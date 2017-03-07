@@ -391,7 +391,7 @@ var COFantasy = COFantasy || function() {
         case "tirDeBarrage":
         case "ignoreObstacles":
           options[cmd[0]] = true;
-          break;
+          return;
         case "si":
           options.conditionAttaquant = parseCondition(cmd.slice(1));
           break;
@@ -1358,7 +1358,7 @@ var COFantasy = COFantasy || function() {
                     bar1 = pvmax;
                   }
                   updateCurrentBar(attackingToken, 1, bar1);
-                  explications.push("L'attaque soigne " + attackerTokName + " de " + soin + " PV");
+                  explications.push("L'attaque soigne " + attackerTokName + " de " + soins + " PV");
                 }
                 addLineToFramedDisplay(display, "<b>Dommages :</b> " + dmgDisplay);
                 var st = attributeAsInt(targetCharId, 'sous_tension', -1, targetToken);
