@@ -64,6 +64,8 @@ p  {margin-left: inherit}
     pas, un nouveau est créé, avec compteur de tour à 1, et on rentre en combat.
     <p>
     À chaque instant, le token dont c'est le tour d'agir est signalé par un drapeau noir.
+    <p>
+    Il est possible d'attendre avant d'agir en réduisant temporairement son initiative, en utilisant <tt>!cof-attendre ?nouvelle_initiative</tt>.
 
     <h4>Attaquer une cible : 
       <tt>!cof-attack @{selected|token_id} @{target|token_id}</tt> <i>n</i></h4>
@@ -102,7 +104,7 @@ p  {margin-left: inherit}
       </li>
       <li> <tt>--etatSi</tt> <i>e condition</i>: si l'attaque touche et la <a href="#conditions"><i>condition</i></a> est validée, la
         cible passe dans l'état <i>e</i>.</li>
-      <li> <tt>--effet</tt> <i>e duree</i> : ajoute à la cible l'effet temporaire <i>e</i> pour la duree spécifiée. Pour que cela soit automatiquement mis à jour, il faut avoir utiliser le turn tracker.
+      <li> <tt>--effet</tt> <i>e duree</i> : ajoute à la cible l'effet temporaire <i>e</i> pour la duree spécifiée. Pour que cela soit automatiquement mis à jour, il faut utiliser le turn tracker.
       <li> <tt>--peur</tt> <i>seuil duree</i> : fait un effet de peur si l'attaque touche. Le <i>seuil</i> sert pour le test de sagesse de résitance à la peur (tient compte de la capacité <b>sans peur</b> du chevalier).</li>
       <li> <tt>--plus</tt> <i>dmg</i> : ajoute <i>dmg</i> dégâts. Attention, ces dégâts sont multipliés par les
         critiques (sauf si de type différent de l'attaque principale)</li>
@@ -311,8 +313,8 @@ p  {margin-left: inherit}
         <ul>
           <li>ajouter un attribut <tt>iniEnMain</tt><i>N</i>, où <i>N</i> est le numéro d'une attaque avec
             arme à poudre</li>
-          <li>utiliser <tt>!cof-degaine</tt> <i>N</i> pour avoir en main l'arme <i>N</i></li>
-          <li>exemple : <tt>!cof-degaine ?{Arme en main ?|Pétoire,0|Épée,1|Aucune,-1}</tt>
+          <li>utiliser <tt>!cof-degainer</tt> <i>N</i> pour avoir en main l'arme <i>N</i></li>
+          <li>exemple : <tt>!cof-degainer ?{Arme en main ?|Pétoire,0|Épée,1|Aucune,-1}</tt>
             avec <tt>initEnMain0</tt> = 0/10, il passe à 10/10 si on degaine l'arme 0.</li>
       </li>
         </ul>
