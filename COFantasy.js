@@ -662,6 +662,10 @@ var COFantasy = COFantasy || function() {
       attBonus += 1;
       explications.push("Chant des héros donne +1 au jet d'attaque");
     }
+    if (attributeAsBool(charId, 'benediction', false, token)) {
+      attBonus += 1;
+      explications.push("La bénédiction donne +1 au jet d'attaque");
+    }
     return attBonus;
   }
 
@@ -2238,7 +2242,8 @@ var COFantasy = COFantasy || function() {
     if (msg.who.endsWith("(GM)")) {
       var player = getObj('player', msg.playerid);
       pageId = player.get('lastpage');
-    } else {
+    } 
+    if (pageId === undefined || pageId === "") {
       var pages = Campaign().get('playerspecificpages');
       if (pages && pages[msg.playerid] !== undefined) {
         pageId = pages[msg.playerid];
@@ -3522,6 +3527,9 @@ var COFantasy = COFantasy || function() {
       bonus += attributeAsInt(charId, attr, 0);
     });
     if (attributeAsBool(charId, 'chant_des_heros', false, token)) {
+      bonus += 1;
+    }
+    if (attributeAsBool(charId, 'benediction', false, token)) {
       bonus += 1;
     }
     if (carac == 'DEX') {
@@ -5075,6 +5083,11 @@ var COFantasy = COFantasy || function() {
       activation: "écoute le chant du barde",
       actif: "est inspiré par le Chant des Héros",
       fin: "n'est plus inspiré par le Chant des Héros"
+    },
+    benediction: {
+      activation: "est touché par la bénédiction",
+      actif: "est béni",
+      fin: "l'effet de la bénédiction s'estompe"
     },
     cri_de_guerre: {
       activation: "pousse son cri de guerre",
