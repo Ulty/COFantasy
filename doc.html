@@ -576,7 +576,9 @@ p  {margin-left: inherit}
     <h4>Voie de la prière</h4>
     <ol>
       <li>Bénédiction : <tt>!cof-effet-temp benediction [[3+@{selected|SAG}]] --allies --self</tt>. Il faut avoir défini une <a href="#allie">équipe</a> avec le prêtre.</li>
+    </ol>
     <h4>Voie des soins</h4>
+    <p style="margin-top:0px; margin-bottom:0px">
     Utiliser un attribut <tt>voieDesSoins</tt> avec comme valeur le rang dans la voie
     <ol>
       <li>Soins légers : <tt>!cof-soin @{selected|token_id} @{target|token_id} leger</tt></li>
@@ -585,7 +587,10 @@ p  {margin-left: inherit}
     le sort nécessite un point de mana (barre 2 du token), et accepte
     l'option --puissant pour soigner un peu plus.</li>
     </ol>
-    <h4>Voie de la spiritualité</h4> TODO
+    <h4>Voie de la spiritualité</h4>
+    <ol>
+      <li>Vêtements sacrés : Ajouter un attribut <tt>vetementsSacres</tt> avec comme valeur le rang dans la voie de la spiritualité. Cela augmente la DEF, mais seulement lorsque le prêtre ne porte pas d'armure (ne se voit pas sur le total de DEF de la fiche)</li>
+    </ol>
 
     <h3>Rôdeur</h3>
     <h4>Voie de l'archer</h4>

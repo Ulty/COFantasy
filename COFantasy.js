@@ -550,7 +550,7 @@ var COFantasy = COFantasy || function() {
           }
           options.puissant =
             attributeAsBool(
-              attackingToken.get('represents'), cmd[1]+"Puissant", false,
+              attackingToken.get('represents'), cmd[1] + "Puissant", false,
               attackingToken);
           return;
         default:
@@ -933,7 +933,7 @@ var COFantasy = COFantasy || function() {
     var attDice = getAttrByName(attackingCharId, attPrefix + "armedmde") || 4;
     if (options.puissant) {
       attDice = parseInt(attDice);
-      if (isNaN(attDice) || attDice <0) {
+      if (isNaN(attDice) || attDice < 0) {
         error("Dés de l'attaque incorrect", attDice);
         return;
       }
@@ -1065,6 +1065,9 @@ var COFantasy = COFantasy || function() {
       defenseBonus -= 5;
     defenseBonus += attributeAsInt(targetCharId, 'bufDEF', 0, targetToken);
     defenseBonus += attributeAsInt(targetCharId, 'actionConcertee', 0, targetToken);
+    if (attributeAsInt(targetCharId, 'DEFARMUREON', 1) === 0) {
+      defenseBonus += attributeAsInt(targetCharId, 'vetementsSacres', 0, targetToken);
+    }
     var interchange =
       interchangeable(attackingToken, targetToken, targetCharId, pageId);
     if (interchange.result) defenseBonus += 5;
@@ -2242,7 +2245,7 @@ var COFantasy = COFantasy || function() {
     if (msg.who.endsWith("(GM)")) {
       var player = getObj('player', msg.playerid);
       pageId = player.get('lastpage');
-    } 
+    }
     if (pageId === undefined || pageId === "") {
       var pages = Campaign().get('playerspecificpages');
       if (pages && pages[msg.playerid] !== undefined) {
@@ -3317,8 +3320,11 @@ var COFantasy = COFantasy || function() {
         if (getState(token, etat, charId))
           addLineToFramedDisplay(display, etat + eForFemale(charId));
       }
-      if (attributeAsInt(charId, 'DEFARMUREON', 1) === 0)
+      if (attributeAsInt(charId, 'DEFARMUREON', 1) === 0) {
         addLineToFramedDisplay(display, "Ne porte pas son armure");
+        if (attributeAsInt(charId, 'vetementsSacres', 0) > 0)
+          addLineToFramedDisplay(display, "  mais bénéficie de ses vêtements sacrés");
+    }
       if (attributeAsInt(charId, 'DEFBOUCLIERON', 1) === 0)
         addLineToFramedDisplay(display, "Ne porte pas son bouclier");
       for (var effet in messageEffets) {
