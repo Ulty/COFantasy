@@ -112,6 +112,12 @@ var COFantasy = COFantasy || function() {
     if (value && etatRendInactif(etat) && isActive(token))
       removeFromTurnTracker(token.id, evt);
     token.set(cof_states[etat], value);
+    if (etat == 'aveugle') {
+      // We also change vision of the token
+      aff.prev.light_angle = token.get('light_angle');
+      if (value) token.set('light_angle', 0);
+      else token.set('light_angle', 360);
+    }
     if (token.get('bar1_link') !== "") {
       if (charId === '') {
         error("token with a linked bar1 but representing no character", token);
