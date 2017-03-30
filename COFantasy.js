@@ -559,6 +559,16 @@ var COFantasy = COFantasy || function() {
               attackingToken.get('represents'), cmd[1] + "Puissant", false,
               attackingToken);
           return;
+        case "rate":
+        case "touche":
+        case "critique":
+        case "echecCritique":
+          if (options.triche === undefined) {
+            options.triche = cmd[0];
+          } else {
+            error("Option incompatible", optArgs);
+          }
+          return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
       }
@@ -1139,7 +1149,6 @@ var COFantasy = COFantasy || function() {
       });
       var d20roll = rolls.inlinerolls[attRollNumber].results.total;
       var attSkill = rolls.inlinerolls[attSkillNumber].results.total;
-      var attackRoll = d20roll + attSkill + attBonus;
       var defense = rolls.inlinerolls[defRollNumber].results.total;
       if (options.intercepter) {
         defense = res[0].inlinerolls[defRollNumber].results.total;
@@ -1156,6 +1165,57 @@ var COFantasy = COFantasy || function() {
       // Malus de défense global pour les longs combats
       if (DEF_MALUS_APRES_TOUR_5)
         defense -= (Math.floor((state.COFantasy.tour - 1) / 5) * 2);
+      if (options.triche) {
+        switch (options.triche) {
+          case "rate":
+            if (d20roll >= crit) {
+              if (crit < 2) d20roll = 1;
+              else d20roll = randomInteger(crit - 1);
+            }
+            if ((d20roll + attSkill + attBonus) >= defense) {
+              var maxd20roll = defense - attSkill - attBonus - 1;
+              if (maxd20roll >= crit) maxd20roll = crit - 1;
+              if (maxd20roll < 2) d20roll = 1;
+              else d20roll = randomInteger(maxd20roll);
+            }
+            break;
+          case "touche":
+            if (d20roll == 1) d20roll = randomInteger(dice - 1) + 1;
+            if ((d20roll + attSkill + attBonus) < defense) {
+              var mind20roll = defense - attSkill - attBonus - 1;
+              if (mind20roll < 1) mind20roll = 1;
+              if (mind20roll >= dice) d20roll = dice;
+              else d20roll = randomInteger(dice - mind20roll) + mind20roll;
+            }
+            break;
+          case "critique":
+            if (d20roll < crit) {
+              if (crit <= dice) d20roll = randomInteger(dice - crit - 1) + crit - 1;
+              else d20roll = dice;
+            }
+            break;
+          case "echecCritique":
+            if (d20roll > 1) d20roll = 1;
+            break;
+          default:
+            error("Option inconnue", options.triche);
+        }
+        // now adjust the roll
+        var attackInlineRoll = rolls.inlinerolls[attRollNumber];
+        attackInlineRoll.results.total = d20roll;
+        attackInlineRoll.results.rolls.forEach(function(roll) {
+          switch (roll.type) {
+            case "R":
+              if (roll.results.length == 1) {
+                roll.results[0].v = d20roll;
+              }
+              break;
+            default:
+              return;
+          }
+        });
+      }
+      var attackRoll = d20roll + attSkill + attBonus;
       var attackResult; // string
       var touche; //false: pas touché, 1 touché, 2 critique
       // Si point de chance, alors un échec critique peut être transformé
@@ -1850,7 +1910,6 @@ var COFantasy = COFantasy || function() {
           InlineColorOverride = " background-color: #FFFEA2; color: #000;";
         }
     }
-
     var rollOut = '<span style="text-align: center; vertical-align: text-middle; display: inline-block; min-width: 1.75em; border-radius: ' + InlineBorderRadius + 'px; padding: 2px 2px 0px 2px; ' + InlineColorOverride + '" title="Rolling ' + inlineroll.expression + ' = ' + values.join("");
     rollOut += '" class="a inlinerollresult showtip tipsy-n';
     rollOut += (critCheck && failCheck) ? ' importantroll' : (critCheck ? ' fullcrit' : (failCheck ? ' fullfail' : ''));
