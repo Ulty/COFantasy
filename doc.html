@@ -177,6 +177,8 @@ p  {margin-left: inherit}
     <p>
     <i>x</i> peut être un nombre, un jet de dé ou <tt>leger</tt> ou <tt>modere</tt> 
     <p>
+    L'option <tt>--portee</tt> <i>n</i> permet de spécifier une distance maximum entre le soigneur et le soigné (au-delà, le soin échoue).
+    <p>
     Avec l'option <tt>--transfer</tt>, le soin est payé avec les PV du soigneur
     <p>
 
@@ -417,7 +419,7 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie du protecteur</h4>
     <ol>
-      <li>Baies magiques : pas de support (TODO)</li>
+      <li>Baies magiques : Utiliser <tt>!cof-distribuer-baies</tt> avec option <tt>--allies --self</tt> ou <tt>--target</tt> pour donner des baies (en ayant sélectionné le druide, le mieux est d'utiliser une ability). Pour consommer ensuite une baie, il faut utiliser <tt>!cof-consommer-baie</tt>.</li>
     </ol>
     <h4>Voie des végétaux</h4>
     <ol>

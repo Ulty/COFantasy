@@ -721,6 +721,35 @@ var COFantasy = COFantasy || function() {
     return init;
   }
 
+  function soigneToken(token, soins, evt, callTrue, callMax) {
+    var bar1 = parseInt(token.get("bar1_value"));
+    var pvmax = parseInt(token.get("bar1_max"));
+    if (isNaN(bar1) || isNaN(pvmax)) {
+      error("Soins sur un token sans points de vie", token);
+      return;
+    }
+    if (bar1 >= pvmax) {
+      if (callMax) callMax();
+      return;
+    }
+    if (soins < 0) soins = 0;
+    if (evt.affectes === undefined) evt.affectes = [];
+    evt.affectes.push({
+      affecte: token,
+      prev: {
+        bar1_value: bar1
+      }
+    });
+    bar1 += soins;
+    var soinsEffectifs = soins;
+    if (bar1 > pvmax) {
+      soinsEffectifs -= (bar1 - pvmax);
+      bar1 = pvmax;
+    }
+    updateCurrentBar(token, 1, bar1);
+    if (callTrue) callTrue(soinsEffectifs);
+  }
+
   function attack(playerId, attackingToken, targetToken, attackLabel, options) {
     /* Attacker and target infos */
     var attackerTokName = attackingToken.get("name");
@@ -1356,22 +1385,11 @@ var COFantasy = COFantasy || function() {
                   explications.push(smsg);
                 }
                 if (options.vampirise) {
-                  var bar1 = attackingToken.get('bar1_value');
-                  var pvmax = attackingToken.get('bar1_max');
-                  evt.affectes.push({
-                    prev: {
-                      bar1_value: bar1
-                    },
-                    affecte: attackingToken
+                  soigneToken(attackingToken, dmg, evt, function(soins) {
+                    explications.push(
+                      "L'attaque soigne " + attackerTokName + " de " + soins +
+                      " PV");
                   });
-                  bar1 += dmg;
-                  var soins = dmg;
-                  if (bar1 > pvmax) {
-                    soins -= (bar1 - pvmax);
-                    bar1 = pvmax;
-                  }
-                  updateCurrentBar(attackingToken, 1, bar1);
-                  explications.push("L'attaque soigne " + attackerTokName + " de " + soins + " PV");
                 }
                 addLineToFramedDisplay(display, "<b>Dommages :</b> " + dmgDisplay);
                 var st = attributeAsInt(targetCharId, 'sous_tension', -1, targetToken);
@@ -2468,6 +2486,7 @@ var COFantasy = COFantasy || function() {
     removeAllAttributes('soinsLegers', evt);
     removeAllAttributes('soinsModeres', evt);
     removeAllAttributes('fortifie', evt);
+    removeAllAttributes('baieMagique', evt);
   }
 
   function recuperer(msg) {
@@ -2902,14 +2921,13 @@ var COFantasy = COFantasy || function() {
         affectes: []
       };
       var tokensToProcess = selected.length;
-
-      function sendEvent() {
+      var sendEvent = function() {
         if (tokensToProcess == 1) {
           addEvent(evt);
           sendChat("", endFramedDisplay(display));
         }
         tokensToProcess--;
-      }
+      };
       iterSelected(selected, function(token, charId) {
         if (!isActive(token)) {
           sendEvent();
@@ -3330,7 +3348,7 @@ var COFantasy = COFantasy || function() {
         addLineToFramedDisplay(display, "Ne porte pas son armure");
         if (attributeAsInt(charId, 'vetementsSacres', 0) > 0)
           addLineToFramedDisplay(display, "  mais bénéficie de ses vêtements sacrés");
-    }
+      }
       if (attributeAsInt(charId, 'DEFBOUCLIERON', 1) === 0)
         addLineToFramedDisplay(display, "Ne porte pas son bouclier");
       for (var effet in messageEffets) {
@@ -4549,21 +4567,40 @@ var COFantasy = COFantasy || function() {
     var token2 = target.token; // Le soigné
     var charId2 = target.charId;
     var name2 = token2.get('name');
-    var bar1 = parseInt(token2.get("bar1_value"));
-    var pvmax = parseInt(token2.get("bar1_max"));
-    if (isNaN(bar1) || isNaN(pvmax)) {
-      error("pas de pv", token2);
-      return;
+    var pageId = token2.get('pageid');
+    var indexPortee = msg.content.indexOf(' --portee');
+    if (indexPortee > 0) { //Une portée est spécifiée
+      var argPortee = msg.content.substring(indexPortee + 2);
+      argPortee = argPortee.split(' ');
+      if (argPortee.length < 2) {
+        error("Il manque un argument à l'option --portee de !cof-soin", argPortee);
+      } else {
+        var portee = parseInt(argPortee[1]);
+        if (isNaN(portee) || portee < 0) {
+          error("L'argument portee doit être un entier positif", argPortee);
+        } else {
+          var m = malusDistance(token1, charId1, token2, portee, pageId, true);
+          if (isNaN(m.malus) || m.distance > portee) {
+            sendChar(charId1, "est trop loin de " + name2 + " pour le soigner");
+            return;
+          }
+        }
+      }
     }
-    if (bar1 >= pvmax) {
+    var callMax = function() {
       sendChar(charId1, "n'a pas besoin de soigner " + name2 + ". Il est déjà au maximum de PV");
       return;
-    }
+    };
     var niveau = attributeAsInt(charId1, 'NIVEAU', 1);
     var rangSoin = attributeAsInt(charId1, 'voieDesSoins', 0);
     var evt = {
       type: 'soins'
     };
+    var printTrue = function(soins) {
+      sendChar(charId1, "soigne " + name2 + " de " + soins + " PV");
+      addEvent(evt);
+    };
+    var callTrue = printTrue;
     var soins;
     switch (args[3]) {
       case 'leger':
@@ -4572,7 +4609,10 @@ var COFantasy = COFantasy || function() {
           sendChar(charId1, "ne peut plus lancer de sort de soins légers aujourd'hui");
           return;
         }
-        setTokenAttr(token1, charId1, 'soinsLegers', nbLegers + 1, evt);
+        callTrue = function(s) {
+          setTokenAttr(token1, charId1, 'soinsLegers', nbLegers + 1, evt);
+          printTrue(s);
+        };
         soins = randomInteger(8) + niveau;
         break;
       case 'modere':
@@ -4585,7 +4625,10 @@ var COFantasy = COFantasy || function() {
           sendChar(charId1, "ne peut plus lancer de sort de soins modérés aujourd'hui");
           return;
         }
-        setTokenAttr(token1, charId1, 'soinsModeres', nbModeres + 1, evt);
+        callTrue = function(s) {
+          setTokenAttr(token1, charId1, 'soinsModeres', nbModeres + 1, evt);
+          printTrue(s);
+        };
         soins = randomInteger(8) + randomInteger(8) + niveau;
         break;
       default:
@@ -4606,39 +4649,30 @@ var COFantasy = COFantasy || function() {
       sendChar(charId1, "ne réussit pas à soigner (total de soins " + soins + ")");
       return;
     }
-    evt.affectes = [{
-      prev: {
-        bar1_value: bar1
-      },
-      affecte: token2
-    }];
-    bar1 += soins;
-    if (bar1 > pvmax) {
-      soins -= (bar1 - pvmax);
-      bar1 = pvmax;
-    }
+    var pvSoigneur;
+    var callTrueFinal = callTrue;
     if (msg.content.includes(' --transfer')) { //paie avec ses PV
-      var pvSoigneur = parseInt(token1.get("bar1_value"));
+      pvSoigneur = parseInt(token1.get("bar1_value"));
       if (isNaN(pvSoigneur) || pvSoigneur <= 0) {
         sendChar(charId1, "ne peut pas soigner " + name2 + ", il n'a plus de PV");
         return;
       }
-      evt.affectes.push({
-        prev: {
-          bar1_value: pvSoigneur
-        },
-        affecte: token1
-      });
       if (pvSoigneur < soins) {
-        bar1 -= (soins - pvSoigneur);
         soins = pvSoigneur;
       }
-      updateCurrentBar(token1, 1, pvSoigneur - soins);
-      if (pvSoigneur == soins) setState(token1, 'mort', true, evt, charId1);
+      callTrueFinal = function(s) {
+        evt.affectes.push({
+          prev: {
+            bar1_value: pvSoigneur
+          },
+          affecte: token1
+        });
+        updateCurrentBar(token1, 1, pvSoigneur - s);
+        if (pvSoigneur == s) setState(token1, 'mort', true, evt, charId1);
+        callTrue(s);
+      };
     }
-    sendChar(charId1, "soigne " + name2 + " de " + soins + " PV");
-    updateCurrentBar(token2, 1, bar1);
-    addEvent(evt);
+    soigneToken(token2, soins, evt, callTrueFinal, callMax);
   }
 
   function aoeSoin(msg) {
@@ -4716,32 +4750,16 @@ var COFantasy = COFantasy || function() {
       evt.affectes = [];
       iterSelected(selected, function(token, charId) {
         var name = token.get('name');
-        var bar1 = parseInt(token.get("bar1_value"));
-        var pvmax = parseInt(token.get("bar1_max"));
-        if (isNaN(bar1) || isNaN(pvmax)) {
-          error("pas de pv", token);
-          return;
-        }
-        if (bar1 >= pvmax) {
+        var callMax = function() {
           addLineToFramedDisplay(display, "Pas besoin de soigner " + name + ". " +
             onGenre(charId, "Il", "Elle") +
             " est déjà au maximum de PV");
           return;
-        }
-        evt.affectes.push({
-          prev: {
-            bar1_value: bar1
-          },
-          affecte: token
-        });
-        bar1 += soins;
-        var soinsEffectifs = soins;
-        if (bar1 > pvmax) {
-          soinsEffectifs -= (bar1 - pvmax);
-          bar1 = pvmax;
-        }
-        addLineToFramedDisplay(display, name + " est soigné" + eForFemale(charId) + " de " + soinsEffectifs + " PV");
-        updateCurrentBar(token, 1, bar1);
+        };
+        var callTrue = function(soinsEffectifs) {
+          addLineToFramedDisplay(display, name + " est soigné" + eForFemale(charId) + " de " + soinsEffectifs + " PV");
+        };
+        soigneToken(token, soins, evt, callTrue, callMax);
       });
       sendChat("", endFramedDisplay(display));
       addEvent(evt);
@@ -4882,27 +4900,11 @@ var COFantasy = COFantasy || function() {
     setTokenAttr(token1, char1Id, 'fortifiants', nbFortifiants - 1, evt);
     // Puis on soigne la cible
     var name2 = token2.get('name');
-    var bar1 = parseInt(token2.get("bar1_value"));
-    var pvmax = parseInt(token2.get("bar1_max"));
-    if (isNaN(bar1) || isNaN(pvmax)) {
-      error("pas de pv", token2);
-      return;
-    }
     var soins = randomInteger(4) + rang;
-    evt.affectes = [{
-      prev: {
-        bar1_value: bar1
-      },
-      affecte: token2
-    }];
-    bar1 += soins;
-    if (bar1 > pvmax) {
-      soins -= (bar1 - pvmax);
-      bar1 = pvmax;
-    }
-    sendChar(char1Id, "donne à " + name2 + " un fortifiant");
-    sendChar(char2Id, "est soigné de " + soins + " PV");
-    updateCurrentBar(token2, 1, bar1);
+    soigneToken(token2, soins, evt, function(soinsEffectifs) {
+      sendChar(char1Id, "donne à " + name2 + " un fortifiant");
+      sendChar(char2Id, "est soigné de " + soinsEffectifs + " PV");
+    });
     // Finalement on met l'effet fortifie
     setTokenAttr(token2, char2Id, 'fortifie', rang + 1, evt);
     addEvent(evt);
@@ -4942,6 +4944,66 @@ var COFantasy = COFantasy || function() {
       addEvent(evt);
     }
   }
+
+  function distribuerBaies(msg) {
+    if (msg.selected === undefined || msg.selected.length != 1) {
+      error("Pour utiliser !cof-distribuer-baies, il faut sélectionner un token", msg);
+      return;
+    }
+    var tokenDruide = getObj('graphic', msg.selected[0]._id);
+    if (tokenDruide === undefined) {
+      error("Erreur de sélection dans !cof-distribuer-baies", msg.selected);
+      return;
+    }
+    var charIdDruide = tokenDruide.get('represents');
+    if (charIdDruide === '') {
+      error("Le token sélectionné pour !cof-distribuer-baies doit représenter un personnage", tokenDruide);
+      return;
+    }
+    var niveau = attributeAsInt(charIdDruide, 'NIVEAU', 1);
+    var evt = {
+      type: "Distribution de baies magiques"
+    };
+    getSelected(msg, function(selected) {
+      var tokensToProcess = selected.length;
+      var sendEvent = function() {
+        if (tokensToProcess == 1) {
+          addEvent(evt);
+        }
+        tokensToProcess--;
+      };
+      iterSelected(selected, function(token, charId) {
+        var baie = attributeAsInt(charId, 'baieMagique', 0, token);
+        if (baie >= niveau || baie < 0) return; //baie plus puissante ou déjà mangée
+        setTokenAttr(token, charId, 'baieMagique', niveau, evt);
+        sendEvent();
+      });
+    });
+  }
+
+  function consommerBaie(msg) {
+    if (msg.selected === undefined) {
+      error("Il fait sélectionner un token pour !cof-consommer-baie", msg);
+      return;
+    }
+    var evt = {
+      type: "consommer une baie"
+    };
+    iterSelected(msg.selected, function(token, charId) {
+      var baie = attributeAsInt(charId, 'baieMagique', 0, token);
+      if (baie < 0) {
+        sendChar(charId, "a déjà mangé une baie aujourd'hui. Pas d'effet");
+        return;
+      }
+      var soins = randomInteger(6) + baie;
+      setTokenAttr(token, charId, 'baieMagique', -1, evt);
+      soigneToken(token, soins, evt, function(soinsEffectifs) {
+        sendChar(charId, "mange une baie magique. Il est rassasié et récupère " + soinsEffectifs + " points de vie");
+      });
+    });
+    addEvent(evt);
+  }
+
 
   function apiCommand(msg) {
     // First replace inline rolls by their values
@@ -5070,6 +5132,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-peur":
         peur(msg);
         return;
+      case "!cof-distribuer-baies":
+        distribuerBaies(msg);
+        return;
       default:
         return;
     }
@@ -5132,7 +5197,6 @@ var COFantasy = COFantasy || function() {
       fin: "La lame d'énergie lumineuse disparaît"
     },
   };
-
 
   var patternEffetsTemp =
     new RegExp(_.reduce(messageEffets, function(reg, msg, effet) {
