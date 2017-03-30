@@ -1261,6 +1261,7 @@ var COFantasy = COFantasy || function() {
       var attackRoll = d20roll + attSkill + attBonus;
       var attackResult; // string
       var touche; //false: pas touché, 1 touché, 2 critique
+      options.dmgSupplementaire = 0; //DM dépendant du jet de touché
       // Si point de chance, alors un échec critique peut être transformé
       if (d20roll == 1 && _.has(options, 'chance')) {
         d20roll = 11;
@@ -1280,6 +1281,11 @@ var COFantasy = COFantasy || function() {
         attackResult =
           "<span style='color: #0000ff'>" + ": <b><i>CRITIQUE</i></b>" + "'</span> ";
         touche = 2;
+      } else if (attributeAsInt(attackingCharId, 'champion', 0)>0 && d20roll >= 15) {
+        attackResult = " : <b><i>SUCCÈS</i></b>";
+        touche = 1;
+explications.push(attackerTokName+" est un champion, son attaque porte !");
+        options.dmgSupplementaire += randomInteger(6);
       } else if (attackRoll < defense) {
         attackResult = " : <i>Échec</i> ";
         touche = false;
@@ -1609,6 +1615,13 @@ var COFantasy = COFantasy || function() {
       dmgDisplay += "+" + s.display;
       showTotal = true;
     }
+    if (options.dmgSupplementaire > 0) {
+      dmgTotal += options.dmgSupplementaire;
+      if (crit > 1 && dmgExtraRoll === 0) dmgDisplay = "(" + dmgDisplay + ") ";
+      dmgDisplay += "+" + options.dmgSupplementaire;
+      showTotal = true;
+    }
+
     // RD spécifique au type
     var typeRD = function(dmgType) {
       if (dmgType === undefined || dmgType == 'normal') return 0;
