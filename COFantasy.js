@@ -305,6 +305,25 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function caracOfMod(m) {
+    switch (m) {
+      case 'FOR':
+        return 'FORCE';
+      case 'DEX':
+        return 'DEXTERITE';
+      case 'CON':
+        return 'CONSTITUTION';
+      case 'INT':
+        return 'INTELLIGENCE';
+      case 'SAG':
+        return 'SAGESSE';
+      case 'CHA':
+        return 'CHARISME';
+      default:
+        return;
+    }
+  }
+
   function modCarac(charId, carac) {
     var res = Math.floor((attributeAsInt(charId, carac, 10) - 10) / 2);
     return res;
@@ -976,22 +995,36 @@ var COFantasy = COFantasy || function() {
     var attNbDices = getAttrByName(attackingCharId, attPrefix + "armedmnbde") || 1;
     attNbDices = parseInt(attNbDices);
     var attDice = getAttrByName(attackingCharId, attPrefix + "armedmde") || 4;
+    attDice = parseInt(attDice);
+    if (isNaN(attDice) || attDice < 0 || isNaN(attNbDices) || attNbDices < 0) {
+      error("Dés de l'attaque incorrect", attDice);
+      return;
+    }
     if (options.puissant) {
-      attDice = parseInt(attDice);
-      if (isNaN(attDice) || attDice < 0) {
-        error("Dés de l'attaque incorrect", attDice);
-        return;
-      }
       attDice += 2;
     }
+    var maxDmg = attNbDices * attDice;
     if (options.reroll1) attDice += "r1";
     var attCarBonus =
       getAttrByName(attackingCharId, attPrefix + "armedmcar") ||
       modCarac(attackingCharId, "FORCE");
+    if (isNaN(attCarBonus)) {
+      if (attCarBonus.startsWith('@{')) {
+        var carac = caracOfMod(attCarBonus.substr(2, 3));
+        if (carac) {
+          var simplerAttCarBonus = modCarac(attackingCharId, carac);
+          if (!isNaN(simplerAttCarBonus)) {
+            attCarBonus = simplerAttCarBonus;
+            maxDmg += attCarBonus;
+          }
+        }
+      }
+    } else maxDmg += attCarBonus;
     if (attCarBonus === "0" || attCarBonus === 0) attCarBonus = "";
     else attCarBonus = " + " + attCarBonus;
     var attDMBonus =
       parseInt(getAttrByName(attackingCharId, attPrefix + "armedmdiv"));
+    maxDmg += attDMBonus;
     if (isNaN(attDMBonus) || attDMBonus === 0) attDMBonus = '';
     else if (attDMBonus > 0) attDMBonus = '+' + attDMBonus;
     if (options.pressionMortelle) {
@@ -1003,11 +1036,12 @@ var COFantasy = COFantasy || function() {
       }
       attNbDices = pMortelle[0].get('max');
       attDice = 4; //TODO : have an option for that
-      attCarBonus = "+ " + pMortelle[0].get('current');
+      attDMBonus = "+ " + pMortelle[0].get('current');
       attDMBonus = "";
     }
     if (_.has(options, "tempDmg")) {
       var forceTarg = modCarac(targetCharId, "FORCE");
+      maxDmg -= forceTarg;
       if (forceTarg < 0) {
         attDMBonus = " +" + (-forceTarg);
       } else {
@@ -1024,6 +1058,7 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(attackingCharId, 'rayon_affaiblissant', false, attackingToken)) {
         attBonus -= 2;
         attDMBonus += " -2";
+        maxDmg -= 2;
         explications.push("L'effet du rayon affaiblissant donne -2 à l'attaque et aux dégâts");
       }
     }
@@ -1033,6 +1068,7 @@ var COFantasy = COFantasy || function() {
       if (options.semonce) {
         if (dmgExtra) dmgExtra += " +1d6";
         else dmgExtra = "1d6";
+        maxDmg += 6;
         explications.push("Tir de semonce (+5 attaque et +1d6 DM)");
       }
       var tirPrecis = attributeAsInt(attackingCharId, 'tirPrecis', 0);
@@ -1040,14 +1076,19 @@ var COFantasy = COFantasy || function() {
         var modDex = modCarac(attackingCharId, 'DEXTERITE');
         if (m.distance <= 5 * modDex) {
           attDMBonus += " + " + tirPrecis;
+          maxDmg += tirPrecis;
           explications.push("Tir précis : +" + tirPrecis + " DM");
         }
       }
     }
-    if (chasseurEmerite) attDMBonus += "+2";
+    if (chasseurEmerite) {
+      attDMBonus += "+2";
+      maxDmg += 2;
+    }
     if (ennemiJure) {
       if (dmgExtra) dmgExtra += " +1d6";
       else dmgExtra = "1d6";
+      maxDmg += 6;
     }
     if (options.traquenard) {
       if (attributeAsInt(attackingCharId, 'traquenard', 0, attackingToken) === 0) {
@@ -1061,6 +1102,7 @@ var COFantasy = COFantasy || function() {
         if (dmgExtra) dmgExtra += " +2d6";
         else dmgExtra = "2d6";
         explications.push(attackerTokName + " fait un traquenard !");
+        maxDmg += 12;
       } else {
         explications.push(attackerTokName + " n'est pas assez rapide pour faire un traquenard à " + targetTokName);
       }
@@ -1076,6 +1118,7 @@ var COFantasy = COFantasy || function() {
       if (dmgExtra) {
         dmgExtra = dmgExtra + " +" + dmgExtra;
       }
+      maxDmg = maxDmg * 2;
     }
     var mainDmgType = options.type || 'normal';
     var dmgRollExprs = {};
@@ -1190,7 +1233,7 @@ var COFantasy = COFantasy || function() {
             break;
           case "critique":
             if (d20roll < crit) {
-              if (crit <= dice) d20roll = randomInteger(dice - crit - 1) + crit - 1;
+              if (crit <= dice) d20roll = randomInteger(dice - crit + 1) + crit - 1;
               else d20roll = dice;
             }
             break;
@@ -2485,7 +2528,7 @@ var COFantasy = COFantasy || function() {
           attribute: prAttr,
           current: null
         };
-      } else if (prAttr[0].get('current') == 0) {
+      } else if (prAttr[0].get('current') == 0) { // jshint ignore:line
         prAttr[0].set("current", 1);
         return {
           attribute: prAttr[0],
