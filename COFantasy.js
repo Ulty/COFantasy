@@ -894,6 +894,11 @@ var COFantasy = COFantasy || function() {
     var explications = m.explications || [];
     // Expression pour l'attaque
     var crit = getAttrByName(attackingCharId, attPrefix + "armecrit") || 20;
+    crit = parseInt(crit);
+    if (isNaN(crit) || crit < 1 || crit > 20) {
+      error("Le critique n'est pas un nombre entre 1 et 20", crit);
+      crit = 20;
+    }
     if (options.affute) crit -= 1;
     var attSkill =
       getAttrByName(attackingCharId, attPrefix + "armeatk") ||
