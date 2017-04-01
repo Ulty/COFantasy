@@ -121,7 +121,7 @@ p  {margin-left: inherit}
       <li><tt>--reroll1</tt> : relance les 1 aux dés de dégats (le 1 est ignoré)</li>
       <li><tt>--mana</tt> <i>n</i> : l'attaque coûte <i>n</i> points de mana.</li>
       <li><tt>--vampirise</tt> : soigne de tous les DM infligés</li>
-      <li><tt>--ignoreObstacles</tt> : ignore les tokens sur le trajet</li>
+      <li><tt>--ignoreObstacles</tt> : ignore les tokens sur le trajet. Ça semble nécessaire pour les attaques magiques d'après Kegron.</li>
       <li><tt>--puissant</tt> : augmente la valeur max des dés de dégâts de 2. Si <tt>--puissant</tt> est
         suivi d'un argument <i>effet</i>, on teste la présence d'un attribut <i>effet</i><tt>Puissant</tt> pour
         décider si l'attaque est puissante ou non.</li>
@@ -435,7 +435,7 @@ p  {margin-left: inherit}
       <li>Murmures dans le vent : rien à faire</li>
       <li>Sous tension: <tt>!cof-effet-temp sous_tension [[5+@{selected|CHA}]]</tt>. 
     Pour l'attaque, définir une attaque magique à 1d6+CHA,
-    et l'appeler avec les options <tt>--si etat sous_tension --electrique</tt></li>
+    et l'appeler avec les options <tt>--si etat sous_tension --electrique --ignoreObstacles --fx glow-holy</tt></li>
     </ol>
     <h4>Voie de la divination</h4>
     <ol>
@@ -514,10 +514,10 @@ p  {margin-left: inherit}
     TODO
     <h4>Voie de la magie destructrice</h4>
     <ol>
-      <li>Projectile magique : <tt>!cof-attack</tt> avec options <tt>--auto</tt> et <tt>--magique</tt></li>
-      <li> Rayon affaiblissant : <tt>!cof-attack</tt> d'une attaque sans dégâts, avec 10 m de
-        portee et l'option <tt>--effet rayon_affaiblissant [[1d6+@{selected|INT}]]</tt>. On peut aussi ajouter un petit visuel avec <tt>--fx</tt></li>
-      <li>Flèche enflammée : <tt>!cof-attack</tt> ... <tt>--feu --mana 1 ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt> 
+      <li>Projectile magique : <tt>!cof-attack</tt> avec options <tt>--auto</tt> et <tt>--magique --fx missile-magic</tt></li>
+      <li> Rayon affaiblissant : <tt>!cof-attack</tt> d'une attaque sans 
+        dégâts, avec 10 m de portee et l'option <tt>--effet rayon_affaiblissant [[1d6+@{selected|INT}]] --ignoreObstacles</tt>. On peut aussi ajouter un petit visuel avec <tt>--fx splatter-magic</tt></li>
+      <li>Flèche enflammée : <tt>!cof-attack</tt> ... <tt>--fx missile-fire --feu --mana 1 ?{Y consacrer le tour entier ?|oui,--puissant|non,} --ignoreObstacles</tt> 
         TODO : enflammer</li>
     </ol>
 
@@ -573,8 +573,8 @@ p  {margin-left: inherit}
     <h4>Voie de la guerre sainte</h4>
     <ol>
       <li>Arme bénie : utiliser l'option <tt>--reroll1</tt> et <tt>--magique</tt> à l'attaque</li>
-      <li>Bouclier de la foi : ajuster le bonus de DEF du bouclier</li>
-      <li>Marteau sprirituel : utiliser une attaque, avec les options <tt>--magique</tt>, <tt>--mana 1</tt> et <tt>--puissant ?{Y passer tout le tour ?|oui|non}</tt></li>
+        <li>Bouclier de la foi : ajuster le bonus de DEF du bouclier</li>
+        <li>Marteau sprirituel : utiliser une attaque, avec les options <tt>--magique</tt>, <tt>--ignoreObstacle</tt>, <tt>--mana 1</tt> et <tt>--puissant ?{Y passer tout le tour ?|oui|non}</tt></li>
     </ol>
     <h4>Voie de la prière</h4>
     <ol>

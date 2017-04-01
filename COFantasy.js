@@ -1615,7 +1615,7 @@ explications.push(attackerTokName+" est un champion, son attaque porte !");
       dmgDisplay += "+" + s.display;
       showTotal = true;
     }
-    if (options.dmgSupplementaire > 0) {
+    if (options.dmgSupplementaire) {
       dmgTotal += options.dmgSupplementaire;
       if (crit > 1 && dmgExtraRoll === 0) dmgDisplay = "(" + dmgDisplay + ") ";
       dmgDisplay += "+" + options.dmgSupplementaire;
@@ -4388,12 +4388,16 @@ explications.push(attackerTokName+" est un champion, son attaque porte !");
     var evt = {
       type: 'attaque magique'
     };
+    var bonus1 = bonusDAttaque(token1, charId1, explications, evt);
+    if (bonus1 === 0) bonus1 = "";
+    else if (bonus1 > 0) bonus1 = " +"+bonus1;
     var attk1 = addOrigin(name1, "[[" + getAttrByName(charId1, 'ATKMAG') +
-      bonusDAttaque(token1, charId1, explications, evt) +
-      "]]");
+      bonus1 + "]]");
+    var bonus2 = bonusDAttaque(token2, charId2, explications, evt);
+    if (bonus2 === 0) bonus2 = "";
+    else if (bonus2 > 0) bonus2 = " +"+bonus2;
     var attk2 = addOrigin(name2, "[[" + getAttrByName(charId2, 'ATKMAG') +
-      bonusDAttaque(token2, charId2, explications, evt) +
-      "]]");
+      bonus1 + "]]");
     var dice1 = 20;
     if (getState(token1, 'affaibli', charId1)) dice1 = 12;
     var dice2 = 20;
