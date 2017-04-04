@@ -94,7 +94,7 @@ p  {margin-left: inherit}
       <li> <tt>--poudre</tt> : l'arme est une arme à poudre, utilisation d'un dé de poudre</li>
       <li> <tt>--auto</tt> : l'attaque réussit automatiquement</li>
       <li><tt>--bonusAttaque</tt> <i>n</i> : ajoute <i>n</i> au jet d'attaque</li>
-      <li> <tt>--psave</tt> <i>carac seuil</i> : jet de <i>carac</i>, si le jet est supérieur à <i>seuil</i>, les dégâts sont divisés par 2. <i>cararc</i> est l'abbréviation de caractéristiques de 3 lettres standard (FOR, DEX, ...).</li>
+      <li> <tt>--psave</tt> <i>carac seuil</i> : jet de <i>carac</i>, si le jet est supérieur à <i>seuil</i>, les dégâts sont divisés par 2. <i>carac</i> est l'abbréviation de caractéristiques de 3 lettres standard (FOR, DEX, ...). Si on souhaite que le jet ne permette de réduire qu'une partie des dommages (la dernière ajoutée avec <tt>--plus</tt>), on peut ajouter <tt>local</tt>. La syntaxe complète est alors <tt>--psave</tt> <i>carac seuil</i> <tt>local</tt> </li>
       <li> <tt>--fx</tt> <i>effet</i> : ajoute un <a href="https://wiki.roll20.net/Custom_FX">effet</a> qui part de l'attaquant à la cible. Si l'attaque rate, l'effet rate aussi, d'autant plus que le jet d'attaque est loin de la défense.</li>
       <li> <tt>--si</tt> <i>conditon</i> : l'attaque n'est possible que si <i>condition</i> est validée. Une condition peut être
         <ul id="conditions">
@@ -106,8 +106,8 @@ p  {margin-left: inherit}
         cible passe dans l'état <i>e</i>.</li>
       <li> <tt>--effet</tt> <i>e duree</i> : ajoute à la cible l'effet temporaire <i>e</i> pour la duree spécifiée. Pour que cela soit automatiquement mis à jour, il faut utiliser le turn tracker.
       <li> <tt>--peur</tt> <i>seuil duree</i> : fait un effet de peur si l'attaque touche. Le <i>seuil</i> sert pour le test de sagesse de résitance à la peur (tient compte de la capacité <b>sans peur</b> du chevalier).</li>
-      <li> <tt>--plus</tt> <i>dmg</i> : ajoute <i>dmg</i> dégâts. Attention, ces dégâts sont multipliés par les
-        critiques (sauf si de type différent de l'attaque principale)</li>
+      <li> <tt>--plus</tt> <i>dmg</i> : ajoute <i>dmg</i> dégâts. Attention, si <i>dmg</i> est un simple nombre, ces dégâts sont multipliés par les
+        critiques (sauf si de type différent de l'attaque principale). Ainsi, <tt>--plus [[1d6]]</tt> donnera des dégâts multipliés par les critiques (car la fonction ne voit que le résultat du jet), alors que <tt>--plus 1d6</tt> ne le sera pas.</li>
       <li><tt>--de6Plus</tt> <i>n</i> (ou <tt>--sournoise</tt> <i>n</i>): ajoute <i>n</i>d6 aux dégâts (non multipliés en cas de critique), de même
         type que les dégâts principaux</li>
       <li> <tt>--magique</tt> : les dégâts sont magiques</li>

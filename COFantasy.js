@@ -535,11 +535,18 @@ var COFantasy = COFantasy || function() {
             error("Le premier argument de --psave n'est pas une caractéristique", cmd);
             return;
           }
-          options.partialSave = {
+          var psaveopt = options;
+          if (cmd.length > 3 && cmd[3] == 'local') {
+            var psavel = options.additionalDmg.length;
+            if (psavel > 0) {
+              psaveopt = options.additionalDmg[psavel - 1];
+            }
+          }
+          psaveopt.partialSave = {
             carac: cmd[1],
             seuil: parseInt(cmd[2])
           };
-          if (isNaN(options.partialSave.seuil)) {
+          if (isNaN(psaveopt.partialSave.seuil)) {
             error("Le deuxième argument de --psave n'est pas un nombre", cmd);
             return;
           }
@@ -1067,12 +1074,19 @@ var COFantasy = COFantasy || function() {
         explications.push("L'effet du rayon affaiblissant donne -2 à l'attaque et aux dégâts");
       }
     }
-    var dmgExtra; //Ce qui n'est pas doublé en cas de critique
-    if (options.de6Plus) dmgExtra = options.de6Plus + "d6";
+    //Ce qui n'est pas doublé en cas de critique
+    if (options.de6Plus) {
+      options.additionalDmg.push({
+        type: 'dmgExtra',
+        value: options.de6Plus + "d6"
+      });
+    }
     if (options.distance) {
       if (options.semonce) {
-        if (dmgExtra) dmgExtra += " +1d6";
-        else dmgExtra = "1d6";
+        options.additionalDmg.push({
+          type: 'dmgExtra',
+          value: '1d6'
+        });
         maxDmg += 6;
         explications.push("Tir de semonce (+5 attaque et +1d6 DM)");
       }
@@ -1091,8 +1105,10 @@ var COFantasy = COFantasy || function() {
       maxDmg += 2;
     }
     if (ennemiJure) {
-      if (dmgExtra) dmgExtra += " +1d6";
-      else dmgExtra = "1d6";
+      options.additionalDmg.push({
+        type: 'dmgExtra',
+        value: '1d6'
+      });
       maxDmg += 6;
     }
     if (options.traquenard) {
@@ -1104,8 +1120,10 @@ var COFantasy = COFantasy || function() {
       var initTarg = tokenInit(targetToken, targetCharId);
       if (initAtt >= initTarg) {
         attBonus += 2;
-        if (dmgExtra) dmgExtra += " +2d6";
-        else dmgExtra = "2d6";
+        options.additionalDmg.push({
+          type: 'dmgExtra',
+          value: '2d6'
+        });
         explications.push(attackerTokName + " fait un traquenard !");
         maxDmg += 12;
       } else {
@@ -1120,28 +1138,27 @@ var COFantasy = COFantasy || function() {
       addOrigin(attackerName, attNbDices + "d" + attDice + attCarBonus + attDMBonus);
     if (options.tirDouble || options.tirDeBarrage) {
       mainDmgRollExpr += " +" + mainDmgRollExpr;
-      if (dmgExtra) {
-        dmgExtra = dmgExtra + " +" + dmgExtra;
-      }
+      options.additionalDmg.forEach(function(dmSpec) {
+        dmSpec.value += " +" + dmSpec.Value;
+      });
       maxDmg = maxDmg * 2;
     }
     var mainDmgType = options.type || 'normal';
-    var dmgRollExprs = {};
-    dmgRollExprs[mainDmgType] = mainDmgRollExpr;
-    options.additionalDmg.forEach(function(dmSpec) {
-      var dmType = dmSpec.type || 'normal';
-      if (_.has(dmgRollExprs, dmType)) dmgRollExprs[dmType] += " + " + dmSpec.value;
-      else dmgRollExprs[dmType] = dmSpec.value;
+    var ExtraDmgRollExpr = "";
+    options.additionalDmg = options.additionalDmg.filter(function(dmSpec) {
+      dmSpec.type = dmSpec.type || 'normal';
+      if (dmSpec.type != mainDmgType || isNaN(dmSpec.value)) {
+        ExtraDmgRollExpr += " [[" + dmSpec.value + "]]";
+        return true;
+      }
+      // We have the same type and a number -> should be multiplied by crit
+      mainDmgRollExpr += " + " + dmSpec.value;
+      return false;
     });
-    var dmgRolls = [];
-    var agregatedDmgRollExpr = "";
-    for (var dmgType in dmgRollExprs) {
-      agregatedDmgRollExpr += " [[" + dmgRollExprs[dmgType] + "]]";
-      dmgRolls.push({
-        type: dmgType,
-        rollExpr: dmgRollExprs[dmgType]
-      });
-    }
+    var mainDmgRoll = {
+      type: mainDmgType,
+      value: mainDmgRollExpr
+    };
 
     var defenseExpr = getAttrByName(targetCharId, "DEF");
     var defenseBonus = 0;
@@ -1166,19 +1183,17 @@ var COFantasy = COFantasy || function() {
     if (interchange.result) defenseBonus += 5;
     var defenseRollExpr = addOrigin(targetName, "[[" + defenseExpr + "]]");
 
-    var dmgExtraExpr = "[[0d6]]";
-    if (dmgExtra) dmgExtraExpr = "[[" + dmgExtra + "]]";
     // toEvaluate inlines
     // 0: attack roll
     // 1: target defense expression
     // 2: attack skill expression
-    // 3: dés de dégâts extra (pas doublés par le crit et même type que main)
-    // 4+ : les rolls de dégâts
-    // 4 + dmgRolls.length : dé de poudre
+    // 3 : roll de dégâts principaux
+    // 4+ : les rolls de dégâts supplémentaires
+    // 4 + options.additionalDmg.length : dé de poudre
 
     var toEvaluate =
       attackRollExpr + " " + defenseRollExpr + " " + attackSkillExpr +
-      " " + dmgExtraExpr + agregatedDmgRollExpr;
+      " [[" + mainDmgRollExpr + "]]" + ExtraDmgRollExpr;
     if (options.poudre) toEvaluate += " [[1d20]]";
     sendChat(attackerName, toEvaluate, function(res) {
       var rolls = options.rolls || res[0];
@@ -1187,27 +1202,21 @@ var COFantasy = COFantasy || function() {
       var attRollNumber = rollNumber(afterEvaluate[0]);
       var defRollNumber = rollNumber(afterEvaluate[1]);
       var attSkillNumber = rollNumber(afterEvaluate[2]);
-      var dmgExtraNumber = rollNumber(afterEvaluate[3]);
-      var mainDmgRoll;
-      dmgRolls.forEach(function(r, i) {
+      var mainDmgRollNumber = rollNumber(afterEvaluate[3]);
+      mainDmgRoll.total = rolls.inlinerolls[mainDmgRollNumber].results.total;
+      mainDmgRoll.display = buildinline(rolls.inlinerolls[mainDmgRollNumber], mainDmgType);
+      options.additionalDmg.forEach(function(dmSpec, i) {
         var rRoll = rolls.inlinerolls[rollNumber(afterEvaluate[i + 4])];
-        r.total = rRoll.results.total;
-        r.display = buildinline(rRoll, r.type);
-        if (r.type == mainDmgType) mainDmgRoll = r;
+        dmSpec.total = rRoll.results.total;
+        var addDmType = dmSpec.type;
+        if (addDmType == 'dmgExtra') addDmType = mainDmgType;
+        dmSpec.display = buildinline(rRoll, addDmType);
       });
       var d20roll = rolls.inlinerolls[attRollNumber].results.total;
       var attSkill = rolls.inlinerolls[attSkillNumber].results.total;
       var defense = rolls.inlinerolls[defRollNumber].results.total;
       if (options.intercepter) {
         defense = res[0].inlinerolls[defRollNumber].results.total;
-      }
-      if (dmgExtra) {
-        var r = rolls.inlinerolls[dmgExtraNumber];
-        dmgRolls.push({
-          type: 'dmgExtra',
-          total: r.results.total,
-          display: buildinline(r, mainDmgType)
-        });
       }
       defense += defenseBonus;
       // Malus de défense global pour les longs combats
@@ -1286,10 +1295,10 @@ var COFantasy = COFantasy || function() {
         attackResult =
           "<span style='color: #0000ff'>" + ": <b><i>CRITIQUE</i></b>" + "'</span> ";
         touche = 2;
-      } else if (attributeAsInt(attackingCharId, 'champion', 0)>0 && d20roll >= 15) {
+      } else if (attributeAsInt(attackingCharId, 'champion', 0) > 0 && d20roll >= 15) {
         attackResult = " : <b><i>SUCCÈS</i></b>";
         touche = 1;
-explications.push(attackerTokName+" est un champion, son attaque porte !");
+        explications.push(attackerTokName + " est un champion, son attaque porte !");
         options.dmgSupplementaire += randomInteger(6);
       } else if (attackRoll < defense) {
         attackResult = " : <i>Échec</i> ";
@@ -1319,7 +1328,7 @@ explications.push(attackerTokName+" est un champion, son attaque porte !");
 
       // Cas des armes à poudre
       if (options.poudre) {
-        var poudreNumber = rollNumber(afterEvaluate[4 + dmgRolls.length]);
+        var poudreNumber = rollNumber(afterEvaluate[4 + options.additionalDmg.length]);
         var dePoudre = rolls.inlinerolls[poudreNumber].results.total;
         explications.push(
           "Dé de poudre : " + buildinline(rolls.inlinerolls[poudreNumber]));
@@ -1336,8 +1345,9 @@ explications.push(attackerTokName+" est un champion, son attaque porte !");
                 type: 'normal',
                 display: buildinline(explRoll, 'normal')
               };
-              dealDamage(attackingToken, attackingCharId, r, evt, 1, [],
-                options, explications,
+              options.additionalDmg = [];
+              dealDamage(attackingToken, attackingCharId, r, evt, 1, options,
+                explications,
                 function(dmgDisplay, saveResult, dmg) {
                   var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
                     dmgDisplay;
@@ -1357,8 +1367,9 @@ explications.push(attackerTokName+" est un champion, son attaque porte !");
                 type: 'normal',
                 display: buildinline(explRoll, 'normal')
               };
-              dealDamage(attackingToken, attackingCharId, r, evt, 1, [],
-                options, explications,
+              options.additionalDmg = [];
+              dealDamage(attackingToken, attackingCharId, r, evt, 1, options,
+                explications,
                 function(dmgDisplay, saveResult, dmg) {
                   var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
                     dmgDisplay;
@@ -1446,12 +1457,13 @@ explications.push(attackerTokName+" est un champion, son attaque porte !");
           options: options
         };
         var afterPeur = function() {
-          if (dmgRolls.length < 2 && mainDmgRoll.total === 0 && attNbDices === 0) {
+          if (options.additionalDmg.length === 0 && mainDmgRoll.total === 0 &&
+            attNbDices === 0) {
             // Pas de dégâts, donc pas d'appel à dealDamage
             finaliseAttackDisplay(display, explications, evt);
           } else {
             dealDamage(targetToken, targetCharId, mainDmgRoll, evt, touche,
-              dmgRolls, options, explications,
+              options, explications,
               function(dmgDisplay, saveResult, dmg) {
                 if (options.strigeSuce) {
                   var suce =
@@ -1516,7 +1528,7 @@ explications.push(attackerTokName+" est un champion, son attaque porte !");
                       type: 'electrique',
                       display: buildinline(explRoll, 'electrique')
                     };
-                    dealDamage(attackingToken, attackingCharId, r, evt, 1, [],
+                    dealDamage(attackingToken, attackingCharId, r, evt, 1,
                       options, explications,
                       function(dmgDisplay, saveResult, dmg) {
                         var dmgMsg =
@@ -1582,14 +1594,14 @@ explications.push(attackerTokName+" est un champion, son attaque porte !");
     sendChat("", endFramedDisplay(display));
   }
 
-  function dealDamage(token, charId, dmg, evt, crit, otherDmg, options, explications, displayRes) {
+  function dealDamage(token, charId, dmg, evt, crit, options, explications, displayRes) {
     if (options === undefined) options = {};
     var expliquer = function(msg) {
       if (explications) explications.push(msg);
       else sendChar(charId, msg);
     };
     crit = crit || 1;
-    otherDmg = otherDmg || [];
+    var otherDmg = options.additionalDmg || [];
     evt.affectes = evt.affectes || [];
     var dmgDisplay = dmg.display;
     var dmgTotal = dmg.total;
@@ -1599,27 +1611,30 @@ explications.push(attackerTokName+" est un champion, son attaque porte !");
       dmgTotal = dmgTotal * crit;
       if (options.affute) {
         var bonusCrit = randomInteger(6);
-        dmgDisplay = "(" + dmgDisplay + ") +" + bonusCrit;
+        dmgDisplay = "(" + dmgDisplay + ")+" + bonusCrit;
         dmgTotal += bonusCrit;
       } else {
         showTotal = true;
       }
     }
-    // Dommages non affectés par les critiques
+    // Dommages non affectés par les critiques, de même type que le principal
     var dmgExtraRoll =
       otherDmg.findIndex(function(d) {
         return (d.type == 'dmgExtra');
       });
     if (dmgExtraRoll >= 0) {
-      var s = otherDmg[dmgExtraRoll];
-      otherDmg = otherDmg.filter(function(d) {
-        return (d.type != 'dmgExtra');
-      });
-      dmgTotal += s.total;
-      if (crit > 1) dmgDisplay = "(" + dmgDisplay + ") ";
-      dmgDisplay += "+" + s.display;
+      if (crit > 1) dmgDisplay = "(" + dmgDisplay + ")";
       showTotal = true;
+      otherDmg = otherDmg.filter(function(d) {
+        if (d.type == 'dmgExtra') {
+          dmgTotal += d.total;
+          dmgDisplay += "+" + d.display;
+          return false;
+        }
+        return true;
+      });
     }
+    // Dommages déterminés après le jet d'attaque, donc pas de jet de dé (pour simplifier), mais une valeur venant de randomInt
     if (options.dmgSupplementaire) {
       dmgTotal += options.dmgSupplementaire;
       if (crit > 1 && dmgExtraRoll === 0) dmgDisplay = "(" + dmgDisplay + ") ";
@@ -1669,12 +1684,9 @@ explications.push(attackerTokName+" est un champion, son attaque porte !");
         dmgTotal = 0;
       });
     // Other sources of damage
-    otherDmg = otherDmg.filter(function(d) {
-      return (d.type != dmg.type);
-    });
     otherDmg.forEach(function(d) {
       showTotal = true;
-      dmgDisplay += " + " + d.display;
+      dmgDisplay += "+" + d.display;
       var dm = d.total;
       // Les autres sources de dégâts ne sont pas multipliées en cas de crit
       //if (crit > 1) {
@@ -4395,12 +4407,12 @@ explications.push(attackerTokName+" est un champion, son attaque porte !");
     };
     var bonus1 = bonusDAttaque(token1, charId1, explications, evt);
     if (bonus1 === 0) bonus1 = "";
-    else if (bonus1 > 0) bonus1 = " +"+bonus1;
+    else if (bonus1 > 0) bonus1 = " +" + bonus1;
     var attk1 = addOrigin(name1, "[[" + getAttrByName(charId1, 'ATKMAG') +
       bonus1 + "]]");
     var bonus2 = bonusDAttaque(token2, charId2, explications, evt);
     if (bonus2 === 0) bonus2 = "";
-    else if (bonus2 > 0) bonus2 = " +"+bonus2;
+    else if (bonus2 > 0) bonus2 = " +" + bonus2;
     var attk2 = addOrigin(name2, "[[" + getAttrByName(charId2, 'ATKMAG') +
       bonus1 + "]]");
     var dice1 = 20;
