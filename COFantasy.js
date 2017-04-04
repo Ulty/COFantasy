@@ -440,8 +440,6 @@ var COFantasy = COFantasy || function() {
             return;
           }
           var duree;
-          var dureeRollNumber = findRollNumber(cmd[2]);
-          if (dureeRollNumber === undefined) {
             duree = parseInt(cmd[2]);
             if (isNaN(duree) || duree < 1) {
               error(
@@ -449,9 +447,6 @@ var COFantasy = COFantasy || function() {
                 cmd);
               return;
             }
-          } else {
-            duree = msg.inlinerolls[dureeRollNumber].results.total;
-          }
           options.effets = options.effets || [];
           options.effets.push({
             effet: cmd[1],
@@ -3744,6 +3739,7 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+// Ne pas remplacer les inline rolls, il faut les afficher correctement
   function aoe(msg) {
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
@@ -3837,7 +3833,7 @@ var COFantasy = COFantasy || function() {
       }
       iterSelected(selected, function(token, charId) {
         var name = token.get('name');
-        dealDamage(token, charId, dmg, evt, 1, [], options, undefined,
+        dealDamage(token, charId, dmg, evt, 1, options, undefined,
           function(dmgDisplay, saveResult, dmgFinal) {
             if (partialSave === undefined) {
               addLineToFramedDisplay(display,
@@ -4120,20 +4116,13 @@ var COFantasy = COFantasy || function() {
       error(effet + " n'est pas un effet temporaire répertorié", msg.content);
       return;
     }
-    var duree;
-    // Lignes suivantes inutiles : on transforme tous les rolls en résultats
-    var dureeRollNumber = findRollNumber(cmd[2]);
-    if (dureeRollNumber === undefined) {
-      duree = parseInt(cmd[2]);
+    var duree = parseInt(cmd[2]);
       if (isNaN(duree) || duree < 1) {
         error(
           "Le deuxième argument de !cof-effet-temp doit être un nombre positif",
           msg.content);
         return;
       }
-    } else {
-      duree = msg.inlinerolls[dureeRollNumber].results.total;
-    }
     var evt = {
       type: 'effet_temp_' + cmd[1]
     };
@@ -4768,8 +4757,6 @@ var COFantasy = COFantasy || function() {
         soins = randomInteger(8) + randomInteger(8) + niveau;
         break;
       default:
-        var soinsRollNumber = findRollNumber(args[3]);
-        if (soinsRollNumber === undefined) {
           soins = parseInt(args[3]);
           if (isNaN(soins) || soins < 1) {
             error(
@@ -4777,9 +4764,6 @@ var COFantasy = COFantasy || function() {
               msg.content);
             return;
           }
-        } else {
-          soins = msg.inlinerolls[soinsRollNumber].results.total;
-        }
     }
     if (soins <= 0) {
       sendChar(charId1, "ne réussit pas à soigner (total de soins " + soins + ")");
@@ -4858,8 +4842,6 @@ var COFantasy = COFantasy || function() {
       titre = nameSoigneur + " lance un soin de groupe";
       msg.content += " --allies --self";
     } else { // soin générique
-      var soinsRollNumber = findRollNumber(args[1]);
-      if (soinsRollNumber === undefined) {
         soins = parseInt(args[1]);
         if (isNaN(soins) || soins < 1) {
           error(
@@ -4867,9 +4849,6 @@ var COFantasy = COFantasy || function() {
             msg.content);
           return;
         }
-      } else {
-        soins = msg.inlinerolls[soinsRollNumber].results.total;
-      }
     }
     if (soins <= 0) {
       sendChat('', "Pas de soins (total de soins " + soins + ")");
@@ -5140,9 +5119,7 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
-
-  function apiCommand(msg) {
-    // First replace inline rolls by their values
+  function replaceInline(msg) {
     if (_.has(msg, 'inlinerolls')) {
       msg.content = _.chain(msg.inlinerolls)
         .reduce(function(m, v, k) {
@@ -5154,7 +5131,12 @@ var COFantasy = COFantasy || function() {
         }, msg.content)
         .value();
     }
+  }
+
+  function apiCommand(msg) {
+    // First replace inline rolls by their values
     var command = msg.content.split(" ", 1);
+    if (command[0] != "!cof-aoe") replaceInline(msg);
     var evt;
     switch (command[0]) {
       case "!cof-attack":
