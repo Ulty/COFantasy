@@ -440,13 +440,13 @@ var COFantasy = COFantasy || function() {
             return;
           }
           var duree;
-            duree = parseInt(cmd[2]);
-            if (isNaN(duree) || duree < 1) {
-              error(
-                "Le deuxième argument de --effet doit être un nombre positif",
-                cmd);
-              return;
-            }
+          duree = parseInt(cmd[2]);
+          if (isNaN(duree) || duree < 1) {
+            error(
+              "Le deuxième argument de --effet doit être un nombre positif",
+              cmd);
+            return;
+          }
           options.effets = options.effets || [];
           options.effets.push({
             effet: cmd[1],
@@ -1069,17 +1069,18 @@ var COFantasy = COFantasy || function() {
         explications.push("L'effet du rayon affaiblissant donne -2 à l'attaque et aux dégâts");
       }
     }
+    var mainDmgType = options.type || 'normal';
     //Ce qui n'est pas doublé en cas de critique
     if (options.de6Plus) {
       options.additionalDmg.push({
-        type: 'dmgExtra',
+        type: mainDmgType,
         value: options.de6Plus + "d6"
       });
     }
     if (options.distance) {
       if (options.semonce) {
         options.additionalDmg.push({
-          type: 'dmgExtra',
+          type: mainDmgType,
           value: '1d6'
         });
         maxDmg += 6;
@@ -1101,7 +1102,7 @@ var COFantasy = COFantasy || function() {
     }
     if (ennemiJure) {
       options.additionalDmg.push({
-        type: 'dmgExtra',
+        type: mainDmgType,
         value: '1d6'
       });
       maxDmg += 6;
@@ -1116,7 +1117,7 @@ var COFantasy = COFantasy || function() {
       if (initAtt >= initTarg) {
         attBonus += 2;
         options.additionalDmg.push({
-          type: 'dmgExtra',
+          type: mainDmgType,
           value: '2d6'
         });
         explications.push(attackerTokName + " fait un traquenard !");
@@ -1138,7 +1139,6 @@ var COFantasy = COFantasy || function() {
       });
       maxDmg = maxDmg * 2;
     }
-    var mainDmgType = options.type || 'normal';
     var ExtraDmgRollExpr = "";
     options.additionalDmg = options.additionalDmg.filter(function(dmSpec) {
       dmSpec.type = dmSpec.type || 'normal';
@@ -1204,7 +1204,6 @@ var COFantasy = COFantasy || function() {
         var rRoll = rolls.inlinerolls[rollNumber(afterEvaluate[i + 4])];
         dmSpec.total = rRoll.results.total;
         var addDmType = dmSpec.type;
-        if (addDmType == 'dmgExtra') addDmType = mainDmgType;
         dmSpec.display = buildinline(rRoll, addDmType);
       });
       var d20roll = rolls.inlinerolls[attRollNumber].results.total;
@@ -1589,6 +1588,47 @@ var COFantasy = COFantasy || function() {
     sendChat("", endFramedDisplay(display));
   }
 
+  // RD spécifique au type
+  function typeRD(charId, dmgType) {
+    if (dmgType === undefined || dmgType == 'normal') return 0;
+    return attributeAsInt(charId, 'RD_' + dmgType, 0);
+  }
+
+  function partialSave(ps, charId, token, showTotal, dmgDisplay, total, expliquer, afterSave) {
+    if (ps.partialSave !== undefined) {
+      var bonusAttrs = [];
+      if (ps.partialSave.carac == 'DEX') {
+        bonusAttrs.push('reflexesFelins');
+      }
+      testCaracteristique(charId, ps.partialSave.carac, bonusAttrs,
+        ps.partialSave.seuil, token,
+        function(reussite, rollText) {
+          var smsg =
+            " Jet de " + ps.partialSave.carac + " difficulté " +
+            ps.partialSave.seuil + " pour réduire les dégâts.";
+          expliquer(smsg);
+          smsg = token.get('name') + " fait " + rollText;
+          if (reussite) {
+            if (showTotal) dmgDisplay = "(" + dmgDisplay + ")";
+            dmgDisplay += " / 2";
+            showTotal = true;
+            total = Math.ceil(total / 2);
+            smsg += " -> réussite, dégâts divisés par 2";
+          } else {
+            smsg += " -> échec";
+          }
+          expliquer(smsg);
+          afterSave({
+            succes: reussite,
+            display: rollText,
+            dmgDisplay: dmgDisplay,
+            showTotal: showTotal,
+            total: total
+          });
+        });
+    } else afterSave();
+  }
+
   function dealDamage(token, charId, dmg, evt, crit, options, explications, displayRes) {
     if (options === undefined) options = {};
     var expliquer = function(msg) {
@@ -1612,37 +1652,45 @@ var COFantasy = COFantasy || function() {
         showTotal = true;
       }
     }
-    // Dommages non affectés par les critiques, de même type que le principal
-    var dmgExtraRoll =
-      otherDmg.findIndex(function(d) {
-        return (d.type == 'dmgExtra');
-      });
-    if (dmgExtraRoll >= 0) {
-      if (crit > 1) dmgDisplay = "(" + dmgDisplay + ")";
-      showTotal = true;
-      otherDmg = otherDmg.filter(function(d) {
-        if (d.type == 'dmgExtra') {
-          dmgTotal += d.total;
-          dmgDisplay += "+" + d.display;
-          return false;
-        }
-        return true;
-      });
-    }
+    //On trie les DM supplémentaires selon leur type
+    var dmgParType = {};
+    otherDmg.forEach(function(d) {
+      if (_.has(dmgParType, d.type)) dmgParType[d.type].push(d);
+      else dmgParType[d.type] = [d];
+    });
+
     // Dommages déterminés après le jet d'attaque, donc pas de jet de dé (pour simplifier), mais une valeur venant de randomInt
     if (options.dmgSupplementaire) {
       dmgTotal += options.dmgSupplementaire;
-      if (crit > 1 && dmgExtraRoll === 0) dmgDisplay = "(" + dmgDisplay + ") ";
+      if (crit > 1 && dmgExtra === undefined) dmgDisplay = "(" + dmgDisplay + ") ";
       dmgDisplay += "+" + options.dmgSupplementaire;
       showTotal = true;
     }
+    // Dommages de même type que le principal, mais à part, donc non affectés par les critiques
+    var dmgExtra = dmgParType[dmg.type];
+    if (dmgExtra) {
+      if (crit > 1) dmgDisplay = "(" + dmgDisplay + ")";
+      showTotal = true;
+      var count = dmgExtra.length;
+      dmgExtra.forEach(function(d) {
+        count--;
+        partialSave(d, charId, token, false, d.display, d.total, expliquer,
+          function(res) {
+            if (res) {
+              dmgTotal += res.total;
+              dmgDisplay += "+" + res.dmgDisplay;
+            } else {
+              dmgTotal += d.total;
+              dmgDisplay += "+" + d.display;
+            }
+            if (count === 0) dealDamageAfterDmgExtra(token, charId, dmg, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes);
+          });
+      });
+    }
+  }
 
-    // RD spécifique au type
-    var typeRD = function(dmgType) {
-      if (dmgType === undefined || dmgType == 'normal') return 0;
-      return attributeAsInt(charId, 'RD_' + dmgType, 0);
-    };
-    var rdMain = typeRD(dmg.type);
+  function dealDamageAfterDmgExtra(token, charId, dmg, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes) {
+    var rdMain = typeRD(charId, dmg.type);
     if (rdMain > 0 && dmgTotal > 0) {
       dmgTotal -= rdMain;
       if (dmgTotal < 0) {
@@ -1671,7 +1719,7 @@ var COFantasy = COFantasy || function() {
     mitigate(dmg.type,
       function() {
         dmgTotal = Math.ceil(dmgTotal / 2);
-        if (dmgExtraRoll > 0) dmgDisplay = "(" + dmgDisplay + ")";
+        if (dmgExtra) dmgDisplay = "(" + dmgDisplay + ")";
         dmgDisplay += " / 2";
         showTotal = true;
       },
@@ -1679,34 +1727,67 @@ var COFantasy = COFantasy || function() {
         dmgTotal = 0;
       });
     // Other sources of damage
-    otherDmg.forEach(function(d) {
-      showTotal = true;
-      dmgDisplay += "+" + d.display;
-      var dm = d.total;
-      // Les autres sources de dégâts ne sont pas multipliées en cas de crit
-      //if (crit > 1) {
-      //  dmgDisplay += " X "+crit;
-      //  dm = dm * crit;
-      //}
-      var rdl = typeRD(d.type);
-      if (rdl > 0 && dm > 0) {
-        dm -= rdl;
-        if (dm < 0) {
-          rdl += dm;
-          dm = 0;
-        }
-        dmgDisplay += "-" + rdl;
+    // First count all other sources of damage, for synchronization
+    var count = 0;
+    for (var dt in dmgParType) {
+      count += dmgParType[dt].length;
+    }
+    var dealOneType = function(dmgType) {
+      if (dmgType == dmg.type) {
+        count -= dmgParType[dmgType].length;
+        if (count === 0) dealDamageAfterOthers(token, charId, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal);
+        return; //type principal déjà géré
       }
-      mitigate(d.type,
-        function() {
-          dm = Math.ceil(dm / 2);
-          dmgDisplay += " / 2";
-        },
-        function() {
-          dm = 0;
-        });
-      dmgTotal += dm;
-    });
+      showTotal = true;
+      var dm = 0;
+      var typeDisplay = "";
+      var typeCount = dmgParType[dmgType].length;
+      dmgParType[dmgType].forEach(function(d) {
+        partialSave(d, charId, token, false, d.display, d.total, expliquer,
+          function(res) {
+            if (res) {
+              dm += res.total;
+              if (typeDisplay === '') typeDisplay = res.dmgDisplay;
+              else typeDisplay += "+" + res.dmgDisplay;
+            } else {
+              dm += d.total;
+              if (typeDisplay === '') typeDisplay = d.display;
+              else typeDisplay += "+" + d.display;
+            }
+        typeCount--;
+            if (typeCount === 0) {
+              var rdl = typeRD(charId, dmgType);
+              if (rdl > 0 && dm > 0) {
+                dm -= rdl;
+                if (dm < 0) {
+                  rdl += dm;
+                  dm = 0;
+                }
+                typeDisplay += "-" + rdl;
+              }
+              mitigate(dmgType,
+                function() {
+                  dm = Math.ceil(dm / 2);
+                  if (dmgParType[dmgType].length > 1) typeDisplay = "(" + typeDisplay + ")";
+                  typeDisplay += " / 2";
+                },
+                function() {
+                  dm = 0;
+                });
+              dmgTotal += dm;
+              dmgDisplay += "+" + typeDisplay;
+            }
+            count--;
+            if (count === 0) dealDamageAfterOthers(token, charId, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal);
+          });
+      });
+    };
+    for (var dmgType in dmgParType) {
+      dealOneType(dmgType);
+    }
+  }
+
+  function dealDamageAfterOthers(token, charId, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal) {
     // Final function to be called after eventual carac test
     var afterSaveDamageComputation = function(saveResult) {
       var rd = attributeAsInt(charId, 'RDS', 0);
@@ -1854,25 +1935,15 @@ var COFantasy = COFantasy || function() {
       dmgTotal = Math.ceil(dmgTotal / 2);
       showTotal = true;
     }
-    if (options.partialSave !== undefined) {
-      var bonusAttrs = [];
-      if (options.partialSave.carac == 'DEX') {
-        bonusAttrs.push('reflexesFelins');
-      }
-      testCaracteristique(charId, options.partialSave.carac, bonusAttrs,
-        options.partialSave.seuil, token,
-        function(reussite, rollText) {
-          if (reussite) {
-            dmgDisplay += " / 2";
-            showTotal = true;
-            dmgTotal = Math.ceil(dmgTotal / 2);
-          }
-          afterSaveDamageComputation({
-            succes: reussite,
-            display: rollText
-          });
-        });
-    } else afterSaveDamageComputation();
+    partialSave(options, charId, token, showTotal, dmgDisplay, dmgTotal, expliquer,
+      function(res) {
+        if (res) {
+          dmgTotal = res.total;
+          dmgDisplay = res.dmgDisplay;
+          showTotal = res.showTotal;
+        }
+        afterSaveDamageComputation(res);
+      });
   }
 
 
@@ -3739,7 +3810,7 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-// Ne pas remplacer les inline rolls, il faut les afficher correctement
+  // Ne pas remplacer les inline rolls, il faut les afficher correctement
   function aoe(msg) {
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
@@ -4117,12 +4188,12 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var duree = parseInt(cmd[2]);
-      if (isNaN(duree) || duree < 1) {
-        error(
-          "Le deuxième argument de !cof-effet-temp doit être un nombre positif",
-          msg.content);
-        return;
-      }
+    if (isNaN(duree) || duree < 1) {
+      error(
+        "Le deuxième argument de !cof-effet-temp doit être un nombre positif",
+        msg.content);
+      return;
+    }
     var evt = {
       type: 'effet_temp_' + cmd[1]
     };
@@ -4757,13 +4828,13 @@ var COFantasy = COFantasy || function() {
         soins = randomInteger(8) + randomInteger(8) + niveau;
         break;
       default:
-          soins = parseInt(args[3]);
-          if (isNaN(soins) || soins < 1) {
-            error(
-              "Le troisième argument de !cof-soin doit être un nombre positif",
-              msg.content);
-            return;
-          }
+        soins = parseInt(args[3]);
+        if (isNaN(soins) || soins < 1) {
+          error(
+            "Le troisième argument de !cof-soin doit être un nombre positif",
+            msg.content);
+          return;
+        }
     }
     if (soins <= 0) {
       sendChar(charId1, "ne réussit pas à soigner (total de soins " + soins + ")");
@@ -4842,13 +4913,13 @@ var COFantasy = COFantasy || function() {
       titre = nameSoigneur + " lance un soin de groupe";
       msg.content += " --allies --self";
     } else { // soin générique
-        soins = parseInt(args[1]);
-        if (isNaN(soins) || soins < 1) {
-          error(
-            "L'argument de !cof-aoe-soin doit être un nombre positif",
-            msg.content);
-          return;
-        }
+      soins = parseInt(args[1]);
+      if (isNaN(soins) || soins < 1) {
+        error(
+          "L'argument de !cof-aoe-soin doit être un nombre positif",
+          msg.content);
+        return;
+      }
     }
     if (soins <= 0) {
       sendChat('', "Pas de soins (total de soins " + soins + ")");
