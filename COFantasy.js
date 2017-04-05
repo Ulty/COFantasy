@@ -415,6 +415,7 @@ var COFantasy = COFantasy || function() {
         case "mainsDEnergie":
         case "tirDeBarrage":
         case "ignoreObstacles":
+        case "enflamme":
           options[cmd[0]] = true;
           return;
         case "si":
@@ -1402,6 +1403,13 @@ var COFantasy = COFantasy || function() {
           targetToken = interchange.targets[n - 1];
         }
         // change l'état de la cible, si spécifié
+        if (options.enflamme) {
+          var enflammePuissance = 1;
+          if (options.puissant) enflammePuissance = 2;
+          setTokenAttr(
+            targetToken, targetCharId, 'enflamme', enflammePuissance, evt);
+          explications.push(targetTokName + " prend feu !");
+        }
         if (options.etats) {
           options.etats.forEach(function(ce) {
             if (testCondition(ce.condition, attackingCharId, targetCharId)) {
@@ -1688,7 +1696,7 @@ var COFantasy = COFantasy || function() {
           });
       });
     } else {
-      dealDamageAfterDmgExtra(token, charId, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes);
+      return dealDamageAfterDmgExtra(token, charId, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes);
     }
   }
 
@@ -1790,150 +1798,11 @@ var COFantasy = COFantasy || function() {
         dealOneType(dmgType);
       }
     } else {
-      dealDamageAfterOthers(token, charId, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal);
+      return dealDamageAfterOthers(token, charId, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal);
     }
   }
 
   function dealDamageAfterOthers(token, charId, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal) {
-    // Final function to be called after eventual carac test
-    var afterSaveDamageComputation = function(saveResult) {
-      var rd = attributeAsInt(charId, 'RDS', 0);
-      if (crit > 1) rd += attributeAsInt(charId, 'RD_critique', 0);
-      if (options.tranchant) rd += attributeAsInt(charId, 'RD_tranchant', 0);
-      if (options.percant) rd += attributeAsInt(charId, 'RD_percant', 0);
-      if (options.contondant) rd += attributeAsInt(charId, 'RD_contondant', 0);
-      if (options.intercepter) rd += options.intercepter;
-      if (rd > 0) {
-        dmgDisplay += "-" + rd;
-        showTotal = true;
-      }
-      dmgTotal -= rd;
-      if (dmgTotal < 0) dmgTotal = 0;
-      /* compute effect on target */
-      if (options.pointsVitaux && dmgTotal > 0) { //dégâts retardés pour une pression mortelle
-        var pMortelle = tokenAttribute(charId, 'pressionMortelle', token);
-        var dmgPMort = dmgTotal;
-        var numberPMort = 1;
-        if (pMortelle.length > 0) {
-          dmgPMort += pMortelle[0].get('current');
-          numberPMort += pMortelle[0].get('max');
-        }
-        setTokenAttr(
-          token, charId, 'pressionMortelle', dmgPMort, evt, undefined,
-          numberPMort);
-      } else {
-        var bar1 = parseInt(token.get('bar1_value'));
-        var pvmax = parseInt(token.get('bar1_max'));
-        if (isNaN(bar1)) {
-          error("Pas de points de vie chez la cible", token);
-          bar1 = 0;
-          pvmax = 0;
-        } else if (isNaN(pvmax)) {
-          pvmax = bar1;
-          token.set("bar1_max", bar1);
-        }
-        var manaAttr = findObjs({
-          _type: 'attribute',
-          _characterid: charId,
-          name: 'PM'
-        });
-        var hasMana = false;
-        if (manaAttr.length > 0) {
-          var manaMax = parseInt(manaAttr[0].get('max'));
-          hasMana = !isNaN(manaMax) && manaMax > 0;
-        }
-        var tempDmg = 0;
-        if (hasMana) {
-          tempDmg = attributeAsInt(charId, 'DMTEMP', 0, token);
-        } else {
-          tempDmg = parseInt(token.get("bar2_value"));
-          if (isNaN(tempDmg)) {
-            if (options.tempDmg) { //then try to set bar2 correctly
-              var link = token.get("bar1_link");
-              if (link === "") {
-                token.set("bar2_max", pvmax);
-              } else {
-                var tmpHitAttr =
-                  findObjs({
-                    _type: "attribute",
-                    _characterid: charId,
-                    name: "DMTEMP"
-                  });
-                var dmTemp;
-                if (tmpHitAttr.length === 0) {
-                  dmTemp =
-                    createObj("attribute", {
-                      characterid: charId,
-                      name: "DMTEMP",
-                      current: 0,
-                      max: pvmax
-                    });
-                } else {
-                  dmTemp = tmpHitAttr[0];
-                }
-                token.set("bar2_max", pvmax);
-                token.set("bar2_link", dmTemp.id);
-              }
-            }
-            tempDmg = 0;
-          }
-        }
-        if (options.tempDmg) {
-          var oldTempDmg = tempDmg;
-          tempDmg += dmgTotal;
-          if (tempDmg > pvmax) tempDmg = pvmax;
-          if (hasMana) {
-            setTokenAttr(token, charId, 'DMTEMP', tempDmg, evt);
-          } else {
-            evt.affectes.push({
-              affecte: token,
-              prev: {
-                bar2_value: oldTempDmg
-              }
-            });
-            updateCurrentBar(token, 2, tempDmg);
-          }
-        } else {
-          evt.affectes.push({
-            affecte: token,
-            prev: {
-              bar1_value: bar1
-            }
-          });
-          bar1 = bar1 - dmgTotal;
-          if (bar1 <= 0) {
-            if (attributeAsBool(charId, 'sergent', false) && !attributeAsBool(charId, 'sergentUtilise', false, token)) {
-              expliquer(token.get('name') + " évite l'attaque in-extremis");
-              setTokenAttr(token, charId, 'sergentUtilise', true, evt);
-            } else {
-              updateCurrentBar(token, 1, 0);
-              if (attributeAsBool(charId, 'baroudHonneur', false)) {
-                expliquer(token.get('name') + " devrait être mort, mais il continue à se battre !");
-                setTokenAttr(token, charId, 'baroudHonneurActif', true, evt);
-              } else {
-                setState(token, 'mort', true, evt, charId);
-                var targetPos = {
-                  x: token.get('left'),
-                  y: token.get('top')
-                };
-                spawnFxBetweenPoints(targetPos, {
-                  x: 400,
-                  y: 400
-                }, "splatter-blood");
-              }
-            }
-          } else { // bar1>0
-            updateCurrentBar(token, 1, bar1);
-          }
-        }
-        if (bar1 > 0 && tempDmg >= bar1) { //assomé
-          setState(token, 'assome', true, evt, charId);
-        }
-        if (showTotal) dmgDisplay += " (total = " + dmgTotal + ")";
-      }
-      if (displayRes === undefined) return dmgDisplay;
-      displayRes(dmgDisplay, saveResult, dmgTotal);
-    }; // end of afterSaveDamageComputation
     // Now do some dmg mitigation rolls, if necessary
     if ((options.distance || options.aoe) &&
       attributeAsBool(charId, 'a_couvert', false, token)) {
@@ -1942,15 +1811,152 @@ var COFantasy = COFantasy || function() {
       dmgTotal = Math.ceil(dmgTotal / 2);
       showTotal = true;
     }
-    partialSave(options, charId, token, showTotal, dmgDisplay, dmgTotal, expliquer,
-      function(res) {
-        if (res) {
-          dmgTotal = res.total;
-          dmgDisplay = res.dmgDisplay;
-          showTotal = res.showTotal;
+    partialSave(options, charId, token, showTotal, dmgDisplay, dmgTotal,
+      expliquer,
+      function(saveResult) {
+        if (saveResult) {
+          dmgTotal = saveResult.total;
+          dmgDisplay = saveResult.dmgDisplay;
+          showTotal = saveResult.showTotal;
         }
-        afterSaveDamageComputation(res);
+        var rd = attributeAsInt(charId, 'RDS', 0);
+        if (crit > 1) rd += attributeAsInt(charId, 'RD_critique', 0);
+        if (options.tranchant) rd += attributeAsInt(charId, 'RD_tranchant', 0);
+        if (options.percant) rd += attributeAsInt(charId, 'RD_percant', 0);
+        if (options.contondant) rd += attributeAsInt(charId, 'RD_contondant', 0);
+        if (options.intercepter) rd += options.intercepter;
+        if (rd > 0) {
+          dmgDisplay += "-" + rd;
+          showTotal = true;
+        }
+        dmgTotal -= rd;
+        if (dmgTotal < 0) dmgTotal = 0;
+        /* compute effect on target */
+        if (options.pointsVitaux && dmgTotal > 0) { //dégâts retardés pour une pression mortelle
+          var pMortelle = tokenAttribute(charId, 'pressionMortelle', token);
+          var dmgPMort = dmgTotal;
+          var numberPMort = 1;
+          if (pMortelle.length > 0) {
+            dmgPMort += pMortelle[0].get('current');
+            numberPMort += pMortelle[0].get('max');
+          }
+          setTokenAttr(
+            token, charId, 'pressionMortelle', dmgPMort, evt, undefined,
+            numberPMort);
+        } else {
+          var bar1 = parseInt(token.get('bar1_value'));
+          var pvmax = parseInt(token.get('bar1_max'));
+          if (isNaN(bar1)) {
+            error("Pas de points de vie chez la cible", token);
+            bar1 = 0;
+            pvmax = 0;
+          } else if (isNaN(pvmax)) {
+            pvmax = bar1;
+            token.set("bar1_max", bar1);
+          }
+          var manaAttr = findObjs({
+            _type: 'attribute',
+            _characterid: charId,
+            name: 'PM'
+          });
+          var hasMana = false;
+          if (manaAttr.length > 0) {
+            var manaMax = parseInt(manaAttr[0].get('max'));
+            hasMana = !isNaN(manaMax) && manaMax > 0;
+          }
+          var tempDmg = 0;
+          if (hasMana) {
+            tempDmg = attributeAsInt(charId, 'DMTEMP', 0, token);
+          } else {
+            tempDmg = parseInt(token.get("bar2_value"));
+            if (isNaN(tempDmg)) {
+              if (options.tempDmg) { //then try to set bar2 correctly
+                var link = token.get("bar1_link");
+                if (link === "") {
+                  token.set("bar2_max", pvmax);
+                } else {
+                  var tmpHitAttr =
+                    findObjs({
+                      _type: "attribute",
+                      _characterid: charId,
+                      name: "DMTEMP"
+                    });
+                  var dmTemp;
+                  if (tmpHitAttr.length === 0) {
+                    dmTemp =
+                      createObj("attribute", {
+                        characterid: charId,
+                        name: "DMTEMP",
+                        current: 0,
+                        max: pvmax
+                      });
+                  } else {
+                    dmTemp = tmpHitAttr[0];
+                  }
+                  token.set("bar2_max", pvmax);
+                  token.set("bar2_link", dmTemp.id);
+                }
+              }
+              tempDmg = 0;
+            }
+          }
+          if (options.tempDmg) {
+            var oldTempDmg = tempDmg;
+            tempDmg += dmgTotal;
+            if (tempDmg > pvmax) tempDmg = pvmax;
+            if (hasMana) {
+              setTokenAttr(token, charId, 'DMTEMP', tempDmg, evt);
+            } else {
+              evt.affectes.push({
+                affecte: token,
+                prev: {
+                  bar2_value: oldTempDmg
+                }
+              });
+              updateCurrentBar(token, 2, tempDmg);
+            }
+          } else {
+            evt.affectes.push({
+              affecte: token,
+              prev: {
+                bar1_value: bar1
+              }
+            });
+            bar1 = bar1 - dmgTotal;
+            if (bar1 <= 0) {
+              if (attributeAsBool(charId, 'sergent', false) && !attributeAsBool(charId, 'sergentUtilise', false, token)) {
+                expliquer(token.get('name') + " évite l'attaque in-extremis");
+                setTokenAttr(token, charId, 'sergentUtilise', true, evt);
+              } else {
+                updateCurrentBar(token, 1, 0);
+                if (attributeAsBool(charId, 'baroudHonneur', false)) {
+                  expliquer(token.get('name') + " devrait être mort, mais il continue à se battre !");
+                  setTokenAttr(token, charId, 'baroudHonneurActif', true, evt);
+                } else {
+                  setState(token, 'mort', true, evt, charId);
+                  var targetPos = {
+                    x: token.get('left'),
+                    y: token.get('top')
+                  };
+                  spawnFxBetweenPoints(targetPos, {
+                    x: 400,
+                    y: 400
+                  }, "splatter-blood");
+                }
+              }
+            } else { // bar1>0
+              updateCurrentBar(token, 1, bar1);
+            }
+          }
+          if (bar1 > 0 && tempDmg >= bar1) { //assomé
+            setState(token, 'assome', true, evt, charId);
+          }
+          if (showTotal) dmgDisplay += " (total = " + dmgTotal + ")";
+        }
+        if (displayRes === undefined) return dmgDisplay;
+        displayRes(dmgDisplay, saveResult, dmgTotal);
       });
+    return dmgDisplay;
   }
 
 
@@ -2351,6 +2357,7 @@ var COFantasy = COFantasy || function() {
     removeAllAttributes('armureMagique', evt);
     removeAllAttributes('soinsDeGroupe', evt);
     removeAllAttributes('sergentUtilise', evt);
+    removeAllAttributes('enflamme', evt);
     // Autres attributs, on prend attrs l'ensemble des attributs
     var attrs = findObjs({
       _type: 'attribute'
@@ -3542,6 +3549,8 @@ var COFantasy = COFantasy || function() {
       var armureM = attributeAsInt(charId, 'armureMagique', 0, token);
       if (armureM > 0)
         addLineToFramedDisplay(display, "Protégé" + eForFemale(charId) + " par une armure magique");
+      if (attributeAsInt(charId, 'enflamme', 0, token))
+        addLineToFramedDisplay(display, "en flammes");
       var bufDef = attributeAsInt(charId, 'bufDEF', 0, token);
       if (bufDef > 0)
         addLineToFramedDisplay(display, "Défense temporairement modifiée de " + bufDef);
@@ -3613,7 +3622,7 @@ var COFantasy = COFantasy || function() {
       name: attribute
     });
     if (attr.length === 0) {
-      if (maxval === undefined) maxval = value;
+      if (maxval === undefined) maxval = '';
       attr = createObj('attribute', {
         characterid: charId,
         name: attribute,
@@ -5503,6 +5512,7 @@ var COFantasy = COFantasy || function() {
       removeAllAttributes('intercepter', evt);
       removeAllAttributes('exemplaire', evt);
       // nouveau tour : enlever le statut surpris
+      // et faire les actions de début de tour
       var selected = [];
       updateNextInitSet.forEach(function(id) {
         selected.push({
@@ -5520,6 +5530,30 @@ var COFantasy = COFantasy || function() {
           selected.push({
             _id: tok.id
           });
+        }
+        var enflammeAttr = tokenAttribute(charId, 'enflamme', tok);
+        if (enflammeAttr.length > 0) {
+          var enflamme = parseInt(enflammeAttr[0].get('current'));
+          // Pour ne pas faire les dégâts plusieurs fois (plusieurs tokens pour un même personnage), on utilise la valeur max de l'attribu
+          var dernierTourEnflamme = parseInt(enflammeAttr[0].get('max'));
+          if ((isNaN(dernierTourEnflamme) || dernierTourEnflamme < tour) &&
+            !isNaN(enflamme) && enflamme > 0) {
+            var d6Enflamme = randomInteger(6);
+            var feu = d6Enflamme + enflamme - 1;
+            var dmg = {
+              type: 'feu',
+              total: feu,
+              display: feu
+            };
+            feu = dealDamage(tok, charId, dmg, evt, 1);
+            sendChar(charId, " est en flamme ! Il subit " + feu + " DM");
+            if (d6Enflamme < 3) {
+              sendChar(charId, " les flammes s'éteignent");
+              removeTokenAttr(tok, charId, 'enflamme', evt);
+            } else {
+              enflammeAttr[0].set('max', tour);
+            }
+          }
         }
       });
       initiative(selected, evt); // met Tour à la fin et retrie

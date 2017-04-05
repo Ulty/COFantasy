@@ -133,6 +133,7 @@ p  {margin-left: inherit}
       <li><tt>--imparable</tt> : lance 2 d20 pour l'attaque et garde le meilleur</li>
       <li><tt>--affute</tt> : augmente de 1 les chances de crit et +1d6 aux DM des crit.</li>
       <li><tt>--tirDeBarrage</tt> : ignore la charge, multiplie les DM par 2 et message pour undo si la cible bouge.</li>
+      <li><tt>--enflamme</tt> : enflamme la cible, lui infligeant 1d6 DM par tour. Les flammes s'éteindent sur un 1 ou 2. Si l'option <tt>--puissant</tt> est donnée en conjonction, les DM augmentent de 1.
       <li><tt>--rate</tt>, <tt>--touche</tt>, <tt>--critique</tt>, <tt>--echecCritique</tt> : options pour tricher : le résultat des dés donne toujours le résultat voulu.</li>
     </ul>
 
@@ -514,11 +515,11 @@ p  {margin-left: inherit}
     TODO
     <h4>Voie de la magie destructrice</h4>
     <ol>
-      <li>Projectile magique : <tt>!cof-attack</tt> avec options <tt>--auto</tt> et <tt>--magique --fx missile-magic</tt></li>
+      <li>Projectile magique : <tt>!cof-attack</tt> avec options <tt>--auto</tt> et <tt>--magique --fx beam-magic</tt></li>
       <li> Rayon affaiblissant : <tt>!cof-attack</tt> d'une attaque sans 
         dégâts, avec 10 m de portee et l'option <tt>--effet rayon_affaiblissant [[1d6+@{selected|INT}]] --ignoreObstacles</tt>. On peut aussi ajouter un petit visuel avec <tt>--fx splatter-magic</tt></li>
-      <li>Flèche enflammée : <tt>!cof-attack</tt> ... <tt>--fx missile-fire --feu --mana 1 ?{Y consacrer le tour entier ?|oui,--puissant|non,} --ignoreObstacles</tt> 
-        TODO : enflammer</li>
+      <li>Flèche enflammée : Utiliser une attaque sur la fiche, et la lancer avec les options <tt>--fx beam-fire --feu --mana 1 --ignoreObstacles --enflamme ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt> 
+        </li>
     </ol>
 
     <h3>Moine</h3>
