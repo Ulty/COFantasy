@@ -1667,8 +1667,9 @@ var COFantasy = COFantasy || function() {
       showTotal = true;
     }
     // Dommages de même type que le principal, mais à part, donc non affectés par les critiques
-    var dmgExtra = dmgParType[dmg.type];
-    if (dmgExtra) {
+    var mainDmgType = dmg.type;
+    var dmgExtra = dmgParType[mainDmgType];
+    if (dmgExtra && dmgExtra.length > 0) {
       if (crit > 1) dmgDisplay = "(" + dmgDisplay + ")";
       showTotal = true;
       var count = dmgExtra.length;
@@ -1683,14 +1684,16 @@ var COFantasy = COFantasy || function() {
               dmgTotal += d.total;
               dmgDisplay += "+" + d.display;
             }
-            if (count === 0) dealDamageAfterDmgExtra(token, charId, dmg, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes);
+            if (count === 0) dealDamageAfterDmgExtra(token, charId, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes);
           });
       });
+    } else {
+      dealDamageAfterDmgExtra(token, charId, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes);
     }
   }
 
-  function dealDamageAfterDmgExtra(token, charId, dmg, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes) {
-    var rdMain = typeRD(charId, dmg.type);
+  function dealDamageAfterDmgExtra(token, charId, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes) {
+    var rdMain = typeRD(charId, mainDmgType);
     if (rdMain > 0 && dmgTotal > 0) {
       dmgTotal -= rdMain;
       if (dmgTotal < 0) {
@@ -1716,7 +1719,7 @@ var COFantasy = COFantasy || function() {
       }
     };
     // Damage mitigaters for main damage
-    mitigate(dmg.type,
+    mitigate(mainDmgType,
       function() {
         dmgTotal = Math.ceil(dmgTotal / 2);
         if (dmgExtra) dmgDisplay = "(" + dmgDisplay + ")";
@@ -1733,7 +1736,7 @@ var COFantasy = COFantasy || function() {
       count += dmgParType[dt].length;
     }
     var dealOneType = function(dmgType) {
-      if (dmgType == dmg.type) {
+      if (dmgType == mainDmgType) {
         count -= dmgParType[dmgType].length;
         if (count === 0) dealDamageAfterOthers(token, charId, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal);
         return; //type principal déjà géré
@@ -1754,7 +1757,7 @@ var COFantasy = COFantasy || function() {
               if (typeDisplay === '') typeDisplay = d.display;
               else typeDisplay += "+" + d.display;
             }
-        typeCount--;
+            typeCount--;
             if (typeCount === 0) {
               var rdl = typeRD(charId, dmgType);
               if (rdl > 0 && dm > 0) {
@@ -1782,8 +1785,12 @@ var COFantasy = COFantasy || function() {
           });
       });
     };
-    for (var dmgType in dmgParType) {
-      dealOneType(dmgType);
+    if (count > 0) {
+      for (var dmgType in dmgParType) {
+        dealOneType(dmgType);
+      }
+    } else {
+      dealDamageAfterOthers(token, charId, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal);
     }
   }
 
