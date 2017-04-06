@@ -3660,11 +3660,11 @@ var COFantasy = COFantasy || function() {
           }
         }
       }
-      var attrsArmes = findObjs({
+      var attrsChar = findObjs({
         _type: 'attribute',
         _characterid: charId
       });
-      attrsArmes = attrsArmes.filter(function(attr) {
+      var attrsArmes = attrsChar.filter(function(attr) {
         var attrName = attr.get('name');
         return (attrName.startsWith("repeating_armes_") &&
           attrName.endsWith("_armenom"));
@@ -3729,6 +3729,13 @@ var COFantasy = COFantasy || function() {
         if (attributeAsBool(charId, effet, false, token))
           addLineToFramedDisplay(display, messageEffets[effet].actif);
       }
+      allAttributesNamed(attrsChar, 'munition').forEach(function(attr) {
+        var attrName = attr.get('name');
+        var underscore = attrName.indexOf('_');
+        if (underscore < 0 || underscore == attrName.length - 1) return;
+        var munitionNom = attrName.substring(underscore + 1);
+        addLineToFramedDisplay(display, munitionNom + " : " + attr.get('current') + " / " + attr.get('max'));
+      });
       sendChat("", endFramedDisplay(display));
     });
   }
