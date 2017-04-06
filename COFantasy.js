@@ -416,6 +416,7 @@ var COFantasy = COFantasy || function() {
         case "tirDeBarrage":
         case "ignoreObstacles":
         case "enflamme":
+        case "magique":
           options[cmd[0]] = true;
           return;
         case "si":
@@ -492,7 +493,6 @@ var COFantasy = COFantasy || function() {
         case "froid":
         case "acide":
         case "electrique":
-        case "magique":
         case "sonique":
         case "poison":
         case "maladie":
@@ -1200,12 +1200,12 @@ var COFantasy = COFantasy || function() {
       var attSkillNumber = rollNumber(afterEvaluate[2]);
       var mainDmgRollNumber = rollNumber(afterEvaluate[3]);
       mainDmgRoll.total = rolls.inlinerolls[mainDmgRollNumber].results.total;
-      mainDmgRoll.display = buildinline(rolls.inlinerolls[mainDmgRollNumber], mainDmgType);
+      mainDmgRoll.display = buildinline(rolls.inlinerolls[mainDmgRollNumber], mainDmgType, options.magique);
       options.additionalDmg.forEach(function(dmSpec, i) {
         var rRoll = rolls.inlinerolls[rollNumber(afterEvaluate[i + 4])];
         dmSpec.total = rRoll.results.total;
         var addDmType = dmSpec.type;
-        dmSpec.display = buildinline(rRoll, addDmType);
+        dmSpec.display = buildinline(rRoll, addDmType, options.magique);
       });
       var d20roll = rolls.inlinerolls[attRollNumber].results.total;
       var attSkill = rolls.inlinerolls[attSkillNumber].results.total;
@@ -1528,7 +1528,7 @@ var COFantasy = COFantasy || function() {
                     var r = {
                       total: explRoll.results.total,
                       type: 'electrique',
-                      display: buildinline(explRoll, 'electrique')
+                      display: buildinline(explRoll, 'electrique', true)
                     };
                     dealDamage(attackingToken, attackingCharId, r, evt, 1,
                       options, explications,
@@ -1700,6 +1700,34 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function applyRDMagique(rdMagique, dmgType, total, display) {
+    if (total && rdMagique && rdMagique > 0) {
+      switch (dmgType) {
+        case 'normal':
+        case 'poison':
+        case 'maladie':
+          if (total < rdMagique) {
+            display += "-" + total;
+            rdMagique -= total;
+            total = 0;
+          } else {
+            display += "-" + rdMagique;
+            total -= rdMagique;
+            rdMagique = 0;
+          }
+          return {
+            total: total,
+            rdMagique: rdMagique,
+            display: display
+          };
+        default:
+          return;
+      }
+    }
+    return;
+  }
+
+
   function dealDamageAfterDmgExtra(token, charId, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes) {
     var rdMain = typeRD(charId, mainDmgType);
     if (rdMain > 0 && dmgTotal > 0) {
@@ -1710,6 +1738,16 @@ var COFantasy = COFantasy || function() {
       }
       dmgDisplay += "-" + rdMain;
       showTotal = true;
+    }
+    var rdMagique;
+    if (options.magique) rdMagique = 0;
+    else rdMagique = typeRD(charId, 'sauf_magique');
+    if (rdMagique) showTotal = true;
+    var resMagique = applyRDMagique(rdMagique, mainDmgType, dmgTotal, dmgDisplay);
+    if (resMagique) {
+      rdMagique = resMagique.rdMagique;
+      dmgTotal = resMagique.total;
+      dmgDisplay = resMagique.display;
     }
     var armureM = attributeAsInt(charId, 'armureMagique', 0, token);
     var invulnerable = attributeAsBool(charId, 'invulnerable', false);
@@ -1775,6 +1813,12 @@ var COFantasy = COFantasy || function() {
                   dm = 0;
                 }
                 typeDisplay += "-" + rdl;
+              }
+              var resMagique = applyRDMagique(rdMagique, dmgType, dm, typeDisplay);
+              if (resMagique) {
+                rdMagique = resMagique.rdMagique;
+                dm = resMagique.total;
+                typeDisplay = resMagique.display;
               }
               mitigate(dmgType,
                 function() {
@@ -2004,7 +2048,7 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
-  function buildinline(inlineroll, dmgType) {
+  function buildinline(inlineroll, dmgType, magique) {
     var InlineBorderRadius = 5;
     var InlineColorOverride = "";
     var values = [];
@@ -2031,10 +2075,10 @@ var COFantasy = COFantasy || function() {
     // Overrides the default coloring of the inline rolls...
     switch (dmgType) {
       case 'normal':
-        InlineColorOverride = " background-color: #F1E6DA; color: #000;";
-        break;
-      case 'magique':
-        InlineColorOverride = " background-color: #FFFFFF; color: #534200;";
+        if (magique)
+          InlineColorOverride = " background-color: #FFFFFF; color: #534200;";
+        else
+          InlineColorOverride = " background-color: #F1E6DA; color: #000;";
         break;
       case 'feu':
         InlineColorOverride = " background-color: #FF3011; color: #440000;";
