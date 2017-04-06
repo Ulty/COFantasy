@@ -523,14 +523,6 @@ var COFantasy = COFantasy || function() {
           options.fx = cmd[1];
           break;
         case 'psave':
-          if (cmd.length < 3) {
-            error("Usage : --psave carac seuil", cmd);
-            return;
-          }
-          if (isNotCarac(cmd[1])) {
-            error("Le premier argument de --psave n'est pas une caractéristique", cmd);
-            return;
-          }
           var psaveopt = options;
           if (cmd.length > 3 && cmd[3] == 'local') {
             var psavel = options.additionalDmg.length;
@@ -538,15 +530,26 @@ var COFantasy = COFantasy || function() {
               psaveopt = options.additionalDmg[psavel - 1];
             }
           }
-          psaveopt.partialSave = {
-            carac: cmd[1],
-            seuil: parseInt(cmd[2])
-          };
-          if (isNaN(psaveopt.partialSave.seuil)) {
-            error("Le deuxième argument de --psave n'est pas un nombre", cmd);
-            return;
+          var psaveParams = parseSave(cmd);
+          if (psaveParams) psaveopt.partialSave = psaveParams;
+          return;
+        case 'save':
+          if (options.effets) {
+            var leffets = options.effets.length;
+            if (options.effets[leffets - 1].save) {
+              error("Redéfinition de la condition de save pour un effet", optArgs);
+            }
+            if (leffets > 0) {
+              var saveParams = parseSave(cmd);
+              if (saveParams) {
+                options.effets[leffets - 1].save = saveParams;
+                return;
+              }
+              return;
+            }
           }
-          break;
+          error("Pass d'effet auquel appliquer le save", optArgs);
+          return;
         case "mana":
           if (cmd.length < 2) {
             error("Usage : --mana coût", cmd);
@@ -634,6 +637,26 @@ var COFantasy = COFantasy || function() {
     }
     sendChar(charId, " n'a pas de points de mana, action impossible");
     return false;
+  }
+
+  function parseSave(cmd) {
+    if (cmd.length < 3) {
+      error("Usage : --psave carac seuil", cmd);
+      return;
+    }
+    if (isNotCarac(cmd[1])) {
+      error("Le premier argument de --psave n'est pas une caractéristique", cmd);
+      return;
+    }
+    var res = {
+      carac: cmd[1],
+      seuil: parseInt(cmd[2])
+    };
+    if (isNaN(res.seuil)) {
+      error("Le deuxième argument de --psave n'est pas un nombre", cmd);
+      return;
+    }
+    return res;
   }
 
   function parseCondition(args) {
@@ -1426,15 +1449,6 @@ var COFantasy = COFantasy || function() {
             }
           });
         }
-        // Ajoute un effet à la cible
-        if (options.effets) {
-          options.effets.forEach(function(ef) {
-            explications.push(targetName + " " + messageEffets[ef.effet].activation);
-            setTokenAttr(
-              targetToken, targetCharId, ef.effet, ef.duree, evt,
-              undefined, getInit());
-          });
-        }
         // Draw effect, if any
         if (_.has(options, "fx")) {
           var p1e = {
@@ -1458,7 +1472,25 @@ var COFantasy = COFantasy || function() {
           rolls: rolls,
           options: options
         };
-        var afterPeur = function() {
+        // Compte le nombre de saves pour la synchronisation
+        // (On ne compte pas les psave, gérés dans dealDamage)
+        var saves = 0;
+        // Ajoute les effets sans save à la cible
+        if (options.effets) {
+          options.effets.forEach(function(ef) {
+            if (ef.save) {
+              saves++;
+              return; //on le fera plus tard
+            }
+            explications.push(targetName + " " + messageEffets[ef.effet].activation);
+            setTokenAttr(
+              targetToken, targetCharId, ef.effet, ef.duree, evt,
+              undefined, getInit());
+          });
+        }
+        // Tout ce qui se passe après les saves (autres que saves de diminution des dmg
+        var afterSaves = function() {
+          if (saves > 0) return; //On n'a pas encore fait tous les saves
           if (options.additionalDmg.length === 0 && mainDmgRoll.total === 0 &&
             attNbDices === 0) {
             // Pas de dégâts, donc pas d'appel à dealDamage
@@ -1545,11 +1577,34 @@ var COFantasy = COFantasy || function() {
               });
           }
         };
+        var expliquer = function(msg) {
+          explications.push(msg);
+        };
+        // Ajoute les effets avec save à la cible
+        var effetsAvecSave = function() {
+          if (options.effets && saves > 0) {
+            options.effets.forEach(function(ef) {
+              if (ef.save) {
+                var msgPour = " pour résister à un effet";
+                var msgRate = ", " + targetName + " " + messageEffets[ef.effet].activation;
+                save(ef.save, targetCharId, targetToken, expliquer, msgPour, '', msgRate, function(reussite, rollText) {
+                  if (!reussite) {
+                    setTokenAttr(
+                      targetToken, targetCharId, ef.effet, ef.duree, evt,
+                      undefined, getInit());
+                  }
+                  saves--;
+                  afterSaves();
+                });
+              }
+            });
+          } else afterSaves();
+        };
         // Peut faire peur à la cible
         if (options.peur) {
           peurOneToken(targetToken, targetCharId, pageId, options.peur.seuil,
-            options.peur.duree, {}, display, evt, afterPeur);
-        } else afterPeur();
+            options.peur.duree, {}, display, evt, effetsAvecSave);
+        } else effetsAvecSave();
       } else {
         evt.type = 'failure';
         evt.action = {
@@ -1602,36 +1657,44 @@ var COFantasy = COFantasy || function() {
     return attributeAsInt(charId, 'RD_' + dmgType, 0);
   }
 
+  function save(s, charId, token, expliquer, msgPour, msgReussite, msgRate, afterSave) {
+    var bonusAttrs = [];
+    if (s.carac == 'DEX') {
+      bonusAttrs.push('reflexesFelins');
+    }
+    testCaracteristique(charId, s.carac, bonusAttrs, s.seuil, token,
+      function(reussite, rollText) {
+        var smsg =
+          " Jet de " + s.carac + " difficulté " + s.seuil + msgPour;
+        expliquer(smsg);
+        smsg = token.get('name') + " fait " + rollText;
+        if (reussite) {
+          smsg += " -> réussite" + msgReussite;
+        } else {
+          smsg += " -> échec" + msgRate;
+        }
+        expliquer(smsg);
+        afterSave(reussite, rollText);
+      });
+  }
+
   function partialSave(ps, charId, token, showTotal, dmgDisplay, total, expliquer, afterSave) {
     if (ps.partialSave !== undefined) {
-      var bonusAttrs = [];
-      if (ps.partialSave.carac == 'DEX') {
-        bonusAttrs.push('reflexesFelins');
-      }
-      testCaracteristique(charId, ps.partialSave.carac, bonusAttrs,
-        ps.partialSave.seuil, token,
-        function(reussite, rollText) {
-          var smsg =
-            " Jet de " + ps.partialSave.carac + " difficulté " +
-            ps.partialSave.seuil + " pour réduire les dégâts.";
-          expliquer(smsg);
-          smsg = token.get('name') + " fait " + rollText;
-          if (reussite) {
+      save(ps.partialSave, charId, token, expliquer, " pour réduire les dégâts",
+        ", dégâts divisés par 2", '',
+        function(succes, rollText) {
+          if (succes) {
             if (showTotal) dmgDisplay = "(" + dmgDisplay + ")";
-            dmgDisplay += " / 2";
+            dmgDisplay = dmgDisplay + " / 2";
             showTotal = true;
             total = Math.ceil(total / 2);
-            smsg += " -> réussite, dégâts divisés par 2";
-          } else {
-            smsg += " -> échec";
-          }
-          expliquer(smsg);
+          } else {}
           afterSave({
-            succes: reussite,
+            succes: succes,
             display: rollText,
             dmgDisplay: dmgDisplay,
-            showTotal: showTotal,
-            total: total
+            total: total,
+            showTotal: showTotal
           });
         });
     } else afterSave();
