@@ -121,6 +121,7 @@ p  {margin-left: inherit}
       <li> <tt>--tranchant</tt>, <tt>--percant</tt>, <tt>--contondant</tt> : précise le type d'arme (si pertinent), pour pouvoir utiliser les RD spécifiques à un type d'arme.</li>
       <li><tt>--reroll1</tt> : relance les 1 aux dés de dégats (le 1 est ignoré)</li>
       <li><tt>--mana</tt> <i>n</i> : l'attaque coûte <i>n</i> points de mana.</li>
+      <li><tt>--munition</tt> <i>nom</i> <i>taux</i> : l'attaque utilise des munitions dont on garde le compte. Le nombre de munitions doit être inscrit dans un attribut <tt>munition_</tt><i>nom</i>. La valeur courante de l'attribut est le nombre qu'il reste sur le personnage, alors que le maximum contient ce qu'il a plus ce qu'il peut récupérer après le combat. À chaque attaque portée, une munition est utilisée, et il y a <i>taux</i> chances (sur 100) que la munition ne soit pas récupérable. En fin de combat, on considère que le personnage récupère toutes les munitions récupérables.</li>
       <li><tt>--vampirise</tt> : soigne de tous les DM infligés</li>
       <li><tt>--ignoreObstacles</tt> : ignore les tokens sur le trajet. Ça semble nécessaire pour les attaques magiques d'après Kegron.</li>
       <li><tt>--puissant</tt> : augmente la valeur max des dés de dégâts de 2. Si <tt>--puissant</tt> est
@@ -570,7 +571,7 @@ p  {margin-left: inherit}
     <h3>Prêtre</h3>
     <h4>Voie de la foi</h4>
     <ol>
-      <li>Parole divine : géré simplement avec une compétance "convaincre"</li>
+      <li>Parole divine : géré simplement avec une compétence "convaincre"</li>
     </ol>
     <h4>Voie de la guerre sainte</h4>
     <ol>

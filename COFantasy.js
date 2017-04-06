@@ -378,12 +378,12 @@ var COFantasy = COFantasy || function() {
     }
     var attackingToken = getObj("graphic", args[1]);
     if (attackingToken === undefined) {
-      error("First argument is not a token: " + msg.content, args[1]);
+      error("Le premier argument de !cof-attack n'est pas un token" + msg.content, args[1]);
       return;
     }
     var targetToken = getObj("graphic", args[2]);
     if (targetToken === undefined) {
-      error("Second argument is not a token: " + msg.content, args[2]);
+      error("le second argument de !cof-attack doit être un token" + msg.content, args[2]);
       return;
     }
     var attackLabel = args[3];
@@ -592,6 +592,20 @@ var COFantasy = COFantasy || function() {
             options.triche = cmd[0];
           } else {
             error("Option incompatible", optArgs);
+          }
+          return;
+        case 'munition':
+          if (cmd.length < 3) {
+            error("Pour les munitions, il faut préciser le nom et le taux de pertes", cmd);
+            return;
+          }
+          options.munition = {
+            nom: cmd[1],
+            taux: parseInt(cmd[2])
+          };
+          if (isNaN(options.munition.taux)) {
+            error("Le taux de pertes des munitions doit être un nombre entre 0 et 100");
+            options.munition.taux = 20;
           }
           return;
         default:
@@ -918,6 +932,43 @@ var COFantasy = COFantasy || function() {
       }
     }
     var explications = m.explications || [];
+    // Munitions
+    if (options.munition) {
+      if (attackingToken.get('bar1_link') === '') {
+        error("Les munitions ne sont pas supportées pour les tokens qui ne sont pas liées à un personnage", attackingToken);
+      }
+      var munitionsAttr = findObjs({
+        _type: 'attribute',
+        _characterid: attackingCharId,
+        name: 'munition_' + options.munition.nom
+      });
+      if (munitionsAttr.length === 0) {
+        error("Pas de munition nommée " + options.munition.nom + " pour " + attackerName);
+        return;
+      }
+      munitionsAttr = munitionsAttr[0];
+      var munitions = munitionsAttr.get('current');
+      if (munitions < 1 || (options.tirDouble && munitions < 2)) {
+        sendChar(attackingCharId, "ne peut pas utiliser cette attaque, car elle n'a plus de " + options.munition.nom);
+        return;
+      }
+      var munitionsMax = munitionsAttr.get('max');
+      evt.attributes = evt.attributes || [];
+      evt.attributes.push({
+        attribute: munitionsAttr,
+        current: munitions,
+        max: munitionsMax
+      });
+      munitions--;
+      if (randomInteger(100) < options.munition.taux) munitionsMax--;
+      if (options.tirDouble) {
+        munitions--;
+        if (randomInteger(100) < options.munition.taux) munitionsMax--;
+      }
+      explications.push("Il reste " + munitions + " " + options.munition.nom + " à " + attackerTokName);
+      munitionsAttr.set('current', munitions);
+      munitionsAttr.set('max', munitionsMax);
+    }
     // Expression pour l'attaque
     var crit = getAttrByName(attackingCharId, attPrefix + "armecrit") || 20;
     crit = parseInt(crit);
@@ -2475,6 +2526,8 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'traquenard', evt);
     // Tout le monde recharge ses armes après un combat, non ?
     resetAttr(attrs, 'charge', evt, "recharge ses armes");
+    // Et on récupère les munitions récupérables
+    resetAttr(attrs, 'munition', evt, "récupère ses munitions");
     //Effet de ignorerLaDouleur
     var ilds = allAttributesNamed(attrs, 'ignorerLaDouleur');
     ilds.forEach(function(ild) {
