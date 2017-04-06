@@ -5508,6 +5508,11 @@ var COFantasy = COFantasy || function() {
       actif: "contrôle une lame d'énergie lumineuse",
       fin: "La lame d'énergie lumineuse disparaît"
     },
+    putrefaction: {
+      activation: "vient de contracter une sorte de lèpre fulgurante",
+      actif: "est en pleine putréfaction",
+      fin: "La putréfaction s'arrête."
+    },
   };
 
   var patternEffetsTemp =
@@ -5530,6 +5535,45 @@ var COFantasy = COFantasy || function() {
     }
     error("Impossible de déterminer l'effet correspondant à " + ef, attr);
     return undefined;
+  }
+
+  // Fait foo sur tous les tokens représentant charId, ayant l'effet donné, et correspondant au nom d'attribut. Pour le cas où le token doit être lié au personnage, on ne prend qu'un seul token, sauf si filterUnique est défini, auquel cas on  fait l'appel sur tous les tokens qui passes filterUnique
+  function iterTokensOfEffet(charId, effet, attrName, foo, filterUnique) {
+    if (attrName == effet) { //token lié au character
+      var tokens =
+        findObjs({
+          _type: 'graphic',
+          _subtype: 'token',
+          represents: charId
+        });
+      tokens = tokens.filter(function(tok) {
+        return (tok.get('bar1_link') !== '');
+      });
+      if (tokens.length === 0) {
+        log("Pas de token pour un personnage");
+        log(charId);
+        log(attrName);
+        return;
+      }
+      if (filterUnique) {
+        tokens.forEach(function(tok) {
+          if (filterUnique(tok)) foo(tok);
+        });
+      } else foo(tokens[0]);
+    } else { //token non lié au character
+      var tokenName = attrName.substring(attrName.indexOf('_') + 1);
+      var tNames =
+        findObjs({
+          _type: 'graphic',
+          _subtype: 'token',
+          represents: charId,
+          name: tokenName,
+          bar1_link: ''
+        });
+      tNames.forEach(function(tok) {
+        foo(tok);
+      });
+    }
   }
 
   function nextTurn(cmp) {
@@ -5557,6 +5601,9 @@ var COFantasy = COFantasy || function() {
         return (init < obji && obji <= state.COFantasy.init);
       });
       attrs.forEach(function(attr) {
+        var charId = attr.get('characterid');
+        var effet = effetOfAttribute(attr);
+        var attrName = attr.get('name');
         var v = attr.get('current');
         if (v > 0) {
           attr.set('current', v - 1);
@@ -5564,12 +5611,25 @@ var COFantasy = COFantasy || function() {
             attribute: attr,
             current: v
           });
+          if (effet == 'putrefaction') { //prend 1d6 DM
+            iterTokensOfEffet(charId, effet, attrName, function(token) {
+              var putref = randomInteger(6);
+              var dmg = {
+                type: 'maladie',
+                total: putref,
+                display: putref
+              };
+              putref = dealDamage(token, charId, dmg, evt, 1, {
+                magique: 'true'
+              });
+              onGenre(charId, 'Il', 'Elle');
+              sendChar(charId, " pourrit. " + onGenre(charId, 'Il', 'Elle') +
+                " subit " + putref + " DM");
+            });
+          }
         } else {
-          var charId = attr.get('characterid');
-          var effet = effetOfAttribute(attr);
           if (effet !== undefined)
             sendChar(charId, messageEffets[effet].fin);
-          var attrName = attr.get('name');
           if (attrName == 'peur' || attrName == 'peurEtourdi') { //trouver les tokens
             var tokens =
               findObjs({
@@ -5653,7 +5713,8 @@ var COFantasy = COFantasy || function() {
               display: feu
             };
             feu = dealDamage(tok, charId, dmg, evt, 1);
-            sendChar(charId, " est en flamme ! Il subit " + feu + " DM");
+            sendChar(charId, " est en flamme ! " +
+              onGenre(charId, 'Il', 'Elle') + " subit " + feu + " DM");
             if (d6Enflamme < 3) {
               sendChar(charId, " les flammes s'éteignent");
               removeTokenAttr(tok, charId, 'enflamme', evt);
