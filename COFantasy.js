@@ -1248,6 +1248,7 @@ var COFantasy = COFantasy || function() {
     defenseBonus += attributeAsInt(targetCharId, 'actionConcertee', 0, targetToken);
     if (attributeAsInt(targetCharId, 'DEFARMUREON', 1) === 0) {
       defenseBonus += attributeAsInt(targetCharId, 'vetementsSacres', 0, targetToken);
+      defenseBonus += attributeAsInt(targetCharId, 'armureDeVent', 0, targetToken);
     }
     var interchange =
       interchangeable(attackingToken, targetToken, targetCharId, pageId);
@@ -3744,6 +3745,8 @@ var COFantasy = COFantasy || function() {
         addLineToFramedDisplay(display, "Ne porte pas son armure");
         if (attributeAsInt(charId, 'vetementsSacres', 0) > 0)
           addLineToFramedDisplay(display, "  mais bénéficie de ses vêtements sacrés");
+        if (attributeAsInt(charId, 'armureDeVent', 0) > 0)
+          addLineToFramedDisplay(display, "  mais bénéficie de son armure de vent");
       }
       if (attributeAsInt(charId, 'DEFBOUCLIERON', 1) === 0)
         addLineToFramedDisplay(display, "Ne porte pas son bouclier");
