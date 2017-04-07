@@ -1962,6 +1962,18 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function mort(token, charId, evt) {
+    setState(token, 'mort', true, evt, charId);
+    var targetPos = {
+      x: token.get('left'),
+      y: token.get('top')
+    };
+    spawnFxBetweenPoints(targetPos, {
+      x: 400,
+      y: 400
+    }, "splatter-blood");
+  }
+
   function dealDamageAfterOthers(token, charId, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal) {
     // Now do some dmg mitigation rolls, if necessary
     if ((options.distance || options.aoe) &&
@@ -2093,15 +2105,29 @@ var COFantasy = COFantasy || function() {
                   expliquer(token.get('name') + " devrait être mort, mais il continue à se battre !");
                   setTokenAttr(token, charId, 'baroudHonneurActif', true, evt);
                 } else {
-                  setState(token, 'mort', true, evt, charId);
-                  var targetPos = {
-                    x: token.get('left'),
-                    y: token.get('top')
-                  };
-                  spawnFxBetweenPoints(targetPos, {
-                    x: 400,
-                    y: 400
-                  }, "splatter-blood");
+                  var defierLaMort = attributeAsInt(charId, 'defierLaMort', 0);
+                  if (defierLaMort > 0) {
+                    save({
+                        carac: 'CON',
+                        seuil: defierLaMort
+                      }, charId, token,
+                      expliquer, " pour défier la mort", ", conserve 1 PV", '',
+                      function(reussite, rollText) {
+                        if (reussite) {
+                          updateCurrentBar(token, 1, 1);
+                          bar1 = 1;
+                          setTokenAttr(token, charId, 'defierLaMort', defierLaMort+10, evt);
+                        } else mort(token, charId, evt);
+                        if (bar1 > 0 && tempDmg >= bar1) { //assomé
+                          setState(token, 'assome', true, evt, charId);
+                        }
+                        if (showTotal) dmgDisplay += " (total = " + dmgTotal + ")";
+                        if (displayRes === undefined) return dmgDisplay;
+                        displayRes(dmgDisplay, saveResult, dmgTotal);
+                      });
+                    if (displayRes === undefined) return dmgDisplay;
+                    return;
+                  } else mort(token, charId, evt);
                 }
               }
             } else { // bar1>0
@@ -2477,7 +2503,7 @@ var COFantasy = COFantasy || function() {
       var vm = parseInt(att.get("max"));
       if (!isNaN(vm)) {
         var vc = parseInt(att.get("current"));
-        if (vc < vm) {
+        if (vc != vm) {
           evt.attributes.push({
             attribute: att,
             current: vc
@@ -2530,6 +2556,8 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'charge', evt, "recharge ses armes");
     // Et on récupère les munitions récupérables
     resetAttr(attrs, 'munition', evt, "récupère ses munitions");
+    // Remettre défier la mort à 10
+    resetAttr(attrs, 'defierLaMort', evt);
     //Effet de ignorerLaDouleur
     var ilds = allAttributesNamed(attrs, 'ignorerLaDouleur');
     ilds.forEach(function(ild) {
