@@ -3549,6 +3549,27 @@ var COFantasy = COFantasy || function() {
         if (b.id == "-1") return -1;
         if (a.pr < b.pr) return 1;
         if (b.pr < a.pr) return -1;
+        var tokenA = getObj('graphic', a.id);
+        if (tokenA === undefined) return 1;
+        var tokenB = getObj('graphic', b.id);
+        if (tokenB === undefined) return -1;
+        var charIdA = tokenA.get('represents');
+        if (charIdA === '') return 1;
+        var charIdB = tokenB.get('represents');
+        if (charIdB === '') return -1;
+        //Priorité aux joueurs (qui ont un DV) sur les PNJs
+        var dvA = attributeAsInt(charIdA, "DV", 0);
+        var dvB = attributeAsInt(charIdB, "DV", 0);
+        if (dvA === 0) {
+          if (dvB === 0) return 0;
+          return 1;
+        }
+        if (dvB === 0) return -1;
+        //Entre joueurs, priorité à la plus grosse sagesse
+        var sagA = attributeAsInt(charIdA, 'SAGESSE', 10);
+        var sagB = attributeAsInt(charIdB, 'SAGESSE', 10);
+        if (sagA < sagB) return 1;
+        if (sagB > sagA) return -1;
         return 0;
       });
       setActiveToken(to.pasAgi[0].id, evt);
