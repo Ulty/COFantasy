@@ -1206,6 +1206,17 @@ var COFantasy = COFantasy || function() {
       setTokenAttr(
         attackingToken, attackingCharId, 'traquenard', 0, evt);
     }
+    if (attributeAsBool(attackingCharId, 'forgeron_' + attackLabel, false)) {
+      var feuForgeron = attributeAsInt(attackingCharId, 'voieDuMetal', 0);
+      if (feuForgeron < 1 || feuForgeron > 5) {
+        error("Rang dans la voie du métal de " + attackerTokName + " inconnu ou incorrect", feuForgeron);
+      } else {
+        options.additionalDmg.push({
+          type: 'feu',
+          value: feuForgeron
+        });
+      }
+    }
     var mainDmgRollExpr =
       addOrigin(attackerName, attNbDices + "d" + attDice + attCarBonus + attDMBonus);
     if (options.tirDouble || options.tirDeBarrage) {
@@ -2116,7 +2127,7 @@ var COFantasy = COFantasy || function() {
                         if (reussite) {
                           updateCurrentBar(token, 1, 1);
                           bar1 = 1;
-                          setTokenAttr(token, charId, 'defierLaMort', defierLaMort+10, evt);
+                          setTokenAttr(token, charId, 'defierLaMort', defierLaMort + 10, evt);
                         } else mort(token, charId, evt);
                         if (bar1 > 0 && tempDmg >= bar1) { //assomé
                           setState(token, 'assome', true, evt, charId);
@@ -3779,7 +3790,17 @@ var COFantasy = COFantasy || function() {
       if (attributeAsInt(charId, 'DEFBOUCLIERON', 1) === 0)
         addLineToFramedDisplay(display, "Ne porte pas son bouclier");
       for (var effet in messageEffets) {
-        if (attributeAsBool(charId, effet, false, token))
+        var effetActif = false;
+        if (effet == 'forgeron') {
+          if (findObjs({
+              _type: 'attribute',
+              _characterid: charId
+            }).findIndex(function(attr) {
+              return (attr.get('name').startsWith('forgeron_'));
+            }) >= 0)
+            effetActif = true;
+        } else effetActif = attributeAsBool(charId, effet, false, token);
+        if (effetActif)
           addLineToFramedDisplay(display, messageEffets[effet].actif);
       }
       allAttributesNamed(attrsChar, 'munition').forEach(function(attr) {
@@ -4418,7 +4439,9 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-effet-temp", msg.content);
       return;
     }
+    var effetComplet = cmd[1];
     var effet = cmd[1];
+    if (effet.startsWith('forgeron_')) effet = 'forgeron';
     if (!estEffetTemp(effet)) {
       error(effet + " n'est pas un effet temporaire répertorié", msg.content);
       return;
@@ -4431,7 +4454,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var evt = {
-      type: 'effet_temp_' + cmd[1]
+      type: 'effet_temp_' + effetComplet
     };
     opts.forEach(function(arg) {
       cmd = arg.split(' ');
@@ -4489,11 +4512,12 @@ var COFantasy = COFantasy || function() {
         initiative(selected, evt);
       }
       setAttr(
-        selected, effet, duree, evt, messageEffets[effet].activation, getInit());
+        selected, effetComplet, duree, evt, messageEffets[effet].activation,
+        getInit());
       if (options.puissant) {
         var puissant = true;
         if (options.puissant == "off") puissant = false;
-        setAttr(selected, effet + "Puissant", puissant, evt);
+        setAttr(selected, effetComplet + "Puissant", puissant, evt);
       }
       addEvent(evt);
     });
@@ -5625,6 +5649,11 @@ var COFantasy = COFantasy || function() {
       activation: "vient de contracter une sorte de lèpre fulgurante",
       actif: "est en pleine putréfaction",
       fin: "La putréfaction s'arrête."
+    },
+    forgeron: {
+      activation: "enflamme son arme",
+      actif: "a une arme en feu",
+      fin: "L'arme n'est plus enflammée."
     },
   };
 

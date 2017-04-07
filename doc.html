@@ -498,11 +498,9 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie du métal</h4>
     <ol>
-      <li>Forgeron : Il faut un attribut <tt>voieDuMetal</tt> pour connaître le rang.
-        <tt!cof-effet-temp forgeron</tt><i>L</i> <tt>[[5+@{selected|INT}]]</tt>
-        où <i>L</i> doit être le label d'une attaque, <i>L</i> entre 1 et 9.
-    TODO : si deux attaques utilisent la même arme, ça ne marche pas...
-    TODO : pas implémenté en attendant de trouver une meilleure solution</li>
+      <li>Forgeron : Il faut un attribut <tt>voieDuMetal</tt> pour connaître le rang. Lancer le sort avec
+        <tt>!cof-effet-temp forgeron_</tt><i>L</i> <tt>[[5+@{selected|INT}]]</tt>
+        où <i>L</i> est le label d'une attaque. Ensuite, chaque fois que cette attaque sera utilisée, les dégâts seront ajoutés. Limitations : risque de mal fonctionner pour les tokens non liés à un personnage, et si deux attaques utilisent la même arme, il faut faire deux fois l'action, une pour chaque attaque. </li>
     </ol>
     <h4>Voie du golem</h4>
     <ol>
