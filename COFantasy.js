@@ -949,7 +949,7 @@ var COFantasy = COFantasy || function() {
       munitionsAttr = munitionsAttr[0];
       var munitions = munitionsAttr.get('current');
       if (munitions < 1 || (options.tirDouble && munitions < 2)) {
-        sendChar(attackingCharId, "ne peut pas utiliser cette attaque, car elle n'a plus de " + options.munition.nom);
+        sendChar(attackingCharId, "ne peut pas utiliser cette attaque, car elle n'a plus de " + options.munition.nom.replace(/_/g, ' '));
         return;
       }
       var munitionsMax = munitionsAttr.get('max');
@@ -965,7 +965,8 @@ var COFantasy = COFantasy || function() {
         munitions--;
         if (randomInteger(100) < options.munition.taux) munitionsMax--;
       }
-      explications.push("Il reste " + munitions + " " + options.munition.nom + " à " + attackerTokName);
+      explications.push("Il reste " + munitions + " " +
+        options.munition.nom.replace(/_/g, ' ') + " à " + attackerTokName);
       munitionsAttr.set('current', munitions);
       munitionsAttr.set('max', munitionsMax);
     }
@@ -3733,7 +3734,7 @@ var COFantasy = COFantasy || function() {
         var attrName = attr.get('name');
         var underscore = attrName.indexOf('_');
         if (underscore < 0 || underscore == attrName.length - 1) return;
-        var munitionNom = attrName.substring(underscore + 1);
+        var munitionNom = attrName.substring(underscore + 1).replace(/_/g, ' ');
         addLineToFramedDisplay(display, munitionNom + " : " + attr.get('current') + " / " + attr.get('max'));
       });
       sendChat("", endFramedDisplay(display));
