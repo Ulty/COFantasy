@@ -678,28 +678,43 @@ var COFantasy = COFantasy || function() {
       error("condition non reconnue", args);
       return undefined;
     }
-    if (args[0] == "etat") {
-      if (_.has(cof_states, args[1])) {
+    switch (args[0]) {
+      case "etat":
+        if (_.has(cof_states, args[1])) {
+          return {
+            type: 'etat',
+            etat: args[1],
+            text: args[1]
+          };
+        }
         return {
-          type: 'etat',
-          etat: args[1],
+          type: 'attribut',
+          attribute: args[1],
           text: args[1]
         };
-      }
-      return {
-        type: 'attribut',
-        attribute: args[1],
-        text: args[1]
-      };
+      case "deAttaque":
+        var valeurDeAttaque = parseInt(args[1]);
+        if (isNaN(valeurDeAttaque)) {
+          error("La condition de dé d'attaque doit être un nombre", args);
+          // on continue exprès pour tomber dans le cas par défaut
+        } else {
+          return {
+            type: 'deAttaque',
+            seuil: valeurDeAttaque,
+            text: args[1]
+          };
+        }
+        /* falls through */
+      default:
+        return {
+          type: args[0],
+          attribute: args[1],
+          text: args[1]
+        };
     }
-    return {
-      type: args[0],
-      attribute: args[1],
-      text: args[1]
-    };
   }
 
-  function testCondition(cond, attackingCharId, targetCharId) {
+  function testCondition(cond, attackingCharId, targetCharId, deAttaque) {
     switch (cond.type) {
       case "moins":
         var attackerAttr = attributeAsInt(attackingCharId, cond.attribute, 0);
@@ -709,6 +724,13 @@ var COFantasy = COFantasy || function() {
         return (getState(undefined, cond.etat, attackingCharId));
       case "attribut":
         return (attributeAsBool(attackingCharId, cond.attribute, false));
+      case "deAttaque":
+        if (deAttaque === undefined) {
+          error("Condition de dé d'attque non supportée ici", cond);
+          return true;
+        }
+        if (deAttaque < cond.seuil) return false;
+        return true;
       default:
         error("Condition non reconnue", cond);
     }
@@ -1499,7 +1521,7 @@ var COFantasy = COFantasy || function() {
         }
         if (options.etats) {
           options.etats.forEach(function(ce) {
-            if (testCondition(ce.condition, attackingCharId, targetCharId)) {
+            if (testCondition(ce.condition, attackingCharId, targetCharId, d20roll)) {
               if (ce.condition.type == "moins") {
                 setState(targetToken, ce.etat, true, evt, targetCharId);
                 explications.push(targetName + " est " + ce.etat + eForFemale(targetCharId) + " par l'attaque");
