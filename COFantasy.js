@@ -5410,11 +5410,15 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Distribution de baies magiques"
     };
+    var titre =
+      "<b>" + tokenDruide.get('name') + "</b> distribue des baies";
+    var display = startFramedDisplay(msg.playerid, titre, getObj('character', charIdDruide));
     getSelected(msg, function(selected) {
       var tokensToProcess = selected.length;
       var sendEvent = function() {
         if (tokensToProcess == 1) {
           addEvent(evt);
+          sendChat("", endFramedDisplay(display));
         }
         tokensToProcess--;
       };
@@ -5422,6 +5426,9 @@ var COFantasy = COFantasy || function() {
         var baie = attributeAsInt(charId, 'baieMagique', 0, token);
         if (baie >= niveau || baie < 0) return; //baie plus puissante ou déjà mangée
         setTokenAttr(token, charId, 'baieMagique', niveau, evt);
+        var line = token.get('name') + " reçoit une baie";
+        if (token.id == tokenDruide.id) line = token.get('name') + " en garde une pour lui";
+        addLineToFramedDisplay(display, line);
         sendEvent();
       });
     });
@@ -5437,6 +5444,10 @@ var COFantasy = COFantasy || function() {
     };
     iterSelected(msg.selected, function(token, charId) {
       var baie = attributeAsInt(charId, 'baieMagique', 0, token);
+      if (baie === 0) {
+        sendChar(charId, "n'a pas de baie à manger");
+        return;
+      }
       if (baie < 0) {
         sendChar(charId, "a déjà mangé une baie aujourd'hui. Pas d'effet");
         return;
@@ -5583,6 +5594,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-distribuer-baies":
         distribuerBaies(msg);
+        return;
+      case "!cof-consommer-baie":
+        consommerBaie(msg);
         return;
       default:
         return;
