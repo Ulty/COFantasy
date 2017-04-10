@@ -26,6 +26,8 @@ p  {margin-left: inherit}
     Les statuts des tokens sont en partie utilisés pour représenter des états. Voir plus loin pour la <a href="#etats">liste des statuts</a> utilisés par les scripts.
     <p>
     Pour tenir compte d'autre états non visibles sur les tokens, les scripts utilisent des attributs supplémentaires (hors fiche). Parfois, le MJ devra créer et remplir lui-même certains attributs, d'autres fois cela sera géré par les scripts. Il est important de noter la différence entre les tokens liés à un personnage (la barre 1 est liée aux points de vie du personnage, tout changement sur la fiche se répercute sur le token), et les tokens non liés (dans ce cas, la fiche de personnage est générique, et chaque token est une instance différente, avec des PV indépendants). Pour gérer les états spécifiques à un token non lié, les scripts utilisent des conventions de nom d'attribut utilisant le nom du token. Pour que cela fonctionne correctement, <b>il est important que deux tokens indépendants ne portent pas le même nom</b>, même si ils représentent le même personnage. Je suggère d'utiliser le script <a href="https://wiki.roll20.net/Script:Token_Name_Number">Token Name Number</a> qui permet de faire une numérotation automatique des tokens.
+    <p>
+    Certains messages tiennent compte du genre (masculin ou féminin) des personnages. Ils utilisent le champ <tt>Sexe</tt> de la fiche de personnage. Un personnage est reconnu comme féminin si ce champ commence par la lettre <tt>F</tt>.
 
     <h3>1.2 Macros et Ablities</h3>
     <p>
@@ -97,7 +99,7 @@ p  {margin-left: inherit}
       <li> <tt>--auto</tt> : l'attaque réussit automatiquement</li>
       <li><tt>--bonusAttaque</tt> <i>n</i> : ajoute <i>n</i> au jet d'attaque</li>
       <li> <tt>--psave</tt> <i>carac seuil</i> : jet de <i>carac</i>, si le jet est supérieur à <i>seuil</i>, les dégâts sont divisés par 2. <i>carac</i> est l'abbréviation de caractéristiques de 3 lettres standard (FOR, DEX, ...). Si on souhaite que le jet ne permette de réduire qu'une partie des dommages (la dernière ajoutée avec <tt>--plus</tt>), on peut ajouter <tt>local</tt>. La syntaxe complète est alors <tt>--psave</tt> <i>carac seuil</i> <tt>local</tt> </li>
-      <li> <tt>--save</tt> <i>carac seuil</i> : même effet que <tt>--psave</tt>, mais pour annuler le dernier <tt>--effet</tt> (aucun effet sur les DM).</li>
+      <li> <tt>--save</tt> <i>carac seuil</i> : même effet que <tt>--psave</tt>, mais pour annuler le dernier <tt>--effet</tt> ou <tt>--etatSi</tt> (aucun effet sur les DM).</li>
       <li> <tt>--fx</tt> <i>effet</i> : ajoute un <a href="https://wiki.roll20.net/Custom_FX">effet</a> qui part de l'attaquant à la cible. Si l'attaque rate, l'effet rate aussi, d'autant plus que le jet d'attaque est loin de la défense.</li>
       <li> <tt>--si</tt> <i>conditon</i> : l'attaque n'est possible que si <i>condition</i> est validée. Une condition peut être
         <ul id="conditions">

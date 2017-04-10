@@ -391,6 +391,7 @@ var COFantasy = COFantasy || function() {
     var options = {
       additionalDmg: []
     };
+    var lastEtat; //dernier de etats et effets
     optArgs.forEach(function(arg) {
       arg = arg.trim();
       var cmd = arg.split(" ");
@@ -450,11 +451,12 @@ var COFantasy = COFantasy || function() {
             return;
           }
           options.effets = options.effets || [];
-          options.effets.push({
+          lastEtat = {
             effet: cmd[1],
             duree: duree
-          });
-          break;
+          };
+          options.effets.push(lastEtat);
+          return;
         case "etatSi":
           if (cmd.length < 3) {
             error("Il manque un argument à l'option --etatSi de !cof-attack", cmd);
@@ -468,10 +470,11 @@ var COFantasy = COFantasy || function() {
           var condition = parseCondition(cmd.slice(2));
           if (condition === undefined) return;
           options.etats = options.etats || [];
-          options.etats.push({
+          lastEtat = {
             etat: etat,
             condition: condition
-          });
+          };
+          options.etats.push(lastEtat);
           return;
         case "peur":
           if (cmd.length < 3) {
@@ -534,19 +537,16 @@ var COFantasy = COFantasy || function() {
           if (psaveParams) psaveopt.partialSave = psaveParams;
           return;
         case 'save':
-          if (options.effets) {
-            var leffets = options.effets.length;
-            if (options.effets[leffets - 1].save) {
+          if (lastEtat) {
+            if (lastEtat.save) {
               error("Redéfinition de la condition de save pour un effet", optArgs);
             }
-            if (leffets > 0) {
-              var saveParams = parseSave(cmd);
-              if (saveParams) {
-                options.effets[leffets - 1].save = saveParams;
-                return;
-              }
+            var saveParams = parseSave(cmd);
+            if (saveParams) {
+              lastEtat.save = saveParams;
               return;
             }
+            return;
           }
           error("Pass d'effet auquel appliquer le save", optArgs);
           return;
@@ -1519,22 +1519,6 @@ var COFantasy = COFantasy || function() {
             targetToken, targetCharId, 'enflamme', enflammePuissance, evt);
           explications.push(targetTokName + " prend feu !");
         }
-        if (options.etats) {
-          options.etats.forEach(function(ce) {
-            if (testCondition(ce.condition, attackingCharId, targetCharId, d20roll)) {
-              if (ce.condition.type == "moins") {
-                setState(targetToken, ce.etat, true, evt, targetCharId);
-                explications.push(targetName + " est " + ce.etat + eForFemale(targetCharId) + " par l'attaque");
-              } else {
-                explications.push(
-                  "Grâce à sa " + ce.condition.text + ", " + targetName +
-                  " n'est pas " + ce.etat + eForFemale(targetCharId));
-              }
-            } else {
-              error("Condition de changement d'état inconnue", ce);
-            }
-          });
-        }
         // Draw effect, if any
         if (_.has(options, "fx")) {
           var p1e = {
@@ -1561,11 +1545,32 @@ var COFantasy = COFantasy || function() {
         // Compte le nombre de saves pour la synchronisation
         // (On ne compte pas les psave, gérés dans dealDamage)
         var saves = 0;
+        //ajoute les états sans save à la cible
+        if (options.etats) {
+          options.etats.forEach(function(ce) {
+            if (ce.save) {
+              save++;
+              return; //on le fera plus tard
+            }
+            if (testCondition(ce.condition, attackingCharId, targetCharId, d20roll)) {
+              setState(targetToken, ce.etat, true, evt, targetCharId);
+              explications.push(targetName + " est " + ce.etat + eForFemale(targetCharId) + " par l'attaque");
+            } else {
+              if (ce.condition.type == "moins") {
+                explications.push(
+                  "Grâce à sa " + ce.condition.text + ", " + targetName +
+                  " n'est pas " + ce.etat + eForFemale(targetCharId));
+              }
+            }
+          });
+        }
+        var savesEffets = 0;
         // Ajoute les effets sans save à la cible
         if (options.effets) {
           options.effets.forEach(function(ef) {
             if (ef.save) {
               saves++;
+              savesEffets++;
               return; //on le fera plus tard
             }
             explications.push(targetName + " " + messageEffets[ef.effet].activation);
@@ -1666,9 +1671,38 @@ var COFantasy = COFantasy || function() {
         var expliquer = function(msg) {
           explications.push(msg);
         };
+        //Ajoute les états avec save à la cibles
+        var etatsAvecSave = function() {
+          if (savesEffets > 0) return; //On n'a pas encore fini avec les effets
+          if (options.etats && saves > 0) {
+            options.etats.forEach(function(ce) {
+              if (ce.save) {
+                if (testCondition(ce.condition, attackingCharId, targetCharId, d20roll)) {
+                  var msgPour = " pour résister à un effet";
+                  var msgRate = ", " + targetName + " est " + ce.etat + eForFemale(targetCharId) + " par l'attaque";
+                  save(ce.save, targetCharId, targetToken, expliquer, msgPour, '', msgRate, function(reussite, rolltext) {
+                    if (!reussite) {
+                      setState(targetToken, ce.etat, true, evt, targetCharId);
+                    }
+                    save--;
+                    afterSaves();
+                  });
+                } else {
+                  if (ce.condition.type == "moins") {
+                    explications.push(
+                      "Grâce à sa " + ce.condition.text + ", " + targetName +
+                      " n'est pas " + ce.etat + eForFemale(targetCharId));
+                  }
+                  save--;
+                  afterSaves();
+                }
+              }
+            });
+          } else afterSaves();
+        };
         // Ajoute les effets avec save à la cible
         var effetsAvecSave = function() {
-          if (options.effets && saves > 0) {
+          if (options.effets && savesEffets > 0) {
             options.effets.forEach(function(ef) {
               if (ef.save) {
                 var msgPour = " pour résister à un effet";
@@ -1680,11 +1714,12 @@ var COFantasy = COFantasy || function() {
                       undefined, getInit());
                   }
                   saves--;
-                  afterSaves();
+                  savesEffets--;
+                  etatsAvecSave();
                 });
               }
             });
-          } else afterSaves();
+          } else etatsAvecSave();
         };
         // Peut faire peur à la cible
         if (options.peur) {
@@ -3866,7 +3901,7 @@ var COFantasy = COFantasy || function() {
 
   function onGenre(charId, male, female) {
     var sex = getAttrByName(charId, 'SEXE');
-    if (sex == 'F') return female;
+    if (sex.startsWith('F')) return female;
     return male;
   }
 
