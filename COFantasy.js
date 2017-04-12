@@ -658,12 +658,29 @@ var COFantasy = COFantasy || function() {
       error("Usage : --psave carac seuil", cmd);
       return;
     }
-    if (isNotCarac(cmd[1])) {
-      error("Le premier argument de --psave n'est pas une caractéristique", cmd);
+    var carac1;
+    var carac2;
+    if (cmd[1].length == 3) {
+      carac1 = cmd[1];
+      if (isNotCarac(cmd[1])) {
+        error("Le premier argument de save n'est pas une caractéristique", cmd);
+        return;
+      }
+    } else if (cmd[1].length == 6) { //Choix parmis 2 caracs
+      carac1 = cmd[1].substr(0, 3);
+      carac2 = cmd[1].substr(3, 3);
+      if (isNotCarac(carac1) || isNotCarac(carac2)) {
+        error("Le premier argument de save n'est pas une caractéristique", cmd);
+        return;
+      }
+    } else {
+      error("Le premier argument de save n'est pas une caractéristique", cmd);
       return;
     }
+
     var res = {
-      carac: cmd[1],
+      carac: carac1,
+      carac2: carac2,
       seuil: parseInt(cmd[2])
     };
     if (isNaN(res.seuil)) {
@@ -869,6 +886,23 @@ var COFantasy = COFantasy || function() {
     var targetName = target.get("name");
     var pageId = targetToken.get('pageid');
 
+    //Options automatically set by some attributes
+    if (attributeAsBool(attackingCharId, 'fauchage', false)) {
+      var seuilFauchage = 10 + modCarac(attackingCharId, 'FORCE');
+      options.etats = options.etats || [];
+      options.etats.push({
+        etat: 'renverse',
+        condition: {
+          type: 'deAttaque',
+          seuil: 15
+        },
+        save: {
+          carac: 'FOR',
+          carac2: 'DEX',
+          seuil: seuilFauchage
+        }
+      });
+    }
     var att = getAttack(attackLabel, attackerTokName, attackingCharId);
     if (att === undefined) return;
     // Get attack number (does not correspond to the position in sheet !!!)
@@ -1549,7 +1583,7 @@ var COFantasy = COFantasy || function() {
         if (options.etats) {
           options.etats.forEach(function(ce) {
             if (ce.save) {
-              save++;
+              saves++;
               return; //on le fera plus tard
             }
             if (testCondition(ce.condition, attackingCharId, targetCharId, d20roll)) {
@@ -1558,7 +1592,7 @@ var COFantasy = COFantasy || function() {
             } else {
               if (ce.condition.type == "moins") {
                 explications.push(
-                  "Grâce à sa " + ce.condition.text + ", " + targetName +
+                  "Grâce à sa " + ce.condition.text + ", " + targetTokName +
                   " n'est pas " + ce.etat + eForFemale(targetCharId));
               }
             }
@@ -1679,12 +1713,12 @@ var COFantasy = COFantasy || function() {
               if (ce.save) {
                 if (testCondition(ce.condition, attackingCharId, targetCharId, d20roll)) {
                   var msgPour = " pour résister à un effet";
-                  var msgRate = ", " + targetName + " est " + ce.etat + eForFemale(targetCharId) + " par l'attaque";
+                  var msgRate = ", " + targetTokName + " est " + ce.etat + eForFemale(targetCharId) + " par l'attaque";
                   save(ce.save, targetCharId, targetToken, expliquer, msgPour, '', msgRate, function(reussite, rolltext) {
                     if (!reussite) {
                       setState(targetToken, ce.etat, true, evt, targetCharId);
                     }
-                    save--;
+                    saves--;
                     afterSaves();
                   });
                 } else {
@@ -1693,7 +1727,7 @@ var COFantasy = COFantasy || function() {
                       "Grâce à sa " + ce.condition.text + ", " + targetName +
                       " n'est pas " + ce.etat + eForFemale(targetCharId));
                   }
-                  save--;
+                  saves--;
                   afterSaves();
                 }
               }
@@ -1778,15 +1812,45 @@ var COFantasy = COFantasy || function() {
     return attributeAsInt(charId, 'RD_' + dmgType, 0);
   }
 
+  function probaSucces(de, seuil, nbreDe) {
+    if (nbreDe == 2) {
+      var proba1 = probaSucces(de, seuil, 1);
+      return 1 - (1 - proba1) * (1 - proba1);
+    }
+    if (seuil < 2) seuil = 2; // 1 est toujours un échec
+    else if (seuil > 20) seuil = 20;
+    return ((de - seuil) + 1) / de;
+  }
+
+  function meilleureCarac(carac1, carac2, charId, token, seuil) {
+    var bonus1 = bonusTestCarac(carac1, charId, token);
+    if (carac1 == 'DEX') bonus1 += attributeAsInt(charId, 'reflexesFelins', 0);
+    var bonus2 = bonusTestCarac(carac2, charId, token);
+    if (carac2 == 'DEX') bonus2 += attributeAsInt(charId, 'reflexesFelins', 0);
+    var nbrDe1 = nbreDeTestCarac(carac1, charId);
+    var nbrDe2 = nbreDeTestCarac(carac2, charId);
+    var de1 = deTestCarac(carac1, charId, token);
+    var de2 = deTestCarac(carac2, charId, token);
+    var proba1 = probaSucces(de1, seuil - bonus1, nbrDe1);
+    var proba2 = probaSucces(de2, seuil - bonus2, nbrDe2);
+    if (proba2 > proba1) return carac2;
+    return carac1;
+  }
+
   function save(s, charId, token, expliquer, msgPour, msgReussite, msgRate, afterSave) {
     var bonusAttrs = [];
-    if (s.carac == 'DEX') {
+    var carac = s.carac;
+    //Cas où le save peut se faire au choix parmis 2 caracs
+    if (s.carac2) {
+      carac = meilleureCarac(carac, s.carac2, charId, token, s.seuil);
+    }
+    if (carac == 'DEX') {
       bonusAttrs.push('reflexesFelins');
     }
-    testCaracteristique(charId, s.carac, bonusAttrs, s.seuil, token,
+    testCaracteristique(charId, carac, bonusAttrs, s.seuil, token,
       function(reussite, rollText) {
         var smsg =
-          " Jet de " + s.carac + " difficulté " + s.seuil + msgPour;
+          " Jet de " + carac + " difficulté " + s.seuil + msgPour;
         expliquer(smsg);
         smsg = token.get('name') + " fait " + rollText;
         if (reussite) {
@@ -4063,11 +4127,8 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function testCaracteristique(charId, carac, bonusAttrs, seuil, token, callback) { //asynchrone
+  function bonusTestCarac(carac, charId, token) {
     var bonus = attributeAsInt(charId, carac + "_BONUS", 0);
-    bonusAttrs.forEach(function(attr) {
-      bonus += attributeAsInt(charId, attr, 0);
-    });
     if (attributeAsBool(charId, 'chant_des_heros', false, token)) {
       bonus += 1;
     }
@@ -4084,14 +4145,32 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(charId, 'rayon_affaiblissant', false, token))
         bonus -= 2;
     }
+    return bonus;
+  }
+
+  function nbreDeTestCarac(carac, charId) {
+    return attributeAsInt(charId, carac + "_SUP", 1);
+  }
+
+  function deTestCarac(carac, charId, token) {
+    var dice = 20;
+    if (getState(token, 'affaibli', charId)) dice = 12;
+    return dice;
+  }
+
+  function testCaracteristique(charId, carac, bonusAttrs, seuil, token, callback) { //asynchrone
+    var bonus = bonusTestCarac(carac, charId, token);
+    bonusAttrs.forEach(function(attr) {
+      bonus += attributeAsInt(charId, attr, 0);
+    });
     if (carac == 'SAG' || carac == 'INT' || carac == 'CHA') {
       if (attributeAsBool(charId, 'sansEsprit', false)) {
         callback(true, "(sans esprit : réussite automatique)");
         return;
       }
     }
-    var carSup = attributeAsInt(charId, carac + "_SUP", 1);
-    var dice = 20;
+    var carSup = nbreDeTestCarac(carac, charId);
+    var dice = deTestCarac(carac, charId, token);
     if (getState(token, 'affaibli', charId)) dice = 12;
     var rollExpr = "[[{" + carSup + "d" + dice + "cs20cf1}kh1]]";
     var name = getObj('character', charId).get('name');
