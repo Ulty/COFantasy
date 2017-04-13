@@ -264,6 +264,7 @@ p  {margin-left: inherit}
     <tt>!cof-effet-temp</tt> <i>effet duree</i> : ajoute l'effet <i>effet</i> à la cible pour la durée. 
     <ul>
       <li><tt>--mana</tt> <i>id cout</i> : impose au token <i>id</i> de dépenser <i>cout</i> mana</li>
+      <li><tt>--portee</tt> <i>id d</i> : impose aux cibles de l'effet d'être à moins de <i>d</i> mètres du token <i>id</i>
       <li><tt>--puissant</tt> : lance la version puissante de l'effet</li>
       <li><tt>--puissant oui</tt> : idem</li>
       <li><tt>--puissant non</tt> : lance la version non puissante (efface le dernier effet
@@ -517,7 +518,7 @@ p  {margin-left: inherit}
     <h3>Guerrier</h3>
     <h4>Voie du bouclier</h4>
     <ol>
-      <li>Protéger un allié : <tt>!cof-proteger-un-allie @{selected|token_id} @{target|token_id}</tt>. Fonctionne aussi si on remplace le target par un nom de token.</li>
+      <li>Protéger un allié : <tt>!cof-proteger-un-allie @{selected|token_id} @{target|token_id}</tt>. Fonctionne aussi si on remplace le target par un nom de token. Le script ne vérifie pas que le guerrier ne change pas d'allié plus d'une fois par tour.</li>
     </ol>
     <h4>Voie du combat</h4>
     <ol>
@@ -537,7 +538,10 @@ p  {margin-left: inherit}
     </ol>
 
     <h3>Magicien</h3>
-    TODO
+    <h4>Voie de la magie des arcanes</h4>
+    <ol>
+      <li>Agrandissement : <tt>!cof-effet-temp agrandissement [[5+@{selected|INT}]] --target @{target|token_id} --portee @{selected|token_id} 0</tt></li>
+    </ol>
     <h4>Voie de la magie destructrice</h4>
     <ol>
       <li>Projectile magique : <tt>!cof-attack</tt> avec options <tt>--auto</tt> et <tt>--magique --fx beam-magic</tt></li>
@@ -545,6 +549,18 @@ p  {margin-left: inherit}
         dégâts, avec 10 m de portee et l'option <tt>--effet rayon_affaiblissant [[1d6+@{selected|INT}]] --ignoreObstacles</tt>. On peut aussi ajouter un petit visuel avec <tt>--fx splatter-magic</tt></li>
       <li>Flèche enflammée : Utiliser une attaque sur la fiche, et la lancer avec les options <tt>--fx beam-fire --feu --mana 1 --ignoreObstacles --enflamme ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt> 
         </li>
+    </ol>
+    <h4>Voie de la magie élémentaire</h4>
+    <ol>
+      <li>Asphyxie : TODO</li>
+    </ol>
+    <h4>Voie de la magie protectrice</h4>
+    <ol>
+      <li>Armure du mage : TODO</li>
+    </ol>
+    <h4>Voie de la magie universelle</h4>
+    <ol>
+      <li>Lumière : Le MJ peut donner les caractérisiques de lumières à un token</li>
     </ol>
 
     <h3>Moine</h3>
@@ -586,6 +602,7 @@ p  {margin-left: inherit}
       <li>Pas du vent : ok</li>
       <li>Course du vent : ok</li>
       <li>Course des airs : ok</li>
+      <li>Lévitation : ok</li>
     </ol>
 
     <h3>Nécromancien</h3>
@@ -660,7 +677,28 @@ p  {margin-left: inherit}
         des ennemis. Cette race doit se retrouver dans le champ race de l'ennemi.</li>
     </ol>
 
-    <h3>Voleur</h3> TODO
+    <h3>Voleur</h3>
+    <h4>Voie de l'assassin</h4>
+    <ol>
+      <li>Discrétion : simplement ajouter une compétence discrétion sur la fiche, avec le bon bonus</li>
+    </ol>
+    <h4>Voie de l'aventurier</h4>
+    <ol>
+      <li>Sprint : pas de support, au MJ de vérifier que ce n'est utilisé qu'une fois par combat.</li>
+    </ol>
+    <h4>Voie du déplacement</h4>
+    <ol>
+      <li>Esquive : TODO</li>
+    </ol>
+    <h4>Voie du roublard</h4>
+    <ol>
+      <li>Doigts agiles : utiliser des compétences sur la fiche de personnage</li>
+    </ol>
+    <h4>Voie du spadassin</h4>
+    <ol>
+      <li>Attaque en finesse : faire les modifications sur la fiche</li>
+    </ol>
+
 
     <h3>Voies de prestige de races</h3>
     <h4>Voie du demi-orque</h4>

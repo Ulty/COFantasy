@@ -1221,6 +1221,11 @@ var COFantasy = COFantasy || function() {
         });
         maxDmg += 6;
         explications.push("Tir de semonce (+5 attaque et +1d6 DM)");
+      } else { //bonus aux attaques de contact
+        if (attributeAsBool(attackingCharId, 'agrandissement', false)) {
+          attDMBonus += "+2";
+          maxDmg += 2;
+        }
       }
       var tirPrecis = attributeAsInt(attackingCharId, 'tirPrecis', 0);
       if (tirPrecis > 0) {
@@ -2817,7 +2822,40 @@ var COFantasy = COFantasy || function() {
     });
     // fin des effets temporaires (durée en tours)
     attrs = attrs.filter(function(obj) {
-      return (estEffetTemp(obj.get('name')));
+        var attrName = obj.get('name');
+      if (estEffetTemp(attrName)){
+        var effet = effetOfAttribute(obj);
+      if (effet == 'agrandissement') {
+        var charId = obj.get('characterid');
+            evt.affectes = evt.affectes || [];
+            getObj('character', charId).get('defaulttoken', function(normalToken) {
+              normalToken = JSON.parse(normalToken);
+              var largeWidth = normalToken.width + normalToken.width / 2;
+              var largeHeight = normalToken.height + normalToken.height / 2;
+              iterTokensOfEffet(charId, effet, attrName, function(token) {
+                  var width = token.get('width');
+                  var height = token.get('height');
+                  evt.affectes.push({
+                    affecte: token,
+                    prev: {
+                      width: width,
+                      height: height
+                    }
+                  });
+                  token.set('width', normalToken.width);
+                  token.set('height', normalToken.height);
+                },
+                function(token) {
+                  if (token.get('width') == largeWidth) return true;
+                  if (token.get('height') == largeHeight) return true;
+                  return false;
+                }
+              );
+            });
+      }
+        return true;
+      }
+      return false;
     });
     attrs.forEach(function(attr) {
       evt.deletedAttributes.push(attr);
@@ -4020,6 +4058,8 @@ var COFantasy = COFantasy || function() {
       sendChar(charId, msg);
     }
     evt.attributes = evt.attributes || [];
+    var agrandir = false;
+    if (attribute == 'agrandissement') agrandir = true;
     // check if the token is linked to the character. If not, use token name
     // in attribute name (token ids don't persist over API reload)
     var link = token.get('bar1_link');
@@ -4041,6 +4081,22 @@ var COFantasy = COFantasy || function() {
         attribute: attr,
         current: null
       });
+      if (agrandir) {
+        var width = token.get('width');
+        var height = token.get('height');
+        evt.affectes = evt.affectes || [];
+        evt.affectes.push({
+          affecte: token,
+          prev: {
+            width: width,
+            height: height
+          }
+        });
+        width += width / 2;
+        height += height / 2;
+        token.set('width', width);
+        token.set('height', height);
+      }
       return;
     }
     attr = attr[0];
@@ -4187,10 +4243,14 @@ var COFantasy = COFantasy || function() {
         bonus -= attributeAsInt(charId, 'DEFARMUREMALUS', 0);
       if (attributeAsInt(charId, 'DEFBOUCLIERON', 1))
         bonus -= attributeAsInt(charId, 'DEFBOUCLIERMALUS', 0);
+      if (attributeAsBool(charId, 'agrandissement', false, token))
+        bonus -= 2;
     }
     if (carac == 'FOR') {
       if (attributeAsBool(charId, 'rayon_affaiblissant', false, token))
         bonus -= 2;
+      if (attributeAsBool(charId, 'agrandissement', false, token))
+        bonus += 2;
     }
     return bonus;
   }
@@ -4683,6 +4743,27 @@ var COFantasy = COFantasy || function() {
             charId: lanceur.charId
           };
           return;
+        case "portee":
+          if (cmd.length < 3) {
+            error("Pas assez d'argument pour --portee id n", cmd);
+            return;
+          }
+          var tokPortee = tokenOfId(cmd[1], cmd[1], pageId);
+          if (tokPortee === undefined) {
+            error("Premier argument de --portee non valide", cmd);
+            return;
+          }
+          var portee = parseInt(cmd[2]);
+          if (isNaN(portee) || portee < 0) {
+            error("Portée incorrecte", cmd);
+            return;
+          }
+          options.portee = {
+            distance: portee,
+            token: tokPortee.token,
+            charId: tokPortee.charId
+          };
+          return;
         default:
           return;
       }
@@ -4696,7 +4777,18 @@ var COFantasy = COFantasy || function() {
         error("Pas de cible sélectionée pour l'effet", msg);
         return;
       }
-      if (!state.COFantasy.combat) {
+      if (options.portee) {
+        selected = selected.filter(function(sel) {
+          var token = getObj('graphic', sel._id);
+          var dist = distanceCombat(options.portee.token, token);
+          if (dist > options.portee.distance) {
+            sendChar(options.portee.charId, " est trop loin de sa cible");
+            return false;
+          }
+          return true;
+        });
+      }
+      if (!state.COFantasy.combat && selected.length > 0) {
         initiative(selected, evt);
       }
       setAttr(
@@ -5711,7 +5803,7 @@ var COFantasy = COFantasy || function() {
           sendChar(charIdProtecteur, "protège déjà " + nameTarget);
           return;
         }
-        removeTokenAttr(previousTarget.token, previousTarget.charId, 
+        removeTokenAttr(previousTarget.token, previousTarget.charId,
           protegePar, evt, "n'est plus protégé par " + nameProtecteur);
       }
     }
@@ -5723,8 +5815,9 @@ var COFantasy = COFantasy || function() {
   }
 
   function apiCommand(msg) {
-    // First replace inline rolls by their values
+    msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
+    // First replace inline rolls by their values
     if (command[0] != "!cof-aoe") replaceInline(msg);
     var evt;
     switch (command[0]) {
@@ -5919,6 +6012,11 @@ var COFantasy = COFantasy || function() {
       actif: "a une arme en feu",
       fin: "L'arme n'est plus enflammée."
     },
+    agrandissement: {
+      activation: "se met à grandir",
+      actif: "est vraiment très grand",
+      fin: "retrouve sa taille normale"
+    },
   };
 
   var patternEffetsTemp =
@@ -6036,7 +6134,33 @@ var COFantasy = COFantasy || function() {
         } else {
           if (effet !== undefined)
             sendChar(charId, messageEffets[effet].fin);
-          if (attrName == 'peur' || attrName == 'peurEtourdi') { //trouver les tokens
+          if (effet == 'agrandissement') { //redonner sa taille normale
+            evt.affectes = evt.affectes || [];
+            getObj('character', charId).get('defaulttoken', function(normalToken) {
+              normalToken = JSON.parse(normalToken);
+              var largeWidth = normalToken.width + normalToken.width / 2;
+              var largeHeight = normalToken.height + normalToken.height / 2;
+              iterTokensOfEffet(charId, effet, attrName, function(token) {
+                  var width = token.get('width');
+                  var height = token.get('height');
+                  evt.affectes.push({
+                    affecte: token,
+                    prev: {
+                      width: width,
+                      height: height
+                    }
+                  });
+                  token.set('width', normalToken.width);
+                  token.set('height', normalToken.height);
+                },
+                function(token) {
+                  if (token.get('width') == largeWidth) return true;
+                  if (token.get('height') == largeHeight) return true;
+                  return false;
+                }
+              );
+            });
+          } else if (attrName == 'peur' || attrName == 'peurEtourdi') { //trouver les tokens
             var tokens =
               findObjs({
                 _type: 'graphic',
