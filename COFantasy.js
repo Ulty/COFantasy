@@ -1940,6 +1940,11 @@ var COFantasy = COFantasy || function() {
       if (explications) explications.push(msg);
       else sendChar(charId, msg);
     };
+    if (options.aoe === undefined && attributeAsBool(charId, 'formeGazeuse', false, token)) {
+      expliquer("L'attaque passe à travers de " + token.get('name'));
+      if (displayRes) displayRes('0', undefined, 0);
+      return 0;
+    }
     crit = crit || 1;
     var otherDmg = options.additionalDmg || [];
     evt.affectes = evt.affectes || [];
@@ -2822,37 +2827,37 @@ var COFantasy = COFantasy || function() {
     });
     // fin des effets temporaires (durée en tours)
     attrs = attrs.filter(function(obj) {
-        var attrName = obj.get('name');
-      if (estEffetTemp(attrName)){
+      var attrName = obj.get('name');
+      if (estEffetTemp(attrName)) {
         var effet = effetOfAttribute(obj);
-      if (effet == 'agrandissement') {
-        var charId = obj.get('characterid');
-            evt.affectes = evt.affectes || [];
-            getObj('character', charId).get('defaulttoken', function(normalToken) {
-              normalToken = JSON.parse(normalToken);
-              var largeWidth = normalToken.width + normalToken.width / 2;
-              var largeHeight = normalToken.height + normalToken.height / 2;
-              iterTokensOfEffet(charId, effet, attrName, function(token) {
-                  var width = token.get('width');
-                  var height = token.get('height');
-                  evt.affectes.push({
-                    affecte: token,
-                    prev: {
-                      width: width,
-                      height: height
-                    }
-                  });
-                  token.set('width', normalToken.width);
-                  token.set('height', normalToken.height);
-                },
-                function(token) {
-                  if (token.get('width') == largeWidth) return true;
-                  if (token.get('height') == largeHeight) return true;
-                  return false;
-                }
-              );
-            });
-      }
+        if (effet == 'agrandissement') {
+          var charId = obj.get('characterid');
+          evt.affectes = evt.affectes || [];
+          getObj('character', charId).get('defaulttoken', function(normalToken) {
+            normalToken = JSON.parse(normalToken);
+            var largeWidth = normalToken.width + normalToken.width / 2;
+            var largeHeight = normalToken.height + normalToken.height / 2;
+            iterTokensOfEffet(charId, effet, attrName, function(token) {
+                var width = token.get('width');
+                var height = token.get('height');
+                evt.affectes.push({
+                  affecte: token,
+                  prev: {
+                    width: width,
+                    height: height
+                  }
+                });
+                token.set('width', normalToken.width);
+                token.set('height', normalToken.height);
+              },
+              function(token) {
+                if (token.get('width') == largeWidth) return true;
+                if (token.get('height') == largeHeight) return true;
+                return false;
+              }
+            );
+          });
+        }
         return true;
       }
       return false;
@@ -6016,6 +6021,11 @@ var COFantasy = COFantasy || function() {
       activation: "se met à grandir",
       actif: "est vraiment très grand",
       fin: "retrouve sa taille normale"
+    },
+    formeGazeuse: {
+      activation: "semble perdre de la consistance",
+      actif: "est en forme gazeuse",
+      fin: "retrouve sa consistance normale"
     },
   };
 
