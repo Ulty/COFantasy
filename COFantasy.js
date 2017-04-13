@@ -254,7 +254,10 @@ var COFantasy = COFantasy || function() {
       // some attributes where modified too
       evt.attributes.forEach(function(attr) {
         if (attr.current === null) attr.attribute.remove();
-        else attr.attribute.set('current', attr.current);
+        else {
+          attr.attribute.set('current', attr.current);
+          if (attr.max) attr.attribute.set('max', attr.max);
+        }
       });
     }
     // deletedAttributes have a quadratic cost in the size of the history
@@ -330,9 +333,9 @@ var COFantasy = COFantasy || function() {
   }
 
   //Renvoie le token et le charId. Si l'id ne correspond à rien, cherche si 
-  //ça peut être un nom de token, sur la page passée en argument (ou sinon
-  //sur la page active de la campagne
-  function tokenOfId(id, pageId) {
+  //on trouve un nom de token, sur la page passée en argument (ou sinon
+  //sur la page active de la campagne)
+  function tokenOfId(id, name, pageId) {
     var token = getObj('graphic', id);
     if (token === undefined) {
       if (pageId === undefined) {
@@ -342,11 +345,12 @@ var COFantasy = COFantasy || function() {
         _type: 'graphic',
         _subtype: 'token',
         _pageid: pageId,
-        name: id
+        name: name
       });
       if (tokens.length === 0) return undefined;
       if (tokens.length > 1) {
-        error("Ambigüité sur le choix d'un token : il y a " + tokens.length + " tokens nommés" + id, tokens);
+        error("Ambigüité sur le choix d'un token : il y a " +
+          tokens.length + " tokens nommés" + name, tokens);
       }
       token = tokens[0];
     }
@@ -1317,6 +1321,46 @@ var COFantasy = COFantasy || function() {
       defenseBonus += attributeAsInt(targetCharId, 'vetementsSacres', 0, targetToken);
       defenseBonus += attributeAsInt(targetCharId, 'armureDeVent', 0, targetToken);
     }
+    var attrsProtegePar = findObjs({
+      _type: 'attribute',
+      _characterid: targetCharId,
+    });
+    attrsProtegePar.forEach(function(attr) {
+      var attrName = attr.get('name');
+      if (attrName.startsWith('protegePar_')) {
+        var nameProtecteur = attr.get('max');
+        if (attr.get('bar1_link') === '') {
+          if (attrName != 'protegePar_' + nameProtecteur + '_' + targetTokName) return;
+        } else if (attrName != 'protegePar_' + nameProtecteur) return;
+        var protecteur = tokenOfId(attr.get('current'), nameProtecteur, pageId);
+        if (protecteur === undefined) {
+          removeTokenAttr(targetToken, targetCharId, 'protegePar_' + nameProtecteur, evt);
+          sendChar(targetCharId, "ne peut pas être protégé par " + nameProtecteur + " car aucun token le représentant n'est sur la page");
+          return;
+        }
+        if (!isActive(protecteur.token)) {
+          explications.push(nameProtecteur + " n'est pas en état de protéger " +
+            targetTokName);
+          return;
+        }
+        var distTargetProtecteur = distanceCombat(targetToken, protecteur.token, pageId);
+        if (distTargetProtecteur > 0) {
+          explications.push(nameProtecteur + " est trop loin de " +
+            targetTokName + " pour le protéger");
+          return;
+        }
+        if (attributeAsInt(protecteur.charId, 'DEFBOUCLIERON', 1) === 0) {
+          explications.push(nameProtecteur +
+            " ne porte pas son bouclier, il ne peut pas proteger " +
+            targetTokName);
+          return;
+        }
+        var defBouclierProtecteur = attributeAsInt(protecteur.charId, 'DEFBOUCLIER', 0);
+        defenseBonus += defBouclierProtecteur;
+        explications.push(nameProtecteur + " protège " +
+          targetTokName + " de son bouclier (+" + defBouclierProtecteur + "DEF)");
+      }
+    });
     var interchange =
       interchangeable(attackingToken, targetToken, targetCharId, pageId);
     if (interchange.result) defenseBonus += 5;
@@ -2676,6 +2720,8 @@ var COFantasy = COFantasy || function() {
     removeAllAttributes('soinsDeGroupe', evt);
     removeAllAttributes('sergentUtilise', evt);
     removeAllAttributes('enflamme', evt);
+    removeAllAttributes('protegerUnAllie', evt);
+    removeAllAttributes('protegePar', evt);
     // Autres attributs, on prend attrs l'ensemble des attributs
     var attrs = findObjs({
       _type: 'attribute'
@@ -4000,7 +4046,8 @@ var COFantasy = COFantasy || function() {
     attr = attr[0];
     evt.attributes.push({
       attribute: attr,
-      current: attr.get('current')
+      current: attr.get('current'),
+      max: attr.get('max')
     });
     attr.set('current', value);
     if (maxval !== undefined) attr.set('max', maxval);
@@ -4020,7 +4067,7 @@ var COFantasy = COFantasy || function() {
     // check if the token is linked to the character. If not, use token name
     // in attribute name (token ids don't persist over API reload)
     var link = token.get('bar1_link');
-    if (link === "") attribute += "_" + token.get('name');
+    if (link === '') attribute += "_" + token.get('name');
     var attr = findObjs({
       _type: 'attribute',
       _characterid: charId,
@@ -4569,6 +4616,11 @@ var COFantasy = COFantasy || function() {
 
   function effetTemporaire(msg) {
     var options = {};
+    var pageId;
+    if (msg.selected && msg.selected.length > 0) {
+      var firstSelected = getObj('graphic', msg.selected[0]._id);
+      pageId = firstSelected.get('pageid');
+    }
     var opts = msg.content.split(' --');
     var cmd = opts.shift().split(' ');
     if (cmd.length < 3) {
@@ -4615,7 +4667,7 @@ var COFantasy = COFantasy || function() {
             error("Pas assez d'argument pour --mana id n", cmd);
             return;
           }
-          var lanceur = tokenOfId(cmd[1]); //TODO: add page id of message
+          var lanceur = tokenOfId(cmd[1], cmd[1], pageId);
           if (lanceur === undefined) {
             error("Premier argument de --mana non valide", cmd);
             return;
@@ -5151,7 +5203,8 @@ var COFantasy = COFantasy || function() {
       error("Le token sélectionné ne correspond pas à un personnage", args);
       return;
     }
-    var target = tokenOfId(args[2], token1.get('pageid'));
+    var pageId = token1.get('pageid');
+    var target = tokenOfId(args[2], args[2], pageId);
     if (target === undefined) {
       error("Le deuxième argument n'est pas un token valide: " + msg.content, args[2]);
       return;
@@ -5159,7 +5212,6 @@ var COFantasy = COFantasy || function() {
     var token2 = target.token; // Le soigné
     var charId2 = target.charId;
     var name2 = token2.get('name');
-    var pageId = token2.get('pageid');
     var indexPortee = msg.content.indexOf(' --portee');
     if (indexPortee > 0) { //Une portée est spécifiée
       var argPortee = msg.content.substring(indexPortee + 2);
@@ -5611,6 +5663,65 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  /* Quand on protège un allié, on stocke l'id et le nom du token dans un attribut 'protegerUnAllie' (champs current et max), et pour ce token, on met un 
+   * attribut 'protegePar_nom' où nom est le nom du token protecteur, et qui contient l'id et le nom du token protecteur
+   * Ces attributs disparaissent à la fin des combats */
+  function protegerUnAllie(msg) {
+    var args = msg.content.split(" ");
+    if (args.length < 3) {
+      error("Pas assez d'arguments pour !cof-proteger-un-allie: " + msg.content, args);
+      return;
+    }
+    var tokenProtecteur = getObj("graphic", args[1]);
+    if (tokenProtecteur === undefined) {
+      error("Le premier argument n'est pas un token: " + msg.content, args[1]);
+      return;
+    }
+    var charIdProtecteur = tokenProtecteur.get('represents');
+    if (charIdProtecteur === "") {
+      error("Le token sélectionné ne correspond pas à un personnage", args);
+      return;
+    }
+    var nameProtecteur = tokenProtecteur.get('name');
+    var pageId = tokenProtecteur.get('pageid');
+    var target = tokenOfId(args[2], args[2], pageId);
+    if (target === undefined) {
+      error("Le deuxième argument n'est pas un token valide: " + msg.content, args[2]);
+      return;
+    }
+    var tokenTarget = target.token;
+    if (tokenTarget.id == tokenProtecteur.id) {
+      sendChar(charIdProtecteur, "ne peut pas se protéger lui-même");
+      return;
+    }
+    var charIdTarget = target.charId;
+    var nameTarget = tokenTarget.get('name');
+    var evt = {
+      type: "Protéger un allié"
+    };
+    var attrsProtecteur =
+      tokenAttribute(charIdProtecteur, 'protegerUnAllie', tokenProtecteur);
+    var protegePar = 'protegePar_' + nameProtecteur;
+    if (attrsProtecteur.length > 0) { //On protège déjà quelqu'un
+      var previousTarget =
+        tokenOfId(attrsProtecteur[0].get('current'),
+          attrsProtecteur[0].get('max'), pageId);
+      if (previousTarget) {
+        if (previousTarget.token.id == tokenTarget.id) {
+          sendChar(charIdProtecteur, "protège déjà " + nameTarget);
+          return;
+        }
+        removeTokenAttr(previousTarget.token, previousTarget.charId, 
+          protegePar, evt, "n'est plus protégé par " + nameProtecteur);
+      }
+    }
+    setTokenAttr(tokenProtecteur, charIdProtecteur, 'protegerUnAllie',
+      tokenTarget.id, evt, "protège " + nameTarget, nameTarget);
+    setTokenAttr(tokenTarget, charIdTarget, protegePar,
+      tokenProtecteur.id, evt, undefined, nameProtecteur);
+    addEvent(evt);
+  }
+
   function apiCommand(msg) {
     // First replace inline rolls by their values
     var command = msg.content.split(" ", 1);
@@ -5733,6 +5844,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-consommer-baie":
         consommerBaie(msg);
+        return;
+      case "!cof-proteger-un-allie":
+        protegerUnAllie(msg);
         return;
       default:
         return;
