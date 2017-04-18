@@ -814,10 +814,39 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function surveillance(charId, token) {
+    var surveillance = findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+      name: 'surveillance'
+    });
+    if (surveillance.length > 0) {
+      var compagnon = surveillance[0].get('current');
+      var compToken = findObjs({
+        _type: 'graphic',
+        _subtype: 'token',
+        _pageid: token.get('pageid'),
+        layer: 'objects',
+        name: compagnon
+      });
+      var compagnonPresent = false;
+      compToken.forEach(function(tok) {
+        var compCharId = tok.get('represents');
+        if (compCharId === '') return;
+        if (isActive(tok)) compagnonPresent = true;
+        return;
+      });
+      return compagnonPresent;
+    }
+    return false;
+  }
+
   function tokenInit(token, charId) {
     var init = parseInt(getAttrByName(charId, 'DEXTERITE'));
     init += attributeAsInt(charId, 'INIT_DIV', 0);
     if (getState(token, 'aveugle', charId)) init -= 5;
+    // Voie du compagnon animal rang 2 (surveillance)
+    if (surveillance(charId, token)) init += 5;
     // Voie du pistolero rang 1 (plus vite que son ombre)
     attributesInitEnMain(charId).forEach(function(em) {
       var armeL = labelInitEnMain(em);
@@ -1916,7 +1945,7 @@ var COFantasy = COFantasy || function() {
     if (carac == 'DEX') {
       bonusAttrs.push('reflexesFelins');
     }
-    testCaracteristique(charId, carac, bonusAttrs, s.seuil, token,
+    testCaracteristique(charId, carac, bonusAttrs, s.seuil, 0, token,
       function(reussite, rollText) {
         var smsg =
           " Jet de " + carac + " difficulté " + s.seuil + msgPour;
@@ -3578,8 +3607,10 @@ var COFantasy = COFantasy || function() {
         }
         var name = token.get('name');
         if (testSurprise !== undefined) {
+          var bonusSurprise = 0;
+          if (surveillance(charId, token)) bonusSurprise += 5;
           testCaracteristique(charId, 'SAG', ['vigilance', 'perception'],
-            testSurprise, token,
+            testSurprise, bonusSurprise, token,
             function(reussite, rolltext) {
               var result;
               if (reussite) result = "réussi";
@@ -4256,7 +4287,8 @@ var COFantasy = COFantasy || function() {
   }
 
   function bonusTestCarac(carac, charId, token) {
-    var bonus = attributeAsInt(charId, carac + "_BONUS", 0);
+    var bonus = modCarac(charId, caracOfMod(carac));
+    bonus += attributeAsInt(charId, carac + "_BONUS", 0);
     if (attributeAsBool(charId, 'chant_des_heros', false, token)) {
       bonus += 1;
     }
@@ -4290,11 +4322,12 @@ var COFantasy = COFantasy || function() {
     return dice;
   }
 
-  function testCaracteristique(charId, carac, bonusAttrs, seuil, token, callback) { //asynchrone
-    var bonus = bonusTestCarac(carac, charId, token);
+  function testCaracteristique(charId, carac, bonusAttrs, seuil, bonus, token, callback) { //asynchrone
+    var bonusCarac = bonusTestCarac(carac, charId, token);
     bonusAttrs.forEach(function(attr) {
-      bonus += attributeAsInt(charId, attr, 0);
+      bonusCarac += attributeAsInt(charId, attr, 0);
     });
+    bonusCarac += bonus;
     if (carac == 'SAG' || carac == 'INT' || carac == 'CHA') {
       if (attributeAsBool(charId, 'sansEsprit', false)) {
         callback(true, "(sans esprit : réussite automatique)");
@@ -4306,30 +4339,11 @@ var COFantasy = COFantasy || function() {
     if (getState(token, 'affaibli', charId)) dice = 12;
     var rollExpr = "[[{" + carSup + "d" + dice + "cs20cf1}kh1]]";
     var name = getObj('character', charId).get('name');
-    var carTest = addOrigin(name, getAttrByName(charId, carac));
-    var toEvaluate = rollExpr + " [[" + carTest + "]]";
-    sendChat("", toEvaluate, function(res) {
+    sendChat("", rollExpr, function(res) {
       var rolls = res[0];
-      // Determine which roll number correspond to which expression
-      var afterEvaluate = rolls.content.split(" ");
-      var d20RollNumber;
-      var carTestNumber;
-      for (var i = 0; i < afterEvaluate.length; i++) {
-        switch (parseInt(afterEvaluate[i][3])) {
-          case 0:
-            d20RollNumber = i;
-            break;
-          case 1:
-            carTestNumber = i;
-            break;
-          default:
-            error("Cannot recognize roll number", afterEvaluate);
-        }
-      }
-      var d20roll = rolls.inlinerolls[d20RollNumber].results.total;
-      bonus += rolls.inlinerolls[carTestNumber].results.total;
-      var bonusText = (bonus > 0) ? "+" + bonus : (bonus === 0) ? "" : bonus;
-      var rtext = buildinline(rolls.inlinerolls[d20RollNumber]) + bonusText;
+      var d20roll = rolls.inlinerolls[0].results.total;
+      var bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
+      var rtext = buildinline(rolls.inlinerolls[0]) + bonusText;
       if (d20roll == 20 || d20roll + bonus >= seuil) callback(true, rtext);
       else callback(false, rtext);
     });
@@ -4862,16 +4876,16 @@ var COFantasy = COFantasy || function() {
           });
         }
         if (countEquipes === 0) { //continuation
-          var seuil = difficulte - allieSansPeur;
-          testCaracteristique(charId, 'SAG', [], seuil, token,
+          testCaracteristique(charId, 'SAG', [], difficulte, allieSansPeur,
+            token,
             function(reussite, rollText) {
               var line = "Jet de résistance de " + token.get('name') + ":" + rollText;
               var sujet = onGenre(charId, 'il', 'elle');
               if (reussite) {
-                line += "&gt;=" + seuil + ",  " + sujet + " résiste à la peur.";
+                line += "&gt;=" + difficulte + ",  " + sujet + " résiste à la peur.";
               } else {
                 setState(token, 'apeure', true, evt, charId);
-                line += "&lt;" + seuil + ", " + sujet + " s'enfuit";
+                line += "&lt;" + difficulte + ", " + sujet + " s'enfuit";
                 if (options.etourdi) {
                   line += " ou reste recroquevillé" + eForFemale(charId) + " sur place";
                   setTokenAttr(token, charId, 'peurEtourdi', duree, evt, undefined, getInit());
@@ -5212,7 +5226,7 @@ var COFantasy = COFantasy || function() {
             tokensToProcess--;
           };
           targets.forEach(function(t) {
-            testCaracteristique(t.charId, 'SAG', [], seuil, t.token,
+            testCaracteristique(t.charId, 'SAG', [], seuil, 0, t.token,
               function(reussite, rollText) {
                 var line = "Jet de résistance de " + t.name + ":" + rollText;
                 if (reussite) {
@@ -5537,7 +5551,7 @@ var COFantasy = COFantasy || function() {
     var output =
       "cherche des herbes. Après " + duree + " heures, " +
       onGenre(charId, "il", "elle");
-    testCaracteristique(charId, 'SAG', [], 10, token,
+    testCaracteristique(charId, 'SAG', [], 10, 0, token,
       function(reussite, rollText) {
         if (reussite) {
           output += " revient avec de quoi soigner les blessés.";
