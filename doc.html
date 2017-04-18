@@ -104,7 +104,7 @@ p  {margin-left: inherit}
       <li> <tt>--si</tt> <i>conditon</i> : l'attaque n'est possible que si <i>condition</i> est validée. Une condition peut être
         <ul id="conditions">
           <li> <tt>moins</tt> <i>attribut</i> : vrai si l'attribut <i>attribut</i> de la cible est moins haute que celle de l'attaquant</li>
-          <li> <tt>etat</tt> <i>e</i> : vrai si l'état <i>e</i> est actif sur l'attaquent. Cet état peut être un des états définis plus bas, ou un attribut quelconque.</li>
+          <li> <tt>etat</tt> <i>e</i> : vrai si l'état <i>e</i> est actif sur l'attaquant. Cet état peut être un des états définis plus bas, ou un attribut quelconque.</li>
           <li> <tt>deAttaque</tt> <i>n</i> : vrai si le jet de dé d'attaque est supérieur ou égal à <i>n</i>.</li>
         </ul>
       </li>
@@ -172,7 +172,7 @@ p  {margin-left: inherit}
       <tt>!cof-aoe</tt> <i>dm</i></h4>
     <p>
     applique des dégâts à tous les tokens sélectionné.
-    <i>dm</i>peut être un inline roll.
+    <i>dm</i> peut être un inline roll.
     <p>
     argument optionel: <tt>--psave</tt> <i>carac seuil</i> : jet de <i>carac</i>, si supérieur au <i>seuil</i>, les dégâts sont divisés par 2.
 
@@ -377,7 +377,7 @@ p  {margin-left: inherit}
     <ol>
       <li>Réflexes félins : ajouter un attribut <tt>reflexesFelins</tt>, avec comme valeur
         le bonus aux saves (TODO : tester si ça marche bien)</li>
-      <li>Charge : faire une attaque avec les options <tt>--bonusAttaque 2</tt> <tt>--d6Plus 1</tt></li>
+      <li>Charge : faire une attaque avec les options <tt>--bonusAttaque 2</tt> <tt>--de6Plus 1</tt></li>
     </ol>
     <h4>Voie du primitif</h4>
     <ol>
@@ -447,9 +447,11 @@ p  {margin-left: inherit}
     <h4>Voie de l'air</h4>
     <ol>
       <li>Murmures dans le vent : rien à faire</li>
-      <li>Sous tension: <tt>!cof-effet-temp sous_tension [[5+@{selected|CHA}]]</tt>. 
+      <li>Sous tension : <tt>!cof-effet-temp sous_tension [[5+@{selected|CHA}]]</tt>. 
     Pour l'attaque, définir une attaque magique à 1d6+CHA,
-    et l'appeler avec les options <tt>--si etat sous_tension --electrique --ignoreObstacles --fx glow-holy</tt></li>
+    et l'appeler avec les options <tt>--si etat sous_tension --electrique --ignoreObstacles --fx beam-holy</tt></li>
+      <li>Télékinésie : Pas de support autre que <tt>!cof-lancer-sort @{selected|token_id} 1 télékinésie</tt></li>
+      <li>Foudre : <tt>!cof-aoe [[4d6+@{</tt><i>nom</i><tt>|CHA}]] --psave DEX [[12+@{</tt><i>nom</i><tt>|DEX]]</tt>. L'argument <i>nom</i> doit être le nom du personnage qui lance le sort, et le MJ doit se charger de sélectionner les cibles.</li>
     </ol>
     <h4>Voie de la divination</h4>
     <ol>

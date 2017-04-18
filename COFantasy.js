@@ -917,7 +917,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var targetName = target.get("name");
-    var pageId = targetToken.get('pageid');
+    var pageId = attackingToken.get('pageid');
 
     //Options automatically set by some attributes
     if (attributeAsBool(attackingCharId, 'fauchage', false)) {
@@ -1336,24 +1336,31 @@ var COFantasy = COFantasy || function() {
       value: mainDmgRollExpr
     };
 
-    var defenseExpr = getAttrByName(targetCharId, "DEF");
-    var defenseBonus = 0;
+    var defense = 10;
+    defense += attributeAsInt(targetCharId, 'DEFARMURE', 0) * attributeAsInt(targetCharId, 'DEFARMUREON', 1);
+    defense += attributeAsInt(targetCharId, 'DEFBOUCLIER', 0) * attributeAsInt(targetCharId, 'DEFBOUCLIERON', 1);
+    defense += modCarac(targetCharId, 'DEXTERITE');
+    defense += attributeAsInt(targetCharId, 'DEFDIV', 0);
+      // Malus de défense global pour les longs combats
+      if (DEF_MALUS_APRES_TOUR_5)
+        defense -= (Math.floor((state.COFantasy.tour - 1) / 5) * 2);
+    // Autres modificateurs de défense
     var pacifisme_target = attributeAsInt(targetCharId, 'pacifisme', 0, targetToken);
-    defenseBonus += pacifisme_target;
+    defense += pacifisme_target;
     if (attributeAsBool(targetCharId, 'peau_d_ecorce', false, targetToken)) {
-      defenseBonus += attributeAsInt(targetCharId, 'voieDesVegetaux', 0);
+      defense += attributeAsInt(targetCharId, 'voieDesVegetaux', 0);
     }
-    if (getState(targetToken, 'surpris', targetCharId)) defenseBonus -= 5;
-    if (getState(targetToken, 'renverse', targetCharId)) defenseBonus -= 5;
-    if (getState(targetToken, 'aveugle', targetCharId)) defenseBonus -= 5;
+    if (getState(targetToken, 'surpris', targetCharId)) defense -= 5;
+    if (getState(targetToken, 'renverse', targetCharId)) defense -= 5;
+    if (getState(targetToken, 'aveugle', targetCharId)) defense -= 5;
     if (getState(targetToken, 'etourdi', targetCharId) ||
       attributeAsBool(targetCharId, 'peurEtourdi', false, targetToken))
-      defenseBonus -= 5;
-    defenseBonus += attributeAsInt(targetCharId, 'bufDEF', 0, targetToken);
-    defenseBonus += attributeAsInt(targetCharId, 'actionConcertee', 0, targetToken);
+      defense -= 5;
+    defense += attributeAsInt(targetCharId, 'bufDEF', 0, targetToken);
+    defense += attributeAsInt(targetCharId, 'actionConcertee', 0, targetToken);
     if (attributeAsInt(targetCharId, 'DEFARMUREON', 1) === 0) {
-      defenseBonus += attributeAsInt(targetCharId, 'vetementsSacres', 0, targetToken);
-      defenseBonus += attributeAsInt(targetCharId, 'armureDeVent', 0, targetToken);
+      defense += attributeAsInt(targetCharId, 'vetementsSacres', 0, targetToken);
+      defense += attributeAsInt(targetCharId, 'armureDeVent', 0, targetToken);
     }
     var attrsProtegePar = findObjs({
       _type: 'attribute',
@@ -1390,26 +1397,24 @@ var COFantasy = COFantasy || function() {
           return;
         }
         var defBouclierProtecteur = attributeAsInt(protecteur.charId, 'DEFBOUCLIER', 0);
-        defenseBonus += defBouclierProtecteur;
+        defense += defBouclierProtecteur;
         explications.push(nameProtecteur + " protège " +
           targetTokName + " de son bouclier (+" + defBouclierProtecteur + "DEF)");
       }
     });
     var interchange =
       interchangeable(attackingToken, targetToken, targetCharId, pageId);
-    if (interchange.result) defenseBonus += 5;
-    var defenseRollExpr = addOrigin(targetName, "[[" + defenseExpr + "]]");
+    if (interchange.result) defense += 5;
 
     // toEvaluate inlines
     // 0: attack roll
-    // 1: target defense expression
-    // 2: attack skill expression
-    // 3 : roll de dégâts principaux
-    // 4+ : les rolls de dégâts supplémentaires
-    // 4 + options.additionalDmg.length : dé de poudre
+    // 1: attack skill expression
+    // 2 : roll de dégâts principaux
+    // 3+ : les rolls de dégâts supplémentaires
+    // 3 + options.additionalDmg.length : dé de poudre
 
     var toEvaluate =
-      attackRollExpr + " " + defenseRollExpr + " " + attackSkillExpr +
+      attackRollExpr + " " + attackSkillExpr +
       " [[" + mainDmgRollExpr + "]]" + ExtraDmgRollExpr;
     if (options.poudre) toEvaluate += " [[1d20]]";
     sendChat(attackerName, toEvaluate, function(res) {
@@ -1417,27 +1422,18 @@ var COFantasy = COFantasy || function() {
       // Determine which roll number correspond to which expression
       var afterEvaluate = rolls.content.split(" ");
       var attRollNumber = rollNumber(afterEvaluate[0]);
-      var defRollNumber = rollNumber(afterEvaluate[1]);
-      var attSkillNumber = rollNumber(afterEvaluate[2]);
-      var mainDmgRollNumber = rollNumber(afterEvaluate[3]);
+      var attSkillNumber = rollNumber(afterEvaluate[1]);
+      var mainDmgRollNumber = rollNumber(afterEvaluate[2]);
       mainDmgRoll.total = rolls.inlinerolls[mainDmgRollNumber].results.total;
       mainDmgRoll.display = buildinline(rolls.inlinerolls[mainDmgRollNumber], mainDmgType, options.magique);
       options.additionalDmg.forEach(function(dmSpec, i) {
-        var rRoll = rolls.inlinerolls[rollNumber(afterEvaluate[i + 4])];
+        var rRoll = rolls.inlinerolls[rollNumber(afterEvaluate[i + 3])];
         dmSpec.total = rRoll.results.total;
         var addDmType = dmSpec.type;
         dmSpec.display = buildinline(rRoll, addDmType, options.magique);
       });
       var d20roll = rolls.inlinerolls[attRollNumber].results.total;
       var attSkill = rolls.inlinerolls[attSkillNumber].results.total;
-      var defense = rolls.inlinerolls[defRollNumber].results.total;
-      if (options.intercepter) {
-        defense = res[0].inlinerolls[defRollNumber].results.total;
-      }
-      defense += defenseBonus;
-      // Malus de défense global pour les longs combats
-      if (DEF_MALUS_APRES_TOUR_5)
-        defense -= (Math.floor((state.COFantasy.tour - 1) / 5) * 2);
       if (options.triche) {
         switch (options.triche) {
           case "rate":
@@ -1564,7 +1560,7 @@ var COFantasy = COFantasy || function() {
 
       // Cas des armes à poudre
       if (options.poudre) {
-        var poudreNumber = rollNumber(afterEvaluate[4 + options.additionalDmg.length]);
+        var poudreNumber = rollNumber(afterEvaluate[3 + options.additionalDmg.length]);
         var dePoudre = rolls.inlinerolls[poudreNumber].results.total;
         explications.push(
           "Dé de poudre : " + buildinline(rolls.inlinerolls[poudreNumber]));
@@ -2781,6 +2777,7 @@ var COFantasy = COFantasy || function() {
     removeAllAttributes('enflamme', evt);
     removeAllAttributes('protegerUnAllie', evt);
     removeAllAttributes('protegePar', evt);
+    removeAllAttributes('intercepter', evt);
     // Autres attributs, on prend attrs l'ensemble des attributs
     var attrs = findObjs({
       _type: 'attribute'
