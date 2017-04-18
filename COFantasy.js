@@ -1478,6 +1478,26 @@ var COFantasy = COFantasy || function() {
         attackResult =
           "<span style='color: #ff0000'>" + ": <b><i>ÉCHEC&nbsp;CRITIQUE</i></b>" + "'</span> ";
         touche = false;
+        var confirmCrit = randomInteger(20);
+        var critSug = "/w GM Jet de confirmation pour l'échec critique : " +
+          confirmCrit + "/20. Suggestion d'effet : ";
+        switch (confirmCrit) {
+          case 1:
+            critSug += "l'attaquant se blesse ou est paralysé un tour";
+            break;
+          case 2:
+            critSug += "l'attaquant blesse un allié";
+            break;
+          case 3:
+            critSug += "l'arme casse, ou une pièce d'armure se détache, ou -5 DEF un tour (comme surpris)";
+            break;
+          case 4:
+            critSug += "l'attaquant lache son arme ou glisse et tombe";
+            break;
+          default:
+            critSug += "simple échec";
+        }
+        sendChat('COF', critSug);
       } else if (d20roll >= crit) {
         attackResult =
           "<span style='color: #0000ff'>" + ": <b><i>CRITIQUE</i></b>" + "'</span> ";
