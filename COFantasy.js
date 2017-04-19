@@ -385,6 +385,10 @@ var COFantasy = COFantasy || function() {
       error("Le premier argument de !cof-attack n'est pas un token" + msg.content, args[1]);
       return;
     }
+    if (args[1] == args[2]) {//même token pour attaquant et cible
+      sendChar(attackingToken.get('represents'), "s'attaque lui-même ? Probablement une erreur à la sélection de la cible. On annule");
+      return;
+    }
     var targetToken = getObj("graphic", args[2]);
     if (targetToken === undefined) {
       error("le second argument de !cof-attack doit être un token" + msg.content, args[2]);
@@ -611,6 +615,13 @@ var COFantasy = COFantasy || function() {
             error("Le taux de pertes des munitions doit être un nombre entre 0 et 100");
             options.munition.taux = 20;
           }
+          return;
+        case "ligne":
+          if (options.aoe) {
+            error("Deux options pour définir une aoe", args);
+            return;
+          }
+          options.aoe = {type:'ligne'};
           return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
@@ -1006,16 +1017,33 @@ var COFantasy = COFantasy || function() {
         }
       });
     }
+
+    //On trouve l'attaque correspondant au label
     var att = getAttack(attackLabel, attackerTokName, attackingCharId);
     if (att === undefined) return;
-    // Get attack number (does not correspond to the position in sheet !!!)
     var attPrefix = att.attackPrefix;
     var weaponName = att.weaponName;
+    // Portée
+    var portee = getPortee(attackingCharId, attPrefix);
+    if (portee > 0) options.distance = true;
+    //Si on a une aoe, il est temps de trouver les cibles
+    if (options.aoe) {
+      switch (aoe.type) {
+        case 'ligne': 
+          break;
+        default: error("aoe inconnue", options.aoe); return;
+      }
+    }
     if (options.conditionAttaquant !== undefined) {
       if (!testCondition(options.conditionAttaquant, attackingCharId, targetCharId)) {
         sendChar(attackingCharId, "ne peut pas utiliser " + weaponName);
         return;
       }
+    } 
+    var distance = distanceCombat(attackingToken, targetToken, pageId);
+    if (distance > 2 * portee || (options.auto && distance > portee)) {
+      sendChar(attackingCharId, "est hors de portée de " + targetTokName + " pour une attaque utilisant " + weaponName);
+      return;
     }
     var evt = options.evt || {}; //the event to be stored in history
     // Si pas de mana, action impossible, sinon dépense de mana
@@ -1032,28 +1060,14 @@ var COFantasy = COFantasy || function() {
       }];
       initiative(selected, evt);
     }
-    var pacifisme_selected =
-      findObjs({
-        _type: "attribute",
-        _characterid: attackingCharId,
-        name: "pacifisme"
-      });
-    if (pacifisme_selected.length > 0) {
-      pacifisme_selected[0].set("current", 0);
-      sendChat("GM", "/w " + attackerTokName + " " + attackerTokName + " perd son pacifisme");
+    var pacifisme_selected = 
+      tokenAttribute(attackingCharId, 'pacifisme', attackingToken);
+    if (pacifisme_selected.length > 0 && pacifisme_selected[0].get('current') > 0) {
+      pacifisme_selected[0].set('current', 0);
+      sendChat("GM", "/w " + attackerName + " " + attackerTokName + " perd son pacifisme");
     }
     // Get expressions used in rolls
     // Construct attack roll
-    // Portée
-    var portee = getPortee(attackingCharId, attPrefix);
-    if (portee > 0) options.distance = true;
-    var m =
-      malusDistance(attackingToken, attackingCharId, targetToken, portee, pageId, options.ignoreObstacles);
-    if (isNaN(m.malus) || (options.auto && m.distance > portee)) {
-      sendChar(attackingCharId, "est hors de portée de " + targetTokName + " pour une attaque utilisant " + weaponName);
-      return;
-    }
-    var malusDist = m.malus;
     // Armes chargées
     if (options.semonce === undefined && options.tirDeBarrage === undefined) {
       var chargesArme = findObjs({
@@ -1090,7 +1104,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    var explications = m.explications || [];
+    var explications = [];
     // Munitions
     if (options.munition) {
       if (attackingToken.get('bar1_link') === '') {
@@ -1164,7 +1178,9 @@ var COFantasy = COFantasy || function() {
         explications.push("Mains d'énergie => +" + bonusMain + " au jet d'attaque");
       }
     }
-    attBonus -= malusDist;
+    attBonus -= 
+      malusDistance(attackingToken, attackingCharId, targetToken, distance, 
+        portee, pageId, explications, options.ignoreObstacles);
     if (options.bonusAttaque) attBonus += options.bonusAttaque;
     // fortifie, chant des héros, action concertée
     attBonus += bonusDAttaque(attackingToken, attackingCharId, explications, evt);
@@ -1329,7 +1345,7 @@ var COFantasy = COFantasy || function() {
       var tirPrecis = attributeAsInt(attackingCharId, 'tirPrecis', 0);
       if (tirPrecis > 0) {
         var modDex = modCarac(attackingCharId, 'DEXTERITE');
-        if (m.distance <= 5 * modDex) {
+        if (distance <= 5 * modDex) {
           attDMBonus += " + " + tirPrecis;
           maxDmg += tirPrecis;
           explications.push("Tir précis : +" + tirPrecis + " DM");
@@ -2650,27 +2666,14 @@ var COFantasy = COFantasy || function() {
   }
 
 
-  function malusDistance(tok1, charId1, tok2, portee, pageId, ignoreObstacles) {
-    var distance = distanceCombat(tok1, tok2, pageId);
-    if (distance === 0) return {
-      malus: 0,
-      distance: 0
-    };
-    if (distance > 2 * portee) return {
-      malus: "hp",
-      distance: distance
-    };
+  function malusDistance(tok1, charId1, tok2, distance, portee, pageId, explications, ignoreObstacles) {
+    if (distance === 0) return 0;
     var mPortee = (distance <= portee) ? 0 : (Math.ceil(5 * (distance - portee) / portee));
-    var explications = [];
     if (mPortee > 0) {
       explications.push("Distance > " + portee + " m => malus -" + mPortee);
     }
     if (ignoreObstacles || attributeAsBool(charId1, 'joliCoup', false))
-      return {
-        malus: mPortee,
-        explications: explications,
-        distance: distance
-      };
+      return mPortee;
     // Now determine if any token is between tok1 and tok2
     var allToks =
       findObjs({
@@ -2703,11 +2706,7 @@ var COFantasy = COFantasy || function() {
     if (mObstacle > 0) {
       explications.push("Obstacles sur le trajet => malus -" + mObstacle);
     }
-    return {
-      malus: res,
-      explications: explications,
-      distance: distance
-    };
+    return res;
   }
 
   // Returns all attributes in attrs, with name name or starting with name_
@@ -4361,7 +4360,7 @@ var COFantasy = COFantasy || function() {
       var d20roll = rolls.inlinerolls[0].results.total;
       var bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
       var rtext = buildinline(rolls.inlinerolls[0]) + bonusText;
-      if (d20roll == 20 || d20roll + bonus >= seuil) callback(true, rtext);
+      if (d20roll == 20 || d20roll + bonusCarac >= seuil) callback(true, rtext);
       else callback(false, rtext);
     });
   }
@@ -5000,9 +4999,8 @@ var COFantasy = COFantasy || function() {
       iterSelected(selected, function(token, charId) {
           counter--;
           if (options.portee !== undefined) {
-            var m =
-              malusDistance(casterToken, casterCharId, token, options.portee, pageId);
-            if (isNaN(m.malus) || m.distance > options.portee) {
+            var distance = distanceCombat(casterToken, token, pageId);
+            if (distance > options.portee) {
               addLineToFramedDisplay(display, token.get('name') + " est hors de portée de l'effet");
               finalEffect();
               return;
@@ -5371,8 +5369,8 @@ var COFantasy = COFantasy || function() {
         if (isNaN(portee) || portee < 0) {
           error("L'argument portee doit être un entier positif", argPortee);
         } else {
-          var m = malusDistance(token1, charId1, token2, portee, pageId, true);
-          if (isNaN(m.malus) || m.distance > portee) {
+          var distance = distanceCombat(token1, token2, pageId);
+          if (distance > portee) {
             sendChar(charId1, "est trop loin de " + name2 + " pour le soigner");
             return;
           }
