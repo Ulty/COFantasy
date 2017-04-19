@@ -891,6 +891,76 @@ var COFantasy = COFantasy || function() {
     if (callTrue) callTrue(soinsEffectifs);
   }
 
+  function defenseOfToken(token, charId, tokenName, pageId, evt, explications) {
+    var defense = 10;
+    defense += attributeAsInt(charId, 'DEFARMURE', 0) * attributeAsInt(charId, 'DEFARMUREON', 1);
+    defense += attributeAsInt(charId, 'DEFBOUCLIER', 0) * attributeAsInt(charId, 'DEFBOUCLIERON', 1);
+    defense += modCarac(charId, 'DEXTERITE');
+    defense += attributeAsInt(charId, 'DEFDIV', 0);
+    // Malus de défense global pour les longs combats
+    if (DEF_MALUS_APRES_TOUR_5)
+      defense -= (Math.floor((state.COFantasy.tour - 1) / 5) * 2);
+    // Autres modificateurs de défense
+    defense += attributeAsInt(charId, 'defenseTotale', 0, token);
+    defense += attributeAsInt(charId, 'pacifisme', 0, token);
+    if (attributeAsBool(charId, 'peau_d_ecorce', false, token)) {
+      defense += attributeAsInt(charId, 'voieDesVegetaux', 0);
+    }
+    if (getState(token, 'surpris', charId)) defense -= 5;
+    if (getState(token, 'renverse', charId)) defense -= 5;
+    if (getState(token, 'aveugle', charId)) defense -= 5;
+    if (getState(token, 'etourdi', charId) ||
+      attributeAsBool(charId, 'peurEtourdi', false, token))
+      defense -= 5;
+    defense += attributeAsInt(charId, 'bufDEF', 0, token);
+    defense += attributeAsInt(charId, 'actionConcertee', 0, token);
+    if (attributeAsInt(charId, 'DEFARMUREON', 1) === 0) {
+      defense += attributeAsInt(charId, 'vetementsSacres', 0, token);
+      defense += attributeAsInt(charId, 'armureDeVent', 0, token);
+    }
+    var attrsProtegePar = findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+    });
+    attrsProtegePar.forEach(function(attr) {
+      var attrName = attr.get('name');
+      if (attrName.startsWith('protegePar_')) {
+        var nameProtecteur = attr.get('max');
+        if (attr.get('bar1_link') === '') {
+          if (attrName != 'protegePar_' + nameProtecteur + '_' + tokenName) return;
+        } else if (attrName != 'protegePar_' + nameProtecteur) return;
+        var protecteur = tokenOfId(attr.get('current'), nameProtecteur, pageId);
+        if (protecteur === undefined) {
+          removeTokenAttr(token, charId, 'protegePar_' + nameProtecteur, evt);
+          sendChar(charId, "ne peut pas être protégé par " + nameProtecteur + " car aucun token le représentant n'est sur la page");
+          return;
+        }
+        if (!isActive(protecteur.token)) {
+          explications.push(nameProtecteur + " n'est pas en état de protéger " +
+            tokenName);
+          return;
+        }
+        var distTargetProtecteur = distanceCombat(token, protecteur.token, pageId);
+        if (distTargetProtecteur > 0) {
+          explications.push(nameProtecteur + " est trop loin de " +
+            tokenName + " pour le protéger");
+          return;
+        }
+        if (attributeAsInt(protecteur.charId, 'DEFBOUCLIERON', 1) === 0) {
+          explications.push(nameProtecteur +
+            " ne porte pas son bouclier, il ne peut pas proteger " +
+            tokenName);
+          return;
+        }
+        var defBouclierProtecteur = attributeAsInt(protecteur.charId, 'DEFBOUCLIER', 0);
+        defense += defBouclierProtecteur;
+        explications.push(nameProtecteur + " protège " +
+          tokenName + " de son bouclier (+" + defBouclierProtecteur + "DEF)");
+      }
+    });
+    return defense;
+  }
+
   function attack(playerId, attackingToken, targetToken, attackLabel, options) {
     /* Attacker and target infos */
     var attackerTokName = attackingToken.get("name");
@@ -905,6 +975,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var attackerName = attacker.get("name");
+    var pageId = attackingToken.get('pageid');
     var targetTokName = targetToken.get("name");
     var targetCharId = targetToken.get("represents");
     if (targetCharId === "") {
@@ -917,7 +988,6 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var targetName = target.get("name");
-    var pageId = attackingToken.get('pageid');
 
     //Options automatically set by some attributes
     if (attributeAsBool(attackingCharId, 'fauchage', false)) {
@@ -1336,76 +1406,6 @@ var COFantasy = COFantasy || function() {
       value: mainDmgRollExpr
     };
 
-    var defense = 10;
-    defense += attributeAsInt(targetCharId, 'DEFARMURE', 0) * attributeAsInt(targetCharId, 'DEFARMUREON', 1);
-    defense += attributeAsInt(targetCharId, 'DEFBOUCLIER', 0) * attributeAsInt(targetCharId, 'DEFBOUCLIERON', 1);
-    defense += modCarac(targetCharId, 'DEXTERITE');
-    defense += attributeAsInt(targetCharId, 'DEFDIV', 0);
-      // Malus de défense global pour les longs combats
-      if (DEF_MALUS_APRES_TOUR_5)
-        defense -= (Math.floor((state.COFantasy.tour - 1) / 5) * 2);
-    // Autres modificateurs de défense
-    var pacifisme_target = attributeAsInt(targetCharId, 'pacifisme', 0, targetToken);
-    defense += pacifisme_target;
-    if (attributeAsBool(targetCharId, 'peau_d_ecorce', false, targetToken)) {
-      defense += attributeAsInt(targetCharId, 'voieDesVegetaux', 0);
-    }
-    if (getState(targetToken, 'surpris', targetCharId)) defense -= 5;
-    if (getState(targetToken, 'renverse', targetCharId)) defense -= 5;
-    if (getState(targetToken, 'aveugle', targetCharId)) defense -= 5;
-    if (getState(targetToken, 'etourdi', targetCharId) ||
-      attributeAsBool(targetCharId, 'peurEtourdi', false, targetToken))
-      defense -= 5;
-    defense += attributeAsInt(targetCharId, 'bufDEF', 0, targetToken);
-    defense += attributeAsInt(targetCharId, 'actionConcertee', 0, targetToken);
-    if (attributeAsInt(targetCharId, 'DEFARMUREON', 1) === 0) {
-      defense += attributeAsInt(targetCharId, 'vetementsSacres', 0, targetToken);
-      defense += attributeAsInt(targetCharId, 'armureDeVent', 0, targetToken);
-    }
-    var attrsProtegePar = findObjs({
-      _type: 'attribute',
-      _characterid: targetCharId,
-    });
-    attrsProtegePar.forEach(function(attr) {
-      var attrName = attr.get('name');
-      if (attrName.startsWith('protegePar_')) {
-        var nameProtecteur = attr.get('max');
-        if (attr.get('bar1_link') === '') {
-          if (attrName != 'protegePar_' + nameProtecteur + '_' + targetTokName) return;
-        } else if (attrName != 'protegePar_' + nameProtecteur) return;
-        var protecteur = tokenOfId(attr.get('current'), nameProtecteur, pageId);
-        if (protecteur === undefined) {
-          removeTokenAttr(targetToken, targetCharId, 'protegePar_' + nameProtecteur, evt);
-          sendChar(targetCharId, "ne peut pas être protégé par " + nameProtecteur + " car aucun token le représentant n'est sur la page");
-          return;
-        }
-        if (!isActive(protecteur.token)) {
-          explications.push(nameProtecteur + " n'est pas en état de protéger " +
-            targetTokName);
-          return;
-        }
-        var distTargetProtecteur = distanceCombat(targetToken, protecteur.token, pageId);
-        if (distTargetProtecteur > 0) {
-          explications.push(nameProtecteur + " est trop loin de " +
-            targetTokName + " pour le protéger");
-          return;
-        }
-        if (attributeAsInt(protecteur.charId, 'DEFBOUCLIERON', 1) === 0) {
-          explications.push(nameProtecteur +
-            " ne porte pas son bouclier, il ne peut pas proteger " +
-            targetTokName);
-          return;
-        }
-        var defBouclierProtecteur = attributeAsInt(protecteur.charId, 'DEFBOUCLIER', 0);
-        defense += defBouclierProtecteur;
-        explications.push(nameProtecteur + " protège " +
-          targetTokName + " de son bouclier (+" + defBouclierProtecteur + "DEF)");
-      }
-    });
-    var interchange =
-      interchangeable(attackingToken, targetToken, targetCharId, pageId);
-    if (interchange.result) defense += 5;
-
     // toEvaluate inlines
     // 0: attack roll
     // 1: attack skill expression
@@ -1434,6 +1434,13 @@ var COFantasy = COFantasy || function() {
       });
       var d20roll = rolls.inlinerolls[attRollNumber].results.total;
       var attSkill = rolls.inlinerolls[attSkillNumber].results.total;
+      var defense =
+        defenseOfToken(targetToken, targetCharId, targetTokName, pageId, evt,
+          explications);
+      var interchange =
+        interchangeable(attackingToken, targetToken, targetCharId, pageId);
+      if (interchange.result) defense += 5;
+
       if (options.triche) {
         switch (options.triche) {
           case "rate":
@@ -2778,6 +2785,7 @@ var COFantasy = COFantasy || function() {
     removeAllAttributes('protegerUnAllie', evt);
     removeAllAttributes('protegePar', evt);
     removeAllAttributes('intercepter', evt);
+    removeAllAttributes('defenseTotale', evt);
     // Autres attributs, on prend attrs l'ensemble des attributs
     var attrs = findObjs({
       _type: 'attribute'
@@ -3731,6 +3739,18 @@ var COFantasy = COFantasy || function() {
         token.set('status_flying-flag', true);
         state.COFantasy.activeTokenId = tokenId;
         state.COFantasy.activeTokenName = token.get('name');
+        //On enlève aussi les états qui ne durent qu'un tour
+        var charId = token.get('represents');
+        var defenseTotale = tokenAttribute(charId, 'defenseTotale', token);
+        if (defenseTotale.length > 0) {
+          defenseTotale = defenseTotale[0];
+          var tourDefTotale = defenseTotale.get('max');
+          if (tourDefTotale < state.COFantasy.tour) {
+            evt.deletedAttributes = evt.deletedAttributes || [];
+            evt.deletedAttributes.push(defenseTotale);
+            defenseTotale.remove();
+          }
+        }
       } else {
         error("Impossible de trouver le token dont c'est le tour", tokenId);
         state.COFantasy.activeTokenId = undefined;
@@ -5850,6 +5870,34 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  function actionDefensive(msg) {
+    var cmd = msg.content.split(' ');
+    var def = 2; //pour une défense simple
+    var defMsg = "préfère se défendre pendant ce tour";
+    if (cmd.length > 1) {
+      switch (cmd[1]) {
+        case 'totale':
+          def = 4;
+          defMsg = "se consacre entièrement à sa défense pendant ce tour";
+          break;
+        case 'simple':
+          def = 2;
+          break;
+        default:
+          error("Argument de !cof-action-defensive non reconnu", cmd);
+      }
+    }
+    var evt = {
+      type: "action défensive"
+    };
+    initiative(msg.selected, evt);
+    iterSelected(msg.selected, function(token, charId) {
+      setTokenAttr(token, charId, 'defenseTotale', def, evt, defMsg, state.COFantasy.tour);
+    });
+    addEvent(evt);
+  }
+
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -5976,6 +6024,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-proteger-un-allie":
         protegerUnAllie(msg);
+        return;
+      case "!cof-action-defensive":
+        actionDefensive(msg);
         return;
       default:
         return;
