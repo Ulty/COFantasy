@@ -71,7 +71,7 @@ p  {margin-left: inherit}
     <p>
     Il est possible d'attendre avant d'agir en réduisant temporairement son initiative, en utilisant <tt>!cof-attendre ?nouvelle_initiative</tt>.
 
-    <h4>Attaquer une cible : 
+    <h4>Attaquer une (ou plusieurs) cible : 
       <tt>!cof-attack @{selected|token_id} @{target|token_id}</tt> <i>n</i></h4>
     <p>
     où <i>n</i> est la première partie (avant le premier blanc) du nom de l'attaque sur la fiche.
@@ -142,6 +142,7 @@ p  {margin-left: inherit}
       <li><tt>--tirDeBarrage</tt> : ignore la charge, multiplie les DM par 2 et message pour undo si la cible bouge.</li>
       <li><tt>--enflamme</tt> : enflamme la cible, lui infligeant 1d6 DM par tour. Les flammes s'éteindent sur un 1 ou 2. Si l'option <tt>--puissant</tt> est donnée en conjonction, les DM augmentent de 1.
       <li><tt>--rate</tt>, <tt>--touche</tt>, <tt>--critique</tt>, <tt>--echecCritique</tt> : options pour tricher : le résultat des dés donne toujours le résultat voulu.</li>
+      <li><tt>--ligne</tt> : l'attaque porte sur toutes les cibles à portée, entre l'attaquant et le token ciblé. Si le token ciblé est plus proche que la portée de l'attaque, les tokens derrière le token ciblé sont aussi visés. Pour permettre de viser un point quelconque, on peut utiliser un personnage dédié avec un maximum de 0 pv. À chaque fois qu'un token représentant ce personnage est utilisé comme cible de <tt>--ligne</tt>, le token est enlevé de la carte.
     </ul>
 
     <h4>Réduction des dégâts</h4>
@@ -454,7 +455,7 @@ p  {margin-left: inherit}
     Pour l'attaque, définir une attaque magique à 1d6+CHA,
     et l'appeler avec les options <tt>--si etat sous_tension --electrique --ignoreObstacles --fx beam-holy</tt></li>
       <li>Télékinésie : Pas de support autre que <tt>!cof-lancer-sort @{selected|token_id} 1 télékinésie</tt></li>
-      <li>Foudre : <tt>!cof-aoe [[4d6+@{</tt><i>nom</i><tt>|CHA}]] --psave DEX [[12+@{</tt><i>nom</i><tt>|DEX]]</tt>. L'argument <i>nom</i> doit être le nom du personnage qui lance le sort, et le MJ doit se charger de sélectionner les cibles.</li>
+      <li>Foudre : Faire une attaque de foudre de portée 10 m (attaque magique, dégâts 4d6 + CHA), et faire les attaques avec les options <tt>--psave DEX [[12+@{selected|DEX}]] --mana 2 --electrique --ligne --fx beam-holy ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt>. 
     </ol>
     <h4>Voie de la divination</h4>
     <ol>
