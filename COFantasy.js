@@ -1506,6 +1506,7 @@ var COFantasy = COFantasy || function() {
           attackingToken, attackingCharId, 'traquenard', 0, evt);
       }
       var champion = false; //Vrai si champion et jet >= 15 (on ne détermine la valeur qu'après la triche...)
+      var critSug; //Suggestion en cas d'écher critique
       //On enlève les cibles qui ne sont pas touchées
       //(et on ajuste le jet pour la triche)
       cibles = cibles.filter(function(target) {
@@ -1604,7 +1605,7 @@ var COFantasy = COFantasy || function() {
               "<span style='color: #ff0000'>" + ": <b><i>ÉCHEC&nbsp;CRITIQUE</i></b>" + "'</span> ";
             touche = false;
             var confirmCrit = randomInteger(20);
-            var critSug = "/w GM Jet de confirmation pour l'échec critique : " +
+            critSug = "/w GM Jet de confirmation pour l'échec critique : " +
               confirmCrit + "/20. Suggestion d'effet : ";
             switch (confirmCrit) {
               case 1:
@@ -1622,7 +1623,6 @@ var COFantasy = COFantasy || function() {
               default:
                 critSug += "simple échec";
             }
-            sendChat('COF', critSug);
           } else if (paralyse || d20roll >= crit) {
             attackResult =
               "<span style='color: #0000ff'>" + ": <b><i>CRITIQUE</i></b>" + "'</span> ";
@@ -1688,8 +1688,10 @@ var COFantasy = COFantasy || function() {
         }
         return true;
       }); //fin de détermination de toucher des cibles
-      if (cibles.length === 0)
+      if (cibles.length === 0) {
         finaliseAttackDisplay(display, explications, evt);
+            if (critSug) sendChat('COF', critSug);
+      }
 
       //Les dégâts
       //Dégâts insrits sur la ligne de l'arme

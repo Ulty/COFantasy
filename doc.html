@@ -34,7 +34,7 @@ p  {margin-left: inherit}
     Comme tous les scripts, ces scripts sont utilisables tels quels dans le chat, mais ils sont pensés pour être utilisés par des macros qui permettent un autre niveau d'automatisation parfois difficile d'accès au sein des scripts.
     La grosse majorité des capacités et attaques des personnages devraient être utilisées au sein d'abilities de personnages, accessibles comme "Token action". Si ces abilities utilisent des macros, ne pas oublier de rendre ces macros accessibles aux joueurs.
 
-    <h3>1.3 Méthode de sélection de groupes</h3>
+    <h3 id="selection">1.3 Méthode de sélection de groupes</h3>
     <p>
     Comme les joueurs ne peuvent pas sélectionner un nombre arbitraire d'ennemis, 5 méthodes sont disponibles&nbsp;:
     <ul>
@@ -179,6 +179,8 @@ p  {margin-left: inherit}
     <i>dm</i> peut être un inline roll.
     <p>
     argument optionel: <tt>--psave</tt> <i>carac seuil</i> : jet de <i>carac</i>, si supérieur au <i>seuil</i>, les dégâts sont divisés par 2.
+    <p>
+    Remarque : à terme, cela sera probablement remplacé par <tt>!cof-attack</tt> qui gère plus d'options. Voir déjà l'option <tt>--ligne</tt> de <tt>!cof-attack</tt>.
 
     <h4>Sortir du combat :
       <tt>!cof-hors-combat</tt></h4>
@@ -732,30 +734,42 @@ p  {margin-left: inherit}
 
     <h3>Voies de créatures</h3>
     <h4>Voie du champion</h4>
+    <p style="margin-top:0px; margin-bottom:0px">
     Utiliser un attribut <tt>champion</tt> avec comme valeur le rang dans la voie.
     <ol>
       <li>Imparable: utiliser l'option <tt>--imparable</tt> pour l'action limitée. Pour l'effet permanent, ne pas oublier l'attribut <tt>champion</tt></li>
     </ol>
-    <h4>Chef d'armée</h4>
+    <h4>Voie du chef d'armée</h4>
     <ol>
-      <li>Sergent: ne pas oublier l'action de plus par tour
-        utiliser un attribut <tt>sergent</tt> = true (pour l'attaque ignorée par combat)</li>
+      <li>Sergent: ne pas oublier l'action de plus par tour.
+        Utiliser un attribut <tt>sergent</tt> = true (pour l'attaque ignorée par combat)</li>
     </ol>
-    <h4>Colosse</h4>
+    <h4>Voie du cogneur</h4> 
+    <h4>Voie du colosse</h4>
     <ol>
       <li>Fauchage: ajouter la RD, et ajouter un attribut <tt>fauchage</tt>, qui va faire automatiquement le renversement si le dé d'attaque est entre 15 et 20.</li>
     </ol>
-    <h4>Meute</h4>
+    <h4>Voie des créatures élémentaires</h4>
+    <h4>Voie des créatures magique</h4>
+    <h4>Voie des créatures volantes</h4>
+    <h4>Voie de la magie de combat</h4>
+    <ol>
+      <li>Attaque magique : simplement une attaque. Utiliser <tt>!cof-aoe</tt> pour la version de zone.</li>
+      <li>Armure magique : utiliser <tt>!cof-armure-magique</tt></li>
+    </ol>
+    <h4>Voie de la magie de guérison</h4>
+    <h4>Voie de la magie maléfique</h4>
+    <h4>Voie de la meute</h4>
     <ol>
       <li>Intergeanchables : Utiliser attribut <tt>interchangeable</tt>, avec comme valeur 
         le nombre d'opposants à partir duquel les cibles peuvent être interverties</li>
     </ol>
-    <h4>Prédateur</h4> TODO
-    <h4>Magie de combat</h4>
+    <h4>Voie du PNJ récurrent</h4>
+    <h4>Voie du Prédateur</h4> 
     <ol>
-      <li> simplement une attaque. utiliser <tt>!cof-aoe</tt> pour la version de zone.</li>
-      <li>2. Armure magique : utiliser <tt>!cof-armure-magique</tt></li>
+      <li>Embuscade : Sélectionner les ennemis du prédateurs, et utiliser <tt>!cof-surprise</tt>. Par exemple, contre une équipe de joueurs dans le handout <tt>Equipe joueurs</tt> (cf la <a href="#selection">méthode de séclection de groupes</a>), on pourra utiliser l'ability <tt>!cof-surprise [[15 + @{selected|DEX}]] --equipe joueurs</tt>. Pour les bonus en discrétion et init, reporter sur la fiche, pour l'attaque en embuscade sur une cible surprise, rajouter à une attaque les options <tt>--de6Plus 1 --etatSi renverse moins FOR</tt>.</li>
     </ol>
+    <h4>Voie du tueur</h4>
 
 
     <h3>Autres capacités:</h3>
