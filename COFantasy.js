@@ -385,10 +385,6 @@ var COFantasy = COFantasy || function() {
       error("Le premier argument de !cof-attack n'est pas un token" + msg.content, args[1]);
       return;
     }
-    if (args[1] == args[2]) { //même token pour attaquant et cible
-      sendChar(attackingToken.get('represents'), "s'attaque lui-même ? Probablement une erreur à la sélection de la cible. On annule");
-      return;
-    }
     var targetToken = getObj("graphic", args[2]);
     if (targetToken === undefined) {
       error("le second argument de !cof-attack doit être un token" + msg.content, args[2]);
@@ -624,6 +620,24 @@ var COFantasy = COFantasy || function() {
           options.aoe = {
             type: 'ligne'
           };
+          return;
+        case "disque":
+          if (options.aoe) {
+            error("Deux options pour définir une aoe", args);
+            return;
+          }
+          if (cmd.length < 2) {
+            error("Il manque le rayon du disque", cmd);
+            return;
+          }
+          options.aoe = {
+            type: 'disque',
+            rayon: parseInt(cmd[1])
+          };
+          if (isNaN(options.aoe.rayon) || options.aoe.disque < 0) {
+            error("le rayon du disque n'est pas un nombre positif", cmd);
+            options.aoe = undefined;
+          }
           return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
@@ -1134,11 +1148,11 @@ var COFantasy = COFantasy || function() {
     } else {
       nomCiblePrincipale = targetToken.get('name');
       if (options.aoe) {
+        var distanceTarget = distanceCombat(attackingToken, targetToken, pageId);
         switch (options.aoe.type) {
           case 'ligne':
             var pt1 = tokenCenter(attackingToken);
             var pt2 = tokenCenter(targetToken);
-            var distanceTarget = distanceCombat(attackingToken, targetToken, pageId);
             if (distanceTarget < portee) { //la ligne va plus loin que la cible
               var scale = portee * 1.0 / distanceTarget;
               pt2 = [
@@ -1148,7 +1162,7 @@ var COFantasy = COFantasy || function() {
             }
             if (targetToken.get('bar1_max') == 0) { // jshint ignore:line
               //C'est juste un token utilisé pour définir la ligne
-              if (_.has(options, "fx")) {
+              if (options.fx) {
                 var p1e = {
                   x: attackingToken.get('left'),
                   y: attackingToken.get('top'),
@@ -1188,11 +1202,51 @@ var COFantasy = COFantasy || function() {
               });
             });
             break;
+          case 'disque':
+            if (distanceTarget > portee) {
+              sendChar(attackingCharId, "Le centre du disque visé est trop loin pour " + weaponName + " (distance " + distanceTarget + ", portée " + portee + ")");
+              return;
+            }
+            var allToksDisque =
+              findObjs({
+                _type: "graphic",
+                _pageid: pageId,
+                _subtype: "token",
+                layer: "objects"
+              });
+            allToksDisque.forEach(function(obj) {
+              if (portee === 0 && obj.id == attackingToken.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
+              if (getState(obj, 'mort')) return; //pas de dégâts aux morts
+              if (obj.get('bar1_max') == 0) return; // jshint ignore:line
+              var objCharId = obj.get('represents');
+              if (objCharId === '') return;
+              var objChar = getObj('character', objCharId);
+              if (objChar === undefined) return;
+              var distanceCentre = distanceCombat(targetToken, obj, pageId);
+              if (distanceCentre > options.aoe.rayon) return;
+              cibles.push({
+                token: obj,
+                charId: objCharId,
+                name: objChar.get('name'),
+                tokName: obj.get('name')
+              });
+            });
+            if (targetToken.get('bar1_max') == 0) { // jshint ignore:line
+              //C'est juste un token utilisé pour définir le disque
+              targetToken.remove(); //On l'enlève, normalement plus besoin
+            }
+            // La nouvelle portée (pour ne rien éliminer à l'étape suivante
+            portee += options.aoe.rayon;
+            break;
           default:
             error("aoe inconnue", options.aoe);
             return;
         }
       } else {
+        if (attackingToken.id == targetToken.id) { //même token pour attaquant et cible
+          sendChar(attackingCharId, "s'attaque lui-même ? Probablement une erreur à la sélection de la cible. On annule");
+          return;
+        }
         var targetCharId = targetToken.get("represents");
         if (targetCharId === "") {
           error("Le token ciblé (" + nomCiblePrincipale + ") doit représenter un personnage ", targetToken);
@@ -1690,7 +1744,7 @@ var COFantasy = COFantasy || function() {
       }); //fin de détermination de toucher des cibles
       if (cibles.length === 0) {
         finaliseAttackDisplay(display, explications, evt);
-            if (critSug) sendChat('COF', critSug);
+        if (critSug) sendChat('COF', critSug);
       }
 
       //Les dégâts
@@ -1783,7 +1837,11 @@ var COFantasy = COFantasy || function() {
         ciblesCount--;
         if (ciblesCount === 0) {
           cibles.forEach(function(target) {
-            addLineToFramedDisplay(display, target.attackMessage);
+            if (target.attackMessage) {
+              addLineToFramedDisplay(display, target.attackMessage);
+            } else {//par exemple si attaque automatique
+              addLineToFramedDisplay(display, "<b>"+target.tokName+"</b> :");
+            }
             if (target.dmgMessage) addLineToFramedDisplay(display, target.dmgMessage);
             target.messages.forEach(function(expl) {
               addLineToFramedDisplay(display, expl);

@@ -142,7 +142,8 @@ p  {margin-left: inherit}
       <li><tt>--tirDeBarrage</tt> : ignore la charge, multiplie les DM par 2 et message pour undo si la cible bouge.</li>
       <li><tt>--enflamme</tt> : enflamme la cible, lui infligeant 1d6 DM par tour. Les flammes s'éteindent sur un 1 ou 2. Si l'option <tt>--puissant</tt> est donnée en conjonction, les DM augmentent de 1.
       <li><tt>--rate</tt>, <tt>--touche</tt>, <tt>--critique</tt>, <tt>--echecCritique</tt> : options pour tricher : le résultat des dés donne toujours le résultat voulu.</li>
-      <li><tt>--ligne</tt> : l'attaque porte sur toutes les cibles à portée, entre l'attaquant et le token ciblé. Si le token ciblé est plus proche que la portée de l'attaque, les tokens derrière le token ciblé sont aussi visés. Pour permettre de viser un point quelconque, on peut utiliser un personnage dédié avec un maximum de 0 pv. À chaque fois qu'un token représentant ce personnage est utilisé comme cible de <tt>--ligne</tt>, le token est enlevé de la carte.
+      <li><tt>--ligne</tt> : l'attaque porte sur toutes les cibles à portée, entre l'attaquant et le token ciblé. Si le token ciblé est plus proche que la portée de l'attaque, les tokens derrière le token ciblé sont aussi visés. Pour permettre de viser un point quelconque, on peut utiliser un personnage dédié avec un maximum de 0 pv. À chaque fois qu'un token représentant ce personnage est utilisé comme cible de <tt>--ligne</tt>, le token est enlevé de la carte.</li>
+      <li><tt>--disque</tt> <i>r</i> : l'attaque porte sur toutes les cibles dans le disque de centre le token ciblé et de rayon <i>r</i>. Comme pour <tt>--ligne</tt>, on peut utilisant un token cible qui sera supprimé après l'attaque.</li>
     </ul>
 
     <h4>Réduction des dégâts</h4>
@@ -180,7 +181,7 @@ p  {margin-left: inherit}
     <p>
     argument optionel: <tt>--psave</tt> <i>carac seuil</i> : jet de <i>carac</i>, si supérieur au <i>seuil</i>, les dégâts sont divisés par 2.
     <p>
-    Remarque : à terme, cela sera probablement remplacé par <tt>!cof-attack</tt> qui gère plus d'options. Voir déjà l'option <tt>--ligne</tt> de <tt>!cof-attack</tt>.
+    Remarque : si la forme de l'aoe le permet, mieux vaut utiliser <tt>!cof-attack</tt> qui gère plus d'options. Voir déjà les options <tt>--ligne</tt> et <tt>--disque</tt> de <tt>!cof-attack</tt>.
 
     <h4>Sortir du combat :
       <tt>!cof-hors-combat</tt></h4>
@@ -754,7 +755,7 @@ p  {margin-left: inherit}
     <h4>Voie des créatures volantes</h4>
     <h4>Voie de la magie de combat</h4>
     <ol>
-      <li>Attaque magique : simplement une attaque. Utiliser <tt>!cof-aoe</tt> pour la version de zone.</li>
+      <li>Attaque magique : simplement une attaque. Pour la version de zone, utiliser les options <tt>--disque 10 --auto --psave DEX 10</tt>.</li>
       <li>Armure magique : utiliser <tt>!cof-armure-magique</tt></li>
     </ol>
     <h4>Voie de la magie de guérison</h4>
