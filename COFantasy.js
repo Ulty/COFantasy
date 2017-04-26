@@ -114,9 +114,9 @@ var COFantasy = COFantasy || function() {
     token.set(cof_states[etat], value);
     if (etat == 'aveugle') {
       // We also change vision of the token
-      aff.prev.light_angle = token.get('light_angle');
-      if (value) token.set('light_angle', 0);
-      else token.set('light_angle', 360);
+      aff.prev.light_losangle = token.get('light_losangle');
+      if (value) token.set('light_losangle', 0);
+      else token.set('light_losangle', 360);
     }
     if (token.get('bar1_link') !== "") {
       if (charId === '') {
@@ -2018,6 +2018,9 @@ var COFantasy = COFantasy || function() {
                 setTokenAttr(
                   target.token, target.charId, ef.effet, ef.duree, evt,
                   undefined, getInit());
+                if (ef.effet == 'aveugleTemp') {
+                  setState(target.token, 'aveugle', true, evt, target.charId);
+                }
               });
             }
             // Tout ce qui se passe après les saves (autres que saves de diminution des dmg
@@ -2143,6 +2146,9 @@ var COFantasy = COFantasy || function() {
                         setTokenAttr(
                           target.token, target.charId, ef.effet, ef.duree, evt,
                           undefined, getInit());
+                        if (ef.effet == 'aveugleTemp') {
+                          setState(target.token, 'aveugle', true, evt, target.charId);
+                        }
                       }
                       saves--;
                       savesEffets--;
@@ -3135,12 +3141,12 @@ var COFantasy = COFantasy || function() {
       ild.remove();
     });
     // fin des effets temporaires (durée en tours)
-    attrs = attrs.filter(function(obj) {
+    attrs.forEach(function(obj) {
       var attrName = obj.get('name');
+      var charId = obj.get('characterid');
       if (estEffetTemp(attrName)) {
         var effet = effetOfAttribute(obj);
         if (effet == 'agrandissement') {
-          var charId = obj.get('characterid');
           evt.affectes = evt.affectes || [];
           getObj('character', charId).get('defaulttoken', function(normalToken) {
             normalToken = JSON.parse(normalToken);
@@ -3166,14 +3172,22 @@ var COFantasy = COFantasy || function() {
               }
             );
           });
+        } else if (effet == 'aveugleTemp') {
+          iterTokensOfEffet(charId, effet, attrName, function(token) {
+            setState(token, 'aveugle', false, evt, charId);
+          }, function(token) {
+            return true;
+          });
+        } else if (effet == 'peur' || effet == 'peurEtourdi') {
+          iterTokensOfEffet(charId, effet, attrName, function(token) {
+            setState(token, 'peur', false, evt, charId);
+          }, function(token) {
+            return true;
+          });
         }
-        return true;
+      evt.deletedAttributes.push(obj);
+      obj.remove();
       }
-      return false;
-    });
-    attrs.forEach(function(attr) {
-      evt.deletedAttributes.push(attr);
-      attr.remove();
     });
     addEvent(evt);
   }
@@ -6361,6 +6375,11 @@ var COFantasy = COFantasy || function() {
       actif: "est paralysé par la peur",
       fin: "retrouve du courage et peut à nouveau agir"
     },
+    aveugleTemp: {
+      activation: "n'y voit plus rien !",
+      actif: "", //Déjà affiché avec l'état aveugle
+      fin: "retrouve la vue"
+    },
     epeeDansante: {
       activation: "fait apparaître une lame d'énergie lumineuse",
       actif: "contrôle une lame d'énergie lumineuse",
@@ -6534,30 +6553,17 @@ var COFantasy = COFantasy || function() {
                 }
               );
             });
-          } else if (attrName == 'peur' || attrName == 'peurEtourdi') { //trouver les tokens
-            var tokens =
-              findObjs({
-                _type: 'graphic',
-                _subtype: 'token',
-                represents: charId
-              });
-            tokens.forEach(function(tok) {
-              if (tok.get('bar1_link') === '' || !tok.get(cof_states.apeure)) return;
-              setState(tok, 'apeure', false, evt, charId);
+          } else if (effet == 'aveugleTemp') {
+            iterTokensOfEffet(charId, effet, attrName, function(token) {
+              setState(token, 'aveugle', false, evt, charId);
+            }, function(token) {
+              return true;
             });
-          } else if (attrName.startsWith('peur_') ||
-            attrName.startsWith('peurEtourdi_')) {
-            var tokenName = attrName.substring(attrName.indexOf('_') + 1);
-            var tNames =
-              findObjs({
-                _type: 'graphic',
-                _subtype: 'token',
-                represents: charId,
-                name: tokenName,
-                bar1_link: ''
-              });
-            tNames.forEach(function(tok) {
-              setState(tok, 'apeure', false, evt, charId);
+          } else if (effet == 'peur' || effet == 'peurEtourdi') {
+            iterTokensOfEffet(charId, effet, attrName, function(token) {
+              setState(token, 'peur', false, evt, charId);
+            }, function(token) {
+              return true;
             });
           }
           evt.deletedAttributes.push(attr);

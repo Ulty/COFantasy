@@ -617,7 +617,28 @@ p  {margin-left: inherit}
     </ol>
 
     <h3>Nécromancien</h3>
-    TODO
+    <h4>Voie du démon</h4>
+    <ol>
+      <li>Malédiction : TODO</li>
+    </ol>
+    <h4>Voie de la mort</h4>
+    <ol>
+      <li>Siphon des âmes : pour l'instant, à chaque mort, utiliser <tt>!cof-soin @{selected|token_id} @{selected|token_id} [[1d6]]</tt> TODO : automatiser</li>
+    </ol>
+    <h4>Voie de l'outre-tombe</h4>
+    <ol>
+      <li>Peur : Faire une attaque <tt>Peur</tt> utilisant le score d'attaque magique, de portée 20 m, mais ne faisant aucun dégât (0 dé, pas de bonus de caractéristique). Pour l'attaque, ajouter les arguments --peur [[10+@{selected|INT}]] [[1d4+</tt><i>r</i><tt>]]</tt> où <i>r</i> est le rang dans la voie. Pour l'instant n'utilise que le score de SAG pour résister. TODO : ajouter la possibilité d'utiliser la FOR.</li>
+    </ol>
+    <h4>Voie du sang</h4>
+    <ol>
+      <li> Saignements : TODO</li>
+    </ol>
+    <h4>Voie de la sombre magie</h4>
+    <p style="margin-top:0px; margin-bottom:0px">
+    Ajouter sur la fiche une compétence <tt>Occultisme</tt> avec en bonus 2 fois le rang dans cette voie.
+    <ol>
+      <li>Ténèbres : faire une attaque Ténèbres, sans dégâts et de portée 20 m. Pour l'attaque, utiliser les arguments <tt>--disque 10 --auto --effet aveugleTemp [[5+@{selected|INT}]]</tt>. Au MJ ensuite d'enlever l'état aveuglé quand les cibles sortent de la zone.</li>
+    </ol>
 
     <h3>Prêtre</h3>
     <h4>Voie de la foi</h4>
