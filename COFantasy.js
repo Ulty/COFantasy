@@ -264,10 +264,12 @@ var COFantasy = COFantasy || function() {
     if (_.has(evt, 'deletedAttributes')) {
       evt.deletedAttributes.forEach(function(attr) {
         var oldId = attr.id;
+        var nameDel = attr.get('name');
+        log("Restoring attribute " + nameDel);
         var newAttr =
           createObj('attribute', {
             characterid: attr.get('characterid'),
-            name: attr.get('name'),
+            name: nameDel,
             current: attr.get('current'),
             max: attr.get('max')
           });
@@ -816,6 +818,11 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(charId, 'benediction', false, token)) {
       attBonus += 1;
       explications.push("La bénédiction donne +1 au jet d'attaque");
+    }
+    if (attributeAsBool(charId, 'strangulation', false, token)) {
+      var malusStrangulation = 1 + attributeAsInt(charId, 'dureeStrangulation', 0, token);
+      attBonus -= malusStrangulation;
+      explications.push("L'attaquant est étranglé -> -" + malusStrangulation + " au jet d'attaque");
     }
     return attBonus;
   }
@@ -2988,11 +2995,8 @@ var COFantasy = COFantasy || function() {
     if (attrs.length === 0) return;
     if (evt.deletedAttributes === undefined) evt.deletedAttributes = [];
     attrs.forEach(function(attr) {
-      var v = attr.get('current');
-      if (v) {
         evt.deletedAttributes.push(attr);
         attr.remove();
-      }
     });
   }
 
@@ -3038,6 +3042,15 @@ var COFantasy = COFantasy || function() {
     state.COFantasy.combat = false;
     setActiveToken(undefined, evt);
     Campaign().set('initiativepage', false);
+    //Il semblerait qu'un bug crée des attributs sans nom
+    //Au cas où, on les supprime à cette occasion
+    findObjs({
+        _type: 'attribute',
+        name: 'Untitled'
+      })
+      .forEach(function(attr) {
+        attr.remove();
+      });
     // Fin des effets qui durent pour le combat
     removeAllAttributes('armureMagique', evt);
     removeAllAttributes('soinsDeGroupe', evt);
@@ -3047,6 +3060,7 @@ var COFantasy = COFantasy || function() {
     removeAllAttributes('protegePar', evt);
     removeAllAttributes('intercepter', evt);
     removeAllAttributes('defenseTotale', evt);
+    removeAllAttributes('dureeStrangulation', evt);
     // Autres attributs, on prend attrs l'ensemble des attributs
     var attrs = findObjs({
       _type: 'attribute'
@@ -3185,8 +3199,8 @@ var COFantasy = COFantasy || function() {
             return true;
           });
         }
-      evt.deletedAttributes.push(obj);
-      obj.remove();
+        evt.deletedAttributes.push(obj);
+        obj.remove();
       }
     });
     addEvent(evt);
@@ -4603,6 +4617,10 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(charId, 'benediction', false, token)) {
       bonus += 1;
+    }
+    if (attributeAsBool(charId, 'strangulation', false, token)) {
+      var malusStrangulation = 1 + attributeAsInt(charId, 'dureeStrangulation', 0, token);
+      bonus -= malusStrangulation;
     }
     if (carac == 'DEX') {
       if (attributeAsInt(charId, 'DEFARMUREON', 1))
@@ -6188,6 +6206,69 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  function strangulation(msg) {
+    var args = msg.content.split(' ');
+    if (args.length < 3) {
+      error("Pas assez d'arguments pour !cof-strangulation: " + msg.content, args);
+      return;
+    }
+    var token1 = getObj('graphic', args[1]); // Le nécromancien
+    if (token1 === undefined) {
+      error("Le premier argument n'est pas un token: " + msg.content, args[1]);
+      return;
+    }
+    var charId1 = token1.get('represents');
+    if (charId1 === "") {
+      error("Le token sélectionné ne correspond pas à un personnage", args);
+      return;
+    }
+    var pageId = token1.get('pageid');
+    var target = tokenOfId(args[2], args[2], pageId);
+    if (target === undefined) {
+      error("Le deuxième argument n'est pas un token valide: " + msg.content, args[2]);
+      return;
+    }
+    var token2 = target.token;
+    var charId2 = target.charId;
+    var name2 = token2.get('name');
+    if (!attributeAsBool(charId2, 'strangulation', false, token2)) {
+      sendChar(charId1, "ne peut pas maintenir la strangulation. Il faut (re)lancer le cort");
+      return;
+    }
+    var evt = {
+      type: "Strangulation"
+    };
+    var dureeStrang = tokenAttribute(charId2, 'dureeStrangulation', token2);
+    var nouvelleDuree = 1;
+    if (dureeStrang.length > 0) {
+      nouvelleDuree = parseInt(dureeStrang[0].get('current'));
+      if (isNaN(nouvelleDuree)) {
+        log("Durée de strangulation n'est pas un nombre");
+        log(dureeStrang);
+        nouvelleDuree = 1;
+      } else nouvelleDuree++;
+    }
+    setTokenAttr(token2, charId2, 'dureeStrangulation', nouvelleDuree, evt, undefined, true);
+    var deStrang = 6;
+    if (msg.content.includes(' --puissant')) deStrang = 8;
+    var dmgExpr = "[[1d" + deStrang + " ";
+    var modInt = modCarac(charId1, 'INTELLIGENCE');
+    if (modInt > 0) dmgExpr += "+" + modInt;
+    else if (modInt < 0) dmgExpr += modInt;
+    dmgExpr += "]]";
+    sendChat('', dmgExpr, function(res) {
+      var dmg = {
+        type: 'magique',
+        total: res[0].inlinerolls[0].results.total,
+        display: buildinline(res[0].inlinerolls[0], 'magique'),
+      };
+      dealDamage(token2, charId2, dmg, [], evt, 1, {}, undefined,
+        function(dmgDisplay, saveResult, dmg) {
+          sendChar(charId1, "maintient sa strangulation sur " + name2 + ". Dommages : " + dmgDisplay);
+          addEvent(evt);
+        });
+    });
+  }
 
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
@@ -6319,6 +6400,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-action-defensive":
         actionDefensive(msg);
         return;
+      case "!cof-strangulation":
+        strangulation(msg);
+        return;
       default:
         return;
     }
@@ -6409,6 +6493,11 @@ var COFantasy = COFantasy || function() {
       activation: "devient translucide",
       actif: "est intangible",
       fin: "redevient solide"
+    },
+    strangulation: {
+      activation: "commence à étouffer",
+      actif: "est étranglé",
+      fin: "respire enfin"
     }
   };
 
@@ -6502,7 +6591,7 @@ var COFantasy = COFantasy || function() {
         var effet = effetOfAttribute(attr);
         var attrName = attr.get('name');
         var v = attr.get('current');
-        if (v > 0) {
+        if (v > 0) { // Effet encore actif
           attr.set('current', v - 1);
           evt.attributes.push({
             attribute: attr,
@@ -6523,8 +6612,48 @@ var COFantasy = COFantasy || function() {
               sendChar(charId, " pourrit. " + onGenre(charId, 'Il', 'Elle') +
                 " subit " + putref + " DM");
             });
+          } else if (effet == 'strangulation') {
+            var nameDureeStrang = 'dureeStrangulation';
+            if (effet != attrName) { //concerne un token non lié
+              nameDureeStrang += attrName.substring(attrName.indexOf('_'));
+            }
+            var dureeStrang = findObjs({
+              _type: 'attribute',
+              _characterid: charId,
+              name: nameDureeStrang
+            });
+            if (dureeStrang.length === 0) {
+              var attrDuree = createObj('attribute', {
+                characterid: charId,
+                name: nameDureeStrang,
+                current: 0,
+                max: false
+              });
+              evt.attributes.push({
+                attribute: attrDuree,
+                current: null
+              });
+            } else {
+              var strangUpdate = dureeStrang[0].get('max');
+              if (strangUpdate) { //a été mis à jour il y a au plus 1 tour
+                evt.attributes.push({
+                  attribute: dureeStrang[0],
+                  current: dureeStrang[0].get('current'),
+                  max: strangUpdate
+                });
+                dureeStrang[0].set('max', false);
+              } else { //Ça fait trop longtemps, on arrête tout
+                sendChar(charId, messageEffets[effet].fin);
+                attr.set('current', v);
+                evt.attributes.pop(); //On enlève des attributs modifiés pour mettre dans les attribute supprimés.
+                evt.deletedAttributes.push(attr);
+                attr.remove();
+                evt.deletedAttributes.push(dureeStrang[0]);
+                dureeStrang[0].remove();
+              }
+            }
           }
-        } else {
+        } else { //L'effet arrive en fin de vie, doit être supprimé
           if (effet !== undefined)
             sendChar(charId, messageEffets[effet].fin);
           if (effet == 'agrandissement') { //redonner sa taille normale
@@ -6611,7 +6740,7 @@ var COFantasy = COFantasy || function() {
         var enflammeAttr = tokenAttribute(charId, 'enflamme', tok);
         if (enflammeAttr.length > 0) {
           var enflamme = parseInt(enflammeAttr[0].get('current'));
-          // Pour ne pas faire les dégâts plusieurs fois (plusieurs tokens pour un même personnage), on utilise la valeur max de l'attribu
+          // Pour ne pas faire les dégâts plusieurs fois (plusieurs tokens pour un même personnage), on utilise la valeur max de l'attribut
           var dernierTourEnflamme = parseInt(enflammeAttr[0].get('max'));
           if ((isNaN(dernierTourEnflamme) || dernierTourEnflamme < tour) &&
             !isNaN(enflamme) && enflamme > 0) {
