@@ -1839,8 +1839,8 @@ var COFantasy = COFantasy || function() {
           cibles.forEach(function(target) {
             if (target.attackMessage) {
               addLineToFramedDisplay(display, target.attackMessage);
-            } else {//par exemple si attaque automatique
-              addLineToFramedDisplay(display, "<b>"+target.tokName+"</b> :");
+            } else if (options.aoe) { //par exemple si attaque automatique
+              addLineToFramedDisplay(display, "<b>" + target.tokName + "</b> :");
             }
             if (target.dmgMessage) addLineToFramedDisplay(display, target.dmgMessage);
             target.messages.forEach(function(expl) {
@@ -2259,7 +2259,9 @@ var COFantasy = COFantasy || function() {
       if (explications) explications.push(msg);
       else sendChar(charId, msg);
     };
-    if (options.aoe === undefined && attributeAsBool(charId, 'formeGazeuse', false, token)) {
+    if (attributeAsBool(charId, 'intangible', false, token) ||
+      (options.aoe === undefined &&
+        attributeAsBool(charId, 'formeGazeuse', false, token))) {
       expliquer("L'attaque passe à travers de " + token.get('name'));
       if (displayRes) displayRes('0', undefined, 0);
       return 0;
@@ -2940,8 +2942,11 @@ var COFantasy = COFantasy || function() {
     var distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
     allToks.forEach(function(obj) {
       if (obj == tok1 || obj == tok2) return;
-      if (getState(obj, 'mort') || getState(obj, 'assome') ||
-        getState(obj, 'endormi')) return;
+      var objCharId = obj.get('represents');
+      if (objCharId !== '' && (getState(obj, 'mort') || getState(obj, 'assome') ||
+          getState(obj, 'endormi') ||
+          attributeAsBool(objCharId, 'intangible', false, obj)))
+        return;
       var pt = tokenCenter(obj);
       var obj_dist = VecMath.length(VecMath.vec(pt1, pt));
       if (obj_dist > distance_pix) return;
@@ -6381,6 +6386,11 @@ var COFantasy = COFantasy || function() {
       actif: "est en forme gazeuse",
       fin: "retrouve sa consistance normale"
     },
+    intangible: {
+      activation: "devient translucide",
+      actif: "est intangible",
+      fin: "redevient solide"
+    }
   };
 
   var patternEffetsTemp =
