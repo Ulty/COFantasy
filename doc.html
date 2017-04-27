@@ -640,6 +640,7 @@ p  {margin-left: inherit}
       <li>Ténèbres : faire une attaque Ténèbres, sans dégâts et de portée 20 m. Pour l'attaque, utiliser les arguments <tt>--disque 10 --auto --effet aveugleTemp [[5+@{selected|INT}]]</tt>. Au MJ ensuite d'enlever l'état aveuglé quand les cibles sortent de la zone.</li>
       <li>Pattes d'araignées : pas de support</li>
       <li>Strangulation : faire une attaque <tt>Strangulation</tt> sur la fiche, utilisant l'attaque magique, de portée 20 m, et de dégâts 1d6+INT. Au MJ de vérifier que la cible est valide (vivante). Utiliser les options <tt>--effet strangulation </tt><i>rang</i><tt> --mana 1 --ignoreObstacles ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt>. Pour maintenair la strangulation, chaque tour le nécromancien doit faire <tt>!cof-strangulation @{selected|token_id} @{target|token_id} ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt>.</li>
+      <li>Ombre mortelle : <tt>!cof-ombre-mortelle @{selected|token_id} @{target|token_id} [[3+@{selected|INT}]] --portee 20 --mana 2</tt> va créer un double de la cible, (à condition de disposer de 2 points de mana) et ajouter ce double à l'initiative. Au MJ ensuite de la faire attaquer à son tour (pas d'aoe, juste attaquer le token dont elle est l'ombre). Le token disparaît lorsque le nombre de tours est écoulé. Si vous utilisez le script <tt>marchingOrder</tt>, vous pouvez même faire que l'ombre suive con propriétaire automatiquement.</li>
     </ol>
 
     <h3>Prêtre</h3>
