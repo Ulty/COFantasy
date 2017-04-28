@@ -6354,6 +6354,70 @@ var COFantasy = COFantasy || function() {
     }], evt);
   }
 
+  //Attention : ne tient pas compte de la rotation !
+  function intersection(pos1, size1, pos2, size2) {
+    if (pos1 == pos2) return true;
+    if (pos1 < pos2) return ((pos1 + size1 / 2) >= pos2 - size2 / 2);
+    return ((pos2 + size2 / 2) >= pos1 - size1 / 2);
+  }
+
+  var labelsEscalier = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+
+  function escalier(msg) {
+    getSelected(msg, function(selected) {
+      if (selected.length === 0) {
+        sendChat("COF", "/w " + msg.who + " !cof-escalier sans sélection de token");
+        log("!cof-escalier requiert de sélectionner des tokens");
+        return;
+      }
+      var pageId = getObj('graphic', selected[0]._id).get('pageid');
+      var escaliers = findObjs({
+        _type: 'graphic',
+        _pageid: pageId,
+        layer: 'gmlayer'
+      });
+      if (escaliers.length === 0) {
+        sendChat("COF", "/w " + msg.who + " pas de token dans le layer GM");
+        return;
+      }
+      iterSelected(selected, function(token, charId) {
+        var posX = token.get('left');
+        var sizeX = token.get('width');
+        var posY = token.get('top');
+        var sizeY = token.get('height');
+        var sortieEscalier;
+        var etages;
+        escaliers.forEach(function(esc) {
+          if (sortieEscalier) return;
+          if (intersection(posX, sizeX, esc.get('left'), esc.get('width')) &&
+            intersection(posY, sizeY, esc.get('top'), esc.get('height'))) {
+            var escName = esc.get('name');
+            var l = escName.length;
+            if (l > 2) {
+              etages = escName.substr(l - 2, 1);
+              if (isNaN(etages)) return;
+              var label = escName.substr(l - 1, 1);
+              escName = escName.substr(0, l - 1);
+              var i = labelsEscalier.indexOf(label);
+              if (i == etages - 1) escName += labelsEscalier[0];
+              else escName += labelsEscalier[i + 1];
+              sortieEscalier = escaliers.find(function(esc2) {
+                if (esc2.get('name') == escName) return true;
+                return false;
+              });
+            }
+          }
+        });
+        if (sortieEscalier) {
+          token.set('left', sortieEscalier.get('left'));
+          token.set('top', sortieEscalier.get('top'));
+          return;
+        }
+        sendChat('COF', "/w " + msg.who + " " + token.get('name') + " n'est pas sur un escalier");
+      });
+    }); //fin getSelected
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -6489,6 +6553,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-ombre-mortelle":
         ombreMortelle(msg);
+        return;
+      case "!cof-escalier":
+        escalier(msg);
         return;
       default:
         return;
