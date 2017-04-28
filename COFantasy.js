@@ -2095,8 +2095,8 @@ var COFantasy = COFantasy || function() {
                       });
                     }
                     target.dmgMessage = "<b>Dommages :</b> " + dmgDisplay;
-                    var st = attributeAsInt(target.charId, 'sous_tension', -1, target.token);
-                    if (st >= 0 && options.contact) {
+                    if (attributeAsBool(target.charId, 'sous_tension', false, target.token) && options.contact) {
+                      ciblesCount++;
                       sendChat("", "[[1d6]]", function(res) {
                         var rolls = res[0];
                         var explRoll = rolls.inlinerolls[0];
@@ -2111,7 +2111,7 @@ var COFantasy = COFantasy || function() {
                             var dmgMsg =
                               "<b>Décharge électrique sur " + attackerTokName + " :</b> " +
                               dmgDisplay;
-                            addLineToFramedDisplay(display, dmgMsg);
+                            target.messages.push(dmgMsg);
                             finCibles();
                           });
                       });
@@ -6238,7 +6238,7 @@ var COFantasy = COFantasy || function() {
       var dmg = {
         type: 'magique',
         total: res[0].inlinerolls[0].results.total,
-        display: buildinline(res[0].inlinerolls[0], 'magique'),
+        display: buildinline(res[0].inlinerolls[0], 'magique', true),
       };
       dealDamage(token2, charId2, dmg, [], evt, 1, {}, undefined,
         function(dmgDisplay, saveResult, dmg) {
