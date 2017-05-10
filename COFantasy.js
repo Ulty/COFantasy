@@ -931,12 +931,18 @@ var COFantasy = COFantasy || function() {
     if (callTrue) callTrue(soinsEffectifs);
   }
 
-  function defenseOfToken(token, charId, tokenName, pageId, evt, explications) {
+  function defenseOfToken(target, pageId, evt) {
+    var token = target.token;
+    var charId = target.charId;
+    var tokenName = target.tokName;
+    var explications = target.messages;
     var defense = 10;
-    defense += attributeAsInt(charId, 'DEFARMURE', 0) * attributeAsInt(charId, 'DEFARMUREON', 1);
-    defense += attributeAsInt(charId, 'DEFBOUCLIER', 0) * attributeAsInt(charId, 'DEFBOUCLIERON', 1);
+    if (target.defautCuirasse === undefined) {
+      defense += attributeAsInt(charId, 'DEFARMURE', 0) * attributeAsInt(charId, 'DEFARMUREON', 1);
+      defense += attributeAsInt(charId, 'DEFBOUCLIER', 0) * attributeAsInt(charId, 'DEFBOUCLIERON', 1);
+      defense += attributeAsInt(charId, 'DEFDIV', 0);
+    } // Dans le cas contraire, on n'utilise pas ces bonus
     defense += modCarac(charId, 'DEXTERITE');
-    defense += attributeAsInt(charId, 'DEFDIV', 0);
     // Malus de défense global pour les longs combats
     if (DEF_MALUS_APRES_TOUR_5)
       defense -= (Math.floor((state.COFantasy.tour - 1) / 5) * 2);
@@ -1505,7 +1511,7 @@ var COFantasy = COFantasy || function() {
                 type: 'normal',
                 display: buildinline(explRoll, 'normal')
               };
-              dealDamage(attackingToken, attackingCharId, r, [], evt, 1, options,
+              dealDamage({token:attackingToken, charId:attackingCharId}, r, [], evt, 1, options,
                 explications,
                 function(dmgDisplay, saveResult, dmg) {
                   var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
@@ -1526,7 +1532,7 @@ var COFantasy = COFantasy || function() {
                 type: 'normal',
                 display: buildinline(explRoll, 'normal')
               };
-              dealDamage(attackingToken, attackingCharId, r, [], evt, 1, options,
+              dealDamage({token:attackingToken, charId:attackingCharId}, r, [], evt, 1, options,
                 explications,
                 function(dmgDisplay, saveResult, dmg) {
                   var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
@@ -1597,10 +1603,14 @@ var COFantasy = COFantasy || function() {
             target.messages.push(attackerTokName + " n'est pas assez rapide pour faire un traquenard à " + target.tokName);
           }
         }
+        var defautCuirasse = tokenAttribute(target.charId, 'defautDansLaCuirasse_' + attackerTokName, target.token);
+        target.crit = crit;
+        if (defautCuirasse.length > 0) {
+          target.defautCuirasse = true;
+          if (target.crit > 2) target.crit -= 1;
+        }
         //Defense de la cible
-        var defense =
-          defenseOfToken(target.token, target.charId, target.tokName, pageId, evt,
-            target.messages);
+        var defense = defenseOfToken(target, pageId, evt);
         var interchange;
         if (options.aoe === undefined) {
           interchange = interchangeable(attackingToken, target, pageId);
@@ -1615,13 +1625,13 @@ var COFantasy = COFantasy || function() {
           if (options.triche) {
             switch (options.triche) {
               case "rate":
-                if (d20roll >= crit) {
-                  if (crit < 2) d20roll = 1;
-                  else d20roll = randomInteger(crit - 1);
+                if (d20roll >= target.crit) {
+                  if (target.crit < 2) d20roll = 1;
+                  else d20roll = randomInteger(target.crit - 1);
                 }
                 if ((d20roll + attSkill + attBonus) >= defense) {
                   var maxd20roll = defense - attSkill - attBonus - 1;
-                  if (maxd20roll >= crit) maxd20roll = crit - 1;
+                  if (maxd20roll >= target.crit) maxd20roll = target.crit - 1;
                   if (maxd20roll < 2) d20roll = 1;
                   else d20roll = randomInteger(maxd20roll);
                 }
@@ -1636,8 +1646,8 @@ var COFantasy = COFantasy || function() {
                 }
                 break;
               case "critique":
-                if (d20roll < crit) {
-                  if (crit <= dice) d20roll = randomInteger(dice - crit + 1) + crit - 1;
+                if (d20roll < target.crit) {
+                  if (target.crit <= dice) d20roll = randomInteger(dice - target.crit + 1) + target.crit - 1;
                   else d20roll = dice;
                 }
                 break;
@@ -1692,7 +1702,7 @@ var COFantasy = COFantasy || function() {
               default:
                 critSug += "simple échec";
             }
-          } else if (paralyse || d20roll >= crit) {
+          } else if (paralyse || d20roll >= target.crit) {
             attackResult =
               "<span style='color: #0000ff'>" + ": <b><i>CRITIQUE</i></b>" + "'</span> ";
             touche = 2;
@@ -2051,7 +2061,7 @@ var COFantasy = COFantasy || function() {
                 // Pas de dégâts, donc pas d'appel à dealDamage
                 finCibles();
               } else {
-                dealDamage(target.token, target.charId, mainDmgRoll, additionalDmg, evt, target.touche,
+                dealDamage(target, mainDmgRoll, additionalDmg, evt, target.touche,
                   options, target.messages,
                   function(dmgDisplay, saveResult, dmg) {
                     if (options.strigeSuce) {
@@ -2105,7 +2115,7 @@ var COFantasy = COFantasy || function() {
                           type: 'electrique',
                           display: buildinline(explRoll, 'electrique', true)
                         };
-                        dealDamage(attackingToken, attackingCharId, r, [], evt, 1,
+                        dealDamage({token:attackingToken, charId:attackingCharId}, r, [], evt, 1,
                           options, target.messages,
                           function(dmgDisplay, saveResult, dmg) {
                             var dmgMsg =
@@ -2279,7 +2289,9 @@ var COFantasy = COFantasy || function() {
     } else afterSave();
   }
 
-  function dealDamage(token, charId, dmg, otherDmg, evt, crit, options, explications, displayRes) {
+  function dealDamage(target, dmg, otherDmg, evt, crit, options, explications, displayRes) {
+    var token = target.token;
+    var charId = token.charId;
     if (options === undefined) options = {};
     var expliquer = function(msg) {
       if (explications) explications.push(msg);
@@ -2344,11 +2356,11 @@ var COFantasy = COFantasy || function() {
               dmgTotal += d.total;
               dmgDisplay += "+" + d.display;
             }
-            if (count === 0) dealDamageAfterDmgExtra(token, charId, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes);
+            if (count === 0) dealDamageAfterDmgExtra(target, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes);
           });
       });
     } else {
-      return dealDamageAfterDmgExtra(token, charId, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes);
+      return dealDamageAfterDmgExtra(target, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes);
     }
   }
 
@@ -2380,8 +2392,9 @@ var COFantasy = COFantasy || function() {
   }
 
 
-  function dealDamageAfterDmgExtra(token, charId, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes) {
-    var rdMain = typeRD(charId, mainDmgType);
+  function dealDamageAfterDmgExtra(target, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes) {
+    var token = target.token;
+    var rdMain = typeRD(target.charId, mainDmgType);
     if (rdMain > 0 && dmgTotal > 0) {
       dmgTotal -= rdMain;
       if (dmgTotal < 0) {
@@ -2393,7 +2406,7 @@ var COFantasy = COFantasy || function() {
     }
     var rdMagique;
     if (options.magique) rdMagique = 0;
-    else rdMagique = typeRD(charId, 'sauf_magique');
+    else rdMagique = typeRD(target.charId, 'sauf_magique');
     if (rdMagique) showTotal = true;
     var resMagique = applyRDMagique(rdMagique, mainDmgType, dmgTotal, dmgDisplay);
     if (resMagique) {
@@ -2401,8 +2414,8 @@ var COFantasy = COFantasy || function() {
       dmgTotal = resMagique.total;
       dmgDisplay = resMagique.display;
     }
-    var armureM = attributeAsInt(charId, 'armureMagique', 0, token);
-    var invulnerable = attributeAsBool(charId, 'invulnerable', false);
+    var armureM = attributeAsInt(target.charId, 'armureMagique', 0, token);
+    var invulnerable = attributeAsBool(target.charId, 'invulnerable', false);
     var mitigate = function(dmgType, divide, zero) {
       if (estElementaire(dmgType)) {
         if (invulnerable) {
@@ -2436,7 +2449,7 @@ var COFantasy = COFantasy || function() {
     var dealOneType = function(dmgType) {
       if (dmgType == mainDmgType) {
         count -= dmgParType[dmgType].length;
-        if (count === 0) dealDamageAfterOthers(token, charId, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal);
+        if (count === 0) dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal);
         return; //type principal déjà géré
       }
       showTotal = true;
@@ -2444,7 +2457,7 @@ var COFantasy = COFantasy || function() {
       var typeDisplay = "";
       var typeCount = dmgParType[dmgType].length;
       dmgParType[dmgType].forEach(function(d) {
-        partialSave(d, charId, token, false, d.display, d.total, expliquer,
+        partialSave(d, target.charId, token, false, d.display, d.total, expliquer,
           function(res) {
             if (res) {
               dm += res.total;
@@ -2457,7 +2470,7 @@ var COFantasy = COFantasy || function() {
             }
             typeCount--;
             if (typeCount === 0) {
-              var rdl = typeRD(charId, dmgType);
+              var rdl = typeRD(target.charId, dmgType);
               if (rdl > 0 && dm > 0) {
                 dm -= rdl;
                 if (dm < 0) {
@@ -2485,7 +2498,7 @@ var COFantasy = COFantasy || function() {
               dmgDisplay += "+" + typeDisplay;
             }
             count--;
-            if (count === 0) dealDamageAfterOthers(token, charId, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal);
+            if (count === 0) dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal);
           });
       });
     };
@@ -2494,7 +2507,7 @@ var COFantasy = COFantasy || function() {
         dealOneType(dmgType);
       }
     } else {
-      return dealDamageAfterOthers(token, charId, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal);
+      return dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal);
     }
   }
 
@@ -2510,7 +2523,9 @@ var COFantasy = COFantasy || function() {
     }, "splatter-blood");
   }
 
-  function dealDamageAfterOthers(token, charId, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal) {
+  function dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal) {
+    var token = target.token;
+    var charId = target.charId;
     // Now do some dmg mitigation rolls, if necessary
     if ((options.distance || options.aoe) &&
       attributeAsBool(charId, 'a_couvert', false, token)) {
@@ -2532,6 +2547,7 @@ var COFantasy = COFantasy || function() {
         if (options.tranchant) rd += attributeAsInt(charId, 'RD_tranchant', 0);
         if (options.percant) rd += attributeAsInt(charId, 'RD_percant', 0);
         if (options.contondant) rd += attributeAsInt(charId, 'RD_contondant', 0);
+        if (target.defautCuirasse) rd = 0;
         if (options.intercepter) rd += options.intercepter;
         if (rd > 0) {
           dmgDisplay += "-" + rd;
@@ -3006,17 +3022,25 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function removeAllAttributes(name, evt) {
-    var attrs = findObjs({
+  function removeAllAttributes(name, evt, attrs) {
+    if (attrs === undefined) {
+      attrs = findObjs({
       _type: 'attribute'
     });
-    attrs = allAttributesNamed(attrs, name);
-    if (attrs.length === 0) return;
+    }
+    var attrsNamed = allAttributesNamed(attrs, name);
+    if (attrsNamed.length === 0) return attrs;
     if (evt.deletedAttributes === undefined) evt.deletedAttributes = [];
-    attrs.forEach(function(attr) {
+    attrsNamed.forEach(function(attr) {
       evt.deletedAttributes.push(attr);
       attr.remove();
     });
+    attrs.filter(function(attr){
+      var ind = attrsNamed.findIndex(function(nattr) {
+        return nattr.id == attr.id;});
+      return (ind == -1);
+    });
+    return attrs;
   }
 
   //Met tous les attributs avec le nom au max
@@ -3070,20 +3094,21 @@ var COFantasy = COFantasy || function() {
       .forEach(function(attr) {
         attr.remove();
       });*/
-    // Fin des effets qui durent pour le combat
-    removeAllAttributes('armureMagique', evt);
-    removeAllAttributes('soinsDeGroupe', evt);
-    removeAllAttributes('sergentUtilise', evt);
-    removeAllAttributes('enflamme', evt);
-    removeAllAttributes('protegerUnAllie', evt);
-    removeAllAttributes('protegePar', evt);
-    removeAllAttributes('intercepter', evt);
-    removeAllAttributes('defenseTotale', evt);
-    removeAllAttributes('dureeStrangulation', evt);
-    // Autres attributs, on prend attrs l'ensemble des attributs
     var attrs = findObjs({
       _type: 'attribute'
     });
+    // Fin des effets qui durent pour le combat
+    attrs = removeAllAttributes('armureMagique', evt, attrs);
+    attrs = removeAllAttributes('soinsDeGroupe', evt, attrs);
+    attrs = removeAllAttributes('sergentUtilise', evt, attrs);
+    attrs = removeAllAttributes('enflamme', evt, attrs);
+    attrs = removeAllAttributes('protegerUnAllie', evt, attrs);
+    attrs = removeAllAttributes('protegePar', evt, attrs);
+    attrs = removeAllAttributes('intercepter', evt, attrs);
+    attrs = removeAllAttributes('defenseTotale', evt, attrs);
+    attrs = removeAllAttributes('dureeStrangulation', evt, attrs);
+    attrs = removeAllAttributes('defautDansLaCuirasse', evt, attrs);
+    // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
     // Remettre le traquenard à 1
@@ -3420,11 +3445,12 @@ var COFantasy = COFantasy || function() {
 
   // Remise à zéro de toutes les limites journalières
   function jour(evt) {
-    removeAllAttributes('pressionMortelle', evt);
-    removeAllAttributes('soinsLegers', evt);
-    removeAllAttributes('soinsModeres', evt);
-    removeAllAttributes('fortifie', evt);
-    removeAllAttributes('baieMagique', evt);
+    var attrs;
+    attrs = removeAllAttributes('pressionMortelle', evt);
+    attrs = removeAllAttributes('soinsLegers', evt, attrs);
+    attrs = removeAllAttributes('soinsModeres', evt, attrs);
+    attrs = removeAllAttributes('fortifie', evt, attrs);
+    removeAllAttributes('baieMagique', evt, attrs);
   }
 
   function recuperer(msg) {
@@ -4748,7 +4774,7 @@ var COFantasy = COFantasy || function() {
       }
       iterSelected(selected, function(token, charId) {
         var name = token.get('name');
-        dealDamage(token, charId, dmg, [], evt, 1, options, undefined,
+        dealDamage({token:token, charId:charId}, dmg, [], evt, 1, options, undefined,
           function(dmgDisplay, saveResult, dmgFinal) {
             if (partialSave === undefined) {
               addLineToFramedDisplay(display,
@@ -6240,7 +6266,7 @@ var COFantasy = COFantasy || function() {
         total: res[0].inlinerolls[0].results.total,
         display: buildinline(res[0].inlinerolls[0], 'magique', true),
       };
-      dealDamage(token2, charId2, dmg, [], evt, 1, {}, undefined,
+      dealDamage(target, dmg, [], evt, 1, {}, undefined,
         function(dmgDisplay, saveResult, dmg) {
           sendChar(charId1, "maintient sa strangulation sur " + name2 + ". Dommages : " + dmgDisplay);
           addEvent(evt);
@@ -6418,6 +6444,31 @@ var COFantasy = COFantasy || function() {
     }); //fin getSelected
   }
 
+  function defautDansLaCuirasse(msg) {
+    var args = msg.content.split(' ');
+    if (args.length < 3) {
+      error("Pas assez d'arguments pour !cof-defaut-dans-la-cuirasse", args);
+      return;
+    }
+    var tireur = tokenOfId(args[1], args[1]);
+    if (tireur === undefined) {
+      error("Le premier argument n'est pas un token valide", args[1]);
+      return;
+    }
+    var pageId = tireur.token.get('pageid');
+    var cible = tokenOfId(args[2], args[2], pageId);
+    if (cible === undefined) {
+      error("La cible n'est pas un token valide", args[2]);
+      return;
+    }
+    var evt = {
+      type: "Défaut dans la cuirasse"
+    };
+    setTokenAttr(cible.token, cible.charId, 'defautDansLaCuirasse_'+tireur.token.get('name'), 2, evt);
+    sendChar(tireur.charId, "passe le tour à analyser les points faibles de " + cible.token.get('name'));
+    addEvent(evt);
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -6556,6 +6607,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-escalier":
         escalier(msg);
+        return;
+      case "!cof-defaut-dans-la-cuirasse":
+        defautDansLaCuirasse(msg);
         return;
       default:
         return;
@@ -6789,19 +6843,19 @@ var COFantasy = COFantasy || function() {
       deletedAttributes: []
     };
     var active = turnOrder[0];
+      var attrs = findObjs({
+        _type: 'attribute'
+      });
     // Si on a changé d'initiative, alors diminue les effets temporaires
     var init = parseInt(active.pr);
     if (active.id == "-1" && active.custom == "Tour") init = 0;
     if (state.COFantasy.init > init) {
-      var attrs = findObjs({
-        _type: 'attribute'
-      });
-      attrs = attrs.filter(function(obj) {
+      var attrsTemp = attrs.filter(function(obj) {
         if (!estEffetTemp(obj.get('name'))) return false;
         var obji = obj.get('max');
         return (init < obji && obji <= state.COFantasy.init);
       });
-      attrs.forEach(function(attr) {
+      attrsTemp.forEach(function(attr) {
         var charId = attr.get('characterid');
         var effet = effetOfAttribute(attr);
         if (effet === undefined) {
@@ -6825,7 +6879,7 @@ var COFantasy = COFantasy || function() {
                 total: putref,
                 display: putref
               };
-              putref = dealDamage(token, charId, dmg, [], evt, 1, {
+              putref = dealDamage({token:token, charId:charId}, dmg, [], evt, 1, {
                 magique: 'true'
               });
               onGenre(charId, 'Il', 'Elle');
@@ -6892,9 +6946,23 @@ var COFantasy = COFantasy || function() {
       state.COFantasy.tour = tour;
       state.COFantasy.init = 1000;
       // Enlever les bonus d'un tour
-      removeAllAttributes('actionConcertee', evt);
-      removeAllAttributes('intercepter', evt);
-      removeAllAttributes('exemplaire', evt);
+      attrs = removeAllAttributes('actionConcertee', evt, attrs);
+      attrs = removeAllAttributes('intercepter', evt, attrs);
+      attrs = removeAllAttributes('exemplaire', evt, attrs);
+      // Pour défaut dans la cuirasse, on diminue si la valeur est 2, et on supprime si c'est 1
+      var defautsDansLaCuirasse =  allAttributesNamed(attrs, 'defautDansLaCuirasse');
+      defautsDansLaCuirasse.forEach(function(attr){
+        if (attr.get('current') < 2) {
+          if (evt.deletedAttributes) evt.deletedAttributes.push(attr);
+          else evt.deletedAttributes = [attr];
+          attr.remove();
+        } else {
+          var prevAttr = { attribute: attr, current: 2 };
+          if (evt.attributes)  evt.attributes.push(prevAttr);
+          else evt.attributes = [prevAttr];
+          attr.set('current', 1);
+        }
+      });
       // nouveau tour : enlever le statut surpris
       // et faire les actions de début de tour
       var selected = [];
@@ -6929,7 +6997,7 @@ var COFantasy = COFantasy || function() {
               total: feu,
               display: feu
             };
-            feu = dealDamage(tok, charId, dmg, [], evt, 1);
+            feu = dealDamage({token:tok, charId:charId}, dmg, [], evt, 1);
             sendChar(charId, " est en flamme ! " +
               onGenre(charId, 'Il', 'Elle') + " subit " + feu + " DM");
             if (d6Enflamme < 3) {
