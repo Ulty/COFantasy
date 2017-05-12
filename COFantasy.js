@@ -1011,6 +1011,9 @@ var COFantasy = COFantasy || function() {
       if (posture.startsWith('DEF')) defense -= parseInt(attrPosture.get('current'));
       if (posture.endsWith('DEF')) defense += parseInt(attrPosture.get('current'));
     }
+    var instinctSurvie = attributeAsInt(charId, 'instinctDeSurvie', 0);
+    if (instinctSurvie > 0 && token.get('bar1_value') <= instinctSurvie)
+      defense += 5;
     return defense;
   }
 

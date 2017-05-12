@@ -759,7 +759,8 @@ p  {margin-left: inherit}
     <ol>
       <li>Grâce elfique : ajouter les bonus sur la fiche</li>
     </ol>
-    <h4>Voie de l'humain</h4> TODO
+    <h4>Voie de l'humain</h4>
+    Instinct de survie : créer un attribut <tt>instinctDeSurvieHumain</tt> avec comme valeur <tt>true</tt>
     <h4>Voie du nain</h4> TODO
 
     <h3>Voies de créatures</h3>
@@ -795,6 +796,9 @@ p  {margin-left: inherit}
         le nombre d'opposants à partir duquel les cibles peuvent être interverties</li>
     </ol>
     <h4>Voie du PNJ récurrent</h4>
+    <ol>
+      <li>Instinct de survie : ajouter un attribute <tt>instinctDeSurvie</tt> avec comme valeur le nombre de PV en-dessous duquel le PNJ gagne un bonus de DEF. les autres effets sont à faire par le MJ.</li>
+    </ol>
     <h4>Voie du Prédateur</h4> 
     <ol>
       <li>Embuscade : Sélectionner les ennemis du prédateurs, et utiliser <tt>!cof-surprise</tt>. Par exemple, contre une équipe de joueurs dans le handout <tt>Equipe joueurs</tt> (cf la <a href="#selection">méthode de séclection de groupes</a>), on pourra utiliser l'ability <tt>!cof-surprise [[15 + @{selected|DEX}]] --equipe joueurs</tt>. Pour les bonus en discrétion et init, reporter sur la fiche, pour l'attaque en embuscade sur une cible surprise, rajouter à une attaque les options <tt>--de6Plus 1 --etatSi renverse moins FOR</tt>.</li>
