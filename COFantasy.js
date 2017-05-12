@@ -2675,6 +2675,13 @@ var COFantasy = COFantasy || function() {
                 bar1_value: bar1
               }
             });
+            if (bar1 > 0 && bar1 <= dmgTotal && attributeAsBool(charId, 'instinctDeSurvieHumain', false)) {
+              dmgTotal = dmgTotal / 2;
+              if (dmgTotal < 1) dmgTotal = 1;
+              dmgDisplay += "/2";
+              showTotal = true;
+              expliquer("L'instinct de survie aide à réduire une attaque fatale");
+            }
             bar1 = bar1 - dmgTotal;
             if (bar1 <= 0) {
               if (attributeAsBool(charId, 'sergent', false) && !attributeAsBool(charId, 'sergentUtilise', false, token)) {
