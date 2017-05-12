@@ -29,7 +29,7 @@ p  {margin-left: inherit}
     <p>
     Certains messages tiennent compte du genre (masculin ou féminin) des personnages. Ils utilisent le champ <tt>Sexe</tt> de la fiche de personnage. Un personnage est reconnu comme féminin si ce champ commence par la lettre <tt>F</tt>.
 
-    <h3>1.2 Macros et Ablities</h3>
+    <h3>1.2 Macros et Abilities</h3>
     <p>
     Comme tous les scripts, ces scripts sont utilisables tels quels dans le chat, mais ils sont pensés pour être utilisés par des macros qui permettent un autre niveau d'automatisation parfois difficile d'accès au sein des scripts.
     La grosse majorité des capacités et attaques des personnages devraient être utilisées au sein d'abilities de personnages, accessibles comme "Token action". Si ces abilities utilisent des macros, ne pas oublier de rendre ces macros accessibles aux joueurs.
@@ -498,6 +498,7 @@ p  {margin-left: inherit}
             <tt>--ignoreObstacles</tt>
             <tt>--puissant epeeDansante</tt></li>
         </ul></li>
+        <li>Charisme héroïque : reporter sur la fiche</li>
     </ol>
 
     <h3>Forgesort</h3>
@@ -545,7 +546,7 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie du soldat</h4>
     <ol>
-      <li>Posture de combat : TODO</li>
+      <li>Posture de combat : <tt>!cof-posture-de-combat @{selected|token_id}</tt> <i>bonus attr1 attr2</i>, ou les deux <i>attr</i> peuvent être soit <tt>DEF</tt> soit <tt>ATT</tt> soit <tt>DM</tt>, et le <i>bonus</i> est retiré au premier attribut pour être ajouté au second. Le bonus peut être limité si le guerrier a un attribut <tt>voieDuSoldat</tt> qu iindique son rang dans la voie. Exemple d'utilisation&nbsp;: <tt>!cof-posture-de-combat @{selected|token_id} ?{Bonus} ?{Baisser|Défense,DEF|Attaque,ATT|Dégâts,DM} ?{Augmenter|Défense,DEF|Attaque,ATT|Dégâts,DM}</tt>. Normalement, la règle fait décider de sa posture au guerrier à chaque tour, mais en pratique, il en change assez rarement. Une posture de combat reste donc active jusqu'à la fin du combat ou jusqu'à ce qu'on en change (elle est neutre si on a le même attribut à buffer et débuffer). </li>
     </ol>
 
     <h3>Magicien</h3>
@@ -611,7 +612,7 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie du vent</h4>
     <ol>
-      <li>Pas du vent : ok</li>
+      <li>Pas du vent : pas de support particulier, simplement ajuster l'initiative.</li>
       <li>Course du vent : ok</li>
       <li>Course des airs : ok</li>
       <li>Lévitation : ok</li>
@@ -688,6 +689,7 @@ p  {margin-left: inherit}
       <li>Combat : ajouter le loup sous contrôle du joueur</li>
       <li>Empathie animale : pour soigner, utiliser
         <tt>!cof-soin @{selected|token_id}</tt> <i>nom_familier</i> <tt>?{Montant des soins} --transfer</tt></li>
+      <li>Animal fabuleux : ajuster les caractéristiques du loup</li>
     </ol>
     <h4>Voie de l'escarmouche</h4>
     <ol>
@@ -751,6 +753,7 @@ p  {margin-left: inherit}
       <li>Petit veinard : Il y a beaucoup de types de dés différents. Pour l'instant,
     géré par le MJ : faire tirer le jet (/r) par le joueur, si ça a changé,
     utiliser le undo ou faire les changements à la main.</li>
+      <li>Résistance légendaire : ajouter le bonus en CON sur la fiche, et ajouter un attribut <tt>DEF_magie</tt> avec comme valeur 5.</li>
     </ol>
     <h4>Voie du haut elfe</h4>
     <ol>

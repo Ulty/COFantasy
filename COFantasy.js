@@ -1004,6 +1004,13 @@ var COFantasy = COFantasy || function() {
           tokenName + " de son bouclier (+" + defBouclierProtecteur + "DEF)");
       }
     });
+    var attrPosture = tokenAttribute(charId, 'postureDeCombat', token);
+    if (attrPosture.length > 0) {
+      attrPosture = attrPosture[0];
+      var posture = attrPosture.get('max');
+      if (posture.startsWith('DEF')) defense -= parseInt(attrPosture.get('current'));
+      if (posture.endsWith('DEF')) defense += parseInt(attrPosture.get('current'));
+    }
     return defense;
   }
 
@@ -1047,6 +1054,15 @@ var COFantasy = COFantasy || function() {
       explications.push(name + " porte une dernière attaque et s'effondre");
       setState(token, 'mort', true, evt, charId);
       removeTokenAttr(token, charId, 'baroudHonneurActif', evt);
+    }
+    var attrPosture = tokenAttribute(charId, 'postureDeCombat', token);
+    if (attrPosture.length > 0) {
+      attrPosture = attrPosture[0];
+      var posture = attrPosture.get('max');
+      if (posture.startsWith('ATT'))
+        attBonus -= parseInt(attrPosture.get('current'));
+      if (posture.endsWith('ATT'))
+        attBonus += parseInt(attrPosture.get('current'));
     }
     return attBonus;
   }
@@ -1511,7 +1527,10 @@ var COFantasy = COFantasy || function() {
                 type: 'normal',
                 display: buildinline(explRoll, 'normal')
               };
-              dealDamage({token:attackingToken, charId:attackingCharId}, r, [], evt, 1, options,
+              dealDamage({
+                  token: attackingToken,
+                  charId: attackingCharId
+                }, r, [], evt, 1, options,
                 explications,
                 function(dmgDisplay, saveResult, dmg) {
                   var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
@@ -1532,7 +1551,10 @@ var COFantasy = COFantasy || function() {
                 type: 'normal',
                 display: buildinline(explRoll, 'normal')
               };
-              dealDamage({token:attackingToken, charId:attackingCharId}, r, [], evt, 1, options,
+              dealDamage({
+                  token: attackingToken,
+                  charId: attackingCharId
+                }, r, [], evt, 1, options,
                 explications,
                 function(dmgDisplay, saveResult, dmg) {
                   var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
@@ -1598,7 +1620,6 @@ var COFantasy = COFantasy || function() {
               value: '2d6'
             });
             target.messages.push(attackerTokName + " fait un traquenard à " + target.tokName);
-            maxDmg += 12;
           } else {
             target.messages.push(attackerTokName + " n'est pas assez rapide pour faire un traquenard à " + target.tokName);
           }
@@ -1611,6 +1632,8 @@ var COFantasy = COFantasy || function() {
         }
         //Defense de la cible
         var defense = defenseOfToken(target, pageId, evt);
+        if (options.magique)
+          defense += attributeAsInt(target.charId, 'DEF_magie', 0);
         var interchange;
         if (options.aoe === undefined) {
           interchange = interchangeable(attackingToken, target, pageId);
@@ -1787,7 +1810,6 @@ var COFantasy = COFantasy || function() {
       if (options.puissant) {
         attDice += 2;
       }
-      var maxDmg = attNbDices * attDice;
       if (options.reroll1) attDice += "r1";
       var attCarBonus =
         getAttrByName(attackingCharId, attPrefix + "armedmcar") ||
@@ -1799,22 +1821,28 @@ var COFantasy = COFantasy || function() {
             var simplerAttCarBonus = modCarac(attackingCharId, carac);
             if (!isNaN(simplerAttCarBonus)) {
               attCarBonus = simplerAttCarBonus;
-              maxDmg += attCarBonus;
             }
           }
         }
-      } else maxDmg += attCarBonus;
+      }
       if (attCarBonus === "0" || attCarBonus === 0) attCarBonus = "";
       else attCarBonus = " + " + attCarBonus;
       var attDMBonusCommun =
         parseInt(getAttrByName(attackingCharId, attPrefix + "armedmdiv"));
-      maxDmg += attDMBonusCommun;
       if (isNaN(attDMBonusCommun) || attDMBonusCommun === 0) attDMBonusCommun = '';
       else if (attDMBonusCommun > 0) attDMBonusCommun = '+' + attDMBonusCommun;
       // Les autres modifications aux dégâts qui ne dépendent pas de la cible
       if (rayonAffaiblissant) {
         attDMBonusCommun += " -2";
-        maxDmg -= 2;
+      }
+      var attrPosture = tokenAttribute(attackingCharId, 'postureDeCombat', attackingToken);
+      if (attrPosture.length > 0) {
+        attrPosture = attrPosture[0];
+        var posture = attrPosture.get('max');
+        if (posture.startsWith('DM'))
+          attDMBonusCommun += " -" + parseInt(attrPosture.get('current'));
+        if (posture.endsWith('DM'))
+          attDMBonusCommun += " +" + parseInt(attrPosture.get('current'));
       }
       // Les autres sources de dégâts
       if (options.de6Plus) {
@@ -1829,13 +1857,11 @@ var COFantasy = COFantasy || function() {
             type: mainDmgType,
             value: '1d6'
           });
-          maxDmg += 6;
           explications.push("Tir de semonce (+5 attaque et +1d6 DM)");
         }
       } else { //bonus aux attaques de contact
         if (attributeAsBool(attackingCharId, 'agrandissement', false)) {
           attDMBonusCommun += "+2";
-          maxDmg += 2;
         }
       }
       if (attributeAsBool(attackingCharId, 'forgeron_' + attackLabel, false)) {
@@ -1893,7 +1919,6 @@ var COFantasy = COFantasy || function() {
         }
         if (_.has(options, "tempDmg")) {
           var forceTarg = modCarac(target.charId, "FORCE");
-          maxDmg -= forceTarg;
           if (forceTarg < 0) {
             attDMBonus = " +" + (-forceTarg);
           } else {
@@ -1906,21 +1931,18 @@ var COFantasy = COFantasy || function() {
             var modDex = modCarac(attackingCharId, 'DEXTERITE');
             if (target.distance <= 5 * modDex) {
               attDMBonus += " + " + tirPrecis;
-              maxDmg += tirPrecis;
               target.messages.push("Tir précis : +" + tirPrecis + " DM");
             }
           }
         }
         if (target.chasseurEmerite) {
           attDMBonus += "+2";
-          maxDmg += 2;
         }
         if (target.ennemiJure) {
           target.additionalDmg.push({
             type: mainDmgType,
             value: '1d6'
           });
-          maxDmg += 6;
         }
 
         if (attributeAsBool(attackingCharId, 'ombreMortelle', false, attackingToken)) {
@@ -1936,7 +1958,6 @@ var COFantasy = COFantasy || function() {
           additionalDmg.forEach(function(dmSpec) {
             dmSpec.value += " +" + dmSpec.Value;
           });
-          maxDmg = maxDmg * 2;
         }
         var ExtraDmgRollExpr = "";
         additionalDmg = additionalDmg.filter(function(dmSpec) {
@@ -2115,7 +2136,10 @@ var COFantasy = COFantasy || function() {
                           type: 'electrique',
                           display: buildinline(explRoll, 'electrique', true)
                         };
-                        dealDamage({token:attackingToken, charId:attackingCharId}, r, [], evt, 1,
+                        dealDamage({
+                            token: attackingToken,
+                            charId: attackingCharId
+                          }, r, [], evt, 1,
                           options, target.messages,
                           function(dmgDisplay, saveResult, dmg) {
                             var dmgMsg =
@@ -3025,8 +3049,8 @@ var COFantasy = COFantasy || function() {
   function removeAllAttributes(name, evt, attrs) {
     if (attrs === undefined) {
       attrs = findObjs({
-      _type: 'attribute'
-    });
+        _type: 'attribute'
+      });
     }
     var attrsNamed = allAttributesNamed(attrs, name);
     if (attrsNamed.length === 0) return attrs;
@@ -3035,9 +3059,10 @@ var COFantasy = COFantasy || function() {
       evt.deletedAttributes.push(attr);
       attr.remove();
     });
-    attrs.filter(function(attr){
+    attrs.filter(function(attr) {
       var ind = attrsNamed.findIndex(function(nattr) {
-        return nattr.id == attr.id;});
+        return nattr.id == attr.id;
+      });
       return (ind == -1);
     });
     return attrs;
@@ -3108,6 +3133,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('defenseTotale', evt, attrs);
     attrs = removeAllAttributes('dureeStrangulation', evt, attrs);
     attrs = removeAllAttributes('defautDansLaCuirasse', evt, attrs);
+    attrs = removeAllAttributes('postureDeCombat', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -4398,6 +4424,38 @@ var COFantasy = COFantasy || function() {
         var munitionNom = attrName.substring(underscore + 1).replace(/_/g, ' ');
         addLineToFramedDisplay(display, munitionNom + " : " + attr.get('current') + " / " + attr.get('max'));
       });
+      var attrPosture = tokenAttribute(charId, 'postureDeCombat', token);
+      if (attrPosture.length > 0) {
+        attrPosture = attrPosture[0];
+        var posture = attrPosture.get('max');
+        var postureMsg = "a une posture ";
+        switch (posture.substr(-1, 3)) {
+          case 'DEF':
+            msg += "défensive";
+            break;
+          case 'ATT':
+            msg += "offensive";
+            break;
+          case '_DM':
+            msg += "puissante";
+            break;
+          default:
+        }
+        msg += " mais ";
+        switch (posture.substr(0, 3)) {
+          case 'DEF':
+            msg += "risquée";
+            break;
+          case 'ATT':
+            msg += "moins précise";
+            break;
+          case 'DM_':
+            msg += "moins puissante";
+            break;
+          default:
+        }
+        addLineToFramedDisplay(display, posture);
+      }
       sendChat("", endFramedDisplay(display));
     });
   }
@@ -4774,7 +4832,10 @@ var COFantasy = COFantasy || function() {
       }
       iterSelected(selected, function(token, charId) {
         var name = token.get('name');
-        dealDamage({token:token, charId:charId}, dmg, [], evt, 1, options, undefined,
+        dealDamage({
+            token: token,
+            charId: charId
+          }, dmg, [], evt, 1, options, undefined,
           function(dmgDisplay, saveResult, dmgFinal) {
             if (partialSave === undefined) {
               addLineToFramedDisplay(display,
@@ -6464,8 +6525,81 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Défaut dans la cuirasse"
     };
-    setTokenAttr(cible.token, cible.charId, 'defautDansLaCuirasse_'+tireur.token.get('name'), 2, evt);
+    setTokenAttr(cible.token, cible.charId, 'defautDansLaCuirasse_' + tireur.token.get('name'), 2, evt);
     sendChar(tireur.charId, "passe le tour à analyser les points faibles de " + cible.token.get('name'));
+    addEvent(evt);
+  }
+
+  function postureDeCombat(msg) {
+    var args = msg.content.split(' ');
+    if (args.length < 5) {
+      error("Pas assez d'arguments pour !cof-posture-de-combat", args);
+      return;
+    }
+    var guerrier = tokenOfId(args[1], args[1]);
+    if (guerrier === undefined) {
+      error("Le premier argument n'est pas un token valide", args[1]);
+      return;
+    }
+    var charId = guerrier.charId;
+    var bonus = parseInt(args[2]);
+    if (isNaN(bonus) || bonus < 1) {
+      sendChar(charId, "doit choisir un bonus positif (pas " + args[2] + ") pour sa posture de combat");
+      return;
+    }
+    var rang = attributeAsInt(charId, "voieDuSoldat", 0);
+    if (rang > 0 && rang < bonus) {
+      sendChar(charId, "ne peut choisir qu'un bonus inférieur à " + rang + " pour sa posture de combat");
+      return;
+    }
+    var attrDebuf = args[3];
+    if (attrDebuf != 'DEF' && attrDebuf != 'ATT' && attrDebuf != 'DM') {
+      error("L'attribut à débuffer pour la posture de combat est incorrect", args);
+      return;
+    }
+    var attrBuf = args[4];
+    if (attrBuf != 'DEF' && attrBuf != 'ATT' && attrBuf != 'DM') {
+      error("L'attribut à augmenter pour la posture de combat est incorrect", args);
+      return;
+    }
+    var evt = {
+      type: "Posture de combat"
+    };
+    var token = guerrier.token;
+    if (attrBuf == attrDebuf) {
+      sendChar(charId, "prend une posture de combat neutre");
+      removeTokenAttr(token, charId, 'postureDeCombat', evt);
+      addEvent(evt);
+      return;
+    }
+    msg = "prend une posture ";
+    switch (attrBuf) {
+      case 'DEF':
+        msg += "défensive";
+        break;
+      case 'ATT':
+        msg += "offensive";
+        break;
+      case 'DM':
+        msg += "puissante";
+        break;
+      default:
+    }
+    msg += " mais ";
+    switch (attrDebuf) {
+      case 'DEF':
+        msg += "risquée";
+        break;
+      case 'ATT':
+        msg += "moins précise";
+        break;
+      case 'DM':
+        msg += "moins puissante";
+        break;
+      default:
+    }
+    setTokenAttr(token, charId, 'postureDeCombat', bonus, evt, msg,
+      attrDebuf + "_" + attrBuf);
     addEvent(evt);
   }
 
@@ -6610,6 +6744,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-defaut-dans-la-cuirasse":
         defautDansLaCuirasse(msg);
+        return;
+      case "!cof-posture-de-combat":
+        postureDeCombat(msg);
         return;
       default:
         return;
@@ -6843,9 +6980,9 @@ var COFantasy = COFantasy || function() {
       deletedAttributes: []
     };
     var active = turnOrder[0];
-      var attrs = findObjs({
-        _type: 'attribute'
-      });
+    var attrs = findObjs({
+      _type: 'attribute'
+    });
     // Si on a changé d'initiative, alors diminue les effets temporaires
     var init = parseInt(active.pr);
     if (active.id == "-1" && active.custom == "Tour") init = 0;
@@ -6879,7 +7016,10 @@ var COFantasy = COFantasy || function() {
                 total: putref,
                 display: putref
               };
-              putref = dealDamage({token:token, charId:charId}, dmg, [], evt, 1, {
+              putref = dealDamage({
+                token: token,
+                charId: charId
+              }, dmg, [], evt, 1, {
                 magique: 'true'
               });
               onGenre(charId, 'Il', 'Elle');
@@ -6950,15 +7090,18 @@ var COFantasy = COFantasy || function() {
       attrs = removeAllAttributes('intercepter', evt, attrs);
       attrs = removeAllAttributes('exemplaire', evt, attrs);
       // Pour défaut dans la cuirasse, on diminue si la valeur est 2, et on supprime si c'est 1
-      var defautsDansLaCuirasse =  allAttributesNamed(attrs, 'defautDansLaCuirasse');
-      defautsDansLaCuirasse.forEach(function(attr){
+      var defautsDansLaCuirasse = allAttributesNamed(attrs, 'defautDansLaCuirasse');
+      defautsDansLaCuirasse.forEach(function(attr) {
         if (attr.get('current') < 2) {
           if (evt.deletedAttributes) evt.deletedAttributes.push(attr);
           else evt.deletedAttributes = [attr];
           attr.remove();
         } else {
-          var prevAttr = { attribute: attr, current: 2 };
-          if (evt.attributes)  evt.attributes.push(prevAttr);
+          var prevAttr = {
+            attribute: attr,
+            current: 2
+          };
+          if (evt.attributes) evt.attributes.push(prevAttr);
           else evt.attributes = [prevAttr];
           attr.set('current', 1);
         }
@@ -6997,7 +7140,10 @@ var COFantasy = COFantasy || function() {
               total: feu,
               display: feu
             };
-            feu = dealDamage({token:tok, charId:charId}, dmg, [], evt, 1);
+            feu = dealDamage({
+              token: tok,
+              charId: charId
+            }, dmg, [], evt, 1);
             sendChar(charId, " est en flamme ! " +
               onGenre(charId, 'Il', 'Elle') + " subit " + feu + " DM");
             if (d6Enflamme < 3) {
