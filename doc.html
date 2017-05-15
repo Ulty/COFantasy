@@ -100,6 +100,7 @@ p  {margin-left: inherit}
       <li> <tt>--poudre</tt> : l'arme est une arme à poudre, utilisation d'un dé de poudre</li>
       <li> <tt>--auto</tt> : l'attaque réussit automatiquement</li>
       <li><tt>--bonusAttaque</tt> <i>n</i> : ajoute <i>n</i> au jet d'attaque</li>
+      <li><tt>--bonusCritique</tt> <i>n</i> : augmente <i>n</i> à la plage de coups critiques</li>
       <li> <tt>--psave</tt> <i>carac seuil</i> : jet de <i>carac</i>, si le jet est supérieur à <i>seuil</i>, les dégâts sont divisés par 2. <i>carac</i> est l'abbréviation de caractéristiques de 3 lettres standard (FOR, DEX, ...). Si on souhaite que le jet ne permette de réduire qu'une partie des dommages (la dernière ajoutée avec <tt>--plus</tt>), on peut ajouter <tt>local</tt>. La syntaxe complète est alors <tt>--psave</tt> <i>carac seuil</i> <tt>local</tt> </li>
       <li> <tt>--save</tt> <i>carac seuil</i> : même effet que <tt>--psave</tt>, mais pour annuler le dernier <tt>--effet</tt> ou <tt>--etatSi</tt> (aucun effet sur les DM).</li>
       <li> <tt>--fx</tt> <i>effet</i> : ajoute un <a href="https://wiki.roll20.net/Custom_FX">effet</a> qui part de l'attaquant à la cible. Si l'attaque rate, l'effet rate aussi, d'autant plus que le jet d'attaque est loin de la défense.</li>
@@ -476,7 +477,7 @@ p  {margin-left: inherit}
     <ol>
       <li>Injonction : utiliser 
         <tt>!cof-attaque-magique @{selected|token_id} @{target|token_id}</tt></li>
-      <li>Sommeil : <tt>!cof-sommeil @{selected|token_id} --disque @{target|token_id} 10 20</tt>. Pour sélectionner le centre de la zone, on peut utiliser un personnage fictif ayant 0 de max de PV.</li>
+      <li>Sommeil : <tt>!cof-sommeil @{selected|token_id} --disque @{target|token_id} 5 20</tt>. Pour sélectionner le centre de la zone, on peut utiliser un personnage fictif ayant 0 de max de PV.</li>
     </ol>
     <h4>Voie des illusions</h4>
     <ol>
@@ -639,7 +640,7 @@ p  {margin-left: inherit}
     <p style="margin-top:0px; margin-bottom:0px">
     Ajouter sur la fiche une compétence <tt>Occultisme</tt> avec en bonus 2 fois le rang dans cette voie.
     <ol>
-      <li>Ténèbres : faire une attaque Ténèbres, sans dégâts et de portée 20 m. Pour l'attaque, utiliser les arguments <tt>--disque 10 --auto --effet aveugleTemp [[5+@{selected|INT}]]</tt>. Au MJ ensuite d'enlever l'état aveuglé quand les cibles sortent de la zone.</li>
+      <li>Ténèbres : faire une attaque Ténèbres, sans dégâts et de portée 20 m. Pour l'attaque, utiliser les arguments <tt>--disque 5 --auto --effet aveugleTemp [[5+@{selected|INT}]]</tt>. Au MJ ensuite d'enlever l'état aveuglé quand les cibles sortent de la zone.</li>
       <li>Pattes d'araignées : pas de support</li>
       <li>Strangulation : faire une attaque <tt>Strangulation</tt> sur la fiche, utilisant l'attaque magique, de portée 20 m, et de dégâts 1d6+INT. Au MJ de vérifier que la cible est valide (vivante). Utiliser les options <tt>--effet strangulation </tt><i>rang</i><tt> --mana 1 --ignoreObstacles ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt>. Pour maintenair la strangulation, chaque tour le nécromancien doit faire <tt>!cof-strangulation @{selected|token_id} @{target|token_id} ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt>.</li>
       <li>Ombre mortelle : <tt>!cof-ombre-mortelle @{selected|token_id} @{target|token_id} [[3+@{selected|INT}]] --portee 20 --mana 2</tt> va créer un double de la cible, (à condition de disposer de 2 points de mana) et ajouter ce double à l'initiative. Au MJ ensuite de la faire attaquer à son tour (pas d'aoe, juste attaquer le token dont elle est l'ombre). Le token disparaît lorsque le nombre de tours est écoulé. Si vous utilisez le script <tt>marchingOrder</tt>, vous pouvez même faire que l'ombre suive con propriétaire automatiquement.</li>
@@ -785,7 +786,7 @@ p  {margin-left: inherit}
     <h4>Voie des créatures volantes</h4>
     <h4>Voie de la magie de combat</h4>
     <ol>
-      <li>Attaque magique : simplement une attaque. Pour la version de zone, utiliser les options <tt>--disque 10 --auto --psave DEX 10</tt>.</li>
+      <li>Attaque magique : simplement une attaque. Pour la version de zone, utiliser les options <tt>--disque 5 --auto --psave DEX 10</tt>.</li>
       <li>Armure magique : utiliser <tt>!cof-armure-magique</tt></li>
     </ol>
     <h4>Voie de la magie de guérison</h4>

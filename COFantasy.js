@@ -580,6 +580,18 @@ var COFantasy = COFantasy || function() {
           }
           options.bonusAttaque = bAtt;
           return;
+        case "bonusCritique":
+          if (cmd.length < 2) {
+            error("Usage : --bonusCritique b", cmd);
+            return;
+          }
+          var bCrit = parseInt(cmd[1]);
+          if (isNaN(bCrit)) {
+            error("Le bonus aux chances de critique doit être un nombre");
+            return;
+          }
+          options.bonusCritique = bCrit;
+          return;
         case "puissant":
           if (cmd.length < 2) {
             options.puissant = true;
@@ -1181,7 +1193,7 @@ var COFantasy = COFantasy || function() {
     } else {
       nomCiblePrincipale = targetToken.get('name');
       if (options.aoe) {
-        var distanceTarget = distanceCombat(attackingToken, targetToken, pageId);
+        var distanceTarget = distanceCombat(targetToken, attackingToken, pageId, true);
         switch (options.aoe.type) {
           case 'ligne':
             var pt1 = tokenCenter(attackingToken);
@@ -1237,7 +1249,9 @@ var COFantasy = COFantasy || function() {
             break;
           case 'disque':
             if (distanceTarget > portee) {
-              sendChar(attackingCharId, "Le centre du disque visé est trop loin pour " + weaponName + " (distance " + distanceTarget + ", portée " + portee + ")");
+              sendChar(attackingCharId, 
+                "Le centre du disque visé est trop loin pour " + weaponName + 
+                  " (distance " + distanceTarget + ", portée " + portee + ")");
               return;
             }
             var allToksDisque =
@@ -1255,7 +1269,8 @@ var COFantasy = COFantasy || function() {
               if (objCharId === '') return;
               var objChar = getObj('character', objCharId);
               if (objChar === undefined) return;
-              var distanceCentre = distanceCombat(targetToken, obj, pageId);
+              var distanceCentre = 
+                distanceCombat(targetToken, obj, pageId, true);
               if (distanceCentre > options.aoe.rayon) return;
               cibles.push({
                 token: obj,
@@ -1458,6 +1473,7 @@ var COFantasy = COFantasy || function() {
       error("Le critique n'est pas un nombre entre 1 et 20", crit);
       crit = 20;
     }
+    if (options.bonusCritique) crit -=1;
     if (options.affute) crit -= 1;
     var dice = 20;
     if (getState(attackingToken, 'affaibli', attackingCharId)) {
@@ -2992,7 +3008,8 @@ var COFantasy = COFantasy || function() {
     return 0;
   }
 
-  function distanceCombat(tok1, tok2, pageId) {
+  //strict1 = true si on considère que tok1 doit avoir une taille nulle
+  function distanceCombat(tok1, tok2, pageId, strict1) {
     if (pageId === undefined) {
       pageId = tok1.get('pageid');
     }
@@ -3002,7 +3019,7 @@ var COFantasy = COFantasy || function() {
     var pt1 = tokenCenter(tok1);
     var pt2 = tokenCenter(tok2);
     var distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
-    distance_pix -= tokenSize(tok1, PIX_PER_UNIT);
+    if (!strict1) distance_pix -= tokenSize(tok1, PIX_PER_UNIT);
     distance_pix -= tokenSize(tok2, PIX_PER_UNIT);
     if (distance_pix < PIX_PER_UNIT * 1.5) return 0; //cases voisines
     return ((distance_pix / PIX_PER_UNIT) * scale);
@@ -3421,7 +3438,7 @@ var COFantasy = COFantasy || function() {
                 }
                 actif = tokenOfId(msg.selected[0]._id, msg.selected[0]._id, pageId);
               }
-              if (distanceCombat(actif.token, centre.token) > portee) {
+              if (distanceCombat(centre.token, actif.token, pageId, true) > portee) {
                 sendChar("Le centre de l'effet est placé trop loin (portée " + portee + ")");
                 return;
               }
@@ -3441,7 +3458,7 @@ var COFantasy = COFantasy || function() {
               if (objCharId === '') return;
               var objChar = getObj('character', objCharId);
               if (objChar === undefined) return;
-              var distanceCentre = distanceCombat(centre.token, obj, pageId);
+              var distanceCentre = distanceCombat(centre.token, obj, pageId, true);
               if (distanceCentre > rayon) return;
               selected.push({
                 _id: obj.id
