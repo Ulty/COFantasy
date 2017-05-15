@@ -424,6 +424,7 @@ var COFantasy = COFantasy || function() {
         case "ignoreObstacles":
         case "enflamme":
         case "magique":
+        case "asDeLaGachette":
           options[cmd[0]] = true;
           return;
         case "si":
@@ -1249,9 +1250,9 @@ var COFantasy = COFantasy || function() {
             break;
           case 'disque':
             if (distanceTarget > portee) {
-              sendChar(attackingCharId, 
-                "Le centre du disque visé est trop loin pour " + weaponName + 
-                  " (distance " + distanceTarget + ", portée " + portee + ")");
+              sendChar(attackingCharId,
+                "Le centre du disque visé est trop loin pour " + weaponName +
+                " (distance " + distanceTarget + ", portée " + portee + ")");
               return;
             }
             var allToksDisque =
@@ -1269,7 +1270,7 @@ var COFantasy = COFantasy || function() {
               if (objCharId === '') return;
               var objChar = getObj('character', objCharId);
               if (objChar === undefined) return;
-              var distanceCentre = 
+              var distanceCentre =
                 distanceCombat(targetToken, obj, pageId, true);
               if (distanceCentre > options.aoe.rayon) return;
               cibles.push({
@@ -1473,7 +1474,7 @@ var COFantasy = COFantasy || function() {
       error("Le critique n'est pas un nombre entre 1 et 20", crit);
       crit = 20;
     }
-    if (options.bonusCritique) crit -=1;
+    if (options.bonusCritique) crit -= 1;
     if (options.affute) crit -= 1;
     var dice = 20;
     if (getState(attackingToken, 'affaibli', attackingCharId)) {
@@ -1779,7 +1780,15 @@ var COFantasy = COFantasy || function() {
           line +=
             ":</b> " + attRollValue + " vs <b>" + defense + "</b> " + attackResult;
           target.attackMessage = line;
-          if (!touche) {
+          if (touche) {
+            if (options.asDeLaGachette && attackRoll > 24) {
+              target.messages.push("As de la gachette : + 1d6 DM");
+              target.additionalDmg.push({
+                type: mainDmgType,
+                value: '1d6'
+              });
+            }
+          } else {//Effet si on ne touche pas
             /* Draw failed effect */
             if (_.has(options, "fx") && options.distance) {
               var p1 = {
