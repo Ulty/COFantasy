@@ -36,7 +36,7 @@ p  {margin-left: inherit}
 
     <h3 id="selection">1.3 Méthode de sélection de groupes</h3>
     <p>
-    Comme les joueurs ne peuvent pas sélectionner un nombre arbitraire d'ennemis, 5 méthodes sont disponibles&nbsp;:
+    Comme les joueurs ne peuvent pas sélectionner un nombre arbitraire d'ennemis, 6 méthodes sont disponibles&nbsp;:
     <ul>
       <li>Le MJ lance la macro en sélectionnant les cibles</li>
       <li id="allie"> option <tt>--allies</tt> :
@@ -51,6 +51,8 @@ p  {margin-left: inherit}
       <li> option <tt>--target</tt> :
         pour ajouter une seule cible, avec une id de token.
         Le personnage qui agit est celui qui est sélectionné</li>
+      <li> option <tt>--disque</tt> :
+        le premier argument doit être l'id ou le nom d'un token qui représente un personnage, le deuxième argument un rayon. Cela sélectionne tous les tokens à une distamce de moins que le rayon du premier argument. Si un troisième argument est donné, il est interprété comme la portée maximum entre le centre du disque et le token actif (qui est supposé être celui sélectionné). Si le premier argument représente un personnage avec un max de PV à 0, il est compris comme un personnage fictif créé juste pour définir le disque, et il sera supprimé après la sélection.</li>
     </ul>
 
     <h3>1.4 Règles optionelles utilisées</h3>
@@ -474,9 +476,7 @@ p  {margin-left: inherit}
     <ol>
       <li>Injonction : utiliser 
         <tt>!cof-attaque-magique @{selected|token_id} @{target|token_id}</tt></li>
-      <li>Sommeil : Le joueur sélectionne une zone, puis le MJ lance la commande
-    sur l'ensemble des tokens. Prendre en argument le nom de l'attaquant, 
-    (cherche le nom exact et sinon un préfixe). <tt>!cof-sommeil</tt> <i>nom</i></li>
+      <li>Sommeil : <tt>!cof-sommeil @{selected|token_id} --disque @{target|token_id} 10 20</tt>. Pour sélectionner le centre de la zone, on peut utiliser un personnage fictif ayant 0 de max de PV.</li>
     </ol>
     <h4>Voie des illusions</h4>
     <ol>

@@ -993,8 +993,9 @@ var COFantasy = COFantasy || function() {
           return;
         }
         if (attributeAsInt(protecteur.charId, 'DEFBOUCLIERON', 1) === 0) {
+          var sujet = onGenre(protecteur.charId, 'il', 'elle');
           explications.push(nameProtecteur +
-            " ne porte pas son bouclier, il ne peut pas proteger " +
+            " ne porte pas son bouclier, " + sujet + " ne peut pas proteger " +
             tokenName);
           return;
         }
@@ -1336,6 +1337,7 @@ var COFantasy = COFantasy || function() {
       type: "Tentative d'attaque"
     }; //the event to be stored in history
     var explications = [];
+    var sujetAttaquant = onGenre(attackingCharId, 'il', 'elle');
     // Munitions
     if (options.munition) {
       if (attackingToken.get('bar1_link') === '') {
@@ -1353,7 +1355,9 @@ var COFantasy = COFantasy || function() {
       munitionsAttr = munitionsAttr[0];
       var munitions = munitionsAttr.get('current');
       if (munitions < 1 || (options.tirDouble && munitions < 2)) {
-        sendChar(attackingCharId, "ne peut pas utiliser cette attaque, car elle n'a plus de " + options.munition.nom.replace(/_/g, ' '));
+        sendChar(attackingCharId,
+          "ne peut pas utiliser cette attaque, car " + sujetAttaquant +
+          " n'a plus de " + options.munition.nom.replace(/_/g, ' '));
         return; //evt toujours vide
       }
       var munitionsMax = munitionsAttr.get('max');
@@ -1390,7 +1394,9 @@ var COFantasy = COFantasy || function() {
           return;
         }
         if (options.tirDouble && currentCharge < 2) {
-          sendChar(attackingCharId, "ne peut pas faire de tir double avec ses" + weaponName + "s car il n'en a pas au moins 2 chargées");
+          sendChar(attackingCharId,
+            "ne peut pas faire de tir double avec ses" + weaponName + "s car " +
+            sujetAttaquant + " n'en a pas au moins 2 chargées");
           addEvent(evt);
           return;
         }
@@ -1408,7 +1414,9 @@ var COFantasy = COFantasy || function() {
         }
       } else {
         if (options.tirDouble) {
-          sendChar(attackingCharId, "ne peut pas faire de tir double avec ses" + weaponName + "s car il n'en a pas au moins 2 chargées");
+          sendChar(attackingCharId,
+            "ne peut pas faire de tir double avec ses" + weaponName + "s car " +
+            sujetAttaquant + " n'en a pas au moins 2 chargées");
           addEvent(evt);
           return;
         }
@@ -3263,7 +3271,8 @@ var COFantasy = COFantasy || function() {
     return tokens;
   }
 
-  function getSelected(msg, callback) {
+  // actif est un argument optionnel qui représente (token+charId) de l'unique token sélectionné
+  function getSelected(msg, callback, actif) {
     var pageId;
     if (msg.who.endsWith("(GM)")) {
       var player = getObj('player', msg.playerid);
@@ -3284,7 +3293,8 @@ var COFantasy = COFantasy || function() {
       args.shift();
       args.forEach(function(cmd) {
         count--;
-        switch (cmd.split(' ', 1)[0]) {
+        var cmdSplit = cmd.split(' ');
+        switch (cmdSplit[0]) {
           case 'equipe':
             var nomEquipe = 'Equipe' + cmd.substring(cmd.indexOf(' '));
             var equipes = findObjs({
@@ -3359,6 +3369,12 @@ var COFantasy = COFantasy || function() {
             }); //end toutesEquipes.forEach
             return;
           case 'self':
+            if (actif) {
+              selected.push({
+                _id: actif.token.id
+              });
+              return;
+            }
             if (msg.selected === undefined) return;
             msg.selected.forEach(function(obj) {
               var inSelf = selected.findIndex(function(o) {
@@ -3368,7 +3384,6 @@ var COFantasy = COFantasy || function() {
             });
             return;
           case 'target':
-            var cmdSplit = cmd.split(' ');
             if (cmdSplit.length < 2) {
               error("Il manque l'id de la cible (après --target)", cmd);
               return;
@@ -3376,6 +3391,67 @@ var COFantasy = COFantasy || function() {
             selected.push({
               _id: cmdSplit[1]
             });
+            return;
+          case 'disque':
+            if (cmdSplit.length < 3) {
+              error("Pas assez d'argument pour définir un disque", cmdSplit);
+              return;
+            }
+            var centre = tokenOfId(cmdSplit[1], cmdSplit[1], pageId);
+            if (centre === undefined) {
+              error("le premier argument du disque n'est pas un token valide", cmdSplit);
+              return;
+            }
+            var rayon = parseInt(cmdSplit[2]);
+            if (isNaN(rayon) || rayon < 0) {
+              error("Rayon du disque mal défini", cmdSplit);
+              return;
+            }
+            var portee;
+            if (cmdSplit.length > 3) {
+              portee = parseInt(cmdSplit[3]);
+              if (isNaN(portee) || portee < 0) {
+                error("La portée du disque est mal formée", cmdSplit);
+                return;
+              }
+              if (actif === undefined) {
+                if (msg.selected === undefined || msg.selected.length != 1) {
+                  error("Pas de token sélectionné pour calculer la distance du disque", msg);
+                  return;
+                }
+                actif = tokenOfId(msg.selected[0]._id, msg.selected[0]._id, pageId);
+              }
+              if (distanceCombat(actif.token, centre.token) > portee) {
+                sendChar("Le centre de l'effet est placé trop loin (portée " + portee + ")");
+                return;
+              }
+            }
+            var allToksDisque =
+              findObjs({
+                _type: "graphic",
+                _pageid: pageId,
+                _subtype: "token",
+                layer: "objects"
+              });
+            allToksDisque.forEach(function(obj) {
+              if (portee === 0 && obj.id == actif.token.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
+              if (getState(obj, 'mort')) return; //pas d'effet aux morts
+              if (obj.get('bar1_max') == 0) return; // jshint ignore:line
+              var objCharId = obj.get('represents');
+              if (objCharId === '') return;
+              var objChar = getObj('character', objCharId);
+              if (objChar === undefined) return;
+              var distanceCentre = distanceCombat(centre.token, obj, pageId);
+              if (distanceCentre > rayon) return;
+              selected.push({
+                _id: obj.id
+              });
+            });
+            if (centre.token.get('bar1_max') == 0) { // jshint ignore:line
+              //C'est juste un token utilisé pour définir le disque
+              centre.token.remove(); //On l'enlève, normalement plus besoin
+              centre = undefined;
+            }
             return;
           default:
         }
@@ -5311,17 +5387,13 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-peur", msg.content);
       return;
     }
-    var casterTokenId = cmd[1];
-    var casterToken = getObj('graphic', casterTokenId);
-    if (!casterToken) {
+    var caster = tokenOfId(cmd[1], cmd[1]);
+    if (caster === undefined) {
       error("Le premier arguent de !cof-peur n'est pas un token valide", cmd);
       return;
     }
-    var casterCharId = casterToken.get('represents');
-    if (casterCharId === '') {
-      error("Le premier arguent de !cof-peur n'est pas un token valide", casterToken);
-      return;
-    }
+    var casterToken = caster.token;
+    var casterCharId = caster.charId;
     var casterCharacter = getObj('character', casterCharId);
     var pageId = casterToken.get('pageid');
     var difficulte = parseInt(cmd[2]);
@@ -5399,7 +5471,7 @@ var COFantasy = COFantasy || function() {
           counter--;
           finalEffect();
         });
-    });
+    }, caster);
   }
 
 
@@ -5507,49 +5579,30 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function findCharacter(name) {
-    var charac = findObjs({
-      _type: 'character',
-      name: name
-    });
-    if (charac.length > 1)
-      sendChat("COFantasy", "Il existe plusieurs personnages nommés " + name);
-    if (charac.length > 0) return charac[0];
-    charac = findObjs({
-      _type: 'character'
-    });
-    charac = charac.filter(function(obj) {
-      return (obj.get('name').startsWith(name));
-    });
-    if (charac.length > 1)
-      sendChat("COFantasy", "Aucun personnage nommé " + name + ", mais plusieurs commençant par " + name + ". On choisi " + charac[0].get('name'));
-    if (charac.length > 0) return charac[0];
-    return undefined;
-  }
-
   function sommeil(msg) { //sort de sommeil
+    var args = msg.content.split(' ');
+    if (args.length < 2) {
+      error("La fonction !cof-sommeil a besoin du nom ou de l'id du lanceur de sort", args);
+      return;
+    }
+    var caster = tokenOfId(args[1], args[1]);
+    if (caster === undefined) {
+      error("Aucun personnage nommé " + args[1], args);
+      return;
+    }
+    var casterCharId = caster.charId;
+    var casterChar = getObj('character', casterCharId);
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
         sendChat(msg.who, "Pas de cible sélectionnée pour le sort de sommeil");
         return;
       }
-      // first argument is name of the spell caster
-      var args = msg.content.split(' ');
-      if (args.length < 2) {
-        error("La fonction !cof-sommeil a besoin du nom du lanceur de sort", args);
-        return;
-      }
-      var caster = findCharacter(args[1]);
-      if (caster === undefined) {
-        error("Aucun personnage nommé " + args[1], args);
-        return;
-      }
-      var casterCharId = caster.id;
-      var casterName = caster.get('name');
+      var casterName = caster.token.get('name');
+      var casterCharName = casterChar.get('name');
       var cha = modCarac(casterCharId, 'CHARISME');
-      var attMagText = addOrigin(casterName, getAttrByName(casterCharId, 'ATKMAG'));
+      var attMagText = addOrigin(casterCharName, getAttrByName(casterCharId, 'ATKMAG'));
       var titre = "<b>" + casterName + "</b> lance un sort de sommeil";
-      var display = startFramedDisplay(msg.playerid, titre, caster);
+      var display = startFramedDisplay(msg.playerid, titre, casterChar);
       sendChat("", "[[1d6]] [[" + attMagText + "]]", function(res) {
         var rolls = res[0];
         var afterEvaluate = rolls.content.split(" ");
@@ -5630,11 +5683,12 @@ var COFantasy = COFantasy || function() {
             testCaracteristique(t.charId, 'SAG', [], seuil, 0, t.token,
               function(reussite, rollText) {
                 var line = "Jet de résistance de " + t.name + ":" + rollText;
+                var sujet = onGenre(t.charId, 'il', 'elle');
                 if (reussite) {
-                  line += "&gt;=" + seuil + ",  il ne s'endort pas";
+                  line += "&gt;=" + seuil + ",  " + sujet + " ne s'endort pas";
                 } else {
                   setState(t.token, 'endormi', true, evt, t.charId);
-                  line += "&lt;" + seuil + ", il s'endort";
+                  line += "&lt;" + seuil + ", " + sujet + " s'endort";
                 }
                 addLineToFramedDisplay(display, line);
                 sendEvent();
@@ -5645,7 +5699,7 @@ var COFantasy = COFantasy || function() {
           sendChat("", endFramedDisplay(display));
         }
       });
-    });
+    }, caster);
   }
 
   function transeGuerison(msg) {
@@ -5825,7 +5879,9 @@ var COFantasy = COFantasy || function() {
     if (msg.content.includes(' --transfer')) { //paie avec ses PV
       pvSoigneur = parseInt(token1.get("bar1_value"));
       if (isNaN(pvSoigneur) || pvSoigneur <= 0) {
-        sendChar(charId1, "ne peut pas soigner " + name2 + ", il n'a plus de PV");
+        var sujet = onGenre(charId2, 'il', 'elle');
+        sendChar(charId1,
+          "ne peut pas soigner " + name2 + ", " + sujet + " n'a plus de PV");
         return;
       }
       if (pvSoigneur < soins) {
