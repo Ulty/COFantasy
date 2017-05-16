@@ -425,6 +425,7 @@ var COFantasy = COFantasy || function() {
         case "enflamme":
         case "magique":
         case "asDeLaGachette":
+        case "sortilege":
           options[cmd[0]] = true;
           return;
         case "si":
@@ -653,6 +654,21 @@ var COFantasy = COFantasy || function() {
             error("le rayon du disque n'est pas un nombre positif", cmd);
             options.aoe = undefined;
           }
+          return;
+        case "cone":
+          if (options.aoe) {
+            error("Deux options pour définir une aoe", args);
+            return;
+          }
+          var angle = 90;
+          if (cmd.length > 1) {
+            angle = parseInt(cmd[1]);
+            if (isNaN(angle) || angle < 0 || angle > 360) {
+              error("Paramètre d'angle du cone incorrect", cmd);
+              angle = 90;
+            }
+          }
+          options.aoe = {type: 'cone', angle: angle};
           return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
@@ -1028,6 +1044,10 @@ var COFantasy = COFantasy || function() {
     var instinctSurvie = attributeAsInt(charId, 'instinctDeSurvie', 0);
     if (instinctSurvie > 0 && token.get('bar1_value') <= instinctSurvie)
       defense += 5;
+    if (attributeAsBool(charId, 'danseIrresistible', false, token)) {
+      defense -= 4;
+      explications.push("Pas facile de se défendre en dansant...");
+    }
     return defense;
   }
 
@@ -1080,6 +1100,14 @@ var COFantasy = COFantasy || function() {
         attBonus -= parseInt(attrPosture.get('current'));
       if (posture.endsWith('ATT'))
         attBonus += parseInt(attrPosture.get('current'));
+    }
+    if (options.sortilege && attributeAsBool(charId, 'zoneDeSilence', false, token)) {
+      attBonus -= 2;
+      explications.push("L'impossibilité de faire un son rend le lancement de sorts difficile");
+    }
+    if (attributeAsBool(charId, 'danseIrresistible', false, token)) {
+      attBonus -= 4;
+      explications.push("Pas facile d'attaquer en dansant...");
     }
     return attBonus;
   }
@@ -1195,15 +1223,15 @@ var COFantasy = COFantasy || function() {
       nomCiblePrincipale = targetToken.get('name');
       if (options.aoe) {
         var distanceTarget = distanceCombat(targetToken, attackingToken, pageId, true);
+            var pta = tokenCenter(attackingToken);
+            var ptt = tokenCenter(targetToken);
         switch (options.aoe.type) {
           case 'ligne':
-            var pt1 = tokenCenter(attackingToken);
-            var pt2 = tokenCenter(targetToken);
             if (distanceTarget < portee) { //la ligne va plus loin que la cible
               var scale = portee * 1.0 / distanceTarget;
-              pt2 = [
-                Math.round((pt2[0] - pt1[0]) * scale) + pt1[0],
-                Math.round((pt2[1] - pt1[1]) * scale) + pt1[1]
+              ptt = [
+                Math.round((ptt[0] - pta[0]) * scale) + pta[0],
+                Math.round((ptt[1] - pta[1]) * scale) + pta[1]
               ];
             }
             if (targetToken.get('bar1_max') == 0) { // jshint ignore:line
@@ -1231,15 +1259,15 @@ var COFantasy = COFantasy || function() {
               });
             allToks.forEach(function(obj) {
               if (obj.id == attackingToken.id) return; //on ne se cible pas
-              if (getState(obj, 'mort')) return; //pas de dégâts aux morts
-              var pt = tokenCenter(obj);
-              var distToTrajectory = VecMath.ptSegDist(pt, pt1, pt2);
-              if (distToTrajectory > (obj.get('width') + obj.get('height')) / 2)
-                return;
               var objCharId = obj.get('represents');
               if (objCharId === '') return;
               var objChar = getObj('character', objCharId);
               if (objChar === undefined) return;
+              if (getState(obj, 'mort')) return; //pas de dégâts aux morts
+              var pt = tokenCenter(obj);
+              var distToTrajectory = VecMath.ptSegDist(pt, pta, ptt);
+              if (distToTrajectory > (obj.get('width') + obj.get('height')) / 2)
+                return;
               cibles.push({
                 token: obj,
                 charId: objCharId,
@@ -1264,12 +1292,12 @@ var COFantasy = COFantasy || function() {
               });
             allToksDisque.forEach(function(obj) {
               if (portee === 0 && obj.id == attackingToken.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
-              if (getState(obj, 'mort')) return; //pas de dégâts aux morts
               if (obj.get('bar1_max') == 0) return; // jshint ignore:line
               var objCharId = obj.get('represents');
               if (objCharId === '') return;
               var objChar = getObj('character', objCharId);
               if (objChar === undefined) return;
+              if (getState(obj, 'mort')) return; //pas de dégâts aux morts
               var distanceCentre =
                 distanceCombat(targetToken, obj, pageId, true);
               if (distanceCentre > options.aoe.rayon) return;
@@ -1286,6 +1314,51 @@ var COFantasy = COFantasy || function() {
             }
             // La nouvelle portée (pour ne rien éliminer à l'étape suivante
             portee += options.aoe.rayon;
+            break;
+          case 'cone':
+            var vecCentre = VecMath.normalize(VecMath.vec(pta, ptt));
+            var cosAngle = Math.cos(options.aoe.angle * Math.PI / 180.0);
+            if (targetToken.get('bar1_max') == 0) { // jshint ignore:line
+              //C'est juste un token utilisé pour définir le cone
+              if (options.fx) {
+                var p1eC = {
+                  x: attackingToken.get('left'),
+                  y: attackingToken.get('top'),
+                };
+                var p2eC = {
+                  x: targetToken.get('left'),
+                  y: targetToken.get('top'),
+                };
+                spawnFxBetweenPoints(p1eC, p2eC, options.fx, pageId);
+              }
+              cibles = [];
+              targetToken.remove(); //On l'enlève, normalement plus besoin
+            }
+            var allToksCone =
+              findObjs({
+                _type: "graphic",
+                _pageid: pageId,
+                _subtype: "token",
+                layer: "objects"
+              });
+            allToksCone.forEach(function(obj) {
+              if (obj.id == attackingToken.id) return; //on ne se cible pas
+              var objCharId = obj.get('represents');
+              if (objCharId === '') return;
+              var objChar = getObj('character', objCharId);
+              if (objChar === undefined) return;
+              if (getState(obj, 'mort')) return; //pas de dégâts aux morts
+              var pt = tokenCenter(obj);
+              var vecObj = VecMath.normalize(VecMath.vec(pta, pt));
+              if (VecMath.dot(vecCentre, vecObj) < cosAngle) return;
+              // La distance sera comparée à la portée plus loin
+              cibles.push({
+                token: obj,
+                charId: objCharId,
+                name: objChar.get('name'),
+                tokName: obj.get('name')
+              });
+            });
             break;
           default:
             error("aoe inconnue", options.aoe);
@@ -1630,6 +1703,7 @@ var COFantasy = COFantasy || function() {
         setTokenAttr(
           attackingToken, attackingCharId, 'traquenard', 0, evt);
       }
+      if (options.sortilege) options.ignoreObstacles = true;
       var champion = false; //Vrai si champion et jet >= 15 (on ne détermine la valeur qu'après la triche...)
       var critSug; //Suggestion en cas d'écher critique
       //On enlève les cibles qui ne sont pas touchées
@@ -1660,7 +1734,7 @@ var COFantasy = COFantasy || function() {
         }
         //Defense de la cible
         var defense = defenseOfToken(target, pageId, evt);
-        if (options.magique)
+        if (options.sortilege)
           defense += attributeAsInt(target.charId, 'DEF_magie', 0);
         var interchange;
         if (options.aoe === undefined) {
@@ -6940,6 +7014,16 @@ var COFantasy = COFantasy || function() {
       activation: "voit son ombre s'animer et l'attaquer !",
       actif: "est une ombre animée",
       fin: "retrouve une ombre normale"
+    },
+    zoneDeSilence: {
+      activation: "n'entend plus rien",
+      actif: "est totalement sourd",
+      fin: "peut à nouveau entendre"
+    },
+    danseIrresistible: {
+      activation: "se met à danser",
+      actif: "danse malgré lui",
+      fin: "s'arrête de danser"
     }
   };
 

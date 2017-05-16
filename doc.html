@@ -127,6 +127,7 @@ p  {margin-left: inherit}
         multiple pour l'instant).
         Le type affecte différents attributs, et aussi la couleur d'affichage des dégâts.</li>
       <li> <tt>--tranchant</tt>, <tt>--percant</tt>, <tt>--contondant</tt> : précise le type d'arme (si pertinent), pour pouvoir utiliser les RD spécifiques à un type d'arme.</li>
+      <li> <tt>--sortilege</tt> pour indiquer qu'il s'agit d'un sortilège, de façons à pouvoir appliquer tous les effets spécifiques aux sorts. Cette options devrait être passées pour toutes les capacités suivies d'une étoile dans le livre des règles. En particulier, tout sortilege ignore les malus d'obstacles.</li>
       <li><tt>--reroll1</tt> : relance les 1 aux dés de dégats (le 1 est ignoré)</li>
       <li><tt>--mana</tt> <i>n</i> : l'attaque coûte <i>n</i> points de mana.</li>
       <li><tt>--munition</tt> <i>nom</i> <i>taux</i> : l'attaque utilise des munitions dont on garde le compte. Le nombre de munitions doit être inscrit dans un attribut <tt>munition_</tt><i>nom</i>. <i>nom</i> ne doit pas contenir de blanc, mais à l'affichage les <tt>_</tt> seront remplacés par des blancs. La valeur courante de l'attribut est le nombre qu'il reste sur le personnage, alors que le maximum contient ce qu'il a plus ce qu'il peut récupérer après le combat. À chaque attaque portée, une munition est utilisée, et il y a <i>taux</i> chances (sur 100) que la munition ne soit pas récupérable. En fin de combat, on considère que le personnage récupère toutes les munitions récupérables.</li>
@@ -148,6 +149,7 @@ p  {margin-left: inherit}
       <li><tt>--rate</tt>, <tt>--touche</tt>, <tt>--critique</tt>, <tt>--echecCritique</tt> : options pour tricher : le résultat des dés donne toujours le résultat voulu.</li>
       <li><tt>--ligne</tt> : l'attaque porte sur toutes les cibles à portée, entre l'attaquant et le token ciblé. Si le token ciblé est plus proche que la portée de l'attaque, les tokens derrière le token ciblé sont aussi visés. Pour permettre de viser un point quelconque, on peut utiliser un personnage dédié avec un maximum de 0 pv. À chaque fois qu'un token représentant ce personnage est utilisé comme cible de <tt>--ligne</tt>, le token est enlevé de la carte.</li>
       <li><tt>--disque</tt> <i>r</i> : l'attaque porte sur toutes les cibles dans le disque de centre le token ciblé et de rayon <i>r</i>. Comme pour <tt>--ligne</tt>, on peut utilisant un token cible qui sera supprimé après l'attaque.</li>
+      <li><tt>--cone</tt> <i>angle</i> cible toutes les créatures dans un cône de sommet l'attaquant, d'angle <i>angle</i> degrés (90 degrés par défaut), et séparé en deux par le segment joignant l'attaquant et le token visé.</li>
     </ul>
 
     <h4>Réduction des dégâts</h4>
@@ -361,6 +363,13 @@ p  {margin-left: inherit}
     <ol>
       <li>Chant des héros: 
         <tt>!cof-effet-temp chant_des_heros [[5+@{selected|CHA}]] --allies</tt>. Il faut avoir défini une <a href="#allie">équipe</a> avec le barde.</li>
+      <li>Attaque sonore :
+        Ajouter une attaque sur la fiche, utilisant l'attaque magique, de portée 10 m, et de DM 1d6+CHA. Appeler cette attaque avec les options <tt>--sonique --magique --sortilege --cone --fx breath-smoke</tt></li>
+      <li>Zone de silence :
+        <tt>!cof-effet-temp zoneDeSilence [[1d6+@{selected|CHA}]] --mana @{selected|token_id} 1 --portee @{selected|token_id} 35 --disque @{target|token_id} 3</tt>. Le script ne gère pas le moment où les cibles sortent de la zone. Si cela arrive, le MJ doit enlever à la main l'attribut <tt>zoneDeSilence</tt> crée par le script pour le personnage concerné.</li>
+      <li>Danse irrésisitible :
+        Ajouter une attaque sans dégâts sur la fiche, de portée 100 m, utilisant l'attaque magique, avec les options <tt>--mana 2 --sortilege --effet danseIrresistible ?{Y consacrer tout le tour?|Oui,[[2d4+2*@{selected|CHA}]]|Non,[[1d4+@{selected|CHA}]]}</tt> </li>
+      <li>Musique fascinante : pas de support particulier</li>
     </ol>
     <h4>Voie du saltimbanque</h4>
     <ol>
@@ -462,9 +471,9 @@ p  {margin-left: inherit}
       <li>Murmures dans le vent : rien à faire</li>
       <li>Sous tension : <tt>!cof-effet-temp sous_tension [[5+@{selected|CHA}]]</tt>. 
     Pour l'attaque, définir une attaque magique à 1d6+CHA,
-    et l'appeler avec les options <tt>--si etat sous_tension --electrique --ignoreObstacles --fx beam-holy</tt></li>
+    et l'appeler avec les options <tt>--si etat sous_tension --electrique --sortilege --fx beam-holy</tt></li>
       <li>Télékinésie : Pas de support autre que <tt>!cof-lancer-sort @{selected|token_id} 1 télékinésie</tt></li>
-      <li>Foudre : Faire une attaque de foudre de portée 10 m (attaque magique, dégâts 4d6 + CHA), et faire les attaques avec les options <tt>--psave DEX [[12+@{selected|DEX}]] --mana 2 --electrique --ligne --fx beam-holy ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt>. 
+      <li>Foudre : Faire une attaque de foudre de portée 10 m (attaque magique, dégâts 4d6 + CHA), et faire les attaques avec les options <tt>--psave DEX [[12+@{selected|DEX}]] --mana 2 --electrique --sortilege --ligne --fx beam-holy ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt>. 
         <li>Forme éthérée : <tt>!cof-effet-temp intangible [[5 + @{selected|CHA}]] --mana @{selected|token_id} 3</tt></li>
     </ol>
     <h4>Voie de la divination</h4>
@@ -560,10 +569,10 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie de la magie destructrice</h4>
     <ol>
-      <li>Projectile magique : <tt>!cof-attack</tt> avec options <tt>--auto</tt> et <tt>--magique --fx beam-magic</tt></li>
+      <li>Projectile magique : <tt>!cof-attack</tt> avec options <tt>--auto</tt> et <tt>--magique --sortilege --fx beam-magic</tt></li>
       <li> Rayon affaiblissant : <tt>!cof-attack</tt> d'une attaque sans 
-        dégâts, avec 10 m de portee et l'option <tt>--effet rayon_affaiblissant [[1d6+@{selected|INT}]] --ignoreObstacles</tt>. On peut aussi ajouter un petit visuel avec <tt>--fx splatter-magic</tt></li>
-      <li>Flèche enflammée : Utiliser une attaque sur la fiche, et la lancer avec les options <tt>--fx beam-fire --feu --mana 1 --ignoreObstacles --enflamme ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt> 
+        dégâts, avec 10 m de portee et l'option <tt>--effet rayon_affaiblissant [[1d6+@{selected|INT}]] --sortilege</tt>. On peut aussi ajouter un petit visuel avec <tt>--fx splatter-magic</tt></li>
+      <li>Flèche enflammée : Utiliser une attaque sur la fiche, et la lancer avec les options <tt>--fx beam-fire --feu --mana 1 --sortilege --enflamme ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt> 
         </li>
     </ol>
     <h4>Voie de la magie élémentaire</h4>
@@ -632,7 +641,7 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie de l'outre-tombe</h4>
     <ol>
-      <li>Peur : Faire une attaque <tt>Peur</tt> utilisant le score d'attaque magique, de portée 20 m, mais ne faisant aucun dégât (0 dé, pas de bonus de caractéristique). Pour l'attaque, ajouter les arguments --peur [[10+@{selected|INT}]] [[1d4+</tt><i>r</i><tt>]]</tt> où <i>r</i> est le rang dans la voie. Pour l'instant n'utilise que le score de SAG pour résister. TODO : ajouter la possibilité d'utiliser la FOR.</li>
+      <li>Peur : Faire une attaque <tt>Peur</tt> utilisant le score d'attaque magique, de portée 20 m, mais ne faisant aucun dégât (0 dé, pas de bonus de caractéristique). Pour l'attaque, ajouter les arguments <tt>--sortilege --peur [[10+@{selected|INT}]] [[1d4+</tt><i>r</i><tt>]]</tt> où <i>r</i> est le rang dans la voie. Pour l'instant n'utilise que le score de SAG pour résister. TODO : ajouter la possibilité d'utiliser la FOR.</li>
     </ol>
     <h4>Voie du sang</h4>
     <ol>
@@ -644,7 +653,7 @@ p  {margin-left: inherit}
     <ol>
       <li>Ténèbres : faire une attaque Ténèbres, sans dégâts et de portée 20 m. Pour l'attaque, utiliser les arguments <tt>--disque 5 --auto --effet aveugleTemp [[5+@{selected|INT}]]</tt>. Au MJ ensuite d'enlever l'état aveuglé quand les cibles sortent de la zone.</li>
       <li>Pattes d'araignées : pas de support</li>
-      <li>Strangulation : faire une attaque <tt>Strangulation</tt> sur la fiche, utilisant l'attaque magique, de portée 20 m, et de dégâts 1d6+INT. Au MJ de vérifier que la cible est valide (vivante). Utiliser les options <tt>--effet strangulation </tt><i>rang</i><tt> --mana 1 --ignoreObstacles ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt>. Pour maintenair la strangulation, chaque tour le nécromancien doit faire <tt>!cof-strangulation @{selected|token_id} @{target|token_id} ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt>.</li>
+      <li>Strangulation : faire une attaque <tt>Strangulation</tt> sur la fiche, utilisant l'attaque magique, de portée 20 m, et de dégâts 1d6+INT. Au MJ de vérifier que la cible est valide (vivante). Utiliser les options <tt>--effet strangulation </tt><i>rang</i><tt> --mana 1 --sortilege ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt>. Pour maintenair la strangulation, chaque tour le nécromancien doit faire <tt>!cof-strangulation @{selected|token_id} @{target|token_id} ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt>.</li>
       <li>Ombre mortelle : <tt>!cof-ombre-mortelle @{selected|token_id} @{target|token_id} [[3+@{selected|INT}]] --portee 20 --mana 2</tt> va créer un double de la cible, (à condition de disposer de 2 points de mana) et ajouter ce double à l'initiative. Au MJ ensuite de la faire attaquer à son tour (pas d'aoe, juste attaquer le token dont elle est l'ombre). Le token disparaît lorsque le nombre de tours est écoulé. Si vous utilisez le script <tt>marchingOrder</tt>, vous pouvez même faire que l'ombre suive con propriétaire automatiquement.</li>
     </ol>
 
@@ -657,7 +666,7 @@ p  {margin-left: inherit}
     <ol>
       <li>Arme bénie : utiliser l'option <tt>--reroll1</tt> et <tt>--magique</tt> à l'attaque</li>
         <li>Bouclier de la foi : ajuster le bonus de DEF du bouclier</li>
-        <li>Marteau sprirituel : utiliser une attaque, avec les options <tt>--magique</tt>, <tt>--ignoreObstacle</tt>, <tt>--mana 1</tt> et <tt>--puissant ?{Y passer tout le tour ?|oui|non}</tt></li>
+        <li>Marteau sprirituel : utiliser une attaque, avec les options <tt>--magique</tt>, <tt>--sortilege</tt>, <tt>--mana 1</tt> et <tt>--puissant ?{Y passer tout le tour ?|oui|non}</tt></li>
     </ol>
     <h4>Voie de la prière</h4>
     <ol>
@@ -788,7 +797,7 @@ p  {margin-left: inherit}
     <h4>Voie des créatures volantes</h4>
     <h4>Voie de la magie de combat</h4>
     <ol>
-      <li>Attaque magique : simplement une attaque. Pour la version de zone, utiliser les options <tt>--disque 5 --auto --psave DEX 10</tt>.</li>
+      <li>Attaque magique : simplement une attaque, avec les options <tt>--sortilege --magique --fx beam-magic</tt>. Pour la version de zone, utiliser les options <tt>--disque 5 --auto --psave DEX 10</tt>.</li>
       <li>Armure magique : utiliser <tt>!cof-armure-magique</tt></li>
     </ol>
     <h4>Voie de la magie de guérison</h4>
