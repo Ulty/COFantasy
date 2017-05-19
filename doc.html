@@ -103,6 +103,7 @@ p  {margin-left: inherit}
       <li><tt>--bonusCritique</tt> <i>n</i> : augmente <i>n</i> à la plage de coups critiques</li>
       <li> <tt>--psave</tt> <i>carac seuil</i> : jet de <i>carac</i>, si le jet est supérieur à <i>seuil</i>, les dégâts sont divisés par 2. <i>carac</i> est l'abbréviation de caractéristiques de 3 lettres standard (FOR, DEX, ...). Si on souhaite que le jet ne permette de réduire qu'une partie des dommages (la dernière ajoutée avec <tt>--plus</tt>), on peut ajouter <tt>local</tt>. La syntaxe complète est alors <tt>--psave</tt> <i>carac seuil</i> <tt>local</tt> </li>
       <li> <tt>--save</tt> <i>carac seuil</i> : même effet que <tt>--psave</tt>, mais pour annuler le dernier <tt>--effet</tt> ou <tt>--etatSi</tt> (aucun effet sur les DM).</li>
+      <li> <tt>--saveParTour</tt> <i>carac seuil</i> : même effet que <tt>--save</tt>, mais donne droit à un jet à la fin de chaque tour au lieu d'un jet au moment de l'attaque.</li>
       <li> <tt>--fx</tt> <i>effet</i> : ajoute un <a href="https://wiki.roll20.net/Custom_FX">effet</a> qui part de l'attaquant à la cible. Si l'attaque rate, l'effet rate aussi, d'autant plus que le jet d'attaque est loin de la défense.</li>
       <li> <tt>--si</tt> <i>conditon</i> : l'attaque n'est possible que si <i>condition</i> est validée. Une condition peut être
         <ul id="conditions">
@@ -489,6 +490,7 @@ p  {margin-left: inherit}
       <li>Injonction : utiliser 
         <tt>!cof-attaque-magique @{selected|token_id} @{target|token_id}</tt></li>
       <li>Sommeil : <tt>!cof-sommeil @{selected|token_id} --disque @{target|token_id} 5 20</tt>. Pour sélectionner le centre de la zone, on peut utiliser un personnage fictif ayant 0 de max de PV.</li>
+      <li>Confusion: faire une attaque sans dégâts, de portée 20 m, et pour la macro, utiliser les options <tt>--sortilege --mana 1 --effet confusion ?{Y consacrer tout le tour?|Oui,[[6+2*@{selected|CHA}]]|Non,[[3+@{selected|CHA}]]} --saveParTour SAG [[10+@{selected|CHA}]]</tt>.
     </ol>
     <h4>Voie des illusions</h4>
     <ol>
@@ -616,6 +618,7 @@ p  {margin-left: inherit}
     La valeur est mise à 0 à chaque attaque.</li> 
       <li>Transe de guérison : <tt>!cof-transe-guerison</tt></li>
       <li>Maîtrise du ki : adapter les valeurs de DEF et init</li>
+      <li>Projection mentale : aucun support</li>
     </ol>
     <h4>Voie du poing</h4>
     <ol>
