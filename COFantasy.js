@@ -2960,6 +2960,9 @@ var COFantasy = COFantasy || function() {
       case 'electrique':
         InlineColorOverride = " background-color: #FFFF80; color: #222200;";
         break;
+      case 'poison':
+        InlineColorOverride = " background-color: #558000; color: #DDAFFF;";
+        break;
       default:
         if (critCheck && failCheck) {
           InlineColorOverride = " background-color: #8FA4D4; color: #061539;";
@@ -7196,6 +7199,11 @@ var COFantasy = COFantasy || function() {
       activation: "fait apparaître un mur de force",
       actif: "en entouré d'un mur de force",
       fin: "voit son mur de force disparaître"
+    },
+    asphyxie: {
+      activation: "commence à manquer d'air",
+      actif: "étouffe",
+      fin: "peut à nouveau respirer"
     }
   };
 
@@ -7387,7 +7395,8 @@ var COFantasy = COFantasy || function() {
             attribute: attr,
             current: v
           });
-          if (effet == 'putrefaction') { //prend 1d6 DM
+          switch (effet) {
+          case 'putrefaction': //prend 1d6 DM
             iterTokensOfEffet(charId, effet, attrName, function(token) {
               var putref = randomInteger(6);
               var dmg = {
@@ -7405,7 +7414,25 @@ var COFantasy = COFantasy || function() {
               sendChar(charId, " pourrit. " + onGenre(charId, 'Il', 'Elle') +
                 " subit " + putref + " DM");
             });
-          } else if (effet == 'strangulation') {
+              break;
+          case 'asphyxie': //prend 1d6 DM
+            iterTokensOfEffet(charId, effet, attrName, function(token) {
+              var asphyxie = randomInteger(6);
+              var dmg = {
+                type: 'normal',
+                total: asphyxie,
+                display: asphyxie
+              };
+              asphyxie = dealDamage({
+                token: token,
+                charId: charId
+              }, dmg, [], evt, 1);
+              onGenre(charId, 'Il', 'Elle');
+              sendChar(charId, " ne peut plus respirer. " + onGenre(charId, 'Il', 'Elle') +
+                " subit " + asphyxie + " DM");
+            });
+              break;
+          case 'strangulation':
             var nameDureeStrang = 'dureeStrangulation';
             if (effet != attrName) { //concerne un token non lié
               nameDureeStrang += attrName.substring(attrName.indexOf('_'));
@@ -7445,6 +7472,8 @@ var COFantasy = COFantasy || function() {
                 dureeStrang[0].remove();
               }
             }
+              break;
+          default:
           }
         } else { //L'effet arrive en fin de vie, doit être supprimé
           finDEffet(attr, effet, attrName, charId, evt);
