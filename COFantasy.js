@@ -989,6 +989,10 @@ var COFantasy = COFantasy || function() {
     if (target.defautCuirasse === undefined) {
       defense += attributeAsInt(charId, 'DEFARMURE', 0) * attributeAsInt(charId, 'DEFARMUREON', 1);
       defense += attributeAsInt(charId, 'DEFBOUCLIER', 0) * attributeAsInt(charId, 'DEFBOUCLIERON', 1);
+      if (attributeAsBool(charId, 'armureDuMage', false, token)) {
+        if (defense > 12) defense += 2; // On a déjà une armure physique, ça ne se cumule pas.
+        else defense += 4;
+      }
       defense += attributeAsInt(charId, 'DEFDIV', 0);
     } // Dans le cas contraire, on n'utilise pas ces bonus
     defense += modCarac(charId, 'DEXTERITE');
@@ -7204,6 +7208,11 @@ var COFantasy = COFantasy || function() {
       activation: "commence à manquer d'air",
       actif: "étouffe",
       fin: "peut à nouveau respirer"
+    },
+    armureDuMage: {
+      activation: "fait apparaître un nuage magique argenté qui le protège",
+      actif: "est entouré d'une armure du mage",
+      fin: "n'a plus son armure du mage"
     }
   };
 
@@ -7396,84 +7405,84 @@ var COFantasy = COFantasy || function() {
             current: v
           });
           switch (effet) {
-          case 'putrefaction': //prend 1d6 DM
-            iterTokensOfEffet(charId, effet, attrName, function(token) {
-              var putref = randomInteger(6);
-              var dmg = {
-                type: 'maladie',
-                total: putref,
-                display: putref
-              };
-              putref = dealDamage({
-                token: token,
-                charId: charId
-              }, dmg, [], evt, 1, {
-                magique: 'true'
-              });
-              onGenre(charId, 'Il', 'Elle');
-              sendChar(charId, " pourrit. " + onGenre(charId, 'Il', 'Elle') +
-                " subit " + putref + " DM");
-            });
-              break;
-          case 'asphyxie': //prend 1d6 DM
-            iterTokensOfEffet(charId, effet, attrName, function(token) {
-              var asphyxie = randomInteger(6);
-              var dmg = {
-                type: 'normal',
-                total: asphyxie,
-                display: asphyxie
-              };
-              asphyxie = dealDamage({
-                token: token,
-                charId: charId
-              }, dmg, [], evt, 1);
-              onGenre(charId, 'Il', 'Elle');
-              sendChar(charId, " ne peut plus respirer. " + onGenre(charId, 'Il', 'Elle') +
-                " subit " + asphyxie + " DM");
-            });
-              break;
-          case 'strangulation':
-            var nameDureeStrang = 'dureeStrangulation';
-            if (effet != attrName) { //concerne un token non lié
-              nameDureeStrang += attrName.substring(attrName.indexOf('_'));
-            }
-            var dureeStrang = findObjs({
-              _type: 'attribute',
-              _characterid: charId,
-              name: nameDureeStrang
-            });
-            if (dureeStrang.length === 0) {
-              var attrDuree = createObj('attribute', {
-                characterid: charId,
-                name: nameDureeStrang,
-                current: 0,
-                max: false
-              });
-              evt.attributes.push({
-                attribute: attrDuree,
-                current: null
-              });
-            } else {
-              var strangUpdate = dureeStrang[0].get('max');
-              if (strangUpdate) { //a été mis à jour il y a au plus 1 tour
-                evt.attributes.push({
-                  attribute: dureeStrang[0],
-                  current: dureeStrang[0].get('current'),
-                  max: strangUpdate
+            case 'putrefaction': //prend 1d6 DM
+              iterTokensOfEffet(charId, effet, attrName, function(token) {
+                var putref = randomInteger(6);
+                var dmg = {
+                  type: 'maladie',
+                  total: putref,
+                  display: putref
+                };
+                putref = dealDamage({
+                  token: token,
+                  charId: charId
+                }, dmg, [], evt, 1, {
+                  magique: 'true'
                 });
-                dureeStrang[0].set('max', false);
-              } else { //Ça fait trop longtemps, on arrête tout
-                sendChar(charId, messageEffets[effet].fin);
-                attr.set('current', v);
-                evt.attributes.pop(); //On enlève des attributs modifiés pour mettre dans les attribute supprimés.
-                evt.deletedAttributes.push(attr);
-                attr.remove();
-                evt.deletedAttributes.push(dureeStrang[0]);
-                dureeStrang[0].remove();
-              }
-            }
+                onGenre(charId, 'Il', 'Elle');
+                sendChar(charId, " pourrit. " + onGenre(charId, 'Il', 'Elle') +
+                  " subit " + putref + " DM");
+              });
               break;
-          default:
+            case 'asphyxie': //prend 1d6 DM
+              iterTokensOfEffet(charId, effet, attrName, function(token) {
+                var asphyxie = randomInteger(6);
+                var dmg = {
+                  type: 'normal',
+                  total: asphyxie,
+                  display: asphyxie
+                };
+                asphyxie = dealDamage({
+                  token: token,
+                  charId: charId
+                }, dmg, [], evt, 1);
+                onGenre(charId, 'Il', 'Elle');
+                sendChar(charId, " ne peut plus respirer. " + onGenre(charId, 'Il', 'Elle') +
+                  " subit " + asphyxie + " DM");
+              });
+              break;
+            case 'strangulation':
+              var nameDureeStrang = 'dureeStrangulation';
+              if (effet != attrName) { //concerne un token non lié
+                nameDureeStrang += attrName.substring(attrName.indexOf('_'));
+              }
+              var dureeStrang = findObjs({
+                _type: 'attribute',
+                _characterid: charId,
+                name: nameDureeStrang
+              });
+              if (dureeStrang.length === 0) {
+                var attrDuree = createObj('attribute', {
+                  characterid: charId,
+                  name: nameDureeStrang,
+                  current: 0,
+                  max: false
+                });
+                evt.attributes.push({
+                  attribute: attrDuree,
+                  current: null
+                });
+              } else {
+                var strangUpdate = dureeStrang[0].get('max');
+                if (strangUpdate) { //a été mis à jour il y a au plus 1 tour
+                  evt.attributes.push({
+                    attribute: dureeStrang[0],
+                    current: dureeStrang[0].get('current'),
+                    max: strangUpdate
+                  });
+                  dureeStrang[0].set('max', false);
+                } else { //Ça fait trop longtemps, on arrête tout
+                  sendChar(charId, messageEffets[effet].fin);
+                  attr.set('current', v);
+                  evt.attributes.pop(); //On enlève des attributs modifiés pour mettre dans les attribute supprimés.
+                  evt.deletedAttributes.push(attr);
+                  attr.remove();
+                  evt.deletedAttributes.push(dureeStrang[0]);
+                  dureeStrang[0].remove();
+                }
+              }
+              break;
+            default:
           }
         } else { //L'effet arrive en fin de vie, doit être supprimé
           finDEffet(attr, effet, attrName, charId, evt);
