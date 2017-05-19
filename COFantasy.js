@@ -15,6 +15,7 @@
 /* globals spawnFxBetweenPoints */
 /* globals VecMath */
 /* globals on */
+/* globals toFront */
 
 // Needs the Vector Math scripty
 
@@ -6317,17 +6318,13 @@ var COFantasy = COFantasy || function() {
       error("La fonction !cof-lancer-sort attend en argument celui qui lance le sort et le coût en mana", cmd);
       return;
     }
-    var tokenId = cmd[1];
-    var token = getObj('graphic', tokenId);
-    if (token === undefined) {
-      error("Le premier argument de !cof-lancer-sort doit être un token", tokenId);
+    var lanceur = tokenOfId(cmd[1], cmd[1]);
+    if (lanceur === undefined) {
+      error("Le premier argument de !cof-lancer-sort doit être un token", cmd[1]);
       return;
     }
-    var charId = token.get('represents');
-    if (charId === '') {
-      error("Le token ne représente pas de personnage", token);
-      return;
-    }
+    var charId = lanceur.charId;
+    var token = lanceur.token;
     var mana = parseInt(cmd[2]);
     if (isNaN(mana) || mana < 0) {
       error("Le deuxième argument de !cof-lancer-sort doit être un nombre positif", cmd[2]);
@@ -6344,6 +6341,89 @@ var COFantasy = COFantasy || function() {
       sendChar(charId, "/w GM " + spell);
       addEvent(evt);
     }
+  }
+
+  function murDeForce(msg) {
+    var cmd = msg.content.split(' ');
+    if (cmd.length < 3) {
+      error("La fonction !cof-mur-de-force attend en argument celui qui lance le sort", cmd);
+      return;
+    }
+    var lanceur = tokenOfId(cmd[1], cmd[1]);
+    if (lanceur === undefined) {
+      error("Le premier argument de !cof-lancer-sort doit être un token", cmd[1]);
+      return;
+    }
+    var charId = lanceur.charId;
+    var token = lanceur.token;
+    var pageId = lanceur.token.get('pageid');
+    var sphere = true;
+    if (cmd[2] == 'mur') sphere = false;
+    var options = {};
+    var args = msg.content.split(' --');
+    args.shift();
+    args.forEach(function(opt) {
+      var optCmd = opt.split(' ');
+      switch (optCmd[0]) {
+        case 'mana':
+          if (optCmd.length < 2) {
+            error("Il manque le coût en mana", cmd);
+            options.mana = 5;
+            return;
+          }
+          options.mana = parseInt(optCmd[1]);
+          if (isNaN(options.mana) || options.mana < 0) {
+            error("Coût en mana incorrect", optCmd);
+            options.mana = 5;
+          }
+          return;
+        case 'puissant':
+          options.puissant = true;
+          return;
+        case 'image':
+          if (optCmd.length < 2) {
+            error("Il manque l'adresse de l'image", cmd);
+            return;
+          }
+          options.image = optCmd[1];
+          return;
+        default:
+          error("Option inconnue", cmd);
+      }
+    });
+    var evt = {
+      type: "Mur de force"
+    };
+    if (!depenseMana(token, charId, options.mana, "lancer un mur de force", evt)) {
+      return;
+    }
+    sendChar(charId, "lance un sort de mur de force");
+    if (options.image && sphere) {
+      var PIX_PER_UNIT = 70;
+      var page = getObj("page", pageId);
+      var scale = page.get('scale_number');
+      var diametre = PIX_PER_UNIT * (6 / scale);
+      var imageFields = {
+        _pageid: pageId,
+        imgsrc: options.image,
+        represents: '',
+        left: token.get('left'),
+        top: token.get('top'),
+        width: diametre,
+        height: diametre,
+        layer: 'map',
+        name: "Mur de force",
+        isdrawing: true,
+      };
+      var newImage = createObj('graphic', imageFields);
+      toFront(newImage);
+      var duree = 5 + modCarac(charId, 'CHARISME');
+      setTokenAttr(token, charId, 'murDeForce', duree, evt, undefined, getInit());
+      setTokenAttr(token, charId, 'murDeForceId', newImage.id, evt);
+    } else {
+      sendChar(charId, "/w " + token.get('name') + " placer l'image du mur sur la carte");
+    }
+    addEvent(evt);
   }
 
   function distribuerBaies(msg) {
@@ -6993,6 +7073,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-posture-de-combat":
         postureDeCombat(msg);
         return;
+      case "!cof-mur-de-force":
+        murDeForce(msg);
+        return;
       default:
         return;
     }
@@ -7108,6 +7191,11 @@ var COFantasy = COFantasy || function() {
       activation: "ne sait plus très bien ce qu'il fait là",
       actif: "est en pleine confusion",
       fin: "retrouve ses esprits"
+    },
+    murDeForce: {
+      activation: "fait apparaître un mur de force",
+      actif: "en entouré d'un mur de force",
+      fin: "voit son mur de force disparaître"
     }
   };
 
@@ -7236,6 +7324,17 @@ var COFantasy = COFantasy || function() {
       case 'ombreMortelle':
         iterTokensOfEffet(charId, effet, attrName, function(token) {
           token.remove();
+        });
+        break;
+      case 'murDeForce':
+        iterTokensOfEffet(charId, effet, attrName, function(token) {
+          var attr = tokenAttribute(charId, 'murDeForceId', token);
+          if (attr.length === 0) return;
+          var imageMur = getObj('graphic', attr[0].get('current'));
+          if (imageMur) {
+            imageMur.remove();
+          }
+          attr[0].remove();
         });
         break;
       default:
@@ -7475,7 +7574,11 @@ var COFantasy = COFantasy || function() {
           if (count === 0) addEvent(evt);
           return;
         }
-        var attrEffet = findObjs({_type:'attribute', _characterid:charId, name:attrName});
+        var attrEffet = findObjs({
+          _type: 'attribute',
+          _characterid: charId,
+          name: attrName
+        });
         if (attrEffet === undefined || attrEffet.length === 0) {
           error("Save sans effet temporaire " + attrName, attr);
           attr.remove();

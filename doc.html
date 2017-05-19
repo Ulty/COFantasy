@@ -491,6 +491,7 @@ p  {margin-left: inherit}
         <tt>!cof-attaque-magique @{selected|token_id} @{target|token_id}</tt></li>
       <li>Sommeil : <tt>!cof-sommeil @{selected|token_id} --disque @{target|token_id} 5 20</tt>. Pour sélectionner le centre de la zone, on peut utiliser un personnage fictif ayant 0 de max de PV.</li>
       <li>Confusion: faire une attaque sans dégâts, de portée 20 m, et pour la macro, utiliser les options <tt>--sortilege --mana 1 --effet confusion ?{Y consacrer tout le tour?|Oui,[[6+2*@{selected|CHA}]]|Non,[[3+@{selected|CHA}]]} --saveParTour SAG [[10+@{selected|CHA}]]</tt>.
+        <li>Amitié: pas de support particulier</li>
     </ol>
     <h4>Voie des illusions</h4>
     <ol>
@@ -502,7 +503,7 @@ p  {margin-left: inherit}
       <li>Familier : créer un token pour le familier, avec vue et controlé par le
         joueur. Le partage des PV n'est pas géré.</li>
       <li>Serviteur invisible: ok</li>
-      <li>Mur de force : pas de support (?)</li>
+      <li>Mur de force : <tt>!cof-mur-de-force @{selected|token_id} ?{Spherique?|Oui,|Non,mur} --mana 1 --image</tt> <i>path</i> où <i>path</i> est l'adresse url d'une image de la librairie Roll20 qui représente un mur de force (sera placé dans le layer map). L'image n'est utilisée qu'en cas de mur sphérique. </li>
       <li>Épée dansante :
         <ul>
           <li>sort: <tt>!cof-effet-temp epeeDansante [[5+@{selected|CHA}]] --mana @{selected|token_id} 2 --puissant ?{Y passer tout le tour ?|oui|non}</tt></li>
