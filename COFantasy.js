@@ -873,6 +873,30 @@ var COFantasy = COFantasy || function() {
       attBonus -= malusStrangulation;
       explications.push("L'attaquant est étranglé -> -" + malusStrangulation + " au jet d'attaque");
     }
+    if (getState(token, 'renverse', charId)) {
+      attBonus -= 5;
+      explications.push("Attaquant à terre -> -5 à l'attaque");
+    }
+    var attrPosture = tokenAttribute(charId, 'postureDeCombat', token);
+    if (attrPosture.length > 0) {
+      attrPosture = attrPosture[0];
+      var posture = attrPosture.get('max');
+      if (posture.startsWith('ATT'))
+        attBonus -= parseInt(attrPosture.get('current'));
+      if (posture.endsWith('ATT'))
+        attBonus += parseInt(attrPosture.get('current'));
+    }
+    if (attributeAsBool(charId, 'danseIrresistible', false, token)) {
+      attBonus -= 4;
+      explications.push("Pas facile d'attaquer en dansant...");
+    }
+    if (aUnCapitaine({
+        token: token,
+        charId: charId
+      }, evt)) {
+      attBonus += 2;
+      explications.push("Un capitaine donne des ordres -> +2 à l'attaque");
+    }
     return attBonus;
   }
 
@@ -930,12 +954,15 @@ var COFantasy = COFantasy || function() {
     return false;
   }
 
-  function tokenInit(token, charId) {
+  function tokenInit(perso, evt) {
+    var charId = perso.charId;
     var init = parseInt(getAttrByName(charId, 'DEXTERITE'));
     init += attributeAsInt(charId, 'INIT_DIV', 0);
-    if (getState(token, 'aveugle', charId)) init -= 5;
+    if (getState(perso.token, 'aveugle', charId)) init -= 5;
     // Voie du compagnon animal rang 2 (surveillance)
-    if (surveillance(charId, token)) init += 5;
+    if (surveillance(charId, perso.token)) init += 5;
+    // Voie du chef d'armée rang 2 (Capitaine)
+    if (aUnCapitaine(perso, evt)) init += 2;
     // Voie du pistolero rang 1 (plus vite que son ombre)
     attributesInitEnMain(charId).forEach(function(em) {
       var armeL = labelInitEnMain(em);
@@ -1085,10 +1112,6 @@ var COFantasy = COFantasy || function() {
     var attBonus = tempAttkMod;
     if (options.bonusAttaque) attBonus += options.bonusAttaque;
     attBonus += bonusDAttaque(token, charId, explications, evt);
-    if (getState(token, 'renverse', charId)) {
-      attBonus -= 5;
-      explications.push("Attaquant à terre -> -5 à l'attaque");
-    }
     if (getState(token, 'aveugle', charId)) {
       if (options.distance > 0) {
         attBonus -= 10;
@@ -1116,22 +1139,9 @@ var COFantasy = COFantasy || function() {
       setState(token, 'mort', true, evt, charId);
       removeTokenAttr(token, charId, 'baroudHonneurActif', evt);
     }
-    var attrPosture = tokenAttribute(charId, 'postureDeCombat', token);
-    if (attrPosture.length > 0) {
-      attrPosture = attrPosture[0];
-      var posture = attrPosture.get('max');
-      if (posture.startsWith('ATT'))
-        attBonus -= parseInt(attrPosture.get('current'));
-      if (posture.endsWith('ATT'))
-        attBonus += parseInt(attrPosture.get('current'));
-    }
     if (options.sortilege && attributeAsBool(charId, 'zoneDeSilence', false, token)) {
       attBonus -= 2;
       explications.push("L'impossibilité de faire un son rend le lancement de sorts difficile");
-    }
-    if (attributeAsBool(charId, 'danseIrresistible', false, token)) {
-      attBonus -= 4;
-      explications.push("Pas facile d'attaquer en dansant...");
     }
     return attBonus;
   }
@@ -1200,10 +1210,14 @@ var COFantasy = COFantasy || function() {
     // Attacker and target infos
     var attackerTokName = attackingToken.get("name");
     var attackingCharId = attackingToken.get("represents");
-    if (attackingCharId === "") {
+    if (attackingCharId === '') {
       error("Attacking token " + attackerTokName + " must represent a character", attackingToken);
       return;
     }
+    var attaquant = {
+      token: attackingToken,
+      charId: attackingCharId
+    };
     var attacker = getObj("character", attackingCharId);
     if (attacker === undefined) {
       error("Unexpected undefined 1", attacker);
@@ -1652,11 +1666,7 @@ var COFantasy = COFantasy || function() {
                 type: 'normal',
                 display: buildinline(explRoll, 'normal')
               };
-              dealDamage({
-                  token: attackingToken,
-                  charId: attackingCharId
-                }, r, [], evt, 1, options,
-                explications,
+              dealDamage(attaquant, r, [], evt, 1, options, explications,
                 function(dmgDisplay, saveResult, dmg) {
                   var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
                     dmgDisplay;
@@ -1676,11 +1686,7 @@ var COFantasy = COFantasy || function() {
                 type: 'normal',
                 display: buildinline(explRoll, 'normal')
               };
-              dealDamage({
-                  token: attackingToken,
-                  charId: attackingCharId
-                }, r, [], evt, 1, options,
-                explications,
+              dealDamage(attaquant, r, [], evt, 1, options, explications,
                 function(dmgDisplay, saveResult, dmg) {
                   var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
                     dmgDisplay;
@@ -1721,7 +1727,7 @@ var COFantasy = COFantasy || function() {
           addEvent(evt);
           return;
         }
-        traquenard = tokenInit(attackingToken, attackingCharId);
+        traquenard = tokenInit(attaquant, evt);
       }
       if (attributeAsInt(attackingCharId, 'traquenard', 0, attackingToken) > 0) {
         setTokenAttr(
@@ -1738,7 +1744,7 @@ var COFantasy = COFantasy || function() {
         //Les bonus d'attaque qui dépendent de la cible
         var attBonus = attBonusCommun + bonusAttaqueD(attackingToken, attackingCharId, attackerTokName, target, portee, pageId, evt, target.messages, options);
         if (traquenard) {
-          var initTarg = tokenInit(target.token, target.charId);
+          var initTarg = tokenInit(target, evt);
           if (traquenard >= initTarg) {
             attBonus += 2;
             target.additionalDmg.push({
@@ -1978,6 +1984,7 @@ var COFantasy = COFantasy || function() {
         if (posture.endsWith('DM'))
           attDMBonusCommun += " +" + parseInt(attrPosture.get('current'));
       }
+      if (aUnCapitaine(attaquant, evt, pageId)) attDMBonusCommun += " +2";
       // Les autres sources de dégâts
       if (options.de6Plus) {
         options.additionalDmg.push({
@@ -2275,11 +2282,8 @@ var COFantasy = COFantasy || function() {
                           type: 'electrique',
                           display: buildinline(explRoll, 'electrique', true)
                         };
-                        dealDamage({
-                            token: attackingToken,
-                            charId: attackingCharId
-                          }, r, [], evt, 1,
-                          options, target.messages,
+                        dealDamage(attaquant, r, [], evt, 1, options,
+                          target.messages,
                           function(dmgDisplay, saveResult, dmg) {
                             var dmgMsg =
                               "<b>Décharge électrique sur " + attackerTokName + " :</b> " +
@@ -4436,7 +4440,10 @@ var COFantasy = COFantasy || function() {
     iterSelected(selected, function(token, charId) {
       state.COFantasy.combat_pageid = token.get('pageid');
       if (!isActive(token)) return;
-      var init = tokenInit(token, charId);
+      var init = tokenInit({
+        token: token,
+        charId: charId
+      }, evt);
       // On place le token à sa place dans la liste du tour
       var dejaIndex =
         to.dejaAgi.findIndex(function(elt) {
@@ -4516,7 +4523,7 @@ var COFantasy = COFantasy || function() {
     var newInit = parseInt(cmd[1]);
     if (isNaN(newInit) || newInit < 1) {
       error("On ne peut attendre que jusqu'à une initiative de 1", cmd);
-      newInit = 0;
+      newInit = 1;
     }
     var evt = {
       type: "attente"
@@ -4770,11 +4777,13 @@ var COFantasy = COFantasy || function() {
     }
     evt.attributes = evt.attributes || [];
     var agrandir = false;
-    if (attribute == 'agrandissement') agrandir = true;
+    if (attribute == 'agrandissement' && token) agrandir = true;
     // check if the token is linked to the character. If not, use token name
     // in attribute name (token ids don't persist over API reload)
-    var link = token.get('bar1_link');
-    if (link === "") attribute += "_" + token.get('name');
+    if (token) {
+      var link = token.get('bar1_link');
+      if (link === "") attribute += "_" + token.get('name');
+    }
     var attr = findObjs({
       _type: 'attribute',
       _characterid: charId,
@@ -4833,8 +4842,10 @@ var COFantasy = COFantasy || function() {
     }
     // check if the token is linked to the character. If not, use token name
     // in attribute name (token ids don't persist over API reload)
-    var link = token.get('bar1_link');
-    if (link === '') attribute += "_" + token.get('name');
+    if (token) {
+      var link = token.get('bar1_link');
+      if (link === '') attribute += "_" + token.get('name');
+    }
     var attr = findObjs({
       _type: 'attribute',
       _characterid: charId,
@@ -4855,7 +4866,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function tokenAttribute(charId, name, token) {
-    if (token !== undefined) {
+    if (token) {
       var link = token.get('bar1_link');
       if (link === "") name += "_" + token.get('name');
     }
@@ -6433,6 +6444,100 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  function tokensEnCombat() {
+    var cmp = Campaign();
+    var turnOrder = cmp.get('turnorder');
+    if (turnOrder === '') return []; // nothing in the turn order
+    turnOrder = JSON.parse(turnOrder);
+    if (turnOrder.length === 0) return [];
+    var tokens = [];
+    turnOrder.forEach(function(a) {
+      if (a.id == -1) return;
+      tokens.push({
+        _id: a.id
+      });
+    });
+    return tokens;
+  }
+
+  function aUnCapitaine(cible, evt, pageId) {
+    var charId = cible.charId;
+    var token = cible.token;
+    var attrs = findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+    });
+    var attrCapitaine = attrs.find(function(a) {
+      return (a.get('name') == 'capitaine');
+    });
+    if (attrCapitaine === undefined) return false;
+    if (pageId === undefined) {
+      pageId = token.get('pageid');
+    }
+    var nomCapitaine = attrCapitaine.get('current');
+    var idCapitaine = attrCapitaine.get('max');
+    var capitaine = tokenOfId(idCapitaine, nomCapitaine, pageId);
+    var capitaineActif = attrs.find(function(a) {
+      return (a.get('name') == 'capitaineActif');
+    });
+    if (capitaine && isActive(capitaine.token)) {
+      if (capitaineActif) return true;
+      setTokenAttr(undefined, charId, 'capitaineActif', true, evt);
+      iterSelected(tokensEnCombat(), function(tok, ci) {
+        if (ci == charId) updateInit(tok, evt);
+      });
+      return true;
+    }
+    if (capitaineActif) {
+      removeTokenAttr(undefined, charId, 'capitaineActif', evt);
+      iterSelected(tokensEnCombat(), function(tok, ci) {
+        if (ci == charId) updateInit(tok, evt);
+      });
+    }
+    return false;
+  }
+
+
+  function devientCapitaine(msg) {
+    var cmd = msg.content.split(' ');
+    if (cmd.length < 2) {
+      error("La fonction !cof-capitaine attend en argument l'id du capitaine ou --aucun", cmd);
+      return;
+    }
+    var remove;
+    var capitaine;
+    var nomCapitaine;
+    if (cmd[1] == '--aucun') {
+      remove = true;
+    } else {
+      capitaine = tokenOfId(cmd[1], cmd[1]);
+      if (capitaine === undefined) {
+        error("Le premier argument de !cof-lancer-sort doit être un token", cmd[1]);
+        return;
+      }
+      nomCapitaine = capitaine.token.get('name');
+    }
+    var evt = {
+      type: 'Capitaine'
+    };
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(token, charId) {
+        if (remove) {
+          removeTokenAttr(undefined, charId, 'capitaine', evt);
+          removeTokenAttr(undefined, charId, 'capitaineActif', evt);
+          sendChat('COF', "/w GM " + token.get('name') + " n'a plus de capitaine");
+        } else {
+          if (token.id == capitaine.token.id) return;
+          setTokenAttr(undefined, charId, 'capitaine', nomCapitaine, evt,
+            undefined, capitaine.token.id);
+          sendChat('COF', "/w GM " + nomCapitaine + " est le capitaine de " + token.get('name'));
+        }
+      });
+      addEvent(evt);
+    });
+  }
+
+
   function distribuerBaies(msg) {
     if (msg.selected === undefined || msg.selected.length != 1) {
       error("Pour utiliser !cof-distribuer-baies, il faut sélectionner un token", msg);
@@ -7083,6 +7188,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-mur-de-force":
         murDeForce(msg);
         return;
+      case "!cof-capitaine":
+        devientCapitaine(msg);
+        return;
       default:
         return;
     }
@@ -7363,6 +7471,8 @@ var COFantasy = COFantasy || function() {
   function nextTurn(cmp) {
     if (!cmp.get('initiativepage')) return;
     var turnOrder = cmp.get('turnorder');
+    var pageId = state.COFantasy.combat_pageid;
+    if (pageId === undefined) pageId = cmp.get('playerpageid');
     if (turnOrder === "") return; // nothing in the turn order
     turnOrder = JSON.parse(turnOrder);
     if (turnOrder.length < 1) return;
@@ -7532,7 +7642,8 @@ var COFantasy = COFantasy || function() {
       });
       findObjs({
         _type: 'graphic',
-        _subtype: 'token'
+        _subtype: 'token',
+        _pageid: pageId
       }).forEach(function(tok) {
         var charId = tok.get('represents');
         if (charId === '') return;

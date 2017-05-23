@@ -498,7 +498,8 @@ p  {margin-left: inherit}
     <h4>Voie des illusions</h4>
     <ol>
       <li>Image décalée : <tt>!cof-effet-temp image_decalee [[5+@{selected|CHA}]] </tt></li>
-      <li>Mirage : rien à faire</li>
+      <li>Mirage : pas de support particulier</li>
+      <li>Imitation : pas de support autre que <tt>!cof-lancer-sort @{selected|token_id} 1 lance un sort d'imitation ([[5+@{selected|CHA}]] minutes)</tt>. </li>
     </ol>
     <h4>Voie de l'invocation</h4>
     <ol>
@@ -796,8 +797,9 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie du chef d'armée</h4>
     <ol>
-      <li>Sergent: ne pas oublier l'action de plus par tour.
+      <li>Sergent : ne pas oublier l'action de plus donnée à un allié par tour.
         Utiliser un attribut <tt>sergent</tt> = true (pour l'attaque ignorée par combat)</li>
+      <li>Capitaine : pour désigner le capitaine d'un ensemble de tokens sélectionné (quelle que soit <a href="#selection">la méthode</a>), on peut utiliser <tt>!cof-capitaine @{selected|token_id}</tt>, en ajoutant les options de sélection (comme <tt>--target @{target|token_id}</tt>. Au lieu de sélectionner une cible, on peut utiliser le nom d'un token. Si le capitaine fait parti de la sélection, il sera automatiquement exclu (on ne peut être son propre capitaine). Si à la place d'une id de token, l'argument est --aucun, cela enlève le capitaine. L'attribut généré est lié à un personnage, pas un token spécifique, il suffit donc de cibler un token représentant un personnage pour affecter tous les tokens qui représentent ce personnage.</li>
     </ol>
     <h4>Voie du cogneur</h4> 
     <h4>Voie du colosse</h4>
