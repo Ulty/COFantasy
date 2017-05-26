@@ -131,6 +131,7 @@ p  {margin-left: inherit}
       <li> <tt>--sortilege</tt> pour indiquer qu'il s'agit d'un sortilège, de façons à pouvoir appliquer tous les effets spécifiques aux sorts. Cette options devrait être passées pour toutes les capacités suivies d'une étoile dans le livre des règles. En particulier, tout sortilege ignore les malus d'obstacles.</li>
       <li><tt>--reroll1</tt> : relance les 1 aux dés de dégats (le 1 est ignoré)</li>
       <li><tt>--mana</tt> <i>n</i> : l'attaque coûte <i>n</i> points de mana.</li>
+      <li><tt>--limiteParJour</tt> <i>l</i> : limite le nombre d'utilisations de cette attaque à <i>l</i> fois par jour. On peut préciser un nom après <i>l</i>, qui va correspondre à une ressource pouvant être partagée avec d'autres attaques ou d'autres effets (voir <tt>!cof-effet-temp</tt>. Par défaut, le nom de cette ressource est le label de l'attaque.</li>
       <li><tt>--munition</tt> <i>nom</i> <i>taux</i> : l'attaque utilise des munitions dont on garde le compte. Le nombre de munitions doit être inscrit dans un attribut <tt>munition_</tt><i>nom</i>. <i>nom</i> ne doit pas contenir de blanc, mais à l'affichage les <tt>_</tt> seront remplacés par des blancs. La valeur courante de l'attribut est le nombre qu'il reste sur le personnage, alors que le maximum contient ce qu'il a plus ce qu'il peut récupérer après le combat. À chaque attaque portée, une munition est utilisée, et il y a <i>taux</i> chances (sur 100) que la munition ne soit pas récupérable. En fin de combat, on considère que le personnage récupère toutes les munitions récupérables.</li>
       <li><tt>--vampirise</tt> : soigne de tous les DM infligés</li>
       <li><tt>--ignoreObstacles</tt> : ignore les tokens sur le trajet. Ça semble nécessaire pour les attaques magiques d'après Kegron.</li>
@@ -277,8 +278,10 @@ p  {margin-left: inherit}
     <p>
     <tt>!cof-effet-temp</tt> <i>effet duree</i> : ajoute l'effet <i>effet</i> à la cible pour la durée. 
     <ul>
-      <li><tt>--mana</tt> <i>id cout</i> : impose au token <i>id</i> de dépenser <i>cout</i> mana</li>
-      <li><tt>--portee</tt> <i>id d</i> : impose aux cibles de l'effet d'être à moins de <i>d</i> mètres du token <i>id</i>
+      <li><tt>--lanceur</tt> <i>id</i> : indique quel est le lanceur. Utile pour un certain nombre d'autres options.
+        <li><tt>--mana</tt> <i>id cout</i> : impose au token <i>id</i> de dépenser <i>cout</i> mana. Si <tt>--lanceur</tt> est donné, <i>id</i> est inutile.</li>
+      <li><tt>--limiteParJour</tt> <i>l</i> : limite le nombre d'utilisations de cette effet à <i>l</i> fois par jour. On peut préciser un nom après <i>l</i>, qui va correspondre à une ressource pouvant être partagée avec d'autres attaques ou d'autres effets (voir <tt>!cof-attack</tt>. Par défaut, le nom de cette ressource est <i>id</i>.</li>
+      <li><tt>--portee</tt> <i>id d</i> : impose aux cibles de l'effet d'être à moins de <i>d</i> mètres du token <i>id</i>. Si <tt>--lanceur</tt> est précisé, inutile de donner <i>id</i>.</li>
       <li><tt>--puissant</tt> : lance la version puissante de l'effet</li>
       <li><tt>--puissant oui</tt> : idem</li>
       <li><tt>--puissant non</tt> : lance la version non puissante (efface le dernier effet
@@ -367,7 +370,7 @@ p  {margin-left: inherit}
       <li>Attaque sonore :
         Ajouter une attaque sur la fiche, utilisant l'attaque magique, de portée 10 m, et de DM 1d6+CHA. Appeler cette attaque avec les options <tt>--sonique --magique --sortilege --cone --fx breath-smoke</tt></li>
       <li>Zone de silence :
-        <tt>!cof-effet-temp zoneDeSilence [[1d6+@{selected|CHA}]] --mana @{selected|token_id} 1 --portee @{selected|token_id} 35 --disque @{target|token_id} 3</tt>. Le script ne gère pas le moment où les cibles sortent de la zone. Si cela arrive, le MJ doit enlever à la main l'attribut <tt>zoneDeSilence</tt> crée par le script pour le personnage concerné.</li>
+        <tt>!cof-effet-temp zoneDeSilence [[1d6+@{selected|CHA}]] --lanceur @{selected|token_id} --mana 1 --portee 35 --disque @{target|token_id} 3</tt>. Le script ne gère pas le moment où les cibles sortent de la zone. Si cela arrive, le MJ doit enlever à la main l'attribut <tt>zoneDeSilence</tt> crée par le script pour le personnage concerné.</li>
       <li>Danse irrésisitible :
         Ajouter une attaque sans dégâts sur la fiche, de portée 100 m, utilisant l'attaque magique, avec les options <tt>--mana 2 --sortilege --effet danseIrresistible ?{Y consacrer tout le tour?|Oui,[[2d4+2*@{selected|CHA}]]|Non,[[1d4+@{selected|CHA}]]}</tt> </li>
       <li>Musique fascinante : pas de support particulier</li>
@@ -475,7 +478,7 @@ p  {margin-left: inherit}
     et l'appeler avec les options <tt>--si etat sous_tension --electrique --sortilege --fx beam-holy</tt></li>
       <li>Télékinésie : Pas de support autre que <tt>!cof-lancer-sort @{selected|token_id} 1 télékinésie</tt></li>
       <li>Foudre : Faire une attaque de foudre de portée 10 m (attaque magique, dégâts 4d6 + CHA), et faire les attaques avec les options <tt>--psave DEX [[12+@{selected|DEX}]] --mana 2 --electrique --sortilege --ligne --fx beam-holy ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt>. 
-        <li>Forme éthérée : <tt>!cof-effet-temp intangible [[5 + @{selected|CHA}]] --mana @{selected|token_id} 3</tt></li>
+        <li>Forme éthérée : <tt>!cof-effet-temp intangible [[5 + @{selected|CHA}]] --lanceur @{selected|token_id} --mana 3</tt></li>
     </ol>
     <h4>Voie de la divination</h4>
     <ol>
@@ -509,7 +512,7 @@ p  {margin-left: inherit}
       <li>Mur de force : <tt>!cof-mur-de-force @{selected|token_id} ?{Spherique?|Oui,|Non,mur} --mana 1 --image</tt> <i>path</i> où <i>path</i> est l'adresse url d'une image de la librairie Roll20 qui représente un mur de force (sera placé dans le layer map). L'image n'est utilisée qu'en cas de mur sphérique. </li>
       <li>Épée dansante :
         <ul>
-          <li>sort: <tt>!cof-effet-temp epeeDansante [[5+@{selected|CHA}]] --mana @{selected|token_id} 2 --puissant ?{Y passer tout le tour ?|oui|non}</tt></li>
+          <li>sort: <tt>!cof-effet-temp epeeDansante [[5+@{selected|CHA}]] --lanceur @{selected|token_id} --mana 2 --puissant ?{Y passer tout le tour ?|oui|non}</tt></li>
           <li>attaque: faire une attaque de portee 20 m, avec les options
             <tt>--si etat epeeDansante</tt>
             <tt>--magique</tt>
@@ -570,7 +573,7 @@ p  {margin-left: inherit}
     <h3>Magicien</h3>
     <h4>Voie de la magie des arcanes</h4>
     <ol>
-      <li>Agrandissement : <tt>!cof-effet-temp agrandissement [[5+@{selected|INT}]] --target @{target|token_id} --portee @{selected|token_id} 0</tt></li>
+      <li>Agrandissement : <tt>!cof-effet-temp agrandissement [[5+@{selected|INT}]] --target @{target|token_id} --lanceur @{selected|token_id} --portee 0</tt></li>
       <li>Forme gazeuse : <tt>!cof-effet-temp formeGazeuse [[1d4 + @{selected|INT}]]</tt>. Au MJ de faire attention que sous cette forme, toutes les capacités sont interdites.</li>
     </ol>
     <h4>Voie de la magie destructrice</h4>

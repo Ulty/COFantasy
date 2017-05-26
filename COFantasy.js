@@ -688,6 +688,21 @@ var COFantasy = COFantasy || function() {
             angle: angle
           };
           return;
+        case 'limiteParJour':
+          if (cmd.length < 2) {
+            error("Il manque la limite journalière", cmd);
+            return;
+          }
+          var limiteParJour = parseInt(cmd[1]);
+          if (isNaN(limiteParJour) || limiteParJour < 1) {
+            error("La limite journalière doit être un nombre positif", cmd);
+            return;
+          }
+          options.limiteParJour = limiteParJour;
+          if (cmd.length > 2) {
+            options.limiteParJourRessource = cmd[2];
+          }
+          return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
       }
@@ -1557,6 +1572,20 @@ var COFantasy = COFantasy || function() {
         addEvent(evt);
         return;
       }
+    }
+    if (options.limiteParJour) {
+      var ressource = attackLabel;
+      if (options.limiteParJourRessource)
+        ressource = options.limiteParJourRessource;
+      ressource = "limiteParJour_" + ressource;
+      var utilisations =
+        attributeAsInt(attaquant.charId, ressource, options.limiteParJour, attaquant.token);
+      if (utilisations === 0) {
+        sendChar(attaquant.charId, "ne peut plus faire cette attaque ajourd'hui");
+        return;
+      }
+
+      setTokenAttr(attaquant.token, attaquant.charId, ressource, utilisations - 1, evt);
     }
     // Effets quand on rentre en combat 
     if (!state.COFantasy.combat) {
@@ -3700,6 +3729,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('soinsLegers', evt, attrs);
     attrs = removeAllAttributes('soinsModeres', evt, attrs);
     attrs = removeAllAttributes('fortifie', evt, attrs);
+    attrs = removeAllAttributes('limiteParJour', evt, attrs);
     removeAllAttributes('baieMagique', evt, attrs);
   }
 
@@ -5420,10 +5450,20 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: 'effet_temp_' + effetComplet
     };
-    var charId; //Au cas où on saurait de qui il s'agit
+    var lanceur;
     opts.forEach(function(arg) {
       cmd = arg.split(' ');
       switch (cmd[0]) {
+        case "lanceur":
+          if (cmd.length < 2) {
+            error("Il faut préciser l'id ou le nom du lanceur", arg);
+            return;
+          }
+          lanceur = tokenOfId(cmd[1], cmd[1], pageId);
+          if (lanceur === undefined) {
+            error("Argument de --lanceur non valide", cmd);
+          }
+          return;
         case 'puissant':
           if (cmd.length < 2) {
             options.puissant = "on";
@@ -5440,68 +5480,103 @@ var COFantasy = COFantasy || function() {
           error("Option puissant non reconnue", cmd);
           return;
         case "mana":
-          if (cmd.length < 3) {
-            error("Pas assez d'argument pour --mana id n", cmd);
+          if (cmd.length < 2) {
+            error("Pas assez d'argument pour --mana", cmd);
             return;
           }
-          var lanceur = tokenOfId(cmd[1], cmd[1], pageId);
-          if (lanceur === undefined) {
-            error("Premier argument de --mana non valide", cmd);
-            return;
+          var cout;
+          if (cmd.length > 2) {
+            lanceur = tokenOfId(cmd[1], cmd[1], pageId);
+            if (lanceur === undefined) {
+              error("Premier argument de --mana non valide", cmd);
+              return;
+            }
+            cout = parseInt(cmd[2]);
+          } else {
+            cout = parseInt(cmd[1]);
           }
-          charId = lanceur.charId;
-          var cout = parseInt(cmd[2]);
           if (isNaN(cout) || cout < 0) {
             error("Cout en mana incorrect", cmd);
             return;
           }
-          options.mana = {
-            cout: cout,
-            token: lanceur.token,
-            charId: lanceur.charId
-          };
+          options.mana = cout;
+          return;
+        case 'limiteParJour':
+          if (cmd.length < 2) {
+            error("Il manque la limite journalière", cmd);
+            return;
+          }
+          var limiteParJour = parseInt(cmd[1]);
+          if (isNaN(limiteParJour) || limiteParJour < 1) {
+            error("La limite journalière doit être un nombre positif", cmd);
+            return;
+          }
+          options.limiteParJour = limiteParJour;
+          if (cmd.length > 2) {
+            options.limiteParJourRessource = cmd[2];
+          }
           return;
         case "portee":
-          if (cmd.length < 3) {
-            error("Pas assez d'argument pour --portee id n", cmd);
+          if (cmd.length < 2) {
+            error("Pas assez d'argument pour --portee n", cmd);
             return;
           }
-          var tokPortee = tokenOfId(cmd[1], cmd[1], pageId);
-          if (tokPortee === undefined) {
-            error("Premier argument de --portee non valide", cmd);
-            return;
+          var portee;
+          if (cmd.length > 2) {
+            var tokPortee = tokenOfId(cmd[1], cmd[1], pageId);
+            if (tokPortee === undefined) {
+              error("Premier argument de --portee non valide", cmd);
+              return;
+            }
+            portee = parseInt(cmd[2]);
+          } else {
+            portee = parseInt(cmd[1]);
           }
-          if (charId === undefined) charId = tokPortee.charId;
-          var portee = parseInt(cmd[2]);
           if (isNaN(portee) || portee < 0) {
             error("Portée incorrecte", cmd);
             return;
           }
-          options.portee = {
-            distance: portee,
-            token: tokPortee.token,
-            charId: tokPortee.charId
-          };
+          options.portee = portee;
           return;
         default:
           return;
       }
     });
-    if (options.mana &&
-      !depenseMana(
-        options.mana.token, options.mana.charId, options.mana.cout, effet, evt)
-    ) return;
+    var charId;
+    if (lanceur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour)) {
+      error("Il faut préciser un lanceur pour ces options d'effet", options);
+      return;
+    }
+    if (lanceur) charId = lanceur.charId;
+    if (options.mana) {
+      if (!depenseMana(lanceur.token, lanceur.charId, options.mana, effet,
+          evt)) return;
+    }
+    if (options.limiteParJour) {
+      var ressource = effet;
+      if (options.limiteParJourRessource)
+        ressource = options.limiteParJourRessource;
+      ressource = "limiteParJour_" + ressource;
+      var utilisations =
+        attributeAsInt(lanceur.charId, ressource, options.limiteParJour, lanceur.token);
+      if (utilisations === 0) {
+        sendChar(charId, "ne peut plus utiliser cet effet ajourd'hui");
+        return;
+      }
+
+      setTokenAttr(lanceur.token, lanceur.charId, ressource, utilisations - 1, evt);
+    }
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
         sendChar(charId, "Pas de cible sélectionée pour l'effet");
         return;
       }
-      if (options.portee) {
+      if (options.portee !== undefined) {
         selected = selected.filter(function(sel) {
           var token = getObj('graphic', sel._id);
-          var dist = distanceCombat(options.portee.token, token);
-          if (dist > options.portee.distance) {
-            sendChar(options.portee.charId, " est trop loin de sa cible");
+          var dist = distanceCombat(lanceur.token, token);
+          if (dist > options.portee) {
+            sendChar(charId, " est trop loin de sa cible");
             return false;
           }
           return true;
