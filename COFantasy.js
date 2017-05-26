@@ -897,6 +897,7 @@ var COFantasy = COFantasy || function() {
       attBonus += 2;
       explications.push("Un capitaine donne des ordres -> +2 à l'attaque");
     }
+    if (attributeAsBool(charId, 'forceDeGeant', false, token)) attBonus += 2;
     return attBonus;
   }
 
@@ -2001,7 +2002,10 @@ var COFantasy = COFantasy || function() {
           explications.push("Tir de semonce (+5 attaque et +1d6 DM)");
         }
       } else { //bonus aux attaques de contact
-        if (attributeAsBool(attackingCharId, 'agrandissement', false)) {
+        if (attributeAsBool(attackingCharId, 'agrandissement', false, attackingToken)) {
+          attDMBonusCommun += "+2";
+        }
+        if (attributeAsBool(attackingCharId, 'forceDeGeant', false, attackingToken)) {
           attDMBonusCommun += "+2";
         }
       }
@@ -6795,6 +6799,7 @@ var COFantasy = COFantasy || function() {
       error("La durée doit être un nombre positif", args);
       return;
     }
+    var image = "https://s3.amazonaws.com/files.d20.io/images/2781735/LcllgIHvqvu0HAbWdXZbJQ/thumb.png?13900368485";
     var options = {};
     var opts = msg.content.split(' --');
     opts.shift();
@@ -6823,6 +6828,13 @@ var COFantasy = COFantasy || function() {
             options.mana = undefined;
           }
           return;
+        case 'image':
+          if (cmd.length < 2) {
+            error("Il manque l'argument de --mana", msg.content);
+            return;
+          }
+          image = cmd[1];
+          return;
         default:
           return;
       }
@@ -6842,7 +6854,7 @@ var COFantasy = COFantasy || function() {
     }
     var tokenFields = {
       _pageid: pageId,
-      imgsrc: "https://s3.amazonaws.com/files.d20.io/images/2781735/LcllgIHvqvu0HAbWdXZbJQ/thumb.png?13900368485",
+      imgsrc: image,
       represents: cible.charId,
       left: cible.token.get('left') + 60,
       top: cible.token.get('top'),
@@ -7321,6 +7333,11 @@ var COFantasy = COFantasy || function() {
       activation: "fait apparaître un nuage magique argenté qui le protège",
       actif: "est entouré d'une armure du mage",
       fin: "n'a plus son armure du mage"
+    },
+    forceDeGeant: {
+      activation: "devient plus fort",
+      actif: "a une force de géant",
+      fin: "retrouve sa force normale"
     }
   };
 

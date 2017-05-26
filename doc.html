@@ -583,7 +583,7 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie de la magie élémentaire</h4>
     <ol>
-      <li>Asphyxie : ajouter une attaque magique sur la fiche, de portée 20 m, et sans dégât. Utiliser cette attaque avec les options <tt>--sortilege --effet asphyxie [[1+@{selected|INT}]]</li>
+      <li>Asphyxie : ajouter une attaque magique sur la fiche, de portée 20 m, et sans dégât. Utiliser cette attaque avec les options <tt>--sortilege --effet asphyxie [[1+@{selected|INT}]]</tt></li>
     </ol>
     <h4>Voie de la magie protectrice</h4>
     <ol>
@@ -667,7 +667,8 @@ p  {margin-left: inherit}
       <li>Ténèbres : faire une attaque Ténèbres, sans dégâts et de portée 20 m. Pour l'attaque, utiliser les arguments <tt>--disque 5 --auto --effet aveugleTemp [[5+@{selected|INT}]]</tt>. Au MJ ensuite d'enlever l'état aveuglé quand les cibles sortent de la zone.</li>
       <li>Pattes d'araignées : pas de support</li>
       <li>Strangulation : faire une attaque <tt>Strangulation</tt> sur la fiche, utilisant l'attaque magique, de portée 20 m, et de dégâts 1d6+INT. Au MJ de vérifier que la cible est valide (vivante). Utiliser les options <tt>--effet strangulation </tt><i>rang</i><tt> --mana 1 --sortilege ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt>. Pour maintenair la strangulation, chaque tour le nécromancien doit faire <tt>!cof-strangulation @{selected|token_id} @{target|token_id} ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt>.</li>
-      <li>Ombre mortelle : <tt>!cof-ombre-mortelle @{selected|token_id} @{target|token_id} [[3+@{selected|INT}]] --portee 20 --mana 2</tt> va créer un double de la cible, (à condition de disposer de 2 points de mana) et ajouter ce double à l'initiative. Au MJ ensuite de la faire attaquer à son tour (pas d'aoe, juste attaquer le token dont elle est l'ombre). Le token disparaît lorsque le nombre de tours est écoulé. Si vous utilisez le script <tt>marchingOrder</tt>, vous pouvez même faire que l'ombre suive con propriétaire automatiquement.</li>
+      <li>Ombre mortelle : <tt>!cof-ombre-mortelle @{selected|token_id} @{target|token_id} [[3+@{selected|INT}]] --portee 20 --mana 2</tt> va créer un double de la cible, (à condition de disposer de 2 points de mana) et ajouter ce double à l'initiative. Au MJ ensuite de la faire attaquer à son tour (pas d'aoe, juste attaquer le token dont elle est l'ombre). Le token disparaît lorsque le nombre de tours est écoulé. Il est possible de choisir l'image utilisée pour représenter l'ombre en passant l'url de l'image avec l'option <tt>--image</tt>. Si vous utilisez le script <tt>marchingOrder</tt>, vous pouvez même faire que l'ombre suive con propriétaire automatiquement.</li>
+      <li>Intelligence héroïque : utiliser la fiche</li>
     </ol>
 
     <h3>Prêtre</h3>
@@ -799,7 +800,7 @@ p  {margin-left: inherit}
     <ol>
       <li>Sergent : ne pas oublier l'action de plus donnée à un allié par tour.
         Utiliser un attribut <tt>sergent</tt> = true (pour l'attaque ignorée par combat)</li>
-      <li>Capitaine : pour désigner le capitaine d'un ensemble de tokens sélectionné (quelle que soit <a href="#selection">la méthode</a>), on peut utiliser <tt>!cof-capitaine @{selected|token_id}</tt>, en ajoutant les options de sélection (comme <tt>--target @{target|token_id}</tt>. Au lieu de sélectionner une cible, on peut utiliser le nom d'un token. Si le capitaine fait parti de la sélection, il sera automatiquement exclu (on ne peut être son propre capitaine). Si à la place d'une id de token, l'argument est --aucun, cela enlève le capitaine. L'attribut généré est lié à un personnage, pas un token spécifique, il suffit donc de cibler un token représentant un personnage pour affecter tous les tokens qui représentent ce personnage.</li>
+      <li>Capitaine : pour désigner le capitaine d'un ensemble de tokens sélectionné (quelle que soit <a href="#selection">la méthode</a>), on peut utiliser <tt>!cof-capitaine @{selected|token_id}</tt>, en ajoutant les options de sélection (comme <tt>--target @{target|token_id}</tt>. Au lieu de sélectionner une cible, on peut utiliser le nom d'un token. Si le capitaine fait parti de la sélection, il sera automatiquement exclu (on ne peut être son propre capitaine). Si à la place d'une id de token, l'argument est <tt>--aucun</tt>, cela enlève le capitaine. L'attribut généré est lié à un personnage, pas un token spécifique, il suffit donc de cibler un token représentant un personnage pour affecter tous les tokens qui représentent ce personnage. Pas de support particulier pour l'attaque supplémentaire en cas d'action limitée.</li>
     </ol>
     <h4>Voie du cogneur</h4> 
     <h4>Voie du colosse</h4>
@@ -809,6 +810,9 @@ p  {margin-left: inherit}
     <h4>Voie des créatures élémentaires</h4>
     <h4>Voie des créatures magique</h4>
     <h4>Voie des créatures volantes</h4>
+    <ol>
+      <li>Vol rapide : simplement faire une variante de l'attaque avec les options <tt>--bonusAttaque 5 --plus 1d6</tt> à utiliser le premier tour de combat si a créature ets en vol et attaque une créature au sol. Ne pas oublier l'action de mouvement supplémentaire en vol.</li>
+    </ol>
     <h4>Voie de la magie de combat</h4>
     <ol>
       <li>Attaque magique : simplement une attaque, avec les options <tt>--sortilege --magique --fx beam-magic</tt>. Pour la version de zone, utiliser les options <tt>--disque 5 --auto --psave DEX 10</tt>.</li>
@@ -835,6 +839,7 @@ p  {margin-left: inherit}
     <h3>Autres capacités:</h3>
     <ul>
       <li>Baroud d'honneur : ajouter un attribut <tt>baroudHonneur</tt> (=true) (Quand le personnage arrive à 0 PV, il ne meurt pas jusqu'à sa prochaine attaque, qui se fait avec un bonus de +5)</li>
+      <li>Force de géant : <tt>!cof-effet-temp forceDeGeant 10</tt></li>
       <li> Putréfaction : ajouter à l'attaque <tt>--effet putrefaction 5 --save CON 14</tt> (pour les données des momies)</li>
       <li>Sans esprit      : ajouter un attribut <tt>sansEsprit</tt> (=true) permet la réussite
         automatique des jets de résistance basés sur INT, SAG ou CHA.</li>
