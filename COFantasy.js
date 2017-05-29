@@ -427,6 +427,7 @@ var COFantasy = COFantasy || function() {
         case "magique":
         case "asDeLaGachette":
         case "sortilege":
+        case "malediction":
           options[cmd[0]] = true;
           return;
         case "si":
@@ -1222,6 +1223,46 @@ var COFantasy = COFantasy || function() {
     return attBonus;
   }
 
+  function computeDice(lanceur, dice, nbDe, plusFort) {
+    if (plusFort === undefined) plusFort = true;
+    if (attributeAsBool(lanceur.charId, 'malediction', false, lanceur.token)) {
+      if (plusFort) {
+        if (nbDe > 1) nbDe--;
+        else {
+          nbDe = 2;
+          plusFort = false;
+        }
+      } else nbDe++;
+    }
+    var de = nbDe + "d" + dice;
+    if (nbDe > 1) {
+      if (plusFort) de += "kh1";
+      else de += "kl1";
+    }
+    return de;
+  }
+
+  function diminueMalediction(lanceur, evt) {
+    var attrMalediction =
+      tokenAttribute(lanceur.charId, 'malediction', lanceur.token);
+    if (attrMalediction.length > 0) {
+      attrMalediction = attrMalediction[0];
+      var nbMaudit = parseInt(attrMalediction.get('current'));
+      if (isNaN(nbMaudit) || nbMaudit < 2) {
+        evt.deletedAttributes = evt.deletedAttributes || [];
+        evt.deletedAttributes.push(attrMalediction);
+        attrMalediction.remove();
+      } else {
+        evt.attributes = evt.attributes || [];
+        evt.attributes.push({
+          attribute: attrMalediction,
+          current: nbMaudit
+        });
+        attrMalediction.set('current', nbMaudit - 1);
+      }
+    }
+  }
+
   function attack(playerId, attackingToken, targetToken, attackLabel, options) {
     // Attacker and target infos
     var attackerTokName = attackingToken.get("name");
@@ -1622,12 +1663,9 @@ var COFantasy = COFantasy || function() {
       dice = 12;
       explications.push("Attaquant affaibli -> d12 au lieu de d20 pour l'attaque");
     }
-    var de = "d" + dice;
-    if (options.imparable) {
-      de = 2 + de + "k1";
-    } else {
-      de = 1 + de;
-    }
+    var nbDe = 1;
+    if (options.imparable) nbDe = 2;
+    var de = computeDice(attaquant, dice, nbDe);
     var attackRollExpr = addOrigin(attackerName, "[[" + de + "cs>" + crit + "cf1]]");
     var attSkill =
       getAttrByName(attackingCharId, attPrefix + "armeatk") ||
@@ -1945,6 +1983,7 @@ var COFantasy = COFantasy || function() {
               spawnFxBetweenPoints(p1, p2, options.fx, pageId);
             }
             evt.succes = false;
+            diminueMalediction(attaquant, evt);
             //On a fini avec cette cible, on imprime ce qui la concerne
             addLineToFramedDisplay(display, target.attackMessage);
             target.messages.forEach(function(expl) {
@@ -2193,6 +2232,10 @@ var COFantasy = COFantasy || function() {
                 target.token, target.charId, 'enflamme', enflammePuissance, evt);
               target.messages.push(target.tokName + " prend feu !");
             }
+            if (options.malediction) {
+              setTokenAttr(target.token, target.charId, 'malediction', 3, evt);
+              target.messages.push(target.tokName + " est maudit...");
+            }
             // Draw effect, if any
             if (_.has(options, "fx")) {
               var p1e = {
@@ -2344,7 +2387,7 @@ var COFantasy = COFantasy || function() {
                       }], d20roll)) {
                       var msgPour = " pour résister à un effet";
                       var msgRate = ", " + target.tokName + " est " + ce.etat + eForFemale(target.charId) + " par l'attaque";
-                      save(ce.save, target.charId, target.token, expliquer, msgPour, '', msgRate, function(reussite, rolltext) {
+                      save(ce.save, target.charId, target.token, expliquer, msgPour, '', msgRate, evt, function(reussite, rolltext) {
                         if (!reussite) {
                           setState(target.token, ce.etat, true, evt,
                             target.charId);
@@ -2372,25 +2415,27 @@ var COFantasy = COFantasy || function() {
                   if (ef.save) {
                     var msgPour = " pour résister à un effet";
                     var msgRate = ", " + target.tokName + " " + messageEffets[ef.effet].activation;
-                    save(ef.save, target.charId, target.token, expliquer, msgPour, '', msgRate, function(reussite, rollText) {
-                      if (!reussite) {
-                        setTokenAttr(
-                          target.token, target.charId, ef.effet, ef.duree, evt,
-                          undefined, getInit());
-                        if (ef.effet == 'aveugleTemp') {
-                          setState(target.token, 'aveugle', true, evt, target.charId);
-                        }
-                        if (ef.saveParTour) {
+                    save(ef.save, target.charId, target.token, expliquer,
+                      msgPour, '', msgRate, evt,
+                      function(reussite, rollText) {
+                        if (!reussite) {
                           setTokenAttr(
-                            target.token, target.charId,
-                            ef.effet + "SaveParTour", ef.saveParTour.carac,
-                            evt, undefined, ef.saveParTour.seuil);
+                            target.token, target.charId, ef.effet, ef.duree, evt,
+                            undefined, getInit());
+                          if (ef.effet == 'aveugleTemp') {
+                            setState(target.token, 'aveugle', true, evt, target.charId);
+                          }
+                          if (ef.saveParTour) {
+                            setTokenAttr(
+                              target.token, target.charId,
+                              ef.effet + "SaveParTour", ef.saveParTour.carac,
+                              evt, undefined, ef.saveParTour.seuil);
+                          }
                         }
-                      }
-                      saves--;
-                      savesEffets--;
-                      etatsAvecSave();
-                    });
+                        saves--;
+                        savesEffets--;
+                        etatsAvecSave();
+                      });
                   }
                 });
               } else etatsAvecSave();
@@ -2450,7 +2495,7 @@ var COFantasy = COFantasy || function() {
 
   //s représente le save, avec une carac, une carac2 optionnelle et un seuil
   //expliquer est une fonction qui prend en argument un string et le publie
-  function save(s, charId, token, expliquer, msgPour, msgReussite, msgRate, afterSave) {
+  function save(s, charId, token, expliquer, msgPour, msgReussite, msgRate, evt, afterSave) {
     var bonusAttrs = [];
     var carac = s.carac;
     //Cas où le save peut se faire au choix parmis 2 caracs
@@ -2460,7 +2505,10 @@ var COFantasy = COFantasy || function() {
     if (carac == 'DEX') {
       bonusAttrs.push('reflexesFelins');
     }
-    testCaracteristique(charId, carac, bonusAttrs, s.seuil, 0, token,
+    testCaracteristique({
+        charId: charId,
+        token: token
+      }, carac, bonusAttrs, s.seuil, 0, evt,
       function(reussite, rollText) {
         var smsg =
           " Jet de " + carac + " difficulté " + s.seuil + msgPour;
@@ -2476,10 +2524,10 @@ var COFantasy = COFantasy || function() {
       });
   }
 
-  function partialSave(ps, charId, token, showTotal, dmgDisplay, total, expliquer, afterSave) {
+  function partialSave(ps, charId, token, showTotal, dmgDisplay, total, expliquer, evt, afterSave) {
     if (ps.partialSave !== undefined) {
       save(ps.partialSave, charId, token, expliquer, " pour réduire les dégâts",
-        ", dégâts divisés par 2", '',
+        ", dégâts divisés par 2", '', evt,
         function(succes, rollText) {
           if (succes) {
             if (showTotal) dmgDisplay = "(" + dmgDisplay + ")";
@@ -2547,7 +2595,7 @@ var COFantasy = COFantasy || function() {
       var count = dmgExtra.length;
       dmgExtra.forEach(function(d) {
         count--;
-        partialSave(d, charId, token, false, d.display, d.total, expliquer,
+        partialSave(d, charId, token, false, d.display, d.total, expliquer, evt,
           function(res) {
             if (res) {
               dmgTotal += res.total;
@@ -2657,7 +2705,7 @@ var COFantasy = COFantasy || function() {
       var typeDisplay = "";
       var typeCount = dmgParType[dmgType].length;
       dmgParType[dmgType].forEach(function(d) {
-        partialSave(d, target.charId, token, false, d.display, d.total, expliquer,
+        partialSave(d, target.charId, token, false, d.display, d.total, expliquer, evt,
           function(res) {
             if (res) {
               dm += res.total;
@@ -2735,7 +2783,7 @@ var COFantasy = COFantasy || function() {
       showTotal = true;
     }
     partialSave(options, charId, token, showTotal, dmgDisplay, dmgTotal,
-      expliquer,
+      expliquer, evt,
       function(saveResult) {
         if (saveResult) {
           dmgTotal = saveResult.total;
@@ -2875,7 +2923,7 @@ var COFantasy = COFantasy || function() {
                         carac: 'CON',
                         seuil: defierLaMort
                       }, charId, token,
-                      expliquer, " pour défier la mort", ", conserve 1 PV", '',
+                      expliquer, " pour défier la mort", ", conserve 1 PV", '', evt,
                       function(reussite, rollText) {
                         if (reussite) {
                           updateCurrentBar(token, 1, 1);
@@ -4202,8 +4250,10 @@ var COFantasy = COFantasy || function() {
         if (testSurprise !== undefined) {
           var bonusSurprise = 0;
           if (surveillance(charId, token)) bonusSurprise += 5;
-          testCaracteristique(charId, 'SAG', ['vigilance', 'perception'],
-            testSurprise, bonusSurprise, token,
+          testCaracteristique({
+              charId: charId,
+              token: token
+            }, 'SAG', ['vigilance', 'perception'], testSurprise, bonusSurprise, evt,
             function(reussite, rolltext) {
               var result;
               if (reussite) result = "réussi";
@@ -5026,7 +5076,9 @@ var COFantasy = COFantasy || function() {
     return dice;
   }
 
-  function testCaracteristique(charId, carac, bonusAttrs, seuil, bonus, token, callback) { //asynchrone
+  function testCaracteristique(personnage, carac, bonusAttrs, seuil, bonus, evt, callback) { //asynchrone
+    var charId = personnage.charId;
+    var token = personnage.token;
     var bonusCarac = bonusTestCarac(carac, charId, token);
     bonusAttrs.forEach(function(attr) {
       bonusCarac += attributeAsInt(charId, attr, 0);
@@ -5041,7 +5093,8 @@ var COFantasy = COFantasy || function() {
     var carSup = nbreDeTestCarac(carac, charId);
     var dice = deTestCarac(carac, charId, token);
     if (getState(token, 'affaibli', charId)) dice = 12;
-    var rollExpr = "[[{" + carSup + "d" + dice + "cs20cf1}kh1]]";
+    var de = computeDice(personnage, dice, carSup);
+    var rollExpr = "[[" + de + "cs20cf1]]";
     var name = getObj('character', charId).get('name');
     sendChat("", rollExpr, function(res) {
       var rolls = res[0];
@@ -5049,7 +5102,10 @@ var COFantasy = COFantasy || function() {
       var bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
       var rtext = buildinline(rolls.inlinerolls[0]) + bonusText;
       if (d20roll == 20 || d20roll + bonusCarac >= seuil) callback(true, rtext);
-      else callback(false, rtext);
+      else {
+        diminueMalediction(personnage, evt);
+        callback(false, rtext);
+      }
     });
   }
 
@@ -5631,8 +5687,10 @@ var COFantasy = COFantasy || function() {
           });
         }
         if (countEquipes === 0) { //continuation
-          testCaracteristique(charId, 'SAG', [], difficulte, allieSansPeur,
-            token,
+          testCaracteristique({
+              charId: charId,
+              token: token
+            }, 'SAG', [], difficulte, allieSansPeur, evt,
             function(reussite, rollText) {
               var line = "Jet de résistance de " + token.get('name') + ":" + rollText;
               var sujet = onGenre(charId, 'il', 'elle');
@@ -5957,7 +6015,7 @@ var COFantasy = COFantasy || function() {
             tokensToProcess--;
           };
           targets.forEach(function(t) {
-            testCaracteristique(t.charId, 'SAG', [], seuil, 0, t.token,
+            testCaracteristique(t, 'SAG', [], seuil, 0, evt,
               function(reussite, rollText) {
                 var line = "Jet de résistance de " + t.name + ":" + rollText;
                 var sujet = onGenre(t.charId, 'il', 'elle');
@@ -6271,21 +6329,20 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-nature-nourriciere: " + msg.content, args);
       return;
     }
-    var token = getObj("graphic", args[1]);
-    if (token === undefined) {
-      error("Le premier argument n'est pas un token: " + msg.content, args[1]);
+    var lanceur = tokenOfId(args[1], args[1]);
+    if (lanceur === undefined) {
+      error("Le premier argument n'est pas un token valide: " + msg.content, args[1]);
       return;
     }
-    var charId = token.get('represents');
-    if (charId === "") {
-      error("Le token sélectionné ne correspond pas à un personnage", args);
-      return;
-    }
+    var charId = lanceur.charId;
     var duree = randomInteger(6);
     var output =
       "cherche des herbes. Après " + duree + " heures, " +
       onGenre(charId, "il", "elle");
-    testCaracteristique(charId, 'SAG', [], 10, 0, token,
+    var evt = {
+      type: "recherche d'herbes"
+    };
+    testCaracteristique(lanceur, 'SAG', [], 10, 0, evt,
       function(reussite, rollText) {
         if (reussite) {
           output += " revient avec de quoi soigner les blessés.";
@@ -6293,6 +6350,7 @@ var COFantasy = COFantasy || function() {
           output += " revient bredouille.";
         }
         sendChar(charId, output);
+        addEvent(evt);
       });
   }
 
@@ -7839,7 +7897,7 @@ var COFantasy = COFantasy || function() {
             carac: carac,
             seuil: seuil
           }, charId, token, expliquer, msgPour,
-          msgReussite, msgRate,
+          msgReussite, msgRate, evt,
           function(reussite) { //asynchrone
             if (reussite) {
               finDEffet(attrEffet, effet, attrName, charId, evt, attr);
