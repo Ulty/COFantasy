@@ -2291,7 +2291,12 @@ var COFantasy = COFantasy || function() {
                     target.messages.push(target.tokName + " a déjà été dédoublé pendant ce combat");
                     return;
                   }
-                  copieToken(target, undefined, IMAGE_DOUBLE, "Double de "+target.name, 'dedoublement', ef.duree, pageId, evt);
+                  target.messages.push("Un double translucide de " + 
+                    target.tokName + " apparaît. Il est aux ordres de " + 
+                      attackerTokName);
+                  copieToken(target, undefined, IMAGE_DOUBLE, 
+                    "Double de "+target.tokName, 'dedoublement', ef.duree, 
+                    pageId, evt);
                   return;
                 }
                 target.messages.push(target.tokName + " " + messageEffets[ef.effet].activation);
