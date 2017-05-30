@@ -26,6 +26,8 @@ var COFantasy = COFantasy || function() {
   "use strict";
 
   var DEF_MALUS_APRES_TOUR_5 = true;
+  var IMAGE_OMBRE = "https://s3.amazonaws.com/files.d20.io/images/2781735/LcllgIHvqvu0HAbWdXZbJQ/thumb.png?13900368485";
+  var IMAGE_DOUBLE;
   var HISTORY_SIZE = 150;
   var eventHistory = [];
   var updateNextInitSet = new Set();
@@ -2158,7 +2160,9 @@ var COFantasy = COFantasy || function() {
           });
         }
 
-        if (attributeAsBool(attackingCharId, 'ombreMortelle', false, attackingToken)) {
+        if (
+          attributeAsBool(attackingCharId, 'ombreMortelle', false, attackingToken) || 
+          attributeAsBool(attackingCharId, 'dedoublement', false, attackingToken)) {
           if (options.divise) options.divise *= 2;
           else options.divise = 2;
         }
@@ -2281,6 +2285,14 @@ var COFantasy = COFantasy || function() {
                   saves++;
                   savesEffets++;
                   return; //on le fera plus tard
+                }
+                if (ef.effet == 'dedoublement') {
+                  if (attributeAsBool(target.charId, 'dedouble', false, target.token)) {
+                    target.messages.push(target.tokName + " a déjà été dédoublé pendant ce combat");
+                    return;
+                  }
+                  copieToken(target, undefined, IMAGE_DOUBLE, "Double de "+target.name, 'dedoublement', ef.duree, pageId, evt);
+                  return;
                 }
                 target.messages.push(target.tokName + " " + messageEffets[ef.effet].activation);
                 setTokenAttr(
@@ -3360,6 +3372,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('dureeStrangulation', evt, attrs);
     attrs = removeAllAttributes('defautDansLaCuirasse', evt, attrs);
     attrs = removeAllAttributes('postureDeCombat', evt, attrs);
+    attrs = removeAllAttributes('dedouble', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -6909,10 +6922,11 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+
   function ombreMortelle(msg) {
     var args = msg.content.split(' ');
     if (args.length < 4) {
-      error("Pas assez d'arguments pour !cof-ombre-mortelle", args);
+      error("Pas assez d'arguments pour " + args[0], args);
       return;
     }
     var lanceur = tokenOfId(args[1], args[1]);
@@ -6932,7 +6946,7 @@ var COFantasy = COFantasy || function() {
       error("La durée doit être un nombre positif", args);
       return;
     }
-    var image = "https://s3.amazonaws.com/files.d20.io/images/2781735/LcllgIHvqvu0HAbWdXZbJQ/thumb.png?13900368485";
+    var image = IMAGE_OMBRE;
     var options = {};
     var opts = msg.content.split(' --');
     opts.shift();
@@ -6975,7 +6989,8 @@ var COFantasy = COFantasy || function() {
     if (options.portee !== undefined) {
       var distance = distanceCombat(lanceur.token, cible.token, pageId);
       if (distance > options.portee) {
-        sendChar(lanceur.charId, "est trop loind de " + cible.name + " pour animer son ombre");
+        sendChar(lanceur.charId, "est trop loind de " + cible.name +
+          " pour animer son ombre");
         return;
       }
     }
@@ -6983,11 +6998,20 @@ var COFantasy = COFantasy || function() {
       type: "Ombre mortelle"
     };
     if (options.mana) {
-      if (!depenseMana(lanceur.token, lanceur.charId, options.mana, "invoquer une ombre mortelle", evt)) return;
+      var msgMana = "invoquer une ombre mortelle";
+      if (!depenseMana(lanceur.token, lanceur.charId, options.mana, msgMana, evt)) return;
     }
+    copieToken(cible, image, IMAGE_OMBRE, "Ombre de " + cible.name, 'ombreMortelle', duree, pageId, evt);
+    sendChar(lanceur.charId,
+      "anime l'ombre de " + cible.name + ". Celle-ci commence à attaquer " +
+      cible.name + "&nbsp;!");
+    addEvent(evt);
+  }
+
+  function copieToken(cible, image1, image2, nom, effet, duree, pageId, evt) {
     var tokenFields = {
       _pageid: pageId,
-      imgsrc: image,
+      imgsrc: image1,
       represents: cible.charId,
       left: cible.token.get('left') + 60,
       top: cible.token.get('top'),
@@ -6995,9 +7019,9 @@ var COFantasy = COFantasy || function() {
       height: cible.token.get('height'),
       rotation: cible.token.get('rotation'),
       layer: 'objects',
-      name: "Ombre de " + cible.name,
-      bar1_value: cible.token.get('bar1_value'),
-      bar1_max: cible.token.get('bar1_max'),
+      name: nom,
+      bar1_value: cible.token.get('bar1_value')/2,
+      bar1_max: cible.token.get('bar1_max')/2,
       bar2_value: cible.token.get('bar2_value'),
       bar2_max: cible.token.get('bar2_max'),
       bar3_value: cible.token.get('bar3_value'),
@@ -7006,18 +7030,24 @@ var COFantasy = COFantasy || function() {
       showplayers_name: true,
       showplayers_bar1: true,
     };
-    var newToken = createObj('graphic', tokenFields);
+    var newToken;
+    if (image1) newToken = createObj('graphic', tokenFields);
     if (newToken === undefined) {
-      log(tokenFields.imgsrc);
       tokenFields.imgsrc = cible.token.get('imgsrc').replace("max", "thumb");
       newToken = createObj('graphic', tokenFields);
       if (newToken === undefined) {
-        error("L'image du token sélectionné n'a pas été uploadé, et l'image par défaut n'est pas correcte. Impossible de créer un token.", tokenFields);
-        return;
+        log(tokenFields.imgsrc);
+        if (image2 && image2 != image1) {
+          tokenFields.imgsrc = image2;
+          newToken = createObj('graphic', tokenFields);
+        }
+        if (newToken === undefined) {
+          error("L'image du token sélectionné n'a pas été uploadé, et l'image par défaut n'est pas correcte. Impossible de créer un token.", tokenFields);
+          return;
+        }
       }
     }
-    sendChar(lanceur.charId, "anime l'ombre de " + cible.name + ". Celle-ci commence à attaquer " + cible.name + "&nbsp;!");
-    setTokenAttr(newToken, cible.charId, 'ombreMortelle', duree, evt, undefined, getInit());
+    setTokenAttr(newToken, cible.charId, effet, duree, evt, undefined, getInit());
     initiative([{
       _id: newToken.id
     }], evt);
@@ -7437,6 +7467,11 @@ var COFantasy = COFantasy || function() {
       actif: "est une ombre animée",
       fin: "retrouve une ombre normale"
     },
+    dedoublement: {
+      activation: "voit un double translucide sortir de lui",
+      actif: "est un double translucide",
+      fin: "le double disparaît"
+    },
     zoneDeSilence: {
       activation: "n'entend plus rien",
       actif: "est totalement sourd",
@@ -7596,7 +7631,7 @@ var COFantasy = COFantasy || function() {
           return true;
         });
         break;
-      case 'ombreMortelle':
+      case 'ombreMortelle': case 'dedoublement':
         iterTokensOfEffet(charId, effet, attrName, function(token) {
           token.remove();
         });
