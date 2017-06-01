@@ -430,15 +430,25 @@ var COFantasy = COFantasy || function() {
         case "tirDeBarrage":
         case "ignoreObstacles":
         case "enflamme":
-        case "magique":
         case "asDeLaGachette":
         case "sortilege":
         case "malediction":
           options[cmd[0]] = true;
           return;
+        case "magique":
+          var niveauMagie = 1;
+          if (cmd.length > 1) {
+            niveauMagie = parseInt(cmd[1]);
+            if (isNaN(niveauMagie) || niveauMagie < 1) {
+              error("Le niveau de magie doit être au moins 1", cmd);
+              niveauMagie = 1;
+            }
+          }
+          options.magique = niveauMagie;
+          return;
         case "si":
           options.conditionAttaquant = parseCondition(cmd.slice(1));
-          break;
+          return;
         case "plus":
           if (cmd.length < 2) {
             sendChat("COF", "Il manque un argument à l'option --plus de !cof-attack");
@@ -2093,6 +2103,7 @@ var COFantasy = COFantasy || function() {
         });
         explications.push(attackerTokName + " est un champion, son attaque porte !");
       }
+      /////////////////////////////////////////////////////////////////
       //Tout ce qui dépend de la cible
       var ciblesCount = cibles.length; //Pour l'asynchronie
       var finCibles = function() {
@@ -2160,10 +2171,40 @@ var COFantasy = COFantasy || function() {
           if (options.divise) options.divise *= 2;
           else options.divise = 2;
         }
+        var attNbDicesCible = attNbDices;
+        var attDiceCible = attDice;
+        var attCarBonusCible = attCarBonus;
+        if (!options.sortilege && 
+          charAttributeAsBool(target.charId, 'immuniteAuxArmes')) {
+            if (options.magique) {
+              attNbDicesCible = options.magique;
+              attDiceCible = "6";
+              attCarBonusCible = modCarac(target.charId, 'SAGESSE');
+              if (attCarBonusCible < 1) attCarBonusCible = "";
+              else attCarBonusCible = " +"+attCarBonusCible;
+            } else {
+              target.messages.push(target.tokName + " semble immunisé aux armes ordinaires");
+              attNbDicesCible = 0;
+              attCarBonusCible = "";
+              attDMBonus = "";
+            }
+          }
         var mainDmgRollExpr =
-          addOrigin(attackerName, attNbDices + "d" + attDice + attCarBonus + attDMBonus);
+          addOrigin(attackerName, attNbDicesCible + "d" + attDiceCible + attCarBonusCible + attDMBonus);
         //Additional damage
         var additionalDmg = options.additionalDmg.concat(target.additionalDmg);
+        if (!options.sortilege && !options.magique &&
+          charAttributeAsBool(target.charId, 'immuniteAuxArmes')) {
+            additionalDmg = additionalDmg.filter(function(dmSpec) {
+              switch (dmSpec.type) {
+              case undefined:
+              case 'normal':
+              case 'poison':
+              case 'maladie': return false;
+              default: return true;
+              }
+            });
+          }
         if (options.tirDouble || options.tirDeBarrage) {
           mainDmgRollExpr += " +" + mainDmgRollExpr;
           additionalDmg.forEach(function(dmSpec) {
@@ -2299,6 +2340,8 @@ var COFantasy = COFantasy || function() {
                   getInit());
                 if (ef.effet == 'aveugleTemp') {
                   setState(target, 'aveugle', true, evt);
+                } else if (ef.effet == 'ralentiTemp') {
+                  setState(target, 'ralenti', true, evt);
                 }
                 if (ef.saveParTour) {
                   setTokenAttr(target, ef.effet + "SaveParTour",
@@ -2424,6 +2467,8 @@ var COFantasy = COFantasy || function() {
                             undefined, getInit());
                           if (ef.effet == 'aveugleTemp') {
                             setState(target, 'aveugle', true, evt);
+                          } else if (ef.effet == 'ralentiTemp') {
+                            setState(target, 'ralenti', true, evt);
                           }
                           if (ef.saveParTour) {
                             setTokenAttr(target,
@@ -5041,6 +5086,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function charAttributeAsBool(charId, name) {
+    if (charId.charId) charId = charId.charId;
     return attributeAsBool({
       charId: charId
     }, name);
@@ -7575,6 +7621,11 @@ var COFantasy = COFantasy || function() {
       actif: "", //Déjà affiché avec l'état aveugle
       fin: "retrouve la vue"
     },
+    ralentiTemp: {
+      activation: "est ralenti : une seule action, pas d'action limitée",
+      actif: "", //Déjà affiché avec l'état ralenti
+      fin: "n'est plus ralenti"
+    },
     epeeDansante: {
       activation: "fait apparaître une lame d'énergie lumineuse",
       actif: "contrôle une lame d'énergie lumineuse",
@@ -7775,6 +7826,16 @@ var COFantasy = COFantasy || function() {
             token: token,
             charId: charId
           }, 'aveugle', false, evt);
+        }, function(token) {
+          return true;
+        });
+        break;
+      case 'ralentiTemp':
+        iterTokensOfEffet(charId, effet, attrName, function(token) {
+          setState({
+            token: token,
+            charId: charId
+          }, 'ralenti', false, evt);
         }, function(token) {
           return true;
         });

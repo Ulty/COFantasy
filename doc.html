@@ -120,7 +120,7 @@ p  {margin-left: inherit}
         critiques (sauf si de type différent de l'attaque principale). Ainsi, <tt>--plus [[1d6]]</tt> donnera des dégâts multipliés par les critiques (car la fonction ne voit que le résultat du jet), alors que <tt>--plus 1d6</tt> ne le sera pas.</li>
       <li><tt>--de6Plus</tt> <i>n</i> (ou <tt>--sournoise</tt> <i>n</i>): ajoute <i>n</i>d6 aux dégâts (non multipliés en cas de critique), de même
         type que les dégâts principaux</li>
-      <li> <tt>--magique</tt> : les dégâts sont magiques</li>
+      <li> <tt>--magique</tt> : les dégâts sont magiques. On peut passer en argument le niveau de magie. Il est utilisé contre les créatures immunisées aux armes. Le niveau par défaut est 1.</li>
       <li><tt>--feu</tt>, <tt>--acide</tt>, <tt>--electrique</tt>, <tt>--froid</tt>, <tt>--sonique</tt>, --<tt>poison</tt>, --<tt>maladie</tt> : les dégâts sont de type 
         feu, acide, électrique, froid ou sonique. Le type spécifie uniquement le
         dernier <tt>--plus</tt> précédent cette option, ou si il n'y en a pas, celui des dégâts 
@@ -822,6 +822,9 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie des créatures élémentaires</h4>
     <h4>Voie des créatures magique</h4>
+    <ol>
+      <li> Réduction des DM : Ajouter un attribut <tt>RD_sauf_</tt><i>genre</i>, où <i>genre</i> peut être <tt>magique</tt> ou un des types d'attaque (feu, acide, poison, etc...).</li>
+    </ol>
     <h4>Voie des créatures volantes</h4>
     <ol>
       <li>Vol rapide : simplement faire une variante de l'attaque avec les options <tt>--bonusAttaque 5 --plus 1d6</tt> à utiliser le premier tour de combat si a créature ets en vol et attaque une créature au sol. Ne pas oublier l'action de mouvement supplémentaire en vol.</li>
@@ -859,6 +862,7 @@ p  {margin-left: inherit}
       <li> Putréfaction : ajouter à l'attaque <tt>--effet putrefaction 5 --save CON 14</tt> (pour les données des momies)</li>
       <li>Sans esprit      : ajouter un attribut <tt>sansEsprit</tt> (=true) permet la réussite
         automatique des jets de résistance basés sur INT, SAG ou CHA.</li>
+      <li>Immunité aux armes : ajouter un attribut <tt>immuniteAuxArmes</tt> avec comme valeur <tt>true</tt></li>
     </ul>
   </body>
 </html>
