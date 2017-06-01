@@ -292,7 +292,7 @@ p  {margin-left: inherit}
     <h3>2.8 Sorts</h3>
     <p>
     <tt>!cof-attaque-magique @{selected|token_id} @{target|token_id}</tt> : fait un jet d'attaque magique opposé entre le lanceur et sa cible, et dit juste si le
-    sort est raté ou réussi.
+    sort est raté ou réussi. Options disponibles : <tt>--portee</tt> et <tt>--mana</tt>.
     <p>
     <tt>!cof-lancer-sort</tt> <i>token_id mana texte</i> : <i>token_id</i> lance un sort ayant un coût en
     mana, <i>texte</i> décrit le sort, mais pas d'effet (autre que la dépense de mana) à part /w au joueur et au MJ.
@@ -504,7 +504,8 @@ p  {margin-left: inherit}
       <li>Image décalée : <tt>!cof-effet-temp image_decalee [[5+@{selected|CHA}]] </tt></li>
       <li>Mirage : pas de support particulier</li>
       <li>Imitation : pas de support autre que <tt>!cof-lancer-sort @{selected|token_id} 1 lance un sort d'imitation ([[5+@{selected|CHA}]] minutes)</tt>. </li>
-      <li>Dédoublement : ajouter une attaque magique, de portée 20 m, et sans dégâts, avec les options <tt>--sortilege --mana 2 --effet dedoublement [[5+@{selected|token_id}]]</tt>. </li>
+      <li>Dédoublement : ajouter une attaque magique, de portée 20 m, et sans dégâts, avec les options <tt>--sortilege --mana 2 --effet dedoublement [[5+@{selected|CHA}]]</tt>. </li>
+      <li> Tueur fantasmagorique : <tt>!cof-tueur-fantasmagorique @{selected|token_id} @{target|token_id} --portee 20 --mana 3</tt></li>
     </ol>
     <h4>Voie de l'invocation</h4>
     <ol>
@@ -663,7 +664,7 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie du sang</h4>
     <ol>
-      <li> Saignements : TODO</li>
+      <li> Saignements : ajouter une attaque magique, de portée 10 m, sans dégâts. La lancer avec les options <tt>--sortilege --effet saignementsSang</tt> <i>rang</i>, où <i>rang</i> est le rang dans la Voie.</li>
     </ol>
     <h4>Voie de la sombre magie</h4>
     <p style="margin-top:0px; margin-bottom:0px">
@@ -757,7 +758,7 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie du déplacement</h4>
     <ol>
-      <li>Esquive : TODO</li>
+      <li>Esquive : pas de support particulier</li>
     </ol>
     <h4>Voie du roublard</h4>
     <ol>
@@ -774,7 +775,10 @@ p  {margin-left: inherit}
     <ol>
       <li>Force de la nature : ajouter les bonus sur la fiche</li>
     </ol>
-    <h4>Voie de l'elfe sylvain</h4> TODO
+    <h4>Voie de l'elfe sylvain</h4>
+    <ol>
+      <li>Grâce elfique : simplement reporter sur la fiche</li>
+    </ol>
     <h4>Voie du gnome</h4>
     <ol>
       <li>Petit pote : ajouter le bonus de CHA sur la fiche</li>
@@ -792,7 +796,10 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie de l'humain</h4>
     Instinct de survie : créer un attribut <tt>instinctDeSurvieHumain</tt> avec comme valeur <tt>true</tt>
-    <h4>Voie du nain</h4> TODO
+    <h4>Voie du nain</h4>
+    <ol>
+      <li>Résistance : ajouter les bonus sur la fiche</li>
+    </ol>
 
     <h3>Voies de créatures</h3>
     <h4>Voie du champion</h4>
