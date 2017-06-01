@@ -162,7 +162,8 @@ p  {margin-left: inherit}
       <li> les attributs hors fiche <tt>RD_</tt><i>genre</i> diminuent les dégâts pour ce genre
         (<i>genre</i> = <tt>tranchant</tt>, <tt>percant</tt>, <tt>contondant</tt>, ou un type (<tt>feu</tt>, <tt>acide</tt>, etc...))</li>
       <li> l'attribut <tt>RD_sauf_magique</tt> diminue tous les dégâts normaux, poison ou maladie, sauf si les dégâts sont spécifiés magiques (avec l'option <tt>--magique</tt>).
-        mentionné.
+        mentionné.</li>
+      <li> Les attributs <tt>RD_sauf_</tt><i>genre</i> permettent de préciser une RD sauf pour un type donné.</li>
         <li> pour les attaques, il faut préciser le genre si besoin (comme <tt>--tranchant</tt> pour une épée)</li>
         <li>pour les résistances sauf un genre d'arme le mieux est de spécifier une RD aux
           2 autres genres, pour ne pas résister aussi aux attaques magiques.</li>
@@ -846,6 +847,9 @@ p  {margin-left: inherit}
       <li>Embuscade : Sélectionner les ennemis du prédateurs, et utiliser <tt>!cof-surprise</tt>. Par exemple, contre une équipe de joueurs dans le handout <tt>Equipe joueurs</tt> (cf la <a href="#selection">méthode de séclection de groupes</a>), on pourra utiliser l'ability <tt>!cof-surprise [[15 + @{selected|DEX}]] --equipe joueurs</tt>. Pour les bonus en discrétion et init, reporter sur la fiche, pour l'attaque en embuscade sur une cible surprise, rajouter à une attaque les options <tt>--de6Plus 1 --etatSi renverse moins FOR</tt>.</li>
     </ol>
     <h4>Voie du tueur</h4>
+    <ol>
+      <li>Attaque mortelle : donner la possibilité de faire une attaque avec les options <tt>--bonusAttaque 5 --de6Plus</tt> <i>rang</i>.</li>
+    </ol>
 
 
     <h3>Autres capacités:</h3>

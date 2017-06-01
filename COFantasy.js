@@ -2635,6 +2635,27 @@ var COFantasy = COFantasy || function() {
     return;
   }
 
+  function applyRDSauf(rds, dmgType, total, display) {
+    if (total) {
+      for (var saufType in rds) {
+        var rd = rds[saufType];
+        if (rd < 1 || saufType == dmgType) break;
+        if (total < rd) {
+          display += "-" + total;
+          rds[saufType] -= total;
+          total = 0;
+        } else {
+          display += "-" + rd;
+          total -= rd;
+          rds[saufType] = 0;
+        }
+      }
+    }
+    return {
+      total: total,
+      display: display
+    };
+  }
 
   function dealDamageAfterDmgExtra(target, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes) {
     var rdMain = typeRD(target.charId, mainDmgType);
@@ -2657,6 +2678,25 @@ var COFantasy = COFantasy || function() {
       dmgTotal = resMagique.total;
       dmgDisplay = resMagique.display;
     }
+    var rdSauf = [];
+    if (target.attrs === undefined) {
+      target.attrs = findObjs({
+        _type: 'attribute',
+        _characterid: target.charId
+      });
+    }
+    target.attrs.forEach(function(attr) {
+      var attrName = attr.get('name');
+      if (attrName.startsWith('RD_sauf_')) {
+        if (attrName == 'RD_sauf_magique') return;
+        var rds = parseInt(attr.get('current'));
+        if (isNaN(rds) || rds < 1) return;
+        rdSauf[attrName.substr(8)] = rds;
+      }
+    });
+    var resSauf = applyRDSauf(rdSauf, mainDmgType, dmgTotal, dmgDisplay);
+    dmgTotal = resSauf.total;
+    dmgDisplay = resSauf.display;
     var armureM = attributeAsInt(target, 'armureMagique', 0);
     var invulnerable = charAttributeAsBool(target.charId, 'invulnerable');
     var mitigate = function(dmgType, divide, zero) {
@@ -2728,6 +2768,9 @@ var COFantasy = COFantasy || function() {
                 dm = resMagique.total;
                 typeDisplay = resMagique.display;
               }
+              var resSauf = applyRDSauf(rdSauf, dmgType, dm, typeDisplay);
+              dm = resSauf.total;
+              typeDisplay = resSauf.display;
               mitigate(dmgType,
                 function() {
                   dm = Math.ceil(dm / 2);
