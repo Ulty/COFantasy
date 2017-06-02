@@ -1107,7 +1107,7 @@ var COFantasy = COFantasy || function() {
     if (charAttributeAsInt(charId, 'DEFARMUREON', 1) === 0) {
       defense += charAttributeAsInt(charId, 'vetementsSacres', 0);
       defense += charAttributeAsInt(charId, 'armureDeVent', 0);
-      if (!options.distance) 
+      if (!options.distance)
         defense += charAttributeAsInt(charId, 'dentellesEtRapiere', 0);
     }
     var attrsProtegePar = findObjs({
@@ -1165,8 +1165,8 @@ var COFantasy = COFantasy || function() {
       defense -= 4;
       explications.push("Pas facile de se défendre en dansant...");
     }
-        if (options.sortilege)
-          defense += charAttributeAsInt(target.charId, 'DEF_magie', 0);
+    if (options.sortilege)
+      defense += charAttributeAsInt(target.charId, 'DEF_magie', 0);
     return defense;
   }
 
@@ -1779,7 +1779,7 @@ var COFantasy = COFantasy || function() {
                   var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
                     dmgDisplay;
                   addLineToFramedDisplay(display, dmgMsg);
-                  finaliseAttackDisplay(display, explications, evt);
+                  finaliseDisplay(display, explications, evt);
                 });
             });
           } else {
@@ -1799,7 +1799,7 @@ var COFantasy = COFantasy || function() {
                   var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
                     dmgDisplay;
                   addLineToFramedDisplay(display, dmgMsg);
-                  finaliseAttackDisplay(display, explications, evt);
+                  finaliseDisplay(display, explications, evt);
                 });
             });
           }
@@ -1810,7 +1810,7 @@ var COFantasy = COFantasy || function() {
             "<b>Attaque :</b> " +
             buildinline(rollsAttack.inlinerolls[attRollNumber]));
           explications.push(weaponName + " fait long feu, le coup ne part pas");
-          finaliseAttackDisplay(display, explications, evt);
+          finaliseDisplay(display, explications, evt);
           return;
         }
       }
@@ -2038,7 +2038,7 @@ var COFantasy = COFantasy || function() {
         return true;
       }); //fin de détermination de toucher des cibles
       if (cibles.length === 0) {
-        finaliseAttackDisplay(display, explications, evt);
+        finaliseDisplay(display, explications, evt);
         if (critSug) sendChat('COF', critSug);
       }
 
@@ -2150,7 +2150,7 @@ var COFantasy = COFantasy || function() {
               addLineToFramedDisplay(display, expl);
             });
           });
-          finaliseAttackDisplay(display, explications, evt);
+          finaliseDisplay(display, explications, evt);
         }
       };
       cibles.forEach(function(target) {
@@ -2532,7 +2532,7 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function finaliseAttackDisplay(display, explications, evt) {
+  function finaliseDisplay(display, explications, evt) {
     addEvent(evt);
     explications.forEach(function(expl) {
       addLineToFramedDisplay(display, expl);
@@ -7447,6 +7447,62 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  function tourDeForce(msg) {
+    var args = msg.content.split(' ');
+    if (args.length < 3) {
+      error("Il manque un argument à !cof-tour-de-force", args);
+      return;
+    }
+    var barbare = tokenOfId(args[1], args[1]);
+    if (barbare === undefined) {
+      error("Le premier argument n'est pas un token valide", args);
+      return;
+    }
+    var character = getObj('character', barbare.charId);
+    if (character === undefined) {
+      error("Personnage manquant", barbare);
+      return;
+    }
+    var seuil = parseInt(args[2]);
+    if (isNaN(seuil)) {
+      sendChar(barbare.charId, "le seuil de difficulté du tour de force doit être un nombre");
+      return;
+    }
+    var titre = barbare.token.get('name') + " tente un tour de force !";
+    var display = startFramedDisplay(msg.playerid, titre, character);
+    var evt = {
+      type: "Tour de force"
+    };
+    testCaracteristique(barbare, 'FOR', [], seuil, 10, evt,
+      function(reussite, rollText) {
+        addLineToFramedDisplay(display, " Jet de force difficulté " + seuil);
+        var smsg = barbare.token.get('name') + " fait " + rollText;
+        if (reussite) {
+          smsg += " -> réussite";
+        } else {
+          smsg += " -> échec";
+        }
+        addLineToFramedDisplay(display, smsg);
+        sendChat("", "[[1d4]]", function(res) {
+          var rolls = res[0];
+          var explRoll = rolls.inlinerolls[0];
+          var r = {
+            total: explRoll.results.total,
+            type: 'normal',
+            display: buildinline(explRoll, 'normal')
+          };
+          var explications = [];
+          dealDamage(barbare, r, [], evt, 1, {}, explications,
+            function(dmgDisplay, saveResult, dmg) {
+              var dmgMsg = "mais cela lui coûte " + dmgDisplay + " PV";
+              addLineToFramedDisplay(display, dmgMsg);
+              finaliseDisplay(display, explications, evt);
+            });
+        });
+      });
+  }
+
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -7600,6 +7656,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-tueur-fantasmagorique":
         tueurFantasmagorique(msg);
+        return;
+      case "!cof-tour-de-force":
+        tourDeForce(msg);
         return;
       default:
         return;
