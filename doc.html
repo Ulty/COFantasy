@@ -303,9 +303,9 @@ p  {margin-left: inherit}
     SAG, <i>token_id</i> est l'id du lanceur.
     options :
     <ul>
-      <li><tt>--resisteAvecForce</tt> : on prend le max de FOR et SAG pour résister TODO (comment faire le choix entre une SAG supérieure et une FOR normale mais avec un plus grand mod ?)</li>
+      <li><tt>--resisteAvecForce</tt> : on prend le max de FOR et SAG pour résister</li>
       <li><tt>--etourdi</tt> : la peur fait fuir ou rend étourdi</li>
-      <li><tt>--ralenti</tt> : la peur ralenti TODO</li>
+      <li><tt>--ralenti</tt> : la peur ralenti</li>
       <li><tt>--effroi</tt> : la peur est passive (pas un sort)</li>
       <li><tt>--portee</tt> <i>n</i> : limite la portée du sort à <i>n</i> metres.</li>
     </ul>
@@ -363,7 +363,8 @@ p  {margin-left: inherit}
     <h3>Barde</h3>
     <h4>Voie de l'escrime</h4>
     <ol>
-      <li>Précision: ok</li>
+      <li>Précision : simplement utiliser le bon score sur la fiche.</li>
+      <li>Intelligence du combat : ajouter les bonus sur la fiche.</li>
     </ol>
     <h4>Voie du musicien</h4>
     <ol>
@@ -379,11 +380,13 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie du saltimbanque</h4>
     <ol>
-      <li>Acrobate: ok</li>
+      <li>Acrobate : ajouter les compétences sur la fiche</li>
+      <li>Grâce féline : simplement ajouter les bonus sur la fiche</li>
     </ol>
     <h4>Voie de la séduction</h4>
     <ol>
-      <li>Charmant: ok</li>
+      <li>Charmant : ajouter les compétences sur la fiche</li>
+      <li>Dentelles et rapière : Ajouter un attribut <tt>dentellesEtRapière</tt> avec comme valeur le rang dans la voie de la séduction. Cela augmente la DEF, mais seulement lorsque le barde ne porte pas d'armure et seulement contre les attaques au contact. (ne se voit pas sur le total de DEF de la fiche)</li>
     </ol>
     <h4>Voie du vagabond</h4>
     <ol>
@@ -657,11 +660,11 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie de la mort</h4>
     <ol>
-      <li>Siphon des âmes : pour l'instant, à chaque mort, utiliser <tt>!cof-soin @{selected|token_id} @{selected|token_id} [[1d6]]</tt> TODO : automatiser</li>
+      <li>Siphon des âmes : ajouter un attribut <tt>siphonDesAmes</tt></li>
     </ol>
     <h4>Voie de l'outre-tombe</h4>
     <ol>
-      <li>Peur : Faire une attaque <tt>Peur</tt> utilisant le score d'attaque magique, de portée 20 m, mais ne faisant aucun dégât (0 dé, pas de bonus de caractéristique). Pour l'attaque, ajouter les arguments <tt>--sortilege --peur [[10+@{selected|INT}]] [[1d4+</tt><i>r</i><tt>]]</tt> où <i>r</i> est le rang dans la voie. Pour l'instant n'utilise que le score de SAG pour résister. TODO : ajouter la possibilité d'utiliser la FOR.</li>
+      <li>Peur : Faire une attaque <tt>Peur</tt> utilisant le score d'attaque magique, de portée 20 m, mais ne faisant aucun dégât (0 dé, pas de bonus de caractéristique). Pour l'attaque, ajouter les arguments <tt>--sortilege --peur [[10+@{selected|INT}]] [[1d4+</tt><i>r</i><tt>]]</tt> où <i>r</i> est le rang dans la voie.</li>
     </ol>
     <h4>Voie du sang</h4>
     <ol>

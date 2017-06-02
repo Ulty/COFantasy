@@ -124,6 +124,33 @@ var COFantasy = COFantasy || function() {
       aff.prev.light_losangle = token.get('light_losangle');
       if (value) token.set('light_losangle', 0);
       else token.set('light_losangle', 360);
+    } else if (etat == 'mort') {
+      var allToks =
+        findObjs({
+          _type: "graphic",
+          _pageid: token.get('pageid'),
+          _subtype: "token",
+          layer: "objects"
+        });
+      allToks.forEach(function(tok) {
+        var ci = tok.get('represents');
+        if (ci === '') return;
+        var p = {
+          token: tok,
+          charId: ci
+        };
+        if (getState(p, 'mort')) return;
+        if (charAttributeAsBool(ci, 'siphonDesAmes')) {
+          soigneToken(tok, randomInteger(6), evt,
+            function(s) {
+              sendChar(ci, "siphone l'âme de " + token.get('name') +
+                ". Il récupère " + s + " pv.");
+            },
+            function() {
+              sendChar(ci, "est déjà au maximum de point de vie. Il laisse échapper l'âme de " + token.get('name'));
+            });
+        }
+      });
     }
     if (token.get('bar1_link') !== "") {
       if (charId === '') {
@@ -1045,7 +1072,8 @@ var COFantasy = COFantasy || function() {
     if (callTrue) callTrue(soinsEffectifs);
   }
 
-  function defenseOfToken(target, pageId, evt) {
+  function defenseOfToken(target, pageId, evt, options) {
+    if (options === undefined) options = {};
     var charId = target.charId;
     var tokenName = target.tokName;
     var explications = target.messages;
@@ -1079,6 +1107,8 @@ var COFantasy = COFantasy || function() {
     if (charAttributeAsInt(charId, 'DEFARMUREON', 1) === 0) {
       defense += charAttributeAsInt(charId, 'vetementsSacres', 0);
       defense += charAttributeAsInt(charId, 'armureDeVent', 0);
+      if (!options.distance) 
+        defense += charAttributeAsInt(charId, 'dentellesEtRapiere', 0);
     }
     var attrsProtegePar = findObjs({
       _type: 'attribute',
@@ -1135,6 +1165,8 @@ var COFantasy = COFantasy || function() {
       defense -= 4;
       explications.push("Pas facile de se défendre en dansant...");
     }
+        if (options.sortilege)
+          defense += charAttributeAsInt(target.charId, 'DEF_magie', 0);
     return defense;
   }
 
@@ -1839,9 +1871,7 @@ var COFantasy = COFantasy || function() {
           if (target.crit > 2) target.crit -= 1;
         }
         //Defense de la cible
-        var defense = defenseOfToken(target, pageId, evt);
-        if (options.sortilege)
-          defense += charAttributeAsInt(target.charId, 'DEF_magie', 0);
+        var defense = defenseOfToken(target, pageId, evt, options);
         var interchange;
         if (options.aoe === undefined) {
           interchange = interchangeable(attackingToken, target, pageId);
@@ -2174,37 +2204,39 @@ var COFantasy = COFantasy || function() {
         var attNbDicesCible = attNbDices;
         var attDiceCible = attDice;
         var attCarBonusCible = attCarBonus;
-        if (!options.sortilege && 
+        if (!options.sortilege &&
           charAttributeAsBool(target.charId, 'immuniteAuxArmes')) {
-            if (options.magique) {
-              attNbDicesCible = options.magique;
-              attDiceCible = "6";
-              attCarBonusCible = modCarac(target.charId, 'SAGESSE');
-              if (attCarBonusCible < 1) attCarBonusCible = "";
-              else attCarBonusCible = " +"+attCarBonusCible;
-            } else {
-              target.messages.push(target.tokName + " semble immunisé aux armes ordinaires");
-              attNbDicesCible = 0;
-              attCarBonusCible = "";
-              attDMBonus = "";
-            }
+          if (options.magique) {
+            attNbDicesCible = options.magique;
+            attDiceCible = "6";
+            attCarBonusCible = modCarac(target.charId, 'SAGESSE');
+            if (attCarBonusCible < 1) attCarBonusCible = "";
+            else attCarBonusCible = " +" + attCarBonusCible;
+          } else {
+            target.messages.push(target.tokName + " semble immunisé aux armes ordinaires");
+            attNbDicesCible = 0;
+            attCarBonusCible = "";
+            attDMBonus = "";
           }
+        }
         var mainDmgRollExpr =
           addOrigin(attackerName, attNbDicesCible + "d" + attDiceCible + attCarBonusCible + attDMBonus);
         //Additional damage
         var additionalDmg = options.additionalDmg.concat(target.additionalDmg);
         if (!options.sortilege && !options.magique &&
           charAttributeAsBool(target.charId, 'immuniteAuxArmes')) {
-            additionalDmg = additionalDmg.filter(function(dmSpec) {
-              switch (dmSpec.type) {
+          additionalDmg = additionalDmg.filter(function(dmSpec) {
+            switch (dmSpec.type) {
               case undefined:
               case 'normal':
               case 'poison':
-              case 'maladie': return false;
-              default: return true;
-              }
-            });
-          }
+              case 'maladie':
+                return false;
+              default:
+                return true;
+            }
+          });
+        }
         if (options.tirDouble || options.tirDeBarrage) {
           mainDmgRollExpr += " +" + mainDmgRollExpr;
           additionalDmg.forEach(function(dmSpec) {
@@ -2487,7 +2519,9 @@ var COFantasy = COFantasy || function() {
             // Peut faire peur à la cible
             if (options.peur) {
               peurOneToken(target, pageId, options.peur.seuil,
-                options.peur.duree, {}, display, evt, effetsAvecSave);
+                options.peur.duree, {
+                  resisteAvecForce: true
+                }, display, evt, effetsAvecSave);
             } else effetsAvecSave();
           } else {
             evt.succes = false;
@@ -5760,6 +5794,8 @@ var COFantasy = COFantasy || function() {
       callback();
       return;
     }
+    var carac = 'SAG'; //carac pour résister
+    if (options.resisteAvecForce) carac += 'FOR';
     //chercher si un partenaire a sansPeur pour appliquer le bonus
     var charName = getObj('character', charId).get('name');
     var toutesEquipes = findObjs({
@@ -5786,7 +5822,7 @@ var COFantasy = COFantasy || function() {
           });
         }
         if (countEquipes === 0) { //continuation
-          testCaracteristique(target, 'SAG', [], difficulte, allieSansPeur, evt,
+          testCaracteristique(target, carac, [], difficulte, allieSansPeur, evt,
             function(reussite, rollText) {
               var line = "Jet de résistance de " + targetName + ":" + rollText;
               var sujet = onGenre(charId, 'il', 'elle');
@@ -5794,13 +5830,18 @@ var COFantasy = COFantasy || function() {
                 line += "&gt;=" + difficulte + ",  " + sujet + " résiste à la peur.";
               } else {
                 setState(target, 'apeure', true, evt);
-                line += "&lt;" + difficulte + ", " + sujet + " s'enfuit";
+                line += "&lt;" + difficulte + ", " + sujet;
+                var effet = 'peur';
                 if (options.etourdi) {
-                  line += " ou reste recroquevillé" + eForFemale(charId) + " sur place";
-                  setTokenAttr(target, 'peurEtourdi', duree, evt, undefined, getInit());
+                  line += "s'enfuit ou reste recroquevillé" + eForFemale(charId) + " sur place";
+                  effet = 'peurEtourdi';
+                } else if (options.ralenti) {
+                  line += "est ralenti" + eForFemale(charId);
+                  effet = 'ralentiTemp';
                 } else {
-                  setTokenAttr(target, 'peur', duree, evt, undefined, getInit());
+                  line += "s'enfuit.";
                 }
+                setTokenAttr(target, effet, duree, evt, undefined, getInit());
               }
               addLineToFramedDisplay(display, line);
               callback();
