@@ -1043,6 +1043,7 @@ var COFantasy = COFantasy || function() {
     return init;
   }
 
+  //fonction avec callback, mais synchrone
   function soigneToken(token, soins, evt, callTrue, callMax) {
     var bar1 = parseInt(token.get("bar1_value"));
     var pvmax = parseInt(token.get("bar1_max"));
@@ -1354,10 +1355,15 @@ var COFantasy = COFantasy || function() {
     else options.contact = true;
 
     //Détermination de la (ou des) cible(s)
-    var nomCiblePrincipale; //Utilie pour le cas mono-cible
+    var nomCiblePrincipale; //Utilise pour le cas mono-cible
     var cibles = [];
     if (targetToken.cibles) { //Dans ce cas les cibles sont précisées dans targetToken
       cibles = targetToken.cibles;
+      if (cibles.length === 0) {
+        error("Attaque sans cible", targetToken);
+        return;
+      }
+      nomCiblePrincipale = cibles[0].tokName;
     } else {
       nomCiblePrincipale = targetToken.get('name');
       if (options.aoe) {
@@ -2919,6 +2925,10 @@ var COFantasy = COFantasy || function() {
         if (options.contondant) rd += charAttributeAsInt(charId, 'RD_contondant', 0);
         if (target.defautCuirasse) rd = 0;
         if (options.intercepter) rd += options.intercepter;
+        if (target.extraRD) {
+          rd += target.extraRD;
+          expliquer(target.tokName + " dévie le coup sur son armure");
+        }
         if (rd > 0) {
           dmgDisplay += "-" + rd;
           showTotal = true;
@@ -4271,7 +4281,10 @@ var COFantasy = COFantasy || function() {
     options.rollsAttack = attaque.rollsAttack;
     options.rollsDmg = attaque.rollsDmg;
     options.evt = evt;
-    attack(attaque.player_id, attaque.attaquant, attaque, attaque.attack_label, options);
+    cible.rollsDamg = attaque.cibles[0].rollsDmg;
+    attack(attaque.player_id, attaque.attaquant, {
+      cibles: [cible]
+    }, attaque.attack_label, options);
   }
 
   function exemplaire(msg) {
@@ -5093,7 +5106,9 @@ var COFantasy = COFantasy || function() {
 
   function charAttributeAsInt(charId, name, def) {
     var perso = charId;
-    if (perso.charId === undefined) perso = {charId:charId};
+    if (perso.charId === undefined) perso = {
+      charId: charId
+    };
     return attributeAsInt(perso, name, def);
   }
 
@@ -5502,9 +5517,17 @@ var COFantasy = COFantasy || function() {
     }
     var monter;
     switch (cmd[1]) {
-      case 'oui': case 'true': monter = true; break;
-      case 'non': case 'false': monter = false; break;
-      default: error("Option de !cof-a-cheval inconnue", cmd); return;
+      case 'oui':
+      case 'true':
+        monter = true;
+        break;
+      case 'non':
+      case 'false':
+        monter = false;
+        break;
+      default:
+        error("Option de !cof-a-cheval inconnue", cmd);
+        return;
     }
     var evt = {
       type: "À cheval"
@@ -7516,6 +7539,59 @@ var COFantasy = COFantasy || function() {
       });
   }
 
+  function encaisserUnCoup(msg) {
+    getSelected(msg, function(selected) {
+      if (selected.length === 0) {
+        error("Personne n'est sélectionné pour encaisser un coup", msg);
+        return;
+      }
+      var lastAct = lastEvent();
+      if (lastAct === undefined) {
+        sendChat('', "Historique d'actions vide, pas d'action trouvée pour encaisser un coup");
+        return;
+      }
+      if (lastAct.type != 'Attaque' || lastAct.succes === false) {
+        sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour encaisser le coup d'une action précédente");
+        return;
+      }
+      var attaque = lastAct.action;
+      if (attaque.options.distance) {
+        sendChat('', "Impossible d'encaisser le dernier coup, ce n'était pas une attaque au contact");
+        return;
+      }
+      var nbOK = 0;
+      var evt = {
+        type: "Encaisser un coup"
+      };
+      iterSelected(selected, function(chevalier) {
+        if (!attributeAsBool(chevalier, 'encaisserUnCoup')) {
+          sendChar(chevalier.charId, "n'est pas placé pour encaisser un coup");
+          return;
+        }
+        var cible = attaque.cibles.find(function(target) {
+          return (target.token.id === chevalier.token.id);
+        });
+        if (cible === undefined) {
+          sendChar(chevalier.charId, "n'est pas la cible de la dernière attaque");
+          return;
+        }
+        removeTokenAttr(chevalier, 'encaisserUnCoup', evt);
+        cible.extraRD =
+          charAttributeAsInt(chevalier, 'DEFARMURE', 0) *
+          charAttributeAsInt(chevalier, 'DEFARMUREON', 1) +
+          charAttributeAsInt(chevalier, 'DEFBOUCLIER', 0) *
+          charAttributeAsInt(chevalier, 'DEFBOUCLIERON', 1);
+        nbOK++;
+      }); //fin iterSelected
+      if (nbOK > 0) {
+        undoEvent();
+        var options = attaque.options;
+        options.rollsAttack = attaque.rollsAttack;
+        options.evt = evt;
+        attack(attaque.player_id, attaque.attaquant, attaque, attaque.attack_label, options);
+      }
+    }); //fin getSelected
+  }
 
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
@@ -7590,7 +7666,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-degainer":
         degainer(msg);
         return;
-      case "!cof-a-cheval": aCheval(msg); return;
+      case "!cof-a-cheval":
+        aCheval(msg);
+        return;
       case "!cof-echange-init":
         echangeInit(msg);
         return;
@@ -7674,6 +7752,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-tour-de-force":
         tourDeForce(msg);
+        return;
+      case "!cof-encaisser-un-coup":
+        encaisserUnCoup(msg);
         return;
       default:
         return;
@@ -7825,6 +7906,11 @@ var COFantasy = COFantasy || function() {
       activation: "commence à saigner du nez, des oreilles et des yeux",
       actif: "saigne de tous les orifices du visage",
       fin: "ne saigne plus"
+    },
+    encaisserUnCoup: {
+      activation: "se place de façon à dévier un coup sur son armure",
+      actif: "est placé de façon à dévier un coup",
+      fin: "n'est plus en position pour encaisser un coup"
     }
   };
 
