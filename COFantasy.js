@@ -959,6 +959,10 @@ var COFantasy = COFantasy || function() {
       explications.push("Un capitaine donne des ordres -> +2 à l'attaque");
     }
     if (attributeAsBool(personnage, 'forceDeGeant')) attBonus += 2;
+    if (attributeAsBool(personnage, 'nueeDInsectes')) {
+      attBonus -=2;
+      explications.push("Les insectes qui volent autour de lui l'aveuglent -> -2 à l'attaque");
+    }
     return attBonus;
   }
 
@@ -5201,6 +5205,9 @@ var COFantasy = COFantasy || function() {
         1 + attributeAsInt(personnage, 'dureeStrangulation', 0);
       bonus -= malusStrangulation;
     }
+    if (attributeAsBool(personnage, 'nueeDInsectes')) {
+      bonus -= 2;
+    }
     if (carac == 'DEX') {
       if (charAttributeAsInt(charId, 'DEFARMUREON', 1))
         bonus -= charAttributeAsInt(charId, 'DEFARMUREMALUS', 0);
@@ -7915,6 +7922,11 @@ var COFantasy = COFantasy || function() {
       activation: "se place de façon à dévier un coup sur son armure",
       actif: "est placé de façon à dévier un coup",
       fin: "n'est plus en position pour encaisser un coup"
+    },
+    nueeDInsectes: {
+      activation: "est attaqué par une nuée d'insectes",
+      actif: "est entouré d'une nuée d'insectes",
+      fin: "est enfin débarassé des insectes"
     }
   };
 
@@ -8180,6 +8192,22 @@ var COFantasy = COFantasy || function() {
                 onGenre(charId, 'Il', 'Elle');
                 sendChar(charId, " saigne par tous les orifices du visage. " + onGenre(charId, 'Il', 'Elle') +
                   " subit " + saigneSang + " DM");
+              });
+              break;
+            case 'nueeDInsectes': //prend 1 DM
+              iterTokensOfEffet(charId, effet, attrName, function(token) {
+                var dmg = {
+                  type: 'normal',
+                  total: 1,
+                  display: 1
+                };
+                var dmNuee = dealDamage({
+                  token: token,
+                  charId: charId
+                }, dmg, [], evt, 1);
+                onGenre(charId, 'Il', 'Elle');
+                sendChar(charId, " est piqué par les insectes qui l'entourent. " + onGenre(charId, 'Il', 'Elle') +
+                  " subit " + dmNuee + " DM");
               });
               break;
             case 'strangulation':
