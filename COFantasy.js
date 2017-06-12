@@ -2923,6 +2923,10 @@ var COFantasy = COFantasy || function() {
         if (options.tranchant) rd += charAttributeAsInt(charId, 'RD_tranchant', 0);
         if (options.percant) rd += charAttributeAsInt(charId, 'RD_percant', 0);
         if (options.contondant) rd += charAttributeAsInt(charId, 'RD_contondant', 0);
+        if (options.distance) {
+          var piqures = charAttributeAsInt(charId, 'puquresDInsecte', 0);
+          if (piqures > 0 && charAttributeAsBool(charId, 'DEFARMUREON') && charAttributeAsInt(charId, 'DEFARMURE', 0) > 5) rd += piqures;
+        }
         if (target.defautCuirasse) rd = 0;
         if (options.intercepter) rd += options.intercepter;
         if (target.extraRD) {
