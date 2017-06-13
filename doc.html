@@ -278,7 +278,7 @@ p  {margin-left: inherit}
     <p>
     <tt>!cof-remove-buf-def</tt> : enlève tout buf ou debuf de la def.
     <p>
-    <tt>!cof-effet-temp</tt> <i>effet duree</i> : ajoute l'effet <i>effet</i> à la cible pour la durée, et <tt>!cof-effet-combat</tt> <i>effet</i> ajoute l'effet pour le combat.
+    <tt>!cof-effet-temp</tt> <i>effet duree</i> : ajoute l'effet <i>effet</i> à la cible pour la durée, <tt>!cof-effet-combat</tt> <i>effet</i> ajoute l'effet pour le combat, et <tt>!cof-effet</tt> <i>effet</i> ajoute ou enlève un effet à durée indéterminée.
     <ul>
       <li><tt>--lanceur</tt> <i>id</i> : indique quel est le lanceur. Utile pour un certain nombre d'autres options.
         <li><tt>--mana</tt> <i>id cout</i> : impose au token <i>id</i> de dépenser <i>cout</i> mana. Si <tt>--lanceur</tt> est donné, <i>id</i> est inutile.</li>
@@ -432,7 +432,7 @@ p  {margin-left: inherit}
       <li>Cavalier émérite : ajuster la DEF de la monture. 
         <ul>
           <li> Ajouter un attribute <tt>cavalierEmerite</tt> avec comme valeur 2 </li>
-          <li> Pour monter ou descendre de cheval, utiliser <tt>!cof-a-cheval</tt> avec comme argument <tt>oui</tt>, <tt>true</tt>, <tt>non</tt> ou <tt>false</tt></li>
+          <li> Pour monter ou descendre de cheval, utiliser <tt>!cof-effet aCheval</tt> avec comme argument <tt>oui</tt>, <tt>true</tt>, <tt>non</tt> ou <tt>false</tt></li>
         </ul>
       </li>
     </ol>

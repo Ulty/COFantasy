@@ -4917,6 +4917,10 @@ var COFantasy = COFantasy || function() {
         if (attributeAsBool(perso, effetC))
           addLineToFramedDisplay(display, messageEffetCombat[effetC].actif);
       }
+      for (var effetI in messageEffetIndetermine) {
+        if (attributeAsBool(perso, effetI))
+          addLineToFramedDisplay(display, messageEffetIndetermine[effetI].actif);
+      }
       allAttributesNamed(attrsChar, 'munition').forEach(function(attr) {
         var attrName = attr.get('name');
         var underscore = attrName.indexOf('_');
@@ -5513,41 +5517,6 @@ var COFantasy = COFantasy || function() {
     if (evt.attributes.length > 0) addEvent(evt);
   }
 
-  function aCheval(msg) {
-    if (msg.selected === undefined || msg.selected.length === 0) {
-      error("Qui doit monter à cheval ?", msg);
-      return;
-    }
-    var cmd = msg.content.split(' ');
-    if (cmd.length < 2) {
-      error("Pas assez d'arguments pour !cof-a-cheval", msg.content);
-      return;
-    }
-    var monter;
-    switch (cmd[1]) {
-      case 'oui':
-      case 'true':
-        monter = true;
-        break;
-      case 'non':
-      case 'false':
-        monter = false;
-        break;
-      default:
-        error("Option de !cof-a-cheval inconnue", cmd);
-        return;
-    }
-    var evt = {
-      type: "À cheval"
-    };
-    var message = "descend de cheval";
-    if (monter) message = "monte à cheval";
-    iterSelected(msg.selected, function(perso) {
-      setTokenAttr(perso, 'aCheval', monter, evt, message);
-    });
-    addEvent(evt);
-  }
-
   function echangeInit(msg) {
     var args = msg.content.split(" ");
     if (args.length < 4) {
@@ -5840,7 +5809,7 @@ var COFantasy = COFantasy || function() {
     var options = parseOptions(msg, evt);
     var cmd = options.cmd;
     if (cmd === undefined || cmd.length < 2) {
-      error("Pas assez d'arguments pour !cof-effet-temp", msg.content);
+      error("Pas assez d'arguments pour !cof-effet-combat", msg.content);
       return;
     }
     var effet = cmd[1];
@@ -5902,6 +5871,89 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function effetIndetermine(msg) {
+    var evt = {};
+    var options = parseOptions(msg, evt);
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 3) {
+      error("Pas assez d'arguments pour !cof-effet", msg.content);
+      return;
+    }
+    var effet = cmd[1];
+    if (!estEffetIndetermine(effet)) {
+      error(effet + " n'est pas un effet répertorié", msg.content);
+      return;
+    }
+    var activer;
+    switch (cmd[2]) {
+      case 'oui':
+      case 'Oui':
+      case 'true':
+        activer = true;
+        break;
+      case 'non':
+      case 'Non':
+      case 'false':
+        activer = false;
+        break;
+      default:
+        error("Option de !cof-effet inconnue", cmd);
+        return;
+    }
+    evt.type = 'Effet ' + effet;
+    var lanceur = options.lanceur;
+    var charId;
+    if (lanceur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour)) {
+      error("Il faut préciser un lanceur pour ces options d'effet", options);
+      return;
+    }
+    if (lanceur) charId = lanceur.charId;
+    if (options.mana) {
+      if (!depenseMana(lanceur, options.mana, effet, evt)) return;
+    }
+    if (options.limiteParJour) {
+      var ressource = effet;
+      if (options.limiteParJourRessource)
+        ressource = options.limiteParJourRessource;
+      ressource = "limiteParJour_" + ressource;
+      var utilisations =
+        attributeAsInt(lanceur, ressource, options.limiteParJour);
+      if (utilisations === 0) {
+        sendChar(charId, "ne peut plus utiliser cet effet ajourd'hui");
+        return;
+      }
+      setTokenAttr(lanceur, ressource, utilisations - 1, evt);
+    }
+    getSelected(msg, function(selected) {
+      if (selected === undefined || selected.length === 0) {
+        sendChar(charId, "Pas de cible sélectionée pour l'effet");
+        return;
+      }
+      if (options.portee !== undefined) {
+        selected = selected.filter(function(sel) {
+          var token = getObj('graphic', sel._id);
+          var dist = distanceCombat(lanceur.token, token);
+          if (dist > options.portee) {
+            sendChar(charId, " est trop loin de sa cible");
+            return false;
+          }
+          return true;
+        });
+      }
+      if (activer) {
+      setAttr(
+        selected, effet, true, evt, messageEffetIndetermine[effet].activation);
+      if (options.puissant) {
+        var puissant = true;
+        if (options.puissant == "off") puissant = false;
+        setAttr(selected, effet + "Puissant", puissant, evt);
+      }
+      } else {
+        removeAttr(selected, effet, evt, messageEffetIndetermine[effet].fin);
+      }
+      addEvent(evt);
+    });
+  }
   function peurOneToken(target, pageId, difficulte, duree, options,
     display, evt, callback) {
     var charId = target.charId;
@@ -7747,9 +7799,6 @@ var COFantasy = COFantasy || function() {
       case "!cof-degainer":
         degainer(msg);
         return;
-      case "!cof-a-cheval":
-        aCheval(msg);
-        return;
       case "!cof-echange-init":
         echangeInit(msg);
         return;
@@ -7761,6 +7810,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-effet-combat":
         effetCombat(msg);
+        return;
+      case "!cof-effet":
+        effetIndetermine(msg);
         return;
       case "!cof-attaque-magique":
         attaqueMagique(msg);
@@ -8005,6 +8057,16 @@ var COFantasy = COFantasy || function() {
     return (patternEffetsTemp.test(name));
   }
 
+  function effetTempOfAttribute(attr) {
+    var ef = attr.get('name');
+    if (ef === undefined || estEffetTemp(ef)) return ef;
+    for (var effet in messageEffetTemp) {
+      if (ef.startsWith(effet + "_")) return effet;
+    }
+    error("Impossible de déterminer l'effet correspondant à " + ef, attr);
+    return undefined;
+  }
+
   var messageEffetCombat = {
     armureMagique: {
       activation: "est entouré d'un halo magique",
@@ -8035,20 +8097,40 @@ var COFantasy = COFantasy || function() {
     return (patternEffetsCombat.test(name));
   }
 
-  function effetTempOfAttribute(attr) {
+  function effetCombatOfAttribute(attr) {
     var ef = attr.get('name');
-    if (ef === undefined || _.has(messageEffetTemp, ef)) return ef;
-    for (var effet in messageEffetTemp) {
+    if (ef === undefined || estEffetCombat(ef)) return ef;
+    for (var effet in messageEffetCombat) {
       if (ef.startsWith(effet + "_")) return effet;
     }
     error("Impossible de déterminer l'effet correspondant à " + ef, attr);
     return undefined;
   }
 
-  function effetCombatOfAttribute(attr) {
+  var messageEffetIndetermine = {
+    aCheval: {
+      activation: "monte sur sa monture",
+      actif: "est sur sa monture",
+      fin: "descend de sa monture"
+    },
+  };
+
+  var patternEffetsIndetermine =
+    new RegExp(_.reduce(messageEffetIndetermine, function(reg, msg, effet) {
+      var res = reg;
+      if (res !== "(") res += "|";
+      res += "^" + effet + "($|_)";
+      return res;
+    }, "(") + ")");
+
+  function estEffetIndetermine(name) {
+    return (patternEffetsIndetermine.test(name));
+  }
+
+  function effetIndetermineOfAttribute(attr) {
     var ef = attr.get('name');
-    if (ef === undefined || _.has(messageEffetCombat, ef)) return ef;
-    for (var effet in messageEffetCombat) {
+    if (ef === undefined || estEffetIndetermine(ef)) return ef;
+    for (var effet in messageEffetIndetermine) {
       if (ef.startsWith(effet + "_")) return effet;
     }
     error("Impossible de déterminer l'effet correspondant à " + ef, attr);
