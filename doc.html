@@ -53,6 +53,7 @@ p  {margin-left: inherit}
         Le personnage qui agit est celui qui est sélectionné</li>
       <li> option <tt>--disque</tt> :
         le premier argument doit être l'id ou le nom d'un token qui représente un personnage, le deuxième argument un rayon. Cela sélectionne tous les tokens à une distamce de moins que le rayon du premier argument. Si un troisième argument est donné, il est interprété comme la portée maximum entre le centre du disque et le token actif (qui est supposé être celui sélectionné). Si le premier argument représente un personnage avec un max de PV à 0, il est compris comme un personnage fictif créé juste pour définir le disque, et il sera supprimé après la sélection.</li>
+      <li>option <tt>--saufAllies</tt> permet d'exclure les alliés de la sélection (voir plus haut pour la définition des alliés)</li>
     </ul>
 
     <h3>1.4 Règles optionelles utilisées</h3>
@@ -288,6 +289,7 @@ p  {margin-left: inherit}
       <li><tt>--puissant oui</tt> : idem</li>
       <li><tt>--puissant non</tt> : lance la version non puissante (efface le dernier effet
         puissant)</li>
+      <li><tt>--saveParTour</tt> <i>carac seuil</i> : la cible peut se sortir de l'effet chaque tour grâce à un test de <i>carac</i> de difficulte <i>seuil</i>.</li>
     </ul>
 
     <h3>2.8 Sorts</h3>
@@ -486,12 +488,14 @@ p  {margin-left: inherit}
     <h4>Voie du protecteur</h4>
     <ol>
       <li>Baies magiques : Utiliser <tt>!cof-distribuer-baies</tt> avec option <tt>--allies --self</tt> ou <tt>--target</tt> pour donner des baies (en ayant sélectionné le druide, le mieux est d'utiliser une ability). Pour consommer ensuite une baie, il faut utiliser <tt>!cof-consommer-baie</tt>.</li>
+      <li>Forêt vivante : pas vraiment de support. On peut baisser temporairement l'init des adversaires sur la fiche.</li>
     </ol>
     <h4>Voie des végétaux</h4>
     <ol>
       <li>Peau d'écorce : <tt>!cof-effet-temp peau_d_ecorce [[5+@{selected|SAG}]]</tt>.
         Il faut un attribut <tt>voieDesVegetaux</tt> avec comme valeur le rang dans la
         voie.</li>
+      <li>Prison végétale : <tt>!cof-effet-temp prisonVegetale [[5+@{selected|SAG}]] --saveParTour FOR [[10+@{selected|SAG}]] --lanceur @{selected|token_id} --disque @{target|token_id} 10 20 --saufAllies</tt></li>
     </ol>
 
     <h3>Ensorceleur</h3>

@@ -124,7 +124,7 @@ var COFantasy = COFantasy || function() {
       aff.prev.light_losangle = token.get('light_losangle');
       if (value) token.set('light_losangle', 0);
       else token.set('light_losangle', 360);
-    } else if (etat == 'mort') {
+    } else if (value && etat == 'mort') {
       var allToks =
         findObjs({
           _type: "graphic",
@@ -967,6 +967,10 @@ var COFantasy = COFantasy || function() {
       attBonus += 2;
       explications.push("prend avantage du terrain : +2 att");
     }
+    if (attributeAsBool(personnage, 'prisonVegetale')) {
+      attBonus -= 2;
+      explications.push("est entravé par des plantes : -2 att");
+    }
     return attBonus;
   }
 
@@ -1179,6 +1183,10 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(target, 'marcheSylvestre')) {
       defense += 2;
       explications.push(tokenName + " profite du terrain pour se protéger");
+    }
+    if (attributeAsBool(target, 'prisonVegetale')) {
+      defense -= 2;
+      explications.push(tokenName + " est entravé par des plantes, pas facile d'éviter les attaques");
     }
     return defense;
   }
@@ -3175,7 +3183,7 @@ var COFantasy = COFantasy || function() {
 
     // Overrides the default coloring of the inline rolls...
     switch (dmgType) {
-      case 'normal':
+      case 'normal': case 'maladie':
         if (magique)
           InlineColorOverride = " background-color: #FFFFFF; color: #534200;";
         else
@@ -3652,8 +3660,19 @@ var COFantasy = COFantasy || function() {
     }
     var args = msg.content.split(' --');
     var selected = [];
+    var enleveAuxSelected = [];
     var count = args.length - 1;
     var called;
+    var finalCall = function() {
+      called = true;
+      var res = selected.filter(function(sel) {
+        var interdit = enleveAuxSelected.find(function(i) {
+          return (i._id == sel._id);
+        });
+        return (interdit === undefined);
+      });
+      callback(res);
+    };
     if (args.length > 1) {
       args.shift();
       args.forEach(function(cmd) {
@@ -3687,25 +3706,29 @@ var COFantasy = COFantasy || function() {
                   });
                 });
                 count--;
-                if (count === 0) {
-                  called = true;
-                  callback(selected);
-                }
+                if (count === 0) finalCall();
                 return;
               });
             });
             return;
           case 'allies':
-            // First get the acting token (in msg.selected)
-            if (msg.selected === undefined || msg.selected.length === 0) {
-              error("Pas d'allié car pas de token sélectionné", msg);
-              return;
-            }
+          case 'saufAllies':
+            var selection = selected;
+            if (cmdSplit[0] == 'saufAllies') selection = enleveAuxSelected;
             var activeNames = [];
-            iterSelected(msg.selected, function(personnage) {
-              var character = getObj('character', personnage.charId);
-              activeNames.push(character.get('name'));
-            });
+            // First get the acting token (in msg.selected)
+            if (actif) {
+              activeNames = [getObj('character', actif.charId).get('name')];
+            } else {
+              if (msg.selected === undefined || msg.selected.length === 0) {
+                error("Pas d'allié car pas de token sélectionné", msg);
+                return;
+              }
+              iterSelected(msg.selected, function(personnage) {
+                var character = getObj('character', personnage.charId);
+                activeNames.push(character.get('name'));
+              });
+            }
             var toutesEquipes = findObjs({
               _type: 'handout'
             });
@@ -3721,20 +3744,20 @@ var COFantasy = COFantasy || function() {
                   return (activeNames.indexOf(n) >= 0);
                 });
                 if (allie) {
-                  names = names.filter(function(n) {
-                    return (activeNames.indexOf(n) < 0);
-                  });
+                  //On enlève le token actif, mais seulement pour allies
+                  if (cmdSplit[0] == 'allies') {
+                    names = names.filter(function(n) {
+                      return (activeNames.indexOf(n) < 0);
+                    });
+                  }
                   var tokens = tokensNamed(names, pageId);
                   tokens.forEach(function(tok) {
-                    selected.push({
+                    selection.push({
                       _id: tok.id
                     });
                   });
                 }
-                if (count === 0) {
-                  called = true;
-                  callback(selected);
-                }
+                if (count === 0) finalCall();
                 return;
               });
             }); //end toutesEquipes.forEach
@@ -3834,13 +3857,21 @@ var COFantasy = COFantasy || function() {
     if (count === 0) {
       if (selected.length === 0) {
         if (_.has(msg, 'selected')) {
-          if (!called) callback(msg.selected);
+          if (!called) {
+            var res = msg.selected.filter(function(sel) {
+              var interdit = enleveAuxSelected.find(function(i) {
+                return (i._id == sel._id);
+              });
+              return (interdit === undefined);
+            });
+            callback(res);
+          }
           return;
         }
         if (!called) callback([]);
         return;
       }
-      if (!called) callback(selected);
+      if (!called) finalCall();
       return;
     }
   }
@@ -5235,7 +5266,22 @@ var COFantasy = COFantasy || function() {
   }
 
   function nbreDeTestCarac(carac, charId) {
-    return charAttributeAsInt(charId, carac + "_SUP", 1);
+    var typeJet = findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+      name: carac + '_SUP'
+    });
+    if (typeJet.length === 0) return 1;
+    switch (typeJet[0].get('current')) {
+      case '@{JETNORMAL}':
+        return 1;
+      case '@{JETSUP}':
+      case '@{JETSUPHERO}':
+        return 2;
+      default:
+        error("Jet inconnu", typeJet[0].get('current'));
+    }
+    return 1;
   }
 
   function deTest(personnage) {
@@ -5724,6 +5770,9 @@ var COFantasy = COFantasy || function() {
           }
           options.portee = portee;
           return;
+        case 'saveParTour':
+          options.saveParTour = parseSave(cmd);
+          return;
         default:
           return;
       }
@@ -5803,13 +5852,17 @@ var COFantasy = COFantasy || function() {
       setAttr(
         selected, effetComplet, duree, evt, messageEffetTemp[effet].activation,
         getInit());
+      if (options.saveParTour) {
+        setAttr(selected, effetComplet + "SaveParTour",
+          options.saveParTour.carac, evt, undefined, options.saveParTour.seuil);
+      }
       if (options.puissant) {
         var puissant = true;
         if (options.puissant == "off") puissant = false;
         setAttr(selected, effetComplet + "Puissant", puissant, evt);
       }
       addEvent(evt);
-    });
+    }, lanceur);
   }
 
   function effetCombat(msg) {
@@ -5949,19 +6002,20 @@ var COFantasy = COFantasy || function() {
         });
       }
       if (activer) {
-      setAttr(
-        selected, effet, true, evt, messageEffetIndetermine[effet].activation);
-      if (options.puissant) {
-        var puissant = true;
-        if (options.puissant == "off") puissant = false;
-        setAttr(selected, effet + "Puissant", puissant, evt);
-      }
+        setAttr(
+          selected, effet, true, evt, messageEffetIndetermine[effet].activation);
+        if (options.puissant) {
+          var puissant = true;
+          if (options.puissant == "off") puissant = false;
+          setAttr(selected, effet + "Puissant", puissant, evt);
+        }
       } else {
         removeAttr(selected, effet, evt, messageEffetIndetermine[effet].fin);
       }
       addEvent(evt);
     });
   }
+
   function peurOneToken(target, pageId, difficulte, duree, options,
     display, evt, callback) {
     var charId = target.charId;
@@ -8050,6 +8104,11 @@ var COFantasy = COFantasy || function() {
       activation: "est attaqué par une nuée d'insectes",
       actif: "est entouré d'une nuée d'insectes",
       fin: "est enfin débarassé des insectes"
+    },
+    prisonVegetale: {
+      activation: "voit des plantes pousser et s'enrouler autour de ses jambes",
+      actif: "est bloqué par des plantes",
+      fin: "se libère des plantes"
     }
   };
 
@@ -8152,6 +8211,7 @@ var COFantasy = COFantasy || function() {
 
   // Fait foo sur tous les tokens représentant charId, ayant l'effet donné, et correspondant au nom d'attribut. Pour le cas où le token doit être lié au personnage, on ne prend qu'un seul token, sauf si filterUnique est défini, auquel cas on  fait l'appel sur tous les tokens qui passent filterUnique
   function iterTokensOfEffet(charId, effet, attrName, foo, filterUnique) {
+    var total = 1; //Nombre de tokens affectés, pour gérer l'asynchronie si besoin
     if (attrName == effet) { //token lié au character
       var tokens =
         findObjs({
@@ -8169,10 +8229,11 @@ var COFantasy = COFantasy || function() {
         return;
       }
       if (filterUnique) {
+        total = tokens.length;
         tokens.forEach(function(tok) {
-          if (filterUnique(tok)) foo(tok);
+          if (filterUnique(tok)) foo(tok, total);
         });
-      } else foo(tokens[0]);
+      } else foo(tokens[0], 1);
     } else { //token non lié au character
       var tokenName = attrName.substring(attrName.indexOf('_') + 1);
       var tNames =
@@ -8183,8 +8244,9 @@ var COFantasy = COFantasy || function() {
           name: tokenName,
           bar1_link: ''
         });
+      total = tNames.length;
       tNames.forEach(function(tok) {
-        foo(tok);
+        foo(tok, total);
       });
     }
   }
@@ -8292,6 +8354,36 @@ var COFantasy = COFantasy || function() {
     attr.remove();
   }
 
+  //asynchrone
+  function degatsParTour(charId, effet, attrName, dmg, type, msg, evt, options, callback) {
+    options = options || {};
+    msg = msg || '';
+    var count = -1;
+    iterTokensOfEffet(charId, effet, attrName, function(token, total) {
+      if (count < 0) count = total;
+      sendChat('', "[[" + dmg + "]]", function(res) {
+        var rolls = res[0];
+        var dmgRoll = rolls.inlinerolls[0];
+        var r = {
+          total: dmgRoll.results.total,
+          type: type,
+          display: buildinline(dmgRoll, type)
+        };
+        var perso = {
+          token: token,
+          charId: charId
+        };
+        dealDamage(perso, r, [], evt, 1, options, undefined,
+          function(dmgDisplay, saveResult, dmg) {
+            sendChar(charId, msg + ". " + onGenre(charId, 'Il', 'Elle') +
+              " subit " + dmgDisplay + " DM");
+            count--;
+            if (count === 0) callback();
+          });
+      }); //fin sendChat du jet de dé
+    }); //fin iterTokensOfEffet
+  }
+
   function nextTurn(cmp) {
     if (!cmp.get('initiativepage')) return;
     var turnOrder = cmp.get('turnorder');
@@ -8315,6 +8407,7 @@ var COFantasy = COFantasy || function() {
     // Si on a changé d'initiative, alors diminue les effets temporaires
     var init = parseInt(active.pr);
     if (active.id == "-1" && active.custom == "Tour") init = 0;
+    var count = 0; // pour l'aspect asynchrone des effets temporaires
     if (state.COFantasy.init > init) {
       var attrsTemp = attrs.filter(function(obj) {
         if (!estEffetTemp(obj.get('name'))) return false;
@@ -8322,12 +8415,15 @@ var COFantasy = COFantasy || function() {
         return (init < obji && obji <= state.COFantasy.init);
       });
       state.COFantasy.init = init;
+      // Boucle sur les effets temps peut être asynchrone à cause des DM
+      count = attrsTemp.length;
       attrsTemp.forEach(function(attr) {
         var charId = attr.get('characterid');
         var effet = effetTempOfAttribute(attr);
         if (effet === undefined) {
           //erreur, on stoppe tout
           log(attr);
+          count--;
           return;
         }
         var attrName = attr.get('name');
@@ -8338,76 +8434,43 @@ var COFantasy = COFantasy || function() {
             attribute: attr,
             current: v
           });
-          switch (effet) {
+          switch (effet) { //rien après le switch, donc on sort par un return
             case 'putrefaction': //prend 1d6 DM
-              iterTokensOfEffet(charId, effet, attrName, function(token) {
-                var putref = randomInteger(6);
-                var dmg = {
-                  type: 'maladie',
-                  total: putref,
-                  display: putref
-                };
-                putref = dealDamage({
-                  token: token,
-                  charId: charId
-                }, dmg, [], evt, 1, {
-                  magique: 'true'
+              degatsParTour(charId, effet, attrName, "1d6", 'maladie',
+                "pourrit", evt, {
+                  magique: true
+                },
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
                 });
-                onGenre(charId, 'Il', 'Elle');
-                sendChar(charId, " pourrit. " + onGenre(charId, 'Il', 'Elle') +
-                  " subit " + putref + " DM");
-              });
-              break;
+              return;
             case 'asphyxie': //prend 1d6 DM
-              iterTokensOfEffet(charId, effet, attrName, function(token) {
-                var asphyxie = randomInteger(6);
-                var dmg = {
-                  type: 'normal',
-                  total: asphyxie,
-                  display: asphyxie
-                };
-                asphyxie = dealDamage({
-                  token: token,
-                  charId: charId
-                }, dmg, [], evt, 1);
-                onGenre(charId, 'Il', 'Elle');
-                sendChar(charId, " ne peut plus respirer. " + onGenre(charId, 'Il', 'Elle') +
-                  " subit " + asphyxie + " DM");
-              });
-              break;
+              degatsParTour(charId, effet, attrName, "1d6", 'normal',
+                "ne peut plus respirer", evt, {},
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                });
+              return;
             case 'saignementsSang': //prend 1d6 DM
-              iterTokensOfEffet(charId, effet, attrName, function(token) {
-                var saigneSang = randomInteger(6);
-                var dmg = {
-                  type: 'normal',
-                  total: saigneSang,
-                  display: saigneSang
-                };
-                saigneSang = dealDamage({
-                  token: token,
-                  charId: charId
-                }, dmg, [], evt, 1);
-                onGenre(charId, 'Il', 'Elle');
-                sendChar(charId, " saigne par tous les orifices du visage. " + onGenre(charId, 'Il', 'Elle') +
-                  " subit " + saigneSang + " DM");
-              });
-              break;
+              degatsParTour(charId, effet, attrName, "1d6", 'normal',
+                "saigne par tous les orifices du visage", evt, {
+                  magique: true
+                },
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                });
+              return;
             case 'nueeDInsectes': //prend 1 DM
-              iterTokensOfEffet(charId, effet, attrName, function(token) {
-                var dmg = {
-                  type: 'normal',
-                  total: 1,
-                  display: 1
-                };
-                var dmNuee = dealDamage({
-                  token: token,
-                  charId: charId
-                }, dmg, [], evt, 1);
-                onGenre(charId, 'Il', 'Elle');
-                sendChar(charId, " est piqué par les insectes qui l'entourent. " + onGenre(charId, 'Il', 'Elle') +
-                  " subit " + dmNuee + " DM");
-              });
-              break;
+              degatsParTour(charId, effet, attrName, "1", 'normal',
+                "est piqué par les insectes", evt, {},
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                });
+              return;
             case 'strangulation':
               var nameDureeStrang = 'dureeStrangulation';
               if (effet != attrName) { //concerne un token non lié
@@ -8448,14 +8511,22 @@ var COFantasy = COFantasy || function() {
                   dureeStrang[0].remove();
                 }
               }
-              break;
+              count--;
+              return;
             default:
+              count--;
+              return;
           }
         } else { //L'effet arrive en fin de vie, doit être supprimé
           finDEffet(attr, effet, attrName, charId, evt);
+          count--;
         }
       }); //fin de la boucle sur tous les attributs d'effets
     }
+    if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+  }
+
+  function nextTurnOfActive(active, attrs, evt, pageId) {
     if (active.id == "-1" && active.custom == "Tour") {
       var tour = parseInt(active.pr);
       if (isNaN(tour)) {
