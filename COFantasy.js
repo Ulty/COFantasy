@@ -963,6 +963,10 @@ var COFantasy = COFantasy || function() {
       attBonus -= 2;
       explications.push("Les insectes qui volent autour de lui l'aveuglent -> -2 à l'attaque");
     }
+    if (attributeAsBool(personnage, 'marcheSylvestre')) {
+      attBonus += 2;
+      explications.push("prend avantage du terrain : +2 att");
+    }
     return attBonus;
   }
 
@@ -1172,6 +1176,10 @@ var COFantasy = COFantasy || function() {
     }
     if (options.sortilege)
       defense += charAttributeAsInt(target.charId, 'DEF_magie', 0);
+    if (attributeAsBool(target, 'marcheSylvestre')) {
+      defense += 2;
+      explications.push(tokenName + " profite du terrain pour se protéger");
+    }
     return defense;
   }
 
@@ -8059,7 +8067,7 @@ var COFantasy = COFantasy || function() {
 
   function effetTempOfAttribute(attr) {
     var ef = attr.get('name');
-    if (ef === undefined || estEffetTemp(ef)) return ef;
+    if (ef === undefined || messageEffetTemp[ef]) return ef;
     for (var effet in messageEffetTemp) {
       if (ef.startsWith(effet + "_")) return effet;
     }
@@ -8099,7 +8107,7 @@ var COFantasy = COFantasy || function() {
 
   function effetCombatOfAttribute(attr) {
     var ef = attr.get('name');
-    if (ef === undefined || estEffetCombat(ef)) return ef;
+    if (ef === undefined || messageEffetCombat[ef]) return ef;
     for (var effet in messageEffetCombat) {
       if (ef.startsWith(effet + "_")) return effet;
     }
@@ -8113,6 +8121,11 @@ var COFantasy = COFantasy || function() {
       actif: "est sur sa monture",
       fin: "descend de sa monture"
     },
+    marcheSylvestre: {
+      activation: "se deplace maintenant en terrain difficile",
+      actif: "profite du terrain difficile",
+      fin: "est maintenant en terrain normal"
+    }
   };
 
   var patternEffetsIndetermine =
@@ -8129,7 +8142,7 @@ var COFantasy = COFantasy || function() {
 
   function effetIndetermineOfAttribute(attr) {
     var ef = attr.get('name');
-    if (ef === undefined || estEffetIndetermine(ef)) return ef;
+    if (ef === undefined || messageEffetIndetermine[ef]) return ef;
     for (var effet in messageEffetIndetermine) {
       if (ef.startsWith(effet + "_")) return effet;
     }
