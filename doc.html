@@ -278,7 +278,7 @@ p  {margin-left: inherit}
     <p>
     <tt>!cof-remove-buf-def</tt> : enlève tout buf ou debuf de la def.
     <p>
-    <tt>!cof-effet-temp</tt> <i>effet duree</i> : ajoute l'effet <i>effet</i> à la cible pour la durée. 
+    <tt>!cof-effet-temp</tt> <i>effet duree</i> : ajoute l'effet <i>effet</i> à la cible pour la durée, et <tt>!cof-effet-combat</tt> <i>effet</i> ajoute l'effet pour le combat.
     <ul>
       <li><tt>--lanceur</tt> <i>id</i> : indique quel est le lanceur. Utile pour un certain nombre d'autres options.
         <li><tt>--mana</tt> <i>id cout</i> : impose au token <i>id</i> de dépenser <i>cout</i> mana. Si <tt>--lanceur</tt> est donné, <i>id</i> est inutile.</li>
@@ -309,6 +309,9 @@ p  {margin-left: inherit}
       <li><tt>--effroi</tt> : la peur est passive (pas un sort)</li>
       <li><tt>--portee</tt> <i>n</i> : limite la portée du sort à <i>n</i> metres.</li>
     </ul>
+
+    <h3>2.9 Escaliers</h3>
+    Pour gérer les escaliers sur les cartes, vous pouvez utiliser la méthode suivante, inspirée du script Teleport : placez dans le layer "GM Info Overlay", au nivea des escaliers, des tokens qui prennent exactement la place des escaliers. Nommez ces escaliers avec un nom suivi du nombre d'étages (entre 2 et 9), suivi d'une lettre majuscule. Par exemple <tt>Escalier2A</tt>. Chaque escalier de la même colonne doit avoir le même nom et même nombre d'étage, et différer seulement par la lettre finale. Ensuite, si un ensemble de tokens est sur un escalier, utilisez <tt>!cof-escalier</tt> pour téléporter les tokens à l'emplacement de l'escalier suivant dans l'ordre des lettres. Dans l'exemple précédent, il serait téléporté à l'emplacement du token nommé <tt>Escalier2B</tt>. Cela ne fonctionne que si les bouts de l'escalier sont sur la même carte. À vous de choisir sir vous préférez révéler cette fonctionalité à vos joueurs, ou si vous le faites vous-même.
 
     <h2>3. Implémentation des capacités</h2>
     <h3>Arquebusier</h3>
@@ -418,7 +421,7 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie de la rage</h4>
     <ol>
-      <li>Cri de guerre : <tt>!cof-effet-temp cri_de_guerre 20</tt></li>
+      <li>Cri de guerre : <tt>!cof-effet-combat criDeGuerre</tt></li>
       <li>Défier la mort : ajouter un attribut <tt>defierLaMort</tt> de valeur 10 et de maximum 10. (pour l'instant ne prend pas la rage en compte)</li>
     </ol>
 
@@ -472,11 +475,13 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie du fauve</h4>
     <ol>
-      <li>Vitesse du félin : ok</li>
+      <li>Vitesse du félin : simplement ajouter les bonus sur la fiche, ainsi que les competences course, escalade et saut.</li>
+      <li>Panthère : ajouter un personnage pour la panthère, qui sera contrôlé par le joueur.</li>
     </ol>
     <h4>Voie de la nature</h4>
     <ol>
       <li>Maître de la survie : Ajouter +2 à un attribut <tt>vigilance</tt></li>
+      <li>Marche sylvestre : pas de support. Utiliser la barre 3 du token et <tt>!cof-buf-def</tt> en cas de terrain difficile.</li>
     </ol>
     <h4>Voie du protecteur</h4>
     <ol>
@@ -613,7 +618,7 @@ p  {margin-left: inherit}
     <h4>Voie de la magie protectrice</h4>
     <ol>
       <li>Armure du mage : 
-        <tt>!cof-effet-temp armureDuMage 20</tt> </li>
+        <tt>!cof-effet-combat armureDuMage</tt> </li>
     </ol>
     <h4>Voie de la magie universelle</h4>
     <ol>
@@ -850,7 +855,7 @@ p  {margin-left: inherit}
     <h4>Voie de la magie de combat</h4>
     <ol>
       <li>Attaque magique : simplement une attaque, avec les options <tt>--sortilege --magique --fx beam-magic</tt>. Pour la version de zone, utiliser les options <tt>--disque 5 --auto --psave DEX 10</tt>.</li>
-      <li>Armure magique : utiliser <tt>!cof-armure-magique</tt></li>
+      <li>Armure magique : utiliser <tt>!cof-effet-combat armureMagique</tt></li>
     </ol>
     <h4>Voie de la magie de guérison</h4>
     <h4>Voie de la magie maléfique</h4>

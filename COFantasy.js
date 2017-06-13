@@ -960,7 +960,7 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(personnage, 'forceDeGeant')) attBonus += 2;
     if (attributeAsBool(personnage, 'nueeDInsectes')) {
-      attBonus -=2;
+      attBonus -= 2;
       explications.push("Les insectes qui volent autour de lui l'aveuglent -> -2 à l'attaque");
     }
     return attBonus;
@@ -1268,7 +1268,7 @@ var COFantasy = COFantasy || function() {
       target.ennemiJure = true;
     }
     if (options.contact) {
-      if (attributeAsBool(target, 'cri_de_guerre') &&
+      if (attributeAsBool(target, 'criDeGuerre') &&
         charAttributeAsInt(attackingCharId, 'FORCE', 10) <= charAttributeAsInt(target.charId, 'FORCE', 10) &&
         parseInt(attaquant.token.get("bar1_max")) <= parseInt(target.token.get("bar1_max"))) {
         attBonus -= 2;
@@ -2382,7 +2382,7 @@ var COFantasy = COFantasy || function() {
                     pageId, evt);
                   return;
                 }
-                target.messages.push(target.tokName + " " + messageEffets[ef.effet].activation);
+                target.messages.push(target.tokName + " " + messageEffetTemp[ef.effet].activation);
                 setTokenAttr(target, ef.effet, ef.duree, evt, undefined,
                   getInit());
                 if (ef.effet == 'aveugleTemp') {
@@ -2506,7 +2506,7 @@ var COFantasy = COFantasy || function() {
                 options.effets.forEach(function(ef) {
                   if (ef.save) {
                     var msgPour = " pour résister à un effet";
-                    var msgRate = ", " + target.tokName + " " + messageEffets[ef.effet].activation;
+                    var msgRate = ", " + target.tokName + " " + messageEffetTemp[ef.effet].activation;
                     save(ef.save, target, expliquer, msgPour, '', msgRate, evt,
                       function(reussite, rollText) {
                         if (!reussite) {
@@ -2791,7 +2791,6 @@ var COFantasy = COFantasy || function() {
     var resSauf = applyRDSauf(rdSauf, mainDmgType, dmgTotal, dmgDisplay);
     dmgTotal = resSauf.total;
     dmgDisplay = resSauf.display;
-    var armureM = attributeAsInt(target, 'armureMagique', 0);
     var invulnerable = charAttributeAsBool(target.charId, 'invulnerable');
     var mitigate = function(dmgType, divide, zero) {
       if (estElementaire(dmgType)) {
@@ -2801,7 +2800,7 @@ var COFantasy = COFantasy || function() {
       } else {
         if (invulnerable && (dmgType == 'poison' || dmgType == 'maladie')) {
           zero();
-        } else if (armureM > 0) {
+        } else if (attributeAsBool(target, 'armureMagie')) {
           divide();
         }
       }
@@ -3494,7 +3493,6 @@ var COFantasy = COFantasy || function() {
       _type: 'attribute'
     });
     // Fin des effets qui durent pour le combat
-    attrs = removeAllAttributes('armureMagique', evt, attrs);
     attrs = removeAllAttributes('soinsDeGroupe', evt, attrs);
     attrs = removeAllAttributes('sergentUtilise', evt, attrs);
     attrs = removeAllAttributes('enflamme', evt, attrs);
@@ -3596,12 +3594,16 @@ var COFantasy = COFantasy || function() {
       evt.deletedAttributes.push(ild);
       ild.remove();
     });
-    // fin des effets temporaires (durée en tours)
+    // fin des effets temporaires (durée en tours, ou durée = combat)
     attrs.forEach(function(obj) {
       var attrName = obj.get('name');
       var charId = obj.get('characterid');
       if (estEffetTemp(attrName)) {
-        finDEffet(obj, effetOfAttribute(obj), attrName, charId, evt);
+        finDEffet(obj, effetTempOfAttribute(obj), attrName, charId, evt);
+      } else if (estEffetCombat(attrName)) {
+        sendChar(charId, messageEffetCombat[effetCombatOfAttribute(obj)].fin);
+        evt.deletedAttributes.push(obj);
+        obj.remove();
       }
     });
     addEvent(evt);
@@ -4879,9 +4881,6 @@ var COFantasy = COFantasy || function() {
           }
         }
       });
-      var armureM = attributeAsInt(perso, 'armureMagique', 0);
-      if (armureM > 0)
-        addLineToFramedDisplay(display, "Protégé" + eForFemale(charId) + " par une armure magique");
       if (attributeAsInt(perso, 'enflamme', 0))
         addLineToFramedDisplay(display, "en flammes");
       var bufDef = attributeAsInt(perso, 'bufDEF', 0);
@@ -4900,7 +4899,7 @@ var COFantasy = COFantasy || function() {
       }
       if (charAttributeAsInt(charId, 'DEFBOUCLIERON', 1) === 0)
         addLineToFramedDisplay(display, "Ne porte pas son bouclier");
-      for (var effet in messageEffets) {
+      for (var effet in messageEffetTemp) {
         var effetActif = false;
         if (effet == 'forgeron') {
           if (findObjs({
@@ -4912,7 +4911,11 @@ var COFantasy = COFantasy || function() {
             effetActif = true;
         } else effetActif = attributeAsBool(perso, effet);
         if (effetActif)
-          addLineToFramedDisplay(display, messageEffets[effet].actif);
+          addLineToFramedDisplay(display, messageEffetTemp[effet].actif);
+      }
+      for (var effetC in messageEffetCombat) {
+        if (attributeAsBool(perso, effetC))
+          addLineToFramedDisplay(display, messageEffetCombat[effetC].actif);
       }
       allAttributesNamed(attrsChar, 'munition').forEach(function(attr) {
         var attrName = attr.get('name');
@@ -5113,10 +5116,10 @@ var COFantasy = COFantasy || function() {
   }
 
   function charAttributeAsInt(charId, name, def) {
-    var perso = charId;
-    if (perso.charId === undefined) perso = {
+    var perso = {
       charId: charId
     };
+    if (charId.charId) perso.charId = charId.charId;
     return attributeAsInt(perso, name, def);
   }
 
@@ -5130,22 +5133,16 @@ var COFantasy = COFantasy || function() {
   }
 
   function charAttributeAsBool(charId, name) {
-    if (charId.charId) charId = charId.charId;
-    return attributeAsBool({
+    var perso = {
       charId: charId
-    }, name);
+    };
+    if (charId.charId) perso.charId = charId.charId;
+    return attributeAsBool(perso, name);
   }
 
   function armureMagique(msg) {
-    var evt = {
-      type: 'other'
-    };
-    setAttr(msg.selected, 'armureMagique', 1, evt, "est entouré d'un halo magique");
-    if (evt.attributes.length === 0) {
-      error("Pas de cible valide sélectionnée pour !cod-armure-magique", msg);
-      return;
-    }
-    addEvent(evt);
+    msg.content += " armureMagique";
+    effetCombat(msg);
   }
 
   function bufDef(msg) {
@@ -5652,41 +5649,17 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
-  function getInit() {
-    return state.COFantasy.init;
-  }
-
-  function effetTemporaire(msg) {
-    var options = {};
-    var pageId;
-    if (msg.selected && msg.selected.length > 0) {
+  function parseOptions(msg, evt, pageId) {
+    if (pageId === undefined && msg.selected && msg.selected.length > 0) {
       var firstSelected = getObj('graphic', msg.selected[0]._id);
       pageId = firstSelected.get('pageid');
     }
     var opts = msg.content.split(' --');
     var cmd = opts.shift().split(' ');
-    if (cmd.length < 3) {
-      error("Pas assez d'arguments pour !cof-effet-temp", msg.content);
-      return;
-    }
-    var effetComplet = cmd[1];
-    var effet = cmd[1];
-    if (effet.startsWith('forgeron_')) effet = 'forgeron';
-    if (!estEffetTemp(effet)) {
-      error(effet + " n'est pas un effet temporaire répertorié", msg.content);
-      return;
-    }
-    var duree = parseInt(cmd[2]);
-    if (isNaN(duree) || duree < 1) {
-      error(
-        "Le deuxième argument de !cof-effet-temp doit être un nombre positif",
-        msg.content);
-      return;
-    }
-    var evt = {
-      type: 'effet_temp_' + effetComplet
+    var options = {
+      pageId: pageId,
+      cmd: cmd
     };
-    var lanceur;
     opts.forEach(function(arg) {
       cmd = arg.split(' ');
       switch (cmd[0]) {
@@ -5695,8 +5668,8 @@ var COFantasy = COFantasy || function() {
             error("Il faut préciser l'id ou le nom du lanceur", arg);
             return;
           }
-          lanceur = tokenOfId(cmd[1], cmd[1], pageId);
-          if (lanceur === undefined) {
+          options.lanceur = tokenOfId(cmd[1], cmd[1], pageId);
+          if (options.lanceur === undefined) {
             error("Argument de --lanceur non valide", cmd);
           }
           return;
@@ -5722,8 +5695,8 @@ var COFantasy = COFantasy || function() {
           }
           var cout;
           if (cmd.length > 2) {
-            lanceur = tokenOfId(cmd[1], cmd[1], pageId);
-            if (lanceur === undefined) {
+            options.lanceur = tokenOfId(cmd[1], cmd[1], pageId);
+            if (options.lanceur === undefined) {
               error("Premier argument de --mana non valide", cmd);
               return;
             }
@@ -5778,6 +5751,37 @@ var COFantasy = COFantasy || function() {
           return;
       }
     });
+    return options;
+  }
+
+  function getInit() {
+    return state.COFantasy.init;
+  }
+
+  function effetTemporaire(msg) {
+    var evt = {};
+    var options = parseOptions(msg, evt);
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 3) {
+      error("Pas assez d'arguments pour !cof-effet-temp", msg.content);
+      return;
+    }
+    var effetComplet = cmd[1];
+    var effet = cmd[1];
+    if (effet.startsWith('forgeron_')) effet = 'forgeron';
+    if (!estEffetTemp(effet)) {
+      error(effet + " n'est pas un effet temporaire répertorié", msg.content);
+      return;
+    }
+    var duree = parseInt(cmd[2]);
+    if (isNaN(duree) || duree < 1) {
+      error(
+        "Le deuxième argument de !cof-effet-temp doit être un nombre positif",
+        msg.content);
+      return;
+    }
+    evt.type = 'Effet temporaire ' + effetComplet;
+    var lanceur = options.lanceur;
     var charId;
     if (lanceur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour)) {
       error("Il faut préciser un lanceur pour ces options d'effet", options);
@@ -5798,7 +5802,6 @@ var COFantasy = COFantasy || function() {
         sendChar(charId, "ne peut plus utiliser cet effet ajourd'hui");
         return;
       }
-
       setTokenAttr(lanceur, ressource, utilisations - 1, evt);
     }
     getSelected(msg, function(selected) {
@@ -5821,12 +5824,79 @@ var COFantasy = COFantasy || function() {
         initiative(selected, evt);
       }
       setAttr(
-        selected, effetComplet, duree, evt, messageEffets[effet].activation,
+        selected, effetComplet, duree, evt, messageEffetTemp[effet].activation,
         getInit());
       if (options.puissant) {
         var puissant = true;
         if (options.puissant == "off") puissant = false;
         setAttr(selected, effetComplet + "Puissant", puissant, evt);
+      }
+      addEvent(evt);
+    });
+  }
+
+  function effetCombat(msg) {
+    var evt = {};
+    var options = parseOptions(msg, evt);
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 2) {
+      error("Pas assez d'arguments pour !cof-effet-temp", msg.content);
+      return;
+    }
+    var effet = cmd[1];
+    if (!estEffetCombat(effet)) {
+      error(effet + " n'est pas un effet de combat répertorié", msg.content);
+      return;
+    }
+    evt.type = 'Effet ' + effet;
+    var lanceur = options.lanceur;
+    var charId;
+    if (lanceur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour)) {
+      error("Il faut préciser un lanceur pour ces options d'effet", options);
+      return;
+    }
+    if (lanceur) charId = lanceur.charId;
+    if (options.mana) {
+      if (!depenseMana(lanceur, options.mana, effet, evt)) return;
+    }
+    if (options.limiteParJour) {
+      var ressource = effet;
+      if (options.limiteParJourRessource)
+        ressource = options.limiteParJourRessource;
+      ressource = "limiteParJour_" + ressource;
+      var utilisations =
+        attributeAsInt(lanceur, ressource, options.limiteParJour);
+      if (utilisations === 0) {
+        sendChar(charId, "ne peut plus utiliser cet effet ajourd'hui");
+        return;
+      }
+      setTokenAttr(lanceur, ressource, utilisations - 1, evt);
+    }
+    getSelected(msg, function(selected) {
+      if (selected === undefined || selected.length === 0) {
+        sendChar(charId, "Pas de cible sélectionée pour l'effet");
+        return;
+      }
+      if (options.portee !== undefined) {
+        selected = selected.filter(function(sel) {
+          var token = getObj('graphic', sel._id);
+          var dist = distanceCombat(lanceur.token, token);
+          if (dist > options.portee) {
+            sendChar(charId, " est trop loin de sa cible");
+            return false;
+          }
+          return true;
+        });
+      }
+      if (!state.COFantasy.combat && selected.length > 0) {
+        initiative(selected, evt);
+      }
+      setAttr(
+        selected, effet, true, evt, messageEffetCombat[effet].activation);
+      if (options.puissant) {
+        var puissant = true;
+        if (options.puissant == "off") puissant = false;
+        setAttr(selected, effet + "Puissant", puissant, evt);
       }
       addEvent(evt);
     });
@@ -7689,6 +7759,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-effet-temp":
         effetTemporaire(msg);
         return;
+      case "!cof-effet-combat":
+        effetCombat(msg);
+        return;
       case "!cof-attaque-magique":
         attaqueMagique(msg);
         return;
@@ -7772,7 +7845,7 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  var messageEffets = {
+  var messageEffetTemp = {
     sous_tension: {
       activation: "se charge d'énergie électrique",
       actif: "est chargé d'énergie électrique",
@@ -7797,11 +7870,6 @@ var COFantasy = COFantasy || function() {
       activation: "est touché par la bénédiction",
       actif: "est béni",
       fin: "l'effet de la bénédiction s'estompe"
-    },
-    cri_de_guerre: {
-      activation: "pousse son cri de guerre",
-      actif: "a effrayé ses adversaires",
-      fin: "n'effraie plus ses adversaires"
     },
     peau_d_ecorce: {
       activation: "donne à sa peau la consistance de l'écorce",
@@ -7903,11 +7971,6 @@ var COFantasy = COFantasy || function() {
       actif: "étouffe",
       fin: "peut à nouveau respirer"
     },
-    armureDuMage: {
-      activation: "fait apparaître un nuage magique argenté qui le protège",
-      actif: "est entouré d'une armure du mage",
-      fin: "n'a plus son armure du mage"
-    },
     forceDeGeant: {
       activation: "devient plus fort",
       actif: "a une force de géant",
@@ -7931,7 +7994,7 @@ var COFantasy = COFantasy || function() {
   };
 
   var patternEffetsTemp =
-    new RegExp(_.reduce(messageEffets, function(reg, msg, effet) {
+    new RegExp(_.reduce(messageEffetTemp, function(reg, msg, effet) {
       var res = reg;
       if (res !== "(") res += "|";
       res += "^" + effet + "($|_)";
@@ -7942,10 +8005,50 @@ var COFantasy = COFantasy || function() {
     return (patternEffetsTemp.test(name));
   }
 
-  function effetOfAttribute(attr) {
+  var messageEffetCombat = {
+    armureMagique: {
+      activation: "est entouré d'un halo magique",
+      actif: "est protégé par une armure magique",
+      fin: "n'est plus entouré d'un halo magique"
+    },
+    criDeGuerre: {
+      activation: "pousse son cri de guerre",
+      actif: "a effrayé ses adversaires",
+      fin: "n'effraie plus ses adversaires"
+    },
+    armureDuMage: {
+      activation: "fait apparaître un nuage magique argenté qui le protège",
+      actif: "est entouré d'une armure du mage",
+      fin: "n'a plus son armure du mage"
+    },
+  };
+
+  var patternEffetsCombat =
+    new RegExp(_.reduce(messageEffetCombat, function(reg, msg, effet) {
+      var res = reg;
+      if (res !== "(") res += "|";
+      res += "^" + effet + "($|_)";
+      return res;
+    }, "(") + ")");
+
+  function estEffetCombat(name) {
+    return (patternEffetsCombat.test(name));
+  }
+
+  function effetTempOfAttribute(attr) {
     var ef = attr.get('name');
-    if (ef === undefined || _.has(messageEffets, ef)) return ef;
-    for (var effet in messageEffets) {
+    if (ef === undefined || _.has(messageEffetTemp, ef)) return ef;
+    for (var effet in messageEffetTemp) {
+      if (ef.startsWith(effet + "_")) return effet;
+    }
+    error("Impossible de déterminer l'effet correspondant à " + ef, attr);
+    return undefined;
+  }
+
+  function effetCombatOfAttribute(attr) {
+    var ef = attr.get('name');
+    if (ef === undefined || _.has(messageEffetCombat, ef)) return ef;
+    for (var effet in messageEffetCombat) {
       if (ef.startsWith(effet + "_")) return effet;
     }
     error("Impossible de déterminer l'effet correspondant à " + ef, attr);
@@ -7997,7 +8100,7 @@ var COFantasy = COFantasy || function() {
       evt.deletedAttributes.push(attrSave);
       attrSave.remove();
     } else { //On cherche si il y en a un
-      sendChar(charId, messageEffets[effet].fin);
+      sendChar(charId, messageEffetTemp[effet].fin);
       var nameWithSave = effet + "SaveParTour" + attrName.substr(effet.length);
       findObjs({
         _type: 'attribute',
@@ -8126,7 +8229,7 @@ var COFantasy = COFantasy || function() {
       state.COFantasy.init = init;
       attrsTemp.forEach(function(attr) {
         var charId = attr.get('characterid');
-        var effet = effetOfAttribute(attr);
+        var effet = effetTempOfAttribute(attr);
         if (effet === undefined) {
           //erreur, on stoppe tout
           log(attr);
@@ -8241,7 +8344,7 @@ var COFantasy = COFantasy || function() {
                   });
                   dureeStrang[0].set('max', false);
                 } else { //Ça fait trop longtemps, on arrête tout
-                  sendChar(charId, messageEffets[effet].fin);
+                  sendChar(charId, messageEffetTemp[effet].fin);
                   attr.set('current', v);
                   evt.attributes.pop(); //On enlève des attributs modifiés pour mettre dans les attribute supprimés.
                   evt.deletedAttributes.push(attr);
@@ -8401,8 +8504,8 @@ var COFantasy = COFantasy || function() {
         };
         var msgPour = " pour ne plus être sous l'effet de " + effet;
         var sujet = onGenre(charId, 'il', 'elle');
-        var msgReussite = ", " + sujet + " " + messageEffets[effet].fin;
-        var msgRate = ", " + sujet + " " + messageEffets[effet].actif;
+        var msgReussite = ", " + sujet + " " + messageEffetTemp[effet].fin;
+        var msgRate = ", " + sujet + " " + messageEffetTemp[effet].actif;
         save({
             carac: carac,
             seuil: seuil
