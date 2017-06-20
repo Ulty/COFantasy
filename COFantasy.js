@@ -1235,6 +1235,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //Bonus d'attaque qui dépendent de la cible
+  // si options.aoe, target doit avoir un champ tokName
   function bonusAttaqueD(attaquant, attackerTokName, target, portee, pageId, evt, explications, options) {
     var attackingCharId = attaquant.charId;
     var attBonus = 0;
@@ -1737,7 +1738,7 @@ var COFantasy = COFantasy || function() {
     var nbDe = 1;
     if (options.imparable) nbDe = 2;
     var de = computeDice(attaquant, nbDe, dice);
-    var attackRollExpr = addOrigin(attackerName, "[[" + de + "cs>" + crit + "cf1]]");
+    var attackRollExpr = "[[" + de + "cs>" + crit + "cf1]]";
     var attSkill =
       getAttrByName(attackingCharId, attPrefix + "armeatk") ||
       getAttrByName(attackingCharId, "ATKCAC");
@@ -1909,6 +1910,21 @@ var COFantasy = COFantasy || function() {
           if (interchange.result) defense += 5;
         }
 
+        //Absorption au bouclier
+        var absorber;
+        if (target.absorber) {
+          var msgAbsorber = target.absorberDisplay;
+          var attAbsBonus = bonusAttaqueA(target, target.tokName, 'bouclier', evt, explications, {});
+          attAbsBonus += bonusAttaqueD(target, target.tokName, attaquant, 0, pageId, evt, explications, {});
+          if (attAbsBonus > 0) msgAbsorber += "+" + attAbsBonus;
+          else if (attAbsBonus < 0) msgAbsorber += attAbsBonus;
+          explications.push(target.tokName + " tente d'absorber l'attaque avec son bouclier. Il fait " + msgAbsorber);
+          if (target.absorber + attAbsBonus > defense) {
+            defense = target.absorber + attAbsBonus;
+            absorber = msgAbsorber;
+          }
+        }
+
         var touche; //false: pas touché, 1 touché, 2 critique
         // Calcule si touché, et les messages de dégats et attaque
         if (options.auto) {
@@ -2013,13 +2029,15 @@ var COFantasy = COFantasy || function() {
           if (attSkill > 0) attRollValue += "+" + attSkill;
           else if (attSkill < 0) attRollValue += attSkill;
           if (attBonus > 0) attRollValue += "+" + attBonus;
-          else if (attBonus < 0) attRollValue += +attBonus;
+          else if (attBonus < 0) attRollValue += attBonus;
           var line = "<b>Attaque ";
           if (options.aoe) {
             line += "contre " + target.tokName;
           }
-          line +=
-            ":</b> " + attRollValue + " vs <b>" + defense + "</b> " + attackResult;
+          line += ":</b> " + attRollValue + " vs <b>";
+          if (absorber) line += absorber;
+          else line += defense;
+          line += "</b> " + attackResult;
           target.attackMessage = line;
           if (touche) {
             if (options.asDeLaGachette && attackRoll > 24) {
@@ -3183,7 +3201,8 @@ var COFantasy = COFantasy || function() {
 
     // Overrides the default coloring of the inline rolls...
     switch (dmgType) {
-      case 'normal': case 'maladie':
+      case 'normal':
+      case 'maladie':
         if (magique)
           InlineColorOverride = " background-color: #FFFFFF; color: #534200;";
         else
@@ -7788,6 +7807,92 @@ var COFantasy = COFantasy || function() {
     }); //fin getSelected
   }
 
+  // asynchrone : on fait les jets du guerrier en opposition
+  function absorberAuBouclier(msg) {
+    getSelected(msg, function(selected) {
+      if (selected.length === 0) {
+        error("Personne n'est sélectionné pour absorber", msg);
+        return;
+      }
+      var lastAct = lastEvent();
+      if (lastAct === undefined) {
+        sendChat('', "Historique d'actions vide, pas d'action trouvée pour absorber un coup ou un sort");
+        return;
+      }
+      if (lastAct.type != 'Attaque' || lastAct.succes === false) {
+        sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour absorber l'attaque précédente");
+        return;
+      }
+      var attaque = lastAct.action;
+      var options = attaque.options;
+      options.rollsAttack = attaque.rollsAttack;
+      options.evt = evt;
+      var evt = {
+        type: "absorber un "
+      };
+      var attrAbsorbe = 'absorberUn';
+      if (options.sortilege) {
+        evt.type += "sort";
+        attrAbsorbe += "Sort";
+      } else {
+        evt.type += "coup";
+        attrAbsorbe += "Coup";
+      }
+      var nbOK = 0;
+      var count = selected.length;
+      iterSelected(selected, function(guerrier) {
+        if (charAttributeAsInt(guerrier, 'DEFBOUCLIERON', 1) != 1) {
+          sendChar(guerrier.charId, "ne porte pas son bouclier, il ne peut pas " + evt.type);
+          count--;
+          return;
+        }
+        if (!attributeAsBool(guerrier, attrAbsorbe)) {
+          sendChar(guerrier.charId, "n'est pas placé pour " + evt.type);
+          count--;
+          return;
+        }
+        var cible = attaque.cibles.find(function(target) {
+          return (target.token.id === guerrier.token.id);
+        });
+        if (cible === undefined) {
+          sendChar(guerrier.charId, "n'est pas la cible de la dernière attaque");
+          count--;
+          return;
+        }
+        removeTokenAttr(guerrier, attrAbsorbe, evt);
+        nbOK++;
+        var attackRollExpr = "[[1d20cs20cf1]]";
+        sendChat('', attackRollExpr, function(res) {
+          var rolls = res[0];
+          var attackRoll = rolls.inlinerolls[0];
+          cible.absorber = attackRoll.results.total;
+          cible.absorberDisplay = buildinline(attackRoll);
+          var attBonus = charAttributeAsInt(guerrier, 'NIVEAU', 1);
+          if (options.sortilege) {
+            attBonus += modCarac(guerrier.charId, 'SAGESSE');
+            attBonus += charAttributeAsInt(guerrier, 'ATKMAG_DIV', 0);
+          } else {
+            attBonus += modCarac(guerrier.charId, 'FORCE');
+            attBonus += charAttributeAsInt(guerrier, 'ATKCAC_DIV', 0);
+          }
+          cible.absorber += attBonus;
+          if (attBonus > 0) cible.absorberDisplay += "+" + attBonus;
+          else if (attBonus < 0) cible.absorberDisplay += attBonus;
+          count--;
+          if (count === 0) {
+            nbOK = 0;
+            undoEvent();
+            attack(attaque.player_id, attaque.attaquant, attaque, attaque.attack_label, options);
+          }
+        });
+      }); //fin iterSelected
+      if (count === 0 && nbOK > 0) {
+        undoEvent();
+        attack(attaque.player_id, attaque.attaquant, attaque, attaque.attack_label, options);
+      }
+    }); //fin getSelected
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -7954,6 +8059,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-encaisser-un-coup":
         encaisserUnCoup(msg);
         return;
+      case "!cof-absorber-au-bouclier":
+        absorberAuBouclier(msg);
+        return;
       default:
         return;
     }
@@ -8099,6 +8207,16 @@ var COFantasy = COFantasy || function() {
       activation: "se place de façon à dévier un coup sur son armure",
       actif: "est placé de façon à dévier un coup",
       fin: "n'est plus en position pour encaisser un coup"
+    },
+    absorberUnCoup: {
+      activation: "se prépare à absorber un coup avec son bouclier",
+      actif: "est prêt à absorber un coup avec son bouclier",
+      fin: "n'est plus en position de prendre le prochain coup sur son bouclier"
+    },
+    absorberUnSort: {
+      activation: "se prépare à absorber un sort avec son bouclier",
+      actif: "est prêt à absorber un sort avec son bouclier",
+      fin: "n'est plus en position de se protéger d'un sort avec son bouclier"
     },
     nueeDInsectes: {
       activation: "est attaqué par une nuée d'insectes",
