@@ -7773,7 +7773,7 @@ var COFantasy = COFantasy || function() {
         sendChat('', "Impossible d'encaisser le dernier coup, ce n'était pas une attaque au contact");
         return;
       }
-      var nbOK = 0;
+      var toProceed;
       var evt = {
         type: "Encaisser un coup"
       };
@@ -7795,9 +7795,9 @@ var COFantasy = COFantasy || function() {
           charAttributeAsInt(chevalier, 'DEFARMUREON', 1) +
           charAttributeAsInt(chevalier, 'DEFBOUCLIER', 0) *
           charAttributeAsInt(chevalier, 'DEFBOUCLIERON', 1);
-        nbOK++;
+        toProceed = true;
       }); //fin iterSelected
-      if (nbOK > 0) {
+      if (toProceed) {
         undoEvent();
         var options = attaque.options;
         options.rollsAttack = attaque.rollsAttack;
@@ -7838,7 +7838,7 @@ var COFantasy = COFantasy || function() {
         evt.type += "coup";
         attrAbsorbe += "Coup";
       }
-      var nbOK = 0;
+      var toProceed;
       var count = selected.length;
       iterSelected(selected, function(guerrier) {
         if (charAttributeAsInt(guerrier, 'DEFBOUCLIERON', 1) != 1) {
@@ -7860,8 +7860,8 @@ var COFantasy = COFantasy || function() {
           return;
         }
         removeTokenAttr(guerrier, attrAbsorbe, evt);
-        nbOK++;
-        var attackRollExpr = "[[1d20cs20cf1]]";
+        toProceed = true;
+        var attackRollExpr = "[[" + computeDice(guerrier, 1) + "]]";
         sendChat('', attackRollExpr, function(res) {
           var rolls = res[0];
           var attackRoll = rolls.inlinerolls[0];
@@ -7880,13 +7880,13 @@ var COFantasy = COFantasy || function() {
           else if (attBonus < 0) cible.absorberDisplay += attBonus;
           count--;
           if (count === 0) {
-            nbOK = 0;
+            toProceed = false;
             undoEvent();
             attack(attaque.player_id, attaque.attaquant, attaque, attaque.attack_label, options);
           }
         });
       }); //fin iterSelected
-      if (count === 0 && nbOK > 0) {
+      if (count === 0 && toProceed) {
         undoEvent();
         attack(attaque.player_id, attaque.attaquant, attaque, attaque.attack_label, options);
       }
