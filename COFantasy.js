@@ -3162,7 +3162,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function addLineToFramedDisplay(display, line) {
-    var formatedLine = "<div style='padding: 5px; border-left: 1px solid #000; border-right: 1px solid #000; border-radius: 0px; background-color: ";
+    var formatedLine = "<div style='padding: 0px 5px 5px; border-left: 1px solid #000; border-right: 1px solid #000; border-radius: 0px; background-color: ";
     if (display.isOdd) {
       formatedLine += "#FFF";
       display.isOdd = false;
@@ -3172,7 +3172,7 @@ var COFantasy = COFantasy || function() {
     }
     formatedLine += "; color: #000;'>";
     if (!display.isfirst) {
-      formatedLine += "<div><img alt='' src='http://imgsrv.roll20.net/?src=raw.githubusercontent.com/Roll20/roll20-character-sheets/master/ChroniquesOubliees/co_hr.png' style='display: block; max-width: 100%; height: auto;' /></div>";
+      formatedLine += "<div style='padding: 0px 0px 5px;' ><img alt='' src='http://imgsrv.roll20.net/?src=raw.githubusercontent.com/Roll20/roll20-character-sheets/master/ChroniquesOubliees/co_hr.png' style='display: block; max-width: 100%; height: auto;' /></div>";
     }
     else {
       display.isfirst = false;
