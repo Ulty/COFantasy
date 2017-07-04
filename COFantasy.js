@@ -31,6 +31,14 @@ var COFantasy = COFantasy || function() {
   var HISTORY_SIZE = 150;
   var eventHistory = [];
   var updateNextInitSet = new Set();
+  
+  var bs_label='text-transform: uppercase; display: inline; padding: .2em .6em .3em; font-size: 75%; line-height: 2; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25em;';
+  var bs_label_success='background-color: #5cb85c;';
+  var bs_label_danger='background-color: #d9534f;';
+  
+  var bs_alert='padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px;';
+  var bs_alert_success='color: #3c763d; background-color: #dff0d8; border-color: #d6e9c6;';
+  var bs_alert_danger='color: #a94442; background-color: #f2dede; border-color: #ebccd1;';
 
   // List of states:
   var cof_states = {
@@ -921,7 +929,7 @@ var COFantasy = COFantasy || function() {
     if (fortifie > 0) {
       attBonus += 3;
       fortifie--;
-      explications.push("L'effet du fortifiant donne +3 à l'attaque. Il sera encore actif pour " + fortifie + " tests");
+      explications.push("Effet du fortifiant => +3 à l'attaque. Il sera encore actif pour " + fortifie + " tests");
       if (fortifie === 0) {
         removeTokenAttr(personnage, 'fortifie', evt);
       } else {
@@ -931,21 +939,21 @@ var COFantasy = COFantasy || function() {
     attBonus += charAttributeAsInt(charId, 'actionConcertee', 0);
     if (attributeAsBool(personnage, 'chant_des_heros')) {
       attBonus += 1;
-      explications.push("Chant des héros donne +1 au jet d'attaque");
+      explications.push("Chant des héros => +1 au jet d'attaque");
     }
     if (attributeAsBool(personnage, 'benediction')) {
       attBonus += 1;
-      explications.push("La bénédiction donne +1 au jet d'attaque");
+      explications.push("La bénédiction => +1 au jet d'attaque");
     }
     if (attributeAsBool(personnage, 'strangulation')) {
       var malusStrangulation =
         1 + attributeAsInt(personnage, 'dureeStrangulation', 0);
       attBonus -= malusStrangulation;
-      explications.push("L'attaquant est étranglé -> -" + malusStrangulation + " au jet d'attaque");
+      explications.push("L'attaquant est étranglé => -" + malusStrangulation + " au jet d'attaque");
     }
     if (getState(personnage, 'renverse')) {
       attBonus -= 5;
-      explications.push("Attaquant à terre -> -5 à l'attaque");
+      explications.push("Attaquant à terre => -5 à l'attaque");
     }
     var attrPosture = tokenAttribute(personnage, 'postureDeCombat');
     if (attrPosture.length > 0) {
@@ -962,12 +970,15 @@ var COFantasy = COFantasy || function() {
     }
     if (aUnCapitaine(personnage, evt)) {
       attBonus += 2;
-      explications.push("Un capitaine donne des ordres -> +2 à l'attaque");
+      explications.push("Un capitaine donne des ordres => +2 à l'attaque");
     }
-    if (attributeAsBool(personnage, 'forceDeGeant')) attBonus += 2;
+    if (attributeAsBool(personnage, 'forceDeGeant')) {
+      attBonus += 2;
+      explications.push("Force de géant => +2 à l'attaque");
+    }
     if (attributeAsBool(personnage, 'nueeDInsectes')) {
       attBonus -= 2;
-      explications.push("Les insectes qui volent autour de lui l'aveuglent -> -2 à l'attaque");
+      explications.push("Les insectes qui volent autour de lui l'aveuglent => -2 à l'attaque");
     }
     if (attributeAsBool(personnage, 'marcheSylvestre')) {
       attBonus += 2;
@@ -1205,10 +1216,10 @@ var COFantasy = COFantasy || function() {
     if (getState(attaquant, 'aveugle')) {
       if (options.distance) {
         attBonus -= 10;
-        explications.push("Attaquant aveuglé -> -10 à l'attaque à distance");
+        explications.push("Attaquant aveuglé => -10 à l'attaque à distance");
       } else {
         attBonus -= 5;
-        explications.push("Attaquant aveuglé -> -5 à l'attaque");
+        explications.push("Attaquant aveuglé => -5 à l'attaque");
       }
     }
     if (options.tirDouble) {
@@ -1218,7 +1229,7 @@ var COFantasy = COFantasy || function() {
     if (options.chance) {
       attBonus += options.chance;
       var pc = options.chance / 10;
-      explications.push(pc + " point" + ((pc > 1) ? "s" : "") + " de chance dépensé -> +" + options.chance);
+      explications.push(pc + " point" + ((pc > 1) ? "s" : "") + " de chance dépensé => +" + options.chance);
     }
     if (options.semonce) {
       attBonus += 5;
@@ -1268,7 +1279,7 @@ var COFantasy = COFantasy || function() {
       charOfType(target.charId, "animal");
     if (chasseurEmerite) {
       attBonus += 2;
-      var explChasseurEmerite = attackerTokName + " est un chasseur émérite -> +2 en attaque et aux dommages";
+      var explChasseurEmerite = attackerTokName + " est un chasseur émérite => +2 en attaque et aux dommages";
       if (options.aoe) explChasseurEmerite += " contre " + target.tokName;
       explications.push(explChasseurEmerite);
       target.chasseurEmerite = true;
@@ -1284,7 +1295,7 @@ var COFantasy = COFantasy || function() {
       var ejSag = modCarac(attackingCharId, 'SAGESSE');
       attBonus += ejSag;
       var explEnnemiJure =
-        attackerTokName + " attaque son ennemi juré -> +" + ejSag +
+        attackerTokName + " attaque son ennemi juré => +" + ejSag +
         " en attaque et +1d6 aux dommages";
       if (options.aoe) explEnnemiJure += " contre " + target.tokName;
       explications.push(explEnnemiJure);
@@ -1739,7 +1750,7 @@ var COFantasy = COFantasy || function() {
     var dice = 20;
     if (getState(attaquant, 'affaibli')) {
       dice = 12;
-      explications.push("Attaquant affaibli -> d12 au lieu de d20 pour l'attaque");
+      explications.push("Attaquant affaibli => d12 au lieu de d20 pour l'attaque");
     }
     var nbDe = 1;
     if (options.imparable) nbDe = 2;
@@ -1862,7 +1873,7 @@ var COFantasy = COFantasy || function() {
         if (attributeAsBool(attaquant, 'rayon_affaiblissant')) {
           rayonAffaiblissant = true;
           attBonusCommun -= 2;
-          explications.push("L'effet du rayon affaiblissant donne -2 à l'attaque et aux dégâts");
+          explications.push("Rayon affaiblissant => -2 à l'attaque et aux dégâts");
         }
       }
       var traquenard = false;
@@ -1991,11 +2002,11 @@ var COFantasy = COFantasy || function() {
           var paralyse = false;
           if (getState(target, 'paralyse')) {
             paralyse = true;
-            target.messages.push("Cible paralysée -> réussite critique automatique");
+            target.messages.push("Cible paralysée => réussite critique automatique");
           }
+
           if (d20roll == 1 && options.chance === undefined) {
-            attackResult =
-              " : <span style='color: #ff0000'><b><i>ÉCHEC&nbsp;CRITIQUE</i></b></span>";
+            attackResult = " : <span style='"+bs_label+" "+bs_label_danger+"'><b><i>échec&nbsp;critique</i></b></span>";
             touche = false;
             var confirmCrit = randomInteger(20);
             critSug = "/w GM Jet de confirmation pour l'échec critique : " +
@@ -2017,19 +2028,18 @@ var COFantasy = COFantasy || function() {
                 critSug += "simple échec";
             }
           } else if (paralyse || d20roll >= target.crit) {
-            attackResult =
-              " : <span style='color: #00ff00'><b><i>CRITIQUE</i></b></span>";
+            attackResult = " : <span style='"+bs_label+" "+bs_label_success+"'><b><i>critique</i></b></span>";
             touche = 2;
           } else if (charAttributeAsInt(attackingCharId, 'champion', 0) > 0 && d20roll >= 15) {
-            attackResult = " : <span style='color: #00ff00'><b><i>SUCCÈS</i></b></span>";
+            attackResult = " : <span style='"+bs_label+" "+bs_label_success+"'><b><i>succès</i></b></span>";
             touche = 1;
             champion = true;
           } else if (attackRoll < defense) {
             attackResult = " : <i>Échec</i> ";
-            attackResult = " : <span style='color: #ff0000'><b><i>ÉCHEC</i></b></span>";
+            attackResult = " : <span style='"+bs_label+" "+bs_label_danger+"'><b><i>échec</i></b></span>";
             touche = false;
           } else { // Touché normal
-            attackResult = " : <span style='color: #00ff00'><b><i>SUCCÈS</i></b></span>";
+            attackResult = " : <span style='"+bs_label+" "+bs_label_success+"'><b><i>succès</i></b></span>";
             touche = 1;
           }
           var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
@@ -2037,11 +2047,12 @@ var COFantasy = COFantasy || function() {
           else if (attSkill < 0) attRollValue += attSkill;
           if (attBonus > 0) attRollValue += "+" + attBonus;
           else if (attBonus < 0) attRollValue += attBonus;
-          var line = "<b>Attaque ";
+          var line = "<b>Attaque</b> ";
           if (options.aoe) {
-            line += "contre " + target.tokName;
+            line += "contre <b>" + target.tokName + "</b>";
           }
-          line += ":</b> " + attRollValue + " vs <b>";
+          line += ":<br>";
+          line += attRollValue + " vs <b>";
           if (absorber) line += absorber;
           else line += defense;
           line += "</b> " + attackResult;
@@ -2081,7 +2092,7 @@ var COFantasy = COFantasy || function() {
             //On a fini avec cette cible, on imprime ce qui la concerne
             addLineToFramedDisplay(display, target.attackMessage);
             target.messages.forEach(function(expl) {
-              addLineToFramedDisplay(display, expl);
+              addLineToFramedDisplay(display, expl, 80);
             });
             return false;
           }
@@ -2167,9 +2178,11 @@ var COFantasy = COFantasy || function() {
       } else { //bonus aux attaques de contact
         if (attributeAsBool(attaquant, 'agrandissement')) {
           attDMBonusCommun += "+2";
+          explications.push("Agrandissement => +2 DM");
         }
         if (attributeAsBool(attaquant, 'forceDeGeant')) {
           attDMBonusCommun += "+2";
+          explications.push("Force de géant => +2 à l'attaque");
         }
       }
       if (charAttributeAsBool(attackingCharId, 'forgeron_' + attackLabel)) {
@@ -2204,7 +2217,7 @@ var COFantasy = COFantasy || function() {
             }
             if (target.dmgMessage) addLineToFramedDisplay(display, target.dmgMessage);
             target.messages.forEach(function(expl) {
-              addLineToFramedDisplay(display, expl);
+              addLineToFramedDisplay(display, expl, 80);
             });
           });
           finaliseDisplay(display, explications, evt);
@@ -2482,7 +2495,7 @@ var COFantasy = COFantasy || function() {
                           " PV");
                       });
                     }
-                    target.dmgMessage = "<b>Dommages :</b> " + dmgDisplay;
+                    target.dmgMessage = "<b>DM :</b> " + dmgDisplay;
                     if (attributeAsBool(target, 'sous_tension') && options.contact) {
                       ciblesCount++;
                       sendChat("", "[[1d6]]", function(res) {
@@ -2592,7 +2605,7 @@ var COFantasy = COFantasy || function() {
   function finaliseDisplay(display, explications, evt) {
     addEvent(evt);
     explications.forEach(function(expl) {
-      addLineToFramedDisplay(display, expl);
+      addLineToFramedDisplay(display, expl, 80);
     });
     sendChat("", endFramedDisplay(display));
   }
@@ -2647,10 +2660,10 @@ var COFantasy = COFantasy || function() {
         expliquer(smsg);
         smsg = target.token.get('name') + " fait " + rollText;
         if (reussite) {
-          smsg += " -> réussite";
+          smsg += " => réussite";
           if (msgReussite) smsg += msgReussite;
         } else {
-          smsg += " -> échec";
+          smsg += " => échec";
           if (msgRate) smsg += msgRate;
         }
         expliquer(smsg);
@@ -3147,10 +3160,10 @@ var COFantasy = COFantasy || function() {
       if (imageSize === undefined) imageSize = 45;
       image =
         "<img src='" + character.get('avatar') +
-        "' style='float:left; width:" + imageSize + "%; max-width:80px; max-height:120px'>";
+        "' style='float:left; width:" + imageSize + "%; max-width:80px; max-height:120px; border-radius: 6px;'>";
     }
     var res =
-      "/direct <div style='font-family: Georgia; font-weight: normal; overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; margin-top: 0.2em; border: 1px solid #000; border-radius: 10px 10px 0px 0px; color: " +
+      "/direct <div style='font-family: Georgia; font-weight: normal; overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; margin-top: 0.2em; border: 1px solid #000; border-radius: 5px 5px 0px 0px; color: " +
       playerTXColor + "; background-color: " + playerBGColor +
       ";' title=''> " + image + titre + "</div>" +
       "<div style='font-family: Tahoma; font-weight: normal;'>";
@@ -3161,8 +3174,10 @@ var COFantasy = COFantasy || function() {
     };
   }
 
-  function addLineToFramedDisplay(display, line) {
-    var formatedLine = "<div style='padding: 0px 5px 5px; border-left: 1px solid #000; border-right: 1px solid #000; border-radius: 0px; background-color: ";
+  function addLineToFramedDisplay(display, line, size) {
+    var size = (typeof size !== 'undefined') ? size : 100;
+    
+    var formatedLine = "<div style='padding: 0 5px 0; border-left: 1px solid #000; border-right: 1px solid #000; border-radius: 0px; background-color: ";
     if (display.isOdd) {
       formatedLine += "#FFF";
       display.isOdd = false;
@@ -3172,12 +3187,12 @@ var COFantasy = COFantasy || function() {
     }
     formatedLine += "; color: #000;'>";
     if (!display.isfirst) {
-      formatedLine += "<div style='padding: 0px 0px 5px;' ><img alt='' src='http://imgsrv.roll20.net/?src=raw.githubusercontent.com/Roll20/roll20-character-sheets/master/ChroniquesOubliees/co_hr.png' style='display: block; max-width: 100%; height: auto;' /></div>";
+      formatedLine += "<div style='padding: 5px' ><img alt='' src='http://imgsrv.roll20.net/?src=raw.githubusercontent.com/Roll20/roll20-character-sheets/master/ChroniquesOubliees/co_hr.png' style='display: block; max-width: 100%; height: auto;' /></div>";
     }
     else {
       display.isfirst = false;
     }
-    formatedLine += line;
+    formatedLine += '<div style="font-size: '+size+'%">'+line+'</div>';
     formatedLine += "</div>";
     display.output += formatedLine;
   }
@@ -3185,7 +3200,7 @@ var COFantasy = COFantasy || function() {
   function endFramedDisplay(display) {
     // Ajout des coins arrondis à la fin
     var res =
-      display.output.replace(/border-radius: 0px;(?!.*border-radius: 0px;)/g, "border-radius: 0px 0px 10px 10px; border-bottom: 1px solid #000;");
+      display.output.replace(/border-radius: 0px;(?!.*border-radius: 0px;)/g, "border-radius: 0px 0px 5px 5px; border-bottom: 1px solid #000;");
     res += "</div>";
     return res;
   }
@@ -3252,7 +3267,7 @@ var COFantasy = COFantasy || function() {
           InlineColorOverride = " background-color: #FFFEA2; color: #000;";
         }
     }
-    var rollOut = '<span style="text-align: center; vertical-align: text-middle; display: inline-block; min-width: 1.75em; border-radius: ' + InlineBorderRadius + 'px; padding: 2px 2px 0px 2px; ' + InlineColorOverride + '" title="Rolling ' + inlineroll.expression + ' = ' + values.join("");
+    var rollOut = '<span style="display: inline-block; border-radius: ' + InlineBorderRadius + 'px; padding: 0 4px; ' + InlineColorOverride + '" title="Jet ' + inlineroll.expression + ' = ' + values.join("");
     rollOut += '" class="a inlinerollresult showtip tipsy-n';
     rollOut += (critCheck && failCheck) ? ' importantroll' : (critCheck ? ' fullcrit' : (failCheck ? ' fullfail' : ''));
     rollOut += '">' + inlineroll.results.total + '</span>';
@@ -6389,7 +6404,7 @@ var COFantasy = COFantasy || function() {
           else if (niveauCible < niveauAttaquant)
             s.seuil += (niveauAttaquant - niveauCible);
           var expliquer = function(message) {
-            addLineToFramedDisplay(display, message);
+            addLineToFramedDisplay(display, message, 80);
           };
           var msgPour = " pour résister au tueur fantasmagorique";
           save(s, cible, expliquer, msgPour, undefined, undefined, evt,
@@ -6781,7 +6796,7 @@ var COFantasy = COFantasy || function() {
       }
       var nameSoigneur = tokSoigneur.get('name');
       soigneur = getObj('character', charIdSoigneur);
-      titre = nameSoigneur + " lance un soin de groupe";
+      titre = "<b>" + nameSoigneur + "</b> lance un soin de groupe";
       msg.content += " --allies --self";
     } else { // soin générique
       soins = parseInt(args[1]);
@@ -6808,15 +6823,12 @@ var COFantasy = COFantasy || function() {
       iterSelected(selected, function(perso) {
         var name = perso.token.get('name');
         var callMax = function() {
-          addLineToFramedDisplay(display, "Pas besoin de soigner " + name + ". " +
-            onGenre(perso.charId, "Il", "Elle") +
-            " est déjà au maximum de PV");
+          addLineToFramedDisplay(display, "<b>" + name + "</b> : Pas besoin de soins.");
           return;
         };
         var callTrue = function(soinsEffectifs) {
           addLineToFramedDisplay(display,
-            name + " est soigné" + eForFemale(perso.charId) + " de " +
-            soinsEffectifs + " PV");
+            "<b>" + name + "</b> : + " + soinsEffectifs + " PV");
         };
         soigneToken(perso.token, soins, evt, callTrue, callMax);
       });
@@ -7744,9 +7756,9 @@ var COFantasy = COFantasy || function() {
         addLineToFramedDisplay(display, " Jet de force difficulté " + seuil);
         var smsg = barbare.token.get('name') + " fait " + rollText;
         if (reussite) {
-          smsg += " -> réussite";
+          smsg += " => réussite";
         } else {
-          smsg += " -> échec";
+          smsg += " => échec";
         }
         addLineToFramedDisplay(display, smsg);
         sendChat("", "[[1d4]]", function(res) {
