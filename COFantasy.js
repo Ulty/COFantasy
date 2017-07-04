@@ -1995,7 +1995,7 @@ var COFantasy = COFantasy || function() {
           }
           if (d20roll == 1 && options.chance === undefined) {
             attackResult =
-              "<span style='color: #ff0000'>" + ": <b><i>ÉCHEC&nbsp;CRITIQUE</i></b>" + "'</span> ";
+              " : <span style='color: #ff0000'><b><i>ÉCHEC&nbsp;CRITIQUE</i></b></span>";
             touche = false;
             var confirmCrit = randomInteger(20);
             critSug = "/w GM Jet de confirmation pour l'échec critique : " +
@@ -2018,17 +2018,18 @@ var COFantasy = COFantasy || function() {
             }
           } else if (paralyse || d20roll >= target.crit) {
             attackResult =
-              "<span style='color: #0000ff'>" + ": <b><i>CRITIQUE</i></b>" + "'</span> ";
+              " : <span style='color: #0000ff'><b><i>CRITIQUE</i></b></span>";
             touche = 2;
           } else if (charAttributeAsInt(attackingCharId, 'champion', 0) > 0 && d20roll >= 15) {
-            attackResult = " : <b><i>SUCCÈS</i></b>";
+            attackResult = " : <span style='color: #00ff00'><b><i>SUCCÈS</i></b></span>";
             touche = 1;
             champion = true;
           } else if (attackRoll < defense) {
             attackResult = " : <i>Échec</i> ";
+            attackResult = " : <span style='color: #ff0000'><b><i>ÉCHEC</i></b></span>";
             touche = false;
           } else { // Touché normal
-            attackResult = " : <b><i>SUCCÈS</i></b>";
+            attackResult = " : <span style='color: #00ff00'><b><i>SUCCÈS</i></b></span>";
             touche = 1;
           }
           var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
