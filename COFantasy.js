@@ -1735,6 +1735,8 @@ var COFantasy = COFantasy || function() {
       crit = 20;
     }
     if (options.bonusCritique) crit -= 1;
+    if (charAttributeAsBool(attaquant, 'scienceDuCritique') || 
+      (!options.distance && !options.sortilege && charAttributeAsBool(attaquant, 'morsureDuSerpent'))) crit -=1;
     if (options.affute) crit -= 1;
     var dice = 20;
     if (getState(attaquant, 'affaibli')) {

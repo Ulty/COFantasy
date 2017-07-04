@@ -605,6 +605,7 @@ p  {margin-left: inherit}
     <h4>Voie du maître d'armes</h4>
     <ol>
       <li>Arme de prédilection : le mieux est de refléter ça sur l'attaque dans la fiche.</li>
+      <li>Science du critique : pour ne pas avoir à modifier les chances de critique pour toutes les attaques, utiliser un attribut <tt>scienceDuCritique</tt> (valeur <tt>true</tt>). Attention à ne pas faire ça ET modifier les chances de critiques de l'attaque, car ça s'additionne.</li>
     </ol>
     <h4>Voie de la résistance</h4>
     <ol>
@@ -663,7 +664,7 @@ p  {margin-left: inherit}
     <h4>Voie de la maîtrise</h4>
     <ol>
       <li>Esquive du singe : ok</li>
-      <li>Morsure du serpent : ok</li>
+      <li>Morsure du serpent : pour ne pas avoir à modifier les chances de critique pour toutes les attaques au contact, utiliser un attribut <tt>morsureDuSerpent</tt> (valeur <tt>true</tt>). Attention à ne pas faire ça ET modifier les chances de critiques de l'attaque, car ça s'additionne. (En revanche, pas de soucis avec la science du critique).</li>
     </ol>
     <h4>Voie de la méditation</h4>
     <ol>
