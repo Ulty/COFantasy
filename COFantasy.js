@@ -2018,7 +2018,7 @@ var COFantasy = COFantasy || function() {
             }
           } else if (paralyse || d20roll >= target.crit) {
             attackResult =
-              " : <span style='color: #0000ff'><b><i>CRITIQUE</i></b></span>";
+              " : <span style='color: #00ff00'><b><i>CRITIQUE</i></b></span>";
             touche = 2;
           } else if (charAttributeAsInt(attackingCharId, 'champion', 0) > 0 && d20roll >= 15) {
             attackResult = " : <span style='color: #00ff00'><b><i>SUCCÈS</i></b></span>";
@@ -3150,26 +3150,33 @@ var COFantasy = COFantasy || function() {
         "' style='float:left; width:" + imageSize + "%; max-width:80px; max-height:120px'>";
     }
     var res =
-      "/direct <div style='font-family: Georgia; font-weight: normal; overflow:auto; text-align: center; vertical-align: middle; padding: 5px 0px; margin-top: 0.2em; border: 1px solid #000; border-radius: 10px 10px 0px 0px; color: " +
+      "/direct <div style='font-family: Georgia; font-weight: normal; overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; margin-top: 0.2em; border: 1px solid #000; border-radius: 10px 10px 0px 0px; color: " +
       playerTXColor + "; background-color: " + playerBGColor +
       ";' title=''> " + image + titre + "</div>" +
-      "<span style='font-family: Tahoma; font-weight: normal;'>";
+      "<div style='font-family: Tahoma; font-weight: normal;'>";
     return {
       output: res,
-      isOdd: true
+      isOdd: true,
+      isfirst: true,
     };
   }
 
   function addLineToFramedDisplay(display, line) {
     var formatedLine = "<div style='padding: 5px; border-left: 1px solid #000; border-right: 1px solid #000; border-radius: 0px; background-color: ";
     if (display.isOdd) {
-      formatedLine += "#CEC7B6";
+      formatedLine += "#FFF";
       display.isOdd = false;
     } else {
-      formatedLine += "#B6AB91";
+      formatedLine += "#FFF";
       display.isOdd = true;
     }
     formatedLine += "; color: #000;'>";
+    if (!display.isfirst) {
+      formatedLine += "<div><img alt='' src='http://imgsrv.roll20.net/?src=raw.githubusercontent.com/Roll20/roll20-character-sheets/master/ChroniquesOubliees/co_hr.png' style='display: block; max-width: 100%; height: auto;' /></div>";
+    }
+    else {
+      display.isfirst = false;
+    }
     formatedLine += line;
     formatedLine += "</div>";
     display.output += formatedLine;
@@ -3179,7 +3186,7 @@ var COFantasy = COFantasy || function() {
     // Ajout des coins arrondis à la fin
     var res =
       display.output.replace(/border-radius: 0px;(?!.*border-radius: 0px;)/g, "border-radius: 0px 0px 10px 10px; border-bottom: 1px solid #000;");
-    res += "</span></div>";
+    res += "</div>";
     return res;
   }
 
