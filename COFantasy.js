@@ -460,6 +460,7 @@ var COFantasy = COFantasy || function() {
         case "asDeLaGachette":
         case "sortilege":
         case "malediction":
+        case "test":
           options[cmd[0]] = true;
           return;
         case "magique":
@@ -658,7 +659,12 @@ var COFantasy = COFantasy || function() {
             options.puissant = true;
             return;
           }
-          options.puissant = attributeAsBool(attaquant, cmd[1] + "Puissant");
+          switch (cmd[1]) {
+            case 'oui': case 'Oui': options.puissant = true; return;
+            case 'non': case 'Non': options.puissant = false; return;
+            default:
+              options.puissant = attributeAsBool(attaquant, cmd[1] + "Puissant");
+          }
           return;
         case "rate":
         case "touche":
@@ -2080,6 +2086,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         target.touche = touche;
+        if (options.test) target.touche = false;
         if (options.aoe === undefined && interchange.targets.length > 1) { //any target can be affected
           var n = randomInteger(interchange.targets.length);
           target.token = interchange.targets[n - 1];
