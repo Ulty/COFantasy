@@ -6796,7 +6796,7 @@ var COFantasy = COFantasy || function() {
         addEvent(evt);
         return;
       }
-      evt.affectes = [];
+      evt.affectes = evt.affectes || [];
       iterSelected(selected, function(perso) {
         var name = perso.token.get('name');
         var callMax = function() {
