@@ -1230,8 +1230,12 @@ var COFantasy = COFantasy || function() {
     attBonus += bonusDAttaque(attaquant, explications, evt);
     if (getState(attaquant, 'aveugle')) {
       if (options.distance) {
+        if (charAttributeAsBool(attaquant, 'tirAveugle')) {
+        explications.push("Attaquant aveuglé, mais il sait tirer à l'aveugle");
+        } else {
         attBonus -= 10;
         explications.push("Attaquant aveuglé => -10 en Attaque à distance");
+        }
       } else {
         attBonus -= 5;
         explications.push("Attaquant aveuglé => -5 en Attaque");
