@@ -758,6 +758,21 @@ var COFantasy = COFantasy || function() {
             options.limiteParJourRessource = cmd[2];
           }
           return;
+        case 'limiteParCombat':
+          if (cmd.length < 2) {
+            options.limiteParCombat = 1;
+            return;
+          }
+          var limiteParCombat = parseInt(cmd[1]);
+          if (isNaN(limiteParCombat) || limiteParCombat < 1) {
+            error("La limite par combat doit être un nombre positif", cmd);
+            return;
+          }
+          options.limiteParCombat = limiteParCombat;
+          if (cmd.length > 2) {
+            options.limiteParCombatRessource = cmd[2];
+          }
+          return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
       }
@@ -1352,6 +1367,47 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+
+  function limiteRessources(personnage, options, defResource, msg, evt) {
+    if (options.mana) {
+      if (!depenseMana(personnage, options.mana, msg, evt)) {
+        addEvent(evt);
+        return true;
+      }
+    }
+    var ressource = defResource;
+    var utilisations;
+    if (options.limiteParJour) {
+      if (options.limiteParJourRessource)
+        ressource = options.limiteParJourRessource;
+      ressource = "limiteParJour_" + ressource;
+      utilisations =
+        attributeAsInt(personnage, ressource, options.limiteParJour);
+      if (utilisations === 0) {
+        sendChar(personnage.charId, "ne peut plus faire cette action ajourd'hui");
+        addEvent(evt);
+        return true;
+      }
+
+      setTokenAttr(personnage, ressource, utilisations - 1, evt);
+    }
+    if (options.limiteParCombat) {
+      if (options.limiteParCombatRessource)
+        ressource = options.limiteParcombatRessource;
+      ressource = "limiteParCombat_" + ressource;
+      utilisations =
+        attributeAsInt(personnage, ressource, options.limiteParCombat);
+      if (utilisations === 0) {
+        sendChar(personnage.charId, "ne peut plus faire cette action pour ce combat");
+        addEvent(evt);
+        return true;
+      }
+
+      setTokenAttr(personnage, ressource, utilisations - 1, evt);
+    }
+    return false;
+  }
+
   //targetToken est soit un token, soit une structure avec nu champs cibles qui contient toutes les cibles
   function attack(playerId, attaquant, targetToken, attackLabel, options) {
     // Attacker and target infos
@@ -1697,27 +1753,8 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    // Si pas de mana, action impossible, sinon dépense de mana
-    if (options.mana) {
-      if (!depenseMana(attaquant, options.mana, weaponName, evt)) {
-        addEvent(evt);
-        return;
-      }
-    }
-    if (options.limiteParJour) {
-      var ressource = attackLabel;
-      if (options.limiteParJourRessource)
-        ressource = options.limiteParJourRessource;
-      ressource = "limiteParJour_" + ressource;
-      var utilisations =
-        attributeAsInt(attaquant, ressource, options.limiteParJour);
-      if (utilisations === 0) {
-        sendChar(attaquant.charId, "ne peut plus faire cette attaque ajourd'hui");
-        return;
-      }
-
-      setTokenAttr(attaquant, ressource, utilisations - 1, evt);
-    }
+    if (limiteRessources(attaquant, options, attackLabel, weaponName, evt))
+      return;
     // Effets quand on rentre en combat 
     if (!state.COFantasy.combat) {
       var selected = [{
@@ -3180,8 +3217,8 @@ var COFantasy = COFantasy || function() {
   }
 
   function addLineToFramedDisplay(display, line, size, new_line) {
-    var size = (typeof size !== 'undefined') ? size : 100;
-    var new_line = (typeof new_line !== 'undefined') ? new_line : true;
+    size = size || 100;
+    new_line = (new_line !== 'undefined') ? new_line : true;
     
     var background_color, border, separator = '';
     
@@ -3579,6 +3616,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('defautDansLaCuirasse', evt, attrs);
     attrs = removeAllAttributes('postureDeCombat', evt, attrs);
     attrs = removeAllAttributes('dedouble', evt, attrs);
+    attrs = removeAllAttributes('limiteParCombat', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -5807,6 +5845,21 @@ var COFantasy = COFantasy || function() {
             options.limiteParJourRessource = cmd[2];
           }
           return;
+        case 'limiteParCombat':
+          if (cmd.length < 2) {
+            options.limiteParCombat = 1;
+            return;
+          }
+          var limiteParCombat = parseInt(cmd[1]);
+          if (isNaN(limiteParCombat) || limiteParCombat < 1) {
+            error("La limite par combat doit être un nombre positif", cmd);
+            return;
+          }
+          options.limiteParCombat = limiteParCombat;
+          if (cmd.length > 2) {
+            options.limiteParCombatRessource = cmd[2];
+          }
+          return;
         case "portee":
           if (cmd.length < 2) {
             error("Pas assez d'argument pour --portee n", cmd);
@@ -5868,27 +5921,12 @@ var COFantasy = COFantasy || function() {
     evt.type = 'Effet temporaire ' + effetComplet;
     var lanceur = options.lanceur;
     var charId;
-    if (lanceur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour)) {
+    if (lanceur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour || options.limiteParCombat)) {
       error("Il faut préciser un lanceur pour ces options d'effet", options);
       return;
     }
     if (lanceur) charId = lanceur.charId;
-    if (options.mana) {
-      if (!depenseMana(lanceur, options.mana, effet, evt)) return;
-    }
-    if (options.limiteParJour) {
-      var ressource = effet;
-      if (options.limiteParJourRessource)
-        ressource = options.limiteParJourRessource;
-      ressource = "limiteParJour_" + ressource;
-      var utilisations =
-        attributeAsInt(lanceur, ressource, options.limiteParJour);
-      if (utilisations === 0) {
-        sendChar(charId, "ne peut plus utiliser cet effet ajourd'hui");
-        return;
-      }
-      setTokenAttr(lanceur, ressource, utilisations - 1, evt);
-    }
+    if (limiteRessources(lanceur, options, effet, effet, evt)) return;
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
         sendChar(charId, "Pas de cible sélectionée pour l'effet");
@@ -5940,27 +5978,12 @@ var COFantasy = COFantasy || function() {
     evt.type = 'Effet ' + effet;
     var lanceur = options.lanceur;
     var charId;
-    if (lanceur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour)) {
+    if (lanceur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour || options.limiteParCombat)) {
       error("Il faut préciser un lanceur pour ces options d'effet", options);
       return;
     }
     if (lanceur) charId = lanceur.charId;
-    if (options.mana) {
-      if (!depenseMana(lanceur, options.mana, effet, evt)) return;
-    }
-    if (options.limiteParJour) {
-      var ressource = effet;
-      if (options.limiteParJourRessource)
-        ressource = options.limiteParJourRessource;
-      ressource = "limiteParJour_" + ressource;
-      var utilisations =
-        attributeAsInt(lanceur, ressource, options.limiteParJour);
-      if (utilisations === 0) {
-        sendChar(charId, "ne peut plus utiliser cet effet ajourd'hui");
-        return;
-      }
-      setTokenAttr(lanceur, ressource, utilisations - 1, evt);
-    }
+    if (limiteRessources(lanceur, options, effet, effet, evt)) return;
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
         sendChar(charId, "Pas de cible sélectionée pour l'effet");
@@ -6023,27 +6046,12 @@ var COFantasy = COFantasy || function() {
     evt.type = 'Effet ' + effet;
     var lanceur = options.lanceur;
     var charId;
-    if (lanceur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour)) {
+    if (lanceur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour || options.limiteParCombat)) {
       error("Il faut préciser un lanceur pour ces options d'effet", options);
       return;
     }
     if (lanceur) charId = lanceur.charId;
-    if (options.mana) {
-      if (!depenseMana(lanceur, options.mana, effet, evt)) return;
-    }
-    if (options.limiteParJour) {
-      var ressource = effet;
-      if (options.limiteParJourRessource)
-        ressource = options.limiteParJourRessource;
-      ressource = "limiteParJour_" + ressource;
-      var utilisations =
-        attributeAsInt(lanceur, ressource, options.limiteParJour);
-      if (utilisations === 0) {
-        sendChar(charId, "ne peut plus utiliser cet effet ajourd'hui");
-        return;
-      }
-      setTokenAttr(lanceur, ressource, utilisations - 1, evt);
-    }
+    if (limiteRessources(lanceur, options, effet, effet, evt)) return;
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
         sendChar(charId, "Pas de cible sélectionée pour l'effet");
