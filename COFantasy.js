@@ -36,7 +36,7 @@ var COFantasy = COFantasy || function() {
   var bs_label_success='background-color: #5cb85c;';
   var bs_label_danger='background-color: #d9534f;';
   
-  var bs_alert='padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px;';
+  var bs_alert='padding: 5px; border: 1px solid transparent; border-radius: 4px;';
   var bs_alert_success='color: #3c763d; background-color: #dff0d8; border-color: #d6e9c6;';
   var bs_alert_danger='color: #a94442; background-color: #f2dede; border-color: #ebccd1;';
 
@@ -1794,13 +1794,15 @@ var COFantasy = COFantasy || function() {
       // debut de la partie affichage
       var titre = "<b>" + attackerTokName + "</b>";
       if (options.aoe) {
+        /*
         titre += " utilise " + weaponName + ". Les cibles sont :";
         cibles.forEach(function(target) {
           titre += " " + target.tokName;
         });
+        */
+        titre += " utilise <b>" + weaponName + "</b>.";
       } else
-        titre += " attaque <b>" + nomCiblePrincipale +
-        "</b> avec " + weaponName;
+        titre += " attaque <b>" + nomCiblePrincipale + "</b> avec <b>" + weaponName + "</b>";
       var display = startFramedDisplay(playerId, titre, attacker);
 
       // Cas des armes à poudre
@@ -2049,7 +2051,7 @@ var COFantasy = COFantasy || function() {
           else if (attBonus < 0) attRollValue += attBonus;
           var line = "<b>Attaque</b> ";
           if (options.aoe) {
-            line += "contre <b>" + target.tokName + "</b>";
+            line += "contre <b>" + target.tokName + "</b> ";
           }
           line += ":<br>";
           line += attRollValue + " vs <b>";
@@ -2215,7 +2217,7 @@ var COFantasy = COFantasy || function() {
             } else if (options.aoe) { //par exemple si attaque automatique
               addLineToFramedDisplay(display, "<b>" + target.tokName + "</b> :");
             }
-            if (target.dmgMessage) addLineToFramedDisplay(display, target.dmgMessage);
+            if (target.dmgMessage) addLineToFramedDisplay(display, target.dmgMessage, 100, false);
             target.messages.forEach(function(expl) {
               addLineToFramedDisplay(display, expl, 80);
             });
@@ -3167,7 +3169,7 @@ var COFantasy = COFantasy || function() {
       "<div style='-webkit-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); -moz-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); border: 1px solid #000; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px; overflow: hidden;'>" +
       "<div style='font-family: Georgia; font-weight: normal; overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: " + playerTXColor + "; background-color: " + playerBGColor +";' title=''> " + image + titre + 
       "</div>" +
-      "<div style='font-family: Tahoma; font-weight: normal;'>";
+      "<div style='font-family: Tahoma; font-weight: normal; background-color: #FFF;'>";
     return {
       output: res,
       isOdd: true,
@@ -3175,25 +3177,31 @@ var COFantasy = COFantasy || function() {
     };
   }
 
-  function addLineToFramedDisplay(display, line, size) {
+  function addLineToFramedDisplay(display, line, size, new_line) {
     var size = (typeof size !== 'undefined') ? size : 100;
+    var new_line = (typeof new_line !== 'undefined') ? new_line : true;
     
-    var formatedLine = "<div style='padding: 0 5px 0; background-color: ";
+    var background_color, border, separator = '';
+    
+    if (!new_line) display.isOdd = !display.isOdd;
     if (display.isOdd) {
-      formatedLine += "#FFF";
+      background_color = "transparent";
       display.isOdd = false;
     } else {
-      formatedLine += "#FFF";
+      background_color = "#f3f3f3";
       display.isOdd = true;
     }
-    formatedLine += "; color: #000;'>";
+    if (size < 100) background_color = "#fcf8e3";
+    
     if (!display.isfirst) {
-      formatedLine += "<div style='height: 3px;background-color: #333;'></div>";
-    }
-    else {
-      display.isfirst = false;
-    }
-    formatedLine += '<div style="font-size: '+size+'%">'+line+'</div>';
+      if (new_line) border = "border-top: 1px solid #333;";
+    } else display.isfirst = false;
+    
+    var formatedLine = "<div style='padding: 0 5px 0; background-color: " + background_color + "; color: #000;" + border + "'>";
+
+    
+    if (!new_line) separator='border-top: 1px solid #ddd;';
+    formatedLine += '<div style="padding: 4px 0; font-size: ' + size + '%;' + separator + '">'+line+'</div>';
     formatedLine += "</div>";
     display.output += formatedLine;
   }
