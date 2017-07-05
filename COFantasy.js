@@ -929,7 +929,7 @@ var COFantasy = COFantasy || function() {
     if (fortifie > 0) {
       attBonus += 3;
       fortifie--;
-      explications.push("Effet du fortifiant => +3 à l'attaque. Il sera encore actif pour " + fortifie + " tests");
+      explications.push("Effet du fortifiant => +3 en Attaque. Il sera encore actif pour " + fortifie + " tests");
       if (fortifie === 0) {
         removeTokenAttr(personnage, 'fortifie', evt);
       } else {
@@ -939,21 +939,21 @@ var COFantasy = COFantasy || function() {
     attBonus += charAttributeAsInt(charId, 'actionConcertee', 0);
     if (attributeAsBool(personnage, 'chant_des_heros')) {
       attBonus += 1;
-      explications.push("Chant des héros => +1 au jet d'attaque");
+      explications.push("Chant des héros => +1 en Attaque");
     }
     if (attributeAsBool(personnage, 'benediction')) {
       attBonus += 1;
-      explications.push("La bénédiction => +1 au jet d'attaque");
+      explications.push("La bénédiction => +1 en Attaque");
     }
     if (attributeAsBool(personnage, 'strangulation')) {
       var malusStrangulation =
         1 + attributeAsInt(personnage, 'dureeStrangulation', 0);
       attBonus -= malusStrangulation;
-      explications.push("L'attaquant est étranglé => -" + malusStrangulation + " au jet d'attaque");
+      explications.push("L'attaquant est étranglé => -" + malusStrangulation + " en Attaque");
     }
     if (getState(personnage, 'renverse')) {
       attBonus -= 5;
-      explications.push("Attaquant à terre => -5 à l'attaque");
+      explications.push("Attaquant à terre => -5 en Attaque");
     }
     var attrPosture = tokenAttribute(personnage, 'postureDeCombat');
     if (attrPosture.length > 0) {
@@ -970,15 +970,15 @@ var COFantasy = COFantasy || function() {
     }
     if (aUnCapitaine(personnage, evt)) {
       attBonus += 2;
-      explications.push("Un capitaine donne des ordres => +2 à l'attaque");
+      explications.push("Un capitaine donne des ordres => +2 en Attaque");
     }
     if (attributeAsBool(personnage, 'forceDeGeant')) {
       attBonus += 2;
-      explications.push("Force de géant => +2 à l'attaque");
+      explications.push("Force de géant => +2 en Attaque");
     }
     if (attributeAsBool(personnage, 'nueeDInsectes')) {
       attBonus -= 2;
-      explications.push("Les insectes qui volent autour de lui l'aveuglent => -2 à l'attaque");
+      explications.push("Les insectes qui volent autour de lui l'aveuglent => -2 en Attaque");
     }
     if (attributeAsBool(personnage, 'marcheSylvestre')) {
       attBonus += 2;
@@ -1208,7 +1208,7 @@ var COFantasy = COFantasy || function() {
     return defense;
   }
 
-  //Bonus au jet d'attaque qui ne dépendent pas du défenseur
+  //Bonus en Attaque qui ne dépendent pas du défenseur
   function bonusAttaqueA(attaquant, name, weaponName, evt, explications, options) {
     var attBonus = 0;
     if (options.bonusAttaque) attBonus += options.bonusAttaque;
@@ -1216,10 +1216,10 @@ var COFantasy = COFantasy || function() {
     if (getState(attaquant, 'aveugle')) {
       if (options.distance) {
         attBonus -= 10;
-        explications.push("Attaquant aveuglé => -10 à l'attaque à distance");
+        explications.push("Attaquant aveuglé => -10 en Attaque à distance");
       } else {
         attBonus -= 5;
-        explications.push("Attaquant aveuglé => -5 à l'attaque");
+        explications.push("Attaquant aveuglé => -5 en Attaque");
       }
     }
     if (options.tirDouble) {
@@ -1262,11 +1262,11 @@ var COFantasy = COFantasy || function() {
       var targetArmorDef = parseInt(getAttrByName(target.charId, "DEFARMURE"));
       if (isNaN(targetArmorDef) || targetArmorDef === 0) {
         attBonus += 2;
-        explications.push("Mains d'énergie, la cible n'a pas d'armure => +2 au jet d'attaque");
+        explications.push("Mains d'énergie, cible sans armure => +2 en Attaque");
       } else {
         var bonusMain = Math.min(5, 2 + targetArmorDef);
         attBonus += bonusMain;
-        explications.push("Mains d'énergie => +" + bonusMain + " au jet d'attaque");
+        explications.push("Mains d'énergie => +" + bonusMain + " en Attaque");
       }
     }
     if (options.aoe === undefined && options.auto === undefined && portee > 0) {
@@ -1279,7 +1279,7 @@ var COFantasy = COFantasy || function() {
       charOfType(target.charId, "animal");
     if (chasseurEmerite) {
       attBonus += 2;
-      var explChasseurEmerite = attackerTokName + " est un chasseur émérite => +2 en attaque et aux dommages";
+      var explChasseurEmerite = attackerTokName + " est un chasseur émérite => +2 en Attaque et aux DM";
       if (options.aoe) explChasseurEmerite += " contre " + target.tokName;
       explications.push(explChasseurEmerite);
       target.chasseurEmerite = true;
@@ -1750,7 +1750,7 @@ var COFantasy = COFantasy || function() {
     var dice = 20;
     if (getState(attaquant, 'affaibli')) {
       dice = 12;
-      explications.push("Attaquant affaibli => d12 au lieu de d20 pour l'attaque");
+      explications.push("Attaquant affaibli => D12 au lieu de D20 en Attaque");
     }
     var nbDe = 1;
     if (options.imparable) nbDe = 2;
@@ -1865,7 +1865,7 @@ var COFantasy = COFantasy || function() {
         }
       }
 
-      //Modificateurs au jet d'attaque qui ne dépendent pas de la cible
+      //Modificateurs en Attaque qui ne dépendent pas de la cible
       var attBonusCommun =
         bonusAttaqueA(attaquant, attackerTokName, weaponName, evt,
           explications, options);
@@ -1875,7 +1875,7 @@ var COFantasy = COFantasy || function() {
         if (attributeAsBool(attaquant, 'rayon_affaiblissant')) {
           rayonAffaiblissant = true;
           attBonusCommun -= 2;
-          explications.push("Rayon affaiblissant => -2 à l'attaque et aux dégâts");
+          explications.push("Rayon affaiblissant => -2 en Attaque et aux DM");
         }
       }
       var traquenard = false;
@@ -2184,7 +2184,7 @@ var COFantasy = COFantasy || function() {
         }
         if (attributeAsBool(attaquant, 'forceDeGeant')) {
           attDMBonusCommun += "+2";
-          explications.push("Force de géant => +2 à l'attaque");
+          explications.push("Force de géant => +2 en Attaque");
         }
       }
       if (charAttributeAsBool(attackingCharId, 'forgeron_' + attackLabel)) {
@@ -3443,7 +3443,7 @@ var COFantasy = COFantasy || function() {
     var tok1 = perso1.token;
     var mPortee = (distance <= portee) ? 0 : (Math.ceil(5 * (distance - portee) / portee));
     if (mPortee > 0) {
-      explications.push("Distance > " + portee + " m => malus -" + mPortee);
+      explications.push("Distance > " + portee + " m => -" + mPortee + " en Attaque");
     }
     if (ignoreObstacles || charAttributeAsBool(perso1.charId, 'joliCoup'))
       return mPortee;
@@ -3484,7 +3484,7 @@ var COFantasy = COFantasy || function() {
     if (mObstacle > 5) mObstacle = 5;
     var res = mPortee + mObstacle;
     if (mObstacle > 0) {
-      explications.push("Obstacles sur le trajet => malus -" + mObstacle);
+      explications.push("Obstacles sur le trajet => -" + mObstacle + " en Attaque");
     }
     return res;
   }
