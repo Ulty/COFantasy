@@ -1,4 +1,4 @@
-﻿<html>
+<html>
   <head>
     <title>
       Scripts pour Chroniques Oubliées Fantasy sous Roll20
@@ -315,6 +315,11 @@ p  {margin-left: inherit}
 
     <h3>2.9 Escaliers</h3>
     Pour gérer les escaliers sur les cartes, vous pouvez utiliser la méthode suivante, inspirée du script Teleport : placez dans le layer "GM Info Overlay", au nivea des escaliers, des tokens qui prennent exactement la place des escaliers. Nommez ces escaliers avec un nom suivi du nombre d'étages (entre 2 et 9), suivi d'une lettre majuscule. Par exemple <tt>Escalier2A</tt>. Chaque escalier de la même colonne doit avoir le même nom et même nombre d'étage, et différer seulement par la lettre finale. Ensuite, si un ensemble de tokens est sur un escalier, utilisez <tt>!cof-escalier</tt> pour téléporter les tokens à l'emplacement de l'escalier suivant dans l'ordre des lettres. Dans l'exemple précédent, il serait téléporté à l'emplacement du token nommé <tt>Escalier2B</tt>. Cela ne fonctionne que si les bouts de l'escalier sont sur la même carte. À vous de choisir sir vous préférez révéler cette fonctionalité à vos joueurs, ou si vous le faites vous-même.
+    
+    <h3>2.10 Jet de Caracteristiques</h3>
+    <p>
+    <tt>!cof-jet @{selected|token_id} ?{Faire un jet de |Charisme, CHA|Constitution, CON|Dextérité, DEX|Force, FOR|Intelligence, INT|Sagesse, SAG}</tt> : fait un simple jet pour la caractérisique sélectionnée.
+    <p>
 
     <h2>3. Implémentation des capacités</h2>
     <h3>Arquebusier</h3>
