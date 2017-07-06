@@ -409,6 +409,50 @@ var COFantasy = COFantasy || function() {
     };
   }
 
+
+  function jet(msg) {
+    // Les arguments pour cof-jet shouldsont :
+    // - token
+    // - Caracteristique (FOR, DEX, CON, INT, SAG, CHA)
+
+    var args = msg.content.split(" ");
+    
+    if (args.length < 2) {
+      error("Pas assez d'arguments pour !cof-jet: " + msg.content, args);
+      return;
+    }
+    
+    var perso = tokenOfId(args[1]);
+    if (perso === undefined) {
+      error("Le premier argument de !cof-jet n'est pas un token valide" + msg.content, args[1]);
+      return;
+    }
+    
+    var caracteristique = args[2];
+    switch (caracteristique) {
+      case "FOR":
+      case "DEX":
+      case "CON":
+      case "INT":
+      case "SAG":
+      case "CHA":        
+        JetCaracteristique(perso, caracteristique, function(rolltext) {
+          var token = perso.token;
+          var charId = perso.charId;
+          var name = token.get('name');
+          var character = getObj('character', charId);
+          
+          var display = startFramedDisplay(msg.playerid, "Jet de <b>" + caracOfMod(caracteristique) + "</b>", character, 20);
+          addLineToFramedDisplay(display, "<b>Resultat :</b> " + rolltext);
+          sendChat(name, endFramedDisplay(display));
+        });
+        
+        return;
+      default:
+        sendChat("COF", "Caracteristique '" + caracteristique + "' non reconnue (FOR, DEX, CON, INT, SAG, CHA).");
+    }
+  }
+    
   //callback called on a object whose members are the allies
   function listeAllies(personnage, callback) {
     personnage.name =
@@ -442,7 +486,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseAttack(msg) {
-    // Arguments to cofattack should be:
+    // Arguments to cof-attack should be:
     // - attacking token
     // - target token
     // - attack number (referring to the character sheet)
@@ -452,7 +496,7 @@ var COFantasy = COFantasy || function() {
     var args = optArgs[0].split(" ");
     optArgs.shift();
     if (args.length < 4) {
-      error("Not enough arguments to !cofattack: " + msg.content, args);
+      error("Pas assez d'arguments pour !cof-attack: " + msg.content, args);
       return;
     }
     var attaquant = tokenOfId(args[1]);
@@ -3414,7 +3458,7 @@ var COFantasy = COFantasy || function() {
           InlineColorOverride = " background-color: #FFFEA2; color: #000;";
         }
     }
-    var rollOut = '<span style="display: inline-block; border-radius: ' + InlineBorderRadius + 'px; padding: 0 4px; ' + InlineColorOverride + '" title="Jet ' + inlineroll.expression + ' = ' + values.join("");
+    var rollOut = '<span style="display: inline-block; border-radius: ' + InlineBorderRadius + 'px; padding: 0 4px; ' + InlineColorOverride + '" title="' + inlineroll.expression + ' = ' + values.join("");
     rollOut += '" class="a inlinerollresult showtip tipsy-n';
     rollOut += (critCheck && failCheck) ? ' importantroll' : (critCheck ? ' fullcrit' : (failCheck ? ' fullfail' : ''));
     rollOut += '">' + inlineroll.results.total + '</span>';
@@ -5486,6 +5530,25 @@ var COFantasy = COFantasy || function() {
     if (getState(personnage, 'affaibli')) dice = 12;
     return dice;
   }
+  
+  function JetCaracteristique(personnage, carac, callback) {
+    var charId = personnage.charId;
+    var token = personnage.token;
+    var bonusCarac = bonusTestCarac(carac, personnage);
+    
+    var carSup = nbreDeTestCarac(carac, charId);
+    var de = computeDice(personnage, carSup);
+    
+    var bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
+    var rollExpr = "[[" + de + "cs20cf1 " + bonusText+"]]";
+    
+    sendChat("", rollExpr, function(res) {
+      var rolls = res[0];
+      var d20roll = rolls.inlinerolls[0].results.total;
+      var rtext = buildinline(rolls.inlinerolls[0]);
+      callback(rtext);
+    });
+  }
 
   function testCaracteristique(personnage, carac, bonusAttrs, seuil, bonus, evt, callback) { //asynchrone
     var charId = personnage.charId;
@@ -5657,7 +5720,7 @@ var COFantasy = COFantasy || function() {
   function interfaceSetState(msg) {
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
-        error("pas de cible pour le changement d'état", msg);
+        error("Pas de cible pour le changement d'état", msg);
         return;
       }
       var cmd = msg.content.split(' ');
@@ -5771,7 +5834,7 @@ var COFantasy = COFantasy || function() {
   function echangeInit(msg) {
     var args = msg.content.split(" ");
     if (args.length < 4) {
-      error("Not enough arguments to !cof-echange-init: " + msg.content, args);
+      error("Pas assez d'arguments pour !cof-echange-init: " + msg.content, args);
       return;
     }
     var perso1 = tokenOfId(args[1], args[1]);
@@ -8045,6 +8108,9 @@ var COFantasy = COFantasy || function() {
     if (command[0] != "!cof-aoe") replaceInline(msg);
     var evt;
     switch (command[0]) {
+      case "!cof-jet":
+        jet(msg);
+        return;
       case "!cof-attack":
         parseAttack(msg);
         return;
