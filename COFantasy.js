@@ -2101,15 +2101,10 @@ var COFantasy = COFantasy || function() {
           //Absorption au bouclier
           var absorber;
           if (target.absorber) {
-            var msgAbsorber = target.absorberDisplay;
-            var attAbsBonus = bonusAttaqueA(target, target.tokName, 'bouclier', evt, explications, {});
-            attAbsBonus += bonusAttaqueD(target, target.tokName, attaquant, 0, pageId, evt, explications, {});
-            if (attAbsBonus > 0) msgAbsorber += "+" + attAbsBonus;
-            else if (attAbsBonus < 0) msgAbsorber += attAbsBonus;
-            explications.push(target.tokName + " tente d'absorber l'attaque avec son bouclier. Il fait " + msgAbsorber);
-            if (target.absorber + attAbsBonus > defense) {
-              defense = target.absorber + attAbsBonus;
-              absorber = msgAbsorber;
+            explications = explications.concat(target.absorberExpl);
+            if (target.absorber > defense) {
+              defense = target.absorber;
+              absorber = target.absorberDisplay;
             }
           }
 
@@ -8073,8 +8068,8 @@ var COFantasy = COFantasy || function() {
         sendChat('', attackRollExpr, function(res) {
           var rolls = res[0];
           var attackRoll = rolls.inlinerolls[0];
-          cible.absorber = attackRoll.results.total;
-          cible.absorberDisplay = buildinline(attackRoll);
+          var totalAbsorbe = attackRoll.results.total;
+          var msgAbsorber = buildinline(attackRoll);
           var attBonus = charAttributeAsInt(guerrier, 'NIVEAU', 1);
           if (options.sortilege) {
             attBonus += modCarac(guerrier.charId, 'SAGESSE');
@@ -8083,9 +8078,19 @@ var COFantasy = COFantasy || function() {
             attBonus += modCarac(guerrier.charId, 'FORCE');
             attBonus += charAttributeAsInt(guerrier, 'ATKCAC_DIV', 0);
           }
-          cible.absorber += attBonus;
-          if (attBonus > 0) cible.absorberDisplay += "+" + attBonus;
-          else if (attBonus < 0) cible.absorberDisplay += attBonus;
+          totalAbsorbe += attBonus;
+          if (attBonus > 0) msgAbsorber += "+" + attBonus;
+          else if (attBonus < 0) msgAbsorber += attBonus;
+          var explAbsorber = [];
+          var attAbsBonus = bonusAttaqueA(cible, cible.tokName, 'bouclier', evt, explAbsorber, {});
+          var pageId = guerrier.token.get('pageid');
+            attAbsBonus += bonusAttaqueD(cible, cible.tokName, attaque.attaquant, 0, pageId, evt, explAbsorber, {});
+            if (attAbsBonus > 0) msgAbsorber += "+" + attAbsBonus;
+            else if (attAbsBonus < 0) msgAbsorber += attAbsBonus;
+            explAbsorber.push(cible.tokName + " tente d'absorber l'attaque avec son bouclier. Il fait " + msgAbsorber);
+          cible.absorber = totalAbsorbe;
+          cible.absorberDisplay = msgAbsorber;
+          cible.absorberExpl = explAbsorber;
           count--;
           if (count === 0) {
             toProceed = false;
