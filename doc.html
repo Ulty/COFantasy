@@ -618,6 +618,7 @@ p  {margin-left: inherit}
     <h4>Voie du soldat</h4>
     <ol>
       <li>Posture de combat : <tt>!cof-posture-de-combat @{selected|token_id}</tt> <i>bonus attr1 attr2</i>, ou les deux <i>attr</i> peuvent être soit <tt>DEF</tt> soit <tt>ATT</tt> soit <tt>DM</tt>, et le <i>bonus</i> est retiré au premier attribut pour être ajouté au second. Le bonus peut être limité si le guerrier a un attribut <tt>voieDuSoldat</tt> qu iindique son rang dans la voie. Exemple d'utilisation&nbsp;: <tt>!cof-posture-de-combat @{selected|token_id} ?{Bonus} ?{Baisser|Défense,DEF|Attaque,ATT|Dégâts,DM} ?{Augmenter|Défense,DEF|Attaque,ATT|Dégâts,DM}</tt>. Normalement, la règle fait décider de sa posture au guerrier à chaque tour, mais en pratique, il en change assez rarement. Une posture de combat reste donc active jusqu'à la fin du combat ou jusqu'à ce qu'on en change (elle est neutre si on a le même attribut à buffer et débuffer). </li>
+      <li>Combat en phalange : ajouter un attribut <tt>combatEnPhalange</tt>, valeur <tt>true</tt></li>
     </ol>
 
     <h3>Magicien</h3>
@@ -758,8 +759,9 @@ p  {margin-left: inherit}
     <h3>Rôdeur</h3>
     <h4>Voie de l'archer</h4>
     <ol>
-      <li>Sens affutés: ajouter le bonus à un attribut <tt>perception</tt></li>
-      <li>Tir aveugle: ajouter un attribut <tt>tirAveugle</tt>, avec comme valeur <tt>true</tt>.</li>
+      <li>Sens affutés : ajouter le bonus à un attribut <tt>perception</tt></li>
+      <li>Tir aveugle : ajouter un attribut <tt>tirAveugle</tt>, avec comme valeur <tt>true</tt>.</li>
+      <li>Tir rapide : faire simplement deux attaques dans le tour</li>
     </ol>
     <h4>Voie du compagnon animal</h4>
     <ol>
@@ -773,7 +775,7 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie de l'escarmouche</h4>
     <ol>
-      <li>Chasseur émérite: ajouter un attribut <tt>chasseurEmerite</tt> (valeur true).
+      <li>Chasseur émérite : ajouter un attribut <tt>chasseurEmerite</tt> (valeur true).
         Puis, si dans le profil (attribut PROFIL) de la cible, il y a <tt>animal</tt>, le bonus
         s'applique.</li>
       <li>Traquenard : ajouter un attribut <tt>traquenard</tt> (valeur 1/1), puis option
@@ -851,10 +853,12 @@ p  {margin-left: inherit}
 
     <h3>Voies de créatures</h3>
     <h4>Voie du champion</h4>
-    <p style="margin-top:0px; margin-bottom:0px">
-    Utiliser un attribut <tt>champion</tt> avec comme valeur le rang dans la voie.
     <ol>
-      <li>Imparable: utiliser l'option <tt>--imparable</tt> pour l'action limitée. Pour l'effet permanent, ne pas oublier l'attribut <tt>champion</tt></li>
+      <li>Imparable: 
+        <ul>
+          <li>Utiliser l'option <tt>--imparable</tt> pour l'action limitée. </li>
+          <li> Pour l'effet permanent, utiliser un attribut <tt>champion</tt>, avec une valeur <tt>true</tt></li>
+        </ul>
     </ol>
     <h4>Voie du chef d'armée</h4>
     <ol>
