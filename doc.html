@@ -623,7 +623,7 @@ p  {margin-left: inherit}
     <h4>Voie du soldat</h4>
     <ol>
       <li>Posture de combat : <tt>!cof-posture-de-combat @{selected|token_id}</tt> <i>bonus attr1 attr2</i>, ou les deux <i>attr</i> peuvent être soit <tt>DEF</tt> soit <tt>ATT</tt> soit <tt>DM</tt>, et le <i>bonus</i> est retiré au premier attribut pour être ajouté au second. Le bonus peut être limité si le guerrier a un attribut <tt>voieDuSoldat</tt> qu iindique son rang dans la voie. Exemple d'utilisation&nbsp;: <tt>!cof-posture-de-combat @{selected|token_id} ?{Bonus} ?{Baisser|Défense,DEF|Attaque,ATT|Dégâts,DM} ?{Augmenter|Défense,DEF|Attaque,ATT|Dégâts,DM}</tt>. Normalement, la règle fait décider de sa posture au guerrier à chaque tour, mais en pratique, il en change assez rarement. Une posture de combat reste donc active jusqu'à la fin du combat ou jusqu'à ce qu'on en change (elle est neutre si on a le même attribut à buffer et débuffer). </li>
-      <li>Combat en phalange : ajouter un attribut <tt>combatEnPhalange</tt>, valeur <tt>true</tt></li>
+      <li>Combat en phalange : ajouter un attribut <tt>combatEnPhalange</tt>, valeur <tt>true</tt>. Les bonus seront ajoutés automatiquement en fonctions des alliés définis selon <a href="#allie">cette méthode</a>.</li>
     </ol>
 
     <h3>Magicien</h3>
