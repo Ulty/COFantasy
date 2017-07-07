@@ -141,6 +141,7 @@ var COFantasy = COFantasy || function() {
           layer: "objects"
         });
       allToks.forEach(function(tok) {
+        if (tok.id == token.id) return;
         var ci = tok.get('represents');
         if (ci === '') return;
         var p = {
