@@ -33,6 +33,8 @@ var COFantasy = COFantasy || function() {
   var updateNextInitSet = new Set();
   
   var bs_label='text-transform: uppercase; display: inline; padding: .2em .6em .3em; font-size: 75%; line-height: 2; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25em;';
+  var bs_label_default='background-color: #777;';
+  var bs_label_primary='background-color: #337ab7;';
   var bs_label_success='background-color: #5cb85c;';
   var bs_label_info='background-color: #5bc0de;';
   var bs_label_warning='background-color: #f0ad4e;';
@@ -1445,7 +1447,8 @@ var COFantasy = COFantasy || function() {
         error("Attaque sans cible", targetToken);
         return;
       }
-      nomCiblePrincipale = cibles[0].tokName;
+      else if (cibles.length === 1) targetToken=targetToken.cibles.token;
+      nomCiblePrincipale = cibles[0].tokName;      
     } else {
       nomCiblePrincipale = targetToken.get('name');
       if (options.aoe) {
@@ -1836,18 +1839,14 @@ var COFantasy = COFantasy || function() {
       };
 
       // debut de la partie affichage
-      var titre = "<b>" + attackerTokName + "</b>";
+      var titre = "<b>Arme / Capacité</b> : ";
+      var label_type = bs_label_info;
       if (options.aoe) {
-        /*
-        titre += " utilise " + weaponName + ". Les cibles sont :";
-        cibles.forEach(function(target) {
-          titre += " " + target.tokName;
-        });
-        */
-        titre += " utilise <b>" + weaponName + "</b>.";
         targetToken=undefined;
-      } else
-        titre += " attaque <b>" + nomCiblePrincipale + "</b> avec <b>" + weaponName + "</b>";
+        label_type = bs_label_warning;
+      }
+      titre += "<span style='"+bs_label+" "+label_type+"; text-transform: none; font-size: 100%;'>" + weaponName + "</span>";
+      
       var display = startFramedDisplay(playerId, titre, attacker, targetToken);
 
       // Cas des armes à poudre
@@ -3264,7 +3263,7 @@ var COFantasy = COFantasy || function() {
             ) +
           '</table>' +           
         '</div>' +
-        '<div style="font-size: 85%; overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: #a94442; background-color: #f2dede;" title=""> ' + 
+        '<div style="font-size: 85%; text-align: left; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: #a94442; background-color: #f2dede;" title=""> ' + 
           action +
         '</div>' +
       '<div style="background-color: #FFF;">';
