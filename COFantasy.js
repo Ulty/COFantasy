@@ -3195,6 +3195,14 @@ var COFantasy = COFantasy || function() {
       });
     return dmgDisplay;
   }
+  
+  
+  function improve_image(image_url) {
+    image_url = image_url.replace('/med.png', '/thumb.png');
+    image_url = image_url.substring(0, image_url.indexOf('?'));
+    
+    return image_url;
+  }
 
 
   function startFramedDisplay(playerId, action, character, character2_token) {
@@ -3215,13 +3223,13 @@ var COFantasy = COFantasy || function() {
       
       character2_name = '<b>' + character2_represents.get('name') + '</b>';
       if (character2_represents !== undefined) {
-        character2_avatar = '<img src="' + character2_represents.get('avatar') + '" style="width: 50%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+        character2_avatar = '<img src="' + improve_image(character2_represents.get('avatar')) + '" style="width: 50%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
       }
     }
     
     if (character !== undefined) {
       character_name = '<b>' + character.get('name') + '</b>';
-      character_avatar = '<img src="' + character.get('avatar') + '" style="width: ' + (is_vs ? 50 : 100) + '%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+      character_avatar = '<img src="' + improve_image(character.get('avatar')) + '" style="width: ' + (is_vs ? 50 : 100) + '%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
     }
      
     var res =
