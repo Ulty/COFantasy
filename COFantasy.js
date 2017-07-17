@@ -3689,6 +3689,13 @@ var COFantasy = COFantasy || function() {
     return [tok.get('left'), tok.get('top')];
   }
 
+  // Retourne le diamètre d'un disque inscrit dans un carré de surface
+  // équivalente à celle du token
+  function tokenSizeAsCircle(token) {
+    var surface = token.get('width') * token.get('height');
+    return Math.sqrt(surface);
+  }
+
   // if token is bigger than thresh reduce the distance by that size
   function tokenSize(tok, thresh) {
     var size = (tok.get('width') + tok.get('height')) / 2;
@@ -3754,11 +3761,23 @@ var COFantasy = COFantasy || function() {
       obj_dist = VecMath.length(VecMath.vec(pt2, pt));
       if (obj_dist > distance_pix) return;
       var distToTrajectory = VecMath.ptSegDist(pt, pt1, pt2);
-      if (distToTrajectory > PIX_PER_UNIT + tokenSize(obj, PIX_PER_UNIT)) return;
+      // On modélise le token comme un disque
+      var rayonObj = tokenSizeAsCircle(obj)/2;
+      if (distToTrajectory > rayonObj) return;
       liste_obstacles.push(obj.get("name"));
-      mObstacle += Math.ceil(5 * (PIX_PER_UNIT - distToTrajectory) / PIX_PER_UNIT);
+      // On calcule un malus proportionnel à l'arc à traverser
+      // Pour l'instant, malus = 1 si distance = PIX_PER_UNIT
+      var longueurArc = 2 * Math.sqrt(rayonObj*rayonObj - distToTrajectory*distToTrajectory);
+      var mToken = longueurArc / PIX_PER_UNIT;
+      //malus plus important si l'obstacle est au contact de la cible
+      if (distanceCombat(tok2, obj, pageId) === 0) mToken *= 5;
+      else mToken *= 3;
+      mObstacle += mToken;
     });
+    // On ajuste aussi en fonction de la taille de la cible
+    mObstacle = mObstacle / (tokenSizeAsCircle(tok2)/PIX_PER_UNIT);
     if (mObstacle > 5) mObstacle = 5;
+    else mObstacle = Math.round(mObstacle);
     var res = mPortee + mObstacle;
     if (mObstacle > 0) {
       log("Obstacle" + ((mObstacle > 1) ? "s" : "") + " trouvé : " + liste_obstacles.join(', '));
