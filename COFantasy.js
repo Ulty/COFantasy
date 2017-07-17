@@ -32,17 +32,17 @@ var COFantasy = COFantasy || function() {
   var eventHistory = [];
   var updateNextInitSet = new Set();
 
-  var bs_label='text-transform: uppercase; display: inline; padding: .2em .6em .3em; font-size: 75%; line-height: 2; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25em;';
-  var bs_label_default='background-color: #777;';
-  var bs_label_primary='background-color: #337ab7;';
-  var bs_label_success='background-color: #5cb85c;';
-  var bs_label_info='background-color: #5bc0de;';
-  var bs_label_warning='background-color: #f0ad4e;';
-  var bs_label_danger='background-color: #d9534f;';
-  
-  var bs_alert='padding: 5px; border: 1px solid transparent; border-radius: 4px;';
-  var bs_alert_success='color: #3c763d; background-color: #dff0d8; border-color: #d6e9c6;';
-  var bs_alert_danger='color: #a94442; background-color: #f2dede; border-color: #ebccd1;';
+  var BS_LABEL = 'text-transform: uppercase; display: inline; padding: .2em .6em .3em; font-size: 75%; line-height: 2; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25em;';
+  var BS_LABEL_DEFAULT = 'background-color: #777;';
+  var BS_LABEL_PRIMARY = 'background-color: #337ab7;';
+  var BS_LABEL_SUCCESS = 'background-color: #5cb85c;';
+  var BS_LABEL_INFO = 'background-color: #5bc0de;';
+  var BS_LABEL_WARNING = 'background-color: #f0ad4e;';
+  var BS_LABEL_DANGER = 'background-color: #d9534f;';
+
+  var bs_alert = 'padding: 5px; border: 1px solid transparent; border-radius: 4px;';
+  var bs_alert_success = 'color: #3c763d; background-color: #dff0d8; border-color: #d6e9c6;';
+  var bs_alert_danger = 'color: #a94442; background-color: #f2dede; border-color: #ebccd1;';
 
   // List of states:
   var cof_states = {
@@ -1474,7 +1474,7 @@ var COFantasy = COFantasy || function() {
           if (distanceCombat(target.token, tok, pageId) > 0) return;
           if (distanceCombat(attaquant.token, tok, pageId) > 0) return;
           var ci = tok.get('represents');
-          if (ci === '') return; 
+          if (ci === '') return;
           var ch = getObj('character', ci);
           if (ch === undefined) return;
           if (!isActive({
@@ -1625,8 +1625,7 @@ var COFantasy = COFantasy || function() {
       if (cibles.length === 0) {
         error("Attaque sans cible", targetToken);
         return;
-      }
-      else if (cibles.length === 1) targetToken=targetToken.cibles.token;
+      } else if (cibles.length == 1) targetToken = targetToken.cibles.token;
       nomCiblePrincipale = cibles[0].tokName;
     } else {
       nomCiblePrincipale = targetToken.get('name');
@@ -2002,13 +2001,13 @@ var COFantasy = COFantasy || function() {
 
       // debut de la partie affichage
       var action = "<b>Arme / Capacité</b> : ";
-      var label_type = bs_label_info;
+      var label_type = BS_LABEL_INFO;
       if (options.aoe) {
-        targetToken=undefined;
-        label_type = bs_label_warning;
+        targetToken = undefined;
+        label_type = BS_LABEL_WARNING;
       }
-      action += "<span style='"+bs_label+" "+label_type+"; text-transform: none; font-size: 100%;'>" + weaponName + "</span>";
-      
+      action += "<span style='" + BS_LABEL + " " + label_type + "; text-transform: none; font-size: 100%;'>" + weaponName + "</span>";
+
       var display = startFramedDisplay(playerId, action, attacker, targetToken);
 
       // Cas des armes à poudre
@@ -2212,7 +2211,7 @@ var COFantasy = COFantasy || function() {
               if (charAttributeAsBool(attaquant, 'champion') && d20roll >= 15)
                 options.champion = true;
               if (d20roll == 1 && options.chance === undefined) {
-                attackResult = " : <span style='" + bs_label + " " + bs_label_danger + "'><b>échec&nbsp;critique</b></span>";
+                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
                 touche = false;
                 var confirmCrit = randomInteger(20);
                 critSug = "/w GM Jet de confirmation pour l'échec critique : " +
@@ -2234,16 +2233,16 @@ var COFantasy = COFantasy || function() {
                     critSug += "simple échec";
                 }
               } else if (paralyse || d20roll >= target.crit) {
-                attackResult = " : <span style='" + bs_label + " " + bs_label_success + "'><b>réussite critique</b></span>";
+                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
                 touche = 2;
               } else if (options.champion) {
-                attackResult = " : <span style='" + bs_label + " " + bs_label_success + "'><b>succès</b></span>";
+                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
                 touche = 1;
               } else if (attackRoll < defense) {
-                attackResult = " : <span style='" + bs_label + " " + bs_label_warning + "'><b>échec</b></span>";
+                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
                 touche = false;
               } else { // Touché normal
-                attackResult = " : <span style='" + bs_label + " " + bs_label_success + "'><b>succès</b></span>";
+                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
                 touche = 1;
               }
               var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
@@ -3368,12 +3367,12 @@ var COFantasy = COFantasy || function() {
       });
     return dmgDisplay;
   }
-  
-  
+
+
   function improve_image(image_url) {
     image_url = image_url.replace('/med.png', '/thumb.png');
     image_url = image_url.substring(0, image_url.indexOf('?'));
-    
+
     return image_url;
   }
 
@@ -3387,66 +3386,65 @@ var COFantasy = COFantasy || function() {
     var character2_avatar = "";
     var is_vs = false;
     var vs = "";
-    
+
     if (character2_token !== undefined) {
       is_vs = true;
       vs = "VS";
-      
+
       var character2_represents = getObj('character', character2_token.get('represents'));
-      
+
       character2_name = '<b>' + character2_represents.get('name') + '</b>';
       if (character2_represents !== undefined) {
         character2_avatar = '<img src="' + improve_image(character2_represents.get('avatar')) + '" style="width: 50%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
       }
     }
-    
+
     if (character !== undefined) {
       character_name = '<b>' + character.get('name') + '</b>';
       character_avatar = '<img src="' + improve_image(character.get('avatar')) + '" style="width: ' + (is_vs ? 50 : 100) + '%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
     }
-     
+
     var res =
       '/direct ' +
       '<div style="-webkit-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); -moz-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); border: 1px solid #000; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px; overflow: hidden;">' +
-        '<div style="overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: ' + playerTXColor + '; background-color: ' + playerBGColor +';" title=""> ' + 
-          '<table>' +
-          ( is_vs ?
-          // versus
-            '<tr style="text-align: center">' +
-              '<td style="width:45%; vertical-align: middle;">' +
-              character_name +
-              '</td>' +
-              '<td style="width:10%; vertical-align: middle;" rowspan="2">' +
-              vs +
-              '</td>' +
-              '<td style="width:45%; vertical-align: middle;">' +
-              character2_name +
-              '</td>' +
-            '</tr>' +
-            '<tr style="text-align: center">' +
-              '<td style="width:45%; vertical-align: middle;">' +
-              character_avatar +
-              '</td>' +
-              '<td style="width:45%; vertical-align: middle;">' +
-              character2_avatar +
-              '</td>' +
-            '</tr>'
-            :
-            // pas versus
-            '<tr style="text-align: left">' +
-              '<td style="width:25%; vertical-align: middle;">' +
-              character_avatar +
-              '</td>' +
-              '<td style="width:75%; vertical-align: middle;">' +
-              character_name +
-              '</td>' +
-            '</tr>'
-            ) +
-          '</table>' +           
-        '</div>' +
-        '<div style="font-size: 85%; text-align: left; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: #a94442; background-color: #f2dede;" title=""> ' + 
-          action +
-        '</div>' +
+      '<div style="overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: ' + playerTXColor + '; background-color: ' + playerBGColor + ';" title=""> ' +
+      '<table>' +
+      (is_vs ?
+        // versus
+        '<tr style="text-align: center">' +
+        '<td style="width:45%; vertical-align: middle;">' +
+        character_name +
+        '</td>' +
+        '<td style="width:10%; vertical-align: middle;" rowspan="2">' +
+        vs +
+        '</td>' +
+        '<td style="width:45%; vertical-align: middle;">' +
+        character2_name +
+        '</td>' +
+        '</tr>' +
+        '<tr style="text-align: center">' +
+        '<td style="width:45%; vertical-align: middle;">' +
+        character_avatar +
+        '</td>' +
+        '<td style="width:45%; vertical-align: middle;">' +
+        character2_avatar +
+        '</td>' +
+        '</tr>' :
+        // pas versus
+        '<tr style="text-align: left">' +
+        '<td style="width:25%; vertical-align: middle;">' +
+        character_avatar +
+        '</td>' +
+        '<td style="width:75%; vertical-align: middle;">' +
+        character_name +
+        '</td>' +
+        '</tr>'
+      ) +
+      '</table>' +
+      '</div>' +
+      '<div style="font-size: 85%; text-align: left; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: #a94442; background-color: #f2dede;" title=""> ' +
+      action +
+      '</div>' +
       '<div style="background-color: #FFF;">';
     return {
       output: res,
@@ -3456,11 +3454,11 @@ var COFantasy = COFantasy || function() {
   }
 
   function addLineToFramedDisplay(display, line, size, new_line) {
-    var size = (typeof size !== 'undefined') ? size : 100;
-    var new_line = (typeof new_line !== 'undefined') ? new_line : true;
-    
+    size = size || 100;
+    new_line = (new_line !== 'undefined') ? new_line : true;
+
     var background_color, border, separator = '';
-    
+
     if (!new_line) display.isOdd = !display.isOdd;
     if (display.isOdd) {
       background_color = "transparent";
@@ -3470,16 +3468,15 @@ var COFantasy = COFantasy || function() {
       display.isOdd = true;
     }
     if (size < 100) background_color = "#fcf8e3";
-    
+
     if (!display.isfirst) {
       if (new_line) border = "border-top: 1px solid #333;";
     } else display.isfirst = false;
-    
+
     var formatedLine = '<div style="padding: 0 5px 0; background-color: ' + background_color + '; color: #000;' + border + '">';
 
-    
-    if (!new_line) separator="border-top: 1px solid #ddd;";
-    formatedLine += '<div style="padding: 4px 0; font-size: ' + size + '%;' + separator + '">'+line+'</div>';
+    if (!new_line) separator = "border-top: 1px solid #ddd;";
+    formatedLine += '<div style="padding: 4px 0; font-size: ' + size + '%;' + separator + '">' + line + '</div>';
     formatedLine += '</div>';
     display.output += formatedLine;
   }
@@ -3738,7 +3735,7 @@ var COFantasy = COFantasy || function() {
     var pt1 = tokenCenter(tok1);
     var pt2 = tokenCenter(tok2);
     var distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
-    var liste_obstacles=[];
+    var liste_obstacles = [];
     allToks.forEach(function(obj) {
       if (obj.id == tok1.id || obj.id == tok2.id) return;
       var objCharId = obj.get('represents');
@@ -7084,7 +7081,7 @@ var COFantasy = COFantasy || function() {
       sendChat('', "Pas de soins (total de soins " + soins + ")");
       return;
     }
-    
+
     var action = "Soins de groupe";
     var display = startFramedDisplay(msg.playerid, action, soigneur);
     getSelected(msg, function(selected) {
