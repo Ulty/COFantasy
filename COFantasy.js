@@ -32,13 +32,17 @@ var COFantasy = COFantasy || function() {
   var eventHistory = [];
   var updateNextInitSet = new Set();
 
-  var bs_label = 'text-transform: uppercase; display: inline; padding: .2em .6em .3em; font-size: 75%; line-height: 2; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25em;';
-  var bs_label_success = 'background-color: #5cb85c;';
-  var bs_label_danger = 'background-color: #d9534f;';
-
-  var bs_alert = 'padding: 5px; border: 1px solid transparent; border-radius: 4px;';
-  var bs_alert_success = 'color: #3c763d; background-color: #dff0d8; border-color: #d6e9c6;';
-  var bs_alert_danger = 'color: #a94442; background-color: #f2dede; border-color: #ebccd1;';
+  var bs_label='text-transform: uppercase; display: inline; padding: .2em .6em .3em; font-size: 75%; line-height: 2; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25em;';
+  var bs_label_default='background-color: #777;';
+  var bs_label_primary='background-color: #337ab7;';
+  var bs_label_success='background-color: #5cb85c;';
+  var bs_label_info='background-color: #5bc0de;';
+  var bs_label_warning='background-color: #f0ad4e;';
+  var bs_label_danger='background-color: #d9534f;';
+  
+  var bs_alert='padding: 5px; border: 1px solid transparent; border-radius: 4px;';
+  var bs_alert_success='color: #3c763d; background-color: #dff0d8; border-color: #d6e9c6;';
+  var bs_alert_danger='color: #a94442; background-color: #f2dede; border-color: #ebccd1;';
 
   // List of states:
   var cof_states = {
@@ -410,7 +414,6 @@ var COFantasy = COFantasy || function() {
     };
   }
 
-
   function jet(msg) {
     // Les arguments pour cof-jet shouldsont :
     // - token
@@ -443,7 +446,7 @@ var COFantasy = COFantasy || function() {
           var name = token.get('name');
           var character = getObj('character', charId);
 
-          var display = startFramedDisplay(msg.playerid, "Jet de <b>" + caracOfMod(caracteristique) + "</b>", character, 20);
+          var display = startFramedDisplay(msg.playerid, "Jet de <b>" + caracOfMod(caracteristique) + "</b>", character);
           addLineToFramedDisplay(display, "<b>Resultat :</b> " + rolltext);
           sendChat(name, endFramedDisplay(display));
         });
@@ -1040,7 +1043,7 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(personnage, 'benediction')) {
       attBonus += 1;
-      explications.push("La bénédiction => +1 en Attaque");
+      explications.push("Bénédiction => +1 en Attaque");
     }
     if (attributeAsBool(personnage, 'strangulation')) {
       var malusStrangulation =
@@ -1063,7 +1066,7 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(personnage, 'danseIrresistible')) {
       attBonus -= 4;
-      explications.push("Pas facile d'attaquer en dansant...");
+      explications.push("En train de danser => -4 en Attaque");
     }
     if (aUnCapitaine(personnage, evt)) {
       attBonus += 2;
@@ -1075,15 +1078,15 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(personnage, 'nueeDInsectes')) {
       attBonus -= 2;
-      explications.push("Les insectes qui volent autour de lui l'aveuglent => -2 en Attaque");
+      explications.push("Nuée d’insectes => -2 en Attaque");
     }
     if (attributeAsBool(personnage, 'marcheSylvestre')) {
       attBonus += 2;
-      explications.push("prend avantage du terrain : +2 att");
+      explications.push("Marche sylvestre : +2 en Attaque");
     }
     if (attributeAsBool(personnage, 'prisonVegetale')) {
       attBonus -= 2;
-      explications.push("est entravé par des plantes : -2 att");
+      explications.push("Prison végétale : -2 en Attaque");
     }
     return attBonus;
   }
@@ -1291,17 +1294,17 @@ var COFantasy = COFantasy || function() {
       defense += 5;
     if (attributeAsBool(target, 'danseIrresistible')) {
       defense -= 4;
-      explications.push("Pas facile de se défendre en dansant...");
+      explications.push("En train de danser => -4 DEF");
     }
     if (options.sortilege)
       defense += charAttributeAsInt(target.charId, 'DEF_magie', 0);
     if (attributeAsBool(target, 'marcheSylvestre')) {
       defense += 2;
-      explications.push(tokenName + " profite du terrain pour se protéger");
+      explications.push("Marche sylvestre => +2 DEF");
     }
     if (attributeAsBool(target, 'prisonVegetale')) {
       defense -= 2;
-      explications.push(tokenName + " est entravé par des plantes, pas facile d'éviter les attaques");
+      explications.push("Prison végétale => -2 DEF");
     }
     if (charAttributeAsBool(target, 'combatEnPhalange')) {
       listeAllies(target, function(allies) {
@@ -1343,7 +1346,7 @@ var COFantasy = COFantasy || function() {
         });
         if (defensePhalange > 0) {
           defense += defensePhalange;
-          explications.push(tokenName + " combat en phalange (+" + defensePhalange + " DEF)");
+          explications.push("Combat en phalange => +" + defensePhalange + " DEF");
         }
         callback(defense);
       }); //fin listeAllies
@@ -1375,7 +1378,7 @@ var COFantasy = COFantasy || function() {
     if (options.chance) {
       attBonus += options.chance;
       var pc = options.chance / 10;
-      explications.push(pc + " point" + ((pc > 1) ? "s" : "") + " de chance dépensé => +" + options.chance);
+      explications.push(pc + " point" + ((pc > 1) ? "s" : "") + " de chance dépensé => +" + options.chance + " en Attaque");
     }
     if (options.semonce) {
       attBonus += 5;
@@ -1388,11 +1391,11 @@ var COFantasy = COFantasy || function() {
     }
     if (options.sortilege && attributeAsBool(attaquant, 'zoneDeSilence')) {
       attBonus -= 2;
-      explications.push("L'impossibilité de faire un son rend le lancement de sorts difficile");
+      explications.push("Zone de silence => -2 en Attaque Magique");
     }
     if (!options.distance && attributeAsBool(attaquant, 'aCheval')) {
       attBonus += charAttributeAsInt(attaquant, 'cavalierEmerite');
-      explications.push(name + " gagne +2 en attaque à cheval");
+      explications.push("A cheval => +2 en Attaque");
     }
     return attBonus;
   }
@@ -1411,7 +1414,7 @@ var COFantasy = COFantasy || function() {
       var targetArmorDef = parseInt(getAttrByName(target.charId, "DEFARMURE"));
       if (isNaN(targetArmorDef) || targetArmorDef === 0) {
         attBonus += 2;
-        explications.push("Mains d'énergie, cible sans armure => +2 en Attaque");
+        explications.push("Mains d'énergie => +2 en Attaque (cible sans armure)");
       } else {
         var bonusMain = Math.min(5, 2 + targetArmorDef);
         attBonus += bonusMain;
@@ -1428,7 +1431,7 @@ var COFantasy = COFantasy || function() {
       charOfType(target.charId, "animal");
     if (chasseurEmerite) {
       attBonus += 2;
-      var explChasseurEmerite = attackerTokName + " est un chasseur émérite => +2 en Attaque et aux DM";
+      var explChasseurEmerite = "Chasseur émérite => +2 en Attaque et aux DM";
       if (options.aoe) explChasseurEmerite += " contre " + target.tokName;
       explications.push(explChasseurEmerite);
       target.chasseurEmerite = true;
@@ -1443,9 +1446,7 @@ var COFantasy = COFantasy || function() {
     if (ennemiJure) {
       var ejSag = modCarac(attackingCharId, 'SAGESSE');
       attBonus += ejSag;
-      var explEnnemiJure =
-        attackerTokName + " attaque son ennemi juré => +" + ejSag +
-        " en attaque et +1d6 aux dommages";
+      var explEnnemiJure = "Attaque sur ennemi juré => +" + ejSag + " en attaque et +1d6 aux DM";
       if (options.aoe) explEnnemiJure += " contre " + target.tokName;
       explications.push(explEnnemiJure);
       target.ennemiJure = true;
@@ -1455,7 +1456,7 @@ var COFantasy = COFantasy || function() {
         charAttributeAsInt(attackingCharId, 'FORCE', 10) <= charAttributeAsInt(target.charId, 'FORCE', 10) &&
         parseInt(attaquant.token.get("bar1_max")) <= parseInt(target.token.get("bar1_max"))) {
         attBonus -= 2;
-        explications.push(attackerTokName + " a un peu peur de s'attaquer à " + target.tokName);
+        explications.push("Effrayé => -2 en Attaque");
       }
     }
     if (charAttributeAsBool(attaquant, 'combatEnPhalange')) {
@@ -1486,7 +1487,7 @@ var COFantasy = COFantasy || function() {
         });
         if (alliesAuContact > 0) {
           attBonus += alliesAuContact;
-          explications.push(attackerTokName + " combat en phalange => +" + alliesAuContact + " en attaque");
+          explications.push("Combat en phalange => +" + alliesAuContact + " en Attaque");
         }
         callback(attBonus);
       }); //fin listeAllies
@@ -1625,6 +1626,7 @@ var COFantasy = COFantasy || function() {
         error("Attaque sans cible", targetToken);
         return;
       }
+      else if (cibles.length === 1) targetToken=targetToken.cibles.token;
       nomCiblePrincipale = cibles[0].tokName;
     } else {
       nomCiblePrincipale = targetToken.get('name');
@@ -1999,18 +2001,15 @@ var COFantasy = COFantasy || function() {
       };
 
       // debut de la partie affichage
-      var titre = "<b>" + attackerTokName + "</b>";
+      var action = "<b>Arme / Capacité</b> : ";
+      var label_type = bs_label_info;
       if (options.aoe) {
-        /*
-        titre += " utilise " + weaponName + ". Les cibles sont :";
-        cibles.forEach(function(target) {
-          titre += " " + target.tokName;
-        });
-        */
-        titre += " utilise <b>" + weaponName + "</b>.";
-      } else
-        titre += " attaque <b>" + nomCiblePrincipale + "</b> avec <b>" + weaponName + "</b>";
-      var display = startFramedDisplay(playerId, titre, attacker);
+        targetToken=undefined;
+        label_type = bs_label_warning;
+      }
+      action += "<span style='"+bs_label+" "+label_type+"; text-transform: none; font-size: 100%;'>" + weaponName + "</span>";
+      
+      var display = startFramedDisplay(playerId, action, attacker, targetToken);
 
       // Cas des armes à poudre
       if (options.poudre) {
@@ -2213,7 +2212,7 @@ var COFantasy = COFantasy || function() {
               if (charAttributeAsBool(attaquant, 'champion') && d20roll >= 15)
                 options.champion = true;
               if (d20roll == 1 && options.chance === undefined) {
-                attackResult = " : <span style='" + bs_label + " " + bs_label_danger + "'><b><i>échec&nbsp;critique</i></b></span>";
+                attackResult = " : <span style='" + bs_label + " " + bs_label_danger + "'><b>échec&nbsp;critique</b></span>";
                 touche = false;
                 var confirmCrit = randomInteger(20);
                 critSug = "/w GM Jet de confirmation pour l'échec critique : " +
@@ -2235,17 +2234,16 @@ var COFantasy = COFantasy || function() {
                     critSug += "simple échec";
                 }
               } else if (paralyse || d20roll >= target.crit) {
-                attackResult = " : <span style='" + bs_label + " " + bs_label_success + "'><b><i>critique</i></b></span>";
+                attackResult = " : <span style='" + bs_label + " " + bs_label_success + "'><b>réussite critique</b></span>";
                 touche = 2;
               } else if (options.champion) {
-                attackResult = " : <span style='" + bs_label + " " + bs_label_success + "'><b><i>succès</i></b></span>";
+                attackResult = " : <span style='" + bs_label + " " + bs_label_success + "'><b>succès</b></span>";
                 touche = 1;
               } else if (attackRoll < defense) {
-                attackResult = " : <i>Échec</i> ";
-                attackResult = " : <span style='" + bs_label + " " + bs_label_danger + "'><b><i>échec</i></b></span>";
+                attackResult = " : <span style='" + bs_label + " " + bs_label_warning + "'><b>échec</b></span>";
                 touche = false;
               } else { // Touché normal
-                attackResult = " : <span style='" + bs_label + " " + bs_label_success + "'><b><i>succès</i></b></span>";
+                attackResult = " : <span style='" + bs_label + " " + bs_label_success + "'><b>succès</b></span>";
                 touche = 1;
               }
               var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
@@ -2265,7 +2263,7 @@ var COFantasy = COFantasy || function() {
               target.attackMessage = line;
               if (touche) {
                 if (options.asDeLaGachette && attackRoll > 24) {
-                  target.messages.push("As de la gachette : + 1d6 DM");
+                  target.messages.push("As de la gachette : + 1d6 aux DM");
                   target.additionalDmg.push({
                     type: mainDmgType,
                     value: '1d6'
@@ -2394,12 +2392,12 @@ var COFantasy = COFantasy || function() {
           type: mainDmgType,
           value: '1d6'
         });
-        explications.push("Tir de semonce (+5 attaque et +1d6 DM)");
+        explications.push("Tir de semonce => +5 en Attaque et +1d6 aux DM");
       }
     } else { //bonus aux attaques de contact
       if (attributeAsBool(attaquant, 'agrandissement')) {
         attDMBonusCommun += "+2";
-        explications.push("Agrandissement => +2 DM");
+        explications.push("Agrandissement => +2 aux DM");
       }
       if (attributeAsBool(attaquant, 'forceDeGeant')) {
         attDMBonusCommun += "+2";
@@ -3347,7 +3345,7 @@ var COFantasy = COFantasy || function() {
                         if (bar1 > 0 && tempDmg >= bar1) { //assomé
                           setState(target, 'assome', true, evt);
                         }
-                        if (showTotal) dmgDisplay += " (total = " + dmgTotal + ")";
+                        if (showTotal) dmgDisplay += " = " + dmgTotal;
                         if (displayRes === undefined) return dmgDisplay;
                         displayRes(dmgDisplay, saveResult, dmgTotal);
                       });
@@ -3363,31 +3361,93 @@ var COFantasy = COFantasy || function() {
           if (bar1 > 0 && tempDmg >= bar1) { //assomé
             setState(target, 'assome', true, evt);
           }
-          if (showTotal) dmgDisplay += " (total = " + dmgTotal + ")";
+          if (showTotal) dmgDisplay += " = " + dmgTotal;
         }
         if (displayRes === undefined) return dmgDisplay;
         displayRes(dmgDisplay, saveResult, dmgTotal);
       });
     return dmgDisplay;
   }
+  
+  
+  function improve_image(image_url) {
+    image_url = image_url.replace('/med.png', '/thumb.png');
+    image_url = image_url.substring(0, image_url.indexOf('?'));
+    
+    return image_url;
+  }
 
 
-  function startFramedDisplay(playerId, titre, character, imageSize) {
+  function startFramedDisplay(playerId, action, character, character2_token) {
     var playerBGColor = getObj("player", playerId).get("color");
     var playerTXColor = (getBrightness(playerBGColor) < 50) ? "#FFF" : "#000";
-    var image = "";
-    if (character !== undefined) {
-      if (imageSize === undefined) imageSize = 45;
-      image =
-        "<img src='" + character.get('avatar') +
-        "' style='float:left; width:" + imageSize + "%; max-width:80px; max-height:120px; border-radius: 6px;'>";
+    var character_name = "";
+    var character_avatar = "";
+    var character2_name = "";
+    var character2_avatar = "";
+    var is_vs = false;
+    var vs = "";
+    
+    if (character2_token !== undefined) {
+      is_vs = true;
+      vs = "VS";
+      
+      var character2_represents = getObj('character', character2_token.get('represents'));
+      
+      character2_name = '<b>' + character2_represents.get('name') + '</b>';
+      if (character2_represents !== undefined) {
+        character2_avatar = '<img src="' + improve_image(character2_represents.get('avatar')) + '" style="width: 50%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+      }
     }
+    
+    if (character !== undefined) {
+      character_name = '<b>' + character.get('name') + '</b>';
+      character_avatar = '<img src="' + improve_image(character.get('avatar')) + '" style="width: ' + (is_vs ? 50 : 100) + '%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+    }
+     
     var res =
-      "/direct " +
-      "<div style='-webkit-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); -moz-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); border: 1px solid #000; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px; overflow: hidden;'>" +
-      "<div style='font-family: Georgia; font-weight: normal; overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: " + playerTXColor + "; background-color: " + playerBGColor + ";' title=''> " + image + titre +
-      "</div>" +
-      "<div style='font-family: Tahoma; font-weight: normal; background-color: #FFF;'>";
+      '/direct ' +
+      '<div style="-webkit-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); -moz-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); border: 1px solid #000; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px; overflow: hidden;">' +
+        '<div style="overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: ' + playerTXColor + '; background-color: ' + playerBGColor +';" title=""> ' + 
+          '<table>' +
+          ( is_vs ?
+          // versus
+            '<tr style="text-align: center">' +
+              '<td style="width:45%; vertical-align: middle;">' +
+              character_name +
+              '</td>' +
+              '<td style="width:10%; vertical-align: middle;" rowspan="2">' +
+              vs +
+              '</td>' +
+              '<td style="width:45%; vertical-align: middle;">' +
+              character2_name +
+              '</td>' +
+            '</tr>' +
+            '<tr style="text-align: center">' +
+              '<td style="width:45%; vertical-align: middle;">' +
+              character_avatar +
+              '</td>' +
+              '<td style="width:45%; vertical-align: middle;">' +
+              character2_avatar +
+              '</td>' +
+            '</tr>'
+            :
+            // pas versus
+            '<tr style="text-align: left">' +
+              '<td style="width:25%; vertical-align: middle;">' +
+              character_avatar +
+              '</td>' +
+              '<td style="width:75%; vertical-align: middle;">' +
+              character_name +
+              '</td>' +
+            '</tr>'
+            ) +
+          '</table>' +           
+        '</div>' +
+        '<div style="font-size: 85%; text-align: left; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: #a94442; background-color: #f2dede;" title=""> ' + 
+          action +
+        '</div>' +
+      '<div style="background-color: #FFF;">';
     return {
       output: res,
       isOdd: true,
@@ -3396,11 +3456,11 @@ var COFantasy = COFantasy || function() {
   }
 
   function addLineToFramedDisplay(display, line, size, new_line) {
-    size = size || 100;
-    new_line = (new_line !== 'undefined') ? new_line : true;
-
+    var size = (typeof size !== 'undefined') ? size : 100;
+    var new_line = (typeof new_line !== 'undefined') ? new_line : true;
+    
     var background_color, border, separator = '';
-
+    
     if (!new_line) display.isOdd = !display.isOdd;
     if (display.isOdd) {
       background_color = "transparent";
@@ -3410,24 +3470,24 @@ var COFantasy = COFantasy || function() {
       display.isOdd = true;
     }
     if (size < 100) background_color = "#fcf8e3";
-
+    
     if (!display.isfirst) {
       if (new_line) border = "border-top: 1px solid #333;";
     } else display.isfirst = false;
+    
+    var formatedLine = '<div style="padding: 0 5px 0; background-color: ' + background_color + '; color: #000;' + border + '">';
 
-    var formatedLine = "<div style='padding: 0 5px 0; background-color: " + background_color + "; color: #000;" + border + "'>";
-
-
-    if (!new_line) separator = 'border-top: 1px solid #ddd;';
-    formatedLine += '<div style="padding: 4px 0; font-size: ' + size + '%;' + separator + '">' + line + '</div>';
-    formatedLine += "</div>";
+    
+    if (!new_line) separator="border-top: 1px solid #ddd;";
+    formatedLine += '<div style="padding: 4px 0; font-size: ' + size + '%;' + separator + '">'+line+'</div>';
+    formatedLine += '</div>';
     display.output += formatedLine;
   }
 
   function endFramedDisplay(display) {
     var res = display.output;
-    res += "</div>";
-    res += "</div>";
+    res += '</div>';
+    res += '</div>';
     return res;
   }
 
@@ -3460,37 +3520,37 @@ var COFantasy = COFantasy || function() {
       case 'normal':
       case 'maladie':
         if (magique)
-          InlineColorOverride = " background-color: #FFFFFF; color: #534200;";
+          InlineColorOverride = ' background-color: #FFFFFF; color: #534200;';
         else
-          InlineColorOverride = " background-color: #F1E6DA; color: #000;";
+          InlineColorOverride = ' background-color: #F1E6DA; color: #000;';
         break;
       case 'feu':
-        InlineColorOverride = " background-color: #FF3011; color: #440000;";
+        InlineColorOverride = ' background-color: #FF3011; color: #440000;';
         break;
       case 'froid':
-        InlineColorOverride = " background-color: #77FFFF; color: #004444;";
+        InlineColorOverride = ' background-color: #77FFFF; color: #004444;';
         break;
       case 'acide':
-        InlineColorOverride = " background-color: #80BF40; color: #020401;";
+        InlineColorOverride = ' background-color: #80BF40; color: #020401;';
         break;
       case 'sonique':
-        InlineColorOverride = " background-color: #E6CCFF; color: #001144;";
+        InlineColorOverride = ' background-color: #E6CCFF; color: #001144;';
         break;
       case 'electrique':
-        InlineColorOverride = " background-color: #FFFF80; color: #222200;";
+        InlineColorOverride = ' background-color: #FFFF80; color: #222200;';
         break;
       case 'poison':
-        InlineColorOverride = " background-color: #558000; color: #DDAFFF;";
+        InlineColorOverride = ' background-color: #558000; color: #DDAFFF;';
         break;
       default:
         if (critCheck && failCheck) {
-          InlineColorOverride = " background-color: #8FA4D4; color: #061539;";
+          InlineColorOverride = ' background-color: #8FA4D4; color: #061539;';
         } else if (critCheck && !failCheck) {
-          InlineColorOverride = " background-color: #88CC88; color: #004400;";
+          InlineColorOverride = ' background-color: #88CC88; color: #004400;';
         } else if (!critCheck && failCheck) {
-          InlineColorOverride = " background-color: #FFAAAA; color: #660000;";
+          InlineColorOverride = ' background-color: #FFAAAA; color: #660000;';
         } else {
-          InlineColorOverride = " background-color: #FFFEA2; color: #000;";
+          InlineColorOverride = ' background-color: #FFFEA2; color: #000;';
         }
     }
     var rollOut = '<span style="display: inline-block; border-radius: ' + InlineBorderRadius + 'px; padding: 0 4px; ' + InlineColorOverride + '" title="' + inlineroll.expression + ' = ' + values.join("");
@@ -3678,6 +3738,7 @@ var COFantasy = COFantasy || function() {
     var pt1 = tokenCenter(tok1);
     var pt2 = tokenCenter(tok2);
     var distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
+    var liste_obstacles=[];
     allToks.forEach(function(obj) {
       if (obj.id == tok1.id || obj.id == tok2.id) return;
       var objCharId = obj.get('represents');
@@ -3696,13 +3757,14 @@ var COFantasy = COFantasy || function() {
       if (obj_dist > distance_pix) return;
       var distToTrajectory = VecMath.ptSegDist(pt, pt1, pt2);
       if (distToTrajectory > PIX_PER_UNIT + tokenSize(obj, PIX_PER_UNIT)) return;
-      log("Obstacle trouvé : " + obj.get("name"));
+      liste_obstacles.push(obj.get("name"));
       mObstacle += Math.ceil(5 * (PIX_PER_UNIT - distToTrajectory) / PIX_PER_UNIT);
     });
     if (mObstacle > 5) mObstacle = 5;
     var res = mPortee + mObstacle;
     if (mObstacle > 0) {
-      explications.push("Obstacles sur le trajet => -" + mObstacle + " en Attaque");
+      log("Obstacle" + ((mObstacle > 1) ? "s" : "") + " trouvé : " + liste_obstacles.join(', '));
+      explications.push('Obstacle' + ((mObstacle > 1) ? 's' : '') + ' sur le trajet => -' + mObstacle + ' en Attaque<br /><span style="font-size: 0.8em; color: #666;">' + liste_obstacles.join(', ') + '</span>');
     }
     return res;
   }
@@ -5098,7 +5160,7 @@ var COFantasy = COFantasy || function() {
       var name = token.get('name');
       var character = getObj('character', charId);
       var display =
-        startFramedDisplay(playerId, "État de " + name, character, 20);
+        startFramedDisplay(playerId, "État de " + name, character);
       var line =
         "Points de vie    : " + token.get('bar1_value') + " / " +
         getAttrByName(charId, 'PV', 'max');
@@ -5623,7 +5685,7 @@ var COFantasy = COFantasy || function() {
         error("pas de cible pour l'aoe", msg);
         return;
       }
-      var title = "<b>Dégats à aire d'effets.</b>";
+      var action = "<b>Dégats à aire d'effets.</b>";
       var optArgs = msg.content.split(' --');
       var cmd = optArgs[0].split(' ');
       if (cmd.length < 2) {
@@ -5690,11 +5752,11 @@ var COFantasy = COFantasy || function() {
           error("Le deuxième argument de --psave n'est pas un nombre", partialSave);
           return;
         }
-        title +=
+        action +=
           " Jet de " + partialSave[1] + " difficulté " + partialSave[2] +
           " pour réduire les dégâts";
       }
-      var display = startFramedDisplay(msg.playerid, title);
+      var display = startFramedDisplay(msg.playerid, action);
       var tokensToProcess = selected.length;
       var evt = {
         type: "aoe",
@@ -6409,11 +6471,11 @@ var COFantasy = COFantasy || function() {
         error("Pas de cible sélectionnée pour la peur", msg);
         return;
       }
-      var titre = "<b>" + casterToken.get('name') + "</b> ";
+      var action = "<b>" + casterToken.get('name') + "</b> ";
       if (options.effroi)
-        titre += "est vraiment effrayant" + eForFemale(casterCharId);
-      else titre += "lance un sort de peur";
-      var display = startFramedDisplay(msg.playerid, titre, casterCharacter);
+        action += "est vraiment effrayant" + eForFemale(casterCharId);
+      else action = "<b>Capacité</b> :  : Sort de peur";
+      var display = startFramedDisplay(msg.playerid, action, casterCharacter);
       var evt = {
         type: 'peur'
       };
@@ -6554,11 +6616,8 @@ var COFantasy = COFantasy || function() {
       var d20roll2 = rolls.inlinerolls[att2RollNumber].results.total;
       var att2Skill = rolls.inlinerolls[attk2SkillNumber].results.total;
       var attackRoll2 = d20roll2 + att2Skill;
-      var titre =
-        "<b>" + token1.get('name') +
-        "</b> tente une attaque magique opposée contre <b>" + token2.get('name') +
-        "</b>";
-      var display = startFramedDisplay(msg.playerid, titre, char1);
+      var action = "Attaque magique opposée";
+      var display = startFramedDisplay(msg.playerid, action, char1, token2);
       var line =
         token1.get('name') + " fait " +
         buildinline(rolls.inlinerolls[att1RollNumber]);
@@ -6674,8 +6733,8 @@ var COFantasy = COFantasy || function() {
       var casterCharName = casterChar.get('name');
       var cha = modCarac(casterCharId, 'CHARISME');
       var attMagText = addOrigin(casterCharName, getAttrByName(casterCharId, 'ATKMAG'));
-      var titre = "<b>" + casterName + "</b> lance un sort de sommeil";
-      var display = startFramedDisplay(msg.playerid, titre, casterChar);
+      var action = "<b>Capacité</b> :  : Sort de sommeil";
+      var display = startFramedDisplay(msg.playerid, action, casterChar);
       sendChat("", "[[1d6]] [[" + attMagText + "]]", function(res) {
         var rolls = res[0];
         var afterEvaluate = rolls.content.split(" ");
@@ -6976,7 +7035,6 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: 'soins'
     };
-    var titre = "Soins de groupe";
     var soigneur;
     var soins;
     if (args[1] == "groupe") {
@@ -7012,7 +7070,6 @@ var COFantasy = COFantasy || function() {
       }
       var nameSoigneur = tokSoigneur.get('name');
       soigneur = getObj('character', charIdSoigneur);
-      titre = "<b>" + nameSoigneur + "</b> lance un soin de groupe";
       msg.content += " --allies --self";
     } else { // soin générique
       soins = parseInt(args[1]);
@@ -7027,7 +7084,9 @@ var COFantasy = COFantasy || function() {
       sendChat('', "Pas de soins (total de soins " + soins + ")");
       return;
     }
-    var display = startFramedDisplay(msg.playerid, titre, soigneur);
+    
+    var action = "Soins de groupe";
+    var display = startFramedDisplay(msg.playerid, action, soigneur);
     getSelected(msg, function(selected) {
       if (selected.length === 0) {
         addLineToFramedDisplay(display, "Aucune cible sélectionnée pour le soin");
@@ -7422,9 +7481,8 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Distribution de baies magiques"
     };
-    var titre =
-      "<b>" + tokenDruide.get('name') + "</b> distribue des baies";
-    var display = startFramedDisplay(msg.playerid, titre, getObj('character', charIdDruide));
+    var action = "Distribue des baies";
+    var display = startFramedDisplay(msg.playerid, action, getObj('character', charIdDruide));
     getSelected(msg, function(selected) {
       var tokensToProcess = selected.length;
       var sendEvent = function() {
@@ -7962,8 +8020,8 @@ var COFantasy = COFantasy || function() {
       sendChar(barbare.charId, "le seuil de difficulté du tour de force doit être un nombre");
       return;
     }
-    var titre = barbare.token.get('name') + " tente un tour de force !";
-    var display = startFramedDisplay(msg.playerid, titre, character);
+    var action = "<b>Capacité</b> : Tour de force";
+    var display = startFramedDisplay(msg.playerid, action, character);
     var evt = {
       type: "Tour de force"
     };
