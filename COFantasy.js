@@ -2000,7 +2000,8 @@ var COFantasy = COFantasy || function() {
       };
 
       // debut de la partie affichage
-      var action = "<b>Arme / Capacité</b> : ";
+      var action = "<b>Arme</b> : ";
+      if (options.sortilege) action = "<b>Sort</b> : ";
       var label_type = BS_LABEL_INFO;
       if (options.aoe) {
         targetToken = undefined;
@@ -6471,7 +6472,7 @@ var COFantasy = COFantasy || function() {
       var action = "<b>" + casterToken.get('name') + "</b> ";
       if (options.effroi)
         action += "est vraiment effrayant" + eForFemale(casterCharId);
-      else action = "<b>Capacité</b> :  : Sort de peur";
+      else action = "<b>Capacité</b> : Sort de peur";
       var display = startFramedDisplay(msg.playerid, action, casterCharacter);
       var evt = {
         type: 'peur'
@@ -6730,7 +6731,7 @@ var COFantasy = COFantasy || function() {
       var casterCharName = casterChar.get('name');
       var cha = modCarac(casterCharId, 'CHARISME');
       var attMagText = addOrigin(casterCharName, getAttrByName(casterCharId, 'ATKMAG'));
-      var action = "<b>Capacité</b> :  : Sort de sommeil";
+      var action = "<b>Capacité</b> : Sort de sommeil";
       var display = startFramedDisplay(msg.playerid, action, casterChar);
       sendChat("", "[[1d6]] [[" + attMagText + "]]", function(res) {
         var rolls = res[0];
