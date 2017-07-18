@@ -440,7 +440,7 @@ var COFantasy = COFantasy || function() {
       case "INT":
       case "SAG":
       case "CHA":
-        JetCaracteristique(perso, caracteristique, function(rolltext) {
+        jetCaracteristique(perso, caracteristique, function(rolltext) {
           var token = perso.token;
           var charId = perso.charId;
           var name = token.get('name');
@@ -3762,12 +3762,12 @@ var COFantasy = COFantasy || function() {
       if (obj_dist > distance_pix) return;
       var distToTrajectory = VecMath.ptSegDist(pt, pt1, pt2);
       // On modélise le token comme un disque
-      var rayonObj = tokenSizeAsCircle(obj)/2;
+      var rayonObj = tokenSizeAsCircle(obj) / 2;
       if (distToTrajectory > rayonObj) return;
       liste_obstacles.push(obj.get("name"));
       // On calcule un malus proportionnel à l'arc à traverser
       // Pour l'instant, malus = 1 si distance = PIX_PER_UNIT
-      var longueurArc = 2 * Math.sqrt(rayonObj*rayonObj - distToTrajectory*distToTrajectory);
+      var longueurArc = 2 * Math.sqrt(rayonObj * rayonObj - distToTrajectory * distToTrajectory);
       var mToken = longueurArc / PIX_PER_UNIT;
       //malus plus important si l'obstacle est au contact de la cible
       if (distanceCombat(tok2, obj, pageId) === 0) mToken *= 5;
@@ -3775,7 +3775,7 @@ var COFantasy = COFantasy || function() {
       mObstacle += mToken;
     });
     // On ajuste aussi en fonction de la taille de la cible
-    mObstacle = mObstacle / (tokenSizeAsCircle(tok2)/PIX_PER_UNIT);
+    mObstacle = mObstacle / (tokenSizeAsCircle(tok2) / PIX_PER_UNIT);
     if (mObstacle > 5) mObstacle = 5;
     else mObstacle = Math.round(mObstacle);
     var res = mPortee + mObstacle;
@@ -5645,7 +5645,7 @@ var COFantasy = COFantasy || function() {
     return dice;
   }
 
-  function JetCaracteristique(personnage, carac, callback) {
+  function jetCaracteristique(personnage, carac, callback) {
     var charId = personnage.charId;
     var token = personnage.token;
     var bonusCarac = bonusTestCarac(carac, personnage);
@@ -8223,6 +8223,37 @@ var COFantasy = COFantasy || function() {
     }); //fin getSelected
   }
 
+  //category est un tableau de string, le premier élément étant la catégorie
+  //principale, le suivant la sous-catégorie, etc
+  function addStatistics(playerId, category, value) {
+    if (state.COFantasy.statistiques === undefined) return;
+    var stat = state.COFantasy.statistiques;
+    if (playerId) {
+      var player = getObj('player', playerId);
+      if (player) {
+        //On utilise l'id roll20 qui semble persistante
+        var pid = player.get('d20userid');
+        stat[pid] = stat[pid] || {};
+        stat = stat[pid];
+      }
+    }
+    if (category) {
+      category.forEach(function(cat) {
+        stat[cat] = stat[cat] || {};
+        stat = stat[cat];
+      });
+    }
+    if (isNaN(value)) {
+      error("statistique sur une valeur qui n'est pas un nombre", value);
+      return;
+    }
+    if (typeof value != 'number') value = parseInt(value);
+    if (stat.total) stat.total += value;
+    else stat.total = value;
+    if (stat.nombre) stat.nombre++;
+    else stat.nombre = 1;
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -8394,6 +8425,23 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-absorber-au-bouclier":
         absorberAuBouclier(msg);
+        return;
+      case "!cof-demarrer-statistiques":
+        if (state.COFantasy.statistiquesEnPause) {
+          state.COFantasy.statistiques = state.COFantasy.statistiquesEnPause;
+          state.COFantasy.statistiquesEnPause = undefined;
+        } else {
+          state.COFantasy.statistiques = {}; //remet aussi les statistiques à 0
+        }
+        return;
+      case "!cof-arreter-statistiques":
+        state.COFamtasy.statistiques = undefined;
+        return;
+      case "!cof-pause-statistiques":
+        if (state.COFantasy.statistiques) {
+          state.COFantasy.statistiquesEnPause = state.COFantasy.statistiques;
+          state.COFantasy.statistiques = undefined;
+        } // sinon, ne pas écraser les statistiques déjà en pause
         return;
       default:
         return;
