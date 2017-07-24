@@ -386,8 +386,8 @@ var COFantasy = COFantasy || function() {
   //sur la page active de la campagne)
   function tokenOfId(id, name, pageId) {
     var token = getObj('graphic', id);
-    if (token === undefined){
-     if (name === undefined) return undefined;
+    if (token === undefined) {
+      if (name === undefined) return undefined;
       if (pageId === undefined) {
         pageId = Campaign().get('playerpageid');
       }
@@ -453,7 +453,7 @@ var COFantasy = COFantasy || function() {
           var display = startFramedDisplay(msg.playerid, "Jet de <b>" + caracOfMod(caracteristique) + "</b>", character);
           addLineToFramedDisplay(display, "<b>Resultat :</b> " + rolltext);
           sendChat(name, endFramedDisplay(display));
-          addStatistics(msg.playerId, ["Jet de caractéristique", caracteristique], roll);
+          addStatistics(msg.playerid, ["Jet de carac", caracteristique], roll);
         });
 
         return;
@@ -8303,6 +8303,78 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function displayStatCategory(stats, indent, categoryName, accum) {
+    var res = {
+      nombre: 0,
+      total: 0,
+    };
+    if (stats.nombre) { //on peut afficher des résultats
+      res.nombre = stats.nombre;
+      res.total = stats.total;
+    }
+    var nindent = indent + "&nbsp;&nbsp;";
+    var nAccum = [];
+    for (var category in stats) {
+      if (category == 'total' || category == 'nombre') break;
+      var catRes = displayStatCategory(stats[category], nindent, category, nAccum);
+      res.nombre += catRes.nombre;
+      res.total += catRes.total;
+    }
+    var msg = "aucun jet cellecté";
+    if (res.nombre > 0) {
+      var moyenne = res.total / res.nombre;
+      msg = res.nombre + " jet" + ((res.nombre>1)?"s":"") + ", moyenne " + moyenne;
+    }
+    if (nAccum.length > 0) msg = indent + categoryName + " (" + msg +") :";
+    else msg = indent + categoryName + " : " + msg;
+    accum.push(msg);
+    nAccum.forEach(function(m){accum.push(m);});
+    return res;
+  }
+
+  function displayStatistics(msg) {
+    var stats = state.COFantasy.statistiques;
+    var display = startFramedDisplay(msg.playerid, "Statistiques");
+    if (stats === undefined) {
+      stats = state.COFantasy.statistiquesEnPause;
+      if (stats)
+        addLineToFramedDisplay(display, "Statistiques en pause");
+      else {
+        addLineToFramedDisplay(display, "Aucune statistique collectée");
+        sendChat("COF", endFramedDisplay(display));
+        return;
+      }
+    }
+    var tot = {
+      total: 0,
+      nombre: 0
+    };
+    var players = findObjs({type:'player'});
+    var findPlayer = function(pid) {
+      return players.find(function(p){
+        return (p.get('d20userid') == pid);
+      });
+    };
+    var addMessages = function(mv) {
+      mv.forEach(function(m){
+        addLineToFramedDisplay(display, m);
+      });
+    };
+    for (var category in stats) {
+      //first, check if the category is a player id
+      var pl = findPlayer(category);
+      var catName = category;
+      if (pl) catName = pl.get('displayname');
+      var accum = [];
+      var catRes = displayStatCategory(stats[category], "", catName, accum);
+      addMessages(accum);
+      tot.total += catRes.total;
+      tot.nombre += catRes.nombre;
+    }
+    addLineToFramedDisplay(display, tot.nombre + " jets au total, dont la somme fait " + tot.total);
+    sendChat("COF", endFramedDisplay(display));
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -8484,13 +8556,16 @@ var COFantasy = COFantasy || function() {
         }
         return;
       case "!cof-arreter-statistiques":
-        state.COFamtasy.statistiques = undefined;
+        state.COFantasy.statistiques = undefined;
         return;
       case "!cof-pause-statistiques":
         if (state.COFantasy.statistiques) {
           state.COFantasy.statistiquesEnPause = state.COFantasy.statistiques;
           state.COFantasy.statistiques = undefined;
         } // sinon, ne pas écraser les statistiques déjà en pause
+        return;
+      case "!cof-statistiques":
+        displayStatistics(msg);
         return;
       default:
         return;
