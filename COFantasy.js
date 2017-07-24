@@ -386,7 +386,8 @@ var COFantasy = COFantasy || function() {
   //sur la page active de la campagne)
   function tokenOfId(id, name, pageId) {
     var token = getObj('graphic', id);
-    if (token === undefined && name !== undefined) {
+    if (token === undefined){
+     if (name === undefined) return undefined;
       if (pageId === undefined) {
         pageId = Campaign().get('playerpageid');
       }
@@ -418,6 +419,9 @@ var COFantasy = COFantasy || function() {
     // Les arguments pour cof-jet shouldsont :
     // - token
     // - Caracteristique (FOR, DEX, CON, INT, SAG, CHA)
+    // Problème avec les malédictions : on ne sait pas si le jet est raté,
+    // donc on ne peut pas diminuer le compteur de malédiction. Il faut que le
+    // MJ le fasse à la main...
 
     var args = msg.content.split(" ");
 
@@ -440,7 +444,7 @@ var COFantasy = COFantasy || function() {
       case "INT":
       case "SAG":
       case "CHA":
-        jetCaracteristique(perso, caracteristique, function(rolltext) {
+        jetCaracteristique(perso, caracteristique, function(rolltext, roll) {
           var token = perso.token;
           var charId = perso.charId;
           var name = token.get('name');
@@ -449,6 +453,7 @@ var COFantasy = COFantasy || function() {
           var display = startFramedDisplay(msg.playerid, "Jet de <b>" + caracOfMod(caracteristique) + "</b>", character);
           addLineToFramedDisplay(display, "<b>Resultat :</b> " + rolltext);
           sendChat(name, endFramedDisplay(display));
+          addStatistics(msg.playerId, ["Jet de caractéristique", caracteristique], roll);
         });
 
         return;
@@ -3624,8 +3629,8 @@ var COFantasy = COFantasy || function() {
               (!critRoll &&
                 (lowRoll !== false && result.v <= lowRoll || result.v === 1));
           }
-          result.v = "<span class='basicdiceroll" + (critRoll ? ' critsuccess' : (failRoll ? ' critfail' : '')) + "'>" + result.v + "</span>";
-          rollValues.push(result.v);
+          var rv = "<span class='basicdiceroll" + (critRoll ? ' critsuccess' : (failRoll ? ' critfail' : '')) + "'>" + result.v + "</span>";
+          rollValues.push(rv);
         }
       });
       return {
@@ -5660,7 +5665,7 @@ var COFantasy = COFantasy || function() {
       var rolls = res[0];
       var d20roll = rolls.inlinerolls[0].results.total;
       var rtext = buildinline(rolls.inlinerolls[0]);
-      callback(rtext);
+      callback(rtext, rolls.inlinerolls[0]);
     });
   }
 
@@ -8223,8 +8228,46 @@ var COFantasy = COFantasy || function() {
     }); //fin getSelected
   }
 
+
+  // modifie res et le retourne (au cas où il ne serait pas donné)
+  function listRollResults(roll, res) {
+    res = res || [];
+    switch (roll.type) {
+      case 'V': //top-level des rolls
+        if (roll.rolls === undefined) break;
+        roll.rolls.forEach(function(r) {
+          listRollResults(r, res);
+        });
+        return res;
+      case 'R': //jet simple
+        if (roll.results === undefined) break;
+        roll.results.forEach(function(r) {
+          if (r.v) res.push(r.v);
+          else if (r.d) res.push(r.d);
+          else log("Type de résultat de dé inconnu " + r);
+        });
+        return res;
+      case 'M':
+      case 'L':
+        return res;
+      case 'G':
+        if (roll.rolls === undefined) break;
+        roll.rolls.forEach(function(ra) {
+          ra.forEach(function(r) {
+            listRollResults(r, res);
+          });
+        });
+        return res;
+      default:
+        log("tag inconnu");
+    }
+    error("Structure de roll inconnue", roll);
+    return res;
+  }
+
   //category est un tableau de string, le premier élément étant la catégorie
   //principale, le suivant la sous-catégorie, etc
+  //value peut être un nombre, un tableau de nombres, ou un inline roll
   function addStatistics(playerId, category, value) {
     if (state.COFantasy.statistiques === undefined) return;
     var stat = state.COFantasy.statistiques;
@@ -8243,15 +8286,21 @@ var COFantasy = COFantasy || function() {
         stat = stat[cat];
       });
     }
-    if (isNaN(value)) {
-      error("statistique sur une valeur qui n'est pas un nombre", value);
-      return;
+    if (!Array.isArray(value)) {
+      if (value.results) value = listRollResults(value.results);
+      else value = [value];
     }
-    if (typeof value != 'number') value = parseInt(value);
-    if (stat.total) stat.total += value;
-    else stat.total = value;
-    if (stat.nombre) stat.nombre++;
-    else stat.nombre = 1;
+    value.forEach(function(v) {
+      if (isNaN(v)) {
+        error("statistique sur une valeur qui n'est pas un nombre", value);
+        return;
+      }
+      if (typeof v != 'number') v = parseInt(v);
+      if (stat.total) stat.total += v;
+      else stat.total = v;
+      if (stat.nombre) stat.nombre++;
+      else stat.nombre = 1;
+    });
   }
 
   function apiCommand(msg) {
