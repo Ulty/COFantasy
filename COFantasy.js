@@ -1,3 +1,4 @@
+//version 0.3
 // jshint undef:true
 // jshint eqeqeq:false
 /* globals Set */
@@ -277,10 +278,17 @@ var COFantasy = COFantasy || function() {
   }
 
   function addEvent(evt) {
+    evt.id = state.COFantasy.eventId++;
     eventHistory.push(evt);
     if (eventHistory.length > HISTORY_SIZE) {
       eventHistory.shift();
     }
+  }
+
+  function findEvent(id) {
+    return eventHistory.find(function(evt) {
+      return (evt.id == id);
+    });
   }
 
   function lastEvent() {
@@ -419,9 +427,6 @@ var COFantasy = COFantasy || function() {
     // Les arguments pour cof-jet shouldsont :
     // - token
     // - Caracteristique (FOR, DEX, CON, INT, SAG, CHA)
-    // Problème avec les malédictions : on ne sait pas si le jet est raté,
-    // donc on ne peut pas diminuer le compteur de malédiction. Il faut que le
-    // MJ le fasse à la main...
 
     var args = msg.content.split(" ");
 
@@ -437,6 +442,9 @@ var COFantasy = COFantasy || function() {
     }
 
     var caracteristique = args[2];
+    var evt = {
+      type: "Jet de " + caracteristique
+    };
     switch (caracteristique) {
       case "FOR":
       case "DEX":
@@ -444,7 +452,7 @@ var COFantasy = COFantasy || function() {
       case "INT":
       case "SAG":
       case "CHA":
-        jetCaracteristique(perso, caracteristique, function(rolltext, roll) {
+        jetCaracteristique(perso, caracteristique, function(rolltext, d20, roll) {
           var token = perso.token;
           var charId = perso.charId;
           var name = token.get('name');
@@ -452,13 +460,48 @@ var COFantasy = COFantasy || function() {
 
           var display = startFramedDisplay(msg.playerid, "Jet de <b>" + caracOfMod(caracteristique) + "</b>", character);
           addLineToFramedDisplay(display, "<b>Resultat :</b> " + rolltext);
-          sendChat(name, endFramedDisplay(display));
           addStatistics(msg.playerid, ["Jet de carac", caracteristique], roll);
+          // Maintenant, on diminue la malédiction si le test est un échec
+          var attrMalediction = tokenAttribute(perso, 'malediction');
+          if (attrMalediction.length > 0) {
+            if (d20 == 1) diminueMalediction(perso, evt, attrMalediction);
+            else if (d20 < 20) {
+              var action = "<a href='!cof-resultat-jet " + state.COFantasy.eventId;
+              addLineToFramedDisplay(display, "L'action est-elle " + action + " reussi'>réussie</a> ou " + action + " rate'>ratée</a> ?");
+              evt.personnage = perso;
+              evt.attenteResultat = true;
+            }
+          }
+          addEvent(evt);
+          sendChat(name, endFramedDisplay(display));
         });
 
         return;
       default:
         sendChat("COF", "Caracteristique '" + caracteristique + "' non reconnue (FOR, DEX, CON, INT, SAG, CHA).");
+    }
+  }
+
+  function resultatJet(msg) {
+    var args = msg.content.split(' ');
+    if (args.length < 3) {
+      error("La fonction !cof-resultat-jet n'a pas assez d'arguments", args);
+      return;
+    }
+    var evt = findEvent(args[1]);
+    if (evt === undefined) {
+      error("Le jet est trop ancien ou éte annulé", args);
+      return;
+    }
+    if (evt.personnage === undefined) {
+      error("Erreur interne ", evt);
+      return;
+    }
+    if (evt.attenteResultat) {
+      if (args[2] == 'rate') diminueMalediction(evt.personnage, evt);
+      evt.attenteResultat = undefined;
+    } else {
+      sendChat(msg.who, "Résultat déjà décidé");
     }
   }
 
@@ -1519,8 +1562,8 @@ var COFantasy = COFantasy || function() {
     return de;
   }
 
-  function diminueMalediction(lanceur, evt) {
-    var attrMalediction = tokenAttribute(lanceur, 'malediction');
+  function diminueMalediction(lanceur, evt, attr) {
+    var attrMalediction = attr || tokenAttribute(lanceur, 'malediction');
     if (attrMalediction.length > 0) {
       attrMalediction = attrMalediction[0];
       var nbMaudit = parseInt(attrMalediction.get('current'));
@@ -3564,104 +3607,107 @@ var COFantasy = COFantasy || function() {
   }
 
   function processRoll(roll, critRoll, failRoll, highRoll, lowRoll, noHighlight) {
-    if (roll.type === "C") {
-      return {
-        value: " " + roll.text + " "
-      };
-    } else if (roll.type === "L") {
-      if (roll.text.indexOf("HR") != -1) highRoll = parseInt(roll.text.substring(2));
-      else highRoll = false;
-      if (roll.text.indexOf("LR") != -1) lowRoll = parseInt(roll.text.substring(2));
-      else lowRoll = false;
-      if (roll.text.indexOf("NH") != -1) {
-        // Blocks highlight on an individual roll...
-        noHighlight = true;
-      }
-      // Remove inline tags to reduce clutter...
-      roll.text = roll.text.replace(/HR(\d+)/g, "");
-      roll.text = roll.text.replace(/LR(\d+)/g, "");
-      roll.text = roll.text.replace(/NH/g, "");
-      if (roll.text !== "") roll.text = " [" + roll.text + "] ";
-      return {
-        value: roll.text,
-        highRoll: highRoll,
-        lowRoll: lowRoll,
-        noHighlight: noHighlight
-      };
-    } else if (roll.type === "M") {
-      roll.expr = roll.expr.toString().replace(/\+/g, " + ");
-      return {
-        value: roll.expr
-      };
-    } else if (roll.type === "R") {
-      var rollValues = [];
-      roll.results.forEach(function(result) {
-        if (result.tableItem !== undefined) {
-          rollValues.push(result.tableItem.name);
-        } else {
-          // Turn off highlighting if true...
-          if (noHighlight) {
-            critRoll = false;
-            failRoll = false;
-          } else {
-            if (_.has(roll, 'mods') && _.has(roll.mods, 'customCrit')) {
-              switch (roll.mods.customCrit[0].comp) {
-                case '=':
-                case '==':
-                  critRoll = (result.v == roll.mods.customCrit[0].point);
-                  break;
-                case '>=':
-                case '=>':
-                case '>':
-                  critRoll = (result.v >= roll.mods.customCrit[0].point);
-                  break;
-                default:
-                  critRoll =
-                    (highRoll !== false && result.v >= highRoll ||
-                      result.v === roll.sides);
-              }
-            } else {
-              critRoll =
-                (highRoll !== false && result.v >= highRoll ||
-                  result.v === roll.sides);
-            }
-            failRoll =
-              (!critRoll &&
-                (lowRoll !== false && result.v <= lowRoll || result.v === 1));
-          }
-          var rv = "<span class='basicdiceroll" + (critRoll ? ' critsuccess' : (failRoll ? ' critfail' : '')) + "'>" + result.v + "</span>";
-          rollValues.push(rv);
+    switch (roll.type) {
+      case 'C':
+        return {
+          value: " " + roll.text + " "
+        };
+      case 'L':
+        if (roll.text.indexOf("HR") != -1) highRoll = parseInt(roll.text.substring(2));
+        else highRoll = false;
+        if (roll.text.indexOf("LR") != -1) lowRoll = parseInt(roll.text.substring(2));
+        else lowRoll = false;
+        if (roll.text.indexOf("NH") != -1) {
+          // Blocks highlight on an individual roll...
+          noHighlight = true;
         }
-      });
-      return {
-        value: "(" + rollValues.join(" + ") + ")",
-        critRoll: critRoll,
-        failRoll: failRoll,
-        highRoll: highRoll,
-        lowRoll: lowRoll,
-        noHighlight: noHighlight
-      };
-    } else if (roll.type === "G") {
-      var grollVal = [];
-      roll.rolls.forEach(function(groll) {
-        groll.forEach(function(groll2) {
-          var result = processRoll(groll2, highRoll, lowRoll, noHighlight);
-          grollVal.push(result.value);
-          critRoll = critRoll || result.critRoll;
-          failRoll = failRoll || result.failRoll;
-          highRoll = highRoll || result.highRoll;
-          lowRoll = lowRoll || result.lowRoll;
-          noHighlight = noHighlight || result.noHighlight;
+        // Remove inline tags to reduce clutter...
+        roll.text = roll.text.replace(/HR(\d+)/g, "");
+        roll.text = roll.text.replace(/LR(\d+)/g, "");
+        roll.text = roll.text.replace(/NH/g, "");
+        if (roll.text !== "") roll.text = " [" + roll.text + "] ";
+        return {
+          value: roll.text,
+          highRoll: highRoll,
+          lowRoll: lowRoll,
+          noHighlight: noHighlight
+        };
+      case 'M':
+        roll.expr = roll.expr.toString().replace(/\+/g, " + ");
+        return {
+          value: roll.expr
+        };
+      case 'R':
+        var rollValues = [];
+        roll.results.forEach(function(result) {
+          if (result.tableItem !== undefined) {
+            rollValues.push(result.tableItem.name);
+          } else {
+            // Turn off highlighting if true...
+            if (noHighlight) {
+              critRoll = false;
+              failRoll = false;
+            } else {
+              if (_.has(roll, 'mods') && _.has(roll.mods, 'customCrit')) {
+                switch (roll.mods.customCrit[0].comp) {
+                  case '=':
+                  case '==':
+                    critRoll = (result.v == roll.mods.customCrit[0].point);
+                    break;
+                  case '>=':
+                  case '=>':
+                  case '>':
+                    critRoll = (result.v >= roll.mods.customCrit[0].point);
+                    break;
+                  default:
+                    critRoll =
+                      (highRoll !== false && result.v >= highRoll ||
+                        result.v === roll.sides);
+                }
+              } else {
+                critRoll =
+                  (highRoll !== false && result.v >= highRoll ||
+                    result.v === roll.sides);
+              }
+              failRoll =
+                (!critRoll &&
+                  (lowRoll !== false && result.v <= lowRoll || result.v === 1));
+            }
+            var rv = "<span class='basicdiceroll" + (critRoll ? ' critsuccess' : (failRoll ? ' critfail' : '')) + "'>" + result.v + "</span>";
+            rollValues.push(rv);
+          }
         });
-      });
-      return {
-        value: "{" + grollVal.join(" ") + "}",
-        critRoll: critRoll,
-        failRoll: failRoll,
-        highRoll: highRoll,
-        lowRoll: lowRoll,
-        noHighlight: noHighlight
-      };
+        var separator = ' + ';
+        if (roll.mods && roll.mods.keep) separator = ' , ';
+        return {
+          value: "(" + rollValues.join(separator) + ")",
+          critRoll: critRoll,
+          failRoll: failRoll,
+          highRoll: highRoll,
+          lowRoll: lowRoll,
+          noHighlight: noHighlight
+        };
+      case 'G':
+        var grollVal = [];
+        roll.rolls.forEach(function(groll) {
+          groll.forEach(function(groll2) {
+            var result = processRoll(groll2, highRoll, lowRoll, noHighlight);
+            grollVal.push(result.value);
+            critRoll = critRoll || result.critRoll;
+            failRoll = failRoll || result.failRoll;
+            highRoll = highRoll || result.highRoll;
+            lowRoll = lowRoll || result.lowRoll;
+            noHighlight = noHighlight || result.noHighlight;
+          });
+        });
+        return {
+          value: "{" + grollVal.join(" ") + "}",
+          critRoll: critRoll,
+          failRoll: failRoll,
+          highRoll: highRoll,
+          lowRoll: lowRoll,
+          noHighlight: noHighlight
+        };
     }
   }
 
@@ -5590,6 +5636,7 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //retourne un entier
   function bonusTestCarac(carac, personnage) {
     var charId = personnage.charId;
     var bonus = modCarac(charId, caracOfMod(carac));
@@ -5658,14 +5705,17 @@ var COFantasy = COFantasy || function() {
     var carSup = nbreDeTestCarac(carac, charId);
     var de = computeDice(personnage, carSup);
 
-    var bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
-    var rollExpr = "[[" + de + "cs20cf1 " + bonusText + "]]";
+    var bonusText = (bonusCarac > 0) ? ' + ' + bonusCarac : (bonusCarac === 0) ? "" : ' - ' + (-bonusCarac);
+    var rollExpr = "[[" + de + "cs20cf1" + "]]";
 
     sendChat("", rollExpr, function(res) {
       var rolls = res[0];
       var d20roll = rolls.inlinerolls[0].results.total;
-      var rtext = buildinline(rolls.inlinerolls[0]);
-      callback(rtext, rolls.inlinerolls[0]);
+      var rtext = buildinline(rolls.inlinerolls[0]) + bonusText;
+      if (d20roll == 1) rtext += " -> échec critique";
+      else if (d20roll == 20) rtext += " -> réussite critique";
+      else if (bonusCarac !== 0) rtext += " = " + (d20roll + bonusCarac);
+      callback(rtext, d20roll, rolls.inlinerolls[0]);
     });
   }
 
@@ -8323,12 +8373,14 @@ var COFantasy = COFantasy || function() {
     var msg = "aucun jet cellecté";
     if (res.nombre > 0) {
       var moyenne = res.total / res.nombre;
-      msg = res.nombre + " jet" + ((res.nombre>1)?"s":"") + ", moyenne " + moyenne;
+      msg = res.nombre + " jet" + ((res.nombre > 1) ? "s" : "") + ", moyenne " + moyenne;
     }
-    if (nAccum.length > 0) msg = indent + categoryName + " (" + msg +") :";
+    if (nAccum.length > 0) msg = indent + categoryName + " (" + msg + ") :";
     else msg = indent + categoryName + " : " + msg;
     accum.push(msg);
-    nAccum.forEach(function(m){accum.push(m);});
+    nAccum.forEach(function(m) {
+      accum.push(m);
+    });
     return res;
   }
 
@@ -8349,14 +8401,16 @@ var COFantasy = COFantasy || function() {
       total: 0,
       nombre: 0
     };
-    var players = findObjs({type:'player'});
+    var players = findObjs({
+      type: 'player'
+    });
     var findPlayer = function(pid) {
-      return players.find(function(p){
+      return players.find(function(p) {
         return (p.get('d20userid') == pid);
       });
     };
     var addMessages = function(mv) {
-      mv.forEach(function(m){
+      mv.forEach(function(m) {
         addLineToFramedDisplay(display, m);
       });
     };
@@ -8384,6 +8438,9 @@ var COFantasy = COFantasy || function() {
     switch (command[0]) {
       case "!cof-jet":
         jet(msg);
+        return;
+      case "!cof-resultat-jet":
+        resultatJet(msg);
         return;
       case "!cof-attack":
         parseAttack(msg);
@@ -9351,9 +9408,15 @@ on("ready", function() {
   state.COFantasy = state.COFantasy || {
     combat: false,
     tour: 0,
-    init: 1000
+    init: 1000,
+    eventId: 0,
+    version: '0.3',
   };
-  log("COFantasy loaded");
+  if (state.COFantasy.version === undefined) {
+    state.COFantasy.eventId = 0;
+    state.COFantasy.version = '0.3';
+  }
+  log("COFantasy 0.3 loaded");
 });
 
 on("chat:message", function(msg) {
