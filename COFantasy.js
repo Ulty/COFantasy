@@ -498,7 +498,13 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (evt.attenteResultat) {
-      if (args[2] == 'rate') diminueMalediction(evt.personnage, evt);
+      var message = evt.type + " ";
+      if (args[2] == 'rate') {
+        diminueMalediction(evt.personnage, evt);
+        message += "raté.";
+        sendChar(evt.personnage.charId, evt.type + " raté.");
+      } else message += "réussi.";
+      sendChar(evt.personnage.charId, message);
       evt.attenteResultat = undefined;
     } else {
       sendChat(msg.who, "Résultat déjà décidé");
