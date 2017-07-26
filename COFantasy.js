@@ -3103,7 +3103,7 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(target, 'protectionContreLesElements')) {
       rdElems = charAttributeAsInt(target, 'voieDeLaMagieElementaire', 0);
     }
-    if (rdElems > 0  && dmgTotal > 0 && estElementaire(mainDmgType)) {
+    if (rdElems > 0 && dmgTotal > 0 && estElementaire(mainDmgType)) {
       if (dmgTotal > rdElems) {
         dmgDisplay += ' - ' + rdElems;
         dmgTotal -= rdElems;
@@ -3137,6 +3137,9 @@ var COFantasy = COFantasy || function() {
     var mitigate = function(dmgType, divide, zero) {
       if (estElementaire(dmgType)) {
         if (invulnerable) {
+          divide();
+        }
+        if (dmgType == 'froid' && attributeAsBool(target, 'masqueMortuaire')) {
           divide();
         }
       } else {
@@ -3203,17 +3206,17 @@ var COFantasy = COFantasy || function() {
                 dm = resMagique.total;
                 typeDisplay = resMagique.display;
               }
-    if (rdElems > 0  && dm > 0 && estElementaire(dmgType)) {
-      if (dm > rdElems) {
-        typeDisplay += ' - ' + rdElems;
-        dm -= rdElems;
-        rdElems = 0;
-      } else {
-        typeDisplay += ' - ' + dm;
-        rdElems -= dm;
-        dm = 0;
-      }
-    }
+              if (rdElems > 0 && dm > 0 && estElementaire(dmgType)) {
+                if (dm > rdElems) {
+                  typeDisplay += ' - ' + rdElems;
+                  dm -= rdElems;
+                  rdElems = 0;
+                } else {
+                  typeDisplay += ' - ' + dm;
+                  rdElems -= dm;
+                  dm = 0;
+                }
+              }
               var resSauf = applyRDSauf(rdSauf, dmgType, dm, typeDisplay);
               dm = resSauf.total;
               typeDisplay = resSauf.display;
@@ -3283,6 +3286,7 @@ var COFantasy = COFantasy || function() {
           var piqures = charAttributeAsInt(charId, 'puquresDInsecte', 0);
           if (piqures > 0 && charAttributeAsBool(charId, 'DEFARMUREON') && charAttributeAsInt(charId, 'DEFARMURE', 0) > 5) rd += piqures;
         }
+        if (attributeAsBool(target, 'masqueMortuaire')) rd += 2;
         if (target.defautCuirasse) rd = 0;
         if (options.intercepter) rd += options.intercepter;
         if (target.extraRD) {
@@ -8826,6 +8830,11 @@ var COFantasy = COFantasy || function() {
       activation: "lance un sort de protection contre les éléments",
       actif: "est protégé contre les éléments",
       fin: "n'est plus protégé contre les éléments"
+    },
+    masqueMortuaire: {
+      activation: "prend l'apparence de la mort",
+      actif: "semble mort et animé",
+      fin: "retrouve une apparence de vivant"
     }
   };
 
