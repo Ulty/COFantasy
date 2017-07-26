@@ -502,7 +502,6 @@ var COFantasy = COFantasy || function() {
       if (args[2] == 'rate') {
         diminueMalediction(evt.personnage, evt);
         message += "raté.";
-        sendChar(evt.personnage.charId, evt.type + " raté.");
       } else message += "réussi.";
       sendChar(evt.personnage.charId, message);
       evt.attenteResultat = undefined;
@@ -602,6 +601,7 @@ var COFantasy = COFantasy || function() {
         case "sortilege":
         case "malediction":
         case "test":
+        case "argent":
           options[cmd[0]] = true;
           return;
         case "magique":
@@ -1504,6 +1504,13 @@ var COFantasy = COFantasy || function() {
       if (options.aoe) explEnnemiJure += " contre " + target.tokName;
       explications.push(explEnnemiJure);
       target.ennemiJure = true;
+    }
+    if (options.argent) {
+      if (raceIs(target.charId, 'mort-vivant') || raceIs(target.charId, 'demon') || raceIs(target.charId, 'démon')) {
+        attBonus += 2;
+        explications.push("Arme en argent => +2 en attaque et +1d6 aux DM");
+        target.argent = true;
+      }
     }
     if (options.contact) {
       if (attributeAsBool(target, 'criDeGuerre') &&
@@ -2538,6 +2545,12 @@ var COFantasy = COFantasy || function() {
           value: '1d6'
         });
       }
+      if (target.argent) {
+        target.additionalDmg.push({
+          type: mainDmgType,
+          value: '1d6'
+        });
+      }
 
       if (attributeAsBool(attaquant, 'ombreMortelle') ||
         attributeAsBool(attaquant, 'dedoublement')) {
@@ -3101,7 +3114,7 @@ var COFantasy = COFantasy || function() {
     }
     var rdElems = 0;
     if (attributeAsBool(target, 'protectionContreLesElements')) {
-      rdElems = charAttributeAsInt(target, 'voieDeLaMagieElementaire', 0);
+      rdElems = charAttributeAsInt(target, 'voieDeLaMagieElementaire', 0) * 2;
     }
     if (rdElems > 0 && dmgTotal > 0 && estElementaire(mainDmgType)) {
       if (dmgTotal > rdElems) {
@@ -3294,8 +3307,11 @@ var COFantasy = COFantasy || function() {
           expliquer(target.tokName + " dévie le coup sur son armure");
         }
         if (rd > 0) {
-          dmgDisplay += "-" + rd;
-          showTotal = true;
+          if (showTotal) dmgDisplay = "(" + dmgDisplay + ") - " + rd;
+          else {
+            dmgDisplay += " - " + rd;
+            showTotal = true;
+          }
         }
         dmgTotal -= rd;
         if (dmgTotal < 0) dmgTotal = 0;
@@ -8876,6 +8892,11 @@ var COFantasy = COFantasy || function() {
       actif: "est entouré d'une armure du mage",
       fin: "n'a plus son armure du mage"
     },
+    armeDArgent: {
+      activation: "crée une arme d'argent et de lumière",
+      actif: "possède une arme d'argent et de lumière",
+      fin: "ne possède plus d'arme d'argent et de lumière"
+    }
   };
 
   var patternEffetsCombat =

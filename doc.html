@@ -152,6 +152,7 @@ p  {margin-left: inherit}
       <li><tt>--enflamme</tt> : enflamme la cible, lui infligeant 1d6 DM par tour. Les flammes s'éteindent sur un 1 ou 2. Si l'option <tt>--puissant</tt> est donnée en conjonction, les DM augmentent de 1.</li>
       <li><tt>--malediction</tt> : maudit la cible pour 3 jets.</li>
       <li><tt>--asDeLaGachette</tt> : ajoute 1d6 DM si le jet d'attaque dépasse une DEF de 25.</li>
+      <li><tt>--argent</tt> : bonus de +2 en attaque et 1d6 aux DM si la cible est un mort-vivant ou un démon (utilise le champ <tt>Race</tt> de la fiche).</li>
       <li><tt>--rate</tt>, <tt>--touche</tt>, <tt>--critique</tt>, <tt>--echecCritique</tt> : options pour tricher : le résultat des dés donne toujours le résultat voulu.</li>
       <li><tt>--ligne</tt> : l'attaque porte sur toutes les cibles à portée, entre l'attaquant et le token ciblé. Si le token ciblé est plus proche que la portée de l'attaque, les tokens derrière le token ciblé sont aussi visés. Pour permettre de viser un point quelconque, on peut utiliser un personnage dédié avec un maximum de 0 pv. À chaque fois qu'un token représentant ce personnage est utilisé comme cible de <tt>--ligne</tt>, le token est enlevé de la carte.</li>
       <li><tt>--disque</tt> <i>r</i> : l'attaque porte sur toutes les cibles dans le disque de centre le token ciblé et de rayon <i>r</i>. Comme pour <tt>--ligne</tt>, on peut utilisant un token cible qui sera supprimé après l'attaque.</li>
@@ -737,6 +738,11 @@ p  {margin-left: inherit}
     <h4>Voie de la foi</h4>
     <ol>
       <li>Parole divine : géré simplement avec une compétence "convaincre"</li>
+      <li>Arme d'argent :
+        <ul>
+          <li> <tt>!cof-effet-combat armeDArgent</tt> pour lancer le sort</li>
+          <li> Pour attaquer avec l'arme d'argent, faire l'attaque avec les DM appropriés, puis l'utiliser avec les options <tt>--si etat armeDArgent --argent --magique</tt></li>
+        </ul></li>
     </ol>
     <h4>Voie de la guerre sainte</h4>
     <ol>
