@@ -3086,7 +3086,7 @@ var COFantasy = COFantasy || function() {
         rdMain += dmgTotal;
         dmgTotal = 0;
       }
-      dmgDisplay += "-" + rdMain;
+      dmgDisplay += " - " + rdMain;
       showTotal = true;
     }
     var rdMagique;
@@ -3098,6 +3098,21 @@ var COFantasy = COFantasy || function() {
       rdMagique = resMagique.rdMagique;
       dmgTotal = resMagique.total;
       dmgDisplay = resMagique.display;
+    }
+    var rdElems = 0;
+    if (attributeAsBool(target, 'protectionContreLesElements')) {
+      rdElems = charAttributeAsInt(target, 'voieDeLaMagieElementaire', 0);
+    }
+    if (rdElems > 0  && dmgTotal > 0 && estElementaire(mainDmgType)) {
+      if (dmgTotal > rdElems) {
+        dmgDisplay += ' - ' + rdElems;
+        dmgTotal -= rdElems;
+        rdElems = 0;
+      } else {
+        dmgDisplay += ' - ' + dmgTotal;
+        rdElems -= dmgTotal;
+        dmgTotal = 0;
+      }
     }
     var rdSauf = [];
     if (target.attrs === undefined) {
@@ -3188,6 +3203,17 @@ var COFantasy = COFantasy || function() {
                 dm = resMagique.total;
                 typeDisplay = resMagique.display;
               }
+    if (rdElems > 0  && dm > 0 && estElementaire(dmgType)) {
+      if (dm > rdElems) {
+        typeDisplay += ' - ' + rdElems;
+        dm -= rdElems;
+        rdElems = 0;
+      } else {
+        typeDisplay += ' - ' + dm;
+        rdElems -= dm;
+        dm = 0;
+      }
+    }
               var resSauf = applyRDSauf(rdSauf, dmgType, dm, typeDisplay);
               dm = resSauf.total;
               typeDisplay = resSauf.display;
@@ -8795,6 +8821,11 @@ var COFantasy = COFantasy || function() {
       activation: "voit des plantes pousser et s'enrouler autour de ses jambes",
       actif: "est bloqué par des plantes",
       fin: "se libère des plantes"
+    },
+    protectionContreLesElements: {
+      activation: "lance un sort de protection contre les éléments",
+      actif: "est protégé contre les éléments",
+      fin: "n'est plus protégé contre les éléments"
     }
   };
 
