@@ -2958,6 +2958,11 @@ var COFantasy = COFantasy || function() {
 
   function partialSave(ps, target, showTotal, dmgDisplay, total, expliquer, evt, afterSave) {
     if (ps.partialSave !== undefined) {
+      if ((ps.partialSave.carac == 'CON' || ps.partialSave.carac2 == 'CON') && estNonVivant(target)) {
+        expliquer("Les créatures non-vivantes sont immnunisées aux attaques qui demandent un test de constitution");
+        afterSave({succes:true, display:'0', dmgDisplay:'0', total:0, showTotal:false});
+        return;
+      }
       save(ps.partialSave, target, expliquer, " pour réduire les dégâts",
         ", dégâts divisés par 2", '', evt,
         function(succes, rollText) {
@@ -2989,6 +2994,11 @@ var COFantasy = COFantasy || function() {
       (options.aoe === undefined &&
         attributeAsBool(target, 'formeGazeuse'))) {
       expliquer("L'attaque passe à travers de " + target.token.get('name'));
+      if (displayRes) displayRes('0', undefined, 0);
+      return 0;
+    }
+    if (options.asphyxie && estNonVivant(target)) {
+      expliquer("L'asphyxie est sans effet sur une créature non-vivante");
       if (displayRes) displayRes('0', undefined, 0);
       return 0;
     }
@@ -3146,7 +3156,7 @@ var COFantasy = COFantasy || function() {
     var resSauf = applyRDSauf(rdSauf, mainDmgType, dmgTotal, dmgDisplay);
     dmgTotal = resSauf.total;
     dmgDisplay = resSauf.display;
-    var invulnerable = charAttributeAsBool(target.charId, 'invulnerable');
+    var invulnerable = charAttributeAsBool(target, 'invulnerable');
     var mitigate = function(dmgType, divide, zero) {
       if (estElementaire(dmgType)) {
         if (invulnerable) {
@@ -3156,7 +3166,7 @@ var COFantasy = COFantasy || function() {
           divide();
         }
       } else {
-        if (invulnerable && (dmgType == 'poison' || dmgType == 'maladie')) {
+        if ((dmgType == 'poison' || dmgType == 'maladie') && (invulnerable || estNonVivant(target))) {
           zero();
         } else if (attributeAsBool(target, 'armureMagie')) {
           divide();
@@ -7013,6 +7023,11 @@ var COFantasy = COFantasy || function() {
     return (profil.includes(type));
   }
 
+  function estNonVivant(perso) {
+    return (charAttributeAsBool(perso, 'nonVivant') || 
+      attributeAsBool(perso, 'masqueMortuaire'));
+  }
+
   function raceIs(charId, race) {
     var attr = findObjs({
       _type: 'attribute',
@@ -9194,7 +9209,7 @@ var COFantasy = COFantasy || function() {
               return;
             case 'asphyxie': //prend 1d6 DM
               degatsParTour(charId, effet, attrName, "1d6", 'normal',
-                "ne peut plus respirer", evt, {},
+                "ne peut plus respirer", evt, {asphyxie:true},
                 function() {
                   count--;
                   if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
