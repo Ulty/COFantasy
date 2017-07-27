@@ -9074,6 +9074,12 @@ var COFantasy = COFantasy || function() {
           bar1_link: ''
         });
       total = tNames.length;
+      if (total > 1) {
+        var character = getObj('character', charId);
+        var charName = "d'id "+charId;
+        if (character) charName = character.get('name');
+        error("Attention, il y a plusieurs tokens nommés "+tokenName+", instances du personnage "+charName, total);
+      }
       tNames.forEach(function(tok) {
         foo(tok, total);
       });
