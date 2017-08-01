@@ -4751,121 +4751,109 @@ var COFantasy = COFantasy || function() {
   }
 
   function intercepter(msg) {
-    var cmd = msg.content.split(' ');
-    if (cmd.length < 2) {
-      error("Pour !cof-intercepter, il faut préciser l'id du token qui intercepte: ", msg.content);
-      return;
-    }
-    var cible = tokenOfId(cmd[1], cmd[1]);
-    if (cible === undefined) {
-      error("L'argument de !cof-intercepter n'est pas une id de token valide", msg.content);
-      return;
-    }
-    var charId = cible.charId;
-    var character = getObj('character', charId);
-    if (character === undefined) {
-      error("L'argument de !cof-intercepter n'est pas une id de token valide (personnage non défini)", msg.content);
-      return;
-    }
-    cible.tokName = cible.token.get('name');
-    cible.name = character.get('name');
-    if (attributeAsBool(cible, 'intercepter')) {
-      sendChar(charId, " a déjà intercepté une attaque ce tour");
-      return;
-    }
-    var voieMeneur = charAttributeAsInt(charId, "voieDuMeneurDHomme", 0);
-    if (voieMeneur < 2) {
-      error(cible.tokName + " n'a pas un rang suffisant dans la voie du meneur d'homme pour intercepter l'attaque", voieMeneur);
-      return;
-    }
-    var attaque;
-    var lastAct = lastEvent();
-    if (lastAct !== undefined) {
-      attaque = lastAct.action;
-    }
-    if (attaque === undefined) {
-      sendChar(charId, "la dernière action trouvée n'est pas une attaque, impossible d'intercepter");
-      return;
-    }
-    if (attaque.cibles.length === 0) {
-      sendChar(charId, "la dernière attaque n'a touché aucune cible, impossible d'intercepter");
-      return;
-    }
-    if (attaque.cibles.length > 1) {
-      sendChar(charId, "la dernière attaque a touché plus d'une cible, impossible d'intercepter");
-      return;
-    }
-    var targetName = attaque.cibles[0].tokName;
-    if (targetName === undefined) {
-      error("Le token de la dernière attaque est indéfini", attaque);
-      return;
-    }
-    if (distanceCombat(cible.token, attaque.cibles[0].token) > 0) {
-      sendChar(charId, " est trop loin de " + targetName + " pour intercepter l'attaque");
-      return;
-    }
-    var evt = {
-      type: 'interception'
-    };
-    setTokenAttr(cible, 'intercepter', true, evt,
-      "se met devant " + targetName + " pour intercepter l'attaque !");
-    // On annule l'ancienne action
-    undoEvent();
-    // Puis on refait en changeant la cible
-    var options = attaque.options;
-    options.intercepter = voieMeneur;
-    options.rollsAttack = attaque.rollsAttack;
-    options.rollsDmg = attaque.rollsDmg;
-    options.evt = evt;
-    cible.rollsDamg = attaque.cibles[0].rollsDmg;
-    attack(attaque.player_id, attaque.attaquant, {
-      cibles: [cible]
-    }, attaque.attack_label, options);
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(cible) {
+        var charId = cible.charId;
+        var character = getObj('character', charId);
+        if (character === undefined) {
+          error("L'argument de !cof-intercepter n'est pas une id de token valide (personnage non défini)", msg.content);
+          return;
+        }
+        cible.tokName = cible.token.get('name');
+        cible.name = character.get('name');
+        if (attributeAsBool(cible, 'intercepter')) {
+          sendChar(charId, " a déjà intercepté une attaque ce tour");
+          return;
+        }
+        var voieMeneur = charAttributeAsInt(charId, "voieDuMeneurDHomme", 0);
+        if (voieMeneur < 2) {
+          error(cible.tokName + " n'a pas un rang suffisant dans la voie du meneur d'homme pour intercepter l'attaque", voieMeneur);
+          return;
+        }
+        var attaque;
+        var lastAct = lastEvent();
+        if (lastAct !== undefined) {
+          attaque = lastAct.action;
+        }
+        if (attaque === undefined) {
+          sendChar(charId, "la dernière action trouvée n'est pas une attaque, impossible d'intercepter");
+          return;
+        }
+        if (attaque.cibles.length === 0) {
+          sendChar(charId, "la dernière attaque n'a touché aucune cible, impossible d'intercepter");
+          return;
+        }
+        if (attaque.cibles.length > 1) {
+          sendChar(charId, "la dernière attaque a touché plus d'une cible, impossible d'intercepter");
+          return;
+        }
+        var targetName = attaque.cibles[0].tokName;
+        if (targetName === undefined) {
+          error("Le token de la dernière attaque est indéfini", attaque);
+          return;
+        }
+        if (distanceCombat(cible.token, attaque.cibles[0].token) > 0) {
+          sendChar(charId, " est trop loin de " + targetName + " pour intercepter l'attaque");
+          return;
+        }
+        var evt = {
+          type: 'interception'
+        };
+        setTokenAttr(cible, 'intercepter', true, evt,
+          "se met devant " + targetName + " pour intercepter l'attaque !");
+        // On annule l'ancienne action
+        undoEvent();
+        // Puis on refait en changeant la cible
+        var options = attaque.options;
+        options.intercepter = voieMeneur;
+        options.rollsAttack = attaque.rollsAttack;
+        options.rollsDmg = attaque.rollsDmg;
+        options.evt = evt;
+        cible.rollsDamg = attaque.cibles[0].rollsDmg;
+        attack(attaque.player_id, attaque.attaquant, {
+          cibles: [cible]
+        }, attaque.attack_label, options);
+      });
+    });
   }
 
   function exemplaire(msg) {
-    var cmd = msg.content.split(' ');
-    if (cmd.length < 2) {
-      error("Pour !cof-exemplaire, il faut préciser l'id du token qui est exemplaire: ", msg.content);
-      return;
-    }
-    var cible = tokenOfId(cmd[1], cmd[1]);
-    if (cible === undefined) {
-      error("L'argument de !cof-exemplaire n'est pas une id de token valide", msg.content);
-      return;
-    }
-    var charId = cible.charId;
-    if (attributeAsBool(cible, 'exemplaire')) {
-      sendChar(charId, " a déjà montré l'exemple à ce tour");
-      return;
-    }
-    var attaque;
-    var lastAct = lastEvent();
-    if (lastAct !== undefined) {
-      if (lastAct.type == 'Attaque' && lastAct.succes === false) {
-        attaque = lastAct.action;
-      }
-    }
-    if (attaque === undefined) {
-      sendChar(charId, "la dernière action trouvée n'est pas une attaque ratée, impossible de montrer l'exemple");
-      return;
-    }
-    var attackerName = attaque.attaquant.token.get('name');
-    if (attackerName === undefined) {
-      error("Le token de la dernière attaque est indéfini", attaque);
-      return;
-    }
-    var evt = {
-      type: "Montrer l'exemple"
-    };
-    setTokenAttr(cible, 'exemplaire', true, evt,
-      "montre l'exemple à " + attackerName);
-    // On annule l'ancienne action
-    undoEvent();
-    // Puis on refait 
-    var options = attaque.options;
-    options.evt = evt;
-    attack(attaque.player_id, attaque.attaquant, attaque, attaque.attack_label, options);
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(cible) {
+        var charId = cible.charId;
+        if (attributeAsBool(cible, 'exemplaire')) {
+          sendChar(charId, " a déjà montré l'exemple à ce tour");
+          return;
+        }
+        var attaque;
+        var lastAct = lastEvent();
+        if (lastAct !== undefined) {
+          if (lastAct.type == 'Attaque' && lastAct.succes === false) {
+            attaque = lastAct.action;
+          }
+        }
+        if (attaque === undefined) {
+          sendChar(charId, "la dernière action trouvée n'est pas une attaque ratée, impossible de montrer l'exemple");
+          return;
+        }
+        var attackerName = attaque.attaquant.token.get('name');
+        if (attackerName === undefined) {
+          error("Le token de la dernière attaque est indéfini", attaque);
+          return;
+        }
+        var evt = {
+          type: "Montrer l'exemple"
+        };
+        setTokenAttr(cible, 'exemplaire', true, evt,
+          "montre l'exemple à " + attackerName);
+        // On annule l'ancienne action
+        undoEvent();
+        // Puis on refait 
+        var options = attaque.options;
+        options.evt = evt;
+        attack(attaque.player_id, attaque.attaquant, attaque, attaque.attack_label, options);
+      });
+    });
   }
 
   function surprise(msg) {
@@ -7301,87 +7289,75 @@ var COFantasy = COFantasy || function() {
   }
 
   function natureNourriciere(msg) {
-    var args = msg.content.split(" ");
-    if (args.length < 2) {
-      error("Pas assez d'arguments pour !cof-nature-nourriciere: " + msg.content, args);
-      return;
-    }
-    var lanceur = tokenOfId(args[1], args[1]);
-    if (lanceur === undefined) {
-      error("Le premier argument n'est pas un token valide: " + msg.content, args[1]);
-      return;
-    }
-    var charId = lanceur.charId;
-    var duree = randomInteger(6);
-    var output =
-      "cherche des herbes. Après " + duree + " heures, " +
-      onGenre(charId, "il", "elle");
-    var evt = {
-      type: "recherche d'herbes"
-    };
-    testCaracteristique(lanceur, 'SAG', [], 10, 0, evt,
-      function(reussite, rollText) {
-        if (reussite) {
-          output += " revient avec de quoi soigner les blessés.";
-        } else {
-          output += " revient bredouille.";
-        }
-        sendChar(charId, output);
-        addEvent(evt);
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(lanceur) {
+        var charId = lanceur.charId;
+        var duree = randomInteger(6);
+        var output =
+          "cherche des herbes. Après " + duree + " heures, " +
+          onGenre(charId, "il", "elle");
+        var evt = {
+          type: "recherche d'herbes"
+        };
+        testCaracteristique(lanceur, 'SAG', [], 10, 0, evt,
+          function(reussite, rollText) {
+            if (reussite) {
+              output += " revient avec de quoi soigner les blessés.";
+            } else {
+              output += " revient bredouille.";
+            }
+            sendChar(charId, output);
+            addEvent(evt);
+          });
       });
+    });
   }
 
   function ignorerLaDouleur(msg) {
-    var cmd = msg.content.split(' ');
-    if (msg.length < 2) {
-      error("Il faut en premier argument l'id d'un token pour !cof-ignorer-la-douleur", cmd);
-      return;
-    }
-    var chevalier = tokenOfId(cmd[1], cmd[1]);
-    if (chevalier === undefined) {
-      error("Il faut en premier argument l'id d'un token valide pour !cof-ignorer-la-douleur", cmd);
-      return;
-    }
-    var charId = chevalier.charId;
-    var token = chevalier.token;
-    if (attributeAsInt(chevalier, 'ignorerLaDouleur', 0) > 0) {
-      sendChar(charId, "a déjà ignoré la doubleur une fois pendant ce combat");
-      return;
-    }
-    var lastAct = lastEvent();
-    if (lastAct === undefined || lastAct.type != 'attaque') {
-      sendChar(charId, "s'y prend trop tard pour ignorer la douleur : la dernière action n'était pas une attaque");
-      return;
-    }
-    if (lastAct.affectes === undefined) {
-      sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque n'ait affecté personne");
-      return;
-    }
-    var affecte = lastAct.affectes.find(function(aff) {
-      return (aff.affecte.id == token.id);
-    });
-    if (affecte === undefined || affecte.prev === undefined) {
-      sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne l'ait pas affecté");
-      return;
-    }
-    var lastBar1 = affecte.prev.bar1_value;
-    var bar1 = parseInt(token.get('bar1_value'));
-    if (isNaN(lastBar1) || isNaN(bar1) || lastBar1 <= bar1) {
-      sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ai pas enlevé de PV");
-      return;
-    }
-    var evt = {
-      type: 'ignorer_la_douleur',
-      affectes: [{
-        affecte: token,
-        prev: {
-          bar1_value: bar1
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(chevalier) {
+        var charId = chevalier.charId;
+        var token = chevalier.token;
+        if (attributeAsInt(chevalier, 'ignorerLaDouleur', 0) > 0) {
+          sendChar(charId, "a déjà ignoré la doubleur une fois pendant ce combat");
+          return;
         }
-      }]
-    };
-    updateCurrentBar(token, 1, lastBar1);
-    setTokenAttr(chevalier, 'ignorerLaDouleur', lastBar1 - bar1, evt);
-    sendChar(charId, " ignore la douleur de la dernière attaque");
+        var lastAct = lastEvent();
+        if (lastAct === undefined || lastAct.type != 'attaque') {
+          sendChar(charId, "s'y prend trop tard pour ignorer la douleur : la dernière action n'était pas une attaque");
+          return;
+        }
+        if (lastAct.affectes === undefined) {
+          sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque n'ait affecté personne");
+          return;
+        }
+        var affecte = lastAct.affectes.find(function(aff) {
+          return (aff.affecte.id == token.id);
+        });
+        if (affecte === undefined || affecte.prev === undefined) {
+          sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne l'ait pas affecté");
+          return;
+        }
+        var lastBar1 = affecte.prev.bar1_value;
+        var bar1 = parseInt(token.get('bar1_value'));
+        if (isNaN(lastBar1) || isNaN(bar1) || lastBar1 <= bar1) {
+          sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ai pas enlevé de PV");
+          return;
+        }
+        var evt = {
+          type: 'ignorer_la_douleur',
+          affectes: [{
+            affecte: token,
+            prev: {
+              bar1_value: bar1
+            }
+          }]
+        };
+        updateCurrentBar(token, 1, lastBar1);
+        setTokenAttr(chevalier, 'ignorerLaDouleur', lastBar1 - bar1, evt);
+        sendChar(charId, " ignore la douleur de la dernière attaque");
+      });
+    });
   }
 
   function fortifiant(msg) {
@@ -7471,86 +7447,85 @@ var COFantasy = COFantasy || function() {
   }
 
   function murDeForce(msg) {
-    var cmd = msg.content.split(' ');
-    if (cmd.length < 3) {
-      error("La fonction !cof-mur-de-force attend en argument celui qui lance le sort", cmd);
+    var cmd = removeSelectedTokenIdFromArgs(msg, 2);
+    if (cmd.length < 2) {
+      error("La fonction !cof-mur-de-force attend en argument la forme du mur", cmd);
       return;
     }
-    var lanceur = tokenOfId(cmd[1], cmd[1]);
-    if (lanceur === undefined) {
-      error("Le premier argument de !cof-lancer-sort doit être un token", cmd[1]);
-      return;
-    }
-    var charId = lanceur.charId;
-    var token = lanceur.token;
-    var pageId = lanceur.token.get('pageid');
     var sphere = true;
-    if (cmd[2] == 'mur') sphere = false;
-    var options = {};
-    var args = msg.content.split(' --');
-    args.shift();
-    args.forEach(function(opt) {
-      var optCmd = opt.split(' ');
-      switch (optCmd[0]) {
-        case 'mana':
-          if (optCmd.length < 2) {
-            error("Il manque le coût en mana", cmd);
-            options.mana = 5;
-            return;
+    if (cmd[1] == 'mur') sphere = false;
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(lanceur) {
+        var charId = lanceur.charId;
+        var token = lanceur.token;
+        var pageId = lanceur.token.get('pageid');
+        var options = {};
+        var args = msg.content.split(' --');
+        args.shift();
+        args.forEach(function(opt) {
+          var optCmd = opt.split(' ');
+          switch (optCmd[0]) {
+            case 'mana':
+              if (optCmd.length < 2) {
+                error("Il manque le coût en mana", cmd);
+                options.mana = 5;
+                return;
+              }
+              options.mana = parseInt(optCmd[1]);
+              if (isNaN(options.mana) || options.mana < 0) {
+                error("Coût en mana incorrect", optCmd);
+                options.mana = 5;
+              }
+              return;
+            case 'puissant':
+              options.puissant = true;
+              return;
+            case 'image':
+              if (optCmd.length < 2) {
+                error("Il manque l'adresse de l'image", cmd);
+                return;
+              }
+              options.image = optCmd[1];
+              return;
+            default:
+              error("Option inconnue", cmd);
           }
-          options.mana = parseInt(optCmd[1]);
-          if (isNaN(options.mana) || options.mana < 0) {
-            error("Coût en mana incorrect", optCmd);
-            options.mana = 5;
-          }
+        });
+        var evt = {
+          type: "Mur de force"
+        };
+        if (!depenseMana(lanceur, options.mana, "lancer un mur de force", evt)) {
           return;
-        case 'puissant':
-          options.puissant = true;
-          return;
-        case 'image':
-          if (optCmd.length < 2) {
-            error("Il manque l'adresse de l'image", cmd);
-            return;
-          }
-          options.image = optCmd[1];
-          return;
-        default:
-          error("Option inconnue", cmd);
-      }
+        }
+        sendChar(charId, "lance un sort de mur de force");
+        if (options.image && sphere) {
+          var PIX_PER_UNIT = 70;
+          var page = getObj("page", pageId);
+          var scale = page.get('scale_number');
+          var diametre = PIX_PER_UNIT * (6 / scale);
+          var imageFields = {
+            _pageid: pageId,
+            imgsrc: options.image,
+            represents: '',
+            left: token.get('left'),
+            top: token.get('top'),
+            width: diametre,
+            height: diametre,
+            layer: 'map',
+            name: "Mur de force",
+            isdrawing: true,
+          };
+          var newImage = createObj('graphic', imageFields);
+          toFront(newImage);
+          var duree = 5 + modCarac(charId, 'CHARISME');
+          setTokenAttr(lanceur, 'murDeForce', duree, evt, undefined, getInit());
+          setTokenAttr(lanceur, 'murDeForceId', newImage.id, evt);
+        } else {
+          sendChar(charId, "/w " + token.get('name') + " placer l'image du mur sur la carte");
+        }
+        addEvent(evt);
+      });
     });
-    var evt = {
-      type: "Mur de force"
-    };
-    if (!depenseMana(lanceur, options.mana, "lancer un mur de force", evt)) {
-      return;
-    }
-    sendChar(charId, "lance un sort de mur de force");
-    if (options.image && sphere) {
-      var PIX_PER_UNIT = 70;
-      var page = getObj("page", pageId);
-      var scale = page.get('scale_number');
-      var diametre = PIX_PER_UNIT * (6 / scale);
-      var imageFields = {
-        _pageid: pageId,
-        imgsrc: options.image,
-        represents: '',
-        left: token.get('left'),
-        top: token.get('top'),
-        width: diametre,
-        height: diametre,
-        layer: 'map',
-        name: "Mur de force",
-        isdrawing: true,
-      };
-      var newImage = createObj('graphic', imageFields);
-      toFront(newImage);
-      var duree = 5 + modCarac(charId, 'CHARISME');
-      setTokenAttr(lanceur, 'murDeForce', duree, evt, undefined, getInit());
-      setTokenAttr(lanceur, 'murDeForceId', newImage.id, evt);
-    } else {
-      sendChar(charId, "/w " + token.get('name') + " placer l'image du mur sur la carte");
-    }
-    addEvent(evt);
   }
 
   function tokensEnCombat() {
@@ -8120,125 +8095,123 @@ var COFantasy = COFantasy || function() {
   }
 
   function postureDeCombat(msg) {
-    var args = msg.content.split(' ');
-    if (args.length < 5) {
+    var args = removeSelectedTokenIdFromArgs(msg, 4);
+    if (args.length < 4) {
       error("Pas assez d'arguments pour !cof-posture-de-combat", args);
       return;
     }
-    var guerrier = tokenOfId(args[1], args[1]);
-    if (guerrier === undefined) {
-      error("Le premier argument n'est pas un token valide", args[1]);
-      return;
-    }
-    var charId = guerrier.charId;
-    var bonus = parseInt(args[2]);
-    if (isNaN(bonus) || bonus < 1) {
-      sendChar(charId, "doit choisir un bonus positif (pas " + args[2] + ") pour sa posture de combat");
-      return;
-    }
-    var rang = charAttributeAsInt(charId, "voieDuSoldat", 0);
-    if (rang > 0 && rang < bonus) {
-      sendChar(charId, "ne peut choisir qu'un bonus inférieur à " + rang + " pour sa posture de combat");
-      return;
-    }
-    var attrDebuf = args[3];
+    var bonus = parseInt(args[1]);
+    var attrDebuf = args[2];
     if (attrDebuf != 'DEF' && attrDebuf != 'ATT' && attrDebuf != 'DM') {
       error("L'attribut à débuffer pour la posture de combat est incorrect", args);
       return;
     }
-    var attrBuf = args[4];
+    var attrBuf = args[3];
     if (attrBuf != 'DEF' && attrBuf != 'ATT' && attrBuf != 'DM') {
       error("L'attribut à augmenter pour la posture de combat est incorrect", args);
       return;
     }
-    var evt = {
-      type: "Posture de combat"
-    };
-    if (attrBuf == attrDebuf) {
-      sendChar(charId, "prend une posture de combat neutre");
-      removeTokenAttr(guerrier, 'postureDeCombat', evt);
-      addEvent(evt);
-      return;
-    }
-    msg = "prend une posture ";
-    switch (attrBuf) {
-      case 'DEF':
-        msg += "défensive";
-        break;
-      case 'ATT':
-        msg += "offensive";
-        break;
-      case 'DM':
-        msg += "puissante";
-        break;
-      default:
-    }
-    msg += " mais ";
-    switch (attrDebuf) {
-      case 'DEF':
-        msg += "risquée";
-        break;
-      case 'ATT':
-        msg += "moins précise";
-        break;
-      case 'DM':
-        msg += "moins puissante";
-        break;
-      default:
-    }
-    setTokenAttr(guerrier, 'postureDeCombat', bonus, evt, msg,
-      attrDebuf + "_" + attrBuf);
-    addEvent(evt);
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(guerrier) {
+        var charId = guerrier.charId;
+        if (isNaN(bonus) || bonus < 1) {
+          sendChar(charId, "doit choisir un bonus positif (pas " + args[1] + ") pour sa posture de combat");
+          return;
+        }
+        var rang = charAttributeAsInt(charId, "voieDuSoldat", 0);
+        if (rang > 0 && rang < bonus) {
+          sendChar(charId, "ne peut choisir qu'un bonus inférieur à " + rang + " pour sa posture de combat");
+          return;
+        }
+        var evt = {
+          type: "Posture de combat"
+        };
+        if (attrBuf == attrDebuf) {
+          sendChar(charId, "prend une posture de combat neutre");
+          removeTokenAttr(guerrier, 'postureDeCombat', evt);
+          addEvent(evt);
+          return;
+        }
+        msg = "prend une posture ";
+        switch (attrBuf) {
+          case 'DEF':
+            msg += "défensive";
+            break;
+          case 'ATT':
+            msg += "offensive";
+            break;
+          case 'DM':
+            msg += "puissante";
+            break;
+          default:
+        }
+        msg += " mais ";
+        switch (attrDebuf) {
+          case 'DEF':
+            msg += "risquée";
+            break;
+          case 'ATT':
+            msg += "moins précise";
+            break;
+          case 'DM':
+            msg += "moins puissante";
+            break;
+          default:
+        }
+        setTokenAttr(guerrier, 'postureDeCombat', bonus, evt, msg,
+          attrDebuf + "_" + attrBuf);
+        addEvent(evt);
+      });
+    });
   }
 
   function tourDeForce(msg) {
-    var args = msg.content.split(' ');
-    if (args.length < 3) {
+    var args = removeSelectedTokenIdFromArgs(msg, 2);
+    if (args.length < 2) {
       error("Il manque un argument à !cof-tour-de-force", args);
       return;
     }
-    var barbare = tokenOfId(args[1], args[1]);
-    if (barbare === undefined) {
-      error("Le premier argument n'est pas un token valide", args);
-      return;
-    }
-    var seuil = parseInt(args[2]);
-    if (isNaN(seuil)) {
-      sendChar(barbare.charId, "le seuil de difficulté du tour de force doit être un nombre");
-      return;
-    }
+    var seuil = parseInt(args[1]);
     var action = "<b>Capacité</b> : Tour de force";
-    var display = startFramedDisplay(msg.playerid, action, barbare);
-    var evt = {
-      type: "Tour de force"
-    };
-    testCaracteristique(barbare, 'FOR', [], seuil, 10, evt,
-      function(reussite, rollText) {
-        addLineToFramedDisplay(display, " Jet de force difficulté " + seuil);
-        var smsg = barbare.token.get('name') + " fait " + rollText;
-        if (reussite) {
-          smsg += " => réussite";
-        } else {
-          smsg += " => échec";
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(barbare) {
+        if (isNaN(seuil)) {
+          sendChar(barbare.charId, "le seuil de difficulté du tour de force doit être un nombre");
+          return;
         }
-        addLineToFramedDisplay(display, smsg);
-        sendChat("", "[[1d4]]", function(res) {
-          var rolls = res[0];
-          var explRoll = rolls.inlinerolls[0];
-          var r = {
-            total: explRoll.results.total,
-            type: 'normal',
-            display: buildinline(explRoll, 'normal')
-          };
-          var explications = [];
-          dealDamage(barbare, r, [], evt, 1, {}, explications,
-            function(dmgDisplay, saveResult, dmg) {
-              var dmgMsg = "mais cela lui coûte " + dmgDisplay + " PV";
-              addLineToFramedDisplay(display, dmgMsg);
-              finaliseDisplay(display, explications, evt);
+        var display = startFramedDisplay(msg.playerid, action, barbare);
+        var evt = {
+          type: "Tour de force"
+        };
+        testCaracteristique(barbare, 'FOR', [], seuil, 10, evt,
+          function(reussite, rollText) {
+            addLineToFramedDisplay(display, " Jet de force difficulté " + seuil);
+            var smsg = barbare.token.get('name') + " fait " + rollText;
+            if (reussite) {
+              smsg += " => réussite";
+            } else {
+              smsg += " => échec";
+            }
+            addLineToFramedDisplay(display, smsg);
+            sendChat("", "[[1d4]]", function(res) {
+              var rolls = res[0];
+              var explRoll = rolls.inlinerolls[0];
+              var r = {
+                total: explRoll.results.total,
+                type: 'normal',
+                display: buildinline(explRoll, 'normal')
+              };
+              var explications = [];
+              dealDamage(barbare, r, [], evt, 1, {}, explications,
+                function(dmgDisplay, saveResult, dmg) {
+                  var dmgMsg = "mais cela lui coûte " + dmgDisplay + " PV";
+                  addLineToFramedDisplay(display, dmgMsg);
+                  finaliseDisplay(display, explications, evt);
+                });
             });
-        });
+          });
       });
+    });
   }
 
   function encaisserUnCoup(msg) {
@@ -8545,42 +8518,41 @@ var COFantasy = COFantasy || function() {
   }
 
   function destructionDesMortsVivants(msg) {
-    var args = msg.content.split(' ');
-    if (args.length < 3) {
-      error("Il faut au moins 2 arguments à !cof-destruction-des-morts-vivants", args);
+    var args = removeSelectedTokenIdFromArgs(msg, 2);
+    if (args.length < 2) {
+      error("Il faut au moins un argument à !cof-destruction-des-morts-vivants", args);
       return;
     }
-    var lanceur = tokenOfId(args[1]);
-    if (lanceur === undefined) {
-      error("Le premier argument de !cof-destruction-des-morts-vivants doit être une id de token", args);
-      return;
-    }
-    var dm = parseInt(args[2]);
+    var dm = parseInt(args[1]);
     if (isNaN(dm)) {
       error("Le second argument de !cof-destruction-des-morts-vivants doit être un entier", args);
       return;
     }
-    var evt = {
-      type: "Destruction des morts-vivants"
-    };
-    var display = startFramedDisplay(msg.playerid, "<b>Sort :<b> destruction des morts-vivants", lanceur);
-    var name = lanceur.token.get('name');
-    testCaracteristique(lanceur, 'SAG', [], 13, 0, evt,
-      function(reussite, rollText) {
-        var msgJet = "Jet de SAG : " + rollText;
-        if (reussite) {
-          var eventId = state.COFantasy.eventId;
-          var action = "!cof-aoe " + dm + " --once " + eventId + " --morts-vivants";
-          evt.waitingForAoe = true;
-          addLineToFramedDisplay(display, msgJet + " <= 13");
-          addLineToFramedDisplay(display, "Sélectionner les token en vue, et <a href='" + action + "'>cliquer ici</a>");
-        } else {
-          addLineToFramedDisplay(display, msgJet + " < 13");
-          addLineToFramedDisplay(display, name + " ne réussit pas à invoquer son dieu.");
-        }
-        sendChat(name, endFramedDisplay(display));
-        addEvent(evt);
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(lanceur) {
+        var evt = {
+          type: "Destruction des morts-vivants"
+        };
+        var display = startFramedDisplay(msg.playerid, "<b>Sort :<b> destruction des morts-vivants", lanceur);
+        var name = lanceur.token.get('name');
+        testCaracteristique(lanceur, 'SAG', [], 13, 0, evt,
+          function(reussite, rollText) {
+            var msgJet = "Jet de SAG : " + rollText;
+            if (reussite) {
+              var eventId = state.COFantasy.eventId;
+              var action = "!cof-aoe " + dm + " --once " + eventId + " --morts-vivants";
+              evt.waitingForAoe = true;
+              addLineToFramedDisplay(display, msgJet + " <= 13");
+              addLineToFramedDisplay(display, "Sélectionner les token en vue, et <a href='" + action + "'>cliquer ici</a>");
+            } else {
+              addLineToFramedDisplay(display, msgJet + " < 13");
+              addLineToFramedDisplay(display, name + " ne réussit pas à invoquer son dieu.");
+            }
+            sendChat(name, endFramedDisplay(display));
+            addEvent(evt);
+          });
       });
+    });
   }
 
   function apiCommand(msg) {

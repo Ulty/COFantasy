@@ -413,7 +413,7 @@ p  {margin-left: inherit}
     <h4>Voie de la brute</h4>
     <ol>
       <li>Argument de taille : ajouter les capacité et le bonus de PV sur la fiche.</li>
-      <li>Tour de force : utiliser <tt>!cof-tour-de-force @{selected|token_id} ?{Difficulté du jet de force ?}</tt></li>
+      <li>Tour de force : utiliser <tt>!cof-tour-de-force ?{Difficulté du jet de force ?}</tt></li>
     </ol>
     <h4>Voie du pagne</h4>
     <ol>
@@ -460,17 +460,17 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie du héro</h4>
     <ol>
-      <li>Ignorer la douleur : <tt>!cof-ignorer-la-douleur @{selected|token_id}</tt>. À faire juste après le coup.</li>
+      <li>Ignorer la douleur : <tt>!cof-ignorer-la-douleur</tt>. À faire juste après le coup.</li>
       <li>Piqures d'insectes : ajouter un attribut <tt>piquresDInsectes</tt>, avec comme valeur le rang dans la voie</li>
     </ol>
     <h4>Voie du meneur d'hommes</h4>
     <ol>
       <li>Sans peur : Ajouter un attribut <tt>sansPeur</tt>, utilisé quand on
         essaiera de faire peur à un <a href="#allie">allié</a>.</li>
-      <li>Intercepter : Juste après l'attaque réussie, utiliser <tt>!cof-intercepter @{selected|token_id}</tt>.
+      <li>Intercepter : Juste après l'attaque réussie, utiliser <tt>!cof-intercepter</tt>.
         Il faut un attribut <tt>voieDuMeneurDHomme</tt> avec comme valeur le rang dans la
         voie.</li>
-      <li>Exemplaire : <tt>!cof-exemplaire @{selected|token_id}</tt>, juste après l'attaque
+      <li>Exemplaire : <tt>!cof-exemplaire</tt>, juste après l'attaque
         ratée.</li>
     </ol>
     <h4>Voie de la noblesse</h4>
@@ -550,7 +550,7 @@ p  {margin-left: inherit}
       <li>Familier : créer un token pour le familier, avec vue et controlé par le
         joueur. Le partage des PV n'est pas géré.</li>
       <li>Serviteur invisible: ok</li>
-      <li>Mur de force : <tt>!cof-mur-de-force @{selected|token_id} ?{Spherique?|Oui,|Non,mur} --mana 1 --image</tt> <i>path</i> où <i>path</i> est l'adresse url d'une image de la librairie Roll20 qui représente un mur de force (sera placé dans le layer map). L'image n'est utilisée qu'en cas de mur sphérique. </li>
+      <li>Mur de force : <tt>!cof-mur-de-force ?{Spherique?|Oui,|Non,mur} --mana 1 --image</tt> <i>path</i> où <i>path</i> est l'adresse url d'une image de la librairie Roll20 qui représente un mur de force (sera placé dans le layer map). L'image n'est utilisée qu'en cas de mur sphérique. </li>
       <li>Épée dansante :
         <ul>
           <li>sort: <tt>!cof-effet-temp epeeDansante [[5+@{selected|CHA}]] --lanceur @{selected|token_id} --mana 2 --puissant ?{Y passer tout le tour ?|oui|non}</tt></li>
@@ -623,7 +623,7 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie du soldat</h4>
     <ol>
-      <li>Posture de combat : <tt>!cof-posture-de-combat @{selected|token_id}</tt> <i>bonus attr1 attr2</i>, ou les deux <i>attr</i> peuvent être soit <tt>DEF</tt> soit <tt>ATT</tt> soit <tt>DM</tt>, et le <i>bonus</i> est retiré au premier attribut pour être ajouté au second. Le bonus peut être limité si le guerrier a un attribut <tt>voieDuSoldat</tt> qu iindique son rang dans la voie. Exemple d'utilisation&nbsp;: <tt>!cof-posture-de-combat @{selected|token_id} ?{Bonus} ?{Baisser|Défense,DEF|Attaque,ATT|Dégâts,DM} ?{Augmenter|Défense,DEF|Attaque,ATT|Dégâts,DM}</tt>. Normalement, la règle fait décider de sa posture au guerrier à chaque tour, mais en pratique, il en change assez rarement. Une posture de combat reste donc active jusqu'à la fin du combat ou jusqu'à ce qu'on en change (elle est neutre si on a le même attribut à buffer et débuffer). </li>
+      <li>Posture de combat : <tt>!cof-posture-de-combat</tt> <i>bonus attr1 attr2</i>, ou les deux <i>attr</i> peuvent être soit <tt>DEF</tt> soit <tt>ATT</tt> soit <tt>DM</tt>, et le <i>bonus</i> est retiré au premier attribut pour être ajouté au second. Le bonus peut être limité si le guerrier a un attribut <tt>voieDuSoldat</tt> qu iindique son rang dans la voie. Exemple d'utilisation&nbsp;: <tt>!cof-posture-de-combat @{selected|token_id} ?{Bonus} ?{Baisser|Défense,DEF|Attaque,ATT|Dégâts,DM} ?{Augmenter|Défense,DEF|Attaque,ATT|Dégâts,DM}</tt>. Normalement, la règle fait décider de sa posture au guerrier à chaque tour, mais en pratique, il en change assez rarement. Une posture de combat reste donc active jusqu'à la fin du combat ou jusqu'à ce qu'on en change (elle est neutre si on a le même attribut à buffer et débuffer). </li>
       <li>Combat en phalange : ajouter un attribut <tt>combatEnPhalange</tt>, valeur <tt>true</tt>. Les bonus seront ajoutés automatiquement en fonctions des alliés définis selon <a href="#allie">cette méthode</a>.</li>
     </ol>
 
@@ -753,7 +753,7 @@ p  {margin-left: inherit}
     <h4>Voie de la prière</h4>
     <ol>
       <li>Bénédiction : <tt>!cof-effet-temp benediction [[3+@{selected|SAG}]] --allies --self</tt>. Il faut avoir défini une <a href="#allie">équipe</a> avec le prêtre.</li>
-      <li>Destruction des morts-vivants : <tt>!cof-destruction-des-morts-vivants @{selected|token_id} [[2d6]]</tt>. Au rang 4 dans la voie, ajuster les dégâts.</li>
+      <li>Destruction des morts-vivants : <tt>!cof-destruction-des-morts-vivants [[2d6]]</tt>. Au rang 4 dans la voie, ajuster les dégâts.</li>
     </ol>
     <h4>Voie des soins</h4>
     <p style="margin-top:0px; margin-bottom:0px">
@@ -801,7 +801,7 @@ p  {margin-left: inherit}
     <ol>
       <li>Endurant : ajouter un jet de capacité "survie", test de CON avec le bonus</li>
       <li>Nature nourricière : pour la recherche d'herbes, on peut utiliser
-        <tt>!cof-nature-nourriciere @{selected|token_id}</tt></li>
+        <tt>!cof-nature-nourriciere</tt></li>
       <li>Grand pas : ajouter les compétences natation et escalade</li>
     </ol>
     <h4>Voie du traqueur</h4>
