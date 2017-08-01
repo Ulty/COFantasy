@@ -433,9 +433,6 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var caracteristique = args[1];
-    var evt = {
-      type: "Jet de " + caracteristique
-    };
     switch (caracteristique) {
       case "FOR":
       case "DEX":
@@ -450,6 +447,9 @@ var COFantasy = COFantasy || function() {
             return;
           }
           iterSelected(selected, function(perso) {
+            var evt = {
+              type: "Jet de " + caracteristique
+            };
             jetCaracteristique(perso, caracteristique,
               function(rolltext, d20, roll) {
 
@@ -7438,35 +7438,44 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
-  function lancerSort(msg) {
+  //Utilisé pour enlever l'argument @{selected|token_id} quand il était
+  //inutile. argsNumber est le nombre d'arguments attendu, on n'enlève 
+  //d'argument que si il y en a plus
+  function removeSelectedTokenIdFromArgs(msg, argsNumber) {
+    argsNumber = (isNaN(argsNumber) || argsNumber < 1) ? 1 : argsNumber;
     var cmd = msg.content.split(' ');
-    if (cmd.length < 4) {
-      error("La fonction !cof-lancer-sort attend en argument celui qui lance le sort et le coût en mana", cmd);
+    if (cmd.length <= argsNumber) return cmd;
+    if (msg.selected === undefined || msg.selected.length === 0) return cmd;
+    if (cmd[1] == msg.selected[0]._id) cmd.splice(1, 1);
+    return cmd;
+  }
+
+  function lancerSort(msg) {
+    var cmd = removeSelectedTokenIdFromArgs(msg, 3);
+    if (cmd.length < 3) {
+      error("La fonction !cof-lancer-sort attend en argument le coût en mana", cmd);
       return;
     }
-    var lanceur = tokenOfId(cmd[1], cmd[1]);
-    if (lanceur === undefined) {
-      error("Le premier argument de !cof-lancer-sort doit être un token", cmd[1]);
-      return;
-    }
-    var charId = lanceur.charId;
-    var token = lanceur.token;
-    var mana = parseInt(cmd[2]);
+    cmd.shift();
+    var mana = parseInt(cmd.shift());
     if (isNaN(mana) || mana < 0) {
-      error("Le deuxième argument de !cof-lancer-sort doit être un nombre positif", cmd[2]);
+      error("Le deuxième argument de !cof-lancer-sort doit être un nombre positif", msg.content);
       return;
     }
-    var msgPos = msg.content.indexOf(' '); // just before the token id
-    msgPos = msg.content.indexOf(' ', msgPos + 1); // just before mana cost
-    var spell = msg.content.substring(msg.content.indexOf(' ', msgPos + 1) + 1);
-    var evt = {
-      type: "lancement de sort"
-    };
-    if (depenseMana(lanceur, mana, spell, evt)) {
-      sendChar(charId, "/w " + token.get('name') + " " + spell);
-      sendChar(charId, "/w GM " + spell);
-      addEvent(evt);
-    }
+    var spell = cmd.join(' ');
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(lanceur) {
+        var charId = lanceur.charId;
+        var evt = {
+          type: "lancement de sort"
+        };
+        if (depenseMana(lanceur, mana, spell, evt)) {
+          sendChar(charId, "/w " + lanceur.token.get('name') + " " + spell);
+          sendChar(charId, "/w GM " + spell);
+          addEvent(evt);
+        }
+      });
+    });
   }
 
   function murDeForce(msg) {

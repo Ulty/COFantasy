@@ -301,7 +301,7 @@ p  {margin-left: inherit}
     <tt>!cof-attaque-magique @{selected|token_id} @{target|token_id}</tt> : fait un jet d'attaque magique opposé entre le lanceur et sa cible, et dit juste si le
     sort est raté ou réussi. Options disponibles : <tt>--portee</tt> et <tt>--mana</tt>.
     <p>
-    <tt>!cof-lancer-sort</tt> <i>token_id mana texte</i> : <i>token_id</i> lance un sort ayant un coût en
+    <tt>!cof-lancer-sort</tt> <i>mana texte</i>: le token sélectionné lance un sort ayant un coût en
     mana, <i>texte</i> décrit le sort, mais pas d'effet (autre que la dépense de mana) à part /w au joueur et au MJ.
     <p>
     <tt>!cof-peur</tt> <i>token_id difficulté durée</i>: effet de peur (nécromant, dragon, etc). Tant que la peur
@@ -406,7 +406,7 @@ p  {margin-left: inherit}
     <h4>Voie du vagabond</h4>
     <ol>
       <li>Rumeurs et légendes : ajouter les compétences sur la fiche</li>
-      <li> Compréhension des langues : <tt>!cof-lancer-sort @{selected|token_id} 0 compréhension des langues pendant [[1d6+@{selected|CHA}]] minutes</tt></li>
+      <li> Compréhension des langues : <tt>!cof-lancer-sort 0 lance un sort de compréhension des langues qui dure [[1d6+@{selected|CHA}]] minutes</tt></li>
     </ol>
 
     <h3>Barbare</h3>
@@ -515,7 +515,7 @@ p  {margin-left: inherit}
       <li>Sous tension : <tt>!cof-effet-temp sous_tension [[5+@{selected|CHA}]]</tt>. 
     Pour l'attaque, définir une attaque magique à 1d6+CHA,
     et l'appeler avec les options <tt>--si etat sous_tension --electrique --sortilege --fx beam-holy</tt></li>
-      <li>Télékinésie : Pas de support autre que <tt>!cof-lancer-sort @{selected|token_id} 1 télékinésie</tt></li>
+      <li>Télékinésie : Pas de support autre que <tt>!cof-lancer-sort 1 lance un sort de télékinésie</tt></li>
       <li>Foudre : Faire une attaque de foudre de portée 10 m (attaque magique, dégâts 4d6 + CHA), et faire les attaques avec les options <tt>--psave DEX [[12+@{selected|DEX}]] --mana 2 --electrique --sortilege --ligne --fx beam-holy ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt>. 
         <li>Forme éthérée : <tt>!cof-effet-temp intangible [[5 + @{selected|CHA}]] --lanceur @{selected|token_id} --mana 3</tt></li>
     </ol>
@@ -541,7 +541,7 @@ p  {margin-left: inherit}
     <ol>
       <li>Image décalée : <tt>!cof-effet-temp image_decalee [[5+@{selected|CHA}]] </tt></li>
       <li>Mirage : pas de support particulier</li>
-      <li>Imitation : pas de support autre que <tt>!cof-lancer-sort @{selected|token_id} 1 lance un sort d'imitation ([[5+@{selected|CHA}]] minutes)</tt>. </li>
+      <li>Imitation : pas de support autre que <tt>!cof-lancer-sort 1 lance un sort d'imitation ([[5+@{selected|CHA}]] minutes)</tt>. </li>
       <li>Dédoublement : ajouter une attaque magique, de portée 20 m, et sans dégâts, avec les options <tt>--sortilege --mana 2 --effet dedoublement [[5+@{selected|CHA}]]</tt>. </li>
       <li> Tueur fantasmagorique : <tt>!cof-tueur-fantasmagorique @{selected|token_id} @{target|token_id} --portee 20 --mana 3</tt></li>
     </ol>
@@ -656,8 +656,8 @@ p  {margin-left: inherit}
       <li>Lumière : Le MJ peut donner les caractérisiques de lumières à un token(ou utiliser le script <tt>torch</tt>)</li>
       <li>Détection de la magie : pas de support</li>
       <li>Invisibilité : 
-        pas de support autre que <tt>!cof-lancer-sort @{selected|token_id} 1 invisibilité ([[1d6+@{selected|INT}]] minutes)</tt>. Pour les ennemis, mettre dans le layer gm, pour les joueurs, ne pas les cibler. Reste le problème des AOE...</li>
-      <li>Vol : pas de support autre que <tt>!cof-lancer-sort @{selected|token_id} 2 vol ([[1d6+@{selected|INT}]] minutes)</tt> </li>
+        pas de support autre que <tt>!cof-lancer-sort 1 se rend invisible ([[1d6+@{selected|INT}]] minutes)</tt>. Pour les ennemis, mettre dans le layer gm, pour les joueurs, ne pas les cibler. Reste le problème des AOE...</li>
+      <li>Vol : pas de support autre que <tt>!cof-lancer-sort 2 vole ([[1d6+@{selected|INT}]] minutes)</tt> </li>
       <li>Intelligence héroïque : reporter sur la fiche</li>
     </ol>
 
