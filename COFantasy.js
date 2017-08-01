@@ -1110,10 +1110,16 @@ var COFantasy = COFantasy || function() {
     if (attrPosture.length > 0) {
       attrPosture = attrPosture[0];
       var posture = attrPosture.get('max');
-      if (posture.startsWith('ATT'))
-        attBonus -= parseInt(attrPosture.get('current'));
-      if (posture.endsWith('ATT'))
-        attBonus += parseInt(attrPosture.get('current'));
+      var postureVal;
+      if (posture.startsWith('ATT')) {
+        postureVal = parseInt(attrPosture.get('current'));
+        attBonus -= postureVal;
+        explications.push("Posture de combat => -"+postureVal+" en Attaque");
+    } else if (posture.endsWith('ATT')) {
+        postureVal = parseInt(attrPosture.get('current'));
+        attBonus += postureVal;
+        explications.push("Posture de combat => +"+postureVal+" en Attaque");
+    }
     }
     if (attributeAsBool(personnage, 'danseIrresistible')) {
       attBonus -= 4;
@@ -1337,8 +1343,16 @@ var COFantasy = COFantasy || function() {
     if (attrPosture.length > 0) {
       attrPosture = attrPosture[0];
       var posture = attrPosture.get('max');
-      if (posture.startsWith('DEF')) defense -= parseInt(attrPosture.get('current'));
-      if (posture.endsWith('DEF')) defense += parseInt(attrPosture.get('current'));
+      var postureVal;
+      if (posture.startsWith('DEF')) {
+        postureVal = parseInt(attrPosture.get('current'));
+        defense -= postureVal;
+        explications.push("Posture de combat => -"+postureVal+" DEF");
+      } else if (posture.endsWith('DEF')) {
+        postureVal = parseInt(attrPosture.get('current'));
+        defense += postureVal;
+        explications.push("Posture de combat => +"+postureVal+" DEF");
+      }
     }
     var instinctSurvie = charAttributeAsInt(charId, 'instinctDeSurvie', 0);
     if (instinctSurvie > 0 && target.token.get('bar1_value') <= instinctSurvie)
@@ -2431,10 +2445,16 @@ var COFantasy = COFantasy || function() {
     if (attrPosture.length > 0) {
       attrPosture = attrPosture[0];
       var posture = attrPosture.get('max');
-      if (posture.startsWith('DM'))
-        attDMBonusCommun += " -" + parseInt(attrPosture.get('current'));
-      if (posture.endsWith('DM'))
-        attDMBonusCommun += " +" + parseInt(attrPosture.get('current'));
+      var postureVal;
+      if (posture.startsWith('DM')) {
+        postureVal = parseInt(attrPosture.get('current'));
+        attDMBonusCommun += " -" + postureVal;
+        explications.push("Posture de combat => -"+postureVal+" DM");
+      } else if (posture.endsWith('DM')) {
+        postureVal = parseInt(attrPosture.get('current'));
+        attDMBonusCommun += " +" + postureVal;
+        explications.push("Posture de combat => +"+postureVal+" DM");
+      }
     }
     if (aUnCapitaine(attaquant, evt, pageId)) attDMBonusCommun += " +2";
     // Les autres sources de dégâts
