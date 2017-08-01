@@ -2075,13 +2075,14 @@ var COFantasy = COFantasy || function() {
       var action = "<b>Arme</b> : ";
       if (options.sortilege) action = "<b>Sort</b> : ";
       var label_type = BS_LABEL_INFO;
+      var target = cibles[0];
       if (options.aoe) {
-        targetToken = undefined;
+        target = undefined;
         label_type = BS_LABEL_WARNING;
       }
       action += "<span style='" + BS_LABEL + " " + label_type + "; text-transform: none; font-size: 100%;'>" + weaponName + "</span>";
 
-      var display = startFramedDisplay(playerId, action, attacker, targetToken);
+      var display = startFramedDisplay(playerId, action, attaquant, target);
 
       // Cas des armes à poudre
       if (options.poudre) {
@@ -3510,74 +3511,65 @@ var COFantasy = COFantasy || function() {
     return image_url;
   }
 
-  //character est soit un objet de type character, soit un personnage 
-  //(avec un champ token et un champ charId).
-  function startFramedDisplay(playerId, action, character, character2_token) {
+  function startFramedDisplay(playerId, action, perso1, perso2) {
     var playerBGColor = getObj("player", playerId).get("color");
     var playerTXColor = (getBrightness(playerBGColor) < 50) ? "#FFF" : "#000";
-    var character_name = "";
-    var character_avatar = "";
-    var character2_name = "";
-    var character2_avatar = "";
-    var is_vs = false;
-    var vs = "";
-
-    if (character2_token !== undefined) {
-      is_vs = true;
-      vs = "VS";
-
-      var character2_represents = getObj('character', character2_token.get('represents'));
-
-      character2_name = '<b>' + character2_represents.get('name') + '</b>';
-      if (character2_represents !== undefined) {
-        character2_avatar = '<img src="' + improve_image(character2_represents.get('avatar')) + '" style="width: 50%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
-      }
-    }
-
-    if (character && character.charId)
-      character = getObj('character', character.charId);
-
-    if (character !== undefined) {
-      character_name = '<b>' + character.get('name') + '</b>';
-      character_avatar = '<img src="' + improve_image(character.get('avatar')) + '" style="width: ' + (is_vs ? 50 : 100) + '%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
-    }
-
     var res =
       '/direct ' +
       '<div style="-webkit-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); -moz-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); border: 1px solid #000; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px; overflow: hidden;">' +
       '<div style="overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: ' + playerTXColor + '; background-color: ' + playerBGColor + ';" title=""> ' +
-      '<table>' +
-      (is_vs ?
-        // versus
+      '<table>';
+    var name1 = '';
+    var avatar1 = '';
+    if (perso1) {
+      if (perso1.tokName) name1 = perso1.tokName;
+      else name1 = perso1.token.get('name');
+      name1 = '<b>' + name1 + '</b>';
+      var character1 = getObj('character', perso1.charId);
+      if (character1)
+        avatar1 = '<img src="' + improve_image(character1.get('avatar')) + '" style="width: ' + (perso2 ? 50 : 100) + '%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+    }
+    if (perso2) {
+      var name2 = perso2.tokName;
+      if (name2 === undefined) name2 = perso2.token.get('name');
+      name2 = '<b>' + name2 + '</b>';
+      var avatar2 = '';
+      var character2 = getObj('character', perso2.charId);
+      if (character2 !== undefined) {
+        avatar2 = '<img src="' + improve_image(character2.get('avatar')) + '" style="width: 50%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+      }
+      res +=
         '<tr style="text-align: center">' +
         '<td style="width:45%; vertical-align: middle;">' +
-        character_name +
+        name1 +
         '</td>' +
         '<td style="width:10%; vertical-align: middle;" rowspan="2">' +
-        vs +
+        'VS' +
         '</td>' +
         '<td style="width:45%; vertical-align: middle;">' +
-        character2_name +
+        name2 +
         '</td>' +
         '</tr>' +
         '<tr style="text-align: center">' +
         '<td style="width:45%; vertical-align: middle;">' +
-        character_avatar +
+        avatar1 +
         '</td>' +
         '<td style="width:45%; vertical-align: middle;">' +
-        character2_avatar +
+        avatar2 +
         '</td>' +
-        '</tr>' :
-        // pas versus
+        '</tr>';
+    } else {
+      res +=
         '<tr style="text-align: left">' +
         '<td style="width:25%; vertical-align: middle;">' +
-        character_avatar +
+        avatar1 +
         '</td>' +
         '<td style="width:75%; vertical-align: middle;">' +
-        character_name +
+        name1 +
         '</td>' +
-        '</tr>'
-      ) +
+        '</tr>';
+    }
+    res +=
       '</table>' +
       '</div>' +
       '<div style="font-size: 85%; text-align: left; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: #a94442; background-color: #f2dede;" title=""> ' +
@@ -6771,7 +6763,7 @@ var COFantasy = COFantasy || function() {
     if (options.portee !== undefined) {
       var distance = distanceCombat(token1, token2, pageId);
       if (distance > options.portee) {
-        sendChar(charId1, "est trop loind de " + cible.name +
+        sendChar(charId1, "est trop loin de " + cible.token.get('name') +
           " pour l'attaque magique");
         return;
       }
@@ -6808,7 +6800,7 @@ var COFantasy = COFantasy || function() {
       var att2Skill = rolls.inlinerolls[attk2SkillNumber].results.total;
       var attackRoll2 = d20roll2 + att2Skill;
       var action = "Attaque magique opposée";
-      var display = startFramedDisplay(msg.playerid, action, char1, token2);
+      var display = startFramedDisplay(msg.playerid, action, char1, cible);
       var line =
         token1.get('name') + " fait " +
         buildinline(rolls.inlinerolls[att1RollNumber]);
@@ -6925,7 +6917,7 @@ var COFantasy = COFantasy || function() {
       var cha = modCarac(casterCharId, 'CHARISME');
       var attMagText = addOrigin(casterCharName, getAttrByName(casterCharId, 'ATKMAG'));
       var action = "<b>Capacité</b> : Sort de sommeil";
-      var display = startFramedDisplay(msg.playerid, action, casterChar);
+      var display = startFramedDisplay(msg.playerid, action, caster);
       sendChat("", "[[1d6]] [[" + attMagText + "]]", function(res) {
         var rolls = res[0];
         var afterEvaluate = rolls.content.split(" ");

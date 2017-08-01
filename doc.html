@@ -533,9 +533,9 @@ p  {margin-left: inherit}
         <tt>!cof-attaque-magique @{selected|token_id} @{target|token_id}</tt></li>
       <li>Sommeil : <tt>!cof-sommeil @{selected|token_id} --disque @{target|token_id} 5 20</tt>. Pour sélectionner le centre de la zone, on peut utiliser un personnage fictif ayant 0 de max de PV.</li>
       <li>Confusion: faire une attaque sans dégâts, de portée 20 m, et pour la macro, utiliser les options <tt>--sortilege --mana 1 --effet confusion ?{Y consacrer tout le tour?|Oui,[[6+2*@{selected|CHA}]]|Non,[[3+@{selected|CHA}]]} --saveParTour SAG [[10+@{selected|CHA}]]</tt>.
-        <li>Amitié: pas de support particulier</li>
+        <li>Amitié: pas de support particulier, sinon <tt>!cof-lancer-sort 2 lance un sort d'amitié</tt></li>
       <li>Domination : utiliser 
-        <tt>!cof-attaque-magique @{selected|token_id} @{target|token_id}</tt></li>
+        <tt>!cof-attaque-magique @{selected|token_id} @{target|token_id} --mana 3 --portee 20</tt></li>
     </ol>
     <h4>Voie des illusions</h4>
     <ol>
