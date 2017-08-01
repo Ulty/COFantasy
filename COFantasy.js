@@ -8523,11 +8523,14 @@ var COFantasy = COFantasy || function() {
       error("Il faut au moins un argument à !cof-destruction-des-morts-vivants", args);
       return;
     }
-    var dm = parseInt(args[1]);
-    if (isNaN(dm)) {
-      error("Le second argument de !cof-destruction-des-morts-vivants doit être un entier", args);
-      return;
-    }
+    args.shift();
+    var dm = args.join(' ');
+    dm = dm.replace(/%/g, '&#37;');
+    dm = dm.replace(/\)/g, '&#41;');
+    dm = dm.replace(/\?/g, '&#63;');
+    dm = dm.replace(/@/g, '&#64;');
+    dm = dm.replace(/\[/g, '&#91;');
+    dm = dm.replace(/\]/g, '&#93;');
     getSelected(msg, function(selected) {
       iterSelected(selected, function(lanceur) {
         var evt = {
@@ -8540,15 +8543,16 @@ var COFantasy = COFantasy || function() {
             var msgJet = "Jet de SAG : " + rollText;
             if (reussite) {
               var eventId = state.COFantasy.eventId;
-              var action = "!cof-aoe " + dm + " --once " + eventId + " --morts-vivants";
+              var action = "!cof-aoe &lbrack;&lbrack;" + dm + "&rbrack;&rbrack; --once " + eventId + " --morts-vivants";
               evt.waitingForAoe = true;
-              addLineToFramedDisplay(display, msgJet + " <= 13");
-              addLineToFramedDisplay(display, "Sélectionner les token en vue, et <a href='" + action + "'>cliquer ici</a>");
+              addLineToFramedDisplay(display, msgJet + " &ge; 13");
+              sendChat(name, endFramedDisplay(display));
+              sendChat('COF', "/w GM Sélectionner les token en vue de " + name + ", et [cliquer ici](" + action + ")");
             } else {
               addLineToFramedDisplay(display, msgJet + " < 13");
               addLineToFramedDisplay(display, name + " ne réussit pas à invoquer son dieu.");
+              sendChat(name, endFramedDisplay(display));
             }
-            sendChat(name, endFramedDisplay(display));
             addEvent(evt);
           });
       });
