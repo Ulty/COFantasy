@@ -424,24 +424,15 @@ var COFantasy = COFantasy || function() {
   }
 
   function jet(msg) {
-    // Les arguments pour cof-jet shouldsont :
-    // - token
+    // Les arguments pour cof-jet sont :
     // - Caracteristique (FOR, DEX, CON, INT, SAG, CHA)
-
+    // Les tokens sélectionnés sont ceux qui doivent faire le jet
     var args = msg.content.split(" ");
-
-    if (args.length < 2) {
+    if (args.length < 1) {
       error("Pas assez d'arguments pour !cof-jet: " + msg.content, args);
       return;
     }
-
-    var perso = tokenOfId(args[1]);
-    if (perso === undefined) {
-      error("Le premier argument de !cof-jet n'est pas un token valide" + msg.content, args[1]);
-      return;
-    }
-
-    var caracteristique = args[2];
+    var caracteristique = args[1];
     var evt = {
       type: "Jet de " + caracteristique
     };
@@ -452,26 +443,35 @@ var COFantasy = COFantasy || function() {
       case "INT":
       case "SAG":
       case "CHA":
-        jetCaracteristique(perso, caracteristique,
-          function(rolltext, d20, roll) {
+        getSelected(msg, function(selected) {
+          if (selected.length === 0) {
+            sendChat("COF", "/w " + msg.who + " !cof-jet sans sélection de token");
+            log("!cof-jet requiert de sélectionner des tokens");
+            return;
+          }
+          iterSelected(selected, function(perso) {
+            jetCaracteristique(perso, caracteristique,
+              function(rolltext, d20, roll) {
 
-            var display = startFramedDisplay(msg.playerid, "Jet de <b>" + caracOfMod(caracteristique) + "</b>", perso);
-            addLineToFramedDisplay(display, "<b>Resultat :</b> " + rolltext);
-            addStatistics(msg.playerid, ["Jet de carac", caracteristique], roll);
-            // Maintenant, on diminue la malédiction si le test est un échec
-            var attrMalediction = tokenAttribute(perso, 'malediction');
-            if (attrMalediction.length > 0) {
-              if (d20 == 1) diminueMalediction(perso, evt, attrMalediction);
-              else if (d20 < 20) {
-                var action = "<a href='!cof-resultat-jet " + state.COFantasy.eventId;
-                addLineToFramedDisplay(display, "L'action est-elle " + action + " reussi'>réussie</a> ou " + action + " rate'>ratée</a> ?");
-                evt.personnage = perso;
-                evt.attenteResultat = true;
-              }
-            }
-            addEvent(evt);
-            sendChat(perso.token.get('name'), endFramedDisplay(display));
-          });
+                var display = startFramedDisplay(msg.playerid, "Jet de <b>" + caracOfMod(caracteristique) + "</b>", perso);
+                addLineToFramedDisplay(display, "<b>Resultat :</b> " + rolltext);
+                addStatistics(msg.playerid, ["Jet de carac", caracteristique], roll);
+                // Maintenant, on diminue la malédiction si le test est un échec
+                var attrMalediction = tokenAttribute(perso, 'malediction');
+                if (attrMalediction.length > 0) {
+                  if (d20 == 1) diminueMalediction(perso, evt, attrMalediction);
+                  else if (d20 < 20) {
+                    var action = "<a href='!cof-resultat-jet " + state.COFantasy.eventId;
+                    addLineToFramedDisplay(display, "L'action est-elle " + action + " reussi'>réussie</a> ou " + action + " rate'>ratée</a> ?");
+                    evt.personnage = perso;
+                    evt.attenteResultat = true;
+                  }
+                }
+                addEvent(evt);
+                sendChat(perso.token.get('name'), endFramedDisplay(display));
+              });
+          }); //fin de iterSelected
+        }); //fin de getSelected
 
         return;
       default:
@@ -1114,12 +1114,12 @@ var COFantasy = COFantasy || function() {
       if (posture.startsWith('ATT')) {
         postureVal = parseInt(attrPosture.get('current'));
         attBonus -= postureVal;
-        explications.push("Posture de combat => -"+postureVal+" en Attaque");
-    } else if (posture.endsWith('ATT')) {
+        explications.push("Posture de combat => -" + postureVal + " en Attaque");
+      } else if (posture.endsWith('ATT')) {
         postureVal = parseInt(attrPosture.get('current'));
         attBonus += postureVal;
-        explications.push("Posture de combat => +"+postureVal+" en Attaque");
-    }
+        explications.push("Posture de combat => +" + postureVal + " en Attaque");
+      }
     }
     if (attributeAsBool(personnage, 'danseIrresistible')) {
       attBonus -= 4;
@@ -1347,11 +1347,11 @@ var COFantasy = COFantasy || function() {
       if (posture.startsWith('DEF')) {
         postureVal = parseInt(attrPosture.get('current'));
         defense -= postureVal;
-        explications.push("Posture de combat => -"+postureVal+" DEF");
+        explications.push("Posture de combat => -" + postureVal + " DEF");
       } else if (posture.endsWith('DEF')) {
         postureVal = parseInt(attrPosture.get('current'));
         defense += postureVal;
-        explications.push("Posture de combat => +"+postureVal+" DEF");
+        explications.push("Posture de combat => +" + postureVal + " DEF");
       }
     }
     var instinctSurvie = charAttributeAsInt(charId, 'instinctDeSurvie', 0);
@@ -2449,11 +2449,11 @@ var COFantasy = COFantasy || function() {
       if (posture.startsWith('DM')) {
         postureVal = parseInt(attrPosture.get('current'));
         attDMBonusCommun += " -" + postureVal;
-        explications.push("Posture de combat => -"+postureVal+" DM");
+        explications.push("Posture de combat => -" + postureVal + " DM");
       } else if (posture.endsWith('DM')) {
         postureVal = parseInt(attrPosture.get('current'));
         attDMBonusCommun += " +" + postureVal;
-        explications.push("Posture de combat => +"+postureVal+" DM");
+        explications.push("Posture de combat => +" + postureVal + " DM");
       }
     }
     if (aUnCapitaine(attaquant, evt, pageId)) attDMBonusCommun += " +2";
@@ -8777,7 +8777,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-statistiques":
         displayStatistics(msg);
         return;
-      case "!cof-destruction-des-morts-vivants": destructionDesMortsVivants(msg); return;
+      case "!cof-destruction-des-morts-vivants":
+        destructionDesMortsVivants(msg);
+        return;
       default:
         return;
     }
@@ -9096,9 +9098,9 @@ var COFantasy = COFantasy || function() {
       total = tNames.length;
       if (total > 1) {
         var character = getObj('character', charId);
-        var charName = "d'id "+charId;
+        var charName = "d'id " + charId;
         if (character) charName = character.get('name');
-        error("Attention, il y a plusieurs tokens nommés "+tokenName+", instances du personnage "+charName, total);
+        error("Attention, il y a plusieurs tokens nommés " + tokenName + ", instances du personnage " + charName, total);
       }
       tNames.forEach(function(tok) {
         foo(tok, total);
