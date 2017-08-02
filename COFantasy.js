@@ -769,28 +769,18 @@ var COFantasy = COFantasy || function() {
           options.mana = mana;
           break;
         case "bonusAttaque":
+        case "bonusContreBouclier":
+        case "bonusCritique":
           if (cmd.length < 2) {
-            error("Usage : --bonusAttaque b", cmd);
+            error("Usage : --" + cmd[0] + " b", cmd);
             return;
           }
           var bAtt = parseInt(cmd[1]);
           if (isNaN(bAtt)) {
-            error("Le bonus d'attaque doit être un nombre");
+            error("Le bonus (" + cmd[0] + ") doit être un nombre");
             return;
           }
-          options.bonusAttaque = bAtt;
-          return;
-        case "bonusCritique":
-          if (cmd.length < 2) {
-            error("Usage : --bonusCritique b", cmd);
-            return;
-          }
-          var bCrit = parseInt(cmd[1]);
-          if (isNaN(bCrit)) {
-            error("Le bonus aux chances de critique doit être un nombre");
-            return;
-          }
-          options.bonusCritique = bCrit;
+          options[cmd[0]] = bAtt;
           return;
         case "puissant":
           if (cmd.length < 2) {
@@ -1521,6 +1511,13 @@ var COFantasy = COFantasy || function() {
         attBonus += 2;
         explications.push("Arme en argent => +2 en attaque et +1d6 aux DM");
         target.argent = true;
+      }
+    }
+    if (options.bonusContreBouclier) {
+      if (charAttributeAsInt(target, 'DEFBOUCLIERON', 1) &&
+      charAttributeAsInt(target, 'DEFBOUCLIER', 0) > 0) {
+        attBonus += options.bonusContreBouclier;
+        explications.push("L'adversaire porte un bouclier => " + ((options.bonusContreBouclier>0)?'+':'') + options.bonusContreBouclier + " en attaque");
       }
     }
     if (options.contact) {
