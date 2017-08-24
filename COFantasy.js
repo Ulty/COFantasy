@@ -811,18 +811,21 @@ var COFantasy = COFantasy || function() {
           }
           return;
         case 'munition':
-          if (cmd.length < 3) {
-            error("Pour les munitions, il faut préciser le nom et le taux de pertes", cmd);
+          if (cmd.length < 2) {
+            error("Pour les munitions, il faut préciser le nom", cmd);
             return;
+          }
+          var tauxPertes = 100;//Par défaut, les munitions sont perdues
+          if (cmd.length >2)
+            tauxPertes = parseInt(cmd[2]);
+          if (isNaN(tauxPertes) || tauxPertes < 0 || tauxPertes > 100) {
+            error("Le taux de pertes des munitions doit être un nombre entre 0 et 100");
+            tauxPertes = 100;
           }
           options.munition = {
             nom: cmd[1],
-            taux: parseInt(cmd[2])
+            taux: tauxPertes
           };
-          if (isNaN(options.munition.taux)) {
-            error("Le taux de pertes des munitions doit être un nombre entre 0 et 100");
-            options.munition.taux = 20;
-          }
           return;
         case "ligne":
           if (options.aoe) {
