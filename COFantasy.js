@@ -815,8 +815,8 @@ var COFantasy = COFantasy || function() {
             error("Pour les munitions, il faut préciser le nom", cmd);
             return;
           }
-          var tauxPertes = 100;//Par défaut, les munitions sont perdues
-          if (cmd.length >2)
+          var tauxPertes = 100; //Par défaut, les munitions sont perdues
+          if (cmd.length > 2)
             tauxPertes = parseInt(cmd[2]);
           if (isNaN(tauxPertes) || tauxPertes < 0 || tauxPertes > 100) {
             error("Le taux de pertes des munitions doit être un nombre entre 0 et 100");
@@ -1518,9 +1518,9 @@ var COFantasy = COFantasy || function() {
     }
     if (options.bonusContreBouclier) {
       if (charAttributeAsInt(target, 'DEFBOUCLIERON', 1) &&
-      charAttributeAsInt(target, 'DEFBOUCLIER', 0) > 0) {
+        charAttributeAsInt(target, 'DEFBOUCLIER', 0) > 0) {
         attBonus += options.bonusContreBouclier;
-        explications.push("L'adversaire porte un bouclier => " + ((options.bonusContreBouclier>0)?'+':'') + options.bonusContreBouclier + " en attaque");
+        explications.push("L'adversaire porte un bouclier => " + ((options.bonusContreBouclier > 0) ? '+' : '') + options.bonusContreBouclier + " en attaque");
       }
     }
     if (options.contact) {
@@ -2493,6 +2493,13 @@ var COFantasy = COFantasy || function() {
           value: feuForgeron
         });
       }
+    }
+    if (charAttributeAsBool(attackingCharId, 'dmgArme1d6_' + attackLabel)) {
+      options.additionalDmg.push({
+        type: mainDmgType,
+        value: '1d6'
+      });
+      explications.push("Arme enduite => +1d6 aux DM");
     }
     if (options.champion) {
       options.additionalDmg.push({
@@ -5285,6 +5292,12 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  function containsEffectStartingWith(allAttrs, effet) {
+    return (allAttrs.findIndex(function(attr) {
+      return (attr.get('name').startsWith(effet + '_'));
+    }) >= 0);
+  }
+
   function statut(msg) { // show some character informations
     if (!_.has(msg, 'selected')) {
       error("Dans !cof-status : rien à faire, pas de token selectionné", msg);
@@ -5411,16 +5424,14 @@ var COFantasy = COFantasy || function() {
       }
       if (charAttributeAsInt(charId, 'DEFBOUCLIERON', 1) === 0)
         addLineToFramedDisplay(display, "Ne porte pas son bouclier");
+      var allAttrs = findObjs({
+        _type: 'attribute',
+        _characterid: charId
+      });
       for (var effet in messageEffetTemp) {
         var effetActif = false;
-        if (effet == 'forgeron') {
-          if (findObjs({
-              _type: 'attribute',
-              _characterid: charId
-            }).findIndex(function(attr) {
-              return (attr.get('name').startsWith('forgeron_'));
-            }) >= 0)
-            effetActif = true;
+        if (effet == 'forgeron' || effet == 'dmgArme1d6') {
+          effetActif = containsEffectStartingWith(allAttrs, effet);
         } else effetActif = attributeAsBool(perso, effet);
         if (effetActif)
           addLineToFramedDisplay(display, messageEffetTemp[effet].actif);
@@ -6340,6 +6351,7 @@ var COFantasy = COFantasy || function() {
     var effetComplet = cmd[1];
     var effet = cmd[1];
     if (effet.startsWith('forgeron_')) effet = 'forgeron';
+    else if (effet.startsWith('dmgArme1d6_')) effet = 'dmgArme1d6';
     if (!estEffetTemp(effet)) {
       error(effet + " n'est pas un effet temporaire répertorié", msg.content);
       return;
@@ -8832,6 +8844,11 @@ var COFantasy = COFantasy || function() {
       activation: "enflamme son arme",
       actif: "a une arme en feu",
       fin: "L'arme n'est plus enflammée."
+    },
+    dmgArme1d6: {
+      activation: "enduit son arme d'une huile magique",
+      actif: "a une arme plus puissante",
+      fin: "L'arme retrouve sa puissance normale"
     },
     agrandissement: {
       activation: "se met à grandir",
