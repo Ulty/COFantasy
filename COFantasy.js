@@ -2104,7 +2104,7 @@ var COFantasy = COFantasy || function() {
                 display: buildinline(explRoll, 'normal')
               };
               dealDamage(attaquant, r, [], evt, 1, options, explications,
-                function(dmgDisplay, saveResult, dmg) {
+                function(dmgDisplay, dmg) {
                   var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
                     dmgDisplay;
                   addLineToFramedDisplay(display, dmgMsg);
@@ -2124,7 +2124,7 @@ var COFantasy = COFantasy || function() {
                 display: buildinline(explRoll, 'normal')
               };
               dealDamage(attaquant, r, [], evt, 1, options, explications,
-                function(dmgDisplay, saveResult, dmg) {
+                function(dmgDisplay, dmg) {
                   var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
                     dmgDisplay;
                   addLineToFramedDisplay(display, dmgMsg);
@@ -2397,6 +2397,7 @@ var COFantasy = COFantasy || function() {
     if (cibles.length === 0) {
       finaliseDisplay(display, explications, evt);
       if (critSug) sendChat('COF', critSug);
+      return;
     }
     var attackingCharId = attaquant.charId;
     var attackingToken = attaquant.token;
@@ -2483,7 +2484,7 @@ var COFantasy = COFantasy || function() {
         explications.push("Force de géant => +2 en Attaque");
       }
     }
-    if (charAttributeAsBool(attackingCharId, 'forgeron_' + attackLabel)) {
+    if (attributeAsBool(attaquant, 'forgeron_' + attackLabel)) {
       var feuForgeron = charAttributeAsInt(attackingCharId, 'voieDuMetal', 0);
       if (feuForgeron < 1 || feuForgeron > 5) {
         error("Rang dans la voie du métal de " + attackerTokName + " inconnu ou incorrect", feuForgeron);
@@ -2493,6 +2494,22 @@ var COFantasy = COFantasy || function() {
           value: feuForgeron
         });
       }
+    }
+    var poisonAttr = tokenAttribute(attaquant, 'poisonRapide_' + attackLabel);
+    if (poisonAttr.length > 0) {
+      poisonAttr = poisonAttr[0];
+      options.additionalDmg.push({
+        type: 'poison',
+        value: poisonAttr.get('current'),
+        partialSave: {
+          carac: 'CON',
+          seuil: poisonAttr.get('max')
+        }
+      });
+      explications.push("L'arme est empoisonnée");
+      evt.deletedAttributes = evt.deletedAttributes || [];
+      evt.deletedAttributes.push(poisonAttr);
+      poisonAttr.remove();
     }
     if (charAttributeAsBool(attackingCharId, 'dmgArme1d6_' + attackLabel)) {
       options.additionalDmg.push({
@@ -2772,7 +2789,7 @@ var COFantasy = COFantasy || function() {
             } else {
               dealDamage(target, mainDmgRoll, additionalDmg, evt, target.touche,
                 options, target.messages,
-                function(dmgDisplay, saveResult, dmg) {
+                function(dmgDisplay, dmg) {
                   if (options.strigeSuce) {
                     var suce = attributeAsInt(attaquant, 'strigeSuce', 0);
                     if (suce === 0) {
@@ -2819,7 +2836,7 @@ var COFantasy = COFantasy || function() {
                       };
                       dealDamage(attaquant, r, [], evt, 1, options,
                         target.messages,
-                        function(dmgDisplay, saveResult, dmg) {
+                        function(dmgDisplay, dmg) {
                           var dmgMsg =
                             "<b>Décharge électrique sur " + attackerTokName + " :</b> " +
                             dmgDisplay;
@@ -3014,6 +3031,10 @@ var COFantasy = COFantasy || function() {
     } else afterSave();
   }
 
+  // Fonction asynchrone
+  // displayRes est optionnel, et peut avoir 2 arguments
+  // - un texte affichant le jet de dégâts
+  // - la valeur finale des dégâts infligés
   function dealDamage(target, dmg, otherDmg, evt, crit, options, explications, displayRes) {
     if (options === undefined) options = {};
     var expliquer = function(msg) {
@@ -3025,12 +3046,12 @@ var COFantasy = COFantasy || function() {
       (options.aoe === undefined &&
         attributeAsBool(target, 'formeGazeuse'))) {
       expliquer("L'attaque passe à travers de " + target.token.get('name'));
-      if (displayRes) displayRes('0', undefined, 0);
+      if (displayRes) displayRes('0', 0);
       return 0;
     }
     if (options.asphyxie && estNonVivant(target)) {
       expliquer("L'asphyxie est sans effet sur une créature non-vivante");
-      if (displayRes) displayRes('0', undefined, 0);
+      if (displayRes) displayRes('0', 0);
       return 0;
     }
     crit = crit || 1;
@@ -3488,7 +3509,7 @@ var COFantasy = COFantasy || function() {
                         }
                         if (showTotal) dmgDisplay += " = " + dmgTotal;
                         if (displayRes === undefined) return dmgDisplay;
-                        displayRes(dmgDisplay, saveResult, dmgTotal);
+                        displayRes(dmgDisplay, dmgTotal);
                       });
                     if (displayRes === undefined) return dmgDisplay;
                     return;
@@ -3505,7 +3526,7 @@ var COFantasy = COFantasy || function() {
           if (showTotal) dmgDisplay += " = " + dmgTotal;
         }
         if (displayRes === undefined) return dmgDisplay;
-        displayRes(dmgDisplay, saveResult, dmgTotal);
+        displayRes(dmgDisplay, dmgTotal);
       });
     return dmgDisplay;
   }
@@ -5373,14 +5394,11 @@ var COFantasy = COFantasy || function() {
         var nomArme = attr.get('current');
         var armeLabel = nomArme.split(' ', 1)[0];
         nomArme = nomArme.substring(nomArme.indexOf(' ') + 1);
-        var charge =
-          findObjs({
-            _type: "attribute",
-            _characterid: charId,
-            name: "charge_" + armeLabel
-          });
-        if (charge.length > 0) {
-          charge = parseInt(charge[0].get('current'));
+        var charge = attrsChar.find(function(a) {
+          return (a.get('name') == 'charge_' + armeLabel);
+        });
+        if (charge) {
+          charge = parseInt(charge.get('current'));
           if (!isNaN(charge)) {
             if (charge === 0) {
               line = nomArme + " n'est pas chargé";
@@ -5404,6 +5422,9 @@ var COFantasy = COFantasy || function() {
             }
             addLineToFramedDisplay(display, line);
           }
+        }
+        if (attributeAsBool(perso, 'poisonRapide_' + armeLabel)) {
+          addLineToFramedDisplay(display, nomArme + " est enduit de poison.");
         }
       });
       if (attributeAsInt(perso, 'enflamme', 0))
@@ -5797,6 +5818,11 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  // Test de caractéristique
+  // Après le test, lance callback(reussite, texte).
+  //  texte est l'affichage du jet de dé
+  //   reussite est false si le jet échoue, undefined si c'est un échec critique
+  //     true si c'est une réussite, et 2 si c'est un critique.
   function testCaracteristique(personnage, carac, bonusAttrs, seuil, bonus, evt, callback) { //asynchrone
     var charId = personnage.charId;
     var token = personnage.token;
@@ -5820,7 +5846,11 @@ var COFantasy = COFantasy || function() {
       var d20roll = rolls.inlinerolls[0].results.total;
       var bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
       var rtext = buildinline(rolls.inlinerolls[0]) + bonusText;
-      if (d20roll == 20 || d20roll + bonusCarac >= seuil) callback(true, rtext);
+      if (d20roll == 20) callback(2, rtext);
+      else if (d20roll == 1) {
+        diminueMalediction(personnage, evt);
+        callback(undefined, rtext);
+      } else if (d20roll + bonusCarac >= seuil) callback(true, rtext);
       else {
         diminueMalediction(personnage, evt);
         callback(false, rtext);
@@ -5909,7 +5939,6 @@ var COFantasy = COFantasy || function() {
             options[opt[0]] = true;
             return;
           default:
-            error("option de !cof-aoe inconnue :" + opt[0], optArgs);
         }
       });
       if (options.return) return;
@@ -5956,22 +5985,14 @@ var COFantasy = COFantasy || function() {
           return;
         }
         var name = perso.token.get('name');
-        dealDamage(perso, dmg, [], evt, 1, options, undefined,
-          function(dmgDisplay, saveResult, dmgFinal) {
-            if (partialSave === undefined) {
-              addLineToFramedDisplay(display,
-                name + " reçoit " + dmgDisplay + " points de dégâts");
-            } else {
-              var message =
-                name + " fait " + saveResult.display + ". " +
-                onGenre(perso.charId, 'Il', 'Elle');
-              if (saveResult.success) {
-                message += " ne reçoit que " + dmgDisplay + " points de dégâts";
-              } else {
-                message += " reçoit " + dmgDisplay + " points de dégâts";
-              }
-              addLineToFramedDisplay(display, message);
-            }
+        var explications = [];
+        dealDamage(perso, dmg, [], evt, 1, options, explications,
+          function(dmgDisplay, dmgFinal) {
+            addLineToFramedDisplay(display,
+              name + " reçoit " + dmgDisplay + " points de dégâts", undefined, true);
+            explications.forEach(function(e) {
+              addLineToFramedDisplay(display, e);
+            });
             finalDisplay();
           });
       }, finalDisplay);
@@ -7863,7 +7884,7 @@ var COFantasy = COFantasy || function() {
         display: buildinline(res[0].inlinerolls[0], 'magique', true),
       };
       dealDamage(target, dmg, [], evt, 1, {}, undefined,
-        function(dmgDisplay, saveResult, dmg) {
+        function(dmgDisplay, dmg) {
           sendChar(charId1, "maintient sa strangulation sur " + name2 + ". Dommages : " + dmgDisplay);
           addEvent(evt);
         });
@@ -8215,7 +8236,7 @@ var COFantasy = COFantasy || function() {
               };
               var explications = [];
               dealDamage(barbare, r, [], evt, 1, {}, explications,
-                function(dmgDisplay, saveResult, dmg) {
+                function(dmgDisplay, dmg) {
                   var dmgMsg = "mais cela lui coûte " + dmgDisplay + " PV";
                   addLineToFramedDisplay(display, dmgMsg);
                   finaliseDisplay(display, explications, evt);
@@ -8571,6 +8592,144 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function enduireDePoison(msg) {
+    var optArgs = msg.content.split(' --');
+    var cmd = optArgs[0].split(' ');
+    optArgs.shift();
+    if (cmd.length < 5) {
+      error("Usage : !cof-enduire-poison L type force save", cmd);
+      return;
+    }
+    var labelArme = cmd[1];
+    var typePoison = cmd[2];
+    if (typePoison != 'rapide') {
+      error("le seul type de poison géré est rapide, pas " + typePoison, cmd);
+    }
+    var attribut = 'poisonRapide_' + labelArme;
+    var forcePoison = cmd[3];
+    var savePoison = parseInt(cmd[4]);
+    if (isNaN(savePoison)) {
+      error("Le dernier argument non optionnel doit être la difficulté du test de CON", cmd);
+      return;
+    }
+    var testINT = 14;
+    var dose;
+    optArgs.forEach(function(arg) {
+      cmd = arg.split(' ');
+      switch (cmd[0]) {
+        case 'testINT':
+          if (cmd.length < 2) {
+            error("Il faut un argument à --testINT", cmd);
+            return;
+          }
+          testINT = parseInt(cmd[1]);
+          if (isNaN(testINT)) {
+            error("Argument de --testINT invalide", cmd);
+            testINT = 14;
+          }
+          return;
+        case 'dose': //TODO
+          if (cmd.length < 2) {
+            error("Il manque le nom de la dose de poison", cmd);
+            return;
+          }
+          dose = cmd[1];
+          return;
+      }
+    }); //fin du traitement des options
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(perso) {
+        var name = perso.token.get('name');
+        var att = getAttack(labelArme, name, perso.charId);
+        if (att === undefined) {
+          error(name + " n'a pas d'arme associée au label " + labelArme, cmd);
+          return;
+        }
+        if (attributeAsBool(perso, attribut)) {
+          sendChar(perso.charId, att.weaponName + " est déjà enduit de poison.");
+          return;
+        }
+        var evt = {
+          type: "Enduire de poison"
+        };
+        var display = startFramedDisplay(msg.playerid, "Essaie d'enduire " + att.weaponName + " de poison", perso);
+        if (dose) {
+          var nomDose = dose.replace(/_/g, ' ');
+          var doseAttr = tokenAttribute(perso, 'dose_' + dose);
+          if (doseAttr.length === 0) {
+            sendChar(perso.charId, "n'a pas de dose de " + nomDose);
+            return; //evt toujours vide
+          }
+          doseAttr = doseAttr[0];
+          var nbDoses = parseInt(doseAttr.get('current'));
+          if (isNaN(nbDoses) || nbDoses < 1) {
+            sendChar(perso.charId, "n'a plus de dose de " + nomDose);
+            return; //evt toujours vide
+          }
+          evt.attributes = evt.attributes || [];
+          evt.attributes.push({
+            attribute: doseAttr,
+            current: nbDoses
+          });
+          //À partir de ce point, tout return doit ajouter evt
+          nbDoses--;
+          addLineToFramedDisplay(display, "Il restera " + nbDoses + " dose de " + nomDose + " à " + name);
+          doseAttr.set('current', nbDoses);
+        }
+        //Test d'INT pour savoir si l'action réussit.
+        testCaracteristique(perso, 'INT', [], testINT, 0, evt,
+          function(reussite, rtext) {
+            var jet = "Jet d'INT : " + rtext;
+            if (reussite === undefined) { //échec critique
+              jet += " Échec critique !";
+              addLineToFramedDisplay(display, jet);
+              addLineToFramedDisplay(display, name + " s'empoisonne.");
+              sendChat('', "[[" + forcePoison + "]]", function(res) {
+                var rolls = res[0];
+                var dmgRoll = rolls.inlinerolls[0];
+                var r = {
+                  total: dmgRoll.results.total,
+                  type: 'poison',
+                  display: buildinline(dmgRoll, 'poison')
+                };
+                var ps = {
+                  partialSave: {
+                    carac: 'CON',
+                    seuil: savePoison
+                  }
+                };
+                var explications = [];
+                dealDamage(perso, r, [], evt, 1, ps, explications,
+                  function(dmgDisplay, dmg) {
+                    explications.forEach(function(e) {
+                      addLineToFramedDisplay(display, e);
+                    });
+                    addLineToFramedDisplay(name + " subit " + dmgDisplay + " DM");
+                    addEvent(evt);
+                    sendChat("", endFramedDisplay(display));
+                  }); //fin de dmg dus à l'échec critique
+              }); //fin du jet de dmg
+              return;
+            } else if (reussite) {
+              jet += " &ge; " + testINT;
+              addLineToFramedDisplay(display, jet);
+              setTokenAttr(perso, attribut, forcePoison, evt, undefined, savePoison);
+              addLineToFramedDisplay(display, att.weaponName + " est maintenant enduit de poison");
+              addEvent(evt);
+              sendChat("", endFramedDisplay(display));
+              return;
+            } else { //echec normal au jet d'INT
+              jet += " < " + testINT + " : échec";
+              addLineToFramedDisplay(display, jet);
+              addEvent(evt);
+              sendChat("", endFramedDisplay(display));
+              return;
+            }
+          }); //fin du test de carac
+      }); //fin de iterSelected
+    }); //fin de getSelected
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -8768,6 +8927,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-destruction-des-morts-vivants":
         destructionDesMortsVivants(msg);
+        return;
+      case "!cof-enduire-poison":
+        enduireDePoison(msg);
         return;
       default:
         return;
@@ -9225,7 +9387,7 @@ var COFantasy = COFantasy || function() {
           charId: charId
         };
         dealDamage(perso, r, [], evt, 1, options, undefined,
-          function(dmgDisplay, saveResult, dmg) {
+          function(dmgDisplay, dmg) {
             sendChar(charId, msg + ". " + onGenre(charId, 'Il', 'Elle') +
               " subit " + dmgDisplay + " DM");
             count--;

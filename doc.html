@@ -926,7 +926,13 @@ p  {margin-left: inherit}
       <li>Baroud d'honneur : ajouter un attribut <tt>baroudHonneur</tt> (=true) (Quand le personnage arrive à 0 PV, il ne meurt pas jusqu'à sa prochaine attaque, qui se fait avec un bonus de +5)</li>
       <li>Créature non-vivante : ajouter un attribut <tt>nonVivant</tt></li>
       <li>Force de géant : <tt>!cof-effet-temp forceDeGeant 10</tt></li>
-      <li> Putréfaction : ajouter à l'attaque <tt>--effet putrefaction 5 --save CON 14</tt> (pour les données des momies)</li>
+      <li>Poison : pour enduire une arme de label <i>L</i> de poison, utiliser <tt>!cof-enduire-poison <i>L type force save</i></tt>. Pour l'instant, <i>type</i> ne peut être que <tt>rapide</tt>, et <i>force</i> est une expression pour les dégâts (typiquement, <tt>2d6</tt> pour un poison rapide). <i>save</i> est la difficulté du jet de CON pour résister au poison. On peut rajouter deux arguments optionnels :
+        <ul>
+          <li><tt>--testINT</tt> <i>n</i>: fixe la difficulté du jet d'INT pour réussir à poser le poison. La difficulté par défaut est 14.</li>
+          <li><tt>--dose</tt> <i>nom</i>: indique une ressource dans laquelle on puise pour enduire de poison (à la manière de munitions). Il faudra que le personnage ait une ability de nom <tt>dose_</tt><i>nom</i> avec comme valeur le nombre de doses possédées.</li>
+        </ul>
+      </li> 
+      <li>Putréfaction : ajouter à l'attaque <tt>--effet putrefaction 5 --save CON 14</tt> (pour les données des momies)</li>
       <li>Huile de fort assaut : <tt>!cof-effet-temp dmgArme1d6_<i>L</i> 10</tt> où <i>L</i> est le label de l'arme qu'on veut enduire d'huile de fort assaut.</li>
       <li>Immunité aux armes : ajouter un attribut <tt>immuniteAuxArmes</tt> avec comme valeur <tt>true</tt></li>
       <li>Sans esprit      : ajouter un attribut <tt>sansEsprit</tt> (=true) permet la réussite
