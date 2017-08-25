@@ -1627,7 +1627,6 @@ var COFantasy = COFantasy || function() {
         addEvent(evt);
         return true;
       }
-
       setTokenAttr(personnage, ressource, utilisations - 1, evt);
     }
     if (options.limiteParCombat) {
@@ -1641,8 +1640,17 @@ var COFantasy = COFantasy || function() {
         addEvent(evt);
         return true;
       }
-
       setTokenAttr(personnage, ressource, utilisations - 1, evt);
+    }
+    if (options.dose) {
+      var nomDose = options.dose.replace(/_/g, ' ');
+      var doses = attributeAsInt(personnage, 'dose_' + options.dose, 0);
+      if (doses === 0) {
+        sendChar(personnage.charId, "n'a plus de " + nomDose);
+        addEvent(evt);
+        return true;
+      }
+      setTokenAttr(personnage, 'dose_' + options.dose, doses - 1, evt);
     }
     return false;
   }
@@ -6350,6 +6358,13 @@ var COFantasy = COFantasy || function() {
         case 'saveParTour':
           options.saveParTour = parseSave(cmd);
           return;
+        case 'dose':
+          if (cmd.length < 2) {
+            error("Il faut le nom de la dose", cmd);
+            return;
+          }
+          options.dose = cmd[1];
+          return;
         default:
           return;
       }
@@ -6387,7 +6402,7 @@ var COFantasy = COFantasy || function() {
     evt.type = 'Effet temporaire ' + effetComplet;
     var lanceur = options.lanceur;
     var charId;
-    if (lanceur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour || options.limiteParCombat)) {
+    if (lanceur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour || options.limiteParCombat || options.dose)) {
       error("Il faut préciser un lanceur pour ces options d'effet", options);
       return;
     }
