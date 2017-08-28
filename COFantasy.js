@@ -726,7 +726,10 @@ var COFantasy = COFantasy || function() {
             }
           }
           var psaveParams = parseSave(cmd);
-          if (psaveParams) psaveopt.partialSave = psaveParams;
+          if (psaveParams) {
+            psaveopt.partialSave = psaveParams;
+            psaveopt.attaquant = attaquant;
+          }
           return;
         case 'save':
           if (lastEtat) {
@@ -740,7 +743,7 @@ var COFantasy = COFantasy || function() {
             }
             return;
           }
-          error("Pass d'effet auquel appliquer le save", optArgs);
+          error("Pas d'effet auquel appliquer le save", optArgs);
           return;
         case 'saveParTour':
           if (lastEtat) {
@@ -1253,7 +1256,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //asynchrone pour avoir les alliés (pour le combat en phalange)
-  function defenseOfToken(target, pageId, evt, options, callback) {
+  function defenseOfToken(attaquant, target, pageId, evt, options, callback) {
     options = options || {};
     var charId = target.charId;
     var tokenName = target.tokName;
@@ -1363,6 +1366,11 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(target, 'prisonVegetale')) {
       defense -= 2;
       explications.push("Prison végétale => -2 DEF");
+    }
+    if (attributeAsBool(target, 'protectionContreLeMal') &&
+      estMauvais(attaquant)) {
+      defense += 2;
+      explications.push("Protection contre le mal => +2 DEF");
     }
     if (charAttributeAsBool(target, 'combatEnPhalange')) {
       listeAllies(target, function(allies) {
@@ -1510,7 +1518,7 @@ var COFantasy = COFantasy || function() {
       target.ennemiJure = true;
     }
     if (options.argent) {
-      if (raceIs(target, 'mort-vivant') || raceIs(target, 'demon') || raceIs(target, 'démon')) {
+      if (estMortVivant(target) || raceIs(target, 'demon') || raceIs(target, 'démon')) {
         attBonus += 2;
         explications.push("Arme en argent => +2 en attaque et +1d6 aux DM");
         target.argent = true;
@@ -2210,7 +2218,7 @@ var COFantasy = COFantasy || function() {
             if (target.crit > 2) target.crit -= 1;
           }
           //Defense de la cible
-          defenseOfToken(target, pageId, evt, options, function(defense) {
+          defenseOfToken(attaquant, target, pageId, evt, options, function(defense) {
             var interchange;
             if (options.aoe === undefined) {
               interchange = interchangeable(attackingToken, target, pageId);
@@ -2410,6 +2418,7 @@ var COFantasy = COFantasy || function() {
     var attackingCharId = attaquant.charId;
     var attackingToken = attaquant.token;
     var attackerTokName = attaquant.tokName;
+    options.attaquant = attaquant;
 
     //Les dégâts
     //Dégâts insrits sur la ligne de l'arme
@@ -2871,13 +2880,19 @@ var COFantasy = COFantasy || function() {
                     }], d20roll)) {
                     var msgPour = " pour résister à un effet";
                     var msgRate = ", " + target.tokName + " est " + ce.etat + eForFemale(target.charId) + " par l'attaque";
-                    save(ce.save, target, expliquer, msgPour, '', msgRate, evt, function(reussite, rolltext) {
-                      if (!reussite) {
-                        setState(target, ce.etat, true, evt);
-                      }
-                      saves--;
-                      afterSaves();
-                    });
+                    var saveOpts = {
+                      msgPour: msgPour,
+                      msgRate: msgRate,
+                      attaquant: attaquant
+                    };
+                    save(ce.save, target, expliquer, saveOpts, evt,
+                      function(reussite, rolltext) {
+                        if (!reussite) {
+                          setState(target, ce.etat, true, evt);
+                        }
+                        saves--;
+                        afterSaves();
+                      });
                   } else {
                     if (ce.condition.type == "moins") {
                       target.messages.push(
@@ -2898,7 +2913,12 @@ var COFantasy = COFantasy || function() {
                 if (ef.save) {
                   var msgPour = " pour résister à un effet";
                   var msgRate = ", " + target.tokName + " " + messageEffetTemp[ef.effet].activation;
-                  save(ef.save, target, expliquer, msgPour, '', msgRate, evt,
+                  var saveOpts = {
+                    msgPour: msgPour,
+                    msgRate: msgRate,
+                    attaquant: attaquant
+                  };
+                  save(ef.save, target, expliquer, saveOpts, evt,
                     function(reussite, rollText) {
                       if (!reussite) {
                         setTokenAttr(target, ef.effet, ef.duree, evt,
@@ -2961,6 +2981,7 @@ var COFantasy = COFantasy || function() {
     return ((de - seuil) + 1) / de;
   }
 
+  // Meilleure carac parmis 2 pour un save.
   function meilleureCarac(carac1, carac2, personnage, seuil) {
     var charId = personnage.charId;
     var bonus1 = bonusTestCarac(carac1, personnage);
@@ -2978,7 +2999,19 @@ var COFantasy = COFantasy || function() {
 
   //s représente le save, avec une carac, une carac2 optionnelle et un seuil
   //expliquer est une fonction qui prend en argument un string et le publie
-  function save(s, target, expliquer, msgPour, msgReussite, msgRate, evt, afterSave) {
+  // options peut contenir les champs :
+  //   - msgPour : message d'explication à afficher avant le jet
+  //   - msgReussite : message à afficher en cas de réussite
+  //   - msgRate : message à afficher si l'action rate
+  //   - attaquant : le {charId, token} de l'attaquant contre lequel le save se fait (si il y en a un)
+  function save(s, target, expliquer, options, evt, afterSave) {
+    var bonus = 0;
+    if (options.attaquant &&
+      charAttributeAsBool(target, 'protectionContreLeMal') &&
+      estMauvais(options.attaquant)) {
+      bonus += 2;
+      expliquer("Protection contre le mal => +2 au jet de sauvegarde");
+    }
     var bonusAttrs = [];
     var carac = s.carac;
     //Cas où le save peut se faire au choix parmis 2 caracs
@@ -2988,18 +3021,18 @@ var COFantasy = COFantasy || function() {
     if (carac == 'DEX') {
       bonusAttrs.push('reflexesFelins');
     }
-    testCaracteristique(target, carac, bonusAttrs, s.seuil, 0, evt,
+    testCaracteristique(target, carac, bonusAttrs, s.seuil, bonus, evt,
       function(reussite, rollText) {
-        var smsg =
-          " Jet de " + carac + " difficulté " + s.seuil + msgPour;
+        var smsg = " Jet de " + carac + " difficulté " + s.seuil;
+        if (options.msgPour) smsg += options.msgPour;
         expliquer(smsg);
         smsg = target.token.get('name') + " fait " + rollText;
         if (reussite) {
           smsg += " => réussite";
-          if (msgReussite) smsg += msgReussite;
+          if (options.msgReussite) smsg += options.msgReussite;
         } else {
           smsg += " => échec";
-          if (msgRate) smsg += msgRate;
+          if (options.msgRate) smsg += options.msgRate;
         }
         expliquer(smsg);
         afterSave(reussite, rollText);
@@ -3019,8 +3052,11 @@ var COFantasy = COFantasy || function() {
         });
         return;
       }
-      save(ps.partialSave, target, expliquer, " pour réduire les dégâts",
-        ", dégâts divisés par 2", '', evt,
+      save(ps.partialSave, target, expliquer, {
+          msgPour: " pour réduire les dégâts",
+          msgReussite: ", dégâts divisés par 2",
+          attaquant: ps.attaquant
+        }, evt,
         function(succes, rollText) {
           if (succes) {
             if (showTotal) dmgDisplay = "(" + dmgDisplay + ")";
@@ -3504,8 +3540,10 @@ var COFantasy = COFantasy || function() {
                     save({
                         carac: 'CON',
                         seuil: defierLaMort
-                      }, target,
-                      expliquer, " pour défier la mort", ", conserve 1 PV", '', evt,
+                      }, target, expliquer, {
+                        msgPour: " pour défier la mort",
+                        msgReussite: ", conserve 1 PV"
+                      }, evt,
                       function(reussite, rollText) {
                         if (reussite) {
                           updateCurrentBar(token, 1, 1);
@@ -5988,7 +6026,7 @@ var COFantasy = COFantasy || function() {
         tokensToProcess--;
       }
       iterSelected(selected, function(perso) {
-        if (options['morts-vivants'] && !(raceIs(perso, 'mort-vivant'))) {
+        if (options['morts-vivants'] && !(estMortVivant(perso))) {
           finalDisplay();
           return;
         }
@@ -6900,8 +6938,11 @@ var COFantasy = COFantasy || function() {
           var expliquer = function(message) {
             addLineToFramedDisplay(display, message, 80);
           };
-          var msgPour = " pour résister au tueur fantasmagorique";
-          save(s, cible, expliquer, msgPour, undefined, undefined, evt,
+          var saveOpts = {
+            msgPour: " pour résister au tueur fantasmagorique",
+            attaquant: attaquant
+          };
+          save(s, cible, expliquer, saveOpts, evt,
             function(reussiteSave) {
               if (reussiteSave) {
                 addLineToFramedDisplay(display, cible.token.get('name') + " perd l'équilibre et tombe par terre");
@@ -7122,6 +7163,47 @@ var COFantasy = COFantasy || function() {
     if (attr.length === 0) return false;
     var charRace = attr[0].get('current').toLowerCase();
     return (charRace == race.toLowerCase());
+  }
+
+  function estMortVivant(perso) {
+    if (charAttributeAsBool(perso, 'mort-vivant')) return true;
+    var attr = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+      name: 'RACE'
+    });
+    if (attr.length === 0) return false;
+    var charRace = attr[0].get('current').toLowerCase();
+    switch (charRace) {
+      case 'squelette':
+      case 'zombie':
+      case 'mort-vivant':
+      case 'momie':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function estMauvais(perso) {
+    if (charAttributeAsBool(perso, 'mauvais')) return true;
+    var attr = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+      name: 'RACE'
+    });
+    if (attr.length === 0) return false;
+    var charRace = attr[0].get('current').toLowerCase();
+    switch (charRace) {
+      case 'squelette':
+      case 'zombie':
+      case 'élémentaire':
+      case 'démon':
+      case 'momie':
+        return true;
+      default:
+        return false;
+    }
   }
 
   function soin(msg) {
@@ -7849,17 +7931,13 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-strangulation: " + msg.content, args);
       return;
     }
-    var token1 = getObj('graphic', args[1]); // Le nécromancien
-    if (token1 === undefined) {
+    var necromancien = tokenOfId(args[1], args[1]);
+    if (necromancien === undefined) {
       error("Le premier argument n'est pas un token", args[1]);
       return;
     }
-    var charId1 = token1.get('represents');
-    if (charId1 === "") {
-      error("Le token sélectionné ne correspond pas à un personnage", args);
-      return;
-    }
-    var pageId = token1.get('pageid');
+    var charId1 = necromancien.charId;
+    var pageId = necromancien.token.get('pageid');
     var target = tokenOfId(args[2], args[2], pageId);
     if (target === undefined) {
       error("Le deuxième argument n'est pas un token valide: " + msg.content, args[2]);
@@ -7898,7 +7976,9 @@ var COFantasy = COFantasy || function() {
         total: res[0].inlinerolls[0].results.total,
         display: buildinline(res[0].inlinerolls[0], 'magique', true),
       };
-      dealDamage(target, dmg, [], evt, 1, {}, undefined,
+      dealDamage(target, dmg, [], evt, 1, {
+          attaquant: necromancien
+        }, undefined,
         function(dmgDisplay, dmg) {
           sendChar(charId1, "maintient sa strangulation sur " + name2 + ". Dommages : " + dmgDisplay);
           addEvent(evt);
@@ -9171,6 +9251,11 @@ var COFantasy = COFantasy || function() {
       activation: "crée une arme d'argent et de lumière",
       actif: "possède une arme d'argent et de lumière",
       fin: "ne possède plus d'arme d'argent et de lumière"
+    },
+    protectionContreLeMal: {
+      activation: "reçoit une bénédiction de protection contre le mal",
+      actif: "est protégé contre le mal",
+      fin: "n'est plus protégé contre le mal"
     }
   };
 
@@ -9702,14 +9787,18 @@ var COFantasy = COFantasy || function() {
         var sujet = onGenre(charId, 'il', 'elle');
         var msgReussite = ", " + sujet + " " + messageEffetTemp[effet].fin;
         var msgRate = ", " + sujet + " " + messageEffetTemp[effet].actif;
+        var saveOpts = {
+          msgPour: msgPour,
+          msgReussite: msgReussite,
+          msgRate: msgRate
+        };
         save({
             carac: carac,
             seuil: seuil
           }, {
             charId: charId,
             token: token
-          }, expliquer, msgPour,
-          msgReussite, msgRate, evt,
+          }, expliquer, saveOpts, evt,
           function(reussite) { //asynchrone
             if (reussite) {
               finDEffet(attrEffet, effet, attrName, charId, evt, attr);

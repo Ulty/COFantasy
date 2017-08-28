@@ -153,7 +153,7 @@ p  {margin-left: inherit}
       <li><tt>--enflamme</tt> : enflamme la cible, lui infligeant 1d6 DM par tour. Les flammes s'éteindent sur un 1 ou 2. Si l'option <tt>--puissant</tt> est donnée en conjonction, les DM augmentent de 1.</li>
       <li><tt>--malediction</tt> : maudit la cible pour 3 jets.</li>
       <li><tt>--asDeLaGachette</tt> : ajoute 1d6 DM si le jet d'attaque dépasse une DEF de 25.</li>
-      <li><tt>--argent</tt> : bonus de +2 en attaque et 1d6 aux DM si la cible est un mort-vivant ou un démon (utilise le champ <tt>Race</tt> de la fiche).</li>
+      <li><tt>--argent</tt> : bonus de +2 en attaque et 1d6 aux DM si la cible est un mort-vivant ou un démon (utilise le champ <tt>Race</tt> de la fiche ou si présent un attribut <tt>mort-vivant</tt>).</li>
       <li><tt>--rate</tt>, <tt>--touche</tt>, <tt>--critique</tt>, <tt>--echecCritique</tt> : options pour tricher : le résultat des dés donne toujours le résultat voulu.</li>
       <li><tt>--ligne</tt> : l'attaque porte sur toutes les cibles à portée, entre l'attaquant et le token ciblé. Si le token ciblé est plus proche que la portée de l'attaque, les tokens derrière le token ciblé sont aussi visés. Pour permettre de viser un point quelconque, on peut utiliser un personnage dédié avec un maximum de 0 pv. À chaque fois qu'un token représentant ce personnage est utilisé comme cible de <tt>--ligne</tt>, le token est enlevé de la carte.</li>
       <li><tt>--disque</tt> <i>r</i> : l'attaque porte sur toutes les cibles dans le disque de centre le token ciblé et de rayon <i>r</i>. Comme pour <tt>--ligne</tt>, on peut utilisant un token cible qui sera supprimé après l'attaque.</li>
@@ -569,6 +569,7 @@ p  {margin-left: inherit}
     <h4>Voie des artefacts</h4>
     <ol>
       <li>Bâton de mage : simplement adapter l'attaque, avec aussi <tt>--magique</tt></li>
+      <li>Blocage : pas de support particulier</li>
     </ol>
     <h4>Voie des élixirs</h4>
     <ol>
@@ -770,6 +771,7 @@ p  {margin-left: inherit}
     <h4>Voie de la spiritualité</h4>
     <ol>
       <li>Vêtements sacrés : Ajouter un attribut <tt>vetementsSacres</tt> avec comme valeur le rang dans la voie de la spiritualité. Cela augmente la DEF, mais seulement lorsque le prêtre ne porte pas d'armure (ne se voit pas sur le total de DEF de la fiche)</li>
+      <li>Protection contre le mal : <tt>!cof-effet-combat protectionContreLeMal --lanceur @{selected|token_id} --target @{target|token_id} --portee 0</tt>. Donne le bonus contre toute créature dont l'attribut <tt>RACE</tt> est <tt>squelette</tt>, <tt>zombie</tt>, <tt>démon</tt>, <tt>élémentaire</tt>, ou bien qui possède l'attribut <tt>mauvais</tt> (valeur <tt>true</tt>).</li>
     </ol>
 
     <h3>Rôdeur</h3>
