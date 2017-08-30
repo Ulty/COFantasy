@@ -1638,8 +1638,13 @@ var COFantasy = COFantasy || function() {
       setTokenAttr(personnage, ressource, utilisations - 1, evt);
     }
     if (options.limiteParCombat) {
+      if (!state.COFantasy.combat) {
+        sendChar(personnage.charId, "ne peut pas faire cette action en dehors des combats");
+        addEvent(evt);
+        return true;
+      }
       if (options.limiteParCombatRessource)
-        ressource = options.limiteParcombatRessource;
+        ressource = options.limiteParCombatRessource;
       ressource = "limiteParCombat_" + ressource;
       utilisations =
         attributeAsInt(personnage, ressource, options.limiteParCombat);
@@ -1659,6 +1664,16 @@ var COFantasy = COFantasy || function() {
         return true;
       }
       setTokenAttr(personnage, 'dose_' + options.dose, doses - 1, evt);
+    }
+    if (options.limiteAttribut) {
+      var nomAttr = options.limiteAttribut.nom;
+      var currentAttr = attributeAsInt(personnage, nomAttr, 0);
+      if (currentAttr >= options.limiteAttribut.limite) {
+        sendChar(personnage.charId, options.limiteAttribut.message);
+        addEvent(evt);
+        return true;
+      }
+      setTokenAttr(personnage, nomAttr, currentAttr + 1, evt);
     }
     return false;
   }
@@ -6280,7 +6295,7 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
-  function parseOptions(msg, evt, pageId) {
+  function parseOptions(msg, pageId) {
     if (pageId === undefined && msg.selected && msg.selected.length > 0) {
       var firstSelected = getObj('graphic', msg.selected[0]._id);
       pageId = firstSelected.get('pageid');
@@ -6415,8 +6430,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function effetTemporaire(msg) {
-    var evt = {};
-    var options = parseOptions(msg, evt);
+    var options = parseOptions(msg);
     var cmd = options.cmd;
     if (cmd === undefined || cmd.length < 3) {
       error("Pas assez d'arguments pour !cof-effet-temp", msg.content);
@@ -6437,7 +6451,9 @@ var COFantasy = COFantasy || function() {
         msg.content);
       return;
     }
-    evt.type = 'Effet temporaire ' + effetComplet;
+    var evt = {
+      type: 'Effet temporaire ' + effetComplet
+    };
     var lanceur = options.lanceur;
     var charId;
     if (lanceur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour || options.limiteParCombat || options.dose)) {
@@ -6482,8 +6498,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function effetCombat(msg) {
-    var evt = {};
-    var options = parseOptions(msg, evt);
+    var options = parseOptions(msg);
     var cmd = options.cmd;
     if (cmd === undefined || cmd.length < 2) {
       error("Pas assez d'arguments pour !cof-effet-combat", msg.content);
@@ -6494,7 +6509,9 @@ var COFantasy = COFantasy || function() {
       error(effet + " n'est pas un effet de combat répertorié", msg.content);
       return;
     }
-    evt.type = 'Effet ' + effet;
+    var evt = {
+      type: 'Effet ' + effet
+    };
     var lanceur = options.lanceur;
     var charId;
     if (lanceur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour || options.limiteParCombat)) {
@@ -6534,8 +6551,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function effetIndetermine(msg) {
-    var evt = {};
-    var options = parseOptions(msg, evt);
+    var options = parseOptions(msg);
     var cmd = options.cmd;
     if (cmd === undefined || cmd.length < 3) {
       error("Pas assez d'arguments pour !cof-effet", msg.content);
@@ -6562,7 +6578,9 @@ var COFantasy = COFantasy || function() {
         error("Option de !cof-effet inconnue", cmd);
         return;
     }
-    evt.type = 'Effet ' + effet;
+    var evt = {
+      type: 'Effet ' + effet
+    };
     var lanceur = options.lanceur;
     var charId;
     if (lanceur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour || options.limiteParCombat)) {
@@ -7206,132 +7224,235 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function soin(msg) {
-    var args = msg.content.split(" ");
-    if (args.length < 4) {
-      error("Pas assez d'arguments pour !cof-soin: " + msg.content, args);
+  function soigner(msg) {
+    var options = parseOptions(msg);
+    var args = msg.content.split(' --');
+    var cmd = args[0].split(' ');
+    if (cmd.length < 2) {
+      error("Il faut au moins un argument à !cof-soin", args);
       return;
     }
-    var soigneur = tokenOfId(args[1], args[1]);
-    if (soigneur === undefined) {
-      error("Le premier argument n'est pas un token valide", args[1]);
-      return;
+    var soigneur = options.lanceur;
+    var pageId;
+    if (soigneur) pageId = soigneur.token.get('pageId');
+    var cible;
+    var argSoin;
+    if (cmd.length > 4) {
+      error("Trop d'arguments à !cof-soin", cmd);
     }
-    var token1 = soigneur.token;
-    var charId1 = soigneur.charId;
-    var pageId = token1.get('pageid');
-    var target = tokenOfId(args[2], args[2], pageId);
-    if (target === undefined) {
-      error("Le deuxième argument n'est pas un token valide: " + msg.content, args[2]);
-      return;
-    }
-    var token2 = target.token; // Le soigné
-    var charId2 = target.charId;
-    var name2 = token2.get('name');
-    var indexPortee = msg.content.indexOf(' --portee');
-    if (indexPortee > 0) { //Une portée est spécifiée
-      var argPortee = msg.content.substring(indexPortee + 2);
-      argPortee = argPortee.split(' ');
-      if (argPortee.length < 2) {
-        error("Il manque un argument à l'option --portee de !cof-soin", argPortee);
+    if (cmd.length > 2) { //cof-soin lanceur [cible] montant
+      if (soigneur === undefined) {
+        soigneur = tokenOfId(cmd[1], cmd[1]);
+        if (soigneur === undefined) {
+          error("Le premier argument n'est pas un token valide", cmd[1]);
+          return;
+        }
+        pageId = soigneur.token.get('pageid');
+      }
+      if (cmd.length > 3) { // on a la cible en argument
+        cible = tokenOfId(cmd[2], cmd[2], pageId);
+        if (cible === undefined) {
+          error("Le deuxième argument n'est pas un token valide: " + msg.content, cmd[2]);
+          return;
+        }
+        argSoin = cmd[3];
       } else {
-        var portee = parseInt(argPortee[1]);
-        if (isNaN(portee) || portee < 0) {
-          error("L'argument portee doit être un entier positif", argPortee);
+        argSoin = cmd[2];
+      }
+    } else { //on a juste le montant des soins
+      argSoin = cmd[1];
+    }
+    if (soigneur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour || options.limiteParCombat || options.dose)) {
+      error("Il faut préciser un soigneur pour ces options d'effet", options);
+      return;
+    }
+    var charId;
+    var niveau = 1;
+    var rangSoin = 0;
+    var soins;
+    if (soigneur) {
+      charId = soigneur.charId;
+      niveau = charAttributeAsInt(soigneur, 'NIVEAU', 1);
+      rangSoin = charAttributeAsInt(soigneur, 'voieDesSoins', 0);
+    }
+    var effet = "soins";
+    switch (argSoin) {
+      case 'leger':
+        effet += ' légers';
+        if (options.dose === undefined && options.limiteParJour === undefined)
+          options.limiteAttribut = {
+            nom: 'soinsLegers',
+            message: "ne peut plus lancer de sort de soins légers aujourd'hui",
+            limite: rangSoin
+          };
+        soins = "[[1d8 +" + niveau + "]]";
+        if (options.portee === undefined) options.portee = 0;
+        break;
+      case 'modere':
+        effet += ' modérés';
+        if (options.dose === undefined && options.limiteParJour === undefined)
+          options.limiteAttribut = {
+            nom: 'soinsModeres',
+            message: "ne peut plus lancer de sort de soins modéréss aujourd'hui",
+            limite: rangSoin
+          };
+        if (options.portee === undefined) options.portee = 0;
+        soins = "[[2d8 +" + niveau + "]]";
+        break;
+      case 'groupe':
+        if (!state.COFantasy.combat) {
+          sendChar(charId, " ne peut pas lancer de soin de groupe en dehors des combats");
+          return;
+        }
+        effet += ' de groupe';
+        if (options.dose === undefined && options.limiteParJour === undefined)
+          options.limiteAttribut = {
+            nom: 'soinsDeGroupe',
+            message: " a déjà fait un soin de groupe durant ce combat",
+            limite: 1
+          };
+        if (options.puissant) soins = "[[1d10";
+        else soins = "[[1d8";
+        soins += " + " + niveau + "]]";
+        msg.content += " --allies --self";
+        if (options.mana === undefined) options.mana = 1;
+        break;
+      default:
+        soins = "[[" + argSoin + "]]";
+    }
+    sendChat('', soins, function(res) {
+      soins = res[0].inlinerolls[0].results.total;
+      var soinTxt = buildinline(res[0].inlinerolls[0], 'normal', true);
+      if (soins <= 0) {
+        sendChar(charId, "ne réussit pas à soigner (total de soins " + soinTxt + ")");
+        return;
+      }
+      var evt = {
+        type: effet
+      };
+      var limiteATester = true;
+      var soinImpossible = false;
+      var nbCibles;
+      var display;
+      var iterCibles = function(callback) {
+        if (cible) {
+          nbCibles = 1;
+          callback(cible);
         } else {
-          var distance = distanceCombat(token1, token2, pageId);
-          if (distance > portee) {
-            sendChar(charId1, "est trop loin de " + name2 + " pour le soigner");
+          getSelected(msg, function(selected) {
+            nbCibles = selected.length;
+            if (nbCibles > 1) {
+              display = startFramedDisplay(msg.playerid, effet, soigneur);
+            } else if (nbCibles === 0) {
+              sendChar(soigneur.charId, "personne à soigner");
+              return;
+            }
+            iterSelected(selected, callback);
+          });
+        }
+      };
+      var finSoin = function() {
+        if (nbCibles == 1) {
+          if (display) sendChat("", endFramedDisplay(display));
+          addEvent(evt);
+        }
+        nbCibles--;
+      };
+      var token = soigneur.token;
+      iterCibles(function(cible) {
+        if (soinImpossible) {
+          finSoin();
+          return;
+        }
+        var token2 = cible.token;
+        var name2 = token2.get('name');
+        var sujet = onGenre(cible.charId, 'il', 'elle');
+        var Sujet = onGenre(cible.charId, 'Il', 'Elle');
+        if (options.portee !== undefined) {
+          var distance = distanceCombat(token, token2, pageId);
+          if (distance > options.portee) {
+            if (display)
+              addLineToFramedDisplay(display, "<b>" + name2 + "</b> : trop loin pour le soin.");
+            else
+              sendChar(charId,
+                "est trop loin de " + name2 + " pour le soigner.");
             return;
           }
         }
-      }
-    }
-    var callMax = function() {
-      sendChar(charId1, "n'a pas besoin de soigner " + name2 + ". Il est déjà au maximum de PV");
-      return;
-    };
-    var niveau = charAttributeAsInt(charId1, 'NIVEAU', 1);
-    var rangSoin = charAttributeAsInt(charId1, 'voieDesSoins', 0);
-    var evt = {
-      type: 'soins'
-    };
-    var printTrue = function(soins) {
-      sendChar(charId1, "soigne " + name2 + " de " + soins + " PV");
-      addEvent(evt);
-    };
-    var callTrue = printTrue;
-    var soins;
-    switch (args[3]) {
-      case 'leger':
-        var nbLegers = charAttributeAsInt(charId1, 'soinsLegers', 0);
-        if (nbLegers >= rangSoin) {
-          sendChar(charId1, "ne peut plus lancer de sort de soins légers aujourd'hui");
-          return;
+        if (limiteATester) {
+          limiteATester = false;
+          if (limiteRessources(soigneur, options, effet, effet, evt)) {
+            soinImpossible = true;
+            display = undefined;
+            finSoin();
+            return;
+          } else if (display) {
+            addLineToFramedDisplay(display, "Résultat des dés : " + soinTxt);
+          }
         }
-        callTrue = function(s) {
-          setTokenAttr(soigneur, 'soinsLegers', nbLegers + 1, evt);
-          printTrue(s);
+        var callMax = function() {
+          if (display) {
+            addLineToFramedDisplay(display, "<b>" + name2 + "</b> : pas besoin de soins.");
+          } else {
+            var maxMsg = "n'a pas besoin de ";
+            if (token2.id == token.id) maxMsg += "se soigner";
+            else maxMsg += "soigner " + name2;
+            sendChar(charId, maxMsg + ". " + Sujet + " est déjà au maximum de PV");
+          }
+          return;
         };
-        soins = randomInteger(8) + niveau;
-        break;
-      case 'modere':
-        if (rangSoin < 2) {
-          sendChar(charId1, "n'a pas un rang suffisant dans la Voie des Soins pour lancer un sort de soins modérés");
-          return;
-        }
-        var nbModeres = charAttributeAsInt(charId1, 'soinsModeres', 0);
-        if (nbModeres >= rangSoin) {
-          sendChar(charId1, "ne peut plus lancer de sort de soins modérés aujourd'hui");
-          return;
-        }
-        callTrue = function(s) {
-          setTokenAttr(soigneur, 'soinsModeres', nbModeres + 1, evt);
-          printTrue(s);
+        var printTrue = function(s) {
+          if (display) {
+            addLineToFramedDisplay(display,
+              "<b>" + name2 + "</b> : + " + s + " PV");
+          } else {
+            var msgSoin;
+            if (token2.id == token.id) msgSoin = 'se soigne';
+            else msgSoin = 'soigne ' + name2;
+            msgSoin += " de ";
+            if (s < soins)
+              msgSoin += s + " PV. (Le résultat du jet était " + soinTxt + ")";
+            else msgSoin += soinTxt + " PV.";
+            sendChar(charId, msgSoin);
+          }
         };
-        soins = randomInteger(8) + randomInteger(8) + niveau;
-        break;
-      default:
-        soins = parseInt(args[3]);
-        if (isNaN(soins) || soins < 1) {
-          error(
-            "Le troisième argument de !cof-soin doit être un nombre positif",
-            msg.content);
-          return;
+        var callTrue = printTrue;
+        var pvSoigneur;
+        var callTrueFinal = callTrue;
+        if (msg.content.includes(' --transfer')) { //paie avec ses PV
+          pvSoigneur = parseInt(token.get("bar1_value"));
+          if (isNaN(pvSoigneur) || pvSoigneur <= 0) {
+            if (display)
+              addLineToFramedDisplay(display, "<b>" + name2 + "</b> : plus assez de PV pour le soigner");
+            else
+              sendChar(charId,
+                "ne peut pas soigner " + name2 + ", " + sujet + " n'a plus de PV");
+            soinImpossible = true;
+            finSoin();
+            return;
+          }
+          if (pvSoigneur < soins) {
+            soins = pvSoigneur;
+          }
+          callTrueFinal = function(s) {
+            evt.affectes.push({
+              prev: {
+                bar1_value: pvSoigneur
+              },
+              affecte: token
+            });
+            updateCurrentBar(token, 1, pvSoigneur - s);
+            if (pvSoigneur == s) setState(soigneur, 'mort', true, evt);
+            callTrue(s);
+          };
         }
-    }
-    if (soins <= 0) {
-      sendChar(charId1, "ne réussit pas à soigner (total de soins " + soins + ")");
-      return;
-    }
-    var pvSoigneur;
-    var callTrueFinal = callTrue;
-    if (msg.content.includes(' --transfer')) { //paie avec ses PV
-      pvSoigneur = parseInt(token1.get("bar1_value"));
-      if (isNaN(pvSoigneur) || pvSoigneur <= 0) {
-        var sujet = onGenre(charId2, 'il', 'elle');
-        sendChar(charId1,
-          "ne peut pas soigner " + name2 + ", " + sujet + " n'a plus de PV");
-        return;
-      }
-      if (pvSoigneur < soins) {
-        soins = pvSoigneur;
-      }
-      callTrueFinal = function(s) {
-        evt.affectes.push({
-          prev: {
-            bar1_value: pvSoigneur
-          },
-          affecte: token1
-        });
-        updateCurrentBar(token1, 1, pvSoigneur - s);
-        if (pvSoigneur == s) setState(soigneur, 'mort', true, evt);
-        callTrue(s);
-      };
-    }
-    soigneToken(token2, soins, evt, callTrueFinal, callMax);
+        soigneToken(token2, soins, evt, callTrueFinal, callMax);
+        finSoin();
+      }); //fin de iterCibles
+    }); //fin du sendChat du jet de dés
   }
 
+  //Deprecated
   function aoeSoin(msg) {
     var args = msg.content.split(' ');
     if (args.length < 2) {
@@ -7974,7 +8095,7 @@ var COFantasy = COFantasy || function() {
       var dmg = {
         type: 'magique',
         total: res[0].inlinerolls[0].results.total,
-        display: buildinline(res[0].inlinerolls[0], 'magique', true),
+        display: buildinline(res[0].inlinerolls[0], 'normal', true),
       };
       dealDamage(target, dmg, [], evt, 1, {
           attaquant: necromancien
@@ -8929,9 +9050,9 @@ var COFantasy = COFantasy || function() {
         transeGuerison(msg);
         return;
       case "!cof-soin":
-        soin(msg);
+        soigner(msg);
         return;
-      case "!cof-aoe-soin":
+      case "!cof-aoe-soin": //Deprecated
         aoeSoin(msg);
         return;
       case "!cof-nature-nourriciere":

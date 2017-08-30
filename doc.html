@@ -206,18 +206,15 @@ p  {margin-left: inherit}
     <h3>2.2 Soins</h3>
     <h4><tt>!cof-soin @{selected|token_id} @{target|token_id}</tt> <i>x</i></h4>
     <p>
-    <i>x</i> peut être un nombre, un jet de dé ou <tt>leger</tt> ou <tt>modere</tt> 
+    <i>x</i> peut être un nombre, un jet de dé ou <tt>leger</tt>, <tt>modere</tt> ou <tt>groupe</tt>.
+    <p>
+    Le deuxième argument est optionnel. Si il n'est pas présent, alors la sélection se fait soit en utilisant les tokens sélectionnés, soit avec une option de sélection de groupe.
     <p>
     L'option <tt>--portee</tt> <i>n</i> permet de spécifier une distance maximum entre le soigneur et le soigné (au-delà, le soin échoue).
     <p>
     Avec l'option <tt>--transfer</tt>, le soin est payé avec les PV du soigneur
     <p>
-
-    <h4><tt>!cof-aoe-soin</tt>  <i>x</i></h4>
-    <p>
-    soigne de <i>x</i> les tokens sélectionnés.
-    <i>x</i> peut aussi être <tt>groupe</tt>, auquel cas le lanceur devra être sélectionné et
-    les <a href="#allie">alliés</a> dans la même map seront soignés.
+    L'option <tt>--mana</tt> <i>n</i> demande au lanceur de payer <i>n</i> points de mana.
 
     <h3>2.3 Undo :
       <tt>!cof-undo</tt></h3>
@@ -762,10 +759,10 @@ p  {margin-left: inherit}
     <p style="margin-top:0px; margin-bottom:0px">
     Utiliser un attribut <tt>voieDesSoins</tt> avec comme valeur le rang dans la voie
     <ol>
-      <li>Soins légers : <tt>!cof-soin @{selected|token_id} @{target|token_id} leger --portee 0</tt></li>
-      <li>Soins modérés : <tt>!cof-soin @{selected|token_id} @{target|token_id} modere --portee 0</tt></li>
-      <li>Soins de groupe : <tt>!cof-aoe-soin groupe</tt> (ne pas oublier de définir des <a href="#allie">alliés</a>).
-    le sort nécessite un point de mana (barre 2 du token), et accepte
+      <li>Soins légers : <tt>!cof-soin @{selected|token_id} @{target|token_id} leger</tt></li>
+      <li>Soins modérés : <tt>!cof-soin @{selected|token_id} @{target|token_id} modere</tt></li>
+      <li>Soins de groupe : <tt>!cof-soin @{selected|token_id} groupe</tt> (ne pas oublier de définir des <a href="#allie">alliés</a>).
+    Le sort nécessite un point de mana (barre 2 du token), et accepte
     l'option --puissant pour soigner un peu plus.</li>
     </ol>
     <h4>Voie de la spiritualité</h4>
