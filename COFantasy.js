@@ -1675,6 +1675,30 @@ var COFantasy = COFantasy || function() {
       }
       setTokenAttr(personnage, nomAttr, currentAttr + 1, evt);
     }
+    if (options.contactDuToken && personnage) {
+      var tok = getObj('graphic', options.contactDuToken);
+      if (tok) {
+        var distance = distanceCombat(tok, personnage.token, options.pageId);
+        if (distance > 0) {
+          sendChar(personnage.charId, "trop loin du consommable");
+          return true;
+        }
+      }
+    }
+    if (options.decrAttribute) {
+      var attr = options.decrAttribute;
+      var oldval = parseInt(attr.get('current'));
+      if (isNaN(oldval) || oldval < 1) {
+        return true;
+      }
+      evt.attributes = evt.attributes || [];
+      evt.attributes.push({
+        attribute: attr,
+        current: oldval,
+        max: attr.get('max')
+      });
+      attr.set('current', oldval - 1);
+    }
     return false;
   }
 
@@ -6295,8 +6319,9 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
-  function parseOptions(msg, pageId) {
-    if (pageId === undefined && msg.selected && msg.selected.length > 0) {
+  function parseOptions(msg) {
+    var pageId;
+    if (msg.selected && msg.selected.length > 0) {
       var firstSelected = getObj('graphic', msg.selected[0]._id);
       pageId = firstSelected.get('pageid');
     }
@@ -6417,6 +6442,26 @@ var COFantasy = COFantasy || function() {
             return;
           }
           options.dose = cmd[1];
+          return;
+        case 'decrAttribute':
+          if (cmd.length < 2) {
+            error("Erreur interne d'une commande générée par bouton", opts);
+            return;
+          }
+          var attr = getObj('attribute', cmd[1]);
+          if (attr === undefined) {
+            log("Attribut à changer perdu");
+            log(cmd);
+            return;
+          }
+          options.decrAttribute = attr;
+          return;
+        case 'contactDuToken':
+          if (cmd.length < 2) {
+            error("Erreur interne d'une commande générée par bouton", opts);
+            return;
+          }
+          options.contactDuToken = cmd[1];
           return;
         default:
           return;
@@ -7226,10 +7271,9 @@ var COFantasy = COFantasy || function() {
 
   function soigner(msg) {
     var options = parseOptions(msg);
-    var args = msg.content.split(' --');
-    var cmd = args[0].split(' ');
+    var cmd = options.cmd;
     if (cmd.length < 2) {
-      error("Il faut au moins un argument à !cof-soin", args);
+      error("Il faut au moins un argument à !cof-soin", cmd);
       return;
     }
     var soigneur = options.lanceur;
@@ -7344,7 +7388,7 @@ var COFantasy = COFantasy || function() {
             if (nbCibles > 1) {
               display = startFramedDisplay(msg.playerid, effet, soigneur);
             } else if (nbCibles === 0) {
-              sendChar(soigneur.charId, "personne à soigner");
+              sendChar(charId, "personne à soigner");
               return;
             }
             iterSelected(selected, callback);
@@ -7358,7 +7402,6 @@ var COFantasy = COFantasy || function() {
         }
         nbCibles--;
       };
-      var token = soigneur.token;
       iterCibles(function(cible) {
         if (soinImpossible) {
           finSoin();
@@ -7369,7 +7412,7 @@ var COFantasy = COFantasy || function() {
         var sujet = onGenre(cible.charId, 'il', 'elle');
         var Sujet = onGenre(cible.charId, 'Il', 'Elle');
         if (options.portee !== undefined) {
-          var distance = distanceCombat(token, token2, pageId);
+          var distance = distanceCombat(soigneur.token, token2, pageId);
           if (distance > options.portee) {
             if (display)
               addLineToFramedDisplay(display, "<b>" + name2 + "</b> : trop loin pour le soin.");
@@ -7395,7 +7438,7 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, "<b>" + name2 + "</b> : pas besoin de soins.");
           } else {
             var maxMsg = "n'a pas besoin de ";
-            if (token2.id == token.id) maxMsg += "se soigner";
+            if (!soigneur || token2.id == soigneur.token.id) maxMsg += "se soigner";
             else maxMsg += "soigner " + name2;
             sendChar(charId, maxMsg + ". " + Sujet + " est déjà au maximum de PV");
           }
@@ -7407,7 +7450,7 @@ var COFantasy = COFantasy || function() {
               "<b>" + name2 + "</b> : + " + s + " PV");
           } else {
             var msgSoin;
-            if (token2.id == token.id) msgSoin = 'se soigne';
+            if (!soigneur || token2.id == soigneur.token.id) msgSoin = 'se soigne';
             else msgSoin = 'soigne ' + name2;
             msgSoin += " de ";
             if (s < soins)
@@ -7420,7 +7463,12 @@ var COFantasy = COFantasy || function() {
         var pvSoigneur;
         var callTrueFinal = callTrue;
         if (msg.content.includes(' --transfer')) { //paie avec ses PV
-          pvSoigneur = parseInt(token.get("bar1_value"));
+          if (soigneur === undefined) {
+            error("Il faut préciser qui est le soigneur pour utiliser l'option --transfer", msg.content);
+            soinImpossible = true;
+            return;
+          }
+          pvSoigneur = parseInt(soigneur.token.get("bar1_value"));
           if (isNaN(pvSoigneur) || pvSoigneur <= 0) {
             if (display)
               addLineToFramedDisplay(display, "<b>" + name2 + "</b> : plus assez de PV pour le soigner");
@@ -7439,9 +7487,9 @@ var COFantasy = COFantasy || function() {
               prev: {
                 bar1_value: pvSoigneur
               },
-              affecte: token
+              affecte: soigneur.token
             });
-            updateCurrentBar(token, 1, pvSoigneur - s);
+            updateCurrentBar(soigneur.token, 1, pvSoigneur - s);
             if (pvSoigneur == s) setState(soigneur, 'mort', true, evt);
             callTrue(s);
           };
@@ -8830,6 +8878,8 @@ var COFantasy = COFantasy || function() {
     }
     var testINT = 14;
     var dose;
+    var decrAttribute;
+    var proprio;
     optArgs.forEach(function(arg) {
       cmd = arg.split(' ');
       switch (cmd[0]) {
@@ -8844,17 +8894,41 @@ var COFantasy = COFantasy || function() {
             testINT = 14;
           }
           return;
-        case 'dose': //TODO
+        case 'dose':
           if (cmd.length < 2) {
             error("Il manque le nom de la dose de poison", cmd);
             return;
           }
           dose = cmd[1];
           return;
+        case 'decrAttribute':
+          if (cmd.length < 2) {
+            error("Erreur interne d'une commande générée par bouton", cmd);
+            return;
+          }
+          var attr = getObj('attribute', cmd[1]);
+          if (attr === undefined) {
+            log("Attribut à changer perdu");
+            log(cmd);
+            return;
+          }
+          decrAttribute = attr;
+          return;
+        case 'contactDuToken':
+          if (cmd.length < 2) {
+            error("Erreur interne d'une commande générée par bouton", cmd);
+            return;
+          }
+          proprio = cmd[1];
+          return;
       }
     }); //fin du traitement des options
     getSelected(msg, function(selected) {
       iterSelected(selected, function(perso) {
+        if (proprio && perso.token.id != proprio) {
+          sendChar(perso.charId, "ne peut pas utiliser un poison qu'il n'a pas");
+          return;
+        }
         var name = perso.token.get('name');
         var att = getAttack(labelArme, name, perso.charId);
         if (att === undefined) {
@@ -8891,6 +8965,20 @@ var COFantasy = COFantasy || function() {
           nbDoses--;
           addLineToFramedDisplay(display, "Il restera " + nbDoses + " dose de " + nomDose + " à " + name);
           doseAttr.set('current', nbDoses);
+        }
+        if (decrAttribute) {
+          var oldval = parseInt(decrAttribute.get('current'));
+          if (isNaN(oldval) || oldval < 1) {
+            sendChar(perso.charId, "n'a plus de ce poison");
+            return;
+          }
+          evt.attributes = evt.attributes || [];
+          evt.attributes.push({
+            attribute: decrAttribute,
+            current: oldval,
+            max: decrAttribute.get('max')
+          });
+          decrAttribute.set('current', oldval - 1);
         }
         //Test d'INT pour savoir si l'action réussit.
         testCaracteristique(perso, 'INT', [], testINT, 0, evt,
@@ -8944,6 +9032,44 @@ var COFantasy = COFantasy || function() {
           }); //fin du test de carac
       }); //fin de iterSelected
     }); //fin de getSelected
+  }
+
+  function listeConsommables(msg) {
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(perso) {
+        if (perso.token.get('bar1_link') === '') {
+          error("La liste de consommables n'est pas au point pour les tokens non liés", perso);
+          return;
+        }
+        var display = startFramedDisplay(msg.playerid, "Liste des consommables", perso);
+        var attributes = findObjs({
+          _type: 'attribute',
+          _characterid: perso.charId
+        });
+        attributes.forEach(function(attr) {
+          var attrName = attr.get('name');
+          if (!(attrName.startsWith('dose_') || attrName.startsWith('consommable_'))) return;
+          var consName = attrName.substring(attrName.indexOf('_') + 1);
+          consName = consName.replace(/_/g, ' ');
+          var quantite = parseInt(attr.get('current'));
+          if (isNaN(quantite) || quantite < 1) {
+            addLineToFramedDisplay(display, "0 " + consName);
+            return;
+          }
+          var action = attr.get('max');
+          var ligne = quantite + ' ';
+          if (action !== '') {
+            action += " --decrAttribute " + attr.id + " --contactDuToken " + perso.token.id;
+            action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;');
+            ligne += "<a href='" + action + "'>";
+          }
+          ligne += consName;
+          if (action !== '') ligne += "</a>";
+          addLineToFramedDisplay(display, ligne);
+        }); //fin de la boucle sur les attributs
+        sendChat('', endFramedDisplay(display));
+      });
+    }); //fin du getSelected
   }
 
   function apiCommand(msg) {
@@ -9146,6 +9272,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-enduire-poison":
         enduireDePoison(msg);
+        return;
+      case "!cof-consommables":
+        listeConsommables(msg);
         return;
       default:
         return;

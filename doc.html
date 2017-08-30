@@ -315,10 +315,17 @@ p  {margin-left: inherit}
       <li><tt>--portee</tt> <i>n</i> : limite la portée du sort à <i>n</i> metres.</li>
     </ul>
 
-    <h3>2.9 Escaliers</h3>
+    <h3>2.9 Consommables <tt>!cof-consommables</tt></h3>
+    La fonction affiche une liste de consommables, avec la possibilité de cliquer sur un élément de la liste pour le consommer (et activer son effet). Pour cela, la fonction regarde tous les attributs qui commencent par <tt>dose_</tt> ou <tt>consommable_</tt>. La valeur courante doit être le nombre d'éléments possédé, et le max peut être une commande à effectuer pour activer l'effet. La fonction est à réserver aux tokens liés à un personnage. 
+    <p>
+   Attention, les boutons sont utilisables par tout le monde, ce qui permet de faire utiliser un des concommables d'un personnage par un autre. Le script vérifie juste que le token qui utilise l'objet est au contact.
+   <p> 
+   Pour l'instant, seules les commandes <tt>!cof-effet-temp</tt>, <tt>!cof-effet-combat</tt>, <tt>!cof-effet</tt>, <tt>!cof-enduire-poison</tt> et <tt>!cof-soin</tt> diminuent correctement le nombre de consommables.
+
+    <h3>2.10 Escaliers</h3>
     Pour gérer les escaliers sur les cartes, vous pouvez utiliser la méthode suivante, inspirée du script Teleport : placez dans le layer "GM Info Overlay", au nivea des escaliers, des tokens qui prennent exactement la place des escaliers. Nommez ces escaliers avec un nom suivi du nombre d'étages (entre 2 et 9), suivi d'une lettre majuscule. Par exemple <tt>Escalier2A</tt>. Chaque escalier de la même colonne doit avoir le même nom et même nombre d'étage, et différer seulement par la lettre finale. Ensuite, si un ensemble de tokens est sur un escalier, utilisez <tt>!cof-escalier</tt> pour téléporter les tokens à l'emplacement de l'escalier suivant dans l'ordre des lettres. Dans l'exemple précédent, il serait téléporté à l'emplacement du token nommé <tt>Escalier2B</tt>. Cela ne fonctionne que si les bouts de l'escalier sont sur la même carte. À vous de choisir sir vous préférez révéler cette fonctionalité à vos joueurs, ou si vous le faites vous-même.
     
-    <h3>2.10 Jet de Caracteristiques</h3>
+    <h3>2.11 Jet de Caracteristiques</h3>
     <p>
     <tt>!cof-jet ?{Faire un jet de |Charisme, CHA|Constitution, CON|Dextérité, DEX|Force, FOR|Intelligence, INT|Sagesse, SAG}</tt> : fait un simple jet pour la caractérisique sélectionnée.
     <p>
@@ -763,7 +770,7 @@ p  {margin-left: inherit}
       <li>Soins modérés : <tt>!cof-soin @{selected|token_id} @{target|token_id} modere</tt></li>
       <li>Soins de groupe : <tt>!cof-soin @{selected|token_id} groupe</tt> (ne pas oublier de définir des <a href="#allie">alliés</a>).
     Le sort nécessite un point de mana (barre 2 du token), et accepte
-    l'option --puissant pour soigner un peu plus.</li>
+    l'option <tt>--puissant</tt> pour soigner un peu plus.</li>
     </ol>
     <h4>Voie de la spiritualité</h4>
     <ol>
