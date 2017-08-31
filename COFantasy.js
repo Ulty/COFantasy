@@ -9059,8 +9059,13 @@ var COFantasy = COFantasy || function() {
           var action = attr.get('max');
           var ligne = quantite + ' ';
           if (action !== '') {
-            action += " --decrAttribute " + attr.id + " --contactDuToken " + perso.token.id;
+            if (action.startsWith('!')) {
+              action += " --decrAttribute " + attr.id + " --contactDuToken " + perso.token.id;
+            } else {
+              action = "!cof-utilise-consommable " + perso.token.id + " " + attr.id + " --message " + action;
+            }
             action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;');
+            action = action.replace(/\'/g, '&apos;'); // escape quotes
             ligne += "<a href='" + action + "'>";
           }
           ligne += consName;
@@ -9070,6 +9075,79 @@ var COFantasy = COFantasy || function() {
         sendChat('', endFramedDisplay(display));
       });
     }); //fin du getSelected
+  }
+
+  // Le premier argument est l'id du token, le deuxième est l'id de l'attribut,
+  // le reste est le message à afficher
+  function utiliseConsommable(msg) {
+    var cmd = msg.content.split(' ');
+    if (cmd.length < 3) {
+      error("Erreur interne de consommables", cmd);
+      return;
+    }
+    var perso = tokenOfId(cmd[1]);
+    if (perso === undefined) {
+      log("Propriétaire perdu");
+      sendChat('COF', "Plus possible d'utiliser cette action. Réafficher les consommables.");
+      return;
+    }
+    // Vérifie les droits d'utiliser le consommable
+    if (msg.selected && msg.selected.length == 1) {
+      var utilisateur = tokenOfId(msg.selected[0]._id);
+      if (utilisateur === undefined) {
+        sendChat('COF', "Le token sélectionné n'est pas valide");
+        return;
+      }
+      var d = distanceCombat(perso.token, utilisateur.token);
+      if (d > 0) {
+        sendChar(utilisateur.charId, "est trop loin de " + perso.token.get('name') + " pour utiliser ses objets");
+        return;
+      }
+      perso = utilisateur;
+    } else { //On regarde si le joueur contrôle le token
+      if (!msg.who.endsWith("(GM)")) {
+        var character = getObj('character', perso.charId);
+        if (character === undefined) {
+          sendChat('COF', "Le token sélectionné n'est pas valide");
+          return;
+        }
+        var ctrl = character.get('controlledby').split(',');
+        var ctrlOk = ctrl.findIndex(function(ct) {
+          if (ct == 'all') return true;
+          if (ct == msg.playerid) return true;
+          return false;
+        });
+        if (ctrlOk < 0) {
+          sendChat('COF', "Pas les droits pour ça");
+          return;
+        }
+      }
+    }
+    var attr = getObj('attribute', cmd[2]);
+    if (attr === undefined) {
+      log("Attribut à changer perdu");
+      log(cmd);
+      sendChat('COF', "Plus possible d'utiliser cette action. Réafficher les consommables.");
+      return;
+    }
+    var oldval = parseInt(attr.get('current'));
+    if (isNaN(oldval) || oldval < 1) {
+      sendChat('COF', "Plus a déjà été utilisé");
+      return;
+    }
+    var evt = {
+      type: "Utilisation de consommable",
+      attributes: []
+    };
+    evt.attributes.push({
+      attribute: attr,
+      current: oldval,
+      max: attr.get('max')
+    });
+    attr.set('current', oldval - 1);
+    var start = msg.content.indexOf(' --message ') + 10;
+    sendChar(perso.charId, msg.content.substring(start));
+    addEvent(evt);
   }
 
   function apiCommand(msg) {
@@ -9275,6 +9353,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-consommables":
         listeConsommables(msg);
+        return;
+      case "!cof-utilise-consommable": //Usage interne seulement
+        utiliseConsommable(msg);
         return;
       default:
         return;
