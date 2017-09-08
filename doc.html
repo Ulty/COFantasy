@@ -823,10 +823,12 @@ p  {margin-left: inherit}
     <h4>Voie de l'assassin</h4>
     <ol>
       <li>Discrétion : simplement ajouter une compétence discrétion sur la fiche, avec le bon bonus</li>
+      <li>Attaque sournoise : Faire des versions des attaques avec <tt>--de6Plus</tt> <i>n</i>, où <i>n</i> est le rang dans la voie. Au MJ de vérifier que les conditions de l'attaque sournoise sont remplies. (Exemple de macro pour un voleur qui aurait une attaque <tt>Dague</tt> et une attaque <tt>arbalète</tt> : <tt>?{Arme utilisée?|Dague,%{selected|Dague}|Arbalète,%{selected|Arbalète}} --de6Plus 2</tt>)</li>
     </ol>
     <h4>Voie de l'aventurier</h4>
     <ol>
       <li>Sprint : pas de support, au MJ de vérifier que ce n'est utilisé qu'une fois par combat.</li>
+      <li>Provocation : <tt>!cof-provocation @{selected|token_id} @{target|token_id}</tt>. Au joueur ensuite de faire son attaque gratuite si la provocation est réussie et que l'adversaire l'attaque.</li>
     </ol>
     <h4>Voie du déplacement</h4>
     <ol>
