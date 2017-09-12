@@ -332,6 +332,7 @@ p  {margin-left: inherit}
     <p>
     <tt>!cof-jet ?{Faire un jet de |Charisme, CHA|Constitution, CON|Dextérité, DEX|Force, FOR|Intelligence, INT|Sagesse, SAG}</tt> : fait un simple jet pour la caractérisique sélectionnée.
     <p>
+    Il est aussi possible de donner en argument une difficulté au jet. Par exemple en faisant <tt>!cof-jet INT ?{difficulté}</tt>.
 
     <h2>3. Implémentation des capacités</h2>
     <h3>Arquebusier</h3>
@@ -802,6 +803,7 @@ p  {margin-left: inherit}
         <tt>--traquenard</tt> pour l'attaque.
         Exemple pour un personnage qui aurait une ability <tt>Arme</tt> permettant d'utiliser son épée, et une ability <tt>Arc</tt> permettant d'utiliser son arc : <tt>?{Arme?|Épée,%{selected|Attaque}|Arc,%{selected|Arc}} --traquenard</tt> (Note : bien faire attention à ce que les abilities ne contiennent pas de ligne vide, et que la dernière ligne est bien expansée en <tt>!cof-attack</tt>)</li>
       <li> Attaque éclair : <tt>--plus [[@{selected|DEX}]] --bonusAttaque [[@{selected|DEX}]]</tt></li>
+      <li> Repli : simplement faire un jet en utilisant par exemple <tt>!cof-jet DEX 10</tt>, et décrire le résultat.</li>
     </ol>
     <h4>Voie de la survie</h4>
     <ol>
@@ -815,6 +817,7 @@ p  {margin-left: inherit}
       <li>Pas de loup : ok</li>
       <li>Ennemi juré : ajouter un attribut <tt>ennemiJure</tt> avec comme valeur la race
         des ennemis. Cette race doit se retrouver dans le champ race de l'ennemi.</li>
+      <li>Embuscade : en cas d'attaque sur les ennemis, les mettre tous surpris avec la commande <tt>!cof-set-state surpris true</tt></li>
     </ol>
 
     <h3>Voleur</h3>

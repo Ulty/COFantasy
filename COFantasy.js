@@ -428,55 +428,67 @@ var COFantasy = COFantasy || function() {
     // - Caracteristique (FOR, DEX, CON, INT, SAG, CHA)
     // Les tokens sélectionnés sont ceux qui doivent faire le jet
     var args = msg.content.split(" ");
-    if (args.length < 1) {
+    if (args.length < 2) {
       error("Pas assez d'arguments pour !cof-jet: " + msg.content, args);
       return;
     }
     var caracteristique = args[1];
-    switch (caracteristique) {
-      case "FOR":
-      case "DEX":
-      case "CON":
-      case "INT":
-      case "SAG":
-      case "CHA":
-        getSelected(msg, function(selected) {
-          if (selected.length === 0) {
-            sendChat("COF", "/w " + msg.who + " !cof-jet sans sélection de token");
-            log("!cof-jet requiert de sélectionner des tokens");
-            return;
-          }
-          iterSelected(selected, function(perso) {
-            var evt = {
-              type: "Jet de " + caracteristique
-            };
-            jetCaracteristique(perso, caracteristique,
-              function(rolltext, total, d20, roll) {
-
-                var display = startFramedDisplay(msg.playerid, "Jet de <b>" + caracOfMod(caracteristique) + "</b>", perso);
-                addLineToFramedDisplay(display, "<b>Resultat :</b> " + rolltext);
-                addStatistics(msg.playerid, ["Jet de carac", caracteristique], roll);
-                // Maintenant, on diminue la malédiction si le test est un échec
-                var attrMalediction = tokenAttribute(perso, 'malediction');
-                if (attrMalediction.length > 0) {
-                  if (d20 == 1) diminueMalediction(perso, evt, attrMalediction);
-                  else if (d20 < 20) {
-                    var action = "<a href='!cof-resultat-jet " + state.COFantasy.eventId;
-                    addLineToFramedDisplay(display, "L'action est-elle " + action + " reussi'>réussie</a> ou " + action + " rate'>ratée</a> ?");
-                    evt.personnage = perso;
-                    evt.attenteResultat = true;
-                  }
-                }
-                addEvent(evt);
-                sendChat(perso.token.get('name'), endFramedDisplay(display));
-              });
-          }); //fin de iterSelected
-        }); //fin de getSelected
-
-        return;
-      default:
-        sendChat("COF", "Caracteristique '" + caracteristique + "' non reconnue (FOR, DEX, CON, INT, SAG, CHA).");
+    if (isNotCarac(caracteristique)) {
+      error("Caracteristique '" + caracteristique + "' non reconnue (FOR, DEX, CON, INT, SAG, CHA).", args);
+      return;
     }
+    var difficulte;
+    if (args.length > 2) {
+      difficulte = parseInt(args[2]);
+      if (isNaN(difficulte)) difficulte = undefined;
+    }
+    var titre = "Jet de <b>" + caracOfMod(caracteristique) + "</b>";
+    if (difficulte !== undefined) titre += " difficulté " + difficulte;
+    getSelected(msg, function(selected) {
+      if (selected.length === 0) {
+        sendChat("COF", "/w " + msg.who + " !cof-jet sans sélection de token");
+        log("!cof-jet requiert de sélectionner des tokens");
+        return;
+      }
+      iterSelected(selected, function(perso) {
+        var evt = {
+          type: "Jet de " + caracteristique
+        };
+        var display = startFramedDisplay(msg.playerid, titre, perso);
+        if (difficulte === undefined) {
+          jetCaracteristique(perso, caracteristique,
+            function(rolltext, total, d20, roll) {
+
+              addLineToFramedDisplay(display, "<b>Résultat :</b> " + rolltext);
+              addStatistics(msg.playerid, ["Jet de carac", caracteristique], roll);
+              // Maintenant, on diminue la malédiction si le test est un échec
+              var attrMalediction = tokenAttribute(perso, 'malediction');
+              if (attrMalediction.length > 0) {
+                if (d20 == 1) diminueMalediction(perso, evt, attrMalediction);
+                else if (d20 < 20) {
+                  var action = "<a href='!cof-resultat-jet " + state.COFantasy.eventId;
+                  addLineToFramedDisplay(display, "L'action est-elle " + action + " reussi'>réussie</a> ou " + action + " rate'>ratée</a> ?");
+                  evt.personnage = perso;
+                  evt.attenteResultat = true;
+                }
+              }
+              addEvent(evt);
+              sendChat('', endFramedDisplay(display));
+            });
+        } else {
+          testCaracteristique(perso, caracteristique, [], difficulte, 0, evt, function(reussite, rolltext) {
+            addLineToFramedDisplay(display, "<b>Résultat :</b> " + rolltext);
+            if (reussite) {
+              addLineToFramedDisplay(display, "C'est réussi");
+            } else {
+              addLineToFramedDisplay(display, "C'est raté");
+            }
+            addEvent(evt);
+            sendChat('', endFramedDisplay(display));
+          });
+        }
+      }); //fin de iterSelected
+    }); //fin de getSelected
   }
 
   function resultatJet(msg) {
@@ -9745,7 +9757,7 @@ var COFantasy = COFantasy || function() {
   }
 
   var messageEffetIndetermine = {
-    aCheval: {//deprecated, mieux vaut utiliser la commande !cof-en-selle
+    aCheval: { //deprecated, mieux vaut utiliser la commande !cof-en-selle
       activation: "monte sur sa monture",
       actif: "est sur sa monture",
       fin: "descend de sa monture"
