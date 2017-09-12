@@ -2667,6 +2667,11 @@ var COFantasy = COFantasy || function() {
           value: '1d6'
         });
       }
+      var loupParmiLesLoups = charAttributeAsInt(attaquant, 'loupParmiLesLoups', 0);
+      if (loupParmiLesLoups > 0 && estHumanoide(target)) {
+        attDMBonus += "+"+loupParmiLesLoups;
+        target.messages.push("Loup parmi les loups : +"+loupParmiLesLoups+" DM");
+      }
 
       if (attributeAsBool(attaquant, 'ombreMortelle') ||
         attributeAsBool(attaquant, 'dedoublement')) {
@@ -7275,6 +7280,43 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function estHumanoide(perso) {
+    if (charAttributeAsBool(perso, 'humanoide')) return true;
+    var attr = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+      name: 'RACE'
+    });
+    if (attr.length === 0) return false;
+    var charRace = attr[0].get('current').toLowerCase();
+    switch (charRace) {
+      case 'humain':
+      case 'nain':
+      case 'elfe': case 'elfe des bois': case 'elfe noir':
+      case 'drow':
+      case 'halfelin':
+      case 'géant':
+      case 'ange':
+      case 'barghest':
+      case 'démon':
+      case 'doppleganger':
+      case 'dryade':
+      case 'gnoll':
+      case 'gobelin':
+      case 'gobelours':
+      case 'hobegobelin':
+      case 'homme-lézard':
+      case 'kobold':
+      case 'nymphe':
+      case 'ogre':
+      case 'orque':
+      case 'pixie':
+      case 'troll':
+        return true;
+      default:
+        return false;
+    }
+  }
   function estMauvais(perso) {
     if (charAttributeAsBool(perso, 'mauvais')) return true;
     var attr = findObjs({

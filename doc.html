@@ -830,10 +830,12 @@ p  {margin-left: inherit}
     <ol>
       <li>Sprint : pas de support, au MJ de vérifier que ce n'est utilisé qu'une fois par combat.</li>
       <li>Provocation : <tt>!cof-provocation @{selected|token_id} @{target|token_id}</tt>. Au joueur ensuite de faire son attaque gratuite si la provocation est réussie et que l'adversaire l'attaque.</li>
+      <li>Grâce féline : ajouter un attribut <tt>graceFeline</tt> avec comme valeur <tt>true</tt>. Cela va affecter l'initiative et la DEF, mais sans se voir sur la fiche. Pour les tests de déplacement, il faut gérer à part.</li>
     </ol>
     <h4>Voie du déplacement</h4>
     <ol>
-      <li>Esquive : pas de support particulier</li>
+      <li>Esquive : pas de support particulier. Augmenter la DEF sur la fiche.</li>
+      <li>Chute : pas de support particulier</li>
     </ol>
     <h4>Voie du roublard</h4>
     <ol>
@@ -871,6 +873,10 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie de l'humain</h4>
     Instinct de survie : créer un attribut <tt>instinctDeSurvieHumain</tt> avec comme valeur <tt>true</tt>
+    <ol>
+      <li>Adaptable : aucun support</li>
+      <li>Loup parmi les loups : ajouter un attribut <tt>loupParmiLesLoups</tt> avec comme valeur 1 ou 2 selon le rang dans la voie.</li>
+    </ol>
     <h4>Voie du nain</h4>
     <ol>
       <li>Résistance : ajouter les bonus sur la fiche</li>
