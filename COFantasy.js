@@ -1222,6 +1222,9 @@ var COFantasy = COFantasy || function() {
     if (surveillance(perso)) init += 5;
     // Voie du chef d'armée rang 2 (Capitaine)
     if (aUnCapitaine(perso, evt)) init += 2;
+    if (charAttributeAsBool(perso, 'graceFeline')) {
+      init += modCarac(charId, 'CHARISME');
+    }
     // Voie du pistolero rang 1 (plus vite que son ombre)
     attributesInitEnMain(charId).forEach(function(em) {
       var armeL = labelInitEnMain(em);
@@ -1305,6 +1308,9 @@ var COFantasy = COFantasy || function() {
       defense += charAttributeAsInt(charId, 'armureDeVent', 0);
       if (!options.distance)
         defense += charAttributeAsInt(charId, 'dentellesEtRapiere', 0);
+    }
+    if (charAttributeAsBool(target, 'graceFeline')) {
+      defense += modCarac(charId, 'CHARISME');
     }
     var attrsProtegePar = findObjs({
       _type: 'attribute',
