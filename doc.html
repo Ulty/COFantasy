@@ -324,8 +324,11 @@ p  {margin-left: inherit}
 
     <h3>2.10 Escaliers</h3>
     Pour gérer les escaliers sur les cartes, vous pouvez utiliser la méthode suivante, inspirée du script Teleport : placez dans le layer "GM Info Overlay", au nivea des escaliers, des tokens qui prennent exactement la place des escaliers. Nommez ces escaliers avec un nom suivi du nombre d'étages (entre 2 et 9), suivi d'une lettre majuscule. Par exemple <tt>Escalier2A</tt>. Chaque escalier de la même colonne doit avoir le même nom et même nombre d'étage, et différer seulement par la lettre finale. Ensuite, si un ensemble de tokens est sur un escalier, utilisez <tt>!cof-escalier</tt> pour téléporter les tokens à l'emplacement de l'escalier suivant dans l'ordre des lettres. Dans l'exemple précédent, il serait téléporté à l'emplacement du token nommé <tt>Escalier2B</tt>. Cela ne fonctionne que si les bouts de l'escalier sont sur la même carte. À vous de choisir sir vous préférez révéler cette fonctionalité à vos joueurs, ou si vous le faites vous-même.
+
+    <h3>2.11 Montures</h3>
+    Pour qu'un personnage puisse monter sur une monture, il faut que cette monture soit associée à une fiche de personnage et qu'il possède l'attribute <tt>monture</tt> à <tt>true</tt>. La commande pour monter sur la monture est <tt>!cof-en-selle @{selected|token_id} @{target|token_id}</tt>, à lancer en sélectionnant le cavalier. On peut ensuite bouger la monture, cela déplace le cavalier. Le mieux est de lancer la commander alors que le token du cavalier est sur le token de la monture. Si on déplace le cavalier, cela le fait descendre de sa monture.
     
-    <h3>2.11 Jet de Caracteristiques</h3>
+    <h3>2.12 Jet de Caracteristiques</h3>
     <p>
     <tt>!cof-jet ?{Faire un jet de |Charisme, CHA|Constitution, CON|Dextérité, DEX|Force, FOR|Intelligence, INT|Sagesse, SAG}</tt> : fait un simple jet pour la caractérisique sélectionnée.
     <p>
@@ -337,7 +340,7 @@ p  {margin-left: inherit}
       <li>Mécanismes : ajouter les bonus sur la fiche</li>
       <li>Tir de semonce : utiliser l'option <tt>--semonce</tt> à <tt>!cof-attack</tt>
         On laisse le MJ vérifier si la dernière attaque du personnage était bien
-        un échec (devrait être facile à voir dans le chat). Exemple de macro d'utilisation, en supposant qu'on ait déjà des abilities Pétoire et Mousquet : <tt>?{Arme?|Mousquet,%{selected|Mousquet}|Pétoire,%{selected|Pétoire}} --semonce</tt></li>
+        un échec (devrait être facile à voir dans le chat). Exemple de macro d'utilisation, en supposant qu'on ait déjà des abilities Pétoire et Mousquet : <tt>?{Arme?|Mousquet,%{selected|Mousquet}|Pétoire,%{selected|Pétoire}} --semonce</tt> (Note: faire attention à ce que les abilities <tt>Mousquet</tt> et <tt>Pétoire</tt> ne contiennent pas de ligne vide)</li>
       <li>Tir de barrage : Utiliser l'option <tt>--tirDeBarrage</tt>. Ça multiplie les
         dégâts par 2, ignore la charge, et laisse un message demandant le undo
         si la cible décide de ne pas bouger.</li>
@@ -446,13 +449,8 @@ p  {margin-left: inherit}
     <h3>Chevalier</h3>
     <h4>Voie du cavalier</h4>
     <ol>
-      <li>Fidèle monture : pas de support [articulie</li>
-      <li>Cavalier émérite : ajuster la DEF de la monture. 
-        <ul>
-          <li> Ajouter un attribute <tt>cavalierEmerite</tt> avec comme valeur 2 </li>
-          <li> Pour monter ou descendre de cheval, utiliser <tt>!cof-effet aCheval</tt> avec comme argument <tt>oui</tt>, <tt>true</tt>, <tt>non</tt> ou <tt>false</tt></li>
-        </ul>
-      </li>
+      <li>Fidèle monture : Faire un personnage pour la monture, avec un attribute <tt>monture</tt> à <tt>true</tt>. Pour monter sur la monture, on peut utiliser <tt>!cof-en-selle @{selected|token_id}</tt> <i>nom_de_la_monture</i>. Pour en descendre, il suffit de bouger le token du chevalier.</li>
+      <li>Cavalier émérite : ajuster la DEF de la monture. Ajouter au chevalier un attribut <tt>cavalierEmerite</tt> avec comme valeur 2.  </li>
     </ol>
     <h4>Voie de la guerre</h4>
     <ol>
@@ -489,7 +487,7 @@ p  {margin-left: inherit}
     <h4>Voie des animaux</h4>
     <ol>
       <li>Langage des animaux : pas de support particulier</li>
-      <li>Nuée d'insectes : ajouter une attaque magique, de portée 20 m et sans dégâts. Puis appeler cette attaque (avec <tt>!cof-attack</tt>) avec les arguments <tt>--sortilege --effet nueeDInsectes [[5+@{selected|token_id}]]</tt>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <tt>nueeDInsecte</tt> sur la cible dans ce cas).</li>
+      <li>Nuée d'insectes : ajouter une attaque magique, de portée 20 m et sans dégâts. Puis appeler cette attaque (avec <tt>!cof-attack</tt>) avec les arguments <tt>--sortilege --effet nueeDInsectes [[5+@{selected|SAG}]]</tt>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <tt>nueeDInsecte</tt> sur la cible dans ce cas).</li>
     </ol>
     <h4>Voie du fauve</h4>
     <ol>
@@ -630,7 +628,7 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie du soldat</h4>
     <ol>
-      <li>Posture de combat : <tt>!cof-posture-de-combat</tt> <i>bonus attr1 attr2</i>, ou les deux <i>attr</i> peuvent être soit <tt>DEF</tt> soit <tt>ATT</tt> soit <tt>DM</tt>, et le <i>bonus</i> est retiré au premier attribut pour être ajouté au second. Le bonus peut être limité si le guerrier a un attribut <tt>voieDuSoldat</tt> qu iindique son rang dans la voie. Exemple d'utilisation&nbsp;: <tt>!cof-posture-de-combat @{selected|token_id} ?{Bonus} ?{Baisser|Défense,DEF|Attaque,ATT|Dégâts,DM} ?{Augmenter|Défense,DEF|Attaque,ATT|Dégâts,DM}</tt>. Normalement, la règle fait décider de sa posture au guerrier à chaque tour, mais en pratique, il en change assez rarement. Une posture de combat reste donc active jusqu'à la fin du combat ou jusqu'à ce qu'on en change (elle est neutre si on a le même attribut à buffer et débuffer). </li>
+      <li>Posture de combat : <tt>!cof-posture-de-combat</tt> <i>bonus attr1 attr2</i>, ou les deux <i>attr</i> peuvent être soit <tt>DEF</tt> soit <tt>ATT</tt> soit <tt>DM</tt>, et le <i>bonus</i> est retiré au premier attribut pour être ajouté au second. Le bonus peut être limité si le guerrier a un attribut <tt>voieDuSoldat</tt> qu indique son rang dans la voie. Exemple d'utilisation&nbsp;: <tt>!cof-posture-de-combat @{selected|token_id} ?{Bonus} ?{Baisser|Défense,DEF|Attaque,ATT|Dégâts,DM} ?{Augmenter|Défense,DEF|Attaque,ATT|Dégâts,DM}</tt>. Normalement, la règle fait décider de sa posture au guerrier à chaque tour, mais en pratique, il en change assez rarement. Une posture de combat reste donc active jusqu'à la fin du combat ou jusqu'à ce qu'on en change (elle est neutre si on a le même attribut à buffer et débuffer). </li>
       <li>Combat en phalange : ajouter un attribut <tt>combatEnPhalange</tt>, valeur <tt>true</tt>. Les bonus seront ajoutés automatiquement en fonctions des alliés définis selon <a href="#allie">cette méthode</a>.</li>
     </ol>
 
@@ -802,7 +800,7 @@ p  {margin-left: inherit}
         s'applique.</li>
       <li>Traquenard : ajouter un attribut <tt>traquenard</tt> (valeur 1/1), puis option
         <tt>--traquenard</tt> pour l'attaque.
-        Exemple : <tt>?{Arme?|Épée,%{selected|Attaque}|Arc,%{selected|Arc}} --traquenard</tt></li>
+        Exemple pour un personnage qui aurait une ability <tt>Arme</tt> permettant d'utiliser son épée, et une ability <tt>Arc</tt> permettant d'utiliser son arc : <tt>?{Arme?|Épée,%{selected|Attaque}|Arc,%{selected|Arc}} --traquenard</tt> (Note : bien faire attention à ce que les abilities ne contiennent pas de ligne vide, et que la dernière ligne est bien expansée en <tt>!cof-attack</tt>)</li>
       <li> Attaque éclair : <tt>--plus [[@{selected|DEX}]] --bonusAttaque [[@{selected|DEX}]]</tt></li>
     </ol>
     <h4>Voie de la survie</h4>

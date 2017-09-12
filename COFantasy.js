@@ -1459,7 +1459,7 @@ var COFantasy = COFantasy || function() {
       attBonus -= 2;
       explications.push("Zone de silence => -2 en Attaque Magique");
     }
-    if (!options.distance && attributeAsBool(attaquant, 'aCheval')) {
+    if (!options.distance && (attributeAsBool(attaquant, 'aCheval') || attributeAsBool(attaquant, 'monteSur'))) {
       attBonus += charAttributeAsInt(attaquant, 'cavalierEmerite');
       explications.push("A cheval => +2 en Attaque");
     }
@@ -5694,6 +5694,7 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  // evt et msg peuvent être undefined
   function removeTokenAttr(personnage, attribute, evt, msg) {
     var charId = personnage.charId;
     var token = personnage.token;
@@ -5713,8 +5714,10 @@ var COFantasy = COFantasy || function() {
     });
     if (attr.length === 0) return;
     attr = attr[0];
-    evt.deletedAttributes = evt.deletedAttributes || [];
-    evt.deletedAttributes.push(attr);
+    if (evt) {
+      evt.deletedAttributes = evt.deletedAttributes || [];
+      evt.deletedAttributes.push(attr);
+    }
     attr.remove();
   }
 
@@ -9230,6 +9233,49 @@ var COFantasy = COFantasy || function() {
     }); //Fin du jet de CHA du voleur
   }
 
+  function enSelle(msg) {
+    var cmd = msg.content.split(' ');
+    if (cmd.length < 3) {
+      error("Il faut 2 arguments pour !cof-en-selle", cmd);
+      return;
+    }
+    var cavalier = tokenOfId(cmd[1]);
+    if (cavalier === undefined) {
+      error("Premier argument de !cof-en-selle incorrect", cmd);
+      return;
+    }
+    if (attributeAsBool(cavalier, 'monteSur')) {
+      sendChar(cavalier.charId, " est déjà en selle");
+      return;
+    }
+    var tokenC = cavalier.token;
+    var pageId = tokenC.get('pageid');
+    var monture = tokenOfId(cmd[2], cmd[2], pageId);
+    if (monture === undefined || !charAttributeAsBool(monture, 'monture')) {
+      sendChar(cavalier.charId, " ne peut pas monter là-dessus");
+      log(cmd);
+      return;
+    }
+    var tokenM = monture.token;
+    var nomMonture = tokenM.get('name');
+    if (attributeAsBool(monture, 'estMontePar')) {
+      sendChar(cavalier.charId, " ne peut monter sur " + nomMonture + " car elle a déjà un cavalier");
+      return;
+    }
+    if (distanceCombat(tokenC, tokenM, pageId) > 0) {
+      sendChar(cavalier.charId, " est trop loin de " + nomMonture);
+      return;
+    }
+    var evt = {
+      type: 'En selle'
+    };
+    setTokenAttr(cavalier, 'monteSur', tokenM.id, evt, " monte sur " + nomMonture, nomMonture);
+    setTokenAttr(monture, 'estMontePar', tokenC.id, evt, undefined, tokenC.get('name'));
+    setTokenAttr(monture, 'positionSurMonture', tokenC.get('left') - tokenM.get('left'), evt, undefined, tokenC.get('top') - tokenM.get('top'));
+    setTokenAttr(monture, 'directionSurMonture', tokenC.get('rotation') - tokenM.get('rotation'), evt);
+    addEvent(evt);
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -9439,6 +9485,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-provocation":
         provocation(msg);
+        return;
+      case "!cof-en-selle":
+        enSelle(msg);
         return;
       default:
         return;
@@ -9696,7 +9745,7 @@ var COFantasy = COFantasy || function() {
   }
 
   var messageEffetIndetermine = {
-    aCheval: {
+    aCheval: {//deprecated, mieux vaut utiliser la commande !cof-en-selle
       activation: "monte sur sa monture",
       actif: "est sur sa monture",
       fin: "descend de sa monture"
@@ -10248,10 +10297,59 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function estSurMonture(perso, pageId) {
+    var attr = tokenAttribute(perso, 'monteSur');
+    if (attr.length === 0) return false;
+    if (pageId === undefined) pageId = perso.token.get('pageid');
+    var monture = tokenOfId(attr[0].get('current'), attr[0].get('max'), pageId);
+    attr[0].remove();
+    if (monture === undefined) {
+      sendChar(perso.charId, "descend de sa monture");
+      return true;
+    }
+    sendChar(perso.charId, "descend de " + monture.token.get('name'));
+    removeTokenAttr(monture, 'estMontePar');
+    removeTokenAttr(monture, 'positionSurMonture');
+    return true;
+  }
+
+  function moveToken(token) {
+    var charId = token.get('represents');
+    if (charId === '') return;
+    var monture = {
+      token: token,
+      charId: charId
+    };
+    var pageId = token.get('pageid');
+    if (estSurMonture(monture, pageId)) return;
+    var attr = tokenAttribute(monture, 'estMontePar');
+    if (attr.length === 0) return;
+    var cavalier = tokenOfId(attr[0].get('current'), attr[0].get('max'), pageId);
+    if (cavalier === undefined) {
+      attr[0].remove();
+      return;
+    }
+    var x = token.get('left');
+    var y = token.get('top');
+    var position = tokenAttribute(monture, 'positionSurMonture');
+    if (position.length > 0) {
+      var dx = parseInt(position[0].get('current'));
+      var dy = parseInt(position[0].get('max'));
+      if (!(isNaN(dx) || isNaN(dy))) {
+        x += dx;
+        y += dy;
+      }
+    }
+    cavalier.token.set('left', x);
+    cavalier.token.set('top', y);
+    cavalier.token.set('rotation', monture.token.get('rotation') + attributeAsInt(monture, 'directionSurMonture', 0));
+  }
+
   return {
     apiCommand: apiCommand,
     nextTurn: nextTurn,
-    destroyToken: destroyToken
+    destroyToken: destroyToken,
+    moveToken: moveToken,
   };
 
 }();
@@ -10281,3 +10379,7 @@ on("chat:message", function(msg) {
 on("change:campaign:turnorder", COFantasy.nextTurn);
 
 on("destroy:token", COFantasy.destroyToken);
+
+on("change:token:left", COFantasy.moveToken);
+on("change:token:top", COFantasy.moveToken);
+on("change:token:rotation", COFantasy.moveToken);
