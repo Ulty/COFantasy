@@ -1214,6 +1214,11 @@ var COFantasy = COFantasy || function() {
   }
 
   function tokenInit(perso, evt) {
+    var persoMonte = tokenAttribute(perso, 'estMontePar');
+    if (persoMonte.length > 0){
+      var cavalier = tokenOfId(persoMonte[0].get('current'), persoMonte[0].get('max'), perso.token.get('pageid'));
+      if (cavalier !== undefined) return tokenInit(cavalier, evt);
+    }
     var charId = perso.charId;
     var init = parseInt(getAttrByName(charId, 'DEXTERITE'));
     init += charAttributeAsInt(charId, 'INIT_DIV', 0);
