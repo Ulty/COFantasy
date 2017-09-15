@@ -209,7 +209,7 @@ p  {margin-left: inherit}
     <p>
     <i>x</i> peut être un nombre, un jet de dé ou <tt>leger</tt>, <tt>modere</tt> ou <tt>groupe</tt>.
     <p>
-    Le deuxième argument est optionnel. Si il n'est pas présent, alors la sélection se fait soit en utilisant les tokens sélectionnés, soit avec une option de sélection de groupe.
+    Les deux premiers arguments sont optionnels. Si <tt>!cof-soin</tt> n'a qu'un seul argument, c'est interprété comme le montant des soins, et les tokens soignés sont ceux sélectionnés. Si <tt>!cof-soin</tt> n'a que 2 arguments, le premier argument est le token du soigneur, et les cibles doivent être désignées avec une option de sélection de groupe.
     <p>
     L'option <tt>--portee</tt> <i>n</i> permet de spécifier une distance maximum entre le soigneur et le soigné (au-delà, le soin échoue).
     <p>
@@ -317,7 +317,7 @@ p  {margin-left: inherit}
     </ul>
 
     <h3>2.9 Consommables <tt>!cof-consommables</tt></h3>
-    La fonction affiche une liste de consommables, avec la possibilité de cliquer sur un élément de la liste pour le consommer (et activer son effet). Pour cela, la fonction regarde tous les attributs qui commencent par <tt>dose_</tt> ou <tt>consommable_</tt>. La valeur courante doit être le nombre d'éléments possédé, et le max peut être une commande à effectuer pour activer l'effet. La fonction est à réserver aux tokens liés à un personnage. Il est aussi possible de simplement écrire un message qui s'affichera (et diminuera la quantité de consommables).
+    La fonction affiche une liste de consommables, avec la possibilité de cliquer sur un élément de la liste pour le consommer (et activer son effet). Pour cela, la fonction regarde tous les attributs qui commencent par <tt>dose_</tt>, <tt>elixir_</tt> ou <tt>consommable_</tt>. La valeur courante doit être le nombre d'éléments possédé, et le max peut être une commande à effectuer pour activer l'effet. La fonction est à réserver aux tokens liés à un personnage. Il est aussi possible de simplement écrire un message qui s'affichera (et diminuera la quantité de consommables).
     <p>
    Attention, les boutons sont utilisables par tout le monde, ce qui permet de faire utiliser un des concommables d'un personnage par un autre. Le script vérifie juste que le token qui utilise l'objet est au contact.
    <p> 
@@ -453,6 +453,14 @@ p  {margin-left: inherit}
     <ol>
       <li>Fidèle monture : Faire un personnage pour la monture, avec un attribute <tt>monture</tt> à <tt>true</tt>. Pour monter sur la monture, on peut utiliser <tt>!cof-en-selle @{selected|token_id}</tt> <i>nom_de_la_monture</i>. Pour en descendre, il suffit de bouger le token du chevalier.</li>
       <li>Cavalier émérite : ajuster la DEF de la monture. Ajouter au chevalier un attribut <tt>cavalierEmerite</tt> avec comme valeur 2.  </li>
+      <li>Monture magique : pas de support particulier.</li>
+      <li>Charge : pas de support pour le déplacement, mais
+        <ul>
+          <li> Pour l'attaque : utiliser <tt>--imparable --plus 1d6</tt></li>
+          <li> Pour les créatures sur la trajectoire, utiliser <tt>!cof-jet FOR 18</tt>, et en cas de succès, infliger les DM.</li>
+        </ul>
+      </li>
+      <li>Monture fantastique : Faire un personnage pour la monture, avec un attribut <tt>monture</tt> à <tt>true</tt></li>
     </ol>
     <h4>Voie de la guerre</h4>
     <ol>
@@ -576,10 +584,13 @@ p  {margin-left: inherit}
       <li>Blocage : pas de support particulier</li>
     </ol>
     <h4>Voie des élixirs</h4>
+    Pour créer ou juste voir ses élixirs, utiliser la commande <tt>!cof-elixirs</tt>. Pour cela, il faut aussi un attribut <tt>voieDesElixirs</tt> avec comme valeur le rang dans la voie.
     <ol>
-      <li>Fortifiant : il faut un attribut <tt>voieDesElixirs</tt> pour connaître le rang,
+      <li>Fortifiant : création à l'aide de <tt>!cof-elixirs</tt>, et utilisation avec la même commande, ou bien en utilisant <tt>!cof-consommables</tt>.
         un attribut <tt>fortifiants</tt> qui contient le nombre de fortifiants possédés.
         <tt>!cof-fortifiant @{selected|token_id} @{target|token_id}</tt></li>
+      <li>Feu grégeois : comme pour les fortifiants.</li>
+      <li>Élixir de guérison : comme pour les fortifiants.</li>
     </ol>
     <h4>Voie du métal</h4>
     <ol>
