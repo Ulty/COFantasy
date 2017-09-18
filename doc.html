@@ -104,7 +104,7 @@ p  {margin-left: inherit}
       <li><tt>--bonusCritique</tt> <i>n</i> : augmente <i>n</i> à la plage de coups critiques</li>
       <li><tt>--bonusContreBouclier</tt> <i>n</i> : ajoute <i>n</i> au jet d'attaque si le défenseur porte un bouclier. Utile par exemple pour le fléau d'arme.</li>
       <li> <tt>--psave</tt> <i>carac seuil</i> : jet de <i>carac</i>, si le jet est supérieur à <i>seuil</i>, les dégâts sont divisés par 2. <i>carac</i> est l'abbréviation de caractéristiques de 3 lettres standard (FOR, DEX, ...). Si on souhaite que le jet ne permette de réduire qu'une partie des dommages (la dernière ajoutée avec <tt>--plus</tt>), on peut ajouter <tt>local</tt>. La syntaxe complète est alors <tt>--psave</tt> <i>carac seuil</i> <tt>local</tt> </li>
-      <li> <tt>--save</tt> <i>carac seuil</i> : même effet que <tt>--psave</tt>, mais pour annuler le dernier <tt>--effet</tt> ou <tt>--etatSi</tt> (aucun effet sur les DM).</li>
+      <li> <tt>--save</tt> <i>carac seuil</i> : même effet que <tt>--psave</tt>, mais pour annuler le dernier <tt>--effet</tt>, <tt>etat</tt> ou <tt>--etatSi</tt> (aucun effet sur les DM).</li>
       <li> <tt>--saveParTour</tt> <i>carac seuil</i> : même effet que <tt>--save</tt>, mais donne droit à un jet à la fin de chaque tour au lieu d'un jet au moment de l'attaque.</li>
       <li> <tt>--fx</tt> <i>effet</i> : ajoute un <a href="https://wiki.roll20.net/Custom_FX">effet</a> qui part de l'attaquant à la cible. Si l'attaque rate, l'effet rate aussi, d'autant plus que le jet d'attaque est loin de la défense.</li>
       <li> <tt>--si</tt> <i>conditon</i> : l'attaque n'est possible que si <i>condition</i> est validée. Une condition peut être
@@ -114,6 +114,7 @@ p  {margin-left: inherit}
           <li> <tt>deAttaque</tt> <i>n</i> : vrai si le jet de dé d'attaque est supérieur ou égal à <i>n</i>.</li>
         </ul>
       </li>
+      <li> <tt>--etat</tt> <i>e</i>: si l'attaque touche, la cible passe dans l'état <i>e</i>.</li>
       <li> <tt>--etatSi</tt> <i>e condition</i>: si l'attaque touche et la <a href="#conditions"><i>condition</i></a> est validée, la
         cible passe dans l'état <i>e</i>.</li>
       <li> <tt>--effet</tt> <i>e duree</i> : ajoute à la cible l'effet temporaire <i>e</i> pour la duree spécifiée. Pour que cela soit automatiquement mis à jour, il faut utiliser le turn tracker.
@@ -157,7 +158,7 @@ p  {margin-left: inherit}
       <li><tt>--pietine</tt> : si l'attaquant est de taille au moins égale à celle de la cible (ou si la taille de l'un des deux n'est pas connue), fait un test opposé de FOR. En cas d'échec de la cible, elle est renversée et les DM sont doublés.</li>
       <li><tt>--rate</tt>, <tt>--touche</tt>, <tt>--critique</tt>, <tt>--echecCritique</tt> : options pour tricher : le résultat des dés donne toujours le résultat voulu.</li>
       <li><tt>--ligne</tt> : l'attaque porte sur toutes les cibles à portée, entre l'attaquant et le token ciblé. Si le token ciblé est plus proche que la portée de l'attaque, les tokens derrière le token ciblé sont aussi visés. Pour permettre de viser un point quelconque, on peut utiliser un personnage dédié avec un maximum de 0 pv. À chaque fois qu'un token représentant ce personnage est utilisé comme cible de <tt>--ligne</tt>, le token est enlevé de la carte.</li>
-      <li><tt>--disque</tt> <i>r</i> : l'attaque porte sur toutes les cibles dans le disque de centre le token ciblé et de rayon <i>r</i>. Comme pour <tt>--ligne</tt>, on peut utilisant un token cible qui sera supprimé après l'attaque.</li>
+      <li><tt>--disque</tt> <i>r</i> : l'attaque porte sur toutes les cibles dans le disque de centre le token ciblé et de rayon <i>r</i>. Comme pour <tt>--ligne</tt>, on peut utiliser un token cible qui sera supprimé après l'attaque.</li>
       <li><tt>--cone</tt> <i>angle</i> cible toutes les créatures dans un cône de sommet l'attaquant, d'angle <i>angle</i> degrés (90 degrés par défaut), et séparé en deux par le segment joignant l'attaquant et le token visé.</li>
     </ul>
 
@@ -580,8 +581,10 @@ p  {margin-left: inherit}
     <h3>Forgesort</h3>
     <h4>Voie des artefacts</h4>
     <ol>
-      <li>Bâton de mage : simplement adapter l'attaque, avec aussi <tt>--magique</tt></li>
+      <li>Bâton de mage : simplement adapter l'attaque, avec aussi <tt>--magique</tt>. Pour l'éclair d'énergie, le mieux est d'ajouter une autre attaque.</li>
       <li>Blocage : pas de support particulier</li>
+      <li>Sac sans fond : pas de support particulier</li>
+      <li>Frappe des arcanes : le plus simple est d'utiliser la même ligne d'attaque (disons que son label est <tt>E</tt> que pour l'attaque d'énergie (mais si besoin, rien n'empèche d'en utiliser une autre). La commande sera alors <tt>!cof-attack @{selected|token_id} @{selected|token_id} E --auto --magique --disque 10 --etat renverse --save FOR [[10+@{selected|INT}]] --mana 2 ?{Y consacrer tout le tour ?|Oui,--puissant|Non,}</tt></li>
     </ol>
     <h4>Voie des élixirs</h4>
     Pour créer ou juste voir ses élixirs, utiliser la commande <tt>!cof-elixirs</tt>. Pour cela, il faut aussi un attribut <tt>voieDesElixirs</tt> avec comme valeur le rang dans la voie.

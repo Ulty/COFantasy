@@ -663,8 +663,12 @@ var COFantasy = COFantasy || function() {
           options.effets.push(lastEtat);
           return;
         case "etatSi":
-          if (cmd.length < 3) {
+        case "etat":
+          if (cmd.length < 3 && cmd[0] == 'etatSi') {
             error("Il manque un argument à l'option --etatSi de !cof-attack", cmd);
+            return;
+          } else if (cmd.length < 2) {
+            error("Il manque un argument à l'option --etat de !cof-attack", cmd);
             return;
           }
           var etat = cmd[1];
@@ -672,8 +676,11 @@ var COFantasy = COFantasy || function() {
             error("Etat non reconnu", cmd);
             return;
           }
-          var condition = parseCondition(cmd.slice(2));
-          if (condition === undefined) return;
+          var condition = 'toujoursVrai';
+          if (cmd[0] == 'etatSi') {
+            condition = parseCondition(cmd.slice(2));
+            if (condition === undefined) return;
+          }
           options.etats = options.etats || [];
           lastEtat = {
             etat: etat,
@@ -1046,6 +1053,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function testCondition(cond, attaquant, cibles, deAttaque) {
+    if (cond == 'toujoursVrai') return true;
     switch (cond.type) {
       case "moins":
         var attackerAttr = charAttributeAsInt(attaquant.charId, cond.attribute, 0);
@@ -9460,6 +9468,48 @@ var COFantasy = COFantasy || function() {
       nom: 'élixir_de_guérison',
       action: "!cof-soin 3d6+$INT"
     });
+    if (rang < 4) return liste;
+    liste.push({
+      nom: "potion_d_agrandissement",
+      action: "!cof-effet-temp agrandissement [[5+$INT]]"
+    });
+    liste.push({
+      nom: "potion_de_forme_gazeuse",
+      action: "!cof-effet-temp formeGazeuse [[1d4+$INT]]"
+    });
+    liste.push({
+      nom: "potion_de_protection_contre_les_éléments",
+      action: "!cof-effet-temp protectionContreLesElements [[5+$INT]]"
+    });
+    liste.push({
+      nom: "potion_d_armure_de_mage",
+      action: "!cof-effet-combat armureDuMage"
+    });
+    liste.push({
+      nom: "potion_de_chute_ralentie",
+      action: "est léger comme une plume."
+    });
+    if (rang < 5) return liste;
+    liste.push({
+      nom: "potion_d_invisibilité",
+      action: "devient invisible"
+    });
+    liste.push({
+      nom: "potion_de_vol",
+      action: "se met à voler"
+    });
+    liste.push({
+      nom: "potion_de_respiration_aquatique",
+      action: "peut respirer sous l'eau"
+    });
+    liste.push({
+      nom: "potion_de_flou",
+      action: "devient flou (/2 les DM)"
+    });
+    liste.push({
+      nom: "potion_de_hâte",
+      action: "a une action supplémentaire par tour"
+    });
     return liste;
   }
 
@@ -9546,7 +9596,6 @@ var COFantasy = COFantasy || function() {
             if (isNaN(nbElixirs) || nbElixirs < 0) nbElixirs = 0;
           }
           var nomElixir = elixir.nom.replace(/_/g, ' ');
-          addLineToFramedDisplay(display, nbElixirs + ' ' + nomElixir);
           var options = '';
           var bouton;
           if (elixirsACreer > 0) {
@@ -9554,7 +9603,9 @@ var COFantasy = COFantasy || function() {
             bouton += " --decrAttribute " + attrElixirs.id;
             bouton = bouton.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;');
             bouton = bouton.replace(/\'/g, '&apos;'); // escape quotes
-            options += "<a href='" + bouton + "'>Créer</a>";
+            options += "<a href='" + bouton + "'>" + nbElixirs + "</a>";
+          } else {
+            options = nbElixirs + ' ';
           }
           if (nbElixirs > 0) {
             var action = elixir.action;
@@ -9568,10 +9619,12 @@ var COFantasy = COFantasy || function() {
             bouton = action;
             bouton = bouton.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;');
             bouton = bouton.replace(/\'/g, '&apos;'); // escape quotes
-            options += "<a href='" + bouton + "'>Utiliser</a>";
+            options += "<a href='" + bouton + "'>" + nomElixir + "</a>";
             //TODO: Rajouter la possibilité de donner un élixir à un autre token
+          } else {
+            options += nomElixir;
           }
-          if (options !== '') addLineToFramedDisplay(display, options, 80, false);
+          addLineToFramedDisplay(display, options);
         });
         sendChat('', endFramedDisplay(display));
       });
