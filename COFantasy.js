@@ -423,6 +423,19 @@ var COFantasy = COFantasy || function() {
     };
   }
 
+  //ressource est optionnel, et si présent doit être un attribut
+  function bouton(perso, action, text, ressource) {
+    if (action === undefined || action === '') return text;
+    if (action.startsWith('!')) {
+      if (ressource) action += " --decrAttribute " + ressource.id;
+    } else {
+      action = "!cof-utilise-consommable " + perso.token.id + " " + ressource.id + " --message " + action;
+    }
+    action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;');
+    action = action.replace(/\'/g, '&apos;'); // escape quotes
+    return "<a href='" + action + "'>" + text + "</a>";
+  }
+
   function jet(msg) {
     // Les arguments pour cof-jet sont :
     // - Caracteristique (FOR, DEX, CON, INT, SAG, CHA)
@@ -466,8 +479,12 @@ var COFantasy = COFantasy || function() {
               if (attrMalediction.length > 0) {
                 if (d20 == 1) diminueMalediction(perso, evt, attrMalediction);
                 else if (d20 < 20) {
-                  var action = "<a href='!cof-resultat-jet " + state.COFantasy.eventId;
-                  addLineToFramedDisplay(display, "L'action est-elle " + action + " reussi'>réussie</a> ou " + action + " rate'>ratée</a> ?");
+                  var action = "!cof-resultat-jet " + state.COFantasy.eventId;
+                  var ligne = "L'action est-elle ";
+                  ligne += bouton(perso, action + " reussi", "réussie");
+                  ligne += " ou " + bouton(perso, action + " rate", "ratée");
+                  ligne += " ?";
+                  addLineToFramedDisplay(display, ligne);
                   evt.personnage = perso;
                   evt.attenteResultat = true;
                 }
@@ -1713,6 +1730,7 @@ var COFantasy = COFantasy || function() {
       var attr = options.decrAttribute;
       var oldval = parseInt(attr.get('current'));
       if (isNaN(oldval) || oldval < 1) {
+        sendChar(personnage.charId, "ne peut plus faire cela");
         return true;
       }
       evt.attributes = evt.attributes || [];
@@ -6053,9 +6071,7 @@ var COFantasy = COFantasy || function() {
         }
       }
       var partialSave;
-      var options = {
-        aoe: true
-      };
+      options.aoe = true;
       optArgs.forEach(function(opt) {
         opt = opt.split(' ');
         switch (opt[0]) {
@@ -9199,18 +9215,7 @@ var COFantasy = COFantasy || function() {
           }
           var action = attr.get('max');
           var ligne = quantite + ' ';
-          if (action !== '') {
-            if (action.startsWith('!')) {
-              action += " --decrAttribute " + attr.id;
-            } else {
-              action = "!cof-utilise-consommable " + perso.token.id + " " + attr.id + " --message " + action;
-            }
-            action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;');
-            action = action.replace(/\'/g, '&apos;'); // escape quotes
-            ligne += "<a href='" + action + "'>";
-          }
-          ligne += consName;
-          if (action !== '') ligne += "</a>";
+          ligne += bouton(perso, action, consName, attr);
           addLineToFramedDisplay(display, ligne);
         }); //fin de la boucle sur les attributs
         sendChat('', endFramedDisplay(display));
@@ -9597,29 +9602,18 @@ var COFantasy = COFantasy || function() {
           }
           var nomElixir = elixir.nom.replace(/_/g, ' ');
           var options = '';
-          var bouton;
+          var action;
           if (elixirsACreer > 0) {
-            bouton = "!cof-creer-elixir " + forgesort.token.id + ' ' + forgesort.token.get('name') + ' ' + elixir.nom;
-            bouton += " --decrAttribute " + attrElixirs.id;
-            bouton = bouton.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;');
-            bouton = bouton.replace(/\'/g, '&apos;'); // escape quotes
-            options += "<a href='" + bouton + "'>" + nbElixirs + "</a>";
+            action = "!cof-creer-elixir " + forgesort.token.id + ' ' + forgesort.token.get('name') + ' ' + elixir.nom;
+            options += bouton(forgesort, action, nbElixirs, attrElixirs);
           } else {
             options = nbElixirs + ' ';
           }
           if (nbElixirs > 0) {
-            var action = elixir.action;
-            if (action.startsWith('!')) {
-              action += " --decrAttribute " + attr.id;
-            } else {
-              action = "!cof-utilise-consommable " + forgesort.token.id + " " + attr.id + " --message " + action;
-            }
+            action = elixir.action;
             action = action.replace(/\$rang/g, voieDesElixirs);
             action = action.replace(/\$INT/g, modCarac(forgesort, 'INTELLIGENCE'));
-            bouton = action;
-            bouton = bouton.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;');
-            bouton = bouton.replace(/\'/g, '&apos;'); // escape quotes
-            options += "<a href='" + bouton + "'>" + nomElixir + "</a>";
+            options += bouton(forgesort, action, nomElixir, attr);
             //TODO: Rajouter la possibilité de donner un élixir à un autre token
           } else {
             options += nomElixir;
