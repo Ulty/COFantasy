@@ -1183,6 +1183,11 @@ var COFantasy = COFantasy || function() {
       attBonus -= 2;
       explications.push("Prison végétale : -2 en Attaque");
     }
+    if (attributeAsBool(personnage, 'masqueDuPredateur')) {
+      var bonusMasque = modCarac(personnage, 'SAGESSE');
+      attBonus += bonusMasque;
+      explications.push("Masque du prédateur : +"+ bonusMasque + " en Attaque et DM");
+    }
     return attBonus;
   }
 
@@ -1259,6 +1264,9 @@ var COFantasy = COFantasy || function() {
     if (aUnCapitaine(perso, evt)) init += 2;
     if (charAttributeAsBool(perso, 'graceFeline')) {
       init += modCarac(perso, 'CHARISME');
+    }
+    if (attributeAsBool(perso, 'masqueDuPredateur')) {
+      init += modCarac(perso, 'SAGESSE');
     }
     // Voie du pistolero rang 1 (plus vite que son ombre)
     attributesInitEnMain(charId).forEach(function(em) {
@@ -2554,6 +2562,10 @@ var COFantasy = COFantasy || function() {
     // Les autres modifications aux dégâts qui ne dépendent pas de la cible
     if (options.rayonAffaiblissant) {
       attDMBonusCommun += " -2";
+    }
+    if (attributeAsBool(attaquant, 'masqueDuPredateur')) {
+      var bonusMasque = modCarac(attaquant, 'SAGESSE');
+      if (bonusMasque > 0) attDMBonusCommun += " +"+bonusMasque;
     }
     var attrPosture = tokenAttribute(attaquant, 'postureDeCombat');
     if (attrPosture.length > 0) {
@@ -10039,6 +10051,11 @@ var COFantasy = COFantasy || function() {
       activation: "sent son armure chauffer",
       actif: "brûle dans son armure",
       fin: "sent son armure refroidir"
+    },
+    masqueDuPredateur: {
+      activation: "prend les traits d'un prédateur",
+      actif: "a les traits d'un prédateur",
+      fin: "redevient normal"
     }
   };
 

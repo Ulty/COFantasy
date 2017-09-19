@@ -499,6 +499,8 @@ p  {margin-left: inherit}
     <ol>
       <li>Langage des animaux : pas de support particulier</li>
       <li>Nuée d'insectes : ajouter une attaque magique, de portée 20 m et sans dégâts. Puis appeler cette attaque (avec <tt>!cof-attack</tt>) avec les arguments <tt>--sortilege --effet nueeDInsectes [[5+@{selected|SAG}]]</tt>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <tt>nueeDInsecte</tt> sur la cible dans ce cas).</li>
+      <li>Le guetteur : ajouter 5 à un attribut <tt>preception</tt>. Ajouter un personnage et token pour l'oiseau.</li>
+      <li>Masque du prédateur : <tt>!cof-effet-temp masqueDuPredateur [[5+@selected|SAG}]] --lanceur @{selected|token_id} --mana 2</tt></li>
     </ol>
     <h4>Voie du fauve</h4>
     <ol>
@@ -605,10 +607,11 @@ p  {margin-left: inherit}
     <h4>Voie du golem</h4>
     <ol>
       <li>Grosse tête : pas de support (pas de save basé sur INT ?)</li>
+      <li>Golem : ajouter un personnage et un token pour le golem. Pour les réparations, utiliser <tt>!cof-soin @[selected|token_id}</tt> <i>nom_du_golem</i> <i>rang</i><tt>d6+@{selected|INT}</tt>.</li>
     </ol>
     <h4>Voie des runes</h4>
     <ol>
-      <li>Runes de défense : ok</li>
+      <li>Runes de défense : ajuster la DEF sur la fiche.</li>
     </ol>
 
     <h3>Guerrier</h3>
