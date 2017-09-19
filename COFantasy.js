@@ -4887,14 +4887,13 @@ var COFantasy = COFantasy || function() {
       log("!cof-chance requiert de sélectionner exactement un token");
       return;
     }
-    var cmd = msg.content.split(" ");
-    if (cmd.length < 2 || (cmd[1] != "combat" && cmd[1] != "autre")) {
+    var cmd = msg.content.split(' ');
+    if (cmd.length < 2) {
       error("La fonction !cof-chance attend au moins un argument (combat ou autre)", msg);
       return;
     }
     var tokenId = msg.selected[0]._id;
     var perso = tokenOfId(tokenId);
-    var token = getObj('graphic', tokenId);
     if (perso === undefined) {
       error(" !cof-chance ne fonctionne qu'avec des tokens qui représentent des personnages", perso);
       return;
@@ -7040,7 +7039,7 @@ var COFantasy = COFantasy || function() {
       var att2Skill = rolls.inlinerolls[attk2SkillNumber].results.total;
       var attackRoll2 = d20roll2 + att2Skill;
       var action = "Attaque magique opposée";
-      var display = startFramedDisplay(msg.playerid, action, char1, cible);
+      var display = startFramedDisplay(msg.playerid, action, attaquant, cible);
       var line =
         token1.get('name') + " fait " +
         buildinline(rolls.inlinerolls[att1RollNumber]);
