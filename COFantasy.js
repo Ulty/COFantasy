@@ -1171,6 +1171,10 @@ var COFantasy = COFantasy || function() {
       attBonus -= 2;
       explications.push("Nuée d’insectes => -2 en Attaque");
     }
+    if (attributeAsBool(personnage, 'armeBrulante')) {
+      attBonus -= 2;
+      explications.push("Arme brûlante => -2 en Attaque");
+    }
     if (attributeAsBool(personnage, 'marcheSylvestre')) {
       attBonus += 2;
       explications.push("Marche sylvestre : +2 en Attaque");
@@ -7352,6 +7356,7 @@ var COFantasy = COFantasy || function() {
       case 'drow':
       case 'halfelin':
       case 'géant':
+      case 'geant':
       case 'ange':
       case 'barghest':
       case 'démon':
@@ -10024,6 +10029,16 @@ var COFantasy = COFantasy || function() {
       activation: "prend l'apparence de la mort",
       actif: "semble mort et animé",
       fin: "retrouve une apparence de vivant"
+    },
+    armeBrulante: {
+      activation: "sent son arme lui chauffer la main",
+      actif: "se brûle la main sur son arme",
+      fin: "sent son arme refroidir"
+    },
+    armureBrulante: {
+      activation: "sent son armure chauffer",
+      actif: "brûle dans son armure",
+      fin: "sent son armure refroidir"
     }
   };
 
@@ -10396,9 +10411,25 @@ var COFantasy = COFantasy || function() {
                   if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
                 });
               return;
+            case 'armureBrulante': //prend 1d4 DM
+              degatsParTour(charId, effet, attrName, "1d4", 'feu',
+                "brûle dans son armure", evt, {},
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                });
+              return;
             case 'nueeDInsectes': //prend 1 DM
               degatsParTour(charId, effet, attrName, "1", 'normal',
                 "est piqué par les insectes", evt, {},
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                });
+              return;
+            case 'armeBrulante': //prend 1 DM
+              degatsParTour(charId, effet, attrName, "1", 'feu',
+                "se brûle avec son arme", evt, {},
                 function() {
                   count--;
                   if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
