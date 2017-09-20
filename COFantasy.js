@@ -629,6 +629,7 @@ var COFantasy = COFantasy || function() {
         case "test":
         case "argent":
         case "pietine":
+        case "tueurDeGeants":
           options[cmd[0]] = true;
           return;
         case "magique":
@@ -1590,6 +1591,11 @@ var COFantasy = COFantasy || function() {
         attBonus += options.bonusContreBouclier;
         explications.push("L'adversaire porte un bouclier => " + ((options.bonusContreBouclier > 0) ? '+' : '') + options.bonusContreBouclier + " en attaque");
       }
+    }
+    if (options.tueurDeGeants && estUnGeant(target)) {
+      attBonus += 2;
+      explications.push("Tueur de géant => +2 att. et 2d6 DM");
+      target.tueurDeGeants = true;
     }
     if (options.contact) {
       if (attributeAsBool(target, 'criDeGuerre') &&
@@ -2709,6 +2715,12 @@ var COFantasy = COFantasy || function() {
         target.additionalDmg.push({
           type: mainDmgType,
           value: '1d6'
+        });
+      }
+      if (target.tueurDeGeant) {
+        target.additionalDmg.push({
+          type: mainDmgType,
+          value: '2d6'
         });
       }
       if (target.argent) {
@@ -7346,6 +7358,20 @@ var COFantasy = COFantasy || function() {
         return true;
       default:
         return false;
+    }
+  }
+
+  function estUnGeant(perso) {
+    var attr = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+      name: 'RACE'
+    });
+    if (attr.length === 0) return false;
+    var charRace = attr[0].get('current').toLowerCase();
+    switch (charRace) {
+      case 'géant': case 'geant': case 'ogre': case 'ettin': case 'cyclope': return true;
+      default: return false;
     }
   }
 
