@@ -1811,7 +1811,7 @@ var COFantasy = COFantasy || function() {
     } else {
       nomCiblePrincipale = targetToken.get('name');
       if (options.aoe) {
-        var distanceTarget = distanceCombat(targetToken, attackingToken, pageId, true);
+        var distanceTarget = distanceCombat(targetToken, attackingToken, pageId, true, true);
         var pta = tokenCenter(attackingToken);
         var ptt = tokenCenter(targetToken);
         switch (options.aoe.type) {
@@ -4034,7 +4034,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //strict1 = true si on considère que tok1 doit avoir une taille nulle
-  function distanceCombat(tok1, tok2, pageId, strict1) {
+  function distanceCombat(tok1, tok2, pageId, strict1, strict2) {
     if (pageId === undefined) {
       pageId = tok1.get('pageid');
     }
@@ -4045,8 +4045,8 @@ var COFantasy = COFantasy || function() {
     var pt2 = tokenCenter(tok2);
     var distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
     if (!strict1) distance_pix -= tokenSize(tok1, PIX_PER_UNIT);
-    distance_pix -= tokenSize(tok2, PIX_PER_UNIT);
-    if (distance_pix < PIX_PER_UNIT * 1.5) return 0; //cases voisines
+    if (!strict2) distance_pix -= tokenSize(tok2, PIX_PER_UNIT);
+    if ((!strict1 || !strict2) && distance_pix < PIX_PER_UNIT * 1.5) return 0; //cases voisines
     return ((distance_pix / PIX_PER_UNIT) * scale);
   }
 
