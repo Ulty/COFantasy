@@ -122,8 +122,6 @@ p  {margin-left: inherit}
       <li> <tt>--plus</tt> <i>dmg</i> : ajoute <i>dmg</i> dégâts. Attention, si <i>dmg</i> est un simple nombre, ces dégâts sont multipliés par les
         critiques (sauf si de type différent de l'attaque principale). Ainsi, <tt>--plus [[1d6]]</tt> donnera des dégâts multipliés par les critiques (car la fonction ne voit que le résultat du jet), alors que <tt>--plus 1d6</tt> ne le sera pas.</li>
       <li><tt>--test</tt> pour voir le résultat du jet d'attaque. On n'applique pas les résultats d'un touché.</li>
-      <li><tt>--de6Plus</tt> <i>n</i> (ou <tt>--sournoise</tt> <i>n</i>): ajoute <i>n</i>d6 aux dégâts (non multipliés en cas de critique), de même
-        type que les dégâts principaux</li>
       <li> <tt>--magique</tt> : les dégâts sont magiques. On peut passer en argument le niveau de magie. Il est utilisé contre les créatures immunisées aux armes. Le niveau par défaut est 1.</li>
       <li><tt>--feu</tt>, <tt>--acide</tt>, <tt>--electrique</tt>, <tt>--froid</tt>, <tt>--sonique</tt>, --<tt>poison</tt>, --<tt>maladie</tt> : les dégâts sont de type 
         feu, acide, électrique, froid ou sonique. Le type spécifie uniquement le
@@ -437,7 +435,7 @@ p  {margin-left: inherit}
     <ol>
       <li>Réflexes félins : ajouter un attribut <tt>reflexesFelins</tt>, avec comme valeur
         le bonus aux saves</li>
-      <li>Charge : faire une attaque avec les options <tt>--bonusAttaque 2</tt> <tt>--de6Plus 1</tt></li>
+      <li>Charge : faire une attaque avec les options <tt>--bonusAttaque 2</tt> <tt>--plus 1d6</tt></li>
     </ol>
     <h4>Voie du primitif</h4>
     <ol>
@@ -844,7 +842,7 @@ p  {margin-left: inherit}
     <h4>Voie de l'assassin</h4>
     <ol>
       <li>Discrétion : simplement ajouter une compétence discrétion sur la fiche, avec le bon bonus</li>
-      <li>Attaque sournoise : Faire des versions des attaques avec <tt>--de6Plus</tt> <i>n</i>, où <i>n</i> est le rang dans la voie. Au MJ de vérifier que les conditions de l'attaque sournoise sont remplies. (Exemple de macro pour un voleur qui aurait une attaque <tt>Dague</tt> et une attaque <tt>arbalète</tt> : <tt>?{Arme utilisée?|Dague,%{selected|Dague}|Arbalète,%{selected|Arbalète}} --de6Plus 2</tt>)</li>
+      <li>Attaque sournoise : Faire des versions des attaques avec <tt>--plus <i>n</i>d6</tt>, où <i>n</i> est le rang dans la voie. Au MJ de vérifier que les conditions de l'attaque sournoise sont remplies. (Exemple de macro pour un voleur qui aurait une attaque <tt>Dague</tt> et une attaque <tt>arbalète</tt> : <tt>?{Arme utilisée?|Dague,%{selected|Dague}|Arbalète,%{selected|Arbalète}} --plus 2d6</tt>)</li>
     </ol>
     <h4>Voie de l'aventurier</h4>
     <ol>
@@ -952,11 +950,11 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie du Prédateur</h4> 
     <ol>
-      <li>Embuscade : Sélectionner les ennemis du prédateurs, et utiliser <tt>!cof-surprise</tt>. Par exemple, contre une équipe de joueurs dans le handout <tt>Equipe joueurs</tt> (cf la <a href="#selection">méthode de séclection de groupes</a>), on pourra utiliser l'ability <tt>!cof-surprise [[15 + @{selected|DEX}]] --equipe joueurs</tt>. Pour les bonus en discrétion et init, reporter sur la fiche, pour l'attaque en embuscade sur une cible surprise, rajouter à une attaque les options <tt>--de6Plus 1 --etatSi renverse moins FOR</tt>.</li>
+      <li>Embuscade : Sélectionner les ennemis du prédateurs, et utiliser <tt>!cof-surprise</tt>. Par exemple, contre une équipe de joueurs dans le handout <tt>Equipe joueurs</tt> (cf la <a href="#selection">méthode de séclection de groupes</a>), on pourra utiliser l'ability <tt>!cof-surprise [[15 + @{selected|DEX}]] --equipe joueurs</tt>. Pour les bonus en discrétion et init, reporter sur la fiche, pour l'attaque en embuscade sur une cible surprise, rajouter à une attaque les options <tt>--plus 1d6 --etatSi renverse moins FOR</tt>.</li>
     </ol>
     <h4>Voie du tueur</h4>
     <ol>
-      <li>Attaque mortelle : donner la possibilité de faire une attaque avec les options <tt>--bonusAttaque 5 --de6Plus</tt> <i>rang</i>.</li>
+      <li>Attaque mortelle : donner la possibilité de faire une attaque avec les options <tt>--bonusAttaque 5 --plus <i>rang</i>d6</tt>.</li>
     </ol>
 
 
