@@ -159,6 +159,7 @@ p  {margin-left: inherit}
       <li><tt>--ligne</tt> : l'attaque porte sur toutes les cibles à portée, entre l'attaquant et le token ciblé. Si le token ciblé est plus proche que la portée de l'attaque, les tokens derrière le token ciblé sont aussi visés. Pour permettre de viser un point quelconque, on peut utiliser un personnage dédié avec un maximum de 0 pv. À chaque fois qu'un token représentant ce personnage est utilisé comme cible de <tt>--ligne</tt>, le token est enlevé de la carte.</li>
       <li><tt>--disque</tt> <i>r</i> : l'attaque porte sur toutes les cibles dans le disque de centre le token ciblé et de rayon <i>r</i>. Comme pour <tt>--ligne</tt>, on peut utiliser un token cible qui sera supprimé après l'attaque.</li>
       <li><tt>--cone</tt> <i>angle</i> cible toutes les créatures dans un cône de sommet l'attaquant, d'angle <i>angle</i> degrés (90 degrés par défaut), et séparé en deux par le segment joignant l'attaquant et le token visé.</li>
+      <li><tt>--target</tt> <i>id</i> : ajoute une cible à l'attaque (s'ajoute à la cible principale et aux options d'aoe).</li>
     </ul>
 
     <h4>Réduction des dégâts</h4>
@@ -235,11 +236,9 @@ p  {margin-left: inherit}
 
     <h3>2.5 Chance</h3>
     <p>
-    Pour utiliser un point de chance, sélectionner un token et faire
-    <tt>!cof-chance combat</tt> ou <tt>!cof-chance autre</tt>.
-    En macro, ça peut donner 
-    <p>
-    <tt>!cof-chance ?{Utiliser un point de chance pour la dernière attaque ?|Oui, combat|Non, autre}</tt>
+    Le script essaie de détecter les cas où un point de chance peut être utile, et dans ce cas fournit un bouton (utilisable par les joueurs contrôlant le perosnnage ou le GM), permettant de dépenser un point de chance. Attention, pour l'instant, il n'est pas possible de faire juste un undo de la dépense de point de chnce. Le undo après la dépense de point de chance annule toute l'action.
+<p>
+Pour les cas non prévus par le script, on peut faire juste <tt>!cof-chance autre</tt>.
 
     <h3>2.6 Surprise :
       <tt>!cof-suprise ?difficulte</tt></h3>
@@ -921,7 +920,8 @@ p  {margin-left: inherit}
     </ol>
     <h4>Voie du colosse</h4>
     <ol>
-      <li>Fauchage: ajouter la RD, et ajouter un attribut <tt>fauchage</tt>, qui va faire automatiquement le renversement si le dé d'attaque est entre 15 et 20.</li>
+      <li>Fauchage : ajouter la RD, et ajouter un attribut <tt>fauchage</tt>, qui va faire automatiquement le renversement si le dé d'attaque est entre 15 et 20.</li>
+      <li>Balayage : faire une version de l'attaque avec <tt>--target @{target|Target2|token_id}</tt></li>
     </ol>
     <h4>Voie des créatures élémentaires</h4>
     <h4>Voie des créatures magique</h4>
