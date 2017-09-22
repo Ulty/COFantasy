@@ -5638,7 +5638,7 @@ var COFantasy = COFantasy || function() {
       var token = perso.token;
       var charId = perso.charId;
       var name = token.get('name');
-      var display = startFramedDisplay(playerId, "État de " + name, perso);
+      var display = startFramedDisplay(playerId, "État de " + name, perso, undefined, true);
       var line =
         "Points de vie    : " + token.get('bar1_value') + " / " +
         getAttrByName(charId, 'PV', 'max');
