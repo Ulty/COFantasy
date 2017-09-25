@@ -236,7 +236,7 @@ p  {margin-left: inherit}
 
     <h3>2.5 Chance</h3>
     <p>
-    Le script essaie de détecter les cas où un point de chance peut être utile, et dans ce cas fournit un bouton (utilisable par les joueurs contrôlant le perosnnage ou le GM), permettant de dépenser un point de chance. Attention, pour l'instant, il n'est pas possible de faire juste un undo de la dépense de point de chnce. Le undo après la dépense de point de chance annule toute l'action.
+    Le script essaie de détecter les cas où un point de chance peut être utile, et dans ce cas fournit un bouton (utilisable par les joueurs contrôlant le perosnnage ou le GM), permettant de dépenser un point de chance. Attention, pour l'instant, il n'est pas possible de faire juste un undo de la dépense de point de chnce. Le undo après la dépense de point de chance annule toute l'action. Il faut ensuite faire un undo par point de chance dépensé.
 <p>
 Pour les cas non prévus par le script, on peut faire juste <tt>!cof-chance autre</tt>.
 
@@ -587,6 +587,7 @@ Pour les cas non prévus par le script, on peut faire juste <tt>!cof-chance autr
       <li>Frappe des arcanes : le plus simple est d'utiliser la même ligne d'attaque (disons que son label est <tt>E</tt> que pour l'attaque d'énergie (mais si besoin, rien n'empèche d'en utiliser une autre). La commande sera alors <tt>!cof-attack @{selected|token_id} @{selected|token_id} E --auto --magique --disque 10 --etat renverse --save FOR [[10+@{selected|INT}]] --mana 2 ?{Y consacrer tout le tour ?|Oui,--puissant|Non,}</tt></li>
     </ol>
     <h4>Voie des élixirs</h4>
+    <p style="margin-top:0px; margin-bottom:0px">
     Pour créer ou juste voir ses élixirs, utiliser la commande <tt>!cof-elixirs</tt>. Pour cela, il faut aussi un attribut <tt>voieDesElixirs</tt> avec comme valeur le rang dans la voie.
     <ol>
       <li>Fortifiant : création à l'aide de <tt>!cof-elixirs</tt>, et utilisation avec la même commande, ou bien en utilisant <tt>!cof-consommables</tt>.
@@ -610,6 +611,7 @@ Pour les cas non prévus par le script, on peut faire juste <tt>!cof-chance autr
     <h4>Voie des runes</h4>
     <ol>
       <li>Runes de défense : ajuster la DEF sur la fiche.</li>
+      <li>Runes d'énergie : Rajouter un attribut <tt>runeDEnergie</tt> avec comme valeur courante et maximale, 1. Le mieux est de le rajouter à tous les personnages sur lesquels le forgesort fait régulièrement ces runes. Si un jour, pour une raison ou pour une autre, un combat a lieu sans que ces runes aient été posées, mettre ces attributs à 0 (le maximum ne bouge pas et reste à 1). Pour l'utilisation des runes, le script essaie de trouver des cas où ça puisse être fait automatiquement (attaque, jet de caractéristique), mais le résultat sera incorrect si l'action demande de jeter plus d'un dé (malédiction, charge,...). Pour simplement diminuer la rune d'énergie d'un ou plusieurs tokens, les sélectionner et lancer <tt>!cof-bouton-rune-energie</tt>.</li>
     </ol>
 
     <h3>Guerrier</h3>
