@@ -489,15 +489,15 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, "C'est réussi.");
           } else {
             var msgRate = "C'est raté.";
-              evt.personnage = perso;
-              evt.action = {
-                caracteristique: caracteristique,
-                difficulte: difficulte,
-                titre: titre,
-                playerId: playerId,
-                options: options
-              };
-              evt.type = 'jetPerso';
+            evt.personnage = perso;
+            evt.action = {
+              caracteristique: caracteristique,
+              difficulte: difficulte,
+              titre: titre,
+              playerId: playerId,
+              options: options
+            };
+            evt.type = 'jetPerso';
             var pc = attributeAsInt(perso, 'PC', 0);
             if (pc > 0) {
               options.roll = options.roll || tr.roll;
@@ -4760,7 +4760,8 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('tueurFantasmagorique', evt, attrs);
     attrs = removeAllAttributes('elixirsACreer', evt, attrs);
     attrs = removeAllAttributes('elixir', evt, attrs);
-    removeAllAttributes('baieMagique', evt, attrs);
+    //On pourrait diviser par 2 le nombre de baies
+    //var attrsBaie = allAttributesNamed(attrs, 'dose_baie_magique');
   }
 
   function recuperer(msg) {
@@ -8448,54 +8449,66 @@ var COFantasy = COFantasy || function() {
     };
     var action = "Distribue des baies";
     var display = startFramedDisplay(msg.playerid, action, druide);
+    var mangerBaie = "!cof-consommer-baie " + niveau + " --limiteParJour 1 baieMagique";
     getSelected(msg, function(selected) {
-      var tokensToProcess = selected.length;
-      var sendEvent = function() {
-        if (tokensToProcess == 1) {
-          addEvent(evt);
-          sendChat("", endFramedDisplay(display));
-        }
-        tokensToProcess--;
-      };
       iterSelected(selected, function(perso) {
-        var token = perso.token;
-        var baie = attributeAsInt(perso, 'baieMagique', 0);
-        if (baie >= niveau || baie < 0) return; //baie plus puissante ou déjà mangée
-        setTokenAttr(perso, 'baieMagique', niveau, evt);
-        var line = token.get('name') + " reçoit une baie";
-        if (token.id == druide.token.id) line = token.get('name') + " en garde une pour lui";
+        var nom = perso.token.get('name');
+        var baie = tokenAttribute(perso, 'dose_baie_magique');
+        var nbBaies = 1;
+        if (baie.length > 0) {
+          var actionAncienne = baie[0].get('max');
+          var indexNiveau = actionAncienne.indexOf(' ') + 1;
+          var ancienNiveau = parseInt(actionAncienne.substring(indexNiveau));
+          if (ancienNiveau > niveau) {
+            addLineToFramedDisplay(display, nom + " a déjà une baie plus puissante");
+            return;
+          }
+          if (ancienNiveau == niveau) {
+            nbBaies = parseInt(baie[0].get('current'));
+            if (isNaN(nbBaies) || nbBaies < 0) nbBaies = 0;
+            nbBaies++;
+          }
+        }
+        setTokenAttr(perso, 'dose_baie_magique', nbBaies, evt, undefined, mangerBaie);
+        var line = nom + " reçoit une baie";
+        if (perso.token.id == druide.token.id)
+          line = nom + " en garde une pour lui";
         addLineToFramedDisplay(display, line);
-        sendEvent();
       });
-    });
+      addEvent(evt);
+      sendChat("", endFramedDisplay(display));
+    }, druide); //fin du getSelected
   }
 
   function consommerBaie(msg) {
-    if (msg.selected === undefined) {
-      error("Il fait sélectionner un token pour !cof-consommer-baie", msg);
+    var options = parseOptions(msg);
+    var cmd = options.cmd;
+    if (cmd.length < 2) {
+      error("Il faut un argument à !cof-consommer-baie", cmd);
       return;
     }
-    var evt = {
-      type: "consommer une baie"
-    };
-    iterSelected(msg.selected, function(perso) {
-      var charId = perso.charId;
-      var baie = attributeAsInt(perso, 'baieMagique', 0);
-      if (baie === 0) {
-        sendChar(charId, "n'a pas de baie à manger");
+    var baie = parseInt(cmd[1]);
+    if (isNaN(baie) || baie < 0) {
+      error("L'argument de !cof-consommer-baie doit être un nombre positif", cmd);
+      return;
+    }
+    getSelected(msg, function(selection) {
+      if (selection === undefined) {
+        sendPlayer(msg, "Pas de token sélectionné pour !cof-consommer-baie");
         return;
       }
-      if (baie < 0) {
-        sendChar(charId, "a déjà mangé une baie aujourd'hui. Pas d'effet");
-        return;
-      }
-      var soins = randomInteger(6) + baie;
-      setTokenAttr(perso, 'baieMagique', -1, evt);
-      soigneToken(perso.token, soins, evt, function(soinsEffectifs) {
-        sendChar(charId, "mange une baie magique. Il est rassasié et récupère " + soinsEffectifs + " points de vie");
+      var evt = {
+        type: "consommer une baie"
+      };
+      iterSelected(msg.selected, function(perso) {
+        if (limiteRessources(perso, options, 'baieMagique', "a déjà mangé une baie aujourd'hui. Pas d'effet.", evt)) return;
+        var soins = randomInteger(6) + baie;
+        soigneToken(perso.token, soins, evt, function(soinsEffectifs) {
+          sendChar(perso.charId, "mange une baie magique. Il est rassasié et récupère " + soinsEffectifs + " points de vie");
+        });
       });
-    });
-    addEvent(evt);
+      addEvent(evt);
+    }); //fin de getSelected
   }
 
   function replaceInline(msg) {
