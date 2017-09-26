@@ -1,4 +1,4 @@
-//version 0.3
+//version 0.4
 // jshint undef:true
 // jshint eqeqeq:false
 /* globals Set */
@@ -6194,19 +6194,24 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(personnage, 'nueeDInsectes')) {
       bonus -= 2;
     }
-    if (carac == 'DEX') {
-      if (charAttributeAsInt(personnage, 'DEFARMUREON', 1))
-        bonus -= charAttributeAsInt(personnage, 'DEFARMUREMALUS', 0);
-      if (charAttributeAsInt(personnage, 'DEFBOUCLIERON', 1))
-        bonus -= charAttributeAsInt(personnage, 'DEFBOUCLIERMALUS', 0);
-      if (attributeAsBool(personnage, 'agrandissement'))
-        bonus -= 2;
-    }
-    if (carac == 'FOR') {
-      if (attributeAsBool(personnage, 'rayon_affaiblissant'))
-        bonus -= 2;
-      if (attributeAsBool(personnage, 'agrandissement'))
-        bonus += 2;
+    switch (carac) {
+      case 'DEX':
+        if (charAttributeAsInt(personnage, 'DEFARMUREON', 1))
+          bonus -= charAttributeAsInt(personnage, 'DEFARMUREMALUS', 0);
+        if (charAttributeAsInt(personnage, 'DEFBOUCLIERON', 1))
+          bonus -= charAttributeAsInt(personnage, 'DEFBOUCLIERMALUS', 0);
+        if (attributeAsBool(personnage, 'agrandissement'))
+          bonus -= 2;
+        break;
+      case 'FOR':
+        if (attributeAsBool(personnage, 'rayon_affaiblissant'))
+          bonus -= 2;
+        if (attributeAsBool(personnage, 'agrandissement'))
+          bonus += 2;
+        break;
+      case 'CHA':
+        if (attributeAsBool(personnage, 'aspectDeLaSuccube')) bonus += 5;
+        break;
     }
     return bonus;
   }
@@ -10382,6 +10387,11 @@ var COFantasy = COFantasy || function() {
       activation: "prend les traits d'un prédateur",
       actif: "a les traits d'un prédateur",
       fin: "redevient normal"
+    },
+    aspectDeLaSuccube: {
+      activation: "acquiert une beauté fascinante",
+      actif: "est d'une beauté fascinante",
+      fin: "retrouve sa beauté habituelle"
     }
   };
 

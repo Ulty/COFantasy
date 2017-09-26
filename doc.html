@@ -734,6 +734,12 @@ Pour les cas non prévus par le script, on peut faire juste <tt>!cof-chance autr
     <h4>Voie du démon</h4>
     <ol>
       <li>Malédiction : Ajouter une attaque magique sans dégâts, de portée 20 m, avec les options <tt>--sortilege --malediction</tt></li>
+      <li>Aspect de la succube : 
+        <ul>
+          <li> Transformation : <tt>!cof-effet-temp aspectDeLaSuccube [[5+@{selected|INT}]]</tt></li>
+          <li> Pour l'attaque, faire une attaque magique de contact, et l'invoquer avec les arguments <tt>--sortilege --vampirise --si etat aspectDeLaSuccube</tt></li>
+        </ul>
+      </li>
     </ol>
     <h4>Voie de la mort</h4>
     <ol>
