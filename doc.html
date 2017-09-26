@@ -749,6 +749,7 @@ Pour les cas non prévus par le script, on peut faire juste <tt>!cof-chance autr
     <h4>Voie de l'outre-tombe</h4>
     <ol>
       <li>Peur : Faire une attaque <tt>Peur</tt> utilisant le score d'attaque magique, de portée 20 m, mais ne faisant aucun dégât (0 dé, pas de bonus de caractéristique). Pour l'attaque, ajouter les arguments <tt>--sortilege --peur [[10+@{selected|INT}]] [[1d4+</tt><i>r</i><tt>]]</tt> où <i>r</i> est le rang dans la voie.</li>
+      <li>Animation d'un mort-vivant : simplement faire un personnage pour le mort-vivant contrôlé. Le MJ devra se charger de la perte de 1PV tous les 6 tours, si besoin. </li>
     </ol>
     <h4>Voie du sang</h4>
     <ol>
@@ -794,7 +795,8 @@ Pour les cas non prévus par le script, on peut faire juste <tt>!cof-chance autr
       <li>Soins modérés : <tt>!cof-soin @{selected|token_id} @{target|token_id} modere</tt></li>
       <li>Soins de groupe : <tt>!cof-soin @{selected|token_id} groupe</tt> (ne pas oublier de définir des <a href="#allie">alliés</a>).
     Le sort nécessite un point de mana (barre 2 du token), et accepte
-    l'option <tt>--puissant</tt> pour soigner un peu plus.</li>
+    l'option <tt>--puissant</tt> pour soigner un peu plus.
+      Attention, toutefois, le sort ne va pas automatiquement soigner les personnages notés comme morts, ce qui est le cas général si ils sont tombés à 0 PV. Si certains alliés notés morts ne sont pas vraiment morts, mais juste inconscient, il faudra que le MJ fasse la mise à jour de l'état et des PV lui-même.</li>
     </ol>
     <h4>Voie de la spiritualité</h4>
     <ol>

@@ -10969,6 +10969,12 @@ var COFantasy = COFantasy || function() {
           if (count === 0) addEvent(evt);
           return;
         }
+        var perso = {token:token, charId:charId};
+        if (getState(perso, 'mort')) {
+          count--;
+          if (count === 0) addEvent(evt);
+          return;
+        }
         var attrEffet = findObjs({
           _type: 'attribute',
           _characterid: charId,
@@ -10997,10 +11003,7 @@ var COFantasy = COFantasy || function() {
         save({
             carac: carac,
             seuil: seuil
-          }, {
-            charId: charId,
-            token: token
-          }, expliquer, saveOpts, evt,
+          }, perso, expliquer, saveOpts, evt,
           function(reussite) { //asynchrone
             if (reussite) {
               finDEffet(attrEffet, effet, attrName, charId, evt, attr);
