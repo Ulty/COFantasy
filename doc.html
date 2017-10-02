@@ -104,9 +104,11 @@ p  {margin-left: inherit}
       <li><tt>--bonusCritique</tt> <i>n</i> : augmente <i>n</i> à la plage de coups critiques</li>
       <li><tt>--bonusContreBouclier</tt> <i>n</i> : ajoute <i>n</i> au jet d'attaque si le défenseur porte un bouclier. Utile par exemple pour le fléau d'arme.</li>
       <li> <tt>--psave</tt> <i>carac seuil</i> : jet de <i>carac</i>, si le jet est supérieur à <i>seuil</i>, les dégâts sont divisés par 2. <i>carac</i> est l'abbréviation de caractéristiques de 3 lettres standard (FOR, DEX, ...). Si on souhaite que le jet ne permette de réduire qu'une partie des dommages (la dernière ajoutée avec <tt>--plus</tt>), on peut ajouter <tt>local</tt>. La syntaxe complète est alors <tt>--psave</tt> <i>carac seuil</i> <tt>local</tt> </li>
+      <li> <tt>--demiAuto</tt> : si l'attaque rate, on considère juste que les saves partiels sont automatiquemet réussi. Ça signifie en général que la cible prend au moins la moitié des dégâts.<li>
       <li> <tt>--save</tt> <i>carac seuil</i> : même effet que <tt>--psave</tt>, mais pour annuler le dernier <tt>--effet</tt>, <tt>etat</tt> ou <tt>--etatSi</tt> (aucun effet sur les DM).</li>
       <li> <tt>--saveParTour</tt> <i>carac seuil</i> : même effet que <tt>--save</tt>, mais donne droit à un jet à la fin de chaque tour au lieu d'un jet au moment de l'attaque.</li>
       <li> <tt>--fx</tt> <i>effet</i> : ajoute un <a href="https://wiki.roll20.net/Custom_FX">effet</a> qui part de l'attaquant à la cible. Si l'attaque rate, l'effet rate aussi, d'autant plus que le jet d'attaque est loin de la défense.</li>
+      <li> <tt>--targetFx</tt> <i>effet</i> : ajoute un <a href="https://wiki.roll20.net/Custom_FX">effet</a> au niveau de la cible.</li>
       <li> <tt>--si</tt> <i>conditon</i> : l'attaque n'est possible que si <i>condition</i> est validée. Une condition peut être
         <ul id="conditions">
           <li> <tt>moins</tt> <i>attribut</i> : vrai si l'attribut <i>attribut</i> de la cible est moins haute que celle de l'attaquant</li>
@@ -146,7 +148,7 @@ p  {margin-left: inherit}
         compte la quantite sucée. Quand cette quantité arrive à 6, enlève le malus de
         DEF et rend la cible affaiblie.</li>
       <li> <tt>--mainsDEnergie</tt> : +2 à +5 à l'attaque, selon l'armure de la cible</li>
-      <li> <tt>--semonce</tt> : +5 au touché et +1d6 aux DM, ne touche pas aux charges de l'arme</li>
+      <li> <tt>--semonce</tt> : +5 au touché et +1d6 aux DM (ne change pas les charges de l'arme).</li>
       <li><tt>--imparable</tt> : lance 2 d20 pour l'attaque et garde le meilleur</li>
       <li><tt>--affute</tt> : augmente de 1 les chances de crit et +1d6 aux DM des crit.</li>
       <li><tt>--tirDeBarrage</tt> : ignore la charge, multiplie les DM par 2 et message pour undo si la cible bouge.</li>
@@ -663,8 +665,8 @@ Pour les cas non prévus par le script, on peut faire juste <tt>!cof-chance autr
       <li>Projectile magique : <tt>!cof-attack</tt> avec options <tt>--auto</tt> et <tt>--magique --sortilege --fx beam-magic</tt></li>
       <li> Rayon affaiblissant : <tt>!cof-attack</tt> d'une attaque sans 
         dégâts, avec 10 m de portee et l'option <tt>--effet rayon_affaiblissant [[1d6+@{selected|INT}]] --sortilege</tt>. On peut aussi ajouter un petit visuel avec <tt>--fx splatter-magic</tt></li>
-      <li>Flèche enflammée : Utiliser une attaque sur la fiche, et la lancer avec les options <tt>--fx beam-fire --feu --mana 1 --sortilege --enflamme ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt> 
-        </li>
+      <li>Flèche enflammée : Utiliser une attaque sur la fiche, et la lancer avec les options <tt>--fx beam-fire --feu --mana 1 --sortilege --enflamme ?{Y consacrer le tour entier ?|oui,--puissant|non,}</tt> </li>
+      <li>Boule de feu : Utiliser une attaque sur la fiche (attaque magique, portée 30 m, 4d6+INT de DM), et la lancer avec les options <tt>--targetFx explode-fire --feu --mana 2 --sortilege --disque 6 --demiAuto --psave DEX [[10+@{selected|INT}]]</tt>. Si vous utilisez cette option, vous pouvez aussi rajouter <tt>?{Y consacrer tout le tour?|Oui,--puissant|Non, }</tt>.</li>
     </ol>
     <h4>Voie de la magie élémentaire</h4>
     <ol>
@@ -869,6 +871,7 @@ Pour les cas non prévus par le script, on peut faire juste <tt>!cof-chance autr
     <h4>Voie du roublard</h4>
     <ol>
       <li>Doigts agiles : utiliser des compétences sur la fiche de personnage</li>
+      <li>Détecter les pièges : faire le jet avec <tt>!cof-jet INT 10</tt></li>
     </ol>
     <h4>Voie du spadassin</h4>
     <ol>

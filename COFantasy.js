@@ -675,6 +675,7 @@ var COFantasy = COFantasy || function() {
         case "argent":
         case "pietine":
         case "tueurDeGeants":
+        case "demiAuto":
           options[cmd[0]] = true;
           return;
         case "magique":
@@ -799,6 +800,13 @@ var COFantasy = COFantasy || function() {
             return;
           }
           options.fx = cmd[1];
+          break;
+        case "targetFx":
+          if (cmd.length < 2) {
+            sendChat("COF", "Il manque un argument à l'option --targetFx de !cof-attack");
+            return;
+          }
+          options.targetFx = cmd[1];
           break;
         case 'psave':
           var psaveopt = options;
@@ -1896,6 +1904,9 @@ var COFantasy = COFantasy || function() {
     } else {
       nomCiblePrincipale = targetToken.get('name');
       if (options.aoe) {
+        if (options.targetFx) {
+          spawnFx(targetToken.get('left'), targetToken.get('top'), options.targetFx, pageId);
+        }
         var distanceTarget = distanceCombat(targetToken, attackingToken, pageId, true, true);
         var pta = tokenCenter(attackingToken);
         var ptt = tokenCenter(targetToken);
@@ -2488,7 +2499,11 @@ var COFantasy = COFantasy || function() {
                 options.champion = true;
               if (d20roll == 1 && options.chance === undefined) {
                 attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
-                touche = false;
+                if (options.demiAuto) {
+                  target.partialSaveAuto = true;
+                  evt.succes = false;
+                  touche = true;
+                } else touche = false;
                 var confirmCrit = randomInteger(20);
                 critSug = "/w GM Jet de confirmation pour l'échec critique : " +
                   confirmCrit + "/20. Suggestion d'effet : ";
@@ -2516,7 +2531,13 @@ var COFantasy = COFantasy || function() {
                 touche = 1;
               } else if (attackRoll < defense) {
                 attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
-                touche = false;
+                evt.succes = false;
+                if (options.demiAuto) target.partialSaveAuto = true;
+                if (options.demiAuto) {
+                  target.partialSaveAuto = true;
+                  evt.succes = false;
+                  touche = true;
+                } else touche = false;
               } else { // Touché normal
                 attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
                 touche = 1;
@@ -2923,7 +2944,7 @@ var COFantasy = COFantasy || function() {
             target.messages.push(target.tokName + " est maudit...");
           }
           // Draw effect, if any
-          if (_.has(options, "fx")) {
+          if (options.fx) {
             var p1e = {
               x: attackingToken.get('left'),
               y: attackingToken.get('top'),
@@ -2933,6 +2954,9 @@ var COFantasy = COFantasy || function() {
               y: target.token.get('top'),
             };
             spawnFxBetweenPoints(p1e, p2e, options.fx, pageId);
+          }
+          if (options.targetFx && !options.aoe) {
+            spawnFx(target.token.get('left'), target.token.get('top'), options.targetFx, pageId);
           }
           target.rollsDmg = rollsDmg;
           // Compte le nombre de saves pour la synchronisation
@@ -3296,10 +3320,19 @@ var COFantasy = COFantasy || function() {
         expliquer("Les créatures non-vivantes sont immnunisées aux attaques qui demandent un test de constitution");
         afterSave({
           succes: true,
-          display: '0',
           dmgDisplay: '0',
           total: 0,
           showTotal: false
+        });
+        return;
+      }
+      if (target.partialSaveAuto) {
+        if (showTotal) dmgDisplay = '(' + dmgDisplay + ')';
+        afterSave({
+          succes: true,
+          dmgDisplay: dmgDisplay + '/2',
+          total: Math.ceil(total / 2),
+          showTotal: true
         });
         return;
       }
@@ -3317,7 +3350,6 @@ var COFantasy = COFantasy || function() {
           } else {}
           afterSave({
             succes: succes,
-            display: rollText,
             dmgDisplay: dmgDisplay,
             total: total,
             showTotal: showTotal
@@ -5164,6 +5196,11 @@ var COFantasy = COFantasy || function() {
     var options = action.options;
     options.chance = (options.chance + 10) || 10;
     options.rollsAttack = action.rollsAttack;
+    if (action.cibles) {
+      action.cibles.forEach(function(target){
+        target.partialSaveAuto = undefined;
+      });
+    }
     attack(action.player_id, perso, action, action.attack_label, options);
   }
 
@@ -5230,6 +5267,11 @@ var COFantasy = COFantasy || function() {
       switch (evtARefaire.type) {
         case 'Attaque':
           undoEvent(evtARefaire);
+          if (action.cibles) {
+            action.cibles.forEach(function(target){
+              target.partialSaveAuto = undefined;
+            });
+          }
           attack(action.player_id, perso, action, action.attack_label, options);
           return;
         case 'jetPerso':
@@ -10613,7 +10655,9 @@ var COFantasy = COFantasy || function() {
       evt.deletedAttributes.push(attrSave);
       attrSave.remove();
     } else { //On cherche si il y en a un
-      if (!getState({charId:charId},'mort')) {
+      if (!getState({
+          charId: charId
+        }, 'mort')) {
         sendChar(charId, messageEffetTemp[effet].fin);
       }
       var nameWithSave = effet + "SaveParTour" + attrName.substr(effet.length);
