@@ -156,7 +156,7 @@ var COFantasy = COFantasy || function() {
         };
         if (getState(p, 'mort')) return;
         if (charAttributeAsBool(ci, 'siphonDesAmes')) {
-          soigneToken(tok, randomInteger(6), evt,
+          soigneToken(p, randomInteger(6), evt,
             function(s) {
               sendChar(ci, "siphone l'âme de " + token.get('name') +
                 ". Il récupère " + s + " pv.");
@@ -1241,6 +1241,10 @@ var COFantasy = COFantasy || function() {
       attBonus -= 2;
       explications.push("Nuée d’insectes => -2 en Attaque");
     }
+    if (attributeAsBool(personnage, 'etatExsangue')) {
+      attBonus -= 2;
+      explications.push("Exsangue => -2 en Attaque");
+    }
     if (attributeAsBool(personnage, 'armeBrulante')) {
       attBonus -= 2;
       explications.push("Arme brûlante => -2 en Attaque");
@@ -1354,7 +1358,8 @@ var COFantasy = COFantasy || function() {
   }
 
   //fonction avec callback, mais synchrone
-  function soigneToken(token, soins, evt, callTrue, callMax) {
+  function soigneToken(perso, soins, evt, callTrue, callMax) {
+    var token = perso.token;
     var bar1 = parseInt(token.get("bar1_value"));
     var pvmax = parseInt(token.get("bar1_max"));
     if (isNaN(bar1) || isNaN(pvmax)) {
@@ -1373,6 +1378,11 @@ var COFantasy = COFantasy || function() {
         bar1_value: bar1
       }
     });
+    if (bar1 === 0) {
+      if (attributeAsBool(perso, 'etatExsangue')) {
+        removeTokenAttr(perso, 'etatExsangue', evt, "retrouve des couleurs");
+      }
+    }
     bar1 += soins;
     var soinsEffectifs = soins;
     if (bar1 > pvmax) {
@@ -1582,7 +1592,7 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(attaquant, 'baroudHonneurActif')) {
       attBonus += 5;
       explications.push(name + " porte une dernière attaque et s'effondre");
-      setState(attaquant, 'mort', true, evt);
+      mort(attaquant, evt);
       removeTokenAttr(attaquant, 'baroudHonneurActif', evt);
     }
     if (options.sortilege && attributeAsBool(attaquant, 'zoneDeSilence')) {
@@ -3025,7 +3035,7 @@ var COFantasy = COFantasy || function() {
                     }
                   }
                   if (options.vampirise) {
-                    soigneToken(attackingToken, dmg, evt, function(soins) {
+                    soigneToken(attaquant, dmg, evt, function(soins) {
                       target.messages.push(
                         "L'attaque soigne " + attackerTokName + " de " + soins +
                         " PV");
@@ -3606,7 +3616,12 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  //Appelé quand on met à 0 PV
   function mort(personnage, evt) {
+    if (charAttributeAsBool(personnage, 'exsangue') && !attributeAsBool(personnage, 'etatExsangue')) {
+      setTokenAttr(personnage, 'etatExsangue', true, evt, "continue à agir malgré son état");
+      return;
+    }
     setState(personnage, 'mort', true, evt);
     var targetPos = {
       x: personnage.token.get('left'),
@@ -4908,6 +4923,11 @@ var COFantasy = COFantasy || function() {
         if (total < 0) total = 0;
         tokEvt.prev.bar1_value = bar1;
         evt.affectes.push(tokEvt);
+        if (bar1 === 0) {
+          if (attributeAsBool(perso, 'etatExsangue')) {
+            removeTokenAttr(perso, 'etatExsangue', evt, "retrouve des couleurs");
+          }
+        }
         bar1 += total;
         if (bar1 > pvmax) bar1 = pvmax;
         updateCurrentBar(token, 1, bar1);
@@ -5908,6 +5928,9 @@ var COFantasy = COFantasy || function() {
         _type: 'attribute',
         _characterid: charId
       });
+      if (attributeAsBool(perso, 'etatExsangue')) {
+        addLineToFramedDisplay(display, "est exsangue");
+      }
       for (var effet in messageEffetTemp) {
         var effetActif = false;
         if (effet == 'forgeron' || effet == 'dmgArme1d6') {
@@ -6213,6 +6236,9 @@ var COFantasy = COFantasy || function() {
       bonus -= malusStrangulation;
     }
     if (attributeAsBool(personnage, 'nueeDInsectes')) {
+      bonus -= 2;
+    }
+    if (attributeAsBool(personnage, 'etatExsangue')) {
       bonus -= 2;
     }
     switch (carac) {
@@ -7603,6 +7629,11 @@ var COFantasy = COFantasy || function() {
           bar1_value: bar1
         }
       });
+      if (bar1 === 0) {
+        if (attributeAsBool(perso, 'etatExsangue')) {
+          removeTokenAttr(perso, 'etatExsangue', evt, "retrouve des couleurs");
+        }
+      }
       bar1 += soin;
       if (bar1 > pvmax) {
         soin -= (bar1 - pvmax);
@@ -8030,11 +8061,11 @@ var COFantasy = COFantasy || function() {
               affecte: soigneur.token
             });
             updateCurrentBar(soigneur.token, 1, pvSoigneur - s);
-            if (pvSoigneur == s) setState(soigneur, 'mort', true, evt);
+            if (pvSoigneur == s) mort(soigneur, evt);
             callTrue(s);
           };
         }
-        soigneToken(token2, soins, evt, callTrueFinal, callMax);
+        soigneToken(cible, soins, evt, callTrueFinal, callMax);
         finSoin();
       }); //fin de iterCibles
     }); //fin du sendChat du jet de dés
@@ -8120,7 +8151,7 @@ var COFantasy = COFantasy || function() {
           addLineToFramedDisplay(display,
             "<b>" + name + "</b> : + " + soinsEffectifs + " PV");
         };
-        soigneToken(perso.token, soins, evt, callTrue, callMax);
+        soigneToken(perso, soins, evt, callTrue, callMax);
       });
       sendChat("", endFramedDisplay(display));
       addEvent(evt);
@@ -8221,7 +8252,7 @@ var COFantasy = COFantasy || function() {
         var name2 = beneficiaire.token.get('name');
         var soins = randomInteger(4) + rang;
         sendChar(beneficiaire.charId, " boit un fortifiant");
-        soigneToken(beneficiaire.token, soins, evt, function(soinsEffectifs) {
+        soigneToken(beneficiaire, soins, evt, function(soinsEffectifs) {
           sendChar(beneficiaire.charId, "et est soigné de " + soinsEffectifs + " PV");
         });
         // Finalement on met l'effet fortifie
@@ -8529,7 +8560,7 @@ var COFantasy = COFantasy || function() {
       iterSelected(msg.selected, function(perso) {
         if (limiteRessources(perso, options, 'baieMagique', "a déjà mangé une baie aujourd'hui. Pas d'effet.", evt)) return;
         var soins = randomInteger(6) + baie;
-        soigneToken(perso.token, soins, evt, function(soinsEffectifs) {
+        soigneToken(perso, soins, evt, function(soinsEffectifs) {
           sendChar(perso.charId, "mange une baie magique. Il est rassasié et récupère " + soinsEffectifs + " points de vie");
         });
       });
@@ -10582,7 +10613,9 @@ var COFantasy = COFantasy || function() {
       evt.deletedAttributes.push(attrSave);
       attrSave.remove();
     } else { //On cherche si il y en a un
-      sendChar(charId, messageEffetTemp[effet].fin);
+      if (!getState({charId:charId},'mort')) {
+        sendChar(charId, messageEffetTemp[effet].fin);
+      }
       var nameWithSave = effet + "SaveParTour" + attrName.substr(effet.length);
       findObjs({
         _type: 'attribute',
