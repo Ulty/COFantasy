@@ -319,10 +319,8 @@ Pour les cas non prévus par le script, on peut faire juste <tt>!cof-chance autr
 
     <h3>2.9 Consommables <tt>!cof-consommables</tt></h3>
     La fonction affiche une liste de consommables, avec la possibilité de cliquer sur un élément de la liste pour le consommer (et activer son effet). Pour cela, la fonction regarde tous les attributs qui commencent par <tt>dose_</tt>, <tt>elixir_</tt> ou <tt>consommable_</tt>. La valeur courante doit être le nombre d'éléments possédé, et le max peut être une commande à effectuer pour activer l'effet. La fonction est à réserver aux tokens liés à un personnage. Il est aussi possible de simplement écrire un message qui s'affichera (et diminuera la quantité de consommables).
-    <p>
-   Attention, les boutons sont utilisables par tout le monde, ce qui permet de faire utiliser un des concommables d'un personnage par un autre. Le script vérifie juste que le token qui utilise l'objet est au contact.
    <p> 
-   Pour l'instant, seules les commandes <tt>!cof-effet-temp</tt>, <tt>!cof-effet-combat</tt>, <tt>!cof-effet</tt>, <tt>!cof-enduire-poison</tt> et <tt>!cof-soin</tt> diminuent correctement le nombre de consommables.
+   Pour l'instant, seules les commandes <tt>!cof-effet-temp</tt>, <tt>!cof-effet-combat</tt>, <tt>!cof-effet</tt>, <tt>!cof-enduire-poison</tt>, <tt>cof-attack</tt>, et <tt>!cof-soin</tt> diminuent correctement le nombre de consommables.
 
     <h3>2.10 Escaliers</h3>
     Pour gérer les escaliers sur les cartes, vous pouvez utiliser la méthode suivante, inspirée du script Teleport : placez dans le layer "GM Info Overlay", au nivea des escaliers, des tokens qui prennent exactement la place des escaliers. Nommez ces escaliers avec un nom suivi du nombre d'étages (entre 2 et 9), suivi d'une lettre majuscule. Par exemple <tt>Escalier2A</tt>. Chaque escalier de la même colonne doit avoir le même nom et même nombre d'étage, et différer seulement par la lettre finale. Ensuite, si un ensemble de tokens est sur un escalier, utilisez <tt>!cof-escalier</tt> pour téléporter les tokens à l'emplacement de l'escalier suivant dans l'ordre des lettres. Dans l'exemple précédent, il serait téléporté à l'emplacement du token nommé <tt>Escalier2B</tt>. Cela ne fonctionne que si les bouts de l'escalier sont sur la même carte. À vous de choisir sir vous préférez révéler cette fonctionalité à vos joueurs, ou si vous le faites vous-même.
@@ -965,7 +963,7 @@ Pour les cas non prévus par le script, on peut faire juste <tt>!cof-chance autr
     </ol>
     <h4>Voie du Prédateur</h4> 
     <ol>
-      <li>Embuscade : Sélectionner les ennemis du prédateurs, et utiliser <tt>!cof-surprise</tt>. Par exemple, contre une équipe de joueurs dans le handout <tt>Equipe joueurs</tt> (cf la <a href="#selection">méthode de séclection de groupes</a>), on pourra utiliser l'ability <tt>!cof-surprise [[15 + @{selected|DEX}]] --equipe joueurs</tt>. Pour les bonus en discrétion et init, reporter sur la fiche, pour l'attaque en embuscade sur une cible surprise, rajouter à une attaque les options <tt>--plus 1d6 --etatSi renverse moins FOR</tt>.</li>
+      <li>Embuscade : Sélectionner les ennemis du prédateurs, et utiliser <tt>!cof-surprise</tt>. Par exemple, contre une équipe de joueurs dans le handout <tt>Equipe joueurs</tt> (cf la <a href="#selection">méthode de sélection de groupes</a>), on pourra utiliser l'ability <tt>!cof-surprise [[15 + @{selected|DEX}]] --equipe joueurs</tt>. Pour les bonus en discrétion et init, reporter sur la fiche, pour l'attaque en embuscade sur une cible surprise, rajouter à une attaque les options <tt>--plus 1d6 --etatSi renverse moins FOR</tt>.</li>
     </ol>
     <h4>Voie du tueur</h4>
     <ol>

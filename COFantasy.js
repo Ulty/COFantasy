@@ -1011,6 +1011,19 @@ var COFantasy = COFantasy || function() {
             options.limiteParCombatRessource = cmd[2];
           }
           return;
+        case 'decrAttribute':
+          if (cmd.length < 2) {
+            error("Erreur interne d'une commande générée par bouton", cmd);
+            return;
+          }
+          var attr = getObj('attribute', cmd[1]);
+          if (attr === undefined) {
+            log("Attribut à changer perdu");
+            log(cmd);
+            return;
+          }
+          options.decrAttribute = attr;
+          return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
       }
