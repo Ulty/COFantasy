@@ -3053,6 +3053,27 @@ var COFantasy = COFantasy || function() {
                         });
                     });
                   }
+                  if (attributeAsBool(target, 'sangMordant') && options.contact) {
+                    ciblesCount++;
+                    sendChat("", "[[1d6]]", function(res) {
+                      var rolls = res[0];
+                      var explRoll = rolls.inlinerolls[0];
+                      var r = {
+                        total: explRoll.results.total,
+                        type: 'acide',
+                        display: buildinline(explRoll, 'acide', true)
+                      };
+                      dealDamage(attaquant, r, [], evt, 1, options,
+                        target.messages,
+                        function(dmgDisplay, dmg) {
+                          var dmgMsg =
+                            "<b>Le sang acide gicle sur " + attackerTokName + " :</b> " +
+                            dmgDisplay + " DM";
+                          target.messages.push(dmgMsg);
+                          finCibles();
+                        });
+                    });
+                  }
                   finCibles();
                 });
             }
@@ -10392,6 +10413,11 @@ var COFantasy = COFantasy || function() {
       activation: "acquiert une beauté fascinante",
       actif: "est d'une beauté fascinante",
       fin: "retrouve sa beauté habituelle"
+    },
+    sangMordant: {
+      activation: "transforme son sang",
+      actif: "a du sang acide",
+      fin: "retrouve un sang normal"
     }
   };
 
@@ -10969,7 +10995,10 @@ var COFantasy = COFantasy || function() {
           if (count === 0) addEvent(evt);
           return;
         }
-        var perso = {token:token, charId:charId};
+        var perso = {
+          token: token,
+          charId: charId
+        };
         if (getState(perso, 'mort')) {
           count--;
           if (count === 0) addEvent(evt);
