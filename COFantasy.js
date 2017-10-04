@@ -1881,13 +1881,52 @@ var COFantasy = COFantasy || function() {
         }
       });
     }
+    
+    var this_weapon = JSON.parse(attackLabel);
+    if (Array.isArray(this_weapon))
+    {
+      var weaponName = this_weapon[0].replace(/_/g, ' ');
+      var attSkill = this_weapon[1][0];
+      var attSkillDiv = this_weapon[1][1];
+      var crit = this_weapon[2];
+      var DMG = this_weapon[3];
+        var attNbDices = DMG[0];
+        var attDice = DMG[0];
+        var attCarBonus = DMG[0];
+        var attDMBonusCommun = DMG[0];
+      var portee = this_weapon[4];
+    }
+    else {
+      //On trouve l'attaque correspondant au label
+      var att = getAttack(attackLabel, attackerTokName, attackingCharId);
+      if (att === undefined) return;
+      
+      var attPrefix = att.attackPrefix;
+      var weaponName = att.weaponName;
+      
+      var attSkill =
+        getAttrByName(attackingCharId, attPrefix + "armeatk") ||
+        getAttrByName(attackingCharId, "ATKCAC");
+      var attSkillDiv = getAttrByName(attackingCharId, attPrefix + "armeatkdiv") || 0;
+      
+      // DMG
+      var attNbDices = getAttrByName(attackingCharId, attPrefix + "armedmnbde") || 1;
+      var attDice = getAttrByName(attackingCharId, attPrefix + "armedmde") || 4;
+      var attCarBonus =
+        getAttrByName(attackingCharId, attPrefix + "armedmcar") ||
+        modCarac(attaquant, "FORCE");
+      var attDMBonusCommun = getAttrByName(attackingCharId, attPrefix + "armedmdiv");
 
-    //On trouve l'attaque correspondant au label
-    var att = getAttack(attackLabel, attackerTokName, attackingCharId);
-    if (att === undefined) return;
-    var attPrefix = att.attackPrefix;
-    var weaponName = att.weaponName;
-    var portee = getPortee(attackingCharId, attPrefix);
+      var crit = getAttrByName(attackingCharId, attPrefix + "armecrit") || 20;
+      var portee = getPortee(attackingCharId, attPrefix);
+    }
+
+    attSkillDiv = parseInt(attSkillDiv);
+    attNbDices = parseInt(attNbDices);
+    attDice = parseInt(attDice);
+    attDMBonusCommun = parseInt(attDMBonusCommun);
+    crit = parseInt(crit);
+    
     if (portee > 0) options.distance = true;
     else options.contact = true;
 
@@ -2230,8 +2269,6 @@ var COFantasy = COFantasy || function() {
     // et le modificateur d'arme et de caractéritiques qui apparaissent dans 
     // la description de l'attaque. Il faut quand même tenir compte des
     // chances de critique
-    var crit = getAttrByName(attackingCharId, attPrefix + "armecrit") || 20;
-    crit = parseInt(crit);
     if (isNaN(crit) || crit < 1 || crit > 20) {
       error("Le critique n'est pas un nombre entre 1 et 20", crit);
       crit = 20;
@@ -2249,11 +2286,6 @@ var COFantasy = COFantasy || function() {
     if (options.imparable) nbDe = 2;
     var de = computeDice(attaquant, nbDe, dice);
     var attackRollExpr = "[[" + de + "cs>" + crit + "cf1]]";
-    var attSkill =
-      getAttrByName(attackingCharId, attPrefix + "armeatk") ||
-      getAttrByName(attackingCharId, "ATKCAC");
-    var attSkillDiv = getAttrByName(attackingCharId, attPrefix + "armeatkdiv") || 0;
-    attSkillDiv = parseInt(attSkillDiv);
     if (isNaN(attSkillDiv)) attSkillDiv = 0;
     var attSkillDivTxt = "";
     if (attSkillDiv > 0) attSkillDivTxt = " + " + attSkillDiv;
@@ -2596,7 +2628,7 @@ var COFantasy = COFantasy || function() {
                 });
                 count--;
                 if (count === 0)
-                  attackDealDmg(attaquant, ciblesTouchees, critSug, attackLabel, attPrefix, d20roll, display, options, evt, explications, pageId);
+                  attackDealDmg(attaquant, ciblesTouchees, critSug, attackLabel, attNbDices, attDice, attCarBonus, attDMBonusCommun, d20roll, display, options, evt, explications, pageId);
                 return;
               }
             }
@@ -2619,14 +2651,14 @@ var COFantasy = COFantasy || function() {
             if (target.touche) ciblesTouchees.push(target);
             count--;
             if (count === 0)
-              attackDealDmg(attaquant, ciblesTouchees, critSug, attackLabel, attPrefix, d20roll, display, options, evt, explications, pageId);
+              attackDealDmg(attaquant, ciblesTouchees, critSug, attackLabel, attNbDices, attDice, attCarBonus, attDMBonusCommun, d20roll, display, options, evt, explications, pageId);
           }); //fin defenseOfToken
         }); //fin bonusAttaqueD
       }); //fin de détermination de toucher des cibles
     }); // fin du jet d'attaque asynchrone
   }
 
-  function attackDealDmg(attaquant, cibles, critSug, attackLabel, attPrefix, d20roll, display, options, evt, explications, pageId) {
+  function attackDealDmg(attaquant, cibles, critSug, attackLabel, attNbDices, attDice, attCarBonus, attDMBonusCommun, d20roll, display, options, evt, explications, pageId) {
     if (cibles.length === 0) {
       finaliseDisplay(display, explications, evt);
       if (critSug) sendChat('COF', critSug);
@@ -2640,10 +2672,7 @@ var COFantasy = COFantasy || function() {
     //Les dégâts
     //Dégâts insrits sur la ligne de l'arme
     var mainDmgType = options.type || 'normal';
-    var attNbDices = getAttrByName(attackingCharId, attPrefix + "armedmnbde") || 1;
-    attNbDices = parseInt(attNbDices);
-    var attDice = getAttrByName(attackingCharId, attPrefix + "armedmde") || 4;
-    attDice = parseInt(attDice);
+    
     if (isNaN(attDice) || attDice < 0 || isNaN(attNbDices) || attNbDices < 0) {
       error("Dés de l'attaque incorrect", attDice);
       addEvent(evt);
@@ -2653,9 +2682,6 @@ var COFantasy = COFantasy || function() {
       attDice += 2;
     }
     if (options.reroll1) attDice += "r1";
-    var attCarBonus =
-      getAttrByName(attackingCharId, attPrefix + "armedmcar") ||
-      modCarac(attaquant, "FORCE");
     if (isNaN(attCarBonus)) {
       if (attCarBonus.startsWith('@{')) {
         var carac = caracOfMod(attCarBonus.substr(2, 3));
@@ -2669,8 +2695,6 @@ var COFantasy = COFantasy || function() {
     }
     if (attCarBonus === "0" || attCarBonus === 0) attCarBonus = "";
     else attCarBonus = " + " + attCarBonus;
-    var attDMBonusCommun =
-      parseInt(getAttrByName(attackingCharId, attPrefix + "armedmdiv"));
     if (isNaN(attDMBonusCommun) || attDMBonusCommun === 0) attDMBonusCommun = '';
     else if (attDMBonusCommun > 0) attDMBonusCommun = '+' + attDMBonusCommun;
     // Les autres modifications aux dégâts qui ne dépendent pas de la cible
