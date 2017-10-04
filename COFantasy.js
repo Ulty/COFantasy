@@ -1011,6 +1011,19 @@ var COFantasy = COFantasy || function() {
             options.limiteParCombatRessource = cmd[2];
           }
           return;
+        case 'decrAttribute':
+          if (cmd.length < 2) {
+            error("Erreur interne d'une commande générée par bouton", cmd);
+            return;
+          }
+          var attr = getObj('attribute', cmd[1]);
+          if (attr === undefined) {
+            log("Attribut à changer perdu");
+            log(cmd);
+            return;
+          }
+          options.decrAttribute = attr;
+          return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
       }
@@ -1520,7 +1533,8 @@ var COFantasy = COFantasy || function() {
       defense += 2;
       explications.push("Protection contre le mal => +2 DEF");
     }
-    if (charAttributeAsBool(target, 'combatEnPhalange')) {
+    var combatEnPhalange = charAttributeAsBool(target, 'combatEnPhalange');
+    if (combatEnPhalange || attributeAsBool(target, 'esquiveFatale')) {
       listeAllies(target, function(allies) {
         var tokensContact = findObjs({
           _type: 'graphic',
@@ -1549,18 +1563,21 @@ var COFantasy = COFantasy || function() {
           if (allies[n]) tokensAllies.push(tok);
           else tokensEnnemis.push(tok);
         });
-        var defensePhalange = 0;
-        tokensEnnemis.forEach(function(tokE) {
-          var alliesAuContact = tokensAllies.filter(function(tokA) {
-            if (distanceCombat(tokE, tokA, pageId) === 0) return true;
-            return false;
+        target.ennemisAuContact = tokensEnnemis;
+        if (combatEnPhalange) {
+          var defensePhalange = 0;
+          tokensEnnemis.forEach(function(tokE) {
+            var alliesAuContact = tokensAllies.filter(function(tokA) {
+              if (distanceCombat(tokE, tokA, pageId) === 0) return true;
+              return false;
+            });
+            if (alliesAuContact.length > defensePhalange)
+              defensePhalange = alliesAuContact.length;
           });
-          if (alliesAuContact.length > defensePhalange)
-            defensePhalange = alliesAuContact.length;
-        });
-        if (defensePhalange > 0) {
-          defense += defensePhalange;
-          explications.push("Combat en phalange => +" + defensePhalange + " DEF");
+          if (defensePhalange > 0) {
+            defense += defensePhalange;
+            explications.push("Combat en phalange => +" + defensePhalange + " DEF");
+          }
         }
         callback(defense);
       }); //fin listeAllies
@@ -2141,7 +2158,7 @@ var COFantasy = COFantasy || function() {
     //Prise en compte de la distance
     cibles = cibles.filter(function(target) {
       target.distance = distanceCombat(attackingToken, target.token, pageId);
-      if (target.distance > portee) {
+      if (target.distance > portee && target.esquiveFatale === undefined) {
         if (options.aoe || options.auto) return false; //distance stricte
         if (target.distance > 2 * portee) return false;
         // On peut aller jusqu'à 2x portee si unique cible et jet d'attaque
@@ -2315,6 +2332,7 @@ var COFantasy = COFantasy || function() {
         rollsAttack: rollsAttack,
         options: options
       };
+      addEvent(evt);
 
       // debut de la partie affichage
       var action = "<b>Arme</b> : ";
@@ -2405,7 +2423,6 @@ var COFantasy = COFantasy || function() {
       if (options.traquenard) {
         if (attributeAsInt(attaquant, 'traquenard', 0) === 0) {
           sendChar(attackingCharId, "ne peut pas faire de traquenard, car ce n'est pas sa première attaque du combat");
-          addEvent(evt);
           return;
         }
         traquenard = tokenInit(attaquant, evt);
@@ -2648,7 +2665,21 @@ var COFantasy = COFantasy || function() {
                 target.messages.push("Malgré l'image légèrement décalée de " + target.tokName + " l'attaque touche");
               }
             }
-            if (target.touche) ciblesTouchees.push(target);
+            if (target.touche) {
+              ciblesTouchees.push(target);
+              if (attributeAsBool(target, 'esquiveFatale')) {
+                var ennemisAuContact = target.ennemisAuContact;
+                if (ennemisAuContact === undefined) {
+                  error("Les ennemis au contact n'ont pas été déterminé");
+                } else {
+                  var iOther = ennemisAuContact.find(function(tok) {
+                    return (tok.id != attaquant.token.id);
+                  });
+                  if (iOther !== undefined)
+                    target.messages.push(bouton(target, "!cof-esquive-fatale " + evt.id + " @{target|token_id}", "Esquive fatale ?"));
+                }
+              }
+            }
             count--;
             if (count === 0)
               attackDealDmg(attaquant, ciblesTouchees, critSug, attackLabel, attNbDices, attDice, attCarBonus, attDMBonusCommun, d20roll, display, options, evt, explications, pageId);
@@ -2675,7 +2706,6 @@ var COFantasy = COFantasy || function() {
     
     if (isNaN(attDice) || attDice < 0 || isNaN(attNbDices) || attNbDices < 0) {
       error("Dés de l'attaque incorrect", attDice);
-      addEvent(evt);
       return;
     }
     if (options.puissant) {
@@ -2815,7 +2845,6 @@ var COFantasy = COFantasy || function() {
         if (pMortelle.length === 0) {
           sendChar(attackingCharId, "Essaie une pression mortelle, mais aucun point vital de " + target.tokName + " n'a encore été affecté");
           ciblesCount--;
-          if (ciblesCount === 0) addEvent(evt);
           return;
         }
         attNbDices = pMortelle[0].get('max');
@@ -3244,7 +3273,6 @@ var COFantasy = COFantasy || function() {
   }
 
   function finaliseDisplay(display, explications, evt) {
-    addEvent(evt);
     explications.forEach(function(expl) {
       addLineToFramedDisplay(display, expl, 80);
     });
@@ -4412,6 +4440,8 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'defierLaMort', evt);
     // Recharger les runes d'énergie
     resetAttr(attrs, 'runeDEnergie', evt);
+    // Remettre l'esquive fatale à 1
+    resetAttr(attrs, 'esquiveFatale', evt);
     //Effet de ignorerLaDouleur
     var ilds = allAttributesNamed(attrs, 'ignorerLaDouleur');
     ilds.forEach(function(ild) {
@@ -4524,21 +4554,25 @@ var COFantasy = COFantasy || function() {
     return tokens;
   }
 
-  // actif est un argument optionnel qui représente (token+charId) de l'unique token sélectionné
-  function getSelected(msg, callback, actif) {
+  function getPageId(msg) {
     var pageId;
-    if (msg.who.endsWith("(GM)")) {
+    if (playerIsGM(msg.playerid)) {
       var player = getObj('player', msg.playerid);
       pageId = player.get('lastpage');
     }
     if (pageId === undefined || pageId === "") {
       var pages = Campaign().get('playerspecificpages');
       if (pages && pages[msg.playerid] !== undefined) {
-        pageId = pages[msg.playerid];
-      } else {
-        pageId = Campaign().get('playerpageid');
+        return pages[msg.playerid];
       }
+      return Campaign().get('playerpageid');
     }
+    return pageId;
+  }
+
+  // actif est un argument optionnel qui représente (token+charId) de l'unique token sélectionné
+  function getSelected(msg, callback, actif) {
+    var pageId = getPageId(msg);
     var args = msg.content.split(' --');
     var selected = [];
     var enleveAuxSelected = [];
@@ -4820,25 +4854,25 @@ var COFantasy = COFantasy || function() {
   // Récupération pour tous les tokens sélectionnés
   function nuit(msg) {
     if (state.COFantasy.combat) sortirDuCombat();
-    var sel;
-    if (_.has(msg, "selected")) {
-      sel = _.map(msg.selected, function(tokId) {
-        return tokId._id;
-      });
-    } else { //select all token. valid tokens will be filtered by recuperation
-      var page = Campaign().get("playerpageid");
-      var tokens =
-        findObjs({
-          t_ype: 'graphic',
-          _subtype: 'token',
-          layer: 'objects',
-          _pageid: page
+    getSelected(msg, function(selection) {
+      if (selection.length === 0) {
+        var pageId = getPageId(msg);
+        var tokens =
+          findObjs({
+            _type: 'graphic',
+            _subtype: 'token',
+            layer: 'objects',
+            _pageid: pageId
+          });
+        tokens.forEach(function(tok) {
+          if (tok.get('represents') === '') return;
+          selection.push({
+            _id: tok.id
+          });
         });
-      sel = _.map(tokens, function(obj) {
-        return obj.id;
-      });
-    }
-    recuperation(sel, "nuit");
+      }
+      recuperation(selection, "nuit");
+    });
   }
 
   // Remise à zéro de toutes les limites journalières
@@ -4861,15 +4895,14 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "impossible de se reposer en combat");
       return;
     }
-    if (!_.has(msg, "selected")) {
-      sendPlayer(msg, "!cof-recuperer sans sélection de tokens");
-      log("!cof-recuperer requiert des tokens sélectionnés");
-      return;
-    }
-    var sel = _.map(msg.selected, function(tokId) {
-      return tokId._id;
+    getSelected(msg, function(selection) {
+      if (selection.length === 0) {
+        sendPlayer(msg, "!cof-recuperer sans sélection de tokens");
+        log("!cof-recuperer requiert des tokens sélectionnés");
+        return;
+      }
+      recuperation(selection, "recuperer");
     });
-    recuperation(sel, "recuperer");
   }
 
   function recuperation(selection, option) {
@@ -4878,21 +4911,15 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var evt = {
-      type: "recuperation",
+      type: "Récuperation",
       affectes: [],
       attributes: []
     };
     if (option == 'nuit') jour(evt);
-    selection.forEach(function(tokId) {
-      var token = getObj('graphic', tokId);
-      if (token === undefined) return;
-      var charId = token.get('represents');
-      if (charId === undefined || charId === "") return;
-      var perso = {
-        token: token,
-        charId: charId
-      };
+    iterSelected(selection, function(perso) {
       if (getState(perso, 'mort')) return;
+      var token = perso.token;
+      var charId = perso.charId;
       var character = getObj("character", charId);
       var characterName = character.get("name");
       var pr = pointsDeRecuperation(charId);
@@ -5221,7 +5248,7 @@ var COFantasy = COFantasy || function() {
     options.chance = (options.chance + 10) || 10;
     options.rollsAttack = action.rollsAttack;
     if (action.cibles) {
-      action.cibles.forEach(function(target){
+      action.cibles.forEach(function(target) {
         target.partialSaveAuto = undefined;
       });
     }
@@ -5263,7 +5290,7 @@ var COFantasy = COFantasy || function() {
     if (cmd.length > 1) { //On relance pour un événement particulier
       evtARefaire = findEvent(cmd[1]);
       if (evtARefaire === undefined) {
-        error("L'action est trop ancienne ou éte annulée", cmd);
+        error("L'action est trop ancienne ou a été annulée", cmd);
         return;
       }
       var perso = evtARefaire.personnage;
@@ -5292,7 +5319,7 @@ var COFantasy = COFantasy || function() {
         case 'Attaque':
           undoEvent(evtARefaire);
           if (action.cibles) {
-            action.cibles.forEach(function(target){
+            action.cibles.forEach(function(target) {
               target.partialSaveAuto = undefined;
             });
           }
@@ -5318,6 +5345,90 @@ var COFantasy = COFantasy || function() {
         addEvent(evt);
       }); //fin getSelected
     }
+  }
+
+  //Devrait être appelé seulement depuis un bouton
+  //!cof-esquive-fatale evtid target_id
+  function esquiveFatale(msg) {
+    var cmd = msg.content.split(' ');
+    var evtARefaire;
+    var evt = {
+      type: "Esquive fatale",
+      attributes: []
+    };
+    if (cmd.length < 3) {
+      error("Il manque des arguments à !cof-esquive-fatale", cmd);
+      return;
+    }
+    evtARefaire = findEvent(cmd[1]);
+    if (evtARefaire === undefined) {
+      error("L'attaque est trop ancienne ou a été annulée", cmd);
+      return;
+    }
+    var action = evtARefaire.action;
+    if (action === undefined) {
+      error("Impossible d'esquiver l'attaque", evtARefaire);
+      return;
+    }
+    var perso = action.cibles[0];
+    if (perso === undefined) {
+      error("Erreur interne du bouton de 'esquive fatale : l'évenement n'a pas de personnage", evtARefaire);
+      return;
+    }
+    var adversaire = tokenOfId(cmd[2]);
+    if (adversaire === undefined) {
+      sendPlayer(msg, "Il faut cibler un token valide");
+      return;
+    }
+    var attaquant = action.attaquant;
+    if (attaquant.token.id == adversaire.token.id) {
+      sendPlayer(msg, "Il faut cibler un autre adversaire que l'attaquant");
+      return;
+    }
+    if (distanceCombat(perso.token, adversaire.token) > 0) {
+      sendChar(perso.charId, "doit choisir un adversaire au contact pour l'esquive fatale");
+      return;
+    }
+    var ennemisAuContact = perso.ennemisAuContact;
+    if (ennemisAuContact === undefined) {
+      error("Ennemis au contact non définis", perso);
+    } else {
+      var i = ennemisAuContact.find(function(tok) {
+        return (tok.id == adversaire.token.id);
+      });
+      if (i === undefined) {
+        sendPlayer(msg, "Il faut cibler un adversaire au contact pour l'esquive fatale");
+        return;
+      }
+    }
+    if (!peutController(msg, perso)) {
+      sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+      return;
+    }
+    var options = action.options || {};
+    var attr = tokenAttribute(perso, 'esquiveFatale');
+    if (attr.length === 0) {
+      sendChar(perso.charId, "ne sait pas faire d'esquive fatale");
+      return;
+    }
+    attr = attr[0];
+    var dispo = parseInt(attr.get('current'));
+    if (isNaN(dispo) || dispo < 1) {
+      sendChar(perso.charId, "a déjà fait une esquive fatale durant ce combat");
+      return;
+    }
+    adversaire.tokName = adversaire.token.get('name');
+    sendChar(perso.charId, "s'arrange pour que l'attaque touche " + adversaire.tokName);
+    evt.attributes.push({
+      attribute: attr,
+      current: dispo
+    });
+    attr.set('current', 0);
+    addEvent(evt);
+    undoEvent(evtARefaire);
+    adversaire.esquiveFatale = true;
+    action.cibles[0] = adversaire;
+    attack(action.player_id, attaquant, action, action.attack_label, options);
   }
 
   function intercepter(msg) {
@@ -10211,6 +10322,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-intercepter":
         intercepter(msg);
+        return;
+      case "!cof-esquive-fatale":
+        esquiveFatale(msg);
         return;
       case "!cof-exemplaire":
         exemplaire(msg);
