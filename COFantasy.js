@@ -1628,6 +1628,10 @@ var COFantasy = COFantasy || function() {
       attBonus += charAttributeAsInt(attaquant, 'cavalierEmerite');
       explications.push("A cheval => +2 en Attaque");
     }
+    if (options.frappeDuVide) {
+      attBonus += 2;
+      explications.push("Frappe du vide => +2 en Attaque et +1d6 DM");
+    }
     return attBonus;
   }
 
@@ -1898,20 +1902,25 @@ var COFantasy = COFantasy || function() {
         }
       });
     }
-    
+  
+    var weaponName; 
+    var weaponStats = {};
+    var attSkillDiv;
+    var crit;
+    var portee;
     var this_weapon = JSON.parse(attackLabel);
     if (Array.isArray(this_weapon))
     {
-      var weaponName = this_weapon[0].replace(/_/g, ' ');
-      var attSkill = this_weapon[1][0];
-      var attSkillDiv = this_weapon[1][1];
-      var crit = this_weapon[2];
+      weaponName = this_weapon[0].replace(/_/g, ' ');
+      weaponStats.attSkill = this_weapon[1][0];
+      attSkillDiv = this_weapon[1][1];
+      crit = this_weapon[2];
       var DMG = this_weapon[3];
-        var attNbDices = DMG[0];
-        var attDice = DMG[0];
-        var attCarBonus = DMG[0];
-        var attDMBonusCommun = DMG[0];
-      var portee = this_weapon[4];
+        weaponStats.attNbDices = DMG[0];
+        weaponStats.attDice = DMG[0];
+        weaponStats.attCarBonus = DMG[0];
+        weaponStats.attDMBonusCommun = DMG[0];
+      portee = this_weapon[4];
     }
     else {
       //On trouve l'attaque correspondant au label
@@ -1919,31 +1928,31 @@ var COFantasy = COFantasy || function() {
       if (att === undefined) return;
       
       var attPrefix = att.attackPrefix;
-      var weaponName = att.weaponName;
+      weaponName = att.weaponName;
       
-      var attSkill =
+      weaponStats.attSkill =
         getAttrByName(attackingCharId, attPrefix + "armeatk") ||
         getAttrByName(attackingCharId, "ATKCAC");
-      var attSkillDiv = getAttrByName(attackingCharId, attPrefix + "armeatkdiv") || 0;
+      attSkillDiv = getAttrByName(attackingCharId, attPrefix + "armeatkdiv") || 0;
       
       // DMG
-      var attNbDices = getAttrByName(attackingCharId, attPrefix + "armedmnbde") || 1;
-      var attDice = getAttrByName(attackingCharId, attPrefix + "armedmde") || 4;
-      var attCarBonus =
+      weaponStats.attNbDices = getAttrByName(attackingCharId, attPrefix + "armedmnbde") || 1;
+      weaponStats.attDice = getAttrByName(attackingCharId, attPrefix + "armedmde") || 4;
+      weaponStats.attCarBonus =
         getAttrByName(attackingCharId, attPrefix + "armedmcar") ||
         modCarac(attaquant, "FORCE");
-      var attDMBonusCommun = getAttrByName(attackingCharId, attPrefix + "armedmdiv");
+      weaponStats.attDMBonusCommun = getAttrByName(attackingCharId, attPrefix + "armedmdiv");
 
-      var crit = getAttrByName(attackingCharId, attPrefix + "armecrit") || 20;
-      var portee = getPortee(attackingCharId, attPrefix);
+      crit = getAttrByName(attackingCharId, attPrefix + "armecrit") || 20;
+      portee = getPortee(attackingCharId, attPrefix);
     }
 
     attSkillDiv = parseInt(attSkillDiv);
-    attNbDices = parseInt(attNbDices);
-    attDice = parseInt(attDice);
-    attDMBonusCommun = parseInt(attDMBonusCommun);
+    weaponStats.attNbDices = parseInt(weaponStats.attNbDices);
+    weaponStats.attDice = parseInt(weaponStats.attDice);
+    weaponStats.attDMBonusCommun = parseInt(weaponStats.attDMBonusCommun);
     crit = parseInt(crit);
-    
+
     if (portee > 0) options.distance = true;
     else options.contact = true;
 
@@ -2282,6 +2291,10 @@ var COFantasy = COFantasy || function() {
       pacifisme_selected[0].set('current', 0);
       sendChat("GM", "/w " + attackerName + " " + attackerTokName + " perd son pacifisme");
     }
+    if (options.contact && attributeAsBool(attaquant, 'frappeDuVide')) {
+      options.frappeDuVide = true;
+      setTokenAttr(attaquant, 'frappeDuVide', 0, evt);
+    }
     // On commence par le jet d'attaque de base : juste le ou les dés d'attaque 
     // et le modificateur d'arme et de caractéritiques qui apparaissent dans 
     // la description de l'attaque. Il faut quand même tenir compte des
@@ -2307,7 +2320,7 @@ var COFantasy = COFantasy || function() {
     var attSkillDivTxt = "";
     if (attSkillDiv > 0) attSkillDivTxt = " + " + attSkillDiv;
     else if (attSkillDiv < 0) attSkillDivTxt += attSkillDiv;
-    var attackSkillExpr = addOrigin(attackerName, "[[" + attSkill + attSkillDivTxt + "]]");
+    var attackSkillExpr = addOrigin(attackerName, "[[" + weaponStats.attSkill + attSkillDivTxt + "]]");
     // toEvaluateAttack inlines
     // 0: attack roll
     // 1: attack skill expression
@@ -2645,7 +2658,7 @@ var COFantasy = COFantasy || function() {
                 });
                 count--;
                 if (count === 0)
-                  attackDealDmg(attaquant, ciblesTouchees, critSug, attackLabel, attNbDices, attDice, attCarBonus, attDMBonusCommun, d20roll, display, options, evt, explications, pageId);
+                  attackDealDmg(attaquant, ciblesTouchees, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId);
                 return;
               }
             }
@@ -2682,14 +2695,14 @@ var COFantasy = COFantasy || function() {
             }
             count--;
             if (count === 0)
-              attackDealDmg(attaquant, ciblesTouchees, critSug, attackLabel, attNbDices, attDice, attCarBonus, attDMBonusCommun, d20roll, display, options, evt, explications, pageId);
+              attackDealDmg(attaquant, ciblesTouchees, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId);
           }); //fin defenseOfToken
         }); //fin bonusAttaqueD
       }); //fin de détermination de toucher des cibles
     }); // fin du jet d'attaque asynchrone
   }
 
-  function attackDealDmg(attaquant, cibles, critSug, attackLabel, attNbDices, attDice, attCarBonus, attDMBonusCommun, d20roll, display, options, evt, explications, pageId) {
+  function attackDealDmg(attaquant, cibles, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId) {
     if (cibles.length === 0) {
       finaliseDisplay(display, explications, evt);
       if (critSug) sendChat('COF', critSug);
@@ -2703,6 +2716,11 @@ var COFantasy = COFantasy || function() {
     //Les dégâts
     //Dégâts insrits sur la ligne de l'arme
     var mainDmgType = options.type || 'normal';
+
+    var attDice = weaponStats.attDice;
+    var attNbDices = weaponStats.attNbDices;
+    var attCarBonus = weaponStats.attCarBonus;
+    var attDMBonusCommun = weaponStats.attDmBonusCommun;
     
     if (isNaN(attDice) || attDice < 0 || isNaN(attNbDices) || attNbDices < 0) {
       error("Dés de l'attaque incorrect", attDice);
@@ -2774,6 +2792,12 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(attaquant, 'forceDeGeant')) {
         attDMBonusCommun += "+2";
         explications.push("Force de géant => +2 en Attaque");
+      }
+      if (options.frappeDuVide) {
+        options.additionalDmg.push({
+          type:mainDmgType,
+          value:'1d6'
+        });
       }
     }
     if (attributeAsBool(attaquant, 'forgeron_' + attackLabel)) {

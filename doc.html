@@ -108,8 +108,8 @@
                 <li data-toggle="collapse" data-target="#abilities"><a href="#">Implémentation des capacités</a></li>
                 <ul id="abilities" class="collapse">
                   <li><a class="text-info" href="#Arquebusier">Arquebusier</a></li>
-                  <li><a class="text-info" href="#Barde">Barde</a></li>
                   <li><a class="text-info" href="#Barbare">Barbare</a></li>
+                  <li><a class="text-info" href="#Barde">Barde</a></li>
                   <li><a class="text-info" href="#Chevalier">Chevalier</a></li>
                   <li><a class="text-info" href="#Druide">Druide</a></li>
                   <li><a class="text-info" href="#Ensorceleur">Ensorceleur</a></li>
@@ -120,6 +120,7 @@
                   <li><a class="text-info" href="#Nécromancien">Nécromancien</a></li>
                   <li><a class="text-info" href="#Prêtre">Prêtre</a></li>
                   <li><a class="text-info" href="#Rôdeur">Rôdeur</a></li>
+                  <li><a class="text-info" href="#Samouraï">Samouraï</a></li>
                   <li><a class="text-info" href="#Voleur">Voleur</a></li>
                   <li><a class="text-info" href="#Voies_spéciales">Voies spéciales</a></li>
                   <li><a class="text-info" href="#Autres_capacités">Autres capacités</a></li>
@@ -612,6 +613,36 @@
               </li>
               <li>Défaut dans la cuirasse : utiliser <code>!cof-defaut-dans-la-cuirasse @{selected|token_id} @{target|token_id}</code></li>
             </ol>
+            <h3 class="text-info" id="Barbare">Barbare</h3>
+            <div class="decalage">
+            </div>
+            <h4 class="text-dark">Voie de la brute</h4>
+            <ol>
+              <li>Argument de taille : ajouter les capacité et le bonus de PV sur la fiche.</li>
+              <li>Tour de force : utiliser <code>!cof-tour-de-force ?{Difficulté du jet de force ?}</code></li>
+            </ol>
+            <h4 class="text-dark">Voie du pagne</h4>
+            <ol>
+              <li>Vigueur : ajouter les capacités avec leurs bonus sur la fiche</li>
+              <li>Peau de pierre : augmenter la DEF sur la fiche</li>
+            </ol>
+            <h4 class="text-dark">Voie du pourfendeur</h4>
+            <ol>
+              <li>Réflexes félins : ajouter un attribut <code>reflexesFelins</code>, avec comme valeur
+                le bonus aux saves
+              </li>
+              <li>Charge : faire une attaque avec les options <code>--bonusAttaque 2</code> <code>--plus 1d6</code></li>
+            </ol>
+            <h4 class="text-dark">Voie du primitif</h4>
+            <ol>
+              <li>Proche de la nature : ajouter le rang à un attribut <code>perception</code></li>
+              <li>Armure de vent : Ajouter un attribut <code>armureDeVent</code> avec comme valeur le rang dans la voie du primitif. Cela augmente la DEF, mais seulement lorsque le barbare ne porte pas d'armure (ne se voit pas sur le total de DEF de la fiche)</li>
+            </ol>
+            <h4 class="text-dark">Voie de la rage</h4>
+            <ol>
+              <li>Cri de guerre : <code>!cof-effet-combat criDeGuerre</code></li>
+              <li>Défier la mort : ajouter un attribut <code>defierLaMort</code> de valeur 10 et de maximum 10. (pour l'instant ne prend pas la rage en compte)</li>
+            </ol>
             <h3 class="text-info" id="Barde">Barde</h3>
             <div class="decalage">
             </div>
@@ -650,36 +681,6 @@
             <ol>
               <li>Rumeurs et légendes : ajouter les compétences sur la fiche</li>
               <li> Compréhension des langues : <code>!cof-lancer-sort 0 lance un sort de compréhension des langues qui dure [[1d6+@{selected|CHA}]] minutes</code></li>
-            </ol>
-            <h3 class="text-info" id="Barbare">Barbare</h3>
-            <div class="decalage">
-            </div>
-            <h4 class="text-dark">Voie de la brute</h4>
-            <ol>
-              <li>Argument de taille : ajouter les capacité et le bonus de PV sur la fiche.</li>
-              <li>Tour de force : utiliser <code>!cof-tour-de-force ?{Difficulté du jet de force ?}</code></li>
-            </ol>
-            <h4 class="text-dark">Voie du pagne</h4>
-            <ol>
-              <li>Vigueur : ajouter les capacités avec leurs bonus sur la fiche</li>
-              <li>Peau de pierre : augmenter la DEF sur la fiche</li>
-            </ol>
-            <h4 class="text-dark">Voie du pourfendeur</h4>
-            <ol>
-              <li>Réflexes félins : ajouter un attribut <code>reflexesFelins</code>, avec comme valeur
-                le bonus aux saves
-              </li>
-              <li>Charge : faire une attaque avec les options <code>--bonusAttaque 2</code> <code>--plus 1d6</code></li>
-            </ol>
-            <h4 class="text-dark">Voie du primitif</h4>
-            <ol>
-              <li>Proche de la nature : ajouter le rang à un attribut <code>perception</code></li>
-              <li>Armure de vent : Ajouter un attribut <code>armureDeVent</code> avec comme valeur le rang dans la voie du primitif. Cela augmente la DEF, mais seulement lorsque le barbare ne porte pas d'armure (ne se voit pas sur le total de DEF de la fiche)</li>
-            </ol>
-            <h4 class="text-dark">Voie de la rage</h4>
-            <ol>
-              <li>Cri de guerre : <code>!cof-effet-combat criDeGuerre</code></li>
-              <li>Défier la mort : ajouter un attribut <code>defierLaMort</code> de valeur 10 et de maximum 10. (pour l'instant ne prend pas la rage en compte)</li>
             </ol>
             <h3 class="text-info" id="Chevalier">Chevalier</h3>
             <div class="decalage">
@@ -1126,6 +1127,24 @@
                 des ennemis. Cette race doit se retrouver dans le champ race de l'ennemi.
               </li>
               <li>Embuscade : en cas d'attaque sur les ennemis, les mettre tous surpris avec la commande <code>!cof-set-state surpris true</code></li>
+            </ol>
+            <h3 class="text-info" id="Samouraï">Samouraï</h3>
+            <div class="decalage">
+            </div>
+            <h4 class="text-dark">Voie de l'arc et du cheval</h4>
+            <h4 class="text-dark">Voie du dirigeant</h4>
+            <ol>
+              <li>Éduqué : simplement noter les bonus et compétences sur la fiche.</li>
+            </ol>
+            <h4 class="text-dark">Voie de l'honneur</h4>
+            <h4 class="text-dark">Voie du ki</h4>
+            <ol>
+              <li>Esprit vide : reporter le bonus sur la fiche.</li>
+            </ol>
+            <h4 class="text-dark">Voie du sabre</h4>
+            <ol>
+              <li>Technique du sabre : ajuster les attaques au sabre en conséquence.</li>
+              <li>Frappe du vide : ajouter un attribut <code>frappeDuVide</code>, avec comme valeur courante <code>1</code>, et comme valeur maximale <code>1</code>.</li>
             </ol>
             <h3 class="text-info" id="Voleur">Voleur</h3>
             <div class="decalage">
