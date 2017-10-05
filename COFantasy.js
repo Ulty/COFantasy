@@ -5710,8 +5710,35 @@ var COFantasy = COFantasy || function() {
           }
         });
         token.set('status_flying-flag', true);
+        var tokenName = token.get('name');
         state.COFantasy.activeTokenId = tokenId;
-        state.COFantasy.activeTokenName = token.get('name');
+        state.COFantasy.activeTokenName = tokenName;
+        
+        //On recherche dans le Personnage s'il a une "Ability" dont le nom est "#TurnAction#".
+        var TurnAction = findObjs({
+          _type: 'ability',
+          _characterid: charId,
+          name : '#TurnAction#'
+        });
+        //Si elle existe, on lui chuchotte son exécution 
+        if (TurnAction.length > 0) {
+
+          // on récupère la valeur de l'action dont chaque Macro # est mis dans un tableau 'action'
+          var action = TurnAction[0].get('action').replace(/\n/gm, '').replace(/\r/gm, '').split("#");
+          if (action.length > 0)
+          {
+            var macro='/w ' + tokenName + ' &{template:co1} {{perso=Action' + (action.length > 2 ? 's' : '') + '}} {{desc=';
+            action.forEach(function(e, i) {
+              if (e.length > 0) macro+=' [' + i + '. ' + e.replace('-', ' ').replace('_', ' ') + '](!&#13;%{' + tokenName + '|#' + e + '})';
+            });
+            macro+='}}';
+          }
+
+          // on envoie la commande au personnage
+          sendChat('', '/w ' + tokenName + ' ' + macro);
+        }
+        
+        
         // Gestion de la confusion
         if (attributeAsBool(act, "confusion")) {
           //Une chance sur deux de ne pas agir
