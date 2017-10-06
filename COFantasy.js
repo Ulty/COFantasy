@@ -1902,39 +1902,37 @@ var COFantasy = COFantasy || function() {
         }
       });
     }
-  
-    var weaponName; 
+
+    var weaponName;
     var weaponStats = {};
     var attSkillDiv;
     var crit;
     var portee;
     var this_weapon = JSON.parse(attackLabel);
-    if (Array.isArray(this_weapon))
-    {
+    if (Array.isArray(this_weapon)) {
       weaponName = this_weapon[0].replace(/_/g, ' ');
       weaponStats.attSkill = this_weapon[1][0];
       attSkillDiv = this_weapon[1][1];
       crit = this_weapon[2];
       var DMG = this_weapon[3];
-        weaponStats.attNbDices = DMG[0];
-        weaponStats.attDice = DMG[0];
-        weaponStats.attCarBonus = DMG[0];
-        weaponStats.attDMBonusCommun = DMG[0];
+      weaponStats.attNbDices = DMG[0];
+      weaponStats.attDice = DMG[0];
+      weaponStats.attCarBonus = DMG[0];
+      weaponStats.attDMBonusCommun = DMG[0];
       portee = this_weapon[4];
-    }
-    else {
+    } else {
       //On trouve l'attaque correspondant au label
       var att = getAttack(attackLabel, attackerTokName, attackingCharId);
       if (att === undefined) return;
-      
+
       var attPrefix = att.attackPrefix;
       weaponName = att.weaponName;
-      
+
       weaponStats.attSkill =
         getAttrByName(attackingCharId, attPrefix + "armeatk") ||
         getAttrByName(attackingCharId, "ATKCAC");
       attSkillDiv = getAttrByName(attackingCharId, attPrefix + "armeatkdiv") || 0;
-      
+
       // DMG
       weaponStats.attNbDices = getAttrByName(attackingCharId, attPrefix + "armedmnbde") || 1;
       weaponStats.attDice = getAttrByName(attackingCharId, attPrefix + "armedmde") || 4;
@@ -2721,7 +2719,7 @@ var COFantasy = COFantasy || function() {
     var attNbDices = weaponStats.attNbDices;
     var attCarBonus = weaponStats.attCarBonus;
     var attDMBonusCommun = weaponStats.attDmBonusCommun;
-    
+
     if (isNaN(attDice) || attDice < 0 || isNaN(attNbDices) || attNbDices < 0) {
       error("Dés de l'attaque incorrect", attDice);
       return;
@@ -2795,8 +2793,8 @@ var COFantasy = COFantasy || function() {
       }
       if (options.frappeDuVide) {
         options.additionalDmg.push({
-          type:mainDmgType,
-          value:'1d6'
+          type: mainDmgType,
+          value: '1d6'
         });
       }
     }
@@ -4466,6 +4464,8 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'runeDEnergie', evt);
     // Remettre l'esquive fatale à 1
     resetAttr(attrs, 'esquiveFatale', evt);
+    // Remettre frappe du vide à 1
+    resetAttr(attrs, 'frappeDuVide', evt);
     //Effet de ignorerLaDouleur
     var ilds = allAttributesNamed(attrs, 'ignorerLaDouleur');
     ilds.forEach(function(ild) {
