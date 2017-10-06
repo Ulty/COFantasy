@@ -202,13 +202,10 @@
                 <p>Les règles de tri suivent ce qui est donné p 70 : priorité aux PJs. Pour l'instant, on distingue un PJ d'un PNJ au dé de vie : si le personnage d'a pas de dé de vie, c'est un PNJ. Ensuite, entre PJs, priorité à la plus haute sagesse. Pour les PNJ, c'est aléatoire.</p>
                 <p>À chaque instant, le token dont c'est le tour d'agir est signalé par un drapeau noir.</p>
                 <div class="alert alert-info">
-                  <p>
-                    Si une "Abilities" dont le nom est <code>#TurnAction#</code> existe pour le personnage dont c'est le tour, celle-ci sera exécutée et son réultat chuchoté au personnage.<br />
-                    <code>#TurnAction#</code> doit contenir une ou plusieurs macros
-                  </p>
+                  Si une "Abilities" dont le nom est <code>#TurnAction#</code> existe pour le personnage dont c'est le tour, celle-ci sera prise en compte et le joueur qui controle le personnage (ainsi que le MJ) recevra un chuchottement qui contiendra l'ensemble des %Ability et #Macro cliquables de <code>#TurnAction</code>.
                 </div>
                 <p>
-                  <img src="https://i.imgur.com/lzdIxNI.png" class="img-fluid" />
+                  <img src="https://i.imgur.com/I3s8ZsL.png" class="img-fluid" />
                   <figcaption>Exemple d'une macro #TurnAction#</figcaption>
                 </p>
                 <p>Il est possible d'attendre avant d'agir en réduisant temporairement son initiative, en utilisant <code>!cof-attendre ?nouvelle_initiative</code>.</p>
