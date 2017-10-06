@@ -5724,7 +5724,6 @@ var COFantasy = COFantasy || function() {
     }
     if (tokenId) {
       var act = tokenOfId(tokenId, tokenId);
-      
       if (act) {
         var token = act.token;
         var charId = act.charId;
@@ -5734,86 +5733,70 @@ var COFantasy = COFantasy || function() {
             statusmarkers: token.get('statusmarkers')
           }
         });
-        
         token.set('status_flying-flag', true);
         var tokenName = token.get('name');
         state.COFantasy.activeTokenId = tokenId;
         state.COFantasy.activeTokenName = tokenName;
-        
         //On recherche dans le Personnage s'il a une "Ability" dont le nom est "#TurnAction#".
         var TurnAction = findObjs({
           _type: 'ability',
           _characterid: charId,
-          name : '#TurnAction#'
+          name: '#TurnAction#'
         });
-        
         //Si elle existe, on lui chuchotte son exécution 
         if (TurnAction.length > 0) {
-          
           // on récupère la valeur de l'action dont chaque Macro #/Ability % est mis dans un tableau 'action'
-          var action = TurnAction[0].get('action').replace(/\n/gm, '').replace(/\r/gm, '').replace(/%/g,'\n').replace(/#/g,'\n').split("\n");
+          var action = TurnAction[0].get('action').replace(/\n/gm, '').replace(/\r/gm, '').replace(/%/g, '\n').replace(/#/g, '\n').split("\n");
+          var nBfound = 0;
+          var macro = '';
           if (action.length > 0) {
-            var nb_found=0;
-            var macro='/w "' + tokenName + '" ' + '&{template:co1} {{perso=' + tokenName + '}} {{desc=';
-            
+            macro = '/w "' + tokenName + '" ' + '&{template:co1} {{perso=' + tokenName + '}} {{desc=';
             // Toutes les Macros
             var macros = findObjs({
               _type: 'macro'
             });
-            
             // Toutes les Abilities du personnage lié au Token
             var abilities = findObjs({
               _type: 'ability',
               _characterid: charId,
             });
-            
             var found;
-            
             // On recherche si l'action existe (Ability % ou Macro #)
             action.forEach(function(e, i) {
-              e=e.trim();
-              
+              e = e.trim();
               if (e.length > 0) {
-                found=false;
-              
+                found = false;
                 // on recherche en premier dans toutes les Abilities du personnage
                 abilities.forEach(function(elem, index) {
                   if (elem.get('name') === e) {
                     // l'ability existe
-                    found=true;
-                    nb_found++;
-                    
-                    macro+=' [' + i + '. ' + e.replace(/-/g, ' ').replace(/_/g, ' ') + '](!&#13;&#37;{' + tokenName + '|' + e + '})';
+                    found = true;
+                    nBfound++;
+                    macro += ' [' + i + '. ' + e.replace(/-/g, ' ').replace(/_/g, ' ') + '](!&#13;&#37;{' + tokenName + '|' + e + '})';
                     return;
                   }
                 });
-                
                 if (found === false) {
                   // Si pas trouvé, on recherche alors dans toutes les Macros, en toute simplicité j'ai envie de dire xD
                   macros.forEach(function(elem, index) {
                     if (elem.get('name') === e) {
                       // la Macro existe
-                      found=true;
-                      nb_found++;
-                      
-                      macro+=' [' + i + '. ' + e.replace(/-/g, ' ').replace(/_/g, ' ') + '](!&#13;#' + e + ')';
+                      found = true;
+                      nBfound++;
+                      macro += ' [' + i + '. ' + e.replace(/-/g, ' ').replace(/_/g, ' ') + '](!&#13;#' + e + ')';
                       return;
                     }
                   });
                 }
-                
                 // Si on a toujours rien trouvé, on ajoute un petit log
                 if (found === false) {
                   log('Ability et Macro non trouvé : ' + e);
                 }
               }
-              
             });
-
-            macro+='}}';
+            macro += '}}';
           }
-          
-          if (nb_found > 0) {
+          if (nBfound > 0) {
             // on envoie la commande au personnage
             sendChat('', '/w "' + tokenName + '" ' + macro);
             sendChat('', '/w gm ' + macro);
@@ -5887,7 +5870,7 @@ var COFantasy = COFantasy || function() {
         error("Impossible de trouver le token dont c'est le tour", tokenId);
         state.COFantasy.activeTokenId = undefined;
       }
-    }
+    } else state.COFantasy.activeTokenId = undefined;
   }
 
   function getTurnOrder(evt) {
