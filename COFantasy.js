@@ -2772,7 +2772,7 @@ var COFantasy = COFantasy || function() {
     var attDice = weaponStats.attDice;
     var attNbDices = weaponStats.attNbDices;
     var attCarBonus = weaponStats.attCarBonus;
-    var attDMBonusCommun = weaponStats.attDmBonusCommun;
+    var attDMBonusCommun = weaponStats.attDMBonusCommun;
 
     if (isNaN(attDice) || attDice < 0 || isNaN(attNbDices) || attNbDices < 0) {
       error("Dés de l'attaque incorrect", attDice);
