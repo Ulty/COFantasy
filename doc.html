@@ -115,6 +115,7 @@
                   <li><a class="text-info" href="#Ensorceleur">Ensorceleur</a></li>
                   <li><a class="text-info" href="#Forgesort">Forgesort</a></li>
                   <li><a class="text-info" href="#Guerrier">Guerrier</a></li>
+                  <li><a class="text-info" href="#Invocateur">Invocateur</a></li>
                   <li><a class="text-info" href="#Magicien">Magicien</a></li>
                   <li><a class="text-info" href="#Moine">Moine</a></li>
                   <li><a class="text-info" href="#Nécromancien">Nécromancien</a></li>
@@ -557,6 +558,12 @@
             <div class="decalage">
               <p><code>!cof-jet ?{Faire un jet de |Charisme, CHA|Constitution, CON|Dextérité, DEX|Force, FOR|Intelligence, INT|Sagesse, SAG}</code> : fait un simple jet pour la caractérisique sélectionnée.</p>
               <p>Il est aussi possible de donner en argument une difficulté au jet. Par exemple en faisant <code>!cof-jet INT ?{difficulté}</code>.</p>
+              <p>Enfin, la fonction accepte les arguments suivants:
+              <ul>
+                <li><code>--bonus</code> pour spécifier un bonus numérique au jet.</li>
+                <li><code>--attribut</code> pour spécifier un attribut dont la valeur doit être ajoutée au jet. Il est possible de spécifier plusieurs attributs, comme par exemple <code>--attribut perception --attribut vigilance</code> pour un jet de vigilance.</li>
+                <li><code>--nom</code> précise le nom du jet à afficher. De plus, cela va aussi faire rechercher un attribut de même nom (en mettant les caractères en minuscule). Par exemple <code>!cof-jet DEX Discrétion</code> va lancer un jet de DEX, qui sera affiché comme un jet de Discrétion, et qui va ajouter au jet le bonus d'un éventuel attribut <code>discrétion</code>.</li>
+              </ul>
             </div>
             
             <h2 class="text-primary">3. Implémentation des capacités</h2>
@@ -917,6 +924,22 @@
               <li>Posture de combat : <code>!cof-posture-de-combat</code> <i>bonus attr1 attr2</i>, ou les deux <i>attr</i> peuvent être soit <code>DEF</code> soit <code>ATT</code> soit <code>DM</code>, et le <i>bonus</i> est retiré au premier attribut pour être ajouté au second. Le bonus peut être limité si le guerrier a un attribut <code>voieDuSoldat</code> qu indique son rang dans la voie. Exemple d'utilisation&nbsp;: <code>!cof-posture-de-combat @{selected|token_id} ?{Bonus} ?{Baisser|Défense,DEF|Attaque,ATT|Dégâts,DM} ?{Augmenter|Défense,DEF|Attaque,ATT|Dégâts,DM}</code>. Normalement, la règle fait décider de sa posture au guerrier à chaque tour, mais en pratique, il en change assez rarement. Une posture de combat reste donc active jusqu'à la fin du combat ou jusqu'à ce qu'on en change (elle est neutre si on a le même attribut à buffer et débuffer). </li>
               <li>Combat en phalange : ajouter un attribut <code>combatEnPhalange</code>, valeur <code>true</code>. Les bonus seront ajoutés automatiquement en fonctions des alliés définis selon <a href="#allie">cette méthode</a>.</li>
             </ol>
+            <h3 class="text-info" id="Invocateur">Invocateur</h3>
+            <div class="decalage">
+            </div>
+            <h4 class="text-dark">Voie de la conjuration</h4>
+            <h4 class="text-dark">Voie de l'entité</h4>
+            <ol>
+              <li>Invocation d'une entité : ajouter la fiche correspondante.</li>
+              <li>Lien magique : pour l'instant, gérer à la main le transfer de dégâts.</li><!-- TODO -->
+            </ol>
+            <h4 class="text-dark">Voie du familier</h4>
+            <h4 class="text-dark">Voie des mutations</h4>
+            <h4 class="text-dark">Voie des portes</h4>
+            <ol>
+              <li>Raccourci : pas de support particulier.</li>
+              <li>Porte artificielle : pas de support particulier.</li>
+            </ol>
             <h3 class="text-info" id="Magicien">Magicien</h3>
             <div class="decalage">
             </div>
@@ -1158,7 +1181,7 @@
             </div>
             <h4 class="text-dark">Voie de l'assassin</h4>
             <ol>
-              <li>Discrétion : simplement ajouter une compétence discrétion sur la fiche, avec le bon bonus</li>
+              <li>Discrétion : on peut ajouter une compétence discrétion sur la fiche, avec le bon bonus. Pour l'utilisation de <code>!cof-jet</code>, ajouter un attribut <code>discrétion</code> avec la valeur du bonus total.</li>
               <li>Attaque sournoise : Faire des versions des attaques avec <code>--plus <i>n</i>d6</code>, où <i>n</i> est le rang dans la voie. Au MJ de vérifier que les conditions de l'attaque sournoise sont remplies. (Exemple de macro pour un voleur qui aurait une attaque <code>Dague</code> et une attaque <code>arbalète</code> : <code>?{Arme utilisée?|Dague,%{selected|Dague}|Arbalète,%{selected|Arbalète}} --plus 2d6</code>)</li>
             </ol>
             <h4 class="text-dark">Voie de l'aventurier</h4>
@@ -1198,6 +1221,7 @@
               <li>Petit pote : ajouter le bonus de CHA sur la fiche</li>
             </ol>
             <h4 class="text-dark">Voie du halfelin</h4>
+            Petite taille : ajouter le bonus de DEF sur la ficher, et ajouter 2 à un attribut <code>discrétion</code>.
             <ol>
               <li>Petit veinard : Il y a beaucoup de types de dés différents. Pour l'instant,
                 géré par le MJ : faire tirer le jet (/r) par le joueur, si ça a changé,
@@ -1275,7 +1299,7 @@
             </ol>
             <h4 class="text-dark">Voie du Prédateur</h4>
             <ol>
-              <li>Embuscade : Sélectionner les ennemis du prédateurs, et utiliser <code>!cof-surprise</code>. Par exemple, contre une équipe de joueurs dans le <i>handout</i> <code>Equipe joueurs</code> (cf la <a href="#methode_selection_groupes">méthode de sélection de groupes</a>), on pourra utiliser l'ability <code>!cof-surprise [[15 + @{selected|DEX}]] --equipe joueurs</code>. Pour les bonus en discrétion et init, reporter sur la fiche, pour l'attaque en embuscade sur une cible surprise, rajouter à une attaque les options <code>--plus 1d6 --etatSi renverse moins FOR</code>.</li>
+              <li>Embuscade : Sélectionner les ennemis du prédateurs, et utiliser <code>!cof-surprise</code>. Par exemple, contre une équipe de joueurs dans le <i>handout</i> <code>Equipe joueurs</code> (cf la <a href="#methode_selection_groupes">méthode de sélection de groupes</a>), on pourra utiliser l'ability <code>!cof-surprise [[15 + @{selected|DEX}]] --equipe joueurs</code>. Pour les bonus en discrétion et init, reporter sur la fiche (et à un attribut <code>discrétion</code>), pour l'attaque en embuscade sur une cible surprise, rajouter à une attaque les options <code>--plus 1d6 --etatSi renverse moins FOR</code>.</li>
             </ol>
             <h4 class="text-dark">Voie du tueur</h4>
             <ol>

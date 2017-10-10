@@ -457,7 +457,7 @@ var COFantasy = COFantasy || function() {
     };
     var display = startFramedDisplay(playerId, titre, perso);
     if (difficulte === undefined) {
-      jetCaracteristique(perso, caracteristique, function(rt) {
+      jetCaracteristique(perso, caracteristique, options, function(rt) {
         addLineToFramedDisplay(display, "<b>Résultat :</b> " + rt.texte);
         addStatistics(playerId, ["Jet de carac", caracteristique], rt.roll);
         // Maintenant, on diminue la malédiction si le test est un échec
@@ -519,22 +519,63 @@ var COFantasy = COFantasy || function() {
     // Les arguments pour cof-jet sont :
     // - Caracteristique (FOR, DEX, CON, INT, SAG, CHA)
     // Les tokens sélectionnés sont ceux qui doivent faire le jet
-    var args = msg.content.split(" ");
-    if (args.length < 2) {
-      error("Pas assez d'arguments pour !cof-jet: " + msg.content, args);
+    var opts = msg.content.split(' --');
+    var cmd = opts.shift().split(' ');
+    if (cmd.length < 2) {
+      error("Pas assez d'arguments pour !cof-jet: " + msg.content, cmd);
       return;
     }
-    var caracteristique = args[1];
+    var caracteristique = cmd[1];
     if (isNotCarac(caracteristique)) {
-      error("Caracteristique '" + caracteristique + "' non reconnue (FOR, DEX, CON, INT, SAG, CHA).", args);
+      error("Caracteristique '" + caracteristique + "' non reconnue (FOR, DEX, CON, INT, SAG, CHA).", cmd);
       return;
     }
     var difficulte;
-    if (args.length > 2) {
-      difficulte = parseInt(args[2]);
+    if (cmd.length > 2) {
+      difficulte = parseInt(cmd[2]);
       if (isNaN(difficulte)) difficulte = undefined;
     }
-    var titre = "Jet de <b>" + caracOfMod(caracteristique) + "</b>";
+    var options = {
+      bonusAttrs: []
+    };
+    opts.forEach(function(o) {
+      var args = o.split(' ');
+      switch (args[0]) {
+        case "nom":
+          if (args.length < 2) {
+            error("Il manque un argument à l'option " + args[0], opts);
+            return;
+          }
+          options.nom = args[1];
+          options.bonusAttrs.push(args[1].toLowerCase());
+          return;
+        case "attribut":
+          if (args.length < 2) {
+            error("Il manque un argument à l'option " + args[0], opts);
+            return;
+          }
+          options.bonusAttrs.push(args[1]);
+          return;
+        case 'bonus':
+          if (args.length < 2) {
+            error("Il manque un argument à l'option " + args[0], opts);
+            return;
+          }
+          var bonus = parseInt(args[1]);
+          if (isNaN(bonus)) {
+            error("Le bonus doit être un nombre", opts);
+            return;
+          }
+          options.bonus = (options.bonus || 0) + bonus;
+          return;
+      }
+    });
+    var titre = "Jet de <b>";
+    if (options.nom) titre += options.nom;
+    else titre += caracOfMod(caracteristique);
+    titre += "</b>";
+    if (options.bonus)
+      titre += " (" + ((options.bonus > 0) ? '+' : '') + options.bonus + ")";
     if (difficulte !== undefined) titre += " difficulté " + difficulte;
     getSelected(msg, function(selected) {
       if (selected.length === 0) {
@@ -543,7 +584,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       iterSelected(selected, function(perso) {
-        jetPerso(perso, caracteristique, difficulte, titre, msg.playerid);
+        jetPerso(perso, caracteristique, difficulte, titre, msg.playerid, options);
       }); //fin de iterSelected
     }); //fin de getSelected
   }
@@ -6561,10 +6602,16 @@ var COFantasy = COFantasy || function() {
   // - total : Le résultat total du jet
   // - echecCritique, critique pour indiquer si 1 ou 20
   // - roll: le inlineroll (pour les statistiques)
-  function jetCaracteristique(personnage, carac, callback) {
+  function jetCaracteristique(personnage, carac, options, callback) {
     var charId = personnage.charId;
     var token = personnage.token;
     var bonusCarac = bonusTestCarac(carac, personnage);
+    if (options.bonusAttrs) {
+      options.bonusAttrs.forEach(function(attr) {
+        bonusCarac += charAttributeAsInt(charId, attr, 0);
+      });
+    }
+    if (options.bonus) bonusCarac += options.bonus;
 
     var carSup = nbreDeTestCarac(carac, charId);
     var de = computeDice(personnage, carSup);
@@ -9966,8 +10013,8 @@ var COFantasy = COFantasy || function() {
     if (carac2 === undefined) carac2 = carac1;
     var nom1 = perso1.token.get('name');
     var nom2 = perso2.token.get('name');
-    jetCaracteristique(perso1, carac1, function(rt1) {
-      jetCaracteristique(perso2, carac2, function(rt2) {
+    jetCaracteristique(perso1, carac1, {}, function(rt1) {
+      jetCaracteristique(perso2, carac2, {}, function(rt2) {
         explications.push("Jet de " + carac1 + " de " + nom1 + " :" + rt1.texte);
         explications.push("Jet de " + carac2 + " de " + nom2 + " :" + rt2.texte);
         var reussite;
