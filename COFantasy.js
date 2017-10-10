@@ -824,14 +824,14 @@ var COFantasy = COFantasy || function() {
           }
           break;
         case "sournoise":
-        case "de6Plus":
+        case "de6Plus"://deprecated
           if (cmd.length < 2) {
-            sendChat("COF", "Il manque un argument à l'option --de6Plus de !cof-attack");
+            sendChat("COF", "Il manque un argument à l'option --sournoise de !cof-attack");
             return;
           }
-          options.de6Plus = parseInt(cmd[1]);
-          if (isNaN(options.de6Plus) || options.de6Plus < 0) {
-            error("L'option --de6Plus de !cof-attack attend un argument entier positif", cmd);
+          options.sournoise = parseInt(cmd[1]);
+          if (isNaN(options.sournoise) || options.sournoise < 0) {
+            error("L'option --sournoise de !cof-attack attend un argument entier positif", cmd);
             return;
           }
           break;
@@ -2809,12 +2809,6 @@ var COFantasy = COFantasy || function() {
     }
     if (aUnCapitaine(attaquant, evt, pageId)) attDMBonusCommun += " +2";
     // Les autres sources de dégâts
-    if (options.de6Plus) {
-      options.additionalDmg.push({
-        type: mainDmgType,
-        value: options.de6Plus + "d6"
-      });
-    }
     if (options.distance) {
       if (options.semonce) {
         options.additionalDmg.push({
@@ -2932,6 +2926,17 @@ var COFantasy = COFantasy || function() {
           }
         }
       }
+    if (options.sournoise) {
+      if (charAttributeAsBool(target, 'immuniteAuxSournoises')) {
+        target.messages.push('Immunité aux attaques sournoises');
+      } else {
+      target.additionalDmg.push({
+        type: mainDmgType,
+        value: options.sournoise + 'd6'
+      });
+        target.messages.push("Attaque sournoise => +" + options.sournoise + "+d6 DM");
+      }
+    }
       if (target.chasseurEmerite) {
         attDMBonus += "+2";
       }

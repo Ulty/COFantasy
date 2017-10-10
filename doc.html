@@ -341,6 +341,7 @@
                   <li><code>--plus</code> <i>dmg</i> : ajoute <i>dmg</i> dégâts. Attention, si <i>dmg</i> est un simple nombre, ces dégâts sont multipliés par les
                     critiques (sauf si de type différent de l'attaque principale). Ainsi, <code>--plus [[1d6]]</code> donnera des dégâts multipliés par les critiques (car la fonction ne voit que le résultat du jet), alors que <code>--plus 1d6</code> ne le sera pas.
                   </li>
+                  <li><code>--sournoise</code> <i>n</i> : ajoute <i>n</i>d6 de dégâts d'attaque sournoise ou par surprise.</li>
                   <li><code>--test</code> pour voir le résultat du jet d'attaque. On n'applique pas les résultats d'un touché.</li>
                   <li><code>--magique</code> : les dégâts sont magiques. On peut passer en argument le niveau de magie. Il est utilisé contre les créatures immunisées aux armes. Le niveau par défaut est 1.</li>
                   <li><code>--feu</code>, <code>--acide</code>, <code>--electrique</code>, <code>--froid</code>, <code>--sonique</code>, --<code>poison</code>, --<code>maladie</code> : les dégâts sont de type 
@@ -600,6 +601,7 @@
                 le target est l'allié qui se déplace avec l'arquebusier. Se sélectionner
                 soi-même si pas d'allié.
               </li>
+              <li>Combattant aguerri : se reporter à la capacité choisie</li>
             </ol>
             <h4 class="text-dark">Voie du Pistolero</h4>
             <ol>
@@ -634,11 +636,13 @@
             <ol>
               <li>Argument de taille : ajouter les capacité et le bonus de PV sur la fiche.</li>
               <li>Tour de force : utiliser <code>!cof-tour-de-force ?{Difficulté du jet de force ?}</code></li>
+              <li>Attaque brutale : faire l'attaque avec les options <code>--bonusAttaque -2 --plus 1d6</code></li>
             </ol>
             <h4 class="text-dark">Voie du pagne</h4>
             <ol>
               <li>Vigueur : ajouter les capacités avec leurs bonus sur la fiche</li>
               <li>Peau de pierre : augmenter la DEF sur la fiche</li>
+              <li>Tatouages : ajouter le bonus choisi sur la fiche</li>
             </ol>
             <h4 class="text-dark">Voie du pourfendeur</h4>
             <ol>
@@ -646,11 +650,13 @@
                 le bonus aux saves
               </li>
               <li>Charge : faire une attaque avec les options <code>--bonusAttaque 2</code> <code>--plus 1d6</code></li>
+              <li>Enchaînement : à gérer par le MJ</li>
             </ol>
             <h4 class="text-dark">Voie du primitif</h4>
             <ol>
               <li>Proche de la nature : ajouter le rang à un attribut <code>perception</code></li>
               <li>Armure de vent : Ajouter un attribut <code>armureDeVent</code> avec comme valeur le rang dans la voie du primitif. Cela augmente la DEF, mais seulement lorsque le barbare ne porte pas d'armure (ne se voit pas sur le total de DEF de la fiche)</li>
+              <li>Vigilance : ajouter 5 à un attribut <code>vigilance</code> et ajouter un attribut <code>immuniteAuxSournoises</code> avec comme valeur <code>true</code></li>
             </ol>
             <h4 class="text-dark">Voie de la rage</h4>
             <ol>
@@ -1182,7 +1188,7 @@
             <h4 class="text-dark">Voie de l'assassin</h4>
             <ol>
               <li>Discrétion : on peut ajouter une compétence discrétion sur la fiche, avec le bon bonus. Pour l'utilisation de <code>!cof-jet</code>, ajouter un attribut <code>discrétion</code> avec la valeur du bonus total.</li>
-              <li>Attaque sournoise : Faire des versions des attaques avec <code>--plus <i>n</i>d6</code>, où <i>n</i> est le rang dans la voie. Au MJ de vérifier que les conditions de l'attaque sournoise sont remplies. (Exemple de macro pour un voleur qui aurait une attaque <code>Dague</code> et une attaque <code>arbalète</code> : <code>?{Arme utilisée?|Dague,%{selected|Dague}|Arbalète,%{selected|Arbalète}} --plus 2d6</code>)</li>
+              <li>Attaque sournoise : Faire des versions des attaques avec <code>--sournoise <i>n</i></code>, où <i>n</i> est le rang dans la voie. Au MJ de vérifier que les conditions de l'attaque sournoise sont remplies. (Exemple de macro pour un voleur qui aurait une attaque <code>Dague</code> et une attaque <code>arbalète</code> : <code>?{Arme utilisée?|Dague,%{selected|Dague}|Arbalète,%{selected|Arbalète}} --sournoise 2</code>)</li>
             </ol>
             <h4 class="text-dark">Voie de l'aventurier</h4>
             <ol>
@@ -1299,11 +1305,11 @@
             </ol>
             <h4 class="text-dark">Voie du Prédateur</h4>
             <ol>
-              <li>Embuscade : Sélectionner les ennemis du prédateurs, et utiliser <code>!cof-surprise</code>. Par exemple, contre une équipe de joueurs dans le <i>handout</i> <code>Equipe joueurs</code> (cf la <a href="#methode_selection_groupes">méthode de sélection de groupes</a>), on pourra utiliser l'ability <code>!cof-surprise [[15 + @{selected|DEX}]] --equipe joueurs</code>. Pour les bonus en discrétion et init, reporter sur la fiche (et à un attribut <code>discrétion</code>), pour l'attaque en embuscade sur une cible surprise, rajouter à une attaque les options <code>--plus 1d6 --etatSi renverse moins FOR</code>.</li>
+              <li>Embuscade : Sélectionner les ennemis du prédateurs, et utiliser <code>!cof-surprise</code>. Par exemple, contre une équipe de joueurs dans le <i>handout</i> <code>Equipe joueurs</code> (cf la <a href="#methode_selection_groupes">méthode de sélection de groupes</a>), on pourra utiliser l'ability <code>!cof-surprise [[15 + @{selected|DEX}]] --equipe joueurs</code>. Pour les bonus en discrétion et init, reporter sur la fiche (et à un attribut <code>discrétion</code>), pour l'attaque en embuscade sur une cible surprise, rajouter à une attaque les options <code>--sournoise 1 --etatSi renverse moins FOR</code>.</li>
             </ol>
             <h4 class="text-dark">Voie du tueur</h4>
             <ol>
-              <li>Attaque mortelle : donner la possibilité de faire une attaque avec les options <code>--bonusAttaque 5 --plus <i>rang</i>d6</code>.</li>
+              <li>Attaque mortelle : donner la possibilité de faire une attaque avec les options <code>--bonusAttaque 5 --sournoise <i>rang</i></code>.</li>
             </ol>
             <h3 class="text-info" id="Autres_capacités">Autres capacités:</h3>
             <div class="decalage">
