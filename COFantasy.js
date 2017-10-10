@@ -824,7 +824,7 @@ var COFantasy = COFantasy || function() {
           }
           break;
         case "sournoise":
-        case "de6Plus"://deprecated
+        case "de6Plus": //deprecated
           if (cmd.length < 2) {
             sendChat("COF", "Il manque un argument à l'option --sournoise de !cof-attack");
             return;
@@ -1324,6 +1324,10 @@ var COFantasy = COFantasy || function() {
       attBonus += bonusMasque;
       explications.push("Masque du prédateur : +" + bonusMasque + " en Attaque et DM");
     }
+    if (attributeAsBool(personnage, 'rageDuBerserk')) {
+      attBonus += 2;
+      explications.push("Rage du berserk : +2 en Attaque et +1d6 aux DM");
+    }
     return attBonus;
   }
 
@@ -1573,6 +1577,10 @@ var COFantasy = COFantasy || function() {
       estMauvais(attaquant)) {
       defense += 2;
       explications.push("Protection contre le mal => +2 DEF");
+    }
+    if (attributeAsBool(target, 'rageDuBerserk')) {
+      defense -=4;
+      explications.push("Rage du berserk => -4 DEF");
     }
     var combatEnPhalange = charAttributeAsBool(target, 'combatEnPhalange');
     if (combatEnPhalange || attributeAsBool(target, 'esquiveFatale')) {
@@ -1992,8 +2000,13 @@ var COFantasy = COFantasy || function() {
     weaponStats.attDMBonusCommun = parseInt(weaponStats.attDMBonusCommun);
     crit = parseInt(crit);
 
-    if (portee > 0) options.distance = true;
-    else options.contact = true;
+    if (portee > 0) {
+      options.distance = true;
+      if (attributeAsBool(attaquant, 'rageDuBerserk')){
+        sendChar(attaquant.charId, "est en rage du berserk, il ne veut attaquer qu'au contact");
+        return;
+      }
+    } else options.contact = true;
 
     //Détermination de la (ou des) cible(s)
     var nomCiblePrincipale; //Utilise pour le cas mono-cible
@@ -2792,6 +2805,12 @@ var COFantasy = COFantasy || function() {
       var bonusMasque = modCarac(attaquant, 'SAGESSE');
       if (bonusMasque > 0) attDMBonusCommun += " +" + bonusMasque;
     }
+    if (attributeAsBool(attaquant, 'rageDuBerserk')) {
+      options.additionalDmg.push({
+          type: mainDmgType,
+          value: '1d6'
+        });
+    }
     var attrPosture = tokenAttribute(attaquant, 'postureDeCombat');
     if (attrPosture.length > 0) {
       attrPosture = attrPosture[0];
@@ -2926,17 +2945,17 @@ var COFantasy = COFantasy || function() {
           }
         }
       }
-    if (options.sournoise) {
-      if (charAttributeAsBool(target, 'immuniteAuxSournoises')) {
-        target.messages.push('Immunité aux attaques sournoises');
-      } else {
-      target.additionalDmg.push({
-        type: mainDmgType,
-        value: options.sournoise + 'd6'
-      });
-        target.messages.push("Attaque sournoise => +" + options.sournoise + "+d6 DM");
+      if (options.sournoise) {
+        if (charAttributeAsBool(target, 'immuniteAuxSournoises')) {
+          target.messages.push('Immunité aux attaques sournoises');
+        } else {
+          target.additionalDmg.push({
+            type: mainDmgType,
+            value: options.sournoise + 'd6'
+          });
+          target.messages.push("Attaque sournoise => +" + options.sournoise + "+d6 DM");
+        }
       }
-    }
       if (target.chasseurEmerite) {
         attDMBonus += "+2";
       }
@@ -10339,6 +10358,45 @@ var COFantasy = COFantasy || function() {
     }); //Fin du getSelected
   }
 
+  function rageDuBerserk(msg) {
+    getSelected(msg, function(selection) {
+      if (selection.length === 0) {
+        sendPlayer(msg, "Pas de token sélectionné pour la rage");
+        return;
+      }
+      iterSelected(selection, function(perso) {
+        var evt = {
+          type: "Rage"
+        };
+        if (attributeAsBool(perso, 'rageDuBerserk')) {
+          //Jet de sagesse difficulté 13 pour sortir de cet état
+          var options = {};
+          var display = startFramedDisplay(msg.playerid, "Essaie de calmer sa rage", perso);
+          testCaracteristique(perso, 'SAG', 13, options, evt,
+            function(tr) {
+              addLineToFramedDisplay(display, "<b>Résultat du jet de SAG :</b> " + tr.texte);
+              addEvent(evt);
+              if (tr.reussite) {
+                addLineToFramedDisplay(display, "C'est réussi, " + perso.token.get('name') + " se calme.");
+                removeTokenAttr(perso, 'rageDuBerserk', evt);
+              } else {
+                var msgRate = "C'est raté, " + perso.token.get('name') + " reste enragé";
+                //TODO : ajouter un bouton de chance
+                addLineToFramedDisplay(display, msgRate);
+              }
+              sendChat('', endFramedDisplay(display));
+            });
+        } else {
+          //Le barbare passe en rage
+          if (!state.COFantasy.combat) {
+            initiative(selection, evt);
+          }
+          setTokenAttr(perso, 'rageDuBerserk', true, evt, "entre dans une rage berserk !");
+        }
+      }); //fin iterSelected
+    }); //fin getSelected
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -10566,6 +10624,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-elixirs":
         gestionElixir(msg);
+        return;
+      case "!cof-rage-du-berserk":
+        rageDuBerserk(msg);
         return;
       default:
         return;
@@ -10822,6 +10883,11 @@ var COFantasy = COFantasy || function() {
       activation: "reçoit une bénédiction de protection contre le mal",
       actif: "est protégé contre le mal",
       fin: "n'est plus protégé contre le mal"
+    },
+    rageDuBerserk: {
+      activation: "entre dans une rage berserk",
+      actif: "est dans une rage berserk",
+      fin: "retrouve son calme"
     }
   };
 
