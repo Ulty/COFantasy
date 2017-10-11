@@ -697,6 +697,7 @@ var COFantasy = COFantasy || function() {
         case "pointsVitaux":
         case "pressionMortelle":
         case "reroll1":
+        case "reroll2":
         case "tirDouble":
         case "tranchant":
         case "percant":
@@ -2782,6 +2783,7 @@ var COFantasy = COFantasy || function() {
       attDice += 2;
     }
     if (options.reroll1) attDice += "r1";
+    if (options.reroll2) attDice += "r2";
     if (isNaN(attCarBonus)) {
       if (attCarBonus.startsWith('@{')) {
         var carac = caracOfMod(attCarBonus.substr(2, 3));
@@ -3621,6 +3623,9 @@ var COFantasy = COFantasy || function() {
 
   function dealDamageAfterDmgExtra(target, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes) {
     var rdMain = typeRD(target.charId, mainDmgType);
+    if (options.vampirise) {
+      rdMain += attributeAsInt(target, 'RD_drain', 0);
+    }
     if (rdMain > 0 && dmgTotal > 0) {
       dmgTotal -= rdMain;
       if (dmgTotal < 0) {
