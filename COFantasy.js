@@ -1450,6 +1450,9 @@ var COFantasy = COFantasy || function() {
         removeTokenAttr(perso, 'etatExsangue', evt, "retrouve des couleurs");
       }
     }
+    if (attributeAsBool(perso, 'vieArtificielle')) {
+      soins = Math.floor(soins / 2);
+    }
     bar1 += soins;
     var soinsEffectifs = soins;
     if (bar1 > pvmax) {
@@ -1580,7 +1583,7 @@ var COFantasy = COFantasy || function() {
       explications.push("Protection contre le mal => +2 DEF");
     }
     if (attributeAsBool(target, 'rageDuBerserk')) {
-      defense -=4;
+      defense -= 4;
       explications.push("Rage du berserk => -4 DEF");
     }
     var combatEnPhalange = charAttributeAsBool(target, 'combatEnPhalange');
@@ -2003,7 +2006,7 @@ var COFantasy = COFantasy || function() {
 
     if (portee > 0) {
       options.distance = true;
-      if (attributeAsBool(attaquant, 'rageDuBerserk')){
+      if (attributeAsBool(attaquant, 'rageDuBerserk')) {
         sendChar(attaquant.charId, "est en rage du berserk, il ne veut attaquer qu'au contact");
         return;
       }
@@ -2809,9 +2812,9 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(attaquant, 'rageDuBerserk')) {
       options.additionalDmg.push({
-          type: mainDmgType,
-          value: '1d6'
-        });
+        type: mainDmgType,
+        value: '1d6'
+      });
     }
     var attrPosture = tokenAttribute(attaquant, 'postureDeCombat');
     if (attrPosture.length > 0) {
@@ -11210,6 +11213,11 @@ var COFantasy = COFantasy || function() {
                 });
               return;
             case 'saignementsSang': //prend 1d6 DM
+              if (charAttributeAsBool(charId, 'immuniteSaignement')) {
+                count--;
+                if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                return;
+              }
               degatsParTour(charId, effet, attrName, "1d6", 'normal',
                 "saigne par tous les orifices du visage", evt, {
                   magique: true
