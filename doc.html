@@ -371,7 +371,7 @@
                   </li>
                   <li><code>--mainsDEnergie</code> : +2 à +5 à l'attaque, selon l'armure de la cible</li>
                   <li><code>--semonce</code> : +5 au touché et +1d6 aux DM (ne change pas les charges de l'arme).</li>
-                  <li><code>--imparable</code> : lance 2 d20 pour l'attaque et garde le meilleur</li>
+                  <li><code>--m2d20</code> : lance 2 d20 pour l'attaque et garde le meilleur</li>
                   <li><code>--affute</code> : augmente de 1 les chances de crit et +1d6 aux DM des crit.</li>
                   <li><code>--tirDeBarrage</code> : ignore la charge, multiplie les DM par 2 et message pour undo si la cible bouge.</li>
                   <li><code>--enflamme</code> : enflamme la cible, lui infligeant 1d6 DM par tour. Les flammes s'éteindent sur un 1 ou 2. Si l'option <code>--puissant</code> est donnée en conjonction, les DM augmentent de 1.</li>
@@ -716,7 +716,7 @@
               <li>
                 Charge : pas de support pour le déplacement, mais
                 <ul>
-                  <li> Pour l'attaque : utiliser <code>--imparable --plus 1d6</code></li>
+                  <li> Pour l'attaque : utiliser <code>--m2d20 --plus 1d6</code></li>
                   <li> Pour les créatures sur la trajectoire, utiliser <code>!cof-jet FOR 18</code>, et en cas de succès, infliger les DM.</li>
                 </ul>
               </li>
@@ -1265,7 +1265,7 @@
               <li>
                 Imparable: 
                 <ul>
-                  <li>Utiliser l'option <code>--imparable</code> pour l'action limitée. </li>
+                  <li>Utiliser l'option <code>--m2d20</code> pour l'action limitée. </li>
                   <li> Pour l'effet permanent, utiliser un attribut <code>champion</code>, avec une valeur <code>true</code></li>
                 </ul>
             </ol>
@@ -1278,7 +1278,7 @@
             </ol>
             <h4 class="text-dark">Voie du cogneur</h4>
             <ol>
-              <li>Charge : Faire l'attaque avec les arguments <code>--imparable --pietine</code>.</li>
+              <li>Charge : Faire l'attaque avec les arguments <code>--m2d20 --pietine</code>.</li>
             </ol>
             <h4 class="text-dark">Voie du colosse</h4>
             <ol>

@@ -702,7 +702,7 @@ var COFantasy = COFantasy || function() {
         case "tranchant":
         case "percant":
         case "contondant":
-        case "imparable":
+        case "m2d20":
         case "traquenard":
         case "affute":
         case "vampirise":
@@ -720,6 +720,9 @@ var COFantasy = COFantasy || function() {
         case "demiAuto":
         case "feinte":
           options[cmd[0]] = true;
+          return;
+        case "imparable":
+          options.m2d20 = true;
           return;
         case "magique":
           var niveauMagie = 1;
@@ -2374,7 +2377,7 @@ var COFantasy = COFantasy || function() {
       explications.push("Attaquant affaibli => D12 au lieu de D20 en Attaque");
     }
     var nbDe = 1;
-    if (options.imparable) nbDe = 2;
+    if (options.m2d20) nbDe = 2;
     var de = computeDice(attaquant, nbDe, dice);
     var attackRollExpr = "[[" + de + "cs>" + crit + "cf1]]";
     if (isNaN(attSkillDiv)) attSkillDiv = 0;
