@@ -721,7 +721,7 @@ var COFantasy = COFantasy || function() {
         case "feinte":
           options[cmd[0]] = true;
           return;
-        case "imparable":
+        case "imparable"://deprecated
           options.m2d20 = true;
           return;
         case "magique":
@@ -1069,6 +1069,19 @@ var COFantasy = COFantasy || function() {
             return;
           }
           options.decrAttribute = attr;
+          return;
+        case "incrDmgCoef":
+          options.dmgCoef = (options.dmgCoef || 1);
+          if (cmd.length > 1) {
+            var incrDmgCoef = parseInt(cmd[1]);
+            if (isNaN(incrDmgCoef)) {
+              error("L'option --incrDmgCoef attend un entier", cmd);
+              return;
+            }
+            options.dmgCoef += incrDmgCoef;
+            return;
+          }
+          options.dmgCoef++;//Par défaut, incrémente de 1
           return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
@@ -2560,10 +2573,9 @@ var COFantasy = COFantasy || function() {
             }
 
             var touche; //false: pas touché, 1 touché, 2 critique
+            if (options.dmgCoef) touche = options.dmgCoef;
             // Calcule si touché, et les messages de dégats et attaque
-            if (options.auto) {
-              touche = 1;
-            } else {
+            if (!options.auto) {
               if (options.triche) {
                 switch (options.triche) {
                   case "rate":
@@ -2629,7 +2641,6 @@ var COFantasy = COFantasy || function() {
                 if (options.demiAuto) {
                   target.partialSaveAuto = true;
                   evt.succes = false;
-                  touche = true;
                 } else touche = false;
                 var confirmCrit = randomInteger(20);
                 critSug = "/w GM Jet de confirmation pour l'échec critique : " +
@@ -2652,10 +2663,9 @@ var COFantasy = COFantasy || function() {
                 }
               } else if (paralyse || d20roll >= target.crit) {
                 attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
-                touche = 2;
+                touche++;
               } else if (options.champion) {
                 attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
-                touche = 1;
               } else if (attackRoll < defense) {
                 attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
                 evt.succes = false;
@@ -2663,11 +2673,9 @@ var COFantasy = COFantasy || function() {
                 if (options.demiAuto) {
                   target.partialSaveAuto = true;
                   evt.succes = false;
-                  touche = true;
                 } else touche = false;
               } else { // Touché normal
                 attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
-                touche = 1;
               }
               var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
               if (attSkill > 0) attRollValue += "+" + attSkill;
