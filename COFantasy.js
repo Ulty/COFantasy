@@ -89,7 +89,7 @@ var COFantasy = COFantasy || function() {
       error("token with a linked bar1 but representing no character", token);
       return false;
     }
-    if (etat == 'affaibli') { //special case due ti new character sheet
+    if (etat == 'affaibli') { //special case due to new character sheet
       var de = parseInt(getAttrByName(charId, 'ETATDE'));
       if (de === 20) {
         if (res && token !== undefined) token.set(cof_states[etat], false);
@@ -703,6 +703,7 @@ var COFantasy = COFantasy || function() {
         case "percant":
         case "contondant":
         case "m2d20":
+        case "avecd12":
         case "traquenard":
         case "affute":
         case "vampirise":
@@ -2233,6 +2234,10 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
+    if (options.avecd12 && getState(attaquant, 'affaibli')) {
+      sendChar(attackingCharId, "ne peut pas utiliser cette capacité quand il est affaibli.");
+      return;
+    }
     cibles = cibles.filter(function(target) {
       if (attributeAsBool(target, 'ombreMortelle')) {
         sendChar(attackingCharId, "impossible d'attaquer une ombre");
@@ -2389,6 +2394,7 @@ var COFantasy = COFantasy || function() {
       dice = 12;
       explications.push("Attaquant affaibli => D12 au lieu de D20 en Attaque");
     }
+    if (options.avecd12) dice = 12;
     var nbDe = 1;
     if (options.m2d20) nbDe = 2;
     var de = computeDice(attaquant, nbDe, dice);

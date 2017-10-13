@@ -372,6 +372,7 @@
                   <li><code>--mainsDEnergie</code> : +2 à +5 à l'attaque, selon l'armure de la cible</li>
                   <li><code>--semonce</code> : +5 au touché et +1d6 aux DM (ne change pas les charges de l'arme).</li>
                   <li><code>--m2d20</code> : lance 2 d20 pour l'attaque et garde le meilleur</li>
+                  <li><code>--avecd12</code> : lance un d12 au lieu du d20 pour le jet d'attaque. L'attaque est impossible si l'attaquant est déjà affaibli.</li>
                   <li><code>--incrDmgCoef <i>n</i></code> : augmente le coefficient des dégâts de base de 1. Les dégâts de base comprennent les dés de dommage de l'arme (ou du sort), plus tous les bonus constants. Le coefficient par défaut est de 1, et une réussite critique augmente ce coefficient de 1.</li>
                   <li><code>--affute</code> : augmente de 1 les chances de crit et +1d6 aux DM des crit.</li>
                   <li><code>--tirDeBarrage</code> : ignore la charge, multiplie les DM par 2 et message pour undo si la cible bouge.</li>
@@ -1126,7 +1127,8 @@
               <li>Sens affutés : ajouter le bonus à un attribut <code>perception</code></li>
               <li>Tir aveugle : ajouter un attribut <code>tirAveugle</code>, avec comme valeur <code>true</code>.</li>
               <li>Tir rapide : faire simplement deux attaques dans le tour</li>
-              <li>Flèche mortelle : Faire l'attaque, avec les options <code>--m2d20 --incrDmgCoef</code></li>
+              <li>Flèche mortelle : faire l'attaque avec les options <code>--m2d20 --incrDmgCoef</code></li>
+              <li>Dans le mille : faire l'attaque avec les options <code>--avecd12 --plus 2d6</code></li>
             </ol>
             <h4 class="text-dark">Voie du compagnon animal</h4>
             <ol>
