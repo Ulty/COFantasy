@@ -2719,7 +2719,14 @@ var COFantasy = COFantasy || function() {
               }
             }
             target.touche = touche;
-            if (options.test) target.touche = false;
+            if (options.test) {
+                //On a fini avec cette cible, on imprime ce qui la concerne
+                addLineToFramedDisplay(display, target.attackMessage);
+                target.messages.forEach(function(expl) {
+                  addLineToFramedDisplay(display, expl, 80);
+                });
+              target.touche = false;
+            }
             if (options.aoe === undefined && interchange.targets.length > 1) { //any target can be affected
               var n = randomInteger(interchange.targets.length);
               target.token = interchange.targets[n - 1];
