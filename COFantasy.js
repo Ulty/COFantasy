@@ -718,6 +718,7 @@ var COFantasy = COFantasy || function() {
         case "pietine":
         case "tueurDeGeants":
         case "demiAuto":
+        case "feinte":
           options[cmd[0]] = true;
           return;
         case "magique":
@@ -1758,6 +1759,10 @@ var COFantasy = COFantasy || function() {
       explications.push("Tueur de géant => +2 att. et 2d6 DM");
       target.tueurDeGeants = true;
     }
+    if (attributeAsBool(target, 'feinte_' + attaquant.tokName)) {
+      attBonus += 5;
+      explications.push("Feinte => +5 en attaque");
+    }
     if (options.contact) {
       if (attributeAsBool(target, 'criDeGuerre') &&
         charAttributeAsInt(attackingCharId, 'FORCE', 10) <= charAttributeAsInt(target.charId, 'FORCE', 10) &&
@@ -2499,6 +2504,7 @@ var COFantasy = COFantasy || function() {
       if (attributeAsInt(attaquant, 'traquenard', 0) > 0) {
         setTokenAttr(attaquant, 'traquenard', 0, evt);
       }
+      if (options.feinte) explications.push("Mais c'était une feinte...");
       var mainDmgType = options.type || 'normal';
       if (options.sortilege) options.ignoreObstacles = true;
       var critSug; //Suggestion en cas d'écher critique
@@ -2707,26 +2713,9 @@ var COFantasy = COFantasy || function() {
                 }
                 evt.succes = false;
                 diminueMalediction(attaquant, evt);
-                //On a fini avec cette cible, on imprime ce qui la concerne
-                addLineToFramedDisplay(display, target.attackMessage);
-                target.messages.forEach(function(expl) {
-                  addLineToFramedDisplay(display, expl, 80);
-                });
-                count--;
-                if (count === 0)
-                  attackDealDmg(attaquant, ciblesTouchees, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId);
-                return;
               }
             }
             target.touche = touche;
-            if (options.test) {
-                //On a fini avec cette cible, on imprime ce qui la concerne
-                addLineToFramedDisplay(display, target.attackMessage);
-                target.messages.forEach(function(expl) {
-                  addLineToFramedDisplay(display, expl, 80);
-                });
-              target.touche = false;
-            }
             if (options.aoe === undefined && interchange.targets.length > 1) { //any target can be affected
               var n = randomInteger(interchange.targets.length);
               target.token = interchange.targets[n - 1];
@@ -2756,6 +2745,16 @@ var COFantasy = COFantasy || function() {
                 }
               }
             }
+            if (options.test || options.feinte || !target.touche) {
+              //On a fini avec cette cible, on imprime ce qui la concerne
+              addLineToFramedDisplay(display, target.attackMessage);
+              target.messages.forEach(function(expl) {
+                addLineToFramedDisplay(display, expl, 80);
+              });
+            }
+            if (options.feinte) {
+              setTokenAttr(target, 'feinte_' + attaquant.tokName, 0, evt, undefined, target.touche);
+            }
             count--;
             if (count === 0)
               attackDealDmg(attaquant, ciblesTouchees, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId);
@@ -2766,7 +2765,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function attackDealDmg(attaquant, cibles, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId) {
-    if (cibles.length === 0) {
+    if (cibles.length === 0 || options.test || options.feinte) {
       finaliseDisplay(display, explications, evt);
       if (critSug) sendChat('COF', critSug);
       return;
@@ -2987,6 +2986,14 @@ var COFantasy = COFantasy || function() {
         target.additionalDmg.push({
           type: mainDmgType,
           value: '1d6'
+        });
+      }
+      var attrFeinte = tokenAttribute(target, 'feinte_' + attaquant.tokName);
+      if (attrFeinte.length > 0 && attrFeinte[0].get('current') &&
+        attrFeinte[0].get('max')) {
+        target.additionalDmg.push({
+          type: mainDmgType,
+          value: '2d6'
         });
       }
       var loupParmiLesLoups = charAttributeAsInt(attaquant, 'loupParmiLesLoups', 0);
@@ -11341,6 +11348,24 @@ var COFantasy = COFantasy || function() {
           var prevAttr = {
             attribute: attr,
             current: 2
+          };
+          if (evt.attributes) evt.attributes.push(prevAttr);
+          else evt.attributes = [prevAttr];
+          attr.set('current', 1);
+        }
+      });
+      // Pour la feinte, on augmente la valeur, et on supprime si la valeur est 2
+      var feinte = allAttributesNamed(attrs, 'feinte');
+      feinte.forEach(function(attr) {
+        var valFeinte = parseInt(attr.get('current'));
+        if (isNaN(valFeinte) || valFeinte > 0) {
+          if (evt.deletedAttributes) evt.deletedAttributes.push(attr);
+          else evt.deletedAttributes = [attr];
+          attr.remove();
+        } else {
+          var prevAttr = {
+            attribute: attr,
+            current: 0
           };
           if (evt.attributes) evt.attributes.push(prevAttr);
           else evt.attributes = [prevAttr];
