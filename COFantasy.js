@@ -722,7 +722,7 @@ var COFantasy = COFantasy || function() {
         case "feinte":
           options[cmd[0]] = true;
           return;
-        case "imparable"://deprecated
+        case "imparable": //deprecated
           options.m2d20 = true;
           return;
         case "magique":
@@ -1082,7 +1082,7 @@ var COFantasy = COFantasy || function() {
             options.dmgCoef += incrDmgCoef;
             return;
           }
-          options.dmgCoef++;//Par défaut, incrémente de 1
+          options.dmgCoef++; //Par défaut, incrémente de 1
           return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
@@ -1347,6 +1347,10 @@ var COFantasy = COFantasy || function() {
       attBonus += 2;
       explications.push("Rage du berserk : +2 en Attaque et +1d6 aux DM");
     }
+    if (attributeAsBool(personnage, 'armeSecreteBarde')) {
+      attBonus -= 10;
+      explications.push("Déstabilisé par une action de charme => -10 en Attaque");
+    }
     return attBonus;
   }
 
@@ -1521,6 +1525,9 @@ var COFantasy = COFantasy || function() {
     }
     if (charAttributeAsBool(target, 'graceFeline')) {
       defense += modCarac(target, 'CHARISME');
+    }
+    if (attributeAsBool(target, 'armeSecreteBarde')) {
+      defense -= 10;
     }
     var attrsProtegePar = findObjs({
       _type: 'attribute',
@@ -4551,6 +4558,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('postureDeCombat', evt, attrs);
     attrs = removeAllAttributes('dedouble', evt, attrs);
     attrs = removeAllAttributes('limiteParCombat', evt, attrs);
+    attrs = removeAllAttributes('armeSecreteBardeUtilisee', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -10434,6 +10442,57 @@ var COFantasy = COFantasy || function() {
     }); //fin getSelected
   }
 
+  //!cof-arme-secrete @{selected|token_id} @{target|token_id}
+  // TODO: ajouter la possibilité d'utiliser la chance
+  function armeSecrete(msg) {
+    var cmd = msg.content.split(' ');
+    if (cmd.length < 3) {
+      error("Il faut deux arguments à !cof-arme-secrete", cmd);
+      return;
+    }
+    var barde = tokenOfId(cmd[1]);
+    var cible = tokenOfId(cmd[2]);
+    if (barde === undefined || cible === undefined) {
+      error("Token non valide pour l'arme secrète", cmd);
+      return;
+    }
+    if (attributeAsInt(barde, 'armeSecreteBardeUtilisee')) {
+      sendChar(barde.charId, "a déjà utilisé son arme secrète durant ce combat");
+      return;
+    }
+    var evt = {
+      type: 'Arme secrète'
+    };
+    if (!state.COFantasy.combat) {
+      initiative([{
+        _id: barde.token.id
+      }, {
+        _id: cible.token.id
+      }], evt);
+    }
+    setTokenAttr(barde, 'armeSecreteBardeUtilisee', true, evt);
+    var intCible = charAttributeAsInt(cible, 'INTELLIGENCE', 10);
+    testCaracteristique(barde, 'CHA', intCible, {}, evt, function(testRes) {
+      var display = startFramedDisplay(msg.playerid, "Arme secrète", barde, cible);
+      var line = "Jet de CHA : " + testRes.texte;
+      if (testRes) {
+        line += " &ge; " + intCible;
+        addLineToFramedDisplay(display, line);
+        addLineToFramedDisplay(display, cible.token.get('name') + " est complètement déstabilisé");
+        setTokenAttr(cible, 'armeSecreteBarde', 1, evt, '', getInit());
+      } else {
+        line += "< " + intCible;
+        addLineToFramedDisplay(display, line);
+        addLineToFramedDisplay(display, cible.token.get('name') + " reste insensible au charme de " + barde.token.get('name'));
+      }
+      sendChat("", endFramedDisplay(display));
+      addEvent(evt);
+    }); //fin testCarac
+    // testRes.texte est l'affichage du jet de dé
+    // testRes.reussite indique si le jet est réussi
+    // testRes.echecCritique, testRes.critique pour le type
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -10665,6 +10724,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-rage-du-berserk":
         rageDuBerserk(msg);
         return;
+      case "!cof-arme-secrete":
+        armeSecrete(msg);
+        return;
       default:
         return;
     }
@@ -10870,6 +10932,11 @@ var COFantasy = COFantasy || function() {
       activation: "transforme son sang",
       actif: "a du sang acide",
       fin: "retrouve un sang normal"
+    },
+    armeSecreteBarde: {
+      activation: "est déstabilisé",
+      actif: "est déstabilisé par une action de charme",
+      fin: "retrouve ses esprits"
     }
   };
 
@@ -11175,11 +11242,11 @@ var COFantasy = COFantasy || function() {
     var turnOrder = cmp.get('turnorder');
     var pageId = state.COFantasy.combat_pageid;
     if (pageId === undefined) pageId = cmp.get('playerpageid');
-    if (turnOrder === "") return; // nothing in the turn order
+    if (turnOrder === '') return; // nothing in the turn order
     turnOrder = JSON.parse(turnOrder);
-    if (turnOrder.length < 1) return;
+    if (turnOrder.length < 1) return;// Juste le compteur de tour
     var evt = {
-      type: 'personnage suivant',
+      type: 'Personnage suivant',
       attributes: [],
       deletedAttributes: []
     };
@@ -11200,6 +11267,7 @@ var COFantasy = COFantasy || function() {
         var obji = obj.get('max');
         return (init < obji && obji <= state.COFantasy.init);
       });
+      evt.init = state.COFantasy.init;
       state.COFantasy.init = init;
       // Boucle sur les effets temps peut être asynchrone à cause des DM
       count = attrsTemp.length;
@@ -11214,12 +11282,16 @@ var COFantasy = COFantasy || function() {
         }
         var attrName = attr.get('name');
         var v = attr.get('current');
-        if (v > 0) { // Effet encore actif
-          attr.set('current', v - 1);
+        if (v == 'tourFinal') { //L'effet arrive en fin de vie, doit être supprimé
+          finDEffet(attr, effet, attrName, charId, evt);
+          count--;
+        } else { //Effet encore actif
           evt.attributes.push({
             attribute: attr,
             current: v
           });
+          if (v > 1) attr.set('current', v - 1);
+          else attr.set('current', 'tourFinal');
           switch (effet) { //rien après le switch, donc on sort par un return
             case 'putrefaction': //prend 1d6 DM
               degatsParTour(charId, effet, attrName, "1d6", 'maladie',
@@ -11326,15 +11398,13 @@ var COFantasy = COFantasy || function() {
               count--;
               return;
           }
-        } else { //L'effet arrive en fin de vie, doit être supprimé
-          finDEffet(attr, effet, attrName, charId, evt);
-          count--;
-        }
+        } 
       }); //fin de la boucle sur tous les attributs d'effets
     }
     if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
   }
 
+  //evt a un champ attributes et un champ deletedAttributes
   function nextTurnOfActive(active, attrs, evt, pageId) {
     if (active.id == "-1" && active.custom == "Tour") {
       var tour = parseInt(active.pr);
@@ -11364,8 +11434,7 @@ var COFantasy = COFantasy || function() {
             attribute: attr,
             current: 2
           };
-          if (evt.attributes) evt.attributes.push(prevAttr);
-          else evt.attributes = [prevAttr];
+          evt.attributes.push(prevAttr);
           attr.set('current', 1);
         }
       });
@@ -11374,16 +11443,14 @@ var COFantasy = COFantasy || function() {
       feinte.forEach(function(attr) {
         var valFeinte = parseInt(attr.get('current'));
         if (isNaN(valFeinte) || valFeinte > 0) {
-          if (evt.deletedAttributes) evt.deletedAttributes.push(attr);
-          else evt.deletedAttributes = [attr];
+          evt.deletedAttributes.push(attr);
           attr.remove();
         } else {
           var prevAttr = {
             attribute: attr,
             current: 0
           };
-          if (evt.attributes) evt.attributes.push(prevAttr);
-          else evt.attributes = [prevAttr];
+          evt.attributes.push(prevAttr);
           attr.set('current', 1);
         }
       });

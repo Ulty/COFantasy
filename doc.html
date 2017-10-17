@@ -696,16 +696,21 @@
             <ol>
               <li>Acrobate : ajouter les compétences sur la fiche</li>
               <li>Grâce féline : simplement ajouter les bonus sur la fiche</li>
+              <li>Lanceur de couteau : faire normalement l'attaque.</li>
             </ol>
             <h4 class="text-dark">Voie de la séduction</h4>
             <ol>
               <li>Charmant : ajouter les compétences sur la fiche</li>
               <li>Dentelles et rapière : Ajouter un attribut <code>dentellesEtRapière</code> avec comme valeur le rang dans la voie de la séduction. Cela augmente la DEF, mais seulement lorsque le barde ne porte pas d'armure et seulement contre les attaques au contact. (ne se voit pas sur le total de DEF de la fiche)</li>
+              <li>Arme secrète : <code>!cof-arme-secrete @{selected|token_id} @{target|token_id}</code></li>
             </ol>
             <h4 class="text-dark">Voie du vagabond</h4>
             <ol>
               <li>Rumeurs et légendes : ajouter les compétences sur la fiche</li>
-              <li> Compréhension des langues : <code>!cof-lancer-sort 0 lance un sort de compréhension des langues qui dure [[1d6+@{selected|CHA}]] minutes</code></li>
+              <li>Compréhension des langues : <code>!cof-lancer-sort 0 lance un sort de compréhension des langues qui dure [[1d6+@{selected|CHA}]] minutes</code></li>
+              <li>Débrouillard : pas de support particulier. Ajouter le bonus aux compétences que vous souhaitez noter.</li>
+              <li>Déguisement : </code>!cof-lancer-sort 1 lance un sort de déguisement</code></li>
+              <li>Touche à tout : se reporter aux capacités choisies</li>
             </ol>
             <h3 class="text-info" id="Chevalier">Chevalier</h3>
             <div class="decalage">
@@ -734,11 +739,15 @@
                   <li> juste après l'attaque que l'on veut amortir, utiliser <code>!cof-encaisser-un-coup</code></li>
                 </ul>
               </li>
+              <li>Coup de bouclier : faire une attaque de bouclier, avec l'option <code>--avecd12</code></li>
             </ol>
             <h4 class="text-dark">Voie du héro</h4>
             <ol>
               <li>Ignorer la douleur : <code>!cof-ignorer-la-douleur</code>. À faire juste après le coup.</li>
               <li>Piqures d'insectes : ajouter un attribut <code>piquresDInsectes</code>, avec comme valeur le rang dans la voie</li>
+              <li>Laissez-le-moi : pas de support pour restreindre au chef de groupe. On pourraît peut-être utiliser la voie du chef d'armée pour le faire automatiquement ? Pour l'instant, utiliser l'option <code>--plus 1d6</code> contre les leaders.</li>
+              <li>Seul contre tous : pas de support particulier.</li>
+              <li>Charisme héroïque : reporter sur la fiche.</li>
             </ol>
             <h4 class="text-dark">Voie du meneur d'hommes</h4>
             <ol>
@@ -752,6 +761,7 @@
               <li>Exemplaire : <code>!cof-exemplaire</code>, juste après l'attaque
                 ratée.
               </li>
+              <li>Ordre de bataille : pas de support</li>
             </ol>
             <h4 class="text-dark">Voie de la noblesse</h4>
             <ol>
@@ -1148,9 +1158,10 @@
                 Puis, si dans le profil (attribut PROFIL) de la cible, il y a <code>animal</code>, le bonus
                 s'applique.
               </li>
-              <li>Traquenard : ajouter un attribut <code>traquenard</code> (valeur 1/1), puis option
+              <li>Traquenard : ajouter un attribut <code>traquenard</code> (valeur courante 1, valeur maximale 1), puis option
                 <code>--traquenard</code> pour l'attaque.
-                Exemple pour un personnage qui aurait une ability <code>Arme</code> permettant d'utiliser son épée, et une ability <code>Arc</code> permettant d'utiliser son arc : <code>?{Arme?|Épée,%{selected|Attaque}|Arc,%{selected|Arc}} --traquenard</code> (Note : bien faire attention à ce que les abilities ne contiennent pas de ligne vide, et que la dernière ligne est bien expansée en <code>!cof-attack</code>)
+                Exemple pour un personnage qui aurait une ability <code>Arme</code> permettant d'utiliser son épée, et une ability <code>Arc</code> permettant d'utiliser son arc : <code>?{Arme?|Épée,%{selected|Attaque}|Arc,%{selected|Arc}} --traquenard</code> (Note : bien faire attention à ce que les abilities ne contiennent pas de ligne vide, et que la dernière ligne est bien expansée en <code>!cof-attack</code>).
+                En interne, chaque fois que le personnage fait une attaque, la valeur courante de son attribut <code>traquenard</code> passe à 0. Cette valeur courante repasse à 1 automatiquement en fin de combat. C'est cette valeur qui détermine si l'option <code>--traquenard</code> est valide ou non.
               </li>
               <li> Attaque éclair : <code>--plus [[@{selected|DEX}]] --bonusAttaque [[@{selected|DEX}]]</code></li>
               <li> Repli : simplement faire un jet en utilisant par exemple <code>!cof-jet DEX 10</code>, et décrire le résultat.</li>
