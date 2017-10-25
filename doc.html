@@ -12,11 +12,17 @@
 		<script src="https://use.fontawesome.com/4ee7d58794.js"></script>
 	</head>
 	<body data-target="#list" data-spy="scroll" data-offset="10">
-		<script>
+		<script>      
 			$('document').ready(function() {
 			  $(document).on('click', '#start', function() {
 			    $('.start').toggle();
+          $('div.sticky-top ul.collapse').collapse('hide');
 			  });
+        
+        if (window.location.hash) {
+          $('.start').toggle();
+          $(document).scrollTop( $(window.location.hash).offset().top );
+        }
 			  
 			  $(function () {
 			    $('[data-toggle="popover"]').popover()
@@ -24,13 +30,9 @@
 			     
         $('a[href^="http://"], a[href^="https://"]').attr('target','_blank');
          
-        $('div.sticky-top div.collapse').on('show.bs.collapse', function () {
-          $('div.sticky-top div.collapse').collapse('hide');
+        $('div.sticky-top ul.collapse').on('show.bs.collapse', function () {
+          $('div.sticky-top ul.collapse').collapse('hide');
         });
-         
-        $('#list').on('load.bs.scrollspy.data-api', function () {
-          console.log('activated');
-        })
 			});
 			
 		</script>
@@ -83,6 +85,7 @@
 						<div class="sticky-top">
 							<h1>Sommaire</h1>
 							<ol>
+                <li id="start"><a href="#">Introduction</a></li>
                 <li data-toggle="collapse" data-target="#how_to_use"><a href="#comment_utiliser_script">Comment utiliser Le script</a></li>
                 <ul id="how_to_use" class="collapse">
                   <li><a class="text-info" href="#token_personnages">Tokens et personnages</a></li>
