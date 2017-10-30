@@ -719,7 +719,7 @@
             <ol>
               <li>Fidèle monture : Faire un personnage pour la monture, avec un attribute <code>monture</code> à <code>true</code>. Pour monter sur la monture, on peut utiliser <code>!cof-en-selle @{selected|token_id} <i>nom_de_la_monture</i></code>. Pour en descendre, il suffit de bouger le token du chevalier.</li>
               <li>Cavalier émérite : ajuster la DEF de la monture. Ajouter au chevalier un attribut <code>cavalierEmerite</code> avec comme valeur 2.  </li>
-              <li>Monture magique : pas de support particulier.</li>
+              <li>Monture magique : pour les soins automatiques de la nuit, ajouter un attribut <code>montureMagique</code> de valeur <code>true</code>.</li>
               <li>
                 Charge : pas de support pour le déplacement, mais
                 <ul>
@@ -767,6 +767,7 @@
             <ol>
               <li>Éduqué : pas de support particulier, juste reporter les bonus sur la fiche.</li>
               <li>Autorité naturelle : simplement reporter sur la fiche les bonus d'init et de DEF, et ajouter la capacité intimider.</li>
+              <li>Écuyer : pour le bonus au critique, ajouter un attribut <code>ecuyer</code> de valeur <code>true</code>. Pour les soins de nuit, ajouter à l'ecuyer un attribute <code>ecuyerDe</code>, avec comme valeur le nom du chevalier. Si on souhaite que l'ecuyer puisse soigner gratuitement la monture, il faut aussi que celle-ci ait un attribut <code>montureDe</code>, avec comme valeur le nom du chevalier.</li>
             </ol>
             <h3 class="text-info" id="Druide">Druide</h3>
             <div class="decalage">
