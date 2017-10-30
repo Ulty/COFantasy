@@ -536,8 +536,8 @@
                       <li>exemple : <code>!cof-degainer ?{Arme en main ?|P&eacute;toire,0|&Eacute;p&eacute;e,1|Aucune,-1}</code> avec <code>initEnMain0</code> = 0/10, il passe &agrave; 10/10 si on degaine l&#39;arme 0.</li>
                     </ul>
                   </li>
-                  <li><strong>Cadence de tir</strong>: ok</li>
-                  <li><strong>Tir double</strong>: utiliser l&#39;option <code>--tirDouble</code> si deux tirs sur m&ecirc;me cible</li>
+                  <li><strong>Cadence de tir</strong> : ok</li>
+                  <li><strong>Tir double</strong> : utiliser l&#39;option <code>--tirDouble</code> si deux tirs sur m&ecirc;me cible</li>
                   <li><strong>As de la g&acirc;chette</strong> : utiliser l&#39;option <code>--asDeLaGachette</code> pour les attaques avec des armes &agrave; poudre ou des arbal&egrave;tes.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la pr&eacute;cision</h4>
@@ -600,7 +600,7 @@
                 <ol>
                   <li><strong>Acrobate</strong> : ajouter les comp&eacute;tences sur la fiche</li>
                   <li><strong>Gr&acirc;ce f&eacute;line</strong> : simplement ajouter les bonus sur la fiche</li>
-                  <li><strong>Lanceur de couteau</strong> : faire normalement l&#39;attaque.</li>
+                  <li><strong>Lanceur de couteau</strong> : pas de support particulier, ajouter juste l&#39;attaque correspondant aux couteaux de lancer.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la s&eacute;duction</h4>
                 <ol>
@@ -623,7 +623,7 @@
                 <ol>
                   <li><strong>Fid&egrave;le monture</strong> : Faire un personnage pour la monture, avec un attribute <code>monture</code> &agrave; <code>true</code>. Pour monter sur la monture, on peut utiliser <code>!cof-en-selle @{selected|token_id} <i>nom_de_la_monture</i></code>. Pour en descendre, il suffit de bouger le token du chevalier.</li>
                   <li><strong>Cavalier &eacute;m&eacute;rite</strong> : ajuster la DEF de la monture. Ajouter au chevalier un attribut <code>cavalierEmerite</code> avec comme valeur 2.</li>
-                  <li><strong>Monture magique</strong> : pas de support particulier.</li>
+                  <li><strong>Monture magique</strong> : pour les soins automatiques de la nuit, ajouter un attribut <code>montureMagique</code> de valeur <code>true</code>.</li>
                   <li>
                     <strong>Charge</strong> : pas de support pour le d&eacute;placement, mais
                     <ul>
@@ -664,6 +664,7 @@
                 <ol>
                   <li><strong>&Eacute;duqu&eacute;</strong> : pas de support particulier, juste reporter les bonus sur la fiche.</li>
                   <li><strong>Autorit&eacute; naturelle</strong> : simplement reporter sur la fiche les bonus d&#39;init et de DEF, et ajouter la capacit&eacute; intimider.</li>
+                  <li><strong>Écuyer</strong> : pour le bonus au critique, ajouter un attribut <code>ecuyer</code> de valeur <code>true</code>. Pour les soins de nuit, ajouter à l'écuyer un attribut <code>ecuyerDe</code>, avec comme valeur le nom du chevalier. Si on souhaite que l'écuyer puisse soigner gratuitement la monture, il faut aussi que celle-ci ait un attribut <code>montureDe</code>, avec comme valeur le nom du chevalier.</li>
                 </ol>
               </div>
               <h3 class="text-info" id="Druide">Druide</h3>
@@ -1043,7 +1044,6 @@
                   <li><strong>Sprint</strong> : pas de support, au MJ de v&eacute;rifier que ce n&#39;est utilis&eacute; qu&#39;une fois par combat.</li>
                   <li><strong>Provocation</strong> : <code>!cof-provocation @{selected|token_id} @{target|token_id}</code>. Au joueur ensuite de faire son attaque gratuite si la provocation est r&eacute;ussie et que l&#39;adversaire l&#39;attaque.</li>
                   <li><strong>Gr&acirc;ce f&eacute;line</strong> : ajouter un attribut <code>graceFeline</code> avec comme valeur <code>true</code>. Cela va affecter l&#39;initiative et la DEF, mais sans se voir sur la fiche. Pour les tests de d&eacute;placement, il faut g&eacute;rer &agrave; part.</li>
-                  <li><strong>Lanceur de couteau</strong> : pas de support particulier, ajouter juste l&#39;attaque correspondant aux couteaux de lancer.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du d&eacute;placement</h4>
                 <ol>
