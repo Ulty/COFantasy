@@ -116,7 +116,10 @@ var COFantasy = COFantasy || function() {
     evt.affectes = evt.affectes || {};
     var aff = evt.affectes[token.id];
     if (aff === undefined) {
-      aff = {affecte:token, prev:{}};
+      aff = {
+        affecte: token,
+        prev: {}
+      };
       evt.affectes[token.id] = aff;
     }
     if (aff.prev[field] === undefined) aff.prev[field] = value;
@@ -126,7 +129,7 @@ var COFantasy = COFantasy || function() {
   function setState(personnage, etat, value, evt) {
     var token = personnage.token;
     var charId = personnage.charId;
-    var aff = 
+    var aff =
       affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
     if (value && etatRendInactif(etat) && isActive(personnage))
       removeFromTurnTracker(token.id, evt);
@@ -8672,7 +8675,8 @@ var COFantasy = COFantasy || function() {
           return;
         }
         var evt = {
-          type: 'ignorer_la_douleur' };
+          type: 'ignorer_la_douleur'
+        };
         affectToken(token, 'bar1_value', bar1, evt);
         updateCurrentBar(token, 1, lastBar1);
         setTokenAttr(chevalier, 'ignorerLaDouleur', lastBar1 - bar1, evt);
@@ -11198,9 +11202,9 @@ var COFantasy = COFantasy || function() {
           iterTokensOfEffet(charId, effet, attrName, function(token) {
               var width = token.get('width');
               var height = token.get('height');
-            affectToken(token, 'width', width, evt);
+              affectToken(token, 'width', width, evt);
               token.set('width', normalToken.width);
-            affectToken(token, 'height', height, evt);
+              affectToken(token, 'height', height, evt);
               token.set('height', normalToken.height);
             },
             function(token) {

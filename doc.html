@@ -287,7 +287,6 @@
                   <li><code>--bonusContreBouclier <i>n</i></code> : ajoute <i>n</i> au jet d'attaque si le défenseur porte un bouclier. Utile par exemple pour le fléau d'arme.</li>
                   <li><code>--psave <i>carac seuil</i></code> : jet de <i>carac</i>, si le jet est supérieur à <i>seuil</i>, les dégâts sont divisés par 2. <i>carac</i> est l'abbréviation de caractéristiques de 3 lettres standard (FOR, DEX, ...). Si on souhaite que le jet ne permette de réduire qu'une partie des dommages (la dernière ajoutée avec <code>--plus</code>), on peut ajouter <code>local</code>. La syntaxe complète est alors <code>--psave <i>carac seuil</i> local</code></li>
                   <li><code>--demiAuto</code> : si l'attaque rate, on considère juste que les saves partiels sont automatiquemet réussi. Ça signifie en général que la cible prend au moins la moitié des dégâts.</li>
-                  <li>&nbsp;</li>
                   <li><code>--save <i>carac seuil</i></code> : même effet que <code>--psave</code>, mais pour annuler le dernier <code>--effet</code>, <code>etat</code> ou <code>--etatSi</code> (aucun effet sur les DM).</li>
                   <li><code>--saveParTour <i>carac seuil</i></code> : même effet que <code>--save</code>, mais donne droit à un jet à la fin de chaque tour au lieu d'un jet au moment de l'attaque.</li>
                   <li><code>--fx <i>effet</i></code> : ajoute un <a href="https://wiki.roll20.net/Custom_FX">effet</a> qui part de l'attaquant à la cible. Si l'attaque rate, l'effet rate aussi, d'autant plus que le jet d'attaque est loin de la défense.</li>
@@ -477,7 +476,7 @@
               <div class="decalage">
                 <p>La fonction affiche une liste de consommables, avec la possibilité de cliquer sur un élément de la liste pour le consommer (et activer son effet). Pour cela, la fonction regarde tous les attributs qui commencent par <code>dose_</code>, <code>elixir_</code> ou <code>consommable_</code>. La valeur courante doit être le nombre d'éléments possédé, et le max peut être une commande à effectuer pour activer l'effet. La fonction est à réserver aux tokens liés à un personnage. Il est aussi possible de simplement écrire un message qui s'affichera (et diminuera la quantité de consommables).</p>
                 <p>Attention, les boutons sont utilisables par tout le monde, ce qui permet de faire utiliser un des concommables d'un personnage par un autre. Le script vérifie juste que le token qui utilise l'objet est au contact.</p>
-                <p>Pour l'instant, seules les commandes <code>!cof-effet-temp</code>, <code>!cof-effet-combat</code>, <code>!cof-effet</code>, <code>!cof-enduire-poison</code>, <tt>cof-attack</tt> et <code>!cof-soin</code> diminuent correctement le nombre de consommables.</p>
+                <p>Pour l'instant, seules les commandes <code>!cof-effet-temp</code>, <code>!cof-effet-combat</code>, <code>!cof-effet</code>, <code>!cof-enduire-poison</code>, <code>!cof-attack</code> et <code>!cof-soin</code> diminuent correctement le nombre de consommables.</p>
               </div>
               <h3 class="text-info" id="escaliers">2.10 Escaliers</h3>
               <div class="decalage">
@@ -679,6 +678,7 @@
                 <ol>
                   <li><strong>Vitesse du félin</strong> : simplement ajouter les bonus sur la fiche, ainsi que les competences course, escalade et saut.</li>
                   <li><strong>Panthère</strong> : ajouter un personnage pour la panthère, qui sera contrôlé par le joueur.</li>
+                  <li><strong>Attaque bondissante</strong> : faire l'attaque avec les options <code>--bonusAttaque 5</code> <code>--plus 1d6</code>. Les conditions d'utilisation sont à vérifier par le MJ.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la nature</h4>
                 <ol>
@@ -703,7 +703,7 @@
                   <li><strong>Murmures dans le vent</strong> : rien à faire</li>
                   <li><strong>Sous tension</strong> : <code>!cof-effet-temp sous_tension [[5+@{selected|CHA}]]</code>. Pour l'attaque, définir une attaque magique à 1d6+CHA, et l'appeler avec les options <code>--si etat sous_tension --electrique --sortilege --fx beam-holy</code></li>
                   <li><strong>Télékinésie</strong> : Pas de support autre que <code>!cof-lancer-sort 1 lance un sort de télékinésie</code></li>
-                  <li><strong>Foudre</strong> : Faire une attaque de foudre de portée 10 m (attaque magique, dégâts 4d6 + CHA), et faire les attaques avec les options <code>--psave DEX [[12+@{selected|DEX}]] --mana 2 --electrique --sortilege --ligne --fx beam-holy ?{Y consacrer le tour entier ?|oui,--puissant|non,}</code>.</li>
+                  <li><strong>Foudre</strong> : Faire une attaque de foudre de portée 10 m (attaque magique, dégâts 4d6 + CHA), et faire les attaques avec les options <code>--psave DEX [[12+@{selected|DEX}]] --mana 2 --electrique --sortilege --ligne --fx beam-holy ?{Y consacrer le tour entier ?|oui,--puissant|non,''}</code>.</li>
                   <li><strong>Forme éthérée</strong> : <code>!cof-effet-temp intangible [[5 + @{selected|CHA}]] --lanceur @{selected|token_id} --mana 3</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de la divination</h4>
