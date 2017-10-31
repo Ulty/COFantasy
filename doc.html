@@ -49,6 +49,7 @@
       h4.text-secondary {margin-top: 30px;}
       .content li {margin-top: 10px}
       div.decalage > h3.text-info:first-child, div.decalage > h4.text-secondary:first-child, .content li:first-child {margin-top: 0px;}
+      div.alert > p:last-child {margin-bottom: 0}
 		</style>
 		<div class="container">
 			<div class="jumbotron start">
@@ -62,12 +63,11 @@
 					<li>
 						Un niveau de connaissance minimum sur Roll20.<br />
 						<div class="alert alert-light" role="alert">
-							<p>Nous ferons de notre mieux pour détailler au mieux les procédures mais notre but ici n'est pas de vous expliquer le fonctionnement de Roll20 et nous partirons du principe que vous avez des notions sur ce dernier.<br />Si ce n'est pas le cas, nous vous invitons tout d'abord à vous familiariser avec l'outils et savoir notamment créer/utiliser :
-							</p><ul>
+							<p>Nous ferons de notre mieux pour détailler au mieux les procédures mais notre but ici n'est pas de vous expliquer le fonctionnement de Roll20 et nous partirons du principe que vous avez des notions sur ce dernier.<br />Si ce n'est pas le cas, nous vous invitons tout d'abord à vous familiariser avec l'outils et savoir notamment créer/utiliser :</p>
+              <ul>
 								<li>des <i><a href="https://wiki.roll20.net/Macros">Macros</a></i></li>
 								<li>des <i><a href="https://wiki.roll20.net/Journal#Attributes_.26_Abilities_Tab">Attributs</a> et des <a href="https://wiki.roll20.net/Journal#Attributes_.26_Abilities_Tab">Capacités</a></i> des personnages</li>
 							</ul>
-							<p></p>
 						</div>
 					</li>
 					<li>Feuille de Personnages : <a data-toggle="popover" data-placement="bottom" data-html="true" data-content='<a href="https://lh3.googleusercontent.com/-CYiltExxZ_o/VZJjtdEcbkI/AAAAAAAAV7Q/8YWjPOXZ3u8/w1005-h652-no/Roll20_CO_setting.png"><img src="https://lh3.googleusercontent.com/-CYiltExxZ_o/VZJjtdEcbkI/AAAAAAAAV7Q/8YWjPOXZ3u8/w1005-h652-no/Roll20_CO_setting.png" class="img-fluid"/></a><p class="text-center"><small>Cliquer pour agrandir</small></p>' href="#">Chroniques Oubliées Fantasy (French)</a> par <a href="http://www.black-book-editions.fr/forums.php?topic_id=5255">Nata</a></li>
@@ -196,7 +196,9 @@
                   <p>les tokens sélectionnés sont ajouté au tracker de tour. Si celui-ci n'existe pas, un nouveau est créé, avec compteur de tour à 1, et on rentre en combat.</p>
                   <p>Les règles de tri suivent ce qui est donné p 70 : priorité aux PJs. Pour l'instant, on distingue un PJ d'un PNJ au dé de vie : si le personnage d'a pas de dé de vie, c'est un PNJ. Ensuite, entre PJs, priorité à la plus haute sagesse. Pour les PNJ, c'est aléatoire.</p>
                   <p>À chaque instant, le token dont c'est le tour d'agir est signalé par un drapeau noir.</p>
-                  <div class="alert alert-info">Si une "Abilities" dont le nom est <code>#TurnAction#</code> existe pour le personnage dont c'est le tour, celle-ci sera prise en compte et le joueur qui controle le personnage (ainsi que le MJ) recevra un chuchottement qui contiendra l'ensemble des %Ability et #Macro cliquables de <code>#TurnAction</code>.</div>
+                  <div class="alert alert-info">
+                    <p>Si une "Abilities" dont le nom est <code>#TurnAction#</code> existe pour le personnage dont c'est le tour, celle-ci sera prise en compte et le joueur qui controle le personnage (ainsi que le MJ) recevra un chuchottement qui contiendra l'ensemble des %Ability et #Macro cliquables de <code>#TurnAction</code>.</p>
+                  </div>
                   <p><img class="img-fluid" src="https://i.imgur.com/I3s8ZsL.png"></p>
                 </div>
               </div>
@@ -211,15 +213,18 @@
                     <p>la première partie (avant le premier blanc) du nom de l'attaque sur la fiche.</p>
                     <p>&nbsp;</p>
                     <div class="alert alert-success" role="alert">
-                      Exemple :
-                      <div class="decalage"><tt>!cof-attack @{selected|token_id} @{target|token_id} 1</tt></div>
+                      <p>Exemple :</p>
+                      <div class="decalage">
+                        <code>!cof-attack @{selected|token_id} @{target|token_id} 1</code>
+                      </div>
                     </div>
-                    <div class="alert alert-warning" role="alert"><strong>Attention :</strong> Il faut utiliser des noms d'attaque comme "1 Épée longue". L'attaque tient compte de toutes les informations de l'attaque, y compris chances de critique et portée..</div>
-                    <p>&nbsp;</p>
+                    <div class="alert alert-warning" role="alert">
+                      <p><strong>Attention :</strong> Il faut utiliser des noms d'attaque comme "1 Épée longue". L'attaque tient compte de toutes les informations de l'attaque, y compris chances de critique et portée.</p>
+                    </div>
                   </li>
                 </ul>
                 <p>soit :</p>
-                <ul>
+                <ul id="tableau_arme">
                   <li>
                     <p>un tableau d'arme sous la forme : <code>[ ARME, [ATTAQUE], CRIT, [DM], [PORTÉE] ]</code></p>
                     <p><img class="img-fluid" src="https://i.imgur.com/3QvxP9e.png"></p>
@@ -254,15 +259,13 @@
                     </ul>
                     <p>&nbsp;</p>
                     <div class="alert alert-success" role="alert">
-                      Exemple pour le sort "<i>Flèche enflammée</i>" :
-                      <div class="decalage"><tt>!cof-attack @{selected|token_id} @{target|token_id} ["Flèche_Enflammée",["@{selected|ATKMAG}",0],20,[1,6,"@{selected|INT}",0],30] --fx beam-fire --feu --sortilege --enflamme</tt></div>
+                      <p>Exemple pour le sort "<i>Flèche enflammée</i>" :</p>
+                      <div class="decalage"><code>!cof-attack @{selected|token_id} @{target|token_id} ["Flèche_Enflammée",["@{selected|ATKMAG}",0],20,[1,6,"@{selected|INT}",0],30] --fx beam-fire --feu --sortilege --enflamme</code></div>
                     </div>
                     <div class="alert alert-warning" role="alert"><strong>Attention :</strong> Aucun espace n'est toléré.</div>
-                    <p>&nbsp;</p>
-                    <p>&nbsp;</p>
                   </li>
                 </ul>
-                <p>Pour plus de facilité, j'utilise une macro <code>Attaque</code> qui fait <code>!cof-attack @{selected|token_id} @{target|token_id}</code>, comme ça, dans l'exemple précédent, j'ai juste une ability avec comme valeur <code>#Attaque 1</code> (ou mieux, <code>#Attaque 1 --tranchant</code>).</p>
+                <p>Pour plus de facilité, utilisez une macro <code>Attaque</code> qui fait <code>!cof-attack @{selected|token_id} @{target|token_id}</code>, comme ça, dans l'exemple précédent, vous avez juste une ability avec comme valeur <code>#Attaque 1</code> (ou mieux, <code>#Attaque 1 --tranchant</code>).</p>
                 <p><a href="https://i.imgur.com/CxX71qp.png"><img class="img-fluid" src="https://i.imgur.com/CxX71qp.png"></a></p>
               </div>
               <figcaption>Le sort "<i>Flèche enflammée</i>"</figcaption>
@@ -475,9 +478,48 @@
               </div>
               <h3 class="text-info" id="consommables">2.9 Consommables <code>!cof-consommables</code></h3>
               <div class="decalage">
-                <p>La fonction affiche une liste de consommables, avec la possibilité de cliquer sur un élément de la liste pour le consommer (et activer son effet). Pour cela, la fonction regarde tous les attributs qui commencent par <code>dose_</code>, <code>elixir_</code> ou <code>consommable_</code>. La valeur courante doit être le nombre d'éléments possédé, et le max peut être une commande à effectuer pour activer l'effet. La fonction est à réserver aux tokens liés à un personnage. Il est aussi possible de simplement écrire un message qui s'affichera (et diminuera la quantité de consommables).</p>
-                <p>Attention, les boutons sont utilisables par tout le monde, ce qui permet de faire utiliser un des concommables d'un personnage par un autre. Le script vérifie juste que le token qui utilise l'objet est au contact.</p>
-                <p>Pour l'instant, seules les commandes <code>!cof-effet-temp</code>, <code>!cof-effet-combat</code>, <code>!cof-effet</code>, <code>!cof-enduire-poison</code>, <tt>cof-attack</tt> et <code>!cof-soin</code> diminuent correctement le nombre de consommables.</p>
+                <p>Cette fonction affiche une liste de consommables, avec la possibilité de cliquer sur un élément de la liste pour le consommer (et activer son effet) ou l'échanger avec un autre personnage (via le symbole &#8596;).</p>
+                <p>Pour cela, la fonction regarde tous les attributs qui commencent par <code>dose_</code>, <code>elixir_</code> ou <code>consommable_</code>. La valeur courante doit être le nombre d'éléments possédé, et le max peut être une commande à effectuer pour activer l'effet. La fonction est à réserver aux tokens liés à un personnage. Il est aussi possible de simplement écrire un message qui s'affichera (et diminuera la quantité de consommables).</p>
+                <p><a href="https://i.imgur.com/0GGoPRk.png"><img class="img-fluid" src="https://i.imgur.com/0GGoPRk.png"></a></p>
+                <figcaption>Exemple d'une liste de consommable.</figcaption>
+                <!--<p>Attention, les boutons sont utilisables par tout le monde, ce qui permet de faire utiliser un des concommables d'un personnage par un autre. Le script vérifie juste que le token qui utilise l'objet est au contact.</p>-->
+                <p>Pour l'instant, seules les commandes <code>!cof-effet-temp</code>, <code>!cof-effet-combat</code>, <code>!cof-effet</code>, <code>!cof-enduire-poison</code>, <code>!cof-attack</code> et <code>!cof-soin</code> diminuent correctement le nombre de consommables.</p>
+                <div class="alert alert-warning">
+                  <p><strong>Attention : </strong></p>
+                  <ul>
+                    <li>Pour la commande <code>!cof-attack</code>, il est vivemement recommandé d'utiliser un <a href="#tableau_arme">tableau d'arme</a>, notamment afin de faciliter l'échange du consommable.</li>
+                    <li>De manière générale, faites attention avec les références utilisé dans le consommable.du personnage qui utilise le consommable.<br />
+                    Par exemple : <em>peau d'écorce</em> (<code>!cof-effet-temp peau_d_ecorce [[5+@{selected|SAG}]]</code>).<br />
+                    Dans ce cas précis, si le consommable change de main, ce sera le MOD de SAGESSE de celui qui va utiliser le consommable qui sera utilisé (<code>@{selected|SAG}</code>). Est-ce une bonne chose ? A vous de voir en fonction de vos besoins.
+                    </li>
+                  </ul>
+                </div>
+                <div class="alert alert-success">
+                  <p><strong>Exemple de consommables, à ajouter dans un "<em>Attribute</em>" de l'onglet "<em>Attributes & Abilities</em>" du personnage :</strong></p>
+                  <ul>
+                    <li>
+                      Potions de soins légers
+                      <ul>
+                        <li>Name : <code>dose_Potion soins légers</code></li>
+                        <li>Current : <code>1</code> (la quantité)</li>
+                        <li>Max : <code>!cof-soin @{selected|token_id} @{selected|token_id} 1D8+@{selected|NIVEAU}</code></li>
+                      </ul>
+                    </li>
+                    <li>
+                      Parchemin Flèche enflammée
+                      <ul>
+                        <li>Name : <code>dose_Parch. Flèche enflammée</code></li>
+                        <li>Current : <code>1</code> (la quantité)</li>
+                        <li>Max : <code>!cof-attack @{selected|token_id} @{target|token_id} ["Flèche_Enflammée",["@{selected|ATKCAC}",0],20,[1,6,"@{selected|SAG}",0],30] --fx beam-fire --feu --sortilege --enflamme</code></li>
+                      </ul>
+                    </li>
+                  </ul>
+                </div>
+                <p>L'échange via le symbole <span class="text-danger"><strong>&#8596;</strong></span> vous permettra de sélectionner un token destinataire qui recevra le consommable dans sa liste. Si le consommable existe déjà pour le destinataire, sa quantité sera augmenté de 1, sinon le consommable sera créé.</p>
+                <div class="alert alert-secondary">
+                <p>Cette fonction peut-être très utile pour que les PJ échangent entre eux un consommable, mais aussi pour faciliter la vente d'objet entre PNJ et PJ.</p>
+                <p>Pour cette dernière, il vous suffira de préparer un personnage avec un token qui contient, dans ses attributs, les consommables à échanger/vendre.</p>
+                </div>
               </div>
               <h3 class="text-info" id="escaliers">2.10 Escaliers</h3>
               <div class="decalage">
