@@ -10049,16 +10049,14 @@ var COFantasy = COFantasy || function() {
     }); //fin de getSelected
   }
 
-  function listeConsommables(msg, echange) {
+  function listeConsommables(msg) {
     getSelected(msg, function(selected) {
       iterSelected(selected, function(perso) {
         if (perso.token.get('bar1_link') === '') {
           error("La liste de consommables n'est pas au point pour les tokens non liés", perso);
           return;
         }
-        var titre = 'Liste de vos consommables :';
-        if (echange) titre = 'Echanger un consommable :';
-        var display = startFramedDisplay(msg.playerid, titre, perso, undefined, true);
+        var display = startFramedDisplay(msg.playerid, 'Liste de vos consommables :', perso, undefined, true);
         var attributes = findObjs({
           _type: 'attribute',
           _characterid: perso.charId
@@ -10069,10 +10067,6 @@ var COFantasy = COFantasy || function() {
           var attrName = attr.get('name').trim();
           if (!(attrName.startsWith('dose_') || attrName.startsWith('consommable_') || attrName.startsWith('elixir_'))) return;
           cpt++;
-          if (cpt == 1) {
-              if (echange) addLineToFramedDisplay(display, "<small><em>Cliquez sur le consommable puis sélectionnez la cible avec laquelle vous souhaitez l'échanger</em></small>");
-              else addLineToFramedDisplay(display, "<small><em>Cliquez sur le consommable pour l'utiliser</em></small>");
-          }
           
           var consName = attrName.substring(attrName.indexOf('_') + 1);
           consName = consName.replace(/_/g, ' ');
@@ -10083,12 +10077,13 @@ var COFantasy = COFantasy || function() {
           }
           else cpt2++;
           var action = attr.get('max').trim();
-          if (echange) action = '!cof-echange-consommables @{selected|token_id} @{target|token_id}';
           var ligne = quantite + ' ';
           ligne += bouton(perso, action, consName, attr);
+          ligne += bouton(perso, '!cof-echange-consommables @{selected|token_id} @{target|token_id}', '&#8596;', attr);
           addLineToFramedDisplay(display, ligne);
         }); //fin de la boucle sur les attributs
         if (cpt2 == 0) addLineToFramedDisplay(display, "<code>Vous n'avez aucun consommable</code>");
+        else addLineToFramedDisplay(display, "<em>Cliquez sur le consommable pour l'utiliser ou sur <tt>&#8596;</tt> pour l'échanger avec un autre personnage.</em>");
         sendChat('', endFramedDisplay(display));
       });
     }); //fin du getSelected
@@ -10870,9 +10865,6 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-consommables":
         listeConsommables(msg, false);
-        return;
-      case "!cof-consommables-echange":
-        listeConsommables(msg, true);
         return;
       case "!cof-utilise-consommable": //Usage interne seulement
         utiliseConsommable(msg, false);
