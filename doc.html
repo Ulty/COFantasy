@@ -14,32 +14,34 @@
 	<body data-target="#list" data-spy="scroll" data-offset="10">
 		<script>      
 			$('document').ready(function() {
-			  $(document).on('click', '#start', function() {
-			    $('.start').toggle();
-			       $('div.sticky-top ul.collapse').collapse('hide');
-			  });
+        $(document).on('click', '#start', function() {
+          $('.start').toggle();
+          $('div.sticky-top ul.collapse').collapse('hide');
+        });
 			     
-			     if (window.location.hash) {
-			       $('.start').toggle();
-			       $(document).scrollTop( $(window.location.hash).offset().top );
-			     }
+        if (window.location.hash) {
+          $('.start').toggle();
+          $(document).scrollTop( $(window.location.hash).offset().top );
+        }
 			  
-			  $(function () {
-			    $('[data-toggle="popover"]').popover()
-			  });
+			  $('[data-toggle="popover"]').popover();
+        
+        $(document).on('click', '[data-href]', function(){
+          window.open($(this).data('href'));
+        });
 			     
-			     $('a[href^="http://"], a[href^="https://"]').attr('target','_blank');
-			      
-			     $('div.sticky-top ul.collapse').on('show.bs.collapse', function () {
-			       $('div.sticky-top ul.collapse').collapse('hide');
-			     });
+        $('a[href^="http://"], a[href^="https://"]').attr('target','_blank');
+
+        $('div.sticky-top ul.collapse').on('show.bs.collapse', function () {
+        $('div.sticky-top ul.collapse').collapse('hide');
+        });
 			});
 			
 		</script>
 		<style>
 			body{position: relative;}
 			.jumbotron.start{margin-top: 20px;}
-			[data-toggle="popover"], button {cursor: pointer}
+			[data-toggle="popover"], button, [data-href] {cursor: pointer}
 			.jumbotron p {margin-bottom: 0}
 			img{margin: 0 auto; display: block; border-radius: 3px; -webkit-box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.40); -moz-box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.40); box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.4);}
 			img:hover{-webkit-box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.60); -moz-box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.60); box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.60);}
@@ -140,9 +142,9 @@
               <h3 class="text-info" id="token_personnages">1.1 Tokens et personnages</h3>
               <div class="decalage">
                 <p>Ces scripts ont été écrits pour fonctionner avec les fiches de personnages développées par <a href="https://github.com/Roll20/roll20-character-sheets/tree/master/ChroniquesOubliees">Natha</a>.</p>
-                <p><a href="https://i.imgur.com/rF0Qxht.png"><img class="img-fluid" src="https://i.imgur.com/rF0Qxht.png"></a></p>
+                <p><img class="img-fluid" src="https://i.imgur.com/rF0Qxht.png" data-href="https://i.imgur.com/rF0Qxht.png"></p>
+                <figcaption>A choisir pendant la création de la partie sur Roll20.</figcaption>
               </div>
-              <figcaption>A choisir pendant la création de la partie sur Roll20.</figcaption>
               <p>Chaque token avec lequel vous souhaitez interagir doit représenter un personnage.</p>
               <p>La barre 1 représente toujours les points de vie du token.<br />
                 La barre 2 est soit la mana, pour les personnages qui ont des points de mana, soit les dégâts temporaires pour les personnages qui n’ont pas de points de mana<br />
@@ -152,7 +154,7 @@
                 Pour tenir compte d'autre états non visibles sur les tokens, les scripts utilisent des attributs supplémentaires (hors fiche). Parfois, le MJ devra créer et remplir lui-même certains attributs, d'autres fois cela sera géré par les scripts.
               </p>
               <p>Il est important de noter la différence entre les tokens liés à un personnage (la barre 1 est liée aux points de vie du personnage, tout changement sur la fiche se répercute sur le token), et les tokens non liés (dans ce cas, la fiche de personnage est générique, et chaque token est une instance différente, avec des PV indépendants).</p>
-              <p><a href="https://i.imgur.com/KDumZNH.png"><img class="img-fluid" src="https://i.imgur.com/KDumZNH.png"></a></p>
+              <p><img class="img-fluid" src="https://i.imgur.com/KDumZNH.png" data-href="https://i.imgur.com/KDumZNH.png"></p>
               <figcaption>Différence entre un token lié et non lié. Exemple d'utilisation avec <i>Token Name Number</i></figcaption>
               <p>Pour gérer les états spécifiques à un token non lié, les scripts utilisent des conventions de nom d'attribut utilisant le nom du token. Pour que cela fonctionne correctement, <b>il est important que deux tokens indépendants ne portent pas le même nom</b>, même si ils représentent le même personnage.</p>
               <p>C'est pour cette raison qu'il est fortement recommandé d'utiliser le script <a href="https://wiki.roll20.net/Script:Token_Name_Number">Token Name Number</a> (<a href="https://app.roll20.net/forum/post/1273423/script-tokennamenumber-automatic-numbering-of-qualifying-tokens/?pageforid=1273423#post-1273423" target="_blank">comment l'utiliser</a>) qui permet de faire une numérotation automatique des tokens.</p>
@@ -178,9 +180,9 @@
                   <li>option <code>--disque</code> : le premier argument doit être l'id ou le nom d'un token qui représente un personnage, le deuxième argument un rayon. Cela sélectionne tous les tokens à une distamce de moins que le rayon du premier argument. Si un troisième argument est donné, il est interprété comme la portée maximum entre le centre du disque et le token actif (qui est supposé être celui sélectionné). Si le premier argument représente un personnage avec un max de PV à 0, il est compris comme un personnage fictif créé juste pour définir le disque, et il sera supprimé après la sélection.</li>
                   <li>option <code>--saufAllies</code> permet d'exclure les alliés de la sélection (voir plus haut pour la définition des alliés)</li>
                 </ul>
-                <p><a href="https://i.imgur.com/WHfwsKo.png"><img class="img-fluid" src="https://i.imgur.com/WHfwsKo.png"></a></p>
+                <p><img class="img-fluid" src="https://i.imgur.com/WHfwsKo.png" data-href="https://i.imgur.com/WHfwsKo.png"></p>
+                <figcaption>Exemple d'<i>handout</i> avec différentes équipes.</figcaption>
               </div>
-              <figcaption>Exemple d'<i>handout</i> avec différentes équipes.</figcaption>
               <h3 class="text-info" id="regles_optionnelles">1.4 Règles optionnelles utilisées</h3>
               <div class="decalage">
                 <p>Les scripts supportent l'utilisation de la règle des points de chance, des points de récupérations, des points de mana (et de magie puissante ou rapide).</p>
@@ -199,10 +201,10 @@
                   <div class="alert alert-info">
                     <p>Si une "Abilities" dont le nom est <code>#TurnAction#</code> existe pour le personnage dont c'est le tour, celle-ci sera prise en compte et le joueur qui controle le personnage (ainsi que le MJ) recevra un chuchottement qui contiendra l'ensemble des %Ability et #Macro cliquables de <code>#TurnAction</code>.</p>
                   </div>
-                  <p><img class="img-fluid" src="https://i.imgur.com/I3s8ZsL.png"></p>
+                  <p><img class="img-fluid" src="https://i.imgur.com/tTfFoPW.png" data-href="https://i.imgur.com/tTfFoPW.png"></p>
+                  <figcaption>Exemple d'une macro #TurnAction#</figcaption>
                 </div>
               </div>
-              <figcaption>Exemple d'une macro #TurnAction#</figcaption>
               <p>&nbsp;</p>
               <p>Il est possible d'attendre avant d'agir en réduisant temporairement son initiative, en utilisant <code>!cof-attendre ?{Nouvelle initiative}</code>.</p>
               <h4 class="text-secondary">Attaquer une (ou plusieurs) cible : <code>!cof-attack @{selected|token_id} @{target|token_id} <i>n</i></code></h4>
@@ -227,8 +229,8 @@
                 <ul id="tableau_arme">
                   <li>
                     <p>un tableau d'arme sous la forme : <code>[ ARME, [ATTAQUE], CRIT, [DM], [PORTÉE] ]</code></p>
-                    <p><img class="img-fluid" src="https://i.imgur.com/3QvxP9e.png"></p>
-                    <p>&nbsp;</p>
+                    <p><img class="img-fluid" src="https://i.imgur.com/3QvxP9e.png" data-href="https://i.imgur.com/3QvxP9e.png"></p>
+                    <figcaption>Le sort "<i>Flèche enflammée</i>"</figcaption>
                     <ul>
                       <li><code>ARME</code> : Nom de l'Arme/Attaque. Exemple : "Flèche_Enflammée"</li>
                       <li>
@@ -266,15 +268,14 @@
                   </li>
                 </ul>
                 <p>Pour plus de facilité, utilisez une macro <code>Attaque</code> qui fait <code>!cof-attack @{selected|token_id} @{target|token_id}</code>, comme ça, dans l'exemple précédent, vous avez juste une ability avec comme valeur <code>#Attaque 1</code> (ou mieux, <code>#Attaque 1 --tranchant</code>).</p>
-                <p><a href="https://i.imgur.com/CxX71qp.png"><img class="img-fluid" src="https://i.imgur.com/CxX71qp.png"></a></p>
+                <p><img class="img-fluid" src="https://i.imgur.com/CxX71qp.png" data-href="https://i.imgur.com/CxX71qp.png"></p>
               </div>
-              <figcaption>Le sort "<i>Flèche enflammée</i>"</figcaption>
               <figcaption>Ajout de la Macro <i>Attaque</i>.</figcaption>
-              <p><a href="https://i.imgur.com/MWTVRO4.png"><img class="img-fluid" src="https://i.imgur.com/MWTVRO4.png"></a></p>
+              <p><img class="img-fluid" src="https://i.imgur.com/MWTVRO4.png" data-href="https://i.imgur.com/MWTVRO4.png"></p>
               <figcaption>Création des <i>Abilities</i> (Capacités) du Personnage.</figcaption>
-              <p><a href="https://i.imgur.com/iQrzLZh.png"><img class="img-fluid" src="https://i.imgur.com/iQrzLZh.png"></a></p>
+              <p><img class="img-fluid" src="https://i.imgur.com/iQrzLZh.png" data-href="https://i.imgur.com/iQrzLZh.png"></p>
               <figcaption>ne pas oublier de cocher la case "<i>Show as Token Action</i>".</figcaption>
-              <p><a href="https://i.imgur.com/GmUxCpB.png"><img class="img-fluid" src="https://i.imgur.com/GmUxCpB.png"></a></p>
+              <p><img class="img-fluid" src="https://i.imgur.com/GmUxCpB.png" data-href="https://i.imgur.com/GmUxCpB.png"></p>
               <figcaption>Ne pas oublier de mettre un numéro pour l'arme. A utiliser dans la création des <i>Abilities</i>.</figcaption>
               <p>Malus ou bonus temporaire à une attaque : utiliser la barre 3.</p>
               <p>Le test d'attaque à distance tient compte de la portée (malus de -1 à -5 si distance entre portée et deux fois cette valeur), ainsi que des tokens sur le trajet de l'attaque. Une attaque de trop loin ne porte jamais.</p>
@@ -414,7 +415,7 @@
                 <p>Le script essaie de détecter les cas où un point de chance peut être utile, et dans ce cas fournit un bouton (utilisable par les joueurs contrôlant le perosnnage ou le GM), permettant de dépenser un point de chance. Attention, pour l'instant, il n'est pas possible de faire juste un undo de la dépense de point de chnce. Le undo après la dépense de point de chance annule toute l'action. Il faut ensuite faire un undo par point de chance dépensé.</p>
                 <p>Pour les cas non prévus par le script, on peut faire juste <code>!cof-chance autre</code>.</p>
               </div>
-              <h3 class="text-info" id="surprise">2.6 Surprise : <code>!cof-suprise ?difficulte</code></h3>
+              <h3 class="text-info" id="surprise">2.6 Surprise : <code>!cof-surprise ?difficulte</code></h3>
               <div class="decalage">
                 <p>Fait un test de surprise sur tous les tokens sélectionné. Si la difficulté n'est pas présente, ils sont automatiquement surpris. Les valeurs des attributs (hors fiche) <code>vigilance</code> et <code>perception</code> sont ajoutés au test de sagesse.</p>
               </div>
@@ -480,7 +481,7 @@
               <div class="decalage">
                 <p>Cette fonction affiche une liste de consommables, avec la possibilité de cliquer sur un élément de la liste pour le consommer (et activer son effet) ou l'échanger avec un autre personnage (via le symbole &#8596;).</p>
                 <p>Pour cela, la fonction regarde tous les attributs qui commencent par <code>dose_</code>, <code>elixir_</code> ou <code>consommable_</code>. La valeur courante doit être le nombre d'éléments possédé, et le max peut être une commande à effectuer pour activer l'effet. La fonction est à réserver aux tokens liés à un personnage. Il est aussi possible de simplement écrire un message qui s'affichera (et diminuera la quantité de consommables).</p>
-                <p><a href="https://i.imgur.com/0GGoPRk.png"><img class="img-fluid" src="https://i.imgur.com/0GGoPRk.png"></a></p>
+                <p><img class="img-fluid" src="https://i.imgur.com/WZT8buT.png" data-href="https://i.imgur.com/WZT8buT.png"></p>
                 <figcaption>Exemple d'une liste de consommable.</figcaption>
                 <!--<p>Attention, les boutons sont utilisables par tout le monde, ce qui permet de faire utiliser un des concommables d'un personnage par un autre. Le script vérifie juste que le token qui utilise l'objet est au contact.</p>-->
                 <p>Pour l'instant, seules les commandes <code>!cof-effet-temp</code>, <code>!cof-effet-combat</code>, <code>!cof-effet</code>, <code>!cof-enduire-poison</code>, <code>!cof-attack</code> et <code>!cof-soin</code> diminuent correctement le nombre de consommables.</p>

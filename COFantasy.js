@@ -74,6 +74,87 @@ var COFantasy = COFantasy || function() {
     log(obj);
     sendChat("COFantasy", msg);
   }
+  
+  // retourne un tableau contenant la liste des ID de joueurs controlant le personnage lié au Token
+  function get_player_ids_from_token(token) {
+    var player_ids = [];
+    
+    var charId = token.get('represents');
+    if (charId === '' || charId === undefined) return player_ids;
+    var character = getObj('character', charId);
+
+    var char_controlledby = character.get('controlledby');
+    if (char_controlledby == '') return player_ids;
+    
+    _.each(char_controlledby.split(","), function(controlledby) {    
+      var player = getObj('player', controlledby);
+      if (player === undefined) return;
+      player_ids.push(controlledby);
+    });
+    
+    return player_ids;
+  }
+  
+  
+  function get_picto_style_from_command (command, style) {
+    
+    if (style === undefined) var style = '';
+    
+    var picto_style = {
+      picto: '',
+      style : style
+    }
+    
+    if (command === undefined) return picto_style;
+    
+    var picto = '';
+    // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
+    
+    if (command.startsWith('#Attaque') || command.startsWith('!cof-attack') || command.startsWith('!cof-attaque') || command.startsWith('!cof-lancer-sort')) {
+      if (command.indexOf('-sort') !== -1 || command.indexOf('-magic') !== -1 || command.indexOf('-magique') !== -1 ) {
+        // attaque magique
+        picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
+        style = 'background-color:#9900ff';
+      }
+      else if (command.indexOf('--percant') !== -1) {
+        // attaque distance
+        picto = '<span style="font-family: \'Pictos Custom\'">[</span> ';
+        style = 'background-color:#48b92c';
+      }
+      else {
+        // attaque contact
+        picto = '<span style="font-family: \'Pictos Custom\'">t</span> ';
+      }
+    }
+    if (command.startsWith('!cof-soin') || command.startsWith('!cof-transe-guerison')) {
+      picto = '<span style="font-family: \'Pictos\'">k</span> ';
+      style = 'background-color:#ffe599;color:#333';
+    }
+    if (command.startsWith('!cof-effet')) {
+      picto = '<span style="font-family: \'Pictos\'">S</span> ';
+      style = 'background-color:#4a86e8';
+    }
+    if (command.startsWith('!cof-recharger')) {
+      picto = '<span style="font-family: \'Pictos\'">0</span> ';
+      style = 'background-color:#e69138';
+    }
+    if (command.startsWith('!cof-action-defensive')) {
+      picto = '<span style="font-family: \'Pictos Three\'">b</span> ';
+    }
+    if (command.startsWith('!cof-attendre')) {
+      picto = '<span style="font-family: \'Pictos\'">t</span> ';
+      style = 'background-color:#999999';
+    }
+    if (command.startsWith('!cof-consommables')) {
+      picto = '<span style="font-family: \'Pictos\'">b</span> ';
+      style = '';
+    }
+    
+    picto_style.picto = picto;
+    picto_style.style = style;
+    
+    return picto_style;
+  }
 
   function getState(personnage, etat) {
     var token = personnage.token;
@@ -435,18 +516,33 @@ var COFantasy = COFantasy || function() {
   }
 
   //ressource est optionnel, et si présent doit être un attribut
-  function bouton(perso, action, text, ressource) {
-    if (action === undefined || action === '') return text;
-    if (action.startsWith('!')) {
-      if (ressource) action += " --decrAttribute " + ressource.id;
-    } else if (ressource) {
-      action = "!cof-utilise-consommable " + perso.token.id + " " + ressource.id + " --message " + action;
-    } else {
-      action = "!cof-lancer-sort 0 " + action;
+  function bouton(action, text, perso, ressource, button_style, button_title) {
+    if (action === undefined || action.trim().length == 0) return text;
+    else action = action.trim();
+    
+    if (button_style !== undefined) button_style=' style="' + button_style + '"';
+    else button_style = '';
+    
+    if (button_title !== undefined) button_title=' title="' + button_title + '"';
+    else button_title = '';
+    
+    switch(action.charAt(0)) {
+      case '!':
+        if (!action.startsWith('!&#13;') && ressource) action += " --decrAttribute " + ressource.id;
+        break;
+        
+      default:
+        if (ressource) {
+          action = "!cof-utilise-consommable " + perso.token.id + " " + ressource.id + " --message " + action;
+        } else {
+          action = "!cof-lancer-sort 0 " + action;
+        }
     }
+
     action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;');
     action = action.replace(/\'/g, '&apos;'); // escape quotes
-    return "<a href='" + action + "'>" + text + "</a>";
+    
+    return '<a href="' + action + '"' + button_style + button_title +'>' + text + '</a>';
   }
 
   function jetPerso(perso, caracteristique, difficulte, titre, playerId, options) {
@@ -467,8 +563,8 @@ var COFantasy = COFantasy || function() {
           else if (!rt.critique) {
             var action = "!cof-resultat-jet " + state.COFantasy.eventId;
             var ligne = "L'action est-elle ";
-            ligne += bouton(perso, action + " reussi", "réussie");
-            ligne += " ou " + bouton(perso, action + " rate", "ratée");
+            ligne += bouton(action + " reussi", "réussie", perso);
+            ligne += " ou " + bouton(action + " rate", "ratée", perso);
             ligne += " ?";
             addLineToFramedDisplay(display, ligne);
             evt.personnage = perso;
@@ -501,11 +597,11 @@ var COFantasy = COFantasy || function() {
             if (pc > 0) {
               options.roll = options.roll || tr.roll;
               msgRate += ' ' +
-                bouton(perso, "!cof-bouton-chance " + evt.id, "Chance") +
+                bouton("!cof-bouton-chance " + evt.id, "Chance", perso) +
                 " (reste " + pc + " PC)";
             }
             if (charAttributeAsBool(perso, 'runeDEnergie') && (caracteristique == 'FOR' || caracteristique == 'CON' || caracteristique == 'DEX')) {
-              msgRate += ' ' + bouton(perso, "!cof-bouton-rune-energie " + evt.id, "Rune d'énergie");
+              msgRate += ' ' + bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", perso);
             }
             addLineToFramedDisplay(display, msgRate);
           }
@@ -2754,7 +2850,7 @@ var COFantasy = COFantasy || function() {
                     return (tok.id != attaquant.token.id);
                   });
                   if (iOther !== undefined)
-                    target.messages.push(bouton(target, "!cof-esquive-fatale " + evt.id + " @{target|token_id}", "Esquive fatale ?"));
+                    target.messages.push(bouton("!cof-esquive-fatale " + evt.id + " @{target|token_id}", "Esquive fatale ?", target));
                 }
               }
             }
@@ -3399,10 +3495,10 @@ var COFantasy = COFantasy || function() {
       evt.personnage = evt.action.attaquant;
       var pc = attributeAsInt(evt.action.attaquant, 'PC', 0);
       if (pc > 0) {
-        addLineToFramedDisplay(display, bouton(evt.personnage, "!cof-bouton-chance " + evt.id, "Chance") + " (reste " + pc + " PC)");
+        addLineToFramedDisplay(display, bouton("!cof-bouton-chance " + evt.id, "Chance", evt.personnage) + " (reste " + pc + " PC)");
       }
       if (charAttributeAsBool(evt.action.attaquant, 'runeDEnergie')) {
-        addLineToFramedDisplay(display, bouton(evt.personnage, "!cof-bouton-rune-energie " + evt.id, "Rune d'énergie"));
+        addLineToFramedDisplay(display, bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", evt.personnage));
       }
     }
     sendChat("", endFramedDisplay(display));
@@ -4036,82 +4132,139 @@ var COFantasy = COFantasy || function() {
     return image_url;
   }
 
-  function startFramedDisplay(playerId, action, perso1, perso2, toSelf) {
+  function startFramedDisplay(playerId, action, perso1, perso2, to_displayname) {
     var player = getObj('player', playerId);
-    if (player === undefined) {
-      error("Joueur inconnu", playerId);
-      return;
-    }
-    var playerBGColor = player.get("color");
-    var playerTXColor = (getBrightness(playerBGColor) < 50) ? "#FFF" : "#000";
-    var res = '/direct ';
-    if (toSelf) res = '/w "' + player.get('displayname') + '" ';
-    res +=
-      '<div style="-webkit-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); -moz-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); border: 1px solid #000; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px; overflow: hidden;">' +
-      '<div style="overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: ' + playerTXColor + '; background-color: ' + playerBGColor + ';" title=""> ' +
-      '<table>';
-    var name1 = '';
-    var avatar1 = '';
-    if (perso1) {
-      if (perso1.tokName) name1 = perso1.tokName;
-      else name1 = perso1.token.get('name');
-      name1 = '<b>' + name1 + '</b>';
-      var character1 = getObj('character', perso1.charId);
-      if (character1)
-        avatar1 = '<img src="' + improve_image(character1.get('avatar')) + '" style="width: ' + (perso2 ? 50 : 100) + '%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
-    }
-    if (perso2) {
-      var name2 = perso2.tokName;
-      if (name2 === undefined) name2 = perso2.token.get('name');
-      name2 = '<b>' + name2 + '</b>';
-      var avatar2 = '';
-      var character2 = getObj('character', perso2.charId);
-      if (character2 !== undefined) {
-        avatar2 = '<img src="' + improve_image(character2.get('avatar')) + '" style="width: 50%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
-      }
-      res +=
-        '<tr style="text-align: center">' +
-        '<td style="width:45%; vertical-align: middle;">' +
-        name1 +
-        '</td>' +
-        '<td style="width:10%; vertical-align: middle;" rowspan="2">' +
-        'VS' +
-        '</td>' +
-        '<td style="width:45%; vertical-align: middle;">' +
-        name2 +
-        '</td>' +
-        '</tr>' +
-        '<tr style="text-align: center">' +
-        '<td style="width:45%; vertical-align: middle;">' +
-        avatar1 +
-        '</td>' +
-        '<td style="width:45%; vertical-align: middle;">' +
-        avatar2 +
-        '</td>' +
-        '</tr>';
-    } else {
-      res +=
-        '<tr style="text-align: left">' +
-        '<td style="width:25%; vertical-align: middle;">' +
-        avatar1 +
-        '</td>' +
-        '<td style="width:75%; vertical-align: middle;">' +
-        name1 +
-        '</td>' +
-        '</tr>';
-    }
-    res +=
-      '</table>' +
-      '</div>' +
-      '<div style="font-size: 85%; text-align: left; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: #a94442; background-color: #f2dede;" title=""> ' +
-      action +
-      '</div>' +
-      '<div style="background-color: #FFF;">';
-    return {
-      output: res,
+    
+    var display = {
+      output: '',
       isOdd: true,
       isfirst: true,
     };
+    
+    if (player === undefined && !to_displayname) {
+      error('Aucun déstinataire de précisé...');
+      return display;
+    }
+      
+    var playerBGColor = '#333';
+    var playerTXColor = '#FFF'
+    var displayname = 'Inconnu';
+    
+    if (player !== undefined) {
+      playerBGColor = player.get("color");
+      playerTXColor = (getBrightness(playerBGColor) < 50) ? "#FFF" : "#000";
+      displayname = player.get('displayname');
+    }
+    
+    var res = '/direct ';
+    
+    if (to_displayname) {
+      var who;
+      if (to_displayname !== true) who = to_displayname;
+      else who = displayname;
+      
+      res = '/w "' + who + '" ';
+    }
+    
+    var name1, name2, avatar1, avatar2 = '';
+    
+    if (perso2) {      
+      var character2 = getObj('character', perso2.charId);
+      if (character2 !== undefined) {
+        avatar2 = '<img src="' + improve_image(character2.get('avatar')) + '" style="width: 50%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+        name2 = perso2.tokName;
+        if (name2 === undefined) name2 = perso2.token.get('name');
+        name2 = '<b>' + name2 + '</b>';
+      }
+    }
+
+    if (perso1) {
+      var character1 = getObj('character', perso1.charId);
+      if (character1 !== undefined) {
+        avatar1 = '<img src="' + improve_image(character1.get('avatar')) + '" style="width: ' + (character2 !== undefined ? 50 : 100) + '%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+        
+        if (perso1.tokName) name1 = perso1.tokName;
+        else name1 = perso1.token.get('name');
+        
+        name1 = '<b>' + name1 + '</b>';
+      }      
+    }
+    
+    res +=
+      '<div class="all_content" style="-webkit-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); -moz-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); border: 1px solid #000; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px; overflow: hidden;">';
+      
+    if (character1 !== undefined) {
+      res +=
+      '<div class="line_header" style="overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: ' + playerTXColor + '; background-color: ' + playerBGColor + ';" title=""> ' +
+        '<table>';
+      
+      if (character2 !== undefined) {
+      res +=
+        '<tr style="text-align: center">' +
+          '<td style="width:45%; vertical-align: middle;">' + name1 + '</td>' +
+          '<td style="width:10%; vertical-align: middle;" rowspan="2">' + 'VS' + '</td>' +
+          '<td style="width:45%; vertical-align: middle;">' + name2 + '</td>' +
+        '</tr>' +
+        '<tr style="text-align: center">' +
+          '<td style="width:45%; vertical-align: middle;">' + avatar1 + '</td>' + 
+          '<td style="width:45%; vertical-align: middle;">' + avatar2 + '</td>' +
+        '</tr>';
+      } else {
+        var bar1_value, bar1_max, bar1_link, bar1_info = '', bar2_value, bar2_max, bar2_link, bar2_info = '', bar3_value, bar3_max, bar3_link, bar3_info = '';
+        
+        if (perso1.token.get('bar1_link').length > 0) {
+          var bar1 = findObjs({
+            _type: 'attribute',
+            _id: perso1.token.get('bar1_link')
+          });
+          if (bar1[0] !== undefined) bar1_info = '<b>' + bar1[0].get('name') + '</b> : ' + bar1[0].get('current') + ' / ' + bar1[0].get('max') + '';
+        }
+        if (perso1.token.get('bar2_link').length > 0) {
+          var bar2 = findObjs({
+            _type: 'attribute',
+            _id: perso1.token.get('bar2_link')
+          });
+          if (bar2[0] !== undefined) bar2_info = '<b>' + bar2[0].get('name') + '</b> : ' + bar2[0].get('current') + ' / ' + bar2[0].get('max') + '';
+        }
+        
+        if (perso1.token.get('bar3_link').length > 0) {
+          var bar3 = findObjs({
+            _type: 'attribute',
+            _id: perso1.token.get('bar3_link')
+          });
+          if (bar3[0] !== undefined) bar3_info = '<b>' + bar3[0].get('name') + '</b> : ' + bar3[0].get('current') + ' / ' + bar3[0].get('max') + '';
+        }
+
+        res +=
+          '<tr style="text-align: left">' +
+            '<td style="width:25%; vertical-align: middle;">' + avatar1 +
+            '</td>' +
+            '<td style="width:75%; vertical-align: middle; position: relative;">' + 
+              '<div style="float: left;">' + name1 + '</div>' +
+              '<div style="float: right; position: absolute; top: 0; right: 0; border: 1px solid #000; background-color: #222;">' +
+                '<div style="text-align: right; margin: 0 5px; color: #7cc489">' + bar1_info + '</div>' +
+                '<div style="text-align: right; margin: 0 5px; color: #7c9bc4">' + bar2_info + '</div>' +
+                '<div style="text-align: right; margin: 0 5px; color: #b21d1d">' + bar3_info + '</div>' +
+              '</div>' +
+            '</td>' +
+          '</tr>';
+      }
+      res +=
+          '</table>' +
+        '</div>'; // line_header
+    }
+    
+    res +=
+      '<div class="line_title" style="font-size: 85%; text-align: left; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: #a94442; background-color: #f2dede;" title=""> ' +
+        action +
+      '</div>'; // line_title
+      
+    res +=
+      '<div class="line_content">';
+      
+    display.output = res;
+      
+    return display;
   }
 
   function addLineToFramedDisplay(display, line, size, new_line) {
@@ -4122,7 +4275,7 @@ var COFantasy = COFantasy || function() {
 
     if (!new_line) display.isOdd = !display.isOdd;
     if (display.isOdd) {
-      background_color = "transparent";
+      background_color = "#FFF;";
       display.isOdd = false;
     } else {
       background_color = "#f3f3f3";
@@ -4139,13 +4292,14 @@ var COFantasy = COFantasy || function() {
     if (!new_line) separator = "border-top: 1px solid #ddd;";
     formatedLine += '<div style="padding: 4px 0; font-size: ' + size + '%;' + separator + '">' + line + '</div>';
     formatedLine += '</div>';
+    
     display.output += formatedLine;
   }
 
   function endFramedDisplay(display) {
     var res = display.output;
-    res += '</div>';
-    res += '</div>';
+    res += '</div>'; // line_content
+    res += '</div>'; // all_content
     return res;
   }
 
@@ -5060,7 +5214,7 @@ var COFantasy = COFantasy || function() {
           var action = "!cof-soin " + ecuyer.token.id + " ";
           alliesASoigner.forEach(function(c) {
             var nom = c.token.get('name');
-            addLineToFramedDisplay(display, bouton(ecuyer, action + c.token.id + " 2d6", nom, attr));
+            addLineToFramedDisplay(display, bouton(action + c.token.id + " 2d6", nom, ecuyer, attr));
           });
           finSoin();
         }
@@ -5947,6 +6101,7 @@ var COFantasy = COFantasy || function() {
         affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
         token.set('status_flying-flag', true);
         var tokenName = token.get('name');
+        
         state.COFantasy.activeTokenId = tokenId;
         state.COFantasy.activeTokenName = tokenName;
         //On recherche dans le Personnage s'il a une "Ability" dont le nom est "#TurnAction#".
@@ -5958,11 +6113,15 @@ var COFantasy = COFantasy || function() {
         //Si elle existe, on lui chuchotte son exécution 
         if (TurnAction.length > 0) {
           // on récupère la valeur de l'action dont chaque Macro #/Ability % est mis dans un tableau 'action'
-          var action = TurnAction[0].get('action').replace(/\n/gm, '').replace(/\r/gm, '').replace(/%/g, '\n').replace(/#/g, '\n').split("\n");
+          var actions = TurnAction[0].get('action').replace(/\n/gm, '').replace(/\r/gm, '').replace(/%/g, '\n').replace(/#/g, '\n').split("\n");
           var nBfound = 0;
-          var macro = '';
-          if (action.length > 0) {
-            macro = '/w "' + tokenName + '" ' + '&{template:co1} {{perso=' + tokenName + '}} {{desc=';
+          var ligne = '';
+          if (actions.length > 0) { 
+            // personnage lié au Token
+            var character = getObj('character', charId);
+            if (character !== undefined) var characterName=character.get('name')
+            else return;
+          
             // Toutes les Macros
             var macros = findObjs({
               _type: 'macro'
@@ -5972,46 +6131,87 @@ var COFantasy = COFantasy || function() {
               _type: 'ability',
               _characterid: charId,
             });
-            var found;
+            var found, picto_style;
+            var style = '', command ='';
             // On recherche si l'action existe (Ability % ou Macro #)
-            action.forEach(function(e, i) {
-              e = e.trim();
-              if (e.length > 0) {
+            actions.forEach(function(action, i) {
+              action = action.trim();
+              if (action.length > 0) {
+                var action_text = action.replace(/-/g, ' ').replace(/_/g, ' ');
+                
                 found = false;
                 // on recherche en premier dans toutes les Abilities du personnage
                 abilities.forEach(function(elem, index) {
-                  if (elem.get('name') === e) {
+                  if (elem.get('name') === action) {
                     // l'ability existe
                     found = true;
                     nBfound++;
-                    macro += ' [' + i + '. ' + e.replace(/-/g, ' ').replace(/_/g, ' ') + '](!&#13;&#37;{' + tokenName + '|' + e + '})';
+                    
+                    command = elem.get('action').trim();
+                    picto_style = get_picto_style_from_command (command, 'background-color:#cc0000');
+                    action_text = picto_style.picto + action_text;
+                    style = picto_style.style;
+
+                    ligne += bouton('!&#13;%{' + characterName + '|' + action + '}', action_text, false, false, style, '') + '<br />';
                     return;
                   }
                 });
                 if (found === false) {
                   // Si pas trouvé, on recherche alors dans toutes les Macros, en toute simplicité j'ai envie de dire xD
                   macros.forEach(function(elem, index) {
-                    if (elem.get('name') === e) {
+                    if (elem.get('name') === action) {
                       // la Macro existe
                       found = true;
                       nBfound++;
-                      macro += ' [' + i + '. ' + e.replace(/-/g, ' ').replace(/_/g, ' ') + '](!&#13;#' + e + ')';
+                      
+                      command = elem.get('action').trim();
+                      picto_style = get_picto_style_from_command (command, 'background-color:#660000');
+                      action_text = picto_style.picto + action_text;
+                      style = picto_style.style;
+                      
+                      ligne += bouton('!&#13;#' + action , action_text, false, false, style, '') + '<br />';
                       return;
                     }
                   });
                 }
                 // Si on a toujours rien trouvé, on ajoute un petit log
                 if (found === false) {
-                  log('Ability et Macro non trouvé : ' + e);
+                  log('Ability et Macro non trouvé : ' + action);
                 }
               }
             });
-            macro += '}}';
           }
           if (nBfound > 0) {
-            // on envoie la commande au personnage
-            sendChat('', '/w "' + tokenName + '" ' + macro);
-            sendChat('', '/w gm ' + macro);
+            // on envoie la liste aux joueurs qui gèrent le personnage dont le token est lié
+            
+            charId = token.get('represents');
+            // token non lié
+            if (charId === '') return;
+            
+            // on récupère les players_ids
+            var player_ids = get_player_ids_from_token(token);
+            if (player_ids.length > 0) {
+              
+              var perso = {
+                token: token,
+                charId: charId
+              };
+              
+              var title = 'Actions possibles :';
+              var last_playerid;
+              
+              _.each(player_ids, function(playerid) {
+                last_playerid = playerid;
+                var display = startFramedDisplay(playerid, title, perso, false, true);
+                addLineToFramedDisplay(display, ligne);
+                sendChat('', endFramedDisplay(display));
+              });
+              
+              // En prime, on l'envoie au MJ
+              var display = startFramedDisplay(last_playerid, title, perso, false, 'gm');
+              addLineToFramedDisplay(display, ligne);
+              sendChat('', endFramedDisplay(display));
+            }
           }
         }
 
@@ -10056,7 +10256,7 @@ var COFantasy = COFantasy || function() {
           error("La liste de consommables n'est pas au point pour les tokens non liés", perso);
           return;
         }
-        var display = startFramedDisplay(msg.playerid, 'Liste de vos consommables :', perso, undefined, true);
+        var display = startFramedDisplay(msg.playerid, 'Liste de vos consommables :', perso, false, true);
         var attributes = findObjs({
           _type: 'attribute',
           _characterid: perso.charId
@@ -10078,12 +10278,13 @@ var COFantasy = COFantasy || function() {
           else cpt2++;
           var action = attr.get('max').trim();
           var ligne = quantite + ' ';
-          ligne += bouton(perso, action, consName, attr);
-          ligne += bouton(perso, '!cof-echange-consommables @{selected|token_id} @{target|token_id}', '&#8596;', attr);
+          ligne += bouton(action, consName, perso, attr);
+          // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
+          ligne += bouton('!cof-echange-consommables @{selected|token_id} @{target|token_id}', '<span style="font-family:Pictos">r</span>', perso, attr, 'background-color: #a009ec;font-size: 17px;padding: 4px 4px 6px 4px;', 'Cliquez pour échanger');
           addLineToFramedDisplay(display, ligne);
         }); //fin de la boucle sur les attributs
         if (cpt2 == 0) addLineToFramedDisplay(display, "<code>Vous n'avez aucun consommable</code>");
-        else addLineToFramedDisplay(display, "<em>Cliquez sur le consommable pour l'utiliser ou sur <tt>&#8596;</tt> pour l'échanger avec un autre personnage.</em>");
+        else addLineToFramedDisplay(display, '<em>Cliquez sur le consommable pour l\'utiliser ou sur <tt><span style="font-family:Pictos">r</span></tt> pour l\'échanger avec un autre personnage.</em>');
         sendChat('', endFramedDisplay(display));
       });
     }); //fin du getSelected
@@ -10551,7 +10752,7 @@ var COFantasy = COFantasy || function() {
             action = elixir.action;
             action = action.replace(/\$rang/g, voieDesElixirs);
             action = action.replace(/\$INT/g, modCarac(forgesort, 'INTELLIGENCE'));
-            options += bouton(forgesort, action, nomElixir, attr);
+            options += bouton(action, nomElixir, forgesort, attr);
             //TODO: Rajouter la possibilité de donner un élixir à un autre token
           } else {
             options += nomElixir;
@@ -10864,7 +11065,7 @@ var COFantasy = COFantasy || function() {
         enduireDePoison(msg);
         return;
       case "!cof-consommables":
-        listeConsommables(msg, false);
+        listeConsommables(msg);
         return;
       case "!cof-utilise-consommable": //Usage interne seulement
         utiliseConsommable(msg, false);
@@ -11856,9 +12057,7 @@ on("chat:message", function(msg) {
 });
 
 on("change:campaign:turnorder", COFantasy.nextTurn);
-
 on("destroy:token", COFantasy.destroyToken);
-
 on("change:token:left", COFantasy.moveToken);
 on("change:token:top", COFantasy.moveToken);
 on("change:token:rotation", COFantasy.moveToken);
