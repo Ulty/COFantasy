@@ -6052,7 +6052,7 @@ var COFantasy = COFantasy || function() {
         prevToken.set('status_flying-flag', false);
         if (highlight_token_on_turn) {
           prevToken.set('aura2_radius', '');
-          prevToken.set('showplayers_aura1', false);
+          prevToken.set('showplayers_aura2', false);
         }
       } else {
         if (pageId) {
@@ -6076,7 +6076,7 @@ var COFantasy = COFantasy || function() {
           o.set('status_flying-flag', false);
           if (highlight_token_on_turn) {
             o.set('aura2_radius', '');
-            o.set('showplayers_aura1', false);
+            o.set('showplayers_aura2', false);
           }
         });
       }
@@ -6117,7 +6117,7 @@ var COFantasy = COFantasy || function() {
         if (highlight_token_on_turn) {
           token.set('aura2_radius', '0.001');
           token.set('aura2_color', aura2_color);
-          token.set('showplayers_aura1', true);
+          token.set('showplayers_aura2', true);
         }
         else token.set('status_flying-flag', true);
         
@@ -6235,7 +6235,7 @@ var COFantasy = COFantasy || function() {
             sendChar(charId, "est en pleine confusion. Il ne fait rien ce tour");
             if (highlight_token_on_turn) {
               token.set('aura2_radius', '');
-              token.set('showplayers_aura1', false);
+              token.set('showplayers_aura2', false);
             }
             token.set('status_flying-flag', false);
           } else {
