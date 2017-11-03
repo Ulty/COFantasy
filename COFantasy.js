@@ -10066,27 +10066,23 @@ var COFantasy = COFantasy || function() {
           _characterid: perso.charId
         });
         var cpt = 0;
-        var cpt2 = 0;
         attributes.forEach(function(attr) {
           var attrName = attr.get('name').trim();
           if (!(attrName.startsWith('dose_') || attrName.startsWith('consommable_') || attrName.startsWith('elixir_'))) return;
-          cpt++;
-          
           var consName = attrName.substring(attrName.indexOf('_') + 1);
           consName = consName.replace(/_/g, ' ');
           var quantite = parseInt(attr.get('current'));
           if (isNaN(quantite) || quantite < 1) {
             //addLineToFramedDisplay(display, "0 " + consName);
             return;
-          }
-          else cpt2++;
+          } else cpt++;
           var action = attr.get('max').trim();
           var ligne = quantite + ' ';
           ligne += bouton(perso, action, consName, attr);
           ligne += bouton(perso, '!cof-echange-consommables @{selected|token_id} @{target|token_id}', '&#8596;', attr);
           addLineToFramedDisplay(display, ligne);
         }); //fin de la boucle sur les attributs
-        if (cpt2 == 0) addLineToFramedDisplay(display, "<code>Vous n'avez aucun consommable</code>");
+        if (cpt === 0) addLineToFramedDisplay(display, "<code>Vous n'avez aucun consommable</code>");
         else addLineToFramedDisplay(display, "<em>Cliquez sur le consommable pour l'utiliser ou sur <tt>&#8596;</tt> pour l'échanger avec un autre personnage.</em>");
         sendChat('', endFramedDisplay(display));
       });
@@ -10097,11 +10093,10 @@ var COFantasy = COFantasy || function() {
   // Le deuxième nous indique si on effectue un échange ou pas : echange => true/false
   function utiliseConsommable(msg, echange) {
     var cmd = msg.content.split(' ');
-    if ( (!echange && cmd.length < 3) || (echange && cmd.length < 4) ) {
+    if ((!echange && cmd.length < 3) || (echange && cmd.length < 5)) {
       error("Erreur interne de consommables", cmd);
       return;
     }
-    
     //perso1 = token avec qui utilise (ou qui va échanger) le consommable 
     var perso1 = tokenOfId(cmd[1]);
     if (perso1 === undefined) {
@@ -10109,17 +10104,16 @@ var COFantasy = COFantasy || function() {
       sendChat('COF', "Plus possible d'utiliser cette action. Réafficher les consommables.");
       return;
     }
-    
+    var perso2;
     if (echange) {
       //perso2 = token avec lequel on va faire l'échange
-      var perso2 = tokenOfId(cmd[2]);
+      perso2 = tokenOfId(cmd[2]);
       if (perso2 === undefined) {
         log("Destinataire perdu");
         sendChat('COF', "Erreur concernant le destinataire. Veuillez réessayer.");
         return;
       }
     }
-    
     // Vérifie les droits d'utiliser le consommable
     if (msg.selected && msg.selected.length == 1) {
       var utilisateur = tokenOfId(msg.selected[0]._id);
@@ -10133,33 +10127,28 @@ var COFantasy = COFantasy || function() {
         return;
       }
       perso1 = utilisateur;
-    }
-    else {
+    } else {
       //On regarde si le joueur contrôle le token
       if (!peutController(msg, perso1)) {
         sendPlayer(msg, "Pas les droits pour ça");
         return;
       }
     }
-    
     //on récupère l'attribut à utiliser/échanger de perso1
     var attr1;
     if (echange) attr1 = getObj('attribute', cmd[4]);
     else attr1 = getObj('attribute', cmd[2]);
-    
     var attrName = attr1.get('name').trim();
-    
+    var effet = attr1.get('max').trim();
     if (attr1 === undefined) {
       log("Attribut a changé/perdu");
       log(cmd);
       sendChat('COF', "Plus possible d'utiliser cette action. Veuillez réafficher les consommables.");
       return;
     }
-    
     //Nom du consommable (pour affichage)
     var consName = attrName.substring(attrName.indexOf('_') + 1);
-        consName = "<code>"+consName.replace(/_/g, ' ').trim()+"</code>";
-    
+    consName = "<code>" + consName.replace(/_/g, ' ').trim() + "</code>";
     // quantité actuelle pour perso1
     var quantite1 = parseInt(attr1.get('current'));
     if (isNaN(quantite1) || quantite1 < 1) {
@@ -10167,13 +10156,21 @@ var COFantasy = COFantasy || function() {
       sendChat('COF', "/w " + perso1.token.get('name') + " Vous ne disposez plus de " + consName);
       return;
     }
-    
+    var evt = {
+      type: "Utilisation de consommable",
+      attributes: []
+    };
     if (echange) {
       //c'est un échange
+      evt.type = "Échange de consommable";
       if (perso1.charId != perso2.charId) {
         // on baisse la valeur de 1 du consommable qu'on s'apprête à échanger
         attr1.set('current', quantite1 - 1);
-        
+        evt.attributes.push({
+          attribute: attr1,
+          current: quantite1,
+          max: effet
+        });
         // ajout du consommable dans perso2 :
         var attributes = findObjs({
           _type: 'attribute',
@@ -10184,58 +10181,58 @@ var COFantasy = COFantasy || function() {
         // on recherche si le consommable existe chez perso2
         attributes.forEach(function(attr2) {
           var attrName2 = attr2.get('name').trim();
-          if (attrName == attrName2) {
+          if (!found && attrName == attrName2) {
+            if (attr2.get('max').trim() != effet) {
+              error("Échange dangereux : pas le même effet pour le consommable selon le personnage \n" + effet + "\n" + attr2.get('max'), attr2);
+              return;
+            }
             found = true;
             // si oui, on augmente sa quantité de 1
             quantite2 = parseInt(attr2.get('current'));
-            if (isNaN(quantite2) || quantite2 < 1) quantite2=0;
-            quantite2+=1;
-            attr2.set('current', quantite2);
+            if (isNaN(quantite2) || quantite2 < 1) quantite2 = 0;
+            attr2.set('current', quantite2 + 1);
+            evt.attributes.push({
+              attribute: attr2,
+              current: quantite2,
+              max: effet
+            });
             return;
           }
         });
-      
         // si le consommable n'a pas été trouvé, on le créé avec une valeur de 1.
-        if (found === false) {
-          quantite2 = 1;
-          
-          createObj("attribute", {
+        if (!found) {
+          var attr2 = createObj("attribute", {
             name: attrName,
-            current: quantite2,
-            max: attr1.get('max').trim(),
+            current: 1,
+            max: effet,
             characterid: perso2.charId
           });
+          evt.attributes.push({
+            attribute: attr2,
+            current: null,
+          });
         }
-        
         // on envoie un petit message précisant la résultante de l'action.
         sendChat('COF', "Echange entre " + perso1.token.get('name') + " et " + perso2.token.get('name') + " terminée.");
         sendChat('COF', "/w " + perso1.token.get('name') + " Il vous reste <strong>" + parseInt(attr1.get('current')) + "</strong> " + consName + ".");
         sendChat('COF', "/w " + perso2.token.get('name') + " Vous possédez désormais <strong>" + quantite2 + "</strong> " + consName + ".");
         // le MJ est notifié :
-        sendChat('COF', "/w MJ " + perso1.token.get('name') + " vient de donner <strong>1</strong> " + consName + " à " + perso2.token.get('name') + ".");
-      }
-      else {
+        sendChat('COF', "/w GM " + perso1.token.get('name') + " vient de donner <strong>1</strong> " + consName + " à " + perso2.token.get('name') + ".");
+      } else {
         sendChat('COF', "/w " + perso1.token.get('name') + " Vous ne pouvez pas échanger un consommable avec vous-même ...");
       }
-    }
-    else {
+    } else {
       // on utilise le consommable
       attr1.set('current', quantite1 - 1);
-      
-      var evt = {
-        type: "Utilisation de consommable",
-        attributes: []
-      };
       evt.attributes.push({
         attribute: attr1,
         current: quantite1,
-        max: attr1.get('max')
+        max: effet
       });
       var start = msg.content.indexOf(' --message ') + 10;
       sendChar(perso1.charId, msg.content.substring(start));
-      addEvent(evt);
     }
-    
+    addEvent(evt);
   }
 
   //asynchrone
@@ -10873,7 +10870,7 @@ var COFantasy = COFantasy || function() {
       case "!cof-utilise-consommable": //Usage interne seulement
         utiliseConsommable(msg, false);
         return;
-      case "!cof-echange-consommables":  //Usage interne seulement
+      case "!cof-echange-consommables": //Usage interne seulement
         utiliseConsommable(msg, true);
         return;
       case "!cof-provocation":
