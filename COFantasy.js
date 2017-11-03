@@ -45,6 +45,8 @@ var COFantasy = COFantasy || function() {
   var bs_alert = 'padding: 5px; border: 1px solid transparent; border-radius: 4px;';
   var bs_alert_success = 'color: #3c763d; background-color: #dff0d8; border-color: #d6e9c6;';
   var bs_alert_danger = 'color: #a94442; background-color: #f2dede; border-color: #ebccd1;';
+  
+  var highlight_token_on_turn = false;
 
   // List of states:
   var cof_states = {
@@ -6048,6 +6050,10 @@ var COFantasy = COFantasy || function() {
       if (prevToken) {
         affectToken(prevToken, 'statusmarkers', prevToken.get('statusmarkers'), evt);
         prevToken.set('status_flying-flag', false);
+        if (highlight_token_on_turn) {
+          prevToken.set('aura2_radius', '');
+          prevToken.set('showplayers_aura1', false);
+        }
       } else {
         if (pageId) {
           prevToken = findObjs({
@@ -6068,6 +6074,10 @@ var COFantasy = COFantasy || function() {
         prevToken.forEach(function(o) {
           affectToken(o, 'statusmarkers', o.get('statusmarkers'), evt);
           o.set('status_flying-flag', false);
+          if (highlight_token_on_turn) {
+            o.set('aura2_radius', '');
+            o.set('showplayers_aura1', false);
+          }
         });
       }
     }
@@ -6075,10 +6085,41 @@ var COFantasy = COFantasy || function() {
       var act = tokenOfId(tokenId, tokenId);
       if (act) {
         var token = act.token;
-        var charId = act.charId;
-        affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
-        token.set('status_flying-flag', true);
         var tokenName = token.get('name');
+        
+        var charId = act.charId;
+        // personnage lié au Token
+        var character = getObj('character', charId);
+        if (character === undefined) return;
+        var characterName=character.get('name');
+        var toutesEquipes = findObjs({
+          _type: 'handout'
+        });
+        toutesEquipes = toutesEquipes.filter(function(obj) {
+          return (obj.get('name').startsWith("Equipe "));
+        });
+        
+        var all_notes = '';
+        toutesEquipes.forEach(function(equipe) {
+          equipe.get('notes', function(note) {
+            all_notes += note;
+          });
+        });
+        
+        var aura2_color = '#59E594';
+        if (all_notes.indexOf(tokenName) == -1 && all_notes.indexOf(characterName) == -1) {
+          // token ou personnage non allié = ennemi
+          aura2_color = '#CC0000';
+        }
+        
+        affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
+        var current_aura2_radius = token.get('aura2_radius');
+        if (highlight_token_on_turn) {
+          token.set('aura2_radius', '0.001');
+          token.set('aura2_color', aura2_color);
+          token.set('showplayers_aura1', true);
+        }
+        else token.set('status_flying-flag', true);
         
         state.COFantasy.activeTokenId = tokenId;
         state.COFantasy.activeTokenName = tokenName;
@@ -6094,11 +6135,7 @@ var COFantasy = COFantasy || function() {
           var actions = TurnAction[0].get('action').replace(/\n/gm, '').replace(/\r/gm, '').replace(/%/g, '\n').replace(/#/g, '\n').split("\n");
           var nBfound = 0;
           var ligne = '';
-          if (actions.length > 0) { 
-            // personnage lié au Token
-            var character = getObj('character', charId);
-            if (character === undefined) return;
-            var characterName=character.get('name');
+          if (actions.length > 0) {
             // Toutes les Macros
             var macros = findObjs({
               _type: 'macro'
@@ -6196,6 +6233,10 @@ var COFantasy = COFantasy || function() {
           //Une chance sur deux de ne pas agir
           if (randomInteger(2) < 2) {
             sendChar(charId, "est en pleine confusion. Il ne fait rien ce tour");
+            if (highlight_token_on_turn) {
+              token.set('aura2_radius', '');
+              token.set('showplayers_aura1', false);
+            }
             token.set('status_flying-flag', false);
           } else {
             //Trouver la créature la plus proche
@@ -10883,6 +10924,8 @@ var COFantasy = COFantasy || function() {
           error("Dans !cof-init : rien à faire, pas de token selectionné", msg);
           return;
         }
+        if (msg.content.indexOf('--aura') !== -1) highlight_token_on_turn = true;
+        else highlight_token_on_turn = false;
         evt = {
           type: "initiative"
         };

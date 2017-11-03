@@ -164,9 +164,7 @@
               <h3 class="text-info" id="macros_abilities">1.2 Macros et Abilities</h3>
               <div class="decalage">
                 <p>Comme tous les scripts, ces scripts sont utilisables tels quels dans le chat, mais ils sont pensés pour être utilisés par des macros qui permettent un autre niveau d'automatisation parfois difficile d'accès au sein des scripts.</p>
-                <p>&nbsp;</p>
                 La grosse majorité des capacités et attaques des personnages devraient être utilisées au sein d'abilities de personnages, accessibles comme "Token action". Si ces abilities utilisent des macros, ne pas oublier de rendre ces macros accessibles aux joueurs.
-                <p>&nbsp;</p>
               </div>
               <h3 class="text-info" id="methode_selection_groupes">1.3 Méthode de sélection de groupes</h3>
               <div class="decalage">
@@ -180,7 +178,7 @@
                   <li>option <code>--disque</code> : le premier argument doit être l'id ou le nom d'un token qui représente un personnage, le deuxième argument un rayon. Cela sélectionne tous les tokens à une distamce de moins que le rayon du premier argument. Si un troisième argument est donné, il est interprété comme la portée maximum entre le centre du disque et le token actif (qui est supposé être celui sélectionné). Si le premier argument représente un personnage avec un max de PV à 0, il est compris comme un personnage fictif créé juste pour définir le disque, et il sera supprimé après la sélection.</li>
                   <li>option <code>--saufAllies</code> permet d'exclure les alliés de la sélection (voir plus haut pour la définition des alliés)</li>
                 </ul>
-                <p><img class="img-fluid" src="https://i.imgur.com/WHfwsKo.png" data-href="https://i.imgur.com/WHfwsKo.png"></p>
+                <p id="exemple_equipe"><img class="img-fluid" src="https://i.imgur.com/WHfwsKo.png" data-href="https://i.imgur.com/WHfwsKo.png"></p>
                 <figcaption>Exemple d'<i>handout</i> avec différentes équipes.</figcaption>
               </div>
               <h3 class="text-info" id="regles_optionnelles">1.4 Règles optionnelles utilisées</h3>
@@ -195,25 +193,33 @@
               <div class="decalage">
                 <h4 class="text-secondary">Initiative : <code>!cof-init</code></h4>
                 <div class="decalage">
-                  <p>les tokens sélectionnés sont ajouté au tracker de tour. Si celui-ci n'existe pas, un nouveau est créé, avec compteur de tour à 1, et on rentre en combat.</p>
+                  <p>Les tokens sélectionnés sont ajouté au tracker de tour. Si celui-ci n'existe pas, un nouveau est créé, avec compteur de tour à 1, et on rentre en combat.</p>
                   <p>Les règles de tri suivent ce qui est donné p 70 : priorité aux PJs. Pour l'instant, on distingue un PJ d'un PNJ au dé de vie : si le personnage d'a pas de dé de vie, c'est un PNJ. Ensuite, entre PJs, priorité à la plus haute sagesse. Pour les PNJ, c'est aléatoire.</p>
                   <p>À chaque instant, le token dont c'est le tour d'agir est signalé par un drapeau noir.</p>
-                  <div class="alert alert-info">
-                    <p>Si une "Abilities" dont le nom est <code>#TurnAction#</code> existe pour le personnage dont c'est le tour, celle-ci sera prise en compte et le joueur qui controle le personnage (ainsi que le MJ) recevra un chuchottement qui contiendra l'ensemble des %Ability et #Macro cliquables de <code>#TurnAction</code>.</p>
+                  <div class="alert alert-primary">
+                    <h3>Astuces :</h3>
+                    <ul>
+                      <li><p><code>!cof-attendre ?{Nouvelle initiative}</code> : Permet d'attendre avant d'agir en réduisant temporairement son initiative.</p></li>
+                      <li>
+                        <code>!cof-init --aura</code> : Remplace le drapeau noir par une aura autour du Token de couleur verte (ou rouge si le nom du personnage ou du Token n'est pas présent dans votre <a href="#exemple_equipe">Equipe</a>).</p>
+                        <p><img class="img-fluid" src="https://i.imgur.com/kfqD2Lw.gif" data-href="https://i.imgur.com/kfqD2Lw.gif"></p>
+                        <figcaption>Exemple du Turn Order avec Aura</figcaption>
+                      </li>
+                      <li>
+                        <p>Si une "Abilities" dont le nom est <code>#TurnAction#</code> existe pour le personnage dont c'est le tour, celle-ci sera prise en compte et le joueur qui controle le personnage (ainsi que le MJ) recevra un chuchottement qui contiendra l'ensemble des %Ability et #Macro cliquables de <code>#TurnAction</code>.</p>
+                        <p><img class="img-fluid" src="https://i.imgur.com/tTfFoPW.png" data-href="https://i.imgur.com/tTfFoPW.png"></p>
+                        <figcaption>Exemple d'une macro #TurnAction#</figcaption>
+                      </li>
+                    </ul>
                   </div>
-                  <p><img class="img-fluid" src="https://i.imgur.com/tTfFoPW.png" data-href="https://i.imgur.com/tTfFoPW.png"></p>
-                  <figcaption>Exemple d'une macro #TurnAction#</figcaption>
                 </div>
               </div>
-              <p>&nbsp;</p>
-              <p>Il est possible d'attendre avant d'agir en réduisant temporairement son initiative, en utilisant <code>!cof-attendre ?{Nouvelle initiative}</code>.</p>
               <h4 class="text-secondary">Attaquer une (ou plusieurs) cible : <code>!cof-attack @{selected|token_id} @{target|token_id} <i>n</i></code></h4>
               <div class="decalage">
                 <p>où <i>n</i> est soit :</p>
                 <ul>
                   <li>
                     <p>la première partie (avant le premier blanc) du nom de l'attaque sur la fiche.</p>
-                    <p>&nbsp;</p>
                     <div class="alert alert-success" role="alert">
                       <p>Exemple :</p>
                       <div class="decalage">
@@ -259,7 +265,6 @@
                       </li>
                       <li><code>[PORTÉE]</code> : La portée en mètre de l'Arme/Attaque. Exemple : 0, 10, 20 , 30</li>
                     </ul>
-                    <p>&nbsp;</p>
                     <div class="alert alert-success" role="alert">
                       <p>Exemple pour le sort "<i>Flèche enflammée</i>" :</p>
                       <div class="decalage"><code>!cof-attack @{selected|token_id} @{target|token_id} ["Flèche_Enflammée",["@{selected|ATKMAG}",0],20,[1,6,"@{selected|INT}",0],30] --fx beam-fire --feu --sortilege --enflamme</code></div>
@@ -488,10 +493,9 @@
                   <p><strong>Attention : </strong></p>
                   <ul>
                     <li>Pour la commande <code>!cof-attack</code>, il est vivemement recommandé d'utiliser un <a href="#tableau_arme">tableau d'arme</a>, notamment afin de faciliter l'échange du consommable.</li>
-                    <li>De manière générale, faites attention avec les références utilisé dans le consommable.du personnage qui utilise le consommable.<br />
+                    <li>De manière générale, faites attention avec les références utilisé dans le consommable du personnage qui utilise le consommable.<br />
                     Par exemple : <em>peau d'écorce</em> (<code>!cof-effet-temp peau_d_ecorce [[5+@{selected|SAG}]]</code>).<br />
-                    Dans ce cas précis, si le consommable change de main, ce sera le MOD de SAGESSE de celui qui va utiliser le consommable qui sera utilisé (<code>@{selected|SAG}</code>). Est-ce une bonne chose ? A vous de voir en fonction de vos besoins.
-                    </li>
+                    Dans ce cas précis, l'effet ne sera pas complet car il faut avoir un attribut <code>voieDesVegetaux</code> avec comme valeur le rang dans la <a href="#voie_végétaux">Voie des végétaux</a>.</li>
                   </ul>
                 </div>
                 <div class="alert alert-success">
@@ -733,7 +737,7 @@
                   <li><strong>Baies magiques</strong> : Utiliser <code>!cof-distribuer-baies</code> avec option <code>--allies --self</code> ou <code>--target</code> pour donner des baies (en ayant sélectionné le druide, le mieux est d'utiliser une ability). Pour consommer ensuite une baie, il faut utiliser <code>!cof-consommables</code>.</li>
                   <li><strong>Forêt vivante</strong> : pas vraiment de support. On peut baisser temporairement l'init des adversaires sur la fiche.</li>
                 </ol>
-                <h4 class="text-secondary">Voie des végétaux</h4>
+                <h4 class="text-secondary" id="voie_végétaux">Voie des végétaux</h4>
                 <ol>
                   <li><strong>Peau d'écorce</strong> : <code>!cof-effet-temp peau_d_ecorce [[5+@{selected|SAG}]]</code>. Il faut un attribut <code>voieDesVegetaux</code> avec comme valeur le rang dans la voie.</li>
                   <li><strong>Prison végétale</strong> : <code>!cof-effet-temp prisonVegetale [[5+@{selected|SAG}]] --saveParTour FOR [[10+@{selected|SAG}]] --lanceur @{selected|token_id} --disque @{target|token_id} 10 20 --saufAllies</code></li>
