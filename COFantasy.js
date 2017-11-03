@@ -4157,6 +4157,7 @@ var COFantasy = COFantasy || function() {
     }
     
     var res = '/direct ';
+    var whisper = false;
     
     if (to_displayname) {
       var who;
@@ -4164,6 +4165,7 @@ var COFantasy = COFantasy || function() {
       else who = displayname;
       
       res = '/w "' + who + '" ';
+      whisper = true;
     }
     
     var name1, name2, avatar1, avatar2 = '';
@@ -4191,7 +4193,7 @@ var COFantasy = COFantasy || function() {
     }
     
     res +=
-      '<div class="all_content" style="-webkit-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); -moz-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); border: 1px solid #000; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px; overflow: hidden;">';
+      '<div class="all_content" style="-webkit-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); -moz-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); border: 1px solid #000; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px; overflow: hidden; position: relative;">';
       
     if (character1 !== undefined) {
       res +=
@@ -4201,47 +4203,51 @@ var COFantasy = COFantasy || function() {
       if (character2 !== undefined) {
       res +=
         '<tr style="text-align: center">' +
-          '<td style="width:45%; vertical-align: middle;">' + name1 + '</td>' +
-          '<td style="width:10%; vertical-align: middle;" rowspan="2">' + 'VS' + '</td>' +
-          '<td style="width:45%; vertical-align: middle;">' + name2 + '</td>' +
+          '<td style="width: 44%; vertical-align: middle;">' + name1 + '</td>' +
+          '<td style="width: 12%;height: 28px;line-height: 30px;border: 2px solid #900;border-radius: 100%;position: absolute;margin-top: 25px;font-weight: bold;background-color: #EEE;color: #900;">' + 'VS' + '</td>' +
+          '<td style="width: 44%; vertical-align: middle;">' + name2 + '</td>' +
         '</tr>' +
         '<tr style="text-align: center">' +
-          '<td style="width:45%; vertical-align: middle;">' + avatar1 + '</td>' + 
-          '<td style="width:45%; vertical-align: middle;">' + avatar2 + '</td>' +
+          '<td style="width: 42%; vertical-align: middle;">' + avatar1 + '</td>' + 
+          '<td style="width: 16%; vertical-align: middle;">&nbsp;</td>' + 
+          '<td style="width: 42%; vertical-align: middle;">' + avatar2 + '</td>' +
         '</tr>';
       } else {
-        var bar1_value, bar1_max, bar1_link, bar1_info = '', bar2_value, bar2_max, bar2_link, bar2_info = '', bar3_value, bar3_max, bar3_link, bar3_info = '';
+        var bar1_info = '', bar2_info = '', bar3_info = '';
         
-        if (perso1.token.get('bar1_link').length > 0) {
-          var bar1 = findObjs({
-            _type: 'attribute',
-            _id: perso1.token.get('bar1_link')
-          });
-          if (bar1[0] !== undefined) bar1_info = '<b>' + bar1[0].get('name') + '</b> : ' + bar1[0].get('current') + ' / ' + bar1[0].get('max') + '';
-        }
-        if (perso1.token.get('bar2_link').length > 0) {
-          var bar2 = findObjs({
-            _type: 'attribute',
-            _id: perso1.token.get('bar2_link')
-          });
-          if (bar2[0] !== undefined) bar2_info = '<b>' + bar2[0].get('name') + '</b> : ' + bar2[0].get('current') + ' / ' + bar2[0].get('max') + '';
+        if (whisper) {
+          // on chuchotte donc on peut afficher les informations concernant les barres du Token
+          if (perso1.token.get('bar1_link').length > 0) {
+            var bar1 = findObjs({
+              _type: 'attribute',
+              _id: perso1.token.get('bar1_link')
+            });
+            if (bar1[0] !== undefined) bar1_info = '<b>' + bar1[0].get('name') + '</b> : ' + bar1[0].get('current') + ' / ' + bar1[0].get('max') + '';
+          }
+          if (perso1.token.get('bar2_link').length > 0) {
+            var bar2 = findObjs({
+              _type: 'attribute',
+              _id: perso1.token.get('bar2_link')
+            });
+            if (bar2[0] !== undefined) bar2_info = '<b>' + bar2[0].get('name') + '</b> : ' + bar2[0].get('current') + ' / ' + bar2[0].get('max') + '';
+          }
+          
+          if (perso1.token.get('bar3_link').length > 0) {
+            var bar3 = findObjs({
+              _type: 'attribute',
+              _id: perso1.token.get('bar3_link')
+            });
+            if (bar3[0] !== undefined) bar3_info = '<b>' + bar3[0].get('name') + '</b> : ' + bar3[0].get('current') + ' / ' + bar3[0].get('max') + '';
+          }
         }
         
-        if (perso1.token.get('bar3_link').length > 0) {
-          var bar3 = findObjs({
-            _type: 'attribute',
-            _id: perso1.token.get('bar3_link')
-          });
-          if (bar3[0] !== undefined) bar3_info = '<b>' + bar3[0].get('name') + '</b> : ' + bar3[0].get('current') + ' / ' + bar3[0].get('max') + '';
-        }
-
         res +=
           '<tr style="text-align: left">' +
             '<td style="width:25%; vertical-align: middle;">' + avatar1 +
             '</td>' +
             '<td style="width:75%; vertical-align: middle; position: relative;">' + 
-              '<div style="float: left;">' + name1 + '</div>' +
-              '<div style="float: right; position: absolute; top: 0; right: 0; border: 1px solid #000; background-color: #222;">' +
+              '<div>' + name1 + '</div>' +
+              '<div style="position: absolute;top: -6px;right: -5px;border: 1px solid #000;background-color: #333;">' +
                 '<div style="text-align: right; margin: 0 5px; color: #7cc489">' + bar1_info + '</div>' +
                 '<div style="text-align: right; margin: 0 5px; color: #7c9bc4">' + bar2_info + '</div>' +
                 '<div style="text-align: right; margin: 0 5px; color: #b21d1d">' + bar3_info + '</div>' +
@@ -6188,30 +6194,29 @@ var COFantasy = COFantasy || function() {
             // token non lié
             if (charId === '') return;
             
-            // on récupère les players_ids
+            var perso = {
+              token: token,
+              charId: charId
+            };
+            var last_playerid;
+            var title = 'Actions possibles :';
+            
+            // on récupère les players_ids qui controllent le Token
             var player_ids = get_player_ids_from_token(token);
             if (player_ids.length > 0) {
-              
-              var perso = {
-                token: token,
-                charId: charId
-              };
-              
-              var title = 'Actions possibles :';
-              var last_playerid;
-              
               _.each(player_ids, function(playerid) {
                 last_playerid = playerid;
+                
                 var display = startFramedDisplay(playerid, title, perso, false, true);
                 addLineToFramedDisplay(display, ligne);
                 sendChat('', endFramedDisplay(display));
               });
-              
-              // En prime, on l'envoie au MJ
-              var display = startFramedDisplay(last_playerid, title, perso, false, 'gm');
-              addLineToFramedDisplay(display, ligne);
-              sendChat('', endFramedDisplay(display));
             }
+            
+            // En prime, on l'envoie au MJ
+            var display = startFramedDisplay(last_playerid, title, perso, false, 'gm');
+            addLineToFramedDisplay(display, ligne);
+            sendChat('', endFramedDisplay(display));
           }
         }
 
