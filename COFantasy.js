@@ -46,7 +46,7 @@ var COFantasy = COFantasy || function() {
   var bs_alert_success = 'color: #3c763d; background-color: #dff0d8; border-color: #d6e9c6;';
   var bs_alert_danger = 'color: #a94442; background-color: #f2dede; border-color: #ebccd1;';
   
-  var highlight_token_on_turn = false;
+  var aura_token_on_turn = false;
 
   // List of states:
   var cof_states = {
@@ -6041,6 +6041,31 @@ var COFantasy = COFantasy || function() {
     }
     return res;
   }
+  
+  function setToken_FlagAura(token, tokenName, characterName) {
+    if (aura_token_on_turn) {
+      // ennemi => rouge
+      var aura2_color = '#CC0000';
+
+      if (notes_equipe.includes(tokenName) || notes_equipe.includes(characterName)) {
+        // equipe => vert
+        aura2_color = '#59E594';
+      }
+      
+      token.set('aura2_radius', '0.001');
+      token.set('aura2_color', aura2_color);
+      token.set('showplayers_aura2', true);
+    }
+    else token.set('status_flying-flag', true);
+  }
+  
+  function removeToken_FlagAura(token) {
+    if (aura_token_on_turn) {
+      token.set('aura2_radius', '');
+      token.set('showplayers_aura2', false);
+    }
+    else token.set('status_flying-flag', false);
+  }
 
   function setActiveToken(tokenId, evt) {
     var pageId = Campaign().get('initiativepage');
@@ -6049,11 +6074,11 @@ var COFantasy = COFantasy || function() {
       var prevToken = getObj('graphic', state.COFantasy.activeTokenId);
       if (prevToken) {
         affectToken(prevToken, 'statusmarkers', prevToken.get('statusmarkers'), evt);
-        prevToken.set('status_flying-flag', false);
-        if (highlight_token_on_turn) {
-          prevToken.set('aura2_radius', '');
-          prevToken.set('showplayers_aura2', false);
-        }
+        affectToken(prevToken, 'aura2_radius', prevToken.get('aura2_radius'), evt);
+        affectToken(prevToken, 'aura2_color', prevToken.get('aura2_color'), evt);
+        affectToken(prevToken, 'showplayers_aura2', prevToken.get('showplayers_aura2'), evt);
+        
+        removeToken_FlagAura(prevToken);
       } else {
         if (pageId) {
           prevToken = findObjs({
@@ -6073,11 +6098,11 @@ var COFantasy = COFantasy || function() {
         }
         prevToken.forEach(function(o) {
           affectToken(o, 'statusmarkers', o.get('statusmarkers'), evt);
-          o.set('status_flying-flag', false);
-          if (highlight_token_on_turn) {
-            o.set('aura2_radius', '');
-            o.set('showplayers_aura2', false);
-          }
+          affectToken(o, 'aura2_radius', o.get('aura2_radius'), evt);
+          affectToken(o, 'aura2_color', o.get('aura2_color'), evt);
+          affectToken(o, 'showplayers_aura2', o.get('showplayers_aura2'), evt);
+
+          removeToken_FlagAura(o);
         });
       }
     }
@@ -6092,34 +6117,13 @@ var COFantasy = COFantasy || function() {
         var character = getObj('character', charId);
         if (character === undefined) return;
         var characterName=character.get('name');
-        var toutesEquipes = findObjs({
-          _type: 'handout'
-        });
-        toutesEquipes = toutesEquipes.filter(function(obj) {
-          return (obj.get('name').startsWith("Equipe "));
-        });
-        
-        var all_notes = '';
-        toutesEquipes.forEach(function(equipe) {
-          equipe.get('notes', function(note) {
-            all_notes += note;
-          });
-        });
-        
-        var aura2_color = '#59E594';
-        if (all_notes.indexOf(tokenName) == -1 && all_notes.indexOf(characterName) == -1) {
-          // token ou personnage non allié = ennemi
-          aura2_color = '#CC0000';
-        }
         
         affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
-        var current_aura2_radius = token.get('aura2_radius');
-        if (highlight_token_on_turn) {
-          token.set('aura2_radius', '0.001');
-          token.set('aura2_color', aura2_color);
-          token.set('showplayers_aura2', true);
-        }
-        else token.set('status_flying-flag', true);
+        affectToken(token, 'aura2_radius', token.get('aura2_radius'), evt);
+        affectToken(token, 'aura2_color', token.get('aura2_color'), evt);
+        affectToken(token, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
+        
+        setToken_FlagAura(token, tokenName, characterName);
         
         state.COFantasy.activeTokenId = tokenId;
         state.COFantasy.activeTokenName = tokenName;
@@ -6233,11 +6237,7 @@ var COFantasy = COFantasy || function() {
           //Une chance sur deux de ne pas agir
           if (randomInteger(2) < 2) {
             sendChar(charId, "est en pleine confusion. Il ne fait rien ce tour");
-            if (highlight_token_on_turn) {
-              token.set('aura2_radius', '');
-              token.set('showplayers_aura2', false);
-            }
-            token.set('status_flying-flag', false);
+            removeToken_FlagAura(token);
           } else {
             //Trouver la créature la plus proche
             var closestToken;
@@ -10924,8 +10924,8 @@ var COFantasy = COFantasy || function() {
           error("Dans !cof-init : rien à faire, pas de token selectionné", msg);
           return;
         }
-        if (msg.content.indexOf('--aura') !== -1) highlight_token_on_turn = true;
-        else highlight_token_on_turn = false;
+        if (msg.content.indexOf('--aura') !== -1) aura_token_on_turn = true;
+        else aura_token_on_turn = false;
         evt = {
           type: "initiative"
         };
@@ -12051,20 +12051,52 @@ var COFantasy = COFantasy || function() {
 
 }();
 
+var notes_equipe = [];
+// "notes_equipe" contiendra toutes les lignes des handouts dont le nom commence par "Equipe "
+// Appelé uniquement après le "ready" et lorsqu'on modifie un handout (fonctionne après l'ajout d'un handout)
+// Du coup, notes_equipe est toujours à jour et peut l'utiliser sans problème n'importe où. Exemple: if (notes_equipe.includes(token_name))
+function get_handout_notes() {
+  var handout = findObjs({
+    _type: 'handout'
+  });
+  
+  var AllEquipe = handout.filter(function(obj) {
+    return (obj.get('name').startsWith("Equipe "));
+  });
+  
+  notes_equipe = [];
+  
+  AllEquipe.forEach(function(this_equipe, i) {
+    this_equipe.get('notes', function(note) { // asynchronous
+      var names = note.trim().split('<br>');
+      names.forEach(function(name) {
+        name = name.trim();
+        if (name.length > 0) notes_equipe.push(name);
+      });      
+    });
+  });
+}
+
+on("change:handout", function(obj) {
+  get_handout_notes();
+});
+
 on("ready", function() {
+  var script_version = 0.5;
   COF_loaded = true;
   state.COFantasy = state.COFantasy || {
     combat: false,
     tour: 0,
     init: 1000,
     eventId: 0,
-    version: '0.5',
+    version: script_version,
   };
   if (state.COFantasy.version === undefined) {
     state.COFantasy.eventId = 0;
-    state.COFantasy.version = '0.5';
+    state.COFantasy.version = script_version;
   }
-  log("COFantasy 0.5 loaded");
+  get_handout_notes();
+  log("COFantasy " + script_version + " loaded");
 });
 
 on("chat:message", function(msg) {
