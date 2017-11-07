@@ -427,6 +427,7 @@ var COFantasy = COFantasy || function() {
     if (_.has(evt, 'combat_pageid')) state.COFantasy.combat_pageid = evt.combat_pageid;
     if (_.has(evt, 'tour')) state.COFantasy.tour = evt.tour;
     if (_.has(evt, 'init')) state.COFantasy.init = evt.init;
+    if (_.has(evt, 'activeTokenId')) state.COFantasy.activeTokenId = evt.activeTokenId;
     if (_.has(evt, 'updateNextInitSet'))
       updateNextInitSet = evt.updateNextInitSet;
     if (_.has(evt, 'turnorder'))
@@ -6071,6 +6072,7 @@ var COFantasy = COFantasy || function() {
     var pageId = Campaign().get('initiativepage');
     if (state.COFantasy.activeTokenId) {
       if (tokenId == state.COFantasy.activeTokenId) return;
+      evt.activeTokenId = state.COFantasy.activeTokenId;
       var prevToken = getObj('graphic', state.COFantasy.activeTokenId);
       if (prevToken) {
         affectToken(prevToken, 'statusmarkers', prevToken.get('statusmarkers'), evt);
@@ -6111,20 +6113,16 @@ var COFantasy = COFantasy || function() {
       if (act) {
         var token = act.token;
         var tokenName = token.get('name');
-        
         var charId = act.charId;
         // personnage lié au Token
         var character = getObj('character', charId);
         if (character === undefined) return;
         var characterName=character.get('name');
-        
         affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
         affectToken(token, 'aura2_radius', token.get('aura2_radius'), evt);
         affectToken(token, 'aura2_color', token.get('aura2_color'), evt);
         affectToken(token, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
-        
         setToken_FlagAura(token, tokenName, characterName);
-        
         state.COFantasy.activeTokenId = tokenId;
         state.COFantasy.activeTokenName = tokenName;
         //On recherche dans le Personnage s'il a une "Ability" dont le nom est "#TurnAction#".
