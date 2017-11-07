@@ -520,6 +520,25 @@ var COFantasy = COFantasy || function() {
     if (button_title !== undefined) button_title=' title="' + button_title + '"';
     else button_title = '';
     
+    if (action.startsWith('#')) {
+      // macro donc on va le remplacer par sa commande (action)
+      
+      // Toutes les Macros
+      var macros = findObjs({
+        _type: 'macro'
+      });
+      
+      var command_words = action.split(" ");
+      var this_macro = macros.filter(function(obj) {
+        return (obj.get('name').trim() == command_words[0].substring(1));
+      });
+      
+      if (this_macro.length  == 1) {
+        // macro trouvé
+        action = action.replace(command_words[0], this_macro[0].get('action'));
+      }
+    }
+    
     switch(action.charAt(0)) {
       case '!':
         if (!action.startsWith('!&#13;') && ressource) action += " --decrAttribute " + ressource.id;
@@ -531,6 +550,29 @@ var COFantasy = COFantasy || function() {
         } else {
           action = "!cof-lancer-sort 0 " + action;
         }
+    }
+    
+    if (action.indexOf('@{selected') !== -1) {
+      // on, remplace tous les selected par @{character name|attr}
+      function escapeRegExp(str) {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
+      }
+      // cas spécial pour @{selected|token_id} où l'on remplace toutes les occurences par perso.token.id
+      action = action.replace(new RegExp(escapeRegExp('@{selected|token_id}'), 'g'), perso.token.id);
+      
+      var character_name = perso.get('name');
+      var tmp = action.split('@{selected');
+      _.each(tmp, function( elem, i) {
+        if (elem.startsWith('|')) {
+          // attribut demandé
+          var attribute_name = elem.substring(0, elem.indexOf("}")).substr(1);
+          
+          action = action.replace(new RegExp(escapeRegExp('@{selected|' + attribute_name + '}'), 'g'), '@{' + character_name + '|' + attribute_name + '}');
+        }
+      });
+    }
+    else {
+      if (!ressource) action += " --token-id " + perso.token.id;
     }
 
     action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;');
@@ -6116,6 +6158,8 @@ var COFantasy = COFantasy || function() {
         // personnage lié au Token
         var character = getObj('character', charId);
         if (character === undefined) return;
+        character['token'] = [];
+        character['token']['id'] = token.get('_id');
         var characterName=character.get('name');
         
         affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
@@ -6150,7 +6194,7 @@ var COFantasy = COFantasy || function() {
               _characterid: charId,
             });
             var found, picto_style;
-            var style = '', command ='';
+            var style = '', command = '';
             // On recherche si l'action existe (Ability % ou Macro #)
             actions.forEach(function(action, i) {
               action = action.trim();
@@ -6159,35 +6203,35 @@ var COFantasy = COFantasy || function() {
                 
                 found = false;
                 // on recherche en premier dans toutes les Abilities du personnage
-                abilities.forEach(function(elem, index) {
-                  if (elem.get('name') === action) {
+                abilities.forEach(function(abilitie, index) {
+                  if (abilitie.get('name') === action) {
                     // l'ability existe
                     found = true;
                     nBfound++;
                     
-                    command = elem.get('action').trim();
+                    command = abilitie.get('action').trim();
                     picto_style = get_picto_style_from_command (command, 'background-color:#cc0000');
                     action_text = picto_style.picto + action_text;
                     style = picto_style.style;
 
-                    ligne += bouton('!&#13;%{' + characterName + '|' + action + '}', action_text, false, false, style, '') + '<br />';
+                    ligne += bouton(command, action_text, character, false, style, '') + '<br />';
                     return;
                   }
                 });
                 if (found === false) {
                   // Si pas trouvé, on recherche alors dans toutes les Macros, en toute simplicité j'ai envie de dire xD
-                  macros.forEach(function(elem, index) {
-                    if (elem.get('name') === action) {
+                  macros.forEach(function(macro, index) {
+                    if (macro.get('name') === action) {
                       // la Macro existe
                       found = true;
                       nBfound++;
                       
-                      command = elem.get('action').trim();
+                      command = macro.get('action').trim();
                       picto_style = get_picto_style_from_command (command, 'background-color:#660000');
                       action_text = picto_style.picto + action_text;
                       style = picto_style.style;
                       
-                      ligne += bouton('!&#13;#' + action , action_text, false, false, style, '') + '<br />';
+                      ligne += bouton(command , action_text,  character, false, style, '') + '<br />';
                       return;
                     }
                   });
@@ -10275,6 +10319,11 @@ var COFantasy = COFantasy || function() {
           return;
         }
         var display = startFramedDisplay(msg.playerid, 'Liste de vos consommables :', perso, false, true);
+        // personnage lié au Token
+        var character = getObj('character', perso.charId);
+        if (character === undefined) return;
+        character['token'] = [];
+        character['token']['id'] = perso.token.get('_id');
         var attributes = findObjs({
           _type: 'attribute',
           _characterid: perso.charId
@@ -10292,9 +10341,9 @@ var COFantasy = COFantasy || function() {
           } else cpt++;
           var action = attr.get('max').trim();
           var ligne = quantite + ' ';
-          ligne += bouton(action, consName, perso, attr);
+          ligne += bouton(action, consName, character, attr);
           // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
-          ligne += bouton('!cof-echange-consommables @{selected|token_id} @{target|token_id}', '<span style="font-family:Pictos">r</span>', perso, attr, 'background-color: #a009ec;font-size: 17px;padding: 4px 4px 6px 4px;', 'Cliquez pour échanger');
+          ligne += bouton('!cof-echange-consommables @{selected|token_id} @{target|token_id}', '<span style="font-family:Pictos">r</span>', character, attr, 'background-color: #a009ec;font-size: 17px;padding: 4px 4px 6px 4px;', 'Cliquez pour échanger');
           addLineToFramedDisplay(display, ligne);
         }); //fin de la boucle sur les attributs
         if (cpt === 0) addLineToFramedDisplay(display, "<code>Vous n'avez aucun consommable</code>");
@@ -10872,6 +10921,27 @@ var COFantasy = COFantasy || function() {
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
+    var all_command = msg.content.split(" ");
+    
+    if (msg.selected == undefined || msg.content.indexOf('--token-id ') !== -1) {
+      // Si aucun token n'est selectionné, on essaye de trouver le token_id dans les parametres
+      _.each(all_command, function (elem, i) {
+        if (elem == '--token-id') {
+          // Trouvé ! Le token_id est dont le paramètre suivant
+          var token_id = all_command[(i+1)];
+          
+          // on récupère les infos du token :
+          var token = getObj("graphic", token_id);
+          
+          // on fait comme-ci c'était ce token qui avait été selectionné lors de l'envoie de la commande.
+          msg.selected = [];
+          msg.selected.push({_id: token.get('_id'), _type: token.get('_type')});
+
+          return;
+        }
+      });
+    }
+    
     // First replace inline rolls by their values
     if (command[0] != "!cof-aoe") replaceInline(msg);
     var evt;
