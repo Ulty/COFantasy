@@ -133,13 +133,14 @@
 									<li><a class="text-info" href="#Autres_capacités">Autres capacités</a></li>
 								</ul>
 								<li><a href="#statistiques">Statistiques</a></li>
+                <li><a href="#import_export">Import / Export (Alpha)</a></li>
 							</ol>
 						</div>
 					</div>
 					<div class="col-md-9 col-sm-8 content">
-						<h2 class="text-primary" id="comment_utiliser_script">1. Comment utiliser Le script</h2>
+						<h2 class="text-primary" id="comment_utiliser_script">2. Comment utiliser Le script</h2>
             <div class="decalage">
-              <h3 class="text-info" id="token_personnages">1.1 Tokens et personnages</h3>
+              <h3 class="text-info" id="token_personnages">2.1 Tokens et personnages</h3>
               <div class="decalage">
                 <p>Ces scripts ont été écrits pour fonctionner avec les fiches de personnages développées par <a href="https://github.com/Roll20/roll20-character-sheets/tree/master/ChroniquesOubliees">Natha</a>.</p>
                 <p><img class="img-fluid" src="https://i.imgur.com/rF0Qxht.png" data-href="https://i.imgur.com/rF0Qxht.png"></p>
@@ -161,12 +162,12 @@
               <p>Certains messages tiennent compte du genre (masculin ou féminin) des personnages.<br />
                 Ils utilisent le champ <code>Sexe</code> de la fiche de personnage. Un personnage est reconnu comme féminin si ce champ commence par la lettre <code>F</code>.
               </p>
-              <h3 class="text-info" id="macros_abilities">1.2 Macros et Abilities</h3>
+              <h3 class="text-info" id="macros_abilities">2.2 Macros et Abilities</h3>
               <div class="decalage">
                 <p>Comme tous les scripts, ces scripts sont utilisables tels quels dans le chat, mais ils sont pensés pour être utilisés par des macros qui permettent un autre niveau d'automatisation parfois difficile d'accès au sein des scripts.</p>
                 La grosse majorité des capacités et attaques des personnages devraient être utilisées au sein d'abilities de personnages, accessibles comme "Token action". Si ces abilities utilisent des macros, ne pas oublier de rendre ces macros accessibles aux joueurs.
               </div>
-              <h3 class="text-info" id="methode_selection_groupes">1.3 Méthode de sélection de groupes</h3>
+              <h3 class="text-info" id="methode_selection_groupes">2.3 Méthode de sélection de groupes</h3>
               <div class="decalage">
                 <p>Comme les joueurs ne peuvent pas sélectionner un nombre arbitraire d'ennemis, 6 méthodes sont disponibles&nbsp;:</p>
                 <ul>
@@ -181,15 +182,15 @@
                 <p id="exemple_equipe"><img class="img-fluid" src="https://i.imgur.com/WHfwsKo.png" data-href="https://i.imgur.com/WHfwsKo.png"></p>
                 <figcaption>Exemple d'<i>handout</i> avec différentes équipes.</figcaption>
               </div>
-              <h3 class="text-info" id="regles_optionnelles">1.4 Règles optionnelles utilisées</h3>
+              <h3 class="text-info" id="regles_optionnelles">2.4 Règles optionnelles utilisées</h3>
               <div class="decalage">
                 <p>Les scripts supportent l'utilisation de la règle des points de chance, des points de récupérations, des points de mana (et de magie puissante ou rapide).</p>
                 <p>J'ai aussi choisi, comme proposé par Kegron, de diminuer la DEF de tous les protagonistes après un certain nombre de tours de combat (-2 tous les 5 tours).</p>
               </div>
             </div>
-            <h2 class="text-primary" id="action_principales">2. Actions principales</h2>
+            <h2 class="text-primary" id="action_principales">3. Actions principales</h2>
             <div class="decalage">
-              <h3 class="text-info" id="le_combat">2.1 Le combat</h3>
+              <h3 class="text-info" id="le_combat">3.1 Le combat</h3>
               <div class="decalage">
                 <h4 class="text-secondary">Initiative : <code>!cof-init</code></h4>
                 <div class="decalage">
@@ -382,7 +383,7 @@
               <div class="decalage">
                 <p>Ferme aussi le tracker de tour. Encore à mettre en macro dans la barre du MJ. Permet de tenir compte de pleins de capacités qui durent un combat, ou utilisables une seule fois par combat,...</p>
               </div>
-              <h3 class="text-info" id="soins">2.2 Soins :</h3>
+              <h3 class="text-info" id="soins">3.2 Soins :</h3>
               <div class="decalage">
                 <h4 class="text-secondary"><code>!cof-soin @{selected|token_id} @{target|token_id} <i>x</i></code></h4>
                 <div class="decalage">
@@ -396,11 +397,11 @@
                   </ul>
                 </div>
               </div>
-              <h3 class="text-info" id="annulation">2.3 Annulation : <code>!cof-undo</code></h3>
+              <h3 class="text-info" id="annulation">3.3 Annulation : <code>!cof-undo</code></h3>
               <div class="decalage">
                 <p>Fait partie des fonctions que je met en macro dans la barre du MJ, ça peut servir très souvent.</p>
               </div>
-              <h3 class="text-info" id="repos">2.4 Repos</h3>
+              <h3 class="text-info" id="repos">3.4 Repos</h3>
               <div class="decalage">
                 <h4 class="text-secondary">Repos de plus de 8 h</h4>
                 <div class="decalage">
@@ -414,16 +415,16 @@
                   <p><code>!cof-recuperation</code> : dépense 1 PR pour se soigner, à mettre en macro associée aux tokens, car tous les joueurs en ont besoin.</p>
                 </div>
               </div>
-              <h3 class="text-info" id="chance">2.5 Chance</h3>
+              <h3 class="text-info" id="chance">3.5 Chance</h3>
               <div class="decalage">
                 <p>Le script essaie de détecter les cas où un point de chance peut être utile, et dans ce cas fournit un bouton (utilisable par les joueurs contrôlant le perosnnage ou le GM), permettant de dépenser un point de chance. Attention, pour l'instant, il n'est pas possible de faire juste un undo de la dépense de point de chnce. Le undo après la dépense de point de chance annule toute l'action. Il faut ensuite faire un undo par point de chance dépensé.</p>
                 <p>Pour les cas non prévus par le script, on peut faire juste <code>!cof-chance autre</code>.</p>
               </div>
-              <h3 class="text-info" id="surprise">2.6 Surprise : <code>!cof-surprise ?difficulte</code></h3>
+              <h3 class="text-info" id="surprise">3.6 Surprise : <code>!cof-surprise ?difficulte</code></h3>
               <div class="decalage">
                 <p>Fait un test de surprise sur tous les tokens sélectionné. Si la difficulté n'est pas présente, ils sont automatiquement surpris. Les valeurs des attributs (hors fiche) <code>vigilance</code> et <code>perception</code> sont ajoutés au test de sagesse.</p>
               </div>
-              <h3 class="text-info" id="statut_etats">2.7 Statut et états</h3>
+              <h3 class="text-info" id="statut_etats">3.7 Statut et états</h3>
               <div class="decalage">
                 <p><code>!cof-statut</code> affiche l'état courant de tous les tokens sélectionnés. Utile pour connaître facilement les états qui ne sont pas directement visibles sur un token (points de récupération, armes chargées, ...).</p>
                 <h4 class="text-secondary" id="etats">États gérés en utilisant le statut des tokens</h4>
@@ -467,7 +468,7 @@
                   </ul>
                 </div>
               </div>
-              <h3 class="text-info" id="sorts">2.8 Sorts</h3>
+              <h3 class="text-info" id="sorts">3.8 Sorts</h3>
               <div class="decalage">
                 <p><code>!cof-attaque-magique @{selected|token_id} @{target|token_id}</code> : fait un jet d'attaque magique opposé entre le lanceur et sa cible, et dit juste si le sort est raté ou réussi. Options disponibles : <code>--portee</code> et <code>--mana</code>.</p>
                 <p><code>!cof-lancer-sort <i>mana texte</i></code> : le token sélectionné lance un sort ayant un coût en mana, <i>texte</i> décrit le sort, mais pas d'effet (autre que la dépense de mana) à part /w au joueur et au MJ.</p>
@@ -481,7 +482,7 @@
                   <li><code>--portee <i>n</i></code> : limite la portée du sort à <i>n</i> metres.</li>
                 </ul>
               </div>
-              <h3 class="text-info" id="consommables">2.9 Consommables <code>!cof-consommables</code></h3>
+              <h3 class="text-info" id="consommables">3.9 Consommables <code>!cof-consommables</code></h3>
               <div class="decalage">
                 <p>Cette fonction affiche une liste de consommables, avec la possibilité de cliquer sur un élément de la liste pour le consommer (et activer son effet) ou l'échanger avec un autre personnage (via le symbole &#8596;).</p>
                 <p>Pour cela, la fonction regarde tous les attributs qui commencent par <code>dose_</code>, <code>elixir_</code> ou <code>consommable_</code>. La valeur courante doit être le nombre d'éléments possédé, et le max peut être une commande à effectuer pour activer l'effet. La fonction est à réserver aux tokens liés à un personnage. Il est aussi possible de simplement écrire un message qui s'affichera (et diminuera la quantité de consommables).</p>
@@ -525,18 +526,18 @@
                 <p>Pour cette dernière, il vous suffira de préparer un personnage avec un token qui contient, dans ses attributs, les consommables à échanger/vendre.</p>
                 </div>
               </div>
-              <h3 class="text-info" id="escaliers">2.10 Escaliers</h3>
+              <h3 class="text-info" id="escaliers">3.10 Escaliers</h3>
               <div class="decalage">
                 <p>Pour gérer les escaliers sur les cartes, vous pouvez utiliser la méthode suivante, inspirée du script Teleport : placez dans le layer "GM Info Overlay", au nivea des escaliers, des tokens qui prennent exactement la place des escaliers. Nommez ces escaliers avec un nom suivi du nombre d'étages (entre 2 et 9), suivi d'une lettre majuscule. Par exemple <code>Escalier2A</code>.</p>
                 <p>Chaque escalier de la même colonne doit avoir le même nom et même nombre d'étage, et différer seulement par la lettre finale. Ensuite, si un ensemble de tokens est sur un escalier, utilisez <code>!cof-escalier</code> pour téléporter les tokens à l'emplacement de l'escalier suivant dans l'ordre des lettres.</p>
                 <p>Dans l'exemple précédent, il serait téléporté à l'emplacement du token nommé <code>Escalier2B</code>. Cela ne fonctionne que si les bouts de l'escalier sont sur la même carte. À vous de choisir sir vous préférez révéler cette fonctionalité à vos joueurs, ou si vous le faites vous-même.</p>
               </div>
-              <h3 class="text-info" id="montures">2.11 Montures</h3>
+              <h3 class="text-info" id="montures">3.11 Montures</h3>
               <div class="decalage">
                 <p>Pour qu'un personnage puisse monter sur une monture, il faut que cette monture soit associée à une fiche de personnage et qu'il possède l'attribute <code>monture</code> à <code>true</code>. La commande pour monter sur la monture est <code>!cof-en-selle @{selected|token_id} @{target|token_id}</code>, à lancer en sélectionnant le cavalier.</p>
                 <p>On peut ensuite bouger la monture, cela déplace le cavalier. Le mieux est de lancer la commander alors que le token du cavalier est sur le token de la monture. Si on déplace le cavalier, cela le fait descendre de sa monture.</p>
               </div>
-              <h3 class="text-info" id="jet_caracteristiques">2.12 Jet de Caracteristiques</h3>
+              <h3 class="text-info" id="jet_caracteristiques">3.12 Jet de Caracteristiques</h3>
               <div class="decalage">
                 <p><code>!cof-jet ?{Faire un jet de |Charisme, CHA|Constitution, CON|Dextérité, DEX|Force, FOR|Intelligence, INT|Sagesse, SAG}</code> : fait un simple jet pour la caractérisique sélectionnée.</p>
                 <p>Il est aussi possible de donner en argument une difficulté au jet. Par exemple en faisant <code>!cof-jet INT ?{difficulté}</code>.</p>
@@ -548,7 +549,7 @@
                 </ul>
               </div>
             </div>
-						<h2 class="text-primary">3. Capacités par Classe</h2>
+						<h2 class="text-primary">4. Capacités par Classe</h2>
             <div class="decalage">
               <h3 class="text-info" id="Arquebusier">Arquebusier</h3>
               <div class="decalage">
@@ -1227,12 +1228,42 @@
                 </ul>
               </div>
             </div>
-						<h2 class="text-primary" id="statistiques">3. Statistiques</h2>
+						<h2 class="text-primary" id="statistiques">5. Statistiques</h2>
 						<div class="decalage">
 							<p>Il est possible d'activer la collecte de statistiques en utilisant la commande <code>!cof-demarrer-statistiques</code>.</p>
 							<p>On peut arrêter la collecte avec <code>!cof-arreter-statistiques</code>, et la mettre en pause avec <code>!cof-pause-statistiques</code>.<br />
 								Si on redémarre après une mise en pause, on reprend les statistiques comme elles étaient au moment de la pause. Si on redémarre des statistiques en court, cela remet les statistiques à zéro.
 							</p>
+						</div>
+            <h2 class="text-primary" id="import_export">6. Import / Export (Alpha)</h2>
+						<div class="decalage">
+              <div class="alert alert-danger">
+                <p><strong>Attention : </strong>Pour le moment, cette fonctionnalité est en <strong>Alpha</strong>. Il est donc possible que le format évolue et génère une erreur d'une version à une autre.</p>
+              </div>
+              <p>La création de personnage peut être assez longue et fastidieuse sur Roll20. Ces fonctionnalités vont nous permettre de constituer une base de données des PNJ et du bestiaire du jeu qui sera rempli au fur et à mesure par la communauté.</p>
+              <p>Cela deviendra ensuite très rapide d'importer un personnage.</p>
+              <h3 class="text-info" id="Autres_capacités">6.1 Export: <code>!cof-export</code></h3>
+              <div class="decalage">
+                <p>Cette commande va créer un "<i>handout</i>" qui contiendra les informations encodées des tokens sélectionnés.</p>
+              </div>
+              <h3 class="text-info" id="Autres_capacités">6.2 Import: <code>!cof-import</code></h3>
+              <div class="decalage">
+                <p>Pour importer un ou plusieurs personnages, vous devez :</p>
+                <ul>
+                  <li>Avoir un "<i>handout</i>" avec comme nom "<i>cof-import</i>"</li>
+                  <li>Son contenu ("<i>Description & Notes</i>") doit être équivalent à un <code>!cof-export</code></li>
+                  <li>C'est tout :-)</li>
+                </ul>
+                <div class="alert alert-warning" role="alert">
+                  <p><strong>Attention :</strong> Si c'est un import de plusieurs personnages d'un coup, chaque personnage doit être séparé par :</p>
+                  <ul>
+                    <li>Un retour chariot (touche Entrée)</li>
+                    <li>###</li>
+                    <li>Un retour chariot (touche Entrée)</li>
+                  </ul>
+                  <p>Si vous avez utilisé l'export en sélectionnant plusieurs token, vous n'avez rien à ajouter car c'est fait automatiquement.</p>
+                </div>
+              </div>
 						</div>
 					</div>
 				</div>

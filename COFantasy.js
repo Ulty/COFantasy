@@ -575,7 +575,7 @@ var COFantasy = COFantasy || function() {
       if (!ressource) action += " --token-id " + perso.token.id;
     }
 
-    action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;');
+    action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;').replace(/"/g, '&#34;');
     action = action.replace(/\'/g, '&apos;'); // escape quotes
     
     return '<a href="' + action + '"' + button_style + button_title +'>' + text + '</a>';
@@ -10917,6 +10917,156 @@ var COFantasy = COFantasy || function() {
     // testRes.reussite indique si le jet est réussi
     // testRes.echecCritique, testRes.critique pour le type
   }
+  
+  var separator = '<br>###<br>';
+  function export_character(msg) {
+    var json_export = '';
+    getSelected(msg, function(selection) {
+      var nb_selection = selection.length;
+      
+      if (nb_selection === 0) {
+        sendPlayer(msg, "Vous devez sélectionner au moins un token.");
+        return;
+      }
+      var cpt = 0;
+      iterSelected(selection, function(perso) {
+        var charId = perso.token.get('represents');
+        
+        if (charId === undefined) {
+          sendPlayer(msg, perso.token.get('name') + " ne représente pas un personnage.");
+        }
+        else {
+          var character = getObj('character', charId);
+          var character_name = character.get('name');
+          var export_character = {};
+          
+          export_character.character = {
+            name : character_name,
+            notes : '',
+            gmnotes : '',
+            bio : '',
+          };
+          
+          character.get("notes", function(notes) { // asynchronous
+            if (notes.length > 0 && notes != 'null') export_character.character.notes = notes;
+            
+            character.get("gmnotes", function(gmnotes) { // asynchronous
+              if (gmnotes.length > 0 && gmnotes != 'null') export_character.character.gmnotes = gmnotes;
+              
+              character.get("bio", function(bio) { // asynchronous
+                if (bio.length > 0 && bio != 'null') export_character.character.bio = bio;
+                
+                var attributes = findObjs({
+                  _type: 'attribute',
+                  _characterid: charId,
+                });
+                export_character.attributes = [];
+                _.each(attributes, function(attribute, i) {
+                  export_character.attributes.push({
+                    name : attribute.get('name'),
+                    current : attribute.get('current'),
+                    max : attribute.get('max')
+                  });
+                });
+                var abilities = findObjs({
+                  _type: 'ability',
+                  _characterid: charId,
+                });
+                export_character.abilities = [];
+                _.each(abilities, function(ability, i) {
+                  export_character.abilities.push({
+                    name : ability.get('name'),
+                    description : ability.get('description'),
+                    action : ability.get('action'),
+                    istokenaction : ability.get('istokenaction')
+                  });
+                });
+                
+                json_export += JSON.stringify(export_character) + separator;
+                sendPlayer(msg, "Export " + character_name + " effectué.");
+                
+                cpt++;
+                if (cpt == nb_selection) {
+                  var this_date = (new Date()).toISOString().split('.')[0].replace('T', '-');
+                  
+                  // Génère une erreur :
+                  // "ERROR: You cannot set the imgsrc or avatar of an object unless you use an image that is in your Roll20 Library. See the API documentation for more info."
+                  // => c'est "normal" : https://app.roll20.net/forum/post/2405159/api-create-handout-error/?pageforid=2405587
+                  var this_handout = createObj("handout", {
+                    name: 'cof-export-' + this_date
+                  });
+                  
+                  this_handout.set('notes', json_export);
+                  sendPlayer(msg, "Export terminé.");
+                }
+              });
+            });
+          });
+        }
+      });
+    });
+  }
+  
+  function import_character(msg) {
+    
+    var import_data = findObjs({
+      _type: 'handout',
+      name: 'cof-import',
+    });
+    
+    var all_data = [];
+    
+    import_data.forEach(function(import_handout, i) {
+      import_handout.get('notes', function(note) { // asynchronous
+        var data = note.trim().split(separator);
+        data.forEach(function(content) {
+          content = content.trim();
+          if (content.length > 0) all_data.push(content);
+        });
+        
+        if ((i+1) == import_data.length) {
+          _.each(all_data, function(this_import_data) {
+            var exported_character = JSON.parse(this_import_data);
+            
+            var character = exported_character.character;
+            var new_character = createObj("character", {
+              name: character.name
+            });
+            new_character.set('notes', character.notes);
+            new_character.set('gmnotes', character.gmnotes);
+            new_character.set('bio', character.bio);
+            
+            var charId = new_character.get('id');
+            
+            var attributes = exported_character.attributes;
+            _.each(attributes, function(attribute, i) {
+              var new_attribute = createObj("attribute", {
+                _characterid: charId,
+                name: attribute.name,
+                current: attribute.current,
+                max: attribute.max
+              });
+            });
+            
+            var abilities = exported_character.abilities;
+            _.each(abilities, function(ability, i) {
+              var new_ability = createObj("ability", {
+                _characterid: charId,
+                name: ability.name,
+                description: ability.description,
+                action: ability.action,
+                istokenaction: ability.istokenaction
+              });
+            });
+            
+            sendPlayer(msg, "Import effectué.");
+            import_handout.set('notes', '');
+          });
+          
+        }
+      });
+    });
+  }
 
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
@@ -11177,6 +11327,12 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-arme-secrete":
         armeSecrete(msg);
+        return;
+      case "!cof-export":
+        export_character(msg);
+        return;
+      case "!cof-import":
+        import_character(msg);
         return;
       default:
         return;
