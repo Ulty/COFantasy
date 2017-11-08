@@ -574,7 +574,7 @@ var COFantasy = COFantasy || function() {
     
     var add_token = " --token-id " + perso.token.id;
     if (action.indexOf(' --message ') !== -1) action = action.replace(' --message ', add_token + ' --message ');
-    else action +=add_token;
+    else if (action.indexOf('cof-attack') === -1)  action +=add_token;
 
     action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;').replace(/"/g, '&#34;');
     action = action.replace(/\'/g, '&apos;'); // escape quotes
