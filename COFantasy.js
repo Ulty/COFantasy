@@ -11059,8 +11059,7 @@ var COFantasy = COFantasy || function() {
               });
             });
             
-            sendPlayer(msg, "Import effectué.");
-            import_handout.set('notes', '');
+            sendPlayer(msg, "Import " + character.name + " effectué.");
           });
           
         }
