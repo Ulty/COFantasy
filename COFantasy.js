@@ -45,7 +45,7 @@ var COFantasy = COFantasy || function() {
   var bs_alert = 'padding: 5px; border: 1px solid transparent; border-radius: 4px;';
   var bs_alert_success = 'color: #3c763d; background-color: #dff0d8; border-color: #d6e9c6;';
   var bs_alert_danger = 'color: #a94442; background-color: #f2dede; border-color: #ebccd1;';
-  
+
   var aura_token_on_turn = false;
 
   // List of states:
@@ -76,7 +76,7 @@ var COFantasy = COFantasy || function() {
     log(obj);
     sendChat("COFantasy", msg);
   }
-  
+
   // retourne un tableau contenant la liste des ID de joueurs controlant le personnage lié au Token
   function get_player_ids_from_token(token) {
     var player_ids = [];
@@ -85,36 +85,34 @@ var COFantasy = COFantasy || function() {
     var character = getObj('character', charId);
     var char_controlledby = character.get('controlledby');
     if (char_controlledby === '') return player_ids;
-    _.each(char_controlledby.split(","), function(controlledby) {    
+    _.each(char_controlledby.split(","), function(controlledby) {
       var player = getObj('player', controlledby);
       if (player === undefined) return;
       player_ids.push(controlledby);
     });
     return player_ids;
   }
-  
-  
-  function get_picto_style_from_command (command, style) {
+
+
+  function get_picto_style_from_command(command, style) {
     if (style === undefined) style = '';
     var picto_style = {
       picto: '',
-      style : style
+      style: style
     };
     if (command === undefined) return picto_style;
     var picto = '';
     // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
     if (command.startsWith('#Attaque') || command.startsWith('!cof-attack') || command.startsWith('!cof-attaque') || command.startsWith('!cof-lancer-sort')) {
-      if (command.indexOf('-sort') !== -1 || command.indexOf('-magic') !== -1 || command.indexOf('-magique') !== -1 ) {
+      if (command.indexOf('-sort') !== -1 || command.indexOf('-magic') !== -1 || command.indexOf('-magique') !== -1) {
         // attaque magique
         picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
         style = 'background-color:#9900ff';
-      }
-      else if (command.indexOf('--percant') !== -1) {
+      } else if (command.indexOf('--percant') !== -1) {
         // attaque distance
         picto = '<span style="font-family: \'Pictos Custom\'">[</span> ';
         style = 'background-color:#48b92c';
-      }
-      else {
+      } else {
         // attaque contact
         picto = '<span style="font-family: \'Pictos Custom\'">t</span> ';
       }
@@ -514,18 +512,18 @@ var COFantasy = COFantasy || function() {
   function bouton(action, text, perso, ressource, button_style, button_title) {
     if (action === undefined || action.trim().length === 0) return text;
     else action = action.trim();
-    
-    if (button_style !== undefined) button_style=' style="' + button_style + '"';
+
+    if (button_style !== undefined) button_style = ' style="' + button_style + '"';
     else button_style = '';
-    
-    if (button_title !== undefined) button_title=' title="' + button_title + '"';
+
+    if (button_title !== undefined) button_title = ' title="' + button_title + '"';
     else button_title = '';
-    
-    switch(action.charAt(0)) {
+
+    switch (action.charAt(0)) {
       case '!':
         if (!action.startsWith('!&#13;') && ressource) action += " --decrAttribute " + ressource.id;
         break;
-        
+
       default:
         if (ressource) {
           action = "!cof-utilise-consommable " + perso.token.id + " " + ressource.id + " --message " + action;
@@ -536,8 +534,8 @@ var COFantasy = COFantasy || function() {
 
     action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;');
     action = action.replace(/\'/g, '&apos;'); // escape quotes
-    
-    return '<a href="' + action + '"' + button_style + button_title +'>' + text + '</a>';
+
+    return '<a href="' + action + '"' + button_style + button_title + '>' + text + '</a>';
   }
 
   function jetPerso(perso, caracteristique, difficulte, titre, playerId, options) {
@@ -4157,7 +4155,7 @@ var COFantasy = COFantasy || function() {
     }
     var name1, name2, avatar1, avatar2 = '';
     var character2;
-    if (perso2) {      
+    if (perso2) {
       character2 = getObj('character', perso2.charId);
       if (character2 !== undefined) {
         avatar2 = '<img src="' + improve_image(character2.get('avatar')) + '" style="width: 50%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
@@ -4170,32 +4168,34 @@ var COFantasy = COFantasy || function() {
     if (perso1) {
       character1 = getObj('character', perso1.charId);
       if (character1 !== undefined) {
-        avatar1 = '<img src="' + improve_image(character1.get('avatar')) + '" style="width: ' + (character2? 50 : 100) + '%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+        avatar1 = '<img src="' + improve_image(character1.get('avatar')) + '" style="width: ' + (character2 ? 50 : 100) + '%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
         if (perso1.tokName) name1 = perso1.tokName;
         else name1 = perso1.token.get('name');
         name1 = '<b>' + name1 + '</b>';
-      }      
+      }
     }
     res +=
       '<div class="all_content" style="-webkit-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); -moz-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); border: 1px solid #000; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px; overflow: hidden; position: relative;">';
     if (character1) {
       res +=
-      '<div class="line_header" style="overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: ' + playerTXColor + '; background-color: ' + playerBGColor + ';" title=""> ' +
+        '<div class="line_header" style="overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: ' + playerTXColor + '; background-color: ' + playerBGColor + ';" title=""> ' +
         '<table>';
       if (character2) {
-      res +=
-        '<tr style="text-align: center">' +
+        res +=
+          '<tr style="text-align: center">' +
           '<td style="width: 44%; vertical-align: middle;">' + name1 + '</td>' +
           '<td style="width: 12%;height: 28px;line-height: 30px;border: 2px solid #900;border-radius: 100%;position: absolute;margin-top: 25px;font-weight: bold;background-color: #EEE;color: #900;">' + 'VS' + '</td>' +
           '<td style="width: 44%; vertical-align: middle;">' + name2 + '</td>' +
-        '</tr>' +
-        '<tr style="text-align: center">' +
-          '<td style="width: 42%; vertical-align: middle;">' + avatar1 + '</td>' + 
-          '<td style="width: 16%; vertical-align: middle;">&nbsp;</td>' + 
+          '</tr>' +
+          '<tr style="text-align: center">' +
+          '<td style="width: 42%; vertical-align: middle;">' + avatar1 + '</td>' +
+          '<td style="width: 16%; vertical-align: middle;">&nbsp;</td>' +
           '<td style="width: 42%; vertical-align: middle;">' + avatar2 + '</td>' +
-        '</tr>';
+          '</tr>';
       } else {
-        var bar1_info = '', bar2_info = '', bar3_info = '';
+        var bar1_info = '',
+          bar2_info = '',
+          bar3_info = '';
         if (whisper) {
           // on chuchotte donc on peut afficher les informations concernant les barres du Token
           if (perso1.token.get('bar1_link').length > 0) {
@@ -4222,25 +4222,25 @@ var COFantasy = COFantasy || function() {
         }
         res +=
           '<tr style="text-align: left">' +
-            '<td style="width:25%; vertical-align: middle;">' + avatar1 +
-            '</td>' +
-            '<td style="width:75%; vertical-align: middle; position: relative;">' + 
-              '<div>' + name1 + '</div>' +
-              '<div style="position: absolute;top: -6px;right: -5px;border: 1px solid #000;background-color: #333;">' +
-                '<div style="text-align: right; margin: 0 5px; color: #7cc489">' + bar1_info + '</div>' +
-                '<div style="text-align: right; margin: 0 5px; color: #7c9bc4">' + bar2_info + '</div>' +
-                '<div style="text-align: right; margin: 0 5px; color: #b21d1d">' + bar3_info + '</div>' +
-              '</div>' +
-            '</td>' +
+          '<td style="width:25%; vertical-align: middle;">' + avatar1 +
+          '</td>' +
+          '<td style="width:75%; vertical-align: middle; position: relative;">' +
+          '<div>' + name1 + '</div>' +
+          '<div style="position: absolute;top: -6px;right: -5px;border: 1px solid #000;background-color: #333;">' +
+          '<div style="text-align: right; margin: 0 5px; color: #7cc489">' + bar1_info + '</div>' +
+          '<div style="text-align: right; margin: 0 5px; color: #7c9bc4">' + bar2_info + '</div>' +
+          '<div style="text-align: right; margin: 0 5px; color: #b21d1d">' + bar3_info + '</div>' +
+          '</div>' +
+          '</td>' +
           '</tr>';
       }
       res +=
-          '</table>' +
+        '</table>' +
         '</div>'; // line_header
     }
     res +=
       '<div class="line_title" style="font-size: 85%; text-align: left; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: #a94442; background-color: #f2dede;" title=""> ' +
-        action +
+      action +
       '</div>'; // line_title
     res +=
       '<div class="line_content">';
@@ -4273,7 +4273,7 @@ var COFantasy = COFantasy || function() {
     if (!new_line) separator = "border-top: 1px solid #ddd;";
     formatedLine += '<div style="padding: 4px 0; font-size: ' + size + '%;' + separator + '">' + line + '</div>';
     formatedLine += '</div>';
-    
+
     display.output += formatedLine;
   }
 
@@ -6042,7 +6042,7 @@ var COFantasy = COFantasy || function() {
     }
     return res;
   }
-  
+
   function setToken_FlagAura(token, tokenName, characterName) {
     if (aura_token_on_turn) {
       // ennemi => rouge
@@ -6052,20 +6052,18 @@ var COFantasy = COFantasy || function() {
         // equipe => vert
         aura2_color = '#59E594';
       }
-      
+
       token.set('aura2_radius', '0.001');
       token.set('aura2_color', aura2_color);
       token.set('showplayers_aura2', true);
-    }
-    else token.set('status_flying-flag', true);
+    } else token.set('status_flying-flag', true);
   }
-  
+
   function removeToken_FlagAura(token) {
     if (aura_token_on_turn) {
       token.set('aura2_radius', '');
       token.set('showplayers_aura2', false);
-    }
-    else token.set('status_flying-flag', false);
+    } else token.set('status_flying-flag', false);
   }
 
   function setActiveToken(tokenId, evt) {
@@ -6079,7 +6077,7 @@ var COFantasy = COFantasy || function() {
         affectToken(prevToken, 'aura2_radius', prevToken.get('aura2_radius'), evt);
         affectToken(prevToken, 'aura2_color', prevToken.get('aura2_color'), evt);
         affectToken(prevToken, 'showplayers_aura2', prevToken.get('showplayers_aura2'), evt);
-        
+
         removeToken_FlagAura(prevToken);
       } else {
         if (pageId) {
@@ -6117,7 +6115,7 @@ var COFantasy = COFantasy || function() {
         // personnage lié au Token
         var character = getObj('character', charId);
         if (character === undefined) return;
-        var characterName=character.get('name');
+        var characterName = character.get('name');
         affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
         affectToken(token, 'aura2_radius', token.get('aura2_radius'), evt);
         affectToken(token, 'aura2_color', token.get('aura2_color'), evt);
@@ -6148,13 +6146,14 @@ var COFantasy = COFantasy || function() {
               _characterid: charId,
             });
             var found, picto_style;
-            var style = '', command ='';
+            var style = '',
+              command = '';
             // On recherche si l'action existe (Ability % ou Macro #)
             actions.forEach(function(action, i) {
               action = action.trim();
               if (action.length > 0) {
                 var action_text = action.replace(/-/g, ' ').replace(/_/g, ' ');
-                
+
                 found = false;
                 // on recherche en premier dans toutes les Abilities du personnage
                 abilities.forEach(function(elem, index) {
@@ -6162,9 +6161,9 @@ var COFantasy = COFantasy || function() {
                     // l'ability existe
                     found = true;
                     nBfound++;
-                    
+
                     command = elem.get('action').trim();
-                    picto_style = get_picto_style_from_command (command, 'background-color:#cc0000');
+                    picto_style = get_picto_style_from_command(command, 'background-color:#cc0000');
                     action_text = picto_style.picto + action_text;
                     style = picto_style.style;
 
@@ -6179,13 +6178,13 @@ var COFantasy = COFantasy || function() {
                       // la Macro existe
                       found = true;
                       nBfound++;
-                      
+
                       command = elem.get('action').trim();
-                      picto_style = get_picto_style_from_command (command, 'background-color:#660000');
+                      picto_style = get_picto_style_from_command(command, 'background-color:#660000');
                       action_text = picto_style.picto + action_text;
                       style = picto_style.style;
-                      
-                      ligne += bouton('!&#13;#' + action , action_text, false, false, style, '') + '<br />';
+
+                      ligne += bouton('!&#13;#' + action, action_text, false, false, style, '') + '<br />';
                       return;
                     }
                   });
@@ -6199,30 +6198,30 @@ var COFantasy = COFantasy || function() {
           }
           if (nBfound > 0) {
             // on envoie la liste aux joueurs qui gèrent le personnage dont le token est lié
-            
+
             charId = token.get('represents');
             // token non lié
             if (charId === '') return;
-            
+
             var perso = {
               token: token,
               charId: charId
             };
             var last_playerid;
             var title = 'Actions possibles :';
-            
+
             // on récupère les players_ids qui controllent le Token
             var player_ids = get_player_ids_from_token(token);
             if (player_ids.length > 0) {
               _.each(player_ids, function(playerid) {
                 last_playerid = playerid;
-                
+
                 var display = startFramedDisplay(playerid, title, perso, false, true);
                 addLineToFramedDisplay(display, ligne);
                 sendChat('', endFramedDisplay(display));
               });
             }
-            
+
             // En prime, on l'envoie au MJ
             var display = startFramedDisplay(last_playerid, title, perso, false, 'gm');
             addLineToFramedDisplay(display, ligne);
@@ -12057,20 +12056,20 @@ function get_handout_notes() {
   var handout = findObjs({
     _type: 'handout'
   });
-  
+
   var AllEquipe = handout.filter(function(obj) {
     return (obj.get('name').startsWith("Equipe "));
   });
-  
+
   notes_equipe = [];
-  
+
   AllEquipe.forEach(function(this_equipe, i) {
     this_equipe.get('notes', function(note) { // asynchronous
       var names = note.trim().split('<br>');
       names.forEach(function(name) {
         name = name.trim();
         if (name.length > 0) notes_equipe.push(name);
-      });      
+      });
     });
   });
 }
