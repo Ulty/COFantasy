@@ -508,6 +508,11 @@ var COFantasy = COFantasy || function() {
     };
   }
 
+  // on, remplace tous les selected par @{character name|attr}
+  function escapeRegExp(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
+  }
+
   //ressource est optionnel, et si présent doit être un attribut
   function bouton(action, text, perso, ressource, button_style, button_title) {
     if (action === undefined || action.trim().length === 0) return text;
@@ -518,6 +523,24 @@ var COFantasy = COFantasy || function() {
 
     if (button_title !== undefined) button_title = ' title="' + button_title + '"';
     else button_title = '';
+    if (action.startsWith('#')) {
+      // macro donc on va le remplacer par sa commande (action)
+
+      // Toutes les Macros
+      var macros = findObjs({
+        _type: 'macro'
+      });
+
+      var command_words = action.split(" ");
+      var this_macro = macros.filter(function(obj) {
+        return (obj.get('name').trim() == command_words[0].substring(1));
+      });
+
+      if (this_macro.length == 1) {
+        // macro trouvé
+        action = action.replace(command_words[0], this_macro[0].get('action'));
+      }
+    }
 
     switch (action.charAt(0)) {
       case '!':
@@ -532,7 +555,27 @@ var COFantasy = COFantasy || function() {
         }
     }
 
-    action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;');
+    if (action.indexOf('@{selected') !== -1) {
+      // cas spécial pour @{selected|token_id} où l'on remplace toutes les occurences par perso.token.id
+      action = action.replace(new RegExp(escapeRegExp('@{selected|token_id}'), 'g'), perso.token.id);
+
+      var character_name = perso.get('name');
+      var tmp = action.split('@{selected');
+      _.each(tmp, function(elem, i) {
+        if (elem.startsWith('|')) {
+          // attribut demandé
+          var attribute_name = elem.substring(0, elem.indexOf("}")).substr(1);
+
+          action = action.replace(new RegExp(escapeRegExp('@{selected|' + attribute_name + '}'), 'g'), '@{' + character_name + '|' + attribute_name + '}');
+        }
+      });
+    }
+
+    var add_token = " --token-id " + perso.token.id;
+    if (action.indexOf(' --message ') !== -1) action = action.replace(' --message ', add_token + ' --message ');
+    else if (action.indexOf('cof-attack') === -1) action += add_token;
+
+    action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;').replace(/"/g, '&#34;');
     action = action.replace(/\'/g, '&apos;'); // escape quotes
 
     return '<a href="' + action + '"' + button_style + button_title + '>' + text + '</a>';
@@ -6115,6 +6158,8 @@ var COFantasy = COFantasy || function() {
         // personnage lié au Token
         var character = getObj('character', charId);
         if (character === undefined) return;
+        character.token = {};
+        character.token.id = token.get('_id');
         var characterName = character.get('name');
         affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
         affectToken(token, 'aura2_radius', token.get('aura2_radius'), evt);
@@ -6156,35 +6201,34 @@ var COFantasy = COFantasy || function() {
 
                 found = false;
                 // on recherche en premier dans toutes les Abilities du personnage
-                abilities.forEach(function(elem, index) {
-                  if (elem.get('name') === action) {
+                abilities.forEach(function(abilitie, index) {
+                  if (abilitie.get('name') === action) {
                     // l'ability existe
                     found = true;
                     nBfound++;
 
-                    command = elem.get('action').trim();
+                    command = abilitie.get('action').trim();
                     picto_style = get_picto_style_from_command(command, 'background-color:#cc0000');
                     action_text = picto_style.picto + action_text;
                     style = picto_style.style;
 
-                    ligne += bouton('!&#13;%{' + characterName + '|' + action + '}', action_text, false, false, style, '') + '<br />';
+                    ligne += bouton(command, action_text, character, false, style, '') + '<br />';
                     return;
                   }
                 });
                 if (found === false) {
                   // Si pas trouvé, on recherche alors dans toutes les Macros, en toute simplicité j'ai envie de dire xD
-                  macros.forEach(function(elem, index) {
-                    if (elem.get('name') === action) {
+                  macros.forEach(function(macro, index) {
+                    if (macro.get('name') === action) {
                       // la Macro existe
                       found = true;
                       nBfound++;
-
-                      command = elem.get('action').trim();
+                      command = macro.get('action').trim();
                       picto_style = get_picto_style_from_command(command, 'background-color:#660000');
                       action_text = picto_style.picto + action_text;
                       style = picto_style.style;
 
-                      ligne += bouton('!&#13;#' + action, action_text, false, false, style, '') + '<br />';
+                      ligne += bouton(command, action_text, character, false, style, '') + '<br />';
                       return;
                     }
                   });
@@ -10272,6 +10316,11 @@ var COFantasy = COFantasy || function() {
           return;
         }
         var display = startFramedDisplay(msg.playerid, 'Liste de vos consommables :', perso, false, true);
+        // personnage lié au Token
+        var character = getObj('character', perso.charId);
+        if (character === undefined) return;
+        character.token = {};
+        character.token.id = perso.token.get('_id');
         var attributes = findObjs({
           _type: 'attribute',
           _characterid: perso.charId
@@ -10289,9 +10338,9 @@ var COFantasy = COFantasy || function() {
           } else cpt++;
           var action = attr.get('max').trim();
           var ligne = quantite + ' ';
-          ligne += bouton(action, consName, perso, attr);
+          ligne += bouton(action, consName, character, attr);
           // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
-          ligne += bouton('!cof-echange-consommables @{selected|token_id} @{target|token_id}', '<span style="font-family:Pictos">r</span>', perso, attr, 'background-color: #a009ec;font-size: 17px;padding: 4px 4px 6px 4px;', 'Cliquez pour échanger');
+          ligne += bouton('!cof-echange-consommables @{selected|token_id} @{target|token_id}', '<span style="font-family:Pictos">r</span>', character, attr, 'background-color: #a009ec;font-size: 17px;padding: 4px 4px 6px 4px;', 'Cliquez pour échanger');
           addLineToFramedDisplay(display, ligne);
         }); //fin de la boucle sur les attributs
         if (cpt === 0) addLineToFramedDisplay(display, "<code>Vous n'avez aucun consommable</code>");
@@ -10866,9 +10915,182 @@ var COFantasy = COFantasy || function() {
     // testRes.echecCritique, testRes.critique pour le type
   }
 
+  var separator = '<br>###<br>';
+
+  function export_character(msg) {
+    var json_export = '';
+    getSelected(msg, function(selection) {
+      var nb_selection = selection.length;
+
+      if (nb_selection === 0) {
+        sendPlayer(msg, "Vous devez sélectionner au moins un token.");
+        return;
+      }
+      var cpt = 0;
+      iterSelected(selection, function(perso) {
+        var charId = perso.token.get('represents');
+
+        if (charId === undefined) {
+          sendPlayer(msg, perso.token.get('name') + " ne représente pas un personnage.");
+        } else {
+          var character = getObj('character', charId);
+          var character_name = character.get('name');
+          var export_character = {};
+
+          export_character.character = {
+            name: character_name,
+            notes: '',
+            gmnotes: '',
+            bio: '',
+          };
+
+          character.get("notes", function(notes) { // asynchronous
+            if (notes.length > 0 && notes != 'null') export_character.character.notes = notes;
+
+            character.get("gmnotes", function(gmnotes) { // asynchronous
+              if (gmnotes.length > 0 && gmnotes != 'null') export_character.character.gmnotes = gmnotes;
+
+              character.get("bio", function(bio) { // asynchronous
+                if (bio.length > 0 && bio != 'null') export_character.character.bio = bio;
+
+                var attributes = findObjs({
+                  _type: 'attribute',
+                  _characterid: charId,
+                });
+                export_character.attributes = [];
+                _.each(attributes, function(attribute, i) {
+                  export_character.attributes.push({
+                    name: attribute.get('name'),
+                    current: attribute.get('current'),
+                    max: attribute.get('max')
+                  });
+                });
+                var abilities = findObjs({
+                  _type: 'ability',
+                  _characterid: charId,
+                });
+                export_character.abilities = [];
+                _.each(abilities, function(ability, i) {
+                  export_character.abilities.push({
+                    name: ability.get('name'),
+                    description: ability.get('description'),
+                    action: ability.get('action'),
+                    istokenaction: ability.get('istokenaction')
+                  });
+                });
+
+                json_export += JSON.stringify(export_character) + separator;
+                sendPlayer(msg, "Export " + character_name + " effectué.");
+
+                cpt++;
+                if (cpt == nb_selection) {
+                  var this_date = (new Date()).toISOString().split('.')[0].replace('T', '-');
+
+                  // Génère une erreur :
+                  // "ERROR: You cannot set the imgsrc or avatar of an object unless you use an image that is in your Roll20 Library. See the API documentation for more info."
+                  // => c'est "normal" : https://app.roll20.net/forum/post/2405159/api-create-handout-error/?pageforid=2405587
+                  var this_handout = createObj("handout", {
+                    name: 'cof-export-' + this_date
+                  });
+
+                  this_handout.set('notes', json_export);
+                  sendPlayer(msg, "Export terminé.");
+                }
+              });
+            });
+          });
+        }
+      });
+    });
+  }
+
+  function import_character(msg) {
+
+    var import_data = findObjs({
+      _type: 'handout',
+      name: 'cof-import',
+    });
+
+    var all_data = [];
+
+    import_data.forEach(function(import_handout, i) {
+      import_handout.get('notes', function(note) { // asynchronous
+        var data = note.trim().split(separator);
+        data.forEach(function(content) {
+          content = content.trim();
+          if (content.length > 0) all_data.push(content);
+        });
+
+        if ((i + 1) == import_data.length) {
+          _.each(all_data, function(this_import_data) {
+            var exported_character = JSON.parse(this_import_data);
+
+            var character = exported_character.character;
+            var new_character = createObj("character", {
+              name: character.name
+            });
+            new_character.set('notes', character.notes);
+            new_character.set('gmnotes', character.gmnotes);
+            new_character.set('bio', character.bio);
+
+            var charId = new_character.get('id');
+
+            var attributes = exported_character.attributes;
+            _.each(attributes, function(attribute, i) {
+              var new_attribute = createObj("attribute", {
+                _characterid: charId,
+                name: attribute.name,
+                current: attribute.current,
+                max: attribute.max
+              });
+            });
+
+            var abilities = exported_character.abilities;
+            _.each(abilities, function(ability, i) {
+              var new_ability = createObj("ability", {
+                _characterid: charId,
+                name: ability.name,
+                description: ability.description,
+                action: ability.action,
+                istokenaction: ability.istokenaction
+              });
+            });
+
+            sendPlayer(msg, "Import " + character.name + " effectué.");
+          });
+
+        }
+      });
+    });
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
+    var all_command = msg.content.split(" ");
+
+    if (msg.selected === undefined || msg.content.indexOf('--token-id ') !== -1) {
+      // Si aucun token n'est selectionné, on essaye de trouver le token_id dans les parametres
+      _.each(all_command, function(elem, i) {
+        if (elem == '--token-id') {
+          // Trouvé ! Le token_id est dont le paramètre suivant
+          var token_id = all_command[(i + 1)];
+
+          // on récupère les infos du token :
+          var token = getObj("graphic", token_id);
+
+          // on fait comme-ci c'était ce token qui avait été selectionné lors de l'envoie de la commande.
+          msg.selected = [];
+          msg.selected.push({
+            _id: token.get('_id'),
+            _type: token.get('_type')
+          });
+
+          return;
+        }
+      });
+    }
+
     // First replace inline rolls by their values
     if (command[0] != "!cof-aoe") replaceInline(msg);
     var evt;
@@ -11104,6 +11326,12 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-arme-secrete":
         armeSecrete(msg);
+        return;
+      case "!cof-export":
+        export_character(msg);
+        return;
+      case "!cof-import":
+        import_character(msg);
         return;
       default:
         return;

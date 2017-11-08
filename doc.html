@@ -35,6 +35,14 @@
         $('div.sticky-top ul.collapse').on('show.bs.collapse', function () {
         $('div.sticky-top ul.collapse').collapse('hide');
         });
+        
+        $(document).on('click', '.add_bestiaire', function() {
+          var json = $(this).prev('.json').text().trim();
+          $('#json_data').removeClass('d-none');
+          $('#json_data textarea').append(json).append('\n###\n');
+          $(this).text('Ajouté !').removeClass('btn-primary').addClass('btn-secondary');
+          $(this).closest('.card').addClass("added");
+        });
 			});
 			
 		</script>
@@ -44,7 +52,11 @@
 			[data-toggle="popover"], button, [data-href] {cursor: pointer}
 			.jumbotron p {margin-bottom: 0}
 			img{margin: 0 auto; display: block; border-radius: 3px; -webkit-box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.40); -moz-box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.40); box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.4);}
-			img:hover{-webkit-box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.60); -moz-box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.60); box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.60);}
+			.card, img:hover{-webkit-box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.60); -moz-box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.60); box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.60);}
+      .card {margin-bottom: 20px;}
+      .card > img {-webkit-box-shadow: none; -moz-box-shadow: none; box-shadow: none;}
+      .card.added > img {-webkit-filter: grayscale(100%); -moz-filter: grayscale(100%); -o-filter: grayscale(100%); -ms-filter: grayscale(100%); filter: grayscale(100%); }
+      .card .card-title {height: 52px; overflow: hidden}
 			figcaption {font-size: 0.7em; text-align: center; margin-top: -0.7rem; margin-bottom: 0.7rem;}
       div.decalage {margin-left: 10px;}
       h3.text-info {margin-top: 30px;}
@@ -52,6 +64,7 @@
       .content li {margin-top: 10px}
       div.decalage > h3.text-info:first-child, div.decalage > h4.text-secondary:first-child, .content li:first-child {margin-top: 0px;}
       div.alert > p:last-child {margin-bottom: 0}
+      #json_data textarea {margin-bottom: 20px;}
 		</style>
 		<div class="container">
 			<div class="jumbotron start">
@@ -133,13 +146,14 @@
 									<li><a class="text-info" href="#Autres_capacités">Autres capacités</a></li>
 								</ul>
 								<li><a href="#statistiques">Statistiques</a></li>
+                <li><a href="#import_export">Import / Export (Alpha)</a></li>
 							</ol>
 						</div>
 					</div>
 					<div class="col-md-9 col-sm-8 content">
-						<h2 class="text-primary" id="comment_utiliser_script">1. Comment utiliser Le script</h2>
+						<h2 class="text-primary" id="comment_utiliser_script">2. Comment utiliser Le script</h2>
             <div class="decalage">
-              <h3 class="text-info" id="token_personnages">1.1 Tokens et personnages</h3>
+              <h3 class="text-info" id="token_personnages">2.1 Tokens et personnages</h3>
               <div class="decalage">
                 <p>Ces scripts ont été écrits pour fonctionner avec les fiches de personnages développées par <a href="https://github.com/Roll20/roll20-character-sheets/tree/master/ChroniquesOubliees">Natha</a>.</p>
                 <p><img class="img-fluid" src="https://i.imgur.com/rF0Qxht.png" data-href="https://i.imgur.com/rF0Qxht.png"></p>
@@ -161,12 +175,12 @@
               <p>Certains messages tiennent compte du genre (masculin ou féminin) des personnages.<br />
                 Ils utilisent le champ <code>Sexe</code> de la fiche de personnage. Un personnage est reconnu comme féminin si ce champ commence par la lettre <code>F</code>.
               </p>
-              <h3 class="text-info" id="macros_abilities">1.2 Macros et Abilities</h3>
+              <h3 class="text-info" id="macros_abilities">2.2 Macros et Abilities</h3>
               <div class="decalage">
                 <p>Comme tous les scripts, ces scripts sont utilisables tels quels dans le chat, mais ils sont pensés pour être utilisés par des macros qui permettent un autre niveau d'automatisation parfois difficile d'accès au sein des scripts.</p>
                 La grosse majorité des capacités et attaques des personnages devraient être utilisées au sein d'abilities de personnages, accessibles comme "Token action". Si ces abilities utilisent des macros, ne pas oublier de rendre ces macros accessibles aux joueurs.
               </div>
-              <h3 class="text-info" id="methode_selection_groupes">1.3 Méthode de sélection de groupes</h3>
+              <h3 class="text-info" id="methode_selection_groupes">2.3 Méthode de sélection de groupes</h3>
               <div class="decalage">
                 <p>Comme les joueurs ne peuvent pas sélectionner un nombre arbitraire d'ennemis, 6 méthodes sont disponibles&nbsp;:</p>
                 <ul>
@@ -181,15 +195,15 @@
                 <p id="exemple_equipe"><img class="img-fluid" src="https://i.imgur.com/WHfwsKo.png" data-href="https://i.imgur.com/WHfwsKo.png"></p>
                 <figcaption>Exemple d'<i>handout</i> avec différentes équipes.</figcaption>
               </div>
-              <h3 class="text-info" id="regles_optionnelles">1.4 Règles optionnelles utilisées</h3>
+              <h3 class="text-info" id="regles_optionnelles">2.4 Règles optionnelles utilisées</h3>
               <div class="decalage">
                 <p>Les scripts supportent l'utilisation de la règle des points de chance, des points de récupérations, des points de mana (et de magie puissante ou rapide).</p>
                 <p>J'ai aussi choisi, comme proposé par Kegron, de diminuer la DEF de tous les protagonistes après un certain nombre de tours de combat (-2 tous les 5 tours).</p>
               </div>
             </div>
-            <h2 class="text-primary" id="action_principales">2. Actions principales</h2>
+            <h2 class="text-primary" id="action_principales">3. Actions principales</h2>
             <div class="decalage">
-              <h3 class="text-info" id="le_combat">2.1 Le combat</h3>
+              <h3 class="text-info" id="le_combat">3.1 Le combat</h3>
               <div class="decalage">
                 <h4 class="text-secondary">Initiative : <code>!cof-init</code></h4>
                 <div class="decalage">
@@ -382,7 +396,7 @@
               <div class="decalage">
                 <p>Ferme aussi le tracker de tour. Encore à mettre en macro dans la barre du MJ. Permet de tenir compte de pleins de capacités qui durent un combat, ou utilisables une seule fois par combat,...</p>
               </div>
-              <h3 class="text-info" id="soins">2.2 Soins :</h3>
+              <h3 class="text-info" id="soins">3.2 Soins :</h3>
               <div class="decalage">
                 <h4 class="text-secondary"><code>!cof-soin @{selected|token_id} @{target|token_id} <i>x</i></code></h4>
                 <div class="decalage">
@@ -396,11 +410,11 @@
                   </ul>
                 </div>
               </div>
-              <h3 class="text-info" id="annulation">2.3 Annulation : <code>!cof-undo</code></h3>
+              <h3 class="text-info" id="annulation">3.3 Annulation : <code>!cof-undo</code></h3>
               <div class="decalage">
                 <p>Fait partie des fonctions que je met en macro dans la barre du MJ, ça peut servir très souvent.</p>
               </div>
-              <h3 class="text-info" id="repos">2.4 Repos</h3>
+              <h3 class="text-info" id="repos">3.4 Repos</h3>
               <div class="decalage">
                 <h4 class="text-secondary">Repos de plus de 8 h</h4>
                 <div class="decalage">
@@ -414,16 +428,16 @@
                   <p><code>!cof-recuperation</code> : dépense 1 PR pour se soigner, à mettre en macro associée aux tokens, car tous les joueurs en ont besoin.</p>
                 </div>
               </div>
-              <h3 class="text-info" id="chance">2.5 Chance</h3>
+              <h3 class="text-info" id="chance">3.5 Chance</h3>
               <div class="decalage">
                 <p>Le script essaie de détecter les cas où un point de chance peut être utile, et dans ce cas fournit un bouton (utilisable par les joueurs contrôlant le perosnnage ou le GM), permettant de dépenser un point de chance. Attention, pour l'instant, il n'est pas possible de faire juste un undo de la dépense de point de chnce. Le undo après la dépense de point de chance annule toute l'action. Il faut ensuite faire un undo par point de chance dépensé.</p>
                 <p>Pour les cas non prévus par le script, on peut faire juste <code>!cof-chance autre</code>.</p>
               </div>
-              <h3 class="text-info" id="surprise">2.6 Surprise : <code>!cof-surprise ?difficulte</code></h3>
+              <h3 class="text-info" id="surprise">3.6 Surprise : <code>!cof-surprise ?difficulte</code></h3>
               <div class="decalage">
                 <p>Fait un test de surprise sur tous les tokens sélectionné. Si la difficulté n'est pas présente, ils sont automatiquement surpris. Les valeurs des attributs (hors fiche) <code>vigilance</code> et <code>perception</code> sont ajoutés au test de sagesse.</p>
               </div>
-              <h3 class="text-info" id="statut_etats">2.7 Statut et états</h3>
+              <h3 class="text-info" id="statut_etats">3.7 Statut et états</h3>
               <div class="decalage">
                 <p><code>!cof-statut</code> affiche l'état courant de tous les tokens sélectionnés. Utile pour connaître facilement les états qui ne sont pas directement visibles sur un token (points de récupération, armes chargées, ...).</p>
                 <h4 class="text-secondary" id="etats">États gérés en utilisant le statut des tokens</h4>
@@ -467,7 +481,7 @@
                   </ul>
                 </div>
               </div>
-              <h3 class="text-info" id="sorts">2.8 Sorts</h3>
+              <h3 class="text-info" id="sorts">3.8 Sorts</h3>
               <div class="decalage">
                 <p><code>!cof-attaque-magique @{selected|token_id} @{target|token_id}</code> : fait un jet d'attaque magique opposé entre le lanceur et sa cible, et dit juste si le sort est raté ou réussi. Options disponibles : <code>--portee</code> et <code>--mana</code>.</p>
                 <p><code>!cof-lancer-sort <i>mana texte</i></code> : le token sélectionné lance un sort ayant un coût en mana, <i>texte</i> décrit le sort, mais pas d'effet (autre que la dépense de mana) à part /w au joueur et au MJ.</p>
@@ -481,7 +495,7 @@
                   <li><code>--portee <i>n</i></code> : limite la portée du sort à <i>n</i> metres.</li>
                 </ul>
               </div>
-              <h3 class="text-info" id="consommables">2.9 Consommables <code>!cof-consommables</code></h3>
+              <h3 class="text-info" id="consommables">3.9 Consommables <code>!cof-consommables</code></h3>
               <div class="decalage">
                 <p>Cette fonction affiche une liste de consommables, avec la possibilité de cliquer sur un élément de la liste pour le consommer (et activer son effet) ou l'échanger avec un autre personnage (via le symbole &#8596;).</p>
                 <p>Pour cela, la fonction regarde tous les attributs qui commencent par <code>dose_</code>, <code>elixir_</code> ou <code>consommable_</code>. La valeur courante doit être le nombre d'éléments possédé, et le max peut être une commande à effectuer pour activer l'effet. La fonction est à réserver aux tokens liés à un personnage. Il est aussi possible de simplement écrire un message qui s'affichera (et diminuera la quantité de consommables).</p>
@@ -525,18 +539,18 @@
                 <p>Pour cette dernière, il vous suffira de préparer un personnage avec un token qui contient, dans ses attributs, les consommables à échanger/vendre.</p>
                 </div>
               </div>
-              <h3 class="text-info" id="escaliers">2.10 Escaliers</h3>
+              <h3 class="text-info" id="escaliers">3.10 Escaliers</h3>
               <div class="decalage">
                 <p>Pour gérer les escaliers sur les cartes, vous pouvez utiliser la méthode suivante, inspirée du script Teleport : placez dans le layer "GM Info Overlay", au nivea des escaliers, des tokens qui prennent exactement la place des escaliers. Nommez ces escaliers avec un nom suivi du nombre d'étages (entre 2 et 9), suivi d'une lettre majuscule. Par exemple <code>Escalier2A</code>.</p>
                 <p>Chaque escalier de la même colonne doit avoir le même nom et même nombre d'étage, et différer seulement par la lettre finale. Ensuite, si un ensemble de tokens est sur un escalier, utilisez <code>!cof-escalier</code> pour téléporter les tokens à l'emplacement de l'escalier suivant dans l'ordre des lettres.</p>
                 <p>Dans l'exemple précédent, il serait téléporté à l'emplacement du token nommé <code>Escalier2B</code>. Cela ne fonctionne que si les bouts de l'escalier sont sur la même carte. À vous de choisir sir vous préférez révéler cette fonctionalité à vos joueurs, ou si vous le faites vous-même.</p>
               </div>
-              <h3 class="text-info" id="montures">2.11 Montures</h3>
+              <h3 class="text-info" id="montures">3.11 Montures</h3>
               <div class="decalage">
                 <p>Pour qu'un personnage puisse monter sur une monture, il faut que cette monture soit associée à une fiche de personnage et qu'il possède l'attribute <code>monture</code> à <code>true</code>. La commande pour monter sur la monture est <code>!cof-en-selle @{selected|token_id} @{target|token_id}</code>, à lancer en sélectionnant le cavalier.</p>
                 <p>On peut ensuite bouger la monture, cela déplace le cavalier. Le mieux est de lancer la commander alors que le token du cavalier est sur le token de la monture. Si on déplace le cavalier, cela le fait descendre de sa monture.</p>
               </div>
-              <h3 class="text-info" id="jet_caracteristiques">2.12 Jet de Caracteristiques</h3>
+              <h3 class="text-info" id="jet_caracteristiques">3.12 Jet de Caracteristiques</h3>
               <div class="decalage">
                 <p><code>!cof-jet ?{Faire un jet de |Charisme, CHA|Constitution, CON|Dextérité, DEX|Force, FOR|Intelligence, INT|Sagesse, SAG}</code> : fait un simple jet pour la caractérisique sélectionnée.</p>
                 <p>Il est aussi possible de donner en argument une difficulté au jet. Par exemple en faisant <code>!cof-jet INT ?{difficulté}</code>.</p>
@@ -548,7 +562,7 @@
                 </ul>
               </div>
             </div>
-						<h2 class="text-primary">3. Capacités par Classe</h2>
+						<h2 class="text-primary">4. Capacités par Classe</h2>
             <div class="decalage">
               <h3 class="text-info" id="Arquebusier">Arquebusier</h3>
               <div class="decalage">
@@ -1227,12 +1241,215 @@
                 </ul>
               </div>
             </div>
-						<h2 class="text-primary" id="statistiques">3. Statistiques</h2>
+						<h2 class="text-primary" id="statistiques">5. Statistiques</h2>
 						<div class="decalage">
 							<p>Il est possible d'activer la collecte de statistiques en utilisant la commande <code>!cof-demarrer-statistiques</code>.</p>
 							<p>On peut arrêter la collecte avec <code>!cof-arreter-statistiques</code>, et la mettre en pause avec <code>!cof-pause-statistiques</code>.<br />
 								Si on redémarre après une mise en pause, on reprend les statistiques comme elles étaient au moment de la pause. Si on redémarre des statistiques en court, cela remet les statistiques à zéro.
 							</p>
+						</div>
+            <h2 class="text-primary" id="import_export">6. Import / Export (Alpha)</h2>
+						<div class="decalage">
+              <div class="alert alert-danger">
+                <p><strong>Attention : </strong>Pour le moment, cette fonctionnalité est en <strong>Alpha</strong>. Il est donc possible que le format évolue et génère une erreur d'une version à une autre.</p>
+              </div>
+              <p>La création de personnage peut être assez longue et fastidieuse sur Roll20. Ces fonctionnalités vont nous permettre de constituer une base de données des PNJ et du bestiaire du jeu qui sera rempli au fur et à mesure par la communauté.</p>
+              <p>Cela deviendra ensuite très rapide d'importer un personnage.</p>
+              <h3 class="text-info" id="Autres_capacités">6.1 Export: <code>!cof-export</code></h3>
+              <div class="decalage">
+                <p>Cette commande va créer un "<i>handout</i>" qui contiendra les informations encodées des tokens sélectionnés.</p>
+              </div>
+              <h3 class="text-info" id="Autres_capacités">6.2 Import: <code>!cof-import</code></h3>
+              <div class="decalage">
+                <p>Pour importer un ou plusieurs personnages, vous devez :</p>
+                <ul>
+                  <li>Avoir un "<i>handout</i>" avec comme nom "<i>cof-import</i>"</li>
+                  <li>Son contenu ("<i>Description & Notes</i>") doit être équivalent à un <code>!cof-export</code></li>
+                  <li>C'est tout :-)</li>
+                </ul>
+                <div class="alert alert-warning" role="alert">
+                  <p><strong>Attention :</strong> Si c'est un import de plusieurs personnages d'un coup, chaque personnage doit être séparé par :</p>
+                  <ul>
+                    <li>Un retour chariot (touche Entrée)</li>
+                    <li>###</li>
+                    <li>Un retour chariot (touche Entrée)</li>
+                  </ul>
+                  <p>Si vous avez utilisé l'export en sélectionnant plusieurs token, vous n'avez rien à ajouter car c'est fait automatiquement.</p>
+                </div>
+              </div>
+              <h3 class="text-info" id="Autres_capacités">6.3 Bestiaire</h3>
+              <div class="decalage">
+                <div class="row d-none" id="json_data">
+                  <div class="col-12">
+                    <textarea class="form-control" rows="6"></textarea>
+                    <div class="alert alert-primary" role="alert">
+                      <p>A ajouter dans le "<i>Description & Notes</i>" d'un handout appelé "cof-import"</p>
+                      <p>Tappez ensuite la commande : <code>!cof-import</code></p>
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-12">
+                    <h3>Exemple pour le scénario 2 :</h3>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-xs-6 col-sm-4 col-md-3 col-xl-3">
+                    <div class="card">
+                      <img class="card-img-top" src="https://i.imgur.com/kn5Vguy.png" alt="Julius Mortemire">
+                      <div class="card-body text-center">
+                        <h4 class="card-title">Julius Mortemire</h4>
+                        <p class="card-text d-none json">{"character":{"name":"Julius Mortemire","notes":"","gmnotes":"Julius Mortemire est un jeune cassepieds fainéant, prétentieux et malhonnête.
+Il aime le luxe, l’argent facile et les jolies filles, et n’a que très peu de morale. Sa plus grande qualité est sans doute d’aimer sincèrement sa soeur (alors qu’il déteste son propre père).Après avoir fait la bêtise de trop — voler le collier de la fille d’un riche marchand avec laquelle il avait passé la nuit — son père, militaire haut placé, a obtenu du prince qu’il lui accorde de s’engager dans l’armée plutôt que de finir en
+geôle, évitant ainsi un procès humiliant pour le nom de la famille. Il a obtenu son affectation à la garnison lointaine de Fort-Boueux, où la propre soeur de Julius s’était portée volontaire pour son premier commandement.
+
+Julius n’hésitera pas à faire savoir que le métier de soldat à « Fort Bouseux », comme il le nomme déjà, ne lui fait aucune envie. Il ne fait pas mystère d’y aller par obligation : « C’était ça ou la
+prison ! À cause d’une petite pimbêche qui m’a accusé de vol, un collier qu’elle m’avait offert en gage d’amour ! J’ai pris le collier et pas son amour… et voilà ! »
+
+Julius sera une plaie, une épine dans le pied des PJ tout au long du voyage, puis pendant les combats. Au cours de la bataille finale, il désertera. Les personnages le retrouveront dans un prochain épisode, en compagnie de faux-monnayeurs…
+
+Rodrick est un vieux finaud bien informé et son oreille entend bien plus loin que les murailles de son château. Il a immédiatement compris à qui il avait affaire. C’est pourquoi il a reçu Julius au château et l’a
+gardé toute la nuit, le saoulant si copieusement que le dandy n’était plus en état de causer de problèmes
+au village...
+","bio":""},"attributes":[{"name":"FOR_SUP","current":"@{JETNORMAL}","max":""},{"name":"DEX_SUP","current":"@{JETNORMAL}","max":""},{"name":"CON_SUP","current":"@{JETNORMAL}","max":""},{"name":"INT_SUP","current":"@{JETNORMAL}","max":""},{"name":"SAG_SUP","current":"@{JETNORMAL}","max":""},{"name":"CHA_SUP","current":"@{JETNORMAL}","max":""},{"name":"VERSION","current":"1.7","max":""},{"name":"pv","current":26,"max":"26"},{"name":"NIVEAU","current":"2","max":""},{"name":"SEXE","current":"M","max":""},{"name":"FORCE","current":"12","max":""},{"name":"FOR_BONUS","current":"0","max":""},{"name":"DEXTERITE","current":"16","max":""},{"name":"CONSTITUTION","current":"12","max":""},{"name":"INTELLIGENCE","current":"11","max":""},{"name":"SAGESSE","current":"9","max":""},{"name":"CHARISME","current":"15","max":""},{"name":"repeating_armes_-KkBbodUsai740ZrUexZ_armenom","current":"1 Rapière","max":""},{"name":"repeating_armes_-KkBbodUsai740ZrUexZ_armeatkdiv","current":"0","max":""},{"name":"repeating_armes_-KkBbodUsai740ZrUexZ_armedmde","current":"6","max":""},{"name":"repeating_armes_-KkBc0Nx0DfTKC7m8G8q_armenom","current":"2 Dague","max":""},{"name":"repeating_armes_-KkBc0Nx0DfTKC7m8G8q_armeportee","current":"5","max":""},{"name":"repeating_armes_-KkBc0Nx0DfTKC7m8G8q_armeatkdiv","current":"0","max":""},{"name":"voie1-1","current":"Attaque mortelle (L) : Une attaque\nqui doit être exécutée de dos ou par\nsurprise. La créature obtient un bonus\nde +5 en attaque et ajoute +2d6 aux\nDM. La créature obtient aussi un bonus\nde +5 aux tests de discrétion.","max":""},{"name":"DEFDIV","current":"1","max":""},{"name":"DEFARMURE","current":"2","max":""},{"name":"RACE","current":"Humain","max":""},{"name":"PROFIL","current":"Voleur","max":""},{"name":"AGE","current":"20","max":""},{"name":"TAILLE","current":"1.80 m","max":""},{"name":"POIDS","current":"70 kg","max":""},{"name":"repeating_armes_-KnndZFDX9KbS2fGgFQo_armenom","current":"3 Attaque mortelle (L)","max":""},{"name":"repeating_armes_-KnndZFDX9KbS2fGgFQo_armeatkdiv","current":"5","max":""},{"name":"DV","current":"6","max":""},{"name":"repeating_armes_-KnndZFDX9KbS2fGgFQo_armedmnbde","current":"3","max":""},{"name":"repeating_armes_-KnndZFDX9KbS2fGgFQo_armedmde","current":"6","max":""},{"name":"repeating_armes_-KkBbodUsai740ZrUexZ_armecrit","current":"19","max":""},{"name":"DEFBOUCLIERMALUS","current":"0","max":""},{"name":"DEFBOUCLIERON","current":"1","max":""},{"name":"repeating_armes_-KkBc0Nx0DfTKC7m8G8q_armeatk","current":"@{ATKTIR}","max":""},{"name":"repeating_armes_-KnndZFDX9KbS2fGgFQo_armeportee","current":"0","max":""},{"name":"repeating_armes_-KkBbodUsai740ZrUexZ_armeportee","current":"0","max":""},{"name":"repeating_armes_-KkBbodUsai740ZrUexZ_armeatk","current":"@{ATKTIR}","max":""},{"name":"repeating_armes_-KnndZFDX9KbS2fGgFQo_armeatk","current":"@{ATKCAC}","max":""},{"name":"DEFBOUCLIER","current":"2","max":""},{"name":"PR1","current":"0","max":""},{"name":"PR2","current":"0","max":""},{"name":"PR3","current":"0","max":""},{"name":"PR5","current":"0","max":""},{"name":"PR4","current":"0","max":""},{"name":"repeating_armes_-KnndZFDX9KbS2fGgFQo_armecrit","current":"19","max":""},{"name":"PC","current":"5","max":""}],"abilities":[{"name":"Rapière","description":"","action":"#Attaque 1 --tranchant","istokenaction":true},{"name":"Dague","description":"","action":"#Attaque 2 --tranchant","istokenaction":true},{"name":"AttaqueMortelle","description":"","action":"#Attaque 3 --tranchant","istokenaction":true}]}</p>
+                        <button class="btn btn-primary add_bestiaire">Ajouter</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-xs-6 col-sm-4 col-md-3 col-xl-3">
+                    <div class="card">
+                      <img class="card-img-top" src="https://i.imgur.com/6NAMvbj.png" alt="Karoom Dhurvan">
+                      <div class="card-body text-center">
+                        <h4 class="card-title">Karoom Dhurvan</h4>
+                        <p class="card-text d-none json">{"character":{"name":"Karoom","notes":"","gmnotes":"Partie chercher urne de feu éternel, un objet saint de Thürdim. C’est ce que Karoom est allé chercher dans les montagnes parmi les siens.
+","bio":"Habite au niveau de la carrière (Repère C)"},"attributes":[{"name":"FOR_SUP","current":"@{JETNORMAL}","max":""},{"name":"DEX_SUP","current":"@{JETNORMAL}","max":""},{"name":"CON_SUP","current":"@{JETNORMAL}","max":""},{"name":"INT_SUP","current":"@{JETNORMAL}","max":""},{"name":"SAG_SUP","current":"@{JETNORMAL}","max":""},{"name":"CHA_SUP","current":"@{JETNORMAL}","max":""},{"name":"VERSION","current":"1.7","max":""},{"name":"RACE","current":"Nain","max":""},{"name":"PROFIL","current":"Prêtre","max":""}],"abilities":[]}</p>
+                        <button class="btn btn-primary add_bestiaire">Ajouter</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-xs-6 col-sm-4 col-md-3 col-xl-3">
+                    <div class="card">
+                      <img class="card-img-top" src="https://i.imgur.com/6NxKIwL.png" alt="Krush (Vieux)">
+                      <div class="card-body text-center">
+                        <h4 class="card-title">Krush (Vieux)</h4>
+                        <p class="card-text d-none json">{"character":{"name":"Krush","notes":"","gmnotes":"Cinquante ans est un âge vénérable pour un demi-orque et Krush a aujourd’hui bien du mal à marcher sans canne même s’il tente de faire illusion lorsque des villageois passent le saluer. 
+
+Il est devenu asocial et bourru et vit avec ses douze chats. Moins, il voit de monde et mieux il se porte et il ne fait pas dans la dentelle pour le faire savoir. 
+
+Même un PJ dont il est le mentor devra éviter de lui parler trop longtemps. Il déteste les mots et l’action lui manque.
+
+Il attend la mort avec impatience, un dernier combat à sa mesure qui lui permettrait de mourir dignement,contre quelque chose de plus excitant qu’une meute de gobelins…
+","bio":"Installé dans la clairière (repère F) avec Félindra Lupus"},"attributes":[{"name":"FOR_SUP","current":"@{JETNORMAL}","max":""},{"name":"DEX_SUP","current":"@{JETNORMAL}","max":""},{"name":"CON_SUP","current":"@{JETNORMAL}","max":""},{"name":"INT_SUP","current":"@{JETNORMAL}","max":""},{"name":"SAG_SUP","current":"@{JETNORMAL}","max":""},{"name":"CHA_SUP","current":"@{JETNORMAL}","max":""},{"name":"VERSION","current":"1.7","max":""},{"name":"RACE","current":"Demi-Orc","max":""},{"name":"SEXE","current":"M","max":""},{"name":"PROFIL","current":"Guerrier","max":""},{"name":"FORCE","current":"17","max":""},{"name":"DEXTERITE","current":"11","max":""},{"name":"CONSTITUTION","current":"16","max":""},{"name":"INTELLIGENCE","current":"08","max":""},{"name":"SAGESSE","current":"13","max":""},{"name":"CHARISME","current":"08","max":""},{"name":"DEFARMURE","current":"10","max":""},{"name":"DEFBOUCLIER","current":"5","max":""},{"name":"INIT_DIV","current":"3","max":""},{"name":"NIVEAU","current":"10","max":""},{"name":"repeating_armes_-KkQxpyvlVGLhISmNXHL_armenom","current":"Epée","max":""},{"name":"repeating_armes_-KkQxpyvlVGLhISmNXHL_armedmde","current":"8","max":""},{"name":"voie1nom","current":"Combat","max":""},{"name":"voie2nom","current":"Resistance","max":""},{"name":"DV","current":"12","max":""},{"name":"PV","current":"63","max":"63"},{"name":"CAPA_RACE","current":"Vision dans le noir","max":""},{"name":"LANGUES","current":"Commun, Orque","max":""},{"name":"AGE","current":"50","max":""}],"abilities":[]}</p>
+                        <button class="btn btn-primary add_bestiaire">Ajouter</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-xs-6 col-sm-4 col-md-3 col-xl-3">
+                    <div class="card">
+                      <img class="card-img-top" src="https://i.imgur.com/1CLOvGT.png" alt="Licia">
+                      <div class="card-body text-center">
+                        <h4 class="card-title">Licia</h4>
+                        <p class="card-text d-none json">{"character":{"name":"Licia","notes":"","gmnotes":"Licia, une charmante jeune fille du village, se prend d’amitié pour un des PJ rendus célèbres par le sauvetage de Louky (son petit cousin). 
+
+Bien entendu, dès qu’il remarque cela, Julius jette également son dévolu sur la demoiselle, même s’il était déjà en train de compter fleurette par ailleurs, et enrage lorsqu’elle semble plus intéressée par le jeune héros.
+
+Cette concurrence avec le jeune dandy désagréable devrait convaincre le joueur de s’investir dans cette relation !
+Pendant la bataille finale (partie III, p40), vous pourrez ajouter une courte scène héroïque où il faut sauver la demoiselle en détresse.
+
+Le début d’une idylle ?
+Ce type d’intrigue permet au personnage d’avoir de bonnes raisons de s’impliquer ensuite dans la défense de la région, même une fois le scénario terminé
+","bio":""},"attributes":[{"name":"FOR_SUP","current":"@{JETNORMAL}","max":""},{"name":"DEX_SUP","current":"@{JETNORMAL}","max":""},{"name":"CON_SUP","current":"@{JETNORMAL}","max":""},{"name":"INT_SUP","current":"@{JETNORMAL}","max":""},{"name":"SAG_SUP","current":"@{JETNORMAL}","max":""},{"name":"CHA_SUP","current":"@{JETNORMAL}","max":""},{"name":"VERSION","current":"1.7","max":""}],"abilities":[]}</p>
+                        <button class="btn btn-primary add_bestiaire">Ajouter</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-xs-6 col-sm-4 col-md-3 col-xl-3">
+                    <div class="card">
+                      <img class="card-img-top" src="https://i.imgur.com/MAya5gE.png" alt="Shade">
+                      <div class="card-body text-center">
+                        <h4 class="card-title">Shade</h4>
+                        <p class="card-text d-none json">{"character":{"name":"Shade","notes":"","gmnotes":"","bio":""},"attributes":[{"name":"pv","current":"60","max":"60"},{"name":"FOR_SUP","current":"@{JETNORMAL}","max":""},{"name":"DEX_SUP","current":"@{JETNORMAL}","max":""},{"name":"CON_SUP","current":"@{JETNORMAL}","max":""},{"name":"INT_SUP","current":"@{JETNORMAL}","max":""},{"name":"SAG_SUP","current":"@{JETNORMAL}","max":""},{"name":"CHA_SUP","current":"@{JETNORMAL}","max":""},{"name":"VERSION","current":"1.7","max":""},{"name":"FORCE","current":"16","max":""},{"name":"DEXTERITE","current":"12","max":""},{"name":"CONSTITUTION","current":"16","max":""},{"name":"INTELLIGENCE","current":"9","max":""},{"name":"SAGESSE","current":"14","max":""},{"name":"CHARISME","current":"7","max":""},{"name":"DEFARMURE","current":"5","max":""},{"name":"repeating_armes_-KkBgVQunFbpc7ojlCBC_armenom","current":"Morsure","max":""},{"name":"repeating_armes_-KkBgVQunFbpc7ojlCBC_armeatkdiv","current":"","max":""},{"name":"repeating_armes_-KkBgVQunFbpc7ojlCBC_armedmde","current":"6","max":""},{"name":"ATKCAC_DIV","current":"13","max":""},{"name":"repeating_armes_-KkBgVQunFbpc7ojlCBC_armedmnbde","current":"0","max":""},{"name":"repeating_armes_-KkBgVQunFbpc7ojlCBC_armedmcar","current":"@{FOR}","max":""},{"name":"repeating_armes_-KkBgVQunFbpc7ojlCBC_armedmdiv","current":"4","max":""}],"abilities":[]}</p>
+                        <button class="btn btn-primary add_bestiaire">Ajouter</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-xs-6 col-sm-4 col-md-3 col-xl-3">
+                    <div class="card">
+                      <img class="card-img-top" src="https://i.imgur.com/qRDfCYF.png" alt="Baron Rodrick">
+                      <div class="card-body text-center">
+                        <h4 class="card-title">Baron Rodrick</h4>
+                        <p class="card-text d-none json">{"character":{"name":"Baron Rodrick","notes":"","gmnotes":"","bio":""},"attributes":[{"name":"FOR_SUP","current":"@{JETNORMAL}","max":""},{"name":"DEX_SUP","current":"@{JETNORMAL}","max":""},{"name":"CON_SUP","current":"@{JETNORMAL}","max":""},{"name":"INT_SUP","current":"@{JETNORMAL}","max":""},{"name":"SAG_SUP","current":"@{JETNORMAL}","max":""},{"name":"CHA_SUP","current":"@{JETNORMAL}","max":""},{"name":"VERSION","current":"1.7","max":""}],"abilities":[]}</p>
+                        <button class="btn btn-primary add_bestiaire">Ajouter</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-xs-6 col-sm-4 col-md-3 col-xl-3">
+                    <div class="card">
+                      <img class="card-img-top" src="https://i.imgur.com/vsOIbYh.png" alt="Bourgmestre Carillon">
+                      <div class="card-body text-center">
+                        <h4 class="card-title">Bourgmestre Carillon</h4>
+                        <p class="card-text d-none json">{"character":{"name":"M. Carillon","notes":"","gmnotes":"","bio":""},"attributes":[{"name":"FOR_SUP","current":"@{JETNORMAL}","max":""},{"name":"DEX_SUP","current":"@{JETNORMAL}","max":""},{"name":"CON_SUP","current":"@{JETNORMAL}","max":""},{"name":"INT_SUP","current":"@{JETNORMAL}","max":""},{"name":"SAG_SUP","current":"@{JETNORMAL}","max":""},{"name":"CHA_SUP","current":"@{JETNORMAL}","max":""},{"name":"VERSION","current":"1.7","max":""}],"abilities":[]}</p>
+                        <button class="btn btn-primary add_bestiaire">Ajouter</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-xs-6 col-sm-4 col-md-3 col-xl-3">
+                    <div class="card">
+                      <img class="card-img-top" src="https://i.imgur.com/zKJkE9S.png" alt="Bourgmestre Grunder Mark">
+                      <div class="card-body text-center">
+                        <h4 class="card-title">Bourgmestre Grunder Mark</h4>
+                        <p class="card-text d-none json">{"character":{"name":"Grunder Mark","notes":"","gmnotes":"","bio":"Maire de Vireux"},"attributes":[{"name":"FOR_SUP","current":"@{JETNORMAL}","max":""},{"name":"DEX_SUP","current":"@{JETNORMAL}","max":""},{"name":"CON_SUP","current":"@{JETNORMAL}","max":""},{"name":"INT_SUP","current":"@{JETNORMAL}","max":""},{"name":"SAG_SUP","current":"@{JETNORMAL}","max":""},{"name":"CHA_SUP","current":"@{JETNORMAL}","max":""},{"name":"VERSION","current":"1.7","max":""}],"abilities":[]}</p>
+                        <button class="btn btn-primary add_bestiaire">Ajouter</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-xs-6 col-sm-4 col-md-3 col-xl-3">
+                    <div class="card">
+                      <img class="card-img-top" src="https://i.imgur.com/kWIbB7x.png" alt="Breuk">
+                      <div class="card-body text-center">
+                        <h4 class="card-title">Breuk</h4>
+                        <p class="card-text d-none json">{"character":{"name":"Breuk","notes":"","gmnotes":"","bio":""},"attributes":[{"name":"FOR_SUP","current":"@{JETNORMAL}","max":""},{"name":"DEX_SUP","current":"@{JETNORMAL}","max":""},{"name":"CON_SUP","current":"@{JETNORMAL}","max":""},{"name":"INT_SUP","current":"@{JETNORMAL}","max":""},{"name":"SAG_SUP","current":"@{JETNORMAL}","max":""},{"name":"CHA_SUP","current":"@{JETNORMAL}","max":""},{"name":"VERSION","current":"1.7","max":""},{"name":"RACE","current":"Orque","max":""},{"name":"PROFIL","current":"Guerrier","max":""},{"name":"LANGUES","current":"Orque, Commun","max":""},{"name":"SEXE","current":"M","max":""},{"name":"FORCE","current":"14","max":""},{"name":"DEXTERITE","current":"12","max":""},{"name":"CONSTITUTION","current":"12","max":""},{"name":"INTELLIGENCE","current":"8","max":""},{"name":"CHARISME","current":"8","max":""},{"name":"DEFARMURE","current":"3","max":""},{"name":"repeating_armes_-KkR8pupYpjKbbe5GGwZ_armenom","current":"1 Epée","max":""},{"name":"repeating_armes_-KkR8pupYpjKbbe5GGwZ_armedmde","current":"8","max":""},{"name":"PV","current":"20","max":"20"},{"name":"DV","current":"0","max":""},{"name":"PC","current":"0","max":""},{"name":"PR1","current":"0","max":""},{"name":"PR3","current":"0","max":""},{"name":"PR4","current":"0","max":""},{"name":"PR5","current":"0","max":""},{"name":"PR2","current":"0","max":""},{"name":"DEFDIV","current":"0","max":""},{"name":"INIT_DIV","current":"4","max":""}],"abilities":[{"name":"Epée","description":"","action":"#Attaque -tranchant","istokenaction":false},{"name":"#TurnAction#","description":"","action":"%Epée","istokenaction":false}]}</p>
+                        <button class="btn btn-primary add_bestiaire">Ajouter</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-xs-6 col-sm-4 col-md-3 col-xl-3">
+                    <div class="card">
+                      <img class="card-img-top" src="https://i.imgur.com/2MCbPma.png" alt="Andra Mortemire">
+                      <div class="card-body text-center">
+                        <h4 class="card-title">Andra Mortemire</h4>
+                        <p class="card-text d-none json">{"character":{"name":"Andra Mortemire","notes":"","gmnotes":"Interprétation : Autoritaire, calme, suicidaire. 
+
+Andra vénère Axender, dieu du devoir et de l’honneur.
+
+Sa religion tout autant que ce qu’elle vient de vivre l’ont convaincue qu’il faut à tout prix ralentir les orques. L’épreuve qu’elle vient de traverser la rend suicidaire, elle est prête à tout pour tuer un maximum de ses ennemis.
+","bio":""},"attributes":[{"name":"FOR_SUP","current":"@{JETNORMAL}","max":""},{"name":"DEX_SUP","current":"@{JETNORMAL}","max":""},{"name":"CON_SUP","current":"@{JETNORMAL}","max":""},{"name":"INT_SUP","current":"@{JETNORMAL}","max":""},{"name":"SAG_SUP","current":"@{JETNORMAL}","max":""},{"name":"CHA_SUP","current":"@{JETNORMAL}","max":""},{"name":"VERSION","current":"1.7","max":""},{"name":"NIVEAU","current":"4","max":""},{"name":"RACE","current":"Humaine","max":""},{"name":"PROFIL","current":"Prêtresse","max":""},{"name":"SEXE","current":"F","max":""},{"name":"FORCE","current":"12","max":""},{"name":"DEXTERITE","current":"10","max":""},{"name":"CONSTITUTION","current":"12","max":""},{"name":"INTELLIGENCE","current":"12","max":""},{"name":"SAGESSE","current":"14","max":""},{"name":"CHARISME","current":"12","max":""},{"name":"DV","current":"8","max":""},{"name":"PV","current":27,"max":"27"},{"name":"repeating_armes_-KkR3XgrRdayyYMB6xSu_armenom","current":"1 Epée longue","max":""},{"name":"repeating_armes_-KkR3XgrRdayyYMB6xSu_armedmde","current":"8","max":""},{"name":"voie1nom","current":"Guerre sainte","max":""},{"name":"voie1-1","current":"Sans peur : le personnage est immunisé aux attaques de peur et il offre un bonus de [2 + Mod. de CHA] à tous ses alliés contre ce type d’effet.","max":""},{"name":"voie1-2","current":"Bouclier de la foi : le prêtre porte le symbole de sa foi sur son bouclier, ce qui lui confère un bonus supplémentaire de +1 en DEF. Ce bonus passe à +2 au Rang 4 de la Voie.","max":""},{"name":"voie1-3","current":"Marteau spirituel (L)* : le prêtre effectue une attaque magique avec une portée de 30 mètres. Un projectile d’énergie prenant la forme de l’arme du prêtre va percuter la cible, lui infligeant [1d8 + Mod. de SAG] de DM.","max":""},{"name":"voie2nom","current":"Soins","max":""},{"name":"voie2-1","current":"Soins légers (L)* : le prêtre peut toucher une cible, qui récupère alors [1d8 + niveau du prêtre] PV perdus. Le prêtre peut utiliser\nce sort sur lui-même.","max":""},{"name":"voie2-2","current":"Soins modérés (L)* : le prêtre peut toucher une cible, qui récupère alors [2d8 + niveau du prêtre] PV perdus. Le prêtre peut utiliser ce sort sur lui-même.","max":""},{"name":"voie2-3","current":"Soins de groupe (L)* : une fois par combat, le prêtre peut libérer une décharge d’énergie bienfaitrice : tous ses compagnons en vue et lui récupèrent [1d8 + niveau du prêtre] PV perdus.","max":""},{"name":"LANGUES","current":"Commun, Nain, Orque","max":""},{"name":"DIVERS","current":"Interprétation : Autoritaire, calme, suicidaire. \n\nAndra vénère Axender, dieu du devoir et de l’honneur.\n\nSa religion tout autant que ce qu’elle vient de vivre l’ont convaincue qu’il faut à tout prix ralentir les orques. L’épreuve qu’elle vient de traverser la rend suicidaire, elle est prête à tout pour tuer un maximum de ses ennemis.","max":""},{"name":"DEFARMURE","current":"4","max":""},{"name":"repeating_armes_-KnnaH9YaMmMdTdTqZqJ_armenom","current":"2 Marteau spirituel","max":""},{"name":"repeating_armes_-KnnaH9YaMmMdTdTqZqJ_armeatk","current":"@{ATKMAG}","max":""},{"name":"repeating_armes_-KnnaH9YaMmMdTdTqZqJ_armedmde","current":"8","max":""},{"name":"repeating_armes_-KnnaH9YaMmMdTdTqZqJ_armedmcar","current":"@{SAG}","max":""},{"name":"repeating_armes_-KnnaH9YaMmMdTdTqZqJ_armeportee","current":"30","max":""},{"name":"repeating_armes_-KkR3XgrRdayyYMB6xSu_armeportee","current":"0","max":""},{"name":"DEFBOUCLIER","current":"2","max":""},{"name":"DEFDIV","current":"0","max":""},{"name":"PC","current":3,"max":""},{"name":"PR1","current":"0","max":""},{"name":"PR2","current":"0","max":""},{"name":"PR3","current":"0","max":""},{"name":"PR5","current":"0","max":""},{"name":"PR4","current":"0","max":""},{"name":"PM","current":6,"max":"6"},{"name":"voieDesSoins","current":"3","max":""},{"name":"repeating_armes_-KkR3XgrRdayyYMB6xSu_armeatkdiv","current":"5","max":""},{"name":"repeating_armes_-KkR3XgrRdayyYMB6xSu_armedmcar","current":"0","max":""},{"name":"repeating_armes_-KkR3XgrRdayyYMB6xSu_armedmdiv","current":"1","max":""}],"abilities":[{"name":"EpéeLongue","description":"","action":"#Attaque 1 --tranchant","istokenaction":false},{"name":"MarteauSpirituel","description":"","action":"#Attaque 2 --magique --sortilege --mana 1 ?{Y passer tout le tour ?|oui, --puissant|non,}","istokenaction":false},{"name":"SoinsLégers","description":"","action":"!cof-soin @{selected|token_id} @{target|token_id} leger --portee 2","istokenaction":false},{"name":"SoinsModérés","description":"","action":"!cof-soin @{selected|token_id} @{target|token_id} modere --portee 2","istokenaction":false},{"name":"SoinsGroupe","description":"","action":"!cof-soin @{selected|token_id} groupe --equipe PJ","istokenaction":false},{"name":"#TurnAction#","description":"","action":"%EpéeLongue\n%MarteauSpirituel\n%SoinsLégers\n%SoinsModérés\n%SoinsGroupe","istokenaction":false}]}</p>
+                        <button class="btn btn-primary add_bestiaire">Ajouter</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-xs-6 col-sm-4 col-md-3 col-xl-3">
+                    <div class="card">
+                      <img class="card-img-top" src="https://i.imgur.com/HVDM2Z2.png" alt="Guerrier Orque">
+                      <div class="card-body text-center">
+                        <h4 class="card-title">Guerrier Orque</h4>
+                        <p class="card-text d-none json">{"character":{"name":"Orque","notes":"","gmnotes":"","bio":""},"attributes":[{"name":"FOR_SUP","current":"@{JETNORMAL}","max":""},{"name":"DEX_SUP","current":"@{JETNORMAL}","max":""},{"name":"CON_SUP","current":"@{JETNORMAL}","max":""},{"name":"INT_SUP","current":"@{JETNORMAL}","max":""},{"name":"SAG_SUP","current":"@{JETNORMAL}","max":""},{"name":"CHA_SUP","current":"@{JETNORMAL}","max":""},{"name":"VERSION","current":"1.7","max":""},{"name":"pv","current":"9","max":"9"},{"name":"RACE","current":"Orc","max":""},{"name":"FORCE","current":"12","max":""},{"name":"DEXTERITE","current":"12","max":""},{"name":"CONSTITUTION","current":"12","max":""},{"name":"INTELLIGENCE","current":"7","max":""},{"name":"CHARISME","current":"7","max":""},{"name":"repeating_armes_-KkC0goBK2NGug1PqjVQ_armenom","current":"1 Epée","max":""},{"name":"repeating_armes_-KkC0goBK2NGug1PqjVQ_armeatkdiv","current":"0","max":""},{"name":"repeating_armes_-KkC0goBK2NGug1PqjVQ_armecrit","current":"20","max":""},{"name":"repeating_armes_-KkC0goBK2NGug1PqjVQ_armedmnbde","current":"1","max":""},{"name":"repeating_armes_-KkC0goBK2NGug1PqjVQ_armedmde","current":"8","max":""},{"name":"CAPA_RACE","current":"Sensible à la lumière : Créatures souterraines, les orques détestent la lumière du jour. La lumière du soleil leur inflige une pénalité de -1 en attaque.","max":""},{"name":"voie1-1","current":"","max":""},{"name":"DEFARMURE","current":"1","max":""},{"name":"DEFBOUCLIER","current":"2","max":""},{"name":"PROFIL","current":"Guerrier","max":""},{"name":"LANGUES","current":"Orc","max":""},{"name":"NIVEAU","current":"1","max":""},{"name":"repeating_armes_-KkC0goBK2NGug1PqjVQ_armeportee","current":"0 m","max":""},{"name":"DEFDIV","current":"","max":""},{"name":"RDS","current":"0\n","max":""}],"abilities":[{"name":"Epée","description":"","action":"#Attaque 1 --tranchant","istokenaction":false},{"name":"#TurnAction#","description":"","action":"%Epée","istokenaction":false}]}</p>
+                        <button class="btn btn-primary add_bestiaire">Ajouter</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-xs-6 col-sm-4 col-md-3 col-xl-3">
+                    <div class="card">
+                      <img class="card-img-top" src="https://i.imgur.com/Uz9TF3C.png" alt="Chaman Orque">
+                      <div class="card-body text-center">
+                        <h4 class="card-title">Chaman Orque</h4>
+                        <p class="card-text d-none json">{"character":{"name":"Shaman orque","notes":"","gmnotes":"","bio":""},"attributes":[{"name":"FOR_SUP","current":"@{JETNORMAL}","max":""},{"name":"DEX_SUP","current":"@{JETNORMAL}","max":""},{"name":"CON_SUP","current":"@{JETNORMAL}","max":""},{"name":"INT_SUP","current":"@{JETNORMAL}","max":""},{"name":"SAG_SUP","current":"@{JETNORMAL}","max":""},{"name":"CHA_SUP","current":"@{JETNORMAL}","max":""},{"name":"VERSION","current":"1.7","max":""},{"name":"SEXE","current":"M","max":""},{"name":"NIVEAU","current":"2","max":""},{"name":"FORCE","current":"12","max":""},{"name":"CONSTITUTION","current":"12","max":""},{"name":"INTELLIGENCE","current":"7","max":""},{"name":"SAGESSE","current":"14","max":""},{"name":"CHARISME","current":"7","max":""},{"name":"DEFARMURE","current":"5","max":""},{"name":"PV","current":"","max":"19"},{"name":"repeating_armes_-KoCoHPbR8fYp9u9XMU1_armenom","current":"1 Dague","max":""},{"name":"repeating_armes_-KoCoHPbR8fYp9u9XMU1_armedmdiv","current":"1","max":""},{"name":"repeating_armes_-KoCoHPbR8fYp9u9XMU1_armeportee","current":"0","max":""},{"name":"repeating_armes_-KoCoP-ChQDw8XrE-uQJ_armenom","current":"2 Rayon nécrotique (L)","max":""},{"name":"repeating_armes_-KoCoP-ChQDw8XrE-uQJ_armeportee","current":"30","max":""},{"name":"repeating_armes_-KoCoP-ChQDw8XrE-uQJ_armeatk","current":"@{ATKMAG}","max":""},{"name":"repeating_armes_-KoCoP-ChQDw8XrE-uQJ_armedmnbde","current":"2","max":""},{"name":"repeating_armes_-KoCoP-ChQDw8XrE-uQJ_armedmde","current":"6","max":""},{"name":"repeating_armes_-KoCoP-ChQDw8XrE-uQJ_armedmcar","current":"0","max":""},{"name":"voie1nom","current":"Magie de combat","max":""},{"name":"voie1-1","current":"Attaque magique (L) : la créature possède un pouvoir magique qui inflige [1d6 x NC] DM sur un test d’attaque magique réussi (portée 30 m) sur une cible unique. Si vous souhaitez lancer moins de dés, convertissez la moitié des d6 obtenus en autant de bonus de +3 aux DM (8d6 vaut 4d6 + 12). Alternativement, le pouvoir inflige les même DM dans une zone de 10 mètres de diamètre, un test de DEX difficulté 10 réussi permet alors aux cibles de diviser les DM par 2.","max":""},{"name":"repeating_armes_-KoCouskd2AR5pKR8-FR_armenom","current":"3 Attaque magique (L)","max":""},{"name":"repeating_armes_-KoCouskd2AR5pKR8-FR_armeatk","current":"@{ATKMAG}","max":""},{"name":"repeating_armes_-KoCouskd2AR5pKR8-FR_armedmde","current":"6","max":""},{"name":"repeating_armes_-KoCouskd2AR5pKR8-FR_armedmcar","current":"0","max":""},{"name":"repeating_armes_-KoCouskd2AR5pKR8-FR_armedmdiv","current":"0","max":""},{"name":"repeating_armes_-KoCouskd2AR5pKR8-FR_armeportee","current":"30","max":""},{"name":"repeating_armes_-KoCouskd2AR5pKR8-FR_armedmnbde","current":"2","max":""}],"abilities":[{"name":"Dague","description":"","action":"#Attaque 1 -tranchant","istokenaction":false},{"name":"Rayon-Nécrotique-(L)","description":"","action":"#Attaque 2","istokenaction":false},{"name":"Attaque-Magique-(L)","description":"","action":"#Attaque 3","istokenaction":false},{"name":"#TurnAction#","description":"","action":"%Dague\n%Rayon-Nécrotique-(L)\n%Attaque-Magique-(L)","istokenaction":false}]}</p>
+                        <button class="btn btn-primary add_bestiaire">Ajouter</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 						</div>
 					</div>
 				</div>
