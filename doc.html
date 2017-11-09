@@ -10,34 +10,10 @@
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
 		<script src="https://use.fontawesome.com/4ee7d58794.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js"></script>
 	</head>
 	<body data-target="#list" data-spy="scroll" data-offset="10">
 		<script>
-      var all_characters = [];
 			$('document').ready(function() {
-        var clipboard = new Clipboard('.btn');
-        
-        $.getJSON( "https://htmlpreview.github.io/?https://github.com/Ulty/COFantasy/blob/master/character.json", function( characters ) {
-          all_characters = characters;
-          $.each( characters, function( key, exported_character ) {
-            var character = exported_character.character;
-            var content='' +
-            '<div class="col-xs-6 col-sm-4 col-md-3 col-xl-3">' +
-              '<div class="card">' +
-                '<img class="card-img-top" src="' + character.avatar + '" alt="' + character.name + '">' +
-                '<div class="card-body text-center">' +
-                  '<h4 class="card-title">' + character.name + '</h4>' +
-                  '<p class="card-text d-none json">' + key + '</p>' +
-                  '<button class="btn btn-primary add_bestiaire">Ajouter</button>' +
-                '</div>' +
-              '</div>' +
-            '</div>' +
-            '';
-            $('#cards').append(content);
-          });
-        });
-        
         $(document).on('click', '.clear_textarea', function() {
           $('#json_data textarea').text('');
           $('.add_bestiaire').text('Ajouter').removeClass('btn-secondary').addClass('btn-primary');
@@ -64,18 +40,6 @@
 
         $('div.sticky-top ul.collapse').on('show.bs.collapse', function () {
         $('div.sticky-top ul.collapse').collapse('hide');
-        });
-        
-        var import_data = [];
-        $(document).on('click', '.add_bestiaire', function() {
-          var key = $(this).prev('.json').text().trim();
-          import_data.push(all_characters[key]);
-          
-          $('#json_data').removeClass('d-none');
-          $('#json_data textarea').text(JSON.stringify(import_data));
-          
-          $(this).text('Ajouté !').removeClass('btn-primary').addClass('btn-secondary');
-          $(this).closest('.card').addClass("added");
         });
 			});
 		</script>
@@ -181,7 +145,6 @@
 									<li><a class="text-info" href="#Autres_capacités">Autres capacités</a></li>
 								</ul>
 								<li><a href="#statistiques">Statistiques</a></li>
-                <li><a href="#import_export">Import / Export (Alpha)</a></li>
 							</ol>
 						</div>
 					</div>
@@ -1282,50 +1245,6 @@
 							<p>On peut arrêter la collecte avec <code>!cof-arreter-statistiques</code>, et la mettre en pause avec <code>!cof-pause-statistiques</code>.<br />
 								Si on redémarre après une mise en pause, on reprend les statistiques comme elles étaient au moment de la pause. Si on redémarre des statistiques en court, cela remet les statistiques à zéro.
 							</p>
-						</div>
-            <h2 class="text-primary" id="import_export">6. Import / Export (Alpha)</h2>
-						<div class="decalage">
-              <div class="alert alert-danger">
-                <p><strong>Attention : </strong>Pour le moment, cette fonctionnalité est en <strong>Alpha</strong>. Il est donc possible que le format évolue et génère une erreur d'une version à une autre.</p>
-              </div>
-              <p>La création de personnage peut être assez longue et fastidieuse sur Roll20. Ces fonctionnalités vont nous permettre de constituer une base de données des PNJ et du bestiaire du jeu qui sera rempli au fur et à mesure par la communauté.</p>
-              <p>Cela deviendra ensuite très rapide d'importer un personnage.</p>
-              <h3 class="text-info" id="Autres_capacités">6.1 Export: <code>!cof-export</code></h3>
-              <div class="decalage">
-                <p>Cette commande va créer un "<i>handout</i>" qui contiendra les informations encodées des tokens sélectionnés.</p>
-              </div>
-              <h3 class="text-info" id="Autres_capacités">6.2 Import: <code>!cof-import</code></h3>
-              <div class="decalage">
-                <p>Pour importer un ou plusieurs personnages, vous devez :</p>
-                <ul>
-                  <li>Avoir un "<i>handout</i>" avec comme nom "<i>cof-import</i>"</li>
-                  <li>Son contenu ("<i>Description & Notes</i>") doit être équivalent à un <code>!cof-export</code></li>
-                  <li>C'est tout :-)</li>
-                </ul>
-                <div class="alert alert-warning" role="alert">
-                  <p><strong>Attention :</strong> Si c'est un import de plusieurs personnages d'un coup, le tout devrait être sous forme d'un tableau <a href="https://fr.wikipedia.org/wiki/JavaScript_Object_Notation" target="_blank">JSON</a>.</p>
-                  <p>Si vous avez utilisé <code>!cof-import</code> en sélectionnant plusieurs token, vous n'avez rien à faire.</p>
-                </div>
-              </div>
-              <h3 class="text-info" id="Autres_capacités">6.3 Bestiaire</h3>
-              <div class="decalage">
-                <div class="row d-none" id="json_data">
-                  <div class="col-12">
-                    <textarea class="form-control" rows="6" id="cp_txt"></textarea>
-                    <div class="text-right">
-                      <button class="btn btn-success" data-clipboard-target="#cp_txt">Copier</button>
-                      <button class="btn btn-warning clear_textarea">Effacer</button>
-                    </div>
-                    <div class="clearfix"></div>
-                    <div class="alert alert-primary" role="alert">
-                      <p>A ajouter dans le "<i>Description & Notes</i>" d'un handout appelé "cof-import"</p>
-                      <p>Tappez ensuite la commande : <code>!cof-import</code></p>
-                    </div>
-                  </div>
-                </div>
-                <div class="row" id="cards">
-                </div>
-              </div>
 						</div>
 					</div>
 				</div>
