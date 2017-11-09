@@ -13,13 +13,7 @@
 	</head>
 	<body data-target="#list" data-spy="scroll" data-offset="10">
 		<script>
-			$('document').ready(function() {
-        $(document).on('click', '.clear_textarea', function() {
-          $('#json_data textarea').text('');
-          $('.add_bestiaire').text('Ajouter').removeClass('btn-secondary').addClass('btn-primary');
-          $('.add_bestiaire').closest('.card').removeClass("added");
-        });
-      
+			$('document').ready(function() {      
         $(document).on('click', '#start', function() {
           $('.start').toggle();
           $('div.sticky-top ul.collapse').collapse('hide');
