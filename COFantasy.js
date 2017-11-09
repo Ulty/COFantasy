@@ -10915,10 +10915,8 @@ var COFantasy = COFantasy || function() {
     // testRes.echecCritique, testRes.critique pour le type
   }
 
-  var separator = '<br>###<br>';
-
   function export_character(msg) {
-    var json_export = '';
+    var json_export = [];
     getSelected(msg, function(selection) {
       var nb_selection = selection.length;
 
@@ -10938,20 +10936,21 @@ var COFantasy = COFantasy || function() {
           var export_character = {};
 
           export_character.character = {
-            name: character_name,
-            notes: '',
-            gmnotes: '',
-            bio: '',
+            name : character_name,
+            avatar : character.get('avatar'),
+            notes : '',
+            gmnotes : '',
+            bio : '',
           };
 
           character.get("notes", function(notes) { // asynchronous
-            if (notes.length > 0 && notes != 'null') export_character.character.notes = notes;
+            if (notes.length > 0 && notes != 'null') export_character.character.notes = notes.replace(/<br>/g, '\n');
 
             character.get("gmnotes", function(gmnotes) { // asynchronous
-              if (gmnotes.length > 0 && gmnotes != 'null') export_character.character.gmnotes = gmnotes;
+              if (gmnotes.length > 0 && gmnotes != 'null') export_character.character.gmnotes = gmnotes.replace(/<br>/g, '\n');
 
               character.get("bio", function(bio) { // asynchronous
-                if (bio.length > 0 && bio != 'null') export_character.character.bio = bio;
+              if (bio.length > 0 && bio != 'null') export_character.character.bio = bio.replace(/<br>/g, '\n');
 
                 var attributes = findObjs({
                   _type: 'attribute',
@@ -10960,9 +10959,9 @@ var COFantasy = COFantasy || function() {
                 export_character.attributes = [];
                 _.each(attributes, function(attribute, i) {
                   export_character.attributes.push({
-                    name: attribute.get('name'),
-                    current: attribute.get('current'),
-                    max: attribute.get('max')
+                    name : attribute.get('name'),
+                    current : attribute.get('current'),
+                    max : attribute.get('max')
                   });
                 });
                 var abilities = findObjs({
@@ -10972,14 +10971,14 @@ var COFantasy = COFantasy || function() {
                 export_character.abilities = [];
                 _.each(abilities, function(ability, i) {
                   export_character.abilities.push({
-                    name: ability.get('name'),
-                    description: ability.get('description'),
-                    action: ability.get('action'),
-                    istokenaction: ability.get('istokenaction')
+                    name : ability.get('name'),
+                    description : ability.get('description'),
+                    action : ability.get('action'),
+                    istokenaction : ability.get('istokenaction')
                   });
                 });
 
-                json_export += JSON.stringify(export_character) + separator;
+                json_export.push(export_character);
                 sendPlayer(msg, "Export " + character_name + " effectué.");
 
                 cpt++;
@@ -10993,9 +10992,10 @@ var COFantasy = COFantasy || function() {
                     name: 'cof-export-' + this_date
                   });
 
-                  this_handout.set('notes', json_export);
+                  this_handout.set('notes', JSON.stringify(json_export));
                   sendPlayer(msg, "Export terminé.");
                 }
+
               });
             });
           });
@@ -11003,63 +11003,53 @@ var COFantasy = COFantasy || function() {
       });
     });
   }
-
+  
   function import_character(msg) {
 
-    var import_data = findObjs({
+    var import_handouts = findObjs({
       _type: 'handout',
       name: 'cof-import',
     });
 
-    var all_data = [];
+    import_handouts.forEach(function(import_handout, i) {
+      import_handout.get('notes', function(json_data) { // asynchronous
+        var all_characters = JSON.parse(json_data.trim());
 
-    import_data.forEach(function(import_handout, i) {
-      import_handout.get('notes', function(note) { // asynchronous
-        var data = note.trim().split(separator);
-        data.forEach(function(content) {
-          content = content.trim();
-          if (content.length > 0) all_data.push(content);
-        });
+        _.each(all_characters, function(character_data) {
+          var character = character_data.character;
+          var new_character = createObj("character", {
+            name: character.name,
+            avatar: character.avatar
+          });
+          new_character.set('notes', character.notes.replace(/\n/g, '<br>'));
+          new_character.set('gmnotes', character.gmnotes.replace(/\n/g, '<br>'));
+          new_character.set('bio', character.bio.replace(/\n/g, '<br>'));
 
-        if ((i + 1) == import_data.length) {
-          _.each(all_data, function(this_import_data) {
-            var exported_character = JSON.parse(this_import_data);
+          var charId = new_character.get('id');
 
-            var character = exported_character.character;
-            var new_character = createObj("character", {
-              name: character.name
+          var attributes = character_data.attributes;
+          _.each(attributes, function(attribute, i) {
+            var new_attribute = createObj("attribute", {
+              _characterid: charId,
+              name: attribute.name,
+              current: attribute.current,
+              max: attribute.max
             });
-            new_character.set('notes', character.notes);
-            new_character.set('gmnotes', character.gmnotes);
-            new_character.set('bio', character.bio);
-
-            var charId = new_character.get('id');
-
-            var attributes = exported_character.attributes;
-            _.each(attributes, function(attribute, i) {
-              var new_attribute = createObj("attribute", {
-                _characterid: charId,
-                name: attribute.name,
-                current: attribute.current,
-                max: attribute.max
-              });
-            });
-
-            var abilities = exported_character.abilities;
-            _.each(abilities, function(ability, i) {
-              var new_ability = createObj("ability", {
-                _characterid: charId,
-                name: ability.name,
-                description: ability.description,
-                action: ability.action,
-                istokenaction: ability.istokenaction
-              });
-            });
-
-            sendPlayer(msg, "Import " + character.name + " effectué.");
           });
 
-        }
+          var abilities = character_data.abilities;
+          _.each(abilities, function(ability, i) {
+            var new_ability = createObj("ability", {
+              _characterid: charId,
+              name: ability.name,
+              description: ability.description,
+              action: ability.action,
+              istokenaction: ability.istokenaction
+            });
+          });
+
+          sendPlayer(msg, "Import " + character.name + " effectué.");
+        });
       });
     });
   }
