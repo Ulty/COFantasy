@@ -78,11 +78,9 @@ var COFantasy = COFantasy || function() {
   }
 
   // retourne un tableau contenant la liste des ID de joueurs controlant le personnage lié au Token
-  function get_player_ids_from_token(token) {
+  function get_player_ids(perso) {
     var player_ids = [];
-    var charId = token.get('represents');
-    if (charId === '' || charId === undefined) return player_ids;
-    var character = getObj('character', charId);
+    var character = getObj('character', perso.charId);
     var char_controlledby = character.get('controlledby');
     if (char_controlledby === '') return player_ids;
     _.each(char_controlledby.split(","), function(controlledby) {
@@ -525,7 +523,6 @@ var COFantasy = COFantasy || function() {
     else button_title = '';
     if (action.startsWith('#')) {
       // macro donc on va le remplacer par sa commande (action)
-
       // Toutes les Macros
       var macros = findObjs({
         _type: 'macro'
@@ -541,7 +538,6 @@ var COFantasy = COFantasy || function() {
         action = action.replace(command_words[0], this_macro[0].get('action'));
       }
     }
-
     switch (action.charAt(0)) {
       case '!':
         if (!action.startsWith('!&#13;') && ressource) action += " --decrAttribute " + ressource.id;
@@ -554,23 +550,22 @@ var COFantasy = COFantasy || function() {
           action = "!cof-lancer-sort 0 " + action;
         }
     }
-
     if (action.indexOf('@{selected') !== -1) {
       // cas spécial pour @{selected|token_id} où l'on remplace toutes les occurences par perso.token.id
       action = action.replace(new RegExp(escapeRegExp('@{selected|token_id}'), 'g'), perso.token.id);
-
-      var character_name = perso.get('name');
+      if (perso.name === undefined) {
+        var character = getObj('character', perso.charId);
+        perso.name = character.get('name');
+      }
       var tmp = action.split('@{selected');
       _.each(tmp, function(elem, i) {
         if (elem.startsWith('|')) {
           // attribut demandé
           var attribute_name = elem.substring(0, elem.indexOf("}")).substr(1);
-
-          action = action.replace(new RegExp(escapeRegExp('@{selected|' + attribute_name + '}'), 'g'), '@{' + character_name + '|' + attribute_name + '}');
+          action = action.replace(new RegExp(escapeRegExp('@{selected|' + attribute_name + '}'), 'g'), '@{' + perso.name + '|' + attribute_name + '}');
         }
       });
     }
-
     var add_token = " --token-id " + perso.token.id;
     if (action.indexOf(' --message ') !== -1) action = action.replace(' --message ', add_token + ' --message ');
     else if (action.indexOf('cof-attack') === -1) action += add_token;
@@ -6086,12 +6081,72 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
-  function setToken_FlagAura(token, tokenName, characterName) {
+  var alliesParPerso = {};
+  // "alliesParPerso" contiendra toutes les lignes des handouts dont le nom commence par "Equipe "
+  // Appelé uniquement après le "ready" et lorsqu'on modifie un handout (fonctionne après l'ajout d'un handout)
+  // Du coup, alliesParPerso est toujours à jour et peut l'utiliser sans problème n'importe où.
+  function changeHandout(hand) {
+    if (!hand.get('name').startsWith("Equipe ")) return;
+    hand.get('notes', function(note) { // asynchronous
+      var names = note.trim().split('<br>');
+      var persos = new Set();
+      names.forEach(function(name) {
+        name = name.trim();
+        if (name.length === 0) return;
+        var characters = findObjs({
+          _type: 'character',
+          name: name
+        });
+        if (characters.length === 0) {
+          log(name + " dans l'équipe " + hand.get('name') + " est inconnu");
+          return;
+        }
+        if (characters.length > 1) {
+          log(name + " dans l'équipe " + hand.get('name') + " est en double");
+        }
+        characters.forEach(function(character) {
+          persos.add(character.id);
+        });
+      });
+      persos.forEach(function(charId) {
+        var ancien = alliesParPerso[charId];
+        if (ancien === undefined) {
+          ancien = new Set();
+          alliesParPerso[charId] = ancien;
+        }
+        persos.forEach(function(aci){
+          if (aci == charId) return;
+          ancien.add(aci);
+        });
+      });
+    });
+  }
+
+  function estControlleParJoueur(charId) {
+    var character = getObj('character', charId);
+    if (character === undefined) return false;
+    if (character.get('controlledby').length === 0) return false;
+    return true;
+  }
+
+  function estAllieJoueur(perso) { 
+    if (estControlleParJoueur(perso.charId)) return true;
+    var allies = alliesParPerso[perso.charId];
+    if (allies === undefined) return false;
+    var res = false;
+    allies.forEach(function(p) {
+      res = res || estControlleParJoueur(p);
+    });
+    return res;
+  }
+
+  function setToken_FlagAura(perso) {
+    var token = perso.token;
     if (aura_token_on_turn) {
       // ennemi => rouge
       var aura2_color = '#CC0000';
 
-      if (notes_equipe.includes(tokenName) || notes_equipe.includes(characterName)) {
+      if (estAllieJoueur(perso)) {
         // equipe => vert
         aura2_color = '#59E594';
       }
@@ -6156,16 +6211,11 @@ var COFantasy = COFantasy || function() {
         var tokenName = token.get('name');
         var charId = act.charId;
         // personnage lié au Token
-        var character = getObj('character', charId);
-        if (character === undefined) return;
-        character.token = {};
-        character.token.id = token.get('_id');
-        var characterName = character.get('name');
         affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
         affectToken(token, 'aura2_radius', token.get('aura2_radius'), evt);
         affectToken(token, 'aura2_color', token.get('aura2_color'), evt);
         affectToken(token, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
-        setToken_FlagAura(token, tokenName, characterName);
+        setToken_FlagAura(act);
         state.COFantasy.activeTokenId = tokenId;
         state.COFantasy.activeTokenName = tokenName;
         //On recherche dans le Personnage s'il a une "Ability" dont le nom est "#TurnAction#".
@@ -6212,7 +6262,7 @@ var COFantasy = COFantasy || function() {
                     action_text = picto_style.picto + action_text;
                     style = picto_style.style;
 
-                    ligne += bouton(command, action_text, character, false, style, '') + '<br />';
+                    ligne += bouton(command, action_text, act, false, style, '') + '<br />';
                     return;
                   }
                 });
@@ -6228,7 +6278,7 @@ var COFantasy = COFantasy || function() {
                       action_text = picto_style.picto + action_text;
                       style = picto_style.style;
 
-                      ligne += bouton(command, action_text, character, false, style, '') + '<br />';
+                      ligne += bouton(command, action_text, act, false, style, '') + '<br />';
                       return;
                     }
                   });
@@ -6255,7 +6305,7 @@ var COFantasy = COFantasy || function() {
             var title = 'Actions possibles :';
 
             // on récupère les players_ids qui controllent le Token
-            var player_ids = get_player_ids_from_token(token);
+            var player_ids = get_player_ids(perso);
             if (player_ids.length > 0) {
               _.each(player_ids, function(playerid) {
                 last_playerid = playerid;
@@ -12272,38 +12322,13 @@ var COFantasy = COFantasy || function() {
     nextTurn: nextTurn,
     destroyToken: destroyToken,
     moveToken: moveToken,
+    changeHandout: changeHandout,
   };
 
 }();
 
-var notes_equipe = [];
-// "notes_equipe" contiendra toutes les lignes des handouts dont le nom commence par "Equipe "
-// Appelé uniquement après le "ready" et lorsqu'on modifie un handout (fonctionne après l'ajout d'un handout)
-// Du coup, notes_equipe est toujours à jour et peut l'utiliser sans problème n'importe où. Exemple: if (notes_equipe.includes(token_name))
-function get_handout_notes() {
-  var handout = findObjs({
-    _type: 'handout'
-  });
-
-  var AllEquipe = handout.filter(function(obj) {
-    return (obj.get('name').startsWith("Equipe "));
-  });
-
-  notes_equipe = [];
-
-  AllEquipe.forEach(function(this_equipe, i) {
-    this_equipe.get('notes', function(note) { // asynchronous
-      var names = note.trim().split('<br>');
-      names.forEach(function(name) {
-        name = name.trim();
-        if (name.length > 0) notes_equipe.push(name);
-      });
-    });
-  });
-}
-
 on("change:handout", function(obj) {
-  get_handout_notes();
+  COFantasy.changeHandout(obj);
 });
 
 on("ready", function() {
@@ -12320,7 +12345,10 @@ on("ready", function() {
     state.COFantasy.eventId = 0;
     state.COFantasy.version = script_version;
   }
-  get_handout_notes();
+  var handout = findObjs({
+    _type: 'handout'
+  });
+  handout.forEach(COFantasy.changeHandout);
   log("COFantasy " + script_version + " loaded");
 });
 
