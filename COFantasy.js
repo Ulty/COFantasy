@@ -12109,7 +12109,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = 0.5;
+  var script_version = 0.6;
   COF_loaded = true;
   state.COFantasy = state.COFantasy || {
     combat: false,

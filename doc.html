@@ -716,6 +716,10 @@
                 <ol>
                   <li><strong>Éduqué</strong> : pas de support particulier, juste reporter les bonus sur la fiche.</li>
                   <li><strong>Autorité naturelle</strong> : simplement reporter sur la fiche les bonus d'init et de DEF, et ajouter la capacité intimider.</li>
+                  <li><strong>Écuyer</strong> : pour le bonus au critique, 
+                    ajouter un attribut <code>ecuyer</code> de valeur <code>true</code>. 
+                    Pour les soins de nuit, ajouter à l'écuyer un attribut <code>ecuyerDe</code>, avec comme valeur le nom du chevalier. 
+                    Si on souhaite que l'écuyer puisse soigner gratuitement la monture, il faut aussi que celle-ci ait un attribut <code>montureDe</code>, avec comme valeur le nom du chevalier.</li>
                 </ol>
               </div>
               <h3 class="text-info" id="Druide">Druide</h3>
@@ -726,6 +730,7 @@
                   <li><strong>Nuée d'insectes</strong> : ajouter une attaque magique, de portée 20 m et sans dégâts. Puis appeler cette attaque (avec <code>!cof-attack</code>) avec les arguments <code>--sortilege --effet nueeDInsectes [[5+@{selected|SAG}]]</code>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDInsecte</code> sur la cible dans ce cas).</li>
                   <li><strong>Le guetteur</strong> : ajouter 5 à un attribut <code>preception</code>. Ajouter un personnage et token pour l'oiseau.</li>
                   <li><strong>Masque du prédateur</strong> : <code>!cof-effet-temp masqueDuPredateur [[5+@selected|SAG}]] --lanceur @{selected|token_id} --mana 2</code></li>
+                  <li><strong>Forme animale</strong> : pas d'autre support que <code>!cof-lancer-sort 3 se transforme en ?{Transformation en ?}</code> </li>.
                 </ol>
                 <h4 class="text-secondary">Voie du fauve</h4>
                 <ol>
