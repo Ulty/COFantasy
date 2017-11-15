@@ -99,39 +99,37 @@ var COFantasy = COFantasy || function() {
     };
     if (full_command === undefined) return picto_style;
     var picto = '';
-    
+
     var command = full_command.split(' ');
-    
+
     // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
     switch (command[0]) {
       case "#Attaque":
       case "!cof-attack":
-      case "!cof-attaque":      
+      case "!cof-attaque":
         var portee = 0;
         if (command[1] !== undefined && command[3] !== undefined) {
           var attackLabel = command[3];
           var this_weapon = [];
           try {
             this_weapon = JSON.parse(attackLabel);
+          } catch (e) {
+            log('Erreur parsing the Array');
           }
-          catch (e) {
-            log('Erreur parsing the Array')
-          }
-          
+
           if (Array.isArray(this_weapon)) {
             portee = this_weapon[4];
-          }
-          else{
+          } else {
             var token = getObj('graphic', tokenId);
             if (token !== undefined) {
-              var att = getAttack(attackLabel, token.get('name'), token.get('represents'))
+              var att = getAttack(attackLabel, token.get('name'), token.get('represents'));
               if (att !== undefined) {
                 portee = getPortee(token.get('represents'), att.attackPrefix);
               }
             }
           }
         }
-        
+
         if (full_command.indexOf('-sort') !== -1 || full_command.indexOf('-magic') !== -1 || full_command.indexOf('-magique') !== -1) {
           // attaque magique
           picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
@@ -150,46 +148,46 @@ var COFantasy = COFantasy || function() {
         picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
         style = 'background-color:#9900ff';
         break;
-      case "!cof-soin" :
-      case "!cof-transe-guerison" :
+      case "!cof-soin":
+      case "!cof-transe-guerison":
         picto = '<span style="font-family: \'Pictos\'">k</span> ';
         style = 'background-color:#ffe599;color:#333';
         break;
-      case "!cof-effet" :
-      case "!cof-effet-temp" :
-      case "!cof-effet-combat" :
+      case "!cof-effet":
+      case "!cof-effet-temp":
+      case "!cof-effet-combat":
         picto = '<span style="font-family: \'Pictos\'">S</span> ';
         style = 'background-color:#4a86e8';
         break;
-      case "!cof-enduire-poison" :
+      case "!cof-enduire-poison":
         picto = '<span style="font-family: \'Pictos Three\'">i</span> ';
         style = 'background-color:#05461c';
         break;
-      case "!cof-surprise" :
+      case "!cof-surprise":
         picto = '<span style="font-family: \'Pictos\'">e</span> ';
         style = 'background-color:#4a86e8';
         break;
-      case "!cof-recharger" :
+      case "!cof-recharger":
         picto = '<span style="font-family: \'Pictos\'">0</span> ';
         style = 'background-color:#e69138';
         break;
-      case "!cof-action-defensive" :
+      case "!cof-action-defensive":
         picto = '<span style="font-family: \'Pictos Three\'">b</span> ';
         style = 'background-color:#cc0000';
         break;
-      case "!cof-attendre" :
+      case "!cof-attendre":
         picto = '<span style="font-family: \'Pictos\'">t</span> ';
         style = 'background-color:#999999';
         break;
-      case "!cof-aoe" :
+      case "!cof-aoe":
         picto = '<span style="font-family: \'Pictos\'">\'</span> ';
         style = 'background-color:#cc0000';
         break;
-      case "!cof-peur" :
+      case "!cof-peur":
         picto = '<span style="font-family: \'Pictos\'">`</span> ';
         style = 'background-color:#B445FE';
         break;
-      case "!cof-consommables" :
+      case "!cof-consommables":
         picto = '<span style="font-family: \'Pictos\'">b</span> ';
         style = 'background-color:#ce0f69';
         break;
@@ -198,7 +196,7 @@ var COFantasy = COFantasy || function() {
         style = '';
         break;
     }
-    
+
     picto_style.picto = picto;
     picto_style.style = style;
     return picto_style;
@@ -576,7 +574,7 @@ var COFantasy = COFantasy || function() {
   function bouton(action, text, perso, ressource, button_style, button_title) {
     if (action === undefined || action.trim().length === 0) return text;
     else action = action.trim();
-    
+
     if (action.indexOf('#') !== -1) {
       // Cette commande contient au moins une macro donc on va le remplacer par sa commande (action)
       // Toutes les Macros
@@ -604,12 +602,8 @@ var COFantasy = COFantasy || function() {
         });
       });
     }
-
-    var token;
-    if (perso.token !== undefined) token = perso.token;
-    else token = perso;
-    if (token.get('represents') !== undefined) var character = getObj('character', token.get('represents'));
-    
+    var token = perso.token;
+    var character = getObj('character', perso.charId);
     switch (action.charAt(0)) {
       case '!':
         if (!action.startsWith('!&#13;') && ressource) action += " --decrAttribute " + ressource.id;
@@ -621,9 +615,7 @@ var COFantasy = COFantasy || function() {
           action = "!cof-lancer-sort 0 " + action;
         }
     }
-    
     var picto_style = get_picto_style_from_command(action, token.id);
-    
     if (action.indexOf('@{selected') !== -1 && character !== undefined) {
       // cas spécial pour @{selected|token_id} où l'on remplace toutes les occurences par token.id
       action = action.replace(new RegExp(escapeRegExp('@{selected|token_id}'), 'g'), token.id);
@@ -641,11 +633,11 @@ var COFantasy = COFantasy || function() {
       if (action.indexOf(' --message ') !== -1) action = action.replace(' --message ', add_token + ' --message ');
       else if (action.indexOf('cof-attack') === -1) action += add_token;
     }
-    
-    
+
+
     text = picto_style.picto + text;
     button_style = ' style="' + picto_style.style + '"';
-    
+
     if (button_title !== undefined) button_title = ' title="' + button_title + '"';
     else button_title = '';
 
@@ -7960,7 +7952,7 @@ var COFantasy = COFantasy || function() {
         }
         addLineToFramedDisplay(display, line);
         callback();
-      });//fin testCaracteristique (asynchrone)
+      }); //fin testCaracteristique (asynchrone)
   }
 
   function peur(msg) {
@@ -10388,9 +10380,9 @@ var COFantasy = COFantasy || function() {
           } else cpt++;
           var action = attr.get('max').trim();
           var ligne = quantite + ' ';
-          ligne += bouton(action, consName, perso.token, attr);
+          ligne += bouton(action, consName, perso, attr);
           // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
-          ligne += bouton('!cof-echange-consommables @{selected|token_id} @{target|token_id}', '<span style="font-family:Pictos">r</span>', perso.token, attr, 'background-color: #a009ec;font-size: 17px;padding: 4px 4px 6px 4px;', 'Cliquez pour échanger');
+          ligne += bouton('!cof-echange-consommables @{selected|token_id} @{target|token_id}', '<span style="font-family:Pictos">r</span>', perso, attr, 'background-color: #a009ec;font-size: 17px;padding: 4px 4px 6px 4px;', 'Cliquez pour échanger');
           addLineToFramedDisplay(display, ligne);
         }); //fin de la boucle sur les attributs
         if (cpt === 0) addLineToFramedDisplay(display, "<code>Vous n'avez aucun consommable</code>");
@@ -10855,7 +10847,7 @@ var COFantasy = COFantasy || function() {
           var action;
           if (elixirsACreer > 0) {
             action = "!cof-creer-elixir " + forgesort.token.id + ' ' + forgesort.token.get('name') + ' ' + elixir.nom;
-            options += bouton(forgesort, action, nbElixirs, attrElixirs);
+            options += bouton(action, nbElixirs, forgesort, attrElixirs);
           } else {
             options = nbElixirs + ' ';
           }
