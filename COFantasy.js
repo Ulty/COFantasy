@@ -515,59 +515,71 @@ var COFantasy = COFantasy || function() {
     if (action === undefined || action.trim().length === 0) return text;
     else action = action.trim();
 
+    var token;
+    if (perso.token !== undefined) token = perso.token;
+    else token = perso;
+    if (token.get('represents') !== undefined) var character = getObj('character', token.get('represents'));
+
     if (button_style !== undefined) button_style = ' style="' + button_style + '"';
     else button_style = '';
 
     if (button_title !== undefined) button_title = ' title="' + button_title + '"';
-    else button_title = '';
-    if (action.startsWith('#')) {
-      // macro donc on va le remplacer par sa commande (action)
+    else button_title = '';    
+    if (action.indexOf('#') !== -1) {
+      // Cette commande contient au moins une macro donc on va le remplacer par sa commande (action)
       // Toutes les Macros
       var macros = findObjs({
         _type: 'macro'
       });
-
-      var command_words = action.split(" ");
-      var this_macro = macros.filter(function(obj) {
-        return (obj.get('name').trim() == command_words[0].substring(1));
+      var command_words = action.split("\n");
+      //chaque ligne
+      _.each(command_words, function(line, j) {
+        var line_words = line.split(' ');
+        //chaque mot
+        _.each(line_words, function(word, k) {
+          // si le mot commence par #
+          if (word.startsWith('#')) {
+            // on recherche une macro qui s'appelle pareil (sans le #)
+            var this_macro = macros.filter(function(obj) {
+              return (obj.get('name').trim() == word.substring(1));
+            });
+            if (this_macro.length == 1) {
+              // macro trouvé
+              // on replace dans la commande initiale
+              action = action.replace(word, this_macro[0].get('action'));
+            }
+          }
+        });
       });
-
-      if (this_macro.length == 1) {
-        // macro trouvé
-        action = action.replace(command_words[0], this_macro[0].get('action'));
-      }
     }
     switch (action.charAt(0)) {
       case '!':
         if (!action.startsWith('!&#13;') && ressource) action += " --decrAttribute " + ressource.id;
         break;
-
       default:
         if (ressource) {
-          action = "!cof-utilise-consommable " + perso.token.id + " " + ressource.id + " --message " + action;
+          action = "!cof-utilise-consommable " + token.id + " " + ressource.id + " --message " + action;
         } else {
           action = "!cof-lancer-sort 0 " + action;
         }
     }
-    if (action.indexOf('@{selected') !== -1) {
-      // cas spécial pour @{selected|token_id} où l'on remplace toutes les occurences par perso.token.id
-      action = action.replace(new RegExp(escapeRegExp('@{selected|token_id}'), 'g'), perso.token.id);
-      if (perso.name === undefined) {
-        var character = getObj('character', perso.charId);
-        perso.name = character.get('name');
-      }
+    if (action.indexOf('@{selected') !== -1 && character !== undefined) {
+      // cas spécial pour @{selected|token_id} où l'on remplace toutes les occurences par token.id
+      action = action.replace(new RegExp(escapeRegExp('@{selected|token_id}'), 'g'), token.id);
       var tmp = action.split('@{selected');
       _.each(tmp, function(elem, i) {
         if (elem.startsWith('|')) {
           // attribut demandé
           var attribute_name = elem.substring(0, elem.indexOf("}")).substr(1);
-          action = action.replace(new RegExp(escapeRegExp('@{selected|' + attribute_name + '}'), 'g'), '@{' + perso.name + '|' + attribute_name + '}');
+          action = action.replace(new RegExp(escapeRegExp('@{selected|' + attribute_name + '}'), 'g'), '@{' + character.get('name') + '|' + attribute_name + '}');
         }
       });
     }
-    var add_token = " --token-id " + perso.token.id;
-    if (action.indexOf(' --message ') !== -1) action = action.replace(' --message ', add_token + ' --message ');
-    else if (action.indexOf('cof-attack') === -1) action += add_token;
+    var add_token = " --token-id " + token.id;
+    if (action.indexOf('cof-lancer-sort') === -1) {
+      if (action.indexOf(' --message ') !== -1) action = action.replace(' --message ', add_token + ' --message ');
+      else if (action.indexOf('cof-attack') === -1) action += add_token;
+    }
 
     action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;').replace(/"/g, '&#34;');
     action = action.replace(/\'/g, '&apos;'); // escape quotes
@@ -10316,9 +10328,9 @@ var COFantasy = COFantasy || function() {
           } else cpt++;
           var action = attr.get('max').trim();
           var ligne = quantite + ' ';
-          ligne += bouton(action, consName, character, attr);
+          ligne += bouton(action, consName, perso.token, attr);
           // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
-          ligne += bouton('!cof-echange-consommables @{selected|token_id} @{target|token_id}', '<span style="font-family:Pictos">r</span>', character, attr, 'background-color: #a009ec;font-size: 17px;padding: 4px 4px 6px 4px;', 'Cliquez pour échanger');
+          ligne += bouton('!cof-echange-consommables @{selected|token_id} @{target|token_id}', '<span style="font-family:Pictos">r</span>', perso.token, attr, 'background-color: #a009ec;font-size: 17px;padding: 4px 4px 6px 4px;', 'Cliquez pour échanger');
           addLineToFramedDisplay(display, ligne);
         }); //fin de la boucle sur les attributs
         if (cpt === 0) addLineToFramedDisplay(display, "<code>Vous n'avez aucun consommable</code>");
