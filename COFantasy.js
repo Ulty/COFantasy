@@ -91,52 +91,106 @@ var COFantasy = COFantasy || function() {
   }
 
 
-  function get_picto_style_from_command(command, style) {
-    if (style === undefined) style = '';
+  function get_picto_style_from_command(full_command, tokenId) {
+    var style = '';
     var picto_style = {
       picto: '',
       style: style
     };
-    if (command === undefined) return picto_style;
+    if (full_command === undefined) return picto_style;
     var picto = '';
+    
+    var command = full_command.split(' ');
+    
     // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
-    if (command.startsWith('#Attaque') || command.startsWith('!cof-attack') || command.startsWith('!cof-attaque') || command.startsWith('!cof-lancer-sort')) {
-      if (command.indexOf('-sort') !== -1 || command.indexOf('-magic') !== -1 || command.indexOf('-magique') !== -1) {
-        // attaque magique
-        picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
-        style = 'background-color:#9900ff';
-      } else if (command.indexOf('--percant') !== -1) {
-        // attaque distance
-        picto = '<span style="font-family: \'Pictos Custom\'">[</span> ';
-        style = 'background-color:#48b92c';
-      } else {
-        // attaque contact
-        picto = '<span style="font-family: \'Pictos Custom\'">t</span> ';
-      }
+    switch (command[0]) {
+      case "#Attaque":
+      case "!cof-attack":
+      case "!cof-attaque":
+      case "!cof-lancer-sort":
+        var portee = 0;
+        if (command[1] !== undefined && command[3] !== undefined) {
+          var attackLabel = command[3];
+          var this_weapon;
+          try {
+             this_weapon = JSON.parse(attackLabel);
+          }
+          catch (e) {
+          }
+          
+          if (Array.isArray(this_weapon)) {
+            portee = this_weapon[4];
+          }
+          else{
+            var token = getObj('graphic', tokenId);
+            if (token !== undefined) {
+              var att = getAttack(attackLabel, token.get('name'), token.get('represents'))
+              if (att !== undefined) {
+                portee = getPortee(token.get('represents'), att.attackPrefix);
+              }
+            }
+          }
+        }
+        
+        if (command.indexOf('-sort') !== -1 || command.indexOf('-magic') !== -1 || command.indexOf('-magique') !== -1) {
+          // attaque magique
+          picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
+          style = 'background-color:#9900ff';
+        } else if (portee > 0) {
+          // attaque distance
+          picto = '<span style="font-family: \'Pictos Custom\'">[</span> ';
+          style = 'background-color:#48b92c';
+        } else {
+          // attaque contact
+          picto = '<span style="font-family: \'Pictos Custom\'">t</span> ';
+          style = 'background-color:#cc0000';
+        }
+        break;
+      case "!cof-soin" :
+      case "!cof-transe-guerison" :
+        picto = '<span style="font-family: \'Pictos\'">k</span> ';
+        style = 'background-color:#ffe599;color:#333';
+        break;
+      case "!cof-effet" :
+      case "!cof-effet-temp" :
+      case "!cof-effet-combat" :
+        picto = '<span style="font-family: \'Pictos\'">S</span> ';
+        style = 'background-color:#4a86e8';
+        break;
+      case "!cof-enduire-poison" :
+        picto = '<span style="font-family: \'Pictos Three\'">i</span> ';
+        style = 'background-color:#05461c';
+        break;
+      case "!cof-surprise" :
+        picto = '<span style="font-family: \'Pictos\'">e</span> ';
+        style = 'background-color:#4a86e8';
+        break;
+      case "!cof-recharger" :
+        picto = '<span style="font-family: \'Pictos\'">0</span> ';
+        style = 'background-color:#e69138';
+        break;
+      case "!cof-action-defensive" :
+        picto = '<span style="font-family: \'Pictos Three\'">b</span> ';
+        style = 'background-color:#cc0000';
+        break;
+      case "!cof-attendre" :
+        picto = '<span style="font-family: \'Pictos\'">t</span> ';
+        style = 'background-color:#999999';
+        break;
+      case "!cof-aoe" :
+        picto = '<span style="font-family: \'Pictos\'">\'</span> ';
+        style = '';
+        break;
+      case "!cof-consommables" :
+        picto = '<span style="font-family: \'Pictos\'">b</span> ';
+        style = 'background-color:#ce0f69';
+        break;
+      default:
+        picto = '';
+        style = '';
+        break;
     }
-    if (command.startsWith('!cof-soin') || command.startsWith('!cof-transe-guerison')) {
-      picto = '<span style="font-family: \'Pictos\'">k</span> ';
-      style = 'background-color:#ffe599;color:#333';
-    }
-    if (command.startsWith('!cof-effet')) {
-      picto = '<span style="font-family: \'Pictos\'">S</span> ';
-      style = 'background-color:#4a86e8';
-    }
-    if (command.startsWith('!cof-recharger')) {
-      picto = '<span style="font-family: \'Pictos\'">0</span> ';
-      style = 'background-color:#e69138';
-    }
-    if (command.startsWith('!cof-action-defensive')) {
-      picto = '<span style="font-family: \'Pictos Three\'">b</span> ';
-    }
-    if (command.startsWith('!cof-attendre')) {
-      picto = '<span style="font-family: \'Pictos\'">t</span> ';
-      style = 'background-color:#999999';
-    }
-    if (command.startsWith('!cof-consommables')) {
-      picto = '<span style="font-family: \'Pictos\'">b</span> ';
-      style = '';
-    }
+    
     picto_style.picto = picto;
     picto_style.style = style;
     return picto_style;
@@ -514,17 +568,7 @@ var COFantasy = COFantasy || function() {
   function bouton(action, text, perso, ressource, button_style, button_title) {
     if (action === undefined || action.trim().length === 0) return text;
     else action = action.trim();
-
-    var token;
-    if (perso.token !== undefined) token = perso.token;
-    else token = perso;
-    if (token.get('represents') !== undefined) var character = getObj('character', token.get('represents'));
-
-    if (button_style !== undefined) button_style = ' style="' + button_style + '"';
-    else button_style = '';
-
-    if (button_title !== undefined) button_title = ' title="' + button_title + '"';
-    else button_title = '';    
+    
     if (action.indexOf('#') !== -1) {
       // Cette commande contient au moins une macro donc on va le remplacer par sa commande (action)
       // Toutes les Macros
@@ -552,6 +596,12 @@ var COFantasy = COFantasy || function() {
         });
       });
     }
+
+    var token;
+    if (perso.token !== undefined) token = perso.token;
+    else token = perso;
+    if (token.get('represents') !== undefined) var character = getObj('character', token.get('represents'));
+    
     switch (action.charAt(0)) {
       case '!':
         if (!action.startsWith('!&#13;') && ressource) action += " --decrAttribute " + ressource.id;
@@ -576,10 +626,17 @@ var COFantasy = COFantasy || function() {
       });
     }
     var add_token = " --token-id " + token.id;
-    if (action.indexOf('cof-lancer-sort') === -1) {
+    if (action.indexOf('cof-lancer-sort') === -1 && action.indexOf('cof-surprise') === -1) {
       if (action.indexOf(' --message ') !== -1) action = action.replace(' --message ', add_token + ' --message ');
       else if (action.indexOf('cof-attack') === -1) action += add_token;
     }
+    
+    var picto_style = get_picto_style_from_command(action, token.id);
+    text = picto_style.picto + text;
+    button_style = ' style="' + picto_style.style + '"';
+    
+    if (button_title !== undefined) button_title = ' title="' + button_title + '"';
+    else button_title = '';
 
     action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;').replace(/"/g, '&#34;');
     action = action.replace(/\'/g, '&apos;'); // escape quotes
@@ -6114,7 +6171,7 @@ var COFantasy = COFantasy || function() {
         aura2_color = '#59E594';
       }
 
-      token.set('aura2_radius', '0.001');
+      token.set('aura2_radius', '0.1');
       token.set('aura2_color', aura2_color);
       token.set('showplayers_aura2', true);
     } else token.set('status_flying-flag', true);
@@ -6221,11 +6278,7 @@ var COFantasy = COFantasy || function() {
                     nBfound++;
 
                     command = abilitie.get('action').trim();
-                    picto_style = get_picto_style_from_command(command, 'background-color:#cc0000');
-                    action_text = picto_style.picto + action_text;
-                    style = picto_style.style;
-
-                    ligne += bouton(command, action_text, act, false, style, '') + '<br />';
+                    ligne += bouton(command, action_text, act, false) + '<br />';
                     return;
                   }
                 });
@@ -6237,11 +6290,7 @@ var COFantasy = COFantasy || function() {
                       found = true;
                       nBfound++;
                       command = macro.get('action').trim();
-                      picto_style = get_picto_style_from_command(command, 'background-color:#660000');
-                      action_text = picto_style.picto + action_text;
-                      style = picto_style.style;
-
-                      ligne += bouton(command, action_text, act, false, style, '') + '<br />';
+                      ligne += bouton(command, action_text, act, false) + '<br />';
                       return;
                     }
                   });
