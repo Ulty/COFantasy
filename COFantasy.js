@@ -106,16 +106,16 @@ var COFantasy = COFantasy || function() {
     switch (command[0]) {
       case "#Attaque":
       case "!cof-attack":
-      case "!cof-attaque":
-      case "!cof-lancer-sort":
+      case "!cof-attaque":      
         var portee = 0;
         if (command[1] !== undefined && command[3] !== undefined) {
           var attackLabel = command[3];
-          var this_weapon;
+          var this_weapon = [];
           try {
-             this_weapon = JSON.parse(attackLabel);
+            this_weapon = JSON.parse(attackLabel);
           }
           catch (e) {
+            log('Erreur parsing the Array')
           }
           
           if (Array.isArray(this_weapon)) {
@@ -132,7 +132,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         
-        if (command.indexOf('-sort') !== -1 || command.indexOf('-magic') !== -1 || command.indexOf('-magique') !== -1) {
+        if (full_command.indexOf('-sort') !== -1 || full_command.indexOf('-magic') !== -1 || full_command.indexOf('-magique') !== -1) {
           // attaque magique
           picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
           style = 'background-color:#9900ff';
@@ -145,6 +145,10 @@ var COFantasy = COFantasy || function() {
           picto = '<span style="font-family: \'Pictos Custom\'">t</span> ';
           style = 'background-color:#cc0000';
         }
+        break;
+      case "!cof-lancer-sort":
+        picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
+        style = 'background-color:#9900ff';
         break;
       case "!cof-soin" :
       case "!cof-transe-guerison" :
@@ -179,7 +183,11 @@ var COFantasy = COFantasy || function() {
         break;
       case "!cof-aoe" :
         picto = '<span style="font-family: \'Pictos\'">\'</span> ';
-        style = '';
+        style = 'background-color:#cc0000';
+        break;
+      case "!cof-peur" :
+        picto = '<span style="font-family: \'Pictos\'">`</span> ';
+        style = 'background-color:#B445FE';
         break;
       case "!cof-consommables" :
         picto = '<span style="font-family: \'Pictos\'">b</span> ';
@@ -613,6 +621,9 @@ var COFantasy = COFantasy || function() {
           action = "!cof-lancer-sort 0 " + action;
         }
     }
+    
+    var picto_style = get_picto_style_from_command(action, token.id);
+    
     if (action.indexOf('@{selected') !== -1 && character !== undefined) {
       // cas spécial pour @{selected|token_id} où l'on remplace toutes les occurences par token.id
       action = action.replace(new RegExp(escapeRegExp('@{selected|token_id}'), 'g'), token.id);
@@ -631,7 +642,7 @@ var COFantasy = COFantasy || function() {
       else if (action.indexOf('cof-attack') === -1) action += add_token;
     }
     
-    var picto_style = get_picto_style_from_command(action, token.id);
+    
     text = picto_style.picto + text;
     button_style = ' style="' + picto_style.style + '"';
     
