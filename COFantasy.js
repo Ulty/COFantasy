@@ -988,7 +988,16 @@ var COFantasy = COFantasy || function() {
           } else {
             options.type = cmd[0];
           }
-          break;
+          return;
+        case "nature":
+        case "naturel":
+          var ln = options.additionalDmg.length;
+          if (ln > 0) {
+            options.additionalDmg[ln - 1].nature = true;
+          } else {
+            options.nature = true;
+          }
+          return;
         case "sournoise":
         case "de6Plus": //deprecated
           if (cmd.length < 2) {
@@ -3867,7 +3876,7 @@ var COFantasy = COFantasy || function() {
       } else {
         if ((dmgType == 'poison' || dmgType == 'maladie') && (invulnerable || estNonVivant(target))) {
           zero();
-        } else if (attributeAsBool(target, 'armureMagie')) {
+        } else if (attributeAsBool(target, 'armureMagique')) {
           divide();
         }
       }
