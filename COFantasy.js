@@ -6191,7 +6191,7 @@ var COFantasy = COFantasy || function() {
   // Appelé uniquement après le "ready" et lorsqu'on modifie un handout (fonctionne après l'ajout et la destruction d'un handout)
   // Du coup, alliesParPerso est toujours à jour 
   function changeHandout(hand, prev) {
-    if (prev && prev.name.startsWith("Equipe ")) {
+    if (prev && prev.name && prev.name.startsWith("Equipe ")) {
       var handouts = findObjs({
         _type: 'handout'
       });
