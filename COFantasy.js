@@ -179,7 +179,8 @@ var COFantasy = COFantasy || function() {
         picto = '<span style="font-family: \'Pictos\'">t</span> ';
         style = 'background-color:#999999';
         break;
-      case "!cof-aoe":
+      case "!cof-aoe": //deprecated
+      case "!cof-dmg":
         picto = '<span style="font-family: \'Pictos\'">\'</span> ';
         style = 'background-color:#cc0000';
         break;
@@ -880,6 +881,7 @@ var COFantasy = COFantasy || function() {
         case "tueurDeGeants":
         case "demiAuto":
         case "feinte":
+        case "artificiel":
           options[cmd[0]] = true;
           return;
         case "imparable": //deprecated
@@ -991,12 +993,7 @@ var COFantasy = COFantasy || function() {
           return;
         case "nature":
         case "naturel":
-          var ln = options.additionalDmg.length;
-          if (ln > 0) {
-            options.additionalDmg[ln - 1].nature = true;
-          } else {
-            options.nature = true;
-          }
+          options.nature = true;
           return;
         case "sournoise":
         case "de6Plus": //deprecated
@@ -1390,6 +1387,9 @@ var COFantasy = COFantasy || function() {
     if (cond == 'toujoursVrai') return true;
     switch (cond.type) {
       case "moins":
+        // Au cas où on utilise les MOD au lieu de l'attribut de base:
+        var attribute = caracOfMod(cond.attribute);
+        if (attribute) cond.attribute = attribute;
         var attackerAttr = charAttributeAsInt(attaquant.charId, cond.attribute, 0);
         var resMoins = true;
         cibles.forEach(function(target) {
@@ -3994,6 +3994,84 @@ var COFantasy = COFantasy || function() {
     }, "splatter-blood");
   }
 
+  function dmgNaturel(options) {
+    if (options.nature) return true;
+    if (options.artificiel) return false;
+    var attaquant = options.attaquant;
+    if (attaquant === undefined) return false;
+    if (charAttributeAsBool(attaquant, 'animal')) return true;
+    if (charAttributeAsBool(attaquant, 'insecte')) return true;
+    var attr = findObjs({
+      _type: 'attribute',
+      _characterid: attaquant.charId,
+    });
+    var attrProfile = attr.filter(function(a) {
+      return a.get('name') == 'PROFIL';
+    });
+    if (attrProfile.length > 0) {
+      switch (attrProfile[0].get('current').trim().toLowerCase()) {
+        case 'animal':
+        case 'insecte':
+          return true;
+      }
+    }
+    var attrRace = attr.filter(function(a) {
+      return a.get('name') == 'RACE';
+    });
+    if (attrRace.length === 0) return false;
+    var charRace = attrRace[0].get('current').trim().toLowerCase();
+    switch (charRace) {
+      case 'insecte':
+      case 'ankheg':
+      case 'araignée':
+      case 'araignee':
+      case 'guêpe':
+      case 'libellule':
+      case 'scarabée':
+      case 'scorpion':
+      case 'strige':
+      case 'animal':
+      case 'aigle':
+      case 'basilic':
+      case 'bulette':
+      case 'bison':
+      case 'calmar':
+      case 'chauve-souris':
+      case 'cheval':
+      case 'chien':
+      case 'crocodile':
+      case 'dinosaure':
+      case 'éléphant':
+      case 'eléphant':
+      case 'elephant':
+      case 'mammouth':
+      case 'gorille':
+      case 'griffon':
+      case 'hipogriffe':
+      case 'hydre':
+      case 'lion':
+      case 'loup':
+      case 'mammouth':
+      case 'manticore':
+      case 'ours':
+      case 'ours-hibou':
+      case 'pegase':
+      case 'pégase':
+      case 'pieuvre':
+      case 'rhinocéros':
+      case 'roc':
+      case 'sanglier':
+      case 'serpent':
+      case 'rat':
+      case 'taureau':
+      case 'tigre':
+      case 'wiverne':
+        return true;
+      default:
+        return false;
+    }
+  }
+
   function dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal) {
     var charId = target.charId;
     var token = target.token;
@@ -4020,9 +4098,11 @@ var COFantasy = COFantasy || function() {
         if (options.contondant) rd += charAttributeAsInt(charId, 'RD_contondant', 0);
         if (options.distance) {
           var piqures = charAttributeAsInt(charId, 'puquresDInsecte', 0);
-          if (piqures > 0 && charAttributeAsBool(charId, 'DEFARMUREON') && charAttributeAsInt(charId, 'DEFARMURE', 0) > 5) rd += piqures;
+          if (piqures > 0 && charAttributeAsBool(target, 'DEFARMUREON') && charAttributeAsInt(charId, 'DEFARMURE', 0) > 5) rd += piqures;
         }
         if (attributeAsBool(target, 'masqueMortuaire')) rd += 2;
+        var rdNature = charAttributeAsInt(target, 'RD_nature', 0);
+        if (rdNature > 0 && dmgNaturel(options)) rd += rdNature;
         if (target.defautCuirasse) rd = 0;
         if (options.intercepter) rd += options.intercepter;
         if (target.extraRD) {
@@ -7190,70 +7270,55 @@ var COFantasy = COFantasy || function() {
   }
 
   // Ne pas remplacer les inline rolls, il faut les afficher correctement
-  function aoe(msg) {
+  function dmgDirects(msg) {
     var options = parseOptions(msg);
     var cmd = options.cmd;
     if (cmd === undefined || cmd.length < 2) {
-      error("cof-aoe prend les dégats en argument, avant les options",
+      error("cof-dmg prend les dégats en argument, avant les options",
         msg.content);
       return;
     }
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
-        error("pas de cible pour l'aoe", msg);
+        error("pas de cible pour les dégâts", msg);
         return;
       }
       var evt = {
-        type: 'aoe',
+        type: 'dégâts directs',
       };
-      if (limiteRessources(undefined, options, 'aoe', 'aoe', evt)) return;
-      var action = "<b>Dégats à aire d'effets.</b>";
+      if (limiteRessources(undefined, options, 'dmg', 'dmg', evt)) return;
+      var action = "<b>Dégâts.</b>";
       var optArgs = msg.content.split(' --');
-      var dmg;
-      var dmgRollNumber = findRollNumber(cmd[1]);
-      if (dmgRollNumber === undefined) {
-        dmg = {
-          display: cmd[1],
-          total: parseInt(cmd[1]),
-          type: 'normal'
-        };
-        if (isNaN(dmg.total)) {
-          error("Le premier argument de !cof-aoe n'est pas un nombre",
-            msg.content);
-          return;
-        }
-      } else {
-        var r = msg.inlinerolls[dmgRollNumber];
-        dmg = {
-          total: r.results.total,
-          display: buildinline(r, 'normal'),
-          type: 'normal'
-        };
-        if (isNaN(dmg.total)) {
-          error("Le premier argument de !cof-aoe n'est pas un nombre",
-            msg.content);
-          return;
-        }
-      }
       var partialSave;
       options.aoe = true;
       optArgs.forEach(function(opt) {
         opt = opt.split(' ');
         switch (opt[0]) {
-          case '!cof-aoe':
-            break;
           case 'psave':
-            partialSave = opt;
-            break;
+            var psaveopt = options;
+            if (options.additionalDmg && opt.length > 3 && opt[3] == 'local') {
+              var psavel = options.additionalDmg.length;
+              if (psavel > 0) {
+                psaveopt = options.additionalDmg[psavel - 1];
+              }
+            }
+            var psaveParams = parseSave(opt);
+            if (psaveParams) {
+              psaveopt.partialSave = psaveParams;
+              action +=
+                " Jet de " + psaveParams.carac + " difficulté " + psaveParams.seuil +
+                " pour réduire les dégâts";
+            }
+            return;
           case 'once':
             if (opt.length < 2) {
-              error("Il manque l'id de l'événement qui a provoqué l'aoe", optArgs);
+              error("Il manque l'id de l'événement qui a provoqué les dégâts", optArgs);
               options.return = true;
               return;
             }
             var originalEvt = findEvent(opt[1]);
             if (originalEvt === undefined) {
-              sendPlayer(msg, "Trop tard pour l'aoe : l'action de départ est trop ancienne ou a été annulée");
+              sendPlayer(msg, "Trop tard pour les dégâts : l'action de départ est trop ancienne ou a été annulée");
               options.return = true;
               return;
             }
@@ -7265,79 +7330,95 @@ var COFantasy = COFantasy || function() {
             sendPlayer(msg, "Action déjà effectuée");
             options.return = true;
             return;
+          case 'asphyxie':
+          case 'affute':
+          case 'vampirise':
+          case 'magique':
+          case 'artificiel':
+          case 'tranchant':
+          case 'percant':
+          case 'contondant':
+          case 'tempDmg':
           case 'morts-vivants':
             options[opt[0]] = true;
             return;
-          default:
+          case "feu":
+          case "froid":
+          case "acide":
+          case "electrique":
+          case "sonique":
+          case "poison":
+          case "maladie":
+            if (options.additionalDmg) {
+              var l = options.additionalDmg.length;
+              if (l > 0) {
+                options.additionalDmg[l - 1].type = opt[0];
+              } else {
+                options.type = opt[0];
+              }
+            } else options.type = opt[0];
+            return;
+          case "nature":
+          case "naturel":
+            options.nature = true;
+            return;
         }
       });
       if (options.return) return;
-      if (partialSave !== undefined) {
-        if (partialSave.length < 3) {
-          error("Usage : !cof-aoe dmg --psave carac seuil", partialSave);
-          return;
-        }
-        if (isNotCarac(partialSave[1])) {
-          error("Le premier argument de --psave n'est pas une caractéristique", partialSave);
-          return;
-        }
-        var seuil;
-        var seuilText;
-        var seuilRollNumber = findRollNumber(partialSave[2]);
-        if (seuilRollNumber === undefined) {
-          seuil = parseInt(partialSave[2]);
-          if (isNaN(seuil)) {
-            error("Le deuxième argument de --psave n'est pas un nombre", partialSave);
-            return;
-          }
-          seuilText = seuil;
-        } else {
-          var rs = msg.inlinerolls[seuilRollNumber];
-          seuilText = buildinline(rs, 'normal');
-          seuil = rs.results.total;
-        }
-        options.partialSave = {
-          carac: partialSave[1],
-          seuil: seuil
-        };
-        action +=
-          " Jet de " + partialSave[1] + " difficulté " + seuilText +
-          " pour réduire les dégâts";
-      }
-      var display = startFramedDisplay(msg.playerid, action);
-      var tokensToProcess = selected.length;
+      //L'expression à lancer est tout ce qui est entre le premier blanc et le premier --
+      var debutDmgRollExpr = msg.content.indexOf(' ') + 1;
+      var dmgRollExpr = msg.content.substring(debutDmgRollExpr);
+      var finDmgRollExpr = msg.content.indexOf(' --');
+      if (finDmgRollExpr > debutDmgRollExpr)
+        dmgRollExpr = msg.content.substring(debutDmgRollExpr, finDmgRollExpr);
+      else dmgRollExpr = msg.content.substring(debutDmgRollExpr);
+      dmgRollExpr = dmgRollExpr.trim();
+      var dmgType = options.type || 'normal';
+      var dmg = {
+        type: dmgType,
+        value: dmgRollExpr
+      };
+      sendChat('', '[[' + dmgRollExpr + ']]', function(resDmg) {
+        var rollsDmg = resDmg[0];
+        var afterEvaluateDmg = rollsDmg.content.split(' ');
+        var dmgRollNumber = rollNumber(afterEvaluateDmg[0]);
+        dmg.total = rollsDmg.inlinerolls[dmgRollNumber].results.total;
+        dmg.display = buildinline(rollsDmg.inlinerolls[dmgRollNumber], dmgType, options.magique);
+        var display = startFramedDisplay(msg.playerid, action);
+        var tokensToProcess = selected.length;
 
-      function finalDisplay() {
-        if (tokensToProcess == 1) {
-          sendChat("", endFramedDisplay(display));
-          if (evt.affectes) {
-            if (evt.waitingForAoe) {
-              evt.waitingForAoe = undefined;
-            } else {
-              addEvent(evt);
+        function finalDisplay() {
+          if (tokensToProcess == 1) {
+            sendChat("", endFramedDisplay(display));
+            if (evt.affectes) {
+              if (evt.waitingForAoe) {
+                evt.waitingForAoe = undefined;
+              } else {
+                addEvent(evt);
+              }
             }
           }
+          tokensToProcess--;
         }
-        tokensToProcess--;
-      }
-      iterSelected(selected, function(perso) {
-        if (options['morts-vivants'] && !(estMortVivant(perso))) {
-          finalDisplay();
-          return;
-        }
-        var name = perso.token.get('name');
-        var explications = [];
-        dealDamage(perso, dmg, [], evt, 1, options, explications,
-          function(dmgDisplay, dmgFinal) {
-            addLineToFramedDisplay(display,
-              name + " reçoit " + dmgDisplay + " DM");
-            explications.forEach(function(e) {
-              addLineToFramedDisplay(display, e, 80, false);
-            });
+        iterSelected(selected, function(perso) {
+          if (options['morts-vivants'] && !(estMortVivant(perso))) {
             finalDisplay();
-          });
-      }, finalDisplay);
-    }, options.lanceur);
+            return;
+          }
+          var name = perso.token.get('name');
+          var explications = [];
+          dealDamage(perso, dmg, [], evt, 1, options, explications,
+            function(dmgDisplay, dmgFinal) {
+              addLineToFramedDisplay(display,
+                name + " reçoit " + dmgDisplay + " DM");
+              explications.forEach(function(e) {
+                addLineToFramedDisplay(display, e, 80, false);
+              });
+              finalDisplay();
+            });
+        }, finalDisplay); //fin iterSelected
+      }); //fin du jet de dés
+    }, options.lanceur); //fin du getSelected
   }
 
   function findRollNumber(msg) {
@@ -10172,7 +10253,7 @@ var COFantasy = COFantasy || function() {
             var msgJet = "Jet de SAG : " + testRes.texte;
             if (testRes.reussite) {
               var eventId = state.COFantasy.eventId;
-              var action = "!cof-aoe &lbrack;&lbrack;" + dm + "&rbrack;&rbrack; --once " + eventId + " --morts-vivants";
+              var action = "!cof-dmg " + dm + " --once " + eventId + " --morts-vivants";
               evt.waitingForAoe = true;
               addLineToFramedDisplay(display, msgJet + " &ge; 13");
               sendChat(name, endFramedDisplay(display));
@@ -10717,7 +10798,7 @@ var COFantasy = COFantasy || function() {
     if (rang < 2) return liste;
     liste.push({
       nom: 'feu_grégeois',
-      action: "!cof-aoe [[$rangd6]] --psave DEX [[10+@{selected|INT}]] --disque @{target|token_id} 3 10 --lanceur @{selected|token_id}"
+      action: "!cof-dmg $rangd6 --feu --psave DEX [[10+@{selected|INT}]] --disque @{target|token_id} 3 10 --lanceur @{selected|token_id}"
     });
     if (rang < 3) return liste;
     liste.push({
@@ -10975,13 +11056,13 @@ var COFantasy = COFantasy || function() {
       // Si aucun token n'est selectionné, on essaye de trouver le token_id dans les parametres
       _.each(all_command, function(elem, i) {
         if (elem == '--token-id') {
-          // Trouvé ! Le token_id est dont le paramètre suivant
+          // Trouvé ! Le token_id est donc le paramètre suivant
           var token_id = all_command[(i + 1)];
 
           // on récupère les infos du token :
           var token = getObj("graphic", token_id);
 
-          // on fait comme-ci c'était ce token qui avait été selectionné lors de l'envoie de la commande.
+          // on fait comme si c'était ce token qui avait été selectionné lors de l'envoi de la commande.
           msg.selected = [];
           msg.selected.push({
             _id: token.get('_id'),
@@ -10994,7 +11075,7 @@ var COFantasy = COFantasy || function() {
     }
 
     // First replace inline rolls by their values
-    if (command[0] != "!cof-aoe") replaceInline(msg);
+    replaceInline(msg);
     var evt;
     switch (command[0]) {
       case "!cof-jet":
@@ -11068,8 +11149,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-remove-buf-def":
         removeBufDef(msg);
         return;
-      case "!cof-aoe":
-        aoe(msg);
+      case "!cof-aoe": //deprecated
+      case "!cof-dmg":
+        dmgDirects(msg);
         return;
       case "!cof-set-state":
         interfaceSetState(msg);

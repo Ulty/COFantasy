@@ -377,12 +377,11 @@
                   Recharge l'arme <i>N</i> (augmente les charges d'un). Les armes sont toutes rechargées à la fin d'un combat.
                 </p>
               </div>
-              <h4 class="text-secondary">Dégâts à aire d'effet : <code>!cof-aoe <i>dm</i></code></h4>
+              <h4 class="text-secondary">Dégâts directs (sans attaquant, ou aire d'effet trop complexe pour !cof-attack) : <code>!cof-dmg <i>dm</i></code></h4>
               <div class="decalage">
-                <p>Applique des dégâts à tous les tokens sélectionné. <i>dm</i> peut être un inline roll.<br />
-                  Argument optionel: <code>--psave <i>carac seuil</i></code> : jet de <i>carac</i>, si supérieur au <i>seuil</i>, les dégâts sont divisés par 2.
+                <p>Applique des dégâts à tous les tokens sélectionnés. L'argument <i>dm</i> peut être un inline roll. Utile par exemple pour les chutes, ou bien les dégâts d'environnement, voire de pièges.<br />
+                Arguments optionels: une partie des options de <code>!cof-attack</code>, dont le type, et par exemple <code>--psave <i>carac seuil</i></code> (jet de <i>carac</i>, si supérieur au <i>seuil</i>, les dégâts sont divisés par 2).
                 </p>
-                <p>Remarque : si la forme de l'aoe le permet, mieux vaut utiliser <code>!cof-attack</code> qui gère plus d'options. Voir déjà les options <code>--ligne</code>, <code>--cone</code> et <code>--disque</code> de <code>!cof-attack</code>.</p>
               </div>
               <h4 class="text-secondary">Sortir du combat : <code>!cof-hors-combat</code></h4>
               <div class="decalage">
@@ -742,6 +741,7 @@
                 <ol>
                   <li><strong>Maître de la survie</strong> : Ajouter +2 à un attribut <code>vigilance</code></li>
                   <li><strong>Marche sylvestre</strong> : quand le druide est en terrain difficile, faire <code>!cof-effet marcheSylvestre oui</code>. Faire <code>!cof-effet marcheSylvestre non</code> quand il en sort.</li>
+                  <li><strong>Résistant</strong> : ajouter un attribut </code>RD_nature</code>, avec comme valeur la RD (donc deux fois le rang dans la voie). Cette RD s'applique à toute attaque ou dommages avec l'option <code>--nature</code> ou <code>--naturel</code>. Il s'applique aussi à toute attaque venant d'un personnage avec un attribut <code>animal</code>, ou <code>insecte</code> ou bien avec un profil animal ou insecte, ou avec une race reconnue comme étant un animal ou un insecte. Dans ce cas, si on souhaite qu'une attaque d'une telle créature ne soit pas considérée comme naturelle, on peut utiliser l'option <code>--artificiel</code> à l'attaque.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du protecteur</h4>
                 <ol>
