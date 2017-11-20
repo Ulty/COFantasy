@@ -77,7 +77,7 @@ var COFantasy = COFantasy || function() {
   }
 
   // retourne un tableau contenant la liste des ID de joueurs controlant le personnage lié au Token
-  function get_player_ids(perso) {
+  function getPlayerIds(perso) {
     var player_ids = [];
     var character = getObj('character', perso.charId);
     var char_controlledby = character.get('controlledby');
@@ -629,10 +629,14 @@ var COFantasy = COFantasy || function() {
         }
       });
     }
-    var add_token = " --token-id " + token.id;
-    if (action.indexOf('cof-lancer-sort') === -1 && action.indexOf('cof-surprise') === -1) {
-      if (action.indexOf(' --message ') !== -1) action = action.replace(' --message ', add_token + ' --message ');
-      else if (action.indexOf('cof-attack') === -1) action += add_token;
+    if (action.indexOf('@{target|') == -1 &&
+      action.indexOf('cof-lancer-sort') == -1 &&
+      action.indexOf('cof-surprise') == -1 &&
+      action.indexOf('cof-attack') == -1) {
+      //Si on n'a pas de cible, on fait comme si le token était sélectionné.
+      var add_token = " --target " + token.id;
+      if (action.indexOf(' --message ') != -1) action = action.replace(' --message ', add_token + ' --message ');
+      else action += add_token;
     }
 
 
@@ -4055,6 +4059,7 @@ var COFantasy = COFantasy || function() {
       case 'manticore':
       case 'ours':
       case 'ours-hibou':
+      case 'panthère':
       case 'pegase':
       case 'pégase':
       case 'pieuvre':
@@ -6396,20 +6401,17 @@ var COFantasy = COFantasy || function() {
           }
           if (nBfound > 0) {
             // on envoie la liste aux joueurs qui gèrent le personnage dont le token est lié
-
             charId = token.get('represents');
             // token non lié
             if (charId === '') return;
-
             var perso = {
               token: token,
               charId: charId
             };
             var last_playerid;
             var title = 'Actions possibles :';
-
             // on récupère les players_ids qui controllent le Token
-            var player_ids = get_player_ids(perso);
+            var player_ids = getPlayerIds(perso);
             if (player_ids.length > 0) {
               _.each(player_ids, function(playerid) {
                 last_playerid = playerid;
@@ -6419,14 +6421,12 @@ var COFantasy = COFantasy || function() {
                 sendChat('', endFramedDisplay(display));
               });
             }
-
             // En prime, on l'envoie au MJ
             var display = startFramedDisplay(last_playerid, title, perso, false, 'gm');
             addLineToFramedDisplay(display, ligne);
             sendChat('', endFramedDisplay(display));
           }
         }
-
         // Gestion de la confusion
         if (attributeAsBool(act, "confusion")) {
           //Une chance sur deux de ne pas agir
@@ -11050,30 +11050,6 @@ var COFantasy = COFantasy || function() {
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
-    var all_command = msg.content.split(" ");
-
-    if (msg.selected === undefined || msg.content.indexOf('--token-id ') !== -1) {
-      // Si aucun token n'est selectionné, on essaye de trouver le token_id dans les parametres
-      _.each(all_command, function(elem, i) {
-        if (elem == '--token-id') {
-          // Trouvé ! Le token_id est donc le paramètre suivant
-          var token_id = all_command[(i + 1)];
-
-          // on récupère les infos du token :
-          var token = getObj("graphic", token_id);
-
-          // on fait comme si c'était ce token qui avait été selectionné lors de l'envoi de la commande.
-          msg.selected = [];
-          msg.selected.push({
-            _id: token.get('_id'),
-            _type: token.get('_type')
-          });
-
-          return;
-        }
-      });
-    }
-
     // First replace inline rolls by their values
     replaceInline(msg);
     var evt;
