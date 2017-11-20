@@ -6197,7 +6197,7 @@ var COFantasy = COFantasy || function() {
       });
       alliesParPerso = {};
       handouts.forEach(addHandoutTeam);
-    } else {
+    } else if (hand) {
       addHandoutTeam(hand);
     }
   }
