@@ -469,6 +469,7 @@
                     <li><code>--puissant oui</code> : idem</li>
                     <li><code>--puissant non</code> : lance la version non puissante (efface le dernier effet puissant)</li>
                     <li><code>--saveParTour <i>carac seuil</i></code> : la cible peut se sortir de l'effet chaque tour grâce à un test de <i>carac</i> de difficulte <i>seuil</i>.</li>
+                    <li><code>--valeur <i>n</i></code> : pour certains effet, permet de spécifier une valeur qui remplace la valeur par défaut de l'effet.</li>
                   </ul>
                 </div>
               </div>
@@ -499,8 +500,7 @@
                   <ul>
                     <li>Pour la commande <code>!cof-attack</code>, il est vivemement recommandé d'utiliser un <a href="#tableau_arme">tableau d'arme</a>, notamment afin de faciliter l'échange du consommable.</li>
                     <li>De manière générale, faites attention avec les références utilisé dans le consommable du personnage qui utilise le consommable.<br />
-                    Par exemple : <em>peau d'écorce</em> (<code>!cof-effet-temp peau_d_ecorce [[5+@{selected|SAG}]]</code>).<br />
-                    Dans ce cas précis, l'effet ne sera pas complet car il faut avoir un attribut <code>voieDesVegetaux</code> avec comme valeur le rang dans la <a href="#voie_végétaux">Voie des végétaux</a>.</li>
+                    </li>
                   </ul>
                 </div>
                 <div class="alert alert-success">
@@ -743,7 +743,7 @@
                   <li><strong>Maître de la survie</strong> : Ajouter +2 à un attribut <code>vigilance</code></li>
                   <li><strong>Marche sylvestre</strong> : quand le druide est en terrain difficile, faire <code>!cof-effet marcheSylvestre oui</code>. Faire <code>!cof-effet marcheSylvestre non</code> quand il en sort.</li>
                   <li><strong>Résistant</strong> : ajouter un attribut </code>RD_nature</code>, avec comme valeur la RD (donc deux fois le rang dans la voie). Cette RD s'applique à toute attaque ou dommages avec l'option <code>--nature</code> ou <code>--naturel</code>. Il s'applique aussi à toute attaque venant d'un personnage avec un attribut <code>animal</code>, ou <code>insecte</code> ou bien avec un profil animal ou insecte, ou avec une race reconnue comme étant un animal ou un insecte. Dans ce cas, si on souhaite qu'une attaque d'une telle créature ne soit pas considérée comme naturelle, on peut utiliser l'option <code>--artificiel</code> à l'attaque.</li>
-                  <li><strong>Bâton de druide</strong> : Simplement créer l'attauue correspondante et permettre les deux attaques en action limitée.</li>
+                  <li><strong>Bâton de druide</strong> : Simplement créer l'attaque correspondante et permettre les deux attaques en action limitée.</li>
                   <li><strong>Constitution héroïque</strong> : reporter sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary">Voie du protecteur</h4>
@@ -753,7 +753,7 @@
                 </ol>
                 <h4 class="text-secondary" id="voie_végétaux">Voie des végétaux</h4>
                 <ol>
-                  <li><strong>Peau d'écorce</strong> : <code>!cof-effet-temp peau_d_ecorce [[5+@{selected|SAG}]]</code>. Il faut un attribut <code>voieDesVegetaux</code> avec comme valeur le rang dans la voie.</li>
+                  <li><strong>Peau d'écorce</strong> : <code>!cof-effet-temp peau_d_ecorce [[5+@{selected|SAG}]]</code>. Par défaut, utilise la valeur d'un attribut <code>voieDesVegetaux</code> (qui devrait avoir comme valeur le rang dans la voie). Il est possible de choisir une autre valeur en utilisant l'option <code>--valeur</code>, et si aucune des deux méthodes n'est utilisée, le bonus de DEF est de 1.</li>
                   <li><strong>Prison végétale</strong> : <code>!cof-effet-temp prisonVegetale [[5+@{selected|SAG}]] --saveParTour FOR [[10+@{selected|SAG}]] --lanceur @{selected|token_id} --disque @{target|token_id} 10 20 --saufAllies</code></li>
                 </ol>
               </div>
@@ -822,7 +822,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie du métal</h4>
                 <ol>
-                  <li><strong>Forgeron</strong> : Il faut un attribut <code>voieDuMetal</code> pour connaître le rang. Lancer le sort avec <code>!cof-effet-temp forgeron_<i>L</i> [[5+@{selected|INT}]]</code> où <i>L</i> est le label d'une attaque. Ensuite, chaque fois que cette attaque sera utilisée, les dégâts seront ajoutés. Limitations : risque de mal fonctionner pour les tokens non liés à un personnage, et si deux attaques utilisent la même arme, il faut faire deux fois l'action, une pour chaque attaque.</li>
+                  <li><strong>Forgeron</strong> : Il faut un attribut <code>voieDuMetal</code> pour connaître le rang (ou utiliser l'option <code>--valeur</code>. Lancer le sort avec <code>!cof-effet-temp forgeron_<i>L</i> [[5+@{selected|INT}]]</code> où <i>L</i> est le label d'une attaque. Ensuite, chaque fois que cette attaque sera utilisée, les dégâts seront ajoutés. Limitations : risque de mal fonctionner pour les tokens non liés à un personnage, et si deux attaques utilisent la même arme, il faut faire deux fois l'action, une pour chaque attaque.</li>
                   <li><strong>Métal brûlant</strong> : faire une attaque magique de portée 20 m et sans dégâts. L'appeler avec les options <code>--sortilege --effet ?{Chauffer|une arme,armeBrulante|une armure,armureBrulante} [[5+@{selected|INT}]]</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie du golem</h4>
@@ -911,7 +911,7 @@
                 <h4 class="text-secondary">Voie de la magie élémentaire</h4>
                 <ol>
                   <li><strong>Asphyxie</strong> : ajouter une attaque magique sur la fiche, de portée 20 m, et sans dégât. Utiliser cette attaque avec les options <code>--sortilege --effet asphyxie [[1+@{selected|INT}]]</code></li>
-                  <li><strong>Protection contre les éléments</strong> : ajouter un attribut <code>voieDeLaMagieElementaire</code> avec comme valeur le rang dans la voie. Pour lancer le sort, faire <code>!cof-effet-temp protectionContreLesElements [[5+@{selected|INT}]]</code>.</li>
+                  <li><strong>Protection contre les éléments</strong> : ajouter un attribut <code>voieDeLaMagieElementaire</code> avec comme valeur le rang dans la voie. Pour lancer le sort, faire <code>!cof-effet-temp protectionContreLesElements [[5+@{selected|INT}]]</code>. Notez que si vous utilisez une option <code>--valeur</code> à la place d'utiliser l'attribut, la RD sera cette valeur multipliée par 2.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la magie protectrice</h4>
                 <ol>
@@ -1226,7 +1226,7 @@
                 <ul>
                   <li><strong>Baroud d'honneur</strong> : ajouter un attribut <code>baroudHonneur</code> (=true) (Quand le personnage arrive à 0 PV, il ne meurt pas jusqu'à sa prochaine attaque, qui se fait avec un bonus de +5)</li>
                   <li><strong>Créature non-vivante</strong> : ajouter un attribut <code>nonVivant</code></li>
-                  <li><strong>Force de géant</strong> : <code>!cof-effet-temp forceDeGeant 10</code></li>
+                  <li><strong>Force de géant</strong> : <code>!cof-effet-temp forceDeGeant 10</code>. Le bonus est de 2 par défaut, mais peut être modifié en utilisant l'option <code>--valeur</code>.</li>
                   <li>
                     <strong>Poison</strong> : pour enduire une arme de label <i>L</i> de poison, utiliser <code>!cof-enduire-poison <i>L type force save</i></code>. Pour l'instant, <i>type</i> ne peut être que <code>rapide</code>, et <i>force</i> est une expression pour les dégâts (typiquement, <code>2d6</code> pour un poison rapide). <i>save</i> est la difficulté du jet de CON pour résister au poison. On peut rajouter deux arguments optionnels :
                     <ul>

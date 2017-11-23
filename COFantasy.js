@@ -1444,7 +1444,7 @@ var COFantasy = COFantasy || function() {
     }
     attBonus += charAttributeAsInt(charId, 'actionConcertee', 0);
     if (attributeAsBool(personnage, 'chant_des_heros')) {
-      attBonus += 1;
+      attBonus += getValeurOfEffet(personnage, 'chant_des_heros', 1);
       explications.push("Chant des héros => +1 en Attaque");
     }
     if (attributeAsBool(personnage, 'benediction')) {
@@ -1485,8 +1485,9 @@ var COFantasy = COFantasy || function() {
       explications.push("Un capitaine donne des ordres => +2 en Attaque");
     }
     if (attributeAsBool(personnage, 'forceDeGeant')) {
-      attBonus += 2;
-      explications.push("Force de géant => +2 en Attaque");
+      var bonusForceDeGeant = getValeurOfEffet(personnage, 'forceDeGeant', 2);
+      attBonus += bonusForceDeGeant;
+      explications.push("Force de géant => +" + bonusForceDeGeant + " en Attaque");
     }
     if (attributeAsBool(personnage, 'nueeDInsectes')) {
       attBonus -= 2;
@@ -1505,11 +1506,11 @@ var COFantasy = COFantasy || function() {
       explications.push("Marche sylvestre : +2 en Attaque");
     }
     if (attributeAsBool(personnage, 'prisonVegetale')) {
-      attBonus -= 2;
+      attBonus -= getValeurOfEffet(personnage, 'prisonVegetale', 2);
       explications.push("Prison végétale : -2 en Attaque");
     }
     if (attributeAsBool(personnage, 'masqueDuPredateur')) {
-      var bonusMasque = modCarac(personnage, 'SAGESSE');
+      var bonusMasque = getValeurOfEffet(personnage, 'masqueDuPredateur', modCarac(personnage, 'SAGESSE'));
       attBonus += bonusMasque;
       explications.push("Masque du prédateur : +" + bonusMasque + " en Attaque et DM");
     }
@@ -1599,7 +1600,7 @@ var COFantasy = COFantasy || function() {
       init += modCarac(perso, 'CHARISME');
     }
     if (attributeAsBool(perso, 'masqueDuPredateur')) {
-      init += modCarac(perso, 'SAGESSE');
+      init += getValeurOfEffet(perso, 'masqueDuPredateur', modCarac(perso, 'SAGESSE'));
     }
     // Voie du pistolero rang 1 (plus vite que son ombre)
     attributesInitEnMain(charId).forEach(function(em) {
@@ -1671,7 +1672,7 @@ var COFantasy = COFantasy || function() {
     defense += attributeAsInt(target, 'defenseTotale', 0);
     defense += attributeAsInt(target, 'pacifisme', 0);
     if (attributeAsBool(target, 'peau_d_ecorce')) {
-      defense += charAttributeAsInt(target, 'voieDesVegetaux', 0);
+      defense += getValeurOfEffet(target, 'peau_d_ecorce', 1, 'voieDesVegetaux');
     }
     if (getState(target, 'surpris')) defense -= 5;
     if (getState(target, 'renverse')) defense -= 5;
@@ -1762,7 +1763,7 @@ var COFantasy = COFantasy || function() {
       explications.push("Marche sylvestre => +2 DEF");
     }
     if (attributeAsBool(target, 'prisonVegetale')) {
-      defense -= 2;
+      defense -= getValeurOfEffet(target, 'prisonVegetale', 2);
       explications.push("Prison végétale => -2 DEF");
     }
     if (attributeAsBool(target, 'protectionContreLeMal') &&
@@ -2986,7 +2987,7 @@ var COFantasy = COFantasy || function() {
       attDMBonusCommun += " -2";
     }
     if (attributeAsBool(attaquant, 'masqueDuPredateur')) {
-      var bonusMasque = modCarac(attaquant, 'SAGESSE');
+      var bonusMasque = getValeurOfEffet(attaquant, 'masqueDuPredateur', modCarac(attaquant, 'SAGESSE'));
       if (bonusMasque > 0) attDMBonusCommun += " +" + bonusMasque;
     }
     if (attributeAsBool(attaquant, 'rageDuBerserk')) {
@@ -3026,8 +3027,9 @@ var COFantasy = COFantasy || function() {
         explications.push("Agrandissement => +2 aux DM");
       }
       if (attributeAsBool(attaquant, 'forceDeGeant')) {
-        attDMBonusCommun += "+2";
-        explications.push("Force de géant => +2 en Attaque");
+      var bonusForceDeGeant = getValeurOfEffet(attaquant, 'forceDeGeant', 2);
+        attDMBonusCommun += "+" + bonusForceDeGeant;
+        explications.push("Force de géant => +" + bonusForceDeGeant + " aux DM");
       }
       if (options.frappeDuVide) {
         options.additionalDmg.push({
@@ -3037,15 +3039,11 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (attributeAsBool(attaquant, 'forgeron_' + attackLabel)) {
-      var feuForgeron = charAttributeAsInt(attackingCharId, 'voieDuMetal', 0);
-      if (feuForgeron < 1 || feuForgeron > 5) {
-        error("Rang dans la voie du métal de " + attackerTokName + " inconnu ou incorrect", feuForgeron);
-      } else {
-        options.additionalDmg.push({
-          type: 'feu',
-          value: feuForgeron
-        });
-      }
+      var feuForgeron = getValeurOfEffet(attackingCharId, 'forgeron_' + attackLabel, 1, 'voieDuMetal');
+      options.additionalDmg.push({
+        type: 'feu',
+        value: feuForgeron
+      });
     }
     var poisonAttr = tokenAttribute(attaquant, 'poisonRapide_' + attackLabel);
     if (poisonAttr.length > 0) {
@@ -3836,7 +3834,7 @@ var COFantasy = COFantasy || function() {
     }
     var rdElems = 0;
     if (attributeAsBool(target, 'protectionContreLesElements')) {
-      rdElems = charAttributeAsInt(target, 'voieDeLaMagieElementaire', 0) * 2;
+      rdElems = getValeurOfEffet(target, 'protectionContreLesElements', 1, 'voieDeLaMagieElementaire') * 2;
     }
     if (rdElems > 0 && dmgTotal > 0 && estElementaire(mainDmgType)) {
       if (dmgTotal > rdElems) {
@@ -4758,7 +4756,7 @@ var COFantasy = COFantasy || function() {
       evt.deletedAttributes.push(attr);
       attr.remove();
     });
-    attrs.filter(function(attr) {
+    attrs = attrs.filter(function(attr) {
       var ind = attrsNamed.findIndex(function(nattr) {
         return nattr.id == attr.id;
       });
@@ -4917,12 +4915,23 @@ var COFantasy = COFantasy || function() {
       evt.deletedAttributes.push(ild);
       ild.remove();
     });
+    if (ilds.length > 0) {
+      attrs = attrs.filter(function(attr) {
+        var ind = ilds.findIndex(function(nattr) {
+          return nattr.id == attr.id;
+        });
+        return (ind == -1);
+      });
+    }
     // fin des effets temporaires (durée en tours, ou durée = combat)
     attrs.forEach(function(obj) {
       var attrName = obj.get('name');
       var charId = obj.get('characterid');
       if (estEffetTemp(attrName)) {
-        finDEffet(obj, effetTempOfAttribute(obj), attrName, charId, evt);
+        finDEffet(obj, effetTempOfAttribute(obj), attrName, charId, evt, undefined, true);
+      } else if (estAttributEffetTemp(attrName)) {
+        evt.deletedAttributes.push(obj);
+        obj.remove();
       } else if (estEffetCombat(attrName)) {
         sendChar(charId, messageEffetCombat[effetCombatOfAttribute(obj)].fin);
         evt.deletedAttributes.push(obj);
@@ -7114,7 +7123,7 @@ var COFantasy = COFantasy || function() {
       bonus += 1;
     }
     if (attributeAsBool(personnage, 'benediction')) {
-      bonus += 1;
+      bonus += getValeurOfEffet(personnage, 'benediction', 1);
     }
     if (attributeAsBool(personnage, 'strangulation')) {
       var malusStrangulation =
@@ -7143,7 +7152,8 @@ var COFantasy = COFantasy || function() {
           bonus += 2;
         break;
       case 'CHA':
-        if (attributeAsBool(personnage, 'aspectDeLaSuccube')) bonus += 5;
+        if (attributeAsBool(personnage, 'aspectDeLaSuccube')) 
+          bonus += getValeurOfEffet(personnage, 'aspectDeLaSuccube', 5);
         break;
     }
     return bonus;
@@ -7792,6 +7802,17 @@ var COFantasy = COFantasy || function() {
           }
           options.decrAttribute = attr;
           return;
+        case 'valeur':
+          if (cmd.length < 2) {
+            error("Il manque la valeur en argument de l'option --valeur", opts);
+            return;
+          }
+          options.valeur = parseInt(cmd[1]);
+          if (isNaN(options.valeur)) {
+            error("L'argument de --valeur n'est pas un nombre", cmd);
+            options.valeur = undefined;
+          }
+          return;
         default:
           return;
       }
@@ -7866,6 +7887,9 @@ var COFantasy = COFantasy || function() {
         var puissant = true;
         if (options.puissant == "off") puissant = false;
         setAttr(selected, effetComplet + "Puissant", puissant, evt);
+      }
+      if (options.valeur !== undefined) {
+        setAttr(selected, effetComplet + "Valeur", options.valeur, evt);
       }
       addEvent(evt);
     }, lanceur);
@@ -10816,7 +10840,7 @@ var COFantasy = COFantasy || function() {
     });
     liste.push({
       nom: "potion_de_protection_contre_les_éléments",
-      action: "!cof-effet-temp protectionContreLesElements [[5+$INT]]"
+      action: "!cof-effet-temp protectionContreLesElements [[5+$INT]] --valeur $rang"
     });
     liste.push({
       nom: "potion_d_armure_de_mage",
@@ -11500,16 +11524,36 @@ var COFantasy = COFantasy || function() {
     }
   };
 
-  var patternEffetsTemp =
-    new RegExp(_.reduce(messageEffetTemp, function(reg, msg, effet) {
+  function buildPatternEffets(listeEffets, postfix) {
+    if (postfix && postfix.length === 0) postfix = undefined;
+    var expression = "(";
+    expression = _.reduce(listeEffets, function(reg, msg, effet) {
       var res = reg;
       if (res !== "(") res += "|";
-      res += "^" + effet + "($|_)";
+      res += "^" + effet + "(";
+      if (postfix) {
+        postfix.forEach(function(p, i){
+          if (i) res += "|";
+          res += p+"$|"+p+"_";
+        });
+      } else res += "$|_";
+      res += ")";
       return res;
-    }, "(") + ")");
+    }, expression);
+    expression += ")";
+    return new RegExp(expression);
+  }
+
+  var patternEffetsTemp = buildPatternEffets(messageEffetTemp);
 
   function estEffetTemp(name) {
     return (patternEffetsTemp.test(name));
+  }
+
+  var patternAttributEffetsTemp = buildPatternEffets(messageEffetTemp, ["Puissant", "Valeur"]);
+
+  function estAttributEffetTemp(name) {
+    return (patternAttributEffetsTemp.test(name));
   }
 
   function effetTempOfAttribute(attr) {
@@ -11555,13 +11599,7 @@ var COFantasy = COFantasy || function() {
     }
   };
 
-  var patternEffetsCombat =
-    new RegExp(_.reduce(messageEffetCombat, function(reg, msg, effet) {
-      var res = reg;
-      if (res !== "(") res += "|";
-      res += "^" + effet + "($|_)";
-      return res;
-    }, "(") + ")");
+  var patternEffetsCombat = buildPatternEffets(messageEffetCombat);
 
   function estEffetCombat(name) {
     return (patternEffetsCombat.test(name));
@@ -11590,13 +11628,7 @@ var COFantasy = COFantasy || function() {
     }
   };
 
-  var patternEffetsIndetermine =
-    new RegExp(_.reduce(messageEffetIndetermine, function(reg, msg, effet) {
-      var res = reg;
-      if (res !== "(") res += "|";
-      res += "^" + effet + "($|_)";
-      return res;
-    }, "(") + ")");
+  var patternEffetsIndetermine = buildPatternEffets(messageEffetIndetermine);
 
   function estEffetIndetermine(name) {
     return (patternEffetsIndetermine.test(name));
@@ -11660,7 +11692,31 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function finDEffet(attr, effet, attrName, charId, evt, attrSave) { //L'effet arrive en fin de vie, doit être supprimé
+  function getValeurOfEffet(perso, effet, def, attrDef) {
+    var attrsVal = tokenAttribute(perso, effet+"Valeur");
+    if (attrsVal.length === 0) {
+      if (attrDef) return charAttributeAsInt(perso, attrDef, def);
+      return def;
+    }
+    var res = parseInt(attrsVal[0].get('current'));
+    if (isNaN(res)) return def;
+    return res;
+  }
+
+  function enleverEffetAttribut(charId, effet, attrName, attribut, evt) {
+      var nameWithSave = effet + attribut + attrName.substr(effet.length);
+      findObjs({
+        _type: 'attribute',
+        _characterid: charId,
+        name: nameWithSave
+      }).
+      forEach(function(attrS) {
+        evt.deletedAttributes.push(attrS);
+        attrS.remove();
+      });
+  }
+
+  function finDEffet(attr, effet, attrName, charId, evt, attrSave, gardeAutresAttributs) { //L'effet arrive en fin de vie, doit être supprimé
     //Si on a un attrSave, alors on a déjà imprimé le message de fin d'effet
     if (attrSave) { //on a un attribut associé à supprimer)
       evt.deletedAttributes.push(attrSave);
@@ -11671,16 +11727,11 @@ var COFantasy = COFantasy || function() {
         }, 'mort')) {
         sendChar(charId, messageEffetTemp[effet].fin);
       }
-      var nameWithSave = effet + "SaveParTour" + attrName.substr(effet.length);
-      findObjs({
-        _type: 'attribute',
-        _characterid: charId,
-        name: nameWithSave
-      }).
-      forEach(function(attrS) {
-        evt.deletedAttributes.push(attrS);
-        attrS.remove();
-      });
+      enleverEffetAttribut(charId, effet, attrName, 'SaveParTour', evt);
+    }
+    if (gardeAutresAttributs === undefined) {
+      enleverEffetAttribut(charId, effet, attrName, 'Puissant', evt);
+      enleverEffetAttribut(charId, effet, attrName, 'Valeur', evt);
     }
     switch (effet) {
       case 'agrandissement': //redonner sa taille normale
