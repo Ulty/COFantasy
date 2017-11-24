@@ -8116,25 +8116,19 @@ var COFantasy = COFantasy || function() {
   function peur(msg) {
     var optArgs = msg.content.split(' --');
     var cmd = optArgs[0].split(' ');
-    if (cmd.length < 4) {
+    if (cmd.length < 3) {
       error("Pas assez d'arguments pour !cof-peur", msg.content);
       return;
     }
-    var caster = tokenOfId(cmd[1], cmd[1]);
-    if (caster === undefined) {
-      error("Le premier arguent de !cof-peur n'est pas un token valide", cmd);
-      return;
-    }
-    var casterToken = caster.token;
-    var pageId = casterToken.get('pageid');
-    var difficulte = parseInt(cmd[2]);
+    var pageId = getPageId(msg);
+    var difficulte = parseInt(cmd[1]);
     if (isNaN(difficulte)) {
-      error("Le second argument de !cof-peur, la difficulté du test de résitance, n'est pas un nombre", cmd);
+      error("Le premier argument de !cof-peur, la difficulté du test de résitance, n'est pas un nombre", cmd);
       return;
     }
-    var duree = parseInt(cmd[3]);
+    var duree = parseInt(cmd[2]);
     if (isNaN(duree) || duree < 0) {
-      error("Le troisième argument de !cof-peur, la durée, n'est pas un nombre positif", cmd);
+      error("Le second argument de !cof-peur, la durée, n'est pas un nombre positif", cmd);
       return;
     }
     var options = {};
@@ -8162,6 +8156,14 @@ var COFantasy = COFantasy || function() {
             options.portee = undefined;
           }
           return;
+        case 'lanceur':
+          if (optCmd.length < 2) {
+            error("Il manque l'argument de lanceur", optArgs);
+            return;
+          }
+          options.lanceur = tokenOfId(optCmd[1], optCmd[1]);
+          if (options.lanceur) pageId = options.lanceur.token.get('pageid');
+          return;
         default:
           return;
       }
@@ -8171,11 +8173,14 @@ var COFantasy = COFantasy || function() {
         error("Pas de cible sélectionnée pour la peur", msg);
         return;
       }
-      var action = "<b>" + casterToken.get('name') + "</b> ";
-      if (options.effroi)
-        action += "est vraiment effrayant" + eForFemale(caster.charId);
-      else action = "<b>Capacité</b> : Sort de peur";
-      var display = startFramedDisplay(msg.playerid, action, caster);
+      var action = "Effet de peur";
+      if (options.lanceur) {
+        action = "<b>" + options.lanceur.token.get('name') + "</b> ";
+        if (options.effroi)
+          action += "est vraiment effrayant" + eForFemale(options.lanceur.charId);
+        else action = "<b>Capacité</b> : Sort de peur";
+      }
+      var display = startFramedDisplay(msg.playerid, action, options.lanceur);
       var evt = {
         type: 'peur'
       };
@@ -8187,8 +8192,8 @@ var COFantasy = COFantasy || function() {
       };
       iterSelected(selected, function(perso) {
           counter--;
-          if (options.portee !== undefined) {
-            var distance = distanceCombat(casterToken, perso.token, pageId);
+          if (options.portee !== undefined && options.lanceur) {
+            var distance = distanceCombat(options.lanceur.token, perso.token, pageId);
             if (distance > options.portee) {
               addLineToFramedDisplay(display,
                 perso.token.get('name') + " est hors de portée de l'effet");
@@ -8203,7 +8208,7 @@ var COFantasy = COFantasy || function() {
           counter--;
           finalEffect();
         });
-    }, caster);
+    }, options.lanceur);
   }
 
   // callback est seulement appelé si on fait le test
@@ -11865,7 +11870,7 @@ var COFantasy = COFantasy || function() {
             var soins = regen * toursRestant;
             soigneToken(perso, soins, evt,
               function(s) {
-                attrSave = true;//Pour ne pas afficher le message final.
+                attrSave = true; //Pour ne pas afficher le message final.
                 var tempsEffectif = Math.ceil(s / regen);
                 sendChar(charId, "récupère encore " + s + " PV en " + tempsEffectif + " tours.");
               },

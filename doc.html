@@ -477,7 +477,7 @@
               <div class="decalage">
                 <p><code>!cof-attaque-magique @{selected|token_id} @{target|token_id}</code> : fait un jet d'attaque magique opposé entre le lanceur et sa cible, et dit juste si le sort est raté ou réussi. Options disponibles : <code>--portee</code> et <code>--mana</code>.</p>
                 <p><code>!cof-lancer-sort <i>mana texte</i></code> : le token sélectionné lance un sort ayant un coût en mana, <i>texte</i> décrit le sort, mais pas d'effet (autre que la dépense de mana) à part /w au joueur et au MJ.</p>
-                <p><code>!cof-peur <i>token_id difficulté durée</i></code> : effet de peur (nécromant, dragon, etc). Tant que la peur est active, statut screaming. <i>difficulté</i> est la difficulté du jet de SAG, <i>token_id</i> est l'id du lanceur.</p>
+                <p><code>!cof-peur <i>difficulté durée</i></code> : effet de peur (nécromant, dragon, etc). Tant que la peur est active, statut screaming. <i>difficulté</i> est la difficulté du jet de SAG.</p>
                 <span>Options :</span>
                 <ul>
                   <li><code>--resisteAvecForce</code> : on prend le max de FOR et SAG pour résister</li>
@@ -485,6 +485,7 @@
                   <li><code>--ralenti</code> : la peur ralenti</li>
                   <li><code>--effroi</code> : la peur est passive (pas un sort)</li>
                   <li><code>--portee <i>n</i></code> : limite la portée du sort à <i>n</i> metres.</li>
+                  <li><code>--lanceur <i>id</i></code> : le lanceur de l'effet de peur (si il y en a un). Nécessaire pour la portée, par exemple.</li>
                 </ul>
               </div>
               <h3 class="text-info" id="consommables">3.9 Consommables <code>!cof-consommables</code></h3>
