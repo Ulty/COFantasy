@@ -1769,7 +1769,7 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(target, 'protectionContreLeMal') &&
       estMauvais(attaquant)) {
-        var bonusProtectionContreLeMal = getValeurOfEffet(target, 'protectionContreLeMal', 2);
+      var bonusProtectionContreLeMal = getValeurOfEffet(target, 'protectionContreLeMal', 2);
       defense += bonusProtectionContreLeMal;
       explications.push("Protection contre le mal => +" + bonusProtectionContreLeMal + " DEF");
     }
@@ -3612,7 +3612,7 @@ var COFantasy = COFantasy || function() {
     if (options.attaquant &&
       charAttributeAsBool(target, 'protectionContreLeMal') &&
       estMauvais(options.attaquant)) {
-        var bonusProtectionContreLeMal = getValeurOfEffet(target, 'protectionContreLeMal', 2);
+      var bonusProtectionContreLeMal = getValeurOfEffet(target, 'protectionContreLeMal', 2);
       bonus += bonusProtectionContreLeMal;
       expliquer("Protection contre le mal => +" + bonusProtectionContreLeMal + " au jet de sauvegarde");
     }
@@ -7717,7 +7717,7 @@ var COFantasy = COFantasy || function() {
             return;
           }
           var cout;
-          if (cmd.length > 2) {
+          if (cmd.length > 2 && options.lanceur === undefined) {
             options.lanceur = tokenOfId(cmd[1], cmd[1], pageId);
             if (options.lanceur === undefined) {
               error("Premier argument de --mana non valide", cmd);
@@ -7746,6 +7746,21 @@ var COFantasy = COFantasy || function() {
           options.limiteParJour = limiteParJour;
           if (cmd.length > 2) {
             options.limiteParJourRessource = cmd[2];
+          }
+          return;
+        case 'limiteCibleParJour':
+          if (cmd.length < 2) {
+            error("Il manque la limite journalière", cmd);
+            return;
+          }
+          var limiteCibleParJour = parseInt(cmd[1]);
+          if (isNaN(limiteCibleParJour) || limiteCibleParJour < 1) {
+            error("La limite journalière doit être un nombre positif", cmd);
+            return;
+          }
+          options.limiteCibleParJour = limiteCibleParJour;
+          if (cmd.length > 2) {
+            options.limiteCibleParJourRessource = cmd[2];
           }
           return;
         case 'limiteParCombat':
@@ -7878,6 +7893,26 @@ var COFantasy = COFantasy || function() {
           }
           return true;
         });
+      }
+      if (options.limiteCibleParJour) {
+        var ressource = effet;
+        if (options.limiteCibleParJourRessource)
+          ressource = options.limiteCibleParJourRessource;
+        ressource = "limiteParJour_" + ressource;
+        var selectedAutorises = [];
+        iterSelected(selected, function(perso) {
+          var utilisations =
+            attributeAsInt(perso, ressource, options.limiteCibleParJour);
+          if (utilisations === 0) {
+            sendChar(perso.charId, "ne peut plus bénéficier de " + effet + " ajourd'hui");
+            return;
+          }
+          setTokenAttr(perso, ressource, utilisations - 1, evt);
+          selectedAutorises.push({
+            _id: perso.token.id
+          });
+        });
+        selected = selectedAutorises;
       }
       if (!state.COFantasy.combat && selected.length > 0) {
         initiative(selected, evt);
@@ -11530,6 +11565,11 @@ var COFantasy = COFantasy || function() {
       activation: "est déstabilisé",
       actif: "est déstabilisé par une action de charme",
       fin: "retrouve ses esprits"
+    },
+    regeneration: {
+      activation: "commence à se régénérer",
+      actif: "se régénère",
+      fin: "a fini de se régénérer"
     }
   };
 
@@ -11559,7 +11599,7 @@ var COFantasy = COFantasy || function() {
     return (patternEffetsTemp.test(name));
   }
 
-  var patternAttributEffetsTemp = buildPatternEffets(messageEffetTemp, ["Puissant", "Valeur"]);
+  var patternAttributEffetsTemp = buildPatternEffets(messageEffetTemp, ["Puissant", "Valeur", "SaveParTour"]);
 
   function estAttributEffetTemp(name) {
     return (patternAttributEffetsTemp.test(name));
@@ -11614,7 +11654,7 @@ var COFantasy = COFantasy || function() {
     return (patternEffetsCombat.test(name));
   }
 
-  var patternAttributEffetsCombat = buildPatternEffets(messageEffetCombat, ["Puissant", "Valeur"]);
+  var patternAttributEffetsCombat = buildPatternEffets(messageEffetCombat, ["Puissant", "Valeur", "SaveParTour"]);
 
   function estAttributEffetCombat(name) {
     return (patternAttributEffetsCombat.test(name));
@@ -11736,17 +11776,8 @@ var COFantasy = COFantasy || function() {
     if (attrSave) { //on a un attribut associé à supprimer)
       evt.deletedAttributes.push(attrSave);
       attrSave.remove();
-    } else { //On cherche si il y en a un
-      if (!getState({
-          charId: charId
-        }, 'mort')) {
-        sendChar(charId, messageEffetTemp[effet].fin);
-      }
+    } else if (gardeAutresAttributs === undefined) { //On cherche si il y en a un
       enleverEffetAttribut(charId, effet, attrName, 'SaveParTour', evt);
-    }
-    if (gardeAutresAttributs === undefined) {
-      enleverEffetAttribut(charId, effet, attrName, 'Puissant', evt);
-      enleverEffetAttribut(charId, effet, attrName, 'Valeur', evt);
     }
     switch (effet) {
       case 'agrandissement': //redonner sa taille normale
@@ -11821,7 +11852,36 @@ var COFantasy = COFantasy || function() {
           attr[0].remove();
         });
         break;
+      case 'regeneration': //faire les soins restants
+        iterTokensOfEffet(charId, effet, attrName,
+          function(token) {
+            var toursRestant = attr.get('current');
+            if (toursRestant == 'tourFinal' || isNaN(toursRestant)) return;
+            var perso = {
+              token: token,
+              charId: charId
+            };
+            var regen = getValeurOfEffet(perso, 'regeneration', 3);
+            var soins = regen * toursRestant;
+            soigneToken(perso, soins, evt,
+              function(s) {
+                attrSave = true;//Pour ne pas afficher le message final.
+                var tempsEffectif = Math.ceil(s / regen);
+                sendChar(charId, "récupère encore " + s + " PV en " + tempsEffectif + " tours.");
+              },
+              function() {});
+          });
+        break;
       default:
+    }
+    if (attrSave === undefined && !getState({
+        charId: charId
+      }, 'mort')) {
+      sendChar(charId, messageEffetTemp[effet].fin);
+    }
+    if (gardeAutresAttributs === undefined) {
+      enleverEffetAttribut(charId, effet, attrName, 'Puissant', evt);
+      enleverEffetAttribut(charId, effet, attrName, 'Valeur', evt);
     }
     evt.deletedAttributes.push(attr);
     attr.remove();
@@ -11850,6 +11910,42 @@ var COFantasy = COFantasy || function() {
           function(dmgDisplay, dmg) {
             sendChar(charId, msg + ". " + onGenre(charId, 'Il', 'Elle') +
               " subit " + dmgDisplay + " DM");
+            count--;
+            if (count === 0) callback();
+          });
+      }); //fin sendChat du jet de dé
+    }); //fin iterTokensOfEffet
+  }
+
+  //asynchrone
+  function soigneParTour(charId, effet, attrName, soinsExpr, msg, evt, options, callback) {
+    options = options || {};
+    msg = msg || '';
+    var count = -1;
+    iterTokensOfEffet(charId, effet, attrName, function(token, total) {
+      if (count < 0) count = total;
+      var perso = {
+        token: token,
+        charId: charId
+      };
+      var localSoinsExpr = soinsExpr;
+      if (options.valeur) {
+        var attrsVal = tokenAttribute(perso, options.valeur);
+        if (attrsVal.length > 0) localSoinsExpr = attrsVal[0].get('current');
+      }
+      sendChat('', "[[" + localSoinsExpr + "]]", function(res) {
+        var rolls = res[0];
+        var soinRoll = rolls.inlinerolls[0];
+        var soins = soinRoll.results.total;
+        var displaySoins = buildinline(soinRoll, 'normal', true);
+        soigneToken(perso, soins, evt,
+          function(s) {
+            if (s < soins) sendChar(charId, "récupère tous ses PV.");
+            else sendChar(charId, "récupère " + displaySoins + " PV.");
+            count--;
+            if (count === 0) callback();
+          },
+          function() {
             count--;
             if (count === 0) callback();
           });
@@ -11971,6 +12067,16 @@ var COFantasy = COFantasy || function() {
                   count--;
                   if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
                 });
+              return;
+            case 'regeneration': //soigne
+              soigneParTour(charId, effet, attrName, 3, "régénère", evt, {
+                  valeur: 'regenerationValeur'
+                },
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                });
+
               return;
             case 'strangulation':
               var nameDureeStrang = 'dureeStrangulation';
