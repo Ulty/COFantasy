@@ -259,8 +259,10 @@ var COFantasy = COFantasy || function() {
     var charId = personnage.charId;
     var aff =
       affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
-    if (value && etatRendInactif(etat) && isActive(personnage))
-      removeFromTurnTracker(token.id, evt);
+    if (value && etatRendInactif(etat) && isActive(personnage)) {
+      if (etat != 'surpris' || !surveillance(personnage))
+        removeFromTurnTracker(token.id, evt);
+    }
     token.set(cof_states[etat], value);
     if (etat == 'aveugle') {
       // We also change vision of the token
@@ -1593,7 +1595,7 @@ var COFantasy = COFantasy || function() {
     init += charAttributeAsInt(perso, 'INIT_DIV', 0);
     if (getState(perso, 'aveugle')) init -= 5;
     // Voie du compagnon animal rang 2 (surveillance)
-    if (surveillance(perso)) init += 5;
+    init += attributeAsInt(perso, 'bonusInitEmbuscade', 0);
     // Voie du chef d'armée rang 2 (Capitaine)
     if (aUnCapitaine(perso, evt)) init += 2;
     if (charAttributeAsBool(perso, 'graceFeline')) {
@@ -3762,38 +3764,17 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function applyRDMagique(rdMagique, dmgType, total, display) {
-    if (total && rdMagique && rdMagique > 0) {
-      switch (dmgType) {
-        case 'normal':
-        case 'poison':
-        case 'maladie':
-          if (total < rdMagique) {
-            display += "-" + total;
-            rdMagique -= total;
-            total = 0;
-          } else {
-            display += "-" + rdMagique;
-            total -= rdMagique;
-            rdMagique = 0;
-          }
-          return {
-            total: total,
-            rdMagique: rdMagique,
-            display: display
-          };
-        default:
-          return;
-      }
-    }
-    return;
-  }
-
-  function applyRDSauf(rds, dmgType, total, display) {
+  function applyRDSauf(rds, dmgType, total, display, options) {
+    options = options || {};
+    var typeTrouve = function(t) {
+      return (t == dmgType || options[t]);
+    };
     if (total) {
       for (var saufType in rds) {
         var rd = rds[saufType];
-        if (rd < 1 || saufType == dmgType) break;
+        if (rd < 1) break;
+        var types = saufType.split('_');
+        if (types.find(typeTrouve)) break;
         if (total < rd) {
           display += "-" + total;
           rds[saufType] -= total;
@@ -3825,16 +3806,6 @@ var COFantasy = COFantasy || function() {
       dmgDisplay += " - " + rdMain;
       showTotal = true;
     }
-    var rdMagique;
-    if (options.magique) rdMagique = 0;
-    else rdMagique = typeRD(target.charId, 'sauf_magique');
-    if (rdMagique) showTotal = true;
-    var resMagique = applyRDMagique(rdMagique, mainDmgType, dmgTotal, dmgDisplay);
-    if (resMagique) {
-      rdMagique = resMagique.rdMagique;
-      dmgTotal = resMagique.total;
-      dmgDisplay = resMagique.display;
-    }
     var rdElems = 0;
     if (attributeAsBool(target, 'protectionContreLesElements')) {
       rdElems = getValeurOfEffet(target, 'protectionContreLesElements', 1, 'voieDeLaMagieElementaire') * 2;
@@ -3860,13 +3831,18 @@ var COFantasy = COFantasy || function() {
     target.attrs.forEach(function(attr) {
       var attrName = attr.get('name');
       if (attrName.startsWith('RD_sauf_')) {
-        if (attrName == 'RD_sauf_magique') return;
         var rds = parseInt(attr.get('current'));
         if (isNaN(rds) || rds < 1) return;
         rdSauf[attrName.substr(8)] = rds;
       }
     });
-    var resSauf = applyRDSauf(rdSauf, mainDmgType, dmgTotal, dmgDisplay);
+    var additionalType = {
+      magique: options.magique,
+      tranchant: options.tranchant,
+      percant: options.percant,
+      contondant: options.contondant
+    };
+    var resSauf = applyRDSauf(rdSauf, mainDmgType, dmgTotal, dmgDisplay, additionalType);
     dmgTotal = resSauf.total;
     dmgDisplay = resSauf.display;
     var invulnerable = charAttributeAsBool(target, 'invulnerable');
@@ -3936,12 +3912,6 @@ var COFantasy = COFantasy || function() {
                 }
                 typeDisplay += "-" + rdl;
               }
-              var resMagique = applyRDMagique(rdMagique, dmgType, dm, typeDisplay);
-              if (resMagique) {
-                rdMagique = resMagique.rdMagique;
-                dm = resMagique.total;
-                typeDisplay = resMagique.display;
-              }
               if (rdElems > 0 && dm > 0 && estElementaire(dmgType)) {
                 if (dm > rdElems) {
                   typeDisplay += ' - ' + rdElems;
@@ -3953,7 +3923,10 @@ var COFantasy = COFantasy || function() {
                   dm = 0;
                 }
               }
-              var resSauf = applyRDSauf(rdSauf, dmgType, dm, typeDisplay);
+              var additionalType = {
+                magique: options.magique
+              };
+              var resSauf = applyRDSauf(rdSauf, dmgType, dm, typeDisplay, additionalType);
               dm = resSauf.total;
               typeDisplay = resSauf.display;
               mitigate(dmgType,
@@ -6120,9 +6093,13 @@ var COFantasy = COFantasy || function() {
           return;
         }
         var name = perso.token.get('name');
+        var bonusSurprise = 0;
+        if (surveillance(perso)) {
+          bonusSurprise += 5;
+          setTokenAttr(perso, 'bonusInitEmbuscade', 5, evt, "garde un temps d'avance grâce à son compagnon animal");
+          initiative([{_id:perso.token.id}],evt);
+        }
         if (testSurprise !== undefined) {
-          var bonusSurprise = 0;
-          if (surveillance(perso)) bonusSurprise += 5;
           testCaracteristique(perso, 'SAG', testSurprise, {
               bonus: bonusSurprise,
               bonusAttrs: ['vigilance', 'perception']
@@ -6272,7 +6249,7 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
-  function setToken_FlagAura(perso) {
+  function setTokenFlagAura(perso) {
     var token = perso.token;
     if (aura_token_on_turn) {
       // ennemi => rouge
@@ -6347,7 +6324,7 @@ var COFantasy = COFantasy || function() {
         affectToken(token, 'aura2_radius', token.get('aura2_radius'), evt);
         affectToken(token, 'aura2_color', token.get('aura2_color'), evt);
         affectToken(token, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
-        setToken_FlagAura(act);
+        setTokenFlagAura(act);
         state.COFantasy.activeTokenId = tokenId;
         state.COFantasy.activeTokenName = tokenName;
         //On recherche dans le Personnage s'il a une "Ability" dont le nom est "#TurnAction#".
@@ -11650,6 +11627,11 @@ var COFantasy = COFantasy || function() {
       activation: "entre dans une rage berserk",
       actif: "est dans une rage berserk",
       fin: "retrouve son calme"
+    },
+    bonusInitEmbuscade: { //Effet interne pour la capacité Surveillance
+      activation: "a un temps d'avance en cas d'embuscade",
+      actif: "a un temps d'avance",
+      fin: ""
     }
   };
 

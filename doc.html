@@ -361,10 +361,10 @@
                   <li>La RD sur la fiche diminue tous les dégâts.</li>
                   <li>L'attribut hors fiche <code>RD_critique</code> diminue les dégâts des critiques (pour les casques).</li>
                   <li>les attributs hors fiche <code>RD_<i>genre</i></code> diminuent les dégâts pour ce genre (<i>genre</i> = <code>tranchant</code>, <code>percant</code>, <code>contondant</code>, ou un type (<code>feu</code>, <code>acide</code>, etc...) ou <code>drain</code>)</li>
-                  <li>l'attribut <code>RD_sauf_magique</code> diminue tous les dégâts normaux, poison ou maladie, sauf si les dégâts sont spécifiés magiques (avec l'option <code>--magique</code>). mentionné.</li>
-                  <li>Les attributs <code>RD_sauf_<i>genre</i></code> permettent de préciser une RD sauf pour un type donné.</li>
+                  <li>l'attribut <code>RD_sauf_magique</code> diminue tous les dégâts, sauf si les dégâts sont spécifiés magiques (avec l'option <code>--magique</code>).</li>
+                  <li>Les attributs <code>RD_sauf_<i>genre</i></code> permettent de préciser une RD sauf pour un type donné. Il est possible de préciser plusieurs genres, séparés par un <code>_</code>.</li>
                   <li>pour les attaques, il faut préciser le genre si besoin (comme <code>--tranchant</code> pour une épée)</li>
-                  <li>pour les résistances sauf un genre d'arme le mieux est de spécifier une RD aux 2 autres genres, pour ne pas résister aussi aux attaques magiques.</li>
+                  <li>pour les résistances sauf un genre d'arme le mieux est de spécifier une RD aux 2 autres genres, si on ne veut pas résister aussi aux attaques magiques.</li>
                 </ul>
               </div>
               <h4 class="text-secondary">Manoeuvres</h4>
@@ -757,6 +757,7 @@
                 <ol>
                   <li><strong>Peau d'écorce</strong> : <code>!cof-effet-temp peau_d_ecorce [[5+@{selected|SAG}]]</code>. Par défaut, utilise la valeur d'un attribut <code>voieDesVegetaux</code> (qui devrait avoir comme valeur le rang dans la voie). Il est possible de choisir une autre valeur en utilisant l'option <code>--valeur</code>, et si aucune des deux méthodes n'est utilisée, le bonus de DEF est de 1.</li>
                   <li><strong>Prison végétale</strong> : <code>!cof-effet-temp prisonVegetale [[5+@{selected|SAG}]] --saveParTour FOR [[10+@{selected|SAG}]] --lanceur @{selected|token_id} --disque @{target|token_id} 10 20 --saufAllies</code></li>
+                  <li><strong>Animation d'un arbre</strong> : préparer un personnage arbre, avec les caractéristiques décrites. Ne pas oublier son attribut <code>RD_feu_tranchant</code> à 10.</li>
                 </ol>
               </div>
               <h3 class="text-info" id="Ensorceleur">Ensorceleur</h3>
