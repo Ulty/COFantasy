@@ -91,7 +91,7 @@ var COFantasy = COFantasy || function() {
   }
 
 
-  function get_picto_style_from_command(full_command, tokenId) {
+  function getPictoStyleFromCommand(full_command, tokenId) {
     var style = '';
     var picto_style = {
       picto: '',
@@ -252,6 +252,12 @@ var COFantasy = COFantasy || function() {
     }
     if (aff.prev[field] === undefined) aff.prev[field] = value;
     return aff;
+  }
+
+  function setToken(token, field, newValue, evt) {
+    var prevValue = token.get(field);
+    affectToken(token, field, prevValue, evt);
+    token.set(field, newValue);
   }
 
   function setState(personnage, etat, value, evt) {
@@ -459,6 +465,71 @@ var COFantasy = COFantasy || function() {
         }
       });
     }
+    if (evt.deletedCharacters) {
+      evt.deletedCharacters.forEach(function(character) {
+        var nameDel = character.name;
+        log("Restoring character " + nameDel);
+        var newCharacter =
+          createObj('character', {
+            name: nameDel,
+            avatar: character.avatar
+          });
+        var charId = newCharacter.id;
+        var tokens = findObjs({
+          _type: 'graphic',
+          represents: character.id
+        });
+        tokens.forEach(function(tok) {
+          tok.set('represents', charId);
+        });
+        eventHistory.forEach(function(evt) {
+          if (evt.characters) {
+            evt.characters = evt.characters.map(function(oldCharac) {
+              if (oldCharac.id == character.id) return newCharacter;
+              return oldCharac;
+            });
+          }
+          if (evt.deletedAttributes) {
+            evt.deletedAttributes.forEach(function(attr) {
+              if (attr.id == character.id) attr.newCharId = charId;
+            });
+          }
+        });
+        //Maintenant on remet les attributs
+        if (character.attributes) {
+          character.attributes.forEach(function(attr) {
+            var oldId = attr.id;
+            var newAttr = createObj('attribute', {
+              characterid: charId,
+              name: attr.get('name'),
+              current: attr.get('current'),
+              max: attr.get('max')
+            });
+            eventHistory.forEach(function(evt) {
+              if (evt.attributes) {
+                evt.attributes.forEach(function(attr) {
+                  if (attr.attribute.id == oldId) attr.attribute = newAttr;
+                });
+              }
+            });
+            tokens.forEach(function(tok) {
+              if (tok.get('bar1_link') == oldId)
+                tok.set('bar1_link', newAttr.id);
+            });
+          });
+        }
+        if (character.abilities) {
+          character.abilities.forEach(function(ab) {
+            var newAb = createObj('ability', {
+              characterid: charId,
+              name: ab.get('name'),
+              action: ab.get('action'),
+              istokenaction: ab.get('istokenaction')
+            });
+          });
+        }
+      });
+    }
     // deletedAttributes have a quadratic cost in the size of the history
     if (evt.deletedAttributes) {
       evt.deletedAttributes.forEach(function(attr) {
@@ -467,7 +538,7 @@ var COFantasy = COFantasy || function() {
         log("Restoring attribute " + nameDel);
         var newAttr =
           createObj('attribute', {
-            characterid: attr.get('characterid'),
+            characterid: attr.newCharId || attr.get('characterid'),
             name: nameDel,
             current: attr.get('current'),
             max: attr.get('max')
@@ -479,6 +550,24 @@ var COFantasy = COFantasy || function() {
             });
           }
         });
+      });
+    }
+    if (evt.characters) {
+      evt.characters.forEach(function(character) {
+        var charId = character.id;
+        findObjs({
+          _type: 'attribute',
+          _characterid: charId
+        }).forEach(function(attr) {
+          attr.remove();
+        });
+        findObjs({
+          _type: 'ability',
+          _characterid: charId
+        }).forEach(function(ab) {
+          ab.remove();
+        });
+        character.remove();
       });
     }
     if (_.has(evt, 'combat')) state.COFantasy.combat = evt.combat;
@@ -618,7 +707,7 @@ var COFantasy = COFantasy || function() {
           action = "!cof-lancer-sort 0 " + action;
         }
     }
-    var picto_style = get_picto_style_from_command(action, token.id);
+    var picto_style = getPictoStyleFromCommand(action, token.id);
     if (action.indexOf('@{selected') !== -1 && character !== undefined) {
       // cas spécial pour @{selected|token_id} où l'on remplace toutes les occurences par token.id
       action = action.replace(new RegExp(escapeRegExp('@{selected|token_id}'), 'g'), token.id);
@@ -1903,7 +1992,7 @@ var COFantasy = COFantasy || function() {
     }
     var chasseurEmerite =
       charAttributeAsBool(attackingCharId, 'chasseurEmerite') &&
-      charOfType(target.charId, "animal");
+      estAnimal(target);
     if (chasseurEmerite) {
       attBonus += 2;
       var explChasseurEmerite = "Chasseur émérite => +2 en Attaque et aux DM";
@@ -2149,18 +2238,22 @@ var COFantasy = COFantasy || function() {
     var attSkillDiv;
     var crit;
     var portee;
-    var this_weapon = JSON.parse(attackLabel);
-    if (Array.isArray(this_weapon)) {
-      weaponName = this_weapon[0].replace(/_/g, ' ');
-      weaponStats.attSkill = this_weapon[1][0];
-      attSkillDiv = this_weapon[1][1];
-      crit = this_weapon[2];
-      var DMG = this_weapon[3];
-      weaponStats.attNbDices = DMG[0];
-      weaponStats.attDice = DMG[0];
-      weaponStats.attCarBonus = DMG[0];
-      weaponStats.attDMBonusCommun = DMG[0];
-      portee = this_weapon[4];
+    var attaqueArray;
+    try {
+      attaqueArray = JSON.parse(attackLabel);
+    } catch (e) {}
+    if (Array.isArray(attaqueArray) && attaqueArray.length > 4 &&
+      attaqueArray[1].length > 1 && attaqueArray[3].length > 3) {
+      weaponName = attaqueArray[0].replace(/_/g, ' ');
+      weaponStats.attSkill = attaqueArray[1][0];
+      attSkillDiv = attaqueArray[1][1];
+      crit = attaqueArray[2];
+      var weaponDmg = attaqueArray[3];
+      weaponStats.attNbDices = weaponDmg[0];
+      weaponStats.attDice = weaponDmg[1];
+      weaponStats.attCarBonus = weaponDmg[2];
+      weaponStats.attDMBonusCommun = weaponDmg[3];
+      portee = attaqueArray[4];
     } else {
       //On trouve l'attaque correspondant au label
       var att = getAttack(attackLabel, attackerTokName, attackingCharId);
@@ -3103,6 +3196,7 @@ var COFantasy = COFantasy || function() {
       var attDMBonus = attDMBonusCommun;
       //Les modificateurs de dégâts qui dépendent de la cible
       if (options.pressionMortelle) {
+        //TODO : ne pas appliquer la RD à chaque coup, mais seulement au relachenement
         var pMortelle = tokenAttribute(target, 'pressionMortelle');
         if (pMortelle.length === 0) {
           sendChar(attackingCharId, "Essaie une pression mortelle, mais aucun point vital de " + target.tokName + " n'a encore été affecté");
@@ -3977,7 +4071,7 @@ var COFantasy = COFantasy || function() {
     if (options.artificiel) return false;
     var attaquant = options.attaquant;
     if (attaquant === undefined) return false;
-    if (charAttributeAsBool(attaquant, 'animal')) return true;
+    if (estAnimal(attaquant)) return true;
     if (charAttributeAsBool(attaquant, 'insecte')) return true;
     var attr = findObjs({
       _type: 'attribute',
@@ -3988,7 +4082,6 @@ var COFantasy = COFantasy || function() {
     });
     if (attrProfile.length > 0) {
       switch (attrProfile[0].get('current').trim().toLowerCase()) {
-        case 'animal':
         case 'insecte':
           return true;
       }
@@ -4008,43 +4101,6 @@ var COFantasy = COFantasy || function() {
       case 'scarabée':
       case 'scorpion':
       case 'strige':
-      case 'animal':
-      case 'aigle':
-      case 'basilic':
-      case 'bulette':
-      case 'bison':
-      case 'calmar':
-      case 'chauve-souris':
-      case 'cheval':
-      case 'chien':
-      case 'crocodile':
-      case 'dinosaure':
-      case 'éléphant':
-      case 'eléphant':
-      case 'elephant':
-      case 'mammouth':
-      case 'gorille':
-      case 'griffon':
-      case 'hipogriffe':
-      case 'hydre':
-      case 'lion':
-      case 'loup':
-      case 'mammouth':
-      case 'manticore':
-      case 'ours':
-      case 'ours-hibou':
-      case 'panthère':
-      case 'pegase':
-      case 'pégase':
-      case 'pieuvre':
-      case 'rhinocéros':
-      case 'roc':
-      case 'sanglier':
-      case 'serpent':
-      case 'rat':
-      case 'taureau':
-      case 'tigre':
-      case 'wiverne':
         return true;
       default:
         return false;
@@ -4141,8 +4197,7 @@ var COFantasy = COFantasy || function() {
             tempDmg = parseInt(token.get("bar2_value"));
             if (isNaN(tempDmg)) {
               if (options.tempDmg) { //then try to set bar2 correctly
-                var link = token.get("bar1_link");
-                if (link === "") {
+                if (token.get("bar1_link") === '') {
                   token.set("bar2_max", pvmax);
                 } else {
                   var tmpHitAttr =
@@ -6097,7 +6152,9 @@ var COFantasy = COFantasy || function() {
         if (surveillance(perso)) {
           bonusSurprise += 5;
           setTokenAttr(perso, 'bonusInitEmbuscade', 5, evt, "garde un temps d'avance grâce à son compagnon animal");
-          initiative([{_id:perso.token.id}],evt);
+          initiative([{
+            _id: perso.token.id
+          }], evt);
         }
         if (testSurprise !== undefined) {
           testCaracteristique(perso, 'SAG', testSurprise, {
@@ -6814,6 +6871,9 @@ var COFantasy = COFantasy || function() {
       });
       if (attributeAsBool(perso, 'etatExsangue')) {
         addLineToFramedDisplay(display, "est exsangue");
+      }
+      if (attributeAsBool(perso, 'malediction')) {
+        addLineToFramedDisplay(display, "est maudit...");
       }
       for (var effet in messageEffetTemp) {
         var effetActif = false;
@@ -8100,7 +8160,7 @@ var COFantasy = COFantasy || function() {
     var pageId = getPageId(msg);
     var difficulte = parseInt(cmd[1]);
     if (isNaN(difficulte)) {
-      error("Le premier argument de !cof-peur, la difficulté du test de résitance, n'est pas un nombre", cmd);
+      error("Le premier argument de !cof-peur, la difficulté du test de résistance, n'est pas un nombre", cmd);
       return;
     }
     var duree = parseInt(cmd[2]);
@@ -8552,19 +8612,6 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
-  // Look for a given string in the PROFIL attribute (case insensitive)
-  // type should be all lower case
-  function charOfType(charId, type) {
-    var attr = findObjs({
-      _type: 'attribute',
-      _characterid: charId,
-      name: 'PROFIL'
-    });
-    if (attr.length === 0) return false;
-    var profil = attr[0].get('current').toLowerCase();
-    return (profil.includes(type));
-  }
-
   function estNonVivant(perso) {
     return (charAttributeAsBool(perso, 'nonVivant') ||
       attributeAsBool(perso, 'masqueMortuaire'));
@@ -8656,6 +8703,68 @@ var COFantasy = COFantasy || function() {
       case 'orque':
       case 'pixie':
       case 'troll':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function estAnimal(perso) {
+    if (charAttributeAsBool(perso, 'animal')) return true;
+    var attr = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+    });
+    var attrProfile = attr.filter(function(a) {
+      return a.get('name') == 'PROFIL';
+    });
+    if (attrProfile.length > 0) {
+      if (attrProfile[0].get('current').trim().toLowerCase() == 'animal')
+        return true;
+    }
+    var attrRace = attr.filter(function(a) {
+      return a.get('name') == 'RACE';
+    });
+    if (attrRace.length === 0) return false;
+    var charRace = attrRace[0].get('current').trim().toLowerCase();
+    switch (charRace) {
+      case 'animal':
+      case 'aigle':
+      case 'basilic':
+      case 'bulette':
+      case 'bison':
+      case 'calmar':
+      case 'chauve-souris':
+      case 'cheval':
+      case 'chien':
+      case 'crocodile':
+      case 'dinosaure':
+      case 'éléphant':
+      case 'eléphant':
+      case 'elephant':
+      case 'mammouth':
+      case 'gorille':
+      case 'griffon':
+      case 'hipogriffe':
+      case 'hydre':
+      case 'lion':
+      case 'loup':
+      case 'mammouth':
+      case 'manticore':
+      case 'ours':
+      case 'ours-hibou':
+      case 'panthère':
+      case 'pegase':
+      case 'pégase':
+      case 'pieuvre':
+      case 'rhinocéros':
+      case 'roc':
+      case 'sanglier':
+      case 'serpent':
+      case 'rat':
+      case 'taureau':
+      case 'tigre':
+      case 'wiverne':
         return true;
       default:
         return false;
@@ -11097,6 +11206,127 @@ var COFantasy = COFantasy || function() {
     // testRes.echecCritique, testRes.critique pour le type
   }
 
+  function nouveauNomDePerso(nom) {
+    var characters = findObjs({
+      _type: 'character'
+    });
+    characters = characters.map(function(c) {
+      return c.get('name');
+    });
+    var trouve = characters.indexOf(nom);
+    if (trouve < 0) return nom;
+    var n = 2;
+    while (1) {
+      var nomP = nom + ' ' + n;
+      trouve = characters.indexOf(nomP);
+      if (trouve < 0) return nomP;
+      n++;
+    }
+  }
+
+  //!cof-animer-arbre lanceur-id target-id [rang]
+  function animerUnArbre(msg) {
+    var options = parseOptions(msg);
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 3) {
+      error("cof-animer-arbre attend 2 arguments", msg.content);
+      return;
+    }
+    var druide = tokenOfId(cmd[1], cmd[1], options.pageId);
+    if (druide === undefined) {
+      error("Le premier argument de !cof-animer-arbre n'est pas un token valie", cmd);
+      return;
+    }
+    var tokenArbre = getObj('graphic', cmd[2]);
+    if (tokenArbre === undefined) {
+      error("Le deuxième argument de !cof-animer-arbre n'est pas un token", cmd);
+      return;
+    }
+    if (tokenArbre.get('represents') !== '') {
+      sendChar(druide.charId, "ne peut pas animer " + tokenArbre.get('name'));
+      return;
+    }
+    if (options.portee !== undefined) {
+      var dist = distanceCombat(druide.token, tokenArbre, options.pageId);
+      if (dist > options.portee) {
+        sendChar(druide.charId, " est trop loin de l'arbre");
+        return;
+      }
+    }
+    var rang = charAttributeAsInt(druide, 'voieDesVegetaux', 3);
+    if (cmd.length > 3) { //Le rang est spécifié en argument optionnel
+      var cmd3 = parseInt(cmd[3]);
+      if (isNaN(cmd3) || cmd3 < 1) {
+        error("Le rang n'est pas un nombre valie. On utilise " + rang + " à la place", cmd);
+      } else rang = cmd3;
+    }
+    var evt = {
+      type: "Animation d'un arbre"
+    };
+    if (limiteRessources(druide, options, 'animerUnArbre', 'animer un arbre', evt)) return;
+    if (!state.COFantasy.combat) {
+      initiative([{
+        _id: druide.token.id
+      }], evt);
+    }
+    var nomArbre = nouveauNomDePerso('Arbre animé');
+    var charArbre = createObj('character', {
+      name: nomArbre,
+      avatar: "https://s3.amazonaws.com/files.d20.io/images/42323556/6qxlm965aFhBXGoYFy5fqg/thumb.png?1510582137"
+    });
+    evt.characters = [charArbre];
+    var caid = charArbre.id;
+    var pvArbre = rang * 10;
+    setToken(tokenArbre, 'represents', caid, evt);
+    //Les attributs n'ont pas besoin d'être ajoutés à evt, on les enlève en supprimant le personnage
+    createObj('attribute', {
+      characterid: caid,
+      name: 'DEXTERITE',
+      current: 7
+    });
+    createObj('attribute', {
+      characterid: caid,
+      name: 'DEFDIV',
+      current: 5
+    });
+    var pvAttr = createObj('attribute', {
+      characterid: caid,
+      name: 'PV',
+      current: pvArbre,
+      max: pvArbre
+    });
+    createObj('attribute', {
+      characterid: caid,
+      name: 'RD_sauf_feu_tranchant',
+      current: 10
+    });
+    var niveau = charAttributeAsInt(druide, 'NIVEAU', 1);
+    createObj('ability', {
+      characterid: caid,
+      name: 'Attaque',
+      istokenaction: true,
+      action: '!cof-attack @{selected|token_id} @{target|token_id} ["Branches",[' + niveau + ',0],20,[1,6,3,0],0]'
+    });
+    setToken(tokenArbre, 'bar1_link', pvAttr.id, evt);
+    setToken(tokenArbre, 'bar1_value', pvArbre, evt);
+    setToken(tokenArbre, 'bar1_max', pvArbre, evt);
+    setToken(tokenArbre, 'sjowplayers_bar1', true, evt);
+    setToken(tokenArbre, 'name', nomArbre, evt);
+    setToken(tokenArbre, 'showname', true, evt);
+    setToken(tokenArbre, 'showplayers_name', true, evt);
+    createObj('attribute', {
+      characterid: caid,
+      name: 'arbreAnime',
+      current: niveau,
+      max: getInit()
+    });
+    sendChar(caid, "commence à s'animer");
+    initiative([{
+      _id: tokenArbre.id
+    }], evt);
+    addEvent(evt);
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -11337,6 +11567,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-arme-secrete":
         armeSecrete(msg);
         return;
+      case "!cof-animer-arbre":
+        animerUnArbre(msg);
+        return;
       default:
         return;
     }
@@ -11552,6 +11785,11 @@ var COFantasy = COFantasy || function() {
       activation: "commence à se régénérer",
       actif: "se régénère",
       fin: "a fini de se régénérer"
+    },
+    arbreAnime: {
+      activation: "commence à bouger",
+      actif: "est un arbre animé",
+      fin: "redevient un arbre ordinaire"
     }
   };
 
@@ -11859,6 +12097,52 @@ var COFantasy = COFantasy || function() {
               function() {});
           });
         break;
+      case 'arbreAnime': //effacer le personnage
+        //On efface d'abord les attributs et les abilities
+        var charAttributes = findObjs({
+          _type: 'attribute',
+          _characterid: charId
+        });
+        charAttributes.forEach(
+          function(otherAttr) {
+            if (otherAttr.id != attr.id) otherAttr.remove();
+          }
+        );
+        var charAbilities = findObjs({
+          _type: 'ability',
+          _characterid: charId
+        });
+        charAbilities.forEach(
+          function(ab) {
+            ab.remove();
+          }
+        );
+        iterTokensOfEffet(charId, effet, attrName, function(token) {
+          removeFromTurnTracker(token.id, evt);
+          setToken(token, 'bar1_link', '', evt);
+          setToken(token, 'bar1_value', '', evt);
+          setToken(token, 'bar1_max', '', evt);
+          setToken(token, 'showplayers_bar1', false, evt);
+          setToken(token, 'represents', '', evt);
+          setToken(token, 'showname', false, evt);
+          setToken(token, 'showplayers_name', false, evt);
+          setToken(token, 'name', '', evt);
+        });
+        attr.remove();
+        sendChar(charId, messageEffetTemp[effet].fin);
+        var arbreChar = getObj('character', charId);
+        if (arbreChar) {
+          evt.deletedCharacters = evt.deletedCharacters || [];
+          evt.deletedCharacters.push({
+            id: charId,
+            name: arbreChar.get('name'),
+            avatar: arbreChar.get('avatar'),
+            attributes: charAttributes,
+            abilities: charAbilities
+          });
+          arbreChar.remove();
+        }
+        return; //Pas besoin de faire le reste, car plus de perso
       default:
     }
     if (attrSave === undefined && !getState({
@@ -12399,7 +12683,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = 0.6;
+  var script_version = 0.7;
   COF_loaded = true;
   state.COFantasy = state.COFantasy || {
     combat: false,
