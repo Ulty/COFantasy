@@ -114,7 +114,7 @@ var COFantasy = COFantasy || function() {
           try {
             this_weapon = JSON.parse(attackLabel);
           } catch (e) {
-            log('Erreur parsing the Array');
+            error('Erreur parsing the Array', command);
           }
 
           if (Array.isArray(this_weapon)) {
@@ -666,19 +666,18 @@ var COFantasy = COFantasy || function() {
   function bouton(action, text, perso, ressource, button_style, button_title) {
     if (action === undefined || action.trim().length === 0) return text;
     else action = action.trim();
-
     if (action.indexOf('#') !== -1) {
-      // Cette commande contient au moins une macro donc on va le remplacer par sa commande (action)
+      // Cette commande contient au moins une macro donc on va la remplacer par sa commande (action)
       // Toutes les Macros
       var macros = findObjs({
         _type: 'macro'
       });
       var command_words = action.split("\n");
       //chaque ligne
-      _.each(command_words, function(line, j) {
+      _.each(command_words, function(line) {
         var line_words = line.split(' ');
         //chaque mot
-        _.each(line_words, function(word, k) {
+        _.each(line_words, function(word) {
           // si le mot commence par #
           if (word.startsWith('#')) {
             // on recherche une macro qui s'appelle pareil (sans le #)
@@ -726,20 +725,20 @@ var COFantasy = COFantasy || function() {
       action.indexOf('cof-attack') == -1) {
       //Si on n'a pas de cible, on fait comme si le token était sélectionné.
       var add_token = " --target " + token.id;
+      if (action.indexOf('--allie') >= 0) {
+       if (action.indexOf('--lanceur') == -1)
+          add_token = " --lanceur " + token.id;
+        else add_token = "";//La cible sont les alliés de --lanceur.
+      }
       if (action.indexOf(' --message ') != -1) action = action.replace(' --message ', add_token + ' --message ');
       else action += add_token;
     }
-
-
     text = picto_style.picto + text;
     button_style = ' style="' + picto_style.style + '"';
-
     if (button_title !== undefined) button_title = ' title="' + button_title + '"';
     else button_title = '';
-
     action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;').replace(/"/g, '&#34;');
     action = action.replace(/\'/g, '&apos;'); // escape quotes
-
     return '<a href="' + action + '"' + button_style + button_title + '>' + text + '</a>';
   }
 
