@@ -725,7 +725,7 @@ var COFantasy = COFantasy || function() {
       action.indexOf('cof-attack') == -1) {
       //Si on n'a pas de cible, on fait comme si le token était sélectionné.
       var add_token = " --target " + token.id;
-      if (action.indexOf('--allie') >= 0) {
+      if (action.indexOf(' --allie') >= 0 || (action.indexOf('cof-soin') >= 0 && action.indexOf(' groupe') >= 0)) {
        if (action.indexOf('--lanceur') == -1)
           add_token = " --lanceur " + token.id;
         else add_token = "";//La cible sont les alliés de --lanceur.
