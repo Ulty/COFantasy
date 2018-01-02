@@ -2722,7 +2722,7 @@ var COFantasy = COFantasy || function() {
                 type: 'normal',
                 display: buildinline(explRoll, 'normal')
               };
-              dealDamage(attaquant, r, [], evt, 1, options, explications,
+              dealDamage(attaquant, r, [], evt, false, options, explications,
                 function(dmgDisplay, dmg) {
                   var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
                     dmgDisplay;
@@ -2742,7 +2742,7 @@ var COFantasy = COFantasy || function() {
                 type: 'normal',
                 display: buildinline(explRoll, 'normal')
               };
-              dealDamage(attaquant, r, [], evt, 1, options, explications,
+              dealDamage(attaquant, r, [], evt, false, options, explications,
                 function(dmgDisplay, dmg) {
                   var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
                     dmgDisplay;
@@ -2836,8 +2836,8 @@ var COFantasy = COFantasy || function() {
             absorber = target.absorberDisplay;
           }
         }
-        var touche = 1; //false: pas touché, 1 touché, 2 critique
-        if (options.dmgCoef) touche = options.dmgCoef;
+        var touche = true;
+        var critique = false;
         // Calcule si touché, et les messages de dégats et attaque
         if (!options.auto) {
           if (options.triche) {
@@ -2927,7 +2927,8 @@ var COFantasy = COFantasy || function() {
             }
           } else if (paralyse || d20roll >= target.crit) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
-            touche++;
+            touche = true;
+            critique = true;
           } else if (options.champion) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
           } else if (attackRoll < defense) {
@@ -2989,6 +2990,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         target.touche = touche;
+        target.critique = critique;
         if (options.aoe === undefined && interchange.targets.length > 1) { //any target can be affected
           var n = randomInteger(interchange.targets.length);
           target.token = interchange.targets[n - 1];
@@ -3457,7 +3459,7 @@ var COFantasy = COFantasy || function() {
               // Pas de dégâts, donc pas d'appel à dealDamage
               finCibles();
             } else {
-              dealDamage(target, mainDmgRoll, additionalDmg, evt, target.touche,
+              dealDamage(target, mainDmgRoll, additionalDmg, evt, target.critique,
                 options, target.messages,
                 function(dmgDisplay, dmg) {
                   if (options.strigeSuce) {
@@ -3504,7 +3506,7 @@ var COFantasy = COFantasy || function() {
                         type: 'electrique',
                         display: buildinline(explRoll, 'electrique', true)
                       };
-                      dealDamage(attaquant, r, [], evt, 1, options,
+                      dealDamage(attaquant, r, [], evt, false, options,
                         target.messages,
                         function(dmgDisplay, dmg) {
                           var dmgMsg =
@@ -3525,7 +3527,7 @@ var COFantasy = COFantasy || function() {
                         type: 'acide',
                         display: buildinline(explRoll, 'acide', true)
                       };
-                      dealDamage(attaquant, r, [], evt, 1, options,
+                      dealDamage(attaquant, r, [], evt, false, options,
                         target.messages,
                         function(dmgDisplay, dmg) {
                           var dmgMsg =
@@ -3790,6 +3792,7 @@ var COFantasy = COFantasy || function() {
   // displayRes est optionnel, et peut avoir 2 arguments
   // - un texte affichant le jet de dégâts
   // - la valeur finale des dégâts infligés
+  // crit est un booléen, il augmente de 1 le coefficient (option.dmgCoef) et active certains effets
   function dealDamage(target, dmg, otherDmg, evt, crit, options, explications, displayRes) {
     if (options === undefined) options = {};
     var expliquer = function(msg) {
@@ -3809,15 +3812,16 @@ var COFantasy = COFantasy || function() {
       if (displayRes) displayRes('0', 0);
       return 0;
     }
-    crit = crit || 1;
+    var dmgCoef = options.dmgCoef || 1;
+    if (crit) dmgCoef++;
     otherDmg = otherDmg || [];
     var dmgDisplay = dmg.display;
     var dmgTotal = dmg.total;
     var showTotal = false;
-    if (crit > 1) {
-      dmgDisplay += " X " + crit;
-      dmgTotal = dmgTotal * crit;
-      if (options.affute) {
+    if (dmgCoef > 1) {
+      dmgDisplay += " X " + dmgCoef;
+      dmgTotal = dmgTotal * dmgCoef;
+      if (crit && options.affute) {
         var bonusCrit = randomInteger(6);
         dmgDisplay = "(" + dmgDisplay + ")+" + bonusCrit;
         dmgTotal += bonusCrit;
@@ -3836,7 +3840,7 @@ var COFantasy = COFantasy || function() {
     var mainDmgType = dmg.type;
     var dmgExtra = dmgParType[mainDmgType];
     if (dmgExtra && dmgExtra.length > 0) {
-      if (crit > 1) dmgDisplay = "(" + dmgDisplay + ")";
+      if (dmgCoef > 1) dmgDisplay = "(" + dmgDisplay + ")";
       showTotal = true;
       var count = dmgExtra.length;
       dmgExtra.forEach(function(d) {
@@ -4127,7 +4131,7 @@ var COFantasy = COFantasy || function() {
           showTotal = saveResult.showTotal;
         }
         var rd = charAttributeAsInt(charId, 'RDS', 0);
-        if (crit > 1) rd += charAttributeAsInt(charId, 'RD_critique', 0);
+        if (crit) rd += charAttributeAsInt(charId, 'RD_critique', 0);
         if (options.tranchant) rd += charAttributeAsInt(charId, 'RD_tranchant', 0);
         if (options.percant) rd += charAttributeAsInt(charId, 'RD_percant', 0);
         if (options.contondant) rd += charAttributeAsInt(charId, 'RD_contondant', 0);
@@ -7460,7 +7464,7 @@ var COFantasy = COFantasy || function() {
           }
           var name = perso.token.get('name');
           var explications = [];
-          dealDamage(perso, dmg, [], evt, 1, options, explications,
+          dealDamage(perso, dmg, [], evt, false, options, explications,
             function(dmgDisplay, dmgFinal) {
               addLineToFramedDisplay(display,
                 name + " reçoit " + dmgDisplay + " DM");
@@ -9715,7 +9719,7 @@ var COFantasy = COFantasy || function() {
         total: res[0].inlinerolls[0].results.total,
         display: buildinline(res[0].inlinerolls[0], 'normal', true),
       };
-      dealDamage(target, dmg, [], evt, 1, {
+      dealDamage(target, dmg, [], evt, false, {
           attaquant: necromancien
         }, undefined,
         function(dmgDisplay, dmg) {
@@ -10071,7 +10075,7 @@ var COFantasy = COFantasy || function() {
                 display: buildinline(explRoll, 'normal')
               };
               var explications = [];
-              dealDamage(barbare, r, [], evt, 1, {}, explications,
+              dealDamage(barbare, r, [], evt, false, {}, explications,
                 function(dmgDisplay, dmg) {
                   var dmgMsg = "mais cela lui coûte " + dmgDisplay + " PV";
                   addLineToFramedDisplay(display, dmgMsg);
@@ -10567,7 +10571,7 @@ var COFantasy = COFantasy || function() {
                   }
                 };
                 var explications = [];
-                dealDamage(perso, r, [], evt, 1, ps, explications,
+                dealDamage(perso, r, [], evt, false, ps, explications,
                   function(dmgDisplay, dmg) {
                     explications.forEach(function(e) {
                       addLineToFramedDisplay(display, e);
@@ -12176,7 +12180,7 @@ var COFantasy = COFantasy || function() {
           token: token,
           charId: charId
         };
-        dealDamage(perso, r, [], evt, 1, options, undefined,
+        dealDamage(perso, r, [], evt, false, options, undefined,
           function(dmgDisplay, dmg) {
             sendChar(charId, msg + ". " + onGenre(charId, 'Il', 'Elle') +
               " subit " + dmgDisplay + " DM");
@@ -12489,7 +12493,7 @@ var COFantasy = COFantasy || function() {
               total: feu,
               display: feu
             };
-            feu = dealDamage(perso, dmg, [], evt, 1);
+            feu = dealDamage(perso, dmg, [], evt);
             sendChar(charId, " est en flamme ! " +
               onGenre(charId, 'Il', 'Elle') + " subit " + feu + " DM");
             if (d6Enflamme < 3) {
