@@ -831,7 +831,7 @@
                 <h4 class="text-secondary">Voie du golem</h4>
                 <ol>
                   <li><strong>Grosse tête</strong> : pas de support (pas de save basé sur INT ?)</li>
-                  <li><strong>Golem</strong> : ajouter un personnage et un token pour le golem. Pour les réparations, utiliser <code>!cof-soin @[selected|token_id} <i>nom_du_golem</i> <i>rang</i>d6+@{selected|INT}</code>.</li>
+                  <li><strong>Golem</strong> : ajouter un personnage et un token pour le golem (ne pas oublier l'attribut <code>nonVivant</code> à <code>true</code> pour le golem). Pour les réparations, utiliser <code>!cof-soin @[selected|token_id} <i>nom_du_golem</i> <i>rang</i>d6+@{selected|INT}</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie des runes</h4>
                 <ol>
@@ -934,7 +934,7 @@
                 <h4 class="text-secondary">Voie de l’énergie vitale</h4>
                 <ol>
                   <li><strong>Main d'énergie</strong> : utiliser l'attaque à mains nues avec l'option <code>--mainsDEnergie</code>. D'autre part, ajouter l'option <code>--magique</code> à toutes les attaques à mains nues.</li>
-                  <li><strong>Pression mortelle</strong> : J'applique un bonus de +1d4 par attaque sans dégât avant la pression mortelle. option <code>--pointsVitaux</code> pour ne pas infliger immédiatement les dégâts <code>--pressionMortelle</code> pour libérer les dégâts</li>
+                  <li><strong>Pression mortelle</strong> : utiliser l'option <code>--pointsVitaux</code> pour ne pas infliger immédiatement les dégâts, et l'option <code>--pressionMortelle</code> pour libérer les dégâts.</li>
                   <li><strong>Invulnérable</strong>: utiliser un attribut <code>invulnerable</code> = true</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la maîtrise</h4>

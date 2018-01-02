@@ -276,7 +276,7 @@ var COFantasy = COFantasy || function() {
         aff.prev.light_losangle = token.get('light_losangle');
       if (value) token.set('light_losangle', 0);
       else token.set('light_losangle', 360);
-    } else if (value && etat == 'mort') {
+    } else if (value && etat == 'mort' && !estNonVivant(personnage)) {
       var allToks =
         findObjs({
           _type: "graphic",
@@ -727,9 +727,9 @@ var COFantasy = COFantasy || function() {
       //Si on n'a pas de cible, on fait comme si le token était sélectionné.
       var add_token = " --target " + token.id;
       if (action.indexOf(' --allie') >= 0) {
-       if (action.indexOf('--lanceur') == -1)
+        if (action.indexOf('--lanceur') == -1)
           add_token = " --lanceur " + token.id;
-        else add_token = "";//La cible sont les alliés de --lanceur.
+        else add_token = ""; //La cible sont les alliés de --lanceur.
       }
       if (action.indexOf(' --message ') != -1) action = action.replace(' --message ', add_token + ' --message ');
       else action += add_token;
@@ -1029,6 +1029,7 @@ var COFantasy = COFantasy || function() {
             duree: duree
           };
           options.effets.push(lastEtat);
+          options.seulementVivant = true;
           return;
         case "etatSi":
         case "etat":
@@ -2258,15 +2259,12 @@ var COFantasy = COFantasy || function() {
       //On trouve l'attaque correspondant au label
       var att = getAttack(attackLabel, attackerTokName, attackingCharId);
       if (att === undefined) return;
-
       var attPrefix = att.attackPrefix;
       weaponName = att.weaponName;
-
       weaponStats.attSkill =
         getAttrByName(attackingCharId, attPrefix + "armeatk") ||
         getAttrByName(attackingCharId, "ATKCAC");
       attSkillDiv = getAttrByName(attackingCharId, attPrefix + "armeatkdiv") || 0;
-
       // DMG
       weaponStats.attNbDices = getAttrByName(attackingCharId, attPrefix + "armedmnbde") || 1;
       weaponStats.attDice = getAttrByName(attackingCharId, attPrefix + "armedmde") || 4;
@@ -2274,17 +2272,14 @@ var COFantasy = COFantasy || function() {
         getAttrByName(attackingCharId, attPrefix + "armedmcar") ||
         modCarac(attaquant, "FORCE");
       weaponStats.attDMBonusCommun = getAttrByName(attackingCharId, attPrefix + "armedmdiv");
-
       crit = getAttrByName(attackingCharId, attPrefix + "armecrit") || 20;
       portee = getPortee(attackingCharId, attPrefix);
     }
-
     attSkillDiv = parseInt(attSkillDiv);
     weaponStats.attNbDices = parseInt(weaponStats.attNbDices);
     weaponStats.attDice = parseInt(weaponStats.attDice);
     weaponStats.attDMBonusCommun = parseInt(weaponStats.attDMBonusCommun);
     crit = parseInt(crit);
-
     if (portee > 0) {
       options.distance = true;
       if (attributeAsBool(attaquant, 'rageDuBerserk')) {
@@ -2292,7 +2287,6 @@ var COFantasy = COFantasy || function() {
         return;
       }
     } else options.contact = true;
-
     //Détermination de la (ou des) cible(s)
     var nomCiblePrincipale; //Utilise pour le cas mono-cible
     var cibles = [];
@@ -2500,6 +2494,14 @@ var COFantasy = COFantasy || function() {
     cibles = cibles.filter(function(target) {
       if (attributeAsBool(target, 'ombreMortelle')) {
         sendChar(attackingCharId, "impossible d'attaquer une ombre");
+        return false;
+      }
+      if (options.seulementVivant && estNonVivant(target)) {
+        sendChar(attackingCharId, "cette attaque n'affecte que les créatures vivantes");
+        return false;
+      }
+      if (options.pointsVitaux && estNonVivant(target)) {
+        sendChar(attackingCharId, "La cible n'est pas vraiment vivante : " + attackerName + " ne trouve pas de points vitaux");
         return false;
       }
       return true;
@@ -3197,6 +3199,14 @@ var COFantasy = COFantasy || function() {
     cibles.forEach(function(target) {
       var attDMBonus = attDMBonusCommun;
       //Les modificateurs de dégâts qui dépendent de la cible
+      if (options.tempDmg) {
+        var forceTarg = modCarac(target, "FORCE");
+        if (forceTarg < 0) {
+          attDMBonus += " +" + (-forceTarg);
+        } else {
+          attDMBonus += " -" + forceTarg;
+        }
+      }
       if (options.pressionMortelle) {
         //TODO : ne pas appliquer la RD à chaque coup, mais seulement au relachenement
         var pMortelle = tokenAttribute(target, 'pressionMortelle');
@@ -3205,17 +3215,10 @@ var COFantasy = COFantasy || function() {
           ciblesCount--;
           return;
         }
-        attNbDices = pMortelle[0].get('max');
-        attDice = 4; //TODO : have an option for that
+        attNbDices = 1;//pMortelle[0].get('max');
+        attDice = 6; //TODO : have an option for that
+        attCarBonus = '';
         attDMBonus = "+ " + pMortelle[0].get('current');
-      }
-      if (_.has(options, "tempDmg")) {
-        var forceTarg = modCarac(target, "FORCE");
-        if (forceTarg < 0) {
-          attDMBonus = " +" + (-forceTarg);
-        } else {
-          attDMBonus = " -" + forceTarg;
-        }
       }
       if (options.distance) {
         var tirPrecis = charAttributeAsInt(attackingCharId, 'tirPrecis', 0);
@@ -3835,7 +3838,6 @@ var COFantasy = COFantasy || function() {
       if (_.has(dmgParType, d.type)) dmgParType[d.type].push(d);
       else dmgParType[d.type] = [d];
     });
-
     // Dommages de même type que le principal, mais à part, donc non affectés par les critiques
     var mainDmgType = dmg.type;
     var dmgExtra = dmgParType[mainDmgType];
@@ -3890,7 +3892,20 @@ var COFantasy = COFantasy || function() {
     };
   }
 
+  //On a déterminé les DM du type principal(possiblement après save des dmgExtra, maintenant on applique les résistances, puis on ajoute les DM d'autres types
   function dealDamageAfterDmgExtra(target, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes) {
+    if (options.pointsVitaux && dmgTotal > 0) { //dégâts retardés pour une pression mortelle
+      var pMortelle = tokenAttribute(target, 'pressionMortelle');
+      var dmgPMort = dmgTotal;
+      var numberPMort = 1;
+      if (pMortelle.length > 0) {
+        dmgPMort += pMortelle[0].get('current');
+        numberPMort += pMortelle[0].get('max');
+      }
+      setTokenAttr(target, 'pressionMortelle', dmgPMort, evt, undefined,
+        numberPMort);
+      dmgTotal = 0;
+    }
     var rdMain = typeRD(target.charId, mainDmgType);
     if (options.vampirise) {
       rdMain += attributeAsInt(target, 'RD_drain', 0);
@@ -4163,139 +4178,127 @@ var COFantasy = COFantasy || function() {
           showTotal = true;
         }
         // compute effect on target
-        if (options.pointsVitaux && dmgTotal > 0) { //dégâts retardés pour une pression mortelle
-          var pMortelle = tokenAttribute(target, 'pressionMortelle');
-          var dmgPMort = dmgTotal;
-          var numberPMort = 1;
-          if (pMortelle.length > 0) {
-            dmgPMort += pMortelle[0].get('current');
-            numberPMort += pMortelle[0].get('max');
-          }
-          setTokenAttr(target, 'pressionMortelle', dmgPMort, evt, undefined,
-            numberPMort);
-        } else {
-          var bar1 = parseInt(token.get('bar1_value'));
-          var pvmax = parseInt(token.get('bar1_max'));
-          if (isNaN(bar1)) {
-            error("Pas de points de vie chez la cible", token);
-            bar1 = 0;
-            pvmax = 0;
-          } else if (isNaN(pvmax)) {
-            pvmax = bar1;
-            token.set("bar1_max", bar1);
-          }
-          var manaAttr = findObjs({
-            _type: 'attribute',
-            _characterid: charId,
-            name: 'PM'
-          });
-          var hasMana = false;
-          if (manaAttr.length > 0) {
-            var manaMax = parseInt(manaAttr[0].get('max'));
-            hasMana = !isNaN(manaMax) && manaMax > 0;
-          }
-          var tempDmg = 0;
-          if (hasMana) {
-            tempDmg = attributeAsInt(target, 'DMTEMP', 0);
-          } else {
-            tempDmg = parseInt(token.get("bar2_value"));
-            if (isNaN(tempDmg)) {
-              if (options.tempDmg) { //then try to set bar2 correctly
-                if (token.get("bar1_link") === '') {
-                  token.set("bar2_max", pvmax);
-                } else {
-                  var tmpHitAttr =
-                    findObjs({
-                      _type: "attribute",
-                      _characterid: charId,
-                      name: "DMTEMP"
-                    });
-                  var dmTemp;
-                  if (tmpHitAttr.length === 0) {
-                    dmTemp =
-                      createObj("attribute", {
-                        characterid: charId,
-                        name: "DMTEMP",
-                        current: 0,
-                        max: pvmax
-                      });
-                  } else {
-                    dmTemp = tmpHitAttr[0];
-                  }
-                  token.set("bar2_max", pvmax);
-                  token.set("bar2_link", dmTemp.id);
-                }
-              }
-              tempDmg = 0;
-            }
-          }
-          if (options.tempDmg) {
-            var oldTempDmg = tempDmg;
-            tempDmg += dmgTotal;
-            if (tempDmg > pvmax) tempDmg = pvmax;
-            if (hasMana) {
-              setTokenAttr(target, 'DMTEMP', tempDmg, evt);
-            } else {
-              affectToken(token, 'bar2_value', oldTempDmg, evt);
-              updateCurrentBar(token, 2, tempDmg);
-            }
-          } else {
-            affectToken(token, 'bar1_value', bar1, evt);
-            if (bar1 > 0 && bar1 <= dmgTotal && charAttributeAsBool(charId, 'instinctDeSurvieHumain')) {
-              dmgTotal = dmgTotal / 2;
-              if (dmgTotal < 1) dmgTotal = 1;
-              dmgDisplay += "/2";
-              showTotal = true;
-              expliquer("L'instinct de survie aide à réduire une attaque fatale");
-            }
-            bar1 = bar1 - dmgTotal;
-            if (bar1 <= 0) {
-              if (charAttributeAsBool(charId, 'sergent') &&
-                !attributeAsBool(target, 'sergentUtilise')) {
-                expliquer(token.get('name') + " évite l'attaque in-extremis");
-                setTokenAttr(target, 'sergentUtilise', true, evt);
-              } else {
-                updateCurrentBar(token, 1, 0);
-                if (charAttributeAsBool(charId, 'baroudHonneur')) {
-                  expliquer(token.get('name') + " devrait être mort, mais il continue à se battre !");
-                  setTokenAttr(target, 'baroudHonneurActif', true, evt);
-                } else {
-                  var defierLaMort = charAttributeAsInt(charId, 'defierLaMort', 0);
-                  if (defierLaMort > 0) {
-                    save({
-                        carac: 'CON',
-                        seuil: defierLaMort
-                      }, target, expliquer, {
-                        msgPour: " pour défier la mort",
-                        msgReussite: ", conserve 1 PV"
-                      }, evt,
-                      function(reussite, rollText) {
-                        if (reussite) {
-                          updateCurrentBar(token, 1, 1);
-                          bar1 = 1;
-                          setTokenAttr(target, 'defierLaMort', defierLaMort + 10, evt);
-                        } else mort(target, evt);
-                        if (bar1 > 0 && tempDmg >= bar1) { //assomé
-                          setState(target, 'assome', true, evt);
-                        }
-                        if (showTotal) dmgDisplay += " = " + dmgTotal;
-                        if (displayRes === undefined) return dmgDisplay;
-                        displayRes(dmgDisplay, dmgTotal);
-                      });
-                    if (displayRes === undefined) return dmgDisplay;
-                    return;
-                  } else mort(target, evt);
-                }
-              }
-            } else { // bar1>0
-              updateCurrentBar(token, 1, bar1);
-            }
-          }
-          if (bar1 > 0 && tempDmg >= bar1) { //assomé
-            setState(target, 'assome', true, evt);
-          }
-          if (showTotal) dmgDisplay += " = " + dmgTotal;
+        var bar1 = parseInt(token.get('bar1_value'));
+        var pvmax = parseInt(token.get('bar1_max'));
+        if (isNaN(bar1)) {
+          error("Pas de points de vie chez la cible", token);
+          bar1 = 0;
+          pvmax = 0;
+        } else if (isNaN(pvmax)) {
+          pvmax = bar1;
+          token.set("bar1_max", bar1);
         }
+        var manaAttr = findObjs({
+          _type: 'attribute',
+          _characterid: charId,
+          name: 'PM'
+        });
+        var hasMana = false;
+        if (manaAttr.length > 0) {
+          var manaMax = parseInt(manaAttr[0].get('max'));
+          hasMana = !isNaN(manaMax) && manaMax > 0;
+        }
+        var tempDmg = 0;
+        if (hasMana) {
+          tempDmg = attributeAsInt(target, 'DMTEMP', 0);
+        } else {
+          tempDmg = parseInt(token.get("bar2_value"));
+          if (isNaN(tempDmg)) {
+            if (options.tempDmg) { //then try to set bar2 correctly
+              if (token.get("bar1_link") === '') {
+                token.set("bar2_max", pvmax);
+              } else {
+                var tmpHitAttr =
+                  findObjs({
+                    _type: "attribute",
+                    _characterid: charId,
+                    name: "DMTEMP"
+                  });
+                var dmTemp;
+                if (tmpHitAttr.length === 0) {
+                  dmTemp =
+                    createObj("attribute", {
+                      characterid: charId,
+                      name: "DMTEMP",
+                      current: 0,
+                      max: pvmax
+                    });
+                } else {
+                  dmTemp = tmpHitAttr[0];
+                }
+                token.set("bar2_max", pvmax);
+                token.set("bar2_link", dmTemp.id);
+              }
+            }
+            tempDmg = 0;
+          }
+        }
+        if (options.tempDmg) {
+          var oldTempDmg = tempDmg;
+          tempDmg += dmgTotal;
+          if (tempDmg > pvmax) tempDmg = pvmax;
+          if (hasMana) {
+            setTokenAttr(target, 'DMTEMP', tempDmg, evt);
+          } else {
+            affectToken(token, 'bar2_value', oldTempDmg, evt);
+            updateCurrentBar(token, 2, tempDmg);
+          }
+        } else {
+          affectToken(token, 'bar1_value', bar1, evt);
+          if (bar1 > 0 && bar1 <= dmgTotal && charAttributeAsBool(charId, 'instinctDeSurvieHumain')) {
+            dmgTotal = dmgTotal / 2;
+            if (dmgTotal < 1) dmgTotal = 1;
+            dmgDisplay += "/2";
+            showTotal = true;
+            expliquer("L'instinct de survie aide à réduire une attaque fatale");
+          }
+          bar1 = bar1 - dmgTotal;
+          if (bar1 <= 0) {
+            if (charAttributeAsBool(charId, 'sergent') &&
+              !attributeAsBool(target, 'sergentUtilise')) {
+              expliquer(token.get('name') + " évite l'attaque in-extremis");
+              setTokenAttr(target, 'sergentUtilise', true, evt);
+            } else {
+              updateCurrentBar(token, 1, 0);
+              if (charAttributeAsBool(charId, 'baroudHonneur')) {
+                expliquer(token.get('name') + " devrait être mort, mais il continue à se battre !");
+                setTokenAttr(target, 'baroudHonneurActif', true, evt);
+              } else {
+                var defierLaMort = charAttributeAsInt(charId, 'defierLaMort', 0);
+                if (defierLaMort > 0) {
+                  save({
+                      carac: 'CON',
+                      seuil: defierLaMort
+                    }, target, expliquer, {
+                      msgPour: " pour défier la mort",
+                      msgReussite: ", conserve 1 PV"
+                    }, evt,
+                    function(reussite, rollText) {
+                      if (reussite) {
+                        updateCurrentBar(token, 1, 1);
+                        bar1 = 1;
+                        setTokenAttr(target, 'defierLaMort', defierLaMort + 10, evt);
+                      } else mort(target, evt);
+                      if (bar1 > 0 && tempDmg >= bar1) { //assomé
+                        setState(target, 'assome', true, evt);
+                      }
+                      if (showTotal) dmgDisplay += " = " + dmgTotal;
+                      if (displayRes === undefined) return dmgDisplay;
+                      displayRes(dmgDisplay, dmgTotal);
+                    });
+                  if (displayRes === undefined) return dmgDisplay;
+                  return;
+                } else mort(target, evt);
+              }
+            }
+          } else { // bar1>0
+            updateCurrentBar(token, 1, bar1);
+          }
+        }
+        if (bar1 > 0 && tempDmg >= bar1) { //assomé
+          setState(target, 'assome', true, evt);
+        }
+        if (showTotal) dmgDisplay += " = " + dmgTotal;
         if (displayRes === undefined) return dmgDisplay;
         displayRes(dmgDisplay, dmgTotal);
       });
@@ -8407,6 +8410,12 @@ var COFantasy = COFantasy || function() {
     attaqueMagique(msg, evt,
       function(attaquant, cible, display, reussi) {
         if (reussi) {
+          if (estNonVivant(cible)) {
+            addLineToFramedDisplay(display, cible.token.get('name') + " n'est pas une créature vivante, il ne peut croire à sa mort");
+            sendChat("", endFramedDisplay(display));
+            addEvent(evt);
+            return;
+          }
           if (attributeAsBool(cible, 'tueurFantasmagorique')) {
             addLineToFramedDisplay(display, cible.token.get('name') + " a déjà été victime d'un tueur fantasmagorique aujourd'hui, c'est sans effet");
             sendChat("", endFramedDisplay(display));
@@ -8492,6 +8501,10 @@ var COFantasy = COFantasy || function() {
         var targetsWithoutSave = [];
         iterSelected(selected, function(perso) {
           perso.name = perso.token.get('name');
+          if (estNonVivant(perso)) { //le sort de sommeil n'affecte que les créatures vivantes
+            addLineToFramedDisplay(display, perso.name + " n'est pas affecté par le sommeil");
+            return;
+          }
           var pv = perso.token.get('bar1_max');
           if (pv > 2 * attMag) {
             var line =
@@ -8616,11 +8629,6 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
-  function estNonVivant(perso) {
-    return (charAttributeAsBool(perso, 'nonVivant') ||
-      attributeAsBool(perso, 'masqueMortuaire'));
-  }
-
   function raceIs(perso, race) {
     var attr = findObjs({
       _type: 'attribute',
@@ -8650,6 +8658,11 @@ var COFantasy = COFantasy || function() {
       default:
         return false;
     }
+  }
+
+  function estNonVivant(perso) {
+    return (charAttributeAsBool(perso, 'nonVivant') ||
+      attributeAsBool(perso, 'masqueMortuaire') || estMortVivant(perso));
   }
 
   function estUnGeant(perso) {
@@ -9689,7 +9702,7 @@ var COFantasy = COFantasy || function() {
     var charId2 = target.charId;
     var name2 = target.token.get('name');
     if (!attributeAsBool(target, 'strangulation')) {
-      sendChar(charId1, "ne peut pas maintenir la strangulation. Il faut (re)lancer le cort");
+      sendChar(charId1, "ne peut pas maintenir la strangulation. Il faut (re)lancer le sort");
       return;
     }
     var evt = {
@@ -12686,7 +12699,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = 0.7;
+  var script_version = 0.8;
   COF_loaded = true;
   state.COFantasy = state.COFantasy || {
     combat: false,
