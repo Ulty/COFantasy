@@ -1057,6 +1057,19 @@ var COFantasy = COFantasy || function() {
           };
           options.etats.push(lastEtat);
           return;
+        case "psi": //rajoute une condition au dernier --plus
+          var psil = options.additionalDmg.length;
+          if (psil === 0) {
+            error("option --psi non précédée d'un --plus", optArgs);
+            return;
+          }
+          var psiCond = parseCondition(cmd.slice(1));
+          if (psiCond) {
+            var psiDmg = options.additionalDmg[psil - 1];
+            psiDmg.conditions = psiDmg.conditions || [];
+            psiDmg.conditions.push(psiCond);
+          }
+          return;
         case "peur":
           if (cmd.length < 3) {
             error("Il manque un argument à l'option --peur de !cof-attack", cmd);
@@ -1439,6 +1452,11 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseCondition(args) {
+    if (args.length > 0 && (args[0] == 'crit' || args[0] == 'critique')) {
+      return {
+        type: 'critique'
+      };
+    }
     if (args.length < 2) {
       error("condition non reconnue", args);
       return undefined;
@@ -1501,11 +1519,16 @@ var COFantasy = COFantasy || function() {
         return (charAttributeAsBool(attaquant.charId, cond.attribute));
       case "deAttaque":
         if (deAttaque === undefined) {
-          error("Condition de dé d'attque non supportée ici", cond);
+          error("Condition de dé d'attaque non supportée ici", cond);
           return true;
         }
         if (deAttaque < cond.seuil) return false;
         return true;
+      case "critique":
+        return cibles.every(function(target) {
+          if (target.critique) return true;
+          return false;
+        });
       default:
         error("Condition non reconnue", cond);
     }
@@ -3215,7 +3238,7 @@ var COFantasy = COFantasy || function() {
           ciblesCount--;
           return;
         }
-        attNbDices = 1;//pMortelle[0].get('max');
+        attNbDices = 1; //pMortelle[0].get('max');
         attDice = 6; //TODO : have an option for that
         attCarBonus = '';
         attDMBonus = "+ " + pMortelle[0].get('current');
@@ -3303,6 +3326,13 @@ var COFantasy = COFantasy || function() {
         addOrigin(attaquant.name, attNbDicesCible + "d" + attDiceCible + attCarBonusCible + attDMBonus);
       //Additional damage
       var additionalDmg = options.additionalDmg.concat(target.additionalDmg);
+      //On enlève les DM qui ne passent pas les conditions
+      additionalDmg = additionalDmg.filter(function(dmSpec) {
+        if (dmSpec.conditions === undefined) return true;
+        return dmSpec.conditions.every(function(cond) {
+          return testCondition(cond, attaquant, [target], d20roll);
+        });
+      });
       if (!options.sortilege && !options.magique &&
         charAttributeAsBool(target.charId, 'immuniteAuxArmes')) {
         additionalDmg = additionalDmg.filter(function(dmSpec) {
@@ -3402,9 +3432,7 @@ var COFantasy = COFantasy || function() {
                 saves++;
                 return; //on le fera plus tard
               }
-              if (testCondition(ce.condition, attaquant, [{
-                  charId: target.charId
-                }], d20roll)) {
+              if (testCondition(ce.condition, attaquant, [target], d20roll)) {
                 setState(target, ce.etat, true, evt);
                 target.messages.push(target.tokName + " est " + ce.etat + eForFemale(target.charId) + " par l'attaque");
               } else {
@@ -3554,9 +3582,7 @@ var COFantasy = COFantasy || function() {
             if (options.etats && saves > 0) {
               options.etats.forEach(function(ce) {
                 if (ce.save) {
-                  if (testCondition(ce.condition, attaquant, [{
-                      charId: target.charId
-                    }], d20roll)) {
+                  if (testCondition(ce.condition, attaquant, [target], d20roll)) {
                     var msgPour = " pour résister à un effet";
                     var msgRate = ", " + target.tokName + " est " + ce.etat + eForFemale(target.charId) + " par l'attaque";
                     var saveOpts = {
@@ -3824,13 +3850,12 @@ var COFantasy = COFantasy || function() {
     if (dmgCoef > 1) {
       dmgDisplay += " X " + dmgCoef;
       dmgTotal = dmgTotal * dmgCoef;
-      if (crit && options.affute) {
-        var bonusCrit = randomInteger(6);
-        dmgDisplay = "(" + dmgDisplay + ")+" + bonusCrit;
-        dmgTotal += bonusCrit;
-      } else {
-        showTotal = true;
-      }
+      showTotal = true;
+    }
+    if (crit && options.affute) {
+      var bonusCrit = randomInteger(6);
+      dmgDisplay = "(" + dmgDisplay + ")+" + bonusCrit;
+      dmgTotal += bonusCrit;
     }
     //On trie les DM supplémentaires selon leur type
     var dmgParType = {};

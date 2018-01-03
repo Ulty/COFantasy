@@ -312,13 +312,16 @@
                       <li><code>moins</code> <i>attribut</i> : vrai si l'attribut <i>attribut</i> de la cible est moins haute que celle de l'attaquant</li>
                       <li><code>etat</code> <i>e</i> : vrai si l'état <i>e</i> est actif sur l'attaquant. Cet état peut être un des états définis plus bas, ou un attribut quelconque.</li>
                       <li><code>deAttaque</code> <i>n</i> : vrai si le jet de dé d'attaque est supérieur ou égal à <i>n</i>.</li>
+                      <li><code>crit</code> : vrai si l'attaque est un critique.</li>
                     </ul>
                   </li>
                   <li><code>--etat <i>e</i></code>: si l'attaque touche, la cible passe dans l'état <i>e</i>.</li>
                   <li><code>--etatSi <i>e condition</i></code> : si l'attaque touche et la <a href="#conditions"><i>condition</i></a> est validée, la cible passe dans l'état <i>e</i>.</li>
                   <li><code>--effet <i>e duree</i></code> : ajoute à la cible l'effet temporaire <i>e</i> pour la duree spécifiée. Pour que cela soit automatiquement mis à jour, il faut utiliser le turn tracker.</li>
                   <li><code>--peur <i>seuil duree</i></code> : fait un effet de peur si l'attaque touche. Le <i>seuil</i> sert pour le test de sagesse de résitance à la peur (tient compte de la capacité <b>sans peur</b> du chevalier).</li>
-                  <li><code>--plus <i>dmg</i></code> : ajoute <i>dmg</i> dégâts. Attention, si <i>dmg</i> est un simple nombre, ces dégâts sont multipliés par les critiques (sauf si de type différent de l'attaque principale). Ainsi, <code>--plus [[1d6]]</code> donnera des dégâts multipliés par les critiques (car la fonction ne voit que le résultat du jet), alors que <code>--plus 1d6</code> ne le sera pas.</li>
+                  <li><code>--plus <i>dmg</i></code> :
+                    ajoute <i>dmg</i> dégâts. Attention, si <i>dmg</i> est un simple nombre, ces dégâts sont multipliés par les critiques (sauf si de type différent de l'attaque principale). Ainsi, <code>--plus [[1d6]]</code> donnera des dégâts multipliés par les critiques (car la fonction ne voit que le résultat du jet), alors que <code>--plus 1d6</code> ne le sera pas. 
+                    Si on souhaite que les dégâts ne s'appliquent que si <a href="#conditions">certaines conditions</a> sont réunies, on peut faire suivre les dommages de <code>--psi <i>condition</i></code>. </li>
                   <li><code>--sournoise <i>n</i></code> : ajoute <i>n</i>d6 de dégâts d'attaque sournoise ou par surprise.</li>
                   <li><code>--test</code> pour voir le résultat du jet d'attaque. On n'applique pas les résultats d'un touché.</li>
                   <li><code>--magique</code> : les dégâts sont magiques. On peut passer en argument le niveau de magie. Il est utilisé contre les créatures immunisées aux armes. Le niveau par défaut est 1.</li>
