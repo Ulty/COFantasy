@@ -962,6 +962,7 @@ var COFantasy = COFantasy || function() {
         case "avecd12":
         case "traquenard":
         case "affute":
+        case "metal":
         case "vampirise":
         case "mainsDEnergie":
         case "tirDeBarrage":
@@ -1808,6 +1809,10 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(target, 'armeSecreteBarde')) {
       defense -= 10;
+    }
+    if (options.metal && attributeAsBool(target, 'magnetisme')) {
+      defense += 5;
+      explications.push(tokenName + " contrôle le magnétisme (+5 DEF)");
     }
     var attrsProtegePar = findObjs({
       _type: 'attribute',
@@ -4196,9 +4201,15 @@ var COFantasy = COFantasy || function() {
           }
         }
         dmgTotal -= rd;
+        if (options.metal && attributeAsBool(target, 'magnetisme')) {
+          if (showTotal) dmgDisplay = "(" + dmgDisplay + ") / 2";
+          else dmgDisplay += " / 2";
+          showTotal = true;
+          dmgTotal = Math.ceil(dmgTotal / 2);
+        }
         if (dmgTotal < 0) dmgTotal = 0;
         if (options.divise) {
-          dmgTotal = dmgTotal / options.divise;
+          dmgTotal = Math.ceil(dmgTotal / options.divise);
           dmgDisplay = "(" + dmgDisplay + ")/" + options.divise;
           showTotal = true;
         }
@@ -7417,6 +7428,7 @@ var COFantasy = COFantasy || function() {
             return;
           case 'asphyxie':
           case 'affute':
+          case "metal":
           case 'vampirise':
           case 'magique':
           case 'artificiel':
@@ -11831,6 +11843,11 @@ var COFantasy = COFantasy || function() {
       activation: "commence à bouger",
       actif: "est un arbre animé",
       fin: "redevient un arbre ordinaire"
+    },
+    magnetisme: {
+      activation: "contrôle le magnétisme",
+      actif: "contrôle le magnétisme",
+      fin: "relache son contrôle du magnétisme"
     }
   };
 

@@ -830,6 +830,7 @@
                 <ol>
                   <li><strong>Forgeron</strong> : Il faut un attribut <code>voieDuMetal</code> pour connaître le rang (ou utiliser l'option <code>--valeur</code>. Lancer le sort avec <code>!cof-effet-temp forgeron_<i>L</i> [[5+@{selected|INT}]]</code> où <i>L</i> est le label d'une attaque. Ensuite, chaque fois que cette attaque sera utilisée, les dégâts seront ajoutés. Limitations : risque de mal fonctionner pour les tokens non liés à un personnage, et si deux attaques utilisent la même arme, il faut faire deux fois l'action, une pour chaque attaque.</li>
                   <li><strong>Métal brûlant</strong> : faire une attaque magique de portée 20 m et sans dégâts. L'appeler avec les options <code>--sortilege --effet ?{Chauffer|une arme,armeBrulante|une armure,armureBrulante} [[5+@{selected|INT}]]</code></li>
+                  <li><strong>Magnétisme</strong> : <code>!cof-effet-temp magnetisme [[3+@{selected|INT}]] --lanceur @{selected|token_id} --mana 1</code>. L'effet n'est actif que contre les attaques ayant l'option <code>--metal</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du golem</h4>
                 <ol>
