@@ -2538,6 +2538,7 @@ var COFantasy = COFantasy || function() {
     //Prise en compte de la distance
     cibles = cibles.filter(function(target) {
       target.distance = distanceCombat(attackingToken, target.token, pageId);
+      if (options.intercepter || options.interposer) return true;
       if (target.distance > portee && target.esquiveFatale === undefined) {
         if (options.aoe || options.auto) return false; //distance stricte
         if (target.distance > 2 * portee) return false;
@@ -2869,7 +2870,7 @@ var COFantasy = COFantasy || function() {
         var touche = true;
         var critique = false;
         // Calcule si touché, et les messages de dégats et attaque
-        if (!options.auto) {
+        if (!options.auto && !options.interposer) {
           if (options.triche) {
             switch (options.triche) {
               case "rate":
@@ -3833,6 +3834,9 @@ var COFantasy = COFantasy || function() {
       if (explications) explications.push(msg);
       else sendChar(target.charId, msg);
     };
+    if (options.interposer) {
+      return dealDamageAfterOthers(target, crit, {}, evt, expliquer, displayRes, options.interposer, dmg.display, false);
+    }
     if (attributeAsBool(target, 'intangible') ||
       attributeAsBool(target, 'ombreMortelle') ||
       (options.aoe === undefined &&
@@ -4891,6 +4895,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('protegerUnAllie', evt, attrs);
     attrs = removeAllAttributes('protegePar', evt, attrs);
     attrs = removeAllAttributes('intercepter', evt, attrs);
+    attrs = removeAllAttributes('interposer', evt, attrs);
     attrs = removeAllAttributes('defenseTotale', evt, attrs);
     attrs = removeAllAttributes('dureeStrangulation', evt, attrs);
     attrs = removeAllAttributes('defautDansLaCuirasse', evt, attrs);
@@ -4911,6 +4916,7 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'defierLaMort', evt);
     // Recharger les runes d'énergie
     resetAttr(attrs, 'runeDEnergie', evt);
+    resetAttr(attrs, 'runeDeProtection', evt);
     // Remettre l'esquive fatale à 1
     resetAttr(attrs, 'esquiveFatale', evt);
     // Remettre frappe du vide à 1
@@ -6108,7 +6114,74 @@ var COFantasy = COFantasy || function() {
         options.rollsAttack = attaque.rollsAttack;
         options.rollsDmg = attaque.rollsDmg;
         options.evt = evt;
-        cible.rollsDamg = attaque.cibles[0].rollsDmg;
+        cible.rollsDmg = attaque.cibles[0].rollsDmg;
+        attack(attaque.player_id, attaque.attaquant, {
+          cibles: [cible]
+        }, attaque.attack_label, options);
+      });
+    });
+  }
+
+  //simplement prendre les DM à la place d'un autre
+  function interposer(msg) {
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(cible) {
+        var charId = cible.charId;
+        var character = getObj('character', charId);
+        if (character === undefined) {
+          error("L'argument de !cof-interposer n'est pas une id de token valide (personnage non défini)", msg.content);
+          return;
+        }
+        cible.tokName = cible.token.get('name');
+        cible.name = character.get('name');
+        if (attributeAsBool(cible, 'interposer')) {
+          sendChar(charId, " a déjà intercepté une attaque ce tour");
+          return;
+        }
+        var attaque;
+        var lastAct = lastEvent();
+        if (lastAct !== undefined) {
+          attaque = lastAct.action;
+        }
+        if (attaque === undefined) {
+          sendChar(charId, "la dernière action trouvée n'est pas une attaque, impossible d'intercepter");
+          return;
+        }
+        if (attaque.cibles.length === 0) {
+          sendChar(charId, "la dernière attaque n'a touché aucune cible, impossible de s'interposer");
+          return;
+        }
+        if (attaque.cibles.length > 1) {
+          sendChar(charId, "la dernière attaque a touché plus d'une cible, impossible de s'interposer en utilisant le script");
+          return;
+        }
+        var target = attaque.cibles[0];
+        var targetName = target.tokName;
+        if (targetName === undefined) {
+          error("Le token de la dernière attaque est indéfini", attaque);
+          return;
+        }
+        if (distanceCombat(cible.token, target.token) > 0) {
+          sendChar(charId, " est trop loin de " + targetName + " pour s'interposer");
+          return;
+        }
+        var evt = {
+          type: 'interposer'
+        };
+        setTokenAttr(cible, 'interposer', true, evt,
+          "se met devant " + targetName + " pour intercepter l'attaque !");
+        var pvApres = target.token.get('bar1_value');
+        // On annule l'ancienne action
+        undoEvent();
+        // On calcule ensuite les pv perdus, et on les applique au défenseur
+        var pvPerdus = target.token.get('bar1_value') - pvApres;
+        // Puis on refait en changeant la cible
+        var options = attaque.options;
+        options.interposer = pvPerdus;
+        options.rollsAttack = attaque.rollsAttack;
+        options.rollsDmg = attaque.rollsDmg;
+        options.evt = evt;
+        cible.rollsDmg = target.rollsDmg;
         attack(attaque.player_id, attaque.attaquant, {
           cibles: [cible]
         }, attaque.attack_label, options);
@@ -11380,6 +11453,58 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  function runeProtection(msg) {
+    if (!state.COFantasy.combat) {
+      sendPlayer(msg, "On ne peut utiliser les runes de protection qu'en combat");
+      return;
+    }
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(perso) {
+        var evt = {
+          type: "Rune de protection",
+          attributes: []
+        };
+        var attr = tokenAttribute(perso, 'runeDeProtection');
+        if (attr.length === 0) {
+          sendChar(perso.charId, "n'a pas de rune de protection");
+          return;
+        }
+        attr = attr[0];
+        var dispo = attr.get('current');
+        if (dispo) {
+          var lastAct = lastEvent();
+          if (lastAct === undefined) {
+            sendChar(perso.charId, "pas de dernière action sur laquelle utiliser la rune de protection");
+            return;
+          }
+          if (lastAct.affectes === undefined || lastAct.type != 'Attaque') {
+            sendChar(perso.charId, "la dernière action n'est pas une attaque, on ne peut utiliser la rune de protection");
+            return;
+          }
+          var aff = lastAct.affectes[perso.token.id];
+          var currentPV = perso.token.get('bar1_value');
+          if (aff === undefined || aff.prev === undefined ||
+            aff.prev.bar1_value === undefined ||
+            aff.prev.bar1_value <= currentPV) {
+            sendChar(perso.charId, "la dernière action n'a pas diminué les PV de " + perso.token.get('name'));
+            return;
+          }
+          sendChar(perso.charId, "utilise sa rune de protection pour ignorer les derniers dommages");
+          evt.attributes.push({
+            attribute: attr,
+            current: dispo
+          });
+          attr.set('current', 0);
+          setToken(perso.token, 'bar1_value', aff.prev.bar1_value, evt);
+          if (getState(perso, 'mort')) setState(perso, 'mort', false, evt);
+          return;
+        }
+        sendChar(perso.charId, "a déjà utilisé sa rune de protection durant ce combat");
+        return;
+      });
+    });
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -11426,6 +11551,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-bouton-rune-energie":
         runeEnergie(msg);
+        return;
+      case "!cof-rune-protection":
+        runeProtection(msg);
         return;
       case "!cof-surprise":
         surprise(msg);
@@ -11509,6 +11637,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-intercepter":
         intercepter(msg);
+        return;
+      case "!cof-interposer":
+        interposer(msg);
         return;
       case "!cof-esquive-fatale":
         esquiveFatale(msg);
@@ -12476,6 +12607,7 @@ var COFantasy = COFantasy || function() {
       // Enlever les bonus d'un tour
       attrs = removeAllAttributes('actionConcertee', evt, attrs);
       attrs = removeAllAttributes('intercepter', evt, attrs);
+      attrs = removeAllAttributes('interposer', evt, attrs);
       attrs = removeAllAttributes('exemplaire', evt, attrs);
       // Pour défaut dans la cuirasse, on diminue si la valeur est 2, et on supprime si c'est 1
       var defautsDansLaCuirasse = allAttributesNamed(attrs, 'defautDansLaCuirasse');
