@@ -946,20 +946,22 @@ var COFantasy = COFantasy || function() {
       if (cmd.length === 0) cmd = [arg];
       switch (cmd[0]) {
         case "auto":
-        case "tempDmg":
         case "poudre":
-        case "strigeSuce":
         case "semonce":
         case "pointsVitaux":
         case "pressionMortelle":
         case "reroll1":
         case "reroll2":
+        case "ignoreRD":
+        case "tempDmg":
         case "tirDouble":
         case "tranchant":
         case "percant":
+        case "pasDeDmg":
         case "contondant":
         case "m2d20":
         case "avecd12":
+        case "strigeSuce":
         case "traquenard":
         case "affute":
         case "metal":
@@ -3491,8 +3493,9 @@ var COFantasy = COFantasy || function() {
           // Tout ce qui se passe après les saves (autres que saves de diminution des dmg
           var afterSaves = function() {
             if (saves > 0) return; //On n'a pas encore fait tous les saves
-            if (additionalDmg.length === 0 && mainDmgRoll.total === 0 &&
-              attNbDices === 0) {
+            if (options.pasDeDmg || 
+              (additionalDmg.length === 0 && mainDmgRoll.total === 0 &&
+              attNbDices === 0)) {
               // Pas de dégâts, donc pas d'appel à dealDamage
               finCibles();
             } else {
@@ -3940,86 +3943,88 @@ var COFantasy = COFantasy || function() {
         numberPMort);
       dmgTotal = 0;
     }
-    var rdMain = typeRD(target.charId, mainDmgType);
-    if (options.vampirise) {
-      rdMain += attributeAsInt(target, 'RD_drain', 0);
-    }
-    if (rdMain > 0 && dmgTotal > 0) {
-      dmgTotal -= rdMain;
-      if (dmgTotal < 0) {
-        rdMain += dmgTotal;
-        dmgTotal = 0;
+    if (options.ignoreRD === undefined) {
+      var rdMain = typeRD(target.charId, mainDmgType);
+      if (options.vampirise) {
+        rdMain += attributeAsInt(target, 'RD_drain', 0);
       }
-      dmgDisplay += " - " + rdMain;
-      showTotal = true;
-    }
-    var rdElems = 0;
-    if (attributeAsBool(target, 'protectionContreLesElements')) {
-      rdElems = getValeurOfEffet(target, 'protectionContreLesElements', 1, 'voieDeLaMagieElementaire') * 2;
-    }
-    if (rdElems > 0 && dmgTotal > 0 && estElementaire(mainDmgType)) {
-      if (dmgTotal > rdElems) {
-        dmgDisplay += ' - ' + rdElems;
-        dmgTotal -= rdElems;
-        rdElems = 0;
-      } else {
-        dmgDisplay += ' - ' + dmgTotal;
-        rdElems -= dmgTotal;
-        dmgTotal = 0;
-      }
-    }
-    var rdSauf = [];
-    if (target.attrs === undefined) {
-      target.attrs = findObjs({
-        _type: 'attribute',
-        _characterid: target.charId
-      });
-    }
-    target.attrs.forEach(function(attr) {
-      var attrName = attr.get('name');
-      if (attrName.startsWith('RD_sauf_')) {
-        var rds = parseInt(attr.get('current'));
-        if (isNaN(rds) || rds < 1) return;
-        rdSauf[attrName.substr(8)] = rds;
-      }
-    });
-    var additionalType = {
-      magique: options.magique,
-      tranchant: options.tranchant,
-      percant: options.percant,
-      contondant: options.contondant
-    };
-    var resSauf = applyRDSauf(rdSauf, mainDmgType, dmgTotal, dmgDisplay, additionalType);
-    dmgTotal = resSauf.total;
-    dmgDisplay = resSauf.display;
-    var invulnerable = charAttributeAsBool(target, 'invulnerable');
-    var mitigate = function(dmgType, divide, zero) {
-      if (estElementaire(dmgType)) {
-        if (invulnerable) {
-          divide();
+      if (rdMain > 0 && dmgTotal > 0) {
+        dmgTotal -= rdMain;
+        if (dmgTotal < 0) {
+          rdMain += dmgTotal;
+          dmgTotal = 0;
         }
-        if (dmgType == 'froid' && attributeAsBool(target, 'masqueMortuaire')) {
-          divide();
-        }
-      } else {
-        if ((dmgType == 'poison' || dmgType == 'maladie') && (invulnerable || estNonVivant(target))) {
-          zero();
-        } else if (attributeAsBool(target, 'armureMagique')) {
-          divide();
-        }
-      }
-    };
-    // Damage mitigaters for main damage
-    mitigate(mainDmgType,
-      function() {
-        dmgTotal = Math.ceil(dmgTotal / 2);
-        if (dmgExtra) dmgDisplay = "(" + dmgDisplay + ")";
-        dmgDisplay += " / 2";
+        dmgDisplay += " - " + rdMain;
         showTotal = true;
-      },
-      function() {
-        dmgTotal = 0;
+      }
+      var rdElems = 0;
+      if (attributeAsBool(target, 'protectionContreLesElements')) {
+        rdElems = getValeurOfEffet(target, 'protectionContreLesElements', 1, 'voieDeLaMagieElementaire') * 2;
+      }
+      if (rdElems > 0 && dmgTotal > 0 && estElementaire(mainDmgType)) {
+        if (dmgTotal > rdElems) {
+          dmgDisplay += ' - ' + rdElems;
+          dmgTotal -= rdElems;
+          rdElems = 0;
+        } else {
+          dmgDisplay += ' - ' + dmgTotal;
+          rdElems -= dmgTotal;
+          dmgTotal = 0;
+        }
+      }
+      var rdSauf = [];
+      if (target.attrs === undefined) {
+        target.attrs = findObjs({
+          _type: 'attribute',
+          _characterid: target.charId
+        });
+      }
+      target.attrs.forEach(function(attr) {
+        var attrName = attr.get('name');
+        if (attrName.startsWith('RD_sauf_')) {
+          var rds = parseInt(attr.get('current'));
+          if (isNaN(rds) || rds < 1) return;
+          rdSauf[attrName.substr(8)] = rds;
+        }
       });
+      var additionalType = {
+        magique: options.magique,
+        tranchant: options.tranchant,
+        percant: options.percant,
+        contondant: options.contondant
+      };
+      var resSauf = applyRDSauf(rdSauf, mainDmgType, dmgTotal, dmgDisplay, additionalType);
+      dmgTotal = resSauf.total;
+      dmgDisplay = resSauf.display;
+      var invulnerable = charAttributeAsBool(target, 'invulnerable');
+      var mitigate = function(dmgType, divide, zero) {
+        if (estElementaire(dmgType)) {
+          if (invulnerable) {
+            divide();
+          }
+          if (dmgType == 'froid' && attributeAsBool(target, 'masqueMortuaire')) {
+            divide();
+          }
+        } else {
+          if ((dmgType == 'poison' || dmgType == 'maladie') && (invulnerable || estNonVivant(target))) {
+            zero();
+          } else if (attributeAsBool(target, 'armureMagique')) {
+            divide();
+          }
+        }
+      };
+      // Damage mitigaters for main damage
+      mitigate(mainDmgType,
+        function() {
+          dmgTotal = Math.ceil(dmgTotal / 2);
+          if (dmgExtra) dmgDisplay = "(" + dmgDisplay + ")";
+          dmgDisplay += " / 2";
+          showTotal = true;
+        },
+        function() {
+          dmgTotal = 0;
+        });
+    }
     // Other sources of damage
     // First count all other sources of damage, for synchronization
     var count = 0;
@@ -4050,43 +4055,45 @@ var COFantasy = COFantasy || function() {
             }
             typeCount--;
             if (typeCount === 0) {
-              var rdl = typeRD(target.charId, dmgType);
-              if (rdl > 0 && dm > 0) {
-                dm -= rdl;
-                if (dm < 0) {
-                  rdl += dm;
-                  dm = 0;
+              if (options.ignoreRD === undefined) {
+                var rdl = typeRD(target.charId, dmgType);
+                if (rdl > 0 && dm > 0) {
+                  dm -= rdl;
+                  if (dm < 0) {
+                    rdl += dm;
+                    dm = 0;
+                  }
+                  typeDisplay += "-" + rdl;
                 }
-                typeDisplay += "-" + rdl;
-              }
-              if (rdElems > 0 && dm > 0 && estElementaire(dmgType)) {
-                if (dm > rdElems) {
-                  typeDisplay += ' - ' + rdElems;
-                  dm -= rdElems;
-                  rdElems = 0;
-                } else {
-                  typeDisplay += ' - ' + dm;
-                  rdElems -= dm;
-                  dm = 0;
+                if (rdElems > 0 && dm > 0 && estElementaire(dmgType)) {
+                  if (dm > rdElems) {
+                    typeDisplay += ' - ' + rdElems;
+                    dm -= rdElems;
+                    rdElems = 0;
+                  } else {
+                    typeDisplay += ' - ' + dm;
+                    rdElems -= dm;
+                    dm = 0;
+                  }
                 }
+                var additionalType = {
+                  magique: options.magique
+                };
+                var resSauf = applyRDSauf(rdSauf, dmgType, dm, typeDisplay, additionalType);
+                dm = resSauf.total;
+                typeDisplay = resSauf.display;
+                mitigate(dmgType,
+                  function() {
+                    dm = Math.ceil(dm / 2);
+                    if (dmgParType[dmgType].length > 1) typeDisplay = "(" + typeDisplay + ")";
+                    typeDisplay += " / 2";
+                  },
+                  function() {
+                    dm = 0;
+                  });
+                dmgTotal += dm;
+                dmgDisplay += "+" + typeDisplay;
               }
-              var additionalType = {
-                magique: options.magique
-              };
-              var resSauf = applyRDSauf(rdSauf, dmgType, dm, typeDisplay, additionalType);
-              dm = resSauf.total;
-              typeDisplay = resSauf.display;
-              mitigate(dmgType,
-                function() {
-                  dm = Math.ceil(dm / 2);
-                  if (dmgParType[dmgType].length > 1) typeDisplay = "(" + typeDisplay + ")";
-                  typeDisplay += " / 2";
-                },
-                function() {
-                  dm = 0;
-                });
-              dmgTotal += dm;
-              dmgDisplay += "+" + typeDisplay;
             }
             count--;
             if (count === 0) dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal);
@@ -4197,6 +4204,7 @@ var COFantasy = COFantasy || function() {
           rd += target.extraRD;
           expliquer(target.tokName + " dévie le coup sur son armure");
         }
+        if (options.ignoreRD) rd = 0;
         if (rd > 0) {
           if (showTotal) dmgDisplay = "(" + dmgDisplay + ") - " + rd;
           else {
@@ -4890,6 +4898,7 @@ var COFantasy = COFantasy || function() {
     });
     // Fin des effets qui durent pour le combat
     attrs = removeAllAttributes('soinsDeGroupe', evt, attrs);
+    attrs = removeAllAttributes('secondSouffle', evt, attrs);
     attrs = removeAllAttributes('sergentUtilise', evt, attrs);
     attrs = removeAllAttributes('enflamme', evt, attrs);
     attrs = removeAllAttributes('protegerUnAllie', evt, attrs);
@@ -7510,6 +7519,7 @@ var COFantasy = COFantasy || function() {
           case 'contondant':
           case 'tempDmg':
           case 'morts-vivants':
+          case 'ignoreRD':
             options[opt[0]] = true;
             return;
           case "feu":
@@ -7556,8 +7566,7 @@ var COFantasy = COFantasy || function() {
         dmg.display = buildinline(rollsDmg.inlinerolls[dmgRollNumber], dmgType, options.magique);
         var display = startFramedDisplay(msg.playerid, action);
         var tokensToProcess = selected.length;
-
-        function finalDisplay() {
+        var finalDisplay = function() {
           if (tokensToProcess == 1) {
             sendChat("", endFramedDisplay(display));
             if (evt.affectes) {
@@ -7569,7 +7578,7 @@ var COFantasy = COFantasy || function() {
             }
           }
           tokensToProcess--;
-        }
+        };
         iterSelected(selected, function(perso) {
           if (options['morts-vivants'] && !(estMortVivant(perso))) {
             finalDisplay();
@@ -9065,6 +9074,23 @@ var COFantasy = COFantasy || function() {
         msg.content += " --allies --self";
         if (options.mana === undefined) options.mana = 1;
         break;
+      case 'secondSouffle':
+        if (!state.COFantasy.combat) {
+          sendChar(charId, " ne peut pas utiliser la capacité second souffle en dehors des combats");
+          return;
+        }
+        effet = "second souffle";
+        if (options.dose === undefined && options.limiteParJour === undefined)
+          options.limiteAttribut = {
+            nom: 'secondSouffle',
+            message: " a déjà repris son souffle durant ce combat",
+            limite: 1
+          };
+        soins = "[[1d10+" + niveau + "+" + modCarac(soigneur, 'CONSTITUTION') +
+          "]]";
+        cible = soigneur;
+        options.recuperation = true;
+        break;
       default:
         soins = "[[" + argSoin + "]]";
     }
@@ -9142,7 +9168,10 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, "<b>" + nomCible + "</b> : pas besoin de soins.");
           } else {
             var maxMsg = "n'a pas besoin de ";
-            if (!soigneur || token2.id == soigneur.token.id) {
+            if (options.recuperation) {
+              maxMsg = "se reposer";
+              charId = soigneur.charId;
+            } else if (!soigneur || token2.id == soigneur.token.id) {
               maxMsg += "se soigner";
               charId = cible.charId;
             } else {
@@ -9165,6 +9194,7 @@ var COFantasy = COFantasy || function() {
               msgSoin = 'soigne ' + nomCible;
             }
             msgSoin += " de ";
+            if (options.recuperation) msgSoin = "récupère ";
             if (s < soins)
               msgSoin += s + " PV. (Le résultat du jet était " + soinTxt + ")";
             else msgSoin += soinTxt + " PV.";
@@ -10198,7 +10228,10 @@ var COFantasy = COFantasy || function() {
                 display: buildinline(explRoll, 'normal')
               };
               var explications = [];
-              dealDamage(barbare, r, [], evt, false, {}, explications,
+              var options = {
+                ignoreRD: true
+              };
+              dealDamage(barbare, r, [], evt, false, options, explications,
                 function(dmgDisplay, dmg) {
                   var dmgMsg = "mais cela lui coûte " + dmgDisplay + " PV";
                   addLineToFramedDisplay(display, dmgMsg);
@@ -11130,7 +11163,7 @@ var COFantasy = COFantasy || function() {
     });
     liste.push({
       nom: "potion_de_hâte",
-      action: "a une action supplémentaire par tour"
+      action: "!cof-effet-temp hate [[1d6+$INT]]"
     });
     return liste;
   }
@@ -11979,6 +12012,11 @@ var COFantasy = COFantasy || function() {
       activation: "contrôle le magnétisme",
       actif: "contrôle le magnétisme",
       fin: "relache son contrôle du magnétisme"
+    },
+    hate: {
+      activation: "voit son métabolisme s'accélérer",
+      actif: "peut faire une action de plus par tour",
+      fin: "retrouve un métabolisme normal (plus d'action supplémentaire)"
     }
   };
 
