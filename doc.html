@@ -924,6 +924,8 @@
                   <li><strong>Agrandissement</strong> : <code>!cof-effet-temp agrandissement [[5+@{selected|INT}]] --target @{target|token_id} --lanceur @{selected|token_id} --portee 0</code></li>
                   <li><strong>Forme gazeuse</strong> : <code>!cof-effet-temp formeGazeuse [[1d4 + @{selected|INT}]]</code>. Au MJ de faire attention que sous cette forme, toutes les capacités sont interdites.</li>
                   <li><strong>Hâte</strong> : Pour garder le compte de l'effet, on peut utiliser <code>!cof-effet-temp hate [[1d6+@{selected|INT}]] --lanceur @{selected|token_id} --mana 1</code>, au MJ de gérer ensuite les actions possibles chaque tour. Pour savoir si le sort est encore actif, on peut utiliser <code>!cof-statut</code>.</li>
+                  <li><strong>Téléportation</strong> : Pas de support autre que <code>!cof-lancer-sort 2 se téléporte (à [[@{selected|INTELLIGENCE}*10]] m maximum)</code>.</li>
+                  <li><strong>Désintégration</strong> : faire une attaque magique de portée 20 m, de dégâts 5d6, modificateur INT, avec les options <code>--sortilege --magique</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la magie destructrice</h4>
                 <ol>
@@ -931,15 +933,19 @@
                   <li><strong>Rayon affaiblissant</strong> : <code>!cof-attack</code> d'une attaque de 10 m de portee, avec les options <code>--pasDeDmg --effet rayon_affaiblissant [[1d6+@{selected|INT}]] --sortilege</code>. On peut aussi ajouter un petit visuel avec <code>--fx splatter-magic</code></li>
                   <li><strong>Flèche enflammée</strong> : Utiliser une attaque sur la fiche, et la lancer avec les options <code>--fx beam-fire --feu --mana 1 --sortilege --enflamme ?{Y consacrer le tour entier ?|oui,--puissant|non,}</code></li>
                   <li><strong>Boule de feu</strong> : Utiliser une attaque sur la fiche (attaque magique, portée 30 m, 4d6+INT de DM), et la lancer avec les options <code>--targetFx explode-fire --feu --mana 2 --sortilege --disque 6 --demiAuto --psave DEX [[10+@{selected|INT}]]</code>. Si vous utilisez cette option, vous pouvez aussi rajouter <code>?{Y consacrer tout le tour?|Oui,--puissant|Non, }</code>.</li>
+                  <li><strong>Rituel de puissance</strong> : lancer les attaques utilisant le rituel avec les options <code>--avecd12 --plus 2d6</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la magie élémentaire</h4>
                 <ol>
                   <li><strong>Asphyxie</strong> : ajouter une attaque magique sur la fiche, de portée 20 m, et sans dégât. Utiliser cette attaque avec les options <code>--sortilege --effet asphyxie [[1+@{selected|INT}]]</code></li>
                   <li><strong>Protection contre les éléments</strong> : ajouter un attribut <code>voieDeLaMagieElementaire</code> avec comme valeur le rang dans la voie. Pour lancer le sort, faire <code>!cof-effet-temp protectionContreLesElements [[5+@{selected|INT}]]</code>. Notez que si vous utilisez une option <code>--valeur</code> à la place d'utiliser l'attribut, la RD sera cette valeur multipliée par 2.</li>
+                  <li><strong>Arme enflammée</strong> : Lancer le sort avec <code>!cof-effet-temp armeEnflammee_?{Label de l'arme à enflammer ?} [[5+@{selected|INT}]] --lanceur @{selected|token_id} --target @{target|token_id} --mana 1</code>. Le label demandé par la macro est celui utilisé pour l'attaque correspondant à l'arme. Limitations : risque de mal fonctionner pour les tokens non liés à un personnage, et si deux attaques utilisent la même arme, il faut faire deux fois l'action, une pour chaque attaque.</li>
+                  <li><strong>Respiration aquatique</strong> : pas de support autre que <code>!cof-lancer-sort 2 lance un sort de respiration aquatique (durée 10 minutes, sur soi plus [[@{selected|INT]] compagnons)</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la magie protectrice</h4>
                 <ol>
                   <li><strong>Armure du mage</strong> : <code>!cof-effet-combat armureDuMage</code></li>
+                  <li><strong>Chute ralentie</strong> : pas de support.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la magie universelle</h4>
                 <ol>

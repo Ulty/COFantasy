@@ -3177,6 +3177,12 @@ var COFantasy = COFantasy || function() {
         value: feuForgeron
       });
     }
+    if (attributeAsBool(attaquant, 'armeEnflammee_' + attackLabel)) {
+      options.additionalDmg.push({
+        type: 'feu',
+        value: '1d6'
+      });
+    }
     var poisonAttr = tokenAttribute(attaquant, 'poisonRapide_' + attackLabel);
     if (poisonAttr.length > 0) {
       poisonAttr = poisonAttr[0];
@@ -3493,9 +3499,9 @@ var COFantasy = COFantasy || function() {
           // Tout ce qui se passe après les saves (autres que saves de diminution des dmg
           var afterSaves = function() {
             if (saves > 0) return; //On n'a pas encore fait tous les saves
-            if (options.pasDeDmg || 
+            if (options.pasDeDmg ||
               (additionalDmg.length === 0 && mainDmgRoll.total === 0 &&
-              attNbDices === 0)) {
+                attNbDices === 0)) {
               // Pas de dégâts, donc pas d'appel à dealDamage
               finCibles();
             } else {
@@ -7002,7 +7008,8 @@ var COFantasy = COFantasy || function() {
       }
       for (var effet in messageEffetTemp) {
         var effetActif = false;
-        if (effet == 'forgeron' || effet == 'dmgArme1d6') {
+        if (effet == 'forgeron' || effet == 'dmgArme1d6' ||
+          effet == 'armeEnflammee') {
           effetActif = containsEffectStartingWith(allAttrs, effet);
         } else effetActif = attributeAsBool(perso, effet);
         if (effetActif)
@@ -8018,6 +8025,7 @@ var COFantasy = COFantasy || function() {
     var effetComplet = cmd[1];
     var effet = cmd[1];
     if (effet.startsWith('forgeron_')) effet = 'forgeron';
+    else if (effet.startsWith('armeEnflammee_')) effet = 'armeEnflammee';
     else if (effet.startsWith('dmgArme1d6_')) effet = 'dmgArme1d6';
     if (!estEffetTemp(effet)) {
       error(effet + " n'est pas un effet temporaire répertorié", msg.content);
@@ -11861,6 +11869,11 @@ var COFantasy = COFantasy || function() {
     forgeron: {
       activation: "enflamme son arme",
       actif: "a une arme en feu",
+      fin: "L'arme n'est plus enflammée."
+    },
+    armeEnflammee: {
+      activation: "voit son arme prendre feu",
+      actif: "a une arme enflammée",
       fin: "L'arme n'est plus enflammée."
     },
     dmgArme1d6: {
