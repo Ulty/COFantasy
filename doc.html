@@ -330,7 +330,8 @@
                   <li><code>--tranchant</code>, <code>--percant</code>, <code>--contondant</code> : précise le type d'arme (si pertinent), pour pouvoir utiliser les RD spécifiques à un type d'arme.</li>
                   <li><code>--ignoreRD</code> : l'attaque ignore les RD et division de DMs.</li>
                   <li><code>--sortilege</code> pour indiquer qu'il s'agit d'un sortilège, de façons à pouvoir appliquer tous les effets spécifiques aux sorts. Cette options devrait être passées pour toutes les capacités suivies d'une étoile dans le livre des règles. En particulier, tout sortilege ignore les malus d'obstacles.</li>
-                  <li><code>--reroll1</code> : relance les 1 aux dés de dégats (le 1 est ignoré)</li>
+                  <li><code>--reroll1</code> : relance les 1 aux dés de dégats. À noter que cela ne concerne que les dés de base de l'attaque, pas les DM supplémentaire. </li>
+                  <li><code>--explodeMax</code> : relance les valeurs maximum aux dés de DM de base, et rajoute le nouveau résultat (qui lui-même explose).</li>
                   <li><code>--mana <i>n</i></code> : l'attaque coûte <i>n</i> points de mana.</li>
                   <li><code>--limiteParJour <i>l</i></code> : limite le nombre d'utilisations de cette attaque à <i>l</i> fois par jour. On peut préciser un nom après <i>l</i>, qui va correspondre à une ressource pouvant être partagée avec d'autres attaques ou d'autres effets (voir <code>!cof-effet-temp</code>). Par défaut, le nom de cette ressource est le label de l'attaque.</li>
                   <li><code>--limiteParCombat</code> : même effet que la limite par jour. Si aucun argument n'est donné, la limite est de une fois par combat.</li>
@@ -965,11 +966,14 @@
                   <li><strong>Main d'énergie</strong> : utiliser l'attaque à mains nues avec l'option <code>--mainsDEnergie</code>. D'autre part, ajouter l'option <code>--magique</code> à toutes les attaques à mains nues.</li>
                   <li><strong>Pression mortelle</strong> : utiliser l'option <code>--pointsVitaux</code> pour ne pas infliger immédiatement les dégâts, et l'option <code>--pressionMortelle</code> pour libérer les dégâts.</li>
                   <li><strong>Invulnérable</strong>: utiliser un attribut <code>invulnerable</code> = true</li>
+                  <li><strong>Projection du ki</strong> : ajouter simplement l'attaque sur la fiche, et utiliser les options <code>--sortilege --magique</code>.</li>
+                  <li><strong>Ascétisme</strong> : noter la constitution comme une caractéristique supérieure sur la fiche.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la maîtrise</h4>
                 <ol>
                   <li><strong>Esquive du singe</strong> : ok</li>
                   <li><strong>Morsure du serpent</strong> : pour ne pas avoir à modifier les chances de critique pour toutes les attaques au contact, utiliser un attribut <code>morsureDuSerpent</code> (valeur <code>true</code>). Attention à ne pas faire ça ET modifier les chances de critiques de l'attaque, car ça s'additionne. (En revanche, pas de soucis avec la science du critique).</li>
+                  <li><strong>Griffes du tigre</strong> : rajouter l'option <code>--exploseMax</code> aux attaques à mains nues.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la méditation</h4>
                 <ol>

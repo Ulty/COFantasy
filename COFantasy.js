@@ -953,6 +953,7 @@ var COFantasy = COFantasy || function() {
         case "pressionMortelle":
         case "reroll1":
         case "reroll2":
+        case "explodeMax":
         case "ignoreRD":
         case "tempDmg":
         case "tirDouble":
@@ -3104,6 +3105,7 @@ var COFantasy = COFantasy || function() {
     }
     if (options.reroll1) attDice += "r1";
     if (options.reroll2) attDice += "r2";
+    if (options.explodeMax) attDice += '!';
     if (isNaN(attCarBonus)) {
       if (attCarBonus.startsWith('@{')) {
         var carac = caracOfMod(attCarBonus.substr(2, 3));
