@@ -452,9 +452,10 @@
                     <li>paralysé : <tt>fishing-net</tt></li>
                     <li>endormi : <tt>sleepy</tt></li>
                     <li>apeuré : <tt>screaming</tt></li>
+                    <li>invisible: <tt>ninja-mask</tt></li>
                   </ul>
                   <!-- pénombre (-5 att. distance) : pas encore dans la liste -->
-                  <p>Pour faciliter la gestion des états, j'utilise deux macros dans la barre du GM, <code>!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|endormi|apeure} true</code>, et la même avec <code>false</code>.<br />
+                  <p>Pour faciliter la gestion des états, j'utilise deux macros dans la barre du GM, <code>!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|endormi|apeure|invisible} true</code>, et la même avec <code>false</code>.<br />
                     Notez que si on se contente de changer le statut pour un token lié, le changement risque de ne pas être propagé au personnage (et donc serait perdu en cas de changement de carte).
                   </p>
                 </div>
@@ -946,12 +947,13 @@
                 <ol>
                   <li><strong>Armure du mage</strong> : <code>!cof-effet-combat armureDuMage</code></li>
                   <li><strong>Chute ralentie</strong> : pas de support.</li>
+                  <li><strong>Flou</strong> : <code>!cof-effet-temp flou [[1d4+@{selected|INT}]] --lanceur @{selected|token_id} --mana 1</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la magie universelle</h4>
                 <ol>
                   <li><strong>Lumière</strong> : Le MJ peut donner les caractérisiques de lumières à un token(ou utiliser le script <code>torch</code>)</li>
                   <li><strong>Détection de la magie</strong> : pas de support</li>
-                  <li><strong>Invisibilité</strong> : pas de support autre que <code>!cof-lancer-sort 1 se rend invisible ([[1d6+@{selected|INT}]] minutes)</code>. Pour les ennemis, mettre dans le layer gm, pour les joueurs, ne pas les cibler. Reste le problème des AOE...</li>
+                  <li><strong>Invisibilité</strong> : utiliser <code>!cof-set-state invisible true --lanceur @{selected|token_id} --mana 1 --message se rend invisible ([[1d6+@{selected|INT}]] minutes)</code>. Pour les ennemis, mettre dans le layer gm, pour les joueurs, ne pas les cibler. Reste le problème des AOE...</li>
                   <li><strong>Vol</strong> : pas de support autre que <code>!cof-lancer-sort 2 vole ([[1d6+@{selected|INT}]] minutes)</code></li>
                   <li><strong>Intelligence héroïque</strong> : reporter sur la fiche</li>
                 </ol>
@@ -1134,7 +1136,6 @@
                   <li><strong>Sprint</strong> : pas de support, au MJ de vérifier que ce n'est utilisé qu'une fois par combat.</li>
                   <li><strong>Provocation</strong> : <code>!cof-provocation @{selected|token_id} @{target|token_id}</code>. Au joueur ensuite de faire son attaque gratuite si la provocation est réussie et que l'adversaire l'attaque.</li>
                   <li><strong>Grâce féline</strong> : ajouter un attribut <code>graceFeline</code> avec comme valeur <code>true</code>. Cela va affecter l'initiative et la DEF, mais sans se voir sur la fiche. Pour les tests de déplacement, il faut gérer à part.</li>
-                  <li><strong>Lanceur de couteau</strong> : pas de support particulier, ajouter juste l'attaque correspondant aux couteaux de lancer.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du déplacement</h4>
                 <ol>
@@ -1221,11 +1222,11 @@
                 <h4 class="text-secondary">Voie des créatures élémentaires</h4>
                 <h4 class="text-secondary">Voie des créatures magique</h4>
                 <ol>
-                  <li><strong>Réduction des DM</strong> : Ajouter un attribut <code>RD_sauf_</code><i>genre</i>, où <i>genre</i> peut être <code>magique</code> ou un des types d'attaque (feu, acide, poison, etc...).</li>
+                  <li><strong>Réduction des DM</strong> : Ajouter un attribut <code>RD_sauf_<i>genre</i></code>, où <i>genre</i> peut être <code>magique</code> ou un des types d'attaque (feu, acide, poison, etc...).</li>
                 </ol>
                 <h4 class="text-secondary">Voie des créatures volantes</h4>
                 <ol>
-                  <li><strong>Vol rapide</strong> : simplement faire une variante de l'attaque avec les options <code>--bonusAttaque 5 --plus 1d6</code> à utiliser le premier tour de combat si a créature ets en vol et attaque une créature au sol. Ne pas oublier l'action de mouvement supplémentaire en vol.</li>
+                  <li><strong>Vol rapide</strong> : simplement faire une variante de l'attaque avec les options <code>--bonusAttaque 5 --plus 1d6</code> à utiliser le premier tour de combat si a créature est en vol et attaque une créature au sol. Ne pas oublier l'action de mouvement supplémentaire en vol.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la magie de combat</h4>
                 <ol>
@@ -1236,11 +1237,11 @@
                 <h4 class="text-secondary">Voie de la magie maléfique</h4>
                 <h4 class="text-secondary">Voie de la meute</h4>
                 <ol>
-                  <li><strong>Intergeanchables</strong> : Utiliser attribut <code>interchangeable</code>, avec comme valeur le nombre d'opposants à partir duquel les cibles peuvent être interverties</li>
+                  <li><strong>Intergeanchables</strong> : Utiliser un attribut <code>interchangeable</code>, avec comme valeur le nombre d'opposants à partir duquel les cibles peuvent être interverties</li>
                 </ol>
                 <h4 class="text-secondary">Voie du PNJ récurrent</h4>
                 <ol>
-                  <li><strong>Instinct de survie</strong> : ajouter un attribute <code>instinctDeSurvie</code> avec comme valeur le nombre de PV en-dessous duquel le PNJ gagne un bonus de DEF. les autres effets sont à faire par le MJ.</li>
+                  <li><strong>Instinct de survie</strong> : ajouter un attribut <code>instinctDeSurvie</code> avec comme valeur le nombre de PV en-dessous duquel le PNJ gagne un bonus de DEF. les autres effets sont à faire par le MJ.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du Prédateur</h4>
                 <ol>

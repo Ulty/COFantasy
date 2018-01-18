@@ -59,7 +59,8 @@ var COFantasy = COFantasy || function() {
     paralyse: 'status_fishing-net',
     ralenti: 'status_snail',
     endormi: 'status_sleepy',
-    apeure: 'status_screaming'
+    apeure: 'status_screaming',
+    invisible: 'status_ninja-mask'
   };
 
   function etatRendInactif(etat) {
@@ -2660,6 +2661,10 @@ var COFantasy = COFantasy || function() {
       });
       initiative(selected, evt);
     }
+    if (getState(attaquant, 'invisible')) {
+      explications.push(attackerTokName + " redevient visible");
+      setState(attaquant, 'invisible', false, evt);
+    }
     var pacifisme_selected = tokenAttribute(attaquant, 'pacifisme');
     if (pacifisme_selected.length > 0 && pacifisme_selected[0].get('current') > 0) {
       pacifisme_selected[0].set('current', 0);
@@ -4004,6 +4009,9 @@ var COFantasy = COFantasy || function() {
       dmgDisplay = resSauf.display;
       var invulnerable = charAttributeAsBool(target, 'invulnerable');
       var mitigate = function(dmgType, divide, zero) {
+        if (!options.sortilege && attributeAsBool(target, 'flou')) {
+          divide();
+        }
         if (estElementaire(dmgType)) {
           if (invulnerable) {
             divide();
@@ -7628,27 +7636,38 @@ var COFantasy = COFantasy || function() {
   }
 
   function interfaceSetState(msg) {
+    var options = parseOptions(msg);
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 3) {
+      error("Pas assez d'arguments pour !cof-set-state", msg.content);
+      return;
+    }
+    var etat = cmd[1];
+    var valeur = cmd[2];
+    if (valeur == "false" || valeur == "0") valeur = false;
+    if (valeur == "true") valeur = true;
+    if (!_.has(cof_states, etat)) {
+      error("Le premier argument de !cof-set-state n'est pas un état valide", cmd);
+      return;
+    }
+    var evt = {
+      type: "set_state",
+    };
+    var lanceur = options.lanceur;
+    if (lanceur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour || options.limiteParCombat || options.dose)) {
+      error("Il faut préciser un lanceur pour ces options", options);
+      return;
+    }
+    if (limiteRessources(lanceur, options, etat, etat, evt)) return;
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
         error("Pas de cible pour le changement d'état", msg);
         return;
       }
-      var cmd = msg.content.split(' ');
-      if (cmd.length < 3) {
-        error("Pas assez d'arguments pour !cof-set-state", msg.content);
-        return;
+      if (options.message) {
+        if (lanceur) sendChar(lanceur.charId, options.message);
+        else sendChat('', options.message);
       }
-      var etat = cmd[1];
-      var valeur = cmd[2];
-      if (valeur == "false" || valeur == "0") valeur = false;
-      if (valeur == "true") valeur = true;
-      if (!_.has(cof_states, etat)) {
-        error("Premier argument de !cof-set-state n'est pas un état valide", cmd);
-        return;
-      }
-      var evt = {
-        type: "set_state",
-      };
       iterSelected(selected, function(perso) {
         setState(perso, etat, valeur, evt);
       });
@@ -8003,6 +8022,9 @@ var COFantasy = COFantasy || function() {
             error("L'argument de --valeur n'est pas un nombre", cmd);
             options.valeur = undefined;
           }
+          return;
+        case 'message':
+          if (arg.length > 8) options.message = arg.substring(8);
           return;
         default:
           return;
@@ -11155,7 +11177,7 @@ var COFantasy = COFantasy || function() {
     if (rang < 5) return liste;
     liste.push({
       nom: "potion_d_invisibilité",
-      action: "devient invisible"
+      action: "!cof-set-state invisible true --message se rend invisible ([[1d6+$INT]] minutes)"
     });
     liste.push({
       nom: "potion_de_vol",
@@ -11167,7 +11189,7 @@ var COFantasy = COFantasy || function() {
     });
     liste.push({
       nom: "potion_de_flou",
-      action: "devient flou (/2 les DM)"
+      action: "!cof-effet-temp flou [[1d4+$INT]]"
     });
     liste.push({
       nom: "potion_de_hâte",
@@ -11880,6 +11902,11 @@ var COFantasy = COFantasy || function() {
       activation: "enduit son arme d'une huile magique",
       actif: "a une arme plus puissante",
       fin: "L'arme retrouve sa puissance normale"
+    },
+    flou: {
+      activation: "devient flou",
+      actif: "apparaît flou",
+      fin: "redevient net"
     },
     agrandissement: {
       activation: "se met à grandir",
