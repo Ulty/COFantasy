@@ -749,7 +749,7 @@ var COFantasy = COFantasy || function() {
     var evt = options.evt || {
       type: "Jet de " + caracteristique
     };
-    var display = startFramedDisplay(playerId, titre, perso);
+    var display = startFramedDisplay(playerId, titre, perso, undefined, options.secret);
     if (difficulte === undefined) {
       jetCaracteristique(perso, caracteristique, options, function(rt) {
         addLineToFramedDisplay(display, "<b>Résultat :</b> " + rt.texte);
@@ -862,6 +862,7 @@ var COFantasy = COFantasy || function() {
           }
           options.bonus = (options.bonus || 0) + bonus;
           return;
+        case 'secret': options.secret = true; return;
       }
     });
     var titre = "Jet de <b>";

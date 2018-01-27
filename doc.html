@@ -558,6 +558,7 @@
                   <li><code>--bonus</code> pour spécifier un bonus numérique au jet.</li>
                   <li><code>--attribut</code> pour spécifier un attribut dont la valeur doit être ajoutée au jet. Il est possible de spécifier plusieurs attributs, comme par exemple <code>--attribut perception --attribut vigilance</code> pour un jet de vigilance.</li>
                   <li><code>--nom</code> précise le nom du jet à afficher. De plus, cela va aussi faire rechercher un attribut de même nom (en mettant les caractères en minuscule). Par exemple <code>!cof-jet DEX Discrétion</code> va lancer un jet de DEX, qui sera affiché comme un jet de Discrétion, et qui va ajouter au jet le bonus d'un éventuel attribut <code>discrétion</code>.</li>
+                  <li><code>--secret</code> : le jet n'est visible que par la personne qui a lancé la commande.</li>
                 </ul>
               </div>
             </div>
@@ -971,7 +972,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie de la maîtrise</h4>
                 <ol>
-                  <li><strong>Esquive du singe</strong> : ok</li>
+                  <li><strong>Esquive du singe</strong> : mettre à jour la défense sur la fiche, et ajouter un attribut <code>acrobatie</code> avec le bonus donné par la capacité.</li>
                   <li><strong>Morsure du serpent</strong> : pour ne pas avoir à modifier les chances de critique pour toutes les attaques au contact, utiliser un attribut <code>morsureDuSerpent</code> (valeur <code>true</code>). Attention à ne pas faire ça ET modifier les chances de critiques de l'attaque, car ça s'additionne. (En revanche, pas de soucis avec la science du critique).</li>
                   <li><strong>Griffes du tigre</strong> : rajouter l'option <code>--exploseMax</code> aux attaques à mains nues.</li>
                 </ol>
@@ -987,13 +988,17 @@
                 <ol>
                   <li><strong>Poings de fer</strong> : simplement enlever le <code>--tempDmg</code> et ajuster les dégâts</li>
                   <li><strong>Parade de projectiles</strong> : annuler l'attaque (<code>!cof-undo</code>) si le moine utilise ça.</li>
+                  <li><strong>Peau de fer</strong> : ajuster la DEF sur la fiche.</li>
+                  <li><strong>Déluge de coups</strong> : le MJ gère le nombre d'attaques. Pour les attaques au d12, utiliser l'option <code>--avecd12</code>.</li>
+                  <li><strong>Puissance du ki</strong> : utiliser les options <code>--avecd12 --plus 2d6</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du vent</h4>
                 <ol>
                   <li><strong>Pas du vent</strong> : pas de support particulier, simplement ajuster l'initiative.</li>
-                  <li><strong>Course du vent</strong> : ok</li>
-                  <li><strong>Course des airs</strong> : ok</li>
-                  <li><strong>Lévitation</strong> : ok</li>
+                  <li><strong>Course du vent</strong> : géré par le MJ.</li>
+                  <li><strong>Course des airs</strong> : pas de support.</li>
+                  <li><strong>Lévitation</strong> : pas de support.</li>
+                  <li><strong>Passe-muraille</strong> : pas de support.</li>
                 </ol>
               </div>
               <h3 class="text-info" id="Nécromancien">Nécromancien</h3>
