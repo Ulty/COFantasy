@@ -92,7 +92,10 @@ var COFantasy = COFantasy || function() {
   }
 
   function getPictoStyleFromCommand(fullCommand, tokenId) {
-    if (fullCommand === undefined) return {picto:'', style:''};
+    if (fullCommand === undefined) return {
+      picto: '',
+      style: ''
+    };
     var style = '';
     var picto = '';
     var command = fullCommand.split(' ');
@@ -191,7 +194,10 @@ var COFantasy = COFantasy || function() {
         style = '';
         break;
     }
-    return {picto:picto, style:style};
+    return {
+      picto: picto,
+      style: style
+    };
   }
 
   function getState(personnage, etat) {
@@ -8006,15 +8012,19 @@ var COFantasy = COFantasy || function() {
             options.puissant = "on";
             return;
           }
-          if (cmd[1] == "oui") {
-            options.puissant = "on";
-            return;
+          switch (cmd[1]) {
+            case "oui":
+              options.puissant = "on";
+              return;
+            case "non":
+              options.puissant = "off";
+              return;
+            case "duree":
+              options.puissantDuree = true;
+              return;
+            default:
+              error("Option puissant non reconnue", cmd);
           }
-          if (cmd[1] == "non") {
-            options.puissant = "off";
-            return;
-          }
-          error("Option puissant non reconnue", cmd);
           return;
         case "mana":
           if (cmd.length < 2) {
@@ -8176,6 +8186,7 @@ var COFantasy = COFantasy || function() {
         msg.content);
       return;
     }
+    if (options.puissantDuree) duree = duree * 2;
     var evt = {
       type: 'Effet temporaire ' + effetComplet
     };
@@ -12173,6 +12184,11 @@ var COFantasy = COFantasy || function() {
       activation: "voit son métabolisme s'accélérer",
       actif: "peut faire une action de plus par tour",
       fin: "retrouve un métabolisme normal (plus d'action supplémentaire)"
+    },
+    ailesCelestes: {
+      activation: "sent des ailes célestes lui pousser dans le dos",
+      actif: "possède des ailes célestes",
+      fin: "n'a plus d'aile céleste. Espérons qu'il était au sol..."
     }
   };
 

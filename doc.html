@@ -475,6 +475,7 @@
                     <li><code>--puissant</code> : lance la version puissante de l'effet</li>
                     <li><code>--puissant oui</code> : idem</li>
                     <li><code>--puissant non</code> : lance la version non puissante (efface le dernier effet puissant)</li>
+                    <li><code>--puissant duree</code> : multiplie la durée par 2</li>
                     <li><code>--saveParTour <i>carac seuil</i></code> : la cible peut se sortir de l'effet chaque tour grâce à un test de <i>carac</i> de difficulte <i>seuil</i>.</li>
                     <li><code>--valeur <i>n</i></code> : pour certains effet, permet de spécifier une valeur qui remplace la valeur par défaut de l'effet.</li>
                   </ul>
@@ -1058,12 +1059,14 @@
                       <li>Pour attaquer avec l'arme d'argent, faire l'attaque avec les DM appropriés, puis l'utiliser avec les options <code>--si etat armeDArgent --argent --magique</code></li>
                     </ul>
                   </li>
+                  <li><strong>Ailes célestes</strong> : <code>!cof-effet-temp ailesCelestes [[5+@{selected|SAG}]] --lanceur @{selected|token_id} --mana 1 ?{Y consacrer tout le tour?|Oui,--puissant duree|Non,}</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de la guerre sainte</h4>
                 <ol>
                   <li><strong>Arme bénie</strong> : utiliser l'option <code>--reroll1</code> et <code>--magique</code> à l'attaque</li>
                   <li><strong>Bouclier de la foi</strong> : ajuster le bonus de DEF du bouclier</li>
                   <li><strong>Marteau sprirituel</strong> : utiliser une attaque, avec les options <code>--magique</code>, <code>--sortilege</code>, <code>--mana 1</code> et <code>?{Y passer tout le tour ?|oui,--puissant|non,}</code></li>
+                  <li><strong>Châtiment divin</strong> : faire une attaque de contact avec les modificateurs <code>--bonusAttaque [[@{selected|SAG}]] --plus [[@{selected|SAG}]]</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de la prière</h4>
                 <ol>
