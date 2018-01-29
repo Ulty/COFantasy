@@ -553,12 +553,14 @@
               <div class="decalage">
                 <p><code>!cof-jet ?{Faire un jet de |Charisme, CHA|Constitution, CON|Dextérité, DEX|Force, FOR|Intelligence, INT|Sagesse, SAG}</code> : fait un simple jet pour la caractérisique sélectionnée.</p>
                 <p>Il est aussi possible de donner en argument une difficulté au jet. Par exemple en faisant <code>!cof-jet INT ?{difficulté}</code>.</p>
+                <p>Si on ne donne aucun argument (en dehors des options), la commande demande de préciser la caractéristique à tester. Si il existe un handout nommé <code>Compétences</code>, celui-ci sera utilisé pour proposer pour chaque caractéristique un choix de compétences à tester. Le handout doit contenir dans ses notes des lignes commençant par une caractéristique (FOR, DEX, ...), suivi de <code>:</code>, puis des noms de compétences, séparés par des blancs, des retours à la ligne, des virgules ou des <code>/</code>.</p>
                 <p>Enfin, la fonction accepte les arguments suivants:</p>
                 <ul>
                   <li><code>--bonus</code> pour spécifier un bonus numérique au jet.</li>
                   <li><code>--attribut</code> pour spécifier un attribut dont la valeur doit être ajoutée au jet. Il est possible de spécifier plusieurs attributs, comme par exemple <code>--attribut perception --attribut vigilance</code> pour un jet de vigilance.</li>
                   <li><code>--nom</code> précise le nom du jet à afficher. De plus, cela va aussi faire rechercher un attribut de même nom (en mettant les caractères en minuscule). Par exemple <code>!cof-jet DEX Discrétion</code> va lancer un jet de DEX, qui sera affiché comme un jet de Discrétion, et qui va ajouter au jet le bonus d'un éventuel attribut <code>discrétion</code>.</li>
                   <li><code>--secret</code> : le jet n'est visible que par la personne qui a lancé la commande.</li>
+                  <li><code>--competences</code> : si la commande n'a pas déjà d'option <code>--nom</code>, invite l'utilisateur à choisir une compétence parmis une liste correspondant à la caractéristique (et provenant du handout <code>Compétences</code> tel que défini plus haut).</li>
                 </ul>
               </div>
             </div>

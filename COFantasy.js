@@ -91,25 +91,18 @@ var COFantasy = COFantasy || function() {
     return player_ids;
   }
 
-
-  function getPictoStyleFromCommand(full_command, tokenId) {
+  function getPictoStyleFromCommand(fullCommand, tokenId) {
+    if (fullCommand === undefined) return {picto:'', style:''};
     var style = '';
-    var picto_style = {
-      picto: '',
-      style: style
-    };
-    if (full_command === undefined) return picto_style;
     var picto = '';
-
-    var command = full_command.split(' ');
-
+    var command = fullCommand.split(' ');
     // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
     switch (command[0]) {
       case "#Attaque":
       case "!cof-attack":
       case "!cof-attaque":
         var portee = 0;
-        if (command[1] !== undefined && command[3] !== undefined) {
+        if (command.length > 3) {
           var attackLabel = command[3];
           var this_weapon = [];
           try {
@@ -131,7 +124,7 @@ var COFantasy = COFantasy || function() {
           }
         }
 
-        if (full_command.indexOf('-sort') !== -1 || full_command.indexOf('-magic') !== -1 || full_command.indexOf('-magique') !== -1) {
+        if (fullCommand.indexOf('-sort') !== -1 || fullCommand.indexOf('-magic') !== -1 || fullCommand.indexOf('-magique') !== -1) {
           // attaque magique
           picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
           style = 'background-color:#9900ff';
@@ -198,10 +191,7 @@ var COFantasy = COFantasy || function() {
         style = '';
         break;
     }
-
-    picto_style.picto = picto;
-    picto_style.style = style;
-    return picto_style;
+    return {picto:picto, style:style};
   }
 
   function getState(personnage, etat) {
@@ -664,7 +654,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //ressource est optionnel, et si présent doit être un attribut
-  function bouton(action, text, perso, ressource, button_style, button_title) {
+  function bouton(action, text, perso, ressource, overlay) {
     if (action === undefined || action.trim().length === 0) return text;
     else action = action.trim();
     if (action.indexOf('#') !== -1) {
@@ -707,7 +697,7 @@ var COFantasy = COFantasy || function() {
           action = "!cof-lancer-sort 0 " + action;
         }
     }
-    var picto_style = getPictoStyleFromCommand(action, token.id);
+    var pictoStyle = getPictoStyleFromCommand(action, token.id);
     if (action.indexOf('@{selected') !== -1 && character !== undefined) {
       // cas spécial pour @{selected|token_id} où l'on remplace toutes les occurences par token.id
       action = action.replace(new RegExp(escapeRegExp('@{selected|token_id}'), 'g'), token.id);
@@ -735,13 +725,13 @@ var COFantasy = COFantasy || function() {
       if (action.indexOf(' --message ') != -1) action = action.replace(' --message ', add_token + ' --message ');
       else action += add_token;
     }
-    text = picto_style.picto + text;
-    button_style = ' style="' + picto_style.style + '"';
-    if (button_title !== undefined) button_title = ' title="' + button_title + '"';
-    else button_title = '';
+    text = pictoStyle.picto + text;
+    var buttonStyle = ' style="' + pictoStyle.style + '"';
+    if (overlay) overlay = ' title="' + overlay + '"';
+    else overlay = '';
     action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;').replace(/"/g, '&#34;');
     action = action.replace(/\'/g, '&apos;'); // escape quotes
-    return '<a href="' + action + '"' + button_style + button_title + '>' + text + '</a>';
+    return '<a href="' + action + '"' + buttonStyle + overlay + '>' + text + '</a>';
   }
 
   function jetPerso(perso, caracteristique, difficulte, titre, playerId, options) {
@@ -810,26 +800,28 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  //Par construction, msg.content ne doit pas contenir d'option --nom,
+  //et commencer par !cof-jet 
+  function boutonsCompetences(perso, carac, msg) {
+    var action = msg.content;
+    action = action.replace(/ --competences /, '');
+    action = action.replace(/ --competences/, ''); //au cas où ce serait le dernier argument
+    var args = action.substring(9); //on enlève !cof-jet
+    if (!args.startsWith(carac)) action = "!cof-jet " + carac + " " + args;
+    var res = bouton(action, carac, perso);
+    var comps = listeCompetences[carac];
+    comps.forEach(function(comp) {
+      res += " " + bouton(action + " --nom " + comp, comp, perso);
+    });
+    return res;
+  }
+
   function jet(msg) {
     // Les arguments pour cof-jet sont :
     // - Caracteristique (FOR, DEX, CON, INT, SAG, CHA)
     // Les tokens sélectionnés sont ceux qui doivent faire le jet
     var opts = msg.content.split(' --');
     var cmd = opts.shift().split(' ');
-    if (cmd.length < 2) {
-      error("Pas assez d'arguments pour !cof-jet: " + msg.content, cmd);
-      return;
-    }
-    var caracteristique = cmd[1];
-    if (isNotCarac(caracteristique)) {
-      error("Caracteristique '" + caracteristique + "' non reconnue (FOR, DEX, CON, INT, SAG, CHA).", cmd);
-      return;
-    }
-    var difficulte;
-    if (cmd.length > 2) {
-      difficulte = parseInt(cmd[2]);
-      if (isNaN(difficulte)) difficulte = undefined;
-    }
     var options = {
       bonusAttrs: []
     };
@@ -864,23 +856,73 @@ var COFantasy = COFantasy || function() {
           options.bonus = (options.bonus || 0) + bonus;
           return;
         case 'secret':
-          options.secret = true;
+        case 'competences':
+          options[args[0]] = true;
           return;
       }
     });
-    var titre = "Jet de <b>";
-    if (options.nom) titre += options.nom;
-    else titre += caracOfMod(caracteristique);
-    titre += "</b>";
-    if (options.bonus)
-      titre += " (" + ((options.bonus > 0) ? '+' : '') + options.bonus + ")";
-    if (difficulte !== undefined) titre += " difficulté " + difficulte;
     getSelected(msg, function(selected) {
       if (selected.length === 0) {
         sendPlayer(msg, "!cof-jet sans sélection de token");
         log("!cof-jet requiert de sélectionner des tokens");
         return;
       }
+      if (cmd.length < 2) { //On demande la carac et la compétence, si définies dans un handout Compétence
+        if (options.nom) {
+          error("Il manque la caractéristique à utiliser pour la compétence " + options.nom, msg.content);
+          return;
+        }
+        iterSelected(selected, function(perso) {
+          var display = startFramedDisplay(msg.playerid, "Jet de caractéristique", perso, undefined, options.secret);
+          addLineToFramedDisplay(display, "Choisissez la caractéristique ou compétence");
+          addLineToFramedDisplay(display, boutonsCompetences(perso, 'FOR', msg));
+          addLineToFramedDisplay(display, boutonsCompetences(perso, 'DEX', msg));
+          addLineToFramedDisplay(display, boutonsCompetences(perso, 'CON', msg));
+          addLineToFramedDisplay(display, boutonsCompetences(perso, 'SAG', msg));
+          addLineToFramedDisplay(display, boutonsCompetences(perso, 'INT', msg));
+          addLineToFramedDisplay(display, boutonsCompetences(perso, 'CHA', msg));
+          sendChat('', endFramedDisplay(display));
+        }); //fin de iterSelected
+        return;
+      }
+      var caracteristique = cmd[1];
+      if (isNotCarac(caracteristique)) {
+        error("Caracteristique '" + caracteristique + "' non reconnue (FOR, DEX, CON, INT, SAG, CHA).", cmd);
+        return;
+      }
+      if (options.competences && options.nom === undefined) {
+        iterSelected(selected, function(perso) {
+          var display = startFramedDisplay(msg.playerid, "Jet de " + caracteristique, perso, undefined, options.secret);
+          addLineToFramedDisplay(display, "Choisissez la compétence");
+          addLineToFramedDisplay(display, boutonsCompetences(perso, caracteristique, msg));
+          sendChat('', endFramedDisplay(display));
+        }); //fin de iterSelected
+        return;
+      }
+      var difficulte;
+      if (cmd.length > 2) {
+        difficulte = parseInt(cmd[2]);
+        if (isNaN(difficulte)) difficulte = undefined;
+      }
+      var titre = "Jet d";
+      if (options.nom && options.nom.length > 0) {
+        switch (options.nom.toLowerCase()[0]) {
+          case 'a':
+          case 'e':
+          case 'i':
+          case 'o':
+          case 'u':
+            titre += "'<b>";
+            break;
+          default:
+            titre += "e <b>";
+        }
+        titre += options.nom;
+      } else titre += "e <b>" + caracOfMod(caracteristique);
+      titre += "</b>";
+      if (options.bonus)
+        titre += " (" + ((options.bonus > 0) ? '+' : '') + options.bonus + ")";
+      if (difficulte !== undefined) titre += " difficulté " + difficulte;
       iterSelected(selected, function(perso) {
         jetPerso(perso, caracteristique, difficulte, titre, msg.playerid, options);
       }); //fin de iterSelected
@@ -1038,7 +1080,9 @@ var COFantasy = COFantasy || function() {
               duree: duree
             };
           } else if (estEffetCombat(cmd[1])) {
-            lastEtat = {effet: cmd[1]};
+            lastEtat = {
+              effet: cmd[1]
+            };
           } else {
             error(cmd[1] + " n'est pas un effet temporaire répertorié", cmd);
             return;
@@ -3513,7 +3557,7 @@ var COFantasy = COFantasy || function() {
                 } else if (ef.effet == 'ralentiTemp') {
                   setState(target, 'ralenti', true, evt);
                 }
-              } else {//On a un effet de combat
+              } else { //On a un effet de combat
                 target.messages.push(target.tokName + " " + messageEffetCombat[ef.effet].activation);
                 setTokenAttr(target, ef.effet, true, evt);
               }
@@ -6404,6 +6448,14 @@ var COFantasy = COFantasy || function() {
   }
 
   var alliesParPerso = {};
+  var listeCompetences = {
+    FOR: [],
+    DEX: [],
+    CON: [],
+    SAG: [],
+    INT: [],
+    CHA: []
+  };
   // Appelé uniquement après le "ready" et lorsqu'on modifie un handout (fonctionne après l'ajout et la destruction d'un handout)
   // Du coup, alliesParPerso est toujours à jour 
   function changeHandout(hand, prev) {
@@ -6412,47 +6464,82 @@ var COFantasy = COFantasy || function() {
         _type: 'handout'
       });
       alliesParPerso = {};
-      handouts.forEach(addHandoutTeam);
+      handouts.forEach(parseHandout);
     } else if (hand) {
-      addHandoutTeam(hand);
+      parseHandout(hand);
     }
   }
 
-  function addHandoutTeam(hand) {
-    if (!hand.get('name').startsWith("Equipe ")) return;
-    hand.get('notes', function(note) { // asynchronous
-      var names = note.trim().split('<br>');
-      var persos = new Set();
-      names.forEach(function(name) {
-        name = name.trim();
-        if (name.length === 0) return;
-        var characters = findObjs({
-          _type: 'character',
-          name: name
+  function parseHandout(hand) {
+    var handName = hand.get('name');
+    if (handName.startsWith("Equipe ")) {
+      hand.get('notes', function(note) { // asynchronous
+        var names = note.trim().split('<br>');
+        var persos = new Set();
+        names.forEach(function(name) {
+          name = name.trim();
+          if (name.length === 0) return;
+          var characters = findObjs({
+            _type: 'character',
+            name: name
+          });
+          if (characters.length === 0) {
+            log(name + " dans l'équipe " + hand.get('name') + " est inconnu");
+            return;
+          }
+          if (characters.length > 1) {
+            log(name + " dans l'équipe " + hand.get('name') + " est en double");
+          }
+          characters.forEach(function(character) {
+            persos.add(character.id);
+          });
         });
-        if (characters.length === 0) {
-          log(name + " dans l'équipe " + hand.get('name') + " est inconnu");
-          return;
-        }
-        if (characters.length > 1) {
-          log(name + " dans l'équipe " + hand.get('name') + " est en double");
-        }
-        characters.forEach(function(character) {
-          persos.add(character.id);
+        persos.forEach(function(charId) {
+          var ancien = alliesParPerso[charId];
+          if (ancien === undefined) {
+            ancien = new Set();
+            alliesParPerso[charId] = ancien;
+          }
+          persos.forEach(function(aci) {
+            if (aci == charId) return;
+            ancien.add(aci);
+          });
         });
-      });
-      persos.forEach(function(charId) {
-        var ancien = alliesParPerso[charId];
-        if (ancien === undefined) {
-          ancien = new Set();
-          alliesParPerso[charId] = ancien;
-        }
-        persos.forEach(function(aci) {
-          if (aci == charId) return;
-          ancien.add(aci);
+      }); //end hand.get('notes')
+    } else if (handName == 'Compétences' || handName == 'Competences') {
+      listeCompetences = {
+        FOR: [],
+        DEX: [],
+        CON: [],
+        SAG: [],
+        INT: [],
+        CHA: []
+      };
+      hand.get('notes', function(note) { // asynchronous
+        var carac; //La carac don t on spécifie les compétences actuellement
+        var lignes = note.trim().split('<br>');
+        lignes.forEach(function(ligne) {
+          ligne = ligne.trim();
+          var header = ligne.split(':');
+          if (header.length > 1) {
+            var c = header.shift().trim().toUpperCase();
+            if (isNotCarac(c)) return;
+            carac = c;
+            ligne = header.join(':').trim();
+          }
+          if (ligne.length === 0) return;
+          if (carac === undefined) {
+            error("Compétences sans caractéristique associée", note);
+            return;
+          }
+          var comps = ligne.split(/, |\/| /);
+          comps.forEach(function(comp) {
+            if (comp.length === 0) return;
+            listeCompetences[carac].push(comp);
+          });
         });
-      });
-    });
+      }); //end hand.get(notes)
+    }
   }
 
   function estControlleParJoueur(charId) {
@@ -6573,7 +6660,7 @@ var COFantasy = COFantasy || function() {
               _type: 'ability',
               _characterid: charId,
             });
-            var found, picto_style;
+            var found;
             var style = '',
               command = '';
             // On recherche si l'action existe (Ability % ou Macro #)
@@ -6581,7 +6668,6 @@ var COFantasy = COFantasy || function() {
               action = action.trim();
               if (action.length > 0) {
                 var action_text = action.replace(/-/g, ' ').replace(/_/g, ' ');
-
                 found = false;
                 // on recherche en premier dans toutes les Abilities du personnage
                 abilities.forEach(function(abilitie, index) {
@@ -6589,7 +6675,6 @@ var COFantasy = COFantasy || function() {
                     // l'ability existe
                     found = true;
                     nBfound++;
-
                     command = abilitie.get('action').trim();
                     ligne += bouton(command, action_text, act, false) + '<br />';
                     return;
@@ -10851,7 +10936,7 @@ var COFantasy = COFantasy || function() {
           var ligne = quantite + ' ';
           ligne += bouton(action, consName, perso, attr);
           // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
-          ligne += bouton('!cof-echange-consommables @{selected|token_id} @{target|token_id}', '<span style="font-family:Pictos">r</span>', perso, attr, 'background-color: #a009ec;font-size: 17px;padding: 4px 4px 6px 4px;', 'Cliquez pour échanger');
+          ligne += bouton('!cof-echange-consommables @{selected|token_id} @{target|token_id}', '<span style="font-family:Pictos">r</span>', perso, attr, 'Cliquez pour échanger');
           addLineToFramedDisplay(display, ligne);
         }); //fin de la boucle sur les attributs
         if (cpt === 0) addLineToFramedDisplay(display, "<code>Vous n'avez aucun consommable</code>");
