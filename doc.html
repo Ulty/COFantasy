@@ -318,7 +318,7 @@
                   </li>
                   <li><code>--etat <i>e</i></code>: si l'attaque touche, la cible passe dans l'état <i>e</i>.</li>
                   <li><code>--etatSi <i>e condition</i></code> : si l'attaque touche et la <a href="#conditions"><i>condition</i></a> est validée, la cible passe dans l'état <i>e</i>.</li>
-                  <li><code>--effet <i>e duree</i></code> : ajoute à la cible l'effet temporaire <i>e</i> pour la duree spécifiée. Pour que cela soit automatiquement mis à jour, il faut utiliser le turn tracker.</li>
+                  <li><code>--effet <i>e duree</i></code> : ajoute à la cible l'effet temporaire <i>e</i> pour la duree spécifiée. Pour que cela soit automatiquement mis à jour, il faut utiliser le turn tracker. Noter que l'argument de durée peut être omis pour certains effets, comme ceux qui par définition durent tout le combat.</li>
                   <li><code>--peur <i>seuil duree</i></code> : fait un effet de peur si l'attaque touche. Le <i>seuil</i> sert pour le test de sagesse de résitance à la peur (tient compte de la capacité <b>sans peur</b> du chevalier).</li>
                   <li><code>--plus <i>dmg</i></code> :
                     ajoute <i>dmg</i> dégâts. Attention, si <i>dmg</i> est un simple nombre, ces dégâts sont multipliés par les critiques (sauf si de type différent de l'attaque principale). Ainsi, <code>--plus [[1d6]]</code> donnera des dégâts multipliés par les critiques (car la fonction ne voit que le résultat du jet), alors que <code>--plus 1d6</code> ne le sera pas. 
@@ -1013,16 +1013,20 @@
                       <li>Pour l'attaque, faire une attaque magique de contact, et l'invoquer avec les arguments <code>--sortilege --vampirise --si etat aspectDeLaSuccube</code></li>
                     </ul>
                   </li>
+                  <li><strong>Pavcte sanglant</strong> : un support est prévu, mais en attendant, le MJ doit gérer les bonus. Il peut infliger les dégâts avec la commande <code>!cof-dmg 1d4 --ignoreRD</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de la mort</h4>
                 <ol>
                   <li><strong>Siphon des âmes</strong> : ajouter un attribut <code>siphonDesAmes</code></li>
                   <li><strong>Masque mortuaire</strong> : <code>!cof-effet-temp masqueMortuaire [[5+@{selected|INT}]]</code></li>
+                  <li><strong>Baiser du vampire</strong> : faire une attaque magique de portée 50 m et de DM 1d8+INT, à lancer avec les options <code>--sortilege --magique --vampirise --mana 1 ?{Y consacrer le tour?|oui,--puissant|non,''}</code></li>
+                  <li><strong>Briser les coeurs</strong> : faire une attaque magique de portée 20, de DM 5d6+INT, lancée avec les options <code>--sortilege --magique --psave CON [[10+@{selected|INT}]] --mana 2 ?{Y consacrer le tour?|oui,--puissant|non,''}</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'outre-tombe</h4>
                 <ol>
                   <li><strong>Peur</strong> : Faire une attaque <code>Peur</code> utilisant le score d'attaque magique, de portée 20 m, mais ne faisant aucun dégât (0 dé, pas de bonus de caractéristique). Pour l'attaque, ajouter les arguments <code>--sortilege --peur [[10+@{selected|INT}]] [[1d4+<i>r</i>]]</code> où <i>r</i> est le rang dans la voie.</li>
                   <li><strong>Animation d'un mort-vivant</strong> : simplement faire un personnage pour le mort-vivant contrôlé. Le MJ devra se charger de la perte de 1PV tous les 6 tours, si besoin.</li>
+                  <li><strong>Putréfaction</strong> : ajouter une attaque magique de portée 10 m, de DM 1d6+INT, lancée avec les options <code>--sortilege --magique --effet putrefactionOutreTombe --save CON [[12+@{selected|INT}]] --mana 1 ?{Y consacrer le tour?|oui,--puissant|non,''}</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie du sang</h4>
                 <ol>

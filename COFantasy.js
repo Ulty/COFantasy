@@ -782,6 +782,7 @@ var COFantasy = COFantasy || function() {
           if (tr.reussite) {
             addLineToFramedDisplay(display, "C'est réussi.");
           } else {
+            //TODO : ajouter le pacte sanglant, la prouesse et le tour de force
             var msgRate = "C'est raté.";
             evt.personnage = perso;
             evt.action = {
@@ -862,7 +863,9 @@ var COFantasy = COFantasy || function() {
           }
           options.bonus = (options.bonus || 0) + bonus;
           return;
-        case 'secret': options.secret = true; return;
+        case 'secret':
+          options.secret = true;
+          return;
       }
     });
     var titre = "Jet de <b>";
@@ -1013,27 +1016,34 @@ var COFantasy = COFantasy || function() {
           });
           break;
         case "effet":
-          if (cmd.length < 3) {
+          if (cmd.length < 2) {
             error("Il manque un argument à l'option --effet de !cof-attack", cmd);
             return;
           }
-          if (!estEffetTemp(cmd[1])) {
+          if (estEffetTemp(cmd[1])) {
+            if (cmd.length < 3) {
+              error("Il manque un argument à l'option --effet de !cof-attack", cmd);
+              return;
+            }
+            var duree;
+            duree = parseInt(cmd[2]);
+            if (isNaN(duree) || duree < 1) {
+              error(
+                "Le deuxième argument de --effet doit être un nombre positif",
+                cmd);
+              return;
+            }
+            lastEtat = {
+              effet: cmd[1],
+              duree: duree
+            };
+          } else if (estEffetCombat(cmd[1])) {
+            lastEtat = {effet: cmd[1]};
+          } else {
             error(cmd[1] + " n'est pas un effet temporaire répertorié", cmd);
             return;
           }
-          var duree;
-          duree = parseInt(cmd[2]);
-          if (isNaN(duree) || duree < 1) {
-            error(
-              "Le deuxième argument de --effet doit être un nombre positif",
-              cmd);
-            return;
-          }
           options.effets = options.effets || [];
-          lastEtat = {
-            effet: cmd[1],
-            duree: duree
-          };
           options.effets.push(lastEtat);
           options.seulementVivant = true;
           return;
@@ -1995,6 +2005,10 @@ var COFantasy = COFantasy || function() {
     if (options.frappeDuVide) {
       attBonus += 2;
       explications.push("Frappe du vide => +2 en Attaque et +1d6 DM");
+    }
+    if (attributeAsBool(attaquant, 'putrefactionOutreTombe')) {
+      attBonus -= 2;
+      explications.push("Putréfaction => -2 en Attaque");
     }
     return attBonus;
   }
@@ -3490,13 +3504,18 @@ var COFantasy = COFantasy || function() {
                   pageId, evt);
                 return;
               }
-              target.messages.push(target.tokName + " " + messageEffetTemp[ef.effet].activation);
-              setTokenAttr(target, ef.effet, ef.duree, evt, undefined,
-                getInit());
-              if (ef.effet == 'aveugleTemp') {
-                setState(target, 'aveugle', true, evt);
-              } else if (ef.effet == 'ralentiTemp') {
-                setState(target, 'ralenti', true, evt);
+              if (ef.duree) {
+                target.messages.push(target.tokName + " " + messageEffetTemp[ef.effet].activation);
+                setTokenAttr(target, ef.effet, ef.duree, evt, undefined,
+                  getInit());
+                if (ef.effet == 'aveugleTemp') {
+                  setState(target, 'aveugle', true, evt);
+                } else if (ef.effet == 'ralentiTemp') {
+                  setState(target, 'ralenti', true, evt);
+                }
+              } else {//On a un effet de combat
+                target.messages.push(target.tokName + " " + messageEffetCombat[ef.effet].activation);
+                setTokenAttr(target, ef.effet, true, evt);
               }
               if (ef.saveParTour) {
                 setTokenAttr(target, ef.effet + "SaveParTour",
@@ -3640,7 +3659,10 @@ var COFantasy = COFantasy || function() {
               options.effets.forEach(function(ef) {
                 if (ef.save) {
                   var msgPour = " pour résister à un effet";
-                  var msgRate = ", " + target.tokName + " " + messageEffetTemp[ef.effet].activation;
+                  var msgRate = ", " + target.tokName + " ";
+                  if (ef.duree)
+                    msgRate += messageEffetTemp[ef.effet].activation;
+                  else msgRate += messageEffetCombat[ef.effet].activation;
                   var saveOpts = {
                     msgPour: msgPour,
                     msgRate: msgRate,
@@ -3649,8 +3671,10 @@ var COFantasy = COFantasy || function() {
                   save(ef.save, target, expliquer, saveOpts, evt,
                     function(reussite, rollText) {
                       if (!reussite) {
-                        setTokenAttr(target, ef.effet, ef.duree, evt,
-                          undefined, getInit());
+                        if (ef.duree)
+                          setTokenAttr(target, ef.effet, ef.duree, evt,
+                            undefined, getInit());
+                        else setTokenAttr(target, ef.effet, true, evt);
                         if (ef.effet == 'aveugleTemp') {
                           setState(target, 'aveugle', true, evt);
                         } else if (ef.effet == 'ralentiTemp') {
@@ -3711,9 +3735,10 @@ var COFantasy = COFantasy || function() {
       if (pc > 0) {
         addLineToFramedDisplay(display, bouton("!cof-bouton-chance " + evt.id, "Chance", evt.personnage) + " (reste " + pc + " PC)");
       }
-      if (charAttributeAsBool(evt.action.attaquant, 'runeDEnergie')) {
+      if (charAttributeAsBool(evt.personnage, 'runeDEnergie')) {
         addLineToFramedDisplay(display, bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", evt.personnage));
       }
+      //TODO: pacte sanglant
     }
     sendChat("", endFramedDisplay(display));
   }
@@ -7320,6 +7345,9 @@ var COFantasy = COFantasy || function() {
       bonus -= 2;
     }
     if (attributeAsBool(personnage, 'etatExsangue')) {
+      bonus -= 2;
+    }
+    if (attributeAsBool(personnage, 'putrefactionOutrTombe')) {
       bonus -= 2;
     }
     switch (carac) {
@@ -12140,6 +12168,11 @@ var COFantasy = COFantasy || function() {
       activation: "a un temps d'avance en cas d'embuscade",
       actif: "a un temps d'avance",
       fin: ""
+    },
+    putrefactionOutreTombe: {
+      activation: "sent ses chairs pourrir",
+      actif: "subit le contrecoup d'une putréfaction",
+      fin: "se remet de la putréfaction"
     }
   };
 
