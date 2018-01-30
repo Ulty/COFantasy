@@ -1072,6 +1072,7 @@
                 <ol>
                   <li><strong>Bénédiction</strong> : <code>!cof-effet-temp benediction [[3+@{selected|SAG}]] --allies --self</code>. Il faut avoir défini une <a href="#allie">équipe</a> avec le prêtre.</li>
                   <li><strong>Destruction des morts-vivants</strong> : <code>!cof-destruction-des-morts-vivants 2d6</code>. Au rang 4 dans la voie, ajuster les dégâts.</li>
+                  <li><strong>Sanctuaire</strong> : <code>!cof-effet-temp sanctuaire [[5+@{selected|SAG}]] --lanceur @{selected|token_id} --mana 1 ?{Y consacrer tout le tour ?|Oui,--puissant duree|Non,}</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie des soins</h4>
                 <p style="margin-top:0px; margin-bottom:0px">Utiliser un attribut <code>voieDesSoins</code> avec comme valeur le rang dans la voie</p>
@@ -1084,6 +1085,9 @@
                 <ol>
                   <li><strong>Vêtements sacrés</strong> : Ajouter un attribut <code>vetementsSacres</code> avec comme valeur le rang dans la voie de la spiritualité. Cela augmente la DEF, mais seulement lorsque le prêtre ne porte pas d'armure (ne se voit pas sur le total de DEF de la fiche)</li>
                   <li><strong>Protection contre le mal</strong> : <code>!cof-effet-combat protectionContreLeMal --lanceur @{selected|token_id} --target @{target|token_id} --portee 0</code>. Donne le bonus contre toute créature dont l'attribut <code>RACE</code> est <code>squelette</code>, <code>zombie</code>, <code>démon</code>, <code>élémentaire</code>, ou bien qui possède l'attribut <code>mauvais</code> (valeur <code>true</code>).</li>
+                  <li><strong>Délivrance</strong> : <code>!cof-delivrance @{selected|token_id} @{target|token_id} --mana 1 --portee 0</code></li>
+                  <li><strong>Marche des plans</strong> : <code>!cof-lancer-sort 2 marche entre les plans (il peut se déplacer de [[(3+@{selected|SAG})*10]] km)</code>.</li>
+                  <li><strong>Messie</strong> : aucun support.</li>
                 </ol>
               </div>
               <h3 class="text-info" id="Rôdeur">Rôdeur</h3>
@@ -1110,6 +1114,7 @@
                   <li><strong>Traquenard</strong> : ajouter un attribut <code>traquenard</code> (valeur courante 1, valeur maximale 1), puis option <code>--traquenard</code> pour l'attaque. Exemple pour un personnage qui aurait une ability <code>Arme</code> permettant d'utiliser son épée, et une ability <code>Arc</code> permettant d'utiliser son arc : <code>?{Arme?|Épée,%{selected|Attaque}|Arc,%{selected|Arc}} --traquenard</code> (Note : bien faire attention à ce que les abilities ne contiennent pas de ligne vide, et que la dernière ligne est bien expansée en <code>!cof-attack</code>). En interne, chaque fois que le personnage fait une attaque, la valeur courante de son attribut <code>traquenard</code> passe à 0. Cette valeur courante repasse à 1 automatiquement en fin de combat. C'est cette valeur qui détermine si l'option <code>--traquenard</code> est valide ou non.</li>
                   <li><strong>Attaque éclair</strong> : <code>--plus [[@{selected|DEX}]] --bonusAttaque [[@{selected|DEX}]]</code></li>
                   <li><strong>Repli</strong> : simplement faire un jet en utilisant par exemple <code>!cof-jet DEX 10</code>, et décrire le résultat.</li>
+                  <li><strong>Dextérité héroïque</strong> : reporter sur la fiche.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la survie</h4>
                 <ol>
@@ -1148,6 +1153,7 @@
                 <ol>
                   <li><strong>Discrétion</strong> : on peut ajouter une compétence discrétion sur la fiche, avec le bon bonus. Pour l'utilisation de <code>!cof-jet</code>, ajouter un attribut <code>discrétion</code> avec la valeur du bonus total.</li>
                   <li><strong>Attaque sournoise</strong> : Faire des versions des attaques avec <code>--sournoise <i>n</i></code>, où <i>n</i> est le rang dans la voie. Au MJ de vérifier que les conditions de l'attaque sournoise sont remplies. (Exemple de macro pour un voleur qui aurait une attaque <code>Dague</code> et une attaque <code>arbalète</code> : <code>?{Arme utilisée?|Dague,%{selected|Dague}|Arbalète,%{selected|Arbalète}} --sournoise 2</code>)</li>
+                  <li><strong>Ombre mouvante</strong> : pas beaucoup de support. Faire <code>!cof-jet DEX 10</code> pour le jet de dextérité, le reste est géré par le MJ.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'aventurier</h4>
                 <ol>
@@ -1157,8 +1163,9 @@
                 </ol>
                 <h4 class="text-secondary">Voie du déplacement</h4>
                 <ol>
-                  <li><strong>Esquive</strong> : pas de support particulier. Augmenter la DEF sur la fiche.</li>
-                  <li><strong>Chute</strong> : pas de support particulier</li>
+                  <li><strong>Esquive</strong> : Augmenter la DEF sur la fiche.</li>
+                  <li><strong>Chute</strong> : pas de support particulier.</li>
+                  <li><strong>Acrobaties</strong> : faire <code>!cof-jet DEX 15</code> pour le jet de dextérité, le reste est géré par le MJ.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du roublard</h4>
                 <ol>
