@@ -5253,13 +5253,15 @@ var COFantasy = COFantasy || function() {
           case 'allies':
           case 'saufAllies':
             var selection = selected;
-            if (cmdSplit[0] == 'saufAllies') selection = enleveAuxSelected;
+            var saufAllies = (cmdSplit[0] == 'saufAllies');
+            if (saufAllies) selection = enleveAuxSelected;
             var actives = [];
             var allies = new Set();
             // First get the acting token (in msg.selected)
             if (actif) {
               actives = [actif];
               allies = alliesParPerso[actif.charId] || allies;
+              if (saufAllies) allies = (new Set(allies)).add(actif.charId);
             } else {
               if (msg.selected === undefined || msg.selected.length === 0) {
                 error("Pas d'allié car pas de token sélectionné", msg);
@@ -5273,6 +5275,7 @@ var COFantasy = COFantasy || function() {
                     allies.add(ci);
                   });
                 }
+                if (saufAllies) allies.add(personnage.charId);
               });
             }
             var tokens = findObjs({
