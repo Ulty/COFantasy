@@ -3034,9 +3034,15 @@ var COFantasy = COFantasy || function() {
             paralyse = true;
             target.messages.push("Cible paralysée => réussite critique automatique");
           }
-
-          if (charAttributeAsBool(attaquant, 'champion') && d20roll >= 15)
+          if (d20roll >= 15 && charAttributeAsBool(attaquant, 'champion'))
             options.champion = true;
+          if (d20roll >= 17 && options.contact &&
+            charAttributeAsBool(attaquant, 'crocEnJambe')) {
+            if (d20roll >= 19 || !estQuadrupede(target)) {
+              setState(target, 'renverse', true, evt);
+              target.messages.push("tombe par terre");
+            }
+          }
           if (d20roll == 1 && options.chance === undefined) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
             if (options.demiAuto) {
@@ -8024,6 +8030,10 @@ var COFantasy = COFantasy || function() {
     var pageId;
     if (msg.selected && msg.selected.length > 0) {
       var firstSelected = getObj('graphic', msg.selected[0]._id);
+      if (firstSelected === undefined) {
+        error("Un token sélectionné n'est pas trouvé en interne", msg.selected);
+        return;
+      }
       pageId = firstSelected.get('pageid');
     }
     var opts = msg.content.split(' --');
@@ -9034,6 +9044,64 @@ var COFantasy = COFantasy || function() {
       case 'orque':
       case 'pixie':
       case 'troll':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function estQuadrupede(perso) {
+    if (charAttributeAsBool(perso, 'quadrupede')) return true;
+    var attrRace = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+      name: 'RACE'
+    });
+    if (attrRace.length === 0) return false;
+    var charRace = attrRace[0].get('current').trim().toLowerCase();
+    switch (charRace) {
+      case 'ankheg':
+      case 'araignée':
+      case 'araignee':
+      case 'basilic':
+      case 'béhir':
+      case 'behir':
+      case 'bulette':
+      case 'bison':
+      case 'centaure':
+      case 'cheval':
+      case 'chien':
+      case 'chimère':
+      case 'chimere':
+      case 'cockatrice':
+      case 'crocodile':
+      case 'dragon':
+      case 'drider':
+      case 'eléphant':
+      case 'elephant':
+      case 'éléphant':
+      case 'mammouth':
+      case 'griffon':
+      case 'hipogriffe':
+      case 'hippogriffe':
+      case 'hydre':
+      case 'licorne':
+      case 'lion':
+      case 'loup':
+      case 'worg':
+      case 'manticore':
+      case 'ours':
+      case 'panthere':
+      case 'panthère':
+      case 'pegase':
+      case 'pégase':
+      case 'pieuvre':
+      case 'rat':
+      case 'rhinoceros':
+      case 'rhinocéros':
+      case 'sanglier':
+      case 'taureau':
+      case 'tigre':
         return true;
       default:
         return false;
