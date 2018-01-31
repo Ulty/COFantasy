@@ -2785,6 +2785,9 @@ var COFantasy = COFantasy || function() {
       (crit == 20 && charAttributeAsBool(attaquant, 'ecuyer'))) crit -= 1;
     if (options.bonusCritique) crit -= options.bonusCritique;
     if (options.affute) crit -= 1;
+    if (options.contact && charAttributeAsBool(attaquant, 'frappeChirurgicale'))
+      crit -= modCarac(attaquant, 'INTELLIGENCE');
+    if (crit < 2) crit = 2;
     var dice = 20;
     if (getState(attaquant, 'affaibli')) {
       dice = 12;
