@@ -3107,6 +3107,7 @@ var COFantasy = COFantasy || function() {
           if (absorber) line += absorber;
           else line += defense;
           line += "</b> " + attackResult;
+          if (options.test) line += " ("+attackRoll+")";
           target.attackMessage = line;
           if (touche) {
             if (options.asDeLaGachette && attackRoll > 24) {
