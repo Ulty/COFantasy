@@ -3644,9 +3644,9 @@ var COFantasy = COFantasy || function() {
                         " et commence à lui sucer le sang");
                     }
                     if (suce + dmg >= 6) {
-                      target.messaged.push(
+                      target.messages.push(
                         "Repus, " + attackerTokName + " se détache et s'envole");
-                      target.messaged.push(target.tokName + " se sent un peu faible...");
+                      target.messages.push(target.tokName + " se sent un peu faible...");
                       setState(target, 'affaibli', true, evt);
                       var defbuf = attributeAsInt(attaquant, 'bufDEF', 0);
                       if (defbuf === -3) {
