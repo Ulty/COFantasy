@@ -2384,10 +2384,18 @@ var COFantasy = COFantasy || function() {
       weaponStats.attDMBonusCommun = getAttrByName(attackingCharId, attPrefix + "armedmdiv");
       weaponStats.crit = getAttrByName(attackingCharId, attPrefix + "armecrit") || 20;
       weaponStats.portee = getPortee(attackingCharId, attPrefix);
+      weaponStats.divers = getAttrByName(attackingCharId, attPrefix + "armespec");
     }
     weaponStats.attSkillDiv = parseInt(weaponStats.attSkillDiv);
     weaponStats.attNbDices = parseInt(weaponStats.attNbDices);
     weaponStats.attDice = parseInt(weaponStats.attDice);
+    options.d6 = 'd6';
+    if (charAttributeAsBool(attaquant, 'tropPetit')) {
+      options.d6 = 'd4';
+      if (weaponStats.divers && weaponStats.divers.includes('d3')) {
+        weaponStats.attDice = 3;
+      }
+    }
     weaponStats.attDMBonusCommun = parseInt(weaponStats.attDMBonusCommun);
     weaponStats.crit = parseInt(weaponStats.crit);
     var portee = weaponStats.portee;
@@ -2964,7 +2972,7 @@ var COFantasy = COFantasy || function() {
             attBonus += 2;
             target.additionalDmg.push({
               type: mainDmgType,
-              value: '2d6'
+              value: '2' + options.d6
             });
             target.messages.push(attackerTokName + " fait un traquenard à " + target.tokName);
           } else {
@@ -3122,10 +3130,10 @@ var COFantasy = COFantasy || function() {
           target.attackMessage = line;
           if (touche) {
             if (options.asDeLaGachette && attackRoll > 24) {
-              target.messages.push("As de la gachette : + 1d6 aux DM");
+              target.messages.push("As de la gachette : + 1" + options.d6 + " aux DM");
               target.additionalDmg.push({
                 type: mainDmgType,
-                value: '1d6'
+                value: '1' + options.d6
               });
             }
           } else { //Effet si on ne touche pas
@@ -3258,7 +3266,7 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(attaquant, 'rageDuBerserk')) {
       options.additionalDmg.push({
         type: mainDmgType,
-        value: '1d6'
+        value: '1' + options.d6
       });
     }
     var attrPosture = tokenAttribute(attaquant, 'postureDeCombat');
@@ -3282,9 +3290,9 @@ var COFantasy = COFantasy || function() {
       if (options.semonce) {
         options.additionalDmg.push({
           type: mainDmgType,
-          value: '1d6'
+          value: '1' + options.d6
         });
-        explications.push("Tir de semonce => +5 en Attaque et +1d6 aux DM");
+        explications.push("Tir de semonce => +5 en Attaque et +1" + options.d6 + " aux DM");
       }
     } else { //bonus aux attaques de contact
       if (attributeAsBool(attaquant, 'agrandissement')) {
@@ -3299,7 +3307,7 @@ var COFantasy = COFantasy || function() {
       if (options.frappeDuVide) {
         options.additionalDmg.push({
           type: mainDmgType,
-          value: '1d6'
+          value: '1' + options.d6
         });
       }
     }
@@ -3335,14 +3343,14 @@ var COFantasy = COFantasy || function() {
     if (charAttributeAsBool(attackingCharId, 'dmgArme1d6_' + attackLabel)) {
       options.additionalDmg.push({
         type: mainDmgType,
-        value: '1d6'
+        value: '1' + options.d6
       });
-      explications.push("Arme enduite => +1d6 aux DM");
+      explications.push("Arme enduite => +1" + options.d6 + " aux DM");
     }
     if (options.champion) {
       options.additionalDmg.push({
         type: mainDmgType,
-        value: '1d6'
+        value: '1' + options.d6
       });
       explications.push(attackerTokName + " est un champion, son attaque porte !");
     }
@@ -3406,9 +3414,9 @@ var COFantasy = COFantasy || function() {
         } else {
           target.additionalDmg.push({
             type: mainDmgType,
-            value: options.sournoise + 'd6'
+            value: options.sournoise + options.d6
           });
-          target.messages.push("Attaque sournoise => +" + options.sournoise + "+d6 DM");
+          target.messages.push("Attaque sournoise => +" + options.sournoise + options.d6 + " DM");
         }
       }
       if (target.chasseurEmerite) {
@@ -3417,13 +3425,13 @@ var COFantasy = COFantasy || function() {
       if (target.ennemiJure) {
         target.additionalDmg.push({
           type: mainDmgType,
-          value: '1d6'
+          value: '1' + options.d6
         });
       }
       if (target.tueurDeGeants) {
         target.additionalDmg.push({
           type: mainDmgType,
-          value: '2d6'
+          value: '2' + options.d6
         });
       }
       if (target.argent) {
@@ -3437,7 +3445,7 @@ var COFantasy = COFantasy || function() {
         attrFeinte[0].get('max')) {
         target.additionalDmg.push({
           type: mainDmgType,
-          value: '2d6'
+          value: '2' + options.d6
         });
       }
       var loupParmiLesLoups = charAttributeAsInt(attaquant, 'loupParmiLesLoups', 0);
@@ -4327,7 +4335,7 @@ var COFantasy = COFantasy || function() {
 
   function testBlessureGrave(target, dmgTotal, expliquer, evt) {
     target.tokName = target.tokName || target.token.get('name');
-    if (BLESSURESGRAVES && (dmgTotal == 'mort' ||
+    if (BLESSURESGRAVES && estPJ(target) && (dmgTotal == 'mort' ||
         dmgTotal > charAttributeAsInt(target, 'NIVEAU', 1) + charAttributeAsInt(target, 'CONSTITUTION', 10))) {
       var pr = pointsDeRecuperation(target);
       if (pr > 0) {
@@ -6672,6 +6680,13 @@ var COFantasy = COFantasy || function() {
     return true;
   }
 
+  function estPJ(perso) {
+    var dv = charAttributeAsInt(perso, 'DV', 0);
+    if (dv === 0) return false;
+    if (perso.token.get('bar1_link') === '') return false;
+    return estControlleParJoueur(perso.charId);
+  }
+
   function estAllieJoueur(perso) {
     if (estControlleParJoueur(perso.charId)) return true;
     var allies = alliesParPerso[perso.charId];
@@ -7029,7 +7044,7 @@ var COFantasy = COFantasy || function() {
         if (a.pr < b.pr) return 1;
         if (b.pr < a.pr) return -1;
         // Priorité aux joueurs
-        // Premier critère : la barre de PV des joueurs ets liée
+        // Premier critère : la barre de PV des joueurs est liée
         var tokenA = getObj('graphic', a.id);
         if (tokenA === undefined) return 1;
         var tokenB = getObj('graphic', b.id);
