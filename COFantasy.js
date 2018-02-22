@@ -13401,9 +13401,20 @@ var COFantasy = COFantasy || function() {
 
   //Si le token représente un personnage et avec la barre de vie non liée, 
   // assure un nom unique en ajoutant un numéro
+  // On en profite aussi pour mettre certaines valeurs par défaut
   function renameToken(token, tokenName) {
     var charId = token.get('represents');
     if (charId === undefined || charId === '') return;
+    var perso = {token:token, tokName:tokenName, charId:charId};
+    //Vision
+    var visionNoir = charAttributeAsInt(perso, 'visionDansLeNoir', 0);
+    if (visionNoir > 0) {
+      token.set('light_radius', visionNoir);
+      token.set('light_dimradius', -1);
+      token.set('light_otherplayers', false);
+      token.set('light_hassight', true);
+      token.set('light_angle', 360);
+    }
     if (token.get('bar1_link') !== '') return;
     var tokenBaseName = tokenName;
     if (tokenBaseName.includes('%%NUMBERED%%')) {
@@ -13444,7 +13455,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     nb = nb || 1;
-    if (nb > 20) return; //Tant pis, peut-être que le nom est vide
+    if (nb > 10) return; //Tant pis, peut-être que le nom est vide
     _.delay(function() {
       addToken(token, nb + 1);
     }, 50);
