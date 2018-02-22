@@ -30,7 +30,7 @@ var COFantasy = COFantasy || function() {
   var IMAGE_OMBRE = "https://s3.amazonaws.com/files.d20.io/images/2781735/LcllgIHvqvu0HAbWdXZbJQ/thumb.png?13900368485";
   var IMAGE_DOUBLE = "https://s3.amazonaws.com/files.d20.io/images/33854984/q10B3KtWsCxcMczLo4BSUw/thumb.png?1496303265";
   var HISTORY_SIZE = 150;
-  var blessuresGraves = true; //Si les DMs dépassent CON+niveau, ou si on arrive
+  var BLESSURESGRAVES = true; //Si les DMs dépassent CON+niveau, ou si on arrive
   //à 0 PV, on perd un PR, et si plus de PR, affaibli.
   var eventHistory = [];
   var updateNextInitSet = new Set();
@@ -62,7 +62,8 @@ var COFantasy = COFantasy || function() {
     ralenti: 'status_snail',
     endormi: 'status_sleepy',
     apeure: 'status_screaming',
-    invisible: 'status_ninja-mask'
+    invisible: 'status_ninja-mask',
+    blessé: 'status_arrowed'
   };
 
   function etatRendInactif(etat) {
@@ -252,7 +253,7 @@ var COFantasy = COFantasy || function() {
 
   function estAffaibli(perso) {
     if (getState(perso, 'affaibli')) return true;
-    if (attributeAsBool(perso, 'blessureGrave')) return true;
+    if (getState(perso, 'blessé')) return true;
     return false;
   }
 
@@ -4326,13 +4327,13 @@ var COFantasy = COFantasy || function() {
 
   function testBlessureGrave(target, dmgTotal, expliquer, evt) {
     target.tokName = target.tokName || target.token.get('name');
-    if (blessuresGraves && (dmgTotal == 'mort' ||
+    if (BLESSURESGRAVES && (dmgTotal == 'mort' ||
         dmgTotal > charAttributeAsInt(target, 'NIVEAU', 1) + charAttributeAsInt(target, 'CONSTITUTION', 10))) {
       var pr = pointsDeRecuperation(target);
       if (pr > 0) {
         expliquer("Les dégâts son si importants que " + target.tokName + " perd 1 PR");
         enleverPointDeRecuperation(target, evt);
-      } else if (attributeAsBool(target, 'blessureGrave')) {
+      } else if (getState(target, 'blessé')) {
         if (getState(target, 'mort')) {
           expliquer("Avec la blessure grave, c'est vraiment la fin, " + target.tokName + " ne se relèvera plus...");
         } else {
@@ -4340,7 +4341,7 @@ var COFantasy = COFantasy || function() {
           mort(target, expliquer, evt);
         }
       } else {
-        setTokenAttr(target, 'blessureGrave', true, evt);
+        setState(target, 'blessé', true, evt);
         expliquer("Les dégâts occasionnent une blessure grave !");
       }
     }
@@ -5798,13 +5799,13 @@ var COFantasy = COFantasy || function() {
       var message;
       if (option == "nuit" && pr < 5) { // on récupère un PR
         //Sauf si on a une blessure gave
-        if (attributeAsBool(perso, 'blessureGrave')) {
+        if (getState(perso, 'blessé')) {
           testCaracteristique(perso, 'CON', 8, {}, evt, function(tr) {
             sendChar(charId, "fait un jet de CON pour guérir de sa blessure");
             var m = "/direct " + onGenre(charId, 'Il', 'Elle') + " fait " + tr.texte;
             if (tr.reussite) {
               sendChar(charId, m + "&ge; 8, son état s'améliore nettement.");
-              removeTokenAttr(perso, 'blessureGrave', evt);
+              setState(perso, 'blessé', false, evt);
             } else sendChar(charId, m + "< 8, son état reste préoccupant.");
             finalize();
           });
@@ -7151,9 +7152,6 @@ var COFantasy = COFantasy || function() {
       if (!isNaN(dmTemp) && dmTemp > 0) {
         line = "Dommages temporaires : " + dmTemp;
         addLineToFramedDisplay(display, line);
-      }
-      if (attributeAsBool(perso, 'blessureGrave')) {
-        addLineToFramedDisplay(display, "est gravement blessé.");
       }
       var aDV = charAttributeAsInt(perso, 'DV', 0);
       if (aDV > 0) { // correspond aux PJs

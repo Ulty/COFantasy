@@ -164,8 +164,7 @@
               </p>
               <p>Il est important de noter la différence entre les tokens liés à un personnage (la barre 1 est liée aux points de vie du personnage, tout changement sur la fiche se répercute sur le token), et les tokens non liés (dans ce cas, la fiche de personnage est générique, et chaque token est une instance différente, avec des PV indépendants).</p>
               <p>Pour gérer les états spécifiques à un token non lié, les scripts utilisent des conventions de nom d'attribut utilisant le nom du token. Pour que cela fonctionne correctement, <b>il est important que deux tokens indépendants ne portent pas le même nom</b>, même si ils représentent le même personnage. Pour cette raison, le script va automatiquement renommer les tokens indépendants, en leur associant un numéro. Il est toujours possible de remodifier le nom après la création du token, mais dans ce cas, c'est vous qui gérez...</p>
-              <p>Certains messages tiennent compte du genre (masculin ou féminin) des personnages.<br />
-                Ils utilisent le champ <code>Sexe</code> de la fiche de personnage. Un personnage est reconnu comme féminin si ce champ commence par la lettre <code>F</code>.
+              <p>Certains messages tiennent compte du genre (masculin ou féminin) des personnages. Ils utilisent le champ <code>Sexe</code> de la fiche de personnage. Un personnage est reconnu comme féminin si ce champ commence par la lettre <code>F</code>.
               </p>
               <h3 class="text-info" id="macros_abilities">2.2 Macros et Abilities</h3>
               <div class="decalage">
@@ -174,15 +173,15 @@
               </div>
               <h3 class="text-info" id="methode_selection_groupes">2.3 Méthode de sélection de groupes</h3>
               <div class="decalage">
-                <p>Comme les joueurs ne peuvent pas sélectionner un nombre arbitraire d'ennemis, 6 méthodes sont disponibles&nbsp;:</p>
+                <p>Comme les joueurs ne peuvent pas sélectionner un nombre arbitraire d'ennemis, 7 méthodes sont disponibles&nbsp;:</p>
                 <ul>
                   <li>Le MJ lance la macro en sélectionnant les cibles</li>
-                  <li id="allie">option <code>--allies</code> : cela fait chercher tous les <i>handout</i> dont le nom est Equipe suivi d'un nom, et tels que dans le <i>handout</i> contienne une liste de noms (une par ligne), parmis lesquels, celui du personnage qui agit. Le personnage qui agit est celui qui est sélectionné argument.</li>
-                  <li>option <code>--equipe <i>nom</i></code> : agit sur tous les personnages mentionnés dans le <i>handout</i> s'appelant Equipe <i>nom</i></li>
-                  <li>option <code>--self</code> : pour se rajouter soi-même. Utile si on veut soi+alliés</li>
-                  <li>option <code>--target</code> : pour ajouter une seule cible, avec une id de token. Le personnage qui agit est celui qui est sélectionné</li>
+                  <li id="allie">option <code>--allies</code> : cela fait chercher tous les <i>handout</i> dont le nom est Equipe suivi d'un nom, et tels que le <i>handout</i> contienne une liste de noms (un par ligne), parmis lesquels, celui du personnage qui agit. Le personnage qui agit est celui qui est sélectionné. Les cibles sont tous les alliés du personnage sélectionné, mais pas le personnage lui-même.</li>
+                  <li>option <code>--equipe <i>nom</i></code> : agit sur tous les personnages mentionnés dans le <i>handout</i> s'appelant Equipe <i>nom</i>.</li>
+                  <li>option <code>--self</code> : pour rajouter le personnage sélectionné. Utile si on veut le personnage et ses alliés, par exemple.</li>
+                  <li>option <code>--target</code> : pour ajouter une seule cible, avec une id de token. Le personnage qui agit est celui qui est sélectionné.</li>
                   <li>option <code>--disque</code> : le premier argument doit être l'id ou le nom d'un token qui représente un personnage, le deuxième argument un rayon. Cela sélectionne tous les tokens à une distamce de moins que le rayon du premier argument. Si un troisième argument est donné, il est interprété comme la portée maximum entre le centre du disque et le token actif (qui est supposé être celui sélectionné). Si le premier argument représente un personnage avec un max de PV à 0, il est compris comme un personnage fictif créé juste pour définir le disque, et il sera supprimé après la sélection.</li>
-                  <li>option <code>--saufAllies</code> permet d'exclure les alliés de la sélection (voir plus haut pour la définition des alliés)</li>
+                  <li>option <code>--saufAllies</code> permet d'exclure les alliés de la sélection (voir plus haut pour la définition des alliés).</li>
                 </ul>
                 <p id="exemple_equipe"><img class="img-fluid" src="https://i.imgur.com/WHfwsKo.png" data-href="https://i.imgur.com/WHfwsKo.png"></p>
                 <figcaption>Exemple d'<i>handout</i> avec différentes équipes.</figcaption>
@@ -191,6 +190,7 @@
               <div class="decalage">
                 <p>Les scripts supportent l'utilisation de la règle des points de chance, des points de récupérations, des points de mana (et de magie puissante ou rapide).</p>
                 <p>J'ai aussi choisi, comme proposé par Kegron, de diminuer la DEF de tous les protagonistes après un certain nombre de tours de combat (-2 tous les 5 tours).</p>
+                <p>Le script utilise aussi une règle de blessures graves : chaque fois qu'un personnage reçoit plus de DM que la somme de sa constitution et de son niveau, ou qu'il tombe à 0 PV, il encaisse une perte d'un point de récupération. Si il était à 0 points de récupération, il devient gravement blessé, ce qui le rend <i>affaibli</i>. Si le personnage était déjà gravement blessé, mais qu'il lui reste des PV, il tombe inconscient, et sinon, il meurt. Pour récupérer d'une blessure grave, le personnage doit se reposer une nuit, et réussir un test de CON difficulté 8 (avec le d12). Il est impossible de régénérer les points de récupération quand on est gravement blessé.<p>
               </div>
             </div>
             <h2 class="text-primary" id="action_principales">3. Actions principales</h2>
@@ -453,10 +453,11 @@
                     <li>paralysé : <tt>fishing-net</tt></li>
                     <li>endormi : <tt>sleepy</tt></li>
                     <li>apeuré : <tt>screaming</tt></li>
-                    <li>invisible: <tt>ninja-mask</tt></li>
+                    <li>invisible : <tt>ninja-mask</tt></li>
+                    <li>gravement blessé : <tt>arrowed</tt></li>
                   </ul>
                   <!-- pénombre (-5 att. distance) : pas encore dans la liste -->
-                  <p>Pour faciliter la gestion des états, j'utilise deux macros dans la barre du GM, <code>!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|endormi|apeure|invisible} true</code>, et la même avec <code>false</code>.<br />
+                  <p>Pour faciliter la gestion des états, j'utilise deux macros dans la barre du GM, <code>!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|endormi|apeure|invisible|blessé} true</code>, et la même avec <code>false</code>.<br />
                     Notez que si on se contente de changer le statut pour un token lié, le changement risque de ne pas être propagé au personnage (et donc serait perdu en cas de changement de carte).
                   </p>
                 </div>
