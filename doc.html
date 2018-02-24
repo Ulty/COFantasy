@@ -131,6 +131,7 @@
 									<li><a class="text-info" href="#Moine">Moine</a></li>
 									<li><a class="text-info" href="#Nécromancien">Nécromancien</a></li>
 									<li><a class="text-info" href="#Prêtre">Prêtre</a></li>
+									<li><a class="text-info" href="#Psionique">Psionique</a></li>
 									<li><a class="text-info" href="#Rôdeur">Rôdeur</a></li>
 									<li><a class="text-info" href="#Samouraï">Samouraï</a></li>
 									<li><a class="text-info" href="#Voleur">Voleur</a></li>
@@ -212,7 +213,7 @@
                         <figcaption>Exemple du Turn Order avec Aura</figcaption>
                       </li>
                       <li>
-                        <p>Si une "Abilities" dont le nom est <code>#TurnAction#</code> existe pour le personnage dont c'est le tour, celle-ci sera prise en compte et le joueur qui controle le personnage (ainsi que le MJ) recevra un chuchottement qui contiendra l'ensemble des %Ability et #Macro cliquables de <code>#TurnAction</code>.</p>
+                        <p>Si une "Abilities" dont le nom est <code>#TurnAction#</code> existe pour le personnage dont c'est le tour, celle-ci sera prise en compte et le joueur qui controle le personnage recevra un chuchottement qui contiendra l'ensemble des %Ability et #Macro cliquables de <code>#TurnAction</code>. Pour voir ce message en dehors du changement d'initiative, ou pour le MJ, on peut utiliser <code>!cof-turn-action</code> en sélectionnant le token (un bon candidat pour une macro de type token action).</p>
                         <p><img class="img-fluid" src="https://i.imgur.com/tTfFoPW.png" data-href="https://i.imgur.com/tTfFoPW.png"></p>
                         <figcaption>Exemple d'une macro #TurnAction#</figcaption>
                       </li>
@@ -1091,6 +1092,34 @@
                   <li><strong>Messie</strong> : aucun support.</li>
                 </ol>
               </div>
+              <h3 class="text-info" id="Psionique">Psionique</h3>
+              <div class="decalage">
+                <h4 class="text-secondary">Voie de l'attaque mentale</h4>
+                <ol>
+                  <li><strong>Attaque mentale</strong> : faire 2 attaques, une pour les DMs léthaux, avec les options <code>--sortilege --attaqueMentale</code> et l'autre avec l'option supplémentaire <code>--tempDmg</code>.</li>
+                  <li><strong>Bouclier psi</strong> : </li>
+                </ol>
+                <h4 class="text-secondary">Voie du contrôle corporel</h4>
+                <ol>
+                  <li><strong>Proprioception</strong> :  </li>
+                  <li><strong>Trance de régénération</strong> : </li>
+                </ol>
+                <h4 class="text-secondary">Voie de l'empathie</h4>
+                <ol>
+                  <li><strong>Perception extra-sensorielle</strong> : </li>
+                  <li><strong>Défense intuitive</strong> : </li>
+                </ol>
+                <h4 class="text-secondary">Voie de la télékinésie</h4>
+                <ol>
+                  <li><strong>Manipulation à distance</strong> : pour les attaques à distance, le plus simple est d'utiliser une autre attaque en utilisant le score d'attaque magique et le bon modificateur de DMs.</li>
+                  <li><strong>Champ de protection</strong> : </li>
+                </ol>
+                <h4 class="text-secondary">Voie de la télépathie</h4>
+                <ol>
+                  <li><strong>Télépathie</strong> : </li>
+                  <li><strong>Radar mental</strong> : </li>
+                </ol>
+              </div>
               <h3 class="text-info" id="Rôdeur">Rôdeur</h3>
               <div class="decalage">
                 <h4 class="text-secondary">Voie de l'archer</h4>
@@ -1238,6 +1267,11 @@
                 <ol>
                   <li><strong>Résistance</strong> : ajouter les bonus sur la fiche</li>
                 </ol>
+                <h4 class="text-secondary">Tieflin</h4>
+                <ul>
+                  <li><a href="#Vision_dans_le_noir">Vision dans le noir</a>.</li>
+                  <li><strong>Résistance aux éléments</strong> : ajouter des attributs <code>RD_feu</code>, <code>RD_electrique</code> et <code>RD_froid</code>, de valeur 5 (ou augmentée de 5)</li>
+                </ul>
               </div>
               <h3 class="text-info" id="Créatures">Voies de créatures</h3>
               <div class="decalage">

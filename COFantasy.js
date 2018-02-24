@@ -32,6 +32,7 @@ var COFantasy = COFantasy || function() {
   var HISTORY_SIZE = 150;
   var BLESSURESGRAVES = true; //Si les DMs dépassent CON+niveau, ou si on arrive
   //à 0 PV, on perd un PR, et si plus de PR, affaibli.
+  var MONTRER_TURNACTION_AU_MJ = false;
   var eventHistory = [];
   var updateNextInitSet = new Set();
 
@@ -80,18 +81,19 @@ var COFantasy = COFantasy || function() {
     sendChat("COFantasy", msg);
   }
 
-  // retourne un tableau contenant la liste des ID de joueurs controlant le personnage lié au Token
+  // retourne un tableau contenant la liste des ID de joueurs connectés controlant le personnage lié au Token
   function getPlayerIds(perso) {
-    var player_ids = [];
     var character = getObj('character', perso.charId);
-    var char_controlledby = character.get('controlledby');
-    if (char_controlledby === '') return player_ids;
-    _.each(char_controlledby.split(","), function(controlledby) {
+    if (character === undefined) return;
+    var charControlledby = character.get('controlledby');
+    if (charControlledby === '') return [];
+    var playerIds = [];
+    charControlledby.split(",").forEach(function(controlledby) {
       var player = getObj('player', controlledby);
       if (player === undefined) return;
-      player_ids.push(controlledby);
+      if (player.get('online')) playerIds.push(controlledby);
     });
-    return player_ids;
+    return playerIds;
   }
 
   function getPictoStyleFromCommand(fullCommand, perso) {
@@ -1048,6 +1050,7 @@ var COFantasy = COFantasy || function() {
         case "demiAuto":
         case "feinte":
         case "artificiel":
+        case "attaqueMentale":
           options[cmd[0]] = true;
           return;
         case "imparable": //deprecated
@@ -6715,11 +6718,110 @@ var COFantasy = COFantasy || function() {
     } else token.set('status_flying-flag', true);
   }
 
-  function removeToken_FlagAura(token) {
+  function removeTokenFlagAura(token) {
     if (aura_token_on_turn) {
       token.set('aura2_radius', '');
       token.set('showplayers_aura2', false);
     } else token.set('status_flying-flag', false);
+  }
+
+  function turnAction(perso, playerId) {
+    // Toutes les Abilities du personnage lié au Token
+    var abilities = findObjs({
+      _type: 'ability',
+      _characterid: perso.charId,
+    });
+    //On recherche dans le Personnage s'il a une "Ability" dont le nom est "#TurnAction#".
+    var TurnAction = abilities.filter(function(a) {
+      return a.get('name') == '#TurnAction#';
+    });
+    //Si elle existe, on lui chuchotte son exécution 
+    if (TurnAction.length > 0) {
+      // on récupère la valeur de l'action dont chaque Macro #/Ability % est mis dans un tableau 'action'
+      var actions = TurnAction[0].get('action').replace(/\n/gm, '').replace(/\r/gm, '').replace(/%/g, '\n%').replace(/#/g, '\n#').split("\n");
+      var nBfound = 0;
+      var ligne = '';
+      if (actions.length > 0) {
+        // Toutes les Macros
+        var macros = findObjs({
+          _type: 'macro'
+        });
+        var found;
+        var style = '',
+          command = '';
+        // On recherche si l'action existe (Ability % ou Macro #)
+        actions.forEach(function(action, i) {
+          action = action.trim();
+          if (action.length > 0) {
+            var actionCmd = action.split(' ')[0];
+            var actionText = action.replace(/-/g, ' ').replace(/_/g, ' ');
+            found = false;
+            if (actionCmd.startsWith('%')) {
+              actionCmd = actionCmd.substr(1);
+              actionText = actionText.substr(1);
+              abilities.forEach(function(abilitie, index) {
+                if (found) return;
+                if (abilitie.get('name') === actionCmd) {
+                  // l'ability existe
+                  found = true;
+                  nBfound++;
+                  command = abilitie.get('action').trim();
+                  ligne += bouton(command, actionText, perso, false) + '<br />';
+                }
+              });
+            } else if (actionCmd.startsWith('#')) {
+              actionCmd = actionCmd.substr(1);
+              actionText = actionText.substr(1);
+              macros.forEach(function(macro, index) {
+                if (found) return;
+                if (macro.get('name') === actionCmd) {
+                  found = true;
+                  nBfound++;
+                  command = macro.get('action').trim();
+                  ligne += bouton(command, actionText, perso, false) + '<br />';
+                }
+              });
+            }
+            // Si on a toujours rien trouvé, on ajoute un petit log
+            if (!found) {
+              log('Ability et Macro non trouvé : ' + action);
+            }
+          }
+        });
+      }
+      if (nBfound > 0) {
+        // on envoie la liste aux joueurs qui gèrent le personnage dont le token est lié
+        var last_playerid;
+        var title = 'Actions possibles :';
+        // on récupère les players_ids qui controllent le Token
+        var player_ids;
+        if (playerId) player_ids = [playerId];
+        else player_ids = getPlayerIds(perso);
+        if (player_ids.length > 0) {
+          _.each(player_ids, function(playerid) {
+            last_playerid = playerid;
+
+            var display = startFramedDisplay(playerid, title, perso, false, true);
+            addLineToFramedDisplay(display, ligne);
+            sendChat('', endFramedDisplay(display));
+          });
+        }
+        // En prime, on l'envoie au MJ, si besoin
+        if (MONTRER_TURNACTION_AU_MJ || player_ids.length === 0) {
+          var display = startFramedDisplay(last_playerid, title, perso, false, 'gm');
+          addLineToFramedDisplay(display, ligne);
+          sendChat('', endFramedDisplay(display));
+        }
+      }
+    }
+  }
+
+  function apiTurnAction(msg) {
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(perso) {
+        turnAction(perso, msg.playerid);
+      });
+    });
   }
 
   function setActiveToken(tokenId, evt) {
@@ -6733,8 +6835,7 @@ var COFantasy = COFantasy || function() {
         affectToken(prevToken, 'aura2_radius', prevToken.get('aura2_radius'), evt);
         affectToken(prevToken, 'aura2_color', prevToken.get('aura2_color'), evt);
         affectToken(prevToken, 'showplayers_aura2', prevToken.get('showplayers_aura2'), evt);
-
-        removeToken_FlagAura(prevToken);
+        removeTokenFlagAura(prevToken);
       } else {
         if (pageId) {
           prevToken = findObjs({
@@ -6757,121 +6858,30 @@ var COFantasy = COFantasy || function() {
           affectToken(o, 'aura2_radius', o.get('aura2_radius'), evt);
           affectToken(o, 'aura2_color', o.get('aura2_color'), evt);
           affectToken(o, 'showplayers_aura2', o.get('showplayers_aura2'), evt);
-
-          removeToken_FlagAura(o);
+          removeTokenFlagAura(o);
         });
       }
     }
     if (tokenId) {
-      var act = tokenOfId(tokenId, tokenId);
-      if (act) {
-        var token = act.token;
-        var tokenName = token.get('name');
-        var charId = act.charId;
+      var perso = tokenOfId(tokenId, tokenId);
+      if (perso) {
+        var token = perso.token;
+        var charId = perso.charId;
         // personnage lié au Token
         affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
         affectToken(token, 'aura2_radius', token.get('aura2_radius'), evt);
         affectToken(token, 'aura2_color', token.get('aura2_color'), evt);
         affectToken(token, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
-        setTokenFlagAura(act);
+        setTokenFlagAura(perso);
         state.COFantasy.activeTokenId = tokenId;
-        state.COFantasy.activeTokenName = tokenName;
-        //On recherche dans le Personnage s'il a une "Ability" dont le nom est "#TurnAction#".
-        var TurnAction = findObjs({
-          _type: 'ability',
-          _characterid: charId,
-          name: '#TurnAction#'
-        });
-        //Si elle existe, on lui chuchotte son exécution 
-        if (TurnAction.length > 0) {
-          // on récupère la valeur de l'action dont chaque Macro #/Ability % est mis dans un tableau 'action'
-          var actions = TurnAction[0].get('action').replace(/\n/gm, '').replace(/\r/gm, '').replace(/%/g, '\n').replace(/#/g, '\n').split("\n");
-          var nBfound = 0;
-          var ligne = '';
-          if (actions.length > 0) {
-            // Toutes les Macros
-            var macros = findObjs({
-              _type: 'macro'
-            });
-            // Toutes les Abilities du personnage lié au Token
-            var abilities = findObjs({
-              _type: 'ability',
-              _characterid: charId,
-            });
-            var found;
-            var style = '',
-              command = '';
-            // On recherche si l'action existe (Ability % ou Macro #)
-            actions.forEach(function(action, i) {
-              action = action.trim();
-              if (action.length > 0) {
-                var action_text = action.replace(/-/g, ' ').replace(/_/g, ' ');
-                found = false;
-                // on recherche en premier dans toutes les Abilities du personnage
-                abilities.forEach(function(abilitie, index) {
-                  if (abilitie.get('name') === action) {
-                    // l'ability existe
-                    found = true;
-                    nBfound++;
-                    command = abilitie.get('action').trim();
-                    ligne += bouton(command, action_text, act, false) + '<br />';
-                    return;
-                  }
-                });
-                if (found === false) {
-                  // Si pas trouvé, on recherche alors dans toutes les Macros, en toute simplicité j'ai envie de dire xD
-                  macros.forEach(function(macro, index) {
-                    if (macro.get('name') === action) {
-                      // la Macro existe
-                      found = true;
-                      nBfound++;
-                      command = macro.get('action').trim();
-                      ligne += bouton(command, action_text, act, false) + '<br />';
-                      return;
-                    }
-                  });
-                }
-                // Si on a toujours rien trouvé, on ajoute un petit log
-                if (found === false) {
-                  log('Ability et Macro non trouvé : ' + action);
-                }
-              }
-            });
-          }
-          if (nBfound > 0) {
-            // on envoie la liste aux joueurs qui gèrent le personnage dont le token est lié
-            charId = token.get('represents');
-            // token non lié
-            if (charId === '') return;
-            var perso = {
-              token: token,
-              charId: charId
-            };
-            var last_playerid;
-            var title = 'Actions possibles :';
-            // on récupère les players_ids qui controllent le Token
-            var player_ids = getPlayerIds(perso);
-            if (player_ids.length > 0) {
-              _.each(player_ids, function(playerid) {
-                last_playerid = playerid;
-
-                var display = startFramedDisplay(playerid, title, perso, false, true);
-                addLineToFramedDisplay(display, ligne);
-                sendChat('', endFramedDisplay(display));
-              });
-            }
-            // En prime, on l'envoie au MJ
-            var display = startFramedDisplay(last_playerid, title, perso, false, 'gm');
-            addLineToFramedDisplay(display, ligne);
-            sendChat('', endFramedDisplay(display));
-          }
-        }
+        state.COFantasy.activeTokenName = token.get('name');
+        turnAction(perso);
         // Gestion de la confusion
-        if (attributeAsBool(act, "confusion")) {
+        if (attributeAsBool(perso, "confusion")) {
           //Une chance sur deux de ne pas agir
           if (randomInteger(2) < 2) {
             sendChar(charId, "est en pleine confusion. Il ne fait rien ce tour");
-            removeToken_FlagAura(token);
+            removeTokenFlagAura(token);
           } else {
             //Trouver la créature la plus proche
             var closestToken;
@@ -6919,7 +6929,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         //On enlève aussi les états qui ne durent qu'un tour
-        var defenseTotale = tokenAttribute(act, 'defenseTotale');
+        var defenseTotale = tokenAttribute(perso, 'defenseTotale');
         if (defenseTotale.length > 0) {
           defenseTotale = defenseTotale[0];
           var tourDefTotale = defenseTotale.get('max');
@@ -7081,46 +7091,48 @@ var COFantasy = COFantasy || function() {
   }
 
   function attendreInit(msg) {
-    if (msg.selected === undefined) {
-      error("La fonction !cof-attendre : rien à faire, pas de token selectionné", msg);
-      return;
-    }
-    var cmd = msg.content.split(' ');
-    if (cmd.length < 2) {
-      error("Attendre jusqu'à quelle initiative ?", cmd);
-      return;
-    }
-    var newInit = parseInt(cmd[1]);
-    if (isNaN(newInit) || newInit < 1) {
-      error("On ne peut attendre que jusqu'à une initiative de 1", cmd);
-      newInit = 1;
-    }
-    var evt = {
-      type: "attente"
-    };
-    var to = getTurnOrder(evt);
-    iterSelected(msg.selected, function(perso) {
-      var charId = perso.charId;
-      var token = perso.token;
-      if (!isActive(perso)) return;
-      var tokenPos =
-        to.pasAgi.findIndex(function(elt) {
-          return (elt.id == token.id);
-        });
-      if (tokenPos == -1) { // token ne peut plus agir
-        sendChar(charId, " a déjà agit ce tour");
+    getSelected(msg, function(selected) {
+      if (selected === undefined || selected.length === 0) {
+        error("La fonction !cof-attendre : rien à faire, pas de token selectionné", msg);
         return;
       }
-      if (newInit < to.pasAgi[tokenPos].pr) {
-        to.pasAgi[tokenPos].pr = newInit;
-        sendChar(charId, " attend un peu avant d'agir...");
-        updateNextInit(token);
-      } else {
-        sendChar(charId, " a déjà une initiative inférieure à " + newInit);
+      var cmd = msg.content.split(' ');
+      if (cmd.length < 2) {
+        error("Attendre jusqu'à quelle initiative ?", cmd);
+        return;
       }
+      var newInit = parseInt(cmd[1]);
+      if (isNaN(newInit) || newInit < 1) {
+        error("On ne peut attendre que jusqu'à une initiative de 1", cmd);
+        newInit = 1;
+      }
+      var evt = {
+        type: "attente"
+      };
+      var to = getTurnOrder(evt);
+      iterSelected(selected, function(perso) {
+        var charId = perso.charId;
+        var token = perso.token;
+        if (!isActive(perso)) return;
+        var tokenPos =
+          to.pasAgi.findIndex(function(elt) {
+            return (elt.id == token.id);
+          });
+        if (tokenPos == -1) { // token ne peut plus agir
+          sendChar(charId, " a déjà agit ce tour");
+          return;
+        }
+        if (newInit < to.pasAgi[tokenPos].pr) {
+          to.pasAgi[tokenPos].pr = newInit;
+          sendChar(charId, " attend un peu avant d'agir...");
+          updateNextInit(token);
+        } else {
+          sendChar(charId, " a déjà une initiative inférieure à " + newInit);
+        }
+      });
+      setTurnOrder(to, evt);
+      addEvent(evt);
     });
-    setTurnOrder(to, evt);
-    addEvent(evt);
   }
 
   function containsEffectStartingWith(allAttrs, effet) {
@@ -7958,10 +7970,6 @@ var COFantasy = COFantasy || function() {
   }
 
   function degainer(msg) {
-    if (msg.selected === undefined || msg.selected.length === 0) {
-      error("Qui doit dégainer ?", msg);
-      return;
-    }
     var cmd = msg.content.split(' ');
     if (cmd.length < 2) {
       error("Pas assez d'arguments pour !cof-degainer", msg.content);
@@ -7969,46 +7977,52 @@ var COFantasy = COFantasy || function() {
     }
     var armeLabel = cmd[1];
     var evt = {
-      type: "other",
+      type: "Dégainer",
       attributes: []
     };
-    iterSelected(msg.selected, function(perso) {
-      var charId = perso.charId;
-      var attrs = attributesInitEnMain(charId);
-      attrs.forEach(function(attr) {
-        var cur = parseInt(attr.get('current'));
-        var attrN = labelInitEnMain(attr);
-        var att = getAttack(attrN, perso);
-        if (att === undefined) {
-          error("Init en main avec un label introuvable dans les armes", attr);
-          return;
-        }
-        var nomArme = att.weaponName;
-        if (attrN == armeLabel) {
-          if (cur === 0) {
-            sendChar(charId, "dégaine " + nomArme);
+    getSelected(msg, function(selected) {
+      if (selected === undefined || selected.length === 0) {
+        error("Qui doit dégainer ?", msg);
+        return;
+      }
+      iterSelected(selected, function(perso) {
+        var charId = perso.charId;
+        var attrs = attributesInitEnMain(charId);
+        attrs.forEach(function(attr) {
+          var cur = parseInt(attr.get('current'));
+          var attrN = labelInitEnMain(attr);
+          var att = getAttack(attrN, perso);
+          if (att === undefined) {
+            error("Init en main avec un label introuvable dans les armes", attr);
+            return;
+          }
+          var nomArme = att.weaponName;
+          if (attrN == armeLabel) {
+            if (cur === 0) {
+              sendChar(charId, "dégaine " + nomArme);
+              evt.attributes.push({
+                attribute: attr,
+                current: cur
+              });
+              attr.set('current', attr.get('max'));
+              updateNextInit(perso.token);
+              return;
+            }
+            sendChar(charId, "a déjà " + nomArme + " en main");
+            return;
+          }
+          if (cur !== 0) {
+            sendChar(charId, "rengaine " + nomArme);
             evt.attributes.push({
               attribute: attr,
               current: cur
             });
-            attr.set('current', attr.get('max'));
-            updateNextInit(perso.token);
-            return;
+            attr.set('current', 0);
           }
-          sendChar(charId, "a déjà " + nomArme + " en main");
-          return;
-        }
-        if (cur !== 0) {
-          sendChar(charId, "rengaine " + nomArme);
-          evt.attributes.push({
-            attribute: attr,
-            current: cur
-          });
-          attr.set('current', 0);
-        }
+        });
       });
+      if (evt.attributes.length > 0) addEvent(evt);
     });
-    if (evt.attributes.length > 0) addEvent(evt);
   }
 
   function echangeInit(msg) {
@@ -10067,7 +10081,7 @@ var COFantasy = COFantasy || function() {
         setTokenAttr(perso, 'dose_baie_magique', nbBaies, evt, undefined, mangerBaie);
         var line = nom + " reçoit une baie";
         if (perso.token.id == druide.token.id)
-          line = nom + " en garde une pour lui";
+          line = nom + " en garde une pour " + onGenre(druide.charId, "lui", "elle");
         addLineToFramedDisplay(display, line);
       });
       addEvent(evt);
@@ -10099,8 +10113,11 @@ var COFantasy = COFantasy || function() {
         if (limiteRessources(perso, options, 'baieMagique', "a déjà mangé une baie aujourd'hui. Pas d'effet.", evt)) return;
         var soins = randomInteger(6) + baie;
         soigneToken(perso, soins, evt, function(soinsEffectifs) {
-          sendChar(perso.charId, "mange une baie magique. Il est rassasié et récupère " + soinsEffectifs + " points de vie");
-        });
+            sendChar(perso.charId, "mange une baie magique. Il est rassasié et récupère " + soinsEffectifs + " points de vie");
+          },
+          function() {
+            sendChar(perso.charId, "mange une baie magique. " + onGenre(perso.charId, "Il", "Elle") + " se sent rassasié" + onGenre(perso.charId, '', 'e') + '.');
+          });
       });
       addEvent(evt);
     }); //fin de getSelected
@@ -10194,11 +10211,13 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "action défensive"
     };
-    initiative(msg.selected, evt);
-    iterSelected(msg.selected, function(perso) {
-      setTokenAttr(perso, 'defenseTotale', def, evt, defMsg, state.COFantasy.tour);
+    getSelected(msg, function(selected) {
+      initiative(selected, evt);
+      iterSelected(selected, function(perso) {
+        setTokenAttr(perso, 'defenseTotale', def, evt, defMsg, state.COFantasy.tour);
+      });
+      addEvent(evt);
     });
-    addEvent(evt);
   }
 
   function strangulation(msg) {
@@ -12011,6 +12030,28 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  //!cof-desarmer attaquant cible, optionellement un label d'arme
+  function desarmer(msg) {
+    var cmd = msg.content.split(' ');
+    if (cmd.length < 3) {
+      error("Il manque des arguments à !cof-desarmer", msg.content);
+      return;
+    }
+    var guerrier = tokenOfId(cmd[1], cmd[1]);
+    if (guerrier === undefined) {
+      error("Le premier argument de !cof-desarmer n'est pas un token valide", cmd);
+      return;
+    }
+    var cible = tokenOfId(cmd[2], cmd[2]);
+    if (cible === undefined) {
+      error("Le deuxième argument de !cof-desarmer n'est pas un token valide", cmd);
+      return;
+    }
+    //D'abord on cherche si le guerrier a une arme tenue en main
+    //sinon, on regarde si on a en argument un label d'arme
+    //sinon, on utilise simplement le score d'attaque
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -12076,6 +12117,9 @@ var COFantasy = COFantasy || function() {
         };
         initiative(msg.selected, evt);
         addEvent(evt);
+        return;
+      case "!cof-turn-action":
+        apiTurnAction(msg);
         return;
       case "!cof-attendre":
         attendreInit(msg);
@@ -12262,6 +12306,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-delivrance":
         delivrance(msg);
+        return;
+      case "!cof-desarmer":
+        desarmer(msg);
         return;
       default:
         return;
@@ -13420,7 +13467,11 @@ var COFantasy = COFantasy || function() {
   function renameToken(token, tokenName) {
     var charId = token.get('represents');
     if (charId === undefined || charId === '') return;
-    var perso = {token:token, tokName:tokenName, charId:charId};
+    var perso = {
+      token: token,
+      tokName: tokenName,
+      charId: charId
+    };
     //Vision
     var visionNoir = charAttributeAsInt(perso, 'visionDansLeNoir', 0);
     if (visionNoir > 0) {
@@ -13496,7 +13547,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = 0.9;
+  var script_version = 0.10;
   COF_loaded = true;
   on('add:token', COFantasy.addToken);
   state.COFantasy = state.COFantasy || {
