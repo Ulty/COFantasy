@@ -689,9 +689,16 @@ var COFantasy = COFantasy || function() {
         _characterid: perso.charId
       });
       abilities.forEach(function(a, i) {
-        var aName = '%' + a.get('name');
-        if (action.indexOf(aName) >= 0) {
-          action = action.replace(aName, a.get('action'));
+        var aName = a.get('name');
+        var daName = '%' + aName;
+        if (action.indexOf(daName) >= 0) {
+          action = action.replace(daName, a.get('action'));
+          if (!remplacement) abilities = abilities.splice(i); //Pour éviter la récursion
+          remplacement = true;
+        }
+        daName = '%{selected|' + aName + '}';
+        if (action.indexOf(daName) >= 0) {
+          action = action.replace(daName, a.get('action'));
           if (!remplacement) abilities = abilities.splice(i); //Pour éviter la récursion
           remplacement = true;
         }
@@ -1803,17 +1810,13 @@ var COFantasy = COFantasy || function() {
       init += getValeurOfEffet(perso, 'masqueDuPredateur', modCarac(perso, 'SAGESSE'));
     }
     // Voie du pistolero rang 1 (plus vite que son ombre)
-    attributesInitEnMain(charId).forEach(function(em) {
-      var armeL = labelInitEnMain(em);
+    var armeEnMain = tokenAttribute(perso, 'armeEnMain');
+    if (armeEnMain.length > 0) {
+      var armeL = armeEnMain[0].get('current');
       if (charAttributeAsInt(perso, "charge_" + armeL, 0) > 0) {
-        var initBonus = parseInt(em.get('current'));
-        if (isNaN(initBonus) || initBonus < 0) {
-          error("initBonusEnMain incorrect :" + initBonus, em);
-          return;
-        }
-        init += initBonus;
+        init += charAttributeAsInt(perso, 'initEnMain'+armeL, 0);
       }
-    });
+    }
     return init;
   }
 
@@ -2652,6 +2655,10 @@ var COFantasy = COFantasy || function() {
     var evt = options.evt || {
       type: "Tentative d'attaque"
     }; //the event to be stored in history
+    //On met à jour l'arme en main, si nécessaire
+    if (weaponStats.divers && weaponStats.divers.toLowerCase().includes('arme')) {
+      degainerArme(attaquant, attackLabel, evt);
+    }
     //On fait les tests pour les cibles qui bénéficieraient d'un sanctuaire
     var ciblesATraiter = cibles.length;
     var attaqueImpossible = false;
@@ -7212,6 +7219,11 @@ var COFantasy = COFantasy || function() {
         return (attrName.startsWith("repeating_armes_") &&
           attrName.endsWith("_armenom"));
       });
+      var armeEnMain =
+        attrsChar.find(function(a) {
+          return a.get('name') == 'armeEnMain';
+        });
+      if (armeEnMain) armeEnMain = armeEnMain.get('current');
       attrsArmes.forEach(function(attr) {
         var nomArme = attr.get('current');
         var armeLabel = nomArme.split(' ', 1)[0];
@@ -7229,21 +7241,12 @@ var COFantasy = COFantasy || function() {
             } else if (charge > 1) {
               line = nomArme + " contient encore " + charge + " charges";
             }
-            var enMain =
-              findObjs({
-                _type: "attribute",
-                _characterid: charId,
-                name: "initEnMain" + armeLabel
-              });
-            if (enMain.length > 0) {
-              enMain = parseInt(enMain[0].get('current'));
-              if (!isNaN(enMain)) {
-                if (enMain === 0) line += ", pas en main";
-                else if (enMain > 0) line += " et en main";
-              }
-            }
+            if (armeEnMain == armeLabel) line += " et en main";
+            else line += ", pas en main";
             addLineToFramedDisplay(display, line);
           }
+        } else if (armeEnMain == armeLabel) {
+          addLineToFramedDisplay(display, "tiens " + nomArme + " en main.");
         }
         if (attributeAsBool(perso, 'poisonRapide_' + armeLabel)) {
           addLineToFramedDisplay(display, nomArme + " est enduit de poison.");
@@ -7953,29 +7956,52 @@ var COFantasy = COFantasy || function() {
     updateNextInitSet.add(token.id);
   }
 
-  function attributesInitEnMain(charId) {
-    var attrs = findObjs({
-      _type: 'attribute',
-      _characterid: charId
-    });
-    attrs = attrs.filter(function(obj) {
-      return (obj.get('name').startsWith('initEnMain'));
-    });
-    return attrs;
-  }
-
-  function labelInitEnMain(attr) {
-    var attrN = attr.get('name').substring(10);
-    return attrN;
+  //renvoie le nom de l'arme si l'arme est déjà tenue en main
+  function degainerArme(perso, labelArme, evt) {
+    //D'abord, on rengaine l'arme en main, si besoin.
+    var armeActuelle = tokenAttribute(perso, 'armeEnMain');
+    var labelArmeActuelle;
+    if (armeActuelle.length > 0) {
+      armeActuelle = armeActuelle[0];
+      labelArmeActuelle = armeActuelle.get('current');
+      var attActuelle = getAttack(labelArmeActuelle, perso);
+      if (labelArmeActuelle == labelArme) {
+        //Pas besoin de dégainer. Pas de message ?
+        if (attActuelle) return attActuelle.weaponName;
+        return;
+      }
+      if (attActuelle) {
+        sendChar(perso.charId, "rengaine " + attActuelle.weaponName);
+      }
+    } else armeActuelle = undefined;
+    //Puis on dégaine
+    //On vérifie que l'arme existe
+    var att = getAttack(labelArme, perso);
+    if (att === undefined) {
+      if (armeActuelle) removeTokenAttr(perso, 'armeEnMain', evt);
+      return;
+    }
+    if (armeActuelle) {
+      evt.attributes = evt.attributes || [];
+      evt.attributes.push({
+        attribute: armeActuelle,
+        current: labelArmeActuelle,
+        max: ''
+      });
+      armeActuelle.set('current', labelArme);
+      sendChar(perso.charId, "dégaine " + att.weaponName);
+    } else {
+      setTokenAttr(perso, 'armeEnMain', labelArme, evt, "dégaine " + att.weaponName);
+    }
+    if (charAttributeAsInt(perso, "initEnMain" + labelArme, 0) > 0)
+      updateNextInit(perso.token);
+    return;
   }
 
   function degainer(msg) {
     var cmd = msg.content.split(' ');
-    if (cmd.length < 2) {
-      error("Pas assez d'arguments pour !cof-degainer", msg.content);
-      return;
-    }
-    var armeLabel = cmd[1];
+    var armeLabel = '';
+    if (cmd.length > 1) armeLabel = cmd[1];
     var evt = {
       type: "Dégainer",
       attributes: []
@@ -7986,40 +8012,8 @@ var COFantasy = COFantasy || function() {
         return;
       }
       iterSelected(selected, function(perso) {
-        var charId = perso.charId;
-        var attrs = attributesInitEnMain(charId);
-        attrs.forEach(function(attr) {
-          var cur = parseInt(attr.get('current'));
-          var attrN = labelInitEnMain(attr);
-          var att = getAttack(attrN, perso);
-          if (att === undefined) {
-            error("Init en main avec un label introuvable dans les armes", attr);
-            return;
-          }
-          var nomArme = att.weaponName;
-          if (attrN == armeLabel) {
-            if (cur === 0) {
-              sendChar(charId, "dégaine " + nomArme);
-              evt.attributes.push({
-                attribute: attr,
-                current: cur
-              });
-              attr.set('current', attr.get('max'));
-              updateNextInit(perso.token);
-              return;
-            }
-            sendChar(charId, "a déjà " + nomArme + " en main");
-            return;
-          }
-          if (cur !== 0) {
-            sendChar(charId, "rengaine " + nomArme);
-            evt.attributes.push({
-              attribute: attr,
-              current: cur
-            });
-            attr.set('current', 0);
-          }
-        });
+        var nomArme = degainerArme(perso, armeLabel, evt);
+        if (nomArme) sendChar(perso.charId, "a déjà " + nomArme + " en main");
       });
       if (evt.attributes.length > 0) addEvent(evt);
     });

@@ -384,6 +384,15 @@
                   Recharge l'arme <i>N</i> (augmente les charges d'un). Les armes sont toutes rechargées à la fin d'un combat.
                 </p>
               </div>
+              <h4 class="text-secondary">Dégainer une arme : <code>!cof-degainer <i>N</i></code></h4>
+              <div class="decalage">
+                <p>Pour certaines capacités, (commme <strong>Plus vite que son ombre</strong> ou <strong>Désarmer</strong>), il peut être utile de savoir quelle arme est en main. Pour cela, le script peut utiliser deux méthodes&nbsp;:
+                <ul>
+                  <li><code>!cof-degainer <i>L</i></code> où <i>L</i> est le label d'une des attaques sur la fiche de personnage : cela fait rengainer l'arme en main et dégainer l'arme correspondant à cette attaque. Si le label ne correspond à aucune attaque (ou qu'on ne donne pas de label), l'action fait rengainer l'arme en main.</li>
+                  <li>Si on attaque avec <code>!cof-attack <i>tok1 tok2 L</i></code>, et que l'attaque de label <code><i>L</i></code> contient le mot <code>arme</code> dans le champ <code>SPÉCIAL</code>, alors on considère qu'on doit dégainer cette arme pour pouvoir l'utiliser. Le script envoie le message et considère ensuite l'arme comme étant en main, au MJ de vérifier que le joueur dispose bien d'une action de mouvement pour le faire.</li>
+                </ul>
+                </p>
+              </div>
               <h4 class="text-secondary">Dégâts directs (sans attaquant, ou aire d'effet trop complexe pour !cof-attack) : <code>!cof-dmg <i>dm</i></code></h4>
               <div class="decalage">
                 <p>Applique des dégâts à tous les tokens sélectionnés. L'argument <i>dm</i> peut être un inline roll. Utile par exemple pour les chutes, ou bien les dégâts d'environnement, voire de pièges.<br />
@@ -595,9 +604,9 @@
                   <li>
                     <strong>Plus vite que son ombre</strong> :
                     <ul>
-                      <li>ajouter un attribut <code>iniEnMain<i>N</i></code>, où <i>N</i> est le numéro d'une attaque avec arme à poudre</li>
+                      <li>ajouter un attribut <code>iniEnMain<i>N</i></code>, où <i>N</i> est le numéro d'une attaque avec arme à poudre, avec comme valeur 10</li>
                       <li>utiliser <code>!cof-degainer <i>N</i></code> pour avoir en main l'arme <i>N</i></li>
-                      <li>exemple : <code>!cof-degainer ?{Arme en main ?|Pétoire,0|Épée,1|Aucune,-1}</code> avec <code>initEnMain0</code> = 0/10, il passe à 10/10 si on degaine l'arme 0.</li>
+                      <li>exemple : <code>!cof-degainer ?{Arme en main ?|Pétoire,0|Épée,1|Aucune,-1}</code> avec <code>initEnMain0</code> = 10.</li>
                     </ul>
                   </li>
                   <li><strong>Cadence de tir</strong>: ok</li>
