@@ -1814,7 +1814,7 @@ var COFantasy = COFantasy || function() {
     if (armeEnMain.length > 0) {
       var armeL = armeEnMain[0].get('current');
       if (charAttributeAsInt(perso, "charge_" + armeL, 0) > 0) {
-        init += charAttributeAsInt(perso, 'initEnMain'+armeL, 0);
+        init += charAttributeAsInt(perso, 'initEnMain' + armeL, 0);
       }
     }
     return init;
@@ -5224,7 +5224,8 @@ var COFantasy = COFantasy || function() {
       var charId = obj.get('characterid');
       if (estEffetTemp(attrName)) {
         finDEffet(obj, effetTempOfAttribute(obj), attrName, charId, evt, {
-          gardeAutresAttributs: true
+          gardeAutresAttributs: true,
+        //  pageId: state.COFantasy.combat_pageid //l'id pourrait avoir changé
         });
       } else if (estAttributEffetTemp(attrName)) {
         evt.deletedAttributes.push(obj);
@@ -11968,7 +11969,8 @@ var COFantasy = COFantasy || function() {
       addLineToFramedDisplay(display, "La cible " + message);
     };
     var optFin = {
-      print: printEffet
+      print: printEffet,
+      pageId: options.pageId
     };
     _.each(messageEffetTemp, function(effet, nomEffet) {
       if (effet.prejudiciable) {
@@ -12042,7 +12044,15 @@ var COFantasy = COFantasy || function() {
       return;
     }
     //D'abord on cherche si le guerrier a une arme tenue en main
+    var attGuerrier;
+    var armeGuerrier = tokenAttribute(guerrier, 'armeEnMain');
+    if (armeGuerrier.length > 0) {
+      armeGuerrier = armeGuerrier[0].get('current');
+      attGuerrier = getAttack(armeGuerrier, guerrier);
+    }
     //sinon, on regarde si on a en argument un label d'arme
+    if (attGuerrier === undefined && cmd.length > 3)
+      attGuerrier = getAttack(cmd[3], guerrier);
     //sinon, on utilise simplement le score d'attaque
   }
 
@@ -12711,18 +12721,36 @@ var COFantasy = COFantasy || function() {
   }
 
   // Fait foo sur tous les tokens représentant charId, ayant l'effet donné, et correspondant au nom d'attribut. Pour le cas où le token doit être lié au personnage, on ne prend qu'un seul token, sauf si filterUnique est défini, auquel cas on  fait l'appel sur tous les tokens qui passent filterUnique
-  function iterTokensOfEffet(charId, effet, attrName, foo, filterUnique) {
+  function iterTokensOfEffet(charId, pageId, effet, attrName, foo, filterUnique) {
     var total = 1; //Nombre de tokens affectés, pour gérer l'asynchronie si besoin
     if (attrName == effet) { //token lié au character
-      var tokens =
-        findObjs({
-          _type: 'graphic',
-          _subtype: 'token',
-          represents: charId
+      var tokens;
+      if (pageId) {
+        tokens =
+          findObjs({
+            _type: 'graphic',
+            _subtype: 'token',
+            _pageid: pageId,
+            represents: charId
+          });
+      } else {
+        tokens =
+          findObjs({
+            _type: 'graphic',
+            _subtype: 'token',
+            represents: charId
+          });
+        tokens = tokens.filter(function(tok) {
+          if (tok.get('bar1_link') === '') return false;
+          var pid = tok.get('pageid');
+          var page = getObj('page', pid);
+          if (page) {
+            if (page.get('archived')) return false;
+            return true;
+          }
+          return false;
         });
-      tokens = tokens.filter(function(tok) {
-        return (tok.get('bar1_link') !== '');
-      });
+      }
       if (tokens.length === 0) {
         log("Pas de token pour un personnage");
         log(charId);
@@ -12737,14 +12765,36 @@ var COFantasy = COFantasy || function() {
       } else foo(tokens[0], 1);
     } else { //token non lié au character
       var tokenName = attrName.substring(attrName.indexOf('_') + 1);
-      var tNames =
-        findObjs({
-          _type: 'graphic',
-          _subtype: 'token',
-          represents: charId,
-          name: tokenName,
-          bar1_link: ''
+      var tNames;
+      if (pageId) {
+        tNames =
+          findObjs({
+            _type: 'graphic',
+            _subtype: 'token',
+            _pageId: pageId,
+            represents: charId,
+            name: tokenName,
+            bar1_link: ''
+          });
+      } else {
+        tNames =
+          findObjs({
+            _type: 'graphic',
+            _subtype: 'token',
+            represents: charId,
+            name: tokenName,
+            bar1_link: ''
+          });
+        tNames = tNames.filter(function(tok) {
+          var pid = tok.get('pageid');
+          var page = getObj('page', pid);
+          if (page) {
+            if (page.get('archived')) return false;
+            return true;
+          }
+          return false;
         });
+      }
       total = tNames.length;
       if (total > 1) {
         var character = getObj('character', charId);
@@ -12797,7 +12847,7 @@ var COFantasy = COFantasy || function() {
           normalToken = JSON.parse(normalToken);
           var largeWidth = normalToken.width + normalToken.width / 2;
           var largeHeight = normalToken.height + normalToken.height / 2;
-          iterTokensOfEffet(charId, effet, attrName, function(token) {
+          iterTokensOfEffet(charId, options.pageId, effet, attrName, function(token) {
               var width = token.get('width');
               var height = token.get('height');
               affectToken(token, 'width', width, evt);
@@ -12814,7 +12864,7 @@ var COFantasy = COFantasy || function() {
         });
         break;
       case 'aveugleTemp':
-        iterTokensOfEffet(charId, effet, attrName, function(token) {
+        iterTokensOfEffet(charId, options.pageId, effet, attrName, function(token) {
           setState({
             token: token,
             charId: charId
@@ -12824,7 +12874,7 @@ var COFantasy = COFantasy || function() {
         });
         break;
       case 'ralentiTemp':
-        iterTokensOfEffet(charId, effet, attrName, function(token) {
+        iterTokensOfEffet(charId, options.pageId, effet, attrName, function(token) {
           setState({
             token: token,
             charId: charId
@@ -12835,7 +12885,7 @@ var COFantasy = COFantasy || function() {
         break;
       case 'peur':
       case 'peurEtourdi':
-        iterTokensOfEffet(charId, effet, attrName, function(token) {
+        iterTokensOfEffet(charId, options.pageId, effet, attrName, function(token) {
           setState({
             token: token,
             charId: charId
@@ -12846,12 +12896,12 @@ var COFantasy = COFantasy || function() {
         break;
       case 'ombreMortelle':
       case 'dedoublement':
-        iterTokensOfEffet(charId, effet, attrName, function(token) {
+        iterTokensOfEffet(charId, options.pageId, effet, attrName, function(token) {
           token.remove();
         });
         break;
       case 'murDeForce':
-        iterTokensOfEffet(charId, effet, attrName, function(token) {
+        iterTokensOfEffet(charId, options.pageId, effet, attrName, function(token) {
           var attr = tokenAttribute({
             charId: charId,
             token: token
@@ -12865,7 +12915,7 @@ var COFantasy = COFantasy || function() {
         });
         break;
       case 'regeneration': //faire les soins restants
-        iterTokensOfEffet(charId, effet, attrName,
+        iterTokensOfEffet(charId, options.pageId, effet, attrName,
           function(token) {
             var toursRestant = attr.get('current');
             if (toursRestant == 'tourFinal' || isNaN(toursRestant)) return;
@@ -12904,7 +12954,7 @@ var COFantasy = COFantasy || function() {
             ab.remove();
           }
         );
-        iterTokensOfEffet(charId, effet, attrName, function(token) {
+        iterTokensOfEffet(charId, options.pageId, effet, attrName, function(token) {
           removeFromTurnTracker(token.id, evt);
           setToken(token, 'bar1_link', '', evt);
           setToken(token, 'bar1_value', '', evt);
@@ -12951,7 +13001,7 @@ var COFantasy = COFantasy || function() {
     options = options || {};
     msg = msg || '';
     var count = -1;
-    iterTokensOfEffet(charId, effet, attrName, function(token, total) {
+    iterTokensOfEffet(charId, undefined, effet, attrName, function(token, total) {
       if (count < 0) count = total;
       sendChat('', "[[" + dmg + "]]", function(res) {
         var rolls = res[0];
@@ -12981,7 +13031,7 @@ var COFantasy = COFantasy || function() {
     options = options || {};
     msg = msg || '';
     var count = -1;
-    iterTokensOfEffet(charId, effet, attrName, function(token, total) {
+    iterTokensOfEffet(charId, undefined, effet, attrName, function(token, total) {
       if (count < 0) count = total;
       var perso = {
         token: token,
@@ -13058,7 +13108,7 @@ var COFantasy = COFantasy || function() {
         var attrName = attr.get('name');
         var v = attr.get('current');
         if (v == 'tourFinal') { //L'effet arrive en fin de vie, doit être supprimé
-          finDEffet(attr, effet, attrName, charId, evt);
+          finDEffet(attr, effet, attrName, charId, evt, {pageId:pageId});
           count--;
         } else { //Effet encore actif
           evt.attributes.push({
@@ -13323,7 +13373,7 @@ var COFantasy = COFantasy || function() {
         var effet = attrName.substring(0, indexSave);
         attrName = effet + attrName.substr(indexSave + 11);
         var token;
-        iterTokensOfEffet(charId, effet, attrName, function(tok) {
+        iterTokensOfEffet(charId, pageId, effet, attrName, function(tok) {
           if (token === undefined) token = tok;
         });
         if (token === undefined) {
@@ -13373,7 +13423,8 @@ var COFantasy = COFantasy || function() {
           function(reussite) { //asynchrone
             if (reussite) {
               finDEffet(attrEffet, effet, attrName, charId, evt, {
-                attrSave: attr
+                attrSave: attr,
+                pageId: pageId
               });
             }
             count--;
