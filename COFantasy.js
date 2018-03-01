@@ -5225,7 +5225,7 @@ var COFantasy = COFantasy || function() {
       if (estEffetTemp(attrName)) {
         finDEffet(obj, effetTempOfAttribute(obj), attrName, charId, evt, {
           gardeAutresAttributs: true,
-        //  pageId: state.COFantasy.combat_pageid //l'id pourrait avoir changé
+          //  pageId: state.COFantasy.combat_pageid //l'id pourrait avoir changé
         });
       } else if (estAttributEffetTemp(attrName)) {
         evt.deletedAttributes.push(obj);
@@ -5908,11 +5908,6 @@ var COFantasy = COFantasy || function() {
   }
 
   function recharger(msg) {
-    if (msg.selected === undefined) {
-      sendPlayer(msg, "!cof-recharger sans sélection de tokens");
-      log("!cof-recharger requiert des tokens sélectionnés");
-      return;
-    }
     var cmd = msg.content.split(" ");
     if (cmd.length < 2) {
       error("La fonction !cof-recharger attend au moins un argument", msg);
@@ -5923,46 +5918,53 @@ var COFantasy = COFantasy || function() {
       type: 'recharger',
       attributes: []
     };
-    iterSelected(msg.selected, function(perso) {
-      var attrs =
-        findObjs({
-          _type: 'attribute',
-          _characterid: perso.charId,
-          name: "charge_" + attackLabel
-        });
-      if (attrs.length < 1) {
-        perso.tokName = perso.tokName || perso.token.get('name');
-        log("Personnage " + perso.tokName + " sans charge " + attackLabel);
+    getSelected(msg, function(selected) {
+      if (selected === undefined) {
+        sendPlayer(msg, "!cof-recharger sans sélection de tokens");
+        log("!cof-recharger requiert des tokens sélectionnés");
         return;
       }
-      attrs = attrs[0];
-      var att = getAttack(attackLabel, perso);
-      if (att === undefined) {
-        //  error("Arme "+attackLabel+" n'existe pas pour "+name, charId);
-        return;
-      }
-      var weaponName = att.weaponName;
-      var maxCharge = parseInt(attrs.get('max'));
-      if (isNaN(maxCharge)) {
-        error("max charge mal formée", attrs);
-        return;
-      }
-      var currentCharge = parseInt(attrs.get('current'));
-      if (isNaN(currentCharge)) {
-        error("charge mal formée", attrs);
-        return;
-      }
-      if (currentCharge < maxCharge) {
-        evt.attributes.push({
-          attribute: attrs,
-          current: currentCharge
-        });
-        attrs.set('current', currentCharge + 1);
-        updateNextInit(perso.token);
-        sendChar(perso.charId, "recharge " + weaponName);
-        return;
-      }
-      sendChar(perso.charId, "a déjà tous ses " + weaponName + " chargés");
+      iterSelected(selected, function(perso) {
+        var attrs =
+          findObjs({
+            _type: 'attribute',
+            _characterid: perso.charId,
+            name: "charge_" + attackLabel
+          });
+        if (attrs.length < 1) {
+          perso.tokName = perso.tokName || perso.token.get('name');
+          log("Personnage " + perso.tokName + " sans charge " + attackLabel);
+          return;
+        }
+        attrs = attrs[0];
+        var att = getAttack(attackLabel, perso);
+        if (att === undefined) {
+          //  error("Arme "+attackLabel+" n'existe pas pour "+name, charId);
+          return;
+        }
+        var weaponName = att.weaponName;
+        var maxCharge = parseInt(attrs.get('max'));
+        if (isNaN(maxCharge)) {
+          error("max charge mal formée", attrs);
+          return;
+        }
+        var currentCharge = parseInt(attrs.get('current'));
+        if (isNaN(currentCharge)) {
+          error("charge mal formée", attrs);
+          return;
+        }
+        if (currentCharge < maxCharge) {
+          evt.attributes.push({
+            attribute: attrs,
+            current: currentCharge
+          });
+          attrs.set('current', currentCharge + 1);
+          updateNextInit(perso.token);
+          sendChar(perso.charId, "recharge " + weaponName);
+          return;
+        }
+        sendChar(perso.charId, "a déjà tous ses " + weaponName + " chargés");
+      });
     });
     addEvent(evt);
   }
@@ -12053,7 +12055,9 @@ var COFantasy = COFantasy || function() {
     //sinon, on regarde si on a en argument un label d'arme
     if (attGuerrier === undefined && cmd.length > 3)
       attGuerrier = getAttack(cmd[3], guerrier);
-    //sinon, on utilise simplement le score d'attaque
+    if (attGuerrier) {} else {
+      //sinon, on utilise simplement le score d'attaque
+    }
   }
 
   function apiCommand(msg) {
@@ -12733,7 +12737,8 @@ var COFantasy = COFantasy || function() {
             _pageid: pageId,
             represents: charId
           });
-      } else {
+      }
+      if (tokens === undefined || tokens.length === 0) {
         tokens =
           findObjs({
             _type: 'graphic',
@@ -12776,7 +12781,8 @@ var COFantasy = COFantasy || function() {
             name: tokenName,
             bar1_link: ''
           });
-      } else {
+      }
+      if (tNames === undefined || tNames.length === 0) {
         tNames =
           findObjs({
             _type: 'graphic',
@@ -13108,7 +13114,9 @@ var COFantasy = COFantasy || function() {
         var attrName = attr.get('name');
         var v = attr.get('current');
         if (v == 'tourFinal') { //L'effet arrive en fin de vie, doit être supprimé
-          finDEffet(attr, effet, attrName, charId, evt, {pageId:pageId});
+          finDEffet(attr, effet, attrName, charId, evt, {
+            pageId: pageId
+          });
           count--;
         } else { //Effet encore actif
           evt.attributes.push({
@@ -13534,9 +13542,18 @@ var COFantasy = COFantasy || function() {
     }
     var otherTokens = findObjs({
       _type: 'graphic',
-      _pageid: token.get('pageid'),
+      //_pageid: token.get('pageid'),
       represents: charId
     });
+        otherTokens = otherTokens.filter(function(tok) {
+          var pid = tok.get('pageid');
+          var page = getObj('page', pid);
+          if (page) {
+            if (page.get('archived')) return false;
+            return true;
+          }
+          return false;
+        });
     var numero = 1;
     var nePasModifier = false;
     if (typeof TokenNameNumber !== 'undefined' && tokenBaseName.length > 0) {
