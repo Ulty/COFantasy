@@ -1743,8 +1743,6 @@ var COFantasy = COFantasy || function() {
       attPrefix = "repeating_armes_$" + attackNumber + "_";
       weaponName = getAttrByName(perso.charId, attPrefix + "armenom");
       if (weaponName === undefined || weaponName === "") {
-        perso.tokName = perso.tokName || perso.token.get('name');
-        error("Arme " + attackLabel + " n'existe pas pour " + perso.tokName, perso);
         return;
       }
       var weaponLabel = weaponName.split(' ', 1)[0];
@@ -5964,7 +5962,7 @@ var COFantasy = COFantasy || function() {
         attrs = attrs[0];
         var att = getAttack(attackLabel, perso);
         if (att === undefined) {
-          //  error("Arme "+attackLabel+" n'existe pas pour "+name, charId);
+          error("Arme "+attackLabel+" n'existe pas pour "+perso.tokName, perso);
           return;
         }
         var weaponName = att.weaponName;
@@ -12085,10 +12083,10 @@ var COFantasy = COFantasy || function() {
     }
     cible.name = charCible.get('name');
     var pageId = guerrier.token.get('pageid');
-        if (distanceCombat(guerrier.token, cible.token, pageId)) {
-          sendChar(guerrier.charId, "est trop loin de "+cible.tokName+" pour le désarmer.");
-          return;
-        }
+    if (distanceCombat(guerrier.token, cible.token, pageId)) {
+      sendChar(guerrier.charId, "est trop loin de " + cible.tokName + " pour le désarmer.");
+      return;
+    }
     var evt = {
       type: 'Désarmer'
     };
@@ -12109,9 +12107,9 @@ var COFantasy = COFantasy || function() {
       armeGuerrier = getWeaponStats(guerrier, cmd[3]);
     //L'arme doit être une arme de contact
     if (armeGuerrier && armeGuerrier.portee) {
-      sendChar(guerrier.charId, "doit porter une arme de contact pour désarmer son adversaire. "+armeGuerrier.name+" est une arme à distance");
-     return;
-    } 
+      sendChar(guerrier.charId, "doit porter une arme de contact pour désarmer son adversaire. " + armeGuerrier.name + " est une arme à distance");
+      return;
+    }
     var action = "<b>Désarmement</b>";
     if (armeGuerrier) {
       action += " <span style='" + BS_LABEL + " " + BS_LABEL_INFO + "; text-transform: none; font-size: 100%;'>(" + armeGuerrier.name + ")</span>";
@@ -12156,11 +12154,11 @@ var COFantasy = COFantasy || function() {
         attrArmeCible = attrArmeCible[0];
         armeCible = getWeaponStats(cible, attrArmeCible.get('current'));
       } else attrArmeCible = undefined;
-      var enleverArmeCible = function(){
+      var enleverArmeCible = function() {
         if (attrArmeCible) {
-      evt.deletedAttributes = evt.deletedAttributes || [];
-      evt.deletedAttributes.push(attrArmeCible);
-      attrArmeCible.remove();
+          evt.deletedAttributes = evt.deletedAttributes || [];
+          evt.deletedAttributes.push(attrArmeCible);
+          attrArmeCible.remove();
         }
       };
       if (armeCible) {
