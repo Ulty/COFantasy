@@ -384,7 +384,7 @@
                   Recharge l'arme <i>N</i> (augmente les charges d'un). Les armes sont toutes rechargées à la fin d'un combat.
                 </p>
               </div>
-              <h4 class="text-secondary">Dégainer une arme : <code>!cof-degainer <i>N</i></code></h4>
+              <h4 class="text-secondary" id="degainer">Dégainer une arme : <code>!cof-degainer <i>N</i></code></h4>
               <div class="decalage">
                 <p>Pour certaines capacités, (commme <strong>Plus vite que son ombre</strong> ou <strong>Désarmer</strong>), il peut être utile de savoir quelle arme est en main. Pour cela, le script peut utiliser deux méthodes&nbsp;:
                 <ul>
@@ -889,7 +889,7 @@
                 <h4 class="text-secondary">Voie du combat</h4>
                 <ol>
                   <li><strong>Vivacité</strong> : simplement augmenter l'init sur la fiche.</li>
-                  <li><strong>Désarmer</strong> : faire l'attaque avec l'option <code>--test</code>. Pour le jet de l'opposant, choisir une attaque adaptée (correspondant à l'arme portée, et l'appeler avec l'option <code>--test</code> (si l'attaque s'appelle <i>attaque</i>, on peut simplement utiliser <code>%{selected|<i>attaque</i>}</code>). Le MJ doit ensuite intégrer les modificateurs comme le fait de porter une arme à 2 mains, décider si le désarmement porte, et finalement gérer l'absence d'arme.</li>
+                  <li><strong>Désarmer</strong> : <code>!cof-desarmer @{selected|token_id} @{target|token_id}</code>. On peut utiliser un troisième argument optionnel, qui est le label d'une arme par défaut, au cas où le guerrier n'aurait pas d'arme en main. Le script determine si la cible tient une arme à 2 mains en cherchant dans le nom de l'arme, puis dans le champ <code>SPÉCIAL</code> de l'arme. Pour savoir comment le script détermine quelle est l'arme en main, se référer à la section <a href='#degainer'>dégainer</a>.</li>
                   <li><strong>Double attaque</strong> : faire deux attaques, avec l'option supplémentaire <code>--bonusAttaque -2</code>.</li>
                   <li><strong>Attaque circulaire</strong> : faire les attaques normalement, ce n'est pas considéré comme une aoe.</li>
                   <li><strong>Attaque puissante</strong> : utiliser les options <code>--avecd12 --plus 2d6</code>.</li>

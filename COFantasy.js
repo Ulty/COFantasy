@@ -1759,6 +1759,31 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function getWeaponStats(perso, attackLabel) {
+    var att = getAttack(attackLabel, perso);
+    if (att === undefined) return;
+    var attPrefix = att.attackPrefix;
+    var weaponStats = {
+      name: att.weaponName
+    };
+    var charId = perso.charId;
+    weaponStats.attSkill =
+      getAttrByName(charId, attPrefix + "armeatk") ||
+      getAttrByName(charId, "ATKCAC");
+    weaponStats.attSkillDiv = getAttrByName(charId, attPrefix + "armeatkdiv") || 0;
+    // DMG
+    weaponStats.attNbDices = getAttrByName(charId, attPrefix + "armedmnbde") || 1;
+    weaponStats.attDice = getAttrByName(charId, attPrefix + "armedmde") || 4;
+    weaponStats.attCarBonus =
+      getAttrByName(charId, attPrefix + "armedmcar") ||
+      modCarac(perso, "FORCE");
+    weaponStats.attDMBonusCommun = getAttrByName(charId, attPrefix + "armedmdiv");
+    weaponStats.crit = getAttrByName(charId, attPrefix + "armecrit") || 20;
+    weaponStats.portee = getPortee(charId, attPrefix);
+    weaponStats.divers = getAttrByName(charId, attPrefix + "armespec");
+    return weaponStats;
+  }
+
   function surveillance(personnage) {
     var surveillance = findObjs({
       _type: 'attribute',
@@ -2031,7 +2056,8 @@ var COFantasy = COFantasy || function() {
   }
 
   //Bonus en Attaque qui ne dépendent pas du défenseur
-  function bonusAttaqueA(attaquant, name, weaponName, evt, explications, options) {
+  //attaquant doit avoir un champ tokName
+  function bonusAttaqueA(attaquant, weaponName, evt, explications, options) {
     var attBonus = 0;
     if (options.bonusAttaque) attBonus += options.bonusAttaque;
     attBonus += bonusDAttaque(attaquant, explications, evt);
@@ -2050,7 +2076,7 @@ var COFantasy = COFantasy || function() {
     }
     if (options.tirDouble) {
       attBonus += 2;
-      explications.push(name + " tire avec 2 " + weaponName + "s à la fois !");
+      explications.push(attaquant.tokName + " tire avec 2 " + weaponName + "s à la fois !");
     }
     if (options.chance) {
       attBonus += options.chance;
@@ -2062,7 +2088,7 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(attaquant, 'baroudHonneurActif')) {
       attBonus += 5;
-      explications.push(name + " porte une dernière attaque et s'effondre");
+      explications.push(attaquant.tokName + " porte une dernière attaque et s'effondre");
       mort(attaquant, function(m) {
         explications.push(m);
       }, evt);
@@ -2083,6 +2109,13 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(attaquant, 'putrefactionOutreTombe')) {
       attBonus -= 2;
       explications.push("Putréfaction => -2 en Attaque");
+    }
+    if (options.contact) {
+      if (attributeAsBool(attaquant, 'rayon_affaiblissant')) {
+        options.rayonAffaiblissant = true;
+        attBonus -= 2;
+        explications.push("Rayon affaiblissant => -2 en Attaque et aux DM");
+      }
     }
     return attBonus;
   }
@@ -2336,7 +2369,7 @@ var COFantasy = COFantasy || function() {
     attaquant.name = attaquant.name || attacker.get("name");
     var pageId = attaquant.token.get('pageid');
     //Options automatically set by some attributes
-    if (charAttributeAsBool(attackingCharId, 'fauchage')) {
+    if (charAttributeAsBool(attaquant, 'fauchage')) {
       var seuilFauchage = 10 + modCarac(attaquant, 'FORCE');
       options.etats = options.etats || [];
       options.etats.push({
@@ -2373,24 +2406,9 @@ var COFantasy = COFantasy || function() {
       weaponStats.portee = attaqueArray[4];
     } else {
       //On trouve l'attaque correspondant au label
-      var att = getAttack(attackLabel, attaquant);
-      if (att === undefined) return;
-      var attPrefix = att.attackPrefix;
-      weaponName = att.weaponName;
-      weaponStats.attSkill =
-        getAttrByName(attackingCharId, attPrefix + "armeatk") ||
-        getAttrByName(attackingCharId, "ATKCAC");
-      weaponStats.attSkillDiv = getAttrByName(attackingCharId, attPrefix + "armeatkdiv") || 0;
-      // DMG
-      weaponStats.attNbDices = getAttrByName(attackingCharId, attPrefix + "armedmnbde") || 1;
-      weaponStats.attDice = getAttrByName(attackingCharId, attPrefix + "armedmde") || 4;
-      weaponStats.attCarBonus =
-        getAttrByName(attackingCharId, attPrefix + "armedmcar") ||
-        modCarac(attaquant, "FORCE");
-      weaponStats.attDMBonusCommun = getAttrByName(attackingCharId, attPrefix + "armedmdiv");
-      weaponStats.crit = getAttrByName(attackingCharId, attPrefix + "armecrit") || 20;
-      weaponStats.portee = getPortee(attackingCharId, attPrefix);
-      weaponStats.divers = getAttrByName(attackingCharId, attPrefix + "armespec");
+      weaponStats = getWeaponStats(attaquant, attackLabel);
+      if (weaponStats === undefined) return;
+      weaponName = weaponStats.name;
     }
     weaponStats.attSkillDiv = parseInt(weaponStats.attSkillDiv);
     weaponStats.attNbDices = parseInt(weaponStats.attNbDices);
@@ -2685,6 +2703,71 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  // Effets quand on rentre en combat 
+  // attaquant doit avoir un tokName et un name
+  function entrerEnCombat(attaquant, cibles, explications, options, evt) {
+    if (!state.COFantasy.combat) {
+      var selected = [{
+        _id: attaquant.token.id
+      }];
+      cibles.forEach(function(target) {
+        selected.push({
+          _id: target.token.id
+        });
+      });
+      initiative(selected, evt);
+    }
+    if (getState(attaquant, 'invisible')) {
+      explications.push(attaquant.tokName + " redevient visible");
+      setState(attaquant, 'invisible', false, evt);
+    }
+    var pacifisme = tokenAttribute(attaquant, 'pacifisme');
+    if (pacifisme.length > 0 && pacifisme[0].get('current') > 0) {
+      pacifisme[0].set('current', 0);
+      sendChat("GM", "/w " + attaquant.name + " " + attaquant.tokName + " perd son pacifisme");
+    }
+    if (attributeAsBool(attaquant, 'sanctuaire')) {
+      explications.push(attaquant.tokName + " met fin aux conditions du sanctuaire");
+      removeTokenAttr(attaquant, 'sanctuaire', evt);
+    }
+    if (options.contact && attributeAsBool(attaquant, 'frappeDuVide')) {
+      options.frappeDuVide = true;
+      setTokenAttr(attaquant, 'frappeDuVide', 0, evt);
+    }
+  }
+
+  //L'argument weaponStats est optionnel
+  function critEnAttaque(attaquant, weaponStats, options) {
+    var crit = 20;
+    if (weaponStats) crit = weaponStats.crit;
+    if (isNaN(crit) || crit < 1 || crit > 20) {
+      error("Le critique n'est pas un nombre entre 1 et 20", crit);
+      crit = 20;
+    }
+    if (charAttributeAsBool(attaquant, 'scienceDuCritique') ||
+      (!options.distance && !options.sortilege && charAttributeAsBool(attaquant, 'morsureDuSerpent')) ||
+      (crit == 20 && charAttributeAsBool(attaquant, 'ecuyer'))) crit -= 1;
+    if (options.bonusCritique) crit -= options.bonusCritique;
+    if (options.affute) crit -= 1;
+    if (options.contact && charAttributeAsBool(attaquant, 'frappeChirurgicale'))
+      crit -= modCarac(attaquant, 'INTELLIGENCE');
+    if (crit < 2) crit = 2;
+    return crit;
+  }
+
+  //attaquant doit avoir un champ name
+  function attackExpression(attaquant, nbDe, dice, crit, weaponStats) {
+    var de = computeDice(attaquant, nbDe, dice);
+    var attackRollExpr = "[[" + de + "cs>" + crit + "cf1]]";
+    var attSkillDiv = weaponStats.attSkillDiv;
+    if (isNaN(attSkillDiv)) attSkillDiv = 0;
+    var attSkillDivTxt = "";
+    if (attSkillDiv > 0) attSkillDivTxt = " + " + attSkillDiv;
+    else if (attSkillDiv < 0) attSkillDivTxt += attSkillDiv;
+    var attackSkillExpr = addOrigin(attaquant.name, "[[" + weaponStats.attSkill + attSkillDivTxt + "]]");
+    return attackRollExpr + " " + attackSkillExpr;
+  }
+
   function resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options) {
     var attackingCharId = attaquant.charId;
     var attackingToken = attaquant.token;
@@ -2779,51 +2862,12 @@ var COFantasy = COFantasy || function() {
     if (limiteRessources(attaquant, options, attackLabel, weaponName, evt))
       return;
     // Effets quand on rentre en combat 
-    if (!state.COFantasy.combat) {
-      var selected = [{
-        _id: attackingToken.id
-      }];
-      cibles.forEach(function(target) {
-        selected.push({
-          _id: target.token.id
-        });
-      });
-      initiative(selected, evt);
-    }
-    if (getState(attaquant, 'invisible')) {
-      explications.push(attackerTokName + " redevient visible");
-      setState(attaquant, 'invisible', false, evt);
-    }
-    var pacifisme_selected = tokenAttribute(attaquant, 'pacifisme');
-    if (pacifisme_selected.length > 0 && pacifisme_selected[0].get('current') > 0) {
-      pacifisme_selected[0].set('current', 0);
-      sendChat("GM", "/w " + attackerName + " " + attackerTokName + " perd son pacifisme");
-    }
-    if (attributeAsBool(attaquant, 'sanctuaire')) {
-      explications.push(attaquant.tokName + " met fin aux conditions du sanctuaire");
-      removeTokenAttr(attaquant, 'sanctuaire', evt);
-    }
-    if (options.contact && attributeAsBool(attaquant, 'frappeDuVide')) {
-      options.frappeDuVide = true;
-      setTokenAttr(attaquant, 'frappeDuVide', 0, evt);
-    }
+    entrerEnCombat(attaquant, cibles, explications, options, evt);
     // On commence par le jet d'attaque de base : juste le ou les dés d'attaque 
     // et le modificateur d'arme et de caractéritiques qui apparaissent dans 
     // la description de l'attaque. Il faut quand même tenir compte des
     // chances de critique
-    var crit = weaponStats.crit;
-    if (isNaN(crit) || crit < 1 || crit > 20) {
-      error("Le critique n'est pas un nombre entre 1 et 20", crit);
-      crit = 20;
-    }
-    if (charAttributeAsBool(attaquant, 'scienceDuCritique') ||
-      (!options.distance && !options.sortilege && charAttributeAsBool(attaquant, 'morsureDuSerpent')) ||
-      (crit == 20 && charAttributeAsBool(attaquant, 'ecuyer'))) crit -= 1;
-    if (options.bonusCritique) crit -= options.bonusCritique;
-    if (options.affute) crit -= 1;
-    if (options.contact && charAttributeAsBool(attaquant, 'frappeChirurgicale'))
-      crit -= modCarac(attaquant, 'INTELLIGENCE');
-    if (crit < 2) crit = 2;
+    var crit = critEnAttaque(attaquant, weaponStats, options);
     var dice = 20;
     if (estAffaibli(attaquant)) {
       dice = 12;
@@ -2832,19 +2876,11 @@ var COFantasy = COFantasy || function() {
     if (options.avecd12) dice = 12;
     var nbDe = 1;
     if (options.m2d20) nbDe = 2;
-    var de = computeDice(attaquant, nbDe, dice);
-    var attackRollExpr = "[[" + de + "cs>" + crit + "cf1]]";
-    var attSkillDiv = weaponStats.attSkillDiv;
-    if (isNaN(attSkillDiv)) attSkillDiv = 0;
-    var attSkillDivTxt = "";
-    if (attSkillDiv > 0) attSkillDivTxt = " + " + attSkillDiv;
-    else if (attSkillDiv < 0) attSkillDivTxt += attSkillDiv;
-    var attackSkillExpr = addOrigin(attackerName, "[[" + weaponStats.attSkill + attSkillDivTxt + "]]");
     // toEvaluateAttack inlines
     // 0: attack roll
     // 1: attack skill expression
     // 2: dé de poudre
-    var toEvaluateAttack = attackRollExpr + " " + attackSkillExpr;
+    var toEvaluateAttack = attackExpression(attaquant, nbDe, dice, crit, weaponStats);
     if (options.poudre) toEvaluateAttack += " [[1d20]]";
     sendChat(attackerName, toEvaluateAttack, function(resAttack) {
       var rollsAttack = options.rollsAttack || resAttack[0];
@@ -2938,26 +2974,15 @@ var COFantasy = COFantasy || function() {
           return;
         }
       }
-
       //Modificateurs en Attaque qui ne dépendent pas de la cible
       var attBonusCommun =
-        bonusAttaqueA(attaquant, attackerTokName, weaponName, evt,
-          explications, options);
-      //Autres conditions qui ne modifient pas que le bonus d'attaque
-      if (options.contact) {
-        if (attributeAsBool(attaquant, 'rayon_affaiblissant')) {
-          options.rayonAffaiblissant = true;
-          attBonusCommun -= 2;
-          explications.push("Rayon affaiblissant => -2 en Attaque et aux DM");
-        }
-      }
-      var traquenard = false;
+        bonusAttaqueA(attaquant, weaponName, evt, explications, options);
       if (options.traquenard) {
         if (attributeAsInt(attaquant, 'traquenard', 0) === 0) {
           sendChar(attackingCharId, "ne peut pas faire de traquenard, car ce n'est pas sa première attaque du combat");
           return;
         }
-        traquenard = tokenInit(attaquant, evt);
+        options.traquenard = tokenInit(attaquant, evt);
       }
       if (attributeAsInt(attaquant, 'traquenard', 0) > 0) {
         setTokenAttr(attaquant, 'traquenard', 0, evt);
@@ -2976,9 +3001,9 @@ var COFantasy = COFantasy || function() {
         //Les bonus d'attaque qui dépendent de la cible
         var bad = bonusAttaqueD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
         var attBonus = attBonusCommun + bad;
-        if (traquenard) {
+        if (options.traquenard) {
           var initTarg = tokenInit(target, evt);
-          if (traquenard >= initTarg) {
+          if (options.traquenard >= initTarg) {
             attBonus += 2;
             target.additionalDmg.push({
               type: mainDmgType,
@@ -10765,7 +10790,7 @@ var COFantasy = COFantasy || function() {
           if (attBonus > 0) msgAbsorber += "+" + attBonus;
           else if (attBonus < 0) msgAbsorber += attBonus;
           var explAbsorber = [];
-          var attAbsBonus = bonusAttaqueA(cible, cible.tokName, 'bouclier', evt, explAbsorber, {});
+          var attAbsBonus = bonusAttaqueA(cible, 'bouclier', evt, explAbsorber, {});
           var pageId = guerrier.token.get('pageid');
           var bad = bonusAttaqueD(cible, attaque.attaquant, 0, pageId, evt, explAbsorber, {});
           attAbsBonus += bad;
@@ -12040,24 +12065,191 @@ var COFantasy = COFantasy || function() {
       error("Le premier argument de !cof-desarmer n'est pas un token valide", cmd);
       return;
     }
+    guerrier.tokName = guerrier.token.get('name');
+    var charGuerrier = getObj('character', guerrier.charId);
+    if (charGuerrier === undefined) {
+      error("Impossible de trouver la fiche de " + guerrier.tokName, guerrier);
+      return;
+    }
+    guerrier.name = charGuerrier.get('name');
     var cible = tokenOfId(cmd[2], cmd[2]);
     if (cible === undefined) {
       error("Le deuxième argument de !cof-desarmer n'est pas un token valide", cmd);
       return;
     }
+    cible.tokName = cible.token.get('name');
+    var charCible = getObj('character', cible.charId);
+    if (charCible === undefined) {
+      error("Impossible de trouver la fiche de " + cible.tokName, cible);
+      return;
+    }
+    cible.name = charCible.get('name');
+    var pageId = guerrier.token.get('pageid');
+        if (distanceCombat(guerrier.token, cible.token, pageId)) {
+          sendChar(guerrier.charId, "est trop loin de "+cible.tokName+" pour le désarmer.");
+          return;
+        }
+    var evt = {
+      type: 'Désarmer'
+    };
+    var explications = [];
+    var options = {
+      contact: true
+    };
+    entrerEnCombat(guerrier, [cible], explications, options, evt);
     //D'abord on cherche si le guerrier a une arme tenue en main
-    var attGuerrier;
-    var armeGuerrier = tokenAttribute(guerrier, 'armeEnMain');
-    if (armeGuerrier.length > 0) {
-      armeGuerrier = armeGuerrier[0].get('current');
-      attGuerrier = getAttack(armeGuerrier, guerrier);
+    var armeGuerrier;
+    var labelArmeGuerrier = tokenAttribute(guerrier, 'armeEnMain');
+    if (labelArmeGuerrier.length > 0) {
+      labelArmeGuerrier = labelArmeGuerrier[0].get('current');
+      armeGuerrier = getWeaponStats(guerrier, labelArmeGuerrier);
     }
     //sinon, on regarde si on a en argument un label d'arme
-    if (attGuerrier === undefined && cmd.length > 3)
-      attGuerrier = getAttack(cmd[3], guerrier);
-    if (attGuerrier) {} else {
-      //sinon, on utilise simplement le score d'attaque
+    if (armeGuerrier === undefined && cmd.length > 3)
+      armeGuerrier = getWeaponStats(guerrier, cmd[3]);
+    //L'arme doit être une arme de contact
+    if (armeGuerrier && armeGuerrier.portee) {
+      sendChar(guerrier.charId, "doit porter une arme de contact pour désarmer son adversaire. "+armeGuerrier.name+" est une arme à distance");
+     return;
+    } 
+    var action = "<b>Désarmement</b>";
+    if (armeGuerrier) {
+      action += " <span style='" + BS_LABEL + " " + BS_LABEL_INFO + "; text-transform: none; font-size: 100%;'>(" + armeGuerrier.name + ")</span>";
+    } else {
+      armeGuerrier = {
+        name: 'Attaque par défaut',
+        attSkillDiv: 0,
+        attSkill: getAttrByName(guerrier.charId, "ATKCAC"),
+        crit: 20
+      };
     }
+    var display = startFramedDisplay(msg.playerid, action, guerrier, cible);
+    var critGuerrier = critEnAttaque(guerrier, armeGuerrier, options);
+    var dice = 20;
+    if (estAffaibli(guerrier)) {
+      dice = 12;
+      explications.push("Attaquant affaibli => D12 au lieu de D20 en Attaque");
+    }
+    var toEvaluateAttack = attackExpression(guerrier, 1, dice, critGuerrier, armeGuerrier);
+    sendChat('', toEvaluateAttack, function(resAttack) {
+      var rollsAttack = options.rollsAttack || resAttack[0];
+      var afterEvaluateAttack = rollsAttack.content.split(' ');
+      var attRollNumber = rollNumber(afterEvaluateAttack[0]);
+      var attSkillNumber = rollNumber(afterEvaluateAttack[1]);
+      var d20rollGuerrier = rollsAttack.inlinerolls[attRollNumber].results.total;
+      var attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
+      var attBonus =
+        bonusAttaqueA(guerrier, armeGuerrier.name, evt, explications, options);
+      attBonus +=
+        bonusAttaqueD(guerrier, cible, 0, pageId, evt, explications, options);
+      var attackRollGuerrier = d20rollGuerrier + attSkill + attBonus;
+      var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
+      if (attSkill > 0) attRollValue += "+" + attSkill;
+      else if (attSkill < 0) attRollValue += attSkill;
+      if (attBonus > 0) attRollValue += "+" + attBonus;
+      else if (attBonus < 0) attRollValue += attBonus;
+      addLineToFramedDisplay(display, "Jet de " + guerrier.tokName + " : " + attRollValue);
+      //Maintenant, on cherche l'arme de la cible
+      var armeCible;
+      var attrArmeCible = tokenAttribute(cible, 'armeEnMain');
+      if (attrArmeCible.length > 0) {
+        attrArmeCible = attrArmeCible[0];
+        armeCible = getWeaponStats(cible, attrArmeCible.get('current'));
+      } else attrArmeCible = undefined;
+      var enleverArmeCible = function(){
+        if (attrArmeCible) {
+      evt.deletedAttributes = evt.deletedAttributes || [];
+      evt.deletedAttributes.push(attrArmeCible);
+      attrArmeCible.remove();
+        }
+      };
+      if (armeCible) {
+        //On cherche si la cible a une arme à 2 mains
+        var t = armeCible.name.toLowerCase();
+        if (t.includes('2 mains') || t.includes('deux mains')) {
+          armeCible.deuxMains = true;
+        } else {
+          t = armeCible.divers;
+          if (t) {
+            t = t.toLowerCase();
+            if (t.includes('2 mains') || t.includes('deux mains')) {
+              armeCible.deuxMains = true;
+            }
+          }
+        }
+      } else {
+        armeCible = {
+          name: 'Attaque par défaut',
+          attSkillDiv: 0,
+          attSkill: getAttrByName(cible.charId, "ATKCAC"),
+          crit: 20
+        };
+      }
+      var critCible = critEnAttaque(cible, armeCible, options);
+      var dice = 20;
+      if (estAffaibli(cible)) {
+        dice = 12;
+        explications.push("Défenseur affaibli => D12 au lieu de D20 en Attaque");
+      }
+      toEvaluateAttack = attackExpression(cible, 1, dice, critCible, armeCible);
+      sendChat('', toEvaluateAttack, function(resAttack) {
+        rollsAttack = options.rollsAttack || resAttack[0];
+        afterEvaluateAttack = rollsAttack.content.split(' ');
+        attRollNumber = rollNumber(afterEvaluateAttack[0]);
+        attSkillNumber = rollNumber(afterEvaluateAttack[1]);
+        var d20rollCible = rollsAttack.inlinerolls[attRollNumber].results.total;
+        var attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
+        attBonus =
+          bonusAttaqueA(cible, armeCible.name, evt, explications, options);
+        attBonus +=
+          bonusAttaqueD(cible, guerrier, 0, pageId, evt, explications, options);
+        var attackRollCible = d20rollCible + attSkill + attBonus;
+        attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
+        if (attSkill > 0) attRollValue += "+" + attSkill;
+        else if (attSkill < 0) attRollValue += attSkill;
+        if (attBonus > 0) attRollValue += "+" + attBonus;
+        else if (attBonus < 0) attRollValue += attBonus;
+        if (armeCible.deuxMain) {
+          attRollValue += " +5";
+          attackRollCible += 5;
+          explications.push(cible.tokName + " porte une arme à 2 mains => +5 à son jet");
+        }
+        addLineToFramedDisplay(display, "Jet de " + cible.tokName + " : " + attRollValue);
+        var resultat;
+        if (d20rollGuerrier == 1 && d20rollCible > 1) {
+          resultat = "<span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
+          diminueMalediction(guerrier, evt);
+        } else if (d20rollCible == 1 & d20rollGuerrier > 1) {
+          resultat = "<span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>, " + cible.tokName + " laisse tomber son arme, difficile de la récupérer...";
+          diminueMalediction(cible, evt);
+          enleverArmeCible();
+        } else if (d20rollGuerrier >= critGuerrier && d20rollCible < critCible) {
+          resultat = "<span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span> : " + cible.tokName + " est désarmé, et " + guerrier.tokName + " empêche de reprendre l'arme";
+          diminueMalediction(cible, evt);
+          enleverArmeCible();
+        } else if (d20rollGuerrier < critGuerrier && d20rollCible >= critCible) {
+          resultat = "<span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>, " + cible.tokName + " garde son arme bien en main";
+          diminueMalediction(guerrier, evt);
+        } else if (attackRollGuerrier < attackRollCible) {
+          resultat = "<span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>, " + guerrier.tokName + " n'a pas réussi à désarmer son adversaire";
+          diminueMalediction(guerrier, evt);
+        } else if (attackRollGuerrier > attackRollCible + 9) {
+          resultat = "<span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>, " + guerrier.tokName + " désarme son adversaire et l'empêche de récupérer son arme";
+          diminueMalediction(cible, evt);
+          enleverArmeCible();
+        } else {
+          resultat = "<span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>, " + guerrier.tokName + " désarme son adversaire.";
+          diminueMalediction(cible, evt);
+          enleverArmeCible();
+        }
+        addLineToFramedDisplay(display, resultat);
+        explications.forEach(function(expl) {
+          addLineToFramedDisplay(display, expl, 80);
+        });
+        sendChat("", endFramedDisplay(display));
+        addEvent(evt);
+      }); //fin du sendchat pour jet de la cible
+    }); //Fin du sendChat pour jet du guerrier
   }
 
   function apiCommand(msg) {
@@ -13545,15 +13737,15 @@ var COFantasy = COFantasy || function() {
       //_pageid: token.get('pageid'),
       represents: charId
     });
-        otherTokens = otherTokens.filter(function(tok) {
-          var pid = tok.get('pageid');
-          var page = getObj('page', pid);
-          if (page) {
-            if (page.get('archived')) return false;
-            return true;
-          }
-          return false;
-        });
+    otherTokens = otherTokens.filter(function(tok) {
+      var pid = tok.get('pageid');
+      var page = getObj('page', pid);
+      if (page) {
+        if (page.get('archived')) return false;
+        return true;
+      }
+      return false;
+    });
     var numero = 1;
     var nePasModifier = false;
     if (typeof TokenNameNumber !== 'undefined' && tokenBaseName.length > 0) {
