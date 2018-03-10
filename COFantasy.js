@@ -714,6 +714,7 @@ var COFantasy = COFantasy || function() {
     else action = action.trim();
     action = replaceAction(action, perso);
     var tid = perso.token.id;
+    perso.tokName = perso.tokName || perso.token.get('name');
     var character = getObj('character', perso.charId);
     switch (action.charAt(0)) {
       case '!':
@@ -730,6 +731,7 @@ var COFantasy = COFantasy || function() {
     if (action.indexOf('@{selected') !== -1 && character !== undefined) {
       // cas spécial pour @{selected|token_id} où l'on remplace toutes les occurences par token.id
       action = action.replace(new RegExp(escapeRegExp('@{selected|token_id}'), 'g'), tid);
+      action = action.replace(new RegExp(escapeRegExp('@{selected|token_name}'), 'g'), perso.tokName);
       var tmp = action.split('@{selected');
       _.each(tmp, function(elem, i) {
         if (elem.startsWith('|')) {
@@ -2405,7 +2407,10 @@ var COFantasy = COFantasy || function() {
     } else {
       //On trouve l'attaque correspondant au label
       weaponStats = getWeaponStats(attaquant, attackLabel);
-      if (weaponStats === undefined) return;
+      if (weaponStats === undefined) {
+        error("Pas d'arme de label "+attackLabel, attaquant);
+        return;
+      }
       weaponName = weaponStats.name;
     }
     weaponStats.attSkillDiv = parseInt(weaponStats.attSkillDiv);
