@@ -713,6 +713,9 @@ var COFantasy = COFantasy || function() {
     if (action === undefined || action.trim().length === 0) return text;
     else action = action.trim();
     action = replaceAction(action, perso);
+    if (action.startsWith("/as ")) {
+      action = "!cof-as" + action.substring(3);
+    }
     var tid = perso.token.id;
     perso.tokName = perso.tokName || perso.token.get('name');
     var character = getObj('character', perso.charId);
@@ -745,7 +748,8 @@ var COFantasy = COFantasy || function() {
       action.indexOf('cof-lancer-sort') == -1 &&
       action.indexOf('cof-surprise') == -1 &&
       action.indexOf('cof-attack') == -1 &&
-      action.indexOf('cof-soin') == -1) {
+      action.indexOf('cof-soin') == -1 &&
+    action.indexOf('cof-as ') == -1) {
       //Si on n'a pas de cible, on fait comme si le token était sélectionné.
       var add_token = " --target " + tid;
       if (action.indexOf(' --allie') >= 0) {
@@ -9871,13 +9875,38 @@ var COFantasy = COFantasy || function() {
           type: "lancement de sort"
         };
         if (depenseMana(lanceur, mana, spell, evt)) {
-          sendChar(charId, "/w " + lanceur.token.get('name') + " " + spell);
+          sendChar(charId, '/w "' + lanceur.token.get('name') + '" ' + spell);
           sendChar(charId, "/w GM " + spell);
           addEvent(evt);
         }
       });
     });
   }
+
+  function emulerAs(msg) {
+    var cmd = msg.content.split(' ');
+    if (cmd.length < 2) {
+      error("Il manque le nom du personnage pour !cof-as", msg.content);
+      return;
+    }
+    cmd.shift();
+    var nomPerso = cmd.shift();
+    if (nomPerso.charAt(0) == '"') {
+      nomPerso = nomPerso.substring(1);
+      var inComma = cmd.length;
+      while(inComma) {
+        nomPerso += ' ' + cmd.shift();
+        inComma--;
+        if (nomPerso.endsWith('"')) {
+          nomPerso = nomPerso.substr(0, nomPerso.length-1);
+          inComma = 0;
+        }
+      }
+    }
+    var message = cmd.join(' ');
+    sendChat(nomPerso, message);
+  }
+
 
   function murDeForce(msg) {
     var cmd = removeSelectedTokenIdFromArgs(msg, 2);
@@ -12403,6 +12432,7 @@ var COFantasy = COFantasy || function() {
       case "!cof-lancer-sort":
         lancerSort(msg);
         return;
+      case "!cof-as": emulerAs(msg); return;
       case "!cof-peur":
         peur(msg);
         return;
