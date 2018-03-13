@@ -749,7 +749,7 @@ var COFantasy = COFantasy || function() {
       action.indexOf('cof-surprise') == -1 &&
       action.indexOf('cof-attack') == -1 &&
       action.indexOf('cof-soin') == -1 &&
-    action.indexOf('cof-as ') == -1) {
+      action.indexOf('cof-as ') == -1) {
       //Si on n'a pas de cible, on fait comme si le token était sélectionné.
       var add_token = " --target " + tid;
       if (action.indexOf(' --allie') >= 0) {
@@ -2373,7 +2373,7 @@ var COFantasy = COFantasy || function() {
     attaquant.name = attaquant.name || attacker.get("name");
     var pageId = attaquant.token.get('pageid');
     //Options automatically set by some attributes
-    if (charAttributeAsBool(attaquant, 'fauchage')) {
+    if (options.redo === undefined && charAttributeAsBool(attaquant, 'fauchage')) {
       var seuilFauchage = 10 + modCarac(attaquant, 'FORCE');
       options.etats = options.etats || [];
       options.etats.push({
@@ -2412,7 +2412,7 @@ var COFantasy = COFantasy || function() {
       //On trouve l'attaque correspondant au label
       weaponStats = getWeaponStats(attaquant, attackLabel);
       if (weaponStats === undefined) {
-        error("Pas d'arme de label "+attackLabel, attaquant);
+        error("Pas d'arme de label " + attackLabel, attaquant);
         return;
       }
       weaponName = weaponStats.name;
@@ -2440,12 +2440,12 @@ var COFantasy = COFantasy || function() {
     //Détermination de la (ou des) cible(s)
     var nomCiblePrincipale; //Utilise pour le cas mono-cible
     var cibles = [];
-    if (targetToken.cibles) { //Dans ce cas les cibles sont précisées dans targetToken
-      cibles = targetToken.cibles;
+    if (options.redo) { //Dans ce cas les cibles sont précisées dans targetToken
+      cibles = targetToken;
       if (cibles.length === 0) {
         error("Attaque sans cible", targetToken);
         return;
-      } else if (cibles.length == 1) targetToken = targetToken.cibles.token;
+      } else if (cibles.length == 1) targetToken = cibles[0].token;
       nomCiblePrincipale = cibles[0].tokName;
     } else {
       nomCiblePrincipale = targetToken.get('name');
@@ -3305,7 +3305,7 @@ var COFantasy = COFantasy || function() {
       var bonusMasque = getValeurOfEffet(attaquant, 'masqueDuPredateur', modCarac(attaquant, 'SAGESSE'));
       if (bonusMasque > 0) attDMBonusCommun += " +" + bonusMasque;
     }
-    if (attributeAsBool(attaquant, 'rageDuBerserk')) {
+    if (options.redo === undefined && attributeAsBool(attaquant, 'rageDuBerserk')) {
       options.additionalDmg.push({
         type: mainDmgType,
         value: '1' + options.d6
@@ -3330,10 +3330,12 @@ var COFantasy = COFantasy || function() {
     // Les autres sources de dégâts
     if (options.distance) {
       if (options.semonce) {
-        options.additionalDmg.push({
-          type: mainDmgType,
-          value: '1' + options.d6
-        });
+        if (options.redo === undefined) {
+          options.additionalDmg.push({
+            type: mainDmgType,
+            value: '1' + options.d6
+          });
+        }
         explications.push("Tir de semonce => +5 en Attaque et +1" + options.d6 + " aux DM");
       }
     } else { //bonus aux attaques de contact
@@ -3346,21 +3348,21 @@ var COFantasy = COFantasy || function() {
         attDMBonusCommun += "+" + bonusForceDeGeant;
         explications.push("Force de géant => +" + bonusForceDeGeant + " aux DM");
       }
-      if (options.frappeDuVide) {
+      if (options.redo === undefined && options.frappeDuVide) {
         options.additionalDmg.push({
           type: mainDmgType,
           value: '1' + options.d6
         });
       }
     }
-    if (attributeAsBool(attaquant, 'forgeron_' + attackLabel)) {
+    if (options.redo === undefined && attributeAsBool(attaquant, 'forgeron_' + attackLabel)) {
       var feuForgeron = getValeurOfEffet(attackingCharId, 'forgeron_' + attackLabel, 1, 'voieDuMetal');
       options.additionalDmg.push({
         type: 'feu',
         value: feuForgeron
       });
     }
-    if (attributeAsBool(attaquant, 'armeEnflammee_' + attackLabel)) {
+    if (options.redo === undefined && attributeAsBool(attaquant, 'armeEnflammee_' + attackLabel)) {
       options.additionalDmg.push({
         type: 'feu',
         value: '1d6'
@@ -3369,31 +3371,37 @@ var COFantasy = COFantasy || function() {
     var poisonAttr = tokenAttribute(attaquant, 'poisonRapide_' + attackLabel);
     if (poisonAttr.length > 0) {
       poisonAttr = poisonAttr[0];
-      options.additionalDmg.push({
-        type: 'poison',
-        value: poisonAttr.get('current'),
-        partialSave: {
-          carac: 'CON',
-          seuil: poisonAttr.get('max')
-        }
-      });
+      if (options.redo === undefined) {
+        options.additionalDmg.push({
+          type: 'poison',
+          value: poisonAttr.get('current'),
+          partialSave: {
+            carac: 'CON',
+            seuil: poisonAttr.get('max')
+          }
+        });
+      }
       explications.push("L'arme est empoisonnée");
       evt.deletedAttributes = evt.deletedAttributes || [];
       evt.deletedAttributes.push(poisonAttr);
       poisonAttr.remove();
     }
     if (charAttributeAsBool(attackingCharId, 'dmgArme1d6_' + attackLabel)) {
-      options.additionalDmg.push({
-        type: mainDmgType,
-        value: '1' + options.d6
-      });
+      if (options.redo === undefined) {
+        options.additionalDmg.push({
+          type: mainDmgType,
+          value: '1' + options.d6
+        });
+      }
       explications.push("Arme enduite => +1" + options.d6 + " aux DM");
     }
     if (options.champion) {
-      options.additionalDmg.push({
-        type: mainDmgType,
-        value: '1' + options.d6
-      });
+      if (options.redo === undefined) {
+        options.additionalDmg.push({
+          type: mainDmgType,
+          value: '1' + options.d6
+        });
+      }
       explications.push(attackerTokName + " est un champion, son attaque porte !");
     }
     /////////////////////////////////////////////////////////////////
@@ -5971,7 +5979,7 @@ var COFantasy = COFantasy || function() {
         attrs = attrs[0];
         var att = getAttack(attackLabel, perso);
         if (att === undefined) {
-          error("Arme "+attackLabel+" n'existe pas pour "+perso.tokName, perso);
+          error("Arme " + attackLabel + " n'existe pas pour " + perso.tokName, perso);
           return;
         }
         var weaponName = att.weaponName;
@@ -6142,12 +6150,13 @@ var COFantasy = COFantasy || function() {
     var options = action.options;
     options.chance = (options.chance + 10) || 10;
     options.rollsAttack = action.rollsAttack;
+    options.redo = true;
     if (action.cibles) {
       action.cibles.forEach(function(target) {
         target.partialSaveAuto = undefined;
       });
     }
-    attack(action.player_id, perso, action, action.attack_label, options);
+    attack(action.player_id, perso, action.cibles, action.attack_label, options);
   }
 
   function persoUtiliseRuneEnergie(perso, evt) {
@@ -6208,6 +6217,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       var options = action.options || {};
+      options.redo = true;
       if (!persoUtiliseRuneEnergie(perso, evt)) return;
       addEvent(evt);
       switch (evtARefaire.type) {
@@ -6218,7 +6228,7 @@ var COFantasy = COFantasy || function() {
               target.partialSaveAuto = undefined;
             });
           }
-          attack(action.player_id, perso, action, action.attack_label, options);
+          attack(action.player_id, perso, action.cibles, action.attack_label, options);
           return;
         case 'jetPerso':
           undoEvent(evtARefaire);
@@ -6322,8 +6332,8 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
     undoEvent(evtARefaire);
     adversaire.esquiveFatale = true;
-    action.cibles[0] = adversaire;
-    attack(action.player_id, attaquant, action, action.attack_label, options);
+    options.redo = true;
+    attack(action.player_id, attaquant, [adversaire], action.attack_label, options);
   }
 
   function intercepter(msg) {
@@ -6385,10 +6395,9 @@ var COFantasy = COFantasy || function() {
         options.rollsAttack = attaque.rollsAttack;
         options.rollsDmg = attaque.rollsDmg;
         options.evt = evt;
+        options.redo = true;
         cible.rollsDmg = attaque.cibles[0].rollsDmg;
-        attack(attaque.player_id, attaque.attaquant, {
-          cibles: [cible]
-        }, attaque.attack_label, options);
+        attack(attaque.player_id, attaque.attaquant, [cible], attaque.attack_label, options);
       });
     });
   }
@@ -6452,10 +6461,9 @@ var COFantasy = COFantasy || function() {
         options.rollsAttack = attaque.rollsAttack;
         options.rollsDmg = attaque.rollsDmg;
         options.evt = evt;
+        options.redo = true;
         cible.rollsDmg = target.rollsDmg;
-        attack(attaque.player_id, attaque.attaquant, {
-          cibles: [cible]
-        }, attaque.attack_label, options);
+        attack(attaque.player_id, attaque.attaquant, [cible], attaque.attack_label, options);
       });
     });
   }
@@ -6494,7 +6502,8 @@ var COFantasy = COFantasy || function() {
         // Puis on refait 
         var options = attaque.options;
         options.evt = evt;
-        attack(attaque.player_id, attaque.attaquant, attaque, attaque.attack_label, options);
+        options.redo = true;
+        attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.attack_label, options);
       });
     });
   }
@@ -8415,11 +8424,11 @@ var COFantasy = COFantasy || function() {
       if (limiteRessources(lanceur, options, effet, effet, evt)) {
         //Restore limiteCibleParJour
         if (options.limiteCibleParJour) {
-        iterSelected(selected, function(perso) {
-          var utilisations =
-            attributeAsInt(perso, ressource, options.limiteCibleParJour);
-          setTokenAttr(perso, ressource, utilisations + 1, evt);
-        });
+          iterSelected(selected, function(perso) {
+            var utilisations =
+              attributeAsInt(perso, ressource, options.limiteCibleParJour);
+            setTokenAttr(perso, ressource, utilisations + 1, evt);
+          });
         }
         return;
       }
@@ -8484,7 +8493,7 @@ var COFantasy = COFantasy || function() {
         });
       }
       if (selected.length === 0) return;
-    if (limiteRessources(lanceur, options, effet, effet, evt)) return;
+      if (limiteRessources(lanceur, options, effet, effet, evt)) return;
       if (!state.COFantasy.combat && selected.length > 0) {
         initiative(selected, evt);
       }
@@ -8557,7 +8566,7 @@ var COFantasy = COFantasy || function() {
         });
       }
       if (selected.length === 0) return;
-    if (limiteRessources(lanceur, options, effet, effet, evt)) return;
+      if (limiteRessources(lanceur, options, effet, effet, evt)) return;
       if (activer) {
         setAttr(
           selected, effet, true, evt, messageEffetIndetermine[effet].activation);
@@ -9908,11 +9917,11 @@ var COFantasy = COFantasy || function() {
     if (nomPerso.charAt(0) == '"') {
       nomPerso = nomPerso.substring(1);
       var inComma = cmd.length;
-      while(inComma) {
+      while (inComma) {
         nomPerso += ' ' + cmd.shift();
         inComma--;
         if (nomPerso.endsWith('"')) {
-          nomPerso = nomPerso.substr(0, nomPerso.length-1);
+          nomPerso = nomPerso.substr(0, nomPerso.length - 1);
           inComma = 0;
         }
       }
@@ -10759,7 +10768,8 @@ var COFantasy = COFantasy || function() {
         var options = attaque.options;
         options.rollsAttack = attaque.rollsAttack;
         options.evt = evt;
-        attack(attaque.player_id, attaque.attaquant, attaque, attaque.attack_label, options);
+        options.redo = true;
+        attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.attack_label, options);
       }
     }); //fin getSelected
   }
@@ -10783,10 +10793,11 @@ var COFantasy = COFantasy || function() {
       var attaque = lastAct.action;
       var options = attaque.options;
       options.rollsAttack = attaque.rollsAttack;
-      options.evt = evt;
       var evt = {
         type: "absorber un "
       };
+      options.evt = evt;
+      options.redo = true;
       var attrAbsorbe = 'absorberUn';
       if (options.sortilege) {
         evt.type += "sort";
@@ -10850,13 +10861,13 @@ var COFantasy = COFantasy || function() {
           if (count === 0) {
             toProceed = false;
             undoEvent();
-            attack(attaque.player_id, attaque.attaquant, attaque, attaque.attack_label, options);
+            attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.attack_label, options);
           }
         }); //fin lancé de dés asynchrone
       }); //fin iterSelected
       if (count === 0 && toProceed) {
         undoEvent();
-        attack(attaque.player_id, attaque.attaquant, attaque, attaque.attack_label, options);
+        attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.attack_label, options);
       }
     }); //fin getSelected
   }
@@ -12446,7 +12457,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-lancer-sort":
         lancerSort(msg);
         return;
-      case "!cof-as": emulerAs(msg); return;
+      case "!cof-as":
+        emulerAs(msg);
+        return;
       case "!cof-peur":
         peur(msg);
         return;
