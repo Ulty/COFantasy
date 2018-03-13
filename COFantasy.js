@@ -2731,7 +2731,7 @@ var COFantasy = COFantasy || function() {
     var pacifisme = tokenAttribute(attaquant, 'pacifisme');
     if (pacifisme.length > 0 && pacifisme[0].get('current') > 0) {
       pacifisme[0].set('current', 0);
-      sendChat("GM", "/w " + attaquant.name + " " + attaquant.tokName + " perd son pacifisme");
+      sendChat("GM", '/w "' + attaquant.name + '" ' + attaquant.tokName + " perd son pacifisme");
     }
     if (attributeAsBool(attaquant, 'sanctuaire')) {
       explications.push(attaquant.tokName + " met fin aux conditions du sanctuaire");
@@ -5105,7 +5105,7 @@ var COFantasy = COFantasy || function() {
             var charId = att.get('characterid');
             var character = getObj('character', charId);
             var name = character.get('name');
-            sendChar(charId, "/w " + name + " " + msg);
+            sendChar(charId, '/w "' + name + '" ' + msg);
           }
         }
       }
@@ -8374,7 +8374,6 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (lanceur) charId = lanceur.charId;
-    if (limiteRessources(lanceur, options, effet, effet, evt)) return;
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
         sendChar(charId, "Pas de cible sélectionée pour l'effet");
@@ -8385,14 +8384,15 @@ var COFantasy = COFantasy || function() {
           var token = getObj('graphic', sel._id);
           var dist = distanceCombat(lanceur.token, token);
           if (dist > options.portee) {
-            sendChar(charId, " est trop loin de sa cible");
+            sendChar(charId, " est trop loin de " + token.get('name'));
             return false;
           }
           return true;
         });
       }
+      var ressource;
       if (options.limiteCibleParJour) {
-        var ressource = effet;
+        ressource = effet;
         if (options.limiteCibleParJourRessource)
           ressource = options.limiteCibleParJourRessource;
         ressource = "limiteParJour_" + ressource;
@@ -8410,6 +8410,18 @@ var COFantasy = COFantasy || function() {
           });
         });
         selected = selectedAutorises;
+      }
+      if (selected.length === 0) return;
+      if (limiteRessources(lanceur, options, effet, effet, evt)) {
+        //Restore limiteCibleParJour
+        if (options.limiteCibleParJour) {
+        iterSelected(selected, function(perso) {
+          var utilisations =
+            attributeAsInt(perso, ressource, options.limiteCibleParJour);
+          setTokenAttr(perso, ressource, utilisations + 1, evt);
+        });
+        }
+        return;
       }
       if (!state.COFantasy.combat && selected.length > 0) {
         initiative(selected, evt);
@@ -8455,7 +8467,6 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (lanceur) charId = lanceur.charId;
-    if (limiteRessources(lanceur, options, effet, effet, evt)) return;
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
         sendChar(charId, "Pas de cible sélectionée pour l'effet");
@@ -8466,12 +8477,14 @@ var COFantasy = COFantasy || function() {
           var token = getObj('graphic', sel._id);
           var dist = distanceCombat(lanceur.token, token);
           if (dist > options.portee) {
-            sendChar(charId, " est trop loin de sa cible");
+            sendChar(charId, " est trop loin de " + token.get('name'));
             return false;
           }
           return true;
         });
       }
+      if (selected.length === 0) return;
+    if (limiteRessources(lanceur, options, effet, effet, evt)) return;
       if (!state.COFantasy.combat && selected.length > 0) {
         initiative(selected, evt);
       }
@@ -8527,7 +8540,6 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (lanceur) charId = lanceur.charId;
-    if (limiteRessources(lanceur, options, effet, effet, evt)) return;
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
         sendChar(charId, "Pas de cible sélectionée pour l'effet");
@@ -8538,12 +8550,14 @@ var COFantasy = COFantasy || function() {
           var token = getObj('graphic', sel._id);
           var dist = distanceCombat(lanceur.token, token);
           if (dist > options.portee) {
-            sendChar(charId, " est trop loin de sa cible");
+            sendChar(charId, " est trop loin de " + token.get('name'));
             return false;
           }
           return true;
         });
       }
+      if (selected.length === 0) return;
+    if (limiteRessources(lanceur, options, effet, effet, evt)) return;
       if (activer) {
         setAttr(
           selected, effet, true, evt, messageEffetIndetermine[effet].activation);
@@ -9983,7 +9997,7 @@ var COFantasy = COFantasy || function() {
           setTokenAttr(lanceur, 'murDeForce', duree, evt, undefined, getInit());
           setTokenAttr(lanceur, 'murDeForceId', newImage.id, evt);
         } else {
-          sendChar(charId, "/w " + token.get('name') + " placer l'image du mur sur la carte");
+          sendChar(charId, '/w "' + token.get('name') + '" ' + "placer l'image du mur sur la carte");
         }
         addEvent(evt);
       });
@@ -11317,7 +11331,7 @@ var COFantasy = COFantasy || function() {
     var quantite1 = parseInt(attr1.get('current'));
     if (isNaN(quantite1) || quantite1 < 1) {
       attr1.set('current', 0);
-      sendChat('COF', "/w " + perso1.token.get('name') + " Vous ne disposez plus de " + consName);
+      sendChat('COF', '/w "' + perso1.token.get('name') + '" Vous ne disposez plus de ' + consName);
       return;
     }
     var evt = {
@@ -11378,12 +11392,12 @@ var COFantasy = COFantasy || function() {
         }
         // on envoie un petit message précisant la résultante de l'action.
         sendChat('COF', "Echange entre " + perso1.token.get('name') + " et " + perso2.token.get('name') + " terminée.");
-        sendChat('COF', "/w " + perso1.token.get('name') + " Il vous reste <strong>" + parseInt(attr1.get('current')) + "</strong> " + consName + ".");
-        sendChat('COF', "/w " + perso2.token.get('name') + " Vous possédez désormais <strong>" + quantite2 + "</strong> " + consName + ".");
+        sendChat('COF', '/w "' + perso1.token.get('name') + '" Il vous reste <strong>' + parseInt(attr1.get('current')) + "</strong> " + consName + ".");
+        sendChat('COF', '/w "' + perso2.token.get('name') + '" Vous possédez désormais <strong>' + quantite2 + "</strong> " + consName + ".");
         // le MJ est notifié :
         sendChat('COF', "/w GM " + perso1.token.get('name') + " vient de donner <strong>1</strong> " + consName + " à " + perso2.token.get('name') + ".");
       } else {
-        sendChat('COF', "/w " + perso1.token.get('name') + " Vous ne pouvez pas échanger un consommable avec vous-même ...");
+        sendChat('COF', '"/w ' + perso1.token.get('name') + '" Vous ne pouvez pas échanger un consommable avec vous-même ...');
       }
     } else {
       // on utilise le consommable
