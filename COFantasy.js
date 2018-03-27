@@ -1102,9 +1102,9 @@ var COFantasy = COFantasy || function() {
     var max;
     if (options.rang) max = options.rang;
     var mana = options.mana || 0;
-      var niveau = charAttributeAsInt(perso, 'NIVEAU', 1);
-      if (max === undefined || max > niveau - mana)
-        max = niveau - mana;
+    var niveau = charAttributeAsInt(perso, 'NIVEAU', 1);
+    if (max === undefined || max > niveau - mana)
+      max = niveau - mana;
     tempeteDeManaCourante.max = max;
     optionsDeTempeteDeMana({
       content: '!cof-tempete-de-mana'
@@ -8601,6 +8601,13 @@ var COFantasy = COFantasy || function() {
             options.valeur = undefined;
           }
           return;
+        case "fx":
+          if (cmd.length < 2) {
+            sendChat("COF", "Il manque un argument à l'option --fx");
+            return;
+          }
+          options.fx = cmd[1];
+          return;
         case 'message':
           if (arg.length > 8) options.message = arg.substring(8);
           return;
@@ -8660,24 +8667,24 @@ var COFantasy = COFantasy || function() {
           if (lanceur) charId = lanceur.charId;
         }
       }
-    if (lanceur && options.tempeteDeMana) {
-      if (options.tempeteDeMana.cout === 0) {
-        //On demande de préciser les options
-        var optMana = {
-          mana: options.mana,
-          dm: messageEffetTemp[effet].dm,
-          soins: messageEffetTemp[effet].soins,
-          portee: options.portee,
-          rang: options.rang
-        };
-        setTempeteDeMana(msg.playerid, lanceur, msg.content, optMana);
-        return;
-      } else {
-        if (options.rang && options.tempeteDeMana.cout > options.rang) {
-          sendChar(lanceur.charId, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
+      if (lanceur && options.tempeteDeMana) {
+        if (options.tempeteDeMana.cout === 0) {
+          //On demande de préciser les options
+          var optMana = {
+            mana: options.mana,
+            dm: messageEffetTemp[effet].dm,
+            soins: messageEffetTemp[effet].soins,
+            portee: options.portee,
+            rang: options.rang
+          };
+          setTempeteDeMana(msg.playerid, lanceur, msg.content, optMana);
+          return;
+        } else {
+          if (options.rang && options.tempeteDeMana.cout > options.rang) {
+            sendChar(lanceur.charId, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
+          }
         }
       }
-    }
       if (options.portee !== undefined) {
         selected = selected.filter(function(sel) {
           var token = getObj('graphic', sel._id);
@@ -8744,6 +8751,19 @@ var COFantasy = COFantasy || function() {
         setAttr(selected, effetComplet + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
       }
       addEvent(evt);
+      if (lanceur && options.fx) {
+        iterSelected(selected, function(target) {
+          var p1e = {
+            x: lanceur.token.get('left'),
+            y: lanceur.token.get('top'),
+          };
+          var p2e = {
+            x: target.token.get('left'),
+            y: target.token.get('top'),
+          };
+          spawnFxBetweenPoints(p1e, p2e, options.fx, options.pageId);
+        });
+      }
     }, lanceur);
   }
 
@@ -8810,6 +8830,19 @@ var COFantasy = COFantasy || function() {
         setAttr(selected, effet + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
       }
       addEvent(evt);
+      if (lanceur && options.fx) {
+        iterSelected(selected, function(target) {
+          var p1e = {
+            x: lanceur.token.get('left'),
+            y: lanceur.token.get('top'),
+          };
+          var p2e = {
+            x: target.token.get('left'),
+            y: target.token.get('top'),
+          };
+          spawnFxBetweenPoints(p1e, p2e, options.fx, options.pageId);
+        });
+      }
     });
   }
 
@@ -9812,7 +9845,7 @@ var COFantasy = COFantasy || function() {
           };
         if (options.portee === undefined) options.portee = 0;
         var bonusModere = niveau + charAttributeAsInt(soigneur, 'voieDuGuerisseur', 0);
-        soins = "[[" + (nbDes +1) + "d8 +" + bonusModere + "]]";
+        soins = "[[" + (nbDes + 1) + "d8 +" + bonusModere + "]]";
         break;
       case 'groupe':
         if (!state.COFantasy.combat) {
@@ -12884,7 +12917,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-desarmer":
         desarmer(msg);
         return;
-      case "!cof-tempete-de-mana": optionsDeTempeteDeMana(msg); return;
+      case "!cof-tempete-de-mana":
+        optionsDeTempeteDeMana(msg);
+        return;
       default:
         return;
     }
