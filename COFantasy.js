@@ -8611,6 +8611,13 @@ var COFantasy = COFantasy || function() {
         case 'message':
           if (arg.length > 8) options.message = arg.substring(8);
           return;
+        case "targetFx":
+          if (cmd.length < 2) {
+            sendChat("COF", "Il manque un argument à l'option --targetFx");
+            return;
+          }
+          options.targetFx = cmd[1];
+          break;
         default:
           return;
       }
@@ -8764,6 +8771,11 @@ var COFantasy = COFantasy || function() {
           spawnFxBetweenPoints(p1e, p2e, options.fx, options.pageId);
         });
       }
+      if (options.targetFx) {
+        iterSelected(selected, function(target) {
+          spawnFx(target.token.get('left'), target.token.get('top'), options.targetFx, options.pageId);
+        });
+      }
     }, lanceur);
   }
 
@@ -8841,6 +8853,11 @@ var COFantasy = COFantasy || function() {
             y: target.token.get('top'),
           };
           spawnFxBetweenPoints(p1e, p2e, options.fx, options.pageId);
+        });
+      }
+      if (options.targetFx) {
+        iterSelected(selected, function(target) {
+          spawnFx(target.token.get('left'), target.token.get('top'), options.targetFx, options.pageId);
         });
       }
     });
