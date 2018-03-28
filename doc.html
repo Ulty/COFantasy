@@ -335,7 +335,7 @@
                   <li><code>--explodeMax</code> : relance les valeurs maximum aux dés de DM de base, et rajoute le nouveau résultat (qui lui-même explose).</li>
                   <li><code>--mana <i>n</i></code> : l'attaque coûte <i>n</i> points de mana.</li>
                   <li><code>--rang <i>n</i></code> : indique le rang de la capacité utilisée, si besoin. Utilisé par l'option <code>--tempeteDeMana</code>.</li>
-                  <li><code>--tempeteDeMana <i>liste</i></code> : indique des effets de tempête de mana. La liste peut contenir un nombre (pour l'effet intense), <code>duree</code>, <code>rapide</code> et <code>portee</code>. Si le rang du sort est spécifié (par l'option <code>--rang</code>, un message est affichée si le coût en mana est supérieur au rang. Si la liste d'options est vide, le script affiche un menu pour spécifier les options de tempête de mana.</li>
+                  <li><code>--tempeteDeMana <i>liste</i></code> : indique des effets de tempête de mana. La liste peut contenir un nombre (pour l'effet intense), <code>duree</code>, <code>rapide</code> et <code>portee</code>. Si le rang du sort est spécifié (par l'option <code>--rang</code>, un message est affichée si le coût en mana est supérieur au rang. Si la liste d'options est vide, le script affiche un menu dans le chat pour spécifier les options de tempête de mana.</li>
                   <li><code>--limiteParJour <i>l</i></code> : limite le nombre d'utilisations de cette attaque à <i>l</i> fois par jour. On peut préciser un nom après <i>l</i>, qui va correspondre à une ressource pouvant être partagée avec d'autres attaques ou d'autres effets (voir <code>!cof-effet-temp</code>). Par défaut, le nom de cette ressource est le label de l'attaque.</li>
                   <li><code>--limiteParCombat</code> : même effet que la limite par jour. Si aucun argument n'est donné, la limite est de une fois par combat.</li>
                   <li><code>--munition <i>nom</i> <i>taux</i></code> : l'attaque utilise des munitions dont on garde le compte. Le nombre de munitions doit être inscrit dans un attribut <code>munition_<i>nom</i></code>. <i>nom</i> ne doit pas contenir de blanc, mais à l'affichage les <code>_</code> seront remplacés par des blancs. La valeur courante de l'attribut est le nombre qu'il reste sur le personnage, alors que le maximum contient ce qu'il a plus ce qu'il peut récupérer après le combat. À chaque attaque portée, une munition est utilisée, et il y a <i>taux</i> chances (sur 100) que la munition ne soit pas récupérable. En fin de combat, on considère que le personnage récupère toutes les munitions récupérables. Par défaut, le taux de pertes est de 100&nbsp;%.</li>
@@ -490,6 +490,7 @@
                     <li><code>--puissant non</code> : lance la version non puissante (efface le dernier effet puissant)</li>
                     <li><code>--puissant duree</code> : multiplie la durée par 2</li>
                     <li><code>--saveParTour <i>carac seuil</i></code> : la cible peut se sortir de l'effet chaque tour grâce à un test de <i>carac</i> de difficulte <i>seuil</i>.</li>
+                  <li><code>--tempeteDeMana <i>liste</i></code> : indique des effets de tempête de mana. La liste peut contenir un nombre (pour l'effet intense), <code>duree</code>, <code>rapide</code> et <code>portee</code>. Si le rang du sort est spécifié (par l'option <code>--rang</code>, un message est affichée si le coût en mana est supérieur au rang. Si la liste d'options est vide, le script affiche un menu dans le chat pour spécifier les options de tempête de mana.</li>
                     <li><code>--valeur <i>n</i></code> : pour certains effet, permet de spécifier une valeur qui remplace la valeur par défaut de l'effet.</li>
                     <li><code>--fx <i>effet</i></code> : affiche l'effet spécial entre le lanceur et ses cibles.</li>
                     <li><code>--targetFx <i>effet</i></code> : affiche l'effet spécial sur toutes les cibles.</li> 
@@ -793,8 +794,8 @@
                   <li><strong>Murmures dans le vent</strong> : rien à faire</li>
                   <li><strong>Sous tension</strong> : <code>!cof-effet-temp sous_tension [[5+@{selected|CHA}]]</code>. Pour l'attaque, définir une attaque magique à 1d6+CHA, et l'appeler avec les options <code>--si etat sous_tension --electrique --sortilege --fx beam-holy</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Oui,--tempeteDeMana|Non,}</code>, seulement pour la mise sous tension (pas l'attaque).</li>
                   <li><strong>Télékinésie</strong> : Pas de support autre que <code>!cof-lancer-sort 1 lance un sort de télékinésie</code></li>
-                  <li><strong>Foudre</strong> : Faire une attaque de foudre de portée 10 m (attaque magique, dégâts 4d6 + CHA), et faire les attaques avec les options <code>--psave DEX [[12+@{selected|DEX}]] --mana 2 --electrique --sortilege --ligne --fx beam-holy ?{Y consacrer le tour entier ?|oui,--puissant|non,''}</code>.</li>
-                  <li><strong>Forme éthérée</strong> : <code>!cof-effet-temp intangible [[5 + @{selected|CHA}]] --mana 3</code></li>
+                  <li><strong>Foudre</strong> : Faire une attaque de foudre de portée 10 m (attaque magique, dégâts 4d6 + CHA), et faire les attaques avec les options <code>--psave DEX [[12+@{selected|DEX}]] --mana 2 --electrique --sortilege --ligne --fx beam-holy</code>. Si vous utilisez l'option de magie puissante, vous pouvez rajouter <code>?{Y consacrer le tour entier ?|oui,--puissant|non,}</code>. Et si à la place, vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 4 ?{Tempête de mana?|Oui,--tempeteDeMana|Non,}</code>. </li>
+                  <li><strong>Forme éthérée</strong> : <code>!cof-effet-temp intangible [[5 + @{selected|CHA}]] --mana 3</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 5 ?{Tempête de mana?|Oui,--tempeteDeMana|Non,}</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de la divination</h4>
                 <ol>
@@ -805,29 +806,31 @@
                 <h4 class="text-secondary">Voie de l'envoûteur</h4>
                 <ol>
                   <li><strong>Injonction</strong> : utiliser <code>!cof-attaque-magique @{selected|token_id} @{target|token_id}</code></li>
-                  <li><strong>Sommeil</strong> : <code>!cof-sommeil @{selected|token_id} --disque @{target|token_id} 5 20</code>. Pour sélectionner le centre de la zone, on peut utiliser un personnage fictif ayant 0 de max de PV.</li>
-                  <li><strong>Confusion</strong>: faire une attaque de portée 20 m, et pour la macro, utiliser les options <code>--pasDeDmg --sortilege --mana 1 --effet confusion ?{Y consacrer tout le tour?|Oui,[[6+2*@{selected|CHA}]]|Non,[[3+@{selected|CHA}]]} --saveParTour SAG [[10+@{selected|CHA}]]</code>.</li>
+                  <li><strong>Sommeil</strong> : <code>!cof-sommeil @{selected|token_id} --disque @{target|token_id} 5 20</code>. Pour sélectionner le centre de la zone, on peut utiliser un personnage fictif (avec un token représentant une cible, par exemple) ayant 0 de max de PV.</li>
+                  <li><strong>Confusion</strong>: faire une attaque de portée 20 m, et pour la macro, utiliser les options <code>--pasDeDmg --sortilege --mana 1 --effet confusion [[3+@{selected|CHA}]] --saveParTour SAG [[10+@{selected|CHA}]]</code>. Si vous utilisez les options de magie puissante, vous pouvez remplacer la durée par <code>?{Y consacrer tout le tour?|Oui,[[6+2*@{selected|CHA}]]|Non,[[3+@{selected|CHA}]]}</code>.  Et si à la place, vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Oui,--tempeteDeMana|Non,}</code>.</li>
                   <li><strong>Amitié</strong>: pas de support particulier, sinon <code>!cof-lancer-sort 2 lance un sort d'amitié</code></li>
                   <li><strong>Domination</strong> : utiliser <code>!cof-attaque-magique @{selected|token_id} @{target|token_id} --mana 3 --portee 20</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie des illusions</h4>
                 <ol>
-                  <li><strong>Image décalée</strong> : <code>!cof-effet-temp image_decalee [[5+@{selected|CHA}]] </code></li>
+                  <li><strong>Image décalée</strong> : <code>!cof-effet-temp image_decalee [[5+@{selected|CHA}]]</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Oui,--tempeteDeMana|Non,}</code>.</li>
                   <li><strong>Mirage</strong> : pas de support particulier</li>
                   <li><strong>Imitation</strong> : pas de support autre que <code>!cof-lancer-sort 1 lance un sort d'imitation ([[5+@{selected|CHA}]] minutes)</code>.</li>
-                  <li><strong>Dédoublement</strong> : ajouter une attaque magique, de portée 20 m, avec les options <code>--pasDeDmg --sortilege --mana 2 --effet dedoublement [[5+@{selected|CHA}]]</code>.</li>
-                  <li><strong>Tueur fantasmagorique</strong> : <code>!cof-tueur-fantasmagorique @{selected|token_id} @{target|token_id} --portee 20 --mana 3</code></li>
+                  <li><strong>Dédoublement</strong> : ajouter une attaque magique, de portée 20 m, avec les options <code>--pasDeDmg --sortilege --mana 2 --effet dedoublement [[5+@{selected|CHA}]]</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 4 ?{Tempête de mana?|Oui,--tempeteDeMana|Non,}</code>.</li>
+                  <li><strong>Tueur fantasmagorique</strong> : <code>!cof-tueur-fantasmagorique @{selected|token_id} @{target|token_id} --portee 20 --mana 3</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 5 ?{Tempête de mana?|Oui,--tempeteDeMana|Non,}</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'invocation</h4>
                 <ol>
                   <li><strong>Familier</strong> : créer un token pour le familier, avec vue et controlé par le joueur. Le partage des PV n'est pas géré.</li>
                   <li><strong>Serviteur invisible&nbsp;</strong>: ok</li>
-                  <li><strong>Mur de force</strong> : <code>!cof-mur-de-force ?{Spherique?|Oui,|Non,mur} --mana 1 --image <i>path</i></code> où <i>path</i> est l'adresse url d'une image de la librairie Roll20 qui représente un mur de force (sera placé dans le layer map). L'image n'est utilisée qu'en cas de mur sphérique.</li>
+                  <li><strong>Mur de force</strong> : <code>!cof-mur-de-force ?{Spherique?|Oui,|Non,mur} --mana 1 --image <i>path</i></code> où <i>path</i> est l'adresse url d'une image de la librairie Roll20 qui représente un mur de force (sera placé dans le layer map). L'image n'est utilisée qu'en cas de mur sphérique. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Oui,--tempeteDeMana|Non,}</code>.</li>
                   <li>
                     <strong>Épée dansante</strong> :
                     <ul>
-                      <li>sort: <code>!cof-effet-temp epeeDansante [[5+@{selected|CHA}]] --mana 2 --puissant ?{Y passer tout le tour ?|oui|non}</code></li>
-                      <li>attaque: faire une attaque de portee 20 m, avec les options <code>--si etat epeeDansante</code> <code>--magique</code> <code>--ignoreObstacles</code> <code>--puissant epeeDansante</code></li>
+                      <li>sort: <code>!cof-effet-temp epeeDansante [[5+@{selected|CHA}]] --mana 2</code></li>
+                      <li>attaque: faire une attaque de portée 20 m, avec les options <code>--si etat epeeDansante</code> <code>--magique</code> <code>--ignoreObstacles</code></li>
+                        <li>si vous jouez les options de magie puissante, rajoutez <code>--puissant ?{Y passer tout le tour ?|oui|non}</code> pour le sort, et <code>--puissant epeeDansante</code> pour l'attaque. </li>
+                        <li>si vous utilisez les options de tempête de mana, ajoutez juste <code>--rang 4 ?{Tempête de mana?|Oui,--tempeteDeMana|Non,}</code> au sort.</li>
                     </ul>
                   </li>
                   <li><strong>Charisme héroïque</strong> : reporter sur la fiche</li>
