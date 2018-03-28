@@ -1643,8 +1643,10 @@ var COFantasy = COFantasy || function() {
           if (options.effets) {
             options.effets.forEach(function(ef) {
               if (ef.effet) {
-                optMana.dm = optMana.dm || messageEffetTemp[ef.effet].dm;
-                optMana.soins = optMana.soins || messageEffetTemp[ef.effet].soins;
+                if (estEffetTemp(ef.effet)) {
+                  optMana.dm = optMana.dm || messageEffetTemp[ef.effet].dm;
+                  optMana.soins = optMana.soins || messageEffetTemp[ef.effet].soins;
+                }
               }
             });
           }
@@ -1663,10 +1665,10 @@ var COFantasy = COFantasy || function() {
           options.peur.duree = options.peur.duree * 2;
         if (options.effets) {
           options.effets.forEach(function(ef) {
-            if (ef.effet &&
+            if (ef.effet && ef.duree &&
               !messageEffetTemp[ef.effet].dm &&
               !messageEffetTemp[ef.effet].soins) {
-              if (ef.duree) ef.duree = ef.duree * 2;
+              ef.duree = ef.duree * 2;
             }
           });
         }
@@ -3951,6 +3953,8 @@ var COFantasy = COFantasy || function() {
                 target.messages.push(target.tokName + " " + messageEffetCombat[ef.effet].activation);
                 setTokenAttr(target, ef.effet, true, evt);
               }
+              if (options.tempeteDeManaIntense)
+                setTokenAttr(target, ef.effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
               if (ef.saveParTour) {
                 setTokenAttr(target, ef.effet + "SaveParTour",
                   ef.saveParTour.carac, evt, undefined, ef.saveParTour.seuil);
@@ -4114,6 +4118,8 @@ var COFantasy = COFantasy || function() {
                         } else if (ef.effet == 'ralentiTemp') {
                           setState(target, 'ralenti', true, evt);
                         }
+                        if (options.tempeteDeManaIntense)
+                          setTokenAttr(target, ef.effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
                         if (ef.saveParTour) {
                           setTokenAttr(target,
                             ef.effet + "SaveParTour", ef.saveParTour.carac,
@@ -13658,17 +13664,27 @@ var COFantasy = COFantasy || function() {
     var count = -1;
     iterTokensOfEffet(charId, undefined, effet, attrName, function(token, total) {
       if (count < 0) count = total;
-      sendChat('', "[[" + dmg + "]]", function(res) {
+      var perso = {
+        token: token,
+        charId: charId
+      };
+      var dmgExpr = dmg;
+      if (dmg.de) {
+        var tdmi = attributeAsInt(perso, effet + "TempeteDeManaIntense", 0);
+        if (tdmi) {
+          dmgExpr = (tdmi + dmg.nbDe) + 'd' + dmg.de;
+          removeTokenAttr(perso, effet + "TempeteDeManaIntense", evt);
+        } else dmgExpr = dmg.nbDe + 'd' + dmg.de;
+      } else if (dmg.cst) {
+        dmgExpr = dmg.cst;
+      }
+      sendChat('', "[[" + dmgExpr + "]]", function(res) {
         var rolls = res[0];
         var dmgRoll = rolls.inlinerolls[0];
         var r = {
           total: dmgRoll.results.total,
           type: type,
           display: buildinline(dmgRoll, type)
-        };
-        var perso = {
-          token: token,
-          charId: charId
         };
         dealDamage(perso, r, [], evt, false, options, undefined,
           function(dmgDisplay, dmg) {
@@ -13776,7 +13792,10 @@ var COFantasy = COFantasy || function() {
           else attr.set('current', 'tourFinal');
           switch (effet) { //rien après le switch, donc on sort par un return
             case 'putrefaction': //prend 1d6 DM
-              degatsParTour(charId, effet, attrName, "1d6", 'maladie',
+              degatsParTour(charId, effet, attrName, {
+                  nbDe: 1,
+                  de: 6
+                }, 'maladie',
                 "pourrit", evt, {
                   magique: true
                 },
@@ -13786,7 +13805,10 @@ var COFantasy = COFantasy || function() {
                 });
               return;
             case 'asphyxie': //prend 1d6 DM
-              degatsParTour(charId, effet, attrName, "1d6", 'normal',
+              degatsParTour(charId, effet, attrName, {
+                  nbDe: 1,
+                  de: 6
+                }, 'normal',
                 "ne peut plus respirer", evt, {
                   asphyxie: true
                 },
@@ -13801,7 +13823,10 @@ var COFantasy = COFantasy || function() {
                 if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
                 return;
               }
-              degatsParTour(charId, effet, attrName, "1d6", 'normal',
+              degatsParTour(charId, effet, attrName, {
+                  nbDe: 1,
+                  de: 6
+                }, 'normal',
                 "saigne par tous les orifices du visage", evt, {
                   magique: true
                 },
@@ -13811,7 +13836,10 @@ var COFantasy = COFantasy || function() {
                 });
               return;
             case 'armureBrulante': //prend 1d4 DM
-              degatsParTour(charId, effet, attrName, "1d4", 'feu',
+              degatsParTour(charId, effet, attrName, {
+                  nbDe: 1,
+                  de: 4
+                }, 'feu',
                 "brûle dans son armure", evt, {},
                 function() {
                   count--;
@@ -13819,7 +13847,9 @@ var COFantasy = COFantasy || function() {
                 });
               return;
             case 'nueeDInsectes': //prend 1 DM
-              degatsParTour(charId, effet, attrName, "1", 'normal',
+              degatsParTour(charId, effet, attrName, {
+                  cst: 1
+                }, 'normal',
                 "est piqué par les insectes", evt, {},
                 function() {
                   count--;
@@ -13827,7 +13857,9 @@ var COFantasy = COFantasy || function() {
                 });
               return;
             case 'armeBrulante': //prend 1 DM
-              degatsParTour(charId, effet, attrName, "1", 'feu',
+              degatsParTour(charId, effet, attrName, {
+                  cst: 1
+                }, 'feu',
                 "se brûle avec son arme", evt, {},
                 function() {
                   count--;
