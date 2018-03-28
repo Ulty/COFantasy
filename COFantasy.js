@@ -2666,8 +2666,6 @@ var COFantasy = COFantasy || function() {
     }
     weaponStats.attSkillDiv = parseInt(weaponStats.attSkillDiv);
     weaponStats.attNbDices = parseInt(weaponStats.attNbDices);
-    if (weaponStats.attNbDices && options.tempeteDeManaIntense)
-      weaponStats.attNbDices += options.tempeteDeManaIntense;
     weaponStats.attDice = parseInt(weaponStats.attDice);
     options.d6 = 'd6';
     if (charAttributeAsBool(attaquant, 'tropPetit')) {
@@ -3531,6 +3529,20 @@ var COFantasy = COFantasy || function() {
     }
     if (options.puissant) {
       attDice += 2;
+    }
+    if (attNbDices) {
+      if (options.tempeteDeManaIntense) {
+        attNbDices += options.tempeteDeManaIntense;
+      } else if (options.conditionAttaquant &&
+        options.conditionAttaquant.type == 'attribut') {
+        var attrtdmi =
+          options.conditionAttaquant.attribute + "TempeteDeManaIntense";
+        var tdmCond = attributeAsInt(attaquant, attrtdmi, 0);
+        if (tdmCond) {
+          attNbDices += tdmCond;
+          removeTokenAttr(attaquant, attrtdmi, evt);
+        }
+      }
     }
     if (options.reroll1) attDice += "r1";
     if (options.reroll2) attDice += "r2";

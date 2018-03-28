@@ -791,7 +791,7 @@
                 <h4 class="text-secondary">Voie de l'air</h4>
                 <ol>
                   <li><strong>Murmures dans le vent</strong> : rien à faire</li>
-                  <li><strong>Sous tension</strong> : <code>!cof-effet-temp sous_tension [[5+@{selected|CHA}]]</code>. Pour l'attaque, définir une attaque magique à 1d6+CHA, et l'appeler avec les options <code>--si etat sous_tension --electrique --sortilege --fx beam-holy</code></li>
+                  <li><strong>Sous tension</strong> : <code>!cof-effet-temp sous_tension [[5+@{selected|CHA}]]</code>. Pour l'attaque, définir une attaque magique à 1d6+CHA, et l'appeler avec les options <code>--si etat sous_tension --electrique --sortilege --fx beam-holy</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Oui,--tempeteDeMana|Non,}</code>, seulement pour la mise sous tension (pas l'attaque).</li>
                   <li><strong>Télékinésie</strong> : Pas de support autre que <code>!cof-lancer-sort 1 lance un sort de télékinésie</code></li>
                   <li><strong>Foudre</strong> : Faire une attaque de foudre de portée 10 m (attaque magique, dégâts 4d6 + CHA), et faire les attaques avec les options <code>--psave DEX [[12+@{selected|DEX}]] --mana 2 --electrique --sortilege --ligne --fx beam-holy ?{Y consacrer le tour entier ?|oui,--puissant|non,''}</code>.</li>
                   <li><strong>Forme éthérée</strong> : <code>!cof-effet-temp intangible [[5 + @{selected|CHA}]] --mana 3</code></li>
