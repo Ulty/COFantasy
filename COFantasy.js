@@ -13672,7 +13672,7 @@ var COFantasy = COFantasy || function() {
               charId: charId
             };
             var regen = getValeurOfEffet(perso, 'regeneration', 3);
-            var soins = regen * toursRestant;
+            var soins = regen * (toursRestant + attributeAsInt(perso, 'regenerationTempeteDeManaIntense', 0));
             soigneToken(perso, soins, evt,
               function(s) {
                 options.print = function(m) {}; //Pour ne pas afficher le message final.
@@ -13757,14 +13757,17 @@ var COFantasy = COFantasy || function() {
         charId: charId
       };
       var dmgExpr = dmg;
+      var tdmi = attributeAsInt(perso, effet + "TempeteDeManaIntense", 0);
       if (dmg.de) {
-        var tdmi = attributeAsInt(perso, effet + "TempeteDeManaIntense", 0);
         if (tdmi) {
           dmgExpr = (tdmi + dmg.nbDe) + 'd' + dmg.de;
           removeTokenAttr(perso, effet + "TempeteDeManaIntense", evt);
         } else dmgExpr = dmg.nbDe + 'd' + dmg.de;
       } else if (dmg.cst) {
-        dmgExpr = dmg.cst;
+        if (tdmi) {
+          dmgExpr = dmg.cst * (1+tdmi);
+          removeTokenAttr(perso, effet + "TempeteDeManaIntense", evt);
+        } else dmgExpr = dmg.cst;
       }
       sendChat('', "[[" + dmgExpr + "]]", function(res) {
         var rolls = res[0];
@@ -13796,6 +13799,11 @@ var COFantasy = COFantasy || function() {
         token: token,
         charId: charId
       };
+      var tdmi = attributeAsInt(perso, effet + "TempeteDeManaIntense", 0);
+      if (tdmi) {
+        soinsExpr = "(" + soinsExpr + ")*" + (1+tdmi);
+        removeTokenAttr(perso, effet + "TempeteDeManaIntense", evt);
+      }
       var localSoinsExpr = soinsExpr;
       if (options.valeur) {
         var attrsVal = tokenAttribute(perso, options.valeur);
