@@ -1720,7 +1720,13 @@ var COFantasy = COFantasy || function() {
     }
     if (hasMana) {
       var bar2 = parseInt(token.get("bar2_value"));
-      if (isNaN(bar2)) bar2 = 0;
+      if (isNaN(bar2)) {
+        if (token.get('bar1_link') === '') bar2 = 0;
+        else { //devrait être lié à la mana courante
+          sendChar(charId, "*** Attention, la barre de mana du token n'est pas liée à la mana de la fiche ***");
+          bar2 = parseInt(manaAttr[0].get('current'));
+        }
+      }
       if (bar2 < cout) {
         msg = msg || '';
         sendChar(charId, " n'a pas assez de points de mana pour " + msg);
@@ -5817,8 +5823,11 @@ var COFantasy = COFantasy || function() {
     var attrPR = tokenAttribute(perso, 'pointsDeRecuperation');
     if (attrPR.length > 0) {
       var prc = parseInt(attrPR[0].get('current'));
-      var prm =parseInt(attrPR[0].get('max'));
-      return {current:prc, max:prm};
+      var prm = parseInt(attrPR[0].get('max'));
+      return {
+        current: prc,
+        max: prm
+      };
     }
     var pr = 5;
     var x;
@@ -5826,7 +5835,10 @@ var COFantasy = COFantasy || function() {
       x = getAttrByName(perso.charId, "PR" + i);
       if (x == 1) pr--;
     }
-    return {current:pr, max:5};
+    return {
+      current: pr,
+      max: 5
+    };
   }
 
   function enleverPointDeRecuperation(perso, evt) {
