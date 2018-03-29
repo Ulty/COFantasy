@@ -1107,6 +1107,10 @@ var COFantasy = COFantasy || function() {
     var niveau = charAttributeAsInt(perso, 'NIVEAU', 1);
     if (max === undefined || max > niveau - mana)
       max = niveau - mana;
+    if (max < 1) {
+      sendChar(perso.charId, "ne peut pas dépenser plus de mana en tempête de mana (niveau "+niveau+", mana déjà dépensée "+mana+")");
+      return;
+    }
     tempeteDeManaCourante.max = max;
     optionsDeTempeteDeMana({
       content: '!cof-tempete-de-mana'
