@@ -4664,7 +4664,7 @@ var COFantasy = COFantasy || function() {
     if (BLESSURESGRAVES && estPJ(target) && (dmgTotal == 'mort' ||
         dmgTotal > charAttributeAsInt(target, 'NIVEAU', 1) + charAttributeAsInt(target, 'CONSTITUTION', 10))) {
       var pr = pointsDeRecuperation(target);
-      if (pr > 0) {
+      if (pr.current > 0) {
         expliquer("Les dégâts son si importants que " + target.tokName + " perd 1 PR");
         enleverPointDeRecuperation(target, evt);
       } else if (getState(target, 'blessé')) {
@@ -5814,16 +5814,32 @@ var COFantasy = COFantasy || function() {
 
   function pointsDeRecuperation(perso) {
     // retourne les nombre de PR restant
+    var attrPR = tokenAttribute(perso, 'pointsDeRecuperation');
+    if (attrPR.length > 0) {
+      var prc = parseInt(attrPR[0].get('current'));
+      var prm =parseInt(attrPR[0].get('max'));
+      return {current:prc, max:prm};
+    }
     var pr = 5;
     var x;
     for (var i = 1; i < 6; i++) {
       x = getAttrByName(perso.charId, "PR" + i);
       if (x == 1) pr--;
     }
-    return pr;
+    return {current:pr, max:5};
   }
 
   function enleverPointDeRecuperation(perso, evt) {
+    var attrPR = tokenAttribute(perso, 'pointsDeRecuperation');
+    if (attrPR.length > 0) {
+      var prc = parseInt(attrPR[0].get('current'));
+      if (prc > 0) {
+        setTokenAttr(perso, 'pointsDeRecuperation', prc - 1, evt);
+        return;
+      }
+      sendChat("COF", "Plus de point de récupération à enlever");
+      return;
+    }
     evt.attributes = evt.attributes || [];
     for (var i = 1; i < 6; i++) {
       var prAttr = findObjs({
@@ -5855,23 +5871,35 @@ var COFantasy = COFantasy || function() {
     sendChat("COF", "Plus de point de récupération à enlever");
   }
 
-  function rajouterPointDeRecuperation(charId) {
+  function rajouterPointDeRecuperation(perso, evt) {
+    var attrPR = tokenAttribute(perso, 'pointsDeRecuperation');
+    if (attrPR.length > 0) {
+      var prc = parseInt(attrPR[0].get('current'));
+      var prmax = parseInt(attrPR[0].get('max'));
+      if (prc < prmax) {
+        setTokenAttr(perso, 'pointsDeRecuperation', prc + 1, evt);
+        return true;
+      }
+      log("Pas de point de récupération à récupérer pour " + perso.token.get('name'));
+      return;
+    }
     for (var i = 1; i < 6; i++) {
       var prAttr =
         findObjs({
           _type: "attribute",
-          _characterid: charId,
+          _characterid: perso.charId,
           name: "PR" + i
         });
       if (prAttr.length > 0 && prAttr[0].get("current") == 1) {
         prAttr[0].set("current", 0);
-        return {
+        evt.attributes.push({
           attribute: prAttr[0],
           current: 1
-        };
+        });
+        return true;
       }
     }
-    log("Pas de point de récupération à récupérer pour " + charId);
+    log("Pas de point de récupération à récupérer pour " + perso.token.get('name'));
   }
 
   //Asynchrone
@@ -6110,7 +6138,7 @@ var COFantasy = COFantasy || function() {
       var bar1 = parseInt(token.get("bar1_value"));
       var pvmax = parseInt(token.get("bar1_max"));
       if (isNaN(bar1) || isNaN(pvmax)) return;
-      if (bar1 >= pvmax && (pr == 5 || option == 'recuperer')) {
+      if (bar1 >= pvmax && (pr.current == pr.max || option == 'recuperer')) {
         if (option == "recuperer") {
           sendChat("", characterName + " n'a pas besoin de repos");
         }
@@ -6132,7 +6160,7 @@ var COFantasy = COFantasy || function() {
         return; //Si pas de dé de vie, alors pas de PR.
       }
       var message;
-      if (option == "nuit" && pr < 5) { // on récupère un PR
+      if (option == "nuit" && pr.current < pr.max) { // on récupère un PR
         //Sauf si on a une blessure gave
         if (getState(perso, 'blessé')) {
           testCaracteristique(perso, 'CON', 8, {}, evt, function(tr) {
@@ -6146,30 +6174,29 @@ var COFantasy = COFantasy || function() {
           });
           return;
         }
-        var affAttr = rajouterPointDeRecuperation(charId);
+        var affAttr = rajouterPointDeRecuperation(perso, evt);
         if (affAttr === undefined) {
           error("Pas de point de récupérartion à rajouter et pourtant pas au max", token);
           finalize();
           return;
         }
-        evt.attributes.push(affAttr);
         message =
           "Au cours de la nuit, les points de récupération de " + characterName +
-          " passent de " + pr + " à " + (pr + 1);
+          " passent de " + pr.current + " à " + (pr.current + 1);
         sendChar(charId, message);
         if (bar1 < pvmax) manquePV.push(perso);
         finalize();
         return;
       }
       if (option == "recuperer") {
-        if (pr === 0) { //pas possible de récupérer
-          message = " a besoin d'une nuite complète pour récupérer";
+        if (pr.current === 0) { //pas possible de récupérer
+          message = " a besoin d'une nuit complète pour récupérer";
           sendChar(charId, message);
           finalize();
           return;
         } else { //dépense d'un PR
           enleverPointDeRecuperation(perso, evt);
-          pr--;
+          pr.current--;
         }
       }
       var conMod = modCarac(perso, 'CONSTITUTION');
@@ -6197,7 +6224,7 @@ var COFantasy = COFantasy || function() {
           message = "Après une dizaine de minutes de repos, ";
         }
         message +=
-          characterName + " récupère " + buildinline(rolls.inlinerolls[0]) + "+" + bonus + " PV. Il lui reste " + pr + " points de récupération";
+          characterName + " récupère " + buildinline(rolls.inlinerolls[0]) + "+" + bonus + " PV. Il lui reste " + pr.current + " points de récupération";
         sendChar(charId, "/direct " + message);
         finalize();
       });
@@ -7509,8 +7536,9 @@ var COFantasy = COFantasy || function() {
       }
       var aDV = charAttributeAsInt(perso, 'DV', 0);
       if (aDV > 0) { // correspond aux PJs
+        var pr = pointsDeRecuperation(perso);
         line =
-          "Points de récupération : " + pointsDeRecuperation(perso) + " / 5";
+          "Points de récupération : " + pr.current + " / " + pr.max;
         addLineToFramedDisplay(display, line);
         line =
           "Points de chance : " + attributeAsInt(perso, 'PC', 0) + " / " +
