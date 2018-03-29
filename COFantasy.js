@@ -1053,7 +1053,8 @@ var COFantasy = COFantasy || function() {
       restant = tempeteDeManaCourante.max - tempeteDeManaCourante.cout;
     }
     var display = startFramedDisplay(tempeteDeManaCourante.playerId, title, perso, undefined, true);
-    if (tempeteDeManaCourante.dm === undefined &&
+    if (tempeteDeManaCourante.dureeDeBase &&
+      tempeteDeManaCourante.dm === undefined &&
       tempeteDeManaCourante.soins === undefined)
       ajouterOptionTempete(display, "duree", "Durée", restant, perso);
     if (tempeteDeManaCourante.porteeDeBase)
@@ -1097,6 +1098,7 @@ var COFantasy = COFantasy || function() {
       soins: options.soins,
       intense: options.intense,
       porteeDeBase: options.portee,
+      dureeDeBase: options.duree,
       cout: options.cout || 0
     };
     var max;
@@ -1639,18 +1641,21 @@ var COFantasy = COFantasy || function() {
           rang: options.rang,
           portee: true //Pour avoir l'option
         };
-        if (options.pasDeDmg) {
-          if (options.effets) {
-            options.effets.forEach(function(ef) {
-              if (ef.effet) {
-                if (estEffetTemp(ef.effet)) {
-                  optMana.dm = optMana.dm || messageEffetTemp[ef.effet].dm;
-                  optMana.soins = optMana.soins || messageEffetTemp[ef.effet].soins;
-                }
+        if (!options.pasDeDmg) optMana.dm = true;
+        if (options.effets) {
+          options.effets.forEach(function(ef) {
+            if (ef.effet) {
+              if (estEffetTemp(ef.effet)) {
+                optMana.dm = optMana.dm || messageEffetTemp[ef.effet].dm;
+                optMana.soins = optMana.soins || messageEffetTemp[ef.effet].soins;
+                optMana.duree = true;
               }
-            });
-          }
-        } else optMana.dm = true;
+            } else if (estEffetCombat(ef.effet)) {
+              optMana.dm = optMana.dm || messageEffetCombat[ef.effet].dm;
+              optMana.soins = optMana.soins || messageEffetCombat[ef.effet].soins;
+            }
+          });
+        }
         setTempeteDeMana(msg.playerid, attaquant, msg.content, optMana);
         return;
       } else {
@@ -8700,6 +8705,7 @@ var COFantasy = COFantasy || function() {
             dm: messageEffetTemp[effet].dm,
             soins: messageEffetTemp[effet].soins,
             portee: options.portee,
+            duree: true,
             rang: options.rang
           };
           setTempeteDeMana(msg.playerid, lanceur, msg.content, optMana);
@@ -8711,6 +8717,7 @@ var COFantasy = COFantasy || function() {
         }
       }
       if (options.portee !== undefined) {
+        if (options.tempeteDeManaPortee) options.portee = options.portee * 2;
         selected = selected.filter(function(sel) {
           var token = getObj('graphic', sel._id);
           var dist = distanceCombat(lanceur.token, token);
@@ -8830,7 +8837,26 @@ var COFantasy = COFantasy || function() {
           if (lanceur) charId = lanceur.charId;
         }
       }
+      if (lanceur && options.tempeteDeMana) {
+        if (options.tempeteDeMana.cout === 0) {
+          //On demande de préciser les options
+          var optMana = {
+            mana: options.mana,
+            dm: messageEffetCombat[effet].dm,
+            soins: messageEffetCombat[effet].soins,
+            portee: options.portee,
+            rang: options.rang
+          };
+          setTempeteDeMana(msg.playerid, lanceur, msg.content, optMana);
+          return;
+        } else {
+          if (options.rang && options.tempeteDeMana.cout > options.rang) {
+            sendChar(lanceur.charId, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
+          }
+        }
+      }
       if (options.portee !== undefined) {
+        if (options.tempeteDeManaPortee) options.portee = options.portee * 2;
         selected = selected.filter(function(sel) {
           var token = getObj('graphic', sel._id);
           var dist = distanceCombat(lanceur.token, token);
@@ -9922,6 +9948,23 @@ var COFantasy = COFantasy || function() {
         //TODO : augmenter les dés en cas de tempete de mana intense
         soins = "[[" + argSoin + "]]";
     }
+    if (options.tempeteDeMana && soigneur) {
+      if (options.tempeteDeMana.cout === 0) {
+        //On demande de préciser les options
+        var optMana = {
+          mana: options.mana,
+          rang: options.rang,
+          portee: options.portee,
+          soins: true
+        };
+        setTempeteDeMana(msg.playerid, soigneur, msg.content, optMana);
+        return;
+      } else {
+        if (options.rang && options.tempeteDeMana.cout > options.rang) {
+          sendChar(soigneur.charId, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
+        }
+      }
+    }
     sendChat('', soins, function(res) {
       soins = res[0].inlinerolls[0].results.total;
       var soinTxt = buildinline(res[0].inlinerolls[0], 'normal', true);
@@ -9970,6 +10013,7 @@ var COFantasy = COFantasy || function() {
         var sujet = onGenre(cible.charId, 'il', 'elle');
         var Sujet = onGenre(cible.charId, 'Il', 'Elle');
         if (options.portee !== undefined) {
+          if (options.tempeteDeManaPortee) options.portee = options.portee * 2;
           var distance = distanceCombat(soigneur.token, token2, pageId);
           if (distance > options.portee) {
             if (display)
