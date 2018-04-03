@@ -776,7 +776,7 @@ var COFantasy = COFantasy || function() {
     };
     var display = startFramedDisplay(playerId, titre, perso, undefined, options.secret);
     if (difficulte === undefined) {
-      jetCaracteristique(perso, caracteristique, options, function(rt) {
+      jetCaracteristique(perso, caracteristique, options, evt, function(rt) {
         addLineToFramedDisplay(display, "<b>Résultat :</b> " + rt.texte);
         addStatistics(playerId, ["Jet de carac", caracteristique], rt.roll);
         // Maintenant, on diminue la malédiction si le test est un échec
@@ -1472,7 +1472,7 @@ var COFantasy = COFantasy || function() {
           if (options[cmd[0]] === undefined) options[cmd[0]] = 0;
           options[cmd[0]] += bAtt;
           return;
-        case "puissant":
+        case 'puissant':
           if (cmd.length < 2) {
             options.puissant = true;
             return;
@@ -1485,6 +1485,9 @@ var COFantasy = COFantasy || function() {
             case 'non':
             case 'Non':
               options.puissant = false;
+              return;
+            case 'duree':
+              options.puissantDuree = true;
               return;
             default:
               options.puissant = attributeAsBool(attaquant, cmd[1] + "Puissant");
@@ -1668,7 +1671,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    if (options.tempeteDeManaDuree) {
+    if (options.tempeteDeManaDuree || options.puissantDuree) {
       if (options.pasDeDmg) {
         if (options.peur && options.peur.duree)
           options.peur.duree = options.peur.duree * 2;
@@ -1682,11 +1685,13 @@ var COFantasy = COFantasy || function() {
           });
         }
       } else {
+        if (options.tempeteDeManDuree) {
         sendChar(attaquant.charId, "Attention, l'option tempête de mana pour la durée n'est pas prise en compte. Utiliser l'option --pasDeDmg si le sort ne fait pas de DM");
         options.tempeteDeManaDuree = false;
         if (options.tempeteDeMana && options.tempeteDeMana.cout)
           options.tempeteDeMana.cout--;
         if (options.mana) options.mana--;
+        }
       }
     }
     attack(msg.playerid, attaquant, targetToken, attackLabel, options);
@@ -1893,12 +1898,22 @@ var COFantasy = COFantasy || function() {
     }
     attBonus += charAttributeAsInt(personnage, 'actionConcertee', 0);
     if (attributeAsBool(personnage, 'chant_des_heros')) {
-      attBonus += getValeurOfEffet(personnage, 'chant_des_heros', 1);
-      explications.push("Chant des héros => +1 en Attaque");
+      var bonusChantDesHeros = getValeurOfEffet(personnage, 'chant_des_heros', 1);
+      var chantDesHerosIntense =  attributeAsInt(personnage, 'chant_des_herosTempeteDeManaIntense', 0);
+      bonusChantDesHeros += chantDesHerosIntense;
+      attBonus += bonusChantDesHeros;
+      explications.push("Chant des héros => +" +bonusChantDesHeros + " en Attaque");
+      if (chantDesHerosIntense) 
+        removeTokenAttr(personnage, 'chant_des_herosTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(personnage, 'benediction')) {
-      attBonus += 1;
-      explications.push("Bénédiction => +1 en Attaque");
+      var bonusBenediction = getValeurOfEffet(personnage, 'benediction', 1);
+      var benedictionIntense =  attributeAsInt(personnage, 'benedictionTempeteDeManaIntense', 0);
+      bonusBenediction += benedictionIntense;
+      attBonus += bonusBenediction;
+      explications.push("Bénédiction => +" +bonusBenediction + " en Attaque");
+      if (benedictionIntense) 
+        removeTokenAttr(personnage, 'benedictionTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(personnage, 'strangulation')) {
       var malusStrangulation =
@@ -1939,8 +1954,11 @@ var COFantasy = COFantasy || function() {
       explications.push("Force de géant => +" + bonusForceDeGeant + " en Attaque");
     }
     if (attributeAsBool(personnage, 'nueeDInsectes')) {
-      attBonus -= 2;
-      explications.push("Nuée d’insectes => -2 en Attaque");
+      var malusNuee = 2 + attributeAsInt(personnage, 'nueeDInsectesTempeteDeManaIntense', 0);
+      attBonus -= malusNuee;
+      explications.push("Nuée d’insectes => -" + malusNuee + " en Attaque");
+      if (malusNuee > 2)
+        removeTokenAttr(personnage, 'nueeDInsectesTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(personnage, 'etatExsangue')) {
       attBonus -= 2;
@@ -1960,8 +1978,12 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(personnage, 'masqueDuPredateur')) {
       var bonusMasque = getValeurOfEffet(personnage, 'masqueDuPredateur', modCarac(personnage, 'SAGESSE'));
+      var masqueIntense = attributeAsInt(personnage, 'masqueDuPredateurTempeteDeManaIntense', 0);
+      bonusMasque += masqueIntense;
       attBonus += bonusMasque;
       explications.push("Masque du prédateur : +" + bonusMasque + " en Attaque et DM");
+      if (masqueIntense)
+        removeTokenAttr(personnage, 'masqueDuPredateurTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(personnage, 'rageDuBerserk')) {
       attBonus += 2;
@@ -2142,7 +2164,13 @@ var COFantasy = COFantasy || function() {
     defense += attributeAsInt(target, 'defenseTotale', 0);
     defense += attributeAsInt(target, 'pacifisme', 0);
     if (attributeAsBool(target, 'peau_d_ecorce')) {
-      defense += getValeurOfEffet(target, 'peau_d_ecorce', 1, 'voieDesVegetaux');
+      var bonusPeau = getValeurOfEffet(target, 'peau_d_ecorce', 1, 'voieDesVegetaux');
+      var peauIntense = attributeAsInt(target, 'peau_d_ecorceTempeteDeManaIntense', 0);
+      bonusPeau += peauIntense;
+      defense += bonusPeau;
+      explications.push("Peau d'écorce : +" + bonusPeau + " en DEF");
+      if (peauIntense)
+        removeTokenAttr(target, 'peau_d_ecorceTempeteDeManaIntense', evt);
     }
     if (getState(target, 'surpris')) defense -= 5;
     if (getState(target, 'renverse')) defense -= 5;
@@ -7929,14 +7957,25 @@ var COFantasy = COFantasy || function() {
   }
 
   //retourne un entier
-  function bonusTestCarac(carac, personnage) {
+  // evt n'est défini que si la caractéristique est effectivement utlilisée
+  function bonusTestCarac(carac, personnage, evt) {
     var bonus = modCarac(personnage, caracOfMod(carac));
     bonus += charAttributeAsInt(personnage, carac + "_BONUS", 0);
     if (attributeAsBool(personnage, 'chant_des_heros')) {
-      bonus += 1;
+      var bonusChantDesHeros = getValeurOfEffet(personnage, 'chant_des_heros', 1);
+      var chantDesHerosIntense =  attributeAsInt(personnage, 'chant_des_herosTempeteDeManaIntense', 0);
+      bonusChantDesHeros += chantDesHerosIntense;
+      bonus += bonusChantDesHeros;
+      if (chantDesHerosIntense && evt) 
+        removeTokenAttr(personnage, 'chant_des_herosTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(personnage, 'benediction')) {
-      bonus += getValeurOfEffet(personnage, 'benediction', 1);
+      var bonusBenediction = getValeurOfEffet(personnage, 'benediction', 1);
+      var benedictionIntense =  attributeAsInt(personnage, 'benedictionTempeteDeManaIntense', 0);
+      bonusBenediction += benedictionIntense;
+      bonus += bonusBenediction;
+      if (benedictionIntense && evt) 
+        removeTokenAttr(personnage, 'benedictionTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(personnage, 'strangulation')) {
       var malusStrangulation =
@@ -7944,7 +7983,10 @@ var COFantasy = COFantasy || function() {
       bonus -= malusStrangulation;
     }
     if (attributeAsBool(personnage, 'nueeDInsectes')) {
-      bonus -= 2;
+      var malusNuee = 2 + attributeAsInt(personnage, 'nueeDInsectesTempeteDeManaIntense', 0);
+      bonus -= malusNuee;
+      if (malusNuee > 2 && evt)
+        removeTokenAttr(personnage, 'nueeDInsectesTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(personnage, 'etatExsangue')) {
       bonus -= 2;
@@ -8005,10 +8047,10 @@ var COFantasy = COFantasy || function() {
   // - total : Le résultat total du jet
   // - echecCritique, critique pour indiquer si 1 ou 20
   // - roll: le inlineroll (pour les statistiques)
-  function jetCaracteristique(personnage, carac, options, callback) {
+  function jetCaracteristique(personnage, carac, options, evt, callback) {
     var charId = personnage.charId;
     var token = personnage.token;
-    var bonusCarac = bonusTestCarac(carac, personnage);
+    var bonusCarac = bonusTestCarac(carac, personnage, evt);
     if (options.bonusAttrs) {
       options.bonusAttrs.forEach(function(attr) {
         bonusCarac += charAttributeAsInt(charId, attr, 0);
@@ -8052,7 +8094,7 @@ var COFantasy = COFantasy || function() {
     options = options || {};
     var charId = personnage.charId;
     var token = personnage.token;
-    var bonusCarac = bonusTestCarac(carac, personnage);
+    var bonusCarac = bonusTestCarac(carac, personnage, evt);
     if (options.bonusAttrs) {
       options.bonusAttrs.forEach(function(attr) {
         bonusCarac += charAttributeAsInt(charId, attr, 0);
@@ -11902,8 +11944,8 @@ var COFantasy = COFantasy || function() {
     if (carac2 === undefined) carac2 = carac1;
     var nom1 = perso1.token.get('name');
     var nom2 = perso2.token.get('name');
-    jetCaracteristique(perso1, carac1, {}, function(rt1) {
-      jetCaracteristique(perso2, carac2, {}, function(rt2) {
+    jetCaracteristique(perso1, carac1, {}, evt, function(rt1) {
+      jetCaracteristique(perso2, carac2, {}, evt, function(rt2) {
         explications.push("Jet de " + carac1 + " de " + nom1 + " :" + rt1.texte);
         explications.push("Jet de " + carac2 + " de " + nom2 + " :" + rt2.texte);
         var reussite;
