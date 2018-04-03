@@ -1108,7 +1108,7 @@ var COFantasy = COFantasy || function() {
     if (max === undefined || max > niveau - mana)
       max = niveau - mana;
     if (max < 1) {
-      sendChar(perso.charId, "ne peut pas dépenser plus de mana en tempête de mana (niveau "+niveau+", mana déjà dépensée "+mana+")");
+      sendChar(perso.charId, "ne peut pas dépenser plus de mana en tempête de mana (niveau " + niveau + ", mana déjà dépensée " + mana + ")");
       return;
     }
     tempeteDeManaCourante.max = max;
@@ -1686,11 +1686,11 @@ var COFantasy = COFantasy || function() {
         }
       } else {
         if (options.tempeteDeManDuree) {
-        sendChar(attaquant.charId, "Attention, l'option tempête de mana pour la durée n'est pas prise en compte. Utiliser l'option --pasDeDmg si le sort ne fait pas de DM");
-        options.tempeteDeManaDuree = false;
-        if (options.tempeteDeMana && options.tempeteDeMana.cout)
-          options.tempeteDeMana.cout--;
-        if (options.mana) options.mana--;
+          sendChar(attaquant.charId, "Attention, l'option tempête de mana pour la durée n'est pas prise en compte. Utiliser l'option --pasDeDmg si le sort ne fait pas de DM");
+          options.tempeteDeManaDuree = false;
+          if (options.tempeteDeMana && options.tempeteDeMana.cout)
+            options.tempeteDeMana.cout--;
+          if (options.mana) options.mana--;
         }
       }
     }
@@ -1899,20 +1899,20 @@ var COFantasy = COFantasy || function() {
     attBonus += charAttributeAsInt(personnage, 'actionConcertee', 0);
     if (attributeAsBool(personnage, 'chant_des_heros')) {
       var bonusChantDesHeros = getValeurOfEffet(personnage, 'chant_des_heros', 1);
-      var chantDesHerosIntense =  attributeAsInt(personnage, 'chant_des_herosTempeteDeManaIntense', 0);
+      var chantDesHerosIntense = attributeAsInt(personnage, 'chant_des_herosTempeteDeManaIntense', 0);
       bonusChantDesHeros += chantDesHerosIntense;
       attBonus += bonusChantDesHeros;
-      explications.push("Chant des héros => +" +bonusChantDesHeros + " en Attaque");
-      if (chantDesHerosIntense) 
+      explications.push("Chant des héros => +" + bonusChantDesHeros + " en Attaque");
+      if (chantDesHerosIntense)
         removeTokenAttr(personnage, 'chant_des_herosTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(personnage, 'benediction')) {
       var bonusBenediction = getValeurOfEffet(personnage, 'benediction', 1);
-      var benedictionIntense =  attributeAsInt(personnage, 'benedictionTempeteDeManaIntense', 0);
+      var benedictionIntense = attributeAsInt(personnage, 'benedictionTempeteDeManaIntense', 0);
       bonusBenediction += benedictionIntense;
       attBonus += bonusBenediction;
-      explications.push("Bénédiction => +" +bonusBenediction + " en Attaque");
-      if (benedictionIntense) 
+      explications.push("Bénédiction => +" + bonusBenediction + " en Attaque");
+      if (benedictionIntense)
         removeTokenAttr(personnage, 'benedictionTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(personnage, 'strangulation')) {
@@ -7963,18 +7963,18 @@ var COFantasy = COFantasy || function() {
     bonus += charAttributeAsInt(personnage, carac + "_BONUS", 0);
     if (attributeAsBool(personnage, 'chant_des_heros')) {
       var bonusChantDesHeros = getValeurOfEffet(personnage, 'chant_des_heros', 1);
-      var chantDesHerosIntense =  attributeAsInt(personnage, 'chant_des_herosTempeteDeManaIntense', 0);
+      var chantDesHerosIntense = attributeAsInt(personnage, 'chant_des_herosTempeteDeManaIntense', 0);
       bonusChantDesHeros += chantDesHerosIntense;
       bonus += bonusChantDesHeros;
-      if (chantDesHerosIntense && evt) 
+      if (chantDesHerosIntense && evt)
         removeTokenAttr(personnage, 'chant_des_herosTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(personnage, 'benediction')) {
       var bonusBenediction = getValeurOfEffet(personnage, 'benediction', 1);
-      var benedictionIntense =  attributeAsInt(personnage, 'benedictionTempeteDeManaIntense', 0);
+      var benedictionIntense = attributeAsInt(personnage, 'benedictionTempeteDeManaIntense', 0);
       bonusBenediction += benedictionIntense;
       bonus += bonusBenediction;
-      if (benedictionIntense && evt) 
+      if (benedictionIntense && evt)
         removeTokenAttr(personnage, 'benedictionTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(personnage, 'strangulation')) {
@@ -8704,11 +8704,8 @@ var COFantasy = COFantasy || function() {
             error("Il manque la valeur en argument de l'option --valeur", opts);
             return;
           }
-          options.valeur = parseInt(cmd[1]);
-          if (isNaN(options.valeur)) {
-            error("L'argument de --valeur n'est pas un nombre", cmd);
-            options.valeur = undefined;
-          }
+          options.valeur = cmd[1];
+          if (cmd.length > 2) options.valeurMax = cmd[2];
           return;
         case "fx":
           if (cmd.length < 2) {
@@ -8863,7 +8860,7 @@ var COFantasy = COFantasy || function() {
         setAttr(selected, effetComplet + "Puissant", puissant, evt);
       }
       if (options.valeur !== undefined) {
-        setAttr(selected, effetComplet + "Valeur", options.valeur, evt);
+        setAttr(selected, effetComplet + "Valeur", options.valeur, evt, undefined, options.valeurMax);
       }
       if (options.tempeteDeManaIntense !== undefined) {
         setAttr(selected, effetComplet + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
@@ -8966,7 +8963,7 @@ var COFantasy = COFantasy || function() {
         setAttr(selected, effet + "Puissant", puissant, evt);
       }
       if (options.valeur !== undefined) {
-        setAttr(selected, effet + "Valeur", options.valeur, evt);
+        setAttr(selected, effet + "Valeur", options.valeur, evt, undefined, options.valeurMax);
       }
       if (options.tempeteDeManaIntense !== undefined) {
         setAttr(selected, effet + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
@@ -13177,6 +13174,36 @@ var COFantasy = COFantasy || function() {
       fin: "L'arme n'est plus enflammée.",
       dm: true
     },
+    dotGen1: {
+      activation: "subit un effet",
+      actif: "subit régulièrement des dégâts",
+      fin: "ne subit plus ces effets de dégâts",
+      dm: true
+    },
+    dotGen2: {
+      activation: "subit un effet",
+      actif: "subit régulièrement des dégâts",
+      fin: "ne subit plus ces effets de dégâts",
+      dm: true
+    },
+    dotGen3: {
+      activation: "subit un effet",
+      actif: "subit régulièrement des dégâts",
+      fin: "ne subit plus ces effets de dégâts",
+      dm: true
+    },
+    dotGen4: {
+      activation: "subit un effet",
+      actif: "subit régulièrement des dégâts",
+      fin: "ne subit plus ces effets de dégâts",
+      dm: true
+    },
+    dotGen5: {
+      activation: "subit un effet",
+      actif: "subit régulièrement des dégâts",
+      fin: "ne subit plus ces effets de dégâts",
+      dm: true
+    },
     dmgArme1d6: {
       activation: "enduit son arme d'une huile magique",
       actif: "a une arme plus puissante",
@@ -13807,9 +13834,21 @@ var COFantasy = COFantasy || function() {
         } else dmgExpr = dmg.nbDe + 'd' + dmg.de;
       } else if (dmg.cst) {
         if (tdmi) {
-          dmgExpr = dmg.cst * (1+tdmi);
+          dmgExpr = dmg.cst * (1 + tdmi);
           removeTokenAttr(perso, effet + "TempeteDeManaIntense", evt);
         } else dmgExpr = dmg.cst;
+      } else if (options.dotGen) {
+        //alors dmg = '' et type = ''
+        var valAttr = tokenAttribute(perso, effet + 'Valeur');
+        if (valAttr.length === 0) {
+          //Par défaut, 1d6 DM normaux
+          dmgExpr = "1d6";
+          type = 'normal';
+        } else {
+          dmgExpr = valAttr[0].get('current');
+          type = valAttr[0].get('max');
+          if (type === '') type = 'normal';
+        }
       }
       sendChat('', "[[" + dmgExpr + "]]", function(res) {
         var rolls = res[0];
@@ -13843,7 +13882,7 @@ var COFantasy = COFantasy || function() {
       };
       var tdmi = attributeAsInt(perso, effet + "TempeteDeManaIntense", 0);
       if (tdmi) {
-        soinsExpr = "(" + soinsExpr + ")*" + (1+tdmi);
+        soinsExpr = "(" + soinsExpr + ")*" + (1 + tdmi);
         removeTokenAttr(perso, effet + "TempeteDeManaIntense", evt);
       }
       var localSoinsExpr = soinsExpr;
@@ -14055,6 +14094,19 @@ var COFantasy = COFantasy || function() {
                 }
               }
               count--;
+              return;
+            case 'dotGen1':
+            case 'dotGen2':
+            case 'dotGen3':
+            case 'dotGen4':
+            case 'dotGen5':
+              degatsParTour(charId, effet, attrName, {}, '', "", evt, {
+                  dotGen: true
+                },
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                });
               return;
             default:
               count--;
