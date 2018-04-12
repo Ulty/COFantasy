@@ -3614,7 +3614,7 @@ var COFantasy = COFantasy || function() {
       var bonusMasque = getValeurOfEffet(attaquant, 'masqueDuPredateur', modCarac(attaquant, 'SAGESSE'));
       if (bonusMasque > 0) attDMBonusCommun += " +" + bonusMasque;
     }
-    if (options.redo === undefined && attributeAsBool(attaquant, 'rageDuBerserk')) {
+    if (options.redoDmg === undefined && attributeAsBool(attaquant, 'rageDuBerserk')) {
       options.additionalDmg.push({
         type: mainDmgType,
         value: '1' + options.d6
@@ -3639,7 +3639,7 @@ var COFantasy = COFantasy || function() {
     // Les autres sources de dégâts
     if (options.distance) {
       if (options.semonce) {
-        if (options.redo === undefined) {
+        if (options.redoDmg === undefined) {
           options.additionalDmg.push({
             type: mainDmgType,
             value: '1' + options.d6
@@ -3657,7 +3657,7 @@ var COFantasy = COFantasy || function() {
         attDMBonusCommun += "+" + bonusForceDeGeant;
         explications.push("Force de géant => +" + bonusForceDeGeant + " aux DM");
       }
-      if (options.redo === undefined && options.frappeDuVide) {
+      if (options.redoDmg === undefined && options.frappeDuVide) {
         options.additionalDmg.push({
           type: mainDmgType,
           value: '1' + options.d6
@@ -3672,7 +3672,7 @@ var COFantasy = COFantasy || function() {
         feuForgeron = feuForgeron * (1 + feuForgeronIntense);
         removeTokenAttr(attaquant, attrForgeron + 'TempeteDeManaIntense', evt);
       }
-      if (options.redo === undefined)
+      if (options.redoDmg === undefined)
         options.additionalDmg.push({
           type: 'feu',
           value: feuForgeron
@@ -3686,7 +3686,7 @@ var COFantasy = COFantasy || function() {
         nAEF += AEFIntense;
         removeTokenAttr(attaquant, attrAEF + 'TempeteDeManaIntense', evt);
       }
-      if (options.redo === undefined)
+      if (options.redoDmg === undefined)
         options.additionalDmg.push({
           type: 'feu',
           value: nAEF + 'd6'
@@ -3695,7 +3695,7 @@ var COFantasy = COFantasy || function() {
     var poisonAttr = tokenAttribute(attaquant, 'poisonRapide_' + attackLabel);
     if (poisonAttr.length > 0) {
       poisonAttr = poisonAttr[0];
-      if (options.redo === undefined) {
+      if (options.redoDmg === undefined) {
         options.additionalDmg.push({
           type: 'poison',
           value: poisonAttr.get('current'),
@@ -3712,20 +3712,23 @@ var COFantasy = COFantasy || function() {
     }
     var attrDmgArme = 'dmgArme(' + attackLabel + ')';
     if (charAttributeAsBool(attackingCharId, attrDmgArme)) {
-      var dmgArme = {type:mainDmgType, value:'1' + options.d6};
-        var valDmgArme = tokenAttribute(attaquant, attrDmgArme + 'Valeur');
-        if (valDmgArme.length > 0) {
-          dmgArme.value = valDmgArme[0].get('current');
-          var dmgArmeType = valDmgArme[0].get('max');
-          if (dmgArmeType !== '') dmgArme.type = dmgArmeType;
-        }
-      if (options.redo === undefined) {
+      var dmgArme = {
+        type: mainDmgType,
+        value: '1' + options.d6
+      };
+      var valDmgArme = tokenAttribute(attaquant, attrDmgArme + 'Valeur');
+      if (valDmgArme.length > 0) {
+        dmgArme.value = valDmgArme[0].get('current');
+        var dmgArmeType = valDmgArme[0].get('max');
+        if (dmgArmeType !== '') dmgArme.type = dmgArmeType;
+      }
+      if (options.redoDmg === undefined) {
         options.additionalDmg.push(dmgArme);
       }
       explications.push("Arme enduite => +" + dmgArme.value + " aux DM");
     }
     if (options.champion) {
-      if (options.redo === undefined) {
+      if (options.redoDmg === undefined) {
         options.additionalDmg.push({
           type: mainDmgType,
           value: '1' + options.d6
@@ -6700,6 +6703,7 @@ var COFantasy = COFantasy || function() {
     undoEvent(evtARefaire);
     adversaire.esquiveFatale = true;
     options.redo = true;
+    options.redoDmg = true;
     attack(action.player_id, attaquant, [adversaire], action.attack_label, options);
   }
 
@@ -6763,6 +6767,7 @@ var COFantasy = COFantasy || function() {
         options.rollsDmg = attaque.rollsDmg;
         options.evt = evt;
         options.redo = true;
+        options.redoDmg = true;
         cible.rollsDmg = attaque.cibles[0].rollsDmg;
         attack(attaque.player_id, attaque.attaquant, [cible], attaque.attack_label, options);
       });
@@ -6829,6 +6834,7 @@ var COFantasy = COFantasy || function() {
         options.rollsDmg = attaque.rollsDmg;
         options.evt = evt;
         options.redo = true;
+        options.redoDmg = true;
         cible.rollsDmg = target.rollsDmg;
         attack(attaque.player_id, attaque.attaquant, [cible], attaque.attack_label, options);
       });
@@ -11302,6 +11308,7 @@ var COFantasy = COFantasy || function() {
         options.rollsAttack = attaque.rollsAttack;
         options.evt = evt;
         options.redo = true;
+        options.redoDmg = true;
         attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.attack_label, options);
       }
     }); //fin getSelected
@@ -11331,6 +11338,7 @@ var COFantasy = COFantasy || function() {
       };
       options.evt = evt;
       options.redo = true;
+      options.redoDmg = true;
       var attrAbsorbe = 'absorberUn';
       if (options.sortilege) {
         evt.type += "sort";
@@ -13408,7 +13416,7 @@ var COFantasy = COFantasy || function() {
       var res = reg;
       if (res !== "(") res += "|";
       res += "^" + effet;
-      if (msg.generic) res += "\([^)]\)";
+      if (msg.generic) res += "\\([^)]*\\)";
       res += "(";
       if (postfix) {
         postfix.forEach(function(p, i) {
@@ -13446,7 +13454,7 @@ var COFantasy = COFantasy || function() {
       if (messageEffetTemp[ef]) return ef;
     }
     //Ensuite on enlève les parties entre parenthèse pour les effets génériques
-    pu = ef.substring('(');
+    pu = ef.indexOf('(');
     if (pu > 0) {
       ef = ef.substring(0, pu);
       if (messageEffetTemp[ef]) return ef;
@@ -14558,8 +14566,8 @@ on("ready", function() {
         attrName = attrName.replace(/image_decalee/, 'imageDecalee');
         attrName = attrName.replace(/a_couvert/, 'aCouvert');
         attrName = attrName.replace(/sous_tension/, 'sousTension');
-        attrName = attrName.replace(/forgeron_([^_ ]*)/, 'forgeron(\1)');
-        attrName = attrName.replace(/armeEnflammee([^_ ]*)/, 'armeEnflammee(\1)');
+        attrName = attrName.replace(/forgeron_([^_\s)]*)/, 'forgeron($1)');
+        attrName = attrName.replace(/armeEnflammee([^_\s)]*)/, 'armeEnflammee($1)');
         attr.set('name', attrName);
       }
       //Pour les consommables, il faut aussi changer le champ max;
@@ -14571,14 +14579,14 @@ on("ready", function() {
         attrMax = attrMax.replace(/image_decalee/g, 'imageDecalee');
         attrMax = attrMax.replace(/a_couvert/g, 'aCouvert');
         attrMax = attrMax.replace(/sous_tension/g, 'sousTension');
-        attrMax = attrMax.replace(/forgeron_([^_ ]*)/, 'forgeron(\1)');
-        attrMax = attrMax.replace(/armeEnflammee([^_ ]*)/, 'armeEnflammee(\1)');
+        attrMax = attrMax.replace(/forgeron_([^_\s)]*)/g, 'forgeron($1)');
+        attrMax = attrMax.replace(/armeEnflammee([^_\s)]*)/g, 'armeEnflammee($1)');
         attr.set('max', attrMax);
       }
     });
     var macros = findObjs({
       _type: 'macro'
-    }).append(findObjs({
+    }).concat(findObjs({
       _type: 'ability'
     }));
     macros.forEach(function(m) {
@@ -14590,13 +14598,13 @@ on("ready", function() {
         action = action.replace(/image_decalee/g, 'imageDecalee');
         action = action.replace(/a_couvert/g, 'aCouvert');
         action = action.replace(/sous_tension/g, 'sousTension');
-        action = action.replace(/forgeron_([^_ ]*)/, 'forgeron(\1)');
-        action = action.replace(/armeEnflammee([^_ ]*)/, 'armeEnflammee(\1)');
+        action = action.replace(/forgeron_([^_\s)]*)/g, 'forgeron($1)');
+        action = action.replace(/armeEnflammee([^_\s)]*)/g, 'armeEnflammee($1)');
         m.set('action', action);
       }
     });
     log("Mise à jour effectuée.");
-    //state.COFantasy.version = 0.1;
+    state.COFantasy.version = 1.0;
   }
   handout.forEach(function(hand) {
     COFantasy.changeHandout(hand);
