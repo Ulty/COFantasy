@@ -4483,7 +4483,7 @@ var COFantasy = COFantasy || function() {
     // Dommages de même type que le principal, mais à part, donc non affectés par les critiques
     var mainDmgType = dmg.type;
     var dmgExtra = dmgParType[mainDmgType];
-    if (dmgExtra && dmgExtra.length > 0) {
+    if (dmgExtra && dmgExtra.length > 0 && !charAttributeAsBool(target, 'immunite_' + mainDmgType)) {
       if (dmgCoef > 1) dmgDisplay = "(" + dmgDisplay + ")";
       showTotal = true;
       var count = dmgExtra.length;
@@ -4548,7 +4548,16 @@ var COFantasy = COFantasy || function() {
         numberPMort);
       dmgTotal = 0;
     }
-    if (options.ignoreRD === undefined) {
+
+    if (charAttributeAsBool(target, 'immunite_' + mainDmgType)) {
+      if (expliquer) {
+        target.tokName = target.tokName || target.token.get('name');
+        expliquer(target.tokName + " ne semble pas affecté par le type " + mainDmgType);
+      }
+      dmgTotal = 0;
+      dmgDisplay = '0';
+      showTotal = false;
+    } else if (options.ignoreRD === undefined) {
       var rdMain = typeRD(target, mainDmgType);
       if (options.vampirise) {
         rdMain += attributeAsInt(target, 'RD_drain', 0);
@@ -4637,7 +4646,14 @@ var COFantasy = COFantasy || function() {
     // First count all other sources of damage, for synchronization
     var count = 0;
     for (var dt in dmgParType) {
-      count += dmgParType[dt].length;
+      if (charAttributeAsBool(target, 'immunite_' + dt)) {
+        if (expliquer) {
+          target.tokName = target.tokName || target.token.get('name');
+          expliquer(target.tokName + " ne semble pas affecté par le type " + dt);
+        }
+        dmgParType[dt] = undefined;
+      } else 
+        count += dmgParType[dt].length;
     }
     var dealOneType = function(dmgType) {
       if (dmgType == mainDmgType) {
@@ -7742,8 +7758,8 @@ var COFantasy = COFantasy || function() {
         if (charAttributeAsInt(charId, 'armureDeVent', 0) > 0)
           addLineToFramedDisplay(display, "  mais bénéficie de son armure de vent");
       }
-      if (charAttributeAsInt(charId, 'DEFBOUCLIERON', 1) === 0 && 
-        charAttributeAsInt(charId,'DEFBOUCLIER', 0))
+      if (charAttributeAsInt(charId, 'DEFBOUCLIERON', 1) === 0 &&
+        charAttributeAsInt(charId, 'DEFBOUCLIER', 0))
         addLineToFramedDisplay(display, "Ne porte pas son bouclier");
       if (attributeAsBool(perso, 'etatExsangue')) {
         addLineToFramedDisplay(display, "est exsangue");
@@ -10131,14 +10147,14 @@ var COFantasy = COFantasy || function() {
       default:
         //TODO : augmenter les dés en cas de tempete de mana intense
         if (options.tempeteDeManaIntense) {
-        var firstDicePart = argSoin.match(/[1-9][0-9]*d\d+/i);
+          var firstDicePart = argSoin.match(/[1-9][0-9]*d\d+/i);
           if (firstDicePart && firstDicePart.length > 0) {
             var fdp = firstDicePart[0];
             nbDes = parseInt(fdp) + options.tempeteDeManaIntense;
-            argSoin = 
+            argSoin =
               argSoin.replace(fdp, nbDes + fdp.substring(fdp.search(/d/i)));
           } else {
-            argSoin = '(' + argSoin + ')*' + (1+options.tempeteDeManaIntense);
+            argSoin = '(' + argSoin + ')*' + (1 + options.tempeteDeManaIntense);
           }
         }
         soins = "[[" + argSoin + "]]";
