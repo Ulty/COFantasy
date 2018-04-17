@@ -10130,6 +10130,17 @@ var COFantasy = COFantasy || function() {
         break;
       default:
         //TODO : augmenter les dés en cas de tempete de mana intense
+        if (options.tempeteDeManaIntense) {
+        var firstDicePart = argSoin.match(/[1-9][0-9]*d\d+/i);
+          if (firstDicePart && firstDicePart.length > 0) {
+            var fdp = firstDicePart[0];
+            nbDes = parseInt(fdp) + options.tempeteDeManaIntense;
+            argSoin = 
+              argSoin.replace(fdp, nbDes + fdp.substring(fdp.search(/d/i)));
+          } else {
+            argSoin = '(' + argSoin + ')*' + (1+options.tempeteDeManaIntense);
+          }
+        }
         soins = "[[" + argSoin + "]]";
     }
     if (options.tempeteDeMana && soigneur) {
