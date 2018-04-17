@@ -317,6 +317,7 @@
                       <li><code>crit</code> : vrai si l'attaque est un critique.</li>
                     </ul>
                   </li>
+                  <li><code>--tempsRecharge <i>effet</i> <i>duree</i></code> : l'attaque n'est possible que si l'effet est inactif sur l'attaquant, et de plus active l'effet sur l'attaquant pour la durée indiquée si l'attaque est possible.</li>
                   <li><code>--etat <i>e</i></code>: si l'attaque touche, la cible passe dans l'état <i>e</i>.</li>
                   <li><code>--etatSi <i>e condition</i></code> : si l'attaque touche et la <a href="#conditions"><i>condition</i></a> est validée, la cible passe dans l'état <i>e</i>.</li>
                   <li><code>--effet <i>e duree</i></code> : ajoute à la cible l'effet temporaire <i>e</i> pour la duree spécifiée. Pour que cela soit automatiquement mis à jour, il faut utiliser le turn tracker. Noter que l'argument de durée peut être omis pour certains effets, comme ceux qui par définition durent tout le combat.</li>
@@ -1331,7 +1332,7 @@
                 <h4 class="text-secondary">Voie des créatures élémentaires</h4>
                 <p style="margin-top:0px; margin-bottom:0px">Ajouter un attribut <code>immunite_<i>type</i></code> de valeur <code>true</code>, où <i>type</i> est le type de la créature élémentaire (feu, acide, froid, ...)</p>
                 <ol>
-                  <li><strong>Souffle</strong> : </li>
+                  <li><strong>Souffle</strong> : faire une attaque avec le bon nombre de d6 en DM, de portée la portée du souffle, à utiliser avec les options <code>--auto --cone --<i>type</i> --tempsRecharge rechargeSouffle [[1d4]] --psave DEX 13</code>, où <i>type</i> est le type de la créature (feu, acide, frois, ...).</li>
                 </ol>
                 <h4 class="text-secondary">Voie des créatures magique</h4>
                 <ol>

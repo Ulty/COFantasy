@@ -1286,9 +1286,25 @@ var COFantasy = COFantasy || function() {
         case "si":
           options.conditionAttaquant = parseCondition(cmd.slice(1));
           return;
+        case 'tempsRecharge':
+          if (cmd.length < 3) {
+            error("Il manque un argument à l'option --tempsRecharge de !cof-attack", cmd);
+            return;
+          }
+          if (!estEffetTemp(cmd[1])) {
+            error("Le premier argument de l'option --tempsRecharge doit être un effet temporaire répertorié", cmd);
+            return;
+          }
+          var tr = parseInt(cmd[2]);
+          if (isNaN(tr)) {
+            error("Le deuxième argument de l'option --tempsRecharge doit être un nombre", cmd);
+            return;
+          }
+          options.tempsRecharge = {effet:cmd[1], duree:tr};
+          return;
         case "plus":
           if (cmd.length < 2) {
-            sendChat("COF", "Il manque un argument à l'option --plus de !cof-attack");
+            error("Il manque un argument à l'option --plus de !cof-attack", cmd);
             return;
           }
           var val = arg.substring(arg.indexOf(' ') + 1);
@@ -3032,6 +3048,14 @@ var COFantasy = COFantasy || function() {
     var evt = options.evt || {
       type: "Tentative d'attaque"
     }; //the event to be stored in history
+    if (options.tempsRecharge) {
+      if (attributeAsBool(attaquant, options.tempsRecharge.effet)) {
+        sendChar(attackingCharId, "ne peut pas encore utiliser cette attaque");
+        return;
+      }
+      if (options.tempsRecharge.duree > 0)
+        setTokenAttr(attaquant, options.tempsRecharge.effet, options.tempsRecharge.duree, evt, undefined, getInit());
+    }
     //On met à jour l'arme en main, si nécessaire
     if (weaponStats.divers && weaponStats.divers.toLowerCase().includes('arme')) {
       degainerArme(attaquant, attackLabel, evt);
@@ -13505,6 +13529,11 @@ var COFantasy = COFantasy || function() {
       activation: "lance un sort de sanctuaire",
       actif: "est protégé par un sanctuaire",
       fin: "n'est plus protégé par le sanctuaire"
+    },
+    rechargeSouffle: {
+      activation: "doit maintenant attendre un peu avant de pouvoir le refaire",
+      actif: "attends avant de pouvoir refaire un souffle",
+      fin: "a récupéré"
     }
   };
 
