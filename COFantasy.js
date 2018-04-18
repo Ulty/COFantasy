@@ -7263,13 +7263,21 @@ var COFantasy = COFantasy || function() {
       _characterid: perso.charId,
     });
     //On recherche dans le Personnage s'il a une "Ability" dont le nom est "#TurnAction#".
-    var TurnAction = abilities.filter(function(a) {
-      return a.get('name') == '#TurnAction#';
+    var actionsParDefaut = false;
+    var actionsDuTour = abilities.filter(function(a) {
+      switch (a.get('name')) {
+      case '#TurnAction#': return true;
+      case '#Actions#': actionsParDefaut = true; return true;
+      default: return false;
+      }
     });
     //Si elle existe, on lui chuchotte son exécution 
-    if (TurnAction.length > 0) {
+    if (actionsDuTour.length > 0) {
       // on récupère la valeur de l'action dont chaque Macro #/Ability % est mis dans un tableau 'action'
-      var actions = TurnAction[0].get('action').replace(/\n/gm, '').replace(/\r/gm, '').replace(/%/g, '\n%').replace(/#/g, '\n#').split("\n");
+      var actions = actionsDuTour[0].get('action').replace(/\n/gm, '').replace(/\r/gm, '').replace(/%/g, '\n%').replace(/#/g, '\n#').split("\n");
+      if (actionsParDefaut) {
+        actions.push('Attendre').push('Se défendre');
+      }
       var nBfound = 0;
       var ligne = '';
       if (actions.length > 0) {
@@ -7312,6 +7320,12 @@ var COFantasy = COFantasy || function() {
                   ligne += bouton(command, actionText, perso, false) + '<br />';
                 }
               });
+            } else if (action == 'Attendre') {
+              command = "!cof-attendre ?{Nouvelle initiative}";
+              ligne += bouton(command, action, perso, false) + '<br />';
+            } else if (action == 'Se défendre') {
+              command = "!cof-action-defensive ?{Action défensive|simple|totale}";
+              ligne += bouton(command, action, perso, false) + '<br />';
             }
             // Si on a toujours rien trouvé, on ajoute un petit log
             if (!found) {
