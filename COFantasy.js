@@ -1300,7 +1300,10 @@ var COFantasy = COFantasy || function() {
             error("Le deuxième argument de l'option --tempsRecharge doit être un nombre", cmd);
             return;
           }
-          options.tempsRecharge = {effet:cmd[1], duree:tr};
+          options.tempsRecharge = {
+            effet: cmd[1],
+            duree: tr
+          };
           return;
         case "plus":
           if (cmd.length < 2) {
@@ -2737,6 +2740,10 @@ var COFantasy = COFantasy || function() {
     attaquant.name = attaquant.name || attacker.get("name");
     var pageId = attaquant.token.get('pageid');
     //Options automatically set by some attributes
+    if (attributeAsBool(attaquant, 'paralysieRoublard')) {
+      sendChar(attackingCharId, "ne peut pas attaquer car il est paralysé de douleur");
+      return;
+    }
     if (options.redo === undefined && charAttributeAsBool(attaquant, 'fauchage')) {
       var seuilFauchage = 10 + modCarac(attaquant, 'FORCE');
       options.etats = options.etats || [];
@@ -4676,7 +4683,7 @@ var COFantasy = COFantasy || function() {
           expliquer(target.tokName + " ne semble pas affecté par le type " + dt);
         }
         dmgParType[dt] = undefined;
-      } else 
+      } else
         count += dmgParType[dt].length;
     }
     var dealOneType = function(dmgType) {
@@ -13243,6 +13250,12 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  //Attributs possibles :
+  // dm : permet d'infliger des dm
+  // soins : soigne
+  // prejudiciable: est un effet préjudiciable, qui peut être enlevé par délivrance
+  // generic: admet un argument entre parenthèses
+  // seulementVivant: ne peut s'appliquer qu'aux créatures vivantes
   var messageEffetTemp = {
     sousTension: {
       activation: "se charge d'énergie électrique",
@@ -13534,6 +13547,12 @@ var COFantasy = COFantasy || function() {
       activation: "doit maintenant attendre un peu avant de pouvoir le refaire",
       actif: "attends avant de pouvoir refaire un souffle",
       fin: "a récupéré"
+    },
+    paralysieRoublard: {
+      activation: "est paralysé par la douleur",
+      actif: "ne peut pas attaquer ni se déplacer",
+      fin: "peut à nouveau attaquer et se déplacer",
+      prejudiciable: true
     }
   };
 

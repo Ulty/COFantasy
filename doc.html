@@ -1232,6 +1232,7 @@
                   <li><strong>Doigts agiles</strong> : utiliser des compétences sur la fiche de personnage</li>
                   <li><strong>Détecter les pièges</strong> : faire le jet avec <code>!cof-jet INT 10</code></li>
                   <li><strong>Croc-en-jambe</strong> : ajouter un attribut <code>crocEnJambe</code> de valeur <code>true</code>. Pour distinguer les adversaires quadrupèdes qui ne seraient pas connues du script, lui ajouter un attribut <code>quadrupede</code>, de valeur <code>true</code>.</li>
+                  <li><strong>Attaque paralysante</strong> : lancer une des attaques de contact du voleur en rajoutant les options <code>--limiteParCombat 1 attaqueParalysante --pasDeDmg --effet paralysieRoublatrd [[1d4]]</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du spadassin</h4>
                 <ol>
@@ -1332,7 +1333,7 @@
                 <h4 class="text-secondary">Voie des créatures élémentaires</h4>
                 <p style="margin-top:0px; margin-bottom:0px">Ajouter un attribut <code>immunite_<i>type</i></code> de valeur <code>true</code>, où <i>type</i> est le type de la créature élémentaire (feu, acide, froid, ...)</p>
                 <ol>
-                  <li><strong>Souffle</strong> : faire une attaque avec le bon nombre de d6 en DM, de portée la portée du souffle, à utiliser avec les options <code>--auto --cone --<i>type</i> --tempsRecharge rechargeSouffle [[1d4]] --psave DEX 13</code>, où <i>type</i> est le type de la créature (feu, acide, frois, ...).</li>
+                  <li><strong>Souffle</strong> : faire une attaque avec le bon nombre de d6 en DM, de portée la portée du souffle, à utiliser avec les options <code>--auto --cone --<i>type</i> --tempsRecharge rechargeSouffle [[1d4]] --psave DEX 13</code>, où <i>type</i> est le type de la créature (feu, acide, frois, ...). Ne pas oublier la possibilité d'utiliser un token cible temporaire pour le cone.</li>
                 </ol>
                 <h4 class="text-secondary">Voie des créatures magique</h4>
                 <ol>
