@@ -395,6 +395,7 @@
                   <li><code>!cof-degainer <i>L</i></code> où <i>L</i> est le label d'une des attaques sur la fiche de personnage : cela fait rengainer l'arme en main et dégainer l'arme correspondant à cette attaque. Si le label ne correspond à aucune attaque (ou qu'on ne donne pas de label), l'action fait rengainer l'arme en main.</li>
                   <li>Si on attaque avec <code>!cof-attack <i>tok1 tok2 L</i></code>, et que l'attaque de label <code><i>L</i></code> contient le mot <code>arme</code> dans le champ <code>SPÉCIAL</code>, alors on considère qu'on doit dégainer cette arme pour pouvoir l'utiliser. Le script envoie le message et considère ensuite l'arme comme étant en main, au MJ de vérifier que le joueur dispose bien d'une action de mouvement pour le faire.</li>
                 </ul>
+                Dans tous les cas, si le personnage dégaine une arme à 2 mains (déterminé en fonction du nom de l'arme ou du champs "divers" de l'arme), le script fait enlever le bouclier, et il le fait remettre si on passe d'une arme à 2 mains à une arme à 1 main.
                 </p>
               </div>
               <h4 class="text-secondary">Dégâts directs (sans attaquant, ou aire d'effet trop complexe pour !cof-attack) : <code>!cof-dmg <i>dm</i></code></h4>
@@ -979,7 +980,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie de la magie universelle</h4>
                 <ol>
-                  <li><strong>Lumière</strong> : Le MJ peut donner les caractérisiques de lumières à un token(ou utiliser le script <code>torch</code>)</li>
+                  <li><strong>Lumière</strong> : Le MJ peut donner les caractérisiques de lumières à un token(ou utiliser le script <code>torch</code>, dans ce cas, j'utilise la macro <code>!torch 20 10 yes @{target|token_id}</code>)</li>
                   <li><strong>Détection de la magie</strong> : pas de support</li>
                   <li><strong>Invisibilité</strong> : utiliser <code>!cof-set-state invisible true --mana 1 --message se rend invisible ([[1d6+@{selected|INT}]] minutes)</code>. Pour les ennemis, mettre dans le layer gm, pour les joueurs, ne pas les cibler. Reste le problème des AOE...</li>
                   <li><strong>Vol</strong> : pas de support autre que <code>!cof-lancer-sort 2 vole ([[1d6+@{selected|INT}]] minutes)</code></li>

@@ -118,7 +118,6 @@ var COFantasy = COFantasy || function() {
           } catch (e) {
             error('Erreur parsing the Array', command);
           }
-
           if (Array.isArray(this_weapon)) {
             portee = this_weapon[4];
           } else {
@@ -128,8 +127,7 @@ var COFantasy = COFantasy || function() {
             }
           }
         }
-
-        if (fullCommand.indexOf('-sort') !== -1 || fullCommand.indexOf('-magic') !== -1 || fullCommand.indexOf('-magique') !== -1) {
+        if (fullCommand.indexOf('--sortileg') !== -1) {
           // attaque magique
           picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
           style = 'background-color:#9900ff';
@@ -161,6 +159,10 @@ var COFantasy = COFantasy || function() {
       case "!cof-enduire-poison":
         picto = '<span style="font-family: \'Pictos Three\'">i</span> ';
         style = 'background-color:#05461c';
+        break;
+      case "!cof-desarmer":
+        picto = '<span style="font-family: \'Pictos Custom\'">t</span> ';
+        style = 'background-color:#cc0000';
         break;
       case "!cof-surprise":
         picto = '<span style="font-family: \'Pictos\'">e</span> ';
@@ -2119,6 +2121,19 @@ var COFantasy = COFantasy || function() {
     weaponStats.crit = getAttrByName(charId, attPrefix + "armecrit") || 20;
     weaponStats.portee = getPortee(charId, attPrefix);
     weaponStats.divers = getAttrByName(charId, attPrefix + "armespec");
+    //On cherche si c'est une arme à 2 mains
+    var t = weaponStats.name.toLowerCase();
+    if (t.includes('2 mains') || t.includes('deux mains')) {
+      weaponStats.deuxMains = true;
+    } else {
+      t = weaponStats.divers;
+      if (t) {
+        t = t.toLowerCase();
+        if (t.includes('2 mains') || t.includes('deux mains')) {
+          weaponStats.deuxMains = true;
+        }
+      }
+    }
     return weaponStats;
   }
 
@@ -7328,9 +7343,11 @@ var COFantasy = COFantasy || function() {
             } else if (action == 'Attendre') {
               command = "!cof-attendre ?{Nouvelle initiative}";
               ligne += bouton(command, action, perso, false) + '<br />';
+              found = true;
             } else if (action == 'Se défendre') {
               command = "!cof-action-defensive ?{Action défensive|simple|totale}";
               ligne += bouton(command, action, perso, false) + '<br />';
+              found = true;
             }
             // Si on a toujours rien trouvé, on ajoute un petit log
             if (!found) {
@@ -8519,25 +8536,73 @@ var COFantasy = COFantasy || function() {
     //D'abord, on rengaine l'arme en main, si besoin.
     var armeActuelle = tokenAttribute(perso, 'armeEnMain');
     var labelArmeActuelle;
+    var ancienneArme;
     if (armeActuelle.length > 0) {
       armeActuelle = armeActuelle[0];
       labelArmeActuelle = armeActuelle.get('current');
-      var attActuelle = getAttack(labelArmeActuelle, perso);
+      ancienneArme = getWeaponStats(perso, labelArmeActuelle);
       if (labelArmeActuelle == labelArme) {
         //Pas besoin de dégainer. Pas de message ?
-        if (attActuelle) return attActuelle.weaponName;
+        if (ancienneArme) return ancienneArme.name;
         return;
       }
-      if (attActuelle) {
-        sendChar(perso.charId, "rengaine " + attActuelle.weaponName);
+      if (ancienneArme) {
+        sendChar(perso.charId, "rengaine " + ancienneArme.name);
       }
     } else armeActuelle = undefined;
     //Puis on dégaine
     //On vérifie que l'arme existe
-    var att = getAttack(labelArme, perso);
-    if (att === undefined) {
+    var nouvelleArme = getWeaponStats(perso, labelArme);
+    if (nouvelleArme === undefined) {
       if (armeActuelle) removeTokenAttr(perso, 'armeEnMain', evt);
       return;
+    }
+    if (nouvelleArme.deuxMains) {
+      if (charAttributeAsBool(perso, 'DEFBOUCLIER') &&
+        charAttributeAsInt(perso, 'DEFBOUCLIERON', 1)) {
+        sendChar(perso.charId, "enlève son bouclier");
+        var attrBouclier = findObjs({
+          _type: 'attribute',
+          _characterid: perso.charId,
+          name: 'DEFBOUCLIERON'
+        });
+        evt.attributes = evt.attributes || [];
+        if (attrBouclier.length > 0) {
+          evt.attributes.push({
+            attribute: attrBouclier[0],
+            current: 1,
+            max: ''
+          });
+          attrBouclier[0].set('current', 0);
+        } else {
+          attrBouclier = createObj('attribute', {
+            characterid: perso.charId,
+            name: 'DEFBOUCLIERON',
+            current: 0
+          });
+          evt.attributes.push({
+            attribute: attrBouclier,
+            current: null
+          });
+        }
+      }
+    } else if (ancienneArme && ancienneArme.deuxMains) {
+      if (charAttributeAsBool(perso, 'DEFBOUCLIER') &&
+        !charAttributeAsInt(perso, 'DEFBOUCLIERON', 1)) {
+        sendChar(perso.charId, "remet son bouclier");
+        evt.attributes = evt.attributes || [];
+        var attrBouclierOff = findObjs({
+          _type: 'attribute',
+          _characterid: perso.charId,
+          name: 'DEFBOUCLIERON'
+        });//devrait être de taille au moins 1, avec valeur courante 0
+          evt.attributes.push({
+            attribute: attrBouclierOff[0],
+            current: 0,
+            max: ''
+          });
+          attrBouclierOff[0].set('current', 1);
+        }
     }
     if (armeActuelle) {
       evt.attributes = evt.attributes || [];
@@ -8547,9 +8612,9 @@ var COFantasy = COFantasy || function() {
         max: ''
       });
       armeActuelle.set('current', labelArme);
-      sendChar(perso.charId, "dégaine " + att.weaponName);
+      sendChar(perso.charId, "dégaine " + nouvelleArme.name);
     } else {
-      setTokenAttr(perso, 'armeEnMain', labelArme, evt, "dégaine " + att.weaponName);
+      setTokenAttr(perso, 'armeEnMain', labelArme, evt, "dégaine " + nouvelleArme.name);
     }
     if (charAttributeAsInt(perso, "initEnMain" + labelArme, 0) > 0)
       updateNextInit(perso.token);
@@ -12911,21 +12976,7 @@ var COFantasy = COFantasy || function() {
           attrArmeCible.remove();
         }
       };
-      if (armeCible) {
-        //On cherche si la cible a une arme à 2 mains
-        var t = armeCible.name.toLowerCase();
-        if (t.includes('2 mains') || t.includes('deux mains')) {
-          armeCible.deuxMains = true;
-        } else {
-          t = armeCible.divers;
-          if (t) {
-            t = t.toLowerCase();
-            if (t.includes('2 mains') || t.includes('deux mains')) {
-              armeCible.deuxMains = true;
-            }
-          }
-        }
-      } else {
+      if (armeCible === undefined) {
         armeCible = {
           name: 'Attaque par défaut',
           attSkillDiv: 0,
@@ -12957,7 +13008,7 @@ var COFantasy = COFantasy || function() {
         else if (attSkill < 0) attRollValue += attSkill;
         if (attBonus > 0) attRollValue += "+" + attBonus;
         else if (attBonus < 0) attRollValue += attBonus;
-        if (armeCible.deuxMain) {
+        if (armeCible.deuxMains) {
           attRollValue += " +5";
           attackRollCible += 5;
           explications.push(cible.tokName + " porte une arme à 2 mains => +5 à son jet");
