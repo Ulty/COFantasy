@@ -4494,7 +4494,9 @@ var COFantasy = COFantasy || function() {
       if (displayRes) displayRes('0', 0);
       return 0;
     }
-    if (options.asphyxie && estNonVivant(target)) {
+    if (options.asphyxie &&
+      (charAttributeAsBool(target, 'creatureArtificielle') ||
+        estNonVivant(target))) {
       expliquer("L'asphyxie est sans effet sur une créature non-vivante");
       if (displayRes) displayRes('0', 0);
       return 0;
@@ -4667,7 +4669,8 @@ var COFantasy = COFantasy || function() {
             divide();
           }
         } else {
-          if ((dmgType == 'poison' || dmgType == 'maladie') && (invulnerable || estNonVivant(target))) {
+          if ((dmgType == 'poison' || dmgType == 'maladie') &&
+            (invulnerable || charAttributeAsBool(target, 'creatureArtificielle') || estNonVivant(target))) {
             zero();
           } else if (attributeAsBool(target, 'armureMagique')) {
             divide();
@@ -13660,7 +13663,8 @@ var COFantasy = COFantasy || function() {
       activation: "est paralysé par la douleur",
       actif: "ne peut pas attaquer ni se déplacer",
       fin: "peut à nouveau attaquer et se déplacer",
-      prejudiciable: true
+      prejudiciable: true,
+      seulementVivant: true
     }
   };
 
@@ -14171,6 +14175,7 @@ var COFantasy = COFantasy || function() {
         };
         dealDamage(perso, r, [], evt, false, options, undefined,
           function(dmgDisplay, dmg) {
+            if (dmg>0)
             sendChar(charId, msg + ". " + onGenre(charId, 'Il', 'Elle') +
               " subit " + dmgDisplay + " DM");
             count--;
