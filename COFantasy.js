@@ -3080,7 +3080,8 @@ var COFantasy = COFantasy || function() {
     }
     //On met à jour l'arme en main, si nécessaire
     if (weaponStats.divers && weaponStats.divers.toLowerCase().includes('arme')) {
-      degainerArme(attaquant, attackLabel, evt);
+      options.weaponStats = weaponStats;
+      degainerArme(attaquant, attackLabel, evt, options);
     }
     //On fait les tests pour les cibles qui bénéficieraient d'un sanctuaire
     var ciblesATraiter = cibles.length;
@@ -3134,10 +3135,6 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(attaquant, 'sanctuaire')) {
       explications.push(attaquant.tokName + " met fin aux conditions du sanctuaire");
       removeTokenAttr(attaquant, 'sanctuaire', evt);
-    }
-    if (options.contact && attributeAsBool(attaquant, 'frappeDuVide')) {
-      options.frappeDuVide = true;
-      setTokenAttr(attaquant, 'frappeDuVide', 0, evt);
     }
   }
 
@@ -5582,6 +5579,7 @@ var COFantasy = COFantasy || function() {
   function sortirDuCombat() {
     if (!state.COFantasy.combat) {
       log("Pas en combat");
+      sendChat("GM", "/w GM Le combat est déjà terminé");
       return;
     }
     sendChat("GM", "Le combat est terminé");
@@ -5633,8 +5631,23 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'runeDeProtection', evt);
     // Remettre l'esquive fatale à 1
     resetAttr(attrs, 'esquiveFatale', evt);
-    // Remettre frappe du vide à 1
-    resetAttr(attrs, 'frappeDuVide', evt);
+    // Pour frappe du vide, on rengaine l'arme, cela remet aussi l'attribut
+    allAttributesNamed(attrs, 'frappeDuVide').forEach(function(attr) {
+      var fdvCharId = attr.get('characterid');
+      if (fdvCharId === undefined || fdvCharId === '') {
+        error("Attribut sans personnage associé", attr);
+        return;
+      }
+      iterTokensOfEffet(fdvCharId, state.COFantasy.combat_pageid,
+        'frappeDuVide', attr.get('name'),
+        function(tok) {
+          var perso = {
+            charId: fdvCharId,
+            token: tok
+          };
+          degainerArme(perso, '', evt);
+        });
+    });
     //Effet de ignorerLaDouleur
     var ilds = allAttributesNamed(attrs, 'ignorerLaDouleur');
     ilds.forEach(function(ild) {
@@ -8532,7 +8545,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //renvoie le nom de l'arme si l'arme est déjà tenue en main
-  function degainerArme(perso, labelArme, evt) {
+  function degainerArme(perso, labelArme, evt, options) {
     //D'abord, on rengaine l'arme en main, si besoin.
     var armeActuelle = tokenAttribute(perso, 'armeEnMain');
     var labelArmeActuelle;
@@ -8552,9 +8565,28 @@ var COFantasy = COFantasy || function() {
     } else armeActuelle = undefined;
     //Puis on dégaine
     //On vérifie que l'arme existe
-    var nouvelleArme = getWeaponStats(perso, labelArme);
+    var nouvelleArme;
+    if (options && options.weaponStats) nouvelleArme = options.weaponStats;
+    else if (labelArme !== '') nouvelleArme = getWeaponStats(perso, labelArme);
     if (nouvelleArme === undefined) {
-      if (armeActuelle) removeTokenAttr(perso, 'armeEnMain', evt);
+      if (armeActuelle) {
+        removeTokenAttr(perso, 'armeEnMain', evt);
+        if (!state.COFantasy.combat) {
+          //Si le perso a la capacité frappe du vide, la réinitialiser
+          var attrFDV = tokenAttribute(perso, 'frappeDuVide');
+          if (attrFDV.length > 0) {
+            if (!attrFDV[0].get('current')) {
+              evt.attributes = evt.attributes || [];
+              evt.attributes.push({
+                attribute: attrFDV[0],
+                current: 0,
+                max: 1
+              });
+              attrFDV[0].set('current', 1);
+            }
+          }
+        }
+      }
       return;
     }
     if (nouvelleArme.deuxMains) {
@@ -8595,14 +8627,20 @@ var COFantasy = COFantasy || function() {
           _type: 'attribute',
           _characterid: perso.charId,
           name: 'DEFBOUCLIERON'
-        });//devrait être de taille au moins 1, avec valeur courante 0
-          evt.attributes.push({
-            attribute: attrBouclierOff[0],
-            current: 0,
-            max: ''
-          });
-          attrBouclierOff[0].set('current', 1);
-        }
+        }); //devrait être de taille au moins 1, avec valeur courante 0
+        evt.attributes.push({
+          attribute: attrBouclierOff[0],
+          current: 0,
+          max: ''
+        });
+        attrBouclierOff[0].set('current', 1);
+      }
+    }
+    if (attributeAsBool(perso, 'frappeDuVide')) {
+      if (options && options.contact) {
+        options.frappeDuVide = true;
+      }
+      setTokenAttr(perso, 'frappeDuVide', 0, evt);
     }
     if (armeActuelle) {
       evt.attributes = evt.attributes || [];
