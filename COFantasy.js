@@ -7266,9 +7266,13 @@ var COFantasy = COFantasy || function() {
     var actionsParDefaut = false;
     var actionsDuTour = abilities.filter(function(a) {
       switch (a.get('name')) {
-      case '#TurnAction#': return true;
-      case '#Actions#': actionsParDefaut = true; return true;
-      default: return false;
+        case '#TurnAction#':
+          return true;
+        case '#Actions#':
+          actionsParDefaut = true;
+          return true;
+        default:
+          return false;
       }
     });
     //Si elle existe, on lui chuchotte son exécution 
@@ -7276,7 +7280,8 @@ var COFantasy = COFantasy || function() {
       // on récupère la valeur de l'action dont chaque Macro #/Ability % est mis dans un tableau 'action'
       var actions = actionsDuTour[0].get('action').replace(/\n/gm, '').replace(/\r/gm, '').replace(/%/g, '\n%').replace(/#/g, '\n#').split("\n");
       if (actionsParDefaut) {
-        actions.push('Attendre').push('Se défendre');
+        actions.push('Attendre');
+        actions.push('Se défendre');
       }
       var nBfound = 0;
       var ligne = '';
