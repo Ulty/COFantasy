@@ -751,7 +751,8 @@ var COFantasy = COFantasy || function() {
       action.indexOf('cof-surprise') == -1 &&
       action.indexOf('cof-attack') == -1 &&
       action.indexOf('cof-soin') == -1 &&
-      action.indexOf('cof-as ') == -1) {
+      action.indexOf('cof-as ') == -1 &&
+      action.indexOf('--equipe') == -1) {
       //Si on n'a pas de cible, on fait comme si le token était sélectionné.
       var add_token = " --target " + tid;
       if (action.indexOf(' --allie') >= 0) {
@@ -9367,13 +9368,13 @@ var COFantasy = COFantasy || function() {
         bonus: allieSansPeur
       }, evt,
       function(tr) {
-        var line = "Jet de résistance de " + targetName + ":" + tr.texte;
+        var line = "Jet de résistance de " + targetName + " :" + tr.texte;
         var sujet = onGenre(charId, 'il', 'elle');
         if (tr.reussite) {
           line += "&gt;=" + difficulte + ",  " + sujet + " résiste à la peur.";
         } else {
           setState(target, 'apeure', true, evt);
-          line += "&lt;" + difficulte + ", " + sujet;
+          line += "&lt;" + difficulte + ", " + sujet + ' ';
           var effet = 'peur';
           if (options.etourdi) {
             line += "s'enfuit ou reste recroquevillé" + eForFemale(charId) + " sur place";
@@ -9462,14 +9463,15 @@ var COFantasy = COFantasy || function() {
       var evt = {
         type: 'peur'
       };
+      initiative(selected, evt);
       var counter = selected.length;
       var finalEffect = function() {
+        counter--;
         if (counter > 0) return;
         sendChat("", endFramedDisplay(display));
         addEvent(evt);
       };
       iterSelected(selected, function(perso) {
-          counter--;
           if (options.portee !== undefined && options.lanceur) {
             var distance = distanceCombat(options.lanceur.token, perso.token, pageId);
             if (distance > options.portee) {
@@ -9482,10 +9484,8 @@ var COFantasy = COFantasy || function() {
           peurOneToken(perso, pageId, difficulte, duree, options,
             display, evt, finalEffect);
         }, //fun fonction de iterSelectde
-        function() { //callback pour les cas où token incorrect
-          counter--;
-          finalEffect();
-        });
+        finalEffect //callback pour les cas où token incorrect
+      );
     }, options.lanceur);
   }
 
@@ -14010,14 +14010,16 @@ var COFantasy = COFantasy || function() {
         break;
       case 'peur':
       case 'peurEtourdi':
-        iterTokensOfEffet(charId, options.pageId, effet, attrName, function(token) {
-          setState({
-            token: token,
-            charId: charId
-          }, 'peur', false, evt);
-        }, function(token) {
-          return true;
-        });
+        iterTokensOfEffet(charId, options.pageId, effet, attrName,
+          function(token) {
+            setState({
+              token: token,
+              charId: charId
+            }, 'apeure', false, evt);
+          },
+          function(token) {
+            return true;
+          });
         break;
       case 'ombreMortelle':
       case 'dedoublement':
