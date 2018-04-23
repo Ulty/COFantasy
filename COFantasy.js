@@ -2720,11 +2720,10 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (options.decrAttribute) {
-      if (personnage) {
         var attr = options.decrAttribute;
         var oldval = parseInt(attr.get('current'));
         if (isNaN(oldval) || oldval < 1) {
-          sendChar(personnage.charId, "ne peut plus faire cela");
+          sendChar(attr.get('characterid'), "ne peut plus faire cela");
           return true;
         }
         evt.attributes = evt.attributes || [];
@@ -2734,10 +2733,6 @@ var COFantasy = COFantasy || function() {
           max: attr.get('max')
         });
         attr.set('current', oldval - 1);
-      } else {
-        error("Impossible de savoir à qui appliquer la limitation", options);
-        return true;
-      }
     }
     return false;
   }
@@ -12045,11 +12040,6 @@ var COFantasy = COFantasy || function() {
           return;
         }
         var display = startFramedDisplay(msg.playerid, 'Liste de vos consommables :', perso, false, true);
-        // personnage lié au Token
-        var character = getObj('character', perso.charId);
-        if (character === undefined) return;
-        character.token = {};
-        character.token.id = perso.token.get('_id');
         var attributes = findObjs({
           _type: 'attribute',
           _characterid: perso.charId
