@@ -711,7 +711,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //ressource est optionnel, et si présent doit être un attribut
-  function bouton(action, text, perso, ressource, overlay) {
+  function bouton(action, text, perso, ressource, overlay, style) {
     if (action === undefined || action.trim().length === 0) return text;
     else action = action.trim();
     action = replaceAction(action, perso);
@@ -764,7 +764,10 @@ var COFantasy = COFantasy || function() {
       else action += add_token;
     }
     text = pictoStyle.picto + text;
-    var buttonStyle = ' style="' + pictoStyle.style + '"';
+    var buttonStyle = '';
+    if (style) buttonStyle = ' style="' + style + '"';
+    else if (pictoStyle.style) 
+      buttonStyle = ' style="' + pictoStyle.style + '"';
     if (overlay) overlay = ' title="' + overlay + '"';
     else overlay = '';
     action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;').replace(/"/g, '&#34;');
@@ -840,18 +843,51 @@ var COFantasy = COFantasy || function() {
 
   //Par construction, msg.content ne doit pas contenir d'option --nom,
   //et commencer par !cof-jet 
-  function boutonsCompetences(perso, carac, msg) {
+  function boutonsCompetences(display, perso, carac, msg) {
     var action = msg.content;
     action = action.replace(/ --competences /, '');
     action = action.replace(/ --competences/, ''); //au cas où ce serait le dernier argument
     var args = action.substring(9); //on enlève !cof-jet
     if (!args.startsWith(carac)) action = "!cof-jet " + carac + " " + args;
-    var res = bouton(action, carac, perso);
+    var pictoCarac = carac;
+    var overlay;
+    switch (carac) {
+      case 'FOR':
+        pictoCarac = '<span style="font-family: \'Pictos\'">S</span>';
+        overlay = 'Force';
+        break;
+      case 'DEX':
+        pictoCarac = '<span style="font-family: \'Pictos Custom\'">t</span>';
+        overlay = 'Dextérité';
+        break;
+      case 'CON':
+        pictoCarac = '<span style="font-family: \'Pictos\'">k</span>';
+        overlay = 'Constitution';
+        break;
+      case 'INT':
+        pictoCarac = '<span style="font-family: \'Pictos Custom\'">y</span>';
+        overlay = 'Intelligence';
+        break;
+      case 'SAG':
+        pictoCarac = '&#9775;';
+        overlay = 'Sagesse';
+        break;
+      case 'CHA':
+        pictoCarac = '<span style="font-family: \'Pictos\'">w</span>';
+        overlay = 'Charisme';
+        break;
+    }
+    var cell = bouton(action, pictoCarac, perso, undefined, overlay);
+    addCellInFramedDisplay(display, cell, 150, true);
     var comps = listeCompetences[carac];
+    cell = '';
+    var sec = false;
     comps.forEach(function(comp) {
-      res += " " + bouton(action + " --nom " + comp, comp, perso);
+      if (sec) cell += ' ';
+      else sec = true;
+      cell += bouton(action + " --nom " + comp, comp, perso, undefined, undefined, "background-color:#996600");
     });
-    return res;
+    addCellInFramedDisplay(display, cell, 80, false);
   }
 
   function jet(msg) {
@@ -911,14 +947,15 @@ var COFantasy = COFantasy || function() {
           return;
         }
         iterSelected(selected, function(perso) {
-          var display = startFramedDisplay(msg.playerid, "Jet de caractéristique", perso, undefined, options.secret);
-          addLineToFramedDisplay(display, "Choisissez la caractéristique ou compétence");
-          addLineToFramedDisplay(display, boutonsCompetences(perso, 'FOR', msg));
-          addLineToFramedDisplay(display, boutonsCompetences(perso, 'DEX', msg));
-          addLineToFramedDisplay(display, boutonsCompetences(perso, 'CON', msg));
-          addLineToFramedDisplay(display, boutonsCompetences(perso, 'SAG', msg));
-          addLineToFramedDisplay(display, boutonsCompetences(perso, 'INT', msg));
-          addLineToFramedDisplay(display, boutonsCompetences(perso, 'CHA', msg));
+          var display = startFramedDisplay(msg.playerid, "Jet de caractéristique", perso, undefined, true);
+          startTableInFramedDisplay(display);
+          boutonsCompetences(display, perso, 'FOR', msg);
+          boutonsCompetences(display, perso, 'DEX', msg);
+          boutonsCompetences(display, perso, 'CON', msg);
+          boutonsCompetences(display, perso, 'SAG', msg);
+          boutonsCompetences(display, perso, 'INT', msg);
+          boutonsCompetences(display, perso, 'CHA', msg);
+          endTableInFramedDisplay(display);
           sendChat('', endFramedDisplay(display));
         }); //fin de iterSelected
         return;
@@ -930,9 +967,11 @@ var COFantasy = COFantasy || function() {
       }
       if (options.competences && options.nom === undefined) {
         iterSelected(selected, function(perso) {
-          var display = startFramedDisplay(msg.playerid, "Jet de " + caracteristique, perso, undefined, options.secret);
+          var display = startFramedDisplay(msg.playerid, "Jet de " + caracteristique, perso, undefined, true);
           addLineToFramedDisplay(display, "Choisissez la compétence");
-          addLineToFramedDisplay(display, boutonsCompetences(perso, caracteristique, msg));
+          startTableInFramedDisplay(display);
+          boutonsCompetences(display, perso, caracteristique, msg);
+          endTableInFramedDisplay(display);
           sendChat('', endFramedDisplay(display));
         }); //fin de iterSelected
         return;
@@ -2720,19 +2759,19 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (options.decrAttribute) {
-        var attr = options.decrAttribute;
-        var oldval = parseInt(attr.get('current'));
-        if (isNaN(oldval) || oldval < 1) {
-          sendChar(attr.get('characterid'), "ne peut plus faire cela");
-          return true;
-        }
-        evt.attributes = evt.attributes || [];
-        evt.attributes.push({
-          attribute: attr,
-          current: oldval,
-          max: attr.get('max')
-        });
-        attr.set('current', oldval - 1);
+      var attr = options.decrAttribute;
+      var oldval = parseInt(attr.get('current'));
+      if (isNaN(oldval) || oldval < 1) {
+        sendChar(attr.get('characterid'), "ne peut plus faire cela");
+        return true;
+      }
+      evt.attributes = evt.attributes || [];
+      evt.attributes.push({
+        attribute: attr,
+        current: oldval,
+        max: attr.get('max')
+      });
+      attr.set('current', oldval - 1);
     }
     return false;
   }
@@ -5189,13 +5228,13 @@ var COFantasy = COFantasy || function() {
     return display;
   }
 
-  function addLineToFramedDisplay(display, line, size, new_line) {
+  function addLineToFramedDisplay(display, line, size, newLine) {
     size = size || 100;
-    new_line = (new_line !== undefined) ? new_line : true;
+    newLine = (newLine !== undefined) ? newLine : true;
 
     var background_color, border, separator = '';
 
-    if (!new_line) display.isOdd = !display.isOdd;
+    if (!newLine) display.isOdd = !display.isOdd;
     if (display.isOdd) {
       background_color = "#FFF;";
       display.isOdd = false;
@@ -5206,16 +5245,36 @@ var COFantasy = COFantasy || function() {
     if (size < 100) background_color = "#fcf8e3";
 
     if (!display.isfirst) {
-      if (new_line) border = "border-top: 1px solid #333;";
+      if (newLine) border = "border-top: 1px solid #333;";
     } else display.isfirst = false;
 
     var formatedLine = '<div style="padding: 0 5px 0; background-color: ' + background_color + '; color: #000;' + border + '">';
 
-    if (!new_line) separator = "border-top: 1px solid #ddd;";
+    if (!newLine) separator = "border-top: 1px solid #ddd;";
     formatedLine += '<div style="padding: 4px 0; font-size: ' + size + '%;' + separator + '">' + line + '</div>';
     formatedLine += '</div>';
 
     display.output += formatedLine;
+  }
+
+  function startTableInFramedDisplay(display) {
+    display.output += "<table>";
+    display.endColumn = true;
+  }
+
+  function endTableInFramedDisplay(display) {
+    if (!display.endColumn) display.output += "</tr>";
+    display.output += "</table>";
+  }
+
+  //newLine indique qu'on commence une nouvelle rangée
+  function addCellInFramedDisplay(display, cell, size, newLine) {
+    size = size || 100;
+    if (display.endColumn) {
+      display.output += '<tr>';
+      display.endColumn = false;
+    } else if (newLine) display.output += '</tr><tr>';
+    display.output += '<td style="background-color: #FFF; font-size: ' + size + '%; height: ' + size + '%">' + cell + '</td>';
   }
 
   function endFramedDisplay(display) {
@@ -7173,7 +7232,7 @@ var COFantasy = COFantasy || function() {
         var names = note.trim().split('<br>');
         var persos = new Set();
         names.forEach(function(name) {
-          name = name.replace(/<(?:.|\s)*?>/g, '');//Pour enlever les <h2>, etc
+          name = name.replace(/<(?:.|\s)*?>/g, ''); //Pour enlever les <h2>, etc
           name = name.trim();
           if (name.length === 0) return;
           var characters = findObjs({
@@ -14186,9 +14245,9 @@ var COFantasy = COFantasy || function() {
         };
         dealDamage(perso, r, [], evt, false, options, undefined,
           function(dmgDisplay, dmg) {
-            if (dmg>0)
-            sendChar(charId, msg + ". " + onGenre(charId, 'Il', 'Elle') +
-              " subit " + dmgDisplay + " DM");
+            if (dmg > 0)
+              sendChar(charId, msg + ". " + onGenre(charId, 'Il', 'Elle') +
+                " subit " + dmgDisplay + " DM");
             count--;
             if (count === 0) callback();
           });
