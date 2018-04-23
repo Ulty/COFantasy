@@ -4115,6 +4115,8 @@ var COFantasy = COFantasy || function() {
                   setState(target, 'aveugle', true, evt);
                 } else if (ef.effet == 'ralentiTemp') {
                   setState(target, 'ralenti', true, evt);
+                } else if (ef.effet == 'paralyseTemp') {
+                  setState(target, 'paralyse', true, evt);
                 }
               } else { //On a un effet de combat
                 target.messages.push(target.tokName + " " + messageEffetCombat[ef.effet].activation);
@@ -4284,6 +4286,8 @@ var COFantasy = COFantasy || function() {
                           setState(target, 'aveugle', true, evt);
                         } else if (ef.effet == 'ralentiTemp') {
                           setState(target, 'ralenti', true, evt);
+                        } else if (ef.effet == 'paralyseTemp') {
+                          setState(target, 'paralyse', true, evt);
                         }
                         if (options.tempeteDeManaIntense)
                           setTokenAttr(target, ef.effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
@@ -7174,6 +7178,7 @@ var COFantasy = COFantasy || function() {
         var names = note.trim().split('<br>');
         var persos = new Set();
         names.forEach(function(name) {
+          name = name.replace(/<(?:.|\s)*?>/g, '');//Pour enlever les <h2>, etc
           name = name.trim();
           if (name.length === 0) return;
           var characters = findObjs({
@@ -13429,6 +13434,12 @@ var COFantasy = COFantasy || function() {
       fin: "n'est plus ralenti",
       prejudiciable: true
     },
+    paralyseTemp: {
+      activation: "est paralysé : aucune action ni déplacement possible",
+      actif: "", //Déjà affiché avec l'état ralenti
+      fin: "n'est plus paralysé",
+      prejudiciable: true
+    },
     epeeDansante: {
       activation: "fait apparaître une lame d'énergie lumineuse",
       actif: "contrôle une lame d'énergie lumineuse",
@@ -14008,6 +14019,16 @@ var COFantasy = COFantasy || function() {
             token: token,
             charId: charId
           }, 'ralenti', false, evt);
+        }, function(token) {
+          return true;
+        });
+        break;
+      case 'paralyseTemp':
+        iterTokensOfEffet(charId, options.pageId, effet, attrName, function(token) {
+          setState({
+            token: token,
+            charId: charId
+          }, 'paralyse', false, evt);
         }, function(token) {
           return true;
         });
