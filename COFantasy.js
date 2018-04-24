@@ -9407,7 +9407,7 @@ var COFantasy = COFantasy || function() {
     display, evt, callback) {
     var charId = target.charId;
     var targetName = target.token.get('name');
-    if (charAttributeAsBool(charId, 'sansPeur')) {
+    if (charAttributeAsBool(charId, 'sansPeur') || charAttributeAsBool(charId, 'immunitePeur')) {
       addLineToFramedDisplay(display,
         targetName + " est insensible à la peur !");
       callback();
