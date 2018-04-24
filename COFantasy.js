@@ -13725,7 +13725,12 @@ var COFantasy = COFantasy || function() {
       fin: "peut à nouveau attaquer et se déplacer",
       prejudiciable: true,
       seulementVivant: true
-    }
+    },
+    mutationOffensive: {
+      activation: "échange une partie de son corps avec celle d'une créature monstrueuse",
+      actif: "possède un appendice monstrueux",
+      fin: "retrouve un corps normal"
+    },
   };
 
   function buildPatternEffets(listeEffets, postfix) {
