@@ -10659,6 +10659,20 @@ var COFantasy = COFantasy || function() {
             callTrue(s);
           };
         }
+        if (options.fx) {
+          var p1e = {
+            x: soigneur.token.get('left'),
+            y: soigneur.token.get('top'),
+          };
+          var p2e = {
+            x: cible.token.get('left'),
+            y: cible.token.get('top'),
+          };
+          spawnFxBetweenPoints(p1e, p2e, options.fx, pageId);
+        }
+        if (options.targetFx) {
+          spawnFx(cible.token.get('left'), cible.token.get('top'), options.targetFx, pageId);
+        }
         soigneToken(cible, soins, evt, callTrueFinal, callMax);
         finSoin();
       }); //fin de iterCibles
