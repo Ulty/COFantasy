@@ -752,7 +752,8 @@ var COFantasy = COFantasy || function() {
       action.indexOf('cof-attack') == -1 &&
       action.indexOf('cof-soin') == -1 &&
       action.indexOf('cof-as ') == -1 &&
-      action.indexOf('--equipe') == -1) {
+      action.indexOf('--equipe') == -1 &&
+      action.indexOf('--target ' + tid) == -1) {
       //Si on n'a pas de cible, on fait comme si le token était sélectionné.
       var add_token = " --target " + tid;
       if (action.indexOf(' --allie') >= 0) {
@@ -766,7 +767,7 @@ var COFantasy = COFantasy || function() {
     text = pictoStyle.picto + text;
     var buttonStyle = '';
     if (style) buttonStyle = ' style="' + style + '"';
-    else if (pictoStyle.style) 
+    else if (pictoStyle.style)
       buttonStyle = ' style="' + pictoStyle.style + '"';
     if (overlay) overlay = ' title="' + overlay + '"';
     else overlay = '';
@@ -888,6 +889,228 @@ var COFantasy = COFantasy || function() {
       cell += bouton(action + " --nom " + comp, comp, perso, undefined, undefined, "background-color:#996600");
     });
     addCellInFramedDisplay(display, cell, 80, false);
+  }
+
+  // actif est un argument optionnel qui représente (token+charId) de l'unique token sélectionné
+  function getSelected(msg, callback, actif) {
+    var pageId = getPageId(msg);
+    var args = msg.content.split(' --');
+    var selected = [];
+    var enleveAuxSelected = [];
+    var count = args.length - 1;
+    var called;
+    var finalCall = function() {
+      called = true;
+      var seen = new Set();
+      var res = selected.filter(function(sel) {
+        if (seen.has(sel._id)) return false;
+        seen.add(sel._id);
+        var interdit = enleveAuxSelected.find(function(i) {
+          return (i._id == sel._id);
+        });
+        return (interdit === undefined);
+      });
+      callback(res);
+    };
+    if (args.length > 1) {
+      args.shift();
+      args.forEach(function(cmd) {
+        count--;
+        var cmdSplit = cmd.split(' ');
+        switch (cmdSplit[0]) {
+          case 'equipe':
+            var nomEquipe = 'Equipe' + cmd.substring(cmd.indexOf(' '));
+            var equipes = findObjs({
+              _type: 'handout',
+              name: nomEquipe
+            });
+            if (equipes.length === 0) {
+              error(nomEquipe + " inconnue", msg.content);
+              return;
+            }
+            if (equipes.length > 1) {
+              error("Plus d'une " + nomEquipe, cmd);
+            }
+            count += equipes.length;
+            equipes.forEach(function(equipe) {
+              equipe.get('notes', function(note) { //asynchrone
+                var names = note.split('<br>');
+                var tokens = tokensNamed(names, pageId);
+                if (tokens.length === 0) {
+                  error("Pas de token de l'" + nomEquipe + " sur la page");
+                }
+                tokens.forEach(function(tok) {
+                  selected.push({
+                    _id: tok.id
+                  });
+                });
+                count--;
+                if (count === 0) finalCall();
+                return;
+              });
+            });
+            return;
+          case 'allies':
+          case 'saufAllies':
+            var selection = selected;
+            var saufAllies = (cmdSplit[0] == 'saufAllies');
+            if (saufAllies) selection = enleveAuxSelected;
+            var actives = [];
+            var allies = new Set();
+            // First get the acting token (in msg.selected)
+            if (actif) {
+              actives = [actif];
+              allies = alliesParPerso[actif.charId] || allies;
+              if (saufAllies) allies = (new Set(allies)).add(actif.charId);
+            } else {
+              if (msg.selected === undefined || msg.selected.length === 0) {
+                error("Pas d'allié car pas de token sélectionné", msg);
+                return;
+              }
+              iterSelected(msg.selected, function(personnage) {
+                actives.push(personnage);
+                var alliesPerso = alliesParPerso[personnage.charId];
+                if (alliesPerso) {
+                  alliesPerso.forEach(function(ci) {
+                    allies.add(ci);
+                  });
+                }
+                if (saufAllies) allies.add(personnage.charId);
+              });
+            }
+            var tokens = findObjs({
+              _type: 'graphic',
+              _subtype: 'token',
+              _pageid: pageId,
+              layer: 'objects'
+            });
+            tokens.forEach(function(tok) {
+              var ci = tok.get('represents');
+              if (ci === '') return;
+              if (!allies.has(ci)) return;
+              //On enlève le token actif, mais seulement pour allies
+              if (cmdSplit[0] == 'allies') {
+                if (actives.indexOf(function(perso) {
+                    return perso.charId == ci;
+                  }) >= 0) return;
+              }
+              selection.push({
+                _id: tok.id
+              });
+            });
+            return;
+          case 'self':
+            if (actif) {
+              selected.push({
+                _id: actif.token.id
+              });
+              return;
+            }
+            if (msg.selected === undefined) return;
+            msg.selected.forEach(function(obj) {
+              var inSelf = selected.findIndex(function(o) {
+                return (o._id == obj._id);
+              });
+              if (inSelf < 0) selected.push(obj);
+            });
+            return;
+          case 'target':
+            if (cmdSplit.length < 2) {
+              error("Il manque l'id de la cible (après --target)", cmd);
+              return;
+            }
+            selected.push({
+              _id: cmdSplit[1]
+            });
+            return;
+          case 'disque':
+            if (cmdSplit.length < 3) {
+              error("Pas assez d'argument pour définir un disque", cmdSplit);
+              return;
+            }
+            var centre = tokenOfId(cmdSplit[1], cmdSplit[1], pageId);
+            if (centre === undefined) {
+              error("le premier argument du disque n'est pas un token valide", cmdSplit);
+              return;
+            }
+            var rayon = parseInt(cmdSplit[2]);
+            if (isNaN(rayon) || rayon < 0) {
+              error("Rayon du disque mal défini", cmdSplit);
+              return;
+            }
+            var portee;
+            if (cmdSplit.length > 3) {
+              portee = parseInt(cmdSplit[3]);
+              if (isNaN(portee) || portee < 0) {
+                error("La portée du disque est mal formée", cmdSplit);
+                return;
+              }
+              if (actif === undefined) {
+                if (msg.selected === undefined || msg.selected.length != 1) {
+                  error("Pas de token sélectionné pour calculer la distance du disque", msg);
+                  return;
+                }
+                actif = tokenOfId(msg.selected[0]._id, msg.selected[0]._id, pageId);
+              }
+              if (distanceCombat(centre.token, actif.token, pageId, true) > portee) {
+                sendChar(actif.charId, "Le centre de l'effet est placé trop loin (portée " + portee + ")");
+                return;
+              }
+            }
+            var allToksDisque =
+              findObjs({
+                _type: "graphic",
+                _pageid: pageId,
+                _subtype: "token",
+                layer: "objects"
+              });
+            allToksDisque.forEach(function(obj) {
+              if (portee === 0 && obj.id == actif.token.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
+              var objCharId = obj.get('represents');
+              if (objCharId === '') return;
+              if (getState({
+                  token: obj,
+                  charId: objCharId
+                }, 'mort')) return; //pas d'effet aux morts
+              if (obj.get('bar1_max') == 0) return; // jshint ignore:line
+              var objChar = getObj('character', objCharId);
+              if (objChar === undefined) return;
+              var distanceCentre = distanceCombat(centre.token, obj, pageId, true);
+              if (distanceCentre > rayon) return;
+              selected.push({
+                _id: obj.id
+              });
+            });
+            if (centre.token.get('bar1_max') == 0) { // jshint ignore:line
+              //C'est juste un token utilisé pour définir le disque
+              centre.token.remove(); //On l'enlève, normalement plus besoin
+              centre = undefined;
+            }
+            return;
+          default:
+        }
+      });
+    }
+    if (count === 0) {
+      if (selected.length === 0) {
+        if (msg.selected) {
+          if (!called) {
+            var res = msg.selected.filter(function(sel) {
+              var interdit = enleveAuxSelected.find(function(i) {
+                return (i._id == sel._id);
+              });
+              return (interdit === undefined);
+            });
+            callback(res);
+          }
+          return;
+        }
+        if (!called) callback([]);
+        return;
+      }
+      if (!called) finalCall();
+      return;
+    }
   }
 
   function jet(msg) {
@@ -1991,6 +2214,33 @@ var COFantasy = COFantasy || function() {
     return false;
   }
 
+  // evt et msg peuvent être undefined
+  function removeTokenAttr(personnage, attribute, evt, msg) {
+    var charId = personnage.charId;
+    var token = personnage.token;
+    // check if the token is linked to the character. If not, use token name
+    // in attribute name (token ids don't persist over API reload)
+    if (token) {
+      var link = token.get('bar1_link');
+      if (link === '') attribute += "_" + token.get('name');
+    }
+    var attr = findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+      name: attribute
+    });
+    if (attr.length === 0) return;
+    if (msg !== undefined) {
+      sendChar(charId, msg);
+    }
+    attr = attr[0];
+    if (evt) {
+      evt.deletedAttributes = evt.deletedAttributes || [];
+      evt.deletedAttributes.push(attr);
+    }
+    attr.remove();
+  }
+
   // bonus d'attaque d'un token, indépendament des options
   // Mise en commun pour attack et attaque-magique
   function bonusDAttaque(personnage, explications, evt) {
@@ -2301,6 +2551,11 @@ var COFantasy = COFantasy || function() {
       explications.push("Peau d'écorce : +" + bonusPeau + " en DEF");
       if (peauIntense)
         removeTokenAttr(target, 'peauDEcorceTempeteDeManaIntense', evt);
+    }
+    if (attributeAsBool(target, 'mutationCuirasse')) {
+      var bonusMutation = getValeurOfEffet(target, 'mutationCuirasse', 2, 'voieDesMutations');
+      defense += bonusMutation;
+      explications.push("Cuirasse : +" + bonusMutation + " en DEF");
     }
     if (getState(target, 'surpris')) defense -= 5;
     if (getState(target, 'renverse')) defense -= 5;
@@ -2672,6 +2927,41 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function attributesOfClass(perso, classeEffet) {
+    var attrs = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId
+    });
+    var res = [];
+    attrs.forEach(function(attr) {
+      var attrName = attr.get('name');
+      var ice = attrName.indexOf('ClasseEffet');
+      if (ice < 1) return;
+      if (attr.get('current') == classeEffet) {
+        var baseAttrName = attrName.replace(/ClasseEffet/, '');
+        var baseAttr = attrs.find(function(a) {
+          return (a.get('name') == baseAttrName);
+        });
+        if (baseAttr === undefined) {
+          error("On a un attribut " + attrName + ", mais pas d'attribut " + baseAttrName + " pour " + perso.token.get('name'), classeEffet);
+          attr.remove();
+          return;
+        }
+        res.push({
+          baseAttribute: baseAttr,
+          classAttribute: attr
+        });
+      }
+    });
+    if (res.length === 0) {
+      var ace = tokenAttribute(perso, classeEffet);
+      if (ace.length > 0) {
+        error(perso.token.get('name') + " a une classe d'effets " + classeEffet + " mais pas d'effet associé", ace);
+        ace[0].remove();
+      }
+    }
+    return res;
+  }
 
   function limiteRessources(personnage, options, defResource, msg, evt) {
     if (options.mana) {
@@ -4706,10 +4996,21 @@ var COFantasy = COFantasy || function() {
           if (dmgType == 'froid' && attributeAsBool(target, 'masqueMortuaire')) {
             divide();
           }
+          if ((dmgType == 'feu' || dmgType == 'acide') && attributeAsBool(target, 'mutationEcaillesRouges')) {
+            divide();
+          } else if ((dmgType == 'froid' || dmgType == 'electrique') && attributeAsBool(target, 'mutationFourrureViolette')) {
+            divide();
+          }
         } else {
-          if ((dmgType == 'poison' || dmgType == 'maladie') &&
-            (invulnerable || charAttributeAsBool(target, 'creatureArtificielle') || estNonVivant(target))) {
-            zero();
+          if (dmgType == 'poison' || dmgType == 'maladie') {
+            if (invulnerable ||
+              charAttributeAsBool(target, 'creatureArtificielle') ||
+              estNonVivant(target)) {
+              zero();
+            } else if (attributeAsBool(target, 'mutationSangNoir')) {
+              divide();
+            }
+
           } else if (attributeAsBool(target, 'armureMagique')) {
             divide();
           }
@@ -5849,226 +6150,6 @@ var COFantasy = COFantasy || function() {
     }
     return pageId;
   }
-
-  // actif est un argument optionnel qui représente (token+charId) de l'unique token sélectionné
-  function getSelected(msg, callback, actif) {
-    var pageId = getPageId(msg);
-    var args = msg.content.split(' --');
-    var selected = [];
-    var enleveAuxSelected = [];
-    var count = args.length - 1;
-    var called;
-    var finalCall = function() {
-      called = true;
-      var res = selected.filter(function(sel) {
-        var interdit = enleveAuxSelected.find(function(i) {
-          return (i._id == sel._id);
-        });
-        return (interdit === undefined);
-      });
-      callback(res);
-    };
-    if (args.length > 1) {
-      args.shift();
-      args.forEach(function(cmd) {
-        count--;
-        var cmdSplit = cmd.split(' ');
-        switch (cmdSplit[0]) {
-          case 'equipe':
-            var nomEquipe = 'Equipe' + cmd.substring(cmd.indexOf(' '));
-            var equipes = findObjs({
-              _type: 'handout',
-              name: nomEquipe
-            });
-            if (equipes.length === 0) {
-              error(nomEquipe + " inconnue", msg.content);
-              return;
-            }
-            if (equipes.length > 1) {
-              error("Plus d'une " + nomEquipe, cmd);
-            }
-            count += equipes.length;
-            equipes.forEach(function(equipe) {
-              equipe.get('notes', function(note) { //asynchrone
-                var names = note.split('<br>');
-                var tokens = tokensNamed(names, pageId);
-                if (tokens.length === 0) {
-                  error("Pas de token de l'" + nomEquipe + " sur la page");
-                }
-                tokens.forEach(function(tok) {
-                  selected.push({
-                    _id: tok.id
-                  });
-                });
-                count--;
-                if (count === 0) finalCall();
-                return;
-              });
-            });
-            return;
-          case 'allies':
-          case 'saufAllies':
-            var selection = selected;
-            var saufAllies = (cmdSplit[0] == 'saufAllies');
-            if (saufAllies) selection = enleveAuxSelected;
-            var actives = [];
-            var allies = new Set();
-            // First get the acting token (in msg.selected)
-            if (actif) {
-              actives = [actif];
-              allies = alliesParPerso[actif.charId] || allies;
-              if (saufAllies) allies = (new Set(allies)).add(actif.charId);
-            } else {
-              if (msg.selected === undefined || msg.selected.length === 0) {
-                error("Pas d'allié car pas de token sélectionné", msg);
-                return;
-              }
-              iterSelected(msg.selected, function(personnage) {
-                actives.push(personnage);
-                var alliesPerso = alliesParPerso[personnage.charId];
-                if (alliesPerso) {
-                  alliesPerso.forEach(function(ci) {
-                    allies.add(ci);
-                  });
-                }
-                if (saufAllies) allies.add(personnage.charId);
-              });
-            }
-            var tokens = findObjs({
-              _type: 'graphic',
-              _subtype: 'token',
-              _pageid: pageId,
-              layer: 'objects'
-            });
-            tokens.forEach(function(tok) {
-              var ci = tok.get('represents');
-              if (ci === '') return;
-              if (!allies.has(ci)) return;
-              //On enlève le token actif, mais seulement pour allies
-              if (cmdSplit[0] == 'allies') {
-                if (actives.indexOf(function(perso) {
-                    return perso.charId == ci;
-                  }) >= 0) return;
-              }
-              selection.push({
-                _id: tok.id
-              });
-            });
-            return;
-          case 'self':
-            if (actif) {
-              selected.push({
-                _id: actif.token.id
-              });
-              return;
-            }
-            if (msg.selected === undefined) return;
-            msg.selected.forEach(function(obj) {
-              var inSelf = selected.findIndex(function(o) {
-                return (o._id == obj._id);
-              });
-              if (inSelf < 0) selected.push(obj);
-            });
-            return;
-          case 'target':
-            if (cmdSplit.length < 2) {
-              error("Il manque l'id de la cible (après --target)", cmd);
-              return;
-            }
-            selected.push({
-              _id: cmdSplit[1]
-            });
-            return;
-          case 'disque':
-            if (cmdSplit.length < 3) {
-              error("Pas assez d'argument pour définir un disque", cmdSplit);
-              return;
-            }
-            var centre = tokenOfId(cmdSplit[1], cmdSplit[1], pageId);
-            if (centre === undefined) {
-              error("le premier argument du disque n'est pas un token valide", cmdSplit);
-              return;
-            }
-            var rayon = parseInt(cmdSplit[2]);
-            if (isNaN(rayon) || rayon < 0) {
-              error("Rayon du disque mal défini", cmdSplit);
-              return;
-            }
-            var portee;
-            if (cmdSplit.length > 3) {
-              portee = parseInt(cmdSplit[3]);
-              if (isNaN(portee) || portee < 0) {
-                error("La portée du disque est mal formée", cmdSplit);
-                return;
-              }
-              if (actif === undefined) {
-                if (msg.selected === undefined || msg.selected.length != 1) {
-                  error("Pas de token sélectionné pour calculer la distance du disque", msg);
-                  return;
-                }
-                actif = tokenOfId(msg.selected[0]._id, msg.selected[0]._id, pageId);
-              }
-              if (distanceCombat(centre.token, actif.token, pageId, true) > portee) {
-                sendChar(actif.charId, "Le centre de l'effet est placé trop loin (portée " + portee + ")");
-                return;
-              }
-            }
-            var allToksDisque =
-              findObjs({
-                _type: "graphic",
-                _pageid: pageId,
-                _subtype: "token",
-                layer: "objects"
-              });
-            allToksDisque.forEach(function(obj) {
-              if (portee === 0 && obj.id == actif.token.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
-              var objCharId = obj.get('represents');
-              if (objCharId === '') return;
-              if (getState({
-                  token: obj,
-                  charId: objCharId
-                }, 'mort')) return; //pas d'effet aux morts
-              if (obj.get('bar1_max') == 0) return; // jshint ignore:line
-              var objChar = getObj('character', objCharId);
-              if (objChar === undefined) return;
-              var distanceCentre = distanceCombat(centre.token, obj, pageId, true);
-              if (distanceCentre > rayon) return;
-              selected.push({
-                _id: obj.id
-              });
-            });
-            if (centre.token.get('bar1_max') == 0) { // jshint ignore:line
-              //C'est juste un token utilisé pour définir le disque
-              centre.token.remove(); //On l'enlève, normalement plus besoin
-              centre = undefined;
-            }
-            return;
-          default:
-        }
-      });
-    }
-    if (count === 0) {
-      if (selected.length === 0) {
-        if (msg.selected) {
-          if (!called) {
-            var res = msg.selected.filter(function(sel) {
-              var interdit = enleveAuxSelected.find(function(i) {
-                return (i._id == sel._id);
-              });
-              return (interdit === undefined);
-            });
-            callback(res);
-          }
-          return;
-        }
-        if (!called) callback([]);
-        return;
-      }
-      if (!called) finalCall();
-      return;
-    }
-  }
-
 
   function pointsDeRecuperation(perso) {
     // retourne les nombre de PR restant
@@ -8075,33 +8156,6 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  // evt et msg peuvent être undefined
-  function removeTokenAttr(personnage, attribute, evt, msg) {
-    var charId = personnage.charId;
-    var token = personnage.token;
-    if (msg !== undefined) {
-      sendChar(charId, msg);
-    }
-    // check if the token is linked to the character. If not, use token name
-    // in attribute name (token ids don't persist over API reload)
-    if (token) {
-      var link = token.get('bar1_link');
-      if (link === '') attribute += "_" + token.get('name');
-    }
-    var attr = findObjs({
-      _type: 'attribute',
-      _characterid: charId,
-      name: attribute
-    });
-    if (attr.length === 0) return;
-    attr = attr[0];
-    if (evt) {
-      evt.deletedAttributes = evt.deletedAttributes || [];
-      evt.deletedAttributes.push(attr);
-    }
-    attr.remove();
-  }
-
   function removeAttr(selected, attribute, evt, msg) {
     if (selected === undefined || selected.length === 0) return [];
     iterSelected(selected, function(perso) {
@@ -9044,6 +9098,13 @@ var COFantasy = COFantasy || function() {
           }
           options.targetFx = cmd[1];
           break;
+        case "classeEffet":
+          if (cmd.length < 2) {
+            sendChat("COF", "Il manque un argument à l'option --classeEffet");
+            return;
+          }
+          options.classeEffet = cmd[1];
+          return;
         default:
           return;
       }
@@ -9384,8 +9445,30 @@ var COFantasy = COFantasy || function() {
         });
       }
       if (selected.length === 0) return;
-      if (limiteRessources(lanceur, options, effet, effet, evt)) return;
       if (activer) {
+        if (limiteRessources(lanceur, options, effet, effet, evt)) return;
+        if (options.classeEffet) {
+          selected = selected.filter(function(sel) {
+            var perso = tokenOfId(sel._id);
+            if (perso === undefined) return false;
+            if (attributeAsBool(perso, options.classeEffet)) {
+              var attrDeClasse = attributesOfClass(perso, options.classeEffet);
+              var mpc = "Non cumulable avec";
+              attrDeClasse.forEach(function(attrClasseEffet) {
+                var attr = attrClasseEffet.baseAttribute;
+                var attrName = attr.get('name');
+                if (estEffetIndetermine(attrName))
+                  mpc += ' ' + messageEffetIndetermine[effetIndetermineOfAttribute(attr)].actif;
+                else mpc += ' ' + attrName;
+              });
+              sendChar(perso.charId, mpc);
+              return false;
+            }
+            setTokenAttr(perso, options.classeEffet, true, evt);
+            setTokenAttr(perso, effet + 'ClasseEffet', options.classeEffet, evt);
+            return true;
+          });
+        }
         setAttr(
           selected, effet, true, evt, messageEffetIndetermine[effet].activation);
         if (options.puissant) {
@@ -9397,10 +9480,56 @@ var COFantasy = COFantasy || function() {
           setAttr(selected, effet + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
         }
       } else {
-        removeAttr(selected, effet, evt, messageEffetIndetermine[effet].fin);
+        iterSelected(selected, function(perso) {
+          //On commence par enlever les attributs de classe d'effet, si besoin
+          var ace = tokenAttribute(perso, effet + 'ClasseEffet');
+          if (ace.length > 0) {
+            var ce = ace[0].get('current');
+            removeTokenAttr(perso, ce, evt);
+            evt.deletedAttributes = evt.deletedAttributes || [];
+            evt.deletedAttributes.push(ace[0]);
+            ace[0].remove();
+          }
+          removeTokenAttr(perso, effet, evt, messageEffetIndetermine[effet].fin);
+        });
       }
       addEvent(evt);
     });
+  }
+
+  function finClasseDEffet(msg) {
+    var cmd = msg.content.split(' ');
+    if (cmd.length < 2) {
+      error("Il manque l'argument de !cof-fin-classe-effet", cmd);
+      return;
+    }
+    var classeEffet = cmd[1];
+    getSelected(msg, function(selected) {
+      if (selected === undefined || selected.length === 0) {
+        error("Pas de cible sélectionnée pour la fin d'une classe d'effets", msg);
+        return;
+      }
+      var evt = {
+        type: "Fin des effets de classe " + classeEffet,
+        deletedAttributes: []
+      };
+      iterSelected(selected, function(perso) {
+        if (attributeAsBool(perso, classeEffet)) {
+          var attrDeClasse = attributesOfClass(perso, classeEffet);
+          attrDeClasse.forEach(function(adc) {
+            var attrName = adc.baseAttribute.get('name');
+            if (estEffetIndetermine(attrName))
+              sendChar(perso.charId, messageEffetIndetermine[effetIndetermineOfAttribute(adc.baseAttribute)].fin);
+            evt.deletedAttributes.push(adc.baseAttribute);
+            adc.baseAttribute.remove();
+            evt.deletedAttributes.push(adc.classAttribute);
+            adc.classAttribute.remove();
+          });
+          removeTokenAttr(perso, classeEffet, evt);
+        }
+      });
+      addEvent(evt);
+    }); //fin de getSelected
   }
 
   function peurOneToken(target, pageId, difficulte, duree, options,
@@ -13255,6 +13384,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-effet":
         effetIndetermine(msg);
         return;
+      case "!cof-fin-classe-effet":
+        finClasseDEffet(msg);
+        return;
       case "!cof-attaque-magique":
         attaqueMagique(msg);
         return;
@@ -13879,7 +14011,32 @@ var COFantasy = COFantasy || function() {
       activation: "se deplace maintenant en terrain difficile",
       actif: "profite du terrain difficile",
       fin: "est maintenant en terrain normal"
-    }
+    },
+    mutationCuirasse: {
+      activation: "endurcit sa peau",
+      actif: "a la peau recouverte d'une cuirasse",
+      fin: "retrouve une peau normale"
+    },
+    mutationEcaillesRouges: {
+      activation: "recouvre sa peau d'écailles rouges",
+      actif: "a la peau recouverte d'écailles rouges",
+      fin: "retrouve une peau normale"
+    },
+    mutationFourrureViolette: {
+      activation: "se fait pousser une fourrure violette",
+      actif: "a la peau recouverte d'une fourrure violette",
+      fin: "retrouve une peau normale"
+    },
+    mutationOuies: {
+      activation: "se fait pousser des ouïes",
+      actif: "possède des ouïes",
+      fin: "n'a plus d'ouïes"
+    },
+    mutationSangNoir: {
+      activation: "prend un teint plus sombre",
+      actif: "a le sang noir",
+      fin: "retrouve un sang normal"
+    },
   };
 
   var patternEffetsIndetermine = buildPatternEffets(messageEffetIndetermine);
