@@ -2,6 +2,7 @@
 
 ## 1.0 à 1.1
 ### Nouvelles capacités
+* Forme d'arbre (Druide)
 * Mutation protectrice (Invocateur)
 * Mutation offensive (Invocateur)
 * Chef né (Samouraï)

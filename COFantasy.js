@@ -29,6 +29,7 @@ var COFantasy = COFantasy || function() {
   var DEF_MALUS_APRES_TOUR_5 = true;
   var IMAGE_OMBRE = "https://s3.amazonaws.com/files.d20.io/images/2781735/LcllgIHvqvu0HAbWdXZbJQ/thumb.png?13900368485";
   var IMAGE_DOUBLE = "https://s3.amazonaws.com/files.d20.io/images/33854984/q10B3KtWsCxcMczLo4BSUw/thumb.png?1496303265";
+  var IMAGE_ARBRE = "https://s3.amazonaws.com/files.d20.io/images/52767134/KEGYUXeKnxZr5dbDwQEO4Q/thumb.png?15248300835";
   var HISTORY_SIZE = 150;
   var BLESSURESGRAVES = true; //Si les DMs dépassent CON+niveau, ou si on arrive
   //à 0 PV, on perd un PR, et si plus de PR, affaibli.
@@ -2052,6 +2053,35 @@ var COFantasy = COFantasy || function() {
     sendChat(dest, msg);
   }
 
+  //Si evt est défini, alors on considère qu'il faut y mettre la valeur actuelle
+  function updateCurrentBar(token, barNumber, val, evt, maxVal) {
+    var fieldv = 'bar' + barNumber + '_value';
+    var fieldm;
+    if (maxVal) fieldm = 'bar' + barNumber + '_max';
+    var attrId = token.get("bar" + barNumber + "_link");
+    if (attrId === "") {
+      token.set(fieldv, val);
+      if (maxVal) token.set(fieldm, val);
+      if (evt) {
+        affectToken(token, fieldv, token.get(fieldv), evt);
+        if (maxVal) affectToken(token, fieldm, token.get(fieldm), evt);
+      }
+      return;
+    }
+    var attr = getObj('attribute', attrId);
+    if (evt) {
+      evt.attributes = evt.attributes || [];
+      evt.attributes.push({
+        attribute: attr,
+        current: attr.get('current'),
+        max: attr.get('max')
+      });
+    }
+    attr.set('current', val);
+    if (maxVal) attr.set('max', maxVal);
+    return;
+  }
+
   // Fait dépenser de la mana, et si pas possible, retourne false
   function depenseMana(personnage, cout, msg, evt) {
     if (cout === 0) return true;
@@ -2239,6 +2269,122 @@ var COFantasy = COFantasy || function() {
       evt.deletedAttributes.push(attr);
     }
     attr.remove();
+  }
+
+  function setTokenAttr(personnage, attribute, value, evt, msg, maxval) {
+    var charId = personnage.charId;
+    var token = personnage.token;
+    if (msg !== undefined) {
+      sendChar(charId, msg);
+    }
+    evt.attributes = evt.attributes || [];
+    var agrandir = false;
+    if (attribute == 'agrandissement' && token) agrandir = true;
+    var formeArbre = false;
+    if (attribute == 'formeDArbre' && token) formeArbre = true;
+    // check if the token is linked to the character. If not, use token name
+    // in attribute name (token ids don't persist over API reload)
+    if (token) {
+      var link = token.get('bar1_link');
+      if (link === "") attribute += "_" + token.get('name');
+    }
+    var attr = findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+      name: attribute
+    });
+    if (attr.length === 0) {
+      if (maxval === undefined) maxval = '';
+      attr = createObj('attribute', {
+        characterid: charId,
+        name: attribute,
+        current: value,
+        max: maxval
+      });
+      evt.attributes.push({
+        attribute: attr,
+        current: null
+      });
+      if (agrandir) {
+        var width = token.get('width');
+        var height = token.get('height');
+        affectToken(token, 'width', width, evt);
+        affectToken(token, 'height', height, evt);
+        width += width / 2;
+        height += height / 2;
+        token.set('width', width);
+        token.set('height', height);
+      } else if (formeArbre) {
+        //On copie les PVs pour pouvoir les restaurer à la fin de l'effet
+        setTokenAttr(personnage, 'anciensPV', token.get('bar1_value'), evt, undefined, token.get('bar1_max'));
+        //On va créer une copie de token, mais avec une image d'arbre
+        var tokenFields = {
+          _pageid: token.get('pageid'),
+          imgsrc: IMAGE_ARBRE,
+          represents: personnage.charId,
+          left: token.get('left'),
+          top: token.get('top'),
+          width: token.get('width'),
+          height: token.get('height'),
+          rotation: token.get('rotation'),
+          layer: 'objects',
+          name: token.get('name'),
+          bar1_value: token.get('bar1_value'),
+          bar1_max: token.get('bar1_max'),
+          bar1_link: token.get('bar1_link'),
+          bar2_value: token.get('bar2_value'),
+          bar2_max: token.get('bar2_max'),
+          bar2_link: token.get('bar2_link'),
+          bar3_value: token.get('bar3_value'),
+          bar3_max: token.get('bar3_max'),
+          aura1_radius: token.get('aura1_radius'),
+          aura1_color: token.get('aura1_color'),
+          aura1_square: token.get('aura1_square'),
+          showplayers_aura1: token.get('showplayers_aura1'),
+          aura2_radius: token.get('aura2_radius'),
+          aura2_color: token.get('aura2_color'),
+          aura2_square: token.get('aura2_square'),
+          showplayers_aura2: token.get('showplayers_aura2'),
+          statusmarkers: token.get('statusmarkers'),
+          light_radius: token.get('light_radius'),
+          light_dimradius: token.get('light_dimradius'),
+          light_otherplayers: token.get('light_otherplayers'),
+          light_hassight: token.get('light_hassight'),
+          light_angle: token.get('light_angle'),
+          light_losangle: token.get('light_losangle'),
+          light_multiplier: token.get('light_multiplier'),
+          showname: token.get('showname'),
+          showplayers_name: token.get('showplayers_name'),
+          showplayers_bar1: token.get('showplayers_bar1'),
+        };
+        var tokenArbre = createObj('graphic', tokenFields);
+        if (tokenArbre) {
+          //On met l'ancien token dans le gmlayer, car si l'image vient du merketplace, il est impossible de le recréer depuis l'API
+          setToken(token, 'layer', 'gmlayer', evt);
+          setTokenAttr(personnage, 'changementDeToken', true, evt);
+          replaceInTurnTracker(token.id, tokenArbre.id, evt);
+          personnage.token = tokenArbre;
+          token = tokenArbre;
+        }
+        //On met maintenant les nouveaux PVs
+        var nouveauxPVs = getValeurOfEffet(personnage, 'formeDArbre', 40);
+        updateCurrentBar(token, 1, nouveauxPVs, evt, nouveauxPVs);
+        //L'initiative change
+        initiative([{
+          _id: token.id
+        }], evt);
+      }
+      return attr;
+    }
+    attr = attr[0];
+    evt.attributes.push({
+      attribute: attr,
+      current: attr.get('current'),
+      max: attr.get('max')
+    });
+    attr.set('current', value);
+    if (maxval !== undefined) attr.set('max', maxval);
+    return attr;
   }
 
   // bonus d'attaque d'un token, indépendament des options
@@ -2466,6 +2612,7 @@ var COFantasy = COFantasy || function() {
     var charId = perso.charId;
     var init = parseInt(getAttrByName(charId, 'DEXTERITE'));
     init += charAttributeAsInt(perso, 'INIT_DIV', 0);
+    if (attributeAsBool(perso, 'formeDArbre')) init = 7;
     if (getState(perso, 'aveugle')) init -= 5;
     // Voie du compagnon animal rang 2 (surveillance)
     init += attributeAsInt(perso, 'bonusInitEmbuscade', 0);
@@ -2537,6 +2684,7 @@ var COFantasy = COFantasy || function() {
       defense += charAttributeAsInt(target, 'DEFDIV', 0);
     } // Dans le cas contraire, on n'utilise pas ces bonus
     defense += modCarac(target, 'DEXTERITE');
+    if (attributeAsBool(target, 'formeDArbre')) defense = 13;
     // Malus de défense global pour les longs combats
     if (DEF_MALUS_APRES_TOUR_5)
       defense -= (Math.floor((state.COFantasy.tour - 1) / 5) * 2);
@@ -4975,6 +5123,10 @@ var COFantasy = COFantasy || function() {
           rdSauf[attrName.substr(8)] = rds;
         }
       });
+      if (attributeAsBool(target, 'formeDArbre')) {
+        rdSauf.feu_tranchant = rdSauf.feu_tranchant || 0;
+        rdSauf.feu_tranchant += 10;
+      }
       var additionalType = {
         magique: options.magique,
         tranchant: options.tranchant,
@@ -5338,6 +5490,24 @@ var COFantasy = COFantasy || function() {
             expliquer("L'instinct de survie aide à réduire une attaque fatale");
           }
           bar1 = bar1 - dmgTotal;
+          if (bar1 <= 0) {
+            var attrFDA = tokenAttribute(target, 'formeDArbre');
+            if (attrFDA.length > 0) {
+              var effetFDA = finDEffet(attrFDA[0], 'formeDArbre', attrFDA[0].get('name'), charId, evt, {
+                pageId: token.get('pageid')
+              });
+              if (effetFDA && effetFDA.newToken) {
+                token = effetFDA.newToken;
+                target.token = token;
+              }
+              var newBar1 = parseInt(token.get('bar1_value'));
+              if (isNaN(newBar1) || newBar1 < 0) {
+                error("Points de vie de l'ancien token incorrects", newBar1);
+              } else {
+                bar1 += newBar1;
+              }
+            }
+          }
           if (bar1 <= 0) {
             if (charAttributeAsBool(charId, 'sergent') &&
               !attributeAsBool(target, 'sergentUtilise')) {
@@ -8073,15 +8243,19 @@ var COFantasy = COFantasy || function() {
     Campaign().set('turnorder', JSON.stringify(turnOrder));
   }
 
-  function updateCurrentBar(token, barNumber, val) {
-    var attrId = token.get("bar" + barNumber + "_link");
-    if (attrId === "") {
-      token.set("bar" + barNumber + "_value", val);
+  function replaceInTurnTracker(tidOld, tidNew, evt) {
+    var turnOrder = Campaign().get('turnorder');
+    if (turnOrder === "" || !state.COFantasy.combat) {
       return;
     }
-    var attr = getObj('attribute', attrId);
-    attr.set('current', val);
-    return;
+    evt.turnorder = evt.turnorder || turnOrder;
+    turnOrder = JSON.parse(turnOrder);
+    turnOrder.forEach(function(elt) {
+      if (elt.id == tidOld) elt.id = tidNew;
+    });
+    Campaign().set('turnorder', JSON.stringify(turnOrder));
+    if (tidOld == state.COFantasy.activeTokenId)
+      state.COFantasy.activeTokenId = tidNew;
   }
 
   function eForFemale(charId) {
@@ -8092,61 +8266,6 @@ var COFantasy = COFantasy || function() {
     var sex = getAttrByName(charId, 'SEXE');
     if (sex.startsWith('F')) return female;
     return male;
-  }
-
-  function setTokenAttr(personnage, attribute, value, evt, msg, maxval) {
-    var charId = personnage.charId;
-    var token = personnage.token;
-    if (msg !== undefined) {
-      sendChar(charId, msg);
-    }
-    evt.attributes = evt.attributes || [];
-    var agrandir = false;
-    if (attribute == 'agrandissement' && token) agrandir = true;
-    // check if the token is linked to the character. If not, use token name
-    // in attribute name (token ids don't persist over API reload)
-    if (token) {
-      var link = token.get('bar1_link');
-      if (link === "") attribute += "_" + token.get('name');
-    }
-    var attr = findObjs({
-      _type: 'attribute',
-      _characterid: charId,
-      name: attribute
-    });
-    if (attr.length === 0) {
-      if (maxval === undefined) maxval = '';
-      attr = createObj('attribute', {
-        characterid: charId,
-        name: attribute,
-        current: value,
-        max: maxval
-      });
-      evt.attributes.push({
-        attribute: attr,
-        current: null
-      });
-      if (agrandir) {
-        var width = token.get('width');
-        var height = token.get('height');
-        affectToken(token, 'width', width, evt);
-        affectToken(token, 'height', height, evt);
-        width += width / 2;
-        height += height / 2;
-        token.set('width', width);
-        token.set('height', height);
-      }
-      return attr;
-    }
-    attr = attr[0];
-    evt.attributes.push({
-      attribute: attr,
-      current: attr.get('current'),
-      max: attr.get('max')
-    });
-    attr.set('current', value);
-    if (maxval !== undefined) attr.set('max', maxval);
-    return attr;
   }
 
   function setAttr(selected, attribute, value, evt, msg, maxval) {
@@ -9236,6 +9355,9 @@ var COFantasy = COFantasy || function() {
       if (selected.length > 0) {
         initiative(selected, evt);
       }
+      if (options.valeur !== undefined) {
+        setAttr(selected, effet + "Valeur", options.valeur, evt, undefined, options.valeurMax);
+      }
       setAttr(
         selected, effetC, duree, evt, messageEffetTemp[effet].activation,
         getInit());
@@ -9247,9 +9369,6 @@ var COFantasy = COFantasy || function() {
         var puissant = true;
         if (options.puissant == "off") puissant = false;
         setAttr(selected, effet + "Puissant", puissant, evt);
-      }
-      if (options.valeur !== undefined) {
-        setAttr(selected, effet + "Valeur", options.valeur, evt, undefined, options.valeurMax);
       }
       if (options.tempeteDeManaIntense !== undefined) {
         setAttr(selected, effetC + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
@@ -9872,9 +9991,7 @@ var COFantasy = COFantasy || function() {
                 setState(cible, 'renverse', true, evt);
               } else { //save raté
                 addLineToFramedDisplay(display, cible.token.get('name') + " succombe à ses pires terreurs");
-                var pv = cible.token.get('bar1_value');
-                affectToken(cible.token, 'bar1_value', pv, evt);
-                updateCurrentBar(cible.token, 1, 0);
+                updateCurrentBar(cible.token, 1, 0, evt);
                 setState(cible, 'mort', true, evt);
               }
               sendChat("", endFramedDisplay(display));
@@ -10079,6 +10196,8 @@ var COFantasy = COFantasy || function() {
       case 'zombie':
       case 'mort-vivant':
       case 'momie':
+      case 'goule':
+      case 'vampire':
         return true;
       default:
         return false;
@@ -11409,7 +11528,7 @@ var COFantasy = COFantasy || function() {
           return;
         case 'image':
           if (cmd.length < 2) {
-            error("Il manque l'argument de --mana", msg.content);
+            error("Il manque l'argument de --image", msg.content);
             return;
           }
           image = cmd[1];
@@ -13877,6 +13996,11 @@ var COFantasy = COFantasy || function() {
       actif: "possède un appendice monstrueux",
       fin: "retrouve un corps normal"
     },
+    formeDArbre: {
+      activation: "se transorme en arbre",
+      actif: "est transformé en arbre",
+      fin: "retrouve sa forme normale"
+    }
   };
 
   function buildPatternEffets(listeEffets, postfix) {
@@ -14082,6 +14206,7 @@ var COFantasy = COFantasy || function() {
             _type: 'graphic',
             _subtype: 'token',
             _pageid: pageId,
+            layer: 'objects',
             represents: charId
           });
       }
@@ -14090,6 +14215,7 @@ var COFantasy = COFantasy || function() {
           findObjs({
             _type: 'graphic',
             _subtype: 'token',
+            layer: 'objects',
             represents: charId
           });
         tokens = tokens.filter(function(tok) {
@@ -14124,6 +14250,7 @@ var COFantasy = COFantasy || function() {
             _type: 'graphic',
             _subtype: 'token',
             _pageId: pageId,
+            layer: 'objects',
             represents: charId,
             name: tokenName,
             bar1_link: ''
@@ -14136,6 +14263,7 @@ var COFantasy = COFantasy || function() {
             _subtype: 'token',
             represents: charId,
             name: tokenName,
+            layer: 'objects',
             bar1_link: ''
           });
         tNames = tNames.filter(function(tok) {
@@ -14198,6 +14326,8 @@ var COFantasy = COFantasy || function() {
 
   function finDEffet(attr, effet, attrName, charId, evt, options) { //L'effet arrive en fin de vie, doit être supprimé
     options = options || {};
+    var res;
+    var newInit = [];
     var efComplet = effetComplet(effet, attrName);
     //Si on a un attrSave, alors on a déjà imprimé le message de fin d'effet
     if (options.attrSave) { //on a un attribut associé à supprimer)
@@ -14357,6 +14487,74 @@ var COFantasy = COFantasy || function() {
           arbreChar.remove();
         }
         return; //Pas besoin de faire le reste, car plus de perso
+      case 'formeDArbre':
+        var tokenChange = charAttributeAsBool(charId, 'changementDeToken');
+        var filterUnique;
+        if (tokenChange) {
+          removeTokenAttr({
+            charId: charId
+          }, 'changementDeToken', evt);
+          filterUnique = function(token) {
+            return true;
+          };
+        }
+        iterTokensOfEffet(charId, options.pageId, effet, attrName,
+          function(token) {
+            var perso = {
+              token: token,
+              charId: charId
+            };
+            if (tokenChange) {
+              var tokenMJ =
+                findObjs({
+                  _type: 'graphic',
+                  _subtype: 'token',
+                  _pageid: token.get('pageid'),
+                  layer: 'gmlayer',
+                  represents: charId,
+                  name: token.get('name')
+                });
+              if (tokenMJ.length === 0) return;
+              var nouveauToken = tokenMJ[0];
+              setToken(nouveauToken, 'layer', 'objects', evt);
+              setToken(nouveauToken, 'left', token.get('left'), evt);
+              setToken(nouveauToken, 'top', token.get('top'), evt);
+              setToken(nouveauToken, 'width', token.get('width'), evt);
+              setToken(nouveauToken, 'height', token.get('height'), evt);
+              setToken(nouveauToken, 'rotation', token.get('rotation'), evt);
+              setToken(nouveauToken, 'bar2_value', token.get('bar2_value'), evt);
+              setToken(nouveauToken, 'aura1_radius', token.get('aura1_radius'), evt);
+              setToken(nouveauToken, 'aura1_color', token.get('aura1_color'), evt);
+              setToken(nouveauToken, 'aura1_square', token.get('aura1_square'), evt);
+              setToken(nouveauToken, 'showplayers_aura1', token.get('showplayers_aura1'), evt);
+              setToken(nouveauToken, 'aura2_radius', token.get('aura2_radius'), evt);
+              setToken(nouveauToken, 'aura2_color', token.get('aura2_color'), evt);
+              setToken(nouveauToken, 'aura2_square', token.get('aura2_square'), evt);
+              setToken(nouveauToken, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
+              setToken(nouveauToken, 'statusmarkers', token.get('statusmarkers'), evt);
+              setToken(nouveauToken, 'light_angle', token.get('light_angle'), evt);
+              if (state.COFantasy.combat) {
+                replaceInTurnTracker(token.id, nouveauToken.id, evt);
+              }
+              res = res || {};
+              res.oldTokenId = token.id;
+              res.newTokenId = nouveauToken.id;
+              res.newToken = nouveauToken;
+              token.remove();
+              token = nouveauToken;
+              perso.token = nouveauToken;
+            }
+            var apv = tokenAttribute(perso, 'anciensPV');
+            if (apv.length > 0) {
+              updateCurrentBar(token, 1, apv[0].get('current'), evt, apv[0].get('max'));
+              removeTokenAttr(perso, 'anciensPV', evt);
+              newInit.push({
+                _id: token.id
+              });
+            }
+          },
+          filterUnique);
+        break;
       default:
     }
     if (options.attrSave === undefined && !getState({
@@ -14372,6 +14570,8 @@ var COFantasy = COFantasy || function() {
     }
     evt.deletedAttributes.push(attr);
     attr.remove();
+    if (newInit.length > 0) initiative(newInit, evt);
+    return res;
   }
 
   //asynchrone
@@ -14518,9 +14718,11 @@ var COFantasy = COFantasy || function() {
         var attrName = attr.get('name');
         var v = attr.get('current');
         if (v == 'tourFinal') { //L'effet arrive en fin de vie, doit être supprimé
-          finDEffet(attr, effet, attrName, charId, evt, {
+          var effetFinal = finDEffet(attr, effet, attrName, charId, evt, {
             pageId: pageId
           });
+          if (effetFinal && effetFinal.oldTokenId == active.id)
+            active.id = effetFinal.newTokenId;
           count--;
         } else { //Effet encore actif
           evt.attributes.push({
