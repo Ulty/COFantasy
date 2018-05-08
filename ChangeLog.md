@@ -1,7 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 
-## 1.0 à 1.1
+## 1.0 à 1.01
 ### Nouvelles capacités
+* Attaque en traître (Voleur)
 * Forme d'arbre (Druide)
 * Mutation protectrice (Invocateur)
 * Mutation offensive (Invocateur)
