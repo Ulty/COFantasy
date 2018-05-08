@@ -13084,11 +13084,11 @@ var COFantasy = COFantasy || function() {
   function creerElixir(msg) {
     var options = parseOptions(msg);
     var cmd = options.cmd;
-    if (cmd === undefined || cmd.length < 4) {
+    if (cmd === undefined || cmd.length < 3) {
       error("Pas assez d'arguments pour !cof-creer-elixir", msg.content);
       return;
     }
-    var forgesort = tokenOfId(cmd[1], cmd[2], options.pageId);
+    var forgesort = tokenOfId(cmd[1], cmd[1], options.pageId);
     if (forgesort === undefined) {
       if (msg.selected && msg.selected.length == 1) {
         forgesort = tokenOfId(msg.selected[0]._id);
@@ -13104,11 +13104,11 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var elixir = listeElixirs(voieDesElixirs).find(function(i) {
-      if (i.nom == cmd[3]) return true;
+      if (i.nom == cmd[2]) return true;
       return false;
     });
     if (elixir === undefined) {
-      error(forgesort.token.get('name') + " est incapable de créer " + cmd[3], cmd);
+      error(forgesort.token.get('name') + " est incapable de créer " + cmd[2], cmd);
       return;
     }
     var evt = {
@@ -13166,7 +13166,7 @@ var COFantasy = COFantasy || function() {
           var options = '';
           var action;
           if (elixirsACreer > 0) {
-            action = "!cof-creer-elixir " + forgesort.token.id + ' ' + forgesort.token.get('name') + ' ' + elixir.nom;
+            action = "!cof-creer-elixir " + forgesort.token.id + ' ' + elixir.nom;
             options += bouton(action, nbElixirs, forgesort, attrElixirs);
           } else {
             options = nbElixirs + ' ';
