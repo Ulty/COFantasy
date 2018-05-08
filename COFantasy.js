@@ -2517,7 +2517,6 @@ var COFantasy = COFantasy || function() {
         //On va créer une copie de token, mais avec une image d'arbre
         var tokenFields = {
           _pageid: token.get('pageid'),
-          imgsrc: IMAGE_ARBRE,
           represents: personnage.charId,
           left: token.get('left'),
           top: token.get('top'),
@@ -2554,7 +2553,20 @@ var COFantasy = COFantasy || function() {
           showplayers_name: token.get('showplayers_name'),
           showplayers_bar1: token.get('showplayers_bar1'),
         };
-        var tokenArbre = createObj('graphic', tokenFields);
+        var tokenArbre;
+        var imageArbre = findObjs({
+          _type: 'attribute',
+          _characterid: personnage.charId,
+          name: 'tokenFormeDArbre'
+        });
+        if (imageArbre.length > 0) {
+          tokenFields.imgsrc = imageArbre[0].get('current');
+          tokenArbre = createObj('graphic', tokenFields);
+        }
+        if (tokenArbre === undefined) {
+          tokenFields.imgsrc = IMAGE_ARBRE;
+          tokenArbre = createObj('graphic', tokenFields);
+        }
         if (tokenArbre) {
           //On met l'ancien token dans le gmlayer, car si l'image vient du merketplace, il est impossible de le recréer depuis l'API
           setToken(token, 'layer', 'gmlayer', evt);

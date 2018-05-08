@@ -1,11 +1,16 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
-## 1.01 à 1.02
+## 1.01
+### Nouvelles capacités
+* Attaque en traître (Voleur)
+
 ### Corrections de bugs
 * La création d'elixirs fonctionne maintenant correctement avec des tokens ayant des espaces dans leur nom
 
-## 1.0 à 1.01
+### Autres améliorations
+* Ajout de la possibilité de spécifier une image spécifique à un personnage pour le token en forme d'arbre.
+
+## 1.0
 ### Nouvelles capacités
-* Attaque en traître (Voleur)
 * Forme d'arbre (Druide)
 * Mutation protectrice (Invocateur)
 * Mutation offensive (Invocateur)
