@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 1.01
 ### Nouvelles capacités
+* Gland de pouvoir (Druide)
 * Attaque en traître (Voleur)
 
 ### Corrections de bugs
