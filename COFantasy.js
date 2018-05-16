@@ -1320,6 +1320,15 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function sendPlayer(origin, msg) {
+    var dest = origin;
+    if (origin.who) {
+      if (playerIsGM(origin.playerid)) dest = 'GM';
+      else dest = origin.who;
+    }
+    sendChat('COF', '/w "' + dest + '" ' + msg);
+  }
+
   function jet(msg) {
     // Les arguments pour cof-jet sont :
     // - Caracteristique (FOR, DEX, CON, INT, SAG, CHA)
@@ -2257,15 +2266,6 @@ var COFantasy = COFantasy || function() {
       }
     }
     attack(msg.playerid, attaquant, targetToken, attackLabel, options);
-  }
-
-  function sendPlayer(origin, msg) {
-    var dest = origin;
-    if (origin.who) {
-      if (playerIsGM(origin.playerid)) dest = 'GM';
-      else dest = origin.who;
-    }
-    sendChat('COF', '/w "' + dest + '" ' + msg);
   }
 
   function sendChar(charId, msg) {
@@ -6960,7 +6960,13 @@ var COFantasy = COFantasy || function() {
       type: "Nouveau jour",
       attributes: []
     };
-    sendChat('player|'+msg.playerid, "Un nouveau jour se lève");
+    var fromMsg = 'player|' + msg.playerid;
+    var player = getObj('player', msg.playerid);
+    if (player) {
+      var speaksAs = player.get('speakingas');
+      if (speaksAs !== '') fromMsg = speaksAs;
+    }
+    sendChat(fromMsg, "Un nouveau jour se lève");
     jour(evt);
     if (msg.content.includes(' --repos')) nuit(msg, evt);
     else addEvent(evt);
