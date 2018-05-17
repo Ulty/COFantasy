@@ -8,6 +8,7 @@
 * La création d'elixirs fonctionne maintenant correctement avec des tokens ayant des espaces dans leur nom
 
 ### Autres améliorations
+* Possibilité de mettre fin à un effet temporaire avec la commande !cof-effet-temp effet 0
 * Changement des commandes pour le passage des nuits. Les commandes !cof-nuit et !cof-jour sont remplacées par !cof-nouveau-jour.
 * Ajout de la possibilité de spécifier une image spécifique à un personnage pour le token en forme d'arbre.
 

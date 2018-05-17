@@ -34,6 +34,7 @@ var COFantasy = COFantasy || function() {
   var BLESSURESGRAVES = true; //Si les DMs dépassent CON+niveau, ou si on arrive
   //à 0 PV, on perd un PR, et si plus de PR, affaibli.
   var MONTRER_TURNACTION_AU_MJ = false;
+  var FORME_D_ARBRE_AMELIORE_PEAU_D_ECORCE = true;//+50% en forme d'arbre
   var eventHistory = [];
   var updateNextInitSet = new Set();
 
@@ -2956,7 +2957,7 @@ var COFantasy = COFantasy || function() {
       var bonusPeau = getValeurOfEffet(target, 'peauDEcorce', 1, 'voieDesVegetaux');
       var peauIntense = attributeAsInt(target, 'peauDEcorceTempeteDeManaIntense', 0);
       bonusPeau += peauIntense;
-      if (formeDarbre) {
+      if (FORME_D_ARBRE_AMELIORE_PEAU_D_ECORCE && formeDarbre) {
         bonusPeau = Math.ceil(bonusPeau * 1.5);
       }
       defense += bonusPeau;
@@ -9678,12 +9679,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var duree = parseInt(cmd[2]);
-    if (isNaN(duree) || duree < 1) {
-      error(
-        "Le deuxième argument de !cof-effet-temp doit être un nombre positif",
-        msg.content);
-      return;
-    }
+    if (isNaN(duree) || duree < 1) duree = 0;//On veut terminer l'effet
     if (options.puissantDuree || options.tempeteDeManaDuree) duree = duree * 2;
     var evt = {
       type: 'Effet temporaire ' + effetC
@@ -9778,6 +9774,7 @@ var COFantasy = COFantasy || function() {
       if (selected.length > 0) {
         initiative(selected, evt);
       }
+      if (duree > 0) {
       if (options.valeur !== undefined) {
         setAttr(selected, effet + "Valeur", options.valeur, evt, undefined, options.valeurMax);
       }
@@ -9795,6 +9792,17 @@ var COFantasy = COFantasy || function() {
       }
       if (options.tempeteDeManaIntense !== undefined) {
         setAttr(selected, effetC + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
+      }
+      } else {//On met fin à l'effet
+        var opt = {pageId:options.pageId};
+        iterSelected(selected, function(perso) {
+          var attr = tokenAttribute(perso, effetC);
+          if (attr.length === 0) {
+            log(perso.token.get('name') + "n'a pas d'attribut "+effetC);
+            return;
+          }
+          finDEffet(attr[0], effetC, attr[0].get('name'), perso.charId, evt, opt);
+        });
       }
       addEvent(evt);
       if (lanceur && options.fx) {

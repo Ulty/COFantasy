@@ -489,7 +489,7 @@
                 <div class="decalage">
                   <p><code>!cof-buf-def <i>n</i></code> : buf ou debuf de la DEF.</p>
                   <p><code>!cof-remove-buf-def</code> : enlève tout buf ou debuf de la def.</p>
-                  <p><code>!cof-effet-temp <i>effet duree</i></code> : ajoute l'effet <i>effet</i> à la cible pour la durée, <code>!cof-effet-combat <i>effet</i></code> ajoute l'effet pour le combat, et <code>!cof-effet <i>effet</i></code> ajoute ou enlève un effet à durée indéterminée.</p>
+                  <p><code>!cof-effet-temp <i>effet duree</i></code> : ajoute l'effet <i>effet</i> à la cible pour la durée, <code>!cof-effet-combat <i>effet</i></code> ajoute l'effet pour le combat, et <code>!cof-effet <i>effet</i></code> ajoute ou enlève un effet à durée indéterminée. À noter que si la durée est 0 ou <code>fin</code>, alors la commande met fin à l'effet (utile pour des effets temporaires qui ont une action en fin d'effet, comme <code>agrandissement</code> ou <code>formeDArbre</code>).</p>
                   <ul>
                     <li><code>--lanceur <i>id</i></code> : indique quel est le lanceur. Utile pour un certain nombre d'autres options.</li>
                     <li><code>--mana <i>id cout</i></code> : impose au token <i>id</i> de dépenser <i>cout</i> mana. Si <code>--lanceur</code> est donné, <i>id</i> est inutile.</li>
