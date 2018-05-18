@@ -34,7 +34,7 @@ var COFantasy = COFantasy || function() {
   var BLESSURESGRAVES = true; //Si les DMs dépassent CON+niveau, ou si on arrive
   //à 0 PV, on perd un PR, et si plus de PR, affaibli.
   var MONTRER_TURNACTION_AU_MJ = false;
-  var FORME_D_ARBRE_AMELIORE_PEAU_D_ECORCE = true;//+50% en forme d'arbre
+  var FORME_D_ARBRE_AMELIORE_PEAU_D_ECORCE = true; //+50% en forme d'arbre
   var eventHistory = [];
   var updateNextInitSet = new Set();
 
@@ -1846,7 +1846,7 @@ var COFantasy = COFantasy || function() {
             return;
           }
           options.effets[0].valeur = cmd[1];
-          if (cmd.length > 2) options.effets.valeurMax = cmd[2];
+          if (cmd.length > 2) options.effets[0].valeurMax = cmd[2];
           return;
         case "etatSi":
         case "etat":
@@ -2347,7 +2347,7 @@ var COFantasy = COFantasy || function() {
 
   function parseSave(cmd) {
     if (cmd.length < 3) {
-      error("Usage : --psave carac seuil", cmd);
+      error("Usage : --save carac seuil", cmd);
       return;
     }
     var carac1;
@@ -2378,6 +2378,17 @@ var COFantasy = COFantasy || function() {
     if (isNaN(res.seuil)) {
       error("Le deuxième argument de --psave n'est pas un nombre", cmd);
       return;
+    }
+    if (cmd.length > 3) {
+      switch (cmd[3]) {
+        case 'carac':
+        case 'carac2':
+        case 'seuil':
+          error("Argument supplémentaire de save inconnu", cmd);
+          break;
+        default:
+          res[cmd[3]] = true;
+      }
     }
     return res;
   }
@@ -4924,6 +4935,7 @@ var COFantasy = COFantasy || function() {
               });
             }
             attaquant.alliesAvecAttaqueEnTraitre.forEach(function(tok) {
+              if (tok.id == target.id) return;
               if (distanceCombat(target.token, tok, pageId) === 0) {
                 var aetp = attaquesEnTraitrePossibles[tok.id];
                 if (aetp === undefined) {
@@ -5179,11 +5191,16 @@ var COFantasy = COFantasy || function() {
                     msgRate: msgRate,
                     attaquant: attaquant
                   };
+                  var duree = ef.duree;
                   save(ef.save, target, expliquer, saveOpts, evt,
                     function(reussite, rollText) {
+                      if (reussite && duree && ef.save.demiDuree) {
+                        reussite = false;
+                        duree = Math.ceil(duree / 2);
+                      }
                       if (!reussite) {
                         if (ef.duree)
-                          setTokenAttr(target, ef.effet, ef.duree, evt,
+                          setTokenAttr(target, ef.effet, duree, evt,
                             undefined, getInit());
                         else setTokenAttr(target, ef.effet, true, evt);
                         if (ef.effet == 'aveugleTemp') {
@@ -8689,13 +8706,6 @@ var COFantasy = COFantasy || function() {
     return male;
   }
 
-  function setAttr(selected, attribute, value, evt, msg, maxval) {
-    if (selected === undefined || selected.length === 0) return [];
-    iterSelected(selected, function(perso) {
-      setTokenAttr(perso, attribute, value, evt, msg, maxval);
-    });
-  }
-
   function removeAttr(selected, attribute, evt, msg) {
     if (selected === undefined || selected.length === 0) return [];
     iterSelected(selected, function(perso) {
@@ -8774,7 +8784,9 @@ var COFantasy = COFantasy || function() {
       type: 'other'
     };
     getSelected(msg, function(selected) {
-      setAttr(selected, 'bufDEF', buf, evt, message);
+      iterSelected(selected, function(perso) {
+        setTokenAttr(perso, 'bufDEF', buf, evt, message);
+      });
       if (evt.attributes.length === 0) {
         error("Pas de cible valide sélectionnée pour !cod-buf-def", msg);
         return;
@@ -9136,6 +9148,9 @@ var COFantasy = COFantasy || function() {
         case 'saveParTour':
           options.saveParTour = parseSave(cmd);
           return;
+        case 'save':
+          options.save = parseSave(cmd);
+          return;
         case 'dose':
           if (cmd.length < 2) {
             error("Il faut le nom de la dose", cmd);
@@ -9218,7 +9233,10 @@ var COFantasy = COFantasy || function() {
       var partialSave;
       options.aoe = true;
       optArgs.forEach(function(opt) {
-        opt = opt.split(' ');
+        opt = opt.trim().split(' ');
+        opt = opt.filter(function(c) {
+          return c !== '';
+        });
         switch (opt[0]) {
           case 'psave':
             var psaveopt = options;
@@ -9679,7 +9697,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var duree = parseInt(cmd[2]);
-    if (isNaN(duree) || duree < 1) duree = 0;//On veut terminer l'effet
+    if (isNaN(duree) || duree < 1) duree = 0; //On veut terminer l'effet
     if (options.puissantDuree || options.tempeteDeManaDuree) duree = duree * 2;
     var evt = {
       type: 'Effet temporaire ' + effetC
@@ -9775,53 +9793,82 @@ var COFantasy = COFantasy || function() {
         initiative(selected, evt);
       }
       if (duree > 0) {
-      if (options.valeur !== undefined) {
-        setAttr(selected, effet + "Valeur", options.valeur, evt, undefined, options.valeurMax);
-      }
-      setAttr(
-        selected, effetC, duree, evt, messageEffetTemp[effet].activation,
-        getInit());
-      if (options.saveParTour) {
-        setAttr(selected, effetC + "SaveParTour",
-          options.saveParTour.carac, evt, undefined, options.saveParTour.seuil);
-      }
-      if (options.puissant) {
-        var puissant = true;
-        if (options.puissant == "off") puissant = false;
-        setAttr(selected, effet + "Puissant", puissant, evt);
-      }
-      if (options.tempeteDeManaIntense !== undefined) {
-        setAttr(selected, effetC + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
-      }
-      } else {//On met fin à l'effet
-        var opt = {pageId:options.pageId};
+        var count = selected.length;
+        var setOneEffect = function(perso, d) {
+          if (options.valeur !== undefined) {
+            setTokenAttr(perso, effetC + "Valeur", options.valeur, evt, undefined, options.valeurMax);
+          }
+          setTokenAttr(
+            perso, effetC, d, evt, messageEffetTemp[effet].activation,
+            getInit());
+          if (options.saveParTour) {
+            setTokenAttr(perso, effetC + "SaveParTour",
+              options.saveParTour.carac, evt, undefined, options.saveParTour.seuil);
+          }
+          if (options.puissant) {
+            var puissant = true;
+            if (options.puissant == "off") puissant = false;
+            setTokenAttr(perso, effetC + "Puissant", puissant, evt);
+          }
+          if (options.tempeteDeManaIntense !== undefined) {
+            setTokenAttr(perso, effetC + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
+          }
+          if (lanceur && options.fx) {
+            var p1e = {
+              x: lanceur.token.get('left'),
+              y: lanceur.token.get('top'),
+            };
+            var p2e = {
+              x: perso.token.get('left'),
+              y: perso.token.get('top'),
+            };
+            spawnFxBetweenPoints(p1e, p2e, options.fx, options.pageId);
+          }
+          if (options.targetFx) {
+            spawnFx(perso.token.get('left'), perso.token.get('top'), options.targetFx, options.pageId);
+          }
+          count--;
+          if (count === 0) addEvent(evt);
+        };
+        iterSelected(selected, function(perso) {
+          if (options.save) {
+            var saveOpts = {
+              msgPour: " pour résister à un effet",
+              msgRate: ", raté.",
+            };
+            var expliquer = function(s) {
+              sendChar(perso.charId, s);
+            };
+            var d = duree;
+            save(options.save, perso, expliquer, saveOpts, evt,
+              function(reussite, rollText) {
+                if (reussite && options.save.demiDuree) {
+                  reussite = false;
+                  d = Math.ceil(d / 2);
+                }
+                if (reussite) {
+                  count--;
+                  if (count === 0) addEvent(evt);
+                } else {
+                  setOneEffect(perso, d);
+                }
+              });
+          } else setOneEffect(perso, duree);
+        });
+        addEvent(evt);
+      } else { //On met fin à l'effet
+        var opt = {
+          pageId: options.pageId
+        };
         iterSelected(selected, function(perso) {
           var attr = tokenAttribute(perso, effetC);
           if (attr.length === 0) {
-            log(perso.token.get('name') + "n'a pas d'attribut "+effetC);
+            log(perso.token.get('name') + "n'a pas d'attribut " + effetC);
             return;
           }
           finDEffet(attr[0], effetC, attr[0].get('name'), perso.charId, evt, opt);
         });
-      }
-      addEvent(evt);
-      if (lanceur && options.fx) {
-        iterSelected(selected, function(target) {
-          var p1e = {
-            x: lanceur.token.get('left'),
-            y: lanceur.token.get('top'),
-          };
-          var p2e = {
-            x: target.token.get('left'),
-            y: target.token.get('top'),
-          };
-          spawnFxBetweenPoints(p1e, p2e, options.fx, options.pageId);
-        });
-      }
-      if (options.targetFx) {
-        iterSelected(selected, function(target) {
-          spawnFx(target.token.get('left'), target.token.get('top'), options.targetFx, options.pageId);
-        });
+        addEvent(evt);
       }
     }, lanceur);
   }
@@ -9899,19 +9946,21 @@ var COFantasy = COFantasy || function() {
       if (!state.COFantasy.combat && selected.length > 0) {
         initiative(selected, evt);
       }
-      setAttr(
-        selected, effet, true, evt, messageEffetCombat[effet].activation);
-      if (options.puissant) {
-        var puissant = true;
-        if (options.puissant == "off") puissant = false;
-        setAttr(selected, effet + "Puissant", puissant, evt);
-      }
-      if (options.valeur !== undefined) {
-        setAttr(selected, effet + "Valeur", options.valeur, evt, undefined, options.valeurMax);
-      }
-      if (options.tempeteDeManaIntense !== undefined) {
-        setAttr(selected, effet + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
-      }
+      iterSelected(selected, function(perso) {
+        setTokenAttr(
+          perso, effet, true, evt, messageEffetCombat[effet].activation);
+        if (options.puissant) {
+          var puissant = true;
+          if (options.puissant == "off") puissant = false;
+          setTokenAttr(perso, effet + "Puissant", puissant, evt);
+        }
+        if (options.valeur !== undefined) {
+          setTokenAttr(perso, effet + "Valeur", options.valeur, evt, undefined, options.valeurMax);
+        }
+        if (options.tempeteDeManaIntense !== undefined) {
+          setTokenAttr(perso, effet + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
+        }
+      });
       addEvent(evt);
       if (lanceur && options.fx) {
         iterSelected(selected, function(target) {
@@ -10019,16 +10068,18 @@ var COFantasy = COFantasy || function() {
             return true;
           });
         }
-        setAttr(
-          selected, effet, true, evt, messageEffetIndetermine[effet].activation);
-        if (options.puissant) {
-          var puissant = true;
-          if (options.puissant == "off") puissant = false;
-          setAttr(selected, effet + "Puissant", puissant, evt);
-        }
-        if (options.tempeteDeManaIntense !== undefined) {
-          setAttr(selected, effet + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
-        }
+        iterSelected(selected, function(perso) {
+          setTokenAttr(
+            perso, effet, true, evt, messageEffetIndetermine[effet].activation);
+          if (options.puissant) {
+            var puissant = true;
+            if (options.puissant == "off") puissant = false;
+            setTokenAttr(perso, effet + "Puissant", puissant, evt);
+          }
+          if (options.tempeteDeManaIntense !== undefined) {
+            setTokenAttr(perso, effet + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
+          }
+        });
       } else {
         iterSelected(selected, function(perso) {
           //On commence par enlever les attributs de classe d'effet, si besoin
@@ -14663,7 +14714,7 @@ var COFantasy = COFantasy || function() {
     var p = attrName.indexOf('(', effet.length - 1);
     if (p > 0) {
       p = attrName.indexOf(')', p);
-      if (p > 0) return attrName.substring(0, p);
+      if (p > 0) return attrName.substring(0, p + 1);
     }
     return effet;
   }
@@ -14925,7 +14976,8 @@ var COFantasy = COFantasy || function() {
   // effet est le nom complet de l'effet
   function degatsParTour(charId, pageId, effet, attrName, dmg, type, msg, evt, options, callback) {
     options = options || {};
-    msg = msg || '';
+    if (msg) msg += '. ' + onGenre(charId, 'Il', 'Elle');
+    else msg = '';
     var count = -1;
     iterTokensOfAttribute(charId, pageId, effet, attrName,
       function(token, total) {
@@ -14970,8 +15022,7 @@ var COFantasy = COFantasy || function() {
           dealDamage(perso, r, [], evt, false, options, undefined,
             function(dmgDisplay, dmg) {
               if (dmg > 0)
-                sendChar(charId, msg + ". " + onGenre(charId, 'Il', 'Elle') +
-                  " subit " + dmgDisplay + " DM");
+                sendChar(charId, msg + " subit " + dmgDisplay + " DM");
               count--;
               if (count === 0) callback();
             });
@@ -15331,6 +15382,7 @@ var COFantasy = COFantasy || function() {
           }
         }
       });
+      setActiveToken(undefined, evt);
       initiative(selected, evt); // met Tour à la fin et retrie
       updateNextInitSet = new Set();
       // Saves à faire à la fin de chaque tour
@@ -15591,7 +15643,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = 1.0;
+  var script_version = 1.02;
   COF_loaded = true;
   on('add:token', COFantasy.addToken);
   state.COFantasy = state.COFantasy || {
