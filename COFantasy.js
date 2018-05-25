@@ -1677,6 +1677,52 @@ var COFantasy = COFantasy || function() {
     options.mana += options.tempeteDeMana.cout;
   }
 
+  function parseCondition(args) {
+    if (args.length > 0 && (args[0] == 'crit' || args[0] == 'critique')) {
+      return {
+        type: 'critique'
+      };
+    }
+    if (args.length < 2) {
+      error("condition non reconnue", args);
+      return undefined;
+    }
+    switch (args[0]) {
+      case "etat":
+        if (_.has(cof_states, args[1])) {
+          return {
+            type: 'etat',
+            etat: args[1],
+            text: args[1]
+          };
+        }
+        return {
+          type: 'attribut',
+          attribute: args[1],
+          text: args[1]
+        };
+      case "deAttaque":
+        var valeurDeAttaque = parseInt(args[1]);
+        if (isNaN(valeurDeAttaque)) {
+          error("La condition de dé d'attaque doit être un nombre", args);
+          // on continue exprès pour tomber dans le cas par défaut
+        } else {
+          return {
+            type: 'deAttaque',
+            seuil: valeurDeAttaque,
+            text: args[1]
+          };
+        }
+        /* falls through */
+      default:
+        return {
+          type: args[0],
+          attribute: args[1],
+          text: args[1]
+        };
+    }
+  }
+
   function parseAttack(msg) {
     // Arguments to cof-attack should be:
     // - attacking token
@@ -2391,52 +2437,6 @@ var COFantasy = COFantasy || function() {
       }
     }
     return res;
-  }
-
-  function parseCondition(args) {
-    if (args.length > 0 && (args[0] == 'crit' || args[0] == 'critique')) {
-      return {
-        type: 'critique'
-      };
-    }
-    if (args.length < 2) {
-      error("condition non reconnue", args);
-      return undefined;
-    }
-    switch (args[0]) {
-      case "etat":
-        if (_.has(cof_states, args[1])) {
-          return {
-            type: 'etat',
-            etat: args[1],
-            text: args[1]
-          };
-        }
-        return {
-          type: 'attribut',
-          attribute: args[1],
-          text: args[1]
-        };
-      case "deAttaque":
-        var valeurDeAttaque = parseInt(args[1]);
-        if (isNaN(valeurDeAttaque)) {
-          error("La condition de dé d'attaque doit être un nombre", args);
-          // on continue exprès pour tomber dans le cas par défaut
-        } else {
-          return {
-            type: 'deAttaque',
-            seuil: valeurDeAttaque,
-            text: args[1]
-          };
-        }
-        /* falls through */
-      default:
-        return {
-          type: args[0],
-          attribute: args[1],
-          text: args[1]
-        };
-    }
   }
 
   function testCondition(cond, attaquant, cibles, deAttaque) {
@@ -3492,6 +3492,7 @@ var COFantasy = COFantasy || function() {
 
   //targetToken est soit un token, soit une structure avec un champs cibles qui contient toutes les cibles
   function attack(playerId, attaquant, targetToken, attackLabel, options) {
+    var originalOptions = JSON.parse(JSON.stringify(options)); //pour la chance etc.
     // Attacker and target infos
     var attackingToken = attaquant.token;
     var attackingCharId = attaquant.charId;
@@ -3508,7 +3509,7 @@ var COFantasy = COFantasy || function() {
       sendChar(attackingCharId, "ne peut pas attaquer car il est paralysé de douleur");
       return;
     }
-    if (options.redo === undefined && charAttributeAsBool(attaquant, 'fauchage')) {
+    if (charAttributeAsBool(attaquant, 'fauchage')) {
       var seuilFauchage = 10 + modCarac(attaquant, 'FORCE');
       options.etats = options.etats || [];
       options.etats.push({
@@ -3817,7 +3818,10 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var evt = options.evt || {
-      type: "Tentative d'attaque"
+      type: "Tentative d'attaque",
+      action: {
+        options: originalOptions
+      }
     }; //the event to be stored in history
     if (options.tempsRecharge) {
       if (attributeAsBool(attaquant, options.tempsRecharge.effet)) {
@@ -4166,14 +4170,11 @@ var COFantasy = COFantasy || function() {
 
       evt.type = "Attaque";
       evt.succes = true;
-      evt.action = {
-        player_id: playerId,
-        attaquant: attaquant,
-        cibles: cibles,
-        attack_label: attackLabel,
-        rollsAttack: rollsAttack,
-        options: options
-      };
+      evt.action.player_id = playerId;
+      evt.action.attaquant = attaquant;
+      evt.action.cibles = cibles;
+      evt.action.attack_label = attackLabel;
+      evt.action.rollsAttack = rollsAttack;
       addEvent(evt);
 
       // debut de la partie affichage
@@ -4586,7 +4587,7 @@ var COFantasy = COFantasy || function() {
       var bonusMasque = getValeurOfEffet(attaquant, 'masqueDuPredateur', modCarac(attaquant, 'SAGESSE'));
       if (bonusMasque > 0) attDMBonusCommun += " +" + bonusMasque;
     }
-    if (options.redoDmg === undefined && attributeAsBool(attaquant, 'rageDuBerserk')) {
+    if (attributeAsBool(attaquant, 'rageDuBerserk')) {
       options.additionalDmg.push({
         type: mainDmgType,
         value: '1' + options.d6
@@ -4611,12 +4612,10 @@ var COFantasy = COFantasy || function() {
     // Les autres sources de dégâts
     if (options.distance) {
       if (options.semonce) {
-        if (options.redoDmg === undefined) {
-          options.additionalDmg.push({
-            type: mainDmgType,
-            value: '1' + options.d6
-          });
-        }
+        options.additionalDmg.push({
+          type: mainDmgType,
+          value: '1' + options.d6
+        });
         explications.push("Tir de semonce => +5 en Attaque et +1" + options.d6 + " aux DM");
       }
     } else { //bonus aux attaques de contact
@@ -4629,7 +4628,7 @@ var COFantasy = COFantasy || function() {
         attDMBonusCommun += "+" + bonusForceDeGeant;
         explications.push("Force de géant => +" + bonusForceDeGeant + " aux DM");
       }
-      if (options.redoDmg === undefined && options.frappeDuVide) {
+      if (options.frappeDuVide) {
         options.additionalDmg.push({
           type: mainDmgType,
           value: '1' + options.d6
@@ -4644,11 +4643,10 @@ var COFantasy = COFantasy || function() {
         feuForgeron = feuForgeron * (1 + feuForgeronIntense);
         removeTokenAttr(attaquant, attrForgeron + 'TempeteDeManaIntense', evt);
       }
-      if (options.redoDmg === undefined)
-        options.additionalDmg.push({
-          type: 'feu',
-          value: feuForgeron
-        });
+      options.additionalDmg.push({
+        type: 'feu',
+        value: feuForgeron
+      });
     }
     var attrAEF = 'armeEnflammee(' + attackLabel + ')';
     if (attributeAsBool(attaquant, attrAEF)) {
@@ -4658,25 +4656,22 @@ var COFantasy = COFantasy || function() {
         nAEF += AEFIntense;
         removeTokenAttr(attaquant, attrAEF + 'TempeteDeManaIntense', evt);
       }
-      if (options.redoDmg === undefined)
-        options.additionalDmg.push({
-          type: 'feu',
-          value: nAEF + 'd6'
-        });
+      options.additionalDmg.push({
+        type: 'feu',
+        value: nAEF + 'd6'
+      });
     }
     var poisonAttr = tokenAttribute(attaquant, 'poisonRapide_' + attackLabel);
     if (poisonAttr.length > 0) {
       poisonAttr = poisonAttr[0];
-      if (options.redoDmg === undefined) {
-        options.additionalDmg.push({
-          type: 'poison',
-          value: poisonAttr.get('current'),
-          partialSave: {
-            carac: 'CON',
-            seuil: poisonAttr.get('max')
-          }
-        });
-      }
+      options.additionalDmg.push({
+        type: 'poison',
+        value: poisonAttr.get('current'),
+        partialSave: {
+          carac: 'CON',
+          seuil: poisonAttr.get('max')
+        }
+      });
       explications.push("L'arme est empoisonnée");
       evt.deletedAttributes = evt.deletedAttributes || [];
       evt.deletedAttributes.push(poisonAttr);
@@ -4694,18 +4689,14 @@ var COFantasy = COFantasy || function() {
         var dmgArmeType = valDmgArme[0].get('max');
         if (dmgArmeType !== '') dmgArme.type = dmgArmeType;
       }
-      if (options.redoDmg === undefined) {
-        options.additionalDmg.push(dmgArme);
-      }
+      options.additionalDmg.push(dmgArme);
       explications.push("Arme enduite => +" + dmgArme.value + " aux DM");
     }
     if (options.champion) {
-      if (options.redoDmg === undefined) {
-        options.additionalDmg.push({
-          type: mainDmgType,
-          value: '1' + options.d6
-        });
-      }
+      options.additionalDmg.push({
+        type: mainDmgType,
+        value: '1' + options.d6
+      });
       explications.push(attackerTokName + " est un champion, son attaque porte !");
     }
     /////////////////////////////////////////////////////////////////
@@ -7577,7 +7568,6 @@ var COFantasy = COFantasy || function() {
     undoEvent(evtARefaire);
     adversaire.esquiveFatale = true;
     options.redo = true;
-    options.redoDmg = true;
     attack(action.player_id, attaquant, [adversaire], action.attack_label, options);
   }
 
@@ -7641,7 +7631,6 @@ var COFantasy = COFantasy || function() {
         options.rollsDmg = attaque.rollsDmg;
         options.evt = evt;
         options.redo = true;
-        options.redoDmg = true;
         cible.rollsDmg = attaque.cibles[0].rollsDmg;
         attack(attaque.player_id, attaque.attaquant, [cible], attaque.attack_label, options);
       });
@@ -7708,7 +7697,6 @@ var COFantasy = COFantasy || function() {
         options.rollsDmg = attaque.rollsDmg;
         options.evt = evt;
         options.redo = true;
-        options.redoDmg = true;
         cible.rollsDmg = target.rollsDmg;
         attack(attaque.player_id, attaque.attaquant, [cible], attaque.attack_label, options);
       });
@@ -12362,7 +12350,6 @@ var COFantasy = COFantasy || function() {
         options.rollsAttack = attaque.rollsAttack;
         options.evt = evt;
         options.redo = true;
-        options.redoDmg = true;
         attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.attack_label, options);
       }
     }); //fin getSelected
@@ -12392,7 +12379,6 @@ var COFantasy = COFantasy || function() {
       };
       options.evt = evt;
       options.redo = true;
-      options.redoDmg = true;
       var attrAbsorbe = 'absorberUn';
       if (options.sortilege) {
         evt.type += "sort";
