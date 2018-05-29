@@ -1723,6 +1723,14 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function closeIte(scope){
+    var ps = scope.parentScope;
+    if (ps === undefined) return;
+    log("Il manque un endif");
+    scope.parentScope = undefined;
+    closeIte(ps);
+  }
+
   function parseAttack(msg) {
     // Arguments to cof-attack should be:
     // - attacking token
@@ -1749,10 +1757,9 @@ var COFantasy = COFantasy || function() {
     }
     var attackLabel = args[3];
     // Optional arguments
-    var options = {
-      additionalDmg: []
-    };
+    var options = {};
     var lastEtat; //dernier de etats et effets
+    var scope = options; //Pour les conditionnelles
     optArgs.forEach(function(arg) {
       arg = arg.trim();
       var cmd = arg.split(" ");
@@ -1761,43 +1768,45 @@ var COFantasy = COFantasy || function() {
       });
       if (cmd.length === 0) cmd = [arg];
       switch (cmd[0]) {
-        case "auto":
-        case "poudre":
-        case "semonce":
-        case "pointsVitaux":
         case "pressionMortelle":
-        case "reroll1":
-        case "reroll2":
-        case "explodeMax":
         case "ignoreRD":
         case "tempDmg":
-        case "tirDouble":
-        case "tranchant":
-        case "percant":
-        case "pasDeDmg":
-        case "contondant":
-        case "m2d20":
-        case "avecd12":
-        case "strigeSuce":
-        case "traquenard":
-        case "affute":
-        case "metal":
         case "vampirise":
-        case "mainsDEnergie":
-        case "tirDeBarrage":
-        case "ignoreObstacles":
         case "enflamme":
-        case "asDeLaGachette":
-        case "sortilege":
         case "malediction":
-        case "test":
-        case "argent":
         case "pietine":
-        case "tueurDeGeants":
-        case "demiAuto":
-        case "feinte":
+          scope[cmd[0]] = true;
+          return;
+        case "affute":
+        case "argent":
         case "artificiel":
+        case "asDeLaGachette":
         case "attaqueMentale":
+        case "auto":
+        case "avecd12":
+        case "contondant":
+        case "demiAuto":
+        case "explodeMax":
+        case "feinte":
+        case "ignoreObstacles":
+        case "m2d20":
+        case "mainsDEnergie":
+        case "pasDeDmg":
+        case "percant":
+        case "pointsVitaux":
+        case "poudre":
+        case "metal":
+        case "reroll1":
+        case "reroll2":
+        case "semonce":
+        case "sortilege":
+        case "strigeSuce":
+        case "tirDeBarrage":
+        case "tranchant":
+        case "test":
+        case "tirDouble":
+        case "traquenard":
+        case "tueurDeGeants":
           options[cmd[0]] = true;
           return;
         case "imparable": //deprecated
@@ -1842,7 +1851,8 @@ var COFantasy = COFantasy || function() {
             return;
           }
           var val = arg.substring(arg.indexOf(' ') + 1);
-          options.additionalDmg.push({
+          scope.additionalDmg = scope.additionalDmg || [];
+          scope.additionalDmg.push({
             value: val
           });
           break;
@@ -1870,7 +1880,7 @@ var COFantasy = COFantasy || function() {
               duree: duree,
               message: m
             };
-            options.seulementVivant = m && m.seulementVivant;
+            scope.seulementVivant = m && m.seulementVivant;
           } else if (estEffetCombat(cmd[1])) {
             lastEtat = {
               effet: cmd[1]
@@ -1879,20 +1889,20 @@ var COFantasy = COFantasy || function() {
             error(cmd[1] + " n'est pas un effet temporaire répertorié", cmd);
             return;
           }
-          options.effets = options.effets || [];
-          options.effets.push(lastEtat);
+          scope.effets = scope.effets || [];
+          scope.effets.push(lastEtat);
           return;
         case 'valeur':
           if (cmd.length < 2) {
-            error("Il manque un argument à l'option --effet de !cof-attack", cmd);
+            error("Il manque un argument à l'option --valeur de !cof-attack", cmd);
             return;
           }
-          if (options.effets === undefined || options.effets.length === 0) {
+          if (scope.effets === undefined || scope.effets.length === 0) {
             error("Il faut un effet avant l'option --valeur", optArgs);
             return;
           }
-          options.effets[0].valeur = cmd[1];
-          if (cmd.length > 2) options.effets[0].valeurMax = cmd[2];
+          scope.effets[0].valeur = cmd[1];
+          if (cmd.length > 2) scope.effets[0].valeurMax = cmd[2];
           return;
         case "etatSi":
         case "etat":
@@ -1913,22 +1923,23 @@ var COFantasy = COFantasy || function() {
             condition = parseCondition(cmd.slice(2));
             if (condition === undefined) return;
           }
-          options.etats = options.etats || [];
+          scope.etats = scope.etats || [];
           lastEtat = {
             etat: etat,
             condition: condition
           };
-          options.etats.push(lastEtat);
+          scope.etats.push(lastEtat);
           return;
-        case "psi": //rajoute une condition au dernier --plus
-          var psil = options.additionalDmg.length;
+        case "psi": //deprecated
+          var psil = 0;
+          if (scope.adiitionalDmg) psil = scope.additionalDmg.length;
           if (psil === 0) {
             error("option --psi non précédée d'un --plus", optArgs);
             return;
           }
           var psiCond = parseCondition(cmd.slice(1));
           if (psiCond) {
-            var psiDmg = options.additionalDmg[psil - 1];
+            var psiDmg = scope.additionalDmg[psil - 1];
             psiDmg.conditions = psiDmg.conditions || [];
             psiDmg.conditions.push(psiCond);
           }
@@ -1938,14 +1949,14 @@ var COFantasy = COFantasy || function() {
             error("Il manque un argument à l'option --peur de !cof-attack", cmd);
             return;
           }
-          options.peur = {
+          scope.peur = {
             seuil: parseInt(cmd[1]),
             duree: parseInt(cmd[2])
           };
-          if (isNaN(options.peur.seuil)) {
+          if (isNaN(scope.peur.seuil)) {
             error("Le premier argument de --peur doit être un nombre (le seuil)", cmd);
           }
-          if (isNaN(options.peur.duree) || options.peur.duree <= 0) {
+          if (isNaN(scope.peur.duree) || scope.peur.duree <= 0) {
             error("Le deuxième argument de --peur doit être un nombre positif (la durée)", cmd);
           }
           return;
@@ -1956,16 +1967,17 @@ var COFantasy = COFantasy || function() {
         case "sonique":
         case "poison":
         case "maladie":
-          var l = options.additionalDmg.length;
+          var l = 0;
+          if (scope.additionalDmg) l = scope.additionalDmg.length;
           if (l > 0) {
-            options.additionalDmg[l - 1].type = cmd[0];
+            scope.additionalDmg[l - 1].type = cmd[0];
           } else {
-            options.type = cmd[0];
+            scope.type = cmd[0];
           }
           return;
         case "nature":
         case "naturel":
-          options.nature = true;
+          scope.nature = true;
           return;
         case "sournoise":
         case "de6Plus": //deprecated
@@ -1973,9 +1985,9 @@ var COFantasy = COFantasy || function() {
             sendChat("COF", "Il manque un argument à l'option --sournoise de !cof-attack");
             return;
           }
-          if (options.sournoise === undefined) options.sournoise = 0;
-          options.sournoise += parseInt(cmd[1]);
-          if (isNaN(options.sournoise) || options.sournoise < 0) {
+          if (scope.sournoise === undefined) scope.sournoise = 0;
+          scope.sournoise += parseInt(cmd[1]);
+          if (isNaN(scope.sournoise) || scope.sournoise < 0) {
             error("L'option --sournoise de !cof-attack attend un argument entier positif", cmd);
             return;
           }
@@ -1985,21 +1997,22 @@ var COFantasy = COFantasy || function() {
             sendChat("COF", "Il manque un argument à l'option --fx de !cof-attack");
             return;
           }
-          options.fx = cmd[1];
+          scope.fx = cmd[1];
           break;
         case "targetFx":
           if (cmd.length < 2) {
             sendChat("COF", "Il manque un argument à l'option --targetFx de !cof-attack");
             return;
           }
-          options.targetFx = cmd[1];
+          scope.targetFx = cmd[1];
           break;
         case 'psave':
-          var psaveopt = options;
+          var psaveopt = scope;
           if (cmd.length > 3 && cmd[3] == 'local') {
-            var psavel = options.additionalDmg.length;
+            var psavel = 0;
+            if (scope.additionalDmg) psavel = scope.additionalDmg.length;
             if (psavel > 0) {
-              psaveopt = options.additionalDmg[psavel - 1];
+              psaveopt = scope.additionalDmg[psavel - 1];
             }
           }
           var psaveParams = parseSave(cmd);
@@ -2046,8 +2059,8 @@ var COFantasy = COFantasy || function() {
             error("Le coût en mana doit être un nombre positif");
             return;
           }
-          if (options.mana === undefined) options.mana = 0;
-          options.mana += mana;
+          if (scope.mana === undefined) scope.mana = 0;
+          scope.mana += mana;
           break;
         case "tempeteDeMana":
           parseTempeteDeMana(cmd, options);
@@ -2062,11 +2075,10 @@ var COFantasy = COFantasy || function() {
             error("Le rang doit être un nombre positif");
             return;
           }
-          options.rang = rang;
+          scope.rang = rang;
           break;
         case "bonusAttaque":
         case "bonusContreBouclier":
-        case "bonusCritique":
           if (cmd.length < 2) {
             error("Usage : --" + cmd[0] + " b", cmd);
             return;
@@ -2076,28 +2088,41 @@ var COFantasy = COFantasy || function() {
             error("Le bonus (" + cmd[0] + ") doit être un nombre");
             return;
           }
+          if (scope[cmd[0]] === undefined) scope[cmd[0]] = 0;
+          scope[cmd[0]] += bAtt;
+          return;
+        case "bonusCritique":
+          if (cmd.length < 2) {
+            error("Usage : --" + cmd[0] + " b", cmd);
+            return;
+          }
+          var b2Att = parseInt(cmd[1]);
+          if (isNaN(b2Att)) {
+            error("Le bonus (" + cmd[0] + ") doit être un nombre");
+            return;
+          }
           if (options[cmd[0]] === undefined) options[cmd[0]] = 0;
-          options[cmd[0]] += bAtt;
+          options[cmd[0]] += b2Att;
           return;
         case 'puissant':
           if (cmd.length < 2) {
-            options.puissant = true;
+            scope.puissant = true;
             return;
           }
           switch (cmd[1]) {
             case 'oui':
             case 'Oui':
-              options.puissant = true;
+              scope.puissant = true;
               return;
             case 'non':
             case 'Non':
-              options.puissant = false;
+              scope.puissant = false;
               return;
             case 'duree':
-              options.puissantDuree = true;
+              scope.puissantDuree = true;
               return;
             default:
-              options.puissant = attributeAsBool(attaquant, cmd[1] + "Puissant");
+              scope.puissant = attributeAsBool(attaquant, cmd[1] + "Puissant");
           }
           return;
         case "rate":
@@ -2197,14 +2222,14 @@ var COFantasy = COFantasy || function() {
             error("La limite journalière doit être un nombre positif", cmd);
             return;
           }
-          options.limiteParJour = limiteParJour;
+          scope.limiteParJour = limiteParJour;
           if (cmd.length > 2) {
-            options.limiteParJourRessource = cmd[2];
+            scope.limiteParJourRessource = cmd[2];
           }
           return;
         case 'limiteParCombat':
           if (cmd.length < 2) {
-            options.limiteParCombat = 1;
+            scope.limiteParCombat = 1;
             return;
           }
           var limiteParCombat = parseInt(cmd[1]);
@@ -2212,9 +2237,9 @@ var COFantasy = COFantasy || function() {
             error("La limite par combat doit être un nombre positif", cmd);
             return;
           }
-          options.limiteParCombat = limiteParCombat;
+          scope.limiteParCombat = limiteParCombat;
           if (cmd.length > 2) {
-            options.limiteParCombatRessource = cmd[2];
+            scope.limiteParCombatRessource = cmd[2];
           }
           return;
         case 'decrAttribute':
@@ -2228,38 +2253,88 @@ var COFantasy = COFantasy || function() {
             log(cmd);
             return;
           }
-          options.decrAttribute = attr;
+          scope.decrAttribute = attr;
           return;
         case "incrDmgCoef":
-          options.dmgCoef = (options.dmgCoef || 1);
+          scope.dmgCoef = (scope.dmgCoef || 1);
           if (cmd.length > 1) {
             var incrDmgCoef = parseInt(cmd[1]);
             if (isNaN(incrDmgCoef)) {
               error("L'option --incrDmgCoef attend un entier", cmd);
               return;
             }
-            options.dmgCoef += incrDmgCoef;
+            scope.dmgCoef += incrDmgCoef;
             return;
           }
-          options.dmgCoef++; //Par défaut, incrémente de 1
+          scope.dmgCoef++; //Par défaut, incrémente de 1
           return;
         case "incrCritCoef":
-          options.critCoef = (options.critCoef || 1);
+          scope.critCoef = (scope.critCoef || 1);
           if (cmd.length > 1) {
             var incrCritCoef = parseInt(cmd[1]);
             if (isNaN(incrCritCoef)) {
               error("L'option --incrCritCoef attend un entier", cmd);
               return;
             }
-            options.critCoef += incrCritCoef;
+            scope.critCoef += incrCritCoef;
             return;
           }
-          options.critCoef++; //Par défaut, incrémente de 1
+          scope.critCoef++; //Par défaut, incrémente de 1
+          return;
+        case "if":
+          var ifCond = parseCondition(cmd.slice(1));
+          if (ifCond === undefined) return;
+          var ifThen = {
+            parentScope: scope
+          };
+          scope.ite = scope.ite || [];
+          scope.ite.push({
+            condition: ifCond,
+            then: ifThen
+          });
+          scope = ifThen;
+          return;
+        case "endif":
+          var psEndif = scope.parentScope;
+          if (psEndif === undefined) {
+            error("--endIf sans --if correspondant", cmd);
+            return;
+          }
+          scope.parentScope = undefined;//To remove circular dependencies in options
+          scope = psEndif;
+          return;
+        case "else":
+          var psElse = scope.parentScope;
+          if (psElse === undefined) {
+            error("--else sans --if correspondant", cmd);
+            return;
+          }
+          var iteL = psElse.ite[psElse.ite.length - 1];
+          if (iteL.else) {
+            error("Il y a déjà un --else pour ce --if", cmd);
+            return;
+          }
+          scope.parentScope = undefined;
+          var ifElse = {
+            parentScope: psElse
+          };
+          iteL.else = ifElse;
+          scope = ifElse;
+          return;
+        case 'message':
+          if (cmd.length < 2) {
+            error("Il manque le message après --message", cmd);
+            return;
+          }
+          scope.messages = scope.messages || [];
+          scope.messages.push(cmd.slice(1).join(' '));
           return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
       }
     });
+    closeIte(scope);//pour fermer les endif mal formés et éviter les boucles
+    options.additionalDmg = options.additionalDmg || [];
     if (options.tempeteDeMana) {
       if (options.tempeteDeMana.cout === 0) {
         //On demande de préciser les options
@@ -2475,6 +2550,74 @@ var COFantasy = COFantasy || function() {
         error("Condition non reconnue", cond);
     }
     return false;
+  }
+
+  //Evaluation récursive des if-then-else
+  function evalITE(attaquant, target, deAttaque, options, explications, scope, inTarget) {
+    if (scope.ite === undefined) return;
+    scope.ite = scope.ite.filter(function(ite) {
+      var condInTarget = inTarget;
+      var resCondition;
+      if (ite.condition == 'toujoursVrai') resCondition = true;
+      switch (ite.condition.type) {
+        case 'etat':
+        case 'attribut':
+          resCondition = testCondition(ite.condition, attaquant, [], deAttaque);
+          break;
+        case 'deAttaque':
+          if (deAttaque === undefined) return true;
+          resCondition = testCondition(ite.condition, attaquant, [], deAttaque);
+          break;
+        case 'moins':
+          if (target === undefined) return true;
+          condInTarget = true;
+          resCondition = testCondition(ite.condition, attaquant, [target], deAttaque);
+          break;
+        case 'critique':
+          if (target === undefined || deAttaque === undefined) return true;
+          condInTarget = true;
+          resCondition = testCondition(ite.condition, attaquant, [target], deAttaque);
+          break;
+        default:
+          error("Condition non reconnue", ite.condition);
+          resCondition = true;
+      }
+      var branch;
+      if (resCondition) branch = ite.then;
+      else branch = ite.else;
+      if (branch === undefined) return condInTarget; //On garde l'ite si on dépende de la cible
+      //On copie les champs de scope dans options ou dans target
+      var opt = options;
+      if (condInTarget) opt = target;
+      for (var field in branch) {
+        switch (field) {
+          case 'additionalDmg': case 'effets': case 'etats':
+            opt[field] = opt[field] || [];
+            opt[field] = opt[field].concat(branch[field]);
+            break;
+          case 'sournoise': case 'mana': case 'bonusAttaque': case 'bonusContreBouclier':
+            opt[field] = opt[field] || 0;
+            opt[field] += branch[field];
+            break;
+          case 'dmgCoef': case 'critCoef':
+            if (opt[field] === undefined) {
+              if (condInTarget) opt[field] = 0;
+              else opt[field] = 1;
+            }
+            opt[field] += branch[field] - 1;
+            break;
+          case 'messages':
+            if (condInTarget) target.messages.concat(branch.messages);
+            else {/*jshint loopfunc: true */
+              branch.messages.forEach(function(m) {explications.push(m);});
+            }
+            break;
+          default: opt[field] = branch[field];
+        }
+      }
+      evalITE(attaquant, target, deAttaque, options, explications, branch, condInTarget);
+      return condInTarget;
+    });
   }
 
   // evt et msg peuvent être undefined
@@ -3205,6 +3348,7 @@ var COFantasy = COFantasy || function() {
     attaquant.tokName = attaquant.tokName || attaquant.token.get('name');
     var attackerTokName = attaquant.tokName;
     var attBonus = 0;
+    if (target.bonusAttaque) attBonus += target.bonusAttaque;
     if (options.mainsDEnergie) {
       if (options.aoe) error("Mains d'énergie n'est pas compatible avec les AOE", options.aoe);
       // Check if target wears armor
@@ -3255,11 +3399,13 @@ var COFantasy = COFantasy || function() {
         target.argent = true;
       }
     }
-    if (options.bonusContreBouclier) {
+    var bonusContreBouclier = options.bonusContreBouclier || 0;
+    if (target.bonusContreBouclier) bonusContreBouclier += target.bonusContreBouclier;
+    if (bonusContreBouclier) {
       if (charAttributeAsInt(target, 'DEFBOUCLIERON', 1) &&
         charAttributeAsInt(target, 'DEFBOUCLIER', 0) > 0) {
-        attBonus += options.bonusContreBouclier;
-        explications.push("L'adversaire porte un bouclier => " + ((options.bonusContreBouclier > 0) ? '+' : '') + options.bonusContreBouclier + " en attaque");
+        attBonus += bonusContreBouclier;
+        explications.push("L'adversaire porte un bouclier => " + ((bonusContreBouclier > 0) ? '+' : '') + bonusContreBouclier + " en attaque");
       }
     }
     if (options.tueurDeGeants && estUnGeant(target)) {
@@ -3492,7 +3638,6 @@ var COFantasy = COFantasy || function() {
 
   //targetToken est soit un token, soit une structure avec un champs cibles qui contient toutes les cibles
   function attack(playerId, attaquant, targetToken, attackLabel, options) {
-    var originalOptions = JSON.parse(JSON.stringify(options)); //pour la chance etc.
     // Attacker and target infos
     var attackingToken = attaquant.token;
     var attackingCharId = attaquant.charId;
@@ -3820,7 +3965,7 @@ var COFantasy = COFantasy || function() {
     var evt = options.evt || {
       type: "Tentative d'attaque",
       action: {
-        options: originalOptions
+        options: JSON.parse(JSON.stringify(options)) //pour la chance etc.
       }
     }; //the event to be stored in history
     if (options.tempsRecharge) {
@@ -4051,7 +4196,7 @@ var COFantasy = COFantasy || function() {
     var attackingToken = attaquant.token;
     var attackerName = attaquant.name;
     var attackerTokName = attaquant.tokName;
-    var explications = [];
+    var explications = options.messages || [];
     var sujetAttaquant = onGenre(attackingCharId, 'il', 'elle');
     // Munitions
     if (options.munition) {
@@ -4534,7 +4679,6 @@ var COFantasy = COFantasy || function() {
     //Les dégâts
     //Dégâts insrits sur la ligne de l'arme
     var mainDmgType = options.type || 'normal';
-
     var attDice = weaponStats.attDice;
     var attNbDices = weaponStats.attNbDices;
     var attCarBonus = weaponStats.attCarBonus;
@@ -4724,9 +4868,15 @@ var COFantasy = COFantasy || function() {
       }
     };
     cibles.forEach(function(target) {
+      target.ignoreRD = options.ignoreRD;
+      target.tempDmg = options.tempDmg;
+      target.enflamme = options.enflamme;
+      target.malediction = options.malediction;
+      target.pietine = options.pietine;
+      evalITE(attaquant, target, d20roll, options, explications, options);
       var attDMBonus = attDMBonusCommun;
       //Les modificateurs de dégâts qui dépendent de la cible
-      if (options.tempDmg) {
+      if (target.tempDmg) {
         var forceTarg = modCarac(target, "FORCE");
         if (forceTarg < 0) {
           attDMBonus += " +" + (-forceTarg);
@@ -4734,7 +4884,7 @@ var COFantasy = COFantasy || function() {
           attDMBonus += " -" + forceTarg;
         }
       }
-      if (options.pressionMortelle) {
+      if (options.pressionMortelle || target.pressionMortelle) {
         //TODO : ne pas appliquer la RD à chaque coup, mais seulement au relachenement
         var pMortelle = tokenAttribute(target, 'pressionMortelle');
         if (pMortelle.length === 0) {
@@ -4757,15 +4907,17 @@ var COFantasy = COFantasy || function() {
           }
         }
       }
-      if (options.sournoise) {
+      var sournoise = options.sournoise || 0;
+      if (target.sournoise) sournoise += target.sournoise;
+      if (sournoise) {
         if (charAttributeAsBool(target, 'immuniteAuxSournoises')) {
           target.messages.push('Immunité aux attaques sournoises');
         } else {
           target.additionalDmg.push({
             type: mainDmgType,
-            value: options.sournoise + options.d6
+            value: sournoise + options.d6
           });
-          target.messages.push("Attaque sournoise => +" + options.sournoise + options.d6 + " DM");
+          target.messages.push("Attaque sournoise => +" + sournoise + options.d6 + " DM");
         }
       }
       if (target.chasseurEmerite) {
@@ -4894,7 +5046,7 @@ var COFantasy = COFantasy || function() {
         if (target.touche) { //Devrait être inutile ?
           if (options.tirDeBarrage) target.messages.push("Tir de barrage : undo si la cible décide de ne pas bouger");
           if (options.pointsVitaux) target.messages.push(attackerTokName + " vise des points vitaux mais ne semble pas faire de dégâts");
-          if (options.pressionMortelle) {
+          if (options.pressionMortelle || target.pressionMortelle) {
             removeTokenAttr(target, 'pressionMortelle', evt);
             target.messages.push(attackerTokName + " libère la pression des points vitaux, l'effet est dévastateur !");
             spawnFx(target.token.get('left'), target.token.get('top'), 'bomb-death', pageId);
@@ -4938,13 +5090,13 @@ var COFantasy = COFantasy || function() {
             });
           }
           // change l'état de la cible, si spécifié
-          if (options.enflamme) {
+          if (target.enflamme) {
             var enflammePuissance = 1;
             if (options.puissant) enflammePuissance = 2;
             setTokenAttr(target, 'enflamme', enflammePuissance, evt);
             target.messages.push(target.tokName + " prend feu !");
           }
-          if (options.malediction) {
+          if (target.malediction) {
             setTokenAttr(target, 'malediction', 3, evt);
             target.messages.push(target.tokName + " est maudit...");
           }
@@ -4968,8 +5120,13 @@ var COFantasy = COFantasy || function() {
           // (On ne compte pas les psave, gérés dans dealDamage)
           var saves = 0;
           //ajoute les états sans save à la cible
-          if (options.etats) {
-            options.etats.forEach(function(ce) {
+          var etats = options.etats;
+          if (target.etats) {
+            if (etats) etats = etats.concat(target.etats);
+            else etats = target.etats;
+          }
+          if (etats) {
+            etats.forEach(function(ce) {
               if (ce.save) {
                 saves++;
                 return; //on le fera plus tard
@@ -4988,8 +5145,13 @@ var COFantasy = COFantasy || function() {
           }
           var savesEffets = 0;
           // Ajoute les effets sans save à la cible
-          if (options.effets) {
-            options.effets.forEach(function(ef) {
+          var effets = options.effets;
+          if (target.effets) {
+            if (effets) effets = effets.concat(target.effets);
+            else effets = target.effets;
+          }
+          if (effets) {
+            effets.forEach(function(ef) {
               if (ef.save) {
                 saves++;
                 savesEffets++;
@@ -5075,7 +5237,7 @@ var COFantasy = COFantasy || function() {
                           attackerTokName + " continue à sucer le sang de " + target.tokName);
                     }
                   }
-                  if (options.vampirise) {
+                  if (options.vampirise || target.vampirise) {
                     soigneToken(attaquant, dmg, evt, function(soins) {
                       target.messages.push(
                         "L'attaque soigne " + attackerTokName + " de " + soins +
@@ -5135,8 +5297,8 @@ var COFantasy = COFantasy || function() {
           //Ajoute les états avec save à la cibles
           var etatsAvecSave = function() {
             if (savesEffets > 0) return; //On n'a pas encore fini avec les effets
-            if (options.etats && saves > 0) {
-              options.etats.forEach(function(ce) {
+            if (etats && saves > 0) {
+              etats.forEach(function(ce) {
                 if (ce.save) {
                   if (testCondition(ce.condition, attaquant, [target], d20roll)) {
                     var msgPour = " pour résister à un effet";
@@ -5169,8 +5331,8 @@ var COFantasy = COFantasy || function() {
           };
           // Ajoute les effets avec save à la cible
           var effetsAvecSave = function() {
-            if (options.effets && savesEffets > 0) {
-              options.effets.forEach(function(ef) {
+            if (effets && savesEffets > 0) {
+              effets.forEach(function(ef) {
                 if (ef.save) {
                   var msgPour = " pour résister à un effet";
                   var msgRate = ", " + target.tokName + " ";
@@ -5221,7 +5383,7 @@ var COFantasy = COFantasy || function() {
             } else etatsAvecSave();
           };
           var effetPietinement = function() {
-            if (options.pietine && estAussiGrandQue(attaquant, target)) {
+            if (target.pietine && estAussiGrandQue(attaquant, target)) {
               testOppose(target, 'FOR', attaquant, 'FOR', target.messages, evt,
                 function(resultat) {
                   if (resultat == 2) {
@@ -5421,9 +5583,12 @@ var COFantasy = COFantasy || function() {
       return 0;
     }
     var dmgCoef = options.dmgCoef || 1;
+    if (target.dmgCoef) dmgCoef += target.dmgCoef;
     if (crit) {
-      if (options.critCoef) dmgCoef += options.critCoef;
-      else dmgCoef++;
+      var critCoef = 1;
+      if (options.critCoef) critCoef = options.critCoef;
+      if (target.critCoef) critCoef += target.critCoef;
+      dmgCoef += critCoef;
     }
     otherDmg = otherDmg || [];
     var dmgDisplay = dmg.display;
@@ -5522,9 +5687,9 @@ var COFantasy = COFantasy || function() {
       dmgTotal = 0;
       dmgDisplay = '0';
       showTotal = false;
-    } else if (options.ignoreRD === undefined) {
+    } else if (target.ignoreRD === undefined) {
       var rdMain = typeRD(target, mainDmgType);
-      if (options.vampirise) {
+      if (options.vampirise || target.vampirise) {
         rdMain += attributeAsInt(target, 'RD_drain', 0);
       }
       if (rdMain > 0 && dmgTotal > 0) {
@@ -5660,7 +5825,7 @@ var COFantasy = COFantasy || function() {
             }
             typeCount--;
             if (typeCount === 0) {
-              if (options.ignoreRD === undefined) {
+              if (target.ignoreRD === undefined) {
                 var rdl = typeRD(target, dmgType);
                 if (rdl > 0 && dm > 0) {
                   dm -= rdl;
@@ -5867,7 +6032,7 @@ var COFantasy = COFantasy || function() {
           rd += target.extraRD;
           expliquer(target.tokName + " dévie le coup sur son armure");
         }
-        if (options.ignoreRD) rd = 0;
+        if (target.ignoreRD) rd = 0;
         if (rd > 0) {
           if (showTotal) dmgDisplay = "(" + dmgDisplay + ") - " + rd;
           else {
@@ -5915,7 +6080,7 @@ var COFantasy = COFantasy || function() {
         } else {
           tempDmg = parseInt(token.get("bar2_value"));
           if (isNaN(tempDmg)) {
-            if (options.tempDmg) { //then try to set bar2 correctly
+            if (target.tempDmg) { //then try to set bar2 correctly
               if (token.get("bar1_link") === '') {
                 token.set("bar2_max", pvmax);
               } else {
@@ -5945,7 +6110,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         var pvPerdus = dmgTotal;
-        if (options.tempDmg) {
+        if (target.tempDmg) {
           var oldTempDmg = tempDmg;
           tempDmg += dmgTotal;
           if (tempDmg > pvmax) {
@@ -9340,6 +9505,8 @@ var COFantasy = COFantasy || function() {
           }
           var name = perso.token.get('name');
           var explications = [];
+          perso.ignoreRD = options.ignoreRD;
+          perso.tempDmg = options.tempDmg;
           dealDamage(perso, dmg, [], evt, false, options, explications,
             function(dmgDisplay, dmgFinal) {
               addLineToFramedDisplay(display,
@@ -12285,10 +12452,8 @@ var COFantasy = COFantasy || function() {
                 display: buildinline(explRoll, 'normal')
               };
               var explications = [];
-              var options = {
-                ignoreRD: true
-              };
-              dealDamage(barbare, r, [], evt, false, options, explications,
+              barbare.ignoreRD = true;
+              dealDamage(barbare, r, [], evt, false, {}, explications,
                 function(dmgDisplay, dmg) {
                   var dmgMsg = "mais cela lui coûte " + dmgDisplay + " PV";
                   addLineToFramedDisplay(display, dmgMsg);
@@ -15629,7 +15794,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = 1.02;
+  var script_version = 1.03;
   COF_loaded = true;
   on('add:token', COFantasy.addToken);
   state.COFantasy = state.COFantasy || {
