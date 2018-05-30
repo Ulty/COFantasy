@@ -17,6 +17,7 @@
 /* globals on */
 /* globals toFront */
 /* globals playerIsGM */
+/* globals HealthColors */
 
 // Needs the Vector Math scripty
 
@@ -610,9 +611,12 @@ var COFantasy = COFantasy || function() {
         error("Pas d'état précédant", aff);
         return;
       }
+      var prevTok;
+      if (HealthColors) prevTok = JSON.parse(JSON.stringify(tok));
       _.each(prev, function(val, key) {
         tok.set(key, val);
       });
+      if (HealthColors) HealthColors.Update(tok, prevTok);
       sendChat("COF", "État de " + tok.get("name") + " restauré.");
     });
   }
@@ -2398,17 +2402,22 @@ var COFantasy = COFantasy || function() {
 
   //Si evt est défini, alors on considère qu'il faut y mettre la valeur actuelle
   function updateCurrentBar(token, barNumber, val, evt, maxVal) {
+    var prevToken;
+    if (HealthColors) prevToken = JSON.parse(JSON.stringify(token));
     var fieldv = 'bar' + barNumber + '_value';
     var fieldm;
     if (maxVal) fieldm = 'bar' + barNumber + '_max';
     var attrId = token.get("bar" + barNumber + "_link");
     if (attrId === "") {
+      var prevVal = token.get(fieldv);
+      if (evt) affectToken(token, fieldv, prevVal, evt);
       token.set(fieldv, val);
-      if (maxVal) token.set(fieldm, val);
-      if (evt) {
-        affectToken(token, fieldv, token.get(fieldv), evt);
-        if (maxVal) affectToken(token, fieldm, token.get(fieldm), evt);
+      if (maxVal) {
+        var prevMax = token.get(fieldm);
+        if (evt) affectToken(token, fieldm, token.get(fieldm), evt);
+        token.set(fieldm, val);
       }
+      if (HealthColors) HealthColors.Update(token, prevToken);
       return;
     }
     var attr = getObj('attribute', attrId);
@@ -2422,6 +2431,7 @@ var COFantasy = COFantasy || function() {
     }
     attr.set('current', val);
     if (maxVal) attr.set('max', maxVal);
+    if (HealthColors) HealthColors.Update(token, prevToken);
     return;
   }
 
