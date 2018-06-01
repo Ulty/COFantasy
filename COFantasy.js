@@ -1749,7 +1749,7 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function closeIte(scope){
+  function closeIte(scope) {
     var ps = scope.parentScope;
     if (ps === undefined) return;
     log("Il manque un endif");
@@ -2326,7 +2326,7 @@ var COFantasy = COFantasy || function() {
             error("--endIf sans --if correspondant", cmd);
             return;
           }
-          scope.parentScope = undefined;//To remove circular dependencies in options
+          scope.parentScope = undefined; //To remove circular dependencies in options
           scope = psEndif;
           return;
         case "else":
@@ -2359,7 +2359,7 @@ var COFantasy = COFantasy || function() {
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
       }
     });
-    closeIte(scope);//pour fermer les endif mal formés et éviter les boucles
+    closeIte(scope); //pour fermer les endif mal formés et éviter les boucles
     options.additionalDmg = options.additionalDmg || [];
     if (options.tempeteDeMana) {
       if (options.tempeteDeMana.cout === 0) {
@@ -2623,15 +2623,21 @@ var COFantasy = COFantasy || function() {
       if (condInTarget) opt = target;
       for (var field in branch) {
         switch (field) {
-          case 'additionalDmg': case 'effets': case 'etats':
+          case 'additionalDmg':
+          case 'effets':
+          case 'etats':
             opt[field] = opt[field] || [];
             opt[field] = opt[field].concat(branch[field]);
             break;
-          case 'sournoise': case 'mana': case 'bonusAttaque': case 'bonusContreBouclier':
+          case 'sournoise':
+          case 'mana':
+          case 'bonusAttaque':
+          case 'bonusContreBouclier':
             opt[field] = opt[field] || 0;
             opt[field] += branch[field];
             break;
-          case 'dmgCoef': case 'critCoef':
+          case 'dmgCoef':
+          case 'critCoef':
             if (opt[field] === undefined) {
               if (condInTarget) opt[field] = 0;
               else opt[field] = 1;
@@ -2640,11 +2646,14 @@ var COFantasy = COFantasy || function() {
             break;
           case 'messages':
             if (condInTarget) target.messages.concat(branch.messages);
-            else {/*jshint loopfunc: true */
-              branch.messages.forEach(function(m) {explications.push(m);});
+            else { /*jshint loopfunc: true */
+              branch.messages.forEach(function(m) {
+                explications.push(m);
+              });
             }
             break;
-          default: opt[field] = branch[field];
+          default:
+            opt[field] = branch[field];
         }
       }
       evalITE(attaquant, target, deAttaque, options, explications, branch, condInTarget);
@@ -14317,6 +14326,10 @@ var COFantasy = COFantasy || function() {
       case "!cof-tempete-de-mana":
         optionsDeTempeteDeMana(msg);
         return;
+      case "!cof-deplacer-token":
+        deplacerToken(msg);
+        return;
+      case "!cof-permettre-deplacement": permettreDeplacement(msg); return;
       default:
         return;
     }
@@ -15459,6 +15472,7 @@ var COFantasy = COFantasy || function() {
       attrs = removeAllAttributes('intercepter', evt, attrs);
       attrs = removeAllAttributes('interposer', evt, attrs);
       attrs = removeAllAttributes('exemplaire', evt, attrs);
+      attrs = removeAllAttributes('peutEtreDeplace', evt, attrs);
       resetAttr(attrs, 'attaqueEnTraitre', evt);
       // Pour défaut dans la cuirasse, on diminue si la valeur est 2, et on supprime si c'est 1
       var defautsDansLaCuirasse = allAttributesNamed(attrs, 'defautDansLaCuirasse');
@@ -15677,9 +15691,43 @@ var COFantasy = COFantasy || function() {
     return true;
   }
 
-  function moveToken(token) {
+  function nePeutPasBouger(perso) {
+    if (attributeAsBool(perso, 'peutEtreDeplace')) return false;
+    if (isActive(perso)) {
+      if (attributeAsBool(perso, 'immobilise')) return true;
+      return false;
+    }
+    return true;
+  }
+
+  function permettreDeplacement(msg) {
+    getSelected(msg, function(selected) {
+      var evt = {type:'Permettre le déplacement pour un tour'};
+      iterSelected(selected, function(perso) {
+        setTokenAttr(perso, 'peutEtreDeplace', true, evt);
+      });
+      addEvent(evt);
+    });
+  }
+
+  function moveToken(token, prev) {
     var charId = token.get('represents');
     if (charId === '') return;
+    var perso = {
+      token: token,
+      charId: charId
+    };
+    var x = token.get('left');
+    var y = token.get('top');
+    if (prev && (prev.left != x || prev.top != y) && nePeutPasBouger(perso)) {
+      sendChar(charId, "ne peut pas se déplacer.");
+      sendChat('COF', "/w GM " +
+        '<a href="!cof-deplacer-token ' + x + ' ' + y + ' --target ' + token.id + '">Déplacer </a>' +
+        '<a href="!cof-permettre-deplacement --target ' + token.id + '">Décoincer</a>');
+      token.set('left', prev.left);
+      token.set('top', prev.top);
+      return;
+    }
     var monture = {
       token: token,
       charId: charId
@@ -15693,8 +15741,6 @@ var COFantasy = COFantasy || function() {
       attr[0].remove();
       return;
     }
-    var x = token.get('left');
-    var y = token.get('top');
     var position = tokenAttribute(monture, 'positionSurMonture');
     if (position.length > 0) {
       var dx = parseInt(position[0].get('current'));
@@ -15707,6 +15753,29 @@ var COFantasy = COFantasy || function() {
     cavalier.token.set('left', x);
     cavalier.token.set('top', y);
     cavalier.token.set('rotation', monture.token.get('rotation') + attributeAsInt(monture, 'directionSurMonture', 0));
+  }
+
+  function deplacerToken(msg) {
+    var cmd = msg.content.split(' ');
+    if (cmd.length < 3) {
+      error("Il manque un argument à !cof-deplacer-token", cmd);
+      return;
+    }
+    getSelected(msg, function(selected) {
+      if (selected.length === 0) {
+        error("Il faut sélectionner un token", cmd);
+        return;
+      }
+      if (selected.length > 1) {
+        error("Déplacement de plusieurs tokens au même endroit", selected);
+        return;
+      }
+      iterSelected(selected, function(perso) {
+        perso.token.set('left', cmd[1]);
+        perso.token.set('top', cmd[2]);
+        moveToken(perso.token);
+      });
+    });
   }
 
   //Si le token représente un personnage et avec la barre de vie non liée, 
