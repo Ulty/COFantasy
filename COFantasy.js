@@ -14329,7 +14329,12 @@ var COFantasy = COFantasy || function() {
       case "!cof-deplacer-token":
         deplacerToken(msg);
         return;
-      case "!cof-permettre-deplacement": permettreDeplacement(msg); return;
+      case "!cof-permettre-deplacement":
+        permettreDeplacement(msg);
+        return;
+      case "!cof-tour-suivant":
+        tourSuivant(msg);
+        return;
       default:
         return;
     }
@@ -15453,6 +15458,38 @@ var COFantasy = COFantasy || function() {
     if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
   }
 
+  //Fonction appelée par !cof-tour-suivant
+  function tourSuivant(msg) {
+    if (!state.COFantasy.combat) {
+      sendPlayer(msg, "Vous n'êtes pas en combat");
+      return;
+    }
+    var cmp = Campaign();
+    var turnOrder = cmp.get('turnorder');
+    if (turnOrder === '') {
+      error("Personne n'est en combat", turnOrder);
+      return;
+    }
+    turnOrder = JSON.parse(turnOrder);
+    if (turnOrder.length < 1) {
+      error("Personne n'est en combat", turnOrder);
+      return;
+    }
+    var active = turnOrder.shift();
+    var persoActif = tokenOfId(active.id);
+    if (persoActif === undefined) {
+      error("Impossible de trouver le personnage actif", active);
+      return;
+    }
+    if (!peutController(msg, persoActif)) {
+      sendPlayer(msg, "Ce n'est pas votre tour (personnage actif : " + persoActif.token.get('name') + ")");
+      return;
+    }
+    turnOrder.push(active);
+    cmp.set('turnorder', JSON.stringify(turnOrder));
+    nextTurn(cmp);
+  }
+
   //evt a un champ attributes et un champ deletedAttributes
   function nextTurnOfActive(active, attrs, evt, pageId) {
     if (active.id == "-1" && active.custom == "Tour") {
@@ -15702,7 +15739,9 @@ var COFantasy = COFantasy || function() {
 
   function permettreDeplacement(msg) {
     getSelected(msg, function(selected) {
-      var evt = {type:'Permettre le déplacement pour un tour'};
+      var evt = {
+        type: 'Permettre le déplacement pour un tour'
+      };
       iterSelected(selected, function(perso) {
         setTokenAttr(perso, 'peutEtreDeplace', true, evt);
       });
