@@ -99,6 +99,28 @@ var COFantasy = COFantasy || function() {
     return playerIds;
   }
 
+  function getAttack(attackLabel, perso) {
+    // Get attack number (does not correspond to the position in sheet !!!)
+    var attackNumber = 0;
+    var attPrefix, weaponName;
+    while (true) {
+      attPrefix = "repeating_armes_$" + attackNumber + "_";
+      weaponName = getAttrByName(perso.charId, attPrefix + "armenom");
+      if (weaponName === undefined || weaponName === "") {
+        return;
+      }
+      var weaponLabel = weaponName.split(' ', 1)[0];
+      if (weaponLabel == attackLabel) {
+        weaponName = weaponName.substring(weaponName.indexOf(' ') + 1);
+        return {
+          attackPrefix: attPrefix,
+          weaponName: weaponName
+        };
+      }
+      attackNumber++;
+    }
+  }
+
   function getPictoStyleFromCommand(fullCommand, perso) {
     if (fullCommand === undefined) return {
       picto: '',
@@ -115,18 +137,18 @@ var COFantasy = COFantasy || function() {
         var portee = 0;
         if (command.length > 3) {
           var attackLabel = command[3];
-          var this_weapon = [];
-          try {
-            this_weapon = JSON.parse(attackLabel);
-          } catch (e) {
-            error('Error parsing the Array', command);
-          }
-          if (Array.isArray(this_weapon)) {
-            portee = this_weapon[4];
+          var att = getAttack(attackLabel, perso);
+          if (att !== undefined) {
+            portee = getPortee(perso.charId, att.attackPrefix);
           } else {
-            var att = getAttack(attackLabel, perso);
-            if (att !== undefined) {
-              portee = getPortee(perso.charId, att.attackPrefix);
+            var thisWeapon = [];
+            try {
+              thisWeapon = JSON.parse(attackLabel);
+              if (Array.isArray(thisWeapon) && thisWeapon.length > 4) {
+                portee = thisWeapon[4];
+              }
+            } catch (e) {
+              log("Impossible de trouver la portée pour " + attackLabel);
             }
           }
         }
@@ -2909,28 +2931,6 @@ var COFantasy = COFantasy || function() {
 
   function rollNumber(s) {
     return parseInt(s.substring(3, s.indexOf(']')));
-  }
-
-  function getAttack(attackLabel, perso) {
-    // Get attack number (does not correspond to the position in sheet !!!)
-    var attackNumber = 0;
-    var attPrefix, weaponName;
-    while (true) {
-      attPrefix = "repeating_armes_$" + attackNumber + "_";
-      weaponName = getAttrByName(perso.charId, attPrefix + "armenom");
-      if (weaponName === undefined || weaponName === "") {
-        return;
-      }
-      var weaponLabel = weaponName.split(' ', 1)[0];
-      if (weaponLabel == attackLabel) {
-        weaponName = weaponName.substring(weaponName.indexOf(' ') + 1);
-        return {
-          attackPrefix: attPrefix,
-          weaponName: weaponName
-        };
-      }
-      attackNumber++;
-    }
   }
 
   function getWeaponStats(perso, attackLabel) {
