@@ -64,6 +64,7 @@ var COFantasy = COFantasy || function() {
     etourdi: 'status_half-haze',
     paralyse: 'status_fishing-net',
     ralenti: 'status_snail',
+    immobilise: 'status_cobweb',
     endormi: 'status_sleepy',
     apeure: 'status_screaming',
     invisible: 'status_ninja-mask',
@@ -3941,7 +3942,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    if (options.avecd12 && estAffaibli(attaquant)) {
+    if (options.avecd12 && (estAffaibli(attaquant) || getState(attaquant, 'immobilise'))) {
       sendChar(attackingCharId, "ne peut pas utiliser cette capacité quand il est affaibli.");
       return;
     }
@@ -4314,6 +4315,9 @@ var COFantasy = COFantasy || function() {
     if (estAffaibli(attaquant)) {
       dice = 12;
       explications.push("Attaquant affaibli => D12 au lieu de D20 en Attaque");
+    } else if (getState(attaquant, 'immobilise')) {
+      dice = 12;
+      explications.push("Attaquant aimmobilisé => D12 au lieu de D20 en Attaque");
     }
     if (options.avecd12) dice = 12;
     var nbDe = 1;
@@ -9063,7 +9067,8 @@ var COFantasy = COFantasy || function() {
 
   function deTest(personnage) {
     var dice = 20;
-    if (estAffaibli(personnage)) dice = 12;
+    if (estAffaibli(personnage) || getState(personnage, 'immobilise'))
+      dice = 12;
     return dice;
   }
 
@@ -13947,6 +13952,9 @@ var COFantasy = COFantasy || function() {
     if (estAffaibli(guerrier)) {
       dice = 12;
       explications.push("Attaquant affaibli => D12 au lieu de D20 en Attaque");
+    } else if (getState(guerrier, 'imobilise')) {
+      dice = 12;
+      explications.push("Attaquant immobilisé => D12 au lieu de D20 en Attaque");
     }
     var toEvaluateAttack = attackExpression(guerrier, 1, dice, critGuerrier, armeGuerrier);
     sendChat('', toEvaluateAttack, function(resAttack) {
@@ -13994,6 +14002,9 @@ var COFantasy = COFantasy || function() {
       if (estAffaibli(cible)) {
         dice = 12;
         explications.push("Défenseur affaibli => D12 au lieu de D20 en Attaque");
+      } else if (getState(cible, 'immobilise')) {
+        dice = 12;
+        explications.push("Défenseur immobilisé => D12 au lieu de D20 en Attaque");
       }
       toEvaluateAttack = attackExpression(cible, 1, dice, critCible, armeCible);
       sendChat('', toEvaluateAttack, function(resAttack) {
@@ -15712,26 +15723,10 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function estSurMonture(perso, pageId) {
-    var attr = tokenAttribute(perso, 'monteSur');
-    if (attr.length === 0) return false;
-    if (pageId === undefined) pageId = perso.token.get('pageid');
-    var monture = tokenOfId(attr[0].get('current'), attr[0].get('max'), pageId);
-    attr[0].remove();
-    if (monture === undefined) {
-      sendChar(perso.charId, "descend de sa monture");
-      return true;
-    }
-    sendChar(perso.charId, "descend de " + monture.token.get('name'));
-    removeTokenAttr(monture, 'estMontePar');
-    removeTokenAttr(monture, 'positionSurMonture');
-    return true;
-  }
-
   function nePeutPasBouger(perso) {
     if (attributeAsBool(perso, 'peutEtreDeplace')) return false;
     if (isActive(perso)) {
-      if (attributeAsBool(perso, 'immobilise')) return true;
+      if (getState(perso, 'immobilise')) return true;
       return false;
     }
     return true;
@@ -15758,7 +15753,8 @@ var COFantasy = COFantasy || function() {
     };
     var x = token.get('left');
     var y = token.get('top');
-    if (prev && (prev.left != x || prev.top != y) && nePeutPasBouger(perso)) {
+    var deplacement = prev && (prev.left != x || prev.top != y);
+    if (deplacement && nePeutPasBouger(perso)) {
       sendChar(charId, "ne peut pas se déplacer.");
       sendChat('COF', "/w GM " +
         '<a href="!cof-deplacer-token ' + x + ' ' + y + ' --target ' + token.id + '">Déplacer </a>' +
@@ -15767,20 +15763,32 @@ var COFantasy = COFantasy || function() {
       token.set('top', prev.top);
       return;
     }
-    var monture = {
-      token: token,
-      charId: charId
-    };
     var pageId = token.get('pageid');
-    if (estSurMonture(monture, pageId)) return;
-    var attr = tokenAttribute(monture, 'estMontePar');
+    //On regarde d'abord si perso est sur une monture
+    var attr = tokenAttribute(perso, 'monteSur');
+    if (attr.length > 0) {
+      if (deplacement) {
+        attr[0].remove();
+        var monture = tokenOfId(attr[0].get('current'), attr[0].get('max'), pageId);
+        if (monture === undefined) {
+          sendChar(charId, "descend de sa monture");
+          return;
+        }
+        sendChar(charId, "descend de " + monture.token.get('name'));
+        removeTokenAttr(monture, 'estMontePar');
+        removeTokenAttr(monture, 'positionSurMonture');
+      }
+      return;
+    }
+    //si non, perso est peut-être une monture
+    attr = tokenAttribute(perso, 'estMontePar');
     if (attr.length === 0) return;
     var cavalier = tokenOfId(attr[0].get('current'), attr[0].get('max'), pageId);
     if (cavalier === undefined) {
       attr[0].remove();
       return;
     }
-    var position = tokenAttribute(monture, 'positionSurMonture');
+    var position = tokenAttribute(perso, 'positionSurMonture');
     if (position.length > 0) {
       var dx = parseInt(position[0].get('current'));
       var dy = parseInt(position[0].get('max'));
@@ -15791,7 +15799,7 @@ var COFantasy = COFantasy || function() {
     }
     cavalier.token.set('left', x);
     cavalier.token.set('top', y);
-    cavalier.token.set('rotation', monture.token.get('rotation') + attributeAsInt(monture, 'directionSurMonture', 0));
+    cavalier.token.set('rotation', token.get('rotation') + attributeAsInt(perso, 'directionSurMonture', 0));
   }
 
   function deplacerToken(msg) {
