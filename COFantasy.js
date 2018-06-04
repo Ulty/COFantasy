@@ -27,6 +27,7 @@ var COFantasy = COFantasy || function() {
 
   "use strict";
 
+  var PIX_PER_UNIT = 70;
   var DEF_MALUS_APRES_TOUR_5 = true;
   var IMAGE_OMBRE = "https://s3.amazonaws.com/files.d20.io/images/2781735/LcllgIHvqvu0HAbWdXZbJQ/thumb.png?13900368485";
   var IMAGE_DOUBLE = "https://s3.amazonaws.com/files.d20.io/images/33854984/q10B3KtWsCxcMczLo4BSUw/thumb.png?1496303265";
@@ -1126,6 +1127,27 @@ var COFantasy = COFantasy || function() {
     addCellInFramedDisplay(display, cell, 80, false);
   }
 
+  //options peut avoir les champs:
+  // - strict1 = true si on considère que tok1 doit avoir une taille nulle
+  // - strict2
+  // - allonge
+  function distanceCombat(tok1, tok2, pageId, options) {
+    if (pageId === undefined) {
+      pageId = tok1.get('pageid');
+    }
+    var page = getObj("page", pageId);
+    var scale = page.get('scale_number');
+    var pt1 = tokenCenter(tok1);
+    var pt2 = tokenCenter(tok2);
+    var distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
+    options = options || {};
+    if (!options.strict1) distance_pix -= tokenSize(tok1, PIX_PER_UNIT);
+    if (!options.strict2) distance_pix -= tokenSize(tok2, PIX_PER_UNIT);
+    if (options.allonge) distance_pix -= (options.allonge * PIX_PER_UNIT)/scale;
+    if ((!options.strict1 || !options.strict2) && distance_pix < PIX_PER_UNIT * 1.5) return 0; //cases voisines
+    return ((distance_pix / PIX_PER_UNIT) * scale);
+  }
+
   // actif est un argument optionnel qui représente (token+charId) de l'unique token sélectionné
   function getSelected(msg, callback, actif) {
     var pageId = getPageId(msg);
@@ -1287,7 +1309,9 @@ var COFantasy = COFantasy || function() {
                 }
                 actif = tokenOfId(msg.selected[0]._id, msg.selected[0]._id, pageId);
               }
-              if (distanceCombat(centre.token, actif.token, pageId, true) > portee) {
+              if (distanceCombat(centre.token, actif.token, pageId, {
+                  strict1: true
+                }) > portee) {
                 sendChar(actif.charId, "Le centre de l'effet est placé trop loin (portée " + portee + ")");
                 return;
               }
@@ -1310,7 +1334,9 @@ var COFantasy = COFantasy || function() {
               if (obj.get('bar1_max') == 0) return; // jshint ignore:line
               var objChar = getObj('character', objCharId);
               if (objChar === undefined) return;
-              var distanceCentre = distanceCombat(centre.token, obj, pageId, true);
+              var distanceCentre = distanceCombat(centre.token, obj, pageId, {
+                strict1: true
+              });
               if (distanceCentre > rayon) return;
               selected.push({
                 _id: obj.id
@@ -2355,6 +2381,19 @@ var COFantasy = COFantasy || function() {
           }
           scope.messages = scope.messages || [];
           scope.messages.push(cmd.slice(1).join(' '));
+          return;
+        case 'allonge':
+          if (cmd.length < 2) {
+            error("Il manque le message après --allonge", cmd);
+            return;
+          }
+          if (options.allonge !== undefined) {
+            log("Redéfinition de l'allong");
+          }
+          options.allonge = parseFloat(cmd[1]);
+          if (isNaN(options.allonge)) {
+            error("L'argument de --allonge n'est pas un nombre", cmd);
+          }
           return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
@@ -3758,7 +3797,10 @@ var COFantasy = COFantasy || function() {
         if (options.targetFx) {
           spawnFx(targetToken.get('left'), targetToken.get('top'), options.targetFx, pageId);
         }
-        var distanceTarget = distanceCombat(targetToken, attackingToken, pageId, true, true);
+        var distanceTarget = distanceCombat(targetToken, attackingToken, pageId, {
+          strict1: true,
+          strict2: true
+        });
         var pta = tokenCenter(attackingToken);
         var ptt = tokenCenter(targetToken);
         switch (options.aoe.type) {
@@ -3838,7 +3880,9 @@ var COFantasy = COFantasy || function() {
               };
               if (getState(cible, 'mort')) return; //pas de dégâts aux morts
               var distanceCentre =
-                distanceCombat(targetToken, obj, pageId, true);
+                distanceCombat(targetToken, obj, pageId, {
+                  strict1: true
+                });
               if (distanceCentre > options.aoe.rayon) return;
               var objChar = getObj('character', objCharId);
               if (objChar === undefined) return;
@@ -3963,8 +4007,11 @@ var COFantasy = COFantasy || function() {
     });
     if (cibles.length === 0) return;
     //Prise en compte de la distance
+    var optDistance = {};
+    if (options.contact) optDistance.allonge = options.allonge;
     cibles = cibles.filter(function(target) {
-      target.distance = distanceCombat(attackingToken, target.token, pageId);
+      target.distance =
+        distanceCombat(attackingToken, target.token, pageId, optDistance);
       if (options.intercepter || options.interposer) return true;
       if (target.distance > portee && target.esquiveFatale === undefined) {
         if (options.aoe || options.auto) return false; //distance stricte
@@ -6457,23 +6504,6 @@ var COFantasy = COFantasy || function() {
     return 0;
   }
 
-  //strict1 = true si on considère que tok1 doit avoir une taille nulle
-  function distanceCombat(tok1, tok2, pageId, strict1, strict2) {
-    if (pageId === undefined) {
-      pageId = tok1.get('pageid');
-    }
-    var PIX_PER_UNIT = 70;
-    var page = getObj("page", pageId);
-    var scale = page.get('scale_number');
-    var pt1 = tokenCenter(tok1);
-    var pt2 = tokenCenter(tok2);
-    var distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
-    if (!strict1) distance_pix -= tokenSize(tok1, PIX_PER_UNIT);
-    if (!strict2) distance_pix -= tokenSize(tok2, PIX_PER_UNIT);
-    if ((!strict1 || !strict2) && distance_pix < PIX_PER_UNIT * 1.5) return 0; //cases voisines
-    return ((distance_pix / PIX_PER_UNIT) * scale);
-  }
-
 
   function malusDistance(perso1, tok2, distance, portee, pageId, explications, ignoreObstacles) {
     if (distance === 0) return 0;
@@ -6493,7 +6523,6 @@ var COFantasy = COFantasy || function() {
         layer: "objects"
       });
     var mObstacle = 0;
-    var PIX_PER_UNIT = 70;
     var pt1 = tokenCenter(tok1);
     var pt2 = tokenCenter(tok2);
     var distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
@@ -11756,7 +11785,6 @@ var COFantasy = COFantasy || function() {
         }
         sendChar(charId, "lance un sort de mur de force");
         if (options.image && sphere) {
-          var PIX_PER_UNIT = 70;
           var page = getObj("page", pageId);
           var scale = page.get('scale_number');
           var diametre = PIX_PER_UNIT * (6 / scale);
