@@ -37,7 +37,7 @@ var COFantasy = COFantasy || function() {
   //à 0 PV, on perd un PR, et si plus de PR, affaibli.
   var MONTRER_TURNACTION_AU_MJ = false;
   var FORME_D_ARBRE_AMELIORE_PEAU_D_ECORCE = true; //+50% en forme d'arbre
-  var DM_MINIMUM = 0;//Dégâts minimum d'une attaque ou autre source de DM.
+  var DM_MINIMUM = 0; //Dégâts minimum d'une attaque ou autre source de DM.
   var eventHistory = [];
   var updateNextInitSet = new Set();
 
@@ -4751,6 +4751,13 @@ var COFantasy = COFantasy || function() {
             if (options.demiAuto) {
               target.partialSaveAuto = true;
             } else touche = false;
+          } else if (d20roll % 2 && attributeAsBool(target, 'clignotement')) {
+            target.messages.push(target.tokName + " disparaît au moment où l'attaque aurait du l" + onGenre(target.charId, 'e', 'a') + " toucher");
+            attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
+            target.clignotement = true;
+            if (options.demiAuto) {
+              target.partialSaveAuto = true;
+            } else touche = false;
           } else { // Touché normal
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
           }
@@ -4800,8 +4807,10 @@ var COFantasy = COFantasy || function() {
               p2.y += dev * (p2.x - p1.x);
               spawnFxBetweenPoints(p1, p2, options.fx, pageId);
             }
-            evt.succes = false;
-            diminueMalediction(attaquant, evt);
+            if (target.clignotement === undefined) {
+              evt.succes = false;
+              diminueMalediction(attaquant, evt);
+            }
           }
         }
         target.touche = touche;
@@ -14895,6 +14904,11 @@ var COFantasy = COFantasy || function() {
       actif: "est transformé en statue de bois",
       fin: "retrouve sa forme normale",
       prejudiciable: true
+    },
+    clignotement: {
+      activation: "disparaît, puis réapparaît",
+      actif: "clignote",
+      fin: "ne disparaît plus"
     }
   };
 
