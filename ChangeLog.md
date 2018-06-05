@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 # 1.03
 ### Autres améliorations
+* Ajout d'actions pour se libérer des états préjudiciables
 * Nouvelle option d'attaque --allonge
 * Ajout de l'état immobilisé
 * !cof-tour-suivant : permet à un joueur de passer au tour suivant si il contrôle le token dont c'est le tour.

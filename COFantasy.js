@@ -313,6 +313,9 @@ var COFantasy = COFantasy || function() {
         removeFromTurnTracker(token.id, evt);
     }
     token.set(cof_states[etat], value);
+    if (!value) { //On enlève le save si il y en a un
+      removeTokenAttr(personnage, etat + 'Save', evt);
+    }
     if (etat == 'aveugle') {
       // We also change vision of the token
       if (aff.prev.light_losangle === undefined)
@@ -1143,7 +1146,7 @@ var COFantasy = COFantasy || function() {
     options = options || {};
     if (!options.strict1) distance_pix -= tokenSize(tok1, PIX_PER_UNIT);
     if (!options.strict2) distance_pix -= tokenSize(tok2, PIX_PER_UNIT);
-    if (options.allonge) distance_pix -= (options.allonge * PIX_PER_UNIT)/scale;
+    if (options.allonge) distance_pix -= (options.allonge * PIX_PER_UNIT) / scale;
     if ((!options.strict1 || !options.strict2) && distance_pix < PIX_PER_UNIT * 1.5) return 0; //cases voisines
     return ((distance_pix / PIX_PER_UNIT) * scale);
   }
@@ -1383,6 +1386,20 @@ var COFantasy = COFantasy || function() {
     sendChat('COF', '/w "' + dest + '" ' + msg);
   }
 
+  function isCarac(x) {
+    switch (x) {
+      case 'FOR':
+      case 'DEX':
+      case 'CON':
+      case 'SAG':
+      case 'INT':
+      case 'CHA':
+        return true;
+      default:
+        return false;
+    }
+  }
+
   function jet(msg) {
     // Les arguments pour cof-jet sont :
     // - Caracteristique (FOR, DEX, CON, INT, SAG, CHA)
@@ -1454,7 +1471,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       var caracteristique = cmd[1];
-      if (isNotCarac(caracteristique)) {
+      if (!isCarac(caracteristique)) {
         error("Caracteristique '" + caracteristique + "' non reconnue (FOR, DEX, CON, INT, SAG, CHA).", cmd);
         return;
       }
@@ -1981,6 +1998,22 @@ var COFantasy = COFantasy || function() {
             etat: etat,
             condition: condition
           };
+          if (cmd[0] == 'etat' && cmd.length > 3) {
+            if (isCarac(cmd[2])) {
+              lastEtat.saveCarac = cmd[2];
+              var opposition = tokenOfId(cmd[3]);
+              if (opposition) {
+                lastEtat.saveDifficulte = cmd[3] + ' ' + opposition.token.get('name');
+              } else {
+                lastEtat.saveDifficulte = parseInt(cmd[3]);
+                if (isNaN(lastEtat.saveDifficulte)) {
+                  error("Difficulté du jet de sauvegarde incorrecte", cmd);
+                  lastEtat.saveCarac = undefined;
+                  lastEtat.saveDifficulte = undefined;
+                }
+              }
+            }
+          }
           scope.etats.push(lastEtat);
           return;
         case "psi": //deprecated
@@ -2547,14 +2580,14 @@ var COFantasy = COFantasy || function() {
     var carac2;
     if (cmd[1].length == 3) {
       carac1 = cmd[1];
-      if (isNotCarac(cmd[1])) {
+      if (!isCarac(cmd[1])) {
         error("Le premier argument de save n'est pas une caractéristique", cmd);
         return;
       }
     } else if (cmd[1].length == 6) { //Choix parmis 2 caracs
       carac1 = cmd[1].substr(0, 3);
       carac2 = cmd[1].substr(3, 3);
-      if (isNotCarac(carac1) || isNotCarac(carac2)) {
+      if (!isCarac(carac1) || !isCarac(carac2)) {
         error("Le premier argument de save n'est pas une caractéristique", cmd);
         return;
       }
@@ -5204,6 +5237,9 @@ var COFantasy = COFantasy || function() {
               if (testCondition(ce.condition, attaquant, [target], d20roll)) {
                 setState(target, ce.etat, true, evt);
                 target.messages.push(target.tokName + " est " + ce.etat + eForFemale(target.charId) + " par l'attaque");
+                if (ce.saveCarac) {
+                  setTokenAttr(target, ce.etat + 'Save', ce.saveCarac, evt, undefined, ce.saveDifficulte);
+                }
               } else {
                 if (ce.condition.type == "moins") {
                   target.messages.push(
@@ -5382,6 +5418,9 @@ var COFantasy = COFantasy || function() {
                       function(reussite, rolltext) {
                         if (!reussite) {
                           setState(target, ce.etat, true, evt);
+                          if (ce.saveCarac) {
+                            setTokenAttr(target, ce.etat + 'Save', ce.saveCarac, evt, undefined, ce.saveDifficulte);
+                          }
                         }
                         saves--;
                         afterSaves();
@@ -8152,7 +8191,7 @@ var COFantasy = COFantasy || function() {
           var header = ligne.split(':');
           if (header.length > 1) {
             var c = header.shift().trim().toUpperCase();
-            if (isNotCarac(c)) return;
+            if (!isCarac(c)) return;
             carac = c;
             ligne = header.join(':').trim();
           }
@@ -8325,6 +8364,13 @@ var COFantasy = COFantasy || function() {
             }
           }
         });
+      }
+      for (var etat in cof_states) {
+        var saveEtat = boutonSaveState(perso, etat);
+        if (saveEtat) {
+          ligne += saveEtat + '<br />';
+          actionsAAfficher = true;
+        }
       }
       if (actionsAAfficher) {
         // on envoie la liste aux joueurs qui gèrent le personnage dont le token est lié
@@ -8785,8 +8831,14 @@ var COFantasy = COFantasy || function() {
       if (bufDef > 0)
         addLineToFramedDisplay(display, "Défense temporairement modifiée de " + bufDef);
       for (var etat in cof_states) {
-        if (getState(perso, etat))
-          addLineToFramedDisplay(display, etat + eForFemale(charId));
+        if (getState(perso, etat)) {
+          var etext = etat;
+          if (etext.endsWith('e')) etext = etext.substring(0, etext.length - 1) + 'é';
+          etext += eForFemale(charId);
+          var saveEtat = boutonSaveState(perso, etat);
+          if (saveEtat) etext += ", " + saveEtat;
+          addLineToFramedDisplay(display, etext);
+        }
       }
       if (charAttributeAsInt(charId, 'DEFARMUREON', 1) === 0) {
         addLineToFramedDisplay(display, "Ne porte pas son armure");
@@ -9585,10 +9637,6 @@ var COFantasy = COFantasy || function() {
     return undefined;
   }
 
-  function isNotCarac(x) {
-    return (x != 'FOR' && x != 'DEX' && x != 'CON' && x != 'SAG' && x != 'INT' && x != 'CHA');
-  }
-
   function estElementaire(t) {
     if (t === undefined) return false;
     return (t == "feu" || t == "froid" || t == "acide" || t == "electrique");
@@ -9609,6 +9657,27 @@ var COFantasy = COFantasy || function() {
       error("Le premier argument de !cof-set-state n'est pas un état valide", cmd);
       return;
     }
+    var save;
+    if (isCarac(cmd[2])) {
+      if (cmd.length < 4) {
+        error("Il manque la difficulté du jet de sauvegarde.", cmd);
+        return;
+      }
+      valeur = true;
+      save = {
+        carac: cmd[2]
+      };
+      var opposition = tokenOfId(cmd[3]);
+      if (opposition) {
+        save.difficulte = cmd[3] + ' ' + opposition.token.get('name');
+      } else {
+        save.difficulte = parseInt(cmd[3]);
+        if (isNaN(save.difficulte)) {
+          error("Difficulté du jet de sauvegarde incorrecte", cmd);
+          return;
+        }
+      }
+    }
     var evt = {
       type: "set_state",
     };
@@ -9627,9 +9696,126 @@ var COFantasy = COFantasy || function() {
       }
       iterSelected(selected, function(perso) {
         setState(perso, etat, valeur, evt);
+        if (save) {
+          setTokenAttr(perso, etat + 'Save', save.carac, evt, undefined, save.difficulte);
+        }
       });
       addEvent(evt);
     });
+  }
+
+  function textOfSaveState(etat) {
+    switch (etat) {
+      case 'immobilise':
+        return "se libérer";
+      case 'aveugle':
+        return "retrouver la vue";
+      case 'etourdi':
+        return "reprendre ses esprits";
+      case 'assome':
+        return "reprendre conscience";
+      case 'renverse':
+        return "se relever";
+      case 'endormi':
+        return "se réveiller";
+      case 'apeure':
+        return "retrouver du courage";
+      default:
+        return "ne plus être " + etat;
+    }
+  }
+
+  function saveState(msg) {
+    var options = parseOptions(msg);
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 4 ||
+      !_.has(cof_states, cmd[1]) || !isCarac(cmd[2])) {
+      error("Paramètres de !cof-save-state incorrects", cmd);
+      return;
+    }
+    var etat = cmd[1];
+    var carac = cmd[2];
+    var titre = 'Jet de ' + carac + ' pour ' + textOfSaveState(etat);
+    getSelected(msg, function(selected) {
+      if (selected.length === 0) {
+        error("Pas de token sélectionné", msg.content);
+        return;
+      }
+      var pageId = options.pageId;
+      if (pageId === undefined) {
+        iterSelected(selected, function(perso) {
+          if (pageId) return;
+          pageId = perso.token.get('pageid');
+        });
+      }
+      var opposant = tokenOfId(cmd[3], cmd[4], pageId);
+      if (opposant) {
+        iterSelected(selected, function(perso) {
+          if (!getState(perso, etat)) {
+            sendChar(perso.charId, "n'est pas " + etat + eForFemale(perso.charId));
+            return;
+          }
+          var evt = {
+            type: titre
+          };
+          var display = startFramedDisplay(msg.playerid, titre, perso, opposant);
+          var explications = [];
+          testOppose(perso, carac, opposant, carac, explications, evt,
+            function(resultat, crit) {
+              if (resultat == 2) {
+                explications.push(perso.token.get('name') + " est toujours " + etat + eForFemale(perso.charId));
+              } else {
+                setState(perso, etat, false, evt);
+                explications.push(perso.token.get('name') + " n'est plus " + etat + eForFemale(perso.charId));
+              }
+              explications.forEach(function(e) {
+                addLineToFramedDisplay(display, e);
+              });
+              addEvent(evt);
+              sendChat("", endFramedDisplay(display));
+            }); //fin test opposé (asynchrone)
+        }); //fin iterSelected du cas avec opposant
+      } else {
+        var seuil = parseInt(cmd[3]);
+        if (isNaN(seuil)) {
+          error("La difficulté n'est pas un nombre", cmd);
+          return;
+        }
+        iterSelected(selected, function(perso) {
+          if (!getState(perso, etat)) {
+            sendChar(perso.charId, "n'est pas " + etat + eForFemale(perso.charId));
+            return;
+          }
+          var evt = {
+            type: titre
+          };
+          testCaracteristique(perso, carac, seuil, {}, evt, function(res) {
+            sendChar(perso.charId, titre + " : " + res.texte);
+            if (res.reussite) {
+              setState(perso, etat, false, evt);
+              sendChar(perso.charId, res.texte + " &ge; " + seuil + ", " + perso.token.get('name') + " n'est plus " + etat + eForFemale(perso.charId));
+            } else {
+              sendChar(perso.charId, res.texte + " &lt; " + seuil + ", " + perso.token.get('name') + " est toujours " + etat + eForFemale(perso.charId));
+            }
+            addEvent(evt);
+          }); //fin test carac
+        }); //fin iterSelected du cas sans opposant
+      }
+    }); //fin getSelected
+  }
+
+  //Renvoie false si le personnage n'a pas d'attribut etatSave
+  function boutonSaveState(perso, etat) {
+    var attr = tokenAttribute(perso, etat + 'Save');
+    if (attr.length === 0) return false;
+    attr = attr[0];
+    var carac = attr.get('current');
+    if (!isCarac(carac)) {
+      log("Caractéristiques du save contre " + etat + " de " + perso.token.get('name') + " n'est pas une caractéristique " + carac);
+      return false;
+    }
+    var b = bouton("!cof-save-state " + etat + ' ' + carac + ' ' + attr.get('max'), "Jet", perso);
+    return b + " de " + carac + " pour " + textOfSaveState(etat);
   }
 
   function updateInit(token, evt) {
@@ -14189,6 +14375,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-set-state":
         interfaceSetState(msg);
         return;
+      case "!cof-save-state":
+        saveState(msg);
+        return;
       case "!cof-degainer":
         degainer(msg);
         return;
@@ -15648,7 +15837,7 @@ var COFantasy = COFantasy || function() {
       attrsSave.forEach(function(attr) {
         var attrName = attr.get('name');
         var carac = attr.get('current');
-        if (isNotCarac(carac)) {
+        if (!isCarac(carac)) {
           error("Save par tour " + attrName + " mal formé", carac);
           count--;
           if (count === 0) addEvent(evt);
