@@ -38,6 +38,7 @@ var COFantasy = COFantasy || function() {
   var MONTRER_TURNACTION_AU_MJ = false;
   var FORME_D_ARBRE_AMELIORE_PEAU_D_ECORCE = true; //+50% en forme d'arbre
   var DM_MINIMUM = 0; //Dégâts minimum d'une attaque ou autre source de DM.
+  var AVATAR_IN_DISPLAY = true; //Si false on utilise les images de tokens
   var eventHistory = [];
   var updateNextInitSet = new Set();
 
@@ -820,10 +821,11 @@ var COFantasy = COFantasy || function() {
   }
 
   function improve_image(image_url) {
-    image_url = image_url.replace('/med.png', '/thumb.png');
-    image_url = image_url.substring(0, image_url.indexOf('?'));
-
-    return image_url;
+    if (image_url) {
+      image_url = image_url.replace('/med.png', '/thumb.png');
+      image_url = image_url.substring(0, image_url.indexOf('?'));
+      return image_url;
+    }
   }
 
   //Fonction séparée pour pouvoir envoyer un frame à plusieurs joueurs
@@ -847,22 +849,29 @@ var COFantasy = COFantasy || function() {
       else who = displayname;
       res = '/w "' + who + '" ';
     }
-    var name1, name2, avatar1, avatar2 = '';
-    var character2;
+    var name1, name2 = '';
+    var avatar1, avatar2;
     if (perso2) {
-      character2 = getObj('character', perso2.charId);
-      if (character2 !== undefined) {
-        avatar2 = '<img src="' + improve_image(character2.get('avatar')) + '" style="width: 50%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+      var img2 = improve_image(perso2.token.get('imgsrc'));
+      if (AVATAR_IN_DISPLAY) {
+        var character2 = getObj('character', perso2.charId);
+        if (character2) img2 = improve_image(character2.get('avatar'));
+      }
+      if (img2) {
+        avatar2 = '<img src="' + img2 + '" style="width: 50%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
         name2 = perso2.tokName;
         if (name2 === undefined) name2 = perso2.token.get('name');
         name2 = '<b>' + name2 + '</b>';
       }
     }
-    var character1;
     if (perso1) {
-      character1 = getObj('character', perso1.charId);
-      if (character1 !== undefined) {
-        avatar1 = '<img src="' + improve_image(character1.get('avatar')) + '" style="width: ' + (character2 ? 50 : 100) + '%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+      var img1 = improve_image(perso1.token.get('imgsrc'));
+      if (AVATAR_IN_DISPLAY) {
+        var character1 = getObj('character', perso1.charId);
+        if (character1) img1 = improve_image(character1.get('avatar'));
+      }
+      if (img1) {
+        avatar1 = '<img src="' + img1 + '" style="width: ' + (avatar2 ? 50 : 100) + '%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
         if (perso1.tokName) name1 = perso1.tokName;
         else name1 = perso1.token.get('name');
         name1 = '<b>' + name1 + '</b>';
@@ -870,11 +879,11 @@ var COFantasy = COFantasy || function() {
     }
     res +=
       '<div class="all_content" style="-webkit-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); -moz-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); border: 1px solid #000; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px; overflow: hidden; position: relative;">';
-    if (character1) {
+    if (avatar1) {
       res +=
         '<div class="line_header" style="overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: ' + playerTXColor + '; background-color: ' + playerBGColor + ';" title=""> ' +
         '<table>';
-      if (character2) {
+      if (avatar2) {
         res +=
           '<tr style="text-align: center">' +
           '<td style="width: 44%; vertical-align: middle;">' + name1 + '</td>' +
@@ -15906,7 +15915,7 @@ var COFantasy = COFantasy || function() {
         };
         var msgPour = " pour ne plus être sous l'effet de " + effetC;
         var sujet = onGenre(charId, 'il', 'elle');
-        var met =  messageOfEffetTemp(effetC);
+        var met = messageOfEffetTemp(effetC);
         var msgReussite = ", " + sujet + " " + met.fin;
         var msgRate = ", " + sujet + " " + met.actif;
         var saveOpts = {
