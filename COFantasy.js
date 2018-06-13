@@ -15913,7 +15913,10 @@ var COFantasy = COFantasy || function() {
         var expliquer = function(msg) {
           sendChar(charId, msg);
         };
-        var msgPour = " pour ne plus être sous l'effet de " + effetC;
+        var msgPour = " pour ne plus être sous l'effet de ";
+        if (effetC.startsWith('dotGen(')) 
+          msgPour += effetC.substring(7, effetC.indexOf(')'));
+        else msgPour += effetC;
         var sujet = onGenre(charId, 'il', 'elle');
         var met = messageOfEffetTemp(effetC);
         var msgReussite = ", " + sujet + " " + met.fin;

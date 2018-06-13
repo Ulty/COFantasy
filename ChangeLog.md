@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 1.03
 ### Autres améliorations
+* En cas de save par tour d'un dotGen, affiche le nom du dotGen plutôt que dotGen(nom)
 * Capacité clignotement du Barghest
 * Ajout d'actions pour se libérer des états préjudiciables
 * Nouvelle option d'attaque --allonge
