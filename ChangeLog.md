@@ -1,5 +1,6 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 1.04
+* Correction d'un bug quand HealthColors n'était actif.
 * Possibilité d'avoir des macros ou ability ayant plusieurs lignes dans les #Actions#
 
 ## 1.03

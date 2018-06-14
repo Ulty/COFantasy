@@ -633,6 +633,12 @@ var COFantasy = COFantasy || function() {
   }
 
   function undoTokenEffect(evt) {
+    var HTdeclared;
+    try {
+      HTdeclared = HealthColors;
+    } catch(e) {
+      if (e.name != "ReferenceError") throw(e);
+    }
     _.each(evt.affectes, function(aff) {
       var prev = aff.prev;
       var tok = aff.affecte;
@@ -641,11 +647,11 @@ var COFantasy = COFantasy || function() {
         return;
       }
       var prevTok;
-      if (HealthColors) prevTok = JSON.parse(JSON.stringify(tok));
+      if (HTdeclared) prevTok = JSON.parse(JSON.stringify(tok));
       _.each(prev, function(val, key) {
         tok.set(key, val);
       });
-      if (HealthColors) HealthColors.Update(tok, prevTok);
+      if (HTdeclared) HealthColors.Update(tok, prevTok);
       sendChat("COF", "État de " + tok.get("name") + " restauré.");
     });
   }
@@ -2573,7 +2579,13 @@ var COFantasy = COFantasy || function() {
   //Si evt est défini, alors on considère qu'il faut y mettre la valeur actuelle
   function updateCurrentBar(token, barNumber, val, evt, maxVal) {
     var prevToken;
-    if (HealthColors) prevToken = JSON.parse(JSON.stringify(token));
+    var HTdeclared;
+    try {
+      HTdeclared = HealthColors;
+    } catch(e) {
+      if (e.name != "ReferenceError") throw(e);
+    }
+    if (HTdeclared) prevToken = JSON.parse(JSON.stringify(token));
     var fieldv = 'bar' + barNumber + '_value';
     var fieldm;
     if (maxVal) fieldm = 'bar' + barNumber + '_max';
@@ -2587,7 +2599,7 @@ var COFantasy = COFantasy || function() {
         if (evt) affectToken(token, fieldm, token.get(fieldm), evt);
         token.set(fieldm, val);
       }
-      if (HealthColors) HealthColors.Update(token, prevToken);
+      if (HTdeclared) HealthColors.Update(token, prevToken);
       return;
     }
     var attr = getObj('attribute', attrId);
@@ -2601,7 +2613,7 @@ var COFantasy = COFantasy || function() {
     }
     attr.set('current', val);
     if (maxVal) attr.set('max', maxVal);
-    if (HealthColors) HealthColors.Update(token, prevToken);
+    if (HTdeclared) HealthColors.Update(token, prevToken);
     return;
   }
 
