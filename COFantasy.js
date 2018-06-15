@@ -636,8 +636,8 @@ var COFantasy = COFantasy || function() {
     var HTdeclared;
     try {
       HTdeclared = HealthColors;
-    } catch(e) {
-      if (e.name != "ReferenceError") throw(e);
+    } catch (e) {
+      if (e.name != "ReferenceError") throw (e);
     }
     _.each(evt.affectes, function(aff) {
       var prev = aff.prev;
@@ -767,6 +767,11 @@ var COFantasy = COFantasy || function() {
     action = replaceAction(action, perso);
     var tid = perso.token.id;
     perso.tokName = perso.tokName || perso.token.get('name');
+    if (perso.name === undefined) {
+      var character = getObj('character', perso.charId);
+      if (character) perso.name = character.get('name');
+      else perso.name = perso.tokName;
+    }
     //Cas de plusieurs actions après expansion
     var actions = action.split('\n');
     actions = actions.map(function(act) {
@@ -774,7 +779,8 @@ var COFantasy = COFantasy || function() {
       if (act.startsWith("/as ")) {
         act = "!cof-as" + act.substring(3);
       }
-      var character = getObj('character', perso.charId);
+      if (act.startsWith('!') && 
+        !(act.startsWith('!cof') || act.startsWith('!&#13'))) return act;//On ne touche pas aux commandes des autres scripts
       switch (act.charAt(0)) {
         case '!':
           if (!act.startsWith('!&#13;') && ressource) act += " --decrAttribute " + ressource.id;
@@ -786,7 +792,7 @@ var COFantasy = COFantasy || function() {
             act = "!cof-lancer-sort 0 " + act;
           }
       }
-      if (act.indexOf('@{selected') !== -1 && character !== undefined) {
+      if (act.indexOf('@{selected') !== -1) {
         // cas spécial pour @{selected|token_id} où l'on remplace toutes les occurences par token.id
         act = act.replace(new RegExp(escapeRegExp('@{selected|token_id}'), 'g'), tid);
         act = act.replace(new RegExp(escapeRegExp('@{selected|token_name}'), 'g'), perso.tokName);
@@ -795,7 +801,13 @@ var COFantasy = COFantasy || function() {
           if (elem.startsWith('|')) {
             // attribut demandé
             var attribute_name = elem.substring(0, elem.indexOf("}")).substr(1);
-            act = act.replace(new RegExp(escapeRegExp('@{selected|' + attribute_name + '}'), 'g'), '@{' + character.get('name') + '|' + attribute_name + '}');
+            var attrs = findObjs({type:'attribute', charid:perso.charId, name:attribute_name});
+            var replacement;
+            if (attrs.length === 0) 
+              replacement ='@{' + perso.name + '|' + attribute_name + '}';
+            else 
+              replacement = attrs[0].get('current');
+            act = act.replace(new RegExp(escapeRegExp('@{selected|' + attribute_name + '}'), 'g'), replacement);
           }
         });
       }
@@ -2582,8 +2594,8 @@ var COFantasy = COFantasy || function() {
     var HTdeclared;
     try {
       HTdeclared = HealthColors;
-    } catch(e) {
-      if (e.name != "ReferenceError") throw(e);
+    } catch (e) {
+      if (e.name != "ReferenceError") throw (e);
     }
     if (HTdeclared) prevToken = JSON.parse(JSON.stringify(token));
     var fieldv = 'bar' + barNumber + '_value';
