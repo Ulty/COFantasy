@@ -5364,7 +5364,8 @@ var COFantasy = COFantasy || function() {
                         function(tok) {
                           attaquant.alliesAvecAttaqueEnTraitre.push(tok);
                         }, {
-                          onlyOnPage: true
+                          onlyOnPage: true,
+                          possiblementAbsent:true
                         });
                     }
                   }
@@ -6787,7 +6788,8 @@ var COFantasy = COFantasy || function() {
             represents: charId
           });
       }
-      if (tokens === undefined || (tokens.length === 0 && !options.onlyOnPage)) {
+      if (tokens === undefined || 
+        (tokens.length === 0 && !options.onlyOnPage)) {
         tokens =
           findObjs({
             _type: 'graphic',
@@ -6807,6 +6809,7 @@ var COFantasy = COFantasy || function() {
         });
       }
       if (tokens.length === 0) {
+        if (options.possiblementAbsent) return;
         log("Pas de token pour un personnage");
         log(charId);
         log(attrNameComplet);
@@ -14271,7 +14274,7 @@ var COFantasy = COFantasy || function() {
     if (estAffaibli(guerrier)) {
       dice = 12;
       explications.push("Attaquant affaibli => D12 au lieu de D20 en Attaque");
-    } else if (getState(guerrier, 'imobilise')) {
+    } else if (getState(guerrier, 'immobilise')) {
       dice = 12;
       explications.push("Attaquant immobilisé => D12 au lieu de D20 en Attaque");
     }
