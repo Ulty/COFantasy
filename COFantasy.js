@@ -779,8 +779,8 @@ var COFantasy = COFantasy || function() {
       if (act.startsWith("/as ")) {
         act = "!cof-as" + act.substring(3);
       }
-      if (act.startsWith('!') && 
-        !(act.startsWith('!cof') || act.startsWith('!&#13'))) return act;//On ne touche pas aux commandes des autres scripts
+      if (act.startsWith('!') &&
+        !(act.startsWith('!cof') || act.startsWith('!&#13'))) return act; //On ne touche pas aux commandes des autres scripts
       switch (act.charAt(0)) {
         case '!':
           if (!act.startsWith('!&#13;') && ressource) act += " --decrAttribute " + ressource.id;
@@ -801,11 +801,15 @@ var COFantasy = COFantasy || function() {
           if (elem.startsWith('|')) {
             // attribut demandé
             var attribute_name = elem.substring(0, elem.indexOf("}")).substr(1);
-            var attrs = findObjs({type:'attribute', charid:perso.charId, name:attribute_name});
+            var attrs = findObjs({
+              type: 'attribute',
+              charid: perso.charId,
+              name: attribute_name
+            });
             var replacement;
-            if (attrs.length === 0) 
-              replacement ='@{' + perso.name + '|' + attribute_name + '}';
-            else 
+            if (attrs.length === 0)
+              replacement = '@{' + perso.name + '|' + attribute_name + '}';
+            else
               replacement = attrs[0].get('current');
             act = act.replace(new RegExp(escapeRegExp('@{selected|' + attribute_name + '}'), 'g'), replacement);
           }
@@ -993,7 +997,7 @@ var COFantasy = COFantasy || function() {
       perso2: options.perso2,
       action: action
     };
-    if (options.retarde === undefined) 
+    if (options.retarde === undefined)
       addFramedHeader(display, playerId, options.chuchote);
     return display;
   }
@@ -1063,7 +1067,9 @@ var COFantasy = COFantasy || function() {
     var evt = options.evt || {
       type: "Jet de " + caracteristique
     };
-    var display = startFramedDisplay(playerId, titre, perso, {chuchote:options.secret});
+    var display = startFramedDisplay(playerId, titre, perso, {
+      chuchote: options.secret
+    });
     if (difficulte === undefined) {
       jetCaracteristique(perso, caracteristique, options, evt, function(rt) {
         addLineToFramedDisplay(display, "<b>Résultat :</b> " + rt.texte);
@@ -1551,7 +1557,9 @@ var COFantasy = COFantasy || function() {
           return;
         }
         iterSelected(selected, function(perso) {
-          var display = startFramedDisplay(playerId, "Jet de caractéristique", perso, {chuchote:true});
+          var display = startFramedDisplay(playerId, "Jet de caractéristique", perso, {
+            chuchote: true
+          });
           startTableInFramedDisplay(display);
           boutonsCompetences(display, perso, 'FOR', msg);
           boutonsCompetences(display, perso, 'DEX', msg);
@@ -1571,7 +1579,9 @@ var COFantasy = COFantasy || function() {
       }
       if (options.competences && options.nom === undefined) {
         iterSelected(selected, function(perso) {
-          var display = startFramedDisplay(playerId, "Jet de " + caracteristique, perso, {chuchote:true});
+          var display = startFramedDisplay(playerId, "Jet de " + caracteristique, perso, {
+            chuchote: true
+          });
           addLineToFramedDisplay(display, "Choisissez la compétence");
           startTableInFramedDisplay(display);
           boutonsCompetences(display, perso, caracteristique, msg);
@@ -1713,7 +1723,9 @@ var COFantasy = COFantasy || function() {
       title += " (max " + tempeteDeManaCourante.max + ")";
       restant = tempeteDeManaCourante.max - tempeteDeManaCourante.cout;
     }
-    var display = startFramedDisplay(tempeteDeManaCourante.playerId, title, perso, {chuchote:true});
+    var display = startFramedDisplay(tempeteDeManaCourante.playerId, title, perso, {
+      chuchote: true
+    });
     if (tempeteDeManaCourante.dureeDeBase &&
       tempeteDeManaCourante.dm === undefined &&
       tempeteDeManaCourante.soins === undefined)
@@ -4299,7 +4311,9 @@ var COFantasy = COFantasy || function() {
       return;
     }
     //On crée un display sans le header
-    var display = startFramedDisplay(undefined, "Attaque en traître possible", voleur, {retarde:true});
+    var display = startFramedDisplay(undefined, "Attaque en traître possible", voleur, {
+      retarde: true
+    });
     cibles.forEach(function(target) {
       target.tokName = target.tokName || target.token.get('name');
       if (target.name === undefined) {
@@ -4620,7 +4634,9 @@ var COFantasy = COFantasy || function() {
       }
       action += "<span style='" + BS_LABEL + " " + label_type + "; text-transform: none; font-size: 100%;'>" + weaponName + "</span>";
 
-      var display = startFramedDisplay(playerId, action, attaquant, {perso2:target});
+      var display = startFramedDisplay(playerId, action, attaquant, {
+        perso2: target
+      });
 
       // Cas des armes à poudre
       if (options.poudre) {
@@ -5367,7 +5383,7 @@ var COFantasy = COFantasy || function() {
                           attaquant.alliesAvecAttaqueEnTraitre.push(tok);
                         }, {
                           onlyOnPage: true,
-                          possiblementAbsent:true
+                          possiblementAbsent: true
                         });
                     }
                   }
@@ -6790,7 +6806,7 @@ var COFantasy = COFantasy || function() {
             represents: charId
           });
       }
-      if (tokens === undefined || 
+      if (tokens === undefined ||
         (tokens.length === 0 && !options.onlyOnPage)) {
         tokens =
           findObjs({
@@ -6946,6 +6962,23 @@ var COFantasy = COFantasy || function() {
             token: tok
           };
           degainerArme(perso, '', evt);
+        });
+    });
+    // On remet en main l'arme par défaut si elle est précisée
+    allAttributesNamed(attrs, 'armeParDefaut').forEach(function(attr) {
+      var apdCharId = attr.get('characterid');
+      if (apdCharId === undefined || apdCharId === '') {
+        error("Attribut sans personnage associé", attr);
+        return;
+      }
+      iterTokensOfAttribute(apdCharId, state.COFantasy.combat_pageid,
+        'armeParDefaut', attr.get('name'),
+        function(tok) {
+          var perso = {
+            charId: apdCharId,
+            token: tok
+          };
+          degainerArme(perso, attr.get('current'), evt);
         });
     });
     //Effet de ignorerLaDouleur
@@ -8483,14 +8516,18 @@ var COFantasy = COFantasy || function() {
           _.each(player_ids, function(playerid) {
             last_playerid = playerid;
 
-            var display = startFramedDisplay(playerid, title, perso, {chuchote:true});
+            var display = startFramedDisplay(playerid, title, perso, {
+              chuchote: true
+            });
             addLineToFramedDisplay(display, ligne);
             sendChat('', endFramedDisplay(display));
           });
         }
         // En prime, on l'envoie au MJ, si besoin
         if (MONTRER_TURNACTION_AU_MJ || player_ids.length === 0) {
-          var display = startFramedDisplay(last_playerid, title, perso, {chuchote:'gm'});
+          var display = startFramedDisplay(last_playerid, title, perso, {
+            chuchote: 'gm'
+          });
           addLineToFramedDisplay(display, ligne);
           sendChat('', endFramedDisplay(display));
         }
@@ -8829,7 +8866,9 @@ var COFantasy = COFantasy || function() {
         var name = token.get('name');
         var lie = true;
         if (token.get('bar1_link') === '') lie = false;
-        var display = startFramedDisplay(playerId, "État de " + name, perso, {chuchote:true});
+        var display = startFramedDisplay(playerId, "État de " + name, perso, {
+          chuchote: true
+        });
         var line =
           "Points de vie    : " + token.get('bar1_value') + " / " +
           getAttrByName(charId, 'PV', 'max');
@@ -9858,7 +9897,9 @@ var COFantasy = COFantasy || function() {
           var evt = {
             type: titre
           };
-          var display = startFramedDisplay(playerId, titre, perso, {perso2:opposant});
+          var display = startFramedDisplay(playerId, titre, perso, {
+            perso2: opposant
+          });
           var explications = [];
           testOppose(perso, carac, opposant, carac, explications, evt,
             function(resultat, crit) {
@@ -10887,7 +10928,9 @@ var COFantasy = COFantasy || function() {
       var att2Skill = rolls.inlinerolls[attk2SkillNumber].results.total;
       var attackRoll2 = d20roll2 + att2Skill;
       var action = "Attaque magique opposée";
-      var display = startFramedDisplay(getPlayerIdFromMsg(msg), action, attaquant, {perso2:cible});
+      var display = startFramedDisplay(getPlayerIdFromMsg(msg), action, attaquant, {
+        perso2: cible
+      });
       var line =
         token1.get('name') + " fait " +
         buildinline(rolls.inlinerolls[att1RollNumber]);
@@ -13334,7 +13377,9 @@ var COFantasy = COFantasy || function() {
           error("La liste de consommables n'est pas au point pour les tokens non liés", perso);
           return;
         }
-        var display = startFramedDisplay(playerId, 'Liste de vos consommables :', perso, {chuchote:true});
+        var display = startFramedDisplay(playerId, 'Liste de vos consommables :', perso, {
+          chuchote: true
+        });
         var attributes = findObjs({
           _type: 'attribute',
           _characterid: perso.charId
@@ -13577,7 +13622,9 @@ var COFantasy = COFantasy || function() {
     var nomVoleur = voleur.token.get('name');
     var nomCible = cible.token.get('name');
     var display =
-      startFramedDisplay(getPlayerIdFromMsg(msg), 'Provocation', voleur, {perso2:cible});
+      startFramedDisplay(getPlayerIdFromMsg(msg), 'Provocation', voleur, {
+        perso2: cible
+      });
     var evt = {
       type: 'Provocation'
     };
@@ -13808,7 +13855,9 @@ var COFantasy = COFantasy || function() {
         if (elixirsACreer < 1)
           titre = "Impossible de créer un autre élixir aujourd'hui";
         else titre = "Encore " + elixirsACreer + " élixirs à créer";
-        var display = startFramedDisplay(playerId, titre, forgesort, {chuchote:true});
+        var display = startFramedDisplay(playerId, titre, forgesort, {
+          chuchote: true
+        });
         listeElixirs(voieDesElixirs).forEach(function(elixir) {
           var nbElixirs = 0;
           var attr = tokenAttribute(forgesort, 'elixir_' + elixir.nom);
@@ -13912,7 +13961,9 @@ var COFantasy = COFantasy || function() {
     var intCible = charAttributeAsInt(cible, 'INTELLIGENCE', 10);
     testCaracteristique(barde, 'CHA', intCible, {}, evt, function(testRes) {
       var display = startFramedDisplay(getPlayerIdFromMsg(msg),
-        "Arme secrète", barde, {perso2:cible});
+        "Arme secrète", barde, {
+          perso2: cible
+        });
       var line = "Jet de CHA : " + testRes.texte;
       if (testRes) {
         line += " &ge; " + intCible;
@@ -14137,7 +14188,9 @@ var COFantasy = COFantasy || function() {
     };
     if (limiteRessources(pretre, options, 'délivrance', 'délivrance', evt)) return;
     var attr;
-    var display = startFramedDisplay(getPlayerIdFromMsg(msg), 'Délivrance', pretre, {perso2:cible});
+    var display = startFramedDisplay(getPlayerIdFromMsg(msg), 'Délivrance', pretre, {
+      perso2: cible
+    });
     var printEffet = function(message) {
       addLineToFramedDisplay(display, "La cible " + message);
     };
@@ -14270,7 +14323,9 @@ var COFantasy = COFantasy || function() {
         crit: 20
       };
     }
-    var display = startFramedDisplay(getPlayerIdFromMsg(msg), action, guerrier, {perso2:cible});
+    var display = startFramedDisplay(getPlayerIdFromMsg(msg), action, guerrier, {
+      perso2: cible
+    });
     var critGuerrier = critEnAttaque(guerrier, armeGuerrier, options);
     var dice = 20;
     if (estAffaibli(guerrier)) {
@@ -14433,6 +14488,7 @@ var COFantasy = COFantasy || function() {
         undoEvent();
         return;
       case "!cof-hors-combat":
+      case "!cof-fin-combat":
         sortirDuCombat();
         return;
       case "!cof-nuit": //deprecated

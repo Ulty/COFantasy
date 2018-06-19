@@ -398,6 +398,8 @@
                 <ul>
                   <li><code>!cof-degainer <i>L</i></code> où <i>L</i> est le label d'une des attaques sur la fiche de personnage : cela fait rengainer l'arme en main et dégainer l'arme correspondant à cette attaque. Si le label ne correspond à aucune attaque (ou qu'on ne donne pas de label), l'action fait rengainer l'arme en main.</li>
                   <li>Si on attaque avec <code>!cof-attack <i>tok1 tok2 L</i></code>, et que l'attaque de label <code><i>L</i></code> contient le mot <code>arme</code> dans le champ <code>SPÉCIAL</code>, alors on considère qu'on doit dégainer cette arme pour pouvoir l'utiliser. Le script envoie le message et considère ensuite l'arme comme étant en main, au MJ de vérifier que le joueur dispose bien d'une action de mouvement pour le faire.</li>
+                  <li>En fin de combat, si le personnage a la capacité frappe du vide, le script va automatiquement lui faire rengainer son arme.</li>
+                  <li>Enfin, en fin de combat, si le personnage possède un attribut <code>armeParDefaut</code>, le script va lui faire dégainer l'arme dont le label est stocké dans l'attribut. Donc si l'attribut est vide, le personnage va rengainer son arme.</li>
                 </ul>
                 Dans tous les cas, si le personnage dégaine une arme à 2 mains (déterminé en fonction du nom de l'arme ou du champs "divers" de l'arme), le script fait enlever le bouclier, et il le fait remettre si on passe d'une arme à 2 mains à une arme à 1 main.
                 </p>
@@ -410,7 +412,7 @@
                 <p> Il est possible d'infliger des dégâts sur la durée en utilisant la commande <code>!cof-effet-temp dotGen(<i>nom</i>) <i>duree</i> --valeur <i>expr</i> <i>tyoe</i></code>. <i>k</i> doit être un nombre entre 1 et 5 (permettant d'avoir jusqu'à 5 dots génériques simultanés sur un personnage). Les arguments de <code>--valeur</code> donnent l'expression à évaluer, de type lancé de dé, et le type de dégâts. Par défaut, si rien n'est précisé, c'est <code>1d6</code> et <code>normal</code>. On peut utiliser les options habituelles de <code>!cof-effet-temp</code>. Ainsi, si on souhaite infliger des dégâts de poison de 1d4+1 par tour, pendant 10 tours, avec un jet de CON difficulté 12 pour arrêter l'effet, on pourra écrire <code>!cof-effet-temp dotGen(monPoison) 10 --saveParTour CON 12 --valeur 1d4+1 poison</code>.
                 </p>
               </div>
-              <h4 class="text-secondary">Sortir du combat : <code>!cof-hors-combat</code></h4>
+              <h4 class="text-secondary">Sortir du combat : <code>!cof-fin-combat</code></h4>
               <div class="decalage">
                 <p>Ferme aussi le tracker de tour. Encore à mettre en macro dans la barre du MJ. Permet de tenir compte de pleins de capacités qui durent un combat, ou utilisables une seule fois par combat,...</p>
               </div>
@@ -1035,7 +1037,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie de la méditation</h4>
                 <ol>
-                  <li><strong>Pacifisme</strong> : ajouter un attribut <code>pacifisme</code>, avec maximum 5. La valeur courante de cet attribut est automatiquement ajouté à la défense quand le personnage est attaqué. La valeur courante est remise au max à chaque sortie de combat (le mj utilise <code>!cof-hors-combat</code>). La valeur est mise à 0 à chaque attaque.</li>
+                  <li><strong>Pacifisme</strong> : ajouter un attribut <code>pacifisme</code>, avec maximum 5. La valeur courante de cet attribut est automatiquement ajouté à la défense quand le personnage est attaqué. La valeur courante est remise au max à chaque sortie de combat (le mj utilise <code>!cof-fin-combat</code>). La valeur est mise à 0 à chaque attaque.</li>
                   <li><strong>Transe de guérison</strong> : <code>!cof-transe-guerison</code></li>
                   <li><strong>Maîtrise du ki</strong> : adapter les valeurs de DEF et init</li>
                   <li><strong>Projection mentale</strong> : aucun support</li>
