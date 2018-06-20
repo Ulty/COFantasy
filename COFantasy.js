@@ -222,7 +222,7 @@ var COFantasy = COFantasy || function() {
         picto = '<span style="font-family: \'Pictos\'">b</span> ';
         style = 'background-color:#ce0f69';
         break;
-      case "!cof-turn-action":
+      case "!cof-liste-actions":
         picto = '<span style="font-family: \'Pictos\'">l</span> ';
         style = 'background-color:#272751';
         break;
@@ -2878,6 +2878,76 @@ var COFantasy = COFantasy || function() {
     attr.remove();
   }
 
+  function initiative(selected, evt, recompute) { //set initiative for selected tokens
+    // Always called when entering combat mode
+    // set the initiative counter, if not yet set
+    // Assumption: all tokens that have not acted yet are those before the turn 
+    // counter.
+    // When initiative for token not present, assumes it has not acted
+    // When present, stays in same group, but update position according to
+    // current initiative.
+    // Tokens appearing before the turn are sorted
+    if (!Campaign().get('initiativepage')) evt.initiativepage = false;
+    if (!state.COFantasy.combat) { //actions de début de combat
+      evt.combat = false;
+      evt.combat_pageid = state.COFantasy.combat_pageid;
+      state.COFantasy.combat = true;
+      Campaign().set({
+        turnorder: JSON.stringify([{
+          id: "-1",
+          pr: 1,
+          custom: "Tour",
+          formula: "+1"
+        }]),
+        initiativepage: true
+      });
+      evt.tour = state.COFantasy.tour;
+      state.COFantasy.tour = 1;
+      evt.init = state.COFantasy.init;
+      state.COFantasy.init = 1000;
+      removeAllAttributes('transeDeGuérison', evt);
+    }
+    if (!Campaign().get('initiativepage')) {
+      Campaign().set('initiativepage', true);
+    }
+    var to = getTurnOrder(evt);
+    if (to.pasAgi.length === 0) { // Fin de tour, on met le tour à la fin et on retrie
+      to.pasAgi = to.dejaAgi;
+      to.dejaAgi = [];
+    }
+    iterSelected(selected, function(perso) {
+      state.COFantasy.combat_pageid = perso.token.get('pageid');
+      if (!isActive(perso)) return;
+      var init = tokenInit(perso, evt);
+      // On place le token à sa place dans la liste du tour
+      var dejaIndex =
+        to.dejaAgi.findIndex(function(elt) {
+          return (elt.id == perso.token.id);
+        });
+      if (dejaIndex == -1) {//Le personnage doit encore agir
+        var push = true;
+        to.pasAgi =
+          to.pasAgi.filter(function(elt) {
+            if (elt.id == perso.token.id) {
+              if (recompute) return false;//On enlève le perso des pasAgi
+              push = false;//Sinon, comme on ne recalcule pas, on le laisse
+              return true;
+            }
+            return true;
+          });
+        if (push)
+          to.pasAgi.push({
+            id: perso.token.id,
+            pr: init,
+            custom: ''
+          });
+      } else {
+        to.dejaAgi[dejaIndex].pr = init;
+      }
+    });
+    setTurnOrder(to, evt);
+  }
+
   function setTokenAttr(personnage, attribute, value, evt, msg, maxval) {
     var charId = personnage.charId;
     var token = personnage.token;
@@ -2991,7 +3061,7 @@ var COFantasy = COFantasy || function() {
         //L'initiative change
         initiative([{
           _id: token.id
-        }], evt);
+        }], evt, true);
       }
       return attr;
     }
@@ -8178,7 +8248,7 @@ var COFantasy = COFantasy || function() {
           setTokenAttr(perso, 'bonusInitEmbuscade', 5, evt, "garde un temps d'avance grâce à son compagnon animal");
           initiative([{
             _id: perso.token.id
-          }], evt);
+          }], evt, true);
         }
         if (testSurprise !== undefined) {
           testCaracteristique(perso, 'SAG', testSurprise, {
@@ -8405,7 +8475,9 @@ var COFantasy = COFantasy || function() {
       _type: 'ability',
       _characterid: perso.charId,
     });
+    var title = 'Actions possibles :';
     if (listActions) {
+      title = listActions;
       var fullListActions = '#' + listActions + '#';
       listActions = abilities.find(function(a) {
         return a.get('name') == fullListActions;
@@ -8449,7 +8521,7 @@ var COFantasy = COFantasy || function() {
       // on récupère la valeur de l'action dont chaque Macro #/Ability % est mis dans un tableau 'action'
       var actions = actionsDuTour[0].get('action')
         .replace(/\n/gm, '').replace(/\r/gm, '')
-        .replace(/%#([^#]*)#/g, '\n!cof-turn-action $1')
+        .replace(/%#([^#]*)#/g, '\n!cof-liste-actions $1')
         .replace(/%/g, '\n%').replace(/#/g, '\n#')
         .split("\n");
       if (actionsParDefaut) {
@@ -8538,7 +8610,6 @@ var COFantasy = COFantasy || function() {
       if (actionsAAfficher) {
         // on envoie la liste aux joueurs qui gèrent le personnage dont le token est lié
         var last_playerid;
-        var title = 'Actions possibles :';
         // on récupère les players_ids qui controllent le Token
         var player_ids;
         if (playerId) player_ids = [playerId];
@@ -8734,69 +8805,6 @@ var COFantasy = COFantasy || function() {
       dejaAgi: turnOrder.slice(indexTour + 1, turnOrder.length)
     };
     return res;
-  }
-
-  function initiative(selected, evt) { //set initiative for selected tokens
-    // Always called when entering combat mode
-    // set the initiative counter, if not yet set
-    // Assumption: all tokens that have not acted yet are those before the turn 
-    // counter.
-    // When initiative for token not present, assumes it has not acted
-    // When present, stays in same group, but update position according to
-    // current initiative.
-    // Tokens appearing before the turn are sorted
-    if (!Campaign().get('initiativepage')) evt.initiativepage = false;
-    if (!state.COFantasy.combat) { //actions de début de combat
-      evt.combat = false;
-      evt.combat_pageid = state.COFantasy.combat_pageid;
-      state.COFantasy.combat = true;
-      Campaign().set({
-        turnorder: JSON.stringify([{
-          id: "-1",
-          pr: 1,
-          custom: "Tour",
-          formula: "+1"
-        }]),
-        initiativepage: true
-      });
-      evt.tour = state.COFantasy.tour;
-      state.COFantasy.tour = 1;
-      evt.init = state.COFantasy.init;
-      state.COFantasy.init = 1000;
-      removeAllAttributes('transeDeGuérison', evt);
-    }
-    if (!Campaign().get('initiativepage')) {
-      Campaign().set('initiativepage', true);
-    }
-    var to = getTurnOrder(evt);
-    if (to.pasAgi.length === 0) { // Fin de tour, on met le tour à la fin et on retrie
-      to.pasAgi = to.dejaAgi;
-      to.dejaAgi = [];
-    }
-    iterSelected(selected, function(perso) {
-      state.COFantasy.combat_pageid = perso.token.get('pageid');
-      if (!isActive(perso)) return;
-      var init = tokenInit(perso, evt);
-      // On place le token à sa place dans la liste du tour
-      var dejaIndex =
-        to.dejaAgi.findIndex(function(elt) {
-          return (elt.id == perso.token.id);
-        });
-      if (dejaIndex == -1) {
-        to.pasAgi =
-          to.pasAgi.filter(function(elt) {
-            return (elt.id != perso.token.id);
-          });
-        to.pasAgi.push({
-          id: perso.token.id,
-          pr: init,
-          custom: ''
-        });
-      } else {
-        to.dejaAgi[dejaIndex].pr = init;
-      }
-    });
-    setTurnOrder(to, evt);
   }
 
   function setTurnOrder(to, evt) {
@@ -9998,7 +10006,7 @@ var COFantasy = COFantasy || function() {
       token.get('pageid') == state.COFantasy.combat_pageid)
       initiative([{
         _id: token.id
-      }], evt);
+      }], evt, true);
   }
 
   function updateNextInit(token) {
@@ -14573,6 +14581,7 @@ var COFantasy = COFantasy || function() {
         addEvent(evt);
         return;
       case "!cof-turn-action":
+      case "!cof-liste-actions":
         apiTurnAction(msg);
         return;
       case "!cof-attendre":
@@ -15605,7 +15614,7 @@ var COFantasy = COFantasy || function() {
     }
     evt.deletedAttributes.push(attr);
     attr.remove();
-    if (newInit.length > 0) initiative(newInit, evt);
+    if (newInit.length > 0) initiative(newInit, evt, true);
     return res;
   }
 
@@ -16053,7 +16062,7 @@ var COFantasy = COFantasy || function() {
         }
       });
       setActiveToken(undefined, evt);
-      initiative(selected, evt); // met Tour à la fin et retrie
+      initiative(selected, evt, true); // met Tour à la fin et retrie
       updateNextInitSet = new Set();
       // Saves à faire à la fin de chaque tour
       var attrsSave = attrs.filter(function(attr) {
