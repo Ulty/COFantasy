@@ -2924,13 +2924,13 @@ var COFantasy = COFantasy || function() {
         to.dejaAgi.findIndex(function(elt) {
           return (elt.id == perso.token.id);
         });
-      if (dejaIndex == -1) {//Le personnage doit encore agir
+      if (dejaIndex == -1) { //Le personnage doit encore agir
         var push = true;
         to.pasAgi =
           to.pasAgi.filter(function(elt) {
             if (elt.id == perso.token.id) {
-              if (recompute) return false;//On enlève le perso des pasAgi
-              push = false;//Sinon, comme on ne recalcule pas, on le laisse
+              if (recompute) return false; //On enlève le perso des pasAgi
+              push = false; //Sinon, comme on ne recalcule pas, on le laisse
               return true;
             }
             return true;
@@ -15953,6 +15953,15 @@ var COFantasy = COFantasy || function() {
       return;
     }
     turnOrder.push(active);
+    if (turnOrder[0].id == "-1" && turnOrder[0].custom == "Tour") {
+      //Il faut aussi augmenter la valeur du tour
+      var tour = parseInt(turnOrder[0].pr);
+      if (isNaN(tour)) {
+        error("Tour invalide", turnOrder);
+        return;
+      }
+      turnOrder[0].pr = tour + 1;
+    }
     cmp.set('turnorder', JSON.stringify(turnOrder));
     nextTurn(cmp);
   }
