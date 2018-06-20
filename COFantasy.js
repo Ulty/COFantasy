@@ -222,10 +222,13 @@ var COFantasy = COFantasy || function() {
         picto = '<span style="font-family: \'Pictos\'">b</span> ';
         style = 'background-color:#ce0f69';
         break;
+      case "!cof-turn-action":
+        picto = '<span style="font-family: \'Pictos\'">l</span> ';
+        style = 'background-color:#272751';
+        break;
       default:
         picto = '';
         style = '';
-        break;
     }
     return {
       picto: picto,
@@ -764,6 +767,7 @@ var COFantasy = COFantasy || function() {
   function bouton(action, text, perso, ressource, overlay, style) {
     if (action === undefined || action.trim().length === 0) return text;
     else action = action.trim();
+    //Expansion des macros et abilities
     action = replaceAction(action, perso);
     var tid = perso.token.id;
     perso.tokName = perso.tokName || perso.token.get('name');
@@ -779,11 +783,11 @@ var COFantasy = COFantasy || function() {
       if (act.startsWith("/as ")) {
         act = "!cof-as" + act.substring(3);
       }
-      if (act.startsWith('!') &&
-        !(act.startsWith('!cof') || act.startsWith('!&#13'))) return act; //On ne touche pas aux commandes des autres scripts
       switch (act.charAt(0)) {
         case '!':
-          if (!act.startsWith('!&#13;') && ressource) act += " --decrAttribute " + ressource.id;
+          if (act.startsWith('!cof')) {
+            if (ressource) act += " --decrAttribute " + ressource.id;
+          } else if (!act.startsWith('!&#13')) return act; //On ne touche pas aux commandes des autres scripts
           break;
         default:
           if (ressource) {
@@ -4855,7 +4859,7 @@ var COFantasy = COFantasy || function() {
               default:
                 critSug += "simple échec";
             }
-          } else if (paralyse || d20roll == 20 || 
+          } else if (paralyse || d20roll == 20 ||
             (d20roll >= target.crit && attackRoll >= defense)) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
             touche = true;
@@ -8392,44 +8396,62 @@ var COFantasy = COFantasy || function() {
     } else token.set('status_flying-flag', false);
   }
 
-  function turnAction(perso, playerId) {
-    if (!isActive(perso)) {
-      sendChar(perso.charId, "ne peut pas agir à ce tour");
-      return;
-    }
+  //Si listActions est fourni, ça doit faire référence à une ability
+  //dont le nom commence et termine par #, contenant une liste d'actions
+  //à afficher
+  function turnAction(perso, playerId, listActions) {
     // Toutes les Abilities du personnage lié au Token
     var abilities = findObjs({
       _type: 'ability',
       _characterid: perso.charId,
     });
-    //On recherche dans le Personnage s'il a une "Ability" dont le nom est "#TurnAction#".
-    var actionsParDefaut = false;
-    var formeDarbre = attributeAsBool(perso, 'formeDArbre');
-    var actionsDuTour = [];
-    if (formeDarbre) {
-      actionsDuTour = abilities.filter(function(a) {
-        return (a.get('name') == '#FormeArbre#');
+    if (listActions) {
+      var fullListActions = '#' + listActions + '#';
+      listActions = abilities.find(function(a) {
+        return a.get('name') == fullListActions;
       });
-      if (actionsDuTour.length === 0) formeDarbre = false;
-      else actionsParDefaut = true;
     }
-    if (actionsDuTour.length === 0) {
-      actionsDuTour = abilities.filter(function(a) {
-        switch (a.get('name')) {
-          case '#TurnAction#':
-            return true;
-          case '#Actions#':
-            actionsParDefaut = true;
-            return true;
-          default:
-            return false;
-        }
-      });
+    var actionsDuTour = [];
+    var actionsParDefaut = false;
+    var formeDarbre = false;
+    if (listActions) {
+      actionsDuTour = [listActions];
+    } else {
+      if (!isActive(perso)) {
+        sendChar(perso.charId, "ne peut pas agir à ce tour");
+        return;
+      }
+      //On recherche dans le Personnage s'il a une "Ability" dont le nom est 2#Actions#" ou "#TurnAction#".
+      formeDarbre = attributeAsBool(perso, 'formeDArbre');
+      if (formeDarbre) {
+        actionsDuTour = abilities.filter(function(a) {
+          return (a.get('name') == '#FormeArbre#');
+        });
+        if (actionsDuTour.length === 0) formeDarbre = false;
+        else actionsParDefaut = true;
+      }
+      if (actionsDuTour.length === 0) {
+        actionsDuTour = abilities.filter(function(a) {
+          switch (a.get('name')) {
+            case '#TurnAction#':
+              return true;
+            case '#Actions#':
+              actionsParDefaut = true;
+              return true;
+            default:
+              return false;
+          }
+        });
+      }
     }
     //Si elle existe, on lui chuchotte son exécution 
     if (actionsDuTour.length > 0) {
       // on récupère la valeur de l'action dont chaque Macro #/Ability % est mis dans un tableau 'action'
-      var actions = actionsDuTour[0].get('action').replace(/\n/gm, '').replace(/\r/gm, '').replace(/%/g, '\n%').replace(/#/g, '\n#').split("\n");
+      var actions = actionsDuTour[0].get('action')
+        .replace(/\n/gm, '').replace(/\r/gm, '')
+        .replace(/%#([^#]*)#/g, '\n!cof-turn-action $1')
+        .replace(/%/g, '\n%').replace(/#/g, '\n#')
+        .split("\n");
       if (actionsParDefaut) {
         actions.push('Attendre');
         actions.push('Se défendre');
@@ -8450,7 +8472,8 @@ var COFantasy = COFantasy || function() {
         actions.forEach(function(action, i) {
           action = action.trim();
           if (action.length > 0) {
-            var actionCmd = action.split(' ')[0];
+            var actionCommands = action.split(' ');
+            var actionCmd = actionCommands[0];
             var actionText = action.replace(/-/g, ' ').replace(/_/g, ' ');
             found = false;
             if (actionCmd.startsWith('%')) {
@@ -8476,6 +8499,13 @@ var COFantasy = COFantasy || function() {
                   ligne += bouton(command, actionText, perso, false) + '<br />';
                 }
               });
+            } else if (actionCmd.startsWith('!')) {
+              if (actionCommands.length > 1) {
+                actionText = actionCommands[1].replace(/-/g, ' ').replace(/_/g, ' ');
+              }
+              command = action;
+              ligne += bouton(command, actionText, perso, false) + '<br />';
+              found = true;
             } else if (action == 'Attendre') {
               command = "!cof-attendre ?{Nouvelle initiative}";
               ligne += bouton(command, action, perso, false) + '<br />';
@@ -8493,7 +8523,7 @@ var COFantasy = COFantasy || function() {
               actionsAAfficher = true;
             } else {
               // Si on n'a toujours rien trouvé, on ajoute un petit log
-              log('Ability et Macro non trouvé : ' + action);
+              log('Ability et macro non trouvé : ' + action);
             }
           }
         });
@@ -8537,9 +8567,12 @@ var COFantasy = COFantasy || function() {
   }
 
   function apiTurnAction(msg) {
+    var cmd = msg.content.split(' ');
+    var abil;
+    if (cmd.length > 1 && !(cmd[1].startsWith('--'))) abil = cmd[1];
     getSelected(msg, function(selected, playerId) {
       iterSelected(selected, function(perso) {
-        turnAction(perso, playerId);
+        turnAction(perso, playerId, cmd[1]);
       });
     });
   }

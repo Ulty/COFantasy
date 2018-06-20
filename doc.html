@@ -220,7 +220,8 @@
                       </li>
                     </ul>
                   </div>
-                  <p>Il est possible de laisser les joueurs passer leur tour, en utilisant la commande <code>!cof-tour-suivant</code>. Une utilisation possible est de le mettre en macro dans les actions du tour (voir <code>#Actions#</code> plus bas).</p>
+                  <p>Il est possible d'ouvrir d'autre listes d'actions, à partir des commandes ou même d'une liste d'actions. Une liste d'action doit être stoquée dans une ability dont le nom commence et termine par <code>#</code>. Pour y faire référence dans une liste, il suffit d'écrire le nom de l'ability (commençant donc par <code>%</code>). Pour faire afficher la liste depuis une commande, utiliser <code>!cof-turn-action <i>nom</i></code> (où le nom est celui de l'ability sans les <code>#</code>). Par exemple, si on ne souhaite pas afficher la liste complète des sorts d'un personnage à son tour, on peut faire une ability <code>#Sorts#</code>, puis faire une macro qui lance <code>!cof-turn-action Sorts</code> pour que le joueur puisse afficher la liste quand il le souhaite, et aussi (ou à la place) mettre une ligne <code>%#Sorts#</code> dans son ability <code>#Actions#</code>.</p>
+                  <p>Il est possible de laisser les joueurs passer leur tour, en utilisant la commande <code>!cof-tour-suivant</code>. Une utilisation possible est de le mettre en macro dans les actions du tour (voir <code>#Actions#</code> ci-dessus).</p>
                 </div>
               </div>
               <h4 class="text-secondary">Attaquer une (ou plusieurs) cible : <code>!cof-attack @{selected|token_id} @{target|token_id} <i>n</i></code></h4>
