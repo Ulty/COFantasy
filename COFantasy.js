@@ -4855,13 +4855,14 @@ var COFantasy = COFantasy || function() {
               default:
                 critSug += "simple échec";
             }
-          } else if (paralyse || d20roll >= target.crit) {
+          } else if (paralyse || d20roll == 20 || 
+            (d20roll >= target.crit && attackRoll >= defense)) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
             touche = true;
             critique = true;
           } else if (options.champion) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
-          } else if (attackRoll < defense) {
+          } else if (attackRoll < defense && d20roll < target.crit) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
             evt.succes = false;
             if (options.demiAuto) {
