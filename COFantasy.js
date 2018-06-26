@@ -9893,13 +9893,14 @@ var COFantasy = COFantasy || function() {
                 }
               }
             } else {
-              sendChat("COF", "Aucune cible valide n'a été sélectionée");
+              sendPlayer(msg, "Aucune cible valide n'a été sélectionée");
             }
           }
           tokensToProcess--;
         };
         iterSelected(selected, function(perso) {
           if (options['morts-vivants'] && !(estMortVivant(perso))) {
+            sendPlayer(msg, perso.token.get('name') + " n'est pas un mort-vivant");
             finalDisplay();
             return;
           }
@@ -15026,6 +15027,12 @@ var COFantasy = COFantasy || function() {
       actif: "subit régulièrement des dégâts",
       fin: "ne subit plus ces effets de dégâts",
       dm: true,
+      generic: true
+    },
+    rechargeGen: {
+      activation: "doit maintenant attendre un peu avant de pouvoir le refaire",
+      actif: "attends avant de pouvoir refaire une attaque",
+      fin: "a récupéré",
       generic: true
     },
     dmgArme1d6: {
