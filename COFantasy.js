@@ -1956,6 +1956,7 @@ var COFantasy = COFantasy || function() {
         case "enflamme":
         case "malediction":
         case "pietine":
+        case "maxDmg":
           scope[cmd[0]] = true;
           return;
         case "affute":
@@ -5260,6 +5261,7 @@ var COFantasy = COFantasy || function() {
       target.enflamme = options.enflamme;
       target.malediction = options.malediction;
       target.pietine = options.pietine;
+      target.maxDmg = options.maxDmg;
       evalITE(attaquant, target, d20roll, options, explications, options);
       var attDMBonus = attDMBonusCommun;
       //Les modificateurs de dégâts qui dépendent de la cible
@@ -5365,8 +5367,10 @@ var COFantasy = COFantasy || function() {
           attDMBonus = "";
         }
       }
+      var symbde = 'd';
+      if (target.maxDmg) symbde = '*';
       var mainDmgRollExpr =
-        addOrigin(attaquant.name, attNbDicesCible + "d" + attDiceCible + attCarBonusCible + attDMBonus);
+        addOrigin(attaquant.name, attNbDicesCible + symbde + attDiceCible + attCarBonusCible + attDMBonus);
       //Additional damage
       var additionalDmg = options.additionalDmg.concat(target.additionalDmg);
       //On enlève les DM qui ne passent pas les conditions
@@ -5811,16 +5815,23 @@ var COFantasy = COFantasy || function() {
     explications.forEach(function(expl) {
       addLineToFramedDisplay(display, expl, 80);
     });
-    if (evt.succes === false && evt.action) {
+    if (evt.action) {
       evt.personnage = evt.action.attaquant;
-      var pc = attributeAsInt(evt.action.attaquant, 'PC', 0);
-      if (pc > 0) {
-        addLineToFramedDisplay(display, bouton("!cof-bouton-chance " + evt.id, "Chance", evt.personnage) + " (reste " + pc + " PC)");
+      if (evt.succes === false) {
+        var pc = attributeAsInt(evt.personnage, 'PC', 0);
+        if (pc > 0) {
+          addLineToFramedDisplay(display, bouton("!cof-bouton-chance " + evt.id, "Chance", evt.personnage) + " (reste " + pc + " PC)");
+        }
+        if (attributeAsBool(evt.personnage, 'runeDEnergie')) {
+          addLineToFramedDisplay(display, bouton("!cof-rune-energie " + evt.id, "Rune d'énergie", evt.personnage));
+        }
+        //TODO: pacte sanglant
+      } else if (evt.action.attack_label) {
+        var attLabel = evt.action.attack_label;
+        if (attributeAsBool(evt.personnage, 'runeDePuissance(' + attLabel + ')')) {
+          addLineToFramedDisplay(display, bouton("!cof-rune-puissance " + attLabel + ' ' + evt.id, "Rune de puissance", evt.personnage));
+        }
       }
-      if (charAttributeAsBool(evt.personnage, 'runeDEnergie')) {
-        addLineToFramedDisplay(display, bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", evt.personnage));
-      }
-      //TODO: pacte sanglant
     }
     sendChat("", endFramedDisplay(display));
   }
@@ -6812,10 +6823,10 @@ var COFantasy = COFantasy || function() {
 
   // Returns all attributes in attrs, with name name or starting with name_
   function allAttributesNamed(attrs, name) {
-    var nameExt = name + '_';
+    var reg = new RegExp("^" + name + "($|_|\\()");
     return attrs.filter(function(obj) {
       var attrName = obj.get('name');
-      return (name == attrName || attrName.startsWith(nameExt));
+      return reg.test(attrName);
     });
   }
 
@@ -7019,6 +7030,7 @@ var COFantasy = COFantasy || function() {
     // Recharger les runes d'énergie
     resetAttr(attrs, 'runeDEnergie', evt);
     resetAttr(attrs, 'runeDeProtection', evt);
+    resetAttr(attrs, 'runeDePuissance', evt);
     // Remettre l'esquive fatale à 1
     resetAttr(attrs, 'esquiveFatale', evt);
     resetAttr(attrs, 'attaqueEnTraitre', evt);
@@ -7939,11 +7951,105 @@ var COFantasy = COFantasy || function() {
     } else { //Juste pour vérifier l'attribut et le diminuer
       getSelected(msg, function(selection) {
         if (selection.length === 0) {
-          sendPlayer(msg, 'Pas de token sélectionné pour !cof-rune-d-energie');
+          sendPlayer(msg, 'Pas de token sélectionné pour !cof-rune-energie');
           return;
         }
         iterSelected(selection, function(perso) {
           persoUtiliseRuneEnergie(perso, evt);
+        }); //fin iterSelected
+        addEvent(evt);
+      }); //fin getSelected
+    }
+  }
+
+  function persoUtiliseRunePuissance(perso, labelArme, evt) {
+    var attr = tokenAttribute(perso, 'runeDePuissance(' + labelArme + ')');
+    var arme = getAttack(labelArme, perso);
+    if (arme === undefined) {
+      error(perso.tokNname + " n'a pas d'arme associée au label " + labelArme, perso);
+      return false;
+    }
+    if (attr.length === 0) {
+      sendChar(perso.charId, "n'a pas de rune de puissance sur " + arme.weaponName);
+      return false;
+    }
+    attr = attr[0];
+    var dispo = attr.get('current');
+    if (dispo) {
+      sendChar(perso.charId, "utilise sa rune de puissance pour obtenir les DM maximum de son arme (" + arme.weaponName + ")");
+      evt.attributes.push({
+        attribute: attr,
+        current: dispo
+      });
+      attr.set('current', 0);
+      return true;
+    }
+    sendChar(perso.charId, "a déjà utilisé sa rune de puissance durant ce combat");
+    return false;
+  }
+
+  //!cof-rune-puissance label [evt.id]
+  function runePuissance(msg) {
+    if (!state.COFantasy.combat) {
+      sendPlayer(msg, "On ne peut utiliser les runes de puissance qu'en combat");
+      return;
+    }
+    var cmd = msg.content.split(' ');
+    if (cmd.length < 2) {
+      error("Il faut spécifier le label de l'arme sur laquelle la rune de puissance est inscrite", cmd);
+      return;
+    }
+    var labelArme = cmd[1];
+    var evtARefaire;
+    var evt = {
+      type: "Rune de puissance",
+      attributes: []
+    };
+    if (cmd.length > 2) { //On relance pour un événement particulier
+      evtARefaire = findEvent(cmd[2]);
+      if (evtARefaire === undefined) {
+        error("L'action est trop ancienne ou a été annulée", cmd);
+        return;
+      }
+      var perso = evtARefaire.personnage;
+      if (perso === undefined) {
+        error("Erreur interne du bouton de rune de puissance : l'évenement n'a pas de personnage", evtARefaire);
+        return;
+      }
+      if (!peutController(msg, perso)) {
+        sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+        return;
+      }
+      var action = evtARefaire.action;
+      if (action === undefined) {
+        error("Impossible de relancer l'action", evtARefaire);
+        return;
+      }
+      var options = action.options || {};
+      options.redo = true;
+      options.maxDmg = true;
+      options.rollsAttack = action.rollsAttack;
+      action.cibles.forEach(function(target) {
+        target.rollsDmg = undefined;
+      });
+      if (!persoUtiliseRunePuissance(perso, labelArme, evt)) return;
+      addEvent(evt);
+      switch (evtARefaire.type) {
+        case 'Attaque':
+          undoEvent(evtARefaire);
+          attack(action.player_id, perso, action.cibles, action.attack_label, options);
+          return;
+        default:
+          return;
+      }
+    } else { //Juste pour vérifier l'attribut et le diminuer
+      getSelected(msg, function(selection) {
+        if (selection.length === 0) {
+          sendPlayer(msg, 'Pas de token sélectionné pour !cof-rune-puissance');
+          return;
+        }
+        iterSelected(selection, function(perso) {
+          persoUtiliseRunePuissance(perso, labelArme, evt);
         }); //fin iterSelected
         addEvent(evt);
       }); //fin getSelected
@@ -8091,7 +8197,6 @@ var COFantasy = COFantasy || function() {
         var options = attaque.options;
         options.intercepter = voieMeneur;
         options.rollsAttack = attaque.rollsAttack;
-        options.rollsDmg = attaque.rollsDmg;
         options.evt = evt;
         options.redo = true;
         cible.rollsDmg = attaque.cibles[0].rollsDmg;
@@ -9725,6 +9830,7 @@ var COFantasy = COFantasy || function() {
           case 'tempDmg':
           case 'morts-vivants':
           case 'ignoreRD':
+          case 'maxDmg':
             options[opt[0]] = true;
             return;
           case "feu":
@@ -9763,6 +9869,9 @@ var COFantasy = COFantasy || function() {
         type: dmgType,
         value: dmgRollExpr
       };
+      if (options.maxDmg) {
+        dmgRollExpr = dmgRollExpr.replace(/d([1-9])/g, "*$1");
+      }
       sendChat('', '[[' + dmgRollExpr + ']]', function(resDmg) {
         var rollsDmg = resDmg[0];
         var afterEvaluateDmg = rollsDmg.content.split(' ');
@@ -9771,15 +9880,20 @@ var COFantasy = COFantasy || function() {
         dmg.display = buildinline(rollsDmg.inlinerolls[dmgRollNumber], dmgType, options.magique);
         var display = startFramedDisplay(playerId, action);
         var tokensToProcess = selected.length;
+        var someDmgDone;
         var finalDisplay = function() {
           if (tokensToProcess == 1) {
-            sendChat("", endFramedDisplay(display));
-            if (evt.affectes) {
-              if (evt.waitingForAoe) {
-                evt.waitingForAoe = undefined;
-              } else {
-                addEvent(evt);
+            if (someDmgDone) {
+              sendChat("", endFramedDisplay(display));
+              if (evt.affectes) {
+                if (evt.waitingForAoe) {
+                  evt.waitingForAoe = undefined;
+                } else {
+                  addEvent(evt);
+                }
               }
+            } else {
+              sendChat("COF", "Aucune cible valide n'a été sélectionée");
             }
           }
           tokensToProcess--;
@@ -9795,6 +9909,7 @@ var COFantasy = COFantasy || function() {
           perso.tempDmg = options.tempDmg;
           dealDamage(perso, dmg, [], evt, false, options, explications,
             function(dmgDisplay, dmgFinal) {
+              someDmgDone = true;
               addLineToFramedDisplay(display,
                 name + " reçoit " + dmgDisplay + " DM");
               explications.forEach(function(e) {
@@ -13047,7 +13162,6 @@ var COFantasy = COFantasy || function() {
     }); //fin getSelected
   }
 
-
   // modifie res et le retourne (au cas où il ne serait pas donné)
   function listRollResults(roll, res) {
     res = res || [];
@@ -14559,7 +14673,11 @@ var COFantasy = COFantasy || function() {
         boutonChance(msg);
         return;
       case "!cof-bouton-rune-energie":
+      case "!cof-rune-energie":
         runeEnergie(msg);
+        return;
+      case "!cof-rune-puissance":
+        runePuissance(msg);
         return;
       case "!cof-rune-protection":
         runeProtection(msg);
@@ -16401,7 +16519,6 @@ on("ready", function() {
   };
   if (state.COFantasy.version === undefined) {
     state.COFantasy.eventId = 0;
-    state.COFantasy.version = script_version;
   }
   var handout = findObjs({
     _type: 'handout'
@@ -16462,8 +16579,8 @@ on("ready", function() {
       }
     });
     log("Mise à jour effectuée.");
-    state.COFantasy.version = 1.01;
   }
+  state.COFantasy.version = script_version;
   handout.forEach(function(hand) {
     COFantasy.changeHandout(hand);
   });
