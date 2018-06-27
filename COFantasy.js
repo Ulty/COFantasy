@@ -13314,8 +13314,9 @@ var COFantasy = COFantasy || function() {
   }
 
   function destructionDesMortsVivants(msg) {
-    var args = msg.content.split(' ');
-    if (args.length < 2) {
+    var options = parseOptions(msg);
+    var args = options.cmd;
+    if (args === undefined || args.length < 2) {
       error("Il faut au moins un argument à !cof-destruction-des-morts-vivants", args);
       return;
     }
@@ -14625,6 +14626,37 @@ var COFantasy = COFantasy || function() {
      });*/
   }
 
+  function conjurationPredateur(msg){
+    var options = parseOptions(msg);
+    var cmd = options.cmd;
+    if (cmd === undefined) {
+      error("Pas de commande", msg.content);
+      return;
+    }
+    getSelected(msg, function(selected, playerId) {
+      if (selected === undefined || selected.length === 0) {
+        error("pas de lanceur pour la conjuration de prédateurs", msg);
+        return;
+      }
+      iterSelected(selected, function(invocateur) {
+      var evt = {
+        type: 'conjuration de prédateurs'
+      };
+    var niveau = charAttributeAsInt(invocateur, 'NIVEAU', 1);
+        var nomPredateur;
+        if (niveau < 5) nomPredateur = 'loup';
+        else if (niveau < 9) nomPredateur = 'loupAlpha';
+        else if (niveau < 12) nomPredateur = 'worg';
+        else if (niveau < 15) nomPredateur = 'lion';
+        else if (niveau < 18) nomPredateur = 'grandLion';
+        else if (niveau < 21) nomPredateur = 'oursPolaire';
+        else if (niveau < 23) nomPredateur = 'tigreDentsDeSabre';
+        else nomPredateur = 'oursPrehistorique';
+        addEvent(evt);
+      });//end iterSelected
+    });//end getSelected
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -14916,6 +14948,7 @@ var COFantasy = COFantasy || function() {
       case "!cof-multi-command":
         multiCommand(msg);
         return;
+      case "!cof-conjuration-de-predateurs": conjurationPredateur(msg);return;
       default:
         return;
     }
