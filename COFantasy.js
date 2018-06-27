@@ -8453,6 +8453,10 @@ var COFantasy = COFantasy || function() {
     var handName = hand.get('name');
     if (handName.startsWith("Equipe ")) {
       hand.get('notes', function(note) { // asynchronous
+        note = note.trim();
+        if (note.startsWith('<p>')) note = note.substring(3);
+        note = note.trim().replace(/<p>/g, '<br>');
+        note = note.replace(/<\/p>/g,'');
         var names = note.trim().split('<br>');
         var persos = new Set();
         names.forEach(function(name) {
