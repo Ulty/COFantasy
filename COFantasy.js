@@ -4250,12 +4250,11 @@ var COFantasy = COFantasy || function() {
       sendChar(attackingCharId, "est hors de portée de " + nomCiblePrincipale + " pour une attaque utilisant " + weaponName);
       return;
     }
-    var evt = options.evt || {
-      type: "Tentative d'attaque",
-      action: {
+    var evt = options.evt || {type: "Tentative d'attaque"};
+    evt.action = evt.action ||
+      {
         options: JSON.parse(JSON.stringify(options)) //pour la chance etc.
-      }
-    }; //the event to be stored in history
+      };
     if (options.tempsRecharge) {
       if (attributeAsBool(attaquant, options.tempsRecharge.effet)) {
         sendChar(attackingCharId, "ne peut pas encore utiliser cette attaque");
