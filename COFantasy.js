@@ -4644,14 +4644,6 @@ var COFantasy = COFantasy || function() {
           charAttributeAsInt(attaquant, "initEnMain" + attackLabel, 0) > 0) {
           updateNextInit(attackingToken);
         }
-      } else {
-        if (options.tirDouble) {
-          sendChar(attackingCharId,
-            "ne peut pas faire de tir double avec ses" + weaponName + "s car " +
-            sujetAttaquant + " n'en a pas au moins 2 chargées");
-          addEvent(evt);
-          return;
-        }
       }
     }
     if (limiteRessources(attaquant, options, attackLabel, weaponName, evt))
