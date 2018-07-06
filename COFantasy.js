@@ -4250,11 +4250,12 @@ var COFantasy = COFantasy || function() {
       sendChar(attackingCharId, "est hors de portée de " + nomCiblePrincipale + " pour une attaque utilisant " + weaponName);
       return;
     }
-    var evt = options.evt || {type: "Tentative d'attaque"};
-    evt.action = evt.action ||
-      {
-        options: JSON.parse(JSON.stringify(options)) //pour la chance etc.
-      };
+    var evt = options.evt || {
+      type: "Tentative d'attaque"
+    };
+    evt.action = evt.action || {
+      options: JSON.parse(JSON.stringify(options)) //pour la chance etc.
+    };
     if (options.tempsRecharge) {
       if (attributeAsBool(attaquant, options.tempsRecharge.effet)) {
         sendChar(attackingCharId, "ne peut pas encore utiliser cette attaque");
@@ -5817,10 +5818,24 @@ var COFantasy = COFantasy || function() {
           addLineToFramedDisplay(display, bouton("!cof-rune-energie " + evt.id, "Rune d'énergie", evt.personnage));
         }
         //TODO: pacte sanglant
-      } else if (evt.action.attack_label) {
-        var attLabel = evt.action.attack_label;
-        if (attributeAsBool(evt.personnage, 'runeDePuissance(' + attLabel + ')')) {
-          addLineToFramedDisplay(display, bouton("!cof-rune-puissance " + attLabel + ' ' + evt.id, "Rune de puissance", evt.personnage));
+      } else {
+        if (evt.action.attack_label) {
+          var attLabel = evt.action.attack_label;
+          if (attributeAsBool(evt.personnage, 'runeDePuissance(' + attLabel + ')')) {
+            addLineToFramedDisplay(display, 
+              bouton("!cof-rune-puissance " + attLabel + ' ' + evt.id, 
+                "Rune de puissance", evt.personnage));
+          }
+        }
+        if (evt.action.cibles) {
+          evt.action.cibles.forEach(function(target) {
+            if (attributeAsBool(target, 'encaisserUnCoup')) {
+              addLineToFramedDisplay(display, target.tokName + " peut " +
+                bouton("!cof-encaisser-un-coup " + evt.id, 
+                  "encaisser le coup", target)
+              );
+            }
+          });
         }
       }
     }
@@ -8447,7 +8462,7 @@ var COFantasy = COFantasy || function() {
         note = note.trim();
         if (note.startsWith('<p>')) note = note.substring(3);
         note = note.trim().replace(/<p>/g, '<br>');
-        note = note.replace(/<\/p>/g,'');
+        note = note.replace(/<\/p>/g, '');
         var names = note.trim().split('<br>');
         var persos = new Set();
         names.forEach(function(name) {
@@ -13006,21 +13021,30 @@ var COFantasy = COFantasy || function() {
   }
 
   function encaisserUnCoup(msg) {
-    getSelected(msg, function(selected) {
+    var options = parseOptions(msg);
+    var cmd = options.cmd;
+    var evtARefaire = lastEvent();
+    if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
+      evtARefaire = findEvent(cmd[1]);
+      if (evtARefaire === undefined) {
+        error("L'action est trop ancienne ou a été annulée", cmd);
+        return;
+      }
+    }
+    getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         error("Personne n'est sélectionné pour encaisser un coup", msg);
         return;
       }
-      var lastAct = lastEvent();
-      if (lastAct === undefined) {
+      if (evtARefaire === undefined) {
         sendChat('', "Historique d'actions vide, pas d'action trouvée pour encaisser un coup");
         return;
       }
-      if (lastAct.type != 'Attaque' || lastAct.succes === false) {
+      if (evtARefaire.type != 'Attaque' || evtARefaire.succes === false) {
         sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour encaisser le coup d'une action précédente");
         return;
       }
-      var attaque = lastAct.action;
+      var attaque = evtARefaire.action;
       if (attaque.options.distance) {
         sendChat('', "Impossible d'encaisser le dernier coup, ce n'était pas une attaque au contact");
         return;
@@ -13032,6 +13056,10 @@ var COFantasy = COFantasy || function() {
       iterSelected(selected, function(chevalier) {
         if (!attributeAsBool(chevalier, 'encaisserUnCoup')) {
           sendChar(chevalier.charId, "n'est pas placé pour encaisser un coup");
+          return;
+        }
+        if (!peutController(msg, chevalier)) {
+          sendPlayer(msg, "pas le droit d'utiliser ce bouton");
           return;
         }
         var cible = attaque.cibles.find(function(target) {
@@ -14621,7 +14649,7 @@ var COFantasy = COFantasy || function() {
      });*/
   }
 
-  function conjurationPredateur(msg){
+  function conjurationPredateur(msg) {
     var options = parseOptions(msg);
     var cmd = options.cmd;
     if (cmd === undefined) {
@@ -14634,10 +14662,10 @@ var COFantasy = COFantasy || function() {
         return;
       }
       iterSelected(selected, function(invocateur) {
-      var evt = {
-        type: 'conjuration de prédateurs'
-      };
-    var niveau = charAttributeAsInt(invocateur, 'NIVEAU', 1);
+        var evt = {
+          type: 'conjuration de prédateurs'
+        };
+        var niveau = charAttributeAsInt(invocateur, 'NIVEAU', 1);
         var nomPredateur;
         if (niveau < 5) nomPredateur = 'loup';
         else if (niveau < 9) nomPredateur = 'loupAlpha';
@@ -14648,8 +14676,8 @@ var COFantasy = COFantasy || function() {
         else if (niveau < 23) nomPredateur = 'tigreDentsDeSabre';
         else nomPredateur = 'oursPrehistorique';
         addEvent(evt);
-      });//end iterSelected
-    });//end getSelected
+      }); //end iterSelected
+    }); //end getSelected
   }
 
   function apiCommand(msg) {
@@ -14943,7 +14971,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-multi-command":
         multiCommand(msg);
         return;
-      case "!cof-conjuration-de-predateurs": conjurationPredateur(msg);return;
+      case "!cof-conjuration-de-predateurs":
+        conjurationPredateur(msg);
+        return;
       default:
         return;
     }
@@ -16542,7 +16572,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = 1.04;
+  var script_version = 1.05;
   COF_loaded = true;
   on('add:token', COFantasy.addToken);
   state.COFantasy = state.COFantasy || {

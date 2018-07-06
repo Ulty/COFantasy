@@ -1,4 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 1.05
+* Encaisser un coup est maintenant proposé en bouton à cliquer en cas d'attaque réussie.
+
 ## 1.04
 ### Nouvelles capacités
 * Runes de puissance du forgesort
