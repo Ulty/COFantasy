@@ -1,5 +1,12 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 1.05
+### Capacités
+* Prise en compte des effets de protection contre les souffles et les dégâts de zone.
+
+### Correction de bug
+* undo d'une diminution de PV sur un token lié remet maintenant correctement les PVs de tous les tokens liés au même personnage.
+
+### Autres améliorations
 * Encaisser un coup est maintenant proposé en bouton à cliquer en cas d'attaque réussie.
 
 ## 1.04

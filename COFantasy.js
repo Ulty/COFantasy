@@ -4167,7 +4167,9 @@ var COFantasy = COFantasy || function() {
         }
       } else {
         if (attackingToken.id == targetToken.id) { //même token pour attaquant et cible
-          sendChar(attackingCharId, "s'attaque lui-même ? Probablement une erreur à la sélection de la cible. On annule");
+          sendChar(attackingCharId, 
+            "s'attaque " + onGenre(attackingCharId, "lui", "elle") + 
+              "-même ? Probablement une erreur à la sélection de la cible. On annule");
           return;
         }
         var targetCharId = targetToken.get("represents");
@@ -5819,8 +5821,8 @@ var COFantasy = COFantasy || function() {
         if (evt.action.attack_label) {
           var attLabel = evt.action.attack_label;
           if (attributeAsBool(evt.personnage, 'runeDePuissance(' + attLabel + ')')) {
-            addLineToFramedDisplay(display, 
-              bouton("!cof-rune-puissance " + attLabel + ' ' + evt.id, 
+            addLineToFramedDisplay(display,
+              bouton("!cof-rune-puissance " + attLabel + ' ' + evt.id,
                 "Rune de puissance", evt.personnage));
           }
         }
@@ -5828,7 +5830,7 @@ var COFantasy = COFantasy || function() {
           evt.action.cibles.forEach(function(target) {
             if (attributeAsBool(target, 'encaisserUnCoup')) {
               addLineToFramedDisplay(display, target.tokName + " peut " +
-                bouton("!cof-encaisser-un-coup " + evt.id, 
+                bouton("!cof-encaisser-un-coup " + evt.id,
                   "encaisser le coup", target)
               );
             }
@@ -6074,6 +6076,12 @@ var COFantasy = COFantasy || function() {
         if (!options.sortilege && attributeAsBool(target, 'flou')) {
           divide();
         }
+        if (options.aoe &&
+          (attributeAsBool(target, 'protectionDMZone') ||
+            attributeAsBool(target, 'protectionDMZone_' + dmgType))) {
+          divide();
+              expliquer(target.token.get('name')+" est protégé contre les dégâts de zone");
+            }
         if (estElementaire(dmgType)) {
           if (invulnerable) {
             divide();
