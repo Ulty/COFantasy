@@ -4054,7 +4054,7 @@ var COFantasy = COFantasy || function() {
       portee = portee / 10;
       options.aoe = options.aoe || {
         type: 'cone',
-        angle: 50
+        angle: 90
       };
       weaponStats.attDice -= 2;
       if (weaponStats.attDice < 0) weaponStats.attDice = 0;
@@ -4073,7 +4073,7 @@ var COFantasy = COFantasy || function() {
           definition: {
 
             "angle": -1,
-            "angleRandom": 30,
+            "angleRandom": 45,
             "duration": 8,
             "emissionRate": 40,
             "endColour": [130, 130, 130, 0],
