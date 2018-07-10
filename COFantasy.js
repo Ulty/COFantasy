@@ -1990,6 +1990,7 @@ var COFantasy = COFantasy || function() {
         case "tirDouble":
         case "traquenard":
         case "tueurDeGeants":
+        case "grenaille":
           options[cmd[0]] = true;
           return;
         case "imparable": //deprecated
@@ -3057,7 +3058,9 @@ var COFantasy = COFantasy || function() {
           token = tokenArbre;
         }
         //On met maintenant les nouveaux PVs
-        var nouveauxPVs = getValeurOfEffet(personnage, 'formeDArbre', 40);
+        //selon Kegron http://www.black-book-editions.fr/forums.php?topic_id=4800&tid=245841#msg245841
+        var niveau = charAttributeAsInt(charId, 'NIVEAU', 1);
+        var nouveauxPVs = getValeurOfEffet(personnage, 'formeDArbre', niveau * 5);
         updateCurrentBar(token, 1, nouveauxPVs, evt, nouveauxPVs);
         //L'initiative change
         initiative([{
@@ -3999,6 +4002,69 @@ var COFantasy = COFantasy || function() {
         weaponStats.portee = portee;
       }
     } else options.contact = true;
+    //Pour l'option grenaille implicite, il faut vérifier que toutes les charge de l'arme sont des charges de grenaille
+    var chargesArme = findObjs({
+      _type: 'attribute',
+      _characterid: attackingCharId,
+      name: "charge_" + attackLabel
+    });
+    if (!options.grenaille && chargesArme.length > 0) {
+      var chargesGrenaille = findObjs({
+        _type: 'attribute',
+        _characterid: attackingCharId,
+        name: "chargeGrenaille_" + attackLabel
+      });
+      if (chargesGrenaille.length > 0) {
+        var chargesTotales = parseInt(chargesArme[0].get('current'));
+        if (!isNaN(chargesTotales)) {
+          var grenailles = parseInt(chargesGrenaille[0].get('current'));
+          if (!isNaN(grenailles) && grenailles >= chargesTotales)
+            options.grenaille = true;
+        }
+      }
+    }
+    if (options.grenaille) {
+      portee = portee / 10;
+      options.aoe = options.aoe || {
+        type: 'cone',
+        angle: 45
+      };
+      weaponStats.attDice -= 2;
+      if (weaponStats.attDice < 0) weaponStats.attDice = 0;
+      options.auto = true;
+      var effet = findObjs({
+        _type: 'custfx',
+        name: 'grenaille ' + portee
+      });
+      if (effet.length === 0) {
+        effet = createObj('custfx', {
+          name: 'grenaille ' + portee,
+          definition: {
+
+            "angle": -1,
+            "angleRandom": 30,
+            "duration": 8,
+            "emissionRate": 40,
+            "endColour": [130, 130, 130, 0],
+            "endColourRandom": [10, 10, 10, 0],
+            "gravity": {
+              "x": 0.01,
+              "y": 0.01
+            },
+            "lifeSpan": portee * 5,
+            "lifeSpanRandom": portee / 2,
+            "maxParticles": 200,
+            "size": 10,
+            "sizeRandom": 3,
+            "speed": 12,
+            "speedRandom": 3,
+            "startColour": [30, 30, 30, 1],
+            "startColourRandom": [8, 8, 8, 0.5]
+          }
+        });
+      } else effet = effet[0];
+      options.fx = options.fx || effet.id;
+    }
     //Détermination de la (ou des) cible(s)
     var nomCiblePrincipale; //Utilise pour le cas mono-cible
     var cibles = [];
@@ -4116,21 +4182,21 @@ var COFantasy = COFantasy || function() {
             portee += options.aoe.rayon;
             break;
           case 'cone':
+            if (options.fx) {
+              var p1eC = {
+                x: attackingToken.get('left'),
+                y: attackingToken.get('top'),
+              };
+              var p2eC = {
+                x: targetToken.get('left'),
+                y: targetToken.get('top'),
+              };
+              spawnFxBetweenPoints(p1eC, p2eC, options.fx, pageId);
+            }
             var vecCentre = VecMath.normalize(VecMath.vec(pta, ptt));
             var cosAngle = Math.cos(options.aoe.angle * Math.PI / 180.0);
             if (targetToken.get('bar1_max') == 0) { // jshint ignore:line
               //C'est juste un token utilisé pour définir le cone
-              if (options.fx) {
-                var p1eC = {
-                  x: attackingToken.get('left'),
-                  y: attackingToken.get('top'),
-                };
-                var p2eC = {
-                  x: targetToken.get('left'),
-                  y: targetToken.get('top'),
-                };
-                spawnFxBetweenPoints(p1eC, p2eC, options.fx, pageId);
-              }
               cibles = [];
               targetToken.remove(); //On l'enlève, normalement plus besoin
             }
@@ -4167,9 +4233,9 @@ var COFantasy = COFantasy || function() {
         }
       } else {
         if (attackingToken.id == targetToken.id) { //même token pour attaquant et cible
-          sendChar(attackingCharId, 
-            "s'attaque " + onGenre(attackingCharId, "lui", "elle") + 
-              "-même ? Probablement une erreur à la sélection de la cible. On annule");
+          sendChar(attackingCharId,
+            "s'attaque " + onGenre(attackingCharId, "lui", "elle") +
+            "-même ? Probablement une erreur à la sélection de la cible. On annule");
           return;
         }
         var targetCharId = targetToken.get("represents");
@@ -4279,7 +4345,7 @@ var COFantasy = COFantasy || function() {
             sendChar(attaquant.charId, "réussi à passer outre le sanctuaire de " + cible.tokName + " (jet de SAG " + tr.texte + "&ge;15)");
             ciblesATraiter--;
             if (ciblesATraiter === 0)
-              resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options);
+              resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options, chargesArme);
           } else {
             sendChar(attaquant.charId, "ne peut se résoudre à attaquer " + cible.tokName + " (sanctuaire, jet de SAG " + tr.texte + "< 15)");
             attaqueImpossible = true;
@@ -4289,7 +4355,7 @@ var COFantasy = COFantasy || function() {
       } else {
         ciblesATraiter--;
         if (ciblesATraiter === 0)
-          resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options);
+          resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options, chargesArme);
       }
     });
   }
@@ -4563,7 +4629,7 @@ var COFantasy = COFantasy || function() {
     return attackRollExpr + " " + attackSkillExpr;
   }
 
-  function resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options) {
+  function resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options, chargesArme) {
     var attackingCharId = attaquant.charId;
     var attackingToken = attaquant.token;
     var attackerName = attaquant.name;
@@ -4613,11 +4679,6 @@ var COFantasy = COFantasy || function() {
     }
     // Armes chargées
     if (options.semonce === undefined && options.tirDeBarrage === undefined) {
-      var chargesArme = findObjs({
-        _type: 'attribute',
-        _characterid: attackingCharId,
-        name: "charge_" + attackLabel
-      });
       if (chargesArme.length > 0) {
         var currentCharge = parseInt(chargesArme[0].get('current'));
         if (isNaN(currentCharge) || currentCharge < 1) {
@@ -4633,6 +4694,31 @@ var COFantasy = COFantasy || function() {
           return;
         }
         evt.attributes = evt.attributes || [];
+        if (options.grenaille) {
+          var chargesGrenaille = tokenAttribute(attaquant, 'chargeGrenaille _' + attackLabel);
+          if (chargesGrenaille.length > 0) {
+            var currentChargeGrenaille = parseInt(chargesGrenaille[0].get('current'));
+            if (isNaN(currentChargeGrenaille) || currentChargeGrenaille < 1) {
+              sendChar(attackingCharId, "ne peut pas attaquer avec " + weaponName + " car elle n'est pas chargée en grenaille");
+              addEvent(evt);
+              return;
+            }
+            if (options.tirDouble && currentChargeGrenaille < 2) {
+              sendChar(attackingCharId,
+                "ne peut pas faire de tir double de grenaille avec ses" + weaponName + "s car " +
+                sujetAttaquant + " n'en a pas au moins 2 chargées de grenaille");
+              addEvent(evt);
+              return;
+            }
+            evt.attributes.push({
+              attribute: chargesGrenaille[0],
+              current: currentChargeGrenaille
+            });
+            if (options.tirDouble) currentChargeGrenaille -= 2;
+            else currentChargeGrenaille -= 1;
+            chargesGrenaille[0].set('current', currentChargeGrenaille);
+          }
+        }
         evt.attributes.push({
           attribute: chargesArme[0],
           current: currentCharge
@@ -5277,7 +5363,7 @@ var COFantasy = COFantasy || function() {
         attCarBonus = '';
         attDMBonus = "+ " + pMortelle[0].get('current');
       }
-      if (options.distance) {
+      if (options.distance && !options.grenaille) {
         var tirPrecis = charAttributeAsInt(attaquant, 'tirPrecis', 0);
         if (tirPrecis > 0) {
           var modDex = modCarac(attaquant, 'DEXTERITE');
@@ -5485,15 +5571,18 @@ var COFantasy = COFantasy || function() {
           }
           // Draw effect, if any
           if (options.fx) {
-            var p1e = {
-              x: attackingToken.get('left'),
-              y: attackingToken.get('top'),
-            };
-            var p2e = {
-              x: target.token.get('left'),
-              y: target.token.get('top'),
-            };
-            spawnFxBetweenPoints(p1e, p2e, options.fx, pageId);
+            //Pour les cones, on fait un seul effet, car c'est bien géré.
+            if (!options.aoe || options.aoe.type != 'cone') {
+              var p1e = {
+                x: attackingToken.get('left'),
+                y: attackingToken.get('top'),
+              };
+              var p2e = {
+                x: target.token.get('left'),
+                y: target.token.get('top'),
+              };
+              spawnFxBetweenPoints(p1e, p2e, options.fx, pageId);
+            }
           }
           if (options.targetFx && !options.aoe) {
             spawnFx(target.token.get('left'), target.token.get('top'), options.targetFx, pageId);
@@ -6080,8 +6169,8 @@ var COFantasy = COFantasy || function() {
           (attributeAsBool(target, 'protectionDMZone') ||
             attributeAsBool(target, 'protectionDMZone_' + dmgType))) {
           divide();
-              expliquer(target.token.get('name')+" est protégé contre les dégâts de zone");
-            }
+          expliquer(target.token.get('name') + " est protégé contre les dégâts de zone");
+        }
         if (estElementaire(dmgType)) {
           if (invulnerable) {
             divide();
@@ -7671,6 +7760,8 @@ var COFantasy = COFantasy || function() {
       type: 'recharger',
       attributes: []
     };
+    var grenaille = false;
+    if (msg.content.includes(' --grenaille')) grenaille = true;
     getSelected(msg, function(selected) {
       if (selected === undefined) {
         sendPlayer(msg, "!cof-recharger sans sélection de tokens");
@@ -7678,6 +7769,12 @@ var COFantasy = COFantasy || function() {
         return;
       }
       iterSelected(selected, function(perso) {
+        var att = getAttack(attackLabel, perso);
+        if (att === undefined) {
+          error("Arme " + attackLabel + " n'existe pas pour " + perso.tokName, perso);
+          return;
+        }
+        var weaponName = att.weaponName;
         var attrs =
           findObjs({
             _type: 'attribute',
@@ -7687,15 +7784,13 @@ var COFantasy = COFantasy || function() {
         if (attrs.length < 1) {
           perso.tokName = perso.tokName || perso.token.get('name');
           log("Personnage " + perso.tokName + " sans charge " + attackLabel);
-          return;
-        }
-        attrs = attrs[0];
-        var att = getAttack(attackLabel, perso);
-        if (att === undefined) {
-          error("Arme " + attackLabel + " n'existe pas pour " + perso.tokName, perso);
-          return;
-        }
-        var weaponName = att.weaponName;
+          attrs = createObj('attribute', {
+            characterid: perso.charId,
+            name: 'charge_' + attackLabel,
+            current: 0,
+            max: 1
+          });
+        } else attrs = attrs[0];
         var maxCharge = parseInt(attrs.get('max'));
         if (isNaN(maxCharge)) {
           error("max charge mal formée", attrs);
@@ -7706,17 +7801,91 @@ var COFantasy = COFantasy || function() {
           error("charge mal formée", attrs);
           return;
         }
+        var attrGrenaille =
+          findObjs({
+            _type: 'attribute',
+            _characterid: perso.charId,
+            name: "chargeGrenaille_" + attackLabel
+          });
+        var currentChargeGrenaille;
         if (currentCharge < maxCharge) {
+          if (grenaille) {
+            if (attrGrenaille.length < 1) {
+              attrGrenaille = createObj('attribute', {
+                characterid: perso.charId,
+                name: 'chargeGrenaille_' + attackLabel,
+                current: 0
+              });
+            } else attrGrenaille = attrGrenaille[0];
+            currentChargeGrenaille = parseInt(attrGrenaille.get('current'));
+            if (isNaN(currentChargeGrenaille)) {
+              error("charge de grenaille mal formée", attrGrenaille);
+              return;
+            }
+            if (currentChargeGrenaille > currentCharge) currentChargeGrenaille = currentCharge;
+            evt.attributes.push({
+              attribute: attrGrenaille,
+              current: currentChargeGrenaille
+            });
+            attrGrenaille.set('current', currentChargeGrenaille + 1);
+          }
           evt.attributes.push({
             attribute: attrs,
             current: currentCharge
           });
           attrs.set('current', currentCharge + 1);
           updateNextInit(perso.token);
-          sendChar(perso.charId, "recharge " + weaponName);
+          if (grenaille)
+            sendChar(perso.charId, "charge " + weaponName + " de grenaille.");
+          else
+            sendChar(perso.charId, "recharge " + weaponName);
           return;
+        } else {
+          if (grenaille) { //On peut vouloir changer des charges normales en grenaille
+            if (attrGrenaille.length < 1) {
+              attrGrenaille = createObj('attribute', {
+                characterid: perso.charId,
+                name: 'chargeGrenaille_' + attackLabel,
+                current: 0
+              });
+            } else attrGrenaille = attrGrenaille[0];
+            currentChargeGrenaille = parseInt(attrGrenaille.get('current'));
+            if (isNaN(currentChargeGrenaille)) {
+              error("charge de grenaille mal formée", attrGrenaille);
+              return;
+            }
+            if (currentChargeGrenaille < currentCharge) {
+              evt.attributes.push({
+                attribute: attrGrenaille,
+                current: currentChargeGrenaille
+              });
+              attrGrenaille.set('current', currentChargeGrenaille + 1);
+              sendChar(perso.charId, "remplace une charge de " + weaponName + " par de la grenaille.");
+              return;
+            }
+          } else if (attrGrenaille.length > 0) {
+            attrGrenaille = attrGrenaille[0];
+            currentChargeGrenaille = parseInt(attrGrenaille.get('current'));
+            if (isNaN(currentChargeGrenaille)) {
+              error("charge de grenaille mal formée", attrGrenaille);
+              return;
+            }
+            if (currentChargeGrenaille > 0) {
+              evt.attributes.push({
+                attribute: attrGrenaille,
+                current: currentChargeGrenaille
+              });
+              attrGrenaille.set('current', currentChargeGrenaille - 1);
+              sendChar(perso.charId, "remplace une charge de grenaille  de " + weaponName + " par une charge normale.");
+              return;
+            }
+          }
         }
-        sendChar(perso.charId, "a déjà tous ses " + weaponName + " chargés");
+        if (maxCharge == 1) {
+          sendChar(perso.charId, weaponName + " est déjà chargé");
+        } else {
+          sendChar(perso.charId, "a déjà tous ses " + weaponName + " chargés");
+        }
       });
     });
     addEvent(evt);
@@ -9102,10 +9271,23 @@ var COFantasy = COFantasy || function() {
             if (!isNaN(charge)) {
               if (charge === 0) {
                 line = nomArme + " n'est pas chargé";
-              } else if (charge == 1) {
-                line = nomArme + " est chargé";
-              } else if (charge > 1) {
-                line = nomArme + " contient encore " + charge + " charges";
+              } else {
+                var grenaille = attrsChar.find(function(a) {
+                  return (a.get('name') == 'chargeGrenaille_' + armeLabel);
+                });
+                if (grenaille) {
+                  grenaille = parseInt(grenaille.get('current'));
+                  if (isNaN(grenaille) || grenaille < 0) grenaille = 0;
+                } else grenaille = 0;
+                if (charge == 1) {
+                  line = nomArme + " est chargé";
+                  if (grenaille) line += " de grenaille";
+                } else if (charge > 1) {
+                  line = nomArme + " contient encore " + charge + " charges";
+                  if (grenaille == charge) line += " de grenaille";
+                  else if (grenaille)
+                    line += ", dont " + grenaille + " de grenaille";
+                }
               }
               if (armeEnMain == armeLabel) line += " et en main";
               else line += ", pas en main";

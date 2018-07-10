@@ -391,7 +391,8 @@
               <h4 class="text-secondary">Recharger des armes : <code>!cof-recharger <i>N</i></code></h4>
               <div class="decalage">
                 <p>Il faut un attribut <code>charge_<i>N</i></code> où <i>N</i> est le label de l'arme. La valeur max est le maximum de charges. Noter que si on a 2 armes à une charge, il faut utiliser un maximum de 2.<br />
-                  Recharge l'arme <i>N</i> (augmente les charges d'un). Les armes sont toutes rechargées à la fin d'un combat.
+                Recharge l'arme <i>N</i> (augmente les charges d'un). Les armes sont toutes rechargées à la fin d'un combat.<br />
+                La commande adment un argment optionel <code>--grenaille</code> pour charger (une arme à poudre) avec de la grenaille.
                 </p>
               </div>
               <h4 class="text-secondary" id="degainer">Dégainer une arme : <code>!cof-degainer <i>N</i></code></h4>
@@ -621,7 +622,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie des explosifs</h4>
                 <ol>
-                  <li><strong>Chimiste</strong> : enlever l'option <code>--poudre</code> aux attaques avec arme à poudre</li>
+                  <li><strong>Chimiste</strong> : enlever l'option <code>--poudre</code> aux attaques avec arme à poudre. Si vous utilisez la capacité alternative <strong>Grenaille</strong>, vous pouvez soit gérer les charges de grenaille avec <code>!cof-recharger <i>L</i> --grenaille</code>, soit (si vous ne voulez pas faire gérer les charges) utiliser l'option <code>--grenaille</code>. Si vous utilisez la même attaque pour plusieurs armes et que seule une partie est chargée de grenaille, il faudra aussi utiliser cette option pour utiliser l'arme chargée de grenaille.</li>
                   <li><strong>Démolition</strong> : pas de support particulier</li>
                   <li><strong>Poudre puissante</strong> : ajuster les attaques</li>
                 </ol>
@@ -806,7 +807,7 @@
                   <li><strong>Baies magiques</strong> : Utiliser <code>!cof-distribuer-baies</code> avec option <code>--allies --self</code> ou <code>--target</code> pour donner des baies (en ayant sélectionné le druide, le mieux est d'utiliser une ability). Pour consommer ensuite une baie, il faut utiliser <code>!cof-consommables</code>.</li>
                   <li><strong>Forêt vivante</strong> : pas vraiment de support. On peut baisser temporairement l'init des adversaires sur la fiche.</li>
                   <li><strong>Régénération</strong> : <code>!cof-effet-temp regeneration [[@{selected|NIVEAU} + @{selected|SAG}]] --lanceur @{selected|token_id} --target @{target|token_id} --limiteCibleParJour 1 --portee 0 --mana 1</code>. Si vous utilisez l'option de magie puissante, vous pouvez rajouter <code>?{Y consacrer tout le tour ?|oui,--valeur 4|non,&amp;#32;}</code>, et si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Oui,--tempeteDeMana|Non,&amp;#32;}</code>, à la place.</li>
-                  <li><strong>Forme d'arbre</strong> : <code>!cof-effet-temp formeDArbre [[5+@{selected|SAG}]] --mana 2</code>. J'ai choisi de donner comme pouvoir supplémentaire à cette forme d'avoir ses propres PVs, et le druide récupère ses PVs originaux à la fin de l'effet. La transformation est annulée aussi si l'arbre perd tous ses PVs. Le nombre de PVs par défaut est de 40, mais il peut être modifié en ajoutant au argument <code>--valeur <i>pv</i></code>. Pour augmenter un peu l'intérêt de ce sort, je lui fais aussi augmenter de 50% le bonus de peau d'écorce. Si vous utilisez les actions à afficher à chaque tour, vous pouvez aussi créer une ability de nom <code>#FormeArbre#</code> contenant les sorts et actions possibles en forme d'arbre. Si une telle ability existe, elle va toujours afficher au moins les actions défensive, d'attente et d'attaque sous forme d'arbre (pas besoin de créer une attaque dédiée sur la fiche). Il est possible de spécifier une image pour le token en forme d'arbre, en utilisant le valeur courante d'un attribut <code>tokenFormeDArbre</code>.</li>
+                  <li><strong>Forme d'arbre</strong> : <code>!cof-effet-temp formeDArbre [[5+@{selected|SAG}]] --mana 2</code>. J'ai choisi de donner comme pouvoir supplémentaire à cette forme d'avoir ses propres PVs, et le druide récupère ses PVs originaux à la fin de l'effet. La transformation est annulée aussi si l'arbre perd tous ses PVs. Le nombre de PVs par défaut est de niveau x 5, mais il peut être modifié en ajoutant au argument <code>--valeur <i>pv</i></code>. Pour augmenter un peu l'intérêt de ce sort, je lui fais aussi augmenter de 50% le bonus de peau d'écorce. Si vous utilisez les actions à afficher à chaque tour, vous pouvez aussi créer une ability de nom <code>#FormeArbre#</code> contenant les sorts et actions possibles en forme d'arbre. Si une telle ability existe, elle va toujours afficher au moins les actions défensive, d'attente et d'attaque sous forme d'arbre (pas besoin de créer une attaque dédiée sur la fiche). Il est possible de spécifier une image pour le token en forme d'arbre, en utilisant le valeur courante d'un attribut <code>tokenFormeDArbre</code>.</li>
                   <li><strong>Sagesse héroïque</strong> : reporter sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary" id="voie_végétaux">Voie des végétaux</h4>
