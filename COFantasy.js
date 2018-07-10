@@ -1987,7 +1987,6 @@ var COFantasy = COFantasy || function() {
         case "tirDeBarrage":
         case "tranchant":
         case "test":
-        case "tirDouble":
         case "traquenard":
         case "tueurDeGeants":
         case "grenaille":
@@ -1995,6 +1994,13 @@ var COFantasy = COFantasy || function() {
           return;
         case "imparable": //deprecated
           options.m2d20 = true;
+          return;
+        case "tirDouble":
+          if (cmd.length > 1)
+            options.tirDouble = {
+              label: cmd[1]
+            };
+          else options.tirDouble = options.tirDouble || true;
           return;
         case "magique":
           var niveauMagie = 1;
@@ -3577,7 +3583,13 @@ var COFantasy = COFantasy || function() {
     }
     if (options.tirDouble) {
       attBonus += 2;
-      explications.push(attaquant.tokName + " tire avec 2 " + weaponName + "s à la fois !");
+      if (options.tirDouble.stats && options.tirDouble.stats.name) {
+        explications.push(attaquant.tokName + " tire avec " +
+          weaponName + " et " + options.tirDouble.stats.name + " à la fois !");
+      } else {
+        explications.push(attaquant.tokName + " tire avec 2 " +
+          weaponName + "s à la fois !");
+      }
     }
     if (options.chance) {
       attBonus += options.chance;
@@ -3991,6 +4003,21 @@ var COFantasy = COFantasy || function() {
     weaponStats.attDMBonusCommun = parseInt(weaponStats.attDMBonusCommun);
     weaponStats.crit = parseInt(weaponStats.crit);
     var portee = weaponStats.portee;
+    if (options.tirDouble && options.tirDouble.label) {
+      var stats2 = getWeaponStats(attaquant, options.tirDouble.label);
+      if (stats2 === undefined) {
+        error("Pas d'arme de label " + options.tirDouble.label + " pour le tir double", attaquant);
+        return;
+      }
+      var tdSkillDiv = parseInt(stats2.attSkillDiv);
+      if (!isNaN(tdSkillDiv) && tdSkillDiv < weaponStats.attSkillDiv)
+        weaponStats.attSkillDiv = tdSkillDiv;
+      stats2.attDMBonusCommun = parseInt(stats2.attDMBonusCommun);
+      stats2.attNbDices = parseInt(stats2.attNbDices);
+      stats2.attDice = parseInt(stats2.attDice);
+      if (stats2.divers && stats2.divers.includes('d3')) stats2.attDice = 3;
+      options.tirDouble.stats = stats2;
+    }
     if (portee > 0) {
       options.distance = true;
       if (attributeAsBool(attaquant, 'rageDuBerserk')) {
@@ -4031,6 +4058,10 @@ var COFantasy = COFantasy || function() {
       };
       weaponStats.attDice -= 2;
       if (weaponStats.attDice < 0) weaponStats.attDice = 0;
+      if (options.tirDouble && options.tirDouble.stats) {
+        options.tirDouble.stats.attDice -= 2;
+        if (options.tirDouble.stats.attDice < 0) options.tirDouble.stats.attDice = 0;
+      }
       options.auto = true;
       var effet = findObjs({
         _type: 'custfx',
@@ -4686,7 +4717,9 @@ var COFantasy = COFantasy || function() {
           addEvent(evt);
           return;
         }
-        if (options.tirDouble && currentCharge < 2) {
+        if (options.tirDouble &&
+          (!options.tirDouble.stats || options.tirDouble.label == attackLabel) &&
+          currentCharge < 2) {
           sendChar(attackingCharId,
             "ne peut pas faire de tir double avec ses" + weaponName + "s car " +
             sujetAttaquant + " n'en a pas au moins 2 chargées");
@@ -4703,7 +4736,9 @@ var COFantasy = COFantasy || function() {
               addEvent(evt);
               return;
             }
-            if (options.tirDouble && currentChargeGrenaille < 2) {
+            if (options.tirDouble &&
+              (!options.tirDouble.stats || options.tirDouble.label == attackLabel) &&
+              currentChargeGrenaille < 2) {
               sendChar(attackingCharId,
                 "ne peut pas faire de tir double de grenaille avec ses" + weaponName + "s car " +
                 sujetAttaquant + " n'en a pas au moins 2 chargées de grenaille");
@@ -4714,7 +4749,9 @@ var COFantasy = COFantasy || function() {
               attribute: chargesGrenaille[0],
               current: currentChargeGrenaille
             });
-            if (options.tirDouble) currentChargeGrenaille -= 2;
+            if (options.tirDouble &&
+              (!options.tirDouble.stats || options.tirDouble.label == attackLabel)
+            ) currentChargeGrenaille -= 2;
             else currentChargeGrenaille -= 1;
             chargesGrenaille[0].set('current', currentChargeGrenaille);
           }
@@ -4723,12 +4760,57 @@ var COFantasy = COFantasy || function() {
           attribute: chargesArme[0],
           current: currentCharge
         });
-        if (options.tirDouble) currentCharge -= 2;
+        if (options.tirDouble &&
+          (!options.tirDouble.stats || options.tirDouble.label == attackLabel)) currentCharge -= 2;
         else currentCharge -= 1;
         chargesArme[0].set('current', currentCharge);
         if (currentCharge === 0 &&
           charAttributeAsInt(attaquant, "initEnMain" + attackLabel, 0) > 0) {
           updateNextInit(attackingToken);
+        }
+      }
+      if (options.tirDouble && options.tirDouble.label && options.tirDouble.label != attackLabel) {
+        var secondLabel = options.tirDouble.label;
+        var secondNom = options.tirDouble.stats.name;
+        var chargesSecondeArme = findObjs({
+          _type: 'attribute',
+          _characterid: attackingCharId,
+          name: "charge_" + secondLabel
+        });
+        if (chargesSecondeArme.length > 0) {
+          var currentCharge2 = parseInt(chargesSecondeArme[0].get('current'));
+          if (isNaN(currentCharge2) || currentCharge2 < 1) {
+            sendChar(attackingCharId, "ne peut pas faire de tir double avec " + secondNom + " car ce n'est pas chargé");
+            addEvent(evt);
+            return;
+          }
+          evt.attributes = evt.attributes || [];
+          if (options.grenaille) {
+            var chargesGrenaille2 = tokenAttribute(attaquant, 'chargeGrenaille _' + secondLabel);
+            if (chargesGrenaille2.length > 0) {
+              var currentChargeGrenaille2 = parseInt(chargesGrenaille2[0].get('current'));
+              if (isNaN(currentChargeGrenaille2) || currentChargeGrenaille2 < 1) {
+                sendChar(attackingCharId, "ne peut pas faire de tir double avec " + secondNom + " car ce n'est pas chargé en grenaille");
+                addEvent(evt);
+                return;
+              }
+              evt.attributes.push({
+                attribute: chargesGrenaille2[0],
+                current: currentChargeGrenaille2
+              });
+              currentChargeGrenaille2 -= 1;
+              chargesGrenaille2[0].set('current', currentChargeGrenaille2);
+            }
+          }
+          evt.attributes.push({
+            attribute: chargesSecondeArme[0],
+            current: currentCharge2
+          });
+          chargesArme[0].set('current', currentCharge2 - 1);
+          if (currentCharge2 == 1 &&
+            charAttributeAsInt(attaquant, "initEnMain" + secondLabel, 0) > 0) {
+            updateNextInit(attackingToken);
+          }
         }
       }
     }
@@ -5130,6 +5212,73 @@ var COFantasy = COFantasy || function() {
     }); // fin du jet d'attaque asynchrone
   }
 
+  function computeMainDmgRollExpr(attaquant, target, weaponStats, attNbDices, attDMBonus, options) {
+    var attDMArme = weaponStats.attDMBonusCommun;
+    if (isNaN(attDMArme) || attDMArme === 0) attDMArme = '';
+    else if (attDMArme > 0) attDMArme = '+' + attDMArme;
+    attDMBonus = attDMArme + attDMBonus;
+    var attNbDicesCible = attNbDices;
+    var attDiceCible = computeAttackDice(weaponStats.attDice, options);
+    var attCarBonusCible =
+      computeAttackCarBonus(attaquant, weaponStats.attCarBonus);
+    if (target.pressionMortelle) {
+      attNbDicesCible = 1;
+      attDiceCible = 6; //TODO : have an option for that
+      attCarBonusCible = '';
+    }
+    if (!options.sortilege &&
+      charAttributeAsBool(target.charId, 'immuniteAuxArmes')) {
+      if (options.magique) {
+        attNbDicesCible = options.magique;
+        attDiceCible = "6";
+        attCarBonusCible = modCarac(target, 'SAGESSE');
+        if (attCarBonusCible < 1) attCarBonusCible = "";
+        else attCarBonusCible = " +" + attCarBonusCible;
+      } else {
+        target.messages.push(target.tokName + " semble immunisé aux armes ordinaires");
+        attNbDicesCible = 0;
+        attCarBonusCible = "";
+        attDMBonus = "";
+      }
+    }
+    var symbde = 'd';
+    if (target.maxDmg) symbde = '*';
+    return addOrigin(attaquant.name, attNbDicesCible + symbde + attDiceCible + attCarBonusCible + attDMBonus);
+  }
+
+  function computeAttackDice(d, options) {
+    if (isNaN(d) || d < 0) {
+      error("Dé d'attaque incorrect", d);
+      return 0;
+    }
+    var attDice = d;
+    if (options.puissant) {
+      attDice += 2;
+    }
+    if (options.reroll1) attDice += "r1";
+    if (options.reroll2) attDice += "r2";
+    if (options.explodeMax) attDice += '!';
+    return attDice;
+  }
+
+  function computeAttackCarBonus(attaquant, x) {
+    var attCarBonus = x;
+    if (isNaN(attCarBonus)) {
+      if (attCarBonus.startsWith('@{')) {
+        var carac = caracOfMod(attCarBonus.substr(2, 3));
+        if (carac) {
+          var simplerAttCarBonus = modCarac(attaquant, carac);
+          if (!isNaN(simplerAttCarBonus)) {
+            attCarBonus = simplerAttCarBonus;
+          }
+        }
+      }
+    }
+    if (attCarBonus === "0" || attCarBonus === 0) attCarBonus = "";
+    else attCarBonus = " + " + attCarBonus;
+    return attCarBonus;
+  }
+
   function attackDealDmg(attaquant, cibles, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId) {
     if (cibles.length === 0 || options.test || options.feinte) {
       finaliseDisplay(display, explications, evt);
@@ -5144,17 +5293,11 @@ var COFantasy = COFantasy || function() {
     //Les dégâts
     //Dégâts insrits sur la ligne de l'arme
     var mainDmgType = options.type || 'normal';
-    var attDice = weaponStats.attDice;
     var attNbDices = weaponStats.attNbDices;
-    var attCarBonus = weaponStats.attCarBonus;
-    var attDMBonusCommun = weaponStats.attDMBonusCommun;
 
-    if (isNaN(attDice) || attDice < 0 || isNaN(attNbDices) || attNbDices < 0) {
-      error("Dés de l'attaque incorrect", attDice);
+    if (isNaN(attNbDices) || attNbDices < 0) {
+      error("Dés de l'attaque incorrect", attNbDices);
       return;
-    }
-    if (options.puissant) {
-      attDice += 2;
     }
     if (attNbDices) {
       if (options.tempeteDeManaIntense) {
@@ -5170,25 +5313,8 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    if (options.reroll1) attDice += "r1";
-    if (options.reroll2) attDice += "r2";
-    if (options.explodeMax) attDice += '!';
-    if (isNaN(attCarBonus)) {
-      if (attCarBonus.startsWith('@{')) {
-        var carac = caracOfMod(attCarBonus.substr(2, 3));
-        if (carac) {
-          var simplerAttCarBonus = modCarac(attaquant, carac);
-          if (!isNaN(simplerAttCarBonus)) {
-            attCarBonus = simplerAttCarBonus;
-          }
-        }
-      }
-    }
-    if (attCarBonus === "0" || attCarBonus === 0) attCarBonus = "";
-    else attCarBonus = " + " + attCarBonus;
-    if (isNaN(attDMBonusCommun) || attDMBonusCommun === 0) attDMBonusCommun = '';
-    else if (attDMBonusCommun > 0) attDMBonusCommun = '+' + attDMBonusCommun;
     // Les autres modifications aux dégâts qui ne dépendent pas de la cible
+    var attDMBonusCommun = '';
     if (options.rayonAffaiblissant) {
       attDMBonusCommun += " -2";
     }
@@ -5351,16 +5477,13 @@ var COFantasy = COFantasy || function() {
         }
       }
       if (options.pressionMortelle || target.pressionMortelle) {
-        //TODO : ne pas appliquer la RD à chaque coup, mais seulement au relachenement
         var pMortelle = tokenAttribute(target, 'pressionMortelle');
         if (pMortelle.length === 0) {
           sendChar(attackingCharId, "Essaie une pression mortelle, mais aucun point vital de " + target.tokName + " n'a encore été affecté");
           ciblesCount--;
           return;
         }
-        attNbDices = 1; //pMortelle[0].get('max');
-        attDice = 6; //TODO : have an option for that
-        attCarBonus = '';
+        target.pressionMortelle = pMortelle;
         attDMBonus = "+ " + pMortelle[0].get('current');
       }
       if (options.distance && !options.grenaille) {
@@ -5426,28 +5549,9 @@ var COFantasy = COFantasy || function() {
         if (options.divise) options.divise *= 2;
         else options.divise = 2;
       }
-      var attNbDicesCible = attNbDices;
-      var attDiceCible = attDice;
-      var attCarBonusCible = attCarBonus;
-      if (!options.sortilege &&
-        charAttributeAsBool(target.charId, 'immuniteAuxArmes')) {
-        if (options.magique) {
-          attNbDicesCible = options.magique;
-          attDiceCible = "6";
-          attCarBonusCible = modCarac(target, 'SAGESSE');
-          if (attCarBonusCible < 1) attCarBonusCible = "";
-          else attCarBonusCible = " +" + attCarBonusCible;
-        } else {
-          target.messages.push(target.tokName + " semble immunisé aux armes ordinaires");
-          attNbDicesCible = 0;
-          attCarBonusCible = "";
-          attDMBonus = "";
-        }
-      }
-      var symbde = 'd';
-      if (target.maxDmg) symbde = '*';
       var mainDmgRollExpr =
-        addOrigin(attaquant.name, attNbDicesCible + symbde + attDiceCible + attCarBonusCible + attDMBonus);
+        computeMainDmgRollExpr(attaquant, target, weaponStats, attNbDices,
+          attDMBonus, options);
       //Additional damage
       var additionalDmg = options.additionalDmg.concat(target.additionalDmg);
       //On enlève les DM qui ne passent pas les conditions
@@ -5472,7 +5576,14 @@ var COFantasy = COFantasy || function() {
         });
       }
       if (options.tirDouble || options.tirDeBarrage) {
-        mainDmgRollExpr += " +" + mainDmgRollExpr;
+        if (options.tirDouble.stats) {
+          var stats2 = options.tirDouble.stats;
+          mainDmgRollExpr += " +" +
+            computeMainDmgRollExpr(attaquant, target, stats2, stats2.attNbDices,
+              attDMBonus, options);
+        } else {
+          mainDmgRollExpr += " +" + mainDmgRollExpr;
+        }
         additionalDmg.forEach(function(dmSpec) {
           dmSpec.value += " +" + dmSpec.Value;
         });

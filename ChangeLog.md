@@ -9,6 +9,7 @@
 * undo d'une diminution de PV sur un token lié remet maintenant correctement les PVs de tous les tokens liés au même personnage.
 
 ### Autres améliorations
+* Il est maintenant possible d'utiliser tir double avec 2 armes différentes.
 * Encaisser un coup est maintenant proposé en bouton à cliquer en cas d'attaque réussie.
 
 ## 1.04
