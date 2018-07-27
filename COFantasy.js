@@ -4071,7 +4071,6 @@ var COFantasy = COFantasy || function() {
         effet = createObj('custfx', {
           name: 'grenaille ' + portee,
           definition: {
-
             "angle": -1,
             "angleRandom": 45,
             "duration": 8,
@@ -14937,6 +14936,270 @@ var COFantasy = COFantasy || function() {
      });*/
   }
 
+  function createCharacter(nom, avatar, spec) {
+    var res = createObj('character', {
+      name: nom, avatar:avatar
+    });
+    if (!res) return;
+    var charId = res.id;
+    if (spec.attributesFiche) {
+      for (var attrName in spec.attributesFiche) {
+        var attr = findObjs({
+          _type: 'attribute',
+          _characterid: charId,
+          name: attrName
+        });
+        if (attr.length === 0) {
+          createObj('attribute', {_characterid:charId, name:attrName, current:spec.attributesFiche[attrName]});
+        } else {
+          attr[0].set('current', spec.attributesFiche[attrName]);
+        }
+      }
+    } //end attributesFiche
+    if (spec.pv) {
+      var pvAttr = findObjs({
+        _type: 'attribute',
+        _characterid: charId,
+        name: 'PV'
+      });
+      if (pvAttr.length === 0) {
+          createObj('attribute', {_characterid:charId, name:'PV', current:spec.pv, max:spec.pv});
+      } else {
+        pvAttr[0].set('current', spec.pv);
+        pvAttr[0].set('max', spec.pv);
+      }
+    }
+    var actions = "";
+    if (spec.attaques) {
+      spec.attaques.forEach(function(att) {
+        if (!att.length) {
+          error("Attaque mal formée", att);
+        } else {
+          createObj('ability', {
+            _characterid: charId,
+            name: att[0],
+            istokenaction: true,
+            action: '!cof-attack @{selected|token_id} @{target|token_id} ' + JSON.stringify(att)
+          });
+          actions += '%' + att[0] + ' ';
+        }
+      });
+    }
+    if (spec.attributes) {
+      spec.attributes.forEach(function(a) {
+        a._characterid = charId;
+        createObj('attribute', a);
+      });
+    }
+    if (spec.abilities) {
+      spec.abilities.forEach(function(a) {
+        a._characterid = charId;
+        a.istokenaction = true;
+        createObj('ability', a);
+        actions += '%' + a.name + ' ';
+      });
+    }
+    createObj('ability', {
+      _characterid: charId,
+      name: '#Actions#',
+      istokenaction: false,
+      action: actions
+    });
+  }
+
+  var predateurs = {
+    loup: {
+      nom: 'Loup',
+      avatar: "https://s3.amazonaws.com/files.d20.io/images/59094468/bX_aTjrVAbIRHjpRn-HwdQ/max.jpg?1532611383",
+      attributesFiche: {
+        NIVEAU: 1,
+        FORCE: 12,
+        DEXTERITE: 12,
+        CONSTITUTION: 12,
+        CON_SUP: '@{JETSUP}',
+        INTELLIGENCE: 2,
+        SAGESSE: 14,
+        SAG_SUP: '@{JETSUP}',
+        CHARISME: 6,
+        DEFDIV: 3 //Total 14
+      },
+      pv: 9,
+      attaques: [
+        ['Morsure', ["@{selected|ATKCAC}", 0], 20, [1, 6, 1, 0],
+          [0]
+        ]
+      ],
+      attributes: [],
+      abilities: []
+    },
+    loupAlpha: {
+      nom: 'Loup alpha',
+      avatar: "https://s3.amazonaws.com/files.d20.io/images/59094818/J0yWdxryZFKakJtNGJNNvw/max.jpg?1532612061",
+      attributesFiche: {
+        NIVEAU: 2,
+        FORCE: 16,
+        DEXTERITE: 12,
+        CONSTITUTION: 16,
+        CON_SUP: '@{JETSUP}',
+        INTELLIGENCE: 2,
+        SAGESSE: 14,
+        SAG_SUP: '@{JETSUP}',
+        CHARISME: 6,
+        DEFDIV: 4, //Total 15
+        INIT_DIV: 5 //Total 17
+      },
+      pv: 15,
+      attaques: [
+        ['Morsure', ["@{selected|ATKCAC}", -1], 20, [1, 6, 3, 0],
+          [0]
+        ]
+      ],
+      attributes: [{
+        name: 'discrétion',
+        value: 5
+      }],
+      abilities: [{
+        name: 'Embuscade',
+        action: '!cof-surprise [[15 + @{selected|DEX}]]'
+      }, {
+        name: 'Attaque-embuscade',
+        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-1],20,[1,6,3,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif'
+      }]
+    },
+    worg: {
+      nom: 'Grand loup',
+      avatar: "https://s3.amazonaws.com/files.d20.io/images/25294798/4dJ_60uP2mw6UJA2elkoXA/max.jpg?1479223790",
+      attributesFiche: {
+        NIVEAU: 3,
+        FORCE: 16,
+        DEXTERITE: 12,
+        CONSTITUTION: 16,
+        CON_SUP: '@{JETSUP}',
+        INTELLIGENCE: 4,
+        SAGESSE: 14,
+        SAG_SUP: '@{JETSUP}',
+        CHARISME: 6,
+        DEFDIV: 6, //Total 17
+        INIT_DIV: 5 //Total 17
+      },
+      pv: 35,
+      attaques: [
+        ['Morsure', ["@{selected|ATKCAC}", 0], 20, [1, 6, 5, 0],
+          [0]
+        ]
+      ],
+      attributes: [{
+        name: 'discrétion',
+        value: 5
+      }],
+      abilities: [{
+        name: 'Embuscade',
+        action: '!cof-surprise [[15 + @{selected|DEX}]]'
+      }, {
+        name: 'Attaque-embuscade',
+        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",0],20,[1,6,5,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif'
+      }]
+    },
+    lion: {
+      nom: 'Lion',
+      attributesFiche: {
+        NIVEAU: 4,
+        FORCE: 20,
+        DEXTERITE: 18,
+        DEX_SUP: '@{JETSUP}',
+        CONSTITUTION: 20,
+        INTELLIGENCE: 4,
+        SAGESSE: 14,
+        SAG_SUP: '@{JETSUP}',
+        CHARISME: 6,
+        DEFDIV: 4, //Total 18
+        INIT_DIV: 5 //Total 23 
+      },
+      pv: 30,
+      attaques: [
+        ['Morsure', ["@{selected|ATKCAC}", -1], 20, [2, 6, 5, 0],
+          [0]
+        ]
+      ],
+      attributes: [{
+        name: 'discrétion',
+        value: 5
+      }],
+      abilities: [{
+        name: 'Embuscade',
+        action: '!cof-surprise [[15 + @{selected|DEX}]]'
+      }, {
+        name: 'Attaque-embuscade',
+        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-1],20,[2,6,5,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
+      }, {
+        name: 'Dévorer',
+        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-1],20,[2,6,5,0],[0]] --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
+      }]
+    },
+    grandLion: {
+      nom: 'Grand lion',
+      attributesFiche: {
+        NIVEAU: 5,
+        FORCE: 22,
+        DEXTERITE: 18,
+        DEX_SUP: '@{JETSUP}',
+        CONSTITUTION: 20,
+        INTELLIGENCE: 2,
+        SAGESSE: 14,
+        SAG_SUP: '@{JETSUP}',
+        CHARISME: 14,
+        DEFDIV: 6, //Total 20
+      },
+      pv: 50,
+      attaques: [
+        ['Morsure', ["@{selected|ATKCAC}", -2], 20, [2, 6, 7, 0],
+          [0]
+        ]
+      ],
+      attributes: [{
+        name: 'discrétion',
+        value: 5
+      }],
+      abilities: [{
+        name: 'Embuscade',
+        action: '!cof-surprise [[15 + @{selected|DEX}]]'
+      }, {
+        name: 'Attaque-embuscade',
+        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-2],20,[2,6,7,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
+      }, {
+        name: 'Dévorer',
+        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-2],20,[2,6,7,0],[0]] --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
+      }]
+    },
+    oursPolaire: {
+      nom: 'Ours polaire',
+      attributesFiche: {
+        NIVEAU: 6,
+        FORCE: 26,
+        FOR_SUP: '@{JETSUP}',
+        DEXTERITE: 11,
+        CONSTITUTION: 26,
+        CON_SUP: '@{JETSUP}',
+        INTELLIGENCE: 2,
+        SAGESSE: 14,
+        CHARISME: 6,
+        DEFDIV: 10, //Total 20
+      },
+      pv: 50,
+      attaques: [
+        ['Morsure', ["@{selected|ATKCAC}", 0], 20, [2, 8, 7, 0],
+          [0]
+        ]
+      ],
+    },
+    tigreDentsDeSabre: {
+      nom: 'Tigre à dents de sabre',
+    },
+    oursPrehistorique: {
+      nom: 'Ours préhistorique',
+    }
+  };
+
   function conjurationPredateur(msg) {
     var options = parseOptions(msg);
     var cmd = options.cmd;
@@ -14954,15 +15217,17 @@ var COFantasy = COFantasy || function() {
           type: 'conjuration de prédateurs'
         };
         var niveau = charAttributeAsInt(invocateur, 'NIVEAU', 1);
-        var nomPredateur;
-        if (niveau < 5) nomPredateur = 'loup';
-        else if (niveau < 9) nomPredateur = 'loupAlpha';
-        else if (niveau < 12) nomPredateur = 'worg';
-        else if (niveau < 15) nomPredateur = 'lion';
-        else if (niveau < 18) nomPredateur = 'grandLion';
-        else if (niveau < 21) nomPredateur = 'oursPolaire';
-        else if (niveau < 23) nomPredateur = 'tigreDentsDeSabre';
-        else nomPredateur = 'oursPrehistorique';
+        var predateur;
+        if (niveau < 5) predateur = predateurs.loup;
+        else if (niveau < 9) predateur = predateurs.loupAlpha;
+        else if (niveau < 12) predateur = predateurs.worg;
+        else if (niveau < 15) predateur = predateurs.lion;
+        else if (niveau < 18) predateur = predateurs.grandLion;
+        else if (niveau < 21) predateur = predateurs.oursPolaire;
+        else if (niveau < 23) predateur = predateurs.tigreDentsDeSabre;
+        else predateur = predateurs.oursPrehistorique;
+        var nomPredateur = predateur.nom + ' de ' + invocateur.token.get('name');
+        createCharacter(nomPredateur, predateur.avatar, predateur);
         addEvent(evt);
       }); //end iterSelected
     }); //end getSelected
