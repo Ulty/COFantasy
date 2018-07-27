@@ -4727,7 +4727,7 @@ var COFantasy = COFantasy || function() {
         }
         evt.attributes = evt.attributes || [];
         if (options.grenaille) {
-          var chargesGrenaille = tokenAttribute(attaquant, 'chargeGrenaille _' + attackLabel);
+          var chargesGrenaille = tokenAttribute(attaquant, 'chargeGrenaille_' + attackLabel);
           if (chargesGrenaille.length > 0) {
             var currentChargeGrenaille = parseInt(chargesGrenaille[0].get('current'));
             if (isNaN(currentChargeGrenaille) || currentChargeGrenaille < 1) {
@@ -4785,7 +4785,7 @@ var COFantasy = COFantasy || function() {
           }
           evt.attributes = evt.attributes || [];
           if (options.grenaille) {
-            var chargesGrenaille2 = tokenAttribute(attaquant, 'chargeGrenaille _' + secondLabel);
+            var chargesGrenaille2 = tokenAttribute(attaquant, 'chargeGrenaille_' + secondLabel);
             if (chargesGrenaille2.length > 0) {
               var currentChargeGrenaille2 = parseInt(chargesGrenaille2[0].get('current'));
               if (isNaN(currentChargeGrenaille2) || currentChargeGrenaille2 < 1) {
