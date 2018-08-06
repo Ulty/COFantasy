@@ -9051,6 +9051,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
+    return actionsDuTour.length;
   }
 
   function apiTurnAction(msg) {
@@ -9059,7 +9060,9 @@ var COFantasy = COFantasy || function() {
     if (cmd.length > 1 && !(cmd[1].startsWith('--'))) abil = cmd[1];
     getSelected(msg, function(selected, playerId) {
       iterSelected(selected, function(perso) {
-        turnAction(perso, playerId, cmd[1]);
+        var actions = turnAction(perso, playerId, cmd[1]);
+        if (!actions)
+          sendChar(perso.charId, "n'a pas de liste d'actions définie");
       });
     });
   }
@@ -11630,48 +11633,51 @@ var COFantasy = COFantasy || function() {
 
   function transeGuerison(msg) {
     if (state.COFantasy.combat) {
-      sendChat("", "Pas possible de méditer en combat");
+      sendPlayer(msg, "Pas possible de méditer en combat");
       return;
     }
-    if (msg.selected === undefined || msg.selected.length === 0) {
-      sendPlayer(msg, "Pas de cible sélectionnée pour la transe de guérison");
-      return;
-    }
-    var evt = {
-      type: "Transe de guérison",
-    };
-    iterSelected(msg.selected, function(perso) {
-      var token = perso.token;
-      if (attributeAsBool(perso, 'transeDeGuérison')) {
-        sendChar(perso.charId, "a déjà médité depuis le dernier combat");
+    var options = parseOptions(msg);
+    getSelected(msg, function(selected, playerId) {
+      if (selected === undefined || selected.length === 0) {
+        sendPlayer(msg, "Pas de cible sélectionnée pour la transe de guérison");
         return;
       }
-      var bar1 = parseInt(token.get("bar1_value"));
-      var pvmax = parseInt(token.get("bar1_max"));
-      if (isNaN(bar1) || isNaN(pvmax)) return;
-      if (bar1 >= pvmax) {
-        sendChar(perso.charId, "n'a pas besoin de méditer");
-        return;
-      }
-      var sagMod = modCarac(perso, 'SAGESSE');
-      var niveau = charAttributeAsInt(perso, 'NIVEAU', 1);
-      var soin = niveau + sagMod;
-      if (soin < 0) soin = 0;
-      if (bar1 === 0) {
-        if (attributeAsBool(perso, 'etatExsangue')) {
-          removeTokenAttr(perso, 'etatExsangue', evt, "retrouve des couleurs");
+      var evt = {
+        type: "Transe de guérison",
+      };
+      iterSelected(selected, function(perso) {
+        var token = perso.token;
+        if (attributeAsBool(perso, 'transeDeGuérison')) {
+          sendChar(perso.charId, "a déjà médité depuis le dernier combat");
+          return;
         }
-      }
-      bar1 += soin;
-      if (bar1 > pvmax) {
-        soin -= (bar1 - pvmax);
-        bar1 = pvmax;
-      }
-      updateCurrentBar(token, 1, bar1, evt);
-      setTokenAttr(perso, 'transeDeGuérison', true, evt);
-      sendChar(perso.charId, "entre en méditation pendant 10 minutes et récupère " + soin + " points de vie.");
+        var bar1 = parseInt(token.get("bar1_value"));
+        var pvmax = parseInt(token.get("bar1_max"));
+        if (isNaN(bar1) || isNaN(pvmax)) return;
+        if (bar1 >= pvmax) {
+          sendChar(perso.charId, "n'a pas besoin de méditer");
+          return;
+        }
+        var sagMod = modCarac(perso, 'SAGESSE');
+        var niveau = charAttributeAsInt(perso, 'NIVEAU', 1);
+        var soin = niveau + sagMod;
+        if (soin < 0) soin = 0;
+        if (bar1 === 0) {
+          if (attributeAsBool(perso, 'etatExsangue')) {
+            removeTokenAttr(perso, 'etatExsangue', evt, "retrouve des couleurs");
+          }
+        }
+        bar1 += soin;
+        if (bar1 > pvmax) {
+          soin -= (bar1 - pvmax);
+          bar1 = pvmax;
+        }
+        updateCurrentBar(token, 1, bar1, evt);
+        setTokenAttr(perso, 'transeDeGuérison', true, evt);
+        sendChar(perso.charId, "entre en méditation pendant 10 minutes et récupère " + soin + " points de vie.");
+      });
+      addEvent(evt);
     });
-    addEvent(evt);
   }
 
   function raceIs(perso, race) {
@@ -14962,13 +14968,17 @@ var COFantasy = COFantasy || function() {
      });*/
   }
 
-  function createCharacter(nom, avatar, spec) {
+  function createCharacter(nom, playerId, avatar, token, spec) {
     var res = createObj('character', {
       name: nom,
-      avatar: avatar
+      avatar: avatar,
+      controlledby: playerId
     });
     if (!res) return;
     var charId = res.id;
+    if (token) {
+      token.set('represents', charId);
+    }
     if (spec.attributesFiche) {
       for (var attrName in spec.attributesFiche) {
         var attr = findObjs({
@@ -14994,15 +15004,21 @@ var COFantasy = COFantasy || function() {
         name: 'PV'
       });
       if (pvAttr.length === 0) {
-        createObj('attribute', {
+        pvAttr = createObj('attribute', {
           _characterid: charId,
           name: 'PV',
           current: spec.pv,
           max: spec.pv
         });
       } else {
-        pvAttr[0].set('current', spec.pv);
-        pvAttr[0].set('max', spec.pv);
+        pvAttr = pvAttr[0];
+        pvAttr.set('current', spec.pv);
+        pvAttr.set('max', spec.pv);
+      }
+      if (token) {
+        token.set('bar1_link', pvAttr.id);
+        token.set('bar1_value', spec.pv);
+        token.set('bar1_max', spec.pv);
       }
     }
     var actions = "";
@@ -15047,6 +15063,7 @@ var COFantasy = COFantasy || function() {
     loup: {
       nom: 'Loup',
       avatar: "https://s3.amazonaws.com/files.d20.io/images/59094468/bX_aTjrVAbIRHjpRn-HwdQ/max.jpg?1532611383",
+      token: "https://s3.amazonaws.com/files.d20.io/images/59489165/3R9Ob68sTiqvNeEhwzwWcg/thumb.png?1533047142",
       attributesFiche: {
         NIVEAU: 1,
         FORCE: 12,
@@ -15138,6 +15155,7 @@ var COFantasy = COFantasy || function() {
     },
     lion: {
       nom: 'Lion',
+      avatar: "https://s3.amazonaws.com/files.d20.io/images/59486104/SngxPIGXDJKdCqsbrXxRYQ/max.jpg?1533041390",
       attributesFiche: {
         NIVEAU: 4,
         FORCE: 20,
@@ -15174,6 +15192,7 @@ var COFantasy = COFantasy || function() {
     },
     grandLion: {
       nom: 'Grand lion',
+      avatar: "https://s3.amazonaws.com/files.d20.io/images/59486144/8wHs_5WfEIeL_7dKbALHHA/max.jpg?1533041459",
       attributesFiche: {
         NIVEAU: 5,
         FORCE: 22,
@@ -15209,6 +15228,7 @@ var COFantasy = COFantasy || function() {
     },
     oursPolaire: {
       nom: 'Ours polaire',
+      avatar: "https://s3.amazonaws.com/files.d20.io/images/59486216/UssilagWK_2dfVGuPABBpA/max.png?1533041591",
       attributesFiche: {
         NIVEAU: 6,
         FORCE: 26,
@@ -15221,18 +15241,87 @@ var COFantasy = COFantasy || function() {
         CHARISME: 6,
         DEFDIV: 10, //Total 20
       },
-      pv: 50,
+      pv: 70,
       attaques: [
         ['Morsure', ["@{selected|ATKCAC}", 0], 20, [2, 8, 7, 0],
           [0]
         ]
       ],
+      attributes: [{
+        name: 'peutEnrager',
+        current: 'true'
+      }],
+      abilities: [{
+        name: 'Charge',
+        action: '%{selected|Morsure} --m2d20 --pietine}'
+      }, ]
     },
     tigreDentsDeSabre: {
       nom: 'Tigre à dents de sabre',
+      avatar: "https://s3.amazonaws.com/files.d20.io/images/59486272/f5lUcN3Y9H0thmJPrqa6FQ/max.png?1533041702",
+      attributesFiche: {
+        NIVEAU: 7,
+        FORCE: 26,
+        FOR_SUP: '@{JETSUP}',
+        DEXTERITE: 18,
+        DEX_SUP: '@{JETSUP}',
+        CONSTITUTION: 26,
+        INTELLIGENCE: 2,
+        SAGESSE: 12,
+        SAG_SUP: '@{JETSUP}',
+        CHARISME: 2,
+        DEFDIV: 8, //Total 22
+      },
+      pv: 90,
+      attaques: [
+        ['Morsure', ["@{selected|ATKCAC}", -1], 20, [2, 6, 12, 0],
+          [0]
+        ]
+      ],
+      attributes: [{
+        name: 'discrétion',
+        value: 5
+      }],
+      abilities: [{
+        name: 'Embuscade',
+        action: '!cof-surprise [[15 + @{selected|DEX}]]'
+      }, {
+        name: 'Attaque-embuscade',
+        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-1],20,[2,6,12,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
+      }, {
+        name: 'Dévorer',
+        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-1],20,[2,6,12,0],[0]] --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
+      }]
     },
     oursPrehistorique: {
       nom: 'Ours préhistorique',
+      avatar: "https://s3.amazonaws.com/files.d20.io/images/59486323/V6RVSlBbeRJi_aIaIuGGBw/max.png?1533041814",
+      attributesFiche: {
+        NIVEAU: 8,
+        FORCE: 32,
+        DEXTERITE: 10,
+        CONSTITUTION: 32,
+        CON_SUP: '@{JETSUP}',
+        INTELLIGENCE: 2,
+        SAGESSE: 14,
+        CHARISME: 6,
+        DEFDIV: 12, //Total 22
+        RDS: 2
+      },
+      pv: 110,
+      attaques: [
+        ['Griffes', ["@{selected|ATKCAC}", -2], 20, [3, 6, 13, 0],
+          [0]
+        ]
+      ],
+      attributes: [{
+        name: 'fauchage',
+        current: 'true'
+      }],
+      abilities: [{
+        name: 'Charge',
+        action: '%{selected|Griffes} --m2d20 --pietine}'
+      }, ]
     }
   };
 
@@ -15252,6 +15341,7 @@ var COFantasy = COFantasy || function() {
         var evt = {
           type: 'conjuration de prédateurs'
         };
+        var pageId = invocateur.token.get('pageid');
         var niveau = charAttributeAsInt(invocateur, 'NIVEAU', 1);
         var predateur;
         if (niveau < 5) predateur = predateurs.loup;
@@ -15263,7 +15353,23 @@ var COFantasy = COFantasy || function() {
         else if (niveau < 23) predateur = predateurs.tigreDentsDeSabre;
         else predateur = predateurs.oursPrehistorique;
         var nomPredateur = predateur.nom + ' de ' + invocateur.token.get('name');
-        createCharacter(nomPredateur, predateur.avatar, predateur);
+        var token = createObj('graphic', {
+          name: nomPredateur,
+          subtype: 'token',
+          pageid: pageId,
+          imgsrc: predateur.token,
+          left: invocateur.token.get('left'),
+          top: invocateur.token.get('top'),
+          width: 70,
+          height: 70,
+          layer: 'objects',
+          showname: 'true',
+          showplayers_bar1: 'true',
+          light_hassight: 'true',
+          light_angle: 0 //Pour que le joueur ne voit rien par ses yeux
+        });
+        toFront(token);
+        createCharacter(nomPredateur, playerId, predateur.avatar, token, predateur);
         addEvent(evt);
       }); //end iterSelected
     }); //end getSelected
@@ -15560,7 +15666,7 @@ var COFantasy = COFantasy || function() {
       case "!cof-multi-command":
         multiCommand(msg);
         return;
-      case "!cof-conjuration-de-predateurs":
+      case "!cof-conjuration-de-predateur":
         conjurationPredateur(msg);
         return;
       default:
