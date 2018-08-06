@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 1.05
 ### Capacités
+* Frénésie (pour les hommes-rats)
 * Capacité enrager de la voie du Cogneur
 * Capacité grenaille de l'arquebusier
 * Mise à jour de la capacité forme d'arbre, suites aux indications de Kegron : la forme d'arbre a maintenant niveau * 5 PV.

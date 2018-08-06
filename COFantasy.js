@@ -3639,6 +3639,14 @@ var COFantasy = COFantasy || function() {
         explications.push("Enragé => +5 en Attaque et +1d6 DM");
       }
     }
+    var frenesie = charAttributeAsInt(attaquant, 'frenesie', 0);
+    if (frenesie > 0) {
+      var pv = parseInt(attaquant.token.get('bar1_value'));
+      if (pv <= frenesie) {
+        attBonus += 2;
+        explications.push("Frénésie => +2 en Attaque");
+      }
+    }
     return attBonus;
   }
 
