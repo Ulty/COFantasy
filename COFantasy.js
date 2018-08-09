@@ -63,9 +63,9 @@ var COFantasy = COFantasy || function() {
 
   // List of states:
   var cof_states = {
+    assome: 'status_pummeled',
     mort: 'status_dead',
     surpris: 'status_lightning-helix',
-    assome: 'status_pummeled',
     renverse: 'status_back-pain',
     aveugle: 'status_bleeding-eye',
     affaibli: 'status_half-heart',
@@ -76,7 +76,8 @@ var COFantasy = COFantasy || function() {
     endormi: 'status_sleepy',
     apeure: 'status_screaming',
     invisible: 'status_ninja-mask',
-    blessé: 'status_arrowed'
+    blessé: 'status_arrowed',
+    encombre: 'status_frozen-orb'
   };
 
   function etatRendInactif(etat) {
@@ -1148,6 +1149,61 @@ var COFantasy = COFantasy || function() {
   function charIdAttributeAsBool(charId, name) {
     var attr = charAttribute(charId, name);
     return attrAsBool(attr);
+  }
+
+  // Test de caractéristique
+  // options : bonusAttrs, bonus, roll
+  // Après le test, lance callback(testRes)
+  // testRes.texte est l'affichage du jet de dé
+  // testRes.reussite indique si le jet est réussi
+  // testRes.echecCritique, testRes.critique pour le type
+  function testCaracteristique(personnage, carac, seuil, options, evt, callback) { //asynchrone
+    options = options || {};
+    var token = personnage.token;
+    var bonusCarac = bonusTestCarac(carac, personnage, evt);
+    if (options.bonusAttrs) {
+      options.bonusAttrs.forEach(function(attr) {
+        bonusCarac += charAttributeAsInt(personnage, attr, 0);
+      });
+    }
+    if (options.bonus) bonusCarac += options.bonus;
+    var testRes = {};
+    if (carac == 'SAG' || carac == 'INT' || carac == 'CHA') {
+      if (charAttributeAsBool(personnage, 'sansEsprit')) {
+        testRes.reussite = true;
+        testRes.texte = "(sans esprit : réussite automatique)";
+        callback(testRes);
+        return;
+      }
+    }
+    var carSup = nbreDeTestCarac(carac, personnage);
+    var de = computeDice(personnage, {
+      nbDe: carSup,
+      carac: carac
+    });
+    var rollExpr = "[[" + de + "cs20cf1]]";
+    var name = personnage.name || getObj('character', personnage.charId).get('name');
+    sendChat("", rollExpr, function(res) {
+      var roll = options.roll || res[0].inlinerolls[0];
+      testRes.roll = roll;
+      var d20roll = roll.results.total;
+      var bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
+      testRes.texte = buildinline(roll) + bonusText;
+      if (d20roll == 20) {
+        testRes.reussite = true;
+        testRes.critique = true;
+      } else if (d20roll == 1) {
+        testRes.reussite = false;
+        testRes.echecCritique = true;
+        diminueMalediction(personnage, evt);
+      } else if (d20roll + bonusCarac >= seuil) {
+        testRes.reussite = true;
+      } else {
+        diminueMalediction(personnage, evt);
+        testRes.reussite = false;
+      }
+      callback(testRes);
+    });
   }
 
   function jetPerso(perso, caracteristique, difficulte, titre, playerId, options) {
@@ -3842,9 +3898,14 @@ var COFantasy = COFantasy || function() {
     return attBonus;
   }
 
-  function computeDice(lanceur, nbDe, dice, plusFort) {
+  function computeDice(lanceur, options) {
+    options = options || {};
+    var nbDe = options.nbDe;
+    if (nbDe === undefined) nbDe = 1;
+    var plusFort = options.plusFort;
     if (plusFort === undefined) plusFort = true;
-    if (dice === undefined) dice = deTest(lanceur);
+    var dice = options.dice;
+    if (dice === undefined) dice = deTest(lanceur, options.carac);
     if (attributeAsBool(lanceur, 'malediction')) {
       if (plusFort) {
         if (nbDe > 1) nbDe--;
@@ -4741,7 +4802,10 @@ var COFantasy = COFantasy || function() {
 
   //attaquant doit avoir un champ name
   function attackExpression(attaquant, nbDe, dice, crit, weaponStats) {
-    var de = computeDice(attaquant, nbDe, dice);
+    var de = computeDice(attaquant, {
+      nbDe: nbDe,
+      dice: dice
+    });
     var attackRollExpr = "[[" + de + "cs>" + crit + "cf1]]";
     var attSkillDiv = weaponStats.attSkillDiv;
     if (isNaN(attSkillDiv)) attSkillDiv = 0;
@@ -6181,9 +6245,10 @@ var COFantasy = COFantasy || function() {
     if (carac2 == 'DEX') bonus2 += charAttributeAsInt(personnage, 'reflexesFelins', 0);
     var nbrDe1 = nbreDeTestCarac(carac1, personnage);
     var nbrDe2 = nbreDeTestCarac(carac2, personnage);
-    var de = deTest(personnage);
-    var proba1 = probaSucces(de, seuil - bonus1, nbrDe1);
-    var proba2 = probaSucces(de, seuil - bonus2, nbrDe2);
+    var de1 = deTest(personnage, carac1);
+    var proba1 = probaSucces(de1, seuil - bonus1, nbrDe1);
+    var de2 = deTest(personnage, carac2);
+    var proba2 = probaSucces(de2, seuil - bonus2, nbrDe2);
     if (proba2 > proba1) return carac2;
     return carac1;
   }
@@ -8917,7 +8982,7 @@ var COFantasy = COFantasy || function() {
       };
       hand.get('notes', function(note) { // asynchronous
         var carac; //La carac don t on spécifie les compétences actuellement
-        var lignes = note.trim().split('<br>');
+        var lignes = note.trim().replace(/<p>|<\/p>/g, '<br>').split('<br>');
         lignes.forEach(function(ligne) {
           ligne = ligne.trim();
           var header = ligne.split(':');
@@ -9810,9 +9875,10 @@ var COFantasy = COFantasy || function() {
     return bonus;
   }
 
-  function deTest(personnage) {
+  function deTest(personnage, carac) {
     var dice = 20;
-    if (estAffaibli(personnage) || getState(personnage, 'immobilise'))
+    if (estAffaibli(personnage) || getState(personnage, 'immobilise') ||
+      (carac == 'DEX' && getState(personnage, 'encombre')))
       dice = 12;
     return dice;
   }
@@ -9833,7 +9899,10 @@ var COFantasy = COFantasy || function() {
     if (options.bonus) bonusCarac += options.bonus;
 
     var carSup = nbreDeTestCarac(carac, personnage);
-    var de = computeDice(personnage, carSup);
+    var de = computeDice(personnage, {
+      nbDe: carSup,
+      carac: carac
+    });
 
     var bonusText = (bonusCarac > 0) ? ' + ' + bonusCarac : (bonusCarac === 0) ? "" : ' - ' + (-bonusCarac);
     var rollExpr = "[[" + de + "cs20cf1" + "]]";
@@ -9855,58 +9924,6 @@ var COFantasy = COFantasy || function() {
       rt.texte = rtext;
       rt.roll = rolls.inlinerolls[0];
       callback(rt);
-    });
-  }
-
-  // Test de caractéristique
-  // options : bonusAttrs, bonus, roll
-  // Après le test, lance callback(testRes)
-  // testRes.texte est l'affichage du jet de dé
-  // testRes.reussite indique si le jet est réussi
-  // testRes.echecCritique, testRes.critique pour le type
-  function testCaracteristique(personnage, carac, seuil, options, evt, callback) { //asynchrone
-    options = options || {};
-    var token = personnage.token;
-    var bonusCarac = bonusTestCarac(carac, personnage, evt);
-    if (options.bonusAttrs) {
-      options.bonusAttrs.forEach(function(attr) {
-        bonusCarac += charAttributeAsInt(personnage, attr, 0);
-      });
-    }
-    if (options.bonus) bonusCarac += options.bonus;
-    var testRes = {};
-    if (carac == 'SAG' || carac == 'INT' || carac == 'CHA') {
-      if (charAttributeAsBool(personnage, 'sansEsprit')) {
-        testRes.reussite = true;
-        testRes.texte = "(sans esprit : réussite automatique)";
-        callback(testRes);
-        return;
-      }
-    }
-    var carSup = nbreDeTestCarac(carac, personnage);
-    var de = computeDice(personnage, carSup);
-    var rollExpr = "[[" + de + "cs20cf1]]";
-    var name = personnage.name || getObj('character', personnage.charId).get('name');
-    sendChat("", rollExpr, function(res) {
-      var roll = options.roll || res[0].inlinerolls[0];
-      testRes.roll = roll;
-      var d20roll = roll.results.total;
-      var bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
-      testRes.texte = buildinline(roll) + bonusText;
-      if (d20roll == 20) {
-        testRes.reussite = true;
-        testRes.critique = true;
-      } else if (d20roll == 1) {
-        testRes.reussite = false;
-        testRes.echecCritique = true;
-        diminueMalediction(personnage, evt);
-      } else if (d20roll + bonusCarac >= seuil) {
-        testRes.reussite = true;
-      } else {
-        diminueMalediction(personnage, evt);
-        testRes.reussite = false;
-      }
-      callback(testRes);
     });
   }
 
@@ -11450,8 +11467,8 @@ var COFantasy = COFantasy || function() {
     else if (bonus2 > 0) bonus2 = " +" + bonus2;
     var attk2 = addOrigin(name2, "[[" + getAttrByName(charId2, 'ATKMAG') +
       bonus1 + "]]");
-    var de1 = computeDice(attaquant, 1);
-    var de2 = computeDice(cible, 1);
+    var de1 = computeDice(attaquant);
+    var de2 = computeDice(cible);
     var toEvaluate = "[[" + de1 + "]] [[" + de2 + "]] " + attk1 + " " + attk2;
     sendChat("", toEvaluate, function(res) {
       var rolls = res[0];
@@ -13527,7 +13544,7 @@ var COFantasy = COFantasy || function() {
         }
         removeTokenAttr(guerrier, attrAbsorbe, evt);
         toProceed = true;
-        var attackRollExpr = "[[" + computeDice(guerrier, 1) + "]]";
+        var attackRollExpr = "[[" + computeDice(guerrier) + "]]";
         sendChat('', attackRollExpr, function(res) {
           var rolls = res[0];
           var attackRoll = rolls.inlinerolls[0];
@@ -15139,7 +15156,9 @@ var COFantasy = COFantasy || function() {
         SAGESSE: 14,
         SAG_SUP: '@{JETSUP}',
         CHARISME: 6,
-        DEFDIV: 3 //Total 14
+        DEFDIV: 3, //Total 14
+        RACE: 'loup',
+        TAILLE: 'moyen'
       },
       pv: 9,
       attaques: [
@@ -15164,7 +15183,9 @@ var COFantasy = COFantasy || function() {
         SAG_SUP: '@{JETSUP}',
         CHARISME: 6,
         DEFDIV: 4, //Total 15
-        INIT_DIV: 5 //Total 17
+        INIT_DIV: 5, //Total 17
+        RACE: 'loup',
+        TAILLE: 'moyen'
       },
       pv: 15,
       attaques: [
@@ -15198,7 +15219,9 @@ var COFantasy = COFantasy || function() {
         SAG_SUP: '@{JETSUP}',
         CHARISME: 6,
         DEFDIV: 6, //Total 17
-        INIT_DIV: 5 //Total 17
+        INIT_DIV: 5, //Total 17
+        RACE: 'loup',
+        TAILLE: 'moyen'
       },
       pv: 35,
       attaques: [
@@ -15232,7 +15255,9 @@ var COFantasy = COFantasy || function() {
         SAG_SUP: '@{JETSUP}',
         CHARISME: 6,
         DEFDIV: 4, //Total 18
-        INIT_DIV: 5 //Total 23 
+        INIT_DIV: 5, //Total 23 
+        RACE: 'lion',
+        TAILLE: 'grand'
       },
       pv: 30,
       attaques: [
@@ -15269,6 +15294,8 @@ var COFantasy = COFantasy || function() {
         SAG_SUP: '@{JETSUP}',
         CHARISME: 14,
         DEFDIV: 6, //Total 20
+        RACE: 'lion',
+        TAILLE: 'grand'
       },
       pv: 50,
       attaques: [
@@ -15305,6 +15332,8 @@ var COFantasy = COFantasy || function() {
         SAGESSE: 14,
         CHARISME: 6,
         DEFDIV: 10, //Total 20
+        RACE: 'ours',
+        TAILLE: 'grand'
       },
       pv: 70,
       attaques: [
@@ -15336,6 +15365,8 @@ var COFantasy = COFantasy || function() {
         SAG_SUP: '@{JETSUP}',
         CHARISME: 2,
         DEFDIV: 8, //Total 22
+        RACE: 'tigre',
+        TAILLE: 'grand'
       },
       pv: 90,
       attaques: [
@@ -15371,7 +15402,9 @@ var COFantasy = COFantasy || function() {
         SAGESSE: 14,
         CHARISME: 6,
         DEFDIV: 12, //Total 22
-        RDS: 2
+        RDS: 2,
+        RACE: 'ours',
+        TAILLE: 'énorme'
       },
       pv: 110,
       attaques: [
@@ -15475,10 +15508,10 @@ var COFantasy = COFantasy || function() {
     istokenaction: false,
     inBar: true
   }, {
-    name: 'Jet',
+    name: 'Jets',
     action: "!cof-jet",
-    visibleto: '',
-    istokenaction: false,
+    visibleto: 'all',
+    istokenaction: true,
     inBar: true
   }, {
     name: 'Nuit',
@@ -15511,13 +15544,13 @@ var COFantasy = COFantasy || function() {
     inBar: true
   }, {
     name: 'devient',
-    action: "!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|immobilise|endormi|apeure|invisible|blessé} true",
+    action: "!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|immobilise|endormi|apeure|invisible|blessé|encombre} true",
     visibleto: '',
     istokenaction: false,
     inBar: true
   }, {
     name: 'enlève',
-    action: "!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|immobilise|endormi|apeure|invisible|blessé} false",
+    action: "!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|immobilise|endormi|apeure|invisible|blessé|encombre} false",
     visibleto: '',
     istokenaction: false,
     inBar: true
