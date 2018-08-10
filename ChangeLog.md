@@ -1,6 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 1.05
 ### Capacités
+* Conjuration de prédateurs de l'invocateur
+* Cibles multiples (pour les nuées)
 * Frénésie (pour les hommes-rats)
 * Capacité enrager de la voie du Cogneur
 * Capacité grenaille de l'arquebusier
