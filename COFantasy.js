@@ -5352,12 +5352,16 @@ var COFantasy = COFantasy || function() {
         }
         if (target.touche &&
           attributeAsBool(target, 'imageDecalee')) {
-          var id = randomInteger(6);
+            var id = randomInteger(6);
+            var rollOut = 
+              '<span style="display: inline-block; border-radius: 5px; padding: 0 4px; background-color: #FFFEA2; color: #000;" title="1d6 = ' + 
+              id + '" class="a inlinerollresult showtip tipsy-n">' + id + 
+              '</span>';
           if (id > 4) {
             target.touche = false;
-            target.messages.push("L'attaque passe à travers l'image de " + target.tokName);
+            target.messages.push(rollOut + ": l'attaque passe à travers l'image de " + target.tokName);
           } else {
-            target.messages.push("Malgré l'image légèrement décalée de " + target.tokName + " l'attaque touche");
+            target.messages.push(rollOut + ": malgré l'image légèrement décalée de " + target.tokName + " l'attaque touche");
           }
         }
         if (target.touche) {
@@ -6974,7 +6978,6 @@ var COFantasy = COFantasy || function() {
   }
 
   function buildinline(inlineroll, dmgType, magique) {
-    var InlineBorderRadius = 5;
     var InlineColorOverride = "";
     var values = [];
     var critRoll = false;
@@ -7035,7 +7038,7 @@ var COFantasy = COFantasy || function() {
           InlineColorOverride = ' background-color: #FFFEA2; color: #000;';
         }
     }
-    var rollOut = '<span style="display: inline-block; border-radius: ' + InlineBorderRadius + 'px; padding: 0 4px; ' + InlineColorOverride + '" title="' + inlineroll.expression + ' = ' + values.join("");
+    var rollOut = '<span style="display: inline-block; border-radius: 5px; padding: 0 4px; ' + InlineColorOverride + '" title="' + inlineroll.expression + ' = ' + values.join("");
     rollOut += '" class="a inlinerollresult showtip tipsy-n';
     rollOut += (critCheck && failCheck) ? ' importantroll' : (critCheck ? ' fullcrit' : (failCheck ? ' fullfail' : ''));
     rollOut += '">' + inlineroll.results.total + '</span>';
