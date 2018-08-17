@@ -176,7 +176,7 @@ var COFantasy = COFantasy || function() {
           style = 'background-color:#cc0000';
         }
         break;
-      case "!cof-lancer-sort":
+      case "!cof-lancer-sort": case "!cof-injonction":
         picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
         style = 'background-color:#9900ff';
         break;
@@ -1751,20 +1751,24 @@ var COFantasy = COFantasy || function() {
         if (isNaN(difficulte)) difficulte = undefined;
       }
       var titre = "Jet d";
+      var nomJet;
       if (options.nom && options.nom.length > 0) {
-        switch (options.nom.toLowerCase()[0]) {
-          case 'a':
-          case 'e':
-          case 'i':
-          case 'o':
-          case 'u':
-            titre += "'<b>";
-            break;
-          default:
-            titre += "e <b>";
-        }
-        titre += options.nom;
-      } else titre += "e <b>" + caracOfMod(caracteristique);
+        nomJet = options.nom;
+      } else {
+        nomJet = caracOfMod(caracteristique).toLowerCase();
+      }
+      switch (nomJet.toLowerCase()[0]) {
+        case 'a':
+        case 'e':
+        case 'i':
+        case 'o':
+        case 'u':
+          titre += "'<b>";
+          break;
+        default:
+          titre += "e <b>";
+      }
+      titre += nomJet;
       titre += "</b>";
       if (options.bonus)
         titre += " (" + ((options.bonus > 0) ? '+' : '') + options.bonus + ")";
@@ -7849,6 +7853,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('fortifie', evt, attrs);
     attrs = removeAllAttributes('limiteParJour', evt, attrs);
     attrs = removeAllAttributes('tueurFantasmagorique', evt, attrs);
+    attrs = removeAllAttributes('resisteInjonction', evt, attrs);
     attrs = removeAllAttributes('elixirsACreer', evt, attrs);
     attrs = removeAllAttributes('elixir', evt, attrs);
     //On pourrait diviser par 2 le nombre de baies
@@ -11392,15 +11397,17 @@ var COFantasy = COFantasy || function() {
   }
 
   // callback est seulement appelé si on fait le test
-  function attaqueMagique(msg, evt, callback) {
-    var args = msg.content.split(" ");
-    if (args.length < 3) {
-      error("Pas assez d'arguments pour " + msg.content, args);
+  function attaqueMagique(msg, evt, defResource, callback) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd.length < 3) {
+      error("Pas assez d'arguments pour " + msg.content, cmd);
       return;
     }
-    var attaquant = tokenOfId(args[1], args[1]);
+    var attaquant = tokenOfId(cmd[1], cmd[1]);
     if (attaquant === undefined) {
-      error("L'attaquant n'est pas un token valide", args[1]);
+      error("L'attaquant n'est pas un token valide", cmd[1]);
       return;
     }
     var token1 = attaquant.token;
@@ -11412,9 +11419,9 @@ var COFantasy = COFantasy || function() {
     }
     var name1 = char1.get('name');
     var pageId = attaquant.token.get('pageid');
-    var cible = tokenOfId(args[2], args[2], pageId);
+    var cible = tokenOfId(cmd[2], cmd[2], pageId);
     if (cible === undefined) {
-      error("La cible n'est pas un token valide" + msg.content, args[2]);
+      error("La cible n'est pas un token valide" + msg.content, cmd[2]);
       return;
     }
     var token2 = cible.token;
@@ -11429,39 +11436,6 @@ var COFantasy = COFantasy || function() {
     evt = evt || {
       type: 'attaque magique'
     };
-    var options = {};
-    var opts = msg.content.split(' --');
-    opts.shift();
-    opts.forEach(function(option) {
-      var cmd = option.split(' ');
-      switch (cmd[0]) {
-        case 'portee':
-          if (cmd.length < 2) {
-            error("Il manque l'argument de --portee", msg.content);
-            return;
-          }
-          options.portee = parseInt(cmd[1]);
-          if (isNaN(options.portee) || options.portee < 0) {
-            error("La portée doit être un nombre positif", cmd);
-            options.portee = undefined;
-          }
-          return;
-        case 'mana':
-          if (cmd.length < 2) {
-            error("Il manque l'argument de --mana", msg.content);
-            return;
-          }
-          options.mana = parseInt(cmd[1]);
-          if (isNaN(options.mana) || options.mana < 0) {
-            error("Le coût en mana doit être un nombre positif", cmd);
-            options.mana = undefined;
-          }
-          return;
-        default:
-          error("Option d'attaque magique inconnue", cmd);
-          return;
-      }
-    });
     if (options.portee !== undefined) {
       var distance = distanceCombat(token1, token2, pageId);
       if (distance > options.portee) {
@@ -11470,10 +11444,8 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    if (options.mana) {
-      var msgMana = "l'attaque magique";
-      if (!depenseMana(attaquant, options.mana, msgMana, evt)) return;
-    }
+    defResource = defResource || 'attaqueMagique';
+    if (limiteRessources(attaquant, options, defResource, "l'attaque magique", evt)) return;
     var bonus1 = bonusDAttaque(attaquant, explications, evt);
     if (bonus1 === 0) bonus1 = "";
     else if (bonus1 > 0) bonus1 = " +" + bonus1;
@@ -11541,11 +11513,36 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function injonction(msg) {
+    var evt = {
+      type: 'Injonction'
+    };
+    attaqueMagique(msg, evt, 'injonction',
+      function(attaquant, cible, display, reussi) {
+        if (reussi) {
+          if (attributeAsBool(cible, 'resisteInjonction')) {
+            addLineToFramedDisplay(display, cible.token.get('name') + " a déjà résisté à une injonction aujourd'hui, c'est sans effet");
+            sendChat("", endFramedDisplay(display));
+            addEvent(evt);
+            return;
+          }
+          addLineToFramedDisplay(display, cible.token.get('name') + " obéit à l'injonction");
+          sendChat("", endFramedDisplay(display));
+          addEvent(evt);
+        } else {
+          setTokenAttr(cible, 'resisteInjonction', true, evt);
+          addLineToFramedDisplay(display, cible.token.get('name') + " n'obéit pas à l'injonction");
+          sendChat("", endFramedDisplay(display));
+          addEvent(evt);
+        }
+      });
+  }
+
   function tueurFantasmagorique(msg) {
     var evt = {
       type: 'Tueur fantasmagorique'
     };
-    attaqueMagique(msg, evt,
+    attaqueMagique(msg, evt, 'tueurFantasmagorique',
       function(attaquant, cible, display, reussi) {
         if (reussi) {
           if (estNonVivant(cible)) {
@@ -15084,13 +15081,29 @@ var COFantasy = COFantasy || function() {
     if (token) {
       token.set('represents', charId);
     }
+    var attrs = findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+    });
+    var attrVersion =
+      attrs.find(function(a) {
+        return a.get('name') == 'VERSION';
+      });
+    if (attrVersion) attrVersion.set('current', '1.7');
+    else {
+      createObj('attribute', {
+        _characterid: charId,
+        name: 'VERSION',
+        current: '1.7'
+      });
+    }
     if (spec.attributesFiche) {
       for (var attrName in spec.attributesFiche) {
-        var attr = findObjs({
-          _type: 'attribute',
-          _characterid: charId,
-          name: attrName
-        });
+        /*jshint loopfunc: true */
+        var attr =
+          attrs.filter(function(a) {
+            return a.get('name') == attrName;
+          });
         if (attr.length === 0) {
           createObj('attribute', {
             _characterid: charId,
@@ -15103,11 +15116,7 @@ var COFantasy = COFantasy || function() {
       }
     } //end attributesFiche
     if (spec.pv) {
-      var pvAttr = findObjs({
-        _type: 'attribute',
-        _characterid: charId,
-        name: 'PV'
-      });
+      var pvAttr = attrs.filter(function(a) { return a.get('name') == 'PV';});
       if (pvAttr.length === 0) {
         pvAttr = createObj('attribute', {
           _characterid: charId,
@@ -15496,7 +15505,7 @@ var COFantasy = COFantasy || function() {
         else if (niveau < 21) predateur = predateurs.oursPolaire;
         else if (niveau < 23) predateur = predateurs.tigreDentsDeSabre;
         else predateur = predateurs.oursPrehistorique;
-        var nomPredateur = 
+        var nomPredateur =
           predateur.nom + ' de ' + invocateur.token.get('name');
         var token = createObj('graphic', {
           name: nomPredateur,
@@ -15783,6 +15792,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-attaque-magique":
         attaqueMagique(msg);
+        return;
+      case "!cof-injonction":
+        injonction(msg);
         return;
       case "!cof-sommeil":
         sommeil(msg);

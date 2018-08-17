@@ -170,7 +170,7 @@
               </p>
               <h3 class="text-info" id="macros_abilities">2.2 Macros et Abilities</h3>
               <div class="decalage">
-                <p>Comme tous les scripts, ces scripts sont utilisables tels quels dans le chat, mais ils sont pensés pour être utilisés par des macros qui permettent un autre niveau d'automatisation parfois difficile d'accès au sein des scripts.</p>
+                <p>Comme tous les scripts, ces scripts sont utilisables tels quels dans le chat, mais ils sont pensés pour être utilisés par des macros qui permettent un autre niveau d'automatisation parfois difficile d'accès au sein des scripts. Il est d'ailleurs possible de demander au script de générer la plupart des macros utiles en tapant la commande <code>!cof-set-macros</code> dans le chat.</p>
                 La grosse majorité des capacités et attaques des personnages devraient être utilisées au sein d'abilities de personnages, accessibles comme "Token action". Si ces abilities utilisent des macros, ne pas oublier de rendre ces macros accessibles aux joueurs.
               </div>
               <h3 class="text-info" id="methode_selection_groupes">2.3 Méthode de sélection de groupes</h3>
@@ -215,7 +215,7 @@
                         <figcaption>Exemple du Turn Order avec Aura</figcaption>
                       </li>
                       <li>
-                        <p>Si une "Abilities" dont le nom est <code>#Actions#</code> existe pour le personnage dont c'est le tour, celle-ci sera prise en compte et le joueur qui controle le personnage recevra un chuchottement qui contiendra l'ensemble des %Ability et #Macro cliquables de <code>#Actions#</code>. Par défaut, cela contient toujours une action pour attendre et une pour se défendre. Pour voir ce message en dehors du changement d'initiative, ou pour le MJ, on peut utiliser <code>!cof-liste-actions</code> en sélectionnant le token (un bon candidat pour une macro de type token action).</p>
+                        <p>Si une "Abilities" dont le nom est <code>#Actions#</code> existe pour le personnage dont c'est le tour, celle-ci sera prise en compte et le joueur qui controle le personnage recevra un chuchottement qui contiendra l'ensemble des %Ability et #Macro cliquables de <code>#Actions#</code>. Par défaut, cela contient toujours une action pour attendre et une pour se défendre. Pour voir ce message en dehors du changement d'initiative, ou pour le MJ, on peut utiliser <code>!cof-liste-actions</code> en sélectionnant le token (un bon candidat pour une macro de type token action, d'ailleurs généré par la commande <code>!cof-set-macros</code>).</p>
                         <p><img class="img-fluid" src="https://i.imgur.com/tTfFoPW.png" data-href="https://i.imgur.com/tTfFoPW.png"></p>
                         <figcaption>Exemple d'une macro #Actions# (ou #TurnAction#)</figcaption>
                       </li>
@@ -387,7 +387,7 @@
               </div>
               <h4 class="text-secondary">Manoeuvres</h4>
               <div class="decalage">
-                <p><code>!cof-action-defensive</code> avec comme argument soit <code>simple</code>, soit <code>totale</code> donne le bonus en défense de l'action défensive (p 71). Utilisation sugérée&nbsp;: dans une macro accessible à tous les tokens, <code>!cof-action-defensive ?{Action défensive|simple|totale}</code>.</p>
+                <p><code>!cof-action-defensive</code> avec comme argument soit <code>simple</code>, soit <code>totale</code> donne le bonus en défense de l'action défensive (p 71). Cette action est disponible par défaut si le personnage a une ability <code>#Actions</code>. Alternativement, si vous n'utilisez pas cette méthode, vous pouvez créer une macro accessible à tous les tokens, <code>!cof-action-defensive ?{Action défensive|simple|totale}</code>.</p>
               </div>
               <h4 class="text-secondary">Recharger des armes : <code>!cof-recharger <i>N</i></code></h4>
               <div class="decalage">
@@ -418,7 +418,7 @@
               </div>
               <h4 class="text-secondary">Sortir du combat : <code>!cof-fin-combat</code></h4>
               <div class="decalage">
-                <p>Ferme aussi le tracker de tour. Encore à mettre en macro dans la barre du MJ. Permet de tenir compte de pleins de capacités qui durent un combat, ou utilisables une seule fois par combat,...</p>
+                <p>Ferme aussi le tracker de tour. Encore à mettre en macro dans la barre du MJ (macro automatiquement générée par <code>!cof-set-macros</code>). Permet de tenir compte de pleins de capacités qui durent un combat, ou utilisables une seule fois par combat,...</p>
               </div>
               <h3 class="text-info" id="soins">3.2 Soins :</h3>
               <div class="decalage">
@@ -436,7 +436,7 @@
               </div>
               <h3 class="text-info" id="annulation">3.3 Annulation : <code>!cof-undo</code></h3>
               <div class="decalage">
-                <p>Fait partie des fonctions que je met en macro dans la barre du MJ, ça peut servir très souvent.</p>
+                <p>Fait partie des fonctions que je met en macro dans la barre du MJ, ça peut servir très souvent. Elle est d'ailleurs générée par la commande <code>!cof-set-macros</code>.</p>
               </div>
               <h3 class="text-info" id="repos">3.4 Repos et changement de jour</h3>
               <div class="decalage">
@@ -455,7 +455,7 @@
                 </div>
                 <h4 class="text-secondary">Repos de 10 minutes</h4>
                 <div class="decalage">
-                  <p><code>!cof-recuperation</code> : dépense 1 PR pour se soigner. À mettre en macro associée aux tokens, car tous les joueurs en ont besoin.</p>
+                  <p><code>!cof-recuperation</code> : dépense 1 PR pour se soigner. À mettre en macro associée aux tokens, car tous les joueurs en ont besoin (généré par <code>!cof-set-macros</code>.</p>
                 </div>
               </div>
               <h3 class="text-info" id="chance">3.5 Chance</h3>
@@ -839,7 +839,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie de l'envoûteur</h4>
                 <ol>
-                  <li><strong>Injonction</strong> : utiliser <code>!cof-attaque-magique @{selected|token_id} @{target|token_id}</code></li>
+                  <li><strong>Injonction</strong> : utiliser <code>!cof-injonction @{selected|token_id} @{target|token_id} --portee 20</code></li>
                   <li><strong>Sommeil</strong> : <code>!cof-sommeil @{selected|token_id} --disque @{target|token_id} 5 20</code>. Pour sélectionner le centre de la zone, on peut utiliser un personnage fictif (avec un token représentant une cible, par exemple) ayant 0 de max de PV.</li>
                   <li><strong>Confusion</strong>: faire une attaque de portée 20 m, et pour la macro, utiliser les options <code>--pasDeDmg --sortilege --mana 1 --effet confusion [[3+@{selected|CHA}]] --saveParTour SAG [[10+@{selected|CHA}]]</code>. Si vous utilisez les options de magie puissante, vous pouvez remplacer la durée par <code>?{Y consacrer tout le tour?|Oui,[[6+2*@{selected|CHA}]]|Non,[[3+@{selected|CHA}]]}</code>.  Et si à la place, vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Oui,--tempeteDeMana|Non,&amp;#32;}</code>.</li>
                   <li><strong>Amitié</strong>: pas de support particulier, sinon <code>!cof-lancer-sort 2 lance un sort d'amitié</code></li>
@@ -1280,7 +1280,7 @@
                 <h4 class="text-secondary">Voie du roublard</h4>
                 <ol>
                   <li><strong>Doigts agiles</strong> : utiliser des compétences sur la fiche de personnage</li>
-                  <li><strong>Détecter les pièges</strong> : faire le jet avec <code>!cof-jet INT 10</code></li>
+                  <li><strong>Détecter les pièges</strong> : faire le jet avec <code>!cof-jet INT ?{Piège normal?|Oui,10|Magique,15} --secret</code></li>
                   <li><strong>Croc-en-jambe</strong> : ajouter un attribut <code>crocEnJambe</code> de valeur <code>true</code>. Pour distinguer les adversaires quadrupèdes qui ne seraient pas connues du script, lui ajouter un attribut <code>quadrupede</code>, de valeur <code>true</code>.</li>
                   <li><strong>Attaque paralysante</strong> : lancer une des attaques de contact du voleur en rajoutant les options <code>--limiteParCombat 1 attaqueParalysante --pasDeDmg --effet paralysieRoublard [[1d4]]</code>.</li>
                   <li><strong>Attaque en traître</strong> : Ajouter un attribut <code>attaqueEnTraitre</code>, de valeur courante 1, et de valeur maximale 1. Les actions affichées en cas d'attaque en traître seront en priorité les attaques d'un ability <code>#AttaqueEnTraitre#</code> ou sinon les attaques des actions habituelles du personnages (venant donc de <code>#Actions#</code>).</li>
@@ -1410,7 +1410,7 @@
                 <ol>
                   <li><strong>Instinct de survie</strong> : ajouter un attribut <code>instinctDeSurvie</code> avec comme valeur le nombre de PV en-dessous duquel le PNJ gagne un bonus de DEF. les autres effets sont à faire par le MJ.</li>
                 </ol>
-                <h4 class="text-secondary">Voie du Prédateur</h4>
+                <h4 class="text-secondary">Voie du prédateur</h4>
                 <ol>
                   <li><strong>Embuscade</strong> : Sélectionner les ennemis du prédateurs, et utiliser <code>!cof-surprise</code>. Par exemple, contre une équipe de joueurs dans le <i>handout</i> <code>Equipe joueurs</code> (cf la <a href="#methode_selection_groupes">méthode de sélection de groupes</a>), on pourra utiliser l'ability <code>!cof-surprise [[15 + @{selected|DEX}]] --equipe joueurs</code>. Pour les bonus en discrétion et init, reporter sur la fiche (et à un attribut <code>discrétion</code>), pour l'attaque en embuscade sur une cible surprise, rajouter à une attaque les options <code>--sournoise 1 --if moins FOR --etat renverse --endif</code>.</li>
                   <li><strong>Dévorer</strong> : ajouter les options d'attaque <code>--if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif</code>.</li>
