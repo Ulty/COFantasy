@@ -109,26 +109,36 @@ var COFantasy = COFantasy || function() {
     return playerIds;
   }
 
+  var attackNameRegExp = new RegExp(/^(repeating_armes_.*_)armenom$/);
+
   function getAttack(attackLabel, perso) {
-    // Get attack number (does not correspond to the position in sheet !!!)
-    var attackNumber = 0;
-    var attPrefix, weaponName;
-    while (true) {
-      attPrefix = "repeating_armes_$" + attackNumber + "_";
-      weaponName = getAttrByName(perso.charId, attPrefix + "armenom");
-      if (weaponName === undefined || weaponName === "") {
-        return;
+    var res;
+    var attributes = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+    });
+    attributes.forEach(function(a) {
+      if (res) return;
+      var an = a.get('name');
+      var m = attackNameRegExp.exec(an);
+      if (m) {
+        var attPrefix = m[1];
+        var weaponName = a.get('current');
+        if (weaponName === undefined || weaponName === "") {
+          error("Pas de nom pour une attaque");
+          return;
+        }
+        var weaponLabel = weaponName.split(' ', 1)[0];
+        if (weaponLabel == attackLabel) {
+          weaponName = weaponName.substring(weaponName.indexOf(' ') + 1);
+          res = {
+            attackPrefix: attPrefix,
+            weaponName: weaponName
+          };
+        }
       }
-      var weaponLabel = weaponName.split(' ', 1)[0];
-      if (weaponLabel == attackLabel) {
-        weaponName = weaponName.substring(weaponName.indexOf(' ') + 1);
-        return {
-          attackPrefix: attPrefix,
-          weaponName: weaponName
-        };
-      }
-      attackNumber++;
-    }
+    });
+    return res;
   }
 
   function getPictoStyleFromCommand(fullCommand, perso) {
@@ -176,7 +186,8 @@ var COFantasy = COFantasy || function() {
           style = 'background-color:#cc0000';
         }
         break;
-      case "!cof-lancer-sort": case "!cof-injonction":
+      case "!cof-lancer-sort":
+      case "!cof-injonction":
         picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
         style = 'background-color:#9900ff';
         break;
@@ -15116,7 +15127,9 @@ var COFantasy = COFantasy || function() {
       }
     } //end attributesFiche
     if (spec.pv) {
-      var pvAttr = attrs.filter(function(a) { return a.get('name') == 'PV';});
+      var pvAttr = attrs.filter(function(a) {
+        return a.get('name') == 'PV';
+      });
       if (pvAttr.length === 0) {
         pvAttr = createObj('attribute', {
           _characterid: charId,
