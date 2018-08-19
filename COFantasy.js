@@ -2788,7 +2788,11 @@ var COFantasy = COFantasy || function() {
     } catch (e) {
       if (e.name != "ReferenceError") throw (e);
     }
-    if (HTdeclared) prevToken = JSON.parse(JSON.stringify(token));
+    if (HTdeclared) {
+      //Pour pouvoir annuler les effets de HealthColor sur le statut
+      affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
+      prevToken = JSON.parse(JSON.stringify(token));
+    }
     var fieldv = 'bar' + barNumber + '_value';
     var fieldm;
     if (maxVal) fieldm = 'bar' + barNumber + '_max';
@@ -12647,8 +12651,24 @@ var COFantasy = COFantasy || function() {
           type: "lancement de sort"
         };
         if (depenseMana(lanceur, mana, spell, evt)) {
-          sendChar(charId, '/w "' + lanceur.token.get('name') + '" ' + spell);
-          sendChar(charId, "/w GM " + spell);
+          var character = getObj('character', charId);
+          if (character) {
+            var controlled = character.get('controlledby');
+            if (controlled.includes('all')) sendChar(charId, spell);
+            else {
+              controlled.split(',').forEach(function(c) {
+                if (c !== '' && !playerIsGM(c)) {
+                  var p= getObj('player', c);
+                  if (p) {
+                  sendChar(charId, '/w "' + p.get('_displayname') + '" ' + spell);
+                  }
+                }
+              });
+              sendChar(charId, "/w GM " + spell);
+            }
+          } else {
+            sendChar(charId, "/w GM " + spell);
+          }
           addEvent(evt);
         }
       });
