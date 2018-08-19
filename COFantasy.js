@@ -1382,9 +1382,8 @@ var COFantasy = COFantasy || function() {
     return pageId;
   }
 
-  // actif est un argument optionnel qui représente (token+charId) de l'unique token sélectionné
   // callback(selected, playerId)
-  function getSelected(msg, callback, actif) {
+  function getSelected(msg, callback, options) {
     var playerId = getPlayerIdFromMsg(msg);
     var pageId = getPageId(playerId);
     var args = msg.content.split(' --');
@@ -1392,6 +1391,8 @@ var COFantasy = COFantasy || function() {
     var enleveAuxSelected = [];
     var count = args.length - 1;
     var called;
+    options = options || {};
+    var actif = options.lanceur;
     var finalCall = function() {
       called = true;
       var seen = new Set();
@@ -1526,6 +1527,7 @@ var COFantasy = COFantasy || function() {
               error("le premier argument du disque n'est pas un token valide", cmdSplit);
               return;
             }
+            var tokenCentre = centre.token;
             var rayon = parseInt(cmdSplit[2]);
             if (isNaN(rayon) || rayon < 0) {
               error("Rayon du disque mal défini", cmdSplit);
@@ -1545,7 +1547,7 @@ var COFantasy = COFantasy || function() {
                 }
                 actif = tokenOfId(msg.selected[0]._id, msg.selected[0]._id, pageId);
               }
-              if (distanceCombat(centre.token, actif.token, pageId, {
+              if (distanceCombat(tokenCentre, actif.token, pageId, {
                   strict1: true
                 }) > portee) {
                 sendChar(actif.charId, "Le centre de l'effet est placé trop loin (portée " + portee + ")");
@@ -1570,7 +1572,7 @@ var COFantasy = COFantasy || function() {
               if (obj.get('bar1_max') == 0) return; // jshint ignore:line
               var objChar = getObj('character', objCharId);
               if (objChar === undefined) return;
-              var distanceCentre = distanceCombat(centre.token, obj, pageId, {
+              var distanceCentre = distanceCombat(tokenCentre, obj, pageId, {
                 strict1: true
               });
               if (distanceCentre > rayon) return;
@@ -1578,10 +1580,13 @@ var COFantasy = COFantasy || function() {
                 _id: obj.id
               });
             });
-            if (centre.token.get('bar1_max') == 0) { // jshint ignore:line
+            if (options.targetFx) {
+              spawnFx(tokenCentre.get('left'), tokenCentre.get('top'), options.targetFx, pageId);
+            }
+            if (tokenCentre.get('bar1_max') == 0) { // jshint ignore:line
               //C'est juste un token utilisé pour définir le disque
-              centre.token.remove(); //On l'enlève, normalement plus besoin
-              centre = undefined;
+              tokenCentre.remove(); //On l'enlève, normalement plus besoin
+              options.targetFx = undefined;
             }
             return;
           default:
@@ -5352,11 +5357,11 @@ var COFantasy = COFantasy || function() {
         }
         if (target.touche &&
           attributeAsBool(target, 'imageDecalee')) {
-            var id = randomInteger(6);
-            var rollOut = 
-              '<span style="display: inline-block; border-radius: 5px; padding: 0 4px; background-color: #FFFEA2; color: #000;" title="1d6 = ' + 
-              id + '" class="a inlinerollresult showtip tipsy-n">' + id + 
-              '</span>';
+          var id = randomInteger(6);
+          var rollOut =
+            '<span style="display: inline-block; border-radius: 5px; padding: 0 4px; background-color: #FFFEA2; color: #000;" title="1d6 = ' +
+            id + '" class="a inlinerollresult showtip tipsy-n">' + id +
+            '</span>';
           if (id > 4) {
             target.touche = false;
             target.messages.push(rollOut + ": l'attaque passe à travers l'image de " + target.tokName);
@@ -10309,7 +10314,7 @@ var COFantasy = COFantasy || function() {
           if (tokensToProcess == 1) {
             if (someDmgDone) {
               sendChat("", endFramedDisplay(display));
-              if (evt.affectes) {
+              if (evt.affectes || evt.attributes) {
                 if (evt.waitingForAoe) {
                   evt.waitingForAoe = undefined;
                 } else {
@@ -10344,7 +10349,7 @@ var COFantasy = COFantasy || function() {
             });
         }, finalDisplay); //fin iterSelected
       }); //fin du jet de dés
-    }, options.lanceur); //fin du getSelected
+    }, options); //fin du getSelected
   }
 
   function findRollNumber(msg) {
@@ -10994,7 +10999,7 @@ var COFantasy = COFantasy || function() {
         });
         addEvent(evt);
       }
-    }, lanceur);
+    }, options);
   }
 
   function effetCombat(msg) {
@@ -11407,7 +11412,7 @@ var COFantasy = COFantasy || function() {
         }, //fun fonction de iterSelectde
         finalEffect //callback pour les cas où token incorrect
       );
-    }, options.lanceur);
+    }, options);
   }
 
   // callback est seulement appelé si on fait le test
@@ -11726,7 +11731,9 @@ var COFantasy = COFantasy || function() {
           sendChat("", endFramedDisplay(display));
         }
       });
-    }, caster);
+    }, {
+      lanceur: caster
+    });
   }
 
   function transeGuerison(msg) {
@@ -12290,7 +12297,9 @@ var COFantasy = COFantasy || function() {
               return;
             }
             iterSelected(selected, callback);
-          }, soigneur);
+          }, {
+            lanceur: soigneur
+          });
         }
       };
       var finSoin = function() {
@@ -12898,7 +12907,9 @@ var COFantasy = COFantasy || function() {
       });
       addEvent(evt);
       sendChat("", endFramedDisplay(display));
-    }, druide); //fin du getSelected
+    }, {
+      lanceur: druide
+    }); //fin du getSelected
   }
 
   function consommerBaie(msg) {
@@ -14342,7 +14353,7 @@ var COFantasy = COFantasy || function() {
     if (rang < 2) return liste;
     liste.push({
       nom: 'feu_grégeois',
-      action: "!cof-dmg $rangd6 --feu --psave DEX [[10+@{selected|INT}]] --disque @{target|token_id} 3 10 --lanceur @{selected|token_id}"
+      action: "!cof-dmg $rangd6 --feu --psave DEX [[10+@{selected|INT}]] --disque @{target|token_id} 3 10 --lanceur @{selected|token_id} --targetFx burst-fire"
     });
     if (rang < 3) return liste;
     liste.push({
