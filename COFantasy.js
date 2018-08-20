@@ -12283,6 +12283,13 @@ var COFantasy = COFantasy || function() {
       var evt = {
         type: effet
       };
+      var ressourceLimiteCibleParJour;
+      if (options.limiteCibleParJour) {
+        ressourceLimiteCibleParJour = effet;
+        if (options.limiteCibleParJourRessource)
+          ressourceLimiteCibleParJour = options.limiteCibleParJourRessource;
+        ressourceLimiteCibleParJour = "limiteParJour_" + ressourceLimiteCibleParJour;
+      }
       var limiteATester = true;
       var soinImpossible = false;
       var nbCibles;
@@ -12314,6 +12321,16 @@ var COFantasy = COFantasy || function() {
         nbCibles--;
       };
       iterCibles(function(cible) {
+        if (ressourceLimiteCibleParJour) {
+          var utilisations =
+            attributeAsInt(cible, ressourceLimiteCibleParJour, options.limiteCibleParJour);
+          if (utilisations === 0) {
+            sendChar(cible.charId, "ne peut plus bénéficier de " + effet + " ajourd'hui");
+            finSoin();
+            return;
+          }
+          setTokenAttr(cible, ressourceLimiteCibleParJour, utilisations - 1, evt);
+        }
         if (soinImpossible) {
           finSoin();
           return;
@@ -12658,9 +12675,9 @@ var COFantasy = COFantasy || function() {
             else {
               controlled.split(',').forEach(function(c) {
                 if (c !== '' && !playerIsGM(c)) {
-                  var p= getObj('player', c);
+                  var p = getObj('player', c);
                   if (p) {
-                  sendChar(charId, '/w "' + p.get('_displayname') + '" ' + spell);
+                    sendChar(charId, '/w "' + p.get('_displayname') + '" ' + spell);
                   }
                 }
               });
@@ -17655,7 +17672,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = 1.05;
+  var script_version = 1.06;
   COF_loaded = true;
   on('add:token', COFantasy.addToken);
   state.COFantasy = state.COFantasy || {
