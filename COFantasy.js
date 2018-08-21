@@ -157,18 +157,20 @@ var COFantasy = COFantasy || function() {
         var portee = 0;
         if (command.length > 3) {
           var attackLabel = command[3];
-          var att = getAttack(attackLabel, perso);
-          if (att !== undefined) {
-            portee = getPortee(perso.charId, att.attackPrefix);
-          } else {
-            var thisWeapon = [];
-            try {
-              thisWeapon = JSON.parse(attackLabel);
-              if (Array.isArray(thisWeapon) && thisWeapon.length > 4) {
-                portee = thisWeapon[4];
+          if (!attackLabel.startsWith('?')) {
+            var att = getAttack(attackLabel, perso);
+            if (att !== undefined) {
+              portee = getPortee(perso.charId, att.attackPrefix);
+            } else {
+              var thisWeapon = [];
+              try {
+                thisWeapon = JSON.parse(attackLabel);
+                if (Array.isArray(thisWeapon) && thisWeapon.length > 4) {
+                  portee = thisWeapon[4];
+                }
+              } catch (e) {
+                log("Impossible de trouver la portée pour " + attackLabel);
               }
-            } catch (e) {
-              log("Impossible de trouver la portée pour " + attackLabel);
             }
           }
         }
@@ -2625,7 +2627,7 @@ var COFantasy = COFantasy || function() {
           }
           scope.limiteParJour = limiteParJour;
           if (cmd.length > 2) {
-            cmd.splice(0,2);
+            cmd.splice(0, 2);
             scope.limiteParJourRessource = cmd.joins('_');
           }
           return;
@@ -2641,7 +2643,7 @@ var COFantasy = COFantasy || function() {
           }
           scope.limiteParCombat = limiteParCombat;
           if (cmd.length > 2) {
-            cmd.splice(0,2);
+            cmd.splice(0, 2);
             scope.limiteParCombatRessource = cmd.join('_');
           }
           return;
@@ -10096,7 +10098,7 @@ var COFantasy = COFantasy || function() {
           }
           options.limiteParJour = limiteParJour;
           if (cmd.length > 2) {
-            cmd.splice(0,2);
+            cmd.splice(0, 2);
             options.limiteParJourRessource = cmd.join('_');
           }
           return;
@@ -10112,7 +10114,7 @@ var COFantasy = COFantasy || function() {
           }
           options.limiteCibleParJour = limiteCibleParJour;
           if (cmd.length > 2) {
-            cmd.splice(0,2);
+            cmd.splice(0, 2);
             options.limiteCibleParJourRessource = cmd.join('_');
           }
           return;
@@ -10128,7 +10130,7 @@ var COFantasy = COFantasy || function() {
           }
           options.limiteParCombat = limiteParCombat;
           if (cmd.length > 2) {
-            cmd.splice(0,2);
+            cmd.splice(0, 2);
             options.limiteParCombatRessource = cmd.join('_');
           }
           return;
@@ -15818,7 +15820,7 @@ var COFantasy = COFantasy || function() {
       error("Problème lors de la création du token de lumière", cmd);
       return;
     }
-    evt.tokens =[tokLumiere];
+    evt.tokens = [tokLumiere];
     if (ct.get('bar1_max')) { //Lumière liée à un token
       var attr = createObj('attribute', {
         characterid: cible.charId,
@@ -15848,7 +15850,9 @@ var COFantasy = COFantasy || function() {
       if (cmd.length > 1) groupe = cmd[1];
       if (groupe.toLowerCase() == 'tout') groupe = '';
       var pageId = options.pageId;
-            var evt = {type:"Eteindre la lumière"};
+      var evt = {
+        type: "Eteindre la lumière"
+      };
       iterSelected(selected, function(perso) {
         var attrLumiere = tokenAttribute(perso, 'lumiere');
         attrLumiere.forEach(function(al) {
@@ -15877,7 +15881,7 @@ var COFantasy = COFantasy || function() {
             lumiere = tokensLumiere.shift();
             if (tokensLumiere.length > 0) {
               //On cherche le token le plus proche de perso
-              var pos = [perso.token.get('left'),perso.token.get('top')];
+              var pos = [perso.token.get('left'), perso.token.get('top')];
               var d =
                 VecMath.length(
                   VecMath.vec([lumiere.get('left'), lumiere.get('top')], pos));
@@ -17729,9 +17733,9 @@ var COFantasy = COFantasy || function() {
             }
           }
           if (lumiere === undefined) {
-              log("Pas de token pour la lumière " + al.get('current'));
-              al.remove();
-              return;
+            log("Pas de token pour la lumière " + al.get('current'));
+            al.remove();
+            return;
           }
           lumiere.set('left', x);
           lumiere.set('top', y);
