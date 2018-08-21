@@ -1025,7 +1025,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie de la magie universelle</h4>
                 <ol>
-                  <li><strong>Lumière</strong> : Le MJ peut donner les caractérisiques de lumières à un token(ou utiliser le script <code>torch</code>, dans ce cas, j'utilise la macro <code>!flicker-on 20 10 yes @{target|token_id}</code>)</li>
+                  <li><strong>Lumière</strong> : <code>!cof-lumiere @{target|token_id} 20</code>. On peut utiliser une cible qui ne soit qu'un personnage sans PV, et dans ce cas le token disparaît, et pour éteindre la lumière, le MJ doit supprimer le token dans le layer de l'éclairage dynamique. Si la cible est un personnage avec des PV, alors la lumière se déplacera avec lui, et pour étaindre la lumière, il faut séclectionner le ou les tokens et lancer <code>!cof-eteindre-lumiere lumiere</code>.</li>
                   <li><strong>Détection de la magie</strong> : pas de support</li>
                   <li><strong>Invisibilité</strong> : utiliser <code>!cof-set-state invisible true --mana 1 --message se rend invisible ([[1d6+@{selected|INT}]] minutes)</code>. Pour les ennemis, mettre dans le layer gm, pour les joueurs, ne pas les cibler. Reste le problème des AOE...</li>
                   <li><strong>Vol</strong> : pas de support autre que <code>!cof-lancer-sort 2 vole ([[1d6+@{selected|INT}]] minutes)</code></li>
