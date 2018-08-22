@@ -15698,7 +15698,7 @@ var COFantasy = COFantasy || function() {
     inBar: true
   }, {
     name: 'Torche',
-    action: "!cof-torche",
+    action: "!cof-torche @{selected|token_id}",
     visibleto: 'all',
     istokenaction: true,
   }, {
@@ -16028,8 +16028,8 @@ var COFantasy = COFantasy || function() {
       var msgAllume = "allume une torche, qui peut encore éclairer pendant " + tempsTorche + " minutes.";
       if (nbTorches > 1) {
         msgAllume += " Il lui reste encore " + (nbTorches - 1);
-      if (nbTorches == 2) msgAllume += " autre torche";
-      else msgAllume += " autres torches";
+        if (nbTorches == 2) msgAllume += " autre torche";
+        else msgAllume += " autres torches";
       }
       whisperChar(perso.charId, msgAllume);
       addEvent(evt);
