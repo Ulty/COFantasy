@@ -1,6 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+
 ## 1.06
 ### Capacités
+* Ajout de la gestion des torches
 * Prise en charge du sort de lumière du magicien
 * Rang 1 de la voie de la magie de guérison
 
