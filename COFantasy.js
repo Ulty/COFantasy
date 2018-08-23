@@ -9830,13 +9830,6 @@ var COFantasy = COFantasy || function() {
     return male;
   }
 
-  function removeAttr(selected, attribute, evt, msg) {
-    if (selected === undefined || selected.length === 0) return [];
-    iterSelected(selected, function(perso) {
-      removeTokenAttr(perso, attribute, evt, msg);
-    });
-  }
-
   function armureMagique(msg) {
     msg.content += " armureMagique";
     effetCombat(msg);
@@ -9861,8 +9854,12 @@ var COFantasy = COFantasy || function() {
       type: 'other'
     };
     getSelected(msg, function(selected) {
+      if (selected === undefined || selected.length === 0) {
+        sendPlayer(msg, "Pas de token sélectionné pour !cof--buf-def");
+      }
       iterSelected(selected, function(perso) {
         setTokenAttr(perso, 'bufDEF', buf, evt, message);
+        setToken(perso.token, 'status_blue', buf, evt);
       });
       if (evt.attributes.length === 0) {
         error("Pas de cible valide sélectionnée pour !cod-buf-def", msg);
@@ -9877,11 +9874,13 @@ var COFantasy = COFantasy || function() {
       type: 'other'
     };
     getSelected(msg, function(selected) {
-      removeAttr(selected, 'bufDEF', evt, "retrouve sa défense normale");
-      if (evt.deletedAttributes.length === 0) {
-        error("Pas de cible valide sélectionnée pour !cod-remove-buf-def", msg);
-        return;
+      if (selected === undefined || selected.length === 0) {
+        sendPlayer(msg, "Pas de token sélectionné pour !cof-remove-buf-def");
       }
+      iterSelected(selected, function(perso) {
+        removeTokenAttr(perso, 'bufDEF', evt, "retrouve sa défense normale");
+        setToken(perso.token, 'status_blue', false, evt);
+      });
       addEvent(evt);
     });
   }
@@ -16025,11 +16024,15 @@ var COFantasy = COFantasy || function() {
         type: "Allumer une torche"
       };
       ajouteUneLumiere(perso, 'torche', 13, 7, evt);
-      var msgAllume = "allume une torche, qui peut encore éclairer pendant " + tempsTorche + " minutes.";
+      var msgAllume = 
+        "allume une torche, qui peut encore éclairer pendant " + tempsTorche + 
+        " minute";
+      if (tempsTorche > 1) msgAllume += 's';
+      msgAllume += '.';
       if (nbTorches > 1) {
         msgAllume += " Il lui reste encore " + (nbTorches - 1);
-        if (nbTorches == 2) msgAllume += " autre torche";
-        else msgAllume += " autres torches";
+        if (nbTorches == 2) msgAllume += " autre torche.";
+        else msgAllume += " autres torches.";
       }
       whisperChar(perso.charId, msgAllume);
       addEvent(evt);
