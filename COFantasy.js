@@ -6233,6 +6233,7 @@ var COFantasy = COFantasy || function() {
     }); //Fin de la boucle pour toutes cibles
   }
 
+  //Affichage final d'une attaque
   function finaliseDisplay(display, explications, evt) {
     explications.forEach(function(expl) {
       addLineToFramedDisplay(display, expl, 80);
@@ -6257,6 +6258,8 @@ var COFantasy = COFantasy || function() {
                 "Rune de puissance", evt.personnage));
           }
         }
+        var sort = false;
+        if (evt.action.options && evt.action.options.sortilege) sort = true;
         if (evt.action.cibles) {
           evt.action.cibles.forEach(function(target) {
             if (attributeAsBool(target, 'encaisserUnCoup')) {
@@ -6264,6 +6267,21 @@ var COFantasy = COFantasy || function() {
                 bouton("!cof-encaisser-un-coup " + evt.id,
                   "encaisser le coup", target)
               );
+            }
+            if (sort) {
+              if (attributeAsBool(target, 'absorberUnSort')) {
+                addLineToFramedDisplay(display, target.tokName + " peut " +
+                  bouton("!cof-absorber-au-bouclier " + evt.id,
+                    "absorber le sort", target)
+                );
+              }
+            } else {
+              if (attributeAsBool(target, 'absorberUnCoup')) {
+                addLineToFramedDisplay(display, target.tokName + " peut " +
+                  bouton("!cof-absorber-au-bouclier " + evt.id,
+                    "absorber le coup", target)
+                );
+              }
             }
           });
         }
@@ -13591,21 +13609,31 @@ var COFantasy = COFantasy || function() {
 
   // asynchrone : on fait les jets du guerrier en opposition
   function absorberAuBouclier(msg) {
-    getSelected(msg, function(selected) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    var evtARefaire = lastEvent();
+    if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
+      evtARefaire = findEvent(cmd[1]);
+      if (evtARefaire === undefined) {
+        error("L'action est trop ancienne ou a été annulée", cmd);
+        return;
+      }
+    }
+    getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         error("Personne n'est sélectionné pour absorber", msg);
         return;
       }
-      var lastAct = lastEvent();
-      if (lastAct === undefined) {
+      if (evtARefaire === undefined) {
         sendChat('', "Historique d'actions vide, pas d'action trouvée pour absorber un coup ou un sort");
         return;
       }
-      if (lastAct.type != 'Attaque' || lastAct.succes === false) {
+      if (evtARefaire.type != 'Attaque' || evtARefaire.succes === false) {
         sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour absorber l'attaque précédente");
         return;
       }
-      var attaque = lastAct.action;
+      var attaque = evtARefaire.action;
       var options = attaque.options;
       options.rollsAttack = attaque.rollsAttack;
       var evt = {
@@ -13624,6 +13652,10 @@ var COFantasy = COFantasy || function() {
       var toProceed;
       var count = selected.length;
       iterSelected(selected, function(guerrier) {
+        if (!peutController(msg, guerrier)) {
+          sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+          return;
+        }
         if (ficheAttributeAsInt(guerrier, 'DEFBOUCLIERON', 1) != 1) {
           sendChar(guerrier.charId, "ne porte pas son bouclier, il ne peut pas " + evt.type);
           count--;
@@ -15730,10 +15762,14 @@ var COFantasy = COFantasy || function() {
     var playerId = msg.playerid;
     var force = playerIsGM(playerId) && msg.content.includes('--force');
     var inBar = [];
-    var allMacros = findObjs({_type:'macro'});
+    var allMacros = findObjs({
+      _type: 'macro'
+    });
     gameMacros.forEach(function(m) {
-      var prev = 
-        allMacros.find(function(macro){ return macro.get('name') == m.name;});
+      var prev =
+        allMacros.find(function(macro) {
+          return macro.get('name') == m.name;
+        });
       if (prev === undefined) {
         m.playerid = playerId;
         createObj('macro', m);
@@ -16024,8 +16060,8 @@ var COFantasy = COFantasy || function() {
         type: "Allumer une torche"
       };
       ajouteUneLumiere(perso, 'torche', 13, 7, evt);
-      var msgAllume = 
-        "allume une torche, qui peut encore éclairer pendant " + tempsTorche + 
+      var msgAllume =
+        "allume une torche, qui peut encore éclairer pendant " + tempsTorche +
         " minute";
       if (tempsTorche > 1) msgAllume += 's';
       msgAllume += '.';

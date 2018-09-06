@@ -1,5 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 
+* Absorber un coup ou un sort est maintenant disponible sur l'affichage des attaques qui portent sur un guerrier en position.
+
 ## 1.06
 ### Capacités
 * Ajout de la gestion des torches
