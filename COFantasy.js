@@ -1581,7 +1581,7 @@ var COFantasy = COFantasy || function() {
               if (distanceCombat(tokenCentre, actif.token, pageId, {
                   strict1: true
                 }) > portee) {
-                sendChar(actif.charId, "Le centre de l'effet est placé trop loin (portée " + portee + ")");
+                sendChar(actif.charId, "Le centre de l'effet est placé trop loin (portée " + portee + " m)");
                 return;
               }
             }
@@ -3085,6 +3085,28 @@ var COFantasy = COFantasy || function() {
       evt.deletedAttributes.push(attr);
     }
     attr.remove();
+  }
+
+  function removeAllAttributes(name, evt, attrs) {
+    if (attrs === undefined) {
+      attrs = findObjs({
+        _type: 'attribute'
+      });
+    }
+    var attrsNamed = allAttributesNamed(attrs, name);
+    if (attrsNamed.length === 0) return attrs;
+    if (evt.deletedAttributes === undefined) evt.deletedAttributes = [];
+    attrsNamed.forEach(function(attr) {
+      evt.deletedAttributes.push(attr);
+      attr.remove();
+    });
+    attrs = attrs.filter(function(attr) {
+      var ind = attrsNamed.findIndex(function(nattr) {
+        return nattr.id == attr.id;
+      });
+      return (ind == -1);
+    });
+    return attrs;
   }
 
   function initiative(selected, evt, recompute) { //set initiative for selected tokens
@@ -7327,28 +7349,6 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function removeAllAttributes(name, evt, attrs) {
-    if (attrs === undefined) {
-      attrs = findObjs({
-        _type: 'attribute'
-      });
-    }
-    var attrsNamed = allAttributesNamed(attrs, name);
-    if (attrsNamed.length === 0) return attrs;
-    if (evt.deletedAttributes === undefined) evt.deletedAttributes = [];
-    attrsNamed.forEach(function(attr) {
-      evt.deletedAttributes.push(attr);
-      attr.remove();
-    });
-    attrs = attrs.filter(function(attr) {
-      var ind = attrsNamed.findIndex(function(nattr) {
-        return nattr.id == attr.id;
-      });
-      return (ind == -1);
-    });
-    return attrs;
-  }
-
   //Met tous les attributs avec le nom au max
   function resetAttr(attrs, attrName, evt, msg) {
     allAttributesNamed(attrs, attrName).forEach(function(att) {
@@ -7928,6 +7928,10 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('limiteParJour', evt, attrs);
     attrs = removeAllAttributes('tueurFantasmagorique', evt, attrs);
     attrs = removeAllAttributes('resisteInjonction', evt, attrs);
+    //Les élixirs
+    var attrsElixirsACreer = attrs.filter(function(a) {
+      return a.get('name').startsWith('elixirsACreer');
+    });
     attrs = removeAllAttributes('elixirsACreer', evt, attrs);
     attrs = removeAllAttributes('elixir', evt, attrs);
     //On pourrait diviser par 2 le nombre de baies
@@ -9941,6 +9945,18 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(personnage, 'putrefactionOutrTombe')) {
       bonus -= 2;
     }
+    var fortifie = attributeAsInt(personnage, 'fortifie', 0);
+    if (fortifie > 0) {
+      bonus += 3;
+      if (evt) {
+        fortifie--;
+        if (fortifie === 0) {
+          removeTokenAttr(personnage, 'fortifie', evt);
+        } else {
+          setTokenAttr(personnage, 'fortifie', fortifie, evt);
+        }
+      }
+    }
     switch (carac) {
       case 'DEX':
         if (ficheAttributeAsInt(personnage, 'DEFARMUREON', 1))
@@ -10254,7 +10270,7 @@ var COFantasy = COFantasy || function() {
     }
     getSelected(msg, function(selected, playerId) {
       if (selected === undefined || selected.length === 0) {
-        error("pas de cible pour les dégâts", msg);
+        sendPlayer(msg, "pas de cible trouvée, action annulée");
         return;
       }
       var evt = {
@@ -15703,6 +15719,11 @@ var COFantasy = COFantasy || function() {
     action: "!cof-jet",
     visibleto: 'all',
     istokenaction: true,
+  }, {
+    name: 'Jets GM',
+    action: "!cof-jet --secret",
+    visibleto: '',
+    istokenaction: false,
     inBar: true
   }, {
     name: 'Nuit',

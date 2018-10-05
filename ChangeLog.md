@@ -1,5 +1,6 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 
+* Le fortifiant du forgefort affecte maintenant la commande !cof-jet
 * Absorber un coup ou un sort est maintenant disponible sur l'affichage des attaques qui portent sur un guerrier en position.
 
 ## 1.06
