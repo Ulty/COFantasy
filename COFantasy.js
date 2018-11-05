@@ -18140,10 +18140,19 @@ var COFantasy = COFantasy || function() {
       token.set('light_angle', 360);
     }
     if (token.get('bar1_link') !== '') return;
+    var copyOf = 0;
     var tokenBaseName = tokenName;
     if (tokenBaseName.includes('%%NUMBERED%%')) {
       if (typeof TokenNameNumber !== 'undefined') return; //On laisse tokenNameNumber gérer ça
       tokenBaseName = tokenBaseName.replace('%%NUMBERED%%', '');
+    } else {
+      // On regarde si le nom se termine par un entier
+      var lastSpace = tokenBaseName.lastIndexOf(' ');
+      if (lastSpace > 0) {
+        copyOf = +tokenBaseName.substring(lastSpace + 1);
+        if (isNaN(copyOf)) copyOf = 0;
+        else tokenBaseName = tokenBaseName.substring(0, lastSpace);
+      }
     }
     var otherTokens = findObjs({
       _type: 'graphic',
@@ -18165,6 +18174,7 @@ var COFantasy = COFantasy || function() {
       if (!isNaN(tokenBaseName[tokenBaseName.length - 1]))
         nePasModifier = true;
     }
+    var pageId = token.get('pageid');
     otherTokens.forEach(function(ot) {
       if (ot.id == token.id) return;
       var name = ot.get('name');
@@ -18173,10 +18183,13 @@ var COFantasy = COFantasy || function() {
         var suffixe = name.replace(tokenBaseName + ' ', '');
         if (isNaN(suffixe)) return;
         var n = parseInt(suffixe);
+        if (n == copyOf) {
+          if (ot.get('pageid') == pageId) copyOf = 0;
+        }
         if (n >= numero) numero = n + 1;
       }
     });
-    if (nePasModifier) return;
+    if (nePasModifier || copyOf > 0) return;
     token.set('name', tokenBaseName + ' ' + numero);
   }
 
