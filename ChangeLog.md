@@ -15,6 +15,7 @@
 * Plus de message d'erreur dans le log quand on utilise un tableau au lieu d'un label pour une attaque
 
 ### Autres améliorations
+* Ajout de la commande !cof-manoeuvre pour faire des manoeuvres risquées (seulement aveugler pour l'instant)
 * Ajout de l'effet temporaire 'aveugleManoeuvre' pour gérer l'effet d'une manoeuvre d'aveuglement
 * Ajout d'une commande pour les tests d'attaque au contact opposée
 * Ajout de la gestion des torches

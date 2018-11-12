@@ -9601,7 +9601,7 @@ var COFantasy = COFantasy || function() {
   function statut(msg) { // show some character informations
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
-        error("Dans !cof-status : rien à faire, pas de token selectionné", msg);
+        error("Dans !cof-statut : rien à faire, pas de token selectionné", msg);
         return;
       }
       iterSelected(selected, function(perso) {
@@ -9714,7 +9714,7 @@ var COFantasy = COFantasy || function() {
               addLineToFramedDisplay(display, line);
             }
           } else if (armeEnMain == armeLabel) {
-            addLineToFramedDisplay(display, "tiens " + nomArme + " en main.");
+            addLineToFramedDisplay(display, "tient " + nomArme + " en main.");
           }
           if (attributeAsBool(perso, 'poisonRapide_' + armeLabel)) {
             addLineToFramedDisplay(display, nomArme + " est enduit de poison.");
@@ -9789,32 +9789,32 @@ var COFantasy = COFantasy || function() {
           attrPosture = attrPosture[0];
           var posture = attrPosture.get('max');
           var postureMsg = "a une posture ";
-          switch (posture.substr(-1, 3)) {
+          switch (posture.substr(-3, 3)) {
             case 'DEF':
-              msg += "défensive";
+              postureMsg += "défensive";
               break;
             case 'ATT':
-              msg += "offensive";
+              postureMsg += "offensive";
               break;
             case '_DM':
-              msg += "puissante";
+              postureMsg += "puissante";
               break;
             default:
           }
-          msg += " mais ";
+          postureMsg += " mais ";
           switch (posture.substr(0, 3)) {
             case 'DEF':
-              msg += "risquée";
+              postureMsg += "risquée";
               break;
             case 'ATT':
-              msg += "moins précise";
+              postureMsg += "moins précise";
               break;
             case 'DM_':
-              msg += "moins puissante";
+              postureMsg += "moins puissante";
               break;
             default:
           }
-          addLineToFramedDisplay(display, posture);
+          addLineToFramedDisplay(display, postureMsg);
         }
         sendChat("", endFramedDisplay(display));
       });
@@ -15277,6 +15277,137 @@ var COFantasy = COFantasy || function() {
       });
   }
 
+  var listeManoeuvres = {
+    aveugler: {
+      appliquer: function(cible, critique, evt, envoyerMessage) {
+        var duree = 1;
+        if (critique) duree = randomInteger(6);
+        var msg;
+        if (envoyerMessage) msg = "est aveuglé par son adversaire";
+        setTokenAttr(
+          cible, 'aveugleManoeuvre', duree, evt, msg, getInit());
+      }
+    }
+  };
+
+  //!cof-appliquer-manoeuvre id1 id2 effet attrId
+  //attrId est utilisé pour limiter le nombre d'utilisations
+  function appliquerManoeuvre(msg) {
+    var cmd = msg.content.split(' ');
+    if (cmd.length < 5) {
+      error("cof-appliquer-manoeuvre attend 4 arguments", msg.content);
+      return;
+    }
+    var limiteAttr = getObj('attribute', cmd[4]);
+    if (limiteAttr === undefined) {
+      sendPlayer(msg, "La manoeuvre a déjà été choisie");
+      return;
+    }
+    var attaquant = tokenOfId(cmd[1], cmd[1]);
+    if (attaquant === undefined) {
+      error("Le premier argument de !cof-appliquer-maneuvre n'est pas un token valide", cmd);
+      return;
+    }
+    var cible = tokenOfId(cmd[2], cmd[2]);
+    if (cible === undefined) {
+      error("Le deuxième argument de !cof-appliquer-manoeuvre n'est pas un token valide", cmd);
+      return;
+    }
+    if (!_.has(listeManoeuvres, cmd[3])) {
+      error("Manoeuvre " + cmd[3] + " inconnue.", cmd);
+      return;
+    }
+    var effet = listeManoeuvres[cmd[3]];
+    var evt = {
+      type: 'Application de manoeuvre',
+      deletedAttributes: [limiteAttr]
+    };
+    limiteAttr.remove();
+    effet.appliquer(cible, false, evt, true);
+    addEvent(evt);
+  }
+
+  //!cof-manoeuvre id1 id2 effet
+  function manoeuvreRisquee(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 4) {
+      error("cof-manoeuvre attend 3 arguments", msg.content);
+      return;
+    }
+    var attaquant = tokenOfId(cmd[1], cmd[1]);
+    if (attaquant === undefined) {
+      error("Le premier argument de !cof-maneuvre n'est pas un token valide", cmd);
+      return;
+    }
+    attaquant.tokName = attaquant.token.get('name');
+    var cible = tokenOfId(cmd[2], cmd[2]);
+    if (cible === undefined) {
+      error("Le deuxième argument de !cof-manoeuvre n'est pas un token valide", cmd);
+      return;
+    }
+    cible.tokName = cible.token.get('name');
+    if (!_.has(listeManoeuvres, cmd[3])) {
+      sendPlayer(msg, "Manoeuvre " + cmd[3] + " inconnue.");
+      return;
+    }
+    var effet = listeManoeuvres[cmd[3]];
+    var evt = {
+      type: 'manoeuvre'
+    };
+    var playerId = getPlayerIdFromMsg(msg);
+    attaqueContactOpposee(playerId, attaquant, cible, evt, options,
+      function(res, display, explications) {
+        if (res.succes) {
+          addLineToFramedDisplay(display, attaquant.tokName + " réussi à " + cmd[3] + " " + cible.tokName);
+          effet.appliquer(cible, res.critique, evt);
+        } else {
+          addLineToFramedDisplay(display, attaquant.tokName + " ne réussi pas à " + cmd[3] + " " + cible.tokName);
+          //Envoyer à la cible la possibilité d'appliquer un effet de son choix
+        }
+        explications.forEach(function(expl) {
+          addLineToFramedDisplay(display, expl, 80);
+        });
+        sendChat("", endFramedDisplay(display));
+        addEvent(evt);
+        if (!res.succes) {
+          var charCible = getObj('character', cible.charId);
+          if (charCible === undefined) {
+            error("Cible sans personnage associé", cible);
+            return;
+          }
+          var nomCible = charCible.get('name');
+          var titre = "Choisir un effet contre " + attaquant.tokName;
+          //On crée un display sans le header
+          display = startFramedDisplay(undefined, titre, cible, {
+            retarde: true
+          });
+          //Attribut pour empecher plusieurs utilisations
+          var attrLimit = createObj('attribute', {
+            _characterid: cible.charId,
+            name: 'limiteApplicationManoeuvre',
+            current: '1'
+          });
+          for (var man in listeManoeuvres) {
+            var appliquerManoeuvre = '!cof-appliquer-manoeuvre ' + cible.token.id + ' ' + attaquant.token.id + ' ' + man + ' ' + attrLimit.id;
+            var ligneManoeuvre = boutonSimple(appliquerManoeuvre, '', man);
+            addLineToFramedDisplay(display, ligneManoeuvre, 90, true);
+          }
+          // on envoie la liste aux joueurs qui gèrent le voleur
+          var playerIds = getPlayerIds(cible);
+          playerIds.forEach(function(playerid) {
+            addFramedHeader(display, playerid, true);
+            sendChat('', endFramedDisplay(display));
+          });
+          if (playerIds.length === 0) {
+            addFramedHeader(display, undefined, 'gm');
+            sendChat('', endFramedDisplay(display));
+          }
+        }
+      });
+  }
+
   function sendCommands(from, commands) {
     if (commands.length === 0) return;
     var c = commands.shift();
@@ -16485,6 +16616,12 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-test-attaque-opposee":
         testAttaqueOpposee(msg);
+        return;
+      case "!cof-manoeuvre":
+        manoeuvreRisquee(msg);
+        return;
+      case "!cof-appliquer-manoeuvre":
+        appliquerManoeuvre(msg);
         return;
       case "!cof-desarmer":
         desarmer(msg);
