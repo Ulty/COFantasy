@@ -1,5 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 
+##1.07
+
+* Les options de script sont maintenant accessibles avec la commande !cof-options. Les options sont persistantes pour une même partie.
 
 ## 1.06
 ### Capacités

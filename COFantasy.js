@@ -28,18 +28,10 @@ var COFantasy = COFantasy || function() {
   "use strict";
 
   var PIX_PER_UNIT = 70;
-  var DEF_MALUS_APRES_TOUR_5 = true;
   var IMAGE_OMBRE = "https://s3.amazonaws.com/files.d20.io/images/2781735/LcllgIHvqvu0HAbWdXZbJQ/thumb.png?13900368485";
   var IMAGE_DOUBLE = "https://s3.amazonaws.com/files.d20.io/images/33854984/q10B3KtWsCxcMczLo4BSUw/thumb.png?1496303265";
   var IMAGE_ARBRE = "https://s3.amazonaws.com/files.d20.io/images/52767134/KEGYUXeKnxZr5dbDwQEO4Q/thumb.png?15248300835";
   var HISTORY_SIZE = 150;
-  var BLESSURESGRAVES = true; //Si les DMs dépassent CON+niveau, ou si on arrive
-  //à 0 PV, on perd un PR, et si plus de PR, affaibli.
-  var MONTRER_TURNACTION_AU_MJ = false;
-  var FORME_D_ARBRE_AMELIORE_PEAU_D_ECORCE = true; //+50% en forme d'arbre
-  var DM_MINIMUM = 0; //Dégâts minimum d'une attaque ou autre source de DM.
-  var AVATAR_IN_DISPLAY = true; //Si false on utilise les images de tokens
-  var MANOEUVRES = true; //affiche les manoeuvres dans les actions par défaut
   var eventHistory = [];
   var updateNextInitSet = new Set();
 
@@ -55,11 +47,58 @@ var COFantasy = COFantasy || function() {
   var bs_alert_success = 'color: #3c763d; background-color: #dff0d8; border-color: #d6e9c6;';
   var bs_alert_danger = 'color: #a94442; background-color: #f2dede; border-color: #ebccd1;';
 
+  var defaultOptions = {
+    blessuresGraves: {
+      explications: "Si les DMs dépassent CON+niveau, ou si on arrive à 0 PV, on perd un PR, et si plus de PR, affaibli.",
+      val: true,
+      type: 'bool'
+    },
+    montrerTurnActionAuMJ: {
+      explications: "À chaque nouveau personnage en combat, montre le choix d'actions au MJ, même pour les PJs.",
+      val: false,
+      type: 'bool'
+    },
+    avatarDansCadres: {
+      explications: "Si faux, on utilise l'image du token.",
+      val: true,
+      type: 'bool'
+    },
+    manoeuvres: {
+      explications: "Affiche les manoeuvres dans la liste d'actions",
+      val: true,
+      type: 'bool'
+    },
+    formeDArbreAmeliorePeuDEcorce: {
+      explications: "+50% à l'effet de la peau d'écorce en forme d'arbre.",
+      val: true,
+      type: 'bool'
+    },
+    dmMinimum: {
+      explications: "Dégâts minimum d'une attaque ou autre source de DM.",
+      val: 0,
+      type: 'int'
+    },
+    malusDEFUsure: {
+      explications: "Malus de -2 en DEF tous les n tours. Mettre à 0 pour ne pas avoir de malus d'usure",
+      val: 5,
+      type: 'int'
+    },
+  };
+
   var aura_token_on_turn = false;
   var stateCOF = state.COFantasy;
 
   function setStateCOF() {
     stateCOF = state.COFantasy;
+    if (stateCOF.options === undefined) stateCOF.options = {};
+    for (var optd in defaultOptions) {
+      if (stateCOF.options[optd] === undefined)
+        stateCOF.options[optd] = {
+          explications: defaultOptions[optd].explications,
+          val: defaultOptions[optd].val,
+          type: defaultOptions[optd].type
+        };
+    }
   }
 
   // List of states:
@@ -957,7 +996,7 @@ var COFantasy = COFantasy || function() {
     var avatar1, avatar2;
     if (perso2) {
       var img2 = improve_image(perso2.token.get('imgsrc'));
-      if (AVATAR_IN_DISPLAY) {
+      if (stateCOF.options.avatarDansCadres.val) {
         var character2 = getObj('character', perso2.charId);
         if (character2) img2 = improve_image(character2.get('avatar')) || img2;
       }
@@ -970,7 +1009,7 @@ var COFantasy = COFantasy || function() {
     }
     if (perso1) {
       var img1 = improve_image(perso1.token.get('imgsrc'));
-      if (AVATAR_IN_DISPLAY) {
+      if (stateCOF.options.avatarDansCadres.val) {
         var character1 = getObj('character', perso1.charId);
         if (character1) img1 = improve_image(character1.get('avatar')) || img1;
       }
@@ -1684,6 +1723,7 @@ var COFantasy = COFantasy || function() {
     return playerId;
   }
 
+  //origin peut être un message ou un nom de joueur
   function sendPlayer(origin, msg) {
     var dest = origin;
     if (origin.who) {
@@ -3624,8 +3664,8 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(target, 'statueDeBois')) defense = 10;
     // Malus de défense global pour les longs combats
-    if (DEF_MALUS_APRES_TOUR_5)
-      defense -= (Math.floor((stateCOF.tour - 1) / 5) * 2);
+    if (stateCOF.options.malusDEFUsure.val)
+      defense -= (Math.floor((stateCOF.tour - 1) / stateCOF.options.malusDEFUsure.val) * 2);
     // Autres modificateurs de défense
     defense += attributeAsInt(target, 'defenseTotale', 0);
     defense += attributeAsInt(target, 'pacifisme', 0);
@@ -3633,7 +3673,7 @@ var COFantasy = COFantasy || function() {
       var bonusPeau = getValeurOfEffet(target, 'peauDEcorce', 1, 'voieDesVegetaux');
       var peauIntense = attributeAsInt(target, 'peauDEcorceTempeteDeManaIntense', 0);
       bonusPeau += peauIntense;
-      if (FORME_D_ARBRE_AMELIORE_PEAU_D_ECORCE && formeDarbre) {
+      if (stateCOF.options.formeDArbreAmeliorePeuDEcorce.val && formeDarbre) {
         bonusPeau = Math.ceil(bonusPeau * 1.5);
       }
       defense += bonusPeau;
@@ -6818,7 +6858,7 @@ var COFantasy = COFantasy || function() {
 
   function testBlessureGrave(target, dmgTotal, expliquer, evt) {
     target.tokName = target.tokName || target.token.get('name');
-    if (BLESSURESGRAVES && estPJ(target) && (dmgTotal == 'mort' ||
+    if (stateCOF.options.blessuresGraves.val && estPJ(target) && (dmgTotal == 'mort' ||
         dmgTotal >
         (ficheAttributeAsInt(target, 'NIVEAU', 1) +
           ficheAttributeAsInt(target, 'CONSTITUTION', 10)))) {
@@ -6923,7 +6963,8 @@ var COFantasy = COFantasy || function() {
           showTotal = true;
           dmgTotal = Math.ceil(dmgTotal / 2);
         }
-        if (dmgTotal < DM_MINIMUM) dmgTotal = DM_MINIMUM;
+        if (dmgTotal < stateCOF.options.dmMinimum.val)
+          dmgTotal = stateCOF.options.dmMinimum.val;
         if (options.divise) {
           dmgTotal = Math.ceil(dmgTotal / options.divise);
           dmgDisplay = "(" + dmgDisplay + ")/" + options.divise;
@@ -9263,7 +9304,7 @@ var COFantasy = COFantasy || function() {
       if (actionsParDefaut) {
         actions.push('Attendre');
         actions.push('Se défendre');
-        if (MANOEUVRES) actions.push('Manoeuvre');
+        if (stateCOF.options.manoeuvres.val) actions.push('Manoeuvre');
       }
       if (formeDarbre) {
         actions.push('Attaque');
@@ -9367,7 +9408,7 @@ var COFantasy = COFantasy || function() {
           });
         }
         // En prime, on l'envoie au MJ, si besoin
-        if (MONTRER_TURNACTION_AU_MJ || player_ids.length === 0) {
+        if (stateCOF.options.montrerTurnActionAuMJ.val || player_ids.length === 0) {
           var display = startFramedDisplay(last_playerid, title, perso, {
             chuchote: 'gm'
           });
@@ -16494,6 +16535,84 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  //!cof-options
+  //!cof-options opt val, met l'option à val
+  //!cof-options reset remet toutes les options à leur valeur patr défaut
+  //Dans tous les cas, affiche les options
+  function setCofOptions(msg) {
+    var playerId = getPlayerIdFromMsg(msg);
+    if (!playerIsGM(playerId)) {
+      sendPlayer(msg, "Seul le MJ peut changer les options du script");
+      return;
+    }
+    var cmd = msg.content.split(' ');
+    if (cmd.length > 1 && cmd[1] == 'reset') {
+      stateCOF.options = {};
+      for (var optd in defaultOptions)
+        stateCOF.options[optd] = {
+          explications: defaultOptions[optd].explications,
+          val: defaultOptions[optd].val,
+          type: defaultOptions[optd].type
+        };
+    }
+    var cofOptions = stateCOF.options;
+    if (cofOptions === undefined) {
+      sendPlayer(msg, "Options non diponibles");
+      return;
+    }
+    if (cmd.length > 2) {
+      var optc = cofOptions[cmd[1]];
+      var val = cmd[2];
+      if (optc) {
+        switch (optc.type) {
+          case 'bool':
+            switch (val) {
+              case 'true':
+              case '1':
+                val = true;
+                break;
+              case 'false':
+              case '0':
+                val = false;
+                break;
+              default:
+                sendPlayer(msg, "L'option " + cmd[1] + " ne peut être que true ou false");
+                val = optc.val;
+            }
+            break;
+          case 'int':
+            val = parseInt(val);
+            if (isNaN(val)) {
+              sendPlayer(msg, "L'option " + cmd[1] + " est une valeur entière");
+              val = optc.val;
+            }
+            break;
+        }
+        optc.val = val;
+      } else {
+        sendPlayer(msg, "Option " + cmd[1] + " inconnue.");
+      }
+    }
+    var display = startFramedDisplay(playerId, "Options de COFantasy", undefined, {
+      chuchote: true
+    });
+    for (var opt in cofOptions) {
+      var line = '<span title="' + cofOptions[opt].explications + '">' + opt + '</span> : ';
+      var action = '!cof-options ' + opt + ' ?{Nouvelle valeur de' + opt + '}';
+      var displayedVal = cofOptions[opt].val;
+      if (cofOptions[opt].type == 'bool') {
+        if (displayedVal)
+          displayedVal = '<span style="font-family: \'Pictos\'">3</span> ';
+        else
+          displayedVal = '<span style="font-family: \'Pictos\'">*</span> ';
+      }
+      line += boutonSimple(action, '', displayedVal);
+      addLineToFramedDisplay(display, line);
+    }
+    addLineToFramedDisplay(display, boutonSimple('!cof-options reset', '', 'Valeurs par défaut'), 70);
+    sendChat('', endFramedDisplay(display));
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -16501,6 +16620,9 @@ var COFantasy = COFantasy || function() {
     replaceInline(msg);
     var evt;
     switch (command[0]) {
+      case "!cof-options":
+        setCofOptions(msg);
+        return;
       case "!cof-jet":
         jet(msg);
         return;
@@ -18549,7 +18671,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = 1.06;
+  var script_version = 1.07;
   COF_loaded = true;
   on('add:token', COFantasy.addToken);
   state.COFantasy = state.COFantasy || {
@@ -18632,7 +18754,7 @@ on("ready", function() {
 
 on("chat:message", function(msg) {
   "use strict";
-  if (COF_loaded && msg.type == "api" && msg.content.startsWith('!cof-')) 
+  if (COF_loaded && msg.type == "api" && msg.content.startsWith('!cof-'))
     COFantasy.apiCommand(msg);
 });
 
