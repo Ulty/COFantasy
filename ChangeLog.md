@@ -2,6 +2,10 @@
 
 ##1.07
 
+### Capacités
+* Ajout de la capacité Bouclier psi du psionique
+
+### Autres améliorations
 * Les options de script sont maintenant accessibles avec la commande !cof-options. Les options sont persistantes pour une même partie.
 
 ## 1.06

@@ -3714,6 +3714,10 @@ var COFantasy = COFantasy || function() {
       defense += diversion;
       explications.push(tokenName + " est victime d'une diversion => " + diversion + " DEF");
     }
+    if (options.attaqueMentale && charAttributeAsBool(target, 'bouclierPsi')) {
+      defense += 5;
+      explications.push(tokenName + " bénéficie d'un bouclier psi => +5 DEF");
+    }
     var attrsProtegePar = findObjs({
       _type: 'attribute',
       _characterid: target.charId,
@@ -6655,6 +6659,9 @@ var COFantasy = COFantasy || function() {
       var invulnerable = charAttributeAsBool(target, 'invulnerable');
       var mitigate = function(dmgType, divide, zero) {
         if (!options.sortilege && attributeAsBool(target, 'flou')) {
+          divide();
+        }
+        if (options.attaqueMentale && charAttributeAsBool(target, 'bouclierPsi')) {
           divide();
         }
         if (options.aoe &&
@@ -10155,6 +10162,9 @@ var COFantasy = COFantasy || function() {
     opts.forEach(function(arg) {
       cmd = arg.trim().split(' ');
       switch (cmd[0]) {
+      case "attaqueMentale":
+          options[cmd[0]] = true;
+          break;
         case "lanceur":
           if (cmd.length < 2) {
             error("Il faut préciser l'id ou le nom du lanceur", arg);
@@ -11710,6 +11720,8 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: 'Injonction'
     };
+    if (!msg.content.includes(' --attaqueMentale'))
+      msg.content += ' --attaqueMentale';
     attaqueMagique(msg, evt, 'injonction',
       function(attaquant, cible, display, reussi) {
         if (reussi) {
