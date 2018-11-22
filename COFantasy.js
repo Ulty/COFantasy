@@ -3676,6 +3676,15 @@ var COFantasy = COFantasy || function() {
       if (peauIntense)
         removeTokenAttr(target, 'peauDEcorceTempeteDeManaIntense', evt);
     }
+    if (attributeAsBool(target, 'champDeProtection')) {
+      var bonusChamp = getValeurOfEffet(target, 'champDeProtection', 2, 'voieDeleTelekinesie');
+      var champIntense = attributeAsInt(target, 'champDeProtectionTempeteDeManaIntense', 0);
+      bonusChamp += champIntense;
+      defense += bonusChamp;
+      explications.push("Champ de protection : +" + bonusChamp + " en DEF");
+      if (champIntense)
+        removeTokenAttr(target, 'champDeProtectionTempeteDeManaIntense', evt);
+    }
     if (attributeAsBool(target, 'mutationCuirasse')) {
       var bonusMutation = getValeurOfEffet(target, 'mutationCuirasse', 2, 'voieDesMutations');
       defense += bonusMutation;
@@ -17336,6 +17345,11 @@ var COFantasy = COFantasy || function() {
       actif: "est un prédateur conjuré",
       fin: "disparaît",
       dm: true
+    },
+    champDeProtection: {
+      activation: "devient protégé par un champ télékinétique",
+      actif: "est protégé par un champ télékinétique",
+      fin: "n'est plus sous l'effet d'un champ de protection",
     },
   };
 

@@ -1196,7 +1196,7 @@
                 <h4 class="text-secondary">Voie de la télékinésie</h4>
                 <ol>
                   <li><strong>Manipulation à distance</strong> : pour les attaques à distance, le plus simple est d'utiliser une autre attaque en utilisant le score d'attaque magique et le bon modificateur de DMs.</li>
-                  <li><strong>Champ de protection</strong> : </li>
+                  <li><strong>Champ de protection</strong> : pour l'effet de base, si vous suivez les règles, ajustez simplement la DEF sur la fiche. Si vous préférez en faire un sort, vous pouvez utiliser la commande <code>!cof-effet-temp champDeProtection [[5+@{selected|CHA}]]</code>. La valeur par défaut est celle d'un attribut <code>voieDeLaTelekinesie</code>, et pour utiliser une autre valeur, on peut utiliser l'option <code>--valeur</code>. Pour le champ à distance, faire <code>!cof-effet-temp champDeProtection 1 --lanceur @{selected|token_id} --portee 10 --valeur <em>n</em> --target @{target|token_id}</code>. </li>
                   <li><strong>Onde de choc</strong> : faire une attaque magique de contact (portée non définie ou nulle), de dégâts 2d6 + Mod. de CHA. Si le lbale de cette attaque est <i>L</i>, la macro pour l'utiliser sera <code>!cof-attack @{selected|token_id} @{selected|token_id} <i>L</i> --auto --disque ?{Portée (max 10) ?|10} --etat renverse --save FOR [[10+@{selected|CHA}]] --mana 1 --targetFx explode-magic</code>. Si vous souhaitez utiliser les options de tempête de mana pour ce profil, rajoutez <code>--rang 3 ?{Tempête de mana?|Oui,--tempeteDeMana|Non,&amp;#32;}</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la télépathie</h4>
