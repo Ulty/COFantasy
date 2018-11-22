@@ -3697,6 +3697,9 @@ var COFantasy = COFantasy || function() {
     if (charAttributeAsBool(target, 'graceFeline')) {
       defense += modCarac(target, 'CHARISME');
     }
+    if (charAttributeAsBool(target, 'defenseIntuitive')) {
+      defense += modCarac(target, 'SAGESSE');
+    }
     if (attributeAsBool(target, 'armeSecreteBarde')) {
       defense -= 10;
     }
