@@ -48,17 +48,17 @@ var COFantasy = COFantasy || function() {
   var bs_alert_danger = 'color: #a94442; background-color: #f2dede; border-color: #ebccd1;';
 
   var defaultOptions = {
-    blessuresGraves: {
+    blessures_graves: {
       explications: "Si les DMs dépassent CON+niveau, ou si on arrive à 0 PV, on perd un PR, et si plus de PR, affaibli.",
       val: true,
       type: 'bool'
     },
-    montrerTurnActionAuMJ: {
+    MJ_voit_actions: {
       explications: "À chaque nouveau personnage en combat, montre le choix d'actions au MJ, même pour les PJs.",
       val: false,
       type: 'bool'
     },
-    avatarDansCadres: {
+    avatar_dans_cadres: {
       explications: "Si faux, on utilise l'image du token.",
       val: true,
       type: 'bool'
@@ -68,17 +68,17 @@ var COFantasy = COFantasy || function() {
       val: true,
       type: 'bool'
     },
-    formeDArbreAmeliorePeuDEcorce: {
+    forme_d_arbre_amelioree: {
       explications: "+50% à l'effet de la peau d'écorce en forme d'arbre.",
       val: true,
       type: 'bool'
     },
-    dmMinimum: {
+    dm_minimum: {
       explications: "Dégâts minimum d'une attaque ou autre source de DM.",
       val: 0,
       type: 'int'
     },
-    malusDEFUsure: {
+    usure_DEF: {
       explications: "Malus de -2 en DEF tous les n tours. Mettre à 0 pour ne pas avoir de malus d'usure",
       val: 5,
       type: 'int'
@@ -996,7 +996,7 @@ var COFantasy = COFantasy || function() {
     var avatar1, avatar2;
     if (perso2) {
       var img2 = improve_image(perso2.token.get('imgsrc'));
-      if (stateCOF.options.avatarDansCadres.val) {
+      if (stateCOF.options.avatar_dans_cadres.val) {
         var character2 = getObj('character', perso2.charId);
         if (character2) img2 = improve_image(character2.get('avatar')) || img2;
       }
@@ -1009,7 +1009,7 @@ var COFantasy = COFantasy || function() {
     }
     if (perso1) {
       var img1 = improve_image(perso1.token.get('imgsrc'));
-      if (stateCOF.options.avatarDansCadres.val) {
+      if (stateCOF.options.avatar_dans_cadres.val) {
         var character1 = getObj('character', perso1.charId);
         if (character1) img1 = improve_image(character1.get('avatar')) || img1;
       }
@@ -1113,29 +1113,24 @@ var COFantasy = COFantasy || function() {
   function addLineToFramedDisplay(display, line, size, newLine) {
     size = size || 100;
     newLine = (newLine !== undefined) ? newLine : true;
-
-    var background_color, border, separator = '';
-
+    var background_color, border = '', separator = '';
     if (!newLine) display.isOdd = !display.isOdd;
     if (display.isOdd) {
-      background_color = "#FFF;";
+      background_color = "#FFF";
       display.isOdd = false;
     } else {
       background_color = "#f3f3f3";
       display.isOdd = true;
     }
     if (size < 100) background_color = "#fcf8e3";
-
     if (!display.isfirst) {
       if (newLine) border = "border-top: 1px solid #333;";
     } else display.isfirst = false;
-
     var formatedLine = '<div style="padding: 0 5px 0; background-color: ' + background_color + '; color: #000;' + border + '">';
 
     if (!newLine) separator = "border-top: 1px solid #ddd;";
     formatedLine += '<div style="padding: 4px 0; font-size: ' + size + '%;' + separator + '">' + line + '</div>';
     formatedLine += '</div>';
-
     display.output += formatedLine;
   }
 
@@ -3664,8 +3659,8 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(target, 'statueDeBois')) defense = 10;
     // Malus de défense global pour les longs combats
-    if (stateCOF.options.malusDEFUsure.val)
-      defense -= (Math.floor((stateCOF.tour - 1) / stateCOF.options.malusDEFUsure.val) * 2);
+    if (stateCOF.options.usure_DEF.val)
+      defense -= (Math.floor((stateCOF.tour - 1) / stateCOF.options.usure_DEF.val) * 2);
     // Autres modificateurs de défense
     defense += attributeAsInt(target, 'defenseTotale', 0);
     defense += attributeAsInt(target, 'pacifisme', 0);
@@ -3673,7 +3668,7 @@ var COFantasy = COFantasy || function() {
       var bonusPeau = getValeurOfEffet(target, 'peauDEcorce', 1, 'voieDesVegetaux');
       var peauIntense = attributeAsInt(target, 'peauDEcorceTempeteDeManaIntense', 0);
       bonusPeau += peauIntense;
-      if (stateCOF.options.formeDArbreAmeliorePeuDEcorce.val && formeDarbre) {
+      if (stateCOF.options.forme_d_arbre_amelioree.val && formeDarbre) {
         bonusPeau = Math.ceil(bonusPeau * 1.5);
       }
       defense += bonusPeau;
@@ -4248,11 +4243,14 @@ var COFantasy = COFantasy || function() {
     var pageId = attaquant.token.get('pageid');
     //Options automatically set by some attributes
     if (attributeAsBool(attaquant, 'paralysieRoublard')) {
-      if (!attributeAsBool(attaquant, 'enragé')) {
+      if (attributeAsBool(attaquant, 'enragé')) {
+        sendChar(attackingCharId, "est trop enragé pour sentir la douleur");
+      } else if (charAttributeAsBool(attaquant, 'proprioception')) {
+        sendChar(attackingCharId, "est immunisé à la douleur");
+      } else {
         sendChar(attackingCharId, "ne peut pas attaquer car il est paralysé de douleur");
         return;
       }
-      sendChar(attackingCharId, "est trop enragé pour sentir la douleur");
     }
     if (charAttributeAsBool(attaquant, 'fauchage')) {
       var seuilFauchage = 10 + modCarac(attaquant, 'FORCE');
@@ -6865,7 +6863,7 @@ var COFantasy = COFantasy || function() {
 
   function testBlessureGrave(target, dmgTotal, expliquer, evt) {
     target.tokName = target.tokName || target.token.get('name');
-    if (stateCOF.options.blessuresGraves.val && estPJ(target) && (dmgTotal == 'mort' ||
+    if (stateCOF.options.blessures_graves.val && estPJ(target) && (dmgTotal == 'mort' ||
         dmgTotal >
         (ficheAttributeAsInt(target, 'NIVEAU', 1) +
           ficheAttributeAsInt(target, 'CONSTITUTION', 10)))) {
@@ -6970,8 +6968,8 @@ var COFantasy = COFantasy || function() {
           showTotal = true;
           dmgTotal = Math.ceil(dmgTotal / 2);
         }
-        if (dmgTotal < stateCOF.options.dmMinimum.val)
-          dmgTotal = stateCOF.options.dmMinimum.val;
+        if (dmgTotal < stateCOF.options.dm_minimum.val)
+          dmgTotal = stateCOF.options.dm_minimum.val;
         if (options.divise) {
           dmgTotal = Math.ceil(dmgTotal / options.divise);
           dmgDisplay = "(" + dmgDisplay + ")/" + options.divise;
@@ -9415,7 +9413,7 @@ var COFantasy = COFantasy || function() {
           });
         }
         // En prime, on l'envoie au MJ, si besoin
-        if (stateCOF.options.montrerTurnActionAuMJ.val || player_ids.length === 0) {
+        if (stateCOF.options.MJ_voit_actions.val || player_ids.length === 0) {
           var display = startFramedDisplay(last_playerid, title, perso, {
             chuchote: 'gm'
           });
@@ -11454,6 +11452,7 @@ var COFantasy = COFantasy || function() {
     var targetName = target.token.get('name');
     if (charAttributeAsBool(target, 'sansPeur') ||
       charAttributeAsBool(target, 'immunitePeur') ||
+      charAttributeAsBool(target, 'proprioception') ||
       attributeAsBool(target, 'enragé')) {
       addLineToFramedDisplay(display,
         targetName + " est insensible à la peur !");
@@ -16609,15 +16608,18 @@ var COFantasy = COFantasy || function() {
       chuchote: true
     });
     for (var opt in cofOptions) {
-      var line = '<span title="' + cofOptions[opt].explications + '">' + opt + '</span> : ';
-      var action = '!cof-options ' + opt + ' ?{Nouvelle valeur de' + opt + '}';
+      var optVu = opt.replace('_', ' ');
+      var line = '<span title="' + cofOptions[opt].explications + '">' + 
+        optVu + '</span> : ';
+      var action = '!cof-options ' + opt + ' ?{Nouvelle valeur de ' + optVu + '}';
       var displayedVal = cofOptions[opt].val;
+      /* Bizarrement, le caractère '*' modifie la suite du tableau
       if (cofOptions[opt].type == 'bool') {
         if (displayedVal)
-          displayedVal = '<span style="font-family: \'Pictos\'">3</span> ';
+          displayedVal = '<span style="font-family: \'Pictos\'">3</span>';
         else
-          displayedVal = '<span style="font-family: \'Pictos\'">*</span> ';
-      }
+          displayedVal = '<span style="font-family: \'Pictos\'">*</span>';
+      } */
       line += boutonSimple(action, '', displayedVal);
       addLineToFramedDisplay(display, line);
     }

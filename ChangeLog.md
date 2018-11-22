@@ -4,6 +4,7 @@
 
 ### Capacités
 * Ajout de la capacité Bouclier psi du psionique
+* Ajout de la capacité Proprioception du psionique
 
 ### Autres améliorations
 * Les options de script sont maintenant accessibles avec la commande !cof-options. Les options sont persistantes pour une même partie.
