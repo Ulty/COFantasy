@@ -3730,6 +3730,10 @@ var COFantasy = COFantasy || function() {
       defense += 5;
       explications.push(tokenName + " bénéficie d'un bouclier psi => +5 DEF");
     }
+    if (attributeAsBool(target, 'monteSur') && charAttributeAsBool(target, 'montureLoyale')) {
+      defense += 1;
+      explications.push(tokenName + " est sur une monture => +1 DEF");
+    }
     var attrsProtegePar = findObjs({
       _type: 'attribute',
       _characterid: target.charId,
@@ -3895,9 +3899,18 @@ var COFantasy = COFantasy || function() {
       attBonus -= 2;
       explications.push("Zone de silence => -2 en Attaque Magique");
     }
-    if (!options.distance && (attributeAsBool(attaquant, 'aCheval') || attributeAsBool(attaquant, 'monteSur'))) {
-      attBonus += charAttributeAsInt(attaquant, 'cavalierEmerite');
-      explications.push("A cheval => +2 en Attaque");
+    if (attributeAsBool(attaquant, 'monteSur')) {
+      if (!options.distance) {
+        var cavalierEm = charAttributeAsInt(attaquant, 'cavalierEmerite');
+        if (cavalierEm) {
+          attBonus += cavalierEm;
+          explications.push("Cavalier émérite => +2 en Attaque");
+        }
+      }
+      if (charAttributeAsBool(attaquant, 'montureLoyale')) {
+        attBonus += 1;
+        explications.push("Monture loyale => +1 en Attaque");
+      }
     }
     if (options.frappeDuVide) {
       attBonus += 2;
@@ -3946,17 +3959,16 @@ var COFantasy = COFantasy || function() {
           explications.push("Attaquant aveuglé => -10 en Attaque à distance");
         }
       } else {
-      if (!charAttributeAsBool(attaquant, 'radarMental') || estNonVivant(target))
-        {
+        if (!charAttributeAsBool(attaquant, 'radarMental') || estNonVivant(target)) {
           attBonus -= 5;
           explications.push("Attaquant aveuglé => -5 en Attaque");
         }
       }
     } else if (attributeAsBool(attaquant, 'aveugleManoeuvre')) {
       if (options.distance || !charAttributeAsBool(attaquant, 'radarMental') || estNonVivant(target)) {
-      attBonus -= 5;
-      options.aveugleManoeuvre = true;
-      explications.push("Attaquant aveuglé => -5 en Attaque et aux DM");
+        attBonus -= 5;
+        options.aveugleManoeuvre = true;
+        explications.push("Attaquant aveuglé => -5 en Attaque et aux DM");
       }
     }
     if (options.mainsDEnergie) {
