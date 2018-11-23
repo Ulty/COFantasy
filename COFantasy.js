@@ -1113,7 +1113,8 @@ var COFantasy = COFantasy || function() {
   function addLineToFramedDisplay(display, line, size, newLine) {
     size = size || 100;
     newLine = (newLine !== undefined) ? newLine : true;
-    var background_color, border = '', separator = '';
+    var background_color, border = '',
+      separator = '';
     if (!newLine) display.isOdd = !display.isOdd;
     if (display.isOdd) {
       background_color = "#FFF";
@@ -10172,7 +10173,7 @@ var COFantasy = COFantasy || function() {
     opts.forEach(function(arg) {
       cmd = arg.trim().split(' ');
       switch (cmd[0]) {
-      case "attaqueMentale":
+        case "attaqueMentale":
           options[cmd[0]] = true;
           break;
         case "lanceur":
@@ -16590,10 +16591,12 @@ var COFantasy = COFantasy || function() {
         switch (optc.type) {
           case 'bool':
             switch (val) {
+              case 'oui':
               case 'true':
               case '1':
                 val = true;
                 break;
+              case 'non':
               case 'false':
               case '0':
                 val = false;
@@ -16620,18 +16623,20 @@ var COFantasy = COFantasy || function() {
       chuchote: true
     });
     for (var opt in cofOptions) {
-      var optVu = opt.replace('_', ' ');
-      var line = '<span title="' + cofOptions[opt].explications + '">' + 
+      var optVu = opt.replace(/_/g, ' ');
+      var line = '<span title="' + cofOptions[opt].explications + '">' +
         optVu + '</span> : ';
-      var action = '!cof-options ' + opt + ' ?{Nouvelle valeur de ' + optVu + '}';
+      var action = '!cof-options ' + opt + ' ?{Nouvelle valeur de ' + optVu;
       var displayedVal = cofOptions[opt].val;
-      /* Bizarrement, le caractère '*' modifie la suite du tableau
+      // Bizarrement, le caractère '*' modifie la suite du tableau
       if (cofOptions[opt].type == 'bool') {
+        action += '|actif,true|inactif,false';
         if (displayedVal)
           displayedVal = '<span style="font-family: \'Pictos\'">3</span>';
         else
           displayedVal = '<span style="font-family: \'Pictos\'">*</span>';
-      } */
+      }
+      action += '}';
       line += boutonSimple(action, '', displayedVal);
       addLineToFramedDisplay(display, line);
     }
