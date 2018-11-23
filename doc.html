@@ -468,6 +468,7 @@
               <h3 class="text-info" id="surprise">3.6 Surprise : <code>!cof-surprise ?difficulte</code></h3>
               <div class="decalage">
                 <p>Fait un test de surprise sur tous les tokens sélectionné. Si la difficulté n'est pas présente, ils sont automatiquement surpris. Les valeurs des attributs (hors fiche) <code>vigilance</code> et <code>perception</code> sont ajoutés au test de sagesse.</p>
+                <p>Si vous souhaitez préciser que la surprise est le fait d'un personnage ou effet non vivant (pour ne pas faire bénéficier du bonus de la capacité Radar mental), vous pouvez rajouter l'option <code>--nonVivant</code>.</p>
               </div>
               <h3 class="text-info" id="statut_etats">3.7 Statut et états</h3>
               <div class="decalage">
@@ -1202,7 +1203,7 @@
                 <h4 class="text-secondary">Voie de la télépathie</h4>
                 <ol>
                   <li><strong>Télépathie</strong> : pas de support particulier.</li>
-                  <li><strong>Radar mental</strong> : </li>
+                  <li><strong>Radar mental</strong> : ajouter un attribut <code>radarMental</code>, de valeur le bonus procuré par le radar mental (2 fois le rang dans la voie).</li>
                 </ol>
               </div>
               <h3 class="text-info" id="Rôdeur">Rôdeur</h3>
@@ -1424,7 +1425,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie du prédateur</h4>
                 <ol>
-                  <li><strong>Embuscade</strong> : Sélectionner les ennemis du prédateurs, et utiliser <code>!cof-surprise</code>. Par exemple, contre une équipe de joueurs dans le <i>handout</i> <code>Equipe joueurs</code> (cf la <a href="#methode_selection_groupes">méthode de sélection de groupes</a>), on pourra utiliser l'ability <code>!cof-surprise [[15 + @{selected|DEX}]] --equipe joueurs</code>. Pour les bonus en discrétion et init, reporter sur la fiche (et à un attribut <code>discrétion</code>), pour l'attaque en embuscade sur une cible surprise, rajouter à une attaque les options <code>--sournoise 1 --if moins FOR --etat renverse --endif</code>.</li>
+                  <li><strong>Embuscade</strong> : Sélectionner les ennemis du prédateurs, et utiliser <code>!cof-surprise</code>. Par exemple, contre une équipe de joueurs dans le <i>handout</i> <code>Equipe joueurs</code> (cf la <a href="#methode_selection_groupes">méthode de sélection de groupes</a>), on pourra utiliser l'ability <code>!cof-surprise [[15 + @{selected|DEX}]] --nonVivant @{selected|token_id} --equipe joueurs</code>. Pour les bonus en discrétion et init, reporter sur la fiche (et à un attribut <code>discrétion</code>), pour l'attaque en embuscade sur une cible surprise, rajouter à une attaque les options <code>--sournoise 1 --if moins FOR --etat renverse --endif</code>.</li>
                   <li><strong>Dévorer</strong> : ajouter les options d'attaque <code>--if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du tueur</h4>

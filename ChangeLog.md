@@ -3,6 +3,7 @@
 ##1.07
 
 ### Capacités
+* Ajout du radar mental du psionique
 * Ajout de la capacité Bouclier psi du psionique
 * Ajout de la capacité Proprioception du psionique
 * Ajout de la capacité Défense intuitive du psionique
