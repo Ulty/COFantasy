@@ -28,9 +28,6 @@ var COFantasy = COFantasy || function() {
   "use strict";
 
   var PIX_PER_UNIT = 70;
-  var IMAGE_OMBRE = "https://s3.amazonaws.com/files.d20.io/images/2781735/LcllgIHvqvu0HAbWdXZbJQ/thumb.png?13900368485";
-  var IMAGE_DOUBLE = "https://s3.amazonaws.com/files.d20.io/images/33854984/q10B3KtWsCxcMczLo4BSUw/thumb.png?1496303265";
-  var IMAGE_ARBRE = "https://s3.amazonaws.com/files.d20.io/images/52767134/KEGYUXeKnxZr5dbDwQEO4Q/thumb.png?15248300835";
   var HISTORY_SIZE = 150;
   var eventHistory = [];
   var updateNextInitSet = new Set();
@@ -48,42 +45,90 @@ var COFantasy = COFantasy || function() {
   var bs_alert_danger = 'color: #a94442; background-color: #f2dede; border-color: #ebccd1;';
 
   var defaultOptions = {
-    blessures_graves: {
-      explications: "Si les DMs dépassent CON+niveau, ou si on arrive à 0 PV, on perd un PR, et si plus de PR, affaibli.",
-      val: true,
-      type: 'bool'
+    regles: {
+      explications: "Options qui influent sur les règles du jeu",
+      type: 'options',
+      val: {
+        blessures_graves: {
+          explications: "Si les DMs dépassent CON+niveau, ou si on arrive à 0 PV, on perd un PR, et si plus de PR, affaibli.",
+          val: true,
+          type: 'bool'
+        },
+        forme_d_arbre_amelioree: {
+          explications: "+50% à l'effet de la peau d'écorce en forme d'arbre.",
+          val: true,
+          type: 'bool'
+        },
+        dm_minimum: {
+          explications: "Dégâts minimum d'une attaque ou autre source de DM.",
+          val: 0,
+          type: 'int'
+        },
+        usure_DEF: {
+          explications: "Malus de -2 en DEF tous les n tours. Mettre à 0 pour ne pas avoir de malus d'usure",
+          val: 5,
+          type: 'int'
+        },
+      }
     },
-    MJ_voit_actions: {
-      explications: "À chaque nouveau personnage en combat, montre le choix d'actions au MJ, même pour les PJs.",
-      val: false,
-      type: 'bool'
+    affichage: {
+      explications: "Options d'affichage",
+      type: 'options',
+      val: {
+        MJ_voit_actions: {
+          explications: "À chaque nouveau personnage en combat, montre le choix d'actions au MJ, même pour les PJs.",
+          val: false,
+          type: 'bool'
+        },
+        avatar_dans_cadres: {
+          explications: "Si faux, on utilise l'image du token.",
+          val: true,
+          type: 'bool'
+        },
+        manoeuvres: {
+          explications: "Affiche les manoeuvres dans la liste d'actions",
+          val: true,
+          type: 'bool'
+        },
+      }
     },
-    avatar_dans_cadres: {
-      explications: "Si faux, on utilise l'image du token.",
-      val: true,
-      type: 'bool'
-    },
-    manoeuvres: {
-      explications: "Affiche les manoeuvres dans la liste d'actions",
-      val: true,
-      type: 'bool'
-    },
-    forme_d_arbre_amelioree: {
-      explications: "+50% à l'effet de la peau d'écorce en forme d'arbre.",
-      val: true,
-      type: 'bool'
-    },
-    dm_minimum: {
-      explications: "Dégâts minimum d'une attaque ou autre source de DM.",
-      val: 0,
-      type: 'int'
-    },
-    usure_DEF: {
-      explications: "Malus de -2 en DEF tous les n tours. Mettre à 0 pour ne pas avoir de malus d'usure",
-      val: 5,
-      type: 'int'
-    },
+    images: {
+      explications: "Images par défaut",
+      type: 'options',
+      val: {
+        image_double: {
+          explications: 'Image utilisée pour la capacité dédoublement',
+          type: 'image',
+          val: "https://s3.amazonaws.com/files.d20.io/images/33854984/q10B3KtWsCxcMczLo4BSUw/thumb.png?1496303265"
+        },
+        image_ombre: {
+          explications: "Image utilisée pour l'ombre mortelle",
+          type: 'image',
+          val: "https://s3.amazonaws.com/files.d20.io/images/2781735/LcllgIHvqvu0HAbWdXZbJQ/thumb.png?13900368485"
+        },
+        image_arbre: {
+          explications: "Image utilisée pour la forme d'arbre",
+          type: 'image',
+          val: "https://s3.amazonaws.com/files.d20.io/images/52767134/KEGYUXeKnxZr5dbDwQEO4Q/thumb.png?15248300835"
+        },
+      }
+    }
   };
+
+  function copyOptions(dst, src) {
+    for (var o in src) {
+      var opt = src[o];
+      if (dst[o] === undefined) {
+        dst[o] = {
+          explications: opt.explications,
+          val: {},
+          type: opt.type,
+        };
+        if (opt.type == 'options') copyOptions(dst[o].val, opt.val);
+        else dst[o].val = opt.val;
+      }
+    }
+  }
 
   var aura_token_on_turn = false;
   var stateCOF = state.COFantasy;
@@ -91,14 +136,7 @@ var COFantasy = COFantasy || function() {
   function setStateCOF() {
     stateCOF = state.COFantasy;
     if (stateCOF.options === undefined) stateCOF.options = {};
-    for (var optd in defaultOptions) {
-      if (stateCOF.options[optd] === undefined)
-        stateCOF.options[optd] = {
-          explications: defaultOptions[optd].explications,
-          val: defaultOptions[optd].val,
-          type: defaultOptions[optd].type
-        };
-    }
+    copyOptions(stateCOF.options, defaultOptions);
   }
 
   // List of states:
@@ -996,7 +1034,7 @@ var COFantasy = COFantasy || function() {
     var avatar1, avatar2;
     if (perso2) {
       var img2 = improve_image(perso2.token.get('imgsrc'));
-      if (stateCOF.options.avatar_dans_cadres.val) {
+      if (stateCOF.options.affichage.val.avatar_dans_cadres.val) {
         var character2 = getObj('character', perso2.charId);
         if (character2) img2 = improve_image(character2.get('avatar')) || img2;
       }
@@ -1009,7 +1047,7 @@ var COFantasy = COFantasy || function() {
     }
     if (perso1) {
       var img1 = improve_image(perso1.token.get('imgsrc'));
-      if (stateCOF.options.avatar_dans_cadres.val) {
+      if (stateCOF.options.affichage.val.avatar_dans_cadres.val) {
         var character1 = getObj('character', perso1.charId);
         if (character1) img1 = improve_image(character1.get('avatar')) || img1;
       }
@@ -1658,7 +1696,7 @@ var COFantasy = COFantasy || function() {
             if (tokenCentre.get('bar1_max') == 0) { // jshint ignore:line
               //C'est juste un token utilisé pour définir le disque
               tokenCentre.remove(); //On l'enlève, normalement plus besoin
-              options.targetFx = undefined;
+              delete options.targetFx;
             }
             return;
           default:
@@ -1895,7 +1933,7 @@ var COFantasy = COFantasy || function() {
         message += "raté.";
       } else message += "réussi.";
       sendChar(evt.personnage.charId, message);
-      evt.attenteResultat = undefined;
+      delete evt.attenteResultat;
     } else {
       sendPlayer(msg, "Résultat déjà décidé");
     }
@@ -2156,7 +2194,7 @@ var COFantasy = COFantasy || function() {
     var ps = scope.parentScope;
     if (ps === undefined) return;
     log("Il manque un endif");
-    scope.parentScope = undefined;
+    delete scope.parentScope;
     closeIte(ps);
   }
 
@@ -2376,8 +2414,8 @@ var COFantasy = COFantasy || function() {
                 lastEtat.saveDifficulte = parseInt(cmd[3]);
                 if (isNaN(lastEtat.saveDifficulte)) {
                   error("Difficulté du jet de sauvegarde incorrecte", cmd);
-                  lastEtat.saveCarac = undefined;
-                  lastEtat.saveDifficulte = undefined;
+                  delete lastEtat.saveCarac;
+                  delete lastEtat.saveDifficulte;
                 }
               }
             }
@@ -2630,7 +2668,7 @@ var COFantasy = COFantasy || function() {
           };
           if (isNaN(options.aoe.rayon) || options.aoe.disque < 0) {
             error("le rayon du disque n'est pas un nombre positif", cmd);
-            options.aoe = undefined;
+            delete options.aoe;
           }
           return;
         case "cone":
@@ -2756,7 +2794,7 @@ var COFantasy = COFantasy || function() {
             error("--endIf sans --if correspondant", cmd);
             return;
           }
-          scope.parentScope = undefined; //To remove circular dependencies in options
+          delete scope.parentScope; //To remove circular dependencies in options
           scope = psEndif;
           return;
         case "else":
@@ -2770,7 +2808,7 @@ var COFantasy = COFantasy || function() {
             error("Il y a déjà un --else pour ce --if", cmd);
             return;
           }
-          scope.parentScope = undefined;
+          delete scope.parentScope;
           var ifElse = {
             parentScope: psElse
           };
@@ -3328,7 +3366,7 @@ var COFantasy = COFantasy || function() {
           tokenArbre = createObj('graphic', tokenFields);
         }
         if (tokenArbre === undefined) {
-          tokenFields.imgsrc = IMAGE_ARBRE;
+          tokenFields.imgsrc = stateCOF.options.images.val.image_arbre.val;
           tokenArbre = createObj('graphic', tokenFields);
         }
         if (tokenArbre) {
@@ -3661,8 +3699,8 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(target, 'statueDeBois')) defense = 10;
     // Malus de défense global pour les longs combats
-    if (stateCOF.options.usure_DEF.val)
-      defense -= (Math.floor((stateCOF.tour - 1) / stateCOF.options.usure_DEF.val) * 2);
+    if (stateCOF.options.regles.val.usure_DEF.val)
+      defense -= (Math.floor((stateCOF.tour - 1) / stateCOF.options.regles.val.usure_DEF.val) * 2);
     // Autres modificateurs de défense
     defense += attributeAsInt(target, 'defenseTotale', 0);
     defense += attributeAsInt(target, 'pacifisme', 0);
@@ -3670,7 +3708,7 @@ var COFantasy = COFantasy || function() {
       var bonusPeau = getValeurOfEffet(target, 'peauDEcorce', 1, 'voieDesVegetaux');
       var peauIntense = attributeAsInt(target, 'peauDEcorceTempeteDeManaIntense', 0);
       bonusPeau += peauIntense;
-      if (stateCOF.options.forme_d_arbre_amelioree.val && formeDarbre) {
+      if (stateCOF.options.regles.val.forme_d_arbre_amelioree.val && formeDarbre) {
         bonusPeau = Math.ceil(bonusPeau * 1.5);
       }
       defense += bonusPeau;
@@ -6133,7 +6171,7 @@ var COFantasy = COFantasy || function() {
                   target.tokName + " apparaît. Il est aux ordres de " +
                   attackerTokName);
                 setTokenAttr(target, 'dedouble', true, evt);
-                copieToken(target, undefined, IMAGE_DOUBLE,
+                copieToken(target, undefined, stateCOF.options.images.val.image_double.val,
                   "Double de " + target.tokName, 'dedoublement', ef.duree,
                   pageId, evt);
                 return;
@@ -6750,7 +6788,7 @@ var COFantasy = COFantasy || function() {
           target.tokName = target.tokName || target.token.get('name');
           expliquer(target.tokName + " ne semble pas affecté par le type " + dt);
         }
-        dmgParType[dt] = undefined;
+        delete dmgParType[dt];
       } else
         count += dmgParType[dt].length;
     }
@@ -6897,7 +6935,7 @@ var COFantasy = COFantasy || function() {
 
   function testBlessureGrave(target, dmgTotal, expliquer, evt) {
     target.tokName = target.tokName || target.token.get('name');
-    if (stateCOF.options.blessures_graves.val && estPJ(target) && (dmgTotal == 'mort' ||
+    if (stateCOF.options.regles.val.blessures_graves.val && estPJ(target) && (dmgTotal == 'mort' ||
         dmgTotal >
         (ficheAttributeAsInt(target, 'NIVEAU', 1) +
           ficheAttributeAsInt(target, 'CONSTITUTION', 10)))) {
@@ -7002,8 +7040,8 @@ var COFantasy = COFantasy || function() {
           showTotal = true;
           dmgTotal = Math.ceil(dmgTotal / 2);
         }
-        if (dmgTotal < stateCOF.options.dm_minimum.val)
-          dmgTotal = stateCOF.options.dm_minimum.val;
+        if (dmgTotal < stateCOF.options.regles.val.dm_minimum.val)
+          dmgTotal = stateCOF.options.regles.val.dm_minimum.val;
         if (options.divise) {
           dmgTotal = Math.ceil(dmgTotal / options.divise);
           dmgDisplay = "(" + dmgDisplay + ")/" + options.divise;
@@ -8572,7 +8610,7 @@ var COFantasy = COFantasy || function() {
     options.redo = true;
     if (action.cibles) {
       action.cibles.forEach(function(target) {
-        target.partialSaveAuto = undefined;
+        delete target.partialSaveAuto;
       });
     }
     attack(action.player_id, perso, action.cibles, action.attack_label, options);
@@ -8644,14 +8682,14 @@ var COFantasy = COFantasy || function() {
           undoEvent(evtARefaire);
           if (action.cibles) {
             action.cibles.forEach(function(target) {
-              target.partialSaveAuto = undefined;
+              delete target.partialSaveAuto;
             });
           }
           attack(action.player_id, perso, action.cibles, action.attack_label, options);
           return;
         case 'jetPerso':
           undoEvent(evtARefaire);
-          options.roll = undefined; //On va le relancer
+          delete options.roll; //On va le relancer
           jetPerso(perso, action.caracteristique, action.difficulte, action.titre, action.playerId, options);
           return;
         default:
@@ -8739,7 +8777,7 @@ var COFantasy = COFantasy || function() {
       options.maxDmg = true;
       options.rollsAttack = action.rollsAttack;
       action.cibles.forEach(function(target) {
-        target.rollsDmg = undefined;
+        delete target.rollsDmg;
       });
       if (!persoUtiliseRunePuissance(perso, labelArme, evt)) return;
       addEvent(evt);
@@ -9589,7 +9627,7 @@ var COFantasy = COFantasy || function() {
       if (actionsParDefaut) {
         actions.push('Attendre');
         actions.push('Se défendre');
-        if (stateCOF.options.manoeuvres.val) actions.push('Manoeuvre');
+        if (stateCOF.options.affichage.val.manoeuvres.val) actions.push('Manoeuvre');
       }
       if (formeDarbre) {
         actions.push('Attaque');
@@ -9693,7 +9731,7 @@ var COFantasy = COFantasy || function() {
           });
         }
         // En prime, on l'envoie au MJ, si besoin
-        if (stateCOF.options.MJ_voit_actions.val || player_ids.length === 0) {
+        if (stateCOF.options.affichage.val.MJ_voit_actions.val || player_ids.length === 0) {
           var display = startFramedDisplay(last_playerid, title, perso, {
             chuchote: 'gm'
           });
@@ -10550,7 +10588,7 @@ var COFantasy = COFantasy || function() {
               sendChat("", endFramedDisplay(display));
               if (evt.affectes || evt.attributes) {
                 if (evt.waitingForAoe) {
-                  evt.waitingForAoe = undefined;
+                  delete evt.waitingForAoe;
                 } else {
                   addEvent(evt);
                 }
@@ -11593,7 +11631,7 @@ var COFantasy = COFantasy || function() {
           options.portee = parseInt(optCmd[1]);
           if (isNaN(options.portee) || options.portee < 0) {
             error("La portée n'est pas un nombre positif", optCmd);
-            options.portee = undefined;
+            delete options.portee;
           }
           return;
         case 'lanceur':
@@ -13381,7 +13419,7 @@ var COFantasy = COFantasy || function() {
       error("La durée doit être un nombre positif", args);
       return;
     }
-    var image = IMAGE_OMBRE;
+    var image = stateCOF.options.images.val.image_ombre.val;
     var options = {};
     var opts = msg.content.split(' --');
     opts.shift();
@@ -13396,7 +13434,7 @@ var COFantasy = COFantasy || function() {
           options.portee = parseInt(cmd[1]);
           if (isNaN(options.portee) || options.portee < 0) {
             error("La portée doit être un nombre positif", cmd);
-            options.portee = undefined;
+            delete options.portee;
           }
           return;
         case 'mana':
@@ -13407,7 +13445,7 @@ var COFantasy = COFantasy || function() {
           options.mana = parseInt(cmd[1]);
           if (isNaN(options.mana) || options.mana < 0) {
             error("Le coût en mana doit être un nombre positif", cmd);
-            options.mana = undefined;
+            delete options.mana;
           }
           return;
         case 'image':
@@ -13436,7 +13474,7 @@ var COFantasy = COFantasy || function() {
       var msgMana = "invoquer une ombre mortelle";
       if (!depenseMana(lanceur, options.mana, msgMana, evt)) return;
     }
-    copieToken(cible, image, IMAGE_OMBRE, "Ombre de " + cible.name, 'ombreMortelle', duree, pageId, evt);
+    copieToken(cible, image, stateCOF.options.images.val.image_ombre.val, "Ombre de " + cible.name, 'ombreMortelle', duree, pageId, evt);
     sendChar(lanceur.charId,
       "anime l'ombre de " + cible.name + ". Celle-ci commence à attaquer " +
       cible.name + "&nbsp;!");
@@ -16599,9 +16637,9 @@ var COFantasy = COFantasy || function() {
   }
 
   //!cof-options
-  //!cof-options opt val, met l'option à val
-  //!cof-options reset remet toutes les options à leur valeur patr défaut
-  //Dans tous les cas, affiche les options
+  //!cof-options opt1 [... optn] val, met l'option à val
+  //!cof-options [opt0 ... optk] reset remet toutes les options à leur valeur patr défaut
+  //Dans tous les cas, affiche les options du niveau demandé
   function setCofOptions(msg) {
     var playerId = getPlayerIdFromMsg(msg);
     if (!playerIsGM(playerId)) {
@@ -16609,77 +16647,124 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var cmd = msg.content.split(' ');
-    if (cmd.length > 1 && cmd[1] == 'reset') {
-      stateCOF.options = {};
-      for (var optd in defaultOptions)
-        stateCOF.options[optd] = {
-          explications: defaultOptions[optd].explications,
-          val: defaultOptions[optd].val,
-          type: defaultOptions[optd].type
-        };
-    }
     var cofOptions = stateCOF.options;
     if (cofOptions === undefined) {
       sendPlayer(msg, "Options non diponibles");
       return;
     }
-    if (cmd.length > 2) {
-      var optc = cofOptions[cmd[1]];
-      var val = cmd[2];
-      if (optc) {
-        switch (optc.type) {
-          case 'bool':
-            switch (val) {
-              case 'oui':
-              case 'true':
-              case '1':
-                val = true;
-                break;
-              case 'non':
-              case 'false':
-              case '0':
-                val = false;
-                break;
-              default:
-                sendPlayer(msg, "L'option " + cmd[1] + " ne peut être que true ou false");
-                val = optc.val;
-            }
-            break;
-          case 'int':
-            val = parseInt(val);
-            if (isNaN(val)) {
-              sendPlayer(msg, "L'option " + cmd[1] + " est une valeur entière");
-              val = optc.val;
-            }
-            break;
-        }
-        optc.val = val;
-      } else {
-        sendPlayer(msg, "Option " + cmd[1] + " inconnue.");
+    var prefix = '';
+    var up;
+    var defOpt = defaultOptions;
+    var newOption;
+    var lastCmd;
+    var fini;
+    cmd.shift();
+    cmd.forEach(function(c) {
+      if (fini) {
+        sendPlayer(msg, "Option " + c + " ignorée");
+        return;
       }
+      if (c == 'reset') {
+        for (var opt in cofOptions) delete cofOptions[opt];
+        copyOptions(cofOptions, defOpt);
+        fini = true;
+      } else if (cofOptions[c]) {
+        if (cofOptions[c].type == 'options') {
+          if (defOpt[c] === undefined) {
+            sendPlayer(msg, "Option " + c + " inconnue dans les options par défaut");
+            fini = true;
+            return;
+          }
+          defOpt = defOpt[c].val;
+          cofOptions = cofOptions[c].val;
+          up = prefix;
+          prefix += ' ' + c;
+        } else {
+          newOption = cofOptions[c];
+        }
+      } else {
+        if (newOption) { //on met newOption à c
+          var val = c;
+          switch (newOption.type) {
+            case 'bool':
+              switch (c) {
+                case 'oui':
+                case 'true':
+                case '1':
+                  val = true;
+                  break;
+                case 'non':
+                case 'false':
+                case '0':
+                  val = false;
+                  break;
+                default:
+                  sendPlayer(msg, "L'option " + lastCmd + " ne peut être que true ou false");
+                  val = newOption.val;
+              }
+              break;
+            case 'int':
+              val = parseInt(c);
+              if (isNaN(val)) {
+                sendPlayer(msg, "L'option " + lastCmd + " est une valeur entière");
+                val = newOption.val;
+              }
+              break;
+          }
+          newOption.val = val;
+          fini = true;
+        } else if (lastCmd) {
+          sendPlayer(msg, "L'option " + lastCmd + " ne contient pas de sous-option " + c);
+        } else {
+          sendPlayer(msg, "Option " + c + " inconnue.");
+        }
+      }
+      lastCmd = c;
+      return;
+    });
+    var titre = "Options de COFantasy";
+    if (prefix !== '') {
+      titre += "<br>" + prefix + ' (';
+      titre += boutonSimple('!cof-options'+up, '', 'retour') + ')';
     }
-    var display = startFramedDisplay(playerId, "Options de COFantasy", undefined, {
+    var display = startFramedDisplay(playerId, titre, undefined, {
       chuchote: true
     });
     for (var opt in cofOptions) {
       var optVu = opt.replace(/_/g, ' ');
       var line = '<span title="' + cofOptions[opt].explications + '">' +
         optVu + '</span> : ';
-      var action = '!cof-options ' + opt + ' ?{Nouvelle valeur de ' + optVu;
+      var action = '!cof-options' + prefix + ' ' + opt;
       var displayedVal = cofOptions[opt].val;
-      // Bizarrement, le caractère '*' modifie la suite du tableau
-      if (cofOptions[opt].type == 'bool') {
-        action += '|actif,true|inactif,false';
-        if (displayedVal)
-          displayedVal = '<span style="font-family: \'Pictos\'">3</span>';
-        else
-          displayedVal = '<span style="font-family: \'Pictos\'">*</span>';
+      var after = '';
+      switch (cofOptions[opt].type) {
+        case 'options':
+          displayedVal = '<span style="font-family: \'Pictos\'">l</span>';
+          break;
+        case 'bool':
+          action += ' ?{Nouvelle valeur de ' + optVu + '|actif,true|inactif,false}';
+          if (displayedVal)
+          // Bizarrement, le caractère '*' modifie la suite du tableau
+            displayedVal = '<span style="font-family: \'Pictos\'">3</span>';
+          else
+            displayedVal = '<span style="font-family: \'Pictos\'">*</span>';
+          break;
+        case 'int':
+          action += ' ?{Nouvelle valeur de ' + optVu + '(entier)}';
+          break;
+        case 'image':
+          action += " ?{Entrez l'url pour " + optVu + '}';
+          after =
+            '<img src="' + displayedVal + '" style="width: 30%; height: auto; border-radius: 6px; margin: 0 auto;">';
+          displayedVal = '<span style="font-family: \'Pictos\'">u</span>';
+          break;
+        default:
+          action += ' ?{Nouvelle valeur de ' + optVu + '}';
       }
-      action += '}';
-      line += boutonSimple(action, '', displayedVal);
+      line += boutonSimple(action, '', displayedVal) + after;
       addLineToFramedDisplay(display, line);
     }
-    addLineToFramedDisplay(display, boutonSimple('!cof-options reset', '', 'Valeurs par défaut'), 70);
+    addLineToFramedDisplay(display, boutonSimple('!cof-options' + prefix + ' reset', '', 'Valeurs par défaut'), 70);
     sendChat('', endFramedDisplay(display));
   }
 
@@ -16906,18 +16991,18 @@ var COFantasy = COFantasy || function() {
       case "!cof-demarrer-statistiques":
         if (stateCOF.statistiquesEnPause) {
           stateCOF.statistiques = stateCOF.statistiquesEnPause;
-          stateCOF.statistiquesEnPause = undefined;
+          delete stateCOF.statistiquesEnPause;
         } else {
           stateCOF.statistiques = {}; //remet aussi les statistiques à 0
         }
         return;
       case "!cof-arreter-statistiques":
-        stateCOF.statistiques = undefined;
+        delete stateCOF.statistiques;
         return;
       case "!cof-pause-statistiques":
         if (stateCOF.statistiques) {
           stateCOF.statistiquesEnPause = stateCOF.statistiques;
-          stateCOF.statistiques = undefined;
+          delete stateCOF.statistiques;
         } // sinon, ne pas écraser les statistiques déjà en pause
         return;
       case "!cof-statistiques":
