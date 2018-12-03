@@ -11,6 +11,7 @@
 * Ajout du champ de protection du psionique
 
 ### Autres améliorations
+* Ajout d'une option pour ajouter 1d6 à l'initiative au début du combat
 * Les options de script sont maintenant accessibles avec la commande !cof-options. Les options sont persistantes pour une même partie.
 
 ## 1.06
