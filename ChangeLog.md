@@ -3,6 +3,7 @@
 ##1.07
 
 ### Capacités
+* Ajout du défi du samouraï
 * Ajout de la monture loyale du samouraï
 * Ajout du radar mental du psionique
 * Ajout de la capacité Bouclier psi du psionique
