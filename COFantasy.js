@@ -445,6 +445,28 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  //Renvoie 1dk + bonus, avec le texte
+  //champs val et roll
+  function rollDePlus(de, bonus) {
+    bonus = bonus || 0;
+    var jetDe = randomInteger(de);
+    var roll = jetDe;
+    var res = {val:jetDe + bonus};
+    var msg = '<span style="display: inline-block; border-radius: 5px; padding: 0 4px; background-color: #F1E6DA; color: #000;" title="1d';
+    msg += de;
+     if (bonus >0) {
+       msg += '+'+bonus;
+       roll += '+'+bonus;
+     } else if (bonus <0) {
+       msg += bonus;
+       roll += bonus;
+     }
+    msg += ' = ' + roll + '" class="a inlinerollresult showtip tipsy-n">';
+    msg += res.val + "</span>";
+    res.roll = msg;
+    return res;
+  }
+
   function setState(personnage, etat, value, evt) {
     var token = personnage.token;
     var charId = personnage.charId;
@@ -482,10 +504,14 @@ var COFantasy = COFantasy || function() {
         };
         if (getState(p, 'mort')) return;
         if (charIdAttributeAsBool(ci, 'siphonDesAmes')) {
-          soigneToken(p, randomInteger(6), evt,
+          var soin = rollDePlus(6);
+          soigneToken(p, soin.val, evt,
             function(s) {
-              sendChar(ci, "siphone l'âme de " + token.get('name') +
-                ". Il récupère " + s + " pv.");
+              var siphMsg = "siphone l'âme de " + token.get('name') +
+                ". Il récupère ";
+              if (s == soin.val) siphMsg += soin.roll + " pv.";
+              else siphMsg += s + " pv (jet "+soin.roll+").";
+              sendChar(ci, siphMsg);
             },
             function() {
               sendChar(ci, "est déjà au maximum de point de vie. Il laisse échapper l'âme de " + token.get('name'));
@@ -3218,10 +3244,10 @@ var COFantasy = COFantasy || function() {
     if (stateCOF.options.regles.val.initiative_variable) {
       var bonusVariable = attributeAsInt(perso, 'bonusInitVariable', 0);
       if (bonusVariable === 0) {
-        bonusVariable = randomInteger(6);
+        var rollD6 = rollDePlus(6);
+        bonusVariable = rollD6.val;
         var msg = "entre en combat. ";
-        msg += onGenre(perso.charId, 'Il', 'Elle') + " fait ";
-        msg += '<span style="display: inline-block; border-radius: 5px; padding: 0 4px; background-color: #F1E6DA; color: #000;" title="1d6 = ' + bonusVariable + '" class="a inlinerollresult showtip tipsy-n">' + bonusVariable + "</span>";
+        msg += onGenre(perso.charId, 'Il', 'Elle') + " fait " + rollD6.roll;
         msg += " à son jet d'initiative";
         setTokenAttr(perso, 'bonusInitVariable', bonusVariable, evt, msg);
       }
@@ -4966,9 +4992,9 @@ var COFantasy = COFantasy || function() {
       showTotal = true;
     }
     if (crit && options.affute) {
-      var bonusCrit = randomInteger(6);
-      dmgDisplay = "(" + dmgDisplay + ")+" + bonusCrit;
-      dmgTotal += bonusCrit;
+      var bonusCrit = rollDePlus(6);
+      dmgDisplay = "(" + dmgDisplay + ")+" + bonusCrit.roll;
+      dmgTotal += bonusCrit.val;
     }
     //On trie les DM supplémentaires selon leur type
     var dmgParType = {};
@@ -5608,16 +5634,12 @@ var COFantasy = COFantasy || function() {
         }
         if (target.touche &&
           attributeAsBool(target, 'imageDecalee')) {
-          var id = randomInteger(6);
-          var rollOut =
-            '<span style="display: inline-block; border-radius: 5px; padding: 0 4px; background-color: #FFFEA2; color: #000;" title="1d6 = ' +
-            id + '" class="a inlinerollresult showtip tipsy-n">' + id +
-            '</span>';
-          if (id > 4) {
+          var id = rollDePlus(6);
+          if (id.val > 4) {
             target.touche = false;
-            target.messages.push(rollOut + ": l'attaque passe à travers l'image de " + target.tokName);
+            target.messages.push(id.roll + ": l'attaque passe à travers l'image de " + target.tokName);
           } else {
-            target.messages.push(rollOut + ": malgré l'image légèrement décalée de " + target.tokName + " l'attaque touche");
+            target.messages.push(id.roll + ": malgré l'image légèrement décalée de " + target.tokName + " l'attaque touche");
           }
         }
         if (target.touche) {
@@ -12861,9 +12883,9 @@ var COFantasy = COFantasy || function() {
     getSelected(msg, function(selected) {
       iterSelected(selected, function(lanceur) {
         var charId = lanceur.charId;
-        var duree = randomInteger(6);
+        var duree = rollDePlus(6);
         var output =
-          "cherche des herbes. Après " + duree + " heures, " +
+          "cherche des herbes. Après " + duree.roll + " heures, " +
           onGenre(charId, "il", "elle");
         var evt = {
           type: "recherche d'herbes"
@@ -15606,9 +15628,10 @@ var COFantasy = COFantasy || function() {
     },
     repousser: {
       appliquer: function(attaquant, cible, critique, evt, envoyerMessage) {
-        var distance = randomInteger(6);
+        var distance = rollDePlus(6);
         if (critique && distance < 3) distance = 3;
-        if (envoyerMessage) sendChar(cible.charId, "est repoussé" + onGenre(cible.charId, '', 'e') + " et doit reculer de " + distance + "m.");
+        if (envoyerMessage) 
+          sendChar(cible.charId, "est repoussé" + onGenre(cible.charId, '', 'e') + " et doit reculer de " + distance.roll + "m.");
         if (critique) setState(cible, 'renverse', true, evt);
       },
       penalitePlusPetit: true,
