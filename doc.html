@@ -1101,7 +1101,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie de la mort</h4>
                 <ol>
-                  <li><strong>Siphon des âmes</strong> : ajouter un attribut <code>siphonDesAmes</code>.</li>
+                  <li><strong>Siphon des âmes</strong> : ajouter un attribut <code>siphonDesAmes</code>, de valeur <code>true</code>.</li>
                   <li><strong>Masque mortuaire</strong> : <code>!cof-effet-temp masqueMortuaire [[5+@{selected|INT}]]</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Oui,--tempeteDeMana altruiste|Non,&amp;#32;}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
                   <li><strong>Baiser du vampire</strong> : faire une attaque magique de portée 50 m et de DM 1d8+INT, à lancer avec les options <code>--sortilege --magique --vampirise --mana 1</code>. Si vous utilisez les options de magie puissante, rajoutez <code>?{Y consacrer le tour?|oui,--puissant|non,&amp;#32;}</code>. Si vous préférez l'option de tempête de mana, rajoutez <code>--rang 3 ?{Tempête de mana?|Oui,--tempeteDeMana|Non,&amp;#32;}</code>.</li>
                   <li><strong>Briser les coeurs</strong> : faire une attaque magique de portée 20, de DM 5d6+INT, lancée avec les options <code>--sortilege --magique --psave CON [[10+@{selected|INT}]] --mana 2</code>. Pour les options de mana puissante ou de tempête de mana, procédez comme avec le Baiser du vampire.</li>
@@ -1422,6 +1422,14 @@
                   <li><strong>Soigner</strong> : <code>!cof-soin @{selected|token_id} @{target|target1|token_id} [[ceil(@{target|target1|PV|max}/2)]] --limiteCibleParJour 1</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de la magie maléfique</h4>
+                <ol>
+                  <li><strong>Vampirisation</strong> :
+                    <ul>
+                      <li> Ajouter une attaque magique avec les DMs de vampirisation, lancée avec l'option <code>--vampirise</code> (et probablement aussi <code>--sortilege</code> et <code>--magique</code>).</li>
+                      <li> Ajouter un attribut <code>siphonDesAmes</code>, de valeur de NC de la créature (ou <code>true</code> si le NC est 0).</li>
+                    </ul>
+                  </li>
+                </ol>
                 <h4 class="text-secondary">Voie de la meute</h4>
                 <ol>
                   <li><strong>Intergeanchables</strong> : Utiliser un attribut <code>interchangeable</code>, avec comme valeur le nombre d'opposants à partir duquel les cibles peuvent être interverties</li>
