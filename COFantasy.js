@@ -571,65 +571,64 @@ var COFantasy = COFantasy || function() {
       if (value) token.set('light_losangle', 0);
       else token.set('light_losangle', 360);
     } else if (value && etat == 'mort') {
-    if (charAttributeAsBool(personnage, 'armeeConjuree')) {
-      removeFromTurnTracker(personnage.token.id, evt);
-      personnage.token.remove();
-      sendChar(personnage.charId, 'disparaît');
-      var armeeChar = getObj('character', personnage.charId);
-      if (armeeChar) {
-        evt.deletedCharacters = evt.deletedCharacters || [];
-        evt.deletedCharacters.push({
-          id: personnage.charId,
-          name: armeeChar.get('name'),
-          avatar: armeeChar.get('avatar'),
-          attributes: findObjs({
-            _type: 'attributes',
-            _characterid: personnage.charId
-          }),
-          abilities: findObjs({
-            _type: 'ability',
-            _characterid: personnage.charId
-          })
-        });
-        armeeChar.remove();
-      }
-    }
-      else if (!estNonVivant(personnage)) {
-      //Cherche si certains peuvent siphoner l'âme
-      var pageId = token.get('pageid');
-      var allToks =
-        findObjs({
-          _type: "graphic",
-          _pageid: pageId,
-          _subtype: "token",
-          layer: "objects"
-        });
-      allToks.forEach(function(tok) {
-        if (tok.id == token.id) return;
-        var ci = tok.get('represents');
-        if (ci === '') return;
-        var p = {
-          token: tok,
-          charId: ci
-        };
-        if (getState(p, 'mort')) return;
-        if (distanceCombat(token, tok, pageId) > 20) return;
-        if (charIdAttributeAsBool(ci, 'siphonDesAmes')) {
-          var bonus = charIdAttributeAsBool(ci, 'siphonDesAmes', 0);
-          var soin = rollDePlus(6, bonus);
-          soigneToken(p, soin.val, evt,
-            function(s) {
-              var siphMsg = "siphone l'âme de " + token.get('name') +
-                ". Il récupère ";
-              if (s == soin.val) siphMsg += soin.roll + " pv.";
-              else siphMsg += s + " pv (jet " + soin.roll + ").";
-              sendChar(ci, siphMsg);
-            },
-            function() {
-              sendChar(ci, "est déjà au maximum de point de vie. Il laisse échapper l'âme de " + token.get('name'));
-            });
+      if (charAttributeAsBool(personnage, 'armeeConjuree')) {
+        removeFromTurnTracker(personnage.token.id, evt);
+        personnage.token.remove();
+        sendChar(personnage.charId, 'disparaît');
+        var armeeChar = getObj('character', personnage.charId);
+        if (armeeChar) {
+          evt.deletedCharacters = evt.deletedCharacters || [];
+          evt.deletedCharacters.push({
+            id: personnage.charId,
+            name: armeeChar.get('name'),
+            avatar: armeeChar.get('avatar'),
+            attributes: findObjs({
+              _type: 'attributes',
+              _characterid: personnage.charId
+            }),
+            abilities: findObjs({
+              _type: 'ability',
+              _characterid: personnage.charId
+            })
+          });
+          armeeChar.remove();
         }
-      });
+      } else if (!estNonVivant(personnage)) {
+        //Cherche si certains peuvent siphoner l'âme
+        var pageId = token.get('pageid');
+        var allToks =
+          findObjs({
+            _type: "graphic",
+            _pageid: pageId,
+            _subtype: "token",
+            layer: "objects"
+          });
+        allToks.forEach(function(tok) {
+          if (tok.id == token.id) return;
+          var ci = tok.get('represents');
+          if (ci === '') return;
+          var p = {
+            token: tok,
+            charId: ci
+          };
+          if (getState(p, 'mort')) return;
+          if (distanceCombat(token, tok, pageId) > 20) return;
+          if (charIdAttributeAsBool(ci, 'siphonDesAmes')) {
+            var bonus = charIdAttributeAsBool(ci, 'siphonDesAmes', 0);
+            var soin = rollDePlus(6, bonus);
+            soigneToken(p, soin.val, evt,
+              function(s) {
+                var siphMsg = "siphone l'âme de " + token.get('name') +
+                  ". Il récupère ";
+                if (s == soin.val) siphMsg += soin.roll + " pv.";
+                else siphMsg += s + " pv (jet " + soin.roll + ").";
+                sendChar(ci, siphMsg);
+              },
+              function() {
+                sendChar(ci, "est déjà au maximum de point de vie. Il laisse échapper l'âme de " + token.get('name'));
+              });
+          }
+        });
       }
     }
     if (token.get('bar1_link') !== "") {
@@ -961,8 +960,12 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  //Retourne le mod de la caractéristque entière.
+  //si carac n'est pas une carac, retourne 0
   function modCarac(perso, carac) {
     var res = Math.floor((ficheAttributeAsInt(perso, carac, 10) - 10) / 2);
+    if (carac == 'FORCE' && attributeAsBool(perso, 'mutationMusclesHypertrophies')) res += 2;
+    else if (carac == 'DEXTERITE' && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) res += 4;
     return res;
   }
 
@@ -3757,7 +3760,7 @@ var COFantasy = COFantasy || function() {
       weaponStats.attDMBonusCommun = getAttrByName(charId, attPrefix + "armedm");
     } else {
       if (!weaponStats.attSkill)
-        weaponStats.attSkill = getAttrByName(charId, "ATKCAC");
+        weaponStats.attSkill = "@{ATKCAC}";
       weaponStats.attSkillDiv = getAttrByName(charId, attPrefix + "armeatkdiv") || 0;
       weaponStats.attCarBonus =
         getAttrByName(charId, attPrefix + "armedmcar") ||
@@ -5182,7 +5185,7 @@ var COFantasy = COFantasy || function() {
     var attSkillDivTxt = "";
     if (attSkillDiv > 0) attSkillDivTxt = " + " + attSkillDiv;
     else if (attSkillDiv < 0) attSkillDivTxt += attSkillDiv;
-    var attackSkillExpr = addOrigin(attaquant.name, "[[" + weaponStats.attSkill + attSkillDivTxt + "]]");
+    var attackSkillExpr = addOrigin(attaquant.name, "[[" + computeArmeAtk(attaquant, weaponStats.attSkill) + attSkillDivTxt + "]]");
     return attackRollExpr + " " + attackSkillExpr;
   }
 
@@ -5811,23 +5814,64 @@ var COFantasy = COFantasy || function() {
     return attDice;
   }
 
+  //retourne le mod de la caractéristique x, undefined si ce n'en est pas une
+  function computeCarExpression(perso, x) {
+    switch (x) {
+      case '@{FOR}':
+        return modCarac(perso, 'FORCE');
+      case '@{DEX}':
+        return modCarac(perso, 'DEXTERITE');
+      case '@{CON}':
+        return modCarac(perso, 'CONSTITUTION');
+      case '@{INT}':
+        return modCarac(perso, 'INTELLIGENCE');
+      case '@{SAG}':
+        return modCarac(perso, 'SAGESSE');
+      case '@{CHA}':
+        return modCarac(perso, 'CHARISME');
+      default:
+        return;
+    }
+  }
+
+
   function computeAttackCarBonus(attaquant, x) {
     if (x === undefined) return '';
     var attCarBonus = x;
     if (isNaN(attCarBonus)) {
-      if (attCarBonus.startsWith('@{')) {
-        var carac = caracOfMod(attCarBonus.substr(2, 3));
-        if (carac) {
-          var simplerAttCarBonus = modCarac(attaquant, carac);
-          if (!isNaN(simplerAttCarBonus)) {
-            attCarBonus = simplerAttCarBonus;
-          }
-        }
+      var simplerAttCarBonus = computeCarExpression(attaquant, x);
+      if (simplerAttCarBonus !== undefined) {
+        attCarBonus = simplerAttCarBonus;
       }
     }
     if (attCarBonus === "0" || attCarBonus === 0) attCarBonus = "";
     else attCarBonus = " + " + attCarBonus;
     return attCarBonus;
+  }
+
+  function computeArmeAtk(attaquant, x) {
+    if (x === undefined) return '';
+    var attDiv;
+    var attCar;
+    switch (x) {
+      case '@{ATKCAC}':
+        attDiv = ficheAttributeAsInt(attaquant, 'ATKCAC_DIV', 0);
+        attCar = getAttrByName(attaquant.charId, 'ATKCAC_CARAC');
+        break;
+      case '@{ATKTIR}':
+        attDiv = ficheAttributeAsInt(attaquant, 'ATKTIR_DIV', 0);
+        attCar = getAttrByName(attaquant.charId, 'ATKTIR_CARAC');
+        break;
+      case '@{ATKMAG}':
+        attDiv = ficheAttributeAsInt(attaquant, 'ATKMAG_DIV', 0);
+        attCar = getAttrByName(attaquant.charId, 'ATKMAG_CARAC');
+        break;
+      default:
+        return x;
+    }
+    attCar = computeCarExpression(attaquant, attCar);
+    if (attCar === undefined) return x;
+    return attCar + ficheAttributeAsInt(attaquant, 'NIVEAU') + attDiv;
   }
 
   function attackDealDmg(attaquant, cibles, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId) {
@@ -6357,6 +6401,8 @@ var COFantasy = COFantasy || function() {
                   setState(target, 'ralenti', true, evt);
                 } else if (ef.effet == 'paralyseTemp') {
                   setState(target, 'paralyse', true, evt);
+                } else if (ef.effet == 'etourdiTemp') {
+                  setState(target, 'etourdi', true, evt);
                 }
               } else { //On a un effet de combat
                 target.messages.push(target.tokName + " " + messageEffetCombat[ef.effet].activation);
@@ -6539,6 +6585,8 @@ var COFantasy = COFantasy || function() {
                           setState(target, 'ralenti', true, evt);
                         } else if (ef.effet == 'paralyseTemp') {
                           setState(target, 'paralyse', true, evt);
+                        } else if (ef.effet == 'etourdiTemp') {
+                          setState(target, 'etourdi', true, evt);
                         }
                         if (ef.valeur !== undefined) {
                           setTokenAttr(target, ef.effet + "Valeur", ef.valeur, evt, undefined, ef.valeurMax);
@@ -7183,6 +7231,7 @@ var COFantasy = COFantasy || function() {
         }
         var rd = ficheAttributeAsInt(target, 'RDS', 0);
         if (attributeAsBool(target, 'statueDeBois')) rd += 10;
+        if (attributeAsBool(target, 'mutationSilhouetteMassive')) rd += 3;
         if (crit) rd += charAttributeAsInt(target, 'RD_critique', 0);
         if (options.tranchant) rd += charAttributeAsInt(target, 'RD_tranchant', 0);
         if (options.percant) rd += charAttributeAsInt(target, 'RD_percant', 0);
@@ -10611,6 +10660,10 @@ var COFantasy = COFantasy || function() {
       case 'CHA':
         if (attributeAsBool(personnage, 'aspectDeLaSuccube'))
           bonus += getValeurOfEffet(personnage, 'aspectDeLaSuccube', 5);
+        break;
+      case 'CON':
+        if (attributeAsBool(personnage, 'mutationSilhouetteMassive'))
+          bonus += 5;
         break;
     }
     return bonus;
@@ -15399,7 +15452,7 @@ var COFantasy = COFantasy || function() {
     arme = {
       name: 'Attaque par défaut',
       attSkillDiv: 0,
-      attSkill: getAttrByName(perso.charId, "ATKCAC"),
+      attSkill: "@{ATKCAC}",
       crit: 20,
       parDefaut: true,
     };
@@ -16052,7 +16105,7 @@ var COFantasy = COFantasy || function() {
       },
       pv: 9,
       attaques: [
-        ['Morsure', ["@{selected|ATKCAC}", 0], 20, [1, 6, 1, 0],
+        ['Morsure', ["@{ATKCAC}", 0], 20, [1, 6, 1, 0],
           [0]
         ]
       ],
@@ -16080,7 +16133,7 @@ var COFantasy = COFantasy || function() {
       },
       pv: 15,
       attaques: [
-        ['Morsure', ["@{selected|ATKCAC}", -1], 20, [1, 6, 3, 0],
+        ['Morsure', ["@{ATKCAC}", -1], 20, [1, 6, 3, 0],
           [0]
         ]
       ],
@@ -16093,7 +16146,7 @@ var COFantasy = COFantasy || function() {
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-1],20,[1,6,3,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{ATKCAC}",-1],20,[1,6,3,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif'
       }]
     },
     worg: {
@@ -16117,7 +16170,7 @@ var COFantasy = COFantasy || function() {
       },
       pv: 35,
       attaques: [
-        ['Morsure', ["@{selected|ATKCAC}", 0], 20, [1, 6, 5, 0],
+        ['Morsure', ["@{ATKCAC}", 0], 20, [1, 6, 5, 0],
           [0]
         ]
       ],
@@ -16130,7 +16183,7 @@ var COFantasy = COFantasy || function() {
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",0],20,[1,6,5,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{ATKCAC}",0],20,[1,6,5,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif'
       }]
     },
     lion: {
@@ -16154,7 +16207,7 @@ var COFantasy = COFantasy || function() {
       },
       pv: 30,
       attaques: [
-        ['Morsure', ["@{selected|ATKCAC}", -1], 20, [2, 6, 5, 0],
+        ['Morsure', ["@{ATKCAC}", -1], 20, [2, 6, 5, 0],
           [0]
         ]
       ],
@@ -16167,10 +16220,10 @@ var COFantasy = COFantasy || function() {
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-1],20,[2,6,5,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{ATKCAC}",-1],20,[2,6,5,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
       }, {
         name: 'Dévorer',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-1],20,[2,6,5,0],[0]] --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{ATKCAC}",-1],20,[2,6,5,0],[0]] --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
       }]
     },
     grandLion: {
@@ -16193,7 +16246,7 @@ var COFantasy = COFantasy || function() {
       },
       pv: 50,
       attaques: [
-        ['Morsure', ["@{selected|ATKCAC}", -2], 20, [2, 6, 7, 0],
+        ['Morsure', ["@{ATKCAC}", -2], 20, [2, 6, 7, 0],
           [0]
         ]
       ],
@@ -16206,10 +16259,10 @@ var COFantasy = COFantasy || function() {
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-2],20,[2,6,7,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{ATKCAC}",-2],20,[2,6,7,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
       }, {
         name: 'Dévorer',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-2],20,[2,6,7,0],[0]] --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{ATKCAC}",-2],20,[2,6,7,0],[0]] --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
       }]
     },
     oursPolaire: {
@@ -16232,7 +16285,7 @@ var COFantasy = COFantasy || function() {
       },
       pv: 70,
       attaques: [
-        ['Morsure', ["@{selected|ATKCAC}", 0], 20, [2, 8, 7, 0],
+        ['Morsure', ["@{ATKCAC}", 0], 20, [2, 8, 7, 0],
           [0]
         ]
       ],
@@ -16266,7 +16319,7 @@ var COFantasy = COFantasy || function() {
       },
       pv: 90,
       attaques: [
-        ['Morsure', ["@{selected|ATKCAC}", -1], 20, [2, 6, 12, 0],
+        ['Morsure', ["@{ATKCAC}", -1], 20, [2, 6, 12, 0],
           [0]
         ]
       ],
@@ -16279,10 +16332,10 @@ var COFantasy = COFantasy || function() {
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-1],20,[2,6,12,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{ATKCAC}",-1],20,[2,6,12,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
       }, {
         name: 'Dévorer',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-1],20,[2,6,12,0],[0]] --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{ATKCAC}",-1],20,[2,6,12,0],[0]] --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
       }]
     },
     oursPrehistorique: {
@@ -16305,7 +16358,7 @@ var COFantasy = COFantasy || function() {
       },
       pv: 110,
       attaques: [
-        ['Griffes', ["@{selected|ATKCAC}", -2], 20, [3, 6, 13, 0],
+        ['Griffes', ["@{ATKCAC}", -2], 20, [3, 6, 13, 0],
           [0]
         ]
       ],
@@ -16474,7 +16527,7 @@ var COFantasy = COFantasy || function() {
         toFront(token);
         var avatar = "https://s3.amazonaws.com/files.d20.io/images/73283254/r6sbxbP1QKKtqXyYq-MlLA/max.png?1549547198";
         var attaque = '!cof-attack @{selected|token_id} @{target|token_id} ';
-        attaque += '["Attaque",["@{selected|ATKCAC}",0],20,[' + nbDeDM + ',' + deDM + ',0,0],[20]] --auto';
+        attaque += '["Attaque",["@{ATKCAC}",0],20,[' + nbDeDM + ',' + deDM + ',0,0],[20]] --auto';
         var abilities = [{
           name: 'Attaque',
           action: attaque
@@ -17503,6 +17556,24 @@ var COFantasy = COFantasy || function() {
       fin: "retrouve la vue",
       prejudiciable: true
     },
+    ralentiTemp: {
+      activation: "est ralenti : une seule action, pas d'action limitée",
+      actif: "", //Déjà affiché avec l'état ralenti
+      fin: "n'est plus ralenti",
+      prejudiciable: true
+    },
+    paralyseTemp: {
+      activation: "est paralysé : aucune action ni déplacement possible",
+      actif: "", //Déjà affiché avec l'état ralenti
+      fin: "n'est plus paralysé",
+      prejudiciable: true
+    },
+    etourdiTemp: {
+      activation: "est étourdi : aucune action et -5 en DEF",
+      actif: "", //Déjà affiché avec l'état ralenti
+      fin: "n'est plus étourdi",
+      prejudiciable: true
+    },
     aveugleManoeuvre: {
       activation: "est aveuglé par la manoeuvre",
       actif: "a du mal à voir où sont ses adversaires",
@@ -17534,18 +17605,6 @@ var COFantasy = COFantasy || function() {
       fin: "peut à nouveau attaquer son adversaire",
       prejudiciable: true,
       generic: true
-    },
-    ralentiTemp: {
-      activation: "est ralenti : une seule action, pas d'action limitée",
-      actif: "", //Déjà affiché avec l'état ralenti
-      fin: "n'est plus ralenti",
-      prejudiciable: true
-    },
-    paralyseTemp: {
-      activation: "est paralysé : aucune action ni déplacement possible",
-      actif: "", //Déjà affiché avec l'état ralenti
-      fin: "n'est plus paralysé",
-      prejudiciable: true
     },
     epeeDansante: {
       activation: "fait apparaître une lame d'énergie lumineuse",
@@ -18021,6 +18080,21 @@ var COFantasy = COFantasy || function() {
       actif: "a le sang noir",
       fin: "retrouve un sang normal"
     },
+    mutationMusclesHypertrophies: {
+      activation: "devient plus musclé",
+      actif: "a les muscles hypertrophiés",
+      fin: "retrouve des muscles normaux",
+    },
+    mutationSilhouetteFiliforme: {
+      activation: "devient plus fin",
+      actif: "a une silhouette filiforme",
+      fin: "retrouve une silhouette normale",
+    },
+    mutationSilhouetteMassive: {
+      activation: "devient plus massif",
+      actif: "a une silhouette massive",
+      fin: "retrouve une silhouette normale",
+    },
   };
 
   var patternEffetsIndetermine = buildPatternEffets(messageEffetIndetermine);
@@ -18142,6 +18216,17 @@ var COFantasy = COFantasy || function() {
               token: token,
               charId: charId
             }, 'paralyse', false, evt);
+          }, {
+            tousLesTokens: true
+          });
+        break;
+      case 'etourdiTemp':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+          function(token) {
+            setState({
+              token: token,
+              charId: charId
+            }, 'etourdi', false, evt);
           }, {
             tousLesTokens: true
           });
@@ -19193,7 +19278,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = 1.08;
+  var script_version = 1.09;
   COF_loaded = true;
   on('add:token', COFantasy.addToken);
   state.COFantasy = state.COFantasy || {

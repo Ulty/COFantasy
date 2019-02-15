@@ -982,11 +982,13 @@
                   <li><strong>Invocation d'une entité</strong> : ajouter la fiche correspondante.</li>
                   <li><strong>Lien magique</strong> : pour l'instant, gérer à la main le transfer de dégâts.</li>
                   <!-- TODO -->
+                  <li><strong>Amélioration</strong> : ajuster la fiche de l'entité.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du familier</h4>
                 <ol>
                   <li><strong>Familier</strong> : créer un token pour le familier, avec vue et controlé par le joueur. Le partage des PV n'est pas géré.</li>
                   <li><strong>Résistance</strong> : ajouter la valeur de RD sur la fiche du familier.</li>
+                  <li><strong>Sens développés</strong> : ajouter un attribut <code>perception</code> de valeur 5 (ou augmenter cet attribut, si il existe déjà), et ajouter un attribut <code>visionDansLeNoir</code> de valeur 20 (40 si le personnage dispose déjà de la vision dans le noir).</li>
                 </ol>
                 <h4 class="text-secondary">Voie des mutations</h4>
                 <ol>
@@ -997,11 +999,14 @@
                       <li> Si vous utilisez les options de tempête de mana, vous pouvew rajouter <code>--rang 1 ?{Tempête de mana?|Oui,--tempeteDeMana|Non,&amp;#32;}</code> à la mutation.</li>
                     </ul></li>
                     <li><strong>Mutation protectrice</strong> : <code>!cof-effet ?{Mutation protectrice|Cuirasse,mutationCuirasse|Écailles rouges,mutationEcaillesRouges|Fourrure violette,mutationFourrureViolette|Ouïes,mutationOuies|Sang noir,mutationSangNoir} true --classeEffet mutationProtectrice</code>. Pour la valeur de protection de la cuirasse, vous pouvez soit utiliser un attribut <code>voieDesMutations</code>, de valeur le rang dans la voie, soit remplacer <code>mutationCuirasse</code> par <code>mutationCuirasse --valeur <i>rang</i></code>. Pour enlever la mutation, le MJ peut ensuite simplement sélectionner le personnage et utiliser <code>!cof-fin-classe-effet mutationProtectrice</code>.</li>
+                    <li><strong>Surpuissance physique</strong> : <code>!cof-effet ?{Surpuissance physique|Muscles hypertrophiés,mutationMusclesHypertrophies|Silhouette filiforme,mutationSilhouetteFiliforme|Silhouette massive,mutationSilhouetteMassive} true --classeEffet surpuissancePhysique --mana 1</code>. Pour enlever la mutation, le MJ peut ensuite simplement sélectionner le personnage et utiliser <code>!cof-fin-classe-effet surpuissancePhysique</code>.</li>
+                  <li><strong>Adaptation motrice</strong> : pas d'autre support que <code>!cof-lancer-sort 2 se fait pousser ?{Adaptation motrice ?|Ailes|des ailes|Pattes demesurées,des pattes demesurées|Queue de poison,une queue de poisson}</code> </li>.
                 </ol>
                 <h4 class="text-secondary">Voie des portes</h4>
                 <ol>
                   <li><strong>Raccourci</strong> : pas de support particulier.</li>
                   <li><strong>Porte artificielle</strong> : pas de support particulier.</li>
+                  <li><strong>Manoir d'outre-tombe</strong> : pas d'autre support que <code>!cof-lancer-sort 1 enchante une porte...</code> </li>.
                 </ol>
               </div>
               <h3 class="text-info" id="Magicien">Magicien</h3>
@@ -1183,7 +1188,7 @@
               <div class="decalage">
                 <h4 class="text-secondary">Voie de l'attaque mentale</h4>
                 <ol>
-                  <li><strong>Attaque mentale</strong> : faire 2 attaques, une pour les DMs léthaux, avec les options <code>--sortilege --attaqueMentale</code> et l'autre avec l'option supplémentaire <code>--tempDmg</code>.</li>
+                  <li><strong>Attaque mentale</strong> : faire 2 attaques, une pour les DMs léthaux, avec les options <code>--sortilege --attaqueMentale</code> et l'autre avec l'option supplémentaire <code>--tempDmg</code> (et en ajustant les DM).</li>
                   <li><strong>Bouclier psi</strong> : ajouter un attribut <code>bouclierPsi</code> de valeur <code>true</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du contrôle corporel</h4>
