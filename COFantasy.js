@@ -6519,46 +6519,76 @@ var COFantasy = COFantasy || function() {
                     });
                   }
                   target.dmgMessage = "<b>DM :</b> " + dmgDisplay;
-                  if (attributeAsBool(target, 'sousTension') && options.contact) {
-                    ciblesCount++;
-                    sendChat("", "[[1d6]]", function(res) {
-                      var rolls = res[0];
-                      var explRoll = rolls.inlinerolls[0];
-                      var r = {
-                        total: explRoll.results.total,
-                        type: 'electrique',
-                        display: buildinline(explRoll, 'electrique', true)
-                      };
-                      dealDamage(attaquant, r, [], evt, false, options,
-                        target.messages,
-                        function(dmgDisplay, dmg) {
-                          var dmgMsg =
-                            "<b>Décharge électrique sur " + attackerTokName + " :</b> " +
-                            dmgDisplay;
-                          target.messages.push(dmgMsg);
-                          finCibles();
-                        });
+                  if (options.contact) {
+                    //Les DMs automatiques en cas de toucher une cible
+                    if (attributeAsBool(target, 'sousTension')) {
+                      ciblesCount++;
+                      sendChat("", "[[1d6]]", function(res) {
+                        var rolls = res[0];
+                        var explRoll = rolls.inlinerolls[0];
+                        var r = {
+                          total: explRoll.results.total,
+                          type: 'electrique',
+                          display: buildinline(explRoll, 'electrique', true)
+                        };
+                        dealDamage(attaquant, r, [], evt, false, options,
+                          target.messages,
+                          function(dmgDisplay, dmg) {
+                            var dmgMsg =
+                              "<b>Décharge électrique sur " + attackerTokName + " :</b> " +
+                              dmgDisplay;
+                            target.messages.push(dmgMsg);
+                            finCibles();
+                          });
+                      });
+                    }
+                    if (attributeAsBool(target, 'sangMordant')) {
+                      ciblesCount++;
+                      sendChat("", "[[1d6]]", function(res) {
+                        var rolls = res[0];
+                        var explRoll = rolls.inlinerolls[0];
+                        var r = {
+                          total: explRoll.results.total,
+                          type: 'acide',
+                          display: buildinline(explRoll, 'acide', true)
+                        };
+                        dealDamage(attaquant, r, [], evt, false, options,
+                          target.messages,
+                          function(dmgDisplay, dmg) {
+                            var dmgMsg =
+                              "<b>Le sang acide gicle sur " + attackerTokName + " :</b> " +
+                              dmgDisplay + " DM";
+                            target.messages.push(dmgMsg);
+                            finCibles();
+                          });
+                      });
+                    }
+                    var attrDmSiToucheContact = findObjs({
+                      _type: 'attribute',
+                      _characterid: target.charId,
+                      name: 'dmSiToucheContact'
                     });
-                  }
-                  if (attributeAsBool(target, 'sangMordant') && options.contact) {
-                    ciblesCount++;
-                    sendChat("", "[[1d6]]", function(res) {
-                      var rolls = res[0];
-                      var explRoll = rolls.inlinerolls[0];
-                      var r = {
-                        total: explRoll.results.total,
-                        type: 'acide',
-                        display: buildinline(explRoll, 'acide', true)
-                      };
-                      dealDamage(attaquant, r, [], evt, false, options,
-                        target.messages,
-                        function(dmgDisplay, dmg) {
-                          var dmgMsg =
-                            "<b>Le sang acide gicle sur " + attackerTokName + " :</b> " +
-                            dmgDisplay + " DM";
-                          target.messages.push(dmgMsg);
-                          finCibles();
-                        });
+                    attrDmSiToucheContact.forEach(function(dstc) {
+                      ciblesCount++;
+                      sendChat("", "[[" + dstc.get('current') + "]]", function(res) {
+                        var rolls = res[0];
+                        var explRoll = rolls.inlinerolls[0];
+                        var type = dstc.get('max');
+                        var r = {
+                          total: explRoll.results.total,
+                          type: type,
+                          display: buildinline(explRoll, type, true)
+                        };
+                        dealDamage(attaquant, r, [], evt, false, options,
+                          target.messages,
+                          function(dmgDisplay, dmg) {
+                            var dmgMsg =
+                              "<b>" + attackerTokName + " subit :</b> " +
+                              dmgDisplay + " DM en touchant " + target.tokName;
+                            target.messages.push(dmgMsg);
+                            finCibles();
+                          });
+                      });
                     });
                   }
                   finCibles();

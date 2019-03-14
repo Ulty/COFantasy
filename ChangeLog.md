@@ -3,6 +3,7 @@
 ## 1.09
 
 ### Capacités
+* Ajout de l'aura de feu de l'élémentaire de feu
 * Ajout de l'attaque étourdissante du psionique
 * Ajout de controle du métabolisme du psionique
 * Ajout de la surpuissance physique de l'invocateur
