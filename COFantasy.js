@@ -3180,8 +3180,14 @@ var COFantasy = COFantasy || function() {
       }
       updateCurrentBar(token, 2, bar2 - cout, evt);
       var niveau = ficheAttributeAsInt(personnage, 'NIVEAU', 1);
-      if (cout > niveau) {
-        sendChar(charId, "Attention, la dépense totale de mana est supérieure au niveau");
+      if (stateCOF.options.regles.val.mana_totale.val) {
+        if (cout > niveau * 3) {
+          sendChar(charId, "Attention, la dépense totale de mana est supérieure au niveau * 3");
+        }
+      } else {
+        if (cout > niveau) {
+          sendChar(charId, "Attention, la dépense totale de mana est supérieure au niveau");
+        }
       }
       return true;
     }
@@ -11349,10 +11355,10 @@ var COFantasy = COFantasy || function() {
     } else {
       setTokenAttr(perso, 'armeEnMain', labelArme, evt);
     }
-      if (options.messages) {
-        message += "dégaine " + nouvelleArme.name;
-        options.messages.push(message);
-      } else sendChar(perso.charId, "dégaine " + nouvelleArme.name);
+    if (options.messages) {
+      message += "dégaine " + nouvelleArme.name;
+      options.messages.push(message);
+    } else sendChar(perso.charId, "dégaine " + nouvelleArme.name);
     if (charAttributeAsInt(perso, "initEnMain" + labelArme, 0) > 0)
       updateNextInit(perso.token);
     return;
