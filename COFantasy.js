@@ -2488,6 +2488,7 @@ var COFantasy = COFantasy || function() {
         case "grenaille":
         case "attaqueArmeeConjuree":
         case "difficultePVmax":
+        case "lamesJumelles":
           options[cmd[0]] = true;
           return;
         case "imparable": //deprecated
@@ -3721,6 +3722,10 @@ var COFantasy = COFantasy || function() {
       if (benedictionIntense)
         removeTokenAttr(personnage, 'benedictionTempeteDeManaIntense', evt);
     }
+    if (attributeAsBool(personnage, 'lameDeLigneePerdue')) {
+      attBonus -= 1;
+      explications.push("Lame de lignée perdue => -1 en Attaque");
+    }
     if (attributeAsBool(personnage, 'strangulation')) {
       var malusStrangulation =
         1 + attributeAsInt(personnage, 'dureeStrangulation', 0);
@@ -4193,6 +4198,13 @@ var COFantasy = COFantasy || function() {
       if (pv <= frenesie) {
         attBonus += 2;
         explications.push("Frénésie => +2 en Attaque");
+      }
+    }
+    if (options.lamesJumelles) {
+      var force = modCarac(attaquant, 'FORCE');
+      if (force < 2) {
+        attBonus += force-2;
+        explications.push("Lames jumelles => "+(force-2)+" en Attaque");
       }
     }
     return attBonus;
@@ -6803,6 +6815,10 @@ var COFantasy = COFantasy || function() {
                 "Rune de puissance", evt.personnage));
           }
         }
+        if (attributeAsBool(evt.personnage, 'kiai') && !attributeAsBool(evt.personnage, 'rechargeDuKiai')) {
+          addLineToFramedDisplay(display,
+            bouton("!cof-pousser-kiai " + evt.id, "Kiai", evt.personnage));
+        }
         var sort = false;
         if (evt.action.options && evt.action.options.sortilege) sort = true;
         if (evt.action.cibles) {
@@ -8067,6 +8083,8 @@ var COFantasy = COFantasy || function() {
     // Remettre l'esquive fatale à 1
     resetAttr(attrs, 'esquiveFatale', evt);
     resetAttr(attrs, 'attaqueEnTraitre', evt);
+    // Réinitialiser le kiai
+    resetAttr(attrs, 'kiai', evt);
     // Pour frappe du vide, on rengaine l'arme, cela remet aussi l'attribut
     allAttributesNamed(attrs, 'frappeDuVide').forEach(function(attr) {
       var fdvCharId = attr.get('characterid');
@@ -9160,6 +9178,76 @@ var COFantasy = COFantasy || function() {
         }); //fin iterSelected
         addEvent(evt);
       }); //fin getSelected
+    }
+  }
+
+  //!cof-pousser-kaia evt.id
+  function kiai(msg) {
+    if (!stateCOF.combat) {
+      sendPlayer(msg, "On ne peut pousser un kiai qu'en combat");
+      return;
+    }
+    var cmd = msg.content.split(' ');
+    if (cmd.length < 2) {
+      error("Il manque l'id de l'attaque sur laquelle pousser le kiai", cmd);
+      return;
+    }
+    var evtARefaire = findEvent(cmd[1]);
+    if (evtARefaire === undefined) {
+      error("L'action est trop ancienne ou a été annulée", cmd);
+      return;
+    }
+    var perso = evtARefaire.personnage;
+    if (perso === undefined) {
+      error("Erreur interne du bouton de kiai : l'évenement n'a pas de personnage", evtARefaire);
+      return;
+    }
+    if (!peutController(msg, perso)) {
+      sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+      return;
+    }
+    var action = evtARefaire.action;
+    if (action === undefined) {
+      error("Impossible de relancer l'action", evtARefaire);
+      return;
+    }
+    var attrKiai = tokenAttribute(perso, 'kiai');
+    if (attrKiai.length === 0) {
+      error("Le personnage " + perso.token.get('name') + " ne sait pas pousser de kiai", cmd);
+      return;
+    }
+    attrKiai = attrKiai[0];
+    var currentKiai = parseInt(attrKiai.get('current'));
+    if (isNaN(currentKiai) || currentKiai < 1) {
+      sendPlayer(msg, perso.token.get('name') + " ne peut plus pousser de kiai pendant ce combat.");
+      return;
+    }
+    var evt = {
+      type: "Kiai",
+      attributes: [{
+        attribute: attrKiai,
+        current: currentKiai
+      }]
+    };
+    attrKiai.set('current', currentKiai - 1);
+    if (currentKiai > 1) {
+      setTokenAttr(perso, 'rechargeDuKiai', randomInteger(6), evt, undefined, getInit());
+    }
+    var options = action.options || {};
+    options.redo = true;
+    options.maxDmg = true;
+    options.rollsAttack = action.rollsAttack;
+    action.cibles.forEach(function(target) {
+      delete target.rollsDmg;
+    });
+    addEvent(evt);
+    switch (evtARefaire.type) {
+      case 'Attaque':
+        undoEvent(evtARefaire);
+        attack(action.player_id, perso, action.cibles, action.attack_label, options);
+        return;
+      default:
+        return;
     }
   }
 
@@ -10745,6 +10833,9 @@ var COFantasy = COFantasy || function() {
       bonus += bonusBenediction;
       if (benedictionIntense && evt)
         removeTokenAttr(personnage, 'benedictionTempeteDeManaIntense', evt);
+    }
+    if (attributeAsBool(personnage, 'lameDeLigneePerdue')) {
+      bonus -= 1;
     }
     if (attributeAsBool(personnage, 'strangulation')) {
       var malusStrangulation =
@@ -17438,6 +17529,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-rune-puissance":
         runePuissance(msg);
         return;
+      case "!cof-pousser-kiai":
+        kiai(msg);
+        return;
       case "!cof-rune-protection":
         runeProtection(msg);
         return;
@@ -18111,6 +18205,11 @@ var COFantasy = COFantasy || function() {
       activation: "se bat contre une armée conjurée",
       actif: "se bat contre une armée conjurée",
       fin: "ne se bat plus contre l'armée conjurée"
+    },
+    rechargeDuKiai: {
+      activation: "pousse un kiai",
+      actif: "ne peut pas encore pousser un autre kiai",
+      fin: "peut pousser un autre kiai"
     },
   };
 
