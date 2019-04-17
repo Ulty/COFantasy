@@ -11348,7 +11348,7 @@ var COFantasy = COFantasy || function() {
       //On dégaine une nouvelle arme
       ancienneArme = getWeaponStats(perso, labelArmeActuelle);
       if (ancienneArme) {
-        if (options.messages) message += "rengaine " + ancienneArme.name + " et ";
+        if (options && options.messages) message += "rengaine " + ancienneArme.name + " et ";
         else sendChar(perso.charId, "rengaine " + ancienneArme.name);
       }
     } else armeActuelle = undefined;
