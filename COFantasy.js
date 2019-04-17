@@ -12054,7 +12054,8 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var carac = 'SAG'; //carac pour résister
-    if (options.resisteAvecForce) carac += 'FOR';
+    if (options.resisteAvecForce)
+      carac = meilleureCarac('SAG', 'FOR', target, difficulte);
     //chercher si un partenaire a sansPeur pour appliquer le bonus
     var allieSansPeur = 0;
     var allies = alliesParPerso[target.charId];
