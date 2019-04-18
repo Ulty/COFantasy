@@ -6780,7 +6780,7 @@ var COFantasy = COFantasy || function() {
             peurOneToken(target, pageId, options.peur.seuil,
               options.peur.duree, {
                 resisteAvecForce: true
-              }, display, evt, effetPietinement);
+              }, target.messages, evt, effetPietinement);
           } else effetPietinement();
         } else {
           evt.succes = false;
@@ -12041,15 +12041,14 @@ var COFantasy = COFantasy || function() {
   }
 
   function peurOneToken(target, pageId, difficulte, duree, options,
-    display, evt, callback) {
+    messages, evt, callback) {
     var charId = target.charId;
     var targetName = target.token.get('name');
     if (charAttributeAsBool(target, 'sansPeur') ||
       charAttributeAsBool(target, 'immunitePeur') ||
       charAttributeAsBool(target, 'proprioception') ||
       attributeAsBool(target, 'enragé')) {
-      addLineToFramedDisplay(display,
-        targetName + " est insensible à la peur !");
+      messages.push(targetName + " est insensible à la peur !");
       callback();
       return;
     }
@@ -12090,7 +12089,7 @@ var COFantasy = COFantasy || function() {
           }
           setTokenAttr(target, effet, duree, evt, undefined, getInit());
         }
-        addLineToFramedDisplay(display, line);
+        messages.push(line);
         callback();
       }); //fin testCaracteristique (asynchrone)
   }
@@ -12169,9 +12168,13 @@ var COFantasy = COFantasy || function() {
       };
       initiative(selected, evt);
       var counter = selected.length;
+      var messages = [];
       var finalEffect = function() {
         counter--;
         if (counter > 0) return;
+        messages.forEach(function(m) {
+          addLineToFramedDisplay(display, m);
+        });
         sendChat("", endFramedDisplay(display));
         addEvent(evt);
       };
@@ -12186,7 +12189,7 @@ var COFantasy = COFantasy || function() {
             }
           }
           peurOneToken(perso, pageId, difficulte, duree, options,
-            display, evt, finalEffect);
+            messages, evt, finalEffect);
         }, //fun fonction de iterSelectde
         finalEffect //callback pour les cas où token incorrect
       );
