@@ -2744,7 +2744,7 @@ var COFantasy = COFantasy || function() {
             }
             return;
           }
-          error("Pass d'effet auquel appliquer le save", optArgs);
+          error("Pas d'effet auquel appliquer le save", optArgs);
           return;
         case "mana":
           if (cmd.length < 2) {
