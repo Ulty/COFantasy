@@ -2948,9 +2948,13 @@ var COFantasy = COFantasy || function() {
           }
           var attr = getObj('attribute', cmd[1]);
           if (attr === undefined) {
-            log("Attribut à changer perdu");
-            log(cmd);
-            return;
+            attr = tokenAttribute(attaquant, cmd[1]);
+            if (attr.length === 0) {
+              log("Attribut à changer perdu");
+              log(cmd);
+              return;
+            }
+            attr = attr[0];
           }
           scope.decrAttribute = attr;
           return;
@@ -3297,7 +3301,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //Evaluation récursive des if-then-else
-  function evalITE(attaquant, target, deAttaque, options, explications, scope, inTarget) {
+  function evalITE(attaquant, target, deAttaque, options, evt, explications, scope, inTarget) {
     if (scope.ite === undefined) return;
     scope.ite = scope.ite.filter(function(ite) {
       var condInTarget = inTarget;
@@ -3366,11 +3370,26 @@ var COFantasy = COFantasy || function() {
               });
             }
             break;
+          case 'decrAttribute':
+            var attr = branch.decrAttribute;
+            var oldval = parseInt(attr.get('current'));
+            if (isNaN(oldval) || oldval < 1) {
+              sendChar(attr.get('characterid'), "ne peut plus faire cela");
+              break;
+            }
+            evt.attributes = evt.attributes || [];
+            evt.attributes.push({
+              attribute: attr,
+              current: oldval,
+              max: attr.get('max')
+            });
+            attr.set('current', oldval - 1);
+            break;
           default:
             opt[field] = branch[field];
         }
       }
-      evalITE(attaquant, target, deAttaque, options, explications, branch, condInTarget);
+      evalITE(attaquant, target, deAttaque, options, evt, explications, branch, condInTarget);
       return condInTarget;
     });
   }
@@ -6189,7 +6208,7 @@ var COFantasy = COFantasy || function() {
       target.malediction = options.malediction;
       target.pietine = options.pietine;
       target.maxDmg = options.maxDmg;
-      evalITE(attaquant, target, d20roll, options, explications, options);
+      evalITE(attaquant, target, d20roll, options, evt, explications, options);
       var attDMBonus = attDMBonusCommun;
       //Les modificateurs de dégâts qui dépendent de la cible
       if (target.tempDmg) {
@@ -10040,7 +10059,7 @@ var COFantasy = COFantasy || function() {
     } else {
       if (!isActive(perso)) {
         sendChar(perso.charId, "ne peut pas agir à ce tour");
-        return;
+        return true;
       }
       //On recherche dans le Personnage s'il a une "Ability" dont le nom est #Actions#" ou "#TurnAction#".
       formeDarbre = attributeAsBool(perso, 'formeDArbre');
