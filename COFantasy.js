@@ -569,6 +569,7 @@ var COFantasy = COFantasy || function() {
     if (!value) { //On enlève le save si il y en a un
       removeTokenAttr(personnage, etat + 'Save', evt);
     }
+    var pageId = token.get('pageid');
     if (etat == 'aveugle') {
       // We also change vision of the token
       if (aff.prev.light_losangle === undefined)
@@ -576,6 +577,25 @@ var COFantasy = COFantasy || function() {
       if (value) token.set('light_losangle', 0);
       else token.set('light_losangle', 360);
     } else if (value && etat == 'mort') {
+      //On libère les personnages enveloppés, si il y en a.
+      var attrEnveloppe = tokenAttribute(personnage, 'enveloppe');
+      attrEnveloppe.forEach(function(a) {
+        var cible = tokenOfIdName(a.get('current'), pageId);
+        if (cible) {
+      evt.deletedAttributes = evt.deletedAttributes || [];
+          var attrCible = tokenAttribute(cible, 'enveloppePar');
+          attrCible.forEach(function(a) {
+            var cube = tokenOfIdName(a.get('current', pageId));
+            if (cube.token.id == personnage.id) {
+              sendChar(cible.charId, 'se libère de '+cube.tokName);
+              evt.deletedAttributes.push(a);
+              a.remove();
+            }
+          });
+        }
+              evt.deletedAttributes.push(a);
+              a.remove();
+      });
       if (charAttributeAsBool(personnage, 'armeeConjuree')) {
         removeFromTurnTracker(personnage.token.id, evt);
         personnage.token.remove();
@@ -600,7 +620,6 @@ var COFantasy = COFantasy || function() {
         }
       } else if (!estNonVivant(personnage)) {
         //Cherche si certains peuvent siphoner l'âme
-        var pageId = token.get('pageid');
         var allToks =
           findObjs({
             _type: "graphic",
@@ -1006,6 +1025,21 @@ var COFantasy = COFantasy || function() {
       token: token,
       charId: charId
     };
+  }
+
+  function tokenOfIdName(idn, pageId) {
+    var pos = idn.indexOf(' ');
+    if (pos < 1 || pos >= idn.length) {
+      error("IdName mal formé", idn);
+      return;
+    }
+    var name = idn.substring(pos + 1);
+    var perso = tokenOfId(idn.substring(0, pos), name, pageId);
+    perso.tokName = perso.token.get('name');
+    if (perso.tokName == name) return perso;
+    log("En cherchant le token " + idn + ", on trouve " + perso.tokName);
+    log(perso);
+    return perso;
   }
 
   function boutonSimple(action, style, texte) {
@@ -3044,6 +3078,19 @@ var COFantasy = COFantasy || function() {
           if (isNaN(options.allonge)) {
             error("L'argument de --allonge n'est pas un nombre", cmd);
           }
+          return;
+        case 'enveloppe':
+          if (cmd.length < 4) {
+            error("Il faut 3 arguments à --enveloppe : la difficulté, le type (label ou ability) et les dommages", cmd);
+            return;
+          }
+          scope.enveloppe = {
+            difficulte: parseInt(cmd[1]),
+            type: cmd[2],
+            expression: cmd[3]
+          };
+          if (isNaN(scope.enveloppe.difficulte))
+            scope.enveloppe.difficulte = 15;
           return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
@@ -6209,6 +6256,16 @@ var COFantasy = COFantasy || function() {
       target.pietine = options.pietine;
       target.maxDmg = options.maxDmg;
       evalITE(attaquant, target, d20roll, options, evt, explications, options);
+      if (options.enveloppe !== undefined) {
+        var ligneEnveloppe = attaquant.tokName + " peut ";
+        var commandeEnvelopper = 
+          '!cof-envelopper '+attaquant.token.id + ' ' + target.token.id + ' ' +
+          options.enveloppe.difficulte + ' ' +
+          options.enveloppe.type + ' ' + options.enveloppe.expression;
+        ligneEnveloppe += boutonSimple(commandeEnvelopper, '', 'envelopper');
+        ligneEnveloppe += target.tokName;
+        target.messages.push(ligneEnveloppe);
+      }
       var attDMBonus = attDMBonusCommun;
       //Les modificateurs de dégâts qui dépendent de la cible
       if (target.tempDmg) {
@@ -8925,6 +8982,16 @@ var COFantasy = COFantasy || function() {
           options.chance = (options.chance === undefined) ? 1 : options.chance + 1;
           jetPerso(perso, action.caracteristique, action.difficulte, action.titre, action.playerId, options);
           return;
+        case 'echapperEnveloppement':
+          var optionsEE = action.options || {};
+          optionsEE.chance = (optionsEE.chance === undefined) ? 1 : optionsEE.chance + 1;
+          echapperEnveloppement({
+            selected: action.selected,
+            content: '!cof-chance-echapper-enveloppement',
+            playerId: action.playerId,
+            options: optionsEE
+          });
+          return;
         default:
           error("Evenement avec une action, mais inconnue au niveau chance. Impossible d'annuler !", evt);
           return;
@@ -9088,6 +9155,16 @@ var COFantasy = COFantasy || function() {
           undoEvent(evtARefaire);
           delete options.roll; //On va le relancer
           jetPerso(perso, action.caracteristique, action.difficulte, action.titre, action.playerId, options);
+          return;
+        case 'echapperEnveloppement':
+          undoEvent(evtARefaire);
+          delete options.roll;
+          echapperEnveloppement({
+            selected: action.selected,
+            content: '!cof-chance-echapper-enveloppement',
+            playerId: action.playerId,
+            options: options
+          });
           return;
         default:
           return;
@@ -10095,130 +10172,161 @@ var COFantasy = COFantasy || function() {
       var actionsAAfficher;
       var ligne = '';
       var command = '';
-      if (formeDarbre) {
-        actionsAAfficher = true;
-        command = '!cof-attack @{selected|token_id} @{target|token_id} ["Branches",["@{selected|NIVEAU}",0],20,[1,6,3,0],0]';
-        ligne += bouton(command, 'Attaque', perso, false) + '<br />';
-      }
-      //On cherche si il y a une armée conjurée à attaquer
-      var attrs_armee =
-        findObjs({
-          _type: "attribute",
-          name: 'armeeConjuree',
-        });
-      if (attrs_armee.length > 0) {
-        var allTokens =
-          findObjs({
-            _type: "graphic",
-            _pageid: pageId,
-            _subtype: "token",
-            layer: "objects"
+      //Les dégâts aux personnages enveloppés par perso
+      var attrs_enveloppe = tokenAttribute(perso, 'enveloppe');
+      attrs_enveloppe.forEach(function(a) {
+        var cible = tokenOfIdName(a.get('current'), pageId);
+        if (cible === undefined) {
+          error("Attribut d'enveloppe mal formé ou obsolète", a.get('current'));
+          return;
+        }
+        var enveloppeDM = a.get('max');
+        if (enveloppeDM.startsWith('ability ')) {
+          enveloppeDM = enveloppeDM.substring(8);
+          var abEnveloppe = abilities.find(function(abilitie) {
+            return (abilitie.get('name') === enveloppeDM);
           });
-        var page = getObj("page", pageId);
-        var scale = page.get('scale_number');
-        var px = perso.token.get('left');
-        var py = perso.token.get('top');
-        var pxp = px + 10 * PIX_PER_UNIT / scale;
-        var pxm = px - 10 * PIX_PER_UNIT / scale;
-        var pyp = py + 10 * PIX_PER_UNIT / scale;
-        var pym = py - 10 * PIX_PER_UNIT / scale;
-        var ps = tokenSize(perso.token, 0);
-        pxp += ps;
-        pxm -= ps;
-        pyp += ps;
-        pym -= ps;
-        attrs_armee.forEach(function(aa) {
-          var aacid = aa.get('characterid');
-          if (aacid == perso.charId) return;
-          var invocId = aa.get('current');
-          if (invocId == perso.charId) return;
-          var allies = alliesParPerso[invocId] || new Set();
-          if (allies.has(perso.charId)) return;
-          allTokens.forEach(function(t) {
-            if (t.get('represents') == aacid) {
-              //teste si dans un carré de 20 m de coté autour de l'armée.
-              var tx = t.get('left');
-              var ty = t.get('top');
-              if (tx < pxp && tx > pxm && ty < pyp && ty > pym) {
-                command = '!cof-attack ' + perso.token.id + ' ' + t.id + ' ["AttaqueArmée",[0,0],20,[0,6,' + (charAttributeAsInt(perso, 'NIVEAU', 1) + 1) + ',0],20] --auto --attaqueArmeeConjuree';
-                ligne += bouton(command, "Attaque de l'armée", perso, false) + '<br />';
-              }
-            }
-          });
-        });
-      }
-      if (actions.length > 0) {
-        // Toutes les Macros
-        var macros = findObjs({
-          _type: 'macro'
-        });
-        var found;
-        // On recherche si l'action existe (Ability % ou Macro #)
-        actions.forEach(function(action, i) {
-          action = action.trim();
-          if (action.length > 0) {
-            var actionCommands = action.split(' ');
-            var actionCmd = actionCommands[0];
-            var actionText = action.replace(/-/g, ' ').replace(/_/g, ' ');
-            found = false;
-            if (actionCmd.startsWith('%')) {
-              actionCmd = actionCmd.substr(1);
-              actionText = actionText.substr(1);
-              abilities.forEach(function(abilitie, index) {
-                if (found) return;
-                if (abilitie.get('name') === actionCmd) {
-                  // l'ability existe
-                  found = true;
-                  command = abilitie.get('action').trim();
-                  ligne += bouton(command, actionText, perso, false) + '<br />';
-                }
-              });
-            } else if (actionCmd.startsWith('#')) {
-              actionCmd = actionCmd.substr(1);
-              actionText = actionText.substr(1);
-              macros.forEach(function(macro, index) {
-                if (found) return;
-                if (macro.get('name') === actionCmd) {
-                  found = true;
-                  command = macro.get('action').trim();
-                  ligne += bouton(command, actionText, perso, false) + '<br />';
-                }
-              });
-            } else if (actionCmd.startsWith('!')) {
-              if (actionCommands.length > 1) {
-                actionText = actionCommands[1].replace(/-/g, ' ').replace(/_/g, ' ');
-              }
-              command = action;
-              ligne += bouton(command, actionText, perso, false) + '<br />';
-              found = true;
-            }
-            if (found) {
-              actionsAAfficher = true;
-            } else {
-              // Si on n'a toujours rien trouvé, on ajoute un petit log
-              log('Ability et macro non trouvé : ' + action);
-            }
+          if (abEnveloppe) {
+            command = abEnveloppe.get('action').trim();
+            command = command.replace(new RegExp(escapeRegExp('@{target|token_id}'), 'g'), cible.token.id);
+            ligne += bouton(command, "Infliger DMS à " + cible.tokName, perso, false) + '<br />';
           }
-        });
-      }
-      if (actionsParDefaut) {
+        } else if (enveloppeDM.startsWith('label ')) {
+          actionsAAfficher = true;
+          command = 'cof-attack ' + perso.token.id + ' ' + cible.token.id + ' ' + enveloppeDM.substring(6);
+          ligne += bouton(command, "Infliger DMs à " + cible.tokName, perso, false) + '<br />';
+        } //else pas reconnu
+      });
+      if (attributeAsBool(perso, 'enveloppePar')) {
         actionsAAfficher = true;
-        command = "!cof-attendre ?{Nouvelle initiative}";
-        ligne += bouton(command, 'Attendre', perso, false) + '<br />';
-        if (!charAttributeAsBool(perso, 'armeeConjuree')) {
-          command = "!cof-action-defensive ?{Action défensive|simple|totale}";
-          ligne += bouton(command, 'Se défendre', perso, false) + '<br />';
-          if (stateCOF.options.affichage.val.manoeuvres.val) {
-            command = "!cof-manoeuvre @{selected|token_id} @{target|token_id} ?{Manoeuvre?|aveugler|bloquer|desarmer|faireDiversion|menacer|renverser|tenirADistance|repousser}";
-            ligne += bouton(command, 'Manoeuvres', perso, false) + '<br />';
+        command = '!cof-echapper-enveloppement --target ' + perso.token.id;
+        ligne += bouton(command, 'Sortir de la créature', perso, false) + '<br />';
+      } else {
+        if (formeDarbre) {
+          actionsAAfficher = true;
+          command = '!cof-attack @{selected|token_id} @{target|token_id} ["Branches",["@{selected|NIVEAU}",0],20,[1,6,3,0],0]';
+          ligne += bouton(command, 'Attaque', perso, false) + '<br />';
+        }
+        //On cherche si il y a une armée conjurée à attaquer
+        var attrs_armee =
+          findObjs({
+            _type: "attribute",
+            name: 'armeeConjuree',
+          });
+        if (attrs_armee.length > 0) {
+          var allTokens =
+            findObjs({
+              _type: "graphic",
+              _pageid: pageId,
+              _subtype: "token",
+              layer: "objects"
+            });
+          var page = getObj("page", pageId);
+          var scale = page.get('scale_number');
+          var px = perso.token.get('left');
+          var py = perso.token.get('top');
+          var pxp = px + 10 * PIX_PER_UNIT / scale;
+          var pxm = px - 10 * PIX_PER_UNIT / scale;
+          var pyp = py + 10 * PIX_PER_UNIT / scale;
+          var pym = py - 10 * PIX_PER_UNIT / scale;
+          var ps = tokenSize(perso.token, 0);
+          pxp += ps;
+          pxm -= ps;
+          pyp += ps;
+          pym -= ps;
+          attrs_armee.forEach(function(aa) {
+            var aacid = aa.get('characterid');
+            if (aacid == perso.charId) return;
+            var invocId = aa.get('current');
+            if (invocId == perso.charId) return;
+            var allies = alliesParPerso[invocId] || new Set();
+            if (allies.has(perso.charId)) return;
+            allTokens.forEach(function(t) {
+              if (t.get('represents') == aacid) {
+                //teste si dans un carré de 20 m de coté autour de l'armée.
+                var tx = t.get('left');
+                var ty = t.get('top');
+                if (tx < pxp && tx > pxm && ty < pyp && ty > pym) {
+                  command = '!cof-attack ' + perso.token.id + ' ' + t.id + ' ["AttaqueArmée",[0,0],20,[0,6,' + (charAttributeAsInt(perso, 'NIVEAU', 1) + 1) + ',0],20] --auto --attaqueArmeeConjuree';
+                  ligne += bouton(command, "Attaque de l'armée", perso, false) + '<br />';
+                }
+              }
+            });
+          });
+        }
+        if (actions.length > 0) {
+          // Toutes les Macros
+          var macros = findObjs({
+            _type: 'macro'
+          });
+          var found;
+          // On recherche si l'action existe (Ability % ou Macro #)
+          actions.forEach(function(action, i) {
+            action = action.trim();
+            if (action.length > 0) {
+              var actionCommands = action.split(' ');
+              var actionCmd = actionCommands[0];
+              var actionText = action.replace(/-/g, ' ').replace(/_/g, ' ');
+              found = false;
+              if (actionCmd.startsWith('%')) {
+                actionCmd = actionCmd.substr(1);
+                actionText = actionText.substr(1);
+                abilities.forEach(function(abilitie, index) {
+                  if (found) return;
+                  if (abilitie.get('name') === actionCmd) {
+                    // l'ability existe
+                    found = true;
+                    command = abilitie.get('action').trim();
+                    ligne += bouton(command, actionText, perso, false) + '<br />';
+                  }
+                });
+              } else if (actionCmd.startsWith('#')) {
+                actionCmd = actionCmd.substr(1);
+                actionText = actionText.substr(1);
+                macros.forEach(function(macro, index) {
+                  if (found) return;
+                  if (macro.get('name') === actionCmd) {
+                    found = true;
+                    command = macro.get('action').trim();
+                    ligne += bouton(command, actionText, perso, false) + '<br />';
+                  }
+                });
+              } else if (actionCmd.startsWith('!')) {
+                if (actionCommands.length > 1) {
+                  actionText = actionCommands[1].replace(/-/g, ' ').replace(/_/g, ' ');
+                }
+                command = action;
+                ligne += bouton(command, actionText, perso, false) + '<br />';
+                found = true;
+              }
+              if (found) {
+                actionsAAfficher = true;
+              } else {
+                // Si on n'a toujours rien trouvé, on ajoute un petit log
+                log('Ability et macro non trouvé : ' + action);
+              }
+            }
+          });
+        }
+        if (actionsParDefaut) {
+          actionsAAfficher = true;
+          command = "!cof-attendre ?{Nouvelle initiative}";
+          ligne += bouton(command, 'Attendre', perso, false) + '<br />';
+          if (!charAttributeAsBool(perso, 'armeeConjuree')) {
+            command = "!cof-action-defensive ?{Action défensive|simple|totale}";
+            ligne += bouton(command, 'Se défendre', perso, false) + '<br />';
+            if (stateCOF.options.affichage.val.manoeuvres.val) {
+              command = "!cof-manoeuvre @{selected|token_id} @{target|token_id} ?{Manoeuvre?|aveugler|bloquer|desarmer|faireDiversion|menacer|renverser|tenirADistance|repousser}";
+              ligne += bouton(command, 'Manoeuvres', perso, false) + '<br />';
+            }
           }
         }
-      }
-      for (var etat in cof_states) {
-        var saveEtat = boutonSaveState(perso, etat);
-        if (saveEtat) {
-          ligne += saveEtat + '<br />';
-          actionsAAfficher = true;
+        for (var etat in cof_states) {
+          var saveEtat = boutonSaveState(perso, etat);
+          if (saveEtat) {
+            ligne += saveEtat + '<br />';
+            actionsAAfficher = true;
+          }
         }
       }
       if (actionsAAfficher) {
@@ -17494,6 +17602,173 @@ var COFantasy = COFantasy || function() {
       cible.token.id + ' ' + cible.tokName);
   }
 
+  //!cof-enveloppement cubeId targetId Difficulte Attaque
+  //Attaque peut être soit label l, soit ability a
+  function enveloppement(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined) {
+      error("Problème de parse options", msg.content);
+      return;
+    }
+    if (cmd.length < 6) {
+      error("Il manque des arguments à !cof-envelopper", cmd);
+      return;
+    }
+    var cube = tokenOfId(cmd[1]);
+    if (cube === undefined) {
+      error("Token non défini", cmd[1]);
+      return;
+    }
+    if (!peutController(msg, cube)) {
+      sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+      return;
+    }
+    var cible = tokenOfId(cmd[2]);
+    if (cible === undefined) {
+      error("Token non défini", cmd[2]);
+      return;
+    }
+    var difficulte = parseInt(cmd[3]);
+    if (isNaN(difficulte)) {
+      error("Difficulté n'est pas un nombre, on prend 15 par défaut", cmd[3]);
+      difficulte = 15;
+    }
+    var exprDM;
+    switch (cmd[4]) {
+      case 'label':
+      case 'ability':
+        exprDM = cmd[4] + ' ' + cmd[5];
+        break;
+      default:
+        error("Impossible de déterminer les dégâts quand enveloppé", cmd[4]);
+        return;
+    }
+    var evt = {
+      type: 'Enveloppement'
+    };
+    //Choix de la caractéristique pour résister : FOR ou DEX
+    var caracRes = meilleureCarac('FOR', 'DEX', cible, 10 + modCarac(cube, 'FORCE'));
+    var titre = "Enveloppement";
+    var display = startFramedDisplay(options.playerId, titre, cube, {
+      perso2: cible
+    });
+    var explications = [];
+    testOppose(cube, 'FOR', cible, caracRes, explications, evt,
+      function(res, crit) {
+        switch (res) {
+          case 1:
+            explications.push(cube.token.get('name') + " a absorbé " + cible.token.get('name'));
+            var cubeId = cube.token.id + ' ' + cube.token.get('name');
+
+            setTokenAttr(cible, 'enveloppePar', cubeId, evt, undefined, difficulte);
+            var cibleId = cible.token.id + ' ' + cible.token.get('name');
+            setTokenAttr(cube, 'enveloppe', cibleId, evt, undefined, exprDM);
+            break;
+          case 2:
+            if (caracRes == 'FOR') {
+              explications.push(cible.token.get('name') + " résiste et ne se laisse pas absorber");
+            } else {
+              explications.push(cible.token.get('name') + " évite l'absorption");
+            }
+            break;
+          default: //match null, la cible s'en sort
+            explications.push(cible.token.get('name') + " échappe de justesse à l'enveloppement");
+        }
+        explications.forEach(function(e) {
+          addLineToFramedDisplay(display, e);
+        });
+        addEvent(evt);
+        sendChat("", endFramedDisplay(display));
+      }
+    );
+  }
+
+  //!cof-echapper-enveloppement diff cubeId cubeName
+  function echapperEnveloppement(msg) {
+    var options = msg.options || parseOptions(msg);
+    if (options === undefined) return;
+    var evt = {
+      type: "Tentative de sortie d'enveloppement"
+    };
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        sendPlayer(msg, "!cof-echapper-enveloppement sans sélection de token");
+        log("!cof-echapper-enveloppement requiert de sélectionner des tokens");
+        return;
+      }
+      iterSelected(selected, function(perso) {
+        var attr = tokenAttribute(perso, 'enveloppePar');
+        if (attr.length === 0) {
+          sendPlayer(msg, perso.token.get('name') + " n'est pas englouti.");
+          return;
+        }
+        attr = attr[0];
+        var cube = tokenOfIdName(attr.get('current'), options.pageId);
+        if (cube === undefined) {
+          error("Attribut enveloppePar mal formé, on le supprime", attr.get('current'));
+          attr.remove();
+          return;
+        }
+        var difficulte = parseInt(attr.get('max'));
+        if (isNaN(difficulte)) {
+          error("Difficulté mal formée", attr.get('max'));
+          difficulte = 15;
+        }
+        var titre = "Tentative de sortir de " + cube.tokName;
+        var display = startFramedDisplay(playerId, titre, perso, {
+          chuchote: options.secret
+        });
+        if (options.chance) options.bonus = options.chance * 10;
+        testCaracteristique(perso, 'FOR', difficulte, options, evt,
+          function(tr) {
+            addLineToFramedDisplay(display, "<b>Résultat :</b> " + tr.texte);
+            addEvent(evt);
+            if (tr.reussite) {
+              addLineToFramedDisplay(display, "C'est réussi, " + perso.token.get('name') + " s'extirpe de " + cube.tokName);
+              evt.deletedAttributes = evt.deletedAttributes || [];
+              evt.deletedAttributes.push(attr);
+              attr.remove();
+              attr = tokenAttribute(cube, 'enveloppe');
+              attr.forEach(function(a) {
+                var ca = tokenOfIdName(a.get('current'));
+                if (ca && ca.token.id == perso.id) {
+                  evt.deletedAttributes.push(a);
+                  a.remove();
+                }
+              });
+            } else if (selected.length == 1) {
+              //TODO : ajouter le pacte sanglant, la prouesse et le tour de force
+              var msgRate = "C'est raté.";
+              evt.personnage = perso;
+              evt.action = {
+                selected: [{
+                  _id: perso.token.id
+                }],
+                playerId: playerId,
+                options: options
+              };
+              evt.type = 'echapperEnveloppement';
+              var pc = attributeAsInt(perso, 'PC', 0);
+              if (pc > 0) {
+                options.roll = options.roll || tr.roll;
+                msgRate += ' ' +
+                  bouton("!cof-bouton-chance " + evt.id, "Chance", perso) +
+                  " (reste " + pc + " PC)";
+              }
+              if (charAttributeAsBool(perso, 'runeDEnergie')) {
+                msgRate += ' ' + bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", perso);
+              }
+              addLineToFramedDisplay(display, msgRate);
+            }
+            sendChat('', endFramedDisplay(display));
+          });
+      });
+      addEvent(evt);
+    });
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -17826,6 +18101,12 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-defi-samourai":
         lancerDefiSamourai(msg);
+        return;
+      case "!cof-enveloppement":
+        enveloppement(msg);
+        return;
+      case "!cof-echapper-enveloppement":
+        echapperEnveloppement(msg);
         return;
       default:
         return;
