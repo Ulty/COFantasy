@@ -3506,8 +3506,13 @@ var COFantasy = COFantasy || function() {
       var cavalier = tokenOfId(persoMonte[0].get('current'), persoMonte[0].get('max'), perso.token.get('pageid'));
       if (cavalier !== undefined) return tokenInit(cavalier, evt);
     }
-    var init = ficheAttributeAsInt(perso, 'DEXTERITE', 10);
-    init += ficheAttributeAsInt(perso, 'INIT_DIV', 0);
+    var init;
+    if (getAttrByName(perso.charId, 'type_personnage') == 'PNJ') {
+      init = ficheAttributeAsInt(perso, 'pnj_init');
+    } else {
+      init = ficheAttributeAsInt(perso, 'DEXTERITE', 10);
+      init += ficheAttributeAsInt(perso, 'INIT_DIV', 0);
+    }
     //Règle optionelle : +1d6, à lancer en entrant en combat
     if (stateCOF.options.regles.val.initiative_variable.val) {
       var bonusVariable = attributeAsInt(perso, 'bonusInitVariable', 0);
