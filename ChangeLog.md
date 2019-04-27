@@ -1,5 +1,10 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 
+## 1.10
+
+### Capacités
+* Ajout de l'enveloppement du cube gelatineux
+
 ## 1.09
 
 ### Capacités

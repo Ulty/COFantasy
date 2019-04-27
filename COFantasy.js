@@ -582,19 +582,20 @@ var COFantasy = COFantasy || function() {
       attrEnveloppe.forEach(function(a) {
         var cible = tokenOfIdName(a.get('current'), pageId);
         if (cible) {
-      evt.deletedAttributes = evt.deletedAttributes || [];
+          evt.deletedAttributes = evt.deletedAttributes || [];
           var attrCible = tokenAttribute(cible, 'enveloppePar');
           attrCible.forEach(function(a) {
             var cube = tokenOfIdName(a.get('current', pageId));
             if (cube.token.id == personnage.id) {
-              sendChar(cible.charId, 'se libère de '+cube.tokName);
+              sendChar(cible.charId, 'se libère de ' + cube.tokName);
+              toFront(cible.token);
               evt.deletedAttributes.push(a);
               a.remove();
             }
           });
         }
-              evt.deletedAttributes.push(a);
-              a.remove();
+        evt.deletedAttributes.push(a);
+        a.remove();
       });
       if (charAttributeAsBool(personnage, 'armeeConjuree')) {
         removeFromTurnTracker(personnage.token.id, evt);
@@ -3080,17 +3081,20 @@ var COFantasy = COFantasy || function() {
           }
           return;
         case 'enveloppe':
-          if (cmd.length < 4) {
-            error("Il faut 3 arguments à --enveloppe : la difficulté, le type (label ou ability) et les dommages", cmd);
-            return;
-          }
           scope.enveloppe = {
-            difficulte: parseInt(cmd[1]),
-            type: cmd[2],
-            expression: cmd[3]
+            difficulte: 15,
+            type: 'label',
+            expression: attackLabel
           };
-          if (isNaN(scope.enveloppe.difficulte))
-            scope.enveloppe.difficulte = 15;
+          if (cmd.length > 1) {
+            scope.enveloppe.difficulte = parseInt(cmd[1]);
+            if (isNaN(scope.enveloppe.difficulte))
+              scope.enveloppe.difficulte = 15;
+          }
+          if (cmd.length > 3) {
+            scope.enveloppe.type = cmd[2];
+            scope.enveloppe.expression = cmd[3];
+          }
           return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
@@ -6258,8 +6262,8 @@ var COFantasy = COFantasy || function() {
       evalITE(attaquant, target, d20roll, options, evt, explications, options);
       if (options.enveloppe !== undefined) {
         var ligneEnveloppe = attaquant.tokName + " peut ";
-        var commandeEnvelopper = 
-          '!cof-envelopper '+attaquant.token.id + ' ' + target.token.id + ' ' +
+        var commandeEnvelopper =
+          '!cof-enveloppement ' + attaquant.token.id + ' ' + target.token.id + ' ' +
           options.enveloppe.difficulte + ' ' +
           options.enveloppe.type + ' ' + options.enveloppe.expression;
         ligneEnveloppe += boutonSimple(commandeEnvelopper, '', 'envelopper');
@@ -10193,7 +10197,7 @@ var COFantasy = COFantasy || function() {
           }
         } else if (enveloppeDM.startsWith('label ')) {
           actionsAAfficher = true;
-          command = 'cof-attack ' + perso.token.id + ' ' + cible.token.id + ' ' + enveloppeDM.substring(6);
+          command = '!cof-attack ' + perso.token.id + ' ' + cible.token.id + ' ' + enveloppeDM.substring(6) + ' --auto --acide --effet paralyseTemp [[2d6]] --save CON 15';
           ligne += bouton(command, "Infliger DMs à " + cible.tokName, perso, false) + '<br />';
         } //else pas reconnu
       });
@@ -10754,6 +10758,13 @@ var COFantasy = COFantasy || function() {
         });
         if (attributeAsInt(perso, 'enflamme', 0))
           addLineToFramedDisplay(display, "en flammes");
+        var attrEnveloppe = tokenAttribute(perso, 'enveloppePar');
+        if (attrEnveloppe.length > 0) {
+          var cube = tokenOfIdName(attrEnveloppe[0].get('current'));
+          if (cube) {
+            addLineToFramedDisplay(display, "est enveloppé dans " + cube.tokName);
+          }
+        }
         var bufDef = attributeAsInt(perso, 'bufDEF', 0);
         if (bufDef > 0)
           addLineToFramedDisplay(display, "Défense temporairement modifiée de " + bufDef);
@@ -17613,7 +17624,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (cmd.length < 6) {
-      error("Il manque des arguments à !cof-envelopper", cmd);
+      error("Il manque des arguments à !cof-enveloppement", cmd);
       return;
     }
     var cube = tokenOfId(cmd[1]);
@@ -17664,6 +17675,9 @@ var COFantasy = COFantasy || function() {
 
             setTokenAttr(cible, 'enveloppePar', cubeId, evt, undefined, difficulte);
             var cibleId = cible.token.id + ' ' + cible.token.get('name');
+            cible.token.set('left', cube.token.get('left'));
+            cible.token.set('right', cube.token.get('right'));
+            toFront(cube.token);
             setTokenAttr(cube, 'enveloppe', cibleId, evt, undefined, exprDM);
             break;
           case 2:
@@ -17727,13 +17741,14 @@ var COFantasy = COFantasy || function() {
             addEvent(evt);
             if (tr.reussite) {
               addLineToFramedDisplay(display, "C'est réussi, " + perso.token.get('name') + " s'extirpe de " + cube.tokName);
+              toFront(perso.token);
               evt.deletedAttributes = evt.deletedAttributes || [];
               evt.deletedAttributes.push(attr);
               attr.remove();
               attr = tokenAttribute(cube, 'enveloppe');
               attr.forEach(function(a) {
                 var ca = tokenOfIdName(a.get('current'));
-                if (ca && ca.token.id == perso.id) {
+                if (ca && ca.token.id == perso.token.id) {
                   evt.deletedAttributes.push(a);
                   a.remove();
                 }
@@ -19647,6 +19662,7 @@ var COFantasy = COFantasy || function() {
     if (isActive(perso)) {
       if (getState(perso, 'immobilise')) return true;
       if (attributeAsBool(perso, 'bloqueManoeuvre')) return true;
+      if (attributeAsBool(perso, 'enveloppePar')) return true;
       return false;
     }
     return true;
@@ -19750,24 +19766,35 @@ var COFantasy = COFantasy || function() {
     }
     //si non, perso est peut-être une monture
     attr = tokenAttribute(perso, 'estMontePar');
-    if (attr.length === 0) return;
-    var cavalier = tokenOfId(attr[0].get('current'), attr[0].get('max'), pageId);
-    if (cavalier === undefined) {
-      attr[0].remove();
-      return;
-    }
-    var position = tokenAttribute(perso, 'positionSurMonture');
-    if (position.length > 0) {
-      var dx = parseInt(position[0].get('current'));
-      var dy = parseInt(position[0].get('max'));
-      if (!(isNaN(dx) || isNaN(dy))) {
-        x += dx;
-        y += dy;
+    attr.forEach(function(a) {
+      var cavalier = tokenOfId(a.get('current'), a.get('max'), pageId);
+      if (cavalier === undefined) {
+        a.remove();
+        return;
       }
-    }
-    cavalier.token.set('left', x);
-    cavalier.token.set('top', y);
-    cavalier.token.set('rotation', token.get('rotation') + attributeAsInt(perso, 'directionSurMonture', 0));
+      var position = tokenAttribute(perso, 'positionSurMonture');
+      if (position.length > 0) {
+        var dx = parseInt(position[0].get('current'));
+        var dy = parseInt(position[0].get('max'));
+        if (!(isNaN(dx) || isNaN(dy))) {
+          x += dx;
+          y += dy;
+        }
+      }
+      cavalier.token.set('left', x);
+      cavalier.token.set('top', y);
+      cavalier.token.set('rotation', token.get('rotation') + attributeAsInt(perso, 'directionSurMonture', 0));
+    });
+    attr = tokenAttribute(perso, 'enveloppe');
+    attr.forEach(function(a) {
+      var cible = tokenOfIdName(a.get('current'), pageId);
+      if (cible === undefined) {
+        a.remove();
+        return;
+      }
+      cible.token.set('left', x);
+      cible.token.set('top', y);
+    });
   }
 
   function deplacerToken(msg) {
@@ -19902,7 +19929,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = 1.09;
+  var script_version = 1.10;
   COF_loaded = true;
   on('add:token', COFantasy.addToken);
   state.COFantasy = state.COFantasy || {
