@@ -9,39 +9,11 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
-		<script src="https://use.fontawesome.com/4ee7d58794.js"></script>
+
 	</head>
 	<body data-target="#list" data-spy="scroll" data-offset="10">
-		<script>
-			$('document').ready(function() {      
-        $(document).on('click', '#start', function() {
-          $('.start').toggle();
-          $('div.sticky-top ul.collapse').collapse('hide');
-        });
-			     
-        if (window.location.hash) {
-          $('.start').toggle();
-          $(document).scrollTop( $(window.location.hash).offset().top );
-        }
-			  
-			  $('[data-toggle="popover"]').popover();
-        
-        $(document).on('click', '[data-href]', function(){
-          window.open($(this).data('href'));
-        });
-			     
-        $('a[href^="http://"], a[href^="https://"]').attr('target','_blank');
-
-        $('div.sticky-top ul.collapse').on('show.bs.collapse', function () {
-        $('div.sticky-top ul.collapse').collapse('hide');
-        });
-			});
-		</script>
 		<style>
 			body{position: relative;}
-			.jumbotron.start{margin-top: 20px;}
-			[data-toggle="popover"], button, [data-href] {cursor: pointer}
-			.jumbotron p {margin-bottom: 0}
 			img{margin: 0 auto; display: block; border-radius: 3px; -webkit-box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.40); -moz-box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.40); box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.4);}
 			.card, img:hover{-webkit-box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.60); -moz-box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.60); box-shadow: 0px 3px 8px 1px rgba(61, 61, 61,0.60);}
       .card {margin-bottom: 20px;}
@@ -59,46 +31,30 @@
       #json_data button {margin-bottom: 10px; margin-right: 5px float: right;}
       #json_data button::after {clear: both;}
 		</style>
-		<div class="container">
-			<div class="jumbotron start">
-				<h1 class="display-3">Chroniques Oubliées Fantasy</h1>
-				<p class="lead">Documentation du script <a href="http://www.black-book-editions.fr/forums.php?topic_id=7842">COFantasy</a> sous Roll20</p>
-				<hr class="my-4">
-				<p>Ce document a pour but de vous aider à installer et configurer le script COFantasy sur le site <a href="https://roll20.net/">Roll20.net</a>.</p>
-				<p>Prérequis:</p>
-        <ul>
-					<li>Un <a href="https://app.roll20.net/account/supporter">compte Pro</a> sur Roll20 afin de pouvoir intégrer des scripts.</li>
-					<li>
-						Un niveau de connaissance minimum sur Roll20.<br />
-						<div class="alert alert-light" role="alert">
-							<p>Nous ferons de notre mieux pour détailler au mieux les procédures mais notre but ici n'est pas de vous expliquer le fonctionnement de Roll20 et nous partirons du principe que vous avez des notions sur ce dernier.<br />Si ce n'est pas le cas, nous vous invitons tout d'abord à vous familiariser avec l'outils et savoir notamment créer/utiliser :</p>
-              <ul>
-								<li>des <i><a href="https://wiki.roll20.net/Macros">Macros</a></i></li>
-								<li>des <i><a href="https://wiki.roll20.net/Journal#Attributes_.26_Abilities_Tab">Attributs</a> et des <a href="https://wiki.roll20.net/Journal#Attributes_.26_Abilities_Tab">Capacités</a></i> des personnages</li>
-							</ul>
-						</div>
-					</li>
-					<li>Feuille de Personnages : <a data-toggle="popover" data-placement="bottom" data-html="true" data-content='<a href="https://lh3.googleusercontent.com/-CYiltExxZ_o/VZJjtdEcbkI/AAAAAAAAV7Q/8YWjPOXZ3u8/w1005-h652-no/Roll20_CO_setting.png"><img src="https://lh3.googleusercontent.com/-CYiltExxZ_o/VZJjtdEcbkI/AAAAAAAAV7Q/8YWjPOXZ3u8/w1005-h652-no/Roll20_CO_setting.png" class="img-fluid"/></a><p class="text-center"><small>Cliquer pour agrandir</small></p>' href="#">Chroniques Oubliées Fantasy (French)</a> par <a href="http://www.black-book-editions.fr/forums.php?topic_id=5255">Nata</a></li>
-					<li>Le script <a href="https://wiki.roll20.net/Script:Vector_Math">Vector math</a> pour certains calculs de distance et de collision (fait partie de la librairie de script Roll20 qui s'installe en un clic).</li>
-				</ul>
-				<p class="lead text-center">
-					<button type="button" class="btn btn-primary" id="start"><i class="fa fa-rocket" aria-hidden="true"></i> C'est parti</button>
-				</p>
-			</div>
-		</div>
+    <script>
+			$('document').ready(function() {      
+        $(document).on('click', '[data-href]', function(){
+          window.open($(this).data('href'));
+        });
+			     
+        $('a[href^="http://"], a[href^="https://"]').attr('target','_blank');
+
+        $('div.sticky-top ul.collapse').on('show.bs.collapse', function () {
+        $('div.sticky-top ul.collapse').collapse('hide');
+        });
+			});
+		</script>
 		<div class="container-fluid">
-			<div class="collapse start hide">
 				<div class="row">
 					<div class="col-md-3 col-sm-4 d-none d-sm-block d-md-block d-lg-block d-xl-block">
 						<div class="sticky-top">
 							<h1>Sommaire</h1>
 							<ol>
-								<li id="start"><a href="#">Introduction</a></li>
 								<li data-toggle="collapse" data-target="#how_to_use"><a href="#comment_utiliser_script">Comment utiliser Le script</a></li>
 								<ul id="how_to_use" class="collapse">
 									<li><a class="text-info" href="#token_personnages">Tokens et personnages</a></li>
 									<li><a class="text-info" href="#macros_abilities">Macros et Abilities</a></li>
-									<li><a class="text-info" href="#methode_selection_groupes">Méthode de sélection de groupes</a></li>
+									<li><a class="text-info" href="#methode_selection_groupes">Méthodes de sélection de groupes</a></li>
 									<li><a class="text-info" href="#regles_optionnelles">Règles optionnelles utilisées</a></li>
 								</ul>
 								<li data-toggle="collapse" data-target="#main_action"><a href="#action_principales">Actions principales</a></li>
@@ -116,7 +72,7 @@
 									<li><a class="text-info" href="#lumiere">Lumière</a></li>
 									<li><a class="text-info" href="#jet_caracteristiques">Jet de Caracteristiques</a></li>
 								</ul>
-								<li data-toggle="collapse" data-target="#abilities"><a href="#">Capacités par Classe</a></li>
+								<li data-toggle="collapse" data-target="#abilities"><a href="#CapacitesClasse">Capacités par Classe</a></li>
 								<ul id="abilities" class="collapse">
 									<li><a class="text-info" href="#Arquebusier">Arquebusier</a></li>
 									<li><a class="text-info" href="#Barbare">Barbare</a></li>
@@ -147,9 +103,9 @@
 						</div>
 					</div>
 					<div class="col-md-9 col-sm-8 content">
-						<h2 class="text-primary" id="comment_utiliser_script">2. Comment utiliser Le script</h2>
+						<h2 class="text-primary" id="comment_utiliser_script">1. Comment utiliser Le script</h2>
             <div class="decalage">
-              <h3 class="text-info" id="token_personnages">2.1 Tokens et personnages</h3>
+              <h3 class="text-info" id="token_personnages">1.1 Tokens et personnages</h3>
               <div class="decalage">
                 <p>Ces scripts ont été écrits pour fonctionner avec les fiches de personnages développées par <a href="https://github.com/Roll20/roll20-character-sheets/tree/master/ChroniquesOubliees">Natha</a>.</p>
                 <p><img class="img-fluid" src="https://i.imgur.com/rF0Qxht.png" data-href="https://i.imgur.com/rF0Qxht.png"></p>
@@ -167,12 +123,12 @@
               <p>Pour gérer les états spécifiques à un token non lié, les scripts utilisent des conventions de nom d'attribut utilisant le nom du token. Pour que cela fonctionne correctement, <b>il est important que deux tokens indépendants ne portent pas le même nom</b>, même si ils représentent le même personnage. Pour cette raison, le script va automatiquement renommer les tokens indépendants, en leur associant un numéro. Il est toujours possible de remodifier le nom après la création du token, mais dans ce cas, c'est vous qui gérez...</p>
               <p>Certains messages tiennent compte du genre (masculin ou féminin) des personnages. Ils utilisent le champ <code>Sexe</code> de la fiche de personnage. Un personnage est reconnu comme féminin si ce champ commence par la lettre <code>F</code>.
               </p>
-              <h3 class="text-info" id="macros_abilities">2.2 Macros et Abilities</h3>
+              <h3 class="text-info" id="macros_abilities">1.2 Macros et Abilities</h3>
               <div class="decalage">
                 <p>Comme tous les scripts, ces scripts sont utilisables tels quels dans le chat, mais ils sont pensés pour être utilisés par des macros qui permettent un autre niveau d'automatisation parfois difficile d'accès au sein des scripts. Il est d'ailleurs possible de demander au script de générer la plupart des macros utiles en tapant la commande <code>!cof-set-macros</code> dans le chat.</p>
                 La grosse majorité des capacités et attaques des personnages devraient être utilisées au sein d'abilities de personnages, accessibles comme "Token action". Si ces abilities utilisent des macros, ne pas oublier de rendre ces macros accessibles aux joueurs.
               </div>
-              <h3 class="text-info" id="methode_selection_groupes">2.3 Méthode de sélection de groupes</h3>
+              <h3 class="text-info" id="methode_selection_groupes">1.3 Méthodes de sélection de groupes</h3>
               <div class="decalage">
                 <p>Comme les joueurs ne peuvent pas sélectionner un nombre arbitraire d'ennemis, 7 méthodes sont disponibles&nbsp;:</p>
                 <ul>
@@ -187,7 +143,7 @@
                 <p id="exemple_equipe"><img class="img-fluid" src="https://i.imgur.com/WHfwsKo.png" data-href="https://i.imgur.com/WHfwsKo.png"></p>
                 <figcaption>Exemple d'<i>handout</i> avec différentes équipes.</figcaption>
               </div>
-              <h3 class="text-info" id="regles_optionnelles">2.4 Règles optionnelles utilisées</h3>
+              <h3 class="text-info" id="regles_optionnelles">1.4 Règles optionnelles utilisées</h3>
               <div class="decalage">
                 <p>Les scripts supportent l'utilisation de la règle des points de chance, des points de récupérations, des points de mana (et de magie puissante ou rapide, ainsi que de tempête de mana).</p>
                 <p>J'ai aussi choisi, comme proposé par Kegron, de diminuer la DEF de tous les protagonistes après un certain nombre de tours de combat (-2 tous les 5 tours).</p>
@@ -195,10 +151,10 @@
                 <p>Il est possible de changer les options du script avec la commande <code>!cof-options</code>.</p>
               </div>
             </div>
-            <h2 class="text-primary" id="action_principales">3. Actions principales</h2>
+            <h2 class="text-primary" id="action_principales">2. Actions principales</h2>
             <p>Pour la plupart des actions ci-dessous, il est généralement utile de créer des macros facilitant leur utilisation. Pour mettre en place un jeu de macros par défaut, vous pouvez taper <code>!cof-set-macros</code> dans le chat. Si vous souhaitez redéfinir des macros existantes, vous pouvez taper <code>!cof-set-macros --force</code>.</p>
             <div class="decalage">
-              <h3 class="text-info" id="le_combat">3.1 Le combat</h3>
+              <h3 class="text-info" id="le_combat">2.1 Le combat</h3>
               <div class="decalage">
                 <h4 class="text-secondary">Initiative : <code>!cof-init</code></h4>
                 <div class="decalage">
@@ -428,7 +384,7 @@
               <div class="decalage">
                 <p>Ferme aussi le tracker de tour. Encore à mettre en macro dans la barre du MJ (macro automatiquement générée par <code>!cof-set-macros</code>). Permet de tenir compte de pleins de capacités qui durent un combat, ou utilisables une seule fois par combat,...</p>
               </div>
-              <h3 class="text-info" id="soins">3.2 Soins :</h3>
+              <h3 class="text-info" id="soins">2.2 Soins :</h3>
               <div class="decalage">
                 <h4 class="text-secondary"><code>!cof-soin @{selected|token_id} @{target|token_id} <i>x</i></code></h4>
                 <div class="decalage">
@@ -442,11 +398,11 @@
                   </ul>
                 </div>
               </div>
-              <h3 class="text-info" id="annulation">3.3 Annulation : <code>!cof-undo</code></h3>
+              <h3 class="text-info" id="annulation">2.3 Annulation : <code>!cof-undo</code></h3>
               <div class="decalage">
                 <p>Fait partie des fonctions que je met en macro dans la barre du MJ, ça peut servir très souvent. Elle est d'ailleurs générée par la commande <code>!cof-set-macros</code>.</p>
               </div>
-              <h3 class="text-info" id="repos">3.4 Repos et changement de jour</h3>
+              <h3 class="text-info" id="repos">2.4 Repos et changement de jour</h3>
               <div class="decalage">
                 Par défaut, le script utilise les points de récupérations qui apparaissent sur la fiche. Mais si vous souhaitez changer le nombre maximal de points de récupération, vous pouvez ajouter un attribut <code>pointsDeRecuperation</code>, dont la valeur courante sera le nombre de PR courant, et le max son maxium. Dans ce cas, modifier les PR sur la fiche sera sans effet pour le script.
                 <h4 class="text-secondary">Changement de jour</h4>
@@ -466,17 +422,17 @@
                   <p><code>!cof-recuperation</code> : dépense 1 PR pour se soigner. À mettre en macro associée aux tokens, car tous les joueurs en ont besoin (généré par <code>!cof-set-macros</code>.</p>
                 </div>
               </div>
-              <h3 class="text-info" id="chance">3.5 Chance</h3>
+              <h3 class="text-info" id="chance">2.5 Chance</h3>
               <div class="decalage">
                 <p>Le script essaie de détecter les cas où un point de chance peut être utile, et dans ce cas fournit un bouton (utilisable par les joueurs contrôlant le perosnnage ou le GM), permettant de dépenser un point de chance. Attention, pour l'instant, il n'est pas possible de faire juste un undo de la dépense de point de chnce. Le undo après la dépense de point de chance annule toute l'action. Il faut ensuite faire un undo par point de chance dépensé.</p>
                 <p>Pour les cas non prévus par le script, on peut faire juste <code>!cof-chance autre</code>.</p>
               </div>
-              <h3 class="text-info" id="surprise">3.6 Surprise : <code>!cof-surprise ?difficulte</code></h3>
+              <h3 class="text-info" id="surprise">2.6 Surprise : <code>!cof-surprise ?difficulte</code></h3>
               <div class="decalage">
                 <p>Fait un test de surprise sur tous les tokens sélectionné. Si la difficulté n'est pas présente, ils sont automatiquement surpris. Les valeurs des attributs (hors fiche) <code>vigilance</code> et <code>perception</code> sont ajoutés au test de sagesse.</p>
                 <p>Si vous souhaitez préciser que la surprise est le fait d'un personnage ou effet non vivant (pour ne pas faire bénéficier du bonus de la capacité Radar mental), vous pouvez rajouter l'option <code>--nonVivant</code>.</p>
               </div>
-              <h3 class="text-info" id="statut_etats">3.7 Statut et états</h3>
+              <h3 class="text-info" id="statut_etats">2.7 Statut et états</h3>
               <div class="decalage">
                 <p><code>!cof-statut</code> affiche l'état courant de tous les tokens sélectionnés. Utile pour connaître facilement les états qui ne sont pas directement visibles sur un token (points de récupération, armes chargées, ...).</p>
                 <h4 class="text-secondary" id="etats">États gérés en utilisant le statut des tokens</h4>
@@ -531,7 +487,7 @@
                   </ul>
                 </div>
               </div>
-              <h3 class="text-info" id="sorts">3.8 Sorts</h3>
+              <h3 class="text-info" id="sorts">2.8 Sorts</h3>
               <div class="decalage">
                 <p><code>!cof-attaque-magique @{selected|token_id} @{target|token_id}</code> : fait un jet d'attaque magique opposé entre le lanceur et sa cible, et dit juste si le sort est raté ou réussi. Options disponibles : <code>--portee</code> et <code>--mana</code>.</p>
                 <p><code>!cof-lancer-sort <i>mana texte</i></code> : le token sélectionné lance un sort ayant un coût en mana, <i>texte</i> décrit le sort, mais pas d'effet (autre que la dépense de mana) à part /w au joueur et au MJ.</p>
@@ -546,7 +502,7 @@
                   <li><code>--lanceur <i>id</i></code> : le lanceur de l'effet de peur (si il y en a un). Nécessaire pour la portée, par exemple.</li>
                 </ul>
               </div>
-              <h3 class="text-info" id="consommables">3.9 Consommables <code>!cof-consommables</code></h3>
+              <h3 class="text-info" id="consommables">2.9 Consommables <code>!cof-consommables</code></h3>
               <div class="decalage">
                 <p>Cette fonction affiche une liste de consommables, avec la possibilité de cliquer sur un élément de la liste pour le consommer (et activer son effet) ou l'échanger avec un autre personnage (via le symbole &#8596;).</p>
                 <p>Pour cela, la fonction regarde tous les attributs qui commencent par <code>dose_</code>, <code>elixir_</code> ou <code>consommable_</code>. La valeur courante doit être le nombre d'éléments possédé, et le max peut être une commande à effectuer pour activer l'effet. La fonction est à réserver aux tokens liés à un personnage. Il est aussi possible de simplement écrire un message qui s'affichera (et diminuera la quantité de consommables).</p>
@@ -589,7 +545,7 @@
                 <p>Pour cette dernière, il vous suffira de préparer un personnage avec un token qui contient, dans ses attributs, les consommables à échanger/vendre.</p>
                 </div>
               </div>
-              <h3 class="text-info" id="deplacements">3.10 Déplacements</h3>
+              <h3 class="text-info" id="deplacements">2.10 Déplacements</h3>
               <h4 class="text-secondary">Personnages immobilisés</h4>
               <div class="decalage">
                 <p>Par défaut, le script empêche le déplacement des personnages immobilisés (paralysé, étourdi, etc...). Pour permettre de déplacer ces personnages, le script envoie au MJ 2 boutons, l'un pour réaliser le déplacement qui vient d'être annulé, et l'autre pour débloquer le personnage pour un tour (et dans ce cas, toutes les personnes contrôlant le token peuvent le bouger jusqu'au prochain changement de tour.<p>
@@ -605,13 +561,13 @@
                 <p>Pour qu'un personnage puisse monter sur une monture, il faut que cette monture soit associée à une fiche de personnage et qu'il possède l'attribute <code>monture</code> à <code>true</code>. La commande pour monter sur la monture est <code>!cof-en-selle @{selected|token_id} @{target|token_id}</code>, à lancer en sélectionnant le cavalier.</p>
                 <p>On peut ensuite bouger la monture, cela déplace le cavalier. Le mieux est de lancer la commander alors que le token du cavalier est sur le token de la monture. Si on déplace le cavalier, cela le fait descendre de sa monture.</p>
               </div>
-              <h3 class="text-info" id="lumiere">3.11 Lumière</h3>
+              <h3 class="text-info" id="lumiere">2.11 Lumière</h3>
               <div class="decalage">
                 <p>Pour faire de la lumière, on peut utiliser <code>!cof-lumiere <i>token_id portee</i></code>. Cela va faire en sorte que le token fasse de la lumière jusqu'à <i>portee</i> mètres. Il est possible d'avoir plusieurs sources de lumière, et la commande est compatible avec la <a href='#Vision_dans_le_noir'>vision dans le noir</a>. La commande admet un troisième argument qui est la distance à laquelle la lumière devient moins brillante, et un quatrième argument qui est le nom du type de lumière (par défaut, <code>lumiere</code>), utilisé quand on éteint les lumières.</p>
                 <p>Pour éteindre des lumières, utiliser <code>!cof-eteindre-lumiere</code> en sélectionnant le ou les tokens désirés. Il est possible de prendre un argument optionnel qui est le nom du groupe de lumières que l'on souhaite éteindre. Par exemple, on peut ainsi éteindre toutes les torches et laisser les effets de lumière magique actifs.</p>
                 <p>Pour les torches, le script propose d'automatiser la gestion en utilisant la commande <code>!cof-torche <i>token_id</i></code>. Si le token tient une torche allumée, cela éteint la torche (et propose au MJ d'indiquer combien de temps la torche est restée allumée), et sinon, si le token possède des torches, cela allume une torche. Le nombre de torche et leur état est stocké dans un attribut <code>torches</code>, dont la valeur courante contient le nombre de torches dans l'inventaire, et la valeur max le temps restant pour la torche en cours d'utilisation (60 minutes pour une torche neuve). Si aucun attribut de ce nom n'existe, le script se contente d'allumer ou d'éteindre une torche, sans gérer leur nombre.</p>
               </div>
-              <h3 class="text-info" id="jet_caracteristiques">3.12 Jet de Caracteristiques</h3>
+              <h3 class="text-info" id="jet_caracteristiques">2.12 Jet de Caracteristiques</h3>
               <div class="decalage">
                 <p><code>!cof-jet ?{Faire un jet de |Charisme, CHA|Constitution, CON|Dextérité, DEX|Force, FOR|Intelligence, INT|Sagesse, SAG}</code> : fait un simple jet pour la caractérisique sélectionnée.</p>
                 <p>Il est aussi possible de donner en argument une difficulté au jet. Par exemple en faisant <code>!cof-jet INT ?{difficulté}</code>.</p>
@@ -626,7 +582,7 @@
                 </ul>
               </div>
             </div>
-						<h2 class="text-primary">4. Capacités par Classe</h2>
+						<h2 class="text-primary" id="CapacitesClasse">3. Capacités par Classe</h2>
             <div class="decalage">
               <h3 class="text-info" id="Arquebusier">Arquebusier</h3>
               <div class="decalage">
@@ -1331,9 +1287,9 @@
                 </ol>
               </div>
             </div>
-            <h2 class="text-primary" id="Autres_capacités">5. Autres capacités</h2>
+            <h2 class="text-primary" id="Autres_capacités">4. Autres capacités</h2>
             <div class="decalage">
-              <h3 class="text-info" id="Capacites_raciales">Voies et capacités raciales</h3>
+              <h3 class="text-info" id="Capacites_raciales">4.1 Voies et capacités raciales</h3>
               <div class="decalage">
                 Quelques capacités communes à plusieurs races :
                 <ul>
@@ -1398,7 +1354,7 @@
                   <li><strong>Se faire discret</strong> : ajouter les jets sur la fiche, ou bien des attributs <code>mentir</code> et <code>deguisement</code> de valeur 5, à utiliser avec <code>!cof-jet</code>.</li>
                 </ol>
               </div>
-              <h3 class="text-info" id="Créatures">Voies de créatures</h3>
+              <h3 class="text-info" id="Créatures">4.2 Voies de créatures</h3>
               <div class="decalage">
                 <h4 class="text-secondary">Voie du champion</h4>
                 <ol>
@@ -1474,7 +1430,7 @@
                   <li><strong>Attaque mortelle</strong> : donner la possibilité de faire une attaque avec les options <code>--bonusAttaque 5 --sournoise <i>rang</i></code>.</li>
                 </ol>
               </div>
-              <h3 class="text-info" id="Capacites_diverses">Autres capacités</h3>
+              <h3 class="text-info" id="Capacites_diverses">4.3 Autres capacités</h3>
               <div class="decalage">
                 <ul>
                   <li><strong>Baroud d'honneur</strong> : ajouter un attribut <code>baroudHonneur</code> (=true) (Quand le personnage arrive à 0 PV, il ne meurt pas jusqu'à sa prochaine attaque, qui se fait avec un bonus de +5)</li>
@@ -1494,6 +1450,7 @@
                       <li><code>--testINT</code> <i>n</i>: fixe la difficulté du jet d'INT pour réussir à poser le poison. La difficulté par défaut est 14.</li>
                       <li><code>--dose</code> <i>nom</i>: indique une ressource dans laquelle on puise pour enduire de poison (à la manière de munitions). Il faudra que le personnage ait une ability de nom <code>dose_</code><i>nom</i> avec comme valeur le nombre de doses possédées.</li>
                     </ul>
+                    Il est aussi possible d'enduire de poison des munitions. Pour ce faire, remplacer le label de l'attaque par le nom de l'attribut contenant les mutions (ce nom commence donc par <code>munition_</code>). Le script suppose que toute munition lancée perd son poison.
                   </li>
                   <li><strong>Protection contre les souffles</strong> et dégâts de zone : ajouter un attribut <code>protectionDMZone</code>, de valeur <code>true</code>. Pour une protection contre un seul élément (feu, froid, etc), ajouter <code>_</code> et le nom de l'élément. Par exemple, contre le feu, on aura un attribut <code>protectionDMZone_feu</code>.</li>
                   <li><strong>Putréfaction</strong> : ajouter à l'attaque <code>--effet putrefaction 5 --save CON 14</code> (pour les données des momies)</li>
@@ -1501,7 +1458,7 @@
                 </ul>
               </div>
             </div>
-						<h2 class="text-primary" id="statistiques">6. Statistiques</h2>
+						<h2 class="text-primary" id="statistiques">5. Statistiques</h2>
 						<div class="decalage">
 							<p>Il est possible d'activer la collecte de statistiques en utilisant la commande <code>!cof-demarrer-statistiques</code>.</p>
 							<p>On peut arrêter la collecte avec <code>!cof-arreter-statistiques</code>, et la mettre en pause avec <code>!cof-pause-statistiques</code>.<br />
@@ -1510,7 +1467,6 @@
 						</div>
 					</div>
 				</div>
-			</div>
 		</div>
 	</body>
 </html>

@@ -5,6 +5,9 @@
 ### Capacités
 * Ajout de l'enveloppement du cube gelatineux
 
+### Autres améliorations
+* Possibilité d'enduire des munitions de poison
+
 ## 1.09
 
 ### Capacités

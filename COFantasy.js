@@ -5415,14 +5415,50 @@ var COFantasy = COFantasy || function() {
           " n'a plus de " + options.munition.nom.replace(/_/g, ' '));
         return; //evt toujours vide
       }
-      var munitionsMax = munitionsAttr.get('max');
+      var munitionsMax = parseInt(munitionsAttr.get('max'));
+      if (isNaN(munitionsMax)) {
+        error("Attribut de munitions mal formé", munitionsMax);
+        return;
+      }
+      //À partir de ce point, tout return doit ajouter evt
       evt.attributes = evt.attributes || [];
       evt.attributes.push({
         attribute: munitionsAttr,
         current: munitions,
         max: munitionsMax
       });
-      //À partir de ce point, tout return doit ajouter evt
+      //On cherche si la munition est empoisonnée
+      var poisonAttr = tokenAttribute(attaquant, 'poisonRapide_munition_' + options.munition.nom);
+      if (poisonAttr.length > 0) {
+        poisonAttr = poisonAttr[0];
+        var infosPoisonMunitions = poisonAttr.get('max');
+        var infosPoisonMunitionsIndex = infosPoisonMunitions.indexOf(' ');
+        var seuilMunitionsEmpoisonnees = parseInt(infosPoisonMunitions.substring(0, infosPoisonMunitionsIndex));
+        var nombreMunitionsEmpoisonnees = parseInt(infosPoisonMunitions.substring(infosPoisonMunitionsIndex + 1));
+        if (!isNaN(seuilMunitionsEmpoisonnees) && !isNaN(nombreMunitionsEmpoisonnees) && nombreMunitionsEmpoisonnees > 0) {
+          options.additionalDmg.push({
+            type: 'poison',
+            value: poisonAttr.get('current'),
+            partialSave: {
+              carac: 'CON',
+              seuil: seuilMunitionsEmpoisonnees
+            }
+          });
+          explications.push("L'arme est empoisonnée");
+          if (nombreMunitionsEmpoisonnees == 1) {
+            evt.deletedAttributes = evt.deletedAttributes || [];
+            evt.deletedAttributes.push(poisonAttr);
+            poisonAttr.remove();
+          } else {
+            evt.attributes.push({
+              attribute: poisonAttr,
+              current: poisonAttr.get('current'),
+              max: infosPoisonMunitions
+            });
+            poisonAttr.set('max', seuilMunitionsEmpoisonnees + ' ' + (nombreMunitionsEmpoisonnees - 1));
+          }
+        }
+      }
       munitions--;
       if (randomInteger(100) < options.munition.taux) munitionsMax--;
       if (options.tirDouble) {
@@ -14823,6 +14859,8 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //!cof-enduire-poison label type dm save
+  //si label = munition_nom, alors on enduit des munitions et non une arme.
   function enduireDePoison(msg) {
     var optArgs = msg.content.split(' --');
     var cmd = optArgs[0].split(' ');
@@ -14834,9 +14872,12 @@ var COFantasy = COFantasy || function() {
     var labelArme = cmd[1];
     var typePoison = cmd[2];
     if (typePoison != 'rapide') {
-      error("le seul type de poison géré est rapide, pas " + typePoison, cmd);
+      error("Le seul type de poison géré est rapide, pas " + typePoison, cmd);
     }
     var attribut = 'poisonRapide_' + labelArme;
+    var nomMunition;
+    var estMunition = labelArme.startsWith('munition_');
+    if (estMunition) nomMunition = labelArme.substring(9);
     var forcePoison = cmd[3];
     var savePoison = parseInt(cmd[4]);
     if (isNaN(savePoison)) {
@@ -14890,19 +14931,64 @@ var COFantasy = COFantasy || function() {
           return;
         }
         perso.tokName = perso.token.get('name');
-        var att = getAttack(labelArme, perso);
-        if (att === undefined) {
-          error(perso.tokNname + " n'a pas d'arme associée au label " + labelArme, cmd);
-          return;
-        }
-        if (attributeAsBool(perso, attribut)) {
-          sendChar(perso.charId, att.weaponName + " est déjà enduit de poison.");
-          return;
+        var attr = tokenAttribute(perso, attribut);
+        var armeEnduite;
+        var infosAdditionelles = savePoison;
+        if (estMunition) {
+          armeEnduite = nomMunition.replace(/_/g, ' ');
+          var attrMunitions = tokenAttribute(perso, labelArme);
+          if (attrMunitions.length === 0) {
+            sendPlayer(msg, perso.tokName + "n'a pas de munition nommée " + nomMunition);
+            return;
+          }
+          attrMunitions = attrMunitions[0];
+          var munitionsCourantes = parseInt(attrMunitions.get('current'));
+          var maxMunitions = parseInt(attrMunitions.get('max'));
+          if (isNaN(munitionsCourantes) || isNaN(maxMunitions)) {
+            error("Attribut de munitions mal formé", attrMunitions);
+            return;
+          }
+          if (munitionsCourantes === 0) {
+            sendPlayer(msg, "Plus de munition " + nomMunition);
+            return;
+          }
+          var dejaEnduits = 0;
+          if (attr.length > 0) {
+            var infos = attr[0].get('max');
+            var indexInfos = infos.indexOf(' ');
+            if (indexInfos < 1) {
+              error("Attribut de poison rapide de munition mal formé (il faudrait la difficulté du save + le nombre de munitions empoisonnées)", infos);
+              return;
+            }
+            var oldSave = parseInt(infos.substring(0, indexInfos));
+            dejaEnduits = parseInt(infos.substring(indexInfos + 1));
+            if (isNaN(dejaEnduits)) dejaEnduits = 0;
+            if (dejaEnduits > 0 && (attr[0].get('current') != forcePoison || oldSave != savePoison)) {
+              sendPlayer(msg, "Il y a déjà du poison de force " + attr[0].get('current') + "et de save " + oldSave + " sur les munitions " + armeEnduite + ". Le script ne sait pas gérer différents poisons sur les mêmes munitions.");
+              return;
+            }
+          }
+          infosAdditionelles = savePoison + ' ' + (dejaEnduits + 1);
+          if (dejaEnduits >= maxMunitions) {
+            sendPlayer(msg, "Toutes les munitions " + armeEnduite + " sont déjà enduites de poison");
+            return;
+          }
+        } else {
+          var att = getAttack(labelArme, perso);
+          if (att === undefined) {
+            error(perso.tokNname + " n'a pas d'arme associée au label " + labelArme, cmd);
+            return;
+          }
+          armeEnduite = att.weaponName;
+          if (attributeAsBool(perso, attribut)) {
+            sendChar(perso.charId, armeEnduite + " est déjà enduit de poison.");
+            return;
+          }
         }
         var evt = {
           type: "Enduire de poison"
         };
-        var display = startFramedDisplay(playerId, "Essaie d'enduire " + att.weaponName + " de poison", perso);
+        var display = startFramedDisplay(playerId, "Essaie d'enduire " + armeEnduite + " de poison", perso);
         if (dose) {
           var nomDose = dose.replace(/_/g, ' ');
           var doseAttr = tokenAttribute(perso, 'dose_' + dose);
@@ -14977,8 +15063,8 @@ var COFantasy = COFantasy || function() {
             } else if (tr.reussite) {
               jet += " &ge; " + testINT;
               addLineToFramedDisplay(display, jet);
-              setTokenAttr(perso, attribut, forcePoison, evt, undefined, savePoison);
-              addLineToFramedDisplay(display, att.weaponName + " est maintenant enduit de poison");
+              setTokenAttr(perso, attribut, forcePoison, evt, undefined, infosAdditionelles);
+              addLineToFramedDisplay(display, armeEnduite + " est maintenant enduit de poison");
               addEvent(evt);
               sendChat("", endFramedDisplay(display));
               return;
@@ -19934,7 +20020,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = 1.10;
+  var script_version = "1.10";
   COF_loaded = true;
   on('add:token', COFantasy.addToken);
   state.COFantasy = state.COFantasy || {
