@@ -4976,6 +4976,7 @@ var COFantasy = COFantasy || function() {
     }
 
     //Les conditions qui peuvent empêcher l'attaque
+    //TODO: ajouter le test de savoir si on a déjà riposté contre la cibe (attribut riposteDuTour = liste des adversaires, séparés par _|_
     if (options.conditionAttaquant !== undefined) {
       if (!testCondition(options.conditionAttaquant, attaquant, cibles)) {
         sendChar(attackingCharId, "ne peut pas utiliser " + weaponName);
@@ -5081,35 +5082,43 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function displayAttaqueEnTraitre(vid, cibles) {
-    var voleur = tokenOfId(vid);
-    if (voleur === undefined) {
-      error("Impossible de retrouver le personnage qui pouvait faire une attaque en traître", vid);
+  function displayAttaqueOpportunite(vid, cibles, type, action, resource) {
+    var attaquant = tokenOfId(vid);
+    if (attaquant === undefined) {
+      error("Impossible de retrouver le personnage qui pouvait faire une attaque "+type, vid);
       return;
     }
-    var aet = tokenAttribute(voleur, 'attaqueEnTraitre');
-    if (aet.length === 0) {
-      error("Impossible de trouver l'attribut d'attaque en traître", aet);
+    if (resource) {
+    resource = tokenAttribute(attaquant, resource);
+    if (resource.length === 0) {
+      error("Impossible de trouver l'attribut d'attaque "+type, resource);
       return;
     }
-    aet = aet[0];
+    resource = resource[0];
+      var curResource = parseInt(resource.get('current'));
+      if (isNaN(curResource)) {
+        error("Resource pour attaque "+type+" mal formée", resource);
+        return;
+      }
+      if (curResource < 1) return;
+    }
     var abilities = findObjs({
       _type: 'ability',
-      _characterid: voleur.charId,
+      _characterid: attaquant.charId,
     });
     var actions;
     var actionTrouvee;
     abilities.forEach(function(a) {
       if (actionTrouvee) return;
       var an = a.get('name');
-      if (an == '#AttaqueEnTraitre#') {
+      if (an == action) {
         actions = a;
         actionTrouvee = true;
         return;
       }
       if (an == '#Actions#' || an == '#TurnAction#') actions = a;
     });
-    var actionsTraitre = [];
+    var actionsOpportunite = [];
     if (actions) {
       actions = actions.get('action').replace(/\n/gm, '').replace(/\r/gm, '').replace(/%/g, '\n%').replace(/#/g, '\n#').split("\n");
       if (actions.length > 0) {
@@ -5128,9 +5137,9 @@ var COFantasy = COFantasy || function() {
               abilities.forEach(function(abilitie, index) {
                 if (abilitie.get('name') === actionCmd) {
                   command = abilitie.get('action').trim();
-                  command = replaceAction(command, voleur, macros, abilities);
+                  command = replaceAction(command, attaquant, macros, abilities);
                   if (command.startsWith('!cof-attack')) {
-                    actionsTraitre.push({
+                    actionsOpportunite.push({
                       command: command,
                       text: actionText
                     });
@@ -5143,9 +5152,9 @@ var COFantasy = COFantasy || function() {
               macros.forEach(function(macro, index) {
                 if (macro.get('name') === actionCmd) {
                   command = macro.get('action').trim();
-                  command = replaceAction(command, voleur, macros, abilities);
+                  command = replaceAction(command, attaquant, macros, abilities);
                   if (command.startsWith('!cof-attack')) {
-                    actionsTraitre.push({
+                    actionsOpportunite.push({
                       command: command,
                       text: actionText
                     });
@@ -5153,7 +5162,7 @@ var COFantasy = COFantasy || function() {
                 }
               });
             } else if (actionCmd.startsWith('!cof-attack')) {
-              actionsTraitre.push({
+              actionsOpportunite.push({
                 command: actionCmd,
                 text: actionText
               });
@@ -5162,17 +5171,17 @@ var COFantasy = COFantasy || function() {
         });
       }
     }
-    if (actionsTraitre.length === 0) {
+    if (actionsOpportunite.length === 0) {
       //Pas besoin de faire un frame, on n'a pas d'action
-      var ligne = "peut faire une attaque en traître contre";
+      var ligne = "peut faire une attaque "+type+" contre";
       cibles.forEach(function(target) {
         ligne += ' ' + target.token.get('name');
       });
-      sendChar(voleur.charId, ligne);
+      sendChar(attaquant.charId, ligne);
       return;
     }
     //On crée un display sans le header
-    var display = startFramedDisplay(undefined, "Attaque en traître possible", voleur, {
+    var display = startFramedDisplay(undefined, "Attaque "+type+" possible", attaquant, {
       retarde: true
     });
     cibles.forEach(function(target) {
@@ -5186,16 +5195,16 @@ var COFantasy = COFantasy || function() {
         target.name = targetChar.get('name');
       }
       addLineToFramedDisplay(display, "contre " + target.tokName, 100, true);
-      actionsTraitre.forEach(function(action) {
+      actionsOpportunite.forEach(function(action) {
         var cmd = action.command.replace(/@\{target\|token_id\}/g, target.token.id);
         cmd = cmd.replace(/@\{target\|token_name\}/g, target.tokName);
         cmd = cmd.replace(/@\{target\|/g, '@{' + target.name + '|');
-        cmd += " --decrAttribute " + aet.id;
-        addLineToFramedDisplay(display, bouton(cmd, action.text, voleur));
+        if (resource) cmd += " --decrAttribute " + resource.id;
+        addLineToFramedDisplay(display, bouton(cmd, action.text, attaquant));
       });
     });
-    // on envoie la liste aux joueurs qui gèrent le voleur
-    var playerIds = getPlayerIds(voleur);
+    // on envoie la liste aux joueurs qui gèrent l'attaquant
+    var playerIds = getPlayerIds(attaquant);
     playerIds.forEach(function(playerid) {
       addFramedHeader(display, playerid, true);
       sendChat('', endFramedDisplay(display));
@@ -6288,8 +6297,13 @@ var COFantasy = COFantasy || function() {
         });
         finaliseDisplay(display, explications, evt);
         for (var vid in attaquesEnTraitrePossibles) {
-          displayAttaqueEnTraitre(vid, attaquesEnTraitrePossibles[vid]);
+          displayAttaqueOpportunite(vid, attaquesEnTraitrePossibles[vid], "en traître", '#AttaqueEnTraitre#', 'attaqueEnTraitre');
         }
+        cibles.forEach(function(target) {
+          if (charAttributeAsBool(target, 'seulContreTous')) {
+          displayAttaqueOpportunite(target.id, [attaquant], "de riposte", '#ActionsRiposte#');
+          }
+        });
       }
     };
     cibles.forEach(function(target) {
@@ -8186,6 +8200,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('armeSecreteBardeUtilisee', evt, attrs);
     attrs = removeAllAttributes('attaqueMalgreMenace', evt, attrs);
     attrs = removeAllAttributes('limiteApplicationManoeuvre', evt, attrs);
+    attrs = removeAllAttributes('ripostesDuTour', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -10233,6 +10248,7 @@ var COFantasy = COFantasy || function() {
           });
           if (abEnveloppe) {
             command = abEnveloppe.get('action').trim();
+            command = replaceAction(command, perso);
             command = command.replace(new RegExp(escapeRegExp('@{target|token_id}'), 'g'), cible.token.id);
             ligne += bouton(command, "Infliger DMS à " + cible.tokName, perso, false) + '<br />';
           }
