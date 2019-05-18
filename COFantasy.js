@@ -4976,7 +4976,6 @@ var COFantasy = COFantasy || function() {
     }
 
     //Les conditions qui peuvent empêcher l'attaque
-    //TODO: ajouter le test de savoir si on a déjà riposté contre la cibe (attribut riposteDuTour = liste des adversaires, séparés par _|_
     if (options.conditionAttaquant !== undefined) {
       if (!testCondition(options.conditionAttaquant, attaquant, cibles)) {
         sendChar(attackingCharId, "ne peut pas utiliser " + weaponName);
@@ -4986,6 +4985,11 @@ var COFantasy = COFantasy || function() {
     if (options.avecd12 && (estAffaibli(attaquant) || getState(attaquant, 'immobilise'))) {
       sendChar(attackingCharId, "ne peut pas utiliser cette capacité quand il est affaibli.");
       return;
+    }
+    var attrRipostesDuTour = tokenAttribute(attaquant, 'ripostesDuTour');
+    var ripostesDuTour = [];
+    if (ripostesDuTour.length > 0) {
+      ripostesDuTour = ripostesDuTour[0].get('current').split('_|_');
     }
     cibles = cibles.filter(function(target) {
       if (attributeAsBool(target, 'ombreMortelle')) {
@@ -12842,7 +12846,7 @@ var COFantasy = COFantasy || function() {
   function raceIs(perso, race) {
     var charRace = ficheAttribute(perso, 'RACE');
     if (charRace === undefined) return false;
-    return (charRace.toLowercase() == race.toLowerCase());
+    return (charRace.toLowerCase() == race.toLowerCase());
   }
 
   function estMortVivant(perso) {
