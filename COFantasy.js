@@ -5436,6 +5436,22 @@ var COFantasy = COFantasy || function() {
     var attackerTokName = attaquant.tokName;
     var explications = options.messages || [];
     var sujetAttaquant = onGenre(attackingCharId, 'il', 'elle');
+    if (options.contact) {
+      //Pris en compte du corps élémentaire
+      var attrCorpsElem = findObjs({
+        _type: 'attribute',
+        _characterid: attackingCharId,
+        name: 'corpsElementaire'
+      });
+      attrCorpsElem.forEach(function(attr) {
+        var typeCorpsElem= attr.get('current');
+          options.additionalDmg.push({
+            type: typeCorpsElem,
+            value: '1d6',
+          });
+          explications.push("Corps de "+typeCorpsElem+" => +1d6 DM");
+      });
+    }
     // Munitions
     if (options.munition) {
       if (attackingToken.get('bar1_link') === '') {
@@ -6821,6 +6837,33 @@ var COFantasy = COFantasy || function() {
                         var rolls = res[0];
                         var explRoll = rolls.inlinerolls[0];
                         var type = dstc.get('max');
+                        var r = {
+                          total: explRoll.results.total,
+                          type: type,
+                          display: buildinline(explRoll, type, true)
+                        };
+                        dealDamage(attaquant, r, [], evt, false, options,
+                          target.messages,
+                          function(dmgDisplay, dmg) {
+                            var dmgMsg =
+                              "<b>" + attackerTokName + " subit :</b> " +
+                              dmgDisplay + " DM en touchant " + target.tokName;
+                            target.messages.push(dmgMsg);
+                            finCibles();
+                          });
+                      });
+                    });
+                    var attrCorpsElem = findObjs({
+                      _type: 'attribute',
+                      _characterid: target.charId,
+                      name: 'corpsElementaire'
+                    });
+                    attrCorpsElem.forEach(function(dstc) {
+                      ciblesCount++;
+                      sendChat("", "[[1d6]]", function(res) {
+                        var rolls = res[0];
+                        var explRoll = rolls.inlinerolls[0];
+                        var type = dstc.get('current');
                         var r = {
                           total: explRoll.results.total,
                           type: type,
@@ -10376,6 +10419,11 @@ var COFantasy = COFantasy || function() {
               }
             });
           });
+        }
+        //Les soins pour les élémentaires
+        if (charAttributeAsBool(perso, 'corpsElementaire')) {
+          command = '!cof-soin 5';
+          ligne += bouton(command, "Régénération", perso, false) + " si source élémentaire proche<br />";
         }
         if (actions.length > 0) {
           // Toutes les Macros

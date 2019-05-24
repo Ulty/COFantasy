@@ -1386,6 +1386,7 @@
                 <p style="margin-top:0px; margin-bottom:0px">Ajouter un attribut <code>immunite_<i>type</i></code> de valeur <code>true</code>, où <i>type</i> est le type de la créature élémentaire (feu, acide, froid, ...)</p>
                 <ol>
                   <li><strong>Souffle</strong> : faire une attaque avec le bon nombre de d6 en DM, de portée la portée du souffle, à utiliser avec les options <code>--auto --cone --<i>type</i> --tempsRecharge rechargeSouffle [[1d4]] --psave DEX 13</code>, où <i>type</i> est le type de la créature (feu, acide, frois, ...). Ne pas oublier la possibilité d'utiliser un token cible temporaire pour le cone.</li>
+                  <li><strong>Corps élémentaire</strong> : ajouter un attribut <code>corpsElementaire</code>, de valeur l'élément (<code>feu</code>, <code>froid</code>,...). Cela va automatiquement ajoute les dégâts aux attaques de contact, et faire des dégâts à ceux qui l'attaquent au contact. Cela va aussi faire apparaître dans les actions du tour une action de régéneration, que le MJ peut utiliser chaque tour, à lui de voir si les conditions s'y prêtent (source élémentaire proche). Pas de support générique pour les victimes saisies ou aggriper, à gérer au cas par cas.</li>
                 </ol>
                 <h4 class="text-secondary">Voie des créatures magique</h4>
                 <ol>
