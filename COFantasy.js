@@ -5758,7 +5758,7 @@ var COFantasy = COFantasy || function() {
       //Modificateurs en Attaque qui ne dépendent pas de la cible
       var attBonusCommun =
         bonusAttaqueA(attaquant, weaponName, evt, explications, options);
-      if (attributeAsBool(attaquant, 'aspectDuDemon')) {
+      if (attributeAsBool(attaquant, 'aspectDuDemon') && weaponStats.attSkill==='@{ATKCAC}') {
         attBonusCommun += getValeurOfEffet(attaquant, 'aspectDuDemon', 2);
       }
       if (options.traquenard) {
