@@ -4009,6 +4009,9 @@ var COFantasy = COFantasy || function() {
     // Autres modificateurs de défense
     defense += attributeAsInt(target, 'defenseTotale', 0);
     defense += attributeAsInt(target, 'pacifisme', 0);
+    if (attributeAsBool(target, 'aspectDuDemon')) {
+        defense += getValeurOfEffet(target, 'aspectDuDemon', 2);
+    }
     if (attributeAsBool(target, 'peauDEcorce')) {
       var bonusPeau = getValeurOfEffet(target, 'peauDEcorce', 1, 'voieDesVegetaux');
       var peauIntense = attributeAsInt(target, 'peauDEcorceTempeteDeManaIntense', 0);
@@ -5755,6 +5758,9 @@ var COFantasy = COFantasy || function() {
       //Modificateurs en Attaque qui ne dépendent pas de la cible
       var attBonusCommun =
         bonusAttaqueA(attaquant, weaponName, evt, explications, options);
+      if (attributeAsBool(attaquant, 'aspectDuDemon')) {
+        attBonusCommun += getValeurOfEffet(attaquant, 'aspectDuDemon', 2);
+      }
       if (options.traquenard) {
         if (attributeAsInt(attaquant, 'traquenard', 0) === 0) {
           sendChar(attackingCharId, "ne peut pas faire de traquenard, car ce n'est pas sa première attaque du combat");
@@ -11179,12 +11185,16 @@ var COFantasy = COFantasy || function() {
           bonus -= ficheAttributeAsInt(personnage, 'DEFBOUCLIERMALUS', 0);
         if (attributeAsBool(personnage, 'agrandissement'))
           bonus -= 2;
+        if (attributeAsBool(personnage, 'aspectDuDemon'))
+          bonus += getValeurOfEffet(personnage, 'aspectDuDemon', 2);
         break;
       case 'FOR':
         if (attributeAsBool(personnage, 'rayonAffaiblissant'))
           bonus -= 2;
         if (attributeAsBool(personnage, 'agrandissement'))
           bonus += 2;
+        if (attributeAsBool(personnage, 'aspectDuDemon'))
+          bonus += getValeurOfEffet(personnage, 'aspectDuDemon', 2);
         break;
       case 'CHA':
         if (attributeAsBool(personnage, 'aspectDeLaSuccube'))
@@ -11195,6 +11205,8 @@ var COFantasy = COFantasy || function() {
           bonus += 5;
         if (charAttributeAsBool(personnage, 'controleDuMetabolisme'))
           bonus += modCarac(personnage, 'CHARISME');
+        if (attributeAsBool(personnage, 'aspectDuDemon'))
+          bonus += getValeurOfEffet(personnage, 'aspectDuDemon', 2);
         break;
     }
     return bonus;
@@ -12007,6 +12019,23 @@ var COFantasy = COFantasy || function() {
         var setOneEffect = function(perso, d) {
           if (options.valeur !== undefined) {
             setTokenAttr(perso, effetC + "Valeur", options.valeur, evt, undefined, options.valeurMax);
+          }
+          //On retire l'autre aspect du Nécromancien si il est présent
+          if(effetC == "aspectDuDemon") {
+            var evt = {
+              type: 'Nouvel aspect',
+              attributes: [],
+              deletedAttributes: []
+            };
+            finDEffetDeNom(perso,"aspectDeLaSuccube",evt,null);
+          }
+          if(effetC == "aspectDeLaSuccube") {
+            var evt = {
+              type: 'Nouvel aspect',
+              attributes: [],
+              deletedAttributes: []
+            };
+            finDEffetDeNom(perso,"aspectDuDemon",evt,null);
           }
           setTokenAttr(
             perso, effetC, d, evt, messageEffetTemp[effet].activation,
@@ -18646,6 +18675,11 @@ var COFantasy = COFantasy || function() {
       actif: "est d'une beauté fascinante",
       fin: "retrouve sa beauté habituelle"
     },
+    aspectDuDemon: {
+      activation: "prend l’apparence d’un démon",
+      actif: "a l’apparence d’un démon",
+      fin: "retrouve son apparence habituelle"
+    },
     sangMordant: {
       activation: "transforme son sang",
       actif: "a du sang acide",
@@ -20147,7 +20181,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = "1.10";
+  var script_version = "1.11";
   COF_loaded = true;
   on('add:token', COFantasy.addToken);
   state.COFantasy = state.COFantasy || {
