@@ -4081,7 +4081,7 @@ var COFantasy = COFantasy || function() {
     defense += attributeAsInt(target, 'defenseTotale', 0);
     defense += attributeAsInt(target, 'pacifisme', 0);
     if (attributeAsBool(target, 'aspectDuDemon')) {
-        defense += getValeurOfEffet(target, 'aspectDuDemon', 2);
+      defense += getValeurOfEffet(target, 'aspectDuDemon', 2);
     }
     if (attributeAsBool(target, 'peauDEcorce')) {
       var bonusPeau = getValeurOfEffet(target, 'peauDEcorce', 1, 'voieDesVegetaux');
@@ -4346,6 +4346,10 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(attaquant, 'enragé')) {
         attBonus += 5;
         explications.push("Enragé => +5 en Attaque et +1d6 DM");
+      }
+      if (attributeAsBool(attaquant, 'aspectDuDemon')) {
+        attBonus += getValeurOfEffet(attaquant, 'aspectDuDemon', 2);
+        explications.push("Aspect de démon => +2 en Attaque");
       }
     }
     var frenesie = charAttributeAsInt(attaquant, 'frenesie', 0);
@@ -5829,9 +5833,6 @@ var COFantasy = COFantasy || function() {
       //Modificateurs en Attaque qui ne dépendent pas de la cible
       var attBonusCommun =
         bonusAttaqueA(attaquant, weaponName, evt, explications, options);
-      if (options.contact && attributeAsBool(attaquant, 'aspectDuDemon')) {
-        attBonusCommun += getValeurOfEffet(attaquant, 'aspectDuDemon', 2);
-      }
       if (options.traquenard) {
         if (attributeAsInt(attaquant, 'traquenard', 0) === 0) {
           sendChar(attackingCharId, "ne peut pas faire de traquenard, car ce n'est pas sa première attaque du combat");
@@ -12142,11 +12143,11 @@ var COFantasy = COFantasy || function() {
             setTokenAttr(perso, effetC + "Valeur", options.valeur, evt, undefined, options.valeurMax);
           }
           //On retire l'autre aspect du Nécromancien si il est présent
-          if(effetC == "aspectDuDemon") {
-            finDEffetDeNom(perso,"aspectDeLaSuccube",evt);
+          if (effetC == "aspectDuDemon") {
+            finDEffetDeNom(perso, "aspectDeLaSuccube", evt);
           }
-          if(effetC == "aspectDeLaSuccube") {
-            finDEffetDeNom(perso,"aspectDuDemon",evt);
+          if (effetC == "aspectDeLaSuccube") {
+            finDEffetDeNom(perso, "aspectDuDemon", evt);
           }
           setTokenAttr(
             perso, effetC, d, evt, messageEffetTemp[effet].activation,
