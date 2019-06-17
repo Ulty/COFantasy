@@ -504,7 +504,8 @@ var COFantasy = COFantasy || function() {
   }
 
   //fonction avec callback, mais synchrone
-  function soigneToken(perso, soins, evt, callTrue, callMax) {
+  function soigneToken(perso, soins, evt, callTrue, callMax, options) {
+    options = options || {};
     var token = perso.token;
     var bar1 = parseInt(token.get("bar1_value"));
     var pvmax = parseInt(token.get("bar1_max"));
@@ -516,6 +517,56 @@ var COFantasy = COFantasy || function() {
     if (bar1 >= pvmax) bar1 = pvmax;
     else updateBar1 = true;
     if (soins < 0) soins = 0;
+    var nonSoignable = 0;
+    //Update des dm suivis
+    var attrs = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+    });
+    var regSuivis = '^DMSuivis([^_]+)';
+    var link = token.get('bar1_link');
+    if (link === '') regSuivis += "_" + token.get('name') + '$';
+    else regSuivis += '$';
+    regSuivis = new RegExp(regSuivis);
+    var soinsSuivis = soins;
+    var soinsImpossible = new Set(options.saufDMType);
+    attrs.forEach(function(a) {
+      if (soinsSuivis === 0) return;
+      var an = a.get('name');
+      an = an.match(regSuivis);
+      if (an && an.length > 0) {
+        var ds = parseInt(a.get('current'));
+        if (ds > 0) {
+          if (an[0].length < 2) {
+            error("Match non trouvé pour les soins", an);
+            return;
+          }
+          if (soinsImpossible.has(an[1])) {
+            nonSoignable += ds;
+          } else {
+            if (ds > soinsSuivis) {
+              evt.attributes = evt.attributes || [];
+              evt.attributes.push({
+                attribute: a,
+                current: ds
+              });
+              ds -= soinsSuivis;
+              a.set('current', ds);
+              soinsSuivis = 0;
+            } else {
+              soinsSuivis -= ds;
+              ds = 0;
+            }
+          }
+        } else ds = 0;
+        if (ds === 0) {
+          evt.deletedAttributes = evt.deletedAttributes || [];
+          evt.deletedAttributes.push(a);
+          a.remove();
+        }
+      }
+    });
+    pvmax -= nonSoignable;
     if (bar1 === 0) {
       if (attributeAsBool(perso, 'etatExsangue')) {
         removeTokenAttr(perso, 'etatExsangue', evt, "retrouve des couleurs");
@@ -535,18 +586,36 @@ var COFantasy = COFantasy || function() {
           var anciensMax = parseInt(apv.get('max'));
           if (!(isNaN(anciensPV) || isNaN(anciensMax)) &&
             anciensPV < anciensMax) {
-            anciensPV += bar1 - pvmax;
-            soinsEffectifs += bar1 - pvmax;
-            if (anciensPV > anciensMax) {
-              soinsEffectifs -= anciensPV - anciensMax;
-              anciensPV = anciensMax;
-            }
+            var soinsTransferes = bar1 - pvmax;
+            if (anciensMax - anciensPV < soinsTransferes)
+              soinsTransferes = anciensMax - anciensPV;
+            anciensPV += soinsTransferes;
+            bar1 -= soinsTransferes;
             setTokenAttr(perso, 'anciensPV', anciensPV, evt, undefined, anciensMax);
           }
         }
       }
-      soinsEffectifs -= (bar1 - pvmax);
-      bar1 = pvmax;
+      // On  cherche si il y a des DM temporaires à soigner
+      if (bar1 > pvmax) {
+        var hasMana = (ficheAttributeAsInt(perso, 'PM', 0) > 0);
+        var dmgTemp;
+        if (hasMana) dmgTemp = attributeAsInt(perso, 'DMTEMP', 0);
+        else {
+          dmgTemp = parseInt(token.get('bar2_value'));
+          if (isNaN(dmgTemp)) dmgTemp = 0;
+        }
+        if (dmgTemp > 0) {
+          var newDmgTemp = dmgTemp - bar1 + pvmax;
+          if (newDmgTemp < 0) {
+            newDmgTemp = 0;
+            bar1 -= dmgTemp;
+          } else bar1 = pvmax;
+          if (hasMana) setTokenAttr(perso, 'DMTEMP', newDmgTemp, evt);
+          else updateCurrentBar(token, 1, newDmgTemp, evt);
+        }
+        soinsEffectifs -= (bar1 - pvmax);
+        bar1 = pvmax;
+      }
     }
     if (updateBar1) updateCurrentBar(token, 1, bar1, evt);
     if (soinsEffectifs > 0) {
@@ -1144,8 +1213,8 @@ var COFantasy = COFantasy || function() {
             // attribut demandé
             var attribute_name = elem.substring(0, elem.indexOf("}")).substr(1);
             var attrs = findObjs({
-              type: 'attribute',
-              charid: perso.charId,
+              _type: 'attribute',
+              _characterid: perso.charId,
               name: attribute_name
             });
             var replacement;
@@ -3221,6 +3290,8 @@ var COFantasy = COFantasy || function() {
       _type: 'attribute',
       _characterid: charId,
       name: 'PM'
+    }, {
+      caseInsensitive: true
     });
     var hasMana = false;
     if (manaAttr.length > 0) {
@@ -5447,12 +5518,12 @@ var COFantasy = COFantasy || function() {
         name: 'corpsElementaire'
       });
       attrCorpsElem.forEach(function(attr) {
-        var typeCorpsElem= attr.get('current');
-          options.additionalDmg.push({
-            type: typeCorpsElem,
-            value: '1d6',
-          });
-          explications.push("Corps de "+typeCorpsElem+" => +1d6 DM");
+        var typeCorpsElem = attr.get('current');
+        options.additionalDmg.push({
+          type: typeCorpsElem,
+          value: '1d6',
+        });
+        explications.push("Corps de " + typeCorpsElem + " => +1d6 DM");
       });
     }
     // Munitions
@@ -7404,6 +7475,14 @@ var COFantasy = COFantasy || function() {
           dmgTotal = 0;
         });
     }
+    var dmSuivis = {}; //si il faut noter les DMs d'un type particulier
+    charAttribute(target.charId, 'vitaliteSurnaturelle').forEach(function(a) {
+      var typeVitalite = a.get('max').split(',');
+      typeVitalite.forEach(function(tv) {
+        if (tv == mainDmgType) dmSuivis[tv] = dmgTotal;
+        else dmSuivis[tv] = 0;
+      });
+    });
     // Other sources of damage
     // First count all other sources of damage, for synchronization
     var count = 0;
@@ -7420,7 +7499,7 @@ var COFantasy = COFantasy || function() {
     var dealOneType = function(dmgType) {
       if (dmgType == mainDmgType) {
         count -= dmgParType[dmgType].length;
-        if (count === 0) dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal);
+        if (count === 0) dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal, dmSuivis);
         return; //type principal déjà géré
       }
       showTotal = true;
@@ -7480,10 +7559,13 @@ var COFantasy = COFantasy || function() {
                   });
                 dmgTotal += dm;
                 dmgDisplay += "+" + typeDisplay;
+                if (_.has(dmSuivis, dmgType)) {
+                  dmSuivis[dmgType] = dm;
+                }
               }
             }
             count--;
-            if (count === 0) dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal);
+            if (count === 0) dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal, dmSuivis);
           });
       });
     };
@@ -7492,7 +7574,7 @@ var COFantasy = COFantasy || function() {
         dealOneType(dmgType);
       }
     } else {
-      return dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal);
+      return dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal, dmSuivis);
     }
   }
 
@@ -7613,7 +7695,7 @@ var COFantasy = COFantasy || function() {
     attrs[0].set('current', newCur);
   }
 
-  function dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal) {
+  function dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal, dmSuivis) {
     var charId = target.charId;
     var token = target.token;
     // Now do some dmg mitigation rolls, if necessary
@@ -7622,13 +7704,21 @@ var COFantasy = COFantasy || function() {
       if (showTotal) dmgDisplay = "(" + dmgDisplay + ")";
       dmgDisplay += " / 2";
       dmgTotal = Math.ceil(dmgTotal / 2);
+      for (var dmType in dmSuivis) {
+        dmSuivis[dmType] = Math.ceil(dmSuivis[dmType] / 2);
+      }
       showTotal = true;
     }
     partialSave(options, target, showTotal, dmgDisplay, dmgTotal,
       expliquer, evt,
       function(saveResult) {
         if (saveResult) {
-          dmgTotal = saveResult.total;
+          if (saveResult.total < dmgTotal) {
+            dmgTotal = saveResult.total;
+            for (var dmType in dmSuivis) {
+              dmSuivis[dmType] = Math.ceil(dmSuivis[dmType] / 2);
+            }
+          }
           dmgDisplay = saveResult.dmgDisplay;
           showTotal = saveResult.showTotal;
         }
@@ -7662,16 +7752,30 @@ var COFantasy = COFantasy || function() {
           }
         }
         dmgTotal -= rd;
+        for (var dmSuiviType in dmSuivis) {
+          if (rd === 0) break;
+          dmSuivis[dmSuiviType] -= rd;
+          if (dmSuivis[dmSuiviType] < 0) {
+            rd = -dmSuivis[dmSuiviType];
+            dmSuivis[dmSuiviType] = 0;
+          } else rd = 0;
+        }
         if (options.metal && attributeAsBool(target, 'magnetisme')) {
           if (showTotal) dmgDisplay = "(" + dmgDisplay + ") / 2";
           else dmgDisplay += " / 2";
           showTotal = true;
           dmgTotal = Math.ceil(dmgTotal / 2);
+          for (var dmType2 in dmSuivis) {
+            dmSuivis[dmType2] = Math.ceil(dmSuivis[dmType2] / 2);
+          }
         }
         if (dmgTotal < stateCOF.options.regles.val.dm_minimum.val)
           dmgTotal = stateCOF.options.regles.val.dm_minimum.val;
         if (options.divise) {
           dmgTotal = Math.ceil(dmgTotal / options.divise);
+          for (var dmType3 in dmSuivis) {
+            dmSuivis[dmType3] = Math.ceil(dmSuivis[dmType3] / options.divise);
+          }
           dmgDisplay = "(" + dmgDisplay + ")/" + options.divise;
           showTotal = true;
         }
@@ -7686,16 +7790,7 @@ var COFantasy = COFantasy || function() {
           pvmax = bar1;
           token.set("bar1_max", bar1);
         }
-        var manaAttr = findObjs({
-          _type: 'attribute',
-          _characterid: charId,
-          name: 'PM'
-        });
-        var hasMana = false;
-        if (manaAttr.length > 0) {
-          var manaMax = parseInt(manaAttr[0].get('max'));
-          hasMana = !isNaN(manaMax) && manaMax > 0;
-        }
+        var hasMana = (ficheAttributeAsInt(target, 'PM', 0) > 0);
         var tempDmg = 0;
         if (hasMana) {
           tempDmg = attributeAsInt(target, 'DMTEMP', 0);
@@ -7753,6 +7848,9 @@ var COFantasy = COFantasy || function() {
           if (bar1 > 0 && bar1 <= dmgTotal &&
             charAttributeAsBool(target, 'instinctDeSurvieHumain')) {
             dmgTotal = dmgTotal / 2;
+            for (var dmType4 in dmSuivis) {
+              dmSuivis[dmType4] = Math.ceil(dmSuivis[dmType4] / 2);
+            }
             if (dmgTotal < 1) dmgTotal = 1;
             dmgDisplay += "/2";
             showTotal = true;
@@ -7784,6 +7882,25 @@ var COFantasy = COFantasy || function() {
                 error("Points de vie de l'ancien token incorrects", newBar1);
               } else {
                 bar1 += newBar1;
+              }
+            }
+          }
+          //On enregistre les dm suivis
+          for (var dmType5 in dmSuivis) {
+            var d = dmSuivis[dmType5];
+            if (d) {
+              var attrDmSuivi = tokenAttribute(target, 'DMSuivis' + dmType5);
+              if (attrDmSuivi.length > 0) {
+                var cd = parseInt(attrDmSuivi[0].get('current'));
+                if (cd > 0) d += cd;
+                attrDmSuivi[0].set('current', d);
+                evt.attributes = evt.attributes || [];
+                evt.attributes.push({
+                  attribute: attrDmSuivi[0],
+                  current: cd
+                });
+              } else {
+                setTokenAttr(target, 'DMSuivis' + dmType5, d, evt);
               }
             }
           }
@@ -8813,6 +8930,8 @@ var COFantasy = COFantasy || function() {
         _type: 'attribute',
         _characterid: charId,
         name: 'PM'
+      }, {
+        caseInsensitive: true
       });
       var hasMana = false;
       var dmTemp = bar2;
@@ -10830,6 +10949,8 @@ var COFantasy = COFantasy || function() {
           _type: 'attribute',
           _characterid: charId,
           name: 'PM'
+        }, {
+          caseInsensitive: true
         });
         var hasMana = false;
         if (manaAttr.length > 0) {
@@ -19786,6 +19907,20 @@ var COFantasy = COFantasy || function() {
             }
           }
         }
+        var vitaliteSurnatAttr = charAttribute(perso.charId, 'vitaliteSurnaturelle');
+        if (vitaliteSurnatAttr.length > 0) {
+          var vitaliteSurnat = parseInt(vitaliteSurnatAttr[0].get('current'));
+          if (vitaliteSurnat > 0) {
+            soigneToken(perso, vitaliteSurnat, evt,
+              function(s) {
+                sendChar(charId, 'récupère ' + s + ' PVs.');
+              },
+              function() {}, {
+                saufDMType: vitaliteSurnatAttr[0].get('max').split(',')
+              }
+            );
+          }
+        }
       });
       setActiveToken(undefined, evt);
       initiative(selected, evt, true); // met Tour à la fin et retrie
@@ -19889,7 +20024,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function destroyToken(token) { //to remove unused local attributes
-    var charId = token.get('represeernts');
+    var charId = token.get('represents');
     if (charId === "") return;
     if (token.get('bar1_link') !== "") return;
     var endName = "_" + token.get('name');
