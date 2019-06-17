@@ -1,9 +1,12 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 
+## 1.11
+* Ajout de la capacité vitalité surnaturelle des créatures magiques.
+* Ajout de l'aspect du démon
+
 ## 1.10
 
 ### Capacités
-* Ajout de la capacité vitalité surnaturelle des créatures magiques.
 * Ajout de la capacité corps élémentaire de la voie de l'élémentaire
 * Ajout de la capacité Riposte du champion
 * Ajout de la capacité Seul contre tous du chevalier

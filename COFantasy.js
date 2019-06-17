@@ -5829,7 +5829,7 @@ var COFantasy = COFantasy || function() {
       //Modificateurs en Attaque qui ne dépendent pas de la cible
       var attBonusCommun =
         bonusAttaqueA(attaquant, weaponName, evt, explications, options);
-      if (attributeAsBool(attaquant, 'aspectDuDemon') && weaponStats.attSkill==='@{ATKCAC}') {
+      if (options.contact && attributeAsBool(attaquant, 'aspectDuDemon')) {
         attBonusCommun += getValeurOfEffet(attaquant, 'aspectDuDemon', 2);
       }
       if (options.traquenard) {
@@ -12143,20 +12143,10 @@ var COFantasy = COFantasy || function() {
           }
           //On retire l'autre aspect du Nécromancien si il est présent
           if(effetC == "aspectDuDemon") {
-            var evt = {
-              type: 'Nouvel aspect',
-              attributes: [],
-              deletedAttributes: []
-            };
-            finDEffetDeNom(perso,"aspectDeLaSuccube",evt,null);
+            finDEffetDeNom(perso,"aspectDeLaSuccube",evt);
           }
           if(effetC == "aspectDeLaSuccube") {
-            var evt = {
-              type: 'Nouvel aspect',
-              attributes: [],
-              deletedAttributes: []
-            };
-            finDEffetDeNom(perso,"aspectDuDemon",evt,null);
+            finDEffetDeNom(perso,"aspectDuDemon",evt);
           }
           setTokenAttr(
             perso, effetC, d, evt, messageEffetTemp[effet].activation,
