@@ -1,6 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 
 ## 1.11
+### Capacités
+* Mur de force utilise maintenant une image par défaut.
 * Ajout de la capacité vitalité surnaturelle des créatures magiques.
 * Ajout de l'aspect du démon
 
