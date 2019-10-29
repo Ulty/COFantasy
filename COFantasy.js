@@ -734,7 +734,7 @@ var COFantasy = COFantasy || function() {
           if (getState(p, 'mort')) return;
           if (distanceCombat(token, tok, pageId) > 20) return;
           if (charIdAttributeAsBool(ci, 'siphonDesAmes')) {
-            var bonus = charIdAttributeAsBool(ci, 'siphonDesAmes', 0);
+            var bonus = charAttributeAsInt(p, 'siphonDesAmes', 0);
             var soin = rollDePlus(6, bonus);
             soigneToken(p, soin.val, evt,
               function(s) {

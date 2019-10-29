@@ -9,6 +9,7 @@
 * Ajout de l'aspect du démon
 
 ### Corrections de bugs
+* Correction d'un bug de siphon des âmes
 * Dans les listes d'actions, remplace les macros correctement même si un nom de macro est préfixe d'un autre.
 * !cof-effet-temp met bien l'état associé quand on utilise paralyseTemp ou etourdiTemp
 
