@@ -1138,7 +1138,7 @@ var COFantasy = COFantasy || function() {
       macros.forEach(function(m, i) {
         var mName = '#' + m.get('name');
         if (action.indexOf(mName) >= 0) {
-          mName = new RegExp(mName+"\\b", "g");
+          mName = new RegExp(mName + "\\b", "g");
           action = action.replace(mName, m.get('action'));
           if (!remplacement)
             macros = macros.filter(function(m, k) {
@@ -1278,6 +1278,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //Fonction séparée pour pouvoir envoyer un frame à plusieurs joueurs
+  // playerId peut être undefined (en particulier pour envoye au mj)
   function addFramedHeader(display, playerId, chuchote) {
     var perso1 = display.perso1;
     var perso2 = display.perso2;
@@ -1349,7 +1350,7 @@ var COFantasy = COFantasy || function() {
         var bar1_info = '',
           bar2_info = '',
           bar3_info = '';
-        if (chuchote) {
+        if (chuchote && peutController(playerId, perso1)) {
           // on chuchote donc on peut afficher les informations concernant les barres du Token
           if (perso1.token.get('bar1_link').length > 0) {
             var bar1 = findObjs({
@@ -2018,7 +2019,9 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  //msg peut être directement le playerId ou un message
   function getPlayerIdFromMsg(msg) {
+    if (msg.playerid === undefined) return msg;
     var playerId = msg.playerid;
     if (playerId == 'API') {
       var nom = msg.who;
@@ -2612,6 +2615,7 @@ var COFantasy = COFantasy || function() {
         case "difficultePVmax":
         case "lamesJumelles":
         case "riposte":
+        case 'secret':
           options[cmd[0]] = true;
           return;
         case "imparable": //deprecated
@@ -3603,6 +3607,7 @@ var COFantasy = COFantasy || function() {
       init = ficheAttributeAsInt(perso, 'DEXTERITE', 10);
       init += ficheAttributeAsInt(perso, 'INIT_DIV', 0);
     }
+    if (attributeAsBool(perso, 'formeDArbre')) init = 7;
     //Règle optionelle : +1d6, à lancer en entrant en combat
     if (stateCOF.options.regles.val.initiative_variable.val) {
       var bonusVariable = attributeAsInt(perso, 'bonusInitVariable', 0);
@@ -3616,7 +3621,6 @@ var COFantasy = COFantasy || function() {
       }
       init += bonusVariable;
     }
-    if (attributeAsBool(perso, 'formeDArbre')) init = 7;
     if (getState(perso, 'aveugle')) init -= 5;
     // Voie du compagnon animal rang 2 (surveillance)
     init += attributeAsInt(perso, 'bonusInitEmbuscade', 0);
@@ -5780,7 +5784,9 @@ var COFantasy = COFantasy || function() {
       action += "<span style='" + BS_LABEL + " " + label_type + "; text-transform: none; font-size: 100%;'>" + weaponName + "</span>";
 
       var display = startFramedDisplay(playerId, action, attaquant, {
-        perso2: target
+        perso2: target,
+        chuchote: options.secret,
+        retarde: options.secret
       });
 
       // Cas des armes à poudre
@@ -5807,7 +5813,7 @@ var COFantasy = COFantasy || function() {
                   var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
                     dmgDisplay;
                   addLineToFramedDisplay(display, dmgMsg);
-                  finaliseDisplay(display, explications, evt, attaquant, cibles);
+                  finaliseDisplay(display, explications, evt, attaquant, cibles, options);
                 });
             });
           } else {
@@ -5827,7 +5833,7 @@ var COFantasy = COFantasy || function() {
                   var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
                     dmgDisplay;
                   addLineToFramedDisplay(display, dmgMsg);
-                  finaliseDisplay(display, explications, evt, attaquant, cibles);
+                  finaliseDisplay(display, explications, evt, attaquant, cibles, options);
                 });
             });
           }
@@ -5838,7 +5844,7 @@ var COFantasy = COFantasy || function() {
             "<b>Attaque :</b> " +
             buildinline(rollsAttack.inlinerolls[attRollNumber]));
           explications.push(weaponName + " fait long feu, le coup ne part pas");
-          finaliseDisplay(display, explications, evt, attaquant, cibles);
+          finaliseDisplay(display, explications, evt, attaquant, cibles, options);
           return;
         }
       }
@@ -6258,7 +6264,7 @@ var COFantasy = COFantasy || function() {
 
   function attackDealDmg(attaquant, cibles, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees) {
     if (cibles.length === 0 || options.test || options.feinte) {
-      finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees);
+      finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options);
       if (critSug) sendChat('COF', critSug);
       return;
     }
@@ -6435,7 +6441,7 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, expl, 80);
           });
         });
-        finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees);
+        finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options);
         for (var vid in attaquesEnTraitrePossibles) {
           var voleur = tokenOfId(vid);
           if (voleur === undefined) continue;
@@ -7103,7 +7109,8 @@ var COFantasy = COFantasy || function() {
   }
 
   //Affichage final d'une attaque
-  function finaliseDisplay(display, explications, evt, attaquant, cibles) {
+  // attaquant est optionnel, mais si il est présent, cibles doit être un tableau et options un objet
+  function finaliseDisplay(display, explications, evt, attaquant, cibles, options) {
     explications.forEach(function(expl) {
       addLineToFramedDisplay(display, expl, 80);
     });
@@ -7160,9 +7167,29 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    sendChat("", endFramedDisplay(display));
+    if (options && !options.secret) sendChat("", endFramedDisplay(display));
     if (attaquant) {
+      var playerIds;
+      if (options.secret) {
+        playerIds = getPlayerIds(attaquant);
+        playerIds.forEach(function(playerid) {
+          addFramedHeader(display, playerid, true);
+          sendChat('', endFramedDisplay(display));
+        });
+        addFramedHeader(display, undefined, 'gm');
+        sendChat('', endFramedDisplay(display));
+      }
       cibles.forEach(function(target) {
+        if (options.secret) {
+          var addPlayers = getPlayerIds(target);
+          addPlayers.forEach(function(nid) {
+            if (!playerIds.includes(nid)) {
+              playerIds.push(nid);
+              addFramedHeader(display, nid, true);
+              sendChat('', endFramedDisplay(display));
+            }
+          });
+        }
         if (charAttributeAsBool(target, 'seulContreTous')) {
           displayAttaqueOpportunite(target.token.id, [attaquant], "de riposte", '#ActionsRiposte#');
         } else if (charAttributeAsBool(target, 'riposte')) {
@@ -7179,6 +7206,9 @@ var COFantasy = COFantasy || function() {
           displayAttaqueOpportunite(target.token.id, [attaquant], "de riposte", '#ActionsRiposte#', '--riposte');
         }
       });
+      if (options.secret) {
+        if (!playerIds.includes('gm')) playerIds.push('gm');
+      }
     }
   }
 
@@ -9222,7 +9252,9 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  //msg peut être un message ou un playerId
   function peutController(msg, perso) {
+    if (msg === undefined) return true;
     var playerId = getPlayerIdFromMsg(msg);
     if (playerIsGM(playerId)) return true;
     if (msg.selected && msg.selected.length > 0) {

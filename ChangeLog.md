@@ -11,6 +11,9 @@
 * Dans les listes d'actions, remplace les macros correctement même si un nom de macro est préfixe d'un autre.
 * !cof-effet-temp met bien l'état associé quand on utilise paralyseTemp ou etourdiTemp
 
+### Autres améliorations
+* ajout d'une option --secret à !cof-attack
+
 ## 1.10
 
 ### Capacités
