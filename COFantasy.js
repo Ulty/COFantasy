@@ -616,7 +616,7 @@ var COFantasy = COFantasy || function() {
             bar1 -= dmgTemp;
           } else bar1 = pvmax;
           if (hasMana) setTokenAttr(perso, 'DMTEMP', newDmgTemp, evt);
-          else updateCurrentBar(token, 1, newDmgTemp, evt);
+          else updateCurrentBar(token, 2, newDmgTemp, evt);
         }
         soinsEffectifs -= (bar1 - pvmax);
         bar1 = pvmax;
@@ -13768,9 +13768,8 @@ var COFantasy = COFantasy || function() {
             sendChar(charId, msgSoin);
           }
         };
-        var callTrue = printTrue;
         var pvSoigneur;
-        var callTrueFinal = callTrue;
+        var callTrueFinal = printTrue;
         if (msg.content.includes(' --transfer')) { //paie avec ses PV
           if (soigneur === undefined) {
             error("Il faut préciser qui est le soigneur pour utiliser l'option --transfer", msg.content);
@@ -13794,7 +13793,7 @@ var COFantasy = COFantasy || function() {
           callTrueFinal = function(s) {
             updateCurrentBar(soigneur.token, 1, pvSoigneur - s, evt);
             if (pvSoigneur == s) mort(soigneur, undefined, evt);
-            callTrue(s);
+            printTrue(s);
           };
         }
         if (options.fx) {
