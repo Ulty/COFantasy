@@ -17559,7 +17559,7 @@ var COFantasy = COFantasy || function() {
     visibleto: 'all',
     istokenaction: true,
   }, {
-    name: 'Jets GM',
+    name: 'Jets-GM',
     action: "!cof-jet --secret",
     visibleto: '',
     istokenaction: false,

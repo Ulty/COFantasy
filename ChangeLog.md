@@ -9,6 +9,7 @@
 * Ajout de l'aspect du démon
 
 ### Corrections de bugs
+* Changement du nom de macro "Jets GM" en "Jets-GM"
 * Correction d'un bug dans les macros de soin quand la cible a des DMs temporaires sur la barre 2
 * Correction d'un bug de siphon des âmes
 * Dans les listes d'actions, remplace les macros correctement même si un nom de macro est préfixe d'un autre.
