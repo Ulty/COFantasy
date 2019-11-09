@@ -9,6 +9,7 @@
 * Ajout de l'aspect du démon
 
 ### Corrections de bugs
+* Correction de bug (crash) avec les attaques magiques de certaines capacités
 * Changement du nom de macro "Jets GM" en "Jets-GM"
 * Correction d'un bug dans les macros de soin quand la cible a des DMs temporaires sur la barre 2
 * Correction d'un bug de siphon des âmes

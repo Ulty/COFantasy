@@ -318,6 +318,8 @@ var COFantasy = COFantasy || function() {
         break;
       case "!cof-soin":
       case "!cof-transe-guerison":
+      case "!cof-delivrance":
+      case "!cof-guerir":
         picto = '<span style="font-family: \'Pictos\'">k</span> ';
         style = 'background-color:#ffe599;color:#333';
         break;
@@ -12805,12 +12807,12 @@ var COFantasy = COFantasy || function() {
     var bonus1 = bonusDAttaque(attaquant, explications, evt);
     if (bonus1 === 0) bonus1 = "";
     else if (bonus1 > 0) bonus1 = " +" + bonus1;
-    var attk1 = addOrigin(name1, "[[" + getAttrByName(charId1, 'ATKMAG') +
+    var attk1 = addOrigin(name1, "[[" + computeArmeAtk(attaquant, '@{ATKMAG}') +
       bonus1 + "]]");
     var bonus2 = bonusDAttaque(cible, explications, evt);
     if (bonus2 === 0) bonus2 = "";
     else if (bonus2 > 0) bonus2 = " +" + bonus2;
-    var attk2 = addOrigin(name2, "[[" + getAttrByName(charId2, 'ATKMAG') +
+    var attk2 = addOrigin(name2, "[[" + computeArmeAtk(cible, '@{ATKMAG}') +
       bonus1 + "]]");
     var de1 = computeDice(attaquant);
     var de2 = computeDice(cible);
@@ -12975,7 +12977,7 @@ var COFantasy = COFantasy || function() {
       var casterName = caster.token.get('name');
       var casterCharName = casterChar.get('name');
       var cha = modCarac(caster, 'CHARISME');
-      var attMagText = addOrigin(casterCharName, getAttrByName(casterCharId, 'ATKMAG'));
+      var attMagText = addOrigin(casterCharName, computeArmeAtk(caster, '@{ATKMAG}'));
       var action = "<b>Capacité</b> : Sort de sommeil";
       var display = startFramedDisplay(playerId, action, caster);
       sendChat("", "[[1d6]] [[" + attMagText + "]]", function(res) {
@@ -13115,7 +13117,7 @@ var COFantasy = COFantasy || function() {
     var bonusA = bonusDAttaque(attaquant, explications, evt);
     if (bonusA === 0) bonusA = "";
     else if (bonusA > 0) bonusA = " +" + bonusA;
-    var attMagText = addOrigin(attaquant.name, "[[" + getAttrByName(attaquant.charId, 'ATKMAG') + bonusA + "]]");
+    var attMagText = addOrigin(attaquant.name, "[[" + computeArmeAtk(attaquant, '@{ATKMAG}') + bonusA + "]]");
     var de = computeDice(attaquant);
     var action = "<b>Attaque magique</b> (contre pv max)";
     var display = startFramedDisplay(playerId, action, attaquant, {
@@ -18385,6 +18387,36 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //!cof-animer-cadavre lanceur cible
+  function animerCadavre(msg) {
+    var options = msg.options || parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 3) {
+      error("cof-delivrance attend 2 arguments", msg.content);
+      return;
+    }
+    var lanceur = tokenOfId(cmd[1], cmd[1], options.pageId);
+    if (lanceur === undefined) {
+      error("Le premier argument de !cof-animer-cadavre n'est pas un token valide", msg.content);
+      return;
+    }
+    var cible = tokenOfId(cmd[2], cmd[2], options.pageId);
+    if (cible === undefined) {
+      error("Le deuxième argument de !cof-animer-cadavre n'est pas un token valide", msg.content);
+      return;
+    }
+    cible.tokName = cible.token.get('name');
+    if (!getState(cible, 'mort')) {
+      sendPlayer(msg, cible.tokName+" n'est pas mort"+eForFemale(cible.charId)+".");
+      return;
+    }
+    if (attributeAsBool(cible, 'cadavreAnime')) {
+      sendPlayer(msg, cible.tokName+" a déjà été animé"+eForFemale(cible.charId)+".");
+      return;
+    }
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -18668,6 +18700,7 @@ var COFantasy = COFantasy || function() {
         animerUnArbre(msg);
         return;
       case "!cof-delivrance":
+      case "!cof-guerir":
         delivrance(msg);
         return;
       case "!cof-test-attaque-opposee":
@@ -18726,6 +18759,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-liberer-agrippe":
         libererAgrippe(msg);
+        return;
+      case "!cof-animer-cadavre":
+        animerCadavre(msg);
         return;
       default:
         return;
