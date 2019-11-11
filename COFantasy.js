@@ -3658,6 +3658,9 @@ var COFantasy = COFantasy || function() {
     if (charAttributeAsBool(perso, 'controleDuMetabolisme')) {
       init += getValeurOfEffet(perso, 'controleDuMetabolisme', modCarac(perso, 'CHARISME'));
     }
+    if (attributeAsBool(perso, 'cadavreAnime')) {
+      init -= 2;
+    }
     // Voie du pistolero rang 1 (plus vite que son ombre)
     var armeEnMain = tokenAttribute(perso, 'armeEnMain');
     if (armeEnMain.length > 0) {
@@ -3946,6 +3949,10 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(personnage, 'danseIrresistible')) {
       attBonus -= 4;
       explications.push("En train de danser => -4 en Attaque");
+    }
+    if (attributeAsBool(personnage, 'cadavreAnime')) {
+      attBonus -= 4;
+      explications.push("Cadavre animé => -2 en Attaque");
     }
     if (aUnCapitaine(personnage, evt)) {
       attBonus += 2;
@@ -18415,6 +18422,12 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, cible.tokName+" a déjà été animé"+eForFemale(cible.charId)+".");
       return;
     }
+    var evt = { type: "Animer un cadvre" };
+    if (limiteRessources(lanceur, options, 'animerUnCadavre', "animer un cadavre", evt)) return;
+    sendChar(lanceur.charId, 'réanime '+cible.tokName);
+    setState(cible, 'mort', false, evt);
+    setTokenAttr(cible, 'cadavreAnime', true, evt, 'se relève');
+    addEvent(evt);
   }
 
   function apiCommand(msg) {
