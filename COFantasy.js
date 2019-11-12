@@ -79,6 +79,11 @@ var COFantasy = COFantasy || function() {
           val: false,
           type: 'bool'
         },
+        elixirs_sorts: {
+          explications: "Toutes fabrications d'élixir sont considérées comme des sorts (qui peuvent coûter de la mana)",
+          val: true,
+          type: 'bool'
+        },
       }
     },
     affichage: {
@@ -15612,12 +15617,12 @@ var COFantasy = COFantasy || function() {
       sendChat('COF', "Plus possible d'utiliser cette action. Réafficher les consommables.");
       return;
     }
-      var char1 = getObj('character', perso1.charId);
-      if (char1 === undefined) {
-        error("Token sans personnage", perso1);
-        return;
-      }
-      perso1.name = char1.get('name');
+    var char1 = getObj('character', perso1.charId);
+    if (char1 === undefined) {
+      error("Token sans personnage", perso1);
+      return;
+    }
+    perso1.name = char1.get('name');
     perso1.tokName = perso1.token.get('name');
     var perso2;
     if (echange) {
@@ -15634,7 +15639,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       perso2.name = char2.get('name');
-    perso2.tokName = perso2.token.get('name');
+      perso2.tokName = perso2.token.get('name');
     }
     // Vérifie les droits d'utiliser le consommable
     if (msg.selected && msg.selected.length == 1) {
@@ -15926,59 +15931,72 @@ var COFantasy = COFantasy || function() {
   function listeElixirs(rang) {
     var liste = [{
       nom: 'fortifiant',
-      action: "!cof-fortifiant $rang"
+      action: "!cof-fortifiant $rang",
+      rang: 1
     }];
     if (rang < 2) return liste;
     liste.push({
       nom: 'feu_grégeois',
-      action: "!cof-dmg $rangd6 --feu --psave DEX [[10+@{selected|INT}]] --disque @{target|token_id} 3 10 --lanceur @{selected|token_id} --targetFx burst-fire"
+      action: "!cof-dmg $rangd6 --feu --psave DEX [[10+@{selected|INT}]] --disque @{target|token_id} 3 10 --lanceur @{selected|token_id} --targetFx burst-fire",
+      rang: 2
     });
     if (rang < 3) return liste;
     liste.push({
       nom: 'élixir_de_guérison',
-      action: "!cof-soin 3d6+$INT"
+      action: "!cof-soin 3d6+$INT",
+      rang: 3
     });
     if (rang < 4) return liste;
     liste.push({
       nom: "potion_d_agrandissement",
-      action: "!cof-effet-temp agrandissement [[5+$INT]]"
+      action: "!cof-effet-temp agrandissement [[5+$INT]]",
+      rang: 4
     });
     liste.push({
       nom: "potion_de_forme_gazeuse",
-      action: "!cof-effet-temp formeGazeuse [[1d4+$INT]]"
+      action: "!cof-effet-temp formeGazeuse [[1d4+$INT]]",
+      rang: 4
     });
     liste.push({
       nom: "potion_de_protection_contre_les_éléments",
-      action: "!cof-effet-temp protectionContreLesElements [[5+$INT]] --valeur $rang"
+      action: "!cof-effet-temp protectionContreLesElements [[5+$INT]] --valeur $rang",
+      rang: 4
     });
     liste.push({
       nom: "potion_d_armure_de_mage",
-      action: "!cof-effet-combat armureDuMage"
+      action: "!cof-effet-combat armureDuMage",
+      rang: 4
     });
     liste.push({
       nom: "potion_de_chute_ralentie",
-      action: "est léger comme une plume."
+      action: "est léger comme une plume.",
+      rang: 4
     });
     if (rang < 5) return liste;
     liste.push({
       nom: "potion_d_invisibilité",
-      action: "!cof-set-state invisible true --message se rend invisible ([[1d6+$INT]] minutes)"
+      action: "!cof-set-state invisible true --message se rend invisible ([[1d6+$INT]] minutes)",
+      rang: 5
     });
     liste.push({
       nom: "potion_de_vol",
-      action: "se met à voler"
+      action: "se met à voler",
+      rang: 5
     });
     liste.push({
       nom: "potion_de_respiration_aquatique",
-      action: "peut respirer sous l'eau"
+      action: "peut respirer sous l'eau",
+      rang: 5
     });
     liste.push({
       nom: "potion_de_flou",
-      action: "!cof-effet-temp flou [[1d4+$INT]]"
+      action: "!cof-effet-temp flou [[1d4+$INT]]",
+      rang: 5
     });
     liste.push({
       nom: "potion_de_hâte",
-      action: "!cof-effet-temp hate [[1d6+$INT]]"
+      action: "!cof-effet-temp hate [[1d6+$INT]]",
+      rang: 5
     });
     return liste;
   }
@@ -16018,6 +16036,29 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Création d'élixir"
     };
+    if (stateCOF.options.regles.val.elixirs_sorts.val) {
+      if (stateCOF.options.regles.val.mana_totale.val) {
+        switch (elixir.rang) {
+          case 1:
+            options.mana = 1;
+            break;
+          case 2:
+            options.mana = 3;
+            break;
+          case 3:
+            options.mana = 6;
+            break;
+          case 4:
+            options.mana = 10;
+            break;
+          case 5:
+            options.mana = 15;
+            break;
+        }
+      } else if (elixir.rang > 2) {
+        options.mana = elixir.rang - 2;
+      }
+    }
     if (limiteRessources(forgesort, options, 'elixirsACreer', 'élixirs à créer', evt)) return;
     var attrName = 'elixir_' + elixir.nom;
     var message = "crée un " + elixir.nom.replace(/_/g, ' ');

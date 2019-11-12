@@ -2,6 +2,7 @@
 
 ## 1.11
 ### Capacités
+* Ajout d'une option pour que les créations d'élixirs soient considérées comme des sorts (avec éventuellement un coût en mana)
 * Animer un cadavre, rang 2 de la voie de la magie maléfique.
 * Agripper, rang 2 de la voie des créature volantes
 * Destruction des mort-vivants peut maintenant utiliser les options de tempête de mana
