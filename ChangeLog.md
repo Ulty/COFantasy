@@ -18,6 +18,7 @@
 * !cof-effet-temp met bien l'état associé quand on utilise paralyseTemp ou etourdiTemp
 
 ### Autres améliorations
+* ajout d'explications aux jets de caractéristiques
 * ajout d'une option --secret à !cof-attack
 
 ## 1.10
