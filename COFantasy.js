@@ -1551,6 +1551,7 @@ var COFantasy = COFantasy || function() {
     var attr = charAttribute(personnage.charId, name, {
       caseInsensitive: true
     });
+    if (attr === undefined) return def;
     return attrAsInt(attr, def);
   }
 
@@ -4112,17 +4113,21 @@ var COFantasy = COFantasy || function() {
     var tokenName = target.tokName;
     var explications = target.messages;
     var defense = 10;
-    if (target.defautCuirasse === undefined) {
-      defense += ficheAttributeAsInt(target, 'DEFARMURE', 0) * ficheAttributeAsInt(target, 'DEFARMUREON', 1);
-      defense += ficheAttributeAsInt(target, 'DEFBOUCLIER', 0) * ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1);
-      if (attributeAsBool(target, 'armureDuMage')) {
-        var bonusArmureDuMage = getValeurOfEffet(target, 'armureDuMage', 4);
-        if (defense > 12) defense += bonusArmureDuMage / 2; // On a déjà une armure physique, ça ne se cumule pas.
-        else defense += bonusArmureDuMage;
-      }
-      defense += ficheAttributeAsInt(target, 'DEFDIV', 0);
-    } // Dans le cas contraire, on n'utilise pas ces bonus
-    defense += modCarac(target, 'DEXTERITE');
+    if (getAttrByName(target.charId, 'type_personnage') == 'PNJ') {
+      defense = ficheAttributeAsInt(target, 'pnj_def', 10);
+    } else {
+      if (target.defautCuirasse === undefined) {
+        defense += ficheAttributeAsInt(target, 'DEFARMURE', 0) * ficheAttributeAsInt(target, 'DEFARMUREON', 1);
+        defense += ficheAttributeAsInt(target, 'DEFBOUCLIER', 0) * ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1);
+        if (attributeAsBool(target, 'armureDuMage')) {
+          var bonusArmureDuMage = getValeurOfEffet(target, 'armureDuMage', 4);
+          if (defense > 12) defense += bonusArmureDuMage / 2; // On a déjà une armure physique, ça ne se cumule pas.
+          else defense += bonusArmureDuMage;
+        }
+        defense += ficheAttributeAsInt(target, 'DEFDIV', 0);
+      } // Dans le cas contraire, on n'utilise pas ces bonus
+      defense += modCarac(target, 'DEXTERITE');
+    }
     var formeDarbre;
     if (attributeAsBool(target, 'formeDArbre')) {
       formeDarbre = true;
@@ -5811,7 +5816,7 @@ var COFantasy = COFantasy || function() {
       var d20roll = rollsAttack.inlinerolls[attRollNumber].results.total;
       var attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
 
-      evt.type = "Attaque";
+      evt.type = 'Attaque';
       evt.succes = true;
       evt.action.player_id = playerId;
       evt.action.attaquant = attaquant;
@@ -7877,8 +7882,10 @@ var COFantasy = COFantasy || function() {
             dmSuivis[dmType2] = Math.ceil(dmSuivis[dmType2] / 2);
           }
         }
-        if (dmgTotal < stateCOF.options.regles.val.dm_minimum.val)
+        if (dmgTotal < stateCOF.options.regles.val.dm_minimum.val) {
           dmgTotal = stateCOF.options.regles.val.dm_minimum.val;
+          dmgDisplay += "-> " + stateCOF.options.regles.val.dm_minimum.val;
+        }
         if (options.divise) {
           dmgTotal = Math.ceil(dmgTotal / options.divise);
           for (var dmType3 in dmSuivis) {
@@ -12849,7 +12856,7 @@ var COFantasy = COFantasy || function() {
     var name2 = char2.get('name');
     var explications = [];
     evt = evt || {
-      type: 'attaque magique'
+      type: 'Attaque magique'
     };
     if (options.portee !== undefined) {
       var distance = distanceCombat(token1, token2, pageId);
@@ -13163,7 +13170,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var evt = {
-      type: 'attaque magique',
+      type: 'Attaque magique',
     };
     if (limiteRessources(attaquant, options, 'attaque magique', "l'attaque magique", evt)) return;
     var attaquantChar = getObj('character', attaquant.charId);
@@ -14000,31 +14007,77 @@ var COFantasy = COFantasy || function() {
           return;
         }
         var lastAct = lastEvent();
-        if (lastAct === undefined || lastAct.type != 'attaque') {
+        if (lastAct === undefined || lastAct.type === undefined || !lastAct.type.startsWith('Attaque')) {
           sendChar(charId, "s'y prend trop tard pour ignorer la douleur : la dernière action n'était pas une attaque");
           return;
         }
-        if (lastAct.affectes === undefined) {
-          sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque n'ait affecté personne");
-          return;
-        }
-        var affecte = lastAct.affectes[token.id];
-        if (affecte === undefined || affecte.prev === undefined) {
-          sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne l'ait pas affecté");
-          return;
-        }
-        var lastBar1 = affecte.prev.bar1_value;
-        var bar1 = parseInt(token.get('bar1_value'));
-        if (isNaN(lastBar1) || isNaN(bar1) || lastBar1 <= bar1) {
-          sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ait pas enlevé de PV");
-          return;
-        }
+        var aIgnore;
         var evt = {
           type: 'ignorer la douleur'
         };
-        updateCurrentBar(token, 1, lastBar1, evt);
-        setTokenAttr(chevalier, 'ignorerLaDouleur', lastBar1 - bar1, evt);
-        sendChar(charId, " ignore la douleur de la dernière attaque");
+        var PVid = token.get('bar1_link');
+        if (PVid === '') {//token non lié, effets seulement sur le token.
+          if (lastAct.affecte) {
+            var affecte = lastAct.affectes[token.id];
+            if (affecte && affecte.prev) {
+              var lastBar1 = affecte.prev.bar1_value;
+              var bar1 = parseInt(token.get('bar1_value'));
+              if (isNaN(lastBar1) || isNaN(bar1) || lastBar1 <= bar1) {
+                //On regarde la barre 2, peut-être qu'il s'agit de DM temporaires
+              var lastBar2 = affecte.prev.bar2_value;
+              var bar2 = parseInt(token.get('bar2_value'));
+              if (isNaN(lastBar2) || isNaN(bar2) || bar2 <= lastBar2) {
+                sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ait pas enlevé de PV");
+                return;
+              }
+              updateCurrentBar(token, 2, lastBar2, evt);
+              setTokenAttr(chevalier, 'ignorerLaDouleur', bar2 - lastBar2, evt);
+              aIgnore = true;
+              } else {
+              updateCurrentBar(token, 1, lastBar1, evt);
+              setTokenAttr(chevalier, 'ignorerLaDouleur', lastBar1 - bar1, evt);
+              aIgnore = true;
+              }
+            }
+          }
+        } else {// token lié, il faut regarder l'attribut
+          var attrPV = lastAct.attributes.find(function(attr) {
+            return (attr.attribute.id == PVid);
+          });
+          if (attrPV) {
+            var lastPV = attrPV.current;
+            var newPV = attrPV.attribute.get('current');
+              if (isNaN(lastPV) || isNaN(newPV) || lastPV <= newPV) {
+                sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ait pas enlevé de PV");
+                return;
+              }
+              updateCurrentBar(token, 1, lastPV, evt);
+              setTokenAttr(chevalier, 'ignorerLaDouleur', lastPV - newPV, evt);
+              aIgnore = true;
+          } else {//peut-être qu'il s'agit de DM temporaires
+            PVid = token.get('bar2_link');
+            attrPV = lastAct.attributes.find(function(attr) {
+              return (attr.attribute.id == PVid);
+          });
+          if (attrPV) {
+            var lastDmTemp = attrPV.current;
+            var newDmTemp = attrPV.attribute.get('current');
+              if (isNaN(lastDmTemp) || isNaN(newDmTemp) || newDmTemp <= lastDmTemp) {
+                sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ait pas augmenté les DM temporaires");
+                return;
+              }
+              updateCurrentBar(token, 2, lastDmTemp, evt);
+              setTokenAttr(chevalier, 'ignorerLaDouleur', newDmTemp - lastDmTemp, evt);
+              aIgnore = true;
+          }
+          }
+        }
+        if (aIgnore) {
+          sendChar(charId, " ignore la douleur de la dernière attaque");
+          addEvent(evt);
+        } else {
+          sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne l'ait pas affecté");
+        }
       });
     });
   }
@@ -16383,7 +16436,7 @@ var COFantasy = COFantasy || function() {
             sendChar(perso.charId, "pas de dernière action sur laquelle utiliser la rune de protection");
             return;
           }
-          if (lastAct.affectes === undefined || lastAct.type != 'Attaque') {
+          if (lastAct.affectes === undefined || lastAct.type === undefined || !lastAct.types.startsWith('Attaque')) {
             sendChar(perso.charId, "la dernière action n'est pas une attaque, on ne peut utiliser la rune de protection");
             return;
           }
