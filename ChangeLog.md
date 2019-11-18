@@ -11,7 +11,8 @@
 * Ajout de l'aspect du démon
 
 ### Corrections de bugs
-* Correction d'nu bug de !cof-ignorer-la-douleur
+* Correction d'un bug de !cof-degainer causant un crash.
+* Correction d'un bug de !cof-ignorer-la-douleur : ne reconnaissait plus les attaques
 * Correction de bug (crash) avec les attaques magiques de certaines capacités
 * Changement du nom de macro "Jets GM" en "Jets-GM"
 * Correction d'un bug dans les macros de soin quand la cible a des DMs temporaires sur la barre 2

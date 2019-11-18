@@ -12046,7 +12046,7 @@ var COFantasy = COFantasy || function() {
     } else {
       setTokenAttr(perso, 'armeEnMain', labelArme, evt);
     }
-    if (options.messages) {
+    if (options && options.messages) {
       message += "dégaine " + nouvelleArme.name;
       options.messages.push(message);
     } else sendChar(perso.charId, "dégaine " + nouvelleArme.name);
@@ -14016,7 +14016,7 @@ var COFantasy = COFantasy || function() {
           type: 'ignorer la douleur'
         };
         var PVid = token.get('bar1_link');
-        if (PVid === '') {//token non lié, effets seulement sur le token.
+        if (PVid === '') { //token non lié, effets seulement sur le token.
           if (lastAct.affecte) {
             var affecte = lastAct.affectes[token.id];
             if (affecte && affecte.prev) {
@@ -14024,44 +14024,44 @@ var COFantasy = COFantasy || function() {
               var bar1 = parseInt(token.get('bar1_value'));
               if (isNaN(lastBar1) || isNaN(bar1) || lastBar1 <= bar1) {
                 //On regarde la barre 2, peut-être qu'il s'agit de DM temporaires
-              var lastBar2 = affecte.prev.bar2_value;
-              var bar2 = parseInt(token.get('bar2_value'));
-              if (isNaN(lastBar2) || isNaN(bar2) || bar2 <= lastBar2) {
-                sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ait pas enlevé de PV");
-                return;
-              }
-              updateCurrentBar(token, 2, lastBar2, evt);
-              setTokenAttr(chevalier, 'ignorerLaDouleur', bar2 - lastBar2, evt);
-              aIgnore = true;
+                var lastBar2 = affecte.prev.bar2_value;
+                var bar2 = parseInt(token.get('bar2_value'));
+                if (isNaN(lastBar2) || isNaN(bar2) || bar2 <= lastBar2) {
+                  sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ait pas enlevé de PV");
+                  return;
+                }
+                updateCurrentBar(token, 2, lastBar2, evt);
+                setTokenAttr(chevalier, 'ignorerLaDouleur', bar2 - lastBar2, evt);
+                aIgnore = true;
               } else {
-              updateCurrentBar(token, 1, lastBar1, evt);
-              setTokenAttr(chevalier, 'ignorerLaDouleur', lastBar1 - bar1, evt);
-              aIgnore = true;
+                updateCurrentBar(token, 1, lastBar1, evt);
+                setTokenAttr(chevalier, 'ignorerLaDouleur', lastBar1 - bar1, evt);
+                aIgnore = true;
               }
             }
           }
-        } else {// token lié, il faut regarder l'attribut
+        } else { // token lié, il faut regarder l'attribut
           var attrPV = lastAct.attributes.find(function(attr) {
             return (attr.attribute.id == PVid);
           });
           if (attrPV) {
             var lastPV = attrPV.current;
             var newPV = attrPV.attribute.get('current');
-              if (isNaN(lastPV) || isNaN(newPV) || lastPV <= newPV) {
-                sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ait pas enlevé de PV");
-                return;
-              }
-              updateCurrentBar(token, 1, lastPV, evt);
-              setTokenAttr(chevalier, 'ignorerLaDouleur', lastPV - newPV, evt);
-              aIgnore = true;
-          } else {//peut-être qu'il s'agit de DM temporaires
+            if (isNaN(lastPV) || isNaN(newPV) || lastPV <= newPV) {
+              sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ait pas enlevé de PV");
+              return;
+            }
+            updateCurrentBar(token, 1, lastPV, evt);
+            setTokenAttr(chevalier, 'ignorerLaDouleur', lastPV - newPV, evt);
+            aIgnore = true;
+          } else { //peut-être qu'il s'agit de DM temporaires
             PVid = token.get('bar2_link');
             attrPV = lastAct.attributes.find(function(attr) {
               return (attr.attribute.id == PVid);
-          });
-          if (attrPV) {
-            var lastDmTemp = attrPV.current;
-            var newDmTemp = attrPV.attribute.get('current');
+            });
+            if (attrPV) {
+              var lastDmTemp = attrPV.current;
+              var newDmTemp = attrPV.attribute.get('current');
               if (isNaN(lastDmTemp) || isNaN(newDmTemp) || newDmTemp <= lastDmTemp) {
                 sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ait pas augmenté les DM temporaires");
                 return;
@@ -14069,7 +14069,7 @@ var COFantasy = COFantasy || function() {
               updateCurrentBar(token, 2, lastDmTemp, evt);
               setTokenAttr(chevalier, 'ignorerLaDouleur', newDmTemp - lastDmTemp, evt);
               aIgnore = true;
-          }
+            }
           }
         }
         if (aIgnore) {
