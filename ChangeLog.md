@@ -11,6 +11,7 @@
 * Ajout de l'aspect du démon
 
 ### Corrections de bugs
+* Correction d'un bug qui faisait planter l'API quand il n'y avait pas de coût en mana pour certains sorts (comme destruction des morts vivants)
 * Correction d'un bug de !cof-degainer causant un crash.
 * Correction d'un bug de !cof-ignorer-la-douleur : ne reconnaissait plus les attaques
 * Correction de bug (crash) avec les attaques magiques de certaines capacités

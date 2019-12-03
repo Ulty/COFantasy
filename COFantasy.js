@@ -3332,7 +3332,7 @@ var COFantasy = COFantasy || function() {
 
   // Fait dépenser de la mana, et si pas possible, retourne false
   function depenseMana(personnage, cout, msg, evt) {
-    if (cout === 0) return true;
+    if (isNaN(cout) || cout === 0) return true;
     var token = personnage.token;
     var charId = personnage.charId;
     var manaAttr = findObjs({
