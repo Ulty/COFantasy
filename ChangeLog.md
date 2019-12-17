@@ -2,10 +2,13 @@
 
 ## 2.0
 ### Capacités
+* La capacité tir fatal peut maintenant être appliquée à d'autres catégories d'armes que l'arc.
 * L'option --argent devient --armeDArgent. Cela permet d'utiliser --argent pour les armes en argent ordinaires.
 
 ### Autres améliorations
 * La fiche peut désormais changer d'affichage si le script est utilisé dans la partie.
+* Ajout d'une liste d'actions par défaut (si #Actions# n'est pas définie), et qui consiste en toutes les abilities du personnage.
+* Possibilité de commenter une ligne de #Actions#, en la faisant commencer par //.
 * Nouveau type de dégât, --argent.
 
 ## 1.11
