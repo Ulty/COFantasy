@@ -105,6 +105,11 @@ var COFantasy = COFantasy || function() {
           val: true,
           type: 'bool'
         },
+        fiche: {
+          explications: "La fiche interagit avec le script",
+          val: true,
+          type: 'bool'
+        },
       }
     },
     images: {
@@ -2614,8 +2619,9 @@ var COFantasy = COFantasy || function() {
           scope[cmd[0]] = true;
           return;
         case 'arc':
+        case 'arbalete':
         case "affute":
-        case "argent":
+        case "armeDArgent":
         case "artificiel":
         case "asDeLaGachette":
         case "attaqueMentale":
@@ -2832,6 +2838,7 @@ var COFantasy = COFantasy || function() {
         case "sonique":
         case "poison":
         case "maladie":
+        case "argent":
           var l = 0;
           if (scope.additionalDmg) l = scope.additionalDmg.length;
           if (l > 0) {
@@ -4066,6 +4073,12 @@ var COFantasy = COFantasy || function() {
       p = weaponStats.divers.search(/\barc\b/i);
       if (p >= 0) weaponStats.arc = true;
     }
+    p = weaponStats.name.search(/\barbal(e|è)te\b/i);
+    if (p >= 0) weaponStats.arbalete = true;
+    else if (weaponStats.divers) {
+      p = weaponStats.divers.search(/\barbal(e|è)te\b/i);
+      if (p >= 0) weaponStats.arbalete = true;
+    }
     return weaponStats;
   }
 
@@ -4501,11 +4514,11 @@ var COFantasy = COFantasy || function() {
       explications.push(explEnnemiJure);
       target.ennemiJure = true;
     }
-    if (options.argent) {
+    if (options.armeDArgent) {
       if (estMortVivant(target) || raceIs(target, 'demon') || raceIs(target, 'démon')) {
         attBonus += 2;
         explications.push("Arme en argent => +2 en attaque et +1d6 aux DM");
-        target.argent = true;
+        target.armeDArgent = true;
       }
     }
     var bonusContreBouclier = options.bonusContreBouclier || 0;
@@ -5398,8 +5411,8 @@ var COFantasy = COFantasy || function() {
 
   function ajouteDe6Crit(x, first) {
     var bonusCrit = rollDePlus(6);
-    if (first) x.dmgDisplay = "(" + x.dmgDisplay + ")+";
-    x.dmgDisplay += bonusCrit.roll;
+    if (first) x.dmgDisplay = "(" + x.dmgDisplay + ")";
+    x.dmgDisplay += '+' + bonusCrit.roll;
     x.dmgTotal += bonusCrit.val;
   }
 
@@ -5548,8 +5561,11 @@ var COFantasy = COFantasy || function() {
     if (options.affute) crit -= 1;
     if (options.contact && charAttributeAsBool(attaquant, 'frappeChirurgicale'))
       crit -= modCarac(attaquant, 'INTELLIGENCE');
-    if (options.arc || weaponStats.arc) {
-      if (charAttributeAsBool(attaquant, 'tirFatal')) {
+    var attrTirFatal = charAttribute(attaquant.charId, 'tirFatal');
+    if (attrTirFatal.length > 0) {
+      var armeTirFatal = attrTirFatal[0].get('current');
+      if (armeTirFatal == 'true') armeTirFatal = 'arc';
+      if (options[armeTirFatal] || weaponStats[armeTirFatal]) {
         crit -= modCarac(attaquant, 'SAGESSE');
         options.tirFatal = 1;
         if (charAttributeAsInt(attaquant, 'voieDeLArcEtDuCheval', 3) > 4)
@@ -6603,7 +6619,7 @@ var COFantasy = COFantasy || function() {
           value: '2' + options.d6
         });
       }
-      if (target.argent) {
+      if (target.armeDArgent) {
         target.additionalDmg.push({
           type: mainDmgType,
           value: '1d6'
@@ -8137,6 +8153,9 @@ var COFantasy = COFantasy || function() {
         break;
       case 'poison':
         InlineColorOverride = ' background-color: #558000; color: #DDAFFF;';
+        break;
+      case 'argent':
+        InlineColorOverride = ' background-color: #F1E6DA; color: #C0C0C0;';
         break;
       default:
         if (critCheck && failCheck) {
@@ -11663,6 +11682,7 @@ var COFantasy = COFantasy || function() {
           case "sonique":
           case "poison":
           case "maladie":
+          case "argent":
             if (options.additionalDmg) {
               var l = options.additionalDmg.length;
               if (l > 0) {
@@ -20282,6 +20302,34 @@ var COFantasy = COFantasy || function() {
     nextTurn(cmp);
   }
 
+  //when set is true, sets the version, when false, remove it 
+  function scriptVersionToCharacter(character, set) {
+    var charId = character.id;
+    var attrs = findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+      name: 'scriptVersion',
+    });
+    if (attrs.length === 0) {
+      if (set) {
+        createObj('attribute', {
+          characterid: charId,
+          name: 'scriptVersion',
+          current: true,
+          max: COFantasy.version
+        });
+      }
+    } else {
+      if (set) {
+        attrs[0].set('current', true);
+        attrs[0].set('max', COFantasy.version);
+      } else {
+        attrs[0].set('current', false);
+      }
+
+    }
+  }
+
   //evt a un champ attributes et un champ deletedAttributes
   function nextTurnOfActive(active, attrs, evt, pageId) {
     if (active.id == "-1" && active.custom == "Tour") {
@@ -20783,6 +20831,7 @@ var COFantasy = COFantasy || function() {
     changeHandout: changeHandout,
     addToken: addToken,
     setStateCOF: setStateCOF,
+    scriptVersionToCharacter: scriptVersionToCharacter,
   };
 
 }();
@@ -20796,7 +20845,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = "1.11";
+  var script_version = "2.0";
   COF_loaded = true;
   on('add:token', COFantasy.addToken);
   state.COFantasy = state.COFantasy || {
@@ -20813,13 +20862,18 @@ on("ready", function() {
   var handout = findObjs({
     _type: 'handout'
   });
+  var strReg;
+  var regName;
+  var regText;
+  var attrs;
+  var macros;
   if (state.COFantasy.version < 1.0) {
     log("Mise à jour des attributs et macros vers la version 1.0");
     //Mise à jour des effets temporaires avec _
-    var strReg = "(rayon_affaiblissant|peau_d_ecorce|chant_des_heros|image_decalee|a_couvert|sous_tension|forgeron_|armeEnflammee)";
-    var regName = new RegExp("^" + strReg);
-    var regText = new RegExp(strReg);
-    var attrs = findObjs({
+    strReg = "(rayon_affaiblissant|peau_d_ecorce|chant_des_heros|image_decalee|a_couvert|sous_tension|forgeron_|armeEnflammee)";
+    regName = new RegExp("^" + strReg);
+    regText = new RegExp(strReg);
+    attrs = findObjs({
       _type: 'attribute',
     });
     attrs.forEach(function(attr) {
@@ -20849,7 +20903,7 @@ on("ready", function() {
         attr.set('max', attrMax);
       }
     });
-    var macros = findObjs({
+    macros = findObjs({
       _type: 'macro'
     }).concat(findObjs({
       _type: 'ability'
@@ -20870,7 +20924,71 @@ on("ready", function() {
     });
     log("Mise à jour effectuée.");
   }
+  if (state.COFantasy.version < 2.0) {
+    log("Mise à jour des attributs et macros vers la version 2.0");
+    strReg = "(--argent)";
+    regName = new RegExp("^" + strReg);
+    regText = new RegExp(strReg);
+    attrs = findObjs({
+      _type: 'attribute',
+    });
+    attrs.forEach(function(attr) {
+      var attrName = attr.get('name');
+      if (regName.test(attrName)) {
+        attrName = attrName.replace(/--argent/, '--armeDArgent');
+        attr.set('name', attrName);
+      }
+      //Pour les consommables, il faut aussi changer le champ max;
+      var attrMax = attr.get('max');
+      if (regText.test(attrMax)) {
+        attrMax = attrMax.replace(/--argent/g, '--armeDArgent');
+        attr.set('max', attrMax);
+      }
+    });
+    macros = findObjs({
+      _type: 'macro'
+    }).concat(findObjs({
+      _type: 'ability'
+    }));
+    macros.forEach(function(m) {
+      var action = m.get('action');
+      if (regText.test(action)) {
+        action = action.replace(/--argent/g, '--armeDArgent');
+        m.set('action', action);
+      }
+    });
+    //On met un attribut scriptVersion dans toutes les fiches
+    findObjs({
+      _type: 'character'
+    }).forEach(function(c) {
+      createObj('attribute', {
+        characterid: c.id,
+        name: 'scriptVersion',
+        current: true,
+        max: script_version
+      });
+      state.COFantasy.scriptSheets = true;
+    });
+    log("Mise à jour effectuée.");
+  }
   state.COFantasy.version = script_version;
+  if (state.COFantasy.options.affichage.val.fiche.val) {
+    if (!state.COFantasy.scriptSheets) {
+      findObjs({
+        _type: 'character'
+      }).forEach(function(c) {
+        COFantasy.scriptVersionToCharacter(c, true);
+      });
+    }
+  } else {
+    if (state.COFamtasy.scriptSheets) {
+      findObjs({
+        _type: 'character'
+      }).forEach(function(c) {
+        COFantasy.scriptVersionToCharacter(c, false);
+      });
+    }
+  }
   handout.forEach(function(hand) {
     COFantasy.changeHandout(hand);
   });

@@ -1,5 +1,13 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 
+## 2.0
+### Capacités
+* L'option --argent devient --armeDArgent. Cela permet d'utiliser --argent pour les armes en argent ordinaires.
+
+### Autres améliorations
+* La fiche peut désormais changer d'affichage si le script est utilisé dans la partie.
+* Nouveau type de dégât, --argent.
+
 ## 1.11
 ### Capacités
 * Ajout d'une option pour que les créations d'élixirs soient considérées comme des sorts (avec éventuellement un coût en mana)

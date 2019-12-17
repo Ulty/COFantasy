@@ -292,7 +292,7 @@
                   <li><code>--sournoise <i>n</i></code> : ajoute <i>n</i>d6 de dégâts d'attaque sournoise ou par surprise.</li>
                   <li><code>--test</code> pour voir le résultat du jet d'attaque. On n'applique pas les résultats d'un touché.</li>
                   <li><code>--magique</code> : les dégâts sont magiques. On peut passer en argument le niveau de magie. Il est utilisé contre les créatures immunisées aux armes. Le niveau par défaut est 1.</li>
-                  <li><code>--feu</code>, <code>--acide</code>, <code>--electrique</code>, <code>--froid</code>, <code>--sonique</code>, --<code>poison</code>, --<code>maladie</code> : les dégâts sont de type feu, acide, électrique, froid ou sonique. Le type spécifie uniquement le dernier <code>--plus</code> précédent cette option, ou si il n'y en a pas, celui des dégâts principaux. Seul le dernier type spécifié est pris en compte (pas de type multiple pour l'instant). Le type affecte différents attributs, et aussi la couleur d'affichage des dégâts.</li>
+                  <li><code>--feu</code>, <code>--acide</code>, <code>--electrique</code>, <code>--froid</code>, <code>--sonique</code>, --<code>poison</code>, --<code>maladie</code>, <code>--argent</code>&nbsp;: les dégâts sont de type feu, acide, électrique, froid ou sonique. Le type spécifie uniquement le dernier <code>--plus</code> précédent cette option, ou si il n'y en a pas, celui des dégâts principaux. Seul le dernier type spécifié est pris en compte (pas de type multiple pour l'instant). Le type affecte différents attributs, et aussi la couleur d'affichage des dégâts.</li>
                   <li><code>--tranchant</code>, <code>--percant</code>, <code>--contondant</code> : précise le type d'arme (si pertinent), pour pouvoir utiliser les RD spécifiques à un type d'arme.</li>
                   <li><code>--ignoreRD</code> : l'attaque ignore les RD et division de DMs.</li>
                   <li><code>--ignoreMoitieRD</code> : l'attaque ignore la moitié de la RD.</li>
@@ -322,7 +322,7 @@
                   <li><code>--enflamme</code> : enflamme la cible, lui infligeant 1d6 DM par tour. Les flammes s'éteindent sur un 1 ou 2. Si l'option <code>--puissant</code> est donnée en conjonction, les DM augmentent de 1.</li>
                   <li><code>--malediction</code> : maudit la cible pour 3 jets.</li>
                   <li><code>--asDeLaGachette</code> : ajoute 1d6 DM si le jet d'attaque dépasse une DEF de 25.</li>
-                  <li><code>--argent</code> : bonus de +2 en attaque et 1d6 aux DM si la cible est un mort-vivant ou un démon (utilise le champ <code>Race</code> de la fiche ou si présent un attribut <code>mort-vivant</code>).</li>
+                  <li><code>--armeDArgent</code> : bonus de +2 en attaque et 1d6 aux DM si la cible est un mort-vivant ou un démon (utilise le champ <code>Race</code> de la fiche ou si présent un attribut <code>mort-vivant</code>).</li>
                   <li><code>--pietine</code> : si l'attaquant est de taille au moins égale à celle de la cible (ou si la taille de l'un des deux n'est pas connue), fait un test opposé de FOR. En cas d'échec de la cible, elle est renversée et les DM sont doublés.</li>
                   <li><code>--feinte</code> : L'attaque ne fait pas de dégât, mais un bonus de +5 en attaque est donné sur les attaques du tour suivant sur cette cible (par celui qui a fait la feinte), et +2d6 DM si l'attaque fictive était un succès.</li>
                   <li><code>--enveloppe <i>difficulte type expr</i></code> : si l'attaque touche, elle a une chance d'envelopper la cible. Dans ce cas, un bouton apparaît qui lance un test en opposition. Si celui-ci est remporté par l'attaquant, <i>difficulte</i> est la difficulté du test pour se sortir de l'enveloppement, <i>type</i> est soit <code>label</code>, et dans ce cas, <i>expr</i> doit être le label d'une attaque de l'attaquant, soit <code>ability</code>, et dans ce cas, <i>expr</i> est le nom d'une ability de l'attaquant. Cette attaque ou ability est appelée pour les dégâts périodiques. Si les deux derniers arguments sont ommis, le script prend <code>label</code> et le label de l'attaque courante, et si le premier argument est ommis, la difficulté est de 15.</li>
@@ -1111,7 +1111,7 @@
                     <strong>Arme d'argent</strong> :
                     <ul>
                       <li><code>!cof-effet-combat armeDArgent</code> pour lancer le sort.</li>
-                      <li>Pour attaquer avec l'arme d'argent, faire l'attaque avec les DM appropriés, puis l'utiliser avec les options <code>--si etat armeDArgent --argent --magique</code>.</li>
+                      <li>Pour attaquer avec l'arme d'argent, faire l'attaque avec les DM appropriés, puis l'utiliser avec les options <code>--si etat armeDArgent --armeDArgent --magique</code>.</li>
                       <li>Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Oui,--tempeteDeMana|Non,&amp;#32;}</code> au lancement du sort.</li>
                     </ul>
                   </li>
@@ -1225,7 +1225,7 @@
                 <ol>
                   <li><strong>Monture loyale</strong> : ajouter un attribut <code>montureLoyale</code>, de valeur <code>true</code>. Pour la monture, il faut faire un personnage avec un attribut <code>monture</code> à <code>true</code>. Pour monter de la monture, utiliser <code>!cof-en-selle @{selected|token_id} nom_de_la_monture</code>, et pour en descendre, il suffit de bouger le token du samouraï.</li>
                   <li><strong>Tir en mouvement</strong> : pas de support particulier.</li>
-                  <li><strong>Tir fatal</strong> : ajouter un attribut <code>tirFatal</code>, de valeur <code>true</code>. Pour tenir compte du bonus supplémentaire avec le rang dans la voie, remplir un attribut <code>voieDeLArcEtDuCheval</code> contenant le rang atteint dans cette voie.</li>
+                  <li><strong>Tir fatal</strong> : ajouter un attribut <code>tirFatal</code>, de valeur <code>true</code>. Pour tenir compte du bonus supplémentaire avec le rang dans la voie, remplir un attribut <code>voieDeLArcEtDuCheval</code> contenant le rang atteint dans cette voie. Si vous souhaitez que cette capacité s'applique à une autre classe d'arme que les arcs, vous pouvez spécifier ce nom à la place de <code>true</code> dans la valeur courante de l'attribut <code>tirfatal</code> (attention, sans accent).</li>
                 </ol>
                 <h4 class="text-secondary">Voie du dirigeant</h4>
                 <ol>
