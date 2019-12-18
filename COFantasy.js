@@ -7994,6 +7994,21 @@ var COFantasy = COFantasy || function() {
           }
           pvPerdus = dmgTotal;
           bar1 = bar1 - dmgTotal;
+          if (crit) { //Vulnérabilité aux critiues
+            var vulnerableCritique = charAttributeAsInt(target, 'vulnerableCritique', 0);
+            if (vulnerableCritique > 0) {
+              if (randomInteger(100) <= vulnerableCritique) {
+                expliquer("Le coup critique le fait voler en éclats");
+                if (bar1 > 0) {
+                  dmgTotal += bar1;
+                  pvPerdus += bar1;
+                  bar1 = 0;
+                }
+              } else {
+                expliquer("Le coup critique fait vibrer l'adversaire, mais il résiste.");
+              }
+            }
+          }
           if ((crit || bar1 < pvmax / 2) &&
             charAttributeAsBool(target, 'peutEnrager') &&
             !attributeAsBool(target, 'enragé')) {

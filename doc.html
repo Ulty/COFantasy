@@ -1422,7 +1422,8 @@
                 </ol>
                 <h4 class="text-secondary">Voie de la meute</h4>
                 <ol>
-                  <li><strong>Intergeanchables</strong> : Utiliser un attribut <code>interchangeable</code>, avec comme valeur le nombre d'opposants à partir duquel les cibles peuvent être interverties</li>
+                  <li><strong>Intergeanchables</strong> : Utiliser un attribut <code>interchangeable</code>, avec comme valeur le nombre d'opposants à partir duquel les cibles peuvent être interverties.</li>
+                  <li><strong>Attaque en traître</strong> : Au MJ de décider si une attaque est en traître ou pas. Pour une attaque en traître, rajouter les arguments <code>--sournoise 2 --bonusAttaque 5</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du PNJ récurrent</h4>
                 <ol>
@@ -1463,6 +1464,7 @@
                   <li><strong>Protection contre les souffles</strong> et dégâts de zone : ajouter un attribut <code>protectionDMZone</code>, de valeur <code>true</code>. Pour une protection contre un seul élément (feu, froid, etc), ajouter <code>_</code> et le nom de l'élément. Par exemple, contre le feu, on aura un attribut <code>protectionDMZone_feu</code>.</li>
                   <li><strong>Putréfaction</strong> : ajouter à l'attaque <code>--effet putrefaction 5 --save CON 14</code> (pour les données des momies)</li>
                   <li><strong>Sans esprit</strong> : ajouter un attribut <code>sansEsprit</code> (=true) permet la réussite automatique des jets de résistance basés sur INT, SAG ou CHA.</li>
+                  <li><strong>Vulnérabilité aux coups critiques</strong> : si la créature possède un attribut <code>vulnerableCritique</code>, le script interprète la valeur de cet attribut comme les chances (sur 100) qu'un coup critique tue directment la créature. Par exemple, la valeur sera de 25 pour un esprit du givre.</li>
                 </ul>
               </div>
             </div>

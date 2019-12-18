@@ -2,6 +2,7 @@
 
 ## 2.0
 ### Capacités
+* Ajout de la vulnérabilité aux critiques (pour les seigneurs de l'hiver)
 * La capacité tir fatal peut maintenant être appliquée à d'autres catégories d'armes que l'arc.
 * L'option --argent devient --armeDArgent. Cela permet d'utiliser --argent pour les armes en argent ordinaires.
 
