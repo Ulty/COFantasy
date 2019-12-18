@@ -8362,6 +8362,13 @@ var COFantasy = COFantasy || function() {
           getState(perso, 'assome') || getState(perso, 'endormi') ||
           attributeAsBool(perso, 'intangible')))
         return;
+      //On regarde si le token est une monture d'un des personnages
+      var attrMonte = tokenAttribute(perso, 'estMontePar');
+      var estMonture = attrMonte.find(function(a) {
+        var cid = a.get('current');
+        return cid == tok1.id || cid == tok2.id;
+      });
+      if (estMonture) return;
       var pt = tokenCenter(obj);
       var obj_dist = VecMath.length(VecMath.vec(pt1, pt));
       if (obj_dist > distance_pix) return;
@@ -20326,7 +20333,9 @@ var COFantasy = COFantasy || function() {
       _type: 'attribute',
       _characterid: charId,
       name: 'scriptVersion',
-    }, {caseInsensitive:true});
+    }, {
+      caseInsensitive: true
+    });
     if (attrs.length === 0) {
       if (set) {
         createObj('attribute', {

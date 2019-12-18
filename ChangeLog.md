@@ -10,6 +10,7 @@
 * Ajout d'une liste d'actions par défaut (si #Actions# n'est pas définie), et qui consiste en toutes les abilities du personnage.
 * Possibilité de commenter une ligne de #Actions#, en la faisant commencer par //.
 * Nouveau type de dégât, --argent.
+* Les montures de l'attaquant et de sa cible ne sont plus considérées comme des obstacles lors des attaques à distance.
 
 ## 1.11
 ### Capacités
