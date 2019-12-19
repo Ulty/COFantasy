@@ -225,9 +225,11 @@ var COFantasy = COFantasy || function() {
             if (prev === undefined) {
               sendChat('COF', '/w GM Macro ' + ngm.name + ' créée.');
               if (ngm.inBar) inBar.push(ngm.name);
-              mjs.forEach(function(playerId) {
-                ngm.playerid = playerId;
-                createObj('macro', ngm);
+              mjs.forEach(function(playerId, i) {
+                if (i === 0 || ngm.visibleto === '') {
+                  ngm.playerid = playerId;
+                  createObj('macro', ngm);
+                }
               });
             }
           }
@@ -268,9 +270,11 @@ var COFantasy = COFantasy || function() {
             if (prev === undefined) {
               sendChat('COF', '/w GM Macro ' + m.name + ' créée.');
               if (m.inBar) inBar.push(m.name);
-              mjs.forEach(function(playerId) {
-                m.playerid = playerId;
-                createObj('macro', m);
+              mjs.forEach(function(playerId, i) {
+                if (i === 0 || m.visibleto === '') {
+                  m.playerid = playerId;
+                  createObj('macro', m);
+                }
               });
             }
           });
