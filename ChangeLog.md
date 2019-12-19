@@ -7,6 +7,8 @@
 * L'option --argent devient --armeDArgent. Cela permet d'utiliser --argent pour les armes en argent ordinaires.
 
 ### Autres améliorations
+* Mise à jour automatique des macros de jeu (par défaut)
+* Gestion des directions d'escaliers
 * La fiche peut désormais changer d'affichage si le script est utilisé dans la partie.
 * Ajout d'une liste d'actions par défaut (si #Actions# n'est pas définie), et qui consiste en toutes les abilities du personnage.
 * Possibilité de commenter une ligne de #Actions#, en la faisant commencer par //.

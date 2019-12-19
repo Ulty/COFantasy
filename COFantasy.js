@@ -142,6 +142,11 @@ var COFantasy = COFantasy || function() {
           val: "https://s3.amazonaws.com/files.d20.io/images/33213510/5r3NGSso1QBJMJewTEKv0A/thumb.png?1495195634"
         },
       }
+    },
+    macros_à_jour: {
+      explications: "Met automatiquement les macros à jour",
+      type: 'bool',
+      val: true
     }
   };
 
@@ -168,6 +173,114 @@ var COFantasy = COFantasy || function() {
     stateCOF = state.COFantasy;
     if (stateCOF.options === undefined) stateCOF.options = {};
     copyOptions(stateCOF.options, defaultOptions);
+    if (stateCOF.options.macros_à_jour.val) {
+      var macros = findObjs({
+        _type: 'macro'
+      });
+      var players = findObjs({
+        _type: 'player'
+      });
+      var mjs = [];
+      players.forEach(function(p) {
+        if (playerIsGM(p.id)) mjs.push(p.id);
+      });
+      var inBar = [];
+      if (stateCOF.gameMacros) {
+        //Check modified or removed macros
+        stateCOF.gameMacros.forEach(function(gm) {
+          var ngm = gameMacros.find(function(ngm) {
+            return ngm.name == gm.name;
+          });
+          if (ngm) {
+            if (ngm.action == gm.action && ngm.visibleto == gm.visibleto && ngm.istokenaction == gm.istokenaction) return;
+            macros.forEach(function(m) {
+              if (m.get('name') != ngm.name) return;
+              if (ngm.action != gm.action && m.get('action') == gm.action)
+                m.set('action', ngm.action);
+              if (ngm.visibleto != gm.visibleto && m.get('visibleto') == gm.visibleto)
+                m.set('visibleto', ngm.visibleto);
+              if (ngm.istokenaction != gm.istokenaction && m.get('istokenaction') == gm.istokenaction)
+                m.set('istokenaction', ngm.istokenaction);
+              sendChat('COF', '/w GM Macro ' + ngm.name + ' mise à jour.');
+            });
+          } else {
+            macros.forEach(function(m) {
+              if (m.get('name') != gm.name) return;
+              if (m.get('action') != gm.action) return;
+              m.remove();
+              sendChat('COF', '/w GM Macro ' + ngm.name + ' effacée.');
+            });
+          }
+        });
+        //Nouvelles macros
+        gameMacros.forEach(function(ngm) {
+          var gm = stateCOF.gameMacros.find(function(gm) {
+            return ngm.name == gm.name;
+          });
+          if (!gm) {
+            var prev =
+              macros.find(function(macro) {
+                return macro.get('name') == ngm.name;
+              });
+            if (prev === undefined) {
+              sendChat('COF', '/w GM Macro ' + ngm.name + ' créée.');
+              if (ngm.inBar) inBar.push(ngm.name);
+              mjs.forEach(function(playerId) {
+                ngm.playerid = playerId;
+                createObj('macro', ngm);
+              });
+            }
+          }
+        });
+      } else {
+        //Peut-être la première fois, vérifier les macros
+        if (stateCOF.macros) {
+          //ancienne version, et on avait copié les macros
+          //on enlève juste Escalier, et on remplace par Monter et Descendre
+          var mesc = macros.find(function(m) {
+            return m.get('name') == 'Escalier';
+          });
+          if (mesc) {
+            createObj({
+              name: 'Monter',
+              action: "!cof-escalier",
+              visibleto: '',
+              istokenaction: true,
+              inBar: false,
+              _playerid: mesc.playerid
+            });
+            createObj({
+              name: 'Descendre',
+              action: "!cof-escalier bas",
+              visibleto: '',
+              istokenaction: true,
+              inBar: false,
+              _playerid: mesc.playerid
+            });
+            mesc.remove();
+          }
+        } else {
+          gameMacros.forEach(function(m) {
+            var prev =
+              macros.find(function(macro) {
+                return macro.get('name') == m.name;
+              });
+            if (prev === undefined) {
+              sendChat('COF', '/w GM Macro ' + m.name + ' créée.');
+              if (m.inBar) inBar.push(m.name);
+              mjs.forEach(function(playerId) {
+                m.playerid = playerId;
+                createObj('macro', m);
+              });
+            }
+          });
+        }
+      }
+      if (inBar.length > 0) {
+        sendChat('COF', "/w GM Macros à mettre dans la barre d'action du MJ : " + inBar.join(', '));
+      }
+      stateCOF.gameMacros = gameMacros;
+    }
   }
 
   // List of states:
@@ -14879,6 +14992,17 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, "Pas de token dans le layer GM");
         return;
       }
+      var versLeHaut = true;
+      var loop = true;
+      if (msg.content){
+        if (msg.content.includes(' bas')) {
+          versLeHaut = false;
+          loop = false;
+        } else if (msg.content.includes(' haut')) {
+          versLeHaut = true;
+          loop = false;
+        }
+      }
       iterSelected(selected, function(perso) {
         var token = perso.token;
         var posX = token.get('left');
@@ -14899,8 +15023,15 @@ var COFantasy = COFantasy || function() {
               var label = escName.substr(l - 1, 1);
               escName = escName.substr(0, l - 1);
               var i = labelsEscalier.indexOf(label);
-              if (i == etages - 1) escName += labelsEscalier[0];
-              else escName += labelsEscalier[i + 1];
+              if (versLeHaut) {
+                if (i == etages - 1) {
+                  if (loop) escName += labelsEscalier[0];
+                } else escName += labelsEscalier[i + 1];
+              } else {
+                if (i === 0) {
+                  if (loop) escName += labelsEscalier[etages - 1];
+                } else escName += labelsEscalier[i - 1];
+              }
               sortieEscalier = escaliers.find(function(esc2) {
                 if (esc2.get('name') == escName) return true;
                 return false;
@@ -14913,7 +15044,12 @@ var COFantasy = COFantasy || function() {
           token.set('top', sortieEscalier.get('top'));
           return;
         }
-        sendPlayer(msg, token.get('name') + " n'est pas sur un escalier");
+        var err = token.get('name') + " n'est pas sur un escalier";
+        if (!loop) {
+          if (versLeHaut) err += " qui monte";
+          else err += " qui descend";
+        }
+        sendPlayer(msg, err);
       });
     }); //fin getSelected
   }
@@ -17786,11 +17922,17 @@ var COFantasy = COFantasy || function() {
     visibleto: 'all',
     istokenaction: true
   }, {
-    name: 'Escalier',
-    action: "!cof-escalier",
-    visibleto: '',
-    istokenaction: false,
-    inBar: true
+    name: 'Monter',
+    action: "!cof-escalier haut",
+    visibleto: 'all',
+    istokenaction: true,
+    inBar: false
+  }, {
+    name: 'Descendre',
+    action: "!cof-escalier bas",
+    visibleto: 'all',
+    istokenaction: true,
+    inBar: false
   }, {
     name: 'Fin-combat',
     action: "!cof-fin-combat",
@@ -17896,9 +18038,9 @@ var COFantasy = COFantasy || function() {
       }
     });
     if (inBar.length > 0) {
-      sendPlayer(msg, "Macros à metter dans la barre d'action du MJ : " + inBar.join(', '));
-      stateCOF.macros = true;
+      sendPlayer(msg, "Macros à mettre dans la barre d'action du MJ : " + inBar.join(', '));
     }
+    stateCOF.gameMacros = gameMacros;
   }
 
   function ajouteLumiere(msg) {
