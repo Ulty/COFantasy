@@ -11458,10 +11458,10 @@ var COFantasy = COFantasy || function() {
           if (soinsLegers < rangSoin) {
             soinsRestants = rangSoin - soinsLegers;
             if (soinsRestants > 1) soins = 's';
-            msgSoins = "peut encore faire " + soinsRestants + "soin" + soins + " léger" + soins;
-            addLineToFramedDisplay(msgSoins, display);
+            msgSoins = "peut encore faire " + soinsRestants + " soin" + soins + " léger" + soins;
+            addLineToFramedDisplay(display, msgSoins);
           } else {
-            addLineToFramedDisplay("ne peut plus faire de soin léger aujourd'hui", display);
+            addLineToFramedDisplay(display, "ne peut plus faire de soin léger aujourd'hui");
           }
           if (rangSoin > 1) {
             var soinsModeres = charAttributeAsInt(perso, 'soinsModeres', 0);
@@ -11469,10 +11469,10 @@ var COFantasy = COFantasy || function() {
               soinsRestants = rangSoin - soinsModeres;
               if (soinsRestants > 1) soins = 's';
               else soins = '';
-              msgSoins = "peut encore faire " + soinsRestants + "soin" + soins + " modéré" + soins;
-              addLineToFramedDisplay(msgSoins, display);
+              msgSoins = "peut encore faire " + soinsRestants + " soin" + soins + " modéré" + soins;
+              addLineToFramedDisplay(display, msgSoins);
             } else {
-              addLineToFramedDisplay("ne peut plus faire de soin modéré aujourd'hui", display);
+              addLineToFramedDisplay(display, "ne peut plus faire de soin modéré aujourd'hui");
             }
           }
         }
