@@ -15,6 +15,9 @@
 * Nouveau type de dégât, --argent.
 * Les montures de l'attaquant et de sa cible ne sont plus considérées comme des obstacles lors des attaques à distance.
 
+### Corrections de bugs
+* Prise en compte correcte du niveau de voie du métal ou de la valeur de la capacité forgeron
+
 ## 1.11
 ### Capacités
 * Ajout d'une option pour que les créations d'élixirs soient considérées comme des sorts (avec éventuellement un coût en mana)

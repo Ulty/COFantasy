@@ -3756,6 +3756,17 @@ var COFantasy = COFantasy || function() {
     return male;
   }
 
+  function getValeurOfEffet(perso, effet, def, attrDef) {
+    var attrsVal = tokenAttribute(perso, effet + "Valeur");
+    if (attrsVal.length === 0) {
+      if (attrDef) return charAttributeAsInt(perso, attrDef, def);
+      return def;
+    }
+    var res = parseInt(attrsVal[0].get('current'));
+    if (isNaN(res)) return def;
+    return res;
+  }
+
   function tokenInit(perso, evt) {
     var persoMonte = tokenAttribute(perso, 'estMontePar');
     if (persoMonte.length > 0) {
@@ -6556,7 +6567,7 @@ var COFantasy = COFantasy || function() {
     }
     var attrForgeron = 'forgeron(' + attackLabel + ')';
     if (attributeAsBool(attaquant, attrForgeron)) {
-      var feuForgeron = getValeurOfEffet(attackingCharId, attrForgeron, 1, 'voieDuMetal');
+      var feuForgeron = getValeurOfEffet(attaquant, attrForgeron, 1, 'voieDuMetal');
       var feuForgeronIntense = attributeAsInt(attaquant, attrForgeron + 'TempeteDeManaIntense', 0);
       if (feuForgeronIntense) {
         feuForgeron = feuForgeron * (1 + feuForgeronIntense);
@@ -10560,7 +10571,9 @@ var COFantasy = COFantasy || function() {
       if (name.length === 0) return;
       var characters = findObjs({
         _type: 'character',
-        name: name
+      });
+      characters = characters.filter( function(c) {
+        return c.get('name').trim() == name;
       });
       if (characters.length === 0) {
         log(name + " dans l'équipe " + nomEquipe + " est inconnu");
@@ -19811,17 +19824,6 @@ var COFantasy = COFantasy || function() {
     error("Impossible de déterminer l'effet correspondant à " + ef, attr);
   }
 
-
-  function getValeurOfEffet(perso, effet, def, attrDef) {
-    var attrsVal = tokenAttribute(perso, effet + "Valeur");
-    if (attrsVal.length === 0) {
-      if (attrDef) return charAttributeAsInt(perso, attrDef, def);
-      return def;
-    }
-    var res = parseInt(attrsVal[0].get('current'));
-    if (isNaN(res)) return def;
-    return res;
-  }
 
   //L'argument effet doit être le nom complet, pas la base
   //evt.deletedAttributes doit être défini
