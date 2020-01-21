@@ -1770,6 +1770,12 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function pointsDeChance(perso) {
+    var optionPC = ficheAttributeAsInt(perso, 'option_pc', 1);
+    if (optionPC === 0) return 0;
+    return ficheAttributeAsInt(perso, 'pc', 3);
+  }
+
   function jetPerso(perso, caracteristique, difficulte, titre, playerId, options) {
     options = options || {};
     var evt = options.evt || {
@@ -1825,7 +1831,7 @@ var COFantasy = COFantasy || function() {
               options: options
             };
             evt.type = 'jetPerso';
-            var pc = attributeAsInt(perso, 'PC', 0);
+            var pc = pointsDeChance(perso);
             if (pc > 0) {
               options.roll = options.roll || tr.roll;
               msgRate += ' ' +
@@ -3775,7 +3781,7 @@ var COFantasy = COFantasy || function() {
     }
     var init;
     if (getAttrByName(perso.charId, 'type_personnage') == 'PNJ') {
-      init = ficheAttributeAsInt(perso, 'pnj_init');
+      init = ficheAttributeAsInt(perso, 'pnj_init', 10);
     } else {
       init = ficheAttributeAsInt(perso, 'DEXTERITE', 10);
       init += ficheAttributeAsInt(perso, 'INIT_DIV', 0);
@@ -4013,6 +4019,44 @@ var COFantasy = COFantasy || function() {
         //L'initiative change
         initPerso(personnage, evt, true);
       }
+      return attr;
+    }
+    attr = attr[0];
+    evt.attributes.push({
+      attribute: attr,
+      current: attr.get('current'),
+      max: attr.get('max')
+    });
+    attr.set('current', value);
+    if (maxval !== undefined) attr.set('max', maxval);
+    return attr;
+  }
+
+  function setFicheAttr(personnage, attribute, value, evt, msg, maxval) {
+    var charId = personnage.charId;
+    if (msg !== undefined) {
+      sendChar(charId, msg);
+    }
+    evt.attributes = evt.attributes || [];
+    var attr = findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+      name: attribute
+    }, {
+      caseInsensitive: true
+    });
+    if (attr.length === 0) {
+      if (maxval === undefined) maxval = '';
+      attr = createObj('attribute', {
+        characterid: charId,
+        name: attribute,
+        current: value,
+        max: maxval
+      });
+      evt.attributes.push({
+        attribute: attr,
+        current: null
+      });
       return attr;
     }
     attr = attr[0];
@@ -7336,7 +7380,7 @@ var COFantasy = COFantasy || function() {
     if (evt.action) {
       evt.personnage = evt.action.attaquant;
       if (evt.succes === false) {
-        var pc = attributeAsInt(evt.personnage, 'PC', 0);
+        var pc = pointsDeChance(evt.personnage);
         if (pc > 0) {
           addLineToFramedDisplay(display, bouton("!cof-bouton-chance " + evt.id, "Chance", evt.personnage) + " (reste " + pc + " PC)");
         }
@@ -7456,9 +7500,12 @@ var COFantasy = COFantasy || function() {
     if (typeJet.length === 0) return 1;
     switch (typeJet[0].get('current')) {
       case '@{JETNORMAL}':
+      case '@{jetnormal}':
         return 1;
       case '@{JETSUP}':
+      case '@{jetsup}':
       case '@{JETSUPHERO}':
+      case '@{jetsuphero}':
         return 2;
       default:
         error("Jet inconnu", typeJet[0].get('current'));
@@ -7985,6 +8032,9 @@ var COFantasy = COFantasy || function() {
           showTotal = saveResult.showTotal;
         }
         var rd = ficheAttributeAsInt(target, 'RDS', 0);
+        if (getAttrByName(target.charId, 'type_personnage') == 'PNJ') {
+          rd = ficheAttributeAsInt(target, 'pnj_rd', 0);
+        }
         if (attributeAsBool(target, 'statueDeBois')) rd += 10;
         if (attributeAsBool(target, 'mutationSilhouetteMassive')) rd += 3;
         if (crit) rd += charAttributeAsInt(target, 'RD_critique', 0);
@@ -9539,7 +9589,7 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton");
       return;
     }
-    var chance = attributeAsInt(perso, 'PC', 0);
+    var chance = ficheAttributeAsInt(perso, 'PC', 0);
     if (chance <= 0) {
       sendChar(perso.charId, " n'a plus de point de chance à dépenser...");
       return;
@@ -9551,7 +9601,7 @@ var COFantasy = COFantasy || function() {
     var action = evt.action;
     if (action) { //alors on peut faire le undo
       undoEvent(evt);
-      setTokenAttr(perso, 'PC', chance, evtChance,
+      setFicheAttr(perso, 'PC', chance, evtChance,
         " a dépensé un point de chance. Il lui en reste " + chance);
       addEvent(evtChance);
       switch (evt.type) {
@@ -9618,7 +9668,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    var chance = attributeAsInt(perso, 'PC', 0);
+    var chance = ficheAttributeAsInt(perso, 'PC', 0);
     if (chance <= 0) {
       sendChat("", name + " n'a plus de point de chance à dépenser...");
       return;
@@ -9629,13 +9679,13 @@ var COFantasy = COFantasy || function() {
     chance--;
     switch (cmd[1]) {
       case 'autre':
-        setTokenAttr(perso, 'PC', chance, evt,
+        setFicheAttr(perso, 'PC', chance, evt,
           " a dépensé un point de chance. Il lui en reste " + chance);
         addEvent(evt);
         return;
       case 'combat':
         undoEvent();
-        setTokenAttr(perso, 'PC', chance, evt,
+        setFicheAttr(perso, 'PC', chance, evt,
           " a dépensé un point de chance. Il lui en reste " + chance);
         addEvent(evt);
         chanceCombat(perso, action);
@@ -10572,7 +10622,7 @@ var COFantasy = COFantasy || function() {
       var characters = findObjs({
         _type: 'character',
       });
-      characters = characters.filter( function(c) {
+      characters = characters.filter(function(c) {
         return c.get('name').trim() == name;
       });
       if (characters.length === 0) {
@@ -11286,10 +11336,21 @@ var COFantasy = COFantasy || function() {
           line =
             "Points de récupération : " + pr.current + " / " + pr.max;
           addLineToFramedDisplay(display, line);
-          line =
-            "Points de chance : " + attributeAsInt(perso, 'PC', 0) + " / " +
-            (3 + modCarac(perso, 'CHARISME'));
-          addLineToFramedDisplay(display, line);
+          if (ficheAttributeAsInt(perso, 'option_pc', 1)) {
+            var pc = 3;
+            var pc_max = 3;
+            var attr_pc = charAttribute(perso.charId, 'pc', {
+              caseInsensitive: true
+            });
+            if (attr_pc !== undefined) {
+              pc = parseInt(attr_pc[0].get('current'));
+              if (isNaN(pc)) pc = 0;
+              pc_max = parseInt(attr_pc[0].get('max'));
+              if (isNaN(pc_max)) pc_max = 0;
+            }
+            line = "Points de chance : " + pc + " / " + pc_max;
+            addLineToFramedDisplay(display, line);
+          }
           var pacifisme =
             findObjs({
               _type: "attribute",
@@ -15011,7 +15072,7 @@ var COFantasy = COFantasy || function() {
       }
       var versLeHaut = true;
       var loop = true;
-      if (msg.content){
+      if (msg.content) {
         if (msg.content.includes(' bas')) {
           versLeHaut = false;
           loop = false;
@@ -17365,15 +17426,16 @@ var COFantasy = COFantasy || function() {
       attrs.find(function(a) {
         return a.get('name') == 'VERSION';
       });
-    if (attrVersion) attrVersion.set('current', '1.8');
-    else {
+    if (!attrVersion) {
       createObj('attribute', {
         _characterid: charId,
         name: 'VERSION',
-        current: '1.8'
+        current: '3.0'
       });
     }
+    var pnj = true;
     if (spec.attributesFiche) {
+      if (spec.attributesFiche.type_personnage == 'PJ') pnj = false;
       for (var attrName in spec.attributesFiche) {
         /*jshint loopfunc: true */
         var attr =
@@ -17406,6 +17468,23 @@ var COFantasy = COFantasy || function() {
         pvAttr = pvAttr[0];
         pvAttr.set('current', spec.pv);
         pvAttr.set('max', spec.pv);
+      }
+      if (pnj) {
+        pvAttr = attrs.filter(function(a) {
+          return a.get('name').toUpperCase() == 'pnj_pv';
+        });
+        if (pvAttr.length === 0) {
+          pvAttr = createObj('attribute', {
+            _characterid: charId,
+            name: 'pnj_pv',
+            current: spec.pv,
+            max: spec.pv
+          });
+        } else {
+          pvAttr = pvAttr[0];
+          pvAttr.set('current', spec.pv);
+          pvAttr.set('max', spec.pv);
+        }
       }
       if (token) {
         token.set('bar1_link', pvAttr.id);
@@ -17459,16 +17538,27 @@ var COFantasy = COFantasy || function() {
       avatar: "https://s3.amazonaws.com/files.d20.io/images/59094468/bX_aTjrVAbIRHjpRn-HwdQ/max.jpg?1532611383",
       token: "https://s3.amazonaws.com/files.d20.io/images/59489165/3R9Ob68sTiqvNeEhwzwWcg/thumb.png?1533047142",
       attributesFiche: {
+        type_personnage: 'PNJ',
         NIVEAU: 1,
         FORCE: 12,
+        pnj_for: 1,
         DEXTERITE: 12,
+        pnj_dex: 1,
         CONSTITUTION: 12,
-        CON_SUP: '@{JETSUP}',
+        pnj_con: 1,
+        CON_SUP: '@{jetsup}',
+        pnj_con_sup: 'on',
         INTELLIGENCE: 2,
+        pnj_int: -4,
         SAGESSE: 14,
-        SAG_SUP: '@{JETSUP}',
+        pnj_sag: 2,
+        SAG_SUP: '@{jetsup}',
+        pnj_sag_sup: 'on',
         CHARISME: 6,
-        DEFDIV: 3, //Total 14
+        pnj_cha: -2,
+        DEFDIV: 3,
+        pnj_def: 14,
+        pnj_init: 12,
         RACE: 'loup',
         TAILLE: 'moyen'
       },
@@ -17486,17 +17576,28 @@ var COFantasy = COFantasy || function() {
       avatar: "https://s3.amazonaws.com/files.d20.io/images/59094818/J0yWdxryZFKakJtNGJNNvw/max.jpg?1532612061",
       token: "https://s3.amazonaws.com/files.d20.io/images/60183959/QAMH6WtyoK78aa4zX_mR_Q/thumb.png?1533898482",
       attributesFiche: {
+        type_personnage: 'PNJ',
         NIVEAU: 2,
         FORCE: 16,
+        pnj_for: 3,
         DEXTERITE: 12,
+        pnj_dex: 1,
         CONSTITUTION: 16,
-        CON_SUP: '@{JETSUP}',
+        pnj_con: 3,
+        CON_SUP: '@{jetsup}',
+        pnj_con_sup: 'on',
         INTELLIGENCE: 2,
+        pnj_int: -4,
         SAGESSE: 14,
-        SAG_SUP: '@{JETSUP}',
+        pnj_sag: 2,
+        SAG_SUP: '@{jetsup}',
+        pnj_sag_sup: 'on',
         CHARISME: 6,
-        DEFDIV: 4, //Total 15
-        INIT_DIV: 5, //Total 17
+        pnj_cha: -2,
+        DEFDIV: 4,
+        pnj_def: 15,
+        INIT_DIV: 5,
+        pnj_init: 17,
         RACE: 'loup',
         TAILLE: 'moyen'
       },
@@ -17523,17 +17624,28 @@ var COFantasy = COFantasy || function() {
       avatar: "https://s3.amazonaws.com/files.d20.io/images/25294798/4dJ_60uP2mw6UJA2elkoXA/max.jpg?1479223790",
       token: "https://s3.amazonaws.com/files.d20.io/images/60184237/smG5o2-siD2pChhPblO_sQ/thumb.png?1533899118",
       attributesFiche: {
+        type_personnage: 'PNJ',
         NIVEAU: 3,
         FORCE: 16,
+        pnj_for: 3,
         DEXTERITE: 12,
+        pnj_dex: 1,
         CONSTITUTION: 16,
-        CON_SUP: '@{JETSUP}',
+        pnj_con: 3,
+        CON_SUP: '@{jetsup}',
+        pnj_con_sup: 'on',
         INTELLIGENCE: 4,
+        pnj_int: -3,
         SAGESSE: 14,
-        SAG_SUP: '@{JETSUP}',
+        pnj_sag: 2,
+        SAG_SUP: '@{jetsup}',
+        pnj_sag_sup: 'on',
         CHARISME: 6,
-        DEFDIV: 6, //Total 17
-        INIT_DIV: 5, //Total 17
+        pnj_cha: -2,
+        DEFDIV: 6,
+        pnj_def: 17,
+        INIT_DIV: 5,
+        pnj_init: 17,
         RACE: 'loup',
         TAILLE: 'moyen'
       },
@@ -17560,17 +17672,28 @@ var COFantasy = COFantasy || function() {
       avatar: "https://s3.amazonaws.com/files.d20.io/images/59486104/SngxPIGXDJKdCqsbrXxRYQ/max.jpg?1533041390",
       token: "https://s3.amazonaws.com/files.d20.io/images/60184437/df1MT2T6lrfo7st02Htxeg/thumb.png?1533899407",
       attributesFiche: {
+        type_personnage: 'PNJ',
         NIVEAU: 4,
         FORCE: 20,
+        pnj_for: 5,
         DEXTERITE: 18,
-        DEX_SUP: '@{JETSUP}',
+        pnj_dex: 4,
+        DEX_SUP: '@{jetsup}',
+        pnj_dex_sup: 'on',
         CONSTITUTION: 20,
+        pnj_con: 5,
         INTELLIGENCE: 4,
+        pnj_int: -3,
         SAGESSE: 14,
-        SAG_SUP: '@{JETSUP}',
+        pnj_sag: 2,
+        SAG_SUP: '@{jetsup}',
+        pnj_sag_sup: 'on',
         CHARISME: 6,
-        DEFDIV: 4, //Total 18
-        INIT_DIV: 5, //Total 23 
+        pnj_cha: -3,
+        DEFDIV: 4,
+        pnj_def: 18,
+        INIT_DIV: 5,
+        pnj_init: 23,
         RACE: 'lion',
         TAILLE: 'grand'
       },
@@ -17600,16 +17723,27 @@ var COFantasy = COFantasy || function() {
       avatar: "https://s3.amazonaws.com/files.d20.io/images/59486144/8wHs_5WfEIeL_7dKbALHHA/max.jpg?1533041459",
       token: "https://s3.amazonaws.com/files.d20.io/images/60186141/mUZzndi9_sYIzdVVNNka_w/thumb.png?1533903070",
       attributesFiche: {
+        type_personnage: 'PNJ',
         NIVEAU: 5,
         FORCE: 22,
+        pnj_for: 6,
         DEXTERITE: 18,
-        DEX_SUP: '@{JETSUP}',
+        pnj_dex: 3,
+        DEX_SUP: '@{jetsup}',
+        pnj_dex_sup: 'on',
         CONSTITUTION: 20,
+        pnj_con: 5,
         INTELLIGENCE: 2,
+        pnj_int: -4,
         SAGESSE: 14,
-        SAG_SUP: '@{JETSUP}',
+        pnj_sag: 2,
+        SAG_SUP: '@{jetsup}',
+        pnj_sag_sup: 'on',
         CHARISME: 14,
-        DEFDIV: 6, //Total 20
+        pnj_cha: 2,
+        DEFDIV: 6,
+        pnj_def: 20,
+        pnj_init: 18,
         RACE: 'lion',
         TAILLE: 'grand'
       },
@@ -17639,16 +17773,27 @@ var COFantasy = COFantasy || function() {
       avatar: "https://s3.amazonaws.com/files.d20.io/images/59486216/UssilagWK_2dfVGuPABBpA/max.png?1533041591",
       token: "https://s3.amazonaws.com/files.d20.io/images/60186288/B1uAii9G01GcPfQFNozIbw/thumb.png?1533903333",
       attributesFiche: {
+        type_personnage: 'PNJ',
         NIVEAU: 6,
         FORCE: 26,
-        FOR_SUP: '@{JETSUP}',
+        pnj_for: 8,
+        FOR_SUP: '@{jetsup}',
+        pnj_for_sup: 'on',
         DEXTERITE: 11,
+        pnj_dex: 0,
         CONSTITUTION: 26,
-        CON_SUP: '@{JETSUP}',
+        pnj_con: 8,
+        CON_SUP: '@{jetsup}',
+        pnj_con_sup: 'on',
         INTELLIGENCE: 2,
+        pnj_int: -4,
         SAGESSE: 14,
+        pnj_sag: 2,
         CHARISME: 6,
-        DEFDIV: 10, //Total 20
+        pnj_cha: -2,
+        DEFDIV: 10,
+        pnj_def: 20,
+        pnj_init: 11,
         RACE: 'ours',
         TAILLE: 'grand'
       },
@@ -17672,17 +17817,29 @@ var COFantasy = COFantasy || function() {
       avatar: "https://s3.amazonaws.com/files.d20.io/images/59486272/f5lUcN3Y9H0thmJPrqa6FQ/max.png?1533041702",
       token: "https://s3.amazonaws.com/files.d20.io/images/60186469/ShcrgpvgXKiQsLVOyg4SZQ/thumb.png?1533903741",
       attributesFiche: {
+        type_personnage: 'PNJ',
         NIVEAU: 7,
         FORCE: 26,
-        FOR_SUP: '@{JETSUP}',
+        pnj_for: 8,
+        FOR_SUP: '@{jetsup}',
+        pnj_for_sup: 'on',
         DEXTERITE: 18,
-        DEX_SUP: '@{JETSUP}',
+        pnj_dex: 4,
+        DEX_SUP: '@{jetsup}',
+        pnj_dex_sup: 'on',
         CONSTITUTION: 26,
+        pnj_con: 8,
         INTELLIGENCE: 2,
+        pnj_int: -4,
         SAGESSE: 12,
-        SAG_SUP: '@{JETSUP}',
+        pnj_sag: 1,
+        SAG_SUP: '@{jetsup}',
+        pnj_sag_sup: 'on',
         CHARISME: 2,
-        DEFDIV: 8, //Total 22
+        pnj_cha: -4,
+        DEFDIV: 8,
+        pnj_def: 22,
+        pnj_init: 18,
         RACE: 'tigre',
         TAILLE: 'grand'
       },
@@ -17712,16 +17869,27 @@ var COFantasy = COFantasy || function() {
       avatar: "https://s3.amazonaws.com/files.d20.io/images/59486323/V6RVSlBbeRJi_aIaIuGGBw/max.png?1533041814",
       token: "https://s3.amazonaws.com/files.d20.io/images/60186633/lNHXvCOsvfPMZDQnqJKQVw/thumb.png?1533904189",
       attributesFiche: {
+        type_personnage: 'PNJ',
         NIVEAU: 8,
         FORCE: 32,
+        pnj_for: 11,
         DEXTERITE: 10,
+        pnj_dex: 0,
         CONSTITUTION: 32,
-        CON_SUP: '@{JETSUP}',
+        pnj_con: 11,
+        CON_SUP: '@{jetsup}',
+        pnj_con_sup: 'on',
         INTELLIGENCE: 2,
+        pnj_int: -4,
         SAGESSE: 14,
+        pnj_sag: 2,
         CHARISME: 6,
-        DEFDIV: 12, //Total 22
+        pnj_cha: -2,
+        DEFDIV: 12,
+        pnj_def: 22,
+        pnj_init: 10,
         RDS: 2,
+        pnj_rd: 2,
         RACE: 'ours',
         TAILLE: 'énorme'
       },
@@ -18689,7 +18857,7 @@ var COFantasy = COFantasy || function() {
                 options: options
               };
               evt.type = 'echapperEnveloppement';
-              var pc = attributeAsInt(perso, 'PC', 0);
+              var pc = ficheAttributeAsInt(perso, 'PC', 0);
               if (pc > 0) {
                 options.roll = options.roll || tr.roll;
                 msgRate += ' ' +
@@ -18757,7 +18925,7 @@ var COFantasy = COFantasy || function() {
                 options: options
               };
               evt.type = 'libererAgrippe';
-              var pc = attributeAsInt(perso, 'PC', 0);
+              var pc = ficheAttributeAsInt(perso, 'PC', 0);
               if (pc > 0) {
                 options.roll = options.roll || tr.roll;
                 msgRate += ' ' +
