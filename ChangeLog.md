@@ -7,6 +7,7 @@
 * L'option --argent devient --armeDArgent. Cela permet d'utiliser --argent pour les armes en argent ordinaires.
 
 ### Autres améliorations
+* Rattrapage et message d'erreur en cas d'expression de dégâts mal formés.
 * Mise à jour automatique des macros de jeu (par défaut)
 * Gestion des directions d'escaliers
 * La fiche peut désormais changer d'affichage si le script est utilisé dans la partie.

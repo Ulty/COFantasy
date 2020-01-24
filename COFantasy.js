@@ -6923,13 +6923,19 @@ var COFantasy = COFantasy || function() {
         var mainDmgRollNumber = rollNumber(afterEvaluateDmg[0]);
         mainDmgRoll.total = rollsDmg.inlinerolls[mainDmgRollNumber].results.total;
         mainDmgRoll.display = buildinline(rollsDmg.inlinerolls[mainDmgRollNumber], mainDmgType, options.magique);
+        var correctAdditionalDmg = [];
         additionalDmg.forEach(function(dmSpec, i) {
           var rRoll = rollsDmg.inlinerolls[rollNumber(afterEvaluateDmg[i + 1])];
-          dmSpec.total = dmSpec.total || rRoll.results.total;
-          var addDmType = dmSpec.type;
-          dmSpec.display = dmSpec.display || buildinline(rRoll, addDmType, options.magique);
+          if (rRoll) {
+            correctAdditionalDmg.push(dmSpec);
+            dmSpec.total = dmSpec.total || rRoll.results.total;
+            var addDmType = dmSpec.type;
+            dmSpec.display = dmSpec.display || buildinline(rRoll, addDmType, options.magique);
+          } else { //l'expression de DM additionel est mal formée
+            error("Expression de dégâts supplémentaires mal formée : " + additionalDmg[i].value, additionalDmg[i]);
+          }
         });
-
+        additionalDmg = correctAdditionalDmg;
         if (target.touche) { //Devrait être inutile ?
           if (options.tirDeBarrage) target.messages.push("Tir de barrage : undo si la cible décide de ne pas bouger");
           if (options.pointsVitaux) target.messages.push(attackerTokName + " vise des points vitaux mais ne semble pas faire de dégâts");
