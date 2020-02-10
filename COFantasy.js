@@ -6628,13 +6628,24 @@ var COFantasy = COFantasy || function() {
       });
     }
     var attrAEF = 'armeEnflammee(' + attackLabel + ')';
+      var nAEF = 0;
     if (attributeAsBool(attaquant, attrAEF)) {
-      var nAEF = 1;
+      nAEF = 1;
       var AEFIntense = attributeAsInt(attaquant, attrAEF + 'TempeteDeManaIntense', 0);
       if (AEFIntense) {
         nAEF += AEFIntense;
         removeTokenAttr(attaquant, attrAEF + 'TempeteDeManaIntense', evt);
       }
+    }
+    if (nAEF === 0 && attributeAsBool(attaquant, 'armesEnflammees')) {
+      nAEF = 1;
+      var AsEFIntense = attributeAsInt(attaquant, 'armesEnflammeesTempeteDeManaIntense', 0);
+      if (AsEFIntense) {
+        nAEF += AsEFIntense;
+        removeTokenAttr(attaquant, 'armesEnflammeesTempeteDeManaIntense', evt);
+      }
+    }
+    if (nAEF > 0) {
       options.additionalDmg.push({
         type: 'feu',
         value: nAEF + 'd6'
@@ -19510,6 +19521,12 @@ var COFantasy = COFantasy || function() {
       fin: "L'arme n'est plus enflammée.",
       dm: true,
       generic: true
+    },
+    armesEnflammees: {
+      activation: "voit ses armes prendre feu",
+      actif: "a des armes enflammées",
+      fin: "Les armes ne sont plus enflammées.",
+      dm: true,
     },
     dotGen: {
       activation: "subit un effet",
