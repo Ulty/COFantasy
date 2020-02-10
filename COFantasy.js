@@ -4194,10 +4194,6 @@ var COFantasy = COFantasy || function() {
       if (masqueIntense)
         removeTokenAttr(personnage, 'masqueDuPredateurTempeteDeManaIntense', evt);
     }
-    if (attributeAsBool(personnage, 'rageDuBerserk')) {
-      attBonus += 2;
-      explications.push("Rage du berserk : +2 en Attaque et +1d6 aux DM");
-    }
     if (attributeAsBool(personnage, 'armeSecreteBarde')) {
       attBonus -= 10;
       explications.push("Déstabilisé par une action de charme => -10 en Attaque");
@@ -4485,9 +4481,16 @@ var COFantasy = COFantasy || function() {
       defense += bonusProtectionContreLeMal;
       explications.push("Protection contre le mal => +" + bonusProtectionContreLeMal + " DEF");
     }
-    if (attributeAsBool(target, 'rageDuBerserk')) {
-      defense -= 4;
-      explications.push("Rage du berserk => -4 DEF");
+    var rageBerserk = tokenAttribute(target, 'rageDuBerserk');
+    if (rageBerserk.length > 0) {
+      rageBerserk = rageBerserk[0].get('current');
+      if (rageBerserk == 'furie') {
+        defense -= 6;
+        explications.push("Furie du berserk => -6 DEF");
+      } else {
+        defense -= 4;
+        explications.push("Rage du berserk => -4 DEF");
+      }
     }
     var combatEnPhalange = charAttributeAsBool(target, 'combatEnPhalange');
     if (combatEnPhalange || attributeAsBool(target, 'esquiveFatale')) {
@@ -4605,6 +4608,19 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(attaquant, 'aspectDuDemon')) {
         attBonus += getValeurOfEffet(attaquant, 'aspectDuDemon', 2);
         explications.push("Aspect de démon => +2 en Attaque");
+      }
+      var rageBerserk = tokenAttribute(attaquant, 'rageDuBerserk');
+      if (rageBerserk.length > 0) {
+        rageBerserk = rageBerserk[0].get('current');
+        if (rageBerserk == 'furie') {
+          attBonus += 3;
+          explications.push("Furie du berserk : +3 en Attaque et +2d6 aux DM");
+          options.rageBerserk = 2;
+        } else {
+          attBonus += 2;
+          explications.push("Rage du berserk : +2 en Attaque et +1d6 aux DM");
+          options.rageBerserk = 1;
+        }
       }
     }
     var frenesie = charAttributeAsInt(attaquant, 'frenesie', 0);
@@ -6568,10 +6584,10 @@ var COFantasy = COFantasy || function() {
       var bonusMasque = getValeurOfEffet(attaquant, 'masqueDuPredateur', modCarac(attaquant, 'SAGESSE'));
       if (bonusMasque > 0) attDMBonusCommun += " +" + bonusMasque;
     }
-    if (attributeAsBool(attaquant, 'rageDuBerserk')) {
+    if (options.rageBerserk) {
       options.additionalDmg.push({
         type: mainDmgType,
-        value: '1' + options.d6
+        value: options.rageBerserk + options.d6
       });
     }
     if (attributeAsBool(attaquant, 'enragé')) {
@@ -6580,13 +6596,13 @@ var COFantasy = COFantasy || function() {
         value: '1' + options.d6
       });
     }
-      if (options.contact && attributeAsBool(attaquant, 'memePasMalBonus')) {
-        options.additionalDmg.push({
-          type: mainDmgType,
-          value: '1' + options.d6,
-        });
-        explications.push("Même pas mal => +1"+options.d6+" DM");
-      }
+    if (options.contact && attributeAsBool(attaquant, 'memePasMalBonus')) {
+      options.additionalDmg.push({
+        type: mainDmgType,
+        value: '1' + options.d6,
+      });
+      explications.push("Même pas mal => +1" + options.d6 + " DM");
+    }
     var attrPosture = tokenAttribute(attaquant, 'postureDeCombat');
     if (attrPosture.length > 0) {
       attrPosture = attrPosture[0];
@@ -6643,7 +6659,7 @@ var COFantasy = COFantasy || function() {
       });
     }
     var attrAEF = 'armeEnflammee(' + attackLabel + ')';
-      var nAEF = 0;
+    var nAEF = 0;
     if (attributeAsBool(attaquant, attrAEF)) {
       nAEF = 1;
       var AEFIntense = attributeAsInt(attaquant, attrAEF + 'TempeteDeManaIntense', 0);
@@ -8154,9 +8170,9 @@ var COFantasy = COFantasy || function() {
             options.memePasMal += dmgTotal;
             dmgTotal = 0;
           }
-          expliquer("Même pas mal : ignore "+options.memePasMal+" PVs et peut enrager");
+          expliquer("Même pas mal : ignore " + options.memePasMal + " PVs et peut enrager");
           var mpm = attributeAsInt(target, 'memePasMalIgnore', 0);
-          setTokenAttr(target, 'memePasMalIgnore', mpm+options.memePasMal, evt);
+          setTokenAttr(target, 'memePasMalIgnore', mpm + options.memePasMal, evt);
           setTokenAttr(target, 'memePasMalBonus', 3, evt, undefined, getInit());
         }
         // compute effect on target
@@ -11405,7 +11421,7 @@ var COFantasy = COFantasy || function() {
         }
         var ignorerLaDouleur = attributeAsInt(perso, 'ignorerLaDouleur', 0);
         if (ignorerLaDouleur > 0) {
-          line = "a ignoré "+ignorerLaDouleur+" pv dans ce combat.";
+          line = "a ignoré " + ignorerLaDouleur + " pv dans ce combat.";
           addLineToFramedDisplay(display, line);
         }
         var aDV = charAttributeAsInt(perso, 'DV', 0);
@@ -16568,6 +16584,8 @@ var COFantasy = COFantasy || function() {
   }
 
   function rageDuBerserk(msg) {
+    var typeRage = 'rage';
+    if (msg.content.includes(' --furie')) typeRage = 'furie';
     getSelected(msg, function(selection, playerId) {
       if (selection.length === 0) {
         sendPlayer(msg, "Pas de token sélectionné pour la rage");
@@ -16577,11 +16595,16 @@ var COFantasy = COFantasy || function() {
         var evt = {
           type: "Rage"
         };
-        if (attributeAsBool(perso, 'rageDuBerserk')) {
-          //Jet de sagesse difficulté 13 pour sortir de cet état
+        var attrRage = tokenAttribute(perso, 'rageDuBerserk');
+        if (attrRage.length > 0) {
+          attrRage = attrRage[0];
+          typeRage = attrRage.get('current');
+          var difficulte = 13;
+          if (typeRage == 'furie') difficulte = 16;
+          //Jet de sagesse difficulté 13 pou 16 pour sortir de cet état
           var options = {};
-          var display = startFramedDisplay(playerId, "Essaie de calmer sa rage", perso);
-          testCaracteristique(perso, 'SAG', 13, options, evt,
+          var display = startFramedDisplay(playerId, "Essaie de calmer sa " + typeRage, perso);
+          testCaracteristique(perso, 'SAG', difficulte, options, evt,
             function(tr) {
               addLineToFramedDisplay(display, "<b>Résultat du jet de SAG :</b> " + tr.texte);
               addEvent(evt);
@@ -16600,7 +16623,7 @@ var COFantasy = COFantasy || function() {
           if (!stateCOF.combat) {
             initiative(selection, evt);
           }
-          setTokenAttr(perso, 'rageDuBerserk', true, evt, "entre dans une rage berserk !");
+          setTokenAttr(perso, 'rageDuBerserk', typeRage, evt, "entre dans une " + typeRage + " berserk !");
         }
       }); //fin iterSelected
     }); //fin getSelected
