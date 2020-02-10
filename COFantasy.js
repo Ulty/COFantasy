@@ -59,6 +59,11 @@ var COFantasy = COFantasy || function() {
           val: 0,
           type: 'int'
         },
+        crit_elementaire: {
+          explications: "Les DMs constants d'un autre type que celui de l'arme sont aussi multipliés en cas de critique",
+          val: false,
+          type: 'bool'
+        },
         forme_d_arbre_amelioree: {
           explications: "+50% à l'effet de la peau d'écorce en forme d'arbre.",
           val: true,
@@ -7811,6 +7816,7 @@ var COFantasy = COFantasy || function() {
       } else
         count += dmgParType[dt].length;
     }
+    var critOther = crit && stateCOF.options.regles.val.crit_elementaire.val;
     var dealOneType = function(dmgType) {
       if (dmgType == mainDmgType) {
         count -= dmgParType[dmgType].length;
@@ -7824,15 +7830,18 @@ var COFantasy = COFantasy || function() {
       dmgParType[dmgType].forEach(function(d) {
         partialSave(d, target, false, d.display, d.total, expliquer, evt,
           function(res) {
+            var addTypeDisplay = d.display;
             if (res) {
               dm += res.total;
-              if (typeDisplay === '') typeDisplay = res.dmgDisplay;
-              else typeDisplay += "+" + res.dmgDisplay;
+              if (critOther) dm += res.total;
+              addTypeDisplay = res.dmgDisplay;
             } else {
               dm += d.total;
-              if (typeDisplay === '') typeDisplay = d.display;
-              else typeDisplay += "+" + d.display;
+              if (critOther) dm += d.total;
             }
+            if (critOther) addTypeDisplay = '(' + addTypeDisplay + ') x2';
+            if (typeDisplay === '') typeDisplay = addTypeDisplay;
+            else typeDisplay += "+" + addTypeDisplay;
             typeCount--;
             if (typeCount === 0) {
               if (target.ignoreRD === undefined) {
@@ -10636,7 +10645,13 @@ var COFantasy = COFantasy || function() {
         return;
       }
       if (characters.length > 1) {
-        log(name + " dans l'équipe " + nomEquipe + " est en double");
+        var nonArch = characters.filter(function(c) {
+          return !(c.get('archived'));
+        });
+        if (nonArch.length > 0) characters = nonArch;
+        if (characters.length > 1) {
+          log(name + " dans l'équipe " + nomEquipe + " est en double");
+        }
       }
       characters.forEach(function(character) {
         persos.add(character.id);

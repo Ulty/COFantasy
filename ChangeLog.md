@@ -7,6 +7,7 @@
 * L'option --argent devient --armeDArgent. Cela permet d'utiliser --argent pour les armes en argent ordinaires.
 
 ### Autres améliorations
+* Ajout d'une option pour multiplier les dm d'un autre type que le principal en cas de critique.
 * Rattrapage et message d'erreur en cas d'expression de dégâts mal formés.
 * Mise à jour automatique des macros de jeu (par défaut)
 * Gestion des directions d'escaliers
