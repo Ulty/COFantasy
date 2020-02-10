@@ -5061,7 +5061,9 @@ var COFantasy = COFantasy || function() {
         portee = portee * 2;
         weaponStats.portee = portee;
       }
-    } else options.contact = true;
+    } else {
+      options.contact = true;
+    }
     //Pour l'option grenaille implicite, il faut vérifier que toutes les charge de l'arme sont des charges de grenaille
     var chargesArme = findObjs({
       _type: 'attribute',
@@ -5630,8 +5632,8 @@ var COFantasy = COFantasy || function() {
     }
     var dmgCoef = options.dmgCoef || 1;
     if (target.dmgCoef) dmgCoef += target.dmgCoef;
+    var critCoef = 1;
     if (crit) {
-      var critCoef = 1;
       if (options.critCoef) critCoef = options.critCoef;
       if (target.critCoef) critCoef += target.critCoef;
       dmgCoef += critCoef;
@@ -5646,6 +5648,9 @@ var COFantasy = COFantasy || function() {
       showTotal = true;
     }
     if (crit) {
+      if (attributeAsBool(target, 'memePasMal')) {
+        options.memePasMal = (dmgTotal / dmgCoef) * critCoef;
+      }
       var firstBonusCritique = true;
       var x = {
         dmgDisplay: dmgDisplay,
@@ -5660,6 +5665,9 @@ var COFantasy = COFantasy || function() {
         if (options.tirFatal > 1) {
           ajouteDe6Crit(x, false);
         }
+      }
+      if (options.memePasMal !== undefined) {
+        options.memePasMal += x.dmgTotal - dmgTotal;
       }
       dmgDisplay = x.dmgDisplay;
       dmgTotal = x.dmgTotal;
@@ -6572,6 +6580,13 @@ var COFantasy = COFantasy || function() {
         value: '1' + options.d6
       });
     }
+      if (options.contact && attributeAsBool(attaquant, 'memePasMalBonus')) {
+        options.additionalDmg.push({
+          type: mainDmgType,
+          value: '1' + options.d6,
+        });
+        explications.push("Même pas mal => +1"+options.d6+" DM");
+      }
     var attrPosture = tokenAttribute(attaquant, 'postureDeCombat');
     if (attrPosture.length > 0) {
       attrPosture = attrPosture[0];
@@ -7844,11 +7859,17 @@ var COFantasy = COFantasy || function() {
             var addTypeDisplay = d.display;
             if (res) {
               dm += res.total;
-              if (critOther) dm += res.total;
+              if (critOther) {
+                dm += res.total;
+                if (options.memePasMal) options.memePasMal += res.total;
+              }
               addTypeDisplay = res.dmgDisplay;
             } else {
               dm += d.total;
-              if (critOther) dm += d.total;
+              if (critOther) {
+                dm += d.total;
+                if (options.memePasMal) options.memePasMal += d.total;
+              }
             }
             if (critOther) addTypeDisplay = '(' + addTypeDisplay + ') x2';
             if (typeDisplay === '') typeDisplay = addTypeDisplay;
@@ -8063,7 +8084,11 @@ var COFantasy = COFantasy || function() {
         }
         if (attributeAsBool(target, 'statueDeBois')) rd += 10;
         if (attributeAsBool(target, 'mutationSilhouetteMassive')) rd += 3;
-        if (crit) rd += charAttributeAsInt(target, 'RD_critique', 0);
+        if (crit) {
+          var rdCrit = charAttributeAsInt(target, 'RD_critique', 0);
+          rd += rdCrit;
+          if (options.memePasMal) options.memePasMal -= rdCrit;
+        }
         if (options.tranchant) rd += charAttributeAsInt(target, 'RD_tranchant', 0);
         if (options.percant) rd += charAttributeAsInt(target, 'RD_percant', 0);
         if (options.contondant) rd += charAttributeAsInt(target, 'RD_contondant', 0);
@@ -8103,6 +8128,8 @@ var COFantasy = COFantasy || function() {
           else dmgDisplay += " / 2";
           showTotal = true;
           dmgTotal = Math.ceil(dmgTotal / 2);
+          if (options.memePasMal)
+            options.memePasMal = Math.ceil(options.memePasMal / 2);
           for (var dmType2 in dmSuivis) {
             dmSuivis[dmType2] = Math.ceil(dmSuivis[dmType2] / 2);
           }
@@ -8113,11 +8140,24 @@ var COFantasy = COFantasy || function() {
         }
         if (options.divise) {
           dmgTotal = Math.ceil(dmgTotal / options.divise);
+          if (options.memePasMal)
+            options.memePasMal = Math.ceil(options.memePasMal / options.divise);
           for (var dmType3 in dmSuivis) {
             dmSuivis[dmType3] = Math.ceil(dmSuivis[dmType3] / options.divise);
           }
           dmgDisplay = "(" + dmgDisplay + ")/" + options.divise;
           showTotal = true;
+        }
+        if (crit && options.memePasMal && options.memePasMal > 0) {
+          dmgTotal -= options.memePasMal;
+          if (dmgTotal < 0) {
+            options.memePasMal += dmgTotal;
+            dmgTotal = 0;
+          }
+          expliquer("Même pas mal : ignore "+options.memePasMal+" PVs et peut enrager");
+          var mpm = attributeAsInt(target, 'memePasMalIgnore', 0);
+          setTokenAttr(target, 'memePasMalIgnore', mpm+options.memePasMal, evt);
+          setTokenAttr(target, 'memePasMalBonus', 3, evt, undefined, getInit());
         }
         // compute effect on target
         var bar1 = parseInt(token.get('bar1_value'));
@@ -8850,6 +8890,7 @@ var COFantasy = COFantasy || function() {
     });
     //Effet de ignorerLaDouleur
     var ilds = allAttributesNamed(attrs, 'ignorerLaDouleur');
+    ilds = ilds.concat(allAttributesNamed(attrs, 'memePasMalIgnore'));
     ilds.forEach(function(ild) {
       var douleur = parseInt(ild.get('current'));
       if (isNaN(douleur)) {
@@ -8862,7 +8903,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       var ildName = ild.get('name');
-      if (ildName == 'ignorerLaDouleur') {
+      if (ildName == 'ignorerLaDouleur' || ildName == 'memePasMalIgnore') {
         var pvAttr = findObjs({
           _type: 'attribute',
           _characterid: charId,
@@ -11360,6 +11401,11 @@ var COFantasy = COFantasy || function() {
         }
         if (!isNaN(dmTemp) && dmTemp > 0) {
           line = "Dommages temporaires : " + dmTemp;
+          addLineToFramedDisplay(display, line);
+        }
+        var ignorerLaDouleur = attributeAsInt(perso, 'ignorerLaDouleur', 0);
+        if (ignorerLaDouleur > 0) {
+          line = "a ignoré "+ignorerLaDouleur+" pv dans ce combat.";
           addLineToFramedDisplay(display, line);
         }
         var aDV = charAttributeAsInt(perso, 'DV', 0);
@@ -19795,6 +19841,11 @@ var COFantasy = COFantasy || function() {
       activation: "pousse un kiai",
       actif: "ne peut pas encore pousser un autre kiai",
       fin: "peut pousser un autre kiai"
+    },
+    memePasMalBonus: {
+      activation: "enrage suite au coup critique",
+      actif: "a subit un coup critique",
+      fin: "ne bénéficie plus des effets de même pas mal"
     },
   };
 
