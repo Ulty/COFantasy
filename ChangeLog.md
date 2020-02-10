@@ -2,6 +2,7 @@
 
 ## 2.0
 ### Capacités
+* Ajout de la capacité "Foudres divines" du prêtre
 * Ajout de la capacité "Furie berserk" du barbare
 * Ajout de la capacité "Même pas mal" du barbare
 * Ajout de la vulnérabilité aux critiques (pour les seigneurs de l'hiver)

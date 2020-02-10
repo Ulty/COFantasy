@@ -2788,6 +2788,7 @@ var COFantasy = COFantasy || function() {
         case "lamesJumelles":
         case "riposte":
         case 'secret':
+        case 'saufAllies':
           options[cmd[0]] = true;
           return;
         case "imparable": //deprecated
@@ -5400,6 +5401,15 @@ var COFantasy = COFantasy || function() {
       }
       return true;
     });
+    //On enlève les alliés si l'option saufAllies est active
+    if (options.saufAllies) {
+      var allies = new Set();
+      allies = alliesParPerso[attaquant.charId] || allies;
+      allies = (new Set(allies)).add(attaquant.charId);
+      cibles = cibles.filter(function(target) {
+        return !(allies.has(target.charId));
+      });
+    }
     if (cibles.length === 0) {
       if (options.aoe) {
         sendChar(attackingCharId, "aucune cible dans l'aire d'effet de " + weaponName + ", action annulée");
