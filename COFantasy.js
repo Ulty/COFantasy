@@ -1222,7 +1222,7 @@ var COFantasy = COFantasy || function() {
   //Retourne le mod de la caractéristque entière.
   //si carac n'est pas une carac, retourne 0
   function modCarac(perso, carac) {
-    if (perso.chaId === undefined) perso = {charId: perso};
+    if (perso.charId === undefined) perso = {charId: perso};
     var res = Math.floor((ficheAttributeAsInt(perso, carac, 10) - 10) / 2);
     if (carac == 'FORCE' && attributeAsBool(perso, 'mutationMusclesHypertrophies')) res += 2;
     else if (carac == 'DEXTERITE' && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) res += 4;
