@@ -2,6 +2,7 @@
 
 ## 2.0
 ### Capacités
+* Changement des bonus d'interchangeable, qui rendaient les combats trop longs. Il y a une option pour revenir aux bonus d'origine.
 * Ajout de la capacité "Foudres divines" du prêtre
 * Ajout de la capacité "Furie berserk" du barbare
 * Ajout de la capacité "Même pas mal" du barbare

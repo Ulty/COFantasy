@@ -89,6 +89,11 @@ var COFantasy = COFantasy || function() {
           val: true,
           type: 'bool'
         },
+        interchangeable_attaque: {
+          explications: "La capacité interchangeable donne moins de DEF mais plus d'attaque",
+          val: true,
+          type: 'bool'
+        },
       }
     },
     affichage: {
@@ -1222,7 +1227,9 @@ var COFantasy = COFantasy || function() {
   //Retourne le mod de la caractéristque entière.
   //si carac n'est pas une carac, retourne 0
   function modCarac(perso, carac) {
-    if (perso.charId === undefined) perso = {charId: perso};
+    if (perso.charId === undefined) perso = {
+      charId: perso
+    };
     var res = Math.floor((ficheAttributeAsInt(perso, carac, 10) - 10) / 2);
     if (carac == 'FORCE' && attributeAsBool(perso, 'mutationMusclesHypertrophies')) res += 2;
     else if (carac == 'DEXTERITE' && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) res += 4;
@@ -1777,6 +1784,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function pointsDeChance(perso) {
+    if (!estPJ(perso)) return 0;
     var optionPC = ficheAttributeAsInt(perso, 'option_pc', 1);
     if (optionPC === 0) return 0;
     return ficheAttributeAsInt(perso, 'pc', 3);
@@ -4737,7 +4745,7 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(target, 'feinte_' + attaquant.tokName)) {
       attBonus += 5;
-      explications.push("Feinte => +5 en attaque");
+      explications.push("Feinte => +5 en attaque et +2d6 DM");
     }
     if (options.contact) {
       if (attributeAsBool(target, 'criDeGuerre') &&
@@ -4756,6 +4764,12 @@ var COFantasy = COFantasy || function() {
         target.estAgrippee = true;
       }
     });
+    if (stateCOF.options.regles.val.interchangeable_attaque.val) {
+      if (interchangeable(target.token, attaquant, pageId).result) {
+        attBonus += 3;
+        explications.push("Attaque en meute => +3 en Attaque et +2 en DEF");
+      }
+    }
     if (charAttributeAsBool(attaquant, 'combatEnPhalange')) {
       var tokensContact = findObjs({
         _type: 'graphic',
@@ -6211,7 +6225,13 @@ var COFantasy = COFantasy || function() {
         var interchange;
         if (options.aoe === undefined) {
           interchange = interchangeable(attackingToken, target, pageId);
-          if (interchange.result) defense += 5;
+          if (interchange.result) {
+            if (stateCOF.options.regles.val.interchangeable_attaque.val) {
+              defense += 2;
+            } else {
+              defense += 5;
+            }
+          }
         }
         //Absorption au bouclier
         var absorber;
@@ -11451,7 +11471,7 @@ var COFantasy = COFantasy || function() {
             var attr_pc = charAttribute(perso.charId, 'pc', {
               caseInsensitive: true
             });
-            if (attr_pc !== undefined) {
+            if (attr_pc !== undefined && attr_pc.length > 0) {
               pc = parseInt(attr_pc[0].get('current'));
               if (isNaN(pc)) pc = 0;
               pc_max = parseInt(attr_pc[0].get('max'));
