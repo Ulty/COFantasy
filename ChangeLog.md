@@ -2,6 +2,7 @@
 
 ## 2.0
 ### Capacités
+* Ajout de l'ouverture mortelle du voleur
 * Ajout de l'immunité à la surprise du voleur
 * Changement des bonus d'interchangeable, qui rendaient les combats trop longs. Il y a une option pour revenir aux bonus d'origine.
 * Ajout de la capacité "Foudres divines" du prêtre

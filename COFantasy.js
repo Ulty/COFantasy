@@ -2758,6 +2758,7 @@ var COFantasy = COFantasy || function() {
         case "malediction":
         case "pietine":
         case "maxDmg":
+        case "ouvertureMortelle":
           scope[cmd[0]] = true;
           return;
         case 'arc':
@@ -6346,7 +6347,7 @@ var COFantasy = COFantasy || function() {
               default:
                 critSug += "simple échec";
             }
-          } else if (paralyse || d20roll == 20 ||
+          } else if (paralyse || options.ouvertureMortelle || d20roll == 20 ||
             (d20roll >= target.crit && attackRoll >= defense)) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
             touche = true;
@@ -6857,11 +6858,16 @@ var COFantasy = COFantasy || function() {
         if (charAttributeAsBool(target, 'immuniteAuxSournoises')) {
           target.messages.push('Immunité aux attaques sournoises');
         } else {
+          if (options.ouvertureMortelle) {
+            target.messages.push("Ouverture mortelle => + 2 x " + sournoise + options.d6 + " DM");
+            sournoise = sournoise * 2;
+          } else {
+            target.messages.push("Attaque sournoise => +" + sournoise + options.d6 + " DM");
+          }
           target.additionalDmg.push({
             type: mainDmgType,
             value: sournoise + options.d6
           });
-          target.messages.push("Attaque sournoise => +" + sournoise + options.d6 + " DM");
         }
       }
       if (target.chasseurEmerite) {
@@ -10632,7 +10638,7 @@ var COFantasy = COFantasy || function() {
         }
         var name = perso.token.get('name');
         if (charAttributeAsBool(perso, 'immuniteContreSurprise')) {
-          addLineToFramedDisplay(display, name+" n'est pas surpris"+eForFemale(perso.charId));
+          addLineToFramedDisplay(display, name + " n'est pas surpris" + eForFemale(perso.charId));
           sendEvent();
         }
         var bonusSurprise = 0;
