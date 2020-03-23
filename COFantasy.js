@@ -120,6 +120,11 @@ var COFantasy = COFantasy || function() {
           val: true,
           type: 'bool'
         },
+        montre_def: {
+          explications: "montre la DEF des adversaires dans les cadres de combat",
+          val: true,
+          type: 'bool'
+        },
         fiche: {
           explications: "La fiche interagit avec le script",
           val: true,
@@ -6380,10 +6385,14 @@ var COFantasy = COFantasy || function() {
             line += "contre <b>" + target.tokName + "</b> ";
           }
           line += ":<br>";
-          line += attRollValue + " vs <b>";
-          if (absorber) line += absorber;
-          else line += defense;
-          line += "</b> " + attackResult;
+          line += attRollValue + ' ';
+          if (stateCOF.options.affichage.val.montre_def.val) {
+            line += "vs <b>";
+            if (absorber) line += absorber;
+            else line += defense;
+            line += "</b> ";
+          }
+          line += attackResult;
           if (options.test) line += " (" + attackRoll + ")";
           target.attackMessage = line;
           if (touche) {
