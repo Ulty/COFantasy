@@ -11,6 +11,7 @@
 * L'option --argent devient --armeDArgent. Cela permet d'utiliser --argent pour les armes en argent ordinaires.
 
 ### Autres améliorations
+* Les messages de dégâts d'effets temporaires indiquent le numéro de mob quand la cible n'est pas un personnage unique.
 * Ajout de l'effet temporarire affaibli (affaibliTemp)
 * Ajout d'un effet temporaire armesEnflammees pour enflammer toutes les armes portées par un personnage
 * Ajout d'une option pour multiplier les dm d'un autre type que le principal en cas de critique.

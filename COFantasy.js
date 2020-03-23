@@ -4572,6 +4572,10 @@ var COFantasy = COFantasy || function() {
     if (options.semonce) {
       attBonus += 5;
     }
+    if (attributeAsBool(attaquant, 'criDuPredateur')) {
+      attBonus += 1;
+      explications.push("Cri du prédateur => +1 en attaque");
+    }
     if (attributeAsBool(attaquant, 'baroudHonneurActif')) {
       attBonus += 5;
       explications.push(attaquant.tokName + " porte une dernière attaque et s'effondre");
@@ -4748,7 +4752,8 @@ var COFantasy = COFantasy || function() {
       explications.push("Feinte => +5 en attaque et +2d6 DM");
     }
     if (options.contact) {
-      if (attributeAsBool(target, 'criDeGuerre') &&
+      if ((attributeAsBool(target, 'criDeGuerre') ||
+          attributeAsBool(target, 'criDuPredateur')) &&
         ficheAttributeAsInt(attaquant, 'FORCE', 10) <= ficheAttributeAsInt(target, 'FORCE', 10) &&
         parseInt(attaquant.token.get("bar1_max")) <= parseInt(target.token.get("bar1_max"))) {
         attBonus -= 2;
@@ -14638,7 +14643,7 @@ var COFantasy = COFantasy || function() {
     });
     getSelected(msg, function(selected) {
       if (selected.length === 0) {
-        sendPlayer(msg, "Aucun personnage sélectionner pour lancer le mur de force");
+        sendPlayer(msg, "Aucun personnage sélectionné pour lancer le mur de force");
         return;
       }
       var evt = {
@@ -20004,6 +20009,11 @@ var COFantasy = COFantasy || function() {
       actif: "a effrayé ses adversaires",
       fin: ""
     },
+    criDuPredateur: {
+      activation: "pousse un hurlement effrayant",
+      actif: "a libéré son âme de prédateur",
+      fin: ""
+    },
     protectionContreLeMal: {
       activation: "reçoit une bénédiction de protection contre le mal",
       actif: "est protégé contre le mal",
@@ -20451,11 +20461,25 @@ var COFantasy = COFantasy || function() {
         break;
       default:
     }
-    if (options.attrSave === undefined && charId && !getState({
-        charId: charId
-      }, 'mort')) {
-      if (options.print) options.print(messageEffetTemp[effet].fin);
-      else sendChar(charId, messageEffetTemp[effet].fin);
+    if (options.attrSave === undefined && charId) {
+      var estMort = true;
+      iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+        estMort = estMort && getState({
+          charId: charId,
+          token: token
+        }, 'mort');
+      });
+      if (!estMort) {
+        if (options.print) options.print(messageEffetTemp[effet].fin);
+        else {
+          if (attrName == efComplet)
+            sendChar(charId, messageEffetTemp[effet].fin);
+          else {
+            var tokenName = attrName.substring(attrName.indexOf('_') + 1);
+            sendChat('', tokenName + ' ' + messageEffetTemp[effet].fin);
+          }
+        }
+      }
     }
     if (options.gardeAutresAttributs === undefined && charId) {
       enleverEffetAttribut(charId, efComplet, attrName, 'Puissant', evt);
@@ -20525,8 +20549,14 @@ var COFantasy = COFantasy || function() {
           };
           dealDamage(perso, r, [], evt, false, options, undefined,
             function(dmgDisplay, dmg) {
-              if (dmg > 0)
-                sendChar(charId, msg + " subit " + dmgDisplay + " DM");
+              if (dmg > 0) {
+                if (effet == attrName) {
+                  sendChar(charId, msg + " subit " + dmgDisplay + " DM");
+                } else {
+                  var tokenName = attrName.substring(attrName.indexOf('_') + 1);
+                  sendChat('', tokenName + ' ' + msg + " subit " + dmgDisplay + " DM");
+                }
+              }
               count--;
               if (count === 0) callback();
             });
