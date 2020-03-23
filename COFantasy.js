@@ -6097,7 +6097,8 @@ var COFantasy = COFantasy || function() {
       var display = startFramedDisplay(playerId, action, attaquant, {
         perso2: target,
         chuchote: options.secret,
-        retarde: options.secret
+        retarde: options.secret,
+        auto: options.auto || options.ouvertureMortelle
       });
 
       // Cas des armes à poudre
@@ -7509,32 +7510,42 @@ var COFantasy = COFantasy || function() {
           addLineToFramedDisplay(display,
             bouton("!cof-pousser-kiai " + evt.id, "Kiai", evt.personnage));
         }
-        var sort = false;
-        if (evt.action.options && evt.action.options.sortilege) sort = true;
-        if (evt.action.cibles) {
-          evt.action.cibles.forEach(function(target) {
-            if (attributeAsBool(target, 'encaisserUnCoup')) {
-              addLineToFramedDisplay(display, target.tokName + " peut " +
-                bouton("!cof-encaisser-un-coup " + evt.id,
-                  "encaisser le coup", target)
-              );
-            }
-            if (sort) {
-              if (attributeAsBool(target, 'absorberUnSort')) {
+        //Possibilité d'annuler l'attaque
+        if (evt.action.options && !evt.action.options.auto) {
+          //Seulement si elle n'est pas automatiquement réussie
+          var sort = false;
+          if (evt.action.options && evt.action.options.sortilege) sort = true;
+          if (evt.action.cibles) {
+            evt.action.cibles.forEach(function(target) {
+              if (attributeAsBool(target, 'encaisserUnCoup')) {
                 addLineToFramedDisplay(display, target.tokName + " peut " +
-                  bouton("!cof-absorber-au-bouclier " + evt.id,
-                    "absorber le sort", target)
+                  bouton("!cof-encaisser-un-coup " + evt.id,
+                    "encaisser le coup", target)
                 );
               }
-            } else {
-              if (attributeAsBool(target, 'absorberUnCoup')) {
+              if (attributeAsBool(target, 'esquiveAcrobatique')) {
                 addLineToFramedDisplay(display, target.tokName + " peut " +
-                  bouton("!cof-absorber-au-bouclier " + evt.id,
-                    "absorber le coup", target)
+                  bouton("!cof-esquive-acrobatique " + evt.id,
+                    "tenter une esquive acrobatique", target)
                 );
               }
-            }
-          });
+              if (sort) {
+                if (attributeAsBool(target, 'absorberUnSort')) {
+                  addLineToFramedDisplay(display, target.tokName + " peut " +
+                    bouton("!cof-absorber-au-bouclier " + evt.id,
+                      "absorber le sort", target)
+                  );
+                }
+              } else {
+                if (attributeAsBool(target, 'absorberUnCoup')) {
+                  addLineToFramedDisplay(display, target.tokName + " peut " +
+                    bouton("!cof-absorber-au-bouclier " + evt.id,
+                      "absorber le coup", target)
+                  );
+                }
+              }
+            });
+          }
         }
       }
     }
@@ -8923,6 +8934,7 @@ var COFantasy = COFantasy || function() {
     // Remettre l'esquive fatale à 1
     resetAttr(attrs, 'esquiveFatale', evt);
     resetAttr(attrs, 'attaqueEnTraitre', evt);
+    resetAttr(attrs, 'esquiveAcrobatique', evt);
     // Réinitialiser le kiai
     resetAttr(attrs, 'kiai', evt);
     // Pour frappe du vide, on rengaine l'arme, cela remet aussi l'attribut
@@ -15617,6 +15629,119 @@ var COFantasy = COFantasy || function() {
     }); //fin getSelected
   }
 
+  // asynchrone : on fait les jets du barde en opposition
+  function esquiveAcrobatique(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    var evtARefaire = lastEvent();
+    if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
+      evtARefaire = findEvent(cmd[1]);
+      if (evtARefaire === undefined) {
+        error("L'action est trop ancienne ou a été annulée", cmd);
+        return;
+      }
+    }
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        error("Personne n'est sélectionné pour esquiver", msg);
+        return;
+      }
+      if (evtARefaire === undefined) {
+        sendChat('', "Historique d'actions vide, pas d'action trouvée pour esquiver");
+        return;
+      }
+      if (evtARefaire.type != 'Attaque' || evtARefaire.succes === false) {
+        sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour absorber l'attaque précédente");
+        return;
+      }
+      var attaque = evtARefaire.action;
+      var options = attaque.options;
+      options.rollsAttack = attaque.rollsAttack;
+      var evt = {
+        type: "esquive acrobatique",
+        attributes: []
+      };
+      options.evt = evt;
+      options.redo = true;
+      var toProceed;
+      var count = selected.length;
+      iterSelected(selected, function(barde) {
+        if (!peutController(msg, barde)) {
+          sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+          count--;
+          return;
+        }
+        var esquiveAcrobatique = tokenAttribute(barde, 'esquiveAcrobatique');
+        if (esquiveAcrobatique.length === 0) {
+          sendChar(barde.charId, "ne sait pas faire d'esquive acrobatique");
+          count--;
+          return;
+        }
+        esquiveAcrobatique = esquiveAcrobatique[0];
+        var curEsquiveAcrobatique = parseInt(esquiveAcrobatique.get('current'));
+        if (isNaN(curEsquiveAcrobatique)) {
+          error("Resource pour esquive acrobatique mal formée", esquiveAcrobatique);
+          count--;
+          return;
+        }
+        if (curEsquiveAcrobatique < 1) {
+          sendChar(barde.charId, " a déjà fait une esquive acrobatique ce tour");
+          count--;
+          return;
+        }
+        var cible = attaque.cibles.find(function(target) {
+          return (target.token.id === barde.token.id);
+        });
+        if (cible === undefined) {
+          sendChar(barde.charId, "n'est pas la cible de la dernière attaque");
+          count--;
+          return;
+        }
+        evt.attributes.push({
+          attribute: esquiveAcrobatique,
+          current: curEsquiveAcrobatique
+        });
+        esquiveAcrobatique.set('current', curEsquiveAcrobatique - 1);
+        toProceed = true;
+        var attackRollExpr = "[[" + computeDice(barde) + "]]";
+        sendChat('', attackRollExpr, function(res) {
+          var rolls = res[0];
+          var attackRoll = rolls.inlinerolls[0];
+          var totalEsquive = attackRoll.results.total;
+          var msgEsquiver = buildinline(attackRoll);
+          var attBonus = ficheAttributeAsInt(barde, 'NIVEAU', 1);
+          attBonus += modCarac(barde, 'DEXTERITE');
+          attBonus += ficheAttributeAsInt(barde, 'ATKTIR_DIV', 0);
+          totalEsquive += attBonus;
+          if (attBonus > 0) msgEsquiver += "+" + attBonus;
+          else if (attBonus < 0) msgEsquiver += attBonus;
+          var explEsquiver = [];
+          var attAbsBonus = bonusAttaqueA(cible, 'esquive acrobatique', evt, explEsquiver, {});
+          var pageId = barde.token.get('pageid');
+          var bad = bonusAttaqueD(cible, attaque.attaquant, 0, pageId, evt, explEsquiver, {});
+          attAbsBonus += bad;
+          if (attAbsBonus > 0) msgEsquiver += "+" + attAbsBonus;
+          else if (attAbsBonus < 0) msgEsquiver += attAbsBonus;
+          explEsquiver.push(cible.tokName + " tente une esquive acrobatique. " + onGenre(cible.charId, "Il", "elle") + " fait " + msgEsquiver);
+          cible.absorber = totalEsquive;
+          cible.absorberDisplay = msgEsquiver;
+          cible.absorberExpl = explEsquiver;
+          count--;
+          if (count === 0) {
+            toProceed = false;
+            undoEvent();
+            attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.attack_label, options);
+          }
+        }); //fin lancé de dés asynchrone
+      }); //fin iterSelected
+      if (count === 0 && toProceed) {
+        undoEvent();
+        attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.attack_label, options);
+      }
+    }); //fin getSelected
+  }
+
   // modifie res et le retourne (au cas où il ne serait pas donné)
   function listRollResults(roll, res) {
     res = res || [];
@@ -19386,6 +19511,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-encaisser-un-coup":
         encaisserUnCoup(msg);
         return;
+      case "!cof-esquive-acrobatique":
+        esquiveAcrobatique(msg);
+        return;
       case "!cof-absorber-au-bouclier":
         absorberAuBouclier(msg);
         return;
@@ -20926,6 +21054,7 @@ var COFantasy = COFantasy || function() {
       attrs = removeAllAttributes('attaqueMalgreMenace', evt, attrs);
       attrs = removeAllAttributes('ripostesDuTour', evt, attrs);
       resetAttr(attrs, 'attaqueEnTraitre', evt);
+      resetAttr(attrs, 'esquiveAcrobatique', evt);
       // Pour défaut dans la cuirasse, on diminue si la valeur est 2, et on supprime si c'est 1
       var defautsDansLaCuirasse = allAttributesNamed(attrs, 'defautDansLaCuirasse');
       defautsDansLaCuirasse.forEach(function(attr) {
