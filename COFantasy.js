@@ -10631,6 +10631,10 @@ var COFantasy = COFantasy || function() {
           return;
         }
         var name = perso.token.get('name');
+        if (charAttributeAsBool(perso, 'immuniteContreSurprise')) {
+          addLineToFramedDisplay(display, name+" n'est pas surpris"+eForFemale(perso.charId));
+          sendEvent();
+        }
         var bonusSurprise = 0;
         if (surveillance(perso)) {
           bonusSurprise += 5;

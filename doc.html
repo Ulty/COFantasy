@@ -1263,6 +1263,7 @@
                   <li><strong>Discrétion</strong> : on peut ajouter une compétence discrétion sur la fiche, avec le bon bonus. Pour l'utilisation de <code>!cof-jet</code>, ajouter un attribut <code>discrétion</code> avec la valeur du bonus total.</li>
                   <li><strong>Attaque sournoise</strong> : Faire des versions des attaques avec <code>--sournoise <i>n</i></code>, où <i>n</i> est le rang dans la voie. Au MJ de vérifier que les conditions de l'attaque sournoise sont remplies. (Exemple de macro pour un voleur qui aurait une attaque <code>Dague</code> et une attaque <code>arbalète</code> : <code>?{Arme utilisée?|Dague,%{selected|Dague}|Arbalète,%{selected|Arbalète}} --sournoise 2</code>). Une alternative à cette macro est d'écrire une ability par arme (qui fait des actions comme <code>%{selected|Dague} --sournoise 2</code>) et de lister ces actions dans une ability nommée <code>#Attaque-sournoise#</code>, qui peut elle-même se trouver dans les <code>#Actions#</code>.</li>
                   <li><strong>Ombre mouvante</strong> : pas beaucoup de support. Faire <code>!cof-jet DEX 10</code> pour le jet de dextérité, le reste est géré par le MJ.</li>
+                  <li><strong>Surprise</strong> : ajouter un attribut <code>immuniteContreSurprise</code> de valeur <code>true</code>. Pour le reste, à gérer par le MJ.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'aventurier</h4>
                 <ol>
