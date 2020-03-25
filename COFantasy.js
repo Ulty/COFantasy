@@ -1291,7 +1291,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function boutonSimple(action, style, texte) {
-    action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;').replace(/"/g, '&#34;');
+    action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;').replace(/"/g, '&#34;').replace(/{/g, '&#123;').replace(/}/g, '&#125;').replace(/\|/g, '&#124;');
     action = action.replace(/\'/g, '&apos;'); // escape quotes
     return '<a href="' + action + '"' + style + '>' + texte + '</a>';
   }
@@ -1957,6 +1957,28 @@ var COFantasy = COFantasy || function() {
       return Campaign().get('playerpageid');
     }
     return pageId;
+  }
+
+  // si défini, callback est appelé à chaque élément de selected
+  // qui n'est pas un personnage
+  // iter seulement sur les élément qui correspondent à des personnages
+  function iterSelected(selected, iter, callback) {
+    selected.forEach(function(sel) {
+      var token = getObj('graphic', sel._id);
+      if (token === undefined) {
+        if (callback !== undefined) callback();
+        return;
+      }
+      var charId = token.get('represents');
+      if (charId === undefined || charId === "") {
+        if (callback !== undefined) callback();
+        return;
+      }
+      iter({
+        token: token,
+        charId: charId
+      });
+    });
   }
 
   // callback(selected, playerId)
@@ -6057,6 +6079,14 @@ var COFantasy = COFantasy || function() {
       dice = 12;
       explications.push("Attaquant aimmobilisé => D12 au lieu de D20 en Attaque");
     }
+    var ebriete = attributeAsInt(attaquant, 'niveauEbriete', 0);
+    if (ebriete > 0) {
+      if (options.distance || options.sortilege || ebriete > 1) {
+        dice = 12;
+        if (ebriete > 3) ebriete = 3;
+        explications.push("Attaquant " + niveauxEbriete[ebriete] + " => D12 au lieu de D20 en Attaque");
+      }
+    }
     if (options.avecd12) dice = 12;
     var nbDe = 1;
     if (options.m2d20) nbDe = 2;
@@ -7673,15 +7703,17 @@ var COFantasy = COFantasy || function() {
     if (carac == 'DEX') {
       bonusAttrs.push('reflexesFelins');
     }
+    if (!options.hideSaveTitle) {
+      var title = " Jet de " + carac + " " + s.seuil;
+      if (options.msgPour) title += options.msgPour;
+      expliquer(title);
+    }
     testCaracteristique(target, carac, s.seuil, {
         bonusAttrs: bonusAttrs,
         bonus: bonus
       }, evt,
       function(tr) {
-        var smsg = " Jet de " + carac + " " + s.seuil;
-        if (options.msgPour) smsg += options.msgPour;
-        expliquer(smsg);
-        smsg = target.token.get('name') + " fait " + tr.texte;
+        var smsg = target.token.get('name') + " fait " + tr.texte;
         if (tr.reussite) {
           smsg += " => réussite";
           if (options.msgReussite) smsg += options.msgReussite;
@@ -8937,6 +8969,24 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'esquiveAcrobatique', evt);
     // Réinitialiser le kiai
     resetAttr(attrs, 'kiai', evt);
+    // On diminue l'ébriété des personnages sous vapeurs éthyliques
+    allAttributesNamed(attrs, 'vapeursEthyliques').forEach(function(attr) {
+      var veCharId = attr.get('characterid');
+      if (veCharId === undefined || veCharId === '') {
+        error("Attribut sans personnage associé", attr);
+        return;
+      }
+      iterTokensOfAttribute(veCharId, stateCOF.combat_pageid,
+        'vapeursEthyliques', attr.get('name'),
+        function(tok) {
+          var perso = {
+            charId: veCharId,
+            token: tok
+          };
+          removeTokenAttr(perso, 'niveauEbriete', evt, "désaoûle");
+        });
+    });
+    attrs = removeAllAttributes('vapeursEthyliques', evt, attrs);
     // Pour frappe du vide, on rengaine l'arme, cela remet aussi l'attribut
     allAttributesNamed(attrs, 'frappeDuVide').forEach(function(attr) {
       var fdvCharId = attr.get('characterid');
@@ -9535,25 +9585,6 @@ var COFantasy = COFantasy || function() {
         finalize();
       });
     }, finalize); //fin de iterSelected
-  }
-
-  function iterSelected(selected, iter, callback) {
-    selected.forEach(function(sel) {
-      var token = getObj('graphic', sel._id);
-      if (token === undefined) {
-        if (callback !== undefined) callback();
-        return;
-      }
-      var charId = token.get('represents');
-      if (charId === undefined || charId === "") {
-        if (callback !== undefined) callback();
-        return;
-      }
-      iter({
-        token: token,
-        charId: charId
-      });
-    });
   }
 
   function recharger(msg) {
@@ -11511,7 +11542,7 @@ var COFantasy = COFantasy || function() {
               pc = parseInt(attr_pc[0].get('current'));
               if (isNaN(pc)) pc = 0;
               pc_max = parseInt(attr_pc[0].get('max'));
-              if (isNaN(pc_max)) pc_max = 0;
+              if (isNaN(pc_max)) pc_max = 3;
             }
             line = "Points de chance : " + pc + " / " + pc_max;
             addLineToFramedDisplay(display, line);
@@ -11714,6 +11745,10 @@ var COFantasy = COFantasy || function() {
               addLineToFramedDisplay(display, "ne peut plus faire de soin modéré aujourd'hui");
             }
           }
+        }
+        var ebriete = attributeAsInt(perso, 'niveauEbriete', 0);
+        if (ebriete > 0 && ebriete < niveauxEbriete.length) {
+          addLineToFramedDisplay(display, "est " + niveauxEbriete[ebriete]);
         }
         sendChat("", endFramedDisplay(display));
       });
@@ -11940,6 +11975,11 @@ var COFantasy = COFantasy || function() {
     if (estAffaibli(personnage) || getState(personnage, 'immobilise') ||
       (carac == 'DEX' && getState(personnage, 'encombre')))
       dice = 12;
+    else {
+      var ebriete = attributeAsInt(personnage, 'niveauEbriete', 0);
+      if (ebriete > 2) dice = 12;
+      else if (ebriete > 1 && carac != 'CON') dice = 12;
+    }
     return dice;
   }
 
@@ -16664,8 +16704,29 @@ var COFantasy = COFantasy || function() {
       return false;
     });
     if (elixir === undefined) {
-      error(forgesort.token.get('name') + " est incapable de créer " + cmd[2], cmd);
-      return;
+      var altElixirs = findObjs({
+        _type: 'attribute',
+        _characterid: forgesort.charId
+      });
+      var altElixir = altElixirs.find(function(attr) {
+        var attrName = attr.get('name');
+        if (!attrName.startsWith('Elixir ')) return false;
+        var rang = parseInt(attrName.substring(7));
+        if (isNaN(rang) || rang > 3) return false;
+        var nomElixir = attr.get('current');
+        if (nomElixir != cmd[2]) return false;
+        elixir = {
+          nom: nomElixir,
+          action: attr.get('max'),
+          rang: rang
+        };
+        return true;
+      });
+      if (elixir === undefined) {
+
+        error(forgesort.token.get('name') + " est incapable de créer " + cmd[2], cmd);
+        return;
+      }
     }
     var evt = {
       type: "Création d'élixir"
@@ -16739,6 +16800,14 @@ var COFantasy = COFantasy || function() {
           chuchote: true
         });
         listeElixirs(voieDesElixirs).forEach(function(elixir) {
+          if (elixir.rang < 4) {
+            //Il est possible de changer l'élixir par défaut
+            var altElixir = charAttribute(forgesort.charId, 'Elixir ' + elixir.rang);
+            if (altElixir.length > 0) {
+              elixir.nom = altElixir[0].get('current');
+              elixir.action = altElixir[0].get('max');
+            }
+          }
           var nbElixirs = 0;
           var attr = tokenAttribute(forgesort, 'elixir_' + elixir.nom);
           if (attr.length > 0) {
@@ -19288,6 +19357,148 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  var niveauxEbriete = [
+    "sobre",
+    "pompette",
+    "bourré",
+    "ivre-mort",
+    "en coma éthylique"
+  ];
+
+  function augmenteEbriete(personnage, evt, expliquer) {
+    personnage.tokName = personnage.tokName || personnage.token.get('name');
+    var n = attributeAsInt(personnage, 'niveauEbriete', 0) + 1;
+    if (n >= niveauxEbriete.length) {
+      expliquer(personnage.tokName + " est déjà en coma éthylique.");
+      return;
+    }
+    expliquer(personnage.tokName + " devient " + niveauxEbriete[n]);
+    setTokenAttr(personnage, 'niveauEbriete', n, evt);
+  }
+
+  function diminueEbriete(personnage, evt, expliquer) {
+    personnage.tokName = personnage.tokName || personnage.token.get('name');
+    var n = attributeAsInt(personnage, 'niveauEbriete', 0);
+    if (n < 1) return;
+    n--;
+    if (n >= niveauxEbriete.length) n = niveauxEbriete.length - 1;
+    expliquer(personnage.tokName + " redevient " + niveauxEbriete[n]);
+    setTokenAttr(personnage, 'niveauEbriete', n, evt);
+  }
+
+  function vapeursEthyliques(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    getSelected(msg, function(selected, playerId) {
+      var evt = {
+        type: 'Vapeurs éthyliques'
+      };
+      if (limiteRessources(options.lanceur, options, 'vapeursEthyliques', "lancer une fiole de vapeurs éthyliques", evt)) return;
+      var display = startFramedDisplay(playerId, 'Vapeurs éthyliques');
+      if (options.save) {
+        var title = " Jet de " + options.save.carac + " " + options.save.seuil;
+        title += " pour résister à l'alcool";
+        addLineToFramedDisplay(display, title);
+        title += options.msgPour;
+      }
+      initiative(selected, evt);
+      var count = selected.length;
+      var finalize = function() {
+        count--;
+        if (count > 0) return;
+        sendChat('', endFramedDisplay(display));
+        addEvent(evt);
+      };
+      var expliquer = function(m) {
+        addLineToFramedDisplay(display, m);
+      };
+      iterSelected(selected, function(perso) {
+        perso.tokName = perso.tokName || perso.token.get('name');
+        if (options.save) {
+          save(options.save, perso, expliquer, {
+              msgPour: " pour résister aux vapeurs éthyliques",
+              hideSaveTitle: true
+            }, evt,
+            function(succes, rollText) {
+              if (!succes) {
+                augmenteEbriete(perso, evt, expliquer);
+                setTokenAttr(perso, 'vapeursEthyliques', 0, evt, undefined, options.save.seuil);
+              }
+              finalize();
+            });
+        } else { //pas de save
+          augmenteEbriete(perso, evt, expliquer);
+          setTokenAttr(perso, 'vapeursEthyliques', 0, evt);
+          finalize();
+        }
+      }, finalize); //fin iterSelected
+    }, options); //fin getSelected
+  }
+
+  function desaouler(msg) {
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        sendPlayer(msg, "Aucune sélection pour !cof-desaouler");
+        return;
+      }
+      var evt = {
+        type: 'desaoûler'
+      };
+      var expliquer = function(s) {
+        sendChat('', s);
+      };
+      iterSelected(selected, function(perso) {
+        diminueEbriete(perso, evt, expliquer);
+      });
+      addEvent(evt);
+    });
+  }
+
+  function boireAlcool(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    getSelected(msg, function(selected, playerId) {
+      var evt = {
+        type: 'Boire alcool'
+      };
+      if (limiteRessources(options.lanceur, options, 'boireAlcool', "est affecté par l'alcool", evt)) return;
+      var display = startFramedDisplay(playerId, 'Alcool');
+      if (options.save) {
+        var title = " Jet de " + options.save.carac + " " + options.save.seuil;
+        title += " pour résister à l'alcool";
+        addLineToFramedDisplay(display, title);
+        title += options.msgPour;
+      }
+      var count = selected.length;
+      var finalize = function() {
+        count--;
+        if (count > 0) return;
+        sendChat('', endFramedDisplay(display));
+        addEvent(evt);
+      };
+      var expliquer = function(m) {
+        addLineToFramedDisplay(display, m);
+      };
+      iterSelected(selected, function(perso) {
+        perso.tokName = perso.tokName || perso.token.get('name');
+        if (options.save) {
+          save(options.save, perso, expliquer, {
+              hideSaveTitle: true
+            }, evt,
+            function(succes, rollText) {
+              if (!succes) {
+                augmenteEbriete(perso, evt, expliquer);
+              }
+              finalize();
+            });
+        } else { //pas de save
+          augmenteEbriete(perso, evt, expliquer);
+          finalize();
+        }
+      }, finalize); //fin iterSelected
+    }, options); //fin getSelected
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -19636,6 +19847,15 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-animer-cadavre":
         animerCadavre(msg);
+        return;
+      case "!cof-vapeurs-ethyliques":
+        vapeursEthyliques(msg);
+        return;
+      case "!cof-desaouler":
+        desaouler(msg);
+        return;
+      case "!cof-boire-alcool":
+        boireAlcool(msg);
         return;
       default:
         return;
@@ -21034,6 +21254,7 @@ var COFantasy = COFantasy || function() {
   //evt a un champ attributes et un champ deletedAttributes
   function nextTurnOfActive(active, attrs, evt, pageId) {
     if (active.id == "-1" && active.custom == "Tour") {
+      // Nouveau tour
       var tour = parseInt(active.pr);
       if (isNaN(tour)) {
         error("Tour invalide", active);
@@ -21086,6 +21307,54 @@ var COFantasy = COFantasy || function() {
           evt.attributes.push(prevAttr);
           attr.set('current', 1);
         }
+      });
+      var vapeth = allAttributesNamed(attrs, 'vapeursEthyliques');
+      vapeth.forEach(function(attr) {
+        var ve = parseInt(attr.get('current'));
+        if (isNaN(ve)) ve = 0;
+        evt.attributes.push({
+          attribute: attr,
+          current: 0
+        });
+        attr.set('current', ve + 1);
+        var veCharId = attr.get('characterid');
+        if (veCharId === undefined || veCharId === '') {
+          error("Attribut sans personnage associé", attr);
+          return;
+        }
+        var veSeuil = parseInt(attr.get('max'));
+        if (isNaN(veSeuil)) veSeuil = 0;
+        veSeuil -= Math.floor(ve / 2);
+        iterTokensOfAttribute(veCharId, stateCOF.combat_pageid,
+          'vapeursEthyliques', attr.get('name'),
+          function(tok) {
+            var perso = {
+              charId: veCharId,
+              token: tok
+            };
+            testCaracteristique(perso, 'CON', veSeuil, {}, evt, function(testRes) {
+              var res = "tente un jet de CON " + veSeuil + " pour combattre les vapeurs éthyliques " + testRes.texte;
+              if (testRes.reussite) {
+                res += " => réussi";
+                var expliquer;
+                if (attr.get('name') == 'vapeursEthyliques') {
+                  expliquer = function(s) {
+                    sendChar(veCharId, s);
+                  };
+                } else {
+                  perso.tokName = tok.get('name');
+                  expliquer = function(s) {
+                    sendChat('', perso.tokName + ' ' + s);
+                  };
+                }
+                expliquer(res);
+                diminueEbriete(perso, evt, expliquer);
+              } else {
+                res += " => raté";
+                sendChar(veCharId, res);
+              }
+            });
+          });
       });
       // nouveau tour : enlever le statut surpris
       // et faire les actions de début de tour

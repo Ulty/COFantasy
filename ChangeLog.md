@@ -14,6 +14,7 @@
 * L'option --argent devient --armeDArgent. Cela permet d'utiliser --argent pour les armes en argent ordinaires.
 
 ### Autres améliorations
+* gestion du niveau d'ébriété.
 * ajout d'une option d'affichage pour ne pas montrer la DEF des adversaires.
 * Les messages de dégâts d'effets temporaires indiquent le numéro de mob quand la cible n'est pas un personnage unique.
 * Ajout de l'effet temporarire affaibli (affaibliTemp)
