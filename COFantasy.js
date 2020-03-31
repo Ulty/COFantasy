@@ -3846,6 +3846,10 @@ var COFantasy = COFantasy || function() {
     if (getState(perso, 'aveugle')) init -= 5;
     // Voie du compagnon animal rang 2 (surveillance)
     init += attributeAsInt(perso, 'bonusInitEmbuscade', 0);
+    // Familier
+    if (familier(perso)) init += 2;
+    // Sixième sens en sort
+    if (attributeAsBool(perso, 'sixiemeSens')) init += 2;
     // Voie du chef d'armée rang 2 (Capitaine)
     if (aUnCapitaine(perso, evt)) init += 2;
     if (charAttributeAsBool(perso, 'graceFeline')) {
@@ -4328,6 +4332,36 @@ var COFantasy = COFantasy || function() {
     return false;
   }
 
+  function familier(personnage) {
+    var familier = findObjs({
+      _type: 'attribute',
+      _characterid: personnage.charId,
+      name: 'familier'
+    });
+    if (familier.length > 0) {
+      var compagnon = familier[0].get('current');
+      var compToken = findObjs({
+        _type: 'graphic',
+        _subtype: 'token',
+        _pageid: personnage.token.get('pageid'),
+        layer: 'objects',
+        name: compagnon
+      });
+      var compagnonPresent = false;
+      compToken.forEach(function(tok) {
+        var compCharId = tok.get('represents');
+        if (compCharId === '') return;
+        if (isActive({
+            token: tok,
+            charId: compCharId
+          })) compagnonPresent = true;
+        return;
+      });
+      return compagnonPresent;
+    }
+    return false;
+  }
+
   function defenseOfToken(attaquant, target, pageId, evt, options) {
     options = options || {};
     if (options.difficultePVmax) {
@@ -4397,6 +4431,10 @@ var COFantasy = COFantasy || function() {
       var bonusMutation = getValeurOfEffet(target, 'mutationCuirasse', 2, 'voieDesMutations');
       defense += bonusMutation;
       explications.push("Cuirasse : +" + bonusMutation + " en DEF");
+    }
+    if (attributeAsBool(target, 'sixiemeSens')) {
+      defense += 2;
+      explications.push("Sixième sens : +2 DEF");
     }
     if (getState(target, 'surpris')) defense -= 5;
     if (getState(target, 'renverse')) defense -= 5;
@@ -10699,6 +10737,7 @@ var COFantasy = COFantasy || function() {
           setTokenAttr(perso, 'bonusInitEmbuscade', 5, evt, "garde un temps d'avance grâce à son compagnon animal");
           initPerso(perso, evt, true);
         }
+        if (attributeAsBool(perso, 'sixiemeSens')) bonusSurprise += 5;
         if (testSurprise !== undefined) {
           testCaracteristique(perso, 'SAG', testSurprise, {
               bonus: bonusSurprise,
@@ -20504,6 +20543,11 @@ var COFantasy = COFantasy || function() {
       activation: "devient plus massif",
       actif: "a une silhouette massive",
       fin: "retrouve une silhouette normale",
+    },
+    sixiemeSens: {
+      activation: "fait un rituel de divination",
+      actif: "sait un peu à l'avance ce qu'il va se passer",
+      fin: "l'effet du rituel de divination prend fin",
     },
   };
 

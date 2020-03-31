@@ -2,6 +2,7 @@
 
 ## 2.0
 ### Capacités
+* Amélioration de la prise en compte du bonus d'init grâce aux familiers
 * Ajout de l'esquive acrobatique du barde
 * Ajout de l'ouverture mortelle du voleur
 * Ajout de l'immunité à la surprise du voleur
@@ -14,6 +15,7 @@
 * L'option --argent devient --armeDArgent. Cela permet d'utiliser --argent pour les armes en argent ordinaires.
 
 ### Autres améliorations
+* gestion du sort sixième sens
 * gestion du niveau d'ébriété.
 * ajout d'une option d'affichage pour ne pas montrer la DEF des adversaires.
 * Les messages de dégâts d'effets temporaires indiquent le numéro de mob quand la cible n'est pas un personnage unique.
