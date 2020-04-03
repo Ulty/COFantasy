@@ -5189,12 +5189,13 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (options.grenaille) {
-      portee = portee / 10;
+      portee = portee / 9;
       options.aoe = options.aoe || {
         type: 'cone',
         angle: 90
       };
       weaponStats.attDice -= 2;
+      weaponStats.attDMBonusCommun = Math.ceil(weaponStats.attDMBonusCommun / 2);
       if (weaponStats.attDice < 0) weaponStats.attDice = 0;
       if (options.tirDouble && options.tirDouble.stats) {
         options.tirDouble.stats.attDice -= 2;
@@ -8245,7 +8246,7 @@ var COFantasy = COFantasy || function() {
         if (options.percant) rd += charAttributeAsInt(target, 'RD_percant', 0);
         if (options.contondant) rd += charAttributeAsInt(target, 'RD_contondant', 0);
         if (options.distance) {
-          var piqures = charAttributeAsInt(target, 'puquresDInsecte', 0);
+          var piqures = charAttributeAsInt(target, 'piquresDInsectes', 0);
           if (piqures > 0 && ficheAttributeAsBool(target, 'DEFARMUREON') && ficheAttributeAsInt(target, 'DEFARMURE', 0) > 5) rd += piqures;
         }
         if (attributeAsBool(target, 'masqueMortuaire')) rd += 2;
@@ -8379,9 +8380,9 @@ var COFantasy = COFantasy || function() {
         } else {
           if (bar1 > 0 && bar1 <= dmgTotal &&
             charAttributeAsBool(target, 'instinctDeSurvieHumain')) {
-            dmgTotal = dmgTotal / 2;
+            dmgTotal = Math.floor(dmgTotal / 2);
             for (var dmType4 in dmSuivis) {
-              dmSuivis[dmType4] = Math.ceil(dmSuivis[dmType4] / 2);
+              dmSuivis[dmType4] = Math.floor(dmSuivis[dmType4] / 2);
             }
             if (dmgTotal < 1) dmgTotal = 1;
             dmgDisplay += "/2";
@@ -8456,10 +8457,11 @@ var COFantasy = COFantasy || function() {
               !attributeAsBool(target, 'sergentUtilise')) {
               expliquer(token.get('name') + " évite l'attaque in-extremis");
               setTokenAttr(target, 'sergentUtilise', true, evt);
+              pvPerdus = 0;
             } else {
               testBlessureGrave(target, dmgTotal, expliquer, evt);
               updateCurrentBar(token, 1, 0, evt);
-              pvPerdus -= bar1;
+              pvPerdus += bar1;
               if (charAttributeAsBool(target, 'baroudHonneur')) {
                 expliquer(token.get('name') + " devrait être mort, mais il continue à se battre !");
                 setTokenAttr(target, 'baroudHonneurActif', true, evt);
@@ -8494,7 +8496,7 @@ var COFantasy = COFantasy || function() {
                       }
                       if (showTotal) dmgDisplay += " = " + dmgTotal;
                       if (displayRes === undefined) return dmgDisplay;
-                      displayRes(dmgDisplay, dmgTotal);
+                      displayRes(dmgDisplay, pvPerdus);
                     });
                   if (displayRes === undefined) return dmgDisplay;
                   return;
@@ -8515,7 +8517,7 @@ var COFantasy = COFantasy || function() {
         }
         if (showTotal) dmgDisplay += " = " + dmgTotal;
         if (displayRes === undefined) return dmgDisplay;
-        displayRes(dmgDisplay, dmgTotal);
+        displayRes(dmgDisplay, pvPerdus);
       });
     return dmgDisplay;
   }
