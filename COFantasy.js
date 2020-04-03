@@ -1800,9 +1800,24 @@ var COFantasy = COFantasy || function() {
     var evt = options.evt || {
       type: "Jet de " + caracteristique
     };
-    var display = startFramedDisplay(playerId, titre, perso, {
-      chuchote: options.secret
+    var optionsDisplay = {};
+    if (options.secret) {
+      if (playerIsGM(playerId)) optionsDisplay.chuchote = true;
+      else {
+        var character = getObj('character', perso.charId);
+        if (character) {
+          optionsDisplay.chuchote = '"' + character.get('name') + '"';
+          var controledByGM = false;
+    var charControlledby = character.get('controlledby');
+    charControlledby.split(",").forEach(function(controlledby) {
+      if( playerIsGM(controlledby)) controledByGM = true;
     });
+          if (!controledByGM) optionsDisplay.retarde = true;
+        }
+        else optionsDisplay.retarde = true;
+      }
+    }
+    var display = startFramedDisplay(playerId, titre, perso, optionsDisplay);
     if (difficulte === undefined) {
       jetCaracteristique(perso, caracteristique, options, evt,
         function(rt, explications) {
@@ -1828,7 +1843,12 @@ var COFantasy = COFantasy || function() {
             }
           }
           addEvent(evt);
-          sendChat('', endFramedDisplay(display));
+          if (optionsDisplay.retarde) {
+            addFramedHeader(display, playerId, true);
+            sendChat('', endFramedDisplay(display));
+            addFramedHeader(display, undefined, 'gm');
+            sendChat('', endFramedDisplay(display));
+          } else sendChat('', endFramedDisplay(display));
         });
     } else {
       if (options.chance) options.bonus = options.chance * 10;
@@ -1862,7 +1882,12 @@ var COFantasy = COFantasy || function() {
             }
             addLineToFramedDisplay(display, msgRate);
           }
-          sendChat('', endFramedDisplay(display));
+          if (optionsDisplay.retarde) {
+            addFramedHeader(display, playerId, true);
+            sendChat('', endFramedDisplay(display));
+            addFramedHeader(display, undefined, 'gm');
+            sendChat('', endFramedDisplay(display));
+          } else sendChat('', endFramedDisplay(display));
         });
     }
   }
@@ -1936,10 +1961,10 @@ var COFantasy = COFantasy || function() {
     var pt2 = tokenCenter(tok2);
     var distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
     options = options || {};
-    if (!options.strict1) distance_pix -= tokenSize(tok1, PIX_PER_UNIT);
-    if (!options.strict2) distance_pix -= tokenSize(tok2, PIX_PER_UNIT);
+    if (!options.strict1) distance_pix -= tokenSize(tok1, PIX_PER_UNIT / 2);
+    if (!options.strict2) distance_pix -= tokenSize(tok2, PIX_PER_UNIT / 2);
     if (options.allonge) distance_pix -= (options.allonge * PIX_PER_UNIT) / scale;
-    if ((!options.strict1 || !options.strict2) && distance_pix < PIX_PER_UNIT * 1.5) return 0; //cases voisines
+    if ((!options.strict1 || !options.strict2) && distance_pix < PIX_PER_UNIT * 1.4) return 0; //cases voisines
     return ((distance_pix / PIX_PER_UNIT) * scale);
   }
 
@@ -5189,7 +5214,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (options.grenaille) {
-      portee = portee / 9;
+      portee = portee / 10;
       options.aoe = options.aoe || {
         type: 'cone',
         angle: 90
@@ -5360,6 +5385,8 @@ var COFantasy = COFantasy || function() {
             }
             var vecCentre = VecMath.normalize(VecMath.vec(pta, ptt));
             var cosAngle = Math.cos(options.aoe.angle * Math.PI / 360.0);
+            //Pour éviter des artfacts d'arrondi:
+            cosAngle = (Math.floor(cosAngle * 1000000)) / 1000000;
             if (targetToken.get('bar1_max') == 0) { // jshint ignore:line
               //C'est juste un token utilisé pour définir le cone
               cibles = [];
