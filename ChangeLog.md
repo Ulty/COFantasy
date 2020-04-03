@@ -15,6 +15,7 @@
 * L'option --argent devient --armeDArgent. Cela permet d'utiliser --argent pour les armes en argent ordinaires.
 
 ### Autres améliorations
+* On peut maintenant donner des arguments aux macros dans les listes d'actions
 * !cof-jet --secret, lorsqu'il est employé par un joueur, envoie maintenant le résultat du jet à toutes les personnes qui contrôlent le personnage et au MJ.
 * gestion du sort sixième sens
 * gestion du niveau d'ébriété.
