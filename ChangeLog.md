@@ -34,6 +34,7 @@
 * Les montures de l'attaquant et de sa cible ne sont plus considérées comme des obstacles lors des attaques à distance.
 
 ### Corrections de bugs
+* Correction d'un bug qui faisait planter le sort de commeil
 * Plus d'affichage de dégâts chaque tour sur les personnages morts
 * En interne, modCarac accepte des id de personnage, ce qui fixe certains bugs avec des capacités de chevaliers.
 * Prise en compte correcte du niveau de voie du métal ou de la valeur de la capacité forgeron

@@ -13606,7 +13606,7 @@ var COFantasy = COFantasy || function() {
       var casterName = caster.token.get('name');
       var casterCharName = casterChar.get('name');
       var cha = modCarac(caster, 'CHARISME');
-      var attMagText = addOrigin(casterCharName, computeArmeAtk(caster, '@{ATKMAG}'));
+      var attMagText = addOrigin(casterCharName, '[[' + computeArmeAtk(caster, '@{ATKMAG}') + ']]');
       var action = "<b>Capacité</b> : Sort de sommeil";
       var display = startFramedDisplay(playerId, action, caster);
       sendChat("", "[[1d6]] [[" + attMagText + "]]", function(res) {
