@@ -5511,7 +5511,7 @@ var COFantasy = COFantasy || function() {
       var pseudoTargetToken = attributeAsBool(target, "monteSur") ?
           getObj('graphic', tokenAttribute(target, 'monteSur')[0].get('current')) : target.token;
       target.distance =
-        distanceCombat(attackingToken, target.token, pageId, optDistance);
+        distanceCombat(pseudoAttackingToken, pseudoTargetToken, pageId, optDistance);
       if (options.intercepter || options.interposer) return true;
       if (target.distance > portee && target.esquiveFatale === undefined) {
         if (options.aoe || options.auto) return false; //distance stricte
