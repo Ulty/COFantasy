@@ -5504,6 +5504,12 @@ var COFantasy = COFantasy || function() {
     var optDistance = {};
     if (options.contact) optDistance.allonge = options.allonge;
     cibles = cibles.filter(function(target) {
+      // Si l'attaquant est monté, distance mesurée à partir de sa monture
+      var pseudoAttackingToken = attributeAsBool(attaquant, "monteSur") ?
+          getObj('graphic', tokenAttribute(attaquant, 'monteSur')[0].get('current')) : attackingToken;
+      // Si la cible est montée, distance mesurée vers sa monture
+      var pseudoTargetToken = attributeAsBool(target, "monteSur") ?
+          getObj('graphic', tokenAttribute(target, 'monteSur')[0].get('current')) : target.token;
       target.distance =
         distanceCombat(attackingToken, target.token, pageId, optDistance);
       if (options.intercepter || options.interposer) return true;
