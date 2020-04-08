@@ -5506,20 +5506,18 @@ var COFantasy = COFantasy || function() {
     var pseudoAttackingToken = attackingToken;
     var attrMonture = tokenAttribute(attaquant, 'monteSur');
     if (attrMonture.length > 0) {
-      pseudoAttackingToken =
+      var pseudoAttacker =
         tokenOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
-      if (pseudoAttackingToken === undefined)
-        pseudoAttackingToken = attackingToken;
+      if (pseudoAttacker) pseudoAttackingToken = pseudoAttacker.token;
     }
     cibles = cibles.filter(function(target) {
       // Si la cible est montée, distance mesurée vers sa monture
       var pseudoTargetToken = target.token;
       attrMonture = tokenAttribute(target, 'monteSur');
       if (attrMonture.length > 0) {
-        pseudoTargetToken =
+        var pseudoTarget =
           tokenOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
-        if (pseudoTargetToken === undefined)
-          pseudoTargetToken = target.token;
+        if (pseudoTarget) pseudoTargetToken = pseudoTarget.token;
       }
       target.distance =
         distanceCombat(pseudoAttackingToken, pseudoTargetToken, pageId, optDistance);
