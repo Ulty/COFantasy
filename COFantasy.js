@@ -1808,13 +1808,12 @@ var COFantasy = COFantasy || function() {
         if (character) {
           optionsDisplay.chuchote = '"' + character.get('name') + '"';
           var controledByGM = false;
-    var charControlledby = character.get('controlledby');
-    charControlledby.split(",").forEach(function(controlledby) {
-      if( playerIsGM(controlledby)) controledByGM = true;
-    });
+          var charControlledby = character.get('controlledby');
+          charControlledby.split(",").forEach(function(controlledby) {
+            if (playerIsGM(controlledby)) controledByGM = true;
+          });
           if (!controledByGM) optionsDisplay.retarde = true;
-        }
-        else optionsDisplay.retarde = true;
+        } else optionsDisplay.retarde = true;
       }
     }
     var display = startFramedDisplay(playerId, titre, perso, optionsDisplay);
@@ -5503,15 +5502,27 @@ var COFantasy = COFantasy || function() {
     //Prise en compte de la distance
     var optDistance = {};
     if (options.contact) optDistance.allonge = options.allonge;
+    // Si l'attaquant est monté, distance mesurée à partir de sa monture
+    var pseudoAttackingToken = attackingToken;
+    var attrMonture = tokenAttribute(attaquant, 'monteSur');
+    if (attrMonture.length > 0) {
+      pseudoAttackingToken =
+        tokenOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
+      if (pseudoAttackingToken === undefined)
+        pseudoAttackingToken = attackingToken;
+    }
     cibles = cibles.filter(function(target) {
-      // Si l'attaquant est monté, distance mesurée à partir de sa monture
-      var pseudoAttackingToken = attributeAsBool(attaquant, "monteSur") ?
-          getObj('graphic', tokenAttribute(attaquant, 'monteSur')[0].get('current')) : attackingToken;
       // Si la cible est montée, distance mesurée vers sa monture
-      var pseudoTargetToken = attributeAsBool(target, "monteSur") ?
-          getObj('graphic', tokenAttribute(target, 'monteSur')[0].get('current')) : target.token;
+      var pseudoTargetToken = target.token;
+      attrMonture = tokenAttribute(target, 'monteSur');
+      if (attrMonture.length > 0) {
+        pseudoTargetToken =
+          tokenOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
+        if (pseudoTargetToken === undefined)
+          pseudoTargetToken = target.token;
+      }
       target.distance =
-          distanceCombat(pseudoAttackingToken, pseudoTargetToken, pageId, optDistance);
+        distanceCombat(pseudoAttackingToken, pseudoTargetToken, pageId, optDistance);
       if (options.intercepter || options.interposer) return true;
       if (target.distance > portee && target.esquiveFatale === undefined) {
         if (options.aoe || options.auto) return false; //distance stricte
@@ -11181,7 +11192,7 @@ var COFantasy = COFantasy || function() {
               var actionText = actionCmd.replace(/-/g, ' ').replace(/_/g, ' ');
               found = false;
               if (actionCmd.startsWith('%')) {
-              // Ability
+                // Ability
                 actionCmd = actionCmd.substr(1);
                 actionText = actionText.substr(1);
                 abilities.forEach(function(abilitie, index) {
@@ -11198,7 +11209,7 @@ var COFantasy = COFantasy || function() {
                   }
                 });
               } else if (actionCmd.startsWith('#')) {
-              // Macro
+                // Macro
                 actionCmd = actionCmd.substr(1);
                 actionText = actionText.substr(1);
                 macros.forEach(function(macro, index) {
@@ -11214,7 +11225,7 @@ var COFantasy = COFantasy || function() {
                   }
                 });
               } else if (actionCmd.startsWith('!')) {
-              // commande API
+                // commande API
                 if (actionCommands.length > 1) {
                   actionText = actionCommands[1].replace(/-/g, ' ').replace(/_/g, ' ');
                 }
