@@ -5507,7 +5507,7 @@ var COFantasy = COFantasy || function() {
     var attrMonture = tokenAttribute(attaquant, 'monteSur');
     if (attrMonture.length > 0) {
       pseudoAttackingToken =
-        tokenOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
+        tokenOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId).token;
       if (pseudoAttackingToken === undefined)
         pseudoAttackingToken = attackingToken;
     }
@@ -5517,7 +5517,7 @@ var COFantasy = COFantasy || function() {
       attrMonture = tokenAttribute(target, 'monteSur');
       if (attrMonture.length > 0) {
         pseudoTargetToken =
-          tokenOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
+          tokenOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId).token;
         if (pseudoTargetToken === undefined)
           pseudoTargetToken = target.token;
       }
