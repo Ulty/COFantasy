@@ -9544,6 +9544,10 @@ var COFantasy = COFantasy || function() {
       var token = perso.token;
       var charId = perso.charId;
       var character = getObj("character", charId);
+      if (character === undefined) {
+        finalize();
+        return;
+      }
       var characterName = character.get("name");
       var pr = pointsDeRecuperation(perso);
       var bar2 = parseInt(token.get("bar2_value"));
@@ -13613,6 +13617,10 @@ var COFantasy = COFantasy || function() {
     }
     var casterCharId = caster.charId;
     var casterChar = getObj('character', casterCharId);
+    if (casterChar === undefined) {
+      error("Fiche de personnage manquante");
+      return;
+    }
     getSelected(msg, function(selected, playerId) {
       if (selected === undefined || selected.length === 0) {
         sendPlayer(msg, "Pas de cible sélectionnée pour le sort de sommeil");
@@ -13754,6 +13762,10 @@ var COFantasy = COFantasy || function() {
     };
     if (limiteRessources(attaquant, options, 'attaque magique', "l'attaque magique", evt)) return;
     var attaquantChar = getObj('character', attaquant.charId);
+    if (attaquantChar === undefined) {
+      error("Fiche de l'attaquant introuvable");
+      return;
+    }
     attaquant.tokName = attaquant.token.get('name');
     attaquant.name = attaquantChar.get('name');
     var playerId = options.playerId || getPlayerIdFromMsg(msg);
@@ -14510,6 +14522,9 @@ var COFantasy = COFantasy || function() {
       soins = soins.val;
       var nameSoigneur = tokSoigneur.get('name');
       soigneur = getObj('character', charIdSoigneur);
+      if (soigneur === undefined) {
+        error("Fiche du soigneur introuvable");
+      }
       msg.content += " --allies --self";
     } else { // soin générique
       soins = parseInt(args[1]);
@@ -17449,7 +17464,7 @@ var COFantasy = COFantasy || function() {
           resultat.echec = true;
           resultat.echecCritique = true;
           diminueMalediction(attaquant, evt);
-        } else if (d20rollDefenseur == 1 & d20rollAttaquant > 1) {
+        } else if (d20rollDefenseur == 1 && d20rollAttaquant > 1) {
           resultat.succes = true;
           resultat.echecCritiqueDefenseur = true;
           diminueMalediction(defenseur, evt);
@@ -20666,7 +20681,12 @@ var COFantasy = COFantasy || function() {
     }
     switch (effet) {
       case 'agrandissement': //redonner sa taille normale
-        getObj('character', charId).get('defaulttoken', function(normalToken) {
+        var character = getObj('character', charId);
+        if (character === undefined) {
+          error("Personnage introuvable");
+          return;
+        }
+        character.get('defaulttoken', function(normalToken) {
           normalToken = JSON.parse(normalToken);
           var largeWidth = normalToken.width + normalToken.width / 2;
           var largeHeight = normalToken.height + normalToken.height / 2;
