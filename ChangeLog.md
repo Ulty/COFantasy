@@ -13,6 +13,7 @@
 * Ajout de la vulnérabilité aux critiques (pour les seigneurs de l'hiver)
 * La capacité tir fatal peut maintenant être appliquée à d'autres catégories d'armes que l'arc.
 * L'option --argent devient --armeDArgent. Cela permet d'utiliser --argent pour les armes en argent ordinaires.
+* L'option d'attaque --meuteGobelin permet de prendre en compte la capacité "Attaque en meute" des Gobelins
 
 ### Autres améliorations
 * Si un personnage est monté sur une monture, assouplissement des conditions pour toucher au contact (on considère le token de la monture)
