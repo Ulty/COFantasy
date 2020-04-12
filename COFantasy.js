@@ -4900,7 +4900,6 @@ var COFantasy = COFantasy || function() {
         attBonus += 2;
         explications.push("Attaque en meute : +2 pour toucher");
       } else {
-        log(target);
         setTokenAttr(target,  'meuteGobelin', true, { type: 'Attaque en meute'});
       }
     }
