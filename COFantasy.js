@@ -56,7 +56,7 @@ var COFantasy = COFantasy || function() {
         },
         dm_minimum: {
           explications: "Dégâts minimum d'une attaque ou autre source de DM.",
-          val: 0,
+          val: 1,
           type: 'int'
         },
         crit_elementaire: {

@@ -15,6 +15,7 @@
 * L'option --argent devient --armeDArgent. Cela permet d'utiliser --argent pour les armes en argent ordinaires.
 
 ### Autres améliorations
+* Suite à une précision de Kegron sur les forums BBE, les attaques réussies font toujours au moins 1 DM.
 * Si un personnage est monté sur une monture, assouplissement des conditions pour toucher au contact (on considère le token de la monture)
 * On peut maintenant donner des arguments aux macros dans les listes d'actions
 * !cof-jet --secret, lorsqu'il est employé par un joueur, envoie maintenant le résultat du jet à toutes les personnes qui contrôlent le personnage et au MJ.
