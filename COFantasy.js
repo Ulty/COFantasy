@@ -2856,6 +2856,7 @@ var COFantasy = COFantasy || function() {
         case "riposte":
         case 'secret':
         case 'saufAllies':
+        case 'meuteGobelin' :
           options[cmd[0]] = true;
           return;
         case "imparable": //deprecated
@@ -3985,10 +3986,8 @@ var COFantasy = COFantasy || function() {
       sendChar(charId, msg);
     }
     evt.attributes = evt.attributes || [];
-    var agrandir = false;
-    if (attribute == 'agrandissement' && token) agrandir = true;
-    var formeArbre = false;
-    if (attribute == 'formeDArbre' && token) formeArbre = true;
+    var agrandir = (attribute == 'agrandissement' && token);
+    var formeArbre = (attribute == 'formeDArbre' && token);
     // check if the token is linked to the character. If not, use token name
     // in attribute name (token ids don't persist over API reload)
     if (token) {
@@ -4894,6 +4893,16 @@ var COFantasy = COFantasy || function() {
           attBonus += alliesAuContact;
           explications.push("Combat en phalange => +" + alliesAuContact + " en Attaque");
         }
+      }
+    }
+    if (options.meuteGobelin) {
+      var attributeMeute = tokenAttribute(target, 'meuteGobelin');
+      log(attributeMeute);
+      if(attributeMeute.length > 0) {
+        attBonus += 2;
+        explications.push("Attaque en meute : +2 pour toucher");
+      } else {
+        setTokenAttr(target,  'meuteGobelin', true, { type: 'Attaque en meute'});
       }
     }
     return attBonus;
@@ -9020,6 +9029,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('armeSecreteBardeUtilisee', evt, attrs);
     attrs = removeAllAttributes('attaqueMalgreMenace', evt, attrs);
     attrs = removeAllAttributes('limiteApplicationManoeuvre', evt, attrs);
+    attrs = removeAllAttributes('meuteGobelin', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -21372,6 +21382,8 @@ var COFantasy = COFantasy || function() {
       attrs = removeAllAttributes('ripostesDuTour', evt, attrs);
       resetAttr(attrs, 'attaqueEnTraitre', evt);
       resetAttr(attrs, 'esquiveAcrobatique', evt);
+      // Enlever attaque en meute gobelin
+      attrs = removeAllAttributes('meuteGobelin', evt, attrs);
       // Pour défaut dans la cuirasse, on diminue si la valeur est 2, et on supprime si c'est 1
       var defautsDansLaCuirasse = allAttributesNamed(attrs, 'defautDansLaCuirasse');
       defautsDansLaCuirasse.forEach(function(attr) {
