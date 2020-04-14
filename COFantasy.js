@@ -10748,6 +10748,14 @@ var COFantasy = COFantasy || function() {
             }
           }
           return;
+        case 'message':
+          if (cmd.length < 2) {
+            error("Il manque le message après --message", cmd);
+            return;
+          }
+          options.messages = options.messages || [];
+          options.messages.push(cmd.slice(1).join(' '));
+          return;
         default:
           return;
       }
@@ -14366,6 +14374,12 @@ var COFantasy = COFantasy || function() {
       };
       var finSoin = function() {
         if (nbCibles == 1) {
+          if (options.messages) {
+            options.messages.forEach(function(message) {
+              if (display) addLineToFramedDisplay(display, message);
+              else sendChar(charId, message);
+            });
+          }
           if (display) sendChat("", endFramedDisplay(display));
           addEvent(evt);
         }
