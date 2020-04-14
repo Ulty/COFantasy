@@ -633,25 +633,36 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  // options: bonus:int, deExplosif:bool
   //Renvoie 1dk + bonus, avec le texte
   //champs val et roll
-  function rollDePlus(de, bonus) {
-    bonus = bonus || 0;
-    var jetDe = randomInteger(de);
-    var roll = jetDe;
+  function rollDePlus(de, options) {
+    options = options || {};
+    var bonus = options.bonus || 0;
+    var explose = options.deExplosif || false;
+    var texteJetDeTotal = '';
+    var jetTotal = 0;
+    do {
+      var jetDe = randomInteger(de);
+      texteJetDeTotal += jetDe;
+      jetTotal += jetDe;
+      explose = explose && (jetDe === de);
+      if (explose) texteJetDeTotal += ',';
+    } while (explose && jetTotal < 1000);
     var res = {
-      val: jetDe + bonus
+      val: jetTotal + bonus
     };
     var msg = '<span style="display: inline-block; border-radius: 5px; padding: 0 4px; background-color: #F1E6DA; color: #000;" title="1d';
     msg += de;
+    if (options.deExplosif) msg += '!';
     if (bonus > 0) {
       msg += '+' + bonus;
-      roll += '+' + bonus;
+      texteJetDeTotal += '+' + bonus;
     } else if (bonus < 0) {
       msg += bonus;
-      roll += bonus;
+      texteJetDeTotal += bonus;
     }
-    msg += ' = ' + roll + '" class="a inlinerollresult showtip tipsy-n">';
+    msg += ' = ' + texteJetDeTotal + '" class="a inlinerollresult showtip tipsy-n">';
     msg += res.val + "</span>";
     res.roll = msg;
     return res;
@@ -884,7 +895,7 @@ var COFantasy = COFantasy || function() {
           if (distanceCombat(token, tok, pageId) > 20) return;
           if (charIdAttributeAsBool(ci, 'siphonDesAmes')) {
             var bonus = charAttributeAsInt(p, 'siphonDesAmes', 0);
-            var soin = rollDePlus(6, bonus);
+            var soin = rollDePlus(6, {bonus:bonus});
             soigneToken(p, soin.val, evt,
               function(s) {
                 var siphMsg = "siphone l'âme de " + token.get('name') +
@@ -3850,7 +3861,7 @@ var COFantasy = COFantasy || function() {
     if (stateCOF.options.regles.val.initiative_variable.val) {
       var bonusVariable = attributeAsInt(perso, 'bonusInitVariable', 0);
       if (bonusVariable === 0) {
-        var rollD6 = rollDePlus(6);
+        var rollD6 = rollDePlus(6, {deExplosif:true});
         bonusVariable = rollD6.val;
         var msg = "entre en combat. ";
         msg += onGenre(perso.charId, 'Il', 'Elle') + " fait " + rollD6.roll;
@@ -14490,9 +14501,9 @@ var COFantasy = COFantasy || function() {
       if (!depenseMana(persoSoigneur, 1, "lancer un soin de groupe", evt))
         return;
       if (msg.content.includes(' --puissant')) {
-        soins = rollDePlus(10, niveau);
+        soins = rollDePlus(10, {bonus:niveau});
       } else {
-        soins = rollDePlus(8, niveau);
+        soins = rollDePlus(8, {bonus:niveau});
       }
       rollSoins = soins.roll;
       soins = soins.val;
@@ -14673,7 +14684,7 @@ var COFantasy = COFantasy || function() {
         };
         if (limiteRessources(beneficiaire, options, 'elixir_fortifiant', "boire un fortifiant", evt)) return;
         var name2 = beneficiaire.token.get('name');
-        var soins = rollDePlus(4, rang);
+        var soins = rollDePlus(4, {bonus:rang});
         sendChar(beneficiaire.charId, " boit un fortifiant");
         soigneToken(beneficiaire, soins.val, evt, function(soinsEffectifs) {
           var msgSoins = "et est soigné de ";
@@ -15019,7 +15030,7 @@ var COFantasy = COFantasy || function() {
       };
       iterSelected(msg.selected, function(perso) {
         if (limiteRessources(perso, options, 'baieMagique', "a déjà mangé une baie aujourd'hui. Pas d'effet.", evt)) return;
-        var soins = rollDePlus(6, baie);
+        var soins = rollDePlus(6, {bonus:baie});
         soigneToken(perso, soins.val, evt, function(soinsEffectifs) {
             var msgSoins = "mange une baie magique. Il est rassasié et récupère ";
             if (soinsEffectifs == soins.val) msgSoins += soins.roll + " points de vie";
