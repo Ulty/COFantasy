@@ -9959,7 +9959,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    var chance = ficheAttributeAsInt(perso, 'PC', 0);
+    var chance = ficheAttributeAsInt(perso, 'PC', 3);
     if (chance <= 0) {
       sendChat("", name + " n'a plus de point de chance à dépenser...");
       return;
