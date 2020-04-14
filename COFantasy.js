@@ -15408,6 +15408,14 @@ var COFantasy = COFantasy || function() {
     initPerso(perso, evt);
   }
 
+  function findEsc(escaliers, escName, i) {
+    var fullEscName = escName + labelsEscalier[i];
+    var sortieEscalier = escaliers.find(function(esc) {
+      return esc.get('name') == fullEscName;
+    });
+    if (sortieEscalier === undefined && i > 0) return findEsc(escName, i - 1);
+    return sortieEscalier;
+  }
   //Attention : ne tient pas compte de la rotation !
   function intersection(pos1, size1, pos2, size2) {
     if (pos1 == pos2) return true;
@@ -15459,24 +15467,32 @@ var COFantasy = COFantasy || function() {
             intersection(posY, sizeY, esc.get('top'), esc.get('height'))) {
             var escName = esc.get('name');
             var l = escName.length;
-            if (l > 2) {
-              etages = escName.substr(l - 2, 1);
-              if (isNaN(etages)) return;
+            if (l > 1) {
               var label = escName.substr(l - 1, 1);
               escName = escName.substr(0, l - 1);
               var i = labelsEscalier.indexOf(label);
               if (versLeHaut) {
-                if (i == etages - 1) {
+                if (i == 11) {
                   if (loop) escName += labelsEscalier[0];
                 } else escName += labelsEscalier[i + 1];
               } else {
                 if (i === 0) {
-                  if (loop) escName += labelsEscalier[etages - 1];
+                  if (loop) escName += labelsEscalier[11];
                 } else escName += labelsEscalier[i - 1];
               }
               sortieEscalier = escaliers.find(function(esc2) {
                 return esc2.get('name') == escName;
               });
+              if (sortieEscalier === undefined && loop) {
+                if (i > 0) { //sortie par le plus petit
+                  escName = escName.substr(0, l - 1) + 'A';
+                  sortieEscalier = escaliers.find(function(esc2) {
+                    return esc2.get('name') == escName;
+                  });
+                } else {
+                  sortieEscalier = findEsc(escaliers, escName.substr(0, l - 1), 10);
+                }
+              }
             }
           }
         });
