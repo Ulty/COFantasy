@@ -668,6 +668,132 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  function setTokenAttr(personnage, attribute, value, evt, msg, maxval) {
+    var charId = personnage.charId;
+    var token = personnage.token;
+    if (msg !== undefined) {
+      sendChar(charId, msg);
+    }
+    evt.attributes = evt.attributes || [];
+    var agrandir = (attribute == 'agrandissement' && token);
+    var formeArbre = (attribute == 'formeDArbre' && token);
+    // check if the token is linked to the character. If not, use token name
+    // in attribute name (token ids don't persist over API reload)
+    if (token) {
+      var link = token.get('bar1_link');
+      if (link === "") attribute += "_" + token.get('name');
+    }
+    var attr = findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+      name: attribute
+    });
+    if (attr.length === 0) {
+      if (maxval === undefined) maxval = '';
+      attr = createObj('attribute', {
+        characterid: charId,
+        name: attribute,
+        current: value,
+        max: maxval
+      });
+      evt.attributes.push({
+        attribute: attr,
+        current: null
+      });
+      if (agrandir) {
+        var width = token.get('width');
+        var height = token.get('height');
+        affectToken(token, 'width', width, evt);
+        affectToken(token, 'height', height, evt);
+        width += width / 2;
+        height += height / 2;
+        token.set('width', width);
+        token.set('height', height);
+      } else if (formeArbre) {
+        //On copie les PVs pour pouvoir les restaurer à la fin de l'effet
+        setTokenAttr(personnage, 'anciensPV', token.get('bar1_value'), evt, undefined, token.get('bar1_max'));
+        //On va créer une copie de token, mais avec une image d'arbre
+        var tokenFields = {
+          _pageid: token.get('pageid'),
+          represents: personnage.charId,
+          left: token.get('left'),
+          top: token.get('top'),
+          width: token.get('width'),
+          height: token.get('height'),
+          rotation: token.get('rotation'),
+          layer: 'objects',
+          name: token.get('name'),
+          bar1_value: token.get('bar1_value'),
+          bar1_max: token.get('bar1_max'),
+          bar1_link: token.get('bar1_link'),
+          bar2_value: token.get('bar2_value'),
+          bar2_max: token.get('bar2_max'),
+          bar2_link: token.get('bar2_link'),
+          bar3_value: token.get('bar3_value'),
+          bar3_max: token.get('bar3_max'),
+          aura1_radius: token.get('aura1_radius'),
+          aura1_color: token.get('aura1_color'),
+          aura1_square: token.get('aura1_square'),
+          showplayers_aura1: token.get('showplayers_aura1'),
+          aura2_radius: token.get('aura2_radius'),
+          aura2_color: token.get('aura2_color'),
+          aura2_square: token.get('aura2_square'),
+          showplayers_aura2: token.get('showplayers_aura2'),
+          statusmarkers: token.get('statusmarkers'),
+          light_radius: token.get('light_radius'),
+          light_dimradius: token.get('light_dimradius'),
+          light_otherplayers: token.get('light_otherplayers'),
+          light_hassight: token.get('light_hassight'),
+          light_angle: token.get('light_angle'),
+          light_losangle: token.get('light_losangle'),
+          light_multiplier: token.get('light_multiplier'),
+          showname: token.get('showname'),
+          showplayers_name: token.get('showplayers_name'),
+          showplayers_bar1: token.get('showplayers_bar1'),
+        };
+        var tokenArbre;
+        var imageArbre = findObjs({
+          _type: 'attribute',
+          _characterid: personnage.charId,
+          name: 'tokenFormeDArbre'
+        });
+        if (imageArbre.length > 0) {
+          tokenFields.imgsrc = imageArbre[0].get('current');
+          tokenArbre = createObj('graphic', tokenFields);
+        }
+        if (tokenArbre === undefined) {
+          tokenFields.imgsrc = stateCOF.options.images.val.image_arbre.val;
+          tokenArbre = createObj('graphic', tokenFields);
+        }
+        if (tokenArbre) {
+          //On met l'ancien token dans le gmlayer, car si l'image vient du merketplace, il est impossible de le recréer depuis l'API
+          setToken(token, 'layer', 'gmlayer', evt);
+          setTokenAttr(personnage, 'changementDeToken', true, evt);
+          replaceInTurnTracker(token.id, tokenArbre.id, evt);
+          personnage.token = tokenArbre;
+          token = tokenArbre;
+        }
+        //On met maintenant les nouveaux PVs
+        //selon Kegron http://www.black-book-editions.fr/forums.php?topic_id=4800&tid=245841#msg245841
+        var niveau = ficheAttributeAsInt(personnage, 'NIVEAU', 1);
+        var nouveauxPVs = getValeurOfEffet(personnage, 'formeDArbre', niveau * 5);
+        updateCurrentBar(token, 1, nouveauxPVs, evt, nouveauxPVs);
+        //L'initiative change
+        initPerso(personnage, evt, true);
+      }
+      return attr;
+    }
+    attr = attr[0];
+    evt.attributes.push({
+      attribute: attr,
+      current: attr.get('current'),
+      max: attr.get('max')
+    });
+    attr.set('current', value);
+    if (maxval !== undefined) attr.set('max', maxval);
+    return attr;
+  }
+
   //fonction avec callback, mais synchrone
   function soigneToken(perso, soins, evt, callTrue, callMax, options) {
     options = options || {};
@@ -895,7 +1021,9 @@ var COFantasy = COFantasy || function() {
           if (distanceCombat(token, tok, pageId) > 20) return;
           if (charIdAttributeAsBool(ci, 'siphonDesAmes')) {
             var bonus = charAttributeAsInt(p, 'siphonDesAmes', 0);
-            var soin = rollDePlus(6, {bonus:bonus});
+            var soin = rollDePlus(6, {
+              bonus: bonus
+            });
             soigneToken(p, soin.val, evt,
               function(s) {
                 var siphMsg = "siphone l'âme de " + token.get('name') +
@@ -2856,7 +2984,6 @@ var COFantasy = COFantasy || function() {
         case "riposte":
         case 'secret':
         case 'saufAllies':
-        case 'meuteGobelin' :
           options[cmd[0]] = true;
           return;
         case "imparable": //deprecated
@@ -3862,7 +3989,9 @@ var COFantasy = COFantasy || function() {
     if (stateCOF.options.regles.val.initiative_variable.val) {
       var bonusVariable = attributeAsInt(perso, 'bonusInitVariable', 0);
       if (bonusVariable === 0) {
-        var rollD6 = rollDePlus(6, {deExplosif:true});
+        var rollD6 = rollDePlus(6, {
+          deExplosif: true
+        });
         bonusVariable = rollD6.val;
         var msg = "entre en combat. ";
         msg += onGenre(perso.charId, 'Il', 'Elle') + " fait " + rollD6.roll;
@@ -3977,132 +4106,6 @@ var COFantasy = COFantasy || function() {
     initiative([{
       _id: personnage.token.id
     }], evt, recompute);
-  }
-
-  function setTokenAttr(personnage, attribute, value, evt, msg, maxval) {
-    var charId = personnage.charId;
-    var token = personnage.token;
-    if (msg !== undefined) {
-      sendChar(charId, msg);
-    }
-    evt.attributes = evt.attributes || [];
-    var agrandir = (attribute == 'agrandissement' && token);
-    var formeArbre = (attribute == 'formeDArbre' && token);
-    // check if the token is linked to the character. If not, use token name
-    // in attribute name (token ids don't persist over API reload)
-    if (token) {
-      var link = token.get('bar1_link');
-      if (link === "") attribute += "_" + token.get('name');
-    }
-    var attr = findObjs({
-      _type: 'attribute',
-      _characterid: charId,
-      name: attribute
-    });
-    if (attr.length === 0) {
-      if (maxval === undefined) maxval = '';
-      attr = createObj('attribute', {
-        characterid: charId,
-        name: attribute,
-        current: value,
-        max: maxval
-      });
-      evt.attributes.push({
-        attribute: attr,
-        current: null
-      });
-      if (agrandir) {
-        var width = token.get('width');
-        var height = token.get('height');
-        affectToken(token, 'width', width, evt);
-        affectToken(token, 'height', height, evt);
-        width += width / 2;
-        height += height / 2;
-        token.set('width', width);
-        token.set('height', height);
-      } else if (formeArbre) {
-        //On copie les PVs pour pouvoir les restaurer à la fin de l'effet
-        setTokenAttr(personnage, 'anciensPV', token.get('bar1_value'), evt, undefined, token.get('bar1_max'));
-        //On va créer une copie de token, mais avec une image d'arbre
-        var tokenFields = {
-          _pageid: token.get('pageid'),
-          represents: personnage.charId,
-          left: token.get('left'),
-          top: token.get('top'),
-          width: token.get('width'),
-          height: token.get('height'),
-          rotation: token.get('rotation'),
-          layer: 'objects',
-          name: token.get('name'),
-          bar1_value: token.get('bar1_value'),
-          bar1_max: token.get('bar1_max'),
-          bar1_link: token.get('bar1_link'),
-          bar2_value: token.get('bar2_value'),
-          bar2_max: token.get('bar2_max'),
-          bar2_link: token.get('bar2_link'),
-          bar3_value: token.get('bar3_value'),
-          bar3_max: token.get('bar3_max'),
-          aura1_radius: token.get('aura1_radius'),
-          aura1_color: token.get('aura1_color'),
-          aura1_square: token.get('aura1_square'),
-          showplayers_aura1: token.get('showplayers_aura1'),
-          aura2_radius: token.get('aura2_radius'),
-          aura2_color: token.get('aura2_color'),
-          aura2_square: token.get('aura2_square'),
-          showplayers_aura2: token.get('showplayers_aura2'),
-          statusmarkers: token.get('statusmarkers'),
-          light_radius: token.get('light_radius'),
-          light_dimradius: token.get('light_dimradius'),
-          light_otherplayers: token.get('light_otherplayers'),
-          light_hassight: token.get('light_hassight'),
-          light_angle: token.get('light_angle'),
-          light_losangle: token.get('light_losangle'),
-          light_multiplier: token.get('light_multiplier'),
-          showname: token.get('showname'),
-          showplayers_name: token.get('showplayers_name'),
-          showplayers_bar1: token.get('showplayers_bar1'),
-        };
-        var tokenArbre;
-        var imageArbre = findObjs({
-          _type: 'attribute',
-          _characterid: personnage.charId,
-          name: 'tokenFormeDArbre'
-        });
-        if (imageArbre.length > 0) {
-          tokenFields.imgsrc = imageArbre[0].get('current');
-          tokenArbre = createObj('graphic', tokenFields);
-        }
-        if (tokenArbre === undefined) {
-          tokenFields.imgsrc = stateCOF.options.images.val.image_arbre.val;
-          tokenArbre = createObj('graphic', tokenFields);
-        }
-        if (tokenArbre) {
-          //On met l'ancien token dans le gmlayer, car si l'image vient du merketplace, il est impossible de le recréer depuis l'API
-          setToken(token, 'layer', 'gmlayer', evt);
-          setTokenAttr(personnage, 'changementDeToken', true, evt);
-          replaceInTurnTracker(token.id, tokenArbre.id, evt);
-          personnage.token = tokenArbre;
-          token = tokenArbre;
-        }
-        //On met maintenant les nouveaux PVs
-        //selon Kegron http://www.black-book-editions.fr/forums.php?topic_id=4800&tid=245841#msg245841
-        var niveau = ficheAttributeAsInt(personnage, 'NIVEAU', 1);
-        var nouveauxPVs = getValeurOfEffet(personnage, 'formeDArbre', niveau * 5);
-        updateCurrentBar(token, 1, nouveauxPVs, evt, nouveauxPVs);
-        //L'initiative change
-        initPerso(personnage, evt, true);
-      }
-      return attr;
-    }
-    attr = attr[0];
-    evt.attributes.push({
-      attribute: attr,
-      current: attr.get('current'),
-      max: attr.get('max')
-    });
-    attr.set('current', value);
-    if (maxval !== undefined) attr.set('max', maxval);
-    return attr;
   }
 
   function setFicheAttr(personnage, attribute, value, evt, msg, maxval) {
@@ -4895,14 +4898,13 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    if (options.meuteGobelin) {
-      var attributeMeute = tokenAttribute(target, 'meuteGobelin');
-      log(attributeMeute);
-      if(attributeMeute.length > 0) {
-        attBonus += 2;
-        explications.push("Attaque en meute : +2 pour toucher");
+    var attaqueEnMeute = charAttributeAsInt(attaquant, 'attaqueEnMeute', 0);
+    if (attaqueEnMeute > 0) {
+      if (attributeAsBool(target, 'attaqueParMeute')) {
+        attBonus += attaqueEnMeute;
+        explications.push("Attaque en meute => +"+attaqueEnMeute+" pour toucher");
       } else {
-        setTokenAttr(target,  'meuteGobelin', true, { type: 'Attaque en meute'});
+        setTokenAttr(target, 'attaqueParMeute', true, evt);
       }
     }
     return attBonus;
@@ -9029,7 +9031,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('armeSecreteBardeUtilisee', evt, attrs);
     attrs = removeAllAttributes('attaqueMalgreMenace', evt, attrs);
     attrs = removeAllAttributes('limiteApplicationManoeuvre', evt, attrs);
-    attrs = removeAllAttributes('meuteGobelin', evt, attrs);
+    attrs = removeAllAttributes('attaqueParMeute', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -14225,7 +14227,7 @@ var COFantasy = COFantasy || function() {
           };
         if (options.portee === undefined) options.portee = 0;
         var bonusModere = niveau + charAttributeAsInt(soigneur, 'voieDuGuerisseur', 0);
-        soins = "[[" + (nbDes+1) + (options.puissant ? "d10" : "d8") + " +" + bonusModere + "]]";
+        soins = "[[" + (nbDes + 1) + (options.puissant ? "d10" : "d8") + " +" + bonusModere + "]]";
         break;
       case 'groupe':
         if (!stateCOF.combat) {
@@ -14511,9 +14513,13 @@ var COFantasy = COFantasy || function() {
       if (!depenseMana(persoSoigneur, 1, "lancer un soin de groupe", evt))
         return;
       if (msg.content.includes(' --puissant')) {
-        soins = rollDePlus(10, {bonus:niveau});
+        soins = rollDePlus(10, {
+          bonus: niveau
+        });
       } else {
-        soins = rollDePlus(8, {bonus:niveau});
+        soins = rollDePlus(8, {
+          bonus: niveau
+        });
       }
       rollSoins = soins.roll;
       soins = soins.val;
@@ -14694,7 +14700,9 @@ var COFantasy = COFantasy || function() {
         };
         if (limiteRessources(beneficiaire, options, 'elixir_fortifiant', "boire un fortifiant", evt)) return;
         var name2 = beneficiaire.token.get('name');
-        var soins = rollDePlus(4, {bonus:rang});
+        var soins = rollDePlus(4, {
+          bonus: rang
+        });
         sendChar(beneficiaire.charId, " boit un fortifiant");
         soigneToken(beneficiaire, soins.val, evt, function(soinsEffectifs) {
           var msgSoins = "et est soigné de ";
@@ -15040,7 +15048,9 @@ var COFantasy = COFantasy || function() {
       };
       iterSelected(msg.selected, function(perso) {
         if (limiteRessources(perso, options, 'baieMagique', "a déjà mangé une baie aujourd'hui. Pas d'effet.", evt)) return;
-        var soins = rollDePlus(6, {bonus:baie});
+        var soins = rollDePlus(6, {
+          bonus: baie
+        });
         soigneToken(perso, soins.val, evt, function(soinsEffectifs) {
             var msgSoins = "mange une baie magique. Il est rassasié et récupère ";
             if (soinsEffectifs == soins.val) msgSoins += soins.roll + " points de vie";
@@ -21383,7 +21393,7 @@ var COFantasy = COFantasy || function() {
       resetAttr(attrs, 'attaqueEnTraitre', evt);
       resetAttr(attrs, 'esquiveAcrobatique', evt);
       // Enlever attaque en meute gobelin
-      attrs = removeAllAttributes('meuteGobelin', evt, attrs);
+      attrs = removeAllAttributes('attaqueParMeute', evt, attrs);
       // Pour défaut dans la cuirasse, on diminue si la valeur est 2, et on supprime si c'est 1
       var defautsDansLaCuirasse = allAttributesNamed(attrs, 'defautDansLaCuirasse');
       defautsDansLaCuirasse.forEach(function(attr) {
