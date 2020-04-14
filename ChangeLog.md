@@ -16,6 +16,7 @@
 * L'option --argent devient --armeDArgent. Cela permet d'utiliser --argent pour les armes en argent ordinaires.
 
 ### Autres améliorations
+* Ajout d'un icone pour les tokens affectés par saignement ou asphyxie
 * Utilisation d'un dé explosif pour l'initiative variable
 * Suite à une précision de Kegron sur les forums BBE, les attaques réussies font toujours au moins 1 DM.
 * Si un personnage est monté sur une monture, assouplissement des conditions pour toucher au contact (on considère le token de la monture)

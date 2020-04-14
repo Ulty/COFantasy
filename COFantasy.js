@@ -4902,7 +4902,7 @@ var COFantasy = COFantasy || function() {
     if (attaqueEnMeute > 0) {
       if (attributeAsBool(target, 'attaqueParMeute')) {
         attBonus += attaqueEnMeute;
-        explications.push("Attaque en meute => +"+attaqueEnMeute+" pour toucher");
+        explications.push("Attaque en meute => +" + attaqueEnMeute + " pour toucher");
       } else {
         setTokenAttr(target, 'attaqueParMeute', true, evt);
       }
@@ -7291,16 +7291,27 @@ var COFantasy = COFantasy || function() {
                   target.messages.push(target.tokName + " " + ef.message.activation);
                 setTokenAttr(target, ef.effet, ef.duree, evt, undefined,
                   getInit());
-                if (ef.effet == 'aveugleTemp') {
-                  setState(target, 'aveugle', true, evt);
-                } else if (ef.effet == 'ralentiTemp') {
-                  setState(target, 'ralenti', true, evt);
-                } else if (ef.effet == 'paralyseTemp') {
-                  setState(target, 'paralyse', true, evt);
-                } else if (ef.effet == 'etourdiTemp') {
-                  setState(target, 'etourdi', true, evt);
-                } else if (ef.effet == 'affaibliTemp') {
-                  setState(target, 'affaibli', true, evt);
+                switch (ef.effet) {
+                  case 'aveugleTemp':
+                    setState(target, 'aveugle', true, evt);
+                    break;
+                  case 'ralentiTemp':
+                    setState(target, 'ralenti', true, evt);
+                    break;
+                  case 'paralyseTemp':
+                    setState(target, 'paralyse', true, evt);
+                    break;
+                  case 'etourdiTemp':
+                    setState(target, 'etourdi', true, evt);
+                    break;
+                  case 'affaibliTemp':
+                    setState(target, 'affaibli', true, evt);
+                    break;
+                }
+                var effet = messageEffetTemp[ef.effet];
+                if (effet && effet.statusMarker) {
+                  affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
+                  target.token.set('status_' + effet.statusMarker, true);
                 }
               } else { //On a un effet de combat
                 target.messages.push(target.tokName + " " + messageEffetCombat[ef.effet].activation);
@@ -7530,21 +7541,32 @@ var COFantasy = COFantasy || function() {
                         duree = Math.ceil(duree / 2);
                       }
                       if (!reussite) {
-                        if (ef.duree)
+                        if (ef.duree) {
                           setTokenAttr(target, ef.effet, duree, evt,
                             undefined, getInit());
-                        else setTokenAttr(target, ef.effet, true, evt);
-                        if (ef.effet == 'aveugleTemp') {
-                          setState(target, 'aveugle', true, evt);
-                        } else if (ef.effet == 'ralentiTemp') {
-                          setState(target, 'ralenti', true, evt);
-                        } else if (ef.effet == 'paralyseTemp') {
-                          setState(target, 'paralyse', true, evt);
-                        } else if (ef.effet == 'etourdiTemp') {
-                          setState(target, 'etourdi', true, evt);
-                        } else if (ef.effet == 'affaibliTemp') {
-                          setState(target, 'affaibli', true, evt);
-                        }
+                          switch (ef.effet) {
+                            case 'aveugleTemp':
+                              setState(target, 'aveugle', true, evt);
+                              break;
+                            case 'ralentiTemp':
+                              setState(target, 'ralenti', true, evt);
+                              break;
+                            case 'paralyseTemp':
+                              setState(target, 'paralyse', true, evt);
+                              break;
+                            case 'etourdiTemp':
+                              setState(target, 'etourdi', true, evt);
+                              break;
+                            case 'affaibliTemp':
+                              setState(target, 'affaibli', true, evt);
+                              break;
+                          }
+                          var effet = messageEffetTemp[ef.effet];
+                          if (effet && effet.statusMarker) {
+                            affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
+                            target.token.set('status_' + effet.statusMarker, true);
+                          }
+                        } else setTokenAttr(target, ef.effet, true, evt);
                         if (ef.valeur !== undefined) {
                           setTokenAttr(target, ef.effet + "Valeur", ef.valeur, evt, undefined, ef.valeurMax);
                         }
@@ -11003,12 +11025,10 @@ var COFantasy = COFantasy || function() {
     if (aura_token_on_turn) {
       // ennemi => rouge
       var aura2_color = '#CC0000';
-
       if (estAllieJoueur(perso)) {
         // equipe => vert
         aura2_color = '#59E594';
       }
-
       token.set('aura2_radius', '0.1');
       token.set('aura2_color', aura2_color);
       token.set('showplayers_aura2', true);
@@ -12780,7 +12800,8 @@ var COFantasy = COFantasy || function() {
     var effet = cmd[1];
     var pp = effet.indexOf('(');
     if (pp > 0) effet = effet.substring(effet, pp);
-    if (messageEffetTemp[effet] === undefined) {
+    var mEffet = messageEffetTemp[effet];
+    if (mEffet === undefined) {
       error("Impossible de trouver l'effet " + effetC, cmd);
       return;
     }
@@ -12813,8 +12834,8 @@ var COFantasy = COFantasy || function() {
           //On demande de préciser les options
           var optMana = {
             mana: options.mana,
-            dm: messageEffetTemp[effet].dm,
-            soins: messageEffetTemp[effet].soins,
+            dm: mEffet.dm,
+            soins: mEffet.soins,
             portee: options.portee,
             duree: true,
             rang: options.rang,
@@ -12911,8 +12932,12 @@ var COFantasy = COFantasy || function() {
               break;
             default:
           }
+          if (mEffet.statusMarker) {
+            affectToken(perso.token, 'statusmarkers', perso.token.get('statusmarkers'), evt);
+            perso.token.set('status_' + mEffet.statusMarker, true);
+          }
           setTokenAttr(
-            perso, effetC, d, evt, messageEffetTemp[effet].activation,
+            perso, effetC, d, evt, mEffet.activation,
             getInit());
           if (options.saveParTour) {
             setTokenAttr(perso, effetC + "SaveParTour",
@@ -20208,6 +20233,7 @@ var COFantasy = COFantasy || function() {
       fin: "peut à nouveau respirer",
       prejudiciable: true,
       seulementVivant: true,
+      statusMarker: 'overdrive',
       dm: true
     },
     forceDeGeant: {
@@ -20220,6 +20246,7 @@ var COFantasy = COFantasy || function() {
       actif: "saigne de tous les orifices du visage",
       fin: "ne saigne plus",
       prejudiciable: true,
+      statusMarker: 'red',
       dm: true
     },
     encaisserUnCoup: {
@@ -20675,6 +20702,13 @@ var COFantasy = COFantasy || function() {
     } else if (options.gardeAutresAttributs === undefined) { //On cherche si il y en a un
       enleverEffetAttribut(charId, efComplet, attrName, 'SaveParTour', evt);
     }
+    var mEffet = messageEffetTemp[effet];
+    if (mEffet.statusMarker) {
+      iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
+        affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
+        token.set('status_' + mEffet.statusMarker, false);
+      }, {tousLesTokens: true});
+    }
     switch (effet) {
       case 'agrandissement': //redonner sa taille normale
         var character = getObj('character', charId);
@@ -20848,7 +20882,7 @@ var COFantasy = COFantasy || function() {
           });
         }
         attr.remove();
-        if (options.print) options.print(messageEffetTemp[effet].fin);
+        if (options.print) options.print(mEffet.fin);
         else sendChar(charId, 'disparaît');
         var arbreChar = getObj('character', charId);
         if (arbreChar) {
@@ -20953,13 +20987,13 @@ var COFantasy = COFantasy || function() {
         }, 'mort');
       });
       if (!estMort) {
-        if (options.print) options.print(messageEffetTemp[effet].fin);
+        if (options.print) options.print(mEffet.fin);
         else {
           if (attrName == efComplet)
-            sendChar(charId, messageEffetTemp[effet].fin);
+            sendChar(charId, mEffet.fin);
           else {
             var tokenName = attrName.substring(attrName.indexOf('_') + 1);
-            sendChat('', tokenName + ' ' + messageEffetTemp[effet].fin);
+            sendChat('', tokenName + ' ' + mEffet.fin);
           }
         }
       }
