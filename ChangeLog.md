@@ -40,6 +40,7 @@
 * Les montures de l'attaquant et de sa cible ne sont plus considérées comme des obstacles lors des attaques à distance.
 
 ### Corrections de bugs
+* Correction d'un bug qui empechait l'affichage du résultat d'un tour de force.
 * Trouve les points de chance quand ils sont à la valeur par défaut
 * Correction d'un bug qui faisait planter le sort de commeil
 * Plus d'affichage de dégâts chaque tour sur les personnages morts

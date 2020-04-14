@@ -6265,7 +6265,8 @@ var COFantasy = COFantasy || function() {
               };
               dealDamage(attaquant, r, [], evt, false, options, explications,
                 function(dmgDisplay, dmg) {
-                  var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
+                  var dmgMsg =
+                    "<b>Dommages pour " + attackerTokName + " :</b> " +
                     dmgDisplay;
                   addLineToFramedDisplay(display, dmgMsg);
                   finaliseDisplay(display, explications, evt, attaquant, cibles, options);
@@ -7686,7 +7687,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    if (options && !options.secret) sendChat("", endFramedDisplay(display));
+    if (options === undefined || !options.secret) sendChat("", endFramedDisplay(display));
     if (attaquant) {
       var playerIds;
       if (options.secret) {
@@ -15620,23 +15621,21 @@ var COFantasy = COFantasy || function() {
               smsg += " => échec";
             }
             addLineToFramedDisplay(display, smsg);
-            sendChat("", "[[1d4]]", function(res) {
-              var rolls = res[0];
-              var explRoll = rolls.inlinerolls[0];
-              var r = {
-                total: explRoll.results.total,
-                type: 'normal',
-                display: buildinline(explRoll, 'normal')
-              };
-              var explications = [];
-              barbare.ignoreRD = true;
-              dealDamage(barbare, r, [], evt, false, {}, explications,
-                function(dmgDisplay, dmg) {
-                  var dmgMsg = "mais cela lui coûte " + dmgDisplay + " PV";
-                  addLineToFramedDisplay(display, dmgMsg);
-                  finaliseDisplay(display, explications, evt);
-                });
-            });
+            var d4 = rollDePlus(4);
+            var r = {
+              total: d4.val,
+              type: 'normal',
+              display: d4.roll
+            };
+            var explications = [];
+            barbare.ignoreRD = true;
+            dealDamage(barbare, r, [], evt, false, {}, explications,
+              function(dmgDisplay, dmg) {
+                var dmgMsg = "mais cela lui coûte " + dmgDisplay + " PV";
+                addLineToFramedDisplay(display, dmgMsg);
+                finaliseDisplay(display, explications, evt);
+                addEvent(evt);
+              });
           });
       });
     });
@@ -20721,7 +20720,9 @@ var COFantasy = COFantasy || function() {
       iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
         affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
         token.set('status_' + mEffet.statusMarker, false);
-      }, {tousLesTokens: true});
+      }, {
+        tousLesTokens: true
+      });
     }
     switch (effet) {
       case 'agrandissement': //redonner sa taille normale
