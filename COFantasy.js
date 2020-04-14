@@ -14202,7 +14202,7 @@ var COFantasy = COFantasy || function() {
             limite: rangSoin
           };
         var bonusLeger = niveau + charAttributeAsInt(soigneur, 'voieDuGuerisseur', 0);
-        soins = "[[" + nbDes + "d8 +" + bonusLeger + "]]";
+        soins = "[[" + nbDes + (options.puissant ? "d10" : "d8") + " +" + bonusLeger + "]]";
         if (options.portee === undefined) options.portee = 0;
         break;
       case 'modere':
@@ -14215,7 +14215,7 @@ var COFantasy = COFantasy || function() {
           };
         if (options.portee === undefined) options.portee = 0;
         var bonusModere = niveau + charAttributeAsInt(soigneur, 'voieDuGuerisseur', 0);
-        soins = "[[" + (nbDes + 1) + "d8 +" + bonusModere + "]]";
+        soins = "[[" + (nbDes+1) + (options.puissant ? "d10" : "d8") + " +" + bonusModere + "]]";
         break;
       case 'groupe':
         if (!stateCOF.combat) {
