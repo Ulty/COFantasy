@@ -4400,8 +4400,9 @@ var COFantasy = COFantasy || function() {
       }
       return pvmax;
     }
+    target.tokName = target.tokName || target.token.get('name');
     var tokenName = target.tokName;
-    var explications = target.messages;
+    var explications = target.messages || [];
     var defense = 10;
     if (getAttrByName(target.charId, 'type_personnage') == 'PNJ') {
       defense = ficheAttributeAsInt(target, 'pnj_def', 10);
@@ -4442,7 +4443,7 @@ var COFantasy = COFantasy || function() {
       }
       defense += bonusPeau;
       explications.push("Peau d'écorce : +" + bonusPeau + " en DEF");
-      if (peauIntense)
+      if (peauIntense && !options.test)
         removeTokenAttr(target, 'peauDEcorceTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(target, 'champDeProtection')) {
@@ -4451,7 +4452,7 @@ var COFantasy = COFantasy || function() {
       bonusChamp += champIntense;
       defense += bonusChamp;
       explications.push("Champ de protection : +" + bonusChamp + " en DEF");
-      if (champIntense)
+      if (champIntense && !options.test)
         removeTokenAttr(target, 'champDeProtectionTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(target, 'mutationCuirasse')) {
@@ -4466,7 +4467,7 @@ var COFantasy = COFantasy || function() {
     if (getState(target, 'surpris')) defense -= 5;
     if (getState(target, 'renverse')) defense -= 5;
     if (getState(target, 'aveugle') || attributeAsBool(target, 'aveugleManoeuvre')) {
-      if (options.distance || !charAttributeAsBool(target, 'radarMental') || estNonVivant(attaquant))
+      if (options.distance || !charAttributeAsBool(target, 'radarMental') || (attaquant && estNonVivant(attaquant)))
         defense -= 5;
     }
     if (getState(target, 'etourdi') || attributeAsBool(target, 'peurEtourdi'))
@@ -4521,7 +4522,7 @@ var COFantasy = COFantasy || function() {
         } else if (attrName != 'protegePar_' + nameProtecteur) return;
         var protecteur = tokenOfId(attr.get('current'), nameProtecteur, pageId);
         if (protecteur === undefined) {
-          removeTokenAttr(target, 'protegePar_' + nameProtecteur, evt);
+          if (evt) removeTokenAttr(target, 'protegePar_' + nameProtecteur, evt);
           sendChar(target.charId, "ne peut pas être protégé par " + nameProtecteur + " car aucun token le représentant n'est sur la page");
           return;
         }
@@ -4582,7 +4583,7 @@ var COFantasy = COFantasy || function() {
       explications.push("Prison végétale => -2 DEF");
     }
     if (attributeAsBool(target, 'protectionContreLeMal') &&
-      estMauvais(attaquant)) {
+      (attaquant && estMauvais(attaquant))) {
       var bonusProtectionContreLeMal = getValeurOfEffet(target, 'protectionContreLeMal', 2);
       defense += bonusProtectionContreLeMal;
       explications.push("Protection contre le mal => +" + bonusProtectionContreLeMal + " DEF");
@@ -11756,9 +11757,17 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, "est enveloppé dans " + cube.tokName);
           }
         }
+        var pageId = perso.token.get('pageid');
+        var defense = defenseOfToken(undefined, perso, pageId, undefined, {
+          test: true
+        });
+
+        var defenseMontree;
         var bufDef = attributeAsInt(perso, 'bufDEF', 0);
-        if (bufDef > 0)
-          addLineToFramedDisplay(display, "Défense temporairement modifiée de " + bufDef);
+        if (bufDef > 0) {
+          addLineToFramedDisplay(display, "Défense temporairement modifiée de " + bufDef + " (DEF " + defense + ")");
+          defenseMontree = true;
+        }
         for (var etat in cof_states) {
           if (getState(perso, etat)) {
             var etext = etat;
@@ -11771,10 +11780,14 @@ var COFantasy = COFantasy || function() {
         }
         if (ficheAttributeAsInt(perso, 'DEFARMUREON', 1) === 0) {
           addLineToFramedDisplay(display, "Ne porte pas son armure");
-          if (charAttributeAsInt(perso, 'vetementsSacres', 0) > 0)
-            addLineToFramedDisplay(display, "  mais bénéficie de ses vêtements sacrés");
-          if (charAttributeAsInt(perso, 'armureDeVent', 0) > 0)
-            addLineToFramedDisplay(display, "  mais bénéficie de son armure de vent");
+          if (charAttributeAsInt(perso, 'vetementsSacres', 0) > 0) {
+            addLineToFramedDisplay(display, "  mais bénéficie de ses vêtements sacrés (DEF " + defense + ")");
+            defenseMontree = true;
+          }
+          if (charAttributeAsInt(perso, 'armureDeVent', 0) > 0) {
+            addLineToFramedDisplay(display, "  mais bénéficie de son armure de vent (DEF " + defense + ")");
+            defenseMontree = true;
+          }
         }
         if (ficheAttributeAsInt(perso, 'DEFBOUCLIERON', 1) === 0 &&
           ficheAttributeAsInt(perso, 'DEFBOUCLIER', 0))
@@ -11880,6 +11893,19 @@ var COFantasy = COFantasy || function() {
         var ebriete = attributeAsInt(perso, 'niveauEbriete', 0);
         if (ebriete > 0 && ebriete < niveauxEbriete.length) {
           addLineToFramedDisplay(display, "est " + niveauxEbriete[ebriete]);
+        }
+        if (!defenseMontree) {
+          var defenseAffichee = 10;
+          if (getAttrByName(perso.charId, 'type_personnage') == 'PNJ') {
+            defenseAffichee = ficheAttributeAsInt(perso, 'pnj_def', 10);
+          } else {
+            defenseAffichee += ficheAttributeAsInt(perso, 'DEFARMURE', 0) * ficheAttributeAsInt(perso, 'DEFARMUREON', 1);
+            defenseAffichee += ficheAttributeAsInt(perso, 'DEFBOUCLIER', 0) * ficheAttributeAsInt(perso, 'DEFBOUCLIERON', 1);
+            defenseAffichee += ficheAttributeAsInt(perso, 'DEFDIV', 0);
+            defenseAffichee += modCarac(perso, 'DEXTERITE');
+          }
+          if (defense != defenseAffichee)
+            addLineToFramedDisplay(display, "Défense actuelle : " + defense);
         }
         sendChat("", endFramedDisplay(display));
       });
