@@ -2985,6 +2985,7 @@ var COFantasy = COFantasy || function() {
         case 'secret':
         case 'saufAllies':
         case 'attaqueAssuree':
+        case 'attaqueRisquee':
           options[cmd[0]] = true;
           return;
         case "imparable": //deprecated
@@ -4641,6 +4642,10 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
+    if (attributeAsBool(target, 'attaqueRisquee')) {
+      defense -= 4;
+      explications.push("Suite à une attaque risquée, -4 en DEF");
+    }
     return defense;
   }
 
@@ -4735,6 +4740,12 @@ var COFantasy = COFantasy || function() {
           explications.push("Rage du berserk : +2 en Attaque et +1d6 aux DM");
           options.rageBerserk = 1;
         }
+      }
+      if (options.attaqueRisquee) {
+        attBonus += 2;
+        explications.push("Attaque risquée => +2 en Attaque");
+        if (!options.test)
+          setTokenAttr(attaquant, 'attaqueRisquee', 1, evt, undefined, getInit());
       }
     }
     var frenesie = charAttributeAsInt(attaquant, 'frenesie', 0);
@@ -20484,6 +20495,11 @@ var COFantasy = COFantasy || function() {
       activation: "enrage suite au coup critique",
       actif: "a subit un coup critique",
       fin: "ne bénéficie plus des effets de même pas mal"
+    },
+    attaqueRisquee: {
+      activation: "fait une attaque risquée",
+      actif: "s'est mis en danger par une attaque risquée",
+      fin: "retrouve une position moins risquée",
     },
   };
 
