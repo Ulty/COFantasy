@@ -6732,9 +6732,7 @@ var COFantasy = COFantasy || function() {
     }
   
     if(sound != "" && sound != undefined){
-      log(sound)
-      log("!roll20AM --audio,play|"+ sound )
-      sendChat("GM","!roll20AM --audio,play|"+ sound);
+      sendChat("GM","!roll20AM --audio,play,nomenu|"+ sound);
     }
   }
 
