@@ -2984,6 +2984,7 @@ var COFantasy = COFantasy || function() {
         case "riposte":
         case 'secret':
         case 'saufAllies':
+        case 'attaqueAssuree':
           options[cmd[0]] = true;
           return;
         case "imparable": //deprecated
@@ -4666,6 +4667,10 @@ var COFantasy = COFantasy || function() {
     }
     if (options.semonce) {
       attBonus += 5;
+    }
+    if (options.attaqueAssuree) {
+      attBonus += 5;
+      explications.push("Attaque assurée => +5 en Attaque et DM/2");
     }
     if (attributeAsBool(attaquant, 'criDuPredateur')) {
       attBonus += 1;
@@ -6432,7 +6437,8 @@ var COFantasy = COFantasy || function() {
           var paralyse = false;
           if (getState(target, 'paralyse')) {
             paralyse = true;
-            target.messages.push("Cible paralysée => réussite critique automatique");
+            if (!options.attaqueAssuree)
+              target.messages.push("Cible paralysée => réussite critique automatique");
           }
           if (d20roll >= 15) {
             if (charAttributeAsBool(attaquant, 'champion'))
@@ -6472,12 +6478,12 @@ var COFantasy = COFantasy || function() {
               default:
                 critSug += "simple échec";
             }
-          } else if (paralyse || options.ouvertureMortelle || d20roll == 20 ||
-            (d20roll >= target.crit && attackRoll >= defense)) {
+          } else if ((paralyse || options.ouvertureMortelle || d20roll == 20 ||
+              (d20roll >= target.crit && attackRoll >= defense)) && !options.attaqueAssuree) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
             touche = true;
             critique = true;
-          } else if (options.champion) {
+          } else if (options.champion || d20roll == 20 || paralyse) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
           } else if (attackRoll < defense && d20roll < target.crit) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
@@ -7067,6 +7073,10 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(attaquant, 'ombreMortelle') ||
         attributeAsBool(attaquant, 'dedoublement') ||
         (charAttributeAsBool(attaquant, 'armeeConjuree') && attributeAsBool(target, 'attaqueArmeeConjuree'))) {
+        if (options.divise) options.divise *= 2;
+        else options.divise = 2;
+      }
+      if (options.attaqueAssuree) {
         if (options.divise) options.divise *= 2;
         else options.divise = 2;
       }

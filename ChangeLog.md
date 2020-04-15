@@ -16,6 +16,7 @@
 * L'option --argent devient --armeDArgent. Cela permet d'utiliser --argent pour les armes en argent ordinaires.
 
 ### Autres améliorations
+* Ajout de l'option d'attaque assurée
 * Affichage de la défense dans le statut, quand elle ne correspond pas à la défense affichée sur la fiche.
 * Simplification du nommage des escaliers.
 * Possibilité d'ajouter un message en argument de !cof-soins
