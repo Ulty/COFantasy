@@ -3558,13 +3558,12 @@ var COFantasy = COFantasy || function() {
           }
           return;
         case 'img-attack-echec-critique':
-          if (cmd.length < 1) {
-            error("Il manque une image après --img-attack-echec-critique", cmd);
-            return;
-          }
-          options.img_attack_echec_critique = cmd[1];
+            if (cmd.length < 1) {
+              error("Il manque une image après --img-attack-echec-critique", cmd);
+              return;
+            }
+            options.img_attack_echec_critique = cmd[1];
           return;
-
         case 'img-attack-echec':
             if (cmd.length < 1) {
               error("Il manque une image après --img-attack-echec", cmd);
@@ -3600,49 +3599,48 @@ var COFantasy = COFantasy || function() {
             }
             options.img_attack_succes_critique = cmd[1];
           return;
-          case 'sound-attack-echec-critique':
+        case 'sound-attack-echec-critique':
             if (cmd.length < 1) {
               error("Il manque le son après --sound-attack-echec-critique", cmd);
               return;
             }
             options.sound_attack_echec_critique = cmd[1];
             return;
-  
-          case 'sound-attack-echec':
-              if (cmd.length < 1) {
-                error("Il manque une sound après --sound-attack-echec", cmd);
-                return;
-              }
-              options.sound_attack_echec = cmd[1];
-            return;
-          case 'sound-attack-echec-clignotement':
-              if (cmd.length < 1) {
-                error("Il manque une sound après --sound-attack-echec-clignotement", cmd);
-                return;
-              }
-              options.sound_attack_echec_clignotement = cmd[1];
-            return;
-          case 'sound-attack-normal-touch':
-              if (cmd.length < 1) {
-                error("Il manque une sound après --sound-attack-normal-touch", cmd);
-                return;
-              }
-              options.sound_attack_normal_touch = cmd[1];
-            return;
-          case 'sound-attack-champion-succes':
-              if (cmd.length < 1) {
-                error("Il manque une sound après --sound-attack-champion-succes", cmd);
-                return;
-              }
-              options.sound_attack_champion_succes = cmd[1];
-            return;
-          case 'sound-attack-succes-critique':
-              if (cmd.length < 1) {
-                error("Il manque une sound après --sound-attack-succes-critique", cmd);
-                return;
-              }
-              options.sound_attack_succes_critique = cmd[1];
-            return;
+        case 'sound-attack-echec':
+            if (cmd.length < 1) {
+              error("Il manque une sound après --sound-attack-echec", cmd);
+              return;
+            }
+            options.sound_attack_echec = cmd[1];
+          return;
+        case 'sound-attack-echec-clignotement':
+            if (cmd.length < 1) {
+              error("Il manque une sound après --sound-attack-echec-clignotement", cmd);
+              return;
+            }
+            options.sound_attack_echec_clignotement = cmd[1];
+          return;
+        case 'sound-attack-normal-touch':
+            if (cmd.length < 1) {
+              error("Il manque une sound après --sound-attack-normal-touch", cmd);
+              return;
+            }
+            options.sound_attack_normal_touch = cmd[1];
+          return;
+        case 'sound-attack-champion-succes':
+            if (cmd.length < 1) {
+              error("Il manque une sound après --sound-attack-champion-succes", cmd);
+              return;
+            }
+            options.sound_attack_champion_succes = cmd[1];
+          return;
+        case 'sound-attack-succes-critique':
+            if (cmd.length < 1) {
+              error("Il manque une sound après --sound-attack-succes-critique", cmd);
+              return;
+            }
+            options.sound_attack_succes_critique = cmd[1];
+          return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
       }
