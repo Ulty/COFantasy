@@ -6449,6 +6449,7 @@ var COFantasy = COFantasy || function() {
           }
           if (d20roll == 1 && options.chance === undefined) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
+			      attackResult += addAttackImg("[img-attack-echec-critique]", weaponStats.divers);
             if (options.demiAuto) {
               target.partialSaveAuto = true;
               evt.succes = false;
@@ -6475,12 +6476,15 @@ var COFantasy = COFantasy || function() {
           } else if (paralyse || options.ouvertureMortelle || d20roll == 20 ||
             (d20roll >= target.crit && attackRoll >= defense)) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
+			      attackResult += addAttackImg("[img-attack-succes-critique]", weaponStats.divers);
             touche = true;
             critique = true;
           } else if (options.champion) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
+			      attackResult += addAttackImg("[img-attack-champion-succes]", weaponStats.divers);
           } else if (attackRoll < defense && d20roll < target.crit) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
+			      attackResult += addAttackImg("[img-attack-echec]", weaponStats.divers);
             evt.succes = false;
             if (options.demiAuto) {
               target.partialSaveAuto = true;
@@ -6488,12 +6492,14 @@ var COFantasy = COFantasy || function() {
           } else if (d20roll % 2 && attributeAsBool(target, 'clignotement')) {
             target.messages.push(target.tokName + " disparaît au moment où l'attaque aurait du l" + onGenre(target.charId, 'e', 'a') + " toucher");
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
+			      attackResult += addAttackImg("[img-attack-echec-clignotement]", weaponStats.divers);
             target.clignotement = true;
             if (options.demiAuto) {
               target.partialSaveAuto = true;
             } else touche = false;
           } else { // Touché normal
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
+			      attackResult += addAttackImg("[img-attack-normal-touch]", weaponStats.divers);
           }
           var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
           if (attSkill > 0) attRollValue += "+" + attSkill;
@@ -6599,6 +6605,22 @@ var COFantasy = COFantasy || function() {
     }); // fin du jet d'attaque asynchrone
   }
 
+  function addAttackImg(AttackParam, divers){
+	var imgAttackResult = "";
+	if(divers.includes(AttackParam)){
+		var imgattack = divers.split(AttackParam);
+		if(imgattack.length > 2){
+			if(imgattack[1].toLowerCase().endsWith(".jpg") || imgattack[1].toLowerCase().endsWith(".png") || imgattack[1].toLowerCase().endsWith(".gif")){
+				var newLineimg =  '<span style="padding: 4px 0;" >  '
+				newLineimg +=   '<img src="' + imgattack[1] + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+				newLineimg + '</span>';
+				imgAttackResult += newLineimg;
+			}
+		}
+	}
+	return imgAttackResult;
+  }
+		
   function computeMainDmgRollExpr(attaquant, target, weaponStats, attNbDices, attDMBonus, options) {
     var attDMArme = weaponStats.attDMBonusCommun;
     if (isNaN(attDMArme) || attDMArme === 0) attDMArme = '';
