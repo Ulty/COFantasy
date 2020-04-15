@@ -6736,50 +6736,49 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-
   function addAttackImg(AttackParam, divers, options){
-  var imgAttackResult = "";
-  var img = "";
-	if(divers.includes(AttackParam)){
-		var imgattack = divers.split(AttackParam);
-		if(imgattack.length > 2){
-      img = imgattack[1]
-		}
-  }
-  
-  if(img == "" || img == undefined){
-    switch (AttackParam) {
-      case "[img-attack-echec-critique]":
-        img = options.img_attack_echec_critique;
-        break;
-      case "[img-attack-echec]":
-        img = options.img_attack_echec
-        break;
-      case "[img-attack-echec-clignotement]":
-        img = options.img_attack_echec_clignotement
-        break;
-      case "[img-attack-normal-touch]":
-        img = options.img_attack_normal_touch
-        break;
-      case "[img-attack-champion-succes]":
-        img = options.img_attack_champion_succes
-        break;
-      case " [img-attack-succes-critique]":
-        img = options.img_attack_succes_critique
-        break;
-      default:
-        img = "";
+    var imgAttackResult = "";
+    var img = "";
+    if(divers.includes(AttackParam)){
+      var imgattack = divers.split(AttackParam);
+      if(imgattack.length > 2){
+        img = imgattack[1]
+      }
     }
-  }
+    
+    if(img == "" || img == undefined){
+      switch (AttackParam) {
+        case "[img-attack-echec-critique]":
+          img = options.img_attack_echec_critique;
+          break;
+        case "[img-attack-echec]":
+          img = options.img_attack_echec
+          break;
+        case "[img-attack-echec-clignotement]":
+          img = options.img_attack_echec_clignotement
+          break;
+        case "[img-attack-normal-touch]":
+          img = options.img_attack_normal_touch
+          break;
+        case "[img-attack-champion-succes]":
+          img = options.img_attack_champion_succes
+          break;
+        case " [img-attack-succes-critique]":
+          img = options.img_attack_succes_critique
+          break;
+        default:
+          img = "";
+      }
+    }
 
-  if(img != "" && img != undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))){
-    var newLineimg =  '<span style="padding: 4px 0;" >  '
-    newLineimg +=   '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
-    newLineimg + '</span>';
-    imgAttackResult += newLineimg;
-  }
-  
-	return imgAttackResult;
+    if(img != "" && img != undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))){
+      var newLineimg =  '<span style="padding: 4px 0;" >  '
+      newLineimg +=   '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+      newLineimg + '</span>';
+      imgAttackResult += newLineimg;
+    }
+    
+    return imgAttackResult;
   }
 		
   function computeMainDmgRollExpr(attaquant, target, weaponStats, attNbDices, attDMBonus, options) {
