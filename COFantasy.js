@@ -7309,6 +7309,10 @@ var COFantasy = COFantasy || function() {
                   pageId, evt);
                 return;
               }
+              if (ef.effet == 'saignementsSang' && charAttributeAsBool(target, 'immuniteSaignement')) {
+                target.messages.push(target.tokName + " ne peut pas saigner");
+                return;
+              }
               if (ef.duree) {
                 if (ef.message)
                   target.messages.push(target.tokName + " " + ef.message.activation);
@@ -13942,14 +13946,14 @@ var COFantasy = COFantasy || function() {
   }
 
   function raceIs(perso, race) {
-    var charRace = ficheAttribute(perso, 'RACE');
+    var charRace = ficheAttribute(perso, 'race');
     if (charRace === undefined) return false;
     return (charRace.toLowerCase() == race.toLowerCase());
   }
 
   function estMortVivant(perso) {
     if (charAttributeAsBool(perso, 'mort-vivant')) return true;
-    var charRace = ficheAttribute(perso, 'RACE');
+    var charRace = ficheAttribute(perso, 'race');
     if (charRace === undefined) return false;
     switch (charRace.toLowerCase()) {
       case 'squelette':
@@ -13970,7 +13974,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function estUnGeant(perso) {
-    var charRace = ficheAttribute(perso, 'RACE');
+    var charRace = ficheAttribute(perso, 'race');
     if (charRace === undefined) return false;
     switch (charRace.trim().toLowerCase()) {
       case 'géant':
@@ -13986,7 +13990,7 @@ var COFantasy = COFantasy || function() {
 
   function estHumanoide(perso) {
     if (charAttributeAsBool(perso, 'humanoide')) return true;
-    var charRace = ficheAttribute(perso, 'RACE');
+    var charRace = ficheAttribute(perso, 'race');
     if (charRace === undefined) return false;
     switch (charRace.trim().toLowerCase()) {
       case 'humain':
@@ -14022,7 +14026,7 @@ var COFantasy = COFantasy || function() {
 
   function estQuadrupede(perso) {
     if (charAttributeAsBool(perso, 'quadrupede')) return true;
-    var charRace = ficheAttribute(perso, 'RACE');
+    var charRace = ficheAttribute(perso, 'race');
     if (charRace === undefined) return false;
     switch (charRace.trim().toLowerCase()) {
       case 'ankheg':
@@ -14136,7 +14140,7 @@ var COFantasy = COFantasy || function() {
 
   function estMauvais(perso) {
     if (charAttributeAsBool(perso, 'mauvais')) return true;
-    var charRace = ficheAttribute(perso, 'RACE');
+    var charRace = ficheAttribute(perso, 'race');
     if (charRace === undefined) return false;
     switch (charRace.trim().toLowerCase()) {
       case 'squelette':
@@ -18126,7 +18130,7 @@ var COFantasy = COFantasy || function() {
         DEFDIV: 3,
         pnj_def: 14,
         pnj_init: 12,
-        RACE: 'loup',
+        race: 'loup',
         TAILLE: 'moyen'
       },
       pv: 9,
@@ -18165,7 +18169,7 @@ var COFantasy = COFantasy || function() {
         pnj_def: 15,
         INIT_DIV: 5,
         pnj_init: 17,
-        RACE: 'loup',
+        race: 'loup',
         TAILLE: 'moyen'
       },
       pv: 15,
@@ -18213,7 +18217,7 @@ var COFantasy = COFantasy || function() {
         pnj_def: 17,
         INIT_DIV: 5,
         pnj_init: 17,
-        RACE: 'loup',
+        race: 'loup',
         TAILLE: 'moyen'
       },
       pv: 35,
@@ -18261,7 +18265,7 @@ var COFantasy = COFantasy || function() {
         pnj_def: 18,
         INIT_DIV: 5,
         pnj_init: 23,
-        RACE: 'lion',
+        race: 'lion',
         TAILLE: 'grand'
       },
       pv: 30,
@@ -18311,7 +18315,7 @@ var COFantasy = COFantasy || function() {
         DEFDIV: 6,
         pnj_def: 20,
         pnj_init: 18,
-        RACE: 'lion',
+        race: 'lion',
         TAILLE: 'grand'
       },
       pv: 50,
@@ -18361,7 +18365,7 @@ var COFantasy = COFantasy || function() {
         DEFDIV: 10,
         pnj_def: 20,
         pnj_init: 11,
-        RACE: 'ours',
+        race: 'ours',
         TAILLE: 'grand'
       },
       pv: 70,
@@ -18407,7 +18411,7 @@ var COFantasy = COFantasy || function() {
         DEFDIV: 8,
         pnj_def: 22,
         pnj_init: 18,
-        RACE: 'tigre',
+        race: 'tigre',
         TAILLE: 'grand'
       },
       pv: 90,
@@ -18457,7 +18461,7 @@ var COFantasy = COFantasy || function() {
         pnj_init: 10,
         RDS: 2,
         pnj_rd: 2,
-        RACE: 'ours',
+        race: 'ours',
         TAILLE: 'énorme'
       },
       pv: 110,
