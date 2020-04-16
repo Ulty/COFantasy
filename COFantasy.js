@@ -6730,7 +6730,12 @@ var COFantasy = COFantasy || function() {
     }
   
     if(sound != "" && sound != undefined){
-      sendChat("GM","!roll20AM --audio,play,nomenu|"+ sound);
+      //With Roll20 Audio Master
+      //sendChat("GM","!roll20AM --audio,play,nomenu|"+ sound);
+      _.each(findObjs({type:'jukeboxtrack',title:sound }),(track)=>{
+        var jbTrack=getObj('jukeboxtrack',track.get('_id'))
+        jbTrack.set({playing:true,softstop:false});
+     });  
     }
   }
 
