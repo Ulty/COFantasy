@@ -337,6 +337,18 @@
                   <li><code>--message <i>texte</i></code> : ajoute une ligne avec le message dans la fenêtre de l'attaque. Attention, <i>texte</i> ne doit pas contenir la séquence <code> --</code>.</li>
                   <li><code>--secret</code> : affiche les jets et résultats de l'attaque seulement aux joueurs qui contrôlent l'attaquant ou ses cibles, ainsi qu'au MJ.</li>
                   <li><code>--allonge <i>n</i></code> : ajoute <i>n</i> mètres à la portée d'une attaque au contact. L'allonge peut être un nombre à virgule et même négative.</li>
+                  <li><code>--sound-attack-echec-critique <i>son</i></code> : joue le son <i>n</i> lorque l'arme fait un echec critique</li>
+                  <li><code>--sound-attack-echec <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un echec</li>
+                  <li><code>--sound-attack-echec-clignotement <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un echec par clignotement</li>
+                  <li><code>--sound-attack-succes-critique <i>son</i></code> : joue le son <i>n</i> lorque l'arme fait un succès critique</li>
+                  <li><code>--sound-attack-normal-touch <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un succès</li>
+                  <li><code>--sound-attack-champion-succes <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un succès champion</li>
+                  <li><code>--img-attack-echec-critique <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un echec critique</li>
+                  <li><code>--img-attack-echec <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un echec</li>
+                  <li><code>--img-attack-echec-clignotement <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un echec par clignotement</li>
+                  <li><code>--img-attack-succes-critique <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un succès critique</li>
+                  <li><code>--img-attack-normal-touch <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un succès</li>
+                  <li><code>--img-attack-champion-succes <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un succès champion</li>
                 </ul>
               </div>
               <h4 class="text-secondary">Réduction des dégâts</h4>
@@ -387,6 +399,38 @@
               <h4 class="text-secondary">Sortir du combat : <code>!cof-fin-combat</code></h4>
               <div class="decalage">
                 <p>Ferme aussi le tracker de tour. Encore à mettre en macro dans la barre du MJ (macro automatiquement générée par <code>!cof-set-macros</code>). Permet de tenir compte de pleins de capacités qui durent un combat, ou utilisables une seule fois par combat,...</p>
+              </div>
+              <h4 class="text-secondary">Utilisation spéciale des images et son des armes</h4>
+              <div class="decalage">
+               <p>Les images des armes et les sons peuvent être redéfinis dans le champ détail de l'arme.</p>
+               <p>Pour ce faire vous devez ajouter les urls des images au format suivant dans la description de l'arme :</p>
+               <p><code>[<i>Type de réussite</i>] <i>url de l'image</i> [<i>Type de réussite</i>]</code></p>
+               <p>Par exemple : <code>[img-attack-echec-critique]https://media0.giphy.com/media/3og0INyCmHlNylks9O/giphy.gif[img-attack-echec-critique]</code></p>
+               <p>Les <i>types de réussite</i> que vous pouvez mettre en image sont :</p>
+               <div class="decalage">
+                  <ul>
+                    <li><code>[img-attack-echec-critique] <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un echec critique</li>
+                    <li><code>[img-attack-echec] <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un echec</li>
+                    <li><code>[img-attack-echec-clignotement] <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un echec par clignotement</li>
+                    <li><code>[img-attack-succes-critique] <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un succès critique</li>
+                    <li><code>[img-attack-normal-touch] <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un succès</li>
+                    <li><code>[img-attack-champion-succes] <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un succès champion</li>
+                  </ul>
+                </div>
+                <p>De la même manière vous pouvez ajouter des sons :</p>
+                <p>[<i>Type de réussite</i>] <i>Nom du son dans votre jukebox</i> [<i>Type de réussite</i>]</p>
+                <div class="decalage">
+                  <ul>
+                    <li><code>[sound-attack-echec-critique] <i>son</i></code> : joue le son <i>n</i> lorque l'arme fait un echec critique</li>
+                    <li><code>[sound-attack-echec] <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un echec</li>
+                    <li><code>[sound-attack-echec-clignotement] <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un echec par clignotement</li>
+                    <li><code>[sound-attack-succes-critique] <i>son</i></code> : joue le son <i>n</i> lorque l'arme fait un succès critique</li>
+                    <li><code>[sound-attack-normal-touch] <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un succès</li>
+                    <li><code>[sound-attack-champion-succes] <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un succès champion</li>
+                  </ul>
+                </div>
+                <p>Par exemple : <code>[sound-attack-echec-critique]bang[sound-attack-echec-critique]</code></p>
+                <p>Dans cette exemple le son nomé "bang" dans votre jutbox serra joué a chaque echec critique de cette arme</p>
               </div>
               <h3 class="text-info" id="soins">2.2 Soins :</h3>
               <div class="decalage">
@@ -1493,7 +1537,7 @@
 							<p>On peut arrêter la collecte avec <code>!cof-arreter-statistiques</code>, et la mettre en pause avec <code>!cof-pause-statistiques</code>.<br />
 								Si on redémarre après une mise en pause, on reprend les statistiques comme elles étaient au moment de la pause. Si on redémarre des statistiques en court, cela remet les statistiques à zéro.
 							</p>
-						</div>
+            </div>
 					</div>
 				</div>
 		</div>
