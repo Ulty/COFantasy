@@ -18,6 +18,7 @@
 /* globals toFront */
 /* globals playerIsGM */
 /* globals HealthColors */
+/* globals Roll20AM */
 
 // Needs the Vector Math scripty
 
@@ -3560,88 +3561,88 @@ var COFantasy = COFantasy || function() {
           }
           return;
         case 'img-attack-echec-critique':
-            if (cmd.length < 1) {
-              error("Il manque une image après --img-attack-echec-critique", cmd);
-              return;
-            }
-            options.img_attack_echec_critique = cmd[1];
+          if (cmd.length < 1) {
+            error("Il manque une image après --img-attack-echec-critique", cmd);
+            return;
+          }
+          options.img_attack_echec_critique = cmd[1];
           return;
         case 'img-attack-echec':
-            if (cmd.length < 1) {
-              error("Il manque une image après --img-attack-echec", cmd);
-              return;
-            }
-            options.img_attack_echec = cmd[1];
+          if (cmd.length < 1) {
+            error("Il manque une image après --img-attack-echec", cmd);
+            return;
+          }
+          options.img_attack_echec = cmd[1];
           return;
         case 'img-attack-echec-clignotement':
-            if (cmd.length < 1) {
-              error("Il manque une image après --img-attack-echec-clignotement", cmd);
-              return;
-            }
-            options.img_attack_echec_clignotement = cmd[1];
+          if (cmd.length < 1) {
+            error("Il manque une image après --img-attack-echec-clignotement", cmd);
+            return;
+          }
+          options.img_attack_echec_clignotement = cmd[1];
           return;
         case 'img-attack-normal-touch':
-            if (cmd.length < 1) {
-              error("Il manque une image après --img-attack-normal-touch", cmd);
-              return;
-            }
-            options.img_attack_normal_touch = cmd[1];
+          if (cmd.length < 1) {
+            error("Il manque une image après --img-attack-normal-touch", cmd);
+            return;
+          }
+          options.img_attack_normal_touch = cmd[1];
           return;
         case 'img-attack-champion-succes':
-            if (cmd.length < 1) {
-              error("Il manque une image après --img-attack-champion-succes", cmd);
-              return;
-            }
-            options.img_attack_champion_succes = cmd[1];
+          if (cmd.length < 1) {
+            error("Il manque une image après --img-attack-champion-succes", cmd);
+            return;
+          }
+          options.img_attack_champion_succes = cmd[1];
           return;
         case 'img-attack-succes-critique':
-            if (cmd.length < 1) {
-              error("Il manque une image après --img-attack-succes-critique", cmd);
-              return;
-            }
-            options.img_attack_succes_critique = cmd[1];
+          if (cmd.length < 1) {
+            error("Il manque une image après --img-attack-succes-critique", cmd);
+            return;
+          }
+          options.img_attack_succes_critique = cmd[1];
           return;
         case 'sound-attack-echec-critique':
-            if (cmd.length < 1) {
-              error("Il manque le son après --sound-attack-echec-critique", cmd);
-              return;
-            }
-            options.sound_attack_echec_critique = cmd[1];
+          if (cmd.length < 1) {
+            error("Il manque le son après --sound-attack-echec-critique", cmd);
             return;
+          }
+          options.sound_attack_echec_critique = cmd[1];
+          return;
         case 'sound-attack-echec':
-            if (cmd.length < 1) {
-              error("Il manque une sound après --sound-attack-echec", cmd);
-              return;
-            }
-            options.sound_attack_echec = cmd[1];
+          if (cmd.length < 1) {
+            error("Il manque une sound après --sound-attack-echec", cmd);
+            return;
+          }
+          options.sound_attack_echec = cmd[1];
           return;
         case 'sound-attack-echec-clignotement':
-            if (cmd.length < 1) {
-              error("Il manque une sound après --sound-attack-echec-clignotement", cmd);
-              return;
-            }
-            options.sound_attack_echec_clignotement = cmd[1];
+          if (cmd.length < 1) {
+            error("Il manque une sound après --sound-attack-echec-clignotement", cmd);
+            return;
+          }
+          options.sound_attack_echec_clignotement = cmd[1];
           return;
         case 'sound-attack-normal-touch':
-            if (cmd.length < 1) {
-              error("Il manque une sound après --sound-attack-normal-touch", cmd);
-              return;
-            }
-            options.sound_attack_normal_touch = cmd[1];
+          if (cmd.length < 1) {
+            error("Il manque une sound après --sound-attack-normal-touch", cmd);
+            return;
+          }
+          options.sound_attack_normal_touch = cmd[1];
           return;
         case 'sound-attack-champion-succes':
-            if (cmd.length < 1) {
-              error("Il manque une sound après --sound-attack-champion-succes", cmd);
-              return;
-            }
-            options.sound_attack_champion_succes = cmd[1];
+          if (cmd.length < 1) {
+            error("Il manque une sound après --sound-attack-champion-succes", cmd);
+            return;
+          }
+          options.sound_attack_champion_succes = cmd[1];
           return;
         case 'sound-attack-succes-critique':
-            if (cmd.length < 1) {
-              error("Il manque une sound après --sound-attack-succes-critique", cmd);
-              return;
-            }
-            options.sound_attack_succes_critique = cmd[1];
+          if (cmd.length < 1) {
+            error("Il manque une sound après --sound-attack-succes-critique", cmd);
+            return;
+          }
+          options.sound_attack_succes_critique = cmd[1];
           return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
@@ -6711,17 +6712,16 @@ var COFantasy = COFantasy || function() {
       }); //fin de détermination de toucher des cibles
     }); // fin du jet d'attaque asynchrone
   }
-  
-  function addAttackSound(AttackParam, divers, options){
-    var sound = "";
-    if(divers.includes(AttackParam)){
+
+  function addAttackSound(AttackParam, divers, options) {
+    var sound;
+    if (divers.includes(AttackParam)) {
       var soundattack = divers.split(AttackParam);
-      if(soundattack.length > 2){
-        sound = soundattack[1]
+      if (soundattack.length > 2) {
+        sound = soundattack[1];
       }
     }
-
-    if(sound == ""){
+    if (sound === undefined) {
       switch (AttackParam) {
         case "[sound-attack-echec-critique]":
           sound = options.sound_attack_echec_critique;
@@ -6741,66 +6741,76 @@ var COFantasy = COFantasy || function() {
         case " [sound-attack-succes-critique]":
           sound = options.sound_attack_succes_critique;
           break;
-        default:
-          sound = "";
       }
     }
-  
-    if(sound != "" && sound != undefined){
-      //With Roll20 Audio Master
-      //sendChat("GM","!roll20AM --audio,play,nomenu|"+ sound);
-      _.each(findObjs({type:'jukeboxtrack',title:sound }),(track)=>{
-        var jbTrack=getObj('jukeboxtrack',track.get('_id'))
-        jbTrack.set({playing:true,softstop:false});
-     });  
+    if (sound) {
+      var AMdeclared;
+      try {
+        AMdeclared = Roll20AM;
+      } catch (e) {
+        if (e.name != "ReferenceError") throw (e);
+      }
+      if (AMdeclared) {
+        //With Roll20 Audio Master
+        sendChat("GM", "!roll20AM --audio,play,nomenu|" + sound);
+      } else {
+        var jukebox = findObjs({
+          type: 'jukeboxtrack',
+          title: sound
+        });
+        jukebox.forEach(function(track) {
+          var jbTrack = getObj('jukeboxtrack', track.get('_id'));
+          if (jbTrack) jbTrack.set({
+            playing: true,
+            softstop: false
+          });
+        });
+      }
     }
   }
 
-  function addAttackImg(AttackParam, divers, options){
+  function addAttackImg(AttackParam, divers, options) {
     var imgAttackResult = "";
     var img = "";
-    if(divers.includes(AttackParam)){
+    if (divers.includes(AttackParam)) {
       var imgattack = divers.split(AttackParam);
-      if(imgattack.length > 2){
-        img = imgattack[1]
+      if (imgattack.length > 2) {
+        img = imgattack[1];
       }
     }
-    
-    if(img == "" || img == undefined){
+    if (img === "" || img === undefined) {
       switch (AttackParam) {
         case "[img-attack-echec-critique]":
           img = options.img_attack_echec_critique;
           break;
         case "[img-attack-echec]":
-          img = options.img_attack_echec
+          img = options.img_attack_echec;
           break;
         case "[img-attack-echec-clignotement]":
-          img = options.img_attack_echec_clignotement
+          img = options.img_attack_echec_clignotement;
           break;
         case "[img-attack-normal-touch]":
-          img = options.img_attack_normal_touch
+          img = options.img_attack_normal_touch;
           break;
         case "[img-attack-champion-succes]":
-          img = options.img_attack_champion_succes
+          img = options.img_attack_champion_succes;
           break;
         case " [img-attack-succes-critique]":
-          img = options.img_attack_succes_critique
+          img = options.img_attack_succes_critique;
           break;
         default:
           img = "";
       }
     }
-
-    if(img != "" && img != undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))){
-      var newLineimg =  '<span style="padding: 4px 0;" >  '
-      newLineimg +=   '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
-      newLineimg + '</span>';
+    if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
+      var newLineimg = '<span style="padding: 4px 0;" >  ';
+      newLineimg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+      newLineimg += '</span>';
       imgAttackResult += newLineimg;
     }
-    
     return imgAttackResult;
   }
-		
+
   function computeMainDmgRollExpr(attaquant, target, weaponStats, attNbDices, attDMBonus, options) {
     var attDMArme = weaponStats.attDMBonusCommun;
     if (isNaN(attDMArme) || attDMArme === 0) attDMArme = '';
@@ -22239,7 +22249,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = "2.0";
+  var script_version = "2.01";
   on('add:token', COFantasy.addToken);
   state.COFantasy = state.COFantasy || {
     combat: false,

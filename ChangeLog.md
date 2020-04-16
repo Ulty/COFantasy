@@ -1,5 +1,9 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 
+## 2.01
+## Autres améliorations
+* Possibilité d'afficher des images et de jouer des sons selon le résultat d'une attaque.
+
 ## 2.0
 ### Capacités
 * Ajout de la capacité "Attaque en meute" des Gobelins
