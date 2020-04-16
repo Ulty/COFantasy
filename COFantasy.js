@@ -10930,6 +10930,15 @@ var COFantasy = COFantasy || function() {
             return;
           }
           var attr = getObj('attribute', cmd[1]);
+          if (attr === undefined && options.lanceur) {
+            attr = tokenAttribute(options.lanceur, cmd[1]);
+            if (attr.length === 0) {
+              log("Attribut à changer perdu");
+              log(cmd);
+              return;
+            }
+            attr = attr[0];
+          }
           if (attr === undefined) {
             log("Attribut à changer perdu");
             log(cmd);
