@@ -5,6 +5,7 @@
 * Possibilité d'afficher des images et de jouer des sons selon le résultat d'une attaque.
 
 ### Corrections de bugs
+* Correction d'un bug pour les effets d'attaque conditionnels.
 * Amélioration du parsing de handout pour les compétences en équipes.
 * Correction d'un bug avec la tempete de mana qui pouvait faire affecter la cible plus le lanceur de l'effet du sort.
 

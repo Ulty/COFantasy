@@ -7138,14 +7138,14 @@ var COFantasy = COFantasy || function() {
       }
     };
     cibles.forEach(function(target) {
-      target.ignoreRD = options.ignoreRD;
-      target.ignoreMoitieRD = options.ignoreMoitieRD;
-      target.tempDmg = options.tempDmg;
-      target.enflamme = options.enflamme;
-      target.malediction = options.malediction;
-      target.pietine = options.pietine;
-      target.maxDmg = options.maxDmg;
       evalITE(attaquant, target, d20roll, options, evt, explications, options);
+      target.ignoreRD = target.ignoreRD || options.ignoreRD;
+      target.ignoreMoitieRD = target.ignoreMoitieRD || options.ignoreMoitieRD;
+      target.tempDmg = target.tempDmg || options.tempDmg;
+      target.enflamme = target.enflamme || options.enflamme;
+      target.malediction = target.malediction || options.malediction;
+      target.pietine = target.pietine || options.pietine;
+      target.maxDmg = target.maxDmg || options.maxDmg;
       if (options.enveloppe !== undefined) {
         var ligneEnveloppe = attaquant.tokName + " peut ";
         var commandeEnvelopper =
