@@ -2605,12 +2605,12 @@ var COFantasy = COFantasy || function() {
     vide: true
   };
 
-  function ajouterOptionTempete(display, option, texte, restant, perso) {
+  function ajouterOptionTempete(display, option, texte, restant) {
     var line = texte + " : ";
     if (tempeteDeManaCourante[option])
-      line += bouton("!cof-tempete-de-mana -" + option, "Oui", perso);
+      line += boutonSimple("!cof-tempete-de-mana -" + option, '', "Oui");
     else if (restant > 0)
-      line += bouton("!cof-tempete-de-mana " + option, "Non", perso);
+      line += boutonSimple("!cof-tempete-de-mana " + option, '', "Non");
     else line += "Non";
     addLineToFramedDisplay(display, line);
   }
@@ -2682,10 +2682,10 @@ var COFantasy = COFantasy || function() {
     if (tempeteDeManaCourante.dureeDeBase &&
       tempeteDeManaCourante.dm === undefined &&
       tempeteDeManaCourante.soins === undefined)
-      ajouterOptionTempete(display, "duree", "Durée", restant, perso);
+      ajouterOptionTempete(display, "duree", "Durée", restant);
     if (tempeteDeManaCourante.porteeDeBase)
-      ajouterOptionTempete(display, "portee", "Portée", restant, perso);
-    ajouterOptionTempete(display, "rapide", "Rapide", restant, perso);
+      ajouterOptionTempete(display, "portee", "Portée", restant);
+    ajouterOptionTempete(display, "rapide", "Rapide", restant);
     if (tempeteDeManaCourante.altruistePossible) {
       var la = 'Magie altruiste : ';
       if (restant || tempeteDeManaCourante.altruiste) {
@@ -2693,7 +2693,7 @@ var COFantasy = COFantasy || function() {
         if (tempeteDeManaCourante.altruiste) {
           tla = tempeteDeManaCourante.altruiste.token.get('name');
         }
-        la += bouton("!cof-tempete-de-mana altruiste @{target|token_id}", tla, perso);
+        la += boutonSimple("!cof-tempete-de-mana altruiste @{target|token_id}", '', tla);
       } else la += 'Non';
       addLineToFramedDisplay(display, la);
     }
@@ -2705,7 +2705,7 @@ var COFantasy = COFantasy || function() {
     if (maxMagieIntense > 5 && restant > 0) maxMagieIntense = magieIntense + 1;
     for (var i = 0; i <= maxMagieIntense; i++) {
       if (i == magieIntense) line += " " + i;
-      else line += " " + bouton("!cof-tempete-de-mana " + i, i, perso);
+      else line += " " + boutonSimple("!cof-tempete-de-mana " + i, '', i);
     }
     addLineToFramedDisplay(display, line);
     var v = tempeteDeManaCourante.cmd;
@@ -2721,7 +2721,7 @@ var COFantasy = COFantasy || function() {
         vopt += " " + tempeteDeManaCourante.intense;
     }
     v = v.replace(/--tempeteDeMana/, vopt);
-    addLineToFramedDisplay(display, bouton(v, "Valider", perso));
+    addLineToFramedDisplay(display, boutonSimple(v, '', "Valider"));
     sendChat("", endFramedDisplay(display));
   }
 

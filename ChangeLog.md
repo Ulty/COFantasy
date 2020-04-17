@@ -4,6 +4,9 @@
 ## Autres améliorations
 * Possibilité d'afficher des images et de jouer des sons selon le résultat d'une attaque.
 
+### Corrections de bugs
+* Correction d'un bug avec la tempete de mana qui pouvait faire affecter la cible plus le lanceur de l'effet du sort.
+
 ## 2.0
 ### Capacités
 * Ajout de la capacité "Attaque en meute" des Gobelins
