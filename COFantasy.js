@@ -11146,7 +11146,8 @@ var COFantasy = COFantasy || function() {
   function charactersInHandout(note, nomEquipe) {
     note = note.trim();
     if (note.startsWith('<p>')) note = note.substring(3);
-    note = note.trim().replace(/<p>/g, '<br>');
+    note = note.trim().replace(/<span[^>]*>|<\/span>/g, '');
+    note = note.replace(/<p>/g, '<br>');
     note = note.replace(/<\/p>/g, '');
     var names = note.trim().split('<br>');
     var persos = new Set();
@@ -11181,7 +11182,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseHandout(hand) {
-    var handName = hand.get('name');
+    var handName = hand.get('name').trim();
     if (handName.startsWith("Equipe ")) {
       hand.get('notes', function(note) { // asynchronous
         var persos = charactersInHandout(note, handName);
@@ -11208,7 +11209,8 @@ var COFantasy = COFantasy || function() {
       };
       hand.get('notes', function(note) { // asynchronous
         var carac; //La carac dont on spécifie les compétences actuellement
-        var lignes = note.trim().replace(/<p>|<\/p>/g, '<br>').split('<br>');
+        var lignes = note.trim().replace(/<span[^>]*>|<\/span>/g, '');
+        lignes = lignes.replace(/<p>|<\/p>/g, '<br>').split('<br>');
         lignes.forEach(function(ligne) {
           ligne = ligne.trim();
           var header = ligne.split(':');
