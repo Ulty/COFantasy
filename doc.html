@@ -339,6 +339,18 @@
                   <li><code>--message <i>texte</i></code> : ajoute une ligne avec le message dans la fenêtre de l'attaque. Attention, <i>texte</i> ne doit pas contenir la séquence <code> --</code>.</li>
                   <li><code>--secret</code> : affiche les jets et résultats de l'attaque seulement aux joueurs qui contrôlent l'attaquant ou ses cibles, ainsi qu'au MJ.</li>
                   <li><code>--allonge <i>n</i></code> : ajoute <i>n</i> mètres à la portée d'une attaque au contact. L'allonge peut être un nombre à virgule et même négative.</li>
+                  <li><code>--sound-attack-echec-critique <i>son</i></code> : joue le son <i>n</i> lorque l'arme fait un echec critique</li>
+                  <li><code>--sound-attack-echec <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un echec</li>
+                  <li><code>--sound-attack-echec-clignotement <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un echec par clignotement</li>
+                  <li><code>--sound-attack-succes-critique <i>son</i></code> : joue le son <i>n</i> lorque l'arme fait un succès critique</li>
+                  <li><code>--sound-attack-normal-touch <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un succès</li>
+                  <li><code>--sound-attack-champion-succes <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un succès champion</li>
+                  <li><code>--img-attack-echec-critique <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un echec critique</li>
+                  <li><code>--img-attack-echec <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un echec</li>
+                  <li><code>--img-attack-echec-clignotement <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un echec par clignotement</li>
+                  <li><code>--img-attack-succes-critique <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un succès critique</li>
+                  <li><code>--img-attack-normal-touch <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un succès</li>
+                  <li><code>--img-attack-champion-succes <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un succès champion</li>
                 </ul>
               </div>
               <h4 class="text-secondary">Réduction des dégâts</h4>
@@ -389,6 +401,38 @@
               <h4 class="text-secondary">Sortir du combat : <code>!cof-fin-combat</code></h4>
               <div class="decalage">
                 <p>Ferme aussi le tracker de tour. Encore à mettre en macro dans la barre du MJ (macro automatiquement générée par <code>!cof-set-macros</code>). Permet de tenir compte de pleins de capacités qui durent un combat, ou utilisables une seule fois par combat,...</p>
+              </div>
+              <h4 class="text-secondary">Utilisation spéciale des images et son des armes</h4>
+              <div class="decalage">
+               <p>Les images des armes et les sons peuvent être redéfinis dans le champ détail de l'arme.</p>
+               <p>Pour ce faire vous devez ajouter les urls des images au format suivant dans la description de l'arme :</p>
+               <p><code>[<i>Type de réussite</i>] <i>url de l'image</i> [<i>Type de réussite</i>]</code></p>
+               <p>Par exemple : <code>[img-attack-echec-critique]https://media0.giphy.com/media/3og0INyCmHlNylks9O/giphy.gif[img-attack-echec-critique]</code></p>
+               <p>Les <i>types de réussite</i> que vous pouvez mettre en image sont :</p>
+               <div class="decalage">
+                  <ul>
+                    <li><code>[img-attack-echec-critique] <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un echec critique</li>
+                    <li><code>[img-attack-echec] <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un echec</li>
+                    <li><code>[img-attack-echec-clignotement] <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un echec par clignotement</li>
+                    <li><code>[img-attack-succes-critique] <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un succès critique</li>
+                    <li><code>[img-attack-normal-touch] <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un succès</li>
+                    <li><code>[img-attack-champion-succes] <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un succès champion</li>
+                  </ul>
+                </div>
+                <p>De la même manière vous pouvez ajouter des sons :</p>
+                <p>[<i>Type de réussite</i>] <i>Nom du son dans votre jukebox</i> [<i>Type de réussite</i>]</p>
+                <div class="decalage">
+                  <ul>
+                    <li><code>[sound-attack-echec-critique] <i>son</i></code> : joue le son <i>n</i> lorque l'arme fait un echec critique</li>
+                    <li><code>[sound-attack-echec] <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un echec</li>
+                    <li><code>[sound-attack-echec-clignotement] <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un echec par clignotement</li>
+                    <li><code>[sound-attack-succes-critique] <i>son</i></code> : joue le son <i>n</i> lorque l'arme fait un succès critique</li>
+                    <li><code>[sound-attack-normal-touch] <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un succès</li>
+                    <li><code>[sound-attack-champion-succes] <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un succès champion</li>
+                  </ul>
+                </div>
+                <p>Par exemple : <code>[sound-attack-echec-critique]bang[sound-attack-echec-critique]</code></p>
+                <p>Dans cette exemple le son nomé "bang" dans votre jutbox serra joué a chaque echec critique de cette arme</p>
               </div>
               <h3 class="text-info" id="soins">2.2 Soins :</h3>
               <div class="decalage">
@@ -870,7 +914,7 @@
                 <h4 class="text-secondary">Voie du métal</h4>
                 <ol>
                   <li><strong>Forgeron</strong> : Il faut un attribut <code>voieDuMetal</code> pour connaître le rang (ou utiliser l'option <code>--valeur</code>). Lancer le sort avec <code>!cof-effet-temp forgeron(<i>L</i>) [[5+@{selected|INT}]]</code> où <i>L</i> est le label d'une attaque. Ensuite, chaque fois que cette attaque sera utilisée, les dégâts seront ajoutés. Limitations : si deux attaques utilisent la même arme, il faut faire deux fois l'action, une pour chaque attaque. Si vous utilisez les options de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Métal brûlant</strong> : faire une attaque, de type magique et de portée 20 m. L'appeler (avec <code>!cof-attack</code>) avec les options <code>--pasDeDmg --sortilege --effet ?{Chauffer|une arme,armeBrulante|une armure,armureBrulante} [[5+@{selected|INT}]]</code>. Si vous utilisez les options de tempête de mana, rajoutez <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
+                  <li><strong>Métal brûlant</strong> : faire une attaque, de type magique et de portée 20 m. L'appeler (avec <code>!cof-attack</code>) avec les options <code>--pasDeDmg --sortilege --effet ?{Chauffer|une arme,armeBrulante|une armure,armureBrulante} [[5+@{selected|INT}]]</code>. Si vous utilisez les options de tempête de mana, rajoutez <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. Pour mettre fin à l'effet (si la cible lache son arme ou enlève son arnure), vous pouvez utiliser la macro <code>!cof-effet-temp ?{Se débarrasser d'une |arme,armeBrulante|armure,armureBrulante} 0</code>.</li>
                   <li><strong>Magnétisme</strong> : <code>!cof-effet-temp magnetisme [[3+@{selected|INT}]] --mana 1</code>. L'effet n'est actif que contre les attaques ayant l'option <code>--metal</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du golem</h4>
@@ -1092,7 +1136,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie du sang</h4>
                 <ol>
-                  <li><strong>Saignements</strong> : ajouter une attaque magique de portée 10 m. La lancer avec les options <code>--pasDeDmg --sortilege --effet saignementsSang <i>rang</i></code>, où <i>rang</i> est le rang dans la Voie. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
+                  <li><strong>Saignements</strong> : ajouter une attaque magique de portée 10 m. La lancer avec les options <code>--pasDeDmg --sortilege --effet saignementsSang <i>rang</i></code>, où <i>rang</i> est le rang dans la Voie. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. Si vous souhaitez que le saignement ne puisse pas être appliqué à certains personnages (comme des golems ou des squelettes), vous pouvez leur ajouter un attribut <code>immuniteSaignement</code> de valeur courante <code>true</code>.</li>
                   <li><strong>Sang mordant</strong> : <code>!cof-effet-temp sangMordant [[5+@{selected|INT}]]</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
                   <li><strong>Exsangue</strong> : ajouter un attribut <code>exsangue</code>, avec comme valeur <code>true</code>.</li>
                 </ol>
@@ -1151,7 +1195,7 @@
                 <h4 class="text-secondary">Voie de la spiritualité</h4>
                 <ol>
                   <li><strong>Vêtements sacrés</strong> : Ajouter un attribut <code>vetementsSacres</code> avec comme valeur le rang dans la voie de la spiritualité. Cela augmente la DEF, mais seulement lorsque le prêtre ne porte pas d'armure (ne se voit pas sur le total de DEF de la fiche)</li>
-                  <li><strong>Protection contre le mal</strong> : <code>!cof-effet-combat protectionContreLeMal --lanceur @{selected|token_id} --target @{target|token_id} --portee 0</code>. Donne le bonus contre toute créature dont l'attribut <code>RACE</code> est <code>squelette</code>, <code>zombie</code>, <code>démon</code>, <code>élémentaire</code>, ou bien qui possède l'attribut <code>mauvais</code> (valeur <code>true</code>). Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
+                  <li><strong>Protection contre le mal</strong> : <code>!cof-effet-combat protectionContreLeMal --lanceur @{selected|token_id} --target @{target|token_id} --portee 0</code>. Donne le bonus contre toute créature dont l'attribut <code>race</code> est <code>squelette</code>, <code>zombie</code>, <code>démon</code>, <code>élémentaire</code>, ou bien qui possède l'attribut <code>mauvais</code> (valeur <code>true</code>). Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
                   <li><strong>Délivrance</strong> : <code>!cof-delivrance @{selected|token_id} @{target|token_id} --mana 1 --portee 0</code></li>
                   <li><strong>Marche des plans</strong> : <code>!cof-lancer-sort 2 marche entre les plans (il peut se déplacer de [[(3+@{selected|SAG})*10]] km)</code>.</li>
                   <li><strong>Messie</strong> : aucun support.</li>
@@ -1495,7 +1539,7 @@
 							<p>On peut arrêter la collecte avec <code>!cof-arreter-statistiques</code>, et la mettre en pause avec <code>!cof-pause-statistiques</code>.<br />
 								Si on redémarre après une mise en pause, on reprend les statistiques comme elles étaient au moment de la pause. Si on redémarre des statistiques en court, cela remet les statistiques à zéro.
 							</p>
-						</div>
+            </div>
 					</div>
 				</div>
 		</div>

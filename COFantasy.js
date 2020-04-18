@@ -18,6 +18,7 @@
 /* globals toFront */
 /* globals playerIsGM */
 /* globals HealthColors */
+/* globals Roll20AM */
 
 // Needs the Vector Math scripty
 
@@ -2606,12 +2607,12 @@ var COFantasy = COFantasy || function() {
     vide: true
   };
 
-  function ajouterOptionTempete(display, option, texte, restant, perso) {
+  function ajouterOptionTempete(display, option, texte, restant) {
     var line = texte + " : ";
     if (tempeteDeManaCourante[option])
-      line += bouton("!cof-tempete-de-mana -" + option, "Oui", perso);
+      line += boutonSimple("!cof-tempete-de-mana -" + option, '', "Oui");
     else if (restant > 0)
-      line += bouton("!cof-tempete-de-mana " + option, "Non", perso);
+      line += boutonSimple("!cof-tempete-de-mana " + option, '', "Non");
     else line += "Non";
     addLineToFramedDisplay(display, line);
   }
@@ -2683,10 +2684,10 @@ var COFantasy = COFantasy || function() {
     if (tempeteDeManaCourante.dureeDeBase &&
       tempeteDeManaCourante.dm === undefined &&
       tempeteDeManaCourante.soins === undefined)
-      ajouterOptionTempete(display, "duree", "Durée", restant, perso);
+      ajouterOptionTempete(display, "duree", "Durée", restant);
     if (tempeteDeManaCourante.porteeDeBase)
-      ajouterOptionTempete(display, "portee", "Portée", restant, perso);
-    ajouterOptionTempete(display, "rapide", "Rapide", restant, perso);
+      ajouterOptionTempete(display, "portee", "Portée", restant);
+    ajouterOptionTempete(display, "rapide", "Rapide", restant);
     if (tempeteDeManaCourante.altruistePossible) {
       var la = 'Magie altruiste : ';
       if (restant || tempeteDeManaCourante.altruiste) {
@@ -2694,7 +2695,7 @@ var COFantasy = COFantasy || function() {
         if (tempeteDeManaCourante.altruiste) {
           tla = tempeteDeManaCourante.altruiste.token.get('name');
         }
-        la += bouton("!cof-tempete-de-mana altruiste @{target|token_id}", tla, perso);
+        la += boutonSimple("!cof-tempete-de-mana altruiste @{target|token_id}", '', tla);
       } else la += 'Non';
       addLineToFramedDisplay(display, la);
     }
@@ -2706,7 +2707,7 @@ var COFantasy = COFantasy || function() {
     if (maxMagieIntense > 5 && restant > 0) maxMagieIntense = magieIntense + 1;
     for (var i = 0; i <= maxMagieIntense; i++) {
       if (i == magieIntense) line += " " + i;
-      else line += " " + bouton("!cof-tempete-de-mana " + i, i, perso);
+      else line += " " + boutonSimple("!cof-tempete-de-mana " + i, '', i);
     }
     addLineToFramedDisplay(display, line);
     var v = tempeteDeManaCourante.cmd;
@@ -2722,7 +2723,7 @@ var COFantasy = COFantasy || function() {
         vopt += " " + tempeteDeManaCourante.intense;
     }
     v = v.replace(/--tempeteDeMana/, vopt);
-    addLineToFramedDisplay(display, bouton(v, "Valider", perso));
+    addLineToFramedDisplay(display, boutonSimple(v, '', "Valider"));
     sendChat("", endFramedDisplay(display));
   }
 
@@ -3560,6 +3561,90 @@ var COFantasy = COFantasy || function() {
             scope.enveloppe.type = cmd[2];
             scope.enveloppe.expression = cmd[3];
           }
+          return;
+        case 'img-attack-echec-critique':
+          if (cmd.length < 1) {
+            error("Il manque une image après --img-attack-echec-critique", cmd);
+            return;
+          }
+          options.img_attack_echec_critique = cmd[1];
+          return;
+        case 'img-attack-echec':
+          if (cmd.length < 1) {
+            error("Il manque une image après --img-attack-echec", cmd);
+            return;
+          }
+          options.img_attack_echec = cmd[1];
+          return;
+        case 'img-attack-echec-clignotement':
+          if (cmd.length < 1) {
+            error("Il manque une image après --img-attack-echec-clignotement", cmd);
+            return;
+          }
+          options.img_attack_echec_clignotement = cmd[1];
+          return;
+        case 'img-attack-normal-touch':
+          if (cmd.length < 1) {
+            error("Il manque une image après --img-attack-normal-touch", cmd);
+            return;
+          }
+          options.img_attack_normal_touch = cmd[1];
+          return;
+        case 'img-attack-champion-succes':
+          if (cmd.length < 1) {
+            error("Il manque une image après --img-attack-champion-succes", cmd);
+            return;
+          }
+          options.img_attack_champion_succes = cmd[1];
+          return;
+        case 'img-attack-succes-critique':
+          if (cmd.length < 1) {
+            error("Il manque une image après --img-attack-succes-critique", cmd);
+            return;
+          }
+          options.img_attack_succes_critique = cmd[1];
+          return;
+        case 'sound-attack-echec-critique':
+          if (cmd.length < 1) {
+            error("Il manque le son après --sound-attack-echec-critique", cmd);
+            return;
+          }
+          options.sound_attack_echec_critique = cmd[1];
+          return;
+        case 'sound-attack-echec':
+          if (cmd.length < 1) {
+            error("Il manque une sound après --sound-attack-echec", cmd);
+            return;
+          }
+          options.sound_attack_echec = cmd[1];
+          return;
+        case 'sound-attack-echec-clignotement':
+          if (cmd.length < 1) {
+            error("Il manque une sound après --sound-attack-echec-clignotement", cmd);
+            return;
+          }
+          options.sound_attack_echec_clignotement = cmd[1];
+          return;
+        case 'sound-attack-normal-touch':
+          if (cmd.length < 1) {
+            error("Il manque une sound après --sound-attack-normal-touch", cmd);
+            return;
+          }
+          options.sound_attack_normal_touch = cmd[1];
+          return;
+        case 'sound-attack-champion-succes':
+          if (cmd.length < 1) {
+            error("Il manque une sound après --sound-attack-champion-succes", cmd);
+            return;
+          }
+          options.sound_attack_champion_succes = cmd[1];
+          return;
+        case 'sound-attack-succes-critique':
+          if (cmd.length < 1) {
+            error("Il manque une sound après --sound-attack-succes-critique", cmd);
+            return;
+          }
+          options.sound_attack_succes_critique = cmd[1];
           return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
@@ -6468,6 +6553,8 @@ var COFantasy = COFantasy || function() {
           }
           if (d20roll == 1 && options.chance === undefined) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
+            attackResult += addAttackImg("[img-attack-echec-critique]", weaponStats.divers, options);
+            addAttackSound("[sound-attack-echec-critique]", weaponStats.divers, options);
             if (options.demiAuto) {
               target.partialSaveAuto = true;
               evt.succes = false;
@@ -6494,12 +6581,18 @@ var COFantasy = COFantasy || function() {
           } else if ((paralyse || options.ouvertureMortelle || d20roll == 20 ||
               (d20roll >= target.crit && attackRoll >= defense)) && !options.attaqueAssuree) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
+            attackResult += addAttackImg("[img-attack-succes-critique]", weaponStats.divers, options);
+            addAttackSound("[sound-attack-succes-critique]", weaponStats.divers, options);
             touche = true;
             critique = true;
           } else if (options.champion || d20roll == 20 || paralyse) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
+            attackResult += addAttackImg("[img-attack-champion-succes]", weaponStats.divers);
+            addAttackSound("[sound-attack-champion-succes]", weaponStats.divers, options);
           } else if (attackRoll < defense && d20roll < target.crit) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
+            attackResult += addAttackImg("[img-attack-echec]", weaponStats.divers, options);
+            addAttackSound("[sound-attack-echec]", weaponStats.divers, options);
             evt.succes = false;
             if (options.demiAuto) {
               target.partialSaveAuto = true;
@@ -6507,12 +6600,16 @@ var COFantasy = COFantasy || function() {
           } else if (d20roll % 2 && attributeAsBool(target, 'clignotement')) {
             target.messages.push(target.tokName + " disparaît au moment où l'attaque aurait du l" + onGenre(target.charId, 'e', 'a') + " toucher");
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
+            attackResult += addAttackImg("[img-attack-echec-clignotement]", weaponStats.divers, options);
+            addAttackSound("[sound-attack-echec-clignotement]", weaponStats.divers, options);
             target.clignotement = true;
             if (options.demiAuto) {
               target.partialSaveAuto = true;
             } else touche = false;
           } else { // Touché normal
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
+            attackResult += addAttackImg("[img-attack-normal-touch]", weaponStats.divers, options);
+            addAttackSound("[sound-attack-normal-touch]", weaponStats.divers, options);
           }
           var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
           if (attSkill > 0) attRollValue += "+" + attSkill;
@@ -6616,6 +6713,104 @@ var COFantasy = COFantasy || function() {
           attackDealDmg(attaquant, ciblesTouchees, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles);
       }); //fin de détermination de toucher des cibles
     }); // fin du jet d'attaque asynchrone
+  }
+
+  function addAttackSound(AttackParam, divers, options) {
+    var sound;
+    if (divers.includes(AttackParam)) {
+      var soundattack = divers.split(AttackParam);
+      if (soundattack.length > 2) {
+        sound = soundattack[1];
+      }
+    }
+    if (sound === undefined) {
+      switch (AttackParam) {
+        case "[sound-attack-echec-critique]":
+          sound = options.sound_attack_echec_critique;
+          break;
+        case "[sound-attack-echec]":
+          sound = options.sound_attack_echec;
+          break;
+        case "[sound-attack-echec-clignotement]":
+          sound = options.sound_attack_echec_clignotement;
+          break;
+        case "[sound-attack-normal-touch]":
+          sound = options.sound_attack_normal_touch;
+          break;
+        case "[sound-attack-champion-succes]":
+          sound = options.sound_attack_champion_succes;
+          break;
+        case " [sound-attack-succes-critique]":
+          sound = options.sound_attack_succes_critique;
+          break;
+      }
+    }
+    if (sound) {
+      var AMdeclared;
+      try {
+        AMdeclared = Roll20AM;
+      } catch (e) {
+        if (e.name != "ReferenceError") throw (e);
+      }
+      if (AMdeclared) {
+        //With Roll20 Audio Master
+        sendChat("GM", "!roll20AM --audio,play,nomenu|" + sound);
+      } else {
+        var jukebox = findObjs({
+          type: 'jukeboxtrack',
+          title: sound
+        });
+        jukebox.forEach(function(track) {
+          var jbTrack = getObj('jukeboxtrack', track.get('_id'));
+          if (jbTrack) jbTrack.set({
+            playing: true,
+            softstop: false
+          });
+        });
+      }
+    }
+  }
+
+  function addAttackImg(AttackParam, divers, options) {
+    var imgAttackResult = "";
+    var img = "";
+    if (divers.includes(AttackParam)) {
+      var imgattack = divers.split(AttackParam);
+      if (imgattack.length > 2) {
+        img = imgattack[1];
+      }
+    }
+    if (img === "" || img === undefined) {
+      switch (AttackParam) {
+        case "[img-attack-echec-critique]":
+          img = options.img_attack_echec_critique;
+          break;
+        case "[img-attack-echec]":
+          img = options.img_attack_echec;
+          break;
+        case "[img-attack-echec-clignotement]":
+          img = options.img_attack_echec_clignotement;
+          break;
+        case "[img-attack-normal-touch]":
+          img = options.img_attack_normal_touch;
+          break;
+        case "[img-attack-champion-succes]":
+          img = options.img_attack_champion_succes;
+          break;
+        case " [img-attack-succes-critique]":
+          img = options.img_attack_succes_critique;
+          break;
+        default:
+          img = "";
+      }
+    }
+    if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
+      var newLineimg = '<span style="padding: 4px 0;" >  ';
+      newLineimg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+      newLineimg += '</span>';
+      imgAttackResult += newLineimg;
+    }
+    return imgAttackResult;
   }
 
   function computeMainDmgRollExpr(attaquant, target, weaponStats, attNbDices, attDMBonus, options) {
@@ -6945,14 +7140,14 @@ var COFantasy = COFantasy || function() {
       }
     };
     cibles.forEach(function(target) {
-      target.ignoreRD = options.ignoreRD;
-      target.ignoreMoitieRD = options.ignoreMoitieRD;
-      target.tempDmg = options.tempDmg;
-      target.enflamme = options.enflamme;
-      target.malediction = options.malediction;
-      target.pietine = options.pietine;
-      target.maxDmg = options.maxDmg;
       evalITE(attaquant, target, d20roll, options, evt, explications, options);
+      target.ignoreRD = target.ignoreRD || options.ignoreRD;
+      target.ignoreMoitieRD = target.ignoreMoitieRD || options.ignoreMoitieRD;
+      target.tempDmg = target.tempDmg || options.tempDmg;
+      target.enflamme = target.enflamme || options.enflamme;
+      target.malediction = target.malediction || options.malediction;
+      target.pietine = target.pietine || options.pietine;
+      target.maxDmg = target.maxDmg || options.maxDmg;
       if (options.enveloppe !== undefined) {
         var ligneEnveloppe = attaquant.tokName + " peut ";
         var commandeEnvelopper =
@@ -7309,6 +7504,10 @@ var COFantasy = COFantasy || function() {
                 copieToken(target, undefined, stateCOF.options.images.val.image_double.val,
                   "Double de " + target.tokName, 'dedoublement', ef.duree,
                   pageId, evt);
+                return;
+              }
+              if (ef.effet == 'saignementsSang' && charAttributeAsBool(target, 'immuniteSaignement')) {
+                target.messages.push(target.tokName + " ne peut pas saigner");
                 return;
               }
               if (ef.duree) {
@@ -10733,6 +10932,15 @@ var COFantasy = COFantasy || function() {
             return;
           }
           var attr = getObj('attribute', cmd[1]);
+          if (attr === undefined && options.lanceur) {
+            attr = tokenAttribute(options.lanceur, cmd[1]);
+            if (attr.length === 0) {
+              log("Attribut à changer perdu");
+              log(cmd);
+              return;
+            }
+            attr = attr[0];
+          }
           if (attr === undefined) {
             log("Attribut à changer perdu");
             log(cmd);
@@ -10940,7 +11148,8 @@ var COFantasy = COFantasy || function() {
   function charactersInHandout(note, nomEquipe) {
     note = note.trim();
     if (note.startsWith('<p>')) note = note.substring(3);
-    note = note.trim().replace(/<p>/g, '<br>');
+    note = note.trim().replace(/<span[^>]*>|<\/span>/g, '');
+    note = note.replace(/<p>/g, '<br>');
     note = note.replace(/<\/p>/g, '');
     var names = note.trim().split('<br>');
     var persos = new Set();
@@ -10975,7 +11184,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseHandout(hand) {
-    var handName = hand.get('name');
+    var handName = hand.get('name').trim();
     if (handName.startsWith("Equipe ")) {
       hand.get('notes', function(note) { // asynchronous
         var persos = charactersInHandout(note, handName);
@@ -11002,7 +11211,8 @@ var COFantasy = COFantasy || function() {
       };
       hand.get('notes', function(note) { // asynchronous
         var carac; //La carac dont on spécifie les compétences actuellement
-        var lignes = note.trim().replace(/<p>|<\/p>/g, '<br>').split('<br>');
+        var lignes = note.trim().replace(/<span[^>]*>|<\/span>/g, '');
+        lignes = lignes.replace(/<p>|<\/p>/g, '<br>').split('<br>');
         lignes.forEach(function(ligne) {
           ligne = ligne.trim();
           var header = ligne.split(':');
@@ -13944,14 +14154,14 @@ var COFantasy = COFantasy || function() {
   }
 
   function raceIs(perso, race) {
-    var charRace = ficheAttribute(perso, 'RACE');
+    var charRace = ficheAttribute(perso, 'race');
     if (charRace === undefined) return false;
     return (charRace.toLowerCase() == race.toLowerCase());
   }
 
   function estMortVivant(perso) {
     if (charAttributeAsBool(perso, 'mort-vivant')) return true;
-    var charRace = ficheAttribute(perso, 'RACE');
+    var charRace = ficheAttribute(perso, 'race');
     if (charRace === undefined) return false;
     switch (charRace.toLowerCase()) {
       case 'squelette':
@@ -13972,7 +14182,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function estUnGeant(perso) {
-    var charRace = ficheAttribute(perso, 'RACE');
+    var charRace = ficheAttribute(perso, 'race');
     if (charRace === undefined) return false;
     switch (charRace.trim().toLowerCase()) {
       case 'géant':
@@ -13988,7 +14198,7 @@ var COFantasy = COFantasy || function() {
 
   function estHumanoide(perso) {
     if (charAttributeAsBool(perso, 'humanoide')) return true;
-    var charRace = ficheAttribute(perso, 'RACE');
+    var charRace = ficheAttribute(perso, 'race');
     if (charRace === undefined) return false;
     switch (charRace.trim().toLowerCase()) {
       case 'humain':
@@ -14024,7 +14234,7 @@ var COFantasy = COFantasy || function() {
 
   function estQuadrupede(perso) {
     if (charAttributeAsBool(perso, 'quadrupede')) return true;
-    var charRace = ficheAttribute(perso, 'RACE');
+    var charRace = ficheAttribute(perso, 'race');
     if (charRace === undefined) return false;
     switch (charRace.trim().toLowerCase()) {
       case 'ankheg':
@@ -14138,7 +14348,7 @@ var COFantasy = COFantasy || function() {
 
   function estMauvais(perso) {
     if (charAttributeAsBool(perso, 'mauvais')) return true;
-    var charRace = ficheAttribute(perso, 'RACE');
+    var charRace = ficheAttribute(perso, 'race');
     if (charRace === undefined) return false;
     switch (charRace.trim().toLowerCase()) {
       case 'squelette':
@@ -18128,7 +18338,7 @@ var COFantasy = COFantasy || function() {
         DEFDIV: 3,
         pnj_def: 14,
         pnj_init: 12,
-        RACE: 'loup',
+        race: 'loup',
         TAILLE: 'moyen'
       },
       pv: 9,
@@ -18167,7 +18377,7 @@ var COFantasy = COFantasy || function() {
         pnj_def: 15,
         INIT_DIV: 5,
         pnj_init: 17,
-        RACE: 'loup',
+        race: 'loup',
         TAILLE: 'moyen'
       },
       pv: 15,
@@ -18215,7 +18425,7 @@ var COFantasy = COFantasy || function() {
         pnj_def: 17,
         INIT_DIV: 5,
         pnj_init: 17,
-        RACE: 'loup',
+        race: 'loup',
         TAILLE: 'moyen'
       },
       pv: 35,
@@ -18263,7 +18473,7 @@ var COFantasy = COFantasy || function() {
         pnj_def: 18,
         INIT_DIV: 5,
         pnj_init: 23,
-        RACE: 'lion',
+        race: 'lion',
         TAILLE: 'grand'
       },
       pv: 30,
@@ -18313,7 +18523,7 @@ var COFantasy = COFantasy || function() {
         DEFDIV: 6,
         pnj_def: 20,
         pnj_init: 18,
-        RACE: 'lion',
+        race: 'lion',
         TAILLE: 'grand'
       },
       pv: 50,
@@ -18363,7 +18573,7 @@ var COFantasy = COFantasy || function() {
         DEFDIV: 10,
         pnj_def: 20,
         pnj_init: 11,
-        RACE: 'ours',
+        race: 'ours',
         TAILLE: 'grand'
       },
       pv: 70,
@@ -18409,7 +18619,7 @@ var COFantasy = COFantasy || function() {
         DEFDIV: 8,
         pnj_def: 22,
         pnj_init: 18,
-        RACE: 'tigre',
+        race: 'tigre',
         TAILLE: 'grand'
       },
       pv: 90,
@@ -18459,7 +18669,7 @@ var COFantasy = COFantasy || function() {
         pnj_init: 10,
         RDS: 2,
         pnj_rd: 2,
-        RACE: 'ours',
+        race: 'ours',
         TAILLE: 'énorme'
       },
       pv: 110,
@@ -22052,7 +22262,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = "2.0";
+  var script_version = "2.01";
   on('add:token', COFantasy.addToken);
   state.COFantasy = state.COFantasy || {
     combat: false,
