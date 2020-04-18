@@ -3345,7 +3345,19 @@ var COFantasy = COFantasy || function() {
           }
           options.munition = {
             nom: cmd[1],
-            taux: tauxPertes
+            taux: tauxPertes,
+            consomme: 1
+          };
+          return;
+        case 'siMunition':
+          if (cmd.length < 2) {
+            error("Pour les munitions, il faut préciser le nom", cmd);
+            return;
+          }
+          options.munition = {
+            nom: cmd[1],
+            taux: tauxPertes,
+            consomme: 0
           };
           return;
         case "ligne":
@@ -6140,7 +6152,7 @@ var COFantasy = COFantasy || function() {
           }
         }
       }
-      munitions--;
+      munitions = munitions - options.munition.consomme;
       if (randomInteger(100) < options.munition.taux) munitionsMax--;
       if (options.tirDouble) {
         munitions--;
