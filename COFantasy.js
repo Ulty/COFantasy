@@ -13709,7 +13709,8 @@ var COFantasy = COFantasy || function() {
     if (msg.content.includes('--attaqueMentale') && charAttributeAsBool(cible, 'sansEsprit')) {
       sendChat('', token2.get('name')+" est sans esprit, " +
                 onGenre(charId2, 'il', 'elle') +
-        "est immunisé" + onGenre(charId2,'','e')+ " aux attaques mentales.");
+        " est immunisé" + onGenre(charId2,'','e')+ " aux attaques mentales.");
+      return;
     }
     var explications = [];
     evt = evt || {
