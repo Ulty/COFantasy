@@ -3606,11 +3606,12 @@ var COFantasy = COFantasy || function() {
             scope.enveloppe.expression = cmd[3];
           }
           return;
-        case 'imgAttackEchecCritique':
+        case 'imgAttack':
         case 'imgAttackEchec':
+        case 'imgAttackEchecCritique':
         case 'imgAttackEchecClignotement':
-        case 'imgAttackNormalTouch':
-        case 'imgAttackChampionSucces':
+        case 'imgAttackSucces':
+        case 'imgAttackSuccesChampion':
         case 'imgAttackSuccesCritique':
           if (cmd.length < 1) {
             error("Il manque une image après --" + cmd[0], cmd);
@@ -3636,13 +3637,17 @@ var COFantasy = COFantasy || function() {
         case 'img-attack-echec':
         case 'img-attack-echec-clignotement':
         case 'img-attack-normal-touch':
+        case 'img-attack-succes':
         case 'img-attack-champion-succes':
+        case 'img-attack-succes-champion':
         case 'img-attack-succes-critique':
           if (cmd.length < 1) {
             error("Il manque une image après --" + cmd[0], cmd);
             return;
           }
           var imgCmd = cmd[0].replace('-a', 'A').replace('-e', 'E').replace('-c', 'C').replace('-n', 'N').replace('-s', 'S').replace('-t', 'T');
+          if (imgCmd == 'imgAttackNormalTouch') soundCmd = 'imgAttackSucces';
+          if (imgCmd == 'imgAttackChampionSucces') soundCmd = 'imgAttackSuccesChampion';
           options[imgCmd] = cmd[1];
           return;
         case 'sound-attack-echec-critique':
@@ -6559,7 +6564,7 @@ var COFantasy = COFantasy || function() {
             critique = true;
           } else if (options.champion || d20roll == 20 || paralyse) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
-            attackResult += addAttackImg("imgAttackChampionSucces", weaponStats.divers, options);
+            attackResult += addAttackImg("imgAttackSuccesChampion", weaponStats.divers, options);
             addAttackSound("soundAttackSuccesChampion", weaponStats.divers, options);
           } else if (attackRoll < defense && d20roll < target.crit) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
@@ -6580,7 +6585,7 @@ var COFantasy = COFantasy || function() {
             } else touche = false;
           } else { // Touché normal
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
-            attackResult += addAttackImg("imgAttackNormalTouch", weaponStats.divers, options);
+            attackResult += addAttackImg("imgAttackSucces", weaponStats.divers, options);
             addAttackSound("soundAttackSucces", weaponStats.divers, options);
           }
           var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
@@ -6687,41 +6692,42 @@ var COFantasy = COFantasy || function() {
     }); // fin du jet d'attaque asynchrone
   }
 
+  function findAttackParam(attackParam, divers, options) {
+    var param = options[attackParam];
+    if (param) return param;
+    var subParam = attackParam;
+    var subParamIndex = subParam.indexOf('C');
+    if (subParamIndex > 0) {
+      subParam = subParam.substring(0, subParamIndex);
+      param = options[subParam];
+      if (param) return param;
+    }
+    subParamIndex = subParam.indexOf('E');
+    if (subParamIndex > 0) {
+      subParam = subParam.substring(0, subParamIndex);
+      param = options[subParam];
+      if (param) return param;
+    }
+    subParamIndex = subParam.indexOf('S');
+    if (subParamIndex > 0) {
+      subParam = subParam.substring(0, subParamIndex);
+      param = options[subParam];
+      if (param) return param;
+    }
+    var tag = attackParam.replace(/[A-Z]/g, function(c) {
+      return '-' + c.toLowerCase();
+    });
+    if (divers.includes(tag)) {
+      var soundAttack = divers.split(tag);
+      if (soundAttack.length > 2) {
+        param = soundAttack[1];
+      }
+    }
+    return param;
+  }
+
   function addAttackSound(attackParam, divers, options) {
-    var sound = options[attackParam];
-    if (sound === undefined) {
-      var subParam = attackParam;
-      var subParamIndex = subParam.indexOf('C');
-      if (subParamIndex > 0) {
-        subParam = subParam.substring(0, subParamIndex);
-        sound = options[subParam];
-      }
-      if (sound === undefined) {
-        subParamIndex = subParam.indexOf('E');
-        if (subParamIndex > 0) {
-          subParam = subParam.substring(0, subParamIndex);
-          sound = options[subParam];
-        }
-      }
-      if (sound === undefined) {
-        subParamIndex = subParam.indexOf('S');
-        if (subParamIndex > 0) {
-          subParam = subParam.substring(0, subParamIndex);
-          sound = options[subParam];
-        }
-      }
-    }
-    if (sound === undefined) {
-      var tag = attackParam.replace(/[A-Z]/g, function(c) {
-        return '-' + c.toLowerCase();
-      });
-      if (divers.includes(tag)) {
-        var soundAttack = divers.split(tag);
-        if (soundAttack.length > 2) {
-          sound = soundAttack[1];
-        }
-      }
-    }
+    var sound = findAttackParam(attackParam, divers, options);
     if (sound) {
       var AMdeclared;
       try {
@@ -6749,18 +6755,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function addAttackImg(attackParam, divers, options) {
-    var img = options[attackParam];
-    if (img === undefined) {
-      var tag = attackParam.replace(/[A-Z]/g, function(c) {
-        return '-' + c.toLowerCase();
-      });
-      if (divers.includes(img)) {
-        var imgAttack = divers.split(tag);
-        if (imgAttack.length > 2) {
-          img = imgAttack[1];
-        }
-      }
-    }
+    var img = findAttackParam(attackParam, divers, options);
     if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
       var newLineimg = '<span style="padding: 4px 0;" >  ';
       newLineimg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
