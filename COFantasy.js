@@ -3606,89 +3606,56 @@ var COFantasy = COFantasy || function() {
             scope.enveloppe.expression = cmd[3];
           }
           return;
+        case 'imgAttackEchecCritique':
+        case 'imgAttackEchec':
+        case 'imgAttackEchecClignotement':
+        case 'imgAttackNormalTouch':
+        case 'imgAttackChampionSucces':
+        case 'imgAttackSuccesCritique':
+          if (cmd.length < 1) {
+            error("Il manque une image après --" + cmd[0], cmd);
+            return;
+          }
+          options[cmd[0]] = cmd[1];
+          return;
+        case 'soundAttackEchecCritique':
+        case 'soundAttackEchec':
+        case 'soundAttackEchecClignotement':
+        case 'soundAttackNormalTouch':
+        case 'soundAttackChampionSucces':
+        case 'soundAttackSuccesCritique':
+          if (cmd.length < 1) {
+            error("Il manque le son après --" + cmd[0], cmd);
+            return;
+          }
+          options[cmd[0]] = cmd.slice(1).join(' ');
+          return;
+          //Anciennes variantes, gardées pour la compatibilité
         case 'img-attack-echec-critique':
-          if (cmd.length < 1) {
-            error("Il manque une image après --img-attack-echec-critique", cmd);
-            return;
-          }
-          options.img_attack_echec_critique = cmd[1];
-          return;
         case 'img-attack-echec':
-          if (cmd.length < 1) {
-            error("Il manque une image après --img-attack-echec", cmd);
-            return;
-          }
-          options.img_attack_echec = cmd[1];
-          return;
         case 'img-attack-echec-clignotement':
-          if (cmd.length < 1) {
-            error("Il manque une image après --img-attack-echec-clignotement", cmd);
-            return;
-          }
-          options.img_attack_echec_clignotement = cmd[1];
-          return;
         case 'img-attack-normal-touch':
-          if (cmd.length < 1) {
-            error("Il manque une image après --img-attack-normal-touch", cmd);
-            return;
-          }
-          options.img_attack_normal_touch = cmd[1];
-          return;
         case 'img-attack-champion-succes':
-          if (cmd.length < 1) {
-            error("Il manque une image après --img-attack-champion-succes", cmd);
-            return;
-          }
-          options.img_attack_champion_succes = cmd[1];
-          return;
         case 'img-attack-succes-critique':
           if (cmd.length < 1) {
-            error("Il manque une image après --img-attack-succes-critique", cmd);
+            error("Il manque une image après --" + cmd[0], cmd);
             return;
           }
-          options.img_attack_succes_critique = cmd[1];
+          var imgCmd = cmd[0].replace('-a', 'A').replace('-e', 'E').replace('-c', 'C').replace('-n', 'N').replace('-s', 'S').replace('-t', 'T');
+          options[imgCmd] = cmd[1];
           return;
         case 'sound-attack-echec-critique':
-          if (cmd.length < 1) {
-            error("Il manque le son après --sound-attack-echec-critique", cmd);
-            return;
-          }
-          options.sound_attack_echec_critique = cmd[1];
-          return;
         case 'sound-attack-echec':
-          if (cmd.length < 1) {
-            error("Il manque une sound après --sound-attack-echec", cmd);
-            return;
-          }
-          options.sound_attack_echec = cmd[1];
-          return;
         case 'sound-attack-echec-clignotement':
-          if (cmd.length < 1) {
-            error("Il manque une sound après --sound-attack-echec-clignotement", cmd);
-            return;
-          }
-          options.sound_attack_echec_clignotement = cmd[1];
-          return;
         case 'sound-attack-normal-touch':
-          if (cmd.length < 1) {
-            error("Il manque une sound après --sound-attack-normal-touch", cmd);
-            return;
-          }
-          options.sound_attack_normal_touch = cmd[1];
-          return;
         case 'sound-attack-champion-succes':
-          if (cmd.length < 1) {
-            error("Il manque une sound après --sound-attack-champion-succes", cmd);
-            return;
-          }
-          options.sound_attack_champion_succes = cmd[1];
-          return;
         case 'sound-attack-succes-critique':
           if (cmd.length < 1) {
-            error("Il manque une sound après --sound-attack-succes-critique", cmd);
+            error("Il manque le son après --" + cmd[0], cmd);
             return;
           }
-          options.sound_attack_succes_critique = cmd[1];
+          var soundCmd = cmd[0].replace('-a', 'A').replace('-e', 'E').replace('-c', 'C').replace('-n', 'N').replace('-s', 'S').replace('-t', 'T');
+          options[soundCmd] = cmd.slice(1).join(' ');
           return;
         default:
           sendChat("COF", "Argument de !cof-attack '" + arg + "' non reconnu");
@@ -6553,8 +6520,8 @@ var COFantasy = COFantasy || function() {
           }
           if (d20roll == 1 && options.chance === undefined) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
-            attackResult += addAttackImg("[img-attack-echec-critique]", weaponStats.divers, options);
-            addAttackSound("[sound-attack-echec-critique]", weaponStats.divers, options);
+            attackResult += addAttackImg("imgAttackEchecCritique", weaponStats.divers, options);
+            addAttackSound("soundAttackEchecCritique", weaponStats.divers, options);
             if (options.demiAuto) {
               target.partialSaveAuto = true;
               evt.succes = false;
@@ -6581,18 +6548,18 @@ var COFantasy = COFantasy || function() {
           } else if ((paralyse || options.ouvertureMortelle || d20roll == 20 ||
               (d20roll >= target.crit && attackRoll >= defense)) && !options.attaqueAssuree) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
-            attackResult += addAttackImg("[img-attack-succes-critique]", weaponStats.divers, options);
-            addAttackSound("[sound-attack-succes-critique]", weaponStats.divers, options);
+            attackResult += addAttackImg("imgAttackSuccesCritique", weaponStats.divers, options);
+            addAttackSound("soundAttackSuccesCritique", weaponStats.divers, options);
             touche = true;
             critique = true;
           } else if (options.champion || d20roll == 20 || paralyse) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
-            attackResult += addAttackImg("[img-attack-champion-succes]", weaponStats.divers);
-            addAttackSound("[sound-attack-champion-succes]", weaponStats.divers, options);
+            attackResult += addAttackImg("imgAttackChampionSucces", weaponStats.divers, options);
+            addAttackSound("soundAttackChampionSucces", weaponStats.divers, options);
           } else if (attackRoll < defense && d20roll < target.crit) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
-            attackResult += addAttackImg("[img-attack-echec]", weaponStats.divers, options);
-            addAttackSound("[sound-attack-echec]", weaponStats.divers, options);
+            attackResult += addAttackImg("imgAttackEchec", weaponStats.divers, options);
+            addAttackSound("soundAttackEchec", weaponStats.divers, options);
             evt.succes = false;
             if (options.demiAuto) {
               target.partialSaveAuto = true;
@@ -6600,16 +6567,16 @@ var COFantasy = COFantasy || function() {
           } else if (d20roll % 2 && attributeAsBool(target, 'clignotement')) {
             target.messages.push(target.tokName + " disparaît au moment où l'attaque aurait du l" + onGenre(target.charId, 'e', 'a') + " toucher");
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
-            attackResult += addAttackImg("[img-attack-echec-clignotement]", weaponStats.divers, options);
-            addAttackSound("[sound-attack-echec-clignotement]", weaponStats.divers, options);
+            attackResult += addAttackImg("imgAttackEchecClignotement", weaponStats.divers, options);
+            addAttackSound("soundAttackEchecClignotement", weaponStats.divers, options);
             target.clignotement = true;
             if (options.demiAuto) {
               target.partialSaveAuto = true;
             } else touche = false;
           } else { // Touché normal
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
-            attackResult += addAttackImg("[img-attack-normal-touch]", weaponStats.divers, options);
-            addAttackSound("[sound-attack-normal-touch]", weaponStats.divers, options);
+            attackResult += addAttackImg("imgAttackNormalTouch", weaponStats.divers, options);
+            addAttackSound("soundAttackNormalTouch", weaponStats.divers, options);
           }
           var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
           if (attSkill > 0) attRollValue += "+" + attSkill;
@@ -6715,34 +6682,17 @@ var COFantasy = COFantasy || function() {
     }); // fin du jet d'attaque asynchrone
   }
 
-  function addAttackSound(AttackParam, divers, options) {
-    var sound;
-    if (divers.includes(AttackParam)) {
-      var soundattack = divers.split(AttackParam);
-      if (soundattack.length > 2) {
-        sound = soundattack[1];
-      }
-    }
+  function addAttackSound(attackParam, divers, options) {
+    var sound = options[attackParam];
     if (sound === undefined) {
-      switch (AttackParam) {
-        case "[sound-attack-echec-critique]":
-          sound = options.sound_attack_echec_critique;
-          break;
-        case "[sound-attack-echec]":
-          sound = options.sound_attack_echec;
-          break;
-        case "[sound-attack-echec-clignotement]":
-          sound = options.sound_attack_echec_clignotement;
-          break;
-        case "[sound-attack-normal-touch]":
-          sound = options.sound_attack_normal_touch;
-          break;
-        case "[sound-attack-champion-succes]":
-          sound = options.sound_attack_champion_succes;
-          break;
-        case " [sound-attack-succes-critique]":
-          sound = options.sound_attack_succes_critique;
-          break;
+      var tag = attackParam.replace(/[A-Z]/g, function(c) {
+        return '-' + c.toLowercase();
+      });
+      if (divers.includes(tag)) {
+        var soundAttack = divers.split(tag);
+        if (soundAttack.length > 2) {
+          sound = soundAttack[1];
+        }
       }
     }
     if (sound) {
@@ -6771,46 +6721,26 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function addAttackImg(AttackParam, divers, options) {
-    var imgAttackResult = "";
-    var img = "";
-    if (divers.includes(AttackParam)) {
-      var imgattack = divers.split(AttackParam);
-      if (imgattack.length > 2) {
-        img = imgattack[1];
-      }
-    }
-    if (img === "" || img === undefined) {
-      switch (AttackParam) {
-        case "[img-attack-echec-critique]":
-          img = options.img_attack_echec_critique;
-          break;
-        case "[img-attack-echec]":
-          img = options.img_attack_echec;
-          break;
-        case "[img-attack-echec-clignotement]":
-          img = options.img_attack_echec_clignotement;
-          break;
-        case "[img-attack-normal-touch]":
-          img = options.img_attack_normal_touch;
-          break;
-        case "[img-attack-champion-succes]":
-          img = options.img_attack_champion_succes;
-          break;
-        case " [img-attack-succes-critique]":
-          img = options.img_attack_succes_critique;
-          break;
-        default:
-          img = "";
+  function addAttackImg(attackParam, divers, options) {
+    var img = options[attackParam];
+    if (img === undefined) {
+      var tag = attackParam.replace(/[A-Z]/g, function(c) {
+        return '-' + c.toLowercase();
+      });
+      if (divers.includes(img)) {
+        var imgAttack = divers.split(tag);
+        if (imgAttack.length > 2) {
+          img = imgAttack[1];
+        }
       }
     }
     if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
       var newLineimg = '<span style="padding: 4px 0;" >  ';
       newLineimg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
       newLineimg += '</span>';
-      imgAttackResult += newLineimg;
+      return newLineimg;
     }
-    return imgAttackResult;
+    return '';
   }
 
   function computeMainDmgRollExpr(attaquant, target, weaponStats, attNbDices, attDMBonus, options) {
