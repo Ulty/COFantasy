@@ -938,6 +938,8 @@ var COFantasy = COFantasy || function() {
       if (value) token.set('light_losangle', 0);
       else token.set('light_losangle', 360);
     } else if (value && etat == 'mort') {
+      //On s'assure de mettre les PV de la cible à 0 (pour les insta kills sans dommages)
+      updateCurrentBar(token, 1, 0);
       //On libère les personnages enveloppés, si il y en a.
       var attrEnveloppe = tokenAttribute(personnage, 'enveloppe');
       attrEnveloppe.forEach(function(a) {
