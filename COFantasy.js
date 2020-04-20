@@ -669,6 +669,50 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  //Si evt est défini, alors on considère qu'il faut y mettre la valeur actuelle
+  function updateCurrentBar(token, barNumber, val, evt, maxVal) {
+    var prevToken;
+    var HTdeclared;
+    try {
+      HTdeclared = HealthColors;
+    } catch (e) {
+      if (e.name != "ReferenceError") throw (e);
+    }
+    if (HTdeclared) {
+      //Pour pouvoir annuler les effets de HealthColor sur le statut
+      affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
+      prevToken = JSON.parse(JSON.stringify(token));
+    }
+    var fieldv = 'bar' + barNumber + '_value';
+    var fieldm;
+    if (maxVal) fieldm = 'bar' + barNumber + '_max';
+    var attrId = token.get("bar" + barNumber + "_link");
+    if (attrId === "") {
+      var prevVal = token.get(fieldv);
+      if (evt) affectToken(token, fieldv, prevVal, evt);
+      token.set(fieldv, val);
+      if (maxVal) {
+        var prevMax = token.get(fieldm);
+        if (evt) affectToken(token, fieldm, token.get(fieldm), evt);
+        token.set(fieldm, val);
+      }
+      if (HTdeclared) HealthColors.Update(token, prevToken);
+      return;
+    }
+    var attr = getObj('attribute', attrId);
+    if (evt) {
+      evt.attributes = evt.attributes || [];
+      evt.attributes.push({
+        attribute: attr,
+        current: attr.get('current'),
+        max: attr.get('max')
+      });
+    }
+    attr.set('current', val);
+    if (maxVal) attr.set('max', maxVal);
+    if (HTdeclared) HealthColors.Update(token, prevToken);
+  }
+
   function setTokenAttr(personnage, attribute, value, evt, msg, maxval) {
     var charId = personnage.charId;
     var token = personnage.token;
@@ -939,7 +983,7 @@ var COFantasy = COFantasy || function() {
       else token.set('light_losangle', 360);
     } else if (value && etat == 'mort') {
       //On s'assure de mettre les PV de la cible à 0 (pour les insta kills sans dommages)
-      updateCurrentBar(token, 1, 0);
+      updateCurrentBar(token, 1, 0, evt);
       //On libère les personnages enveloppés, si il y en a.
       var attrEnveloppe = tokenAttribute(personnage, 'enveloppe');
       attrEnveloppe.forEach(function(a) {
@@ -3708,50 +3752,6 @@ var COFantasy = COFantasy || function() {
       }
     }
     attack(playerId, attaquant, targetToken, attackLabel, options);
-  }
-
-  //Si evt est défini, alors on considère qu'il faut y mettre la valeur actuelle
-  function updateCurrentBar(token, barNumber, val, evt, maxVal) {
-    var prevToken;
-    var HTdeclared;
-    try {
-      HTdeclared = HealthColors;
-    } catch (e) {
-      if (e.name != "ReferenceError") throw (e);
-    }
-    if (HTdeclared) {
-      //Pour pouvoir annuler les effets de HealthColor sur le statut
-      affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
-      prevToken = JSON.parse(JSON.stringify(token));
-    }
-    var fieldv = 'bar' + barNumber + '_value';
-    var fieldm;
-    if (maxVal) fieldm = 'bar' + barNumber + '_max';
-    var attrId = token.get("bar" + barNumber + "_link");
-    if (attrId === "") {
-      var prevVal = token.get(fieldv);
-      if (evt) affectToken(token, fieldv, prevVal, evt);
-      token.set(fieldv, val);
-      if (maxVal) {
-        var prevMax = token.get(fieldm);
-        if (evt) affectToken(token, fieldm, token.get(fieldm), evt);
-        token.set(fieldm, val);
-      }
-      if (HTdeclared) HealthColors.Update(token, prevToken);
-      return;
-    }
-    var attr = getObj('attribute', attrId);
-    if (evt) {
-      evt.attributes = evt.attributes || [];
-      evt.attributes.push({
-        attribute: attr,
-        current: attr.get('current'),
-        max: attr.get('max')
-      });
-    }
-    attr.set('current', val);
-    if (maxVal) attr.set('max', maxVal);
-    if (HTdeclared) HealthColors.Update(token, prevToken);
   }
 
   // Fait dépenser de la mana, et si pas possible, retourne false

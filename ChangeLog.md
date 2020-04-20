@@ -1,6 +1,9 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 
 ## 2.01
+## Capacités
+* Ajout du rang 3 de la Voie du tueur.
+
 ## Autres améliorations
 * Possibilité d'afficher des images et de jouer des sons selon le résultat d'une attaque.
 
