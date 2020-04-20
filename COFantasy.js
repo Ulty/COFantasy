@@ -3618,11 +3618,12 @@ var COFantasy = COFantasy || function() {
           }
           options[cmd[0]] = cmd[1];
           return;
-        case 'soundAttackEchecCritique':
+        case 'soundAttack':
         case 'soundAttackEchec':
+        case 'soundAttackEchecCritique':
         case 'soundAttackEchecClignotement':
-        case 'soundAttackNormalTouch':
-        case 'soundAttackChampionSucces':
+        case 'soundAttackSucces':
+        case 'soundAttackSuccesChampion':
         case 'soundAttackSuccesCritique':
           if (cmd.length < 1) {
             error("Il manque le son après --" + cmd[0], cmd);
@@ -3648,13 +3649,17 @@ var COFantasy = COFantasy || function() {
         case 'sound-attack-echec':
         case 'sound-attack-echec-clignotement':
         case 'sound-attack-normal-touch':
+        case 'sound-attack-succes':
         case 'sound-attack-champion-succes':
+        case 'sound-attack-succes-champion':
         case 'sound-attack-succes-critique':
           if (cmd.length < 1) {
             error("Il manque le son après --" + cmd[0], cmd);
             return;
           }
           var soundCmd = cmd[0].replace('-a', 'A').replace('-e', 'E').replace('-c', 'C').replace('-n', 'N').replace('-s', 'S').replace('-t', 'T');
+          if (soundCmd == 'soundAttackNormalTouch') soundCmd = 'soundAttackSucces';
+          if (soundCmd == 'soundAttackChampionSucces') soundCmd = 'soundAttackSuccesChampion';
           options[soundCmd] = cmd.slice(1).join(' ');
           return;
         default:
@@ -6555,7 +6560,7 @@ var COFantasy = COFantasy || function() {
           } else if (options.champion || d20roll == 20 || paralyse) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
             attackResult += addAttackImg("imgAttackChampionSucces", weaponStats.divers, options);
-            addAttackSound("soundAttackChampionSucces", weaponStats.divers, options);
+            addAttackSound("soundAttackSuccesChampion", weaponStats.divers, options);
           } else if (attackRoll < defense && d20roll < target.crit) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
             attackResult += addAttackImg("imgAttackEchec", weaponStats.divers, options);
@@ -6576,7 +6581,7 @@ var COFantasy = COFantasy || function() {
           } else { // Touché normal
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
             attackResult += addAttackImg("imgAttackNormalTouch", weaponStats.divers, options);
-            addAttackSound("soundAttackNormalTouch", weaponStats.divers, options);
+            addAttackSound("soundAttackSucces", weaponStats.divers, options);
           }
           var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
           if (attSkill > 0) attRollValue += "+" + attSkill;
@@ -6685,8 +6690,30 @@ var COFantasy = COFantasy || function() {
   function addAttackSound(attackParam, divers, options) {
     var sound = options[attackParam];
     if (sound === undefined) {
+      var subParam = attackParam;
+      var subParamIndex = subParam.indexOf('C');
+      if (subParamIndex > 0) {
+        subParam = subParam.substring(0, subParamIndex);
+        sound = options[subParam];
+      }
+      if (sound === undefined) {
+        subParamIndex = subParam.indexOf('E');
+        if (subParamIndex > 0) {
+          subParam = subParam.substring(0, subParamIndex);
+          sound = options[subParam];
+        }
+      }
+      if (sound === undefined) {
+        subParamIndex = subParam.indexOf('S');
+        if (subParamIndex > 0) {
+          subParam = subParam.substring(0, subParamIndex);
+          sound = options[subParam];
+        }
+      }
+    }
+    if (sound === undefined) {
       var tag = attackParam.replace(/[A-Z]/g, function(c) {
-        return '-' + c.toLowercase();
+        return '-' + c.toLowerCase();
       });
       if (divers.includes(tag)) {
         var soundAttack = divers.split(tag);
@@ -6725,7 +6752,7 @@ var COFantasy = COFantasy || function() {
     var img = options[attackParam];
     if (img === undefined) {
       var tag = attackParam.replace(/[A-Z]/g, function(c) {
-        return '-' + c.toLowercase();
+        return '-' + c.toLowerCase();
       });
       if (divers.includes(img)) {
         var imgAttack = divers.split(tag);
