@@ -6726,9 +6726,7 @@ var COFantasy = COFantasy || function() {
     return param;
   }
 
-  function addAttackSound(attackParam, divers, options) {
-    var sound = findAttackParam(attackParam, divers, options);
-    if (sound) {
+  function playSound(sound) {
       var AMdeclared;
       try {
         AMdeclared = Roll20AM;
@@ -6752,6 +6750,10 @@ var COFantasy = COFantasy || function() {
         });
       }
     }
+
+  function addAttackSound(attackParam, divers, options) {
+    var sound = findAttackParam(attackParam, divers, options);
+    if (sound) playSound(sound);
   }
 
   function addAttackImg(attackParam, divers, options) {
@@ -9886,6 +9888,11 @@ var COFantasy = COFantasy || function() {
     };
     var grenaille = false;
     if (msg.content.includes(' --grenaille')) grenaille = true;
+    var options = {};
+    if (msg.content.includes(' --son')) {
+      options = parseOptions(msg);
+      options = options || {};
+    }
     getSelected(msg, function(selected) {
       if (selected === undefined) {
         sendPlayer(msg, "!cof-recharger sans sélection de tokens");
@@ -9959,6 +9966,7 @@ var COFantasy = COFantasy || function() {
           });
           attrs.set('current', currentCharge + 1);
           updateNextInit(perso.token);
+          if (options.son) playSound(options.son);
           if (grenaille)
             sendChar(perso.charId, "charge " + weaponName + " de grenaille.");
           else
@@ -10940,6 +10948,13 @@ var COFantasy = COFantasy || function() {
           }
           options.messages = options.messages || [];
           options.messages.push(cmd.slice(1).join(' '));
+          return;
+        case 'son':
+          if (cmd.length < 2) {
+            error("Il manque le message après --son", cmd);
+            return;
+          }
+          options.son = cmd.slice(1).join(' ');
           return;
         default:
           return;
@@ -13182,6 +13197,7 @@ var COFantasy = COFantasy || function() {
             };
             spawnFxBetweenPoints(p1e, p2e, options.fx, options.pageId);
           }
+          if (options.son) playSound(options.son);
           if (options.targetFx) {
             spawnFx(perso.token.get('left'), perso.token.get('top'), options.targetFx, options.pageId);
           }
@@ -13334,6 +13350,7 @@ var COFantasy = COFantasy || function() {
           spawnFxBetweenPoints(p1e, p2e, options.fx, options.pageId);
         });
       }
+          if (options.son) playSound(options.son);
       if (options.targetFx) {
         iterSelected(selected, function(target) {
           spawnFx(target.token.get('left'), target.token.get('top'), options.targetFx, options.pageId);
@@ -14715,6 +14732,7 @@ var COFantasy = COFantasy || function() {
           };
           spawnFxBetweenPoints(p1e, p2e, options.fx, pageId);
         }
+          if (options.son) playSound(options.son);
         if (options.targetFx) {
           spawnFx(cible.token.get('left'), cible.token.get('top'), options.targetFx, pageId);
         }
