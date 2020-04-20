@@ -5575,6 +5575,10 @@ var COFantasy = COFantasy || function() {
         sendChar(attackingCharId, "cette attaque n'affecte que les créatures vivantes");
         return false;
       }
+      if (options.attaqueMentale && charAttributeAsBool(target, 'sansEsprit')){
+        sendChar(attackingCharId, "cette attaque n'affecte que les créatures pensantes");
+        return false;
+      }
       if (options.pointsVitaux && estNonVivant(target)) {
         sendChar(attackingCharId, "La cible n'est pas vraiment vivante : " + attaquant.name + " ne trouve pas de points vitaux");
         return false;
@@ -13702,6 +13706,11 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var name2 = char2.get('name');
+    if (msg.content.includes('--attaqueMentale') && charAttributeAsBool(cible, 'sansEsprit')) {
+      sendChat('', token2.get('name')+" est sans esprit, " +
+                onGenre(charId2, 'il', 'elle') +
+        "est immunisé" + onGenre(charId2,'','e')+ " aux attaques mentales.");
+    }
     var explications = [];
     evt = evt || {
       type: 'Attaque magique'

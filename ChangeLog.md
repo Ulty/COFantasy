@@ -5,6 +5,7 @@
 * Ajout du rang 3 de la Voie du tueur.
 
 ## Autres améliorations
+* prise en compte de l'option --attaqueMentale pour les créatures sans esprit.
 * Ajout d'options de son sur les effets et le rechargement
 * Possibilité d'afficher des images et de jouer des sons selon le résultat d'une attaque.
 
