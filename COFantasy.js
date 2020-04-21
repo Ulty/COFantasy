@@ -9673,8 +9673,11 @@ var COFantasy = COFantasy || function() {
     });
     attrs = removeAllAttributes('elixirsACreer', evt, attrs);
     attrs = removeAllAttributes('elixir', evt, attrs);
+    //Les plantes médicinales
+    attrs = removeAllAttributes('dose_Plante médicinale', evt, attrs);
     //On pourrait diviser par 2 le nombre de baies
     //var attrsBaie = allAttributesNamed(attrs, 'dose_baie_magique');
+
   }
 
   function nouveauJour(msg) {
@@ -14852,6 +14855,11 @@ var COFantasy = COFantasy || function() {
     getSelected(msg, function(selected) {
       iterSelected(selected, function(lanceur) {
         var charId = lanceur.charId;
+        var voieDeLaSurvie = charAttributeAsInt(lanceur, 'voieDeLaSurvie', 0);
+        if (voieDeLaSurvie < 1) {
+          sendChar(charId, " ne connaît pas la Voie de la Survie");
+          return;
+        }
         var duree = rollDePlus(6);
         var output =
           "cherche des herbes. Après " + duree.roll + " heures, " +
@@ -14862,7 +14870,9 @@ var COFantasy = COFantasy || function() {
         testCaracteristique(lanceur, 'SAG', 10, {}, evt,
           function(testRes) {
             if (testRes.reussite) {
-              output += " revient avec de quoi soigner les blessés.";
+              var attrName = 'dose_Plante médicinale';
+              setTokenAttr(lanceur, attrName, voieDeLaSurvie, evt, undefined, "!cof-soin @{selected|token_id} @{selected|token_id} 1D6");
+              output += " revient avec " + voieDeLaSurvie + " plantes médicinales.";
             } else {
               output += " revient bredouille.";
             }
