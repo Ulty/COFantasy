@@ -14,6 +14,7 @@
 * Possibilité d'afficher des images et de jouer des sons selon le résultat d'une attaque.
 
 ### Corrections de bugs
+* Utilisation d'un attribut mortVivant au lieu de mort-vivant.
 * Factorisation et amélioration des significations des options de sons et d'images d'attaques.
 * Correction d'un bug pour les effets d'attaque conditionnels.
 * Amélioration du parsing de handout pour les compétences en équipes.

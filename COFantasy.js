@@ -12475,7 +12475,7 @@ var COFantasy = COFantasy || function() {
           case 'percant':
           case 'contondant':
           case 'tempDmg':
-          case 'morts-vivants':
+          case 'mortsVivants':
           case 'ignoreRD':
           case 'ignoreMoitieRD':
           case 'maxDmg':
@@ -12549,7 +12549,7 @@ var COFantasy = COFantasy || function() {
             tokensToProcess--;
           };
           iterSelected(selected, function(perso) {
-            if (options['morts-vivants'] && !(estMortVivant(perso))) {
+            if (options.mortsVivants && !(estMortVivant(perso))) {
               sendPlayer(msg, perso.token.get('name') + " n'est pas un mort-vivant");
               finalDisplay();
               return;
@@ -14160,7 +14160,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function estMortVivant(perso) {
-    if (charAttributeAsBool(perso, 'mort-vivant')) return true;
+    if (charAttributeAsBool(perso, 'mortVivant')) return true;
     var charRace = ficheAttribute(perso, 'race');
     if (charRace === undefined) return false;
     switch (charRace.toLowerCase()) {
@@ -16440,7 +16440,7 @@ var COFantasy = COFantasy || function() {
             var msgJet = "Jet de SAG : " + testRes.texte;
             if (testRes.reussite) {
               var eventId = stateCOF.eventId;
-              var action = "!cof-dmg " + dm + " --once " + eventId + " --morts-vivants";
+              var action = "!cof-dmg " + dm + " --once " + eventId + " --mortsVivants";
               evt.waitingForAoe = true;
               addLineToFramedDisplay(display, msgJet + " &ge; 13");
               sendChat(name, endFramedDisplay(display));
@@ -22288,7 +22288,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = "2.01";
+  var script_version = "2.02";
   on('add:token', COFantasy.addToken);
   state.COFantasy = state.COFantasy || {
     combat: false,
@@ -22410,6 +22410,16 @@ on("ready", function() {
         max: script_version
       });
       state.COFantasy.scriptSheets = true;
+    });
+    log("Mise à jour effectuée.");
+  }
+  if (state.COFantasy.version < 2.02) {
+    attrs = findObjs({
+      _type: 'attribute',
+    });
+    attrs.forEach(function(attr) {
+      var attrName = attr.get('name');
+      if (attrName == 'mort-vivant') attr.set('name', 'mortVivant');
     });
     log("Mise à jour effectuée.");
   }
