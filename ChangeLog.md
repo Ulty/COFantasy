@@ -5,6 +5,7 @@
 * Ajout du rang 3 de la Voie du tueur.
 
 ## Autres améliorations
+* bloque les personnages sous prison végétale.
 * Possibilité d'ajouter des contraintes (comme --dose) au fonctions de repos.
 * La capacité nature nourricière génère des consommanbles.
 * prise en compte de l'option --attaqueMentale pour les créatures sans esprit.

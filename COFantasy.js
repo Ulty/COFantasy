@@ -21996,6 +21996,7 @@ var COFantasy = COFantasy || function() {
       if (getState(perso, 'immobilise')) return true;
       if (attributeAsBool(perso, 'bloqueManoeuvre')) return true;
       if (attributeAsBool(perso, 'enveloppePar')) return true;
+      if (attributeAsBool(perso, 'prisonVegetale')) return true;
       return false;
     }
     return true;
