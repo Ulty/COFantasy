@@ -13536,7 +13536,7 @@ var COFantasy = COFantasy || function() {
       allies.forEach(function(cid) {
         if (charIdAttributeAsBool(cid, 'sansPeur')) {
           allieSansPeur =
-            Math.max(allieSansPeur, 2 + modCarac(cid, 'CHARISME'));
+            Math.max(allieSansPeur, 2 + modCarac({charId: cid}, 'CHARISME'));
         }
       });
     }
