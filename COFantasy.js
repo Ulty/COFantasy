@@ -5575,7 +5575,7 @@ var COFantasy = COFantasy || function() {
         sendChar(attackingCharId, "cette attaque n'affecte que les créatures vivantes");
         return false;
       }
-      if (options.attaqueMentale && charAttributeAsBool(target, 'sansEsprit')){
+      if (options.attaqueMentale && charAttributeAsBool(target, 'sansEsprit')) {
         sendChar(attackingCharId, "cette attaque n'affecte que les créatures pensantes");
         return false;
       }
@@ -6731,29 +6731,29 @@ var COFantasy = COFantasy || function() {
   }
 
   function playSound(sound) {
-      var AMdeclared;
-      try {
-        AMdeclared = Roll20AM;
-      } catch (e) {
-        if (e.name != "ReferenceError") throw (e);
-      }
-      if (AMdeclared) {
-        //With Roll20 Audio Master
-        sendChat("GM", "!roll20AM --audio,play,nomenu|" + sound);
-      } else {
-        var jukebox = findObjs({
-          type: 'jukeboxtrack',
-          title: sound
-        });
-        jukebox.forEach(function(track) {
-          var jbTrack = getObj('jukeboxtrack', track.get('_id'));
-          if (jbTrack) jbTrack.set({
-            playing: true,
-            softstop: false
-          });
-        });
-      }
+    var AMdeclared;
+    try {
+      AMdeclared = Roll20AM;
+    } catch (e) {
+      if (e.name != "ReferenceError") throw (e);
     }
+    if (AMdeclared) {
+      //With Roll20 Audio Master
+      sendChat("GM", "!roll20AM --audio,play,nomenu|" + sound);
+    } else {
+      var jukebox = findObjs({
+        type: 'jukeboxtrack',
+        title: sound
+      });
+      jukebox.forEach(function(track) {
+        var jbTrack = getObj('jukeboxtrack', track.get('_id'));
+        if (jbTrack) jbTrack.set({
+          playing: true,
+          softstop: false
+        });
+      });
+    }
+  }
 
   function addAttackSound(attackParam, divers, options) {
     var sound = findAttackParam(attackParam, divers, options);
@@ -9677,7 +9677,6 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('dose_Plante médicinale', evt, attrs);
     //On pourrait diviser par 2 le nombre de baies
     //var attrsBaie = allAttributesNamed(attrs, 'dose_baie_magique');
-
   }
 
   function nouveauJour(msg) {
@@ -13357,7 +13356,7 @@ var COFantasy = COFantasy || function() {
           spawnFxBetweenPoints(p1e, p2e, options.fx, options.pageId);
         });
       }
-          if (options.son) playSound(options.son);
+      if (options.son) playSound(options.son);
       if (options.targetFx) {
         iterSelected(selected, function(target) {
           spawnFx(target.token.get('left'), target.token.get('top'), options.targetFx, options.pageId);
@@ -13710,9 +13709,9 @@ var COFantasy = COFantasy || function() {
     }
     var name2 = char2.get('name');
     if (msg.content.includes('--attaqueMentale') && charAttributeAsBool(cible, 'sansEsprit')) {
-      sendChat('', token2.get('name')+" est sans esprit, " +
-                onGenre(charId2, 'il', 'elle') +
-        " est immunisé" + onGenre(charId2,'','e')+ " aux attaques mentales.");
+      sendChat('', token2.get('name') + " est sans esprit, " +
+        onGenre(charId2, 'il', 'elle') +
+        " est immunisé" + onGenre(charId2, '', 'e') + " aux attaques mentales.");
       return;
     }
     var explications = [];
@@ -14745,7 +14744,7 @@ var COFantasy = COFantasy || function() {
           };
           spawnFxBetweenPoints(p1e, p2e, options.fx, pageId);
         }
-          if (options.son) playSound(options.son);
+        if (options.son) playSound(options.son);
         if (options.targetFx) {
           spawnFx(cible.token.get('left'), cible.token.get('top'), options.targetFx, pageId);
         }
@@ -14857,8 +14856,7 @@ var COFantasy = COFantasy || function() {
         var charId = lanceur.charId;
         var voieDeLaSurvie = charAttributeAsInt(lanceur, 'voieDeLaSurvie', 0);
         if (voieDeLaSurvie < 1) {
-          sendChar(charId, " ne connaît pas la Voie de la Survie");
-          return;
+          sendChar(charId, " ne connaît pas la Voie de la Survie ?");
         }
         var duree = rollDePlus(6);
         var output =
@@ -14870,10 +14868,15 @@ var COFantasy = COFantasy || function() {
         testCaracteristique(lanceur, 'SAG', 10, {}, evt,
           function(testRes) {
             if (testRes.reussite) {
-              var attrName = 'dose_Plante médicinale';
-              setTokenAttr(lanceur, attrName, voieDeLaSurvie, evt, undefined, "!cof-soin @{selected|token_id} @{selected|token_id} 1D6");
-              output += " revient avec " + voieDeLaSurvie + " plantes médicinales.";
+              if (voieDeLaSurvie > 0) {
+                var attrName = 'dose_Plante médicinale';
+                setTokenAttr(lanceur, attrName, voieDeLaSurvie, evt, undefined, "!cof-soin @{selected|token_id} @{selected|token_id} 1D6");
+                output += " revient avec " + voieDeLaSurvie + " plantes médicinales.";
+              } else {
+                output += " revient avec de quoi soigner les blessés.";
+              }
             } else {
+              //TODO: ajouter la possibilité d'utiliser un point de chance
               output += " revient bredouille.";
             }
             sendChar(charId, output);
