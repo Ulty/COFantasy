@@ -6721,6 +6721,7 @@ var COFantasy = COFantasy || function() {
     var tag = attackParam.replace(/[A-Z]/g, function(c) {
       return '-' + c.toLowerCase();
     });
+    tag = '['+tag+']';
     if (divers.includes(tag)) {
       var soundAttack = divers.split(tag);
       if (soundAttack.length > 2) {
