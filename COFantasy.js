@@ -9630,6 +9630,7 @@ var COFantasy = COFantasy || function() {
 
   // Récupération pour tous les tokens sélectionnés
   function nuit(msg, evt) {
+    var options = parseOptions(msg);
     if (stateCOF.combat) sortirDuCombat();
     getSelected(msg, function(selection, playerId) {
       if (selection.length === 0) {
@@ -9653,7 +9654,7 @@ var COFantasy = COFantasy || function() {
         attributes: []
       };
       if (msg.content.startsWith('!cof-nuit')) jour(evt);
-      recuperation(selection, true, playerId, evt);
+      recuperation(selection, true, playerId, evt, options);
     });
   }
 
@@ -9719,7 +9720,8 @@ var COFantasy = COFantasy || function() {
   }
 
   //Asynchrone (jets de dés)
-  function recuperation(selection, reposLong, playerId, evt) {
+  function recuperation(selection, reposLong, playerId, evt, options) {
+    options = options || {};
     var manquePV = [];
     var ecuyers = [];
     var count = selection.length;
@@ -9809,6 +9811,11 @@ var COFantasy = COFantasy || function() {
         if (bar1 < pvmax) manquePV.push(perso);
         finalize();
         return; //Si pas de dé de vie, alors pas de PR.
+      }
+      if (limiteRessources(perso, options, 'repos', 'repos', evt)) {
+        if (bar1 < pvmax) manquePV.push(perso);
+        finalize();
+        return;
       }
       var message;
       if (reposLong && pr.current < pr.max) { // on récupère un PR

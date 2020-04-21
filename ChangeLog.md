@@ -5,6 +5,7 @@
 * Ajout du rang 3 de la Voie du tueur.
 
 ## Autres améliorations
+* Possibilité d'ajouter des contraintes (comme --dose) au fonctions de repos.
 * La capacité nature nourricière génère des consommanbles.
 * prise en compte de l'option --attaqueMentale pour les créatures sans esprit.
 * Ajout d'options de son sur les effets et le rechargement
