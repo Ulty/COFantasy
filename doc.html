@@ -70,7 +70,8 @@
 									<li><a class="text-info" href="#consommables">Consommables</a></li>
 									<li><a class="text-info" href="#deplacements">Déplacements</a></li>
 									<li><a class="text-info" href="#lumiere">Lumière</a></li>
-									<li><a class="text-info" href="#jet_caracteristiques">Jet de Caracteristiques</a></li>
+									<li><a class="text-info" href="#jet_caracteristiques">Jet de Caractéristiques</a></li>
+									<li><a class="text-info" href="#son">Jouer un son</a></li>
 								</ul>
 								<li data-toggle="collapse" data-target="#abilities"><a href="#CapacitesClasse">Capacités par Classe</a></li>
 								<ul id="abilities" class="collapse">
@@ -620,7 +621,7 @@
                 <p>Pour éteindre des lumières, utiliser <code>!cof-eteindre-lumiere</code> en sélectionnant le ou les tokens désirés. Il est possible de prendre un argument optionnel qui est le nom du groupe de lumières que l'on souhaite éteindre. Par exemple, on peut ainsi éteindre toutes les torches et laisser les effets de lumière magique actifs.</p>
                 <p>Pour les torches, le script propose d'automatiser la gestion en utilisant la commande <code>!cof-torche <i>token_id</i></code>. Si le token tient une torche allumée, cela éteint la torche (et propose au MJ d'indiquer combien de temps la torche est restée allumée), et sinon, si le token possède des torches, cela allume une torche. Le nombre de torche et leur état est stocké dans un attribut <code>torches</code>, dont la valeur courante contient le nombre de torches dans l'inventaire, et la valeur max le temps restant pour la torche en cours d'utilisation (60 minutes pour une torche neuve). Si aucun attribut de ce nom n'existe, le script se contente d'allumer ou d'éteindre une torche, sans gérer leur nombre.</p>
               </div>
-              <h3 class="text-info" id="jet_caracteristiques">2.12 Jet de Caracteristiques</h3>
+              <h3 class="text-info" id="jet_caracteristiques">2.12 Jet de Caractéristiques</h3>
               <div class="decalage">
                 <p><code>!cof-jet ?{Faire un jet de |Charisme, CHA|Constitution, CON|Dextérité, DEX|Force, FOR|Intelligence, INT|Sagesse, SAG}</code> : fait un simple jet pour la caractérisique sélectionnée.</p>
                 <p>Il est aussi possible de donner en argument une difficulté au jet. Par exemple en faisant <code>!cof-jet INT ?{difficulté}</code>.</p>
@@ -633,6 +634,12 @@
                   <li><code>--secret</code> : le jet n'est visible que par les personnes qui contrôlent le personnage, plus le MJ. Si la personne qui a lancé la commande est MJ, il sera le seul à voir le résultat.</li>
                   <li><code>--competences</code> : si la commande n'a pas déjà d'option <code>--nom</code>, invite l'utilisateur à choisir une compétence parmis une liste correspondant à la caractéristique (et provenant du handout <code>Compétences</code> tel que défini plus haut).</li>
                 </ul>
+              </div>
+              <h3 class="text-info" id="son">2.13 Jouer un son</h3>
+              <div class="decalage">
+                Les fonctions d'attaque peuvent jouer un son (options commençant par <code>--soundAttack</code>. Une partie des actions admet aussi une option <code>--son</code> pour jouer un son. Finalement, il est aussi possible de simplement jouer un son en utilisant <code>!cof-jouers-son <i>son</i></code>.
+
+                Le script est compatible avec <a href="https://wiki.roll20.net/Script:Roll20_Audio_Master">Roll20AM</a>, mais si il n'est pas installé, il va simplement utiliser les sons dans le jukebox.
               </div>
             </div>
 						<h2 class="text-primary" id="CapacitesClasse">3. Capacités par Classe</h2>

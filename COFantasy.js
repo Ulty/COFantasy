@@ -6721,7 +6721,7 @@ var COFantasy = COFantasy || function() {
     var tag = attackParam.replace(/[A-Z]/g, function(c) {
       return '-' + c.toLowerCase();
     });
-    tag = '['+tag+']';
+    tag = '[' + tag + ']';
     if (divers.includes(tag)) {
       var soundAttack = divers.split(tag);
       if (soundAttack.length > 2) {
@@ -12521,55 +12521,59 @@ var COFantasy = COFantasy || function() {
       if (options.maxDmg) {
         dmgRollExpr = dmgRollExpr.replace(/d([1-9])/g, "*$1");
       }
-      sendChat('', '[[' + dmgRollExpr + ']]', function(resDmg) {
-        var rollsDmg = resDmg[0];
-        var afterEvaluateDmg = rollsDmg.content.split(' ');
-        var dmgRollNumber = rollNumber(afterEvaluateDmg[0]);
-        dmg.total = rollsDmg.inlinerolls[dmgRollNumber].results.total;
-        dmg.display = buildinline(rollsDmg.inlinerolls[dmgRollNumber], dmgType, options.magique);
-        var display = startFramedDisplay(playerId, action);
-        var tokensToProcess = selected.length;
-        var someDmgDone;
-        var finalDisplay = function() {
-          if (tokensToProcess == 1) {
-            if (someDmgDone) {
-              sendChat("", endFramedDisplay(display));
-              if (evt.affectes || evt.attributes) {
-                if (evt.waitingForAoe) {
-                  delete evt.waitingForAoe;
-                } else {
-                  addEvent(evt);
+      try {
+        sendChat('', '[[' + dmgRollExpr + ']]', function(resDmg) {
+          var rollsDmg = resDmg[0];
+          var afterEvaluateDmg = rollsDmg.content.split(' ');
+          var dmgRollNumber = rollNumber(afterEvaluateDmg[0]);
+          dmg.total = rollsDmg.inlinerolls[dmgRollNumber].results.total;
+          dmg.display = buildinline(rollsDmg.inlinerolls[dmgRollNumber], dmgType, options.magique);
+          var display = startFramedDisplay(playerId, action);
+          var tokensToProcess = selected.length;
+          var someDmgDone;
+          var finalDisplay = function() {
+            if (tokensToProcess == 1) {
+              if (someDmgDone) {
+                sendChat("", endFramedDisplay(display));
+                if (evt.affectes || evt.attributes) {
+                  if (evt.waitingForAoe) {
+                    delete evt.waitingForAoe;
+                  } else {
+                    addEvent(evt);
+                  }
                 }
+              } else {
+                sendPlayer(msg, "Aucune cible valide n'a été sélectionée");
               }
-            } else {
-              sendPlayer(msg, "Aucune cible valide n'a été sélectionée");
             }
-          }
-          tokensToProcess--;
-        };
-        iterSelected(selected, function(perso) {
-          if (options['morts-vivants'] && !(estMortVivant(perso))) {
-            sendPlayer(msg, perso.token.get('name') + " n'est pas un mort-vivant");
-            finalDisplay();
-            return;
-          }
-          var name = perso.token.get('name');
-          var explications = [];
-          perso.ignoreRD = options.ignoreRD;
-          perso.ignoreMoitieRD = options.ignoreMoitieRD;
-          perso.tempDmg = options.tempDmg;
-          dealDamage(perso, dmg, [], evt, false, options, explications,
-            function(dmgDisplay, dmgFinal) {
-              someDmgDone = true;
-              addLineToFramedDisplay(display,
-                name + " reçoit " + dmgDisplay + " DM");
-              explications.forEach(function(e) {
-                addLineToFramedDisplay(display, e, 80, false);
-              });
+            tokensToProcess--;
+          };
+          iterSelected(selected, function(perso) {
+            if (options['morts-vivants'] && !(estMortVivant(perso))) {
+              sendPlayer(msg, perso.token.get('name') + " n'est pas un mort-vivant");
               finalDisplay();
-            });
-        }, finalDisplay); //fin iterSelected
-      }); //fin du jet de dés
+              return;
+            }
+            var name = perso.token.get('name');
+            var explications = [];
+            perso.ignoreRD = options.ignoreRD;
+            perso.ignoreMoitieRD = options.ignoreMoitieRD;
+            perso.tempDmg = options.tempDmg;
+            dealDamage(perso, dmg, [], evt, false, options, explications,
+              function(dmgDisplay, dmgFinal) {
+                someDmgDone = true;
+                addLineToFramedDisplay(display,
+                  name + " reçoit " + dmgDisplay + " DM");
+                explications.forEach(function(e) {
+                  addLineToFramedDisplay(display, e, 80, false);
+                });
+                finalDisplay();
+              });
+          }, finalDisplay); //fin iterSelected
+        }); //fin du jet de dés
+      } catch (rollError) {
+        error("Jet " + dmgRollExpr + " mal formé", cmd);
+      }
     }, options); //fin du getSelected
   }
 
@@ -12908,7 +12912,13 @@ var COFantasy = COFantasy || function() {
   }
 
   function degainer(msg) {
-    var cmd = msg.content.split(' ');
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined) {
+      error("commande non formée", msg.content);
+      return;
+    }
     var armeLabel = '';
     if (cmd.length > 1) armeLabel = cmd[1];
     var evt = {
@@ -12920,8 +12930,9 @@ var COFantasy = COFantasy || function() {
         error("Qui doit dégainer ?", msg);
         return;
       }
+      if (options.son) playSound(options.son);
       iterSelected(selected, function(perso) {
-        var nomArme = degainerArme(perso, armeLabel, evt);
+        var nomArme = degainerArme(perso, armeLabel, evt, options);
         if (nomArme) sendChar(perso.charId, "a déjà " + nomArme + " en main");
       });
       if (evt.attributes.length > 0) addEvent(evt);
@@ -19921,6 +19932,16 @@ var COFantasy = COFantasy || function() {
     }, options); //fin getSelected
   }
 
+  function jouerSon(msg) {
+    var sonIndex = msg.content.indexOf(' ');
+    if (sonIndex < 1) {
+      sendPlayer(msg, "Il manque le son à jouer dans la commande " + msg.content);
+      return;
+    }
+    var son = msg.content.substring(sonIndex + 1);
+    playSound(son);
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -20277,6 +20298,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-boire-alcool":
         boireAlcool(msg);
+        return;
+      case "!cof-jouer-son":
+        jouerSon(msg);
         return;
       default:
         return;
