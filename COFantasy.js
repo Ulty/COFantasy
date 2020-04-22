@@ -4562,6 +4562,7 @@ var COFantasy = COFantasy || function() {
       if (!options.distance)
         defense += charAttributeAsInt(target, 'dentellesEtRapiere', 0);
     }
+    defense += charAttributeAsInt(target, 'esquiveVoleur', 0);
     if (charAttributeAsBool(target, 'graceFeline')) {
       defense += modCarac(target, 'CHARISME');
     }
@@ -7991,9 +7992,15 @@ var COFantasy = COFantasy || function() {
   // Meilleure carac parmis 2 pour un save.
   function meilleureCarac(carac1, carac2, personnage, seuil) {
     var bonus1 = bonusTestCarac(carac1, personnage);
-    if (carac1 == 'DEX') bonus1 += charAttributeAsInt(personnage, 'reflexesFelins', 0);
+    if (carac1 == 'DEX') {
+      bonus1 += charAttributeAsInt(personnage, 'reflexesFelins', 0);
+      bonus1 += charAttributeAsInt(personnage, 'esquiveVoleur', 0);
+    }
     var bonus2 = bonusTestCarac(carac2, personnage);
-    if (carac2 == 'DEX') bonus2 += charAttributeAsInt(personnage, 'reflexesFelins', 0);
+    if (carac2 == 'DEX') {
+      bonus2 += charAttributeAsInt(personnage, 'reflexesFelins', 0);
+      bonus2 += charAttributeAsInt(personnage, 'esquiveVoleur', 0);
+    }
     var nbrDe1 = nbreDeTestCarac(carac1, personnage);
     var nbrDe2 = nbreDeTestCarac(carac2, personnage);
     var de1 = deTest(personnage, carac1);
@@ -8028,6 +8035,7 @@ var COFantasy = COFantasy || function() {
     }
     if (carac == 'DEX') {
       bonusAttrs.push('reflexesFelins');
+      bonusAttrs.push('esquiveVoleur');
     }
     if (!options.hideSaveTitle) {
       var title = " Jet de " + carac + " " + s.seuil;

@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.02
 ### Capacités
+* Amélioration de la prise en charge de la capacité Esquive du voleur.
 * Ajout du rang 2 de la Voie du tueur.
 
 ### Autres améliorations
