@@ -11057,6 +11057,7 @@ var COFantasy = COFantasy || function() {
         if (charAttributeAsBool(perso, 'immuniteContreSurprise')) {
           addLineToFramedDisplay(display, name + " n'est pas surpris" + eForFemale(perso.charId));
           sendEvent();
+          return;
         }
         var bonusSurprise = 0;
         if (surveillance(perso)) {
