@@ -3247,13 +3247,14 @@ var COFantasy = COFantasy || function() {
             sendChat("COF", "Il manque un argument à l'option --disparition de !cof-attack");
             return;
           }
-          if (scope.disparition === undefined) scope.disparition = 0;
-          scope.disparition += parseInt(cmd[1]);
-          if (isNaN(scope.disparition) || scope.disparition < 0) {
+          var disparition = parseInt(cmd[1]);
+          if (isNaN(disparition) || disparition < 0) {
             error("L'option --disparition de !cof-attack attend un argument entier positif", cmd);
             return;
           }
-          break;
+          if (options.disparition === undefined) options.disparition = 0;
+          options.disparition += disparition;
+          return;
         case "fx":
           getFx(cmd, 'fx', scope, '!cof-attack');
           return;
@@ -5718,11 +5719,12 @@ var COFantasy = COFantasy || function() {
     var attaqueImpossible = false;
     cibles.forEach(function(cible) {
       if (attaqueImpossible) return;
+      cible.messages = [];
       var evalSanctuaire = function() {
         if (attributeAsBool(cible, 'sanctuaire')) {
           testCaracteristique(attaquant, 'SAG', 15, {}, evt, function(tr) {
             if (tr.reussite) {
-              sendChar(attaquant.charId, "réussi à passer outre le sanctuaire de " + cible.tokName + " (jet de SAG " + tr.texte + "&ge;15)");
+              cible.messages.push(attaquant.tokName + " réussi à passer outre le sanctuaire de " + cible.tokName + " (jet de SAG " + tr.texte + "&ge;15)");
               ciblesATraiter--;
               if (ciblesATraiter === 0)
                 resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options, chargesArme);
@@ -5738,42 +5740,25 @@ var COFantasy = COFantasy || function() {
         }
       };
       // Attaque de Disparition avec jet opposé
-      var disparition = options.disparition || 0;
-      if (cible.sournoise) disparition += cible.sournoise;
-      if (disparition) {
-        if (charAttributeAsBool(cible, 'immuniteAuxSournoises')) {
-          options.messages = options.messages || [];
-          options.messages.push("Immunité aux attaques sournoises");
-          evalSanctuaire();
-        } else {
-          var explications = [];
-          testOppose(attaquant, "DEX", {bonusAttrs: ["discrétion"]}, cible, "SAG", {}, explications, evt, function (resultat) {
-            getPlayerIds(cible).forEach(function(playerId){
-              var display = startFramedDisplay(playerId, "Résistance à disparition", cible, {
-                perso2: attaquant
-              });
-              explications.forEach(function (e) {
-                addLineToFramedDisplay(display, e);
-              });
-              sendChat("", endFramedDisplay(display));
-            });
-            if(resultat != 2) {
-              options.messages = options.messages || [];
-              options.messages.push("L'attaque de Disparition réussit.");
-              // rajout des bonus de sournoise
-              var bonusAttaque = options.bonusAttaque || 0;
-              options.bonusAttaque = bonusAttaque + 5;
-              options.sournoise = disparition;
-              evalSanctuaire();
-            } else {
-              options.messages = options.messages || [];
-              options.messages.push("L'attaque de Disparition a été repérée.");
-              evalSanctuaire();
-            }
-          });
-        }
-      }
-      else evalSanctuaire();
+      if (options.disparition) {
+        //L'immunité aux attaques sournoise est testée plus loin et ne devrait
+        //pas empêcher le bonus de +5 à l'attaque.
+        testOppose(attaquant, "DEX", {
+          bonusAttrs: ["discrétion"]
+        }, cible, "SAG", {}, cible.messages, evt, function(resultat) {
+          if (resultat != 2) {
+            cible.messages.push(attaquant.tokName + " réapparait à côté de " + cible.tokName + " et lui porte une attaque mortelle !");
+            // rajout des bonus de sournoise
+            options.bonusAttaque = (options.bonusAttaque || 0) + 5;
+            options.sournoise = options.sournoise || 0;
+            options.sournoise += options.disparition;
+            evalSanctuaire();
+          } else {
+            cible.messages.push(cible.tokName + " repère " + attaquant.tokName + " à temps pour réagir.");
+            evalSanctuaire();
+          }
+        }); //fin de testOppose (asynchrone)
+      } else evalSanctuaire();
     });
   }
 
@@ -6452,7 +6437,6 @@ var COFantasy = COFantasy || function() {
           setTokenAttr(attaquant, 'attaqueMalgreMenace(' + target.token.id + ')', 2, evt, undefined);
         }
         target.additionalDmg = [];
-        target.messages = [];
         var amm = 'attaqueMalgreMenace(' + attaquant.token.id + ')';
         if (options.contact && cibles.length == 1) {
           if (attributeAsBool(target, amm)) {
@@ -7209,7 +7193,7 @@ var COFantasy = COFantasy || function() {
       if (target.sournoise) sournoise += target.sournoise;
       if (sournoise) {
         if (charAttributeAsBool(target, 'immuniteAuxSournoises')) {
-          target.messages.push('Immunité aux attaques sournoises');
+          target.messages.push(target.tokName + " est immunisé" + eForFemale(target.charId) + " aux attaques sournoises");
         } else {
           if (options.ouvertureMortelle) {
             target.messages.push("Ouverture mortelle => + 2 x " + sournoise + options.d6 + " DM");
@@ -7822,7 +7806,7 @@ var COFantasy = COFantasy || function() {
           };
           var effetPietinement = function() {
             if (target.pietine && estAussiGrandQue(attaquant, target)) {
-              testOppose(target, 'FOR', {}, attaquant, 'FOR', {}, target.messages, evt, function (resultat) {
+              testOppose(target, 'FOR', {}, attaquant, 'FOR', {}, target.messages, evt, function(resultat) {
                 if (resultat == 2) {
                   target.messages.push(target.tokName + " est piétiné par " + attackerTokName);
                   setState(target, 'renverse', true, evt);
@@ -12766,14 +12750,14 @@ var COFantasy = COFantasy || function() {
             perso2: opposant
           });
           var explications = [];
-          testOppose(perso, carac, {}, opposant, carac, {}, explications, evt, function (resultat, crit) {
+          testOppose(perso, carac, {}, opposant, carac, {}, explications, evt, function(resultat, crit) {
             if (resultat == 2) {
               explications.push(perso.token.get('name') + " est toujours " + etat + eForFemale(perso.charId));
             } else {
               setState(perso, etat, false, evt);
               explications.push(perso.token.get('name') + " n'est plus " + etat + eForFemale(perso.charId));
             }
-            explications.forEach(function (e) {
+            explications.forEach(function(e) {
               addLineToFramedDisplay(display, e);
             });
             addEvent(evt);
@@ -16998,8 +16982,8 @@ var COFantasy = COFantasy || function() {
       type: 'Provocation'
     };
     var jets = [];
-    testOppose(voleur, 'CHA', {}, cible, 'INT', {}, jets, evt, function (res, crit) {
-      jets.forEach(function (l) {
+    testOppose(voleur, 'CHA', {}, cible, 'INT', {}, jets, evt, function(res, crit) {
+      jets.forEach(function(l) {
         addLineToFramedDisplay(display, l);
       });
       var reussite;
@@ -19598,7 +19582,7 @@ var COFantasy = COFantasy || function() {
       perso2: cible
     });
     var explications = [];
-    testOppose(cube, 'FOR', {}, cible, caracRes, {}, explications, evt, function (res, crit) {
+    testOppose(cube, 'FOR', {}, cible, caracRes, {}, explications, evt, function(res, crit) {
       switch (res) {
         case 1:
           explications.push(cube.token.get('name') + " a absorbé " + cible.token.get('name'));
@@ -19621,7 +19605,7 @@ var COFantasy = COFantasy || function() {
         default: //match null, la cible s'en sort
           explications.push(cible.token.get('name') + " échappe de justesse à l'enveloppement");
       }
-      explications.forEach(function (e) {
+      explications.forEach(function(e) {
         addLineToFramedDisplay(display, e);
       });
       addEvent(evt);
@@ -19747,8 +19731,8 @@ var COFantasy = COFantasy || function() {
         });
         var explications = [];
         if (options.chance) options.bonus = options.chance * 10;
-        testOppose(perso, 'FOR', {}, agrippant, 'FOR', {}, explications, evt, function (tr, crit) {
-          explications.forEach(function (e) {
+        testOppose(perso, 'FOR', {}, agrippant, 'FOR', {}, explications, evt, function(tr, crit) {
+          explications.forEach(function(e) {
             addLineToFramedDisplay(display, e);
           });
           if (tr == 2) {
@@ -19766,8 +19750,8 @@ var COFantasy = COFantasy || function() {
             if (pc > 0) {
               options.roll = options.roll || tr.roll;
               msgRate += ' ' +
-                  bouton("!cof-bouton-chance " + evt.id, "Chance", perso) +
-                  " (reste " + pc + " PC)";
+                bouton("!cof-bouton-chance " + evt.id, "Chance", perso) +
+                " (reste " + pc + " PC)";
             }
             if (charAttributeAsBool(perso, 'runeDEnergie')) {
               msgRate += ' ' + bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", perso);
@@ -19784,7 +19768,7 @@ var COFantasy = COFantasy || function() {
             evt.deletedAttributes.push(attr);
             attr.remove();
             attr = tokenAttribute(agrippant, 'agrippe');
-            attr.forEach(function (a) {
+            attr.forEach(function(a) {
               var ca = tokenOfIdName(a.get('current'));
               if (ca && ca.token.id == perso.token.id) {
                 evt.deletedAttributes.push(a);

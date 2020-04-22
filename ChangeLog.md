@@ -1,10 +1,16 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.02
+### Capacités
+* Ajout du rang 2 de la Voie du tueur.
+
+### Corrections de bugs
+* Utilisation d'un attribut mortVivant au lieu de mort-vivant.
 
 ## 2.01
-## Capacités
+### Capacités
 * Ajout du rang 3 de la Voie du tueur.
 
-## Autres améliorations
+### Autres améliorations
 * Ajout d'une commande !cof-jouer-son
 * bloque les personnages sous prison végétale.
 * Possibilité d'ajouter des contraintes (comme --dose) au fonctions de repos.
@@ -14,7 +20,6 @@
 * Possibilité d'afficher des images et de jouer des sons selon le résultat d'une attaque.
 
 ### Corrections de bugs
-* Utilisation d'un attribut mortVivant au lieu de mort-vivant.
 * Factorisation et amélioration des significations des options de sons et d'images d'attaques.
 * Correction d'un bug pour les effets d'attaque conditionnels.
 * Amélioration du parsing de handout pour les compétences en équipes.
