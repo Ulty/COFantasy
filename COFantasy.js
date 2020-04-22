@@ -8096,7 +8096,16 @@ var COFantasy = COFantasy || function() {
   function applyRDSauf(rds, dmgType, total, display, options) {
     options = options || {};
     var typeTrouve = function(t) {
-      return (t == dmgType || options[t]);
+      if (t == dmgType) return true;
+      if (options[t]) return true;
+      switch (t) {
+        case 'tranchant':
+        case 'contondant':
+        case 'percant':
+          return dmgType != 'normal';
+        default:
+          return false;
+      }
     };
     if (total) {
       for (var saufType in rds) {
