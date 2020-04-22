@@ -9912,7 +9912,7 @@ var COFantasy = COFantasy || function() {
         if (reposLong) {
           message = "Au cours de la nuit, ";
         } else {
-          message = "Après une dizaine de minutes de repos, ";
+          message = "Après 5 minutes de minutes de repos, ";
         }
         message +=
           characterName + " récupère " + buildinline(rolls.inlinerolls[0]) + "+" + bonus + " PV. Il lui reste " + pr.current + " points de récupération";
