@@ -8753,6 +8753,11 @@ var COFantasy = COFantasy || function() {
                   expliquer(token.get('name') + " devrait être mort, mais il continue à se battre !");
                   setTokenAttr(target, 'agitAZeroPV', 1, evt, undefined, getInit());
                 }
+              } else if (charAttributeAsBool(target, 'durACuire')) {
+                if (!attributeAsBool(target, 'agitAZeroPV')) {
+                  expliquer(token.get('name') + " devrait être mort, mais il continue à se battre !");
+                  setTokenAttr(target, 'agitAZeroPV', 1, evt, undefined, getInit());
+                }
               } else {
                 var defierLaMort = charAttributeAsInt(target, 'defierLaMort', 0);
                 if (defierLaMort > 0) {
