@@ -3,6 +3,9 @@
 ### Capacités
 * Ajout du rang 2 de la Voie du tueur.
 
+### Autres améliorations
+* Possibilité d'arrêter tous les sons.
+
 ### Corrections de bugs
 * Utilisation d'un attribut mortVivant au lieu de mort-vivant.
 

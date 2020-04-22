@@ -6782,8 +6782,7 @@ var COFantasy = COFantasy || function() {
         title: sound
       });
       jukebox.forEach(function(track) {
-        var jbTrack = getObj('jukeboxtrack', track.get('_id'));
-        if (jbTrack) jbTrack.set({
+        track.set({
           playing: true,
           softstop: false
         });
@@ -19965,12 +19964,30 @@ var COFantasy = COFantasy || function() {
 
   function jouerSon(msg) {
     var sonIndex = msg.content.indexOf(' ');
-    if (sonIndex < 1) {
-      sendPlayer(msg, "Il manque le son à jouer dans la commande " + msg.content);
-      return;
+    if (sonIndex >0) {
+      //On joue un son
+      var son = msg.content.substring(sonIndex + 1);
+      playSound(son);
+    } else { //On arrête tous les sons
+    var AMdeclared;
+    try {
+      AMdeclared = Roll20AM;
+    } catch (e) {
+      if (e.name != "ReferenceError") throw (e);
     }
-    var son = msg.content.substring(sonIndex + 1);
-    playSound(son);
+    if (AMdeclared) {
+      //With Roll20 Audio Master
+      sendChat("GM", "!roll20AM --audio,stop|");
+    } else {
+      var jukebox = findObjs({
+        type: 'jukeboxtrack',
+        playing: true
+      });
+      jukebox.forEach(function(track) {
+        track.set('playing', false);
+      });
+    }
+    }
   }
 
   function apiCommand(msg) {
