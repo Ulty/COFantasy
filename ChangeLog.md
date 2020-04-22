@@ -7,6 +7,7 @@
 * Possibilité d'arrêter tous les sons.
 
 ### Corrections de bugs
+* Protection contre les macros et abilities de nom vide.
 * Immunité à la surprise permet bien de ne pas faire le test.
 * Utilisation d'un attribut mortVivant au lieu de mort-vivant.
 

@@ -1494,7 +1494,9 @@ var COFantasy = COFantasy || function() {
         _type: 'macro'
       });
       macros.forEach(function(m, i) {
-        var mName = '#' + m.get('name');
+        var mName =  m.get('name');
+        if (mName === '') return;
+        mName = '#' + mName;
         if (action.indexOf(mName) >= 0) {
           mName = new RegExp(mName + "\\b", "g");
           action = action.replace(mName, m.get('action'));
@@ -1513,6 +1515,7 @@ var COFantasy = COFantasy || function() {
       });
       abilities.forEach(function(a, i) {
         var aName = a.get('name');
+        if (aName === '') return;
         var daName = '%' + aName;
         if (action.indexOf(daName) >= 0) {
           action = action.replace(daName, a.get('action'));
