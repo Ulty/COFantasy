@@ -5635,8 +5635,8 @@ var COFantasy = COFantasy || function() {
       if (options.intercepter || options.interposer) return true;
       if (target.distance > portee && target.esquiveFatale === undefined) {
         if (options.aoe || options.auto) return false; //distance stricte
-        if (target.distance > 2 * portee) return false;
-        // On peut aller jusqu'à 2x portee si unique cible et jet d'attaque
+        if (target.distance > (charAttributeAsBool(attaquant, "tirParabolique") ? 3 : 2) * portee) return false;
+        // On peut aller jusqu'à 2x portee si unique cible et jet d'attaque, 3x si le personnage a Tir Parabolique
         return true;
       }
       return true;
@@ -9025,12 +9025,16 @@ var COFantasy = COFantasy || function() {
   }
 
 
-  function malusDistance(perso1, tok2, distance, portee, pageId, explications, ignoreObstacles) {
+  function malusDistance(perso1, tok2, distanceDeBase, portee, pageId, explications, ignoreObstacles) {
+    // Extension de distance pour tir parabolique
+    var tirParabolique = charAttributeAsBool(perso1, "tirParabolique");
+    var distance = tirParabolique ? Math.max(0, distanceDeBase-portee) : distanceDeBase;
+
     if (distance === 0) return 0;
     var tok1 = perso1.token;
     var mPortee = (distance <= portee) ? 0 : (Math.ceil(5 * (distance - portee) / portee));
     if (mPortee > 0) {
-      explications.push("Distance > " + portee + " m => -" + mPortee + " en Attaque");
+      explications.push("Distance > " + ((tirParabolique) ? portee*2 : portee) + " m => -" + mPortee + " en Attaque");
     }
     if (ignoreObstacles || charAttributeAsBool(perso1, 'joliCoup'))
       return mPortee;
