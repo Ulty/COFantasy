@@ -7,6 +7,7 @@
 * Ajout du rang 2 de la Voie du tueur.
 
 ### Autres améliorations
+* Ajout de conditions sur un attribut de cible quelconque pour l'attaque
 * Possibilité d'arrêter tous les sons.
 
 ### Corrections de bugs

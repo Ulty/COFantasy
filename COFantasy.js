@@ -2896,6 +2896,28 @@ var COFantasy = COFantasy || function() {
           attribute: args[1],
           text: args[1]
         };
+      case 'attributCible':
+        if (args.length < 3) {
+          error("Il manque un argument pour comparer l'attribut de la cible", args);
+          return;
+        }
+        var res = {
+          type: 'attributCible',
+          attribute: args[1],
+          valeur: args[2].toLowerCase(),
+          text: args[1] + ' ' + args[2]
+        };
+        if (args.length > 3) {
+          if (args[3] == 'local') {
+            res.local = true;
+          } else if (args[3] == 'fiche') {
+            res.fiche = {};
+            if (args.length > 4) {
+              res.fiche.def = args[4];
+            }
+          }
+        }
+        return res;
       case "deAttaque":
         var valeurDeAttaque = parseInt(args[1]);
         if (isNaN(valeurDeAttaque)) {
@@ -3872,10 +3894,34 @@ var COFantasy = COFantasy || function() {
         return (attributeAsBool(attaquant, cond.attribute));
       case "attributCible":
         var resAttrCible = true;
-        cibles.forEach(function(target) {
-          if (resAttrCible && !attributeAsBool(target, cond.attribute))
-            resAttrCible = false;
-        });
+        if (cond.valeur === undefined) {
+          cibles.forEach(function(target) {
+            if (resAttrCible && !attributeAsBool(target, cond.attribute))
+              resAttrCible = false;
+          });
+        } else {
+          cibles.forEach(function(target) {
+            if (resAttrCible) {
+              var attr;
+              if (cond.fiche) {
+                attr = ficheAttribute(target, cond.attribute, cond.fiche.def);
+                if (attr === undefined) {
+                  resAttrCible = false;
+                  return;
+                }
+                resAttrCible = (attr+'').toLowerCase() == cond.valeur;
+                return;
+              }
+              if (cond.local) attr = tokenAttribute(target, cond.attribute);
+              else attr = charAttribute(target.charId, cond.attribute);
+              if (attr.length === 0) {
+                resAttrCible = false;
+                return;
+              }
+              resAttrCible = (attr[0].get('current')+'').toLowerCase() == cond.valeur;
+            }
+          });
+        }
         return resAttrCible;
       case "deAttaque":
         if (deAttaque === undefined) {
@@ -3956,7 +4002,8 @@ var COFantasy = COFantasy || function() {
             opt[field] += branch[field] - 1;
             break;
           case 'messages':
-            if (condInTarget) target.messages.concat(branch.messages);
+            if (condInTarget)
+              target.messages = target.messages.concat(branch.messages);
             else { /*jshint loopfunc: true */
               branch.messages.forEach(function(m) {
                 explications.push(m);
@@ -5253,7 +5300,7 @@ var COFantasy = COFantasy || function() {
       weaponStats.attDMBonusCommun = weaponDmg[3];
       weaponStats.portee = attaqueArray[4];
       // Ceci est fait pour mirror le comportement de getWeaponStats et pour éviter un weaponStats.divers === undefined
-      if(attaqueArray.length > 5) {
+      if (attaqueArray.length > 5) {
         weaponStats.divers = attaqueArray[5];
       } else {
         weaponStats.divers = "";
