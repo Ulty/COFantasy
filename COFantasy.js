@@ -8777,15 +8777,13 @@ var COFantasy = COFantasy || function() {
                 msgBarroud += onGenre(target.charId, 'il', 'elle') + " continue à se battre !";
                 expliquer(msgBarroud);
                 setTokenAttr(target, 'baroudHonneurActif', true, evt);
-              } else if (attributeAsBool(target, 'enragé') ||
-                charAttributeAsBool(target, 'durACuire')) {
-                if (!attributeAsBool(target, 'agitAZeroPV')) {
-                  var msgAgitZ = token.get('name') + " devrait être mort";
-                  msgAgitZ += eForFemale(target.charId) + ", mais ";
-                  msgAgitZ += onGenre(target.charId, 'il', 'elle') + " continue à se battre !";
-                  expliquer(msgAgitZ);
-                  setTokenAttr(target, 'agitAZeroPV', 1, evt, undefined, getInit());
-                }
+              } else if ((attributeAsBool(target, 'enragé') || charAttributeAsBool(target, 'durACuire')) &&
+                  !limiteRessources(target, {limiteParCombat: 1}, "agitAZeroPV", "", evt)) {
+                var msgAgitZ = token.get('name') + " devrait être mort";
+                msgAgitZ += eForFemale(target.charId) + ", mais ";
+                msgAgitZ += onGenre(target.charId, 'il', 'elle') + " continue à se battre !";
+                expliquer(msgAgitZ);
+                setTokenAttr(target, 'agitAZeroPV', 1, evt, undefined, getInit());
               } else {
                 var defierLaMort = charAttributeAsInt(target, 'defierLaMort', 0);
                 if (defierLaMort > 0) {
