@@ -1,6 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.02
 ### Capacités
+* Ajout des rangs 4 et 5 de la Voie de la résistance du guerrier.
+* Ajout des rangs 4 et 5 de la Voie de la précisison de l'arquebusier.
 * Amélioration de la prise en charge de la capacité Esquive du voleur.
 * Ajout du rang 2 de la Voie du tueur.
 

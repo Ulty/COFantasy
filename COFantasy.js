@@ -1494,7 +1494,7 @@ var COFantasy = COFantasy || function() {
         _type: 'macro'
       });
       macros.forEach(function(m, i) {
-        var mName =  m.get('name');
+        var mName = m.get('name');
         if (mName === '') return;
         mName = '#' + mName;
         if (action.indexOf(mName) >= 0) {
@@ -8766,16 +8766,18 @@ var COFantasy = COFantasy || function() {
               updateCurrentBar(token, 1, 0, evt);
               pvPerdus += bar1;
               if (charAttributeAsBool(target, 'baroudHonneur')) {
-                expliquer(token.get('name') + " devrait être mort, mais il continue à se battre !");
+                var msgBarroud = token.get('name') + " devrait être mort";
+                msgBarroud += eForFemale(target.charId) + ", mais ";
+                msgBarroud += onGenre(target.charId, 'il', 'elle') + " continue à se battre !";
+                expliquer(msgBarroud);
                 setTokenAttr(target, 'baroudHonneurActif', true, evt);
-              } else if (attributeAsBool(target, 'enragé')) {
+              } else if (attributeAsBool(target, 'enragé') ||
+                charAttributeAsBool(target, 'durACuire')) {
                 if (!attributeAsBool(target, 'agitAZeroPV')) {
-                  expliquer(token.get('name') + " devrait être mort, mais il continue à se battre !");
-                  setTokenAttr(target, 'agitAZeroPV', 1, evt, undefined, getInit());
-                }
-              } else if (charAttributeAsBool(target, 'durACuire')) {
-                if (!attributeAsBool(target, 'agitAZeroPV')) {
-                  expliquer(token.get('name') + " devrait être mort, mais il continue à se battre !");
+                  var msgAgitZ = token.get('name') + " devrait être mort";
+                  msgAgitZ += eForFemale(target.charId) + ", mais ";
+                  msgAgitZ += onGenre(target.charId, 'il', 'elle') + " continue à se battre !";
+                  expliquer(msgAgitZ);
                   setTokenAttr(target, 'agitAZeroPV', 1, evt, undefined, getInit());
                 }
               } else {
@@ -9053,13 +9055,13 @@ var COFantasy = COFantasy || function() {
   function malusDistance(perso1, tok2, distanceDeBase, portee, pageId, explications, ignoreObstacles) {
     // Extension de distance pour tir parabolique
     var tirParabolique = charAttributeAsBool(perso1, "tirParabolique");
-    var distance = tirParabolique ? Math.max(0, distanceDeBase-portee) : distanceDeBase;
+    var distance = tirParabolique ? Math.max(0, distanceDeBase - portee) : distanceDeBase;
 
     if (distance === 0) return 0;
     var tok1 = perso1.token;
     var mPortee = (distance <= portee) ? 0 : (Math.ceil(5 * (distance - portee) / portee));
     if (mPortee > 0) {
-      explications.push("Distance > " + ((tirParabolique) ? portee*2 : portee) + " m => -" + mPortee + " en Attaque");
+      explications.push("Distance > " + ((tirParabolique) ? portee * 2 : portee) + " m => -" + mPortee + " en Attaque");
     }
     if (ignoreObstacles || charAttributeAsBool(perso1, 'joliCoup'))
       return mPortee;
@@ -19994,29 +19996,29 @@ var COFantasy = COFantasy || function() {
 
   function jouerSon(msg) {
     var sonIndex = msg.content.indexOf(' ');
-    if (sonIndex >0) {
+    if (sonIndex > 0) {
       //On joue un son
       var son = msg.content.substring(sonIndex + 1);
       playSound(son);
     } else { //On arrête tous les sons
-    var AMdeclared;
-    try {
-      AMdeclared = Roll20AM;
-    } catch (e) {
-      if (e.name != "ReferenceError") throw (e);
-    }
-    if (AMdeclared) {
-      //With Roll20 Audio Master
-      sendChat("GM", "!roll20AM --audio,stop|");
-    } else {
-      var jukebox = findObjs({
-        type: 'jukeboxtrack',
-        playing: true
-      });
-      jukebox.forEach(function(track) {
-        track.set('playing', false);
-      });
-    }
+      var AMdeclared;
+      try {
+        AMdeclared = Roll20AM;
+      } catch (e) {
+        if (e.name != "ReferenceError") throw (e);
+      }
+      if (AMdeclared) {
+        //With Roll20 Audio Master
+        sendChat("GM", "!roll20AM --audio,stop|");
+      } else {
+        var jukebox = findObjs({
+          type: 'jukeboxtrack',
+          playing: true
+        });
+        jukebox.forEach(function(track) {
+          track.set('playing', false);
+        });
+      }
     }
   }
 
