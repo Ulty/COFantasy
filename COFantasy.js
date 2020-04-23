@@ -1,5 +1,6 @@
 // jshint undef:true
 // jshint eqeqeq:false
+// jshint esversion: 6
 /* globals Set */
 /* globals getAttrByName */
 /* globals findObjs */
@@ -3909,7 +3910,7 @@ var COFantasy = COFantasy || function() {
                   resAttrCible = false;
                   return;
                 }
-                resAttrCible = (attr+'').toLowerCase() == cond.valeur;
+                resAttrCible = (attr + '').toLowerCase() == cond.valeur;
                 return;
               }
               if (cond.local) attr = tokenAttribute(target, cond.attribute);
@@ -3918,7 +3919,7 @@ var COFantasy = COFantasy || function() {
                 resAttrCible = false;
                 return;
               }
-              resAttrCible = (attr[0].get('current')+'').toLowerCase() == cond.valeur;
+              resAttrCible = (attr[0].get('current') + '').toLowerCase() == cond.valeur;
             }
           });
         }
@@ -22399,52 +22400,51 @@ var COFantasy = COFantasy || function() {
     }, 50);
   }
 
-// Surveillance sur le changement d'état du token  
-  function changeMarker (token, prev) {
+  // Surveillance sur le changement d'état du token  
+  function changeMarker(token, prev) {
     var charId = token.get('represents');
     if (charId === undefined || charId === '') return; // Uniquement si token lié à un perso
     var perso = {
       token: token,
       charId: charId
     };
-    
     var evt = {
-      type: "set_state",  // evt est un objet avec type="set_state"
+      type: "set_state", // evt est un objet avec type="set_state"
     };
-
+    affectToken(token, 'statusmarkers', prev.statusmarkers, evt);
     var currentMarkers = [];
-    if (token.get("statusmarkers") != "") {
+    if (token.get("statusmarkers") !== '') {
       currentMarkers = token.get("statusmarkers").split(',');
     }
     var previousMarkers = [];
-    if (prev.statusmarkers != "") {
+    if (prev.statusmarkers !== '') {
       previousMarkers = prev.statusmarkers.split(',');
     }
-
-// Si un ancien Marker a disparu
+    // Si un ancien Marker a disparu
     if (previousMarkers) {
-      let supprMarkers = previousMarkers.filter(x => !currentMarkers.includes(x));
-        supprMarkers.forEach(function(state) {
-          var value = "status_"+state
-          var etat = Object.keys(cof_states).find(key => cof_states[key] === value);
-// Si on ne retrouve pas le Marker dans cof_states, on oublie
-          if (etat !== undefined) { 
-            setState(perso, etat, false, evt);
-          }
-        });
+      var supprMarkers = previousMarkers.filter(x => !currentMarkers.includes(x));
+      supprMarkers.forEach(function(state) {
+        var value = "status_" + state;
+        var etat = Object.keys(cof_states).find(key => cof_states[key] === value);
+        // Si on ne retrouve pas le Marker dans cof_states, on oublie
+        if (etat !== undefined) {
+          setState(perso, etat, false, evt);
+        }
+      });
     }
-// Si un nouveau Marker est apparu
+    // Si un nouveau Marker est apparu
     if (currentMarkers !== null) {
       let addMarkers = currentMarkers.filter(x => !previousMarkers.includes(x));
       addMarkers.forEach(function(state) {
-          var value = "status_"+state
-          var etat = Object.keys(cof_states).find(key => cof_states[key] === value);
-// Si on ne retrouve pas le Marker dans cof_states, on oublie
-          if (etat !== undefined) { 
-            setState(perso, etat, true, evt);
-          }
+        var value = "status_" + state;
+        var etat = Object.keys(cof_states).find(key => cof_states[key] === value);
+        // Si on ne retrouve pas le Marker dans cof_states, on oublie
+        if (etat !== undefined) {
+          setState(perso, etat, true, evt);
+        }
       });
     }
+    addEvent(evt);
   }
 
   return {
