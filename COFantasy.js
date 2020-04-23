@@ -5267,7 +5267,6 @@ var COFantasy = COFantasy || function() {
       }
       weaponName = weaponStats.name;
     }
-    log(weaponStats);
     weaponStats.attSkillDiv = parseInt(weaponStats.attSkillDiv);
     weaponStats.attNbDices = parseInt(weaponStats.attNbDices);
     weaponStats.attDice = parseInt(weaponStats.attDice);
