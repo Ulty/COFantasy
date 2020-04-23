@@ -709,8 +709,11 @@ var COFantasy = COFantasy || function() {
         max: attr.get('max')
       });
     }
-    attr.set('current', val);
-    if (maxVal) attr.set('max', maxVal);
+    var aset = {
+      current: val
+    };
+    if (maxVal) aset.max = maxVal;
+    attr.setWithWorker(aset);
     if (HTdeclared) HealthColors.Update(token, prevToken);
   }
 
@@ -8826,7 +8829,9 @@ var COFantasy = COFantasy || function() {
                 expliquer(msgBarroud);
                 setTokenAttr(target, 'baroudHonneurActif', true, evt);
               } else if ((attributeAsBool(target, 'enragé') || charAttributeAsBool(target, 'durACuire')) &&
-                  !limiteRessources(target, {limiteParCombat: 1}, "agitAZeroPV", "", evt)) {
+                !limiteRessources(target, {
+                  limiteParCombat: 1
+                }, "agitAZeroPV", "", evt)) {
                 var msgAgitZ = token.get('name') + " devrait être mort";
                 msgAgitZ += eForFemale(target.charId) + ", mais ";
                 msgAgitZ += onGenre(target.charId, 'il', 'elle') + " continue à se battre !";
@@ -21844,12 +21849,15 @@ var COFantasy = COFantasy || function() {
       }
     } else {
       if (set) {
-        attrs[0].set('current', true);
-        attrs[0].set('max', state.COFantasy.version);
+        attrs[0].setWithWorker({
+          current: true,
+          max: state.COFantasy.version
+        });
       } else {
-        attrs[0].set('current', false);
+        attrs[0].setWithWorker({
+          current: false
+        });
       }
-
     }
   }
 
