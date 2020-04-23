@@ -22399,6 +22399,54 @@ var COFantasy = COFantasy || function() {
     }, 50);
   }
 
+// Surveillance sur le changement d'état du token  
+  function changeMarker (token, prev) {
+    var charId = token.get('represents');
+    if (charId === undefined || charId === '') return; // Uniquement si token lié à un perso
+    var perso = {
+      token: token,
+      charId: charId
+    };
+    
+    var evt = {
+      type: "set_state",  // evt est un objet avec type="set_state"
+    };
+
+    var currentMarkers = [];
+    if (token.get("statusmarkers") != "") {
+      currentMarkers = token.get("statusmarkers").split(',');
+    }
+    var previousMarkers = [];
+    if (prev.statusmarkers != "") {
+      previousMarkers = prev.statusmarkers.split(',');
+    }
+
+// Si un ancien Marker a disparu
+    if (previousMarkers) {
+      let supprMarkers = previousMarkers.filter(x => !currentMarkers.includes(x));
+        supprMarkers.forEach(function(state) {
+          var value = "status_"+state
+          var etat = Object.keys(cof_states).find(key => cof_states[key] === value);
+// Si on ne retrouve pas le Marker dans cof_states, on oublie
+          if (etat !== undefined) { 
+            setState(perso, etat, false, evt);
+          }
+        });
+    }
+// Si un nouveau Marker est apparu
+    if (currentMarkers !== null) {
+      let addMarkers = currentMarkers.filter(x => !previousMarkers.includes(x));
+      addMarkers.forEach(function(state) {
+          var value = "status_"+state
+          var etat = Object.keys(cof_states).find(key => cof_states[key] === value);
+// Si on ne retrouve pas le Marker dans cof_states, on oublie
+          if (etat !== undefined) { 
+            setState(perso, etat, true, evt);
+          }
+      });
+    }
+  }
+
   return {
     apiCommand: apiCommand,
     nextTurn: nextTurn,
@@ -22406,6 +22454,7 @@ var COFantasy = COFantasy || function() {
     moveToken: moveToken,
     changeHandout: changeHandout,
     addToken: addToken,
+    changeMarker: changeMarker,
     setStateCOF: setStateCOF,
     scriptVersionToCharacter: scriptVersionToCharacter,
   };
@@ -22423,6 +22472,7 @@ on("destroy:handout", function(prev) {
 on("ready", function() {
   var script_version = "2.02";
   on('add:token', COFantasy.addToken);
+  on("change:graphic:statusmarkers", COFantasy.changeMarker);
   state.COFantasy = state.COFantasy || {
     combat: false,
     tour: 0,
