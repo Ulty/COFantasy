@@ -5252,6 +5252,12 @@ var COFantasy = COFantasy || function() {
       weaponStats.attCarBonus = weaponDmg[2];
       weaponStats.attDMBonusCommun = weaponDmg[3];
       weaponStats.portee = attaqueArray[4];
+      // Ceci est fait pour mirror le comportement de getWeaponStats et pour éviter un weaponStats.divers === undefined
+      if(attaqueArray.length > 5) {
+        weaponStats.divers = attaqueArray[5];
+      } else {
+        weaponStats.divers = "";
+      }
     } else {
       //On trouve l'attaque correspondant au label
       weaponStats = getWeaponStats(attaquant, attackLabel);
@@ -5261,6 +5267,7 @@ var COFantasy = COFantasy || function() {
       }
       weaponName = weaponStats.name;
     }
+    log(weaponStats);
     weaponStats.attSkillDiv = parseInt(weaponStats.attSkillDiv);
     weaponStats.attNbDices = parseInt(weaponStats.attNbDices);
     weaponStats.attDice = parseInt(weaponStats.attDice);
