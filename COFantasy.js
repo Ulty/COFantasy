@@ -939,8 +939,14 @@ var COFantasy = COFantasy || function() {
       if (bar1 > pvmax) {
         var hasMana = (ficheAttributeAsInt(perso, 'PM', 0) > 0);
         var dmgTemp;
-        if (hasMana) dmgTemp = attributeAsInt(perso, 'DMTEMP', 0);
-        else {
+        var estPNJ = getAttrByName(perso.charId, 'type_personnage') == 'PNJ';
+        var estMook =token.get("bar1_link") === '';
+        var nameAttrDMTEMP = 'DMTEMP';
+        if (estPNJ && !estMook) nameAttrDMTEMP = 'pnj_dmtemp';
+        if (hasMana) {
+          if (estMook) dmgTemp = attributeAsInt(perso, 'DMTEMP', 0);
+          else dmgTemp = ficheAttributeAsInt(perso, nameAttrDMTEMP, 0);
+        } else {
           dmgTemp = parseInt(token.get('bar2_value'));
           if (isNaN(dmgTemp)) dmgTemp = 0;
         }
@@ -8685,27 +8691,34 @@ var COFantasy = COFantasy || function() {
         }
         var hasMana = (ficheAttributeAsInt(target, 'PM', 0) > 0);
         var tempDmg = 0;
+        var estPNJ = getAttrByName(charId, 'type_personnage') == 'PNJ';
+        var estMook =token.get("bar1_link") === '';
+        var nameAttrDMTEMP = 'DMTEMP';
+        if (estPNJ && !estMook) nameAttrDMTEMP = 'pnj_dmtemp';
         if (hasMana) {
-          tempDmg = attributeAsInt(target, 'DMTEMP', 0);
+          if (estMook) tempDmg = attributeAsInt(target, 'DMTEMP', 0);
+          else tempDmg = ficheAttributeAsInt(target, nameAttrDMTEMP, 0);
         } else {
           tempDmg = parseInt(token.get("bar2_value"));
           if (isNaN(tempDmg)) {
             if (target.tempDmg) { //then try to set bar2 correctly
-              if (token.get("bar1_link") === '') {
+              if (estMook) {
                 token.set("bar2_max", pvmax);
               } else {
                 var tmpHitAttr =
                   findObjs({
                     _type: "attribute",
                     _characterid: charId,
-                    name: "DMTEMP"
-                  });
+                    name: nameAttrDMTEMP
+                  }, {
+      caseInsensitive: true}
+                  );
                 var dmTemp;
                 if (tmpHitAttr.length === 0) {
                   dmTemp =
                     createObj("attribute", {
                       characterid: charId,
-                      name: "DMTEMP",
+                      name: nameAttrDMTEMP,
                       current: 0,
                       max: pvmax
                     });
@@ -8732,7 +8745,7 @@ var COFantasy = COFantasy || function() {
             tempDmg = pvmax;
           }
           if (hasMana) {
-            setTokenAttr(target, 'DMTEMP', tempDmg, evt);
+            setTokenAttr(target, nameAttrDMTEMP, tempDmg, evt);
           } else {
             updateCurrentBar(token, 2, tempDmg, evt);
           }
@@ -9454,7 +9467,8 @@ var COFantasy = COFantasy || function() {
         }, {
           caseInsensitive: true
         });
-        if (getAttrByName(charId, 'type_personnage') == 'PNJ') {
+        var estPNJ = getAttrByName(charId, 'type_personnage') == 'PNJ';
+        if (estPNJ) {
           pvAttr = findObjs({
             _type: 'attribute',
             _characterid: charId,
@@ -9483,7 +9497,9 @@ var COFantasy = COFantasy || function() {
         if (pv > 0 && newPv === 0) {
           sendChar(charId, "s'écroule. Il semble sans vie. La douleur qu'il avait ignorée l'a finalement rattrapé...");
         } else {
-          var tempDmg = attributeAsInt(charId, 'DMTEMP', 0);
+        var nameAttrDMTEMP = 'DMTEMP';
+        if (estPNJ) nameAttrDMTEMP = 'pnj_dmtemp';
+          var tempDmg = ficheAttributeAsInt(charId, nameAttrDMTEMP, 0);
           if (pv > tempDmg && newPv <= tempDmg) {
             sendChar(charId, "s'écroule, assomé. La douleur qu'il avait ignorée l'a finalement rattrapé...");
           } else {
@@ -9892,11 +9908,16 @@ var COFantasy = COFantasy || function() {
       });
       var hasMana = false;
       var dmTemp = bar2;
+        var estPNJ = getAttrByName(charId, 'type_personnage') == 'PNJ';
+        var estMook =token.get("bar1_link") === '';
+        var nameAttrDMTEMP = 'DMTEMP';
+        if (estPNJ && !estMook) nameAttrDMTEMP = 'pnj_dmtemp';
       if (manaAttr.length > 0) { // Récupération des points de mana
         var manaMax = parseInt(manaAttr[0].get('max'));
         hasMana = !isNaN(manaMax) && manaMax > 0;
         if (hasMana) {
-          dmTemp = attributeAsInt(perso, 'DMTEMP', 0);
+          if (estMook) dmTemp = attributeAsInt(perso, 'DMTEMP', 0);
+          else dmTemp = ficheAttributeAsInt(perso, nameAttrDMTEMP, 0);
           if (reposLong && (isNaN(bar2) || bar2 < manaMax)) {
             updateCurrentBar(token, 2, manaMax, evt);
           }
@@ -9906,7 +9927,7 @@ var COFantasy = COFantasy || function() {
         if (reposLong) dmTemp = 0;
         else dmTemp = Math.max(0, dmTemp - 10);
         if (hasMana) {
-          setTokenAttr(perso, 'DMTEMP', dmTemp, evt);
+          setTokenAttr(perso, nameAttrDMTEMP, dmTemp, evt);
         } else {
           updateCurrentBar(token, 2, dmTemp, evt);
         }
@@ -11956,14 +11977,11 @@ var COFantasy = COFantasy || function() {
         var display = startFramedDisplay(playerId, "État de " + name, perso, {
           chuchote: true
         });
+        var estPNJ = getAttrByName(charId, 'type_personnage') == 'PNJ';
         var line;
-        //inutile d'afficher les PVs, ils sont chuchotés
-        //line =
-        //  "Points de vie    : " + token.get('bar1_value') + " / ";
-        //if (persoEstPNJ(perso)) line += getAttrByName(charId, 'pnj_pv', 'max');
-        //else line += getAttrByName(charId, 'PV', 'max');
-        //addLineToFramedDisplay(display, line);
-        var manaAttr = findObjs({
+        var manaAttr;
+         if (!estPNJ)
+          manaAttr = findObjs({
           _type: 'attribute',
           _characterid: charId,
           name: 'PM'
@@ -11976,14 +11994,20 @@ var COFantasy = COFantasy || function() {
           hasMana = !isNaN(manaMax) && manaMax > 0;
         }
         var dmTemp = parseInt(token.get('bar2_value'));
-        if (hasMana) {
+        if (hasMana) {//ne peut pas être un PNJ
           var mana = dmTemp;
-          if (lie) mana = manaAttr[0].get('current');
+          if (lie) {
+            mana = manaAttr[0].get('current');
+            dmTemp = ficheAttributeAsInt(perso, 'DMTEMP', 0);
+          } else {
+            dmTemp = attributeAsInt(perso, 'DMTEMP', 0);
+          }
           line = "Points de mana   : " + mana + " / " + manaAttr[0].get('max');
           addLineToFramedDisplay(display, line);
-          dmTemp = attributeAsInt(perso, 'DMTEMP', 0);
         } else if (lie) {
-          dmTemp = ficheAttributeAsInt(perso, 'DMTEMP', 0);
+        var nameAttrDMTEMP = 'DMTEMP';
+        if (estPNJ) nameAttrDMTEMP = 'pnj_dmtemp';
+          dmTemp = ficheAttributeAsInt(perso, nameAttrDMTEMP, 0);
         }
         if (!isNaN(dmTemp) && dmTemp > 0) {
           line = "Dommages temporaires : " + dmTemp;
