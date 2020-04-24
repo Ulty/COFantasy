@@ -940,7 +940,7 @@ var COFantasy = COFantasy || function() {
         var hasMana = (ficheAttributeAsInt(perso, 'PM', 0) > 0);
         var dmgTemp;
         var estPNJ = getAttrByName(perso.charId, 'type_personnage') == 'PNJ';
-        var estMook =token.get("bar1_link") === '';
+        var estMook = token.get("bar1_link") === '';
         var nameAttrDMTEMP = 'DMTEMP';
         if (estPNJ && !estMook) nameAttrDMTEMP = 'pnj_dmtemp';
         if (hasMana) {
@@ -8692,7 +8692,7 @@ var COFantasy = COFantasy || function() {
         var hasMana = (ficheAttributeAsInt(target, 'PM', 0) > 0);
         var tempDmg = 0;
         var estPNJ = getAttrByName(charId, 'type_personnage') == 'PNJ';
-        var estMook =token.get("bar1_link") === '';
+        var estMook = token.get("bar1_link") === '';
         var nameAttrDMTEMP = 'DMTEMP';
         if (estPNJ && !estMook) nameAttrDMTEMP = 'pnj_dmtemp';
         if (hasMana) {
@@ -8711,8 +8711,8 @@ var COFantasy = COFantasy || function() {
                     _characterid: charId,
                     name: nameAttrDMTEMP
                   }, {
-      caseInsensitive: true}
-                  );
+                    caseInsensitive: true
+                  });
                 var dmTemp;
                 if (tmpHitAttr.length === 0) {
                   dmTemp =
@@ -9497,8 +9497,8 @@ var COFantasy = COFantasy || function() {
         if (pv > 0 && newPv === 0) {
           sendChar(charId, "s'écroule. Il semble sans vie. La douleur qu'il avait ignorée l'a finalement rattrapé...");
         } else {
-        var nameAttrDMTEMP = 'DMTEMP';
-        if (estPNJ) nameAttrDMTEMP = 'pnj_dmtemp';
+          var nameAttrDMTEMP = 'DMTEMP';
+          if (estPNJ) nameAttrDMTEMP = 'pnj_dmtemp';
           var tempDmg = ficheAttributeAsInt(charId, nameAttrDMTEMP, 0);
           if (pv > tempDmg && newPv <= tempDmg) {
             sendChar(charId, "s'écroule, assomé. La douleur qu'il avait ignorée l'a finalement rattrapé...");
@@ -9908,10 +9908,10 @@ var COFantasy = COFantasy || function() {
       });
       var hasMana = false;
       var dmTemp = bar2;
-        var estPNJ = getAttrByName(charId, 'type_personnage') == 'PNJ';
-        var estMook =token.get("bar1_link") === '';
-        var nameAttrDMTEMP = 'DMTEMP';
-        if (estPNJ && !estMook) nameAttrDMTEMP = 'pnj_dmtemp';
+      var estPNJ = getAttrByName(charId, 'type_personnage') == 'PNJ';
+      var estMook = token.get("bar1_link") === '';
+      var nameAttrDMTEMP = 'DMTEMP';
+      if (estPNJ && !estMook) nameAttrDMTEMP = 'pnj_dmtemp';
       if (manaAttr.length > 0) { // Récupération des points de mana
         var manaMax = parseInt(manaAttr[0].get('max'));
         hasMana = !isNaN(manaMax) && manaMax > 0;
@@ -11980,21 +11980,21 @@ var COFantasy = COFantasy || function() {
         var estPNJ = getAttrByName(charId, 'type_personnage') == 'PNJ';
         var line;
         var manaAttr;
-         if (!estPNJ)
+        if (!estPNJ)
           manaAttr = findObjs({
-          _type: 'attribute',
-          _characterid: charId,
-          name: 'PM'
-        }, {
-          caseInsensitive: true
-        });
+            _type: 'attribute',
+            _characterid: charId,
+            name: 'PM'
+          }, {
+            caseInsensitive: true
+          });
         var hasMana = false;
         if (manaAttr.length > 0) {
           var manaMax = parseInt(manaAttr[0].get('max'));
           hasMana = !isNaN(manaMax) && manaMax > 0;
         }
         var dmTemp = parseInt(token.get('bar2_value'));
-        if (hasMana) {//ne peut pas être un PNJ
+        if (hasMana) { //ne peut pas être un PNJ
           var mana = dmTemp;
           if (lie) {
             mana = manaAttr[0].get('current');
@@ -12005,8 +12005,8 @@ var COFantasy = COFantasy || function() {
           line = "Points de mana   : " + mana + " / " + manaAttr[0].get('max');
           addLineToFramedDisplay(display, line);
         } else if (lie) {
-        var nameAttrDMTEMP = 'DMTEMP';
-        if (estPNJ) nameAttrDMTEMP = 'pnj_dmtemp';
+          var nameAttrDMTEMP = 'DMTEMP';
+          if (estPNJ) nameAttrDMTEMP = 'pnj_dmtemp';
           dmTemp = ficheAttributeAsInt(perso, nameAttrDMTEMP, 0);
         }
         if (!isNaN(dmTemp) && dmTemp > 0) {
@@ -17674,7 +17674,7 @@ var COFantasy = COFantasy || function() {
             sendChar(perso.charId, "pas de dernière action sur laquelle utiliser la rune de protection");
             return;
           }
-          if (lastAct.affectes === undefined || lastAct.type === undefined || !lastAct.types.startsWith('Attaque')) {
+          if (lastAct.affectes === undefined || lastAct.type === undefined || !lastAct.type.startsWith('Attaque')) {
             sendChar(perso.charId, "la dernière action n'est pas une attaque, on ne peut utiliser la rune de protection");
             return;
           }
@@ -22419,27 +22419,25 @@ var COFantasy = COFantasy || function() {
   function initTokenMarkers(token) {
     var charId = token.get('represents');
     if (charId === undefined || charId === '') return; // Si token lié à un perso
-    if (token.get('bar1_link') === '') return;         // Si unique
-// Boucle sur les états de cof_states
+    if (token.get('bar1_link') === '') return; // Si unique
+    var perso = {tokem:token, charId:charId};
+    // Boucle sur les états de cof_states
     Object.keys(cof_states).forEach(function(etat) {
-// Récupère la valeur de l'état sur la fiche
-      var attributeFicheValue = false;
-      if (etat == 'affaibli') {   // Cas particulier affaibli sur la fiche perso
-        var attributeFiche = findObjs({_type: 'attribute', name: 'ETATDE', _characterid: charId}, {caseInsensitive: true})[0];
-        if (attributeFiche !== undefined && attributeFiche.get("current") === 12)  attributeFicheValue = true ;
-      } else {                   // Autre cas
-        var attributeFiche = findObjs({_type: 'attribute', name: etat, _characterid: charId})[0];
-        if (attributeFiche !== undefined && attributeFiche.get("current") === true)  attributeFicheValue = true ;
+      // Récupère la valeur de l'état sur la fiche
+      var attributeFicheValue;
+      if (etat == 'affaibli') { // Cas particulier affaibli sur la fiche perso
+        attributeFicheValue = (ficheAttributeAsInt(perso, 'affaibli', 20) == 12);
+      } else { // Autre cas
+        attributeFicheValue = ficheAttributeAsBool(perso, etat);
       }
-// Récupère la valeur de l'état sur le token
-      var attributeTokenValue = token.get(cof_states[etat]);         
-// En fonction des cas appel token.set avec true ou false
-//      sendChat ("COF", "Etat:"+etat+" Fiche:"+attributeFicheValue+" Token"+attributeTokenValue);
+      // Récupère la valeur de l'état sur le token
+      var attributeTokenValue = token.get(cof_states[etat]);
+      // En fonction des cas appel token.set avec true ou false
       if (attributeFicheValue === true && attributeTokenValue === false) {
         token.set(cof_states[etat], true);
       } else if (attributeFicheValue === false && attributeTokenValue === true) {
         token.set(cof_states[etat], false);
-      }        
+      }
     });
   }
 
@@ -22508,13 +22506,17 @@ var COFantasy = COFantasy || function() {
 
   function initAllMarkers(campaign) {
     var currentMap = getObj("page", campaign.get("playerpageid"));
-    var tokens = findObjs({ _pageid: currentMap.get("_id"), _type: "graphic", _subtype: "token"})
-          .filter((o)=>o.get("bar1_link")!=="");
+    var tokens = findObjs({
+        _pageid: currentMap.get("_id"),
+        _type: "graphic",
+        _subtype: "token"
+      })
+      .filter((o) => o.get("bar1_link") !== "");
     tokens.forEach(function(token) {
       initTokenMarkers(token);
     });
   }
-  
+
   return {
     apiCommand: apiCommand,
     nextTurn: nextTurn,
