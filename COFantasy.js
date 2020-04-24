@@ -22301,11 +22301,40 @@ var COFantasy = COFantasy || function() {
     token.set('name', tokenBaseName + ' ' + numero);
   }
 
+  function initTokenMarkers(token) {
+    var charId = token.get('represents');
+    if (charId === undefined || charId === '') return; // Si token lié à un perso
+    if (token.get('bar1_link') === '') return;         // Si unique
+// Boucle sur les états de cof_states
+    Object.keys(cof_states).forEach(function(etat) {
+// Récupère la valeur de l'état sur la fiche
+      var attributeFicheValue = false;
+      if (etat == 'affaibli') {   // Cas particulier affaibli sur la fiche perso
+        var attributeFiche = findObjs({_type: 'attribute', name: 'ETATDE', _characterid: charId}, {caseInsensitive: true})[0];
+        if (attributeFiche !== undefined && attributeFiche.get("current") === 12)  attributeFicheValue = true ;
+      } else {                   // Autre cas
+        var attributeFiche = findObjs({_type: 'attribute', name: etat, _characterid: charId})[0];
+        if (attributeFiche !== undefined && attributeFiche.get("current") === true)  attributeFicheValue = true ;
+      }
+// Récupère la valeur de l'état sur le token
+      var attributeTokenValue = token.get(cof_states[etat]);         
+// En fonction des cas appel token.set avec true ou false
+//      sendChat ("COF", "Etat:"+etat+" Fiche:"+attributeFicheValue+" Token"+attributeTokenValue);
+      if (attributeFicheValue === true && attributeTokenValue === false) {
+        token.set(cof_states[etat], true);
+      } else if (attributeFicheValue === false && attributeTokenValue === true) {
+        token.set(cof_states[etat], false);
+      }        
+    });
+  }
+
+
   function addToken(token, nb) {
     var tokenName = token.get('name');
     //La plupart du temps, il faut attendre un peu que le nom soit affecté
     if (tokenName !== '') {
       renameToken(token, tokenName);
+      initTokenMarkers(token);
       return;
     }
     nb = nb || 1;
@@ -22363,6 +22392,15 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function initAllMarkers(campaign) {
+    var currentMap = getObj("page", campaign.get("playerpageid"));
+    var tokens = findObjs({ _pageid: currentMap.get("_id"), _type: "graphic", _subtype: "token"})
+          .filter((o)=>o.get("bar1_link")!=="");
+    tokens.forEach(function(token) {
+      initTokenMarkers(token);
+    });
+  }
+  
   return {
     apiCommand: apiCommand,
     nextTurn: nextTurn,
@@ -22371,6 +22409,7 @@ var COFantasy = COFantasy || function() {
     changeHandout: changeHandout,
     addToken: addToken,
     changeMarker: changeMarker,
+    initAllMarkers: initAllMarkers,
     setStateCOF: setStateCOF,
     scriptVersionToCharacter: scriptVersionToCharacter,
   };
@@ -22389,6 +22428,7 @@ on("ready", function() {
   var script_version = "2.02";
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
+  on("change:campaign:playerpageid", COFantasy.initAllMarkers);
   state.COFantasy = state.COFantasy || {
     combat: false,
     tour: 0,
