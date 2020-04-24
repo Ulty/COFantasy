@@ -17674,17 +17674,37 @@ var COFantasy = COFantasy || function() {
             sendChar(perso.charId, "pas de dernière action sur laquelle utiliser la rune de protection");
             return;
           }
-          if (lastAct.affectes === undefined || lastAct.type === undefined || !lastAct.type.startsWith('Attaque')) {
+          if (lastAct.type === undefined || !lastAct.type.startsWith('Attaque')) {
             sendChar(perso.charId, "la dernière action n'est pas une attaque, on ne peut utiliser la rune de protection");
             return;
           }
-          var aff = lastAct.affectes[perso.token.id];
           var currentPV = perso.token.get('bar1_value');
-          if (aff === undefined || aff.prev === undefined ||
-            aff.prev.bar1_value === undefined ||
-            aff.prev.bar1_value <= currentPV) {
-            sendChar(perso.charId, "la dernière action n'a pas diminué les PV de " + perso.token.get('name'));
-            return;
+          var previousPV;
+          var attrPVId = perso.token.get('bar1_link');
+          if (attrPVId === '') {
+
+            var aff;
+            if (lastAct.affectes) aff = lastAct.affectes[perso.token.id];
+            if (aff === undefined || aff.prev === undefined ||
+              aff.prev.bar1_value === undefined ||
+              aff.prev.bar1_value <= currentPV) {
+              sendChar(perso.charId, "la dernière action n'a pas diminué les PV de " + perso.token.get('name'));
+              return;
+            }
+            previousPV = aff.prev.bar1_value;
+          } else {
+            if (lastAct.attributes) {
+              lastAct.attributes.forEach(function(a) {
+                if (a.attribute.id == attrPVId) {
+                  previousPV = parseInt(a.current);
+                  if (isNaN(previousPV)) previousPV = undefined;
+                }
+              });
+            }
+            if (previousPV === undefined) {
+              sendChar(perso.charId, "la dernière action n'a pas diminué les PV de " + perso.token.get('name'));
+              return;
+            }
           }
           sendChar(perso.charId, "utilise sa rune de protection pour ignorer les derniers dommages");
           evt.attributes.push({
@@ -17692,8 +17712,9 @@ var COFantasy = COFantasy || function() {
             current: dispo
           });
           attr.set('current', 0);
-          setToken(perso.token, 'bar1_value', aff.prev.bar1_value, evt);
+          updateCurrentBar(perso.token, 1, previousPV, evt);
           if (getState(perso, 'mort')) setState(perso, 'mort', false, evt);
+          addEvent(evt);
           return;
         }
         sendChar(perso.charId, "a déjà utilisé sa rune de protection durant ce combat");
@@ -22420,7 +22441,10 @@ var COFantasy = COFantasy || function() {
     var charId = token.get('represents');
     if (charId === undefined || charId === '') return; // Si token lié à un perso
     if (token.get('bar1_link') === '') return; // Si unique
-    var perso = {tokem:token, charId:charId};
+    var perso = {
+      tokem: token,
+      charId: charId
+    };
     // Boucle sur les états de cof_states
     Object.keys(cof_states).forEach(function(etat) {
       // Récupère la valeur de l'état sur la fiche
