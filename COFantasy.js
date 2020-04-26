@@ -12130,7 +12130,13 @@ var COFantasy = COFantasy || function() {
         }
         for (var etat in cof_states) {
           if (getState(perso, etat)) {
-            var etext = etat;
+            var markerName = cof_states[etat].substring(7);
+            var markers = tokenMarkers.filter((o) => o.name === markerName);
+            if (markers.length > 0) {
+              var etext = "<img src=" + markers[0].url + "></img> " + etat;
+            } else { // Cas du statut mort ou en cas de non-présence des tokens au catalogue
+              var etext = etat;  
+            }
             if (etext.endsWith('e')) etext = etext.substring(0, etext.length - 1) + 'é';
             etext += eForFemale(charId);
             var saveEtat = boutonSaveState(perso, etat);
@@ -22566,6 +22572,8 @@ on("destroy:handout", function(prev) {
 
 on("ready", function() {
   var script_version = "2.02";
+// Récupération des token Markers attachés à la campagne image, nom, tag, Id 
+  tokenMarkers = JSON.parse(Campaign().get("token_markers"));
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
