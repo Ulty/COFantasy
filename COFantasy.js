@@ -13420,7 +13420,7 @@ var COFantasy = COFantasy || function() {
             log(perso.token.get('name') + " n'a pas d'attribut " + effetC);
             return;
           }
-          finDEffet(attr[0], effetC, attr[0].get('name'), perso.charId, evt, opt);
+          finDEffet(attr[0], effetTempOfAttribute(attr[0]), attr[0].get('name'), perso.charId, evt, opt);
         });
         addEvent(evt);
       }
@@ -17668,7 +17668,9 @@ var COFantasy = COFantasy || function() {
     // Display par personnage
     for (const [forgesortCharId, runesDuForgesort] of Object.entries(forgesorts)) {
       // Init du desplay pour le personnage
-      var displayOpt = {chuchote: true};
+      var displayOpt = {
+        chuchote: true
+      };
       var allPlayers = getPlayerIds({
         charId: forgesortCharId
       });
@@ -22476,7 +22478,7 @@ var COFantasy = COFantasy || function() {
           }, perso, expliquer, saveOpts, evt,
           function(reussite) { //asynchrone
             if (reussite) {
-              finDEffet(attrEffet, effetC, attrName, charId, evt, {
+              finDEffet(attrEffet, effetTempOfAttribute(attrEffet), attrName, charId, evt, {
                 attrSave: attr,
                 pageId: pageId
               });

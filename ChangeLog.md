@@ -1,14 +1,22 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
-## 2.02
+## 2.03
 ### Capacités
 * Meilleure interface des runes du forgesort, avec implementation du rang 4, et  renouvellement automatique des runes selon le choix des forgesorts.
+
+### Autres améliorations
+* Affichage des icones correspondant aux états dans la fonction statut.
+
+### Corrections de bugs
+* Correction d'un buf sur les effets génériques avec saveParTour
+
+## 2.02
+### Capacités
 * Ajout des rangs 4 et 5 de la Voie de la résistance du guerrier.
 * Ajout des rangs 4 et 5 de la Voie de la précisison de l'arquebusier.
 * Amélioration de la prise en charge de la capacité Esquive du voleur.
 * Ajout du rang 2 de la Voie du tueur.
 
 ### Autres améliorations
-* Affichage des icones correspondant aux états dans la fonction statut.
 * Possibilité de changer les états directement depuis le token
 * Ajout de conditions sur un attribut de cible quelconque pour l'attaque
 * Possibilité d'arrêter tous les sons.
