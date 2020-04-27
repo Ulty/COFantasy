@@ -11981,7 +11981,8 @@ var COFantasy = COFantasy || function() {
         });
         var estPNJ = getAttrByName(charId, 'type_personnage') == 'PNJ';
         var line;
-        var manaAttr;
+        var hasMana = false;
+        var manaAttr = [];
         if (!estPNJ)
           manaAttr = findObjs({
             _type: 'attribute',
@@ -11990,7 +11991,6 @@ var COFantasy = COFantasy || function() {
           }, {
             caseInsensitive: true
           });
-        var hasMana = false;
         if (manaAttr.length > 0) {
           var manaMax = parseInt(manaAttr[0].get('max'));
           hasMana = !isNaN(manaMax) && manaMax > 0;
