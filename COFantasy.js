@@ -189,6 +189,10 @@ var COFantasy = COFantasy || function() {
   var stateCOF = state.COFantasy;
 
   function setStateCOF() {
+    var markers = JSON.parse(Campaign().get("token_markers"));
+    markers.forEach(function(m) {
+      tokenMarkers[m.name] = m;
+    });
     stateCOF = state.COFantasy;
     if (stateCOF.options === undefined) stateCOF.options = {};
     copyOptions(stateCOF.options, defaultOptions);
@@ -22870,10 +22874,6 @@ on("destroy:handout", function(prev) {
 on("ready", function() {
   var script_version = "2.03";
   // Récupération des token Markers attachés à la campagne image, nom, tag, Id 
-  var markers = JSON.parse(Campaign().get("token_markers"));
-  markers.forEach(function(m) {
-    COFantasy.tokenMarkers[m.name] = m;
-  });
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
