@@ -17609,7 +17609,7 @@ var COFantasy = COFantasy || function() {
           return;
         }
         var forgesort = {
-          token: tokensForgesort[0].get('_id'),
+          token: tokensForgesort[0],
           charId: foundForgesortId
         };
         // Check du perso voie des Runes
@@ -17641,7 +17641,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       var target = {
-        token: tokensTarget[0].get('_id'),
+        token: tokensTarget[0],
         charId: targetCharId
       };
       // Check de la rune à renouveler
@@ -17669,12 +17669,18 @@ var COFantasy = COFantasy || function() {
     // Display par personnage
     for (const [forgesortCharId, runesDuForgesort] of Object.entries(forgesorts)) {
       // Init du desplay pour le personnage
+      var displayOpt = {chuchote: true};
       var allPlayers = getPlayerIds({
         charId: forgesortCharId
       });
-      if (allPlayers === undefined || allPlayers.length < 1) continue;
+      var playerId;
+      if (allPlayers === undefined || allPlayers.length < 1) {
+        displayOpt.chuchote = 'gm';
+      } else {
+        playerId = allPlayers[0];
+      }
       var forgesort = runesDuForgesort.forgesort;
-      var display = startFramedDisplay(allPlayers[0], "Renouveler les runes", forgesort);
+      var display = startFramedDisplay(allPlayers[0], "Renouveler les runes", forgesort, displayOpt);
       var actionToutRenouveler = "";
       // Boucle par rang de rune
       for (const rang in runesDuForgesort.runesParRang) {
