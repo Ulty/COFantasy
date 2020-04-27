@@ -18,6 +18,7 @@
 /* globals on */
 /* globals toFront */
 /* globals playerIsGM */
+/* globals setTimeout */
 /* globals HealthColors */
 /* globals Roll20AM */
 
@@ -47,6 +48,8 @@ var COFantasy = COFantasy || function() {
   var bs_alert_danger = 'color: #a94442; background-color: #f2dede; border-color: #ebccd1;';
 
   var tokenMarkers = {};
+
+  var flashyInitMarkerScale = 1.7;
 
   var defaultOptions = {
     regles: {
@@ -127,6 +130,11 @@ var COFantasy = COFantasy || function() {
         montre_def: {
           explications: "montre la DEF des adversaires dans les cadres de combat",
           val: true,
+          type: 'bool'
+        },
+        init_dynamique: {
+          explications: "Fait apparître une aura dynamique sur le token qui a l'initiative",
+          val: false,
           type: 'bool'
         },
         fiche: {
@@ -266,7 +274,7 @@ var COFantasy = COFantasy || function() {
             return m.get('name') == 'Escalier';
           });
           if (mesc) {
-            createObj({
+            createObj('macro', {
               name: 'Monter',
               action: "!cof-escalier",
               visibleto: '',
@@ -274,7 +282,7 @@ var COFantasy = COFantasy || function() {
               inBar: false,
               _playerid: mesc.playerid
             });
-            createObj({
+            createObj('macro', {
               name: 'Descendre',
               action: "!cof-escalier bas",
               visibleto: '',
@@ -11389,8 +11397,70 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
-  function setTokenFlagAura(perso) {
+  var roundMarkerSpec = {
+    represents: '',
+    rotation: 0,
+    layer: 'objects',
+    name: 'Init marker',
+    aura1_color: '#ff00ff',
+    aura2_color: '#00ff00',
+    imgsrc: 'https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/thumb.png?1400535580',
+  };
+  var roundMarker;
+  var threadSync = 0;
+
+  function activateRoundMarker(sync, token, evt) {
+    if (!stateCOF.combat) {
+      if (roundMarker) roundMarker.remove();
+      threadSync = 0;
+      return;
+    }
+    if (sync != threadSync) return;
+    if (token) {
+      var pageId = token.get('pageid');
+      if (roundMarker === undefined || pageId != roundMarker.get('pageId')) {
+        if (roundMarker) roundMarker.remove();
+        roundMarkerSpec._pageid = token.get('pageid');
+        roundMarkerSpec.left = token.get('left');
+        roundMarkerSpec.top = token.get('top');
+        roundMarkerSpec.width = token.get('width') * flashyInitMarkerScale;
+        roundMarkerSpec.height = token.get('height') * flashyInitMarkerScale;
+        roundMarker = createObj('graphic', roundMarkerSpec);
+        if (roundMarker === undefined) return false;
+        if (evt.tokens) {
+          evt.tokens.push(roundMarker);
+        } else {
+          evt.tokens = [roundMarker];
+        }
+        toFront(roundMarker);
+        toFront(token);
+        setTimeout(_.bind(activateRoundMarker,undefined,sync), 100);
+      } else {
+        affectToken(roundMarker, 'left', roundMarker.get('left'), evt);
+        affectToken(roundMarker, 'top', roundMarker.get('top'), evt);
+        affectToken(roundMarker, 'width', roundMarker.get('width'), evt);
+        affectToken(roundMarker, 'height', roundMarker.get('height'), evt);
+        roundMarker.set('left', token.get('left'));
+        roundMarker.set('top', token.get('top'));
+        roundMarker.set('width', token.get('width') * flashyInitMarkerScale);
+        roundMarker.set('height', token.get('height') * flashyInitMarkerScale);
+        roundMarker.set('rotation', 0);
+        toFront(token);
+      }
+    } else { //rotation
+      var rotation = roundMarker.get('rotation');
+      roundMarker.set('rotation', (rotation + 1) % 365);
+      setTimeout(_.bind(activateRoundMarker,undefined,sync), 100);
+    }
+  }
+
+  function setTokenFlagAura(perso, evt) {
     var token = perso.token;
+    if (stateCOF.options.affichage.val.init_dynamique.val) {
+      threadSync++;
+      activateRoundMarker(threadSync, token, evt);
+      return;
+    }
     if (aura_token_on_turn) {
       // ennemi => rouge
       var aura2_color = '#CC0000';
@@ -11405,6 +11475,10 @@ var COFantasy = COFantasy || function() {
   }
 
   function removeTokenFlagAura(token) {
+    if (stateCOF.options.affichage.val.init_dynamique.val) {
+      if (roundMarker) roundMarker.remove();
+      return;
+    }
     if (aura_token_on_turn) {
       token.set('aura2_radius', '');
       token.set('showplayers_aura2', false);
@@ -11756,7 +11830,7 @@ var COFantasy = COFantasy || function() {
         affectToken(token, 'aura2_radius', token.get('aura2_radius'), evt);
         affectToken(token, 'aura2_color', token.get('aura2_color'), evt);
         affectToken(token, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
-        setTokenFlagAura(perso);
+        setTokenFlagAura(perso, evt);
         stateCOF.activeTokenId = tokenId;
         stateCOF.activeTokenName = token.get('name');
         turnAction(perso);
@@ -22560,6 +22634,11 @@ var COFantasy = COFantasy || function() {
         token.set('top', prev.top);
         return;
       } else {
+        if (stateCOF.options.affichage.val.init_dynamique.val &&
+          roundMarker && stateCOF.activeTokenId == token.get('_id')) {
+          roundMarker.set('left', x);
+          roundMarker.set('top', y);
+        }
         //On déplace les tokens de lumière, si il y en a
         var attrLumiere = tokenAttribute(perso, 'lumiere');
         attrLumiere.forEach(function(al) {
