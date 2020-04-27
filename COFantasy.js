@@ -5996,9 +5996,16 @@ var COFantasy = COFantasy || function() {
     if (target.dmgCoef) dmgCoef += target.dmgCoef;
     var critCoef = 1;
     if (crit) {
-      if (options.critCoef) critCoef = options.critCoef;
-      if (target.critCoef) critCoef += target.critCoef;
-      dmgCoef += critCoef;
+      if (attributeAsBool(target, 'armureLourdeGuerrier')
+        && attributeAsBool(target, 'DEFARMUREON')
+        && attributeAsInt(target, 'DEFARMURE', 0) >= 8) {
+        expliquer("L'armure lourde de " + target.token.get('name') + " lui permet d'ignorer les dégâts critiques");
+        critCoef = 0;
+      } else {
+        if (options.critCoef) critCoef = options.critCoef;
+        if (target.critCoef) critCoef += target.critCoef;
+        dmgCoef += critCoef;
+      }
     }
     otherDmg = otherDmg || [];
     var dmgDisplay = dmg.display;
