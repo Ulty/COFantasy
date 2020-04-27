@@ -2072,7 +2072,7 @@ var COFantasy = COFantasy || function() {
                 bouton("!cof-bouton-chance " + evt.id, "Chance", perso) +
                 " (reste " + pc + " PC)";
             }
-            if (charAttributeAsBool(perso, 'runeDEnergie') && (caracteristique == 'FOR' || caracteristique == 'CON' || caracteristique == 'DEX')) {
+            if (charAttributeAsBool(perso, 'runeForgesort_énergie') && (caracteristique == 'FOR' || caracteristique == 'CON' || caracteristique == 'DEX')) {
               msgRate += ' ' + bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", perso);
             }
             addLineToFramedDisplay(display, msgRate);
@@ -5192,7 +5192,8 @@ var COFantasy = COFantasy || function() {
         utilisations =
           attributeAsInt(personnage, ressource, options.limiteParCombat);
         if (utilisations === 0) {
-          sendChar(personnage.charId, "ne peut plus faire cette action pour ce combat");
+          var msgToSend = msg || "ne peut plus faire cette action pour ce combat";
+          sendChar(personnage.charId, msg);
           addEvent(evt);
           return true;
         }
@@ -7913,14 +7914,16 @@ var COFantasy = COFantasy || function() {
         if (pc > 0) {
           addLineToFramedDisplay(display, bouton("!cof-bouton-chance " + evt.id, "Chance", evt.personnage) + " (reste " + pc + " PC)");
         }
-        if (attributeAsBool(evt.personnage, 'runeDEnergie')) {
+        if (attributeAsBool(evt.personnage, 'runeForgesort_énergie') &&
+            attributeAsInt(evt.personnage, 'limiteParCombat_runeForgesort_énergie', 1) > 0 ) {
           addLineToFramedDisplay(display, bouton("!cof-rune-energie " + evt.id, "Rune d'énergie", evt.personnage));
         }
         //TODO: pacte sanglant
       } else {
         if (evt.action.attack_label) {
           var attLabel = evt.action.attack_label;
-          if (attributeAsBool(evt.personnage, 'runeDePuissance(' + attLabel + ')')) {
+          if (attributeAsBool(evt.personnage, 'runeForgesort_puissance(' + attLabel + ')') &&
+              attributeAsInt(evt.personnage, 'limiteParCombat_runeForgesort_puissance(' + attLabel + ')', 1) > 0 ) {
             addLineToFramedDisplay(display,
               bouton("!cof-rune-puissance " + attLabel + ' ' + evt.id,
                 "Rune de puissance", evt.personnage));
@@ -7947,6 +7950,12 @@ var COFantasy = COFantasy || function() {
                 addLineToFramedDisplay(display, target.tokName + " peut " +
                   bouton("!cof-esquive-acrobatique " + evt.id,
                     "tenter une esquive acrobatique", target)
+                );
+              }
+              if (attributeAsBool(target, 'runeForgesort_protection') &&
+                  attributeAsInt(target, 'limiteParCombat_runeForgesort_protection', 1) > 0 ) {
+                addLineToFramedDisplay(display, bouton("!cof-rune-protection " + evt.id + " " +target.token.id,
+                        "Rune de protection", target)
                 );
               }
               if (sort) {
@@ -9382,10 +9391,6 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'munition', evt, "récupère ses munitions");
     // Remettre défier la mort à 10
     resetAttr(attrs, 'defierLaMort', evt);
-    // Recharger les runes d'énergie
-    resetAttr(attrs, 'runeDEnergie', evt);
-    resetAttr(attrs, 'runeDeProtection', evt);
-    resetAttr(attrs, 'runeDePuissance', evt);
     // Remettre l'esquive fatale à 1
     resetAttr(attrs, 'esquiveFatale', evt);
     resetAttr(attrs, 'attaqueEnTraitre', evt);
@@ -9812,6 +9817,8 @@ var COFantasy = COFantasy || function() {
     });
     attrs = removeAllAttributes('elixirsACreer', evt, attrs);
     attrs = removeAllAttributes('elixir', evt, attrs);
+    //Les runes
+    attrs = proposerRenouveauRunes(evt, attrs);
     //Les plantes médicinales
     attrs = removeAllAttributes('dose_Plante médicinale', evt, attrs);
     //On pourrait diviser par 2 le nombre de baies
@@ -10343,23 +10350,15 @@ var COFantasy = COFantasy || function() {
   }
 
   function persoUtiliseRuneEnergie(perso, evt) {
-    var attr = tokenAttribute(perso, 'runeDEnergie');
-    if (attr.length === 0) {
+    var attr = tokenAttribute(perso, 'runeForgesort_énergie');
+    if (attr.length <1  || attr[0].get('current') < 1) {
       sendChar(perso.charId, "n'a pas de rune d'énergie");
       return false;
     }
-    attr = attr[0];
-    var dispo = attr.get('current');
-    if (dispo) {
+    if (!limiteRessources(perso, {limiteParCombat: 1}, "runeForgesort_énergie", "a déjà utilisé sa rune d'énergie durant ce combat", evt)) {
       sendChar(perso.charId, "utilise sa rune d'énergie pour relancer un d20 sur un test d'attaque, de FOR, DEX ou CON");
-      evt.attributes.push({
-        attribute: attr,
-        current: dispo
-      });
-      attr.set('current', 0);
       return true;
     }
-    sendChar(perso.charId, "a déjà utilisé sa rune d'énergie durant ce combat");
     return false;
   }
 
@@ -10446,7 +10445,8 @@ var COFantasy = COFantasy || function() {
   }
 
   function persoUtiliseRunePuissance(perso, labelArme, evt) {
-    var attr = tokenAttribute(perso, 'runeDePuissance(' + labelArme + ')');
+    var attrName = "runeForgesort_puissance(" + labelArme + ")";
+    var attr = tokenAttribute(perso, attrName);
     var arme = getAttack(labelArme, perso);
     if (arme === undefined) {
       error(perso.tokNname + " n'a pas d'arme associée au label " + labelArme, perso);
@@ -10456,18 +10456,11 @@ var COFantasy = COFantasy || function() {
       sendChar(perso.charId, "n'a pas de rune de puissance sur " + arme.weaponName);
       return false;
     }
-    attr = attr[0];
-    var dispo = attr.get('current');
-    if (dispo) {
-      sendChar(perso.charId, "utilise sa rune de puissance pour obtenir les DM maximum de son arme (" + arme.weaponName + ")");
-      evt.attributes.push({
-        attribute: attr,
-        current: dispo
-      });
-      attr.set('current', 0);
+
+    if (!limiteRessources(perso, {limiteParCombat: 1}, attrName, "a déjà utilisé sa rune de puissance durant ce combat", evt)) {
+      sendChar(perso.charId, "utilise sa rune de puissance pour obtenir les DM maximum de son arme (");
       return true;
     }
-    sendChar(perso.charId, "a déjà utilisé sa rune de puissance durant ce combat");
     return false;
   }
 
@@ -17310,7 +17303,6 @@ var COFantasy = COFantasy || function() {
         return true;
       });
       if (elixir === undefined) {
-
         error(forgesort.token.get('name') + " est incapable de créer " + cmd[2], cmd);
         return;
       }
@@ -17424,6 +17416,281 @@ var COFantasy = COFantasy || function() {
         sendChat('', endFramedDisplay(display));
       });
     }); //Fin du getSelected
+  }
+
+  function listeRunes(rang) {
+    var liste = [];
+    if (rang < 2) return liste;
+    liste.push({
+      nom: "Rune d'énergie",
+      action: "!cof-rune-energie",
+      attrName: "runeForgesort_énergie",
+      rang: 2
+    });
+    if (rang < 3) return liste;
+    liste.push({
+      nom: "Rune de protection",
+      action: "!cof-rune-protection",
+      attrName: "runeForgesort_protection",
+      rang: 3
+    });
+    if (rang < 4) return liste;
+    liste.push({
+      nom: "Rune de puissance",
+      action: "!cof-rune-puissance",
+      attrName: "runeForgesort_puissance",
+      rang: 4
+    });
+    return liste;
+  }
+
+  function gestionRunes(msg) {
+    getSelected(msg, function(selected, playerId) {
+      var player = getObj('player', playerId);
+      if (player === undefined) {
+        error("Impossible de trouver le joueur", playerId);
+        return;
+      }
+      iterSelected(selected, function(forgesort) {
+        var voieDesRunes = charAttributeAsInt(forgesort, 'voieDesRunes', 0);
+        if (voieDesRunes < 1) {
+          sendChar(forgesort.charId, " ne connaît pas la Voie des Runes.");
+          return;
+        } else if(voieDesRunes < 2) {
+          sendChar(forgesort.charId, " ne peut écrire que des Runes de défense.");
+          return;
+        }
+        var titre = "Création de runes";
+        var display = startFramedDisplay(playerId, titre, forgesort, {
+          chuchote: true
+        });
+        listeRunes(voieDesRunes).forEach(function(rune) {
+          var action = "!cof-creer-rune " + forgesort.token.id + " @{target|token_id} " + rune.rang;
+          if(rune.rang === 4) action += " ?{Numéro de l'arme de la cible?}"
+          var options = bouton(action, rune.nom, forgesort);
+          addLineToFramedDisplay(display, options);
+        });
+        sendChat('', endFramedDisplay(display));
+      });
+    }); //Fin du getSelected
+  }
+
+  //!cof-creer-elixir token_id nom_token elixir
+  function creerRune(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 4) {
+      error("Pas assez d'arguments pour !cof-creer-runes", msg.content);
+      return;
+    }
+    var forgesort = tokenOfId(cmd[1], cmd[1], options.pageId);
+    if (forgesort === undefined) {
+      if (msg.selected && msg.selected.length == 1) {
+        forgesort = tokenOfId(msg.selected[0]._id);
+      }
+      if (forgesort === undefined) {
+        error("Impossible de savoir qui crée la rune", cmd);
+        return;
+      }
+    }
+    var target = tokenOfId(cmd[2], cmd[2], options.pageId);
+    if (target === undefined) {
+      error("Impossible de savoir à qui octroyer la rune", cmd);
+      return;
+    }
+    var voieDesRunes = charAttributeAsInt(forgesort, 'voieDesRunes', 0);
+    if (voieDesRunes < 1) {
+      sendChar(forgesort.charId, " ne connaît pas la Voie des Runes");
+      return;
+    } else if(voieDesRunes < 2) {
+      sendChar(forgesort.charId, " ne peut écrire que des Runes de défense.");
+      return;
+    }
+    var rune = listeRunes(voieDesRunes).find(function(i) {
+      return i.rang == cmd[3];
+    });
+    if (rune === undefined) {
+      error(forgesort.token.get('name') + " est incapable de créer " + cmd[3], cmd);
+      return;
+    }
+    if(rune.rang == 4) {
+      if (cmd.length < 5) {
+        error("La rune de puissance nécessite de choisir un numéro d'arme.")
+        return;
+      }
+      var numeroArme = parseInt(cmd[4]);
+    }
+    var evt = {
+      type: "Création de rune"
+    };
+    if (stateCOF.options.regles.val.mana_totale.val) {
+      switch (rune.rang) {
+        case 2:
+          options.mana = 3;
+          break;
+        case 3:
+          options.mana = 6;
+          break;
+        case 4:
+          options.mana = 10;
+          break;
+      }
+    } else if (rune.rang > 2) {
+      options.mana = rune.rang - 2;
+    }
+
+    var attrName = rune.attrName;
+    if(rune.rang === 4) attrName += "(" + numeroArme + ")";
+    var message = "reçoit ";
+    var typeRune;
+    switch (rune.rang) {
+      case 2:
+        typeRune = "une rune d'énergie";
+        break;
+      case 3:
+        typeRune = "une rune de protection";
+        break;
+      case 4:
+        typeRune = "une rune de puissance sur son arme " + numeroArme;
+        break;
+    }
+    message += typeRune;
+    var attr = tokenAttribute(target, attrName);
+    var action = rune.action;
+    if (attr.length !== 0) {
+      var nb = parseInt(attr[0].get('current'));
+      if (!isNaN(nb) && nb > 0) {
+        error("La cible possède déjà une rune " + typeRune, cmd);
+        return;
+      }
+    }
+    if(options.mana != undefined && limiteRessources(forgesort, options, undefined, "créer "+typeRune, evt)) return;
+    setTokenAttr(target, attrName, 1, evt, message, forgesort.charId);
+    addEvent(evt);
+  }
+
+  function proposerRenouveauRunes(evt, attrs) {
+    var attrsNamed = allAttributesNamed(attrs, 'runeForgesort');
+    if(attrsNamed.length === 0) return attrs;
+
+    // Filtrer par Forgesort, dans l'éventualité qu'il y en ait plusieurs actifs
+    var forgesorts = {};
+
+    for(const i in attrsNamed) {
+      var attr = attrsNamed[i];
+      // Check de l'existence d'un créateur
+      var foundForgesortId = attr.get('max');
+      if (foundForgesortId === undefined) {
+        error("Impossible de retrouver le créateur de la rune : " + attr);
+        continue;
+      }
+
+      // Check de l'existence d'un token présent pour le créateur
+      var tokensForgesort =
+          findObjs({
+            _pageid: Campaign().get("playerpageid"),
+            _type: 'graphic',
+            _subtype: 'token',
+            represents: foundForgesortId
+          });
+      if (tokensForgesort.length < 1) {
+        error("Impossible de trouver le token du forgesort " + foundForgesortId + " sur la carte");
+        continue;
+      }
+      var tokenForgesort = tokenOfId(tokensForgesort[0].get('_id'));
+
+      // Check du perso voie des Runes
+      var voieDesRunes = charAttributeAsInt(tokenForgesort, 'voieDesRunes', 0);
+      if (voieDesRunes < 1) {
+        error(forgesortCharId, " ne connaît pas la Voie des Runes");
+        continue;
+      } else if(voieDesRunes < 2) {
+        sendChar(forgesortCharId, " ne peut écrire que des Runes de défense.");
+        continue;
+      }
+
+      // Check de la présence d'un token pour la cible
+      var targetCharId = attr.get('characterid');
+      var tokensTarget =
+          findObjs({
+            _pageid: Campaign().get("playerpageid"),
+            _type: 'graphic',
+            _subtype: 'token',
+            represents: targetCharId
+          });
+      if (tokensTarget.length < 1) {
+        error("Impossible de trouver le token de la cible " + targetCharId + " sur la carte");
+        continue;
+      }
+      var tokenTarget = tokenOfId(tokensTarget[0].get('_id'));
+
+      // Check de la rune à renouveler
+      var runeName = attr.get('name');
+      var typeRune = listeRunes(voieDesRunes).find(function(i) {
+        return i.attrName == runeName.split("(")[0];
+      });
+      if(typeRune === undefined) {
+        error("Impossible de trouver la rune à renouveler");
+        continue;
+      }
+
+      // Tout est ok, création de l'item
+      var runeARenouveler = {
+        forgesortCharId: foundForgesortId,
+        tokenForgesort: tokenForgesort,
+        targetCharId: targetCharId,
+        tokenTarget: tokenTarget,
+        typeRune: typeRune,
+        runeName: runeName
+      };
+
+      var runesParForgesort = forgesorts[foundForgesortId] || [];
+      var runesParForgesortParRang = runesParForgesort[typeRune.rang] || [];
+
+      runesParForgesortParRang.push(runeARenouveler);
+      runesParForgesort[typeRune.rang] = runesParForgesortParRang;
+      forgesorts[foundForgesortId] = runesParForgesort;
+    }
+
+    // Display par personnage
+    for(const [forgesortCharId, runesParRang] of Object.entries(forgesorts)) {
+      // Init du desplay pour le personnage
+      var allPlayers = getPlayerIds({charId: forgesortCharId});
+      if (allPlayers === undefined || allPlayers.length < 1) continue;
+      var display = startFramedDisplay(allPlayers[0], "Renouveler les runes", tokenForgesort);
+
+      var actionToutRenouveler = "";
+      // Boucle par rang de rune
+      for(const rang in runesParRang) {
+        var runesDeRang = runesParRang[rang];
+        if(runesDeRang == null || runesDeRang.length < 1) continue;
+
+        addLineToFramedDisplay(display, runesDeRang[0].typeRune.nom, undefined, true);
+
+        var actionTout = "";
+        var ligneBoutons = "";
+        // Boucle par rune de ce rang à renouveler
+        for(const i in runesDeRang) {
+          var rune = runesDeRang[i];
+
+          var action = "!cof-creer-rune " + rune['tokenForgesort']['token'].get('_id') + " " + rune['tokenTarget']['token'].get('_id') + " " + rang;
+          if(rang == 4) {
+            var runeName = rune['runeName'];
+            action += " " + runeName.substring(runeName.indexOf("(")+1, runeName.indexOf(")"));
+          }
+          actionTout += action + "\n";
+          actionToutRenouveler += action + "\n";
+          ligneBoutons += bouton(action, rune['tokenTarget']['token'].get('name'), rune['tokenForgesort'], undefined, false);
+        }
+        ligneBoutons += bouton(actionTout, "Tout", tokenForgesort, undefined, undefined, "background-color: blue;");
+        addLineToFramedDisplay(display, ligneBoutons, undefined, true);
+      }
+      var boutonTourRenouveler = bouton(actionToutRenouveler, "Tout renouveler", tokenForgesort, undefined, undefined, "background-color: green;")
+      addLineToFramedDisplay(display, boutonTourRenouveler, undefined, true);
+      sendChar(forgesortCharId, endFramedDisplay(display));
+    }
+    return removeAllAttributes("runeForgesort", evt, attrs);
   }
 
   function rageDuBerserk(msg) {
@@ -17656,76 +17923,89 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  function persoUtiliseRuneProtection(perso, evt) {
+    var attr = tokenAttribute(perso, 'runeForgesort_protection');
+    if (attr.length <1  || attr[0].get('current') < 1) {
+      sendChar(perso.charId, "n'a pas de rune de protection");
+      return false;
+    }
+    if (!limiteRessources(perso, {limiteParCombat: 1}, "runeForgesort_protection", "a déjà utilisé sa rune de protection durant ce combat", evt)) {
+      sendChar(perso.charId, "utilise sa rune de protection pour ignorer les derniers dommages");
+      return true;
+    }
+    return false;
+  }
+
   function runeProtection(msg) {
     if (!stateCOF.combat) {
       sendPlayer(msg, "On ne peut utiliser les runes de protection qu'en combat");
       return;
     }
-    getSelected(msg, function(selected) {
-      iterSelected(selected, function(perso) {
-        var evt = {
-          type: "Rune de protection",
-          attributes: []
-        };
-        var attr = tokenAttribute(perso, 'runeDeProtection');
-        if (attr.length === 0) {
-          sendChar(perso.charId, "n'a pas de rune de protection");
-          return;
-        }
-        attr = attr[0];
-        var dispo = attr.get('current');
-        if (dispo) {
-          var lastAct = lastEvent();
-          if (lastAct === undefined) {
-            sendChar(perso.charId, "pas de dernière action sur laquelle utiliser la rune de protection");
-            return;
-          }
-          if (lastAct.type === undefined || !lastAct.type.startsWith('Attaque')) {
-            sendChar(perso.charId, "la dernière action n'est pas une attaque, on ne peut utiliser la rune de protection");
-            return;
-          }
-          var currentPV = perso.token.get('bar1_value');
-          var previousPV;
-          var attrPVId = perso.token.get('bar1_link');
-          if (attrPVId === '') {
+    var cmd = msg.content.split(' ');
+    var evtARefaire;
+    var evt = {
+      type: "Rune de protection",
+      attributes: []
+    };
+    if (cmd.length > 2) { // Bouton Rune de protection
+      evtARefaire = findEvent(cmd[1]);
+      var perso = tokenOfId(cmd[2]);
 
-            var aff;
-            if (lastAct.affectes) aff = lastAct.affectes[perso.token.id];
-            if (aff === undefined || aff.prev === undefined ||
-              aff.prev.bar1_value === undefined ||
-              aff.prev.bar1_value <= currentPV) {
-              sendChar(perso.charId, "la dernière action n'a pas diminué les PV de " + perso.token.get('name'));
-              return;
-            }
-            previousPV = aff.prev.bar1_value;
-          } else {
-            if (lastAct.attributes) {
-              lastAct.attributes.forEach(function(a) {
-                if (a.attribute.id == attrPVId) {
-                  previousPV = parseInt(a.current);
-                  if (isNaN(previousPV)) previousPV = undefined;
-                }
-              });
-            }
-            if (previousPV === undefined) {
-              sendChar(perso.charId, "la dernière action n'a pas diminué les PV de " + perso.token.get('name'));
-              return;
-            }
-          }
-          sendChar(perso.charId, "utilise sa rune de protection pour ignorer les derniers dommages");
-          evt.attributes.push({
-            attribute: attr,
-            current: dispo
-          });
-          attr.set('current', 0);
-          updateCurrentBar(perso.token, 1, previousPV, evt);
-          if (getState(perso, 'mort')) setState(perso, 'mort', false, evt);
-          addEvent(evt);
+      if (evtARefaire === undefined) {
+        error("L'action est trop ancienne ou a été annulée", cmd);
+        return;
+      }
+      if (perso === undefined) {
+        error("Erreur interne du bouton de rune de protection : l'évenement n'a pas de personnage", evtARefaire);
+        return;
+      }
+      if (!peutController(msg, perso)) {
+        sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+        return;
+      }
+      var currentPV = perso.token.get('bar1_value');
+      var previousPV;
+      var attrPVId = perso.token.get('bar1_link');
+      if (attrPVId === '') {
+        var aff;
+        if (lastAct.affectes) aff = evtARefaire.affectes[perso.token.id];
+        if (aff === undefined || aff.prev === undefined ||
+          aff.prev.bar1_value === undefined ||
+          aff.prev.bar1_value <= currentPV) {
+          sendChar(perso.charId, "la dernière action n'a pas diminué les PV de " + perso.token.get('name'));
           return;
         }
-        sendChar(perso.charId, "a déjà utilisé sa rune de protection durant ce combat");
-      });
-    });
+        previousPV = aff.prev.bar1_value;
+      } else {
+        if (evtARefaire.attributes) {
+          evtARefaire.attributes.forEach(function(a) {
+            if (a.attribute.id == attrPVId) {
+              previousPV = parseInt(a.current);
+              if (isNaN(previousPV)) previousPV = undefined;
+            }
+          });
+        }
+        if (previousPV === undefined) {
+          sendChar(perso.charId, "la dernière action n'a pas diminué les PV de " + perso.token.get('name'));
+          return;
+        }
+      }
+      if (!persoUtiliseRuneProtection(perso, evt)) return;
+      addEvent(evt);
+      updateCurrentBar(perso.token, 1, previousPV, evt);
+      if (getState(perso, 'mort')) setState(perso, 'mort', false, evt);
+    } else { //Juste pour vérifier l'attribut et le diminuer
+      getSelected(msg, function(selection) {
+        if (selection.length === 0) {
+          sendPlayer(msg, 'Pas de token sélectionné pour !cof-rune-protection');
+          return;
+        }
+        iterSelected(selection, function(perso) {
+          persoUtiliseRuneProtection(perso, evt);
+        }); //fin iterSelected
+        addEvent(evt);
+      }); //fin getSelected
+    }
   }
 
   //!cof-delivrance @{selected|token_id} @{target|token_id}
@@ -19825,7 +20105,7 @@ var COFantasy = COFantasy || function() {
                   bouton("!cof-bouton-chance " + evt.id, "Chance", perso) +
                   " (reste " + pc + " PC)";
               }
-              if (charAttributeAsBool(perso, 'runeDEnergie')) {
+              if (charAttributeAsBool(perso, 'runeForgesort_énergie')) {
                 msgRate += ' ' + bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", perso);
               }
               addLineToFramedDisplay(display, msgRate);
@@ -19892,7 +20172,7 @@ var COFantasy = COFantasy || function() {
                 bouton("!cof-bouton-chance " + evt.id, "Chance", perso) +
                 " (reste " + pc + " PC)";
             }
-            if (charAttributeAsBool(perso, 'runeDEnergie')) {
+            if (charAttributeAsBool(perso, 'runeForgesort_énergie')) {
               msgRate += ' ' + bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", perso);
             }
             addLineToFramedDisplay(display, msgRate);
@@ -20404,6 +20684,12 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-elixirs":
         gestionElixir(msg);
+        return;
+      case "!cof-runes":
+        gestionRunes(msg);
+        return;
+      case "!cof-creer-rune": // usage interne seulement
+        creerRune(msg);
         return;
       case "!cof-rage-du-berserk":
         rageDuBerserk(msg);
@@ -22571,7 +22857,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = "2.02";
+  var script_version = "2.03";
 // Récupération des token Markers attachés à la campagne image, nom, tag, Id 
   tokenMarkers = JSON.parse(Campaign().get("token_markers"));
   on('add:token', COFantasy.addToken);
@@ -22709,6 +22995,20 @@ on("ready", function() {
       if (attrName == 'mort-vivant') attr.set('name', 'mortVivant');
     });
     log("Mise à jour effectuée.");
+  }
+  if (state.COFantasy.version < 2.03) {
+    attrs = findObjs({
+      _type: 'attribute',
+    });
+    attrs.forEach(function(attr) {
+      var attrName = attr.get('name');
+      if (attrName == 'runeDEnergie') attr.set('name', 'runeForgesort_énergie');
+      if (attrName == 'runeDeProtection') attr.set('name', 'runeForgesort_protection');
+      if (attrName.includes('runeDePuissance')) {
+        attr.set('name', 'runeForgesort_puissance(' + attrName.substring(attrName.indexOf("(")+1, attrName.indexOf(")")) +')');
+      }
+    });
+    log("Mise à jour des runes effectuée.");
   }
   state.COFantasy.version = script_version;
   if (state.COFantasy.options.affichage.val.fiche.val) {
