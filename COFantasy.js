@@ -17655,7 +17655,6 @@ var COFantasy = COFantasy || function() {
       }
       // Tout est ok, création de l'item
       var runeARenouveler = {
-        targetCharId: targetCharId,
         target: target,
         typeRune: typeRune,
         runeName: runeName
@@ -17692,14 +17691,14 @@ var COFantasy = COFantasy || function() {
         // Boucle par rune de ce rang à renouveler
         for (const i in runesDeRang) {
           var rune = runesDeRang[i];
-          var action = "!cof-creer-rune " + rune.forgesort.token.get('_id') + " " + rune.target.token.get('_id') + " " + rang;
+          var action = "!cof-creer-rune " + forgesort.token.get('_id') + " " + rune.target.token.get('_id') + " " + rang;
           if (rang == 4) {
             var runeName = rune.runeName;
             action += " " + runeName.substring(runeName.indexOf("(") + 1, runeName.indexOf(")"));
           }
           actionTout += action + "\n";
           actionToutRenouveler += action + "\n";
-          ligneBoutons += bouton(action, rune.target.token.get('name'), rune.forgesort, undefined, false);
+          ligneBoutons += bouton(action, rune.target.token.get('name'), forgesort, undefined, false);
         }
         ligneBoutons += bouton(actionTout, "Tout", forgesort, undefined, undefined, "background-color: blue;");
         addLineToFramedDisplay(display, ligneBoutons, undefined, true);
