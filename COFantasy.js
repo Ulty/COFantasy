@@ -14972,10 +14972,17 @@ var COFantasy = COFantasy || function() {
             sendChar(charId, maxMsg + ". " + Sujet + " est déjà au maximum de PV");
           }
         };
+        var img = options.image;
+        var extraImg = '';
+        if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
+          extraImg = '<span style="padding: 4px 0;" >  ';
+          extraImg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+          extraImg += '</span>';
+        }
         var printTrue = function(s) {
           if (display) {
             addLineToFramedDisplay(display,
-              "<b>" + nomCible + "</b> : + " + s + " PV");
+              "<b>" + nomCible + "</b> : + " + s + " PV" + extraImg);
           } else {
             var msgSoin;
             if (!soigneur || token2.id == soigneur.token.id) {
@@ -14989,6 +14996,7 @@ var COFantasy = COFantasy || function() {
             if (s < soins)
               msgSoin += s + " PV. (Le résultat du jet était " + soinTxt + ")";
             else msgSoin += soinTxt + " PV.";
+            msgSoin += extraImg;
             sendChar(charId, msgSoin);
           }
         };

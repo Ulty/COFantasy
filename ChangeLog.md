@@ -5,7 +5,7 @@
 * Meilleure interface des runes du forgesort, avec implementation du rang 4, et  renouvellement automatique des runes selon le choix des forgesorts.
 
 ### Autres améliorations
-* Ajout d'une option --image pour !cof-effet-temp
+* Ajout d'une option --image pour !cof-effet-temp et !cof-soins
 * Nouvelle façon de souligner le personnage dont c'est le tour. Pour revenir à l'ancien système, utiliser !cof-options.
 * Affichage des icones correspondant aux états dans la fonction statut.
 
