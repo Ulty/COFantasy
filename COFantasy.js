@@ -3734,8 +3734,8 @@ var COFantasy = COFantasy || function() {
             return;
           }
           var imgCmd = cmd[0].replace('-a', 'A').replace('-e', 'E').replace('-c', 'C').replace('-n', 'N').replace('-s', 'S').replace('-t', 'T');
-          if (imgCmd == 'imgAttackNormalTouch') soundCmd = 'imgAttackSucces';
-          if (imgCmd == 'imgAttackChampionSucces') soundCmd = 'imgAttackSuccesChampion';
+          if (imgCmd == 'imgAttackNormalTouch') imgCmd = 'imgAttackSucces';
+          if (imgCmd == 'imgAttackChampionSucces') imgCmd = 'imgAttackSuccesChampion';
           options[imgCmd] = cmd[1];
           return;
         case 'sound-attack-echec-critique':
@@ -11119,9 +11119,6 @@ var COFantasy = COFantasy || function() {
         case "fx":
           getFx(cmd, 'fx', options);
           return;
-        case 'message':
-          if (arg.length > 8) options.message = arg.substring(8);
-          return;
         case "targetFx":
           getFx(cmd, 'targetFx', options);
           break;
@@ -11149,9 +11146,16 @@ var COFantasy = COFantasy || function() {
           options.messages = options.messages || [];
           options.messages.push(cmd.slice(1).join(' '));
           return;
+        case 'image':
+          if (cmd.length < 2) {
+            error("Il manque le nom de l'imageaprès --image", cmd);
+            return;
+          }
+          options.image = cmd[1];
+          return;
         case 'son':
           if (cmd.length < 2) {
-            error("Il manque le message après --son", cmd);
+            error("Il manque le nom du son après --son", cmd);
             return;
           }
           options.son = cmd.slice(1).join(' ');
@@ -12899,9 +12903,11 @@ var COFantasy = COFantasy || function() {
       if (lanceur === undefined && selected.length == 1)
         lanceur = tokenOfId(selected[0]._id);
       if (limiteRessources(lanceur, options, etat, etat, evt)) return;
-      if (options.message) {
-        if (lanceur) sendChar(lanceur.charId, options.message);
-        else sendChat('', options.message);
+      if (options.messages) {
+        options.messages.forEach(function(m) {
+          if (lanceur) sendChar(lanceur.charId, m);
+          else sendChat('', m);
+        });
       }
       iterSelected(selected, function(perso) {
         setState(perso, etat, valeur, evt);
@@ -13452,9 +13458,15 @@ var COFantasy = COFantasy || function() {
             affectToken(perso.token, 'statusmarkers', perso.token.get('statusmarkers'), evt);
             perso.token.set('status_' + mEffet.statusMarker, true);
           }
-          setTokenAttr(
-            perso, effetC, d, evt, mEffet.activation,
-            getInit());
+          var actMsg = mEffet.activation;
+          var img = options.image;
+          if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
+            var newLineimg = '<span style="padding: 4px 0;" >  ';
+            newLineimg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+            newLineimg += '</span>';
+            actMsg += newLineimg;
+          }
+          setTokenAttr(perso, effetC, d, evt, actMsg, getInit());
           if (options.saveParTour) {
             setTokenAttr(perso, effetC + "SaveParTour",
               options.saveParTour.carac, evt, undefined, options.saveParTour.seuil);
