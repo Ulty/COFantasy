@@ -1,9 +1,11 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.03
 ### Capacités
+* Rang 4 de la voie du bouclier du guerrier
 * Meilleure interface des runes du forgesort, avec implementation du rang 4, et  renouvellement automatique des runes selon le choix des forgesorts.
 
 ### Autres améliorations
+* Nouvelle façon de souligner le personnage dont c'est le tour. Pour revenir à l'ancien système, utiliser !cof-options.
 * Affichage des icones correspondant aux états dans la fonction statut.
 
 ### Corrections de bugs

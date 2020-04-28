@@ -163,25 +163,24 @@
                   <p>Les tokens sélectionnés sont ajouté au tracker de tour. Si celui-ci n'existe pas, un nouveau est créé, avec compteur de tour à 1, et on rentre en combat.</p>
                   <p>Une option du script (ajustable en utilisant <code>!cof-options</code>) permet d'utiliser la règle de l'initiative variable (ajout d'un d6 à l'initiative). </p>
                   <p>Les règles de tri suivent ce qui est donné p 70 : priorité aux PJs. Pour l'instant, on distingue un PJ d'un PNJ au dé de vie : si le personnage d'a pas de dé de vie, c'est un PNJ. Ensuite, entre PJs, priorité à la plus haute sagesse. Pour les PNJ, c'est aléatoire.</p>
-                  <p>À chaque instant, le token dont c'est le tour d'agir est signalé par un drapeau noir.</p>
+                  <p>À chaque instant, le token dont c'est le tour d'agir est signalé par une aura qui bouge lentement.</p>
+                  <p>Il est possible de laisser les joueurs passer leur tour, en utilisant la commande <code>!cof-tour-suivant</code>. Une utilisation possible est de le mettre en macro dans les actions du tour (voir <code>#Actions#</code> ci-dessous).</p>
                   <div class="alert alert-primary">
-                    <h3>Astuces :</h3>
+                    <h5>Astuces :</h5>
                     <ul>
                       <li><p><code>!cof-attendre ?{Nouvelle initiative}</code> : Permet d'attendre avant d'agir en réduisant temporairement son initiative.</p></li>
-                      <li>
-                        <code>!cof-init --aura</code> : Remplace le drapeau noir par une aura autour du Token de couleur verte (ou rouge si le personnage n'est pas contrôlé par un joueur ou dans une <a href="#exemple_equipe">équipe</a> contenant un personnage contrôlé par un joueur).</p>
-                        <p><img class="img-fluid" src="https://i.imgur.com/kfqD2Lw.gif" data-href="https://i.imgur.com/kfqD2Lw.gif"></p>
-                        <figcaption>Exemple du Turn Order avec Aura</figcaption>
+                      <li> Il est possible de se passer de l'aura qui bouge, et d'utiliser à la place une icône de drapeau ou avec la syntaxe
+                        <code>!cof-init --aura</code> une aura autour du Token de couleur verte (ou rouge si le personnage n'est pas contrôlé par un joueur ou dans une <a href="#exemple_equipe">équipe</a> contenant un personnage contrôlé par un joueur). Pour cela, désactiver l'initiative dynamique dans les options d'affichage (<code>!cof-options affichage</code>).
                       </li>
-                      <li>
-                        <p>Si une "Abilities" dont le nom est <code>#Actions#</code> existe pour le personnage dont c'est le tour, celle-ci sera prise en compte et le joueur qui controle le personnage recevra un chuchottement qui contiendra l'ensemble des %Ability et #Macro cliquables de <code>#Actions#</code>. Par défaut, cela contient toujours une action pour attendre et une pour se défendre. Pour voir ce message en dehors du changement d'initiative, ou pour le MJ, on peut utiliser <code>!cof-liste-actions</code> en sélectionnant le token (un bon candidat pour une macro de type token action, d'ailleurs généré par la commande <code>!cof-set-macros</code>). Il est possible de commenter temporairement une ligne de cette liste, en ajoutant // au début de celle-ci. Par défaut, si aucune ability <code>#Actions#</code> n'existe, la liste des abilities du personnage sera affichée.</p>
-                        <p><img class="img-fluid" src="https://i.imgur.com/tTfFoPW.png" data-href="https://i.imgur.com/tTfFoPW.png"></p>
-                        <figcaption>Exemple d'une macro #Actions# (ou #TurnAction#)</figcaption>
                       </li>
                     </ul>
                   </div>
+
+                  <h4>Liste d'actions pour le personnage dont c'est le tour</h4>
+                        <p>Si une "Abilities" dont le nom est <code>#Actions#</code> existe pour le personnage dont c'est le tour, celle-ci sera prise en compte et le joueur qui controle le personnage recevra un chuchottement qui contiendra l'ensemble des %Ability et #Macro cliquables de <code>#Actions#</code>. Par défaut, cela contient toujours une action pour attendre et une pour se défendre. Pour voir ce message en dehors du changement d'initiative, ou pour le MJ, on peut utiliser <code>!cof-liste-actions</code> en sélectionnant le token (un bon candidat pour une macro de type token action, d'ailleurs généré par la commande <code>!cof-set-macros</code>). Il est possible de commenter temporairement une ligne de cette liste, en ajoutant // au début de celle-ci. Par défaut, si aucune ability <code>#Actions#</code> n'existe, la liste des abilities du personnage sera affichée.</p>
+                        <p><img class="img-fluid" src="https://i.imgur.com/tTfFoPW.png" data-href="https://i.imgur.com/tTfFoPW.png"></p>
+                        <figcaption>Exemple d'une macro #Actions# (ou #TurnAction#)</figcaption>
                   <p>Il est possible d'ouvrir d'autre listes d'actions, à partir des commandes ou même d'une liste d'actions. Une liste d'action doit être stoquée dans une ability dont le nom commence et termine par <code>#</code>. Pour y faire référence dans une liste, il suffit d'écrire le nom de l'ability (commençant donc par <code>%</code>). Pour faire afficher la liste depuis une commande, utiliser <code>!cof-liste-actions <i>nom</i></code> (où le nom est celui de l'ability sans les <code>#</code>). Par exemple, si on ne souhaite pas afficher la liste complète des sorts d'un personnage à son tour, on peut faire une ability <code>#Sorts#</code>, puis faire une macro qui lance <code>!cof-liste-actions Sorts</code> pour que le joueur puisse afficher la liste quand il le souhaite, et aussi (ou à la place) mettre une ligne <code>%#Sorts#</code> dans son ability <code>#Actions#</code>.</p>
-                  <p>Il est possible de laisser les joueurs passer leur tour, en utilisant la commande <code>!cof-tour-suivant</code>. Une utilisation possible est de le mettre en macro dans les actions du tour (voir <code>#Actions#</code> ci-dessus).</p>
                 </div>
               </div>
               <h4 class="text-secondary">Attaquer une (ou plusieurs) cible : <code>!cof-attack @{selected|token_id} @{target|token_id} <i>n</i></code></h4>

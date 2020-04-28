@@ -134,7 +134,7 @@ var COFantasy = COFantasy || function() {
         },
         init_dynamique: {
           explications: "Fait apparître une aura dynamique sur le token qui a l'initiative",
-          val: false,
+          val: true,
           type: 'bool'
         },
         fiche: {
@@ -202,6 +202,25 @@ var COFantasy = COFantasy || function() {
       tokenMarkers[m.name] = m;
     });
     stateCOF = state.COFantasy;
+    if (stateCOF.roundMarkerId) {
+      roundMarker = getObj('graphic', stateCOF.roundMarkerId);
+      if (roundMarker === undefined) {
+        log("Le marqueur d'init a changé d'id");
+        roundMarker = findObjs({
+          _type: 'graphic',
+          represents: '',
+          layer: 'objects',
+          name: 'Init marker',
+        });
+        if (roundMarker.length > 0) {
+          roundMarker = roundMarker[0];
+          stateCOF.roundMarkerId = roundMarker.id;
+        } else {
+          roundMarker = undefined;
+          stateCOF.roundMarkerId = undefined;
+        }
+      }
+    }
     if (stateCOF.options === undefined) stateCOF.options = {};
     copyOptions(stateCOF.options, defaultOptions);
     if (stateCOF.options.macros_à_jour.val) {
@@ -1386,7 +1405,14 @@ var COFantasy = COFantasy || function() {
     if (_.has(evt, 'combat_pageid')) stateCOF.combat_pageid = evt.combat_pageid;
     if (_.has(evt, 'tour')) stateCOF.tour = evt.tour;
     if (_.has(evt, 'init')) stateCOF.init = evt.init;
-    if (_.has(evt, 'activeTokenId')) stateCOF.activeTokenId = evt.activeTokenId;
+    if (_.has(evt, 'activeTokenId')) {
+      stateCOF.activeTokenId = evt.activeTokenId;
+      var activeToken = getObj('graphic', evt.activeTokenId);
+      if (activeToken) {
+        threadSync++;
+        activateRoundMarker(threadSync, activeToken);
+      }
+    }
     if (_.has(evt, 'updateNextInitSet'))
       updateNextInitSet = evt.updateNextInitSet;
     if (_.has(evt, 'turnorder'))
@@ -6004,9 +6030,9 @@ var COFantasy = COFantasy || function() {
     if (target.dmgCoef) dmgCoef += target.dmgCoef;
     var critCoef = 1;
     if (crit) {
-      if (attributeAsBool(target, 'armureLourdeGuerrier')
-        && attributeAsBool(target, 'DEFARMUREON')
-        && attributeAsInt(target, 'DEFARMURE', 0) >= 8) {
+      if (attributeAsBool(target, 'armureLourdeGuerrier') &&
+        attributeAsBool(target, 'DEFARMUREON') &&
+        attributeAsInt(target, 'DEFARMURE', 0) >= 8) {
         expliquer("L'armure lourde de " + target.token.get('name') + " lui permet d'ignorer les dégâts critiques");
         critCoef = 0;
       } else {
@@ -9179,6 +9205,7 @@ var COFantasy = COFantasy || function() {
     var liste_obstacles = [];
     allToks.forEach(function(obj) {
       if (obj.id == tok1.id || obj.id == tok2.id) return;
+      if (roundMarker && obj.id == roundMarker.id) return;
       var objCharId = obj.get('represents');
       var perso = {
         token: obj,
@@ -11404,6 +11431,8 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  var roundMarker;
+
   var roundMarkerSpec = {
     represents: '',
     rotation: 0,
@@ -11413,59 +11442,46 @@ var COFantasy = COFantasy || function() {
     aura2_color: '#00ff00',
     imgsrc: 'https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/thumb.png?1400535580',
   };
-  var roundMarker;
   var threadSync = 0;
 
-  function activateRoundMarker(sync, token, evt) {
+  function activateRoundMarker(sync, token) {
     if (!stateCOF.combat) {
-      if (roundMarker) roundMarker.remove();
+      if (roundMarker) {
+        roundMarker.remove();
+        roundMarker = undefined;
+        stateCOF.roundMarkerId = undefined;
+      }
       threadSync = 0;
       return;
     }
     if (sync != threadSync) return;
     if (token) {
-      var pageId = token.get('pageid');
-      if (roundMarker === undefined || pageId != roundMarker.get('pageId')) {
-        if (roundMarker) roundMarker.remove();
-        roundMarkerSpec._pageid = token.get('pageid');
-        roundMarkerSpec.left = token.get('left');
-        roundMarkerSpec.top = token.get('top');
-        roundMarkerSpec.width = token.get('width') * flashyInitMarkerScale;
-        roundMarkerSpec.height = token.get('height') * flashyInitMarkerScale;
-        roundMarker = createObj('graphic', roundMarkerSpec);
-        if (roundMarker === undefined) return false;
-        if (evt.tokens) {
-          evt.tokens.push(roundMarker);
-        } else {
-          evt.tokens = [roundMarker];
-        }
-        toFront(roundMarker);
-        toFront(token);
-        setTimeout(_.bind(activateRoundMarker,undefined,sync), 100);
-      } else {
-        affectToken(roundMarker, 'left', roundMarker.get('left'), evt);
-        affectToken(roundMarker, 'top', roundMarker.get('top'), evt);
-        affectToken(roundMarker, 'width', roundMarker.get('width'), evt);
-        affectToken(roundMarker, 'height', roundMarker.get('height'), evt);
-        roundMarker.set('left', token.get('left'));
-        roundMarker.set('top', token.get('top'));
-        roundMarker.set('width', token.get('width') * flashyInitMarkerScale);
-        roundMarker.set('height', token.get('height') * flashyInitMarkerScale);
-        roundMarker.set('rotation', 0);
-        toFront(token);
+      if (roundMarker) roundMarker.remove();
+      roundMarkerSpec._pageid = token.get('pageid');
+      roundMarkerSpec.left = token.get('left');
+      roundMarkerSpec.top = token.get('top');
+      var width = (token.get('width') + token.get('height')) / 2 * flashyInitMarkerScale;
+      roundMarkerSpec.width = width;
+      roundMarkerSpec.height = width;
+      roundMarker = createObj('graphic', roundMarkerSpec);
+      if (roundMarker === undefined) {
+        error("Impossible de créer le token pour l'aura dynamique", roundMarkerSpec);
+        return false;
       }
+      stateCOF.roundMarkerId = roundMarker.id;
+      toFront(token);
     } else { //rotation
       var rotation = roundMarker.get('rotation');
       roundMarker.set('rotation', (rotation + 1) % 365);
-      setTimeout(_.bind(activateRoundMarker,undefined,sync), 100);
     }
+    setTimeout(_.bind(activateRoundMarker, undefined, sync), 100);
   }
 
-  function setTokenFlagAura(perso, evt) {
+  function setTokenFlagAura(perso) {
     var token = perso.token;
     if (stateCOF.options.affichage.val.init_dynamique.val) {
       threadSync++;
-      activateRoundMarker(threadSync, token, evt);
+      activateRoundMarker(threadSync, token);
       return;
     }
     if (aura_token_on_turn) {
@@ -11483,7 +11499,11 @@ var COFantasy = COFantasy || function() {
 
   function removeTokenFlagAura(token) {
     if (stateCOF.options.affichage.val.init_dynamique.val) {
-      if (roundMarker) roundMarker.remove();
+      if (roundMarker) {
+        roundMarker.remove();
+        roundMarker = undefined;
+        stateCOF.roundMarkerId = undefined;
+      }
       return;
     }
     if (aura_token_on_turn) {
@@ -11837,7 +11857,7 @@ var COFantasy = COFantasy || function() {
         affectToken(token, 'aura2_radius', token.get('aura2_radius'), evt);
         affectToken(token, 'aura2_color', token.get('aura2_color'), evt);
         affectToken(token, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
-        setTokenFlagAura(perso, evt);
+        setTokenFlagAura(perso);
         stateCOF.activeTokenId = tokenId;
         stateCOF.activeTokenName = token.get('name');
         turnAction(perso);
@@ -17774,7 +17794,7 @@ var COFantasy = COFantasy || function() {
         // Boucle par rune de ce rang à renouveler
         for (const i in runesDeRang) {
           var rune = runesDeRang[i];
-          var action = "!cof-creer-rune " + forgesort.token.get('_id') + " " + rune.target.token.get('_id') + " " + rang;
+          var action = "!cof-creer-rune " + forgesort.token.id + " " + rune.target.token.id + " " + rang;
           if (rang == 4) {
             var runeName = rune.runeName;
             action += " " + runeName.substring(runeName.indexOf("(") + 1, runeName.indexOf(")"));
@@ -22641,10 +22661,11 @@ var COFantasy = COFantasy || function() {
         token.set('top', prev.top);
         return;
       } else {
-        if (stateCOF.options.affichage.val.init_dynamique.val &&
-          roundMarker && stateCOF.activeTokenId == token.get('_id')) {
-          roundMarker.set('left', x);
-          roundMarker.set('top', y);
+        if (stateCOF.options.affichage.val.init_dynamique.val) {
+          if (roundMarker && stateCOF.activeTokenId == token.id) {
+            roundMarker.set('left', x);
+            roundMarker.set('top', y);
+          }
         }
         //On déplace les tokens de lumière, si il y en a
         var attrLumiere = tokenAttribute(perso, 'lumiere');
@@ -22931,7 +22952,7 @@ var COFantasy = COFantasy || function() {
   function initAllMarkers(campaign) {
     var currentMap = getObj("page", campaign.get("playerpageid"));
     var tokens = findObjs({
-        _pageid: currentMap.get("_id"),
+        _pageid: currentMap.id,
         _type: "graphic",
         _subtype: "token"
       })
