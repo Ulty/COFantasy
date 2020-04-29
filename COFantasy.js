@@ -6616,7 +6616,9 @@ var COFantasy = COFantasy || function() {
         var touche = true;
         var critique = false;
         // Calcule si touché, et les messages de dégats et attaque
-        if (!options.auto && !options.interposer) {
+        if (options.auto) {
+            addAttackSound("soundAttackSucces", weaponStats.divers, options);
+        } else if (!options.interposer) {
           if (options.triche) {
             switch (options.triche) {
               case "rate":
