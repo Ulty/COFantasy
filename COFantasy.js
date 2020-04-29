@@ -1030,12 +1030,12 @@ var COFantasy = COFantasy || function() {
       //On libère les personnages enveloppés, si il y en a.
       var attrEnveloppe = tokenAttribute(personnage, 'enveloppe');
       attrEnveloppe.forEach(function(a) {
-        var cible = tokenOfIdName(a.get('current'), pageId);
+        var cible = persoOfIdName(a.get('current'), pageId);
         if (cible) {
           evt.deletedAttributes = evt.deletedAttributes || [];
           var attrCible = tokenAttribute(cible, 'enveloppePar');
           attrCible.forEach(function(a) {
-            var cube = tokenOfIdName(a.get('current', pageId));
+            var cube = persoOfIdName(a.get('current', pageId));
             if (cube.token.id == personnage.id) {
               sendChar(cible.charId, 'se libère de ' + cube.tokName);
               toFront(cible.token);
@@ -1050,12 +1050,12 @@ var COFantasy = COFantasy || function() {
       //On libère les personnages agrippés, si il y en a.
       var attrAgrippe = tokenAttribute(personnage, 'agrippe');
       attrAgrippe.forEach(function(a) {
-        var cible = tokenOfIdName(a.get('current'), pageId);
+        var cible = persoOfIdName(a.get('current'), pageId);
         if (cible) {
           evt.deletedAttributes = evt.deletedAttributes || [];
           var attrCible = tokenAttribute(cible, 'estAgrippePar');
           attrCible.forEach(function(a) {
-            var agrippant = tokenOfIdName(a.get('current', pageId));
+            var agrippant = persoOfIdName(a.get('current', pageId));
             if (agrippant.token.id == personnage.id) {
               sendChar(cible.charId, 'se libère de ' + agrippant.tokName);
               toFront(cible.token);
@@ -1479,7 +1479,7 @@ var COFantasy = COFantasy || function() {
   //Renvoie le token et le charId. Si l'id ne correspond à rien, cherche si 
   //on trouve un nom de token, sur la page passée en argument (ou sinon
   //sur la page active de la campagne)
-  function tokenOfId(id, name, pageId) {
+  function persoOfId(id, name, pageId) {
     var token = getObj('graphic', id);
     if (token === undefined) {
       if (name === undefined) return undefined;
@@ -1510,14 +1510,14 @@ var COFantasy = COFantasy || function() {
     };
   }
 
-  function tokenOfIdName(idn, pageId) {
+  function persoOfIdName(idn, pageId) {
     var pos = idn.indexOf(' ');
     if (pos < 1 || pos >= idn.length) {
       error("IdName mal formé", idn);
       return;
     }
     var name = idn.substring(pos + 1);
-    var perso = tokenOfId(idn.substring(0, pos), name, pageId);
+    var perso = persoOfId(idn.substring(0, pos), name, pageId);
     perso.tokName = perso.token.get('name');
     if (perso.tokName == name) return perso;
     log("En cherchant le token " + idn + ", on trouve " + perso.tokName);
@@ -2392,7 +2392,7 @@ var COFantasy = COFantasy || function() {
               error("Pas assez d'argument pour définir un disque", cmdSplit);
               return;
             }
-            var centre = tokenOfId(cmdSplit[1], cmdSplit[1], pageId);
+            var centre = persoOfId(cmdSplit[1], cmdSplit[1], pageId);
             if (centre === undefined) {
               error("le premier argument du disque n'est pas un token valide", cmdSplit);
               return;
@@ -2415,7 +2415,7 @@ var COFantasy = COFantasy || function() {
                   error("Pas de token sélectionné pour calculer la distance du disque", msg);
                   return;
                 }
-                actif = tokenOfId(msg.selected[0]._id, msg.selected[0]._id, pageId);
+                actif = persoOfId(msg.selected[0]._id, msg.selected[0]._id, pageId);
               }
               if (distanceCombat(tokenCentre, actif.token, pageId, {
                   strict1: true
@@ -2745,7 +2745,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque l'id du token pour l'option altruiste de la tempete de mana", cmd);
             return;
           }
-          var cible = tokenOfId(cmd[2]);
+          var cible = persoOfId(cmd[2]);
           if (cmd[2] == perso.token.id) cible = undefined;
           if (cible) {
             if (!tempeteDeManaCourante.altruiste) tempeteDeManaCourante.cout++;
@@ -2886,7 +2886,7 @@ var COFantasy = COFantasy || function() {
         default:
           if (altruiste) {
             altruiste = false;
-            var cible = tokenOfId(ta);
+            var cible = persoOfId(ta);
             if (cible) {
               options.tempeteDeMana.cout++;
               options.tempeteDeMana.altruiste = cible;
@@ -3032,7 +3032,7 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-attack: " + msg.content, args);
       return;
     }
-    var attaquant = tokenOfId(args[1]);
+    var attaquant = persoOfId(args[1]);
     if (attaquant === undefined) {
       error("Le premier argument de !cof-attack n'est pas un token valide" + msg.content, args[1]);
       return;
@@ -3239,7 +3239,7 @@ var COFantasy = COFantasy || function() {
           if (cmd[0] == 'etat' && cmd.length > 3) {
             if (isCarac(cmd[2])) {
               lastEtat.saveCarac = cmd[2];
-              var opposition = tokenOfId(cmd[3]);
+              var opposition = persoOfId(cmd[3]);
               if (opposition) {
                 lastEtat.saveDifficulte = cmd[3] + ' ' + opposition.token.get('name');
               } else {
@@ -3532,7 +3532,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque l'id de la cible", cmd);
             return;
           }
-          var targetS = tokenOfId(cmd[1]);
+          var targetS = persoOfId(cmd[1]);
           if (targetS === undefined) {
             error("Cible supplémentaire invalide", cmd);
             return;
@@ -4153,7 +4153,7 @@ var COFantasy = COFantasy || function() {
   function tokenInit(perso, evt) {
     var persoMonte = tokenAttribute(perso, 'estMontePar');
     if (persoMonte.length > 0) {
-      var cavalier = tokenOfId(persoMonte[0].get('current'), persoMonte[0].get('max'), perso.token.get('pageid'));
+      var cavalier = persoOfId(persoMonte[0].get('current'), persoMonte[0].get('max'), perso.token.get('pageid'));
       if (cavalier !== undefined) return tokenInit(cavalier, evt);
     }
     var init;
@@ -4700,7 +4700,7 @@ var COFantasy = COFantasy || function() {
         if (attr.get('bar1_link') === '') {
           if (attrName != 'protegePar_' + nameProtecteur + '_' + tokenName) return;
         } else if (attrName != 'protegePar_' + nameProtecteur) return;
-        var protecteur = tokenOfId(attr.get('current'), nameProtecteur, pageId);
+        var protecteur = persoOfId(attr.get('current'), nameProtecteur, pageId);
         if (protecteur === undefined) {
           if (evt) removeTokenAttr(target, 'protegePar_' + nameProtecteur, evt);
           sendChar(target.charId, "ne peut pas être protégé par " + nameProtecteur + " car aucun token le représentant n'est sur la page");
@@ -5051,7 +5051,7 @@ var COFantasy = COFantasy || function() {
     }
     var attrAgrippe = tokenAttribute(attaquant, 'agrippe');
     attrAgrippe.forEach(function(a) {
-      var cibleAgrippee = tokenOfIdName(a.get('current'), pageId);
+      var cibleAgrippee = persoOfIdName(a.get('current'), pageId);
       if (cibleAgrippee && cibleAgrippee.id == target.id) {
         attBonus += 5;
         explications.push("Cible agrippée => +5 att. et 1d6 DM");
@@ -5726,7 +5726,7 @@ var COFantasy = COFantasy || function() {
     var attrMonture = tokenAttribute(attaquant, 'monteSur');
     if (attrMonture.length > 0) {
       var pseudoAttacker =
-        tokenOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
+        persoOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
       if (pseudoAttacker) pseudoAttackingToken = pseudoAttacker.token;
     }
     cibles = cibles.filter(function(target) {
@@ -5735,7 +5735,7 @@ var COFantasy = COFantasy || function() {
       attrMonture = tokenAttribute(target, 'monteSur');
       if (attrMonture.length > 0) {
         var pseudoTarget =
-          tokenOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
+          persoOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
         if (pseudoTarget) pseudoTargetToken = pseudoTarget.token;
       }
       target.distance =
@@ -5871,7 +5871,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function displayAttaqueOpportunite(vid, cibles, type, action, option) {
-    var attaquant = tokenOfId(vid);
+    var attaquant = persoOfId(vid);
     if (attaquant === undefined) {
       error("Impossible de retrouver le personnage qui pouvait faire une attaque " + type, vid);
       return;
@@ -7228,7 +7228,7 @@ var COFantasy = COFantasy || function() {
         });
         finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options);
         for (var vid in attaquesEnTraitrePossibles) {
-          var voleur = tokenOfId(vid);
+          var voleur = persoOfId(vid);
           if (voleur === undefined) continue;
           var attaqueEnTraitre = tokenAttribute(voleur, 'attaqueEnTraitre');
           if (attaqueEnTraitre.length === 0) {
@@ -7372,7 +7372,7 @@ var COFantasy = COFantasy || function() {
           var cibleDefiName = cibleDefi.substring(cibleDefiSep + 1);
           if (cibleDefiName == target.tokName) {
             var cibleDefiId = cibleDefi.substring(0, cibleDefiSep);
-            cibleDefi = tokenOfId(cibleDefiId, cibleDefiName, pageId);
+            cibleDefi = persoOfId(cibleDefiId, cibleDefiName, pageId);
             cibleDefi = cibleDefi === undefined || cibleDefi.id == target.id;
           } else cibleDefi = false;
         }
@@ -10240,7 +10240,7 @@ var COFantasy = COFantasy || function() {
     if (playerIsGM(playerId)) return true;
     if (msg.selected && msg.selected.length > 0) {
       if (perso.token.id == msg.selected[0]._id) return true;
-      var selectedPerso = tokenOfId(msg.selected[0]._id);
+      var selectedPerso = persoOfId(msg.selected[0]._id);
       if (selectedPerso !== undefined && selectedPerso.charId == perso.charId) return true;
     }
     var character = getObj('character', perso.charId);
@@ -10333,7 +10333,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var tokenId = msg.selected[0]._id;
-    var perso = tokenOfId(tokenId);
+    var perso = persoOfId(tokenId);
     if (perso === undefined) {
       error(" !cof-chance ne fonctionne qu'avec des tokens qui représentent des personnages", perso);
       return;
@@ -10681,7 +10681,7 @@ var COFantasy = COFantasy || function() {
       error("Erreur interne du bouton de 'esquive fatale : l'évenement n'a pas de personnage", evtARefaire);
       return;
     }
-    var adversaire = tokenOfId(cmd[2]);
+    var adversaire = persoOfId(cmd[2]);
     if (adversaire === undefined) {
       sendPlayer(msg, "Il faut cibler un token valide");
       return;
@@ -10942,7 +10942,7 @@ var COFantasy = COFantasy || function() {
             error("Il faut préciser l'id ou le nom du lanceur", arg);
             return;
           }
-          options.lanceur = tokenOfId(cmd[1], cmd[1], pageId);
+          options.lanceur = persoOfId(cmd[1], cmd[1], pageId);
           if (options.lanceur === undefined) {
             error("Argument de --lanceur non valide", cmd);
           }
@@ -10973,7 +10973,7 @@ var COFantasy = COFantasy || function() {
           }
           var cout;
           if (cmd.length > 2 && cmd[1] !== '' && cmd[2] !== '') {
-            options.lanceur = tokenOfId(cmd[1], cmd[1], pageId);
+            options.lanceur = persoOfId(cmd[1], cmd[1], pageId);
             if (options.lanceur === undefined) {
               error("Premier argument de --mana non valide", cmd);
               return;
@@ -11058,7 +11058,7 @@ var COFantasy = COFantasy || function() {
           }
           var portee;
           if (cmd.length > 2) {
-            var tokPortee = tokenOfId(cmd[1], cmd[1], pageId);
+            var tokPortee = persoOfId(cmd[1], cmd[1], pageId);
             if (tokPortee === undefined) {
               error("Premier argument de --portee non valide", cmd);
               return;
@@ -11132,7 +11132,7 @@ var COFantasy = COFantasy || function() {
         case "nonVivant":
           options.nonVivant = true;
           if (cmd.length > 1) {
-            var nonVivantPerso = tokenOfId(cmd[1], cmd[1], pageId);
+            var nonVivantPerso = persoOfId(cmd[1], cmd[1], pageId);
             if (nonVivantPerso) {
               options.nonVivant = charAttributeAsBool(nonVivantPerso, 'nonVivant');
             }
@@ -11574,7 +11574,7 @@ var COFantasy = COFantasy || function() {
     //Les dégâts aux personnages enveloppés par perso
     var attrs_enveloppe = tokenAttribute(perso, 'enveloppe');
     attrs_enveloppe.forEach(function(a) {
-      var cible = tokenOfIdName(a.get('current'), pageId);
+      var cible = persoOfIdName(a.get('current'), pageId);
       if (cible === undefined) {
         error("Attribut d'enveloppe mal formé ou obsolète", a.get('current'));
         return;
@@ -11852,7 +11852,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (tokenId) {
-      var perso = tokenOfId(tokenId, tokenId);
+      var perso = persoOfId(tokenId, tokenId);
       if (perso) {
         var token = perso.token;
         var charId = perso.charId;
@@ -12219,7 +12219,7 @@ var COFantasy = COFantasy || function() {
           addLineToFramedDisplay(display, "en flammes");
         var attrEnveloppe = tokenAttribute(perso, 'enveloppePar');
         if (attrEnveloppe.length > 0) {
-          var cube = tokenOfIdName(attrEnveloppe[0].get('current'));
+          var cube = persoOfIdName(attrEnveloppe[0].get('current'));
           if (cube) {
             addLineToFramedDisplay(display, "est enveloppé dans " + cube.tokName);
           }
@@ -12880,7 +12880,7 @@ var COFantasy = COFantasy || function() {
       save = {
         carac: cmd[2]
       };
-      var opposition = tokenOfId(cmd[3]);
+      var opposition = persoOfId(cmd[3]);
       if (opposition) {
         save.difficulte = cmd[3] + ' ' + opposition.token.get('name');
       } else {
@@ -12901,7 +12901,7 @@ var COFantasy = COFantasy || function() {
       }
       var lanceur = options.lanceur;
       if (lanceur === undefined && selected.length == 1)
-        lanceur = tokenOfId(selected[0]._id);
+        lanceur = persoOfId(selected[0]._id);
       if (limiteRessources(lanceur, options, etat, etat, evt)) return;
       if (options.messages) {
         options.messages.forEach(function(m) {
@@ -12964,7 +12964,7 @@ var COFantasy = COFantasy || function() {
           pageId = perso.token.get('pageid');
         });
       }
-      var opposant = tokenOfId(cmd[3], cmd[4], pageId);
+      var opposant = persoOfId(cmd[3], cmd[4], pageId);
       if (opposant) {
         iterSelected(selected, function(perso) {
           if (!getState(perso, etat)) {
@@ -13207,12 +13207,12 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-echange-init: " + msg.content, args);
       return;
     }
-    var perso1 = tokenOfId(args[1], args[1]);
+    var perso1 = persoOfId(args[1], args[1]);
     if (perso1 === undefined) {
       error("le premier argument n'est pas un token valide", args[1]);
       return;
     }
-    var perso2 = tokenOfId(args[2], args[2]);
+    var perso2 = persoOfId(args[2], args[2]);
     if (perso2 === undefined) {
       error("le second argument n'est pas un token valide", args[2]);
       return;
@@ -13269,7 +13269,7 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-a-couvert: " + msg.content, args);
       return;
     }
-    var perso1 = tokenOfId(args[1], args[1]);
+    var perso1 = persoOfId(args[1], args[1]);
     if (perso1 === undefined) {
       error("Le premier argument n'est pas un token valide", args[1]);
       return;
@@ -13280,7 +13280,7 @@ var COFantasy = COFantasy || function() {
     var init = getInit();
     setTokenAttr(perso1, 'aCouvert', 1, evt, "reste à couvert", init);
     if (args.length > 2) {
-      var perso2 = tokenOfId(args[2], args[2]);
+      var perso2 = persoOfId(args[2], args[2]);
       if (perso2 === undefined) {
         error("Le second argument n'est pas un token valide", args[2]);
         addEvent(evt);
@@ -13347,7 +13347,7 @@ var COFantasy = COFantasy || function() {
           return;
         }
         if (selected.length == 1) {
-          lanceur = tokenOfId(selected[0]._id);
+          lanceur = persoOfId(selected[0]._id);
           if (lanceur) charId = lanceur.charId;
         }
       }
@@ -13570,7 +13570,7 @@ var COFantasy = COFantasy || function() {
           return;
         }
         if (selected.length == 1) {
-          lanceur = tokenOfId(selected[0]._id);
+          lanceur = persoOfId(selected[0]._id);
           if (lanceur) charId = lanceur.charId;
         }
       }
@@ -13614,9 +13614,16 @@ var COFantasy = COFantasy || function() {
       if (selected.length > 0) {
         initiative(selected, evt);
       }
+      var actMsg = messageEffetCombat[effet].activation;
+      var img = options.image;
+      if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
+        var newLineimg = '<span style="padding: 4px 0;" >  ';
+        newLineimg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+        newLineimg += '</span>';
+        actMsg += newLineimg;
+      }
       iterSelected(selected, function(perso) {
-        setTokenAttr(
-          perso, effet, true, evt, messageEffetCombat[effet].activation);
+        setTokenAttr(perso, effet, true, evt, actMsg);
         if (options.puissant) {
           var puissant = true;
           if (options.puissant == "off") puissant = false;
@@ -13698,7 +13705,7 @@ var COFantasy = COFantasy || function() {
           return;
         }
         if (selected.length == 1) {
-          lanceur = tokenOfId(selected[0]._id);
+          lanceur = persoOfId(selected[0]._id);
           if (lanceur) charId = lanceur.charId;
         }
       }
@@ -13718,7 +13725,7 @@ var COFantasy = COFantasy || function() {
         if (limiteRessources(lanceur, options, effet, effet, evt)) return;
         if (options.classeEffet) {
           selected = selected.filter(function(sel) {
-            var perso = tokenOfId(sel._id);
+            var perso = persoOfId(sel._id);
             if (perso === undefined) return false;
             if (attributeAsBool(perso, options.classeEffet)) {
               var attrDeClasse = attributesOfClass(perso, options.classeEffet);
@@ -13906,7 +13913,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque l'argument de lanceur", optArgs);
             return;
           }
-          options.lanceur = tokenOfId(optCmd[1], optCmd[1]);
+          options.lanceur = persoOfId(optCmd[1], optCmd[1]);
           if (options.lanceur) pageId = options.lanceur.token.get('pageid');
           return;
         default:
@@ -13968,7 +13975,7 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour " + msg.content, cmd);
       return;
     }
-    var attaquant = tokenOfId(cmd[1], cmd[1]);
+    var attaquant = persoOfId(cmd[1], cmd[1]);
     if (attaquant === undefined) {
       error("L'attaquant n'est pas un token valide", cmd[1]);
       return;
@@ -13982,7 +13989,7 @@ var COFantasy = COFantasy || function() {
     }
     var name1 = char1.get('name');
     var pageId = attaquant.token.get('pageid');
-    var cible = tokenOfId(cmd[2], cmd[2], pageId);
+    var cible = persoOfId(cmd[2], cmd[2], pageId);
     if (cible === undefined) {
       error("La cible n'est pas un token valide" + msg.content, cmd[2]);
       return;
@@ -14173,7 +14180,7 @@ var COFantasy = COFantasy || function() {
       error("La fonction !cof-sommeil a besoin du nom ou de l'id du lanceur de sort", args);
       return;
     }
-    var caster = tokenOfId(args[1], args[1]);
+    var caster = persoOfId(args[1], args[1]);
     if (caster === undefined) {
       error("Aucun personnage nommé " + args[1], args);
       return;
@@ -14301,8 +14308,8 @@ var COFantasy = COFantasy || function() {
       error("Il faut au moins 2 arguments à !cof-attaque-magique-contre-pv", cmd);
       return;
     }
-    var attaquant = tokenOfId(cmd[1], cmd[1]);
-    var cible = tokenOfId(cmd[2], cmd[2]);
+    var attaquant = persoOfId(cmd[1], cmd[1]);
+    var cible = persoOfId(cmd[2], cmd[2]);
     if (attaquant === undefined || cible === undefined) {
       error("Arguments de !cof-attaque-magique-contre-pv incorrects", cmd);
       return;
@@ -14729,7 +14736,7 @@ var COFantasy = COFantasy || function() {
     }
     if (cmd.length > 2) { //cof-soin lanceur [cible] montant
       if (soigneur === undefined) {
-        soigneur = tokenOfId(cmd[1], cmd[1]);
+        soigneur = persoOfId(cmd[1], cmd[1]);
         if (soigneur === undefined) {
           error("Le premier argument n'est pas un token valide", cmd[1]);
           return;
@@ -14737,7 +14744,7 @@ var COFantasy = COFantasy || function() {
         pageId = soigneur.token.get('pageid');
       }
       if (cmd.length > 3) { // on a la cible en argument
-        cible = tokenOfId(cmd[2], cmd[2], pageId);
+        cible = persoOfId(cmd[2], cmd[2], pageId);
         if (cible === undefined) {
           error("Le deuxième argument n'est pas un token valide: " + msg.content, cmd[2]);
           return;
@@ -15070,7 +15077,7 @@ var COFantasy = COFantasy || function() {
       if (msg.selected.length > 1) {
         error("Plusieurs tokens sélectionnés comme lançant le sort de soins de groupe.", msg.selected);
       }
-      var persoSoigneur = tokenOfId(msg.selected[0]._id);
+      var persoSoigneur = persoOfId(msg.selected[0]._id);
       if (persoSoigneur === undefined) {
         error("Le token sélectionné ne représente aucun personnage", tokSoigneur);
         return;
@@ -15315,7 +15322,7 @@ var COFantasy = COFantasy || function() {
       return c == '--lanceur';
     });
     if (indexLanceur > -1 && indexLanceur < cmd.length - 1) {
-      var l = tokenOfId(cmd[indexLanceur + 1]);
+      var l = persoOfId(cmd[indexLanceur + 1]);
       if (l) {
         msg.selected = [{
           _id: cmd[indexLanceur + 1]
@@ -15489,7 +15496,7 @@ var COFantasy = COFantasy || function() {
     }
     var nomCapitaine = attrCapitaine.get('current');
     var idCapitaine = attrCapitaine.get('max');
-    var capitaine = tokenOfId(idCapitaine, nomCapitaine, pageId);
+    var capitaine = persoOfId(idCapitaine, nomCapitaine, pageId);
     var capitaineActif = attrs.find(function(a) {
       return (a.get('name') == 'capitaineActif');
     });
@@ -15527,7 +15534,7 @@ var COFantasy = COFantasy || function() {
     if (cmd[1] == '--aucun') {
       remove = true;
     } else {
-      capitaine = tokenOfId(cmd[1], cmd[1]);
+      capitaine = persoOfId(cmd[1], cmd[1]);
       if (capitaine === undefined) {
         error("Le premier argument de !cof-lancer-sort doit être un token", cmd[1]);
         return;
@@ -15568,7 +15575,7 @@ var COFantasy = COFantasy || function() {
       error("Pour utiliser !cof-distribuer-baies, il faut sélectionner un token", msg);
       return;
     }
-    var druide = tokenOfId(msg.selected[0]._id);
+    var druide = persoOfId(msg.selected[0]._id);
     if (druide === undefined) {
       error("Erreur de sélection dans !cof-distribuer-baies", msg.selected);
       return;
@@ -15675,7 +15682,7 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-proteger-un-allie: " + msg.content, args);
       return;
     }
-    var protecteur = tokenOfId(args[1], args[1]);
+    var protecteur = persoOfId(args[1], args[1]);
     if (protecteur === undefined) {
       error("Le premier argument n'est pas un token valide", args[1]);
       return;
@@ -15684,7 +15691,7 @@ var COFantasy = COFantasy || function() {
     var charIdProtecteur = protecteur.charId;
     var nameProtecteur = tokenProtecteur.get('name');
     var pageId = tokenProtecteur.get('pageid');
-    var target = tokenOfId(args[2], args[2], pageId);
+    var target = persoOfId(args[2], args[2], pageId);
     if (target === undefined) {
       error("Le deuxième argument n'est pas un token valide: " + msg.content, args[2]);
       return;
@@ -15703,7 +15710,7 @@ var COFantasy = COFantasy || function() {
     var protegePar = 'protegePar_' + nameProtecteur;
     if (attrsProtecteur.length > 0) { //On protège déjà quelqu'un
       var previousTarget =
-        tokenOfId(attrsProtecteur[0].get('current'),
+        persoOfId(attrsProtecteur[0].get('current'),
           attrsProtecteur[0].get('max'), pageId);
       if (previousTarget) {
         if (previousTarget.token.id == tokenTarget.id) {
@@ -15755,14 +15762,14 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-strangulation: " + msg.content, args);
       return;
     }
-    var necromancien = tokenOfId(args[1], args[1]);
+    var necromancien = persoOfId(args[1], args[1]);
     if (necromancien === undefined) {
       error("Le premier argument n'est pas un token", args[1]);
       return;
     }
     var charId1 = necromancien.charId;
     var pageId = necromancien.token.get('pageid');
-    var target = tokenOfId(args[2], args[2], pageId);
+    var target = persoOfId(args[2], args[2], pageId);
     if (target === undefined) {
       error("Le deuxième argument n'est pas un token valide: " + msg.content, args[2]);
       return;
@@ -15817,13 +15824,13 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour " + args[0], args);
       return;
     }
-    var lanceur = tokenOfId(args[1], args[1]);
+    var lanceur = persoOfId(args[1], args[1]);
     if (lanceur === undefined) {
       error("Le premier argument n'est pas un token valide", args[1]);
       return;
     }
     var pageId = lanceur.token.get('pageid');
-    var cible = tokenOfId(args[2], args[2], pageId);
+    var cible = persoOfId(args[2], args[2], pageId);
     if (cible === undefined) {
       error("La cible n'est pas un token valide", args[2]);
       return;
@@ -16064,13 +16071,13 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-defaut-dans-la-cuirasse", args);
       return;
     }
-    var tireur = tokenOfId(args[1], args[1]);
+    var tireur = persoOfId(args[1], args[1]);
     if (tireur === undefined) {
       error("Le premier argument n'est pas un token valide", args[1]);
       return;
     }
     var pageId = tireur.token.get('pageid');
-    var cible = tokenOfId(args[2], args[2], pageId);
+    var cible = persoOfId(args[2], args[2], pageId);
     if (cible === undefined) {
       error("La cible n'est pas un token valide", args[2]);
       return;
@@ -16998,7 +17005,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     //perso1 = token avec qui utilise (ou qui va échanger) le consommable 
-    var perso1 = tokenOfId(cmd[1]);
+    var perso1 = persoOfId(cmd[1]);
     if (perso1 === undefined) {
       log("Propriétaire perdu");
       sendChat('COF', "Plus possible d'utiliser cette action. Réafficher les consommables.");
@@ -17014,7 +17021,7 @@ var COFantasy = COFantasy || function() {
     var perso2;
     if (echange) {
       //perso2 = token avec lequel on va faire l'échange
-      perso2 = tokenOfId(cmd[2]);
+      perso2 = persoOfId(cmd[2]);
       if (perso2 === undefined) {
         log("Destinataire perdu");
         sendChat('COF', "Erreur concernant le destinataire. Veuillez réessayer.");
@@ -17030,7 +17037,7 @@ var COFantasy = COFantasy || function() {
     }
     // Vérifie les droits d'utiliser le consommable
     if (msg.selected && msg.selected.length == 1) {
-      var utilisateur = tokenOfId(msg.selected[0]._id);
+      var utilisateur = persoOfId(msg.selected[0]._id);
       if (utilisateur === undefined) {
         sendChat('COF', "Le token sélectionné n'est pas valide");
         return;
@@ -17204,12 +17211,12 @@ var COFantasy = COFantasy || function() {
       error("La commande !cof-provocation requiert 2 arguments", cmd);
       return;
     }
-    var voleur = tokenOfId(cmd[1]);
+    var voleur = persoOfId(cmd[1]);
     if (voleur === undefined) {
       error("Le premier argument de !cof-provocation n'est pas un token valide");
       return;
     }
-    var cible = tokenOfId(cmd[2]);
+    var cible = persoOfId(cmd[2]);
     if (cible === undefined) {
       error("Le deuxième argument de !cof-provocation n'est pas un token valide");
       return;
@@ -17277,7 +17284,7 @@ var COFantasy = COFantasy || function() {
       error("Il faut 2 arguments pour !cof-en-selle", cmd);
       return;
     }
-    var cavalier = tokenOfId(cmd[1]);
+    var cavalier = persoOfId(cmd[1]);
     if (cavalier === undefined) {
       error("Premier argument de !cof-en-selle incorrect", cmd);
       return;
@@ -17288,7 +17295,7 @@ var COFantasy = COFantasy || function() {
     }
     var tokenC = cavalier.token;
     var pageId = tokenC.get('pageid');
-    var monture = tokenOfId(cmd[2], cmd[2], pageId);
+    var monture = persoOfId(cmd[2], cmd[2], pageId);
     if (monture === undefined || !charAttributeAsBool(monture, 'monture')) {
       sendChar(cavalier.charId, " ne peut pas monter là-dessus");
       log(cmd);
@@ -17396,10 +17403,10 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-creer-elixir", msg.content);
       return;
     }
-    var forgesort = tokenOfId(cmd[1], cmd[1], options.pageId);
+    var forgesort = persoOfId(cmd[1], cmd[1], options.pageId);
     if (forgesort === undefined) {
       if (msg.selected && msg.selected.length == 1) {
-        forgesort = tokenOfId(msg.selected[0]._id);
+        forgesort = persoOfId(msg.selected[0]._id);
       }
       if (forgesort === undefined) {
         error("Impossible de savoir qui crée l'élixir", cmd);
@@ -17615,17 +17622,17 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-creer-runes", msg.content);
       return;
     }
-    var forgesort = tokenOfId(cmd[1], cmd[1], options.pageId);
+    var forgesort = persoOfId(cmd[1], cmd[1], options.pageId);
     if (forgesort === undefined) {
       if (msg.selected && msg.selected.length == 1) {
-        forgesort = tokenOfId(msg.selected[0]._id);
+        forgesort = persoOfId(msg.selected[0]._id);
       }
       if (forgesort === undefined) {
         error("Impossible de savoir qui crée la rune", cmd);
         return;
       }
     }
-    var target = tokenOfId(cmd[2], cmd[2], options.pageId);
+    var target = persoOfId(cmd[2], cmd[2], options.pageId);
     if (target === undefined) {
       error("Impossible de savoir à qui octroyer la rune", cmd);
       return;
@@ -17888,8 +17895,8 @@ var COFantasy = COFantasy || function() {
       error("Il faut deux arguments à !cof-arme-secrete", cmd);
       return;
     }
-    var barde = tokenOfId(cmd[1]);
-    var cible = tokenOfId(cmd[2]);
+    var barde = persoOfId(cmd[1]);
+    var cible = persoOfId(cmd[2]);
     if (barde === undefined || cible === undefined) {
       error("Token non valide pour l'arme secrète", cmd);
       return;
@@ -17961,7 +17968,7 @@ var COFantasy = COFantasy || function() {
       error("cof-animer-arbre attend 2 arguments", msg.content);
       return;
     }
-    var druide = tokenOfId(cmd[1], cmd[1], options.pageId);
+    var druide = persoOfId(cmd[1], cmd[1], options.pageId);
     if (druide === undefined) {
       error("Le premier argument de !cof-animer-arbre n'est pas un token valie", cmd);
       return;
@@ -18092,7 +18099,7 @@ var COFantasy = COFantasy || function() {
     };
     if (cmd.length > 2) { // Bouton Rune de protection
       evtARefaire = findEvent(cmd[1]);
-      var perso = tokenOfId(cmd[2]);
+      var perso = persoOfId(cmd[2]);
 
       if (evtARefaire === undefined) {
         error("L'action est trop ancienne ou a été annulée", cmd);
@@ -18160,12 +18167,12 @@ var COFantasy = COFantasy || function() {
       error("cof-delivrance attend 2 arguments", msg.content);
       return;
     }
-    var pretre = tokenOfId(cmd[1], cmd[1], options.pageId);
+    var pretre = persoOfId(cmd[1], cmd[1], options.pageId);
     if (pretre === undefined) {
       error("Le premier argument de !cof-delivrance n'est pas un token valide", msg.content);
       return;
     }
-    var cible = tokenOfId(cmd[2], cmd[2], options.pageId);
+    var cible = persoOfId(cmd[2], cmd[2], options.pageId);
     if (cible === undefined) {
       error("Le deuxième argument de !cof-delivrance n'est pas un token valide", msg.content);
       return;
@@ -18414,8 +18421,8 @@ var COFantasy = COFantasy || function() {
       error("Il faut 2 personnages pour un test d'attaque en opposition", cmd);
       return;
     }
-    var attaquant = tokenOfId(cmd[1], cmd[1]);
-    var defenseur = tokenOfId(cmd[2], cmd[2]);
+    var attaquant = persoOfId(cmd[1], cmd[1]);
+    var defenseur = persoOfId(cmd[2], cmd[2]);
     if (attaquant === undefined) {
       error("Le premier argument de !cof-test-attaque-opposee doit être un token valide", cmd[1]);
       return;
@@ -18451,13 +18458,13 @@ var COFantasy = COFantasy || function() {
       error("Il manque des arguments à !cof-desarmer", msg.content);
       return;
     }
-    var guerrier = tokenOfId(cmd[1], cmd[1]);
+    var guerrier = persoOfId(cmd[1], cmd[1]);
     if (guerrier === undefined) {
       error("Le premier argument de !cof-desarmer n'est pas un token valide", cmd);
       return;
     }
     guerrier.tokName = guerrier.token.get('name');
-    var cible = tokenOfId(cmd[2], cmd[2]);
+    var cible = persoOfId(cmd[2], cmd[2]);
     if (cible === undefined) {
       error("Le deuxième argument de !cof-desarmer n'est pas un token valide", cmd);
       return;
@@ -18648,12 +18655,12 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "La manoeuvre a déjà été choisie");
       return;
     }
-    var attaquant = tokenOfId(cmd[1], cmd[1]);
+    var attaquant = persoOfId(cmd[1], cmd[1]);
     if (attaquant === undefined) {
       error("Le premier argument de !cof-appliquer-maneuvre n'est pas un token valide", cmd);
       return;
     }
-    var cible = tokenOfId(cmd[2], cmd[2]);
+    var cible = persoOfId(cmd[2], cmd[2]);
     if (cible === undefined) {
       error("Le deuxième argument de !cof-appliquer-manoeuvre n'est pas un token valide", cmd);
       return;
@@ -18681,13 +18688,13 @@ var COFantasy = COFantasy || function() {
       error("cof-manoeuvre attend 3 arguments", msg.content);
       return;
     }
-    var attaquant = tokenOfId(cmd[1], cmd[1]);
+    var attaquant = persoOfId(cmd[1], cmd[1]);
     if (attaquant === undefined) {
       error("Le premier argument de !cof-maneuvre n'est pas un token valide", cmd);
       return;
     }
     attaquant.tokName = attaquant.token.get('name');
-    var cible = tokenOfId(cmd[2], cmd[2]);
+    var cible = persoOfId(cmd[2], cmd[2]);
     if (cible === undefined) {
       error("Le deuxième argument de !cof-manoeuvre n'est pas un token valide", cmd);
       return;
@@ -19622,7 +19629,7 @@ var COFantasy = COFantasy || function() {
       error("Il faut au moins 2 arguments à !cof-lumiere", cmd);
       return;
     }
-    var cible = tokenOfId(cmd[1]);
+    var cible = persoOfId(cmd[1]);
     if (cible === undefined) {
       error("le premier argument de !cof-lumière doit être un token", cmd);
       return;
@@ -19786,7 +19793,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var pageId = options.pageId;
-    var perso = tokenOfId(cmd[1], cmd[1], pageId);
+    var perso = persoOfId(cmd[1], cmd[1], pageId);
     if (perso === undefined) {
       error("Token invalide", cmd);
       return;
@@ -20052,7 +20059,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var pageId = options.pageId;
-    var samourai = tokenOfId(cmd[1], cmd[1], pageId);
+    var samourai = persoOfId(cmd[1], cmd[1], pageId);
     if (samourai === undefined) {
       error("Le token sélectionné n'est pas valide", msg.content);
       return;
@@ -20062,7 +20069,7 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, samourai.tokName + " a déjà lancé un défi durant ce combat.");
       return;
     }
-    var cible = tokenOfId(cmd[2], cmd[2], pageId);
+    var cible = persoOfId(cmd[2], cmd[2], pageId);
     if (cible === undefined) {
       error("Le deuxième token sélectionné n'est pas valide", msg.content);
       return;
@@ -20105,7 +20112,7 @@ var COFantasy = COFantasy || function() {
       error("Il manque des arguments à !cof-enveloppement", cmd);
       return;
     }
-    var cube = tokenOfId(cmd[1]);
+    var cube = persoOfId(cmd[1]);
     if (cube === undefined) {
       error("Token non défini", cmd[1]);
       return;
@@ -20114,7 +20121,7 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton");
       return;
     }
-    var cible = tokenOfId(cmd[2]);
+    var cible = persoOfId(cmd[2]);
     if (cible === undefined) {
       error("Token non défini", cmd[2]);
       return;
@@ -20195,7 +20202,7 @@ var COFantasy = COFantasy || function() {
           return;
         }
         attr = attr[0];
-        var cube = tokenOfIdName(attr.get('current'), options.pageId);
+        var cube = persoOfIdName(attr.get('current'), options.pageId);
         if (cube === undefined) {
           error("Attribut enveloppePar mal formé, on le supprime", attr.get('current'));
           attr.remove();
@@ -20223,7 +20230,7 @@ var COFantasy = COFantasy || function() {
               attr.remove();
               attr = tokenAttribute(cube, 'enveloppe');
               attr.forEach(function(a) {
-                var ca = tokenOfIdName(a.get('current'));
+                var ca = persoOfIdName(a.get('current'));
                 if (ca && ca.token.id == perso.token.id) {
                   evt.deletedAttributes.push(a);
                   a.remove();
@@ -20278,7 +20285,7 @@ var COFantasy = COFantasy || function() {
           return;
         }
         attr = attr[0];
-        var agrippant = tokenOfIdName(attr.get('current'), options.pageId);
+        var agrippant = persoOfIdName(attr.get('current'), options.pageId);
         if (agrippant === undefined) {
           error("Attribut estAgrippePar mal formé, on le supprime", attr.get('current'));
           attr.remove();
@@ -20331,7 +20338,7 @@ var COFantasy = COFantasy || function() {
             attr.remove();
             attr = tokenAttribute(agrippant, 'agrippe');
             attr.forEach(function(a) {
-              var ca = tokenOfIdName(a.get('current'));
+              var ca = persoOfIdName(a.get('current'));
               if (ca && ca.token.id == perso.token.id) {
                 evt.deletedAttributes.push(a);
                 a.remove();
@@ -20354,12 +20361,12 @@ var COFantasy = COFantasy || function() {
       error("cof-delivrance attend 2 arguments", msg.content);
       return;
     }
-    var lanceur = tokenOfId(cmd[1], cmd[1], options.pageId);
+    var lanceur = persoOfId(cmd[1], cmd[1], options.pageId);
     if (lanceur === undefined) {
       error("Le premier argument de !cof-animer-cadavre n'est pas un token valide", msg.content);
       return;
     }
-    var cible = tokenOfId(cmd[2], cmd[2], options.pageId);
+    var cible = persoOfId(cmd[2], cmd[2], options.pageId);
     if (cible === undefined) {
       error("Le deuxième argument de !cof-animer-cadavre n'est pas un token valide", msg.content);
       return;
@@ -22285,7 +22292,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var active = turnOrder.shift();
-    var persoActif = tokenOfId(active.id);
+    var persoActif = persoOfId(active.id);
     if (persoActif === undefined) {
       error("Impossible de trouver le personnage actif", active);
       return;
@@ -22738,7 +22745,7 @@ var COFantasy = COFantasy || function() {
     if (attr.length > 0) {
       if (deplacement) {
         attr[0].remove();
-        var monture = tokenOfId(attr[0].get('current'), attr[0].get('max'), pageId);
+        var monture = persoOfId(attr[0].get('current'), attr[0].get('max'), pageId);
         if (monture === undefined) {
           sendChar(charId, "descend de sa monture");
           return;
@@ -22752,7 +22759,7 @@ var COFantasy = COFantasy || function() {
     //si non, perso est peut-être une monture
     attr = tokenAttribute(perso, 'estMontePar');
     attr.forEach(function(a) {
-      var cavalier = tokenOfId(a.get('current'), a.get('max'), pageId);
+      var cavalier = persoOfId(a.get('current'), a.get('max'), pageId);
       if (cavalier === undefined) {
         a.remove();
         return;
@@ -22772,7 +22779,7 @@ var COFantasy = COFantasy || function() {
     });
     attr = tokenAttribute(perso, 'enveloppe');
     attr.forEach(function(a) {
-      var cible = tokenOfIdName(a.get('current'), pageId);
+      var cible = persoOfIdName(a.get('current'), pageId);
       if (cible === undefined) {
         a.remove();
         return;
