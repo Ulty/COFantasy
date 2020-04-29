@@ -1528,6 +1528,7 @@ var COFantasy = COFantasy || function() {
   function boutonSimple(action, style, texte) {
     action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;').replace(/"/g, '&#34;').replace(/{/g, '&#123;').replace(/}/g, '&#125;').replace(/\|/g, '&#124;');
     action = action.replace(/\'/g, '&apos;'); // escape quotes
+    action = action.replace(/:/g, '&amp;#58;'); // double escape colon
     return '<a href="' + action + '"' + style + '>' + texte + '</a>';
   }
 

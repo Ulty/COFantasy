@@ -10,6 +10,7 @@
 * Affichage des icones correspondant aux états dans la fonction statut.
 
 ### Corrections de bugs
+* double escape des ':' dans les boutons (sinon, pas de lien)
 * Correction d'un buf sur les effets génériques avec saveParTour
 
 ## 2.02
