@@ -3980,6 +3980,12 @@ var COFantasy = COFantasy || function() {
           return true;
         }
         return deAttaque >= cond.seuil;
+      case "echecCritique":
+        if (deAttaque === undefined) {
+          error("Condition de dé d'attaque non supportée ici", cond);
+          return true;
+        }
+        return deAttaque == 1;
       case "critique":
         return cibles.every(function(target) {
           return target.critique;
@@ -6618,7 +6624,7 @@ var COFantasy = COFantasy || function() {
         var critique = false;
         // Calcule si touché, et les messages de dégats et attaque
         if (options.auto) {
-            addAttackSound("soundAttackSucces", weaponStats.divers, options);
+          addAttackSound("soundAttackSucces", weaponStats.divers, options);
         } else if (!options.interposer) {
           if (options.triche) {
             switch (options.triche) {
@@ -11757,9 +11763,19 @@ var COFantasy = COFantasy || function() {
         if (!charAttributeAsBool(perso, 'armeeConjuree')) {
           command = "!cof-action-defensive ?{Action défensive|simple|totale}";
           ligne += bouton(command, 'Se défendre', perso, false) + '<br />';
+          var manoeuvreDuelliste = charAttributeAsBool(perso, 'manoeuvreDuelliste');
+          if (manoeuvreDuelliste) {
+            command = "!cof-manoeuvre @{selected|token_id} @{target|token_id} ?{Manoeuvre?|bloquer|desarmer|renverser|tenirADistance|repousser}";
+            ligne += bouton(command, 'Manoeuvres de duelliste', perso, false) + '<br />';
+          }
           if (stateCOF.options.affichage.val.manoeuvres.val) {
-            command = "!cof-manoeuvre @{selected|token_id} @{target|token_id} ?{Manoeuvre?|aveugler|bloquer|desarmer|faireDiversion|menacer|renverser|tenirADistance|repousser}";
-            ligne += bouton(command, 'Manoeuvres', perso, false) + '<br />';
+            if (manoeuvreDuelliste) {
+              command = "!cof-manoeuvre @{selected|token_id} @{target|token_id} ?{Manoeuvre?|aveugler|faireDiversion|menacer}";
+              ligne += bouton(command, 'Autres manoeuvres', perso, false) + '<br />';
+            } else {
+              command = "!cof-manoeuvre @{selected|token_id} @{target|token_id} ?{Manoeuvre?|aveugler|bloquer|desarmer|faireDiversion|menacer|renverser|tenirADistance|repousser}";
+              ligne += bouton(command, 'Manoeuvres', perso, false) + '<br />';
+            }
           }
         }
       }
@@ -18389,6 +18405,7 @@ var COFantasy = COFantasy || function() {
         var resultat = {
           rollAttaquant: attackRollAttaquant,
           rollDefenseur: attackRollDefenseur,
+          armeAttaquant: armeAttaquant
         };
         if (d20rollAttaquant == 1 && d20rollDefenseur > 1) {
           resultat.echec = true;
@@ -18571,12 +18588,14 @@ var COFantasy = COFantasy || function() {
           cible, 'aveugleManoeuvre', duree, evt, msg, getInit());
         return critique; //Pour les DMs en plus
       },
-      verbe: 'aveugler'
+      verbe: 'aveugler',
+      duelliste: false
     },
     bloquer: {
       appliquer: appliquerBloquer,
       penalitePlusPetit: true,
-      verbe: 'bloquer'
+      verbe: 'bloquer',
+      duelliste: true
     },
     desarmer: {
       appliquer: function(attaquant, cible, critique, evt, envoyerMessage) {
@@ -18595,7 +18614,8 @@ var COFantasy = COFantasy || function() {
           sendChar(cible.charId, msgDesarme);
         }
       },
-      verbe: 'désarmer'
+      verbe: 'désarmer',
+      duelliste: true
     },
     faireDiversion: {
       appliquer: function(attaquant, cible, critique, evt, envoyerMessage) {
@@ -18606,7 +18626,8 @@ var COFantasy = COFantasy || function() {
         setTokenAttr(cible, 'diversionManoeuvre', 1, evt, msg, getInit());
         setTokenAttr(cible, 'diversionManoeuvreValeur', malus, evt, undefined);
       },
-      verbe: 'faire diversion sur'
+      verbe: 'faire diversion sur',
+      duelliste: false
     },
     menacer: {
       appliquer: function(attaquant, cible, critique, evt, envoyerMessage) {
@@ -18617,7 +18638,8 @@ var COFantasy = COFantasy || function() {
         effet += ')';
         setTokenAttr(cible, effet, 1, evt, msg, getInit());
       },
-      verbe: 'menacer'
+      verbe: 'menacer',
+      duelliste: false
     },
     renverser: {
       appliquer: function(attaquant, cible, critique, evt, envoyerMessage) {
@@ -18626,7 +18648,8 @@ var COFantasy = COFantasy || function() {
         return critique; //Pour les DM en plus
       },
       penalitePlusPetit: true,
-      verbe: 'renverser'
+      verbe: 'renverser',
+      duelliste: true
     },
     repousser: {
       appliquer: function(attaquant, cible, critique, evt, envoyerMessage) {
@@ -18637,11 +18660,13 @@ var COFantasy = COFantasy || function() {
         if (critique) setState(cible, 'renverse', true, evt);
       },
       penalitePlusPetit: true,
-      verbe: 'repousser'
+      verbe: 'repousser',
+      duelliste: true
     },
     tenirADistance: {
       appliquer: appliquerTenirADistance,
-      verbe: 'tenir à distance'
+      verbe: 'tenir à distance',
+      duelliste: true
     }
   };
 
@@ -18651,6 +18676,10 @@ var COFantasy = COFantasy || function() {
     var cmd = msg.content.split(' ');
     if (cmd.length < 5) {
       error("cof-appliquer-manoeuvre attend 4 arguments", msg.content);
+      return;
+    }
+    if (!_.has(listeManoeuvres, cmd[3])) {
+      error("Manoeuvre " + cmd[3] + " inconnue.", cmd);
       return;
     }
     var limiteAttr = getObj('attribute', cmd[4]);
@@ -18666,10 +18695,6 @@ var COFantasy = COFantasy || function() {
     var cible = persoOfId(cmd[2], cmd[2]);
     if (cible === undefined) {
       error("Le deuxième argument de !cof-appliquer-manoeuvre n'est pas un token valide", cmd);
-      return;
-    }
-    if (!_.has(listeManoeuvres, cmd[3])) {
-      error("Manoeuvre " + cmd[3] + " inconnue.", cmd);
       return;
     }
     var effet = listeManoeuvres[cmd[3]];
@@ -18691,6 +18716,11 @@ var COFantasy = COFantasy || function() {
       error("cof-manoeuvre attend 3 arguments", msg.content);
       return;
     }
+    if (!_.has(listeManoeuvres, cmd[3])) {
+      sendPlayer(msg, "Manoeuvre " + cmd[3] + " inconnue.");
+      return;
+    }
+    var effet = listeManoeuvres[cmd[3]];
     var attaquant = persoOfId(cmd[1], cmd[1]);
     if (attaquant === undefined) {
       error("Le premier argument de !cof-maneuvre n'est pas un token valide", cmd);
@@ -18703,11 +18733,6 @@ var COFantasy = COFantasy || function() {
       return;
     }
     cible.tokName = cible.token.get('name');
-    if (!_.has(listeManoeuvres, cmd[3])) {
-      sendPlayer(msg, "Manoeuvre " + cmd[3] + " inconnue.");
-      return;
-    }
-    var effet = listeManoeuvres[cmd[3]];
     var evt = {
       type: 'manoeuvre'
     };
@@ -18723,12 +18748,18 @@ var COFantasy = COFantasy || function() {
       }
     }
     var playerId = getPlayerIdFromMsg(msg);
+    var manoeuvreDuelliste = effet.duelliste && charAttributeAsBool(attaquant, 'manoeuvreDuelliste');
     attaqueContactOpposee(playerId, attaquant, cible, evt, options,
       function(res, display, explications) {
         var dmSupp;
         if (res.succes) {
           addLineToFramedDisplay(display, attaquant.tokName + " réussi à " + effet.verbe + " " + cible.tokName);
           dmSupp = effet.appliquer(attaquant, cible, res.critique, evt);
+          if (manoeuvreDuelliste && !dmSupp) {
+            var pageId = cible.token.get('pageid');
+            var defense = defenseOfToken(attaquant, cible, pageId, evt, options);
+            dmSupp = res.rollAttaquant >= defense + 10;
+          }
         } else {
           addLineToFramedDisplay(display, attaquant.tokName + " ne réussi pas à " + effet.verbe + " " + cible.tokName);
           //Envoyer à la cible la possibilité d'appliquer un effet de son choix
@@ -18745,7 +18776,7 @@ var COFantasy = COFantasy || function() {
         /*if (dmSupp) {
            turnAction(attaquant, playerId);
         }*/
-        if (!res.succes) {
+        if (!res.succes && !manoeuvreDuelliste) {
           var charCible = getObj('character', cible.charId);
           if (charCible === undefined) {
             error("Cible sans personnage associé", cible);
