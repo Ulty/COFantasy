@@ -3423,6 +3423,7 @@ var COFantasy = COFantasy || function() {
           scope[cmd[0]] += bAtt;
           return;
         case "bonusCritique":
+        case "attaqueEnGroupe":
           if (cmd.length < 2) {
             error("Usage : --" + cmd[0] + " b", cmd);
             return;
@@ -4862,6 +4863,11 @@ var COFantasy = COFantasy || function() {
       attBonus += 5;
       explications.push("Attaque assurée => +5 en Attaque et DM/2");
     }
+    if (options.attaqueEnGroupe > 1) {
+      var bonusTouche = 2 * (options.attaqueEnGroupe - 1);
+      attBonus += bonusTouche;
+      explications.push("Attaque en groupe => +" + bonusTouche + " en Attaque");
+    }
     if (attributeAsBool(attaquant, 'criDuPredateur')) {
       attBonus += 1;
       explications.push("Cri du prédateur => +1 en attaque");
@@ -6034,6 +6040,10 @@ var COFantasy = COFantasy || function() {
       return 0;
     }
     var dmgCoef = options.dmgCoef || 1;
+    if(options.attaqueEnGroupeDmgCoef) {
+      dmgCoef++;
+      expliquer("Attaque en groupe > DEF +5 => DMGx" + (crit ? "3" : "2"));
+    }
     if (target.dmgCoef) dmgCoef += target.dmgCoef;
     var critCoef = 1;
     if (crit) {
@@ -6690,6 +6700,9 @@ var COFantasy = COFantasy || function() {
               setState(target, 'renverse', true, evt);
               target.messages.push("tombe par terre");
             }
+          }
+          if (options.attaqueEnGroupe > 1 && attackRoll >= (defense + 5)) {
+            options.attaqueEnGroupeDmgCoef = true;
           }
           if (d20roll == 1 && options.chance === undefined) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
