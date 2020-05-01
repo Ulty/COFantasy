@@ -77,12 +77,12 @@ var COFantasy = COFantasy || function() {
           type: 'bool'
         },
         initiative_variable: {
-          explications: "Ajoute 1d6 à l'initiative, lancé une fois par combat, par type de créature",
+          explications: "Ajoute 1d6 à l'initiative, lancé une fois par combat par type de créature",
           val: false,
           type: 'bool'
         },
         initiative_variable_individuelle: {
-          explications: "Ajoute 1d6 à l'initiative, lancé une fois par combat, pour chaque créature",
+          explications: "Lancer l'initiative variable pour chaque créature (nécessite d'activer l'Initiative variable)",
           val: false,
           type: 'bool'
         },
