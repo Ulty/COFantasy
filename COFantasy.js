@@ -4196,7 +4196,6 @@ var COFantasy = COFantasy || function() {
         var msg = "entre en combat. ";
         msg += onGenre(perso.charId, 'Il', 'Elle') + " fait " + rollD6.roll;
         msg += " à son jet d'initiative";
-        var token;
         setTokenAttr(tokenAUtiliser, 'bonusInitVariable', bonusVariable, evt, msg);
       }
       init += bonusVariable;
