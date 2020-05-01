@@ -509,7 +509,7 @@ var COFantasy = COFantasy || function() {
           if (stateCOF.options.regles.val.generer_options_attaques.val) {
             options = "?{Type d'Attaque|Normale,|Assurée,--attaqueAssuree|Risquée,--attaqueRisquee}";
           }
-          if (stateCOF.options.regles.val.generer_attaque_groupe.val && perso.pnj) {
+          if (stateCOF.options.regles.val.generer_attaque_groupe.val && perso.pnj && perso.token.get('bar1_link') === "") {
             groupe = true;
           }
         }
@@ -1706,7 +1706,7 @@ var COFantasy = COFantasy || function() {
     }
     var toReturn = boutonSimple(action, buttonStyle + overlay, text);
     if (optionsFromCommand.groupe) {
-      toReturn += "<br/>" + boutonSimple(baseAction + " --attaqueEnGroupe ?{Attaque en groupe ?}", buttonStyle + overlay, text + " (groupe)");
+      toReturn += "<br/>" + boutonSimple(baseAction + " --attaqueDeGroupe ?{Attaque en groupe ?}", buttonStyle + overlay, text + " (groupe)");
     }
     return toReturn ;
   }
