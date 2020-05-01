@@ -3423,7 +3423,7 @@ var COFantasy = COFantasy || function() {
           scope[cmd[0]] += bAtt;
           return;
         case "bonusCritique":
-        case "attaqueEnGroupe":
+        case "attaqueDeGroupe":
           if (cmd.length < 2) {
             error("Usage : --" + cmd[0] + " b", cmd);
             return;
@@ -4863,8 +4863,8 @@ var COFantasy = COFantasy || function() {
       attBonus += 5;
       explications.push("Attaque assurée => +5 en Attaque et DM/2");
     }
-    if (options.attaqueEnGroupe > 1) {
-      var bonusTouche = 2 * (options.attaqueEnGroupe - 1);
+    if (options.attaqueDeGroupe > 1) {
+      var bonusTouche = 2 * (options.attaqueDeGroupe - 1);
       attBonus += bonusTouche;
       explications.push("Attaque en groupe => +" + bonusTouche + " en Attaque");
     }
@@ -6040,7 +6040,7 @@ var COFantasy = COFantasy || function() {
       return 0;
     }
     var dmgCoef = options.dmgCoef || 1;
-    if(options.attaqueEnGroupeDmgCoef) {
+    if(options.attaqueDeGroupeDmgCoef) {
       dmgCoef++;
       expliquer("Attaque en groupe > DEF +5 => DMGx" + (crit ? "3" : "2"));
     }
@@ -6701,8 +6701,8 @@ var COFantasy = COFantasy || function() {
               target.messages.push("tombe par terre");
             }
           }
-          if (options.attaqueEnGroupe > 1 && attackRoll >= (defense + 5)) {
-            options.attaqueEnGroupeDmgCoef = true;
+          if (options.attaqueDeGroupe > 1 && attackRoll >= (defense + 5)) {
+            options.attaqueDeGroupeDmgCoef = true;
           }
           if (d20roll == 1 && options.chance === undefined) {
             attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
