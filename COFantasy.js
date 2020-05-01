@@ -86,6 +86,11 @@ var COFantasy = COFantasy || function() {
           val: 5,
           type: 'int'
         },
+        generer_options_attaques: {
+          explications: "Ajouter automatiquement les options d'attaques (normale / assurée / risquée) aux boutons d'attaques dans le chat (Actions)",
+          val: false,
+          type: 'bool'
+        },
         mana_totale: {
           explications: "Tous les sorts ont un coût, celui des tempêtes de mana est multiplié par 3",
           val: false,
@@ -446,13 +451,14 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
-  function getPictoStyleFromCommand(fullCommand, perso) {
+  function getOptionsFromCommand(fullCommand, perso) {
     if (fullCommand === undefined) return {
       picto: '',
       style: ''
     };
     var style = '';
     var picto = '';
+    var options;
     var command = fullCommand.split(' ');
     // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
     switch (command[0]) {
@@ -487,10 +493,16 @@ var COFantasy = COFantasy || function() {
           // attaque distance
           picto = '<span style="font-family: \'Pictos Custom\'">[</span> ';
           style = 'background-color:#48b92c';
+          if (stateCOF.options.regles.val.generer_options_attaques.val) {
+            options = "?{Type d'Attaque|Normale,|Assurée,--attaqueAssuree}";
+          }
         } else {
           // attaque contact
           picto = '<span style="font-family: \'Pictos Custom\'">t</span> ';
           style = 'background-color:#cc0000';
+          if (stateCOF.options.regles.val.generer_options_attaques.val) {
+            options = "?{Type d'Attaque|Normale,|Assurée,--attaqueAssuree|Risquée,--attaqueRisquee}";
+          }
         }
         break;
       case "!cof-lancer-sort":
@@ -562,7 +574,8 @@ var COFantasy = COFantasy || function() {
     }
     return {
       picto: picto,
-      style: style
+      style: style,
+      options: options
     };
   }
 
@@ -1665,17 +1678,19 @@ var COFantasy = COFantasy || function() {
       }
       return act;
     });
-    var pictoStyle = getPictoStyleFromCommand(action, perso);
+    var optionsFromCommand = getOptionsFromCommand(action, perso);
     if (actions.length == 1) action = actions[0];
     else
       action = "!cof-multi-command " + actions.join(' --cof-multi-command ');
-    text = pictoStyle.picto + text;
+    text = optionsFromCommand.picto + text;
     var buttonStyle = '';
     if (style) buttonStyle = ' style="' + style + '"';
-    else if (pictoStyle.style)
-      buttonStyle = ' style="' + pictoStyle.style + '"';
+    else if (optionsFromCommand.style)
+      buttonStyle = ' style="' + optionsFromCommand.style + '"';
     if (overlay) overlay = ' title="' + overlay + '"';
     else overlay = '';
+    if (optionsFromCommand.options)
+      action += ' ' + optionsFromCommand.options;
     return boutonSimple(action, buttonStyle + overlay, text);
   }
 
