@@ -91,6 +91,11 @@ var COFantasy = COFantasy || function() {
           val: false,
           type: 'bool'
         },
+        generer_attaque_groupe: {
+          explications: "Ajouter automatiquement une option 'Attaque de groupe' (cf. Compagnon p.99) pour les PNJ",
+          val: false,
+          type: 'bool'
+        },
         mana_totale: {
           explications: "Tous les sorts ont un coût, celui des tempêtes de mana est multiplié par 3",
           val: false,
@@ -459,6 +464,7 @@ var COFantasy = COFantasy || function() {
     var style = '';
     var picto = '';
     var options;
+    var groupe;
     var command = fullCommand.split(' ');
     // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
     switch (command[0]) {
@@ -502,6 +508,9 @@ var COFantasy = COFantasy || function() {
           style = 'background-color:#cc0000';
           if (stateCOF.options.regles.val.generer_options_attaques.val) {
             options = "?{Type d'Attaque|Normale,&#32;|Assurée,--attaqueAssuree|Risquée,--attaqueRisquee}";
+          }
+          if (stateCOF.options.regles.val.generer_attaque_groupe.val && perso.pnj && perso.token.get('bar1_link') === "") {
+            groupe = true;
           }
         }
         break;
@@ -575,7 +584,8 @@ var COFantasy = COFantasy || function() {
     return {
       picto: picto,
       style: style,
-      options: options
+      options: options,
+      groupe: groupe
     };
   }
 
@@ -1689,9 +1699,16 @@ var COFantasy = COFantasy || function() {
       buttonStyle = ' style="' + optionsFromCommand.style + '"';
     if (overlay) overlay = ' title="' + overlay + '"';
     else overlay = '';
-    if (optionsFromCommand.options)
+
+    var baseAction = action;
+    if (optionsFromCommand.options) {
       action += ' ' + optionsFromCommand.options;
-    return boutonSimple(action, buttonStyle + overlay, text);
+    }
+    var toReturn = boutonSimple(action, buttonStyle + overlay, text);
+    if (optionsFromCommand.groupe) {
+      toReturn += "<br/>" + boutonSimple(baseAction + " --attaqueDeGroupe ?{Attaque en groupe ?}", buttonStyle + overlay, text + " (groupe)");
+    }
+    return toReturn ;
   }
 
   function improve_image(image_url) {
