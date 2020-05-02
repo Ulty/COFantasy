@@ -77,7 +77,12 @@ var COFantasy = COFantasy || function() {
           type: 'bool'
         },
         initiative_variable: {
-          explications: "Ajoute 1d6 à l'initiative, lancé une fois par combat",
+          explications: "Ajoute 1d6 à l'initiative, lancé une fois par combat par type de créature",
+          val: false,
+          type: 'bool'
+        },
+        initiative_variable_individuelle: {
+          explications: "Lancer l'initiative variable pour chaque créature (nécessite d'activer l'Initiative variable)",
           val: false,
           type: 'bool'
         },
@@ -4205,8 +4210,17 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(perso, 'formeDArbre')) init = 7;
     //Règle optionelle : +1d6, à lancer en entrant en combat
+    //Un seul jet par "character" pour les mook
     if (stateCOF.options.regles.val.initiative_variable.val) {
-      var bonusVariable = attributeAsInt(perso, 'bonusInitVariable', 0);
+      var bonusVariable;
+      var tokenAUtiliser;
+      if(stateCOF.options.regles.val.initiative_variable_individuelle.val) {
+        bonusVariable = attributeAsInt(perso, 'bonusInitVariable', 0);
+        tokenAUtiliser = perso;
+      } else {
+        bonusVariable = charAttributeAsInt(perso, 'bonusInitVariable', 0);
+        tokenAUtiliser = {charId: perso.charId};
+      }
       if (bonusVariable === 0) {
         var rollD6 = rollDePlus(6, {
           deExplosif: true
@@ -4215,7 +4229,7 @@ var COFantasy = COFantasy || function() {
         var msg = "entre en combat. ";
         msg += onGenre(perso.charId, 'Il', 'Elle') + " fait " + rollD6.roll;
         msg += " à son jet d'initiative";
-        setTokenAttr(perso, 'bonusInitVariable', bonusVariable, evt, msg);
+        setTokenAttr(tokenAUtiliser, 'bonusInitVariable', bonusVariable, evt, msg);
       }
       init += bonusVariable;
     }
