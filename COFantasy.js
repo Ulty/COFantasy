@@ -494,14 +494,14 @@ var COFantasy = COFantasy || function() {
           picto = '<span style="font-family: \'Pictos Custom\'">[</span> ';
           style = 'background-color:#48b92c';
           if (stateCOF.options.regles.val.generer_options_attaques.val) {
-            options = "?{Type d'Attaque|Normale,|Assurée,--attaqueAssuree}";
+            options = "?{Type d'Attaque|Normale,&#32;|Assurée,--attaqueAssuree}";
           }
         } else {
           // attaque contact
           picto = '<span style="font-family: \'Pictos Custom\'">t</span> ';
           style = 'background-color:#cc0000';
           if (stateCOF.options.regles.val.generer_options_attaques.val) {
-            options = "?{Type d'Attaque|Normale,|Assurée,--attaqueAssuree|Risquée,--attaqueRisquee}";
+            options = "?{Type d'Attaque|Normale,&#32;|Assurée,--attaqueAssuree|Risquée,--attaqueRisquee}";
           }
         }
         break;
