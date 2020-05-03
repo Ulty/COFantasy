@@ -77,7 +77,12 @@ var COFantasy = COFantasy || function() {
           type: 'bool'
         },
         initiative_variable: {
-          explications: "Ajoute 1d6 à l'initiative, lancé une fois par combat",
+          explications: "Ajoute 1d6 à l'initiative, lancé une fois par combat par type de créature",
+          val: false,
+          type: 'bool'
+        },
+        initiative_variable_individuelle: {
+          explications: "Lancer l'initiative variable pour chaque créature (nécessite d'activer l'Initiative variable)",
           val: false,
           type: 'bool'
         },
@@ -529,6 +534,8 @@ var COFantasy = COFantasy || function() {
       case "!cof-effet":
       case "!cof-effet-temp":
       case "!cof-effet-combat":
+      case "!cof-fortifiant":
+      case "!cof-set-state":
         picto = '<span style="font-family: \'Pictos\'">S</span> ';
         style = 'background-color:#4a86e8';
         break;
@@ -4205,8 +4212,17 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(perso, 'formeDArbre')) init = 7;
     //Règle optionelle : +1d6, à lancer en entrant en combat
+    //Un seul jet par "character" pour les mook
     if (stateCOF.options.regles.val.initiative_variable.val) {
-      var bonusVariable = attributeAsInt(perso, 'bonusInitVariable', 0);
+      var bonusVariable;
+      var tokenAUtiliser;
+      if(stateCOF.options.regles.val.initiative_variable_individuelle.val) {
+        bonusVariable = attributeAsInt(perso, 'bonusInitVariable', 0);
+        tokenAUtiliser = perso;
+      } else {
+        bonusVariable = charAttributeAsInt(perso, 'bonusInitVariable', 0);
+        tokenAUtiliser = {charId: perso.charId};
+      }
       if (bonusVariable === 0) {
         var rollD6 = rollDePlus(6, {
           deExplosif: true
@@ -4215,7 +4231,7 @@ var COFantasy = COFantasy || function() {
         var msg = "entre en combat. ";
         msg += onGenre(perso.charId, 'Il', 'Elle') + " fait " + rollD6.roll;
         msg += " à son jet d'initiative";
-        setTokenAttr(perso, 'bonusInitVariable', bonusVariable, evt, msg);
+        setTokenAttr(tokenAUtiliser, 'bonusInitVariable', bonusVariable, evt, msg);
       }
       init += bonusVariable;
     }
@@ -9913,11 +9929,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('tueurFantasmagorique', evt, attrs);
     attrs = removeAllAttributes('resisteInjonction', evt, attrs);
     //Les élixirs
-    var attrsElixirsACreer = attrs.filter(function(a) {
-      return a.get('name').startsWith('elixirsACreer');
-    });
-    attrs = removeAllAttributes('elixirsACreer', evt, attrs);
-    attrs = removeAllAttributes('elixir', evt, attrs);
+    attrs = proposerRenouveauElixirs(evt, attrs);
     //Les runes
     attrs = proposerRenouveauRunes(evt, attrs);
     //Les plantes médicinales
@@ -17039,8 +17051,19 @@ var COFantasy = COFantasy || function() {
         attributes.forEach(function(attr) {
           var attrName = attr.get('name').trim();
           if (!(attrName.startsWith('dose_') || attrName.startsWith('consommable_') || attrName.startsWith('elixir_'))) return;
-          var consName = attrName.substring(attrName.indexOf('_') + 1);
-          consName = consName.replace(/_/g, ' ');
+          var consName;
+          if(attrName.startsWith("elixir_")) {
+            var typeElixir = listeElixirs(5).find(function(i) {
+              return "elixir_"+i.attrName == attrName;
+            });
+            if (typeElixir != undefined) {
+              consName = typeElixir.nom;
+            }
+          }
+          if (consName == undefined) {
+            consName = attrName.substring(attrName.indexOf('_') + 1);
+            consName = consName.replace(/_/g, ' ');
+          }
           var quantite = parseInt(attr.get('current'));
           if (isNaN(quantite) || quantite < 1) {
             //addLineToFramedDisplay(display, "0 " + consName);
@@ -17387,78 +17410,91 @@ var COFantasy = COFantasy || function() {
 
   function listeElixirs(rang) {
     var liste = [{
-      nom: 'fortifiant',
+      nom: 'Elixir fortifiant',
+      attrName: 'fortifiant',
       action: "!cof-fortifiant $rang",
       rang: 1
     }];
     if (rang < 2) return liste;
     liste.push({
-      nom: 'feu_grégeois',
+      nom: 'Elixir de feu grégeois',
+      attrName: 'feu_grégeois',
       action: "!cof-dmg $rangd6 --feu --psave DEX [[10+@{selected|INT}]] --disque @{target|token_id} 3 10 --lanceur @{selected|token_id} --targetFx burst-fire",
       rang: 2
     });
     if (rang < 3) return liste;
     liste.push({
-      nom: 'élixir_de_guérison',
+      nom: 'Elixir de guérison',
+      attrName: 'élixir_de_guérison',
       action: "!cof-soin 3d6+$INT",
       rang: 3
     });
     if (rang < 4) return liste;
     liste.push({
-      nom: "potion_d_agrandissement",
+      nom: "Elixir d'agrandissement",
+      attrName: "potion_d_agrandissement",
       action: "!cof-effet-temp agrandissement [[5+$INT]]",
       rang: 4
     });
     liste.push({
-      nom: "potion_de_forme_gazeuse",
+      nom: "Elixir de forme gazeuse",
+      attrName: "potion_de_forme_gazeuse",
       action: "!cof-effet-temp formeGazeuse [[1d4+$INT]]",
       rang: 4
     });
     liste.push({
-      nom: "potion_de_protection_contre_les_éléments",
+      nom: "Elixir de protection contre les éléments",
+      attrName: "potion_de_protection_contre_les_éléments",
       action: "!cof-effet-temp protectionContreLesElements [[5+$INT]] --valeur $rang",
       rang: 4
     });
     liste.push({
-      nom: "potion_d_armure_de_mage",
+      nom: "Elixir d'armure de mage",
+      attrName: "potion_d_armure_de_mage",
       action: "!cof-effet-combat armureDuMage",
       rang: 4
     });
     liste.push({
-      nom: "potion_de_chute_ralentie",
+      nom: "Elixir de chute ralentie",
+      attrName: "potion_de_chute_ralentie",
       action: "est léger comme une plume.",
       rang: 4
     });
     if (rang < 5) return liste;
     liste.push({
-      nom: "potion_d_invisibilité",
+      nom: "Elixir d'invisibilité",
+      attrName: "potion_d_invisibilité",
       action: "!cof-set-state invisible true --message se rend invisible ([[1d6+$INT]] minutes)",
       rang: 5
     });
     liste.push({
-      nom: "potion_de_vol",
+      nom: "Elixir de vol",
+      attrName: "potion_de_vol",
       action: "se met à voler",
       rang: 5
     });
     liste.push({
-      nom: "potion_de_respiration_aquatique",
+      nom: "Elixir de respiration aquatique",
+      attrName: "potion_de_respiration_aquatique",
       action: "peut respirer sous l'eau",
       rang: 5
     });
     liste.push({
-      nom: "potion_de_flou",
+      nom: "Elixir de flou",
+      attrName: "potion_de_flou",
       action: "!cof-effet-temp flou [[1d4+$INT]]",
       rang: 5
     });
     liste.push({
-      nom: "potion_de_hâte",
+      nom: "Elixir de hâte",
+      attrName: "potion_de_hâte",
       action: "!cof-effet-temp hate [[1d6+$INT]]",
       rang: 5
     });
     return liste;
   }
 
-  //!cof-creer-elixir token_id nom_token elixir
+  //!cof-creer-elixir token_id elixir
   function creerElixir(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
@@ -17483,7 +17519,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var elixir = listeElixirs(voieDesElixirs).find(function(i) {
-      return i.nom == cmd[2];
+      return i.attrName == cmd[2];
     });
     if (elixir === undefined) {
       var altElixirs = findObjs({
@@ -17499,6 +17535,7 @@ var COFantasy = COFantasy || function() {
         if (nomElixir != cmd[2]) return false;
         elixir = {
           nom: nomElixir,
+          attrName: nomElixir,
           action: attr.get('max'),
           rang: rang
         };
@@ -17535,9 +17572,18 @@ var COFantasy = COFantasy || function() {
         options.mana = elixir.rang - 2;
       }
     }
+
+    // Robustesse DecrAttr multi-cmd
+    var elixirsACreer = charAttribute(forgesort.charId, "elixirsACreer");
+    if(elixirsACreer.length === 0) {
+      error(forgesort.token.get('name') + " ne peut créer d'élixirs " + cmd[2], cmd);
+      return;
+    }
+    options.decrAttribute = elixirsACreer[0];
+
     if (limiteRessources(forgesort, options, 'elixirsACreer', 'élixirs à créer', evt)) return;
-    var attrName = 'elixir_' + elixir.nom;
-    var message = "crée un " + elixir.nom.replace(/_/g, ' ');
+    var attrName = 'elixir_' + elixir.attrName;
+    var message = "crée un " + elixir.nom;
     var attr = tokenAttribute(forgesort, attrName);
     if (attr.length === 0) {
       var action = elixir.action.replace(/\$rang/g, voieDesElixirs);
@@ -17586,22 +17632,23 @@ var COFantasy = COFantasy || function() {
             var altElixir = charAttribute(forgesort.charId, 'Elixir ' + elixir.rang);
             if (altElixir.length > 0) {
               elixir.nom = altElixir[0].get('current');
+              elixir.attrName = altElixir[0].get('current');
               elixir.action = altElixir[0].get('max');
             }
           }
           var nbElixirs = 0;
-          var attr = tokenAttribute(forgesort, 'elixir_' + elixir.nom);
+          var attr = tokenAttribute(forgesort, 'elixir_' + elixir.attrName);
           if (attr.length > 0) {
             attr = attr[0];
             nbElixirs = parseInt(attr.get('current'));
             if (isNaN(nbElixirs) || nbElixirs < 0) nbElixirs = 0;
           }
-          var nomElixir = elixir.nom.replace(/_/g, ' ');
+          var nomElixir = elixir.nom;
           var options = '';
           var action;
           if (elixirsACreer > 0) {
-            action = "!cof-creer-elixir " + forgesort.token.id + ' ' + elixir.nom;
-            options += bouton(action, nbElixirs, forgesort, attrElixirs);
+            action = "!cof-creer-elixir " + forgesort.token.id + ' ' + elixir.attrName;
+            options += bouton(action, nbElixirs, forgesort) + ' ';
           } else {
             options = nbElixirs + ' ';
           }
@@ -17618,6 +17665,126 @@ var COFantasy = COFantasy || function() {
         sendChat('', endFramedDisplay(display));
       });
     }); //Fin du getSelected
+  }
+
+  //TODO: passer pageId en argument au lieu de prendre la page des joueurs
+  function proposerRenouveauElixirs(evt, attrs) {
+    var attrsNamed = allAttributesNamed(attrs, 'elixir');
+    if (attrsNamed.length === 0) return attrs;
+    // Trouver les forgesorts avec des élixirs sur eux
+    var forgesorts = {};
+    attrsNamed.forEach(function(attr) {
+      // Check de l'existence d'un créateur
+      var foundCharacterId = attr.get('_characterid');
+      // Check de l'existence d'un token présent pour le personnage
+      var tokensPersonnage =
+          findObjs({
+            _pageid: Campaign().get("playerpageid"),
+            _type: 'graphic',
+            _subtype: 'token',
+            represents: foundCharacterId
+          });
+      if (tokensPersonnage.length < 1) {
+        error("Impossible de trouver le token du personnage " + foundCharacterId + " avec un élixir sur la carte");
+        return;
+      }
+      var personnage = {
+        token: tokensPersonnage[0],
+        charId: foundCharacterId
+      };
+
+      var voieDesElixirs = charAttributeAsInt(personnage, "voieDesElixirs");
+      //TODO: réfléchir à une solution pour le renouveau des élixirs échangés
+      if (voieDesElixirs > 0) {
+        var elixirsDuForgesort = forgesorts[foundCharacterId];
+        if (elixirsDuForgesort === undefined) {
+          var elixirsDuForgesort = {
+            forgesort: personnage,
+            voieDesElixirs: voieDesElixirs,
+            elixirsParRang: {}
+          };
+        }
+
+        // Check de l'élixir à renouveler
+        var nomElixir = attr.get('name');
+        var typeElixir = listeElixirs(voieDesElixirs).find(function(i) {
+          return "elixir_"+i.attrName == nomElixir;
+        });
+        if (typeElixir === undefined) {
+          error("Impossible de trouver l'élixir à renouveler");
+          return;
+        }
+
+        // Check des doses
+        var doses = attr.get("current");
+        if(isNaN(doses)) {
+          error("Erreur interne : élixir mal formé");
+          return;
+        }
+
+        if(doses > 0) {
+          // Tout est ok, création de l'item
+          var elixirArenouveler = {
+            typeElixir: typeElixir,
+            doses: doses
+          };
+
+          var elixirsParRang = elixirsDuForgesort.elixirsParRang;
+          if (elixirsParRang[typeElixir.rang] === undefined) {
+            elixirsParRang[typeElixir.rang] = [elixirArenouveler];
+          } else elixirsParRang[typeElixir.rang].push(elixirArenouveler);
+          forgesorts[foundCharacterId] = elixirsDuForgesort;
+        }
+      }
+    });
+
+    // Display par personnage
+    for (const [forgesortCharId, elixirsDuForgesort] of Object.entries(forgesorts)) {
+      // Init du display pour le personnage
+      var displayOpt = {
+        chuchote: true
+      };
+      var allPlayers = getPlayerIds({
+        charId: forgesortCharId
+      });
+      var playerId;
+      if (allPlayers === undefined || allPlayers.length < 1) {
+        displayOpt.chuchote = 'gm';
+      } else {
+        playerId = allPlayers[0];
+      }
+      var forgesort = elixirsDuForgesort.forgesort;
+      setTokenAttr(forgesort, "elixirsACreer", elixirsDuForgesort.voieDesElixirs*2, evt);
+      var display = startFramedDisplay(allPlayers[0], "Renouveler les élixirs", forgesort, displayOpt);
+      var actionToutRenouveler = "";
+      // Boucle par rang de rune
+      for (const rang in elixirsDuForgesort.elixirsParRang) {
+        var elixirsDeRang = elixirsDuForgesort.elixirsParRang[rang];
+        if (elixirsDeRang === undefined || elixirsDeRang.length < 1) continue;
+        addLineToFramedDisplay(display, "Elixirs de rang " + rang, undefined, true);
+        var actionTout = "";
+        var ligneBoutons = "";
+        // Boucle par élixir de ce rang à renouveler
+        for (const i in elixirsDeRang) {
+          var elixir = elixirsDeRang[i];
+          // Boucle par dose
+          for (let j = 0; j < elixir.doses; j++) {
+            var action = "!cof-creer-elixir " + forgesort.token.id + " " + elixir.typeElixir.attrName;
+            actionTout += action + "\n";
+            actionToutRenouveler += action + "\n";
+            var nomElixirComplet = elixir.typeElixir.nom;
+            ligneBoutons += bouton(action, nomElixirComplet.replace("Elixir de ", "").replace("Elixir d'", ""), forgesort);
+          }
+        }
+        ligneBoutons += bouton(actionTout, "Tout", forgesort, undefined, undefined, "background-color: blue;");
+        addLineToFramedDisplay(display, ligneBoutons, undefined, true);
+      }
+      var boutonToutRenouveler =
+          bouton(actionToutRenouveler, "Tout renouveler", forgesort, undefined, undefined, "background-color: green;");
+      addLineToFramedDisplay(display, boutonToutRenouveler, undefined, true);
+      sendChar(forgesortCharId, endFramedDisplay(display));
+    }
+    return removeAllAttributes("elixir", evt, attrs);
   }
 
   function listeRunes(rang) {
@@ -17677,7 +17844,7 @@ var COFantasy = COFantasy || function() {
     }); //Fin du getSelected
   }
 
-  //!cof-creer-elixir token_id nom_token elixir
+  //!cof-creer-rune token_id rune
   function creerRune(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
@@ -17897,9 +18064,9 @@ var COFantasy = COFantasy || function() {
         ligneBoutons += bouton(actionTout, "Tout", forgesort, undefined, undefined, "background-color: blue;");
         addLineToFramedDisplay(display, ligneBoutons, undefined, true);
       }
-      var boutonTourRenouveler =
+      var boutonToutRenouveler =
         bouton(actionToutRenouveler, "Tout renouveler", forgesort, undefined, undefined, "background-color: green;");
-      addLineToFramedDisplay(display, boutonTourRenouveler, undefined, true);
+      addLineToFramedDisplay(display, boutonToutRenouveler, undefined, true);
       sendChar(forgesortCharId, endFramedDisplay(display));
     }
     return removeAllAttributes("runeForgesort", evt, attrs);
