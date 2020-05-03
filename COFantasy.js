@@ -11509,11 +11509,32 @@ var COFantasy = COFantasy || function() {
     }
     if (sync != threadSync) return;
     if (token) {
+      var tokenAUtiliser = token;
+      // Cas spéciaux du cavaliers
+      var personnage = persoOfId(token.get("_id"));
+      var monteSur = tokenAttribute(personnage, "monteSur");
+      var estMontePar = tokenAttribute(personnage, "estMontePar");
+      var monture;
+      var cavalier;
+      if(monteSur.length > 0) {
+        cavalier = personnage;
+        var montureTokenId = monteSur[0].get("current");
+        monture = persoOfId(montureTokenId);
+        if (monture != undefined) tokenAUtiliser = monture.token;
+      } else if (estMontePar.length > 0) {
+        monture = personnage;
+        var cavalierId = estMontePar[0].get("current");
+        cavalier = persoOfId(cavalierId);
+      }
+      log("cavalier");
+      log(cavalier);
+      log("monture");
+      log(monture);
       if (roundMarker) roundMarker.remove();
-      roundMarkerSpec._pageid = token.get('pageid');
-      roundMarkerSpec.left = token.get('left');
-      roundMarkerSpec.top = token.get('top');
-      var width = (token.get('width') + token.get('height')) / 2 * flashyInitMarkerScale;
+      roundMarkerSpec._pageid = tokenAUtiliser.get('pageid');
+      roundMarkerSpec.left = tokenAUtiliser.get('left');
+      roundMarkerSpec.top = tokenAUtiliser.get('top');
+      var width = (tokenAUtiliser.get('width') + tokenAUtiliser.get('height')) / 2 * flashyInitMarkerScale;
       roundMarkerSpec.width = width;
       roundMarkerSpec.height = width;
       roundMarker = createObj('graphic', roundMarkerSpec);
@@ -11522,7 +11543,13 @@ var COFantasy = COFantasy || function() {
         return false;
       }
       stateCOF.roundMarkerId = roundMarker.id;
-      toFront(token);
+      // Ne pas amener une monture montée en avant pour éviter de cacher le cavalier
+      if(cavalier != undefined && monture != undefined) {
+        toFront(monture.token);
+        toFront(cavalier.token);
+      } else {
+        toFront(tokenAUtiliser);
+      }
     } else { //rotation
       var rotation = roundMarker.get('rotation');
       roundMarker.set('rotation', (rotation + 1) % 365);
@@ -17388,6 +17415,9 @@ var COFantasy = COFantasy || function() {
     setTokenAttr(monture, 'estMontePar', tokenC.id, evt, undefined, tokenC.get('name'));
     setTokenAttr(monture, 'positionSurMonture', tokenC.get('left') - tokenM.get('left'), evt, undefined, tokenC.get('top') - tokenM.get('top'));
     setTokenAttr(monture, 'directionSurMonture', tokenC.get('rotation') - tokenM.get('rotation'), evt);
+    if (stateCOF.combat) {
+      updateInit(monture.token, evt);
+    }
     addEvent(evt);
   }
 
@@ -22982,6 +23012,12 @@ var COFantasy = COFantasy || function() {
         sendChar(charId, "descend de " + monture.token.get('name'));
         removeTokenAttr(monture, 'estMontePar');
         removeTokenAttr(monture, 'positionSurMonture');
+        if(stateCOF.combat) {
+          var evt = {
+            type: "initiative"
+          };
+          updateInit(monture.token, evt);
+        }
       }
       return;
     }
