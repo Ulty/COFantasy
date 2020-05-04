@@ -96,6 +96,11 @@ var COFantasy = COFantasy || function() {
           val: false,
           type: 'bool'
         },
+        generer_attaque_groupe: {
+          explications: "Ajouter automatiquement une option 'Attaque de groupe' (cf. Compagnon p.99) pour les PNJ",
+          val: false,
+          type: 'bool'
+        },
         mana_totale: {
           explications: "Tous les sorts ont un coût, celui des tempêtes de mana est multiplié par 3",
           val: false,
@@ -464,6 +469,7 @@ var COFantasy = COFantasy || function() {
     var style = '';
     var picto = '';
     var options;
+    var groupe;
     var command = fullCommand.split(' ');
     // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
     switch (command[0]) {
@@ -507,6 +513,9 @@ var COFantasy = COFantasy || function() {
           style = 'background-color:#cc0000';
           if (stateCOF.options.regles.val.generer_options_attaques.val) {
             options = "?{Type d'Attaque|Normale,&#32;|Assurée,--attaqueAssuree|Risquée,--attaqueRisquee}";
+          }
+          if (stateCOF.options.regles.val.generer_attaque_groupe.val && perso.pnj && perso.token.get('bar1_link') === "") {
+            groupe = true;
           }
         }
         break;
@@ -582,7 +591,8 @@ var COFantasy = COFantasy || function() {
     return {
       picto: picto,
       style: style,
-      options: options
+      options: options,
+      groupe: groupe
     };
   }
 
@@ -1696,9 +1706,16 @@ var COFantasy = COFantasy || function() {
       buttonStyle = ' style="' + optionsFromCommand.style + '"';
     if (overlay) overlay = ' title="' + overlay + '"';
     else overlay = '';
-    if (optionsFromCommand.options)
+
+    var baseAction = action;
+    if (optionsFromCommand.options) {
       action += ' ' + optionsFromCommand.options;
-    return boutonSimple(action, buttonStyle + overlay, text);
+    }
+    var toReturn = boutonSimple(action, buttonStyle + overlay, text);
+    if (optionsFromCommand.groupe) {
+      toReturn += "<br/>" + boutonSimple(baseAction + " --attaqueDeGroupe ?{Attaque en groupe ?}", buttonStyle + overlay, text + " (groupe)");
+    }
+    return toReturn;
   }
 
   function improve_image(image_url) {
@@ -4199,12 +4216,14 @@ var COFantasy = COFantasy || function() {
     if (stateCOF.options.regles.val.initiative_variable.val) {
       var bonusVariable;
       var tokenAUtiliser;
-      if(stateCOF.options.regles.val.initiative_variable_individuelle.val) {
+      if (stateCOF.options.regles.val.initiative_variable_individuelle.val) {
         bonusVariable = attributeAsInt(perso, 'bonusInitVariable', 0);
         tokenAUtiliser = perso;
       } else {
         bonusVariable = charAttributeAsInt(perso, 'bonusInitVariable', 0);
-        tokenAUtiliser = {charId: perso.charId};
+        tokenAUtiliser = {
+          charId: perso.charId
+        };
       }
       if (bonusVariable === 0) {
         var rollD6 = rollDePlus(6, {
@@ -6071,7 +6090,7 @@ var COFantasy = COFantasy || function() {
       return 0;
     }
     var dmgCoef = options.dmgCoef || 1;
-    if(options.attaqueDeGroupeDmgCoef) {
+    if (options.attaqueDeGroupeDmgCoef) {
       dmgCoef++;
       expliquer("Attaque en groupe > DEF +5 => DMGx" + (crit ? "3" : "2"));
     }
@@ -10037,7 +10056,10 @@ var COFantasy = COFantasy || function() {
       }
       var bar1 = parseInt(token.get("bar1_value"));
       var pvmax = parseInt(token.get("bar1_max"));
-      if (isNaN(bar1) || isNaN(pvmax)) return;
+      if (isNaN(bar1) || isNaN(pvmax)) {
+        finalize();
+        return;
+      }
       if (bar1 >= pvmax && (pr.current == pr.max || !reposLong)) {
         if (!reposLong) {
           sendChat("", characterName + " n'a pas besoin de repos");
@@ -17062,15 +17084,15 @@ var COFantasy = COFantasy || function() {
           var attrName = attr.get('name').trim();
           if (!(attrName.startsWith('dose_') || attrName.startsWith('consommable_') || attrName.startsWith('elixir_'))) return;
           var consName;
-          if(attrName.startsWith("elixir_")) {
+          if (attrName.startsWith("elixir_")) {
             var typeElixir = listeElixirs(5).find(function(i) {
-              return "elixir_"+i.attrName == attrName;
+              return "elixir_" + i.attrName == attrName;
             });
-            if (typeElixir != undefined) {
+            if (typeElixir !== undefined) {
               consName = typeElixir.nom;
             }
           }
-          if (consName == undefined) {
+          if (consName === undefined) {
             consName = attrName.substring(attrName.indexOf('_') + 1);
             consName = consName.replace(/_/g, ' ');
           }
@@ -17588,7 +17610,7 @@ var COFantasy = COFantasy || function() {
 
     // Robustesse DecrAttr multi-cmd
     var elixirsACreer = charAttribute(forgesort.charId, "elixirsACreer");
-    if(elixirsACreer.length === 0) {
+    if (elixirsACreer.length === 0) {
       error(forgesort.token.get('name') + " ne peut créer d'élixirs " + cmd[2], cmd);
       return;
     }
@@ -17691,12 +17713,12 @@ var COFantasy = COFantasy || function() {
       var foundCharacterId = attr.get('_characterid');
       // Check de l'existence d'un token présent pour le personnage
       var tokensPersonnage =
-          findObjs({
-            _pageid: Campaign().get("playerpageid"),
-            _type: 'graphic',
-            _subtype: 'token',
-            represents: foundCharacterId
-          });
+        findObjs({
+          _pageid: Campaign().get("playerpageid"),
+          _type: 'graphic',
+          _subtype: 'token',
+          represents: foundCharacterId
+        });
       if (tokensPersonnage.length < 1) {
         error("Impossible de trouver le token du personnage " + foundCharacterId + " avec un élixir sur la carte");
         return;
@@ -17711,7 +17733,7 @@ var COFantasy = COFantasy || function() {
       if (voieDesElixirs > 0) {
         var elixirsDuForgesort = forgesorts[foundCharacterId];
         if (elixirsDuForgesort === undefined) {
-          var elixirsDuForgesort = {
+          elixirsDuForgesort = {
             forgesort: personnage,
             voieDesElixirs: voieDesElixirs,
             elixirsParRang: {}
@@ -17721,7 +17743,7 @@ var COFantasy = COFantasy || function() {
         // Check de l'élixir à renouveler
         var nomElixir = attr.get('name');
         var typeElixir = listeElixirs(voieDesElixirs).find(function(i) {
-          return "elixir_"+i.attrName == nomElixir;
+          return "elixir_" + i.attrName == nomElixir;
         });
         if (typeElixir === undefined) {
           error("Impossible de trouver l'élixir à renouveler");
@@ -17730,12 +17752,12 @@ var COFantasy = COFantasy || function() {
 
         // Check des doses
         var doses = attr.get("current");
-        if(isNaN(doses)) {
+        if (isNaN(doses)) {
           error("Erreur interne : élixir mal formé");
           return;
         }
 
-        if(doses > 0) {
+        if (doses > 0) {
           // Tout est ok, création de l'item
           var elixirArenouveler = {
             typeElixir: typeElixir,
@@ -17767,7 +17789,7 @@ var COFantasy = COFantasy || function() {
         playerId = allPlayers[0];
       }
       var forgesort = elixirsDuForgesort.forgesort;
-      setTokenAttr(forgesort, "elixirsACreer", elixirsDuForgesort.voieDesElixirs*2, evt);
+      setTokenAttr(forgesort, "elixirsACreer", elixirsDuForgesort.voieDesElixirs * 2, evt);
       var display = startFramedDisplay(allPlayers[0], "Renouveler les élixirs", forgesort, displayOpt);
       var actionToutRenouveler = "";
       // Boucle par rang de rune
@@ -17793,7 +17815,7 @@ var COFantasy = COFantasy || function() {
         addLineToFramedDisplay(display, ligneBoutons, undefined, true);
       }
       var boutonToutRenouveler =
-          bouton(actionToutRenouveler, "Tout renouveler", forgesort, undefined, undefined, "background-color: green;");
+        bouton(actionToutRenouveler, "Tout renouveler", forgesort, undefined, undefined, "background-color: green;");
       addLineToFramedDisplay(display, boutonToutRenouveler, undefined, true);
       sendChar(forgesortCharId, endFramedDisplay(display));
     }
