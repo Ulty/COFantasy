@@ -11548,10 +11548,6 @@ var COFantasy = COFantasy || function() {
         var cavalierId = estMontePar[0].get("current");
         cavalier = persoOfId(cavalierId);
       }
-      log("cavalier");
-      log(cavalier);
-      log("monture");
-      log(monture);
       if (roundMarker) roundMarker.remove();
       roundMarkerSpec._pageid = tokenAUtiliser.get('pageid');
       roundMarkerSpec.left = tokenAUtiliser.get('left');
@@ -17439,6 +17435,9 @@ var COFantasy = COFantasy || function() {
     setTokenAttr(monture, 'directionSurMonture', tokenC.get('rotation') - tokenM.get('rotation'), evt);
     if (stateCOF.combat) {
       updateInit(monture.token, evt);
+      if (stateCOF.options.affichage.val.init_dynamique.val) {
+        setTokenFlagAura(monture);
+      }
     }
     addEvent(evt);
   }
@@ -22969,10 +22968,67 @@ var COFantasy = COFantasy || function() {
         token.set('top', prev.top);
         return;
       } else {
+        //On regarde d'abord si perso est sur une monture
+        var attr = tokenAttribute(perso, 'monteSur');
+        if (attr.length > 0) {
+          if (deplacement) {
+            attr[0].remove();
+            var monture = persoOfId(attr[0].get('current'), attr[0].get('max'), pageId);
+            if (monture === undefined) {
+              sendChar(charId, "descend de sa monture");
+              return;
+            } else {
+              sendChar(charId, "descend de " + monture.token.get('name'));
+              removeTokenAttr(monture, 'estMontePar');
+              removeTokenAttr(monture, 'positionSurMonture');
+            }
+            if(stateCOF.combat) {
+              var evt = {
+                type: "initiative"
+              };
+              updateInit(monture.token, evt);
+              // Réadapter l'init_dynamique au token du perso
+              if (stateCOF.options.affichage.val.init_dynamique.val) {
+                setTokenFlagAura(perso);
+              }
+            }
+          }
+        }
+        //si non, perso est peut-être une monture
+        attr = tokenAttribute(perso, 'estMontePar');
+        attr.forEach(function(a) {
+          var cavalier = persoOfId(a.get('current'), a.get('max'), pageId);
+          if (cavalier === undefined) {
+            a.remove();
+            return;
+          }
+          var position = tokenAttribute(perso, 'positionSurMonture');
+          if (position.length > 0) {
+            var dx = parseInt(position[0].get('current'));
+            var dy = parseInt(position[0].get('max'));
+            if (!(isNaN(dx) || isNaN(dy))) {
+              x += dx;
+              y += dy;
+            }
+          }
+          cavalier.token.set('left', x);
+          cavalier.token.set('top', y);
+          cavalier.token.set('rotation', token.get('rotation') + attributeAsInt(perso, 'directionSurMonture', 0));
+        });
+        // Update position du token d'initiative dynamique
         if (stateCOF.options.affichage.val.init_dynamique.val) {
           if (roundMarker && stateCOF.activeTokenId == token.id) {
             roundMarker.set('left', x);
             roundMarker.set('top', y);
+          } else if (roundMarker) {
+            // Cas spéciaux du cavaliers : au tour du cavalier, l'init_dynamique suit la monture
+            var estMontePar = tokenAttribute(perso, "estMontePar");
+            if (estMontePar.length > 0 && stateCOF.activeTokenId == estMontePar[0].get("current")) {
+              var cavalierId = estMontePar[0].get("current");
+              var cavalier = persoOfId(cavalierId);
+              roundMarker.set('left', cavalier.token.get('left'));
+              roundMarker.set('top', cavalier.token.get('top'));
+            }
           }
         }
         //On déplace les tokens de lumière, si il y en a
@@ -23021,49 +23077,6 @@ var COFantasy = COFantasy || function() {
         });
       }
     }
-    //On regarde d'abord si perso est sur une monture
-    var attr = tokenAttribute(perso, 'monteSur');
-    if (attr.length > 0) {
-      if (deplacement) {
-        attr[0].remove();
-        var monture = persoOfId(attr[0].get('current'), attr[0].get('max'), pageId);
-        if (monture === undefined) {
-          sendChar(charId, "descend de sa monture");
-          return;
-        }
-        sendChar(charId, "descend de " + monture.token.get('name'));
-        removeTokenAttr(monture, 'estMontePar');
-        removeTokenAttr(monture, 'positionSurMonture');
-        if(stateCOF.combat) {
-          var evt = {
-            type: "initiative"
-          };
-          updateInit(monture.token, evt);
-        }
-      }
-      return;
-    }
-    //si non, perso est peut-être une monture
-    attr = tokenAttribute(perso, 'estMontePar');
-    attr.forEach(function(a) {
-      var cavalier = persoOfId(a.get('current'), a.get('max'), pageId);
-      if (cavalier === undefined) {
-        a.remove();
-        return;
-      }
-      var position = tokenAttribute(perso, 'positionSurMonture');
-      if (position.length > 0) {
-        var dx = parseInt(position[0].get('current'));
-        var dy = parseInt(position[0].get('max'));
-        if (!(isNaN(dx) || isNaN(dy))) {
-          x += dx;
-          y += dy;
-        }
-      }
-      cavalier.token.set('left', x);
-      cavalier.token.set('top', y);
-      cavalier.token.set('rotation', token.get('rotation') + attributeAsInt(perso, 'directionSurMonture', 0));
-    });
     attr = tokenAttribute(perso, 'enveloppe');
     attr.forEach(function(a) {
       var cible = persoOfIdName(a.get('current'), pageId);
