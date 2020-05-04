@@ -8745,6 +8745,19 @@ var COFantasy = COFantasy || function() {
         if (attributeAsBool(target, 'masqueMortuaire')) rd += 2;
         var rdNature = charAttributeAsInt(target, 'RD_nature', 0);
         if (rdNature > 0 && dmgNaturel(options)) rd += rdNature;
+        //RD PeauDePierre à prendre en compte en dernier
+        var rdPrePeauDePierreMag = rd;
+        var rdPostPeauDePierreMag = rd;
+        if (attributeAsBool(target, 'peauDePierreMag')) {
+          var absorb = tokenAttribute(target, "peauDePierreMagAbsorb");
+          log(absorb);
+          if(absorb.length < 1 ) {
+            error("compteur de Peau de Pierre non trouvé");
+          } else {
+            rd += parseInt(absorb[0].get("current"));
+            rdPostPeauDePierreMag = rd;
+          }
+        }
         if (target.defautCuirasse) rd = 0;
         if (options.intercepter) rd += options.intercepter;
         if (target.extraRD) {
@@ -8760,7 +8773,31 @@ var COFantasy = COFantasy || function() {
             showTotal = true;
           }
         }
+        // Mise à jour compteur Peau de Pierre
+        if(rdPostPeauDePierreMag > rdPrePeauDePierreMag && rd > rdPrePeauDePierreMag) {
+          var absorbeParPeauDePierreMag = Math.min(rdPostPeauDePierreMag - rdPrePeauDePierreMag, rd - rdPrePeauDePierreMag);
+          var absorb = tokenAttribute(target, "peauDePierreMagAbsorb");
+          if(absorb.length < 1 ) {
+            error("compteur de Peau de Pierre non trouvé");
+          } else {
+            var RDPeauDePierre = parseInt(absorb[0].get("current"));
+            var resteAAbsorber = parseInt(absorb[0].get("max"));
+            if (absorbeParPeauDePierreMag > resteAAbsorber) {
+              rd -= (absorbeParPeauDePierreMag - resteAAbsorber);
+              finDEffetDeNom(target, "peauDePierreMag", evt);
+            } else {
+              var dmgAbsorbes = absorbeParPeauDePierreMag;
+              if (dmgTotal-absorbeParPeauDePierreMag < stateCOF.options.regles.val.dm_minimum.val) {
+                dmgAbsorbes = dmgTotal-stateCOF.options.regles.val.dm_minimum.val;
+              } else if (dmgTotal-absorbeParPeauDePierreMag < 0){
+                dmgAbsorbes = dmgTotal;
+              }
+              setTokenAttr(target, "peauDePierreMagAbsorb", RDPeauDePierre, evt, undefined, (resteAAbsorber-dmgAbsorbes));
+            }
+          }
+        }
         dmgTotal -= rd;
+
         for (var dmSuiviType in dmSuivis) {
           if (rd === 0) break;
           dmSuivis[dmSuiviType] -= rd;
@@ -13532,6 +13569,9 @@ var COFantasy = COFantasy || function() {
               break;
             case 'affaibliTemp':
               setState(perso, 'affaibli', true, evt);
+              break;
+            case 'peauDePierreMag':
+              setTokenAttr(perso, "peauDePierreMagAbsorb", duree, evt, undefined, 40); //RD=dureemax
               break;
             default:
           }
@@ -21613,6 +21653,11 @@ var COFantasy = COFantasy || function() {
       actif: "s'est mis en danger par une attaque risquée",
       fin: "retrouve une position moins risquée",
     },
+    peauDePierreMag: {
+      activation: "transforme sa peau en pierre",
+      actif: "voit ses dégâts réduits par sa Peau de pierre",
+      fin: "retrouve sa peau normale",
+    },
   };
 
   function buildPatternEffets(listeEffets, postfix) {
@@ -22169,6 +22214,17 @@ var COFantasy = COFantasy || function() {
               token: token
             }, undefined, evt);
           }
+        });
+        break;
+      case 'peauDePierreMag':
+        //Effacer Absorb
+        var charAttributes = findObjs({
+          _type: 'attribute',
+          _characterid: charId,
+          name: "peauDePierreMagAbsorb"
+        });
+        charAttributes.forEach(function(otherAttr) {
+          otherAttr.remove();
         });
         break;
       default:
