@@ -5597,7 +5597,7 @@ var COFantasy = COFantasy || function() {
               if (getState(cible, 'mort')) return; //pas de dégâts aux morts
               var pt = tokenCenter(obj);
               var distToTrajectory = VecMath.ptSegDist(pt, pta, ptt);
-              if (distToTrajectory > (obj.get('width') + obj.get('height')) / 4)
+              if (distToTrajectory > (obj.get('width') + obj.get('height')) / 4 + PIX_PER_UNIT/4)
                 return;
               cible.tokName = obj.get('name');
               var objChar = getObj('character', objCharId);
