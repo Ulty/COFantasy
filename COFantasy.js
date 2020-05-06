@@ -887,7 +887,7 @@ var COFantasy = COFantasy || function() {
         }
         //On met maintenant les nouveaux PVs
         //selon Kegron http://www.black-book-editions.fr/forums.php?topic_id=4800&tid=245841#msg245841
-        var niveau = ficheAttributeAsInt(personnage, 'NIVEAU', 1);
+        var niveau = ficheAttributeAsInt(personnage, 'niveau', 1);
         var nouveauxPVs = getValeurOfEffet(personnage, 'formeDArbre', niveau * 5);
         updateCurrentBar(token, 1, nouveauxPVs, evt, nouveauxPVs);
         //L'initiative change
@@ -2882,7 +2882,7 @@ var COFantasy = COFantasy || function() {
     var max;
     if (options.rang) max = options.rang;
     var mana = options.mana || 0;
-    var niveau = ficheAttributeAsInt(perso, 'NIVEAU', 1);
+    var niveau = ficheAttributeAsInt(perso, 'niveau', 1);
     var cout_par_effet = 1;
     if (stateCOF.options.regles.val.mana_totale.val) cout_par_effet = 3;
     if (max === undefined || max > niveau - (mana / cout_par_effet))
@@ -3893,7 +3893,7 @@ var COFantasy = COFantasy || function() {
         return false;
       }
       updateCurrentBar(token, 2, bar2 - cout, evt);
-      var niveau = ficheAttributeAsInt(personnage, 'NIVEAU', 1);
+      var niveau = ficheAttributeAsInt(personnage, 'niveau', 1);
       if (stateCOF.options.regles.val.mana_totale.val) {
         if (cout > niveau * 3) {
           sendChar(charId, "Attention, la dépense totale de mana est supérieure au niveau * 3");
@@ -7099,7 +7099,7 @@ var COFantasy = COFantasy || function() {
     }
     attCar = computeCarExpression(attaquant, attCar);
     if (attCar === undefined) return x;
-    return attCar + ficheAttributeAsInt(attaquant, 'NIVEAU', 1) + attDiv;
+    return attCar + ficheAttributeAsInt(attaquant, 'niveau', 1) + attDiv;
   }
 
   function attackDealDmg(attaquant, cibles, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees) {
@@ -8648,7 +8648,7 @@ var COFantasy = COFantasy || function() {
     target.tokName = target.tokName || target.token.get('name');
     if (stateCOF.options.regles.val.blessures_graves.val && estPJ(target) && (dmgTotal == 'mort' ||
         dmgTotal >
-        (ficheAttributeAsInt(target, 'NIVEAU', 1) +
+        (ficheAttributeAsInt(target, 'niveau', 1) +
           ficheAttributeAsInt(target, 'CONSTITUTION', 10)))) {
       var pr = pointsDeRecuperation(target);
       if (pr.current > 0) {
@@ -8742,7 +8742,7 @@ var COFantasy = COFantasy || function() {
         if (options.distance) {
           var piqures = charAttributeAsInt(target, 'piquresDInsectes', 0);
           if (piqures > 0) {
-            if(getAttrByName(target.charId, 'type_personnage') == 'PNJ' || (ficheAttributeAsBool(target, 'DEFARMUREON') && ficheAttributeAsInt(target, 'DEFARMURE', 0) > 5)) {
+            if (getAttrByName(target.charId, 'type_personnage') == 'PNJ' || (ficheAttributeAsBool(target, 'DEFARMUREON') && ficheAttributeAsInt(target, 'DEFARMURE', 0) > 5)) {
               rd += piqures;
             }
           }
@@ -10131,7 +10131,7 @@ var COFantasy = COFantasy || function() {
         }
       }
       var conMod = modCarac(perso, 'CONSTITUTION');
-      var niveau = ficheAttributeAsInt(perso, 'NIVEAU', 1);
+      var niveau = ficheAttributeAsInt(perso, 'niveau', 1);
       var rollExpr = addOrigin(characterName, "[[1d" + dVie + "]]");
       sendChat("COF", rollExpr, function(res) {
         var rolls = res[0];
@@ -11708,7 +11708,7 @@ var COFantasy = COFantasy || function() {
       }
       if (formeDarbre) {
         actionsAAfficher = true;
-        command = '!cof-attack @{selected|token_id} @{target|token_id} ["Branches",["@{selected|NIVEAU}",0],20,[1,6,3,0],0]';
+        command = '!cof-attack @{selected|token_id} @{target|token_id} ["Branches",["@{selected|niveau}",0],20,[1,6,3,0],0]';
         ligne += bouton(command, 'Attaque', perso, false) + '<br />';
       }
       //On cherche si il y a une armée conjurée à attaquer
@@ -11750,7 +11750,7 @@ var COFantasy = COFantasy || function() {
               var tx = t.get('left');
               var ty = t.get('top');
               if (tx < pxp && tx > pxm && ty < pyp && ty > pym) {
-                command = '!cof-attack ' + perso.token.id + ' ' + t.id + ' ["AttaqueArmée",[0,0],20,[0,6,' + (charAttributeAsInt(perso, 'NIVEAU', 1) + 1) + ',0],20] --auto --attaqueArmeeConjuree';
+                command = '!cof-attack ' + perso.token.id + ' ' + t.id + ' ["AttaqueArmée",[0,0],20,[0,6,' + (ficheAttributeAsInt(perso, 'niveau', 1) + 1) + ',0],20] --auto --attaqueArmeeConjuree';
                 ligne += bouton(command, "Attaque de l'armée", perso, false) + '<br />';
               }
             }
@@ -14249,8 +14249,8 @@ var COFantasy = COFantasy || function() {
             carac: 'SAG',
             seuil: 10 + modCarac(attaquant, 'CHARISME')
           };
-          var niveauAttaquant = ficheAttributeAsInt(attaquant, 'NIVEAU', 1);
-          var niveauCible = ficheAttributeAsInt(cible, 'NIVEAU', 1);
+          var niveauAttaquant = ficheAttributeAsInt(attaquant, 'niveau', 1);
+          var niveauCible = ficheAttributeAsInt(cible, 'niveau', 1);
           if (niveauCible > niveauAttaquant)
             s.seuil -= (niveauCible - niveauAttaquant) * 5;
           else if (niveauCible < niveauAttaquant)
@@ -14516,7 +14516,7 @@ var COFantasy = COFantasy || function() {
           return;
         }
         var sagMod = modCarac(perso, 'SAGESSE');
-        var niveau = ficheAttributeAsInt(perso, 'NIVEAU', 1);
+        var niveau = ficheAttributeAsInt(perso, 'niveau', 1);
         var soin = niveau + sagMod;
         if (soin < 0) soin = 0;
         if (bar1 === 0) {
@@ -14875,7 +14875,7 @@ var COFantasy = COFantasy || function() {
     var soins;
     if (soigneur) {
       charId = soigneur.charId;
-      niveau = ficheAttributeAsInt(soigneur, 'NIVEAU', 1);
+      niveau = ficheAttributeAsInt(soigneur, 'niveau', 1);
       rangSoin = charAttributeAsInt(soigneur, 'voieDesSoins', 0);
     }
     var effet = "soins";
@@ -14923,7 +14923,10 @@ var COFantasy = COFantasy || function() {
         var bonusGroupe = niveau + charAttributeAsInt(soigneur, 'voieDuGuerisseur', 0);
         soins += " + " + bonusGroupe + "]]";
         msg.content += " --allies --self";
-        if (options.mana === undefined) options.mana = 1;
+        if (options.mana === undefined) {
+          if (ficheAttributeAsBool(soigneur, 'option_pm'))
+            options.mana = 1;
+        }
         break;
       case 'secondSouffle':
         if (!stateCOF.combat) {
@@ -15193,7 +15196,7 @@ var COFantasy = COFantasy || function() {
       }
       var tokSoigneur = persoSoigneur.token;
       var charIdSoigneur = persoSoigneur.charId;
-      var niveau = ficheAttributeAsInt(persoSoigneur, 'NIVEAU', 1);
+      var niveau = ficheAttributeAsInt(persoSoigneur, 'niveau', 1);
       if (stateCOF.combat) {
         var dejaSoigne = charAttributeAsBool(persoSoigneur, 'soinsDeGroupe');
         if (dejaSoigne) {
@@ -15689,7 +15692,7 @@ var COFantasy = COFantasy || function() {
       error("Erreur de sélection dans !cof-distribuer-baies", msg.selected);
       return;
     }
-    var niveau = ficheAttributeAsInt(druide, 'NIVEAU', 1);
+    var niveau = ficheAttributeAsInt(druide, 'niveau', 1);
     var evt = {
       type: "Distribution de baies magiques"
     };
@@ -16464,7 +16467,7 @@ var COFantasy = COFantasy || function() {
           var attackRoll = rolls.inlinerolls[0];
           var totalAbsorbe = attackRoll.results.total;
           var msgAbsorber = buildinline(attackRoll);
-          var attBonus = ficheAttributeAsInt(guerrier, 'NIVEAU', 1);
+          var attBonus = ficheAttributeAsInt(guerrier, 'niveau', 1);
           if (options.sortilege) {
             attBonus += modCarac(guerrier, 'SAGESSE');
             attBonus += ficheAttributeAsInt(guerrier, 'ATKMAG_DIV', 0);
@@ -16582,7 +16585,7 @@ var COFantasy = COFantasy || function() {
           var attackRoll = rolls.inlinerolls[0];
           var totalEsquive = attackRoll.results.total;
           var msgEsquiver = buildinline(attackRoll);
-          var attBonus = ficheAttributeAsInt(barde, 'NIVEAU', 1);
+          var attBonus = ficheAttributeAsInt(barde, 'niveau', 1);
           attBonus += modCarac(barde, 'DEXTERITE');
           attBonus += ficheAttributeAsInt(barde, 'ATKTIR_DIV', 0);
           totalEsquive += attBonus;
@@ -17588,7 +17591,7 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Création d'élixir"
     };
-    if (stateCOF.options.regles.val.elixirs_sorts.val) {
+    if (stateCOF.options.regles.val.elixirs_sorts.val && ficheAttributeAsBool(forgesort, 'option_pm')) {
       if (stateCOF.options.regles.val.mana_totale.val) {
         switch (elixir.rang) {
           case 1:
@@ -17933,22 +17936,23 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Création de rune"
     };
-    if (stateCOF.options.regles.val.mana_totale.val) {
-      switch (rune.rang) {
-        case 2:
-          options.mana = 3;
-          break;
-        case 3:
-          options.mana = 6;
-          break;
-        case 4:
-          options.mana = 10;
-          break;
+    if (ficheAttributeAsBool(forgesort, 'option_pm')) {
+      if (stateCOF.options.regles.val.mana_totale.val) {
+        switch (rune.rang) {
+          case 2:
+            options.mana = 3;
+            break;
+          case 3:
+            options.mana = 6;
+            break;
+          case 4:
+            options.mana = 10;
+            break;
+        }
+      } else if (rune.rang > 2) {
+        options.mana = rune.rang - 2;
       }
-    } else if (rune.rang > 2) {
-      options.mana = rune.rang - 2;
     }
-
     var attrName = rune.attrName;
     if (rune.rang === 4) attrName += "(" + numeroArme + ")";
     var message = "reçoit ";
@@ -18318,7 +18322,7 @@ var COFantasy = COFantasy || function() {
       name: 'RD_sauf_feu_tranchant',
       current: 10
     });
-    var niveau = ficheAttributeAsInt(druide, 'NIVEAU', 1);
+    var niveau = ficheAttributeAsInt(druide, 'niveau', 1);
     createObj('ability', {
       characterid: caid,
       name: 'Attaque',
@@ -19222,7 +19226,7 @@ var COFantasy = COFantasy || function() {
       token: "https://s3.amazonaws.com/files.d20.io/images/59489165/3R9Ob68sTiqvNeEhwzwWcg/thumb.png?1533047142",
       attributesFiche: {
         type_personnage: 'PNJ',
-        NIVEAU: 1,
+        niveau: 1,
         FORCE: 12,
         pnj_for: 1,
         DEXTERITE: 12,
@@ -19260,7 +19264,7 @@ var COFantasy = COFantasy || function() {
       token: "https://s3.amazonaws.com/files.d20.io/images/60183959/QAMH6WtyoK78aa4zX_mR_Q/thumb.png?1533898482",
       attributesFiche: {
         type_personnage: 'PNJ',
-        NIVEAU: 2,
+        niveau: 2,
         FORCE: 16,
         pnj_for: 3,
         DEXTERITE: 12,
@@ -19308,7 +19312,7 @@ var COFantasy = COFantasy || function() {
       token: "https://s3.amazonaws.com/files.d20.io/images/60184237/smG5o2-siD2pChhPblO_sQ/thumb.png?1533899118",
       attributesFiche: {
         type_personnage: 'PNJ',
-        NIVEAU: 3,
+        niveau: 3,
         FORCE: 16,
         pnj_for: 3,
         DEXTERITE: 12,
@@ -19356,7 +19360,7 @@ var COFantasy = COFantasy || function() {
       token: "https://s3.amazonaws.com/files.d20.io/images/60184437/df1MT2T6lrfo7st02Htxeg/thumb.png?1533899407",
       attributesFiche: {
         type_personnage: 'PNJ',
-        NIVEAU: 4,
+        niveau: 4,
         FORCE: 20,
         pnj_for: 5,
         DEXTERITE: 18,
@@ -19407,7 +19411,7 @@ var COFantasy = COFantasy || function() {
       token: "https://s3.amazonaws.com/files.d20.io/images/60186141/mUZzndi9_sYIzdVVNNka_w/thumb.png?1533903070",
       attributesFiche: {
         type_personnage: 'PNJ',
-        NIVEAU: 5,
+        niveau: 5,
         FORCE: 22,
         pnj_for: 6,
         DEXTERITE: 18,
@@ -19457,7 +19461,7 @@ var COFantasy = COFantasy || function() {
       token: "https://s3.amazonaws.com/files.d20.io/images/60186288/B1uAii9G01GcPfQFNozIbw/thumb.png?1533903333",
       attributesFiche: {
         type_personnage: 'PNJ',
-        NIVEAU: 6,
+        niveau: 6,
         FORCE: 26,
         pnj_for: 8,
         FOR_SUP: '@{jetsup}',
@@ -19501,7 +19505,7 @@ var COFantasy = COFantasy || function() {
       token: "https://s3.amazonaws.com/files.d20.io/images/60186469/ShcrgpvgXKiQsLVOyg4SZQ/thumb.png?1533903741",
       attributesFiche: {
         type_personnage: 'PNJ',
-        NIVEAU: 7,
+        niveau: 7,
         FORCE: 26,
         pnj_for: 8,
         FOR_SUP: '@{jetsup}',
@@ -19553,7 +19557,7 @@ var COFantasy = COFantasy || function() {
       token: "https://s3.amazonaws.com/files.d20.io/images/60186633/lNHXvCOsvfPMZDQnqJKQVw/thumb.png?1533904189",
       attributesFiche: {
         type_personnage: 'PNJ',
-        NIVEAU: 8,
+        niveau: 8,
         FORCE: 32,
         pnj_for: 11,
         DEXTERITE: 10,
@@ -19620,7 +19624,7 @@ var COFantasy = COFantasy || function() {
       initiative(selected, evt);
       iterSelected(selected, function(invocateur) {
         var pageId = invocateur.token.get('pageid');
-        var niveau = ficheAttributeAsInt(invocateur, 'NIVEAU', 1);
+        var niveau = ficheAttributeAsInt(invocateur, 'niveau', 1);
         if (!renforce) {
           renforce = charAttributeAsInt(invocateur, 'voieDeLaConjuration', 0);
           if (renforce == 1) renforce = 0;
@@ -19694,7 +19698,7 @@ var COFantasy = COFantasy || function() {
       }
       iterSelected(selected, function(invocateur) {
         var pageId = invocateur.token.get('pageid');
-        var niveau = ficheAttributeAsInt(invocateur, 'NIVEAU', 1);
+        var niveau = ficheAttributeAsInt(invocateur, 'niveau', 1);
         var evt = {
           type: "Conjuration d'armée"
         };
@@ -23505,13 +23509,13 @@ on("chat:message", function(msg) {
     try {
       COFantasy.apiCommand(msg);
     } catch (e) {
-      sendChat('COF', "Erreur durant l'exécution de "+msg.content);
-      log("Erreur durant l'exécution de "+msg.content);
+      sendChat('COF', "Erreur durant l'exécution de " + msg.content);
+      log("Erreur durant l'exécution de " + msg.content);
       log(msg);
       var errMsg = e.name;
-      if (e.lineNumber) errMsg += " at "+e.lineNumber;
-      else if (e.number) errMsg += " at "+e.number;
-      errMsg += ': '+e.message;
+      if (e.lineNumber) errMsg += " at " + e.lineNumber;
+      else if (e.number) errMsg += " at " + e.number;
+      errMsg += ': ' + e.message;
       sendChat('COF', errMsg);
       log(errMsg);
     }

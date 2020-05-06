@@ -6,6 +6,7 @@
 * Meilleure interface des runes du forgesort, avec implementation du rang 4, et  renouvellement automatique des runes selon le choix des forgesorts.
 
 ### Autres améliorations
+* Prévention de crash de la sandbox.
 * Ajout de l'option --son pour !cof-rage-du-berserk
 * Ajout de l'attaque de groupe, avec possibilité d'action spécifique détectée par le script.
 * Ajout d'une option pour rajouter les attaques risquees et assurees a toutes les actions
@@ -15,6 +16,7 @@
 * Affichage des icones correspondant aux états dans la fonction statut.
 
 ### Corrections de bugs
+* Plus de demande de mana si l'option de jeu mana est désactivé pour les fiches.
 * possibilité d'utiliser !cof-jouer-son dans les actions du tour
 * meilleure gestion de l'affichage du marqueur d'initiative pour les personnages sur une monture.
 * Correction d'un bug qui empêchait les écuyer de soigner (et l'undo de certains repos).
