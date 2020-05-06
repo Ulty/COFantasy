@@ -391,7 +391,7 @@
                   <li>En fin de combat, si le personnage a la capacité frappe du vide, le script va automatiquement lui faire rengainer son arme.</li>
                   <li>Enfin, en fin de combat, si le personnage possède un attribut <code>armeParDefaut</code>, le script va lui faire dégainer l'arme dont le label est stocké dans l'attribut. Donc si l'attribut est vide, le personnage va rengainer son arme.</li>
                 </ul>
-                Dans tous les cas, si le personnage dégaine une arme à 2 mains (déterminé en fonction du nom de l'arme ou du champs "divers" de l'arme), le script fait enlever le bouclier, et il le fait remettre si on passe d'une arme à 2 mains à une arme à 1 main.
+                Dans tous les cas, si le personnage dégaine une arme à 2 mains, le script fait enlever le bouclier, et il le fait remettre si on passe d'une arme à 2 mains à une arme à 1 main. Pour savoir si une attaque (identifiée par un label) est une arme à 2 mains, le script regarde le nom de l'arme. Parfois, c'est suffisant (genre 1 Épée à 2 mains), mais souvent ça ne suffit pas. Dans ce cas, le script regarde aussi le champ divers de l'attaque, et cherche si il trouve <code>2 mains</code> dans ce champ.
                 </p>
               </div>
               <h4 class="text-secondary">Dégâts directs (sans attaquant, ou aire d'effet trop complexe pour !cof-attack) : <code>!cof-dmg <i>dm</i></code></h4>
