@@ -1681,6 +1681,7 @@ var COFantasy = COFantasy || function() {
         act.indexOf('cof-attack') == -1 &&
         act.indexOf('cof-soin') == -1 &&
         act.indexOf('cof-as ') == -1 &&
+        act.indexOf('cof-jouer-son ') == -1 &&
         act.indexOf('--equipe') == -1 &&
         act.indexOf('--target ' + tid) == -1) {
         //Si on n'a pas de cible, on fait comme si le token était sélectionné.
@@ -5597,7 +5598,7 @@ var COFantasy = COFantasy || function() {
               if (getState(cible, 'mort')) return; //pas de dégâts aux morts
               var pt = tokenCenter(obj);
               var distToTrajectory = VecMath.ptSegDist(pt, pta, ptt);
-              if (distToTrajectory > (obj.get('width') + obj.get('height')) / 4 + PIX_PER_UNIT/4)
+              if (distToTrajectory > (obj.get('width') + obj.get('height')) / 4 + PIX_PER_UNIT / 4)
                 return;
               cible.tokName = obj.get('name');
               var objChar = getObj('character', objCharId);
@@ -11538,11 +11539,11 @@ var COFantasy = COFantasy || function() {
       var estMontePar = tokenAttribute(personnage, "estMontePar");
       var monture;
       var cavalier;
-      if(monteSur.length > 0) {
+      if (monteSur.length > 0) {
         cavalier = personnage;
         var montureTokenId = monteSur[0].get("current");
         monture = persoOfId(montureTokenId);
-        if (monture != undefined) tokenAUtiliser = monture.token;
+        if (monture !== undefined) tokenAUtiliser = monture.token;
       } else if (estMontePar.length > 0) {
         monture = personnage;
         var cavalierId = estMontePar[0].get("current");
@@ -11562,7 +11563,7 @@ var COFantasy = COFantasy || function() {
       }
       stateCOF.roundMarkerId = roundMarker.id;
       // Ne pas amener une monture montée en avant pour éviter de cacher le cavalier
-      if(cavalier != undefined && monture != undefined) {
+      if (cavalier && monture) {
         toFront(monture.token);
         toFront(cavalier.token);
       } else {
@@ -18114,6 +18115,9 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, "Pas de token sélectionné pour la rage");
         return;
       }
+      var options = parseOptions(msg);
+      if (options === undefined) return;
+      if (options.son) playSound(options.son);
       iterSelected(selection, function(perso) {
         var evt = {
           type: "Rage"
@@ -18147,6 +18151,7 @@ var COFantasy = COFantasy || function() {
             initiative(selection, evt);
           }
           setTokenAttr(perso, 'rageDuBerserk', typeRage, evt, "entre dans une " + typeRage + " berserk !");
+          addEvent(evt);
         }
       }); //fin iterSelected
     }); //fin getSelected
@@ -22969,11 +22974,11 @@ var COFantasy = COFantasy || function() {
         return;
       } else {
         //On regarde d'abord si perso est sur une monture
-        var attr = tokenAttribute(perso, 'monteSur');
-        if (attr.length > 0) {
+        var attrMonteSur = tokenAttribute(perso, 'monteSur');
+        if (attrMonteSur.length > 0) {
           if (deplacement) {
-            attr[0].remove();
-            var monture = persoOfId(attr[0].get('current'), attr[0].get('max'), pageId);
+            attrMonteSur[0].remove();
+            var monture = persoOfId(attrMonteSur[0].get('current'), attrMonteSur[0].get('max'), pageId);
             if (monture === undefined) {
               sendChar(charId, "descend de sa monture");
               return;
@@ -22982,7 +22987,7 @@ var COFantasy = COFantasy || function() {
               removeTokenAttr(monture, 'estMontePar');
               removeTokenAttr(monture, 'positionSurMonture');
             }
-            if(stateCOF.combat) {
+            if (stateCOF.combat) {
               var evt = {
                 type: "initiative"
               };
@@ -22995,8 +23000,8 @@ var COFantasy = COFantasy || function() {
           }
         }
         //si non, perso est peut-être une monture
-        attr = tokenAttribute(perso, 'estMontePar');
-        attr.forEach(function(a) {
+        var attrMontePar = tokenAttribute(perso, 'estMontePar');
+        attrMontePar.forEach(function(a) {
           var cavalier = persoOfId(a.get('current'), a.get('max'), pageId);
           if (cavalier === undefined) {
             a.remove();
@@ -23077,8 +23082,8 @@ var COFantasy = COFantasy || function() {
         });
       }
     }
-    attr = tokenAttribute(perso, 'enveloppe');
-    attr.forEach(function(a) {
+    var attrEnveloppe = tokenAttribute(perso, 'enveloppe');
+    attrEnveloppe.forEach(function(a) {
       var cible = persoOfIdName(a.get('current'), pageId);
       if (cible === undefined) {
         a.remove();
@@ -23492,8 +23497,21 @@ on("ready", function() {
 
 on("chat:message", function(msg) {
   "use strict";
-  if (COF_loaded && msg.type == "api" && msg.content.startsWith('!cof-'))
-    COFantasy.apiCommand(msg);
+  if (COF_loaded && msg.type == "api" && msg.content.startsWith('!cof-')) {
+    try {
+      COFantasy.apiCommand(msg);
+    } catch (e) {
+      sendChat('COF', "Erreur durant l'exécution de "+msg.content);
+      log("Erreur durant l'exécution de "+msg.content);
+      log(msg);
+      var errMsg = e.name;
+      if (e.lineNumber) errMsg += " at "+e.lineNumber;
+      else if (e.number) errMsg += " at "+e.number;
+      errMsg += ': '+e.message;
+      sendChat('COF', errMsg);
+      log(errMsg);
+    }
+  }
 });
 
 on("change:campaign:turnorder", COFantasy.nextTurn);
