@@ -14998,6 +14998,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
+    try {
     sendChat('', soins, function(res) {
       soins = res[0].inlinerolls[0].results.total;
       var soinTxt = buildinline(res[0].inlinerolls[0], 'normal', true);
@@ -15185,6 +15186,14 @@ var COFantasy = COFantasy || function() {
         finSoin();
       }); //fin de iterCibles
     }); //fin du sendChat du jet de dés
+    } catch(e) {
+      if (soins) {
+      error("L'expression des soins ("+soins+") n'est pas bien formée", msg.content);
+      } else {
+        error("Erreur pendant les soins ", msg.content);
+        throw e;
+      }
+    }
   }
 
   //Deprecated
