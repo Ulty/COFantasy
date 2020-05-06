@@ -23497,8 +23497,21 @@ on("ready", function() {
 
 on("chat:message", function(msg) {
   "use strict";
-  if (COF_loaded && msg.type == "api" && msg.content.startsWith('!cof-'))
-    COFantasy.apiCommand(msg);
+  if (COF_loaded && msg.type == "api" && msg.content.startsWith('!cof-')) {
+    try {
+      COFantasy.apiCommand(msg);
+    } catch (e) {
+      sendChat('COF', "Erreur durant l'exécution de "+msg.content);
+      log("Erreur durant l'exécution de "+msg.content);
+      log(msg);
+      var errMsg = e.name;
+      if (e.lineNumber) errMsg += " at "+e.lineNumber;
+      else if (e.number) errMsg += " at "+e.number;
+      errMsg += ': '+e.message;
+      sendChat('COF', errMsg);
+      log(errMsg);
+    }
+  }
 });
 
 on("change:campaign:turnorder", COFantasy.nextTurn);
