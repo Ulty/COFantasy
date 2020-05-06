@@ -8741,7 +8741,11 @@ var COFantasy = COFantasy || function() {
         if (options.contondant) rd += charAttributeAsInt(target, 'RD_contondant', 0);
         if (options.distance) {
           var piqures = charAttributeAsInt(target, 'piquresDInsectes', 0);
-          if (piqures > 0 && ficheAttributeAsBool(target, 'DEFARMUREON') && ficheAttributeAsInt(target, 'DEFARMURE', 0) > 5) rd += piqures;
+          if (piqures > 0) {
+            if(getAttrByName(target.charId, 'type_personnage') == 'PNJ' || (ficheAttributeAsBool(target, 'DEFARMUREON') && ficheAttributeAsInt(target, 'DEFARMURE', 0) > 5)) {
+              rd += piqures;
+            }
+          }
         }
         if (attributeAsBool(target, 'masqueMortuaire')) rd += 2;
         var rdNature = charAttributeAsInt(target, 'RD_nature', 0);
