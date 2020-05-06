@@ -3111,6 +3111,7 @@ var COFantasy = COFantasy || function() {
           return;
         case 'arc':
         case 'arbalete':
+        case 'epieu':
         case "affute":
         case "armeDArgent":
         case "artificiel":
@@ -4883,6 +4884,18 @@ var COFantasy = COFantasy || function() {
       defense -= 4;
       explications.push("Suite à une attaque risquée, -4 en DEF");
     }
+    //gestion de l'épieu
+    var armeTarget = tokenAttribute(target, 'armeEnMain');
+    if (armeTarget.length > 0) {
+      armeTarget = getWeaponStats(target, armeTarget[0].get('current'));
+      if (armeTarget.name.search(/[ée]pieu/i) >= 0 || (armeTarget.divers && armeTarget.name.search(/[ée]pieu/i) >= 0)) {
+        var armeAttaquant = tokenAttribute(attaquant, 'armeEnMain');
+        if (armeAttaquant.length === 0) {
+          defense += 2;
+          explications.push("Épieu contre une attaque sans arme => +2 DEF");
+        }
+      }
+    }
     return defense;
   }
 
@@ -5396,7 +5409,7 @@ var COFantasy = COFantasy || function() {
       });
     }
 
-    var weaponName;
+    var weaponName = '';
     var weaponStats = {};
     var attaqueArray;
     try {
@@ -5428,6 +5441,9 @@ var COFantasy = COFantasy || function() {
         return;
       }
       weaponName = weaponStats.name;
+    }
+    if (!options.epieu && weaponName.search(/[ée]pieu/i) >= 0) {
+      options.epieu = true;
     }
     weaponStats.attSkillDiv = parseInt(weaponStats.attSkillDiv);
     weaponStats.attNbDices = parseInt(weaponStats.attNbDices);
@@ -7003,6 +7019,9 @@ var COFantasy = COFantasy || function() {
     var attDiceCible = computeAttackDice(weaponStats.attDice, options);
     var attCarBonusCible =
       computeAttackCarBonus(attaquant, weaponStats.attCarBonus);
+    if (options.epieu && !ficheAttributeAsBool(target, 'DEFARMUREON')) {
+      attNbDicesCible++;
+    }
     if (target.pressionMortelle) {
       attNbDicesCible = 1;
       attDiceCible = 6; //TODO : have an option for that
@@ -18757,7 +18776,6 @@ var COFantasy = COFantasy || function() {
     var options = {
       action: "<b>Désarmement</b>",
       armeContact: "doit porter une arme de contact pour désarmer son adversaire.",
-      armeDefenseur: armeCible,
       pageId: pageId,
     };
     //On cherche l'arme de la cible. On en aura besoin pour désarmer

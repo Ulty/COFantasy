@@ -6,6 +6,7 @@
 * Meilleure interface des runes du forgesort, avec implementation du rang 4, et  renouvellement automatique des runes selon le choix des forgesorts.
 
 ### Autres améliorations
+* Prise en charge des spécificités de l'épieu.
 * Prévention de crash de la sandbox.
 * Ajout de l'option --son pour !cof-rage-du-berserk
 * Ajout de l'attaque de groupe, avec possibilité d'action spécifique détectée par le script.
