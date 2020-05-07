@@ -448,9 +448,15 @@ var COFantasy = COFantasy || function() {
           error("Pas de nom pour une attaque");
           return;
         }
-        var weaponLabel = weaponName.split(' ', 1)[0];
-        if (weaponLabel == attackLabel) {
+        var weaponLabel;
+        var version = parseFloat(ficheAttribute(perso, 'version', 0));
+        if (isNaN(version) || version < 3.2) {
+        weaponLabel = weaponName.split(' ', 1)[0];
           weaponName = weaponName.substring(weaponName.indexOf(' ') + 1);
+        } else {
+          weaponLabel = getAttrByName(perso.charId, attPrefix + "armelabel");
+        }
+        if (weaponLabel == attackLabel) {
           res = {
             attackPrefix: attPrefix,
             weaponName: weaponName
@@ -19144,7 +19150,7 @@ var COFantasy = COFantasy || function() {
       createObj('attribute', {
         _characterid: charId,
         name: 'VERSION',
-        current: '3.0'
+        current: '3.1'
       });
     }
     var pnj = true;
