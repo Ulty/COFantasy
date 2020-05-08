@@ -362,15 +362,17 @@
               </div>
               <h4 class="text-secondary">Réduction des dégâts</h4>
               <div class="decalage">
+                Le script utilise la RD décrite sur la fiche. Cette RD peut se décomposer en plusieurs parties, séparées par une virgule. Chaque élément est soit
                 <ul>
-                  <li>La RD sur la fiche diminue tous les dégâts.</li>
-                  <li>L'attribut hors fiche <code>RD_critique</code> diminue les dégâts des critiques (pour les casques).</li>
-                  <li>les attributs hors fiche <code>RD_<i>genre</i></code> diminuent les dégâts pour ce genre (<i>genre</i> = <code>tranchant</code>, <code>percant</code>, <code>contondant</code>, ou un type (<code>feu</code>, <code>acide</code>, etc...) ou <code>drain</code>)</li>
-                  <li>l'attribut <code>RD_sauf_magique</code> diminue tous les dégâts, sauf si les dégâts sont spécifiés magiques (avec l'option <code>--magique</code>).</li>
-                  <li>Les attributs <code>RD_sauf_<i>genre</i></code> permettent de préciser une RD sauf pour un type donné. Il est possible de préciser plusieurs genres, séparés par un <code>_</code>.</li>
-                  <li>pour les attaques, il faut préciser le genre si besoin (comme <code>--tranchant</code> pour une épée)</li>
-                  <li>pour les résistances <i>sauf un genre d'arme</i> (comme <code>RD_sauf_tranchant</code>, la RD va s'appliquer à tous les dégâts, sauf élémentaires ou bien qui aura précisé le genre dans son attaque. Pour une RD qui s'appliquerait à toutes les armes sauf tranchantes, le mieux est de spécifier une RD aux 2 autres genres, <code>RD_tranchant</code> et <code>RD_contondant</code>.</li>
+                  <li> un nombre. C'est une RD qui s'applique à tous les dégats</li>
+                  <li> un type suivie de <code>:</code> et un nombre, c'est une RD qui ne s'applique qu'à ce type de degâts. Par exemple, une RD de 5 contre le feu s'écrira <code>feu:5</code>.</li>
+                  <li> un nombre, suivi de <code>/</code> et un ou plusieurs types séparés de <code>_</code>, c'est une RD qui s'applique à tous les dégâts, sauf ceux du type mentionné. Par exemple, une RD à tout sauf aux dégâts magiques s'écrira <code>5/magique</code>. Une RD à tout sauf au feu et au froid pourra s'écrire <code>10/feu_froid</code>.
                 </ul>
+                Tous les éléments de RD se cumulent. Ainsi, si on a une RD de <code>5/argent, feu:10</code> des dégâts de feu seront réduits de 15, des dégâts d'argent ne seront pas réduits et des dégâts normaux seront réduits de 5.
+
+                À noter que parmis les types de dégâts, on peut spécifier <code>tranchant</code>, <code>percant</code> ou <code>contondant</code>, voire <code>nature</code> ou <code>drain</code>.
+                Pour la RD des casques, utiliser la case prévue à cet effet sur la fiche (se cumule avec un attribut <code>RD_critique</code>, si présent).
+                Pour que les RD /magique ou /tranchant soient bien pris en compte, il faut que les attaques faisant des dégâts magiques aient l'option <code>--magique</code> et les armes le type de dommage (comme <code>--tranchant</code> pour une épée). Enfin, pour les résistances <i>sauf un genre d'arme</i> (comme <code>/tranchant</code>), la RD va s'appliquer à tous les dégâts, sauf élémentaires ou bien qui aura précisé le genre dans son attaque. Pour une RD qui s'appliquerait à toutes les armes sauf tranchantes, le mieux est de spécifier une RD aux 2 autres genres, <code>tranchant:</code> et <code>contondant:</code>.
               </div>
               <h4 class="text-secondary">Manoeuvres</h4>
               <div class="decalage">
@@ -841,7 +843,7 @@
                 <ol>
                   <li><strong>Maître de la survie</strong> : Ajouter +2 à un attribut <code>vigilance</code></li>
                   <li><strong>Marche sylvestre</strong> : quand le druide est en terrain difficile, faire <code>!cof-effet marcheSylvestre oui</code>. Faire <code>!cof-effet marcheSylvestre non</code> quand il en sort.</li>
-                  <li><strong>Résistant</strong> : ajouter un attribut </code>RD_nature</code>, avec comme valeur la RD (donc deux fois le rang dans la voie). Cette RD s'applique à toute attaque ou dommages avec l'option <code>--nature</code> ou <code>--naturel</code>. Il s'applique aussi à toute attaque venant d'un personnage avec un attribut <code>animal</code>, ou <code>insecte</code> ou bien avec un profil animal ou insecte, ou avec une race reconnue comme étant un animal ou un insecte. Dans ce cas, si on souhaite qu'une attaque d'une telle créature ne soit pas considérée comme naturelle, on peut utiliser l'option <code>--artificiel</code> à l'attaque.</li>
+                  <li><strong>Résistant</strong> : ajouter dans la RD sur la fiche, <code>nature:<i>v</i></code>, avec comme valeur <i>v</i> la RD (donc deux fois le rang dans la voie). Cette RD s'applique à toute attaque ou dommages avec l'option <code>--nature</code> ou <code>--naturel</code>. Il s'applique aussi à toute attaque venant d'un personnage avec un attribut <code>animal</code>, ou <code>insecte</code> ou bien avec un profil animal ou insecte, ou avec une race reconnue comme étant un animal ou un insecte. Dans ce cas, si on souhaite qu'une attaque d'une telle créature ne soit pas considérée comme naturelle, on peut utiliser l'option <code>--artificiel</code> à l'attaque.</li>
                   <li><strong>Bâton de druide</strong> : Simplement créer l'attaque correspondante et permettre les deux attaques en action limitée.</li>
                   <li><strong>Constitution héroïque</strong> : reporter sur la fiche</li>
                 </ol>
@@ -857,7 +859,7 @@
                 <ol>
                   <li><strong>Peau d'écorce</strong> : <code>!cof-effet-temp peauDEcorce [[5+@{selected|SAG}]]</code>. Par défaut, utilise la valeur d'un attribut <code>voieDesVegetaux</code> (qui devrait avoir comme valeur le rang dans la voie). Il est possible de choisir une autre valeur en utilisant l'option <code>--valeur</code>, et si aucune des deux méthodes n'est utilisée, le bonus de DEF est de 1. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
                   <li><strong>Prison végétale</strong> : <code>!cof-effet-temp prisonVegetale [[5+@{selected|SAG}]] --saveParTour FOR [[10+@{selected|SAG}]] --lanceur @{selected|token_id} --disque @{target|token_id} 5 20 --saufAllies</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Animation d'un arbre</strong> :  <code>!cof-animer-arbre @{selected|token_id} @{target|token_id} --mana 1 --portee 0</code>. Cela implique d'avoir un token représentant l'arbre sur la carte. Ce que je fais, c'est de passer un token d'arbre du layer map au layer tokens, puis je laisse le joueur faire le sort. Si c'est trop compliqué, vous pouvez aussi préparer un personnage arbre, avec les caractéristiques décrites, et le faire arriver sur la carte à la main (ne pas oublier son attribut <code>RD_sauf_feu_tranchant</code> à 10, dans ce cas).</li>
+                  <li><strong>Animation d'un arbre</strong> :  <code>!cof-animer-arbre @{selected|token_id} @{target|token_id} --mana 1 --portee 0</code>. Cela implique d'avoir un token représentant l'arbre sur la carte. Ce que je fais, c'est de passer un token d'arbre du layer map au layer tokens, puis je laisse le joueur faire le sort. Si c'est trop compliqué, vous pouvez aussi préparer un personnage arbre, avec les caractéristiques décrites, et le faire arriver sur la carte à la main (ne pas oublier sa RD <code>10/feu_tranchant</code>, dans ce cas).</li>
                   <li><strong>Gland de pouvoir</strong> : Faire une attaque magique de portée 10 m, et l'utiliser avec les options <code>--pasDeDmg --sortilege --effet statueDeBois [[2d6+@{selected|SAG}]] --valeur 10 10 --mana 2</code>.</li>
                   <li><strong>Porte végétale</strong> : Pas de support au niveau du script, à part <code>!cof-lancer-sort 3 lance un sort de porte végétale</code>.</li>
                 </ol>
@@ -1377,7 +1379,7 @@
                   <li id="Vision_dans_le_noir"><strong>Vision dans le noir</strong> : cela peut se gérer au niveau du token, ou alors le script peut faire les modifications pour vous, si vous avez un attribut <code>visionDansLeNoir</code> de valeur le nombre de metres à laquelle le personnage peut voir dans le noir.</li>
                 </ul>
                 <h4 class="text-secondary">Âme forgée</h4>
-                <p>Pour les capacités raciales, un attribut <code>vieArtificielle</code> à <code>true</code> permet de diviser tous les soins par 2. Pour la résistance aux effets de drains utiliser un attribut <code>RD_drain</code> de valeur 5. Pour la résistance au feu et au froid, un attribut <code>RD_feu</code> et un autre <code>RD_froid</code>, de valeur 5. Pour l'immunité aux poisons et maladies, utiliser un attribut <code>creatureArtificielle</code> de valeur <code>true</code>. Enfin pour le saignement, ajouter un attribut <code>immuniteSaignement</code>, de valeur true.</p>
+                <p>Pour les capacités raciales, un attribut <code>vieArtificielle</code> à <code>true</code> permet de diviser tous les soins par 2. Pour la résistance aux effets de drains, au feu et au froid, ajouter dans la RD sur la fiche <code>drain:5, feu:5, froid:5</code>. Pour l'immunité aux poisons et maladies, utiliser un attribut <code>creatureArtificielle</code> de valeur <code>true</code>. Enfin pour le saignement, ajouter un attribut <code>immuniteSaignement</code>, de valeur true.</p>
                 <ol>
                   <li><strong>Main lourde</strong> : ajuster les DM, et enlever l'option <code>--tempDmg</code> pour l'attaque à mains nues.</li>
                 </ol>
@@ -1429,7 +1431,7 @@
                 <h4 class="text-secondary">Tieflin</h4>
                 <ul>
                   <li><a href="#Vision_dans_le_noir">Vision dans le noir</a>.</li>
-                  <li><strong>Résistance aux éléments</strong> : ajouter des attributs <code>RD_feu</code>, <code>RD_electrique</code> et <code>RD_froid</code>, de valeur 5 (ou augmentée de 5)</li>
+                  <li><strong>Résistance aux éléments</strong> : ajouter dans la RD sur la fiche <code>feu:5, electrique:5, froid:5</code></li>
                 </ul>
                 <ol>
                   <li><strong>Se faire discret</strong> : ajouter les jets sur la fiche, ou bien des attributs <code>mentir</code> et <code>deguisement</code> de valeur 5, à utiliser avec <code>!cof-jet</code>.</li>
@@ -1471,7 +1473,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie des créatures magique</h4>
                 <ol>
-                  <li><strong>Réduction des DM</strong> : Ajouter un attribut <code>RD_sauf_<i>genre</i></code>, où <i>genre</i> peut être <code>magique</code> ou un des types d'attaque (feu, acide, poison, etc...).</li>
+                  <li><strong>Réduction des DM</strong> : Ajouter la RD sur la fiche <code>5/<i>genre</i></code>, où <i>genre</i> peut être <code>magique</code> ou un des types d'attaque (feu, acide, poison, etc...).</li>
                   <li><strong>Vitalité surnaturelle</strong> : ajouter un attribut <code>vitaliteSurnaturelle</code>, de valeur courante le nombre de PV régénéré par tour. Si un type de dégât empêche la régénération, inscrire ce type en valeur maximal de l'attribut. Si plusieurs types de dégâts, les séparer par une virgule. Par exemple, un troll aura un attribut <code>vitaliteSurnaturelle</code>, de valeur courante <code>5</code>, et de valeur maximale <code>feu,acide</code>. Si vous voulez réinitialiser les dégâts qui ne peuvent pas se régénérer sur un personnage, vous pouvez utiliser des soins normaux (<code>!cof-soin</code>), et si vous avez augmenté à la main les PVs, vous pouvez effacer les attributs <code>DMSuivis<em>type</em></code> qui ont été créés par le script.</li>
                 </ol>
                 <h4 class="text-secondary">Voie des créatures volantes</h4>

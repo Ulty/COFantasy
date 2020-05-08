@@ -1,4 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.04
+### Autres améliorations
+* Passage de la RD sur la fiche
+
 ## 2.03
 ### Capacités
 * Amélioration du renouvellement des élixirs sur un forgesort.
