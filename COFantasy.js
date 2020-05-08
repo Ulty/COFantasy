@@ -451,7 +451,7 @@ var COFantasy = COFantasy || function() {
         var weaponLabel;
         var version = parseFloat(ficheAttribute(perso, 'version', 0));
         if (isNaN(version) || version < 3.2) {
-        weaponLabel = weaponName.split(' ', 1)[0];
+          weaponLabel = weaponName.split(' ', 1)[0];
           weaponName = weaponName.substring(weaponName.indexOf(' ') + 1);
         } else {
           weaponLabel = getAttrByName(perso.charId, attPrefix + "armelabel");
@@ -2709,11 +2709,15 @@ var COFantasy = COFantasy || function() {
       if (nj == 'perception') {
         options.bonusAttrs = options.bonusAttrs || [];
         options.bonusAttrs.push('diversionManoeuvreValeur');
+        options.bonus = 0;
       }
       if (options.bonus)
         titre += " (" + ((options.bonus > 0) ? '+' : '') + options.bonus + ")";
       if (difficulte !== undefined) titre += " difficulté " + difficulte;
       iterSelected(selected, function(perso) {
+        if (nj == 'perception' && ficheAttributeAsBool(perso, 'casque_on')) {
+          perso.bonusJet = -ficheAttributeAsInt(perso, 'casque_malus');
+        }
         jetPerso(perso, caracteristique, difficulte, titre, playerId, options);
       }); //fin de iterSelected
     }); //fin de getSelected
@@ -8168,9 +8172,9 @@ var COFantasy = COFantasy || function() {
   }
 
   // RD spécifique au type
-  function typeRD(perso, dmgType) {
+  function typeRD(rd, dmgType) {
     if (dmgType === undefined || dmgType == 'normal') return 0;
-    return charAttributeAsInt(perso, 'RD_' + dmgType, 0);
+    return (rd[dmgType] || 0);
   }
 
   function probaSucces(de, seuil, nbreDe) {
@@ -8381,9 +8385,10 @@ var COFantasy = COFantasy || function() {
       dmgDisplay = '0';
       showTotal = false;
     } else if (target.ignoreRD === undefined) {
-      var rdMain = typeRD(target, mainDmgType);
-      if (options.vampirise || target.vampirise) {
-        rdMain += attributeAsInt(target, 'RD_drain', 0);
+      var rd = getRDS(target);
+      var rdMain = typeRD(rd, mainDmgType);
+      if (rd.drain && (options.vampirise || target.vampirise)) {
+        rdMain += rd.drain;
       }
       if (target.ignoreMoitieRD) rdMain = parseInt(rdMain / 2);
       if (rdMain > 0 && dmgTotal > 0) {
@@ -8411,34 +8416,14 @@ var COFantasy = COFantasy || function() {
           dmgTotal = 0;
         }
       }
-      var rdSauf = [];
-      if (target.attrs === undefined) {
-        target.attrs = findObjs({
-          _type: 'attribute',
-          _characterid: target.charId
-        });
-      }
-      target.attrs.forEach(function(attr) {
-        var attrName = attr.get('name');
-        if (attrName.startsWith('RD_sauf_')) {
-          var rds = parseInt(attr.get('current'));
-          if (target.ignoreMoitieRD) rds = parseInt(rds / 2);
-          if (isNaN(rds) || rds < 1) return;
-          rdSauf[attrName.substr(8)] = rds;
-        }
-      });
-      if (attributeAsBool(target, 'formeDArbre')) {
-        rdSauf.feu_tranchant = rdSauf.feu_tranchant || 0;
-        if (target.ignoreMoitieRD) rdSauf.feu_tranchant += 5;
-        else rdSauf.feu_tranchant += 10;
-      }
+      var rdTarget = getRDS(target);
       var additionalType = {
         magique: options.magique,
         tranchant: options.tranchant,
         percant: options.percant,
         contondant: options.contondant
       };
-      var resSauf = applyRDSauf(rdSauf, mainDmgType, dmgTotal, dmgDisplay, additionalType);
+      var resSauf = applyRDSauf(rdTarget.sauf, mainDmgType, dmgTotal, dmgDisplay, additionalType);
       dmgTotal = resSauf.total;
       dmgDisplay = resSauf.display;
       var invulnerable = charAttributeAsBool(target, 'invulnerable');
@@ -8550,7 +8535,7 @@ var COFantasy = COFantasy || function() {
             typeCount--;
             if (typeCount === 0) {
               if (target.ignoreRD === undefined) {
-                var rdl = typeRD(target, dmgType);
+                var rdl = typeRD(rd, dmgType);
                 if (target.ignoreMoitieRD) rdl = parseInt(rdl / 2);
                 if (rdl > 0 && dm > 0) {
                   dm -= rdl;
@@ -8574,7 +8559,7 @@ var COFantasy = COFantasy || function() {
                 var additionalType = {
                   magique: options.magique
                 };
-                var resSauf = applyRDSauf(rdSauf, dmgType, dm, typeDisplay, additionalType);
+                var resSauf = applyRDSauf(rdTarget.sauf, dmgType, dm, typeDisplay, additionalType);
                 dm = resSauf.total;
                 typeDisplay = resSauf.display;
                 mitigate(dmgType,
@@ -8723,6 +8708,84 @@ var COFantasy = COFantasy || function() {
     attrs[0].set('current', newCur);
   }
 
+  function getRDS(perso) {
+    if (perso.rd) return perso.rd;
+    var res = {
+      rdt: 0,
+      sauf: {}
+    };
+    //Pour garder un peu de compatibilité, on regarde encore les attributs RD
+    var attrs = perso.attrs;
+    if (attrs === undefined) {
+      attrs = findObjs({
+        _type: "attribute",
+        _characterid: perso.charId
+      });
+      perso.attrs = attrs;
+    }
+    attrs.forEach(function(a) {
+      var name = a.get('name');
+      if (!name.startsWith('RD_')) return;
+      var rds = parseInt(a.get('current'));
+      if (isNaN(rds) || rds < 1) return;
+      name = name.substring(3);
+      if (name.startsWith('sauf_')) {
+        name = name.substr(5);
+        res.sauf[name] = res.sauf[name] || 0;
+        res.sauf[name] += rds;
+        return;
+      }
+      if (name == 'rdt' || name == 'sauf') return;
+      res[name] = res[name] || 0;
+      res[name] += rds;
+    });
+    //Fin compatibilité
+    if (attributeAsBool(perso, 'formeDArbre')) {
+      res.sauf.feu_tranchant = res.sauf.feu_tranchant || 0;
+      res.sauf.feu_tranchant += 10;
+    }
+    var attrRD = 'RDS';
+    if (getAttrByName(perso.charId, 'type_personnage') == 'PNJ') {
+      attrRD = 'pnj_rd';
+    }
+    var rd = ficheAttribute(perso, attrRD, '').trim();
+    if (rd === '') {
+      perso.rd = res;
+      return res;
+    }
+    rd = rd.split(',');
+    rd.forEach(function(r) {
+      r = r.trim();
+      if (r === '') return;
+      var rds;
+      var index = r.indexOf(':');
+      if (index > 0) { //RD à un type particulier
+        var type = r.substring(0, index);
+        if (type == 'rdt' || type == 'sauf') return;
+        rds = parseInt(r.substring(index + 1));
+        if (isNaN(rds) || rds < 1) return;
+        res[type] = res[type] || 0;
+        res[type] += rds;
+        return;
+      }
+      index = r.indexOf('/');
+      if (index > 0) { //RD sauf à des types
+        rds = parseInt(r.substring(0, index));
+        if (isNaN(rds) || rds < 1) return;
+        var sauf = r.substring(index + 1);
+        res.sauf[sauf] = res.sauf[sauf] || 0;
+        res.sauf[sauf] += rds;
+        return;
+      }
+      //finalement, RD totale
+      rds = parseInt(r);
+      if (isNaN(rds) || rds < 1) return;
+      res.rdt += rds;
+    });
+    perso.rd = res;
+    return res;
+  }
+
   function dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal, dmSuivis) {
     var charId = target.charId;
     var token = target.token;
@@ -8750,21 +8813,22 @@ var COFantasy = COFantasy || function() {
           dmgDisplay = saveResult.dmgDisplay;
           showTotal = saveResult.showTotal;
         }
-        var rd = ficheAttributeAsInt(target, 'RDS', 0);
-        if (getAttrByName(target.charId, 'type_personnage') == 'PNJ') {
-          rd = ficheAttributeAsInt(target, 'pnj_rd', 0);
-        }
+        var rdTarget = getRDS(target);
+        var rd = rdTarget.rdt || 0;
         if (attributeAsBool(target, 'statueDeBois')) rd += 10;
         if (attributeAsBool(target, 'mutationSilhouetteMassive')) rd += 3;
         if (crit) {
-          var rdCrit = charAttributeAsInt(target, 'RD_critique', 0);
+          var rdCrit = charAttributeAsInt(target, 'RD_critique', 0); //pour la compatibilité
+          if (ficheAttributeAsBool(target, 'casque_on'))
+            rdCrit += ficheAttributeAsInt(target, 'casque_rd', 0);
           rd += rdCrit;
           if (options.memePasMal) options.memePasMal -= rdCrit;
         }
-        if (options.tranchant) rd += charAttributeAsInt(target, 'RD_tranchant', 0);
-        if (options.percant) rd += charAttributeAsInt(target, 'RD_percant', 0);
-        if (options.contondant) rd += charAttributeAsInt(target, 'RD_contondant', 0);
+        if (options.tranchant && rdTarget.tranchant) rd += rdTarget.tranchant;
+        if (options.percant && rdTarget.percant) rd += rdTarget.tranchant;
+        if (options.contondant && rdTarget.contondant) rd += rdTarget.contondant;
         if (options.distance) {
+          if (rdTarget.distance) rd += rdTarget.distance;
           var piqures = charAttributeAsInt(target, 'piquresDInsectes', 0);
           if (piqures > 0) {
             if (getAttrByName(target.charId, 'type_personnage') == 'PNJ' || (ficheAttributeAsBool(target, 'DEFARMUREON') && ficheAttributeAsInt(target, 'DEFARMURE', 0) > 5)) {
@@ -8773,8 +8837,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (attributeAsBool(target, 'masqueMortuaire')) rd += 2;
-        var rdNature = charAttributeAsInt(target, 'RD_nature', 0);
-        if (rdNature > 0 && dmgNaturel(options)) rd += rdNature;
+        if (rdTarget.nature > 0 && dmgNaturel(options)) rd += rdTarget.nature;
         if (target.defautCuirasse) rd = 0;
         if (options.intercepter) rd += options.intercepter;
         if (target.extraRD) {
@@ -12762,9 +12825,8 @@ var COFantasy = COFantasy || function() {
         bonusCarac += charAttributeAsInt(personnage, attr, 0);
       });
     }
-
     if (options.bonus) bonusCarac += options.bonus;
-
+    if (personnage.bonusJet) bonusCarac += personnage.bonusJet;
     var carSup = nbreDeTestCarac(carac, personnage);
     var de = computeDice(personnage, {
       nbDe: carSup,
@@ -15005,196 +15067,196 @@ var COFantasy = COFantasy || function() {
       }
     }
     try {
-    sendChat('', soins, function(res) {
-      soins = res[0].inlinerolls[0].results.total;
-      var soinTxt = buildinline(res[0].inlinerolls[0], 'normal', true);
-      if (soins <= 0) {
-        sendChar(charId, "ne réussit pas à soigner (total de soins " + soinTxt + ")");
-        return;
-      }
-      var evt = {
-        type: effet
-      };
-      var ressourceLimiteCibleParJour;
-      if (options.limiteCibleParJour) {
-        ressourceLimiteCibleParJour = effet;
-        if (options.limiteCibleParJourRessource)
-          ressourceLimiteCibleParJour = options.limiteCibleParJourRessource;
-        ressourceLimiteCibleParJour = "limiteParJour_" + ressourceLimiteCibleParJour;
-      }
-      var limiteATester = true;
-      var soinImpossible = false;
-      var nbCibles;
-      var display;
-      var iterCibles = function(callback) {
-        if (cible) {
-          nbCibles = 1;
-          callback(cible);
-        } else {
-          getSelected(msg, function(selected) {
-            nbCibles = selected.length;
-            if (nbCibles > 1) {
-              display = startFramedDisplay(playerId, effet, soigneur);
-            } else if (nbCibles === 0) {
-              sendChar(charId, "personne à soigner");
-              return;
-            }
-            iterSelected(selected, callback);
-          }, {
-            lanceur: soigneur
-          });
-        }
-      };
-      var finSoin = function() {
-        if (nbCibles == 1) {
-          if (options.messages) {
-            options.messages.forEach(function(message) {
-              if (display) addLineToFramedDisplay(display, message);
-              else sendChar(charId, message);
-            });
-          }
-          if (display) sendChat("", endFramedDisplay(display));
-          addEvent(evt);
-        }
-        nbCibles--;
-      };
-      iterCibles(function(cible) {
-        if (ressourceLimiteCibleParJour) {
-          var utilisations =
-            attributeAsInt(cible, ressourceLimiteCibleParJour, options.limiteCibleParJour);
-          if (utilisations === 0) {
-            sendChar(cible.charId, "ne peut plus bénéficier de " + effet + " aujourd'hui");
-            finSoin();
-            return;
-          }
-          setTokenAttr(cible, ressourceLimiteCibleParJour, utilisations - 1, evt);
-        }
-        if (soinImpossible) {
-          finSoin();
+      sendChat('', soins, function(res) {
+        soins = res[0].inlinerolls[0].results.total;
+        var soinTxt = buildinline(res[0].inlinerolls[0], 'normal', true);
+        if (soins <= 0) {
+          sendChar(charId, "ne réussit pas à soigner (total de soins " + soinTxt + ")");
           return;
         }
-        var token2 = cible.token;
-        var nomCible = token2.get('name');
-        var sujet = onGenre(cible.charId, 'il', 'elle');
-        var Sujet = onGenre(cible.charId, 'Il', 'Elle');
-        if (options.portee !== undefined) {
-          if (options.tempeteDeManaPortee) options.portee = options.portee * 2;
-          var distance = distanceCombat(soigneur.token, token2, pageId);
-          if (distance > options.portee) {
-            if (display)
-              addLineToFramedDisplay(display, "<b>" + nomCible + "</b> : trop loin pour le soin.");
-            else
-              sendChar(charId,
-                "est trop loin de " + nomCible + " pour le soigner.");
-            return;
-          }
+        var evt = {
+          type: effet
+        };
+        var ressourceLimiteCibleParJour;
+        if (options.limiteCibleParJour) {
+          ressourceLimiteCibleParJour = effet;
+          if (options.limiteCibleParJourRessource)
+            ressourceLimiteCibleParJour = options.limiteCibleParJourRessource;
+          ressourceLimiteCibleParJour = "limiteParJour_" + ressourceLimiteCibleParJour;
         }
-        if (limiteATester) {
-          limiteATester = false;
-          if (limiteRessources(soigneur, options, effet, effet, evt)) {
-            soinImpossible = true;
-            display = undefined;
-            finSoin();
-            return;
-          } else if (display) {
-            addLineToFramedDisplay(display, "Résultat des dés : " + soinTxt);
-          }
-        }
-        var callMax = function() {
-          if (display) {
-            addLineToFramedDisplay(display, "<b>" + nomCible + "</b> : pas besoin de soins.");
+        var limiteATester = true;
+        var soinImpossible = false;
+        var nbCibles;
+        var display;
+        var iterCibles = function(callback) {
+          if (cible) {
+            nbCibles = 1;
+            callback(cible);
           } else {
-            var maxMsg = "n'a pas besoin de ";
-            if (options.recuperation) {
-              maxMsg = "se reposer";
-              charId = soigneur.charId;
-            } else if (!soigneur || token2.id == soigneur.token.id) {
-              maxMsg += "se soigner";
-              charId = cible.charId;
-            } else {
-              maxMsg += "soigner " + nomCible;
-            }
-            sendChar(charId, maxMsg + ". " + Sujet + " est déjà au maximum de PV");
+            getSelected(msg, function(selected) {
+              nbCibles = selected.length;
+              if (nbCibles > 1) {
+                display = startFramedDisplay(playerId, effet, soigneur);
+              } else if (nbCibles === 0) {
+                sendChar(charId, "personne à soigner");
+                return;
+              }
+              iterSelected(selected, callback);
+            }, {
+              lanceur: soigneur
+            });
           }
         };
-        var img = options.image;
-        var extraImg = '';
-        if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
-          extraImg = '<span style="padding: 4px 0;" >  ';
-          extraImg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
-          extraImg += '</span>';
-        }
-        var printTrue = function(s) {
-          if (display) {
-            addLineToFramedDisplay(display,
-              "<b>" + nomCible + "</b> : + " + s + " PV" + extraImg);
-          } else {
-            var msgSoin;
-            if (!soigneur || token2.id == soigneur.token.id) {
-              msgSoin = 'se soigne';
-              charId = cible.charId;
-            } else {
-              msgSoin = 'soigne ' + nomCible;
+        var finSoin = function() {
+          if (nbCibles == 1) {
+            if (options.messages) {
+              options.messages.forEach(function(message) {
+                if (display) addLineToFramedDisplay(display, message);
+                else sendChar(charId, message);
+              });
             }
-            msgSoin += " de ";
-            if (options.recuperation) msgSoin = "récupère ";
-            if (s < soins)
-              msgSoin += s + " PV. (Le résultat du jet était " + soinTxt + ")";
-            else msgSoin += soinTxt + " PV.";
-            msgSoin += extraImg;
-            sendChar(charId, msgSoin);
+            if (display) sendChat("", endFramedDisplay(display));
+            addEvent(evt);
           }
+          nbCibles--;
         };
-        var pvSoigneur;
-        var callTrueFinal = printTrue;
-        if (msg.content.includes(' --transfer')) { //paie avec ses PV
-          if (soigneur === undefined) {
-            error("Il faut préciser qui est le soigneur pour utiliser l'option --transfer", msg.content);
-            soinImpossible = true;
-            return;
+        iterCibles(function(cible) {
+          if (ressourceLimiteCibleParJour) {
+            var utilisations =
+              attributeAsInt(cible, ressourceLimiteCibleParJour, options.limiteCibleParJour);
+            if (utilisations === 0) {
+              sendChar(cible.charId, "ne peut plus bénéficier de " + effet + " aujourd'hui");
+              finSoin();
+              return;
+            }
+            setTokenAttr(cible, ressourceLimiteCibleParJour, utilisations - 1, evt);
           }
-          pvSoigneur = parseInt(soigneur.token.get("bar1_value"));
-          if (isNaN(pvSoigneur) || pvSoigneur <= 0) {
-            if (display)
-              addLineToFramedDisplay(display, "<b>" + nomCible + "</b> : plus assez de PV pour le soigner");
-            else
-              sendChar(charId,
-                "ne peut pas soigner " + nomCible + ", " + sujet + " n'a plus de PV");
-            soinImpossible = true;
+          if (soinImpossible) {
             finSoin();
             return;
           }
-          if (pvSoigneur < soins) {
-            soins = pvSoigneur;
+          var token2 = cible.token;
+          var nomCible = token2.get('name');
+          var sujet = onGenre(cible.charId, 'il', 'elle');
+          var Sujet = onGenre(cible.charId, 'Il', 'Elle');
+          if (options.portee !== undefined) {
+            if (options.tempeteDeManaPortee) options.portee = options.portee * 2;
+            var distance = distanceCombat(soigneur.token, token2, pageId);
+            if (distance > options.portee) {
+              if (display)
+                addLineToFramedDisplay(display, "<b>" + nomCible + "</b> : trop loin pour le soin.");
+              else
+                sendChar(charId,
+                  "est trop loin de " + nomCible + " pour le soigner.");
+              return;
+            }
           }
-          callTrueFinal = function(s) {
-            updateCurrentBar(soigneur.token, 1, pvSoigneur - s, evt);
-            if (pvSoigneur == s) mort(soigneur, undefined, evt);
-            printTrue(s);
+          if (limiteATester) {
+            limiteATester = false;
+            if (limiteRessources(soigneur, options, effet, effet, evt)) {
+              soinImpossible = true;
+              display = undefined;
+              finSoin();
+              return;
+            } else if (display) {
+              addLineToFramedDisplay(display, "Résultat des dés : " + soinTxt);
+            }
+          }
+          var callMax = function() {
+            if (display) {
+              addLineToFramedDisplay(display, "<b>" + nomCible + "</b> : pas besoin de soins.");
+            } else {
+              var maxMsg = "n'a pas besoin de ";
+              if (options.recuperation) {
+                maxMsg = "se reposer";
+                charId = soigneur.charId;
+              } else if (!soigneur || token2.id == soigneur.token.id) {
+                maxMsg += "se soigner";
+                charId = cible.charId;
+              } else {
+                maxMsg += "soigner " + nomCible;
+              }
+              sendChar(charId, maxMsg + ". " + Sujet + " est déjà au maximum de PV");
+            }
           };
-        }
-        if (options.fx) {
-          var p1e = {
-            x: soigneur.token.get('left'),
-            y: soigneur.token.get('top'),
+          var img = options.image;
+          var extraImg = '';
+          if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
+            extraImg = '<span style="padding: 4px 0;" >  ';
+            extraImg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+            extraImg += '</span>';
+          }
+          var printTrue = function(s) {
+            if (display) {
+              addLineToFramedDisplay(display,
+                "<b>" + nomCible + "</b> : + " + s + " PV" + extraImg);
+            } else {
+              var msgSoin;
+              if (!soigneur || token2.id == soigneur.token.id) {
+                msgSoin = 'se soigne';
+                charId = cible.charId;
+              } else {
+                msgSoin = 'soigne ' + nomCible;
+              }
+              msgSoin += " de ";
+              if (options.recuperation) msgSoin = "récupère ";
+              if (s < soins)
+                msgSoin += s + " PV. (Le résultat du jet était " + soinTxt + ")";
+              else msgSoin += soinTxt + " PV.";
+              msgSoin += extraImg;
+              sendChar(charId, msgSoin);
+            }
           };
-          var p2e = {
-            x: cible.token.get('left'),
-            y: cible.token.get('top'),
-          };
-          spawnFxBetweenPoints(p1e, p2e, options.fx, pageId);
-        }
-        if (options.son) playSound(options.son);
-        if (options.targetFx) {
-          spawnFx(cible.token.get('left'), cible.token.get('top'), options.targetFx, pageId);
-        }
-        soigneToken(cible, soins, evt, callTrueFinal, callMax);
-        finSoin();
-      }); //fin de iterCibles
-    }); //fin du sendChat du jet de dés
-    } catch(e) {
+          var pvSoigneur;
+          var callTrueFinal = printTrue;
+          if (msg.content.includes(' --transfer')) { //paie avec ses PV
+            if (soigneur === undefined) {
+              error("Il faut préciser qui est le soigneur pour utiliser l'option --transfer", msg.content);
+              soinImpossible = true;
+              return;
+            }
+            pvSoigneur = parseInt(soigneur.token.get("bar1_value"));
+            if (isNaN(pvSoigneur) || pvSoigneur <= 0) {
+              if (display)
+                addLineToFramedDisplay(display, "<b>" + nomCible + "</b> : plus assez de PV pour le soigner");
+              else
+                sendChar(charId,
+                  "ne peut pas soigner " + nomCible + ", " + sujet + " n'a plus de PV");
+              soinImpossible = true;
+              finSoin();
+              return;
+            }
+            if (pvSoigneur < soins) {
+              soins = pvSoigneur;
+            }
+            callTrueFinal = function(s) {
+              updateCurrentBar(soigneur.token, 1, pvSoigneur - s, evt);
+              if (pvSoigneur == s) mort(soigneur, undefined, evt);
+              printTrue(s);
+            };
+          }
+          if (options.fx) {
+            var p1e = {
+              x: soigneur.token.get('left'),
+              y: soigneur.token.get('top'),
+            };
+            var p2e = {
+              x: cible.token.get('left'),
+              y: cible.token.get('top'),
+            };
+            spawnFxBetweenPoints(p1e, p2e, options.fx, pageId);
+          }
+          if (options.son) playSound(options.son);
+          if (options.targetFx) {
+            spawnFx(cible.token.get('left'), cible.token.get('top'), options.targetFx, pageId);
+          }
+          soigneToken(cible, soins, evt, callTrueFinal, callMax);
+          finSoin();
+        }); //fin de iterCibles
+      }); //fin du sendChat du jet de dés
+    } catch (e) {
       if (soins) {
-      error("L'expression des soins ("+soins+") n'est pas bien formée", msg.content);
+        error("L'expression des soins (" + soins + ") n'est pas bien formée", msg.content);
       } else {
         error("Erreur pendant les soins ", msg.content);
         throw e;
@@ -19144,13 +19206,13 @@ var COFantasy = COFantasy || function() {
     });
     var attrVersion =
       attrs.find(function(a) {
-        return a.get('name') == 'VERSION';
+        return a.get('name') == 'version';
       });
     if (!attrVersion) {
       createObj('attribute', {
         _characterid: charId,
-        name: 'VERSION',
-        current: '3.1'
+        name: 'version',
+        current: '3.2'
       });
     }
     var pnj = true;
@@ -23359,7 +23421,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = "2.03";
+  var script_version = "2.04";
   // Récupération des token Markers attachés à la campagne image, nom, tag, Id 
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
@@ -23510,6 +23572,55 @@ on("ready", function() {
       }
     });
     log("Mise à jour des runes effectuée.");
+  }
+  if (state.COFantasy.version < 2.04) {
+    attrs = findObjs({
+      _type: 'attribute',
+    });
+    attrs.forEach(function(a) {
+      var attrName = a.get('name');
+      if (!attrName.startsWith('RD_')) return;
+      if (attrName == 'RD_critique') return;
+      var rds = parseInt(a.get('current'));
+      if (isNaN(rds) || rds < 1) {
+        a.remove();
+        return;
+      }
+      var cid = a.get('characterid');
+      var attrRD = 'RDS';
+      if (getAttrByName(cid, 'type_personnage') == 'PNJ') attrRD = 'pnj_rd';
+      var attrRDS = findObjs({
+        _type: 'attribute',
+        _characterid: cid,
+        name: attrRD
+      }, {
+        caseInsensitive: true
+      });
+      if (attrRDS.length === 0) {
+        attrRDS = createObj('attribute', {
+          characterid: cid,
+          name: attrRD,
+          current: '',
+          max: ''
+        });
+      } else attrRDS = attrRDS[0];
+      var rdPerso = attrRDS.get('current');
+      attrName = attrName.substring(3);
+      if (attrName.startsWith('sauf_')) {
+        attrName = attrName.substr(5);
+        if (rdPerso.trim() === '') rdPerso = rds + '/' + attrName;
+        else rdPerso += ', ' + rds + '/' + attrName;
+        attrRDS.set('current', rdPerso);
+        a.remove();
+        return;
+      }
+      if (attrName == 'rdt' || attrName == 'sauf') return;
+      if (rdPerso.trim() === '') rdPerso = attrName + ':' + rds;
+      else rdPerso += ', ' + attrName + ':' + rds;
+      attrRDS.set('current', rdPerso);
+      a.remove();
+    });
+    log("Mise à jour de la RD effectuée");
   }
   state.COFantasy.version = script_version;
   if (state.COFantasy.options.affichage.val.fiche.val) {
