@@ -1,4 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.05
+### Autres améliorations
+* Standardisation de !cof-lancer-sorts et support dans les consommables
+
 ## 2.04
 ### Autres améliorations
 * Passage de la RD sur la fiche

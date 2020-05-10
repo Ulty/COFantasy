@@ -15520,44 +15520,24 @@ var COFantasy = COFantasy || function() {
   }
 
   function lancerSort(msg) {
-    var cmd = msg.content.split(' ');
-    if (cmd.length < 3) {
-      error("La fonction !cof-lancer-sort attend en argument le coût en mana", cmd);
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    if (options.messages === undefined || options.messages.length < 1) {
+      error("La fonction !cof-lancer-sort attend un descriptif de lancement de sort fourni avec --message", cmd);
       return;
     }
-    cmd.shift();
-    var indexLanceur = cmd.findIndex(function(c) {
-      return c == '--lanceur';
-    });
-    if (indexLanceur > -1 && indexLanceur < cmd.length - 1) {
-      var l = persoOfId(cmd[indexLanceur + 1]);
-      if (l) {
-        msg.selected = [{
-          _id: cmd[indexLanceur + 1]
-        }];
-        cmd.splice(indexLanceur, 2);
-      }
-    }
-    var mana = parseInt(cmd.shift());
-    if (isNaN(mana) || mana < 0) {
-      error("Le deuxième argument de !cof-lancer-sort doit être un nombre positif", msg.content);
-      return;
-    }
-    var spell = cmd.join(' ');
     getSelected(msg, function(selected) {
       if (selected.length === 0) {
         error("Pas de token sélectionée pour !cof-lancer-sort", cmd);
         return;
       }
+      var evt = {
+        type: "lancement de sort"
+      };
       iterSelected(selected, function(lanceur) {
-        var charId = lanceur.charId;
-        var evt = {
-          type: "lancement de sort"
-        };
-        if (depenseMana(lanceur, mana, spell, evt)) {
-          whisperChar(charId, spell);
-          addEvent(evt);
-        }
+        if(limiteRessources(lanceur, options, undefined, "lancer un sort", evt)) return;
+        whisperChar(lanceur.charId, options.messages[0]);
+        addEvent(evt);
       });
     });
   }
@@ -23421,7 +23401,7 @@ on("destroy:handout", function(prev) {
 });
 
 on("ready", function() {
-  var script_version = "2.04";
+  var script_version = "2.05";
   // Récupération des token Markers attachés à la campagne image, nom, tag, Id 
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
@@ -23621,6 +23601,34 @@ on("ready", function() {
       a.remove();
     });
     log("Mise à jour de la RD effectuée");
+  }
+  if (state.COFantasy.version < 2.05) {
+    attrs = findObjs({
+      _type: 'attribute',
+    });
+    attrs.forEach(function(a) {
+      var attrName = a.get('name');
+      if (!attrName.startsWith('dose_') && !attrName.startsWith('consommable_')) return;
+      var action = a.get('max');
+      if (!action.startsWith('!cof-lancer-sort')) return;
+      var mana = action.charAt(17);
+      var message = action.substring(19);
+      a.set("max", "!cof-lancer-sort --message " + message + " --mana " + mana);
+    });
+    log("Mise à jour des consommables !cof-lancer-sort effectuée");
+    macros = findObjs({
+      _type: 'macro'
+    }).concat(findObjs({
+      _type: 'ability'
+    }));
+    macros.forEach(function(m) {
+      var macro = m.get("action");
+      if (!macro.startsWith('!cof-lancer-sort')) return;
+      var mana = macro.charAt(17);
+      var message = macro.substring(19);
+      m.set("action", "!cof-lancer-sort --message " + message + " --mana " + mana);
+    });
+    log("Mise à jour des ability & macros !cof-lancer-sort effectuée");
   }
   state.COFantasy.version = script_version;
   if (state.COFantasy.options.affichage.val.fiche.val) {
