@@ -3117,6 +3117,7 @@ var COFantasy = COFantasy || function() {
         case "pietine":
         case "maxDmg":
         case "ouvertureMortelle":
+        case "seulementVivant":
           scope[cmd[0]] = true;
           return;
         case 'arc':
@@ -3240,7 +3241,7 @@ var COFantasy = COFantasy || function() {
               duree: duree,
               message: m
             };
-            scope.seulementVivant = m && m.seulementVivant;
+            scope.seulementVivant = scope.seulementVivant || (m && m.seulementVivant);
           } else if (estEffetCombat(cmd[1])) {
             lastEtat = {
               effet: cmd[1]
