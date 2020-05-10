@@ -1,5 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.04
+### Capacités
+* restriction des capacités de la voie de la mort aux cibles vivantes seulement.
+
 ### Autres améliorations
 * Passage de la RD sur la fiche
 
