@@ -1,7 +1,11 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.05
 ### Autres améliorations
+* Amélioration des affichages de jets
 * Standardisation de !cof-lancer-sorts et support dans les consommables
+
+### Corrections de bugs
+* Prévention de crash en cas d'erreur interne de roll20.
 
 ## 2.04
 ### Capacités
