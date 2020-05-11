@@ -15523,9 +15523,12 @@ var COFantasy = COFantasy || function() {
   function lancerSort(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
-    if (options.messages === undefined || options.messages.length < 1) {
-      error("La fonction !cof-lancer-sort attend un descriptif de lancement de sort fourni avec --message", cmd);
-      return;
+    var cmd = options.cmd;
+    if (cmd === undefined) return;
+    if (options.messages === undefined) options.messages = [];
+    if (cmd.length > 1) options.messages.unshift(cmd.slice(1).join(' '));
+    if (options.messages.length < 1) {
+      options.messages.push("lance un sort");
     }
     getSelected(msg, function(selected) {
       if (selected.length === 0) {
@@ -15535,9 +15538,12 @@ var COFantasy = COFantasy || function() {
       var evt = {
         type: "lancement de sort"
       };
+      if (options.son) playSound(options.son);
       iterSelected(selected, function(lanceur) {
-        if(limiteRessources(lanceur, options, undefined, "lancer un sort", evt)) return;
-        whisperChar(lanceur.charId, options.messages[0]);
+        if (limiteRessources(lanceur, options, undefined, "lancer un sort", evt)) return;
+        options.messages.forEach(function (m) {
+          whisperChar(lanceur.charId, m);
+        });
         addEvent(evt);
       });
     });
