@@ -2103,10 +2103,10 @@ var COFantasy = COFantasy || function() {
     if (difficulte === undefined) {
       jetCaracteristique(perso, caracteristique, options, evt,
         function(rt, explications) {
-          explications.forEach(function(m) {
-            addLineToFramedDisplay(display, m);
-          });
           addLineToFramedDisplay(display, "<b>Résultat :</b> " + rt.texte);
+          explications.forEach(function(m) {
+            addLineToFramedDisplay(display, m, 80);
+          });
           addStatistics(playerId, ["Jet de carac", caracteristique], rt.roll);
           // Maintenant, on diminue la malédiction si le test est un échec
           var attrMalediction = tokenAttribute(perso, 'malediction');
@@ -2709,15 +2709,11 @@ var COFantasy = COFantasy || function() {
       if (nj == 'perception') {
         options.bonusAttrs = options.bonusAttrs || [];
         options.bonusAttrs.push('diversionManoeuvreValeur');
-        options.bonus = 0;
       }
       if (options.bonus)
         titre += " (" + ((options.bonus > 0) ? '+' : '') + options.bonus + ")";
       if (difficulte !== undefined) titre += " difficulté " + difficulte;
       iterSelected(selected, function(perso) {
-        if (nj == 'perception' && ficheAttributeAsBool(perso, 'casque_on')) {
-          perso.bonusJet = -ficheAttributeAsInt(perso, 'casque_malus');
-        }
         jetPerso(perso, caracteristique, difficulte, titre, playerId, options);
       }); //fin de iterSelected
     }); //fin de getSelected
@@ -12821,13 +12817,21 @@ var COFantasy = COFantasy || function() {
     var token = personnage.token;
     var explications = [];
     var bonusCarac = bonusTestCarac(carac, personnage, evt, explications);
+    if (options.bonus) bonusCarac += options.bonus;
     if (options.bonusAttrs) {
       options.bonusAttrs.forEach(function(attr) {
-        bonusCarac += charAttributeAsInt(personnage, attr, 0);
+        var bonusAttribut = charAttributeAsInt(personnage, attr, 0);
+        if(bonusAttribut != 0) {
+          explications.push("Attribut " + attr + " : " + ((bonusAttribut<0) ? "-" : "+") + bonusAttribut);
+          bonusCarac += bonusAttribut;
+        }
+        if (attr == 'perception' && ficheAttributeAsBool(personnage, 'casque_on')) {
+          var malusCasque = ficheAttributeAsInt(personnage, 'casque_malus');
+          explications.push("Malus de casque : -" + malusCasque);
+          bonusCarac -= malusCasque;
+        }
       });
     }
-    if (options.bonus) bonusCarac += options.bonus;
-    if (personnage.bonusJet) bonusCarac += personnage.bonusJet;
     var carSup = nbreDeTestCarac(carac, personnage);
     var de = computeDice(personnage, {
       nbDe: carSup,
