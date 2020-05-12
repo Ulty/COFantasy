@@ -13289,6 +13289,9 @@ var COFantasy = COFantasy || function() {
       //On dégaine une nouvelle arme
       ancienneArme = getWeaponStats(perso, labelArmeActuelle);
       if (ancienneArme) {
+        if (attributeAsBool(perso, 'forgeron(' + labelArmeActuelle + ')')) {
+          finDEffetDeNom(perso, 'forgeron(' + labelArmeActuelle + ')', evt);
+        }
         if (options && options.messages) message += "rengaine " + ancienneArme.name + " et ";
         else sendChar(perso.charId, "rengaine " + ancienneArme.name);
       }
@@ -13419,7 +13422,7 @@ var COFantasy = COFantasy || function() {
         var nomArme = degainerArme(perso, armeLabel, evt, options);
         if (nomArme) sendChar(perso.charId, "a déjà " + nomArme + " en main");
       });
-      if (evt.attributes.length > 0) addEvent(evt);
+      addEvent(evt);
     });
   }
 
@@ -13537,7 +13540,10 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var effetC = cmd[1];
-    if (!estEffetTemp(effetC)) {
+    var effetIncomplet;
+    if (effetC == 'forgeron' || effetC == 'armeEnflammee') {
+      effetIncomplet = effetC;
+    } else if (!estEffetTemp(effetC)) {
       error(effetC + " n'est pas un effet temporaire répertorié", msg.content);
       return;
     }
@@ -13648,6 +13654,16 @@ var COFantasy = COFantasy || function() {
       if (duree > 0) {
         var count = selected.length;
         var setOneEffect = function(perso, d) {
+          if (effetIncomplet) {
+            //Seule possibilité pour l'instant : forgeron ou arme enflammée
+            var armeActuelle = tokenAttribute(perso, 'armeEnMain');
+            if (armeActuelle.length === 0) {
+              whisperChar(perso.charId, "Pas d'arme en main, impossible de savoir quoi enflammer.");
+              return;
+            }
+            var labelArme = armeActuelle[0].get('current');
+            effetC = effetIncomplet + '(' + labelArme + ')';
+          }
           if (options.valeur !== undefined) {
             setTokenAttr(perso, effetC + "Valeur", options.valeur, evt, undefined, options.valeurMax);
           }
@@ -13675,6 +13691,17 @@ var COFantasy = COFantasy || function() {
               setState(perso, 'affaibli', true, evt);
               break;
             default:
+              if (effetC.startsWith('forgeron(')) {
+                //Il faut dégainer l'arme si elle n'est pas en main, et ajouter une lumière
+                var labelArmeForgeron = effetC.substring(9, effetC.indexOf(')'));
+                degainerArme(perso, labelArmeForgeron, evt);
+                var feu = getValeurOfEffet(perso, effetC, 1, 'voieDuMetal');
+                ajouteUneLumiere(perso, effetC, feu * 3, feu, evt);
+              } else if (effetC.startsWith('armeEnflammee(')) {
+                var labelArmeEnflammee = effetC.substring(14, effetC.indexOf(')'));
+                degainerArme(perso, labelArmeEnflammee, evt);
+                ajouteUneLumiere(perso, effetC, 9, 3, evt);
+              }
           }
           if (mEffet.statusMarker) {
             affectToken(perso.token, 'statusmarkers', perso.token.get('statusmarkers'), evt);
@@ -20120,8 +20147,21 @@ var COFantasy = COFantasy || function() {
   function eteindreUneLumiere(perso, pageId, al, lumName, evt) {
     var lumId = al.get('max');
     if (lumId == 'surToken') {
-      setToken(perso.token, 'light_radius', '', evt);
-      setToken(perso.token, 'light_dimradius', '', evt);
+      //Il faut enlever la lumière sur tous les tokens
+      var allTokens = [perso.token];
+      if (perso.token.get('bar1_value') !== '') {
+        allTokens = findObjs({
+          type: 'graphic',
+          represents: perso.charId
+        });
+        allTokens = allTokens.filter(function(tok) {
+          return tok.get('bar1_value') !== '';
+        });
+      }
+      allTokens.forEach(function(token) {
+        setToken(token, 'light_radius', '', evt);
+        setToken(token, 'light_dimradius', '', evt);
+      });
       al.remove();
       return;
     }
@@ -22323,6 +22363,22 @@ var COFantasy = COFantasy || function() {
           }
         });
         break;
+      case 'forgeron':
+      case 'armeEnflammee':
+        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+          var perso = {
+            token: token,
+            charId: charId
+          };
+          var pageId = options.pageId || token.get('pageid');
+          var attrLumiere = tokenAttribute(perso, 'lumiere');
+          attrLumiere.forEach(function(al) {
+            var lumName = al.get('current');
+            if (!lumName.startsWith(efComplet)) return;
+            eteindreUneLumiere(perso, pageId, al, lumName, evt);
+          });
+        });
+        break;
       default:
     }
     if (options.attrSave === undefined && charId) {
@@ -22359,9 +22415,10 @@ var COFantasy = COFantasy || function() {
   function finDEffetDeNom(perso, effet, evt, options) { //Supprime l'effet si présent
     var attrs = tokenAttribute(perso, effet);
     if (attrs.length === 0) return;
+    attrs = attrs[0];
     options = options || {};
     options.pageId = options.pageId || perso.token.get('pageid');
-    finDEffet(attrs[0], effet, attrs[0].get('name'), perso.charId, evt, options);
+    finDEffet(attrs, effetTempOfAttribute(attrs), attrs.get('name'), perso.charId, evt, options);
   }
 
   //asynchrone

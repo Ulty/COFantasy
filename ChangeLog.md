@@ -1,5 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.05
+### Capacités
+* Enflammer une arme fait maintenant de la lumière.
+
 ### Autres améliorations
 * Possibilité de changer des difficultés de sauvegarde en fonction de la mana dépensée en tempête de mana intense.
 * Amélioration des affichages de jets
