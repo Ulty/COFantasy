@@ -49,7 +49,7 @@ var COFantasy = COFantasy || function() {
 
   var tokenMarkers = {};
 
-  var flashyInitMarkerScale = 1.7;
+  var flashyInitMarkerScale = 1.6;
 
   var defaultOptions = {
     regles: {
@@ -1443,10 +1443,12 @@ var COFantasy = COFantasy || function() {
     if (_.has(evt, 'init')) stateCOF.init = evt.init;
     if (_.has(evt, 'activeTokenId')) {
       stateCOF.activeTokenId = evt.activeTokenId;
-      var activeToken = getObj('graphic', evt.activeTokenId);
-      if (activeToken) {
-        threadSync++;
-        activateRoundMarker(threadSync, activeToken);
+      if (stateCOF.options.affichage.val.init_dynamique.val) {
+        var activeToken = getObj('graphic', evt.activeTokenId);
+        if (activeToken) {
+          threadSync++;
+          activateRoundMarker(threadSync, activeToken);
+        }
       }
     }
     if (_.has(evt, 'updateNextInitSet'))
