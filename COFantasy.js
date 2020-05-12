@@ -2031,6 +2031,10 @@ var COFantasy = COFantasy || function() {
     if (options.bonusAttrs) {
       options.bonusAttrs.forEach(function(attr) {
         bonusCarac += charAttributeAsInt(personnage, attr, 0);
+        if (attr == 'perception' && ficheAttributeAsBool(personnage, 'casque_on')) {
+          var malusCasque = ficheAttributeAsInt(personnage, 'casque_malus');
+          bonusCarac -= malusCasque;
+        }
       });
     }
     if (options.bonus) bonusCarac += options.bonus;
