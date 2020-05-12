@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.05
 ### Autres améliorations
+* Possibilité de changer des difficultés de sauvegarde en fonction de la mana dépensée en tempête de mana intense.
 * Amélioration des affichages de jets
 * Standardisation de !cof-lancer-sorts et support dans les consommables
 

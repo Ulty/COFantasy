@@ -3387,15 +3387,15 @@ var COFantasy = COFantasy || function() {
           return;
         case 'psave':
           var psaveopt = scope;
-          if (cmd.length > 3 && cmd[3] == 'local') {
-            var psavel = 0;
-            if (scope.additionalDmg) psavel = scope.additionalDmg.length;
-            if (psavel > 0) {
-              psaveopt = scope.additionalDmg[psavel - 1];
-            }
-          }
           var psaveParams = parseSave(cmd);
           if (psaveParams) {
+            if (psaveParams.local) {
+              var psavel = 0;
+              if (scope.additionalDmg) psavel = scope.additionalDmg.length;
+              if (psavel > 0) {
+                psaveopt = scope.additionalDmg[psavel - 1];
+              }
+            }
             psaveopt.partialSave = psaveParams;
             psaveopt.attaquant = attaquant;
           }
@@ -3941,7 +3941,6 @@ var COFantasy = COFantasy || function() {
       error("Le premier argument de save n'est pas une caractéristique", cmd);
       return;
     }
-
     var res = {
       carac: carac1,
       carac2: carac2,
@@ -3952,15 +3951,28 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (cmd.length > 3) {
-      switch (cmd[3]) {
-        case 'carac':
-        case 'carac2':
-        case 'seuil':
-          error("Argument supplémentaire de save inconnu", cmd);
-          break;
-        default:
-          res[cmd[3]] = true;
-      }
+      var optArgs = cmd.slice(3).join(' ');
+      optArgs = optArgs.split(' +');
+      optArgs.forEach(function(oa) {
+        oa = oa.trim().split(' ');
+        switch (oa[0]) {
+          case 'carac':
+          case 'carac2':
+          case 'seuil':
+            error("Argument supplémentaire de save inconnu", cmd);
+            return;
+          case 'tempete':
+            var ti = 1;
+            if (oa.length > 1) {
+              ti = parseInt(oa[1]);
+              if (isNaN(ti)) ti = 1;
+            }
+            res.tempete = ti;
+            return;
+          default:
+            res[oa[0]] = true;
+        }
+      });
     }
     return res;
   }
@@ -6181,6 +6193,9 @@ var COFantasy = COFantasy || function() {
       var count = dmgExtra.length;
       dmgExtra.forEach(function(d) {
         count--;
+        if (d.partialSave && d.partialSave.tempete && options.tempeteDeManaIntense) {
+          d.partialSave.seuil += d.partialSave.tempete * options.tempeteDeManaIntense;
+        }
         partialSave(d, target, false, d.display, d.total, expliquer, evt,
           function(res) {
             if (res) {
@@ -8509,6 +8524,9 @@ var COFantasy = COFantasy || function() {
       var typeDisplay = "";
       var typeCount = dmgParType[dmgType].length;
       dmgParType[dmgType].forEach(function(d) {
+        if (d.partialSave && d.partialSave.tempete && options.tempeteDeManaIntense) {
+          d.partialSave.seuil += d.partialSave.tempete * options.tempeteDeManaIntense;
+        }
         partialSave(d, target, false, d.display, d.total, expliquer, evt,
           function(res) {
             var addTypeDisplay = d.display;
@@ -8796,6 +8814,9 @@ var COFantasy = COFantasy || function() {
         dmSuivis[dmType] = Math.ceil(dmSuivis[dmType] / 2);
       }
       showTotal = true;
+    }
+    if (options.partialSave && options.partialSave.tempete && options.tempeteDeManaIntense) {
+      options.partialSave.seuil += options.partialSave.tempete * options.tempeteDeManaIntense;
     }
     partialSave(options, target, showTotal, dmgDisplay, dmgTotal,
       expliquer, evt,
@@ -12821,8 +12842,8 @@ var COFantasy = COFantasy || function() {
     if (options.bonusAttrs) {
       options.bonusAttrs.forEach(function(attr) {
         var bonusAttribut = charAttributeAsInt(personnage, attr, 0);
-        if(bonusAttribut !== 0) {
-          explications.push("Attribut " + attr + " : " + ((bonusAttribut<0) ? "-" : "+") + bonusAttribut);
+        if (bonusAttribut !== 0) {
+          explications.push("Attribut " + attr + " : " + ((bonusAttribut < 0) ? "-" : "+") + bonusAttribut);
           bonusCarac += bonusAttribut;
         }
         if (attr == 'perception' && ficheAttributeAsBool(personnage, 'casque_on')) {
@@ -15545,7 +15566,7 @@ var COFantasy = COFantasy || function() {
       if (options.son) playSound(options.son);
       iterSelected(selected, function(lanceur) {
         if (limiteRessources(lanceur, options, undefined, "lancer un sort", evt)) return;
-        options.messages.forEach(function (m) {
+        options.messages.forEach(function(m) {
           whisperChar(lanceur.charId, m);
         });
         addEvent(evt);
