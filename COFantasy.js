@@ -2028,14 +2028,16 @@ var COFantasy = COFantasy || function() {
     options = options || {};
     var token = personnage.token;
     var bonusCarac = bonusTestCarac(carac, personnage, evt);
+    var malusCasque = false;
     if (options.bonusAttrs) {
       options.bonusAttrs.forEach(function(attr) {
         bonusCarac += charAttributeAsInt(personnage, attr, 0);
-        if (attr == 'perception' && ficheAttributeAsBool(personnage, 'casque_on')) {
-          var malusCasque = ficheAttributeAsInt(personnage, 'casque_malus');
-          bonusCarac -= malusCasque;
-        }
+        malusCasque = malusCasque || attr == 'perception' || attr == 'vigilance';
       });
+    }
+    if (malusCasque && ficheAttributeAsBool(personnage, 'casque_on')) {
+      malusCasque = ficheAttributeAsInt(personnage, 'casque_malus', 0);
+      if (malusCasque > 0) bonusCarac -= malusCasque;
     }
     if (options.bonus) bonusCarac += options.bonus;
     var testRes = {};
@@ -2229,11 +2231,69 @@ var COFantasy = COFantasy || function() {
     addCellInFramedDisplay(display, cell, 80, false);
   }
 
+  // prend une distance en mètre et retourne une distance dans l'unité
+  // utilisée sur la page du personnage
+  function scaleDistance(perso, distance) {
+    if (perso.scale) return distance * perso.scale;
+    var pageId = perso.pageId;
+    if (pageId === undefined) {
+      pageId = perso.token.get('pageid');
+      perso.pageId = pageId;
+    }
+    var page = getObj("page", pageId);
+    if (page === undefined) {
+      perso.scale = 1;
+      return distance;
+    }
+    var unit = page.get('scale_units');
+    switch (unit) {
+      case 'm':
+        perso.scale = 1;
+        break;
+      case 'ft':
+        perso.scale = 3.28084;
+        break;
+      case 'cm':
+        perso.scale = 100;
+        break;
+      case 'km':
+        perso.scale = 0.001;
+        break;
+      case 'mi':
+        perso.scale = 0.000621371;
+        break;
+      case 'in':
+        perso.scale = 39.3701;
+        break;
+      default:
+        sendChat('COF', "Attention, unité de mesure de la page (" + unit + ") non reconnue");
+        perso.scale = 1;
+    }
+    return distance * perso.scale;
+  }
+
   function computeScale(pageId) {
     var page = getObj("page", pageId);
-    var scale = page.get('scale_number');
+    var scale = parseFloat(page.get('scale_number'));
+    if (isNaN(scale) || scale <= 0) return 1.0;
     var unit = page.get('scale_units');
-    if (unit == 'ft') scale *= 0.3048;
+    switch (unit) {
+      case 'ft':
+        scale *= 0.3048;
+        break;
+      case 'cm':
+        scale *= 0.01;
+        break;
+      case 'km':
+        scale *= 1000;
+        break;
+      case 'mi':
+        scale *= 1609.34;
+        break;
+      case 'in':
+        scale *= 0.0254;
+        break;
+    }
     return scale;
   }
   //options peut avoir les champs:
@@ -12845,6 +12905,7 @@ var COFantasy = COFantasy || function() {
     var explications = [];
     var bonusCarac = bonusTestCarac(carac, personnage, evt, explications);
     if (options.bonus) bonusCarac += options.bonus;
+    var malusCasque = false;
     if (options.bonusAttrs) {
       options.bonusAttrs.forEach(function(attr) {
         var bonusAttribut = charAttributeAsInt(personnage, attr, 0);
@@ -12852,12 +12913,15 @@ var COFantasy = COFantasy || function() {
           explications.push("Attribut " + attr + " : " + ((bonusAttribut < 0) ? "-" : "+") + bonusAttribut);
           bonusCarac += bonusAttribut;
         }
-        if (attr == 'perception' && ficheAttributeAsBool(personnage, 'casque_on')) {
-          var malusCasque = ficheAttributeAsInt(personnage, 'casque_malus');
-          explications.push("Malus de casque : -" + malusCasque);
-          bonusCarac -= malusCasque;
-        }
+        malusCasque = malusCasque || attr == 'perception' || attr == 'vigilance';
       });
+    }
+    if (malusCasque && ficheAttributeAsBool(personnage, 'casque_on')) {
+      malusCasque = ficheAttributeAsInt(personnage, 'casque_malus', 0);
+      if (malusCasque > 0) {
+        explications.push("Malus de casque : -" + malusCasque);
+        bonusCarac -= malusCasque;
+      }
     }
     var carSup = nbreDeTestCarac(carac, personnage);
     var de = computeDice(personnage, {
@@ -20093,7 +20157,10 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  // prend en compte l'unité de mesure utilisée sur la page
   function ajouteUneLumiere(perso, groupe, radius, dimRadius, evt) {
+    radius = scaleDistance(perso, radius);
+    dimRadius = scaleDistance(perso, dimRadius);
     var ct = perso.token;
     var attrName = 'lumiere';
     if (ct.get('bar1_link') === "") attrName += "_" + ct.get('name');
@@ -23312,6 +23379,7 @@ var COFantasy = COFantasy || function() {
     //Vision
     var visionNoir = charAttributeAsInt(perso, 'visionDansLeNoir', 0);
     if (visionNoir > 0) {
+      visionNoir = scaleDistance(perso, visionNoir);
       token.set('light_radius', visionNoir);
       token.set('light_dimradius', -1);
       token.set('light_otherplayers', false);
