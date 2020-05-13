@@ -2241,6 +2241,10 @@ var COFantasy = COFantasy || function() {
       perso.pageId = pageId;
     }
     var page = getObj("page", pageId);
+    if (page === undefined) {
+      perso.scale = 1;
+      return distance;
+    }
     var unit = page.get('scale_units');
     switch (unit) {
       case 'm':
