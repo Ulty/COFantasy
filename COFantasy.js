@@ -2028,14 +2028,16 @@ var COFantasy = COFantasy || function() {
     options = options || {};
     var token = personnage.token;
     var bonusCarac = bonusTestCarac(carac, personnage, evt);
+    var malusCasque = false;
     if (options.bonusAttrs) {
       options.bonusAttrs.forEach(function(attr) {
         bonusCarac += charAttributeAsInt(personnage, attr, 0);
-        if (attr == 'perception' && ficheAttributeAsBool(personnage, 'casque_on')) {
-          var malusCasque = ficheAttributeAsInt(personnage, 'casque_malus');
-          bonusCarac -= malusCasque;
-        }
+        malusCasque = malusCasque || attr == 'perception' || attr == 'vigilance';
       });
+    }
+    if (malusCasque && ficheAttributeAsBool(personnage, 'casque_on')) {
+      malusCasque = ficheAttributeAsInt(personnage, 'casque_malus', 0);
+      if (malusCasque > 0) bonusCarac -= malusCasque;
     }
     if (options.bonus) bonusCarac += options.bonus;
     var testRes = {};
@@ -12845,6 +12847,7 @@ var COFantasy = COFantasy || function() {
     var explications = [];
     var bonusCarac = bonusTestCarac(carac, personnage, evt, explications);
     if (options.bonus) bonusCarac += options.bonus;
+    var malusCasque = false;
     if (options.bonusAttrs) {
       options.bonusAttrs.forEach(function(attr) {
         var bonusAttribut = charAttributeAsInt(personnage, attr, 0);
@@ -12852,12 +12855,15 @@ var COFantasy = COFantasy || function() {
           explications.push("Attribut " + attr + " : " + ((bonusAttribut < 0) ? "-" : "+") + bonusAttribut);
           bonusCarac += bonusAttribut;
         }
-        if (attr == 'perception' && ficheAttributeAsBool(personnage, 'casque_on')) {
-          var malusCasque = ficheAttributeAsInt(personnage, 'casque_malus');
-          explications.push("Malus de casque : -" + malusCasque);
-          bonusCarac -= malusCasque;
-        }
+        malusCasque = malusCasque || attr == 'perception' || attr == 'vigilance';
       });
+    }
+    if (malusCasque && ficheAttributeAsBool(personnage, 'casque_on')) {
+      malusCasque = ficheAttributeAsInt(personnage, 'casque_malus', 0);
+      if (malusCasque > 0) {
+        explications.push("Malus de casque : -" + malusCasque);
+        bonusCarac -= malusCasque;
+      }
     }
     var carSup = nbreDeTestCarac(carac, personnage);
     var de = computeDice(personnage, {
