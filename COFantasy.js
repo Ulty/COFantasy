@@ -3235,7 +3235,7 @@ var COFantasy = COFantasy || function() {
         case 'nom':
         case 'special':
           if (cmd.length < 1) {
-            error("Il manque le nom après l'option --"+cmd[0], cmd);
+            error("Il manque le nom après l'option --" + cmd[0], cmd);
             return;
           }
           options[cmd[0]] = cmd.slice(1).join(' ').trim();
@@ -19527,13 +19527,13 @@ var COFantasy = COFantasy || function() {
     if (spec.actions) actions = spec.actions;
     if (spec.attaques) {
       spec.attaques.forEach(function(att) {
-          createObj('ability', {
-            _characterid: charId,
-            name: att.name,
-            istokenaction: false,
-            action: '!cof-attack @{selected|token_id} @{target|token_id} ' + att.name + att.options
-          });
-          actions += '%' + att.name + ' ';
+        createObj('ability', {
+          _characterid: charId,
+          name: att.name,
+          istokenaction: false,
+          action: '!cof-attack @{selected|token_id} @{target|token_id} ' + att.name + att.options
+        });
+        actions += '%' + att.name + ' ';
       });
     }
     if (spec.attributes) {
@@ -19590,7 +19590,10 @@ var COFantasy = COFantasy || function() {
         TAILLE: 'moyen'
       },
       pv: 9,
-      attaques: [{name: 'Morsure', options:" --toucher 2 --dm 1d6+1"}],
+      attaques: [{
+        name: 'Morsure',
+        options: " --toucher 2 --dm 1d6+1"
+      }],
       attributes: [],
       abilities: []
     },
@@ -19625,7 +19628,10 @@ var COFantasy = COFantasy || function() {
         TAILLE: 'moyen'
       },
       pv: 15,
-      attaques: [{name: 'Morsure', options:" --toucher 4 --dm 1d6+3"}],
+      attaques: [{
+        name: 'Morsure',
+        options: " --toucher 4 --dm 1d6+3"
+      }],
       attributes: [{
         name: 'discrétion',
         current: 5
@@ -19669,7 +19675,10 @@ var COFantasy = COFantasy || function() {
         TAILLE: 'moyen'
       },
       pv: 35,
-      attaques: [{name: 'Morsure', options:" --toucher 6 --dm 1d6+5"}],
+      attaques: [{
+        name: 'Morsure',
+        options: " --toucher 6 --dm 1d6+5"
+      }],
       attributes: [{
         name: 'discrétion',
         current: 5
@@ -19713,7 +19722,10 @@ var COFantasy = COFantasy || function() {
         TAILLE: 'grand'
       },
       pv: 30,
-      attaques: [{name: 'Morsure', options:" --toucher 7 --dm 2d6+5"}],
+      attaques: [{
+        name: 'Morsure',
+        options: " --toucher 7 --dm 2d6+5"
+      }],
       attributes: [{
         name: 'discrétion',
         current: 5
@@ -19759,7 +19771,10 @@ var COFantasy = COFantasy || function() {
         TAILLE: 'grand'
       },
       pv: 50,
-      attaques: [{name: 'Morsure', options:" --toucher 9 --dm 2d6+7"}],
+      attaques: [{
+        name: 'Morsure',
+        options: " --toucher 9 --dm 2d6+7"
+      }],
       attributes: [{
         name: 'discrétion',
         current: 5
@@ -19805,7 +19820,10 @@ var COFantasy = COFantasy || function() {
         TAILLE: 'grand'
       },
       pv: 70,
-      attaques: [{name: 'Morsure', options:" --toucher 12 --dm 2d8+7"}],
+      attaques: [{
+        name: 'Morsure',
+        options: " --toucher 12 --dm 2d8+7"
+      }],
       attributes: [{
         name: 'peutEnrager',
         current: 'true'
@@ -19847,7 +19865,10 @@ var COFantasy = COFantasy || function() {
         TAILLE: 'grand'
       },
       pv: 90,
-      attaques: [{name: 'Morsure', options:" --toucher 14 --dm 2d6+12"}],
+      attaques: [{
+        name: 'Morsure',
+        options: " --toucher 14 --dm 2d6+12"
+      }],
       attributes: [{
         name: 'discrétion',
         current: 5
@@ -19893,7 +19914,10 @@ var COFantasy = COFantasy || function() {
         TAILLE: 'énorme'
       },
       pv: 110,
-      attaques: [{name: 'Griffes', options:" --toucher 17 --dm 3d6+13"}],
+      attaques: [{
+        name: 'Griffes',
+        options: " --toucher 17 --dm 3d6+13"
+      }],
       attributes: [{
         name: 'fauchage',
         current: 'true'
