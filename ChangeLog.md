@@ -4,6 +4,7 @@
 * Enflammer une arme fait maintenant de la lumière.
 
 ### Autres améliorations
+* Amélioration de l'interface des attaques qui n'utilisent pas les champs d'attaque de la fiche
 * Prise en compte de l'unité de mesure de la carte pour les distances de vision
 * Possibilité de changer des difficultés de sauvegarde en fonction de la mana dépensée en tempête de mana intense.
 * Amélioration des affichages de jets
