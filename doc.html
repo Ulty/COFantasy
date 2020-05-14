@@ -185,69 +185,19 @@
               </div>
               <h4 class="text-secondary">Attaquer une (ou plusieurs) cible : <code>!cof-attack @{selected|token_id} @{target|token_id} <i>n</i></code></h4>
               <div class="decalage">
-                <p>où <i>n</i> est soit :</p>
-                <ul>
-                  <li>
-                    <p>la première partie (avant le premier blanc) du nom de l'attaque sur la fiche.</p>
+                <p>où <i>n</i> est un argument optionnel qui peut soit correspondre au label de l'attaque sur la fiche du personnage (ce label est automatiquement généré par la fiche et affiché juste devant le nom), soit être le nom de l'attaque. Si cet argument est absent ou qu'il ne correspnd pas à un label de la fiche du personnage, l'attaque aura les valeurs par défaut d'une attaque au contact infligeant 1d4 DM.</p>
                     <div class="alert alert-success" role="alert">
-                      <p>Exemple :</p>
+                      <p>Exemple avec label :</p>
                       <div class="decalage">
                         <code>!cof-attack @{selected|token_id} @{target|token_id} 1</code>
                       </div>
                     </div>
-                    <div class="alert alert-warning" role="alert">
-                      <p><strong>Attention :</strong> Il faut utiliser des noms d'attaque comme "1 Épée longue". L'attaque tient compte de toutes les informations de l'attaque, y compris chances de critique et portée.</p>
-                    </div>
-                    <div class="alert alert-warning" role="alert">
-                      <p><strong>Attention :</strong> Ceci n'est plus valable à compter de la version 3.2 de la fiche. En effet, celle-ci contiend automatiquement un label pour chaque attaque. Il faut utiliser ce label comme argument de l'attaque</p>
-                    </div>
-                  </li>
-                </ul>
-                <p>soit :</p>
-                <ul id="tableau_arme">
-                  <li>
-                    <p>un tableau d'arme sous la forme : <code>[ ARME, [ATTAQUE], CRIT, [DM], [PORTÉE] ]</code></p>
-                    <p><img class="img-fluid" src="https://i.imgur.com/3QvxP9e.png" data-href="https://i.imgur.com/3QvxP9e.png"></p>
-                    <figcaption>Le sort "<i>Flèche enflammée</i>"</figcaption>
-                    <ul>
-                      <li><code>ARME</code> : Nom de l'Arme/Attaque. Exemple : "Flèche_Enflammée"</li>
-                      <li>
-                        <code>[ATTAQUE]</code> : un tableau des valeur d'attaque de l'arme : <code>[BONUS_ATTAQUE, BONUS]</code>
-                        <ul>
-                          <li>
-                            <code>BONUS_ATTAQUE</code> : Valeur de bonus de l'attaque de l'Arme/Attaque.<br />
-                            Exemple pour le token selectionné :
-                            <div class="decalage">Au contact : <i>"@{selected|ATKCAC}"</i><br />
-                              A distance : <i>"@{selected|ATKTIR}"</i><br />
-                              Magique : <i>"@{selected|ATKMAG}"</i>
-                            </div>
-                          </li>
-                          <li><code>BONUS</code> : Un éventuel bonus de l'Arme/Attaque. Exemple : -1, 0, 1, 2, 3, etc ...</li>
-                        </ul>
-                      </li>
-                      <li><code>CRIT</code> : La valeur de critique de l'arme. Exemple : 20</li>
-                      <li>
-                        <code>[DM]</code> : un tableau des valeur d'attaque de l'arme : <code>[NOMBRE_DE_DÉ, VALEUR_DÉ, MOD_DÉGÂTS, AUTRE_BONUS]</code>
-                        <ul>
-                          <li><code>NOMBRE_DE_DÉ</code> : Combien de dé à lancer. Exemple : 0, 1, 2, 3, etc ...</li>
-                          <li><code>VALEUR_DÉ</code> : Le nombre de face du dé. Exemple : 4, 6, 8, 10, 12</li>
-                          <li><code>MOD_DÉGÂTS</code> : Le MOD des dégâts à ajouter. Exemple : "@{selected|SAG}", -1, 0, etc...</li>
-                          <li><code>AUTRE_BONUS</code> : D'éventuels autres bonus/malus. Exemple : -1, 0, 1, 2, 3, etc ...</li>
-                        </ul>
-                      </li>
-                      <li><code>[PORTÉE]</code> : La portée en mètre de l'Arme/Attaque. Exemple : 0, 10, 20 , 30</li>
-                    </ul>
+                      <p>L'attaque tient alors compte de toutes les informations de l'attaque, y compris chances de critique et portée. En l'absence de label, on peut spécifier ces informations sous forme d'options d'attaque</p>
                     <div class="alert alert-success" role="alert">
                       <p>Exemple pour le sort "<i>Flèche enflammée</i>" :</p>
-                      <div class="decalage"><code>!cof-attack @{selected|token_id} @{target|token_id} ["Flèche_Enflammée",["@{selected|ATKMAG}",0],20,[1,6,"@{selected|INT}",0],30] --fx beam-fire --feu --sortilege --enflamme</code></div>
+                      <div class="decalage"><code>!cof-attack @{selected|token_id} @{target|token_id} Flèche Enflammée --toucher [[@{selected|ATKMAG}]] --dm 1d6 + [[@{selected|INT}]] --portee 30 --fx beam-fire --feu --sortilege --enflamme</code></div>
                     </div>
-                    <div class="alert alert-warning" role="alert"><strong>Attention :</strong> Aucun espace n'est toléré.</div>
-                  </li>
-                </ul>
-                <p>Pour plus de facilité, utilisez une macro <code>Attaque</code> qui fait <code>!cof-attack @{selected|token_id} @{target|token_id}</code>, comme ça, dans l'exemple précédent, vous avez juste une ability avec comme valeur <code>#Attaque 1</code> (ou mieux, <code>#Attaque 1 --tranchant</code>).</p>
-                <p><img class="img-fluid" src="https://i.imgur.com/CxX71qp.png" data-href="https://i.imgur.com/CxX71qp.png"></p>
-              </div>
-              <figcaption>Ajout de la Macro <i>Attaque</i>.</figcaption>
+                <p>Pour plus de facilité, utilisez la macro <code>Attaque</code> qui fait <code>!cof-attack @{selected|token_id} @{target|token_id}</code>, comme ça, dans l'exemple avec label, vous avez juste une ability avec comme valeur <code>#Attaque 1</code> (ou mieux, <code>#Attaque 1 --tranchant</code>).</p>
               <p><img class="img-fluid" src="https://i.imgur.com/MWTVRO4.png" data-href="https://i.imgur.com/MWTVRO4.png"></p>
               <figcaption>Création des <i>Abilities</i> (Capacités) du Personnage.</figcaption>
               <p><img class="img-fluid" src="https://i.imgur.com/GmUxCpB.png" data-href="https://i.imgur.com/GmUxCpB.png"></p>
@@ -258,10 +208,16 @@
               <h4 class="text-secondary">Options pour l'attaque&nbsp;:</h4>
               <div class="decalage">
                 <ul>
+                  <li><code>--nom <i>txt</i></code> : nom de l'attaque à afficher. Remplace le nom dans la ligne d'attaque si on a donné un label en argument. Le nom ne doit pas comporte de blanc usivi de 2 tirets (<code> --</code>).</li>
+                  <li><code>--toucher <i>n</i></code> : bonus de base de l'attaque. Remplace les valeurs dans la ligne d'attaque si on a donné un label en argument.</li>
+                  <li><code>--crit <i>n</i></code> : valeur à partir de laquelle le jet de dé est un critique. Remplace les valeurs dans la ligne d'attaque si on a donné un label en argument.</li>
+                  <li><code>--dm <i>expr</i></code> : Dégâts de base de l'attaque. Remplace les valeurs dans la ligne d'attaque si on a donné un label en argument. <i>expr</i> peut être un entier ou bien une expression du type <code><i>a</i>d<i>b</i>+<i>c</i></code>. La partie constante de cette expression est optionnelle et peut être négative.</li>
+                  <li><code>--portee <i>n</i></code> : la portée de l'attaque exprimée en mètres. Remplace les valeurs dans la ligne d'attaque si on a donné un label en argument.</li>
+                  <li><code>--special <i>txt</i></code> : remplace le champ spécial de l'attaque sur la fiche.</li>
                   <li><code>--tempDmg</code> : l'attaque fait des dégâts temporaires (tient compte de la force de l'adversaire, utilise la barre 2 pour les dmg temp, sauf si le token a des PM, auquel cas on utilisera un attribut temporaire).</li>
                   <li><code>--pasDeDmg</code> : l'attaque ne fait pas de DM.</li>
                   <li><code>--poudre</code> : l'arme est une arme à poudre, utilisation d'un dé de poudre</li>
-                  <li><code>--epieu</code> : l'arme est un épieu. À noter que l#arme est aussi considérée comme un épieu si elle contient <code>épieu</code> dans son nom ou dans son champs divers. Cette option augmente de 1 le nombre de dés contre un adversaire sans armure.</li>
+                  <li><code>--epieu</code> : l'arme est un épieu. À noter que l'arme est aussi considérée comme un épieu si elle contient <code>épieu</code> dans son nom ou dans son champs divers. Cette option augmente de 1 le nombre de dés contre un adversaire sans armure.</li>
                   <li><code>--auto</code> : l'attaque réussit automatiquement</li>
                   <li><code>--bonusAttaque <i>n</i></code> : ajoute <i>n</i> au jet d'attaque</li>
                   <li><code>--bonusCritique <i>n</i></code> : augmente <i>n</i> à la plage de coups critiques</li>

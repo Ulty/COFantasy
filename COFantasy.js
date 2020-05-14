@@ -2056,27 +2056,32 @@ var COFantasy = COFantasy || function() {
     });
     var rollExpr = "[[" + de + "cs20cf1]]";
     var name = personnage.name || getObj('character', personnage.charId).get('name');
-    sendChat("", rollExpr, function(res) {
-      var roll = options.roll || res[0].inlinerolls[0];
-      testRes.roll = roll;
-      var d20roll = roll.results.total;
-      var bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
-      testRes.texte = buildinline(roll) + bonusText;
-      if (d20roll == 20) {
-        testRes.reussite = true;
-        testRes.critique = true;
-      } else if (d20roll == 1) {
-        testRes.reussite = false;
-        testRes.echecCritique = true;
-        diminueMalediction(personnage, evt);
-      } else if (d20roll + bonusCarac >= seuil) {
-        testRes.reussite = true;
-      } else {
-        diminueMalediction(personnage, evt);
-        testRes.reussite = false;
-      }
-      callback(testRes);
-    });
+    try {
+      sendChat("", rollExpr, function(res) {
+        var roll = options.roll || res[0].inlinerolls[0];
+        testRes.roll = roll;
+        var d20roll = roll.results.total;
+        var bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
+        testRes.texte = buildinline(roll) + bonusText;
+        if (d20roll == 20) {
+          testRes.reussite = true;
+          testRes.critique = true;
+        } else if (d20roll == 1) {
+          testRes.reussite = false;
+          testRes.echecCritique = true;
+          diminueMalediction(personnage, evt);
+        } else if (d20roll + bonusCarac >= seuil) {
+          testRes.reussite = true;
+        } else {
+          diminueMalediction(personnage, evt);
+          testRes.reussite = false;
+        }
+        callback(testRes);
+      });
+    } catch (e) {
+      error("Erreur pendant l'évaluation de " + rollExpr + " dans un test de caractéristiques");
+      log(e.name + ": " + e.message);
+    }
   }
 
   function pointsDeChance(perso) {
@@ -3137,11 +3142,10 @@ var COFantasy = COFantasy || function() {
     // - target token
     // - attack number (referring to the character sheet)
     // - some optional arguments, preceded by --
-
     var optArgs = msg.content.split(" --");
     var args = optArgs[0].split(" ");
     optArgs.shift();
-    if (args.length < 4) {
+    if (args.length < 3) {
       error("Pas assez d'arguments pour !cof-attack: " + msg.content, args);
       return;
     }
@@ -3155,7 +3159,10 @@ var COFantasy = COFantasy || function() {
       error("le second argument de !cof-attack doit être un token" + msg.content, args[2]);
       return;
     }
-    var attackLabel = args[3];
+    var attackLabel;
+    if (args.length > 3) {
+      attackLabel = args.slice(3).join(' ').trim();
+    }
     var playerId = getPlayerIdFromMsg(msg);
     // Optional arguments
     var options = {};
@@ -3163,7 +3170,7 @@ var COFantasy = COFantasy || function() {
     var scope = options; //Pour les conditionnelles
     optArgs.forEach(function(arg) {
       arg = arg.trim();
-      var cmd = arg.split(" ");
+      var cmd = arg.split(' ');
       cmd = cmd.filter(function(c) {
         return c !== '';
       });
@@ -3224,6 +3231,96 @@ var COFantasy = COFantasy || function() {
         case 'attaqueAssuree':
         case 'attaqueRisquee':
           options[cmd[0]] = true;
+          return;
+        case 'nom':
+        case 'special':
+          if (cmd.length < 1) {
+            error("Il manque le nom après l'option --" + cmd[0], cmd);
+            return;
+          }
+          options[cmd[0]] = cmd.slice(1).join(' ').trim();
+          return;
+        case 'toucher':
+          if (cmd.length < 1) {
+            error("Il manque la valeur après l'option --toucher", cmd);
+            return;
+          }
+          var toucher = parseInt(cmd[1]);
+          if (isNaN(toucher)) {
+            error("valeur de toucher incorrecte", cmd);
+            return;
+          }
+          options.toucher = toucher;
+          return;
+        case 'crit':
+          if (cmd.length < 1) {
+            error("Il manque la valeur après l'option --crit", cmd);
+            return;
+          }
+          var crit = parseInt(cmd[1]);
+          if (isNaN(crit)) {
+            error("valeur de critique incorrecte", cmd);
+            return;
+          }
+          if (crit < 2) crit = 2;
+          else if (crit > 20) crit = 20;
+          options.crit = crit;
+          return;
+        case 'dm':
+          if (cmd.length < 1) {
+            error("Il manque la valeur après l'option --dm", cmd);
+            return;
+          }
+          var dm = {
+            nbDe: 0,
+            dice: 4,
+            bonus: 0
+          };
+          var exprDM = cmd.slice(1).join('').trim().toLowerCase();
+          var indexD = exprDM.indexOf('d');
+          if (indexD > 0) {
+            dm.nbDe = parseInt(exprDM.substring(0, indexD));
+            if (isNaN(dm.nbDe) || dm.nbDe < 0) {
+              error("Expression de dégâts " + exprDM + " mal formée", cmd);
+              return;
+            }
+            exprDM = exprDM.substring(indexD + 1);
+            indexD = exprDM.search(/[+\-]/);
+            if (indexD <= 0) {
+              dm.dice = parseInt(exprDM);
+              if (isNaN(dm.dice) || dm.dice < 1) {
+                error("Nombre de faces incorrect dans l'expression des dégâts", cmd);
+                return;
+              }
+              options.dm = dm;
+              return;
+            }
+            exprDM = exprDM.replace('+-', '-');
+            dm.dice = parseInt(exprDM.substring(0, indexD));
+            if (isNaN(dm.dice) || dm.dice < 1) {
+              error("Nombre de faces incorrect dans l'expression des dégâts", cmd);
+              return;
+            }
+            exprDM = exprDM.substring(indexD);
+          }
+          dm.bonus = parseInt(exprDM);
+          if (isNaN(dm.bonus)) {
+            error("Expression de dégâts incorrecte", cmd);
+            return;
+          }
+          options.dm = dm;
+          return;
+        case 'portee':
+          if (cmd.length < 1) {
+            error("Il manque la valeur après l'option --portee", cmd);
+            return;
+          }
+          var portee = parseInt(cmd[1]);
+          if (isNaN(portee) || portee < 0) {
+            error("valeur de critique incorrecte", cmd);
+            return;
+          }
+          options.portee = portee;
           return;
         case "imparable": //deprecated
           options.m2d20 = true;
@@ -3808,6 +3905,10 @@ var COFantasy = COFantasy || function() {
           if (cmd.length > 3) {
             scope.enveloppe.type = cmd[2];
             scope.enveloppe.expression = cmd[3];
+          }
+          if (scope.enveloppe.expression === undefined) {
+            error("Il n'est pas encore possible d'utiliser l'option --enveloppe sans expression si le label de l'attaque n'est pas défini", cmd);
+            scope.enveloppe = undefined;
           }
           return;
         case 'imgAttack':
@@ -4601,12 +4702,24 @@ var COFantasy = COFantasy || function() {
   }
 
   function getWeaponStats(perso, attackLabel) {
-    var att = getAttack(attackLabel, perso);
-    if (att === undefined) return;
-    var attPrefix = att.attackPrefix;
     var weaponStats = {
-      name: att.weaponName
+      name: 'Attaque',
+      attSkill: '@{ATKCAC}',
+      attNbDices: 1,
+      attDice: 4,
+      attDMBonusCommun: 0,
+      crit: 20,
+      divers: '',
+      portee: 0,
     };
+    if (attackLabel === undefined) return weaponStats;
+    var att = getAttack(attackLabel, perso);
+    if (att === undefined) {
+      weaponStats.name = attackLabel;
+      return weaponStats;
+    }
+    var attPrefix = att.attackPrefix;
+    weaponStats.name = att.weaponName;
     var charId = perso.charId;
     weaponStats.attSkill = getAttrByName(charId, attPrefix + "armeatk");
     weaponStats.attNbDices = getAttrByName(charId, attPrefix + "armedmnbde") || 1;
@@ -5361,7 +5474,8 @@ var COFantasy = COFantasy || function() {
         return true;
       }
     }
-    var ressource = defResource;
+    var ressource = '';
+    if (defResource !== undefined) ressource = defResource;
     var utilisations;
     if (options.limiteParJour) {
       if (personnage) {
@@ -5494,7 +5608,7 @@ var COFantasy = COFantasy || function() {
       });
     }
 
-    var weaponName = '';
+    var weaponName = options.nom;
     var weaponStats = {};
     var attaqueArray;
     try {
@@ -5502,7 +5616,7 @@ var COFantasy = COFantasy || function() {
     } catch (e) {}
     if (Array.isArray(attaqueArray) && attaqueArray.length > 4 &&
       attaqueArray[1].length > 1 && attaqueArray[3].length > 3) {
-      weaponName = attaqueArray[0].replace(/_/g, ' ');
+      weaponName = weaponName || attaqueArray[0].replace(/_/g, ' ');
       weaponStats.attSkill = attaqueArray[1][0];
       weaponStats.attSkillDiv = attaqueArray[1][1];
       weaponStats.crit = attaqueArray[2];
@@ -5512,7 +5626,6 @@ var COFantasy = COFantasy || function() {
       weaponStats.attCarBonus = weaponDmg[2];
       weaponStats.attDMBonusCommun = weaponDmg[3];
       weaponStats.portee = attaqueArray[4];
-      // Ceci est fait pour mirror le comportement de getWeaponStats et pour éviter un weaponStats.divers === undefined
       if (attaqueArray.length > 5) {
         weaponStats.divers = attaqueArray[5];
       } else {
@@ -5525,7 +5638,22 @@ var COFantasy = COFantasy || function() {
         error("Pas d'arme de label " + attackLabel, attaquant);
         return;
       }
-      weaponName = weaponStats.name;
+      weaponName = options.nom || weaponStats.name;
+    }
+    if (options.toucher !== undefined) {
+      weaponStats.attSkill = options.toucher;
+      weaponStats.attSkillDiv = 0;
+    }
+    if (options.crit !== undefined) {
+      weaponStats.crit = options.crit;
+    }
+    if (options.dm) {
+      weaponStats.attNbDices = options.dm.nbDe;
+      weaponStats.attDice = options.dm.dice;
+      weaponStats.attDMBonusCommun = options.dm.bonus;
+    }
+    if (options.portee !== undefined) {
+      weaponStats.portee = options.portee;
     }
     if (!options.epieu && weaponName.search(/[ée]pieu/i) >= 0) {
       options.epieu = true;
@@ -5572,23 +5700,26 @@ var COFantasy = COFantasy || function() {
       options.contact = true;
     }
     //Pour l'option grenaille implicite, il faut vérifier que toutes les charge de l'arme sont des charges de grenaille
-    var chargesArme = findObjs({
-      _type: 'attribute',
-      _characterid: attackingCharId,
-      name: "charge_" + attackLabel
-    });
-    if (!options.grenaille && chargesArme.length > 0) {
-      var chargesGrenaille = findObjs({
+    var chargesArme = [];
+    if (attackLabel) {
+      chargesArme = findObjs({
         _type: 'attribute',
         _characterid: attackingCharId,
-        name: "chargeGrenaille_" + attackLabel
+        name: "charge_" + attackLabel
       });
-      if (chargesGrenaille.length > 0) {
-        var chargesTotales = parseInt(chargesArme[0].get('current'));
-        if (!isNaN(chargesTotales)) {
-          var grenailles = parseInt(chargesGrenaille[0].get('current'));
-          if (!isNaN(grenailles) && grenailles >= chargesTotales)
-            options.grenaille = true;
+      if (!options.grenaille && chargesArme.length > 0) {
+        var chargesGrenaille = findObjs({
+          _type: 'attribute',
+          _characterid: attackingCharId,
+          name: "chargeGrenaille_" + attackLabel
+        });
+        if (chargesGrenaille.length > 0) {
+          var chargesTotales = parseInt(chargesArme[0].get('current'));
+          if (!isNaN(chargesTotales)) {
+            var grenailles = parseInt(chargesGrenaille[0].get('current'));
+            if (!isNaN(grenailles) && grenailles >= chargesTotales)
+              options.grenaille = true;
+          }
         }
       }
     }
@@ -6476,7 +6607,7 @@ var COFantasy = COFantasy || function() {
           return;
         }
         evt.attributes = evt.attributes || [];
-        if (options.grenaille) {
+        if (attackLabel && options.grenaille) {
           var chargesGrenaille = tokenAttribute(attaquant, 'chargeGrenaille_' + attackLabel);
           if (chargesGrenaille.length > 0) {
             var currentChargeGrenaille = parseInt(chargesGrenaille[0].get('current'));
@@ -6597,430 +6728,435 @@ var COFantasy = COFantasy || function() {
     // 2: dé de poudre
     var toEvaluateAttack = attackExpression(attaquant, nbDe, dice, crit, weaponStats);
     if (options.poudre) toEvaluateAttack += " [[1d20]]";
-    sendChat(attackerName, toEvaluateAttack, function(resAttack) {
-      var rollsAttack = options.rollsAttack || resAttack[0];
-      var afterEvaluateAttack = rollsAttack.content.split(' ');
-      var attRollNumber = rollNumber(afterEvaluateAttack[0]);
-      var attSkillNumber = rollNumber(afterEvaluateAttack[1]);
-      var d20roll = rollsAttack.inlinerolls[attRollNumber].results.total;
-      var attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
+    try {
+      sendChat(attackerName, toEvaluateAttack, function(resAttack) {
+        var rollsAttack = options.rollsAttack || resAttack[0];
+        var afterEvaluateAttack = rollsAttack.content.split(' ');
+        var attRollNumber = rollNumber(afterEvaluateAttack[0]);
+        var attSkillNumber = rollNumber(afterEvaluateAttack[1]);
+        var d20roll = rollsAttack.inlinerolls[attRollNumber].results.total;
+        var attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
 
-      evt.type = 'Attaque';
-      evt.succes = true;
-      evt.action.player_id = playerId;
-      evt.action.attaquant = attaquant;
-      evt.action.cibles = cibles;
-      evt.action.attack_label = attackLabel;
-      evt.action.rollsAttack = rollsAttack;
-      addEvent(evt);
+        evt.type = 'Attaque';
+        evt.succes = true;
+        evt.action.player_id = playerId;
+        evt.action.attaquant = attaquant;
+        evt.action.cibles = cibles;
+        evt.action.attack_label = attackLabel;
+        evt.action.rollsAttack = rollsAttack;
+        addEvent(evt);
 
-      // debut de la partie affichage
-      var action = "<b>Arme</b> : ";
-      if (options.sortilege) action = "<b>Sort</b> : ";
-      var label_type = BS_LABEL_INFO;
-      var target = cibles[0];
-      if (options.aoe || cibles.length > 1) {
-        target = undefined;
-        label_type = BS_LABEL_WARNING;
-      }
-      action += "<span style='" + BS_LABEL + " " + label_type + "; text-transform: none; font-size: 100%;'>" + weaponName + "</span>";
+        // debut de la partie affichage
+        var action = "<b>Arme</b> : ";
+        if (options.sortilege) action = "<b>Sort</b> : ";
+        var label_type = BS_LABEL_INFO;
+        var target = cibles[0];
+        if (options.aoe || cibles.length > 1) {
+          target = undefined;
+          label_type = BS_LABEL_WARNING;
+        }
+        action += "<span style='" + BS_LABEL + " " + label_type + "; text-transform: none; font-size: 100%;'>" + weaponName + "</span>";
 
-      var display = startFramedDisplay(playerId, action, attaquant, {
-        perso2: target,
-        chuchote: options.secret,
-        retarde: options.secret,
-        auto: options.auto || options.ouvertureMortelle
-      });
+        var display = startFramedDisplay(playerId, action, attaquant, {
+          perso2: target,
+          chuchote: options.secret,
+          retarde: options.secret,
+          auto: options.auto || options.ouvertureMortelle
+        });
 
-      // Cas des armes à poudre
-      if (options.poudre) {
-        var poudreNumber = rollNumber(afterEvaluateAttack[2]);
-        var dePoudre = rollsAttack.inlinerolls[poudreNumber].results.total;
-        explications.push(
-          "Dé de poudre : " + buildinline(rollsAttack.inlinerolls[poudreNumber]));
-        if (dePoudre === 1) {
-          evt.succes = false;
-          if (d20roll === 1) {
-            explications.push(
-              weaponName + " explose ! L'arme est complètement détruite");
-            sendChat("", "[[2d6]]", function(res) {
-              var rolls = res[0];
-              var explRoll = rolls.inlinerolls[0];
-              var r = {
-                total: explRoll.results.total,
-                type: 'normal',
-                display: buildinline(explRoll, 'normal')
-              };
-              dealDamage(attaquant, r, [], evt, false, options, explications,
-                function(dmgDisplay, dmg) {
-                  var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
-                    dmgDisplay;
-                  addLineToFramedDisplay(display, dmgMsg);
-                  finaliseDisplay(display, explications, evt, attaquant, cibles, options);
-                });
-            });
-          } else {
-            explications.push(
-              "La poudre explose dans " + weaponName +
-              ". L'arme est inutilisable jusqu'à la fin du combat");
-            sendChat("", "[[1d6]]", function(res) {
-              var rolls = res[0];
-              var explRoll = rolls.inlinerolls[0];
-              var r = {
-                total: explRoll.results.total,
-                type: 'normal',
-                display: buildinline(explRoll, 'normal')
-              };
-              dealDamage(attaquant, r, [], evt, false, options, explications,
-                function(dmgDisplay, dmg) {
-                  var dmgMsg =
-                    "<b>Dommages pour " + attackerTokName + " :</b> " +
-                    dmgDisplay;
-                  addLineToFramedDisplay(display, dmgMsg);
-                  finaliseDisplay(display, explications, evt, attaquant, cibles, options);
-                });
-            });
-          }
-          return;
-        } else if (d20roll == dePoudre) {
-          evt.succes = false;
-          addLineToFramedDisplay(display,
-            "<b>Attaque :</b> " +
-            buildinline(rollsAttack.inlinerolls[attRollNumber]));
-          explications.push(weaponName + " fait long feu, le coup ne part pas");
-          finaliseDisplay(display, explications, evt, attaquant, cibles, options);
-          return;
-        }
-      }
-      //Modificateurs en Attaque qui ne dépendent pas de la cible
-      var attBonusCommun =
-        bonusAttaqueA(attaquant, weaponName, evt, explications, options);
-      if (options.traquenard) {
-        if (attributeAsInt(attaquant, 'traquenard', 0) === 0) {
-          sendChar(attackingCharId, "ne peut pas faire de traquenard, car ce n'est pas sa première attaque du combat");
-          return;
-        }
-        options.traquenard = tokenInit(attaquant, evt);
-      }
-      if (attributeAsInt(attaquant, 'traquenard', 0) > 0) {
-        setTokenAttr(attaquant, 'traquenard', 0, evt);
-      }
-      if (options.feinte) explications.push("Mais c'était une feinte...");
-      var mainDmgType = options.type || 'normal';
-      if (options.sortilege) options.ignoreObstacles = true;
-      var critSug; //Suggestion en cas d'écher critique
-      //Calcul des cibles touchées
-      //(et on ajuste le jet pour la triche)
-      var ciblesTouchees = [];
-      var count = cibles.length;
-      cibles.forEach(function(target) {
-        if (attributeAsBool(attaquant, 'menaceManoeuvre(' + target.token.id + ')')) {
-          explications.push(attaquant.tokName + " attaque " + target.tokName + " malgré la menace. " + target.tokName + " a droit à une attaque au contact gratuite.");
-          removeTokenAttr(attaquant, 'menaceManoeuvre(' + target.token.id + ')', evt);
-          setTokenAttr(attaquant, 'attaqueMalgreMenace(' + target.token.id + ')', 1, evt, undefined);
-        } else if (attributeAsBool(attaquant, 'menaceManoeuvre(' + target.token.id + ',crit)')) {
-          explications.push(attaquant.tokName + " attaque " + target.tokName + " malgré la menace. " + target.tokName + " a droit à une attaque au contact gratuite (DM x 2 !).");
-          removeTokenAttr(attaquant, 'menaceManoeuvre(' + target.token.id + ',crit)', evt);
-          setTokenAttr(attaquant, 'attaqueMalgreMenace(' + target.token.id + ')', 2, evt, undefined);
-        }
-        target.additionalDmg = [];
-        var amm = 'attaqueMalgreMenace(' + attaquant.token.id + ')';
-        if (options.contact && cibles.length == 1) {
-          if (attributeAsBool(target, amm)) {
-            target.messages.push('Attaque automatique suite à une menace ignorée');
-            options.auto = true;
-            if (attributeAsInt(target, amm, 1) > 1) options.dmFoisDeux = true;
-            target.additionalDmg.push({
-              type: mainDmgType,
-              value: '1d6'
-            });
-            removeTokenAttr(target, amm, evt);
-          } else if (attributeAsBool(attaquant, 'attaqueGratuiteAutomatique(' + target.token.id + ')')) {
-            options.auto = true;
-            removeTokenAttr(attaquant, 'attaqueGratuiteAutomatique(' + target.token.id + ')', evt);
-          }
-        }
-        //Les bonus d'attaque qui dépendent de la cible
-        var bad = bonusAttaqueD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
-        var attBonus = attBonusCommun + bad;
-        if (options.traquenard) {
-          var initTarg = tokenInit(target, evt);
-          if (options.traquenard >= initTarg) {
-            attBonus += 2;
-            target.additionalDmg.push({
-              type: mainDmgType,
-              value: '2' + options.d6
-            });
-            target.messages.push(attackerTokName + " fait un traquenard à " + target.tokName);
-          } else {
-            target.messages.push(attackerTokName + " n'est pas assez rapide pour faire un traquenard à " + target.tokName);
-          }
-        }
-        var defautCuirasse =
-          tokenAttribute(target, 'defautDansLaCuirasse_' + attackerTokName);
-        target.crit = crit;
-        if (defautCuirasse.length > 0) {
-          target.defautCuirasse = true;
-          if (target.crit > 2) target.crit -= 1;
-        }
-        //Defense de la cible
-        var defense = defenseOfToken(attaquant, target, pageId, evt, options);
-        var interchange;
-        if (options.aoe === undefined) {
-          interchange = interchangeable(attackingToken, target, pageId);
-          if (interchange.result) {
-            if (stateCOF.options.regles.val.interchangeable_attaque.val) {
-              defense += 2;
-            } else {
-              defense += 5;
-            }
-          }
-        }
-        //Absorption au bouclier
-        var absorber;
-        if (target.absorber) {
-          explications = explications.concat(target.absorberExpl);
-          if (target.absorber > defense) {
-            defense = target.absorber;
-            absorber = target.absorberDisplay;
-          }
-        }
-        var touche = true;
-        var critique = false;
-        // Calcule si touché, et les messages de dégats et attaque
-        if (options.auto) {
-          addAttackSound("soundAttackSucces", weaponStats.divers, options);
-        } else if (!options.interposer) {
-          if (options.triche) {
-            switch (options.triche) {
-              case "rate":
-                if (d20roll >= target.crit) {
-                  if (target.crit < 2) d20roll = 1;
-                  else d20roll = randomInteger(target.crit - 1);
-                }
-                if ((d20roll + attSkill + attBonus) >= defense) {
-                  var maxd20roll = defense - attSkill - attBonus - 1;
-                  if (maxd20roll >= target.crit) maxd20roll = target.crit - 1;
-                  if (maxd20roll < 2) d20roll = 1;
-                  else d20roll = randomInteger(maxd20roll);
-                }
-                break;
-              case "touche":
-                if (d20roll == 1) d20roll = randomInteger(dice - 1) + 1;
-                if ((d20roll + attSkill + attBonus) < defense) {
-                  var mind20roll = defense - attSkill - attBonus - 1;
-                  if (mind20roll < 1) mind20roll = 1;
-                  if (mind20roll >= dice) d20roll = dice;
-                  else d20roll = randomInteger(dice - mind20roll) + mind20roll;
-                }
-                break;
-              case "critique":
-                if (d20roll < target.crit) {
-                  if (target.crit <= dice) d20roll = randomInteger(dice - target.crit + 1) + target.crit - 1;
-                  else d20roll = dice;
-                }
-                break;
-              case "echecCritique":
-                if (d20roll > 1) d20roll = 1;
-                break;
-              default:
-                error("Option inconnue", options.triche);
-            }
-            // now adjust the roll
-            var attackInlineRoll = rollsAttack.inlinerolls[attRollNumber];
-            attackInlineRoll.results.total = d20roll;
-            attackInlineRoll.results.rolls.forEach(function(roll) {
-              if (roll.type == 'R' && roll.results.length == 1) {
-                roll.results[0].v = d20roll;
-              }
-            });
-          }
-          var attackRoll = d20roll + attSkill + attBonus;
-          var attackResult; // string
-          var paralyse = false;
-          if (getState(target, 'paralyse')) {
-            paralyse = true;
-            if (!options.attaqueAssuree)
-              target.messages.push("Cible paralysée => réussite critique automatique");
-          }
-          if (d20roll >= 15) {
-            if (charAttributeAsBool(attaquant, 'champion'))
-              options.champion = true;
-            if (charAttributeAsBool(attaquant, 'agripper'))
-              options.agripper = true;
-          }
-          if (d20roll >= 17 && options.contact &&
-            charAttributeAsBool(attaquant, 'crocEnJambe')) {
-            if (d20roll >= 19 || !estQuadrupede(target)) {
-              setState(target, 'renverse', true, evt);
-              target.messages.push("tombe par terre");
-            }
-          }
-          if (options.attaqueDeGroupe > 1 && attackRoll >= (defense + 5)) {
-            options.attaqueDeGroupeDmgCoef = true;
-          }
-          if (d20roll == 1 && options.chance === undefined) {
-            attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
-            attackResult += addAttackImg("imgAttackEchecCritique", weaponStats.divers, options);
-            addAttackSound("soundAttackEchecCritique", weaponStats.divers, options);
-            if (options.demiAuto) {
-              target.partialSaveAuto = true;
-              evt.succes = false;
-            } else touche = false;
-            var confirmCrit = randomInteger(20);
-            critSug = "/w GM Jet de confirmation pour l'échec critique : " +
-              confirmCrit + "/20. Suggestion d'effet : ";
-            switch (confirmCrit) {
-              case 1:
-                critSug += "l'attaquant se blesse ou est paralysé un tour";
-                break;
-              case 2:
-                critSug += "l'attaquant blesse un allié";
-                break;
-              case 3:
-                critSug += "l'arme casse, ou une pièce d'armure se détache, ou -5 DEF un tour (comme surpris)";
-                break;
-              case 4:
-                critSug += "l'attaquant lache son arme ou glisse et tombe";
-                break;
-              default:
-                critSug += "simple échec";
-            }
-          } else if ((paralyse || options.ouvertureMortelle || d20roll == 20 ||
-              (d20roll >= target.crit && attackRoll >= defense)) && !options.attaqueAssuree) {
-            attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
-            attackResult += addAttackImg("imgAttackSuccesCritique", weaponStats.divers, options);
-            addAttackSound("soundAttackSuccesCritique", weaponStats.divers, options);
-            touche = true;
-            critique = true;
-          } else if (options.champion || d20roll == 20 || paralyse) {
-            attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
-            attackResult += addAttackImg("imgAttackSuccesChampion", weaponStats.divers, options);
-            addAttackSound("soundAttackSuccesChampion", weaponStats.divers, options);
-          } else if (attackRoll < defense && d20roll < target.crit) {
-            attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
-            attackResult += addAttackImg("imgAttackEchec", weaponStats.divers, options);
-            addAttackSound("soundAttackEchec", weaponStats.divers, options);
+        // Cas des armes à poudre
+        if (options.poudre) {
+          var poudreNumber = rollNumber(afterEvaluateAttack[2]);
+          var dePoudre = rollsAttack.inlinerolls[poudreNumber].results.total;
+          explications.push(
+            "Dé de poudre : " + buildinline(rollsAttack.inlinerolls[poudreNumber]));
+          if (dePoudre === 1) {
             evt.succes = false;
-            if (options.demiAuto) {
-              target.partialSaveAuto = true;
-            } else touche = false;
-          } else if (d20roll % 2 && attributeAsBool(target, 'clignotement')) {
-            target.messages.push(target.tokName + " disparaît au moment où l'attaque aurait du l" + onGenre(target.charId, 'e', 'a') + " toucher");
-            attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
-            attackResult += addAttackImg("imgAttackEchecClignotement", weaponStats.divers, options);
-            addAttackSound("soundAttackEchecClignotement", weaponStats.divers, options);
-            target.clignotement = true;
-            if (options.demiAuto) {
-              target.partialSaveAuto = true;
-            } else touche = false;
-          } else { // Touché normal
-            attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
-            attackResult += addAttackImg("imgAttackSucces", weaponStats.divers, options);
-            addAttackSound("soundAttackSucces", weaponStats.divers, options);
+            if (d20roll === 1) {
+              explications.push(
+                weaponName + " explose ! L'arme est complètement détruite");
+              sendChat("", "[[2d6]]", function(res) {
+                var rolls = res[0];
+                var explRoll = rolls.inlinerolls[0];
+                var r = {
+                  total: explRoll.results.total,
+                  type: 'normal',
+                  display: buildinline(explRoll, 'normal')
+                };
+                dealDamage(attaquant, r, [], evt, false, options, explications,
+                  function(dmgDisplay, dmg) {
+                    var dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
+                      dmgDisplay;
+                    addLineToFramedDisplay(display, dmgMsg);
+                    finaliseDisplay(display, explications, evt, attaquant, cibles, options);
+                  });
+              });
+            } else {
+              explications.push(
+                "La poudre explose dans " + weaponName +
+                ". L'arme est inutilisable jusqu'à la fin du combat");
+              sendChat("", "[[1d6]]", function(res) {
+                var rolls = res[0];
+                var explRoll = rolls.inlinerolls[0];
+                var r = {
+                  total: explRoll.results.total,
+                  type: 'normal',
+                  display: buildinline(explRoll, 'normal')
+                };
+                dealDamage(attaquant, r, [], evt, false, options, explications,
+                  function(dmgDisplay, dmg) {
+                    var dmgMsg =
+                      "<b>Dommages pour " + attackerTokName + " :</b> " +
+                      dmgDisplay;
+                    addLineToFramedDisplay(display, dmgMsg);
+                    finaliseDisplay(display, explications, evt, attaquant, cibles, options);
+                  });
+              });
+            }
+            return;
+          } else if (d20roll == dePoudre) {
+            evt.succes = false;
+            addLineToFramedDisplay(display,
+              "<b>Attaque :</b> " +
+              buildinline(rollsAttack.inlinerolls[attRollNumber]));
+            explications.push(weaponName + " fait long feu, le coup ne part pas");
+            finaliseDisplay(display, explications, evt, attaquant, cibles, options);
+            return;
           }
-          var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
-          if (attSkill > 0) attRollValue += "+" + attSkill;
-          else if (attSkill < 0) attRollValue += attSkill;
-          if (attBonus > 0) attRollValue += "+" + attBonus;
-          else if (attBonus < 0) attRollValue += attBonus;
-          var line = "<b>Attaque</b> ";
-          if (options.aoe || cibles.length > 1) {
-            line += "contre <b>" + target.tokName + "</b> ";
+        }
+        //Modificateurs en Attaque qui ne dépendent pas de la cible
+        var attBonusCommun =
+          bonusAttaqueA(attaquant, weaponName, evt, explications, options);
+        if (options.traquenard) {
+          if (attributeAsInt(attaquant, 'traquenard', 0) === 0) {
+            sendChar(attackingCharId, "ne peut pas faire de traquenard, car ce n'est pas sa première attaque du combat");
+            return;
           }
-          line += ":<br>";
-          line += attRollValue + ' ';
-          if (stateCOF.options.affichage.val.montre_def.val) {
-            line += "vs <b>";
-            if (absorber) line += absorber;
-            else line += defense;
-            line += "</b> ";
+          options.traquenard = tokenInit(attaquant, evt);
+        }
+        if (attributeAsInt(attaquant, 'traquenard', 0) > 0) {
+          setTokenAttr(attaquant, 'traquenard', 0, evt);
+        }
+        if (options.feinte) explications.push("Mais c'était une feinte...");
+        var mainDmgType = options.type || 'normal';
+        if (options.sortilege) options.ignoreObstacles = true;
+        var critSug; //Suggestion en cas d'écher critique
+        //Calcul des cibles touchées
+        //(et on ajuste le jet pour la triche)
+        var ciblesTouchees = [];
+        var count = cibles.length;
+        cibles.forEach(function(target) {
+          if (attributeAsBool(attaquant, 'menaceManoeuvre(' + target.token.id + ')')) {
+            explications.push(attaquant.tokName + " attaque " + target.tokName + " malgré la menace. " + target.tokName + " a droit à une attaque au contact gratuite.");
+            removeTokenAttr(attaquant, 'menaceManoeuvre(' + target.token.id + ')', evt);
+            setTokenAttr(attaquant, 'attaqueMalgreMenace(' + target.token.id + ')', 1, evt, undefined);
+          } else if (attributeAsBool(attaquant, 'menaceManoeuvre(' + target.token.id + ',crit)')) {
+            explications.push(attaquant.tokName + " attaque " + target.tokName + " malgré la menace. " + target.tokName + " a droit à une attaque au contact gratuite (DM x 2 !).");
+            removeTokenAttr(attaquant, 'menaceManoeuvre(' + target.token.id + ',crit)', evt);
+            setTokenAttr(attaquant, 'attaqueMalgreMenace(' + target.token.id + ')', 2, evt, undefined);
           }
-          line += attackResult;
-          if (options.test) line += " (" + attackRoll + ")";
-          target.attackMessage = line;
-          if (touche) {
-            if (options.asDeLaGachette && attackRoll > 24) {
-              target.messages.push("As de la gachette : + 1" + options.d6 + " aux DM");
+          target.additionalDmg = [];
+          var amm = 'attaqueMalgreMenace(' + attaquant.token.id + ')';
+          if (options.contact && cibles.length == 1) {
+            if (attributeAsBool(target, amm)) {
+              target.messages.push('Attaque automatique suite à une menace ignorée');
+              options.auto = true;
+              if (attributeAsInt(target, amm, 1) > 1) options.dmFoisDeux = true;
               target.additionalDmg.push({
                 type: mainDmgType,
-                value: '1' + options.d6
+                value: '1d6'
               });
-            }
-          } else { //Effet si on ne touche pas
-            // Draw failed effect
-            if (_.has(options, "fx") && options.distance) {
-              var p1 = {
-                x: attackingToken.get('left'),
-                y: attackingToken.get('top')
-              };
-              var p2 = {
-                x: target.token.get('left'),
-                y: target.token.get('top')
-              };
-              // Compute some gaussian deviation in [0, 1]
-              var dev =
-                (Math.random() + Math.random() + Math.random() + Math.random() +
-                  Math.random() + 1) / 6;
-              // take into account by how far we miss
-              dev = dev * (d20roll == 1) ? 2 : ((attackRoll - defense) / 20);
-              if (Math.random() > 0.5) dev = -dev;
-              p2.x += dev * (p2.y - p1.y);
-              p2.y += dev * (p2.x - p1.x);
-              spawnFxBetweenPoints(p1, p2, options.fx, pageId);
-            }
-            if (target.clignotement === undefined) {
-              evt.succes = false;
-              diminueMalediction(attaquant, evt);
+              removeTokenAttr(target, amm, evt);
+            } else if (attributeAsBool(attaquant, 'attaqueGratuiteAutomatique(' + target.token.id + ')')) {
+              options.auto = true;
+              removeTokenAttr(attaquant, 'attaqueGratuiteAutomatique(' + target.token.id + ')', evt);
             }
           }
-        }
-        target.touche = touche;
-        target.critique = critique;
-        if (options.aoe === undefined && interchange.targets.length > 1) { //any target can be affected
-          var n = randomInteger(interchange.targets.length);
-          target.token = interchange.targets[n - 1];
-        }
-        if (target.touche &&
-          attributeAsBool(target, 'imageDecalee')) {
-          var id = rollDePlus(6);
-          if (id.val > 4) {
-            target.touche = false;
-            target.messages.push(id.roll + ": l'attaque passe à travers l'image de " + target.tokName);
-          } else {
-            target.messages.push(id.roll + ": malgré l'image légèrement décalée de " + target.tokName + " l'attaque touche");
-          }
-        }
-        if (target.touche) {
-          ciblesTouchees.push(target);
-          if (attributeAsBool(target, 'esquiveFatale')) {
-            var ennemisAuContact = target.ennemisAuContact;
-            if (ennemisAuContact === undefined) {
-              error("Les ennemis au contact n'ont pas été déterminé");
+          //Les bonus d'attaque qui dépendent de la cible
+          var bad = bonusAttaqueD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
+          var attBonus = attBonusCommun + bad;
+          if (options.traquenard) {
+            var initTarg = tokenInit(target, evt);
+            if (options.traquenard >= initTarg) {
+              attBonus += 2;
+              target.additionalDmg.push({
+                type: mainDmgType,
+                value: '2' + options.d6
+              });
+              target.messages.push(attackerTokName + " fait un traquenard à " + target.tokName);
             } else {
-              var iOther = ennemisAuContact.find(function(tok) {
-                return (tok.id != attaquant.token.id);
-              });
-              if (iOther !== undefined)
-                target.messages.push(bouton("!cof-esquive-fatale " + evt.id + " @{target|token_id}", "Esquive fatale ?", target));
+              target.messages.push(attackerTokName + " n'est pas assez rapide pour faire un traquenard à " + target.tokName);
             }
           }
-        }
-        if (options.test || options.feinte || !target.touche) {
-          //On a fini avec cette cible, on imprime ce qui la concerne
-          addLineToFramedDisplay(display, target.attackMessage);
-          target.messages.forEach(function(expl) {
-            addLineToFramedDisplay(display, expl, 80);
-          });
-        }
-        if (options.feinte) {
-          setTokenAttr(target, 'feinte_' + attaquant.tokName, 0, evt, undefined, target.touche);
-        }
-        count--;
-        if (count === 0)
-          attackDealDmg(attaquant, ciblesTouchees, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles);
-      }); //fin de détermination de toucher des cibles
-    }); // fin du jet d'attaque asynchrone
+          var defautCuirasse =
+            tokenAttribute(target, 'defautDansLaCuirasse_' + attackerTokName);
+          target.crit = crit;
+          if (defautCuirasse.length > 0) {
+            target.defautCuirasse = true;
+            if (target.crit > 2) target.crit -= 1;
+          }
+          //Defense de la cible
+          var defense = defenseOfToken(attaquant, target, pageId, evt, options);
+          var interchange;
+          if (options.aoe === undefined) {
+            interchange = interchangeable(attackingToken, target, pageId);
+            if (interchange.result) {
+              if (stateCOF.options.regles.val.interchangeable_attaque.val) {
+                defense += 2;
+              } else {
+                defense += 5;
+              }
+            }
+          }
+          //Absorption au bouclier
+          var absorber;
+          if (target.absorber) {
+            explications = explications.concat(target.absorberExpl);
+            if (target.absorber > defense) {
+              defense = target.absorber;
+              absorber = target.absorberDisplay;
+            }
+          }
+          var touche = true;
+          var critique = false;
+          // Calcule si touché, et les messages de dégats et attaque
+          if (options.auto) {
+            addAttackSound("soundAttackSucces", weaponStats.divers, options);
+          } else if (!options.interposer) {
+            if (options.triche) {
+              switch (options.triche) {
+                case "rate":
+                  if (d20roll >= target.crit) {
+                    if (target.crit < 2) d20roll = 1;
+                    else d20roll = randomInteger(target.crit - 1);
+                  }
+                  if ((d20roll + attSkill + attBonus) >= defense) {
+                    var maxd20roll = defense - attSkill - attBonus - 1;
+                    if (maxd20roll >= target.crit) maxd20roll = target.crit - 1;
+                    if (maxd20roll < 2) d20roll = 1;
+                    else d20roll = randomInteger(maxd20roll);
+                  }
+                  break;
+                case "touche":
+                  if (d20roll == 1) d20roll = randomInteger(dice - 1) + 1;
+                  if ((d20roll + attSkill + attBonus) < defense) {
+                    var mind20roll = defense - attSkill - attBonus - 1;
+                    if (mind20roll < 1) mind20roll = 1;
+                    if (mind20roll >= dice) d20roll = dice;
+                    else d20roll = randomInteger(dice - mind20roll) + mind20roll;
+                  }
+                  break;
+                case "critique":
+                  if (d20roll < target.crit) {
+                    if (target.crit <= dice) d20roll = randomInteger(dice - target.crit + 1) + target.crit - 1;
+                    else d20roll = dice;
+                  }
+                  break;
+                case "echecCritique":
+                  if (d20roll > 1) d20roll = 1;
+                  break;
+                default:
+                  error("Option inconnue", options.triche);
+              }
+              // now adjust the roll
+              var attackInlineRoll = rollsAttack.inlinerolls[attRollNumber];
+              attackInlineRoll.results.total = d20roll;
+              attackInlineRoll.results.rolls.forEach(function(roll) {
+                if (roll.type == 'R' && roll.results.length == 1) {
+                  roll.results[0].v = d20roll;
+                }
+              });
+            }
+            var attackRoll = d20roll + attSkill + attBonus;
+            var attackResult; // string
+            var paralyse = false;
+            if (getState(target, 'paralyse')) {
+              paralyse = true;
+              if (!options.attaqueAssuree)
+                target.messages.push("Cible paralysée => réussite critique automatique");
+            }
+            if (d20roll >= 15) {
+              if (charAttributeAsBool(attaquant, 'champion'))
+                options.champion = true;
+              if (charAttributeAsBool(attaquant, 'agripper'))
+                options.agripper = true;
+            }
+            if (d20roll >= 17 && options.contact &&
+              charAttributeAsBool(attaquant, 'crocEnJambe')) {
+              if (d20roll >= 19 || !estQuadrupede(target)) {
+                setState(target, 'renverse', true, evt);
+                target.messages.push("tombe par terre");
+              }
+            }
+            if (options.attaqueDeGroupe > 1 && attackRoll >= (defense + 5)) {
+              options.attaqueDeGroupeDmgCoef = true;
+            }
+            if (d20roll == 1 && options.chance === undefined) {
+              attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
+              attackResult += addAttackImg("imgAttackEchecCritique", weaponStats.divers, options);
+              addAttackSound("soundAttackEchecCritique", weaponStats.divers, options);
+              if (options.demiAuto) {
+                target.partialSaveAuto = true;
+                evt.succes = false;
+              } else touche = false;
+              var confirmCrit = randomInteger(20);
+              critSug = "/w GM Jet de confirmation pour l'échec critique : " +
+                confirmCrit + "/20. Suggestion d'effet : ";
+              switch (confirmCrit) {
+                case 1:
+                  critSug += "l'attaquant se blesse ou est paralysé un tour";
+                  break;
+                case 2:
+                  critSug += "l'attaquant blesse un allié";
+                  break;
+                case 3:
+                  critSug += "l'arme casse, ou une pièce d'armure se détache, ou -5 DEF un tour (comme surpris)";
+                  break;
+                case 4:
+                  critSug += "l'attaquant lache son arme ou glisse et tombe";
+                  break;
+                default:
+                  critSug += "simple échec";
+              }
+            } else if ((paralyse || options.ouvertureMortelle || d20roll == 20 ||
+                (d20roll >= target.crit && attackRoll >= defense)) && !options.attaqueAssuree) {
+              attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
+              attackResult += addAttackImg("imgAttackSuccesCritique", weaponStats.divers, options);
+              addAttackSound("soundAttackSuccesCritique", weaponStats.divers, options);
+              touche = true;
+              critique = true;
+            } else if (options.champion || d20roll == 20 || paralyse) {
+              attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
+              attackResult += addAttackImg("imgAttackSuccesChampion", weaponStats.divers, options);
+              addAttackSound("soundAttackSuccesChampion", weaponStats.divers, options);
+            } else if (attackRoll < defense && d20roll < target.crit) {
+              attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
+              attackResult += addAttackImg("imgAttackEchec", weaponStats.divers, options);
+              addAttackSound("soundAttackEchec", weaponStats.divers, options);
+              evt.succes = false;
+              if (options.demiAuto) {
+                target.partialSaveAuto = true;
+              } else touche = false;
+            } else if (d20roll % 2 && attributeAsBool(target, 'clignotement')) {
+              target.messages.push(target.tokName + " disparaît au moment où l'attaque aurait du l" + onGenre(target.charId, 'e', 'a') + " toucher");
+              attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
+              attackResult += addAttackImg("imgAttackEchecClignotement", weaponStats.divers, options);
+              addAttackSound("soundAttackEchecClignotement", weaponStats.divers, options);
+              target.clignotement = true;
+              if (options.demiAuto) {
+                target.partialSaveAuto = true;
+              } else touche = false;
+            } else { // Touché normal
+              attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
+              attackResult += addAttackImg("imgAttackSucces", weaponStats.divers, options);
+              addAttackSound("soundAttackSucces", weaponStats.divers, options);
+            }
+            var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
+            if (attSkill > 0) attRollValue += "+" + attSkill;
+            else if (attSkill < 0) attRollValue += attSkill;
+            if (attBonus > 0) attRollValue += "+" + attBonus;
+            else if (attBonus < 0) attRollValue += attBonus;
+            var line = "<b>Attaque</b> ";
+            if (options.aoe || cibles.length > 1) {
+              line += "contre <b>" + target.tokName + "</b> ";
+            }
+            line += ":<br>";
+            line += attRollValue + ' ';
+            if (stateCOF.options.affichage.val.montre_def.val) {
+              line += "vs <b>";
+              if (absorber) line += absorber;
+              else line += defense;
+              line += "</b> ";
+            }
+            line += attackResult;
+            if (options.test) line += " (" + attackRoll + ")";
+            target.attackMessage = line;
+            if (touche) {
+              if (options.asDeLaGachette && attackRoll > 24) {
+                target.messages.push("As de la gachette : + 1" + options.d6 + " aux DM");
+                target.additionalDmg.push({
+                  type: mainDmgType,
+                  value: '1' + options.d6
+                });
+              }
+            } else { //Effet si on ne touche pas
+              // Draw failed effect
+              if (_.has(options, "fx") && options.distance) {
+                var p1 = {
+                  x: attackingToken.get('left'),
+                  y: attackingToken.get('top')
+                };
+                var p2 = {
+                  x: target.token.get('left'),
+                  y: target.token.get('top')
+                };
+                // Compute some gaussian deviation in [0, 1]
+                var dev =
+                  (Math.random() + Math.random() + Math.random() + Math.random() +
+                    Math.random() + 1) / 6;
+                // take into account by how far we miss
+                dev = dev * (d20roll == 1) ? 2 : ((attackRoll - defense) / 20);
+                if (Math.random() > 0.5) dev = -dev;
+                p2.x += dev * (p2.y - p1.y);
+                p2.y += dev * (p2.x - p1.x);
+                spawnFxBetweenPoints(p1, p2, options.fx, pageId);
+              }
+              if (target.clignotement === undefined) {
+                evt.succes = false;
+                diminueMalediction(attaquant, evt);
+              }
+            }
+          }
+          target.touche = touche;
+          target.critique = critique;
+          if (options.aoe === undefined && interchange.targets.length > 1) { //any target can be affected
+            var n = randomInteger(interchange.targets.length);
+            target.token = interchange.targets[n - 1];
+          }
+          if (target.touche &&
+            attributeAsBool(target, 'imageDecalee')) {
+            var id = rollDePlus(6);
+            if (id.val > 4) {
+              target.touche = false;
+              target.messages.push(id.roll + ": l'attaque passe à travers l'image de " + target.tokName);
+            } else {
+              target.messages.push(id.roll + ": malgré l'image légèrement décalée de " + target.tokName + " l'attaque touche");
+            }
+          }
+          if (target.touche) {
+            ciblesTouchees.push(target);
+            if (attributeAsBool(target, 'esquiveFatale')) {
+              var ennemisAuContact = target.ennemisAuContact;
+              if (ennemisAuContact === undefined) {
+                error("Les ennemis au contact n'ont pas été déterminé");
+              } else {
+                var iOther = ennemisAuContact.find(function(tok) {
+                  return (tok.id != attaquant.token.id);
+                });
+                if (iOther !== undefined)
+                  target.messages.push(bouton("!cof-esquive-fatale " + evt.id + " @{target|token_id}", "Esquive fatale ?", target));
+              }
+            }
+          }
+          if (options.test || options.feinte || !target.touche) {
+            //On a fini avec cette cible, on imprime ce qui la concerne
+            addLineToFramedDisplay(display, target.attackMessage);
+            target.messages.forEach(function(expl) {
+              addLineToFramedDisplay(display, expl, 80);
+            });
+          }
+          if (options.feinte) {
+            setTokenAttr(target, 'feinte_' + attaquant.tokName, 0, evt, undefined, target.touche);
+          }
+          count--;
+          if (count === 0)
+            attackDealDmg(attaquant, ciblesTouchees, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles);
+        }); //fin de détermination de toucher des cibles
+      }); // fin du jet d'attaque asynchrone
+    } catch (e) {
+      error("Erreur pendant l'évaluation de " + toEvaluateAttack + " du test d'attaque", weaponStats);
+      log(e.name + ": " + e.message);
+    }
   }
 
   function findAttackParam(attackParam, divers, options) {
@@ -7313,27 +7449,29 @@ var COFantasy = COFantasy || function() {
         });
       }
     }
-    var attrForgeron = 'forgeron(' + attackLabel + ')';
-    if (attributeAsBool(attaquant, attrForgeron)) {
-      var feuForgeron = getValeurOfEffet(attaquant, attrForgeron, 1, 'voieDuMetal');
-      var feuForgeronIntense = attributeAsInt(attaquant, attrForgeron + 'TempeteDeManaIntense', 0);
-      if (feuForgeronIntense) {
-        feuForgeron = feuForgeron * (1 + feuForgeronIntense);
-        removeTokenAttr(attaquant, attrForgeron + 'TempeteDeManaIntense', evt);
-      }
-      options.additionalDmg.push({
-        type: 'feu',
-        value: feuForgeron
-      });
-    }
-    var attrAEF = 'armeEnflammee(' + attackLabel + ')';
     var nAEF = 0;
-    if (attributeAsBool(attaquant, attrAEF)) {
-      nAEF = 1;
-      var AEFIntense = attributeAsInt(attaquant, attrAEF + 'TempeteDeManaIntense', 0);
-      if (AEFIntense) {
-        nAEF += AEFIntense;
-        removeTokenAttr(attaquant, attrAEF + 'TempeteDeManaIntense', evt);
+    if (attackLabel) {
+      var attrForgeron = 'forgeron(' + attackLabel + ')';
+      if (attributeAsBool(attaquant, attrForgeron)) {
+        var feuForgeron = getValeurOfEffet(attaquant, attrForgeron, 1, 'voieDuMetal');
+        var feuForgeronIntense = attributeAsInt(attaquant, attrForgeron + 'TempeteDeManaIntense', 0);
+        if (feuForgeronIntense) {
+          feuForgeron = feuForgeron * (1 + feuForgeronIntense);
+          removeTokenAttr(attaquant, attrForgeron + 'TempeteDeManaIntense', evt);
+        }
+        options.additionalDmg.push({
+          type: 'feu',
+          value: feuForgeron
+        });
+      }
+      var attrAEF = 'armeEnflammee(' + attackLabel + ')';
+      if (attributeAsBool(attaquant, attrAEF)) {
+        nAEF = 1;
+        var AEFIntense = attributeAsInt(attaquant, attrAEF + 'TempeteDeManaIntense', 0);
+        if (AEFIntense) {
+          nAEF += AEFIntense;
+          removeTokenAttr(attaquant, attrAEF + 'TempeteDeManaIntense', evt);
+        }
       }
     }
     if (nAEF === 0 && attributeAsBool(attaquant, 'armesEnflammees')) {
@@ -7350,36 +7488,38 @@ var COFantasy = COFantasy || function() {
         value: nAEF + 'd6'
       });
     }
-    var poisonAttr = tokenAttribute(attaquant, 'poisonRapide_' + attackLabel);
-    if (poisonAttr.length > 0) {
-      poisonAttr = poisonAttr[0];
-      options.additionalDmg.push({
-        type: 'poison',
-        value: poisonAttr.get('current'),
-        partialSave: {
-          carac: 'CON',
-          seuil: poisonAttr.get('max')
-        }
-      });
-      explications.push("L'arme est empoisonnée");
-      evt.deletedAttributes = evt.deletedAttributes || [];
-      evt.deletedAttributes.push(poisonAttr);
-      poisonAttr.remove();
-    }
-    var attrDmgArme = 'dmgArme(' + attackLabel + ')';
-    if (charAttributeAsBool(attaquant, attrDmgArme)) {
-      var dmgArme = {
-        type: mainDmgType,
-        value: '1' + options.d6
-      };
-      var valDmgArme = tokenAttribute(attaquant, attrDmgArme + 'Valeur');
-      if (valDmgArme.length > 0) {
-        dmgArme.value = valDmgArme[0].get('current');
-        var dmgArmeType = valDmgArme[0].get('max');
-        if (dmgArmeType !== '') dmgArme.type = dmgArmeType;
+    if (attackLabel) {
+      var poisonAttr = tokenAttribute(attaquant, 'poisonRapide_' + attackLabel);
+      if (poisonAttr.length > 0) {
+        poisonAttr = poisonAttr[0];
+        options.additionalDmg.push({
+          type: 'poison',
+          value: poisonAttr.get('current'),
+          partialSave: {
+            carac: 'CON',
+            seuil: poisonAttr.get('max')
+          }
+        });
+        explications.push("L'arme est empoisonnée");
+        evt.deletedAttributes = evt.deletedAttributes || [];
+        evt.deletedAttributes.push(poisonAttr);
+        poisonAttr.remove();
       }
-      options.additionalDmg.push(dmgArme);
-      explications.push("Arme enduite => +" + dmgArme.value + " aux DM");
+      var attrDmgArme = 'dmgArme(' + attackLabel + ')';
+      if (charAttributeAsBool(attaquant, attrDmgArme)) {
+        var dmgArme = {
+          type: mainDmgType,
+          value: '1' + options.d6
+        };
+        var valDmgArme = tokenAttribute(attaquant, attrDmgArme + 'Valeur');
+        if (valDmgArme.length > 0) {
+          dmgArme.value = valDmgArme[0].get('current');
+          var dmgArmeType = valDmgArme[0].get('max');
+          if (dmgArmeType !== '') dmgArme.type = dmgArmeType;
+        }
+        options.additionalDmg.push(dmgArme);
+        explications.push("Arme enduite => +" + dmgArme.value + " aux DM");
+      }
     }
     if (options.champion) {
       options.additionalDmg.push({
@@ -13370,7 +13510,7 @@ var COFantasy = COFantasy || function() {
     //On vérifie que l'arme existe
     var nouvelleArme;
     if (options && options.weaponStats) nouvelleArme = options.weaponStats;
-    else if (labelArme !== '') nouvelleArme = getWeaponStats(perso, labelArme);
+    else if (labelArme && labelArme !== '') nouvelleArme = getWeaponStats(perso, labelArme);
     if (nouvelleArme === undefined) {
       if (armeActuelle) {
         removeTokenAttr(perso, 'armeEnMain', evt);
@@ -19383,21 +19523,17 @@ var COFantasy = COFantasy || function() {
         token.set('bar1_max', spec.pv);
       }
     }
-    var actions = "";
+    var actions = '';
     if (spec.actions) actions = spec.actions;
     if (spec.attaques) {
       spec.attaques.forEach(function(att) {
-        if (!att.length) {
-          error("Attaque mal formée", att);
-        } else {
-          createObj('ability', {
-            _characterid: charId,
-            name: att[0],
-            istokenaction: true,
-            action: '!cof-attack @{selected|token_id} @{target|token_id} ' + JSON.stringify(att)
-          });
-          actions += '%' + att[0] + ' ';
-        }
+        createObj('ability', {
+          _characterid: charId,
+          name: att.name,
+          istokenaction: false,
+          action: '!cof-attack @{selected|token_id} @{target|token_id} ' + att.name + att.options
+        });
+        actions += '%' + att.name + ' ';
       });
     }
     if (spec.attributes) {
@@ -19454,11 +19590,10 @@ var COFantasy = COFantasy || function() {
         TAILLE: 'moyen'
       },
       pv: 9,
-      attaques: [
-        ['Morsure', ["@{selected|ATKCAC}", 0], 20, [1, 6, 1, 0],
-          [0]
-        ]
-      ],
+      attaques: [{
+        name: 'Morsure',
+        options: " --toucher 2 --dm 1d6+1"
+      }],
       attributes: [],
       abilities: []
     },
@@ -19493,11 +19628,10 @@ var COFantasy = COFantasy || function() {
         TAILLE: 'moyen'
       },
       pv: 15,
-      attaques: [
-        ['Morsure', ["@{selected|ATKCAC}", -1], 20, [1, 6, 3, 0],
-          [0]
-        ]
-      ],
+      attaques: [{
+        name: 'Morsure',
+        options: " --toucher 4 --dm 1d6+3"
+      }],
       attributes: [{
         name: 'discrétion',
         current: 5
@@ -19507,7 +19641,7 @@ var COFantasy = COFantasy || function() {
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-1],20,[1,6,3,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} Morsure --toucher 4 --dm 1d6+3 --sournoise 1 --if moins FOR --etat renverse --endif'
       }]
     },
     worg: {
@@ -19541,11 +19675,10 @@ var COFantasy = COFantasy || function() {
         TAILLE: 'moyen'
       },
       pv: 35,
-      attaques: [
-        ['Morsure', ["@{selected|ATKCAC}", 0], 20, [1, 6, 5, 0],
-          [0]
-        ]
-      ],
+      attaques: [{
+        name: 'Morsure',
+        options: " --toucher 6 --dm 1d6+5"
+      }],
       attributes: [{
         name: 'discrétion',
         current: 5
@@ -19555,7 +19688,7 @@ var COFantasy = COFantasy || function() {
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",0],20,[1,6,5,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} Morsure --toucher 6 --dm 1d6+5 --sournoise 1 --if moins FOR --etat renverse --endif'
       }]
     },
     lion: {
@@ -19589,11 +19722,10 @@ var COFantasy = COFantasy || function() {
         TAILLE: 'grand'
       },
       pv: 30,
-      attaques: [
-        ['Morsure', ["@{selected|ATKCAC}", -1], 20, [2, 6, 5, 0],
-          [0]
-        ]
-      ],
+      attaques: [{
+        name: 'Morsure',
+        options: " --toucher 7 --dm 2d6+5"
+      }],
       attributes: [{
         name: 'discrétion',
         current: 5
@@ -19603,10 +19735,10 @@ var COFantasy = COFantasy || function() {
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-1],20,[2,6,5,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} Morsure --toucher 7 --dm 2d6+5 --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
       }, {
         name: 'Dévorer',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-1],20,[2,6,5,0],[0]] --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} Morsure --toucher 7 --dm 2d6+5 --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
       }]
     },
     grandLion: {
@@ -19639,11 +19771,10 @@ var COFantasy = COFantasy || function() {
         TAILLE: 'grand'
       },
       pv: 50,
-      attaques: [
-        ['Morsure', ["@{selected|ATKCAC}", -2], 20, [2, 6, 7, 0],
-          [0]
-        ]
-      ],
+      attaques: [{
+        name: 'Morsure',
+        options: " --toucher 9 --dm 2d6+7"
+      }],
       attributes: [{
         name: 'discrétion',
         current: 5
@@ -19653,10 +19784,10 @@ var COFantasy = COFantasy || function() {
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-2],20,[2,6,7,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} Morsure --toucher 9 --dm 2d6+7 --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
       }, {
         name: 'Dévorer',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-2],20,[2,6,7,0],[0]] --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} Morsure --toucher 9 --dm 2d6+7 --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
       }]
     },
     oursPolaire: {
@@ -19689,11 +19820,10 @@ var COFantasy = COFantasy || function() {
         TAILLE: 'grand'
       },
       pv: 70,
-      attaques: [
-        ['Morsure', ["@{selected|ATKCAC}", 0], 20, [2, 8, 7, 0],
-          [0]
-        ]
-      ],
+      attaques: [{
+        name: 'Morsure',
+        options: " --toucher 12 --dm 2d8+7"
+      }],
       attributes: [{
         name: 'peutEnrager',
         current: 'true'
@@ -19735,11 +19865,10 @@ var COFantasy = COFantasy || function() {
         TAILLE: 'grand'
       },
       pv: 90,
-      attaques: [
-        ['Morsure', ["@{selected|ATKCAC}", -1], 20, [2, 6, 12, 0],
-          [0]
-        ]
-      ],
+      attaques: [{
+        name: 'Morsure',
+        options: " --toucher 14 --dm 2d6+12"
+      }],
       attributes: [{
         name: 'discrétion',
         current: 5
@@ -19749,10 +19878,10 @@ var COFantasy = COFantasy || function() {
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-1],20,[2,6,12,0],[0]] --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} Morsure --toucher 14 --dm 2d6+12 --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
       }, {
         name: 'Dévorer',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} ["Morsure",["@{selected|ATKCAC}",-1],20,[2,6,12,0],[0]] --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} Morsure --toucher 14 --dm 2d6+12 --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
       }]
     },
     oursPrehistorique: {
@@ -19785,11 +19914,10 @@ var COFantasy = COFantasy || function() {
         TAILLE: 'énorme'
       },
       pv: 110,
-      attaques: [
-        ['Griffes', ["@{selected|ATKCAC}", -2], 20, [3, 6, 13, 0],
-          [0]
-        ]
-      ],
+      attaques: [{
+        name: 'Griffes',
+        options: " --toucher 17 --dm 3d6+13"
+      }],
       attributes: [{
         name: 'fauchage',
         current: 'true'
@@ -19955,7 +20083,7 @@ var COFantasy = COFantasy || function() {
         toFront(token);
         var avatar = "https://s3.amazonaws.com/files.d20.io/images/73283254/r6sbxbP1QKKtqXyYq-MlLA/max.png?1549547198";
         var attaque = '!cof-attack @{selected|token_id} @{target|token_id} ';
-        attaque += '["Attaque",["@{selected|ATKCAC}",0],20,[' + nbDeDM + ',' + deDM + ',0,0],[20]] --auto';
+        attaque += 'Attaque --dm ' + nbDeDM + 'd' + deDM + ' --auto';
         var abilities = [{
           name: 'Attaque',
           action: attaque
