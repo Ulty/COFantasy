@@ -13156,10 +13156,13 @@ var COFantasy = COFantasy || function() {
       nbDe: carSup,
       carac: carac
     });
-
-    var bonusText = (bonusCarac > 0) ? ' + ' + bonusCarac : (bonusCarac === 0) ? "" : ' - ' + (-bonusCarac);
+    var bonusText = '';
+    if (bonusCarac > 0) {
+      bonusText = ' + ' + bonusCarac;
+    } else if (bonusCarac < 0) {
+      bonusText = ' - ' + (-bonusCarac);
+    }
     var rollExpr = "[[" + de + "cs20cf1" + "]]";
-
     sendChat("", rollExpr, function(res) {
       var rolls = res[0];
       var d20roll = rolls.inlinerolls[0].results.total;
@@ -17722,7 +17725,9 @@ var COFantasy = COFantasy || function() {
     jetCaracteristique(perso1, carac1, options1, evt, function(rt1, expl1) {
       jetCaracteristique(perso2, carac2, options2, evt, function(rt2, expl2) {
         explications.push("Jet de " + carac1 + " de " + nom1 + " :" + rt1.texte);
-        expl1.forEach(explications.push);
+        expl1.forEach(function(m) {
+          explications.push(m);
+        });
         explications.push("Jet de " + carac2 + " de " + nom2 + " :" + rt2.texte);
         expl2.forEach(explications.push);
         var reussite;
