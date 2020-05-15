@@ -6978,7 +6978,7 @@ var COFantasy = COFantasy || function() {
             if (d20roll >= 15) {
               if (charAttributeAsBool(attaquant, 'champion'))
                 options.champion = true;
-              if (charAttributeAsBool(attaquant, 'agripper'))
+              if (options.contact && charAttributeAsBool(attaquant, 'agripper'))
                 options.agripper = true;
             }
             if (d20roll >= 17 && options.contact &&

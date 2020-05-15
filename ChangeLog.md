@@ -11,6 +11,7 @@
 * Standardisation de !cof-lancer-sorts et support dans les consommables
 
 ### Corrections de bugs
+* Les attaques à distance ne déclanchent plus l'effet aggriper.
 * Prévention de crash en cas d'erreur interne de roll20.
 
 ## 2.04
