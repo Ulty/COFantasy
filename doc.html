@@ -101,7 +101,13 @@
 									<li><a class="text-info" href="#Sorts">Autres sorts</a></li>
 									<li><a class="text-info" href="#Capacites_diverses">Capacités diverses</a></li>
                 </ul>
-							</ol>
+                <li data-toggle="collapse" data-target="#markers_personnalises"><a href="#Markers_personnalisés">Markers personnalisés</a></li>
+								<ul id="markers_personnalises" class="collapse">
+                <li><a class="text-info" href="#Markers_presentation">Présentation</a></li>
+                <li><a class="text-info" href="#Markers_COF">Markers COF</a></li>
+                <li><a class="text-info" href="#Markers_Import">Importation dans Roll20</a></li>
+                <li><a class="text-info" href="#Markers_Check">Activation et Vérification</a></li>
+              </ol>
 						</div>
 					</div>
 					<div class="col-md-9 col-sm-8 content">
@@ -1517,7 +1523,39 @@
                 </ul>
               </div>
             </div>
-						<h2 class="text-primary" id="statistiques">5. Statistiques</h2>
+            <h2 class="text-primary" id="Markers_personnalisés">5. Markers Personnalisés</h2>
+            <h3 class="text-info" id="Markers_presentation">5.1 Présentation</h3>
+            <div class="decalage">
+              <p>Roll20 peut être déroutant lors des premières utilisations pour des joueurs plus habitués au Jeu de Rôle sur table. Il introduit des notions peu courantes du fait que les combats vont se dérouler sur des "battlemaps" quadrillées ou non. Aussi on va prendre quelques minutes pour expliquer deux notions importantes : <strong>les tokens</strong> et <strong>les tokens markers</strong> (plus simplement appelés <strong>markers</strong> par la suite).</p>
+              <p>Le token : Un token est la représentation graphique d'un personnage (PJ ou PNJ) sur la battlemap. Grâce au token on sait à tout moment où se trouve le personnage, s'il subit un sort à effet de zone ou si sa ligne de tir est dégagée par exemple.</p>
+              <p>Le marker : Un marker est forcément attaché à un token. Il représente un "état" qui affecte le personnage (<a href="#etats">liste des états</a>). Il se matérialise par une icône dans le coin en haut à doite du token. Un token peut afficher plusieurs markers au même moment. Ils représentent plusieurs états qui se cumulent pour ce personnage.
+              <p><img class="img-fluid" src="https://imgur.com/7aLlEL3.png" data-href="https://imgur.com/7aLlEL3.png"></p>
+              <p>Dans l'image ci-dessus le token c'est le personnage à la cape bleue qui représente un PJ et le marker c'est le petit escargot qui signifie que ce même PJ est "ralenti". Le script gère les états des PJ et PNJ et il matérialisera leurs états grâce aux markers. Par exemple le MJ va demande un jet de surprise, le script effectue les jets de dés nécessaire et matérialise l'état "surpris" grâce à un marker pour les personnages qui ont raté leur jet de dé. Le script applique automatiquement le malus -5 à la DEF. Au bout d'un tour l'état "surpris" et le marker seront retirés automatiquement par le script. Le MJ peut aussi mettre directement un état à un personnage. Par exemple s'il considère que ses PJs voyagent trop chargés il peut ajouter le marker "encombré" qui lui rappelera que dorénavant les jets de DEX se font sur un d12 et plus sur un d20.</p>
+              <p>Il existe des markers qui ne représentent pas un état mais ils sont rares. On peut souligner les ronds de couleurs qui permmettent au joueur de retrouver son token plus facilement. De la même manière dans les markers cof il y existent deux marqueurs <code>cof-init...</code> qui permettent de repérer le prochain joueur pendant les combats. Ce n'est pas un état.</p>
+            </div>
+            <h3 class="text-info" id="Markers_COF">5.2 Récupération des markers dédiés COF</h3>
+            <div class="decalage">
+              <p>Roll20 possède des markers par défaut mais ils ne sont pas toujours adaptés pour Chroniques Oubliées Fantasy. La communauté a voté pour choisir les tokens les plus pertinents dans le contexte COF. Voici le <a href="https://www.black-book-editions.fr/forums.php?topic_id=16514">lien vers le post dans le forum BBE</a>. N'hésitez pas à venir poser vos questions ou proposer vos talents de graphiste à la communauté.</p>
+              <p>Avant de pouvoir créer votre propre jeu de markers sur Roll20, vous devez préalablement télécharger ceux mis à disposition par la communauté depuis <a href="https://github.com/Ulty/COFantasy">le repository GitHub du projet</a>. Procédez comme suit :</p>
+              <p><img class="img-fluid" src="https://imgur.com/xEUDHaC.png" data-href="https://imgur.com/xEUDHaC.png"></p>
+              <p>Une fois le fichier téléchargé sur votre PC dézippez le répertoire <code>cof-marker-set</code> et son sous-répertoire</p>
+            </div>
+            <h3 class="text-info" id="Markers_Import">5.3 Importation des markers dans Roll20</h3>
+            <div class="decalage">
+              <p>Dans le répertoire <code>cof-marker-set</code> vous trouverez tous les markers qui ont été choisis par la communauté. Dans le répertoire <code>markers-alternatifs</code> vous trouverez les glorieux seconds au vote que vous pouvez utiliser en lieu et place du marker choisi s'il vous plaît plus. Il vous suffit alors de glisser-déposer le fichier dans le répertoire principal et de confirmer l'écrasement de l'autre marker. Vous pouvez aussi choisir vos propres markers dans  <a href="https://game-icons.net/">cette géniale bibliothéque d'icônes</a>. Vous pouvez aussi déssiner vos propre marker. Les limites sont que la taille de l'image doit être exactement de 512x512 px. Un fichier PNG est préférable pour gérer la transparence. Enfin votre fichier doit porter exactement le même nom qu'indiqué <a href="#etats">dans cette documentation</a>.</p>
+              <p>Dans Roll20 rendez-vous dans le menu "Outils" puis "Token Marker Library". Appuyez sur "Create Set". Puis renseignez le nom du marker set. "cof markers" par exemple. Appuyez sur "Create Set".</p>
+              <p><img class="img-fluid" src="https://imgur.com/NrHZ5Q6.png" data-href="https://imgur.com/NrHZ5Q6.png"></p>
+              <p>Vous arrivez alors sur la fenêtre suivante où il suffit de déposer les fichiers pour qu'ils soient uploadés sur Roll20</p>
+              <p><img class="img-fluid" src="https://imgur.com/5TUTgWb.png" data-href="https://imgur.com/5TUTgWb.png"></p>
+              <p>A ce moment il y a deux écoles de vie : ceux qui lâchent tous leurs markers en même temps et qui laisse le soin aux serveurs de Roll20 de décider dans quel ordre ils verront apparaître les markers dans leur interface pour le restant de leur jour. Et ceux qui posent les fichiers un par un pour que l'ordre qu'ils souhaitent soit respecté par Roll20. Quand tout est prêt cliquez sur "Upload". Vous avez un message "Fichiers en cours de traitement" pendant 1 à 2 minutes. Ensuite Roll20 vous propose de renommer vos tokens. Ne changez rien et faîtes "Save". Ca y est, vos markers personnalisés sont enfin prêts !</p>
+            </div>
+            <h3 class="text-info" id="Markers_Check">5.4 Activation et Vérification</h3>
+            <div class="decalage">
+              <p>Mais ce n'est pas fini il vous faut encore affecter vos markers à votre campagne. Cela se passe sur la page d'acceuil de votre campagne:</p>
+              <p><img class="img-fluid" src="https://imgur.com/cE5OAga.png" data-href="https://imgur.com/cE5OAga.png"></p>
+              <p>Lancez votre campagne et vérifiez que les nouveaux markers apparaissent bien. Lancez ensuite la commande <code>!cof-options</code> pour cocher "Markers Personnalises". Enfin comme dernier contrôle allez dans la console des API, faîtes "restart API sandbox" et vérifiez que le message "Markers personnalisés activés" est bien présent. Si ce n'est pas le cas vous avez probablement oublié des markers "obligatoires" et le script n'a pas pû activer les markers cof pour cette raison. La liste des markers manquants devrait apparaître dans la console.</p>
+            </div>
+            <h2 class="text-primary" id="statistiques">6. Statistiques</h2>
 						<div class="decalage">
 							<p>Il est possible d'activer la collecte de statistiques en utilisant la commande <code>!cof-demarrer-statistiques</code>.</p>
 							<p>On peut arrêter la collecte avec <code>!cof-arreter-statistiques</code>, et la mettre en pause avec <code>!cof-pause-statistiques</code>.<br />

@@ -47,7 +47,9 @@ var COFantasy = COFantasy || function() {
   var bs_alert_success = 'color: #3c763d; background-color: #dff0d8; border-color: #d6e9c6;';
   var bs_alert_danger = 'color: #a94442; background-color: #f2dede; border-color: #ebccd1;';
 
-  var tokenMarkers = {};
+  var markerCatalog = {};
+
+
 
   var flashyInitMarkerScale = 1.6;
 
@@ -157,6 +159,11 @@ var COFantasy = COFantasy || function() {
           val: true,
           type: 'bool'
         },
+        markers_personnalises: {
+          explications: "Utilisation des markers personnalisés commençant par cof",
+          val: false,
+          type: 'bool'
+        },
       }
     },
     images: {
@@ -211,11 +218,27 @@ var COFantasy = COFantasy || function() {
   var aura_token_on_turn = false;
   var stateCOF = state.COFantasy;
 
+  // List of states:
+  var cof_states = {
+    assome: 'status_pummeled',
+    mort: 'status_dead',
+    surpris: 'status_lightning-helix',
+    renverse: 'status_back-pain',
+    aveugle: 'status_bleeding-eye',
+    affaibli: 'status_half-heart',
+    etourdi: 'status_half-haze',
+    paralyse: 'status_fishing-net',
+    ralenti: 'status_snail',
+    immobilise: 'status_cobweb',
+    endormi: 'status_sleepy',
+    apeure: 'status_screaming',
+    invisible: 'status_ninja-mask',
+    blessé: 'status_arrowed',
+    encombre: 'status_frozen-orb'
+  };
+
   function setStateCOF() {
-    var markers = JSON.parse(Campaign().get("token_markers"));
-    markers.forEach(function(m) {
-      tokenMarkers[m.name] = m;
-    });
+
     stateCOF = state.COFantasy;
     if (stateCOF.roundMarkerId) {
       roundMarker = getObj('graphic', stateCOF.roundMarkerId);
@@ -350,26 +373,65 @@ var COFantasy = COFantasy || function() {
       }
       stateCOF.gameMacros = gameMacros;
     }
-  }
 
-  // List of states:
-  var cof_states = {
-    assome: 'status_pummeled',
-    mort: 'status_dead',
-    surpris: 'status_lightning-helix',
-    renverse: 'status_back-pain',
-    aveugle: 'status_bleeding-eye',
-    affaibli: 'status_half-heart',
-    etourdi: 'status_half-haze',
-    paralyse: 'status_fishing-net',
-    ralenti: 'status_snail',
-    immobilise: 'status_cobweb',
-    endormi: 'status_sleepy',
-    apeure: 'status_screaming',
-    invisible: 'status_ninja-mask',
-    blessé: 'status_arrowed',
-    encombre: 'status_frozen-orb'
-  };
+    // Récupération des token Markers attachés à la campagne image, nom, tag, Id 
+    var markers = JSON.parse(Campaign().get("token_markers"));
+    markers.forEach(function(m) {
+      markerCatalog[m.name] = m;
+    });
+  
+    // Option Markers personnalisés activé
+    if (stateCOF.options.affichage.val.markers_personnalises.val) {
+      var no_error = true;
+      var cof_states_perso = {
+        assome: 'status_cof-assomme',
+        mort: 'status_dead',
+        surpris: 'status_cof-surpris',
+        renverse: 'status_cof-renverse',
+        aveugle: 'status_cof-aveugle',
+        affaibli: 'status_cof-affaibli',
+        etourdi: 'status_cof-etourdi',
+        paralyse: 'status_cof-paralyse',
+        ralenti: 'status_cof-ralenti',
+        immobilise: 'status_cof-immobilise',
+        endormi: 'status_cof-endormi',
+        apeure: 'status_cof-apeure',
+        invisible: 'status_cof-invisible',
+        blessé: 'status_cof-blesse',
+        encombre: 'status_cof-encombre'
+      };
+      // On boucle sur la liste des états pour vérifier que les markers sont bien présents !
+      Object.keys(cof_states_perso).forEach(function(etat) {
+        if (etat === "mort") return; // Cas du statut mort. Cas particulier (n'est pas présent dans le catalogue) on laisse en l'état ...
+        var markerName = cof_states_perso[etat].substring(7);
+        var marker = markerCatalog[markerName];
+        if (marker) {
+          cof_states_perso[etat] = "status_" + marker.tag;
+        } else {
+          no_error = false;  
+          log("Marker " + markerName + " introuvable")
+        }
+      });
+  
+      // Cas particulier des deux tokens d'initiative
+      if (markerCatalog["cof-init-ally"]) {
+        stateCOF.statusForInitAlly = "status_" + markerCatalog["cof-init-ally"].tag
+      }  else no_error = false;
+      if (markerCatalog["cof-init-enemy"]) {
+        stateCOF.statusForInitEnemy = "status_" + markerCatalog["cof-init-enemy"].tag
+      }  else no_error = false;
+  
+      // Si aucune erreur de marker non trouvé
+      if (no_error) {
+        cof_states = cof_states_perso;
+        stateCOF.markers_personnalises = true;
+        log("Markers personnalisés activés. (vous pouvez désactiver les Markers standards Roll20 si vous le souhaitez)")
+      } else {
+        stateCOF.markers_personnalises = false;
+        log("Markers personnalisés manquants -> Retour aux Markers standards Roll20. Voir erreur(s) ci-dessus.")
+      }
+    }
+  }
 
   function etatRendInactif(etat) {
     var res =
@@ -11909,7 +11971,19 @@ var COFantasy = COFantasy || function() {
       token.set('aura2_radius', '0.1');
       token.set('aura2_color', aura2_color);
       token.set('showplayers_aura2', true);
-    } else token.set('status_flying-flag', true);
+    } else {
+      var status = ""
+      // Cas des tokens personnalisés
+      if (stateCOF.markers_personnalises) {
+        // ennemi => rouge
+        status = stateCOF.statusForInitEnemy;
+        if (estAllieJoueur(perso)) {
+          // equipe => vert
+          status = stateCOF.statusForInitAlly;
+        } 
+      } else status = 'status_flying-flag';
+      token.set(status, true);
+    }  
   }
 
   function removeTokenFlagAura(token) {
@@ -11924,7 +11998,13 @@ var COFantasy = COFantasy || function() {
     if (aura_token_on_turn) {
       token.set('aura2_radius', '');
       token.set('showplayers_aura2', false);
-    } else token.set('status_flying-flag', false);
+    } else {
+      // Cas des tokens personnalisés
+      if (stateCOF.markers_personnalises) {
+        token.set(stateCOF.statusForInitAlly, false);
+        token.set(stateCOF.statusForInitEnemy, false);
+      } else token.set('status_flying-flag', false);
+    }
   }
 
   //Si listActions est fourni, ça doit faire référence à une ability
@@ -12658,8 +12738,8 @@ var COFantasy = COFantasy || function() {
         }
         for (var etat in cof_states) {
           if (getState(perso, etat)) {
-            var markerName = cof_states[etat].substring(7);
-            var marker = tokenMarkers[markerName];
+            var markerName = cof_states[etat].substring(7).split("::")[0];
+            var marker = markerCatalog[markerName];
             var etext;
             if (marker) {
               etext = "<img src=" + marker.url + "></img> " + etat;
@@ -23696,7 +23776,6 @@ on("destroy:handout", function(prev) {
 
 on("ready", function() {
   var script_version = "2.05";
-  // Récupération des token Markers attachés à la campagne image, nom, tag, Id 
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
