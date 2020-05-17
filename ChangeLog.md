@@ -4,6 +4,7 @@
 * Enflammer une arme fait maintenant de la lumière.
 
 ### Autres améliorations
+* Ajout des markers de statut personnalisés
 * Amélioration de l'interface des attaques qui n'utilisent pas les champs d'attaque de la fiche
 * Prise en compte de l'unité de mesure de la carte pour les distances de vision
 * Possibilité de changer des difficultés de sauvegarde en fonction de la mana dépensée en tempête de mana intense.
@@ -11,6 +12,7 @@
 * Standardisation de !cof-lancer-sorts et support dans les consommables
 
 ### Corrections de bugs
+* Les attaques à distance ne déclanchent plus l'effet aggriper.
 * Prévention de crash en cas d'erreur interne de roll20.
 
 ## 2.04
