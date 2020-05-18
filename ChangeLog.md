@@ -1,4 +1,27 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.05
+### Capacités
+* Enflammer une arme fait maintenant de la lumière.
+
+### Autres améliorations
+* Ajout des markers de statut personnalisés
+* Amélioration de l'interface des attaques qui n'utilisent pas les champs d'attaque de la fiche
+* Prise en compte de l'unité de mesure de la carte pour les distances de vision
+* Possibilité de changer des difficultés de sauvegarde en fonction de la mana dépensée en tempête de mana intense.
+* Amélioration des affichages de jets
+* Standardisation de !cof-lancer-sorts et support dans les consommables
+
+### Corrections de bugs
+* Les attaques à distance ne déclanchent plus l'effet aggriper.
+* Prévention de crash en cas d'erreur interne de roll20.
+
+## 2.04
+### Capacités
+* restriction des capacités de la voie de la mort aux cibles vivantes seulement.
+
+### Autres améliorations
+* Passage de la RD sur la fiche
+
 ## 2.03
 ### Capacités
 * Amélioration du renouvellement des élixirs sur un forgesort.
@@ -6,6 +29,9 @@
 * Meilleure interface des runes du forgesort, avec implementation du rang 4, et  renouvellement automatique des runes selon le choix des forgesorts.
 
 ### Autres améliorations
+* Prise en charge des spécificités de l'épieu.
+* Prévention de crash de la sandbox.
+* Ajout de l'option --son pour !cof-rage-du-berserk
 * Ajout de l'attaque de groupe, avec possibilité d'action spécifique détectée par le script.
 * Ajout d'une option pour rajouter les attaques risquees et assurees a toutes les actions
 * Ajout de la condition echecCritique pour --si et --if
@@ -14,6 +40,9 @@
 * Affichage des icones correspondant aux états dans la fonction statut.
 
 ### Corrections de bugs
+* Plus de demande de mana si l'option de jeu mana est désactivé pour les fiches.
+* possibilité d'utiliser !cof-jouer-son dans les actions du tour
+* meilleure gestion de l'affichage du marqueur d'initiative pour les personnages sur une monture.
 * Correction d'un bug qui empêchait les écuyer de soigner (et l'undo de certains repos).
 * double escape des ':' dans les boutons (sinon, pas de lien)
 * Correction d'un buf sur les effets génériques avec saveParTour
