@@ -8417,6 +8417,12 @@ var COFantasy = COFantasy || function() {
                     "encaisser le coup", target)
                 );
               }
+              if (attributeAsBool(target, 'ignorerLaDouleur') && attributeAsInt(target, 'douleurIgnoree', 0) === 0) {
+                addLineToFramedDisplay(display, target.tokName + " peut " +
+                  bouton("!cof-ignorer-la-douleur " + evt.id,
+                    "ignorer la douleur", target)
+                );
+              }
               if (attributeAsBool(target, 'esquiveAcrobatique')) {
                 addLineToFramedDisplay(display, target.tokName + " peut " +
                   bouton("!cof-esquive-acrobatique " + evt.id,
@@ -10025,7 +10031,7 @@ var COFantasy = COFantasy || function() {
         });
     });
     //Effet de ignorerLaDouleur
-    var ilds = allAttributesNamed(attrs, 'ignorerLaDouleur');
+    var ilds = allAttributesNamed(attrs, 'douleurIgnoree');
     ilds = ilds.concat(allAttributesNamed(attrs, 'memePasMalIgnore'));
     ilds.forEach(function(ild) {
       var douleur = parseInt(ild.get('current'));
@@ -10039,7 +10045,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       var ildName = ild.get('name');
-      if (ildName == 'ignorerLaDouleur' || ildName == 'memePasMalIgnore') {
+      if (ildName == 'douleurIgnoree' || ildName == 'memePasMalIgnore') {
         var pvAttr = findObjs({
           _type: 'attribute',
           _characterid: charId,
@@ -12699,9 +12705,9 @@ var COFantasy = COFantasy || function() {
           line = "Dommages temporaires : " + dmTemp;
           addLineToFramedDisplay(display, line);
         }
-        var ignorerLaDouleur = attributeAsInt(perso, 'ignorerLaDouleur', 0);
-        if (ignorerLaDouleur > 0) {
-          line = "a ignoré " + ignorerLaDouleur + " pv dans ce combat.";
+        var douleurIgnoree = attributeAsInt(perso, 'douleurIgnoree', 0);
+        if (douleurIgnoree > 0) {
+          line = "a ignoré " + douleurIgnoree + " pv dans ce combat.";
           addLineToFramedDisplay(display, line);
         }
         var aDV = charAttributeAsInt(perso, 'DV', 0);
@@ -15832,16 +15838,26 @@ var COFantasy = COFantasy || function() {
   }
 
   function ignorerLaDouleur(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    var evtARefaire = lastEvent();
+    if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
+      evtARefaire = findEvent(cmd[1]);
+      if (evtARefaire === undefined) {
+        error("L'action est trop ancienne ou a été annulée", cmd);
+        return;
+      }
+    }
     getSelected(msg, function(selected) {
       iterSelected(selected, function(chevalier) {
         var charId = chevalier.charId;
         var token = chevalier.token;
-        if (attributeAsInt(chevalier, 'ignorerLaDouleur', 0) > 0) {
+        if (attributeAsInt(chevalier, 'douleurIgnoree', 0) > 0) {
           sendChar(charId, "a déjà ignoré la doubleur une fois pendant ce combat");
           return;
         }
-        var lastAct = lastEvent();
-        if (lastAct === undefined || lastAct.type === undefined || !lastAct.type.startsWith('Attaque')) {
+        if (evtARefaire === undefined || evtARefaire.type === undefined || !evtARefaire.type.startsWith('Attaque')) {
           sendChar(charId, "s'y prend trop tard pour ignorer la douleur : la dernière action n'était pas une attaque");
           return;
         }
@@ -15851,8 +15867,8 @@ var COFantasy = COFantasy || function() {
         };
         var PVid = token.get('bar1_link');
         if (PVid === '') { //token non lié, effets seulement sur le token.
-          if (lastAct.affecte) {
-            var affecte = lastAct.affectes[token.id];
+          if (evtARefaire.affecte) {
+            var affecte = evtARefaire.affectes[token.id];
             if (affecte && affecte.prev) {
               var lastBar1 = affecte.prev.bar1_value;
               var bar1 = parseInt(token.get('bar1_value'));
@@ -15865,17 +15881,17 @@ var COFantasy = COFantasy || function() {
                   return;
                 }
                 updateCurrentBar(token, 2, lastBar2, evt);
-                setTokenAttr(chevalier, 'ignorerLaDouleur', bar2 - lastBar2, evt);
+                setTokenAttr(chevalier, 'douleurIgnoree', bar2 - lastBar2, evt);
                 aIgnore = true;
               } else {
                 updateCurrentBar(token, 1, lastBar1, evt);
-                setTokenAttr(chevalier, 'ignorerLaDouleur', lastBar1 - bar1, evt);
+                setTokenAttr(chevalier, 'douleurIgnoree', lastBar1 - bar1, evt);
                 aIgnore = true;
               }
             }
           }
         } else { // token lié, il faut regarder l'attribut
-          var attrPV = lastAct.attributes.find(function(attr) {
+          var attrPV = evtARefaire.attributes.find(function(attr) {
             return (attr.attribute.id == PVid);
           });
           if (attrPV) {
@@ -15886,11 +15902,11 @@ var COFantasy = COFantasy || function() {
               return;
             }
             updateCurrentBar(token, 1, lastPV, evt);
-            setTokenAttr(chevalier, 'ignorerLaDouleur', lastPV - newPV, evt);
+            setTokenAttr(chevalier, 'douleurIgnoree', lastPV - newPV, evt);
             aIgnore = true;
           } else { //peut-être qu'il s'agit de DM temporaires
             PVid = token.get('bar2_link');
-            attrPV = lastAct.attributes.find(function(attr) {
+            attrPV = evtARefaire.attributes.find(function(attr) {
               return (attr.attribute.id == PVid);
             });
             if (attrPV) {
@@ -15901,7 +15917,7 @@ var COFantasy = COFantasy || function() {
                 return;
               }
               updateCurrentBar(token, 2, lastDmTemp, evt);
-              setTokenAttr(chevalier, 'ignorerLaDouleur', newDmTemp - lastDmTemp, evt);
+              setTokenAttr(chevalier, 'douleurIgnoree', newDmTemp - lastDmTemp, evt);
               aIgnore = true;
             }
           }
