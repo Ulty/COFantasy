@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.05
 ### Capacités
+* Ajout de la capacité Peau de pierre du magicien
 * Enflammer une arme fait maintenant de la lumière.
 
 ### Autres améliorations
