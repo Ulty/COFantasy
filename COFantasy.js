@@ -470,6 +470,40 @@ var COFantasy = COFantasy || function() {
     return playerIds;
   }
 
+  function characterPageIds(charId) {
+    var character = getObj('character', charId);
+    if (character === undefined) return;
+    var charControlledBy = character.get('controlledby');
+    var playersIds = new Set();
+    if (charControlledBy !== '') {
+      charControlledBy.split(",").forEach(function(controlledby) {
+        if (controlledby == 'all') {
+          var players = findObjs({
+            _type: 'player'
+          });
+          players.forEach(function(p) {
+            if (p.get('online')) playersIds.add(p.id);
+          });
+        }
+        var player = getObj('player', controlledby);
+        if (player === undefined) return;
+        if (player.get('online')) playersIds.add(controlledby);
+      });
+    }
+    if (playersIds.size === 0) {
+      findObjs({
+        _type: 'player'
+      }).forEach(function(p) {
+        if (playerIsGM(p.id)) playersIds.add(p.id);
+      });
+    }
+    var res = new Set();
+    playersIds.forEach(function(pid) {
+      res.add(getPageId(pid));
+    });
+    return res;
+  }
+
   function persoEstPNJ(perso) {
     if (perso.pnj) return true;
     var typePerso = getAttrByName(perso.charId, 'type_personnage');
@@ -10612,6 +10646,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('tueurFantasmagorique', evt, attrs);
     attrs = removeAllAttributes('resisteInjonction', evt, attrs);
     //Les élixirs
+    attrs = removeAllAttributes('elixirsACreer', evt, attrs);
     attrs = proposerRenouveauElixirs(evt, attrs);
     //Les runes
     attrs = proposerRenouveauRunes(evt, attrs);
@@ -14032,7 +14067,7 @@ var COFantasy = COFantasy || function() {
                 var absorbe = 40;
                 if (options.tempeteDeManaIntence) {
                   rd += options.tempeteDeManaIntense;
-                  absorbe += options.tempeteDeManaIntense*5;
+                  absorbe += options.tempeteDeManaIntense * 5;
                 }
                 setTokenAttr(perso, 'peauDePierreMagValeur', rd, evt, undefined, absorbe);
               }
@@ -18098,7 +18133,6 @@ var COFantasy = COFantasy || function() {
         options.mana = elixir.rang - 2;
       }
     }
-
     // Robustesse DecrAttr multi-cmd
     var elixirsACreer = charAttribute(forgesort.charId, "elixirsACreer");
     if (elixirsACreer.length === 0) {
@@ -18106,7 +18140,6 @@ var COFantasy = COFantasy || function() {
       return;
     }
     options.decrAttribute = elixirsACreer[0];
-
     if (limiteRessources(forgesort, options, 'elixirsACreer', 'élixirs à créer', evt)) return;
     var attrName = 'elixir_' + elixir.attrName;
     var message = "crée un " + elixir.nom;
@@ -18193,7 +18226,6 @@ var COFantasy = COFantasy || function() {
     }); //Fin du getSelected
   }
 
-  //TODO: passer pageId en argument au lieu de prendre la page des joueurs
   function proposerRenouveauElixirs(evt, attrs) {
     var attrsNamed = allAttributesNamed(attrs, 'elixir');
     if (attrsNamed.length === 0) return attrs;
@@ -18201,28 +18233,35 @@ var COFantasy = COFantasy || function() {
     var forgesorts = {};
     attrsNamed.forEach(function(attr) {
       // Check de l'existence d'un créateur
-      var foundCharacterId = attr.get('_characterid');
+      var charId = attr.get('_characterid');
       // Check de l'existence d'un token présent pour le personnage
       var tokensPersonnage =
         findObjs({
-          _pageid: Campaign().get("playerpageid"),
           _type: 'graphic',
           _subtype: 'token',
-          represents: foundCharacterId
+          represents: charId
         });
       if (tokensPersonnage.length < 1) {
-        error("Impossible de trouver le token du personnage " + foundCharacterId + " avec un élixir sur la carte");
+        error("Impossible de trouver le token du personnage " + charId + " avec un élixir sur la carte");
         return;
       }
+      var token;
+      if (tokensPersonnage.length > 1) {
+        var pageIds = characterPageIds(charId);
+        tokensPersonnage.forEach(function(t) {
+          if (token) return;
+          if (pageIds.has(token.get('pageid'))) token = t;
+        });
+      }
+      if (token === undefined) token = tokensPersonnage[0];
       var personnage = {
         token: tokensPersonnage[0],
-        charId: foundCharacterId
+        charId: charId
       };
-
-      var voieDesElixirs = charAttributeAsInt(personnage, "voieDesElixirs");
+      var voieDesElixirs = charAttributeAsInt(personnage, 'voieDesElixirs');
       //TODO: réfléchir à une solution pour le renouveau des élixirs échangés
       if (voieDesElixirs > 0) {
-        var elixirsDuForgesort = forgesorts[foundCharacterId];
+        var elixirsDuForgesort = forgesorts[charId];
         if (elixirsDuForgesort === undefined) {
           elixirsDuForgesort = {
             forgesort: personnage,
@@ -18230,7 +18269,6 @@ var COFantasy = COFantasy || function() {
             elixirsParRang: {}
           };
         }
-
         // Check de l'élixir à renouveler
         var nomElixir = attr.get('name');
         var typeElixir = listeElixirs(voieDesElixirs).find(function(i) {
@@ -18240,30 +18278,26 @@ var COFantasy = COFantasy || function() {
           error("Impossible de trouver l'élixir à renouveler");
           return;
         }
-
         // Check des doses
         var doses = attr.get("current");
         if (isNaN(doses)) {
           error("Erreur interne : élixir mal formé");
           return;
         }
-
         if (doses > 0) {
           // Tout est ok, création de l'item
           var elixirArenouveler = {
             typeElixir: typeElixir,
             doses: doses
           };
-
           var elixirsParRang = elixirsDuForgesort.elixirsParRang;
           if (elixirsParRang[typeElixir.rang] === undefined) {
             elixirsParRang[typeElixir.rang] = [elixirArenouveler];
           } else elixirsParRang[typeElixir.rang].push(elixirArenouveler);
-          forgesorts[foundCharacterId] = elixirsDuForgesort;
+          forgesorts[charId] = elixirsDuForgesort;
         }
       }
     });
-
     // Display par personnage
     for (const [forgesortCharId, elixirsDuForgesort] of Object.entries(forgesorts)) {
       // Init du display pour le personnage
@@ -18288,8 +18322,8 @@ var COFantasy = COFantasy || function() {
         var elixirsDeRang = elixirsDuForgesort.elixirsParRang[rang];
         if (elixirsDeRang === undefined || elixirsDeRang.length < 1) continue;
         addLineToFramedDisplay(display, "Elixirs de rang " + rang, undefined, true);
-        var actionTout = "";
-        var ligneBoutons = "";
+        var actionTout = '';
+        var ligneBoutons = '';
         // Boucle par élixir de ce rang à renouveler
         for (const i in elixirsDeRang) {
           var elixir = elixirsDeRang[i];

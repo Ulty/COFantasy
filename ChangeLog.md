@@ -13,6 +13,7 @@
 * Standardisation de !cof-lancer-sorts et support dans les consommables
 
 ### Corrections de bugs
+* Correction d'un bug dans le renouvellement des élixirs qui empêchait de créer de nouveaux élixirs si le forgesort n'a aucun élixir sur lui à la tombée de la nuit.
 * Les attaques à distance ne déclanchent plus l'effet aggriper.
 * Prévention de crash en cas d'erreur interne de roll20.
 
