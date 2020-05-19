@@ -1,6 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.05
 ### Capacités
+* Amélioration de l'automatisation de la capacité Ignorer la douleur du chevalier
+* Ajout de la capacité Peau de pierre du magicien
 * Enflammer une arme fait maintenant de la lumière.
 
 ### Autres améliorations
@@ -12,6 +14,7 @@
 * Standardisation de !cof-lancer-sorts et support dans les consommables
 
 ### Corrections de bugs
+* Correction d'un bug dans le renouvellement des élixirs qui empêchait de créer de nouveaux élixirs si le forgesort n'a aucun élixir sur lui à la tombée de la nuit.
 * Les attaques à distance ne déclanchent plus l'effet aggriper.
 * Prévention de crash en cas d'erreur interne de roll20.
 

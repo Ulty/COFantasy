@@ -374,7 +374,7 @@ var COFantasy = COFantasy || function() {
       stateCOF.gameMacros = gameMacros;
     }
 
-    // Récupération des token Markers attachés à la campagne image, nom, tag, Id 
+    // Récupération des token Markers attachés à la campagne image, nom, tag, Id
     var markers = JSON.parse(Campaign().get("token_markers"));
     markers.forEach(function(m) {
       markerCatalog[m.name] = m;
@@ -468,6 +468,40 @@ var COFantasy = COFantasy || function() {
       if (player.get('online')) playerIds.push(controlledby);
     });
     return playerIds;
+  }
+
+  function characterPageIds(charId) {
+    var character = getObj('character', charId);
+    if (character === undefined) return;
+    var charControlledBy = character.get('controlledby');
+    var playersIds = new Set();
+    if (charControlledBy !== '') {
+      charControlledBy.split(",").forEach(function(controlledby) {
+        if (controlledby == 'all') {
+          var players = findObjs({
+            _type: 'player'
+          });
+          players.forEach(function(p) {
+            if (p.get('online')) playersIds.add(p.id);
+          });
+        }
+        var player = getObj('player', controlledby);
+        if (player === undefined) return;
+        if (player.get('online')) playersIds.add(controlledby);
+      });
+    }
+    if (playersIds.size === 0) {
+      findObjs({
+        _type: 'player'
+      }).forEach(function(p) {
+        if (playerIsGM(p.id)) playersIds.add(p.id);
+      });
+    }
+    var res = new Set();
+    playersIds.forEach(function(pid) {
+      res.add(getPageId(pid));
+    });
+    return res;
   }
 
   function persoEstPNJ(perso) {
@@ -8383,6 +8417,12 @@ var COFantasy = COFantasy || function() {
                     "encaisser le coup", target)
                 );
               }
+              if (attributeAsBool(target, 'ignorerLaDouleur') && attributeAsInt(target, 'douleurIgnoree', 0) === 0) {
+                addLineToFramedDisplay(display, target.tokName + " peut " +
+                  bouton("!cof-ignorer-la-douleur " + evt.id,
+                    "ignorer la douleur", target)
+                );
+              }
               if (attributeAsBool(target, 'esquiveAcrobatique')) {
                 addLineToFramedDisplay(display, target.tokName + " peut " +
                   bouton("!cof-esquive-acrobatique " + evt.id,
@@ -9140,6 +9180,41 @@ var COFantasy = COFantasy || function() {
         }
         if (target.ignoreRD) rd = 0;
         else if (target.ignoreMoitieRD) rd = parseInt(rd / 2);
+        //RD PeauDePierre à prendre en compte en dernier
+        if (!target.defautCuirasse && !target.ignoreRD && rd < dmgTotal && attributeAsBool(target, 'peauDePierreMag')) {
+          var peauDePierreMagValeur = tokenAttribute(target, 'peauDePierreMagValeur');
+          if (peauDePierreMagValeur.length === 0) {
+            error("compteur de Peau de Pierre non trouvé", target);
+          } else {
+            peauDePierreMagValeur = peauDePierreMagValeur[0];
+            var rdPeauDePierreMax = parseInt(peauDePierreMagValeur.get('current'));
+            var peauDePierreAbsorbe = parseInt(peauDePierreMagValeur.get('max'));
+            if (isNaN(rdPeauDePierreMax) || isNaN(peauDePierreAbsorbe) || rdPeauDePierreMax < 1 || peauDePierreAbsorbe < 1) {
+              error("compteur de Peau de Pierre mal formé", peauDePierreMagValeur);
+              finDEffetDeNom(target, "peauDePierreMag", evt);
+            } else {
+              var rdPeauDePierreMag = rdPeauDePierreMax;
+              if (target.ignoreMoitieRD) rdPeauDePierreMag = parseInt(rdPeauDePierreMag / 2);
+              if (rd + rdPeauDePierreMag > dmgTotal) {
+                rdPeauDePierreMag = dmgTotal - rd;
+              }
+              if (rdPeauDePierreMag >= peauDePierreAbsorbe) {
+                rdPeauDePierreMag = peauDePierreAbsorbe;
+                finDEffetDeNom(target, "peauDePierreMag", evt);
+              } else {
+                peauDePierreAbsorbe -= rdPeauDePierreMag;
+                evt.attributes = evt.attributes || [];
+                evt.attributes.push({
+                  attribute: peauDePierreMagValeur,
+                  current: rdPeauDePierreMax,
+                  max: peauDePierreAbsorbe
+                });
+                peauDePierreMagValeur.set('max', peauDePierreAbsorbe);
+              }
+              rd += rdPeauDePierreMag;
+            }
+          }
+        }
         if (rd > 0) {
           if (showTotal) dmgDisplay = "(" + dmgDisplay + ") - " + rd;
           else {
@@ -9956,7 +10031,7 @@ var COFantasy = COFantasy || function() {
         });
     });
     //Effet de ignorerLaDouleur
-    var ilds = allAttributesNamed(attrs, 'ignorerLaDouleur');
+    var ilds = allAttributesNamed(attrs, 'douleurIgnoree');
     ilds = ilds.concat(allAttributesNamed(attrs, 'memePasMalIgnore'));
     ilds.forEach(function(ild) {
       var douleur = parseInt(ild.get('current'));
@@ -9970,7 +10045,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       var ildName = ild.get('name');
-      if (ildName == 'ignorerLaDouleur' || ildName == 'memePasMalIgnore') {
+      if (ildName == 'douleurIgnoree' || ildName == 'memePasMalIgnore') {
         var pvAttr = findObjs({
           _type: 'attribute',
           _characterid: charId,
@@ -10577,6 +10652,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('tueurFantasmagorique', evt, attrs);
     attrs = removeAllAttributes('resisteInjonction', evt, attrs);
     //Les élixirs
+    attrs = removeAllAttributes('elixirsACreer', evt, attrs);
     attrs = proposerRenouveauElixirs(evt, attrs);
     //Les runes
     attrs = proposerRenouveauRunes(evt, attrs);
@@ -12629,9 +12705,9 @@ var COFantasy = COFantasy || function() {
           line = "Dommages temporaires : " + dmTemp;
           addLineToFramedDisplay(display, line);
         }
-        var ignorerLaDouleur = attributeAsInt(perso, 'ignorerLaDouleur', 0);
-        if (ignorerLaDouleur > 0) {
-          line = "a ignoré " + ignorerLaDouleur + " pv dans ce combat.";
+        var douleurIgnoree = attributeAsInt(perso, 'douleurIgnoree', 0);
+        if (douleurIgnoree > 0) {
+          line = "a ignoré " + douleurIgnoree + " pv dans ce combat.";
           addLineToFramedDisplay(display, line);
         }
         var aDV = charAttributeAsInt(perso, 'DV', 0);
@@ -13966,7 +14042,7 @@ var COFantasy = COFantasy || function() {
             effetC = effetIncomplet + '(' + labelArme + ')';
           }
           if (options.valeur !== undefined) {
-            setTokenAttr(perso, effetC + "Valeur", options.valeur, evt, undefined, options.valeurMax);
+            setTokenAttr(perso, effetC + 'Valeur', options.valeur, evt, undefined, options.valeurMax);
           }
           switch (effetC) { //effets supplémentaires associés
             case 'aspectDuDemon':
@@ -13990,6 +14066,17 @@ var COFantasy = COFantasy || function() {
               break;
             case 'affaibliTemp':
               setState(perso, 'affaibli', true, evt);
+              break;
+            case 'peauDePierreMag':
+              if (options.valeur === undefined) {
+                var rd = 5 + modCarac(perso, 'INTELLIGENCE');
+                var absorbe = 40;
+                if (options.tempeteDeManaIntence) {
+                  rd += options.tempeteDeManaIntense;
+                  absorbe += options.tempeteDeManaIntense * 5;
+                }
+                setTokenAttr(perso, 'peauDePierreMagValeur', rd, evt, undefined, absorbe);
+              }
               break;
             default:
               if (effetC.startsWith('forgeron(')) {
@@ -15751,16 +15838,26 @@ var COFantasy = COFantasy || function() {
   }
 
   function ignorerLaDouleur(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    var evtARefaire = lastEvent();
+    if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
+      evtARefaire = findEvent(cmd[1]);
+      if (evtARefaire === undefined) {
+        error("L'action est trop ancienne ou a été annulée", cmd);
+        return;
+      }
+    }
     getSelected(msg, function(selected) {
       iterSelected(selected, function(chevalier) {
         var charId = chevalier.charId;
         var token = chevalier.token;
-        if (attributeAsInt(chevalier, 'ignorerLaDouleur', 0) > 0) {
+        if (attributeAsInt(chevalier, 'douleurIgnoree', 0) > 0) {
           sendChar(charId, "a déjà ignoré la doubleur une fois pendant ce combat");
           return;
         }
-        var lastAct = lastEvent();
-        if (lastAct === undefined || lastAct.type === undefined || !lastAct.type.startsWith('Attaque')) {
+        if (evtARefaire === undefined || evtARefaire.type === undefined || !evtARefaire.type.startsWith('Attaque')) {
           sendChar(charId, "s'y prend trop tard pour ignorer la douleur : la dernière action n'était pas une attaque");
           return;
         }
@@ -15770,8 +15867,8 @@ var COFantasy = COFantasy || function() {
         };
         var PVid = token.get('bar1_link');
         if (PVid === '') { //token non lié, effets seulement sur le token.
-          if (lastAct.affecte) {
-            var affecte = lastAct.affectes[token.id];
+          if (evtARefaire.affecte) {
+            var affecte = evtARefaire.affectes[token.id];
             if (affecte && affecte.prev) {
               var lastBar1 = affecte.prev.bar1_value;
               var bar1 = parseInt(token.get('bar1_value'));
@@ -15784,17 +15881,17 @@ var COFantasy = COFantasy || function() {
                   return;
                 }
                 updateCurrentBar(token, 2, lastBar2, evt);
-                setTokenAttr(chevalier, 'ignorerLaDouleur', bar2 - lastBar2, evt);
+                setTokenAttr(chevalier, 'douleurIgnoree', bar2 - lastBar2, evt);
                 aIgnore = true;
               } else {
                 updateCurrentBar(token, 1, lastBar1, evt);
-                setTokenAttr(chevalier, 'ignorerLaDouleur', lastBar1 - bar1, evt);
+                setTokenAttr(chevalier, 'douleurIgnoree', lastBar1 - bar1, evt);
                 aIgnore = true;
               }
             }
           }
         } else { // token lié, il faut regarder l'attribut
-          var attrPV = lastAct.attributes.find(function(attr) {
+          var attrPV = evtARefaire.attributes.find(function(attr) {
             return (attr.attribute.id == PVid);
           });
           if (attrPV) {
@@ -15805,11 +15902,11 @@ var COFantasy = COFantasy || function() {
               return;
             }
             updateCurrentBar(token, 1, lastPV, evt);
-            setTokenAttr(chevalier, 'ignorerLaDouleur', lastPV - newPV, evt);
+            setTokenAttr(chevalier, 'douleurIgnoree', lastPV - newPV, evt);
             aIgnore = true;
           } else { //peut-être qu'il s'agit de DM temporaires
             PVid = token.get('bar2_link');
-            attrPV = lastAct.attributes.find(function(attr) {
+            attrPV = evtARefaire.attributes.find(function(attr) {
               return (attr.attribute.id == PVid);
             });
             if (attrPV) {
@@ -15820,7 +15917,7 @@ var COFantasy = COFantasy || function() {
                 return;
               }
               updateCurrentBar(token, 2, lastDmTemp, evt);
-              setTokenAttr(chevalier, 'ignorerLaDouleur', newDmTemp - lastDmTemp, evt);
+              setTokenAttr(chevalier, 'douleurIgnoree', newDmTemp - lastDmTemp, evt);
               aIgnore = true;
             }
           }
@@ -18052,7 +18149,6 @@ var COFantasy = COFantasy || function() {
         options.mana = elixir.rang - 2;
       }
     }
-
     // Robustesse DecrAttr multi-cmd
     var elixirsACreer = charAttribute(forgesort.charId, "elixirsACreer");
     if (elixirsACreer.length === 0) {
@@ -18060,7 +18156,6 @@ var COFantasy = COFantasy || function() {
       return;
     }
     options.decrAttribute = elixirsACreer[0];
-
     if (limiteRessources(forgesort, options, 'elixirsACreer', 'élixirs à créer', evt)) return;
     var attrName = 'elixir_' + elixir.attrName;
     var message = "crée un " + elixir.nom;
@@ -18147,7 +18242,6 @@ var COFantasy = COFantasy || function() {
     }); //Fin du getSelected
   }
 
-  //TODO: passer pageId en argument au lieu de prendre la page des joueurs
   function proposerRenouveauElixirs(evt, attrs) {
     var attrsNamed = allAttributesNamed(attrs, 'elixir');
     if (attrsNamed.length === 0) return attrs;
@@ -18155,28 +18249,35 @@ var COFantasy = COFantasy || function() {
     var forgesorts = {};
     attrsNamed.forEach(function(attr) {
       // Check de l'existence d'un créateur
-      var foundCharacterId = attr.get('_characterid');
+      var charId = attr.get('_characterid');
       // Check de l'existence d'un token présent pour le personnage
       var tokensPersonnage =
         findObjs({
-          _pageid: Campaign().get("playerpageid"),
           _type: 'graphic',
           _subtype: 'token',
-          represents: foundCharacterId
+          represents: charId
         });
       if (tokensPersonnage.length < 1) {
-        error("Impossible de trouver le token du personnage " + foundCharacterId + " avec un élixir sur la carte");
+        error("Impossible de trouver le token du personnage " + charId + " avec un élixir sur la carte");
         return;
       }
+      var token;
+      if (tokensPersonnage.length > 1) {
+        var pageIds = characterPageIds(charId);
+        tokensPersonnage.forEach(function(t) {
+          if (token) return;
+          if (pageIds.has(token.get('pageid'))) token = t;
+        });
+      }
+      if (token === undefined) token = tokensPersonnage[0];
       var personnage = {
         token: tokensPersonnage[0],
-        charId: foundCharacterId
+        charId: charId
       };
-
-      var voieDesElixirs = charAttributeAsInt(personnage, "voieDesElixirs");
+      var voieDesElixirs = charAttributeAsInt(personnage, 'voieDesElixirs');
       //TODO: réfléchir à une solution pour le renouveau des élixirs échangés
       if (voieDesElixirs > 0) {
-        var elixirsDuForgesort = forgesorts[foundCharacterId];
+        var elixirsDuForgesort = forgesorts[charId];
         if (elixirsDuForgesort === undefined) {
           elixirsDuForgesort = {
             forgesort: personnage,
@@ -18184,7 +18285,6 @@ var COFantasy = COFantasy || function() {
             elixirsParRang: {}
           };
         }
-
         // Check de l'élixir à renouveler
         var nomElixir = attr.get('name');
         var typeElixir = listeElixirs(voieDesElixirs).find(function(i) {
@@ -18194,30 +18294,26 @@ var COFantasy = COFantasy || function() {
           error("Impossible de trouver l'élixir à renouveler");
           return;
         }
-
         // Check des doses
         var doses = attr.get("current");
         if (isNaN(doses)) {
           error("Erreur interne : élixir mal formé");
           return;
         }
-
         if (doses > 0) {
           // Tout est ok, création de l'item
           var elixirArenouveler = {
             typeElixir: typeElixir,
             doses: doses
           };
-
           var elixirsParRang = elixirsDuForgesort.elixirsParRang;
           if (elixirsParRang[typeElixir.rang] === undefined) {
             elixirsParRang[typeElixir.rang] = [elixirArenouveler];
           } else elixirsParRang[typeElixir.rang].push(elixirArenouveler);
-          forgesorts[foundCharacterId] = elixirsDuForgesort;
+          forgesorts[charId] = elixirsDuForgesort;
         }
       }
     });
-
     // Display par personnage
     for (const [forgesortCharId, elixirsDuForgesort] of Object.entries(forgesorts)) {
       // Init du display pour le personnage
@@ -18242,8 +18338,8 @@ var COFantasy = COFantasy || function() {
         var elixirsDeRang = elixirsDuForgesort.elixirsParRang[rang];
         if (elixirsDeRang === undefined || elixirsDeRang.length < 1) continue;
         addLineToFramedDisplay(display, "Elixirs de rang " + rang, undefined, true);
-        var actionTout = "";
-        var ligneBoutons = "";
+        var actionTout = '';
+        var ligneBoutons = '';
         // Boucle par élixir de ce rang à renouveler
         for (const i in elixirsDeRang) {
           var elixir = elixirsDeRang[i];
@@ -22099,6 +22195,11 @@ var COFantasy = COFantasy || function() {
       actif: "s'est mis en danger par une attaque risquée",
       fin: "retrouve une position moins risquée",
     },
+    peauDePierreMag: {
+      activation: "transforme sa peau en pierre",
+      actif: "voit ses dégâts réduits par sa Peau de pierre",
+      fin: "retrouve sa peau normale",
+    },
   };
 
   function buildPatternEffets(listeEffets, postfix) {
@@ -22655,22 +22756,6 @@ var COFantasy = COFantasy || function() {
               token: token
             }, undefined, evt);
           }
-        });
-        break;
-      case 'forgeron':
-      case 'armeEnflammee':
-        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-          var perso = {
-            token: token,
-            charId: charId
-          };
-          var pageId = options.pageId || token.get('pageid');
-          var attrLumiere = tokenAttribute(perso, 'lumiere');
-          attrLumiere.forEach(function(al) {
-            var lumName = al.get('current');
-            if (!lumName.startsWith(efComplet)) return;
-            eteindreUneLumiere(perso, pageId, al, lumName, evt);
-          });
         });
         break;
       default:
