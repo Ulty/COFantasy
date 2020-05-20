@@ -331,7 +331,7 @@
                 <ul>
                   <li> un nombre. C'est une RD qui s'applique à tous les dégats</li>
                   <li> un type suivie de <code>:</code> et un nombre, c'est une RD qui ne s'applique qu'à ce type de degâts. Par exemple, une RD de 5 contre le feu s'écrira <code>feu:5</code>.</li>
-                  <li> un nombre, suivi de <code>/</code> et un ou plusieurs types séparés de <code>_</code>, c'est une RD qui s'applique à tous les dégâts, sauf ceux du type mentionné. Par exemple, une RD à tout sauf aux dégâts magiques s'écrira <code>5/magique</code>. Une RD à tout sauf au feu et au froid pourra s'écrire <code>10/feu_froid</code>.
+                  <li> un nombre, suivi de <code>/</code> et un ou plusieurs types séparés de <code>_</code>, c'est une RD qui s'applique à tous les dégâts, sauf ceux du type mentionné. Par exemple, une RD à tout sauf aux dégâts magiques s'écrira <code>5/magique</code>. Une RD à tout sauf au feu et au froid pourra s'écrire <code>10/feu_froid</code>. Une RD qui laisse toujours passer au moins un PV s'écrit avec <code>/1</code>.
                 </ul>
                 Tous les éléments de RD se cumulent. Ainsi, si on a une RD de <code>5/argent, feu:10</code> des dégâts de feu seront réduits de 15, des dégâts d'argent ne seront pas réduits et des dégâts normaux seront réduits de 5.
 
@@ -674,6 +674,7 @@
                   <li><strong>Vigueur</strong> : ajouter les capacités avec leurs bonus sur la fiche</li>
                   <li><strong>Peau de pierre</strong> : ajouter un attribut <code>peauDePierre</code>, de valeur <code>true</code>. La nouvelle DEF sera calculée automatiquement.</li>
                   <li><strong>Tatouages</strong> : ajouter le bonus choisi sur la fiche</li>
+                  <li><strong>Peau d'acier</strong> : ajouter dans la partie RD de la fiche, <code>3/1</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie du pourfendeur</h4>
                 <ol>

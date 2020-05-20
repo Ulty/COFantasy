@@ -8691,6 +8691,7 @@ var COFantasy = COFantasy || function() {
     };
     if (total) {
       for (var saufType in rds) {
+        if (saufType == '1') break;
         var rd = rds[saufType];
         if (rd < 1) break;
         var types = saufType.split('_');
@@ -9195,6 +9196,10 @@ var COFantasy = COFantasy || function() {
         }
         if (attributeAsBool(target, 'masqueMortuaire')) rd += 2;
         if (rdTarget.nature > 0 && dmgNaturel(options)) rd += rdTarget.nature;
+        if (dmgTotal > rd && rdTarget.sauf[1]) {
+          if (dmgTotal > rd + rdTarget.sauf[1]) rd += rdTarget.sauf[1];
+          else rd = dmgTotal - 1;
+        }
         if (target.defautCuirasse) rd = 0;
         if (options.intercepter) rd += options.intercepter;
         if (target.extraRD) {
