@@ -638,6 +638,7 @@ var COFantasy = COFantasy || function() {
       case "!cof-transe-guerison":
       case "!cof-delivrance":
       case "!cof-guerir":
+      case "!cof-guerison":
         picto = '<span style="font-family: \'Pictos\'">k</span> ';
         style = 'background-color:#ffe599;color:#333';
         break;
@@ -1792,6 +1793,7 @@ var COFantasy = COFantasy || function() {
         act.indexOf('cof-surprise') == -1 &&
         act.indexOf('cof-attack') == -1 &&
         act.indexOf('cof-soin') == -1 &&
+        act.indexOf('cof-guerison') == -1 &&
         act.indexOf('cof-as ') == -1 &&
         act.indexOf('cof-jouer-son ') == -1 &&
         act.indexOf('--equipe') == -1 &&
@@ -19179,6 +19181,55 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  //!cof-guerison @{selected|token_id} @{target|token_id}
+  function guerison(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 3) {
+      error("cof-guerison attend le lanceur et la cible en argument", msg.content);
+      return;
+    }
+    var lanceur = persoOfId(cmd[1], cmd[1], options.pageId);
+    if (lanceur === undefined) {
+      error("Le premier argument de !cof-delivrance n'est pas un token valide", msg.content);
+      return;
+    }
+    var cible = persoOfId(cmd[2], cmd[2], options.pageId);
+    if (cible === undefined) {
+      error("Le deuxième argument de !cof-delivrance n'est pas un token valide", msg.content);
+      return;
+    }
+    if(options.dose === undefined && options.decrAttribute === undefined) {
+      if(charAttributeAsInt(lanceur, 'voieDesSoins', 0) < 4) {
+        error("Le lanceur de sort n'a pas le niveau requis pour Guérison", msg.content);
+        return;
+      }
+      options.limiteParJour = 1;
+    }
+    if (options.portee !== undefined) {
+      var dist = distanceCombat(lanceur.token, cible.token, options.pageId);
+      if (dist > options.portee) {
+        sendChar(lanceur.charId, " est trop loin de " + cible.token.get('name'));
+        return;
+      }
+    }
+    var evt = {
+      type: "Guérison",
+    };
+    if (limiteRessources(lanceur, options, 'guérison', 'guérison', evt)) return;
+    updateCurrentBar(cible.token, 1, cible.token.get('bar1_max'), evt);
+    var msgSoin;
+    if (lanceur.token.id == cible.token.id) {
+      msgSoin = 'se soigne';
+    } else {
+      msgSoin = 'soigne ' + cible.token.get('name');
+    }
+    msgSoin += ' de toutes les blessures subies';
+    sendChar(lanceur.charId, msgSoin);
+    addEvent(evt);
+  }
+
   function armeDeContact(perso, arme, labelArmeDefaut, armeContact) {
     if (arme) return arme;
     var labelArme = tokenAttribute(perso, 'armeEnMain');
@@ -21797,6 +21848,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-delivrance":
       case "!cof-guerir":
         delivrance(msg);
+        return;
+      case "!cof-guerison":
+        guerison(msg);
         return;
       case "!cof-test-attaque-opposee":
         testAttaqueOpposee(msg);
