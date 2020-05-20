@@ -638,6 +638,7 @@ var COFantasy = COFantasy || function() {
       case "!cof-transe-guerison":
       case "!cof-delivrance":
       case "!cof-guerir":
+      case "!cof-guerison":
         picto = '<span style="font-family: \'Pictos\'">k</span> ';
         style = 'background-color:#ffe599;color:#333';
         break;
@@ -1792,6 +1793,7 @@ var COFantasy = COFantasy || function() {
         act.indexOf('cof-surprise') == -1 &&
         act.indexOf('cof-attack') == -1 &&
         act.indexOf('cof-soin') == -1 &&
+        act.indexOf('cof-guerison') == -1 &&
         act.indexOf('cof-as ') == -1 &&
         act.indexOf('cof-jouer-son ') == -1 &&
         act.indexOf('--equipe') == -1 &&
@@ -3509,6 +3511,11 @@ var COFantasy = COFantasy || function() {
             lastEtat = {
               effet: cmd[1]
             };
+          } else if (estEffetIndetermine(cmd[1])) {
+            lastEtat = {
+              effet: cmd[1],
+              effetIndetermine: true
+            };
           } else {
             error(cmd[1] + " n'est pas un effet temporaire répertorié", cmd);
             return;
@@ -3682,13 +3689,14 @@ var COFantasy = COFantasy || function() {
           error("Pas d'effet auquel appliquer le save", optArgs);
           return;
         case 'saveParTour':
+        case 'saveParJour':
           if (lastEtat) {
-            if (lastEtat.saveParTour) {
+            if (lastEtat[cmd[0]]) {
               error("Redéfinition de la condition de save pour un effet", optArgs);
             }
             var saveParTourParams = parseSave(cmd);
             if (saveParTourParams) {
-              lastEtat.saveParTour = saveParTourParams;
+              lastEtat[cmd[0]] = saveParTourParams;
               return;
             }
             return;
@@ -4930,7 +4938,7 @@ var COFantasy = COFantasy || function() {
     return false;
   }
 
-  function defenseOfToken(attaquant, target, pageId, evt, options) {
+  function defenseOfPerso(attaquant, target, pageId, evt, options) {
     options = options || {};
     if (options.difficultePVmax) {
       var pvmax = parseInt(target.token.get("bar1_max"));
@@ -7000,7 +7008,7 @@ var COFantasy = COFantasy || function() {
             if (target.crit > 2) target.crit -= 1;
           }
           //Defense de la cible
-          var defense = defenseOfToken(attaquant, target, pageId, evt, options);
+          var defense = defenseOfPerso(attaquant, target, pageId, evt, options);
           var interchange;
           if (options.aoe === undefined) {
             interchange = interchangeable(attackingToken, target, pageId);
@@ -8069,7 +8077,10 @@ var COFantasy = COFantasy || function() {
                   affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
                   target.token.set('status_' + effet.statusMarker, true);
                 }
-              } else { //On a un effet de combat
+              } else if (ef.effetIndetermine) {
+                target.messages.push(target.tokName + " " + messageEffetIndetermine[ef.effet].activation);
+                setTokenAttr(target, ef.effet, true, evt);
+              } else { //On a un effet de comba
                 target.messages.push(target.tokName + " " + messageEffetCombat[ef.effet].activation);
                 setTokenAttr(target, ef.effet, true, evt);
               }
@@ -8283,7 +8294,10 @@ var COFantasy = COFantasy || function() {
                   var msgRate = ", " + target.tokName + " ";
                   if (ef.duree && ef.message)
                     msgRate += ef.message.activation;
-                  else msgRate += messageEffetCombat[ef.effet].activation;
+                  else if (ef.effetIndetermine)
+                    msgRate += messageEffetIndetermine[ef.effet].activation;
+                  else
+                    msgRate += messageEffetCombat[ef.effet].activation;
                   var saveOpts = {
                     msgPour: msgPour,
                     msgRate: msgRate,
@@ -8332,6 +8346,11 @@ var COFantasy = COFantasy || function() {
                           setTokenAttr(target,
                             ef.effet + "SaveParTour", ef.saveParTour.carac,
                             evt, undefined, ef.saveParTour.seuil);
+                        }
+                        if (ef.saveParJour) {
+                          setTokenAttr(target,
+                            ef.effet + "SaveParJour", ef.saveParJour.carac,
+                            evt, undefined, ef.saveParJour.seuil);
                         }
                       }
                       saves--;
@@ -10660,6 +10679,100 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('dose_Plante médicinale', evt, attrs);
     //On pourrait diviser par 2 le nombre de baies
     //var attrsBaie = allAttributesNamed(attrs, 'dose_baie_magique');
+    //Saves journaliers
+    var attrsSave = attrs.filter(function(attr) {
+      var attrName = attr.get('name');
+      var indexSave = attrName.indexOf('SaveParJour');
+      return indexSave > 0;
+    });
+    //Les saves sont asynchrones
+    var count = attrsSave.length;
+    attrsSave.forEach(function(attr) {
+      var attrName = attr.get('name');
+      var carac = attr.get('current');
+      if (!isCarac(carac)) {
+        error("Save par jour " + attrName + " mal formé", carac);
+        count--;
+        if (count === 0) addEvent(evt);
+        return;
+      }
+      var seuil = parseInt(attr.get('max'));
+      if (isNaN(seuil)) {
+        error("Save par jour " + attrName + " mal formé", seuil);
+        count--;
+        if (count === 0) addEvent(evt);
+        return;
+      }
+      var charId = attr.get('characterid');
+      var indexSave = attrName.indexOf('SaveParJour');
+      var effetC = attrName.substring(0, indexSave);
+      attrName = effetC + attrName.substr(indexSave + 11);
+      var token;
+      iterTokensOfAttribute(charId, undefined, effetC, attrName, function(tok) {
+        if (token === undefined) token = tok;
+      });
+      if (token === undefined) {
+        log("Pas de token pour le save " + attrName);
+        count--;
+        if (count === 0) addEvent(evt);
+        return;
+      }
+      var pageId = token.get('pageid');
+      var perso = {
+        token: token,
+        charId: charId
+      };
+      if (getState(perso, 'mort')) {
+        count--;
+        if (count === 0) addEvent(evt);
+        return;
+      }
+      var attrEffet = findObjs({
+        _type: 'attribute',
+        _characterid: charId,
+        name: attrName
+      });
+      if (attrEffet === undefined || attrEffet.length === 0) {
+        error("Save sans effet associé " + attrName, attr);
+        attr.remove();
+        count--;
+        if (count === 0) addEvent(evt);
+        return;
+      }
+      attrEffet = attrEffet[0];
+      var expliquer = function(msg) {
+        sendChar(charId, msg);
+      };
+      var msgPour = " pour ne plus être sous l'effet de " + effetC;
+      var sujet = onGenre(charId, 'il', 'elle');
+      var met = messageEffetIndetermine[effetC];
+      if (met === undefined) met = {
+        fin: "résiste à l'effet",
+        actf: "reste ous l'emprise de l'effet"
+      };
+      var msgReussite = ", " + sujet + " " + met.fin;
+      var msgRate = ", " + sujet + " " + met.actif;
+      var saveOpts = {
+        msgPour: msgPour,
+        msgReussite: msgReussite,
+        msgRate: msgRate
+      };
+      save({
+          carac: carac,
+          seuil: seuil
+        }, perso, expliquer, saveOpts, evt,
+        function(reussite) { //asynchrone
+          if (reussite) {
+            finDEffet(attrEffet, effetC, attrName, charId, evt, {
+              attrSave: attr,
+              pageId: pageId
+            });
+          }
+          count--;
+          if (count === 0) addEvent(evt);
+        });
+    }); //fin boucle attrSave
+
   }
 
   function nouveauJour(msg) {
@@ -12810,7 +12923,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         var pageId = perso.token.get('pageid');
-        var defense = defenseOfToken(undefined, perso, pageId, undefined, {
+        var defense = defenseOfPerso(undefined, perso, pageId, undefined, {
           test: true
         });
 
@@ -18266,7 +18379,7 @@ var COFantasy = COFantasy || function() {
         var pageIds = characterPageIds(charId);
         tokensPersonnage.forEach(function(t) {
           if (token) return;
-          if (pageIds.has(token.get('pageid'))) token = t;
+          if (pageIds.has(t.get('pageid'))) token = t;
         });
       }
       if (token === undefined) token = tokensPersonnage[0];
@@ -19068,6 +19181,54 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  //!cof-guerison @{selected|token_id} @{target|token_id}
+  function guerison(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 3) {
+      error("cof-guerison attend le lanceur et la cible en argument", msg.content);
+      return;
+    }
+    var lanceur = persoOfId(cmd[1], cmd[1], options.pageId);
+    if (lanceur === undefined) {
+      error("Le premier argument de !cof-guerison n'est pas un token valide", msg.content);
+      return;
+    }
+    var cible = persoOfId(cmd[2], cmd[2], options.pageId);
+    if (cible === undefined) {
+      error("Le deuxième argument de !cof-guerison n'est pas un token valide", msg.content);
+      return;
+    }
+    if (options.dose === undefined && options.decrAttribute === undefined) {
+      options.limiteParJour = 1;
+    }
+    if (options.portee !== undefined) {
+      var dist = distanceCombat(lanceur.token, cible.token, options.pageId);
+      if (dist > options.portee) {
+        sendChar(lanceur.charId, " est trop loin de " + cible.token.get('name'));
+        return;
+      }
+    }
+    var evt = {
+      type: "Guérison",
+    };
+    if (limiteRessources(lanceur, options, 'guérison', 'guérison', evt)) return;
+    updateCurrentBar(cible.token, 1, cible.token.get('bar1_max'), evt);
+    if (getState(cible, 'blessé')) {
+      setState(cible, 'blessé', false, evt);
+    }
+    var msgSoin;
+    if (lanceur.token.id == cible.token.id) {
+      msgSoin = 'se soigne';
+    } else {
+      msgSoin = 'soigne ' + cible.token.get('name');
+    }
+    msgSoin += ' de toutes les blessures subies';
+    sendChar(lanceur.charId, msgSoin);
+    addEvent(evt);
+  }
+
   function armeDeContact(perso, arme, labelArmeDefaut, armeContact) {
     if (arme) return arme;
     var labelArme = tokenAttribute(perso, 'armeEnMain');
@@ -19549,7 +19710,7 @@ var COFantasy = COFantasy || function() {
           dmSupp = effet.appliquer(attaquant, cible, res.critique, evt);
           if (manoeuvreDuelliste && !dmSupp) {
             var pageId = cible.token.get('pageid');
-            var defense = defenseOfToken(attaquant, cible, pageId, evt, options);
+            var defense = defenseOfPerso(attaquant, cible, pageId, evt, options);
             dmSupp = res.rollAttaquant >= defense + 10;
           }
         } else {
@@ -21191,7 +21352,7 @@ var COFantasy = COFantasy || function() {
     if (options === undefined) return;
     var cmd = options.cmd;
     if (cmd === undefined || cmd.length < 3) {
-      error("cof-delivrance attend 2 arguments", msg.content);
+      error("cof-animer-cadavre attend 2 arguments", msg.content);
       return;
     }
     var lanceur = persoOfId(cmd[1], cmd[1], options.pageId);
@@ -21686,6 +21847,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-delivrance":
       case "!cof-guerir":
         delivrance(msg);
+        return;
+      case "!cof-guerison":
+        guerison(msg);
         return;
       case "!cof-test-attaque-opposee":
         testAttaqueOpposee(msg);
@@ -22423,6 +22587,11 @@ var COFantasy = COFantasy || function() {
       actif: "sait un peu à l'avance ce qu'il va se passer",
       fin: "l'effet du rituel de divination prend fin",
     },
+    charmé: {
+      activation: "devient un ami de longue date",
+      actif: "est sous le charme de quelqu'un",
+      fin: "retrouve ses esprits"
+    },
   };
 
   var patternEffetsIndetermine = buildPatternEffets(messageEffetIndetermine);
@@ -22483,7 +22652,7 @@ var COFantasy = COFantasy || function() {
       enleverEffetAttribut(charId, efComplet, attrName, 'SaveParTour', evt);
     }
     var mEffet = messageEffetTemp[effet];
-    if (mEffet.statusMarker) {
+    if (mEffet && mEffet.statusMarker) {
       iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
         affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
         token.set('status_' + mEffet.statusMarker, false);
@@ -22664,7 +22833,7 @@ var COFantasy = COFantasy || function() {
           });
         }
         attr.remove();
-        if (options.print) options.print(mEffet.fin);
+        if (options.print && mEffet) options.print(mEffet.fin);
         else sendChar(charId, 'disparaît');
         var arbreChar = getObj('character', charId);
         if (arbreChar) {
@@ -22768,7 +22937,7 @@ var COFantasy = COFantasy || function() {
           token: token
         }, 'mort');
       });
-      if (!estMort) {
+      if (!estMort && mEffet) {
         if (options.print) options.print(mEffet.fin);
         else {
           if (attrName == efComplet)
