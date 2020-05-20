@@ -19215,6 +19215,9 @@ var COFantasy = COFantasy || function() {
     };
     if (limiteRessources(lanceur, options, 'guérison', 'guérison', evt)) return;
     updateCurrentBar(cible.token, 1, cible.token.get('bar1_max'), evt);
+    if (getState(cible, 'blessé')) {
+      setState(cible, 'blessé', false, evt);
+    }
     var msgSoin;
     if (lanceur.token.id == cible.token.id) {
       msgSoin = 'se soigne';
