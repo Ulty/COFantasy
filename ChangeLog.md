@@ -8,6 +8,7 @@
 * Enflammer une arme fait maintenant de la lumière.
 
 ### Autres améliorations
+* Application de la règle selon laquelle les dm de base d'une attaque ne peuvent être 0 (pour les gobelins ou personnages avec peu de force).
 * Ajout des markers de statut personnalisés
 * Amélioration de l'interface des attaques qui n'utilisent pas les champs d'attaque de la fiche
 * Prise en compte de l'unité de mesure de la carte pour les distances de vision

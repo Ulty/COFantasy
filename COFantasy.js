@@ -65,7 +65,7 @@ var COFantasy = COFantasy || function() {
         },
         dm_minimum: {
           explications: "Dégâts minimum d'une attaque ou autre source de DM.",
-          val: 1,
+          val: 0,
           type: 'int'
         },
         crit_elementaire: {
@@ -6456,6 +6456,10 @@ var COFantasy = COFantasy || function() {
     otherDmg = otherDmg || [];
     var dmgDisplay = dmg.display;
     var dmgTotal = dmg.total;
+    if (dmgTotal < 1) {
+      dmgDisplay += ' -> 1';
+      dmgTotal = 1;
+    }
     var showTotal = false;
     if (dmgCoef > 1) {
       dmgDisplay += " X " + dmgCoef;
