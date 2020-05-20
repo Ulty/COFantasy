@@ -21353,7 +21353,7 @@ var COFantasy = COFantasy || function() {
     if (options === undefined) return;
     var cmd = options.cmd;
     if (cmd === undefined || cmd.length < 3) {
-      error("cof-delivrance attend 2 arguments", msg.content);
+      error("cof-animer-cadavre attend 2 arguments", msg.content);
       return;
     }
     var lanceur = persoOfId(cmd[1], cmd[1], options.pageId);
