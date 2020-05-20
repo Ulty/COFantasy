@@ -19192,19 +19192,15 @@ var COFantasy = COFantasy || function() {
     }
     var lanceur = persoOfId(cmd[1], cmd[1], options.pageId);
     if (lanceur === undefined) {
-      error("Le premier argument de !cof-delivrance n'est pas un token valide", msg.content);
+      error("Le premier argument de !cof-guerison n'est pas un token valide", msg.content);
       return;
     }
     var cible = persoOfId(cmd[2], cmd[2], options.pageId);
     if (cible === undefined) {
-      error("Le deuxième argument de !cof-delivrance n'est pas un token valide", msg.content);
+      error("Le deuxième argument de !cof-guerison n'est pas un token valide", msg.content);
       return;
     }
-    if(options.dose === undefined && options.decrAttribute === undefined) {
-      if(charAttributeAsInt(lanceur, 'voieDesSoins', 0) < 4) {
-        error("Le lanceur de sort n'a pas le niveau requis pour Guérison", msg.content);
-        return;
-      }
+    if (options.dose === undefined && options.decrAttribute === undefined) {
       options.limiteParJour = 1;
     }
     if (options.portee !== undefined) {
