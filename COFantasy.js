@@ -5569,6 +5569,17 @@ var COFantasy = COFantasy || function() {
 
   //Retourne true si il existe une limite qui empêche de lancer le sort
   function limiteRessources(personnage, options, defResource, msg, evt) {
+    if (options.mana) {
+      if (personnage) {
+        if (!depenseMana(personnage, options.mana, msg, evt)) {
+          addEvent(evt);
+          return true;
+        }
+      } else {
+        error("Impossible de savoir qui doit dépenser de la mana", options);
+        return true;
+      }
+    }
     var ressource = '';
     if (defResource !== undefined) ressource = defResource;
     var utilisations;
@@ -5614,32 +5625,6 @@ var COFantasy = COFantasy || function() {
         return true;
       }
     }
-    if (options.limiteAttribut) {
-      if (personnage) {
-        var nomAttr = options.limiteAttribut.nom;
-        var currentAttr = attributeAsInt(personnage, nomAttr, 0);
-        if (currentAttr >= options.limiteAttribut.limite) {
-          sendChar(personnage.charId, options.limiteAttribut.message);
-          addEvent(evt);
-          return true;
-        }
-        setTokenAttr(personnage, nomAttr, currentAttr + 1, evt);
-      } else {
-        error("Impossible de savoir à qui appliquer la limitation", options);
-        return true;
-      }
-    }
-    if (options.mana) {
-      if (personnage) {
-        if (!depenseMana(personnage, options.mana, msg, evt)) {
-          addEvent(evt);
-          return true;
-        }
-      } else {
-        error("Impossible de savoir qui doit dépenser de la mana", options);
-        return true;
-      }
-    }
     if (options.dose) {
       if (personnage) {
         var nomDose = options.dose.replace(/_/g, ' ');
@@ -5652,6 +5637,21 @@ var COFantasy = COFantasy || function() {
         setTokenAttr(personnage, 'dose_' + options.dose, doses - 1, evt);
       } else {
         error("Impossible de savoir qui doit dépenser la dose", options);
+        return true;
+      }
+    }
+    if (options.limiteAttribut) {
+      if (personnage) {
+        var nomAttr = options.limiteAttribut.nom;
+        var currentAttr = attributeAsInt(personnage, nomAttr, 0);
+        if (currentAttr >= options.limiteAttribut.limite) {
+          sendChar(personnage.charId, options.limiteAttribut.message);
+          addEvent(evt);
+          return true;
+        }
+        setTokenAttr(personnage, nomAttr, currentAttr + 1, evt);
+      } else {
+        error("Impossible de savoir à qui appliquer la limitation", options);
         return true;
       }
     }
