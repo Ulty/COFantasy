@@ -9178,7 +9178,7 @@ var COFantasy = COFantasy || function() {
           if (options.memePasMal) options.memePasMal -= rdCrit;
         }
         if (options.tranchant && rdTarget.tranchant) rd += rdTarget.tranchant;
-        if (options.percant && rdTarget.percant) rd += rdTarget.tranchant;
+        if (options.percant && rdTarget.percant) rd += rdTarget.percant;
         if (options.contondant && rdTarget.contondant) rd += rdTarget.contondant;
         if (options.distance) {
           if (rdTarget.distance) rd += rdTarget.distance;
