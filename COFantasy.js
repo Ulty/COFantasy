@@ -1104,7 +1104,7 @@ var COFantasy = COFantasy || function() {
           tokenArbre = createObj('graphic', tokenFields);
         }
         if (tokenArbre) {
-          //On met l'ancien token dans le gmlayer, car si l'image vient du merketplace, il est impossible de le recréer depuis l'API
+          //On met l'ancien token dans le gmlayer, car si l'image vient du marketplace, il est impossible de le recréer depuis l'API
           setToken(token, 'layer', 'gmlayer', evt);
           setTokenAttr(personnage, 'changementDeToken', true, evt);
           replaceInTurnTracker(token.id, tokenArbre.id, evt);
@@ -19093,6 +19093,7 @@ var COFantasy = COFantasy || function() {
     var caid = charArbre.id;
     var pvArbre = rang * 10;
     setToken(tokenArbre, 'represents', caid, evt);
+    setDefaultTokenForCharacter(charArbre, tokenArbre);
     //Les attributs n'ont pas besoin d'être ajoutés à evt, on les enlève en supprimant le personnage
     createObj('attribute', {
       characterid: caid,
@@ -20062,6 +20063,7 @@ var COFantasy = COFantasy || function() {
       istokenaction: false,
       action: actions
     });
+    if (token) setDefaultTokenForCharacter(res, token);
     return res;
   }
 
