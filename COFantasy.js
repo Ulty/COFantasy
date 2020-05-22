@@ -19,6 +19,7 @@
 /* globals toFront */
 /* globals playerIsGM */
 /* globals setTimeout */
+/* globals setDefaultTokenForCharacter */
 /* globals HealthColors */
 /* globals Roll20AM */
 
@@ -238,7 +239,6 @@ var COFantasy = COFantasy || function() {
   };
 
   function setStateCOF() {
-
     stateCOF = state.COFantasy;
     if (stateCOF.roundMarkerId) {
       roundMarker = getObj('graphic', stateCOF.roundMarkerId);
@@ -258,6 +258,55 @@ var COFantasy = COFantasy || function() {
           stateCOF.roundMarkerId = undefined;
         }
       }
+    }
+    if (!stateCOF.personnageCibleCree) {
+      //On cherche si un personnage cible existe déjà
+      var persos = findObjs({
+        _type: 'character',
+        name: 'Cible',
+        controlledby: 'all'
+      });
+      if (persos.length === 0) {
+        var pages = findObjs({
+          _type: 'page'
+        });
+        if (pages.length > 0) {
+          var pageId = pages[0].id;
+          var charCible = createObj('character', {
+            name: 'Cible',
+            controlledby: 'all',
+            inplayerjournals: 'all',
+            avatar: 'https://s3.amazonaws.com/files.d20.io/images/33041174/5JdDVh-34C-kZglTE1aq-w/max.png?1494837870',
+          });
+          if (charCible) {
+            var attrPV = charAttribute(charCible.id, 'PV', {
+              caseInsensitive: true
+            });
+            if (attrPV.length > 0) attrPV = attrPV[0];
+            else attrPV = createObj('attribute', {
+              name: 'PV',
+              characterid: charCible.id,
+              current: 0,
+              max: 0
+            });
+            var tokenCible = createObj('graphic', {
+              name: 'Cible',
+              layer: 'objects',
+              _pageid: pageId,
+              imgsrc: 'https://s3.amazonaws.com/files.d20.io/images/33041174/5JdDVh-34C-kZglTE1aq-w/thumb.png?1494837870',
+              represents: charCible.id,
+              width: PIX_PER_UNIT,
+              height: PIX_PER_UNIT,
+              bar1_link: attrPV ? attrPV.id : ''
+            });
+            if (tokenCible) {
+              setDefaultTokenForCharacter(charCible, tokenCible);
+              tokenCible.remove();
+            }
+          }
+        }
+      }
+      stateCOF.personnageCibleCree = true;
     }
     if (stateCOF.options === undefined) stateCOF.options = {};
     copyOptions(stateCOF.options, defaultOptions);
@@ -24087,7 +24136,7 @@ on("destroy:handout", function(prev) {
   COFantasy.changeHandout(undefined, prev);
 });
 
-on("ready", function() {
+on('ready', function() {
   var script_version = "2.05";
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
