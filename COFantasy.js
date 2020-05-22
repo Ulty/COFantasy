@@ -30,24 +30,19 @@ var COFantasy = COFantasy || function() {
 
   "use strict";
 
-  var PIX_PER_UNIT = 70;
-  var HISTORY_SIZE = 150;
+  const PIX_PER_UNIT = 70;
+  const HISTORY_SIZE = 150;
+  const BS_LABEL = 'text-transform: uppercase; display: inline; padding: .2em .6em .3em; font-size: 75%; line-height: 2; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25em;';
+  const BS_LABEL_SUCCESS = 'background-color: #5cb85c;';
+  const BS_LABEL_INFO = 'background-color: #5bc0de;';
+  const BS_LABEL_WARNING = 'background-color: #f0ad4e;';
+  const BS_LABEL_DANGER = 'background-color: #d9534f;';
+  const DEFAULT_DYNAMIC_INIT_IMG = 'https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/thumb.png?1400535580';
+
+  var markerCatalog = {};
   var eventHistory = [];
   var updateNextInitSet = new Set();
 
-  var BS_LABEL = 'text-transform: uppercase; display: inline; padding: .2em .6em .3em; font-size: 75%; line-height: 2; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25em;';
-  var BS_LABEL_DEFAULT = 'background-color: #777;';
-  var BS_LABEL_PRIMARY = 'background-color: #337ab7;';
-  var BS_LABEL_SUCCESS = 'background-color: #5cb85c;';
-  var BS_LABEL_INFO = 'background-color: #5bc0de;';
-  var BS_LABEL_WARNING = 'background-color: #f0ad4e;';
-  var BS_LABEL_DANGER = 'background-color: #d9534f;';
-
-  var bs_alert = 'padding: 5px; border: 1px solid transparent; border-radius: 4px;';
-  var bs_alert_success = 'color: #3c763d; background-color: #dff0d8; border-color: #d6e9c6;';
-  var bs_alert_danger = 'color: #a94442; background-color: #f2dede; border-color: #ebccd1;';
-
-  var markerCatalog = {};
 
 
 
@@ -170,6 +165,11 @@ var COFantasy = COFantasy || function() {
       explications: "Images par défaut",
       type: 'options',
       val: {
+        image_init: {
+          explications: 'Image utilisée pour la capacité dédoublement',
+          type: 'image',
+          val: DEFAULT_DYNAMIC_INIT_IMG
+        },
         image_double: {
           explications: 'Image utilisée pour la capacité dédoublement',
           type: 'image',
@@ -11973,13 +11973,19 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function charactersInHandout(note, nomEquipe) {
+  //pour ce débarasser des balises html
+  // et avoir un tableau de lignes
+  function linesOfNote(note) {
     note = note.trim();
     if (note.startsWith('<p>')) note = note.substring(3);
     note = note.trim().replace(/<span[^>]*>|<\/span>/g, '');
     note = note.replace(/<p>/g, '<br>');
     note = note.replace(/<\/p>/g, '');
-    var names = note.trim().split('<br>');
+    return note.trim().split('<br>');
+  }
+
+  function charactersInHandout(note, nomEquipe) {
+    var names = linesOfNote(note);
     var persos = new Set();
     names.forEach(function(name) {
       name = name.replace(/<(?:.|\s)*?>/g, ''); //Pour enlever les <h2>, etc
@@ -12039,8 +12045,7 @@ var COFantasy = COFantasy || function() {
       };
       hand.get('notes', function(note) { // asynchronous
         var carac; //La carac dont on spécifie les compétences actuellement
-        var lignes = note.trim().replace(/<span[^>]*>|<\/span>/g, '');
-        lignes = lignes.replace(/<p>|<\/p>/g, '<br>').split('<br>');
+        var lignes = linesOfNote(note);
         lignes.forEach(function(ligne) {
           ligne = ligne.trim();
           var header = ligne.split(':');
@@ -12100,7 +12105,7 @@ var COFantasy = COFantasy || function() {
     name: 'Init marker',
     aura1_color: '#ff00ff',
     aura2_color: '#00ff00',
-    imgsrc: 'https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/thumb.png?1400535580',
+    imgsrc: DEFAULT_DYNAMIC_INIT_IMG
   };
   var threadSync = 0;
 
@@ -12116,7 +12121,6 @@ var COFantasy = COFantasy || function() {
     }
     if (sync != threadSync) return;
     if (token) {
-      var tokenAUtiliser = token;
       // Cas spéciaux du cavaliers
       var personnage = persoOfId(token.get("_id"));
       var monteSur = tokenAttribute(personnage, "monteSur");
@@ -12127,20 +12131,42 @@ var COFantasy = COFantasy || function() {
         cavalier = personnage;
         var montureTokenId = monteSur[0].get("current");
         monture = persoOfId(montureTokenId);
-        if (monture !== undefined) tokenAUtiliser = monture.token;
+        if (monture !== undefined) token = monture.token;
       } else if (estMontePar.length > 0) {
         monture = personnage;
         var cavalierId = estMontePar[0].get("current");
         cavalier = persoOfId(cavalierId);
       }
       if (roundMarker) roundMarker.remove();
-      roundMarkerSpec._pageid = tokenAUtiliser.get('pageid');
-      roundMarkerSpec.left = tokenAUtiliser.get('left');
-      roundMarkerSpec.top = tokenAUtiliser.get('top');
-      var width = (tokenAUtiliser.get('width') + tokenAUtiliser.get('height')) / 2 * flashyInitMarkerScale;
+      roundMarkerSpec._pageid = token.get('pageid');
+      roundMarkerSpec.left = token.get('left');
+      roundMarkerSpec.top = token.get('top');
+      var width = (token.get('width') + token.get('height')) / 2 * flashyInitMarkerScale;
       roundMarkerSpec.width = width;
       roundMarkerSpec.height = width;
+      roundMarkerSpec.imgsrc = stateCOF.options.images.val.image_init.val;
+      var localImage;
+      var gmNotes = token.get('gmnotes');
+      gmNotes = _.unescape(decodeURIComponent(gmNotes)).replace('&nbsp;', ' ');
+      gmNotes = linesOfNote(gmNotes);
+      gmNotes.forEach(function(l) {
+        if (localImage) return;
+        if (l.startsWith('init_aura:')) {
+          roundMarkerSpec.imgsrc = l.substring(10).trim();
+          localImage = true;
+        }
+      });
       roundMarker = createObj('graphic', roundMarkerSpec);
+      if (roundMarker === undefined && localImage) {
+        error("Image locale de " + token.get('name') + " incorrecte (" + roundMarkerSpec.imgsrc + ")", gmNotes);
+        roundMarkerSpec.imgsrc = stateCOF.options.images.val.image_init.val;
+        roundMarker = createObj('graphic', roundMarkerSpec);
+      }
+      if (roundMarker === undefined && roundMarkerSpec.imgsrc != DEFAULT_DYNAMIC_INIT_IMG) {
+        error("Image d'aura d'initiative incorrecte (" + roundMarkerSpec.imgsrc + ")", gmNotes);
+        roundMarkerSpec.imgsrc = DEFAULT_DYNAMIC_INIT_IMG;
+        roundMarker = createObj('graphic', roundMarkerSpec);
+      }
       if (roundMarker === undefined) {
         error("Impossible de créer le token pour l'aura dynamique", roundMarkerSpec);
         return false;
@@ -12151,7 +12177,7 @@ var COFantasy = COFantasy || function() {
         toFront(monture.token);
         toFront(cavalier.token);
       } else {
-        toFront(tokenAUtiliser);
+        toFront(token);
       }
     } else { //rotation
       var rotation = roundMarker.get('rotation');
