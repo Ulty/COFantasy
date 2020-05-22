@@ -9,6 +9,7 @@
 * Enflammer une arme fait maintenant de la lumière.
 
 ### Autres améliorations
+* Possibilité d'utilise une table pour les échecs critiques.
 * Création automatique d'un personnage cible
 * Possibilité de changer l'aura d'initiative
 * Application de la règle selon laquelle les dm de base d'une attaque ne peuvent être 0 (pour les gobelins ou personnages avec peu de force).

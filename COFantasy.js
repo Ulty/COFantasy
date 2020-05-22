@@ -160,6 +160,11 @@ var COFantasy = COFantasy || function() {
           val: true,
           type: 'bool'
         },
+        table_crit: {
+          explications: "Utilisation d'une table de critiques nommée Echec-Critique-Contact",
+          val: false,
+          type: 'bool'
+        },
       }
     },
     images: {
@@ -216,7 +221,48 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  var aura_token_on_turn = false;
+  //Liste de tables par défaut
+  var gameTables = [{
+    name: "Echec-Critique-Contact",
+    showplayers: false,
+    items: [{
+      name: "FOR - Bousculé  : le personnage est renversé par son adversaire. Il subit un dé malus au test de FOR si l’adversaire " +
+        "est d’une catégorie de taille supérieure et bénéficie d’un dé bonus dans le cas inverse. " +
+        "Il subit une attaque gratuite de la part d’un adversaire pendant qu’il est étalé au sol (-5 en DEF).",
+      weight: 1,
+    }, {
+      name: "DEX - Maladresse : le personnage laisse tomber au sol l'objet avec lequel il attaque. S’il essaye de le ramasser, " +
+        "il subit une attaque gratuite.",
+      weight: 1,
+    }, {
+      name: "CON - Coup de mou: le personnage subit l’état affaibli pendant 3 rounds. Ou il peut annuler cet état en reprenant" +
+        "son souffle par une action limitée.",
+      weight: 1,
+    }, {
+      name: "INT - Erreur tactique : le personnage subit une attaque (gratuite) d’un adversaire à son contact.",
+      weight: 1,
+    }, {
+      name: "SAG - Distrait : le personnage se laisse distraire et ne voit pas venir la prochaine attaque, " +
+        "l’adversaire bénéficiera d’un bonus de +10.",
+      weight: 1,
+    }, {
+      name: "CHA - Ridicule : le personnage fait un faux mouvement à la fois douloureux et ridicule, il subit " +
+        "l’état étourdi pendant un round pour reprendre contenance.",
+      weight: 1,
+    }, {
+      name: "Votre arme se brise . S’il s’agit d’une arme magique, le dé DM est simplement réduit d'une catégorie " +
+        "(2d6/d12=>d10=>d8=>d6=>d4=>d3) jusqu’à la fin du combat.",
+      weight: 1,
+    }, {
+      name: "Une pièce d’armure bouge et elle devient plus gênante que protectrice Cuir : - 1 en DEF et en attaque " +
+        "pour le reste du combat. Maille : -2, Plaque -3.",
+      weight: 1,
+    }, {
+      name: "Simple échec de l'attaque",
+      weight: 12,
+    }, ],
+  }, ];
+
   var stateCOF = state.COFantasy;
 
   // List of states:
@@ -307,6 +353,28 @@ var COFantasy = COFantasy || function() {
         }
       }
       stateCOF.personnageCibleCree = true;
+    }
+    //Création des tables par défaut
+    if (!stateCOF.tablesCrees) {
+      var allTables = findObjs({
+        _type: "rollabletable",
+      });
+      gameTables.forEach(function(gameTable) {
+        var table = allTables.find(function(table) {
+          return table.get("name") == gameTable.name;
+        });
+        if (table === undefined) {
+          table = createObj("rollabletable", {
+            name: gameTable.name,
+            showplayers: gameTable.showplayers,
+          });
+          gameTable.items.forEach(function(tableItem) {
+            tableItem.rollabletableid = table.id;
+            createObj("tableitem", tableItem);
+          });
+        }
+      });
+      stateCOF.tablesCrees = true;
     }
     if (stateCOF.options === undefined) stateCOF.options = {};
     copyOptions(stateCOF.options, defaultOptions);
@@ -422,13 +490,11 @@ var COFantasy = COFantasy || function() {
       }
       stateCOF.gameMacros = gameMacros;
     }
-
     // Récupération des token Markers attachés à la campagne image, nom, tag, Id
     var markers = JSON.parse(Campaign().get("token_markers"));
     markers.forEach(function(m) {
       markerCatalog[m.name] = m;
     });
-
     // Option Markers personnalisés activé
     if (stateCOF.options.affichage.val.markers_personnalises.val) {
       var no_error = true;
@@ -7513,7 +7579,11 @@ var COFantasy = COFantasy || function() {
   function attackDealDmg(attaquant, cibles, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees) {
     if (cibles.length === 0 || options.test || options.feinte) {
       finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options);
-      if (critSug) sendChat('COF', critSug);
+      if (critSug) {
+        if (stateCOF.options.affichage.val.table_crit.val)
+          sendChat('COF', "[[1t[Echec-Critique-Contact]]]");
+        else sendChat('COF', critSug);
+      }
       return;
     }
     var attackingCharId = attaquant.charId;
@@ -12234,6 +12304,8 @@ var COFantasy = COFantasy || function() {
     }
     setTimeout(_.bind(activateRoundMarker, undefined, sync), 100);
   }
+
+  var aura_token_on_turn = false;
 
   function setTokenFlagAura(perso) {
     var token = perso.token;
