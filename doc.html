@@ -852,7 +852,7 @@
                   <li><strong>Injonction</strong> : utiliser <code>!cof-injonction @{selected|token_id} @{target|token_id} --portee 20</code></li>
                   <li><strong>Sommeil</strong> : <code>!cof-sommeil @{selected|token_id} --disque @{target|token_id} 5 20</code>. Pour sélectionner le centre de la zone, on peut utiliser un personnage fictif (avec un token représentant une cible, par exemple) ayant 0 de max de PV.</li>
                   <li><strong>Confusion</strong>: faire une attaque de portée 20 m, et pour la macro, utiliser les options <code>--pasDeDmg --sortilege --attaqueMentale --mana 1 --effet confusion [[3+@{selected|CHA}]] --saveParTour SAG [[10+@{selected|CHA}]]</code>. Si vous utilisez les options de magie puissante, vous pouvez remplacer la durée par <code>?{Y consacrer tout le tour?|Oui,[[6+2*@{selected|CHA}]]|Non,[[3+@{selected|CHA}]]}</code>.  Et si à la place, vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Amitié</strong>:<code>#Attaque Amitié --toucher [[@{selected|ATKMAG}]] --difficultePVmax --portee 10 --pasDeDmg --mana 2 --effet charmé --save SAG [[12+@{selected|CHA}]] --saveParJour SAG [[12+@{selected|CHA}]]</code></li>
+                  <li><strong>Amitié</strong>:<code>#Attaque Amitié --toucher [[@{selected|ATKMAG}]] --difficultePVmax --portee 10 --sortilege --pasDeDmg --mana 2 --effet charmé --save SAG [[12+@{selected|CHA}]] --saveParJour SAG [[12+@{selected|CHA}]]</code></li>
                   <li><strong>Domination</strong> : utiliser <code>!cof-attaque-magique @{selected|token_id} @{target|token_id} --mana 3 --portee 20 --attaqueMentale</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie des illusions</h4>
@@ -1136,7 +1136,7 @@
                 <p style="margin-top:0px; margin-bottom:0px">Ajouter sur la fiche une compétence <code>Occultisme</code> avec en bonus 2 fois le rang dans cette voie.</p>
                 <ol>
                   <li><strong>Ténèbres</strong> : faire une attaque Ténèbres, de portée 20 m. Pour l'attaque, utiliser les arguments <code>--pasDeDmg --disque 5 --auto --effet aveugleTemp [[5+@{selected|INT}]]</code>. Au MJ ensuite d'enlever l'état aveuglé quand les cibles sortent de la zone.</li>
-                  <li><strong>Pattes d'araignées</strong> : pas de support</li>
+                  <li><strong>Pattes d'araignées</strong> : <code>!cof-lancer-sort peut se déplacer sur les murs pendants [[5+@{selected|INT]] tours</code></li>
                   <li><strong>Strangulation</strong> : 
                     <ul>
                       <li>Attaque initiale : attaque magique, de portée 20 m, et de dégâts 1d6+INT, avec les options <code>--effet strangulation <i>rang</i> --mana 1 --sortilege</code>. Le script va vérifier que la cible est bien vivante, en se basant sur la race, et sinon sur la présence éventuelle d'un attribut <code>nonVivant</code>.</li>

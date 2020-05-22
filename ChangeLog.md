@@ -9,6 +9,7 @@
 * Enflammer une arme fait maintenant de la lumière.
 
 ### Autres améliorations
+* Au changement de jour, affichage des effets à durée indéterminée encore actifs pour que le MJ puisse les supprimer si besoin.
 * Possibilité d'utilise une table pour les échecs critiques.
 * Création automatique d'un personnage cible
 * Possibilité de changer l'aura d'initiative

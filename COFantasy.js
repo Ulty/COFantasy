@@ -1957,7 +1957,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //Fonction séparée pour pouvoir envoyer un frame à plusieurs joueurs
-  // playerId peut être undefined (en particulier pour envoye au mj)
+  // playerId peut être undefined (en particulier pour envoyer au mj)
   function addFramedHeader(display, playerId, chuchote) {
     var perso1 = display.perso1;
     var perso2 = display.perso2;
@@ -1965,7 +1965,8 @@ var COFantasy = COFantasy || function() {
     var playerBGColor = '#333';
     var playerTXColor = '#FFF';
     var displayname;
-    var player = getObj('player', playerId);
+    var player;
+    if (playerId) player = getObj('player', playerId);
     if (player !== undefined) {
       playerBGColor = player.get("color");
       playerTXColor = (getBrightness(playerBGColor) < 50) ? "#FFF" : "#000";
@@ -10788,6 +10789,83 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //Si il y a des effets à durée indéterminées, les rappeler au MJ, avec un bouton pour facilement y mettre fin si nécessaire
+  function proposerFinEffetsIndetermines() {
+      var attrs = findObjs({
+        _type: 'attribute'
+      });
+    attrs = attrs.filter(function(a) {
+      return estEffetIndetermine(a.get('name'));
+    });
+    if (attrs.length === 0) return;
+    var display = startFramedDisplay(undefined, "<b>Effets à durée indéterminée actifs</b>", undefined, {chuchote:'gm'});
+    var attrsParPerso = {};
+    attrs.forEach(function(a) {
+      var charId = a.get('characterid');
+      var attrName = a.get('name');
+      var ef = {nom: attrName};
+      var mes = messageEffetIndetermine[attrName];
+      if (mes) {
+        ef.actif = mes.actif;
+        if (attrsParPerso[charId] === undefined) {
+          var resLinked = {effets:[ef]};
+          var linkedTokens = findObjs({_type:'graphic', represents:charId});
+          linkedTokens = linkedTokens.filter(function(t) {
+            return t.get('bar1_link') !== '';
+          });
+          if (linkedTokens.length === 0) {
+            var character = getObj('character', charId);
+            if (character === undefined) {
+              error("Attribut sans personnage", a);
+              a.remove();
+              return;
+            }
+            resLinked.nomPerso = character.get('name');
+          } else {
+            resLinked.nomPerso = linkedTokens[0].get('name');
+            resLinked.tokenId = linkedTokens[0].id;
+          }
+          attrsParPerso[charId] = resLinked;
+          return;
+        }
+        attrsParPerso[charId].effets.push(ef);
+        return;
+      }// on a un attribut de token non lié
+      var pn = attrName.indexOf('_');
+      if (pn < 1) return;
+      ef.nom = attrName.substring(0, pn-1);
+      mes = messageEffetIndetermine[ef.nom];
+      if (mes === undefined) return;
+      ef.actif = mes.actif;
+      var nomPerso = attrName.substring(pn+1);
+      if (attrsParPerso[nomPerso] === undefined) {
+      var tokens = findObjs({_type:'graphic', represents:charId});
+      tokens = tokens.filter(function(t) {
+        return t.get('bar1_link') === '' && t.get('name') == nomPerso;
+      });
+      if (tokens.length === 0) {
+        error("Attribut de mook sans personnage", a);
+        a.remove();
+        return;
+      }
+        attrsParPerso[nomPerso] = {nomPerso:nomPerso, tokenId:tokens[0].id, effets:[ef]};
+        return;
+      }
+      attrsParPerso[nomPerso].effets.push(ef);
+    });
+    _.each(attrsParPerso, function(a) {
+      var line = '<b>' + a.nomPerso+"</b> : ";
+      a.effets.forEach(function(e) {
+        line += e.actif + ' ';
+        if (a.tokenId)
+          line += boutonSimple('!cof-effet '+ e.nom+' false --target '+a.tokenId, '', 'X');
+        else line += "supprimer l'attribut "+ e.nom;
+      });
+      addLineToFramedDisplay(display, line);
+    });
+    sendChat("", endFramedDisplay(display));
+  }
+
   // Remise à zéro de toutes les limites journalières
   function jour(evt) {
     var attrs;
@@ -10815,20 +10893,29 @@ var COFantasy = COFantasy || function() {
     });
     //Les saves sont asynchrones
     var count = attrsSave.length;
+    if (count === 0) {
+      addEvent(evt);
+      proposerFinEffetsIndetermines();
+      return;
+    }
+    var finalize = function () {
+      count--;
+      if (count > 0) return;
+      addEvent(evt);
+      proposerFinEffetsIndetermines();
+    };
     attrsSave.forEach(function(attr) {
       var attrName = attr.get('name');
       var carac = attr.get('current');
       if (!isCarac(carac)) {
         error("Save par jour " + attrName + " mal formé", carac);
-        count--;
-        if (count === 0) addEvent(evt);
+        finalize();
         return;
       }
       var seuil = parseInt(attr.get('max'));
       if (isNaN(seuil)) {
         error("Save par jour " + attrName + " mal formé", seuil);
-        count--;
-        if (count === 0) addEvent(evt);
+        finalize();
         return;
       }
       var charId = attr.get('characterid');
@@ -10841,8 +10928,7 @@ var COFantasy = COFantasy || function() {
       });
       if (token === undefined) {
         log("Pas de token pour le save " + attrName);
-        count--;
-        if (count === 0) addEvent(evt);
+        finalize();
         return;
       }
       var pageId = token.get('pageid');
@@ -10851,8 +10937,7 @@ var COFantasy = COFantasy || function() {
         charId: charId
       };
       if (getState(perso, 'mort')) {
-        count--;
-        if (count === 0) addEvent(evt);
+        finalize();
         return;
       }
       var attrEffet = findObjs({
@@ -10863,8 +10948,7 @@ var COFantasy = COFantasy || function() {
       if (attrEffet === undefined || attrEffet.length === 0) {
         error("Save sans effet associé " + attrName, attr);
         attr.remove();
-        count--;
-        if (count === 0) addEvent(evt);
+        finalize();
         return;
       }
       attrEffet = attrEffet[0];
@@ -10900,7 +10984,6 @@ var COFantasy = COFantasy || function() {
           if (count === 0) addEvent(evt);
         });
     }); //fin boucle attrSave
-
   }
 
   function nouveauJour(msg) {
