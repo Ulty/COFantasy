@@ -20729,7 +20729,6 @@ var COFantasy = COFantasy || function() {
     if (lumiere === undefined) {
       var tokensLumiere = findObjs({
         _type: 'graphic',
-        _pageid: pageId,
         layer: 'walls',
         name: lumName
       });
@@ -20745,12 +20744,18 @@ var COFantasy = COFantasy || function() {
         var d =
           VecMath.length(
             VecMath.vec([lumiere.get('left'), lumiere.get('top')], pos));
+        var samePage = lumiere.get('pageid') == pageId;
         tokensLumiere.forEach(function(tl) {
-          var d2 =
-            VecMath.length(
-              VecMath.vec([tl.get('left'), tl.get('top')], pos));
-          if (d2 < d) {
-            d = d2;
+          if (tl.get('pageid') != pageId) return;
+          if (samePage) {
+            var d2 =
+              VecMath.length(
+                VecMath.vec([tl.get('left'), tl.get('top')], pos));
+            if (d2 < d) {
+              d = d2;
+              lumiere = tl;
+            }
+          } else {
             lumiere = tl;
           }
         });
@@ -23773,8 +23778,12 @@ var COFantasy = COFantasy || function() {
         attrLumiere.forEach(function(al) {
           var lumId = al.get('max');
           if (lumId == 'surToken') return;
+          var lumiereExiste;
           var lumiere = getObj('graphic', lumId);
-          if (lumiere && lumiere.get('pageid') != pageId) lumiere = undefined;
+          if (lumiere && lumiere.get('pageid') != pageId) {
+            lumiere = undefined;
+            lumiereExiste = true;
+          }
           if (lumiere === undefined) {
             var tokensLumiere = findObjs({
               _type: 'graphic',
@@ -23783,6 +23792,7 @@ var COFantasy = COFantasy || function() {
               name: al.get('current')
             });
             if (tokensLumiere.length === 0) {
+              if (lumiereExiste) return;
               log("Pas de token pour la lumière " + al.get('current'));
               al.remove();
               return;
@@ -23805,6 +23815,7 @@ var COFantasy = COFantasy || function() {
             }
           }
           if (lumiere === undefined) {
+            if (lumiereExiste) return;
             log("Pas de token pour la lumière " + al.get('current'));
             al.remove();
             return;
