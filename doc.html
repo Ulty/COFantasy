@@ -145,7 +145,7 @@
                   <li>option <code>--equipe <i>nom</i></code> : agit sur tous les personnages mentionnés dans le <i>handout</i> s'appelant Equipe <i>nom</i>.</li>
                   <li>option <code>--self</code> : pour rajouter le personnage sélectionné. Utile si on veut le personnage et ses alliés, par exemple.</li>
                   <li>option <code>--target</code> : pour ajouter une seule cible, avec une id de token. Le personnage qui agit est celui qui est sélectionné.</li>
-                  <li>option <code>--disque</code> : le premier argument doit être l'id ou le nom d'un token qui représente un personnage, le deuxième argument un rayon. Cela sélectionne tous les tokens à une distamce de moins que le rayon du premier argument. Si un troisième argument est donné, il est interprété comme la portée maximum entre le centre du disque et le token actif (qui est supposé être celui sélectionné). Si le premier argument représente un personnage avec un max de PV à 0, il est compris comme un personnage fictif créé juste pour définir le disque, et il sera supprimé après la sélection.</li>
+                  <li>option <code>--disque</code> : le premier argument doit être l'id ou le nom d'un token qui représente un personnage, le deuxième argument un rayon. Cela sélectionne tous les tokens à une distamce de moins que le rayon du premier argument. Si un troisième argument est donné, il est interprété comme la portée maximum entre le centre du disque et le token actif (qui est supposé être celui sélectionné). Si le premier argument représente un personnage avec un max de PV à 0, il est compris comme un personnage fictif créé juste pour définir le disque, et il sera supprimé après la sélection. À noter que le script crée par défaut un tel personnage, utilisable par tous, et appelé Cible.</li>
                   <li>option <code>--saufAllies</code> permet d'exclure les alliés de la sélection (voir plus haut pour la définition des alliés).</li>
                 </ul>
                 <p id="exemple_equipe"><img class="img-fluid" src="https://i.imgur.com/WHfwsKo.png" data-href="https://i.imgur.com/WHfwsKo.png"></p>
@@ -169,7 +169,7 @@
                   <p>Les tokens sélectionnés sont ajouté au tracker de tour. Si celui-ci n'existe pas, un nouveau est créé, avec compteur de tour à 1, et on rentre en combat.</p>
                   <p>Une option du script (ajustable en utilisant <code>!cof-options</code>) permet d'utiliser la règle de l'initiative variable (ajout d'un d6 à l'initiative). </p>
                   <p>Les règles de tri suivent ce qui est donné p 70 : priorité aux PJs. Pour l'instant, on distingue un PJ d'un PNJ au dé de vie : si le personnage d'a pas de dé de vie, c'est un PNJ. Ensuite, entre PJs, priorité à la plus haute sagesse. Pour les PNJ, c'est aléatoire.</p>
-                  <p>À chaque instant, le token dont c'est le tour d'agir est signalé par une aura qui bouge lentement.</p>
+                  <p>À chaque instant, le token dont c'est le tour d'agir est signalé par une aura qui bouge lentement. L'image de cette aura peut être modifiée dans les options (<code>!cof-options images</code>), et il est possible de spécifier une aura pour chaque token, en ajoutant une ligne dans le champ <code>GM Notes</code> du token (en bas de la partie basique de l'édition du token). Cette ligne doit commencer par <code>init_aura:</code>, et contenir une <a href=https://wiki.roll20.net/API:Objects#imgsrc_and_avatar_property_restrictions>url valide pour un token</a>. N'oubliez pas de sauvegarder le token comme token par défaut our un personnage si vous voulez que ce personnage ait toujours cette aura.</p>
                   <p>Il est possible de laisser les joueurs passer leur tour, en utilisant la commande <code>!cof-tour-suivant</code>. Une utilisation possible est de le mettre en macro dans les actions du tour (voir <code>#Actions#</code> ci-dessous).</p>
                   <div class="alert alert-primary">
                     <h5>Astuces :</h5>
@@ -211,6 +211,7 @@
               <p>Malus ou bonus temporaire à une attaque : utiliser la barre 3.</p>
               <p>Le test d'attaque à distance tient compte de la portée (malus de -1 à -5 si distance entre portée et deux fois cette valeur), ainsi que des tokens sur le trajet de l'attaque. Une attaque de trop loin ne porte jamais.</p>
               <p>Utiliser une attaque fait rentrer l'attaquant en combat (et le rajoute au turn tracker).</p>
+              <p>En cas d'échec critique, le script affiche une courte suggestion pour le MJ en mal d'inspiration. Il est aussi possible d'utiliser une table plus complète (voir les options d'affichage, <code>!cof-options affichage</code>). La table utilisée (<code>Echec-Critique-Contact</code>) peut être modifiée par le MJ.</p>
               <h4 class="text-secondary">Options pour l'attaque&nbsp;:</h4>
               <div class="decalage">
                 <ul>
@@ -331,7 +332,7 @@
                 <ul>
                   <li> un nombre. C'est une RD qui s'applique à tous les dégats</li>
                   <li> un type suivie de <code>:</code> et un nombre, c'est une RD qui ne s'applique qu'à ce type de degâts. Par exemple, une RD de 5 contre le feu s'écrira <code>feu:5</code>.</li>
-                  <li> un nombre, suivi de <code>/</code> et un ou plusieurs types séparés de <code>_</code>, c'est une RD qui s'applique à tous les dégâts, sauf ceux du type mentionné. Par exemple, une RD à tout sauf aux dégâts magiques s'écrira <code>5/magique</code>. Une RD à tout sauf au feu et au froid pourra s'écrire <code>10/feu_froid</code>.
+                  <li> un nombre, suivi de <code>/</code> et un ou plusieurs types séparés de <code>_</code>, c'est une RD qui s'applique à tous les dégâts, sauf ceux du type mentionné. Par exemple, une RD à tout sauf aux dégâts magiques s'écrira <code>5/magique</code>. Une RD à tout sauf au feu et au froid pourra s'écrire <code>10/feu_froid</code>. Une RD qui laisse toujours passer au moins un PV s'écrit avec <code>/1</code>.
                 </ul>
                 Tous les éléments de RD se cumulent. Ainsi, si on a une RD de <code>5/argent, feu:10</code> des dégâts de feu seront réduits de 15, des dégâts d'argent ne seront pas réduits et des dégâts normaux seront réduits de 5.
 
@@ -674,6 +675,7 @@
                   <li><strong>Vigueur</strong> : ajouter les capacités avec leurs bonus sur la fiche</li>
                   <li><strong>Peau de pierre</strong> : ajouter un attribut <code>peauDePierre</code>, de valeur <code>true</code>. La nouvelle DEF sera calculée automatiquement.</li>
                   <li><strong>Tatouages</strong> : ajouter le bonus choisi sur la fiche</li>
+                  <li><strong>Peau d'acier</strong> : ajouter dans la partie RD de la fiche, <code>3/1</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie du pourfendeur</h4>
                 <ol>
@@ -850,7 +852,7 @@
                   <li><strong>Injonction</strong> : utiliser <code>!cof-injonction @{selected|token_id} @{target|token_id} --portee 20</code></li>
                   <li><strong>Sommeil</strong> : <code>!cof-sommeil @{selected|token_id} --disque @{target|token_id} 5 20</code>. Pour sélectionner le centre de la zone, on peut utiliser un personnage fictif (avec un token représentant une cible, par exemple) ayant 0 de max de PV.</li>
                   <li><strong>Confusion</strong>: faire une attaque de portée 20 m, et pour la macro, utiliser les options <code>--pasDeDmg --sortilege --attaqueMentale --mana 1 --effet confusion [[3+@{selected|CHA}]] --saveParTour SAG [[10+@{selected|CHA}]]</code>. Si vous utilisez les options de magie puissante, vous pouvez remplacer la durée par <code>?{Y consacrer tout le tour?|Oui,[[6+2*@{selected|CHA}]]|Non,[[3+@{selected|CHA}]]}</code>.  Et si à la place, vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Amitié</strong>:<code>#Attaque Amitié --toucher [[@{selected|ATKMAG}]] --difficultePVmax --portee 10 --pasDeDmg --mana 2 --effet charmé --save SAG [[12+@{selected|CHA}]] --saveParJour SAG [[12+@{selected|CHA}]]</code></li>
+                  <li><strong>Amitié</strong>:<code>#Attaque Amitié --toucher [[@{selected|ATKMAG}]] --difficultePVmax --portee 10 --sortilege --pasDeDmg --mana 2 --effet charmé --save SAG [[12+@{selected|CHA}]] --saveParJour SAG [[12+@{selected|CHA}]]</code></li>
                   <li><strong>Domination</strong> : utiliser <code>!cof-attaque-magique @{selected|token_id} @{target|token_id} --mana 3 --portee 20 --attaqueMentale</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie des illusions</h4>
@@ -1134,7 +1136,7 @@
                 <p style="margin-top:0px; margin-bottom:0px">Ajouter sur la fiche une compétence <code>Occultisme</code> avec en bonus 2 fois le rang dans cette voie.</p>
                 <ol>
                   <li><strong>Ténèbres</strong> : faire une attaque Ténèbres, de portée 20 m. Pour l'attaque, utiliser les arguments <code>--pasDeDmg --disque 5 --auto --effet aveugleTemp [[5+@{selected|INT}]]</code>. Au MJ ensuite d'enlever l'état aveuglé quand les cibles sortent de la zone.</li>
-                  <li><strong>Pattes d'araignées</strong> : pas de support</li>
+                  <li><strong>Pattes d'araignées</strong> : <code>!cof-lancer-sort peut se déplacer sur les murs pendants [[5+@{selected|INT]] tours</code></li>
                   <li><strong>Strangulation</strong> : 
                     <ul>
                       <li>Attaque initiale : attaque magique, de portée 20 m, et de dégâts 1d6+INT, avec les options <code>--effet strangulation <i>rang</i> --mana 1 --sortilege</code>. Le script va vérifier que la cible est bien vivante, en se basant sur la race, et sinon sur la présence éventuelle d'un attribut <code>nonVivant</code>.</li>

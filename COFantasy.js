@@ -19,6 +19,7 @@
 /* globals toFront */
 /* globals playerIsGM */
 /* globals setTimeout */
+/* globals setDefaultTokenForCharacter */
 /* globals HealthColors */
 /* globals Roll20AM */
 
@@ -30,24 +31,19 @@ var COFantasy = COFantasy || function() {
 
   "use strict";
 
-  var PIX_PER_UNIT = 70;
-  var HISTORY_SIZE = 150;
+  const PIX_PER_UNIT = 70;
+  const HISTORY_SIZE = 150;
+  const BS_LABEL = 'text-transform: uppercase; display: inline; padding: .2em .6em .3em; font-size: 75%; line-height: 2; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25em;';
+  const BS_LABEL_SUCCESS = 'background-color: #5cb85c;';
+  const BS_LABEL_INFO = 'background-color: #5bc0de;';
+  const BS_LABEL_WARNING = 'background-color: #f0ad4e;';
+  const BS_LABEL_DANGER = 'background-color: #d9534f;';
+  const DEFAULT_DYNAMIC_INIT_IMG = 'https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/thumb.png?1400535580';
+
+  var markerCatalog = {};
   var eventHistory = [];
   var updateNextInitSet = new Set();
 
-  var BS_LABEL = 'text-transform: uppercase; display: inline; padding: .2em .6em .3em; font-size: 75%; line-height: 2; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25em;';
-  var BS_LABEL_DEFAULT = 'background-color: #777;';
-  var BS_LABEL_PRIMARY = 'background-color: #337ab7;';
-  var BS_LABEL_SUCCESS = 'background-color: #5cb85c;';
-  var BS_LABEL_INFO = 'background-color: #5bc0de;';
-  var BS_LABEL_WARNING = 'background-color: #f0ad4e;';
-  var BS_LABEL_DANGER = 'background-color: #d9534f;';
-
-  var bs_alert = 'padding: 5px; border: 1px solid transparent; border-radius: 4px;';
-  var bs_alert_success = 'color: #3c763d; background-color: #dff0d8; border-color: #d6e9c6;';
-  var bs_alert_danger = 'color: #a94442; background-color: #f2dede; border-color: #ebccd1;';
-
-  var markerCatalog = {};
 
 
 
@@ -65,7 +61,7 @@ var COFantasy = COFantasy || function() {
         },
         dm_minimum: {
           explications: "Dégâts minimum d'une attaque ou autre source de DM.",
-          val: 1,
+          val: 0,
           type: 'int'
         },
         crit_elementaire: {
@@ -164,12 +160,22 @@ var COFantasy = COFantasy || function() {
           val: true,
           type: 'bool'
         },
+        table_crit: {
+          explications: "Utilisation d'une table de critiques nommée Echec-Critique-Contact",
+          val: false,
+          type: 'bool'
+        },
       }
     },
     images: {
       explications: "Images par défaut",
       type: 'options',
       val: {
+        image_init: {
+          explications: 'Image utilisée pour la capacité dédoublement',
+          type: 'image',
+          val: DEFAULT_DYNAMIC_INIT_IMG
+        },
         image_double: {
           explications: 'Image utilisée pour la capacité dédoublement',
           type: 'image',
@@ -215,7 +221,48 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  var aura_token_on_turn = false;
+  //Liste de tables par défaut
+  var gameTables = [{
+    name: "Echec-Critique-Contact",
+    showplayers: false,
+    items: [{
+      name: "FOR - Bousculé  : le personnage est renversé par son adversaire. Il subit un dé malus au test de FOR si l’adversaire " +
+        "est d’une catégorie de taille supérieure et bénéficie d’un dé bonus dans le cas inverse. " +
+        "Il subit une attaque gratuite de la part d’un adversaire pendant qu’il est étalé au sol (-5 en DEF).",
+      weight: 1,
+    }, {
+      name: "DEX - Maladresse : le personnage laisse tomber au sol l'objet avec lequel il attaque. S’il essaye de le ramasser, " +
+        "il subit une attaque gratuite.",
+      weight: 1,
+    }, {
+      name: "CON - Coup de mou: le personnage subit l’état affaibli pendant 3 rounds. Ou il peut annuler cet état en reprenant" +
+        "son souffle par une action limitée.",
+      weight: 1,
+    }, {
+      name: "INT - Erreur tactique : le personnage subit une attaque (gratuite) d’un adversaire à son contact.",
+      weight: 1,
+    }, {
+      name: "SAG - Distrait : le personnage se laisse distraire et ne voit pas venir la prochaine attaque, " +
+        "l’adversaire bénéficiera d’un bonus de +10.",
+      weight: 1,
+    }, {
+      name: "CHA - Ridicule : le personnage fait un faux mouvement à la fois douloureux et ridicule, il subit " +
+        "l’état étourdi pendant un round pour reprendre contenance.",
+      weight: 1,
+    }, {
+      name: "Votre arme se brise . S’il s’agit d’une arme magique, le dé DM est simplement réduit d'une catégorie " +
+        "(2d6/d12=>d10=>d8=>d6=>d4=>d3) jusqu’à la fin du combat.",
+      weight: 1,
+    }, {
+      name: "Une pièce d’armure bouge et elle devient plus gênante que protectrice Cuir : - 1 en DEF et en attaque " +
+        "pour le reste du combat. Maille : -2, Plaque -3.",
+      weight: 1,
+    }, {
+      name: "Simple échec de l'attaque",
+      weight: 12,
+    }, ],
+  }, ];
+
   var stateCOF = state.COFantasy;
 
   // List of states:
@@ -238,7 +285,6 @@ var COFantasy = COFantasy || function() {
   };
 
   function setStateCOF() {
-
     stateCOF = state.COFantasy;
     if (stateCOF.roundMarkerId) {
       roundMarker = getObj('graphic', stateCOF.roundMarkerId);
@@ -258,6 +304,77 @@ var COFantasy = COFantasy || function() {
           stateCOF.roundMarkerId = undefined;
         }
       }
+    }
+    if (!stateCOF.personnageCibleCree) {
+      //On cherche si un personnage cible existe déjà
+      var persos = findObjs({
+        _type: 'character',
+        name: 'Cible',
+        controlledby: 'all'
+      });
+      if (persos.length === 0) {
+        var pages = findObjs({
+          _type: 'page'
+        });
+        if (pages.length > 0) {
+          var pageId = pages[0].id;
+          var charCible = createObj('character', {
+            name: 'Cible',
+            controlledby: 'all',
+            inplayerjournals: 'all',
+            avatar: 'https://s3.amazonaws.com/files.d20.io/images/33041174/5JdDVh-34C-kZglTE1aq-w/max.png?1494837870',
+          });
+          if (charCible) {
+            var attrPV = charAttribute(charCible.id, 'PV', {
+              caseInsensitive: true
+            });
+            if (attrPV.length > 0) attrPV = attrPV[0];
+            else attrPV = createObj('attribute', {
+              name: 'PV',
+              characterid: charCible.id,
+              current: 0,
+              max: 0
+            });
+            var tokenCible = createObj('graphic', {
+              name: 'Cible',
+              layer: 'objects',
+              _pageid: pageId,
+              imgsrc: 'https://s3.amazonaws.com/files.d20.io/images/33041174/5JdDVh-34C-kZglTE1aq-w/thumb.png?1494837870',
+              represents: charCible.id,
+              width: PIX_PER_UNIT,
+              height: PIX_PER_UNIT,
+              bar1_link: attrPV ? attrPV.id : ''
+            });
+            if (tokenCible) {
+              setDefaultTokenForCharacter(charCible, tokenCible);
+              tokenCible.remove();
+            }
+          }
+        }
+      }
+      stateCOF.personnageCibleCree = true;
+    }
+    //Création des tables par défaut
+    if (!stateCOF.tablesCrees) {
+      var allTables = findObjs({
+        _type: "rollabletable",
+      });
+      gameTables.forEach(function(gameTable) {
+        var table = allTables.find(function(table) {
+          return table.get("name") == gameTable.name;
+        });
+        if (table === undefined) {
+          table = createObj("rollabletable", {
+            name: gameTable.name,
+            showplayers: gameTable.showplayers,
+          });
+          gameTable.items.forEach(function(tableItem) {
+            tableItem.rollabletableid = table.id;
+            createObj("tableitem", tableItem);
+          });
+        }
+      });
+      stateCOF.tablesCrees = true;
     }
     if (stateCOF.options === undefined) stateCOF.options = {};
     copyOptions(stateCOF.options, defaultOptions);
@@ -373,13 +490,11 @@ var COFantasy = COFantasy || function() {
       }
       stateCOF.gameMacros = gameMacros;
     }
-
     // Récupération des token Markers attachés à la campagne image, nom, tag, Id
     var markers = JSON.parse(Campaign().get("token_markers"));
     markers.forEach(function(m) {
       markerCatalog[m.name] = m;
     });
-
     // Option Markers personnalisés activé
     if (stateCOF.options.affichage.val.markers_personnalises.val) {
       var no_error = true;
@@ -989,7 +1104,7 @@ var COFantasy = COFantasy || function() {
           tokenArbre = createObj('graphic', tokenFields);
         }
         if (tokenArbre) {
-          //On met l'ancien token dans le gmlayer, car si l'image vient du merketplace, il est impossible de le recréer depuis l'API
+          //On met l'ancien token dans le gmlayer, car si l'image vient du marketplace, il est impossible de le recréer depuis l'API
           setToken(token, 'layer', 'gmlayer', evt);
           setTokenAttr(personnage, 'changementDeToken', true, evt);
           replaceInTurnTracker(token.id, tokenArbre.id, evt);
@@ -1842,7 +1957,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //Fonction séparée pour pouvoir envoyer un frame à plusieurs joueurs
-  // playerId peut être undefined (en particulier pour envoye au mj)
+  // playerId peut être undefined (en particulier pour envoyer au mj)
   function addFramedHeader(display, playerId, chuchote) {
     var perso1 = display.perso1;
     var perso2 = display.perso2;
@@ -1850,7 +1965,8 @@ var COFantasy = COFantasy || function() {
     var playerBGColor = '#333';
     var playerTXColor = '#FFF';
     var displayname;
-    var player = getObj('player', playerId);
+    var player;
+    if (playerId) player = getObj('player', playerId);
     if (player !== undefined) {
       playerBGColor = player.get("color");
       playerTXColor = (getBrightness(playerBGColor) < 50) ? "#FFF" : "#000";
@@ -6456,6 +6572,10 @@ var COFantasy = COFantasy || function() {
     otherDmg = otherDmg || [];
     var dmgDisplay = dmg.display;
     var dmgTotal = dmg.total;
+    if (dmgTotal < 1) {
+      dmgDisplay += ' -> 1';
+      dmgTotal = 1;
+    }
     var showTotal = false;
     if (dmgCoef > 1) {
       dmgDisplay += " X " + dmgCoef;
@@ -7460,7 +7580,11 @@ var COFantasy = COFantasy || function() {
   function attackDealDmg(attaquant, cibles, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees) {
     if (cibles.length === 0 || options.test || options.feinte) {
       finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options);
-      if (critSug) sendChat('COF', critSug);
+      if (critSug) {
+        if (stateCOF.options.affichage.val.table_crit.val)
+          sendChat('COF', "[[1t[Echec-Critique-Contact]]]");
+        else sendChat('COF', critSug);
+      }
       return;
     }
     var attackingCharId = attaquant.charId;
@@ -8687,6 +8811,7 @@ var COFantasy = COFantasy || function() {
     };
     if (total) {
       for (var saufType in rds) {
+        if (saufType == '1') break;
         var rd = rds[saufType];
         if (rd < 1) break;
         var types = saufType.split('_');
@@ -9191,6 +9316,10 @@ var COFantasy = COFantasy || function() {
         }
         if (attributeAsBool(target, 'masqueMortuaire')) rd += 2;
         if (rdTarget.nature > 0 && dmgNaturel(options)) rd += rdTarget.nature;
+        if (dmgTotal > rd && rdTarget.sauf[1]) {
+          if (dmgTotal > rd + rdTarget.sauf[1]) rd += rdTarget.sauf[1];
+          else rd = dmgTotal - 1;
+        }
         if (target.defautCuirasse) rd = 0;
         if (options.intercepter) rd += options.intercepter;
         if (target.extraRD) {
@@ -10660,6 +10789,83 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //Si il y a des effets à durée indéterminées, les rappeler au MJ, avec un bouton pour facilement y mettre fin si nécessaire
+  function proposerFinEffetsIndetermines() {
+      var attrs = findObjs({
+        _type: 'attribute'
+      });
+    attrs = attrs.filter(function(a) {
+      return estEffetIndetermine(a.get('name'));
+    });
+    if (attrs.length === 0) return;
+    var display = startFramedDisplay(undefined, "<b>Effets à durée indéterminée actifs</b>", undefined, {chuchote:'gm'});
+    var attrsParPerso = {};
+    attrs.forEach(function(a) {
+      var charId = a.get('characterid');
+      var attrName = a.get('name');
+      var ef = {nom: attrName};
+      var mes = messageEffetIndetermine[attrName];
+      if (mes) {
+        ef.actif = mes.actif;
+        if (attrsParPerso[charId] === undefined) {
+          var resLinked = {effets:[ef]};
+          var linkedTokens = findObjs({_type:'graphic', represents:charId});
+          linkedTokens = linkedTokens.filter(function(t) {
+            return t.get('bar1_link') !== '';
+          });
+          if (linkedTokens.length === 0) {
+            var character = getObj('character', charId);
+            if (character === undefined) {
+              error("Attribut sans personnage", a);
+              a.remove();
+              return;
+            }
+            resLinked.nomPerso = character.get('name');
+          } else {
+            resLinked.nomPerso = linkedTokens[0].get('name');
+            resLinked.tokenId = linkedTokens[0].id;
+          }
+          attrsParPerso[charId] = resLinked;
+          return;
+        }
+        attrsParPerso[charId].effets.push(ef);
+        return;
+      }// on a un attribut de token non lié
+      var pn = attrName.indexOf('_');
+      if (pn < 1) return;
+      ef.nom = attrName.substring(0, pn-1);
+      mes = messageEffetIndetermine[ef.nom];
+      if (mes === undefined) return;
+      ef.actif = mes.actif;
+      var nomPerso = attrName.substring(pn+1);
+      if (attrsParPerso[nomPerso] === undefined) {
+      var tokens = findObjs({_type:'graphic', represents:charId});
+      tokens = tokens.filter(function(t) {
+        return t.get('bar1_link') === '' && t.get('name') == nomPerso;
+      });
+      if (tokens.length === 0) {
+        error("Attribut de mook sans personnage", a);
+        a.remove();
+        return;
+      }
+        attrsParPerso[nomPerso] = {nomPerso:nomPerso, tokenId:tokens[0].id, effets:[ef]};
+        return;
+      }
+      attrsParPerso[nomPerso].effets.push(ef);
+    });
+    _.each(attrsParPerso, function(a) {
+      var line = '<b>' + a.nomPerso+"</b> : ";
+      a.effets.forEach(function(e) {
+        line += e.actif + ' ';
+        if (a.tokenId)
+          line += boutonSimple('!cof-effet '+ e.nom+' false --target '+a.tokenId, '', 'X');
+        else line += "supprimer l'attribut "+ e.nom;
+      });
+      addLineToFramedDisplay(display, line);
+    });
+    sendChat("", endFramedDisplay(display));
+  }
+
   // Remise à zéro de toutes les limites journalières
   function jour(evt) {
     var attrs;
@@ -10687,20 +10893,29 @@ var COFantasy = COFantasy || function() {
     });
     //Les saves sont asynchrones
     var count = attrsSave.length;
+    if (count === 0) {
+      addEvent(evt);
+      proposerFinEffetsIndetermines();
+      return;
+    }
+    var finalize = function () {
+      count--;
+      if (count > 0) return;
+      addEvent(evt);
+      proposerFinEffetsIndetermines();
+    };
     attrsSave.forEach(function(attr) {
       var attrName = attr.get('name');
       var carac = attr.get('current');
       if (!isCarac(carac)) {
         error("Save par jour " + attrName + " mal formé", carac);
-        count--;
-        if (count === 0) addEvent(evt);
+        finalize();
         return;
       }
       var seuil = parseInt(attr.get('max'));
       if (isNaN(seuil)) {
         error("Save par jour " + attrName + " mal formé", seuil);
-        count--;
-        if (count === 0) addEvent(evt);
+        finalize();
         return;
       }
       var charId = attr.get('characterid');
@@ -10713,8 +10928,7 @@ var COFantasy = COFantasy || function() {
       });
       if (token === undefined) {
         log("Pas de token pour le save " + attrName);
-        count--;
-        if (count === 0) addEvent(evt);
+        finalize();
         return;
       }
       var pageId = token.get('pageid');
@@ -10723,8 +10937,7 @@ var COFantasy = COFantasy || function() {
         charId: charId
       };
       if (getState(perso, 'mort')) {
-        count--;
-        if (count === 0) addEvent(evt);
+        finalize();
         return;
       }
       var attrEffet = findObjs({
@@ -10735,8 +10948,7 @@ var COFantasy = COFantasy || function() {
       if (attrEffet === undefined || attrEffet.length === 0) {
         error("Save sans effet associé " + attrName, attr);
         attr.remove();
-        count--;
-        if (count === 0) addEvent(evt);
+        finalize();
         return;
       }
       attrEffet = attrEffet[0];
@@ -10772,7 +10984,6 @@ var COFantasy = COFantasy || function() {
           if (count === 0) addEvent(evt);
         });
     }); //fin boucle attrSave
-
   }
 
   function nouveauJour(msg) {
@@ -11964,13 +12175,19 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function charactersInHandout(note, nomEquipe) {
+  //pour ce débarasser des balises html
+  // et avoir un tableau de lignes
+  function linesOfNote(note) {
     note = note.trim();
     if (note.startsWith('<p>')) note = note.substring(3);
     note = note.trim().replace(/<span[^>]*>|<\/span>/g, '');
     note = note.replace(/<p>/g, '<br>');
     note = note.replace(/<\/p>/g, '');
-    var names = note.trim().split('<br>');
+    return note.trim().split('<br>');
+  }
+
+  function charactersInHandout(note, nomEquipe) {
+    var names = linesOfNote(note);
     var persos = new Set();
     names.forEach(function(name) {
       name = name.replace(/<(?:.|\s)*?>/g, ''); //Pour enlever les <h2>, etc
@@ -12030,8 +12247,7 @@ var COFantasy = COFantasy || function() {
       };
       hand.get('notes', function(note) { // asynchronous
         var carac; //La carac dont on spécifie les compétences actuellement
-        var lignes = note.trim().replace(/<span[^>]*>|<\/span>/g, '');
-        lignes = lignes.replace(/<p>|<\/p>/g, '<br>').split('<br>');
+        var lignes = linesOfNote(note);
         lignes.forEach(function(ligne) {
           ligne = ligne.trim();
           var header = ligne.split(':');
@@ -12091,7 +12307,7 @@ var COFantasy = COFantasy || function() {
     name: 'Init marker',
     aura1_color: '#ff00ff',
     aura2_color: '#00ff00',
-    imgsrc: 'https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/thumb.png?1400535580',
+    imgsrc: DEFAULT_DYNAMIC_INIT_IMG
   };
   var threadSync = 0;
 
@@ -12107,7 +12323,6 @@ var COFantasy = COFantasy || function() {
     }
     if (sync != threadSync) return;
     if (token) {
-      var tokenAUtiliser = token;
       // Cas spéciaux du cavaliers
       var personnage = persoOfId(token.get("_id"));
       var monteSur = tokenAttribute(personnage, "monteSur");
@@ -12118,20 +12333,42 @@ var COFantasy = COFantasy || function() {
         cavalier = personnage;
         var montureTokenId = monteSur[0].get("current");
         monture = persoOfId(montureTokenId);
-        if (monture !== undefined) tokenAUtiliser = monture.token;
+        if (monture !== undefined) token = monture.token;
       } else if (estMontePar.length > 0) {
         monture = personnage;
         var cavalierId = estMontePar[0].get("current");
         cavalier = persoOfId(cavalierId);
       }
       if (roundMarker) roundMarker.remove();
-      roundMarkerSpec._pageid = tokenAUtiliser.get('pageid');
-      roundMarkerSpec.left = tokenAUtiliser.get('left');
-      roundMarkerSpec.top = tokenAUtiliser.get('top');
-      var width = (tokenAUtiliser.get('width') + tokenAUtiliser.get('height')) / 2 * flashyInitMarkerScale;
+      roundMarkerSpec._pageid = token.get('pageid');
+      roundMarkerSpec.left = token.get('left');
+      roundMarkerSpec.top = token.get('top');
+      var width = (token.get('width') + token.get('height')) / 2 * flashyInitMarkerScale;
       roundMarkerSpec.width = width;
       roundMarkerSpec.height = width;
+      roundMarkerSpec.imgsrc = stateCOF.options.images.val.image_init.val;
+      var localImage;
+      var gmNotes = token.get('gmnotes');
+      gmNotes = _.unescape(decodeURIComponent(gmNotes)).replace('&nbsp;', ' ');
+      gmNotes = linesOfNote(gmNotes);
+      gmNotes.forEach(function(l) {
+        if (localImage) return;
+        if (l.startsWith('init_aura:')) {
+          roundMarkerSpec.imgsrc = l.substring(10).trim();
+          localImage = true;
+        }
+      });
       roundMarker = createObj('graphic', roundMarkerSpec);
+      if (roundMarker === undefined && localImage) {
+        error("Image locale de " + token.get('name') + " incorrecte (" + roundMarkerSpec.imgsrc + ")", gmNotes);
+        roundMarkerSpec.imgsrc = stateCOF.options.images.val.image_init.val;
+        roundMarker = createObj('graphic', roundMarkerSpec);
+      }
+      if (roundMarker === undefined && roundMarkerSpec.imgsrc != DEFAULT_DYNAMIC_INIT_IMG) {
+        error("Image d'aura d'initiative incorrecte (" + roundMarkerSpec.imgsrc + ")", gmNotes);
+        roundMarkerSpec.imgsrc = DEFAULT_DYNAMIC_INIT_IMG;
+        roundMarker = createObj('graphic', roundMarkerSpec);
+      }
       if (roundMarker === undefined) {
         error("Impossible de créer le token pour l'aura dynamique", roundMarkerSpec);
         return false;
@@ -12142,7 +12379,7 @@ var COFantasy = COFantasy || function() {
         toFront(monture.token);
         toFront(cavalier.token);
       } else {
-        toFront(tokenAUtiliser);
+        toFront(token);
       }
     } else { //rotation
       var rotation = roundMarker.get('rotation');
@@ -12150,6 +12387,8 @@ var COFantasy = COFantasy || function() {
     }
     setTimeout(_.bind(activateRoundMarker, undefined, sync), 100);
   }
+
+  var aura_token_on_turn = false;
 
   function setTokenFlagAura(perso) {
     var token = perso.token;
@@ -18937,6 +19176,7 @@ var COFantasy = COFantasy || function() {
     var caid = charArbre.id;
     var pvArbre = rang * 10;
     setToken(tokenArbre, 'represents', caid, evt);
+    setDefaultTokenForCharacter(charArbre, tokenArbre);
     //Les attributs n'ont pas besoin d'être ajoutés à evt, on les enlève en supprimant le personnage
     createObj('attribute', {
       characterid: caid,
@@ -19906,6 +20146,7 @@ var COFantasy = COFantasy || function() {
       istokenaction: false,
       action: actions
     });
+    if (token) setDefaultTokenForCharacter(res, token);
     return res;
   }
 
@@ -20720,7 +20961,6 @@ var COFantasy = COFantasy || function() {
     if (lumiere === undefined) {
       var tokensLumiere = findObjs({
         _type: 'graphic',
-        _pageid: pageId,
         layer: 'walls',
         name: lumName
       });
@@ -20736,12 +20976,18 @@ var COFantasy = COFantasy || function() {
         var d =
           VecMath.length(
             VecMath.vec([lumiere.get('left'), lumiere.get('top')], pos));
+        var samePage = lumiere.get('pageid') == pageId;
         tokensLumiere.forEach(function(tl) {
-          var d2 =
-            VecMath.length(
-              VecMath.vec([tl.get('left'), tl.get('top')], pos));
-          if (d2 < d) {
-            d = d2;
+          if (tl.get('pageid') != pageId) return;
+          if (samePage) {
+            var d2 =
+              VecMath.length(
+                VecMath.vec([tl.get('left'), tl.get('top')], pos));
+            if (d2 < d) {
+              d = d2;
+              lumiere = tl;
+            }
+          } else {
             lumiere = tl;
           }
         });
@@ -23764,8 +24010,12 @@ var COFantasy = COFantasy || function() {
         attrLumiere.forEach(function(al) {
           var lumId = al.get('max');
           if (lumId == 'surToken') return;
+          var lumiereExiste;
           var lumiere = getObj('graphic', lumId);
-          if (lumiere && lumiere.get('pageid') != pageId) lumiere = undefined;
+          if (lumiere && lumiere.get('pageid') != pageId) {
+            lumiere = undefined;
+            lumiereExiste = true;
+          }
           if (lumiere === undefined) {
             var tokensLumiere = findObjs({
               _type: 'graphic',
@@ -23774,6 +24024,7 @@ var COFantasy = COFantasy || function() {
               name: al.get('current')
             });
             if (tokensLumiere.length === 0) {
+              if (lumiereExiste) return;
               log("Pas de token pour la lumière " + al.get('current'));
               al.remove();
               return;
@@ -23796,6 +24047,7 @@ var COFantasy = COFantasy || function() {
             }
           }
           if (lumiere === undefined) {
+            if (lumiereExiste) return;
             log("Pas de token pour la lumière " + al.get('current'));
             al.remove();
             return;
@@ -24041,7 +24293,7 @@ on("destroy:handout", function(prev) {
   COFantasy.changeHandout(undefined, prev);
 });
 
-on("ready", function() {
+on('ready', function() {
   var script_version = "2.05";
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);

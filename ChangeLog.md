@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.05
 ### Capacités
+* Ajout de la capacité Peau d'acier du barbare.
 * Ajout de la partie soins de la capacité guérison du prêtre.
 * Ajout de la capacité Amitié de l'ensorceleur.
 * Amélioration de l'automatisation de la capacité Ignorer la douleur du chevalier
@@ -8,6 +9,11 @@
 * Enflammer une arme fait maintenant de la lumière.
 
 ### Autres améliorations
+* Au changement de jour, affichage des effets à durée indéterminée encore actifs pour que le MJ puisse les supprimer si besoin.
+* Possibilité d'utilise une table pour les échecs critiques.
+* Création automatique d'un personnage cible
+* Possibilité de changer l'aura d'initiative
+* Application de la règle selon laquelle les dm de base d'une attaque ne peuvent être 0 (pour les gobelins ou personnages avec peu de force).
 * Ajout des markers de statut personnalisés
 * Amélioration de l'interface des attaques qui n'utilisent pas les champs d'attaque de la fiche
 * Prise en compte de l'unité de mesure de la carte pour les distances de vision
@@ -16,6 +22,7 @@
 * Standardisation de !cof-lancer-sorts et support dans les consommables
 
 ### Corrections de bugs
+* Meilleur comportement des tokens de lumières quand on change de carte pour un même personnage.
 * Correction d'un bug dans le renouvellement des élixirs qui empêchait de créer de nouveaux élixirs si le forgesort n'a aucun élixir sur lui à la tombée de la nuit.
 * Les attaques à distance ne déclanchent plus l'effet aggriper.
 * Prévention de crash en cas d'erreur interne de roll20.
