@@ -8523,7 +8523,7 @@ var COFantasy = COFantasy || function() {
   function suggererEchecCritique(evt, weaponStats, sortilege, cibles, attaquant) {
     var d12roll = randomInteger(12);
 
-    var estMag = sortilege || false;
+    var estMag = sortilege || weaponStats.attSkill == "@{ATKMAG}";
     var avecArme = (weaponStats.name.includes("arme") || weaponStats.divers.includes("arme"));
     var estCac = weaponStats.attSkill == "@{ATKCAC}" || weaponStats.portee == 0;
     var estDist = weaponStats.attSkill == "@{ATKTIR}" || weaponStats.portee > 0;
@@ -8593,7 +8593,7 @@ var COFantasy = COFantasy || function() {
       return "Inconfort : Une pièce d’armure bouge et elle devient plus gênante que protectrice. Cuir : -1 en DEF "
           + "et en attaque pour le reste du combat. Maille : -2, Plaque -3. "
           + bouton("!cof-effet-combat inconfort --valeur ?{Malus ?|-1,1|-2,2|-3,3} --save CHA 12", "Appliquer", evt.personnage);
-    } else if (d12roll > 8) {
+    } else {
       return "L'attaquant s'en tire bien cette fois-ci, pas d'effet particulier";
     }
   }
