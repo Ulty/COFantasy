@@ -5397,9 +5397,10 @@ var COFantasy = COFantasy || function() {
     }
     if (options.contact) {
       if (attributeAsBool(attaquant, 'rayonAffaiblissant')) {
-        options.rayonAffaiblissant = true;
-        attBonus -= 2;
-        explications.push("Rayon affaiblissant => -2 en Attaque et aux DM");
+        options.rayonAffaiblissant = getValeurOfEffet(attaquant, 'rayonAffaiblissant', 2);
+        if (options.rayonAffaiblissant < 0) options.rayonAffaiblissant = 1;
+        attBonus -= options.rayonAffaiblissant;
+        explications.push("Rayon affaiblissant => -" + options.rayonAffaiblissant + " en Attaque et aux DM");
       }
       if (attributeAsBool(attaquant, 'enragé')) {
         attBonus += 5;
@@ -7618,7 +7619,7 @@ var COFantasy = COFantasy || function() {
     // Les autres modifications aux dégâts qui ne dépendent pas de la cible
     var attDMBonusCommun = '';
     if (options.rayonAffaiblissant) {
-      attDMBonusCommun += " -2";
+      attDMBonusCommun += " -" + options.rayonAffaiblissant;
     }
     if (attributeAsBool(attaquant, 'masqueDuPredateur')) {
       var bonusMasque = getValeurOfEffet(attaquant, 'masqueDuPredateur', modCarac(attaquant, 'SAGESSE'));
@@ -8554,13 +8555,13 @@ var COFantasy = COFantasy || function() {
           if (evt.action.options && evt.action.options.sortilege) sort = true;
           if (evt.action.cibles) {
             evt.action.cibles.forEach(function(target) {
-              if (attributeAsBool(target, 'encaisserUnCoup')) {
+              if (!options.pasDeDmg && !options.ignoreRD && attributeAsBool(target, 'encaisserUnCoup')) {
                 addLineToFramedDisplay(display, target.tokName + " peut " +
                   bouton("!cof-encaisser-un-coup " + evt.id,
                     "encaisser le coup", target)
                 );
               }
-              if (attributeAsBool(target, 'ignorerLaDouleur') && attributeAsInt(target, 'douleurIgnoree', 0) === 0) {
+              if (!options.pasDeDmg && attributeAsBool(target, 'ignorerLaDouleur') && attributeAsInt(target, 'douleurIgnoree', 0) === 0) {
                 addLineToFramedDisplay(display, target.tokName + " peut " +
                   bouton("!cof-ignorer-la-douleur " + evt.id,
                     "ignorer la douleur", target)
@@ -10791,25 +10792,34 @@ var COFantasy = COFantasy || function() {
 
   //Si il y a des effets à durée indéterminées, les rappeler au MJ, avec un bouton pour facilement y mettre fin si nécessaire
   function proposerFinEffetsIndetermines() {
-      var attrs = findObjs({
-        _type: 'attribute'
-      });
+    var attrs = findObjs({
+      _type: 'attribute'
+    });
     attrs = attrs.filter(function(a) {
       return estEffetIndetermine(a.get('name'));
     });
     if (attrs.length === 0) return;
-    var display = startFramedDisplay(undefined, "<b>Effets à durée indéterminée actifs</b>", undefined, {chuchote:'gm'});
+    var display = startFramedDisplay(undefined, "<b>Effets à durée indéterminée actifs</b>", undefined, {
+      chuchote: 'gm'
+    });
     var attrsParPerso = {};
     attrs.forEach(function(a) {
       var charId = a.get('characterid');
       var attrName = a.get('name');
-      var ef = {nom: attrName};
+      var ef = {
+        nom: attrName
+      };
       var mes = messageEffetIndetermine[attrName];
       if (mes) {
         ef.actif = mes.actif;
         if (attrsParPerso[charId] === undefined) {
-          var resLinked = {effets:[ef]};
-          var linkedTokens = findObjs({_type:'graphic', represents:charId});
+          var resLinked = {
+            effets: [ef]
+          };
+          var linkedTokens = findObjs({
+            _type: 'graphic',
+            represents: charId
+          });
           linkedTokens = linkedTokens.filter(function(t) {
             return t.get('bar1_link') !== '';
           });
@@ -10830,36 +10840,43 @@ var COFantasy = COFantasy || function() {
         }
         attrsParPerso[charId].effets.push(ef);
         return;
-      }// on a un attribut de token non lié
+      } // on a un attribut de token non lié
       var pn = attrName.indexOf('_');
       if (pn < 1) return;
-      ef.nom = attrName.substring(0, pn-1);
+      ef.nom = attrName.substring(0, pn - 1);
       mes = messageEffetIndetermine[ef.nom];
       if (mes === undefined) return;
       ef.actif = mes.actif;
-      var nomPerso = attrName.substring(pn+1);
+      var nomPerso = attrName.substring(pn + 1);
       if (attrsParPerso[nomPerso] === undefined) {
-      var tokens = findObjs({_type:'graphic', represents:charId});
-      tokens = tokens.filter(function(t) {
-        return t.get('bar1_link') === '' && t.get('name') == nomPerso;
-      });
-      if (tokens.length === 0) {
-        error("Attribut de mook sans personnage", a);
-        a.remove();
-        return;
-      }
-        attrsParPerso[nomPerso] = {nomPerso:nomPerso, tokenId:tokens[0].id, effets:[ef]};
+        var tokens = findObjs({
+          _type: 'graphic',
+          represents: charId
+        });
+        tokens = tokens.filter(function(t) {
+          return t.get('bar1_link') === '' && t.get('name') == nomPerso;
+        });
+        if (tokens.length === 0) {
+          error("Attribut de mook sans personnage", a);
+          a.remove();
+          return;
+        }
+        attrsParPerso[nomPerso] = {
+          nomPerso: nomPerso,
+          tokenId: tokens[0].id,
+          effets: [ef]
+        };
         return;
       }
       attrsParPerso[nomPerso].effets.push(ef);
     });
     _.each(attrsParPerso, function(a) {
-      var line = '<b>' + a.nomPerso+"</b> : ";
+      var line = '<b>' + a.nomPerso + "</b> : ";
       a.effets.forEach(function(e) {
         line += e.actif + ' ';
         if (a.tokenId)
-          line += boutonSimple('!cof-effet '+ e.nom+' false --target '+a.tokenId, '', 'X');
-        else line += "supprimer l'attribut "+ e.nom;
+          line += boutonSimple('!cof-effet ' + e.nom + ' false --target ' + a.tokenId, '', 'X');
+        else line += "supprimer l'attribut " + e.nom;
       });
       addLineToFramedDisplay(display, line);
     });
@@ -10898,7 +10915,7 @@ var COFantasy = COFantasy || function() {
       proposerFinEffetsIndetermines();
       return;
     }
-    var finalize = function () {
+    var finalize = function() {
       count--;
       if (count > 0) return;
       addEvent(evt);
@@ -13496,8 +13513,9 @@ var COFantasy = COFantasy || function() {
         break;
       case 'FOR':
         if (attributeAsBool(personnage, 'rayonAffaiblissant')) {
-          explications.push("Affaibli : -2 au jet de FOR");
-          bonus -= 2;
+          var malusRayonAffaiblissant = getValeurOfEffet(personnage, 'rayonAffaiblissant', 2);
+          explications.push("Affaibli : -" + malusRayonAffaiblissant + " au jet de FOR");
+          bonus -= malusRayonAffaiblissant;
         }
         if (attributeAsBool(personnage, 'agrandissement')) {
           explications.push("Agrandi : +2 au jet de FOR");

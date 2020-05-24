@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.05
 ### Capacités
+* Possibilité de spécifier une valeur (option --valeur) pour le rayon affaiblissant.
 * Ajout de la capacité Peau d'acier du barbare.
 * Ajout de la partie soins de la capacité guérison du prêtre.
 * Ajout de la capacité Amitié de l'ensorceleur.
