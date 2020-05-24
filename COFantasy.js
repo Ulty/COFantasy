@@ -795,6 +795,7 @@ var COFantasy = COFantasy || function() {
         break;
       case "!cof-aoe": //deprecated
       case "!cof-dmg":
+      case "!cof-bouton-echec-total":
         picto = '<span style="font-family: \'Pictos\'">\'</span> ';
         style = 'background-color:#cc0000';
         break;
@@ -5374,12 +5375,17 @@ var COFantasy = COFantasy || function() {
       attBonus -= 2;
       explications.push("Zone de silence => -2 en Attaque Magique");
     }
+    if (attributeAsBool(attaquant, 'inconfort')) {
+      var inconfortValeur = attributeAsInt(attaquant, 'inconfortValeur', 0);
+      attBonus -= inconfortValeur;
+      explications.push("Gêne due à l'armure : -" + inconfortValeur);
+    }
     if (attributeAsBool(attaquant, 'monteSur')) {
       if (!options.distance) {
         var cavalierEm = charAttributeAsInt(attaquant, 'cavalierEmerite');
         if (cavalierEm) {
           attBonus += cavalierEm;
-          explications.push("Cavalier émérite => +2 en Attaque");
+          explications.push("Cavalier émérite => +" + cavalierEm + " en Attaque");
         }
       }
       if (charAttributeAsBool(attaquant, 'montureLoyale')) {
@@ -5542,6 +5548,22 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(target, 'feinte_' + attaquant.tokName)) {
       attBonus += 5;
       explications.push("Feinte => +5 en attaque et +2d6 DM");
+    }
+    if (attributeAsBool(target, 'inconfort')) {
+      var inconfortValeur = attributeAsInt(target, "inconfortValeur", 0);
+      attBonus += inconfortValeur;
+      explications.push("L'adversaire est gêné par son armure : +" + inconfortValeur);
+    }
+    if (attributeAsBool(target, 'expose')) {
+      var attrsExposeValeur = tokenAttribute(target, "exposeValeur");
+      var expose = false;
+      attrsExposeValeur.forEach(function testExpose(attr){
+        if(attr.get("current") == attaquant.token.id) expose = true;
+      });
+      if(expose) {
+        attBonus += 10;
+        explications.push("L'adversaire est exposé : +10");
+      }
     }
     if (options.contact) {
       if ((attributeAsBool(target, 'criDeGuerre') ||
@@ -6162,7 +6184,7 @@ var COFantasy = COFantasy || function() {
             return;
         }
       } else {
-        if (attackingToken.id == targetToken.id) { //même token pour attaquant et cible
+        if (attackingToken.id == targetToken.id && !(options.triche == "echecTotal")) { //même token pour attaquant et cible
           sendChar(attackingCharId,
             "s'attaque " + onGenre(attackingCharId, "lui", "elle") +
             "-même ? Probablement une erreur à la sélection de la cible. On annule");
@@ -7072,7 +7094,7 @@ var COFantasy = COFantasy || function() {
         if (options.feinte) explications.push("Mais c'était une feinte...");
         var mainDmgType = options.type || 'normal';
         if (options.sortilege) options.ignoreObstacles = true;
-        var critSug; //Suggestion en cas d'écher critique
+        var echecCritique;
         //Calcul des cibles touchées
         //(et on ajuste le jet pour la triche)
         var ciblesTouchees = [];
@@ -7170,6 +7192,7 @@ var COFantasy = COFantasy || function() {
                   }
                   break;
                 case "touche":
+                case "echecTotal": // l'attaquant s'attaque lui-même et touche automatiquement
                   if (d20roll == 1) d20roll = randomInteger(dice - 1) + 1;
                   if ((d20roll + attSkill + attBonus) < defense) {
                     var mind20roll = defense - attSkill - attBonus - 1;
@@ -7231,25 +7254,7 @@ var COFantasy = COFantasy || function() {
                 target.partialSaveAuto = true;
                 evt.succes = false;
               } else touche = false;
-              var confirmCrit = randomInteger(20);
-              critSug = "/w GM Jet de confirmation pour l'échec critique : " +
-                confirmCrit + "/20. Suggestion d'effet : ";
-              switch (confirmCrit) {
-                case 1:
-                  critSug += "l'attaquant se blesse ou est paralysé un tour";
-                  break;
-                case 2:
-                  critSug += "l'attaquant blesse un allié";
-                  break;
-                case 3:
-                  critSug += "l'arme casse, ou une pièce d'armure se détache, ou -5 DEF un tour (comme surpris)";
-                  break;
-                case 4:
-                  critSug += "l'attaquant lache son arme ou glisse et tombe";
-                  break;
-                default:
-                  critSug += "simple échec";
-              }
+              echecCritique = true;
             } else if ((paralyse || options.ouvertureMortelle || d20roll == 20 ||
                 (d20roll >= target.crit && attackRoll >= defense)) && !options.attaqueAssuree) {
               attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
@@ -7382,7 +7387,7 @@ var COFantasy = COFantasy || function() {
           }
           count--;
           if (count === 0)
-            attackDealDmg(attaquant, ciblesTouchees, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles);
+            attackDealDmg(attaquant, ciblesTouchees, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles);
         }); //fin de détermination de toucher des cibles
       }); // fin du jet d'attaque asynchrone
     } catch (e) {
@@ -7577,13 +7582,13 @@ var COFantasy = COFantasy || function() {
     return attCar + ficheAttributeAsInt(attaquant, 'niveau', 1) + attDiv;
   }
 
-  function attackDealDmg(attaquant, cibles, critSug, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees) {
+  function attackDealDmg(attaquant, cibles, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees) {
     if (cibles.length === 0 || options.test || options.feinte) {
-      finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options);
-      if (critSug) {
+      finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options, echecCritique);
+      if (echecCritique) {
         if (stateCOF.options.affichage.val.table_crit.val)
           sendChat('COF', "[[1t[Echec-Critique-Contact]]]");
-        else sendChat('COF', critSug);
+        else sendChat('COF', suggererEchecCritique(evt, weaponStats, options.sortilege, ciblesAttaquees, attaquant));
       }
       return;
     }
@@ -7948,7 +7953,7 @@ var COFantasy = COFantasy || function() {
         if (options.divise) options.divise *= 2;
         else options.divise = 2;
       }
-      if (options.attaqueAssuree) {
+      if (options.attaqueAssuree || options.triche == "echecTotal") {
         if (options.divise) options.divise *= 2;
         else options.divise = 2;
       }
@@ -8515,9 +8520,88 @@ var COFantasy = COFantasy || function() {
     }); //Fin de la boucle pour toutes cibles
   }
 
+  function suggererEchecCritique(evt, weaponStats, sortilege, cibles, attaquant) {
+    var d12roll = randomInteger(12);
+
+    var estMag = sortilege || false;
+    var avecArme = (weaponStats.name.includes("arme") || weaponStats.divers.includes("arme"));
+    var estCac = weaponStats.attSkill == "@{ATKCAC}" || weaponStats.portee == 0;
+    var estDist = weaponStats.attSkill == "@{ATKTIR}" || weaponStats.portee > 0;
+
+    if(d12roll == 1) {
+      if(estMag) {
+        return "Echec total : le lanceur de sort perd le contrôle de la magie qu'il canalise et subit 1d4 dommages "
+            + "en retour par rang du sort lancé."
+            + bouton("!cof-dmg ?{Rang du sort}d4 --message subit un contrecoup magique", "Appliquer", evt.personnage);
+      } else {
+        return "Echec total : l'attaquant se blesse lui-même et s'inflige la moitié des"
+            + " dégâts de son attaque. L'attaquant ne peut plus attaquer ce tour. "
+            + bouton("!cof-bouton-echec-total " + evt.id, "Appliquer", evt.personnage);
+      }
+    } else if (d12roll == 2) {
+      var difficulte = 0;
+      if(estCac) {
+        var tailleAttaquant = taillePersonnage(attaquant, 4);
+        cibles.forEach(function addTarget(cible){
+          difficulte = Math.max(difficulte, 12 - ((tailleAttaquant - taillePersonnage(cible, 4)) * 2));
+        });
+      } else {
+        difficulte = 12;
+      }
+      return "Bousculé (FOR) : l'attaquant est déséquilibré par son attaque "
+          + bouton("!cof-set-state renverse true --save FOR " + difficulte, "Appliquer", evt.personnage);
+    } else if (d12roll == 3) {
+      if (avecArme) {
+        return "Maladresse (DEX) : l'attaquant laisse échapper son arme qui tombe hors de portée immédiate."
+            + bouton("!cof-degainer --save DEX 12", "Appliquer", evt.personnage);
+      } else {
+        return "Déséquilibré (DEX) : l'attaquant est Ralenti pendant 3 tours." +
+            bouton("!cof-effet-temp ralentiTemp 3 --save DEX 12", "Appliquer", evt.personnage);
+      }
+    } else if (d12roll == 4) {
+      return "Coup de mou (CON) : l'attaquant est affaibli pendant 3 tours, ou jusqu'à ce qu'il consacre un tour "
+          + "ou 1 PR pour se rétablir."
+          + bouton("!cof-effet-temp affaibliTemp 3 --save CON 12", "Appliquer", evt.personnage);
+    } else if (d12roll == 5) {
+      if (estCac) {
+        return "Erreur tactique (INT) : le personnage provoque une attaque (gratuite) d’un adversaire à son contact.";
+      } else if (estDist) {
+        //TODO : Implémenter un bouton "mauvais calcul" automatique
+        return "Mauvais calcul (INT) : le personnage a une chance de toucher une autre cible sur la trajectoire" +
+            " de son tir. Déterminer la cible au hasard et relancer une attaque sur cette nouvelle cible.";
+      } else {
+        //TODO : Nouveau statut ?
+        return "Confus(INT) : le personnage est incapable de lancer des sorts pendant 3 tours";
+      }
+    } else if (d12roll == 6) {
+      if (estCac) {
+        var action = "";
+        cibles.forEach(function addTarget(cible){
+          action += "!cof-effet-temp expose 1 --valeur " + cible.token.id + " --save SAG 12";
+        });
+        return "Exposé (SAG) : l'adversaire dispose d'un bonus de +10 à la touche pendant un round."
+            + bouton(action, "Appliquer", evt.personnage);
+      } else {
+        return "Distrait (SAG) : le personnage est Ralenti pendant 3 tours"
+            + bouton("!cof-effet-temp ralentiTemp 3 --save SAG 12", "Appliquer", evt.personnage);
+      }
+    } else if (d12roll == 7) {
+      return "Ridicule (CHA) : le personnage fait un faux mouvement à la fois douloureux et ridicule, il subit "
+          + "l’état étourdi pendant un round pour reprendre contenance. "
+          + bouton("!cof-effet-temp etourdiTemp 1 --save CHA 12", "Appliquer", evt.personnage);
+    } else if (d12roll == 8) {
+      return "Inconfort : Une pièce d’armure bouge et elle devient plus gênante que protectrice. Cuir : -1 en DEF "
+          + "et en attaque pour le reste du combat. Maille : -2, Plaque -3. "
+          + bouton("!cof-effet-combat inconfort --valeur ?{Malus ?|-1,1|-2,2|-3,3} --save CHA 12", "Appliquer", evt.personnage);
+    } else if (d12roll > 8) {
+      return "L'attaquant s'en tire bien cette fois-ci, pas d'effet particulier";
+    }
+  }
+
   //Affichage final d'une attaque
   // attaquant est optionnel, mais si il est présent, cibles doit être un tableau et options un objet
-  function finaliseDisplay(display, explications, evt, attaquant, cibles, options) {
+  function finaliseDisplay(display, explications, evt, attaquant, cibles, options, echecCritique) {
+    echecCritique = echecCritique || false;
     explications.forEach(function(expl) {
       addLineToFramedDisplay(display, expl, 80);
     });
@@ -8525,7 +8609,7 @@ var COFantasy = COFantasy || function() {
       evt.personnage = evt.action.attaquant;
       if (evt.succes === false) {
         var pc = pointsDeChance(evt.personnage);
-        if (pc > 0) {
+        if (pc > 0 && !echecCritique) {
           addLineToFramedDisplay(display, bouton("!cof-bouton-chance " + evt.id, "Chance", evt.personnage) + " (reste " + pc + " PC)");
         }
         if (attributeAsBool(evt.personnage, 'runeForgesort_énergie') &&
@@ -11513,6 +11597,41 @@ var COFantasy = COFantasy || function() {
     attack(action.player_id, perso, action.cibles, action.attack_label, options);
   }
 
+  function echecTotal(msg) {
+    var args = msg.content.split(' ');
+    if (args.length < 2) {
+      error("La fonction !cof-bouton-echec-total n'a pas assez d'arguments", args);
+      return;
+    }
+    var evt = findEvent(args[1]);
+    if (evt === undefined) {
+      error("L'action est trop ancienne ou éte annulée", args);
+      return;
+    }
+    var perso = evt.personnage;
+    if (perso === undefined) {
+      error("Erreur interne du bouton d'échec total: l'évenement n'a pas de personnage", evt);
+      return;
+    }
+    if (!peutController(msg, perso)) {
+      sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+      return;
+    }
+    var action = evt.action;
+    if (!action || evt.type != "Attaque") {
+      error("Erreur interne du bouton d'échec total: l'évènement n'est pas une attaque", evt);
+      return;
+    }
+    var evtEchecTotal = {
+      type: 'echecTotal'
+    };
+    addEvent(evtEchecTotal);
+    // assumes that the original action was undone, re-attack with bonus
+    var options = action.options;
+    options.triche = "echecTotal";
+    attack(action.player_id, perso, perso.token, action.attack_label, options);
+  }
+
   function persoUtiliseRuneEnergie(perso, evt) {
     var attr = tokenAttribute(perso, 'runeForgesort_énergie');
     if (attr.length < 1 || attr[0].get('current') < 1) {
@@ -13821,22 +13940,22 @@ var COFantasy = COFantasy || function() {
       error("Le premier argument de !cof-set-state n'est pas un état valide", cmd);
       return;
     }
-    var save;
+    var saveParTour;
     if (isCarac(cmd[2])) {
       if (cmd.length < 4) {
         error("Il manque la difficulté du jet de sauvegarde.", cmd);
         return;
       }
       valeur = true;
-      save = {
+      saveParTour = {
         carac: cmd[2]
       };
       var opposition = persoOfId(cmd[3]);
       if (opposition) {
-        save.difficulte = cmd[3] + ' ' + opposition.token.get('name');
+        saveParTour.difficulte = cmd[3] + ' ' + opposition.token.get('name');
       } else {
-        save.difficulte = parseInt(cmd[3]);
-        if (isNaN(save.difficulte)) {
+        saveParTour.difficulte = parseInt(cmd[3]);
+        if (isNaN(saveParTour.difficulte)) {
           error("Difficulté du jet de sauvegarde incorrecte", cmd);
           return;
         }
@@ -13861,9 +13980,27 @@ var COFantasy = COFantasy || function() {
         });
       }
       iterSelected(selected, function(perso) {
-        setState(perso, etat, valeur, evt);
-        if (save) {
-          setTokenAttr(perso, etat + 'Save', save.carac, evt, undefined, save.difficulte);
+        function setEffect() {
+          setState(perso, etat, valeur, evt);
+          if (saveParTour) {
+            setTokenAttr(perso, etat + 'Save', saveParTour.carac, evt, undefined, saveParTour.difficulte);
+          }
+        }
+        if(options.save) {
+          var saveOpts = {
+            msgPour: " pour résister à l'effet " + etat,
+            msgRate: ", raté.",
+          };
+          var expliquer = function(s) {
+            sendChar(perso.charId, s);
+          };
+          save(options.save, perso, expliquer, saveOpts, evt, function(reussite, rollText) {
+              if (!reussite) {
+                setEffect();
+              }
+            });
+        } else {
+          setEffect();
         }
       });
       addEvent(evt);
@@ -14148,8 +14285,26 @@ var COFantasy = COFantasy || function() {
       }
       if (options.son) playSound(options.son);
       iterSelected(selected, function(perso) {
-        var nomArme = degainerArme(perso, armeLabel, evt, options);
-        if (nomArme) sendChar(perso.charId, "a déjà " + nomArme + " en main");
+        function afterSave() {
+          var nomArme = degainerArme(perso, armeLabel, evt, options);
+          if (nomArme) sendChar(perso.charId, "a déjà " + nomArme + " en main");
+        }
+        if(options.save) {
+          var saveOpts = {
+            msgPour: " pour garder son arme en main",
+            msgRate: ", raté.",
+          };
+          var expliquer = function(s) {
+            sendChar(perso.charId, s);
+          };
+          save(options.save, perso, expliquer, saveOpts, evt, function(reussite, rollText) {
+            if (!reussite) {
+              afterSave();
+            }
+          });
+        } else {
+          afterSave();
+        }
       });
       addEvent(evt);
     });
@@ -15634,7 +15789,7 @@ var COFantasy = COFantasy || function() {
   // 5 : grand
   // 6 : énorme
   // 7 : colossal
-  function taillePersonnage(perso) {
+  function taillePersonnage(perso, def) {
     var attr = findObjs({
       _type: 'attribute',
       _characterid: perso.charId,
@@ -15698,7 +15853,7 @@ var COFantasy = COFantasy || function() {
           return 5;
       }
     }
-    return undefined;
+    return def;
   }
 
   function estAussiGrandQue(perso1, perso2) {
@@ -22169,6 +22324,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-jouer-son":
         jouerSon(msg);
         return;
+      case "!cof-bouton-echec-total":
+        echecTotal(msg);
+        return;
       default:
         return;
     }
@@ -22610,6 +22768,12 @@ var COFantasy = COFantasy || function() {
       actif: "voit ses dégâts réduits par sa Peau de pierre",
       fin: "retrouve sa peau normale",
     },
+    expose: {
+      activation: "s'expose aux attaques de sa cible",
+      actif: "est exposé aux attaques de son adversaire",
+      fin: "n'est plus exposé",
+      prejudiciable: true
+    }
   };
 
   function buildPatternEffets(listeEffets, postfix) {
@@ -22750,6 +22914,12 @@ var COFantasy = COFantasy || function() {
       activation: "est agrippé",
       actif: "est agrippé",
       fin: "se libère"
+    },
+    inconfort: {
+      activation: "commence à être gêné par son armure",
+      actif: "est gêné par son armure",
+      fin: "réajuste son armure",
+      prejudiciable: true,
     }
   };
 
