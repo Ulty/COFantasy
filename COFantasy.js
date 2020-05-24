@@ -7588,7 +7588,7 @@ var COFantasy = COFantasy || function() {
       if (echecCritique) {
         if (stateCOF.options.affichage.val.table_crit.val)
           sendChat('COF', "[[1t[Echec-Critique-Contact]]]");
-        else sendChat('COF', suggererEchecCritique(evt, weaponStats, options.sortilege, ciblesAttaquees, attaquant));
+        else sendChat('COF', "/w GM " + suggererEchecCritique(evt, weaponStats, options.sortilege, ciblesAttaquees, attaquant));
       }
       return;
     }
