@@ -8526,7 +8526,6 @@ var COFantasy = COFantasy || function() {
     var estMag = sortilege || weaponStats.attSkill == "@{ATKMAG}";
     var avecArme = (weaponStats.name.includes("arme") || weaponStats.divers.includes("arme"));
     var estCac = weaponStats.attSkill == "@{ATKCAC}" || weaponStats.portee == 0;
-    var estDist = weaponStats.attSkill == "@{ATKTIR}" || weaponStats.portee > 0;
 
     if(d12roll == 1) {
       if(estMag) {
@@ -8565,13 +8564,14 @@ var COFantasy = COFantasy || function() {
     } else if (d12roll == 5) {
       if (estCac) {
         return "Erreur tactique (INT) : le personnage provoque une attaque (gratuite) d’un adversaire à son contact.";
-      } else if (estDist) {
+      } else if (estMag) {
+        return "Aveuglé (INT) : le personnage ne contrôle pas sa puissance et une partie de celle-ci émet un flash "
+            + "qui l'aveugle temporairement."
+            + bouton("!cof-effet-temp aveugleTemp 3 --save INT 12 --saveParTour CON 12", "Appliquer", evt.personnage);
+      } else {
         //TODO : Implémenter un bouton "mauvais calcul" automatique
         return "Mauvais calcul (INT) : le personnage a une chance de toucher une autre cible sur la trajectoire" +
             " de son tir. Déterminer la cible au hasard et relancer une attaque sur cette nouvelle cible.";
-      } else {
-        //TODO : Nouveau statut ?
-        return "Confus(INT) : le personnage est incapable de lancer des sorts pendant 3 tours";
       }
     } else if (d12roll == 6) {
       if (estCac) {
@@ -10013,8 +10013,8 @@ var COFantasy = COFantasy || function() {
     else mObstacle = Math.round(mObstacle);
     var res = mPortee + mObstacle;
     if (mObstacle > 0) {
-      log("Obstacle" + ((mObstacle > 1) ? "s" : "") + " trouvé : " + liste_obstacles.join(', '));
-      explications.push('Obstacle' + ((mObstacle > 1) ? 's' : '') + ' sur le trajet => -' + mObstacle + ' en Attaque<br /><span style="font-size: 0.8em; color: #666;">' + liste_obstacles.join(', ') + '</span>');
+      log("Obstacle" + ((liste_obstacles.length > 1) ? "s" : "") + " trouvé : " + liste_obstacles.join(', '));
+      explications.push('Obstacle' + ((liste_obstacles.length > 1) ? 's' : '') + ' sur le trajet => -' + mObstacle + ' en Attaque<br /><span style="font-size: 0.8em; color: #666;">' + liste_obstacles.join(', ') + '</span>');
     }
     return res;
   }
@@ -22390,31 +22390,31 @@ var COFantasy = COFantasy || function() {
     },
     aveugleTemp: {
       activation: "n'y voit plus rien !",
-      actif: "", //Déjà affiché avec l'état aveugle
+      actif: "est aveuglé",
       fin: "retrouve la vue",
       prejudiciable: true
     },
     ralentiTemp: {
       activation: "est ralenti : une seule action, pas d'action limitée",
-      actif: "", //Déjà affiché avec l'état ralenti
+      actif: "est ralenti",
       fin: "n'est plus ralenti",
       prejudiciable: true
     },
     paralyseTemp: {
       activation: "est paralysé : aucune action ni déplacement possible",
-      actif: "", //Déjà affiché avec l'état ralenti
+      actif: "est paralysé",
       fin: "n'est plus paralysé",
       prejudiciable: true
     },
     etourdiTemp: {
       activation: "est étourdi : aucune action et -5 en DEF",
-      actif: "", //Déjà affiché avec l'état ralenti
+      actif: "est étourdi",
       fin: "n'est plus étourdi",
       prejudiciable: true
     },
     affaibliTemp: {
       activation: "se sent faible",
-      actif: "", //Déjà affiché avec l'état aveugle
+      actif: "est affaibli",
       fin: "se sent moins faible",
       prejudiciable: true
     },
