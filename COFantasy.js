@@ -8569,9 +8569,10 @@ var COFantasy = COFantasy || function() {
             + "qui l'aveugle temporairement."
             + bouton("!cof-effet-temp aveugleTemp 3 --save INT 12 --saveParTour CON 12", "Appliquer", evt.personnage);
       } else {
-        //TODO : Implémenter un bouton "mauvais calcul" automatique
-        return "Mauvais calcul (INT) : le personnage a une chance de toucher une autre cible sur la trajectoire" +
-            " de son tir. Déterminer la cible au hasard et relancer une attaque sur cette nouvelle cible.";
+        //TODO : Implémenter un bouton "mauvais calcul" réalisant une attaque automatique sur un des Obstacle
+        return "Mauvais calcul (INT) : le personnage a une chance de toucher une autre cible sur la trajectoire"
+            + " de son tir. Déterminer la cible au hasard et relancer une attaque sur cette nouvelle cible."
+            + bouton("!cof-jet INT 12", "Appliquer", evt.personnage);
       }
     } else if (d12roll == 6) {
       if (estCac) {
