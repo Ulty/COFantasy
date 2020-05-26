@@ -4609,7 +4609,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function onGenre(charId, male, female) {
-    var sex = getAttrByName(charId, 'SEXE');
+    var sex = getAttrByName(charId, 'sexe');
     if (sex.startsWith('F')) return female;
     return male;
   }
@@ -21081,6 +21081,7 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: 'lumiere',
     };
+    if (limiteRessources(options.lanceur, options, 'lumière', "lumière", evt)) return;
     ajouteUneLumiere(cible, nomToken, radius, dimRadius, evt);
     addEvent(evt);
   }
