@@ -1875,7 +1875,7 @@ var COFantasy = COFantasy || function() {
         if (ressource) {
           act = "!cof-utilise-consommable " + tid + " " + ressource.id + " --message " + act;
         } else {
-          act = "!cof-lancer-sort 0 " + act;
+          act = "!cof-lancer-sort " + act;
         }
       }
       if (act.indexOf('@{selected') !== -1) {
@@ -1902,7 +1902,7 @@ var COFantasy = COFantasy || function() {
         });
       }
       if (act.startsWith('!cof-lancer-sort') && act.indexOf('--lanceur') == -1) {
-        act = "!cof-lancer-sort --lanceur " + tid + act.substr(16);
+        act += " --lanceur " + tid;
       }
       if (act.indexOf('@{target|') == -1 &&
         act.indexOf('cof-lancer-sort') == -1 &&
@@ -16543,8 +16543,12 @@ var COFantasy = COFantasy || function() {
     }
     getSelected(msg, function(selected) {
       if (selected.length === 0) {
+        if (options.lanceur) {
+          selected = [{_id:options.lanceur.token.id}];
+        } else {
         error("Pas de token sélectionée pour !cof-lancer-sort", cmd);
         return;
+        }
       }
       var evt = {
         type: "lancement de sort"
@@ -22383,6 +22387,7 @@ var COFantasy = COFantasy || function() {
         echecTotal(msg);
         return;
       default:
+        error("Commande "+command[0]+" non reconnue.", command);
         return;
     }
   }
