@@ -8564,7 +8564,8 @@ var COFantasy = COFantasy || function() {
           + bouton("!cof-effet-temp affaibliTemp 3 --save CON 12", "Appliquer", evt.personnage);
     } else if (d12roll == 5) {
       if (estCac) {
-        return "Erreur tactique (INT) : le personnage provoque une attaque (gratuite) d’un adversaire à son contact.";
+        return "Erreur tactique (INT) : le personnage provoque une attaque (gratuite) d’un adversaire à son contact."
+            + bouton("!cof-jet INT 12", "Appliquer", evt.personnage);
       } else if (estMag) {
         return "Aveuglé (INT) : le personnage ne contrôle pas sa puissance et une partie de celle-ci émet un flash "
             + "qui l'aveugle temporairement."
