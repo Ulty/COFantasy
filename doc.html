@@ -30,7 +30,7 @@
       #json_data textarea {margin-bottom: 10px;}
       #json_data button {margin-bottom: 10px; margin-right: 5px; float: right;}
       #json_data button::after {clear: both;}
-      table {width: 90%; margin: auto; border-collapse: collapse;}
+      table {/*width: 90%; margin: auto;*/ border-collapse: collapse;}
       th, td {padding: 5px;}
       tr {line-height: 25px;}
 		</style>
@@ -468,12 +468,11 @@
                   <p><code>!cof-set-state <i>etat</i> <i>[true|false]</i></code> permet de changer l'état des tokens sélectionnés. Si cet état concerne un personnage avec tokens liés (en liant la barre 1 aux points de vie), alors l'état persiste si on change de carte (utilisation d'un attribut hors fiche).</p>
                   <p>Liste des états et markers correspondants :</p>
                   <table>
-                    <caption>Inctf : Inactif, ne peut pas prendre part au combat. LdB : Livre de Base, Comp : Compagnon</caption>
+                    <caption>LdB : Livre de Base, Comp : Compagnon</caption>
                     <thead>
                       <tr style="border-bottom: 1px solid black" >
                         <th scope="col">État</th>
-                        <th scope="col">Inctf</th>
-                        <th scope="col">Source et règle</th>
+                        <th scope="col">Source</th>
                         <th scope="col">Remarque</th>
                         <th scope="col" width="145px">Marker Std.</th>
                         <th scope="col" width="135px">Marker COF</th>
@@ -482,144 +481,105 @@
                     <tbody>
                       <tr>
                         <th scope="row">Affaibli</hd>
-                        <td>Non</td>
-                        <td>LdB p70. État préjudiciable. Utiliser un d12 pour tous les tests à la place d'un d20</td>
+                        <td>LdB p70</td>
                         <td>Apparaît sur la fiche perso</td>
                         <td><code>half-heart</code></td>
                         <td><code>cof-affaibli</code></td>
                       </tr>
                       <tr>
                         <th scope="row">Apeuré</hd>
-                        <td>Oui</td>
-                        <td>LdB p52. Victime d'un sort de Peur d'un Nécromancien</td>
                         <td></td>
+                        <td>Victime d'un sort de Peur</td>
                         <td><code>screaming</code></td>
                         <td><code>cof-apeure</code></td>
                       </tr>
                       <tr>
-                        <th scope="row">Asphyxié</hd>
-                        <td>Non</td>
-                        <td>LdB p49. Victime d'un sort d'Asphyxie du Magicien</td>
-                        <td>En cours d'implémentation</td>
-                        <td></td>
-                        <td><code>cof-asphyxsie</code></td>
-                      </tr>
-                      <tr>
                         <th scope="row">Assommé</hd>
-                        <td>Oui</td>
-                        <td>LdB p72. Règle des DM temporaires: quand les DM temporaires dépassent les points de vie le personnage est assommé et perd conscience</td>
+                        <td>LdB p72</td>
                         <td></td>
                         <td><code>pummeled</code></td>
                         <td><code>cof-assomme</code></td>
                       </tr>
                       <tr>
                         <th scope="row">Aveuglé</hd>
-                        <td>Non</td>
-                        <td>LdB p70. Etat préjudiciable : -5 en initiative, en attaque et en DEF, -10 en attaque à distance</td>
+                        <td>LdB p70</td>
                         <td>Change aussi la vision du token</td>
                         <td><code>bleeding-eye</code></td>
                         <td><code>cof-aveugle</code></td>
                       </tr>
                       <tr>
                         <th scope="row">Blessé</hd>
-                        <td>Non</td>
-                        <td>LdB p177. Règle optionnelle des blessures graves</td>
+                        <td>LdB p177</td>
                         <td></td>
                         <td><code>arrowed</code></td>
                         <td><code>cof-blesse</code></td>
                       </tr>
                       <tr>
-                        <th scope="row">Empoisonné</hd>
-                        <td>Non</td>
-                        <td>LdB p76. Les poisons lents 1D6 DM par jour</td>
-                        <td>En cours d'implémentation</td>
-                        <td></td>
-                        <td><code>cof-empoisonne</code></td>
-                      </tr>
-                      <tr>
                         <th scope="row">Encombré</hd>
-                        <td>Non</td>
-                        <td>Comp p103. Utiliser un d12 pour les tests de DEX</td>
+                        <td>Comp p103</td>
                         <td></td>
                         <td><code>frozen-orb</code></td>
                         <td><code>cof-encombre</code></td>
                       </tr>
                       <tr>
                         <th scope="row">Endormi</hd>
-                        <td>Oui</td>
-                        <td>Ne peut pas prendre part aux combats</td>
+                        <td></td>
                         <td></td>
                         <td><code>sleepy</code></td>
                         <td><code>cof-endormi</code></td>
                       </tr>
                       <tr>
                         <th scope="row">Étourdi</hd>
-                        <td>Oui</td>
-                        <td>LdB p70. Etat préjudiciable : Aucune action possible et -5 en DEF</td>
+                        <td>LdB p70</td>
                         <td></td>
                         <td><code>half-haze</code></td>
                         <td><code>cof-etourdi</code></td>
                       </tr>
                       <tr>
                         <th scope="row">Immobilisé</hd>
-                        <td>Non</td>
-                        <td>LdB p70. Etat préjudiciable : Aucun déplacement possible et utiliser un d12 pour tous les tests à la place d'un d20</td>
+                        <td>LdB p70</td>
                         <td></td>
                         <td><code>cobweb</code></td>
                         <td><code>cof-immobilise</code></td>
                       </tr>
                       <tr>
                         <th scope="row">Invisible</hd>
-                        <td>Non</td>
-                        <td>LdB p49. Sort Invisibilité du magicien</td>
                         <td></td>
+                        <td>Sort d'invisibilité</td>
                         <td><code>ninja-mask</code></td>
                         <td><code>cof-invisible</code></td>
                       </tr>
                       <tr>
                         <th scope="row">Mort</hd>
-                        <td>Oui</td>
-                        <td>LdB p73. Inconscience et Mort.</td>
+                        <td>LdB p73</td>
                         <td>Même état pour un PJ juste inconscient à 0 PV</td>
                         <td><code>dead</code></td>
                         <td><code>dead</code></td>
                       </tr>
                       <tr>
                         <th scope="row">Paralysé</hd>
-                        <td>Oui</td>
-                        <td>LdB p70. Etat préjudiciable : Aucune action possible, en cas d'attaque touché automatiquement et subit un critique</td>
+                        <td>LdB p70</td>
                         <td></td>
                         <td><code>fishing-net</code></td>
                         <td><code>cof-paralyse</code></td>
                       </tr>
                       <tr>
-                        <th scope="row">Pénombre</hd>
-                        <td>Non</td>
-                        <td>LdB p71: -5 pour les attaques à distance</td>
-                        <td>En cours d'implémentation</td>
-                        <td></td>
-                        <td><code>cof-penombre</code></td>
-                      </tr>
-                      <tr>
                         <th scope="row">Ralenti</hd>
-                        <td>Non</td>
-                        <td>LdB p70. Etat préjudiciable : Une seule action par tour (action d'attaque ou de mouvement)</td>
+                        <td>LdB p70</td>
                         <td></td>
                         <td><code>snail</code></td>
                         <td><code>cof-ralenti</code></td>
                       </tr>
                       <tr>
                         <th scope="row">Renversé</hd>
-                        <td>Non</td>
-                        <td>LdB p70. Etat préjudiciable : -5 en attaque et en DEF, nécessite une action de mouvement pour se relever</td>
+                        <td>LdB p70</td>
                         <td></td>
                         <td><code>back-pain</code></td>
                         <td><code>cof-renverse</code></td>
                       </tr>
                       <tr>
                         <th scope="row">Surpris</hd>
-                        <td>Oui</td>
-                        <td>LdB p70. Etat préjudiciable : Pas d'attaque et -5 en DEF au premier tour de combat</td>
+                        <td>LdB p70</td>
                         <td></td>
                         <td><code>lightning-helix</code></td>
                         <td><code>cof-surpris</code></td>
