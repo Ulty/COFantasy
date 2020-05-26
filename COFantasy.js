@@ -8198,6 +8198,9 @@ var COFantasy = COFantasy || function() {
                 setTokenAttr(target, ef.effet, ef.duree, evt, undefined,
                   getInit());
                 switch (ef.effet) {
+                  case 'apeureTemp':
+                    setState(target, 'apeure', true, evt);
+                    break;
                   case 'aveugleTemp':
                     setState(target, 'aveugle', true, evt);
                     break;
@@ -8457,6 +8460,9 @@ var COFantasy = COFantasy || function() {
                           setTokenAttr(target, ef.effet, duree, evt,
                             undefined, getInit());
                           switch (ef.effet) {
+                            case 'apeureTemp':
+                              setState(target, 'apeure', true, evt);
+                              break;
                             case 'aveugleTemp':
                               setState(target, 'aveugle', true, evt);
                               break;
@@ -9630,7 +9636,7 @@ var COFantasy = COFantasy || function() {
             !attributeAsBool(target, 'enragé')) {
             setTokenAttr(target, 'enragé', true, evt);
             expliquer(target.tokName + " devient enragé" + eForFemale(target.charId) + ".");
-            finDEffetDeNom(target, 'peur', evt);
+            finDEffetDeNom(target, 'apeureTemp', evt);
             finDEffetDeNom(target, 'peurEtourdi', evt);
             setState(target, 'apeure', false, evt);
           }
@@ -14628,6 +14634,9 @@ var COFantasy = COFantasy || function() {
             case 'affaibliTemp':
               setState(perso, 'affaibli', true, evt);
               break;
+            case 'apeureTemp':
+              setState(perso, 'apeure', true, evt);
+              break;
             case 'peauDePierreMag':
               if (options.valeur === undefined) {
                 var rd = 5 + modCarac(perso, 'INTELLIGENCE');
@@ -15043,18 +15052,20 @@ var COFantasy = COFantasy || function() {
         if (tr.reussite) {
           line += "&gt;=" + difficulte + ",  " + sujet + " résiste à la peur.";
         } else {
-          setState(target, 'apeure', true, evt);
           line += "&lt;" + difficulte + ", " + sujet + ' ';
-          var effet = 'peur';
+          var effet = 'apeureTemp';
+          var etat = 'apeure';
           if (options.etourdi) {
             line += "s'enfuit ou reste recroquevillé" + eForFemale(charId) + " sur place";
             effet = 'peurEtourdi';
           } else if (options.ralenti) {
             line += "est ralenti" + eForFemale(charId);
             effet = 'ralentiTemp';
+            etat = 'ralenti';
           } else {
             line += "s'enfuit.";
           }
+          setState(target, etat, true, evt);
           setTokenAttr(target, effet, duree, evt, undefined, getInit());
         }
         messages.push(line);
@@ -22436,7 +22447,7 @@ var COFantasy = COFantasy || function() {
       fin: "n'est plus affaibli",
       prejudiciable: true
     },
-    peur: {
+    apeureTemp: {
       activation: "prend peur",
       actif: "est dominé par sa peur",
       fin: "retrouve du courage",
@@ -23218,7 +23229,7 @@ var COFantasy = COFantasy || function() {
             tousLesTokens: true
           });
         break;
-      case 'peur':
+      case 'apeureTemp':
       case 'peurEtourdi':
         iterTokensOfAttribute(charId, options.pageId, effet, attrName,
           function(token) {
