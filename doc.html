@@ -30,6 +30,9 @@
       #json_data textarea {margin-bottom: 10px;}
       #json_data button {margin-bottom: 10px; margin-right: 5px; float: right;}
       #json_data button::after {clear: both;}
+      table {border-collapse: collapse;}
+      th, td {padding: 5px;}
+      tr {line-height: 25px;}
 		</style>
     <script>
 			$('document').ready(function() {      
@@ -465,25 +468,126 @@
                 <h4 class="text-secondary" id="etats">États gérés en utilisant le statut des tokens</h4>
                 <div class="decalage">
                   <p><code>!cof-set-state <i>etat</i> <i>[true|false]</i></code> permet de changer l'état des tokens sélectionnés. Si cet état concerne un personnage avec tokens liés (en liant la barre 1 aux points de vie), alors l'état persiste si on change de carte (utilisation d'un attribut hors fiche).</p>
-                  <span>Liste des états et statut correspondant :</span>
-                  <ul>
-                    <li>surpris : <tt>lightning-helix</tt></li>
-                    <li>aveuglé : <tt>bleeding-eye</tt> (change aussi la vision du token)</li>
-                    <li>affaibli : <tt>half-heart</tt> (lié aussi au statut sur la fiche, pour les tokens liés par les points de vie)</li>
-                    <li>étourdi : <tt>half-haze</tt></li>
-                    <li>assomé : <tt>pummeled</tt></li>
-                    <li>ralenti : <tt>snail</tt></li>
-                    <li>renversé : <tt>back-pain</tt></li>
-                    <li>mort : <tt>dead</tt> (même état pour un PJ juste inconscient à 0 PV)</li>
-                    <li>paralysé : <tt>fishing-net</tt></li>
-                    <li>immobilisé : <tt>cobweb</tt></li>
-                    <li>endormi : <tt>sleepy</tt></li>
-                    <li>apeuré : <tt>screaming</tt></li>
-                    <li>invisible : <tt>ninja-mask</tt></li>
-                    <li>gravement blessé : <tt>arrowed</tt></li>
-                    <li>encombré : <tt>frozen-orb</tt></li>
-                  </ul>
-                  <!-- pénombre (-5 att. distance) : pas encore dans la liste -->
+                  <p>Liste des états et markers correspondants :</p>
+                  <table>
+                    <caption>LdB : Livre de Base, Comp : Compagnon</caption>
+                    <thead>
+                      <tr style="border-bottom: 1px solid black" >
+                        <th scope="col">État</th>
+                        <th scope="col">Source</th>
+                        <th scope="col">Remarque</th>
+                        <th scope="col" width="145px">Marker Std.</th>
+                        <th scope="col" width="135px">Marker COF</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <th scope="row">Affaibli</hd>
+                        <td>LdB p70</td>
+                        <td>Apparaît sur la fiche perso</td>
+                        <td><code>half-heart</code></td>
+                        <td><code>cof-affaibli</code></td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Apeuré</hd>
+                        <td></td>
+                        <td>Victime d'un sort de Peur</td>
+                        <td><code>screaming</code></td>
+                        <td><code>cof-apeure</code></td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Assommé</hd>
+                        <td>LdB p72</td>
+                        <td></td>
+                        <td><code>pummeled</code></td>
+                        <td><code>cof-assomme</code></td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Aveuglé</hd>
+                        <td>LdB p70</td>
+                        <td>Change aussi la vision du token</td>
+                        <td><code>bleeding-eye</code></td>
+                        <td><code>cof-aveugle</code></td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Blessé</hd>
+                        <td>LdB p177</td>
+                        <td></td>
+                        <td><code>arrowed</code></td>
+                        <td><code>cof-blesse</code></td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Encombré</hd>
+                        <td>Comp p103</td>
+                        <td></td>
+                        <td><code>frozen-orb</code></td>
+                        <td><code>cof-encombre</code></td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Endormi</hd>
+                        <td></td>
+                        <td></td>
+                        <td><code>sleepy</code></td>
+                        <td><code>cof-endormi</code></td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Étourdi</hd>
+                        <td>LdB p70</td>
+                        <td></td>
+                        <td><code>half-haze</code></td>
+                        <td><code>cof-etourdi</code></td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Immobilisé</hd>
+                        <td>LdB p70</td>
+                        <td></td>
+                        <td><code>cobweb</code></td>
+                        <td><code>cof-immobilise</code></td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Invisible</hd>
+                        <td></td>
+                        <td>Sort d'invisibilité</td>
+                        <td><code>ninja-mask</code></td>
+                        <td><code>cof-invisible</code></td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Mort</hd>
+                        <td>LdB p73</td>
+                        <td>Même état pour un PJ juste inconscient à 0 PV</td>
+                        <td><code>dead</code></td>
+                        <td><code>dead</code></td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Paralysé</hd>
+                        <td>LdB p70</td>
+                        <td></td>
+                        <td><code>fishing-net</code></td>
+                        <td><code>cof-paralyse</code></td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Ralenti</hd>
+                        <td>LdB p70</td>
+                        <td></td>
+                        <td><code>snail</code></td>
+                        <td><code>cof-ralenti</code></td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Renversé</hd>
+                        <td>LdB p70</td>
+                        <td></td>
+                        <td><code>back-pain</code></td>
+                        <td><code>cof-renverse</code></td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Surpris</hd>
+                        <td>LdB p70</td>
+                        <td></td>
+                        <td><code>lightning-helix</code></td>
+                        <td><code>cof-surpris</code></td>
+                      </tr>
+                    </tbody>
+                  </table>
                   <p>Pour faciliter la gestion des états, on peut deux macros dans la barre du GM, <code>!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|immobilise|endormi|apeure|invisible|blessé|encombre} true</code>, et la même avec <code>false</code>. (N'oubliez pas que la commande <code>!cof-set-macros</code> permet de générer automatiquement les macros utiles au script). Une fois qu'on connaît bien les icônes, on peut directement les changer sur les tokens pour le même effet (et même faire un undo de ces changements si besoin).
                   </p>
                   <p>Enfin, il est possible de faire réaliser un jet pour se libérer d'un état, en utilisant la commande <code>!cof-save-state <i>etat</i> <i>carac</i> <i>seuil</i></code>. Il est possible de remplacer <i>seuil</i> par une id de token pour faire faire un test en opposition avec ce token. On peut aussi passer la caractéristique et le seuil en argument à <code>!cof-set-state</code> pour proposer le jet à chaque fois qu'on affiche les <code>#Actions#</code> ou qu'on affiche le statut du personnage.</p>
