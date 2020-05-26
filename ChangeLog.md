@@ -10,6 +10,8 @@
 * Enflammer une arme fait maintenant de la lumière.
 
 ### Autres améliorations
+* Intégration d'une table d'échecs critique, avec jets et effets pris en compte.
+* Possibilité de spécifier une valeur à --ignoreRD
 * Au changement de jour, affichage des effets à durée indéterminée encore actifs pour que le MJ puisse les supprimer si besoin.
 * Possibilité d'utilise une table pour les échecs critiques.
 * Création automatique d'un personnage cible
