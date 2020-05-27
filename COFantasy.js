@@ -8913,7 +8913,7 @@ var COFantasy = COFantasy || function() {
         case 'tranchant':
         case 'contondant':
         case 'percant':
-          return dmgType != 'normal';
+          return options.sortilege || dmgType != 'normal';
         default:
           return false;
       }
@@ -13870,6 +13870,7 @@ var COFantasy = COFantasy || function() {
           case "poison":
           case "maladie":
           case "argent":
+          case 'sortilege':
             if (options.additionalDmg) {
               var l = options.additionalDmg.length;
               if (l > 0) {
@@ -17947,7 +17948,7 @@ var COFantasy = COFantasy || function() {
             var msgJet = "Jet de SAG : " + testRes.texte;
             if (testRes.reussite) {
               var eventId = stateCOF.eventId;
-              var action = "!cof-dmg " + dm + " --once " + eventId + " --mortsVivants";
+              var action = "!cof-dmg " + dm + " --sortilege --mortsVivants";
               evt.waitingForAoe = true;
               addLineToFramedDisplay(display, msgJet + " &ge; 13");
               sendChat(name, endFramedDisplay(display));
