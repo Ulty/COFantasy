@@ -5103,7 +5103,7 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(target, 'statueDeBois')) defense = 10;
     // Malus de défense global pour les longs combats
-    if (stateCOF.options.regles.val.usure_DEF.val)
+    if (stateCOF.options.regles.val.usure_DEF.val && stateCOF.tour > 1)
       defense -= (Math.floor((stateCOF.tour - 1) / stateCOF.options.regles.val.usure_DEF.val) * 2);
     // Autres modificateurs de défense
     defense += attributeAsInt(target, 'defenseTotale', 0);
@@ -13356,13 +13356,16 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (ficheAttributeAsInt(perso, 'DEFARMUREON', 1) === 0) {
-          addLineToFramedDisplay(display, "Ne porte pas son armure");
+          var possedeArmure = ficheAttributeAsInt(perso, 'DEFARMURE', 0) > 0;
+          if (possedeArmure) addLineToFramedDisplay(display, "Ne porte pas son armure");
           if (charAttributeAsInt(perso, 'vetementsSacres', 0) > 0) {
-            addLineToFramedDisplay(display, "  mais bénéficie de ses vêtements sacrés (DEF " + defense + ")");
+            if (possedeArmure) addLineToFramedDisplay(display, "  mais bénéficie de ses vêtements sacrés (DEF " + defense + ")");
+            else addLineToFramedDisplay(display, "porte des vêtements sacrés (DEF " + defense + ")");
             defenseMontree = true;
           }
           if (charAttributeAsInt(perso, 'armureDeVent', 0) > 0) {
-            addLineToFramedDisplay(display, "  mais bénéficie de son armure de vent (DEF " + defense + ")");
+            if (possedeArmure) addLineToFramedDisplay(display, "  mais bénéficie de son armure de vent (DEF " + defense + ")");
+            else addLineToFramedDisplay(display, "bénéficie de son armure de vent (DEF " + defense + ")");
             defenseMontree = true;
           }
         }
@@ -24535,7 +24538,7 @@ on("destroy:handout", function(prev) {
 });
 
 on('ready', function() {
-  var script_version = "2.05";
+  var script_version = "2.06";
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);

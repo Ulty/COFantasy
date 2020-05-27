@@ -1,4 +1,11 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.06
+### Autres améliorations
+* Intégration d'une table d'échecs critique, avec jets et effets pris en compte.
+
+### Corrections de bugs
+* Correction de bug sur les effets de peur qui ralentissent.
+
 ## 2.05
 ### Capacités
 * Possibilité de spécifier une valeur (option --valeur) pour le rayon affaiblissant.
@@ -10,7 +17,6 @@
 * Enflammer une arme fait maintenant de la lumière.
 
 ### Autres améliorations
-* Intégration d'une table d'échecs critique, avec jets et effets pris en compte.
 * Possibilité de spécifier une valeur à --ignoreRD
 * Au changement de jour, affichage des effets à durée indéterminée encore actifs pour que le MJ puisse les supprimer si besoin.
 * Possibilité d'utilise une table pour les échecs critiques.
@@ -25,7 +31,6 @@
 * Standardisation de !cof-lancer-sorts et support dans les consommables
 
 ### Corrections de bugs
-* Correction de bug sur les effets de peur qui ralentissent.
 * Meilleur comportement des tokens de lumières quand on change de carte pour un même personnage.
 * Correction d'un bug dans le renouvellement des élixirs qui empêchait de créer de nouveaux élixirs si le forgesort n'a aucun élixir sur lui à la tombée de la nuit.
 * Les attaques à distance ne déclanchent plus l'effet aggriper.
