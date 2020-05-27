@@ -702,7 +702,16 @@ var COFantasy = COFantasy || function() {
       case "!cof-attack":
       case "!cof-attaque":
         var portee = 0;
-        if (command.length > 3) {
+        var args = fullCommand.split(' --');
+        var porteeTrouvee;
+        args.forEach(function(o) {
+          if (o.startsWith('portee ')) {
+            portee = parseInt(o.substring(7));
+            if (isNaN(portee) || portee < 0) portee = 0;
+            else porteeTrouvee = true;
+          }
+        });
+        if (!porteeTrouvee && command.length > 3) {
           var attackLabel = command[3];
           if (!attackLabel.startsWith('?')) {
             var att = getAttack(attackLabel, perso);
@@ -16562,10 +16571,12 @@ var COFantasy = COFantasy || function() {
     getSelected(msg, function(selected) {
       if (selected.length === 0) {
         if (options.lanceur) {
-          selected = [{_id:options.lanceur.token.id}];
+          selected = [{
+            _id: options.lanceur.token.id
+          }];
         } else {
-        error("Pas de token sélectionée pour !cof-lancer-sort", cmd);
-        return;
+          error("Pas de token sélectionée pour !cof-lancer-sort", cmd);
+          return;
         }
       }
       var evt = {
@@ -22405,7 +22416,7 @@ var COFantasy = COFantasy || function() {
         echecTotal(msg);
         return;
       default:
-        error("Commande "+command[0]+" non reconnue.", command);
+        error("Commande " + command[0] + " non reconnue.", command);
         return;
     }
   }
