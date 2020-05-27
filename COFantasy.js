@@ -8837,6 +8837,9 @@ var COFantasy = COFantasy || function() {
       bonusAttrs.push('reflexesFelins');
       bonusAttrs.push('esquiveVoleur');
     }
+    if (options.sortilege) {
+      bonusAttrs.push('resistanceALaMagie');
+    }
     if (!options.hideSaveTitle) {
       var title = " Jet de " + carac + " " + s.seuil;
       if (options.msgPour) title += options.msgPour;

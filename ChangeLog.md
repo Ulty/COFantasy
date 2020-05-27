@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.06
 ### Autres améliorations
+* Ajout de la résistance à la magie (bonus aux tests pour résister à la magie)
 * Intégration d'une table d'échecs critique, avec jets et effets pris en compte.
 
 ### Corrections de bugs
