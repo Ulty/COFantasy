@@ -1,4 +1,13 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.06
+### Autres améliorations
+* Ajout de la résistance à la magie (bonus aux tests pour résister à la magie)
+* Intégration d'une table d'échecs critique, avec jets et effets pris en compte.
+
+### Corrections de bugs
+* Les sortilèges ne sont plus affectés par les RD/tranchant. La destruction des mort-vivants devient un sortilege.
+* Correction de bug sur les effets de peur qui ralentissent.
+
 ## 2.05
 ### Capacités
 * Possibilité de spécifier une valeur (option --valeur) pour le rayon affaiblissant.
@@ -10,6 +19,7 @@
 * Enflammer une arme fait maintenant de la lumière.
 
 ### Autres améliorations
+* Possibilité de spécifier une valeur à --ignoreRD
 * Au changement de jour, affichage des effets à durée indéterminée encore actifs pour que le MJ puisse les supprimer si besoin.
 * Possibilité d'utilise une table pour les échecs critiques.
 * Création automatique d'un personnage cible

@@ -702,7 +702,16 @@ var COFantasy = COFantasy || function() {
       case "!cof-attack":
       case "!cof-attaque":
         var portee = 0;
-        if (command.length > 3) {
+        var args = fullCommand.split(' --');
+        var porteeTrouvee;
+        args.forEach(function(o) {
+          if (o.startsWith('portee ')) {
+            portee = parseInt(o.substring(7));
+            if (isNaN(portee) || portee < 0) portee = 0;
+            else porteeTrouvee = true;
+          }
+        });
+        if (!porteeTrouvee && command.length > 3) {
           var attackLabel = command[3];
           if (!attackLabel.startsWith('?')) {
             var att = getAttack(attackLabel, perso);
@@ -1875,7 +1884,7 @@ var COFantasy = COFantasy || function() {
         if (ressource) {
           act = "!cof-utilise-consommable " + tid + " " + ressource.id + " --message " + act;
         } else {
-          act = "!cof-lancer-sort 0 " + act;
+          act = "!cof-lancer-sort " + act;
         }
       }
       if (act.indexOf('@{selected') !== -1) {
@@ -1902,7 +1911,7 @@ var COFantasy = COFantasy || function() {
         });
       }
       if (act.startsWith('!cof-lancer-sort') && act.indexOf('--lanceur') == -1) {
-        act = "!cof-lancer-sort --lanceur " + tid + act.substr(16);
+        act += " --lanceur " + tid;
       }
       if (act.indexOf('@{target|') == -1 &&
         act.indexOf('cof-lancer-sort') == -1 &&
@@ -3400,7 +3409,6 @@ var COFantasy = COFantasy || function() {
       if (cmd.length === 0) cmd = [arg];
       switch (cmd[0]) {
         case "pressionMortelle":
-        case "ignoreRD":
         case "ignoreMoitieRD":
         case "tempDmg":
         case "vampirise":
@@ -3554,6 +3562,18 @@ var COFantasy = COFantasy || function() {
               label: cmd[1]
             };
           else options.tirDouble = options.tirDouble || true;
+          return;
+        case "ignoreRD":
+          if (cmd.length < 2) {
+            scope.ignoreTouteRD = true;
+            return;
+          }
+          scope.ignoreRD = parseInt(cmd[1]);
+          if (isNaN(scope.ignoreRD) || scope.ignoreRD < 1) {
+            log("Pas un nombre positif après --ignoreRD, interprété comme ignore toute la RD");
+            scope.ignoreRD = undefined;
+            scope.ignoreTouteRD = true;
+          }
           return;
         case "magique":
           var niveauMagie = 1;
@@ -4598,7 +4618,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function onGenre(charId, male, female) {
-    var sex = getAttrByName(charId, 'SEXE');
+    var sex = getAttrByName(charId, 'sexe');
     if (sex.startsWith('F')) return female;
     return male;
   }
@@ -5092,7 +5112,7 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(target, 'statueDeBois')) defense = 10;
     // Malus de défense global pour les longs combats
-    if (stateCOF.options.regles.val.usure_DEF.val)
+    if (stateCOF.options.regles.val.usure_DEF.val && stateCOF.tour > 1)
       defense -= (Math.floor((stateCOF.tour - 1) / stateCOF.options.regles.val.usure_DEF.val) * 2);
     // Autres modificateurs de défense
     defense += attributeAsInt(target, 'defenseTotale', 0);
@@ -5558,10 +5578,10 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(target, 'expose')) {
       var attrsExposeValeur = tokenAttribute(target, "exposeValeur");
       var expose = false;
-      attrsExposeValeur.forEach(function testExpose(attr){
-        if(attr.get("current") == attaquant.token.id) expose = true;
+      attrsExposeValeur.forEach(function testExpose(attr) {
+        if (attr.get("current") == attaquant.token.id) expose = true;
       });
-      if(expose) {
+      if (expose) {
         attBonus += 10;
         explications.push("L'adversaire est exposé : +10");
       }
@@ -6185,7 +6205,7 @@ var COFantasy = COFantasy || function() {
             return;
         }
       } else {
-        if (attackingToken.id == targetToken.id && !(options.triche == "echecTotal")) { //même token pour attaquant et cible
+        if (attackingToken.id == targetToken.id && options.triche != "echecTotal") { //même token pour attaquant et cible
           sendChar(attackingCharId,
             "s'attaque " + onGenre(attackingCharId, "lui", "elle") +
             "-même ? Probablement une erreur à la sélection de la cible. On annule");
@@ -7589,7 +7609,7 @@ var COFantasy = COFantasy || function() {
       if (echecCritique) {
         if (stateCOF.options.affichage.val.table_crit.val)
           sendChat('COF', "[[1t[Echec-Critique-Contact]]]");
-        else sendChat('COF', "/w GM " + suggererEchecCritique(evt, weaponStats, options.sortilege, ciblesAttaquees, attaquant));
+        else sendChat('COF', "/w GM " + suggererEchecCritique(attaquant, weaponStats, ciblesAttaquees, options, evt));
       }
       return;
     }
@@ -7811,6 +7831,7 @@ var COFantasy = COFantasy || function() {
     };
     cibles.forEach(function(target) {
       evalITE(attaquant, target, d20roll, options, evt, explications, options);
+      target.ignoreTouteRD = target.ignoreTouteRD || options.ignoreTouteRD;
       target.ignoreRD = target.ignoreRD || options.ignoreRD;
       target.ignoreMoitieRD = target.ignoreMoitieRD || options.ignoreMoitieRD;
       target.tempDmg = target.tempDmg || options.tempDmg;
@@ -8186,6 +8207,9 @@ var COFantasy = COFantasy || function() {
                 setTokenAttr(target, ef.effet, ef.duree, evt, undefined,
                   getInit());
                 switch (ef.effet) {
+                  case 'apeureTemp':
+                    setState(target, 'apeure', true, evt);
+                    break;
                   case 'aveugleTemp':
                     setState(target, 'aveugle', true, evt);
                     break;
@@ -8445,6 +8469,9 @@ var COFantasy = COFantasy || function() {
                           setTokenAttr(target, ef.effet, duree, evt,
                             undefined, getInit());
                           switch (ef.effet) {
+                            case 'apeureTemp':
+                              setState(target, 'apeure', true, evt);
+                              break;
                             case 'aveugleTemp':
                               setState(target, 'aveugle', true, evt);
                               break;
@@ -8521,82 +8548,87 @@ var COFantasy = COFantasy || function() {
     }); //Fin de la boucle pour toutes cibles
   }
 
-  function suggererEchecCritique(evt, weaponStats, sortilege, cibles, attaquant) {
+  function suggererEchecCritique(attaquant, weaponStats, cibles, options, evt) {
     var d12roll = randomInteger(12);
-
-    var estMag = sortilege || weaponStats.attSkill == "@{ATKMAG}";
+    var estMag = options.sortilege;
     var avecArme = (weaponStats.name.includes("arme") || weaponStats.divers.includes("arme"));
-    var estCac = weaponStats.attSkill == "@{ATKCAC}" || weaponStats.portee == 0;
-
-    if(d12roll == 1) {
-      if(estMag) {
-        return "Echec total : le lanceur de sort perd le contrôle de la magie qu'il canalise et subit 1d4 dommages "
-            + "en retour par rang du sort lancé."
-            + bouton("!cof-dmg ?{Rang du sort}d4 --message subit un contrecoup magique", "Appliquer", evt.personnage);
-      } else {
-        return "Echec total : l'attaquant se blesse lui-même et s'inflige la moitié des"
-            + " dégâts de son attaque. L'attaquant ne peut plus attaquer ce tour. "
-            + bouton("!cof-bouton-echec-total " + evt.id, "Appliquer", evt.personnage);
-      }
-    } else if (d12roll == 2) {
-      var difficulte = 0;
-      if(estCac) {
-        var tailleAttaquant = taillePersonnage(attaquant, 4);
-        cibles.forEach(function addTarget(cible){
-          difficulte = Math.max(difficulte, 12 - ((tailleAttaquant - taillePersonnage(cible, 4)) * 2));
-        });
-      } else {
-        difficulte = 12;
-      }
-      return "Bousculé (FOR) : l'attaquant est déséquilibré par son attaque "
-          + bouton("!cof-set-state renverse true --save FOR " + difficulte, "Appliquer", evt.personnage);
-    } else if (d12roll == 3) {
-      if (avecArme) {
-        return "Maladresse (DEX) : l'attaquant laisse échapper son arme qui tombe hors de portée immédiate."
-            + bouton("!cof-degainer --save DEX 12", "Appliquer", evt.personnage);
-      } else {
-        return "Déséquilibré (DEX) : l'attaquant est Ralenti pendant 3 tours." +
-            bouton("!cof-effet-temp ralentiTemp 3 --save DEX 12", "Appliquer", evt.personnage);
-      }
-    } else if (d12roll == 4) {
-      return "Coup de mou (CON) : l'attaquant est affaibli pendant 3 tours, ou jusqu'à ce qu'il consacre un tour "
-          + "ou 1 PR pour se rétablir."
-          + bouton("!cof-effet-temp affaibliTemp 3 --save CON 12", "Appliquer", evt.personnage);
-    } else if (d12roll == 5) {
-      if (estCac) {
-        return "Erreur tactique (INT) : le personnage provoque une attaque (gratuite) d’un adversaire à son contact.";
-      } else if (estMag) {
-        return "Aveuglé (INT) : le personnage ne contrôle pas sa puissance et une partie de celle-ci émet un flash "
-            + "qui l'aveugle temporairement."
-            + bouton("!cof-effet-temp aveugleTemp 3 --save INT 12 --saveParTour CON 12", "Appliquer", evt.personnage);
-      } else {
-        //TODO : Implémenter un bouton "mauvais calcul" réalisant une attaque automatique sur un des Obstacle
-        return "Mauvais calcul (INT) : le personnage a une chance de toucher une autre cible sur la trajectoire"
-            + " de son tir. Déterminer la cible au hasard et relancer une attaque sur cette nouvelle cible."
-            + bouton("!cof-jet INT 12", "Appliquer", evt.personnage);
-      }
-    } else if (d12roll == 6) {
-      if (estCac) {
-        var action = "";
-        cibles.forEach(function addTarget(cible){
-          action += "!cof-effet-temp expose 1 --valeur " + cible.token.id + " --save SAG 12";
-        });
-        return "Exposé (SAG) : l'adversaire dispose d'un bonus de +10 à la touche pendant un round."
-            + bouton(action, "Appliquer", evt.personnage);
-      } else {
-        return "Distrait (SAG) : le personnage est Ralenti pendant 3 tours"
-            + bouton("!cof-effet-temp ralentiTemp 3 --save SAG 12", "Appliquer", evt.personnage);
-      }
-    } else if (d12roll == 7) {
-      return "Ridicule (CHA) : le personnage fait un faux mouvement à la fois douloureux et ridicule, il subit "
-          + "l’état étourdi pendant un round pour reprendre contenance. "
-          + bouton("!cof-effet-temp etourdiTemp 1 --save CHA 12", "Appliquer", evt.personnage);
-    } else if (d12roll == 8) {
-      return "Inconfort : Une pièce d’armure bouge et elle devient plus gênante que protectrice. Cuir : -1 en DEF "
-          + "et en attaque pour le reste du combat. Maille : -2, Plaque -3. "
-          + bouton("!cof-effet-combat inconfort --valeur ?{Malus ?|-1,1|-2,2|-3,3} --save CHA 12", "Appliquer", evt.personnage);
-    } else {
-      return "L'attaquant s'en tire bien cette fois-ci, pas d'effet particulier";
+    var estCac = options.contact;
+    var boutonCritique = function(action) {
+      return boutonSimple(action + " --target " + attaquant.token.id,
+        'background-color:#cc0000', "Appliquer");
+    };
+    var msg;
+    switch (d12roll) {
+      case 1:
+        msg = "Échec total : ";
+        if (estMag) {
+          msg += "le lanceur de sort perd le contrôle de la magie qu'il canalise et subit 1d4 dommages en retour par rang du sort lancé. ";
+          msg += boutonCritique("!cof-dmg ?{Rang du sort}d4 --message subit un contrecoup magique");
+        } else {
+          msg += "l'attaquant se blesse lui-même et s'inflige la moitié des dégâts de son attaque. L'attaquant ne peut plus attaquer ce tour. ";
+          msg += boutonCritique("!cof-bouton-echec-total " + evt.id);
+        }
+        return msg;
+      case 2:
+        var difficulte = 0;
+        if (estCac) {
+          var tailleAttaquant = taillePersonnage(attaquant, 4);
+          cibles.forEach(function(cible) {
+            difficulte = Math.max(difficulte, 12 - ((tailleAttaquant - taillePersonnage(cible, 4)) * 2));
+          });
+        } else {
+          difficulte = 12;
+        }
+        msg = "Bousculé (FOR) : l'attaquant est déséquilibré par son attaque ";
+        msg += boutonCritique("!cof-set-state renverse true --save FOR " + difficulte);
+        return msg;
+      case 3:
+        if (avecArme) {
+          msg = "Maladresse (DEX) : l'attaquant laisse échapper son arme qui tombe hors de portée immédiate.";
+          msg += boutonCritique("!cof-degainer --save DEX 12");
+          return msg;
+        }
+        msg = "Déséquilibré (DEX) : l'attaquant est Ralenti pendant 3 tours.";
+        msg += boutonCritique("!cof-effet-temp ralentiTemp 3 --save DEX 12");
+        return msg;
+      case 4:
+        msg = "Coup de mou (CON) : l'attaquant est affaibli pendant 3 tours, ou jusqu'à ce qu'il consacre un tour ou 1 PR pour se rétablir.";
+        msg += boutonCritique("!cof-effet-temp affaibliTemp 3 --save CON 12");
+        return msg;
+      case 5:
+        if (estCac) {
+          msg = "Erreur tactique (INT) : le personnage provoque une attaque (gratuite) d’un adversaire à son contact.";
+          msg += boutonCritique("!cof-jet INT 12");
+        } else if (estMag) {
+          msg = "Aveuglé (INT) : le personnage ne contrôle pas sa puissance et une partie de celle-ci émet un flash qui l'aveugle temporairement.";
+          msg += boutonCritique("!cof-effet-temp aveugleTemp 3 --save INT 12 --saveParTour CON 12");
+        } else {
+          //TODO : Implémenter un bouton "mauvais calcul" réalisant une attaque automatique sur un des Obstacle
+          msg = "Mauvais calcul (INT) : le personnage a une chance de toucher une autre cible sur la trajectoire de son tir. Déterminer la cible au hasard et relancer une attaque sur cette nouvelle cible.";
+          msg += boutonCritique("!cof-jet INT 12");
+        }
+        return msg;
+      case 6:
+        if (estCac) {
+          msg = "Exposé (SAG) : l'adversaire dispose d'un bonus de +10 à la touche pendant un round.";
+          cibles.forEach(function(cible) {
+            msg += boutonCritique("!cof-effet-temp expose 1 --valeur " + cible.token.id + " --save SAG 12");
+          });
+        } else {
+          msg = "Distrait (SAG) : le personnage est Ralenti pendant 3 tours ";
+          msg += boutonCritique("!cof-effet-temp ralentiTemp 3 --save SAG 12");
+        }
+        return msg;
+      case 7:
+        msg = "Ridicule (CHA) : le personnage fait un faux mouvement à la fois douloureux et ridicule, il subit l’état étourdi pendant un round pour reprendre contenance. ";
+        msg += boutonCritique("!cof-effet-temp etourdiTemp 1 --save CHA 12");
+        return msg;
+      case 8:
+        msg = "Inconfort : Une pièce d’armure bouge et elle devient plus gênante que protectrice. Cuir : -1 en DEF et en attaque pour le reste du combat. Maille : -2, Plaque -3. ";
+        msg += boutonCritique("!cof-effet-combat inconfort --valeur ?{Malus ?|-1,1|-2,2|-3,3} --save CHA 12");
+        return msg;
+      default:
+        return "L'attaquant s'en tire bien cette fois-ci, pas d'effet particulier";
     }
   }
 
@@ -8640,7 +8672,7 @@ var COFantasy = COFantasy || function() {
           if (evt.action.options && evt.action.options.sortilege) sort = true;
           if (evt.action.cibles) {
             evt.action.cibles.forEach(function(target) {
-              if (!options.pasDeDmg && !options.ignoreRD && attributeAsBool(target, 'encaisserUnCoup')) {
+              if (!options.pasDeDmg && !options.ignoreTouteRD && attributeAsBool(target, 'encaisserUnCoup')) {
                 addLineToFramedDisplay(display, target.tokName + " peut " +
                   bouton("!cof-encaisser-un-coup " + evt.id,
                     "encaisser le coup", target)
@@ -8814,6 +8846,9 @@ var COFantasy = COFantasy || function() {
       bonusAttrs.push('reflexesFelins');
       bonusAttrs.push('esquiveVoleur');
     }
+    if (options.sortilege) {
+      bonusAttrs.push('resistanceALaMagie');
+    }
     if (!options.hideSaveTitle) {
       var title = " Jet de " + carac + " " + s.seuil;
       if (options.msgPour) title += options.msgPour;
@@ -8890,7 +8925,7 @@ var COFantasy = COFantasy || function() {
         case 'tranchant':
         case 'contondant':
         case 'percant':
-          return dmgType != 'normal';
+          return options.sortilege || dmgType != 'normal';
         default:
           return false;
       }
@@ -8942,13 +8977,16 @@ var COFantasy = COFantasy || function() {
       dmgTotal = 0;
       dmgDisplay = '0';
       showTotal = false;
-    } else if (target.ignoreRD === undefined) {
+    } else if (!target.ignoreTouteRD) {
       var rd = getRDS(target);
       var rdMain = typeRD(rd, mainDmgType);
       if (rd.drain && (options.vampirise || target.vampirise)) {
         rdMain += rd.drain;
       }
       if (target.ignoreMoitieRD) rdMain = parseInt(rdMain / 2);
+      if (target.ignoreRD) {
+        rdMain -= target.ignoreRD; //rdMain peut être négatif
+      }
       if (rdMain > 0 && dmgTotal > 0) {
         dmgTotal -= rdMain;
         if (dmgTotal < 0) {
@@ -9095,7 +9133,7 @@ var COFantasy = COFantasy || function() {
             else typeDisplay += "+" + addTypeDisplay;
             typeCount--;
             if (typeCount === 0) {
-              if (target.ignoreRD === undefined) {
+              if (!target.ignoreTouteRD) {
                 var rdl = typeRD(rd, dmgType);
                 if (target.ignoreMoitieRD) rdl = parseInt(rdl / 2);
                 if (rdl > 0 && dm > 0) {
@@ -9412,10 +9450,13 @@ var COFantasy = COFantasy || function() {
           rd += target.extraRD;
           expliquer(target.tokName + " dévie le coup sur son armure");
         }
-        if (target.ignoreRD) rd = 0;
+        if (target.ignoreTouteRD) rd = 0;
         else if (target.ignoreMoitieRD) rd = parseInt(rd / 2);
+        if (target.ignoreRD) {
+          rd -= target.ignoreRD; //rd peut être négatif
+        }
         //RD PeauDePierre à prendre en compte en dernier
-        if (!target.defautCuirasse && !target.ignoreRD && rd < dmgTotal && attributeAsBool(target, 'peauDePierreMag')) {
+        if (!target.defautCuirasse && !target.ignoreTouteRD && rd < dmgTotal && attributeAsBool(target, 'peauDePierreMag')) {
           var peauDePierreMagValeur = tokenAttribute(target, 'peauDePierreMagValeur');
           if (peauDePierreMagValeur.length === 0) {
             error("compteur de Peau de Pierre non trouvé", target);
@@ -9607,7 +9648,7 @@ var COFantasy = COFantasy || function() {
             !attributeAsBool(target, 'enragé')) {
             setTokenAttr(target, 'enragé', true, evt);
             expliquer(target.tokName + " devient enragé" + eForFemale(target.charId) + ".");
-            finDEffetDeNom(target, 'peur', evt);
+            finDEffetDeNom(target, 'apeureTemp', evt);
             finDEffetDeNom(target, 'peurEtourdi', evt);
             setState(target, 'apeure', false, evt);
           }
@@ -13327,13 +13368,16 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (ficheAttributeAsInt(perso, 'DEFARMUREON', 1) === 0) {
-          addLineToFramedDisplay(display, "Ne porte pas son armure");
+          var possedeArmure = ficheAttributeAsInt(perso, 'DEFARMURE', 0) > 0;
+          if (possedeArmure) addLineToFramedDisplay(display, "Ne porte pas son armure");
           if (charAttributeAsInt(perso, 'vetementsSacres', 0) > 0) {
-            addLineToFramedDisplay(display, "  mais bénéficie de ses vêtements sacrés (DEF " + defense + ")");
+            if (possedeArmure) addLineToFramedDisplay(display, "  mais bénéficie de ses vêtements sacrés (DEF " + defense + ")");
+            else addLineToFramedDisplay(display, "porte des vêtements sacrés (DEF " + defense + ")");
             defenseMontree = true;
           }
           if (charAttributeAsInt(perso, 'armureDeVent', 0) > 0) {
-            addLineToFramedDisplay(display, "  mais bénéficie de son armure de vent (DEF " + defense + ")");
+            if (possedeArmure) addLineToFramedDisplay(display, "  mais bénéficie de son armure de vent (DEF " + defense + ")");
+            else addLineToFramedDisplay(display, "bénéficie de son armure de vent (DEF " + defense + ")");
             defenseMontree = true;
           }
         }
@@ -13826,7 +13870,6 @@ var COFantasy = COFantasy || function() {
           case 'contondant':
           case 'tempDmg':
           case 'mortsVivants':
-          case 'ignoreRD':
           case 'ignoreMoitieRD':
           case 'maxDmg':
             options[opt[0]] = true;
@@ -13839,6 +13882,7 @@ var COFantasy = COFantasy || function() {
           case "poison":
           case "maladie":
           case "argent":
+          case 'sortilege':
             if (options.additionalDmg) {
               var l = options.additionalDmg.length;
               if (l > 0) {
@@ -13851,6 +13895,18 @@ var COFantasy = COFantasy || function() {
           case "nature":
           case "naturel":
             options.nature = true;
+            return;
+          case "ignoreRD":
+            if (cmd.length < 2) {
+              options.ignoreTouteRD = true;
+              return;
+            }
+            options.ignoreRD = parseInt(cmd[1]);
+            if (isNaN(options.ignoreRD) || options.ignoreRD < 1) {
+              log("Pas un nombre positif après --ignoreRD, interprété comme ignore toute la RD");
+              options.ignoreRD = undefined;
+              options.ignoreTouteRD = true;
+            }
             return;
         }
       });
@@ -13907,6 +13963,7 @@ var COFantasy = COFantasy || function() {
             var name = perso.token.get('name');
             var explications = [];
             perso.ignoreRD = options.ignoreRD;
+            perso.ignoreTouteRD = options.ignoreTouteRD;
             perso.ignoreMoitieRD = options.ignoreMoitieRD;
             perso.tempDmg = options.tempDmg;
             dealDamage(perso, dmg, [], evt, false, options, explications,
@@ -14005,7 +14062,7 @@ var COFantasy = COFantasy || function() {
             setTokenAttr(perso, etat + 'Save', saveParTour.carac, evt, undefined, saveParTour.difficulte);
           }
         }
-        if(options.save) {
+        if (options.save) {
           var saveOpts = {
             msgPour: " pour résister à l'effet " + etat,
             msgRate: ", raté.",
@@ -14014,10 +14071,10 @@ var COFantasy = COFantasy || function() {
             sendChar(perso.charId, s);
           };
           save(options.save, perso, expliquer, saveOpts, evt, function(reussite, rollText) {
-              if (!reussite) {
-                setEffect();
-              }
-            });
+            if (!reussite) {
+              setEffect();
+            }
+          });
         } else {
           setEffect();
         }
@@ -14308,7 +14365,7 @@ var COFantasy = COFantasy || function() {
           var nomArme = degainerArme(perso, armeLabel, evt, options);
           if (nomArme) sendChar(perso.charId, "a déjà " + nomArme + " en main");
         }
-        if(options.save) {
+        if (options.save) {
           var saveOpts = {
             msgPour: " pour garder son arme en main",
             msgRate: ", raté.",
@@ -14592,6 +14649,9 @@ var COFantasy = COFantasy || function() {
               break;
             case 'affaibliTemp':
               setState(perso, 'affaibli', true, evt);
+              break;
+            case 'apeureTemp':
+              setState(perso, 'apeure', true, evt);
               break;
             case 'peauDePierreMag':
               if (options.valeur === undefined) {
@@ -15008,18 +15068,20 @@ var COFantasy = COFantasy || function() {
         if (tr.reussite) {
           line += "&gt;=" + difficulte + ",  " + sujet + " résiste à la peur.";
         } else {
-          setState(target, 'apeure', true, evt);
           line += "&lt;" + difficulte + ", " + sujet + ' ';
-          var effet = 'peur';
+          var effet = 'apeureTemp';
+          var etat = 'apeure';
           if (options.etourdi) {
             line += "s'enfuit ou reste recroquevillé" + eForFemale(charId) + " sur place";
             effet = 'peurEtourdi';
           } else if (options.ralenti) {
             line += "est ralenti" + eForFemale(charId);
             effet = 'ralentiTemp';
+            etat = 'ralenti';
           } else {
             line += "s'enfuit.";
           }
+          setState(target, etat, true, evt);
           setTokenAttr(target, effet, duree, evt, undefined, getInit());
         }
         messages.push(line);
@@ -16508,8 +16570,14 @@ var COFantasy = COFantasy || function() {
     }
     getSelected(msg, function(selected) {
       if (selected.length === 0) {
-        error("Pas de token sélectionée pour !cof-lancer-sort", cmd);
-        return;
+        if (options.lanceur) {
+          selected = [{
+            _id: options.lanceur.token.id
+          }];
+        } else {
+          error("Pas de token sélectionée pour !cof-lancer-sort", cmd);
+          return;
+        }
       }
       var evt = {
         type: "lancement de sort"
@@ -17369,7 +17437,7 @@ var COFantasy = COFantasy || function() {
               display: d4.roll
             };
             var explications = [];
-            barbare.ignoreRD = true;
+            barbare.ignoreTouteRD = true;
             dealDamage(barbare, r, [], evt, false, {}, explications,
               function(dmgDisplay, dmg) {
                 var dmgMsg = "mais cela lui coûte " + dmgDisplay + " PV";
@@ -17894,7 +17962,7 @@ var COFantasy = COFantasy || function() {
             var msgJet = "Jet de SAG : " + testRes.texte;
             if (testRes.reussite) {
               var eventId = stateCOF.eventId;
-              var action = "!cof-dmg " + dm + " --once " + eventId + " --mortsVivants";
+              var action = "!cof-dmg " + dm + " --sortilege --mortsVivants";
               evt.waitingForAoe = true;
               addLineToFramedDisplay(display, msgJet + " &ge; 13");
               sendChat(name, endFramedDisplay(display));
@@ -21046,6 +21114,7 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: 'lumiere',
     };
+    if (limiteRessources(options.lanceur, options, 'lumière', "lumière", evt)) return;
     ajouteUneLumiere(cible, nomToken, radius, dimRadius, evt);
     addEvent(evt);
   }
@@ -22347,6 +22416,7 @@ var COFantasy = COFantasy || function() {
         echecTotal(msg);
         return;
       default:
+        error("Commande " + command[0] + " non reconnue.", command);
         return;
     }
   }
@@ -22395,7 +22465,7 @@ var COFantasy = COFantasy || function() {
       fin: "n'est plus affaibli",
       prejudiciable: true
     },
-    peur: {
+    apeureTemp: {
       activation: "prend peur",
       actif: "est dominé par sa peur",
       fin: "retrouve du courage",
@@ -23177,7 +23247,7 @@ var COFantasy = COFantasy || function() {
             tousLesTokens: true
           });
         break;
-      case 'peur':
+      case 'apeureTemp':
       case 'peurEtourdi':
         iterTokensOfAttribute(charId, options.pageId, effet, attrName,
           function(token) {
@@ -24483,7 +24553,7 @@ on("destroy:handout", function(prev) {
 });
 
 on('ready', function() {
-  var script_version = "2.05";
+  var script_version = "2.06";
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
