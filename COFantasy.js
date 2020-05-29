@@ -8219,6 +8219,9 @@ var COFantasy = COFantasy || function() {
                   case 'paralyseTemp':
                     setState(target, 'paralyse', true, evt);
                     break;
+                  case 'immobiliseTemp':
+                    setState(target, 'immobilise', true, evt);
+                    break;
                   case 'etourdiTemp':
                     setState(target, 'etourdi', true, evt);
                     break;
@@ -8480,6 +8483,9 @@ var COFantasy = COFantasy || function() {
                               break;
                             case 'paralyseTemp':
                               setState(target, 'paralyse', true, evt);
+                              break;
+                            case 'immobiliseTemp':
+                              setState(target, 'immobilise', true, evt);
                               break;
                             case 'etourdiTemp':
                               setState(target, 'etourdi', true, evt);
@@ -14643,6 +14649,9 @@ var COFantasy = COFantasy || function() {
               break;
             case 'paralyseTemp':
               setState(perso, 'paralyse', true, evt);
+              break;
+            case 'immobiliseTemp':
+              setState(perso, 'immobilise', true, evt);
               break;
             case 'etourdiTemp':
               setState(perso, 'etourdi', true, evt);
@@ -22493,6 +22502,12 @@ var COFantasy = COFantasy || function() {
       activation: "est paralysé : aucune action ni déplacement possible",
       actif: "est paralysé",
       fin: "n'est plus paralysé",
+      prejudiciable: true
+    },
+    immobiliseTemp: {
+      activation: "est immobilisé : aucun déplacement possible",
+      actif: "est immobilisé",
+      fin: "n'est plus immobilisé",
       prejudiciable: true
     },
     etourdiTemp: {
