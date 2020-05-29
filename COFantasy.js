@@ -530,18 +530,46 @@ var COFantasy = COFantasy || function() {
           no_error = false;
         }
       });
+
+      // Cas particulier des deux markers d'initiative
+      if (markerCatalog["cof-init-ally"]) {
+        stateCOF.statusForInitAlly = "status_" + markerCatalog["cof-init-ally"].tag;
+      } else {
+        markersAbsents.push("cof-init-ally")
+        no_error = false;
+      }
+      if (markerCatalog["cof-init-enemy"]) {
+        stateCOF.statusForInitEnemy = "status_" + markerCatalog["cof-init-enemy"].tag;
+      } else {
+        markersAbsents.push("cof-init-enemy")
+        no_error = false;
+      }
+      
+      // Cas des markers d'effet temporaire, 3 cas particuliers :
+      // 1. uniquement le tag sans "status_" devant
+      // 2. on signale absence mais on on ne touche pas à no_error
+      // 3. on met à jour directement messageEffetTemp 
+      if (markerCatalog["cof-asphyxie"]) {
+        messageEffetTemp.asphyxie.statusMarker = markerCatalog["cof-asphyxie"].tag;
+      } else {
+        markersAbsents.push("cof-asphyxie")
+      }
+      if (markerCatalog["cof-saigne"]) {
+        messageEffetTemp.saignementsSang.statusMarker = markerCatalog["cof-saigne"].tag;
+      } else {
+        markersAbsents.push("cof-saigne")
+      }
+      if (markerCatalog["cof-prison-vegetale"]) {
+        messageEffetTemp.prisonVegetale.statusMarker = markerCatalog["cof-prison-vegetale"].tag;
+      } else {
+        markersAbsents.push("cof-prison-vegetale")
+      }
+      
       if (!ancientSet) {
         markersAbsents.forEach(function(m) {
           log("Marker " + m + " introuvable");
         });
       }
-      // Cas particulier des deux tokens d'initiative
-      if (markerCatalog["cof-init-ally"]) {
-        stateCOF.statusForInitAlly = "status_" + markerCatalog["cof-init-ally"].tag;
-      } else no_error = false;
-      if (markerCatalog["cof-init-enemy"]) {
-        stateCOF.statusForInitEnemy = "status_" + markerCatalog["cof-init-enemy"].tag;
-      } else no_error = false;
       // Si aucune erreur de marker non trouvé
       if (no_error) {
         cof_states = cof_states_perso;
@@ -22685,7 +22713,7 @@ var COFantasy = COFantasy || function() {
       fin: "peut à nouveau respirer",
       prejudiciable: true,
       seulementVivant: true,
-      statusMarker: 'overdrive',
+      statusMarker: 'blue',
       dm: true
     },
     forceDeGeant: {
@@ -22727,7 +22755,8 @@ var COFantasy = COFantasy || function() {
       activation: "voit des plantes pousser et s'enrouler autour de ses jambes",
       actif: "est bloqué par des plantes",
       fin: "se libère des plantes",
-      prejudiciable: true
+      prejudiciable: true,
+      statusMarker: 'green'
     },
     protectionContreLesElements: {
       activation: "lance un sort de protection contre les éléments",
