@@ -16665,13 +16665,11 @@ var COFantasy = COFantasy || function() {
             error("Il manque l'adresse de l'image", cmd);
             return;
           }
-          options.image = optCmd[1];
+          options.image = optCmd[1].replace('&#58;', ':');
           return;
         case 'no-image':
           options.image = undefined;
           return;
-        default:
-          error("Option inconnue", cmd);
       }
     });
     getSelected(msg, function(selected) {
@@ -16707,10 +16705,15 @@ var COFantasy = COFantasy || function() {
             isdrawing: true,
           };
           var newImage = createObj('graphic', imageFields);
-          toFront(newImage);
-          var duree = 5 + modCarac(lanceur, 'CHARISME');
-          setTokenAttr(lanceur, 'murDeForce', duree, evt, undefined, getInit());
-          setTokenAttr(lanceur, 'murDeForceId', newImage.id, evt);
+          if (newImage) {
+            evt.tokens = [newImage];
+            toFront(newImage);
+            setTokenAttr(lanceur, 'murDeForceId', newImage.id, evt);
+            var duree = 5 + modCarac(lanceur, 'CHARISME');
+            setTokenAttr(lanceur, 'murDeForce', duree, evt, undefined, getInit());
+          } else {
+            error("Impossible de créer l'image "+options.image, imageFields);
+          }
         } else {
           sendChar(charId, '/w "' + token.get('name') + '" ' + "placer l'image du mur sur la carte");
         }
