@@ -3616,7 +3616,8 @@ var COFantasy = COFantasy || function() {
           var val = arg.substring(arg.indexOf(' ') + 1);
           scope.additionalDmg = scope.additionalDmg || [];
           scope.additionalDmg.push({
-            value: val
+            value: val,
+            type: scope.type
           });
           break;
         case "effet":
@@ -13193,9 +13194,9 @@ var COFantasy = COFantasy || function() {
   function stringOfEtat(etat, perso) {
     if (etat == 'invisible') return etat;
     var etext = etat;
-            if (etat.endsWith('e')) {
-                etext = etat.substring(0, etat.length - 1) + 'é';
-            }
+    if (etat.endsWith('e')) {
+      etext = etat.substring(0, etat.length - 1) + 'é';
+    }
     if (perso === undefined) return etext;
     return etext + eForFemale(perso.charId);
   }
@@ -16712,7 +16713,7 @@ var COFantasy = COFantasy || function() {
             var duree = 5 + modCarac(lanceur, 'CHARISME');
             setTokenAttr(lanceur, 'murDeForce', duree, evt, undefined, getInit());
           } else {
-            error("Impossible de créer l'image "+options.image, imageFields);
+            error("Impossible de créer l'image " + options.image, imageFields);
           }
         } else {
           sendChar(charId, '/w "' + token.get('name') + '" ' + "placer l'image du mur sur la carte");
