@@ -280,7 +280,7 @@ var COFantasy = COFantasy || function() {
     endormi: 'status_sleepy',
     apeure: 'status_screaming',
     invisible: 'status_ninja-mask',
-    blessé: 'status_arrowed',
+    blesse: 'status_arrowed',
     encombre: 'status_frozen-orb'
   };
 
@@ -512,7 +512,7 @@ var COFantasy = COFantasy || function() {
         endormi: 'status_cof-endormi',
         apeure: 'status_cof-apeure',
         invisible: 'status_cof-invisible',
-        blessé: 'status_cof-blesse',
+        blesse: 'status_cof-blesse',
         encombre: 'status_cof-encombre'
       };
       // On boucle sur la liste des états pour vérifier que les markers sont bien présents !
@@ -530,18 +530,46 @@ var COFantasy = COFantasy || function() {
           no_error = false;
         }
       });
+
+      // Cas particulier des deux markers d'initiative
+      if (markerCatalog["cof-init-ally"]) {
+        stateCOF.statusForInitAlly = "status_" + markerCatalog["cof-init-ally"].tag;
+      } else {
+        markersAbsents.push("cof-init-ally")
+        no_error = false;
+      }
+      if (markerCatalog["cof-init-enemy"]) {
+        stateCOF.statusForInitEnemy = "status_" + markerCatalog["cof-init-enemy"].tag;
+      } else {
+        markersAbsents.push("cof-init-enemy")
+        no_error = false;
+      }
+      
+      // Cas des markers d'effet temporaire, 3 cas particuliers :
+      // 1. uniquement le tag sans "status_" devant
+      // 2. on signale absence mais on on ne touche pas à no_error
+      // 3. on met à jour directement messageEffetTemp 
+      if (markerCatalog["cof-asphyxie"]) {
+        messageEffetTemp.asphyxie.statusMarker = markerCatalog["cof-asphyxie"].tag;
+      } else {
+        markersAbsents.push("cof-asphyxie")
+      }
+      if (markerCatalog["cof-saigne"]) {
+        messageEffetTemp.saignementsSang.statusMarker = markerCatalog["cof-saigne"].tag;
+      } else {
+        markersAbsents.push("cof-saigne")
+      }
+      if (markerCatalog["cof-prison-vegetale"]) {
+        messageEffetTemp.prisonVegetale.statusMarker = markerCatalog["cof-prison-vegetale"].tag;
+      } else {
+        markersAbsents.push("cof-prison-vegetale")
+      }
+      
       if (!ancientSet) {
         markersAbsents.forEach(function(m) {
           log("Marker " + m + " introuvable");
         });
       }
-      // Cas particulier des deux tokens d'initiative
-      if (markerCatalog["cof-init-ally"]) {
-        stateCOF.statusForInitAlly = "status_" + markerCatalog["cof-init-ally"].tag;
-      } else no_error = false;
-      if (markerCatalog["cof-init-enemy"]) {
-        stateCOF.statusForInitEnemy = "status_" + markerCatalog["cof-init-enemy"].tag;
-      } else no_error = false;
       // Si aucune erreur de marker non trouvé
       if (no_error) {
         cof_states = cof_states_perso;
@@ -886,7 +914,7 @@ var COFantasy = COFantasy || function() {
 
   function estAffaibli(perso) {
     if (getState(perso, 'affaibli')) return true;
-    if (getState(perso, 'blessé')) return true;
+    if (getState(perso, 'blesse')) return true;
     return false;
   }
 
@@ -3616,7 +3644,8 @@ var COFantasy = COFantasy || function() {
           var val = arg.substring(arg.indexOf(' ') + 1);
           scope.additionalDmg = scope.additionalDmg || [];
           scope.additionalDmg.push({
-            value: val
+            value: val,
+            type: scope.type
           });
           break;
         case "effet":
@@ -8155,7 +8184,7 @@ var COFantasy = COFantasy || function() {
               }
               if (testCondition(ce.condition, attaquant, [target], d20roll)) {
                 setState(target, ce.etat, true, evt);
-                target.messages.push(target.tokName + " est " + ce.etat + eForFemale(target.charId) + " par l'attaque");
+                target.messages.push(target.tokName + " est " + stringOfEtat(ce.etat, target) + " par l'attaque");
                 if (ce.saveCarac) {
                   setTokenAttr(target, ce.etat + 'Save', ce.saveCarac, evt, undefined, ce.saveDifficulte);
                 }
@@ -8163,7 +8192,7 @@ var COFantasy = COFantasy || function() {
                 if (ce.condition.type == "moins") {
                   target.messages.push(
                     "Grâce à sa " + ce.condition.text + ", " + target.tokName +
-                    " n'est pas " + ce.etat + eForFemale(target.charId));
+                    " n'est pas " + stringOfEtat(ce.etat, target));
                 }
               }
             });
@@ -8218,6 +8247,9 @@ var COFantasy = COFantasy || function() {
                     break;
                   case 'paralyseTemp':
                     setState(target, 'paralyse', true, evt);
+                    break;
+                  case 'immobiliseTemp':
+                    setState(target, 'immobilise', true, evt);
                     break;
                   case 'etourdiTemp':
                     setState(target, 'etourdi', true, evt);
@@ -8409,7 +8441,7 @@ var COFantasy = COFantasy || function() {
                 if (ce.save) {
                   if (testCondition(ce.condition, attaquant, [target], d20roll)) {
                     var msgPour = " pour résister à un effet";
-                    var msgRate = ", " + target.tokName + " est " + ce.etat + eForFemale(target.charId) + " par l'attaque";
+                    var msgRate = ", " + target.tokName + " est " + stringOfEtat(ce.etat, target) + " par l'attaque";
                     var saveOpts = {
                       msgPour: msgPour,
                       msgRate: msgRate,
@@ -8430,7 +8462,7 @@ var COFantasy = COFantasy || function() {
                     if (ce.condition.type == "moins") {
                       target.messages.push(
                         "Grâce à sa " + ce.condition.text + ", " + target.tokName +
-                        " n'est pas " + ce.etat + eForFemale(target.charId));
+                        " n'est pas " + stringOfEtat(ce.etat, target));
                     }
                     saves--;
                     afterSaves();
@@ -8480,6 +8512,9 @@ var COFantasy = COFantasy || function() {
                               break;
                             case 'paralyseTemp':
                               setState(target, 'paralyse', true, evt);
+                              break;
+                            case 'immobiliseTemp':
+                              setState(target, 'immobilise', true, evt);
                               break;
                             case 'etourdiTemp':
                               setState(target, 'etourdi', true, evt);
@@ -9263,7 +9298,7 @@ var COFantasy = COFantasy || function() {
       if (pr.current > 0) {
         expliquer("Les dégâts sont si importants que " + target.tokName + " perd 1 PR");
         enleverPointDeRecuperation(target, evt);
-      } else if (getState(target, 'blessé')) {
+      } else if (getState(target, 'blesse')) {
         if (getState(target, 'mort')) {
           expliquer("Avec la blessure grave, c'est vraiment la fin, " + target.tokName + " ne se relèvera plus...");
         } else {
@@ -9271,7 +9306,7 @@ var COFantasy = COFantasy || function() {
           mort(target, expliquer, evt);
         }
       } else {
-        setState(target, 'blessé', true, evt);
+        setState(target, 'blesse', true, evt);
         expliquer("Les dégâts occasionnent une blessure grave !");
       }
     }
@@ -11277,13 +11312,13 @@ var COFantasy = COFantasy || function() {
       var message;
       if (reposLong && pr.current < pr.max) { // on récupère un PR
         //Sauf si on a une blessure gave
-        if (getState(perso, 'blessé')) {
+        if (getState(perso, 'blesse')) {
           testCaracteristique(perso, 'CON', 8, {}, evt, function(tr) {
             sendChar(charId, "fait un jet de CON pour guérir de sa blessure");
             var m = "/direct " + onGenre(charId, 'Il', 'Elle') + " fait " + tr.texte;
             if (tr.reussite) {
               sendChar(charId, m + "&ge; 8, son état s'améliore nettement.");
-              setState(perso, 'blessé', false, evt);
+              setState(perso, 'blesse', false, evt);
             } else sendChar(charId, m + "< 8, son état reste préoccupant.");
             finalize();
           });
@@ -13184,6 +13219,16 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function stringOfEtat(etat, perso) {
+    if (etat == 'invisible') return etat;
+    var etext = etat;
+    if (etat.endsWith('e')) {
+      etext = etat.substring(0, etat.length - 1) + 'é';
+    }
+    if (perso === undefined) return etext;
+    return etext + eForFemale(perso.charId);
+  }
+
   function statut(msg) { // show some character informations
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
@@ -13354,14 +13399,10 @@ var COFantasy = COFantasy || function() {
           if (getState(perso, etat)) {
             var markerName = cof_states[etat].substring(7).split("::")[0];
             var marker = markerCatalog[markerName];
-            var etext;
+            var etext = stringOfEtat(etat, perso);
             if (marker) {
-              etext = "<img src=" + marker.url + "></img> " + etat;
-            } else { // Cas du statut mort ou en cas de non-présence des tokens au catalogue
-              etext = etat;
+              etext = "<img src=" + marker.url + "></img> " + etext;
             }
-            if (etext.endsWith('e')) etext = etext.substring(0, etext.length - 1) + 'é';
-            etext += eForFemale(charId);
             var saveEtat = boutonSaveState(perso, etat);
             if (saveEtat) etext += ", " + saveEtat;
             addLineToFramedDisplay(display, etext);
@@ -14064,7 +14105,7 @@ var COFantasy = COFantasy || function() {
         }
         if (options.save) {
           var saveOpts = {
-            msgPour: " pour résister à l'effet " + etat,
+            msgPour: " pour résister à l'effet " + stringOfEtat(etat),
             msgRate: ", raté.",
           };
           var expliquer = function(s) {
@@ -14083,7 +14124,7 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function textOfSaveState(etat) {
+  function textOfSaveState(etat, perso) {
     switch (etat) {
       case 'immobilise':
         return "se libérer";
@@ -14100,7 +14141,7 @@ var COFantasy = COFantasy || function() {
       case 'apeure':
         return "retrouver du courage";
       default:
-        return "ne plus être " + etat;
+        return "ne plus être " + stringOfEtat(etat, perso);
     }
   }
 
@@ -14132,7 +14173,7 @@ var COFantasy = COFantasy || function() {
       if (opposant) {
         iterSelected(selected, function(perso) {
           if (!getState(perso, etat)) {
-            sendChar(perso.charId, "n'est pas " + etat + eForFemale(perso.charId));
+            sendChar(perso.charId, "n'est pas " + stringOfEtat(etat, perso));
             return;
           }
           var evt = {
@@ -14144,10 +14185,10 @@ var COFantasy = COFantasy || function() {
           var explications = [];
           testOppose(perso, carac, {}, opposant, carac, {}, explications, evt, function(resultat, crit) {
             if (resultat == 2) {
-              explications.push(perso.token.get('name') + " est toujours " + etat + eForFemale(perso.charId));
+              explications.push(perso.token.get('name') + " est toujours " + stringOfEtat(etat, perso));
             } else {
               setState(perso, etat, false, evt);
-              explications.push(perso.token.get('name') + " n'est plus " + etat + eForFemale(perso.charId));
+              explications.push(perso.token.get('name') + " n'est plus " + stringOfEtat(etat, perso));
             }
             explications.forEach(function(e) {
               addLineToFramedDisplay(display, e);
@@ -14164,7 +14205,7 @@ var COFantasy = COFantasy || function() {
         }
         iterSelected(selected, function(perso) {
           if (!getState(perso, etat)) {
-            sendChar(perso.charId, "n'est pas " + etat + eForFemale(perso.charId));
+            sendChar(perso.charId, "n'est pas " + stringOfEtat(etat, perso));
             return;
           }
           var evt = {
@@ -14174,9 +14215,9 @@ var COFantasy = COFantasy || function() {
             sendChar(perso.charId, titre + " : " + res.texte);
             if (res.reussite) {
               setState(perso, etat, false, evt);
-              sendChar(perso.charId, res.texte + " &ge; " + seuil + ", " + perso.token.get('name') + " n'est plus " + etat + eForFemale(perso.charId));
+              sendChar(perso.charId, res.texte + " &ge; " + seuil + ", " + perso.token.get('name') + " n'est plus " + stringOfEtat(etat, perso));
             } else {
-              sendChar(perso.charId, res.texte + " &lt; " + seuil + ", " + perso.token.get('name') + " est toujours " + etat + eForFemale(perso.charId));
+              sendChar(perso.charId, res.texte + " &lt; " + seuil + ", " + perso.token.get('name') + " est toujours " + stringOfEtat(etat, perso));
             }
             addEvent(evt);
           }); //fin test carac
@@ -14196,7 +14237,7 @@ var COFantasy = COFantasy || function() {
       return false;
     }
     var b = bouton("!cof-save-state " + etat + ' ' + carac + ' ' + attr.get('max'), "Jet", perso);
-    return b + " de " + carac + " pour " + textOfSaveState(etat);
+    return b + " de " + carac + " pour " + textOfSaveState(etat, perso);
   }
 
   function updateInit(token, evt) {
@@ -14643,6 +14684,9 @@ var COFantasy = COFantasy || function() {
               break;
             case 'paralyseTemp':
               setState(perso, 'paralyse', true, evt);
+              break;
+            case 'immobiliseTemp':
+              setState(perso, 'immobilise', true, evt);
               break;
             case 'etourdiTemp':
               setState(perso, 'etourdi', true, evt);
@@ -16650,13 +16694,11 @@ var COFantasy = COFantasy || function() {
             error("Il manque l'adresse de l'image", cmd);
             return;
           }
-          options.image = optCmd[1];
+          options.image = optCmd[1].replace('&#58;', ':');
           return;
         case 'no-image':
           options.image = undefined;
           return;
-        default:
-          error("Option inconnue", cmd);
       }
     });
     getSelected(msg, function(selected) {
@@ -16692,10 +16734,15 @@ var COFantasy = COFantasy || function() {
             isdrawing: true,
           };
           var newImage = createObj('graphic', imageFields);
-          toFront(newImage);
-          var duree = 5 + modCarac(lanceur, 'CHARISME');
-          setTokenAttr(lanceur, 'murDeForce', duree, evt, undefined, getInit());
-          setTokenAttr(lanceur, 'murDeForceId', newImage.id, evt);
+          if (newImage) {
+            evt.tokens = [newImage];
+            toFront(newImage);
+            setTokenAttr(lanceur, 'murDeForceId', newImage.id, evt);
+            var duree = 5 + modCarac(lanceur, 'CHARISME');
+            setTokenAttr(lanceur, 'murDeForce', duree, evt, undefined, getInit());
+          } else {
+            error("Impossible de créer l'image " + options.image, imageFields);
+          }
         } else {
           sendChar(charId, '/w "' + token.get('name') + '" ' + "placer l'image du mur sur la carte");
         }
@@ -19697,8 +19744,8 @@ var COFantasy = COFantasy || function() {
     };
     if (limiteRessources(lanceur, options, 'guérison', 'guérison', evt)) return;
     updateCurrentBar(cible.token, 1, cible.token.get('bar1_max'), evt);
-    if (getState(cible, 'blessé')) {
-      setState(cible, 'blessé', false, evt);
+    if (getState(cible, 'blesse')) {
+      setState(cible, 'blesse', false, evt);
     }
     var msgSoin;
     if (lanceur.token.id == cible.token.id) {
@@ -21029,13 +21076,13 @@ var COFantasy = COFantasy || function() {
     inBar: true
   }, {
     name: 'devient',
-    action: "!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|immobilise|endormi|apeure|invisible|blessé|encombre} true",
+    action: "!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|immobilise|endormi|apeure|invisible|blesse|encombre} true",
     visibleto: '',
     istokenaction: false,
     inBar: true
   }, {
     name: 'enlève',
-    action: "!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|immobilise|endormi|apeure|invisible|blessé|encombre} false",
+    action: "!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|immobilise|endormi|apeure|invisible|blesse|encombre} false",
     visibleto: '',
     istokenaction: false,
     inBar: true
@@ -22495,6 +22542,12 @@ var COFantasy = COFantasy || function() {
       fin: "n'est plus paralysé",
       prejudiciable: true
     },
+    immobiliseTemp: {
+      activation: "est immobilisé : aucun déplacement possible",
+      actif: "est immobilisé",
+      fin: "n'est plus immobilisé",
+      prejudiciable: true
+    },
     etourdiTemp: {
       activation: "est étourdi : aucune action et -5 en DEF",
       actif: "est étourdi",
@@ -22660,7 +22713,7 @@ var COFantasy = COFantasy || function() {
       fin: "peut à nouveau respirer",
       prejudiciable: true,
       seulementVivant: true,
-      statusMarker: 'overdrive',
+      statusMarker: 'blue',
       dm: true
     },
     forceDeGeant: {
@@ -22702,7 +22755,8 @@ var COFantasy = COFantasy || function() {
       activation: "voit des plantes pousser et s'enrouler autour de ses jambes",
       actif: "est bloqué par des plantes",
       fin: "se libère des plantes",
-      prejudiciable: true
+      prejudiciable: true,
+      statusMarker: 'green'
     },
     protectionContreLesElements: {
       activation: "lance un sort de protection contre les éléments",
