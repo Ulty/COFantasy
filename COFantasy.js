@@ -535,16 +535,15 @@ var COFantasy = COFantasy || function() {
       if (markerCatalog["cof-init-ally"]) {
         stateCOF.statusForInitAlly = "status_" + markerCatalog["cof-init-ally"].tag;
       } else {
-        markersAbsents.push("cof-init-ally")
+        markersAbsents.push("cof-init-ally");
         no_error = false;
       }
       if (markerCatalog["cof-init-enemy"]) {
         stateCOF.statusForInitEnemy = "status_" + markerCatalog["cof-init-enemy"].tag;
       } else {
-        markersAbsents.push("cof-init-enemy")
+        markersAbsents.push("cof-init-enemy");
         no_error = false;
       }
-      
       // Cas des markers d'effet temporaire, 3 cas particuliers :
       // 1. uniquement le tag sans "status_" devant
       // 2. on signale absence mais on on ne touche pas à no_error
@@ -552,19 +551,19 @@ var COFantasy = COFantasy || function() {
       if (markerCatalog["cof-asphyxie"]) {
         messageEffetTemp.asphyxie.statusMarker = markerCatalog["cof-asphyxie"].tag;
       } else {
-        markersAbsents.push("cof-asphyxie")
+        markersAbsents.push("cof-asphyxie");
       }
       if (markerCatalog["cof-saigne"]) {
         messageEffetTemp.saignementsSang.statusMarker = markerCatalog["cof-saigne"].tag;
       } else {
-        markersAbsents.push("cof-saigne")
+        markersAbsents.push("cof-saigne");
       }
       if (markerCatalog["cof-prison-vegetale"]) {
         messageEffetTemp.prisonVegetale.statusMarker = markerCatalog["cof-prison-vegetale"].tag;
       } else {
-        markersAbsents.push("cof-prison-vegetale")
+        markersAbsents.push("cof-prison-vegetale");
       }
-      
+
       if (!ancientSet) {
         markersAbsents.forEach(function(m) {
           log("Marker " + m + " introuvable");
@@ -13501,7 +13500,7 @@ var COFantasy = COFantasy || function() {
           var msgSoins;
           var soinsRestants;
           var soins = "";
-          var soinsLegers = charAttributeAsInt(perso, 'soinsLegers', 0);
+          var soinsLegers = attributeAsInt(perso, 'soinsLegers', 0);
           if (soinsLegers < rangSoin) {
             soinsRestants = rangSoin - soinsLegers;
             if (soinsRestants > 1) soins = 's';
@@ -13511,7 +13510,7 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, "ne peut plus faire de soin léger aujourd'hui");
           }
           if (rangSoin > 1) {
-            var soinsModeres = charAttributeAsInt(perso, 'soinsModeres', 0);
+            var soinsModeres = attributeAsInt(perso, 'soinsModeres', 0);
             if (soinsModeres < rangSoin) {
               soinsRestants = rangSoin - soinsModeres;
               if (soinsRestants > 1) soins = 's';
