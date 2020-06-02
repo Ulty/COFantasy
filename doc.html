@@ -106,10 +106,18 @@
                 </ul>
                 <li data-toggle="collapse" data-target="#markers_personnalises"><a href="#Markers_personnalisés">Markers personnalisés</a></li>
 								<ul id="markers_personnalises" class="collapse">
-                <li><a class="text-info" href="#Markers_presentation">Présentation</a></li>
-                <li><a class="text-info" href="#Markers_COF">Markers COF</a></li>
-                <li><a class="text-info" href="#Markers_Import">Importation dans Roll20</a></li>
-                <li><a class="text-info" href="#Markers_Check">Activation et Vérification</a></li>
+                  <li><a class="text-info" href="#Markers_presentation">Présentation</a></li>
+                  <li><a class="text-info" href="#Markers_COF">Markers COF</a></li>
+                  <li><a class="text-info" href="#Markers_Import">Importation dans Roll20</a></li>
+                  <li><a class="text-info" href="#Markers_Check">Activation et Vérification</a></li>
+                </ul>
+                <li data-toggle="collapse" data-target="#console"><a href="#Console">Console API</a></li>
+								<ul id="console" class="collapse">
+                  <li><a class="text-info" href="#Generalites_Console">Généralités sur la Console API</a></li>
+                  <li><a class="text-info" href="#Erreurs_Console">Principaux messages d'erreur</a></li>
+                  <li><a class="text-info" href="#Infos_Console">Principaux messages d'information</a></li>
+                </ul>
+                <li><a class="text-info" href="#statistiques">Statistiques</a></li>
               </ol>
 						</div>
 					</div>
@@ -1668,7 +1676,40 @@
               <p><img class="img-fluid" src="https://imgur.com/cE5OAga.png" data-href="https://imgur.com/cE5OAga.png"></p>
               <p>Lancez votre campagne et vérifiez que les nouveaux markers apparaissent bien. Lancez ensuite la commande <code>!cof-options</code> pour cocher "Markers Personnalises". Enfin comme dernier contrôle allez dans la console des API, faîtes "restart API sandbox" et vérifiez que le message "Markers personnalisés activés" est bien présent. Si ce n'est pas le cas vous avez probablement oublié des markers "obligatoires" et le script n'a pas pu activer les markers cof pour cette raison. La liste des markers manquants devrait apparaître dans la console.</p>
             </div>
-            <h2 class="text-primary" id="statistiques">6. Statistiques</h2>
+            <h2 class="text-primary" id="Console">6. Console API</h2>
+            <h3 class="text-info" id="Generalites_Console">6.1 Généralités sur la Console </h3>
+            <div class="decalage">
+              <p>Il est recommandé quand vous jouez de garder un onglet de votre navigateur ouvert sur la Console API de votre campagne (Paramètres -> Scripts API). En cas d'absence de réponse du jeu il vous permet de facilement prendre connaissance d'une éventuelle erreur et de prendre rapidement les actions correctives nécessaires.</p>
+              <p>Un message bloquant est écrit dans un bloc rouge en dehors de la fenêtre API Output Console et ressemble à l'image suivante :</p>
+              <p><img class="img-fluid" src="https://imgur.com/ydMKYLl.png" data-href="https://imgur.com/ydMKYLl.png"></p>
+              <p>Lorsqu'un message rouge comme celui-ci interrompt votre partie vérifiez s'il possède une solution identifiée dans le paragraphe ci-dessous. "Restart API sandbox" permet de relancer le script mais les mêmes causes provoqueront la même erreur. Si le message d'erreur n'est pas encore référencé ou ne propose pas de solution, essayez de comprendre quelle est votre dernière action ou quel bouton provoque cette erreur et terminez votre séance en évitant de l'utiliser. Retestez plus tard et si l'erreur se reproduit expliquez-nous votre problème <a href="https://www.black-book-editions.fr/forums.php?topic_id=7842">sur ce post dans le forum BBE</a>. Essayez d'être le plus exhaustif possible dans vos explications car malheureusement les messages de Roll20 ne sont pas précis du tout quant au contexte de l'erreur. Par exemple le numéro de la ligne de code incriminée ne nous est pas connue et l'on a donc besoin de toutes les précisions possibles pour comprendre le problème et être en capacité de le reproduire afin de le corriger.</p>
+              <p>Les messages qui sont à l'interieur de la fenêtre API Output Console sont des messages d'information ou d'alerte comme sur l'image suivante :</p>
+              <p><img class="img-fluid" src="https://imgur.com/5N5xrXI.png" data-href="https://imgur.com/5N5xrXI.png"></p>
+              <p>Malgré la gravité apparente de certains de ces messages (SyntaxError) ils n'empêchent jamais le bon fonctionnement du script. Seuls les messages bloquants apparaissants en rouge empêche le bon fonctionnement du script. Nous n'avons pas complétement la main sur l'apparition de ces messages d'alerte et nous travaillons activement avec Roll20 pour les éliminer. Des messages d'informations sont aussi présents comme par exemple le numéro de version du script que vous utilisez actuellement.</p>
+            </div>
+            <h3 class="text-info" id="Messages_Console">6.2 Principaux messages bloquants</h3>
+            <div class="decalage">
+              <ul>
+                <li><code>There was an error communicating with the QuantumRoll server</code> Erreur Roll20 courante. "Restart API Sandbox" règle normalement ce problème.</li>
+                <li><code>docker: Cannot connect to the Docker daemon. Is the docker daemon running on this host?</code> Erreur Roll20. "Restart API Sandbox" règle normalement ce problème.</li>
+                <li><code>SyntaxError: Invalid or unexpected token ... </code> Erreur dans le code. Pas de solution évidente. Le signaler uniquement si c'est un message bloquant (rouge).</li>
+                <li><code>SyntaxError: Unexpected token ... </code> Erreur dans le code. Pas de solution évidente. Le signaler uniquement si c'est un message bloquant (rouge).</li>
+                <li><code>TypeError: Cannot read property '...' of undefined </code> Erreur dans le code. Pas de solution évidente. Le signaler uniquement si c'est un message bloquant (rouge).</li>
+              </ul>
+            </div>
+            <h3 class="text-info" id="Infos_Console">6.3 Principaux messages d'information et d'alerte</h3>
+            <div class="decalage">
+              <ul>
+                <li><code>COFantasy X.XX loaded</code> Information : Le script a correctement démarré. Vous indique le numéro de version utilisé.</li>
+                <li><code>Markers personnalisés activés</code> Information : Succès de l'activation des <a href="#Markers_personnalisés">Markers Personnalisés</a>.</li>
+                <li><code>API sandbox shutdown due to campaign inactivity</code> Information : "Restart API Sandbox" ou l'utilisation de la campagne remet en route la sandbox.</li>
+                <li><code>XXX dans l'équipe XXX est inconnu </code> Alerte : Erreur dans le <a href="#allie">handout servant de sélection d'équipe</a>. Vérifiez l'orthographe de vos personnages.</li>
+                <li><code>Markers personnalisés manquants -> Retour aux markers standards Roll20. Voir erreur(s) ci-dessus.</code> Alerte : Impossibilité d'activer les <a href="#Markers_personnalisés">Markers Personnalisés</a> pour cause d'un marker obligatoire absent.</li>
+                <li><code>Marker cof-XXX introuvable</code> Alerte : Erreur dans le nom d'un marker. Voir <a href="#Markers_personnalisés">Markers Personnalisés</a> ou <a href="#etats">liste des états</a>.</li>
+                <li><code>Compétences sans caractéristique associée</code>Alerte : Erreur de déclaration dans le <a href="#jet_caracteristiques">handout de jets de caractéristique</a>.</li>
+              </ul>
+            </div>
+            <h2 class="text-primary" id="statistiques">7. Statistiques</h2>
 						<div class="decalage">
 							<p>Il est possible d'activer la collecte de statistiques en utilisant la commande <code>!cof-demarrer-statistiques</code>.</p>
 							<p>On peut arrêter la collecte avec <code>!cof-arreter-statistiques</code>, et la mettre en pause avec <code>!cof-pause-statistiques</code>.<br />

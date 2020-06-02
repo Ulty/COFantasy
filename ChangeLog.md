@@ -5,6 +5,7 @@
 * Intégration d'une table d'échecs critique, avec jets et effets pris en compte.
 
 ### Corrections de bugs
+* Correction de bug d'affichage du nombre de soins restants.
 * Les sortilèges ne sont plus affectés par les RD/tranchant. La destruction des mort-vivants devient un sortilege.
 * Correction de bug sur les effets de peur qui ralentissent.
 
