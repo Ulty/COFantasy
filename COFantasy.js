@@ -8950,7 +8950,7 @@ var COFantasy = COFantasy || function() {
     } else afterSave();
   }
 
-  function applyRDSauf(rds, dmgType, total, display, options) {
+  function applyRDSauf(rds, dmgType, total, display, options, target) {
     options = options || {};
     var typeTrouve = function(t) {
       if (t == dmgType) return true;
@@ -8971,6 +8971,16 @@ var COFantasy = COFantasy || function() {
         if (rd < 1) break;
         var types = saufType.split('_');
         if (types.find(typeTrouve)) break;
+        if (target.ignoreMoitieRD) rd = parseInt(rd / 2);
+        if (target.ignoreRD) {
+          if (target.ignoreRD > rd) {
+            target.ignoreRD -= rd;
+            break;
+          } else {
+            rd -= target.ignoreRD;
+            target.ignoreRD = 0;
+          }
+        }
         if (total < rd) {
           display += "-" + total;
           rds[saufType] -= total;
@@ -9019,7 +9029,13 @@ var COFantasy = COFantasy || function() {
       }
       if (target.ignoreMoitieRD) rdMain = parseInt(rdMain / 2);
       if (target.ignoreRD) {
-        rdMain -= target.ignoreRD; //rdMain peut être négatif
+        if (target.ignoreRD > rdMain) {
+          target.ignoreRD -= rdMain;
+          rdMain = 0;
+        } else {
+          rdMain -= target.ignoreRD;
+          target.ignoreRD = 0;
+        }
       }
       if (rdMain > 0 && dmgTotal > 0) {
         dmgTotal -= rdMain;
@@ -9053,7 +9069,7 @@ var COFantasy = COFantasy || function() {
         percant: options.percant,
         contondant: options.contondant
       };
-      var resSauf = applyRDSauf(rdTarget.sauf, mainDmgType, dmgTotal, dmgDisplay, additionalType);
+      var resSauf = applyRDSauf(rdTarget.sauf, mainDmgType, dmgTotal, dmgDisplay, additionalType, target);
       dmgTotal = resSauf.total;
       dmgDisplay = resSauf.display;
       var invulnerable = charAttributeAsBool(target, 'invulnerable');
@@ -9170,6 +9186,15 @@ var COFantasy = COFantasy || function() {
               if (!target.ignoreTouteRD) {
                 var rdl = typeRD(rd, dmgType);
                 if (target.ignoreMoitieRD) rdl = parseInt(rdl / 2);
+                if (target.ignoreRD) {
+                  if (target.ignoreRD > rdl) {
+                    target.ignoreRD -= rdl;
+                    rdl = 0;
+                  } else {
+                    rdl -= target.ignoreRD;
+                    target.ignoreRD = 0;
+                  }
+                }
                 if (rdl > 0 && dm > 0) {
                   dm -= rdl;
                   if (dm < 0) {
@@ -9192,7 +9217,7 @@ var COFantasy = COFantasy || function() {
                 var additionalType = {
                   magique: options.magique
                 };
-                var resSauf = applyRDSauf(rdTarget.sauf, dmgType, dm, typeDisplay, additionalType);
+                var resSauf = applyRDSauf(rdTarget.sauf, dmgType, dm, typeDisplay, additionalType, target);
                 dm = resSauf.total;
                 typeDisplay = resSauf.display;
                 mitigate(dmgType,
