@@ -3499,16 +3499,17 @@ var COFantasy = COFantasy || function() {
           options[cmd[0]] = cmd.slice(1).join(' ').trim();
           return;
         case 'toucher':
+        case 'modifiePortee':
           if (cmd.length < 1) {
-            error("Il manque la valeur après l'option --toucher", cmd);
+            error("Il manque la valeur après l'option --"+cmd[0], cmd);
             return;
           }
-          var toucher = parseInt(cmd[1]);
-          if (isNaN(toucher)) {
-            error("valeur de toucher incorrecte", cmd);
+          var intArg = parseInt(cmd[1]);
+          if (isNaN(intArg)) {
+            error("valeur de "+cmd[0]+" incorrecte", cmd);
             return;
           }
-          options.toucher = toucher;
+          options[cmd[0]] = intArg;
           return;
         case 'crit':
           if (cmd.length < 1) {
@@ -5953,6 +5954,9 @@ var COFantasy = COFantasy || function() {
     }
     if (options.portee !== undefined) {
       weaponStats.portee = options.portee;
+    }
+    if (options.modifiePortee) {
+      weaponStats.portee += options.modifiePortee;
     }
     if (!options.epieu && weaponName.search(/[ée]pieu/i) >= 0) {
       options.epieu = true;
