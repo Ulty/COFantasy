@@ -3501,12 +3501,12 @@ var COFantasy = COFantasy || function() {
         case 'toucher':
         case 'modifiePortee':
           if (cmd.length < 1) {
-            error("Il manque la valeur après l'option --"+cmd[0], cmd);
+            error("Il manque la valeur après l'option --" + cmd[0], cmd);
             return;
           }
           var intArg = parseInt(cmd[1]);
           if (isNaN(intArg)) {
-            error("valeur de "+cmd[0]+" incorrecte", cmd);
+            error("valeur de " + cmd[0] + " incorrecte", cmd);
             return;
           }
           options[cmd[0]] = intArg;
@@ -21195,13 +21195,12 @@ var COFantasy = COFantasy || function() {
   }
 
   // prend en compte l'unité de mesure utilisée sur la page
-  function ajouteUneLumiere(perso, groupe, radius, dimRadius, evt) {
+  function ajouteUneLumiere(perso, nomLumiere, radius, dimRadius, evt) {
     radius = scaleDistance(perso, radius);
     dimRadius = scaleDistance(perso, dimRadius);
     var ct = perso.token;
     var attrName = 'lumiere';
     if (ct.get('bar1_link') === "") attrName += "_" + ct.get('name');
-    var nomLumiere = groupe + '_' + ct.get('name');
     if (ct.get('bar1_max') && !ct.get('light_radius')) {
       //Cas particulier où le personnage est un vrai personnage qui ne fait pas de lumière
       setToken(ct, 'light_radius', radius, evt);
@@ -21255,6 +21254,13 @@ var COFantasy = COFantasy || function() {
   }
 
   function eteindreUneLumiere(perso, pageId, al, lumName, evt) {
+    if (al === undefined) {
+      var attrLumiere = tokenAttribute(perso, 'lumiere');
+      al = attrLumiere.find(function(a) {
+        return a.get('current') == lumName;
+      });
+      if (al === undefined) return;
+    }
     var lumId = al.get('max');
     if (lumId == 'surToken') {
       //Il faut enlever la lumière sur tous les tokens
@@ -23512,6 +23518,16 @@ var COFantasy = COFantasy || function() {
               token: token
             }, undefined, evt);
           }
+        });
+        break;
+      case 'forgeron':
+      case 'armeEnflammee':
+        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+          var perso = {
+            token: token,
+            charId: charId
+          };
+          eteindreUneLumiere(perso, options.pageId, undefined, efComplet, evt);
         });
         break;
       default:

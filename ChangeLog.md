@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.06
 ### Autres améliorations
+* Extinction de la lumière quand l'effet d'arme enflammée prend fin
 * Ajout d'une option pour modifier la portée d'une attaque.
 * Ajout de la résistance à la magie (bonus aux tests pour résister à la magie)
 * Intégration d'une table d'échecs critique, avec jets et effets pris en compte.
