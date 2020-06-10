@@ -14282,6 +14282,11 @@ var COFantasy = COFantasy || function() {
 
   //renvoie le nom de l'arme si l'arme est déjà tenue en main
   function degainerArme(perso, labelArme, evt, options) {
+    var pageId = perso.pageId;
+    if (pageId === undefined) {
+      pageId = perso.token.get('pageid');
+      perso.pageId = pageId;
+    }
     //D'abord, on rengaine l'arme en main, si besoin.
     var armeActuelle = tokenAttribute(perso, 'armeEnMain');
     var labelArmeActuelle;
@@ -14305,6 +14310,9 @@ var COFantasy = COFantasy || function() {
         }
         if (options && options.messages) message += "rengaine " + ancienneArme.name + " et ";
         else sendChar(perso.charId, "rengaine " + ancienneArme.name);
+        if (charAttributeAsBool(perso, 'eclaire_'+labelArmeActuelle)) {
+          eteindreUneLumiere(perso, pageId, undefined, 'eclaire_'+labelArmeActuelle, evt);
+        }
       }
     } else armeActuelle = undefined;
     //Puis on dégaine
@@ -14405,6 +14413,18 @@ var COFantasy = COFantasy || function() {
       message += "dégaine " + nouvelleArme.name;
       options.messages.push(message);
     } else sendChar(perso.charId, "dégaine " + nouvelleArme.name);
+    var eclaire = 'eclaire_'+labelArme;
+    var attrEclaire = charAttribute(perso.charId, eclaire);
+        if (attrEclaire.length > 0) {
+          var radius = parseInt(attrEclaire[0].get('current'));
+          if (isNaN(radius)) {
+            error("Attribut "+eclaire+" mal formé", attrEclaire);
+          } else {
+          var dimRadius = parseInt(attrEclaire[0].get('max'));
+            if (isNaN(dimRadius)) dimRadius = '';
+          ajouteUneLumiere(perso, eclaire, radius, dimRadius, evt);
+          }
+        }
     if (charAttributeAsInt(perso, "initEnMain" + labelArme, 0) > 0)
       updateNextInit(perso.token);
   }
@@ -21197,7 +21217,7 @@ var COFantasy = COFantasy || function() {
   // prend en compte l'unité de mesure utilisée sur la page
   function ajouteUneLumiere(perso, nomLumiere, radius, dimRadius, evt) {
     radius = scaleDistance(perso, radius);
-    dimRadius = scaleDistance(perso, dimRadius);
+    if (dimRadius !== '') dimRadius = scaleDistance(perso, dimRadius);
     var ct = perso.token;
     var attrName = 'lumiere';
     if (ct.get('bar1_link') === "") attrName += "_" + ct.get('name');
