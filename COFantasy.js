@@ -3499,16 +3499,17 @@ var COFantasy = COFantasy || function() {
           options[cmd[0]] = cmd.slice(1).join(' ').trim();
           return;
         case 'toucher':
+        case 'modifiePortee':
           if (cmd.length < 1) {
-            error("Il manque la valeur après l'option --toucher", cmd);
+            error("Il manque la valeur après l'option --" + cmd[0], cmd);
             return;
           }
-          var toucher = parseInt(cmd[1]);
-          if (isNaN(toucher)) {
-            error("valeur de toucher incorrecte", cmd);
+          var intArg = parseInt(cmd[1]);
+          if (isNaN(intArg)) {
+            error("valeur de " + cmd[0] + " incorrecte", cmd);
             return;
           }
-          options.toucher = toucher;
+          options[cmd[0]] = intArg;
           return;
         case 'crit':
           if (cmd.length < 1) {
@@ -5953,6 +5954,9 @@ var COFantasy = COFantasy || function() {
     }
     if (options.portee !== undefined) {
       weaponStats.portee = options.portee;
+    }
+    if (options.modifiePortee) {
+      weaponStats.portee += options.modifiePortee;
     }
     if (!options.epieu && weaponName.search(/[ée]pieu/i) >= 0) {
       options.epieu = true;
@@ -14278,6 +14282,11 @@ var COFantasy = COFantasy || function() {
 
   //renvoie le nom de l'arme si l'arme est déjà tenue en main
   function degainerArme(perso, labelArme, evt, options) {
+    var pageId = perso.pageId;
+    if (pageId === undefined) {
+      pageId = perso.token.get('pageid');
+      perso.pageId = pageId;
+    }
     //D'abord, on rengaine l'arme en main, si besoin.
     var armeActuelle = tokenAttribute(perso, 'armeEnMain');
     var labelArmeActuelle;
@@ -14301,6 +14310,9 @@ var COFantasy = COFantasy || function() {
         }
         if (options && options.messages) message += "rengaine " + ancienneArme.name + " et ";
         else sendChar(perso.charId, "rengaine " + ancienneArme.name);
+        if (charAttributeAsBool(perso, 'eclaire_'+labelArmeActuelle)) {
+          eteindreUneLumiere(perso, pageId, undefined, 'eclaire_'+labelArmeActuelle, evt);
+        }
       }
     } else armeActuelle = undefined;
     //Puis on dégaine
@@ -14401,6 +14413,18 @@ var COFantasy = COFantasy || function() {
       message += "dégaine " + nouvelleArme.name;
       options.messages.push(message);
     } else sendChar(perso.charId, "dégaine " + nouvelleArme.name);
+    var eclaire = 'eclaire_'+labelArme;
+    var attrEclaire = charAttribute(perso.charId, eclaire);
+        if (attrEclaire.length > 0) {
+          var radius = parseInt(attrEclaire[0].get('current'));
+          if (isNaN(radius)) {
+            error("Attribut "+eclaire+" mal formé", attrEclaire);
+          } else {
+          var dimRadius = parseInt(attrEclaire[0].get('max'));
+            if (isNaN(dimRadius)) dimRadius = '';
+          ajouteUneLumiere(perso, eclaire, radius, dimRadius, evt);
+          }
+        }
     if (charAttributeAsInt(perso, "initEnMain" + labelArme, 0) > 0)
       updateNextInit(perso.token);
   }
@@ -21191,13 +21215,12 @@ var COFantasy = COFantasy || function() {
   }
 
   // prend en compte l'unité de mesure utilisée sur la page
-  function ajouteUneLumiere(perso, groupe, radius, dimRadius, evt) {
+  function ajouteUneLumiere(perso, nomLumiere, radius, dimRadius, evt) {
     radius = scaleDistance(perso, radius);
-    dimRadius = scaleDistance(perso, dimRadius);
+    if (dimRadius !== '') dimRadius = scaleDistance(perso, dimRadius);
     var ct = perso.token;
     var attrName = 'lumiere';
     if (ct.get('bar1_link') === "") attrName += "_" + ct.get('name');
-    var nomLumiere = groupe + '_' + ct.get('name');
     if (ct.get('bar1_max') && !ct.get('light_radius')) {
       //Cas particulier où le personnage est un vrai personnage qui ne fait pas de lumière
       setToken(ct, 'light_radius', radius, evt);
@@ -21251,6 +21274,13 @@ var COFantasy = COFantasy || function() {
   }
 
   function eteindreUneLumiere(perso, pageId, al, lumName, evt) {
+    if (al === undefined) {
+      var attrLumiere = tokenAttribute(perso, 'lumiere');
+      al = attrLumiere.find(function(a) {
+        return a.get('current') == lumName;
+      });
+      if (al === undefined) return;
+    }
     var lumId = al.get('max');
     if (lumId == 'surToken') {
       //Il faut enlever la lumière sur tous les tokens
@@ -23508,6 +23538,16 @@ var COFantasy = COFantasy || function() {
               token: token
             }, undefined, evt);
           }
+        });
+        break;
+      case 'forgeron':
+      case 'armeEnflammee':
+        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+          var perso = {
+            token: token,
+            charId: charId
+          };
+          eteindreUneLumiere(perso, options.pageId, undefined, efComplet, evt);
         });
         break;
       default:
