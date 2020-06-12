@@ -99,7 +99,7 @@
                 <li data-toggle="collapse" data-target="#autres_capacites"><a href="#Autres_capacités">Autres capacités</a></li>
 								<ul id="autres_capacites" class="collapse">
 									<li><a class="text-info" href="#Capacites_raciales">Voies et capacités raciales</a></li>
-									<li><a class="text-info" href="#Prestige">Voies de prestige</a></li>
+									<li><a class="text-info" href="#Prestige">Voies de prestige et capacités épiques</a></li>
 									<li><a class="text-info" href="#Créatures">Voies de créature</a></li>
 									<li><a class="text-info" href="#Sorts">Autres sorts</a></li>
 									<li><a class="text-info" href="#Capacites_diverses">Capacités diverses</a></li>
@@ -1521,7 +1521,13 @@
                   <li><strong>Se faire discret</strong> : ajouter les jets sur la fiche, ou bien des attributs <code>mentir</code> et <code>deguisement</code> de valeur 5, à utiliser avec <code>!cof-jet</code>.</li>
                 </ol>
               </div>
-              <h3 class="text-info" id="Créatures">4.2 Voies de créatures</h3>
+              <h3 class="text-info" id="Prestige">4.2 Voies de prestige et capacités épiques</h3>
+              <div class="decalage">
+                <ul>
+                  <li><strong>Lien épique</strong>: ajouter pour chaque personnage un attribut <code>lienEpique</code>, qui contiennent la même chose dans le champ courant (pensez à un nom d'équipe, par exemple).</li>
+                </ul>
+              </div>
+              <h3 class="text-info" id="Créatures">4.3 Voies de créatures</h3>
               <div class="decalage">
                 <h4 class="text-secondary">Voie du champion</h4>
                 <ol>
@@ -1606,7 +1612,7 @@
                   <li><strong>Assassinat</strong> : rajouter <code>--if etatCible surpris --etat mort --save CON 15 --endif</code> à l'Attaque mortelle.</li>
                 </ol>
               </div>
-              <h3 class="text-info" id="Sorts">4.3 Autres Sorts</h3>
+              <h3 class="text-info" id="Sorts">4.4 Autres Sorts</h3>
               <div class="decalage">
                 Sorts qui ne sont pas dans des voies, mais peuvent venir du grimoire (dans le compagnon) ou d'effets de parchemins.
                 <ul>
@@ -1615,10 +1621,10 @@
                   <li><strong>Sixième sens</strong> : <code>!cof-effet sixiemeSens true</code>. Pour mettre fin à l'effet du sort (qui a une durée en heures), on peut effacer l'attribut <code>sixiemeSens</code>, ou mieux encore, sélectionner le token et faire <code>!cof-effet sixiemeSens false</code>.</li>
                 </ul>
               </div>
-              <h3 class="text-info" id="Capacites_diverses">4.4 Autres capacités</h3>
+              <h3 class="text-info" id="Capacites_diverses">4.5 Autres capacités</h3>
               <div class="decalage">
                 <ul>
-                  <li><strong>Attaque en meute</strong> : ajouter un attribut <code>attaqueEnMeute</code> de valeur courante le bonus d'attaque (2 pour un gobelin). Cela confère le bonus pour toutes les attaques de personnages avec cet attribut suivant la première effectuée par un autre personnage avec cet attribut, dans un même tour.</li>
+                  <li><strong>Attaque en meute</strong> : ajouter un attribut <code>attaqueEnMeute</code> de valeur courante le bonus d'attaque (2 pour un gobelin). Cela confère le bonus pour toutes les attaques de personnages avec cet attribut suivant une effectuée par un autre personnage avec cet attribut, jusqu'au prochain tour de ce personnage. Ainsi, si 2 créatures continuent d'attaquer la même cible, elles bénéficieront du bonus tout le temps, sauf la toute première attaque.</li>
                   <li><strong>Baroud d'honneur</strong> : ajouter un attribut <code>baroudHonneur</code> (=true) (Quand le personnage arrive à 0 PV, il ne meurt pas jusqu'à sa prochaine attaque, qui se fait avec un bonus de +5)</li>
                   <li><strong>Cibles multiples</strong> (nuées) : ajouter un attribut <code>ciblesMultiples</code>, de valeur <code>true</code>.</li>
                   <li><strong>Clignotement</strong> : <code>!cof-effet-temp clignotement [[1d6+2]]</code>.</li>

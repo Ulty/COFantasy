@@ -1,5 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.06
+### Capacités
+* Ajout de la capacité lien épique.
+
 ### Autres améliorations
 * Amélioration de la gestion de l'attaque en meute des gobelins.
 * Possibilité qu'une arme fasse de la lumière quand elle est dégainée.

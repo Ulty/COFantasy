@@ -6416,8 +6416,11 @@ var COFantasy = COFantasy || function() {
     }
     var riposte = charAttributeAsBool(attaquant, 'riposte');
     options.attaqueEnMeute = charAttributeAsInt(attaquant, 'attaqueEnMeute', 0);
-    var lienEpique = charAttributeAsBool(attaquant, 'lienEpique');
-    if (riposte || options.attaqueEnMeute || lienEpique) {
+    var attrLienEpique = charAttribute(attaquant.charId, 'lienEpique');
+    if (attrLienEpique.length > 0) {
+      options.lienEpique = attrLienEpique[0].get('current');
+    }
+    if (riposte || options.attaqueEnMeute || options.lienEpique) {
       //Dans ce cas, il faut stoquer les cibles attaquées
       //(dans le cas de riposte, pour ne pas les re-proposer en riposte
       var listeCibles =
@@ -7679,7 +7682,6 @@ var COFantasy = COFantasy || function() {
     var attackingToken = attaquant.token;
     var attackerTokName = attaquant.tokName;
     options.attaquant = attaquant;
-
     //Les dégâts
     //Dégâts insrits sur la ligne de l'arme
     var mainDmgType = options.type || 'normal';
@@ -7891,6 +7893,27 @@ var COFantasy = COFantasy || function() {
         }
       }
     };
+    //Le lien épique (+1d6 DM si les 2 attaquent la même cible
+    var attaqueParLienEpique = new Set();
+    if (options.lienEpique) {
+      //On cherche les autres personnages avec le même lien épique
+      var allChars = findObjs({
+        type: 'character'
+      });
+      allChars.forEach(function(ch) {
+        if (ch.id == attackingCharId) return;
+        var attrLienEpique = charAttribute(ch.id, 'lienEpique');
+        if (attrLienEpique.length === 0) return;
+        if (attrLienEpique[0].get('current') != options.lienEpique) return;
+        var attrCibles = charAttribute(ch.id, 'dernieresCiblesAttaquees');
+        if (attrCibles.length === 0) return;
+        var ciblesAttaquees = attrCibles[0].get('current');
+        if (ciblesAttaquees === '') return;
+        ciblesAttaquees.split(' ').forEach(function(ci) {
+          attaqueParLienEpique.add(ci);
+        });
+      });
+    }
     cibles.forEach(function(target) {
       evalITE(attaquant, target, d20roll, options, evt, explications, options);
       target.ignoreTouteRD = target.ignoreTouteRD || options.ignoreTouteRD;
@@ -7992,6 +8015,13 @@ var COFantasy = COFantasy || function() {
           type: mainDmgType,
           value: '1d6'
         });
+      }
+      if (options.lienEpique && attaqueParLienEpique.has(target.token.id)) {
+        target.additionalDmg.push({
+          type: mainDmgType,
+          value: '1' + options.d6
+        });
+        target.messages.push("Lien épique => + 1" + options.d6 + " DM");
       }
       var attrFeinte = tokenAttribute(target, 'feinte_' + attaquant.tokName);
       if (attrFeinte.length > 0 && attrFeinte[0].get('current') &&
@@ -13023,47 +13053,47 @@ var COFantasy = COFantasy || function() {
   }
 
   function removeDernieresCiblesAttaquees(perso, evt) {
-        var attrDernieresCibles = tokenAttribute(perso, 'dernieresCiblesAttaquees');
-        if (attrDernieresCibles.length > 0) {
-          attrDernieresCibles = attrDernieresCibles[0];
-          if (charAttributeAsBool(perso, 'attaqueEnMeute')) {
-            var dernieresCibles = attrDernieresCibles.get('current');
-            var cibles = new Set(dernieresCibles.split(' '));
-            cibles.forEach(function(ci) {
-              var cible = persoOfId(ci);
-              if (cible === undefined) return;
-              var attrCibleMeute = tokenAttribute(cible, 'attaqueParMeute');
-              if (attrCibleMeute.length > 0) {
-                attrCibleMeute = attrCibleMeute[0];
-                var cibleMeute = attrCibleMeute.get('current');
-                var ensembleCibleMeute = new Set(cibleMeute.split(' '));
-                if (ensembleCibleMeute.has(perso.token.id)) {
-                  ensembleCibleMeute.delete(perso.token.id);
-                  if (ensembleCibleMeute.size > 0) {
-                    evt.attributes = evt.attributes || [];
-                    evt.attributes.push({
-                      attribute: attrCibleMeute,
-                      current: cibleMeute,
-                    });
-                    cibleMeute = '';
-                    ensembleCibleMeute.forEach(function(ai) {
-                      if (cibleMeute === '') cibleMeute = ai;
-                      else cibleMeute += ' ' + ai;
-                    });
-                    attrCibleMeute.set('current', cibleMeute);
-                  } else {
-                    evt.deletedAttributes = evt.deletedAttributes || [];
-                    evt.deletedAttributes.push(attrCibleMeute);
-                    attrCibleMeute.remove();
-                  }
-                }
+    var attrDernieresCibles = tokenAttribute(perso, 'dernieresCiblesAttaquees');
+    if (attrDernieresCibles.length > 0) {
+      attrDernieresCibles = attrDernieresCibles[0];
+      if (charAttributeAsBool(perso, 'attaqueEnMeute')) {
+        var dernieresCibles = attrDernieresCibles.get('current');
+        var cibles = new Set(dernieresCibles.split(' '));
+        cibles.forEach(function(ci) {
+          var cible = persoOfId(ci);
+          if (cible === undefined) return;
+          var attrCibleMeute = tokenAttribute(cible, 'attaqueParMeute');
+          if (attrCibleMeute.length > 0) {
+            attrCibleMeute = attrCibleMeute[0];
+            var cibleMeute = attrCibleMeute.get('current');
+            var ensembleCibleMeute = new Set(cibleMeute.split(' '));
+            if (ensembleCibleMeute.has(perso.token.id)) {
+              ensembleCibleMeute.delete(perso.token.id);
+              if (ensembleCibleMeute.size > 0) {
+                evt.attributes = evt.attributes || [];
+                evt.attributes.push({
+                  attribute: attrCibleMeute,
+                  current: cibleMeute,
+                });
+                cibleMeute = '';
+                ensembleCibleMeute.forEach(function(ai) {
+                  if (cibleMeute === '') cibleMeute = ai;
+                  else cibleMeute += ' ' + ai;
+                });
+                attrCibleMeute.set('current', cibleMeute);
+              } else {
+                evt.deletedAttributes = evt.deletedAttributes || [];
+                evt.deletedAttributes.push(attrCibleMeute);
+                attrCibleMeute.remove();
               }
-            });
+            }
           }
-          evt.deletedAttributes = evt.deletedAttributes || [];
-          evt.deletedAttributes.push(attrDernieresCibles);
-          attrDernieresCibles.remove();
-        }
+        });
+      }
+      evt.deletedAttributes = evt.deletedAttributes || [];
+      evt.deletedAttributes.push(attrDernieresCibles);
+      attrDernieresCibles.remove();
+    }
   }
 
   function setActiveToken(tokenId, evt) {
@@ -23509,7 +23539,10 @@ var COFantasy = COFantasy || function() {
         if (effet == 'arbreAnime') {
           iterTokensOfAttribute(charId, options.pageId, effet, attrName,
             function(token) {
-              var perso = {token:token, charId:charId};
+              var perso = {
+                token: token,
+                charId: charId
+              };
               removeFromTurnTracker(perso, evt);
               setToken(token, 'bar1_link', '', evt);
               setToken(token, 'bar1_value', '', evt);
