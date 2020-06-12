@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.06
 ### Autres améliorations
+* Amélioration de la gestion de l'attaque en meute des gobelins.
 * Possibilité qu'une arme fasse de la lumière quand elle est dégainée.
 * Extinction de la lumière quand l'effet d'arme enflammée prend fin
 * Ajout d'une option pour modifier la portée d'une attaque.
