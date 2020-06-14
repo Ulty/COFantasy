@@ -1,4 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.07
+### Autres améliorations
+* Utilisation des options standard pour le mur de force
+
 ## 2.06
 ### Capacités
 * Ajout de la capacité lien épique.

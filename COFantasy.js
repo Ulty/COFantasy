@@ -10994,7 +10994,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque le nom de l'imageaprès --image", cmd);
             return;
           }
-          options.image = cmd[1];
+          options.image = cmd[1].replace('&#58;', ':');
           return;
         case 'son':
           if (cmd.length < 2) {
@@ -16820,45 +16820,18 @@ var COFantasy = COFantasy || function() {
 
 
   function murDeForce(msg) {
-    var cmd = msg.content.split(' ');
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined) return;
     var sphere = true;
-    if (cmd.length > 1 && cmd[1] == 'mur') sphere = false;
-    var options = {
-      image: stateCOF.options.images.val.image_mur_de_force.val,
-      mana: 0
-    };
-    var args = msg.content.split(' --');
-    args.shift();
-    args.forEach(function(opt) {
-      var optCmd = opt.split(' ');
-      switch (optCmd[0]) {
-        case 'mana':
-          if (optCmd.length < 2) {
-            error("Il manque le coût en mana", cmd);
-            return;
-          }
-          options.mana = parseInt(optCmd[1]);
-          if (isNaN(options.mana) || options.mana < 0) {
-            error("Coût en mana incorrect", optCmd);
-            options.mana = 0;
-          }
-          return;
-        case 'puissant':
-          options.puissant = true;
-          return;
-        case 'image':
-          if (optCmd.length < 2) {
-            error("Il manque l'adresse de l'image", cmd);
-            return;
-          }
-          options.image = optCmd[1].replace('&#58;', ':');
-          return;
-        case 'no-image':
-          options.image = undefined;
-          return;
-      }
-    });
-    getSelected(msg, function(selected) {
+    var imageSphere = stateCOF.options.images.val.image_mur_de_force.val;
+    if (cmd.length > 1) {
+      if (cmd[1] == 'mur') sphere = false;
+      else if (cmd[1] == 'noImage') imageSphere = undefined;
+      else imageSphere = cmd[1].replace('&#58;', ':');
+    }
+    getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         sendPlayer(msg, "Aucun personnage sélectionné pour lancer le mur de force");
         return;
@@ -16868,19 +16841,40 @@ var COFantasy = COFantasy || function() {
       };
       initiative(selected, evt);
       iterSelected(selected, function(lanceur) {
+        if (options.tempeteDeMana) {
+          if (options.tempeteDeMana.cout === 0) {
+            //On demande de préciser les options
+            var optMana = {
+              mana: options.mana,
+              dm: false,
+              soins: false,
+              duree: true,
+              portee:true,
+              rang: options.rang,
+            };
+            setTempeteDeMana(playerId, lanceur, msg.content, optMana);
+            return;
+          } else {
+            if (options.rang && options.tempeteDeMana.cout > options.rang) {
+              sendChar(lanceur.charId, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
+            }
+          }
+        }
         var charId = lanceur.charId;
         var token = lanceur.token;
         var pageId = token.get('pageid');
-        if (!depenseMana(lanceur, options.mana, "lancer un mur de force", evt)) {
-          return;
-        }
-        sendChar(charId, "lance un sort de mur de force");
-        if (options.image && sphere) {
+        if (limiteRessources(lanceur, options, 'murDeForce', 'lancer un mur de force', evt)) return;
+        if (options.son) playSound(options.son);
+        whisperChar(charId, "lance un sort de mur de force");
+        if (sphere) {
           var scale = computeScale(pageId);
           var diametre = PIX_PER_UNIT * (6 / scale);
+          if (options.tempeteDeManaPortee) diametre += diametre;
+          if (options.tempeteDeManaIntence)
+            diametre *= (1 + options.tempeteDeManaIntense);
           var imageFields = {
             _pageid: pageId,
-            imgsrc: options.image,
+            imgsrc: imageSphere,
             represents: '',
             left: token.get('left'),
             top: token.get('top'),
@@ -16896,6 +16890,7 @@ var COFantasy = COFantasy || function() {
             toFront(newImage);
             setTokenAttr(lanceur, 'murDeForceId', newImage.id, evt);
             var duree = 5 + modCarac(lanceur, 'CHARISME');
+            if (options.tempeteDeManaDuree) duree += duree;
             setTokenAttr(lanceur, 'murDeForce', duree, evt, undefined, getInit());
           } else {
             error("Impossible de créer l'image " + options.image, imageFields);
@@ -24781,7 +24776,7 @@ on("destroy:handout", function(prev) {
 });
 
 on('ready', function() {
-  var script_version = "2.06";
+  var scriptVersion = "2.07";
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
@@ -24790,7 +24785,7 @@ on('ready', function() {
     tour: 0,
     init: 1000,
     eventId: 0,
-    version: script_version,
+    version: scriptVersion,
   };
   COFantasy.setStateCOF();
   if (state.COFantasy.version === undefined) {
@@ -24902,7 +24897,7 @@ on('ready', function() {
         characterid: c.id,
         name: 'scriptVersion',
         current: true,
-        max: script_version
+        max: scriptVersion
       });
       state.COFantasy.scriptSheets = true;
     });
@@ -25009,7 +25004,7 @@ on('ready', function() {
     });
     log("Mise à jour des ability & macros !cof-lancer-sort effectuée");
   }
-  state.COFantasy.version = script_version;
+  state.COFantasy.version = scriptVersion;
   if (state.COFantasy.options.affichage.val.fiche.val) {
     if (!state.COFantasy.scriptSheets) {
       findObjs({
@@ -25031,7 +25026,7 @@ on('ready', function() {
     COFantasy.changeHandout(hand);
   });
   COF_loaded = true;
-  log("COFantasy " + script_version + " loaded");
+  log("COFantasy " + scriptVersion + " loaded");
 });
 
 on("chat:message", function(msg) {
