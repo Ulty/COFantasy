@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.07
 ### Autres améliorations
+* Correction de l'affichage des armes dans le statut avec les nouvelles fiches
 * Correction d'un bug quand il n'y avait aucun token actif dans le tour de combat
 * Utilisation des options standard pour le mur de force
 
