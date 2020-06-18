@@ -7436,14 +7436,18 @@ var COFantasy = COFantasy || function() {
             var n = randomInteger(interchange.targets.length);
             target.token = interchange.targets[n - 1];
           }
-          if (target.touche &&
-            attributeAsBool(target, 'imageDecalee')) {
-            var id = rollDePlus(6);
-            if (id.val > 4) {
+          if (target.touche) {
+            if (attributeAsBool(target, 'imageDecalee')) {
+              var id = rollDePlus(6);
+              if (id.val > 4) {
+                target.touche = false;
+                target.messages.push(id.roll + ": l'attaque passe à travers l'image de " + target.tokName);
+              } else {
+                target.messages.push(id.roll + ": malgré l'image légèrement décalée de " + target.tokName + " l'attaque touche");
+              }
+            } else if (charAttributeAsBool(target, 'estUneIllusion')) {
               target.touche = false;
-              target.messages.push(id.roll + ": l'attaque passe à travers l'image de " + target.tokName);
-            } else {
-              target.messages.push(id.roll + ": malgré l'image légèrement décalée de " + target.tokName + " l'attaque touche");
+              target.messages.push(target.tokName + " disparait et se matérialise un peu plus loin");
             }
           }
           if (target.touche) {
@@ -12683,11 +12687,12 @@ var COFantasy = COFantasy || function() {
       } else {
         toFront(token);
       }
-    } else { //rotation
+      setTimeout(_.bind(activateRoundMarker, undefined, sync), 200);
+    } else if (roundMarker) { //rotation
       var rotation = roundMarker.get('rotation');
       roundMarker.set('rotation', (rotation + 1) % 365);
+      setTimeout(_.bind(activateRoundMarker, undefined, sync), 100);
     }
-    setTimeout(_.bind(activateRoundMarker, undefined, sync), 100);
   }
 
   var aura_token_on_turn = false;
@@ -16849,7 +16854,7 @@ var COFantasy = COFantasy || function() {
               dm: false,
               soins: false,
               duree: true,
-              portee:true,
+              portee: true,
               rang: options.rang,
             };
             setTempeteDeMana(playerId, lanceur, msg.content, optMana);
@@ -23220,8 +23225,7 @@ var COFantasy = COFantasy || function() {
       activation: "commence à être gêné par son armure",
       actif: "est gêné par son armure",
       fin: "réajuste son armure",
-      prejudiciable: true,
-    }
+    },
   };
 
   var patternEffetsCombat = buildPatternEffets(messageEffetCombat);
