@@ -1,4 +1,11 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.08
+### Capacités
+* Résistance à la magie du barbare
+
+### Autres améliorations
+* Attaques par défaut dans la liste d'actions, possibilité de se passer complètement des attributs pour les attaques (actif quand la version 3.3 de la fiche sera là.
+
 ## 2.07
 ### Autres améliorations
 * Correction de l'affichage des armes dans le statut avec les nouvelles fiches
