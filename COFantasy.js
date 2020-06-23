@@ -4805,6 +4805,8 @@ var COFantasy = COFantasy || function() {
         init += charAttributeAsInt(perso, 'initEnMain' + armeL, 0);
       }
     }
+    // Réflexes felins de la Voie du pourfendeur
+    init += charAttributeAsInt(perso, 'reflexesFelins', 0);
     return init;
   }
 
@@ -24497,7 +24499,7 @@ var COFantasy = COFantasy || function() {
       attrs = removeAllAttributes('attaqueMalgreMenace', evt, attrs);
       resetAttr(attrs, 'attaqueEnTraitre', evt);
       resetAttr(attrs, 'esquiveAcrobatique', evt);
-    resetAttr(attrs, 'resistanceALaMagieBarbare', evt);
+      resetAttr(attrs, 'resistanceALaMagieBarbare', evt);
       resetAttr(attrs, 'paradeMagistrale', evt);
       // Pour défaut dans la cuirasse, on diminue si la valeur est 2, et on supprime si c'est 1
       var defautsDansLaCuirasse = allAttributesNamed(attrs, 'defautDansLaCuirasse');

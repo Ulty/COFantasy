@@ -6,6 +6,8 @@
 ### Autres améliorations
 * Attaques par défaut dans la liste d'actions, possibilité de se passer complètement des attributs pour les attaques (actif quand la version 3.3 de la fiche sera là.
 
+### Corrections de bugs
+* Prise en compte des réflexes félins (Voie du pourfendeur) dans l'initiative
 ## 2.07
 ### Autres améliorations
 * Correction de l'affichage des armes dans le statut avec les nouvelles fiches
