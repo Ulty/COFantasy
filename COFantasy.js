@@ -2305,8 +2305,16 @@ var COFantasy = COFantasy || function() {
   // testRes.texte est l'affichage du jet de dé
   // testRes.reussite indique si le jet est réussi
   // testRes.echecCritique, testRes.critique pour le type
-  function testCaracteristique(personnage, carac, seuil, options, evt, callback) { //asynchrone
+  function testCaracteristique(personnage, carac, seuil, testId, options, evt, callback) { //asynchrone
     options = options || {};
+    if (carac == 'SAG' || carac == 'INT' || carac == 'CHA') {
+      if (charAttributeAsBool(personnage, 'sansEsprit')) {
+        testRes.reussite = true;
+        testRes.texte = "(sans esprit : réussite automatique)";
+        callback(testRes);
+        return;
+      }
+    }
     var token = personnage.token;
     var bonusCarac = bonusTestCarac(carac, personnage, evt);
     var malusCasque = false;
@@ -2321,15 +2329,28 @@ var COFantasy = COFantasy || function() {
       if (malusCasque > 0) bonusCarac -= malusCasque;
     }
     if (options.bonus) bonusCarac += options.bonus;
-    var testRes = {};
-    if (carac == 'SAG' || carac == 'INT' || carac == 'CHA') {
-      if (charAttributeAsBool(personnage, 'sansEsprit')) {
-        testRes.reussite = true;
-        testRes.texte = "(sans esprit : réussite automatique)";
-        callback(testRes);
-        return;
-      }
+    var testsRatesDuTour;
+    var listeTestsRatesDuTour;
+    var testDejaRate;
+    var adaptable = charAttributeAsInt(personnage, 'adaptable');
+    if (adaptable) {
+      testsRatesDuTour = tokenAttribute(personnage, 'testsRatesDuTour');
+      if (testsRatesDuTour.length > 0) {
+        testsRatesDuTour = testsRatesDuTour[0];
+        listeTestsRatesDuTour = testsRatesDuTour.get('current').split(' ');
+        var testRate = listeTestsRatesDuTour.includes(testId);
+        if (testRate) {
+          testDejaRate = true;
+          bonusCarac += adaptable;
+        } else {
+          testRate = testsRatesDuTour.get('max').split(' ').includes(testId);
+          if (testRate) {
+            bonusCarac += adaptable;
+          }
+        }
+      } else testsRatesDuTour = undefined;
     }
+    var testRes = {};
     var carSup = nbreDeTestCarac(carac, personnage);
     var de = computeDice(personnage, {
       nbDe: carSup,
@@ -2356,6 +2377,35 @@ var COFantasy = COFantasy || function() {
         } else {
           diminueMalediction(personnage, evt);
           testRes.reussite = false;
+        }
+        if (adaptable) {
+          if (testRes.reussite) {
+            if (testsRatesDuTour && listeTestsRatesDuTour) {
+              if (listeTestsRatesDuTour.includes(testId)) {
+                evt.attributes = evt.attributes || [];
+                evt.attributes.push({
+                  attribute: testsRatesDuTour,
+                  current: testsRatesDuTour.get('current'),
+                });
+                listeTestsRatesDuTour = listeTestsRatesDuTour.filter(function(i) {
+                  return i != testId;
+                });
+                testsRatesDuTour.set('current', listeTestsRatesDuTour.join(' '));
+              }
+            }
+          } else if (!testDejaRate) {
+            if (testsRatesDuTour && listeTestsRatesDuTour) {
+              listeTestsRatesDuTour.push(testId);
+              evt.attributes = evt.attributes || [];
+              evt.attributes.push({
+                attribute: testsRatesDuTour,
+                current: testsRatesDuTour.get('current'),
+              });
+              testsRatesDuTour.set('current', listeTestsRatesDuTour.join(' '));
+            } else {
+              setTokenAttr(personnage, 'testsRatesDuTour', testId, evt);
+            }
+          }
         }
         callback(testRes);
       });
@@ -2428,7 +2478,8 @@ var COFantasy = COFantasy || function() {
         });
     } else {
       if (options.chance) options.bonus = options.chance * 10;
-      testCaracteristique(perso, caracteristique, difficulte, options, evt,
+      var testId = 'jet_' + caracteristique + '_' + difficulte;
+      testCaracteristique(perso, caracteristique, difficulte, testId, options, evt,
         function(tr) {
           addLineToFramedDisplay(display, "<b>Résultat :</b> " + tr.texte);
           addEvent(evt);
@@ -2926,6 +2977,7 @@ var COFantasy = COFantasy || function() {
   function jet(msg) {
     // Les arguments pour cof-jet sont :
     // - Caracteristique (FOR, DEX, CON, INT, SAG, CHA)
+    // - difficulté (optionelle)
     // Les tokens sélectionnés sont ceux qui doivent faire le jet
     var opts = msg.content.split(' --');
     var cmd = opts.shift().split(' ');
@@ -6533,7 +6585,8 @@ var COFantasy = COFantasy || function() {
       cible.messages = [];
       var evalSanctuaire = function() {
         if (attributeAsBool(cible, 'sanctuaire')) {
-          testCaracteristique(attaquant, 'SAG', 15, {}, evt, function(tr) {
+          var testId = 'sanctuaire_' + cible.token.id;
+          testCaracteristique(attaquant, 'SAG', 15, testId, {}, evt, function(tr) {
             if (tr.reussite) {
               cible.messages.push(attaquant.tokName + " réussi à passer outre le sanctuaire de " + cible.tokName + " (jet de SAG " + tr.texte + "&ge;15)");
               ciblesATraiter--;
@@ -8585,7 +8638,8 @@ var COFantasy = COFantasy || function() {
                       msgRate: msgRate,
                       attaquant: attaquant
                     };
-                    save(ce.save, target, expliquer, saveOpts, evt,
+                    var saveId = 'etat_' + ce.etat + '_' + attaquant.token.id;
+                    save(ce.save, target, saveId, expliquer, saveOpts, evt,
                       function(reussite, rolltext) {
                         if (!reussite) {
                           setState(target, ce.etat, true, evt);
@@ -8628,6 +8682,7 @@ var COFantasy = COFantasy || function() {
                     attaquant: attaquant
                   };
                   var duree = ef.duree;
+                  var saveId = 'effet_' + ef.effet + '_' + attaquant.token.id;
                   save(ef.save, target, expliquer, saveOpts, evt,
                     function(reussite, rollText) {
                       if (reussite && duree && ef.save.demiDuree) {
@@ -9020,7 +9075,7 @@ var COFantasy = COFantasy || function() {
   //   - msgReussite : message à afficher en cas de réussite
   //   - msgRate : message à afficher si l'action rate
   //   - attaquant : le {charId, token} de l'attaquant contre lequel le save se fait (si il y en a un)
-  function save(s, target, expliquer, options, evt, afterSave) {
+  function save(s, target, saveId, expliquer, options, evt, afterSave) {
     var bonus = 0;
     if (options.attaquant &&
       charAttributeAsBool(target, 'protectionContreLeMal') &&
@@ -9047,7 +9102,7 @@ var COFantasy = COFantasy || function() {
       if (options.msgPour) title += options.msgPour;
       expliquer(title);
     }
-    testCaracteristique(target, carac, s.seuil, {
+    testCaracteristique(target, carac, s.seuil, saveId, {
         bonusAttrs: bonusAttrs,
         bonus: bonus
       }, evt,
@@ -9087,7 +9142,7 @@ var COFantasy = COFantasy || function() {
         });
         return;
       }
-      save(ps.partialSave, target, expliquer, {
+      save(ps.partialSave, target, 'partialSave', expliquer, {
           msgPour: " pour réduire les dégâts",
           msgReussite: ", dégâts divisés par 2",
           attaquant: ps.attaquant
@@ -9938,7 +9993,7 @@ var COFantasy = COFantasy || function() {
                   save({
                       carac: 'CON',
                       seuil: defierLaMort
-                    }, target, expliquer, {
+                    }, target, 'defierLaMort', expliquer, {
                       msgPour: " pour défier la mort",
                       msgReussite: ", conserve 1 PV"
                     }, evt,
@@ -10455,6 +10510,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('limiteApplicationManoeuvre', evt, attrs);
     attrs = removeAllAttributes('attaqueParMeute', evt, attrs);
     attrs = removeAllAttributes('dernieresCiblesAttaquees', evt, attrs);
+    attrs = removeAllAttributes('testsRatesDuTour', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -11240,6 +11296,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('limiteParJour', evt, attrs);
     attrs = removeAllAttributes('tueurFantasmagorique', evt, attrs);
     attrs = removeAllAttributes('resisteInjonction', evt, attrs);
+    attrs = removeAllAttributes('testsRatesDuTour', evt, attrs);
     //Les élixirs
     attrs = removeAllAttributes('elixirsACreer', evt, attrs);
     attrs = proposerRenouveauElixirs(evt, attrs);
@@ -11336,7 +11393,7 @@ var COFantasy = COFantasy || function() {
       save({
           carac: carac,
           seuil: seuil
-        }, perso, expliquer, saveOpts, evt,
+        }, perso, attrEffet.id, expliquer, saveOpts, evt,
         function(reussite) { //asynchrone
           if (reussite) {
             finDEffet(attrEffet, effetC, attrName, charId, evt, {
@@ -11499,7 +11556,7 @@ var COFantasy = COFantasy || function() {
       if (reposLong && pr.current < pr.max) { // on récupère un PR
         //Sauf si on a une blessure gave
         if (getState(perso, 'blesse')) {
-          testCaracteristique(perso, 'CON', 8, {}, evt, function(tr) {
+          testCaracteristique(perso, 'CON', 8, 'guérir_blessure', {}, evt, function(tr) {
             sendChar(charId, "fait un jet de CON pour guérir de sa blessure");
             var m = "/direct " + onGenre(charId, 'Il', 'Elle') + " fait " + tr.texte;
             if (tr.reussite) {
@@ -12481,7 +12538,7 @@ var COFantasy = COFantasy || function() {
         }
         if (attributeAsBool(perso, 'sixiemeSens')) bonusSurprise += 5;
         if (testSurprise !== undefined) {
-          testCaracteristique(perso, 'SAG', testSurprise, {
+          testCaracteristique(perso, 'SAG', testSurprise, 'surprise', {
               bonus: bonusSurprise,
               bonusAttrs: bonusAttrs
             }, evt,
@@ -14385,7 +14442,8 @@ var COFantasy = COFantasy || function() {
           var expliquer = function(s) {
             sendChar(perso.charId, s);
           };
-          save(options.save, perso, expliquer, saveOpts, evt, function(reussite, rollText) {
+          var saveId = 'effet_' + etat;
+          save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, rollText) {
             if (!reussite) {
               setEffect();
             }
@@ -14485,7 +14543,8 @@ var COFantasy = COFantasy || function() {
           var evt = {
             type: titre
           };
-          testCaracteristique(perso, carac, seuil, {}, evt, function(res) {
+          var testId = 'saveState_' + carac + seuil;
+          testCaracteristique(perso, carac, seuil, testId, {}, evt, function(res) {
             sendChar(perso.charId, titre + " : " + res.texte);
             if (res.reussite) {
               setState(perso, etat, false, evt);
@@ -14708,7 +14767,8 @@ var COFantasy = COFantasy || function() {
           var expliquer = function(s) {
             sendChar(perso.charId, s);
           };
-          save(options.save, perso, expliquer, saveOpts, evt, function(reussite, rollText) {
+          var saveId = 'garderArme';
+          save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, rollText) {
             if (!reussite) {
               afterSave();
             }
@@ -15068,7 +15128,8 @@ var COFantasy = COFantasy || function() {
               sendChar(perso.charId, s);
             };
             var d = duree;
-            save(options.save, perso, expliquer, saveOpts, evt,
+            var saveId = 'effet_' + effetC;
+            save(options.save, perso, saveId, expliquer, saveOpts, evt,
               function(reussite, rollText) {
                 if (reussite && options.save.demiDuree) {
                   reussite = false;
@@ -15397,7 +15458,7 @@ var COFantasy = COFantasy || function() {
         }
       });
     }
-    testCaracteristique(target, carac, difficulte, {
+    testCaracteristique(target, carac, difficulte, 'peurOne', {
         bonus: allieSansPeur
       }, evt,
       function(tr) {
@@ -15716,7 +15777,7 @@ var COFantasy = COFantasy || function() {
             msgPour: " pour résister au tueur fantasmagorique",
             attaquant: attaquant
           };
-          save(s, cible, expliquer, saveOpts, evt,
+          save(s, cible, 'tueurFantasmagorique', expliquer, saveOpts, evt,
             function(reussiteSave) {
               if (reussiteSave) {
                 addLineToFramedDisplay(display, cible.token.get('name') + " perd l'équilibre et tombe par terre");
@@ -15838,7 +15899,7 @@ var COFantasy = COFantasy || function() {
             tokensToProcess--;
           };
           targets.forEach(function(t) {
-            testCaracteristique(t, 'SAG', seuil, {}, evt,
+            testCaracteristique(t, 'SAG', seuil, 'sommeil', {}, evt,
               function(testRes) {
                 var line = "Jet de résistance de " + t.name + ":" + testRes.texte;
                 var sujet = onGenre(t.charId, 'il', 'elle');
@@ -16742,7 +16803,7 @@ var COFantasy = COFantasy || function() {
         var evt = {
           type: "recherche d'herbes"
         };
-        testCaracteristique(lanceur, 'SAG', 10, {}, evt,
+        testCaracteristique(lanceur, 'SAG', 10, 'natureNourriciere', {}, evt,
           function(testRes) {
             if (testRes.reussite) {
               if (voieDeLaSurvie > 0) {
@@ -17754,7 +17815,7 @@ var COFantasy = COFantasy || function() {
         var evt = {
           type: "Tour de force"
         };
-        testCaracteristique(barbare, 'FOR', seuil, {
+        testCaracteristique(barbare, 'FOR', 'tourDeForce', seuil, {
             bonus: 10
           }, evt,
           function(testRes) {
@@ -18534,7 +18595,7 @@ var COFantasy = COFantasy || function() {
         var display = startFramedDisplay(playerId,
           "<b>Sort :<b> destruction des morts-vivants", lanceur);
         var name = lanceur.token.get('name');
-        testCaracteristique(lanceur, 'SAG', 13, {}, evt,
+        testCaracteristique(lanceur, 'SAG', 13, 'destructionDesMortsVivants', {}, evt,
           function(testRes) {
             var msgJet = "Jet de SAG : " + testRes.texte;
             if (testRes.reussite) {
@@ -18723,7 +18784,7 @@ var COFantasy = COFantasy || function() {
           decrAttribute.set('current', oldval - 1);
         }
         //Test d'INT pour savoir si l'action réussit.
-        testCaracteristique(perso, 'INT', testINT, {}, evt,
+        testCaracteristique(perso, 'INT', testINT, 'enduireDePoison', {}, evt,
           function(tr) {
             var jet = "Jet d'INT : " + tr.texte;
             if (tr.echecCritique) { //échec critique
@@ -19844,7 +19905,7 @@ var COFantasy = COFantasy || function() {
           //Jet de sagesse difficulté 13 pou 16 pour sortir de cet état
           var options = {};
           var display = startFramedDisplay(playerId, "Essaie de calmer sa " + typeRage, perso);
-          testCaracteristique(perso, 'SAG', difficulte, options, evt,
+          testCaracteristique(perso, 'SAG', difficulte, 'rageDuBerserk', options, evt,
             function(tr) {
               addLineToFramedDisplay(display, "<b>Résultat du jet de SAG :</b> " + tr.texte);
               addEvent(evt);
@@ -19900,7 +19961,7 @@ var COFantasy = COFantasy || function() {
     }
     setTokenAttr(barde, 'armeSecreteBardeUtilisee', true, evt);
     var intCible = ficheAttributeAsInt(cible, 'INTELLIGENCE', 10);
-    testCaracteristique(barde, 'CHA', intCible, {}, evt, function(testRes) {
+    testCaracteristique(barde, 'CHA', intCible, 'armeSecreteBarde', {}, evt, function(testRes) {
       var display = startFramedDisplay(getPlayerIdFromMsg(msg),
         "Arme secrète", barde, {
           perso2: cible
@@ -22289,7 +22350,7 @@ var COFantasy = COFantasy || function() {
           chuchote: options.secret
         });
         if (options.chance) options.bonus = options.chance * 10;
-        testCaracteristique(perso, 'FOR', difficulte, options, evt,
+        testCaracteristique(perso, 'FOR', difficulte, 'enveloppement', options, evt,
           function(tr) {
             addLineToFramedDisplay(display, "<b>Résultat :</b> " + tr.texte);
             addEvent(evt);
@@ -22519,7 +22580,7 @@ var COFantasy = COFantasy || function() {
       iterSelected(selected, function(perso) {
         perso.tokName = perso.tokName || perso.token.get('name');
         if (options.save) {
-          save(options.save, perso, expliquer, {
+          save(options.save, perso, 'alcool', expliquer, {
               msgPour: " pour résister aux vapeurs éthyliques",
               hideSaveTitle: true
             }, evt,
@@ -22586,7 +22647,7 @@ var COFantasy = COFantasy || function() {
       iterSelected(selected, function(perso) {
         perso.tokName = perso.tokName || perso.token.get('name');
         if (options.save) {
-          save(options.save, perso, expliquer, {
+          save(options.save, perso, 'alcool', expliquer, {
               hideSaveTitle: true
             }, evt,
             function(succes, rollText) {
@@ -24533,6 +24594,24 @@ var COFantasy = COFantasy || function() {
           attr.set('current', 1);
         }
       });
+      //Les tests ratés
+      var trTour = allAttributesNamed(attrs, 'testsRatesDuTour');
+      trTour.forEach(function(tr) {
+        var curTr = tr.get('current');
+        if (curTr === '') {
+          evt.deletedAttributes.push(tr);
+          tr.remove();
+        } else {
+          var maxTr = tr.get('max');
+          evt.attributes.push({
+            attribute: tr,
+            current: curTr,
+            max: maxTr
+          });
+          tr.set('max', curTr);
+          tr.set('current', '');
+        }
+      });
       var vapeth = allAttributesNamed(attrs, 'vapeursEthyliques');
       vapeth.forEach(function(attr) {
         var ve = parseInt(attr.get('current'));
@@ -24557,7 +24636,7 @@ var COFantasy = COFantasy || function() {
               charId: veCharId,
               token: tok
             };
-            testCaracteristique(perso, 'CON', veSeuil, {}, evt, function(testRes) {
+            testCaracteristique(perso, 'CON', veSeuil, 'vapeursEthyliques', {}, evt, function(testRes) {
               var res = "tente un jet de CON " + veSeuil + " pour combattre les vapeurs éthyliques " + testRes.texte;
               if (testRes.reussite) {
                 res += " => réussi";
@@ -24729,7 +24808,7 @@ var COFantasy = COFantasy || function() {
         save({
             carac: carac,
             seuil: seuil
-          }, perso, expliquer, saveOpts, evt,
+          }, perso, attrEffet.id, expliquer, saveOpts, evt,
           function(reussite) { //asynchrone
             if (reussite) {
               finDEffet(attrEffet, effetTempOfAttribute(attrEffet), attrName, charId, evt, {

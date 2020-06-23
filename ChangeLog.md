@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.08
 ### Capacités
+* Adaptable de la Voie de l'humain
 * Résistance à la magie du barbare
 
 ### Autres améliorations
