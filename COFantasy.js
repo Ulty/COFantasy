@@ -5120,7 +5120,7 @@ var COFantasy = COFantasy || function() {
       options: '',
     };
     if (attackLabel === undefined) return weaponStats;
-    var att = getAttack(attackLabel, perso);//peuple perso.pnj
+    var att = getAttack(attackLabel, perso); //peuple perso.pnj
     if (att === undefined) {
       weaponStats.name = attackLabel;
       return weaponStats;
@@ -5137,12 +5137,12 @@ var COFantasy = COFantasy || function() {
       weaponStats.attSkill =
         ficheAttributeAsInt(perso, attPrefix + "armeatk", 0);
       weaponStats.attDMBonusCommun =
-      ficheAttributeAsInt(perso, attPrefix + "armedm", 0);
+        ficheAttributeAsInt(perso, attPrefix + "armedm", 0);
     } else {
       weaponStats.attSkill =
         ficheAttribute(perso, attPrefix + "armeatk", '@{ATKCAC}');
       weaponStats.attSkillDiv =
-          ficheAttributeAsInt(perso, attPrefix + "armeatkdiv", 0);
+        ficheAttributeAsInt(perso, attPrefix + "armeatkdiv", 0);
       weaponStats.attCarBonus =
         ficheAttribute(perso, attPrefix + "armedmcar", '@{FOR}');
       weaponStats.attDMBonusCommun =
@@ -5539,6 +5539,13 @@ var COFantasy = COFantasy || function() {
           defense += 2;
           explications.push("Épieu contre une attaque sans arme => +2 DEF");
         }
+      }
+    }
+    if (options.distance) {
+      var bonusCouvert = attributeAsInt(target, 'bonusCouvert');
+      if (bonusCouvert) {
+        defense += bonusCouvert;
+        explications.push("Cible à couvert => +" + bonusCouvert + " DEF");
       }
     }
     return defense;
@@ -8167,10 +8174,12 @@ var COFantasy = COFantasy || function() {
           value: '2' + options.d6
         });
       }
-      var loupParmiLesLoups = charAttributeAsInt(attaquant, 'loupParmiLesLoups', 0);
-      if (loupParmiLesLoups > 0 && estHumanoide(target)) {
-        attDMBonus += "+" + loupParmiLesLoups;
-        target.messages.push("Loup parmi les loups : +" + loupParmiLesLoups + " DM");
+      if (!options.pasDeDmg) {
+        var loupParmiLesLoups = charAttributeAsInt(attaquant, 'loupParmiLesLoups', 0);
+        if (loupParmiLesLoups > 0 && estHumanoide(target)) {
+          attDMBonus += "+" + loupParmiLesLoups;
+          target.messages.push("Loup parmi les loups : +" + loupParmiLesLoups + " DM");
+        }
       }
       //Bonus aux DMs dus au défi samouraï
       var defiSamouraiAttr = tokenAttribute(attaquant, 'defiSamourai');
@@ -13855,6 +13864,10 @@ var COFantasy = COFantasy || function() {
         var ebriete = attributeAsInt(perso, 'niveauEbriete', 0);
         if (ebriete > 0 && ebriete < niveauxEbriete.length) {
           addLineToFramedDisplay(display, "est " + niveauxEbriete[ebriete]);
+        }
+        var bonusCouvert = attributeAsInt(perso, 'bonusCouvert');
+        if (bonusCouvert) {
+            addLineToFramedDisplay(display, "est à couvert (+"+bonusCouvert+" DEF");
         }
         if (!defenseMontree) {
           var defenseAffichee = 10;
@@ -22692,6 +22705,38 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function bonusCouvert(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined) return;
+    var nouveauBonus = 0;
+    if (cmd.length > 1) {
+      nouveauBonus = parseInt(cmd[1]);
+      if (isNaN(nouveauBonus) || nouveauBonus < 0) {
+        error("Il faut un argument positif pour !cof-bonus-couvert", cmd);
+        return;
+      }
+    }
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        error('pas de token sélectionné pour !cof-bonus-couvert');
+        return;
+      }
+      var evt = {
+        type: 'Bonus couvert'
+      };
+      if (limiteRessources(options.lanceur, options, 'bonus couvert', 'bonus couvert', evt)) return;
+      iterSelected(selected, function(perso) {
+        if (nouveauBonus) {
+          setTokenAttr(perso, 'bonusCouvert', nouveauBonus, evt, "se met à couvert");
+        } else {
+          removeTokenAttr(perso, 'bonusCouvert', evt, "n'est plus à couvert");
+        }
+      }); //fin iterSelected
+    }, options); //fin getSelected
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -22808,6 +22853,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-a-couvert":
         aCouvert(msg);
+        return;
+      case "!cof-bonus-couvert":
+        bonusCouvert(msg);
         return;
       case "!cof-effet-temp":
         effetTemporaire(msg);
