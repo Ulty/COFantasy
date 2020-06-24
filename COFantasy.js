@@ -3457,8 +3457,9 @@ var COFantasy = COFantasy || function() {
     // - target token
     // - attack number (referring to the character sheet) or attack name
     // - some optional arguments, preceded by --
-    var optArgs = msg.content.split(" --");
-    var args = optArgs[0].split(" ");
+    var optArgs = msg.content.split(' --');
+    var args = optArgs[0].split(' ');
+    args = args.filter(function(a) { return a !== ''; });
     optArgs.shift();
     if (args.length < 3) {
       error("Pas assez d'arguments pour !cof-attack: " + msg.content, args);
