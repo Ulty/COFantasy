@@ -6073,13 +6073,14 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (charAttributeAsBool(attaquant, 'fauchage')) {
+      var seuilDeFauchage = charAttributeAsInt(attaquant, 'fauchage', 15);
       var seuilFauchage = 10 + modCarac(attaquant, 'FORCE');
       options.etats = options.etats || [];
       options.etats.push({
         etat: 'renverse',
         condition: {
           type: 'deAttaque',
-          seuil: 15
+          seuil: seuilDeFauchage
         },
         save: {
           carac: 'FOR',

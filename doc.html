@@ -194,39 +194,39 @@
                   </div>
 
                   <h4>Liste d'actions pour le personnage dont c'est le tour</h4>
-                        <p>Si une "Abilities" dont le nom est <code>#Actions#</code> existe pour le personnage dont c'est le tour, celle-ci sera prise en compte et le joueur qui controle le personnage recevra un chuchottement qui contiendra l'ensemble des %Ability et #Macro cliquables de <code>#Actions#</code>. Par défaut, cela contient toujours une action pour attendre et une pour se défendre. Pour voir ce message en dehors du changement d'initiative, ou pour le MJ, on peut utiliser <code>!cof-liste-actions</code> en sélectionnant le token (un bon candidat pour une macro de type token action, d'ailleurs généré par la commande <code>!cof-set-macros</code>). Il est possible de commenter temporairement une ligne de cette liste, en ajoutant // au début de celle-ci. Par défaut, si aucune ability <code>#Actions#</code> n'existe, la liste des abilities du personnage sera affichée.</p>
+                    <p>Par défaut, le script affiche, pour le personnage dont c'est le tour, une liste d'actions. Cette liste est chuchotée au joueur qui contrôle le perosnnage. Elle se compose des attaques du personnage, des abilities et des actions d'attendre, se défendre et faire une manoeuvre. Il est possible de ne pas afficher une attaque en décochant la case sous le dé dans les options d'attaque.</p>
+                    <p>Si une "Abilities" dont le nom est <code>#Actions#</code> existe pour le personnage dont c'est le tour, la liste de toutes les abilities est remplacée par les %Ability et #Macro cliquables de <code>#Actions#</code>.</p>
+                    <p>Pour voir ce message en dehors du changement d'initiative, ou pour le MJ, on peut utiliser <code>!cof-liste-actions</code> en sélectionnant le token (un bon candidat pour une macro de type token action, d'ailleurs généré par la commande <code>!cof-set-macros</code>). Il est possible de commenter temporairement une ligne de cette liste, en ajoutant <code>//</code> au début de celle-ci.</p>
                         <p><img class="img-fluid" src="https://i.imgur.com/tTfFoPW.png" data-href="https://i.imgur.com/tTfFoPW.png"></p>
                         <figcaption>Exemple d'une macro #Actions# (ou #TurnAction#)</figcaption>
+              <p><img class="img-fluid" src="https://i.imgur.com/MWTVRO4.png" data-href="https://i.imgur.com/MWTVRO4.png"></p>
+              <figcaption>Création des <i>Abilities</i> (Capacités) du Personnage.</figcaption>
                   <p>Il est possible d'ouvrir d'autre listes d'actions, à partir des commandes ou même d'une liste d'actions. Une liste d'action doit être stoquée dans une ability dont le nom commence et termine par <code>#</code>. Pour y faire référence dans une liste, il suffit d'écrire le nom de l'ability (commençant donc par <code>%</code>). Pour faire afficher la liste depuis une commande, utiliser <code>!cof-liste-actions <i>nom</i></code> (où le nom est celui de l'ability sans les <code>#</code>). Par exemple, si on ne souhaite pas afficher la liste complète des sorts d'un personnage à son tour, on peut faire une ability <code>#Sorts#</code>, puis faire une macro qui lance <code>!cof-liste-actions Sorts</code> pour que le joueur puisse afficher la liste quand il le souhaite, et aussi (ou à la place) mettre une ligne <code>%#Sorts#</code> dans son ability <code>#Actions#</code>.</p>
                 </div>
               </div>
               <h4 class="text-secondary">Attaquer une (ou plusieurs) cible : <code>!cof-attack @{selected|token_id} @{target|token_id} <i>n</i></code></h4>
               <div class="decalage">
-                <p>où <i>n</i> est un argument optionnel qui peut soit correspondre au label de l'attaque sur la fiche du personnage (ce label est automatiquement généré par la fiche et affiché juste devant le nom), soit être le nom de l'attaque. Si cet argument est absent ou qu'il ne correspnd pas à un label de la fiche du personnage, l'attaque aura les valeurs par défaut d'une attaque au contact infligeant 1d4 DM.</p>
+                <p>où <i>n</i> est un argument optionnel qui peut soit correspondre au label de l'attaque sur la fiche du personnage (ce label est automatiquement généré par la fiche et affiché juste devant le nom), soit être le nom de l'attaque. Si cet argument est absent ou qu'il ne correspnd pas à un label de la fiche du personnage, l'attaque aura les valeurs par défaut d'une attaque au contact infligeant 1d4 DM. Pour plus de facilité, vous pouvez utiliser la macro <code>Attaque</code> qui fait <code>!cof-attack @{selected|token_id} @{target|token_id}</code></p>
                     <div class="alert alert-success" role="alert">
                       <p>Exemple avec label :</p>
                       <div class="decalage">
                         <code>!cof-attack @{selected|token_id} @{target|token_id} 1</code>
                       </div>
                     </div>
-                      <p>L'attaque tient alors compte de toutes les informations de l'attaque, y compris chances de critique et portée. En l'absence de label, on peut spécifier ces informations sous forme d'options d'attaque</p>
+                    <p>L'attaque tient alors compte de toutes les informations de l'attaque, y compris chances de critique, portée, type d'attaque, type de dégâs et autres options spécifiées sur la fiche. Par défaut, l'attaque montre le label, le nom de l'attaque, le calcul du bonus d'attaque, le calcul des dégâts, la portée et un champ <code>SPÉCIAL</code>. En cliquant sur la roue au bout à droite de cette ligne, on affiche une deuxième ligne, avec un case à décocher pour ne pas faire apparaître l'attaque à chaque tour, un choix de type d'attaque, des modificateurs, un choix de type de degâts et un champ d'options. Les modificateurs sont constitués d'options sans argument, séparée par une espace. Les options sont reprises telles quels comme un argument à l'attaque (voir plus bas pour le liste de ces options). </p>
+                    <img class="img-fluid" src="images/armes.jpg">
+              <figcaption>Exemple d'attaques.</figcaption>
+                    <p> En l'absence de label, on peut spécifier ces informations sous forme d'options d'attaque</p>
                     <div class="alert alert-success" role="alert">
                       <p>Exemple pour le sort "<i>Flèche enflammée</i>" :</p>
                       <div class="decalage"><code>!cof-attack @{selected|token_id} @{target|token_id} Flèche Enflammée --toucher [[@{selected|ATKMAG}]] --dm 1d6 + [[@{selected|INT}]] --portee 30 --fx beam-fire --feu --sortilege --enflamme</code></div>
                     </div>
-                <p>Pour plus de facilité, utilisez la macro <code>Attaque</code> qui fait <code>!cof-attack @{selected|token_id} @{target|token_id}</code>, comme ça, dans l'exemple avec label, vous avez juste une ability avec comme valeur <code>#Attaque 1</code> (ou mieux, <code>#Attaque 1 --tranchant</code>).</p>
-              <p><img class="img-fluid" src="https://i.imgur.com/MWTVRO4.png" data-href="https://i.imgur.com/MWTVRO4.png"></p>
-              <figcaption>Création des <i>Abilities</i> (Capacités) du Personnage.</figcaption>
-              <p><img class="img-fluid" src="https://i.imgur.com/GmUxCpB.png" data-href="https://i.imgur.com/GmUxCpB.png"></p>
-              <figcaption>Ne pas oublier de mettre un numéro pour l'arme. A utiliser dans la création des <i>Abilities</i>.</figcaption>
               <p>Malus ou bonus temporaire à une attaque : utiliser la barre 3.</p>
               <p>Le test d'attaque à distance tient compte de la portée (malus de -1 à -5 si distance entre portée et deux fois cette valeur), ainsi que des tokens sur le trajet de l'attaque. Une attaque de trop loin ne porte jamais.</p>
               <p>Utiliser une attaque fait rentrer l'attaquant en combat (et le rajoute au turn tracker).</p>
               <h4 class="text-secondary">Options pour l'attaque&nbsp;:</h4>
-              <p>En cas d'échec critique à une attaque, le script va suggérer des effets d'échec critique inspirés de <a href="">cette table suggérée par l'auteur du jeu</a>. Le script proposera même dans la plupart des cas un bouton qui automatisera les lancers de dés et l'application de l'effet, si relevant.</p>
-              <p>Il est aussi possible d'utiliser une table personnelle, non-automatisée (voir les options d'affichage, !cof-options affichage). La table utilisée (Echec-Critique-Contact) peut être modifiée par le MJ.</p>
-              <h4 class="text-secondary">Options pour l'attaque&nbsp;:</h4>
               <div class="decalage">
+                Toutes les options sans arguments peuvent être directement utilisées comme modificateurs dans le liste des modifcateurs d'une attaque.
                 <ul>
                   <li><code>--nom <i>txt</i></code> : nom de l'attaque à afficher. Remplace le nom dans la ligne d'attaque si on a donné un label en argument. Le nom ne doit pas comporte de blanc usivi de 2 tirets (<code> --</code>).</li>
                   <li><code>--toucher <i>n</i></code> : bonus de base de l'attaque. Remplace les valeurs dans la ligne d'attaque si on a donné un label en argument.</li>
@@ -379,6 +379,9 @@
                 Dans tous les cas, si le personnage dégaine une arme à 2 mains, le script fait enlever le bouclier, et il le fait remettre si on passe d'une arme à 2 mains à une arme à 1 main. Pour savoir si une attaque (identifiée par un label) est une arme à 2 mains, le script regarde le nom de l'arme. Parfois, c'est suffisant (genre 1 Épée à 2 mains), mais souvent ça ne suffit pas. Dans ce cas, le script regarde aussi le champ divers de l'attaque, et cherche si il trouve <code>2 mains</code> dans ce champ.
                 </p>
               </div>
+              <h4 class="text-secondary">Échecs critiques&nbsp;:</h4>
+              <p>En cas d'échec critique à une attaque, le script va suggérer des effets d'échec critique inspirés de <a href="">cette table suggérée par l'auteur du jeu</a>. Le script proposera même dans la plupart des cas un bouton qui automatisera les lancers de dés et l'application de l'effet, si relevant.</p>
+              <p>Il est aussi possible d'utiliser une table personnelle, non-automatisée (voir les options d'affichage, !cof-options affichage). La table utilisée (Echec-Critique-Contact) peut être modifiée par le MJ.</p>
               <h4 class="text-secondary">Dégâts directs (sans attaquant, ou aire d'effet trop complexe pour !cof-attack) : <code>!cof-dmg <i>dm</i></code></h4>
               <div class="decalage">
                 <p>Applique des dégâts à tous les tokens sélectionnés. L'argument <i>dm</i> peut être un inline roll. Utile par exemple pour les chutes, ou bien les dégâts d'environnement, voire de pièges.<br />
@@ -1555,7 +1558,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie du colosse</h4>
                 <ol>
-                  <li><strong>Fauchage</strong> : ajouter la RD, et ajouter un attribut <code>fauchage</code> de valeur <code>true</code>, qui va faire automatiquement le renversement si le dé d'attaque est entre 15 et 20.</li>
+                  <li><strong>Fauchage</strong> : ajouter la RD, et ajouter un attribut <code>fauchage</code> de valeur <code>true</code>, qui va faire automatiquement le renversement si le dé d'attaque est entre 15 et 20. Il est possible de changer ce seuil en indiquant dans l'attribut la valeur à laquelle le dé d'attaque provoque le renversement (15 par défaut).</li>
                   <li><strong>Balayage</strong> : faire une version de l'attaque avec <code>--target @{target|Target2|token_id}</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie des créatures élémentaires</h4>
