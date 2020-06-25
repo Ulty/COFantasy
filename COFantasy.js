@@ -799,7 +799,8 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
-  function getOptionsFromCommand(fullCommand, perso) {
+  //attackStats est un argument optionnel pour le cas particulier des attaques
+  function getOptionsFromCommand(fullCommand, perso, attackStats) {
     if (fullCommand === undefined) return {
       picto: '',
       style: ''
@@ -808,42 +809,34 @@ var COFantasy = COFantasy || function() {
     var picto = '';
     var options;
     var groupe;
-    var command = fullCommand.split(' ');
+    var command = fullCommand.split(' ', 1);
     // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
     switch (command[0]) {
       case "#Attaque":
       case "!cof-attack":
       case "!cof-attaque":
         var portee = 0;
+        var sortilege;
         var args = fullCommand.split(' --');
-        var porteeTrouvee;
-        args.forEach(function(o) {
-          if (o.startsWith('portee ')) {
-            portee = parseInt(o.substring(7));
-            if (isNaN(portee) || portee < 0) portee = 0;
-            else porteeTrouvee = true;
-          }
-        });
-        if (!porteeTrouvee && command.length > 3) {
-          var attackLabel = command[3];
-          if (!attackLabel.startsWith('?')) {
-            var att = getAttack(attackLabel, perso);
-            if (att !== undefined) {
-              portee = ficheAttributeAsInt(perso, att.attackPrefix + "armeportee", 0);
-            } else {
-              var thisWeapon = [];
-              try {
-                thisWeapon = JSON.parse(attackLabel);
-                if (Array.isArray(thisWeapon) && thisWeapon.length > 4) {
-                  portee = thisWeapon[4];
-                }
-              } catch (e) {
-                log("Impossible de trouver la portée pour " + attackLabel);
-              }
-            }
+        var cmd = args.shift().split(' ');
+        if (attackStats === undefined && cmd.length > 3) {
+          var attackLabel = cmd[3].trim();
+          if (!attackLabel.startsWith('?{')) {
+            attackStats = getWeaponStats(perso, attackLabel);
           }
         }
-        if (fullCommand.indexOf('--sortileg') !== -1) {
+        if (attackStats) {
+          portee = attackStats.portee;
+          sortilege = attackStats.sortilege;
+        }
+        //On cherche la portée dans les options (ça a la priorité)
+        args.forEach(function(o) {
+          if (o.startsWith('portee ')) {
+            var p = parseInt(o.substring(7));
+            if (!isNaN(p) && p >= 0) portee = p;
+          }
+        });
+        if (sortilege || fullCommand.indexOf(' --sortilege') !== -1) {
           // attaque magique
           picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
           style = 'background-color:#9900ff';
@@ -1993,7 +1986,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //ressource est optionnel, et si présent doit être un attribut
-  function bouton(action, text, perso, ressource, overlay, style) {
+  function bouton(action, text, perso, ressource, overlay, style, attackStats) {
     if (action === undefined || action.trim().length === 0) return text;
     else action = action.trim();
     //Expansion des macros et abilities
@@ -2071,7 +2064,7 @@ var COFantasy = COFantasy || function() {
       }
       return act;
     });
-    var optionsFromCommand = getOptionsFromCommand(action, perso);
+    var optionsFromCommand = getOptionsFromCommand(action, perso, attackStats);
     if (actions.length == 1) action = actions[0];
     else
       action = "!cof-multi-command " + actions.join(' --cof-multi-command ');
@@ -3459,7 +3452,9 @@ var COFantasy = COFantasy || function() {
     // - some optional arguments, preceded by --
     var optArgs = msg.content.split(' --');
     var args = optArgs[0].split(' ');
-    args = args.filter(function(a) { return a !== ''; });
+    args = args.filter(function(a) {
+      return a !== '';
+    });
     optArgs.shift();
     if (args.length < 3) {
       error("Pas assez d'arguments pour !cof-attack: " + msg.content, args);
@@ -13057,92 +13052,11 @@ var COFantasy = COFantasy || function() {
         command = '!cof-soin 5';
         ligne += bouton(command, "Régénération", perso, false) + " si source élémentaire proche<br />";
       }
-      //La liste d'action proprement dite
-      if (actionsDuTour.length > 0) {
-        // on récupère la valeur de l'action dont chaque Macro #/Ability % est mis dans un tableau 'action'
-        var actions = actionsDuTour[0].get('action')
-          .replace(/\n/gm, '').replace(/\r/gm, '')
-          .replace(/%#([^#]*)#/g, '\n!cof-liste-actions $1')
-          .replace(/\/\/%/g, '\n\/\/')
-          .replace(/\/\/#/g, '\n\/\/')
-          .replace(/%/g, '\n%').replace(/#/g, '\n#')
-          .split("\n");
-        if (actions.length > 0) {
-          // Toutes les Macros
-          var macros = findObjs({
-            _type: 'macro'
-          });
-          var found;
-          // On recherche si l'action existe (Ability % ou Macro #)
-          actions.forEach(function(action, i) {
-            action = action.trim();
-            if (action.length > 0) {
-              if (action.startsWith('//')) return; //commented out line
-              var actionCommands = action.split(' ');
-              var actionCmd = actionCommands[0];
-              var actionText = actionCmd.replace(/-/g, ' ').replace(/_/g, ' ');
-              found = false;
-              if (actionCmd.startsWith('%')) {
-                // Ability
-                actionCmd = actionCmd.substr(1);
-                actionText = actionText.substr(1);
-                abilities.forEach(function(abilitie, index) {
-                  if (found) return;
-                  if (abilitie.get('name') === actionCmd) {
-                    // l'ability existe
-                    found = true;
-                    command = abilitie.get('action').trim();
-                    if (actionCommands.length > 1) {
-                      //On rajoute les options de l'ability
-                      command += action.substr(action.indexOf(' '));
-                    }
-                    ligne += bouton(command, actionText, perso, false) + '<br />';
-                  }
-                });
-              } else if (actionCmd.startsWith('#')) {
-                // Macro
-                actionCmd = actionCmd.substr(1);
-                actionText = actionText.substr(1);
-                macros.forEach(function(macro, index) {
-                  if (found) return;
-                  if (macro.get('name') === actionCmd) {
-                    found = true;
-                    command = macro.get('action').trim();
-                    if (actionCommands.length > 1) {
-                      //On rajoute les options de la macro
-                      command += action.substr(action.indexOf(' '));
-                    }
-                    ligne += bouton(command, actionText, perso, false) + '<br />';
-                  }
-                });
-              } else if (actionCmd.startsWith('!')) {
-                // commande API
-                if (actionCommands.length > 1) {
-                  actionText = actionCommands[1].replace(/-/g, ' ').replace(/_/g, ' ');
-                }
-                command = action;
-                ligne += bouton(command, actionText, perso, false) + '<br />';
-                found = true;
-              }
-              if (found) {
-                actionsAAfficher = true;
-              } else {
-                // Si on n'a toujours rien trouvé, on ajoute un petit log
-                log('Ability et macro non trouvé : ' + action);
-              }
-            }
-          });
-        }
-      } else if (stateCOF.options.affichage.val.actions_par_defaut.val) {
-        actionsParDefaut = true;
-        abilities.forEach(function(a) {
-          var actionAbility = a.get('name').replace(/-/g, ' ').replace(/_/g, ' ');
-          command = a.get('action').trim();
-          ligne += bouton(command, actionAbility, perso, false) + '<br />';
-        });
-      }
-      if (actionsParDefaut) {
-        actionsAAfficher = true;
+      //Les attaques de la fiche à afficher dans la liste d'actions
+      var afficherAttaquesFiche =
+        actionsParDefaut ||
+        (actionsDuTour.length === 0 && stateCOF.options.affichage.val.actions_par_defaut.val);
+      if (afficherAttaquesFiche) {
         //Cherche toutes les attaques à afficher
         var typePerso = ficheAttribute(perso, 'type_personnage', 'PJ');
         var estPNJ = (typePerso == 'PNJ');
@@ -13173,6 +13087,107 @@ var COFantasy = COFantasy || function() {
           command = "!cof-attack @{selected|token_id} @{target|token_id} " + attLabel;
           ligne += bouton(command, weaponName, perso) + '<br />';
         });
+      }
+      //La liste d'action proprement dite
+      if (actionsDuTour.length > 0) {
+        // on récupère la valeur de l'action dont chaque Macro #/Ability % est mis dans un tableau 'action'
+        var actions = actionsDuTour[0].get('action')
+          .replace(/\n/gm, '').replace(/\r/gm, '')
+          .replace(/%#([^#]*)#/g, '\n!cof-liste-actions $1')
+          .replace(/\/\/%/g, '\n\/\/')
+          .replace(/\/\/#/g, '\n\/\/')
+          .replace(/%/g, '\n%').replace(/#/g, '\n#')
+          .split("\n");
+        if (actions.length > 0) {
+          // Toutes les Macros
+          var macros = findObjs({
+            _type: 'macro'
+          });
+          var found;
+          // On recherche si l'action existe (Ability % ou Macro #)
+          actions.forEach(function(action) {
+            action = action.trim();
+            if (action === '') return;
+            if (action.startsWith('//')) return; //commented out line
+            var actionCommands = action.split(' ');
+            actionCommands = actionCommands.filter(function(c) {
+              return c !== '';
+            });
+            var actionCmd = actionCommands[0];
+            var actionText = actionCmd.replace(/-/g, ' ').replace(/_/g, ' ');
+            found = false;
+            switch (actionCmd.charAt(0)) {
+              case '%':
+                // Ability
+                actionCmd = actionCmd.substr(1);
+                actionText = actionText.substr(1);
+                abilities.forEach(function(abilitie, index) {
+                  if (found) return;
+                  if (abilitie.get('name') === actionCmd) {
+                    // l'ability existe
+                    found = true;
+                    command = abilitie.get('action').trim();
+                    if (actionCommands.length > 1) {
+                      //On rajoute les options de l'ability
+                      command += action.substr(action.indexOf(' '));
+                    }
+                    ligne += bouton(command, actionText, perso, false) + '<br />';
+                  }
+                });
+                break;
+              case '#':
+                // Macro
+                //D'abord le cas de #Attaque
+                if (actionCmd == '#Attaque' && actionCommands.length > 1) {
+                  found = true;
+                  var attackLabel = actionCommands[1].trim();
+                  var attackStats = getWeaponStats(perso, attackLabel);
+                  actionText = attackStats.name;
+                  ligne += bouton(action, actionText, perso, false, undefined, undefined, attackStats) + '<br />';
+                } else {
+                  actionCmd = actionCmd.substr(1);
+                  actionText = actionText.substr(1);
+                  macros.forEach(function(macro, index) {
+                    if (found) return;
+                    if (macro.get('name') === actionCmd) {
+                      found = true;
+                      command = macro.get('action').trim();
+                      if (actionCommands.length > 1) {
+                        //On rajoute les options de la macro
+                        command += action.substr(action.indexOf(' '));
+                      }
+                      ligne += bouton(command, actionText, perso, false) + '<br />';
+                    }
+                  });
+                }
+                break;
+              case '!':
+                // commande API
+                if (actionCommands.length > 1) {
+                  actionText = actionCommands[1].replace(/-/g, ' ').replace(/_/g, ' ');
+                }
+                command = action;
+                ligne += bouton(command, actionText, perso, false) + '<br />';
+                found = true;
+            }
+            if (found) {
+              actionsAAfficher = true;
+            } else {
+              // Si on n'a toujours rien trouvé, on ajoute un petit log
+              log('Ability et macro non trouvé : ' + action);
+            }
+          });
+        }
+      } else if (stateCOF.options.affichage.val.actions_par_defaut.val) {
+        actionsParDefaut = true;
+        abilities.forEach(function(a) {
+          var actionAbility = a.get('name').replace(/-/g, ' ').replace(/_/g, ' ');
+          command = a.get('action').trim();
+          ligne += bouton(command, actionAbility, perso, false) + '<br />';
+        });
+      }
+      if (actionsParDefaut) {
+        actionsAAfficher = true;
         command = "!cof-attendre ?{Nouvelle initiative}";
         ligne += bouton(command, 'Attendre', perso, false) + '<br />';
         if (!charAttributeAsBool(perso, 'armeeConjuree')) {
@@ -13868,7 +13883,7 @@ var COFantasy = COFantasy || function() {
         }
         var bonusCouvert = attributeAsInt(perso, 'bonusCouvert');
         if (bonusCouvert) {
-            addLineToFramedDisplay(display, "est à couvert (+"+bonusCouvert+" DEF");
+          addLineToFramedDisplay(display, "est à couvert (+" + bonusCouvert + " DEF");
         }
         if (!defenseMontree) {
           var defenseAffichee = 10;
