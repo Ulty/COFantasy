@@ -735,7 +735,8 @@ var COFantasy = COFantasy || function() {
   function persoEstPNJ(perso) {
     if (perso.pnj) return true;
     var typePerso = ficheAttribute(perso, 'type_personnage', 'PJ');
-    return typePerso == 'PNJ';
+    perso.pnj = (typePerso == 'PNJ');
+    return perso.pnj;
   }
 
   var attackNameRegExp = new RegExp(/^(repeating_armes_.*_)armenom$/);
@@ -751,7 +752,7 @@ var COFantasy = COFantasy || function() {
     var findAttack = function(n) {
       return attackNameRegExp.exec(n);
     };
-    if (perso.pnj) {
+    if (persoEstPNJ(perso)) {
       findAttack = function(n) {
         return attackNamePNJRegExp.exec(n);
       };
