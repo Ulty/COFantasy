@@ -1,11 +1,15 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.08
 ### Capacités
+* Adaptable de la Voie de l'humain
 * Résistance à la magie du barbare
 
 ### Autres améliorations
+* Ajout du bonus de couvert
 * Attaques par défaut dans la liste d'actions, possibilité de se passer complètement des attributs pour les attaques (actif quand la version 3.3 de la fiche sera là.
 
+### Corrections de bugs
+* Prise en compte des réflexes félins (Voie du pourfendeur) dans l'initiative
 ## 2.07
 ### Autres améliorations
 * Correction de l'affichage des armes dans le statut avec les nouvelles fiches
