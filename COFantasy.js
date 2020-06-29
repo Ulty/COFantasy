@@ -781,14 +781,7 @@ var COFantasy = COFantasy || function() {
           error("Pas de nom pour une attaque");
           return;
         }
-        var weaponLabel;
-        var version = parseFloat(ficheAttribute(perso, 'version', 0));
-        if (isNaN(version) || version < 3.2) {
-          weaponLabel = weaponName.split(' ', 1)[0];
-          weaponName = weaponName.substring(weaponName.indexOf(' ') + 1);
-        } else {
-          weaponLabel = ficheAttribute(perso, attPrefix + "armelabel", 0);
-        }
+        var weaponLabel = ficheAttribute(perso, attPrefix + "armelabel", 0);
         if (weaponLabel == attackLabel) {
           res = {
             attackPrefix: attPrefix,
@@ -20966,7 +20959,7 @@ var COFantasy = COFantasy || function() {
       createObj('attribute', {
         _characterid: charId,
         name: 'version',
-        current: '3.2'
+        current: '3.3'
       });
     }
     var pnj = true;
@@ -21093,7 +21086,7 @@ var COFantasy = COFantasy || function() {
         pnj_def: 14,
         pnj_init: 12,
         race: 'loup',
-        TAILLE: 'moyen'
+        taille: 'moyen'
       },
       pv: 9,
       attaques: [{
@@ -21131,7 +21124,7 @@ var COFantasy = COFantasy || function() {
         INIT_DIV: 5,
         pnj_init: 17,
         race: 'loup',
-        TAILLE: 'moyen'
+        taille: 'moyen'
       },
       pv: 15,
       attaques: [{
@@ -21178,7 +21171,7 @@ var COFantasy = COFantasy || function() {
         INIT_DIV: 5,
         pnj_init: 17,
         race: 'loup',
-        TAILLE: 'moyen'
+        taille: 'moyen'
       },
       pv: 35,
       attaques: [{
@@ -21225,7 +21218,7 @@ var COFantasy = COFantasy || function() {
         INIT_DIV: 5,
         pnj_init: 23,
         race: 'lion',
-        TAILLE: 'grand'
+        taille: 'grand'
       },
       pv: 30,
       attaques: [{
@@ -21274,7 +21267,7 @@ var COFantasy = COFantasy || function() {
         pnj_def: 20,
         pnj_init: 18,
         race: 'lion',
-        TAILLE: 'grand'
+        taille: 'grand'
       },
       pv: 50,
       attaques: [{
@@ -21323,7 +21316,7 @@ var COFantasy = COFantasy || function() {
         pnj_def: 20,
         pnj_init: 11,
         race: 'ours',
-        TAILLE: 'grand'
+        taille: 'grand'
       },
       pv: 70,
       attaques: [{
@@ -21368,7 +21361,7 @@ var COFantasy = COFantasy || function() {
         pnj_def: 22,
         pnj_init: 18,
         race: 'tigre',
-        TAILLE: 'grand'
+        taille: 'grand'
       },
       pv: 90,
       attaques: [{
@@ -21417,7 +21410,7 @@ var COFantasy = COFantasy || function() {
         RDS: 2,
         pnj_rd: 2,
         race: 'ours',
-        TAILLE: 'énorme'
+        taille: 'énorme'
       },
       pv: 110,
       attaques: [{
