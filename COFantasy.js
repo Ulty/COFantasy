@@ -13075,8 +13075,8 @@ var COFantasy = COFantasy || function() {
           }
         });
         _.forEach(attaques, function(weaponName, attPrefix) {
-          var attaqueVisible = ficheAttribute(perso, attPrefix + 'armeactionvisible', true);
-          if (!attaqueVisible) return;
+          var attaqueVisible = ficheAttributeAsInt(perso, attPrefix + 'armeactionvisible', 1);
+          if (attaqueVisible === 0) return;
           var attLabel = ficheAttribute(perso, attPrefix + "armelabel", 0);
           command = "!cof-attack @{selected|token_id} @{target|token_id} " + attLabel;
           ligne += bouton(command, weaponName, perso) + '<br />';
