@@ -7567,7 +7567,10 @@ var COFantasy = COFantasy || function() {
           }
           if (target.touche) {
             if (attributeAsBool(target, 'imageDecalee')) {
-              var id = rollDePlus(6);
+              if (target.rollImageDecalee === undefined) {
+              target.rollImageDecalee = rollDePlus(6);
+              }
+              var id = target.rollImageDecalee;
               if (id.val > 4) {
                 target.touche = false;
                 target.messages.push(id.roll + ": l'attaque passe à travers l'image de " + target.tokName);
