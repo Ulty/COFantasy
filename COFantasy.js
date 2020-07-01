@@ -698,10 +698,12 @@ var COFantasy = COFantasy || function() {
     return attrAsInt(attr, def);
   }
 
-  function ficheAttributeAsBool(personnage, name) {
+  //Il faut une valeur par défaut, qui correspond à celle de la fiche
+  function ficheAttributeAsBool(personnage, name, def) {
     var attr = charAttribute(personnage.charId, name, {
       caseInsensitive: true
     });
+    if (attr.length === 0) return def;
     return attrAsBool(attr);
   }
 
@@ -2312,7 +2314,7 @@ var COFantasy = COFantasy || function() {
         malusCasque = malusCasque || attr == 'perception' || attr == 'vigilance';
       });
     }
-    if (malusCasque && ficheAttributeAsBool(personnage, 'casque_on')) {
+    if (malusCasque && ficheAttributeAsBool(personnage, 'casque_on', false)) {
       malusCasque = ficheAttributeAsInt(personnage, 'casque_malus', 0);
       if (malusCasque > 0) bonusCarac -= malusCasque;
     }
@@ -7702,7 +7704,7 @@ var COFantasy = COFantasy || function() {
     var attDiceCible = computeAttackDice(weaponStats.attDice, options);
     var attCarBonusCible =
       computeAttackCarBonus(attaquant, weaponStats.attCarBonus);
-    if (options.epieu && !ficheAttributeAsBool(target, 'DEFARMUREON')) {
+    if (options.epieu && !ficheAttributeAsBool(target, 'DEFARMUREON', false)) {
       attNbDicesCible++;
     }
     if (target.pressionMortelle) {
@@ -9704,7 +9706,7 @@ var COFantasy = COFantasy || function() {
         if (attributeAsBool(target, 'mutationSilhouetteMassive')) rd += 3;
         if (crit) {
           var rdCrit = charAttributeAsInt(target, 'RD_critique', 0); //pour la compatibilité
-          if (ficheAttributeAsBool(target, 'casque_on'))
+          if (ficheAttributeAsBool(target, 'casque_on', false))
             rdCrit += ficheAttributeAsInt(target, 'casque_rd', 0);
           rd += rdCrit;
           if (options.memePasMal) options.memePasMal -= rdCrit;
@@ -9716,7 +9718,7 @@ var COFantasy = COFantasy || function() {
           if (rdTarget.distance) rd += rdTarget.distance;
           var piqures = charAttributeAsInt(target, 'piquresDInsectes', 0);
           if (piqures > 0) {
-            if (ficheAttribute(target, 'type_personnage', 'PJ') == 'PNJ' || (ficheAttributeAsBool(target, 'DEFARMUREON') && ficheAttributeAsInt(target, 'DEFARMURE', 0) > 5)) {
+            if (ficheAttribute(target, 'type_personnage', 'PJ') == 'PNJ' || (ficheAttributeAsBool(target, 'DEFARMUREON', false) && ficheAttributeAsInt(target, 'DEFARMURE', 0) > 5)) {
               rd += piqures;
             }
           }
@@ -14152,7 +14154,7 @@ var COFantasy = COFantasy || function() {
         malusCasque = malusCasque || attr == 'perception' || attr == 'vigilance';
       });
     }
-    if (malusCasque && ficheAttributeAsBool(personnage, 'casque_on')) {
+    if (malusCasque && ficheAttributeAsBool(personnage, 'casque_on', false)) {
       malusCasque = ficheAttributeAsInt(personnage, 'casque_malus', 0);
       if (malusCasque > 0) {
         explications.push("Malus de casque : -" + malusCasque);
@@ -14673,8 +14675,8 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (nouvelleArme.deuxMains) {
-      if (ficheAttributeAsBool(perso, 'DEFBOUCLIER') &&
-        ficheAttributeAsInt(perso, 'DEFBOUCLIERON', 1)) {
+      if (ficheAttributeAsBool(perso, 'DEFBOUCLIER', false) &&
+        ficheAttributeAsInt(perso, 'DEFBOUCLIERON', 0)) {
         sendChar(perso.charId, "enlève son bouclier");
         var attrBouclier = findObjs({
           _type: 'attribute',
@@ -14704,8 +14706,8 @@ var COFantasy = COFantasy || function() {
         }
       }
     } else if (ancienneArme && ancienneArme.deuxMains) {
-      if (ficheAttributeAsBool(perso, 'DEFBOUCLIER') &&
-        !ficheAttributeAsInt(perso, 'DEFBOUCLIERON', 1)) {
+      if (ficheAttributeAsBool(perso, 'DEFBOUCLIER', false) &&
+        !ficheAttributeAsInt(perso, 'DEFBOUCLIERON', 0)) {
         sendChar(perso.charId, "remet son bouclier");
         evt.attributes = evt.attributes || [];
         var attrBouclierOff = findObjs({
@@ -16465,7 +16467,7 @@ var COFantasy = COFantasy || function() {
         soins += " + " + bonusGroupe + "]]";
         msg.content += " --allies --self";
         if (options.mana === undefined) {
-          if (ficheAttributeAsBool(soigneur, 'option_pm'))
+          if (ficheAttributeAsBool(soigneur, 'option_pm', true))
             options.mana = 1;
         }
         break;
@@ -19384,7 +19386,7 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Création d'élixir"
     };
-    if (stateCOF.options.regles.val.elixirs_sorts.val && ficheAttributeAsBool(forgesort, 'option_pm')) {
+    if (stateCOF.options.regles.val.elixirs_sorts.val && ficheAttributeAsBool(forgesort, 'option_pm', true)) {
       if (stateCOF.options.regles.val.mana_totale.val) {
         switch (elixir.rang) {
           case 1:
@@ -19728,7 +19730,7 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Création de rune"
     };
-    if (ficheAttributeAsBool(forgesort, 'option_pm')) {
+    if (ficheAttributeAsBool(forgesort, 'option_pm', true)) {
       if (stateCOF.options.regles.val.mana_totale.val) {
         switch (rune.rang) {
           case 2:
@@ -25193,7 +25195,7 @@ var COFantasy = COFantasy || function() {
       if (etat == 'affaibli') { // Cas particulier affaibli sur la fiche perso
         attributeFicheValue = (ficheAttributeAsInt(perso, 'affaibli', 20) == 12);
       } else { // Autre cas
-        attributeFicheValue = ficheAttributeAsBool(perso, etat);
+        attributeFicheValue = ficheAttributeAsBool(perso, etat, false);
       }
       // Récupère la valeur de l'état sur le token
       var attributeTokenValue = token.get(cof_states[etat]);
