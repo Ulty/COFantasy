@@ -3575,7 +3575,6 @@ var COFantasy = COFantasy || function() {
         case "attaqueMentale":
         case "auto":
         case "avecd12":
-        case "contondant":
         case "demiAuto":
         case "explodeMax":
         case "feinte":
@@ -3583,7 +3582,6 @@ var COFantasy = COFantasy || function() {
         case "m2d20":
         case "mainsDEnergie":
         case "pasDeDmg":
-        case "percant":
         case "pointsVitaux":
         case "poudre":
         case "metal":
@@ -3593,7 +3591,6 @@ var COFantasy = COFantasy || function() {
         case "sortilege":
         case "strigeSuce":
         case "tirDeBarrage":
-        case "tranchant":
         case "test":
         case "traquenard":
         case "tueurDeGeants":
@@ -3601,11 +3598,19 @@ var COFantasy = COFantasy || function() {
         case "attaqueArmeeConjuree":
         case "difficultePVmax":
         case "lamesJumelles":
-        case "riposte":
+        case 'riposte':
         case 'secret':
         case 'saufAllies':
         case 'attaqueAssuree':
         case 'attaqueRisquee':
+          options[cmd[0]] = true;
+          return;
+        case 'tranchant':
+        case 'contondant':
+        case 'percant':
+          options.contondant = undefined;
+          options.percant = undefined;
+          options.tranchant = undefined;
           options[cmd[0]] = true;
           return;
         case 'nom':
@@ -9498,6 +9503,7 @@ var COFantasy = COFantasy || function() {
       sendChat('', '/w GM ' + personnage.tokName + ' réapparaîtra dans ' + duree.roll + ' tours.');
       var effet = 'effetRetarde(réapparition)';
       setTokenAttr(personnage, effet, duree.val - 1, evt, undefined, getInit());
+      personnage.token.set('layer', 'gmlayer');
       if (personnage.attaquant) {
         var dm = rollDePlus(6);
         var dmg = {
@@ -9518,6 +9524,7 @@ var COFantasy = COFantasy || function() {
             }
           });
       }
+      return;
     }
     setState(personnage, 'mort', true, evt);
     var targetPos = {
@@ -10503,6 +10510,40 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  var aura_token_on_turn = false;
+
+  function setTokenInitAura(perso) {
+    var token = perso.token;
+    if (stateCOF.options.affichage.val.init_dynamique.val) {
+      threadSync++;
+      activateRoundMarker(threadSync, token);
+      return;
+    }
+    if (aura_token_on_turn) {
+      // ennemi => rouge
+      var aura2_color = '#CC0000';
+      if (estAllieJoueur(perso)) {
+        // equipe => vert
+        aura2_color = '#59E594';
+      }
+      token.set('aura2_radius', '0.1');
+      token.set('aura2_color', aura2_color);
+      token.set('showplayers_aura2', true);
+    } else {
+      var status = '';
+      // Cas des tokens personnalisés
+      if (stateCOF.markers_personnalises) {
+        // ennemi => rouge
+        status = stateCOF.statusForInitEnemy;
+        if (estAllieJoueur(perso)) {
+          // equipe => vert
+          status = stateCOF.statusForInitAlly;
+        }
+      } else status = 'status_flying-flag';
+      token.set(status, true);
+    }
+  }
+
   function setActiveToken(tokenId, evt) {
     var pageId = Campaign().get('initiativepage');
     if (stateCOF.activeTokenId) {
@@ -10553,7 +10594,7 @@ var COFantasy = COFantasy || function() {
         affectToken(token, 'aura2_radius', token.get('aura2_radius'), evt);
         affectToken(token, 'aura2_color', token.get('aura2_color'), evt);
         affectToken(token, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
-        setTokenFlagAura(perso);
+        setTokenInitAura(perso);
         stateCOF.activeTokenId = tokenId;
         stateCOF.activeTokenName = token.get('name');
         turnAction(perso);
@@ -12446,6 +12487,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var options = action.options || {};
+    options.rollsAttack = action.rollsAttack;
     var attr = tokenAttribute(perso, 'esquiveFatale');
     if (attr.length === 0) {
       sendChar(perso.charId, "ne sait pas faire d'esquive fatale");
@@ -12958,6 +13000,7 @@ var COFantasy = COFantasy || function() {
       }
       if (roundMarker) roundMarker.remove();
       roundMarkerSpec._pageid = token.get('pageid');
+      roundMarkerSpec.layer = token.get('layer');
       roundMarkerSpec.left = token.get('left');
       roundMarkerSpec.top = token.get('top');
       var width = (token.get('width') + token.get('height')) / 2 * flashyInitMarkerScale;
@@ -13003,40 +13046,6 @@ var COFantasy = COFantasy || function() {
       var rotation = roundMarker.get('rotation');
       roundMarker.set('rotation', (rotation + 1) % 365);
       setTimeout(_.bind(activateRoundMarker, undefined, sync), 100);
-    }
-  }
-
-  var aura_token_on_turn = false;
-
-  function setTokenFlagAura(perso) {
-    var token = perso.token;
-    if (stateCOF.options.affichage.val.init_dynamique.val) {
-      threadSync++;
-      activateRoundMarker(threadSync, token);
-      return;
-    }
-    if (aura_token_on_turn) {
-      // ennemi => rouge
-      var aura2_color = '#CC0000';
-      if (estAllieJoueur(perso)) {
-        // equipe => vert
-        aura2_color = '#59E594';
-      }
-      token.set('aura2_radius', '0.1');
-      token.set('aura2_color', aura2_color);
-      token.set('showplayers_aura2', true);
-    } else {
-      var status = '';
-      // Cas des tokens personnalisés
-      if (stateCOF.markers_personnalises) {
-        // ennemi => rouge
-        status = stateCOF.statusForInitEnemy;
-        if (estAllieJoueur(perso)) {
-          // equipe => vert
-          status = stateCOF.statusForInitAlly;
-        }
-      } else status = 'status_flying-flag';
-      token.set(status, true);
     }
   }
 
@@ -19288,7 +19297,7 @@ var COFantasy = COFantasy || function() {
     if (stateCOF.combat) {
       updateInit(monture.token, evt);
       if (stateCOF.options.affichage.val.init_dynamique.val) {
-        setTokenFlagAura(monture);
+        setTokenInitAura(monture);
       }
     }
     addEvent(evt);
@@ -24995,7 +25004,6 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(perso, 'prisonVegetale')) return true;
       return false;
     }
-    if (charAttributeAsBool(perso, 'energieDeLaMort')) return false;
     return true;
   }
 
@@ -25054,7 +25062,7 @@ var COFantasy = COFantasy || function() {
               updateInit(monture.token, evt);
               // Réadapter l'init_dynamique au token du perso
               if (stateCOF.options.affichage.val.init_dynamique.val) {
-                setTokenFlagAura(perso);
+                setTokenInitAura(perso);
               }
             }
           }
