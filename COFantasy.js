@@ -9294,7 +9294,8 @@ var COFantasy = COFantasy || function() {
         magique: options.magique,
         tranchant: options.tranchant,
         percant: options.percant,
-        contondant: options.contondant
+        contondant: options.contondant,
+        sortilege: options.sortilege,
       };
       var resSauf = applyRDSauf(rdTarget.sauf, mainDmgType, dmgTotal, dmgDisplay, additionalType, target);
       dmgTotal = resSauf.total;
@@ -9442,6 +9443,7 @@ var COFantasy = COFantasy || function() {
                   }
                 }
                 var additionalType = {
+                  sortilege: options.sortilege,
                   magique: options.magique
                 };
                 var resSauf = applyRDSauf(rdTarget.sauf, dmgType, dm, typeDisplay, additionalType, target);
@@ -9490,7 +9492,9 @@ var COFantasy = COFantasy || function() {
     }
     if (charAttributeAsBool(personnage, 'energieDeLaMort')) {
       personnage.tokName = personnage.tokName || personnage.token.get('name');
-      var duree = rollDePlus(6, {bonus:5});
+      var duree = rollDePlus(6, {
+        bonus: 5
+      });
       sendChat('', '/w GM ' + personnage.tokName + ' réapparaîtra dans ' + duree.roll + ' tours.');
       var effet = 'effetRetarde(réapparition)';
       setTokenAttr(personnage, effet, duree.val - 1, evt, undefined, getInit());
@@ -10497,6 +10501,130 @@ var COFantasy = COFantasy || function() {
         foo(tok, total);
       });
     }
+  }
+
+  function setActiveToken(tokenId, evt) {
+    var pageId = Campaign().get('initiativepage');
+    if (stateCOF.activeTokenId) {
+      if (tokenId == stateCOF.activeTokenId) return;
+      evt.activeTokenId = stateCOF.activeTokenId;
+      var prevToken = getObj('graphic', stateCOF.activeTokenId);
+      if (prevToken) {
+        affectToken(prevToken, 'statusmarkers', prevToken.get('statusmarkers'), evt);
+        affectToken(prevToken, 'aura2_radius', prevToken.get('aura2_radius'), evt);
+        affectToken(prevToken, 'aura2_color', prevToken.get('aura2_color'), evt);
+        affectToken(prevToken, 'showplayers_aura2', prevToken.get('showplayers_aura2'), evt);
+        removeTokenFlagAura(prevToken);
+      } else {
+        if (pageId) {
+          prevToken = findObjs({
+            _type: 'graphic',
+            _subtype: 'token',
+            layer: 'objects',
+            _pageid: pageId,
+            name: stateCOF.activeTokenName
+          });
+        } else {
+          prevToken = findObjs({
+            _type: 'graphic',
+            _subtype: 'token',
+            layer: 'objects',
+            name: stateCOF.activeTokenName
+          });
+        }
+        prevToken.forEach(function(o) {
+          affectToken(o, 'statusmarkers', o.get('statusmarkers'), evt);
+          affectToken(o, 'aura2_radius', o.get('aura2_radius'), evt);
+          affectToken(o, 'aura2_color', o.get('aura2_color'), evt);
+          affectToken(o, 'showplayers_aura2', o.get('showplayers_aura2'), evt);
+          removeTokenFlagAura(o);
+        });
+      }
+    }
+    if (tokenId) {
+      var perso = persoOfId(tokenId, tokenId);
+      if (perso) {
+        //On remet à 0 la liste des cibles attaquées par le personnage
+        removeDernieresCiblesAttaquees(perso, evt);
+        var token = perso.token;
+        var charId = perso.charId;
+        // personnage lié au Token
+        affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
+        affectToken(token, 'aura2_radius', token.get('aura2_radius'), evt);
+        affectToken(token, 'aura2_color', token.get('aura2_color'), evt);
+        affectToken(token, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
+        setTokenFlagAura(perso);
+        stateCOF.activeTokenId = tokenId;
+        stateCOF.activeTokenName = token.get('name');
+        turnAction(perso);
+        // Gestion de la confusion
+        if (attributeAsBool(perso, "confusion")) {
+          //Une chance sur deux de ne pas agir
+          if (randomInteger(2) < 2) {
+            sendChar(charId, "est en pleine confusion. Il ne fait rien ce tour");
+            removeTokenFlagAura(token);
+          } else {
+            //Trouver la créature la plus proche
+            var closestToken;
+            pageId = token.get('pageid');
+            var toksOnPage = findObjs({
+              _type: 'graphic',
+              _subtype: 'token',
+              _pageid: pageId,
+              layer: 'objects'
+            });
+            toksOnPage.forEach(function(tok) {
+              if (tok.id == tokenId) return;
+              var perso = {
+                token: tok
+              };
+              perso.charId = tok.get('represents');
+              if (perso.charId === '') return;
+              if (getState(perso, 'mort')) return;
+              var dist = distanceCombat(token, tok, pageId);
+              if (closestToken) {
+                if (dist > closestToken.distance) return;
+                if (dist < closestToken.distance) {
+                  closestToken = {
+                    distance: dist,
+                    names: [tok.get('name')]
+                  };
+                  return;
+                }
+                closestToken.names.push(tok.get('name'));
+                return;
+              }
+              closestToken = {
+                distance: dist,
+                names: [tok.get('name')]
+              };
+            });
+            if (closestToken) {
+              var r = randomInteger(closestToken.names.length) - 1;
+              sendChar(charId,
+                "est en pleine confusion. " + onGenre(charId, 'Il', 'Elle') +
+                " attaque " + closestToken.names[r] + ".");
+            } else {
+              sendChar(charId, "est seul et en plein confusion");
+            }
+          }
+        }
+        //On enlève aussi les états qui ne durent qu'un tour
+        var defenseTotale = tokenAttribute(perso, 'defenseTotale');
+        if (defenseTotale.length > 0) {
+          defenseTotale = defenseTotale[0];
+          var tourDefTotale = defenseTotale.get('max');
+          if (tourDefTotale < stateCOF.tour) {
+            evt.deletedAttributes = evt.deletedAttributes || [];
+            evt.deletedAttributes.push(defenseTotale);
+            defenseTotale.remove();
+          }
+        }
+      } else {
+        error("Impossible de trouver le token dont c'est le tour", tokenId);
+        stateCOF.activeTokenId = undefined;
+      }
+    } else stateCOF.activeTokenId = undefined;
   }
 
   function sortirDuCombat() {
@@ -13331,130 +13459,6 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function setActiveToken(tokenId, evt) {
-    var pageId = Campaign().get('initiativepage');
-    if (stateCOF.activeTokenId) {
-      if (tokenId == stateCOF.activeTokenId) return;
-      evt.activeTokenId = stateCOF.activeTokenId;
-      var prevToken = getObj('graphic', stateCOF.activeTokenId);
-      if (prevToken) {
-        affectToken(prevToken, 'statusmarkers', prevToken.get('statusmarkers'), evt);
-        affectToken(prevToken, 'aura2_radius', prevToken.get('aura2_radius'), evt);
-        affectToken(prevToken, 'aura2_color', prevToken.get('aura2_color'), evt);
-        affectToken(prevToken, 'showplayers_aura2', prevToken.get('showplayers_aura2'), evt);
-        removeTokenFlagAura(prevToken);
-      } else {
-        if (pageId) {
-          prevToken = findObjs({
-            _type: 'graphic',
-            _subtype: 'token',
-            layer: 'objects',
-            _pageid: pageId,
-            name: stateCOF.activeTokenName
-          });
-        } else {
-          prevToken = findObjs({
-            _type: 'graphic',
-            _subtype: 'token',
-            layer: 'objects',
-            name: stateCOF.activeTokenName
-          });
-        }
-        prevToken.forEach(function(o) {
-          affectToken(o, 'statusmarkers', o.get('statusmarkers'), evt);
-          affectToken(o, 'aura2_radius', o.get('aura2_radius'), evt);
-          affectToken(o, 'aura2_color', o.get('aura2_color'), evt);
-          affectToken(o, 'showplayers_aura2', o.get('showplayers_aura2'), evt);
-          removeTokenFlagAura(o);
-        });
-      }
-    }
-    if (tokenId) {
-      var perso = persoOfId(tokenId, tokenId);
-      if (perso) {
-        //On remet à 0 la liste des cibles attaquées par le personnage
-        removeDernieresCiblesAttaquees(perso, evt);
-        var token = perso.token;
-        var charId = perso.charId;
-        // personnage lié au Token
-        affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
-        affectToken(token, 'aura2_radius', token.get('aura2_radius'), evt);
-        affectToken(token, 'aura2_color', token.get('aura2_color'), evt);
-        affectToken(token, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
-        setTokenFlagAura(perso);
-        stateCOF.activeTokenId = tokenId;
-        stateCOF.activeTokenName = token.get('name');
-        turnAction(perso);
-        // Gestion de la confusion
-        if (attributeAsBool(perso, "confusion")) {
-          //Une chance sur deux de ne pas agir
-          if (randomInteger(2) < 2) {
-            sendChar(charId, "est en pleine confusion. Il ne fait rien ce tour");
-            removeTokenFlagAura(token);
-          } else {
-            //Trouver la créature la plus proche
-            var closestToken;
-            pageId = token.get('pageid');
-            var toksOnPage = findObjs({
-              _type: 'graphic',
-              _subtype: 'token',
-              _pageid: pageId,
-              layer: 'objects'
-            });
-            toksOnPage.forEach(function(tok) {
-              if (tok.id == tokenId) return;
-              var perso = {
-                token: tok
-              };
-              perso.charId = tok.get('represents');
-              if (perso.charId === '') return;
-              if (getState(perso, 'mort')) return;
-              var dist = distanceCombat(token, tok, pageId);
-              if (closestToken) {
-                if (dist > closestToken.distance) return;
-                if (dist < closestToken.distance) {
-                  closestToken = {
-                    distance: dist,
-                    names: [tok.get('name')]
-                  };
-                  return;
-                }
-                closestToken.names.push(tok.get('name'));
-                return;
-              }
-              closestToken = {
-                distance: dist,
-                names: [tok.get('name')]
-              };
-            });
-            if (closestToken) {
-              var r = randomInteger(closestToken.names.length) - 1;
-              sendChar(charId,
-                "est en pleine confusion. " + onGenre(charId, 'Il', 'Elle') +
-                " attaque " + closestToken.names[r] + ".");
-            } else {
-              sendChar(charId, "est seul et en plein confusion");
-            }
-          }
-        }
-        //On enlève aussi les états qui ne durent qu'un tour
-        var defenseTotale = tokenAttribute(perso, 'defenseTotale');
-        if (defenseTotale.length > 0) {
-          defenseTotale = defenseTotale[0];
-          var tourDefTotale = defenseTotale.get('max');
-          if (tourDefTotale < stateCOF.tour) {
-            evt.deletedAttributes = evt.deletedAttributes || [];
-            evt.deletedAttributes.push(defenseTotale);
-            defenseTotale.remove();
-          }
-        }
-      } else {
-        error("Impossible de trouver le token dont c'est le tour", tokenId);
-        stateCOF.activeTokenId = undefined;
-      }
-    } else stateCOF.activeTokenId = undefined;
-  }
-
   function getTurnOrder(evt) {
     var turnOrder = Campaign().get('turnorder');
     evt.turnorder = evt.turnorder || turnOrder;
@@ -14298,6 +14302,7 @@ var COFantasy = COFantasy || function() {
           case 'mortsVivants':
           case 'ignoreMoitieRD':
           case 'maxDmg':
+          case 'sortilege':
             options[opt[0]] = true;
             return;
           case "feu":
@@ -14308,7 +14313,6 @@ var COFantasy = COFantasy || function() {
           case "poison":
           case "maladie":
           case "argent":
-          case 'sortilege':
             if (options.additionalDmg) {
               var l = options.additionalDmg.length;
               if (l > 0) {
@@ -14323,16 +14327,28 @@ var COFantasy = COFantasy || function() {
             options.nature = true;
             return;
           case "ignoreRD":
-            if (cmd.length < 2) {
+            if (opt.length < 2) {
               options.ignoreTouteRD = true;
               return;
             }
-            options.ignoreRD = parseInt(cmd[1]);
+            options.ignoreRD = parseInt(opt[1]);
             if (isNaN(options.ignoreRD) || options.ignoreRD < 1) {
               log("Pas un nombre positif après --ignoreRD, interprété comme ignore toute la RD");
               options.ignoreRD = undefined;
               options.ignoreTouteRD = true;
             }
+            return;
+          case 'attaquant':
+            if (opt.length < 2) {
+              error("Manque l'id de l'attaquant, option ignorée", optArgs);
+              return;
+            }
+            var attaquant = persoOfId(opt[1]);
+            if (attaquant) {
+              options.attaquant = attaquant;
+              return;
+            }
+            error("Attaquant non trouvé", opt);
             return;
         }
       });
@@ -14381,6 +14397,10 @@ var COFantasy = COFantasy || function() {
             tokensToProcess--;
           };
           iterSelected(selected, function(perso) {
+            if (getState(perso, 'mort')) {//pas de dégâts aux morts
+              finalDisplay();
+              return;
+            }
             if (options.mortsVivants && !(estMortVivant(perso))) {
               sendPlayer(msg, perso.token.get('name') + " n'est pas un mort-vivant");
               finalDisplay();
@@ -14392,6 +14412,7 @@ var COFantasy = COFantasy || function() {
             perso.ignoreTouteRD = options.ignoreTouteRD;
             perso.ignoreMoitieRD = options.ignoreMoitieRD;
             perso.tempDmg = options.tempDmg;
+            perso.attaquant = options.attaquant;
             dealDamage(perso, dmg, [], evt, false, options, explications,
               function(dmgDisplay, dmgFinal) {
                 someDmgDone = true;
@@ -18655,9 +18676,11 @@ var COFantasy = COFantasy || function() {
             if (testRes.reussite) {
               var eventId = stateCOF.eventId;
               var action = "!cof-dmg " + dm + " --sortilege --mortsVivants";
+              action += " --attaquant " + lanceur.token.id;
               evt.waitingForAoe = true;
               addLineToFramedDisplay(display, msgJet + " &ge; 13");
               sendChat(name, endFramedDisplay(display));
+              threadSync++; //Pour arrêter le roundMarker
               sendChat('COF', "/w GM Sélectionner les token en vue de " + name + ", et [cliquer ici](" + action + ")");
             } else {
               addLineToFramedDisplay(display, msgJet + " < 13");
@@ -23161,6 +23184,7 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-usure-off':
         stateCOF.usureOff = true;
+        sendChat('COF', "/w GM Pas d'usure de la DEF sur ce combat");
         return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);
@@ -24370,287 +24394,6 @@ var COFantasy = COFantasy || function() {
       }); //fin iterTokensOfAttribute
   }
 
-  function nextTurn(cmp) {
-    if (!cmp.get('initiativepage')) return;
-    var turnOrder = cmp.get('turnorder');
-    var pageId = stateCOF.combat_pageid;
-    if (pageId === undefined) pageId = cmp.get('playerpageid');
-    if (turnOrder === '') return; // nothing in the turn order
-    turnOrder = JSON.parse(turnOrder);
-    if (turnOrder.length < 1) return; // Juste le compteur de tour
-    var evt = {
-      type: 'Personnage suivant',
-      attributes: [],
-      deletedAttributes: []
-    };
-    var active = turnOrder[0];
-    var lastHead = turnOrder.pop();
-    turnOrder.unshift(lastHead);
-    evt.turnorder = JSON.stringify(turnOrder);
-    var attrs = findObjs({
-      _type: 'attribute'
-    });
-    // Si on a changé d'initiative, alors diminue les effets temporaires
-    var init = parseInt(active.pr);
-    if (active.id == "-1" && active.custom == "Tour") init = 0;
-    var count = 0; // pour l'aspect asynchrone des effets temporaires
-    if (stateCOF.init > init) {
-      var attrsTemp = attrs.filter(function(obj) {
-        if (!estEffetTemp(obj.get('name'))) return false;
-        var obji = obj.get('max');
-        return (init < obji && obji <= stateCOF.init);
-      });
-      evt.init = stateCOF.init;
-      stateCOF.init = init;
-      // Boucle sur les effets temps peut être asynchrone à cause des DM
-      count = attrsTemp.length;
-      attrsTemp.forEach(function(attr) {
-        var charId = attr.get('characterid');
-        var effet = effetTempOfAttribute(attr);
-        if (effet === undefined) {
-          //erreur, on stoppe tout
-          log(attr);
-          count--;
-          return;
-        }
-        var attrName = attr.get('name');
-        var v = attr.get('current');
-        if (v == 'tourFinal') { //L'effet arrive en fin de vie, doit être supprimé
-          var effetFinal = finDEffet(attr, effet, attrName, charId, evt, {
-            pageId: pageId
-          });
-          if (effetFinal && effetFinal.oldTokenId == active.id)
-            active.id = effetFinal.newTokenId;
-          count--;
-        } else { //Effet encore actif
-          evt.attributes.push({
-            attribute: attr,
-            current: v
-          });
-          if (v > 1) attr.set('current', v - 1);
-          else attr.set('current', 'tourFinal');
-          switch (effet) { //rien après le switch, donc on sort par un return
-            case 'putrefaction': //prend 1d6 DM
-              degatsParTour(charId, pageId, effet, attrName, {
-                  nbDe: 1,
-                  de: 6
-                }, 'maladie',
-                "pourrit", evt, {
-                  magique: true
-                },
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
-                });
-              return;
-            case 'asphyxie': //prend 1d6 DM
-              degatsParTour(charId, pageId, effet, attrName, {
-                  nbDe: 1,
-                  de: 6
-                }, 'normal',
-                "ne peut plus respirer", evt, {
-                  asphyxie: true
-                },
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
-                });
-              return;
-            case 'saignementsSang': //prend 1d6 DM
-              if (charIdAttributeAsBool(charId, 'immuniteSaignement')) {
-                count--;
-                if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
-                return;
-              }
-              degatsParTour(charId, pageId, effet, attrName, {
-                  nbDe: 1,
-                  de: 6
-                }, 'normal',
-                "saigne par tous les orifices du visage", evt, {
-                  magique: true
-                },
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
-                });
-              return;
-            case 'armureBrulante': //prend 1d4 DM
-              degatsParTour(charId, pageId, effet, attrName, {
-                  nbDe: 1,
-                  de: 4
-                }, 'feu',
-                "brûle dans son armure", evt, {},
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
-                });
-              return;
-            case 'nueeDInsectes': //prend 1 DM
-              degatsParTour(charId, pageId, effet, attrName, {
-                  cst: 1
-                }, 'normal',
-                "est piqué par les insectes", evt, {},
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
-                });
-              return;
-            case 'armeBrulante': //prend 1 DM
-              degatsParTour(charId, pageId, effet, attrName, {
-                  cst: 1
-                }, 'feu',
-                "se brûle avec son arme", evt, {},
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
-                });
-              return;
-            case 'regeneration': //soigne
-              soigneParTour(charId, pageId, effet, attrName, 3, "régénère", evt, {
-                  valeur: 'regenerationValeur'
-                },
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
-                });
-
-              return;
-            case 'strangulation':
-              var nameDureeStrang = 'dureeStrangulation';
-              if (effet != attrName) { //concerne un token non lié
-                nameDureeStrang += attrName.substring(attrName.indexOf('_'));
-              }
-              var dureeStrang = findObjs({
-                _type: 'attribute',
-                _characterid: charId,
-                name: nameDureeStrang
-              });
-              if (dureeStrang.length === 0) {
-                var attrDuree = createObj('attribute', {
-                  characterid: charId,
-                  name: nameDureeStrang,
-                  current: 0,
-                  max: false
-                });
-                evt.attributes.push({
-                  attribute: attrDuree,
-                  current: null
-                });
-              } else {
-                var strangUpdate = dureeStrang[0].get('max');
-                if (strangUpdate) { //a été mis à jour il y a au plus 1 tour
-                  evt.attributes.push({
-                    attribute: dureeStrang[0],
-                    current: dureeStrang[0].get('current'),
-                    max: strangUpdate
-                  });
-                  dureeStrang[0].set('max', false);
-                } else { //Ça fait trop longtemps, on arrête tout
-                  sendChar(charId, messageEffetTemp[effet].fin);
-                  attr.set('current', v);
-                  evt.attributes.pop(); //On enlève des attributs modifiés pour mettre dans les attribute supprimés.
-                  evt.deletedAttributes.push(attr);
-                  attr.remove();
-                  evt.deletedAttributes.push(dureeStrang[0]);
-                  dureeStrang[0].remove();
-                }
-              }
-              count--;
-              return;
-            case 'dotGen':
-              var effetC = effetComplet(effet, attrName);
-              degatsParTour(charId, pageId, effetC, attrName, {}, '', "", evt, {
-                  dotGen: true
-                },
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
-                });
-              return;
-            default:
-              count--;
-              return;
-          }
-        }
-      }); //fin de la boucle sur tous les attributs d'effets
-    }
-    if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
-  }
-
-  //Fonction appelée par !cof-tour-suivant
-  function tourSuivant(msg) {
-    if (!stateCOF.combat) {
-      sendPlayer(msg, "Vous n'êtes pas en combat");
-      return;
-    }
-    var cmp = Campaign();
-    var turnOrder = cmp.get('turnorder');
-    if (turnOrder === '') {
-      error("Personne n'est en combat", turnOrder);
-      return;
-    }
-    turnOrder = JSON.parse(turnOrder);
-    if (turnOrder.length < 1) {
-      error("Personne n'est en combat", turnOrder);
-      return;
-    }
-    var active = turnOrder.shift();
-    var persoActif = persoOfId(active.id);
-    if (persoActif === undefined) {
-      error("Impossible de trouver le personnage actif", active);
-      return;
-    }
-    if (!peutController(msg, persoActif)) {
-      sendPlayer(msg, "Ce n'est pas votre tour (personnage actif : " + persoActif.token.get('name') + ")");
-      return;
-    }
-    turnOrder.push(active);
-    if (turnOrder[0].id == "-1" && turnOrder[0].custom == "Tour") {
-      //Il faut aussi augmenter la valeur du tour
-      var tour = parseInt(turnOrder[0].pr);
-      if (isNaN(tour)) {
-        error("Tour invalide", turnOrder);
-        return;
-      }
-      turnOrder[0].pr = tour + 1;
-    }
-    cmp.set('turnorder', JSON.stringify(turnOrder));
-    nextTurn(cmp);
-  }
-
-  //when set is true, sets the version, when false, remove it 
-  function scriptVersionToCharacter(character, set) {
-    var charId = character.id;
-    var attrs = findObjs({
-      _type: 'attribute',
-      _characterid: charId,
-      name: 'scriptVersion',
-    }, {
-      caseInsensitive: true
-    });
-    if (attrs.length === 0) {
-      if (set) {
-        createObj('attribute', {
-          characterid: charId,
-          name: 'scriptVersion',
-          current: true,
-          max: state.COFantasy.version
-        });
-      }
-    } else {
-      if (set) {
-        attrs[0].setWithWorker({
-          current: true,
-          max: state.COFantasy.version
-        });
-      } else {
-        attrs[0].setWithWorker({
-          current: false
-        });
-      }
-    }
-  }
-
   //evt a un champ attributes et un champ deletedAttributes
   function nextTurnOfActive(active, attrs, evt, pageId) {
     if (active.id == "-1" && active.custom == "Tour") {
@@ -24941,6 +24684,287 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  function nextTurn(cmp) {
+    if (!cmp.get('initiativepage')) return;
+    var turnOrder = cmp.get('turnorder');
+    var pageId = stateCOF.combat_pageid;
+    if (pageId === undefined) pageId = cmp.get('playerpageid');
+    if (turnOrder === '') return; // nothing in the turn order
+    turnOrder = JSON.parse(turnOrder);
+    if (turnOrder.length < 1) return; // Juste le compteur de tour
+    var evt = {
+      type: 'Personnage suivant',
+      attributes: [],
+      deletedAttributes: []
+    };
+    var active = turnOrder[0];
+    var lastHead = turnOrder.pop();
+    turnOrder.unshift(lastHead);
+    evt.turnorder = JSON.stringify(turnOrder);
+    var attrs = findObjs({
+      _type: 'attribute'
+    });
+    // Si on a changé d'initiative, alors diminue les effets temporaires
+    var init = parseInt(active.pr);
+    if (active.id == "-1" && active.custom == "Tour") init = 0;
+    var count = 0; // pour l'aspect asynchrone des effets temporaires
+    if (stateCOF.init > init) {
+      var attrsTemp = attrs.filter(function(obj) {
+        if (!estEffetTemp(obj.get('name'))) return false;
+        var obji = obj.get('max');
+        return (init < obji && obji <= stateCOF.init);
+      });
+      evt.init = stateCOF.init;
+      stateCOF.init = init;
+      // Boucle sur les effets temps peut être asynchrone à cause des DM
+      count = attrsTemp.length;
+      attrsTemp.forEach(function(attr) {
+        var charId = attr.get('characterid');
+        var effet = effetTempOfAttribute(attr);
+        if (effet === undefined) {
+          //erreur, on stoppe tout
+          log(attr);
+          count--;
+          return;
+        }
+        var attrName = attr.get('name');
+        var v = attr.get('current');
+        if (v == 'tourFinal') { //L'effet arrive en fin de vie, doit être supprimé
+          var effetFinal = finDEffet(attr, effet, attrName, charId, evt, {
+            pageId: pageId
+          });
+          if (effetFinal && effetFinal.oldTokenId == active.id)
+            active.id = effetFinal.newTokenId;
+          count--;
+        } else { //Effet encore actif
+          evt.attributes.push({
+            attribute: attr,
+            current: v
+          });
+          if (v > 1) attr.set('current', v - 1);
+          else attr.set('current', 'tourFinal');
+          switch (effet) { //rien après le switch, donc on sort par un return
+            case 'putrefaction': //prend 1d6 DM
+              degatsParTour(charId, pageId, effet, attrName, {
+                  nbDe: 1,
+                  de: 6
+                }, 'maladie',
+                "pourrit", evt, {
+                  magique: true
+                },
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                });
+              return;
+            case 'asphyxie': //prend 1d6 DM
+              degatsParTour(charId, pageId, effet, attrName, {
+                  nbDe: 1,
+                  de: 6
+                }, 'normal',
+                "ne peut plus respirer", evt, {
+                  asphyxie: true
+                },
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                });
+              return;
+            case 'saignementsSang': //prend 1d6 DM
+              if (charIdAttributeAsBool(charId, 'immuniteSaignement')) {
+                count--;
+                if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                return;
+              }
+              degatsParTour(charId, pageId, effet, attrName, {
+                  nbDe: 1,
+                  de: 6
+                }, 'normal',
+                "saigne par tous les orifices du visage", evt, {
+                  magique: true
+                },
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                });
+              return;
+            case 'armureBrulante': //prend 1d4 DM
+              degatsParTour(charId, pageId, effet, attrName, {
+                  nbDe: 1,
+                  de: 4
+                }, 'feu',
+                "brûle dans son armure", evt, {},
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                });
+              return;
+            case 'nueeDInsectes': //prend 1 DM
+              degatsParTour(charId, pageId, effet, attrName, {
+                  cst: 1
+                }, 'normal',
+                "est piqué par les insectes", evt, {},
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                });
+              return;
+            case 'armeBrulante': //prend 1 DM
+              degatsParTour(charId, pageId, effet, attrName, {
+                  cst: 1
+                }, 'feu',
+                "se brûle avec son arme", evt, {},
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                });
+              return;
+            case 'regeneration': //soigne
+              soigneParTour(charId, pageId, effet, attrName, 3, "régénère", evt, {
+                  valeur: 'regenerationValeur'
+                },
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                });
+
+              return;
+            case 'strangulation':
+              var nameDureeStrang = 'dureeStrangulation';
+              if (effet != attrName) { //concerne un token non lié
+                nameDureeStrang += attrName.substring(attrName.indexOf('_'));
+              }
+              var dureeStrang = findObjs({
+                _type: 'attribute',
+                _characterid: charId,
+                name: nameDureeStrang
+              });
+              if (dureeStrang.length === 0) {
+                var attrDuree = createObj('attribute', {
+                  characterid: charId,
+                  name: nameDureeStrang,
+                  current: 0,
+                  max: false
+                });
+                evt.attributes.push({
+                  attribute: attrDuree,
+                  current: null
+                });
+              } else {
+                var strangUpdate = dureeStrang[0].get('max');
+                if (strangUpdate) { //a été mis à jour il y a au plus 1 tour
+                  evt.attributes.push({
+                    attribute: dureeStrang[0],
+                    current: dureeStrang[0].get('current'),
+                    max: strangUpdate
+                  });
+                  dureeStrang[0].set('max', false);
+                } else { //Ça fait trop longtemps, on arrête tout
+                  sendChar(charId, messageEffetTemp[effet].fin);
+                  attr.set('current', v);
+                  evt.attributes.pop(); //On enlève des attributs modifiés pour mettre dans les attribute supprimés.
+                  evt.deletedAttributes.push(attr);
+                  attr.remove();
+                  evt.deletedAttributes.push(dureeStrang[0]);
+                  dureeStrang[0].remove();
+                }
+              }
+              count--;
+              return;
+            case 'dotGen':
+              var effetC = effetComplet(effet, attrName);
+              degatsParTour(charId, pageId, effetC, attrName, {}, '', "", evt, {
+                  dotGen: true
+                },
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                });
+              return;
+            default:
+              count--;
+              return;
+          }
+        }
+      }); //fin de la boucle sur tous les attributs d'effets
+    }
+    if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+  }
+
+  //Fonction appelée par !cof-tour-suivant
+  function tourSuivant(msg) {
+    if (!stateCOF.combat) {
+      sendPlayer(msg, "Vous n'êtes pas en combat");
+      return;
+    }
+    var cmp = Campaign();
+    var turnOrder = cmp.get('turnorder');
+    if (turnOrder === '') {
+      error("Personne n'est en combat", turnOrder);
+      return;
+    }
+    turnOrder = JSON.parse(turnOrder);
+    if (turnOrder.length < 1) {
+      error("Personne n'est en combat", turnOrder);
+      return;
+    }
+    var active = turnOrder.shift();
+    var persoActif = persoOfId(active.id);
+    if (persoActif === undefined) {
+      error("Impossible de trouver le personnage actif", active);
+      return;
+    }
+    if (!peutController(msg, persoActif)) {
+      sendPlayer(msg, "Ce n'est pas votre tour (personnage actif : " + persoActif.token.get('name') + ")");
+      return;
+    }
+    turnOrder.push(active);
+    if (turnOrder[0].id == "-1" && turnOrder[0].custom == "Tour") {
+      //Il faut aussi augmenter la valeur du tour
+      var tour = parseInt(turnOrder[0].pr);
+      if (isNaN(tour)) {
+        error("Tour invalide", turnOrder);
+        return;
+      }
+      turnOrder[0].pr = tour + 1;
+    }
+    cmp.set('turnorder', JSON.stringify(turnOrder));
+    nextTurn(cmp);
+  }
+
+  //when set is true, sets the version, when false, remove it 
+  function scriptVersionToCharacter(character, set) {
+    var charId = character.id;
+    var attrs = findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+      name: 'scriptVersion',
+    }, {
+      caseInsensitive: true
+    });
+    if (attrs.length === 0) {
+      if (set) {
+        createObj('attribute', {
+          characterid: charId,
+          name: 'scriptVersion',
+          current: true,
+          max: state.COFantasy.version
+        });
+      }
+    } else {
+      if (set) {
+        attrs[0].setWithWorker({
+          current: true,
+          max: state.COFantasy.version
+        });
+      } else {
+        attrs[0].setWithWorker({
+          current: false
+        });
+      }
+    }
+  }
+
   function destroyToken(token) { //to remove unused local attributes
     var charId = token.get('represents');
     if (charId === "") return;
@@ -24971,6 +24995,7 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(perso, 'prisonVegetale')) return true;
       return false;
     }
+    if (charAttributeAsBool(perso, 'energieDeLaMort')) return false;
     return true;
   }
 
