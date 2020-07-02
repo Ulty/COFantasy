@@ -1,10 +1,12 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.08
 ### Capacités
+* Support pour l'énergie de la mort, utilisée dans la campagne Vengeance.
 * Adaptable de la Voie de l'humain
 * Résistance à la magie du barbare
 
 ### Autres améliorations
+* Ajout d'un effet retardé pour le cas où on doit compter des nombres de tours
 * Ajout du bonus de couvert
 * Attaques par défaut dans la liste d'actions, possibilité de se passer complètement des attributs pour les attaques (actif quand la version 3.3 de la fiche sera là.
 
