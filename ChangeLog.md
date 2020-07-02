@@ -12,6 +12,7 @@
 * Attaques par défaut dans la liste d'actions, possibilité de se passer complètement des attributs pour les attaques (actif quand la version 3.3 de la fiche sera là.
 
 ### Corrections de bugs
+* Correction de l'affichage en cas d'immunité à un type d'attaque
 * Prise en compte correcte de l'attribut option_pm par défaut
 * Garde le jet d'image décalée en mémoire pour le cas des capacité qui font relancer l'attaque.
 * Prise en compte des réflexes félins (Voie du pourfendeur) dans l'initiative

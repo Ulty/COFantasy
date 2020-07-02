@@ -9355,7 +9355,10 @@ var COFantasy = COFantasy || function() {
           showTotal = true;
         },
         function() {
+          if (dmgTotal > 0) {
+          dmgDisplay += '-'+dmgTotal;
           dmgTotal = 0;
+          }
         });
     }
     var dmSuivis = {}; //si il faut noter les DMs d'un type particulier
@@ -9461,7 +9464,10 @@ var COFantasy = COFantasy || function() {
                     typeDisplay += " / 2";
                   },
                   function() {
-                    dm = 0;
+                    if (dm > 0 ) {
+                      typeDisplay += "-"+dm;
+                      dm = 0;
+                    }
                   });
                 dmgTotal += dm;
                 dmgDisplay += "+" + typeDisplay;
