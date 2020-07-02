@@ -6,6 +6,7 @@
 * Résistance à la magie du barbare
 
 ### Autres améliorations
+* Possibilité de ne pas appliquer l'usure pour un combat (!cof-usure-off)
 * Ajout d'un effet retardé pour le cas où on doit compter des nombres de tours
 * Ajout du bonus de couvert
 * Attaques par défaut dans la liste d'actions, possibilité de se passer complètement des attributs pour les attaques (actif quand la version 3.3 de la fiche sera là.

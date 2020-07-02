@@ -5299,7 +5299,7 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(target, 'statueDeBois')) defense = 10;
     // Malus de défense global pour les longs combats
-    if (stateCOF.options.regles.val.usure_DEF.val && stateCOF.tour > 1)
+    if (stateCOF.options.regles.val.usure_DEF.val && !stateCOF.usureOff && stateCOF.tour > 1)
       defense -= (Math.floor((stateCOF.tour - 1) / stateCOF.options.regles.val.usure_DEF.val) * 2);
     // Autres modificateurs de défense
     defense += attributeAsInt(target, 'defenseTotale', 0);
@@ -10500,6 +10500,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function sortirDuCombat() {
+    stateCOF.usureOff = undefined;
     if (!stateCOF.combat) {
       log("Pas en combat");
       sendChat("GM", "/w GM Le combat est déjà terminé");
@@ -23157,6 +23158,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-bouton-echec-total":
         echecTotal(msg);
+        return;
+      case '!cof-usure-off':
+        stateCOF.usureOff = true;
         return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);
