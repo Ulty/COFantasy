@@ -9715,6 +9715,15 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  function finDEffetDeNom(perso, effet, evt, options) { //Supprime l'effet si présent
+    var attrs = tokenAttribute(perso, effet);
+    if (attrs.length === 0) return;
+    attrs = attrs[0];
+    options = options || {};
+    options.pageId = options.pageId || perso.token.get('pageid');
+    finDEffet(attrs, effetTempOfAttribute(attrs), attrs.get('name'), perso.charId, evt, options);
+  }
+
   function dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal, dmSuivis) {
     var charId = target.charId;
     var token = target.token;
@@ -10429,7 +10438,6 @@ var COFantasy = COFantasy || function() {
             _type: 'graphic',
             _subtype: 'token',
             _pageid: pageId,
-            layer: 'objects',
             represents: charId
           });
       }
@@ -10439,7 +10447,6 @@ var COFantasy = COFantasy || function() {
           findObjs({
             _type: 'graphic',
             _subtype: 'token',
-            layer: 'objects',
             represents: charId
           });
         tokens = tokens.filter(function(tok) {
@@ -10478,7 +10485,6 @@ var COFantasy = COFantasy || function() {
             _type: 'graphic',
             _subtype: 'token',
             _pageid: pageId,
-            layer: 'objects',
             represents: charId,
             name: tokenName,
             bar1_link: ''
@@ -10491,7 +10497,6 @@ var COFantasy = COFantasy || function() {
             _subtype: 'token',
             represents: charId,
             name: tokenName,
-            layer: 'objects',
             bar1_link: ''
           });
         tNames = tNames.filter(function(tok) {
@@ -10567,7 +10572,6 @@ var COFantasy = COFantasy || function() {
           prevToken = findObjs({
             _type: 'graphic',
             _subtype: 'token',
-            layer: 'objects',
             _pageid: pageId,
             name: stateCOF.activeTokenName
           });
@@ -10575,7 +10579,6 @@ var COFantasy = COFantasy || function() {
           prevToken = findObjs({
             _type: 'graphic',
             _subtype: 'token',
-            layer: 'objects',
             name: stateCOF.activeTokenName
           });
         }
@@ -23934,9 +23937,9 @@ var COFantasy = COFantasy || function() {
   //Nom de l'effet, avec la partie générique, mais sans le nom de token
   function effetComplet(effet, attrName) {
     if (effet == attrName) return effet;
-    //On a un effet lié à un token
+    //On a un effet lié à un token ou bien un effet générique
     if (attrName.charAt(effet.length) == '(') {
-      var p = attrName.indexOf(')_', effet.length);
+      var p = attrName.indexOf(')', effet.length);
       if (p > 0) return attrName.substring(0, p + 1);
     }
     return effet;
@@ -24292,15 +24295,6 @@ var COFantasy = COFantasy || function() {
     attr.remove();
     if (newInit.length > 0) initiative(newInit, evt, true);
     return res;
-  }
-
-  function finDEffetDeNom(perso, effet, evt, options) { //Supprime l'effet si présent
-    var attrs = tokenAttribute(perso, effet);
-    if (attrs.length === 0) return;
-    attrs = attrs[0];
-    options = options || {};
-    options.pageId = options.pageId || perso.token.get('pageid');
-    finDEffet(attrs, effetTempOfAttribute(attrs), attrs.get('name'), perso.charId, evt, options);
   }
 
   //asynchrone
