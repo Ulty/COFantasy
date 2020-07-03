@@ -8701,7 +8701,7 @@ var COFantasy = COFantasy || function() {
                   };
                   var duree = ef.duree;
                   var saveId = 'effet_' + ef.effet + '_' + attaquant.token.id;
-                  save(ef.save, target, expliquer, saveOpts, evt,
+                  save(ef.save, target, saveId, expliquer, saveOpts, evt,
                     function(reussite, rollText) {
                       if (reussite && duree && ef.save.demiDuree) {
                         reussite = false;
@@ -9356,8 +9356,8 @@ var COFantasy = COFantasy || function() {
         },
         function() {
           if (dmgTotal > 0) {
-          dmgDisplay += '-'+dmgTotal;
-          dmgTotal = 0;
+            dmgDisplay += '-' + dmgTotal;
+            dmgTotal = 0;
           }
         });
     }
@@ -9464,8 +9464,8 @@ var COFantasy = COFantasy || function() {
                     typeDisplay += " / 2";
                   },
                   function() {
-                    if (dm > 0 ) {
-                      typeDisplay += "-"+dm;
+                    if (dm > 0) {
+                      typeDisplay += "-" + dm;
                       dm = 0;
                     }
                   });
@@ -14415,7 +14415,7 @@ var COFantasy = COFantasy || function() {
             tokensToProcess--;
           };
           iterSelected(selected, function(perso) {
-            if (getState(perso, 'mort')) {//pas de dégâts aux morts
+            if (getState(perso, 'mort')) { //pas de dégâts aux morts
               finalDisplay();
               return;
             }
