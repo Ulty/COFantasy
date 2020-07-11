@@ -12,6 +12,7 @@
 * Attaques par défaut dans la liste d'actions, possibilité de se passer complètement des attributs pour les attaques (actif quand la version 3.3 de la fiche sera là.
 
 ### Corrections de bugs
+* Prise en compte correcte de l'armure des PNJ pour la main d'énergie.
 * Correction d'un bug qui faisait planter en cas de save dans une attaque
 * Correction de l'affichage en cas d'immunité à un type d'attaque
 * Prise en compte correcte de l'attribut option_pm par défaut

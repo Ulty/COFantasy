@@ -733,7 +733,7 @@ var COFantasy = COFantasy || function() {
     return attrAsBool(attr);
   }
 
-
+  //PNJ au sens de la fiche utilisée, pas forcément en jeu
   function persoEstPNJ(perso) {
     if (perso.pnj) return true;
     var typePerso = ficheAttribute(perso, 'type_personnage', 'PJ');
@@ -1341,7 +1341,7 @@ var COFantasy = COFantasy || function() {
       if (bar1 > pvmax) {
         var hasMana = (ficheAttributeAsInt(perso, 'PM', 0) > 0);
         var dmgTemp;
-        var estPNJ = ficheAttribute(perso, 'type_personnage', 'PJ') == 'PNJ';
+        var estPNJ = persoEstPNJ(perso);
         var estMook = token.get("bar1_link") === '';
         var nameAttrDMTEMP = 'DMTEMP';
         if (estPNJ && !estMook) nameAttrDMTEMP = 'pnj_dmtemp';
@@ -4793,7 +4793,7 @@ var COFantasy = COFantasy || function() {
       if (cavalier !== undefined) return tokenInit(cavalier, evt);
     }
     var init;
-    if (ficheAttribute(perso, 'type_personnage', 'PJ') == 'PNJ') {
+    if (persoEstPNJ(perso)) {
       init = ficheAttributeAsInt(perso, 'pnj_init', 10);
     } else {
       init = ficheAttributeAsInt(perso, 'DEXTERITE', 10);
@@ -5277,7 +5277,7 @@ var COFantasy = COFantasy || function() {
     var tokenName = target.tokName;
     var explications = target.messages || [];
     var defense = 10;
-    if (ficheAttribute(target, 'type_personnage', 'PJ') == 'PNJ') {
+    if (persoEstPNJ(target)) {
       defense = ficheAttributeAsInt(target, 'pnj_def', 10);
     } else {
       if (target.defautCuirasse === undefined) {
@@ -5707,8 +5707,13 @@ var COFantasy = COFantasy || function() {
     }
     if (options.mainsDEnergie) {
       if (options.aoe) error("Mains d'énergie n'est pas compatible avec les AOE", options.aoe);
-      // Check if target wears armor
-      var targetArmorDef = parseInt(getAttrByName(target.charId, "DEFARMURE"));
+      // On vérifie si la cible porte une armure
+      var targetArmorDef = 0;
+      if (persoEstPNJ(target)) {
+        if (ficheAttributeAsBool(target, 'DEFARMUREON', false)) targetArmorDef = 5;
+      } else {
+        targetArmorDef = parseInt(getAttrByName(target.charId, "DEFARMURE"));
+      }
       if (isNaN(targetArmorDef) || targetArmorDef === 0) {
         attBonus += 2;
         explications.push("Mains d'énergie => +2 en Attaque (cible sans armure)");
@@ -9674,7 +9679,7 @@ var COFantasy = COFantasy || function() {
       res.sauf.feu_tranchant += 10;
     }
     var attrRD = 'RDS';
-    if (ficheAttribute(perso, 'type_personnage', 'PJ') == 'PNJ') {
+    if (persoEstPNJ(perso)) {
       attrRD = 'pnj_rd';
     }
     var rd = ficheAttribute(perso, attrRD, '').trim();
@@ -9772,7 +9777,7 @@ var COFantasy = COFantasy || function() {
           if (rdTarget.distance) rd += rdTarget.distance;
           var piqures = charAttributeAsInt(target, 'piquresDInsectes', 0);
           if (piqures > 0) {
-            if (ficheAttribute(target, 'type_personnage', 'PJ') == 'PNJ' || (ficheAttributeAsBool(target, 'DEFARMUREON', false) && ficheAttributeAsInt(target, 'DEFARMURE', 0) > 5)) {
+            if (persoEstPNJ(target) || (ficheAttributeAsBool(target, 'DEFARMUREON', false) && ficheAttributeAsInt(target, 'DEFARMURE', 0) > 5)) {
               rd += piqures;
             }
           }
@@ -9894,7 +9899,7 @@ var COFantasy = COFantasy || function() {
         }
         var hasMana = (ficheAttributeAsInt(target, 'PM', 0) > 0);
         var tempDmg = 0;
-        var estPNJ = ficheAttribute(target, 'type_personnage', 'PJ') == 'PNJ';
+        var estPNJ = persoEstPNJ(target);
         var estMook = token.get("bar1_link") === '';
         var nameAttrDMTEMP = 'DMTEMP';
         if (estPNJ && !estMook) nameAttrDMTEMP = 'pnj_dmtemp';
@@ -11708,7 +11713,7 @@ var COFantasy = COFantasy || function() {
       });
       var hasMana = false;
       var dmTemp = bar2;
-      var estPNJ = ficheAttribute(perso, 'type_personnage', 'PJ') == 'PNJ';
+      var estPNJ = persoEstPNJ(perso);
       var estMook = token.get("bar1_link") === '';
       var nameAttrDMTEMP = 'DMTEMP';
       if (estPNJ && !estMook) nameAttrDMTEMP = 'pnj_dmtemp';
@@ -12947,8 +12952,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function estPJ(perso) {
-    var typePerso = ficheAttribute(perso, 'type_personnage', 'PJ');
-    if (typePerso == 'PNJ') return false;
+    if (persoEstPNJ(perso)) return false;
     var dv = ficheAttributeAsInt(perso, 'DV', 0);
     if (dv === 0) return false;
     if (perso.token.get('bar1_link') === '') return false;
@@ -13232,8 +13236,7 @@ var COFantasy = COFantasy || function() {
         (actionsDuTour.length === 0 && stateCOF.options.affichage.val.actions_par_defaut.val);
       if (afficherAttaquesFiche) {
         //Cherche toutes les attaques à afficher
-        var typePerso = ficheAttribute(perso, 'type_personnage', 'PJ');
-        var estPNJ = (typePerso == 'PNJ');
+        var estPNJ = persoEstPNJ(perso);
         var attributes = findObjs({
           _type: 'attribute',
           _characterid: perso.charId,
