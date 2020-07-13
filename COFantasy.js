@@ -13076,6 +13076,41 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function listeAttaquesVisibles(perso, options) {
+    options = options || '';
+    var ligne = '';
+    //Cherche toutes les attaques à afficher
+    var estPNJ = persoEstPNJ(perso);
+    var attributes = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+    });
+    var attaques = {};
+    attributes.forEach(function(attr) {
+      var attrName = attr.get('name');
+      var m;
+      if (estPNJ) m = attackNamePNJRegExp.exec(attrName);
+      else m = attackNameRegExp.exec(attrName);
+      if (m) {
+        var attPrefix = m[1];
+        var weaponName = attr.get('current');
+        if (weaponName === undefined || weaponName === '') {
+          error("Pas de nom pour une attaque");
+          return;
+        }
+        attaques[attPrefix] = weaponName;
+      }
+    });
+    _.forEach(attaques, function(weaponName, attPrefix) {
+      var attaqueVisible = ficheAttributeAsInt(perso, attPrefix + 'armeactionvisible', 1);
+      if (attaqueVisible === 0) return;
+      var attLabel = ficheAttribute(perso, attPrefix + "armelabel", 0);
+      var command = "!cof-attack @{selected|token_id} @{target|token_id} " + attLabel + options;
+      ligne += bouton(command, weaponName, perso) + '<br />';
+    });
+    return ligne;
+  }
+
   //Si listActions est fourni, ça doit faire référence à une ability
   //dont le nom commence et termine par #, contenant une liste d'actions
   //à afficher
@@ -13228,35 +13263,7 @@ var COFantasy = COFantasy || function() {
         actionsParDefaut ||
         (actionsDuTour.length === 0 && stateCOF.options.affichage.val.actions_par_defaut.val);
       if (afficherAttaquesFiche) {
-        //Cherche toutes les attaques à afficher
-        var estPNJ = persoEstPNJ(perso);
-        var attributes = findObjs({
-          _type: 'attribute',
-          _characterid: perso.charId,
-        });
-        var attaques = {};
-        attributes.forEach(function(attr) {
-          var attrName = attr.get('name');
-          var m;
-          if (estPNJ) m = attackNamePNJRegExp.exec(attrName);
-          else m = attackNameRegExp.exec(attrName);
-          if (m) {
-            var attPrefix = m[1];
-            var weaponName = attr.get('current');
-            if (weaponName === undefined || weaponName === '') {
-              error("Pas de nom pour une attaque");
-              return;
-            }
-            attaques[attPrefix] = weaponName;
-          }
-        });
-        _.forEach(attaques, function(weaponName, attPrefix) {
-          var attaqueVisible = ficheAttributeAsInt(perso, attPrefix + 'armeactionvisible', 1);
-          if (attaqueVisible === 0) return;
-          var attLabel = ficheAttribute(perso, attPrefix + "armelabel", 0);
-          command = "!cof-attack @{selected|token_id} @{target|token_id} " + attLabel;
-          ligne += bouton(command, weaponName, perso) + '<br />';
-        });
+        ligne += listeAttaquesVisibles(perso);
       }
       //La liste d'action proprement dite
       if (actionsDuTour.length > 0) {
@@ -13342,6 +13349,9 @@ var COFantasy = COFantasy || function() {
                   if (actionCommands.length > 1) {
                     options = action.substring(8); //démarre par ' '
                   }
+                } else if (actionCmd.toLowerCase() == '!attaques') {
+                  found = true;
+                  ligne += listeAttaquesVisibles(perso, options);
                 } else {
                   // commande API
                   if (actionCommands.length > 1) {
