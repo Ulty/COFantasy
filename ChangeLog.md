@@ -6,6 +6,7 @@
 * Résistance à la magie du barbare
 
 ### Autres améliorations
+* Prise en compte des jets, attributs et inputs dans la partie options des lignes d'attaque, quand elles sont utilisées depuis un bouton (comme avec les listes d'action).
 * Possibilité de ne pas appliquer l'usure pour un combat (!cof-usure-off)
 * Ajout d'un effet retardé pour le cas où on doit compter des nombres de tours
 * Ajout du bonus de couvert

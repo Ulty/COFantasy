@@ -795,145 +795,6 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
-  //attackStats est un argument optionnel pour le cas particulier des attaques
-  function getOptionsFromCommand(fullCommand, perso, attackStats) {
-    if (fullCommand === undefined) return {
-      picto: '',
-      style: ''
-    };
-    var style = '';
-    var picto = '';
-    var options;
-    var groupe;
-    var command = fullCommand.split(' ', 1);
-    // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
-    switch (command[0]) {
-      case "#Attaque":
-      case "!cof-attack":
-      case "!cof-attaque":
-        var portee = 0;
-        var sortilege;
-        var args = fullCommand.split(' --');
-        var cmd = args.shift().split(' ');
-        if (attackStats === undefined && cmd.length > 3) {
-          var attackLabel = cmd[3].trim();
-          if (!attackLabel.startsWith('?{')) {
-            attackStats = getWeaponStats(perso, attackLabel);
-          }
-        }
-        if (attackStats) {
-          portee = attackStats.portee;
-          sortilege = attackStats.sortilege;
-        }
-        //On cherche la portée dans les options (ça a la priorité)
-        args.forEach(function(o) {
-          if (o.startsWith('portee ')) {
-            var p = parseInt(o.substring(7));
-            if (!isNaN(p) && p >= 0) portee = p;
-          }
-        });
-        if (sortilege || fullCommand.indexOf(' --sortilege') !== -1) {
-          // attaque magique
-          picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
-          style = 'background-color:#9900ff';
-        } else if (portee > 0) {
-          // attaque distance
-          picto = '<span style="font-family: \'Pictos Custom\'">[</span> ';
-          style = 'background-color:#48b92c';
-          if (stateCOF.options.regles.val.generer_options_attaques.val) {
-            options = "?{Type d'Attaque|Normale,&#32;|Assurée,--attaqueAssuree}";
-          }
-        } else {
-          // attaque contact
-          picto = '<span style="font-family: \'Pictos Custom\'">t</span> ';
-          style = 'background-color:#cc0000';
-          if (stateCOF.options.regles.val.generer_options_attaques.val) {
-            options = "?{Type d'Attaque|Normale,&#32;|Assurée,--attaqueAssuree|Risquée,--attaqueRisquee}";
-          }
-          if (stateCOF.options.regles.val.generer_attaque_groupe.val && perso.pnj && perso.token.get('bar1_link') === "") {
-            groupe = true;
-          }
-        }
-        break;
-      case "!cof-lancer-sort":
-      case "!cof-injonction":
-        picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
-        style = 'background-color:#9900ff';
-        break;
-      case "!cof-soin":
-      case "!cof-transe-guerison":
-      case "!cof-delivrance":
-      case "!cof-guerir":
-      case "!cof-guerison":
-        picto = '<span style="font-family: \'Pictos\'">k</span> ';
-        style = 'background-color:#ffe599;color:#333';
-        break;
-      case "!cof-effet":
-      case "!cof-effet-temp":
-      case "!cof-effet-combat":
-      case "!cof-fortifiant":
-      case "!cof-set-state":
-        picto = '<span style="font-family: \'Pictos\'">S</span> ';
-        style = 'background-color:#4a86e8';
-        break;
-      case "!cof-enduire-poison":
-        picto = '<span style="font-family: \'Pictos Three\'">i</span> ';
-        style = 'background-color:#05461c';
-        break;
-      case "!cof-desarmer":
-        picto = '<span style="font-family: \'Pictos Custom\'">t</span> ';
-        style = 'background-color:#cc0000';
-        break;
-      case "!cof-surprise":
-        picto = '<span style="font-family: \'Pictos\'">e</span> ';
-        style = 'background-color:#4a86e8';
-        break;
-      case "!cof-recharger":
-        picto = '<span style="font-family: \'Pictos\'">0</span> ';
-        style = 'background-color:#e69138';
-        break;
-      case "!cof-action-defensive":
-        picto = '<span style="font-family: \'Pictos Three\'">b</span> ';
-        style = 'background-color:#cc0000';
-        break;
-      case "!cof-manoeuvre":
-        picto = '<span style="font-family: \'Pictos Three\'">d</span> ';
-        style = 'background-color:#cc0000';
-        break;
-      case "!cof-attendre":
-        picto = '<span style="font-family: \'Pictos\'">t</span> ';
-        style = 'background-color:#999999';
-        break;
-      case "!cof-aoe": //deprecated
-      case "!cof-dmg":
-      case "!cof-bouton-echec-total":
-        picto = '<span style="font-family: \'Pictos\'">\'</span> ';
-        style = 'background-color:#cc0000';
-        break;
-      case "!cof-peur":
-        picto = '<span style="font-family: \'Pictos\'">`</span> ';
-        style = 'background-color:#B445FE';
-        break;
-      case "!cof-consommables":
-        picto = '<span style="font-family: \'Pictos\'">b</span> ';
-        style = 'background-color:#ce0f69';
-        break;
-      case "!cof-liste-actions":
-        picto = '<span style="font-family: \'Pictos\'">l</span> ';
-        style = 'background-color:#272751';
-        break;
-      default:
-        picto = '';
-        style = '';
-    }
-    return {
-      picto: picto,
-      style: style,
-      options: options,
-      groupe: groupe
-    };
-  }
-
   function getState(personnage, etat) {
     var token = personnage.token;
     var charId = personnage.charId;
@@ -1981,8 +1842,109 @@ var COFantasy = COFantasy || function() {
     return action;
   }
 
+  function getWeaponStats(perso, attackLabel) {
+    var weaponStats = {
+      name: 'Attaque',
+      attSkill: '@{ATKCAC}',
+      attNbDices: 1,
+      attDice: 4,
+      attDMBonusCommun: 0,
+      crit: 20,
+      divers: '',
+      portee: 0,
+      options: '',
+    };
+    if (attackLabel === undefined) return weaponStats;
+    var att = getAttack(attackLabel, perso); //peuple perso.pnj
+    if (att === undefined) {
+      weaponStats.name = attackLabel;
+      return weaponStats;
+    }
+    weaponStats.label = attackLabel;
+    var attPrefix = att.attackPrefix;
+    weaponStats.name = att.weaponName;
+    weaponStats.attNbDices =
+      ficheAttributeAsInt(perso, attPrefix + "armedmnbde", 1);
+    weaponStats.attDice = ficheAttributeAsInt(perso, attPrefix + "armedmde", 4);
+    weaponStats.crit = ficheAttributeAsInt(perso, attPrefix + "armecrit", 20);
+    weaponStats.divers = ficheAttribute(perso, attPrefix + "armespec", '');
+    if (perso.pnj) {
+      weaponStats.attSkill =
+        ficheAttributeAsInt(perso, attPrefix + "armeatk", 0);
+      weaponStats.attDMBonusCommun =
+        ficheAttributeAsInt(perso, attPrefix + "armedm", 0);
+    } else {
+      weaponStats.attSkill =
+        ficheAttribute(perso, attPrefix + "armeatk", '@{ATKCAC}');
+      weaponStats.attSkillDiv =
+        ficheAttributeAsInt(perso, attPrefix + "armeatkdiv", 0);
+      weaponStats.attCarBonus =
+        ficheAttribute(perso, attPrefix + "armedmcar", '@{FOR}');
+      weaponStats.attDMBonusCommun =
+        ficheAttribute(perso, attPrefix + "armedmdiv", 0);
+    }
+    weaponStats.portee =
+      ficheAttributeAsInt(perso, attPrefix + "armeportee", 0);
+    weaponStats.typeAttaque =
+      ficheAttribute(perso, attPrefix + 'armetypeattaque', 'Naturel');
+    weaponStats.modificateurs =
+      ficheAttribute(perso, attPrefix + 'armemodificateurs', '');
+    weaponStats.typeDegats =
+      ficheAttribute(perso, attPrefix + 'armetypedegats', 'tranchant');
+    weaponStats.options = ficheAttribute(perso, attPrefix + 'armeoptions', '');
+    weaponStats.options = weaponStats.options.trim();
+    switch (weaponStats.typeAttaque) {
+      case 'Naturel':
+        break;
+      case 'Arme 1 main':
+        weaponStats.arme = true;
+        break;
+      case 'Arme 2 mains':
+        weaponStats.arme = true;
+        weaponStats.deuxMains = true;
+        break;
+      case 'Sortilege':
+        weaponStats.sortilege = true;
+        break;
+      case 'Arme gauche':
+        weaponStats.armeGauche = true;
+        break;
+      case 'Arme de jet':
+        weaponStats.armeDeJet = true;
+        break;
+      default:
+        //On cherche si c'est une arme à 2 mains
+        var t = weaponStats.name.toLowerCase();
+        if (t.includes('2 mains') || t.includes('deux mains')) {
+          weaponStats.deuxMains = true;
+        } else {
+          t = weaponStats.divers;
+          if (t) {
+            t = t.toLowerCase();
+            if (t.includes('2 mains') || t.includes('deux mains')) {
+              weaponStats.deuxMains = true;
+            }
+          }
+        }
+    }
+    //On cherche si c'est un arc
+    var p = weaponStats.name.search(/\barc\b/i);
+    if (p >= 0) weaponStats.arc = true;
+    else if (weaponStats.divers) {
+      p = weaponStats.divers.search(/\barc\b/i);
+      if (p >= 0) weaponStats.arc = true;
+    }
+    p = weaponStats.name.search(/\barbal([eè])te\b/i);
+    if (p >= 0) weaponStats.arbalete = true;
+    else if (weaponStats.divers) {
+      p = weaponStats.divers.search(/\barbal([eè])te\b/i);
+      if (p >= 0) weaponStats.arbalete = true;
+    }
+    return weaponStats;
+  }
+
   //ressource est optionnel, et si présent doit être un attribut
-  function bouton(action, text, perso, ressource, overlay, style, attackStats) {
+  function bouton(action, text, perso, ressource, overlay, buttonStyle, attackStats) {
     if (action === undefined || action.trim().length === 0) return text;
     else action = action.trim();
     //Expansion des macros et abilities
@@ -1996,20 +1958,154 @@ var COFantasy = COFantasy || function() {
     }
     //Cas de plusieurs actions après expansion
     var actions = action.split('\n');
+    //Cherche le picto et le style
+    var style = '';
+    var picto = '';
+    var groupe; //Pour générer un bouton d'attaque de groupe. À revoir
     actions = actions.map(function(act) {
       act = act.trim();
       if (act.startsWith("/as ")) {
         act = "!cof-as" + act.substring(3);
       }
       if (act.charAt(0) == '!') {
-        if (act.startsWith('!cof')) {
+        if (act.startsWith('!cof-')) {
           if (ressource) act += " --decrAttribute " + ressource.id;
+          if (picto === '') {
+            // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
+            switch (act.split(' ', 1)[0].substring(5)) {
+              case 'attack':
+              case 'attaque':
+                var portee = 0;
+                var sortilege;
+                var args = act.split(' --');
+                var cmd = args.shift().split(' ');
+                if (attackStats === undefined && cmd.length > 3) {
+                  var attackLabel = cmd[3].trim();
+                  if (!attackLabel.startsWith('?{')) {
+                    attackStats = getWeaponStats(perso, attackLabel);
+                  }
+                }
+                if (attackStats) {
+                  portee = attackStats.portee;
+                  sortilege = attackStats.sortilege;
+                  if (attackStats.options) {
+                    var firstOptionIndex = act.indexOf(' --');
+                    if (firstOptionIndex > 0) {
+                    act = act.substring(0, firstOptionIndex) + ' --attaqueOptions ' + attackStats.options + act.substring(firstOptionIndex);
+                    } else {
+                      act += ' --attaqueOptions ' + attackStats.options;
+                    }
+                  }
+                }
+                //On cherche la portée dans les options (ça a la priorité)
+                args.forEach(function(o) {
+                  if (o.startsWith('portee ')) {
+                    var p = parseInt(o.substring(7));
+                    if (!isNaN(p) && p >= 0) portee = p;
+                  }
+                });
+                if (sortilege || act.indexOf(' --sortilege') !== -1) {
+                  // attaque magique
+                  picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
+                  style = 'background-color:#9900ff';
+                } else if (portee > 0) {
+                  // attaque distance
+                  picto = '<span style="font-family: \'Pictos Custom\'">[</span> ';
+                  style = 'background-color:#48b92c';
+                  if (stateCOF.options.regles.val.generer_options_attaques.val) {
+                    act += " ?{Type d'Attaque|Normale,&#32;|Assurée,--attaqueAssuree}";
+                  }
+                } else {
+                  // attaque contact
+                  picto = '<span style="font-family: \'Pictos Custom\'">t</span> ';
+                  style = 'background-color:#cc0000';
+                  if (stateCOF.options.regles.val.generer_options_attaques.val) {
+                    act += " ?{Type d'Attaque|Normale,&#32;|Assurée,--attaqueAssuree|Risquée,--attaqueRisquee}";
+                  }
+                  if (stateCOF.options.regles.val.generer_attaque_groupe.val &&
+                    perso.pnj && perso.token.get('bar1_link') === '') {
+                    groupe = true;
+                  }
+                }
+                break;
+              case 'lancer-sort':
+              case 'injonction':
+                picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
+                style = 'background-color:#9900ff';
+                break;
+              case 'soin':
+              case 'transe-guerison':
+              case 'delivrance':
+              case 'guerir':
+              case 'guerison':
+                picto = '<span style="font-family: \'Pictos\'">k</span> ';
+                style = 'background-color:#ffe599;color:#333';
+                break;
+              case 'effet':
+              case 'effet-temp':
+              case 'effet-combat':
+              case 'fortifiant':
+              case 'set-state':
+                picto = '<span style="font-family: \'Pictos\'">S</span> ';
+                style = 'background-color:#4a86e8';
+                break;
+              case 'enduire-poison':
+                picto = '<span style="font-family: \'Pictos Three\'">i</span> ';
+                style = 'background-color:#05461c';
+                break;
+              case 'desarmer':
+                picto = '<span style="font-family: \'Pictos Custom\'">t</span> ';
+                style = 'background-color:#cc0000';
+                break;
+              case 'surprise':
+                picto = '<span style="font-family: \'Pictos\'">e</span> ';
+                style = 'background-color:#4a86e8';
+                break;
+              case 'recharger':
+                picto = '<span style="font-family: \'Pictos\'">0</span> ';
+                style = 'background-color:#e69138';
+                break;
+              case 'action-defensive':
+                picto = '<span style="font-family: \'Pictos Three\'">b</span> ';
+                style = 'background-color:#cc0000';
+                break;
+              case 'manoeuvre':
+                picto = '<span style="font-family: \'Pictos Three\'">d</span> ';
+                style = 'background-color:#cc0000';
+                break;
+              case 'attendre':
+                picto = '<span style="font-family: \'Pictos\'">t</span> ';
+                style = 'background-color:#999999';
+                break;
+              case 'dmg':
+              case 'bouton-echec-total':
+                picto = '<span style="font-family: \'Pictos\'">\'</span> ';
+                style = 'background-color:#cc0000';
+                break;
+              case 'peur':
+                picto = '<span style="font-family: \'Pictos\'">`</span> ';
+                style = 'background-color:#B445FE';
+                break;
+              case 'consommables':
+                picto = '<span style="font-family: \'Pictos\'">b</span> ';
+                style = 'background-color:#ce0f69';
+                break;
+              case 'liste-actions':
+                picto = '<span style="font-family: \'Pictos\'">l</span> ';
+                style = 'background-color:#272751';
+                break;
+            }
+          }
         } else if (!act.startsWith('!&#13')) return act; //On ne touche pas aux commandes des autres scripts
       } else {
         if (ressource) {
           act = "!cof-utilise-consommable " + tid + " " + ressource.id + " --message " + act;
+          picto = '<span style="font-family: \'Pictos\'">b</span> ';
+          style = 'background-color:#ce0f69';
         } else {
           act = "!cof-lancer-sort " + act;
+          picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
+          style = 'background-color:#9900ff';
         }
       }
       if (act.indexOf('@{selected') !== -1) {
@@ -2060,27 +2156,22 @@ var COFantasy = COFantasy || function() {
       }
       return act;
     });
-    var optionsFromCommand = getOptionsFromCommand(action, perso, attackStats);
-    if (actions.length == 1) action = actions[0];
-    else
-      action = "!cof-multi-command " + actions.join(' --cof-multi-command ');
-    text = optionsFromCommand.picto + text;
-    var buttonStyle = '';
-    if (style) buttonStyle = ' style="' + style + '"';
-    else if (optionsFromCommand.style)
-      buttonStyle = ' style="' + optionsFromCommand.style + '"';
+    text = picto + text;
+    if (buttonStyle) buttonStyle = ' style="' + buttonStyle + '"';
+    else if (style !== '') buttonStyle = ' style="' + style + '"';
     if (overlay) overlay = ' title="' + overlay + '"';
     else overlay = '';
-
-    var baseAction = action;
-    if (optionsFromCommand.options) {
-      action += ' ' + optionsFromCommand.options;
+    if (actions.length == 1) {
+      action = actions[0];
+      var toReturn = boutonSimple(action, buttonStyle + overlay, text);
+      if (groupe) {
+        toReturn += "<br/>" + boutonSimple(action + " --attaqueDeGroupe ?{Attaque en groupe ?}", buttonStyle + overlay, text + " (groupe)");
+      }
+      return toReturn;
+    } else {
+      action = "!cof-multi-command " + actions.join(' --cof-multi-command ');
+      return boutonSimple(action, buttonStyle + overlay, text);
     }
-    var toReturn = boutonSimple(action, buttonStyle + overlay, text);
-    if (optionsFromCommand.groupe) {
-      toReturn += "<br/>" + boutonSimple(baseAction + " --attaqueDeGroupe ?{Attaque en groupe ?}", buttonStyle + overlay, text + " (groupe)");
-    }
-    return toReturn;
   }
 
   function improve_image(image_url) {
@@ -3498,7 +3589,8 @@ var COFantasy = COFantasy || function() {
     }
     //Ajout des options de l'arme
     var wo = weaponStats.options.trim();
-    if (wo !== '') {
+    //Pour la partie options, il est possible qu'elle soit déjà passée en ligne de commande
+    if (wo !== '' && (optArgs.length < 1 || optArgs[0] != 'attaqueOptions')) {
       wo = ' ' + wo;
       wo.split(' --').reverse().forEach(function(o) {
         o = o.trim();
@@ -3603,6 +3695,7 @@ var COFantasy = COFantasy || function() {
         case 'saufAllies':
         case 'attaqueAssuree':
         case 'attaqueRisquee':
+        case 'attaqueOptions':
           options[cmd[0]] = true;
           return;
         case 'tranchant':
@@ -5102,106 +5195,6 @@ var COFantasy = COFantasy || function() {
 
   function rollNumber(s) {
     return parseInt(s.substring(3, s.indexOf(']')));
-  }
-
-  function getWeaponStats(perso, attackLabel) {
-    var weaponStats = {
-      name: 'Attaque',
-      attSkill: '@{ATKCAC}',
-      attNbDices: 1,
-      attDice: 4,
-      attDMBonusCommun: 0,
-      crit: 20,
-      divers: '',
-      portee: 0,
-      options: '',
-    };
-    if (attackLabel === undefined) return weaponStats;
-    var att = getAttack(attackLabel, perso); //peuple perso.pnj
-    if (att === undefined) {
-      weaponStats.name = attackLabel;
-      return weaponStats;
-    }
-    weaponStats.label = attackLabel;
-    var attPrefix = att.attackPrefix;
-    weaponStats.name = att.weaponName;
-    weaponStats.attNbDices =
-      ficheAttributeAsInt(perso, attPrefix + "armedmnbde", 1);
-    weaponStats.attDice = ficheAttributeAsInt(perso, attPrefix + "armedmde", 4);
-    weaponStats.crit = ficheAttributeAsInt(perso, attPrefix + "armecrit", 20);
-    weaponStats.divers = ficheAttribute(perso, attPrefix + "armespec", '');
-    if (perso.pnj) {
-      weaponStats.attSkill =
-        ficheAttributeAsInt(perso, attPrefix + "armeatk", 0);
-      weaponStats.attDMBonusCommun =
-        ficheAttributeAsInt(perso, attPrefix + "armedm", 0);
-    } else {
-      weaponStats.attSkill =
-        ficheAttribute(perso, attPrefix + "armeatk", '@{ATKCAC}');
-      weaponStats.attSkillDiv =
-        ficheAttributeAsInt(perso, attPrefix + "armeatkdiv", 0);
-      weaponStats.attCarBonus =
-        ficheAttribute(perso, attPrefix + "armedmcar", '@{FOR}');
-      weaponStats.attDMBonusCommun =
-        ficheAttribute(perso, attPrefix + "armedmdiv", 0);
-    }
-    weaponStats.portee =
-      ficheAttributeAsInt(perso, attPrefix + "armeportee", 0);
-    weaponStats.typeAttaque =
-      ficheAttribute(perso, attPrefix + 'armetypeattaque', 'Naturel');
-    weaponStats.modificateurs =
-      ficheAttribute(perso, attPrefix + 'armemodificateurs', '');
-    weaponStats.typeDegats =
-      ficheAttribute(perso, attPrefix + 'armetypedegats', 'tranchant');
-    weaponStats.options = ficheAttribute(perso, attPrefix + 'armeoptions', '');
-    switch (weaponStats.typeAttaque) {
-      case 'Naturel':
-        break;
-      case 'Arme 1 main':
-        weaponStats.arme = true;
-        break;
-      case 'Arme 2 mains':
-        weaponStats.arme = true;
-        weaponStats.deuxMains = true;
-        break;
-      case 'Sortilege':
-        weaponStats.sortilege = true;
-        break;
-      case 'Arme gauche':
-        weaponStats.armeGauche = true;
-        break;
-      case 'Arme de jet':
-        weaponStats.armeDeJet = true;
-        break;
-      default:
-        //On cherche si c'est une arme à 2 mains
-        var t = weaponStats.name.toLowerCase();
-        if (t.includes('2 mains') || t.includes('deux mains')) {
-          weaponStats.deuxMains = true;
-        } else {
-          t = weaponStats.divers;
-          if (t) {
-            t = t.toLowerCase();
-            if (t.includes('2 mains') || t.includes('deux mains')) {
-              weaponStats.deuxMains = true;
-            }
-          }
-        }
-    }
-    //On cherche si c'est un arc
-    var p = weaponStats.name.search(/\barc\b/i);
-    if (p >= 0) weaponStats.arc = true;
-    else if (weaponStats.divers) {
-      p = weaponStats.divers.search(/\barc\b/i);
-      if (p >= 0) weaponStats.arc = true;
-    }
-    p = weaponStats.name.search(/\barbal([eè])te\b/i);
-    if (p >= 0) weaponStats.arbalete = true;
-    else if (weaponStats.divers) {
-      p = weaponStats.divers.search(/\barbal([eè])te\b/i);
-      if (p >= 0) weaponStats.arbalete = true;
-    }
-    return weaponStats;
   }
 
   function surveillance(personnage) {
