@@ -1991,7 +1991,7 @@ var COFantasy = COFantasy || function() {
                   if (attackStats.options) {
                     var firstOptionIndex = act.indexOf(' --');
                     if (firstOptionIndex > 0) {
-                    act = act.substring(0, firstOptionIndex) + ' --attaqueOptions ' + attackStats.options + act.substring(firstOptionIndex);
+                      act = act.substring(0, firstOptionIndex) + ' --attaqueOptions ' + attackStats.options + act.substring(firstOptionIndex);
                     } else {
                       act += ' --attaqueOptions ' + attackStats.options;
                     }
@@ -13266,14 +13266,16 @@ var COFantasy = COFantasy || function() {
           .replace(/%#([^#]*)#/g, '\n!cof-liste-actions $1')
           .replace(/\/\/%/g, '\n\/\/')
           .replace(/\/\/#/g, '\n\/\/')
-          .replace(/%/g, '\n%').replace(/#/g, '\n#')
-          .split("\n");
+          .replace(/\/\/!/g, '\n\/\/')
+          .replace(/%/g, '\n%').replace(/#/g, '\n#').replace(/!/g, '\n!')
+          .split('\n');
         if (actions.length > 0) {
           // Toutes les Macros
           var macros = findObjs({
             _type: 'macro'
           });
           var found;
+          var options = '';
           // On recherche si l'action existe (Ability % ou Macro #)
           actions.forEach(function(action) {
             action = action.trim();
@@ -13301,6 +13303,7 @@ var COFantasy = COFantasy || function() {
                       //On rajoute les options de l'ability
                       command += action.substr(action.indexOf(' '));
                     }
+                    command += options;
                     ligne += bouton(command, actionText, perso, false) + '<br />';
                   }
                 });
@@ -13313,6 +13316,7 @@ var COFantasy = COFantasy || function() {
                   var attackLabel = actionCommands[1].trim();
                   var attackStats = getWeaponStats(perso, attackLabel);
                   actionText = attackStats.name;
+                  action += options;
                   ligne += bouton(action, actionText, perso, false, undefined, undefined, attackStats) + '<br />';
                 } else {
                   actionCmd = actionCmd.substr(1);
@@ -13326,19 +13330,27 @@ var COFantasy = COFantasy || function() {
                         //On rajoute les options de la macro
                         command += action.substr(action.indexOf(' '));
                       }
+                      command += options;
                       ligne += bouton(command, actionText, perso, false) + '<br />';
                     }
                   });
                 }
                 break;
               case '!':
-                // commande API
-                if (actionCommands.length > 1) {
-                  actionText = actionCommands[1].replace(/-/g, ' ').replace(/_/g, ' ');
+                if (actionCmd.toLowerCase() == '!options') {
+                  found = true;
+                  if (actionCommands.length > 1) {
+                    options = action.substring(8); //démarre par ' '
+                  }
+                } else {
+                  // commande API
+                  if (actionCommands.length > 1) {
+                    actionText = actionCommands[1].replace(/-/g, ' ').replace(/_/g, ' ');
+                  }
+                  command = action + options;
+                  ligne += bouton(command, actionText, perso, false) + '<br />';
+                  found = true;
                 }
-                command = action;
-                ligne += bouton(command, actionText, perso, false) + '<br />';
-                found = true;
             }
             if (found) {
               actionsAAfficher = true;
