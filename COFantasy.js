@@ -7537,10 +7537,18 @@ var COFantasy = COFantasy || function() {
             target.attackMessage = line;
             if (touche) {
               if (options.asDeLaGachette && attackRoll > 24) {
-                target.messages.push("As de la gachette : + 1" + options.d6 + " aux DM");
+                target.messages.push("As de la gachette => + 1" + options.d6 + " aux DM");
                 target.additionalDmg.push({
                   type: mainDmgType,
                   value: '1' + options.d6
+                });
+              }
+              if (options.contact && attackRoll > defense + 9 &&
+                charAttributeAsBool(attaquant, 'botteMortelle')) {
+                target.messages.push("Botte mortelle => + 2" + options.d6 + " aux DM");
+                target.additionalDmg.push({
+                  type: mainDmgType,
+                  value: '2' + options.d6
                 });
               }
             } else { //Effet si on ne touche pas
