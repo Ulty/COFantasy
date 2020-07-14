@@ -5766,9 +5766,16 @@ var COFantasy = COFantasy || function() {
       explications.push("Tueur de géant => +2 att. et 2d6 DM");
       target.tueurDeGeants = true;
     }
-    if (attributeAsBool(target, 'feinte_' + attaquant.tokName)) {
-      attBonus += 10;
-      explications.push("Feinte => +10 en attaque et +2d6 DM");
+    var attrFeinte = tokenAttribute(target, 'feinte_' + attaquant.tokName);
+    if (attrFeinte.length > 0 && attrFeinte[0].get('current')) {
+      var bonusFeinte = charAttributeAsInt(attaquant, 'bonusFeinte', 5);
+      attBonus += bonusFeinte;
+      var msgFeinte = "Feinte => +" + bonusFeinte + " en attaque";
+      if (attrFeinte[0].get('max')) {
+        target.feinte = 2;
+        msgFeinte += " et +2d6 DM";
+      }
+      explications.push(msgFeinte);
     }
     if (attributeAsBool(target, 'expose')) {
       var attrsExposeValeur = tokenAttribute(target, "exposeValeur");
@@ -8165,12 +8172,10 @@ var COFantasy = COFantasy || function() {
         });
         target.messages.push("Lien épique => + 1" + options.d6 + " DM");
       }
-      var attrFeinte = tokenAttribute(target, 'feinte_' + attaquant.tokName);
-      if (attrFeinte.length > 0 && attrFeinte[0].get('current') &&
-        attrFeinte[0].get('max')) {
+      if (target.feinte) {
         target.additionalDmg.push({
           type: mainDmgType,
-          value: '2' + options.d6
+          value: target.feinte + options.d6
         });
       }
       if (!options.pasDeDmg) {
