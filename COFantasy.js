@@ -7156,7 +7156,7 @@ var COFantasy = COFantasy || function() {
         chargesArme[0].set('current', currentCharge);
         if (currentCharge === 0 &&
           charAttributeAsInt(attaquant, "initEnMain" + attackLabel, 0) > 0) {
-          updateNextInit(attackingToken);
+          updateNextInit(attaquant);
         }
       }
       if (options.tirDouble && options.tirDouble.label && options.tirDouble.label != attackLabel) {
@@ -7199,7 +7199,7 @@ var COFantasy = COFantasy || function() {
           chargesArme[0].set('current', currentCharge2 - 1);
           if (currentCharge2 == 1 &&
             charAttributeAsInt(attaquant, "initEnMain" + secondLabel, 0) > 0) {
-            updateNextInit(attackingToken);
+            updateNextInit(attaquant);
           }
         }
       }
@@ -11964,7 +11964,7 @@ var COFantasy = COFantasy || function() {
             current: currentCharge
           });
           attrs.set('current', currentCharge + 1);
-          updateNextInit(perso.token);
+          updateNextInit(perso);
           if (options.son) playSound(options.son);
           if (grenaille)
             sendChar(perso.charId, "charge " + weaponName + " de grenaille.");
@@ -13661,7 +13661,7 @@ var COFantasy = COFantasy || function() {
         if (newInit < to.pasAgi[tokenPos].pr) {
           to.pasAgi[tokenPos].pr = newInit;
           sendChar(charId, " attend un peu avant d'agir...");
-          updateNextInit(token);
+          updateNextInit(perso);
         } else {
           sendChar(charId, " a déjà une initiative inférieure à " + newInit);
         }
@@ -14734,8 +14734,8 @@ var COFantasy = COFantasy || function() {
       }], evt, true);
   }
 
-  function updateNextInit(token) {
-    updateNextInitSet.add(token.id);
+  function updateNextInit(perso) {
+    updateNextInitSet.add(perso.token.id);
   }
 
   //renvoie le nom de l'arme si l'arme est déjà tenue en main
@@ -14884,7 +14884,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (charAttributeAsInt(perso, "initEnMain" + labelArme, 0) > 0)
-      updateNextInit(perso.token);
+      updateNextInit(perso);
   }
 
   function degainer(msg) {
@@ -14988,8 +14988,8 @@ var COFantasy = COFantasy || function() {
     var t1 = to.pasAgi[tourTok1];
     to.pasAgi[tourTok1] = to.pasAgi[tourTok2];
     to.pasAgi[tourTok2] = t1;
-    updateNextInit(perso1.token);
-    updateNextInit(perso2.token);
+    updateNextInit(perso1);
+    updateNextInit(perso2);
     to.pasAgi.push(to.tour);
     var turnOrder = to.pasAgi.concat(to.dejaAgi);
     Campaign().set('turnorder', JSON.stringify(turnOrder));
@@ -15523,6 +15523,9 @@ var COFantasy = COFantasy || function() {
         iterSelected(selected, function(perso) {
           setTokenAttr(
             perso, effet, true, evt, messageEffetIndetermine[effet].activation);
+          if (effet == 'foretVivanteEnnemie' && stateCOF.combat) {
+            updateNextInit(perso);
+          }
           if (options.puissant) {
             var puissant = true;
             if (options.puissant == "off") puissant = false;
@@ -15544,6 +15547,9 @@ var COFantasy = COFantasy || function() {
             ace[0].remove();
           }
           removeTokenAttr(perso, effet, evt, messageEffetIndetermine[effet].fin);
+          if (effet == 'foretVivanteEnnemie' && stateCOF.combat) {
+            updateNextInit(perso);
+          }
         });
       }
       addEvent(evt);
