@@ -2402,7 +2402,33 @@ var COFantasy = COFantasy || function() {
     if (options.bonusAttrs) {
       options.bonusAttrs.forEach(function(attr) {
         bonusCarac += charAttributeAsInt(personnage, attr, 0);
-        malusCasque = malusCasque || attr == 'perception' || attr == 'vigilance';
+        switch (attr) {
+          case 'perception':
+            malusCasque = true;
+            if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+              bonusCarac -= 5;
+            }
+            break;
+          case 'survie':
+            if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+              bonusCarac -= 5;
+            }
+            break;
+          case 'orientation':
+            if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+              bonusCarac -= 5;
+            }
+            break;
+          case 'discrétion':
+          case 'discretion':
+            if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+              bonusCarac -= 5;
+            }
+            break;
+          case 'vigilance':
+            malusCasque = true;
+            break;
+        }
       });
     }
     if (malusCasque && ficheAttributeAsBool(personnage, 'casque_on', false)) {
@@ -4950,6 +4976,9 @@ var COFantasy = COFantasy || function() {
     }
     // Réflexes felins de la Voie du pourfendeur
     init += charAttributeAsInt(perso, 'reflexesFelins', 0);
+    if (attributeAsBool('foretVivanteEnnemie')) {
+      init -= 5;
+    }
     return init;
   }
 
@@ -23878,6 +23907,11 @@ var COFantasy = COFantasy || function() {
       activation: "se deplace maintenant en terrain difficile",
       actif: "profite du terrain difficile",
       fin: "est maintenant en terrain normal"
+    },
+    foretVivanteEnnemie: {
+      activation: "est gêné par la forêt",
+      actif: "est désorienté par la forêt",
+      fin: "se retrouve dans une forêt normale"
     },
     mutationCuirasse: {
       activation: "endurcit sa peau",

@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.08
 ### Capacités
+* Support pour la capacité forêt vivante du druide.
 * Ajout de la capacité botte mortelle du barde.
 * Possibilité de spécifier le bonus apporté par une feinte.
 * Support pour l'énergie de la mort, utilisée dans la campagne Vengeance.
