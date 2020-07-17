@@ -4976,7 +4976,7 @@ var COFantasy = COFantasy || function() {
     }
     // Réflexes felins de la Voie du pourfendeur
     init += charAttributeAsInt(perso, 'reflexesFelins', 0);
-    if (attributeAsBool('foretVivanteEnnemie')) {
+    if (attributeAsBool(perso, 'foretVivanteEnnemie')) {
       init -= 5;
     }
     return init;
@@ -22171,7 +22171,6 @@ var COFantasy = COFantasy || function() {
         addEvent(evt);
         return;
       }
-
       if (torcheAllumee) {
         sendChar(perso.charId,
           "/w gm torche éteinte. Reste " + nbTorches + " torches, et " +
