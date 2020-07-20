@@ -1554,7 +1554,7 @@ var COFantasy = COFantasy || function() {
         if (attr.current === null) attr.attribute.remove();
         else {
           attr.attribute.set('current', attr.current);
-          if (attr.max) attr.attribute.set('max', attr.max);
+          if (attr.max !== undefined) attr.attribute.set('max', attr.max);
         }
       });
     }
@@ -5284,6 +5284,23 @@ var COFantasy = COFantasy || function() {
     return false;
   }
 
+  //Remplis les champs arme et armeGauche de perso
+  //renvoie undefined si aucune arme en main principale
+  //renvoie l'arme principale sinon 
+  function armesEnMain(perso) {
+    if (perso.armesEnMain) return perso.arme;
+    var labelArme = tokenAttribute(perso, 'armeEnMain');
+    if (labelArme.length > 0) {
+      var labelArmePrincipale = labelArme[0].get('current');
+      if (labelArmePrincipale) perso.arme = getWeaponStats(perso, labelArmePrincipale);
+      var labelArmeGauche = labelArme[0].get('max');
+      if (labelArmeGauche) perso.armeGauche = getWeaponStats(perso, labelArmeGauche);
+      perso.armesEnMain = 'calculee';
+      return perso.arme;
+    }
+    return;
+  }
+
   function defenseOfPerso(attaquant, target, pageId, evt, options) {
     options = options || {};
     if (options.difficultePVmax) {
@@ -5546,11 +5563,7 @@ var COFantasy = COFantasy || function() {
       explications.push("Suite à une attaque risquée, -4 en DEF");
     }
     //gestion de l'épieu
-    var armeTarget = target.arme;
-    if (target.arme === undefined) {
-      armeTarget = armeEnMain(target);
-      target.arme = armeTarget;
-    }
+    var armeTarget = armesEnMain(target); //peuple target.arme et armeGauche
     if (armeTarget) {
       if (armeTarget.name.search(/[ée]pieu/i) >= 0 || (armeTarget.divers && armeTarget.name.search(/[ée]pieu/i) >= 0)) {
         var armeAttaquant = tokenAttribute(attaquant, 'armeEnMain');
@@ -5565,6 +5578,13 @@ var COFantasy = COFantasy || function() {
       if (bonusCouvert) {
         defense += bonusCouvert;
         explications.push("Cible à couvert => +" + bonusCouvert + " DEF");
+      }
+    } else {
+      if (charAttributeAsBool(target, 'ambidextreDuelliste')) {
+        if (target.armeGauche && target.armeGauche.portee === 0) {
+          defense += 1;
+          explications.push("La cible utilise son arme en main gauche => +1 DEF");
+        }
       }
     }
     return defense;
@@ -5678,6 +5698,29 @@ var COFantasy = COFantasy || function() {
         explications.push("Attaque risquée => +2 en Attaque");
         if (!options.test)
           setTokenAttr(attaquant, 'attaqueRisquee', 1, evt, undefined, getInit());
+      }
+      if (charAttributeAsBool(attaquant, 'ambidextreDuelliste')) {
+        if (attaquant.armesEnMain === undefined) armesEnMain(attaquant);
+        if (attaquant.armeGauche && attaquant.armeGauche.portee === 0) {
+          var bonusArmeGauche = 0;
+          if (attaquant.pnj) {
+            bonusArmeGauche = attaquant.armeGauche.attSkill;
+          } else {
+            bonusArmeGauche = attaquant.armeGauche.attSkillDiv;
+          }
+          var dmArmeGauche = modCarac(attaquant, 'DEXTERITE');
+          dmArmeGauche += attaquant.armeGauche.attDMBonusCommun;
+          options.additionalDmg = options.additionalDmg || [];
+          options.additionalDmg.push({
+            type: 'normal',
+            value: dmArmeGauche
+          });
+          attBonus += bonusArmeGauche;
+          if (bonusArmeGauche)
+            explications.push("Attaque ambidextre => +" + bonusArmeGauche + " en attaque et +" + dmArmeGauche + " aux DMs");
+          else
+            explications.push("Attaque ambidextre => +" + dmArmeGauche + " aux DMs");
+        }
       }
     }
     var frenesie = charAttributeAsInt(attaquant, 'frenesie', 0);
@@ -8985,9 +9028,7 @@ var COFantasy = COFantasy || function() {
               if (charAttributeAsBool(target, 'paradeMagistrale')) {
                 var actionParadeMagistrale = "esquive acrobatique";
                 if (options.contact) {
-                  if (target.arme === undefined) {
-                    target.arme = armeEnMain(target);
-                  }
+                  if (target.armesEnMain === undefined) armesEnMain(target);
                   if (target.arme && !target.arme.portee)
                     actionParadeMagistrale = "parade magistrale";
                 }
@@ -13796,7 +13837,11 @@ var COFantasy = COFantasy || function() {
           attrsChar.find(function(a) {
             return a.get('name') == 'armeEnMain';
           });
-        if (armeEnMain) armeEnMain = armeEnMain.get('current');
+        var armeEnMainGauche;
+        if (armeEnMain) {
+          armeEnMainGauche = armeEnMain.get('max');
+          armeEnMain = armeEnMain.get('current');
+        }
         _.forEach(attaques, function(nomArme, attPrefix) {
           var armeLabel = getAttrByName(perso.charId, attPrefix + "armelabel");
           var charge = attrsChar.find(function(a) {
@@ -13826,11 +13871,14 @@ var COFantasy = COFantasy || function() {
                 }
               }
               if (armeEnMain == armeLabel) line += " et en main";
+              else if (armeEnMainGauche == armeLabel) line += " et en main gauche";
               else line += ", pas en main";
               addLineToFramedDisplay(display, line);
             }
           } else if (armeEnMain == armeLabel) {
             addLineToFramedDisplay(display, "tient " + nomArme + " en main.");
+          } else if (armeEnMainGauche == armeLabel) {
+            addLineToFramedDisplay(display, "tient " + nomArme + " en main gauche.");
           }
           if (attributeAsBool(perso, 'poisonRapide_' + armeLabel)) {
             addLineToFramedDisplay(display, nomArme + " est enduit de poison.");
@@ -14745,39 +14793,59 @@ var COFantasy = COFantasy || function() {
       pageId = perso.token.get('pageid');
       perso.pageId = pageId;
     }
+    options = options || {};
+    var nouvelleArme;
+    if (options.weaponStats) nouvelleArme = options.weaponStats;
+    else if (labelArme && labelArme !== '') nouvelleArme = getWeaponStats(perso, labelArme);
+    if (nouvelleArme && nouvelleArme.armeGauche) options.gauche = true;
     //D'abord, on rengaine l'arme en main, si besoin.
     var armeActuelle = tokenAttribute(perso, 'armeEnMain');
     var labelArmeActuelle;
+    var labelArmeActuelleGauche = '';
     var ancienneArme;
     var message = perso.token.get('name') + " ";
     if (armeActuelle.length > 0) {
       armeActuelle = armeActuelle[0];
-      labelArmeActuelle = armeActuelle.get('current');
+      if (options.gauche) labelArmeActuelle = armeActuelle.get('max');
+      else {
+        labelArmeActuelle = armeActuelle.get('current');
+        labelArmeActuelleGauche = armeActuelle.get('max');
+      }
       if (labelArmeActuelle == labelArme) {
         //Pas besoin de dégainer. Pas de message ?
-        if (options && options.weaponStats) return options.weaponStats.name;
+        if (options.weaponStats) return options.weaponStats.name;
         ancienneArme = getWeaponStats(perso, labelArmeActuelle);
         if (ancienneArme) return ancienneArme.name;
         return;
       }
       //On dégaine une nouvelle arme
-      ancienneArme = getWeaponStats(perso, labelArmeActuelle);
-      if (ancienneArme) {
+      if (labelArmeActuelle) {
+        ancienneArme = getWeaponStats(perso, labelArmeActuelle);
         if (attributeAsBool(perso, 'forgeron(' + labelArmeActuelle + ')')) {
           finDEffetDeNom(perso, 'forgeron(' + labelArmeActuelle + ')', evt);
         }
-        if (options && options.messages) message += "rengaine " + ancienneArme.name + " et ";
+        if (options.messages) message += "rengaine " + ancienneArme.name + " et ";
         else sendChar(perso.charId, "rengaine " + ancienneArme.name);
         if (charAttributeAsBool(perso, 'eclaire_' + labelArmeActuelle)) {
           eteindreUneLumiere(perso, pageId, undefined, 'eclaire_' + labelArmeActuelle, evt);
         }
       }
+      if ((!nouvelleArme || nouvelleArme.deuxMains) && labelArmeActuelleGauche) {
+        var ancienneArmeGauche = getWeaponStats(perso, labelArmeActuelleGauche);
+        if (attributeAsBool(perso, 'forgeron(' + labelArmeActuelleGauche + ')')) {
+          finDEffetDeNom(perso, 'forgeron(' + labelArmeActuelleGauche + ')', evt);
+        }
+        if (options.messages) {
+          if (ancienneArme) message += ancienneArmeGauche.name + " et ";
+          else message += "rengaine " + ancienneArmeGauche.name + " et ";
+        } else sendChar(perso.charId, "rengaine " + ancienneArmeGauche.name);
+        if (charAttributeAsBool(perso, 'eclaire_' + labelArmeActuelleGauche)) {
+          eteindreUneLumiere(perso, pageId, undefined, 'eclaire_' + labelArmeActuelleGauche, evt);
+        }
+      }
     } else armeActuelle = undefined;
     //Puis on dégaine
-    //On vérifie que l'arme existe
-    var nouvelleArme;
-    if (options && options.weaponStats) nouvelleArme = options.weaponStats;
-    else if (labelArme && labelArme !== '') nouvelleArme = getWeaponStats(perso, labelArme);
+    //mais on vérifie que l'arme existe, sinon c'est juste un ordre de rengainer
     if (nouvelleArme === undefined) {
       if (armeActuelle) {
         removeTokenAttr(perso, 'armeEnMain', evt);
@@ -14830,7 +14898,7 @@ var COFantasy = COFantasy || function() {
           });
         }
       }
-    } else if (ancienneArme && ancienneArme.deuxMains) {
+    } else if (ancienneArme && (ancienneArme.deuxMains || options.gauche)) {
       if (ficheAttributeAsBool(perso, 'DEFBOUCLIER', false) &&
         !ficheAttributeAsInt(perso, 'DEFBOUCLIERON', 0)) {
         sendChar(perso.charId, "remet son bouclier");
@@ -14851,23 +14919,35 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (attributeAsBool(perso, 'frappeDuVide')) {
-      if (options && options.contact) {
+      if (options.contact) {
         options.frappeDuVide = true;
       }
       setTokenAttr(perso, 'frappeDuVide', 0, evt);
     }
     if (armeActuelle) {
       evt.attributes = evt.attributes || [];
-      evt.attributes.push({
+      var evtAttr = {
         attribute: armeActuelle,
-        current: labelArmeActuelle,
-        max: ''
-      });
-      armeActuelle.set('current', labelArme);
+      };
+      if (options.gauche) {
+        evtAttr.current = armeActuelle.get('current');
+        evtAttr.max = labelArmeActuelle;
+        evt.attributes.push(evtAttr);
+        armeActuelle.set('max', labelArme);
+      } else {
+        evtAttr.current = labelArmeActuelle;
+        evtAttr.max = labelArmeActuelleGauche;
+        evt.attributes.push(evtAttr);
+        armeActuelle.set('current', labelArme);
+      }
     } else {
-      setTokenAttr(perso, 'armeEnMain', labelArme, evt);
+      if (options.gauche) {
+        setTokenAttr(perso, 'armeEnMain', '', evt, undefined, labelArme);
+      } else {
+        setTokenAttr(perso, 'armeEnMain', labelArme, evt);
+      }
     }
-    if (options && options.messages) {
+    if (options.messages) {
       message += "dégaine " + nouvelleArme.name;
       options.messages.push(message);
     } else sendChar(perso.charId, "dégaine " + nouvelleArme.name);
@@ -14897,6 +14977,7 @@ var COFantasy = COFantasy || function() {
     }
     var armeLabel = '';
     if (cmd.length > 1) armeLabel = cmd[1];
+    if (cmd.length > 2 && cmd[2] == 'gauche') options.gauche = true;
     var evt = {
       type: "Dégainer",
       attributes: []
@@ -18495,7 +18576,7 @@ var COFantasy = COFantasy || function() {
         toProceed = true;
         var arme;
         if (!estEsquive) {
-          arme = armeEnMain(duelliste);
+          arme = armesEnMain(duelliste);
           if (!arme || arme.portee) estEsquive = true;
         }
         var attackRollExpr = "[[" + computeDice(duelliste) + "]]";
@@ -20510,18 +20591,9 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
-  function armeEnMain(perso) {
-    var labelArme = tokenAttribute(perso, 'armeEnMain');
-    if (labelArme.length > 0) {
-      labelArme = labelArme[0].get('current');
-      return getWeaponStats(perso, labelArme);
-    }
-    return;
-  }
-
   function armeDeContact(perso, arme, labelArmeDefaut, armeContact) {
     if (arme) return arme;
-    arme = armeEnMain(perso);
+    arme = armesEnMain(perso);
     if (arme === undefined && labelArmeDefaut)
       arme = getWeaponStats(perso, labelArmeDefaut);
     //L'arme doit être une arme de contact ?
