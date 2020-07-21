@@ -5614,7 +5614,7 @@ var COFantasy = COFantasy || function() {
     if (options.semonce) {
       attBonus += 5;
     }
-    if (options.attaqueAssuree) {
+    if (options.attaqueAssuree && !options.pasDeDmg) {
       attBonus += 5;
       explications.push("Attaque assurée => +5 en Attaque et DM/2");
     }
@@ -5659,7 +5659,10 @@ var COFantasy = COFantasy || function() {
     }
     if (options.frappeDuVide) {
       attBonus += 2;
-      explications.push("Frappe du vide => +2 en Attaque et +1d6 DM");
+      if (options.pasDeDmg)
+        explications.push("Frappe du vide => +2 en Attaque");
+      else
+        explications.push("Frappe du vide => +2 en Attaque et +1d6 DM");
     }
     if (attributeAsBool(attaquant, 'putrefactionOutreTombe')) {
       attBonus -= 2;
@@ -5670,10 +5673,15 @@ var COFantasy = COFantasy || function() {
         options.rayonAffaiblissant = getValeurOfEffet(attaquant, 'rayonAffaiblissant', 2);
         if (options.rayonAffaiblissant < 0) options.rayonAffaiblissant = 1;
         attBonus -= options.rayonAffaiblissant;
-        explications.push("Rayon affaiblissant => -" + options.rayonAffaiblissant + " en Attaque et aux DM");
+        var msgRA = "Rayon affaiblissant => -" + options.rayonAffaiblissant + " en Attaque";
+        if (options.pasDeDmg) explications.push(msgRA);
+        else explications.push(msgRA + " et aux DM");
       }
       if (attributeAsBool(attaquant, 'enragé')) {
         attBonus += 5;
+        if (options.pasDeDmg)
+        explications.push("Enragé => +5 en Attaque");
+          else
         explications.push("Enragé => +5 en Attaque et +1d6 DM");
       }
       if (attributeAsBool(attaquant, 'aspectDuDemon')) {
@@ -5685,10 +5693,16 @@ var COFantasy = COFantasy || function() {
         rageBerserk = rageBerserk[0].get('current');
         if (rageBerserk == 'furie') {
           attBonus += 3;
+        if (options.pasDeDmg)
+          explications.push("Furie du berserk : +3 en Attaque");
+          else
           explications.push("Furie du berserk : +3 en Attaque et +2d6 aux DM");
           options.rageBerserk = 2;
         } else {
           attBonus += 2;
+        if (options.pasDeDmg)
+          explications.push("Rage du berserk : +2 en Attaque");
+          else 
           explications.push("Rage du berserk : +2 en Attaque et +1d6 aux DM");
           options.rageBerserk = 1;
         }
@@ -5716,10 +5730,14 @@ var COFantasy = COFantasy || function() {
             value: dmArmeGauche
           });
           attBonus += bonusArmeGauche;
-          if (bonusArmeGauche)
-            explications.push("Attaque ambidextre => +" + bonusArmeGauche + " en attaque et +" + dmArmeGauche + " aux DMs");
-          else
-            explications.push("Attaque ambidextre => +" + dmArmeGauche + " aux DMs");
+          var msgAmbidextre = "Attaque ambidextre => +";
+          if (bonusArmeGauche) {
+            msgAmbidextre += bonusArmeGauche + " en attaque";
+            if (options.pasDeDmg) explications.push(msgAmbidextre);
+            else msgAmbidextre += " et +";
+          }
+          if (!options.pasDeDmg)
+            explications.push(msgAmbidextre + dmArmeGauche + " aux DMs");
         }
       }
     }
@@ -5767,6 +5785,9 @@ var COFantasy = COFantasy || function() {
       if (options.distance || !charAttributeAsBool(attaquant, 'radarMental') || estNonVivant(target)) {
         attBonus -= 5;
         options.aveugleManoeuvre = true;
+        if (options.pasDeDmg)
+        explications.push("Attaquant aveuglé => -5 en Attaque");
+          else
         explications.push("Attaquant aveuglé => -5 en Attaque et aux DM");
       }
     }
@@ -5797,7 +5818,8 @@ var COFantasy = COFantasy || function() {
       charAttributeAsBool(attaquant, 'chasseurEmerite') && estAnimal(target);
     if (chasseurEmerite) {
       attBonus += 2;
-      var explChasseurEmerite = "Chasseur émérite => +2 en Attaque et aux DM";
+      var explChasseurEmerite = "Chasseur émérite => +2 en Attaque";
+      if (!options.pasDeDmg) explChasseurEmerite += " et aux DM";
       if (options.aoe) explChasseurEmerite += " contre " + target.tokName;
       explications.push(explChasseurEmerite);
       target.chasseurEmerite = true;
@@ -5812,7 +5834,8 @@ var COFantasy = COFantasy || function() {
     if (ennemiJure) {
       var ejSag = modCarac(attaquant, 'SAGESSE');
       attBonus += ejSag;
-      var explEnnemiJure = "Attaque sur ennemi juré => +" + ejSag + " en attaque et +1d6 aux DM";
+      var explEnnemiJure = "Attaque sur ennemi juré => +" + ejSag + " en attaque";
+      if (!options.pasDeDmg) explEnnemiJure += " et +1d6 aux DM";
       if (options.aoe) explEnnemiJure += " contre " + target.tokName;
       explications.push(explEnnemiJure);
       target.ennemiJure = true;
@@ -5820,6 +5843,9 @@ var COFantasy = COFantasy || function() {
     if (options.armeDArgent) {
       if (estMortVivant(target) || raceIs(target, 'demon') || raceIs(target, 'démon')) {
         attBonus += 2;
+        if (options.psaDeDmg)
+        explications.push("Arme en argent => +2 en attaque");
+          else
         explications.push("Arme en argent => +2 en attaque et +1d6 aux DM");
         target.armeDArgent = true;
       }
@@ -5835,6 +5861,9 @@ var COFantasy = COFantasy || function() {
     }
     if (options.tueurDeGeants && estUnGeant(target)) {
       attBonus += 2;
+      if (options.pasDeDmg)
+      explications.push("Tueur de géant => +2 en Attaque");
+        else
       explications.push("Tueur de géant => +2 att. et 2d6 DM");
       target.tueurDeGeants = true;
     }
@@ -5845,7 +5874,7 @@ var COFantasy = COFantasy || function() {
       var msgFeinte = "Feinte => +" + bonusFeinte + " en attaque";
       if (attrFeinte[0].get('max')) {
         target.feinte = 2;
-        msgFeinte += " et +2d6 DM";
+        if (!options.pasDeDmg) msgFeinte += " et +2d6 DM";
       }
       explications.push(msgFeinte);
     }
@@ -5874,6 +5903,9 @@ var COFantasy = COFantasy || function() {
       var cibleAgrippee = persoOfIdName(a.get('current'), pageId);
       if (cibleAgrippee && cibleAgrippee.id == target.id) {
         attBonus += 5;
+        if (options.pasDeDmg)
+        explications.push("Cible agrippée => +5 em Attaque");
+          else
         explications.push("Cible agrippée => +5 att. et 1d6 DM");
         target.estAgrippee = true;
       }
@@ -20616,7 +20648,7 @@ var COFantasy = COFantasy || function() {
 
   function attaqueContactOpposee(playerId, attaquant, defenseur, evt, options, callback) {
     var explications = [];
-    options = options || {};
+    options = options || {pasDeDmg:true};
     options.contact = true;
     attaquant.tokName = attaquant.tokName || attaquant.token.get('name');
     defenseur.tokName = defenseur.tokName || defenseur.token.get('name');
@@ -20766,7 +20798,7 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Test d'attaque opposée"
     };
-    var options = {};
+    var options = {pasDeDmg:true};
     if (cmd.length > 3) options.labelArmeAttaquant = cmd[3];
     var playerId = getPlayerIdFromMsg(msg);
     attaqueContactOpposee(playerId, attaquant, defenseur, evt, options,
@@ -20810,6 +20842,7 @@ var COFantasy = COFantasy || function() {
     var options = {
       action: "<b>Désarmement</b>",
       armeContact: "doit porter une arme de contact pour désarmer son adversaire.",
+      pasDeDmg: true,
       pageId: pageId,
     };
     //On cherche l'arme de la cible. On en aura besoin pour désarmer
@@ -21022,6 +21055,7 @@ var COFantasy = COFantasy || function() {
   function manoeuvreRisquee(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
+    options.pasDeDmg = true;
     var cmd = options.cmd;
     if (cmd === undefined || cmd.length < 4) {
       error("cof-manoeuvre attend 3 arguments", msg.content);

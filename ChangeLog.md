@@ -9,6 +9,7 @@
 * Résistance à la magie du barbare
 
 ### Autres améliorations
+* Gestion de l'arme en main gauche.
 * Ajout d'un raccourci pour faire afficher toutes les action d'attaque visibles dur la fiche dans n'importe quelle liste d'actions.
 * Ajout de la possibilité de mettre des options globales dans les listes d'action.
 * Prise en compte des jets, attributs et inputs dans la partie options des lignes d'attaque, quand elles sont utilisées depuis un bouton (comme avec les listes d'action).
