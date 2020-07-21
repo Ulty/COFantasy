@@ -89,6 +89,11 @@ var COFantasy = COFantasy || function() {
           val: 5,
           type: 'int'
         },
+        poudre_explosif: {
+          explications: "Les armes à poudre font des dégâts explosifs",
+          val: true,
+          type: 'bool'
+        },
         generer_options_attaques: {
           explications: "Ajouter automatiquement les options d'attaques (normale / assurée / risquée) aux boutons d'attaques dans le chat (Actions)",
           val: false,
@@ -264,6 +269,7 @@ var COFantasy = COFantasy || function() {
   }, ];
 
   var stateCOF = state.COFantasy;
+  var reglesOptionelles = stateCOF.options.regles.val;
 
   // List of states:
   var cof_states = {
@@ -378,6 +384,7 @@ var COFantasy = COFantasy || function() {
     }
     if (stateCOF.options === undefined) stateCOF.options = {};
     copyOptions(stateCOF.options, defaultOptions);
+    reglesOptionelles = stateCOF.options.regles.val;
     if (stateCOF.options.macros_à_jour.val) {
       var macros = findObjs({
         _type: 'macro'
@@ -2012,17 +2019,17 @@ var COFantasy = COFantasy || function() {
                   // attaque distance
                   picto = '<span style="font-family: \'Pictos Custom\'">[</span> ';
                   style = 'background-color:#48b92c';
-                  if (stateCOF.options.regles.val.generer_options_attaques.val) {
+                  if (reglesOptionelles.generer_options_attaques.val) {
                     act += " ?{Type d'Attaque|Normale,&#32;|Assurée,--attaqueAssuree}";
                   }
                 } else {
                   // attaque contact
                   picto = '<span style="font-family: \'Pictos Custom\'">t</span> ';
                   style = 'background-color:#cc0000';
-                  if (stateCOF.options.regles.val.generer_options_attaques.val) {
+                  if (reglesOptionelles.generer_options_attaques.val) {
                     act += " ?{Type d'Attaque|Normale,&#32;|Assurée,--attaqueAssuree|Risquée,--attaqueRisquee}";
                   }
-                  if (stateCOF.options.regles.val.generer_attaque_groupe.val &&
+                  if (reglesOptionelles.generer_attaque_groupe.val &&
                     perso.pnj && perso.token.get('bar1_link') === '') {
                     groupe = true;
                   }
@@ -3382,7 +3389,7 @@ var COFantasy = COFantasy || function() {
     var mana = options.mana || 0;
     var niveau = ficheAttributeAsInt(perso, 'niveau', 1);
     var cout_par_effet = 1;
-    if (stateCOF.options.regles.val.mana_totale.val) cout_par_effet = 3;
+    if (reglesOptionelles.mana_totale.val) cout_par_effet = 3;
     if (max === undefined || max > niveau - (mana / cout_par_effet))
       max = Math.floor(niveau - (mana / cout_par_effet));
     if (max < 1) {
@@ -3443,7 +3450,7 @@ var COFantasy = COFantasy || function() {
       }
     });
     options.mana = options.mana || 0;
-    if (stateCOF.options.regles.val.mana_totale.val)
+    if (reglesOptionelles.mana_totale.val)
       options.mana += options.tempeteDeMana.cout * 3;
     else options.mana += options.tempeteDeMana.cout;
   }
@@ -4547,7 +4554,7 @@ var COFantasy = COFantasy || function() {
           if (options.tempeteDeMana && options.tempeteDeMana.cout)
             options.tempeteDeMana.cout--;
           if (options.mana) {
-            if (stateCOF.options.regles.val.mana_totale.val) options.mana -= 3;
+            if (reglesOptionelles.mana_totale.val) options.mana -= 3;
             else options.mana--;
           }
         }
@@ -4589,7 +4596,7 @@ var COFantasy = COFantasy || function() {
       }
       updateCurrentBar(token, 2, bar2 - cout, evt);
       var niveau = ficheAttributeAsInt(personnage, 'niveau', 1);
-      if (stateCOF.options.regles.val.mana_totale.val) {
+      if (reglesOptionelles.mana_totale.val) {
         if (cout > niveau * 3) {
           sendChar(charId, "Attention, la dépense totale de mana est supérieure au niveau * 3");
         }
@@ -4921,10 +4928,10 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(perso, 'formeDArbre')) init = 7;
     //Règle optionelle : +1d6, à lancer en entrant en combat
     //Un seul jet par "character" pour les mook
-    if (stateCOF.options.regles.val.initiative_variable.val) {
+    if (reglesOptionelles.initiative_variable.val) {
       var bonusVariable;
       var tokenAUtiliser;
-      if (stateCOF.options.regles.val.initiative_variable_individuelle.val) {
+      if (reglesOptionelles.initiative_variable_individuelle.val) {
         bonusVariable = attributeAsInt(perso, 'bonusInitVariable', 0);
         tokenAUtiliser = perso;
       } else {
@@ -5343,8 +5350,8 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(target, 'statueDeBois')) defense = 10;
     // Malus de défense global pour les longs combats
-    if (stateCOF.options.regles.val.usure_DEF.val && !stateCOF.usureOff && stateCOF.tour > 1)
-      defense -= (Math.floor((stateCOF.tour - 1) / stateCOF.options.regles.val.usure_DEF.val) * 2);
+    if (reglesOptionelles.usure_DEF.val && !stateCOF.usureOff && stateCOF.tour > 1)
+      defense -= (Math.floor((stateCOF.tour - 1) / reglesOptionelles.usure_DEF.val) * 2);
     // Autres modificateurs de défense
     defense += attributeAsInt(target, 'defenseTotale', 0);
     defense += attributeAsInt(target, 'pacifisme', 0);
@@ -5355,7 +5362,7 @@ var COFantasy = COFantasy || function() {
       var bonusPeau = getValeurOfEffet(target, 'peauDEcorce', 1, 'voieDesVegetaux');
       var peauIntense = attributeAsInt(target, 'peauDEcorceTempeteDeManaIntense', 0);
       bonusPeau += peauIntense;
-      if (stateCOF.options.regles.val.forme_d_arbre_amelioree.val && formeDarbre) {
+      if (reglesOptionelles.forme_d_arbre_amelioree.val && formeDarbre) {
         bonusPeau = Math.ceil(bonusPeau * 1.5);
       }
       defense += bonusPeau;
@@ -5680,9 +5687,9 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(attaquant, 'enragé')) {
         attBonus += 5;
         if (options.pasDeDmg)
-        explications.push("Enragé => +5 en Attaque");
-          else
-        explications.push("Enragé => +5 en Attaque et +1d6 DM");
+          explications.push("Enragé => +5 en Attaque");
+        else
+          explications.push("Enragé => +5 en Attaque et +1d6 DM");
       }
       if (attributeAsBool(attaquant, 'aspectDuDemon')) {
         attBonus += getValeurOfEffet(attaquant, 'aspectDuDemon', 2);
@@ -5693,17 +5700,17 @@ var COFantasy = COFantasy || function() {
         rageBerserk = rageBerserk[0].get('current');
         if (rageBerserk == 'furie') {
           attBonus += 3;
-        if (options.pasDeDmg)
-          explications.push("Furie du berserk : +3 en Attaque");
+          if (options.pasDeDmg)
+            explications.push("Furie du berserk : +3 en Attaque");
           else
-          explications.push("Furie du berserk : +3 en Attaque et +2d6 aux DM");
+            explications.push("Furie du berserk : +3 en Attaque et +2d6 aux DM");
           options.rageBerserk = 2;
         } else {
           attBonus += 2;
-        if (options.pasDeDmg)
-          explications.push("Rage du berserk : +2 en Attaque");
-          else 
-          explications.push("Rage du berserk : +2 en Attaque et +1d6 aux DM");
+          if (options.pasDeDmg)
+            explications.push("Rage du berserk : +2 en Attaque");
+          else
+            explications.push("Rage du berserk : +2 en Attaque et +1d6 aux DM");
           options.rageBerserk = 1;
         }
       }
@@ -5786,9 +5793,9 @@ var COFantasy = COFantasy || function() {
         attBonus -= 5;
         options.aveugleManoeuvre = true;
         if (options.pasDeDmg)
-        explications.push("Attaquant aveuglé => -5 en Attaque");
-          else
-        explications.push("Attaquant aveuglé => -5 en Attaque et aux DM");
+          explications.push("Attaquant aveuglé => -5 en Attaque");
+        else
+          explications.push("Attaquant aveuglé => -5 en Attaque et aux DM");
       }
     }
     if (options.mainsDEnergie) {
@@ -5844,9 +5851,9 @@ var COFantasy = COFantasy || function() {
       if (estMortVivant(target) || raceIs(target, 'demon') || raceIs(target, 'démon')) {
         attBonus += 2;
         if (options.psaDeDmg)
-        explications.push("Arme en argent => +2 en attaque");
-          else
-        explications.push("Arme en argent => +2 en attaque et +1d6 aux DM");
+          explications.push("Arme en argent => +2 en attaque");
+        else
+          explications.push("Arme en argent => +2 en attaque et +1d6 aux DM");
         target.armeDArgent = true;
       }
     }
@@ -5862,9 +5869,9 @@ var COFantasy = COFantasy || function() {
     if (options.tueurDeGeants && estUnGeant(target)) {
       attBonus += 2;
       if (options.pasDeDmg)
-      explications.push("Tueur de géant => +2 en Attaque");
-        else
-      explications.push("Tueur de géant => +2 att. et 2d6 DM");
+        explications.push("Tueur de géant => +2 en Attaque");
+      else
+        explications.push("Tueur de géant => +2 att. et 2d6 DM");
       target.tueurDeGeants = true;
     }
     var attrFeinte = tokenAttribute(target, 'feinte_' + attaquant.tokName);
@@ -5904,13 +5911,13 @@ var COFantasy = COFantasy || function() {
       if (cibleAgrippee && cibleAgrippee.id == target.id) {
         attBonus += 5;
         if (options.pasDeDmg)
-        explications.push("Cible agrippée => +5 em Attaque");
-          else
-        explications.push("Cible agrippée => +5 att. et 1d6 DM");
+          explications.push("Cible agrippée => +5 em Attaque");
+        else
+          explications.push("Cible agrippée => +5 att. et 1d6 DM");
         target.estAgrippee = true;
       }
     });
-    if (stateCOF.options.regles.val.interchangeable_attaque.val) {
+    if (reglesOptionelles.interchangeable_attaque.val) {
       if (interchangeable(target.token, attaquant, pageId).result) {
         attBonus += 3;
         explications.push("Attaque en meute => +3 en Attaque et +2 en DEF");
@@ -7350,7 +7357,7 @@ var COFantasy = COFantasy || function() {
         });
 
         // Cas des armes à poudre
-        if (options.poudre) {
+        if (options.poudre && !charAttributeAsBool(attaquant, 'chimiste')) {
           var poudreNumber = rollNumber(afterEvaluateAttack[2]);
           var dePoudre = rollsAttack.inlinerolls[poudreNumber].results.total;
           explications.push(
@@ -7486,7 +7493,7 @@ var COFantasy = COFantasy || function() {
           if (options.aoe === undefined) {
             interchange = interchangeable(attackingToken, target, pageId);
             if (interchange.result) {
-              if (stateCOF.options.regles.val.interchangeable_attaque.val) {
+              if (reglesOptionelles.interchangeable_attaque.val) {
                 defense += 2;
               } else {
                 defense += 5;
@@ -7817,6 +7824,22 @@ var COFantasy = COFantasy || function() {
     return '';
   }
 
+  function computeAttackDice(d, options) {
+    if (isNaN(d) || d < 0) {
+      error("Dé d'attaque incorrect", d);
+      return 0;
+    }
+    var attDice = d;
+    if (options.puissant) {
+      attDice += 2;
+    }
+    if (options.reroll1) attDice += "r1";
+    if (options.reroll2) attDice += "r2";
+    if (options.explodeMax) attDice += '!';
+    else if (options.poudre && reglesOptionelles.poudre_explosif.val) attDice += '!p';
+    return attDice;
+  }
+
   function computeMainDmgRollExpr(attaquant, target, weaponStats, attNbDices, attDMBonus, options) {
     var attDMArme = weaponStats.attDMBonusCommun;
     if (isNaN(attDMArme) || attDMArme === 0) attDMArme = '';
@@ -7851,21 +7874,6 @@ var COFantasy = COFantasy || function() {
     var symbde = 'd';
     if (target.maxDmg) symbde = '*';
     return addOrigin(attaquant.name, attNbDicesCible + symbde + attDiceCible + attCarBonusCible + attDMBonus);
-  }
-
-  function computeAttackDice(d, options) {
-    if (isNaN(d) || d < 0) {
-      error("Dé d'attaque incorrect", d);
-      return 0;
-    }
-    var attDice = d;
-    if (options.puissant) {
-      attDice += 2;
-    }
-    if (options.reroll1) attDice += "r1";
-    if (options.reroll2) attDice += "r2";
-    if (options.explodeMax) attDice += '!';
-    return attDice;
   }
 
   //retourne le mod de la caractéristique x, undefined si ce n'en est pas une
@@ -9495,7 +9503,7 @@ var COFantasy = COFantasy || function() {
       } else
         count += dmgParType[dt].length;
     }
-    var critOther = crit && stateCOF.options.regles.val.crit_elementaire.val;
+    var critOther = crit && reglesOptionelles.crit_elementaire.val;
     var dealOneType = function(dmgType) {
       if (dmgType == mainDmgType) {
         count -= dmgParType[dmgType].length;
@@ -9698,7 +9706,7 @@ var COFantasy = COFantasy || function() {
 
   function testBlessureGrave(target, dmgTotal, expliquer, evt) {
     target.tokName = target.tokName || target.token.get('name');
-    if (stateCOF.options.regles.val.blessures_graves.val && estPJ(target) && (dmgTotal == 'mort' ||
+    if (reglesOptionelles.blessures_graves.val && estPJ(target) && (dmgTotal == 'mort' ||
         dmgTotal >
         (ficheAttributeAsInt(target, 'niveau', 1) +
           ficheAttributeAsInt(target, 'CONSTITUTION', 10)))) {
@@ -9969,9 +9977,9 @@ var COFantasy = COFantasy || function() {
             dmSuivis[dmType2] = Math.ceil(dmSuivis[dmType2] / 2);
           }
         }
-        if (dmgTotal < stateCOF.options.regles.val.dm_minimum.val) {
-          dmgTotal = stateCOF.options.regles.val.dm_minimum.val;
-          dmgDisplay += "-> " + stateCOF.options.regles.val.dm_minimum.val;
+        if (dmgTotal < reglesOptionelles.dm_minimum.val) {
+          dmgTotal = reglesOptionelles.dm_minimum.val;
+          dmgDisplay += "-> " + reglesOptionelles.dm_minimum.val;
         }
         if (options.divise) {
           dmgTotal = Math.ceil(dmgTotal / options.divise);
@@ -19632,8 +19640,8 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Création d'élixir"
     };
-    if (stateCOF.options.regles.val.elixirs_sorts.val && ficheAttributeAsBool(forgesort, 'option_pm', true)) {
-      if (stateCOF.options.regles.val.mana_totale.val) {
+    if (reglesOptionelles.elixirs_sorts.val && ficheAttributeAsBool(forgesort, 'option_pm', true)) {
+      if (reglesOptionelles.mana_totale.val) {
         switch (elixir.rang) {
           case 1:
             options.mana = 1;
@@ -19977,7 +19985,7 @@ var COFantasy = COFantasy || function() {
       type: "Création de rune"
     };
     if (ficheAttributeAsBool(forgesort, 'option_pm', true)) {
-      if (stateCOF.options.regles.val.mana_totale.val) {
+      if (reglesOptionelles.mana_totale.val) {
         switch (rune.rang) {
           case 2:
             options.mana = 3;
@@ -20648,7 +20656,9 @@ var COFantasy = COFantasy || function() {
 
   function attaqueContactOpposee(playerId, attaquant, defenseur, evt, options, callback) {
     var explications = [];
-    options = options || {pasDeDmg:true};
+    options = options || {
+      pasDeDmg: true
+    };
     options.contact = true;
     attaquant.tokName = attaquant.tokName || attaquant.token.get('name');
     defenseur.tokName = defenseur.tokName || defenseur.token.get('name');
@@ -20798,7 +20808,9 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Test d'attaque opposée"
     };
-    var options = {pasDeDmg:true};
+    var options = {
+      pasDeDmg: true
+    };
     if (cmd.length > 3) options.labelArmeAttaquant = cmd[3];
     var playerId = getPlayerIdFromMsg(msg);
     attaqueContactOpposee(playerId, attaquant, defenseur, evt, options,

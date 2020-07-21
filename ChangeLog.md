@@ -9,6 +9,7 @@
 * Résistance à la magie du barbare
 
 ### Autres améliorations
+* Les armes à poudre font maintenant des DM explosifs par défaut.
 * Gestion de l'arme en main gauche.
 * Ajout d'un raccourci pour faire afficher toutes les action d'attaque visibles dur la fiche dans n'importe quelle liste d'actions.
 * Ajout de la possibilité de mettre des options globales dans les listes d'action.
