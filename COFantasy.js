@@ -3694,6 +3694,7 @@ var COFantasy = COFantasy || function() {
         case 'arbalete':
         case 'epieu':
         case 'affute':
+        case 'choc':
         case 'armeDArgent':
         case 'artificiel':
         case 'asDeLaGachette':
@@ -3704,7 +3705,6 @@ var COFantasy = COFantasy || function() {
         case 'explodeMax':
         case 'feinte':
         case "ignoreObstacles":
-        case "m2d20":
         case "mainsDEnergie":
         case "pasDeDmg":
         case "pointsVitaux":
@@ -3716,7 +3716,7 @@ var COFantasy = COFantasy || function() {
         case "sortilege":
         case "strigeSuce":
         case "tirDeBarrage":
-        case "test":
+        case 'test':
         case "traquenard":
         case 'tueurDeGeants':
         case "grenaille":
@@ -3730,6 +3730,16 @@ var COFantasy = COFantasy || function() {
         case 'attaqueRisquee':
         case 'attaqueOptions':
           options[cmd[0]] = true;
+          return;
+        case 'm2d20':
+        case 'avantage':
+          options.avantage = options.avantage || 1;
+          options.avantage++;
+          return;
+        case 'désavantage':
+        case 'desavantage':
+          options.avantage = options.avantage || 1;
+          options.avantage--;
           return;
         case 'tranchant':
         case 'contondant':
@@ -7065,10 +7075,11 @@ var COFantasy = COFantasy || function() {
   }
 
   //attaquant doit avoir un champ name
-  function attackExpression(attaquant, nbDe, dice, crit, weaponStats) {
+  function attackExpression(attaquant, nbDe, dice, crit, plusFort, weaponStats) {
     var de = computeDice(attaquant, {
       nbDe: nbDe,
-      dice: dice
+      dice: dice,
+      plusFort: plusFort
     });
     var attackRollExpr = "[[" + de + "cs>" + crit + "cf1]]";
     var attSkillDiv = weaponStats.attSkillDiv;
@@ -7313,12 +7324,20 @@ var COFantasy = COFantasy || function() {
     }
     if (options.avecd12) dice = 12;
     var nbDe = 1;
-    if (options.m2d20) nbDe = 2;
+    var plusFort = true;
+    if (options.avantage !== undefined) {
+      if (options.avantage > 0) nbDe = options.avantage;
+      else {
+        nbDe = 2 - options.avantage; //désavantage
+        plusFort = false;
+      }
+    }
     // toEvaluateAttack inlines
     // 0: attack roll
     // 1: attack skill expression
     // 2: dé de poudre
-    var toEvaluateAttack = attackExpression(attaquant, nbDe, dice, crit, weaponStats);
+    var toEvaluateAttack = 
+      attackExpression(attaquant, nbDe, dice, crit, plusFort, weaponStats);
     if (options.poudre) toEvaluateAttack += " [[1d20]]";
     try {
       sendChat(attackerName, toEvaluateAttack, function(resAttack) {
@@ -20698,7 +20717,7 @@ var COFantasy = COFantasy || function() {
       dice = 12;
       explications.push("Attaquant immobilisé => D12 au lieu de D20 en Attaque");
     }
-    var toEvaluateAttack = attackExpression(attaquant, 1, dice, critAttaquant, armeAttaquant);
+    var toEvaluateAttack = attackExpression(attaquant, 1, dice, critAttaquant, true, armeAttaquant);
     sendChat('', toEvaluateAttack, function(resAttack) {
       var rollsAttack = options.rollsAttack || resAttack[0];
       var afterEvaluateAttack = rollsAttack.content.split(' ');
@@ -20732,7 +20751,7 @@ var COFantasy = COFantasy || function() {
         dice = 12;
         explications.push("Défenseur immobilisé => D12 au lieu de D20 en Attaque");
       }
-      toEvaluateAttack = attackExpression(defenseur, 1, dice, critDefenseur, armeDefenseur);
+      toEvaluateAttack = attackExpression(defenseur, 1, dice, critDefenseur, true, armeDefenseur);
       sendChat('', toEvaluateAttack, function(resAttack) {
         rollsAttack = options.rollsAttack || resAttack[0];
         afterEvaluateAttack = rollsAttack.content.split(' ');
