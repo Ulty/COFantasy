@@ -203,7 +203,7 @@ var COFantasy = COFantasy || function() {
         },
       }
     },
-    macros_à_jour: {
+    macros_a_jour: {
       explications: "Met automatiquement les macros à jour",
       type: 'bool',
       val: true
@@ -385,7 +385,7 @@ var COFantasy = COFantasy || function() {
     if (stateCOF.options === undefined) stateCOF.options = {};
     copyOptions(stateCOF.options, defaultOptions);
     reglesOptionelles = stateCOF.options.regles.val;
-    if (stateCOF.options.macros_à_jour.val) {
+    if (stateCOF.options.macros_a_jour.val) {
       var macros = findObjs({
         _type: 'macro'
       });
@@ -3514,7 +3514,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         return res;
-      case "deAttaque":
+      case 'deAttaque':
         var valeurDeAttaque = parseInt(args[1]);
         if (isNaN(valeurDeAttaque)) {
           error("La condition de dé d'attaque doit être un nombre", args);
@@ -3585,7 +3585,7 @@ var COFantasy = COFantasy || function() {
       error("Le premier argument de !cof-attack n'est pas un token valide" + msg.content, args[1]);
       return;
     }
-    var targetToken = getObj("graphic", args[2]);
+    var targetToken = getObj('graphic', args[2]);
     if (targetToken === undefined) {
       error("le second argument de !cof-attack doit être un token" + msg.content, args[2]);
       return;
@@ -3614,7 +3614,7 @@ var COFantasy = COFantasy || function() {
       if (attaqueArray.length > 5) {
         weaponStats.divers = attaqueArray[5];
       } else {
-        weaponStats.divers = "";
+        weaponStats.divers = '';
       }
     } else {
       //On trouve l'attaque correspondant au label
@@ -3648,13 +3648,13 @@ var COFantasy = COFantasy || function() {
       sortilege: weaponStats.sortilege
     };
     switch (weaponStats.typeDegats) {
-      case "feu":
-      case "froid":
-      case "acide":
-      case "electrique":
-      case "sonique":
-      case "poison":
-      case "maladie":
+      case 'feu':
+      case 'froid':
+      case 'acide':
+      case 'electrique':
+      case 'sonique':
+      case 'poison':
+      case 'maladie':
         options.type = weaponStats.typeDegats;
         break;
       case 'tranchant':
@@ -3678,33 +3678,33 @@ var COFantasy = COFantasy || function() {
       });
       if (cmd.length === 0) cmd = [arg];
       switch (cmd[0]) {
-        case "pressionMortelle":
-        case "ignoreMoitieRD":
-        case "tempDmg":
-        case "vampirise":
-        case "enflamme":
-        case "malediction":
-        case "pietine":
-        case "maxDmg":
-        case "ouvertureMortelle":
-        case "seulementVivant":
+        case 'pressionMortelle':
+        case 'ignoreMoitieRD':
+        case 'tempDmg':
+        case 'vampirise':
+        case 'enflamme':
+        case 'malediction':
+        case 'pietine':
+        case 'maxDmg':
+        case 'ouvertureMortelle':
+        case 'seulementVivant':
           scope[cmd[0]] = true;
           return;
         case 'arc':
         case 'arbalete':
         case 'epieu':
-        case "affute":
-        case "armeDArgent":
-        case "artificiel":
-        case "asDeLaGachette":
-        case "attaqueMentale":
-        case "auto":
-        case "avecd12":
-        case "demiAuto":
-        case "explodeMax":
-        case "feinte":
+        case 'affute':
+        case 'choc':
+        case 'armeDArgent':
+        case 'artificiel':
+        case 'asDeLaGachette':
+        case 'attaqueMentale':
+        case 'auto':
+        case 'avecd12':
+        case 'demiAuto':
+        case 'explodeMax':
+        case 'feinte':
         case "ignoreObstacles":
-        case "m2d20":
         case "mainsDEnergie":
         case "pasDeDmg":
         case "pointsVitaux":
@@ -3716,13 +3716,13 @@ var COFantasy = COFantasy || function() {
         case "sortilege":
         case "strigeSuce":
         case "tirDeBarrage":
-        case "test":
+        case 'test':
         case "traquenard":
-        case "tueurDeGeants":
+        case 'tueurDeGeants':
         case "grenaille":
         case "attaqueArmeeConjuree":
         case "difficultePVmax":
-        case "lamesJumelles":
+        case 'lamesJumelles':
         case 'riposte':
         case 'secret':
         case 'saufAllies':
@@ -3730,6 +3730,16 @@ var COFantasy = COFantasy || function() {
         case 'attaqueRisquee':
         case 'attaqueOptions':
           options[cmd[0]] = true;
+          return;
+        case 'm2d20':
+        case 'avantage':
+          options.avantage = options.avantage || 1;
+          options.avantage++;
+          return;
+        case 'désavantage':
+        case 'desavantage':
+          options.avantage = options.avantage || 1;
+          options.avantage--;
           return;
         case 'tranchant':
         case 'contondant':
@@ -3830,17 +3840,17 @@ var COFantasy = COFantasy || function() {
           }
           options.portee = portee;
           return;
-        case "imparable": //deprecated
+        case 'imparable': //deprecated
           options.m2d20 = true;
           return;
-        case "tirDouble":
+        case 'tirDouble':
           if (cmd.length > 1)
             options.tirDouble = {
               label: cmd[1]
             };
           else options.tirDouble = options.tirDouble || true;
           return;
-        case "ignoreRD":
+        case 'ignoreRD':
           if (cmd.length < 2) {
             scope.ignoreTouteRD = true;
             return;
@@ -3852,7 +3862,7 @@ var COFantasy = COFantasy || function() {
             scope.ignoreTouteRD = true;
           }
           return;
-        case "magique":
+        case 'magique':
           var niveauMagie = 1;
           if (cmd.length > 1) {
             niveauMagie = parseInt(cmd[1]);
@@ -3863,7 +3873,7 @@ var COFantasy = COFantasy || function() {
           }
           options.magique = niveauMagie;
           return;
-        case "si":
+        case 'si':
           options.conditionAttaquant = parseCondition(cmd.slice(1));
           return;
         case 'tempsRecharge':
@@ -3885,7 +3895,7 @@ var COFantasy = COFantasy || function() {
             duree: tr
           };
           return;
-        case "plus":
+        case 'plus':
           if (cmd.length < 2) {
             error("Il manque un argument à l'option --plus de !cof-attack", cmd);
             return;
@@ -3897,7 +3907,7 @@ var COFantasy = COFantasy || function() {
             type: scope.type
           });
           break;
-        case "effet":
+        case 'effet':
           if (cmd.length < 2) {
             error("Il manque un argument à l'option --effet de !cof-attack", cmd);
             return;
@@ -3950,8 +3960,8 @@ var COFantasy = COFantasy || function() {
           scope.effets[0].valeur = cmd[1];
           if (cmd.length > 2) scope.effets[0].valeurMax = cmd[2];
           return;
-        case "etatSi":
-        case "etat":
+        case 'etatSi':
+        case 'etat':
           if (cmd.length < 3 && cmd[0] == 'etatSi') {
             error("Il manque un argument à l'option --etatSi de !cof-attack", cmd);
             return;
@@ -3992,7 +4002,7 @@ var COFantasy = COFantasy || function() {
           }
           scope.etats.push(lastEtat);
           return;
-        case "psi": //deprecated
+        case 'psi': //deprecated
           var psil = 0;
           if (scope.adiitionalDmg) psil = scope.additionalDmg.length;
           if (psil === 0) {
@@ -4006,7 +4016,7 @@ var COFantasy = COFantasy || function() {
             psiDmg.conditions.push(psiCond);
           }
           return;
-        case "peur":
+        case 'peur':
           if (cmd.length < 3) {
             error("Il manque un argument à l'option --peur de !cof-attack", cmd);
             return;
@@ -4022,14 +4032,14 @@ var COFantasy = COFantasy || function() {
             error("Le deuxième argument de --peur doit être un nombre positif (la durée)", cmd);
           }
           return;
-        case "feu":
-        case "froid":
-        case "acide":
-        case "electrique":
-        case "sonique":
-        case "poison":
-        case "maladie":
-        case "argent":
+        case 'feu':
+        case 'froid':
+        case 'acide':
+        case 'electrique':
+        case 'sonique':
+        case 'poison':
+        case 'maladie':
+        case 'argent':
           var l = 0;
           if (scope.additionalDmg) l = scope.additionalDmg.length;
           if (l > 0) {
@@ -4038,12 +4048,12 @@ var COFantasy = COFantasy || function() {
             scope.type = cmd[0];
           }
           return;
-        case "nature":
-        case "naturel":
+        case 'nature':
+        case 'naturel':
           scope.nature = true;
           return;
-        case "sournoise":
-        case "de6Plus": //deprecated
+        case 'sournoise':
+        case 'de6Plus': //deprecated
           if (cmd.length < 2) {
             error("Il manque un argument à l'option --sournoise de !cof-attack", cmd);
             return;
@@ -4055,7 +4065,7 @@ var COFantasy = COFantasy || function() {
             return;
           }
           break;
-        case "disparition":
+        case 'disparition':
           if (cmd.length < 2) {
             error("Il manque un argument à l'option --disparition de !cof-attack", cmd);
             return;
@@ -4068,10 +4078,10 @@ var COFantasy = COFantasy || function() {
           if (options.disparition === undefined) options.disparition = 0;
           options.disparition += disparition;
           return;
-        case "fx":
+        case 'fx':
           getFx(cmd, 'fx', scope, '!cof-attack');
           return;
-        case "targetFx":
+        case 'targetFx':
           getFx(cmd, 'targetFx', scope, '!cof-attack');
           return;
         case 'psave':
@@ -4357,7 +4367,7 @@ var COFantasy = COFantasy || function() {
           }
           scope.critCoef++; //Par défaut, incrémente de 1
           return;
-        case "if":
+        case 'if':
           var ifCond = parseCondition(cmd.slice(1));
           if (ifCond === undefined) return;
           var ifThen = {
@@ -7065,10 +7075,11 @@ var COFantasy = COFantasy || function() {
   }
 
   //attaquant doit avoir un champ name
-  function attackExpression(attaquant, nbDe, dice, crit, weaponStats) {
+  function attackExpression(attaquant, nbDe, dice, crit, plusFort, weaponStats) {
     var de = computeDice(attaquant, {
       nbDe: nbDe,
-      dice: dice
+      dice: dice,
+      plusFort: plusFort
     });
     var attackRollExpr = "[[" + de + "cs>" + crit + "cf1]]";
     var attSkillDiv = weaponStats.attSkillDiv;
@@ -7313,12 +7324,20 @@ var COFantasy = COFantasy || function() {
     }
     if (options.avecd12) dice = 12;
     var nbDe = 1;
-    if (options.m2d20) nbDe = 2;
+    var plusFort = true;
+    if (options.avantage !== undefined) {
+      if (options.avantage > 0) nbDe = options.avantage;
+      else {
+        nbDe = 2 - options.avantage; //désavantage
+        plusFort = false;
+      }
+    }
     // toEvaluateAttack inlines
     // 0: attack roll
     // 1: attack skill expression
     // 2: dé de poudre
-    var toEvaluateAttack = attackExpression(attaquant, nbDe, dice, crit, weaponStats);
+    var toEvaluateAttack = 
+      attackExpression(attaquant, nbDe, dice, crit, plusFort, weaponStats);
     if (options.poudre) toEvaluateAttack += " [[1d20]]";
     try {
       sendChat(attackerName, toEvaluateAttack, function(resAttack) {
@@ -20698,7 +20717,7 @@ var COFantasy = COFantasy || function() {
       dice = 12;
       explications.push("Attaquant immobilisé => D12 au lieu de D20 en Attaque");
     }
-    var toEvaluateAttack = attackExpression(attaquant, 1, dice, critAttaquant, armeAttaquant);
+    var toEvaluateAttack = attackExpression(attaquant, 1, dice, critAttaquant, true, armeAttaquant);
     sendChat('', toEvaluateAttack, function(resAttack) {
       var rollsAttack = options.rollsAttack || resAttack[0];
       var afterEvaluateAttack = rollsAttack.content.split(' ');
@@ -20732,7 +20751,7 @@ var COFantasy = COFantasy || function() {
         dice = 12;
         explications.push("Défenseur immobilisé => D12 au lieu de D20 en Attaque");
       }
-      toEvaluateAttack = attackExpression(defenseur, 1, dice, critDefenseur, armeDefenseur);
+      toEvaluateAttack = attackExpression(defenseur, 1, dice, critDefenseur, true, armeDefenseur);
       sendChat('', toEvaluateAttack, function(resAttack) {
         rollsAttack = options.rollsAttack || resAttack[0];
         afterEvaluateAttack = rollsAttack.content.split(' ');
