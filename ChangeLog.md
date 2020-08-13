@@ -9,6 +9,7 @@
 * Résistance à la magie du barbare
 
 ### Autres améliorations
+* Ajout de l'option d'attaque --ifSaveFails
 * Ajout des options d'avantage et désavantage cumulatives.
 * Les armes à poudre font maintenant des DM explosifs par défaut.
 * Gestion de l'arme en main gauche.
