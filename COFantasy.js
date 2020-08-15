@@ -269,7 +269,7 @@ var COFantasy = COFantasy || function() {
   }, ];
 
   var stateCOF = state.COFantasy;
-  var reglesOptionelles = stateCOF.options.regles.val;
+  var reglesOptionelles; // = stateCOF.options.regles.val;
 
   // List of states:
   var cof_states = {
@@ -11552,6 +11552,27 @@ var COFantasy = COFantasy || function() {
           options.valeur = cmd[1];
           if (cmd.length > 2) options.valeurMax = cmd[2];
           return;
+        case 'accumuleDuree':
+          if (cmd.length < 2) {
+            error("Il manque la valeur en argument de l'option --accumuleDuree", opts);
+            return;
+          }
+          var accumuleDuree = parseInt(cmd[1]);
+          if (isNaN(accumuleDuree) || accumuleDuree < 1) {
+            error("On ne peut accumuler qu'on nombre strictement positif d'effets", opts);
+            return;
+          }
+          options.accumuleDuree = accumuleDuree;
+          return;
+        case "nonVivant":
+          options.nonVivant = true;
+          if (cmd.length > 1) {
+            var nonVivantPerso = persoOfId(cmd[1], cmd[1], pageId);
+            if (nonVivantPerso) {
+              options.nonVivant = charAttributeAsBool(nonVivantPerso, 'nonVivant');
+            }
+          }
+          return;
         case "fx":
           getFx(cmd, 'fx', options);
           return;
@@ -11564,15 +11585,6 @@ var COFantasy = COFantasy || function() {
             return;
           }
           options.classeEffet = cmd[1];
-          return;
-        case "nonVivant":
-          options.nonVivant = true;
-          if (cmd.length > 1) {
-            var nonVivantPerso = persoOfId(cmd[1], cmd[1], pageId);
-            if (nonVivantPerso) {
-              options.nonVivant = charAttributeAsBool(nonVivantPerso, 'nonVivant');
-            }
-          }
           return;
         case 'message':
           if (cmd.length < 2) {
@@ -15468,6 +15480,17 @@ var COFantasy = COFantasy || function() {
             setTokenAttr(perso, effetC + 'Valeur', options.valeur, evt, {
               maxval: options.valeurMax
             });
+          }
+          if (options.accumuleDuree) {
+            if (options.accumuleDuree > 1 && charAttributeAsBool(perso, effetC)) {
+              var accumuleAttr = tokenAttribute(perso, effetC + 'DureeAccumulee');
+              if (accumuleAttr.length === 0) {
+                setTokenAttr(perso, effetC + 'DureeAccumulee', options.accumuleDuree, evt);
+              } else {
+                accumuleAttr = accumuleAttr[0];
+                var dureeAccumulee = accumuleAttr.get('current').split(',');
+              }
+            }
           }
           switch (effetC) { //effets supplémentaires associés
             case 'aspectDuDemon':
