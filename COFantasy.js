@@ -3930,6 +3930,22 @@ var COFantasy = COFantasy || function() {
           scope.effets[0].valeur = cmd[1];
           if (cmd.length > 2) scope.effets[0].valeurMax = cmd[2];
           return;
+        case 'accumuleDuree':
+          if (cmd.length < 2) {
+            error("Il manque la valeur en argument de l'option --accumuleDuree", cmd);
+            return;
+          }
+          var accumuleDuree = parseInt(cmd[1]);
+          if (isNaN(accumuleDuree) || accumuleDuree < 1) {
+            error("On ne peut accumuler qu'on nombre strictement positif d'effets", cmd);
+            return;
+          }
+          if (scope.effets === undefined || scope.effets.length === 0) {
+            error("Il faut un effet avant l'option --accumuleValeur", optArgs);
+            return;
+          }
+          scope.effets[0].accumuleDuree = accumuleDuree;
+          return;
         case 'etatSi':
         case 'etat':
           if (cmd.length < 3 && cmd[0] == 'etatSi') {
@@ -4969,7 +4985,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function getValeurOfEffet(perso, effet, def, attrDef) {
-    var attrsVal = tokenAttribute(perso, effet + "Valeur");
+    var attrsVal = tokenAttribute(perso, effet + 'Valeur');
     if (attrsVal.length === 0) {
       if (attrDef) return charAttributeAsInt(perso, attrDef, def);
       return def;
@@ -8656,6 +8672,26 @@ var COFantasy = COFantasy || function() {
                   return;
                 }
                 if (ef.duree) {
+                  if (ef.accumuleDuree) {
+                    if (ef.accumuleDuree > 1 && charAttributeAsBool(target, ef.effet)) {
+                      var accumuleAttr = tokenAttribute(target, ef.effet + 'DureeAccumulee');
+                      if (accumuleAttr.length === 0) {
+                        setTokenAttr(target, ef.effet + 'DureeAccumulee', ef.duree, evt);
+                      } else {
+                        accumuleAttr = accumuleAttr[0];
+                        var dureeAccumulee = accumuleAttr.get('current') + '';
+                        if (dureeAccumulee.split(',').length < ef.accumuleDuree - 1) {
+                          evt.attributes = evt.attributes || [];
+                          evt.attributes.push({
+                            attribute: accumuleAttr,
+                            current: dureeAccumulee
+                          });
+                          accumuleAttr.set('current', ef.duree + ',' + dureeAccumulee);
+                        }
+                      }
+                      return; //Pas besoin de réappliquer, effet toujours en cours
+                    }
+                  }
                   if (ef.message)
                     target.messages.push(target.tokName + " " + ef.message.activation);
                   setAttrDuree(target, ef.effet, ef.duree, evt);
@@ -8695,14 +8731,14 @@ var COFantasy = COFantasy || function() {
                   setTokenAttr(target, ef.effet, true, evt);
                 }
                 if (ef.valeur !== undefined) {
-                  setTokenAttr(target, ef.effet + "Valeur", ef.valeur, evt, {
+                  setTokenAttr(target, ef.effet + 'Valeur', ef.valeur, evt, {
                     maxval: ef.valeurMax
                   });
                 }
                 if (options.tempeteDeManaIntense)
                   setTokenAttr(target, ef.effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
                 if (ef.saveParTour) {
-                  setTokenAttr(target, ef.effet + "SaveParTour",
+                  setTokenAttr(target, ef.effet + 'SaveParTour',
                     ef.saveParTour.carac, evt, {
                       maxval: ef.saveParTour.seuil
                     });
@@ -8961,7 +8997,7 @@ var COFantasy = COFantasy || function() {
                             }
                           } else setTokenAttr(target, ef.effet, true, evt);
                           if (ef.valeur !== undefined) {
-                            setTokenAttr(target, ef.effet + "Valeur", ef.valeur, evt, {
+                            setTokenAttr(target, ef.effet + 'Valeur', ef.valeur, evt, {
                               maxval: ef.valeurMax
                             });
                           }
@@ -8969,7 +9005,7 @@ var COFantasy = COFantasy || function() {
                             setTokenAttr(target, ef.effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
                           if (ef.saveParTour) {
                             setTokenAttr(target,
-                              ef.effet + "SaveParTour", ef.saveParTour.carac,
+                              ef.effet + 'SaveParTour', ef.saveParTour.carac,
                               evt, {
                                 maxval: ef.saveParTour.seuil
                               });
@@ -15485,10 +15521,18 @@ var COFantasy = COFantasy || function() {
             if (options.accumuleDuree > 1 && charAttributeAsBool(perso, effetC)) {
               var accumuleAttr = tokenAttribute(perso, effetC + 'DureeAccumulee');
               if (accumuleAttr.length === 0) {
-                setTokenAttr(perso, effetC + 'DureeAccumulee', options.accumuleDuree, evt);
+                setTokenAttr(perso, effetC + 'DureeAccumulee', duree, evt);
               } else {
                 accumuleAttr = accumuleAttr[0];
-                var dureeAccumulee = accumuleAttr.get('current').split(',');
+                var dureeAccumulee = accumuleAttr.get('current') + '';
+                if (dureeAccumulee.split(',').length < options.accumuleDuree - 1) {
+                  evt.attributes = evt.attributes || [];
+                  evt.attributes.push({
+                    attribute: accumuleAttr,
+                    current: dureeAccumulee
+                  });
+                  accumuleAttr.set('current', duree + ',' + dureeAccumulee);
+                }
               }
             }
           }
@@ -15561,7 +15605,7 @@ var COFantasy = COFantasy || function() {
           }
           setAttrDuree(perso, effetC, d, evt, whisper + actMsg);
           if (options.saveParTour) {
-            setTokenAttr(perso, effetC + "SaveParTour",
+            setTokenAttr(perso, effetC + 'SaveParTour',
               options.saveParTour.carac, evt, {
                 maxval: options.saveParTour.seuil
               });
@@ -15736,7 +15780,7 @@ var COFantasy = COFantasy || function() {
           setTokenAttr(perso, effet + "Puissant", puissant, evt);
         }
         if (options.valeur !== undefined) {
-          setTokenAttr(perso, effet + "Valeur", options.valeur, evt, {
+          setTokenAttr(perso, effet + 'Valeur', options.valeur, evt, {
             maxval: options.valeurMax
           });
         }
@@ -24380,16 +24424,20 @@ var COFantasy = COFantasy || function() {
     error("Impossible de déterminer l'effet correspondant à " + ef, attr);
   }
 
-
-  //L'argument effet doit être le nom complet, pas la base
-  //evt.deletedAttributes doit être défini
-  function enleverEffetAttribut(charId, effet, attrName, attribut, evt) {
-    var nameWithSave = effet + attribut + attrName.substr(effet.length);
-    findObjs({
+  function attributeExtending(charId, attrName, effetC, extension) {
+    var nameWithExtension = effetC + extension + attrName.substr(effetC.length);
+    return findObjs({
       _type: 'attribute',
       _characterid: charId,
-      name: nameWithSave
-    }).
+      name: nameWithExtension
+    });
+  }
+
+  //L'argument effetC doit être le nom complet, pas la base
+  //evt.deletedAttributes doit être défini
+  function enleverEffetAttribut(charId, effetC, attrName, extension, evt) {
+    var attrSave = attributeExtending(charId, attrName, effetC, extension);
+    attrSave.
     forEach(function(attrS) {
       evt.deletedAttributes.push(attrS);
       attrS.remove();
@@ -24752,6 +24800,7 @@ var COFantasy = COFantasy || function() {
       enleverEffetAttribut(charId, efComplet, attrName, 'Puissant', evt);
       enleverEffetAttribut(charId, efComplet, attrName, 'Valeur', evt);
       enleverEffetAttribut(charId, efComplet, attrName, 'TempeteDeManaIntense', evt);
+      enleverEffetAttribut(charId, efComplet, attrName, 'DureeAccumulee', evt);
     }
     evt.deletedAttributes.push(attr);
     attr.remove();
@@ -25199,15 +25248,48 @@ var COFantasy = COFantasy || function() {
           return;
         }
         var attrName = attr.get('name');
+        var effetC = effetComplet(effet, attrName);
         var v = attr.get('current');
+        var effetActif = true;
         if (v == 'tourFinal') { //L'effet arrive en fin de vie, doit être supprimé
-          var effetFinal = finDEffet(attr, effet, attrName, charId, evt, {
-            pageId: pageId
-          });
-          if (effetFinal && effetFinal.oldTokenId == active.id)
-            active.id = effetFinal.newTokenId;
-          count--;
-        } else { //Effet encore actif
+          //Sauf si on a accumulé plusieurs fois l'effet
+          var accumuleAttr = attributeExtending(charId, attrName, effetC, 'DureeAccumulee');
+          if (accumuleAttr.length > 0) {
+            accumuleAttr = accumuleAttr[0];
+            var dureeAccumulee = accumuleAttr.get('current') + '';
+            var listeDureeAccumulee = dureeAccumulee.split(',');
+            evt.attributes.push({
+              attribute: attr,
+              current: 'tourFinal'
+            });
+            var nDuree = parseInt(listeDureeAccumulee.pop());
+            if (isNaN(nDuree)) {
+              v = 'tourFinal';
+              count--;
+              effetActif = false;
+            } else v = nDuree;
+            attr.set('current', nDuree);
+            if (listeDureeAccumulee.length === 0) {
+              evt.deletedAttributes.push(accumuleAttr);
+              accumuleAttr.remove();
+            } else {
+              evt.attributes.push({
+                attribute: accumuleAttr,
+                current: dureeAccumulee
+              });
+              accumuleAttr.set('current', listeDureeAccumulee.join(','));
+            }
+          } else {
+            var effetFinal = finDEffet(attr, effet, attrName, charId, evt, {
+              pageId: pageId
+            });
+            if (effetFinal && effetFinal.oldTokenId == active.id)
+              active.id = effetFinal.newTokenId;
+            count--;
+            effetActif = false;
+          }
+        }
+        if (effetActif) { //Effet encore actif
           evt.attributes.push({
             attribute: attr,
             current: v
@@ -25343,7 +25425,6 @@ var COFantasy = COFantasy || function() {
               count--;
               return;
             case 'dotGen':
-              var effetC = effetComplet(effet, attrName);
               degatsParTour(charId, pageId, effetC, attrName, {}, '', "", evt, {
                   dotGen: true
                 },

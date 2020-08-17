@@ -9,6 +9,7 @@
 * Résistance à la magie du barbare
 
 ### Autres améliorations
+* Possibilité d'accumuler les durées d'effets.
 * Gestion de --secret pour les !cof-effet
 * Ajout de l'option d'attaque --ifSaveFails
 * Ajout des options d'avantage et désavantage cumulatives.
