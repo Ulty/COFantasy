@@ -23375,6 +23375,39 @@ var COFantasy = COFantasy || function() {
     }, options); //fin getSelected
   }
 
+  //!cof-set-attribute nom valeur [max]
+  function setAttributeInterface(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined) return;
+    if (cmd.length < 3) {
+      error("Pas assez d'arguments pour !cof-set-attribute", cmd);
+      return;
+    }
+    var opt = {};
+    if (cmd.length > 3) {
+      opt.maxval = cmd[3];
+    }
+    getSelected(msg, function(selected, playerId) {
+      if (!playerIsGM(playerId)) {
+        sendChat('COF', "Seul le MJ peut utiliser la commande !cof-set-attributes");
+        return;
+      }
+      if (selected.length === 0) {
+        error('pas de token sélectionné pour !cof-set-attribute');
+        return;
+      }
+      var evt = {
+        type: 'Changement attribut'
+      };
+      if (limiteRessources(options.lanceur, options, 'changementAttribut', 'changementAttribut', evt)) return;
+      iterSelected(selected, function(perso) {
+        setTokenAttr(perso, cmd[1], cmd[2], evt, opt);
+      }); //fin iterSelected
+    }, options);
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -23738,27 +23771,30 @@ var COFantasy = COFantasy || function() {
       case "!cof-liberer-agrippe":
         libererAgrippe(msg);
         return;
-      case "!cof-animer-cadavre":
+      case '!cof-animer-cadavre':
         animerCadavre(msg);
         return;
-      case "!cof-vapeurs-ethyliques":
+      case '!cof-vapeurs-ethyliques':
         vapeursEthyliques(msg);
         return;
-      case "!cof-desaouler":
+      case '!cof-desaouler':
         desaouler(msg);
         return;
-      case "!cof-boire-alcool":
+      case '!cof-boire-alcool':
         boireAlcool(msg);
         return;
-      case "!cof-jouer-son":
+      case '!cof-jouer-son':
         jouerSon(msg);
         return;
-      case "!cof-bouton-echec-total":
+      case '!cof-bouton-echec-total':
         echecTotal(msg);
         return;
       case '!cof-usure-off':
         stateCOF.usureOff = true;
         sendChat('COF', "/w GM Pas d'usure de la DEF sur ce combat");
+        return;
+      case '!cof-set-attribute':
+        setAttributeInterface(msg);
         return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);
