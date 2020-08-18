@@ -44,9 +44,6 @@ var COFantasy = COFantasy || function() {
   var eventHistory = [];
   var updateNextInitSet = new Set();
 
-
-
-
   var flashyInitMarkerScale = 1.6;
 
   var defaultOptions = {
@@ -1314,11 +1311,19 @@ var COFantasy = COFantasy || function() {
       attrEnveloppe.forEach(function(a) {
         var cible = persoOfIdName(a.get('current'), pageId);
         if (cible) {
+          var envDM = a.get('max');
+          if (envDM.startsWith('etreinte')) {
+            //On a une étreinte, on enlève donc l'état immobilisé
+            setState(cible, 'immobilise', false, evt);
+          }
           evt.deletedAttributes = evt.deletedAttributes || [];
           var attrCible = tokenAttribute(cible, 'enveloppePar');
           attrCible.forEach(function(a) {
             var cube = persoOfIdName(a.get('current', pageId));
-            if (cube.token.id == personnage.id) {
+            if (cube === undefined) {
+              evt.deletedAttributes.push(a);
+              a.remove();
+            } else if (cube.token.id == personnage.token.id) {
               sendChar(cible.charId, 'se libère de ' + cube.tokName);
               toFront(cible.token);
               evt.deletedAttributes.push(a);
@@ -4449,6 +4454,21 @@ var COFantasy = COFantasy || function() {
           if (scope.enveloppe.expression === undefined) {
             error("Il n'est pas encore possible d'utiliser l'option --enveloppe sans expression si le label de l'attaque n'est pas défini", cmd);
             scope.enveloppe = undefined;
+          }
+          return;
+        case 'etreinte':
+          scope.enveloppe = {
+            difficulte: 15,
+            type: 'etreinte',
+            expression: '1d6',
+          };
+          if (cmd.length > 1) {
+            scope.enveloppe.difficulte = parseInt(cmd[1]);
+            if (isNaN(scope.enveloppe.difficulte))
+              scope.enveloppe.difficulte = 15;
+          }
+          if (cmd.length > 2) {
+            scope.enveloppe.expression = cmd[2];
           }
           return;
         case 'imgAttack':
@@ -8304,7 +8324,9 @@ var COFantasy = COFantasy || function() {
             '!cof-enveloppement ' + attaquant.token.id + ' ' + target.token.id + ' ' +
             options.enveloppe.difficulte + ' ' +
             options.enveloppe.type + ' ' + options.enveloppe.expression;
-          ligneEnveloppe += boutonSimple(commandeEnvelopper, '', 'envelopper');
+          var verbeEnv = 'envelopper';
+          if (options.enveloppe.type == 'etreinte') verbeEnv = 'étreindre';
+          ligneEnveloppe += boutonSimple(commandeEnvelopper, '', verbeEnv);
           ligneEnveloppe += target.tokName;
           target.messages.push(ligneEnveloppe);
         }
@@ -8673,7 +8695,7 @@ var COFantasy = COFantasy || function() {
                 }
                 if (ef.duree) {
                   if (ef.accumuleDuree) {
-                    if (ef.accumuleDuree > 1 && charAttributeAsBool(target, ef.effet)) {
+                    if (ef.accumuleDuree > 1 && attributeAsBool(target, ef.effet)) {
                       var accumuleAttr = tokenAttribute(target, ef.effet + 'DureeAccumulee');
                       if (accumuleAttr.length === 0) {
                         setTokenAttr(target, ef.effet + 'DureeAccumulee', ef.duree, evt);
@@ -13474,12 +13496,17 @@ var COFantasy = COFantasy || function() {
         actionsAAfficher = true;
         command = '!cof-attack ' + perso.token.id + ' ' + cible.token.id + ' ' + enveloppeDM.substring(6) + ' --auto --acide --effet paralyseTemp [[2d6]] --save CON 15';
         ligne += bouton(command, "Infliger DMs à " + cible.tokName, perso, false) + '<br />';
+      } else if (enveloppeDM.startsWith('etreinte ')) {
+        actionsAAfficher = true;
+        enveloppeDM = enveloppeDM.substring(9);
+        command = '!cof-attack ' + perso.token.id + ' ' + cible.token.id + ' --dm ' + enveloppeDM + ' --auto --nom étreinte ';
+        ligne += bouton(command, "Infliger DMs à " + cible.tokName, perso, false) + '<br />';
       } //else pas reconnu
     });
     if (attributeAsBool(perso, 'enveloppePar')) {
       actionsAAfficher = true;
       command = '!cof-echapper-enveloppement --target ' + perso.token.id;
-      ligne += bouton(command, 'Sortir de la créature', perso, false) + '<br />';
+      ligne += bouton(command, 'Se libérer', perso, false) + '<br />';
     } else {
       if (attributeAsBool(perso, 'estAgrippePar')) {
         actionsAAfficher = true;
@@ -14091,7 +14118,9 @@ var COFantasy = COFantasy || function() {
         if (attrEnveloppe.length > 0) {
           var cube = persoOfIdName(attrEnveloppe[0].get('current'));
           if (cube) {
-            addLineToFramedDisplay(display, "est enveloppé dans " + cube.tokName);
+            var actE = "est enveloppé dans ";
+            if ((attrEnveloppe[0].get('max') + '').startsWith('etreinte')) actE = "est prisonnier de l'étreinte de ";
+            addLineToFramedDisplay(display, actE + cube.tokName);
           }
         }
         var pageId = perso.token.get('pageid');
@@ -15518,7 +15547,7 @@ var COFantasy = COFantasy || function() {
             });
           }
           if (options.accumuleDuree) {
-            if (options.accumuleDuree > 1 && charAttributeAsBool(perso, effetC)) {
+            if (options.accumuleDuree > 1 && attributeAsBool(perso, effetC)) {
               var accumuleAttr = tokenAttribute(perso, effetC + 'DureeAccumulee');
               if (accumuleAttr.length === 0) {
                 setTokenAttr(perso, effetC + 'DureeAccumulee', duree, evt);
@@ -22817,7 +22846,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //!cof-enveloppement cubeId targetId Difficulte Attaque
-  //Attaque peut être soit label l, soit ability a
+  //Attaque peut être soit label l, soit ability a, soit etreinte expr
   function enveloppement(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
@@ -22850,9 +22879,11 @@ var COFantasy = COFantasy || function() {
       difficulte = 15;
     }
     var exprDM;
+    var etreinte;
     switch (cmd[4]) {
       case 'label':
       case 'ability':
+      case 'etreinte':
         exprDM = cmd[4] + ' ' + cmd[5];
         break;
       default:
@@ -22862,21 +22893,29 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: 'Enveloppement'
     };
+    if (cmd[4] == 'etreinte') {
+      evt.type = 'Étreinte';
+      etreinte = true;
+    }
     //Choix de la caractéristique pour résister : FOR ou DEX
     var caracRes = meilleureCarac('FOR', 'DEX', cible, 10 + modCarac(cube, 'FORCE'));
-    var titre = "Enveloppement";
+    var titre = 'Enveloppement';
+    if (etreinte) titre = 'Étreinte';
     var display = startFramedDisplay(options.playerId, titre, cube, {
       perso2: cible
     });
     var explications = [];
     testOppose(cube, 'FOR', {}, cible, caracRes, {}, explications, evt, function(res, crit) {
+      var act = " a absorbé ";
       switch (res) {
         case 1:
-          explications.push(cube.token.get('name') + " a absorbé " + cible.token.get('name'));
+          if (etreinte) act = " s'est enroulé autour de ";
+          explications.push(cube.token.get('name') + act + cible.token.get('name'));
           var cubeId = cube.token.id + ' ' + cube.token.get('name');
-
+          var maxval = difficulte;
+          if (etreinte) maxval = 'etreinte ' + difficulte;
           setTokenAttr(cible, 'enveloppePar', cubeId, evt, {
-            maxval: difficulte
+            maxval: maxval
           });
           var cibleId = cible.token.id + ' ' + cible.token.get('name');
           cible.token.set('left', cube.token.get('left'));
@@ -22885,16 +22924,23 @@ var COFantasy = COFantasy || function() {
           setTokenAttr(cube, 'enveloppe', cibleId, evt, {
             maxval: exprDM
           });
+          if (etreinte) setState(cible, 'immobilise', true, evt);
           break;
         case 2:
           if (caracRes == 'FOR') {
-            explications.push(cible.token.get('name') + " résiste et ne se laisse pas absorber");
+            if (etreinte) act = 'étreindre';
+            else act = 'absorber';
+            explications.push(cible.token.get('name') + " résiste et ne se laisse pas " + act);
           } else {
-            explications.push(cible.token.get('name') + " évite l'absorption");
+            if (etreinte) act = "l'étreinte";
+            else act = "l'absorption";
+            explications.push(cible.token.get('name') + " évite " + act);
           }
           break;
         default: //match null, la cible s'en sort
-          explications.push(cible.token.get('name') + " échappe de justesse à l'enveloppement");
+          if (etreinte) act = "l'étreinte";
+          else act = "l'enveloppement";
+          explications.push(cible.token.get('name') + " échappe de justesse à " + act);
       }
       explications.forEach(function(e) {
         addLineToFramedDisplay(display, e);
@@ -22930,12 +22976,20 @@ var COFantasy = COFantasy || function() {
           attr.remove();
           return;
         }
-        var difficulte = parseInt(attr.get('max'));
+        var etreinte = false;
+        var maxAttr = attr.get('max') + '';
+        if (maxAttr.startsWith('etreinte ')) {
+          etreinte = true;
+          evt.type = "Tentative de libération d'étreinte";
+          maxAttr = maxAttr.substring(9);
+        }
+        var difficulte = parseInt(maxAttr);
         if (isNaN(difficulte)) {
           error("Difficulté mal formée", attr.get('max'));
           difficulte = 15;
         }
         var titre = "Tentative de sortir de " + cube.tokName;
+        if (etreinte) titre = "Tentative de se libérer de l'etreinte de " + cube.tokName;
         var display = startFramedDisplay(playerId, titre, perso, {
           chuchote: options.secret
         });
@@ -22950,6 +23004,7 @@ var COFantasy = COFantasy || function() {
               evt.deletedAttributes = evt.deletedAttributes || [];
               evt.deletedAttributes.push(attr);
               attr.remove();
+              if (etreinte) setState(perso, 'immobilise', false, evt);
               attr = tokenAttribute(cube, 'enveloppe');
               attr.forEach(function(a) {
                 var ca = persoOfIdName(a.get('current'));
