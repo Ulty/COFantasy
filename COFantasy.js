@@ -17544,7 +17544,7 @@ var COFantasy = COFantasy || function() {
     if (options.messages.length < 1) {
       options.messages.push("lance un sort");
     }
-    getSelected(msg, function(selected) {
+    getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         if (options.lanceur) {
           selected = [{
@@ -17560,6 +17560,25 @@ var COFantasy = COFantasy || function() {
       };
       if (options.son) playSound(options.son);
       iterSelected(selected, function(lanceur) {
+        if (options.tempeteDeMana) {
+          if (options.tempeteDeMana.cout === 0) {
+            //On demande de préciser les options
+            var optMana = {
+              mana: options.mana,
+              dm: false,
+              soins: false,
+              duree: true,
+              portee: true,
+              rang: options.rang,
+            };
+            setTempeteDeMana(playerId, lanceur, msg.content, optMana);
+            return;
+          } else {
+            if (options.rang && options.tempeteDeMana.cout > options.rang) {
+              sendChar(lanceur.charId, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
+            }
+          }
+        }
         if (limiteRessources(lanceur, options, undefined, "lancer un sort", evt)) return;
         options.messages.forEach(function(m) {
           whisperChar(lanceur.charId, m);
