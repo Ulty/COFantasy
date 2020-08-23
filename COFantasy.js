@@ -9052,8 +9052,9 @@ var COFantasy = COFantasy || function() {
               if (target.pietine && estAussiGrandQue(attaquant, target)) {
                 testOppose(target, 'FOR', {}, attaquant, 'FOR', {}, target.messages, evt, function(resultat) {
                   if (resultat == 2) {
-                    target.messages.push(target.tokName + " est piétiné par " + attackerTokName);
+                    target.messages.push(target.tokName + " est piétiné par " + attackerTokName + ", dommages doublés");
                     setState(target, 'renverse', true, evt);
+                    options.dmgCoef = (options.dmgCoef || 1) + 1;
                     target.touche++;
                   } else {
                     if (resultat === 0) diminueMalediction(attaquant, evt);
