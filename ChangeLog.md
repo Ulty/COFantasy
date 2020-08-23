@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.08
 ### Capacités
+* Support pour l'étreinte des serpents.
 * Support pour la capacité forêt vivante du druide.
 * Ajout de la capacité botte mortelle du barde.
 * Possibilité de spécifier le bonus apporté par une feinte.
@@ -9,6 +10,9 @@
 * Résistance à la magie du barbare
 
 ### Autres améliorations
+* Ajout de possibilité de tempête de mana pour !cof-lancer-sort
+* Ajout de !cof-set-attribute
+* Possibilité d'accumuler les durées d'effets.
 * Gestion de --secret pour les !cof-effet
 * Ajout de l'option d'attaque --ifSaveFails
 * Ajout des options d'avantage et désavantage cumulatives.
