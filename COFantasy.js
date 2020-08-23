@@ -9054,7 +9054,7 @@ var COFantasy = COFantasy || function() {
                   if (resultat == 2) {
                     target.messages.push(target.tokName + " est piétiné par " + attackerTokName + ", dommages doublés");
                     setState(target, 'renverse', true, evt);
-                    target.dmgCoef = (target.dmgCoef || 1) + 1;
+                    options.dmgCoef = (options.dmgCoef || 1) + 1;
                     target.touche++;
                   } else {
                     if (resultat === 0) diminueMalediction(attaquant, evt);
