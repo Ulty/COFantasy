@@ -24,6 +24,42 @@
 /* globals Roll20AM */
 
 // Needs the Vector Math scripty
+// ------------------ generateRowID code from the Aaron ---------------------
+var generateUUID = (function() {
+    "use strict";
+    var a = 0,
+      b = [];
+    return function() {
+      var c = (new Date()).getTime() + 0,
+        d = c === a;
+      a = c;
+      for (var e = new Array(8), f = 7; 0 <= f; f--) {
+        e[f] = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".charAt(c % 64);
+        c = Math.floor(c / 64);
+      }
+      c = e.join("");
+      if (d) {
+        for (f = 11; 0 <= f && 63 === b[f]; f--) {
+          b[f] = 0;
+        }
+        b[f]++;
+      } else {
+        for (f = 0; 12 > f; f++) {
+          b[f] = Math.floor(64 * Math.random());
+        }
+      }
+      for (f = 0; 12 > f; f++) {
+        c += "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".charAt(b[f]);
+      }
+      return c;
+    };
+  }()),
+
+  generateRowID = function() {
+    "use strict";
+    return generateUUID().replace(/_/g, "Z");
+  };
+//--------------- end generateRowID ----------------------------------------
 
 var COF_loaded = false;
 
@@ -746,7 +782,7 @@ var COFantasy = COFantasy || function() {
   }
 
   var attackNameRegExp = new RegExp(/^(repeating_armes_.*_)armenom$/);
-  var attackNamePNJRegExp = new RegExp(/^(repeating_pnj.*_)armenom$/);
+  var attackNamePNJRegExp = new RegExp(/^(repeating_pnjatk_.*_)armenom$/);
 
   //Met perso.pnj à true si on a un PNJ
   function getAttack(attackLabel, perso) {
@@ -14289,6 +14325,7 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //retourne l'id du suivant si le token actuel était en tête de liste
   function removeFromTurnTracker(perso, evt) {
     removeDernieresCiblesAttaquees(perso, evt);
     var tokenId = perso.token.id;
@@ -14297,11 +14334,29 @@ var COFantasy = COFantasy || function() {
       return;
     }
     evt.turnorder = evt.turnorder || turnOrder;
-    turnOrder = JSON.parse(turnOrder).filter(
-      function(elt) {
-        return (elt.id != tokenId);
-      });
+    turnOrder = JSON.parse(turnOrder);
+    if (turnOrder.length === 0) return;
+    var res;
+    if (turnOrder[0].id == tokenId) {
+      if (turnOrder.length > 1) {
+        res = {
+          nextId: turnOrder[1].id
+        };
+        turnOrder.shift();
+      } else {
+        res = {
+          nextId: false
+        };
+        turnOrder = [];
+      }
+    } else {
+      turnOrder = turnOrder.filter(
+        function(elt) {
+          return (elt.id != tokenId);
+        });
+    }
     Campaign().set('turnorder', JSON.stringify(turnOrder));
+    return res;
   }
 
   function replaceInTurnTracker(tidOld, tidNew, evt) {
@@ -20681,69 +20736,50 @@ var COFantasy = COFantasy || function() {
     if (!stateCOF.combat) {
       initPerso(druide, evt);
     }
-    var nomArbre = nouveauNomDePerso('Arbre animé');
-    var charArbre = createObj('character', {
-      name: nomArbre,
-      avatar: "https://s3.amazonaws.com/files.d20.io/images/42323556/6qxlm965aFhBXGoYFy5fqg/thumb.png?1510582137"
-    });
-    evt.characters = [charArbre];
-    var caid = charArbre.id;
-    var pvArbre = rang * 10;
-    setToken(tokenArbre, 'represents', caid, evt);
-    setDefaultTokenForCharacter(charArbre, tokenArbre);
-    //Les attributs n'ont pas besoin d'être ajoutés à evt, on les enlève en supprimant le personnage
-    createObj('attribute', {
-      characterid: caid,
-      name: 'DEXTERITE',
-      current: 7
-    });
-    createObj('attribute', {
-      characterid: caid,
-      name: 'DEFDIV',
-      current: 5
-    });
-    var pvAttr;
-    if (persoEstPNJ(druide)) {
-      pvAttr = createObj('attribute', {
-        characterid: caid,
-        name: 'pnj_pv',
-        current: pvArbre,
-        max: pvArbre
-      });
-    } else {
-      pvAttr = createObj('attribute', {
-        characterid: caid,
-        name: 'PV',
-        current: pvArbre,
-        max: pvArbre
-      });
-    }
-    createObj('attribute', {
-      characterid: caid,
-      name: 'RD_sauf_feu_tranchant',
-      current: 10
-    });
     var niveau = ficheAttributeAsInt(druide, 'niveau', 1);
-    createObj('ability', {
-      characterid: caid,
-      name: 'Attaque',
-      istokenaction: true,
-      action: '!cof-attack @{selected|token_id} @{target|token_id} ["Branches",[' + niveau + ',0],20,[1,6,3,0],0]'
-    });
-    setToken(tokenArbre, 'bar1_link', pvAttr.id, evt);
-    setToken(tokenArbre, 'bar1_value', pvArbre, evt);
-    setToken(tokenArbre, 'bar1_max', pvArbre, evt);
-    setToken(tokenArbre, 'sjowplayers_bar1', true, evt);
-    setToken(tokenArbre, 'name', nomArbre, evt);
-    setToken(tokenArbre, 'showname', true, evt);
-    setToken(tokenArbre, 'showplayers_name', true, evt);
-    createObj('attribute', {
-      characterid: caid,
-      name: 'arbreAnime',
-      current: niveau,
-      max: getInit()
-    });
-    sendChar(caid, "commence à s'animer");
+    var nomArbre = nouveauNomDePerso('Arbre animé');
+    var avatar = "https://s3.amazonaws.com/files.d20.io/images/42323556/6qxlm965aFhBXGoYFy5fqg/thumb.png?1510582137";
+    var specArbre = {
+      pv: rang * 10,
+      attributesFiche: {
+        type_personnage: 'PNJ',
+        niveau: niveau,
+        FORCE: 18,
+        pnj_for: 4,
+        DEXTERITE: 7,
+        pnj_dex: -2,
+        CONSTITUTION: 20,
+        pnj_con: 5,
+        INTELLIGENCE: 8,
+        pnj_int: -1,
+        SAGESSE: 14,
+        pnj_sag: 2,
+        CHARISME: 6,
+        pnj_cha: -2,
+        DEFDIV: 5,
+        pnj_def: 13,
+        pnj_init: 7,
+        RDS: '10/feu_tranchant',
+        race: 'arbre',
+        taille: 'grand'
+      },
+      attaques: [{
+        nom: 'Branches',
+        atk: niveau,
+        dmnbde: 1,
+        dmde: 6,
+        dm: 3,
+        typedegats: 'contondant',
+      }],
+      attributes: [{
+        name: 'arbreAnime',
+        current: niveau,
+        max: getInit(),
+      }]
+    };
+    var charArbre = createCharacter(nomArbre, options.playerId, avatar, tokenArbre, specArbre);
+    evt.characters = [charArbre];
+    sendChar(charArbre.id, "commence à s'animer");
     initiative([{
       _id: tokenArbre.id
     }], evt);
@@ -21544,6 +21580,14 @@ var COFantasy = COFantasy || function() {
      });*/
   }
 
+  //Crée un nouveau personnage (de type PNJ par défaut)
+  //spec contient les charactéristiques, attributs et abilities
+  //  - attributesFiche contient les attributs définis dans la fiche
+  //      nom_attribut: valeur
+  //  - pv (permet d'être indépendant de PJ ou PNJ)
+  //  - attaques, liste d'attaques, chacune avec (nom, atk, nbde, dmde, dm,...)
+  //  - attributes autres attributs (name, current, max)
+  //  - abilities (name, action), toujours rajoutées à la liste d'actions
   function createCharacter(nom, playerId, avatar, token, spec) {
     var res = createObj('character', {
       name: nom,
@@ -21567,7 +21611,7 @@ var COFantasy = COFantasy || function() {
       createObj('attribute', {
         _characterid: charId,
         name: 'version',
-        current: '3.3'
+        current: '3.5'
       });
     }
     var pnj = true;
@@ -21590,6 +21634,13 @@ var COFantasy = COFantasy || function() {
         }
       }
     } //end attributesFiche
+    if (pnj) {
+      createObj('attribute', {
+        _characterid: charId,
+        name: 'tab',
+        current: 'carac. pnj'
+      });
+    }
     if (spec.pv) {
       var pvAttr = attrs.filter(function(a) {
         return a.get('name').toUpperCase() == 'PV';
@@ -21632,14 +21683,30 @@ var COFantasy = COFantasy || function() {
     var actions = '';
     if (spec.actions) actions = spec.actions;
     if (spec.attaques) {
+      var maxAttackLabel = 0;
+      var prefix_attaques = 'repeating_armes_';
+      if (pnj) prefix_attaques = 'repeating_pnjatk_';
       spec.attaques.forEach(function(att) {
-        createObj('ability', {
-          _characterid: charId,
-          name: att.name,
-          istokenaction: false,
-          action: '!cof-attack @{selected|token_id} @{target|token_id} ' + att.name + att.options
+        var id = generateRowID();
+        var pref = prefix_attaques + id + '_arme';
+        _.forEach(att, function(value, field) {
+          createObj('attribute', {
+            _characterid: charId,
+            name: pref + field,
+            current: value
+          });
         });
-        actions += '%' + att.name + ' ';
+        maxAttackLabel++;
+        createObj('attribute', {
+          _characterid: charId,
+          name: pref + 'label',
+          current: maxAttackLabel
+        });
+      });
+      createObj('attribute', {
+        _characterid: charId,
+        name: 'max_attack_label',
+        current: maxAttackLabel
       });
     }
     if (spec.attributes) {
@@ -21698,8 +21765,11 @@ var COFantasy = COFantasy || function() {
       },
       pv: 9,
       attaques: [{
-        name: 'Morsure',
-        options: " --toucher 2 --dm 1d6+1"
+        nom: 'Morsure',
+        atk: 2,
+        dmnbde: 1,
+        dmde: 6,
+        dm: 1,
       }],
       attributes: [],
       abilities: []
@@ -21736,8 +21806,11 @@ var COFantasy = COFantasy || function() {
       },
       pv: 15,
       attaques: [{
-        name: 'Morsure',
-        options: " --toucher 4 --dm 1d6+3"
+        nom: 'Morsure',
+        atk: 4,
+        nbde: 1,
+        dmde: 6,
+        dm: 3,
       }],
       attributes: [{
         name: 'discrétion',
@@ -21745,10 +21818,10 @@ var COFantasy = COFantasy || function() {
       }],
       abilities: [{
         name: 'Embuscade',
-        action: '!cof-surprise [[15 + @{selected|DEX}]]'
+        action: '!cof-surprise [[15 + @{selected|DEX}]] --target @{target|token_id}'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} Morsure --toucher 4 --dm 1d6+3 --sournoise 1 --if moins FOR --etat renverse --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --sournoise 1 --if moins FOR --etat renverse --endif'
       }]
     },
     worg: {
@@ -21783,8 +21856,11 @@ var COFantasy = COFantasy || function() {
       },
       pv: 35,
       attaques: [{
-        name: 'Morsure',
-        options: " --toucher 6 --dm 1d6+5"
+        nom: 'Morsure',
+        atk: 6,
+        dmnbde: 1,
+        dmde: 6,
+        dm: 5,
       }],
       attributes: [{
         name: 'discrétion',
@@ -21795,7 +21871,7 @@ var COFantasy = COFantasy || function() {
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} Morsure --toucher 6 --dm 1d6+5 --sournoise 1 --if moins FOR --etat renverse --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --sournoise 1 --if moins FOR --etat renverse --endif'
       }]
     },
     lion: {
@@ -21830,8 +21906,11 @@ var COFantasy = COFantasy || function() {
       },
       pv: 30,
       attaques: [{
-        name: 'Morsure',
-        options: " --toucher 7 --dm 2d6+5"
+        nom: 'Morsure',
+        atk: 7,
+        dmnbde: 2,
+        dmde: 6,
+        dm: 5,
       }],
       attributes: [{
         name: 'discrétion',
@@ -21842,10 +21921,10 @@ var COFantasy = COFantasy || function() {
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} Morsure --toucher 7 --dm 2d6+5 --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
       }, {
         name: 'Dévorer',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} Morsure --toucher 7 --dm 2d6+5 --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
       }]
     },
     grandLion: {
@@ -21879,8 +21958,11 @@ var COFantasy = COFantasy || function() {
       },
       pv: 50,
       attaques: [{
-        name: 'Morsure',
-        options: " --toucher 9 --dm 2d6+7"
+        nom: 'Morsure',
+        atk: 9,
+        dmnbde: 2,
+        dmde: 6,
+        dm: 7,
       }],
       attributes: [{
         name: 'discrétion',
@@ -21891,10 +21973,10 @@ var COFantasy = COFantasy || function() {
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} Morsure --toucher 9 --dm 2d6+7 --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
       }, {
         name: 'Dévorer',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} Morsure --toucher 9 --dm 2d6+7 --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
       }]
     },
     oursPolaire: {
@@ -21928,8 +22010,11 @@ var COFantasy = COFantasy || function() {
       },
       pv: 70,
       attaques: [{
-        name: 'Morsure',
-        options: " --toucher 12 --dm 2d8+7"
+        nom: 'Morsure',
+        atk: 12,
+        dmnbde: 2,
+        dmde: 8,
+        dm: 7,
       }],
       attributes: [{
         name: 'peutEnrager',
@@ -21937,7 +22022,7 @@ var COFantasy = COFantasy || function() {
       }],
       abilities: [{
         name: 'Charge',
-        action: '%{selected|Morsure} --m2d20 --pietine}'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --m2d20 --pietine}'
       }, ]
     },
     tigreDentsDeSabre: {
@@ -21973,8 +22058,11 @@ var COFantasy = COFantasy || function() {
       },
       pv: 90,
       attaques: [{
-        name: 'Morsure',
-        options: " --toucher 14 --dm 2d6+12"
+        nom: 'Morsure',
+        atk: 14,
+        dmnbde: 2,
+        dmde: 6,
+        dm: 12,
       }],
       attributes: [{
         name: 'discrétion',
@@ -21985,10 +22073,10 @@ var COFantasy = COFantasy || function() {
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} Morsure --toucher 14 --dm 2d6+12 --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
       }, {
         name: 'Dévorer',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} Morsure --toucher 14 --dm 2d6+12 --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
       }]
     },
     oursPrehistorique: {
@@ -22022,8 +22110,11 @@ var COFantasy = COFantasy || function() {
       },
       pv: 110,
       attaques: [{
-        name: 'Griffes',
-        options: " --toucher 17 --dm 3d6+13"
+        nom: 'Griffes',
+        atk: 17,
+        dmnbde: 3,
+        dmde: 6,
+        dm: 13,
       }],
       attributes: [{
         name: 'fauchage',
@@ -22031,7 +22122,7 @@ var COFantasy = COFantasy || function() {
       }],
       abilities: [{
         name: 'Charge',
-        action: '%{selected|Griffes} --m2d20 --pietine}'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --m2d20 --pietine}'
       }, ]
     }
   };
@@ -22189,12 +22280,12 @@ var COFantasy = COFantasy || function() {
         });
         toFront(token);
         var avatar = "https://s3.amazonaws.com/files.d20.io/images/73283254/r6sbxbP1QKKtqXyYq-MlLA/max.png?1549547198";
-        var attaque = '!cof-attack @{selected|token_id} @{target|token_id} ';
-        attaque += 'Attaque --dm ' + nbDeDM + 'd' + deDM + ' --auto';
-        var abilities = [{
-          name: 'Attaque',
-          action: attaque
-        }];
+        var attaque = {
+          nom: 'Attaque',
+          dmnbde: nbDeDM,
+          dmde: deDM,
+          modificateurs: 'auto',
+        };
         var attributes = [{
           name: 'armeeConjuree',
           current: invocateur.charId
@@ -22202,7 +22293,7 @@ var COFantasy = COFantasy || function() {
         var charArmee =
           createCharacter(nomArmee, playerId, avatar, token, {
             pv: niveau * 10,
-            abilities: abilities,
+            attaques: [attaque],
             attributes: attributes
           });
         evt.characters = [charArmee];
@@ -24749,7 +24840,12 @@ var COFantasy = COFantasy || function() {
                 token: token,
                 charId: charId
               };
-              removeFromTurnTracker(perso, evt);
+              var nA = removeFromTurnTracker(perso, evt);
+              if (nA) {
+                res = res || {};
+                res.oldTokenId = token.id;
+                res.newTokenId = nA.nextId;
+              }
               setToken(token, 'bar1_link', '', evt);
               setToken(token, 'bar1_value', '', evt);
               setToken(token, 'bar1_max', '', evt);
@@ -24761,6 +24857,16 @@ var COFantasy = COFantasy || function() {
             });
         } else if (effet == 'predateurConjure') {
           iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
+            var perso = {
+              token: token,
+              charId: charId
+            };
+            var nP = removeFromTurnTracker(perso, evt);
+            if (nP) {
+              res = res || {};
+              res.oldTokenId = token.id;
+              res.newTokenId = nP.nextId;
+            }
             token.remove();
           });
         }
@@ -24779,7 +24885,7 @@ var COFantasy = COFantasy || function() {
           });
           arbreChar.remove();
         }
-        return; //Pas besoin de faire le reste, car plus de perso
+        return res; //Pas besoin de faire le reste, car plus de perso
       case 'formeDArbre':
         var tokenChange = charIdAttributeAsBool(charId, 'changementDeToken');
         var iterTokOptions = {};
@@ -25027,6 +25133,7 @@ var COFantasy = COFantasy || function() {
 
   //evt a un champ attributes et un champ deletedAttributes
   function nextTurnOfActive(active, attrs, evt, pageId) {
+    if (active === undefined) return;
     if (active.id == "-1" && active.custom == "Tour") {
       // Nouveau tour
       var tour = parseInt(active.pr);
@@ -25394,8 +25501,13 @@ var COFantasy = COFantasy || function() {
             var effetFinal = finDEffet(attr, effet, attrName, charId, evt, {
               pageId: pageId
             });
-            if (effetFinal && effetFinal.oldTokenId == active.id)
+            if (effetFinal && effetFinal.oldTokenId == active.id) {
               active.id = effetFinal.newTokenId;
+              if (active.id === undefined) {
+              } else if (active.id == '-1') {
+                active.custom = 'Tour';
+              }
+            }
             count--;
             effetActif = false;
           }
