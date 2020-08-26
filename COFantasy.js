@@ -3634,7 +3634,7 @@ var COFantasy = COFantasy || function() {
     //Ajout des options de l'arme
     var wo = weaponStats.options.trim();
     //Pour la partie options, il est possible qu'elle soit déjà passée en ligne de commande
-    if (wo !== '' && (optArgs.length < 1 || optArgs[0] != 'attaqueOptions')) {
+    if (wo !== '' && (optArgs.length < 1 || !optArgs[0].startsWith('attaqueOptions'))) {
       wo = ' ' + wo;
       wo.split(' --').reverse().forEach(function(o) {
         o = o.trim();
@@ -5769,9 +5769,34 @@ var COFantasy = COFantasy || function() {
     if (options.semonce) {
       attBonus += 5;
     }
-    if (options.attaqueAssuree && !options.pasDeDmg) {
-      attBonus += 5;
-      explications.push("Attaque assurée => +5 en Attaque et DM/2");
+    if (!options.pasDeDmg) {
+      if (ficheAttributeAsBool(attaquant, 'attaque_en_puissance_check')) {
+        options.attaqueEnPuissance = ficheAttributeAsInt(attaquant, 'attaque_en_puissance', 1);
+      }
+      if (options.attaqueEnPuissance) {
+        attBonus -= 5 * options.attaqueEnPuissance;
+        explications.push("Attaque en puissance => -" + (5 * options.attaqueEnPuissance) + " en Attaque et +" + options.attaqueEnPuissance + options.d6 + " DM");
+      }
+      if (ficheAttributeAsBool(attaquant, 'attaque_assuree_check')) {
+        options.attaqueAssuree = true;
+      }
+      if (options.attaqueAssuree) {
+        attBonus += 5;
+        explications.push("Attaque assurée => +5 en Attaque et DM/2");
+      }
+      if (ficheAttributeAsBool(attaquant, 'attaque_dm_temp_check')) {
+        options.attaqueDmTemp = true;
+      }
+      if (options.attaqueDmTemp && !options.tempDmg) {
+        options.tempDmg = true;
+        if (!options.choc) {
+          attBonus -= 2;
+          explications.push("Attaque pour assomer => -2 en Attaque");
+        }
+      }
+    }
+    if (attaquant.pnj && options.attaqueDeGroupe === undefined) {
+      options.attaqueDeGroupe = ficheAttributeAsInt(attaquant, 'attaque_de_groupe', 1);
     }
     if (options.attaqueDeGroupe > 1) {
       var bonusTouche = 2 * (options.attaqueDeGroupe - 1);
@@ -5862,11 +5887,15 @@ var COFantasy = COFantasy || function() {
           options.rageBerserk = 1;
         }
       }
+      if (ficheAttributeAsBool(attaquant, 'attaque_risquee_check')) {
+        options.attaqueRisquee = true;
+      }
       if (options.attaqueRisquee) {
         attBonus += 2;
         explications.push("Attaque risquée => +2 en Attaque");
-        if (!options.test)
+        if (!options.test) {
           setAttrDuree(attaquant, 'attaqueRisquee', 1, evt);
+        }
       }
       if (charAttributeAsBool(attaquant, 'ambidextreDuelliste')) {
         if (attaquant.armesEnMain === undefined) armesEnMain(attaquant);
@@ -8161,6 +8190,12 @@ var COFantasy = COFantasy || function() {
         value: '1' + options.d6,
       });
       explications.push("Même pas mal => +1" + options.d6 + " DM");
+    }
+    if (options.attaqueEnPuissance) {
+      options.additionalDmg.push({
+        type: mainDmgType,
+        value: options.attaqueEnPuissance + options.d6
+      });
     }
     var attrPosture = tokenAttribute(attaquant, 'postureDeCombat');
     if (attrPosture.length > 0) {
@@ -25504,8 +25539,7 @@ var COFantasy = COFantasy || function() {
             });
             if (effetFinal && effetFinal.oldTokenId == active.id) {
               active.id = effetFinal.newTokenId;
-              if (active.id === undefined) {
-              } else if (active.id == '-1') {
+              if (active.id === undefined) {} else if (active.id == '-1') {
                 active.custom = 'Tour';
               }
             }
