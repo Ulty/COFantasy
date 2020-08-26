@@ -9502,6 +9502,84 @@ var COFantasy = COFantasy || function() {
     } else afterSave();
   }
 
+  function getRDS(perso) {
+    if (perso.rd) return perso.rd;
+    var res = {
+      rdt: 0,
+      sauf: {}
+    };
+    //Pour garder un peu de compatibilité, on regarde encore les attributs RD
+    var attrs = perso.attrs;
+    if (attrs === undefined) {
+      attrs = findObjs({
+        _type: "attribute",
+        _characterid: perso.charId
+      });
+      perso.attrs = attrs;
+    }
+    attrs.forEach(function(a) {
+      var name = a.get('name');
+      if (!name.startsWith('RD_')) return;
+      var rds = parseInt(a.get('current'));
+      if (isNaN(rds) || rds < 1) return;
+      name = name.substring(3);
+      if (name.startsWith('sauf_')) {
+        name = name.substr(5);
+        res.sauf[name] = res.sauf[name] || 0;
+        res.sauf[name] += rds;
+        return;
+      }
+      if (name == 'rdt' || name == 'sauf') return;
+      res[name] = res[name] || 0;
+      res[name] += rds;
+    });
+    //Fin compatibilité
+    if (attributeAsBool(perso, 'formeDArbre')) {
+      res.sauf.feu_tranchant = res.sauf.feu_tranchant || 0;
+      res.sauf.feu_tranchant += 10;
+    }
+    var attrRD = 'RDS';
+    if (persoEstPNJ(perso)) {
+      attrRD = 'pnj_rd';
+    }
+    var rd = ficheAttribute(perso, attrRD, '').trim();
+    if (rd === '') {
+      perso.rd = res;
+      return res;
+    }
+    rd = rd.split(',');
+    rd.forEach(function(r) {
+      r = r.trim();
+      if (r === '') return;
+      var rds;
+      var index = r.indexOf(':');
+      if (index > 0) { //RD à un type particulier
+        var type = r.substring(0, index);
+        if (type == 'rdt' || type == 'sauf') return;
+        rds = parseInt(r.substring(index + 1));
+        if (isNaN(rds) || rds < 1) return;
+        res[type] = res[type] || 0;
+        res[type] += rds;
+        return;
+      }
+      index = r.indexOf('/');
+      if (index > 0) { //RD sauf à des types
+        rds = parseInt(r.substring(0, index));
+        if (isNaN(rds) || rds < 1) return;
+        var sauf = r.substring(index + 1);
+        res.sauf[sauf] = res.sauf[sauf] || 0;
+        res.sauf[sauf] += rds;
+        return;
+      }
+      //finalement, RD totale
+      rds = parseInt(r);
+      if (isNaN(rds) || rds < 1) return;
+      res.rdt += rds;
+    });
+    perso.rd = res;
+    return res;
+  }
+
   function applyRDSauf(rds, dmgType, total, display, options, target) {
     options = options || {};
     var typeTrouve = function(t) {
@@ -9958,84 +10036,6 @@ var COFantasy = COFantasy || function() {
       max: attrs[0].get('max')
     });
     attrs[0].set('current', newCur);
-  }
-
-  function getRDS(perso) {
-    if (perso.rd) return perso.rd;
-    var res = {
-      rdt: 0,
-      sauf: {}
-    };
-    //Pour garder un peu de compatibilité, on regarde encore les attributs RD
-    var attrs = perso.attrs;
-    if (attrs === undefined) {
-      attrs = findObjs({
-        _type: "attribute",
-        _characterid: perso.charId
-      });
-      perso.attrs = attrs;
-    }
-    attrs.forEach(function(a) {
-      var name = a.get('name');
-      if (!name.startsWith('RD_')) return;
-      var rds = parseInt(a.get('current'));
-      if (isNaN(rds) || rds < 1) return;
-      name = name.substring(3);
-      if (name.startsWith('sauf_')) {
-        name = name.substr(5);
-        res.sauf[name] = res.sauf[name] || 0;
-        res.sauf[name] += rds;
-        return;
-      }
-      if (name == 'rdt' || name == 'sauf') return;
-      res[name] = res[name] || 0;
-      res[name] += rds;
-    });
-    //Fin compatibilité
-    if (attributeAsBool(perso, 'formeDArbre')) {
-      res.sauf.feu_tranchant = res.sauf.feu_tranchant || 0;
-      res.sauf.feu_tranchant += 10;
-    }
-    var attrRD = 'RDS';
-    if (persoEstPNJ(perso)) {
-      attrRD = 'pnj_rd';
-    }
-    var rd = ficheAttribute(perso, attrRD, '').trim();
-    if (rd === '') {
-      perso.rd = res;
-      return res;
-    }
-    rd = rd.split(',');
-    rd.forEach(function(r) {
-      r = r.trim();
-      if (r === '') return;
-      var rds;
-      var index = r.indexOf(':');
-      if (index > 0) { //RD à un type particulier
-        var type = r.substring(0, index);
-        if (type == 'rdt' || type == 'sauf') return;
-        rds = parseInt(r.substring(index + 1));
-        if (isNaN(rds) || rds < 1) return;
-        res[type] = res[type] || 0;
-        res[type] += rds;
-        return;
-      }
-      index = r.indexOf('/');
-      if (index > 0) { //RD sauf à des types
-        rds = parseInt(r.substring(0, index));
-        if (isNaN(rds) || rds < 1) return;
-        var sauf = r.substring(index + 1);
-        res.sauf[sauf] = res.sauf[sauf] || 0;
-        res.sauf[sauf] += rds;
-        return;
-      }
-      //finalement, RD totale
-      rds = parseInt(r);
-      if (isNaN(rds) || rds < 1) return;
-      res.rdt += rds;
-    });
-    perso.rd = res;
-    return res;
   }
 
   function finDEffetDeNom(perso, effet, evt, options) { //Supprime l'effet si présent
@@ -20760,6 +20760,7 @@ var COFantasy = COFantasy || function() {
         pnj_def: 13,
         pnj_init: 7,
         RDS: '10/feu_tranchant',
+        pnj_rd: '10/feu_tranchant',
         race: 'arbre',
         taille: 'grand'
       },
