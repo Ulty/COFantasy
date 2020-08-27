@@ -10,6 +10,7 @@
 * Résistance à la magie du barbare
 
 ### Autres améliorations
+* Ajout des options d'attaque à la liste du tour.
 * Prise en compte des options d'attaque sur la fiche
 * Utilisation des lignes d'attaques pour les PNJs créés par le script
 * Ajout de possibilité de tempête de mana pour !cof-lancer-sort

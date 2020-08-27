@@ -1835,10 +1835,11 @@ var COFantasy = COFantasy || function() {
     };
   }
 
-  function boutonSimple(action, style, texte) {
+  function boutonSimple(action, texte, style) {
     action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;').replace(/"/g, '&#34;').replace(/{/g, '&#123;').replace(/}/g, '&#125;').replace(/\|/g, '&#124;');
     action = action.replace(/\'/g, '&apos;'); // escape quotes
     action = action.replace(/:/g, '&amp;#58;'); // double escape colon
+    style = style || '';
     return '<a href="' + action + '"' + style + '>' + texte + '</a>';
   }
 
@@ -2219,14 +2220,14 @@ var COFantasy = COFantasy || function() {
     else overlay = '';
     if (actions.length == 1) {
       action = actions[0];
-      var toReturn = boutonSimple(action, buttonStyle + overlay, text);
+      var toReturn = boutonSimple(action, text, buttonStyle + overlay);
       if (groupe) {
-        toReturn += "<br/>" + boutonSimple(action + " --attaqueDeGroupe ?{Attaque en groupe ?}", buttonStyle + overlay, text + " (groupe)");
+        toReturn += "<br/>" + boutonSimple(action + " --attaqueDeGroupe ?{Attaque en groupe ?}", text + " (groupe)", buttonStyle + overlay);
       }
       return toReturn;
     } else {
       action = "!cof-multi-command " + actions.join(' --cof-multi-command ');
-      return boutonSimple(action, buttonStyle + overlay, text);
+      return boutonSimple(action, text, buttonStyle + overlay);
     }
   }
 
@@ -2354,10 +2355,15 @@ var COFantasy = COFantasy || function() {
         '</table>' +
         '</div>'; // line_header
     }
+    // La ligne de titre
     res +=
-      '<div class="line_title" style="font-size: 85%; text-align: left; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: #a94442; background-color: #f2dede;" title=""> ' +
-      action +
-      '</div>'; // line_title
+      '<div class="line_title" style="font-size: 85%; text-align: left; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: #a94442; background-color: #f2dede;" title=""> ';
+    if (display.action_right) {
+      res += '<table style="width:100%"><tr><td>' + action + '</td><td style="text-align: right;">' + display.action_right + '</td></tr></table>';
+    } else {
+      res += action;
+    }
+    res += '</div>'; // line_title
     res += '<div class="line_content">';
     display.header = res;
   }
@@ -2373,7 +2379,8 @@ var COFantasy = COFantasy || function() {
       isfirst: true,
       perso1: perso,
       perso2: options.perso2,
-      action: action
+      action: action,
+      action_right: options.action_right
     };
     if (options.retarde === undefined)
       addFramedHeader(display, playerId, options.chuchote);
@@ -3264,9 +3271,9 @@ var COFantasy = COFantasy || function() {
   function ajouterOptionTempete(display, option, texte, restant) {
     var line = texte + " : ";
     if (tempeteDeManaCourante[option])
-      line += boutonSimple("!cof-tempete-de-mana -" + option, '', "Oui");
+      line += boutonSimple("!cof-tempete-de-mana -" + option, "Oui");
     else if (restant > 0)
-      line += boutonSimple("!cof-tempete-de-mana " + option, '', "Non");
+      line += boutonSimple("!cof-tempete-de-mana " + option, "Non");
     else line += "Non";
     addLineToFramedDisplay(display, line);
   }
@@ -3349,7 +3356,7 @@ var COFantasy = COFantasy || function() {
         if (tempeteDeManaCourante.altruiste) {
           tla = tempeteDeManaCourante.altruiste.token.get('name');
         }
-        la += boutonSimple("!cof-tempete-de-mana altruiste @{target|token_id}", '', tla);
+        la += boutonSimple("!cof-tempete-de-mana altruiste @{target|token_id}", tla);
       } else la += 'Non';
       addLineToFramedDisplay(display, la);
     }
@@ -3361,7 +3368,7 @@ var COFantasy = COFantasy || function() {
     if (maxMagieIntense > 5 && restant > 0) maxMagieIntense = magieIntense + 1;
     for (var i = 0; i <= maxMagieIntense; i++) {
       if (i == magieIntense) line += " " + i;
-      else line += " " + boutonSimple("!cof-tempete-de-mana " + i, '', i);
+      else line += " " + boutonSimple("!cof-tempete-de-mana " + i, i);
     }
     addLineToFramedDisplay(display, line);
     var v = tempeteDeManaCourante.cmd;
@@ -3377,7 +3384,7 @@ var COFantasy = COFantasy || function() {
         vopt += " " + tempeteDeManaCourante.intense;
     }
     v = v.replace(/--tempeteDeMana/, vopt);
-    addLineToFramedDisplay(display, boutonSimple(v, '', "Valider"));
+    addLineToFramedDisplay(display, boutonSimple(v, "Valider"));
     sendChat("", endFramedDisplay(display));
   }
 
@@ -5206,6 +5213,7 @@ var COFantasy = COFantasy || function() {
     }], evt, recompute);
   }
 
+  // triggers sheet workers
   function setFicheAttr(personnage, attribute, value, evt, msg, maxval) {
     var charId = personnage.charId;
     if (msg !== undefined) {
@@ -5227,6 +5235,9 @@ var COFantasy = COFantasy || function() {
         current: value,
         max: maxval
       });
+      attr.setWithWorker({
+        current: value
+      });
       evt.attributes.push({
         attribute: attr,
         current: null
@@ -5239,8 +5250,11 @@ var COFantasy = COFantasy || function() {
       current: attr.get('current'),
       max: attr.get('max')
     });
-    attr.set('current', value);
-    if (maxval !== undefined) attr.set('max', maxval);
+    var nv = {
+      current: value
+    };
+    if (maxval !== undefined) nv.max = maxval;
+    attr.setWithWorker(nv);
     return attr;
   }
 
@@ -5787,7 +5801,7 @@ var COFantasy = COFantasy || function() {
       if (ficheAttributeAsBool(attaquant, 'attaque_dm_temp_check')) {
         options.attaqueDmTemp = true;
       }
-      if (options.attaqueDmTemp && !options.tempDmg) {
+      if (options.attaqueDmTemp && !options.tempDmg && !options.sortilege) {
         options.tempDmg = true;
         if (!options.choc) {
           attBonus -= 2;
@@ -8397,7 +8411,7 @@ var COFantasy = COFantasy || function() {
             options.enveloppe.type + ' ' + options.enveloppe.expression;
           var verbeEnv = 'envelopper';
           if (options.enveloppe.type == 'etreinte') verbeEnv = 'étreindre';
-          ligneEnveloppe += boutonSimple(commandeEnvelopper, '', verbeEnv);
+          ligneEnveloppe += boutonSimple(commandeEnvelopper, verbeEnv);
           ligneEnveloppe += target.tokName;
           target.messages.push(ligneEnveloppe);
         }
@@ -9157,8 +9171,9 @@ var COFantasy = COFantasy || function() {
     var avecArme = (weaponStats.name.includes("arme") || weaponStats.divers.includes("arme"));
     var estCac = options.contact;
     var boutonCritique = function(action) {
-      return boutonSimple(action + " --target " + attaquant.token.id,
-        'background-color:#cc0000', "Appliquer");
+      var b = boutonSimple(action + " --target " + attaquant.token.id,
+        "Appliquer", 'background-color:#cc0000');
+      return b;
     };
     var msg;
     switch (d12roll) {
@@ -11860,7 +11875,7 @@ var COFantasy = COFantasy || function() {
       a.effets.forEach(function(e) {
         line += e.actif + ' ';
         if (a.tokenId)
-          line += boutonSimple('!cof-effet ' + e.nom + ' false --target ' + a.tokenId, '', 'X');
+          line += boutonSimple('!cof-effet ' + e.nom + ' false --target ' + a.tokenId, 'X');
         else line += "supprimer l'attribut " + e.nom;
       });
       addLineToFramedDisplay(display, line);
@@ -13500,12 +13515,42 @@ var COFantasy = COFantasy || function() {
       _characterid: perso.charId,
     });
     var title = 'Actions possibles :';
+    var opt_display = {
+      chuchote: true
+    };
     if (listActions) {
       title = listActions;
       var fullListActions = '#' + listActions + '#';
       listActions = abilities.find(function(a) {
         return a.get('name') == fullListActions;
       });
+    } else {
+      // On affiche les options d'attaque à droite
+      var action_opts = '!cof-options-d-attaque --target ' + perso.token.id;
+      var text_opts = '';
+      if (persoEstPNJ(perso) && ficheAttributeAsInt(perso, 'attaque_de_groupe', 1) > 1) {
+        text_opts = "Groupe de " + ficheAttributeAsInt(perso, 'attaque_de_groupe', 1);
+      }
+      if (ficheAttributeAsInt(perso, 'attaque_en_puissance_check')) {
+        if (text_opts !== '') text_opts += '<br>';
+        text_opts += "En puissance " + ficheAttributeAsInt(perso, 'attaque_en_puissance', 1);
+      }
+      if (ficheAttributeAsInt(perso, 'attaque_risquee_check')) {
+        if (text_opts !== '') text_opts += '<br>';
+        text_opts += "Risquée";
+      }
+      if (ficheAttributeAsInt(perso, 'attaque_assuree_check')) {
+        if (text_opts !== '') text_opts += '<br>';
+        text_opts += "Assurée";
+      }
+      if (ficheAttributeAsInt(perso, 'attaque_dm_temp_check')) {
+        if (text_opts !== '') text_opts += '<br>';
+        text_opts += "Pour assomer";
+      }
+      if (text_opts === '') text_opts = 'Options';
+      opt_display.action_right =
+        boutonSimple(action_opts, text_opts,
+          'style="color: #a94442; background-color: #f2dede;"');
     }
     var actionsDuTour = [];
     var actionsParDefaut = false;
@@ -13801,17 +13846,14 @@ var COFantasy = COFantasy || function() {
       else playerIds = getPlayerIds(perso);
       playerIds.forEach(function(playerid) {
         lastPlayerid = playerid;
-        var display = startFramedDisplay(playerid, title, perso, {
-          chuchote: true
-        });
+        var display = startFramedDisplay(playerid, title, perso, opt_display);
         addLineToFramedDisplay(display, ligne);
         sendChat('', endFramedDisplay(display));
       });
       // En prime, on l'envoie au MJ, si besoin
       if (stateCOF.options.affichage.val.MJ_voit_actions.val || playerIds.length === 0) {
-        var display = startFramedDisplay(lastPlayerid, title, perso, {
-          chuchote: 'gm'
-        });
+        opt_display.chuchote = 'gm';
+        var display = startFramedDisplay(lastPlayerid, title, perso, opt_display);
         addLineToFramedDisplay(display, ligne);
         sendChat('', endFramedDisplay(display));
       }
@@ -21577,7 +21619,7 @@ var COFantasy = COFantasy || function() {
           });
           for (var man in listeManoeuvres) {
             var appliquerManoeuvre = '!cof-appliquer-manoeuvre ' + cible.token.id + ' ' + attaquant.token.id + ' ' + man + ' ' + attrLimit.id;
-            var ligneManoeuvre = boutonSimple(appliquerManoeuvre, '', man);
+            var ligneManoeuvre = boutonSimple(appliquerManoeuvre, man);
             addLineToFramedDisplay(display, ligneManoeuvre, 90);
           }
           // on envoie la liste aux joueurs qui gèrent le voleur
@@ -22776,7 +22818,7 @@ var COFantasy = COFantasy || function() {
         sendChar(perso.charId,
           "/w gm torche éteinte. Reste " + nbTorches + " torches, et " +
           tempsTorche + " minutes pour la dernière. " +
-          boutonSimple("!cof-torche " + perso.token.id + " ?{Durée?}", '', "Temps depuis allumage"));
+          boutonSimple("!cof-torche " + perso.token.id + " ?{Durée?}", "Temps depuis allumage"));
         addEvent(evt);
         return;
       }
@@ -22899,7 +22941,7 @@ var COFantasy = COFantasy || function() {
     var titre = "Options de COFantasy";
     if (prefix !== '') {
       titre += "<br>" + prefix + ' (';
-      titre += boutonSimple('!cof-options' + up, '', 'retour') + ')';
+      titre += boutonSimple('!cof-options' + up, 'retour') + ')';
     }
     var display = startFramedDisplay(playerId, titre, undefined, {
       chuchote: true
@@ -22935,10 +22977,10 @@ var COFantasy = COFantasy || function() {
         default:
           action += ' ?{Nouvelle valeur de ' + optVu + '}';
       }
-      line += boutonSimple(action, '', displayedVal) + after;
+      line += boutonSimple(action, displayedVal) + after;
       addLineToFramedDisplay(display, line);
     }
-    addLineToFramedDisplay(display, boutonSimple('!cof-options' + prefix + ' reset', '', 'Valeurs par défaut'), 70);
+    addLineToFramedDisplay(display, boutonSimple('!cof-options' + prefix + ' reset', 'Valeurs par défaut'), 70);
     sendChat('', endFramedDisplay(display));
   }
 
@@ -23555,6 +23597,198 @@ var COFantasy = COFantasy || function() {
     }, options);
   }
 
+  function addLigneOptionAttaque(display, perso, val, texte, attr) {
+    var box;
+    var action = "!cof-options-d-attaque " + attr + "_check ?{" + texte + "?|";
+    if (val) {
+      box = '<span style="font-family: \'Pictos\'">3</span>';
+      action += "Non|Oui}";
+    } else {
+      box = ' ';
+      action += "Oui|Non}";
+    }
+    action += " --target " + perso.token.id;
+    var ligne = boutonSimple(action, box) + texte;
+    addLineToFramedDisplay(display, ligne);
+  }
+
+  //!cof-options-d-attaque, affiche les options d'attaque du token sélectionné
+  // si on donne reset en argument, remet tout à zéro
+  // si on donne en argument option valeur, change la valeur de l'option
+  function optionsDAttaque(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined) return;
+    var evt = {
+      type: "Option d'attaque"
+    };
+    getSelected(msg, function(selected, playerId) {
+      iterSelected(selected, function(perso) {
+        //D'abord on lit les valeurs
+        var aepc = ficheAttributeAsBool(perso, 'attaque_en_puissance_check');
+        var arc = ficheAttributeAsBool(perso, 'attaque_risquee_check');
+        var aac = ficheAttributeAsBool(perso, 'attaque_assuree_check');
+        var adtc = ficheAttributeAsBool(perso, 'attaque_dm_temp_check');
+        var aep = ficheAttributeAsInt(perso, 'attaque_en_puissance', 1);
+        var adg;
+        if (persoEstPNJ(perso)) {
+          adg = ficheAttributeAsInt(perso, 'attaque_de_groupe', 1);
+        }
+        if (cmd.length > 1 && cmd[1] == 'reset') {
+          if (adg > 1) {
+            setFicheAttr(perso, 'attaque_de_groupe', 1, evt);
+            adg = 1;
+          }
+          if (aepc) {
+            setFicheAttr(perso, 'attaque_en_puissance_check', 0, evt);
+            aepc = false;
+          }
+          if (arc) {
+            setFicheAttr(perso, 'attaque_risquee_check', 0, evt);
+            arc = false;
+          }
+          if (aac) {
+            setFicheAttr(perso, 'attaque_assuree_check', 0, evt);
+            aac = false;
+          }
+          if (adtc) {
+            setFicheAttr(perso, 'attaque_dm_temp_check', 0, evt);
+            adtc = false;
+          }
+        } else if (cmd.length > 2) {
+          switch (cmd[1]) {
+            case 'attaque_en_puissance_check':
+              if (cmd[2] == 'true' || cmd[2] == 'oui' || cmd[2] == 'Oui') {
+                if (!aepc) {
+                  setFicheAttr(perso, cmd[1], 1, evt);
+                  aepc = true;
+                  aac = false;
+                }
+              } else {
+                if (aepc) {
+                  setFicheAttr(perso, cmd[1], 0, evt);
+                  aepc = false;
+                }
+              }
+              break;
+            case 'attaque_risquee_check':
+              if (cmd[2] == 'true' || cmd[2] == 'oui' || cmd[2] == 'Oui') {
+                if (!arc) {
+                  setFicheAttr(perso, cmd[1], 1, evt);
+                  arc = true;
+                }
+              } else {
+                if (arc) {
+                  setFicheAttr(perso, cmd[1], 0, evt);
+                  arc = false;
+                }
+              }
+              break;
+            case 'attaque_assuree_check':
+              if (cmd[2] == 'true' || cmd[2] == 'oui' || cmd[2] == 'Oui') {
+                if (!aac) {
+                  setFicheAttr(perso, cmd[1], 1, evt);
+                  aac = true;
+                  aepc = false;
+                }
+              } else {
+                if (aac) {
+                  setFicheAttr(perso, cmd[1], 0, evt);
+                  aac = false;
+                }
+              }
+              break;
+            case 'attaque_dm_temp_check':
+              if (cmd[2] == 'true' || cmd[2] == 'oui' || cmd[2] == 'Oui') {
+                if (!adtc) {
+                  setFicheAttr(perso, cmd[1], 1, evt);
+                  adtc = true;
+                }
+              } else {
+                if (adtc) {
+                  setFicheAttr(perso, cmd[1], 0, evt);
+                  adtc = false;
+                }
+              }
+              break;
+            case 'attaque_de_groupe':
+              if (persoEstPNJ(perso)) {
+                var nadg = parseInt(cmd[2]);
+                if (isNaN(nadg) || nadg < 1) nadg = 1;
+                if (nadg != adg) {
+                  setFicheAttr(perso, cmd[1], nadg, evt);
+                  adg = nadg;
+                }
+              }
+              break;
+            case 'attaque_en_puissance':
+              var naep = parseInt(cmd[2]);
+              if (isNaN(naep) || naep < 1) naep = 1;
+              if (naep != aep) {
+                setFicheAttr(perso, cmd[1], naep, evt);
+                aep = naep;
+              }
+              break;
+            default:
+              error("Argument de !cof-options-d-attaque non reconnu", cmd);
+              //Mais on peut quand même afficher les options
+          }
+        }
+        var action;
+        var title = "Options d'attaque";
+        var opt_display = {
+          chuchote: true
+        };
+        if (aepc || arc || aac || adtc || (persoEstPNJ(perso) && adg > 1)) {
+          action = "!cof-options-d-attaque reset --target " + perso.token.id;
+          opt_display.action_right = boutonSimple(action, 'réinit.');
+        }
+        var display = startFramedDisplay(playerId, title, perso, opt_display);
+        var ligne = '';
+        var overlay = '';
+        if (persoEstPNJ(perso)) {
+          ligne = "Attaque de groupe : ";
+          action = "!cof-options-d-attaque attaque_de_groupe ?{Combien d'adversaires par jet?}";
+          action += " --target " + perso.token.id;
+          overlay = 'title="+2 Att. par créature, si Att > DEF + 5, DM x2, si critique DM x3"';
+          ligne += boutonSimple(action, adg, overlay);
+          if (adg < 2) {
+            ligne += "attaquant";
+          } else {
+            ligne += "attaquants";
+          }
+          addLineToFramedDisplay(display, ligne);
+        }
+        var text;
+        action = "!cof-options-d-attaque attaque_en_puissance_check ?{Attaque en puissance?|";
+        if (aepc) {
+          text = '<span style="font-family: \'Pictos\'">3</span>';
+          action += "Non|Oui}";
+        } else {
+          text = '<span> </span>';
+          action += "Oui|Non}";
+        }
+        action += " --target " + perso.token.id;
+        ligne = boutonSimple(action, text) + "Attaque en puissance";
+        action = "!cof-options-d-attaque attaque_en_puissance ?{nombre de dés de bonus (-5 att par dé)?}";
+        action += " --target " + perso.token.id;
+        ligne += "(+" + boutonSimple(action, aep) + "d";
+        if (charAttributeAsBool(perso, 'tropPetit')) {
+          ligne += "4 DM)";
+        } else {
+          ligne += "6 DM)";
+        }
+        addLineToFramedDisplay(display, ligne);
+        addLigneOptionAttaque(display, perso, arc, "Attaque risquée", 'attaque_risquee');
+        addLigneOptionAttaque(display, perso, aac, "Attaque assurée", 'attaque_assuree');
+        addLigneOptionAttaque(display, perso, adtc, "Attaque pour assomer", 'attaque_dm_temp');
+        sendChat('', endFramedDisplay(display));
+      });
+    });
+    if (evt.attributes) addEvent(evt);
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -23562,23 +23796,23 @@ var COFantasy = COFantasy || function() {
     replaceInline(msg);
     var evt;
     switch (command[0]) {
-      case "!cof-options":
+      case '!cof-options':
         setCofOptions(msg);
         return;
-      case "!cof-jet":
+      case '!cof-jet':
         jet(msg);
         return;
-      case "!cof-resultat-jet":
+      case '!cof-resultat-jet':
         resultatJet(msg);
         return;
-      case "!cof-attack":
+      case '!cof-attack':
         parseAttack(msg);
         return;
-      case "!cof-undo":
+      case '!cof-undo':
         undoEvent();
         return;
-      case "!cof-hors-combat":
-      case "!cof-fin-combat":
+      case '!cof-hors-combat':
+      case '!cof-fin-combat':
         sortirDuCombat();
         return;
       case "!cof-nuit": //deprecated
@@ -23942,6 +24176,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-set-attribute':
         setAttributeInterface(msg);
+        return;
+      case '!cof-options-d-attaque':
+        optionsDAttaque(msg);
         return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);
