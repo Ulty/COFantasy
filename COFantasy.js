@@ -16299,7 +16299,7 @@ var COFantasy = COFantasy || function() {
   }
 
   // callback est seulement appelé si on fait le test
-  function attaqueMagique(msg, evt, defResource, callback) {
+  function attaqueMagique(msg, evt, defResource, callback, fixedOpposedCarac) {
     var options = parseOptions(msg);
     if (options === undefined) return;
     var cmd = options.cmd;
@@ -16340,6 +16340,17 @@ var COFantasy = COFantasy || function() {
         " est immunisé" + onGenre(charId2, '', 'e') + " aux attaques mentales.");
       return;
     }
+    if(fixedOpposedCarac !== undefined) {
+      if(fixedOpposedCarac == "PV") {
+        var fixedOpposedValue = parseInt(token2.get("bar1_value"));
+      } else {
+        var fixedOpposedValue = charAttributeAsInt(cible, fixedOpposedCarac);
+      }
+      if (fixedOpposedValue === undefined) {
+        error("Unexpected fixed value ", fixedOpposedCarac);
+        return;
+      }
+    }
     var explications = [];
     evt = evt || {
       type: 'Attaque magique'
@@ -16359,28 +16370,40 @@ var COFantasy = COFantasy || function() {
     else if (bonus1 > 0) bonus1 = " +" + bonus1;
     var attk1 = addOrigin(name1, "[[" + computeArmeAtk(attaquant, '@{ATKMAG}') +
       bonus1 + "]]");
-    var bonus2 = bonusDAttaque(cible, explications, evt);
-    if (bonus2 === 0) bonus2 = "";
-    else if (bonus2 > 0) bonus2 = " +" + bonus2;
-    var attk2 = addOrigin(name2, "[[" + computeArmeAtk(cible, '@{ATKMAG}') +
-      bonus1 + "]]");
     var de1 = computeDice(attaquant);
-    var de2 = computeDice(cible);
-    var toEvaluate = "[[" + de1 + "]] [[" + de2 + "]] " + attk1 + " " + attk2;
+
+    if(fixedOpposedValue !== undefined) {
+      var toEvaluate = "[[" + de1 + "]] " + attk1;
+    } else {
+      var bonus2 = bonusDAttaque(cible, explications, evt);
+      if (bonus2 === 0) bonus2 = "";
+      else if (bonus2 > 0) bonus2 = " +" + bonus2;
+      var attk2 = addOrigin(name2, "[[" + computeArmeAtk(cible, '@{ATKMAG}') +
+          bonus1 + "]]");
+      var de2 = computeDice(cible);
+      var toEvaluate = "[[" + de1 + "]] " + attk1 + " [[" + de2 + "]] " + attk2;
+    }
+
     sendChat("", toEvaluate, function(res) {
       var rolls = res[0];
       // Determine which roll number correspond to which expression
       var afterEvaluate = rolls.content.split(" ");
       var att1RollNumber = rollNumber(afterEvaluate[0]);
-      var att2RollNumber = rollNumber(afterEvaluate[1]);
-      var attk1SkillNumber = rollNumber(afterEvaluate[2]);
-      var attk2SkillNumber = rollNumber(afterEvaluate[3]);
+      var attk1SkillNumber = rollNumber(afterEvaluate[1]);
       var d20roll1 = rolls.inlinerolls[att1RollNumber].results.total;
       var att1Skill = rolls.inlinerolls[attk1SkillNumber].results.total;
       var attackRoll1 = d20roll1 + att1Skill;
-      var d20roll2 = rolls.inlinerolls[att2RollNumber].results.total;
-      var att2Skill = rolls.inlinerolls[attk2SkillNumber].results.total;
-      var attackRoll2 = d20roll2 + att2Skill;
+
+      if(fixedOpposedValue !== undefined) {
+        var attackRoll2 = fixedOpposedValue;
+      } else {
+        var att2RollNumber = rollNumber(afterEvaluate[2]);
+        var attk2SkillNumber = rollNumber(afterEvaluate[3]);
+        var d20roll2 = rolls.inlinerolls[att2RollNumber].results.total;
+        var att2Skill = rolls.inlinerolls[attk2SkillNumber].results.total;
+        var attackRoll2 = d20roll2 + att2Skill;
+      }
+
       var action = "Attaque magique opposée";
       var display = startFramedDisplay(getPlayerIdFromMsg(msg), action, attaquant, {
         perso2: cible
@@ -16391,18 +16414,27 @@ var COFantasy = COFantasy || function() {
       if (att1Skill > 0) line += "+" + att1Skill + " = " + attackRoll1;
       else if (att1Skill < 0) line += att1Skill + " = " + attackRoll1;
       addLineToFramedDisplay(display, line);
-      line =
-        token2.get('name') + " fait " +
-        buildinline(rolls.inlinerolls[att2RollNumber]);
-      if (att2Skill > 0) line += "+" + att2Skill + " = " + attackRoll2;
-      else if (att2Skill < 0) line += att2Skill + " = " + attackRoll2;
-      addLineToFramedDisplay(display, line);
+      if (fixedOpposedValue !== undefined) {
+        line = "La valeur fixe de " + token2.get('name') + " est " + fixedOpposedValue;
+        addLineToFramedDisplay(display, line);
+      } else {
+        line =
+            token2.get('name') + " fait " +
+            buildinline(rolls.inlinerolls[att2RollNumber]);
+        if (att2Skill > 0) line += "+" + att2Skill + " = " + attackRoll2;
+        else if (att2Skill < 0) line += att2Skill + " = " + attackRoll2;
+        addLineToFramedDisplay(display, line);
+      }
+
       var reussi;
       if (d20roll1 == 1) {
-        if (d20roll2 == 1) reussi = (attackRoll1 >= attackRoll2);
+        if (fixedOpposedValue !== undefined) reussi = false;
+        else if (d20roll2 == 1) reussi = (attackRoll1 >= attackRoll2);
         else reussi = false;
-      } else if (d20roll2 == 1) reussi = true;
-      else if (d20roll1 == 20) {
+      } else if (fixedOpposedValue === undefined && d20roll2 == 1) {
+        reussi = true;
+      } else if (d20roll1 == 20) {
+        if (fixedOpposedValue !== undefined) reussi = true;
         if (d20roll2 == 20) reussi = (attackRoll1 >= attackRoll2);
         else reussi = true;
       } else reussi = (attackRoll1 >= attackRoll2);
@@ -16504,6 +16536,44 @@ var COFantasy = COFantasy || function() {
           addEvent(evt);
         }
       });
+  }
+
+  function motDeMort(msg) {
+      var evt = {
+          type: 'Mot de mort'
+      };
+      attaqueMagique(msg, evt, 'motDeMort',function(attaquant, cible, display, reussi) {
+          if (reussi) {
+              var s = {
+                  carac: 'CON',
+                  seuil: 10 + modCarac(attaquant, 'INTELLIGENCE')
+              };
+              var expliquer = function(message) {
+                  addLineToFramedDisplay(display, message, 80);
+              };
+              var saveOpts = {
+                  msgPour: " pour résister au Mot de mort",
+                  attaquant: attaquant
+              };
+              save(s, cible, 'motDeMort', expliquer, saveOpts, evt,
+                  function(reussiteSave) {
+                      if (reussiteSave) {
+                          addLineToFramedDisplay(display, cible.token.get('name') + " résiste au Mot de mort");
+                          setState(cible, 'renverse', true, evt);
+                      } else { //save raté
+                          addLineToFramedDisplay(display, cible.token.get('name') + " succombe au mot de mort");
+                          updateCurrentBar(cible.token, 1, 0, evt);
+                          setState(cible, 'mort', true, evt);
+                      }
+                      sendChat("", endFramedDisplay(display));
+                      addEvent(evt);
+                  });
+              } else {
+              sendChat("", endFramedDisplay(display));
+              addEvent(evt);
+              }
+          }, "PV"
+      );
   }
 
   function sommeil(msg) { //sort de sommeil
@@ -24007,6 +24077,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-tueur-fantasmagorique":
         tueurFantasmagorique(msg);
+        return;
+      case "!cof-mot-de-mort":
+        motDeMort(msg);
         return;
       case "!cof-tour-de-force":
         tourDeForce(msg);
