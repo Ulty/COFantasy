@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.08
 ### Capacités
+* Mot de mort du nécromancien.
 * Support pour l'étreinte des serpents.
 * Support pour la capacité forêt vivante du druide.
 * Ajout de la capacité botte mortelle du barde.

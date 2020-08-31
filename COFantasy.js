@@ -3722,24 +3722,25 @@ var COFantasy = COFantasy || function() {
         case 'demiAuto':
         case 'explodeMax':
         case 'feinte':
-        case "ignoreObstacles":
-        case "mainsDEnergie":
-        case "pasDeDmg":
-        case "pointsVitaux":
-        case "poudre":
-        case "metal":
-        case "reroll1":
-        case "reroll2":
-        case "semonce":
-        case "sortilege":
-        case "strigeSuce":
-        case "tirDeBarrage":
+        case 'ignoreObstacles':
+        case 'mainsDEnergie':
+        case 'pasDeDmg':
+        case 'pointsVitaux':
+        case 'poudre':
+        case 'metal':
+        case 'reroll1':
+        case 'reroll2':
+        case 'semonce':
+        case 'sortilege':
+        case 'strigeSuce':
+        case 'tirDeBarrage':
         case 'test':
-        case "traquenard":
+        case 'traquenard':
         case 'tueurDeGeants':
-        case "grenaille":
-        case "attaqueArmeeConjuree":
-        case "difficultePVmax":
+        case 'grenaille':
+        case 'attaqueArmeeConjuree':
+        case 'difficultePVmax':
+        case 'difficultePV':
         case 'lamesJumelles':
         case 'riposte':
         case 'secret':
@@ -5041,8 +5042,8 @@ var COFantasy = COFantasy || function() {
     return attrs;
   }
 
-  function onGenre(charId, male, female) {
-    var sex = getAttrByName(charId, 'sexe');
+  function onGenre(perso, male, female) {
+    var sex = ficheAttribute(perso, 'sexe', '');
     if (sex.startsWith('F')) return female;
     return male;
   }
@@ -5092,7 +5093,7 @@ var COFantasy = COFantasy || function() {
         });
         bonusVariable = rollD6.val;
         var msg = "entre en combat. ";
-        msg += onGenre(perso.charId, 'Il', 'Elle') + " fait " + rollD6.roll;
+        msg += onGenre(perso, 'Il', 'Elle') + " fait " + rollD6.roll;
         msg += " à son jet d'initiative";
         setTokenAttr(tokenAUtiliser, 'bonusInitVariable', bonusVariable, evt, {
           msg: msg
@@ -5466,13 +5467,21 @@ var COFantasy = COFantasy || function() {
   function defenseOfPerso(attaquant, target, pageId, evt, options) {
     options = options || {};
     if (options.difficultePVmax) {
-      var pvmax = parseInt(target.token.get("bar1_max"));
+      var pvmax = parseInt(target.token.get('bar1_max'));
       if (isNaN(pvmax)) {
         error("Points de vie de " + target.token.get('name') + " mal formés",
-          target.token.get("bar1_max"));
+          target.token.get('bar1_max'));
         return 0;
       }
       return pvmax;
+    } else if (options.difficultePV) {
+      var pv = parseInt(target.token.get('bar1_value'));
+      if (isNaN(pv)) {
+        error("Points de vie de " + target.token.get('name') + " mal formés",
+          target.token.get('bar1_value'));
+        return 0;
+      }
+      return pv;
     }
     target.tokName = target.tokName || target.token.get('name');
     var tokenName = target.tokName;
@@ -5618,7 +5627,7 @@ var COFantasy = COFantasy || function() {
           return;
         }
         if (ficheAttributeAsInt(protecteur, 'DEFBOUCLIERON', 1) === 0) {
-          var sujet = onGenre(protecteur.charId, 'il', 'elle');
+          var sujet = onGenre(protecteur, 'il', 'elle');
           explications.push(nameProtecteur +
             " ne porte pas son bouclier, " + sujet + " ne peut pas proteger " +
             tokenName);
@@ -6707,7 +6716,7 @@ var COFantasy = COFantasy || function() {
       } else {
         if (attackingToken.id == targetToken.id && options.triche != "echecTotal") { //même token pour attaquant et cible
           sendChar(attackingCharId,
-            "s'attaque " + onGenre(attackingCharId, "lui", "elle") +
+            "s'attaque " + onGenre(attaquant, "lui", "elle") +
             "-même ? Probablement une erreur à la sélection de la cible. On annule");
           return;
         }
@@ -6772,7 +6781,7 @@ var COFantasy = COFantasy || function() {
         return false;
       }
       if (attributeAsBool(attaquant, 'tenuADistanceManoeuvre(' + target.token.id + ')')) {
-        sendChar(attackingCharId, "est tenu à distance de " + target.tokName + ", " + onGenre(attackingCharId, "il", "elle") + " ne peut pas l'attaquer ce tour.");
+        sendChar(attackingCharId, "est tenu à distance de " + target.tokName + ", " + onGenre(attaquant, "il", "elle") + " ne peut pas l'attaquer ce tour.");
         return false;
       }
       if (charAttributeAsBool(target, 'armeeConjuree')) {
@@ -7383,7 +7392,7 @@ var COFantasy = COFantasy || function() {
     var attackerName = attaquant.name;
     var attackerTokName = attaquant.tokName;
     var explications = options.messages || [];
-    var sujetAttaquant = onGenre(attackingCharId, 'il', 'elle');
+    var sujetAttaquant = onGenre(attaquant, 'il', 'elle');
     if (options.contact) {
       //Pris en compte du corps élémentaire
       var attrCorpsElem = findObjs({
@@ -7918,7 +7927,7 @@ var COFantasy = COFantasy || function() {
                 target.partialSaveAuto = true;
               } else touche = false;
             } else if (d20roll % 2 && attributeAsBool(target, 'clignotement')) {
-              target.messages.push(target.tokName + " disparaît au moment où l'attaque aurait du l" + onGenre(target.charId, 'e', 'a') + " toucher");
+              target.messages.push(target.tokName + " disparaît au moment où l'attaque aurait du l" + onGenre(target, 'e', 'a') + " toucher");
               attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
               attackResult += addAttackImg("imgAttackEchecClignotement", weaponStats.divers, options);
               addAttackSound("soundAttackEchecClignotement", weaponStats.divers, options);
@@ -8536,7 +8545,7 @@ var COFantasy = COFantasy || function() {
         if (target.sournoise) sournoise += target.sournoise;
         if (sournoise) {
           if (charAttributeAsBool(target, 'immuniteAuxSournoises')) {
-            target.messages.push(target.tokName + " est immunisé" + eForFemale(target.charId) + " aux attaques sournoises");
+            target.messages.push(target.tokName + " est immunisé" + eForFemale(target) + " aux attaques sournoises");
           } else {
             if (options.ouvertureMortelle) {
               target.messages.push("Ouverture mortelle => + 2 x " + sournoise + options.d6 + " DM");
@@ -8808,7 +8817,12 @@ var COFantasy = COFantasy || function() {
                 }
                 if (testCondition(ce.condition, attaquant, [target], d20roll)) {
                   setState(target, ce.etat, true, evt);
-                  target.messages.push(target.tokName + " est " + stringOfEtat(ce.etat, target) + " par l'attaque");
+                  var msgEtat;
+                  if (ce.etat == 'mort')
+                    msgEtat = 'tué'+eForFemale(target);
+                  else
+                    msgEtat = stringOfEtat(ce.etat, target);
+                  target.messages.push(target.tokName + " est " + msgEtat + " par l'attaque");
                   if (ce.saveCarac) {
                     setTokenAttr(target, ce.etat + 'Save', ce.saveCarac, evt, {
                       maxval: ce.saveDifficulte
@@ -9090,7 +9104,12 @@ var COFantasy = COFantasy || function() {
                   if (ce.save) {
                     if (testCondition(ce.condition, attaquant, [target], d20roll)) {
                       var msgPour = " pour résister à un effet";
-                      var msgRate = ", " + target.tokName + " est " + stringOfEtat(ce.etat, target) + " par l'attaque";
+                  var msgEtat;
+                  if (ce.etat == 'mort')
+                    msgEtat = 'tué'+eForFemale(target);
+                  else
+                    msgEtat = stringOfEtat(ce.etat, target);
+                      var msgRate = ", " + target.tokName + " est " + msgEtat + " par l'attaque";
                       var saveOpts = {
                         msgPour: msgPour,
                         msgRate: msgRate,
@@ -10437,7 +10456,7 @@ var COFantasy = COFantasy || function() {
             charAttributeAsBool(target, 'peutEnrager') &&
             !attributeAsBool(target, 'enragé')) {
             setTokenAttr(target, 'enragé', true, evt);
-            expliquer(target.tokName + " devient enragé" + eForFemale(target.charId) + ".");
+            expliquer(target.tokName + " devient enragé" + eForFemale(target) + ".");
             finDEffetDeNom(target, 'apeureTemp', evt);
             finDEffetDeNom(target, 'peurEtourdi', evt);
             setState(target, 'apeure', false, evt);
@@ -10491,8 +10510,8 @@ var COFantasy = COFantasy || function() {
               pvPerdus += bar1;
               if (charAttributeAsBool(target, 'baroudHonneur')) {
                 var msgBarroud = token.get('name') + " devrait être mort";
-                msgBarroud += eForFemale(target.charId) + ", mais ";
-                msgBarroud += onGenre(target.charId, 'il', 'elle') + " continue à se battre !";
+                msgBarroud += eForFemale(target) + ", mais ";
+                msgBarroud += onGenre(target, 'il', 'elle') + " continue à se battre !";
                 expliquer(msgBarroud);
                 setTokenAttr(target, 'baroudHonneurActif', true, evt);
               } else if ((attributeAsBool(target, 'enragé') || charAttributeAsBool(target, 'durACuire')) &&
@@ -10500,8 +10519,8 @@ var COFantasy = COFantasy || function() {
                   limiteParCombat: 1
                 }, "agitAZeroPV", "", evt)) {
                 var msgAgitZ = token.get('name') + " devrait être mort";
-                msgAgitZ += eForFemale(target.charId) + ", mais ";
-                msgAgitZ += onGenre(target.charId, 'il', 'elle') + " continue à se battre !";
+                msgAgitZ += eForFemale(target) + ", mais ";
+                msgAgitZ += onGenre(target, 'il', 'elle') + " continue à se battre !";
                 expliquer(msgAgitZ);
                 setAttrDuree(target, 'agitAZeroPV', 1, evt);
               } else {
@@ -11103,7 +11122,7 @@ var COFantasy = COFantasy || function() {
             if (closestToken) {
               var r = randomInteger(closestToken.names.length) - 1;
               sendChar(charId,
-                "est en pleine confusion. " + onGenre(charId, 'Il', 'Elle') +
+                "est en pleine confusion. " + onGenre(perso, 'Il', 'Elle') +
                 " attaque " + closestToken.names[r] + ".");
             } else {
               sendChar(charId, "est seul et en plein confusion");
@@ -12052,7 +12071,7 @@ var COFantasy = COFantasy || function() {
         sendChar(charId, msg);
       };
       var msgPour = " pour ne plus être sous l'effet de " + effetC;
-      var sujet = onGenre(charId, 'il', 'elle');
+      var sujet = onGenre(perso, 'il', 'elle');
       var met = messageEffetIndetermine[effetC];
       if (met === undefined) met = {
         fin: "résiste à l'effet",
@@ -12233,7 +12252,7 @@ var COFantasy = COFantasy || function() {
         if (getState(perso, 'blesse')) {
           testCaracteristique(perso, 'CON', 8, 'guérir_blessure', {}, evt, function(tr) {
             sendChar(charId, "fait un jet de CON pour guérir de sa blessure");
-            var m = "/direct " + onGenre(charId, 'Il', 'Elle') + " fait " + tr.texte;
+            var m = "/direct " + onGenre(perso, 'Il', 'Elle') + " fait " + tr.texte;
             if (tr.reussite) {
               sendChar(charId, m + "&ge; 8, son état s'améliore nettement.");
               setState(perso, 'blesse', false, evt);
@@ -13205,7 +13224,7 @@ var COFantasy = COFantasy || function() {
         }
         var name = perso.token.get('name');
         if (charAttributeAsBool(perso, 'immuniteContreSurprise')) {
-          addLineToFramedDisplay(display, name + " n'est pas surpris" + eForFemale(perso.charId));
+          addLineToFramedDisplay(display, name + " n'est pas surpris" + eForFemale(perso));
           sendEvent();
           return;
         }
@@ -13228,7 +13247,7 @@ var COFantasy = COFantasy || function() {
               if (tr.reussite) result = "réussi";
               else {
                 result = "raté, " + name + " est surpris";
-                result += eForFemale(perso.charId);
+                result += eForFemale(perso);
                 setState(perso, 'surpris', true, evt);
               }
               var message = name + " fait " + tr.texte + " : " + result;
@@ -13237,7 +13256,7 @@ var COFantasy = COFantasy || function() {
             });
         } else { //no test
           setState(perso, 'surpris', true, evt);
-          addLineToFramedDisplay(display, name + " est surpris." + eForFemale(perso.charId));
+          addLineToFramedDisplay(display, name + " est surpris." + eForFemale(perso));
           sendEvent();
         }
       }, sendEvent);
@@ -14139,7 +14158,7 @@ var COFantasy = COFantasy || function() {
       etext = etat.substring(0, etat.length - 1) + 'é';
     }
     if (perso === undefined) return etext;
-    return etext + eForFemale(perso.charId);
+    return etext + eForFemale(perso);
   }
 
   function statut(msg) { // show some character informations
@@ -14529,8 +14548,8 @@ var COFantasy = COFantasy || function() {
       stateCOF.activeTokenId = tidNew;
   }
 
-  function eForFemale(charId) {
-    return onGenre(charId, '', 'e');
+  function eForFemale(perso) {
+    return onGenre(perso, '', 'e');
   }
 
   function armureMagique(msg) {
@@ -16249,7 +16268,7 @@ var COFantasy = COFantasy || function() {
       }, evt,
       function(tr) {
         var line = "Jet de résistance de " + targetName + " :" + tr.texte;
-        var sujet = onGenre(charId, 'il', 'elle');
+        var sujet = onGenre(target, 'il', 'elle');
         if (tr.reussite) {
           line += "&gt;=" + difficulte + ",  " + sujet + " résiste à la peur.";
         } else {
@@ -16257,10 +16276,10 @@ var COFantasy = COFantasy || function() {
           var effet = 'apeureTemp';
           var etat = 'apeure';
           if (options.etourdi) {
-            line += "s'enfuit ou reste recroquevillé" + eForFemale(charId) + " sur place";
+            line += "s'enfuit ou reste recroquevillé" + eForFemale(target) + " sur place";
             effet = 'peurEtourdi';
           } else if (options.ralenti) {
-            line += "est ralenti" + eForFemale(charId);
+            line += "est ralenti" + eForFemale(target);
             effet = 'ralentiTemp';
             etat = 'ralenti';
           } else {
@@ -16339,7 +16358,7 @@ var COFantasy = COFantasy || function() {
       if (options.lanceur) {
         action = "<b>" + options.lanceur.token.get('name') + "</b> ";
         if (options.effroi)
-          action += "est vraiment effrayant" + eForFemale(options.lanceur.charId);
+          action += "est vraiment effrayant" + eForFemale(options.lanceur);
         else action = "<b>Capacité</b> : Sort de peur";
       }
       var display = startFramedDisplay(playerId, action, options.lanceur);
@@ -16414,8 +16433,8 @@ var COFantasy = COFantasy || function() {
     var name2 = char2.get('name');
     if (msg.content.includes('--attaqueMentale') && charAttributeAsBool(cible, 'sansEsprit')) {
       sendChat('', token2.get('name') + " est sans esprit, " +
-        onGenre(charId2, 'il', 'elle') +
-        " est immunisé" + onGenre(charId2, '', 'e') + " aux attaques mentales.");
+        onGenre(cible, 'il', 'elle') +
+        " est immunisé" + onGenre(cible, '', 'e') + " aux attaques mentales.");
       return;
     }
     var explications = [];
@@ -16688,7 +16707,7 @@ var COFantasy = COFantasy || function() {
             testCaracteristique(t, 'SAG', seuil, 'sommeil', {}, evt,
               function(testRes) {
                 var line = "Jet de résistance de " + t.name + ":" + testRes.texte;
-                var sujet = onGenre(t.charId, 'il', 'elle');
+                var sujet = onGenre(t, 'il', 'elle');
                 if (testRes.reussite) {
                   line += "&gt;=" + seuil + ",  " + sujet + " ne s'endort pas";
                 } else {
@@ -17351,8 +17370,8 @@ var COFantasy = COFantasy || function() {
           }
           var token2 = cible.token;
           var nomCible = token2.get('name');
-          var sujet = onGenre(cible.charId, 'il', 'elle');
-          var Sujet = onGenre(cible.charId, 'Il', 'Elle');
+          var sujet = onGenre(cible, 'il', 'elle');
+          var Sujet = onGenre(cible, 'Il', 'Elle');
           if (options.portee !== undefined) {
             if (options.tempeteDeManaPortee) options.portee = options.portee * 2;
             var distance = distanceCombat(soigneur.token, token2, pageId);
@@ -17585,7 +17604,7 @@ var COFantasy = COFantasy || function() {
         var duree = rollDePlus(6);
         var output =
           "cherche des herbes. Après " + duree.roll + " heures, " +
-          onGenre(charId, "il", "elle");
+          onGenre(lanceur, "il", "elle");
         var evt = {
           type: "recherche d'herbes"
         };
@@ -18055,7 +18074,7 @@ var COFantasy = COFantasy || function() {
         });
         var line = nom + " reçoit une baie";
         if (perso.token.id == druide.token.id)
-          line = nom + " en garde une pour " + onGenre(druide.charId, "lui", "elle");
+          line = nom + " en garde une pour " + onGenre(druide, "lui", "elle");
         addLineToFramedDisplay(display, line);
       });
       addEvent(evt);
@@ -18098,7 +18117,7 @@ var COFantasy = COFantasy || function() {
             sendChar(perso.charId, msgSoins);
           },
           function() {
-            sendChar(perso.charId, "mange une baie magique. " + onGenre(perso.charId, "Il", "Elle") + " se sent rassasié" + onGenre(perso.charId, '', 'e') + '.');
+            sendChar(perso.charId, "mange une baie magique. " + onGenre(perso, "Il", "Elle") + " se sent rassasié" + onGenre(perso, '', 'e') + '.');
           });
       });
       addEvent(evt);
@@ -18831,7 +18850,7 @@ var COFantasy = COFantasy || function() {
           attAbsBonus += bad;
           if (attAbsBonus > 0) msgAbsorber += "+" + attAbsBonus;
           else if (attAbsBonus < 0) msgAbsorber += attAbsBonus;
-          explAbsorber.push(cible.tokName + " tente d'absorber l'attaque avec son bouclier. " + onGenre(cible.charId, "Il", "elle") + " fait " + msgAbsorber);
+          explAbsorber.push(cible.tokName + " tente d'absorber l'attaque avec son bouclier. " + onGenre(cible, "Il", "elle") + " fait " + msgAbsorber);
           cible.absorber = totalAbsorbe;
           cible.absorberDisplay = msgAbsorber;
           cible.absorberExpl = explAbsorber;
@@ -18944,7 +18963,7 @@ var COFantasy = COFantasy || function() {
           attAbsBonus += bad;
           if (attAbsBonus > 0) msgResister += "+" + attAbsBonus;
           else if (attAbsBonus < 0) msgResister += attAbsBonus;
-          expl.push(cible.tokName + " tente de résister à la magie. " + onGenre(cible.charId, "Il", "elle") + " fait " + msgResister);
+          expl.push(cible.tokName + " tente de résister à la magie. " + onGenre(cible, "Il", "elle") + " fait " + msgResister);
           cible.absorber = total;
           cible.absorberDisplay = msgResister;
           cible.absorberExpl = expl;
@@ -19057,7 +19076,7 @@ var COFantasy = COFantasy || function() {
           attAbsBonus += bad;
           if (attAbsBonus > 0) msgEsquiver += "+" + attAbsBonus;
           else if (attAbsBonus < 0) msgEsquiver += attAbsBonus;
-          explEsquiver.push(cible.tokName + " tente une esquive acrobatique. " + onGenre(cible.charId, "Il", "elle") + " fait " + msgEsquiver);
+          explEsquiver.push(cible.tokName + " tente une esquive acrobatique. " + onGenre(cible, "Il", "elle") + " fait " + msgEsquiver);
           cible.absorber = totalEsquive;
           cible.absorberDisplay = msgEsquiver;
           cible.absorberExpl = explEsquiver;
@@ -19185,7 +19204,7 @@ var COFantasy = COFantasy || function() {
           else if (attAbsBonus < 0) msgParer += attAbsBonus;
           var msgAction = " tente une parade magistrale. ";
           if (estEsquive) msgAction = " tente une esquive acobatique";
-          explParer.push(cible.tokName + msgAction + onGenre(cible.charId, "Il", "elle") + " fait " + msgParer);
+          explParer.push(cible.tokName + msgAction + onGenre(cible, "Il", "elle") + " fait " + msgParer);
           cible.absorber = totalParade;
           cible.absorberDisplay = msgParer;
           cible.absorberExpl = explParer;
@@ -21508,7 +21527,7 @@ var COFantasy = COFantasy || function() {
           attrArmeCible.remove();
         }
         if (envoyerMessage) {
-          var msgDesarme = "est désarmé" + onGenre(cible.charId, '', 'e');
+          var msgDesarme = "est désarmé" + onGenre(cible, '', 'e');
           if (critique) msgDesarme += ", son adversaire lui a pris son arme.";
           else msgDesarme += ".";
           sendChar(cible.charId, msgDesarme);
@@ -21556,7 +21575,7 @@ var COFantasy = COFantasy || function() {
         var distance = rollDePlus(6);
         if (critique && distance < 3) distance = 3;
         if (envoyerMessage)
-          sendChar(cible.charId, "est repoussé" + onGenre(cible.charId, '', 'e') + " et doit reculer de " + distance.roll + "m.");
+          sendChar(cible.charId, "est repoussé" + onGenre(cible, '', 'e') + " et doit reculer de " + distance.roll + "m.");
         if (critique) setState(cible, 'renverse', true, evt);
       },
       penalitePlusPetit: true,
@@ -23349,7 +23368,7 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, e);
           });
           if (tr == 2) {
-            var msgRate = "C'est raté, " + perso.tokName + " est toujours agrippé" + eForFemale(perso.charId) + ".";
+            var msgRate = "C'est raté, " + perso.tokName + " est toujours agrippé" + eForFemale(perso) + ".";
             evt.personnage = perso;
             evt.action = {
               selected: [{
@@ -23417,11 +23436,11 @@ var COFantasy = COFantasy || function() {
     }
     cible.tokName = cible.token.get('name');
     if (!getState(cible, 'mort')) {
-      sendPlayer(msg, cible.tokName + " n'est pas mort" + eForFemale(cible.charId) + ".");
+      sendPlayer(msg, cible.tokName + " n'est pas mort" + eForFemale(cible) + ".");
       return;
     }
     if (attributeAsBool(cible, 'cadavreAnime')) {
-      sendPlayer(msg, cible.tokName + " a déjà été animé" + eForFemale(cible.charId) + ".");
+      sendPlayer(msg, cible.tokName + " a déjà été animé" + eForFemale(cible) + ".");
       return;
     }
     var evt = {
@@ -25380,8 +25399,6 @@ var COFantasy = COFantasy || function() {
   // effet est le nom complet de l'effet
   function degatsParTour(charId, pageId, effet, attrName, dmg, type, msg, evt, options, callback) {
     options = options || {};
-    if (msg) msg += '. ' + onGenre(charId, 'Il', 'Elle');
-    else msg = '';
     var count = -1;
     iterTokensOfAttribute(charId, pageId, effet, attrName,
       function(token, total) {
@@ -25426,11 +25443,14 @@ var COFantasy = COFantasy || function() {
           dealDamage(perso, r, [], evt, false, options, undefined,
             function(dmgDisplay, dmg) {
               if (dmg > 0) {
+                var msgDm;
+    if (msg) msgDm = msg + '. ' + onGenre(perso, 'Il', 'Elle');
+    else msgDm = '';
                 if (effet == attrName) {
-                  sendChar(charId, msg + " subit " + dmgDisplay + " DM");
+                  sendChar(charId, msgDm + " subit " + dmgDisplay + " DM");
                 } else {
                   var tokenName = attrName.substring(attrName.indexOf('_') + 1);
-                  sendChat('', tokenName + ' ' + msg + " subit " + dmgDisplay + " DM");
+                  sendChat('', tokenName + ' ' + msgDm + " subit " + dmgDisplay + " DM");
                 }
               }
               count--;
@@ -25648,7 +25668,7 @@ var COFantasy = COFantasy || function() {
             };
             feu = dealDamage(perso, dmg, [], evt);
             sendChar(charId, " est en flamme ! " +
-              onGenre(charId, 'Il', 'Elle') + " subit " + feu + " DM");
+              onGenre(perso, 'Il', 'Elle') + " subit " + feu + " DM");
             if (d6Enflamme < 3) {
               sendChar(charId, " les flammes s'éteignent");
               removeTokenAttr(perso, 'enflamme', evt);
@@ -25743,7 +25763,7 @@ var COFantasy = COFantasy || function() {
         if (effetC.startsWith('dotGen('))
           msgPour += effetC.substring(7, effetC.indexOf(')'));
         else msgPour += effetC;
-        var sujet = onGenre(charId, 'il', 'elle');
+        var sujet = onGenre(perso, 'il', 'elle');
         var met = messageOfEffetTemp(effetC);
         var msgReussite = ", " + sujet + " " + met.fin;
         var msgRate = ", " + sujet + " " + met.actif;
