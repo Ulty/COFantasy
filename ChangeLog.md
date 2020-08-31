@@ -30,6 +30,7 @@
 * Attaques par défaut dans la liste d'actions, possibilité de se passer complètement des attributs pour les attaques (actif quand la version 3.3 de la fiche sera là.
 
 ### Corrections de bugs
+* Utilisation d'une valeur d'attaque plus cohérente pour les PNJ en cas d'attaque magique opposée.
 * Prise en compte de la forêt vivante dans les jets sans difficulté explicite.
 * Prise en compte correcte de l'armure des PNJ pour la main d'énergie.
 * Correction d'un bug qui faisait planter en cas de save dans une attaque

@@ -7257,6 +7257,109 @@ var COFantasy = COFantasy || function() {
     return crit;
   }
 
+  //Retourne un tableau de prefixes valides comme attaques de PNJ
+  function listeAttaquesPNJ(perso) {
+    var attributes = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+    });
+    var attaques = [];
+    attributes.forEach(function(attr) {
+      var attrName = attr.get('name');
+      var m = attackNamePNJRegExp.exec(attrName);
+      if (m) {
+        var attPrefix = m[1];
+        attaques.push(attPrefix);
+      }
+    });
+    return attaques;
+  }
+
+  function computeArmeAtk(attaquant, x) {
+    if (x === undefined) return '';
+    var attDiv;
+    var attCar;
+    switch (x) {
+      case '@{ATKCAC}':
+        if (persoEstPNJ(attaquant)) {
+          var atkcac;
+          listeAttaquesPNJ(attaquant).forEach(function(attPrefix) {
+            if (atkcac === undefined) {
+              atkcac = ficheAttributeAsInt(attaquant, attPrefix + 'armeatk');
+              return;
+            }
+            var portee = ficheAttributeAsInt(attaquant, attPrefix + 'armeportee', 0);
+            if (portee > 0) return;
+            var typeat = ficheAttribute(attaquant, attPrefix + 'armetypeattaque', 'Naturel');
+            switch (typeat) {
+              case 'Sortilege':
+              case 'Arme de jet':
+                return;
+              default:
+                var oatk = ficheAttributeAsInt(attaquant, attPrefix + 'armeatk', atkcac);
+                if (oatk > atkcac) atkcac = oatk;
+            }
+          });
+          if (atkcac === undefined) {
+            atkcac = ficheAttributeAsInt(attaquant, 'niveau', 0) + 1 + modCarac(attaquant, 'FORCE');
+          }
+          return atkcac;
+        }
+        attDiv = ficheAttributeAsInt(attaquant, 'ATKCAC_DIV', 0);
+        attCar = getAttrByName(attaquant.charId, 'ATKCAC_CARAC');
+        break;
+      case '@{ATKTIR}':
+        if (persoEstPNJ(attaquant)) {
+          var atktir;
+          listeAttaquesPNJ(attaquant).forEach(function(attPrefix) {
+            if (atktir === undefined) {
+              atktir = ficheAttributeAsInt(attaquant, attPrefix + 'armeatk');
+              return;
+            }
+            var portee = ficheAttributeAsInt(attaquant, attPrefix + 'armeportee', 0);
+            if (portee === 0) return;
+            var typeat = ficheAttribute(attaquant, attPrefix + 'armetypeattaque', 'Naturel');
+            if (typeat == 'Sortilege') return;
+            var oatk = ficheAttributeAsInt(attaquant, attPrefix + 'armeatk', atktir);
+            if (oatk > atktir) atktir = oatk;
+          });
+          if (atktir === undefined) {
+            atktir = ficheAttributeAsInt(attaquant, 'niveau', 0) + 1 + modCarac(attaquant, 'DEXTERITE');
+          }
+          return atktir;
+        }
+        attDiv = ficheAttributeAsInt(attaquant, 'ATKTIR_DIV', 0);
+        attCar = getAttrByName(attaquant.charId, 'ATKTIR_CARAC');
+        break;
+      case '@{ATKMAG}':
+        if (persoEstPNJ(attaquant)) {
+          var atkmag;
+          listeAttaquesPNJ(attaquant).forEach(function(attPrefix) {
+            if (atkmag === undefined) {
+              atkmag = ficheAttributeAsInt(attaquant, attPrefix + 'armeatk');
+              return;
+            }
+            var typeat = ficheAttribute(attaquant, attPrefix + 'armetypeattaque', 'Naturel');
+            if (typeat != 'Sortilege') return;
+            var oatk = ficheAttributeAsInt(attaquant, attPrefix + 'armeatk', atkmag);
+            if (oatk > atkmag) atkmag = oatk;
+          });
+          if (atkmag === undefined) {
+            atkmag = ficheAttributeAsInt(attaquant, 'niveau', 0) + 1 + modCarac(attaquant, 'SAGESSE');
+          }
+          return atkmag;
+        }
+        attDiv = ficheAttributeAsInt(attaquant, 'ATKMAG_DIV', 0);
+        attCar = getAttrByName(attaquant.charId, 'ATKMAG_CARAC');
+        break;
+      default:
+        return x;
+    }
+    attCar = computeCarExpression(attaquant, attCar);
+    if (attCar === undefined) return x;
+    return attCar + ficheAttributeAsInt(attaquant, 'niveau', 1) + attDiv;
+  }
+
   //attaquant doit avoir un champ name
   function attackExpression(attaquant, nbDe, dice, crit, plusFort, weaponStats) {
     var de = computeDice(attaquant, {
@@ -8113,31 +8216,6 @@ var COFantasy = COFantasy || function() {
     if (attCarBonus === "0" || attCarBonus === 0) attCarBonus = "";
     else attCarBonus = " + " + attCarBonus;
     return attCarBonus;
-  }
-
-  function computeArmeAtk(attaquant, x) {
-    if (x === undefined) return '';
-    var attDiv;
-    var attCar;
-    switch (x) {
-      case '@{ATKCAC}':
-        attDiv = ficheAttributeAsInt(attaquant, 'ATKCAC_DIV', 0);
-        attCar = getAttrByName(attaquant.charId, 'ATKCAC_CARAC');
-        break;
-      case '@{ATKTIR}':
-        attDiv = ficheAttributeAsInt(attaquant, 'ATKTIR_DIV', 0);
-        attCar = getAttrByName(attaquant.charId, 'ATKTIR_CARAC');
-        break;
-      case '@{ATKMAG}':
-        attDiv = ficheAttributeAsInt(attaquant, 'ATKMAG_DIV', 0);
-        attCar = getAttrByName(attaquant.charId, 'ATKMAG_CARAC');
-        break;
-      default:
-        return x;
-    }
-    attCar = computeCarExpression(attaquant, attCar);
-    if (attCar === undefined) return x;
-    return attCar + ficheAttributeAsInt(attaquant, 'niveau', 1) + attDiv;
   }
 
   function attackDealDmg(attaquant, cibles, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees) {
@@ -16299,7 +16377,7 @@ var COFantasy = COFantasy || function() {
   }
 
   // callback est seulement appelé si on fait le test
-  function attaqueMagique(msg, evt, defResource, callback) {
+  function attaqueMagiqueOpposee(msg, evt, defResource, callback) {
     var options = parseOptions(msg);
     if (options === undefined) return;
     var cmd = options.cmd;
@@ -16427,7 +16505,7 @@ var COFantasy = COFantasy || function() {
     };
     if (!msg.content.includes(' --attaqueMentale'))
       msg.content += ' --attaqueMentale';
-    attaqueMagique(msg, evt, 'injonction',
+    attaqueMagiqueOpposee(msg, evt, 'injonction',
       function(attaquant, cible, display, reussi) {
         if (reussi) {
           if (attributeAsBool(cible, 'resisteInjonction')) {
@@ -16452,7 +16530,7 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: 'Tueur fantasmagorique'
     };
-    attaqueMagique(msg, evt, 'tueurFantasmagorique',
+    attaqueMagiqueOpposee(msg, evt, 'tueurFantasmagorique',
       function(attaquant, cible, display, reussi) {
         if (reussi) {
           if (estNonVivant(cible)) {
@@ -23922,7 +24000,7 @@ var COFantasy = COFantasy || function() {
         finClasseDEffet(msg);
         return;
       case "!cof-attaque-magique":
-        attaqueMagique(msg);
+        attaqueMagiqueOpposee(msg);
         return;
       case "!cof-injonction":
         injonction(msg);
