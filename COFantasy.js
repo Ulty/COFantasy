@@ -4376,7 +4376,7 @@ var COFantasy = COFantasy || function() {
           }
           scope.decrAttribute = attr;
           return;
-        case "incrDmgCoef":
+        case 'incrDmgCoef':
           scope.dmgCoef = (scope.dmgCoef || 1);
           if (cmd.length > 1) {
             var incrDmgCoef = parseInt(cmd[1]);
@@ -4389,7 +4389,20 @@ var COFantasy = COFantasy || function() {
           }
           scope.dmgCoef++; //Par défaut, incrémente de 1
           return;
-        case "incrCritCoef":
+        case 'diviseDmg':
+          scope.diviseDmg = (scope.diviseDmg || 1);
+          if (cmd.length > 1) {
+            var diviseDmg = parseInt(cmd[1]);
+            if (isNaN(diviseDmg)) {
+              error("L'option --diviseDmg attend un entier", cmd);
+              return;
+            }
+            scope.diviseDmg *= diviseDmg;
+            return;
+          }
+          scope.diviseDmg *= 2; //Par défaut, divise par 2
+          return;
+        case 'incrCritCoef':
           scope.critCoef = (scope.critCoef || 1);
           if (cmd.length > 1) {
             var incrCritCoef = parseInt(cmd[1]);
@@ -4857,6 +4870,12 @@ var COFantasy = COFantasy || function() {
             else opt[field] = 1;
           }
           opt[field] += branch[field] - 1;
+          break;
+        case 'diviseDmg':
+          if (opt[field] === undefined) {
+            opt[field] = 1;
+          }
+          opt[field] *= branch[field];
           break;
         case 'messages':
           if (condInTarget)
@@ -7144,6 +7163,14 @@ var COFantasy = COFantasy || function() {
       dmgTotal = dmgTotal * dmgCoef;
       showTotal = true;
     }
+    var diviseDmg = options.diviseDmg || 1;
+    if (target.diviseDmg) diviseDmg *= target.diviseDmg;
+    if (diviseDmg > 1) {
+      if (showTotal) dmgDisplay = '(' + dmgDisplay + ')';
+      dmgDisplay += " / " + diviseDmg;
+      dmgTotal = Math.ceil(dmgTotal / diviseDmg);
+      showTotal = true;
+    }
     if (crit) {
       if (attributeAsBool(target, 'memePasMal')) {
         options.memePasMal = (dmgTotal / dmgCoef) * critCoef;
@@ -7752,311 +7779,321 @@ var COFantasy = COFantasy || function() {
         var ciblesTouchees = [];
         var count = cibles.length;
         cibles.forEach(function(target) {
-          if (attributeAsBool(attaquant, 'menaceManoeuvre(' + target.token.id + ')')) {
-            explications.push(attaquant.tokName + " attaque " + target.tokName + " malgré la menace. " + target.tokName + " a droit à une attaque au contact gratuite.");
-            removeTokenAttr(attaquant, 'menaceManoeuvre(' + target.token.id + ')', evt);
-            setTokenAttr(attaquant, 'attaqueMalgreMenace(' + target.token.id + ')', 1, evt);
-          } else if (attributeAsBool(attaquant, 'menaceManoeuvre(' + target.token.id + ',crit)')) {
-            explications.push(attaquant.tokName + " attaque " + target.tokName + " malgré la menace. " + target.tokName + " a droit à une attaque au contact gratuite (DM x 2 !).");
-            removeTokenAttr(attaquant, 'menaceManoeuvre(' + target.token.id + ',crit)', evt);
-            setTokenAttr(attaquant, 'attaqueMalgreMenace(' + target.token.id + ')', 2, evt);
-          }
-          target.additionalDmg = [];
-          var amm = 'attaqueMalgreMenace(' + attaquant.token.id + ')';
-          if (options.contact && cibles.length == 1) {
-            if (attributeAsBool(target, amm)) {
-              target.messages.push('Attaque automatique suite à une menace ignorée');
-              options.auto = true;
-              if (attributeAsInt(target, amm, 1) > 1) options.dmFoisDeux = true;
-              target.additionalDmg.push({
-                type: mainDmgType,
-                value: '1d6'
-              });
-              removeTokenAttr(target, amm, evt);
-            } else if (attributeAsBool(attaquant, 'attaqueGratuiteAutomatique(' + target.token.id + ')')) {
-              options.auto = true;
-              removeTokenAttr(attaquant, 'attaqueGratuiteAutomatique(' + target.token.id + ')', evt);
+          evalITE(attaquant, target, d20roll, options, evt, explications, options, function() {
+            target.ignoreTouteRD = target.ignoreTouteRD || options.ignoreTouteRD;
+            target.ignoreRD = target.ignoreRD || options.ignoreRD;
+            target.ignoreMoitieRD = target.ignoreMoitieRD || options.ignoreMoitieRD;
+            target.tempDmg = target.tempDmg || options.tempDmg;
+            target.enflamme = target.enflamme || options.enflamme;
+            target.malediction = target.malediction || options.malediction;
+            target.pietine = target.pietine || options.pietine;
+            target.maxDmg = target.maxDmg || options.maxDmg;
+            if (attributeAsBool(attaquant, 'menaceManoeuvre(' + target.token.id + ')')) {
+              explications.push(attaquant.tokName + " attaque " + target.tokName + " malgré la menace. " + target.tokName + " a droit à une attaque au contact gratuite.");
+              removeTokenAttr(attaquant, 'menaceManoeuvre(' + target.token.id + ')', evt);
+              setTokenAttr(attaquant, 'attaqueMalgreMenace(' + target.token.id + ')', 1, evt);
+            } else if (attributeAsBool(attaquant, 'menaceManoeuvre(' + target.token.id + ',crit)')) {
+              explications.push(attaquant.tokName + " attaque " + target.tokName + " malgré la menace. " + target.tokName + " a droit à une attaque au contact gratuite (DM x 2 !).");
+              removeTokenAttr(attaquant, 'menaceManoeuvre(' + target.token.id + ',crit)', evt);
+              setTokenAttr(attaquant, 'attaqueMalgreMenace(' + target.token.id + ')', 2, evt);
             }
-          }
-          //Les bonus d'attaque qui dépendent de la cible
-          var bad = bonusAttaqueD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
-          var attBonus = attBonusCommun + bad;
-          if (options.traquenard) {
-            var initTarg = tokenInit(target, evt);
-            if (options.traquenard >= initTarg) {
-              attBonus += 2;
-              target.additionalDmg.push({
-                type: mainDmgType,
-                value: '2' + options.d6
-              });
-              target.messages.push(attackerTokName + " fait un traquenard à " + target.tokName);
-            } else {
-              target.messages.push(attackerTokName + " n'est pas assez rapide pour faire un traquenard à " + target.tokName);
-            }
-          }
-          var defautCuirasse =
-            tokenAttribute(target, 'defautDansLaCuirasse_' + attackerTokName);
-          target.crit = crit;
-          if (defautCuirasse.length > 0) {
-            target.defautCuirasse = true;
-            if (target.crit > 2) target.crit -= 1;
-          }
-          //Defense de la cible
-          var defense = defenseOfPerso(attaquant, target, pageId, evt, options);
-          var interchange;
-          if (options.aoe === undefined) {
-            interchange = interchangeable(attackingToken, target, pageId);
-            if (interchange.result) {
-              if (reglesOptionelles.interchangeable_attaque.val) {
-                defense += 2;
-              } else {
-                defense += 5;
-              }
-            }
-          }
-          //Absorption au bouclier
-          var absorber;
-          if (target.absorber) {
-            explications = explications.concat(target.absorberExpl);
-            if (target.absorber > defense) {
-              defense = target.absorber;
-              absorber = target.absorberDisplay;
-            }
-          }
-          var touche = true;
-          var critique = false;
-          // Calcule si touché, et les messages de dégats et attaque
-          if (options.auto) {
-            addAttackSound("soundAttackSucces", weaponStats.divers, options);
-          } else if (!options.interposer) {
-            if (options.triche) {
-              switch (options.triche) {
-                case "rate":
-                  if (d20roll >= target.crit) {
-                    if (target.crit < 2) d20roll = 1;
-                    else d20roll = randomInteger(target.crit - 1);
-                  }
-                  if ((d20roll + attSkill + attBonus) >= defense) {
-                    var maxd20roll = defense - attSkill - attBonus - 1;
-                    if (maxd20roll >= target.crit) maxd20roll = target.crit - 1;
-                    if (maxd20roll < 2) d20roll = 1;
-                    else d20roll = randomInteger(maxd20roll);
-                  }
-                  break;
-                case "touche":
-                case "echecTotal": // l'attaquant s'attaque lui-même et touche automatiquement
-                  if (d20roll == 1) d20roll = randomInteger(dice - 1) + 1;
-                  if ((d20roll + attSkill + attBonus) < defense) {
-                    var mind20roll = defense - attSkill - attBonus - 1;
-                    if (mind20roll < 1) mind20roll = 1;
-                    if (mind20roll >= dice) d20roll = dice;
-                    else d20roll = randomInteger(dice - mind20roll) + mind20roll;
-                  }
-                  break;
-                case "critique":
-                  if (d20roll < target.crit) {
-                    if (target.crit <= dice) d20roll = randomInteger(dice - target.crit + 1) + target.crit - 1;
-                    else d20roll = dice;
-                  }
-                  break;
-                case "echecCritique":
-                  if (d20roll > 1) d20roll = 1;
-                  break;
-                default:
-                  error("Option inconnue", options.triche);
-              }
-              // now adjust the roll
-              var attackInlineRoll = rollsAttack.inlinerolls[attRollNumber];
-              attackInlineRoll.results.total = d20roll;
-              attackInlineRoll.results.rolls.forEach(function(roll) {
-                if (roll.type == 'R' && roll.results.length == 1) {
-                  roll.results[0].v = d20roll;
-                }
-              });
-            }
-            var attackRoll = d20roll + attSkill + attBonus;
-            var attackResult; // string
-            var paralyse = false;
-            if (getState(target, 'paralyse')) {
-              paralyse = true;
-              if (!options.attaqueAssuree)
-                target.messages.push("Cible paralysée => réussite critique automatique");
-            }
-            if (d20roll >= 15) {
-              if (charAttributeAsBool(attaquant, 'champion'))
-                options.champion = true;
-              if (options.contact && charAttributeAsBool(attaquant, 'agripper'))
-                options.agripper = true;
-            }
-            if (d20roll >= 17 && options.contact &&
-              charAttributeAsBool(attaquant, 'crocEnJambe')) {
-              if (d20roll >= 19 || !estQuadrupede(target)) {
-                setState(target, 'renverse', true, evt);
-                target.messages.push("tombe par terre");
-              }
-            }
-            if (options.attaqueDeGroupe > 1 && attackRoll >= (defense + 5)) {
-              options.attaqueDeGroupeDmgCoef = true;
-            }
-            if (d20roll == 1 && options.chance === undefined) {
-              attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
-              attackResult += addAttackImg("imgAttackEchecCritique", weaponStats.divers, options);
-              addAttackSound("soundAttackEchecCritique", weaponStats.divers, options);
-              if (options.demiAuto) {
-                target.partialSaveAuto = true;
-                evt.succes = false;
-              } else touche = false;
-              echecCritique = true;
-            } else if ((paralyse || options.ouvertureMortelle || d20roll == 20 ||
-                (d20roll >= target.crit && attackRoll >= defense)) && !options.attaqueAssuree) {
-              attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
-              attackResult += addAttackImg("imgAttackSuccesCritique", weaponStats.divers, options);
-              addAttackSound("soundAttackSuccesCritique", weaponStats.divers, options);
-              touche = true;
-              critique = true;
-            } else if (options.champion || d20roll == 20 || paralyse) {
-              attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
-              attackResult += addAttackImg("imgAttackSuccesChampion", weaponStats.divers, options);
-              addAttackSound("soundAttackSuccesChampion", weaponStats.divers, options);
-            } else if (attackRoll < defense && d20roll < target.crit) {
-              attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
-              attackResult += addAttackImg("imgAttackEchec", weaponStats.divers, options);
-              addAttackSound("soundAttackEchec", weaponStats.divers, options);
-              evt.succes = false;
-              if (options.demiAuto) {
-                target.partialSaveAuto = true;
-              } else touche = false;
-            } else if (d20roll % 2 && attributeAsBool(target, 'clignotement')) {
-              target.messages.push(target.tokName + " disparaît au moment où l'attaque aurait du l" + onGenre(target, 'e', 'a') + " toucher");
-              attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
-              attackResult += addAttackImg("imgAttackEchecClignotement", weaponStats.divers, options);
-              addAttackSound("soundAttackEchecClignotement", weaponStats.divers, options);
-              target.clignotement = true;
-              if (options.demiAuto) {
-                target.partialSaveAuto = true;
-              } else touche = false;
-            } else { // Touché normal
-              attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
-              attackResult += addAttackImg("imgAttackSucces", weaponStats.divers, options);
-              addAttackSound("soundAttackSucces", weaponStats.divers, options);
-            }
-            var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
-            if (attSkill > 0) attRollValue += "+" + attSkill;
-            else if (attSkill < 0) attRollValue += attSkill;
-            if (attBonus > 0) attRollValue += "+" + attBonus;
-            else if (attBonus < 0) attRollValue += attBonus;
-            var line = "<b>Attaque</b> ";
-            if (options.aoe || cibles.length > 1) {
-              line += "contre <b>" + target.tokName + "</b> ";
-            }
-            line += ":<br>";
-            line += attRollValue + ' ';
-            if (stateCOF.options.affichage.val.montre_def.val) {
-              line += "vs <b>";
-              if (absorber) line += absorber;
-              else line += defense;
-              line += "</b> ";
-            }
-            line += attackResult;
-            if (options.test) line += " (" + attackRoll + ")";
-            target.attackMessage = line;
-            if (touche) {
-              if (options.asDeLaGachette && attackRoll > 24) {
-                target.messages.push("As de la gachette => + 1" + options.d6 + " aux DM");
+            target.additionalDmg = [];
+            var amm = 'attaqueMalgreMenace(' + attaquant.token.id + ')';
+            if (options.contact && cibles.length == 1) {
+              if (attributeAsBool(target, amm)) {
+                target.messages.push('Attaque automatique suite à une menace ignorée');
+                options.auto = true;
+                if (attributeAsInt(target, amm, 1) > 1) options.dmFoisDeux = true;
                 target.additionalDmg.push({
                   type: mainDmgType,
-                  value: '1' + options.d6
+                  value: '1d6'
                 });
+                removeTokenAttr(target, amm, evt);
+              } else if (attributeAsBool(attaquant, 'attaqueGratuiteAutomatique(' + target.token.id + ')')) {
+                options.auto = true;
+                removeTokenAttr(attaquant, 'attaqueGratuiteAutomatique(' + target.token.id + ')', evt);
               }
-              if (options.contact && attackRoll > defense + 9 &&
-                charAttributeAsBool(attaquant, 'botteMortelle')) {
-                target.messages.push("Botte mortelle => + 2" + options.d6 + " aux DM");
+            }
+            //Les bonus d'attaque qui dépendent de la cible
+            var bad = bonusAttaqueD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
+            var attBonus = attBonusCommun + bad;
+            if (options.traquenard) {
+              var initTarg = tokenInit(target, evt);
+              if (options.traquenard >= initTarg) {
+                attBonus += 2;
                 target.additionalDmg.push({
                   type: mainDmgType,
                   value: '2' + options.d6
                 });
-              }
-            } else { //Effet si on ne touche pas
-              // Draw failed effect
-              if (_.has(options, "fx") && options.distance) {
-                var p1 = {
-                  x: attackingToken.get('left'),
-                  y: attackingToken.get('top')
-                };
-                var p2 = {
-                  x: target.token.get('left'),
-                  y: target.token.get('top')
-                };
-                // Compute some gaussian deviation in [0, 1]
-                var dev =
-                  (Math.random() + Math.random() + Math.random() + Math.random() +
-                    Math.random() + 1) / 6;
-                // take into account by how far we miss
-                dev = dev * (d20roll == 1) ? 2 : ((attackRoll - defense) / 20);
-                if (Math.random() > 0.5) dev = -dev;
-                p2.x += dev * (p2.y - p1.y);
-                p2.y += dev * (p2.x - p1.x);
-                spawnFxBetweenPoints(p1, p2, options.fx, pageId);
-              }
-              if (target.clignotement === undefined) {
-                evt.succes = false;
-                diminueMalediction(attaquant, evt);
+                target.messages.push(attackerTokName + " fait un traquenard à " + target.tokName);
+              } else {
+                target.messages.push(attackerTokName + " n'est pas assez rapide pour faire un traquenard à " + target.tokName);
               }
             }
-          }
-          target.touche = touche;
-          target.critique = critique;
-          if (options.aoe === undefined && interchange.targets.length > 1) { //any target can be affected
-            var n = randomInteger(interchange.targets.length);
-            target.token = interchange.targets[n - 1];
-          }
-          if (target.touche) {
-            if (attributeAsBool(target, 'imageDecalee')) {
-              if (target.rollImageDecalee === undefined) {
-                target.rollImageDecalee = rollDePlus(6);
-              }
-              var id = target.rollImageDecalee;
-              if (id.val > 4) {
-                target.touche = false;
-                target.messages.push(id.roll + ": l'attaque passe à travers l'image de " + target.tokName);
-              } else {
-                target.messages.push(id.roll + ": malgré l'image légèrement décalée de " + target.tokName + " l'attaque touche");
-              }
-            } else if (charAttributeAsBool(target, 'estUneIllusion')) {
-              target.touche = false;
-              target.messages.push(target.tokName + " disparait et se matérialise un peu plus loin");
+            var defautCuirasse =
+              tokenAttribute(target, 'defautDansLaCuirasse_' + attackerTokName);
+            target.crit = crit;
+            if (defautCuirasse.length > 0) {
+              target.defautCuirasse = true;
+              if (target.crit > 2) target.crit -= 1;
             }
-          }
-          if (target.touche) {
-            ciblesTouchees.push(target);
-            if (attributeAsBool(target, 'esquiveFatale')) {
-              var ennemisAuContact = target.ennemisAuContact;
-              if (ennemisAuContact === undefined) {
-                error("Les ennemis au contact n'ont pas été déterminé");
-              } else {
-                var iOther = ennemisAuContact.find(function(tok) {
-                  return (tok.id != attaquant.token.id);
+            //Defense de la cible
+            var defense = defenseOfPerso(attaquant, target, pageId, evt, options);
+            var interchange;
+            if (options.aoe === undefined) {
+              interchange = interchangeable(attackingToken, target, pageId);
+              if (interchange.result) {
+                if (reglesOptionelles.interchangeable_attaque.val) {
+                  defense += 2;
+                } else {
+                  defense += 5;
+                }
+              }
+            }
+            //Absorption au bouclier
+            var absorber;
+            if (target.absorber) {
+              explications = explications.concat(target.absorberExpl);
+              if (target.absorber > defense) {
+                defense = target.absorber;
+                absorber = target.absorberDisplay;
+              }
+            }
+            var touche = true;
+            var critique = false;
+            // Calcule si touché, et les messages de dégats et attaque
+            if (options.auto) {
+              addAttackSound("soundAttackSucces", weaponStats.divers, options);
+            } else if (!options.interposer) {
+              if (options.triche) {
+                switch (options.triche) {
+                  case "rate":
+                    if (d20roll >= target.crit) {
+                      if (target.crit < 2) d20roll = 1;
+                      else d20roll = randomInteger(target.crit - 1);
+                    }
+                    if ((d20roll + attSkill + attBonus) >= defense) {
+                      var maxd20roll = defense - attSkill - attBonus - 1;
+                      if (maxd20roll >= target.crit) maxd20roll = target.crit - 1;
+                      if (maxd20roll < 2) d20roll = 1;
+                      else d20roll = randomInteger(maxd20roll);
+                    }
+                    break;
+                  case "touche":
+                  case "echecTotal": // l'attaquant s'attaque lui-même et touche automatiquement
+                    if (d20roll == 1) d20roll = randomInteger(dice - 1) + 1;
+                    if ((d20roll + attSkill + attBonus) < defense) {
+                      var mind20roll = defense - attSkill - attBonus - 1;
+                      if (mind20roll < 1) mind20roll = 1;
+                      if (mind20roll >= dice) d20roll = dice;
+                      else d20roll = randomInteger(dice - mind20roll) + mind20roll;
+                    }
+                    break;
+                  case "critique":
+                    if (d20roll < target.crit) {
+                      if (target.crit <= dice) d20roll = randomInteger(dice - target.crit + 1) + target.crit - 1;
+                      else d20roll = dice;
+                    }
+                    break;
+                  case "echecCritique":
+                    if (d20roll > 1) d20roll = 1;
+                    break;
+                  default:
+                    error("Option inconnue", options.triche);
+                }
+                // now adjust the roll
+                var attackInlineRoll = rollsAttack.inlinerolls[attRollNumber];
+                attackInlineRoll.results.total = d20roll;
+                attackInlineRoll.results.rolls.forEach(function(roll) {
+                  if (roll.type == 'R' && roll.results.length == 1) {
+                    roll.results[0].v = d20roll;
+                  }
                 });
-                if (iOther !== undefined)
-                  target.messages.push(bouton("!cof-esquive-fatale " + evt.id + " @{target|token_id}", "Esquive fatale ?", target));
+              }
+              var attackRoll = d20roll + attSkill + attBonus;
+              var attackResult; // string
+              var paralyse = false;
+              if (getState(target, 'paralyse')) {
+                paralyse = true;
+                if (!options.attaqueAssuree)
+                  target.messages.push("Cible paralysée => réussite critique automatique");
+              }
+              if (d20roll >= 15) {
+                if (charAttributeAsBool(attaquant, 'champion'))
+                  options.champion = true;
+                if (options.contact && charAttributeAsBool(attaquant, 'agripper'))
+                  options.agripper = true;
+              }
+              if (d20roll >= 17 && options.contact &&
+                charAttributeAsBool(attaquant, 'crocEnJambe')) {
+                if (d20roll >= 19 || !estQuadrupede(target)) {
+                  setState(target, 'renverse', true, evt);
+                  target.messages.push("tombe par terre");
+                }
+              }
+              if (options.attaqueDeGroupe > 1 && attackRoll >= (defense + 5)) {
+                options.attaqueDeGroupeDmgCoef = true;
+              }
+              if (d20roll == 1 && options.chance === undefined) {
+                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
+                attackResult += addAttackImg("imgAttackEchecCritique", weaponStats.divers, options);
+                addAttackSound("soundAttackEchecCritique", weaponStats.divers, options);
+                if (options.demiAuto) {
+                  target.partialSaveAuto = true;
+                  evt.succes = false;
+                } else touche = false;
+                echecCritique = true;
+              } else if ((paralyse || options.ouvertureMortelle || d20roll == 20 ||
+                  (d20roll >= target.crit && attackRoll >= defense)) && !options.attaqueAssuree) {
+                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
+                attackResult += addAttackImg("imgAttackSuccesCritique", weaponStats.divers, options);
+                addAttackSound("soundAttackSuccesCritique", weaponStats.divers, options);
+                touche = true;
+                critique = true;
+              } else if (options.champion || d20roll == 20 || paralyse) {
+                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
+                attackResult += addAttackImg("imgAttackSuccesChampion", weaponStats.divers, options);
+                addAttackSound("soundAttackSuccesChampion", weaponStats.divers, options);
+              } else if (attackRoll < defense && d20roll < target.crit) {
+                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
+                attackResult += addAttackImg("imgAttackEchec", weaponStats.divers, options);
+                addAttackSound("soundAttackEchec", weaponStats.divers, options);
+                evt.succes = false;
+                if (options.demiAuto) {
+                  target.partialSaveAuto = true;
+                } else touche = false;
+              } else if (d20roll % 2 && attributeAsBool(target, 'clignotement')) {
+                target.messages.push(target.tokName + " disparaît au moment où l'attaque aurait du l" + onGenre(target, 'e', 'a') + " toucher");
+                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
+                attackResult += addAttackImg("imgAttackEchecClignotement", weaponStats.divers, options);
+                addAttackSound("soundAttackEchecClignotement", weaponStats.divers, options);
+                target.clignotement = true;
+                if (options.demiAuto) {
+                  target.partialSaveAuto = true;
+                } else touche = false;
+              } else { // Touché normal
+                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
+                attackResult += addAttackImg("imgAttackSucces", weaponStats.divers, options);
+                addAttackSound("soundAttackSucces", weaponStats.divers, options);
+              }
+              var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
+              if (attSkill > 0) attRollValue += "+" + attSkill;
+              else if (attSkill < 0) attRollValue += attSkill;
+              if (attBonus > 0) attRollValue += "+" + attBonus;
+              else if (attBonus < 0) attRollValue += attBonus;
+              var line = "<b>Attaque</b> ";
+              if (options.aoe || cibles.length > 1) {
+                line += "contre <b>" + target.tokName + "</b> ";
+              }
+              line += ":<br>";
+              line += attRollValue + ' ';
+              if (stateCOF.options.affichage.val.montre_def.val) {
+                line += "vs <b>";
+                if (absorber) line += absorber;
+                else line += defense;
+                line += "</b> ";
+              }
+              line += attackResult;
+              if (options.test) line += " (" + attackRoll + ")";
+              target.attackMessage = line;
+              if (touche) {
+                if (options.asDeLaGachette && attackRoll > 24) {
+                  target.messages.push("As de la gachette => + 1" + options.d6 + " aux DM");
+                  target.additionalDmg.push({
+                    type: mainDmgType,
+                    value: '1' + options.d6
+                  });
+                }
+                if (options.contact && attackRoll > defense + 9 &&
+                  charAttributeAsBool(attaquant, 'botteMortelle')) {
+                  target.messages.push("Botte mortelle => + 2" + options.d6 + " aux DM");
+                  target.additionalDmg.push({
+                    type: mainDmgType,
+                    value: '2' + options.d6
+                  });
+                }
+              } else { //Effet si on ne touche pas
+                // Draw failed effect
+                if (_.has(options, "fx") && options.distance) {
+                  var p1 = {
+                    x: attackingToken.get('left'),
+                    y: attackingToken.get('top')
+                  };
+                  var p2 = {
+                    x: target.token.get('left'),
+                    y: target.token.get('top')
+                  };
+                  // Compute some gaussian deviation in [0, 1]
+                  var dev =
+                    (Math.random() + Math.random() + Math.random() + Math.random() +
+                      Math.random() + 1) / 6;
+                  // take into account by how far we miss
+                  dev = dev * (d20roll == 1) ? 2 : ((attackRoll - defense) / 20);
+                  if (Math.random() > 0.5) dev = -dev;
+                  p2.x += dev * (p2.y - p1.y);
+                  p2.y += dev * (p2.x - p1.x);
+                  spawnFxBetweenPoints(p1, p2, options.fx, pageId);
+                }
+                if (target.clignotement === undefined) {
+                  evt.succes = false;
+                  diminueMalediction(attaquant, evt);
+                }
               }
             }
-          }
-          if (options.test || options.feinte || !target.touche) {
-            //On a fini avec cette cible, on imprime ce qui la concerne
-            addLineToFramedDisplay(display, target.attackMessage);
-            target.messages.forEach(function(expl) {
-              addLineToFramedDisplay(display, expl, 80);
-            });
-          }
-          if (options.feinte) {
-            setTokenAttr(target, 'feinte_' + attaquant.tokName, 0, evt, {
-              maxval: target.touche
-            });
-          }
-          count--;
-          if (count === 0)
-            attackDealDmg(attaquant, ciblesTouchees, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles);
+            target.touche = touche;
+            target.critique = critique;
+            if (options.aoe === undefined && interchange.targets.length > 1) { //any target can be affected
+              var n = randomInteger(interchange.targets.length);
+              target.token = interchange.targets[n - 1];
+            }
+            if (target.touche) {
+              if (attributeAsBool(target, 'imageDecalee')) {
+                if (target.rollImageDecalee === undefined) {
+                  target.rollImageDecalee = rollDePlus(6);
+                }
+                var id = target.rollImageDecalee;
+                if (id.val > 4) {
+                  target.touche = false;
+                  target.messages.push(id.roll + ": l'attaque passe à travers l'image de " + target.tokName);
+                } else {
+                  target.messages.push(id.roll + ": malgré l'image légèrement décalée de " + target.tokName + " l'attaque touche");
+                }
+              } else if (charAttributeAsBool(target, 'estUneIllusion')) {
+                target.touche = false;
+                target.messages.push(target.tokName + " disparait et se matérialise un peu plus loin");
+              }
+            }
+            if (target.touche) {
+              ciblesTouchees.push(target);
+              if (attributeAsBool(target, 'esquiveFatale')) {
+                var ennemisAuContact = target.ennemisAuContact;
+                if (ennemisAuContact === undefined) {
+                  error("Les ennemis au contact n'ont pas été déterminé");
+                } else {
+                  var iOther = ennemisAuContact.find(function(tok) {
+                    return (tok.id != attaquant.token.id);
+                  });
+                  if (iOther !== undefined)
+                    target.messages.push(bouton("!cof-esquive-fatale " + evt.id + " @{target|token_id}", "Esquive fatale ?", target));
+                }
+              }
+            }
+            if (options.test || options.feinte || !target.touche) {
+              //On a fini avec cette cible, on imprime ce qui la concerne
+              addLineToFramedDisplay(display, target.attackMessage);
+              target.messages.forEach(function(expl) {
+                addLineToFramedDisplay(display, expl, 80);
+              });
+            }
+            if (options.feinte) {
+              setTokenAttr(target, 'feinte_' + attaquant.tokName, 0, evt, {
+                maxval: target.touche
+              });
+            }
+            count--;
+            if (count === 0)
+              attackDealDmg(attaquant, ciblesTouchees, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles);
+          });
         }); //fin de détermination de toucher des cibles
       }); // fin du jet d'attaque asynchrone
     } catch (e) {
@@ -8480,785 +8517,775 @@ var COFantasy = COFantasy || function() {
       });
     }
     cibles.forEach(function(target) {
-      evalITE(attaquant, target, d20roll, options, evt, explications, options, function() {
-        target.ignoreTouteRD = target.ignoreTouteRD || options.ignoreTouteRD;
-        target.ignoreRD = target.ignoreRD || options.ignoreRD;
-        target.ignoreMoitieRD = target.ignoreMoitieRD || options.ignoreMoitieRD;
-        target.tempDmg = target.tempDmg || options.tempDmg;
-        target.enflamme = target.enflamme || options.enflamme;
-        target.malediction = target.malediction || options.malediction;
-        target.pietine = target.pietine || options.pietine;
-        target.maxDmg = target.maxDmg || options.maxDmg;
-        target.attaquant = attaquant;
-        if (options.enveloppe !== undefined) {
-          var ligneEnveloppe = attaquant.tokName + " peut ";
-          var commandeEnvelopper =
-            '!cof-enveloppement ' + attaquant.token.id + ' ' + target.token.id + ' ' +
-            options.enveloppe.difficulte + ' ' +
-            options.enveloppe.type + ' ' + options.enveloppe.expression;
-          var verbeEnv = 'envelopper';
-          if (options.enveloppe.type == 'etreinte') verbeEnv = 'étreindre';
-          ligneEnveloppe += boutonSimple(commandeEnvelopper, verbeEnv);
-          ligneEnveloppe += target.tokName;
-          target.messages.push(ligneEnveloppe);
-        }
-        if (options.agripper) {
-          var immobilise = estAussiGrandQue(attaquant, target);
-          setTokenAttr(attaquant, 'agrippe', target.token.id + ' ' + target.tokName, evt);
-          setTokenAttr(target, 'estAgrippePar', attaquant.token.id + ' ' + attaquant.tokName, evt, {
-            maxval: immobilise
-          });
-          if (immobilise) setState(target, 'immobilise', true, evt);
-          target.messages.push("est agrippé");
-        }
-        var attDMBonus = attDMBonusCommun;
-        //Les modificateurs de dégâts qui dépendent de la cible
-        if (target.tempDmg) {
-          var forceTarg = modCarac(target, "FORCE");
-          if (forceTarg < 0) {
-            attDMBonus += " +" + (-forceTarg);
-          } else {
-            attDMBonus += " -" + forceTarg;
-          }
-        }
-        if (options.pressionMortelle || target.pressionMortelle) {
-          var pMortelle = tokenAttribute(target, 'pressionMortelle');
-          if (pMortelle.length === 0) {
-            sendChar(attackingCharId, "Essaie une pression mortelle, mais aucun point vital de " + target.tokName + " n'a encore été affecté");
-            ciblesCount--;
-            return;
-          }
-          target.pressionMortelle = pMortelle;
-          attDMBonus = "+ " + pMortelle[0].get('current');
-        }
-        if (options.distance && !options.grenaille) {
-          var tirPrecis = charAttributeAsInt(attaquant, 'tirPrecis', 0);
-          if (tirPrecis > 0) {
-            var modDex = modCarac(attaquant, 'DEXTERITE');
-            if (target.distance <= 5 * modDex) {
-              attDMBonus += " + " + tirPrecis;
-              target.messages.push("Tir précis : +" + tirPrecis + " DM");
-            }
-          }
-        }
-        var sournoise = options.sournoise || 0;
-        if (target.sournoise) sournoise += target.sournoise;
-        if (sournoise) {
-          if (charAttributeAsBool(target, 'immuniteAuxSournoises')) {
-            target.messages.push(target.tokName + " est immunisé" + eForFemale(target) + " aux attaques sournoises");
-          } else {
-            if (options.ouvertureMortelle) {
-              target.messages.push("Ouverture mortelle => + 2 x " + sournoise + options.d6 + " DM");
-              sournoise = sournoise * 2;
-            } else {
-              target.messages.push("Attaque sournoise => +" + sournoise + options.d6 + " DM");
-            }
-            target.additionalDmg.push({
-              type: mainDmgType,
-              value: sournoise + options.d6
-            });
-          }
-        }
-        if (target.chasseurEmerite) {
-          attDMBonus += "+2";
-        }
-        if (target.ennemiJure) {
-          target.additionalDmg.push({
-            type: mainDmgType,
-            value: '1' + options.d6
-          });
-        }
-        if (target.tueurDeGeants) {
-          target.additionalDmg.push({
-            type: mainDmgType,
-            value: '2' + options.d6
-          });
-        }
-        if (target.armeDArgent) {
-          target.additionalDmg.push({
-            type: mainDmgType,
-            value: '1d6'
-          });
-        }
-        if (target.estAgrippee) {
-          target.additionalDmg.push({
-            type: mainDmgType,
-            value: '1d6'
-          });
-        }
-        if (options.lienEpique && attaqueParLienEpique.has(target.token.id)) {
-          target.additionalDmg.push({
-            type: mainDmgType,
-            value: '1' + options.d6
-          });
-          target.messages.push("Lien épique => + 1" + options.d6 + " DM");
-        }
-        if (target.feinte) {
-          target.additionalDmg.push({
-            type: mainDmgType,
-            value: target.feinte + options.d6
-          });
-        }
-        if (!options.pasDeDmg) {
-          var loupParmiLesLoups = charAttributeAsInt(attaquant, 'loupParmiLesLoups', 0);
-          if (loupParmiLesLoups > 0 && estHumanoide(target)) {
-            attDMBonus += "+" + loupParmiLesLoups;
-            target.messages.push("Loup parmi les loups : +" + loupParmiLesLoups + " DM");
-          }
-        }
-        //Bonus aux DMs dus au défi samouraï
-        var defiSamouraiAttr = tokenAttribute(attaquant, 'defiSamourai');
-        if (defiSamouraiAttr.length > 0) {
-          defiSamouraiAttr = defiSamouraiAttr[0];
-          var cibleDefi = defiSamouraiAttr.get('max');
-          if (cibleDefi.startsWith(target.token.id)) cibleDefi = true;
-          else {
-            var cibleDefiSep = cibleDefi.indexOf(' ');
-            var cibleDefiName = cibleDefi.substring(cibleDefiSep + 1);
-            if (cibleDefiName == target.tokName) {
-              var cibleDefiId = cibleDefi.substring(0, cibleDefiSep);
-              cibleDefi = persoOfId(cibleDefiId, cibleDefiName, pageId);
-              cibleDefi = cibleDefi === undefined || cibleDefi.id == target.id;
-            } else cibleDefi = false;
-          }
-          if (cibleDefi) {
-            var bonusDefi = parseInt(defiSamouraiAttr.get('current'));
-            target.additionalDmg.push({
-              type: mainDmgType,
-              value: bonusDefi
-            });
-            target.messages.push(attackerTokName + " bénéficie d'un bonus de +" + bonusDefi + " aux DMs contre " + target.tokName);
-          }
-        }
-
-        if (attributeAsBool(attaquant, 'ombreMortelle') ||
-          attributeAsBool(attaquant, 'dedoublement') ||
-          (charAttributeAsBool(attaquant, 'armeeConjuree') && attributeAsBool(target, 'attaqueArmeeConjuree'))) {
-          if (options.divise) options.divise *= 2;
-          else options.divise = 2;
-        }
-        if (options.attaqueAssuree || options.triche == "echecTotal") {
-          if (options.divise) options.divise *= 2;
-          else options.divise = 2;
-        }
-        var mainDmgRollExpr =
-          computeMainDmgRollExpr(attaquant, target, weaponStats, attNbDices,
-            attDMBonus, options);
-        //Additional damage
-        var additionalDmg = options.additionalDmg.concat(target.additionalDmg);
-        //On enlève les DM qui ne passent pas les conditions
-        additionalDmg = additionalDmg.filter(function(dmSpec) {
-          if (dmSpec.conditions === undefined) return true;
-          return dmSpec.conditions.every(function(cond) {
-            return testCondition(cond, attaquant, [target], d20roll);
-          });
+      target.attaquant = attaquant;
+      if (options.enveloppe !== undefined) {
+        var ligneEnveloppe = attaquant.tokName + " peut ";
+        var commandeEnvelopper =
+          '!cof-enveloppement ' + attaquant.token.id + ' ' + target.token.id + ' ' +
+          options.enveloppe.difficulte + ' ' +
+          options.enveloppe.type + ' ' + options.enveloppe.expression;
+        var verbeEnv = 'envelopper';
+        if (options.enveloppe.type == 'etreinte') verbeEnv = 'étreindre';
+        ligneEnveloppe += boutonSimple(commandeEnvelopper, verbeEnv);
+        ligneEnveloppe += target.tokName;
+        target.messages.push(ligneEnveloppe);
+      }
+      if (options.agripper) {
+        var immobilise = estAussiGrandQue(attaquant, target);
+        setTokenAttr(attaquant, 'agrippe', target.token.id + ' ' + target.tokName, evt);
+        setTokenAttr(target, 'estAgrippePar', attaquant.token.id + ' ' + attaquant.tokName, evt, {
+          maxval: immobilise
         });
-        if (!options.sortilege && !options.magique &&
-          charAttributeAsBool(target, 'immuniteAuxArmes')) {
-          additionalDmg = additionalDmg.filter(function(dmSpec) {
-            switch (dmSpec.type) {
-              case undefined:
-              case 'normal':
-              case 'poison':
-              case 'maladie':
-                return false;
-              default:
-                return true;
-            }
-          });
+        if (immobilise) setState(target, 'immobilise', true, evt);
+        target.messages.push("est agrippé");
+      }
+      var attDMBonus = attDMBonusCommun;
+      //Les modificateurs de dégâts qui dépendent de la cible
+      if (target.tempDmg) {
+        var forceTarg = modCarac(target, "FORCE");
+        if (forceTarg < 0) {
+          attDMBonus += " +" + (-forceTarg);
+        } else {
+          attDMBonus += " -" + forceTarg;
         }
-        if (options.tirDouble || options.tirDeBarrage || options.dmFoisDeux) {
-          if (options.tirDouble && options.tirDouble.stats) {
-            var stats2 = options.tirDouble.stats;
-            mainDmgRollExpr += " +" +
-              computeMainDmgRollExpr(attaquant, target, stats2, stats2.attNbDices,
-                attDMBonus, options);
+      }
+      if (options.pressionMortelle || target.pressionMortelle) {
+        var pMortelle = tokenAttribute(target, 'pressionMortelle');
+        if (pMortelle.length === 0) {
+          sendChar(attackingCharId, "Essaie une pression mortelle, mais aucun point vital de " + target.tokName + " n'a encore été affecté");
+          ciblesCount--;
+          return;
+        }
+        target.pressionMortelle = pMortelle;
+        attDMBonus = "+ " + pMortelle[0].get('current');
+      }
+      if (options.distance && !options.grenaille) {
+        var tirPrecis = charAttributeAsInt(attaquant, 'tirPrecis', 0);
+        if (tirPrecis > 0) {
+          var modDex = modCarac(attaquant, 'DEXTERITE');
+          if (target.distance <= 5 * modDex) {
+            attDMBonus += " + " + tirPrecis;
+            target.messages.push("Tir précis : +" + tirPrecis + " DM");
+          }
+        }
+      }
+      var sournoise = options.sournoise || 0;
+      if (target.sournoise) sournoise += target.sournoise;
+      if (sournoise) {
+        if (charAttributeAsBool(target, 'immuniteAuxSournoises')) {
+          target.messages.push(target.tokName + " est immunisé" + eForFemale(target) + " aux attaques sournoises");
+        } else {
+          if (options.ouvertureMortelle) {
+            target.messages.push("Ouverture mortelle => + 2 x " + sournoise + options.d6 + " DM");
+            sournoise = sournoise * 2;
           } else {
-            mainDmgRollExpr += " +" + mainDmgRollExpr;
+            target.messages.push("Attaque sournoise => +" + sournoise + options.d6 + " DM");
           }
-          additionalDmg.forEach(function(dmSpec) {
-            dmSpec.value += " +" + dmSpec.Value;
+          target.additionalDmg.push({
+            type: mainDmgType,
+            value: sournoise + options.d6
           });
         }
-        var ExtraDmgRollExpr = "";
-        additionalDmg = additionalDmg.filter(function(dmSpec) {
-          dmSpec.type = dmSpec.type || 'normal';
-          if (dmSpec.type != mainDmgType || isNaN(dmSpec.value)) {
-            ExtraDmgRollExpr += " [[" + dmSpec.value + "]]";
-            return true;
-          }
-          // We have the same type and a constant -> should be multiplied by crit
-          mainDmgRollExpr += " + " + dmSpec.value;
-          return false;
-        });
-        if (options.aveugleManoeuvre) {
-          mainDmgRollExpr += " -5";
-        }
-        var mainDmgRoll = {
+      }
+      if (target.chasseurEmerite) {
+        attDMBonus += "+2";
+      }
+      if (target.ennemiJure) {
+        target.additionalDmg.push({
           type: mainDmgType,
-          value: mainDmgRollExpr
-        };
-
-        // toEvaluateDmg inlines
-        // 0 : roll de dégâts principaux
-        // 1+ : les rolls de dégâts supplémentaires
-
-        var toEvaluateDmg = "[[" + mainDmgRollExpr + "]]" + ExtraDmgRollExpr;
-        sendChat(attaquant.name, toEvaluateDmg, function(resDmg) {
-          var rollsDmg = target.rollsDmg || resDmg[0];
-          var afterEvaluateDmg = rollsDmg.content.split(' ');
-          var mainDmgRollNumber = rollNumber(afterEvaluateDmg[0]);
-          mainDmgRoll.total = rollsDmg.inlinerolls[mainDmgRollNumber].results.total;
-          mainDmgRoll.display = buildinline(rollsDmg.inlinerolls[mainDmgRollNumber], mainDmgType, options.magique);
-          var correctAdditionalDmg = [];
-          additionalDmg.forEach(function(dmSpec, i) {
-            var rRoll = rollsDmg.inlinerolls[rollNumber(afterEvaluateDmg[i + 1])];
-            if (rRoll) {
-              correctAdditionalDmg.push(dmSpec);
-              dmSpec.total = dmSpec.total || rRoll.results.total;
-              var addDmType = dmSpec.type;
-              dmSpec.display = dmSpec.display || buildinline(rRoll, addDmType, options.magique);
-            } else { //l'expression de DM additionel est mal formée
-              error("Expression de dégâts supplémentaires mal formée : " + additionalDmg[i].value, additionalDmg[i]);
-            }
+          value: '1' + options.d6
+        });
+      }
+      if (target.tueurDeGeants) {
+        target.additionalDmg.push({
+          type: mainDmgType,
+          value: '2' + options.d6
+        });
+      }
+      if (target.armeDArgent) {
+        target.additionalDmg.push({
+          type: mainDmgType,
+          value: '1d6'
+        });
+      }
+      if (target.estAgrippee) {
+        target.additionalDmg.push({
+          type: mainDmgType,
+          value: '1d6'
+        });
+      }
+      if (options.lienEpique && attaqueParLienEpique.has(target.token.id)) {
+        target.additionalDmg.push({
+          type: mainDmgType,
+          value: '1' + options.d6
+        });
+        target.messages.push("Lien épique => + 1" + options.d6 + " DM");
+      }
+      if (target.feinte) {
+        target.additionalDmg.push({
+          type: mainDmgType,
+          value: target.feinte + options.d6
+        });
+      }
+      if (!options.pasDeDmg) {
+        var loupParmiLesLoups = charAttributeAsInt(attaquant, 'loupParmiLesLoups', 0);
+        if (loupParmiLesLoups > 0 && estHumanoide(target)) {
+          attDMBonus += "+" + loupParmiLesLoups;
+          target.messages.push("Loup parmi les loups : +" + loupParmiLesLoups + " DM");
+        }
+      }
+      //Bonus aux DMs dus au défi samouraï
+      var defiSamouraiAttr = tokenAttribute(attaquant, 'defiSamourai');
+      if (defiSamouraiAttr.length > 0) {
+        defiSamouraiAttr = defiSamouraiAttr[0];
+        var cibleDefi = defiSamouraiAttr.get('max');
+        if (cibleDefi.startsWith(target.token.id)) cibleDefi = true;
+        else {
+          var cibleDefiSep = cibleDefi.indexOf(' ');
+          var cibleDefiName = cibleDefi.substring(cibleDefiSep + 1);
+          if (cibleDefiName == target.tokName) {
+            var cibleDefiId = cibleDefi.substring(0, cibleDefiSep);
+            cibleDefi = persoOfId(cibleDefiId, cibleDefiName, pageId);
+            cibleDefi = cibleDefi === undefined || cibleDefi.id == target.id;
+          } else cibleDefi = false;
+        }
+        if (cibleDefi) {
+          var bonusDefi = parseInt(defiSamouraiAttr.get('current'));
+          target.additionalDmg.push({
+            type: mainDmgType,
+            value: bonusDefi
           });
-          additionalDmg = correctAdditionalDmg;
-          if (target.touche) { //Devrait être inutile ?
-            if (options.tirDeBarrage) target.messages.push("Tir de barrage : undo si la cible décide de ne pas bouger");
-            if (options.pointsVitaux) target.messages.push(attackerTokName + " vise des points vitaux mais ne semble pas faire de dégâts");
-            if (options.pressionMortelle || target.pressionMortelle) {
-              removeTokenAttr(target, 'pressionMortelle', evt);
-              target.messages.push(attackerTokName + " libère la pression des points vitaux, l'effet est dévastateur !");
-              spawnFx(target.token.get('left'), target.token.get('top'), 'bomb-death', pageId);
-            }
-            if (options.pasDeDmg === undefined) { //si l'attaque fait des DM, possibilité d'attaque en traître
-              if (attaquant.alliesAvecAttaqueEnTraitre === undefined) {
-                attaquant.alliesAvecAttaqueEnTraitre = [];
-                //On cherche tous les alliés ayant l'attaque en traitre
-                var allies = alliesParPerso[attaquant.charId] || new Set();
-                allies.forEach(function(ci) {
-                  var aet = findObjs({
-                    _type: 'attribute',
-                    _characterid: ci,
-                  });
-                  aet.forEach(function(a) {
-                    var an = a.get('name');
-                    if (an == 'attaqueEnTraitre' ||
-                      an.startsWith('attaqueEnTraitre_')) {
-                      if (a.get('current')) {
-                        iterTokensOfAttribute(ci, pageId, 'attaqueEnTraitre', an,
-                          function(tok) {
-                            attaquant.alliesAvecAttaqueEnTraitre.push(tok);
-                          }, {
-                            onlyOnPage: true,
-                            possiblementAbsent: true
-                          });
-                      }
-                    }
-                  });
+          target.messages.push(attackerTokName + " bénéficie d'un bonus de +" + bonusDefi + " aux DMs contre " + target.tokName);
+        }
+      }
+
+      if (attributeAsBool(attaquant, 'ombreMortelle') ||
+        attributeAsBool(attaquant, 'dedoublement') ||
+        (charAttributeAsBool(attaquant, 'armeeConjuree') && attributeAsBool(target, 'attaqueArmeeConjuree'))) {
+        if (options.divise) options.divise *= 2;
+        else options.divise = 2;
+      }
+      if (options.attaqueAssuree || options.triche == "echecTotal") {
+        if (options.divise) options.divise *= 2;
+        else options.divise = 2;
+      }
+      var mainDmgRollExpr =
+        computeMainDmgRollExpr(attaquant, target, weaponStats, attNbDices,
+          attDMBonus, options);
+      //Additional damage
+      var additionalDmg = options.additionalDmg.concat(target.additionalDmg);
+      //On enlève les DM qui ne passent pas les conditions
+      additionalDmg = additionalDmg.filter(function(dmSpec) {
+        if (dmSpec.conditions === undefined) return true;
+        return dmSpec.conditions.every(function(cond) {
+          return testCondition(cond, attaquant, [target], d20roll);
+        });
+      });
+      if (!options.sortilege && !options.magique &&
+        charAttributeAsBool(target, 'immuniteAuxArmes')) {
+        additionalDmg = additionalDmg.filter(function(dmSpec) {
+          switch (dmSpec.type) {
+            case undefined:
+            case 'normal':
+            case 'poison':
+            case 'maladie':
+              return false;
+            default:
+              return true;
+          }
+        });
+      }
+      if (options.tirDouble || options.tirDeBarrage || options.dmFoisDeux) {
+        if (options.tirDouble && options.tirDouble.stats) {
+          var stats2 = options.tirDouble.stats;
+          mainDmgRollExpr += " +" +
+            computeMainDmgRollExpr(attaquant, target, stats2, stats2.attNbDices,
+              attDMBonus, options);
+        } else {
+          mainDmgRollExpr += " +" + mainDmgRollExpr;
+        }
+        additionalDmg.forEach(function(dmSpec) {
+          dmSpec.value += " +" + dmSpec.Value;
+        });
+      }
+      var ExtraDmgRollExpr = "";
+      additionalDmg = additionalDmg.filter(function(dmSpec) {
+        dmSpec.type = dmSpec.type || 'normal';
+        if (dmSpec.type != mainDmgType || isNaN(dmSpec.value)) {
+          ExtraDmgRollExpr += " [[" + dmSpec.value + "]]";
+          return true;
+        }
+        // We have the same type and a constant -> should be multiplied by crit
+        mainDmgRollExpr += " + " + dmSpec.value;
+        return false;
+      });
+      if (options.aveugleManoeuvre) {
+        mainDmgRollExpr += " -5";
+      }
+      var mainDmgRoll = {
+        type: mainDmgType,
+        value: mainDmgRollExpr
+      };
+
+      // toEvaluateDmg inlines
+      // 0 : roll de dégâts principaux
+      // 1+ : les rolls de dégâts supplémentaires
+
+      var toEvaluateDmg = "[[" + mainDmgRollExpr + "]]" + ExtraDmgRollExpr;
+      sendChat(attaquant.name, toEvaluateDmg, function(resDmg) {
+        var rollsDmg = target.rollsDmg || resDmg[0];
+        var afterEvaluateDmg = rollsDmg.content.split(' ');
+        var mainDmgRollNumber = rollNumber(afterEvaluateDmg[0]);
+        mainDmgRoll.total = rollsDmg.inlinerolls[mainDmgRollNumber].results.total;
+        mainDmgRoll.display = buildinline(rollsDmg.inlinerolls[mainDmgRollNumber], mainDmgType, options.magique);
+        var correctAdditionalDmg = [];
+        additionalDmg.forEach(function(dmSpec, i) {
+          var rRoll = rollsDmg.inlinerolls[rollNumber(afterEvaluateDmg[i + 1])];
+          if (rRoll) {
+            correctAdditionalDmg.push(dmSpec);
+            dmSpec.total = dmSpec.total || rRoll.results.total;
+            var addDmType = dmSpec.type;
+            dmSpec.display = dmSpec.display || buildinline(rRoll, addDmType, options.magique);
+          } else { //l'expression de DM additionel est mal formée
+            error("Expression de dégâts supplémentaires mal formée : " + additionalDmg[i].value, additionalDmg[i]);
+          }
+        });
+        additionalDmg = correctAdditionalDmg;
+        if (target.touche) { //Devrait être inutile ?
+          if (options.tirDeBarrage) target.messages.push("Tir de barrage : undo si la cible décide de ne pas bouger");
+          if (options.pointsVitaux) target.messages.push(attackerTokName + " vise des points vitaux mais ne semble pas faire de dégâts");
+          if (options.pressionMortelle || target.pressionMortelle) {
+            removeTokenAttr(target, 'pressionMortelle', evt);
+            target.messages.push(attackerTokName + " libère la pression des points vitaux, l'effet est dévastateur !");
+            spawnFx(target.token.get('left'), target.token.get('top'), 'bomb-death', pageId);
+          }
+          if (options.pasDeDmg === undefined) { //si l'attaque fait des DM, possibilité d'attaque en traître
+            if (attaquant.alliesAvecAttaqueEnTraitre === undefined) {
+              attaquant.alliesAvecAttaqueEnTraitre = [];
+              //On cherche tous les alliés ayant l'attaque en traitre
+              var allies = alliesParPerso[attaquant.charId] || new Set();
+              allies.forEach(function(ci) {
+                var aet = findObjs({
+                  _type: 'attribute',
+                  _characterid: ci,
                 });
-              }
-              attaquant.alliesAvecAttaqueEnTraitre.forEach(function(tok) {
-                if (tok.id == target.id) return;
-                if (distanceCombat(target.token, tok, pageId) === 0) {
-                  var aetp = attaquesEnTraitrePossibles[tok.id];
-                  if (aetp === undefined) {
-                    aetp = [];
-                    attaquesEnTraitrePossibles[tok.id] = aetp;
+                aet.forEach(function(a) {
+                  var an = a.get('name');
+                  if (an == 'attaqueEnTraitre' ||
+                    an.startsWith('attaqueEnTraitre_')) {
+                    if (a.get('current')) {
+                      iterTokensOfAttribute(ci, pageId, 'attaqueEnTraitre', an,
+                        function(tok) {
+                          attaquant.alliesAvecAttaqueEnTraitre.push(tok);
+                        }, {
+                          onlyOnPage: true,
+                          possiblementAbsent: true
+                        });
+                    }
                   }
-                  aetp.push(target);
-                }
+                });
               });
             }
-            // change l'état de la cible, si spécifié
-            if (target.enflamme) {
-              var enflammePuissance = 1;
-              if (options.puissant) enflammePuissance = 2;
-              setTokenAttr(target, 'enflamme', enflammePuissance, evt);
-              target.messages.push(target.tokName + " prend feu !");
-            }
-            if (target.malediction) {
-              setTokenAttr(target, 'malediction', 3, evt);
-              target.messages.push(target.tokName + " est maudit...");
-            }
-            // Draw effect, if any
-            if (options.fx) {
-              //Pour les cones, on fait un seul effet, car c'est bien géré.
-              if (!options.aoe || options.aoe.type != 'cone') {
-                var p1e = {
-                  x: attackingToken.get('left'),
-                  y: attackingToken.get('top'),
-                };
-                var p2e = {
-                  x: target.token.get('left'),
-                  y: target.token.get('top'),
-                };
-                spawnFxBetweenPoints(p1e, p2e, options.fx, pageId);
+            attaquant.alliesAvecAttaqueEnTraitre.forEach(function(tok) {
+              if (tok.id == target.id) return;
+              if (distanceCombat(target.token, tok, pageId) === 0) {
+                var aetp = attaquesEnTraitrePossibles[tok.id];
+                if (aetp === undefined) {
+                  aetp = [];
+                  attaquesEnTraitrePossibles[tok.id] = aetp;
+                }
+                aetp.push(target);
               }
+            });
+          }
+          // change l'état de la cible, si spécifié
+          if (target.enflamme) {
+            var enflammePuissance = 1;
+            if (options.puissant) enflammePuissance = 2;
+            setTokenAttr(target, 'enflamme', enflammePuissance, evt);
+            target.messages.push(target.tokName + " prend feu !");
+          }
+          if (target.malediction) {
+            setTokenAttr(target, 'malediction', 3, evt);
+            target.messages.push(target.tokName + " est maudit...");
+          }
+          // Draw effect, if any
+          if (options.fx) {
+            //Pour les cones, on fait un seul effet, car c'est bien géré.
+            if (!options.aoe || options.aoe.type != 'cone') {
+              var p1e = {
+                x: attackingToken.get('left'),
+                y: attackingToken.get('top'),
+              };
+              var p2e = {
+                x: target.token.get('left'),
+                y: target.token.get('top'),
+              };
+              spawnFxBetweenPoints(p1e, p2e, options.fx, pageId);
             }
-            if (options.targetFx && !options.aoe) {
-              spawnFx(target.token.get('left'), target.token.get('top'), options.targetFx, pageId);
+          }
+          if (options.targetFx && !options.aoe) {
+            spawnFx(target.token.get('left'), target.token.get('top'), options.targetFx, pageId);
+          }
+          target.rollsDmg = rollsDmg;
+          // Compte le nombre de saves pour la synchronisation
+          // (On ne compte pas les psave, gérés dans dealDamage)
+          var saves = 0;
+          //ajoute les états sans save à la cible
+          var etats = options.etats;
+          if (target.etats) {
+            if (etats) etats = etats.concat(target.etats);
+            else etats = target.etats;
+          }
+          if (etats) {
+            etats.forEach(function(ce) {
+              if (ce.save) {
+                saves++;
+                return; //on le fera plus tard
+              }
+              if (testCondition(ce.condition, attaquant, [target], d20roll)) {
+                setState(target, ce.etat, true, evt);
+                var msgEtat;
+                if (ce.etat == 'mort')
+                  msgEtat = 'tué' + eForFemale(target);
+                else
+                  msgEtat = stringOfEtat(ce.etat, target);
+                target.messages.push(target.tokName + " est " + msgEtat + " par l'attaque");
+                if (ce.saveCarac) {
+                  setTokenAttr(target, ce.etat + 'Save', ce.saveCarac, evt, {
+                    maxval: ce.saveDifficulte
+                  });
+                }
+              } else {
+                if (ce.condition.type == "moins") {
+                  target.messages.push(
+                    "Grâce à sa " + ce.condition.text + ", " + target.tokName +
+                    " n'est pas " + stringOfEtat(ce.etat, target));
+                }
+              }
+            });
+          }
+          var savesEffets = 0;
+          // Ajoute les effets sans save à la cible
+          var effets = options.effets;
+          if (target.effets) {
+            if (effets) effets = effets.concat(target.effets);
+            else effets = target.effets;
+          }
+          if (effets) {
+            effets.forEach(function(ef) {
+              if (ef.save) {
+                saves++;
+                savesEffets++;
+                return; //on le fera plus tard
+              }
+              if (ef.effet == 'dedoublement') {
+                if (attributeAsBool(target, 'dedouble') ||
+                  attributeAsBool(target, 'dedoublement')) {
+                  target.messages.push(target.tokName + " a déjà été dédoublé pendant ce combat");
+                  return;
+                }
+                target.messages.push("Un double translucide de " +
+                  target.tokName + " apparaît. Il est aux ordres de " +
+                  attackerTokName);
+                setTokenAttr(target, 'dedouble', true, evt);
+                copieToken(target, undefined, stateCOF.options.images.val.image_double.val,
+                  "Double de " + target.tokName, 'dedoublement', ef.duree,
+                  pageId, evt);
+                return;
+              }
+              if (ef.effet == 'saignementsSang' && charAttributeAsBool(target, 'immuniteSaignement')) {
+                target.messages.push(target.tokName + " ne peut pas saigner");
+                return;
+              }
+              if (ef.duree) {
+                if (ef.accumuleDuree) {
+                  if (ef.accumuleDuree > 1 && attributeAsBool(target, ef.effet)) {
+                    var accumuleAttr = tokenAttribute(target, ef.effet + 'DureeAccumulee');
+                    if (accumuleAttr.length === 0) {
+                      setTokenAttr(target, ef.effet + 'DureeAccumulee', ef.duree, evt);
+                    } else {
+                      accumuleAttr = accumuleAttr[0];
+                      var dureeAccumulee = accumuleAttr.get('current') + '';
+                      if (dureeAccumulee.split(',').length < ef.accumuleDuree - 1) {
+                        evt.attributes = evt.attributes || [];
+                        evt.attributes.push({
+                          attribute: accumuleAttr,
+                          current: dureeAccumulee
+                        });
+                        accumuleAttr.set('current', ef.duree + ',' + dureeAccumulee);
+                      }
+                    }
+                    return; //Pas besoin de réappliquer, effet toujours en cours
+                  }
+                }
+                if (ef.message)
+                  target.messages.push(target.tokName + " " + ef.message.activation);
+                setAttrDuree(target, ef.effet, ef.duree, evt);
+                switch (ef.effet) {
+                  case 'apeureTemp':
+                    setState(target, 'apeure', true, evt);
+                    break;
+                  case 'aveugleTemp':
+                    setState(target, 'aveugle', true, evt);
+                    break;
+                  case 'ralentiTemp':
+                    setState(target, 'ralenti', true, evt);
+                    break;
+                  case 'paralyseTemp':
+                    setState(target, 'paralyse', true, evt);
+                    break;
+                  case 'immobiliseTemp':
+                    setState(target, 'immobilise', true, evt);
+                    break;
+                  case 'etourdiTemp':
+                    setState(target, 'etourdi', true, evt);
+                    break;
+                  case 'affaibliTemp':
+                    setState(target, 'affaibli', true, evt);
+                    break;
+                }
+                var effet = messageEffetTemp[ef.effet];
+                if (effet && effet.statusMarker) {
+                  affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
+                  target.token.set('status_' + effet.statusMarker, true);
+                }
+              } else if (ef.effetIndetermine) {
+                target.messages.push(target.tokName + " " + messageEffetIndetermine[ef.effet].activation);
+                setTokenAttr(target, ef.effet, true, evt);
+              } else { //On a un effet de comba
+                target.messages.push(target.tokName + " " + messageEffetCombat[ef.effet].activation);
+                setTokenAttr(target, ef.effet, true, evt);
+              }
+              if (ef.valeur !== undefined) {
+                setTokenAttr(target, ef.effet + 'Valeur', ef.valeur, evt, {
+                  maxval: ef.valeurMax
+                });
+              }
+              if (options.tempeteDeManaIntense)
+                setTokenAttr(target, ef.effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
+              if (ef.saveParTour) {
+                setTokenAttr(target, ef.effet + 'SaveParTour',
+                  ef.saveParTour.carac, evt, {
+                    maxval: ef.saveParTour.seuil
+                  });
+              }
+            });
+          }
+          // Tout ce qui se passe après les saves (autres que saves de diminution des dmg
+          var afterSaves = function() {
+            if (saves > 0) return; //On n'a pas encore fait tous les saves
+            if (options.pasDeDmg ||
+              (additionalDmg.length === 0 && mainDmgRoll.total === 0 &&
+                attNbDices === 0)) {
+              // Pas de dégâts, donc pas d'appel à dealDamage
+              finCibles();
+            } else {
+              dealDamage(target, mainDmgRoll, additionalDmg, evt, target.critique,
+                options, target.messages,
+                function(dmgDisplay, dmg) {
+                  if (options.strigeSuce) {
+                    var suce = attributeAsInt(attaquant, 'strigeSuce', 0);
+                    if (suce === 0) {
+                      setTokenAttr(attaquant, 'bufDEF', -3, evt);
+                      target.messages.push(
+                        attackerTokName + " s'agrippe à " + target.tokName +
+                        " et commence à lui sucer le sang");
+                    }
+                    if (suce + dmg >= 6) {
+                      target.messages.push(
+                        "Repus, " + attackerTokName + " se détache et s'envole");
+                      target.messages.push(target.tokName + " se sent un peu faible...");
+                      setState(target, 'affaibli', true, evt);
+                      var defbuf = attributeAsInt(attaquant, 'bufDEF', 0);
+                      if (defbuf === -3) {
+                        removeTokenAttr(attaquant, 'bufDEF', evt);
+                      } else if (defbuf !== 0) {
+                        setTokenAttr(attaquant, 'bufDEF', defbuf + 3, evt);
+                      }
+                    } else {
+                      setTokenAttr(attaquant, 'strigeSuce', suce + dmg, evt);
+                      if (suce > 0)
+                        target.messages.push(
+                          attackerTokName + " continue à sucer le sang de " + target.tokName);
+                    }
+                  }
+                  if (options.vampirise || target.vampirise) {
+                    soigneToken(attaquant, dmg, evt, function(soins) {
+                      target.messages.push(
+                        "L'attaque soigne " + attackerTokName + " de " + soins +
+                        " PV");
+                    });
+                  }
+                  target.dmgMessage = "<b>DM :</b> " + dmgDisplay;
+                  if (options.contact) {
+                    //Les DMs automatiques en cas de toucher une cible
+                    if (attributeAsBool(target, 'sousTension')) {
+                      ciblesCount++;
+                      sendChat("", "[[1d6]]", function(res) {
+                        var rolls = res[0];
+                        var explRoll = rolls.inlinerolls[0];
+                        var r = {
+                          total: explRoll.results.total,
+                          type: 'electrique',
+                          display: buildinline(explRoll, 'electrique', true)
+                        };
+                        dealDamage(attaquant, r, [], evt, false, options,
+                          target.messages,
+                          function(dmgDisplay, dmg) {
+                            var dmgMsg =
+                              "<b>Décharge électrique sur " + attackerTokName + " :</b> " +
+                              dmgDisplay;
+                            target.messages.push(dmgMsg);
+                            finCibles();
+                          });
+                      });
+                    }
+                    if (attributeAsBool(target, 'sangMordant')) {
+                      ciblesCount++;
+                      sendChat("", "[[1d6]]", function(res) {
+                        var rolls = res[0];
+                        var explRoll = rolls.inlinerolls[0];
+                        var r = {
+                          total: explRoll.results.total,
+                          type: 'acide',
+                          display: buildinline(explRoll, 'acide', true)
+                        };
+                        dealDamage(attaquant, r, [], evt, false, options,
+                          target.messages,
+                          function(dmgDisplay, dmg) {
+                            var dmgMsg =
+                              "<b>Le sang acide gicle sur " + attackerTokName + " :</b> " +
+                              dmgDisplay + " DM";
+                            target.messages.push(dmgMsg);
+                            finCibles();
+                          });
+                      });
+                    }
+                    var attrDmSiToucheContact = findObjs({
+                      _type: 'attribute',
+                      _characterid: target.charId,
+                      name: 'dmSiToucheContact'
+                    });
+                    attrDmSiToucheContact.forEach(function(dstc) {
+                      ciblesCount++;
+                      sendChat("", "[[" + dstc.get('current') + "]]", function(res) {
+                        var rolls = res[0];
+                        var explRoll = rolls.inlinerolls[0];
+                        var type = dstc.get('max');
+                        var r = {
+                          total: explRoll.results.total,
+                          type: type,
+                          display: buildinline(explRoll, type, true)
+                        };
+                        dealDamage(attaquant, r, [], evt, false, options,
+                          target.messages,
+                          function(dmgDisplay, dmg) {
+                            var dmgMsg =
+                              "<b>" + attackerTokName + " subit :</b> " +
+                              dmgDisplay + " DM en touchant " + target.tokName;
+                            target.messages.push(dmgMsg);
+                            finCibles();
+                          });
+                      });
+                    });
+                    var attrCorpsElem = findObjs({
+                      _type: 'attribute',
+                      _characterid: target.charId,
+                      name: 'corpsElementaire'
+                    });
+                    attrCorpsElem.forEach(function(dstc) {
+                      ciblesCount++;
+                      sendChat("", "[[1d6]]", function(res) {
+                        var rolls = res[0];
+                        var explRoll = rolls.inlinerolls[0];
+                        var type = dstc.get('current');
+                        var r = {
+                          total: explRoll.results.total,
+                          type: type,
+                          display: buildinline(explRoll, type, true)
+                        };
+                        dealDamage(attaquant, r, [], evt, false, options,
+                          target.messages,
+                          function(dmgDisplay, dmg) {
+                            var dmgMsg =
+                              "<b>" + attackerTokName + " subit :</b> " +
+                              dmgDisplay + " DM en touchant " + target.tokName;
+                            target.messages.push(dmgMsg);
+                            finCibles();
+                          });
+                      });
+                    });
+                  }
+                  finCibles();
+                });
             }
-            target.rollsDmg = rollsDmg;
-            // Compte le nombre de saves pour la synchronisation
-            // (On ne compte pas les psave, gérés dans dealDamage)
-            var saves = 0;
-            //ajoute les états sans save à la cible
-            var etats = options.etats;
-            if (target.etats) {
-              if (etats) etats = etats.concat(target.etats);
-              else etats = target.etats;
-            }
-            if (etats) {
+          };
+          var expliquer = function(msg) {
+            target.messages.push(msg);
+          };
+          //Ajoute les états avec save à la cibles
+          var etatsAvecSave = function() {
+            if (savesEffets > 0) return; //On n'a pas encore fini avec les effets
+            if (etats && saves > 0) {
               etats.forEach(function(ce) {
                 if (ce.save) {
-                  saves++;
-                  return; //on le fera plus tard
-                }
-                if (testCondition(ce.condition, attaquant, [target], d20roll)) {
-                  setState(target, ce.etat, true, evt);
-                  var msgEtat;
-                  if (ce.etat == 'mort')
-                    msgEtat = 'tué'+eForFemale(target);
-                  else
-                    msgEtat = stringOfEtat(ce.etat, target);
-                  target.messages.push(target.tokName + " est " + msgEtat + " par l'attaque");
-                  if (ce.saveCarac) {
-                    setTokenAttr(target, ce.etat + 'Save', ce.saveCarac, evt, {
-                      maxval: ce.saveDifficulte
-                    });
-                  }
-                } else {
-                  if (ce.condition.type == "moins") {
-                    target.messages.push(
-                      "Grâce à sa " + ce.condition.text + ", " + target.tokName +
-                      " n'est pas " + stringOfEtat(ce.etat, target));
-                  }
-                }
-              });
-            }
-            var savesEffets = 0;
-            // Ajoute les effets sans save à la cible
-            var effets = options.effets;
-            if (target.effets) {
-              if (effets) effets = effets.concat(target.effets);
-              else effets = target.effets;
-            }
-            if (effets) {
-              effets.forEach(function(ef) {
-                if (ef.save) {
-                  saves++;
-                  savesEffets++;
-                  return; //on le fera plus tard
-                }
-                if (ef.effet == 'dedoublement') {
-                  if (attributeAsBool(target, 'dedouble') ||
-                    attributeAsBool(target, 'dedoublement')) {
-                    target.messages.push(target.tokName + " a déjà été dédoublé pendant ce combat");
-                    return;
-                  }
-                  target.messages.push("Un double translucide de " +
-                    target.tokName + " apparaît. Il est aux ordres de " +
-                    attackerTokName);
-                  setTokenAttr(target, 'dedouble', true, evt);
-                  copieToken(target, undefined, stateCOF.options.images.val.image_double.val,
-                    "Double de " + target.tokName, 'dedoublement', ef.duree,
-                    pageId, evt);
-                  return;
-                }
-                if (ef.effet == 'saignementsSang' && charAttributeAsBool(target, 'immuniteSaignement')) {
-                  target.messages.push(target.tokName + " ne peut pas saigner");
-                  return;
-                }
-                if (ef.duree) {
-                  if (ef.accumuleDuree) {
-                    if (ef.accumuleDuree > 1 && attributeAsBool(target, ef.effet)) {
-                      var accumuleAttr = tokenAttribute(target, ef.effet + 'DureeAccumulee');
-                      if (accumuleAttr.length === 0) {
-                        setTokenAttr(target, ef.effet + 'DureeAccumulee', ef.duree, evt);
-                      } else {
-                        accumuleAttr = accumuleAttr[0];
-                        var dureeAccumulee = accumuleAttr.get('current') + '';
-                        if (dureeAccumulee.split(',').length < ef.accumuleDuree - 1) {
-                          evt.attributes = evt.attributes || [];
-                          evt.attributes.push({
-                            attribute: accumuleAttr,
-                            current: dureeAccumulee
-                          });
-                          accumuleAttr.set('current', ef.duree + ',' + dureeAccumulee);
-                        }
-                      }
-                      return; //Pas besoin de réappliquer, effet toujours en cours
-                    }
-                  }
-                  if (ef.message)
-                    target.messages.push(target.tokName + " " + ef.message.activation);
-                  setAttrDuree(target, ef.effet, ef.duree, evt);
-                  switch (ef.effet) {
-                    case 'apeureTemp':
-                      setState(target, 'apeure', true, evt);
-                      break;
-                    case 'aveugleTemp':
-                      setState(target, 'aveugle', true, evt);
-                      break;
-                    case 'ralentiTemp':
-                      setState(target, 'ralenti', true, evt);
-                      break;
-                    case 'paralyseTemp':
-                      setState(target, 'paralyse', true, evt);
-                      break;
-                    case 'immobiliseTemp':
-                      setState(target, 'immobilise', true, evt);
-                      break;
-                    case 'etourdiTemp':
-                      setState(target, 'etourdi', true, evt);
-                      break;
-                    case 'affaibliTemp':
-                      setState(target, 'affaibli', true, evt);
-                      break;
-                  }
-                  var effet = messageEffetTemp[ef.effet];
-                  if (effet && effet.statusMarker) {
-                    affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
-                    target.token.set('status_' + effet.statusMarker, true);
-                  }
-                } else if (ef.effetIndetermine) {
-                  target.messages.push(target.tokName + " " + messageEffetIndetermine[ef.effet].activation);
-                  setTokenAttr(target, ef.effet, true, evt);
-                } else { //On a un effet de comba
-                  target.messages.push(target.tokName + " " + messageEffetCombat[ef.effet].activation);
-                  setTokenAttr(target, ef.effet, true, evt);
-                }
-                if (ef.valeur !== undefined) {
-                  setTokenAttr(target, ef.effet + 'Valeur', ef.valeur, evt, {
-                    maxval: ef.valeurMax
-                  });
-                }
-                if (options.tempeteDeManaIntense)
-                  setTokenAttr(target, ef.effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
-                if (ef.saveParTour) {
-                  setTokenAttr(target, ef.effet + 'SaveParTour',
-                    ef.saveParTour.carac, evt, {
-                      maxval: ef.saveParTour.seuil
-                    });
-                }
-              });
-            }
-            // Tout ce qui se passe après les saves (autres que saves de diminution des dmg
-            var afterSaves = function() {
-              if (saves > 0) return; //On n'a pas encore fait tous les saves
-              if (options.pasDeDmg ||
-                (additionalDmg.length === 0 && mainDmgRoll.total === 0 &&
-                  attNbDices === 0)) {
-                // Pas de dégâts, donc pas d'appel à dealDamage
-                finCibles();
-              } else {
-                dealDamage(target, mainDmgRoll, additionalDmg, evt, target.critique,
-                  options, target.messages,
-                  function(dmgDisplay, dmg) {
-                    if (options.strigeSuce) {
-                      var suce = attributeAsInt(attaquant, 'strigeSuce', 0);
-                      if (suce === 0) {
-                        setTokenAttr(attaquant, 'bufDEF', -3, evt);
-                        target.messages.push(
-                          attackerTokName + " s'agrippe à " + target.tokName +
-                          " et commence à lui sucer le sang");
-                      }
-                      if (suce + dmg >= 6) {
-                        target.messages.push(
-                          "Repus, " + attackerTokName + " se détache et s'envole");
-                        target.messages.push(target.tokName + " se sent un peu faible...");
-                        setState(target, 'affaibli', true, evt);
-                        var defbuf = attributeAsInt(attaquant, 'bufDEF', 0);
-                        if (defbuf === -3) {
-                          removeTokenAttr(attaquant, 'bufDEF', evt);
-                        } else if (defbuf !== 0) {
-                          setTokenAttr(attaquant, 'bufDEF', defbuf + 3, evt);
-                        }
-                      } else {
-                        setTokenAttr(attaquant, 'strigeSuce', suce + dmg, evt);
-                        if (suce > 0)
-                          target.messages.push(
-                            attackerTokName + " continue à sucer le sang de " + target.tokName);
-                      }
-                    }
-                    if (options.vampirise || target.vampirise) {
-                      soigneToken(attaquant, dmg, evt, function(soins) {
-                        target.messages.push(
-                          "L'attaque soigne " + attackerTokName + " de " + soins +
-                          " PV");
-                      });
-                    }
-                    target.dmgMessage = "<b>DM :</b> " + dmgDisplay;
-                    if (options.contact) {
-                      //Les DMs automatiques en cas de toucher une cible
-                      if (attributeAsBool(target, 'sousTension')) {
-                        ciblesCount++;
-                        sendChat("", "[[1d6]]", function(res) {
-                          var rolls = res[0];
-                          var explRoll = rolls.inlinerolls[0];
-                          var r = {
-                            total: explRoll.results.total,
-                            type: 'electrique',
-                            display: buildinline(explRoll, 'electrique', true)
-                          };
-                          dealDamage(attaquant, r, [], evt, false, options,
-                            target.messages,
-                            function(dmgDisplay, dmg) {
-                              var dmgMsg =
-                                "<b>Décharge électrique sur " + attackerTokName + " :</b> " +
-                                dmgDisplay;
-                              target.messages.push(dmgMsg);
-                              finCibles();
-                            });
-                        });
-                      }
-                      if (attributeAsBool(target, 'sangMordant')) {
-                        ciblesCount++;
-                        sendChat("", "[[1d6]]", function(res) {
-                          var rolls = res[0];
-                          var explRoll = rolls.inlinerolls[0];
-                          var r = {
-                            total: explRoll.results.total,
-                            type: 'acide',
-                            display: buildinline(explRoll, 'acide', true)
-                          };
-                          dealDamage(attaquant, r, [], evt, false, options,
-                            target.messages,
-                            function(dmgDisplay, dmg) {
-                              var dmgMsg =
-                                "<b>Le sang acide gicle sur " + attackerTokName + " :</b> " +
-                                dmgDisplay + " DM";
-                              target.messages.push(dmgMsg);
-                              finCibles();
-                            });
-                        });
-                      }
-                      var attrDmSiToucheContact = findObjs({
-                        _type: 'attribute',
-                        _characterid: target.charId,
-                        name: 'dmSiToucheContact'
-                      });
-                      attrDmSiToucheContact.forEach(function(dstc) {
-                        ciblesCount++;
-                        sendChat("", "[[" + dstc.get('current') + "]]", function(res) {
-                          var rolls = res[0];
-                          var explRoll = rolls.inlinerolls[0];
-                          var type = dstc.get('max');
-                          var r = {
-                            total: explRoll.results.total,
-                            type: type,
-                            display: buildinline(explRoll, type, true)
-                          };
-                          dealDamage(attaquant, r, [], evt, false, options,
-                            target.messages,
-                            function(dmgDisplay, dmg) {
-                              var dmgMsg =
-                                "<b>" + attackerTokName + " subit :</b> " +
-                                dmgDisplay + " DM en touchant " + target.tokName;
-                              target.messages.push(dmgMsg);
-                              finCibles();
-                            });
-                        });
-                      });
-                      var attrCorpsElem = findObjs({
-                        _type: 'attribute',
-                        _characterid: target.charId,
-                        name: 'corpsElementaire'
-                      });
-                      attrCorpsElem.forEach(function(dstc) {
-                        ciblesCount++;
-                        sendChat("", "[[1d6]]", function(res) {
-                          var rolls = res[0];
-                          var explRoll = rolls.inlinerolls[0];
-                          var type = dstc.get('current');
-                          var r = {
-                            total: explRoll.results.total,
-                            type: type,
-                            display: buildinline(explRoll, type, true)
-                          };
-                          dealDamage(attaquant, r, [], evt, false, options,
-                            target.messages,
-                            function(dmgDisplay, dmg) {
-                              var dmgMsg =
-                                "<b>" + attackerTokName + " subit :</b> " +
-                                dmgDisplay + " DM en touchant " + target.tokName;
-                              target.messages.push(dmgMsg);
-                              finCibles();
-                            });
-                        });
-                      });
-                    }
-                    finCibles();
-                  });
-              }
-            };
-            var expliquer = function(msg) {
-              target.messages.push(msg);
-            };
-            //Ajoute les états avec save à la cibles
-            var etatsAvecSave = function() {
-              if (savesEffets > 0) return; //On n'a pas encore fini avec les effets
-              if (etats && saves > 0) {
-                etats.forEach(function(ce) {
-                  if (ce.save) {
-                    if (testCondition(ce.condition, attaquant, [target], d20roll)) {
-                      var msgPour = " pour résister à un effet";
-                  var msgEtat;
-                  if (ce.etat == 'mort')
-                    msgEtat = 'tué'+eForFemale(target);
-                  else
-                    msgEtat = stringOfEtat(ce.etat, target);
-                      var msgRate = ", " + target.tokName + " est " + msgEtat + " par l'attaque";
-                      var saveOpts = {
-                        msgPour: msgPour,
-                        msgRate: msgRate,
-                        attaquant: attaquant
-                      };
-                      var saveId = 'etat_' + ce.etat + '_' + attaquant.token.id;
-                      save(ce.save, target, saveId, expliquer, saveOpts, evt,
-                        function(reussite, rolltext) {
-                          if (!reussite) {
-                            setState(target, ce.etat, true, evt);
-                            if (ce.saveCarac) {
-                              setTokenAttr(target, ce.etat + 'Save', ce.saveCarac, evt, {
-                                maxval: ce.saveDifficulte
-                              });
-                            }
-                          }
-                          saves--;
-                          afterSaves();
-                        });
-                    } else {
-                      if (ce.condition.type == "moins") {
-                        target.messages.push(
-                          "Grâce à sa " + ce.condition.text + ", " + target.tokName +
-                          " n'est pas " + stringOfEtat(ce.etat, target));
-                      }
-                      saves--;
-                      afterSaves();
-                    }
-                  }
-                });
-              } else afterSaves();
-            };
-            // Ajoute les effets avec save à la cible
-            var effetsAvecSave = function() {
-              if (effets && savesEffets > 0) {
-                effets.forEach(function(ef) {
-                  if (ef.save) {
+                  if (testCondition(ce.condition, attaquant, [target], d20roll)) {
                     var msgPour = " pour résister à un effet";
-                    var msgRate = ", " + target.tokName + " ";
-                    if (ef.duree && ef.message)
-                      msgRate += ef.message.activation;
-                    else if (ef.effetIndetermine)
-                      msgRate += messageEffetIndetermine[ef.effet].activation;
+                    var msgEtat;
+                    if (ce.etat == 'mort')
+                      msgEtat = 'tué' + eForFemale(target);
                     else
-                      msgRate += messageEffetCombat[ef.effet].activation;
+                      msgEtat = stringOfEtat(ce.etat, target);
+                    var msgRate = ", " + target.tokName + " est " + msgEtat + " par l'attaque";
                     var saveOpts = {
                       msgPour: msgPour,
                       msgRate: msgRate,
                       attaquant: attaquant
                     };
-                    var duree = ef.duree;
-                    var saveId = 'effet_' + ef.effet + '_' + attaquant.token.id;
-                    save(ef.save, target, saveId, expliquer, saveOpts, evt,
-                      function(reussite, rollText) {
-                        if (reussite && duree && ef.save.demiDuree) {
-                          reussite = false;
-                          duree = Math.ceil(duree / 2);
-                        }
+                    var saveId = 'etat_' + ce.etat + '_' + attaquant.token.id;
+                    save(ce.save, target, saveId, expliquer, saveOpts, evt,
+                      function(reussite, rolltext) {
                         if (!reussite) {
-                          if (ef.duree) {
-                            setAttrDuree(target, ef.effet, duree, evt);
-                            switch (ef.effet) {
-                              case 'apeureTemp':
-                                setState(target, 'apeure', true, evt);
-                                break;
-                              case 'aveugleTemp':
-                                setState(target, 'aveugle', true, evt);
-                                break;
-                              case 'ralentiTemp':
-                                setState(target, 'ralenti', true, evt);
-                                break;
-                              case 'paralyseTemp':
-                                setState(target, 'paralyse', true, evt);
-                                break;
-                              case 'immobiliseTemp':
-                                setState(target, 'immobilise', true, evt);
-                                break;
-                              case 'etourdiTemp':
-                                setState(target, 'etourdi', true, evt);
-                                break;
-                              case 'affaibliTemp':
-                                setState(target, 'affaibli', true, evt);
-                                break;
-                            }
-                            var effet = messageEffetTemp[ef.effet];
-                            if (effet && effet.statusMarker) {
-                              affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
-                              target.token.set('status_' + effet.statusMarker, true);
-                            }
-                          } else setTokenAttr(target, ef.effet, true, evt);
-                          if (ef.valeur !== undefined) {
-                            setTokenAttr(target, ef.effet + 'Valeur', ef.valeur, evt, {
-                              maxval: ef.valeurMax
+                          setState(target, ce.etat, true, evt);
+                          if (ce.saveCarac) {
+                            setTokenAttr(target, ce.etat + 'Save', ce.saveCarac, evt, {
+                              maxval: ce.saveDifficulte
                             });
-                          }
-                          if (options.tempeteDeManaIntense)
-                            setTokenAttr(target, ef.effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
-                          if (ef.saveParTour) {
-                            setTokenAttr(target,
-                              ef.effet + 'SaveParTour', ef.saveParTour.carac,
-                              evt, {
-                                maxval: ef.saveParTour.seuil
-                              });
-                          }
-                          if (ef.saveParJour) {
-                            setTokenAttr(target,
-                              ef.effet + "SaveParJour", ef.saveParJour.carac,
-                              evt, {
-                                maxval: ef.saveParJour.seuil
-                              });
                           }
                         }
                         saves--;
-                        savesEffets--;
-                        etatsAvecSave();
+                        afterSaves();
                       });
-                  }
-                });
-              } else etatsAvecSave();
-            };
-            var effetPietinement = function() {
-              if (target.pietine && estAussiGrandQue(attaquant, target)) {
-                testOppose(target, 'FOR', {}, attaquant, 'FOR', {}, target.messages, evt, function(resultat) {
-                  if (resultat == 2) {
-                    target.messages.push(target.tokName + " est piétiné par " + attackerTokName + ", dommages doublés");
-                    setState(target, 'renverse', true, evt);
-                    options.dmgCoef = (options.dmgCoef || 1) + 1;
-                    target.touche++;
                   } else {
-                    if (resultat === 0) diminueMalediction(attaquant, evt);
-                    target.messages.push(target.tokName + " n'est pas piétiné.");
+                    if (ce.condition.type == "moins") {
+                      target.messages.push(
+                        "Grâce à sa " + ce.condition.text + ", " + target.tokName +
+                        " n'est pas " + stringOfEtat(ce.etat, target));
+                    }
+                    saves--;
+                    afterSaves();
                   }
-                  effetsAvecSave();
-                });
-              } else effetsAvecSave();
-            };
-            // Peut faire peur à la cible
-            if (options.peur) {
-              peurOneToken(target, pageId, options.peur.seuil,
-                options.peur.duree, {
-                  resisteAvecForce: true
-                }, target.messages, evt, effetPietinement);
-            } else effetPietinement();
-          } else {
-            evt.succes = false;
-            finCibles();
-          }
-        });
-      }); //Fin evalITE
+                }
+              });
+            } else afterSaves();
+          };
+          // Ajoute les effets avec save à la cible
+          var effetsAvecSave = function() {
+            if (effets && savesEffets > 0) {
+              effets.forEach(function(ef) {
+                if (ef.save) {
+                  var msgPour = " pour résister à un effet";
+                  var msgRate = ", " + target.tokName + " ";
+                  if (ef.duree && ef.message)
+                    msgRate += ef.message.activation;
+                  else if (ef.effetIndetermine)
+                    msgRate += messageEffetIndetermine[ef.effet].activation;
+                  else
+                    msgRate += messageEffetCombat[ef.effet].activation;
+                  var saveOpts = {
+                    msgPour: msgPour,
+                    msgRate: msgRate,
+                    attaquant: attaquant
+                  };
+                  var duree = ef.duree;
+                  var saveId = 'effet_' + ef.effet + '_' + attaquant.token.id;
+                  save(ef.save, target, saveId, expliquer, saveOpts, evt,
+                    function(reussite, rollText) {
+                      if (reussite && duree && ef.save.demiDuree) {
+                        reussite = false;
+                        duree = Math.ceil(duree / 2);
+                      }
+                      if (!reussite) {
+                        if (ef.duree) {
+                          setAttrDuree(target, ef.effet, duree, evt);
+                          switch (ef.effet) {
+                            case 'apeureTemp':
+                              setState(target, 'apeure', true, evt);
+                              break;
+                            case 'aveugleTemp':
+                              setState(target, 'aveugle', true, evt);
+                              break;
+                            case 'ralentiTemp':
+                              setState(target, 'ralenti', true, evt);
+                              break;
+                            case 'paralyseTemp':
+                              setState(target, 'paralyse', true, evt);
+                              break;
+                            case 'immobiliseTemp':
+                              setState(target, 'immobilise', true, evt);
+                              break;
+                            case 'etourdiTemp':
+                              setState(target, 'etourdi', true, evt);
+                              break;
+                            case 'affaibliTemp':
+                              setState(target, 'affaibli', true, evt);
+                              break;
+                          }
+                          var effet = messageEffetTemp[ef.effet];
+                          if (effet && effet.statusMarker) {
+                            affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
+                            target.token.set('status_' + effet.statusMarker, true);
+                          }
+                        } else setTokenAttr(target, ef.effet, true, evt);
+                        if (ef.valeur !== undefined) {
+                          setTokenAttr(target, ef.effet + 'Valeur', ef.valeur, evt, {
+                            maxval: ef.valeurMax
+                          });
+                        }
+                        if (options.tempeteDeManaIntense)
+                          setTokenAttr(target, ef.effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
+                        if (ef.saveParTour) {
+                          setTokenAttr(target,
+                            ef.effet + 'SaveParTour', ef.saveParTour.carac,
+                            evt, {
+                              maxval: ef.saveParTour.seuil
+                            });
+                        }
+                        if (ef.saveParJour) {
+                          setTokenAttr(target,
+                            ef.effet + "SaveParJour", ef.saveParJour.carac,
+                            evt, {
+                              maxval: ef.saveParJour.seuil
+                            });
+                        }
+                      }
+                      saves--;
+                      savesEffets--;
+                      etatsAvecSave();
+                    });
+                }
+              });
+            } else etatsAvecSave();
+          };
+          var effetPietinement = function() {
+            if (target.pietine && estAussiGrandQue(attaquant, target)) {
+              testOppose(target, 'FOR', {}, attaquant, 'FOR', {}, target.messages, evt, function(resultat) {
+                if (resultat == 2) {
+                  target.messages.push(target.tokName + " est piétiné par " + attackerTokName + ", dommages doublés");
+                  setState(target, 'renverse', true, evt);
+                  options.dmgCoef = (options.dmgCoef || 1) + 1;
+                  target.touche++;
+                } else {
+                  if (resultat === 0) diminueMalediction(attaquant, evt);
+                  target.messages.push(target.tokName + " n'est pas piétiné.");
+                }
+                effetsAvecSave();
+              });
+            } else effetsAvecSave();
+          };
+          // Peut faire peur à la cible
+          if (options.peur) {
+            peurOneToken(target, pageId, options.peur.seuil,
+              options.peur.duree, {
+                resisteAvecForce: true
+              }, target.messages, evt, effetPietinement);
+          } else effetPietinement();
+        } else {
+          evt.succes = false;
+          finCibles();
+        }
+      });
     }); //Fin de la boucle pour toutes cibles
   }
 
@@ -22912,9 +22939,17 @@ var COFantasy = COFantasy || function() {
         return;
       }
       if (torcheAllumee) {
+        var msgTorche = "/w gm torche éteinte. ";
+        if (nbTorches > 1) {
+          msgTorche += "Reste " + (nbTorches - 1) + " torche";
+          if (nbTorches > 2) msgTorche += "s neuves";
+          else msgTorche += " neuve";
+          msgTorche += ", et une torche pouvant encore éclairer " + tempsTorche + " minutes.";
+        } else {
+          msgTorche += "Elle peut encore éclairer " + tempsTorche + " minutes.";
+        }
         sendChar(perso.charId,
-          "/w gm torche éteinte. Reste " + nbTorches + " torches, et " +
-          tempsTorche + " minutes pour la dernière. " +
+          msgTorche +
           boutonSimple("!cof-torche " + perso.token.id + " ?{Durée?}", "Temps depuis allumage"));
         addEvent(evt);
         return;
@@ -25444,8 +25479,8 @@ var COFantasy = COFantasy || function() {
             function(dmgDisplay, dmg) {
               if (dmg > 0) {
                 var msgDm;
-    if (msg) msgDm = msg + '. ' + onGenre(perso, 'Il', 'Elle');
-    else msgDm = '';
+                if (msg) msgDm = msg + '. ' + onGenre(perso, 'Il', 'Elle');
+                else msgDm = '';
                 if (effet == attrName) {
                   sendChar(charId, msgDm + " subit " + dmgDisplay + " DM");
                 } else {
