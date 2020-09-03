@@ -7779,6 +7779,32 @@ var COFantasy = COFantasy || function() {
         var ciblesTouchees = [];
         var count = cibles.length;
         cibles.forEach(function(target) {
+          if (attributeAsBool(attaquant, 'menaceManoeuvre(' + target.token.id + ')')) {
+            explications.push(attaquant.tokName + " attaque " + target.tokName + " malgré la menace. " + target.tokName + " a droit à une attaque au contact gratuite.");
+            removeTokenAttr(attaquant, 'menaceManoeuvre(' + target.token.id + ')', evt);
+            setTokenAttr(attaquant, 'attaqueMalgreMenace(' + target.token.id + ')', 1, evt);
+          } else if (attributeAsBool(attaquant, 'menaceManoeuvre(' + target.token.id + ',crit)')) {
+            explications.push(attaquant.tokName + " attaque " + target.tokName + " malgré la menace. " + target.tokName + " a droit à une attaque au contact gratuite (DM x 2 !).");
+            removeTokenAttr(attaquant, 'menaceManoeuvre(' + target.token.id + ',crit)', evt);
+            setTokenAttr(attaquant, 'attaqueMalgreMenace(' + target.token.id + ')', 2, evt);
+          }
+          target.additionalDmg = [];
+          var amm = 'attaqueMalgreMenace(' + attaquant.token.id + ')';
+          if (options.contact && cibles.length == 1) {
+            if (attributeAsBool(target, amm)) {
+              target.messages.push('Attaque automatique suite à une menace ignorée');
+              options.auto = true;
+              if (attributeAsInt(target, amm, 1) > 1) options.dmFoisDeux = true;
+              target.additionalDmg.push({
+                type: mainDmgType,
+                value: '1d6'
+              });
+              removeTokenAttr(target, amm, evt);
+            } else if (attributeAsBool(attaquant, 'attaqueGratuiteAutomatique(' + target.token.id + ')')) {
+              options.auto = true;
+              removeTokenAttr(attaquant, 'attaqueGratuiteAutomatique(' + target.token.id + ')', evt);
+            }
+          }
           evalITE(attaquant, target, d20roll, options, evt, explications, options, function() {
             target.ignoreTouteRD = target.ignoreTouteRD || options.ignoreTouteRD;
             target.ignoreRD = target.ignoreRD || options.ignoreRD;
@@ -7788,32 +7814,6 @@ var COFantasy = COFantasy || function() {
             target.malediction = target.malediction || options.malediction;
             target.pietine = target.pietine || options.pietine;
             target.maxDmg = target.maxDmg || options.maxDmg;
-            if (attributeAsBool(attaquant, 'menaceManoeuvre(' + target.token.id + ')')) {
-              explications.push(attaquant.tokName + " attaque " + target.tokName + " malgré la menace. " + target.tokName + " a droit à une attaque au contact gratuite.");
-              removeTokenAttr(attaquant, 'menaceManoeuvre(' + target.token.id + ')', evt);
-              setTokenAttr(attaquant, 'attaqueMalgreMenace(' + target.token.id + ')', 1, evt);
-            } else if (attributeAsBool(attaquant, 'menaceManoeuvre(' + target.token.id + ',crit)')) {
-              explications.push(attaquant.tokName + " attaque " + target.tokName + " malgré la menace. " + target.tokName + " a droit à une attaque au contact gratuite (DM x 2 !).");
-              removeTokenAttr(attaquant, 'menaceManoeuvre(' + target.token.id + ',crit)', evt);
-              setTokenAttr(attaquant, 'attaqueMalgreMenace(' + target.token.id + ')', 2, evt);
-            }
-            target.additionalDmg = [];
-            var amm = 'attaqueMalgreMenace(' + attaquant.token.id + ')';
-            if (options.contact && cibles.length == 1) {
-              if (attributeAsBool(target, amm)) {
-                target.messages.push('Attaque automatique suite à une menace ignorée');
-                options.auto = true;
-                if (attributeAsInt(target, amm, 1) > 1) options.dmFoisDeux = true;
-                target.additionalDmg.push({
-                  type: mainDmgType,
-                  value: '1d6'
-                });
-                removeTokenAttr(target, amm, evt);
-              } else if (attributeAsBool(attaquant, 'attaqueGratuiteAutomatique(' + target.token.id + ')')) {
-                options.auto = true;
-                removeTokenAttr(attaquant, 'attaqueGratuiteAutomatique(' + target.token.id + ')', evt);
-              }
-            }
             //Les bonus d'attaque qui dépendent de la cible
             var bad = bonusAttaqueD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
             var attBonus = attBonusCommun + bad;
