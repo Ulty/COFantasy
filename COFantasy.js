@@ -9391,7 +9391,7 @@ var COFantasy = COFantasy || function() {
             bouton("!cof-pousser-kiai " + evt.id, "Kiai", perso));
         }
         if (attributeAsBool(perso, 'petitVeinard')) {
-          addLineToFramedDisplay(display, boutonSimple("!cof-petit-veinard --target" + perso.token.id, "Petit veinard")+" pour relancer un dé");
+          addLineToFramedDisplay(display, boutonSimple("!cof-petit-veinard --target" + perso.token.id, "Petit veinard") + " pour relancer un dé");
         }
         //Possibilité d'annuler l'attaque
         if (evt.action.options && !evt.action.options.auto) {
@@ -13730,6 +13730,17 @@ var COFantasy = COFantasy || function() {
       var command = "!cof-attack @{selected|token_id} @{target|token_id} " + attLabel + options;
       ligne += bouton(command, weaponName, perso) + '<br />';
     });
+    //On ajoute aussi les lancers de feu grégeois, si il y en a
+    var attrFeuxGregeois = tokenAttribute(perso, 'elixir_feu_grégeois');
+    if (attrFeuxGregeois.length > 0) {
+      attrFeuxGregeois = attrFeuxGregeois[0];
+      var feuxGregeois = parseInt(attrFeuxGregeois.get('current'));
+      if (feuxGregeois > 0) {
+
+        var command = attrFeuxGregeois.get('max').trim();
+        ligne += bouton(command, 'Feu grégeois', perso, attrFeuxGregeois) + " (reste " + feuxGregeois + ")";
+      }
+    }
     return ligne;
   }
 
