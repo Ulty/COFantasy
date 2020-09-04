@@ -1521,7 +1521,7 @@
                 <h4 class="text-secondary">Halfelin</h4>
                 <p>Petite taille : ajouter le bonus de DEF sur la ficher, et ajouter 2 à un attribut <code>discrétion</code>.</p>
                 <ol>
-                  <li><strong>Petit veinard</strong> : Il y a beaucoup de types de dés différents. Pour l'instant, géré par le MJ : faire tirer le jet (/r) par le joueur, si ça a changé, utiliser le undo ou faire les changements à la main.</li>
+                  <li><strong>Petit veinard</strong> : ajouter un attribut <code>petitVeinard</code> de valeur courante 1, et de valeur maximale 1. Le script ne va automatiser que les relancer de dés d'attaque ou de jets de caractéristiques (et encore, pas tous). Il propose d'utiliser la chance à chaque attaque, même réussie, mais dans ce cas, c'est au joueur de relancer le dé concerné, et au MJ d'en appliquer les conséquences.</li>
                   <li><strong>Résistance légendaire</strong> : ajouter le bonus en CON sur la fiche, et ajouter un attribut <code>DEF_magie</code> avec comme valeur 5.</li>
                 </ol>
                 <h4 class="text-secondary">Haut elfe</h4>
@@ -1537,6 +1537,9 @@
                 <h4 class="text-secondary">Lutin</h4>
                 Voir les <a href="#fee_et_lutin">fées</a>.
                 <h4 class="text-secondary">Nain</h4>
+                <ul>
+                  <li><a href="#Vision_dans_le_noir">Vision dans le noir</a>.</li>
+                </ul>
                 <ol>
                   <li><strong>Résistance</strong> : ajouter les bonus sur la fiche</li>
                   <li><strong>Solide comme un roc</strong> : ajouter le texte <code>2/1</code> dans la RD sur la fiche.</li>

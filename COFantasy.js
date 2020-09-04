@@ -1,28 +1,3 @@
-// jshint undef:true
-// jshint eqeqeq:false
-// jshint esversion: 6
-/* globals Set */
-/* globals getAttrByName */
-/* globals findObjs */
-/* globals _ */
-/* globals createObj */
-/* globals log */
-/* globals sendChat */
-/* globals state */
-/* globals Campaign */
-/* globals getObj */
-/* globals randomInteger */
-/* globals spawnFx */
-/* globals spawnFxBetweenPoints */
-/* globals VecMath */
-/* globals on */
-/* globals toFront */
-/* globals playerIsGM */
-/* globals setTimeout */
-/* globals setDefaultTokenForCharacter */
-/* globals HealthColors */
-/* globals Roll20AM */
-
 // Needs the Vector Math scripty
 // ------------------ generateRowID code from the Aaron ---------------------
 var generateUUID = (function() {
@@ -996,7 +971,6 @@ var COFantasy = COFantasy || function() {
       if (evt) affectToken(token, fieldv, prevVal, evt);
       token.set(fieldv, val);
       if (maxVal) {
-        var prevMax = token.get(fieldm);
         if (evt) affectToken(token, fieldm, token.get(fieldm), evt);
         token.set(fieldm, val);
       }
@@ -1556,6 +1530,7 @@ var COFantasy = COFantasy || function() {
       etat == 'aveugle') updateInit(token, evt);
   }
 
+  /*
   function logEvents() {
     var l = eventHistory.length;
     log("Historique de taille " + l);
@@ -1563,7 +1538,7 @@ var COFantasy = COFantasy || function() {
       log("evt " + i);
       log(evt);
     });
-  }
+  }*/
 
   function addEvent(evt) {
     evt.id = stateCOF.eventId++;
@@ -1669,7 +1644,7 @@ var COFantasy = COFantasy || function() {
         }
         if (character.abilities) {
           character.abilities.forEach(function(ab) {
-            var newAb = createObj('ability', {
+            createObj('ability', {
               characterid: charId,
               name: ab.get('name'),
               action: ab.get('action'),
@@ -2459,7 +2434,6 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    var token = personnage.token;
     var bonusCarac = bonusTestCarac(carac, personnage, options, evt);
     var testsRatesDuTour;
     var listeTestsRatesDuTour;
@@ -2489,7 +2463,6 @@ var COFantasy = COFantasy || function() {
       carac: carac
     });
     var rollExpr = "[[" + de + "cs20cf1]]";
-    var name = personnage.name || getObj('character', personnage.charId).get('name');
     try {
       sendChat("", rollExpr, function(res) {
         var roll = options.roll || res[0].inlinerolls[0];
@@ -2636,8 +2609,11 @@ var COFantasy = COFantasy || function() {
                 bouton("!cof-bouton-chance " + evt.id, "Chance", perso) +
                 " (reste " + pc + " PC)";
             }
-            if (charAttributeAsBool(perso, 'runeForgesort_énergie') && (caracteristique == 'FOR' || caracteristique == 'CON' || caracteristique == 'DEX')) {
+            if (attributeAsBool(perso, 'runeForgesort_énergie') && (caracteristique == 'FOR' || caracteristique == 'CON' || caracteristique == 'DEX')) {
               msgRate += ' ' + bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", perso);
+            }
+            if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
+              msgRate += ' ' + bouton("!cof-petit-veinard " + evt.id, "Petit veinard", perso);
             }
             addLineToFramedDisplay(display, msgRate);
           }
@@ -5282,7 +5258,6 @@ var COFantasy = COFantasy || function() {
   // Mise en commun pour attack et attaque-magique
   function bonusDAttaque(personnage, explications, evt) {
     explications = explications || [];
-    var charId = personnage.charId;
     var tempAttkMod; // Utilise la barre 3 de l'attaquant
     tempAttkMod = parseInt(personnage.token.get("bar3_value"));
     if (tempAttkMod === undefined || isNaN(tempAttkMod) || tempAttkMod === "") {
@@ -5990,7 +5965,6 @@ var COFantasy = COFantasy || function() {
   function bonusAttaqueD(attaquant, target, portee, pageId, evt, explications, options) {
     var attackingCharId = attaquant.charId;
     attaquant.tokName = attaquant.tokName || attaquant.token.get('name');
-    var attackerTokName = attaquant.tokName;
     var attBonus = 0;
     if (target.bonusAttaque) attBonus += target.bonusAttaque;
     if (getState(attaquant, 'aveugle')) {
@@ -6335,7 +6309,7 @@ var COFantasy = COFantasy || function() {
           attributeAsInt(personnage, ressource, options.limiteParCombat);
         if (utilisations === 0) {
           var msgToSend = msg || "ne peut plus faire cette action pour ce combat";
-          sendChar(personnage.charId, msg);
+          sendChar(personnage.charId, msgToSend);
           addEvent(evt);
           return true;
         }
@@ -6981,6 +6955,7 @@ var COFantasy = COFantasy || function() {
       error("Impossible de retrouver le personnage qui pouvait faire une attaque " + type, vid);
       return;
     }
+    if (!isActive(attaquant)) return;
     var abilities = findObjs({
       _type: 'ability',
       _characterid: attaquant.charId,
@@ -7779,6 +7754,11 @@ var COFantasy = COFantasy || function() {
         var ciblesTouchees = [];
         var count = cibles.length;
         cibles.forEach(function(target) {
+          // reset les champs de target qui vont être recalculés
+          target.additionalDmg = [];
+          target.dmgCoef = 0;
+          target.critCoef = 0;
+          target.diviseDmg = 1;
           if (attributeAsBool(attaquant, 'menaceManoeuvre(' + target.token.id + ')')) {
             explications.push(attaquant.tokName + " attaque " + target.tokName + " malgré la menace. " + target.tokName + " a droit à une attaque au contact gratuite.");
             removeTokenAttr(attaquant, 'menaceManoeuvre(' + target.token.id + ')', evt);
@@ -7788,7 +7768,6 @@ var COFantasy = COFantasy || function() {
             removeTokenAttr(attaquant, 'menaceManoeuvre(' + target.token.id + ',crit)', evt);
             setTokenAttr(attaquant, 'attaqueMalgreMenace(' + target.token.id + ')', 2, evt);
           }
-          target.additionalDmg = [];
           var amm = 'attaqueMalgreMenace(' + attaquant.token.id + ')';
           if (options.contact && cibles.length == 1) {
             if (attributeAsBool(target, amm)) {
@@ -9382,30 +9361,37 @@ var COFantasy = COFantasy || function() {
       addLineToFramedDisplay(display, expl, 80);
     });
     if (evt.action) {
-      evt.personnage = evt.action.attaquant;
+      var perso = evt.action.attaquant;
+      evt.personnage = perso;
       if (evt.succes === false) {
-        var pc = pointsDeChance(evt.personnage);
+        var pc = pointsDeChance(perso);
         if (pc > 0 && !echecCritique) {
-          addLineToFramedDisplay(display, bouton("!cof-bouton-chance " + evt.id, "Chance", evt.personnage) + " (reste " + pc + " PC)");
+          addLineToFramedDisplay(display, bouton("!cof-bouton-chance " + evt.id, "Chance", perso) + " (reste " + pc + " PC)");
         }
-        if (attributeAsBool(evt.personnage, 'runeForgesort_énergie') &&
-          attributeAsInt(evt.personnage, 'limiteParCombat_runeForgesort_énergie', 1) > 0) {
-          addLineToFramedDisplay(display, bouton("!cof-rune-energie " + evt.id, "Rune d'énergie", evt.personnage));
+        if (attributeAsBool(perso, 'runeForgesort_énergie') &&
+          attributeAsInt(perso, 'limiteParCombat_runeForgesort_énergie', 1) > 0) {
+          addLineToFramedDisplay(display, bouton("!cof-rune-energie " + evt.id, "Rune d'énergie", perso));
+        }
+        if (attributeAsBool(perso, 'petitVeinard')) {
+          addLineToFramedDisplay(display, bouton("!cof-petit-veinard " + evt.id, "Petit veinard", perso));
         }
         //TODO: pacte sanglant
       } else {
         if (evt.action.weaponStats) {
           var attLabel = evt.action.weaponStats.label;
-          if (attributeAsBool(evt.personnage, 'runeForgesort_puissance(' + attLabel + ')') &&
-            attributeAsInt(evt.personnage, 'limiteParCombat_runeForgesort_puissance(' + attLabel + ')', 1) > 0) {
+          if (attributeAsBool(perso, 'runeForgesort_puissance(' + attLabel + ')') &&
+            attributeAsInt(perso, 'limiteParCombat_runeForgesort_puissance(' + attLabel + ')', 1) > 0) {
             addLineToFramedDisplay(display,
               bouton("!cof-rune-puissance " + attLabel + ' ' + evt.id,
-                "Rune de puissance", evt.personnage));
+                "Rune de puissance", perso));
           }
         }
-        if (attributeAsBool(evt.personnage, 'kiai') && !attributeAsBool(evt.personnage, 'rechargeDuKiai')) {
+        if (attributeAsBool(perso, 'kiai') && !attributeAsBool(perso, 'rechargeDuKiai')) {
           addLineToFramedDisplay(display,
-            bouton("!cof-pousser-kiai " + evt.id, "Kiai", evt.personnage));
+            bouton("!cof-pousser-kiai " + evt.id, "Kiai", perso));
+        }
+        if (attributeAsBool(perso, 'petitVeinard')) {
+          addLineToFramedDisplay(display, boutonSimple("!cof-petit-veinard --target" + perso.token.id, "Petit veinard")+" pour relancer un dé");
         }
         //Possibilité d'annuler l'attaque
         if (evt.action.options && !evt.action.options.auto) {
@@ -10438,7 +10424,6 @@ var COFantasy = COFantasy || function() {
         }
         var pvPerdus = dmgTotal;
         if (target.tempDmg) {
-          var oldTempDmg = tempDmg;
           tempDmg += dmgTotal;
           if (tempDmg > pvmax) {
             pvPerdus -= tempDmg - pvmax;
@@ -11236,6 +11221,7 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'esquiveAcrobatique', evt);
     resetAttr(attrs, 'resistanceALaMagieBarbare', evt);
     resetAttr(attrs, 'paradeMagistrale', evt);
+    resetAttr(attrs, 'petitVeinard', evt);
     // Réinitialiser le kiai
     resetAttr(attrs, 'kiai', evt);
     // On diminue l'ébriété des personnages sous vapeurs éthyliques
@@ -12705,6 +12691,7 @@ var COFantasy = COFantasy || function() {
     return false;
   }
 
+  //!cof-bouton-rune-energie
   function runeEnergie(msg) {
     if (!stateCOF.combat) {
       sendPlayer(msg, "On ne peut utiliser les runes d'énergie qu'en combat");
@@ -13206,6 +13193,124 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //!cof-petit-veinard
+  //sans argument, diminue juste l'attribut, sinon relance l'événement
+  function petitVeinard(msg) {
+    if (!stateCOF.combat) {
+      sendPlayer(msg, "On ne peut utiliser petit veinard qu'en combat");
+      return;
+    }
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined) {
+      error("Problème de parse options", msg.content);
+      return;
+    }
+    var evtARefaire;
+    var evt = {
+      type: "Petit veinard",
+      attributes: []
+    };
+    if (cmd.length > 1) { //On relance pour un événement particulier
+      evtARefaire = findEvent(cmd[1]);
+      if (evtARefaire === undefined) {
+        error("L'action est trop ancienne ou a été annulée", cmd);
+        return;
+      }
+      var perso = evtARefaire.personnage;
+      if (perso === undefined) {
+        error("Erreur interne du bouton petit veinard : l'évenement n'a pas de personnage", evtARefaire);
+        return;
+      }
+      if (!peutController(msg, perso)) {
+        sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+        return;
+      }
+      var action = evtARefaire.action;
+      if (action === undefined) {
+        error("Impossible de relancer l'action", evtARefaire);
+        return;
+      }
+      options = action.options || {};
+      options.redo = true;
+      var petitVeinardAttr = tokenAttribute(perso, 'petitVeinard');
+      if (petitVeinardAttr.length === 0) {
+        sendChar(perso.charId, "n'est pas un petit veinard");
+        return;
+      }
+      petitVeinardAttr = petitVeinardAttr[0];
+      var pvd = parseInt(petitVeinardAttr.get('current'));
+      if (isNaN(pvd) || pvd < 0) pvd = 0;
+      if (pvd === 0) {
+        sendChar(perso.charId, "a déjà tenté sa chance pour ce combat");
+        return;
+      }
+      evt.attributes.push({
+        attribute: petitVeinardAttr,
+        current: pvd
+      });
+      petitVeinardAttr.set('current', pvd - 1);
+      addEvent(evt);
+      switch (evtARefaire.type) {
+        case 'Attaque':
+          undoEvent(evtARefaire);
+          if (action.cibles) {
+            action.cibles.forEach(function(target) {
+              delete target.partialSaveAuto;
+            });
+          }
+          attack(action.player_id, perso, action.cibles, action.weaponStats, options);
+          return;
+        case 'jetPerso':
+          undoEvent(evtARefaire);
+          delete options.roll; //On va le relancer
+          jetPerso(perso, action.caracteristique, action.difficulte, action.titre, action.playerId, options);
+          return;
+        case 'echapperEnveloppement':
+          undoEvent(evtARefaire);
+          delete options.roll;
+          echapperEnveloppement({
+            selected: action.selected,
+            content: '!cof-chance-echapper-enveloppement',
+            playerId: action.playerId,
+            options: options
+          });
+          return;
+        default:
+          return;
+      }
+    } else { //Juste pour vérifier l'attribut et le diminuer
+      getSelected(msg, function(selection) {
+        if (selection.length === 0) {
+          sendPlayer(msg, 'Pas de token sélectionné pour !cof-petit-veinard');
+          return;
+        }
+        iterSelected(selection, function(perso) {
+          var petitVeinardAttr = tokenAttribute(perso, 'petitVeinard');
+          if (petitVeinardAttr.length === 0) {
+            sendChar(perso.charId, "n'est pas un petit veinard");
+            return;
+          }
+          petitVeinardAttr = petitVeinardAttr[0];
+          var pvd = parseInt(petitVeinardAttr.get('current'));
+          if (isNaN(pvd) || pvd < 0) pvd = 0;
+          if (pvd === 0) {
+            sendChar(perso.charId, "a déjà tenté sa chance pour ce combat");
+            return;
+          }
+          evt.attributes.push({
+            attribute: petitVeinardAttr,
+            current: pvd
+          });
+          sendChar(perso.charId, "peut relancer un dé");
+          petitVeinardAttr.set('current', pvd - 1);
+        }); //fin iterSelected
+        addEvent(evt);
+      }); //fin getSelected
+    }
+  }
+
   function surprise(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
@@ -13506,9 +13611,9 @@ var COFantasy = COFantasy || function() {
     if (sync != threadSync) return;
     if (token) {
       // Cas spéciaux du cavaliers
-      var personnage = persoOfId(token.get("_id"));
-      var monteSur = tokenAttribute(personnage, "monteSur");
-      var estMontePar = tokenAttribute(personnage, "estMontePar");
+      var personnage = persoOfId(token.id);
+      var monteSur = tokenAttribute(personnage, 'monteSur');
+      var estMontePar = tokenAttribute(personnage, 'estMontePar');
       var monture;
       var cavalier;
       if (monteSur.length > 0) {
@@ -14840,7 +14945,6 @@ var COFantasy = COFantasy || function() {
   // - echecCritique, critique pour indiquer si 1 ou 20
   // - roll: le inlineroll (pour les statistiques)
   function jetCaracteristique(personnage, carac, options, evt, callback) {
-    var token = personnage.token;
     var explications = [];
     var bonusCarac = bonusTestCarac(carac, personnage, options, evt, explications);
     var carSup = nbreDeTestCarac(carac, personnage);
@@ -14897,7 +15001,6 @@ var COFantasy = COFantasy || function() {
       if (limiteRessources(options.lanceur, options, 'dmg', 'dmg', evt)) return;
       var action = "<b>Dégâts.</b>";
       var optArgs = msg.content.split(' --');
-      var partialSave;
       options.aoe = true;
       optArgs.forEach(function(opt) {
         opt = opt.trim().split(' ');
@@ -15081,17 +15184,6 @@ var COFantasy = COFantasy || function() {
         error("Jet " + dmgRollExpr + " mal formé", cmd);
       }
     }, options); //fin du getSelected
-  }
-
-  function findRollNumber(msg) {
-    if (msg.length > 4) {
-      if (msg.substring(0, 3) == '$[[') {
-        var res = rollNumber(msg);
-        if (isNaN(res)) return undefined;
-        return res;
-      }
-    }
-    return undefined;
   }
 
   function estElementaire(t) {
@@ -16266,7 +16358,6 @@ var COFantasy = COFantasy || function() {
 
   function peurOneToken(target, pageId, difficulte, duree, options,
     messages, evt, callback) {
-    var charId = target.charId;
     var targetName = target.token.get('name');
     if (charAttributeAsBool(target, 'sansPeur') ||
       charAttributeAsBool(target, 'immunitePeur') ||
@@ -16652,7 +16743,6 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, "Pas de cible sélectionnée pour le sort de sommeil");
         return;
       }
-      var casterName = caster.token.get('name');
       var casterCharName = casterChar.get('name');
       var cha = modCarac(caster, 'CHARISME');
       var attMagText = addOrigin(casterCharName, '[[' + computeArmeAtk(caster, '@{ATKMAG}') + ']]');
@@ -17574,7 +17664,6 @@ var COFantasy = COFantasy || function() {
       }
       rollSoins = soins.roll;
       soins = soins.val;
-      var nameSoigneur = tokSoigneur.get('name');
       soigneur = getObj('character', charIdSoigneur);
       if (soigneur === undefined) {
         error("Fiche du soigneur introuvable");
@@ -17773,7 +17862,6 @@ var COFantasy = COFantasy || function() {
           attributes: []
         };
         if (limiteRessources(beneficiaire, options, 'elixir_fortifiant', "boire un fortifiant", evt)) return;
-        var name2 = beneficiaire.token.get('name');
         var soins = rollDePlus(4, {
           bonus: rang
         });
@@ -18193,7 +18281,6 @@ var COFantasy = COFantasy || function() {
       sendChar(charIdProtecteur, "ne peut pas se protéger lui-même");
       return;
     }
-    var charIdTarget = target.charId;
     var nameTarget = tokenTarget.get('name');
     var evt = {
       type: "Protéger un allié"
@@ -18274,7 +18361,6 @@ var COFantasy = COFantasy || function() {
       error("Le deuxième argument n'est pas un token valide: " + msg.content, args[2]);
       return;
     }
-    var charId2 = target.charId;
     var name2 = target.token.get('name');
     if (!attributeAsBool(target, 'strangulation')) {
       sendChar(charId1, "ne peut pas maintenir la strangulation. Il faut (re)lancer le sort");
@@ -18516,7 +18602,6 @@ var COFantasy = COFantasy || function() {
         var posY = token.get('top');
         var sizeY = token.get('height');
         var sortieEscalier;
-        var etages;
         escaliers.forEach(function(esc) {
           if (sortieEscalier) return;
           if (intersection(posX, sizeX, esc.get('left'), esc.get('width')) &&
@@ -19467,7 +19552,6 @@ var COFantasy = COFantasy || function() {
           function(testRes) {
             var msgJet = "Jet de SAG : " + testRes.texte;
             if (testRes.reussite) {
-              var eventId = stateCOF.eventId;
               var action = "!cof-dmg " + dm + " --sortilege --mortsVivants";
               action += " --attaquant " + lanceur.token.id;
               evt.waitingForAoe = true;
@@ -20214,7 +20298,7 @@ var COFantasy = COFantasy || function() {
         _type: 'attribute',
         _characterid: forgesort.charId
       });
-      var altElixir = altElixirs.find(function(attr) {
+      altElixirs.find(function(attr) {
         var attrName = attr.get('name');
         if (!attrName.startsWith('Elixir ')) return false;
         var rang = parseInt(attrName.substring(7));
@@ -20621,7 +20705,6 @@ var COFantasy = COFantasy || function() {
     }
     message += typeRune;
     var attr = tokenAttribute(target, attrName);
-    var action = rune.action;
     if (attr.length !== 0) {
       var nb = parseInt(attr[0].get('current'));
       if (!isNaN(nb) && nb > 0) {
@@ -21545,7 +21628,6 @@ var COFantasy = COFantasy || function() {
     },
     desarmer: {
       appliquer: function(attaquant, cible, critique, evt, envoyerMessage) {
-        var armeCible;
         var attrArmeCible = tokenAttribute(cible, 'armeEnMain');
         if (attrArmeCible.length > 0) {
           attrArmeCible = attrArmeCible[0];
@@ -21729,7 +21811,6 @@ var COFantasy = COFantasy || function() {
             error("Cible sans personnage associé", cible);
             return;
           }
-          var nomCible = charCible.get('name');
           var titre = "Choisir un effet contre " + attaquant.tokName;
           //On crée un display sans le header
           display = startFramedDisplay(undefined, titre, cible, {
@@ -23353,8 +23434,11 @@ var COFantasy = COFantasy || function() {
                   bouton("!cof-bouton-chance " + evt.id, "Chance", perso) +
                   " (reste " + pc + " PC)";
               }
-              if (charAttributeAsBool(perso, 'runeForgesort_énergie')) {
+              if (attributeAsBool(perso, 'runeForgesort_énergie')) {
                 msgRate += ' ' + bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", perso);
+              }
+              if (attributeAsBool(perso, 'petitVeinard')) {
+                msgRate += ' ' + bouton("!cof-petit-veinard " + evt.id, "Petit veinard", perso);
               }
               addLineToFramedDisplay(display, msgRate);
             }
@@ -23420,8 +23504,11 @@ var COFantasy = COFantasy || function() {
                 bouton("!cof-bouton-chance " + evt.id, "Chance", perso) +
                 " (reste " + pc + " PC)";
             }
-            if (charAttributeAsBool(perso, 'runeForgesort_énergie')) {
+            if (attributeAsBool(perso, 'runeForgesort_énergie')) {
               msgRate += ' ' + bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", perso);
+            }
+            if (attributeAsBool(perso, 'petitVeinard')) {
+              msgRate += ' ' + bouton("!cof-petit-veinard" + evt.id, "Petit veinard", perso);
             }
             addLineToFramedDisplay(display, msgRate);
           } else {
@@ -24000,8 +24087,8 @@ var COFantasy = COFantasy || function() {
         initiative(msg.selected, evt);
         addEvent(evt);
         return;
-      case "!cof-turn-action":
-      case "!cof-liste-actions":
+      case '!cof-turn-action':
+      case '!cof-liste-actions':
         apiTurnAction(msg);
         return;
       case "!cof-attendre":
@@ -24311,6 +24398,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-options-d-attaque':
         optionsDAttaque(msg);
+        return;
+      case '!cof-petit-veinard':
+        petitVeinard(msg);
         return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);

@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.08
 ### Capacités
+* Petit veinard du halfelin.
 * Mot de mort du nécromancien.
 * Support pour l'étreinte des serpents.
 * Support pour la capacité forêt vivante du druide.
