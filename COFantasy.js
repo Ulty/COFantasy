@@ -997,6 +997,7 @@ var COFantasy = COFantasy || function() {
   //options peut contenir
   // msg: un message à afficher
   // maxval: la valeur max de l'attribut
+  // renvoie l'attribut crée ou mis à jour
   function setTokenAttr(personnage, attribute, value, evt, options) {
     var charId = personnage.charId;
     var token = personnage.token;
@@ -1365,6 +1366,29 @@ var COFantasy = COFantasy || function() {
         evt.deletedAttributes.push(a);
         a.remove();
       });
+      //On termine les effets temporaires liés au personnage
+      var etlAttr = tokenAttribute(personnage, 'effetsTemporairesLies');
+      if (etlAttr.length > 0) {
+        etlAttr = etlAttr[0];
+        evt.deletedAttributes = evt.deletedAttributes || [];
+        var etl = etlAttr.get('current').split(',');
+        etl.forEach(function(attrId) {
+          var attrEffet = getObj('attribute', attrId);
+          if (attrEffet === undefined) return;
+          var nomAttrEffet = attrEffet.get('name');
+          var charId = attrEffet.get('characterid');
+          if (estEffetTemp(nomAttrEffet)) {
+            finDEffet(attrEffet, effetTempOfAttribute(attrEffet), nomAttrEffet, charId, evt);
+          } else if (estEffetCombat(nomAttrEffet)) {
+            var mc = messageEffetCombat[effetCombatOfAttribute(attrEffet)].fin;
+            if (mc && mc !== '') sendChar(charId, mc);
+            evt.deletedAttributes.push(attrEffet);
+            attrEffet.remove();
+          }
+        });
+        evt.deletedAttributes.push(etlAttr);
+        etlAttr.remove();
+      }
       if (charAttributeAsBool(personnage, 'armeeConjuree')) {
         removeFromTurnTracker(personnage, evt);
         personnage.token.remove();
@@ -1426,7 +1450,7 @@ var COFantasy = COFantasy || function() {
         });
       }
     }
-    if (token.get('bar1_link') !== "") {
+    if (token.get('bar1_link') !== '') {
       if (charId === '') {
         error("token with a linked bar1 but representing no character", token);
         return;
@@ -4145,7 +4169,7 @@ var COFantasy = COFantasy || function() {
             return;
           }
           var mana = parseInt(cmd[1]);
-          if (isNaN(mana) || mana < 1) {
+          if (isNaN(mana) || mana < 0) {
             error("Le coût en mana doit être un nombre positif");
             return;
           }
@@ -5755,12 +5779,13 @@ var COFantasy = COFantasy || function() {
     return defense;
   }
 
+  // renvoie l'attribut créé ou mis à jour
   function setAttrDuree(perso, attr, duree, evt, msg) {
     var options = {
       maxval: getInit()
     };
     if (msg) options.msg = msg;
-    setTokenAttr(perso, attr, duree, evt, options);
+    return setTokenAttr(perso, attr, duree, evt, options);
   }
   //Bonus en Attaque qui ne dépendent pas du défenseur
   //attaquant doit avoir un champ tokName
@@ -8900,7 +8925,10 @@ var COFantasy = COFantasy || function() {
                 }
                 if (ef.message)
                   target.messages.push(target.tokName + " " + ef.message.activation);
-                setAttrDuree(target, ef.effet, ef.duree, evt);
+                var attrEffet = setAttrDuree(target, ef.effet, ef.duree, evt);
+                if (options.mana !== undefined) {
+                  addEffetTemporaireLie(attaquant, attrEffet, evt);
+                }
                 switch (ef.effet) {
                   case 'apeureTemp':
                     setState(target, 'apeure', true, evt);
@@ -8932,9 +8960,12 @@ var COFantasy = COFantasy || function() {
               } else if (ef.effetIndetermine) {
                 target.messages.push(target.tokName + " " + messageEffetIndetermine[ef.effet].activation);
                 setTokenAttr(target, ef.effet, true, evt);
-              } else { //On a un effet de comba
+              } else { //On a un effet de combat
                 target.messages.push(target.tokName + " " + messageEffetCombat[ef.effet].activation);
-                setTokenAttr(target, ef.effet, true, evt);
+                var attrEffetCombat = setTokenAttr(target, ef.effet, true, evt);
+                if (options.mana !== undefined) {
+                  addEffetTemporaireLie(attaquant, attrEffetCombat, evt);
+                }
               }
               if (ef.valeur !== undefined) {
                 setTokenAttr(target, ef.effet + 'Valeur', ef.valeur, evt, {
@@ -9177,7 +9208,10 @@ var COFantasy = COFantasy || function() {
                       }
                       if (!reussite) {
                         if (ef.duree) {
-                          setAttrDuree(target, ef.effet, duree, evt);
+                          var attrEffetTemp = setAttrDuree(target, ef.effet, duree, evt);
+                          if (options.mana !== undefined) {
+                            addEffetTemporaireLie(attaquant, attrEffetTemp, evt);
+                          }
                           switch (ef.effet) {
                             case 'apeureTemp':
                               setState(target, 'apeure', true, evt);
@@ -9206,7 +9240,12 @@ var COFantasy = COFantasy || function() {
                             affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
                             target.token.set('status_' + effet.statusMarker, true);
                           }
-                        } else setTokenAttr(target, ef.effet, true, evt);
+                        } else {
+                          var attrEffet = setTokenAttr(target, ef.effet, true, evt);
+                          if (options.mana !== undefined) {
+                            addEffetTemporaireLie(attaquant, attrEffet, evt);
+                          }
+                        }
                         if (ef.valeur !== undefined) {
                           setTokenAttr(target, ef.effet + 'Valeur', ef.valeur, evt, {
                             maxval: ef.valeurMax
@@ -11204,6 +11243,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('attaqueParMeute', evt, attrs);
     attrs = removeAllAttributes('dernieresCiblesAttaquees', evt, attrs);
     attrs = removeAllAttributes('testsRatesDuTour', evt, attrs);
+    attrs = removeAllAttributes('effetsTemporairesLies', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -15756,6 +15796,32 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  function addEffetTemporaireLie(perso, attr, evt) {
+    var etlAttr = tokenAttribute(perso, 'effetsTemporairesLies');
+    if (etlAttr.length === 0) {
+      etl = '';
+      etlAttr = createObj('attribute', {
+        characterid: perso.charId,
+        name: 'effetsTemporairesLies',
+        current: attr.id,
+      });
+      evt.attributes.push({
+        attribute: etlAttr,
+        current: null
+      });
+      return;
+    }
+    etlAttr = etlAttr[0];
+    var etl = etlAttr.get('current');
+    evt.attributes.push({
+      attribute: etlAttr,
+      current: etl
+    });
+    if (etl === '') etl = attr.id;
+    else etl += ',' + attr.id;
+    etlAttr.set('current', etl);
+  }
+
   function getInit() {
     return stateCOF.init;
   }
@@ -15992,7 +16058,10 @@ var COFantasy = COFantasy || function() {
             newLineimg += '</span>';
             actMsg += newLineimg;
           }
-          setAttrDuree(perso, effetC, d, evt, whisper + actMsg);
+          var effetAttr = setAttrDuree(perso, effetC, d, evt, whisper + actMsg);
+          if (options.lanceur && options.mana !== undefined) {
+            addEffetTemporaireLie(options.lanceur, effetAttr, evt);
+          }
           if (options.saveParTour) {
             setTokenAttr(perso, effetC + 'SaveParTour',
               options.saveParTour.carac, evt, {
@@ -16160,9 +16229,12 @@ var COFantasy = COFantasy || function() {
         actMsg += newLineimg;
       }
       iterSelected(selected, function(perso) {
-        setTokenAttr(perso, effet, true, evt, {
+        var effetAttr = setTokenAttr(perso, effet, true, evt, {
           msg: whisper + actMsg
         });
+        if (options.lanceur && options.mana !== undefined) {
+          addEffetTemporaireLie(options.lanceur, effetAttr, evt);
+        }
         if (options.puissant) {
           var puissant = true;
           if (options.puissant == "off") puissant = false;
