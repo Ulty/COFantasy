@@ -949,7 +949,8 @@ var COFantasy = COFantasy || function() {
   }
 
   //Si evt est défini, alors on considère qu'il faut y mettre la valeur actuelle
-  function updateCurrentBar(token, barNumber, val, evt, maxVal) {
+  function updateCurrentBar(perso, barNumber, val, evt, maxVal) {
+    var token = perso.token;
     var prevToken;
     var HTdeclared;
     try {
@@ -965,8 +966,8 @@ var COFantasy = COFantasy || function() {
     var fieldv = 'bar' + barNumber + '_value';
     var fieldm;
     if (maxVal) fieldm = 'bar' + barNumber + '_max';
-    var attrId = token.get("bar" + barNumber + "_link");
-    if (attrId === "") {
+    var attrId = token.get('bar' + barNumber + '_link');
+    if (attrId === '') {
       var prevVal = token.get(fieldv);
       if (evt) affectToken(token, fieldv, prevVal, evt);
       token.set(fieldv, val);
@@ -992,6 +993,33 @@ var COFantasy = COFantasy || function() {
     if (maxVal) aset.max = maxVal;
     attr.setWithWorker(aset);
     if (HTdeclared) HealthColors.Update(token, prevToken);
+    //Gestion du lien des PVs entre familier et son maître
+    if (barNumber == 1) {
+      var persoLie = charAttribute(perso.charId, 'PVPartagesAvec');
+      if (persoLie.length > 0) {
+        persoLie = persoLie[0].get('current');
+        persoLie = findObjs({
+          _type: 'character',
+          name: persoLie
+        });
+        if (persoLie.length > 0) {
+          var attrLie = charAttribute(persoLie[0].id, 'pv', {
+            caseInsensitive: true
+          });
+          if (attrLie.length > 0) {
+            attrLie = attrLie[0];
+            if (evt) {
+              evt.attributes.push({
+                attribute: attrLie,
+                current: attrLie.get('current'),
+                max: attrLie.get('max')
+              });
+            }
+            attrLie.setWithWorker(aset);
+          }
+        }
+      }
+    }
   }
 
   //options peut contenir
@@ -1110,7 +1138,7 @@ var COFantasy = COFantasy || function() {
         //selon Kegron http://www.black-book-editions.fr/forums.php?topic_id=4800&tid=245841#msg245841
         var niveau = ficheAttributeAsInt(personnage, 'niveau', 1);
         var nouveauxPVs = getValeurOfEffet(personnage, 'formeDArbre', niveau * 5);
-        updateCurrentBar(token, 1, nouveauxPVs, evt, nouveauxPVs);
+        updateCurrentBar(personnage, 1, nouveauxPVs, evt, nouveauxPVs);
         //L'initiative change
         initPerso(personnage, evt, true);
       }
@@ -1243,13 +1271,13 @@ var COFantasy = COFantasy || function() {
             bar1 -= dmgTemp;
           } else bar1 = pvmax;
           if (hasMana) setTokenAttr(perso, 'DMTEMP', newDmgTemp, evt);
-          else updateCurrentBar(token, 2, newDmgTemp, evt);
+          else updateCurrentBar(perso, 2, newDmgTemp, evt);
         }
         soinsEffectifs -= (bar1 - pvmax);
         bar1 = pvmax;
       }
     }
-    if (updateBar1) updateCurrentBar(token, 1, bar1, evt);
+    if (updateBar1) updateCurrentBar(perso, 1, bar1, evt);
     if (soinsEffectifs > 0) {
       if (callTrue) callTrue(soinsEffectifs);
     } else {
@@ -1316,7 +1344,7 @@ var COFantasy = COFantasy || function() {
       else token.set('light_losangle', 360);
     } else if (value && etat == 'mort') {
       //On s'assure de mettre les PV de la cible à 0 (pour les insta kills sans dommages)
-      if (token.get('bar1_value') > 0) updateCurrentBar(token, 1, 0, evt);
+      if (token.get('bar1_value') > 0) updateCurrentBar(personnage, 1, 0, evt);
       //On libère les personnages enveloppés, si il y en a.
       var attrEnveloppe = tokenAttribute(personnage, 'enveloppe');
       attrEnveloppe.forEach(function(a) {
@@ -4684,7 +4712,7 @@ var COFantasy = COFantasy || function() {
         sendChar(charId, " n'a pas assez de points de mana pour " + msg);
         return false;
       }
-      updateCurrentBar(token, 2, bar2 - cout, evt);
+      updateCurrentBar(personnage, 2, bar2 - cout, evt);
       var niveau = ficheAttributeAsInt(personnage, 'niveau', 1);
       if (reglesOptionelles.mana_totale.val) {
         if (cout > niveau * 3) {
@@ -10471,7 +10499,7 @@ var COFantasy = COFantasy || function() {
           if (hasMana) {
             setTokenAttr(target, nameAttrDMTEMP, tempDmg, evt);
           } else {
-            updateCurrentBar(token, 2, tempDmg, evt);
+            updateCurrentBar(target, 2, tempDmg, evt);
           }
           enlevePVStatueDeBois(target, pvPerdus, evt);
         } else {
@@ -10557,7 +10585,7 @@ var COFantasy = COFantasy || function() {
               pvPerdus = 0;
             } else {
               testBlessureGrave(target, dmgTotal, expliquer, evt);
-              updateCurrentBar(token, 1, 0, evt);
+              updateCurrentBar(target, 1, 0, evt);
               pvPerdus += bar1;
               if (charAttributeAsBool(target, 'baroudHonneur')) {
                 var msgBarroud = token.get('name') + " devrait être mort";
@@ -10586,7 +10614,7 @@ var COFantasy = COFantasy || function() {
                     }, evt,
                     function(reussite, rollText) {
                       if (reussite) {
-                        updateCurrentBar(token, 1, 1, evt);
+                        updateCurrentBar(target, 1, 1, evt);
                         bar1 = 1;
                         pvPerdus--;
                         setTokenAttr(target, 'defierLaMort', defierLaMort + 10, evt);
@@ -10612,7 +10640,7 @@ var COFantasy = COFantasy || function() {
             }
           } else { // bar1>0
             testBlessureGrave(target, dmgTotal, expliquer, evt);
-            updateCurrentBar(token, 1, bar1, evt);
+            updateCurrentBar(target, 1, bar1, evt);
             enlevePVStatueDeBois(target, pvPerdus, evt);
           }
         }
@@ -11396,7 +11424,11 @@ var COFantasy = COFantasy || function() {
         var tokPv = parseInt(tokensIld[0].get('bar1_value'));
         var tokNewPv = tokPv - douleur;
         if (tokNewPv < 0) tokNewPv = 0;
-        updateCurrentBar(tokensIld[0], 1, tokNewPv, evt);
+        var perso = {
+          charId: charId,
+          token: tokensIld[0]
+        };
+        updateCurrentBar(perso, 1, tokNewPv, evt);
         //TODO: faire mourrir, assomer
       }
     }); // end forEach on all attributes ignorerLaDouleur
@@ -12255,7 +12287,7 @@ var COFantasy = COFantasy || function() {
           if (estMook) dmTemp = attributeAsInt(perso, 'DMTEMP', 0);
           else dmTemp = ficheAttributeAsInt(perso, nameAttrDMTEMP, 0);
           if (reposLong && (isNaN(bar2) || bar2 < manaMax)) {
-            updateCurrentBar(token, 2, manaMax, evt);
+            updateCurrentBar(perso, 2, manaMax, evt);
           }
         }
       }
@@ -12265,7 +12297,7 @@ var COFantasy = COFantasy || function() {
         if (hasMana) {
           setTokenAttr(perso, nameAttrDMTEMP, dmTemp, evt);
         } else {
-          updateCurrentBar(token, 2, dmTemp, evt);
+          updateCurrentBar(perso, 2, dmTemp, evt);
         }
       }
       var bar1 = parseInt(token.get("bar1_value"));
@@ -12283,7 +12315,7 @@ var COFantasy = COFantasy || function() {
       }
       if (reposLong && charAttributeAsBool(perso, 'montureMagique')) {
         //La monture magique récupère tous ses PV durant la nuit
-        updateCurrentBar(token, 1, pvmax, evt);
+        updateCurrentBar(perso, 1, pvmax, evt);
         sendChar(charId, "récupère tous ses PV");
         finalize();
         return;
@@ -12356,7 +12388,7 @@ var COFantasy = COFantasy || function() {
         bar1 += total;
         if (bar1 < pvmax) manquePV.push(perso);
         else bar1 = pvmax;
-        updateCurrentBar(token, 1, bar1, evt);
+        updateCurrentBar(perso, 1, bar1, evt);
         if (reposLong) {
           message = "Au cours de la nuit, ";
         } else {
@@ -16790,7 +16822,7 @@ var COFantasy = COFantasy || function() {
                 setState(cible, 'renverse', true, evt);
               } else { //save raté
                 addLineToFramedDisplay(display, cible.token.get('name') + " succombe à ses pires terreurs");
-                updateCurrentBar(cible.token, 1, 0, evt);
+                updateCurrentBar(cible, 1, 0, evt);
                 setState(cible, 'mort', true, evt);
               }
               sendChat("", endFramedDisplay(display));
@@ -17049,7 +17081,7 @@ var COFantasy = COFantasy || function() {
           soin -= (bar1 - pvmax);
           bar1 = pvmax;
         }
-        updateCurrentBar(token, 1, bar1, evt);
+        updateCurrentBar(perso, 1, bar1, evt);
         setTokenAttr(perso, 'transeDeGuérison', true, evt);
         sendChar(perso.charId, "entre en méditation pendant 10 minutes et récupère " + soin + " points de vie.");
       });
@@ -17663,7 +17695,7 @@ var COFantasy = COFantasy || function() {
               soins = pvSoigneur;
             }
             callTrueFinal = function(s) {
-              updateCurrentBar(soigneur.token, 1, pvSoigneur - s, evt);
+              updateCurrentBar(soigneur, 1, pvSoigneur - s, evt);
               if (pvSoigneur == s) mort(soigneur, undefined, evt);
               printTrue(s);
             };
@@ -17873,11 +17905,11 @@ var COFantasy = COFantasy || function() {
                   sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ait pas enlevé de PV");
                   return;
                 }
-                updateCurrentBar(token, 2, lastBar2, evt);
+                updateCurrentBar(chevalier, 2, lastBar2, evt);
                 setTokenAttr(chevalier, 'douleurIgnoree', bar2 - lastBar2, evt);
                 aIgnore = true;
               } else {
-                updateCurrentBar(token, 1, lastBar1, evt);
+                updateCurrentBar(chevalier, 1, lastBar1, evt);
                 setTokenAttr(chevalier, 'douleurIgnoree', lastBar1 - bar1, evt);
                 aIgnore = true;
               }
@@ -17894,7 +17926,7 @@ var COFantasy = COFantasy || function() {
               sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ait pas enlevé de PV");
               return;
             }
-            updateCurrentBar(token, 1, lastPV, evt);
+            updateCurrentBar(chevalier, 1, lastPV, evt);
             setTokenAttr(chevalier, 'douleurIgnoree', lastPV - newPV, evt);
             aIgnore = true;
           } else { //peut-être qu'il s'agit de DM temporaires
@@ -17909,7 +17941,7 @@ var COFantasy = COFantasy || function() {
                 sendChar(charId, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ait pas augmenté les DM temporaires");
                 return;
               }
-              updateCurrentBar(token, 2, lastDmTemp, evt);
+              updateCurrentBar(chevalier, 2, lastDmTemp, evt);
               setTokenAttr(chevalier, 'douleurIgnoree', newDmTemp - lastDmTemp, evt);
               aIgnore = true;
             }
@@ -21225,7 +21257,7 @@ var COFantasy = COFantasy || function() {
       }
       if (!persoUtiliseRuneProtection(perso, evt)) return;
       addEvent(evt);
-      updateCurrentBar(perso.token, 1, previousPV, evt);
+      updateCurrentBar(perso, 1, previousPV, evt);
       if (getState(perso, 'mort')) setState(perso, 'mort', false, evt);
     } else { //Juste pour vérifier l'attribut et le diminuer
       getSelected(msg, function(selection) {
@@ -21372,7 +21404,7 @@ var COFantasy = COFantasy || function() {
       type: "Guérison",
     };
     if (limiteRessources(lanceur, options, 'guérison', 'guérison', evt)) return;
-    updateCurrentBar(cible.token, 1, cible.token.get('bar1_max'), evt);
+    updateCurrentBar(cible, 1, cible.token.get('bar1_max'), evt);
     if (getState(cible, 'blesse')) {
       setState(cible, 'blesse', false, evt);
     }
@@ -25521,7 +25553,7 @@ var COFantasy = COFantasy || function() {
             }
             var apv = tokenAttribute(perso, 'anciensPV');
             if (apv.length > 0) {
-              updateCurrentBar(token, 1, apv[0].get('current'), evt, apv[0].get('max'));
+              updateCurrentBar(perso, 1, apv[0].get('current'), evt, apv[0].get('max'));
               removeTokenAttr(perso, 'anciensPV', evt);
               if (stateCOF.combat) {
                 newInit.push({
