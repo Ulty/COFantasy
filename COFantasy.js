@@ -6809,6 +6809,7 @@ var COFantasy = COFantasy || function() {
     if (attrCiblesAttaquees.length > 0) {
       ripostesDuTour = new Set(attrCiblesAttaquees[0].get('max').split(' '));
     }
+    var ciblesAvecPVsPartages = new Set();
     cibles = cibles.filter(function(target) {
       if (attributeAsBool(target, 'ombreMortelle')) {
         sendChar(attackingCharId, "impossible d'attaquer une ombre");
@@ -6836,6 +6837,16 @@ var COFantasy = COFantasy || function() {
       if (ripostesDuTour.has(target.token.id)) {
         sendChar(attackingCharId, "a déjà fait une riposte contre " + target.tokName);
         return false;
+      }
+      if (target.name === undefined) {
+        var targetChar = getObj('character', target.charId);
+        if (targetChar === undefined) return false;
+        target.name = targetChar.get('name');
+      }
+      if (ciblesAvecPVsPartages.has(target.name)) return false;
+      var ciblePartagee = charAttribute(target.charId, 'PVPartagesAvec');
+      if (ciblePartagee.length > 0) {
+        ciblesAvecPVsPartages.add(ciblePartagee[0].get('current'));
       }
       return true;
     });
