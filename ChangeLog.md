@@ -12,6 +12,7 @@
 * Résistance à la magie du barbare
 
 ### Autres améliorations
+* Possibilité d'utiliser la défense et l'initiative d'un autre personnage.
 * Possibilité de lier les PVs.
 * Les effets temporaires lancés avec une option de mana disparaissent quand le lanceur meurt.
 * Ajout d'une option diviseDmg

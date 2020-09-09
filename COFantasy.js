@@ -984,7 +984,8 @@ var COFantasy = COFantasy || function() {
       evt.attributes.push({
         attribute: attr,
         current: attr.get('current'),
-        max: attr.get('max')
+        max: attr.get('max'),
+        withWorker: true
       });
     }
     var aset = {
@@ -1636,8 +1637,12 @@ var COFantasy = COFantasy || function() {
       evt.attributes.forEach(function(attr) {
         if (attr.current === null) attr.attribute.remove();
         else {
-          attr.attribute.set('current', attr.current);
-          if (attr.max !== undefined) attr.attribute.set('max', attr.max);
+          var aset = {
+            current: attr.current
+          };
+          if (attr.max !== undefined) aset.max = attr.max;
+          if (attr.withWorker) attr.attribute.setWithWorker(aset);
+          else attr.attribute.set(aset);
         }
       });
     }
@@ -5107,6 +5112,20 @@ var COFantasy = COFantasy || function() {
   }
 
   function tokenInit(perso, evt) {
+    var initDerivee = charAttribute(perso.charId, 'initiativeDeriveeDe');
+    if (initDerivee.length > 0) {
+      var charDerive = findObjs({
+        _type: 'character',
+        name: initDerivee[0].get('current')
+      });
+      if (charDerive.length > 0) {
+        var persoD = {
+          charId: charDerive[0].id,
+          token: perso.token
+        };
+        return tokenInit(persoD, evt);
+      }
+    }
     var persoMonte = tokenAttribute(perso, 'estMontePar');
     if (persoMonte.length > 0) {
       var cavalier = persoOfId(persoMonte[0].get('current'), persoMonte[0].get('max'), perso.token.get('pageid'));
@@ -5296,7 +5315,8 @@ var COFantasy = COFantasy || function() {
     evt.attributes.push({
       attribute: attr,
       current: attr.get('current'),
-      max: attr.get('max')
+      max: attr.get('max'),
+      withWorker: true
     });
     var nv = {
       current: value
@@ -5528,6 +5548,20 @@ var COFantasy = COFantasy || function() {
         return 0;
       }
       return pv;
+    }
+    var defDerivee = charAttribute(target.charId, 'defDeriveeDe');
+    if (defDerivee.length > 0) {
+      var charDerive = findObjs({
+        _type: 'character',
+        name: defDerivee[0].get('current')
+      });
+      if (charDerive.length > 0) {
+        var perso = {
+          charId: charDerive[0].id,
+          token: target.token
+        };
+        return defenseOfPerso(attaquant, perso, pageId, evt, options);
+      }
     }
     target.tokName = target.tokName || target.token.get('name');
     var tokenName = target.tokName;
@@ -6809,7 +6843,6 @@ var COFantasy = COFantasy || function() {
     if (attrCiblesAttaquees.length > 0) {
       ripostesDuTour = new Set(attrCiblesAttaquees[0].get('max').split(' '));
     }
-    var ciblesAvecPVsPartages = new Set();
     cibles = cibles.filter(function(target) {
       if (attributeAsBool(target, 'ombreMortelle')) {
         sendChar(attackingCharId, "impossible d'attaquer une ombre");
@@ -6837,16 +6870,6 @@ var COFantasy = COFantasy || function() {
       if (ripostesDuTour.has(target.token.id)) {
         sendChar(attackingCharId, "a déjà fait une riposte contre " + target.tokName);
         return false;
-      }
-      if (target.name === undefined) {
-        var targetChar = getObj('character', target.charId);
-        if (targetChar === undefined) return false;
-        target.name = targetChar.get('name');
-      }
-      if (ciblesAvecPVsPartages.has(target.name)) return false;
-      var ciblePartagee = charAttribute(target.charId, 'PVPartagesAvec');
-      if (ciblePartagee.length > 0) {
-        ciblesAvecPVsPartages.add(ciblePartagee[0].get('current'));
       }
       return true;
     });
@@ -6899,6 +6922,57 @@ var COFantasy = COFantasy || function() {
       sendChar(attackingCharId, "est hors de portée de " + nomCiblePrincipale + " pour une attaque utilisant " + weaponName + ", action annulée");
       return;
     }
+    //On enlève les doublons de cibles qui partagent leurs PVs;
+    var ciblesAvecPVsPartages = new Set();
+    //va aussi peupler le champ name des cibles
+    cibles = cibles.filter(function(target, index) {
+      if (target.name === undefined) {
+        var targetChar = getObj('character', target.charId);
+        if (targetChar === undefined) return false;
+        target.name = targetChar.get('name');
+      }
+      if (ciblesAvecPVsPartages.has(target.name)) return false;
+      var ciblePartagee = charAttribute(target.charId, 'PVPartagesAvec');
+      if (ciblePartagee.length > 0) {
+        if (charAttributeAsBool(target, 'familier')) {
+          //c'est le personnage qui a un familier, on le garde en cible prioritaire
+          ciblePartagee.forEach(function(attr) {
+            ciblesAvecPVsPartages.add(attr.get('current'));
+          });
+        } else if (persoEstPNJ(target)) {
+          //cible la moins prioritaire, on l'enlève si on trouve un autre représentant
+          var representantPresent = cibles.find(function(target2, index2) {
+            if (index2 < index) return false;
+            if (target2.name === undefined) {
+              var target2Char = getObj('character', target2.charId);
+              if (target2Char === undefined) return false;
+              target2.name = target2Char.get('name');
+            }
+            return ciblePartagee.find(function(cn) {
+              return cn == target2.name;
+            });
+          });
+          if (representantPresent) return false;
+        } else {
+          //N'a pas de familier mais n'est pas un PNJ
+          var representantFamilier = cibles.find(function(target2, index2) {
+            if (index2 < index) return false;
+            if (target2.name === undefined) {
+              var target2Char = getObj('character', target2.charId);
+              if (target2Char === undefined) return false;
+              target2.name = target2Char.get('name');
+            }
+            var estPartagee = ciblePartagee.find(function(cn) {
+              return cn == target2.name;
+            });
+            if (!estPartagee) return false;
+            return charAttributeAsBool(target2, 'familier');
+          });
+          if (representantFamilier) return false;
+        }
+      }
+      return true;
+    });
     var evt = options.evt || {
       type: "Tentative d'attaque"
     };
