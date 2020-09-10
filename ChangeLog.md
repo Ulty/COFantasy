@@ -1,4 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.09
+### Autres améliorations
+* Ajout d'une macro pour suivre un autre personnage
+
 ## 2.08
 ### Capacités
 * Petit veinard du halfelin.

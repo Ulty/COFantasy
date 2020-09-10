@@ -1286,18 +1286,27 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  //Retourne le perso correspondant à un token id suivi du nom de token
-  //Permet d'avoir une information robuste en cas d'interruption du script
-  function persoOfIdName(idn, pageId) {
+  function splitIdName(idn) {
     var pos = idn.indexOf(' ');
     if (pos < 1 || pos >= idn.length) {
       error("IdName mal formé", idn);
       return;
     }
     var name = idn.substring(pos + 1);
-    var perso = persoOfId(idn.substring(0, pos), name, pageId);
+    return {
+      id: idn.substring(0, pos),
+      name: name
+    };
+  }
+
+  //Retourne le perso correspondant à un token id suivi du nom de token
+  //Permet d'avoir une information robuste en cas d'interruption du script
+  function persoOfIdName(idn, pageId) {
+    var sp = splitIdName(idn);
+    if (sp === undefined) return;
+    var perso = persoOfId(sp.id, sp.name, pageId);
     perso.tokName = perso.token.get('name');
-    if (perso.tokName == name) return perso;
+    if (perso.tokName == sp.name) return perso;
     log("En cherchant le token " + idn + ", on trouve " + perso.tokName);
     log(perso);
     return perso;
@@ -22888,6 +22897,11 @@ var COFantasy = COFantasy || function() {
     istokenaction: false,
     inBar: true
   }, {
+    name: 'Suivre',
+    action: "!cof-suivre @{selected|token_id} @{target|token_id}",
+    visibleto: 'all',
+    istokenaction: true
+  }, {
     name: 'undo',
     action: "!cof-undo",
     visibleto: '',
@@ -24208,6 +24222,128 @@ var COFantasy = COFantasy || function() {
     if (evt.attributes) addEvent(evt);
   }
 
+  //si evt est défini, on ajoute les actions à evt, et on ne supprime pas
+  // l'attribut de suite, qui sera réutilisé
+  function nePlusSuivre(perso, pageId, evt) {
+    perso.tokName = perso.tokName || perso.token.get('name');
+    var attrSuit = tokenAttribute(perso, 'suit');
+    if (attrSuit.length > 0) {
+      attrSuit = attrSuit[0];
+      var idSuivi = attrSuit.get('current');
+      var suivi = persoOfIdName(idSuivi, pageId);
+      if (evt) {
+        evt.attributes.push({
+          attribute: attrSuit,
+          current: idSuivi
+        });
+      } else attrSuit.remove();
+      if (suivi === undefined) {
+        sendChar(perso.charId, "ne suit plus personne");
+        return;
+      } else {
+        sendChar(perso.charId, "ne suit plus " + suivi.token.get('name'));
+        var suivantDeSuivi = tokenAttribute(suivi, 'estSuiviPar');
+        if (suivantDeSuivi.length > 0) {
+          suivantDeSuivi = suivantDeSuivi[0];
+          var currentSuivantDeSuivi = suivantDeSuivi.get('current');
+          var found;
+          var csds = currentSuivantDeSuivi.split(':::').filter(function(idn) {
+            if (found) return true;
+            var sp = splitIdName(idn);
+            if (sp === undefined) return false;
+            if (sp.id == perso.id) {
+              found = true;
+              return false;
+            }
+            if (sp.name == perso.tokName) {
+              found = true;
+              return false;
+            }
+            return true;
+          });
+          if (csds.length === 0) {
+            if (evt) {
+              evt.deletedAttributes = evt.deletedAttributes || [];
+              evt.deletedAttributes.push(suivantDeSuivi);
+            }
+            suivantDeSuivi.remove();
+          } else {
+            if (evt) {
+              evt.attributes.push({
+                attribute: suivantDeSuivi,
+                current: currentSuivantDeSuivi
+              });
+            }
+            suivantDeSuivi.set('current', csds.join(':::'));
+          }
+        }
+      }
+      return attrSuit;
+    }
+  }
+
+  //!cof-suivre @{selected|token_id} @{target|token_id}
+  function suivre(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined) return;
+    if (cmd.length < 3) {
+      error("Pas assez d'arguments pour !cof-suivre", cmd);
+      return;
+    }
+    var perso = persoOfId(cmd[1], cmd[1], options.pageId);
+    if (perso === undefined) {
+      error("Token sélectionne incorrect pour !cof-suivre", cmd);
+      return;
+    }
+    var pageId = perso.token.get('pageid');
+    var cible = persoOfId(cmd[2], cmd[2], pageId);
+    if (cible === undefined) {
+      error("Cible incorrecte pour !cof-suivre", cmd);
+      return;
+    }
+    var evt = {
+      type: 'Suivre',
+      attributes: []
+    };
+    //D'abord on arrête de suivre si on suivait quelqu'un
+    var attrSuit = nePlusSuivre(perso, pageId, evt);
+    var cibleId = cible.token.id + ' ' + cible.token.get('name');
+    var attr = tokenAttribute(cible, 'estSuiviPar');
+    var suiveurs;
+    if (attr.length === 0) {
+      attr = createObj('attribute', {
+        characterid: cible.charId,
+        name: 'estSuiviPar',
+        current: '',
+      });
+      evt.attributes.push({
+        attribute: attr,
+        current: null
+      });
+      suiveurs = [];
+    } else {
+      attr = attr[0];
+      suiveurs = attr.get('current');
+      evt.attributes.push({
+        attribute: attr,
+        current: suiveurs,
+      });
+      suiveurs = suiveurs.split(':::');
+    }
+    if (attrSuit) {
+      //alors evt contient déjà attrSuit
+      attrSuit.set('current', cibleId);
+    } else {
+      setTokenAttr(perso, 'suit', cibleId, evt);
+    }
+    suiveurs.push(perso.token.id + ' ' + perso.token.get('name'));
+    attr.set('current', suiveurs.join(':::'));
+    sendChar(perso.charId, "suit " + cible.token.get('name'));
+    addEvent(evt);
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -24568,7 +24704,7 @@ var COFantasy = COFantasy || function() {
       case "!cof-echapper-enveloppement":
         echapperEnveloppement(msg);
         return;
-      case "!cof-liberer-agrippe":
+      case '!cof-liberer-agrippe':
         libererAgrippe(msg);
         return;
       case '!cof-animer-cadavre':
@@ -24601,6 +24737,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-petit-veinard':
         petitVeinard(msg);
+        return;
+      case '!cof-suivre':
+        suivre(msg);
         return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);
@@ -26480,6 +26619,63 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function determinant(xa, ya, xb, yb) {
+    return xa * yb - ya * xb;
+  }
+
+  //Calcule si le segment [a,b] intersecte le segment [c,d]
+  function segmentIntersecte(a, b, c, d) {
+    var d1 = determinant(b.x - a.x, b.y - a.y, c.x - a.x, c.y - a.y);
+    var d2 = determinant(b.x - a.x, b.y - a.y, d.x - a.x, d.y - a.y);
+    if (d1 > 0 && d2 > 0) return false;
+    if (d1 < 0 && d2 < 0) return false;
+    d1 = determinant(d.x - c.x, d.y - c.y, a.x - c.x, a.y - c.y);
+    d2 = determinant(d.x - c.x, d.y - c.y, b.x - c.x, b.y - c.y);
+    if (d1 > 0 && d2 > 0) return false;
+    if (d1 < 0 && d2 < 0) return false;
+    return true;
+  }
+
+  //traduction des coordonées de path en coordonées réelles sur la carte
+  function translatePathCoordinates(x, y, p) {
+    //D'abord on calcule les coordonnées relatives au centre
+    x -= p.width / 2;
+    y -= p.height / 2;
+    //Puis on applique le scale
+    x *= p.scaleX;
+    y *= p.scaleY;
+    //Puis on fait la rotation
+    var c = Math.cos(p.angle);
+    var s = Math.sin(p.angle);
+    x = c * x + s * y;
+    y = c * y - s * x;
+    //Et finalement on ajoute les coordonnées du centre
+    x += p.left;
+    y += p.top;
+    return {
+      x: x,
+      y: y
+    };
+  }
+
+  //vérifie si de la nouvelle position on peut voir le suivi
+  function obstaclePresent(nsx, nsy, pt, murs) {
+    var ps = {
+      x: nsx,
+      y: nsy
+    };
+    var obstacle = murs && murs.find(function(path) {
+      if (path.length === 0) return false;
+      var pc = path[0];
+      return path.find(function(v, i) {
+        if (i === 0) return false;
+        if (segmentIntersecte(ps, pt, pc, v)) return true;
+        pc = v;
+        return false;
+      });
+    });
+    return obstacle;
+  }
   //Réagit au déplacement manuel d'un token.
   function moveToken(token, prev) {
     var charId = token.get('represents');
@@ -26492,130 +26688,237 @@ var COFantasy = COFantasy || function() {
     var x = token.get('left');
     var y = token.get('top');
     var deplacement = prev && (prev.left != x || prev.top != y);
-    if (deplacement) {
-      if (nePeutPasBouger(perso)) {
-        sendChar(charId, "ne peut pas se déplacer.");
-        sendChat('COF', "/w GM " +
-          '<a href="!cof-deplacer-token ' + x + ' ' + y + ' --target ' + token.id + '">Déplacer </a>' +
-          '<a href="!cof-permettre-deplacement --target ' + token.id + '">Décoincer</a>');
-        token.set('left', prev.left);
-        token.set('top', prev.top);
+    if (!deplacement) return;
+    if (nePeutPasBouger(perso)) {
+      sendChar(charId, "ne peut pas se déplacer.");
+      sendChat('COF', "/w GM " +
+        '<a href="!cof-deplacer-token ' + x + ' ' + y + ' --target ' + token.id + '">Déplacer </a>' +
+        '<a href="!cof-permettre-deplacement --target ' + token.id + '">Décoincer</a>');
+      token.set('left', prev.left);
+      token.set('top', prev.top);
+      return;
+    } else {
+      //On regarde d'abord si perso est sur une monture
+      var attrMonteSur = tokenAttribute(perso, 'monteSur');
+      if (attrMonteSur.length > 0) {
+        var monture = persoOfId(attrMonteSur[0].get('current'), attrMonteSur[0].get('max'), pageId);
+        attrMonteSur[0].remove();
+        if (monture === undefined) {
+          sendChar(charId, "descend de sa monture");
+          return;
+        } else {
+          sendChar(charId, "descend de " + monture.token.get('name'));
+          removeTokenAttr(monture, 'estMontePar');
+          removeTokenAttr(monture, 'positionSurMonture');
+        }
+        if (stateCOF.combat) {
+          var evt = {
+            type: "initiative"
+          };
+          updateInit(monture.token, evt);
+          // Réadapter l'init_dynamique au token du perso
+          if (stateCOF.options.affichage.val.init_dynamique.val) {
+            setTokenInitAura(perso);
+          }
+        }
+      }
+      //si non, perso est peut-être une monture
+      var attrMontePar = tokenAttribute(perso, 'estMontePar');
+      attrMontePar.forEach(function(a) {
+        var cavalier = persoOfId(a.get('current'), a.get('max'), pageId);
+        if (cavalier === undefined) {
+          a.remove();
+          return;
+        }
+        var position = tokenAttribute(perso, 'positionSurMonture');
+        if (position.length > 0) {
+          var dx = parseInt(position[0].get('current'));
+          var dy = parseInt(position[0].get('max'));
+          if (!(isNaN(dx) || isNaN(dy))) {
+            x += dx;
+            y += dy;
+          }
+        }
+        cavalier.token.set('left', x);
+        cavalier.token.set('top', y);
+        cavalier.token.set('rotation', token.get('rotation') + attributeAsInt(perso, 'directionSurMonture', 0));
+      });
+      //Si le token suivait quelqu'un, ce n'est plus le cas
+      nePlusSuivre(perso, pageId);
+      //On bouge tous les tokens qui suivent le personnage
+      var attrSuivi = tokenAttribute(perso, 'estSuiviPar');
+      var page = getObj('page', pageId);
+      if (page === undefined) {
+        error("Impossible de trouver la page du token", perso);
         return;
-      } else {
-        //On regarde d'abord si perso est sur une monture
-        var attrMonteSur = tokenAttribute(perso, 'monteSur');
-        if (attrMonteSur.length > 0) {
-          if (deplacement) {
-            attrMonteSur[0].remove();
-            var monture = persoOfId(attrMonteSur[0].get('current'), attrMonteSur[0].get('max'), pageId);
-            if (monture === undefined) {
-              sendChar(charId, "descend de sa monture");
-              return;
-            } else {
-              sendChar(charId, "descend de " + monture.token.get('name'));
-              removeTokenAttr(monture, 'estMontePar');
-              removeTokenAttr(monture, 'positionSurMonture');
+      }
+      if (attrSuivi.length > 0) {
+        var width = page.get('width') * PIX_PER_UNIT;
+        var height = page.get('height') * PIX_PER_UNIT;
+        var pt = {
+          x: x,
+          y: y
+        };
+        var murs;
+        var distance =
+          Math.sqrt((x - prev.left) * (x - prev.left) + (y - prev.top) * (y - prev.top));
+        if (page.get('showlighting') && page.get('lightrestrictmove')) {
+          murs = findObjs({
+            _type: 'path',
+            _pageid: pageId,
+            layer: 'walls'
+          });
+          murs = murs.map(function(path) {
+            var p = {
+              angle: path.get('rotation') / 180 * Math.PI,
+              width: path.get('width'),
+              height: path.get('height'),
+              top: path.get('top'),
+              left: path.get('left'),
+              scaleX: path.get('scaleX'),
+              scaleY: path.get('scaleY'),
+            };
+            var chemin = JSON.parse(path.get('_path'));
+            if (chemin.length < 2) return [];
+            if (chemin[1][0] != 'L') return [];
+            chemin = chemin.map(function(v) {
+              return translatePathCoordinates(v[1], v[2], p);
+            });
+            return chemin;
+          });
+        }
+        attrSuivi.forEach(function(as) {
+          var suivants = as.get('current').split(':::');
+          var removedSuivant;
+          suivants = suivants.filter(function(idn) {
+            var suivant = persoOfIdName(idn, pageId);
+            if (suivant === undefined) {
+              removedSuivant = true;
+              return false;
             }
-            if (stateCOF.combat) {
-              var evt = {
-                type: "initiative"
-              };
-              updateInit(monture.token, evt);
-              // Réadapter l'init_dynamique au token du perso
-              if (stateCOF.options.affichage.val.init_dynamique.val) {
-                setTokenInitAura(perso);
+            var sw = suivant.token.get('width');
+            var sh = suivant.token.get('height');
+            if (sw > width) return false;
+            if (sh > width) return false;
+            var sx = suivant.token.get('left');
+            var sy = suivant.token.get('top');
+            //On essaie de garder la même position par rapport au token, en supposant qu'on était derrière lui
+              var dp = Math.sqrt((prev.left - sx) * (prev.left - sx) + (prev.top - sy) * (prev.top - sy));
+            var nsx = x + (prev.left - x)*dp/distance;
+            var nsy = y + (prev.top - y)*dp/distance;
+            if (nsx < 0) nsx = 0;
+            if (nsy < 0) nsy = 0;
+            if (nsx + sw > width) nsx = width - sw;
+            if (nsy + sh > height) nsy = height - sh;
+            //vérifie si de la nouvelle position on peut voir le suivi
+            if (obstaclePresent(nsx, nsy, pt, murs)) {
+              //On essaie de suivre le chemin du token, à la lace
+              //D'abord se déplacer vers l'ancienne position de perso, au maximum de distance pixels
+              var distLoc = distance;
+              if (distLoc - dp < 5) {
+                nsx = prev.left;
+                nsy = prev.top;
+              } else {
+                if (dp > distLoc) {
+                  nsx = sx + (prev.left - sx) * distLoc / dp;
+                  nsy = sy + (prev.top - sy) * distLoc / dp;
+                  if (obstaclePresent(nsx, nsy, pt, murs)) {
+                    sendChar(suivant.charId, "ne peut plus suivre " + perso.token.get('name') + " car " + onGenre(suivant, 'il', 'elle') + " ne " + onGenre(perso, 'le', 'la') + " voit plus");
+                    removeTokenAttr(suivant, 'suit');
+                    removedSuivant = true;
+                    return false;
+                  }
+                } else {
+                  //On part de l'ancienne position, et on peut encore avancer
+                  distLoc -= dp;
+                  nsx = prev.left + (x - prev.left) * distLoc / distance;
+                  nsy = prev.top + (y - prev.top) * distLoc / distance;
+                  if (obstaclePresent(nsx, nsy, pt, murs)) {
+                    nsx = prev.left;
+                    nsy = prev.top;
+                  }
+                }
               }
             }
-          }
-        }
-        //si non, perso est peut-être une monture
-        var attrMontePar = tokenAttribute(perso, 'estMontePar');
-        attrMontePar.forEach(function(a) {
-          var cavalier = persoOfId(a.get('current'), a.get('max'), pageId);
-          if (cavalier === undefined) {
-            a.remove();
-            return;
-          }
-          var position = tokenAttribute(perso, 'positionSurMonture');
-          if (position.length > 0) {
-            var dx = parseInt(position[0].get('current'));
-            var dy = parseInt(position[0].get('max'));
-            if (!(isNaN(dx) || isNaN(dy))) {
-              x += dx;
-              y += dy;
+            suivant.token.set('left', nsx);
+            suivant.token.set('top', nsy);
+            return true;
+          });
+          if (removedSuivant) {
+            if (suivants.length === 0) {
+              as.remove();
+            } else {
+              as.set('current', suivants.join(':::'));
             }
           }
-          cavalier.token.set('left', x);
-          cavalier.token.set('top', y);
-          cavalier.token.set('rotation', token.get('rotation') + attributeAsInt(perso, 'directionSurMonture', 0));
         });
-        // Update position du token d'initiative dynamique
-        if (stateCOF.options.affichage.val.init_dynamique.val) {
-          if (roundMarker && stateCOF.activeTokenId == token.id) {
-            roundMarker.set('left', x);
-            roundMarker.set('top', y);
-          } else if (roundMarker) {
-            // Cas spéciaux du cavaliers : au tour du cavalier, l'init_dynamique suit la monture
-            var estMontePar = tokenAttribute(perso, "estMontePar");
-            if (estMontePar.length > 0 && stateCOF.activeTokenId == estMontePar[0].get("current")) {
-              var cavalierId = estMontePar[0].get("current");
-              var cavalier = persoOfId(cavalierId);
-              roundMarker.set('left', cavalier.token.get('left'));
-              roundMarker.set('top', cavalier.token.get('top'));
-            }
+      }
+      // Update position du token d'initiative dynamique
+      if (stateCOF.options.affichage.val.init_dynamique.val) {
+        if (roundMarker && stateCOF.activeTokenId == token.id) {
+          roundMarker.set('left', x);
+          roundMarker.set('top', y);
+        } else if (roundMarker) {
+          // Cas spéciaux du cavaliers : au tour du cavalier, l'init_dynamique suit la monture
+          var estMontePar = tokenAttribute(perso, "estMontePar");
+          if (estMontePar.length > 0 && stateCOF.activeTokenId == estMontePar[0].get("current")) {
+            var cavalierId = estMontePar[0].get("current");
+            var cavalier = persoOfId(cavalierId);
+            roundMarker.set('left', cavalier.token.get('left'));
+            roundMarker.set('top', cavalier.token.get('top'));
           }
         }
-        //On déplace les tokens de lumière, si il y en a
-        var attrLumiere = tokenAttribute(perso, 'lumiere');
-        attrLumiere.forEach(function(al) {
-          var lumId = al.get('max');
-          if (lumId == 'surToken') return;
-          var lumiereExiste;
-          var lumiere = getObj('graphic', lumId);
-          if (lumiere && lumiere.get('pageid') != pageId) {
-            lumiere = undefined;
-            lumiereExiste = true;
-          }
-          if (lumiere === undefined) {
-            var tokensLumiere = findObjs({
-              _type: 'graphic',
-              _pageid: pageId,
-              layer: 'walls',
-              name: al.get('current')
-            });
-            if (tokensLumiere.length === 0) {
-              if (lumiereExiste) return;
-              log("Pas de token pour la lumière " + al.get('current'));
-              al.remove();
-              return;
-            }
-            lumiere = tokensLumiere.shift();
-            if (tokensLumiere.length > 0) {
-              //On cherche le token le plus proche de la position précédente
-              var d =
-                VecMath.length(
-                  VecMath.vec([lumiere.get('left'), lumiere.get('top')], [prev.left, prev.top]));
-              tokensLumiere.forEach(function(tl) {
-                var d2 =
-                  VecMath.length(
-                    VecMath.vec([tl.get('left'), tl.get('top')], [prev.left, prev.top]));
-                if (d2 < d) {
-                  d = d2;
-                  lumiere = tl;
-                }
-              });
-            }
-          }
-          if (lumiere === undefined) {
+      }
+      //On déplace les tokens de lumière, si il y en a
+      var attrLumiere = tokenAttribute(perso, 'lumiere');
+      attrLumiere.forEach(function(al) {
+        var lumId = al.get('max');
+        if (lumId == 'surToken') return;
+        var lumiereExiste;
+        var lumiere = getObj('graphic', lumId);
+        if (lumiere && lumiere.get('pageid') != pageId) {
+          lumiere = undefined;
+          lumiereExiste = true;
+        }
+        if (lumiere === undefined) {
+          var tokensLumiere = findObjs({
+            _type: 'graphic',
+            _pageid: pageId,
+            layer: 'walls',
+            name: al.get('current')
+          });
+          if (tokensLumiere.length === 0) {
             if (lumiereExiste) return;
             log("Pas de token pour la lumière " + al.get('current'));
             al.remove();
             return;
           }
-          lumiere.set('left', x);
-          lumiere.set('top', y);
-        });
-      }
+          lumiere = tokensLumiere.shift();
+          if (tokensLumiere.length > 0) {
+            //On cherche le token le plus proche de la position précédente
+            var d =
+              VecMath.length(
+                VecMath.vec([lumiere.get('left'), lumiere.get('top')], [prev.left, prev.top]));
+            tokensLumiere.forEach(function(tl) {
+              var d2 =
+                VecMath.length(
+                  VecMath.vec([tl.get('left'), tl.get('top')], [prev.left, prev.top]));
+              if (d2 < d) {
+                d = d2;
+                lumiere = tl;
+              }
+            });
+          }
+        }
+        if (lumiere === undefined) {
+          if (lumiereExiste) return;
+          log("Pas de token pour la lumière " + al.get('current'));
+          al.remove();
+          return;
+        }
+        lumiere.set('left', x);
+        lumiere.set('top', y);
+      });
     }
     var attrEnveloppe = tokenAttribute(perso, 'enveloppe');
     attrEnveloppe.forEach(function(a) {
@@ -26854,7 +27157,7 @@ on("destroy:handout", function(prev) {
 });
 
 on('ready', function() {
-  var scriptVersion = "2.08";
+  var scriptVersion = "2.09";
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
@@ -27128,9 +27431,7 @@ on("chat:message", function(msg) {
 
 on("change:campaign:turnorder", COFantasy.nextTurn);
 on("destroy:token", COFantasy.destroyToken);
-on("change:token:left", COFantasy.moveToken);
-on("change:token:top", COFantasy.moveToken);
-on("change:token:rotation", COFantasy.moveToken);
+on("change:token", COFantasy.moveToken);
 on("add:character", function(c) {
   if (COF_loaded && state.COFantasy.scriptSheets) {
     COFantasy.scriptVersionToCharacter(c, true);
