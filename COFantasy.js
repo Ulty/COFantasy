@@ -1036,23 +1036,22 @@ var COFantasy = COFantasy || function() {
       sendChar(charId, options.msg);
     }
     evt.attributes = evt.attributes || [];
-    var agrandir = (attribute == 'agrandissement' && token);
-    var formeArbre = (attribute == 'formeDArbre' && token);
     // check if the token is linked to the character. If not, use token name
     // in attribute name (token ids don't persist over API reload)
+    var fullAttribute = attribute;
     if (token) {
       var link = token.get('bar1_link');
-      if (link === "") attribute += "_" + token.get('name');
+      if (link === "") fullAttribute += "_" + token.get('name');
     }
     var attr = findObjs({
       _type: 'attribute',
       _characterid: charId,
-      name: attribute
+      name: fullAttribute
     });
     if (attr.length === 0) {
       attr = createObj('attribute', {
         characterid: charId,
-        name: attribute,
+        name: fullAttribute,
         current: value,
         max: maxval
       });
@@ -1060,88 +1059,99 @@ var COFantasy = COFantasy || function() {
         attribute: attr,
         current: null
       });
-      if (agrandir) {
-        var width = token.get('width');
-        var height = token.get('height');
-        affectToken(token, 'width', width, evt);
-        affectToken(token, 'height', height, evt);
-        width += width / 2;
-        height += height / 2;
-        token.set('width', width);
-        token.set('height', height);
-      } else if (formeArbre) {
-        //On copie les PVs pour pouvoir les restaurer à la fin de l'effet
-        setTokenAttr(personnage, 'anciensPV', token.get('bar1_value'), evt, {
-          maxval: token.get('bar1_max')
-        });
-        //On va créer une copie de token, mais avec une image d'arbre
-        var tokenFields = {
-          _pageid: token.get('pageid'),
-          represents: personnage.charId,
-          left: token.get('left'),
-          top: token.get('top'),
-          width: token.get('width'),
-          height: token.get('height'),
-          rotation: token.get('rotation'),
-          layer: 'objects',
-          name: token.get('name'),
-          bar1_value: token.get('bar1_value'),
-          bar1_max: token.get('bar1_max'),
-          bar1_link: token.get('bar1_link'),
-          bar2_value: token.get('bar2_value'),
-          bar2_max: token.get('bar2_max'),
-          bar2_link: token.get('bar2_link'),
-          bar3_value: token.get('bar3_value'),
-          bar3_max: token.get('bar3_max'),
-          aura1_radius: token.get('aura1_radius'),
-          aura1_color: token.get('aura1_color'),
-          aura1_square: token.get('aura1_square'),
-          showplayers_aura1: token.get('showplayers_aura1'),
-          aura2_radius: token.get('aura2_radius'),
-          aura2_color: token.get('aura2_color'),
-          aura2_square: token.get('aura2_square'),
-          showplayers_aura2: token.get('showplayers_aura2'),
-          statusmarkers: token.get('statusmarkers'),
-          light_radius: token.get('light_radius'),
-          light_dimradius: token.get('light_dimradius'),
-          light_otherplayers: token.get('light_otherplayers'),
-          light_hassight: token.get('light_hassight'),
-          light_angle: token.get('light_angle'),
-          light_losangle: token.get('light_losangle'),
-          light_multiplier: token.get('light_multiplier'),
-          showname: token.get('showname'),
-          showplayers_name: token.get('showplayers_name'),
-          showplayers_bar1: token.get('showplayers_bar1'),
-        };
-        var tokenArbre;
-        var imageArbre = findObjs({
-          _type: 'attribute',
-          _characterid: personnage.charId,
-          name: 'tokenFormeDArbre'
-        });
-        if (imageArbre.length > 0) {
-          tokenFields.imgsrc = imageArbre[0].get('current');
-          tokenArbre = createObj('graphic', tokenFields);
+      if (token) {
+        var pageId = token.get('pageid');
+        switch (attribute) {
+          case 'agrandissement':
+            var width = token.get('width');
+            var height = token.get('height');
+            affectToken(token, 'width', width, evt);
+            affectToken(token, 'height', height, evt);
+            width += width / 2;
+            height += height / 2;
+            token.set('width', width);
+            token.set('height', height);
+            break;
+          case 'formeDArbre':
+            //On copie les PVs pour pouvoir les restaurer à la fin de l'effet
+            setTokenAttr(personnage, 'anciensPV', token.get('bar1_value'), evt, {
+              maxval: token.get('bar1_max')
+            });
+            //On va créer une copie de token, mais avec une image d'arbre
+            var tokenFields = {
+              _pageid: pageId,
+              represents: personnage.charId,
+              left: token.get('left'),
+              top: token.get('top'),
+              width: token.get('width'),
+              height: token.get('height'),
+              rotation: token.get('rotation'),
+              layer: 'objects',
+              name: token.get('name'),
+              bar1_value: token.get('bar1_value'),
+              bar1_max: token.get('bar1_max'),
+              bar1_link: token.get('bar1_link'),
+              bar2_value: token.get('bar2_value'),
+              bar2_max: token.get('bar2_max'),
+              bar2_link: token.get('bar2_link'),
+              bar3_value: token.get('bar3_value'),
+              bar3_max: token.get('bar3_max'),
+              aura1_radius: token.get('aura1_radius'),
+              aura1_color: token.get('aura1_color'),
+              aura1_square: token.get('aura1_square'),
+              showplayers_aura1: token.get('showplayers_aura1'),
+              aura2_radius: token.get('aura2_radius'),
+              aura2_color: token.get('aura2_color'),
+              aura2_square: token.get('aura2_square'),
+              showplayers_aura2: token.get('showplayers_aura2'),
+              statusmarkers: token.get('statusmarkers'),
+              light_radius: token.get('light_radius'),
+              light_dimradius: token.get('light_dimradius'),
+              light_otherplayers: token.get('light_otherplayers'),
+              light_hassight: token.get('light_hassight'),
+              light_angle: token.get('light_angle'),
+              light_losangle: token.get('light_losangle'),
+              light_multiplier: token.get('light_multiplier'),
+              showname: token.get('showname'),
+              showplayers_name: token.get('showplayers_name'),
+              showplayers_bar1: token.get('showplayers_bar1'),
+            };
+            var tokenArbre;
+            var imageArbre = findObjs({
+              _type: 'attribute',
+              _characterid: personnage.charId,
+              name: 'tokenFormeDArbre'
+            });
+            if (imageArbre.length > 0) {
+              tokenFields.imgsrc = imageArbre[0].get('current');
+              tokenArbre = createObj('graphic', tokenFields);
+            }
+            if (tokenArbre === undefined) {
+              tokenFields.imgsrc = stateCOF.options.images.val.image_arbre.val;
+              tokenArbre = createObj('graphic', tokenFields);
+            }
+            if (tokenArbre) {
+              //On met l'ancien token dans le gmlayer, car si l'image vient du marketplace, il est impossible de le recréer depuis l'API
+              setToken(token, 'layer', 'gmlayer', evt);
+              setTokenAttr(personnage, 'changementDeToken', true, evt);
+              replaceInTurnTracker(token.id, tokenArbre.id, evt);
+              personnage.token = tokenArbre;
+              token = tokenArbre;
+            }
+            //On met maintenant les nouveaux PVs
+            //selon Kegron http://www.black-book-editions.fr/forums.php?topic_id=4800&tid=245841#msg245841
+            var niveau = ficheAttributeAsInt(personnage, 'niveau', 1);
+            var nouveauxPVs = getValeurOfEffet(personnage, 'formeDArbre', niveau * 5);
+            updateCurrentBar(personnage, 1, nouveauxPVs, evt, nouveauxPVs);
+            //L'initiative change
+            initPerso(personnage, evt, true);
+            break;
+          case 'bloqueManoeuvre':
+          case 'enveloppePar':
+          case 'prisonVegetale':
+          case 'statueDeBois':
+            nePlusSuivre(personnage, pageId, evt);
         }
-        if (tokenArbre === undefined) {
-          tokenFields.imgsrc = stateCOF.options.images.val.image_arbre.val;
-          tokenArbre = createObj('graphic', tokenFields);
-        }
-        if (tokenArbre) {
-          //On met l'ancien token dans le gmlayer, car si l'image vient du marketplace, il est impossible de le recréer depuis l'API
-          setToken(token, 'layer', 'gmlayer', evt);
-          setTokenAttr(personnage, 'changementDeToken', true, evt);
-          replaceInTurnTracker(token.id, tokenArbre.id, evt);
-          personnage.token = tokenArbre;
-          token = tokenArbre;
-        }
-        //On met maintenant les nouveaux PVs
-        //selon Kegron http://www.black-book-editions.fr/forums.php?topic_id=4800&tid=245841#msg245841
-        var niveau = ficheAttributeAsInt(personnage, 'niveau', 1);
-        var nouveauxPVs = getValeurOfEffet(personnage, 'formeDArbre', niveau * 5);
-        updateCurrentBar(personnage, 1, nouveauxPVs, evt, nouveauxPVs);
-        //L'initiative change
-        initPerso(personnage, evt, true);
       }
       return attr;
     }
@@ -1350,142 +1360,162 @@ var COFantasy = COFantasy || function() {
       // We also change vision of the token
       if (aff.prev.light_losangle === undefined)
         aff.prev.light_losangle = token.get('light_losangle');
-      if (value) token.set('light_losangle', 0);
-      else token.set('light_losangle', 360);
-    } else if (value && etat == 'mort') {
-      //On s'assure de mettre les PV de la cible à 0 (pour les insta kills sans dommages)
-      if (token.get('bar1_value') > 0) updateCurrentBar(personnage, 1, 0, evt);
-      //On libère les personnages enveloppés, si il y en a.
-      var attrEnveloppe = tokenAttribute(personnage, 'enveloppe');
-      attrEnveloppe.forEach(function(a) {
-        var cible = persoOfIdName(a.get('current'), pageId);
-        if (cible) {
-          var envDM = a.get('max');
-          if (envDM.startsWith('etreinte')) {
-            //On a une étreinte, on enlève donc l'état immobilisé
-            setState(cible, 'immobilise', false, evt);
-          }
-          evt.deletedAttributes = evt.deletedAttributes || [];
-          var attrCible = tokenAttribute(cible, 'enveloppePar');
-          attrCible.forEach(function(a) {
-            var cube = persoOfIdName(a.get('current', pageId));
-            if (cube === undefined) {
-              evt.deletedAttributes.push(a);
-              a.remove();
-            } else if (cube.token.id == personnage.token.id) {
-              sendChar(cible.charId, 'se libère de ' + cube.tokName);
-              toFront(cible.token);
-              evt.deletedAttributes.push(a);
-              a.remove();
-            }
-          });
-        }
-        evt.deletedAttributes.push(a);
-        a.remove();
-      });
-      //On libère les personnages agrippés, si il y en a.
-      var attrAgrippe = tokenAttribute(personnage, 'agrippe');
-      attrAgrippe.forEach(function(a) {
-        var cible = persoOfIdName(a.get('current'), pageId);
-        if (cible) {
-          evt.deletedAttributes = evt.deletedAttributes || [];
-          var attrCible = tokenAttribute(cible, 'estAgrippePar');
-          attrCible.forEach(function(a) {
-            var agrippant = persoOfIdName(a.get('current', pageId));
-            if (agrippant.token.id == personnage.id) {
-              sendChar(cible.charId, 'se libère de ' + agrippant.tokName);
-              toFront(cible.token);
-              if (a.get('max')) setState(cible, 'immobilise', false, evt);
-              evt.deletedAttributes.push(a);
-              a.remove();
-            }
-          });
-        }
-        evt.deletedAttributes.push(a);
-        a.remove();
-      });
-      //On termine les effets temporaires liés au personnage
-      var etlAttr = tokenAttribute(personnage, 'effetsTemporairesLies');
-      if (etlAttr.length > 0) {
-        etlAttr = etlAttr[0];
-        evt.deletedAttributes = evt.deletedAttributes || [];
-        var etl = etlAttr.get('current').split(',');
-        etl.forEach(function(attrId) {
-          var attrEffet = getObj('attribute', attrId);
-          if (attrEffet === undefined) return;
-          var nomAttrEffet = attrEffet.get('name');
-          var charId = attrEffet.get('characterid');
-          if (estEffetTemp(nomAttrEffet)) {
-            finDEffet(attrEffet, effetTempOfAttribute(attrEffet), nomAttrEffet, charId, evt);
-          } else if (estEffetCombat(nomAttrEffet)) {
-            var mc = messageEffetCombat[effetCombatOfAttribute(attrEffet)].fin;
-            if (mc && mc !== '') sendChar(charId, mc);
-            evt.deletedAttributes.push(attrEffet);
-            attrEffet.remove();
-          }
-        });
-        evt.deletedAttributes.push(etlAttr);
-        etlAttr.remove();
+      if (value) {
+        token.set('light_losangle', 0);
+        //Normalement, ne peut plus suivre personne ?
+        //Si il peut parce qu'il touche ou tient une corde, réutiliser la macro
+        //pour suivre
+        nePlusSuivre(personnage, pageId, evt);
+      } else {
+        token.set('light_losangle', 360);
       }
-      if (charAttributeAsBool(personnage, 'armeeConjuree')) {
-        removeFromTurnTracker(personnage, evt);
-        personnage.token.remove();
-        sendChar(personnage.charId, 'disparaît');
-        var armeeChar = getObj('character', personnage.charId);
-        if (armeeChar) {
-          evt.deletedCharacters = evt.deletedCharacters || [];
-          evt.deletedCharacters.push({
-            id: personnage.charId,
-            name: armeeChar.get('name'),
-            avatar: armeeChar.get('avatar'),
-            attributes: findObjs({
-              _type: 'attributes',
-              _characterid: personnage.charId
-            }),
-            abilities: findObjs({
-              _type: 'ability',
-              _characterid: personnage.charId
-            })
-          });
-          armeeChar.remove();
-        }
-      } else if (!estNonVivant(personnage)) {
-        //Cherche si certains peuvent siphoner l'âme
-        var allToks =
-          findObjs({
-            _type: "graphic",
-            _pageid: pageId,
-            _subtype: "token",
-            layer: "objects"
-          });
-        allToks.forEach(function(tok) {
-          if (tok.id == token.id) return;
-          var ci = tok.get('represents');
-          if (ci === '') return;
-          var p = {
-            token: tok,
-            charId: ci
-          };
-          if (getState(p, 'mort')) return;
-          if (distanceCombat(token, tok, pageId) > 20) return;
-          if (charIdAttributeAsBool(ci, 'siphonDesAmes')) {
-            var bonus = charAttributeAsInt(p, 'siphonDesAmes', 0);
-            var soin = rollDePlus(6, {
-              bonus: bonus
-            });
-            soigneToken(p, soin.val, evt,
-              function(s) {
-                var siphMsg = "siphone l'âme de " + token.get('name') +
-                  ". Il récupère ";
-                if (s == soin.val) siphMsg += soin.roll + " pv.";
-                else siphMsg += s + " pv (jet " + soin.roll + ").";
-                sendChar(ci, siphMsg);
-              },
-              function() {
-                sendChar(ci, "est déjà au maximum de point de vie. Il laisse échapper l'âme de " + token.get('name'));
+    } else if (value) {
+      switch (etat) {
+        case 'mort':
+          //On s'assure de mettre les PV de la cible à 0 (pour les insta kills sans dommages)
+          if (token.get('bar1_value') > 0) updateCurrentBar(personnage, 1, 0, evt);
+          nePlusSuivre(personnage, pageId, evt);
+          //On libère les personnages enveloppés, si il y en a.
+          var attrEnveloppe = tokenAttribute(personnage, 'enveloppe');
+          attrEnveloppe.forEach(function(a) {
+            var cible = persoOfIdName(a.get('current'), pageId);
+            if (cible) {
+              var envDM = a.get('max');
+              if (envDM.startsWith('etreinte')) {
+                //On a une étreinte, on enlève donc l'état immobilisé
+                setState(cible, 'immobilise', false, evt);
+              }
+              evt.deletedAttributes = evt.deletedAttributes || [];
+              var attrCible = tokenAttribute(cible, 'enveloppePar');
+              attrCible.forEach(function(a) {
+                var cube = persoOfIdName(a.get('current', pageId));
+                if (cube === undefined) {
+                  evt.deletedAttributes.push(a);
+                  a.remove();
+                } else if (cube.token.id == personnage.token.id) {
+                  sendChar(cible.charId, 'se libère de ' + cube.tokName);
+                  toFront(cible.token);
+                  evt.deletedAttributes.push(a);
+                  a.remove();
+                }
               });
+            }
+            evt.deletedAttributes.push(a);
+            a.remove();
+          });
+          //On libère les personnages agrippés, si il y en a.
+          var attrAgrippe = tokenAttribute(personnage, 'agrippe');
+          attrAgrippe.forEach(function(a) {
+            var cible = persoOfIdName(a.get('current'), pageId);
+            if (cible) {
+              evt.deletedAttributes = evt.deletedAttributes || [];
+              var attrCible = tokenAttribute(cible, 'estAgrippePar');
+              attrCible.forEach(function(a) {
+                var agrippant = persoOfIdName(a.get('current', pageId));
+                if (agrippant.token.id == personnage.id) {
+                  sendChar(cible.charId, 'se libère de ' + agrippant.tokName);
+                  toFront(cible.token);
+                  if (a.get('max')) setState(cible, 'immobilise', false, evt);
+                  evt.deletedAttributes.push(a);
+                  a.remove();
+                }
+              });
+            }
+            evt.deletedAttributes.push(a);
+            a.remove();
+          });
+          //On termine les effets temporaires liés au personnage
+          var etlAttr = tokenAttribute(personnage, 'effetsTemporairesLies');
+          if (etlAttr.length > 0) {
+            etlAttr = etlAttr[0];
+            evt.deletedAttributes = evt.deletedAttributes || [];
+            var etl = etlAttr.get('current').split(',');
+            etl.forEach(function(attrId) {
+              var attrEffet = getObj('attribute', attrId);
+              if (attrEffet === undefined) return;
+              var nomAttrEffet = attrEffet.get('name');
+              var charId = attrEffet.get('characterid');
+              if (estEffetTemp(nomAttrEffet)) {
+                finDEffet(attrEffet, effetTempOfAttribute(attrEffet), nomAttrEffet, charId, evt);
+              } else if (estEffetCombat(nomAttrEffet)) {
+                var mc = messageEffetCombat[effetCombatOfAttribute(attrEffet)].fin;
+                if (mc && mc !== '') sendChar(charId, mc);
+                evt.deletedAttributes.push(attrEffet);
+                attrEffet.remove();
+              }
+            });
+            evt.deletedAttributes.push(etlAttr);
+            etlAttr.remove();
           }
-        });
+          if (charAttributeAsBool(personnage, 'armeeConjuree')) {
+            removeFromTurnTracker(personnage, evt);
+            personnage.token.remove();
+            sendChar(personnage.charId, 'disparaît');
+            var armeeChar = getObj('character', personnage.charId);
+            if (armeeChar) {
+              evt.deletedCharacters = evt.deletedCharacters || [];
+              evt.deletedCharacters.push({
+                id: personnage.charId,
+                name: armeeChar.get('name'),
+                avatar: armeeChar.get('avatar'),
+                attributes: findObjs({
+                  _type: 'attributes',
+                  _characterid: personnage.charId
+                }),
+                abilities: findObjs({
+                  _type: 'ability',
+                  _characterid: personnage.charId
+                })
+              });
+              armeeChar.remove();
+            }
+          } else if (!estNonVivant(personnage)) {
+            //Cherche si certains peuvent siphoner l'âme
+            var allToks =
+              findObjs({
+                _type: "graphic",
+                _pageid: pageId,
+                _subtype: "token",
+                layer: "objects"
+              });
+            allToks.forEach(function(tok) {
+              if (tok.id == token.id) return;
+              var ci = tok.get('represents');
+              if (ci === '') return;
+              var p = {
+                token: tok,
+                charId: ci
+              };
+              if (getState(p, 'mort')) return;
+              if (distanceCombat(token, tok, pageId) > 20) return;
+              if (charIdAttributeAsBool(ci, 'siphonDesAmes')) {
+                var bonus = charAttributeAsInt(p, 'siphonDesAmes', 0);
+                var soin = rollDePlus(6, {
+                  bonus: bonus
+                });
+                soigneToken(p, soin.val, evt,
+                  function(s) {
+                    var siphMsg = "siphone l'âme de " + token.get('name') +
+                      ". Il récupère ";
+                    if (s == soin.val) siphMsg += soin.roll + " pv.";
+                    else siphMsg += s + " pv (jet " + soin.roll + ").";
+                    sendChar(ci, siphMsg);
+                  },
+                  function() {
+                    sendChar(ci, "est déjà au maximum de point de vie. Il laisse échapper l'âme de " + token.get('name'));
+                  });
+              }
+            });
+          }
+          break;
+        case 'immobilise':
+        case 'surpris':
+        case 'assome':
+        case 'etourdi':
+        case 'paralyse':
+        case 'endormi':
+        case 'apeure':
+          nePlusSuivre(personnage, pageId, evt);
       }
     }
     if (token.get('bar1_link') !== '') {
@@ -24220,9 +24250,8 @@ var COFantasy = COFantasy || function() {
     if (evt.attributes) addEvent(evt);
   }
 
-  //si evt est défini, on ajoute les actions à evt, et on ne supprime pas
-  // l'attribut de suite, qui sera réutilisé
-  function nePlusSuivre(perso, pageId, evt) {
+  //si evt est défini, on ajoute les actions à evt
+  function nePlusSuivre(perso, pageId, evt, reutilise) {
     perso.tokName = perso.tokName || perso.token.get('name');
     var attrSuit = tokenAttribute(perso, 'suit');
     if (attrSuit.length > 0) {
@@ -24230,12 +24259,14 @@ var COFantasy = COFantasy || function() {
       var idSuivi = attrSuit.get('current');
       var suivi = persoOfIdName(idSuivi, pageId);
       if (evt) {
+        evt.attributes = evt.attribute || [];
         evt.attributes.push({
           attribute: attrSuit,
           current: idSuivi,
-          max: attrSuit.ge('max')
+          max: attrSuit.get('max')
         });
-      } else attrSuit.remove();
+      }
+      if (!reutilise) attrSuit.remove();
       if (suivi === undefined) {
         sendChar(perso.charId, "ne suit plus personne");
         return;
@@ -24307,7 +24338,7 @@ var COFantasy = COFantasy || function() {
       attributes: []
     };
     //D'abord on arrête de suivre si on suivait quelqu'un
-    var attrSuit = nePlusSuivre(perso, pageId, evt);
+    var attrSuit = nePlusSuivre(perso, pageId, evt, true);
     var cibleId = cible.token.id + ' ' + cible.token.get('name');
     var attr = tokenAttribute(cible, 'estSuiviPar');
     var suiveurs;
@@ -26584,6 +26615,11 @@ var COFantasy = COFantasy || function() {
   function destroyToken(token) { //to remove unused local attributes
     var charId = token.get('represents');
     if (charId === "") return;
+    var perso = {
+      charId: charId,
+      token: token
+    };
+    nePlusSuivre(perso, token.get('pageid'));
     if (token.get('bar1_link') !== "") return;
     var endName = "_" + token.get('name');
     var tokAttr = findObjs({
@@ -26766,10 +26802,10 @@ var COFantasy = COFantasy || function() {
           x: x,
           y: y
         };
-        var murs;
+        var murs = prev.murs;
         var distance =
           Math.sqrt((x - prev.left) * (x - prev.left) + (y - prev.top) * (y - prev.top));
-        if (page.get('showlighting') && page.get('lightrestrictmove')) {
+        if (murs === undefined && page.get('showlighting') && page.get('lightrestrictmove')) {
           murs = findObjs({
             _type: 'path',
             _pageid: pageId,
@@ -26859,7 +26895,8 @@ var COFantasy = COFantasy || function() {
             var sprev = {
               left: sx,
               top: sy,
-              suit: true
+              suit: true,
+              murs: murs
             };
             moveToken(suivant.token, sprev); //pour faire suivre ceux qui le suivent
             return true;
