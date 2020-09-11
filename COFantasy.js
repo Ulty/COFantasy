@@ -5565,11 +5565,8 @@ var COFantasy = COFantasy || function() {
         name: defDerivee[0].get('current')
       });
       if (charDerive.length > 0) {
-        var perso = {
-          charId: charDerive[0].id,
-          token: target.token
-        };
-        return defenseOfPerso(attaquant, perso, pageId, evt, options);
+        target.realCharId = target.charId;
+        target.charId = charDerive[0].id;
       }
     }
     target.tokName = target.tokName || target.token.get('name');
@@ -5847,6 +5844,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
+    if (target.realCharId) target.charId = target.realCharId;
     return defense;
   }
 
@@ -24234,7 +24232,8 @@ var COFantasy = COFantasy || function() {
       if (evt) {
         evt.attributes.push({
           attribute: attrSuit,
-          current: idSuivi
+          current: idSuivi,
+          max: attrSuit.ge('max')
         });
       } else attrSuit.remove();
       if (suivi === undefined) {
@@ -24332,11 +24331,19 @@ var COFantasy = COFantasy || function() {
       });
       suiveurs = suiveurs.split(':::');
     }
+    var xt = perso.token.get('left');
+    var yt = perso.token.get('top');
+    var xc = cible.token.get('left');
+    var yc = cible.token.get('top');
+    var distance = Math.floor(Math.sqrt((xc - xt) * (xc - xt) + (yc - yt) * (yc - yt)));
     if (attrSuit) {
       //alors evt contient déjà attrSuit
       attrSuit.set('current', cibleId);
+      attrSuit.set('max', distance);
     } else {
-      setTokenAttr(perso, 'suit', cibleId, evt);
+      setTokenAttr(perso, 'suit', cibleId, evt, {
+        maxval: distance
+      });
     }
     suiveurs.push(perso.token.id + ' ' + perso.token.get('name'));
     attr.set('current', suiveurs.join(':::'));
@@ -26744,7 +26751,7 @@ var COFantasy = COFantasy || function() {
         cavalier.token.set('rotation', token.get('rotation') + attributeAsInt(perso, 'directionSurMonture', 0));
       });
       //Si le token suivait quelqu'un, ce n'est plus le cas
-      nePlusSuivre(perso, pageId);
+      if (prev.suit === undefined) nePlusSuivre(perso, pageId);
       //On bouge tous les tokens qui suivent le personnage
       var attrSuivi = tokenAttribute(perso, 'estSuiviPar');
       var page = getObj('page', pageId);
@@ -26803,13 +26810,20 @@ var COFantasy = COFantasy || function() {
             var sx = suivant.token.get('left');
             var sy = suivant.token.get('top');
             //On essaie de garder la même position par rapport au token, en supposant qu'on était derrière lui
-              var dp = Math.sqrt((prev.left - sx) * (prev.left - sx) + (prev.top - sy) * (prev.top - sy));
-            var nsx = x + (prev.left - x)*dp/distance;
-            var nsy = y + (prev.top - y)*dp/distance;
+            var attrSuit = tokenAttribute(suivant, 'suit');
+            var dp;
+            if (attrSuit.length > 0) {
+              dp = parseInt(attrSuit[0].get('max'));
+            }
+            if (dp === undefined || isNaN(dp) || dp < 1) {
+              dp = Math.sqrt((prev.left - sx) * (prev.left - sx) + (prev.top - sy) * (prev.top - sy));
+            }
+            var nsx = x + (prev.left - x) * dp / distance;
+            var nsy = y + (prev.top - y) * dp / distance;
             if (nsx < 0) nsx = 0;
             if (nsy < 0) nsy = 0;
-            if (nsx + sw > width) nsx = width - sw;
-            if (nsy + sh > height) nsy = height - sh;
+            if (nsx + sw / 2 > width) nsx = Math.floor(width - sw / 2);
+            if (nsy + sh / 2 > height) nsy = Math.floor(height - sh / 2);
             //vérifie si de la nouvelle position on peut voir le suivi
             if (obstaclePresent(nsx, nsy, pt, murs)) {
               //On essaie de suivre le chemin du token, à la lace
@@ -26842,6 +26856,12 @@ var COFantasy = COFantasy || function() {
             }
             suivant.token.set('left', nsx);
             suivant.token.set('top', nsy);
+            var sprev = {
+              left: sx,
+              top: sy,
+              suit: true
+            };
+            moveToken(suivant.token, sprev); //pour faire suivre ceux qui le suivent
             return true;
           });
           if (removedSuivant) {
