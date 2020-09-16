@@ -11596,9 +11596,11 @@ var COFantasy = COFantasy || function() {
   function pointsDeRecuperation(perso) {
     // retourne les nombre de PR restant
     var attrPR = tokenAttribute(perso, 'pointsDeRecuperation');
+    var prc = 5;
+    var prm = 5;
     if (attrPR.length > 0) {
-      var prc = parseInt(attrPR[0].get('current'));
-      var prm = parseInt(attrPR[0].get('max'));
+      prc = parseInt(attrPR[0].get('current'));
+      prm = parseInt(attrPR[0].get('max'));
       return {
         current: prc,
         max: prm
@@ -11627,9 +11629,23 @@ var COFantasy = COFantasy || function() {
         max: 5
       };
     }
+    prm = attrPR[0].get('max');
+    if (prm === '') prm = 5;
+    else {
+      prm = parseInt(prm);
+      if (isNaN(prm) || prm < 0) prm = 5;
+    }
+    prc = attrPR[0].get('current');
+    if (prc === '') prc = 5;
+    else {
+      prc = parseInt(prc);
+      if (isNaN(prc)) prc = prm;
+      else if (prc < 0) prc = 0;
+      else if (prc > prm) prc = prm;
+    }
     return {
-      current: parseInt(attrPR[0].get('current')),
-      max: parseInt(attrPR[0].get('max'))
+      current: prc,
+      max: prm
     };
   }
 
@@ -11702,7 +11718,9 @@ var COFantasy = COFantasy || function() {
       });
       return;
     }
-    prc = parseInt(attrPR[0].get('current'));
+    prc = attrPR[0].get('current');
+    if (prc === '') prc = 5;
+    else prc = parseInt(prc);
     if (isNaN(prc) || prc < 1) {
       sendChat("COF", "Plus de point de récupération à enlever");
       return;
@@ -11778,8 +11796,15 @@ var COFantasy = COFantasy || function() {
         });
         return;
       }
-      prc = parseInt(attrPR[0].get('current'));
-      prmax = parseInt(attrPR[0].get('max'));
+      prmax = attrPR[0].get('max');
+      if (prmax === '') prmax = 5;
+      else {
+        prmax = parseInt(prmax);
+        if (isNaN(prmax) || prmax < 0) prmax = 5;
+      }
+      prc = attrPR[0].get('current');
+      if (prc === '') prc = 5;
+      else prc = parseInt(prc);
       if (isNaN(prc) || prc >= prmax) {
         return;
       }
