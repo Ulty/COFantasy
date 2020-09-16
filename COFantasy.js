@@ -5320,10 +5320,11 @@ var COFantasy = COFantasy || function() {
   }
 
   // triggers sheet workers
-  function setFicheAttr(personnage, attribute, value, evt, msg, maxval) {
+  //options peut avoir un champ msg et un champ maxVal
+  function setFicheAttr(personnage, attribute, value, evt, options) {
     var charId = personnage.charId;
-    if (msg !== undefined) {
-      sendChar(charId, msg);
+    if (options && options.msg !== undefined) {
+      sendChar(charId, options.msg);
     }
     evt.attributes = evt.attributes || [];
     var attr = findObjs({
@@ -5334,7 +5335,8 @@ var COFantasy = COFantasy || function() {
       caseInsensitive: true
     });
     if (attr.length === 0) {
-      if (maxval === undefined) maxval = '';
+      var maxval = '';
+      if (options && maxval !== undefined) maxval = options.maxVal;
       attr = createObj('attribute', {
         characterid: charId,
         name: attribute,
@@ -5360,7 +5362,7 @@ var COFantasy = COFantasy || function() {
     var nv = {
       current: value
     };
-    if (maxval !== undefined) nv.max = maxval;
+    if (options && options.maxVal !== undefined) nv.max = options.maxVal;
     attr.setWithWorker(nv);
     return attr;
   }
@@ -11602,89 +11604,192 @@ var COFantasy = COFantasy || function() {
         max: prm
       };
     }
-    var pr = 5;
-    var x;
-    for (var i = 1; i < 6; i++) {
-      x = ficheAttribute(perso, "PR" + i, 0);
-      if (x == 1) pr--;
+    var versionFiche = parseFloat(ficheAttribute(perso, 'version', 0));
+    if (isNaN(versionFiche)) versionFiche = 0;
+    if (versionFiche < 3.6) {
+      var pr = 5;
+      var x;
+      for (var i = 1; i < 6; i++) {
+        x = ficheAttribute(perso, "PR" + i, 0);
+        if (x == 1) pr--;
+      }
+      return {
+        current: pr,
+        max: 5
+      };
+    }
+    attrPR = charAttribute(perso.charId, 'pr', {
+      caseInsensitive: true
+    });
+    if (attrPR.length === 0) {
+      return {
+        current: 5,
+        max: 5
+      };
     }
     return {
-      current: pr,
-      max: 5
+      current: parseInt(attrPR[0].get('current')),
+      max: parseInt(attrPR[0].get('max'))
     };
   }
 
   function enleverPointDeRecuperation(perso, evt) {
+    var versionFiche = parseFloat(ficheAttribute(perso, 'version', 0));
+    if (isNaN(versionFiche)) versionFiche = 0;
     var attrPR = tokenAttribute(perso, 'pointsDeRecuperation');
+    var prc = 5;
     if (attrPR.length > 0) {
-      var prc = parseInt(attrPR[0].get('current'));
+      prc = parseInt(attrPR[0].get('current'));
       if (prc > 0) {
-        setTokenAttr(perso, 'pointsDeRecuperation', prc - 1, evt);
+        if (versionFiche > 3.5) {
+          setFicheAttr(perso, 'pr', prc - 1, evt, {
+            maxVal: attrPR[0].get('max')
+          });
+          removeTokenAttr(perso, 'pointsDeRecuperation', evt);
+        } else {
+          setTokenAttr(perso, 'pointsDeRecuperation', prc - 1, evt);
+        }
         return;
       }
       sendChat("COF", "Plus de point de récupération à enlever");
       return;
     }
     evt.attributes = evt.attributes || [];
-    for (var i = 1; i < 6; i++) {
-      var prAttr = findObjs({
-        _type: 'attribute',
-        _characterid: perso.charId,
-        name: "PR" + i
-      });
-      if (prAttr.length === 0) {
-        prAttr = createObj("attribute", {
-          characterid: perso.charId,
-          name: "PR" + i,
-          current: 1,
-          max: 1
-        });
-        evt.attributes.push({
-          attribute: prAttr,
-          current: null
-        });
-        return;
-      } else if (prAttr[0].get('current') == 0) { // jshint ignore:line
-        prAttr[0].set("current", 1);
-        evt.attributes.push({
-          attribute: prAttr[0],
-          current: 0
-        });
-        return;
-      }
-    }
-    sendChat("COF", "Plus de point de récupération à enlever");
-  }
-
-  function rajouterPointDeRecuperation(perso, evt) {
-    var attrPR = tokenAttribute(perso, 'pointsDeRecuperation');
-    if (attrPR.length > 0) {
-      var prc = parseInt(attrPR[0].get('current'));
-      var prmax = parseInt(attrPR[0].get('max'));
-      if (prc < prmax) {
-        setTokenAttr(perso, 'pointsDeRecuperation', prc + 1, evt);
-        return true;
-      }
-      log("Pas de point de récupération à récupérer pour " + perso.token.get('name'));
-      return;
-    }
-    for (var i = 1; i < 6; i++) {
-      var prAttr =
-        findObjs({
-          _type: "attribute",
+    if (versionFiche < 3.6) {
+      for (var i = 1; i < 6; i++) {
+        var prAttr = findObjs({
+          _type: 'attribute',
           _characterid: perso.charId,
           name: "PR" + i
         });
-      if (prAttr.length > 0 && prAttr[0].get("current") == 1) {
-        prAttr[0].set("current", 0);
-        evt.attributes.push({
-          attribute: prAttr[0],
-          current: 1
-        });
+        if (prAttr.length === 0) {
+          prAttr = createObj("attribute", {
+            characterid: perso.charId,
+            name: "PR" + i,
+            current: 1,
+            max: 1
+          });
+          evt.attributes.push({
+            attribute: prAttr,
+            current: null
+          });
+          return;
+        } else if (prAttr[0].get('current') == 0) { // jshint ignore:line
+          prAttr[0].set("current", 1);
+          evt.attributes.push({
+            attribute: prAttr[0],
+            current: 0
+          });
+          return;
+        }
+      }
+      sendChat("COF", "Plus de point de récupération à enlever");
+      return;
+    }
+    attrPR = charAttribute(perso.charId, 'pr', {
+      caseInsensitive: true
+    });
+    if (attrPR.length === 0) {
+      attrPR = createObj("attribute", {
+        characterid: perso.charId,
+        name: 'pr',
+        current: 4,
+        max: 5
+      });
+      evt.attributes.push({
+        attribute: attrPR,
+        current: null
+      });
+      return;
+    }
+    prc = parseInt(attrPR[0].get('current'));
+    if (isNaN(prc) || prc < 1) {
+      sendChat("COF", "Plus de point de récupération à enlever");
+      return;
+    }
+    evt.attributes.add({
+      attribute: attrPR[0],
+      current: prc
+    });
+    attrPR[0].set('current', prc - 1);
+  }
+
+  function rajouterPointDeRecuperation(perso, evt) {
+    var versionFiche = parseFloat(ficheAttribute(perso, 'version', 0));
+    if (isNaN(versionFiche)) versionFiche = 0;
+    var prc = 5;
+    var prmax = 5;
+    var attrPR = tokenAttribute(perso, 'pointsDeRecuperation');
+    if (attrPR.length > 0) {
+      prc = parseInt(attrPR[0].get('current'));
+      prmax = parseInt(attrPR[0].get('max'));
+      if (prc < prmax) {
+        if (versionFiche > 3.5) {
+          setFicheAttr(perso, 'pr', prc + 1, evt, {
+            maxVal: prmax
+          });
+          removeTokenAttr(perso, 'pointsDeRecuperation', evt);
+        } else {
+          setTokenAttr(perso, 'pointsDeRecuperation', prc + 1, evt);
+        }
         return true;
       }
+      if (versionFiche > 3.5) {
+        setFicheAttr(perso, 'pr', prc, evt, {
+          maxVal: prmax
+        });
+        removeTokenAttr(perso, 'pointsDeRecuperation', evt);
+      }
+      return;
     }
-    log("Pas de point de récupération à récupérer pour " + perso.token.get('name'));
+    if (versionFiche < 3.6) {
+      for (var i = 1; i < 6; i++) {
+        var prAttr =
+          findObjs({
+            _type: "attribute",
+            _characterid: perso.charId,
+            name: "PR" + i
+          });
+        if (prAttr.length > 0 && prAttr[0].get("current") == 1) {
+          prAttr[0].set("current", 0);
+          evt.attributes.push({
+            attribute: prAttr[0],
+            current: 1
+          });
+          return true;
+        }
+      }
+      log("Pas de point de récupération à récupérer pour " + perso.token.get('name'));
+    } else {
+      evt.attributes = evt.attributes || [];
+      attrPR = charAttribute(perso.charId, 'pr', {
+        caseInsensitive: true
+      });
+      if (attrPR.length === 0) {
+        attrPR = createObj("attribute", {
+          characterid: perso.charId,
+          name: 'pr',
+          current: 5,
+          max: 5
+        });
+        evt.attributes.push({
+          attribute: attrPR,
+          current: null
+        });
+        return;
+      }
+      prc = parseInt(attrPR[0].get('current'));
+      prmax = parseInt(attrPR[0].get('max'));
+      if (isNaN(prc) || prc >= prmax) {
+        return;
+      }
+      evt.attributes.add({
+        attribute: attrPR[0],
+        current: prc
+      });
+      attrPR[0].set('current', prc + 1);
+      return true;
+    }
   }
 
   //Asynchrone
@@ -12725,8 +12830,9 @@ var COFantasy = COFantasy || function() {
     var action = evt.action;
     if (action) { //alors on peut faire le undo
       undoEvent(evt);
-      setFicheAttr(perso, 'PC', chance, evtChance,
-        " a dépensé un point de chance. Il lui en reste " + chance);
+      setFicheAttr(perso, 'PC', chance, evtChance, {
+        msg: " a dépensé un point de chance. Il lui en reste " + chance
+      });
       addEvent(evtChance);
       switch (evt.type) {
         case 'Attaque':
@@ -12803,14 +12909,16 @@ var COFantasy = COFantasy || function() {
     chance--;
     switch (cmd[1]) {
       case 'autre':
-        setFicheAttr(perso, 'PC', chance, evt,
-          " a dépensé un point de chance. Il lui en reste " + chance);
+        setFicheAttr(perso, 'PC', chance, evt, {
+          msg: " a dépensé un point de chance. Il lui en reste " + chance
+        });
         addEvent(evt);
         return;
       case 'combat':
         undoEvent();
-        setFicheAttr(perso, 'PC', chance, evt,
-          " a dépensé un point de chance. Il lui en reste " + chance);
+        setFicheAttr(perso, 'PC', chance, evt, {
+          msg: " a dépensé un point de chance. Il lui en reste " + chance
+        });
         addEvent(evt);
         chanceCombat(perso, action);
         return;
@@ -27442,6 +27550,7 @@ on('ready', function() {
     });
     log("Mise à jour des ability & macros !cof-lancer-sort effectuée");
   }
+  //Penser à enlever les attributs pointsDeRecuperation et PR1-PR5 à la prochaine version
   state.COFantasy.version = scriptVersion;
   if (state.COFantasy.options.affichage.val.fiche.val) {
     if (!state.COFantasy.scriptSheets) {
