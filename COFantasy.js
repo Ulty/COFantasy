@@ -1267,7 +1267,9 @@ var COFantasy = COFantasy || function() {
         var estPNJ = persoEstPNJ(perso);
         var estMook = token.get("bar1_link") === '';
         var nameAttrDMTEMP = 'DMTEMP';
-        if (estPNJ && !estMook) nameAttrDMTEMP = 'pnj_dmtemp';
+        var versionFiche = parseFloat(ficheAttribute(perso, 'version', 0));
+        if (isNaN(versionFiche)) versionFiche = 0;
+        if (estPNJ && !estMook && versionFiche < 3.7) nameAttrDMTEMP = 'pnj_dmtemp';
         if (hasMana) {
           if (estMook) dmgTemp = attributeAsInt(perso, 'DMTEMP', 0);
           else dmgTemp = ficheAttributeAsInt(perso, nameAttrDMTEMP, 0);
@@ -1844,7 +1846,7 @@ var COFantasy = COFantasy || function() {
   function caracOfMod(m) {
     switch (m) {
       case 'FOR':
-        return 'FORCE';
+        return 'force';
       case 'DEX':
         return 'DEXTERITE';
       case 'CON':
@@ -1867,7 +1869,7 @@ var COFantasy = COFantasy || function() {
       charId: perso
     };
     var res = Math.floor((ficheAttributeAsInt(perso, carac, 10) - 10) / 2);
-    if (carac == 'FORCE' && attributeAsBool(perso, 'mutationMusclesHypertrophies')) res += 2;
+    if ((carac == 'force' || carac == 'FORCE') && attributeAsBool(perso, 'mutationMusclesHypertrophies')) res += 2;
     else if (carac == 'DEXTERITE' && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) res += 4;
     return res;
   }
@@ -2166,6 +2168,7 @@ var COFantasy = COFantasy || function() {
               case 'delivrance':
               case 'guerir':
               case 'guerison':
+              case 'consommer-baie':
                 picto = '<span style="font-family: \'Pictos\'">k</span> ';
                 style = 'background-color:#ffe599;color:#333';
                 break;
@@ -2520,6 +2523,7 @@ var COFantasy = COFantasy || function() {
   // testRes.texte est l'affichage du jet de dé
   // testRes.reussite indique si le jet est réussi
   // testRes.echecCritique, testRes.critique pour le type
+  // testRes.valeur pour la valeur totale du jet
   function testCaracteristique(personnage, carac, seuil, testId, options, evt, callback) { //asynchrone
     options = options || {};
     if (carac == 'SAG' || carac == 'INT' || carac == 'CHA') {
@@ -2579,6 +2583,7 @@ var COFantasy = COFantasy || function() {
           diminueMalediction(personnage, evt);
           testRes.reussite = false;
         }
+        testRes.valeur = d20roll + bonusCarac;
         if (adaptable) {
           if (testRes.reussite) {
             if (testsRatesDuTour && listeTestsRatesDuTour) {
@@ -5320,7 +5325,7 @@ var COFantasy = COFantasy || function() {
   }
 
   // triggers sheet workers
-  //options peut avoir un champ msg et un champ maxVal
+  //options peut avoir un champ msg et un champ maxval
   function setFicheAttr(personnage, attribute, value, evt, options) {
     var charId = personnage.charId;
     if (options && options.msg !== undefined) {
@@ -5336,7 +5341,7 @@ var COFantasy = COFantasy || function() {
     });
     if (attr.length === 0) {
       var maxval = '';
-      if (options && maxval !== undefined) maxval = options.maxVal;
+      if (options && options.maxval !== undefined) maxval = options.maxval;
       attr = createObj('attribute', {
         characterid: charId,
         name: attribute,
@@ -5362,7 +5367,7 @@ var COFantasy = COFantasy || function() {
     var nv = {
       current: value
     };
-    if (options && options.maxVal !== undefined) nv.max = options.maxVal;
+    if (options && options.maxval !== undefined) nv.max = options.maxval;
     attr.setWithWorker(nv);
     return attr;
   }
@@ -6077,7 +6082,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (options.lamesJumelles) {
-      var force = modCarac(attaquant, 'FORCE');
+      var force = modCarac(attaquant, 'force');
       if (force < 2) {
         attBonus += force - 2;
         explications.push("Lames jumelles => " + (force - 2) + " en Attaque");
@@ -6218,7 +6223,7 @@ var COFantasy = COFantasy || function() {
     if (options.contact) {
       if ((attributeAsBool(target, 'criDeGuerre') ||
           attributeAsBool(target, 'criDuPredateur')) &&
-        ficheAttributeAsInt(attaquant, 'FORCE', 10) <= ficheAttributeAsInt(target, 'FORCE', 10) &&
+        ficheAttributeAsInt(attaquant, 'force', 10) <= ficheAttributeAsInt(target, 'force', 10) &&
         parseInt(attaquant.token.get("bar1_max")) <= parseInt(target.token.get("bar1_max"))) {
         attBonus -= 2;
         explications.push("Effrayé => -2 en Attaque");
@@ -6520,7 +6525,7 @@ var COFantasy = COFantasy || function() {
     }
     if (charAttributeAsBool(attaquant, 'fauchage')) {
       var seuilDeFauchage = charAttributeAsInt(attaquant, 'fauchage', 15);
-      var seuilFauchage = 10 + modCarac(attaquant, 'FORCE');
+      var seuilFauchage = 10 + modCarac(attaquant, 'force');
       options.etats = options.etats || [];
       options.etats.push({
         etat: 'renverse',
@@ -7489,7 +7494,7 @@ var COFantasy = COFantasy || function() {
             }
           });
           if (atkcac === undefined) {
-            atkcac = ficheAttributeAsInt(attaquant, 'niveau', 0) + 1 + modCarac(attaquant, 'FORCE');
+            atkcac = ficheAttributeAsInt(attaquant, 'niveau', 0) + 1 + modCarac(attaquant, 'force');
           }
           return atkcac;
         }
@@ -8389,7 +8394,7 @@ var COFantasy = COFantasy || function() {
   function computeCarExpression(perso, x) {
     switch (x) {
       case '@{FOR}':
-        return modCarac(perso, 'FORCE');
+        return modCarac(perso, 'force');
       case '@{DEX}':
         return modCarac(perso, 'DEXTERITE');
       case '@{CON}':
@@ -8698,7 +8703,7 @@ var COFantasy = COFantasy || function() {
       var attDMBonus = attDMBonusCommun;
       //Les modificateurs de dégâts qui dépendent de la cible
       if (target.tempDmg) {
-        var forceTarg = modCarac(target, "FORCE");
+        var forceTarg = modCarac(target, "force");
         if (forceTarg < 0) {
           attDMBonus += " +" + (-forceTarg);
         } else {
@@ -10571,7 +10576,9 @@ var COFantasy = COFantasy || function() {
         var estPNJ = persoEstPNJ(target);
         var estMook = token.get("bar1_link") === '';
         var nameAttrDMTEMP = 'DMTEMP';
-        if (estPNJ && !estMook) nameAttrDMTEMP = 'pnj_dmtemp';
+        var versionFiche = parseFloat(ficheAttribute(target, 'version', 0));
+        if (isNaN(versionFiche)) versionFiche = 0;
+        if (estPNJ && !estMook && versionFiche < 3.7) nameAttrDMTEMP = 'pnj_dmtemp';
         if (hasMana) {
           if (estMook) tempDmg = attributeAsInt(target, 'DMTEMP', 0);
           else tempDmg = ficheAttributeAsInt(target, nameAttrDMTEMP, 0);
@@ -11491,8 +11498,10 @@ var COFantasy = COFantasy || function() {
         }, {
           caseInsensitive: true
         });
+        var versionFiche = parseFloat(getAttrByName(charId, 'version'));
+        if (isNaN(versionFiche)) versionFiche = 0;
         var estPNJ = getAttrByName(charId, 'type_personnage') == 'PNJ';
-        if (estPNJ) {
+        if (estPNJ && versionFiche < 3.7) {
           pvAttr = findObjs({
             _type: 'attribute',
             _characterid: charId,
@@ -11522,7 +11531,7 @@ var COFantasy = COFantasy || function() {
           sendChar(charId, "s'écroule. Il semble sans vie. La douleur qu'il avait ignorée l'a finalement rattrapé...");
         } else {
           var nameAttrDMTEMP = 'DMTEMP';
-          if (estPNJ) nameAttrDMTEMP = 'pnj_dmtemp';
+          if (estPNJ && versionFiche < 3.7) nameAttrDMTEMP = 'pnj_dmtemp';
           var tempDmg = ficheAttributeAsInt(charId, nameAttrDMTEMP, 0);
           if (pv > tempDmg && newPv <= tempDmg) {
             sendChar(charId, "s'écroule, assomé. La douleur qu'il avait ignorée l'a finalement rattrapé...");
@@ -11659,7 +11668,7 @@ var COFantasy = COFantasy || function() {
       if (prc > 0) {
         if (versionFiche > 3.5) {
           setFicheAttr(perso, 'pr', prc - 1, evt, {
-            maxVal: attrPR[0].get('max')
+            maxval: attrPR[0].get('max')
           });
           removeTokenAttr(perso, 'pointsDeRecuperation', evt);
         } else {
@@ -11744,7 +11753,7 @@ var COFantasy = COFantasy || function() {
       if (prc < prmax) {
         if (versionFiche > 3.5) {
           setFicheAttr(perso, 'pr', prc + 1, evt, {
-            maxVal: prmax
+            maxval: prmax
           });
           removeTokenAttr(perso, 'pointsDeRecuperation', evt);
         } else {
@@ -11754,7 +11763,7 @@ var COFantasy = COFantasy || function() {
       }
       if (versionFiche > 3.5) {
         setFicheAttr(perso, 'pr', prc, evt, {
-          maxVal: prmax
+          maxval: prmax
         });
         removeTokenAttr(perso, 'pointsDeRecuperation', evt);
       }
@@ -12336,7 +12345,7 @@ var COFantasy = COFantasy || function() {
     //Les plantes médicinales
     attrs = removeAllAttributes('dose_Plante médicinale', evt, attrs);
     //On pourrait diviser par 2 le nombre de baies
-    //var attrsBaie = allAttributesNamed(attrs, 'dose_baie_magique');
+    //var attrsBaie = allAttributesNamed(attrs, 'dose_Baie_magique');
     //Saves journaliers
     var attrsSave = attrs.filter(function(attr) {
       var attrName = attr.get('name');
@@ -12531,7 +12540,9 @@ var COFantasy = COFantasy || function() {
       var estPNJ = persoEstPNJ(perso);
       var estMook = token.get("bar1_link") === '';
       var nameAttrDMTEMP = 'DMTEMP';
-      if (estPNJ && !estMook) nameAttrDMTEMP = 'pnj_dmtemp';
+      var versionFiche = parseFloat(ficheAttribute(perso, 'version', 0));
+      if (isNaN(versionFiche)) versionFiche = 0;
+      if (estPNJ && !estMook && versionFiche < 3.7) nameAttrDMTEMP = 'pnj_dmtemp';
       if (manaAttr.length > 0) { // Récupération des points de mana
         var manaMax = parseInt(manaAttr[0].get('max'));
         hasMana = !isNaN(manaMax) && manaMax > 0;
@@ -14675,7 +14686,9 @@ var COFantasy = COFantasy || function() {
           addLineToFramedDisplay(display, line);
         } else if (lie) {
           var nameAttrDMTEMP = 'DMTEMP';
-          if (estPNJ) nameAttrDMTEMP = 'pnj_dmtemp';
+          var versionFiche = parseFloat(ficheAttribute(perso, 'version', 0));
+          if (isNaN(versionFiche)) versionFiche = 0;
+          if (estPNJ && versionFiche < 3.7) nameAttrDMTEMP = 'pnj_dmtemp';
           dmTemp = ficheAttributeAsInt(perso, nameAttrDMTEMP, 0);
         }
         if (!isNaN(dmTemp) && dmTemp > 0) {
@@ -18087,18 +18100,21 @@ var COFantasy = COFantasy || function() {
         if (voieDeLaSurvie < 1) {
           sendChar(charId, " ne connaît pas la Voie de la Survie ?");
         }
+        var trouveBaies = charAttributeAsBool(lanceur, 'natureNourriciereBaies');
+
         var duree = rollDePlus(6);
-        var output =
-          "cherche des herbes. Après " + duree.roll + " heures, " +
+        var attrName = 'dose_Plante médicinale';
+        var output = "cherche des herbes. ";
+        if (trouveBaies) output = "cherche des baies. ";
+        output += "Après " + duree.roll + " heures, " +
           onGenre(lanceur, "il", "elle");
         var evt = {
           type: "recherche d'herbes"
         };
         testCaracteristique(lanceur, 'SAG', 10, 'natureNourriciere', {}, evt,
           function(testRes) {
-            if (testRes.reussite) {
+            if ((testRes.reussite && !trouveBaies) || (trouveBaies && !testRes.reussite && testRes.valeur > 7)) {
               if (voieDeLaSurvie > 0) {
-                var attrName = 'dose_Plante médicinale';
                 setTokenAttr(lanceur, attrName, voieDeLaSurvie, evt, {
                   maxval: "!cof-soin @{selected|token_id} @{selected|token_id} 1D6"
                 });
@@ -18106,10 +18122,38 @@ var COFantasy = COFantasy || function() {
               } else {
                 output += " revient avec de quoi soigner les blessés.";
               }
+            } else if (testRes.reussite && trouveBaies) {
+              attrName = 'dose_Baie_magique';
+              var niveau = ficheAttributeAsInt(lanceur, 'niveau', 1);
+              var actionBaies = "!cof-consommer-baie " + niveau + " --limiteParJour 1 baieMagique";
+              var nbBaies = voieDeLaSurvie + Math.floor((testRes.valeur - 10) / 2);
+              if (nbBaies === 0) nbBaies = 1;
+              output += " revient avec " + nbBaies + " baies magiques.";
+              var baies = tokenAttribute(lanceur, attrName);
+              if (baies.length > 0) {
+                baies = baies[0];
+                var bd = parseInt(baies.get('current'));
+                if (!isNaN(bd) && bd > 0) nbBaies += bd;
+                evt.attributes = evt.attributes || [];
+                evt.attributes.add({
+                  attribute: baies,
+                  current: bd,
+                  max: baies.get('max')
+                });
+                baies.set({
+                  current: nbBaies,
+                  max: actionBaies
+                });
+              } else {
+                setTokenAttr(lanceur, attrName, nbBaies, evt, {
+                  maxval: actionBaies
+                });
+              }
             } else {
               //TODO: ajouter la possibilité d'utiliser un point de chance
               output += " revient bredouille.";
             }
+            output += "(test de SAG:"+testRes.texte+")";
             sendChar(charId, output);
             addEvent(evt);
           });
@@ -18538,7 +18582,7 @@ var COFantasy = COFantasy || function() {
       var display = startFramedDisplay(playerId, action, druide);
       iterSelected(selected, function(perso) {
         var nom = perso.token.get('name');
-        var baie = tokenAttribute(perso, 'dose_baie_magique');
+        var baie = tokenAttribute(perso, 'dose_Baie_magique');
         var nbBaies = 1;
         if (baie.length > 0) {
           var actionAncienne = baie[0].get('max');
@@ -18554,7 +18598,7 @@ var COFantasy = COFantasy || function() {
             nbBaies++;
           }
         }
-        setTokenAttr(perso, 'dose_baie_magique', nbBaies, evt, {
+        setTokenAttr(perso, 'dose_Baie_magique', nbBaies, evt, {
           maxval: mangerBaie
         });
         var line = nom + " reçoit une baie";
@@ -19319,7 +19363,7 @@ var COFantasy = COFantasy || function() {
             attBonus += modCarac(guerrier, 'SAGESSE');
             attBonus += ficheAttributeAsInt(guerrier, 'ATKMAG_DIV', 0);
           } else {
-            attBonus += modCarac(guerrier, 'FORCE');
+            attBonus += modCarac(guerrier, 'force');
             attBonus += ficheAttributeAsInt(guerrier, 'ATKCAC_DIV', 0);
           }
           totalAbsorbe += attBonus;
@@ -21398,7 +21442,7 @@ var COFantasy = COFantasy || function() {
       attributesFiche: {
         type_personnage: 'PNJ',
         niveau: niveau,
-        FORCE: 18,
+        force: 18,
         pnj_for: 4,
         DEXTERITE: 7,
         pnj_dex: -2,
@@ -22258,13 +22302,13 @@ var COFantasy = COFantasy || function() {
     });
     var attrVersion =
       attrs.find(function(a) {
-        return a.get('name') == 'version';
+        return a.get('name').toLowerCase() == 'version';
       });
     if (!attrVersion) {
       createObj('attribute', {
         _characterid: charId,
         name: 'version',
-        current: '3.5'
+        current: '3.6'
       });
     }
     var pnj = true;
@@ -22312,7 +22356,7 @@ var COFantasy = COFantasy || function() {
       }
       if (pnj) {
         pvAttr = attrs.filter(function(a) {
-          return a.get('name').toUpperCase() == 'pnj_pv';
+          return a.get('name').toLowerCase() == 'pnj_pv';
         });
         if (pvAttr.length === 0) {
           pvAttr = createObj('attribute', {
@@ -22394,7 +22438,7 @@ var COFantasy = COFantasy || function() {
       attributesFiche: {
         type_personnage: 'PNJ',
         niveau: 1,
-        FORCE: 12,
+        force: 12,
         pnj_for: 1,
         DEXTERITE: 12,
         pnj_dex: 1,
@@ -22434,7 +22478,7 @@ var COFantasy = COFantasy || function() {
       attributesFiche: {
         type_personnage: 'PNJ',
         niveau: 2,
-        FORCE: 16,
+        force: 16,
         pnj_for: 3,
         DEXTERITE: 12,
         pnj_dex: 1,
@@ -22484,7 +22528,7 @@ var COFantasy = COFantasy || function() {
       attributesFiche: {
         type_personnage: 'PNJ',
         niveau: 3,
-        FORCE: 16,
+        force: 16,
         pnj_for: 3,
         DEXTERITE: 12,
         pnj_dex: 1,
@@ -22534,7 +22578,7 @@ var COFantasy = COFantasy || function() {
       attributesFiche: {
         type_personnage: 'PNJ',
         niveau: 4,
-        FORCE: 20,
+        force: 20,
         pnj_for: 5,
         DEXTERITE: 18,
         pnj_dex: 4,
@@ -22587,7 +22631,7 @@ var COFantasy = COFantasy || function() {
       attributesFiche: {
         type_personnage: 'PNJ',
         niveau: 5,
-        FORCE: 22,
+        force: 22,
         pnj_for: 6,
         DEXTERITE: 18,
         pnj_dex: 3,
@@ -22639,7 +22683,7 @@ var COFantasy = COFantasy || function() {
       attributesFiche: {
         type_personnage: 'PNJ',
         niveau: 6,
-        FORCE: 26,
+        force: 26,
         pnj_for: 8,
         FOR_SUP: '@{jetsup}',
         pnj_for_sup: 'on',
@@ -22685,7 +22729,7 @@ var COFantasy = COFantasy || function() {
       attributesFiche: {
         type_personnage: 'PNJ',
         niveau: 7,
-        FORCE: 26,
+        force: 26,
         pnj_for: 8,
         FOR_SUP: '@{jetsup}',
         pnj_for_sup: 'on',
@@ -22739,7 +22783,7 @@ var COFantasy = COFantasy || function() {
       attributesFiche: {
         type_personnage: 'PNJ',
         niveau: 8,
-        FORCE: 32,
+        force: 32,
         pnj_for: 11,
         DEXTERITE: 10,
         pnj_dex: 0,
@@ -23675,7 +23719,7 @@ var COFantasy = COFantasy || function() {
       etreinte = true;
     }
     //Choix de la caractéristique pour résister : FOR ou DEX
-    var caracRes = meilleureCarac('FOR', 'DEX', cible, 10 + modCarac(cube, 'FORCE'));
+    var caracRes = meilleureCarac('FOR', 'DEX', cible, 10 + modCarac(cube, 'force'));
     var titre = 'Enveloppement';
     if (etreinte) titre = 'Étreinte';
     var display = startFramedDisplay(options.playerId, titre, cube, {
@@ -27513,7 +27557,9 @@ on('ready', function() {
       }
       var cid = a.get('characterid');
       var attrRD = 'RDS';
-      if (getAttrByName(cid, 'type_personnage') == 'PNJ') attrRD = 'pnj_rd';
+      var versionFiche = parseFloat(getAttrByName(cid, 'version'));
+      if (isNaN(versionFiche)) versionFiche = 0;
+      if (versionFiche < 3.7 && getAttrByName(cid, 'type_personnage') == 'PNJ') attrRD = 'pnj_rd';
       var attrRDS = findObjs({
         _type: 'attribute',
         _characterid: cid,
@@ -27575,7 +27621,7 @@ on('ready', function() {
     });
     log("Mise à jour des ability & macros !cof-lancer-sort effectuée");
   }
-  //Penser à enlever les attributs pointsDeRecuperation et PR1-PR5 à la prochaine version
+  //Penser à enlever les attributs pointsDeRecuperation et PR1-PR5 à la prochaine version. Puis pnj_pv, pnj_dmtemp et pnj_rd.
   state.COFantasy.version = scriptVersion;
   if (state.COFantasy.options.affichage.val.fiche.val) {
     if (!state.COFantasy.scriptSheets) {
