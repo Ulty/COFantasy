@@ -665,7 +665,7 @@ var COFantasy = COFantasy || function() {
     var token = personnage.token;
     if (token) {
       var link = token.get('bar1_link');
-      if (link === "") name += "_" + token.get('name');
+      if (link === '') name += "_" + token.get('name');
     }
     return findObjs({
       _type: 'attribute',
@@ -1862,12 +1862,39 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function PNJCaracOfMod(m) {
+    return 'pnj_' + m.toLowerCase();
+  }
+
   //Retourne le mod de la caractéristque entière.
   //si carac n'est pas une carac, retourne 0
   function modCarac(perso, carac) {
     if (perso.charId === undefined) perso = {
       charId: perso
     };
+    if (persoEstPNJ(perso)) {
+      switch (carac) {
+        case 'force':
+        case 'FORCE':
+          return ficheAttributeAsInt(perso, 'pnj_for', 0);
+        case 'dexterite':
+        case 'DEXTERITE':
+          return ficheAttributeAsInt(perso, 'pnj_dex', 0);
+        case 'constitution':
+        case 'CONSTITUTION':
+          return ficheAttributeAsInt(perso, 'pnj_con', 0);
+        case 'intelligence':
+        case 'INTELLIGENCE':
+          return ficheAttributeAsInt(perso, 'pnj_int', 0);
+        case 'sagesse':
+        case 'SAGESSE':
+          return ficheAttributeAsInt(perso, 'pnj_sag', 0);
+        case 'charisme':
+        case 'CHARISME':
+          return ficheAttributeAsInt(perso, 'pnj_cha', 0);
+      }
+      return 0;
+    }
     var res = Math.floor((ficheAttributeAsInt(perso, carac, 10) - 10) / 2);
     if ((carac == 'force' || carac == 'FORCE') && attributeAsBool(perso, 'mutationMusclesHypertrophies')) res += 2;
     else if (carac == 'DEXTERITE' && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) res += 4;
@@ -2389,19 +2416,29 @@ var COFantasy = COFantasy || function() {
           bar3_info = '';
         if (chuchote && peutController(playerId, perso1)) {
           // on chuchote donc on peut afficher les informations concernant les barres du Token
-          if (perso1.token.get('bar1_link').length > 0) {
+          if (perso1.token.get('bar1_link') === '') {
+            bar1_info = '<b>PV</b> : ' + perso1.token.get('bar1_value') + ' / ' + perso1.token.get('bar1_max');
+          } else {
             var bar1 = findObjs({
               _type: 'attribute',
               _id: perso1.token.get('bar1_link')
             });
-            if (bar1[0] !== undefined) bar1_info = '<b>' + bar1[0].get('name') + '</b> : ' + bar1[0].get('current') + ' / ' + bar1[0].get('max') + '';
+            if (bar1 && bar1.length > 0)
+              bar1_info = '<b>' + bar1[0].get('name') + '</b> : ' + bar1[0].get('current') + ' / ' + bar1[0].get('max') + '';
           }
-          if (perso1.token.get('bar2_link').length > 0) {
+          if (perso1.token.get('bar2_link') === '') {
+            var dmTemp = perso1.token.get('bar2_value');
+            if (dmTemp !== '') {
+              dmTemp = parseInt(dmTemp);
+              if (!isNaN(dmTemp) && dmTemp > 0)
+                bar2_info = '<b>DM temp</b> : ' + dmTemp;
+            }
+          } else {
             var bar2 = findObjs({
               _type: 'attribute',
               _id: perso1.token.get('bar2_link')
             });
-            if (bar2[0] !== undefined) bar2_info = '<b>' + bar2[0].get('name') + '</b> : ' + bar2[0].get('current') + ' / ' + bar2[0].get('max') + '';
+            if (bar2 && bar2.length > 0) bar2_info = '<b>' + bar2[0].get('name') + '</b> : ' + bar2[0].get('current') + ' / ' + bar2[0].get('max') + '';
           }
           if (perso1.token.get('bar3_link').length > 0) {
             var bar3 = findObjs({
@@ -2515,6 +2552,196 @@ var COFantasy = COFantasy || function() {
     res += '</div>'; // line_content
     res += '</div>'; // all_content
     return res;
+  }
+
+  //retourne un entier
+  // evt n'est défini que si la caractéristique est effectivement utlilisée
+  function bonusTestCarac(carac, personnage, options, evt, explications) {
+    var expliquer = function(msg) {
+      if (explications) explications.push(msg);
+    };
+    var bonus = 0;
+    if (persoEstPNJ(personnage)) {
+      bonus = ficheAttributeAsInt(personnage, PNJCaracOfMod(carac), 0);
+    } else {
+      bonus = modCarac(personnage, caracOfMod(carac));
+      bonus += ficheAttributeAsInt(personnage, carac + "_BONUS", 0);
+    }
+    expliquer("Bonus de " + carac + " : " + bonus);
+    if (attributeAsBool(personnage, 'chantDesHeros')) {
+      var bonusChantDesHeros = getValeurOfEffet(personnage, 'chantDesHeros', 1);
+      var chantDesHerosIntense = attributeAsInt(personnage, 'chantDesHerosTempeteDeManaIntense', 0);
+      bonusChantDesHeros += chantDesHerosIntense;
+      expliquer("Chant des héros : +" + bonusChantDesHeros + " au jet");
+      bonus += bonusChantDesHeros;
+      if (chantDesHerosIntense && evt)
+        removeTokenAttr(personnage, 'chantDesHerosTempeteDeManaIntense', evt);
+    }
+    if (attributeAsBool(personnage, 'benediction')) {
+      var bonusBenediction = getValeurOfEffet(personnage, 'benediction', 1);
+      var benedictionIntense = attributeAsInt(personnage, 'benedictionTempeteDeManaIntense', 0);
+      bonusBenediction += benedictionIntense;
+      expliquer("Bénédiction : +" + bonusBenediction + " au jet");
+      bonus += bonusBenediction;
+      if (benedictionIntense && evt)
+        removeTokenAttr(personnage, 'benedictionTempeteDeManaIntense', evt);
+    }
+    if (attributeAsBool(personnage, 'lameDeLigneePerdue')) {
+      expliquer("Lame de lignée perdue : -1 au jet");
+      bonus -= 1;
+    }
+    if (attributeAsBool(personnage, 'strangulation')) {
+      var malusStrangulation =
+        1 + attributeAsInt(personnage, 'dureeStrangulation', 0);
+      expliquer("Strangulation : -" + malusStrangulation + " au jet");
+      bonus -= malusStrangulation;
+    }
+    if (attributeAsBool(personnage, 'nueeDInsectes')) {
+      var malusNuee = 2 + attributeAsInt(personnage, 'nueeDInsectesTempeteDeManaIntense', 0);
+      expliquer("Nuée d'insectes : -" + malusNuee + " au jet");
+      bonus -= malusNuee;
+      if (malusNuee > 2 && evt)
+        removeTokenAttr(personnage, 'nueeDInsectesTempeteDeManaIntense', evt);
+    }
+    if (attributeAsBool(personnage, 'etatExsangue')) {
+      expliquer("Exsangue : -2 au jet");
+      bonus -= 2;
+    }
+    if (attributeAsBool(personnage, 'putrefactionOutrTombe')) {
+      expliquer("Putréfié : -2 au jet");
+      bonus -= 2;
+    }
+    var fortifie = attributeAsInt(personnage, 'fortifie', 0);
+    if (fortifie > 0) {
+      expliquer("Fortifié : +3 au jet");
+      bonus += 3;
+      if (evt) {
+        fortifie--;
+        if (fortifie === 0) {
+          removeTokenAttr(personnage, 'fortifie', evt);
+        } else {
+          setTokenAttr(personnage, 'fortifie', fortifie, evt);
+        }
+      }
+    }
+    var bonusAspectDuDemon;
+    switch (carac) {
+      case 'DEX':
+        var malusArmure = 0;
+        if (ficheAttributeAsInt(personnage, 'DEFARMUREON', 1))
+          malusArmure += ficheAttributeAsInt(personnage, 'DEFARMUREMALUS', 0);
+        if (ficheAttributeAsInt(personnage, 'DEFBOUCLIERON', 1))
+          malusArmure += ficheAttributeAsInt(personnage, 'DEFBOUCLIERMALUS', 0);
+        if (malusArmure > 0) {
+          expliquer("Armure : -" + malusArmure + " au jet de DEX");
+          bonus -= malusArmure;
+        }
+        if (attributeAsBool(personnage, 'agrandissement')) {
+          expliquer("Agrandi : -2 au jet de DEX");
+          bonus -= 2;
+        }
+        if (attributeAsBool(personnage, 'aspectDuDemon')) {
+          bonusAspectDuDemon = getValeurOfEffet(personnage, 'aspectDuDemon', 2);
+          expliquer("Aspect du démon : +" + bonusAspectDuDemon + " au jet de DEX");
+          bonus += bonusAspectDuDemon;
+        }
+        break;
+      case 'FOR':
+        if (attributeAsBool(personnage, 'rayonAffaiblissant')) {
+          var malusRayonAffaiblissant = getValeurOfEffet(personnage, 'rayonAffaiblissant', 2);
+          expliquer("Affaibli : -" + malusRayonAffaiblissant + " au jet de FOR");
+          bonus -= malusRayonAffaiblissant;
+        }
+        if (attributeAsBool(personnage, 'agrandissement')) {
+          expliquer("Agrandi : +2 au jet de FOR");
+          bonus += 2;
+        }
+        if (attributeAsBool(personnage, 'aspectDuDemon')) {
+          bonusAspectDuDemon = getValeurOfEffet(personnage, 'aspectDuDemon', 2);
+          expliquer("Aspect du démon : +" + bonusAspectDuDemon + " au jet de FOR");
+          bonus += bonusAspectDuDemon;
+        }
+        break;
+      case 'CHA':
+        if (attributeAsBool(personnage, 'aspectDeLaSuccube')) {
+          var bonusAspectDeLaSuccube = getValeurOfEffet(personnage, 'aspectDeLaSuccube', 5);
+          expliquer("Aspect de la succube : +" + bonusAspectDeLaSuccube + " au jet de CHA");
+          bonus += bonusAspectDeLaSuccube;
+        }
+        break;
+      case 'CON':
+        if (attributeAsBool(personnage, 'mutationSilhouetteMassive')) {
+          expliquer("Silhouette massive : +5 au jet de CON");
+          bonus += 5;
+        }
+        if (charAttributeAsBool(personnage, 'controleDuMetabolisme')) {
+          var modCha = modCarac(personnage, 'CHARISME');
+          if (modCha > 0) {
+            expliquer("Controle du métabolisme : +" + modCha + " au jet de CON");
+            bonus += modCha;
+          }
+        }
+        if (attributeAsBool(personnage, 'aspectDuDemon')) {
+          bonusAspectDuDemon = getValeurOfEffet(personnage, 'aspectDuDemon', 2);
+          expliquer("Aspect du démon : +" + bonusAspectDuDemon + " au jet de CON");
+          bonus += bonusAspectDuDemon;
+        }
+        break;
+    }
+    if (options) {
+      if (options.bonus) bonus += options.bonus;
+      var malusCasque = false;
+      if (options.bonusAttrs) {
+        options.bonusAttrs.forEach(function(attr) {
+          var bonusAttribut = charAttributeAsInt(personnage, attr, 0);
+          switch (attr) {
+            case 'perception':
+              malusCasque = true;
+              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+                expliquer("Forêt hostile : -5 en perception");
+                bonus -= 5;
+              }
+              break;
+            case 'survie':
+              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+                expliquer("Forêt hostile : -5 en survie");
+                bonus -= 5;
+              }
+              break;
+            case 'orientation':
+              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+                expliquer("Forêt hostile : -5 en orientation");
+                bonusAttribut -= 5;
+              }
+              break;
+            case 'discrétion':
+            case 'discretion':
+              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+                expliquer("Forêt hostile : -5 en discrétion");
+                bonus -= 5;
+              }
+              break;
+            case 'vigilance':
+              malusCasque = true;
+              break;
+          }
+          if (bonusAttribut !== 0) {
+            expliquer("Attribut " + attr + " : " + ((bonusAttribut < 0) ? "-" : "+") + bonusAttribut);
+            bonus += bonusAttribut;
+          }
+        });
+      }
+      if (malusCasque && ficheAttributeAsBool(personnage, 'casque_on', false)) {
+        malusCasque = ficheAttributeAsInt(personnage, 'casque_malus', 0);
+        if (malusCasque > 0) {
+          expliquer("Malus de casque : -" + malusCasque);
+          bonus -= malusCasque;
+        }
+      }
+    }
+    //Pas besoin de mettre la valeur de caractéristique si c'est le seul bonus
+    if (explications && explications.length == 1) explications.pop();
+    return bonus;
   }
 
   // Test de caractéristique
@@ -4748,7 +4975,7 @@ var COFantasy = COFantasy || function() {
       hasMana = !isNaN(manaMax) && manaMax > 0;
     }
     if (hasMana) {
-      var bar2 = parseInt(token.get("bar2_value"));
+      var bar2 = parseInt(token.get('bar2_value'));
       if (isNaN(bar2)) {
         if (token.get('bar1_link') === '') bar2 = 0;
         else { //devrait être lié à la mana courante
@@ -4847,8 +5074,17 @@ var COFantasy = COFantasy || function() {
       case "moins":
         // Au cas où on utilise les MOD au lieu de l'attribut de base:
         var attribute = caracOfMod(cond.attribute);
-        if (attribute) cond.attribute = attribute;
-        var attackerAttr = charAttributeAsInt(attaquant, cond.attribute, 0);
+        var attackerAttr = 0;
+        if (attribute) {
+          if (persoEstPNJ(attaquant)) {
+            cond.attribute = PNJCaracOfMod(cond.attribute);
+          } else {
+            cond.attribute = attribute;
+          }
+          attackerAttr = ficheAttributeAsInt(attaquant, cond.attribute, 0);
+        } else {
+          attackerAttr = charAttributeAsInt(attaquant, cond.attribute, 0);
+        }
         var resMoins = true;
         cibles.forEach(function(target) {
           if (resMoins) {
@@ -5935,7 +6171,7 @@ var COFantasy = COFantasy || function() {
       if (ficheAttributeAsBool(attaquant, 'attaque_dm_temp_check')) {
         options.attaqueDmTemp = true;
       }
-      if (options.attaqueDmTemp && !options.tempDmg && !options.sortilege) {
+      if (options.attaqueDmTemp && !options.tempDmg && !options.sortilege && (options.contact || !options.percant)) {
         options.tempDmg = true;
         if (!options.choc) {
           attBonus -= 2;
@@ -7114,7 +7350,9 @@ var COFantasy = COFantasy || function() {
         //pas empêcher le bonus de +5 à l'attaque.
         testOppose(attaquant, "DEX", {
           bonusAttrs: ["discrétion"]
-        }, cible, "SAG", {}, cible.messages, evt, function(resultat) {
+        }, cible, "SAG", {
+          bonusAttrs: ["vigilance"]
+        }, cible.messages, evt, function(resultat) {
           if (resultat != 2) {
             cible.messages.push(attaquant.tokName + " réapparait à côté de " + cible.tokName + " et lui porte une attaque mortelle !");
             // rajout des bonus de sournoise
@@ -9589,7 +9827,7 @@ var COFantasy = COFantasy || function() {
         if (attributeAsBool(perso, 'petitVeinard')) {
           addLineToFramedDisplay(display, boutonSimple("!cof-petit-veinard --target" + perso.token.id, "Petit veinard") + " pour relancer un dé");
         }
-        //Possibilité d'annuler l'attaque
+        //Possibilités d'annuler l'attaque
         if (evt.action.options && !evt.action.options.auto) {
           //Seulement si elle n'est pas automatiquement réussie
           var sort = false;
@@ -15093,191 +15331,6 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  //retourne un entier
-  // evt n'est défini que si la caractéristique est effectivement utlilisée
-  function bonusTestCarac(carac, personnage, options, evt, explications) {
-    var expliquer = function(msg) {
-      if (explications) explications.push(msg);
-    };
-    var bonus = modCarac(personnage, caracOfMod(carac));
-    bonus += ficheAttributeAsInt(personnage, carac + "_BONUS", 0);
-    expliquer("Bonus de " + carac + " : " + bonus);
-    if (attributeAsBool(personnage, 'chantDesHeros')) {
-      var bonusChantDesHeros = getValeurOfEffet(personnage, 'chantDesHeros', 1);
-      var chantDesHerosIntense = attributeAsInt(personnage, 'chantDesHerosTempeteDeManaIntense', 0);
-      bonusChantDesHeros += chantDesHerosIntense;
-      expliquer("Chant des héros : +" + bonusChantDesHeros + " au jet");
-      bonus += bonusChantDesHeros;
-      if (chantDesHerosIntense && evt)
-        removeTokenAttr(personnage, 'chantDesHerosTempeteDeManaIntense', evt);
-    }
-    if (attributeAsBool(personnage, 'benediction')) {
-      var bonusBenediction = getValeurOfEffet(personnage, 'benediction', 1);
-      var benedictionIntense = attributeAsInt(personnage, 'benedictionTempeteDeManaIntense', 0);
-      bonusBenediction += benedictionIntense;
-      expliquer("Bénédiction : +" + bonusBenediction + " au jet");
-      bonus += bonusBenediction;
-      if (benedictionIntense && evt)
-        removeTokenAttr(personnage, 'benedictionTempeteDeManaIntense', evt);
-    }
-    if (attributeAsBool(personnage, 'lameDeLigneePerdue')) {
-      expliquer("Lame de lignée perdue : -1 au jet");
-      bonus -= 1;
-    }
-    if (attributeAsBool(personnage, 'strangulation')) {
-      var malusStrangulation =
-        1 + attributeAsInt(personnage, 'dureeStrangulation', 0);
-      expliquer("Strangulation : -" + malusStrangulation + " au jet");
-      bonus -= malusStrangulation;
-    }
-    if (attributeAsBool(personnage, 'nueeDInsectes')) {
-      var malusNuee = 2 + attributeAsInt(personnage, 'nueeDInsectesTempeteDeManaIntense', 0);
-      expliquer("Nuée d'insectes : -" + malusNuee + " au jet");
-      bonus -= malusNuee;
-      if (malusNuee > 2 && evt)
-        removeTokenAttr(personnage, 'nueeDInsectesTempeteDeManaIntense', evt);
-    }
-    if (attributeAsBool(personnage, 'etatExsangue')) {
-      expliquer("Exsangue : -2 au jet");
-      bonus -= 2;
-    }
-    if (attributeAsBool(personnage, 'putrefactionOutrTombe')) {
-      expliquer("Putréfié : -2 au jet");
-      bonus -= 2;
-    }
-    var fortifie = attributeAsInt(personnage, 'fortifie', 0);
-    if (fortifie > 0) {
-      expliquer("Fortifié : +3 au jet");
-      bonus += 3;
-      if (evt) {
-        fortifie--;
-        if (fortifie === 0) {
-          removeTokenAttr(personnage, 'fortifie', evt);
-        } else {
-          setTokenAttr(personnage, 'fortifie', fortifie, evt);
-        }
-      }
-    }
-    var bonusAspectDuDemon;
-    switch (carac) {
-      case 'DEX':
-        var malusArmure = 0;
-        if (ficheAttributeAsInt(personnage, 'DEFARMUREON', 1))
-          malusArmure += ficheAttributeAsInt(personnage, 'DEFARMUREMALUS', 0);
-        if (ficheAttributeAsInt(personnage, 'DEFBOUCLIERON', 1))
-          malusArmure += ficheAttributeAsInt(personnage, 'DEFBOUCLIERMALUS', 0);
-        if (malusArmure > 0) {
-          expliquer("Armure : -" + malusArmure + " au jet de DEX");
-          bonus -= malusArmure;
-        }
-        if (attributeAsBool(personnage, 'agrandissement')) {
-          expliquer("Agrandi : -2 au jet de DEX");
-          bonus -= 2;
-        }
-        if (attributeAsBool(personnage, 'aspectDuDemon')) {
-          bonusAspectDuDemon = getValeurOfEffet(personnage, 'aspectDuDemon', 2);
-          expliquer("Aspect du démon : +" + bonusAspectDuDemon + " au jet de DEX");
-          bonus += bonusAspectDuDemon;
-        }
-        break;
-      case 'FOR':
-        if (attributeAsBool(personnage, 'rayonAffaiblissant')) {
-          var malusRayonAffaiblissant = getValeurOfEffet(personnage, 'rayonAffaiblissant', 2);
-          expliquer("Affaibli : -" + malusRayonAffaiblissant + " au jet de FOR");
-          bonus -= malusRayonAffaiblissant;
-        }
-        if (attributeAsBool(personnage, 'agrandissement')) {
-          expliquer("Agrandi : +2 au jet de FOR");
-          bonus += 2;
-        }
-        if (attributeAsBool(personnage, 'aspectDuDemon')) {
-          bonusAspectDuDemon = getValeurOfEffet(personnage, 'aspectDuDemon', 2);
-          expliquer("Aspect du démon : +" + bonusAspectDuDemon + " au jet de FOR");
-          bonus += bonusAspectDuDemon;
-        }
-        break;
-      case 'CHA':
-        if (attributeAsBool(personnage, 'aspectDeLaSuccube')) {
-          var bonusAspectDeLaSuccube = getValeurOfEffet(personnage, 'aspectDeLaSuccube', 5);
-          expliquer("Aspect de la succube : +" + bonusAspectDeLaSuccube + " au jet de CHA");
-          bonus += bonusAspectDeLaSuccube;
-        }
-        break;
-      case 'CON':
-        if (attributeAsBool(personnage, 'mutationSilhouetteMassive')) {
-          expliquer("Silhouette massive : +5 au jet de CON");
-          bonus += 5;
-        }
-        if (charAttributeAsBool(personnage, 'controleDuMetabolisme')) {
-          var modCha = modCarac(personnage, 'CHARISME');
-          if (modCha > 0) {
-            expliquer("Controle du métabolisme : +" + modCha + " au jet de CON");
-            bonus += modCha;
-          }
-        }
-        if (attributeAsBool(personnage, 'aspectDuDemon')) {
-          bonusAspectDuDemon = getValeurOfEffet(personnage, 'aspectDuDemon', 2);
-          expliquer("Aspect du démon : +" + bonusAspectDuDemon + " au jet de CON");
-          bonus += bonusAspectDuDemon;
-        }
-        break;
-    }
-    if (options) {
-      if (options.bonus) bonus += options.bonus;
-      var malusCasque = false;
-      if (options.bonusAttrs) {
-        options.bonusAttrs.forEach(function(attr) {
-          var bonusAttribut = charAttributeAsInt(personnage, attr, 0);
-          switch (attr) {
-            case 'perception':
-              malusCasque = true;
-              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-                expliquer("Forêt hostile : -5 en perception");
-                bonus -= 5;
-              }
-              break;
-            case 'survie':
-              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-                expliquer("Forêt hostile : -5 en survie");
-                bonus -= 5;
-              }
-              break;
-            case 'orientation':
-              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-                expliquer("Forêt hostile : -5 en orientation");
-                bonusAttribut -= 5;
-              }
-              break;
-            case 'discrétion':
-            case 'discretion':
-              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-                expliquer("Forêt hostile : -5 en discrétion");
-                bonus -= 5;
-              }
-              break;
-            case 'vigilance':
-              malusCasque = true;
-              break;
-          }
-          if (bonusAttribut !== 0) {
-            expliquer("Attribut " + attr + " : " + ((bonusAttribut < 0) ? "-" : "+") + bonusAttribut);
-            bonus += bonusAttribut;
-          }
-        });
-      }
-      if (malusCasque && ficheAttributeAsBool(personnage, 'casque_on', false)) {
-        malusCasque = ficheAttributeAsInt(personnage, 'casque_malus', 0);
-        if (malusCasque > 0) {
-          expliquer("Malus de casque : -" + malusCasque);
-          bonus -= malusCasque;
-        }
-      }
-    }
-    //Pas besoin de mettre la valeur de caractéristique si c'est le seul bonus
-    if (explications && explications.length == 1) explications.pop();
-    return bonus;
-  }
-
   function deTest(personnage, carac) {
     var dice = 20;
     if (estAffaibli(personnage) || getState(personnage, 'immobilise') ||
@@ -19224,7 +19277,10 @@ var COFantasy = COFantasy || function() {
               function(dmgDisplay, dmg) {
                 var dmgMsg = "mais cela lui coûte " + dmgDisplay + " PV";
                 addLineToFramedDisplay(display, dmgMsg);
-                finaliseDisplay(display, explications, evt);
+                explications.forEach(function(expl) {
+                  addLineToFramedDisplay(display, expl, 80);
+                });
+                sendChat('', endFramedDisplay(display));
                 addEvent(evt);
               });
           });
@@ -20446,7 +20502,9 @@ var COFantasy = COFantasy || function() {
           explications.push(m);
         });
         explications.push("Jet de " + carac2 + " de " + nom2 + " :" + rt2.texte);
-        expl2.forEach(explications.push);
+        expl2.forEach(function(m) {
+          explications.push(m);
+        });
         var reussite;
         var crit = 0;
         if (rt1.total > rt2.total) reussite = 1;
@@ -24312,6 +24370,8 @@ var COFantasy = COFantasy || function() {
             setFicheAttr(perso, 'attaque_dm_temp_check', 0, evt);
             adtc = false;
           }
+          turnAction(perso, playerId);
+          return;
         } else if (cmd.length > 2) {
           switch (cmd[1]) {
             case 'attaque_en_puissance_check':
@@ -24390,6 +24450,8 @@ var COFantasy = COFantasy || function() {
               error("Argument de !cof-options-d-attaque non reconnu", cmd);
               //Mais on peut quand même afficher les options
           }
+          turnAction(perso, playerId);
+          return;
         }
         var action;
         var title = "Options d'attaque";
