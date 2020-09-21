@@ -2789,7 +2789,13 @@ var COFantasy = COFantasy || function() {
       nbDe: carSup,
       carac: carac
     });
-    var rollExpr = "[[" + de + "cs20cf1]]";
+    var plageEC = 1;
+    var plageECText = '1';
+    if (options.plageEchecCritique) {
+      plageEC = options.plageEchecCritique;
+      if (plageEC > 1) plageECText = '<' + plageEC;
+    }
+    var rollExpr = "[[" + de + "cs20cf" + plageECText + "]]";
     try {
       sendChat("", rollExpr, function(res) {
         var roll = options.roll || res[0].inlinerolls[0];
@@ -2800,7 +2806,7 @@ var COFantasy = COFantasy || function() {
         if (d20roll == 20) {
           testRes.reussite = true;
           testRes.critique = true;
-        } else if (d20roll == 1) {
+        } else if (d20roll <= plageEC) {
           testRes.reussite = false;
           testRes.echecCritique = true;
           diminueMalediction(personnage, evt);
@@ -3454,6 +3460,17 @@ var COFantasy = COFantasy || function() {
         case 'competences':
           options[args[0]] = true;
           return;
+        case 'plageEchecCritique':
+          if (args.length < 2) {
+            error("Il manque un argument à l'option " + args[0], opts);
+            return;
+          }
+          var plageEC = parseInt(args[1]);
+          if (isNaN(plageEC) || plageEC < 0 || plageEC > 19) {
+            error("La plage d'échecs critqiques doit être un nombre positif inférieur à 19", opts);
+            return;
+          }
+          options.plageEchecCritique = plageEC;
       }
     });
     getSelected(msg, function(selected, playerId) {
@@ -11087,7 +11104,8 @@ var COFantasy = COFantasy || function() {
           InlineColorOverride = ' background-color: #FFFEA2; color: #000;';
         }
     }
-    var rollOut = '<span style="display: inline-block; border-radius: 5px; padding: 0 4px; ' + InlineColorOverride + '" title="' + inlineroll.expression + ' = ' + values.join("");
+    var expression = inlineroll.expression.replace(/=>|>=/, '&amp;ge;').replace(/>/, '&amp;gt;').replace(/<=|=</, '&amp;le;').replace(/</, '&amp;lt;');
+    var rollOut = '<span style="display: inline-block; border-radius: 5px; padding: 0 4px; ' + InlineColorOverride + '" title="' + expression + ' = ' + values.join("");
     rollOut += '" class="a inlinerollresult showtip tipsy-n';
     rollOut += (critCheck && failCheck) ? ' importantroll' : (critCheck ? ' fullcrit' : (failCheck ? ' fullfail' : ''));
     rollOut += '">' + inlineroll.results.total + '</span>';
@@ -11136,30 +11154,48 @@ var COFantasy = COFantasy || function() {
               critRoll = false;
               failRoll = false;
             } else {
-              if (_.has(roll, 'mods') && _.has(roll.mods, 'customCrit')) {
-                switch (roll.mods.customCrit[0].comp) {
-                  case '=':
-                  case '==':
-                    critRoll = (result.v == roll.mods.customCrit[0].point);
-                    break;
-                  case '>=':
-                  case '=>':
-                  case '>':
-                    critRoll = (result.v >= roll.mods.customCrit[0].point);
-                    break;
-                  default:
-                    critRoll =
-                      (highRoll !== false && result.v >= highRoll ||
-                        result.v === roll.sides);
+              if (roll.mods) {
+                if (roll.mods.customCrit && roll.mods.customCrit.length > 0) {
+                  switch (roll.mods.customCrit[0].comp) {
+                    case '=':
+                    case '==':
+                      critRoll = (result.v == roll.mods.customCrit[0].point);
+                      break;
+                    case '>=':
+                    case '=>':
+                    case '>':
+                      critRoll = (result.v >= roll.mods.customCrit[0].point);
+                      break;
+                    default:
+                      critRoll =
+                        (highRoll !== false && result.v >= highRoll ||
+                          result.v === roll.sides);
+                  }
+                }
+                if (!critRoll && roll.mods.customFumble && roll.mods.customFumble.length > 0) {
+                  switch (roll.mods.customFumble[0].comp) {
+                    case '=':
+                    case '==':
+                      failRoll = (result.v == roll.mods.customFumble[0].point);
+                      break;
+                    case '<=':
+                    case '=<':
+                    case '<':
+                      failRoll = (result.v <= roll.mods.customFumble[0].point);
+                      break;
+                    default:
+                      failRoll =
+                        (lowRoll !== false && result.v <= lowRoll || result.v === 1);
+                  }
                 }
               } else {
                 critRoll =
                   (highRoll !== false && result.v >= highRoll ||
                     result.v === roll.sides);
+                failRoll =
+                  (!critRoll &&
+                    (lowRoll !== false && result.v <= lowRoll || result.v === 1));
               }
-              failRoll =
-                (!critRoll &&
-                  (lowRoll !== false && result.v <= lowRoll || result.v === 1));
             }
             var rv = "<span class='basicdiceroll" + (critRoll ? ' critsuccess' : (failRoll ? ' critfail' : '')) + "'>" + result.v + "</span>";
             rollValues.push(rv);
@@ -15363,7 +15399,13 @@ var COFantasy = COFantasy || function() {
     } else if (bonusCarac < 0) {
       bonusText = ' - ' + (-bonusCarac);
     }
-    var rollExpr = "[[" + de + "cs20cf1" + "]]";
+    var plageEC = 1;
+    var plageECText = '1';
+    if (options && options.plageEchecCritique) {
+      plageEC = options.plageEchecCritique;
+      if (plageEC > 1) plageECText = '<' + plageEC;
+    }
+    var rollExpr = "[[" + de + "cs20cf" + plageECText + "]]";
     sendChat("", rollExpr, function(res) {
       var rolls = res[0];
       var d20roll = rolls.inlinerolls[0].results.total;
@@ -15371,7 +15413,7 @@ var COFantasy = COFantasy || function() {
       var rt = {
         total: d20roll + bonusCarac
       };
-      if (d20roll == 1) {
+      if (d20roll <= plageEC) {
         rtext += " -> échec critique";
         rt.echecCritique = true;
       } else if (d20roll == 20) {
