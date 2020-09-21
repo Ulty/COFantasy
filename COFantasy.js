@@ -11734,7 +11734,7 @@ var COFantasy = COFantasy || function() {
       sendChat("COF", "Plus de point de récupération à enlever");
       return;
     }
-    evt.attributes.add({
+    evt.attributes.push({
       attribute: attrPR[0],
       current: prc
     });
@@ -11779,6 +11779,7 @@ var COFantasy = COFantasy || function() {
           });
         if (prAttr.length > 0 && prAttr[0].get("current") == 1) {
           prAttr[0].set("current", 0);
+          evt.attributes = evt.attributes || [];
           evt.attributes.push({
             attribute: prAttr[0],
             current: 1
@@ -11817,7 +11818,7 @@ var COFantasy = COFantasy || function() {
       if (isNaN(prc) || prc >= prmax) {
         return;
       }
-      evt.attributes.add({
+      evt.attributes.push({
         attribute: attrPR[0],
         current: prc
       });
@@ -17821,6 +17822,7 @@ var COFantasy = COFantasy || function() {
         var soinImpossible = false;
         var nbCibles;
         var display;
+        var pvsPartages = new Set();
         var iterCibles = function(callback) {
           if (cible) {
             nbCibles = 1;
@@ -17854,6 +17856,22 @@ var COFantasy = COFantasy || function() {
           nbCibles--;
         };
         iterCibles(function(cible) {
+          if (cible.name === undefined) {
+            var cibleChar = getObj('character', cible.charId);
+            if (cibleChar === undefined) {
+              finSoin();
+              return;
+            }
+            cible.name = cibleChar.get('name');
+          }
+          if (pvsPartages.has(cible.name)) {
+            finSoin();
+            return;
+          }
+          var ciblePartagee = charAttribute(cible.charId, 'PVPartagesAvec');
+          ciblePartagee.forEach(function(attr) {
+            pvsPartages.add(attr.get('current'));
+          });
           if (ressourceLimiteCibleParJour) {
             var utilisations =
               attributeAsInt(cible, ressourceLimiteCibleParJour, options.limiteCibleParJour);
@@ -18135,7 +18153,7 @@ var COFantasy = COFantasy || function() {
                 var bd = parseInt(baies.get('current'));
                 if (!isNaN(bd) && bd > 0) nbBaies += bd;
                 evt.attributes = evt.attributes || [];
-                evt.attributes.add({
+                evt.attributes.push({
                   attribute: baies,
                   current: bd,
                   max: baies.get('max')
@@ -18153,7 +18171,7 @@ var COFantasy = COFantasy || function() {
               //TODO: ajouter la possibilité d'utiliser un point de chance
               output += " revient bredouille.";
             }
-            output += "(test de SAG:"+testRes.texte+")";
+            output += "(test de SAG:" + testRes.texte + ")";
             sendChar(charId, output);
             addEvent(evt);
           });
