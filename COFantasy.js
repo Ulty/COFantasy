@@ -19486,7 +19486,9 @@ var COFantasy = COFantasy || function() {
           if (attBonus > 0) msgAbsorber += "+" + attBonus;
           else if (attBonus < 0) msgAbsorber += attBonus;
           var explAbsorber = [];
-          var attAbsBonus = bonusAttaqueA(cible, 'bouclier', evt, explAbsorber, {});
+          var attAbsBonus = bonusAttaqueA(cible, 'bouclier', evt, explAbsorber, {
+            pasDeDmg: true
+          });
           var pageId = guerrier.token.get('pageid');
           var bad = bonusAttaqueD(cible, attaque.attaquant, 0, pageId, evt, explAbsorber, {});
           attAbsBonus += bad;
@@ -19599,7 +19601,9 @@ var COFantasy = COFantasy || function() {
           if (attBonus > 0) msgResister += "+" + attBonus;
           else if (attBonus < 0) msgResister += attBonus;
           var expl = [];
-          var attAbsBonus = bonusAttaqueA(cible, 'résistance à la magie', evt, expl, {});
+          var attAbsBonus = bonusAttaqueA(cible, 'résistance à la magie', evt, expl, {
+            pasDeDmg: true
+          });
           var pageId = barbare.token.get('pageid');
           var bad = bonusAttaqueD(cible, attaque.attaquant, 0, pageId, evt, expl, {});
           attAbsBonus += bad;
@@ -19712,7 +19716,9 @@ var COFantasy = COFantasy || function() {
           if (attBonus > 0) msgEsquiver += "+" + attBonus;
           else if (attBonus < 0) msgEsquiver += attBonus;
           var explEsquiver = [];
-          var attAbsBonus = bonusAttaqueA(cible, 'esquive acrobatique', evt, explEsquiver, {});
+          var attAbsBonus = bonusAttaqueA(cible, 'esquive acrobatique', evt, explEsquiver, {
+            pasDeDmg: true
+          });
           var pageId = barde.token.get('pageid');
           var bad = bonusAttaqueD(cible, attaque.attaquant, 0, pageId, evt, explEsquiver, {});
           attAbsBonus += bad;
@@ -19737,7 +19743,7 @@ var COFantasy = COFantasy || function() {
     }); //fin getSelected
   }
 
-  // asynchrone : on fait les jets du duellist en opposition
+  // asynchrone : on fait les jets du duelliste en opposition
   function paradeMagistrale(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
@@ -19837,7 +19843,9 @@ var COFantasy = COFantasy || function() {
           var explParer = [];
           var nomArme = 'esquive acrobatique';
           if (!estEsquive) nomArme = arme.nom;
-          var attAbsBonus = bonusAttaqueA(cible, nomArme, evt, explParer, {});
+          var attAbsBonus = bonusAttaqueA(cible, nomArme, evt, explParer, {
+            pasDeDmg: true
+          });
           var pageId = duelliste.token.get('pageid');
           var bad = bonusAttaqueD(cible, attaque.attaquant, 0, pageId, evt, explParer, {});
           attAbsBonus += bad;
