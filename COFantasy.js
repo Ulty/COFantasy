@@ -1025,13 +1025,14 @@ var COFantasy = COFantasy || function() {
 
   //options peut contenir
   // msg: un message à afficher
-  // maxval: la valeur max de l'attribut
+  // maxVal: la valeur max de l'attribut
+  // charAttr: si présent, on utilise un attribut de personnage
   // renvoie l'attribut crée ou mis à jour
   function setTokenAttr(personnage, attribute, value, evt, options) {
     var charId = personnage.charId;
     var token = personnage.token;
     var maxval = '';
-    if (options && options.maxval !== undefined) maxval = options.maxval;
+    if (options && options.maxVal !== undefined) maxval = options.maxVal;
     if (options && options.msg !== undefined) {
       sendChar(charId, options.msg);
     }
@@ -1039,7 +1040,7 @@ var COFantasy = COFantasy || function() {
     // check if the token is linked to the character. If not, use token name
     // in attribute name (token ids don't persist over API reload)
     var fullAttribute = attribute;
-    if (token) {
+    if (token && !options.charAttr) {
       var link = token.get('bar1_link');
       if (link === "") fullAttribute += "_" + token.get('name');
     }
@@ -1162,7 +1163,7 @@ var COFantasy = COFantasy || function() {
       max: attr.get('max')
     });
     attr.set('current', value);
-    if (options && options.maxval !== undefined) attr.set('max', maxval);
+    if (options && options.maxVal !== undefined) attr.set('max', maxval);
     return attr;
   }
 
@@ -1255,7 +1256,7 @@ var COFantasy = COFantasy || function() {
             anciensPV += soinsTransferes;
             bar1 -= soinsTransferes;
             setTokenAttr(perso, 'anciensPV', anciensPV, evt, {
-              maxval: anciensMax
+              maxVal: anciensMax
             });
           }
         }
@@ -5408,6 +5409,46 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  function aUnCapitaine(cible, evt, pageId) {
+    var charId = cible.charId;
+    var attrs = findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+    });
+    var attrCapitaine = attrs.find(function(a) {
+      return (a.get('name') == 'capitaine');
+    });
+    if (attrCapitaine === undefined) return false;
+    if (pageId === undefined) {
+      pageId = cible.token.get('pageid');
+    }
+    var nomCapitaine = attrCapitaine.get('current');
+    var idCapitaine = attrCapitaine.get('max');
+    var capitaine = persoOfId(idCapitaine, nomCapitaine, pageId);
+    var capitaineActif = attrs.find(function(a) {
+      return (a.get('name') == 'capitaineActif');
+    });
+    if (capitaine && isActive(capitaine)) {
+      if (capitaineActif) return true;
+      setTokenAttr({
+        charId: charId
+      }, 'capitaineActif', true, evt);
+      iterSelected(tokensEnCombat(), function(perso) {
+        if (perso.charId == charId) updateInit(perso.token, evt);
+      });
+      return true;
+    }
+    if (capitaineActif) {
+      removeTokenAttr({
+        charId: charId
+      }, 'capitaineActif', evt);
+      iterSelected(tokensEnCombat(), function(perso) {
+        if (perso.charId == charId) updateInit(perso.token, evt);
+      });
+    }
+    return false;
+  }
+
   function tokenInit(perso, evt) {
     var initDerivee = charAttribute(perso.charId, 'initiativeDeriveeDe');
     if (initDerivee.length > 0) {
@@ -5578,7 +5619,7 @@ var COFantasy = COFantasy || function() {
   }
 
   // triggers sheet workers
-  //options peut avoir un champ msg et un champ maxval
+  //options peut avoir un champ msg et un champ maxVal
   function setFicheAttr(personnage, attribute, value, evt, options) {
     var charId = personnage.charId;
     if (options && options.msg !== undefined) {
@@ -5594,7 +5635,7 @@ var COFantasy = COFantasy || function() {
     });
     if (attr.length === 0) {
       var maxval = '';
-      if (options && options.maxval !== undefined) maxval = options.maxval;
+      if (options && options.maxVal !== undefined) maxval = options.maxVal;
       attr = createObj('attribute', {
         characterid: charId,
         name: attribute,
@@ -5620,7 +5661,7 @@ var COFantasy = COFantasy || function() {
     var nv = {
       current: value
     };
-    if (options && options.maxval !== undefined) nv.max = options.maxval;
+    if (options && options.maxVal !== undefined) nv.max = options.maxVal;
     attr.setWithWorker(nv);
     return attr;
   }
@@ -6141,7 +6182,7 @@ var COFantasy = COFantasy || function() {
   // renvoie l'attribut créé ou mis à jour
   function setAttrDuree(perso, attr, duree, evt, msg) {
     var options = {
-      maxval: getInit()
+      maxVal: getInit()
     };
     if (msg) options.msg = msg;
     return setTokenAttr(perso, attr, duree, evt, options);
@@ -7309,7 +7350,7 @@ var COFantasy = COFantasy || function() {
       if (attrCiblesAttaquees.length === 0) {
         if (options.riposte) {
           setTokenAttr(attaquant, 'dernieresCiblesAttaquees', '', evt, {
-            maxval: listeCibles
+            maxVal: listeCibles
           });
         } else {
           setTokenAttr(attaquant, 'dernieresCiblesAttaquees', listeCibles, evt);
@@ -8503,7 +8544,7 @@ var COFantasy = COFantasy || function() {
             }
             if (options.feinte) {
               setTokenAttr(target, 'feinte_' + attaquant.tokName, 0, evt, {
-                maxval: target.touche
+                maxVal: target.touche
               });
             }
             count--;
@@ -8665,6 +8706,31 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function addEffetTemporaireLie(perso, attr, evt) {
+    var etlAttr = tokenAttribute(perso, 'effetsTemporairesLies');
+    if (etlAttr.length === 0) {
+      etl = '';
+      etlAttr = createObj('attribute', {
+        characterid: perso.charId,
+        name: 'effetsTemporairesLies',
+        current: attr.id,
+      });
+      evt.attributes.push({
+        attribute: etlAttr,
+        current: null
+      });
+      return;
+    }
+    etlAttr = etlAttr[0];
+    var etl = etlAttr.get('current');
+    evt.attributes.push({
+      attribute: etlAttr,
+      current: etl
+    });
+    if (etl === '') etl = attr.id;
+    else etl += ',' + attr.id;
+    etlAttr.set('current', etl);
+  }
 
   function computeAttackCarBonus(attaquant, x) {
     if (x === undefined) return '';
@@ -8950,7 +9016,7 @@ var COFantasy = COFantasy || function() {
         var immobilise = estAussiGrandQue(attaquant, target);
         setTokenAttr(attaquant, 'agrippe', target.token.id + ' ' + target.tokName, evt);
         setTokenAttr(target, 'estAgrippePar', attaquant.token.id + ' ' + attaquant.tokName, evt, {
-          maxval: immobilise
+          maxVal: immobilise
         });
         if (immobilise) setState(target, 'immobilise', true, evt);
         target.messages.push("est agrippé");
@@ -9269,7 +9335,7 @@ var COFantasy = COFantasy || function() {
                 target.messages.push(target.tokName + " est " + msgEtat + " par l'attaque");
                 if (ce.saveCarac) {
                   setTokenAttr(target, ce.etat + 'Save', ce.saveCarac, evt, {
-                    maxval: ce.saveDifficulte
+                    maxVal: ce.saveDifficulte
                   });
                 }
               } else {
@@ -9338,7 +9404,8 @@ var COFantasy = COFantasy || function() {
                 if (ef.message)
                   target.messages.push(target.tokName + " " + ef.message.activation);
                 var attrEffet = setAttrDuree(target, ef.effet, ef.duree, evt);
-                if (options.mana !== undefined) {
+                var effet = messageEffetTemp[ef.effet];
+                if (options.mana !== undefined && effet && effet.prejudiciable) {
                   addEffetTemporaireLie(attaquant, attrEffet, evt);
                 }
                 switch (ef.effet) {
@@ -9364,7 +9431,6 @@ var COFantasy = COFantasy || function() {
                     setState(target, 'affaibli', true, evt);
                     break;
                 }
-                var effet = messageEffetTemp[ef.effet];
                 if (effet && effet.statusMarker) {
                   affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
                   target.token.set('status_' + effet.statusMarker, true);
@@ -9373,15 +9439,16 @@ var COFantasy = COFantasy || function() {
                 target.messages.push(target.tokName + " " + messageEffetIndetermine[ef.effet].activation);
                 setTokenAttr(target, ef.effet, true, evt);
               } else { //On a un effet de combat
-                target.messages.push(target.tokName + " " + messageEffetCombat[ef.effet].activation);
+                var effetC = messageEffetCombat[ef.effet];
+                target.messages.push(target.tokName + " " + effetC.activation);
                 var attrEffetCombat = setTokenAttr(target, ef.effet, true, evt);
-                if (options.mana !== undefined) {
+                if (options.mana !== undefined && effetC.prejudiciable) {
                   addEffetTemporaireLie(attaquant, attrEffetCombat, evt);
                 }
               }
               if (ef.valeur !== undefined) {
                 setTokenAttr(target, ef.effet + 'Valeur', ef.valeur, evt, {
-                  maxval: ef.valeurMax
+                  maxVal: ef.valeurMax
                 });
               }
               if (options.tempeteDeManaIntense)
@@ -9389,7 +9456,7 @@ var COFantasy = COFantasy || function() {
               if (ef.saveParTour) {
                 setTokenAttr(target, ef.effet + 'SaveParTour',
                   ef.saveParTour.carac, evt, {
-                    maxval: ef.saveParTour.seuil
+                    maxVal: ef.saveParTour.seuil
                   });
               }
             });
@@ -9572,7 +9639,7 @@ var COFantasy = COFantasy || function() {
                           setState(target, ce.etat, true, evt);
                           if (ce.saveCarac) {
                             setTokenAttr(target, ce.etat + 'Save', ce.saveCarac, evt, {
-                              maxval: ce.saveDifficulte
+                              maxVal: ce.saveDifficulte
                             });
                           }
                         }
@@ -9621,7 +9688,8 @@ var COFantasy = COFantasy || function() {
                       if (!reussite) {
                         if (ef.duree) {
                           var attrEffetTemp = setAttrDuree(target, ef.effet, duree, evt);
-                          if (options.mana !== undefined) {
+                          var effet = messageEffetTemp[ef.effet];
+                          if (options.mana !== undefined && effet && effet.prejudiciable) {
                             addEffetTemporaireLie(attaquant, attrEffetTemp, evt);
                           }
                           switch (ef.effet) {
@@ -9647,20 +9715,20 @@ var COFantasy = COFantasy || function() {
                               setState(target, 'affaibli', true, evt);
                               break;
                           }
-                          var effet = messageEffetTemp[ef.effet];
                           if (effet && effet.statusMarker) {
                             affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
                             target.token.set('status_' + effet.statusMarker, true);
                           }
                         } else {
                           var attrEffet = setTokenAttr(target, ef.effet, true, evt);
-                          if (options.mana !== undefined) {
+                          var effetC = messageEffetCombat[ef.effet];
+                          if (options.mana !== undefined && effetC && effetC.prejudiciable) {
                             addEffetTemporaireLie(attaquant, attrEffet, evt);
                           }
                         }
                         if (ef.valeur !== undefined) {
                           setTokenAttr(target, ef.effet + 'Valeur', ef.valeur, evt, {
-                            maxval: ef.valeurMax
+                            maxVal: ef.valeurMax
                           });
                         }
                         if (options.tempeteDeManaIntense)
@@ -9669,14 +9737,14 @@ var COFantasy = COFantasy || function() {
                           setTokenAttr(target,
                             ef.effet + 'SaveParTour', ef.saveParTour.carac,
                             evt, {
-                              maxval: ef.saveParTour.seuil
+                              maxVal: ef.saveParTour.seuil
                             });
                         }
                         if (ef.saveParJour) {
                           setTokenAttr(target,
                             ef.effet + "SaveParJour", ef.saveParJour.carac,
                             evt, {
-                              maxval: ef.saveParJour.seuil
+                              maxVal: ef.saveParJour.seuil
                             });
                         }
                       }
@@ -10250,7 +10318,7 @@ var COFantasy = COFantasy || function() {
         numberPMort += pMortelle[0].get('max');
       }
       setTokenAttr(target, 'pressionMortelle', dmgPMort, evt, {
-        maxval: numberPMort
+        maxVal: numberPMort
       });
       dmgTotal = 0;
     }
@@ -11942,7 +12010,7 @@ var COFantasy = COFantasy || function() {
       if (prc > 0) {
         if (versionFiche > 3.5) {
           setFicheAttr(perso, 'pr', prc - 1, evt, {
-            maxval: attrPR[0].get('max')
+            maxVal: attrPR[0].get('max')
           });
           removeTokenAttr(perso, 'pointsDeRecuperation', evt);
         } else {
@@ -12027,7 +12095,7 @@ var COFantasy = COFantasy || function() {
       if (prc < prmax) {
         if (versionFiche > 3.5) {
           setFicheAttr(perso, 'pr', prc + 1, evt, {
-            maxval: prmax
+            maxVal: prmax
           });
           removeTokenAttr(perso, 'pointsDeRecuperation', evt);
         } else {
@@ -12037,7 +12105,7 @@ var COFantasy = COFantasy || function() {
       }
       if (versionFiche > 3.5) {
         setFicheAttr(perso, 'pr', prc, evt, {
-          maxval: prmax
+          maxVal: prmax
         });
         removeTokenAttr(perso, 'pointsDeRecuperation', evt);
       }
@@ -15698,7 +15766,7 @@ var COFantasy = COFantasy || function() {
           setState(perso, etat, valeur, evt);
           if (saveParTour) {
             setTokenAttr(perso, etat + 'Save', saveParTour.carac, evt, {
-              maxval: saveParTour.difficulte
+              maxVal: saveParTour.difficulte
             });
           }
         }
@@ -16010,7 +16078,7 @@ var COFantasy = COFantasy || function() {
     } else {
       if (options.gauche) {
         setTokenAttr(perso, 'armeEnMain', '', evt, {
-          maxval: labelArme
+          maxVal: labelArme
         });
       } else {
         setTokenAttr(perso, 'armeEnMain', labelArme, evt);
@@ -16165,7 +16233,7 @@ var COFantasy = COFantasy || function() {
     var init = getInit();
     setTokenAttr(perso1, 'aCouvert', 1, evt, {
       msg: "reste à couvert",
-      maxval: init
+      maxVal: init
     });
     if (args.length > 2) {
       var perso2 = persoOfId(args[2], args[2]);
@@ -16185,37 +16253,11 @@ var COFantasy = COFantasy || function() {
       } else {
         setTokenAttr(perso2, 'aCouvert', 1, evt, {
           msg: "suit " + perso1.token.get('name') + " et reste à couvert",
-          maxval: init
+          maxVal: init
         });
       }
     }
     addEvent(evt);
-  }
-
-  function addEffetTemporaireLie(perso, attr, evt) {
-    var etlAttr = tokenAttribute(perso, 'effetsTemporairesLies');
-    if (etlAttr.length === 0) {
-      etl = '';
-      etlAttr = createObj('attribute', {
-        characterid: perso.charId,
-        name: 'effetsTemporairesLies',
-        current: attr.id,
-      });
-      evt.attributes.push({
-        attribute: etlAttr,
-        current: null
-      });
-      return;
-    }
-    etlAttr = etlAttr[0];
-    var etl = etlAttr.get('current');
-    evt.attributes.push({
-      attribute: etlAttr,
-      current: etl
-    });
-    if (etl === '') etl = attr.id;
-    else etl += ',' + attr.id;
-    etlAttr.set('current', etl);
   }
 
   function getInit() {
@@ -16365,7 +16407,7 @@ var COFantasy = COFantasy || function() {
           }
           if (options.valeur !== undefined) {
             setTokenAttr(perso, effetC + 'Valeur', options.valeur, evt, {
-              maxval: options.valeurMax
+              maxVal: options.valeurMax
             });
           }
           if (options.accumuleDuree) {
@@ -16425,7 +16467,7 @@ var COFantasy = COFantasy || function() {
                   absorbe += options.tempeteDeManaIntense * 5;
                 }
                 setTokenAttr(perso, 'peauDePierreMagValeur', rd, evt, {
-                  maxval: absorbe
+                  maxVal: absorbe
                 });
               }
               break;
@@ -16455,13 +16497,13 @@ var COFantasy = COFantasy || function() {
             actMsg += newLineimg;
           }
           var effetAttr = setAttrDuree(perso, effetC, d, evt, whisper + actMsg);
-          if (options.lanceur && options.mana !== undefined) {
+          if (options.lanceur && options.mana !== undefined && mEffet.prejudiciable) {
             addEffetTemporaireLie(options.lanceur, effetAttr, evt);
           }
           if (options.saveParTour) {
             setTokenAttr(perso, effetC + 'SaveParTour',
               options.saveParTour.carac, evt, {
-                maxval: options.saveParTour.seuil
+                maxVal: options.saveParTour.seuil
               });
           }
           if (options.puissant) {
@@ -16616,7 +16658,8 @@ var COFantasy = COFantasy || function() {
       if (selected.length > 0) {
         initiative(selected, evt);
       }
-      var actMsg = messageEffetCombat[effet].activation;
+      var mEffet = messageEffetCombat[effet];
+      var actMsg = mEffet.activation;
       var img = options.image;
       if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
         var newLineimg = '<span style="padding: 4px 0;" >  ';
@@ -16628,7 +16671,7 @@ var COFantasy = COFantasy || function() {
         var effetAttr = setTokenAttr(perso, effet, true, evt, {
           msg: whisper + actMsg
         });
-        if (options.lanceur && options.mana !== undefined) {
+        if (options.lanceur && options.mana !== undefined && mEffet.prejudiciable) {
           addEffetTemporaireLie(options.lanceur, effetAttr, evt);
         }
         if (options.puissant) {
@@ -16638,7 +16681,7 @@ var COFantasy = COFantasy || function() {
         }
         if (options.valeur !== undefined) {
           setTokenAttr(perso, effet + 'Valeur', options.valeur, evt, {
-            maxval: options.valeurMax
+            maxVal: options.valeurMax
           });
         }
         if (options.tempeteDeManaIntense !== undefined) {
@@ -18229,7 +18272,7 @@ var COFantasy = COFantasy || function() {
             if ((testRes.reussite && !trouveBaies) || (trouveBaies && !testRes.reussite && testRes.valeur > 7)) {
               if (voieDeLaSurvie > 0) {
                 setTokenAttr(lanceur, attrName, voieDeLaSurvie, evt, {
-                  maxval: "!cof-soin @{selected|token_id} @{selected|token_id} 1D6"
+                  maxVal: "!cof-soin @{selected|token_id} @{selected|token_id} 1D6"
                 });
                 output += " revient avec " + voieDeLaSurvie + " plantes médicinales.";
               } else {
@@ -18259,7 +18302,7 @@ var COFantasy = COFantasy || function() {
                 });
               } else {
                 setTokenAttr(lanceur, attrName, nbBaies, evt, {
-                  maxval: actionBaies
+                  maxVal: actionBaies
                 });
               }
             } else {
@@ -18585,47 +18628,6 @@ var COFantasy = COFantasy || function() {
     return tokens;
   }
 
-  function aUnCapitaine(cible, evt, pageId) {
-    var charId = cible.charId;
-    var attrs = findObjs({
-      _type: 'attribute',
-      _characterid: charId,
-    });
-    var attrCapitaine = attrs.find(function(a) {
-      return (a.get('name') == 'capitaine');
-    });
-    if (attrCapitaine === undefined) return false;
-    if (pageId === undefined) {
-      pageId = cible.token.get('pageid');
-    }
-    var nomCapitaine = attrCapitaine.get('current');
-    var idCapitaine = attrCapitaine.get('max');
-    var capitaine = persoOfId(idCapitaine, nomCapitaine, pageId);
-    var capitaineActif = attrs.find(function(a) {
-      return (a.get('name') == 'capitaineActif');
-    });
-    if (capitaine && isActive(capitaine)) {
-      if (capitaineActif) return true;
-      setTokenAttr({
-        charId: charId
-      }, 'capitaineActif', true, evt);
-      iterSelected(tokensEnCombat(), function(perso) {
-        if (perso.charId == charId) updateInit(perso.token, evt);
-      });
-      return true;
-    }
-    if (capitaineActif) {
-      removeTokenAttr({
-        charId: charId
-      }, 'capitaineActif', evt);
-      iterSelected(tokensEnCombat(), function(perso) {
-        if (perso.charId == charId) updateInit(perso.token, evt);
-      });
-    }
-    return false;
-  }
-
-
   function devientCapitaine(msg) {
     var cmd = msg.content.split(' ');
     if (cmd.length < 2) {
@@ -18662,10 +18664,9 @@ var COFantasy = COFantasy || function() {
           sendChat('COF', "/w GM " + token.get('name') + " n'a plus de capitaine");
         } else {
           if (token.id == capitaine.token.id) return;
-          setTokenAttr({
-            charId: charId
-          }, 'capitaine', nomCapitaine, evt, {
-            maxval: capitaine.token.id
+          setTokenAttr(perso, 'capitaine', nomCapitaine, evt, {
+            maxVal: capitaine.token.id,
+            charAttr: true
           });
           sendChat('COF', "/w GM " + nomCapitaine + " est le capitaine de " + token.get('name'));
         }
@@ -18712,7 +18713,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         setTokenAttr(perso, 'dose_Baie_magique', nbBaies, evt, {
-          maxval: mangerBaie
+          maxVal: mangerBaie
         });
         var line = nom + " reçoit une baie";
         if (perso.token.id == druide.token.id)
@@ -18833,7 +18834,7 @@ var COFantasy = COFantasy || function() {
         nameTarget
       });
     setTokenAttr(target, protegePar, tokenProtecteur.id, evt, {
-      maxval: nameProtecteur
+      maxVal: nameProtecteur
     });
     addEvent(evt);
   }
@@ -18863,7 +18864,7 @@ var COFantasy = COFantasy || function() {
       iterSelected(selected, function(perso) {
         setTokenAttr(perso, 'defenseTotale', def, evt, {
           msg: defMsg,
-          maxval: stateCOF.tour
+          maxVal: stateCOF.tour
         });
       });
       addEvent(evt);
@@ -18907,7 +18908,7 @@ var COFantasy = COFantasy || function() {
       } else nouvelleDuree++;
     }
     setTokenAttr(target, 'dureeStrangulation', nouvelleDuree, evt, {
-      maxval: true
+      maxVal: true
     });
     var deStrang = 6;
     if (msg.content.includes(' --puissant')) deStrang = 8;
@@ -19270,7 +19271,7 @@ var COFantasy = COFantasy || function() {
         }
         setTokenAttr(guerrier, 'postureDeCombat', bonus, evt, {
           msg: msg,
-          maxval: attrDebuf + "_" + attrBuf
+          maxVal: attrDebuf + "_" + attrBuf
         });
         addEvent(evt);
       });
@@ -20312,7 +20313,7 @@ var COFantasy = COFantasy || function() {
               jet += " &ge; " + testINT;
               addLineToFramedDisplay(display, jet);
               setTokenAttr(perso, attribut, forcePoison, evt, {
-                maxval: infosAdditionelles
+                maxVal: infosAdditionelles
               });
               addLineToFramedDisplay(display, armeEnduite + " est maintenant enduit de poison");
               addEvent(evt);
@@ -20702,13 +20703,13 @@ var COFantasy = COFantasy || function() {
     };
     setTokenAttr(cavalier, 'monteSur', tokenM.id, evt, {
       msg: " monte sur " + nomMonture,
-      maxval: nomMonture
+      maxVal: nomMonture
     });
     setTokenAttr(monture, 'estMontePar', tokenC.id, evt, {
-      maxval: tokenC.get('name')
+      maxVal: tokenC.get('name')
     });
     setTokenAttr(monture, 'positionSurMonture', tokenC.get('left') - tokenM.get('left'), evt, {
-      maxval: tokenC.get('top') - tokenM.get('top')
+      maxVal: tokenC.get('top') - tokenM.get('top')
     });
     setTokenAttr(monture, 'directionSurMonture', tokenC.get('rotation') - tokenM.get('rotation'), evt);
     if (stateCOF.combat) {
@@ -20900,7 +20901,7 @@ var COFantasy = COFantasy || function() {
       action = action.replace(/\$INT/g, modCarac(forgesort, 'INTELLIGENCE'));
       setTokenAttr(forgesort, attrName, 1, evt, {
         msg: message,
-        maxval: action
+        maxVal: action
       });
     } else {
       var nb = parseInt(attr[0].get('current'));
@@ -21255,7 +21256,7 @@ var COFantasy = COFantasy || function() {
     if (options.mana !== undefined && limiteRessources(forgesort, options, undefined, "créer " + typeRune, evt)) return;
     setTokenAttr(target, attrName, 1, evt, {
       msg: message,
-      maxval: forgesort.charId
+      maxVal: forgesort.charId
     });
     addEvent(evt);
   }
@@ -23529,7 +23530,7 @@ var COFantasy = COFantasy || function() {
         if (nbTorches === 0) { //Donc forcément torcheAllumee
           //On remet l'attribut dans un état convenable
           setTokenAttr(perso, 'torches', 0, evt, {
-            maxval: 60
+            maxVal: 60
           });
           addEvent(evt);
           return;
@@ -23558,7 +23559,7 @@ var COFantasy = COFantasy || function() {
           whisperChar(perso.charId, msgDiminue);
         }
         setTokenAttr(perso, 'torches', nbTorches, evt, {
-          maxval: tempsTorche
+          maxVal: tempsTorche
         });
         sendChar(perso.charId, '/w gm temps de torche diminué de ' + temps + ' minutes');
         addEvent(evt);
@@ -23788,7 +23789,7 @@ var COFantasy = COFantasy || function() {
       bonus = charAttributeAsInt(samourai, 'voieDeLHonneur', 2);
     setTokenAttr(samourai, 'defiSamourai', bonus, evt, {
       msg: samourai.tokName + " lance un défi à " + cible.tokName,
-      maxval: cible.token.id + ' ' + cible.tokName
+      maxVal: cible.token.id + ' ' + cible.tokName
     });
   }
 
@@ -23862,14 +23863,14 @@ var COFantasy = COFantasy || function() {
           var maxval = difficulte;
           if (etreinte) maxval = 'etreinte ' + difficulte;
           setTokenAttr(cible, 'enveloppePar', cubeId, evt, {
-            maxval: maxval
+            maxVal: maxval
           });
           var cibleId = cible.token.id + ' ' + cible.token.get('name');
           cible.token.set('left', cube.token.get('left'));
           cible.token.set('right', cube.token.get('right'));
           toFront(cube.token);
           setTokenAttr(cube, 'enveloppe', cibleId, evt, {
-            maxval: exprDM
+            maxVal: exprDM
           });
           if (etreinte) setState(cible, 'immobilise', true, evt);
           break;
@@ -24188,7 +24189,7 @@ var COFantasy = COFantasy || function() {
               if (!succes) {
                 augmenteEbriete(perso, evt, expliquer);
                 setTokenAttr(perso, 'vapeursEthyliques', 0, evt, {
-                  maxval: options.save.seuil
+                  maxVal: options.save.seuil
                 });
               }
               finalize();
@@ -24340,7 +24341,7 @@ var COFantasy = COFantasy || function() {
     }
     var opt = {};
     if (cmd.length > 3) {
-      opt.maxval = cmd[3];
+      opt.maxVal = cmd[3];
     }
     getSelected(msg, function(selected, playerId) {
       if (!playerIsGM(playerId)) {
@@ -24680,7 +24681,7 @@ var COFantasy = COFantasy || function() {
       attrSuit.set('max', distance);
     } else {
       setTokenAttr(perso, 'suit', cibleId, evt, {
-        maxval: distance
+        maxVal: distance
       });
     }
     suiveurs.push(perso.token.id + ' ' + perso.token.get('name'));
@@ -24896,22 +24897,22 @@ var COFantasy = COFantasy || function() {
       case "!cof-defaut-dans-la-cuirasse":
         defautDansLaCuirasse(msg);
         return;
-      case "!cof-posture-de-combat":
+      case '!cof-posture-de-combat':
         postureDeCombat(msg);
         return;
-      case "!cof-mur-de-force":
+      case '!cof-mur-de-force':
         murDeForce(msg);
         return;
-      case "!cof-capitaine":
+      case '!cof-capitaine':
         devientCapitaine(msg);
         return;
-      case "!cof-tueur-fantasmagorique":
+      case '!cof-tueur-fantasmagorique':
         tueurFantasmagorique(msg);
         return;
-      case "!cof-tour-de-force":
+      case '!cof-tour-de-force':
         tourDeForce(msg);
         return;
-      case "!cof-encaisser-un-coup":
+      case '!cof-encaisser-un-coup':
         encaisserUnCoup(msg);
         return;
       case "!cof-esquive-acrobatique":
@@ -25254,6 +25255,7 @@ var COFantasy = COFantasy || function() {
       actif: "subit régulièrement des dégâts",
       fin: "ne subit plus ces effets de dégâts",
       dm: true,
+      prejudiciable: true,
       generic: true
     },
     rechargeGen: {
