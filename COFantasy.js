@@ -1040,7 +1040,7 @@ var COFantasy = COFantasy || function() {
     // check if the token is linked to the character. If not, use token name
     // in attribute name (token ids don't persist over API reload)
     var fullAttribute = attribute;
-    if (token && !options.charAttr) {
+    if (token && options && !options.charAttr) {
       var link = token.get('bar1_link');
       if (link === "") fullAttribute += "_" + token.get('name');
     }
