@@ -6241,7 +6241,7 @@ var COFantasy = COFantasy || function() {
       options.attaqueDeGroupe = ficheAttributeAsInt(attaquant, 'attaque_de_groupe', 1);
     }
     if (options.attaqueDeGroupe > 1) {
-      var bonusTouche = 2 * (options.attaqueDeGroupe - 1);
+      var bonusTouche = 5 * (options.attaqueDeGroupe - 1);
       attBonus += bonusTouche;
       explications.push("Attaque en groupe => +" + bonusTouche + " en Attaque");
     }
