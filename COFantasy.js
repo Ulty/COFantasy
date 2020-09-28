@@ -112,6 +112,16 @@ var COFantasy = COFantasy || function() {
           val: false,
           type: 'bool'
         },
+        bonus_attaque_groupe: {
+          explications: "Lors d'une attaque de groupe, bonus à la touche par créature supplémentaire",
+          val: 2,
+          type: 'int'
+        },
+        crit_attaque_groupe: {
+          explications: "Lors d'une attaque de groupe, si le jet de touche dépasse DEF + cette valeur, les dommages sont doublés (0 = jamais)",
+          val: 5,
+          type: 'int'
+        },
         mana_totale: {
           explications: "Tous les sorts ont un coût, celui des tempêtes de mana est multiplié par 3",
           val: false,
@@ -6241,7 +6251,7 @@ var COFantasy = COFantasy || function() {
       options.attaqueDeGroupe = ficheAttributeAsInt(attaquant, 'attaque_de_groupe', 1);
     }
     if (options.attaqueDeGroupe > 1) {
-      var bonusTouche = 2 * (options.attaqueDeGroupe - 1);
+      var bonusTouche = reglesOptionelles.bonus_attaque_groupe.val * (options.attaqueDeGroupe - 1);
       attBonus += bonusTouche;
       explications.push("Attaque en groupe => +" + bonusTouche + " en Attaque");
     }
@@ -7587,7 +7597,7 @@ var COFantasy = COFantasy || function() {
     var dmgCoef = options.dmgCoef || 1;
     if (options.attaqueDeGroupeDmgCoef) {
       dmgCoef++;
-      expliquer("Attaque en groupe > DEF +5 => DMGx" + (crit ? "3" : "2"));
+      expliquer("Attaque en groupe > DEF +"+reglesOptionelles.crit_attaque_groupe.val+" => DMGx" + (crit ? "3" : "2"));
     }
     if (target.dmgCoef) dmgCoef += target.dmgCoef;
     var critCoef = 1;
@@ -8388,7 +8398,7 @@ var COFantasy = COFantasy || function() {
                   target.messages.push("tombe par terre");
                 }
               }
-              if (options.attaqueDeGroupe > 1 && attackRoll >= (defense + 5)) {
+              if (options.attaqueDeGroupe > 1 && reglesOptionelles.crit_attaque_groupe.val > 0 && attackRoll >= (defense + reglesOptionelles.crit_attaque_groupe.val)) {
                 options.attaqueDeGroupeDmgCoef = true;
               }
               if (d20roll == 1 && options.chance === undefined) {
