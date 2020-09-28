@@ -2894,6 +2894,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     var display = startFramedDisplay(playerId, titre, perso, optionsDisplay);
+    if (options.chance) options.bonus = options.chance * 10;
     if (difficulte === undefined) {
       jetCaracteristique(perso, caracteristique, options, evt,
         function(rt, explications) {
@@ -2919,6 +2920,28 @@ var COFantasy = COFantasy || function() {
             }
           }
           addEvent(evt);
+          evt.personnage = perso;
+          evt.action = {
+            caracteristique: caracteristique,
+            titre: titre,
+            playerId: playerId,
+            options: options
+          };
+          evt.type = 'jetPerso';
+          var boutonsReroll = '';
+          var pc = pointsDeChance(perso);
+          if (pc > 0) {
+            options.roll = options.roll || rt.roll;
+            boutonsReroll += ' ' + bouton("!cof-bouton-chance " + evt.id, "Chance", perso) +
+                " (reste " + pc + " PC)";
+          }
+          if (attributeAsBool(perso, 'runeForgesort_énergie') && (caracteristique == 'FOR' || caracteristique == 'CON' || caracteristique == 'DEX')) {
+              boutonsReroll += ' ' + bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", perso);
+          }
+          if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
+              boutonsReroll += ' ' + bouton("!cof-petit-veinard " + evt.id, "Petit veinard", perso);
+          }
+          addLineToFramedDisplay(display, boutonsReroll);
           if (optionsDisplay.retarde) {
             addFramedHeader(display, playerId, true);
             sendChat('', endFramedDisplay(display));
@@ -2927,7 +2950,6 @@ var COFantasy = COFantasy || function() {
           } else sendChat('', endFramedDisplay(display));
         });
     } else {
-      if (options.chance) options.bonus = options.chance * 10;
       var testId = 'jet_' + caracteristique + '_' + difficulte;
       testCaracteristique(perso, caracteristique, difficulte, testId, options, evt,
         function(tr) {
@@ -15485,11 +15507,11 @@ var COFantasy = COFantasy || function() {
     }
     var rollExpr = "[[" + de + "cs20cf" + plageECText + "]]";
     sendChat("", rollExpr, function(res) {
-      var rolls = res[0];
-      var d20roll = rolls.inlinerolls[0].results.total;
-      var rtext = buildinline(rolls.inlinerolls[0]) + bonusText;
+      var roll = options.roll || res[0].inlinerolls[0];
+      var d20roll = roll.results.total;
+      var rtext = buildinline(roll) + bonusText;
       var rt = {
-        total: d20roll + bonusCarac
+        total: d20roll + bonusCarac,
       };
       if (d20roll <= plageEC) {
         rtext += " -> échec critique";
@@ -15499,7 +15521,7 @@ var COFantasy = COFantasy || function() {
         rt.critique = true;
       } else if (bonusCarac !== 0) rtext += " = " + rt.total;
       rt.texte = rtext;
-      rt.roll = rolls.inlinerolls[0];
+      rt.roll = roll;
       callback(rt, explications);
     });
   }
