@@ -9790,7 +9790,9 @@ var COFantasy = COFantasy || function() {
           };
           var effetPietinement = function() {
             if (target.pietine && estAussiGrandQue(attaquant, target)) {
-              testOppose(target, 'FOR', {}, attaquant, 'FOR', {}, target.messages, evt, function(resultat) {
+              var options1 = options.jetOppose1 || {};
+              var options2 = options.jetOppose2 || {};
+              testOppose(target, 'FOR', options1, attaquant, 'FOR', options2, target.messages, evt, function(resultat, crit, rt1, rt2) {
                 if (resultat == 2) {
                   target.messages.push(target.tokName + " est piétiné par " + attackerTokName + ", dommages doublés");
                   setState(target, 'renverse', true, evt);
@@ -9800,6 +9802,8 @@ var COFantasy = COFantasy || function() {
                   if (resultat === 0) diminueMalediction(attaquant, evt);
                   target.messages.push(target.tokName + " n'est pas piétiné.");
                 }
+                evt.action.options.jetOppose1 = rt1;
+                evt.action.options.jetOppose2 = rt2;
                 effetsAvecSave();
               });
             } else effetsAvecSave();
@@ -15526,7 +15530,6 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-
   // Ne pas remplacer les inline rolls, il faut les afficher correctement
   function dmgDirects(msg) {
     var options = parseOptions(msg);
@@ -20618,7 +20621,7 @@ var COFantasy = COFantasy || function() {
             diminueMalediction(perso1, evt);
             break;
         }
-        callback(reussite, crit);
+        callback(reussite, crit, rt1, rt2);
       }); //Fin du jet du deuxième perso
     }); //Fin du jet du premier perso
   }
