@@ -9665,8 +9665,9 @@ var COFantasy = COFantasy || function() {
                       attaquant: attaquant
                     };
                     var saveId = 'etat_' + ce.etat + '_' + attaquant.token.id;
+                    if(options[saveId]) saveOpts.roll = options[saveId];
                     save(ce.save, target, saveId, expliquer, saveOpts, evt,
-                      function(reussite, rolltext) {
+                      function(reussite, rolltext, roll) {
                         if (!reussite) {
                           setState(target, ce.etat, true, evt);
                           if (ce.saveCarac) {
@@ -9675,6 +9676,7 @@ var COFantasy = COFantasy || function() {
                             });
                           }
                         }
+                        evt.action.options[saveId] = roll;
                         saves--;
                         afterSaves();
                       });
@@ -9711,8 +9713,9 @@ var COFantasy = COFantasy || function() {
                   };
                   var duree = ef.duree;
                   var saveId = 'effet_' + ef.effet + '_' + attaquant.token.id;
+                  if(options[saveId]) saveOpts.roll = options[saveId];
                   save(ef.save, target, saveId, expliquer, saveOpts, evt,
-                    function(reussite, rollText) {
+                    function(reussite, rollText, roll) {
                       if (reussite && duree && ef.save.demiDuree) {
                         reussite = false;
                         duree = Math.ceil(duree / 2);
@@ -9780,6 +9783,7 @@ var COFantasy = COFantasy || function() {
                             });
                         }
                       }
+                      evt.action.options[saveId] = roll;
                       saves--;
                       savesEffets--;
                       etatsAvecSave();
@@ -10155,10 +10159,12 @@ var COFantasy = COFantasy || function() {
       if (options.msgPour) title += options.msgPour;
       expliquer(title);
     }
-    testCaracteristique(target, carac, s.seuil, saveId, {
+    var optionsTest = {
         bonusAttrs: bonusAttrs,
-        bonus: bonus
-      }, evt,
+        bonus: bonus,
+    }
+    if(options.roll) optionsTest.roll = options.roll;
+    testCaracteristique(target, carac, s.seuil, saveId, optionsTest, evt,
       function(tr) {
         var smsg = target.token.get('name') + " fait " + tr.texte;
         if (tr.reussite) {
@@ -10169,7 +10175,7 @@ var COFantasy = COFantasy || function() {
           if (options.msgRate) smsg += options.msgRate;
         }
         expliquer(smsg);
-        afterSave(tr.reussite, tr.texte);
+        afterSave(tr.reussite, tr.texte, tr.roll);
       });
   }
 
