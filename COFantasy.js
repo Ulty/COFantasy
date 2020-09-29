@@ -6268,10 +6268,9 @@ var COFantasy = COFantasy || function() {
   }
 
   // renvoie l'attribut créé ou mis à jour
-  function setAttrDuree(perso, attr, duree, evt, msg, init) {
-    var initDuree = init || getInit();
+  function setAttrDuree(perso, attr, duree, evt, msg) {
     var options = {
-      maxVal: initDuree
+      maxVal: getInit(),
     };
     if (msg) options.msg = msg;
     return setTokenAttr(perso, attr, duree, evt, options);
@@ -7415,9 +7414,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       if (options.tempsRecharge.duree > 0) {
-        setAttrDuree(attaquant, options.tempsRecharge.effet, options.tempsRecharge.duree, evt, null, tokenInit(attaquant, evt));
-      } else {
-        setAttrDuree(attaquant, options.tempsRecharge.effet, 'tourFinal', evt, null, tokenInit(attaquant, evt));
+        setAttrDuree(attaquant, options.tempsRecharge.effet, options.tempsRecharge.duree, evt);
       }
     }
     //On met à jour l'arme en main, si nécessaire
@@ -10150,8 +10147,8 @@ var COFantasy = COFantasy || function() {
             }
           });
         }
-        if(evt.succes == false && charAttributeAsBool(target, 'riposteGuerrier') && !attributeAsBool(target, 'rechargeGen(riposteGuerrier)')) {
-          displayAttaqueOpportunite(target.token.id, [attaquant], "de riposte", '#ActionsRiposte#', '--tempsRecharge rechargeGen(riposteGuerrier) 0');
+        if (evt.succes == false && charAttributeAsBool(target, 'riposteGuerrier')) {
+          displayAttaqueOpportunite(target.token.id, [attaquant], "de riposte", '#ActionsRiposte#', '--decrAttribute riposteGuerrier');
         } else if (charAttributeAsBool(target, 'seulContreTous')) {
           displayAttaqueOpportunite(target.token.id, [attaquant], "de riposte", '#ActionsRiposte#');
         } else if (charAttributeAsBool(target, 'riposte')) {
@@ -26496,6 +26493,7 @@ var COFantasy = COFantasy || function() {
       resetAttr(attrs, 'esquiveAcrobatique', evt);
       resetAttr(attrs, 'resistanceALaMagieBarbare', evt);
       resetAttr(attrs, 'paradeMagistrale', evt);
+      resetAttr(attrs, 'riposteGuerrier', evt);
       // Pour défaut dans la cuirasse, on diminue si la valeur est 2, et on supprime si c'est 1
       var defautsDansLaCuirasse = allAttributesNamed(attrs, 'defautDansLaCuirasse');
       defautsDansLaCuirasse.forEach(function(attr) {

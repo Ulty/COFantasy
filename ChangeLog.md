@@ -1,5 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.09
+### Capacités
+* Riposte du guerrier
+
 ### Autres améliorations
 * Ajout d'une option --plusCrit aux attaques.
 * Ajout d'une option --plageEchecCritique aux jets.
