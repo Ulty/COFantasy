@@ -7417,7 +7417,7 @@ var COFantasy = COFantasy || function() {
         setAttrDuree(attaquant, options.tempsRecharge.effet, options.tempsRecharge.duree, evt);
     }
     //On met à jour l'arme en main, si nécessaire
-    if (weaponStats.arme || (weaponStats.divers && weaponStats.divers.toLowerCase().includes('arme'))) {
+    if (weaponStats.arme || weaponStats.armeGauche || (weaponStats.divers && weaponStats.divers.toLowerCase().includes('arme'))) {
       options.weaponStats = weaponStats;
       options.messages = options.messages || [];
       degainerArme(attaquant, attackLabel, evt, options);
