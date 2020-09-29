@@ -8,6 +8,7 @@
 * Les effets temporaires lancés avec une option de mana disparaissent quand le lanceur meurt.
 
 ### Corrections de bugs
+* Undo avant de faire le jet d'attaque pour l'esquive acrobatique
 * Prise en compte correcte des caractéristiques de PNJs dans les jets.
 
 ## 2.08

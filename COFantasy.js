@@ -1645,6 +1645,46 @@ var COFantasy = COFantasy || function() {
     });
   }*/
 
+  /* Événements, utilisés pour les undo, en particulier undo pour refaire
+   * une action quand une règle le permet (utilisation de points de chance,
+   * esquive acrobatique, etc..
+   * Champ d'un événement (variables evt en général dans le code:
+   * id               : identificateur unique (int)
+   * type             : description de l'événement (string)
+   * affectes         : liste de tokens affectés par l'événement
+   * tokens           : liste des tokens créés
+   * -> on ne garde pas les tokens effacés, car il est impossible au niveau de l'API de recréer un token si son image n'est pas au bon endroit
+   * attributes       : liste de attributs créés ou modifiés
+   * deletesAttributes: lites des attributs effacés
+   * characters       : liste des personnages créés
+   * deletedCjaracters: liste des personnages effacés
+   * combat           : valeur de la variable d'état combat
+   * combat_pageid    : id de la page où se déroule le combat
+   * tour             : valeur du tour de combat (si il a changé)
+   * init             : valeur de l'initiative dans le tour (si elle a changé)
+   * activeTokenId    : id du token actif (si il a changé)
+   * updateNextInitSet: valeur de l'ensemble des tokens dont il faut recalculer l'init
+   * turnorder        : le turnorder (si il a changé)
+   * initiativepage   : id de la page avec le turnorder actif -> doublon avec combat_pageid ?
+   * personnage       : le perso qui 'fait' l'événement
+   * succes           : stoque si l'attaque était un succès (bool)
+   * action           : sauvegarde des paramètres de l'evt, pour la rejouer
+   *   - caracteristique : carac testée (pour un jet)
+   *   - titre : titre du jet
+   *   - playerId : id du joueur qui a lancé l'action (pour un jet
+   *   - player_id: idem mais pour une attaque (TODO: unifier)
+   *   - selected : cibles sélectionnés des l'action
+   *   - attaquant: personnage attaquant (TODO: voir si doublon avec personnage)
+   *   - cibles: liste des cibles d'attaque, avec leurs tags
+   *   - weaponStats: stats de l'arme (ou attaque) utilisée
+   *   - rollsAttack: rolls de l'attaque
+   *   - options : options de l'action
+   *      - en particulier etat_nom_attid: roll du jet pour mettre dans un état
+   *         et jetOppsose1 jetOppose2 pour le piétinement
+   * attenteResultat  : permet de savoir que le jet est en attente de décision pour savoir si c'est un succès ou non (quand il n'y a pas de difficulté donnée et que le personnage est sous l'emprise d'une malédiction)
+   * waitingForAoe   : même usage que attenteResultat
+   */
+
   function addEvent(evt) {
     evt.id = stateCOF.eventId++;
     eventHistory.push(evt);
@@ -2933,13 +2973,13 @@ var COFantasy = COFantasy || function() {
           if (pc > 0) {
             options.roll = options.roll || rt.roll;
             boutonsReroll += ' ' + bouton("!cof-bouton-chance " + evt.id, "Chance", perso) +
-                " (reste " + pc + " PC)";
+              " (reste " + pc + " PC)";
           }
           if (attributeAsBool(perso, 'runeForgesort_énergie') && (caracteristique == 'FOR' || caracteristique == 'CON' || caracteristique == 'DEX')) {
-              boutonsReroll += ' ' + bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", perso);
+            boutonsReroll += ' ' + bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", perso);
           }
           if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
-              boutonsReroll += ' ' + bouton("!cof-petit-veinard " + evt.id, "Petit veinard", perso);
+            boutonsReroll += ' ' + bouton("!cof-petit-veinard " + evt.id, "Petit veinard", perso);
           }
           addLineToFramedDisplay(display, boutonsReroll);
           if (optionsDisplay.retarde) {
@@ -7619,7 +7659,7 @@ var COFantasy = COFantasy || function() {
     var dmgCoef = options.dmgCoef || 1;
     if (options.attaqueDeGroupeDmgCoef) {
       dmgCoef++;
-      expliquer("Attaque en groupe > DEF +"+reglesOptionelles.crit_attaque_groupe.val+" => DMGx" + (crit ? "3" : "2"));
+      expliquer("Attaque en groupe > DEF +" + reglesOptionelles.crit_attaque_groupe.val + " => DMGx" + (crit ? "3" : "2"));
     }
     if (target.dmgCoef) dmgCoef += target.dmgCoef;
     var critCoef = 1;
@@ -9665,7 +9705,7 @@ var COFantasy = COFantasy || function() {
                       attaquant: attaquant
                     };
                     var saveId = 'etat_' + ce.etat + '_' + attaquant.token.id;
-                    if(options[saveId]) saveOpts.roll = options[saveId];
+                    if (options[saveId]) saveOpts.roll = options[saveId];
                     save(ce.save, target, saveId, expliquer, saveOpts, evt,
                       function(reussite, rolltext, roll) {
                         if (!reussite) {
@@ -9713,7 +9753,7 @@ var COFantasy = COFantasy || function() {
                   };
                   var duree = ef.duree;
                   var saveId = 'effet_' + ef.effet + '_' + attaquant.token.id;
-                  if(options[saveId]) saveOpts.roll = options[saveId];
+                  if (options[saveId]) saveOpts.roll = options[saveId];
                   save(ef.save, target, saveId, expliquer, saveOpts, evt,
                     function(reussite, rollText, roll) {
                       if (reussite && duree && ef.save.demiDuree) {
@@ -10160,10 +10200,10 @@ var COFantasy = COFantasy || function() {
       expliquer(title);
     }
     var optionsTest = {
-        bonusAttrs: bonusAttrs,
-        bonus: bonus,
-    }
-    if(options.roll) optionsTest.roll = options.roll;
+      bonusAttrs: bonusAttrs,
+      bonus: bonus,
+    };
+    if (options.roll) optionsTest.roll = options.roll;
     testCaracteristique(target, carac, s.seuil, saveId, optionsTest, evt,
       function(tr) {
         var smsg = target.token.get('name') + " fait " + tr.texte;
@@ -19739,6 +19779,7 @@ var COFantasy = COFantasy || function() {
           count--;
           return;
         }
+        undoEvent();
         evt.attributes.push({
           attribute: esquiveAcrobatique,
           current: curEsquiveAcrobatique
@@ -19773,13 +19814,11 @@ var COFantasy = COFantasy || function() {
           count--;
           if (count === 0) {
             toProceed = false;
-            undoEvent();
             attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
           }
         }); //fin lancé de dés asynchrone
       }); //fin iterSelected
       if (count === 0 && toProceed) {
-        undoEvent();
         attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
       }
     }); //fin getSelected
@@ -19859,6 +19898,7 @@ var COFantasy = COFantasy || function() {
           count--;
           return;
         }
+        undoEvent();
         evt.attributes.push({
           attribute: paradeMagistrale,
           current: curParadeMagistrale
@@ -19903,13 +19943,11 @@ var COFantasy = COFantasy || function() {
           count--;
           if (count === 0) {
             toProceed = false;
-            undoEvent();
             attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
           }
         }); //fin lancé de dés asynchrone
       }); //fin iterSelected
       if (count === 0 && toProceed) {
-        undoEvent();
         attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
       }
     }); //fin getSelected
