@@ -6268,9 +6268,10 @@ var COFantasy = COFantasy || function() {
   }
 
   // renvoie l'attribut créé ou mis à jour
-  function setAttrDuree(perso, attr, duree, evt, msg) {
+  function setAttrDuree(perso, attr, duree, evt, msg, init) {
+    var initDuree = init || getInit();
     var options = {
-      maxVal: getInit()
+      maxVal: initDuree
     };
     if (msg) options.msg = msg;
     return setTokenAttr(perso, attr, duree, evt, options);
@@ -7413,8 +7414,11 @@ var COFantasy = COFantasy || function() {
         sendChar(attackingCharId, "ne peut pas encore utiliser cette attaque");
         return;
       }
-      if (options.tempsRecharge.duree > 0)
-        setAttrDuree(attaquant, options.tempsRecharge.effet, options.tempsRecharge.duree, evt);
+      if (options.tempsRecharge.duree > 0) {
+        setAttrDuree(attaquant, options.tempsRecharge.effet, options.tempsRecharge.duree, evt, null, tokenInit(attaquant, evt));
+      } else {
+        setAttrDuree(attaquant, options.tempsRecharge.effet, 'tourFinal', evt, null, tokenInit(attaquant, evt));
+      }
     }
     //On met à jour l'arme en main, si nécessaire
     if (weaponStats.arme || weaponStats.armeGauche || (weaponStats.divers && weaponStats.divers.toLowerCase().includes('arme'))) {
@@ -10146,7 +10150,9 @@ var COFantasy = COFantasy || function() {
             }
           });
         }
-        if (charAttributeAsBool(target, 'seulContreTous')) {
+        if(evt.succes == false && charAttributeAsBool(target, 'riposteGuerrier') && !attributeAsBool(target, 'rechargeGen(riposteGuerrier)')) {
+          displayAttaqueOpportunite(target.token.id, [attaquant], "de riposte", '#ActionsRiposte#', '--tempsRecharge rechargeGen(riposteGuerrier) 0');
+        } else if (charAttributeAsBool(target, 'seulContreTous')) {
           displayAttaqueOpportunite(target.token.id, [attaquant], "de riposte", '#ActionsRiposte#');
         } else if (charAttributeAsBool(target, 'riposte')) {
           var attrCiblesDeLaCible = tokenAttribute(target, 'dernieresCiblesAttaquees');
