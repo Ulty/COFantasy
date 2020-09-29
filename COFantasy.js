@@ -1671,8 +1671,7 @@ var COFantasy = COFantasy || function() {
    * action           : sauvegarde des paramètres de l'evt, pour la rejouer
    *   - caracteristique : carac testée (pour un jet)
    *   - titre : titre du jet
-   *   - playerId : id du joueur qui a lancé l'action (pour un jet
-   *   - player_id: idem mais pour une attaque (TODO: unifier)
+   *   - playerId : id du joueur qui a lancé l'action
    *   - selected : cibles sélectionnés des l'action
    *   - attaquant: personnage attaquant (TODO: voir si doublon avec personnage)
    *   - cibles: liste des cibles d'attaque, avec leurs tags
@@ -8197,7 +8196,7 @@ var COFantasy = COFantasy || function() {
 
         evt.type = 'Attaque';
         evt.succes = true;
-        evt.action.player_id = playerId;
+        evt.action.playerId = playerId;
         evt.action.attaquant = attaquant;
         evt.action.cibles = cibles;
         evt.action.weaponStats = weaponStats;
@@ -13401,7 +13400,7 @@ var COFantasy = COFantasy || function() {
         delete target.partialSaveAuto;
       });
     }
-    attack(action.player_id, perso, action.cibles, action.weaponStats, options);
+    attack(action.playerId, perso, action.cibles, action.weaponStats, options);
   }
 
   function echecTotal(msg) {
@@ -13436,7 +13435,7 @@ var COFantasy = COFantasy || function() {
     // assumes that the original action was undone, re-attack with bonus
     var options = action.options;
     options.triche = "echecTotal";
-    attack(action.player_id, perso, perso.token, action.weaponStats, options);
+    attack(action.playerId, perso, perso.token, action.weaponStats, options);
   }
 
   function persoUtiliseRuneEnergie(perso, evt) {
@@ -13503,7 +13502,7 @@ var COFantasy = COFantasy || function() {
               delete target.partialSaveAuto;
             });
           }
-          attack(action.player_id, perso, action.cibles, action.weaponStats, options);
+          attack(action.playerId, perso, action.cibles, action.weaponStats, options);
           return;
         case 'jetPerso':
           undoEvent(evtARefaire);
@@ -13608,7 +13607,7 @@ var COFantasy = COFantasy || function() {
       switch (evtARefaire.type) {
         case 'Attaque':
           undoEvent(evtARefaire);
-          attack(action.player_id, perso, action.cibles, action.weaponStats, options);
+          attack(action.playerId, perso, action.cibles, action.weaponStats, options);
           return;
         default:
           return;
@@ -13690,7 +13689,7 @@ var COFantasy = COFantasy || function() {
     switch (evtARefaire.type) {
       case 'Attaque':
         undoEvent(evtARefaire);
-        attack(action.player_id, perso, action.cibles, action.weaponStats, options);
+        attack(action.playerId, perso, action.cibles, action.weaponStats, options);
         return;
       default:
         return;
@@ -13779,7 +13778,7 @@ var COFantasy = COFantasy || function() {
     undoEvent(evtARefaire);
     adversaire.esquiveFatale = true;
     options.redo = true;
-    attack(action.player_id, attaquant, [adversaire], action.weaponStats, options);
+    attack(action.playerId, attaquant, [adversaire], action.weaponStats, options);
   }
 
   function intercepter(msg) {
@@ -13843,7 +13842,7 @@ var COFantasy = COFantasy || function() {
         options.evt = evt;
         options.redo = true;
         cible.rollsDmg = attaque.cibles[0].rollsDmg;
-        attack(attaque.player_id, attaque.attaquant, [cible], attaque.weaponStats, options);
+        attack(attaque.playerId, attaque.attaquant, [cible], attaque.weaponStats, options);
       });
     });
   }
@@ -13910,7 +13909,7 @@ var COFantasy = COFantasy || function() {
         options.evt = evt;
         options.redo = true;
         cible.rollsDmg = target.rollsDmg;
-        attack(attaque.player_id, attaque.attaquant, [cible], attaque.weaponStats, options);
+        attack(attaque.playerId, attaque.attaquant, [cible], attaque.weaponStats, options);
       });
     });
   }
@@ -13951,7 +13950,7 @@ var COFantasy = COFantasy || function() {
         var options = attaque.options;
         options.evt = evt;
         options.redo = true;
-        attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+        attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
       });
     });
   }
@@ -14023,7 +14022,7 @@ var COFantasy = COFantasy || function() {
               delete target.partialSaveAuto;
             });
           }
-          attack(action.player_id, perso, action.cibles, action.weaponStats, options);
+          attack(action.playerId, perso, action.cibles, action.weaponStats, options);
           return;
         case 'jetPerso':
           undoEvent(evtARefaire);
@@ -19476,7 +19475,7 @@ var COFantasy = COFantasy || function() {
         options.rollsAttack = attaque.rollsAttack;
         options.evt = evt;
         options.redo = true;
-        attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+        attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
       }
     }); //fin getSelected
   }
@@ -19584,13 +19583,13 @@ var COFantasy = COFantasy || function() {
           if (count === 0) {
             toProceed = false;
             undoEvent();
-            attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+            attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
           }
         }); //fin lancé de dés asynchrone
       }); //fin iterSelected
       if (count === 0 && toProceed) {
         undoEvent();
-        attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+        attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
       }
     }); //fin getSelected
   }
@@ -19699,13 +19698,13 @@ var COFantasy = COFantasy || function() {
           if (count === 0) {
             toProceed = false;
             undoEvent();
-            attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+            attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
           }
         }); //fin lancé de dés asynchrone
       }); //fin iterSelected
       if (count === 0 && toProceed) {
         undoEvent();
-        attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+        attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
       }
     }); //fin getSelected
   }
@@ -19814,12 +19813,12 @@ var COFantasy = COFantasy || function() {
           count--;
           if (count === 0) {
             toProceed = false;
-            attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+            attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
           }
         }); //fin lancé de dés asynchrone
       }); //fin iterSelected
       if (count === 0 && toProceed) {
-        attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+        attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
       }
     }); //fin getSelected
   }
@@ -19943,12 +19942,12 @@ var COFantasy = COFantasy || function() {
           count--;
           if (count === 0) {
             toProceed = false;
-            attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+            attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
           }
         }); //fin lancé de dés asynchrone
       }); //fin iterSelected
       if (count === 0 && toProceed) {
-        attack(attaque.player_id, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+        attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
       }
     }); //fin getSelected
   }
