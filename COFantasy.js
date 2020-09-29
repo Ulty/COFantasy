@@ -25438,6 +25438,11 @@ var COFantasy = COFantasy || function() {
       actif: "est placé de façon à dévier un coup",
       fin: "n'est plus en position pour encaisser un coup"
     },
+    seulContreTous: {
+      activation: "se place de façon à faire face à tous ses adversaires",
+      actif: "riposte",
+      fin: "ne fait plus face à tous ses adversaires"
+    },
     absorberUnCoup: {
       activation: "se prépare à absorber un coup avec son bouclier",
       actif: "est prêt à absorber un coup avec son bouclier",
