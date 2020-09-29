@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.09
 ### Capacités
+* Vitalité surnaturelle du barbare
 * Riposte du guerrier
 
 ### Autres améliorations
