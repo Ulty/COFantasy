@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.09
 ### Autres améliorations
+* Ajout d'une option --plusCrit aux attaques.
 * Ajout d'une option --plageEchecCritique aux jets.
 * Ajout d'une macro pour suivre un autre personnage
 * Possibilité d'utiliser la défense et l'initiative d'un autre personnage.

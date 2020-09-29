@@ -4323,6 +4323,18 @@ var COFantasy = COFantasy || function() {
             type: scope.type
           });
           break;
+        case 'plusCrit':
+          if (cmd.length < 2) {
+            error("Il manque un argument à l'option --plusCrit de !cof-attack", cmd);
+            return;
+          }
+          var valCrit = arg.substring(arg.indexOf(' ') + 1);
+          scope.additionalCritDmg = scope.additionalCritDmg || [];
+          scope.additionalCritDmg.push({
+            value: valCrit,
+            type: scope.type
+          });
+          break;
         case 'effet':
           if (cmd.length < 2) {
             error("Il manque un argument à l'option --effet de !cof-attack", cmd);
@@ -5257,6 +5269,7 @@ var COFantasy = COFantasy || function() {
     for (var field in branch) {
       switch (field) {
         case 'additionalDmg':
+        case 'additionalCritDmg':
         case 'effets':
         case 'etats':
           opt[field] = opt[field] || [];
@@ -7718,6 +7731,16 @@ var COFantasy = COFantasy || function() {
           ajouteDe6Crit(x, false);
         }
       }
+      if (target.additionalCritDmg) {
+        target.additionalCritDmg.forEach(function(dmSpec) {
+          if (firstBonusCritique) {
+            x.dmgDisplay = "(" + x.dmgDisplay + ")";
+            firstBonusCritique = false;
+          }
+          x.dmgDisplay += '+' + dmSpec.display;
+          x.dmgTotal += dmSpec.total;
+        });
+      }
       if (options.memePasMal !== undefined) {
         options.memePasMal += x.dmgTotal - dmgTotal;
       }
@@ -9279,6 +9302,12 @@ var COFantasy = COFantasy || function() {
         mainDmgRollExpr += " + " + dmSpec.value;
         return false;
       });
+      // ON ajoute le jet pour les dégâts de critiques supplémentaires
+      if (target.critique && options.additionalCritDmg) {
+        options.additionalCritDmg.forEach(function(dmSpec) {
+          ExtraDmgRollExpr += " [[" + dmSpec.value + "]]";
+        });
+      }
       if (options.aveugleManoeuvre) {
         mainDmgRollExpr += " -5";
       }
@@ -9286,11 +9315,10 @@ var COFantasy = COFantasy || function() {
         type: mainDmgType,
         value: mainDmgRollExpr
       };
-
       // toEvaluateDmg inlines
       // 0 : roll de dégâts principaux
       // 1+ : les rolls de dégâts supplémentaires
-
+      // 1+nb dégâts supplémentaires + : rolls de dégâts critiques
       var toEvaluateDmg = "[[" + mainDmgRollExpr + "]]" + ExtraDmgRollExpr;
       sendChat(attaquant.name, toEvaluateDmg, function(resDmg) {
         var rollsDmg = target.rollsDmg || resDmg[0];
@@ -9298,6 +9326,25 @@ var COFantasy = COFantasy || function() {
         var mainDmgRollNumber = rollNumber(afterEvaluateDmg[0]);
         mainDmgRoll.total = rollsDmg.inlinerolls[mainDmgRollNumber].results.total;
         mainDmgRoll.display = buildinline(rollsDmg.inlinerolls[mainDmgRollNumber], mainDmgType, options.magique);
+        if (target.critique && options.additionalCritDmg) {
+          var firstCritRoll = 1 + additionalDmg.length;
+          target.additionalCritDmg = [];
+          var rollsCrit = resDmg[0];
+          if (target.rollsDmg && target.rollsDmg.length >= firstCritRoll + options.additinalCritDmg.length)
+            rollsCrit = target.rollsDmg;
+          options.additionalCritDmg.forEach(function(dmSpec, i) {
+            var rRoll = rollsCrit.inlinerolls[rollNumber(afterEvaluateDmg[i + firstCritRoll])];
+            if (rRoll) {
+              target.additionalCritDmg.push(dmSpec);
+              dmSpec.total = dmSpec.total || rRoll.results.total;
+              var addDmType = dmSpec.type;
+              dmSpec.display = dmSpec.display || buildinline(rRoll, addDmType, options.magique);
+            } else { //l'expression de DM additionel est mal formée
+              error("Expression de dégâts de critiques mal formée : " + options.additionalCritDmg[i].value, options.additionalCritDmg[i]);
+            }
+          });
+          if (target.additionalCritDmg.length === 0) delete target.additionalCritDmg;
+        }
         var correctAdditionalDmg = [];
         additionalDmg.forEach(function(dmSpec, i) {
           var rRoll = rollsDmg.inlinerolls[rollNumber(afterEvaluateDmg[i + 1])];
