@@ -9665,8 +9665,9 @@ var COFantasy = COFantasy || function() {
                       attaquant: attaquant
                     };
                     var saveId = 'etat_' + ce.etat + '_' + attaquant.token.id;
+                    if(options[saveId]) saveOpts.roll = options[saveId];
                     save(ce.save, target, saveId, expliquer, saveOpts, evt,
-                      function(reussite, rolltext) {
+                      function(reussite, rolltext, roll) {
                         if (!reussite) {
                           setState(target, ce.etat, true, evt);
                           if (ce.saveCarac) {
@@ -9675,6 +9676,7 @@ var COFantasy = COFantasy || function() {
                             });
                           }
                         }
+                        evt.action.options[saveId] = roll;
                         saves--;
                         afterSaves();
                       });
@@ -9711,8 +9713,9 @@ var COFantasy = COFantasy || function() {
                   };
                   var duree = ef.duree;
                   var saveId = 'effet_' + ef.effet + '_' + attaquant.token.id;
+                  if(options[saveId]) saveOpts.roll = options[saveId];
                   save(ef.save, target, saveId, expliquer, saveOpts, evt,
-                    function(reussite, rollText) {
+                    function(reussite, rollText, roll) {
                       if (reussite && duree && ef.save.demiDuree) {
                         reussite = false;
                         duree = Math.ceil(duree / 2);
@@ -9780,6 +9783,7 @@ var COFantasy = COFantasy || function() {
                             });
                         }
                       }
+                      evt.action.options[saveId] = roll;
                       saves--;
                       savesEffets--;
                       etatsAvecSave();
@@ -9790,7 +9794,9 @@ var COFantasy = COFantasy || function() {
           };
           var effetPietinement = function() {
             if (target.pietine && estAussiGrandQue(attaquant, target)) {
-              testOppose(target, 'FOR', {}, attaquant, 'FOR', {}, target.messages, evt, function(resultat) {
+              var options1 = options.jetOppose1 || {};
+              var options2 = options.jetOppose2 || {};
+              testOppose(target, 'FOR', options1, attaquant, 'FOR', options2, target.messages, evt, function(resultat, crit, rt1, rt2) {
                 if (resultat == 2) {
                   target.messages.push(target.tokName + " est piétiné par " + attackerTokName + ", dommages doublés");
                   setState(target, 'renverse', true, evt);
@@ -9800,6 +9806,8 @@ var COFantasy = COFantasy || function() {
                   if (resultat === 0) diminueMalediction(attaquant, evt);
                   target.messages.push(target.tokName + " n'est pas piétiné.");
                 }
+                evt.action.options.jetOppose1 = rt1;
+                evt.action.options.jetOppose2 = rt2;
                 effetsAvecSave();
               });
             } else effetsAvecSave();
@@ -10151,10 +10159,12 @@ var COFantasy = COFantasy || function() {
       if (options.msgPour) title += options.msgPour;
       expliquer(title);
     }
-    testCaracteristique(target, carac, s.seuil, saveId, {
+    var optionsTest = {
         bonusAttrs: bonusAttrs,
-        bonus: bonus
-      }, evt,
+        bonus: bonus,
+    }
+    if(options.roll) optionsTest.roll = options.roll;
+    testCaracteristique(target, carac, s.seuil, saveId, optionsTest, evt,
       function(tr) {
         var smsg = target.token.get('name') + " fait " + tr.texte;
         if (tr.reussite) {
@@ -10165,7 +10175,7 @@ var COFantasy = COFantasy || function() {
           if (options.msgRate) smsg += options.msgRate;
         }
         expliquer(smsg);
-        afterSave(tr.reussite, tr.texte);
+        afterSave(tr.reussite, tr.texte, tr.roll);
       });
   }
 
@@ -15526,7 +15536,6 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-
   // Ne pas remplacer les inline rolls, il faut les afficher correctement
   function dmgDirects(msg) {
     var options = parseOptions(msg);
@@ -20618,7 +20627,7 @@ var COFantasy = COFantasy || function() {
             diminueMalediction(perso1, evt);
             break;
         }
-        callback(reussite, crit);
+        callback(reussite, crit, rt1, rt2);
       }); //Fin du jet du deuxième perso
     }); //Fin du jet du premier perso
   }
