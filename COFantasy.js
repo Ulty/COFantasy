@@ -1676,10 +1676,14 @@ var COFantasy = COFantasy || function() {
    *   - attaquant: personnage attaquant (TODO: voir si doublon avec personnage)
    *   - cibles: liste des cibles d'attaque, avec leurs tags
    *   - weaponStats: stats de l'arme (ou attaque) utilisée
-   *   - rollsAttack: rolls de l'attaque
+   *   - rolls: les jets de l'action, pour les avoir à l'identique
+   *     les dégâts sont stoqués dans chaque cible, dans cible.rollsDmg
+   *     - attack: les jets de l'attaque
+   *     - etat_e_index_targetid: save pour entrer dans l'état e
+   *     - effet_e_index_targetid: save pour l'effet e
+   *     - attaquant_pietinement_targetid: jet de l'attaquant pour le piétinement
+   *     - defenseur_pietinement_targetid: jet de du défenseur pour le piétinement
    *   - options : options de l'action
-   *      - en particulier etat_nom_attid: roll du jet pour mettre dans un état
-   *         et jetOppsose1 jetOppose2 pour le piétinement
    * attenteResultat  : permet de savoir que le jet est en attente de décision pour savoir si c'est un succès ou non (quand il n'y a pas de difficulté donnée et que le personnage est sous l'emprise d'une malédiction)
    * waitingForAoe   : même usage que attenteResultat
    */
@@ -8187,7 +8191,9 @@ var COFantasy = COFantasy || function() {
     if (options.poudre) toEvaluateAttack += " [[1d20]]";
     try {
       sendChat(attackerName, toEvaluateAttack, function(resAttack) {
-        var rollsAttack = options.rollsAttack || resAttack[0];
+        var rollsAttack = resAttack[0];
+        if (options.rolls && options.rolls.attack)
+          rollsAttack = options.rolls.attack;
         var afterEvaluateAttack = rollsAttack.content.split(' ');
         var attRollNumber = rollNumber(afterEvaluateAttack[0]);
         var attSkillNumber = rollNumber(afterEvaluateAttack[1]);
@@ -8200,7 +8206,8 @@ var COFantasy = COFantasy || function() {
         evt.action.attaquant = attaquant;
         evt.action.cibles = cibles;
         evt.action.weaponStats = weaponStats;
-        evt.action.rollsAttack = rollsAttack;
+        evt.action.rolls = evt.action.rolls || {};
+        evt.action.rolls.attack = rollsAttack;
         addEvent(evt);
 
         // debut de la partie affichage
@@ -9684,11 +9691,11 @@ var COFantasy = COFantasy || function() {
           var expliquer = function(msg) {
             target.messages.push(msg);
           };
-          //Ajoute les états avec save à la cibles
+          //Ajoute les états avec save à la cible
           var etatsAvecSave = function() {
             if (savesEffets > 0) return; //On n'a pas encore fini avec les effets
             if (etats && saves > 0) {
-              etats.forEach(function(ce) {
+              etats.forEach(function(ce, index) {
                 if (ce.save) {
                   if (testCondition(ce.condition, attaquant, [target], d20roll)) {
                     var msgPour = " pour résister à un effet";
@@ -9703,8 +9710,9 @@ var COFantasy = COFantasy || function() {
                       msgRate: msgRate,
                       attaquant: attaquant
                     };
+                    var rollId = 'etat_' + ce.etat + index + '_' + target.token.id;
+                    if (options.rolls) saveOpts.roll = options.rolls[rollId];
                     var saveId = 'etat_' + ce.etat + '_' + attaquant.token.id;
-                    if (options[saveId]) saveOpts.roll = options[saveId];
                     save(ce.save, target, saveId, expliquer, saveOpts, evt,
                       function(reussite, rolltext, roll) {
                         if (!reussite) {
@@ -9715,7 +9723,8 @@ var COFantasy = COFantasy || function() {
                             });
                           }
                         }
-                        evt.action.options[saveId] = roll;
+                        evt.action.rolls = evt.actions.rolls || {};
+                        evt.action.rolls[rollId] = roll;
                         saves--;
                         afterSaves();
                       });
@@ -9735,7 +9744,7 @@ var COFantasy = COFantasy || function() {
           // Ajoute les effets avec save à la cible
           var effetsAvecSave = function() {
             if (effets && savesEffets > 0) {
-              effets.forEach(function(ef) {
+              effets.forEach(function(ef, index) {
                 if (ef.save) {
                   var msgPour = " pour résister à un effet";
                   var msgRate = ", " + target.tokName + " ";
@@ -9750,9 +9759,10 @@ var COFantasy = COFantasy || function() {
                     msgRate: msgRate,
                     attaquant: attaquant
                   };
+                  var rollId = 'effet_' + ef.effet + index + '_' + target.token.id;
+                  if (options.rolls) saveOpts.roll = options.rolls[rollId];
                   var duree = ef.duree;
                   var saveId = 'effet_' + ef.effet + '_' + attaquant.token.id;
-                  if (options[saveId]) saveOpts.roll = options[saveId];
                   save(ef.save, target, saveId, expliquer, saveOpts, evt,
                     function(reussite, rollText, roll) {
                       if (reussite && duree && ef.save.demiDuree) {
@@ -9822,7 +9832,8 @@ var COFantasy = COFantasy || function() {
                             });
                         }
                       }
-                      evt.action.options[saveId] = roll;
+                      evt.action.rolls = evt.action.rolls || {};
+                      evt.action.rolls[rollId] = roll;
                       saves--;
                       savesEffets--;
                       etatsAvecSave();
@@ -9833,8 +9844,13 @@ var COFantasy = COFantasy || function() {
           };
           var effetPietinement = function() {
             if (target.pietine && estAussiGrandQue(attaquant, target)) {
-              var options1 = options.jetOppose1 || {};
-              var options2 = options.jetOppose2 || {};
+              var rollId = '_pietinement_' + target.token.id;
+              var options1 = {};
+              if (options.rolls && options.rolls['attaquant' + rollId])
+                options1.roll = options.rolls['attaquant' + rollId];
+              var options2 = {};
+              if (options.rolls && options.rolls['defenseur' + rollId])
+                options2.roll = options.rolls['defenseur' + rollId];
               testOppose(target, 'FOR', options1, attaquant, 'FOR', options2, target.messages, evt, function(resultat, crit, rt1, rt2) {
                 if (resultat == 2) {
                   target.messages.push(target.tokName + " est piétiné par " + attackerTokName + ", dommages doublés");
@@ -9845,8 +9861,9 @@ var COFantasy = COFantasy || function() {
                   if (resultat === 0) diminueMalediction(attaquant, evt);
                   target.messages.push(target.tokName + " n'est pas piétiné.");
                 }
-                evt.action.options.jetOppose1 = rt1;
-                evt.action.options.jetOppose2 = rt2;
+                evt.actions.rolls = evt.actions.rolls || {};
+                evt.action.rolls['attaquant' + rollId] = rt1;
+                evt.action.rolls['defenseur' + rollId] = rt2;
                 effetsAvecSave();
               });
             } else effetsAvecSave();
@@ -13300,11 +13317,13 @@ var COFantasy = COFantasy || function() {
           return;
         case 'jetPerso':
           var options = action.options || {};
+          options.rolls = action.rolls;
           options.chance = (options.chance === undefined) ? 1 : options.chance + 1;
           jetPerso(perso, action.caracteristique, action.difficulte, action.titre, action.playerId, options);
           return;
         case 'echapperEnveloppement':
           var optionsEE = action.options || {};
+          options.rolls = action.rolls;
           optionsEE.chance = (optionsEE.chance === undefined) ? 1 : optionsEE.chance + 1;
           echapperEnveloppement({
             selected: action.selected,
@@ -13393,7 +13412,7 @@ var COFantasy = COFantasy || function() {
     // assumes that the original action was undone, re-attack with bonus
     var options = action.options;
     options.chance = (options.chance + 10) || 10;
-    options.rollsAttack = action.rollsAttack;
+    options.rolls = action.rolls;
     options.redo = true;
     if (action.cibles) {
       action.cibles.forEach(function(target) {
@@ -13502,6 +13521,9 @@ var COFantasy = COFantasy || function() {
               delete target.partialSaveAuto;
             });
           }
+          //On garde tous les jets sauf le jet d'attaque
+          options.rolls = action.rolls;
+          if (options.rolls.attack) delete options.rolls.attack;
           attack(action.playerId, perso, action.cibles, action.weaponStats, options);
           return;
         case 'jetPerso':
@@ -13598,7 +13620,7 @@ var COFantasy = COFantasy || function() {
       var options = action.options || {};
       options.redo = true;
       options.maxDmg = true;
-      options.rollsAttack = action.rollsAttack;
+      options.rolls = action.rolls;
       action.cibles.forEach(function(target) {
         delete target.rollsDmg;
       });
@@ -13681,7 +13703,7 @@ var COFantasy = COFantasy || function() {
     var options = action.options || {};
     options.redo = true;
     options.maxDmg = true;
-    options.rollsAttack = action.rollsAttack;
+    options.rolls = action.rolls;
     action.cibles.forEach(function(target) {
       delete target.rollsDmg;
     });
@@ -13755,7 +13777,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var options = action.options || {};
-    options.rollsAttack = action.rollsAttack;
+    options.rolls = action.rolls;
     var attr = tokenAttribute(perso, 'esquiveFatale');
     if (attr.length === 0) {
       sendChar(perso.charId, "ne sait pas faire d'esquive fatale");
@@ -13838,7 +13860,7 @@ var COFantasy = COFantasy || function() {
         // Puis on refait en changeant la cible
         var options = attaque.options;
         options.intercepter = voieMeneur;
-        options.rollsAttack = attaque.rollsAttack;
+        options.rolls = attaque.rolls;
         options.evt = evt;
         options.redo = true;
         cible.rollsDmg = attaque.cibles[0].rollsDmg;
@@ -13904,8 +13926,7 @@ var COFantasy = COFantasy || function() {
         // Puis on refait en changeant la cible
         var options = attaque.options;
         options.interposer = pvPerdus;
-        options.rollsAttack = attaque.rollsAttack;
-        options.rollsDmg = attaque.rollsDmg;
+        options.rolls = attaque.rolls;
         options.evt = evt;
         options.redo = true;
         cible.rollsDmg = target.rollsDmg;
@@ -19472,7 +19493,7 @@ var COFantasy = COFantasy || function() {
       if (toProceed) {
         undoEvent();
         var options = attaque.options;
-        options.rollsAttack = attaque.rollsAttack;
+        options.rolls = attaque.rolls;
         options.evt = evt;
         options.redo = true;
         attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
@@ -19508,7 +19529,7 @@ var COFantasy = COFantasy || function() {
       }
       var attaque = evtARefaire.action;
       var options = attaque.options;
-      options.rollsAttack = attaque.rollsAttack;
+      options.rolls = attaque.rolls;
       var evt = {
         type: "absorber un "
       };
@@ -19622,7 +19643,7 @@ var COFantasy = COFantasy || function() {
       }
       var attaque = evtARefaire.action;
       var options = attaque.options;
-      options.rollsAttack = attaque.rollsAttack;
+      options.rolls = attaque.rolls;
       var evt = {
         type: "résistance à la magie",
         attributes: []
@@ -19737,7 +19758,7 @@ var COFantasy = COFantasy || function() {
       }
       var attaque = evtARefaire.action;
       var options = attaque.options;
-      options.rollsAttack = attaque.rollsAttack;
+      options.rolls = attaque.rolls;
       var evt = {
         type: "esquive acrobatique",
         attributes: []
@@ -19851,7 +19872,7 @@ var COFantasy = COFantasy || function() {
       }
       var attaque = evtARefaire.action;
       var options = attaque.options;
-      options.rollsAttack = attaque.rollsAttack;
+      options.rolls = attaque.rolls;
       var evt = {
         type: "esquive acrobatique",
         attributes: []
@@ -21992,7 +22013,9 @@ var COFantasy = COFantasy || function() {
     }
     var toEvaluateAttack = attackExpression(attaquant, 1, dice, critAttaquant, true, armeAttaquant);
     sendChat('', toEvaluateAttack, function(resAttack) {
-      var rollsAttack = options.rollsAttack || resAttack[0];
+      var rollsAttack = resAttack[0];
+      if (options.rolls && options.rolls.attack)
+        rollsAttack = options.rolls.attack;
       var afterEvaluateAttack = rollsAttack.content.split(' ');
       var attRollNumber = rollNumber(afterEvaluateAttack[0]);
       var attSkillNumber = rollNumber(afterEvaluateAttack[1]);
@@ -22026,7 +22049,9 @@ var COFantasy = COFantasy || function() {
       }
       toEvaluateAttack = attackExpression(defenseur, 1, dice, critDefenseur, true, armeDefenseur);
       sendChat('', toEvaluateAttack, function(resAttack) {
-        rollsAttack = options.rollsAttack || resAttack[0];
+        var rollsAttack = resAttack[0];
+        if (options.rolls && options.rolls.attackDefenseur)
+          rollsAttack = options.rolls.attackDefenseur;
         afterEvaluateAttack = rollsAttack.content.split(' ');
         attRollNumber = rollNumber(afterEvaluateAttack[0]);
         attSkillNumber = rollNumber(afterEvaluateAttack[1]);
