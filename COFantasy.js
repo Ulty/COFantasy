@@ -9909,6 +9909,7 @@ var COFantasy = COFantasy || function() {
                   if (resultat === 0) diminueMalediction(attaquant, evt);
                   target.messages.push(target.tokName + " n'est pas piétiné.");
                 }
+                evt.actions = evt.actions || {};
                 evt.actions.rolls = evt.actions.rolls || {};
                 evt.action.rolls['attaquant' + rollId] = rt1;
                 evt.action.rolls['defenseur' + rollId] = rt2;
