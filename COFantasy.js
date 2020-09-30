@@ -2915,6 +2915,52 @@ var COFantasy = COFantasy || function() {
     return ficheAttributeAsInt(perso, 'pc', 3);
   }
 
+  //callback peut prendre en argument une structure avec les champs:
+  // - texte: Le texte du jet
+  // - total : Le résultat total du jet
+  // - echecCritique, critique pour indiquer si 1 ou 20
+  // - roll: le inlineroll
+  function jetCaracteristique(personnage, carac, options, evt, callback) {
+    var explications = [];
+    var bonusCarac = bonusTestCarac(carac, personnage, options, evt, explications);
+    var carSup = nbreDeTestCarac(carac, personnage);
+    var de = computeDice(personnage, {
+      nbDe: carSup,
+      carac: carac
+    });
+    var bonusText = '';
+    if (bonusCarac > 0) {
+      bonusText = ' + ' + bonusCarac;
+    } else if (bonusCarac < 0) {
+      bonusText = ' - ' + (-bonusCarac);
+    }
+    var plageEC = 1;
+    var plageECText = '1';
+    if (options && options.plageEchecCritique) {
+      plageEC = options.plageEchecCritique;
+      if (plageEC > 1) plageECText = '<' + plageEC;
+    }
+    var rollExpr = "[[" + de + "cs20cf" + plageECText + "]]";
+    sendChat("", rollExpr, function(res) {
+      var roll = options.roll || res[0].inlinerolls[0];
+      var d20roll = roll.results.total;
+      var rtext = buildinline(roll) + bonusText;
+      var rt = {
+        total: d20roll + bonusCarac,
+      };
+      if (d20roll <= plageEC) {
+        rtext += " -> échec critique";
+        rt.echecCritique = true;
+      } else if (d20roll == 20) {
+        rtext += " -> réussite critique";
+        rt.critique = true;
+      } else if (bonusCarac !== 0) rtext += " = " + rt.total;
+      rt.texte = rtext;
+      rt.roll = roll;
+      callback(rt, explications);
+    });
+  }
+
   function jetPerso(perso, caracteristique, difficulte, titre, playerId, options) {
     options = options || {};
     var evt = options.evt || {
@@ -6878,6 +6924,59 @@ var COFantasy = COFantasy || function() {
       attr.set('current', oldval - 1);
     }
     return false;
+  }
+
+  //asynchrone
+  //callback(resultat, crit, roll1, roll2):
+  // resultat peut être 0, 1 ou 2 : 0 = match null, 1 le perso 1 gagne, 2 le perso 2 gagne.
+  // crit peut être 1 si un des deux perso a fait une réussite critique et pas l'autre, -1 si un des personnage a fait un échec critique et pas l'autre, et 0 sinon
+  function testOppose(perso1, carac1, options1, perso2, carac2, options2, explications, evt, callback) {
+    if (carac2 === undefined) carac2 = carac1;
+    var nom1 = perso1.token.get('name');
+    var nom2 = perso2.token.get('name');
+    jetCaracteristique(perso1, carac1, options1, evt, function(rt1, expl1) {
+      jetCaracteristique(perso2, carac2, options2, evt, function(rt2, expl2) {
+        explications.push("Jet de " + carac1 + " de " + nom1 + " :" + rt1.texte);
+        expl1.forEach(function(m) {
+          explications.push(m);
+        });
+        explications.push("Jet de " + carac2 + " de " + nom2 + " :" + rt2.texte);
+        expl2.forEach(function(m) {
+          explications.push(m);
+        });
+        var reussite;
+        var crit = 0;
+        if (rt1.total > rt2.total) reussite = 1;
+        else if (rt2.total > rt1.total) reussite = 2;
+        else reussite = 0;
+        if (rt1.echecCritique) {
+          if (!rt2.echecCritique) {
+            reussite = 2;
+            crit = -1;
+          }
+        } else if (rt2.echecCritique) {
+          reussite = 1;
+          crit = -1;
+        } else if (rt1.critique) {
+          if (!rt2.critique) {
+            reussite = 1;
+            crit = 1;
+          }
+        } else if (rt2.critique) {
+          reussite = 2;
+          crit = 1;
+        }
+        switch (reussite) {
+          case 1:
+            diminueMalediction(perso2, evt);
+            break;
+          case 2:
+            diminueMalediction(perso1, evt);
+            break;
+        }
+        callback(reussite, crit, rt1.roll, rt2.roll);
+      }); //Fin du jet du deuxième perso
+    }); //Fin du jet du premier perso
   }
 
   //targetToken est soit un token, soit une structure avec un champs cibles qui contient toutes les cibles
@@ -15601,52 +15700,6 @@ var COFantasy = COFantasy || function() {
     return dice;
   }
 
-  //callback peut prendre en argument une structure avec les champs:
-  // - texte: Le texte du jet
-  // - total : Le résultat total du jet
-  // - echecCritique, critique pour indiquer si 1 ou 20
-  // - roll: le inlineroll (pour les statistiques)
-  function jetCaracteristique(personnage, carac, options, evt, callback) {
-    var explications = [];
-    var bonusCarac = bonusTestCarac(carac, personnage, options, evt, explications);
-    var carSup = nbreDeTestCarac(carac, personnage);
-    var de = computeDice(personnage, {
-      nbDe: carSup,
-      carac: carac
-    });
-    var bonusText = '';
-    if (bonusCarac > 0) {
-      bonusText = ' + ' + bonusCarac;
-    } else if (bonusCarac < 0) {
-      bonusText = ' - ' + (-bonusCarac);
-    }
-    var plageEC = 1;
-    var plageECText = '1';
-    if (options && options.plageEchecCritique) {
-      plageEC = options.plageEchecCritique;
-      if (plageEC > 1) plageECText = '<' + plageEC;
-    }
-    var rollExpr = "[[" + de + "cs20cf" + plageECText + "]]";
-    sendChat("", rollExpr, function(res) {
-      var roll = options.roll || res[0].inlinerolls[0];
-      var d20roll = roll.results.total;
-      var rtext = buildinline(roll) + bonusText;
-      var rt = {
-        total: d20roll + bonusCarac,
-      };
-      if (d20roll <= plageEC) {
-        rtext += " -> échec critique";
-        rt.echecCritique = true;
-      } else if (d20roll == 20) {
-        rtext += " -> réussite critique";
-        rt.critique = true;
-      } else if (bonusCarac !== 0) rtext += " = " + rt.total;
-      rt.texte = rtext;
-      rt.roll = roll;
-      callback(rt, explications);
-    });
-  }
-
   // Ne pas remplacer les inline rolls, il faut les afficher correctement
   function dmgDirects(msg) {
     var options = parseOptions(msg);
@@ -20686,59 +20739,6 @@ var COFantasy = COFantasy || function() {
       sendChar(perso1.charId, msg.content.substring(start));
     }
     addEvent(evt);
-  }
-
-  //asynchrone
-  //callback(resultat, crit):
-  // resultat peut être 0, 1 ou 2 : 0 = match null, 1 le perso 1 gagne, 2 le perso 2 gagne.
-  // crit peut être 1 si un des deux perso a fait une réussite critique et pas l'autre, -1 si un des personnage a fait un échec critique et pas l'autre, et 0 sinon
-  function testOppose(perso1, carac1, options1, perso2, carac2, options2, explications, evt, callback) {
-    if (carac2 === undefined) carac2 = carac1;
-    var nom1 = perso1.token.get('name');
-    var nom2 = perso2.token.get('name');
-    jetCaracteristique(perso1, carac1, options1, evt, function(rt1, expl1) {
-      jetCaracteristique(perso2, carac2, options2, evt, function(rt2, expl2) {
-        explications.push("Jet de " + carac1 + " de " + nom1 + " :" + rt1.texte);
-        expl1.forEach(function(m) {
-          explications.push(m);
-        });
-        explications.push("Jet de " + carac2 + " de " + nom2 + " :" + rt2.texte);
-        expl2.forEach(function(m) {
-          explications.push(m);
-        });
-        var reussite;
-        var crit = 0;
-        if (rt1.total > rt2.total) reussite = 1;
-        else if (rt2.total > rt1.total) reussite = 2;
-        else reussite = 0;
-        if (rt1.echecCritique) {
-          if (!rt2.echecCritique) {
-            reussite = 2;
-            crit = -1;
-          }
-        } else if (rt2.echecCritique) {
-          reussite = 1;
-          crit = -1;
-        } else if (rt1.critique) {
-          if (!rt2.critique) {
-            reussite = 1;
-            crit = 1;
-          }
-        } else if (rt2.critique) {
-          reussite = 2;
-          crit = 1;
-        }
-        switch (reussite) {
-          case 1:
-            diminueMalediction(perso2, evt);
-            break;
-          case 2:
-            diminueMalediction(perso1, evt);
-            break;
-        }
-        callback(reussite, crit, rt1, rt2);
-      }); //Fin du jet du deuxième perso
-    }); //Fin du jet du premier perso
   }
 
   function provocation(msg) {
