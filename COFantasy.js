@@ -9871,7 +9871,7 @@ var COFantasy = COFantasy || function() {
                           }
                         }
                         evt.action = evt.action || {};
-                        evt.action.rolls = evt.actions.rolls || {};
+                        evt.action.rolls = evt.action.rolls || {};
                         evt.action.rolls[rollId] = roll;
                         saves--;
                         afterSaves();
