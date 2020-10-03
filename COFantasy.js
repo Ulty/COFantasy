@@ -7037,7 +7037,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    if (charAttributeAsBool(attaquant, 'fauchage')) {
+    if (!options.redo && charAttributeAsBool(attaquant, 'fauchage')) {
       var seuilDeFauchage = charAttributeAsInt(attaquant, 'fauchage', 15);
       var seuilFauchage = 10 + modCarac(attaquant, 'force');
       options.etats = options.etats || [];
@@ -8776,41 +8776,45 @@ var COFantasy = COFantasy || function() {
                 //Seulement si elle n'est pas automatiquement réussie
                 var sort = false;
                 if (options.sortilege) sort = true;
-                if (!options.pasDeDmg && !options.ignoreTouteRD && attributeAsBool(target, 'encaisserUnCoup')) {
+                if (!options.pasDeDmg && !options.ignoreTouteRD && attributeAsBool(target, 'encaisserUnCoup') &&
+                    !target.absorber) {
                   options.preDmg = options.preDmg || {} ;
                   options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                   options.preDmg[target.token.id].encaisserUnCoup = true;
                 }
                 if (!options.pasDeDmg && attributeAsBool(target, 'ignorerLaDouleur')
-                    && attributeAsInt(target, 'douleurIgnoree', 0) === 0) {
+                    && attributeAsInt(target, 'douleurIgnoree', 0) === 0 &&
+                    !target.absorber) {
                   options.preDmg = options.preDmg || {} ;
                   options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                   options.preDmg[target.token.id].ignorerLaDouleur = true;
                 }
-                if (charAttributeAsBool(target, 'esquiveAcrobatique')) {
+                if (charAttributeAsBool(target, 'esquiveAcrobatique') && !target.absorber) {
                   options.preDmg = options.preDmg || {} ;
                   options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                   options.preDmg[target.token.id].esquiveAcrobatique = true;
                 }
-                if (options.sortilege && charAttributeAsBool(target, 'resistanceALaMagieBarbare')) {
+                if (options.sortilege && charAttributeAsBool(target, 'resistanceALaMagieBarbare') &&
+                    !target.absorber) {
                   options.preDmg = options.preDmg || {} ;
                   options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                   options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
                 }
                 if (!options.pasDeDmg && attributeAsBool(target, 'runeForgesort_protection') &&
-                    attributeAsInt(target, 'limiteParCombat_runeForgesort_protection', 1) > 0) {
+                    attributeAsInt(target, 'limiteParCombat_runeForgesort_protection', 1) > 0 &&
+                    !target.utiliseRuneProtection) {
                   options.preDmg = options.preDmg || {} ;
                   options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                   options.preDmg[target.token.id].runeForgesort_protection = true;
                 }
                 if (sort) {
-                  if (attributeAsBool(target, 'absorberUnSort')) {
+                  if (attributeAsBool(target, 'absorberUnSort') && !target.absorber) {
                     options.preDmg = options.preDmg || {} ;
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].absorberUnSort = true;
                   }
                 } else {
-                  if (attributeAsBool(target, 'absorberUnCoup')) {
+                  if (attributeAsBool(target, 'absorberUnCoup') && !target.absorber) {
                     options.preDmg = options.preDmg || {} ;
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].absorberUnCoup = true;
@@ -19653,7 +19657,6 @@ var COFantasy = COFantasy || function() {
         toProceed = true;
       }); //fin iterSelected
       if (toProceed) {
-        undoEvent();
         var options = attaque.options;
         options.rolls = attaque.rolls;
         options.evt = evt;
@@ -19685,7 +19688,7 @@ var COFantasy = COFantasy || function() {
         sendChat('', "Historique d'actions vide, pas d'action trouvée pour absorber un coup ou un sort");
         return;
       }
-      if (evtARefaire.type != 'Attaque' || evtARefaire.succes === false) {
+      if (evtARefaire.type != 'Attaque') {
         sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour absorber l'attaque précédente");
         return;
       }
@@ -19758,20 +19761,19 @@ var COFantasy = COFantasy || function() {
           attAbsBonus += bad;
           if (attAbsBonus > 0) msgAbsorber += "+" + attAbsBonus;
           else if (attAbsBonus < 0) msgAbsorber += attAbsBonus;
-          explAbsorber.push(cible.tokName + " tente d'absorber l'attaque avec son bouclier. " + onGenre(cible, "Il", "elle") + " fait " + msgAbsorber);
+          explAbsorber.push(cible.tokName + " tente d'absorber l'attaque avec son bouclier. " +
+              onGenre(cible, "Il", "elle") + " fait " + msgAbsorber);
           cible.absorber = totalAbsorbe;
           cible.absorberDisplay = msgAbsorber;
           cible.absorberExpl = explAbsorber;
           count--;
           if (count === 0) {
             toProceed = false;
-            undoEvent();
             attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
           }
         }); //fin lancé de dés asynchrone
       }); //fin iterSelected
       if (count === 0 && toProceed) {
-        undoEvent();
         attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
       }
     }); //fin getSelected
@@ -19799,7 +19801,7 @@ var COFantasy = COFantasy || function() {
         sendChat('', "Historique d'actions vide, pas d'action trouvée pour résister");
         return;
       }
-      if (evtARefaire.type != 'Attaque' || evtARefaire.succes === false) {
+      if (evtARefaire.type != 'Attaque') {
         sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour résister à l'attaque précédente");
         return;
       }
@@ -19880,13 +19882,11 @@ var COFantasy = COFantasy || function() {
           count--;
           if (count === 0) {
             toProceed = false;
-            undoEvent();
             attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
           }
         }); //fin lancé de dés asynchrone
       }); //fin iterSelected
       if (count === 0 && toProceed) {
-        undoEvent();
         attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
       }
     }); //fin getSelected
