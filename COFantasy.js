@@ -8544,11 +8544,14 @@ var COFantasy = COFantasy || function() {
             //Absorption au bouclier
             var absorber;
             if (target.absorber) {
-              explications = explications.concat(target.absorberExpl);
+              target.messages.push(target.absorberExpl);
               if (target.absorber > defense) {
                 defense = target.absorber;
                 absorber = target.absorberDisplay;
               }
+            }
+            if (target.utiliseRuneProtection) {
+              target.messages.push(target.utiliseRuneProtection);
             }
             var touche = true;
             var critique = false;
@@ -9778,8 +9781,8 @@ var COFantasy = COFantasy || function() {
           var afterSaves = function() {
             if (saves > 0) return; //On n'a pas encore fait tous les saves
             if (options.pasDeDmg ||
-              (additionalDmg.length === 0 && mainDmgRoll.total === 0 &&
-                attNbDices === 0)) {
+                target.utiliseRuneProtection ||
+                (additionalDmg.length === 0 && mainDmgRoll.total === 0 && attNbDices === 0)) {
               // Pas de dégâts, donc pas d'appel à dealDamage
               finCibles();
             } else {
@@ -10265,7 +10268,7 @@ var COFantasy = COFantasy || function() {
               line += "<br/>" + bouton("!cof-resister-a-la-magie " + evt.id,"tenter de résister à la magie", target);
             }
             if(preDmgToken.runeForgesort_protection) {
-              line += "<br/>" + bouton("!cof-rune-protection " + evt.id + " " + target.token.id, "utiliser sa Rune de Protection", target);
+              line += "<br/>" + bouton("!cof-rune-protection " + evt.id, "utiliser sa Rune de Protection", target);
             }
             if(preDmgToken.absorberUnSort) {
               line += "<br/>" + bouton("!cof-absorber-au-bouclier " + evt.id,"absorber le sort", target);
@@ -21835,62 +21838,53 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "On ne peut utiliser les runes de protection qu'en combat");
       return;
     }
-    var cmd = msg.content.split(' ');
-    var evtARefaire;
-    var evt = {
-      type: "Rune de protection",
-      attributes: []
-    };
-    if (cmd.length > 2) { // Bouton Rune de protection
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    var evtARefaire = lastEvent();
+    if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
       evtARefaire = findEvent(cmd[1]);
-      var perso = persoOfId(cmd[2]);
-
       if (evtARefaire === undefined) {
         error("L'action est trop ancienne ou a été annulée", cmd);
         return;
       }
-      var action = evtARefaire.action;
-      if (action === undefined) {
-        error("Erreur interne du bouton de rune de protection : l'évènement n'a pas d'action", cmd);
-        return;
-      }
-      if (perso === undefined) {
-        error("Erreur interne du bouton de rune de protection : l'évenement n'a pas de personnage", evtARefaire);
-        return;
-      }
-      if (!peutController(msg, perso)) {
-        sendPlayer(msg, "pas le droit d'utiliser ce bouton");
-        return;
-      }
-      var cible = action.cibles.find(function(target) {
-        return (target.token.id === perso.token.id);
-      });
-      if (cible === undefined) {
-        sendChar(barde.charId, "n'est pas la cible de la dernière attaque");
-        return;
-      }
-      if (!persoUtiliseRuneProtection(perso, evt)) return;
-      var options = action.options || {};
-      options.redo = true;
-      //todo utiliser autre chose que pasDeDmg pour les attaques de zone
-      options.pasDeDmg = true;
-      var expl = options.messages || [];
-      expl.push(cible.tokName + " utilise sa Rune de Protection pour annuler les dommages");
-      options.messages = expl;
-      attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
+    }
+    if (evtARefaire.type != 'Attaque') {
+      sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour absorber l'attaque précédente");
       return;
-    } else { //Juste pour vérifier l'attribut et le diminuer
-      getSelected(msg, function(selection) {
-        if (selection.length === 0) {
-          sendPlayer(msg, 'Pas de token sélectionné pour !cof-rune-protection');
+    }
+
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        error("Personne n'est sélectionné pour utiliser une rune", msg);
+        return;
+      }
+      var attaque = evtARefaire.action;
+      var options = attaque.options || {};
+      options.rolls = attaque.rolls;
+      var evt = {
+        type: "rune de protection "
+      };
+      options.evt = evt;
+      options.redo = true;
+      iterSelected(selected, function(perso) {
+        if (!peutController(msg, perso)) {
+          sendPlayer(msg, "pas le droit d'utiliser ce bouton");
           return;
         }
-        iterSelected(selection, function(perso) {
-          persoUtiliseRuneProtection(perso, evt);
-        }); //fin iterSelected
-        addEvent(evt);
-      }); //fin getSelected
-    }
+        var cible = attaque.cibles.find(function(target) {
+          return (target.token.id === perso.token.id);
+        });
+        if (cible === undefined) {
+          sendChar(perso.charId, "n'est pas la cible de la dernière attaque");
+          return;
+        }
+        if (!persoUtiliseRuneProtection(perso, evt)) return;
+        cible.utiliseRuneProtection = cible.tokName + " utilise sa Rune de Protection pour annuler les dommages";
+        attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+        return;
+      }); //fin iterSelected
+    }); //fin getSelected
   }
 
   //!cof-delivrance @{selected|token_id} @{target|token_id}
