@@ -8776,8 +8776,8 @@ var COFantasy = COFantasy || function() {
                 //Seulement si elle n'est pas automatiquement réussie
                 var sort = false;
                 if (options.sortilege) sort = true;
-                if (!options.pasDeDmg && !options.ignoreTouteRD && attributeAsBool(target, 'encaisserUnCoup') &&
-                    !target.absorber) {
+                if (options.contact && !options.pasDeDmg && !options.ignoreTouteRD
+                    && attributeAsBool(target, 'encaisserUnCoup') && !target.absorber) {
                   options.preDmg = options.preDmg || {} ;
                   options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                   options.preDmg[target.token.id].encaisserUnCoup = true;
@@ -8806,6 +8806,11 @@ var COFantasy = COFantasy || function() {
                   options.preDmg = options.preDmg || {} ;
                   options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                   options.preDmg[target.token.id].runeForgesort_protection = true;
+                }
+                if (charAttributeAsBool(target, 'paradeMagistrale') && !target.absorber) {
+                  options.preDmg = options.preDmg || {} ;
+                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                  options.preDmg[target.token.id].paradeMagistrale = true;
                 }
                 if (sort) {
                   if (attributeAsBool(target, 'absorberUnSort') && !target.absorber) {
@@ -10273,6 +10278,15 @@ var COFantasy = COFantasy || function() {
             }
             if(preDmgToken.runeForgesort_protection) {
               line += "<br/>" + bouton("!cof-rune-protection " + evt.id, "utiliser sa Rune de Protection", target);
+            }
+            if(preDmgToken.paradeMagistrale) {
+              var actionParadeMagistrale = "esquive acrobatique";
+              if (options.contact) {
+                if (target.armesEnMain === undefined) armesEnMain(target);
+                if (target.arme && !target.arme.portee)
+                  actionParadeMagistrale = "parade magistrale";
+              }
+              line += "<br/>" + bouton("!cof-parade-magistrale " + evt.id, "tenter une " + actionParadeMagistrale, target);
             }
             if(preDmgToken.absorberUnSort) {
               line += "<br/>" + bouton("!cof-absorber-au-bouclier " + evt.id,"absorber le sort", target);
@@ -20079,7 +20093,6 @@ var COFantasy = COFantasy || function() {
           count--;
           return;
         }
-        undoEvent();
         evt.attributes.push({
           attribute: paradeMagistrale,
           current: curParadeMagistrale
