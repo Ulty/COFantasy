@@ -8553,6 +8553,9 @@ var COFantasy = COFantasy || function() {
             if (target.utiliseRuneProtection) {
               target.messages.push(target.utiliseRuneProtection);
             }
+            if (target.esquiveFatale) {
+              target.messages.push(target.esquiveFatale);
+            }
             var touche = true;
             var critique = false;
             // Calcule si touché, et les messages de dégats et attaque
@@ -8759,18 +8762,6 @@ var COFantasy = COFantasy || function() {
             }
             if (target.touche) {
               ciblesTouchees.push(target);
-              if (attributeAsBool(target, 'esquiveFatale')) {
-                var ennemisAuContact = target.ennemisAuContact;
-                if (ennemisAuContact === undefined) {
-                  error("Les ennemis au contact n'ont pas été déterminé");
-                } else {
-                  var iOther = ennemisAuContact.find(function(tok) {
-                    return (tok.id != attaquant.token.id);
-                  });
-                  if (iOther !== undefined)
-                    target.messages.push(bouton("!cof-esquive-fatale " + evt.id + " @{target|token_id}", "Esquive fatale ?", target));
-                }
-              }
               //Possibilités d'annuler l'attaque
               if (!options.auto && !options.noPreDmg) {
                 //Seulement si elle n'est pas automatiquement réussie
@@ -8793,6 +8784,14 @@ var COFantasy = COFantasy || function() {
                   options.preDmg = options.preDmg || {} ;
                   options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                   options.preDmg[target.token.id].esquiveAcrobatique = true;
+                }
+                if (attributeAsBool(target, 'esquiveFatale') && target.ennemisAuContact !== undefined &&
+                    target.ennemisAuContact.find(function(tok) {
+                      return (tok.id != attaquant.token.id);
+                    }) !== undefined) {
+                  options.preDmg = options.preDmg || {} ;
+                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                  options.preDmg[target.token.id].esquiveFatale = true;
                 }
                 if (options.sortilege && charAttributeAsBool(target, 'resistanceALaMagieBarbare') &&
                     !target.absorber) {
@@ -10272,6 +10271,9 @@ var COFantasy = COFantasy || function() {
             }
             if(preDmgToken.esquiveAcrobatique) {
               line += "<br/>" + bouton("!cof-esquive-acrobatique " + evt.id, "tenter une esquive acrobatique", target);
+            }
+            if(preDmgToken.esquiveFatale) {
+              line += "<br/>" + bouton("!cof-esquive-fatale " + evt.id + " @{target|token_id}", "effectuer une esquive fatale", target);
             }
             if(preDmgToken.resistanceALaMagieBarbare) {
               line += "<br/>" + bouton("!cof-resister-a-la-magie " + evt.id,"tenter de résister à la magie", target);
@@ -14016,17 +14018,17 @@ var COFantasy = COFantasy || function() {
       return;
     }
     adversaire.tokName = adversaire.token.get('name');
-    sendChar(perso.charId, "s'arrange pour que l'attaque touche " + adversaire.tokName);
     evt.attributes.push({
       attribute: attr,
       current: dispo
     });
     attr.set('current', 0);
     addEvent(evt);
-    undoEvent(evtARefaire);
-    adversaire.esquiveFatale = true;
+    adversaire.esquiveFatale = perso.tokName + " esquive l'attaque qui touche " + adversaire.tokName;
     options.redo = true;
-    attack(action.playerId, attaquant, [adversaire], action.weaponStats, options);
+    var cibles = action.cibles.filter(cible => cible.token.id !== perso.token.id);
+    cibles.push(adversaire);
+    attack(action.playerId, attaquant, cibles, action.weaponStats, options);
   }
 
   function intercepter(msg) {
