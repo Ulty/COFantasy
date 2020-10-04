@@ -1570,6 +1570,11 @@
               </div>
               <h3 class="text-info" id="Prestige">4.2 Voies de prestige et capacités épiques</h3>
               <div class="decalage">
+                <h4 class="text-secondary">Voie des vermines</h4>
+                <ol>
+                  <li><strong>Nuée de criquets</strong> : ajouter une attaque magique, de portée 20 m. Puis appeler cette attaque (avec <code>!cof-attack</code>) avec les arguments <code>--pasDeDmg --sortilege --effet nueeDeCriquets [[5+@{selected|SAG}]]</code>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDeCriquets</code> sur la cible dans ce cas). Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. À noter que l'option <code>--mana 0</code> est là pour indiquer au script de terminer l'effet au cas où le druide meurt.</li>
+                </ol>
+                <h4 class="text-secondary">Capacités épiques</h4>
                 <ul>
                   <li><strong>Lien épique</strong>: ajouter pour chaque personnage un attribut <code>lienEpique</code>, qui contiennent la même chose dans le champ courant (pensez à un nom d'équipe, par exemple).</li>
                 </ul>
