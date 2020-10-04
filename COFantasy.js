@@ -8773,13 +8773,6 @@ var COFantasy = COFantasy || function() {
                   options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                   options.preDmg[target.token.id].encaisserUnCoup = true;
                 }
-                if (!options.pasDeDmg && attributeAsBool(target, 'ignorerLaDouleur')
-                    && attributeAsInt(target, 'douleurIgnoree', 0) === 0 &&
-                    !target.absorber) {
-                  options.preDmg = options.preDmg || {} ;
-                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                  options.preDmg[target.token.id].ignorerLaDouleur = true;
-                }
                 if (charAttributeAsBool(target, 'esquiveAcrobatique') && !target.absorber) {
                   options.preDmg = options.preDmg || {} ;
                   options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
@@ -10266,9 +10259,6 @@ var COFantasy = COFantasy || function() {
             if(preDmgToken.encaisserUnCoup) {
               line += "<br/>" + bouton("!cof-encaisser-un-coup " + evt.id, "encaisser le coup", target);
             }
-            if(preDmgToken.ignorerLaDouleur) {
-              line += "<br/>" + bouton("!cof-ignorer-la-douleur " + evt.id, "ignorer la douleur", target);
-            }
             if(preDmgToken.esquiveAcrobatique) {
               line += "<br/>" + bouton("!cof-esquive-acrobatique " + evt.id, "tenter une esquive acrobatique", target);
             }
@@ -10300,6 +10290,16 @@ var COFantasy = COFantasy || function() {
           }
         });
         addLineToFramedDisplay(display, bouton("!cof-confirmer-attaque " + evt.id,"Continuer", perso));
+      }
+      if (evt.action.options && !evt.action.options.auto && evt.action.cibles) {
+        evt.action.cibles.forEach(function(target) {
+          if (!options.pasDeDmg && target.touche && attributeAsBool(target, 'ignorerLaDouleur')
+              && attributeAsInt(target, 'douleurIgnoree', 0) === 0) {
+            addLineToFramedDisplay(display, target.tokName + " peut " +
+                bouton("!cof-ignorer-la-douleur " + evt.id,"ignorer la douleur", target)
+            );
+          }
+        });
       }
     }
     if (options === undefined || !options.secret) sendChat("", endFramedDisplay(display));
