@@ -2690,6 +2690,13 @@ var COFantasy = COFantasy || function() {
       if (malusNuee > 2 && evt)
         removeTokenAttr(personnage, 'nueeDInsectesTempeteDeManaIntense', evt);
     }
+    if (attributeAsBool(personnage, 'nueeDeCriquets')) {
+      var malusNuee = 3 + attributeAsInt(personnage, 'nueeDeCriquetsTempeteDeManaIntense', 0);
+      expliquer("Nuée de criquets : -" + malusNuee + " au jet");
+      bonus -= malusNuee;
+      if (malusNuee > 3 && evt)
+        removeTokenAttr(personnage, 'nueeDeCriquetsTempeteDeManaIntense', evt);
+    }
     if (attributeAsBool(personnage, 'etatExsangue')) {
       expliquer("Exsangue : -2 au jet");
       bonus -= 2;
@@ -5925,6 +5932,13 @@ var COFantasy = COFantasy || function() {
       explications.push("Nuée d’insectes => -" + malusNuee + " en Attaque");
       if (malusNuee > 2)
         removeTokenAttr(personnage, 'nueeDInsectesTempeteDeManaIntense', evt);
+    }
+    if (attributeAsBool(personnage, 'nueeDeCriquets')) {
+      var malusNuee = 3 + attributeAsInt(personnage, 'nueeDeCriquetsTempeteDeManaIntense', 0);
+      attBonus -= malusNuee;
+      explications.push("Nuée de criquets => -" + malusNuee + " en Attaque");
+      if (malusNuee > 3)
+        removeTokenAttr(personnage, 'nueeDeCriquetsTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(personnage, 'etatExsangue')) {
       attBonus -= 2;
@@ -25592,6 +25606,13 @@ var COFantasy = COFantasy || function() {
       prejudiciable: true,
       dm: true
     },
+    nueeDeCriquets: {
+      activation: "est attaqué par une nuée de criquets",
+      actif: "est entouré d'une nuée de criquets",
+      fin: "est enfin débarassé des criquets",
+      prejudiciable: true,
+      dm: true
+    },
     prisonVegetale: {
       activation: "voit des plantes pousser et s'enrouler autour de ses jambes",
       actif: "est bloqué par des plantes",
@@ -26977,6 +26998,16 @@ var COFantasy = COFantasy || function() {
                   cst: 1
                 }, 'normal',
                 "est piqué par les insectes", evt, {},
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                });
+              return;
+            case 'nueeDeCriquets': //prend 1 DM
+              degatsParTour(charId, pageId, effet, attrName, {
+                  cst: 2
+                }, 'normal',
+                "est piqué par les criquets", evt, {},
                 function() {
                   count--;
                   if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
