@@ -1873,6 +1873,38 @@ var COFantasy = COFantasy || function() {
       Campaign().set('initiativepage', evt.initiativepage);
   }
 
+  function confirmerAttaque(msg) {
+    if (!stateCOF.combat) {
+      sendPlayer(msg, "On ne peut utiliser les runes de protection qu'en combat");
+      return;
+    }
+    var cmd = msg.content.split(' ');
+    var evtARefaire;
+    if (cmd.length > 2) { // Bouton Rune de protection
+      evtARefaire = findEvent(cmd[1]);
+      var perso = persoOfId(cmd[2]);
+       if (evtARefaire === undefined) {
+        error("L'action est trop ancienne ou a été annulée", cmd);
+        return;
+      }
+      var action = evtARefaire.action;
+      if (action === undefined) {
+        error("Erreur interne du bouton de rune de protection : l'évènement n'a pas d'action", cmd);
+        return;
+      }
+      if (!peutController(msg, action.attaquant)) {
+        sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+        return;
+      }
+      var options = action.options || {};
+      options.redo = true;
+      options.rolls = action.rolls;
+      options.noPreDmg = true;
+      attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
+      return;
+    }
+  }
+
   function undoTokenEffect(evt) {
     var HTdeclared;
     try {
@@ -2186,6 +2218,7 @@ var COFantasy = COFantasy || function() {
             switch (act.split(' ', 1)[0].substring(5)) {
               case 'attack':
               case 'attaque':
+              case 'confirmer-attaque':
                 var portee = 0;
                 var sortilege;
                 var args = act.split(' --');
@@ -7004,7 +7037,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    if (charAttributeAsBool(attaquant, 'fauchage')) {
+    if (!options.redo && charAttributeAsBool(attaquant, 'fauchage')) {
       var seuilDeFauchage = charAttributeAsInt(attaquant, 'fauchage', 15);
       var seuilFauchage = 10 + modCarac(attaquant, 'force');
       options.etats = options.etats || [];
@@ -8511,11 +8544,17 @@ var COFantasy = COFantasy || function() {
             //Absorption au bouclier
             var absorber;
             if (target.absorber) {
-              explications = explications.concat(target.absorberExpl);
+              target.messages.push(target.absorberExpl);
               if (target.absorber > defense) {
                 defense = target.absorber;
                 absorber = target.absorberDisplay;
               }
+            }
+            if (target.utiliseRuneProtection) {
+              target.messages.push(target.utiliseRuneProtection);
+            }
+            if (target.esquiveFatale) {
+              target.messages.push(target.esquiveFatale);
             }
             var touche = true;
             var critique = false;
@@ -8723,25 +8762,62 @@ var COFantasy = COFantasy || function() {
             }
             if (target.touche) {
               ciblesTouchees.push(target);
-              if (attributeAsBool(target, 'esquiveFatale')) {
-                var ennemisAuContact = target.ennemisAuContact;
-                if (ennemisAuContact === undefined) {
-                  error("Les ennemis au contact n'ont pas été déterminé");
+              //Possibilités d'annuler l'attaque
+              if (!options.auto && !options.noPreDmg) {
+                //Seulement si elle n'est pas automatiquement réussie
+                var sort = false;
+                if (options.sortilege) sort = true;
+                if (options.contact && !options.pasDeDmg && !options.ignoreTouteRD
+                    && attributeAsBool(target, 'encaisserUnCoup') && !target.absorber) {
+                  options.preDmg = options.preDmg || {} ;
+                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                  options.preDmg[target.token.id].encaisserUnCoup = true;
+                }
+                if (charAttributeAsBool(target, 'esquiveAcrobatique') && !target.absorber) {
+                  options.preDmg = options.preDmg || {} ;
+                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                  options.preDmg[target.token.id].esquiveAcrobatique = true;
+                }
+                if (attributeAsBool(target, 'esquiveFatale') && target.ennemisAuContact !== undefined &&
+                    target.ennemisAuContact.find(function(tok) {
+                      return (tok.id != attaquant.token.id);
+                    }) !== undefined) {
+                  options.preDmg = options.preDmg || {} ;
+                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                  options.preDmg[target.token.id].esquiveFatale = true;
+                }
+                if (options.sortilege && charAttributeAsBool(target, 'resistanceALaMagieBarbare') &&
+                    !target.absorber) {
+                  options.preDmg = options.preDmg || {} ;
+                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                  options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
+                }
+                if (!options.pasDeDmg && attributeAsBool(target, 'runeForgesort_protection') &&
+                    attributeAsInt(target, 'limiteParCombat_runeForgesort_protection', 1) > 0 &&
+                    !target.utiliseRuneProtection) {
+                  options.preDmg = options.preDmg || {} ;
+                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                  options.preDmg[target.token.id].runeForgesort_protection = true;
+                }
+                if (charAttributeAsBool(target, 'paradeMagistrale') && !target.absorber) {
+                  options.preDmg = options.preDmg || {} ;
+                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                  options.preDmg[target.token.id].paradeMagistrale = true;
+                }
+                if (sort) {
+                  if (attributeAsBool(target, 'absorberUnSort') && !target.absorber) {
+                    options.preDmg = options.preDmg || {} ;
+                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                    options.preDmg[target.token.id].absorberUnSort = true;
+                  }
                 } else {
-                  var iOther = ennemisAuContact.find(function(tok) {
-                    return (tok.id != attaquant.token.id);
-                  });
-                  if (iOther !== undefined)
-                    target.messages.push(bouton("!cof-esquive-fatale " + evt.id + " @{target|token_id}", "Esquive fatale ?", target));
+                  if (attributeAsBool(target, 'absorberUnCoup') && !target.absorber) {
+                    options.preDmg = options.preDmg || {} ;
+                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                    options.preDmg[target.token.id].absorberUnCoup = true;
+                  }
                 }
               }
-            }
-            if (options.test || options.feinte || !target.touche) {
-              //On a fini avec cette cible, on imprime ce qui la concerne
-              addLineToFramedDisplay(display, target.attackMessage);
-              target.messages.forEach(function(expl) {
-                addLineToFramedDisplay(display, expl, 80);
-              });
             }
             if (options.feinte) {
               setTokenAttr(target, 'feinte_' + attaquant.tokName, 0, evt, {
@@ -8948,6 +9024,22 @@ var COFantasy = COFantasy || function() {
   }
 
   function attackDealDmg(attaquant, cibles, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees) {
+    if(options.preDmg) {
+      addLineToFramedDisplay(display, "<b>Attaque :</b> Touche !");
+      finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options, echecCritique);
+      return;
+    }
+    if(ciblesAttaquees.length > cibles.length) {
+      ciblesAttaquees.forEach(function (target) {
+        if (options.test || options.feinte || !target.touche) {
+          //On a fini avec cette cible, on imprime ce qui la concerne
+          addLineToFramedDisplay(display, target.attackMessage);
+          target.messages.forEach(function(expl) {
+            addLineToFramedDisplay(display, expl, 80);
+          });
+        }
+      });
+    }
     if (cibles.length === 0 || options.test || options.feinte) {
       finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options, echecCritique);
       if (echecCritique) {
@@ -9690,8 +9782,8 @@ var COFantasy = COFantasy || function() {
           var afterSaves = function() {
             if (saves > 0) return; //On n'a pas encore fait tous les saves
             if (options.pasDeDmg ||
-              (additionalDmg.length === 0 && mainDmgRoll.total === 0 &&
-                attNbDices === 0)) {
+                target.utiliseRuneProtection ||
+                (additionalDmg.length === 0 && mainDmgRoll.total === 0 && attNbDices === 0)) {
               // Pas de dégâts, donc pas d'appel à dealDamage
               finCibles();
             } else {
@@ -10145,85 +10237,69 @@ var COFantasy = COFantasy || function() {
         if (evt.action.weaponStats) {
           var attLabel = evt.action.weaponStats.label;
           if (attributeAsBool(perso, 'runeForgesort_puissance(' + attLabel + ')') &&
-            attributeAsInt(perso, 'limiteParCombat_runeForgesort_puissance(' + attLabel + ')', 1) > 0) {
+             attributeAsInt(perso, 'limiteParCombat_runeForgesort_puissance(' + attLabel + ')', 1) > 0) {
             addLineToFramedDisplay(display,
-              bouton("!cof-rune-puissance " + attLabel + ' ' + evt.id,
-                "Rune de puissance", perso));
+                bouton("!cof-rune-puissance " + attLabel + ' ' + evt.id,
+                    "Rune de puissance", perso));
           }
         }
         if (attributeAsBool(perso, 'kiai') && !attributeAsBool(perso, 'rechargeDuKiai')) {
           addLineToFramedDisplay(display,
-            bouton("!cof-pousser-kiai " + evt.id, "Kiai", perso));
+              bouton("!cof-pousser-kiai " + evt.id, "Kiai", perso));
         }
         if (attributeAsBool(perso, 'petitVeinard')) {
           addLineToFramedDisplay(display, boutonSimple("!cof-petit-veinard --target" + perso.token.id, "Petit veinard") + " pour relancer un dé");
         }
-        //Possibilités d'annuler l'attaque
-        if (evt.action.options && !evt.action.options.auto) {
-          //Seulement si elle n'est pas automatiquement réussie
-          var sort = false;
-          if (evt.action.options && evt.action.options.sortilege) sort = true;
-          if (evt.action.cibles) {
-            evt.action.cibles.forEach(function(target) {
-              if (!options.pasDeDmg && !options.ignoreTouteRD && attributeAsBool(target, 'encaisserUnCoup')) {
-                addLineToFramedDisplay(display, target.tokName + " peut " +
-                  bouton("!cof-encaisser-un-coup " + evt.id,
-                    "encaisser le coup", target)
-                );
+      }
+      if(options.preDmg) {
+        cibles.forEach(function(target) {
+          var preDmgToken = options.preDmg[target.token.id];
+          if (preDmgToken !== undefined) {
+            var line = target.tokName + " peut :";
+            if(preDmgToken.encaisserUnCoup) {
+              line += "<br/>" + bouton("!cof-encaisser-un-coup " + evt.id, "encaisser le coup", target);
+            }
+            if(preDmgToken.esquiveAcrobatique) {
+              line += "<br/>" + bouton("!cof-esquive-acrobatique " + evt.id, "tenter une esquive acrobatique", target);
+            }
+            if(preDmgToken.esquiveFatale) {
+              line += "<br/>" + bouton("!cof-esquive-fatale " + evt.id + " @{target|token_id}", "effectuer une esquive fatale", target);
+            }
+            if(preDmgToken.resistanceALaMagieBarbare) {
+              line += "<br/>" + bouton("!cof-resister-a-la-magie " + evt.id,"tenter de résister à la magie", target);
+            }
+            if(preDmgToken.runeForgesort_protection) {
+              line += "<br/>" + bouton("!cof-rune-protection " + evt.id, "utiliser sa Rune de Protection", target);
+            }
+            if(preDmgToken.paradeMagistrale) {
+              var actionParadeMagistrale = "esquive acrobatique";
+              if (options.contact) {
+                if (target.armesEnMain === undefined) armesEnMain(target);
+                if (target.arme && !target.arme.portee)
+                  actionParadeMagistrale = "parade magistrale";
               }
-              if (!options.pasDeDmg && attributeAsBool(target, 'ignorerLaDouleur') && attributeAsInt(target, 'douleurIgnoree', 0) === 0) {
-                addLineToFramedDisplay(display, target.tokName + " peut " +
-                  bouton("!cof-ignorer-la-douleur " + evt.id,
-                    "ignorer la douleur", target)
-                );
-              }
-              if (charAttributeAsBool(target, 'esquiveAcrobatique')) {
-                addLineToFramedDisplay(display, target.tokName + " peut " +
-                  bouton("!cof-esquive-acrobatique " + evt.id,
-                    "tenter une esquive acrobatique", target)
-                );
-              }
-              if (options.sortilege && charAttributeAsBool(target, 'resistanceALaMagieBarbare')) {
-                addLineToFramedDisplay(display, target.tokName + " peut " +
-                  bouton("!cof-resister-a-la-magie " + evt.id,
-                    "tenter de résister à la magie", target)
-                );
-              }
-              if (charAttributeAsBool(target, 'paradeMagistrale')) {
-                var actionParadeMagistrale = "esquive acrobatique";
-                if (options.contact) {
-                  if (target.armesEnMain === undefined) armesEnMain(target);
-                  if (target.arme && !target.arme.portee)
-                    actionParadeMagistrale = "parade magistrale";
-                }
-                addLineToFramedDisplay(display, target.tokName + " peut " +
-                  bouton("!cof-parade-magistrale " + evt.id,
-                    "tenter une " + actionParadeMagistrale, target)
-                );
-              }
-              if (attributeAsBool(target, 'runeForgesort_protection') &&
-                attributeAsInt(target, 'limiteParCombat_runeForgesort_protection', 1) > 0) {
-                addLineToFramedDisplay(display, bouton("!cof-rune-protection " + evt.id + " " + target.token.id,
-                  "Rune de protection", target));
-              }
-              if (sort) {
-                if (attributeAsBool(target, 'absorberUnSort')) {
-                  addLineToFramedDisplay(display, target.tokName + " peut " +
-                    bouton("!cof-absorber-au-bouclier " + evt.id,
-                      "absorber le sort", target)
-                  );
-                }
-              } else {
-                if (attributeAsBool(target, 'absorberUnCoup')) {
-                  addLineToFramedDisplay(display, target.tokName + " peut " +
-                    bouton("!cof-absorber-au-bouclier " + evt.id,
-                      "absorber le coup", target)
-                  );
-                }
-              }
-            });
+              line += "<br/>" + bouton("!cof-parade-magistrale " + evt.id, "tenter une " + actionParadeMagistrale, target);
+            }
+            if(preDmgToken.absorberUnSort) {
+              line += "<br/>" + bouton("!cof-absorber-au-bouclier " + evt.id,"absorber le sort", target);
+            }
+            if(preDmgToken.absorberUnCoup) {
+              line += "<br/>" + bouton("!cof-absorber-au-bouclier " + evt.id,"absorber le coup", target);
+            }
+            addLineToFramedDisplay(display, line);
           }
-        }
+        });
+        addLineToFramedDisplay(display, bouton("!cof-confirmer-attaque " + evt.id,"Continuer", perso));
+      }
+      if (evt.action.options && !evt.action.options.auto && evt.action.cibles) {
+        evt.action.cibles.forEach(function(target) {
+          if (!options.pasDeDmg && target.touche && attributeAsBool(target, 'ignorerLaDouleur')
+              && attributeAsInt(target, 'douleurIgnoree', 0) === 0) {
+            addLineToFramedDisplay(display, target.tokName + " peut " +
+                bouton("!cof-ignorer-la-douleur " + evt.id,"ignorer la douleur", target)
+            );
+          }
+        });
       }
     }
     if (options === undefined || !options.secret) sendChat("", endFramedDisplay(display));
@@ -13942,17 +14018,17 @@ var COFantasy = COFantasy || function() {
       return;
     }
     adversaire.tokName = adversaire.token.get('name');
-    sendChar(perso.charId, "s'arrange pour que l'attaque touche " + adversaire.tokName);
     evt.attributes.push({
       attribute: attr,
       current: dispo
     });
     attr.set('current', 0);
     addEvent(evt);
-    undoEvent(evtARefaire);
-    adversaire.esquiveFatale = true;
+    adversaire.esquiveFatale = perso.tokName + " esquive l'attaque qui touche " + adversaire.tokName;
     options.redo = true;
-    attack(action.playerId, attaquant, [adversaire], action.weaponStats, options);
+    var cibles = action.cibles.filter(cible => cible.token.id !== perso.token.id);
+    cibles.push(adversaire);
+    attack(action.playerId, attaquant, cibles, action.weaponStats, options);
   }
 
   function intercepter(msg) {
@@ -19597,7 +19673,6 @@ var COFantasy = COFantasy || function() {
         toProceed = true;
       }); //fin iterSelected
       if (toProceed) {
-        undoEvent();
         var options = attaque.options;
         options.rolls = attaque.rolls;
         options.evt = evt;
@@ -19629,7 +19704,7 @@ var COFantasy = COFantasy || function() {
         sendChat('', "Historique d'actions vide, pas d'action trouvée pour absorber un coup ou un sort");
         return;
       }
-      if (evtARefaire.type != 'Attaque' || evtARefaire.succes === false) {
+      if (evtARefaire.type != 'Attaque') {
         sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour absorber l'attaque précédente");
         return;
       }
@@ -19702,20 +19777,19 @@ var COFantasy = COFantasy || function() {
           attAbsBonus += bad;
           if (attAbsBonus > 0) msgAbsorber += "+" + attAbsBonus;
           else if (attAbsBonus < 0) msgAbsorber += attAbsBonus;
-          explAbsorber.push(cible.tokName + " tente d'absorber l'attaque avec son bouclier. " + onGenre(cible, "Il", "elle") + " fait " + msgAbsorber);
+          explAbsorber.push(cible.tokName + " tente d'absorber l'attaque avec son bouclier. " +
+              onGenre(cible, "Il", "elle") + " fait " + msgAbsorber);
           cible.absorber = totalAbsorbe;
           cible.absorberDisplay = msgAbsorber;
           cible.absorberExpl = explAbsorber;
           count--;
           if (count === 0) {
             toProceed = false;
-            undoEvent();
             attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
           }
         }); //fin lancé de dés asynchrone
       }); //fin iterSelected
       if (count === 0 && toProceed) {
-        undoEvent();
         attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
       }
     }); //fin getSelected
@@ -19743,7 +19817,7 @@ var COFantasy = COFantasy || function() {
         sendChat('', "Historique d'actions vide, pas d'action trouvée pour résister");
         return;
       }
-      if (evtARefaire.type != 'Attaque' || evtARefaire.succes === false) {
+      if (evtARefaire.type != 'Attaque') {
         sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour résister à l'attaque précédente");
         return;
       }
@@ -19824,13 +19898,11 @@ var COFantasy = COFantasy || function() {
           count--;
           if (count === 0) {
             toProceed = false;
-            undoEvent();
             attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
           }
         }); //fin lancé de dés asynchrone
       }); //fin iterSelected
       if (count === 0 && toProceed) {
-        undoEvent();
         attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
       }
     }); //fin getSelected
@@ -19858,7 +19930,7 @@ var COFantasy = COFantasy || function() {
         sendChat('', "Historique d'actions vide, pas d'action trouvée pour esquiver");
         return;
       }
-      if (evtARefaire.type != 'Attaque' || evtARefaire.succes === false) {
+      if (evtARefaire.type != 'Attaque') {
         sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour esquiver l'attaque précédente");
         return;
       }
@@ -19905,7 +19977,6 @@ var COFantasy = COFantasy || function() {
           count--;
           return;
         }
-        undoEvent();
         evt.attributes.push({
           attribute: esquiveAcrobatique,
           current: curEsquiveAcrobatique
@@ -20024,7 +20095,6 @@ var COFantasy = COFantasy || function() {
           count--;
           return;
         }
-        undoEvent();
         evt.attributes.push({
           attribute: paradeMagistrale,
           current: curParadeMagistrale
@@ -21773,7 +21843,6 @@ var COFantasy = COFantasy || function() {
     if (!limiteRessources(perso, {
         limiteParCombat: 1
       }, "runeForgesort_protection", "a déjà utilisé sa rune de protection durant ce combat", evt)) {
-      sendChar(perso.charId, "utilise sa rune de protection pour ignorer les derniers dommages");
       return true;
     }
     return false;
@@ -21784,71 +21853,53 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "On ne peut utiliser les runes de protection qu'en combat");
       return;
     }
-    var cmd = msg.content.split(' ');
-    var evtARefaire;
-    var evt = {
-      type: "Rune de protection",
-      attributes: []
-    };
-    if (cmd.length > 2) { // Bouton Rune de protection
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    var evtARefaire = lastEvent();
+    if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
       evtARefaire = findEvent(cmd[1]);
-      var perso = persoOfId(cmd[2]);
-
       if (evtARefaire === undefined) {
         error("L'action est trop ancienne ou a été annulée", cmd);
         return;
       }
-      if (perso === undefined) {
-        error("Erreur interne du bouton de rune de protection : l'évenement n'a pas de personnage", evtARefaire);
-        return;
-      }
-      if (!peutController(msg, perso)) {
-        sendPlayer(msg, "pas le droit d'utiliser ce bouton");
-        return;
-      }
-      var currentPV = perso.token.get('bar1_value');
-      var previousPV;
-      var attrPVId = perso.token.get('bar1_link');
-      if (attrPVId === '') {
-        var aff;
-        if (evtARefaire.affectes) aff = evtARefaire.affectes[perso.token.id];
-        if (aff === undefined || aff.prev === undefined ||
-          aff.prev.bar1_value === undefined ||
-          aff.prev.bar1_value <= currentPV) {
-          sendChar(perso.charId, "la dernière action n'a pas diminué les PV de " + perso.token.get('name'));
-          return;
-        }
-        previousPV = aff.prev.bar1_value;
-      } else {
-        if (evtARefaire.attributes) {
-          evtARefaire.attributes.forEach(function(a) {
-            if (a.attribute.id == attrPVId) {
-              previousPV = parseInt(a.current);
-              if (isNaN(previousPV)) previousPV = undefined;
-            }
-          });
-        }
-        if (previousPV === undefined) {
-          sendChar(perso.charId, "la dernière action n'a pas diminué les PV de " + perso.token.get('name'));
-          return;
-        }
-      }
-      if (!persoUtiliseRuneProtection(perso, evt)) return;
-      addEvent(evt);
-      updateCurrentBar(perso, 1, previousPV, evt);
-      if (getState(perso, 'mort')) setState(perso, 'mort', false, evt);
-    } else { //Juste pour vérifier l'attribut et le diminuer
-      getSelected(msg, function(selection) {
-        if (selection.length === 0) {
-          sendPlayer(msg, 'Pas de token sélectionné pour !cof-rune-protection');
-          return;
-        }
-        iterSelected(selection, function(perso) {
-          persoUtiliseRuneProtection(perso, evt);
-        }); //fin iterSelected
-        addEvent(evt);
-      }); //fin getSelected
     }
+    if (evtARefaire.type != 'Attaque') {
+      sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour absorber l'attaque précédente");
+      return;
+    }
+
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        error("Personne n'est sélectionné pour utiliser une rune", msg);
+        return;
+      }
+      var attaque = evtARefaire.action;
+      var options = attaque.options || {};
+      options.rolls = attaque.rolls;
+      var evt = {
+        type: "rune de protection "
+      };
+      options.evt = evt;
+      options.redo = true;
+      iterSelected(selected, function(perso) {
+        if (!peutController(msg, perso)) {
+          sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+          return;
+        }
+        var cible = attaque.cibles.find(function(target) {
+          return (target.token.id === perso.token.id);
+        });
+        if (cible === undefined) {
+          sendChar(perso.charId, "n'est pas la cible de la dernière attaque");
+          return;
+        }
+        if (!persoUtiliseRuneProtection(perso, evt)) return;
+        cible.utiliseRuneProtection = cible.tokName + " utilise sa Rune de Protection pour annuler les dommages";
+        attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+        return;
+      }); //fin iterSelected
+    }); //fin getSelected
   }
 
   //!cof-delivrance @{selected|token_id} @{target|token_id}
@@ -24867,6 +24918,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-undo':
         undoEvent();
+        return;
+      case '!cof-confirmer-attaque':
+        confirmerAttaque(msg);
         return;
       case '!cof-hors-combat':
       case '!cof-fin-combat':

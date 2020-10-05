@@ -11,6 +11,9 @@
 * Possibilité d'utiliser la défense et l'initiative d'un autre personnage.
 * Possibilité de lier les PVs.
 * Les effets temporaires lancés avec une option de mana disparaissent quand le lanceur meurt.
+* Une série de capacités sont à déclencher par les joueurs avant les jets de dégâts : Absorber un Coup, Absorber un 
+Sort, Encaisser un Coup, Résistance à la Magie, Esquive Acrobatique, Esquive fatale, Parade Magistrale, 
+Rune de Protection
 
 ### Corrections de bugs
 * Undo avant de faire le jet d'attaque pour l'esquive acrobatique
