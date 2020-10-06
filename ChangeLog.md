@@ -4,6 +4,7 @@
 * Vitalité surnaturelle du barbare
 * Riposte du guerrier
 * Nuée de criquets (Druide Prestige)
+* Intervention divine du prêtre
 
 ### Autres améliorations
 * Ajout d'une option --plusCrit aux attaques.
