@@ -11391,6 +11391,13 @@ var COFantasy = COFantasy || function() {
                 msgBarroud += onGenre(target, 'il', 'elle') + " continue à se battre !";
                 expliquer(msgBarroud);
                 setTokenAttr(target, 'baroudHonneurActif', true, evt);
+              } else if (charAttributeAsInt(target, 'increvable') > 0) {
+                var msgIncrevable = token.get('name') + " devrait être mort";
+                msgIncrevable += eForFemale(target) + ", mais ";
+                msgIncrevable += onGenre(target, 'il', 'elle') + " est increvable !";
+                expliquer(msgIncrevable);
+                setTokenAttr(target, 'increvable', 0, evt);
+                setTokenAttr(target, 'increvableActif', true, evt);
               } else if ((attributeAsBool(target, 'enragé') || charAttributeAsBool(target, 'durACuire')) &&
                 !limiteRessources(target, {
                   limiteParCombat: 1
@@ -12100,6 +12107,7 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'munition', evt, "récupère ses munitions");
     // Remettre défier la mort à 10
     resetAttr(attrs, 'defierLaMort', evt);
+    resetAttr(attrs, 'increvable', evt);
     // Remettre l'esquive fatale à 1
     resetAttr(attrs, 'esquiveFatale', evt);
     resetAttr(attrs, 'interventionDivine', evt);
@@ -26828,6 +26836,17 @@ var COFantasy = COFantasy || function() {
               }
             );
           }
+        }
+        var increvableActif = charAttribute(perso.charId, 'increvableActif');
+        if (increvableActif.length > 0) {
+          increvableActif[0].remove();
+          var soins = randomInteger(6) + randomInteger(6) + randomInteger(6) + modCarac(perso, "CONSTITUTION");
+          soigneToken(perso, soins, evt, function(soinsEffectifs) {
+            var msgSoins = "est increvable et récupère ";
+            if (soinsEffectifs == soins.val) msgSoins += soins + " points de vie";
+            else msgSoins += soinsEffectifs + " PV (le jet était " + soins + ")";
+            sendChar(perso.charId, msgSoins);
+          });
         }
       });
       setActiveToken(undefined, evt);
