@@ -14236,7 +14236,6 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "On ne peut utiliser petit veinard qu'en combat");
       return;
     }
-
     var options = parseOptions(msg);
     if (options === undefined) return;
     var cmd = options.cmd;
@@ -14244,16 +14243,13 @@ var COFantasy = COFantasy || function() {
       error("Problème de parse options", msg.content);
       return;
     }
-
     if (cmd.length < 2 || (cmd[1] != "rate" && cmd[1] != "touche")) {
       error("Il manque l'option rate ou touche à Intervention Divine", msg);
       return;
     }
-
     getSelected(msg, function(selected) {
       iterSelected(selected, function(pretre) {
         var charId = pretre.charId;
-
         var interventionDivine = tokenAttribute(pretre, 'interventionDivine');
         if (interventionDivine.length === 0) {
           sendChar(pretre.charId, "ne sait pas faire d'intervention Divine");
@@ -14269,7 +14265,6 @@ var COFantasy = COFantasy || function() {
           sendChar(charId, " a déjà fait une intervention divine ce combat");
           return;
         }
-
         var evtARefaire = lastEvent();
         var perso = evtARefaire.personnage;
         if (perso === undefined) {
@@ -14281,9 +14276,8 @@ var COFantasy = COFantasy || function() {
           error("Impossible de relancer l'action", evtARefaire);
           return;
         }
-        options = action.options || {};
-        options.redo = true;
-
+        var optionsRedo = action.options || {};
+        optionsRedo.redo = true;
         var evt = {
           type: "Intervention divine",
           attributes: []
@@ -14294,8 +14288,7 @@ var COFantasy = COFantasy || function() {
         });
         interventionDivine.set('current', 0);
         addEvent(evt);
-
-        if(evtARefaire.type != 'Attaque') {
+        if (evtARefaire.type != 'Attaque') {
           //TODO : Implementer triche sur jetPerso() et echapperEnveloppement()
           error("Intervention Divine ne supporte que les attaques", evtARefaire);
           return;
@@ -14306,8 +14299,8 @@ var COFantasy = COFantasy || function() {
             delete target.partialSaveAuto;
           });
         }
-        options.interventionDivine = cmd[1];
-        attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
+        optionsRedo.interventionDivine = cmd[1];
+        attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, optionsRedo);
         return;
       });
     });
