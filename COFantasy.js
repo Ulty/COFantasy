@@ -8578,8 +8578,9 @@ var COFantasy = COFantasy || function() {
             if (options.auto) {
               addAttackSound("soundAttackSucces", weaponStats.divers, options);
             } else if (!options.interposer) {
-              if (options.triche) {
-                switch (options.triche) {
+              if (options.triche || options.interventionDivine) {
+                var triche = options.triche || options.interventionDivine;
+                switch (triche) {
                   case "rate":
                     if (d20roll >= target.crit) {
                       if (target.crit < 2) d20roll = 1;
@@ -8612,7 +8613,7 @@ var COFantasy = COFantasy || function() {
                     if (d20roll > 1) d20roll = 1;
                     break;
                   default:
-                    error("Option inconnue", options.triche);
+                    error("Option inconnue", triche);
                 }
                 // now adjust the roll
                 var attackInlineRoll = rollsAttack.inlinerolls[attRollNumber];
@@ -12109,6 +12110,7 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'increvable', evt);
     // Remettre l'esquive fatale à 1
     resetAttr(attrs, 'esquiveFatale', evt);
+    resetAttr(attrs, 'interventionDivine', evt);
     resetAttr(attrs, 'attaqueEnTraitre', evt);
     resetAttr(attrs, 'esquiveAcrobatique', evt);
     resetAttr(attrs, 'resistanceALaMagieBarbare', evt);
@@ -14225,6 +14227,88 @@ var COFantasy = COFantasy || function() {
         options.evt = evt;
         options.redo = true;
         attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+      });
+    });
+  }
+
+  function interventionDivine(msg) {
+    if (!stateCOF.combat) {
+      sendPlayer(msg, "On ne peut utiliser petit veinard qu'en combat");
+      return;
+    }
+
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined) {
+      error("Problème de parse options", msg.content);
+      return;
+    }
+
+    if (cmd.length < 2 || (cmd[1] != "rate" && cmd[1] != "touche")) {
+      error("Il manque l'option rate ou touche à Intervention Divine", msg);
+      return;
+    }
+
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(pretre) {
+        var charId = pretre.charId;
+
+        var interventionDivine = tokenAttribute(pretre, 'interventionDivine');
+        if (interventionDivine.length === 0) {
+          sendChar(pretre.charId, "ne sait pas faire d'intervention Divine");
+          return;
+        }
+        interventionDivine = interventionDivine[0];
+        var curinterventionDivine = parseInt(interventionDivine.get('current'));
+        if (isNaN(curinterventionDivine)) {
+          error("Resource pour Intervention Divine mal formée", interventionDivine);
+          return;
+        }
+        if (curinterventionDivine < 1) {
+          sendChar(charId, " a déjà fait une intervention divine ce combat");
+          return;
+        }
+
+        var evtARefaire = lastEvent();
+        var perso = evtARefaire.personnage;
+        if (perso === undefined) {
+          error("Erreur interne : intervention divine sans personnage", evtARefaire);
+          return;
+        }
+        var action = evtARefaire.action;
+        if (action === undefined) {
+          error("Impossible de relancer l'action", evtARefaire);
+          return;
+        }
+        options = action.options || {};
+        options.redo = true;
+
+        var evt = {
+          type: "Intervention divine",
+          attributes: []
+        };
+        evt.attributes.push({
+          attribute: interventionDivine,
+          current: curinterventionDivine
+        });
+        interventionDivine.set('current', 0);
+        addEvent(evt);
+
+        if(evtARefaire.type != 'Attaque') {
+          //TODO : Implementer triche sur jetPerso() et echapperEnveloppement()
+          error("Intervention Divine ne supporte que les attaques", evtARefaire);
+          return;
+        }
+        undoEvent(evtARefaire);
+        if (action.cibles) {
+          action.cibles.forEach(function(target) {
+            delete target.partialSaveAuto;
+          });
+        }
+        options.interventionDivine = cmd[1];
+        attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
+        return;
       });
     });
   }
@@ -25098,6 +25182,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-exemplaire":
         exemplaire(msg);
+        return;
+      case "!cof-intervention-divine":
+        interventionDivine(msg);
         return;
       case "!cof-lancer-sort":
         lancerSort(msg);

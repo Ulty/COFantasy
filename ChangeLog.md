@@ -5,6 +5,7 @@
 * Riposte du guerrier
 * Nuée de criquets (Druide Prestige)
 * Increvable (Rôdeur, Survie rang 4)
+* Intervention divine du prêtre
 
 ### Autres améliorations
 * Ajout d'une option --plusCrit aux attaques.
