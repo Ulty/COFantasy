@@ -308,6 +308,93 @@ var COFantasy = COFantasy || function() {
     encombre: 'status_frozen-orb'
   };
 
+  function tokenAttribute(personnage, name) {
+    var token = personnage.token;
+    if (token) {
+      var link = token.get('bar1_link');
+      if (link === '') name += "_" + token.get('name');
+    }
+    return findObjs({
+      _type: 'attribute',
+      _characterid: personnage.charId,
+      name: name
+    });
+  }
+
+  function charAttribute(charId, name, option) {
+    return findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+      name: name
+    }, option);
+  }
+
+  function attrAsInt(attr, def) {
+    if (attr.length === 0) return def;
+    attr = parseInt(attr[0].get('current'));
+    if (isNaN(attr)) return def;
+    return attr;
+  }
+
+  function attrAsBool(attr) {
+    if (attr.length === 0) return false;
+    attr = attr[0].get('current');
+    if (attr == '0') return false;
+    if (attr) return true;
+    return false;
+  }
+
+  function ficheAttribute(personnage, name, def) {
+    var attr = charAttribute(personnage.charId, name, {
+      caseInsensitive: true
+    });
+    if (attr.length === 0) return def;
+    return attr[0].get('current');
+  }
+
+  function ficheAttributeAsInt(personnage, name, def) {
+    var attr = charAttribute(personnage.charId, name, {
+      caseInsensitive: true
+    });
+    if (attr === undefined) return def;
+    return attrAsInt(attr, def);
+  }
+
+  //Il faut une valeur par défaut, qui correspond à celle de la fiche
+  function ficheAttributeAsBool(personnage, name, def) {
+    var attr = charAttribute(personnage.charId, name, {
+      caseInsensitive: true
+    });
+    if (attr.length === 0) return def;
+    return attrAsBool(attr);
+  }
+
+  // Caution not to use token when the attribute should not be token dependant
+  function attributeAsInt(personnage, name, def) {
+    var attr = tokenAttribute(personnage, name);
+    return attrAsInt(attr, def);
+  }
+
+  function attributeAsBool(personnage, name) {
+    var attr = tokenAttribute(personnage, name);
+    return attrAsBool(attr);
+  }
+
+  function charAttributeAsInt(perso, name, def) {
+    var attr = charAttribute(perso.charId, name);
+    return attrAsInt(attr, def);
+  }
+
+  function charAttributeAsBool(perso, name) {
+    var attr = charAttribute(perso.charId, name);
+    return attrAsBool(attr);
+  }
+
+  function charIdAttributeAsBool(charId, name) {
+    var attr = charAttribute(charId, name);
+    return attrAsBool(attr);
+  }
+
   function setStateCOF() {
     stateCOF = state.COFantasy;
     if (stateCOF.roundMarkerId) {
@@ -671,93 +758,6 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
-  function tokenAttribute(personnage, name) {
-    var token = personnage.token;
-    if (token) {
-      var link = token.get('bar1_link');
-      if (link === '') name += "_" + token.get('name');
-    }
-    return findObjs({
-      _type: 'attribute',
-      _characterid: personnage.charId,
-      name: name
-    });
-  }
-
-  function charAttribute(charId, name, option) {
-    return findObjs({
-      _type: 'attribute',
-      _characterid: charId,
-      name: name
-    }, option);
-  }
-
-  function attrAsInt(attr, def) {
-    if (attr.length === 0) return def;
-    attr = parseInt(attr[0].get('current'));
-    if (isNaN(attr)) return def;
-    return attr;
-  }
-
-  function attrAsBool(attr) {
-    if (attr.length === 0) return false;
-    attr = attr[0].get('current');
-    if (attr == '0') return false;
-    if (attr) return true;
-    return false;
-  }
-
-  function ficheAttribute(personnage, name, def) {
-    var attr = charAttribute(personnage.charId, name, {
-      caseInsensitive: true
-    });
-    if (attr.length === 0) return def;
-    return attr[0].get('current');
-  }
-
-  function ficheAttributeAsInt(personnage, name, def) {
-    var attr = charAttribute(personnage.charId, name, {
-      caseInsensitive: true
-    });
-    if (attr === undefined) return def;
-    return attrAsInt(attr, def);
-  }
-
-  //Il faut une valeur par défaut, qui correspond à celle de la fiche
-  function ficheAttributeAsBool(personnage, name, def) {
-    var attr = charAttribute(personnage.charId, name, {
-      caseInsensitive: true
-    });
-    if (attr.length === 0) return def;
-    return attrAsBool(attr);
-  }
-
-  // Caution not to use token when the attribute should not be token dependant
-  function attributeAsInt(personnage, name, def) {
-    var attr = tokenAttribute(personnage, name);
-    return attrAsInt(attr, def);
-  }
-
-  function attributeAsBool(personnage, name) {
-    var attr = tokenAttribute(personnage, name);
-    return attrAsBool(attr);
-  }
-
-  function charAttributeAsInt(perso, name, def) {
-    var attr = charAttribute(perso.charId, name);
-    return attrAsInt(attr, def);
-  }
-
-  function charAttributeAsBool(perso, name) {
-    var attr = charAttribute(perso.charId, name);
-    return attrAsBool(attr);
-  }
-
-  function charIdAttributeAsBool(charId, name) {
-    var attr = charAttribute(charId, name);
-    return attrAsBool(attr);
-  }
-
   //PNJ au sens de la fiche utilisée, pas forcément en jeu
   function persoEstPNJ(perso) {
     if (perso.pnj) return true;
@@ -826,7 +826,7 @@ var COFantasy = COFantasy || function() {
     var res = false;
     if (token !== undefined) {
       res = token.get(cof_states[etat]);
-      if (token.get('bar1_link') === "") return res;
+      if (token.get('bar1_link') === '') return res;
       // else, look for the character value, if any
       if (charId === undefined) charId = token.get('represents');
       personnage.charId = charId;
@@ -1052,7 +1052,7 @@ var COFantasy = COFantasy || function() {
     var fullAttribute = attribute;
     if (token && (!options || !options.charAttr)) {
       var link = token.get('bar1_link');
-      if (link === "") fullAttribute += "_" + token.get('name');
+      if (link === '') fullAttribute += "_" + token.get('name');
     }
     var attr = findObjs({
       _type: 'attribute',
@@ -2505,12 +2505,9 @@ var COFantasy = COFantasy || function() {
           if (perso1.token.get('bar1_link') === '') {
             bar1_info = '<b>PV</b> : ' + perso1.token.get('bar1_value') + ' / ' + perso1.token.get('bar1_max');
           } else {
-            var bar1 = findObjs({
-              _type: 'attribute',
-              _id: perso1.token.get('bar1_link')
-            });
-            if (bar1 && bar1.length > 0)
-              bar1_info = '<b>' + bar1[0].get('name') + '</b> : ' + bar1[0].get('current') + ' / ' + bar1[0].get('max') + '';
+            var bar1 = getObj('attribute', perso1.token.get('bar1_link'));
+            if (bar1)
+              bar1_info = '<b>' + bar1.get('name') + '</b> : ' + bar1.get('current') + ' / ' + bar1.get('max') + '';
           }
           if (perso1.token.get('bar2_link') === '') {
             var dmTemp = perso1.token.get('bar2_value');
@@ -26195,6 +26192,7 @@ var COFantasy = COFantasy || function() {
           return;
         }
         character.get('defaulttoken', function(normalToken) {
+          if (normalToken === '') return;
           normalToken = JSON.parse(normalToken);
           var largeWidth = normalToken.width + normalToken.width / 2;
           var largeHeight = normalToken.height + normalToken.height / 2;
@@ -27836,16 +27834,13 @@ var COFantasy = COFantasy || function() {
   }
 
   function initAllMarkers(campaign) {
-    var currentMap = getObj("page", campaign.get("playerpageid"));
+    var currentMap = getObj('page', campaign.get('playerpageid'));
     var tokens = findObjs({
-        _pageid: currentMap.id,
-        _type: "graphic",
-        _subtype: "token"
-      })
-      .filter((o) => o.get("bar1_link") !== "");
-    tokens.forEach(function(token) {
-      initTokenMarkers(token);
+      _pageid: currentMap.id,
+      _type: 'graphic',
+      _subtype: 'token'
     });
+    tokens.forEach(initTokenMarkers);
   }
 
   return {
@@ -27872,7 +27867,7 @@ on("destroy:handout", function(prev) {
 });
 
 on('ready', function() {
-  var scriptVersion = "2.09";
+  var scriptVersion = '2.10';
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
@@ -28102,7 +28097,108 @@ on('ready', function() {
     });
     log("Mise à jour des ability & macros !cof-lancer-sort effectuée");
   }
-  //Penser à enlever les attributs pointsDeRecuperation et PR1-PR5 à la prochaine version. Puis pnj_pv, pnj_dmtemp et pnj_rd.
+  if (state.COFantasy.version < 2.10) {
+    var tokens = findObjs({
+      _type: 'graphic',
+      _subtype: 'token'
+    });
+    tokens.forEach(function(token) {
+      var charId = token.get('represents');
+      if (charId === '') return;
+      var bar1_link = token.get('bar1_link');
+      if (bar1_link === '') return;
+      var attrLie = getObj('attribute', bar1_link);
+      if (attrLie === undefined) return;
+      if (attrLie.get('name') != 'pnj_pv') return;
+      var attrPV = findObjs({
+        _type: 'attribute',
+        _characterid: charId,
+        name: 'PV'
+      }, {
+        caseInsensitive: true
+      });
+      if (attrPV.length === 0) return;
+      token.set('bar1_link', attrPV[0].id);
+    });
+    var characters = findObjs({
+      _type: 'character',
+    });
+    var charsToTreat = characters.length;
+    var removeAttrs = function() {
+      charsToTreat--;
+      if (charsToTreat > 0) return;
+      log("Supression des attributs obsolètes");
+      var attrs = findObjs({
+        _type: 'attribute',
+      });
+      attrs.forEach(function(a) {
+        switch (a.get('name')) {
+          case 'PR1':
+          case 'PR2':
+          case 'PR3':
+          case 'PR4':
+          case 'PR5':
+          case 'pnj_pv':
+          case 'pnj_dmtemp':
+          case 'pnj_rd':
+            a.remove();
+        }
+      });
+    };
+    if (charsToTreat === 0) removeAttrs();
+    var pageId = Campaign().get('playerpageid');
+    characters.forEach(function(character) {
+      character.get('defaulttoken', function(token) {
+        if (token === '') {
+          removeAttrs();
+          return;
+        }
+        token = JSON.parse(token);
+        if (!token) {
+          removeAttrs();
+          return;
+        }
+        var bar1_link = token.bar1_link;
+        if (bar1_link === '') {
+          removeAttrs();
+          return;
+        }
+        var attrLie = getObj('attribute', bar1_link);
+        if (attrLie === undefined) {
+          removeAttrs();
+          return;
+        }
+        if (attrLie.get('name') != 'pnj_pv') {
+          removeAttrs();
+          return;
+        }
+        var attrPV = findObjs({
+          _type: 'attribute',
+          _characterid: character.id,
+          name: 'PV'
+        }, {
+          caseInsensitive: true
+        });
+        if (attrPV.length === 0) {
+          removeAttrs();
+          return;
+        }
+        token.bar1_link = attrPV[0].id;
+        token.pageid = pageId;
+        token.imgsrc = token.imgsrc.replace('/med.png', '/thumb.png');
+        var newToken = createObj('graphic', token);
+        if (newToken) {
+          setDefaultTokenForCharacter(character, newToken);
+          newToken.remove();
+        } else {
+          log('Impossible de créer un token pour ' + token.name);
+          log(token);
+        }
+        removeAttrs();
+      });
+    });
+    log("Mise à jour des attributs et tokens effectuée");
+  }
   state.COFantasy.version = scriptVersion;
   if (state.COFantasy.options.affichage.val.fiche.val) {
     if (!state.COFantasy.scriptSheets) {

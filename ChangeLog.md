@@ -1,11 +1,17 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.10
+### Capacités
+* Nuée de criquets (Druide Prestige)
+* Increvable (Rôdeur, Survie rang 4)
+* Intervention divine du prêtre
+
+### Autres améliorations
+* Une série de capacités sont à déclencher par les joueurs avant les jets de dégâts : Absorber un Coup, Absorber un Sort, Encaisser un Coup, Résistance à la Magie, Esquive Acrobatique, Esquive fatale, Parade Magistrale, Rune de Protection
+
 ## 2.09
 ### Capacités
 * Vitalité surnaturelle du barbare
 * Riposte du guerrier
-* Nuée de criquets (Druide Prestige)
-* Increvable (Rôdeur, Survie rang 4)
-* Intervention divine du prêtre
 
 ### Autres améliorations
 * Ajout d'une option --plusCrit aux attaques.
@@ -14,9 +20,6 @@
 * Possibilité d'utiliser la défense et l'initiative d'un autre personnage.
 * Possibilité de lier les PVs.
 * Les effets temporaires lancés avec une option de mana disparaissent quand le lanceur meurt.
-* Une série de capacités sont à déclencher par les joueurs avant les jets de dégâts : Absorber un Coup, Absorber un 
-Sort, Encaisser un Coup, Résistance à la Magie, Esquive Acrobatique, Esquive fatale, Parade Magistrale, 
-Rune de Protection
 
 ### Corrections de bugs
 * Undo avant de faire le jet d'attaque pour l'esquive acrobatique
