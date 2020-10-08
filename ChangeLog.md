@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.10
 ### Capacités
+* Chair à canon de la voie du PNJ récurrent
 * Nuée de criquets (Druide Prestige)
 * Increvable (Rôdeur, Survie rang 4)
 * Intervention divine du prêtre

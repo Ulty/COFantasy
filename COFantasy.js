@@ -1875,7 +1875,7 @@ var COFantasy = COFantasy || function() {
 
   function confirmerAttaque(msg) {
     if (!stateCOF.combat) {
-      sendPlayer(msg, "On ne peut utiliser les runes de protection qu'en combat");
+      sendPlayer(msg, "Trop tard pour continuer l'attaque, on est hors combat");
       return;
     }
     var cmd = msg.content.split(' ');
@@ -3058,14 +3058,15 @@ var COFantasy = COFantasy || function() {
           var pc = pointsDeChance(perso);
           if (pc > 0) {
             options.roll = options.roll || rt.roll;
-            boutonsReroll += ' ' + bouton("!cof-bouton-chance " + evt.id, "Chance", perso) +
+            boutonsReroll +=
+              ' ' + boutonSimple("!cof-bouton-chance " + evt.id, "Chance") +
               " (reste " + pc + " PC)";
           }
           if (attributeAsBool(perso, 'runeForgesort_énergie') && (caracteristique == 'FOR' || caracteristique == 'CON' || caracteristique == 'DEX')) {
-            boutonsReroll += ' ' + bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", perso);
+            boutonsReroll += ' ' + boutonSimple("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie");
           }
           if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
-            boutonsReroll += ' ' + bouton("!cof-petit-veinard " + evt.id, "Petit veinard", perso);
+            boutonsReroll += ' ' + boutonSimple("!cof-bouton-petit-veinard " + evt.id, "Petit veinard");
           }
           addLineToFramedDisplay(display, boutonsReroll);
           if (optionsDisplay.retarde) {
@@ -3099,14 +3100,14 @@ var COFantasy = COFantasy || function() {
             if (pc > 0) {
               options.roll = options.roll || tr.roll;
               msgRate += ' ' +
-                bouton("!cof-bouton-chance " + evt.id, "Chance", perso) +
+                boutonSimple("!cof-bouton-chance " + evt.id, "Chance") +
                 " (reste " + pc + " PC)";
             }
             if (attributeAsBool(perso, 'runeForgesort_énergie') && (caracteristique == 'FOR' || caracteristique == 'CON' || caracteristique == 'DEX')) {
-              msgRate += ' ' + bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", perso);
+              msgRate += ' ' + boutonSimple("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie");
             }
             if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
-              msgRate += ' ' + bouton("!cof-petit-veinard " + evt.id, "Petit veinard", perso);
+              msgRate += ' ' + boutonSimple("!cof-bouton-petit-veinard " + evt.id, "Petit veinard");
             }
             addLineToFramedDisplay(display, msgRate);
           }
@@ -6355,6 +6356,31 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
+    //Chair à canon
+    if (attributeAsInt(target, 'chairACanon', -1) >= 0) {
+      if (target.tokName === undefined) target.tokName = target.get('name');
+      var tokensChairACanon = findObjs({
+        _type: 'graphic',
+        _subtype: "token",
+        _pageid: pageId,
+        layer: 'objects'
+      });
+      target.chairACanon = tokensChairACanon.filter(function(tok) {
+        if (tok.id == target.token.id) return false;
+        var tokCharId = tok.get('represents');
+        if (tokCharId === '') return false;
+        if (distanceCombat(target.token, tok, pageId) > 3) return false;
+        var tokAttrs = charAttribute(tokCharId, 'chairACanonDe');
+        var estChair = tokAttrs.find(function(a) {
+          return a.get('current') == target.tokName;
+        });
+        return estChair;
+      });
+      if (target.chairACanon.length > 0) {
+        defense += 5;
+        explications.push(target.chairACanon[0].get('name') + " aide " + target.tokName + "! => +5 DEF");
+      }
+    }
     if (target.realCharId) target.charId = target.realCharId;
     return defense;
   }
@@ -8809,6 +8835,11 @@ var COFantasy = COFantasy || function() {
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
                   }
+                  if (attributeAsBool(target, 'chairACanon') && target.chairACanon && target.chairACanon.length > 0) {
+                    options.preDmg = options.preDmg || {};
+                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                    options.preDmg[target.token.id].chairACanon = target.chairACanon;
+                  }
                 }
                 if (attributeAsBool(target, 'esquiveFatale') && target.ennemisAuContact !== undefined &&
                   target.ennemisAuContact.find(function(tok) {
@@ -10237,14 +10268,14 @@ var COFantasy = COFantasy || function() {
       if (evt.succes === false) {
         var pc = pointsDeChance(perso);
         if (pc > 0 && !echecCritique) {
-          addLineToFramedDisplay(display, bouton("!cof-bouton-chance " + evt.id, "Chance", perso) + " (reste " + pc + " PC)");
+          addLineToFramedDisplay(display, boutonSimple("!cof-bouton-chance " + evt.id, "Chance") + " (reste " + pc + " PC)");
         }
         if (attributeAsBool(perso, 'runeForgesort_énergie') &&
           attributeAsInt(perso, 'limiteParCombat_runeForgesort_énergie', 1) > 0) {
           addLineToFramedDisplay(display, bouton("!cof-rune-energie " + evt.id, "Rune d'énergie", perso));
         }
         if (attributeAsBool(perso, 'petitVeinard')) {
-          addLineToFramedDisplay(display, bouton("!cof-petit-veinard " + evt.id, "Petit veinard", perso));
+          addLineToFramedDisplay(display, boutonSimple("!cof-bouton-petit-veinard " + evt.id, "Petit veinard"));
         }
         //TODO: pacte sanglant
       } else {
@@ -10262,7 +10293,7 @@ var COFantasy = COFantasy || function() {
             bouton("!cof-pousser-kiai " + evt.id, "Kiai", perso));
         }
         if (attributeAsBool(perso, 'petitVeinard')) {
-          addLineToFramedDisplay(display, boutonSimple("!cof-petit-veinard --target" + perso.token.id, "Petit veinard") + " pour relancer un dé");
+          addLineToFramedDisplay(display, boutonSimple("!cof-bouton-petit-veinard --target" + perso.token.id, "Petit veinard") + " pour relancer un dé");
         }
       }
       if (options.preDmg) {
@@ -10284,6 +10315,11 @@ var COFantasy = COFantasy || function() {
             }
             if (preDmgToken.runeForgesort_protection) {
               line += "<br/>" + bouton("!cof-rune-protection " + evt.id, "utiliser sa Rune de Protection", target);
+            }
+            if (preDmgToken.chairACanon) {
+              preDmgToken.chairACanon.forEach(function(tok) {
+                line += "<br/>" + boutonSimple("!cof-chair-a-canon " + target.token.id + ' ' + tok.id + ' ' + evt.id, "utiliser " + tok.get('name') + " comme chair à canon");
+              });
             }
             if (preDmgToken.paradeMagistrale) {
               var actionParadeMagistrale = "esquive acrobatique";
@@ -12113,6 +12149,7 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'resistanceALaMagieBarbare', evt);
     resetAttr(attrs, 'paradeMagistrale', evt);
     resetAttr(attrs, 'petitVeinard', evt);
+    resetAttr(attrs, 'chairACanon', evt);
     // Réinitialiser le kiai
     resetAttr(attrs, 'kiai', evt);
     // On diminue l'ébriété des personnages sous vapeurs éthyliques
@@ -13526,7 +13563,7 @@ var COFantasy = COFantasy || function() {
     return (res !== undefined);
   }
 
-
+  //!cof-bouton-chance [evt.id]
   function boutonChance(msg) {
     var args = msg.content.split(' ');
     if (args.length < 2) {
@@ -14303,7 +14340,8 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  //!cof-petit-veinard
+  //!cof-petit-veinard (avec un token sélectionné)
+  //!cof-bouton-petit-veinard evtid
   //sans argument, diminue juste l'attribut, sinon relance l'événement
   function petitVeinard(msg) {
     if (!stateCOF.combat) {
@@ -20147,19 +20185,19 @@ var COFantasy = COFantasy || function() {
         return;
       }
       var attaque = evtARefaire.action;
-      var options = attaque.options;
-      options.rolls = attaque.rolls;
+      var optionsRedo = attaque.options;
+      optionsRedo.rolls = attaque.rolls;
       var evt = {
         type: "esquive acrobatique",
         attributes: []
       };
       var estEsquive = true;
-      if (options.contact) {
+      if (optionsRedo.contact) {
         evt.type = "parade magistrale";
         estEsquive = false;
       }
-      options.evt = evt;
-      options.redo = true;
+      optionsRedo.evt = evt;
+      optionsRedo.redo = true;
       var toProceed;
       var count = selected.length;
       iterSelected(selected, function(duelliste) {
@@ -20238,14 +20276,105 @@ var COFantasy = COFantasy || function() {
           count--;
           if (count === 0) {
             toProceed = false;
-            attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+            attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, optionsRedo);
           }
         }); //fin lancé de dés asynchrone
       }); //fin iterSelected
       if (count === 0 && toProceed) {
-        attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+        attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, optionsRedo);
       }
     }); //fin getSelected
+  }
+
+  //!cof-chair-a-canon id1 id2 [evt_id]
+  // id1 est l'id du pnj récurrent
+  // id2 est l'id du token qui se met devant l'attaque
+  function doChairACanon(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 3) {
+      error("pas assez d'argumennts pour !cof-chair-a-canon", cmd);
+      return;
+    }
+    var evtARefaire;
+    if (cmd.length > 3) { //On relance pour un événement particulier
+      evtARefaire = findEvent(cmd[3]);
+      if (evtARefaire === undefined) {
+        error("L'action est trop ancienne ou a été annulée", cmd);
+        return;
+      }
+    } else {
+      evtARefaire = lastEvent();
+    }
+    var pnjRec = persoOfId(cmd[1]);
+    if (pnjRec === undefined) {
+      error("Le premier argument de !cof-chair-a-canon n'est pas un token de personnage", cmd);
+      return;
+    }
+    if (!peutController(msg, pnjRec)) {
+      sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+      return;
+    }
+    var chairACanon = tokenAttribute(pnjRec, 'chairACanon');
+    if (chairACanon.length === 0) {
+      sendChar(pnjRec.charId, "ne sait pas utiliser ses sous-fifres pour se défendre");
+      return;
+    }
+    chairACanon = chairACanon[0];
+    var curChairACanon = parseInt(chairACanon.get('current'));
+    if (isNaN(curChairACanon)) {
+      error("Resource pour chair à canon mal formée", chairACanon);
+      return;
+    }
+    if (curChairACanon < 1) {
+      sendChar(pnjRec.charId, " a déjà utilisé un sous-fifre ce tour");
+      return;
+    }
+    var sousFifre = persoOfId(cmd[2]);
+    if (sousFifre === undefined) {
+      error("Le second argument de !cof-chair-a-canon n'est pas un token de personnage", cmd);
+      return;
+    }
+    if (evtARefaire === undefined) {
+      sendChat('', "Historique d'actions vide, pas d'action trouvée pour la chair à canon");
+      return;
+    }
+    if (evtARefaire.type != 'Attaque' || evtARefaire.succes === false) {
+      sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour utiliser la chair à canon");
+      return;
+    }
+    var attaque = evtARefaire.action;
+    if (attaque === undefined) {
+      error("Attaque sans action", evtARefaire);
+      return;
+    }
+    var originalTarget;
+    var cibles = attaque.cibles.filter(function(c) {
+      if (originalTarget) return true;
+      if (c.token.id != cmd[1]) return true;
+      originalTarget = c;
+      return false;
+    });
+    if (originalTarget === undefined) {
+      error("Impossible de trouver " + pnjRec.token.get('name') + " parmi les cibles de l'attaque", attaque);
+      return;
+    }
+    sousFifre.rollDmg = originalTarget.rollDmg;
+    cibles.push(sousFifre);
+    var optionsRedo = attaque.options;
+    optionsRedo.rolls = attaque.rolls;
+    var evt = {
+      type: "chair à canon",
+      attributes: [{
+        attribute: chairACanon,
+        current: curChairACanon
+      }]
+    };
+    chairACanon.set('current', curChairACanon - 1);
+    optionsRedo.evt = evt;
+    optionsRedo.redo = true;
+    attack(attaque.playerId, attaque.attaquant, cibles, attaque.weaponStats, optionsRedo);
   }
 
   // modifie res et le retourne (au cas où il ne serait pas donné)
@@ -24283,14 +24412,14 @@ var COFantasy = COFantasy || function() {
               if (pc > 0) {
                 options.roll = options.roll || tr.roll;
                 msgRate += ' ' +
-                  bouton("!cof-bouton-chance " + evt.id, "Chance", perso) +
+                  boutonSimple("!cof-bouton-chance " + evt.id, "Chance") +
                   " (reste " + pc + " PC)";
               }
               if (attributeAsBool(perso, 'runeForgesort_énergie')) {
-                msgRate += ' ' + bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", perso);
+                msgRate += ' ' + boutonSimple("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie");
               }
               if (attributeAsBool(perso, 'petitVeinard')) {
-                msgRate += ' ' + bouton("!cof-petit-veinard " + evt.id, "Petit veinard", perso);
+                msgRate += ' ' + boutonSimple("!cof-bouton-petit-veinard " + evt.id, "Petit veinard");
               }
               addLineToFramedDisplay(display, msgRate);
             }
@@ -24353,14 +24482,14 @@ var COFantasy = COFantasy || function() {
             if (pc > 0) {
               options.roll = options.roll || tr.roll;
               msgRate += ' ' +
-                bouton("!cof-bouton-chance " + evt.id, "Chance", perso) +
+                boutonSimple("!cof-bouton-chance " + evt.id, "Chance") +
                 " (reste " + pc + " PC)";
             }
             if (attributeAsBool(perso, 'runeForgesort_énergie')) {
-              msgRate += ' ' + bouton("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie", perso);
+              msgRate += ' ' + boutonSimple("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie");
             }
             if (attributeAsBool(perso, 'petitVeinard')) {
-              msgRate += ' ' + bouton("!cof-petit-veinard" + evt.id, "Petit veinard", perso);
+              msgRate += ' ' + boutonSimple("!cof-bouton-petit-veinard" + evt.id, "Petit veinard");
             }
             addLineToFramedDisplay(display, msgRate);
           } else {
@@ -25239,6 +25368,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-absorber-au-bouclier":
         absorberAuBouclier(msg);
         return;
+      case "!cof-chair-a-canon":
+        doChairACanon(msg);
+        return;
       case "!cof-demarrer-statistiques":
         if (stateCOF.statistiquesEnPause) {
           stateCOF.statistiques = stateCOF.statistiquesEnPause;
@@ -25394,6 +25526,7 @@ var COFantasy = COFantasy || function() {
         optionsDAttaque(msg);
         return;
       case '!cof-petit-veinard':
+      case '!cof-bouton-petit-veinard':
         petitVeinard(msg);
         return;
       case '!cof-suivre':
@@ -26665,6 +26798,7 @@ var COFantasy = COFantasy || function() {
       resetAttr(attrs, 'esquiveAcrobatique', evt);
       resetAttr(attrs, 'resistanceALaMagieBarbare', evt);
       resetAttr(attrs, 'paradeMagistrale', evt);
+      resetAttr(attrs, 'chairACanon', evt);
       resetAttr(attrs, 'riposteGuerrier', evt);
       // Pour défaut dans la cuirasse, on diminue si la valeur est 2, et on supprime si c'est 1
       var defautsDansLaCuirasse = allAttributesNamed(attrs, 'defautDansLaCuirasse');
