@@ -7,6 +7,7 @@
 * Intervention divine du prêtre
 
 ### Autres améliorations
+* Support du nouvel éclairage dynamique
 * Une série de capacités sont à déclencher par les joueurs avant les jets de dégâts : Absorber un Coup, Absorber un Sort, Encaisser un Coup, Résistance à la Magie, Esquive Acrobatique, Esquive fatale, Parade Magistrale, Rune de Protection
 
 ## 2.09

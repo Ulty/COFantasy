@@ -1123,6 +1123,18 @@ var COFantasy = COFantasy || function() {
               light_angle: token.get('light_angle'),
               light_losangle: token.get('light_losangle'),
               light_multiplier: token.get('light_multiplier'),
+              has_bright_light_vision: token.get('has_bright_light_vision'),
+              has_night_vision: token.get('has_night_vision'),
+              night_vision_distance: token.get('night_vision_distance'),
+              night_vision_tint: token.get('night_vision_tint'),
+              emits_bright_light: token.get('emits_bright_light'),
+              bright_light_distance: token.get('bright_light_distance'),
+              emits_low_light: token.get('emits_low_light'),
+              low_light_distance: token.get('low_light_distance'),
+              has_limit_field_of_vision: token.get('has_limit_field_of_vision'),
+              has_limit_field_of_night_vision: token.get('has_limit_field_of_night_vision'),
+              limit_field_of_vision_center: token.get('limit_field_of_vision_center'),
+              limit_field_of_vision_total: token.get('limit_field_of_vision_total'),
               showname: token.get('showname'),
               showplayers_name: token.get('showplayers_name'),
               showplayers_bar1: token.get('showplayers_bar1'),
@@ -1371,16 +1383,35 @@ var COFantasy = COFantasy || function() {
     var pageId = token.get('pageid');
     if (etat == 'aveugle') {
       // We also change vision of the token
-      if (aff.prev.light_losangle === undefined)
-        aff.prev.light_losangle = token.get('light_losangle');
+      var page = getObj('page', pageId);
+      var udl = page && page.get('dynamic_lighting_enabled');
+      if (udl) {
+        if (aff.prev.has_limit_field_of_vision === undefined)
+          aff.prev.has_limit_field_of_vision = token.get('has_limit_field_of_vision');
+        if (aff.prev.has_limit_field_of_night_vision === undefined)
+          aff.prev.has_limit_field_of_night_vision = token.get('has_limit_field_of_night_vision');
+      } else {
+        if (aff.prev.light_losangle === undefined)
+          aff.prev.light_losangle = token.get('light_losangle');
+      }
       if (value) {
-        token.set('light_losangle', 0);
+        if (udl) {
+          token.set('has_limit_field_of_vision', true);
+          token.set('has_limit_field_of_night_vision', true);
+        } else {
+          token.set('light_losangle', 0);
+        }
         //Normalement, ne peut plus suivre personne ?
         //Si il peut parce qu'il touche ou tient une corde, réutiliser la macro
         //pour suivre
         nePlusSuivre(personnage, pageId, evt);
       } else {
-        token.set('light_losangle', 360);
+        if (udl) {
+          token.set('has_limit_field_of_vision', false);
+          token.set('has_limit_field_of_night_vision', false);
+        } else {
+          token.set('light_losangle', 360);
+        }
       }
     } else if (value) {
       switch (etat) {
@@ -23448,7 +23479,9 @@ var COFantasy = COFantasy || function() {
           showname: 'true',
           showplayers_bar1: 'true',
           light_hassight: 'true',
-          light_angle: 0 //Pour que le joueur ne voit rien par ses yeux
+          light_angle: 0, //Pour que le joueur ne voit rien par ses yeux
+          has_bright_light_vision: true,
+          has_limit_field_of_vision: true,
         });
         toFront(token);
         var charPredateur =
@@ -23538,6 +23571,8 @@ var COFantasy = COFantasy || function() {
           showplayers_bar1: 'true',
           light_hassight: 'true',
           light_angle: 0, //Pour que le joueur ne voit rien par ses yeux
+          has_bright_light_vision: true,
+          has_limit_field_of_vision: true,
           aura1_radius: 10,
           aura1_color: "#d56eef",
           aura1_square: true
@@ -23758,26 +23793,55 @@ var COFantasy = COFantasy || function() {
     radius = scaleDistance(perso, radius);
     if (dimRadius !== '') dimRadius = scaleDistance(perso, dimRadius);
     var ct = perso.token;
+    var pageId = ct.get('pageid');
+    var page = getObj('page', pageId);
+    var udl = page && page.get('dynamic_lighting_enabled');
+    var brightLight = radius;
+    if (udl) {
+      if (isNaN(brightLight) || brightLight < 0) {
+        error("Lumière avec un rayon négatif", radius);
+        return;
+      }
+    }
     var attrName = 'lumiere';
     if (ct.get('bar1_link') === "") attrName += "_" + ct.get('name');
-    if (ct.get('bar1_max') && !ct.get('light_radius')) {
+    if (ct.get('bar1_max')) {
+      var lumiereSurPerso;
       //Cas particulier où le personnage est un vrai personnage qui ne fait pas de lumière
-      setToken(ct, 'light_radius', radius, evt);
-      if (dimRadius !== '') setToken(ct, 'light_dimradius', dimRadius, evt);
-      setToken(ct, 'light_otherplayers', true, evt);
-      var attr1 = createObj('attribute', {
-        characterid: perso.charId,
-        name: attrName,
-        current: nomLumiere,
-        max: 'surToken'
-      });
-      evt.attributes = [{
-        attribute: attr1,
-        current: null
-      }];
-      return;
+      if (!udl && !ct.get('light_radius')) {
+        lumiereSurPerso = true;
+        setToken(ct, 'light_radius', radius, evt);
+        if (dimRadius !== '') setToken(ct, 'light_dimradius', dimRadius, evt);
+        setToken(ct, 'light_otherplayers', true, evt);
+      } else if (udl && !ct.get('emits_bright_light') && !ct.get('emits_low_light')) {
+        lumiereSurPerso = true;
+        if (dimRadius !== '') {
+          if (dimRadius < 0) dimRadius = 0;
+          if (dimRadius < brightLight) {
+            setToken(ct, 'emits_low_light', true, evt);
+            setToken(ct, 'low_light_distance', brightLight, evt);
+            brightLight = dimRadius;
+          }
+        }
+        if (brightLight > 0) {
+          setToken(ct, 'emits_bright_light', true, evt);
+          setToken(ct, 'bright_light_distance', brightLight, evt);
+        }
+      }
+      if (lumiereSurPerso) {
+        var attr1 = createObj('attribute', {
+          characterid: perso.charId,
+          name: attrName,
+          current: nomLumiere,
+          max: 'surToken'
+        });
+        evt.attributes = [{
+          attribute: attr1,
+          current: null
+        }];
+        return;
+      }
     }
-    var pageId = ct.get('pageid');
     var tokLumiere = createObj('graphic', {
       _pageid: pageId,
       imgsrc: "https://s3.amazonaws.com/files.d20.io/images/3233035/xHOXBXoAgOHCHs8omiFAYg/thumb.png?1393406116",
@@ -23787,15 +23851,30 @@ var COFantasy = COFantasy || function() {
       height: 70,
       layer: 'walls',
       name: nomLumiere,
-      light_radius: radius,
-      light_dimradius: dimRadius,
-      light_otherplayers: true
     });
     if (tokLumiere === undefined) {
       error("Problème lors de la création du token de lumière", perso);
       return;
     }
     evt.tokens = [tokLumiere];
+    if (udl) {
+      if (dimRadius !== '') {
+        if (dimRadius < 0) dimRadius = 0;
+        if (dimRadius < brightLight) {
+          setToken(tokLumiere, 'emits_low_light', true, evt);
+          setToken(tokLumiere, 'low_light_distance', brightLight, evt);
+          brightLight = dimRadius;
+        }
+      }
+      if (brightLight > 0) {
+        setToken(tokLumiere, 'emits_bright_light', true, evt);
+        setToken(tokLumiere, 'bright_light_distance', brightLight, evt);
+      }
+    } else {
+      setToken(tokLumiere, 'light_radius', radius, evt);
+      setToken(tokLumiere, 'light_dimradius', dimRadius, evt);
+      setToken(tokLumiere, 'light_otherplayers', true, evt);
+    }
     if (ct.get('bar1_max')) { //Lumière liée à un token
       var attr = createObj('attribute', {
         characterid: perso.charId,
@@ -23836,6 +23915,8 @@ var COFantasy = COFantasy || function() {
       allTokens.forEach(function(token) {
         setToken(token, 'light_radius', '', evt);
         setToken(token, 'light_dimradius', '', evt);
+        setToken(token, 'emits_bright_light', false, evt);
+        setToken(token, 'emits_low_light', false, evt);
       });
       al.remove();
       return;
@@ -26575,6 +26656,8 @@ var COFantasy = COFantasy || function() {
               setToken(nouveauToken, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
               setToken(nouveauToken, 'statusmarkers', token.get('statusmarkers'), evt);
               setToken(nouveauToken, 'light_angle', token.get('light_angle'), evt);
+              setToken(nouveauToken, 'has_limit_field_of_vision', token.get('has_limit_field_of_vision'), evt);
+              setToken(nouveauToken, 'has_limit_field_of_night_vision', token.get('has_limit_field_of_night_vision'), evt);
               if (stateCOF.combat) {
                 replaceInTurnTracker(token.id, nouveauToken.id, evt);
               }
@@ -27601,7 +27684,7 @@ var COFantasy = COFantasy || function() {
         var murs = prev.murs;
         var distance =
           Math.sqrt((x - prev.left) * (x - prev.left) + (y - prev.top) * (y - prev.top));
-        if (murs === undefined && page.get('showlighting') && page.get('lightrestrictmove')) {
+        if (murs === undefined && page.get('lightrestrictmove')) {
           murs = findObjs({
             _type: 'path',
             _pageid: pageId,
@@ -27819,15 +27902,24 @@ var COFantasy = COFantasy || function() {
       tokName: tokenName,
       charId: charId
     };
+    var pageId = token.get('pageid');
     //Vision
     var visionNoir = charAttributeAsInt(perso, 'visionDansLeNoir', 0);
     if (visionNoir > 0) {
       visionNoir = scaleDistance(perso, visionNoir);
-      token.set('light_radius', visionNoir);
-      token.set('light_dimradius', -1);
-      token.set('light_otherplayers', false);
-      token.set('light_hassight', true);
-      token.set('light_angle', 360);
+      var page = getObj('page', pageId);
+      var udl = page && page.get('dynamic_lighting_enabled');
+      if (udl) {
+        token.set('has_night_vision', true);
+        token.set('night_vision_tint', '#555555');
+        token.set('night_vision_radius', visionNoir);
+      } else {
+        token.set('light_radius', visionNoir);
+        token.set('light_dimradius', -1);
+        token.set('light_otherplayers', false);
+        token.set('light_hassight', true);
+        token.set('light_angle', 360);
+      }
     }
     if (token.get('bar1_link') !== '') return;
     var copyOf = 0;
@@ -27863,7 +27955,6 @@ var COFantasy = COFantasy || function() {
       if (!isNaN(tokenBaseName[tokenBaseName.length - 1]))
         nePasModifier = true;
     }
-    var pageId = token.get('pageid');
     otherTokens.forEach(function(ot) {
       if (ot.id == token.id) return;
       var name = ot.get('name');
