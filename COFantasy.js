@@ -7712,6 +7712,7 @@ var COFantasy = COFantasy || function() {
       if (an == '#Actions#' || an == '#TurnAction#') actions = a;
     });
     var actionsOpportunite = [];
+
     if (actions) {
       actions = actions.get('action').replace(/\n/gm, '').replace(/\r/gm, '').replace(/%/g, '\n%').replace(/#/g, '\n#').split("\n");
       if (actions.length > 0) {
@@ -7764,15 +7765,6 @@ var COFantasy = COFantasy || function() {
         });
       }
     }
-    if (actionsOpportunite.length === 0) {
-      //Pas besoin de faire un frame, on n'a pas d'action
-      var ligne = "peut faire une attaque " + type + " contre";
-      cibles.forEach(function(target) {
-        ligne += ' ' + target.token.get('name');
-      });
-      sendChar(attaquant.charId, ligne);
-      return;
-    }
     //On crée un display sans le header
     var display = startFramedDisplay(undefined, "Attaque " + type + " possible", attaquant, {
       retarde: true
@@ -7788,6 +7780,7 @@ var COFantasy = COFantasy || function() {
         target.name = targetChar.get('name');
       }
       addLineToFramedDisplay(display, "contre " + target.tokName, 100, true);
+      addLineToFramedDisplay(display, listeAttaquesVisibles(attaquant, option, target.token.id));
       actionsOpportunite.forEach(function(action) {
         var cmd = action.command.replace(/@\{target\|token_id\}/g, target.token.id);
         cmd = cmd.replace(/@\{target\|token_name\}/g, target.tokName);
@@ -14875,8 +14868,9 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function listeAttaquesVisibles(perso, options) {
+  function listeAttaquesVisibles(perso, options, target) {
     options = options || '';
+    target = target || '@{target|token_id}';
     var ligne = '';
     //Cherche toutes les attaques à afficher
     var estPNJ = persoEstPNJ(perso);
@@ -14904,7 +14898,7 @@ var COFantasy = COFantasy || function() {
       var attaqueVisible = ficheAttributeAsInt(perso, attPrefix + 'armeactionvisible', 1);
       if (attaqueVisible === 0) return;
       var attLabel = ficheAttribute(perso, attPrefix + "armelabel", 0);
-      var command = "!cof-attack @{selected|token_id} @{target|token_id} " + attLabel + options;
+      var command = "!cof-attack @{selected|token_id} " + target + " " + attLabel + " " + options;
       ligne += bouton(command, weaponName, perso) + '<br />';
     });
     //On ajoute aussi les lancers de feu grégeois, si il y en a
