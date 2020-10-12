@@ -19598,7 +19598,7 @@ var COFantasy = COFantasy || function() {
     var newToken;
     if (image1) newToken = createObj('graphic', tokenFields);
     if (newToken === undefined) {
-      tokenFields.imgsrc = cible.token.get('imgsrc').replace("max", "thumb");
+      tokenFields.imgsrc = cible.token.get('imgsrc').replace('max', 'thumb');
       newToken = createObj('graphic', tokenFields);
       if (newToken === undefined) {
         log(tokenFields.imgsrc);
@@ -19620,6 +19620,43 @@ var COFantasy = COFantasy || function() {
     initPerso(perso, evt);
   }
 
+  //retourne true si le joueur est effectivement déplacé
+  function movePlayerToMap(pid, oldPageId, newPageId) {
+    if (getObj('player',pid) === undefined) return;
+    var c = Campaign();
+    var playerPages = c.get('playerspecificpages');
+    var playersMainPage = c.get('playerpageid');
+    if (!playerPages) playerPages = {};
+    if ((playerPages[pid] && playerPages[pid] == oldPageId)) {
+      if (playersMainPage == newPageId) {
+        c.set('playerspecificpages', false);
+        if (_.size(playerPages) > 1) {
+          delete playerPages[pid];
+          c.set('playerspecificpages', playerPages);
+        }
+      } else {
+        playerPages[pid] = newPageId;
+        c.set('playerspecificpages', false);
+        c.set('playerspecificpages', playerPages);
+      }
+    } else if ((!playerPages[pid] && playersMainPage == oldPageId)) {
+      playerPages[pid] = newPageId;
+      var allPlayers = findObjs({
+        _type: 'player'
+      });
+      var allOnNewPage = allPlayers.every(function(p) {
+        if (playerIsGM(p.id)) return true;
+        return playerPages[p.id] == newPageId;
+      });
+      c.set('playerspecificpages', false);
+      if (allOnNewPage) {
+        Campaign().set('playerpageid', newPageId);
+      } else {
+        c.set('playerspecificpages', playerPages);
+      }
+    }
+  }
+
   function findEsc(escaliers, escName, i) {
     var fullEscName = escName + labelsEscalier[i];
     var sortieEscalier = escaliers.find(function(esc) {
@@ -19628,6 +19665,7 @@ var COFantasy = COFantasy || function() {
     if (sortieEscalier === undefined && i > 0) return findEsc(escName, i - 1);
     return sortieEscalier;
   }
+
   //Attention : ne tient pas compte de la rotation !
   function intersection(pos1, size1, pos2, size2) {
     if (pos1 == pos2) return true;
@@ -19654,6 +19692,7 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, "Pas de token dans le layer GM");
         return;
       }
+      var tmaps; //Les passages entre les maps.
       var versLeHaut = true;
       var loop = true;
       if (msg.content) {
@@ -19691,25 +19730,84 @@ var COFantasy = COFantasy || function() {
                   if (loop) escName += labelsEscalier[11];
                 } else escName += labelsEscalier[i - 1];
               }
-              sortieEscalier = escaliers.find(function(esc2) {
+              var escs = escaliers;
+              if (escName.startsWith('tmap_')) {
+                if (!tmaps) {
+                  tmaps = findObjs({
+                    _type: 'graphic',
+                    layer: 'gmlayer'
+                  });
+                  tmaps = tmaps.filter(function(e) {
+                    return e.get('name').startsWith('tmap_');
+                  });
+                }
+                escs = tmaps;
+              }
+              sortieEscalier = escs.find(function(esc2) {
                 return esc2.get('name') == escName;
               });
               if (sortieEscalier === undefined && loop) {
                 if (i > 0) { //sortie par le plus petit
                   escName = escName.substr(0, l - 1) + 'A';
-                  sortieEscalier = escaliers.find(function(esc2) {
+                  sortieEscalier = escs.find(function(esc2) {
                     return esc2.get('name') == escName;
                   });
                 } else {
-                  sortieEscalier = findEsc(escaliers, escName.substr(0, l - 1), 10);
+                  sortieEscalier = findEsc(escs, escName.substr(0, l - 1), 10);
                 }
               }
             }
           }
         });
         if (sortieEscalier) {
-          token.set('left', sortieEscalier.get('left'));
-          token.set('top', sortieEscalier.get('top'));
+          var newPageId = sortieEscalier.get('pageid');
+          if (newPageId == pageId) {
+            token.set('left', sortieEscalier.get('left'));
+            token.set('top', sortieEscalier.get('top'));
+            return;
+          }
+          //On change de carte, il faut donc copier le token
+          var tokenObj = JSON.parse(JSON.stringify(token));
+          tokenObj._pageid = newPageId;
+          //On met la taille du token à jour en fonction des échelles des cartes.
+          var ratio =  computeScale(pageId) / computeScale(newPageId);
+          if (ratio < 0.9 || ratio > 1.1) {
+            if (ratio < 0.25) ratio = 0.25;
+            else if (ratio > 4) ratio = 4;
+            tokenObj.width *= ratio;
+            tokenObj.height *= ratio;
+          }
+          tokenObj.imgsrc = tokenObj.imgsrc.replace('/med.png', '/thumb.png');
+          tokenObj.left = sortieEscalier.get('left');
+          tokenObj.top = sortieEscalier.get('top');
+          var newToken = createObj('graphic', tokenObj);
+          if (newToken === undefined) {
+            error("Impossible de copier le token, et donc de faire le changement de carte", tokenObj);
+            return;
+          }
+          //On déplace ensuite le joueur.
+          var character = getObj('character', perso.charId);
+          if (character === undefined) return;
+          var charControlledby = character.get('controlledby');
+          if (charControlledby === '') {
+            //Seul le MJ contrôle le personnage
+            var players = findObjs({
+              _type: 'player',
+              online: true
+            });
+            var gm = players.find(function(pid) {
+              return playerIsGM(pid);
+            });
+            if (gm) {
+              movePlayerToMap(gm.id, pageId, newPageId);
+            }
+          } else {
+            charControlledby.split(",").forEach(function(pid) {
+              movePlayerToMap(pid, pageId, newPageId);
+            });
+          }
+          //Enfin, on efface le token de départ.
+          token.remove();
           return;
         }
         var err = token.get('name') + " n'est pas sur un escalier";

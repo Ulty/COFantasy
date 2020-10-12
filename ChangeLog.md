@@ -3,6 +3,9 @@
 ### Capacités
 * Commandant de la voie du chef d'armée.
 
+### Autres améliorations
+* Possibilité de déplacer un personnage vers une autre carte.
+
 ### Corrections de bugs
 * Prise en compte de la taille des cellules de la grille des cartes, car elle est utilisée en jeu pour mesurer les distances.
 
