@@ -1380,6 +1380,33 @@ var COFantasy = COFantasy || function() {
     return perso;
   }
 
+  function computeScale(pageId) {
+    var page = getObj("page", pageId);
+    var scale = parseFloat(page.get('scale_number'));
+    if (isNaN(scale) || scale <= 0) return 1.0;
+    var cellSize = parseFloat(page.get('snapping_increment'));
+    if (!isNaN(cellSize) && cellSize > 0) scale /= cellSize;
+    var unit = page.get('scale_units');
+    switch (unit) {
+      case 'ft':
+        scale *= 0.3048;
+        break;
+      case 'cm':
+        scale *= 0.01;
+        break;
+      case 'km':
+        scale *= 1000;
+        break;
+      case 'mi':
+        scale *= 1609.34;
+        break;
+      case 'in':
+        scale *= 0.0254;
+        break;
+    }
+    return scale;
+  }
+
   //options peut avoir les champs:
   // - strict1 = true si on considère que tok1 doit avoir une taille nulle
   // - strict2
@@ -3274,31 +3301,6 @@ var COFantasy = COFantasy || function() {
         perso.scale = 1;
     }
     return distance * perso.scale;
-  }
-
-  function computeScale(pageId) {
-    var page = getObj("page", pageId);
-    var scale = parseFloat(page.get('scale_number'));
-    if (isNaN(scale) || scale <= 0) return 1.0;
-    var unit = page.get('scale_units');
-    switch (unit) {
-      case 'ft':
-        scale *= 0.3048;
-        break;
-      case 'cm':
-        scale *= 0.01;
-        break;
-      case 'km':
-        scale *= 1000;
-        break;
-      case 'mi':
-        scale *= 1609.34;
-        break;
-      case 'in':
-        scale *= 0.0254;
-        break;
-    }
-    return scale;
   }
 
   function getPageId(playerId) {
