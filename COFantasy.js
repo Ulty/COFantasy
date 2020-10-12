@@ -27969,8 +27969,8 @@ var COFantasy = COFantasy || function() {
       var udl = page && page.get('dynamic_lighting_enabled');
       if (udl) {
         token.set('has_night_vision', true);
-        token.set('night_vision_tint', '#555555');
-        token.set('night_vision_radius', visionNoir);
+        //token.set('night_vision_tint', '#555555');
+        token.set('night_vision_distance', visionNoir);
       } else {
         token.set('light_radius', visionNoir);
         token.set('light_dimradius', -1);
