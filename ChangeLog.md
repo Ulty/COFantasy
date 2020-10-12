@@ -1,4 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.11
+### Capacités
+* Commandant de la voie du chef d'armée.
 ## 2.10
 ### Capacités
 * Chair à canon de la voie du PNJ récurrent

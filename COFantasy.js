@@ -1189,6 +1189,39 @@ var COFantasy = COFantasy || function() {
     return attr;
   }
 
+  // evt et msg peuvent être undefined
+  function removeTokenAttr(personnage, attribute, evt, msg) {
+    var charId = personnage.charId;
+    var token = personnage.token;
+    // check if the token is linked to the character. If not, use token name
+    // in attribute name (token ids don't persist over API reload)
+    if (token) {
+      var link = token.get('bar1_link');
+      if (link === '') attribute += "_" + token.get('name');
+    }
+    var attr = findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+      name: attribute
+    });
+    if (attr.length === 0) return;
+    if (msg !== undefined) {
+      sendChar(charId, msg);
+    }
+    attr = attr[0];
+    if (evt) {
+      evt.deletedAttributes = evt.deletedAttributes || [];
+      evt.deletedAttributes.push(attr);
+    }
+    attr.remove();
+  }
+
+  function removeCharAttr(charId, attribute, evt, msg) {
+    removeTokenAttr({
+      charId: charId
+    }, attribute, evt, msg);
+  }
+
   //fonction avec callback, mais synchrone
   function soigneToken(perso, soins, evt, callTrue, callMax, options) {
     options = options || {};
@@ -5547,33 +5580,6 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  // evt et msg peuvent être undefined
-  function removeTokenAttr(personnage, attribute, evt, msg) {
-    var charId = personnage.charId;
-    var token = personnage.token;
-    // check if the token is linked to the character. If not, use token name
-    // in attribute name (token ids don't persist over API reload)
-    if (token) {
-      var link = token.get('bar1_link');
-      if (link === '') attribute += "_" + token.get('name');
-    }
-    var attr = findObjs({
-      _type: 'attribute',
-      _characterid: charId,
-      name: attribute
-    });
-    if (attr.length === 0) return;
-    if (msg !== undefined) {
-      sendChar(charId, msg);
-    }
-    attr = attr[0];
-    if (evt) {
-      evt.deletedAttributes = evt.deletedAttributes || [];
-      evt.deletedAttributes.push(attr);
-    }
-    attr.remove();
-  }
-
   function removeAllAttributes(name, evt, attrs) {
     if (attrs === undefined) {
       attrs = findObjs({
@@ -5613,6 +5619,7 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  // renvoie la valeur du bonus si il y a un capitaine (ou commandant)
   function aUnCapitaine(cible, evt, pageId) {
     var charId = cible.charId;
     var attrs = findObjs({
@@ -5626,26 +5633,22 @@ var COFantasy = COFantasy || function() {
     if (pageId === undefined) {
       pageId = cible.token.get('pageid');
     }
-    var nomCapitaine = attrCapitaine.get('current');
-    var idCapitaine = attrCapitaine.get('max');
-    var capitaine = persoOfId(idCapitaine, nomCapitaine, pageId);
+    var capitaine = persoOfIdName(attrCapitaine.get('current'), pageId);
     var capitaineActif = attrs.find(function(a) {
       return (a.get('name') == 'capitaineActif');
     });
     if (capitaine && isActive(capitaine)) {
-      if (capitaineActif) return true;
-      setTokenAttr({
-        charId: charId
-      }, 'capitaineActif', true, evt);
+      if (capitaineActif) return attrCapitaine.get('max');
+      setTokenAttr(cible, 'capitaineActif', true, evt, {
+        charAttr: true
+      });
       iterSelected(tokensEnCombat(), function(perso) {
         if (perso.charId == charId) updateInit(perso.token, evt);
       });
-      return true;
+      return attrCapitaine.get('max');
     }
     if (capitaineActif) {
-      removeTokenAttr({
-        charId: charId
-      }, 'capitaineActif', evt);
+      removeCharAttr(cible.charId, 'capitaineActif', evt);
       iterSelected(tokensEnCombat(), function(perso) {
         if (perso.charId == charId) updateInit(perso.token, evt);
       });
@@ -5716,8 +5719,9 @@ var COFantasy = COFantasy || function() {
     if (familier(perso)) init += 2;
     // Sixième sens en sort
     if (attributeAsBool(perso, 'sixiemeSens')) init += 2;
-    // Voie du chef d'armée rang 2 (Capitaine)
-    if (aUnCapitaine(perso, evt)) init += 2;
+    // Voie du chef d'armée rangs 2 et 3 (Capitaine)
+    var bonusCapitaine = aUnCapitaine(perso, evt);
+    if (bonusCapitaine) init += parseInt(bonusCapitaine);
     if (charAttributeAsBool(perso, 'graceFeline')) {
       init += modCarac(perso, 'CHARISME');
     }
@@ -5947,9 +5951,15 @@ var COFantasy = COFantasy || function() {
       attBonus -= 4;
       explications.push("Cadavre animé => -2 en Attaque");
     }
-    if (aUnCapitaine(personnage, evt)) {
-      attBonus += 2;
-      explications.push("Un capitaine donne des ordres => +2 en Attaque");
+    var bonusCapitaine = aUnCapitaine(personnage, evt);
+    if (bonusCapitaine) {
+      attBonus += parseInt(bonusCapitaine);
+      var msgCapitaine = "Un ";
+      if (bonusCapitaine > 2) msgCapitaine += "commandant";
+      else msgCapitaine += "capitaine";
+      msgCapitaine += " donne des ordres => +" + bonusCapitaine + " en Attaque et aux DMs";
+      personnage.bonusCapitaine = bonusCapitaine;
+      explications.push(msgCapitaine);
     }
     if (attributeAsBool(personnage, 'forceDeGeant')) {
       var bonusForceDeGeant = getValeurOfEffet(personnage, 'forceDeGeant', 2);
@@ -6412,6 +6422,11 @@ var COFantasy = COFantasy || function() {
         defense += 5;
         explications.push(target.chairACanon[0].get('name') + " aide " + target.tokName + "! => +5 DEF");
       }
+    }
+    var bonusCapitaine = aUnCapitaine(target, evt, pageId);
+    if (bonusCapitaine && bonusCapitaine > 2) {
+      defense += bonusCapitaine;
+      explications.push(target.tokName + " suit les ordres de son commandant => +" + bonusCapitaine + " en DEF");
     }
     if (target.realCharId) target.charId = target.realCharId;
     return defense;
@@ -9201,7 +9216,7 @@ var COFantasy = COFantasy || function() {
         explications.push("Posture de combat => +" + postureVal + " DM");
       }
     }
-    if (aUnCapitaine(attaquant, evt, pageId)) attDMBonusCommun += " +2";
+    if (attaquant.bonusCapitaine) attDMBonusCommun += " +" + attaquant.bonusCapitaine;
     // Les autres sources de dégâts
     if (options.distance) {
       if (options.semonce) {
@@ -11164,9 +11179,9 @@ var COFantasy = COFantasy || function() {
       if (showTotal) dmgDisplay = "(" + dmgDisplay + ")";
       dmgDisplay += " / 2";
       dmgTotal = Math.ceil(dmgTotal / 2);
-      for (var dmType in dmSuivis) {
-        dmSuivis[dmType] = Math.ceil(dmSuivis[dmType] / 2);
-      }
+      dmSuivis = _.map(dmSuivis, function(d) {
+        return Math.ceil(d / 2);
+      });
       showTotal = true;
     }
     if (options.partialSave && options.partialSave.tempete && options.tempeteDeManaIntense) {
@@ -11178,9 +11193,9 @@ var COFantasy = COFantasy || function() {
         if (saveResult) {
           if (saveResult.total < dmgTotal) {
             dmgTotal = saveResult.total;
-            for (var dmType in dmSuivis) {
-              dmSuivis[dmType] = Math.ceil(dmSuivis[dmType] / 2);
-            }
+            dmSuivis = _.map(dmSuivis, function(d) {
+              return Math.ceil(d / 2);
+            });
           }
           dmgDisplay = saveResult.dmgDisplay;
           showTotal = saveResult.showTotal;
@@ -11283,8 +11298,46 @@ var COFantasy = COFantasy || function() {
           dmgTotal = Math.ceil(dmgTotal / 2);
           if (options.memePasMal)
             options.memePasMal = Math.ceil(options.memePasMal / 2);
-          for (var dmType2 in dmSuivis) {
-            dmSuivis[dmType2] = Math.ceil(dmSuivis[dmType2] / 2);
+          dmSuivis = _.map(dmSuivis, function(d) {
+            return Math.ceil(d / 2);
+          });
+        }
+        if (charAttributeAsBool(target, 'commandant')) {
+          //On cherche si il y a au moins 4 créatures sous ses ordres à moins de 10 m
+          var pageId = target.token.get('pageid');
+          var tokens =
+            findObjs({
+              _type: 'graphic',
+              _subtype: 'token',
+              layer: 'objects',
+              _pageid: pageId
+            });
+          var nbCreatures = 0;
+          tokens.forEach(function(tok) {
+            if (tok.id === target.token.id) return;
+            var ci = tok.get('represents');
+            if (ci === '') return;
+            if (distanceCombat(tok, target.token, pageId) > 10) return;
+            var attrCom = charAttribute(ci, 'capitaine');
+            if (attrCom.length === 0) return;
+            var capitaine = persoOfIdName(attrCom[0].get('current'), pageId);
+            if (!capitaine || capitaine.token.id != target.token.id) return;
+            var perso = {
+              token: tok,
+              charId: ci
+            };
+            if (isActive(perso)) nbCreatures++;
+          });
+          if (nbCreatures > 3) {
+            if (showTotal) dmgDisplay = "(" + dmgDisplay + ") / 2";
+            else dmgDisplay += " / 2";
+            showTotal = true;
+            dmgTotal = Math.ceil(dmgTotal / 2);
+            if (options.memePasMal)
+              options.memePasMal = Math.ceil(options.memePasMal / 2);
+            dmSuivis = _.map(dmSuivis, function(d) {
+              return Math.ceil(d / 2);
+            });
           }
         }
         if (dmgTotal < reglesOptionelles.dm_minimum.val) {
@@ -11295,9 +11348,9 @@ var COFantasy = COFantasy || function() {
           dmgTotal = Math.ceil(dmgTotal / options.divise);
           if (options.memePasMal)
             options.memePasMal = Math.ceil(options.memePasMal / options.divise);
-          for (var dmType3 in dmSuivis) {
-            dmSuivis[dmType3] = Math.ceil(dmSuivis[dmType3] / options.divise);
-          }
+          dmSuivis = _.map(dmSuivis, function(d) {
+            return Math.ceil(d / options.divise);
+          });
           dmgDisplay = "(" + dmgDisplay + ")/" + options.divise;
           showTotal = true;
         }
@@ -11389,9 +11442,9 @@ var COFantasy = COFantasy || function() {
           if (bar1 > 0 && bar1 <= dmgTotal &&
             charAttributeAsBool(target, 'instinctDeSurvieHumain')) {
             dmgTotal = Math.floor(dmgTotal / 2);
-            for (var dmType4 in dmSuivis) {
-              dmSuivis[dmType4] = Math.floor(dmSuivis[dmType4] / 2);
-            }
+            dmSuivis = _.map(dmSuivis, function(d) {
+              return Math.ceil(d / 2);
+            });
             if (dmgTotal < 1) dmgTotal = 1;
             dmgDisplay += "/2";
             showTotal = true;
@@ -11442,10 +11495,10 @@ var COFantasy = COFantasy || function() {
             }
           }
           //On enregistre les dm suivis
-          for (var dmType5 in dmSuivis) {
-            var d = dmSuivis[dmType5];
+          for (var dmType in dmSuivis) {
+            var d = dmSuivis[dmType];
             if (d) {
-              var attrDmSuivi = tokenAttribute(target, 'DMSuivis' + dmType5);
+              var attrDmSuivi = tokenAttribute(target, 'DMSuivis' + dmType);
               if (attrDmSuivi.length > 0) {
                 var cd = parseInt(attrDmSuivi[0].get('current'));
                 if (cd > 0) d += cd;
@@ -11456,7 +11509,7 @@ var COFantasy = COFantasy || function() {
                   current: cd
                 });
               } else {
-                setTokenAttr(target, 'DMSuivis' + dmType5, d, evt);
+                setTokenAttr(target, 'DMSuivis' + dmType, d, evt);
               }
             }
           }
@@ -19104,13 +19157,18 @@ var COFantasy = COFantasy || function() {
 
   function devientCapitaine(msg) {
     var cmd = msg.content.split(' ');
+    cmd = cmd.filter(function(c) {
+      return c !== '';
+    });
     if (cmd.length < 2) {
-      error("La fonction !cof-capitaine attend en argument l'id du capitaine ou --aucun", cmd);
+      error("La fonction !cof-capitaine attend en argument l'id du capitaine", cmd);
       return;
     }
     var remove;
     var capitaine;
     var nomCapitaine;
+    var bonus = 2;
+    var titre = 'capitaine';
     if (cmd[1] == '--aucun') {
       remove = true;
     } else {
@@ -19120,29 +19178,37 @@ var COFantasy = COFantasy || function() {
         return;
       }
       nomCapitaine = capitaine.token.get('name');
+      if (cmd.length > 2 && !cmd[2].startsWith('--')) {
+        bonus = parseInt(cmd[2]);
+        if (isNaN(bonus) || bonus < 0) {
+          error("Le bonus de capitaine (second argument) doit être un nombre positif", cmd);
+          return;
+        }
+        if (bonus === 0) remove = true;
+        if (bonus > 2) titre = 'commandant';
+      }
     }
     var evt = {
       type: 'Capitaine'
     };
     getSelected(msg, function(selected) {
+      if (selected.length === 0) {
+        error("Pas de token sélectionné pour !cof-capitaine");
+        return;
+      }
       iterSelected(selected, function(perso) {
-        var charId = perso.charId;
         var token = perso.token;
         if (remove) {
-          removeTokenAttr({
-            charId: charId
-          }, 'capitaine', evt);
-          removeTokenAttr({
-            charId: charId
-          }, 'capitaineActif', evt);
+          removeCharAttr(perso.charId, 'capitaine', evt);
+          removeCharAttr(perso.charId, 'capitaineActif', evt);
           sendChat('COF', "/w GM " + token.get('name') + " n'a plus de capitaine");
         } else {
           if (token.id == capitaine.token.id) return;
-          setTokenAttr(perso, 'capitaine', nomCapitaine, evt, {
-            maxVal: capitaine.token.id,
+          setTokenAttr(perso, 'capitaine', capitaine.token.id + ' ' + nomCapitaine, evt, {
+            maxVal: bonus,
             charAttr: true
           });
-          sendChat('COF', "/w GM " + nomCapitaine + " est le capitaine de " + token.get('name'));
+          sendChat('COF', "/w GM " + nomCapitaine + " est le " + titre + " de " + token.get('name'));
         }
       });
       addEvent(evt);
@@ -26610,9 +26676,7 @@ var COFantasy = COFantasy || function() {
         var tokenChange = charIdAttributeAsBool(charId, 'changementDeToken');
         var iterTokOptions = {};
         if (tokenChange) {
-          removeTokenAttr({
-            charId: charId
-          }, 'changementDeToken', evt);
+          removeCharAttr(charId, 'changementDeToken', evt);
           iterTokOptions.tousLesTokens = true;
         }
         iterTokensOfAttribute(charId, options.pageId, effet, attrName,
@@ -28092,7 +28156,7 @@ on("destroy:handout", function(prev) {
 });
 
 on('ready', function() {
-  var scriptVersion = '2.10';
+  var scriptVersion = '2.11';
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
@@ -28423,6 +28487,22 @@ on('ready', function() {
       });
     });
     log("Mise à jour des attributs et tokens effectuée");
+  }
+  if (state.COFantasy.version < 2.11) {
+    attrs = findObjs({
+      _type: 'attribute',
+    });
+    attrs.forEach(function(a) {
+      if (a.get('name') != 'capitaine') return;
+      var nomCapitaine = a.get('current');
+      var idCapitaine = a.get('max');
+      var na = {
+        current: idCapitaine + ' ' + nomCapitaine,
+        max: 2
+      };
+      a.set(na);
+    });
+    log("Mise à jour des attributs de capitaine effectuée");
   }
   state.COFantasy.version = scriptVersion;
   if (state.COFantasy.options.affichage.val.fiche.val) {
