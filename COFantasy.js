@@ -2513,6 +2513,7 @@ var COFantasy = COFantasy || function() {
   function improve_image(image_url) {
     if (image_url) {
       image_url = image_url.replace('/med.png', '/thumb.png');
+      image_url = image_url.replace('/max.png', '/thumb.png');
       image_url = image_url.substring(0, image_url.indexOf('?'));
       return image_url;
     }
@@ -19598,7 +19599,7 @@ var COFantasy = COFantasy || function() {
     var newToken;
     if (image1) newToken = createObj('graphic', tokenFields);
     if (newToken === undefined) {
-      tokenFields.imgsrc = cible.token.get('imgsrc').replace('max', 'thumb');
+      tokenFields.imgsrc = cible.token.get('imgsrc').replace('/max.png', '/thumb.png').replace('/med.png','/thumb.png');
       newToken = createObj('graphic', tokenFields);
       if (newToken === undefined) {
         log(tokenFields.imgsrc);
@@ -19778,6 +19779,7 @@ var COFantasy = COFantasy || function() {
             tokenObj.height *= ratio;
           }
           tokenObj.imgsrc = tokenObj.imgsrc.replace('/med.png', '/thumb.png');
+          tokenObj.imgsrc = tokenObj.imgsrc.replace('/max.png', '/thumb.png');
           tokenObj.left = sortieEscalier.get('left');
           tokenObj.top = sortieEscalier.get('top');
           var newToken = createObj('graphic', tokenObj);
@@ -28575,6 +28577,7 @@ on('ready', function() {
         token.bar1_link = attrPV[0].id;
         token.pageid = pageId;
         token.imgsrc = token.imgsrc.replace('/med.png', '/thumb.png');
+        token.imgsrc = token.imgsrc.replace('/max.png', '/thumb.png');
         var newToken = createObj('graphic', token);
         if (newToken) {
           setDefaultTokenForCharacter(character, newToken);
