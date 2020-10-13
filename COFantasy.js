@@ -7440,7 +7440,7 @@ var COFantasy = COFantasy || function() {
             return;
         }
       } else {
-        if (attackingToken.id == targetToken.id && options.triche != "echecTotal") { //même token pour attaquant et cible
+        if (attackingToken.id == targetToken.id && !options.echecTotal) { //même token pour attaquant et cible
           sendChar(attackingCharId,
             "s'attaque " + onGenre(attaquant, "lui", "elle") +
             "-même ? Probablement une erreur à la sélection de la cible. On annule");
@@ -8659,7 +8659,6 @@ var COFantasy = COFantasy || function() {
                     }
                     break;
                   case "touche":
-                  case "echecTotal": // l'attaquant s'attaque lui-même et touche automatiquement
                     if (d20roll == 1) d20roll = randomInteger(dice - 1) + 1;
                     if ((d20roll + attSkill + attBonus) < defense) {
                       var mind20roll = defense - attSkill - attBonus - 1;
@@ -9533,7 +9532,7 @@ var COFantasy = COFantasy || function() {
         if (options.divise) options.divise *= 2;
         else options.divise = 2;
       }
-      if (options.attaqueAssuree || options.triche == "echecTotal") {
+      if (options.attaqueAssuree || options.echecTotal) {
         if (options.divise) options.divise *= 2;
         else options.divise = 2;
       }
@@ -10221,7 +10220,7 @@ var COFantasy = COFantasy || function() {
   function suggererEchecCritique(attaquant, weaponStats, cibles, options, evt) {
     var d12roll = randomInteger(12);
     var estMag = options.sortilege;
-    var avecArme = (weaponStats.name.includes("arme") || weaponStats.divers.includes("arme"));
+    var avecArme = weaponStats.arme;
     var estCac = options.contact;
     var boutonCritique = function(action) {
       var b = boutonSimple(action + " --target " + attaquant.token.id,
@@ -10234,7 +10233,7 @@ var COFantasy = COFantasy || function() {
         msg = "Échec total : ";
         if (estMag) {
           msg += "le lanceur de sort perd le contrôle de la magie qu'il canalise et subit 1d4 dommages en retour par rang du sort lancé. ";
-          msg += boutonCritique("!cof-dmg ?{Rang du sort}d4 --message subit un contrecoup magique");
+          msg += boutonCritique("!cof-dmg ?{Rang du sort}d4 --ignoreRD --message subit un contrecoup magique");
         } else {
           msg += "l'attaquant se blesse lui-même et s'inflige la moitié des dégâts de son attaque. L'attaquant ne peut plus attaquer ce tour. ";
           msg += boutonCritique("!cof-bouton-echec-total " + evt.id);
@@ -13849,7 +13848,8 @@ var COFantasy = COFantasy || function() {
     addEvent(evtEchecTotal);
     // assumes that the original action was undone, re-attack with bonus
     var options = action.options;
-    options.triche = "echecTotal";
+    options.auto = true;
+    options.echecTotal = true;
     attack(action.playerId, perso, perso.token, action.weaponStats, options);
   }
 
