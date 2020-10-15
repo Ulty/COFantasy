@@ -395,6 +395,56 @@ var COFantasy = COFantasy || function() {
     return attrAsBool(attr);
   }
 
+  function determineSettingDeJeu() {
+    var characters = findObjs({
+      _type: 'character'
+    });
+    var charsGenerique = [];
+    var charsArran = [];
+    characters.forEach(function(c) {
+      var typePerso = charAttribute(c.id, 'type_personnage', {
+        caseInsensitive: true
+      });
+      if (typePerso.length > 0 && typePerso[0].get('current') == 'PNJ')
+        return; //Les fiches de PNJ sont les mêmes
+      var setting = charAttribute(c.id, 'option_setting', {
+        caseInsensitive: true
+      });
+      if (setting.length === 0) {
+        charsGenerique.push(c);
+        return;
+      }
+      if (setting[0].get('current') == 'arran') charsArran.push(c);
+      else charsGenerique.push(c);
+    });
+    if (charsArran.length <= charsGenerique.length) {
+      log("Utilisation des règles COF génériques");
+      if (charsArran.length > 0) {
+        error("Attention, des personnages suivent les options de jeu des Terres d'Arran (voir le log pour la liste)", charsArran);
+        charsArran.forEach(function(c) {
+          var g = getObj('character', c.id);
+          if (g) log(g.get('name'));
+          else log(c);
+        });
+        stateCOF.mixte = true;
+      }
+      return;
+    }
+    log("Utilisation des règles des Terres d'Arran");
+    if (charsGenerique.length > 0) {
+      error("Attention, des personnages ne suivent pas les options de jeu des Terres d'Arran (voir le log pour la liste)", charsGenerique);
+      charsGenerique.forEach(function(c) {
+        var g = getObj('character', c.id);
+        if (g) log(g.get('name'));
+        else log(c);
+      });
+      stateCOF.setting_mixte = true;
+      return;
+    }
+    stateCOF.setting_arran = true;
+  }
+
+  //Appelé au lancement du script, mise à jour de certaines variables globales
   function setStateCOF() {
     stateCOF = state.COFantasy;
     if (stateCOF.roundMarkerId) {
@@ -487,9 +537,13 @@ var COFantasy = COFantasy || function() {
       });
       stateCOF.tablesCrees = true;
     }
+    // Le setting
+    determineSettingDeJeu();
+    // Les options de jeu
     if (stateCOF.options === undefined) stateCOF.options = {};
     copyOptions(stateCOF.options, defaultOptions);
     reglesOptionelles = stateCOF.options.regles.val;
+    // Les macros utiles en jeu
     if (stateCOF.options.macros_a_jour.val) {
       var macros = findObjs({
         _type: 'macro'
@@ -5685,6 +5739,8 @@ var COFantasy = COFantasy || function() {
     } else {
       init = ficheAttributeAsInt(perso, 'DEXTERITE', 10);
       init += ficheAttributeAsInt(perso, 'INIT_DIV', 0);
+      if (stateCOF.setting_arran || stateCOF.setting_mixte)
+        init += ficheAttributeAsInt(perso, 'mod_initiatve', 0);
     }
     if (attributeAsBool(perso, 'formeDArbre')) init = 7;
     //Règle optionelle : +1d6, à lancer en entrant en combat
@@ -8437,7 +8493,6 @@ var COFantasy = COFantasy || function() {
         var attSkillNumber = rollNumber(afterEvaluateAttack[1]);
         var d20roll = rollsAttack.inlinerolls[attRollNumber].results.total;
         var attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
-
         evt.type = 'Attaque';
         evt.succes = true;
         evt.action.playerId = playerId;
@@ -8447,7 +8502,6 @@ var COFantasy = COFantasy || function() {
         evt.action.rolls = evt.action.rolls || {};
         evt.action.rolls.attack = rollsAttack;
         addEvent(evt);
-
         // debut de la partie affichage
         var action = "<b>Arme</b> : ";
         if (options.sortilege) action = "<b>Sort</b> : ";
@@ -8458,14 +8512,12 @@ var COFantasy = COFantasy || function() {
           label_type = BS_LABEL_WARNING;
         }
         action += "<span style='" + BS_LABEL + " " + label_type + "; text-transform: none; font-size: 100%;'>" + weaponName + "</span>";
-
         var display = startFramedDisplay(playerId, action, attaquant, {
           perso2: target,
           chuchote: options.secret,
           retarde: options.secret,
           auto: options.auto || options.ouvertureMortelle
         });
-
         // Cas des armes à poudre
         if (options.poudre && !charAttributeAsBool(attaquant, 'chimiste')) {
           var poudreNumber = rollNumber(afterEvaluateAttack[2]);
@@ -19599,7 +19651,7 @@ var COFantasy = COFantasy || function() {
     var newToken;
     if (image1) newToken = createObj('graphic', tokenFields);
     if (newToken === undefined) {
-      tokenFields.imgsrc = cible.token.get('imgsrc').replace('/max.png', '/thumb.png').replace('/med.png','/thumb.png');
+      tokenFields.imgsrc = cible.token.get('imgsrc').replace('/max.png', '/thumb.png').replace('/med.png', '/thumb.png');
       newToken = createObj('graphic', tokenFields);
       if (newToken === undefined) {
         log(tokenFields.imgsrc);
@@ -19623,7 +19675,7 @@ var COFantasy = COFantasy || function() {
 
   //retourne true si le joueur est effectivement déplacé
   function movePlayerToMap(pid, oldPageId, newPageId) {
-    if (getObj('player',pid) === undefined) return;
+    if (getObj('player', pid) === undefined) return;
     var c = Campaign();
     var playerPages = c.get('playerspecificpages');
     var playersMainPage = c.get('playerpageid');
@@ -19771,7 +19823,7 @@ var COFantasy = COFantasy || function() {
           var tokenObj = JSON.parse(JSON.stringify(token));
           tokenObj._pageid = newPageId;
           //On met la taille du token à jour en fonction des échelles des cartes.
-          var ratio =  computeScale(pageId) / computeScale(newPageId);
+          var ratio = computeScale(pageId) / computeScale(newPageId);
           if (ratio < 0.9 || ratio > 1.1) {
             if (ratio < 0.25) ratio = 0.25;
             else if (ratio > 4) ratio = 4;
@@ -20119,12 +20171,25 @@ var COFantasy = COFantasy || function() {
           var totalAbsorbe = attackRoll.results.total;
           var msgAbsorber = buildinline(attackRoll);
           var attBonus = ficheAttributeAsInt(guerrier, 'niveau', 1);
-          if (options.sortilege) {
-            attBonus += modCarac(guerrier, 'SAGESSE');
-            attBonus += ficheAttributeAsInt(guerrier, 'ATKMAG_DIV', 0);
+          if (stateCOF.setting_arran ||
+            (stateCOF.setting_mixte && ficheAttribute(guerrier, 'option_setting', 'generique') == 'arran')) {
+            if (options.sortilege) {
+              attBonus += modCarac(guerrier, 'INTELLIGENCE');
+              attBonus += ficheAttributeAsInt(guerrier, 'mod_atkmag', 0);
+              attBonus += ficheAttributeAsInt(guerrier, 'ATKMAG_DIV', 0);
+            } else {
+              attBonus += modCarac(guerrier, 'force');
+              attBonus += ficheAttributeAsInt(guerrier, 'mod_atkcac', 0);
+              attBonus += ficheAttributeAsInt(guerrier, 'ATKCAC_DIV', 0);
+            }
           } else {
-            attBonus += modCarac(guerrier, 'force');
-            attBonus += ficheAttributeAsInt(guerrier, 'ATKCAC_DIV', 0);
+            if (options.sortilege) {
+              attBonus += modCarac(guerrier, 'SAGESSE');
+              attBonus += ficheAttributeAsInt(guerrier, 'ATKMAG_DIV', 0);
+            } else {
+              attBonus += modCarac(guerrier, 'force');
+              attBonus += ficheAttributeAsInt(guerrier, 'ATKCAC_DIV', 0);
+            }
           }
           totalAbsorbe += attBonus;
           if (attBonus > 0) msgAbsorber += "+" + attBonus;
@@ -20342,6 +20407,10 @@ var COFantasy = COFantasy || function() {
       var attBonus = ficheAttributeAsInt(barde, 'niveau', 1);
       attBonus += modCarac(barde, 'DEXTERITE');
       attBonus += ficheAttributeAsInt(barde, 'ATKTIR_DIV', 0);
+      if (stateCOF.setting_arran ||
+        (stateCOF.setting_mixte && ficheAttribute(barde, 'option_setting', 'generique') == 'arran')) {
+        attBonus += ficheAttributeAsInt(barde, 'mod_atktir', 0);
+      }
       totalEsquive += attBonus;
       if (attBonus > 0) msgEsquiver += "+" + attBonus;
       else if (attBonus < 0) msgEsquiver += attBonus;
@@ -20457,6 +20526,10 @@ var COFantasy = COFantasy || function() {
       var attBonus = ficheAttributeAsInt(duelliste, 'niveau', 1);
       attBonus += modCarac(duelliste, 'DEXTERITE');
       attBonus += ficheAttributeAsInt(duelliste, 'ATKTIR_DIV', 0);
+      if (stateCOF.setting_arran ||
+        (stateCOF.setting_mixte && ficheAttribute(duelliste, 'option_setting', 'generique') == 'arran')) {
+        attBonus += ficheAttributeAsInt(duelliste, 'mod_atktir', 0);
+      }
       totalParade += attBonus;
       if (attBonus > 0) msgParer += "+" + attBonus;
       else if (attBonus < 0) msgParer += attBonus;

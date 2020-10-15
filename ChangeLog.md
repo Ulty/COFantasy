@@ -4,6 +4,7 @@
 * Commandant de la voie du chef d'armée.
 
 ### Autres améliorations
+* Prise en compte des fiches Terres d'Arran
 * Possibilité de déplacer un personnage vers une autre carte.
 
 ### Corrections de bugs
