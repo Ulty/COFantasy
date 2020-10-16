@@ -4,6 +4,7 @@
 * Commandant de la voie du chef d'armée.
 
 ### Autres améliorations
+* Ajout d'une commande pour centrer sa vue du jeu sur un token.
 * Déplace la vue du joueur quand il emprunte un escalier.
 * Prise en compte des fiches Terres d'Arran
 * Possibilité de déplacer un personnage vers une autre carte.

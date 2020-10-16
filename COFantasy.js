@@ -19865,8 +19865,8 @@ var COFantasy = COFantasy || function() {
               _type: 'player',
               online: true
             });
-            var gm = players.find(function(pid) {
-              return playerIsGM(pid);
+            var gm = players.find(function(p) {
+              return playerIsGM(p.id);
             });
             if (gm) {
               if (newPageId != pageId) movePlayerToMap(gm.id, pageId, newPageId);
@@ -25464,6 +25464,39 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  // !cof-centrer-sur-token tid (ou nom de token)
+  function centrerSurToken(msg) {
+    var cmd = msg.content.split(' ').filter(function (c) { return c !== ''; });
+    if (cmd.length < 2) {
+      error("Il faut préciser un token sur lequel se centrer", cmd);
+      return;
+    }
+    var playerId = getPlayerIdFromMsg(msg);
+    var pageId;
+    if (playerIsGM(playerId)) {
+      var p = getObj('player', playerId);
+      if (p === undefined) {
+        error("Impossible de trouver le joueur qui a lancé la commande", msg);
+        return;
+      }
+      pageId = p.get('_lastpage');
+    } else {
+      var c = Campaign();
+      var ps = c.get('playerspecificpages');
+      if (ps) pageId = ps[playerId];
+      if (playerId === undefined) pageId = c.get('playerpageid');
+    }
+    var indexNom = msg.content.indexOf(' ');
+    var nom = msg.content.substring(indexNom).trim();
+    var perso = persoOfId(cmd[1], nom, pageId);
+    if (perso === undefined) {
+      error("Impossible de trouver le personnage sur lequel se centrer", cmd);
+      return;
+    }
+    var token = perso.token;
+    sendPing(token.get('left'), token.get('top'), pageId, playerId, true, playerId);
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -25871,6 +25904,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-suivre':
         suivre(msg);
+        return;
+      case '!cof-centrer-sur-token':
+        centrerSurToken(msg);
         return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);
