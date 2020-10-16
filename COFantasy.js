@@ -426,7 +426,7 @@ var COFantasy = COFantasy || function() {
           if (g) log(g.get('name'));
           else log(c);
         });
-        stateCOF.mixte = true;
+        stateCOF.setting_mixte = true;
       }
       return;
     }
@@ -496,6 +496,19 @@ var COFantasy = COFantasy || function() {
               current: 0,
               max: 0
             });
+            var attrType = charAttribute(charCible.id, 'type_personnage', {
+              caseInsensitive: true
+            });
+            if (attrType.length > 0) {
+              attrType[0].setWithWorker('current', 'PNJ');
+            } else {
+              attrType = createObj('attribute', {
+                name: 'type_personnage',
+                characterid: charCible.id,
+                current: 'PJ',
+              });
+              attrType.setWithWorker('current', 'PNJ');
+            }
             var tokenCible = createObj('graphic', {
               name: 'Cible',
               layer: 'objects',
@@ -5740,7 +5753,7 @@ var COFantasy = COFantasy || function() {
       init = ficheAttributeAsInt(perso, 'DEXTERITE', 10);
       init += ficheAttributeAsInt(perso, 'INIT_DIV', 0);
       if (stateCOF.setting_arran || stateCOF.setting_mixte)
-        init += ficheAttributeAsInt(perso, 'mod_initiatve', 0);
+        init += ficheAttributeAsInt(perso, 'mod_initiative', 0);
     }
     if (attributeAsBool(perso, 'formeDArbre')) init = 7;
     //Règle optionelle : +1d6, à lancer en entrant en combat
