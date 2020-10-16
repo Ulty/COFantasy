@@ -1675,13 +1675,14 @@
                   <li><strong>Assassinat</strong> : rajouter <code>--if etatCible surpris --etat mort --save CON 15 --endif</code> à l'Attaque mortelle.</li>
                 </ol>
               </div>
-              <h3 class="text-info" id="Sorts">4.4 Autres Sorts</h3>
+              <h3 class="text-info" id="Sorts">4.4 Autres sorts</h3>
               <div class="decalage">
                 Sorts qui ne sont pas dans des voies, mais peuvent venir du grimoire (dans le compagnon) ou d'effets de parchemins.
                 <ul>
                   <li><strong>Force de géant</strong> : <code>!cof-effet-temp forceDeGeant 10</code>. Le bonus est de 2 par défaut, mais peut être modifié en utilisant l'option <code>--valeur</code>.</li>
                   <li><strong>Résistance à la magie</strong> : pour l'augmentation de la DEF contre la magie, utiliser un attribut <code>DEF_magie</code> et pour le bonus aux tests, <code>resistanceALaMagie</code></li>
                   <li><strong>Sixième sens</strong> : <code>!cof-effet sixiemeSens true</code>. Pour mettre fin à l'effet du sort (qui a une durée en heures), on peut effacer l'attribut <code>sixiemeSens</code>, ou mieux encore, sélectionner le token et faire <code>!cof-effet sixiemeSens false</code>.</li>
+                  <li><strong>Toiles</strong> : <code>!cof-effet-temp toiles [[5+@{selected|SAG}]] --saveParTour FOR [[10+@{selected|SAG}]] --lanceur @{selected|token_id} --disque @{target|token_id} 5 20 --saufAllies --mana 0</code>. </li>
                 </ul>
               </div>
               <h3 class="text-info" id="Capacites_diverses">4.5 Autres capacités</h3>

@@ -6070,6 +6070,10 @@ var COFantasy = COFantasy || function() {
       attBonus -= getValeurOfEffet(personnage, 'prisonVegetale', 2);
       explications.push("Prison végétale : -2 en Attaque");
     }
+    if (attributeAsBool(personnage, 'toiles')) {
+      attBonus -= getValeurOfEffet(personnage, 'toiles', 2);
+      explications.push("Entravé : -2 en Attaque");
+    }
     if (attributeAsBool(personnage, 'masqueDuPredateur')) {
       var bonusMasque = getValeurOfEffet(personnage, 'masqueDuPredateur', modCarac(personnage, 'SAGESSE'));
       var masqueIntense = attributeAsInt(personnage, 'masqueDuPredateurTempeteDeManaIntense', 0);
@@ -6382,6 +6386,10 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(target, 'prisonVegetale')) {
       defense -= getValeurOfEffet(target, 'prisonVegetale', 2);
       explications.push("Prison végétale => -2 DEF");
+    }
+    if (attributeAsBool(target, 'toiles')) {
+      defense -= getValeurOfEffet(target, 'toiles', 2);
+      explications.push("Entravé => -2 DEF");
     }
     if (attributeAsBool(target, 'protectionContreLeMal') &&
       (attaquant && estMauvais(attaquant))) {
@@ -26209,6 +26217,13 @@ var COFantasy = COFantasy || function() {
       fin: "est enfin débarassé des criquets",
       prejudiciable: true,
       dm: true
+    },
+    toiles: {
+      activation: "voit des toiles d'araignées apparaître tout autour",
+      actif: "est bloqué par des toiles d'araignées",
+      fin: "se libère des toiles",
+      prejudiciable: true,
+      statusMarker: 'green' //À changer
     },
     prisonVegetale: {
       activation: "voit des plantes pousser et s'enrouler autour de ses jambes",
