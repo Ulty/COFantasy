@@ -19742,7 +19742,7 @@ var COFantasy = COFantasy || function() {
   var labelsEscalier = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
 
   function escalier(msg) {
-    getSelected(msg, function(selected) {
+    getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         sendPlayer(msg, "Pas de sélection de token pour !cof-escalier");
         log("!cof-escalier requiert de sélectionner des tokens");
@@ -19826,31 +19826,34 @@ var COFantasy = COFantasy || function() {
           }
         });
         if (sortieEscalier) {
+          var left = sortieEscalier.get('left');
+          var top = sortieEscalier.get('top');
           var newPageId = sortieEscalier.get('pageid');
+          //Déplacement du token
           if (newPageId == pageId) {
-            token.set('left', sortieEscalier.get('left'));
-            token.set('top', sortieEscalier.get('top'));
-            return;
-          }
-          //On change de carte, il faut donc copier le token
-          var tokenObj = JSON.parse(JSON.stringify(token));
-          tokenObj._pageid = newPageId;
-          //On met la taille du token à jour en fonction des échelles des cartes.
-          var ratio = computeScale(pageId) / computeScale(newPageId);
-          if (ratio < 0.9 || ratio > 1.1) {
-            if (ratio < 0.25) ratio = 0.25;
-            else if (ratio > 4) ratio = 4;
-            tokenObj.width *= ratio;
-            tokenObj.height *= ratio;
-          }
-          tokenObj.imgsrc = tokenObj.imgsrc.replace('/med.png', '/thumb.png');
-          tokenObj.imgsrc = tokenObj.imgsrc.replace('/max.png', '/thumb.png');
-          tokenObj.left = sortieEscalier.get('left');
-          tokenObj.top = sortieEscalier.get('top');
-          var newToken = createObj('graphic', tokenObj);
-          if (newToken === undefined) {
-            error("Impossible de copier le token, et donc de faire le changement de carte", tokenObj);
-            return;
+            token.set('left', left);
+            token.set('top', top);
+          } else {
+            //On change de carte, il faut donc copier le token
+            var tokenObj = JSON.parse(JSON.stringify(token));
+            tokenObj._pageid = newPageId;
+            //On met la taille du token à jour en fonction des échelles des cartes.
+            var ratio = computeScale(pageId) / computeScale(newPageId);
+            if (ratio < 0.9 || ratio > 1.1) {
+              if (ratio < 0.25) ratio = 0.25;
+              else if (ratio > 4) ratio = 4;
+              tokenObj.width *= ratio;
+              tokenObj.height *= ratio;
+            }
+            tokenObj.imgsrc = tokenObj.imgsrc.replace('/med.png', '/thumb.png');
+            tokenObj.imgsrc = tokenObj.imgsrc.replace('/max.png', '/thumb.png');
+            tokenObj.left = left;
+            tokenObj.top = top;
+            var newToken = createObj('graphic', tokenObj);
+            if (newToken === undefined) {
+              error("Impossible de copier le token, et donc de faire le changement de carte", tokenObj);
+              return;
+            }
           }
           //On déplace ensuite le joueur.
           var character = getObj('character', perso.charId);
@@ -19866,15 +19869,17 @@ var COFantasy = COFantasy || function() {
               return playerIsGM(pid);
             });
             if (gm) {
-              movePlayerToMap(gm.id, pageId, newPageId);
+              if (newPageId != pageId) movePlayerToMap(gm.id, pageId, newPageId);
+              sendPing(left, top, newPageId, gm.id, true, gm.id);
             }
           } else {
             charControlledby.split(",").forEach(function(pid) {
-              movePlayerToMap(pid, pageId, newPageId);
+              if (newPageId != pageId) movePlayerToMap(pid, pageId, newPageId);
+              sendPing(left, top, newPageId, pid, true, pid);
             });
           }
-          //Enfin, on efface le token de départ.
-          token.remove();
+          //Enfin, on efface le token de départ si on a changé de page
+          if (newPageId != pageId) token.remove();
           return;
         }
         var err = token.get('name') + " n'est pas sur un escalier";
