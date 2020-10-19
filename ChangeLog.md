@@ -1,4 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.12
+### Autres améliorations
+* Utilisation des consommables sur la fiche pour les PJs (au lieu des attributs dose_ ou consommable_).
+
 ## 2.11
 ### Capacités
 * Commandant de la voie du chef d'armée.

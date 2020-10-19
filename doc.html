@@ -144,8 +144,10 @@
               </p>
               <h3 class="text-info" id="macros_abilities">1.2 Macros et Abilities</h3>
               <div class="decalage">
-                <p>Comme tous les scripts, ces scripts sont utilisables tels quels dans le chat, mais ils sont pensés pour être utilisés par des macros qui permettent un autre niveau d'automatisation parfois difficile d'accès au sein des scripts. Il est d'ailleurs possible de demander au script de générer la plupart des macros utiles en tapant la commande <code>!cof-set-macros</code> dans le chat.</p>
-                La grosse majorité des capacités et attaques des personnages devraient être utilisées au sein d'abilities de personnages, accessibles comme "Token action". Si ces abilities utilisent des macros, ne pas oublier de rendre ces macros accessibles aux joueurs.
+                <p>Comme tous les scripts, ces scripts sont utilisables tels quels dans le chat, mais ils sont pensés pour être utilisés par des macros qui permettent un autre niveau d'automatisation parfois difficile d'accès au sein des scripts. le script génère d'ailleurs la plupart des macros utiles à la première utilisation, et il met automatiquement les macros à jour à chaque changement de version. Il est possible de demander des les re-créer en tapant la commande <code>!cof-set-macros</code> dans le chat.</p>
+                <p>
+                Le script ne peut pas mettre les macros dans la barre de raccourci. Je recommande que chaque joueur se crée sa macro <code>Centrer</code>, contenant le code <code>!cof-centrer-sur-token <i>nom_de_leur_token_principal</i></code>, qui leur permettra en un click de centrer la vue de la carte sur leur token. Pour le MJ, le script suggère de mettre un certain nombre des macros qu'il crée, au moment de la première utilisation.</p>
+                <p>La grosse majorité des capacités et attaques des personnages devraient être utilisées au sein d'abilities de personnages, accessibles comme "Token action". Si ces abilities utilisent des macros, ne pas oublier de rendre ces macros accessibles aux joueurs.</p>
               </div>
               <h3 class="text-info" id="methode_selection_groupes">1.3 Méthodes de sélection de groupes</h3>
               <div class="decalage">
@@ -669,8 +671,8 @@
               </div>
               <h3 class="text-info" id="consommables">2.9 Consommables <code>!cof-consommables</code></h3>
               <div class="decalage">
-                <p>Cette fonction affiche une liste de consommables, avec la possibilité de cliquer sur un élément de la liste pour le consommer (et activer son effet) ou l'échanger avec un autre personnage (via le symbole &#8596;).</p>
-                <p>Pour cela, la fonction regarde tous les attributs qui commencent par <code>dose_</code>, <code>elixir_</code> ou <code>consommable_</code>. La valeur courante doit être le nombre d'éléments possédé, et le max peut être une commande à effectuer pour activer l'effet. La fonction est à réserver aux tokens liés à un personnage. Il est aussi possible de simplement écrire un message qui s'affichera (et diminuera la quantité de consommables).</p>
+                <p>Cette fonction affiche une liste de consommables, avec la possibilité de cliquer sur un élément de la liste pour le consommer (et activer son effet) ou l'échanger avec un autre personnage (via le symbole d'échange).</p>
+                <p>Pour cela, la fonction utilise la liste des consommables sur la fiche (onglet "Équipement"). Elle ne va afficher que les consommables qui ont un effet (décrit dans la ligne Effet sous le nom du consommable). </p>
                 <p><img class="img-fluid" src="https://i.imgur.com/WZT8buT.png" data-href="https://i.imgur.com/WZT8buT.png"></p>
                 <figcaption>Exemple d'une liste de consommable.</figcaption>
                 <!--<p>Attention, les boutons sont utilisables par tout le monde, ce qui permet de faire utiliser un des concommables d'un personnage par un autre. Le script vérifie juste que le token qui utilise l'objet est au contact.</p>-->
@@ -683,8 +685,9 @@
                     </li>
                   </ul>
                 </div>
+                <p>Pour les PNJs, qui n'ont pas encore d'onglet d'équipement, le script regarde tous les attributs qui commencent par <code>dose_</code>, <code>elixir_</code> ou <code>consommable_</code>. Pour ces attributs, la valeur courante doit être le nombre d'éléments possédé, et le max peut être une commande à effectuer pour activer l'effet. La fonction est à réserver aux tokens liés à un personnage. Il est aussi possible de simplement écrire un message qui s'affichera (et diminuera la quantité de consommables).</p>
                 <div class="alert alert-success">
-                  <p><strong>Exemple de consommables, à ajouter dans un "<em>Attribute</em>" de l'onglet "<em>Attributes & Abilities</em>" du personnage :</strong></p>
+                  <p><strong>Exemple de consommables, à ajouter dans la case Effet d'un consommable du personnage :</strong></p>
                   <ul>
                     <li>
                       Potions de soins légers

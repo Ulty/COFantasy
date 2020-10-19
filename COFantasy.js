@@ -21129,6 +21129,10 @@ var COFantasy = COFantasy || function() {
     }); //fin de getSelected
   }
 
+  var consommableNomRegExp = new RegExp(/^(repeating_equipement_.*_)equip-nom/);
+  var consommableQuantiteRegExp = new RegExp(/^(repeating_equipement_.*_)equip-qte/);
+  var consommableEffetRegExp = new RegExp(/^(repeating_equipement_.*_)equip-effet/);
+
   function listeConsommables(msg) {
     getSelected(msg, function(selected, playerId) {
       iterSelected(selected, function(perso) {
@@ -21143,9 +21147,33 @@ var COFantasy = COFantasy || function() {
           _type: 'attribute',
           _characterid: perso.charId
         });
-        var cpt = 0;
+        var consommables = {}; //map id -> nom, quantite, effet, attr
         attributes.forEach(function(attr) {
           var attrName = attr.get('name').trim();
+          var m = consommableNomRegExp.exec(attrName);
+          var consoPrefix;
+          if (m) {
+            consoPrefix = m[1];
+            consommables[consoPrefix] = consommables[consoPrefix] || {};
+            consommables[consoPrefix].nom = attr.get('current');
+            return;
+          }
+          m = consommableQuantiteRegExp.exec(attrName);
+          if (m) {
+            consoPrefix = m[1];
+            consommables[consoPrefix] = consommables[consoPrefix] || {};
+            consommables[consoPrefix].quantite = parseInt(attr.get('current'));
+            consommables[consoPrefix].attr = attr;
+            return;
+          }
+          m = consommableEffetRegExp.exec(attrName);
+          if (m) {
+            consoPrefix = m[1];
+            consommables[consoPrefix] = consommables[consoPrefix] || {};
+            consommables[consoPrefix].effet = attr.get('current');
+            return;
+          }
+          //Consommables dans des attributs utilisateurs
           if (!(attrName.startsWith('dose_') || attrName.startsWith('consommable_') || attrName.startsWith('elixir_'))) return;
           var consName;
           if (attrName.startsWith("elixir_")) {
@@ -21161,19 +21189,35 @@ var COFantasy = COFantasy || function() {
             consName = consName.replace(/_/g, ' ');
           }
           var quantite = parseInt(attr.get('current'));
-          if (isNaN(quantite) || quantite < 1) {
+          var action = attr.get('max').trim();
+          while (consommables[attrName]) {
+            attrName += randomInteger(1000);
+          }
+          consommables[attrName] = {
+            nom: consName,
+            quantite: quantite,
+            effet: action,
+            attr: attr,
+          };
+        }); //fin de la boucle sur les attributs
+        var aConsommable;
+        _.each(consommables, function(c) {
+          if (isNaN(c.quantite) || c.quantite < 1) {
             //addLineToFramedDisplay(display, "0 " + consName);
             return;
-          } else cpt++;
-          var action = attr.get('max').trim();
-          var ligne = quantite + ' ';
-          ligne += bouton(action, consName, perso, attr);
+          }
+          if (c.effet === undefined || c.effet === '' || c.nom === undefined || c.nom === '') return;
+          aConsommable = true;
+          var ligne = c.quantite + ' ';
+          ligne += bouton(c.effet, c.nom, perso, c.attr);
           // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
-          ligne += bouton('!cof-echange-consommables @{selected|token_id} @{target|token_id}', '<span style="font-family:Pictos">r</span>', perso, attr, 'Cliquez pour échanger');
+          ligne += bouton('!cof-echange-consommables @{selected|token_id} @{target|token_id}', '<span style="font-family:Pictos">r</span>', perso, c.attr, 'Cliquez pour échanger');
           addLineToFramedDisplay(display, ligne);
-        }); //fin de la boucle sur les attributs
-        if (cpt === 0) addLineToFramedDisplay(display, "<code>Vous n'avez aucun consommable</code>");
-        else addLineToFramedDisplay(display, '<em>Cliquez sur le consommable pour l\'utiliser ou sur <tt><span style="font-family:Pictos">r</span></tt> pour l\'échanger avec un autre personnage.</em>');
+        }); //fin de la boucle sur les onsommables
+        if (aConsommable)
+          addLineToFramedDisplay(display, '<em>Cliquez sur le consommable pour l\'utiliser ou sur <tt><span style="font-family:Pictos">r</span></tt> pour l\'échanger avec un autre personnage.</em>');
+        else
+          addLineToFramedDisplay(display, "<code>Vous n'avez aucun consommable</code>");
         sendChat('', endFramedDisplay(display));
       });
     }); //fin du getSelected
@@ -25474,7 +25518,9 @@ var COFantasy = COFantasy || function() {
 
   // !cof-centrer-sur-token tid (ou nom de token)
   function centrerSurToken(msg) {
-    var cmd = msg.content.split(' ').filter(function (c) { return c !== ''; });
+    var cmd = msg.content.split(' ').filter(function(c) {
+      return c !== '';
+    });
     if (cmd.length < 2) {
       error("Il faut préciser un token sur lequel se centrer", cmd);
       return;
@@ -28400,7 +28446,7 @@ on("destroy:handout", function(prev) {
 });
 
 on('ready', function() {
-  var scriptVersion = '2.11';
+  var scriptVersion = '2.12';
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
@@ -28748,6 +28794,48 @@ on('ready', function() {
       a.set(na);
     });
     log("Mise à jour des attributs de capitaine effectuée");
+  }
+  if (state.COFantasy.version < 2.12) {
+    attrs = findObjs({
+      _type: 'attribute',
+    });
+    attrs.forEach(function(a) {
+      var attrName = a.get('name');
+      if (!attrName.startsWith('dose_') && !attrName.startsWith('consommable_')) return;
+      var charId = a.get('characterid');
+      //On ne passe dans la liste que pour les persos de type PJ
+      var typePerso = findObjs({
+        _type: 'attribute',
+        _characterid: charId,
+        name: 'type_personnage',
+      }, {
+        caseInsensitive: true
+      });
+      if (typePerso.length > 0 && typePerso[0].get('current') != 'PJ') return;
+      var consName = attrName.substring(attrName.indexOf('_') + 1);
+      consName = consName.replace(/_/g, ' ');
+      if (consName === '') return;
+      var quantite = parseInt(a.get('current'));
+      if (isNaN(quantite) || quantite < 0) return;
+      var pref = 'repeating_equipement_' + generateRowID() + '_';
+      createObj('attribute', {
+        _characterid: charId,
+        name: pref + 'equip-nom',
+        current: consName
+      });
+      createObj('attribute', {
+        _characterid: charId,
+        name: pref + 'equip-qte',
+        current: quantite
+      });
+      createObj('attribute', {
+        _characterid: charId,
+        name: pref + 'equip-effet',
+        current: a.get('max').trim(),
+      });
+      a.remove();
+    });
+    log("Déplacement des attributs de consommables vers la fiche");
   }
   state.COFantasy.version = scriptVersion;
   if (state.COFantasy.options.affichage.val.fiche.val) {
