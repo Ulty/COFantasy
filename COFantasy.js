@@ -1482,13 +1482,33 @@ var COFantasy = COFantasy || function() {
     if (pageId === undefined) {
       pageId = tok1.get('pageid');
     }
+    //perso montés
+    var pseudoTok1 = tok1;
+    var char1 = persoOfId(tok1.get('id'));
+    if(char1) {
+      var attrMonture1 = tokenAttribute(char1, 'monteSur');
+      if (attrMonture1.length > 0) {
+        var pseudoPerso1 = persoOfId(attrMonture1[0].get('current'), attrMonture1[0].get('max'), pageId);
+        if (pseudoPerso1) pseudoTok1 = pseudoPerso1.token;
+      }
+    }
+    var pseudoTok2 = tok2;
+    var char2 = persoOfId(tok2.get('id'));
+    if(char2) {
+      var attrMonture2 = tokenAttribute(char2, 'monteSur');
+      if (attrMonture2.length > 0) {
+        var pseudoPerso2 = persoOfId(attrMonture2[0].get('current'), attrMonture2[0].get('max'), pageId);
+        if (pseudoPerso2) pseudoTok2 = pseudoPerso2.token;
+      }
+    }
+
     var scale = computeScale(pageId);
-    var pt1 = tokenCenter(tok1);
-    var pt2 = tokenCenter(tok2);
+    var pt1 = tokenCenter(pseudoTok1);
+    var pt2 = tokenCenter(pseudoTok2);
     var distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
     options = options || {};
-    if (!options.strict1) distance_pix -= tokenSize(tok1, PIX_PER_UNIT / 2);
-    if (!options.strict2) distance_pix -= tokenSize(tok2, PIX_PER_UNIT / 2);
+    if (!options.strict1) distance_pix -= tokenSize(pseudoTok1, PIX_PER_UNIT / 2);
+    if (!options.strict2) distance_pix -= tokenSize(pseudoTok2, PIX_PER_UNIT / 2);
     if (options.allonge) distance_pix -= (options.allonge * PIX_PER_UNIT) / scale;
     if ((!options.strict1 || !options.strict2) && distance_pix < PIX_PER_UNIT * 1.3) return 0; //cases voisines
     return ((distance_pix / PIX_PER_UNIT) * scale);
