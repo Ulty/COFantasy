@@ -362,6 +362,8 @@
                 À noter que parmis les types de dégâts, on peut spécifier <code>tranchant</code>, <code>percant</code> ou <code>contondant</code>, voire <code>nature</code> ou <code>drain</code>.
                 Pour la RD des casques, utiliser la case prévue à cet effet sur la fiche (se cumule avec un attribut <code>RD_critique</code>, si présent).
                 Pour que les RD /magique ou /tranchant soient bien pris en compte, il faut que les attaques faisant des dégâts magiques aient l'option <code>--magique</code> et les armes le type de dommage (comme <code>--tranchant</code> pour une épée). Enfin, pour les résistances <i>sauf un genre d'arme</i> (comme <code>/tranchant</code>), la RD va s'appliquer à tous les dégâts, sauf élémentaires ou bien qui aura précisé le genre dans son attaque. Pour une RD qui s'appliquerait à toutes les armes sauf tranchantes, le mieux est de spécifier une RD aux 2 autres genres, <code>percant:</code> et <code>contondant:</code>.
+                <p>Pour les effets qui divisent la dégâts subits d'un type donné, utilisez un attribut <code>resistanceA_<i>type</i></code> Par exemple une potion de résistance au feu pourra être simulée par la commande <code>!cof-set-attribute resistanceA_feu true</code>. Il faut ensuite effacer l'attribut à la fin de l'effet.</p>
+                </p>
               </div>
               <h4 class="text-secondary">Manoeuvres</h4>
               <div class="decalage">

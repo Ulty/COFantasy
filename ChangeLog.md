@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.12
 ### Autres améliorations
+* Ajout des résistances permettant de diviser les dégâts d'un type donné.
 * Utilisation des consommables sur la fiche pour les PJs (au lieu des attributs dose_ ou consommable_).
 * Utilisation du token de la monture pour les personnages montés, dans les calculs de distance.
 

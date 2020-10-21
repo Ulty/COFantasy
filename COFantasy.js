@@ -10950,6 +10950,9 @@ var COFantasy = COFantasy || function() {
           divide();
           expliquer(target.token.get('name') + " est protégé contre les dégâts de zone");
         }
+        if (attributeAsBool('resistanceA_'+dmgType)) {
+          divide();
+        }
         if (estElementaire(dmgType)) {
           if (invulnerable) {
             divide();
@@ -11646,9 +11649,7 @@ var COFantasy = COFantasy || function() {
                 setTokenAttr(target, 'increvable', 0, evt);
                 setTokenAttr(target, 'increvableActif', true, evt);
               } else if ((attributeAsBool(target, 'enragé') || charAttributeAsBool(target, 'durACuire')) &&
-                !limiteRessources(target, {
-                  limiteParCombat: 1
-                }, "agitAZeroPV", "", evt)) {
+                !attributeAsBool(target, 'aAgiAZeroPV')) {
                 var msgAgitZ = token.get('name') + " devrait être mort";
                 msgAgitZ += eForFemale(target) + ", mais ";
                 msgAgitZ += onGenre(target, 'il', 'elle') + " continue à se battre !";
@@ -12343,6 +12344,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('dernieresCiblesAttaquees', evt, attrs);
     attrs = removeAllAttributes('testsRatesDuTour', evt, attrs);
     attrs = removeAllAttributes('effetsTemporairesLies', evt, attrs);
+    attrs = removeAllAttributes('aAgiAZeroPV', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -27066,12 +27068,16 @@ var COFantasy = COFantasy || function() {
         break;
       case 'agitAZeroPV':
         iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
+          var perso = {
+            charId: charId,
+            token: token
+          };
           var pv = token.get('bar1_value');
           if (pv == 0) { //jshint ignore:line
-            mort({
-              charId: charId,
-              token: token
-            }, undefined, evt);
+            mort(perso, undefined, evt);
+          } else {
+            //On note qu'il l'a déjà fait pour qu'il ne puisse le refaire dans le combat
+            setTokenAttr(perso, 'aAgiAZeroPV', true, evt);
           }
         });
         break;
