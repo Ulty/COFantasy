@@ -2,6 +2,7 @@
 ## 2.12
 ### Autres améliorations
 * Utilisation des consommables sur la fiche pour les PJs (au lieu des attributs dose_ ou consommable_).
+* Utilisation du token de la monture pour les personnages montés, dans les calculs de distance.
 
 ## 2.11
 ### Capacités

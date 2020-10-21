@@ -1434,6 +1434,40 @@ var COFantasy = COFantasy || function() {
     };
   }
 
+  //Renvoie le token et le charId. Si l'id ne correspond à rien, cherche si 
+  //on trouve un nom de token, sur la page passée en argument (ou sinon
+  //sur la page active de la campagne)
+  function persoOfId(id, name, pageId) {
+    var token = getObj('graphic', id);
+    if (token === undefined) {
+      if (name === undefined) return undefined;
+      if (pageId === undefined) {
+        pageId = Campaign().get('playerpageid');
+      }
+      var tokens = findObjs({
+        _type: 'graphic',
+        _subtype: 'token',
+        _pageid: pageId,
+        name: name
+      });
+      if (tokens.length === 0) return undefined;
+      if (tokens.length > 1) {
+        error("Ambigüité sur le choix d'un token : il y a " +
+          tokens.length + " tokens nommés" + name, tokens);
+      }
+      token = tokens[0];
+    }
+    var charId = token.get('represents');
+    if (charId === '') {
+      error("le token sélectionné ne représente pas de personnage", token);
+      return undefined;
+    }
+    return {
+      token: token,
+      charId: charId
+    };
+  }
+
   //Retourne le perso correspondant à un token id suivi du nom de token
   //Permet d'avoir une information robuste en cas d'interruption du script
   function persoOfIdName(idn, pageId) {
@@ -1474,6 +1508,18 @@ var COFantasy = COFantasy || function() {
     return scale;
   }
 
+  function persoOfToken(token) {
+    var charId = token.get('represents');
+    if (charId === '') {
+      error("le token sélectionné ne représente pas de personnage", token);
+      return undefined;
+    }
+    return {
+      token: token,
+      charId: charId
+    };
+  }
+
   //options peut avoir les champs:
   // - strict1 = true si on considère que tok1 doit avoir une taille nulle
   // - strict2
@@ -1484,24 +1530,27 @@ var COFantasy = COFantasy || function() {
     }
     //perso montés
     var pseudoTok1 = tok1;
-    var char1 = persoOfId(tok1.get('id'));
-    if(char1) {
-      var attrMonture1 = tokenAttribute(char1, 'monteSur');
-      if (attrMonture1.length > 0) {
-        var pseudoPerso1 = persoOfId(attrMonture1[0].get('current'), attrMonture1[0].get('max'), pageId);
-        if (pseudoPerso1) pseudoTok1 = pseudoPerso1.token;
+    if (!options.strict1) {
+      var perso1 = persoOfToken(tok1);
+      if (perso1) {
+        var attrMonture1 = tokenAttribute(perso1, 'monteSur');
+        if (attrMonture1.length > 0) {
+          var pseudoPerso1 = persoOfId(attrMonture1[0].get('current'), attrMonture1[0].get('max'), pageId);
+          if (pseudoPerso1) pseudoTok1 = pseudoPerso1.token;
+        }
       }
     }
     var pseudoTok2 = tok2;
-    var char2 = persoOfId(tok2.get('id'));
-    if(char2) {
-      var attrMonture2 = tokenAttribute(char2, 'monteSur');
-      if (attrMonture2.length > 0) {
-        var pseudoPerso2 = persoOfId(attrMonture2[0].get('current'), attrMonture2[0].get('max'), pageId);
-        if (pseudoPerso2) pseudoTok2 = pseudoPerso2.token;
+    if (!options.strict2) {
+      var perso2 = persoOfToken(tok2);
+      if (perso2) {
+        var attrMonture2 = tokenAttribute(perso2, 'monteSur');
+        if (attrMonture2.length > 0) {
+          var pseudoPerso2 = persoOfId(attrMonture2[0].get('current'), attrMonture2[0].get('max'), pageId);
+          if (pseudoPerso2) pseudoTok2 = pseudoPerso2.token;
+        }
       }
     }
-
     var scale = computeScale(pageId);
     var pt1 = tokenCenter(pseudoTok1);
     var pt2 = tokenCenter(pseudoTok2);
@@ -1671,15 +1720,11 @@ var COFantasy = COFantasy || function() {
               });
             allToks.forEach(function(tok) {
               if (tok.id == token.id) return;
-              var ci = tok.get('represents');
-              if (ci === '') return;
-              var p = {
-                token: tok,
-                charId: ci
-              };
+              var p = persoOfToken(tok);
+              if (p === undefined) return;
               if (getState(p, 'mort')) return;
               if (distanceCombat(token, tok, pageId) > 20) return;
-              if (charIdAttributeAsBool(ci, 'siphonDesAmes')) {
+              if (charIdAttributeAsBool(p.charId, 'siphonDesAmes')) {
                 var bonus = charAttributeAsInt(p, 'siphonDesAmes', 0);
                 var soin = rollDePlus(6, {
                   bonus: bonus
@@ -1690,10 +1735,10 @@ var COFantasy = COFantasy || function() {
                       ". Il récupère ";
                     if (s == soin.val) siphMsg += soin.roll + " pv.";
                     else siphMsg += s + " pv (jet " + soin.roll + ").";
-                    sendChar(ci, siphMsg);
+                    sendChar(p.charId, siphMsg);
                   },
                   function() {
-                    sendChar(ci, "est déjà au maximum de point de vie. Il laisse échapper l'âme de " + token.get('name'));
+                    sendChar(p.charId, "est déjà au maximum de point de vie. Il laisse échapper l'âme de " + token.get('name'));
                   });
               }
             });
@@ -2163,40 +2208,6 @@ var COFantasy = COFantasy || function() {
     if ((carac == 'force' || carac == 'FORCE') && attributeAsBool(perso, 'mutationMusclesHypertrophies')) res += 2;
     else if ((carac == 'DEXTERITE' || carac == 'dexterite') && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) res += 4;
     return res;
-  }
-
-  //Renvoie le token et le charId. Si l'id ne correspond à rien, cherche si 
-  //on trouve un nom de token, sur la page passée en argument (ou sinon
-  //sur la page active de la campagne)
-  function persoOfId(id, name, pageId) {
-    var token = getObj('graphic', id);
-    if (token === undefined) {
-      if (name === undefined) return undefined;
-      if (pageId === undefined) {
-        pageId = Campaign().get('playerpageid');
-      }
-      var tokens = findObjs({
-        _type: 'graphic',
-        _subtype: 'token',
-        _pageid: pageId,
-        name: name
-      });
-      if (tokens.length === 0) return undefined;
-      if (tokens.length > 1) {
-        error("Ambigüité sur le choix d'un token : il y a " +
-          tokens.length + " tokens nommés" + name, tokens);
-      }
-      token = tokens[0];
-    }
-    var charId = token.get('represents');
-    if (charId === '') {
-      error("le token sélectionné ne représente pas de personnage", token);
-      return undefined;
-    }
-    return {
-      token: token,
-      charId: charId
-    };
   }
 
   function boutonSimple(action, texte, style) {
