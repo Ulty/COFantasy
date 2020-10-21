@@ -2092,15 +2092,15 @@ var COFantasy = COFantasy || function() {
       case 'FOR':
         return 'force';
       case 'DEX':
-        return 'DEXTERITE';
+        return 'dexterite';
       case 'CON':
-        return 'CONSTITUTION';
+        return 'constitution';
       case 'INT':
-        return 'INTELLIGENCE';
+        return 'intelligence';
       case 'SAG':
-        return 'SAGESSE';
+        return 'sagesse';
       case 'CHA':
-        return 'CHARISME';
+        return 'charisme';
       default:
         return;
     }
@@ -2141,7 +2141,7 @@ var COFantasy = COFantasy || function() {
     }
     var res = Math.floor((ficheAttributeAsInt(perso, carac, 10) - 10) / 2);
     if ((carac == 'force' || carac == 'FORCE') && attributeAsBool(perso, 'mutationMusclesHypertrophies')) res += 2;
-    else if (carac == 'DEXTERITE' && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) res += 4;
+    else if ((carac == 'DEXTERITE' || carac == 'dexterite') && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) res += 4;
     return res;
   }
 
@@ -2926,7 +2926,7 @@ var COFantasy = COFantasy || function() {
           bonus += 5;
         }
         if (charAttributeAsBool(personnage, 'controleDuMetabolisme')) {
-          var modCha = modCarac(personnage, 'CHARISME');
+          var modCha = modCarac(personnage, 'charisme');
           if (modCha > 0) {
             expliquer("Controle du métabolisme : +" + modCha + " au jet de CON");
             bonus += modCha;
@@ -5750,7 +5750,7 @@ var COFantasy = COFantasy || function() {
     if (persoEstPNJ(perso)) {
       init = ficheAttributeAsInt(perso, 'pnj_init', 10);
     } else {
-      init = ficheAttributeAsInt(perso, 'DEXTERITE', 10);
+      init = ficheAttributeAsInt(perso, 'dexterite', 10);
       init += ficheAttributeAsInt(perso, 'INIT_DIV', 0);
       if (stateCOF.setting_arran || stateCOF.setting_mixte)
         init += ficheAttributeAsInt(perso, 'mod_initiative', 0);
@@ -5795,13 +5795,13 @@ var COFantasy = COFantasy || function() {
     var bonusCapitaine = aUnCapitaine(perso, evt);
     if (bonusCapitaine) init += parseInt(bonusCapitaine);
     if (charAttributeAsBool(perso, 'graceFeline')) {
-      init += modCarac(perso, 'CHARISME');
+      init += modCarac(perso, 'charisme');
     }
     if (attributeAsBool(perso, 'masqueDuPredateur')) {
-      init += getValeurOfEffet(perso, 'masqueDuPredateur', modCarac(perso, 'SAGESSE'));
+      init += getValeurOfEffet(perso, 'masqueDuPredateur', modCarac(perso, 'sagesse'));
     }
     if (charAttributeAsBool(perso, 'controleDuMetabolisme')) {
-      init += getValeurOfEffet(perso, 'controleDuMetabolisme', modCarac(perso, 'CHARISME'));
+      init += getValeurOfEffet(perso, 'controleDuMetabolisme', modCarac(perso, 'charisme'));
     }
     if (attributeAsBool(perso, 'cadavreAnime')) {
       init -= 2;
@@ -6075,7 +6075,7 @@ var COFantasy = COFantasy || function() {
       explications.push("Entravé : -2 en Attaque");
     }
     if (attributeAsBool(personnage, 'masqueDuPredateur')) {
-      var bonusMasque = getValeurOfEffet(personnage, 'masqueDuPredateur', modCarac(personnage, 'SAGESSE'));
+      var bonusMasque = getValeurOfEffet(personnage, 'masqueDuPredateur', modCarac(personnage, 'sagesse'));
       var masqueIntense = attributeAsInt(personnage, 'masqueDuPredateurTempeteDeManaIntense', 0);
       bonusMasque += masqueIntense;
       attBonus += bonusMasque;
@@ -6216,7 +6216,7 @@ var COFantasy = COFantasy || function() {
         }
         defense += ficheAttributeAsInt(target, 'DEFDIV', 0);
       } // Dans le cas contraire, on n'utilise pas ces bonus
-      defense += modCarac(target, 'DEXTERITE');
+      defense += modCarac(target, 'dexterite');
     }
     if (attributeAsBool(target, 'inconfort')) {
       var inconfortValeur = attributeAsInt(target, "inconfortValeur", 0);
@@ -6286,13 +6286,13 @@ var COFantasy = COFantasy || function() {
     }
     defense += charAttributeAsInt(target, 'esquiveVoleur', 0);
     if (charAttributeAsBool(target, 'graceFeline')) {
-      defense += modCarac(target, 'CHARISME');
+      defense += modCarac(target, 'charisme');
     }
     if (charAttributeAsBool(target, 'peauDePierre')) {
-      defense += modCarac(target, 'CONSTITUTION');
+      defense += modCarac(target, 'constitution');
     }
     if (charAttributeAsBool(target, 'defenseIntuitive')) {
-      defense += modCarac(target, 'SAGESSE');
+      defense += modCarac(target, 'sagesse');
     }
     if (attributeAsBool(target, 'armeSecreteBarde')) {
       defense -= 10;
@@ -6681,7 +6681,7 @@ var COFantasy = COFantasy || function() {
           } else {
             bonusArmeGauche = attaquant.armeGauche.attSkillDiv;
           }
-          var dmArmeGauche = modCarac(attaquant, 'DEXTERITE');
+          var dmArmeGauche = modCarac(attaquant, 'dexterite');
           dmArmeGauche += attaquant.armeGauche.attDMBonusCommun;
           options.additionalDmg = options.additionalDmg || [];
           options.additionalDmg.push({
@@ -6790,7 +6790,7 @@ var COFantasy = COFantasy || function() {
     if (ennemiJure.length === 0) ennemiJure = false;
     else ennemiJure = raceIs(target, ennemiJure[0].get('current'));
     if (ennemiJure) {
-      var ejSag = modCarac(attaquant, 'SAGESSE');
+      var ejSag = modCarac(attaquant, 'sagesse');
       attBonus += ejSag;
       var explEnnemiJure = "Attaque sur ennemi juré => +" + ejSag + " en attaque";
       if (!options.pasDeDmg) explEnnemiJure += " et +1d6 aux DM";
@@ -8120,13 +8120,13 @@ var COFantasy = COFantasy || function() {
     if (options.bonusCritique) crit -= options.bonusCritique;
     if (options.affute) crit -= 1;
     if (options.contact && charAttributeAsBool(attaquant, 'frappeChirurgicale'))
-      crit -= modCarac(attaquant, 'INTELLIGENCE');
+      crit -= modCarac(attaquant, 'intelligence');
     var attrTirFatal = charAttribute(attaquant.charId, 'tirFatal');
     if (attrTirFatal.length > 0) {
       var armeTirFatal = attrTirFatal[0].get('current');
       if (armeTirFatal == 'true') armeTirFatal = 'arc';
       if (options[armeTirFatal] || weaponStats[armeTirFatal]) {
-        crit -= modCarac(attaquant, 'SAGESSE');
+        crit -= modCarac(attaquant, 'sagesse');
         options.tirFatal = 1;
         if (charAttributeAsInt(attaquant, 'voieDeLArcEtDuCheval', 3) > 4)
           options.tirFatal = 2;
@@ -8203,7 +8203,7 @@ var COFantasy = COFantasy || function() {
             if (oatk > atktir) atktir = oatk;
           });
           if (atktir === undefined) {
-            atktir = ficheAttributeAsInt(attaquant, 'niveau', 0) + 1 + modCarac(attaquant, 'DEXTERITE');
+            atktir = ficheAttributeAsInt(attaquant, 'niveau', 0) + 1 + modCarac(attaquant, 'dexterite');
           }
           return atktir;
         }
@@ -8224,7 +8224,7 @@ var COFantasy = COFantasy || function() {
             if (oatk > atkmag) atkmag = oatk;
           });
           if (atkmag === undefined) {
-            atkmag = ficheAttributeAsInt(attaquant, 'niveau', 0) + 1 + modCarac(attaquant, 'SAGESSE');
+            atkmag = ficheAttributeAsInt(attaquant, 'niveau', 0) + 1 + modCarac(attaquant, 'sagesse');
           }
           return atkmag;
         }
@@ -9114,8 +9114,8 @@ var COFantasy = COFantasy || function() {
       if (options.magique) {
         attNbDicesCible = options.magique;
         attDiceCible = "6";
-        attCarBonusCible = modCarac(target, 'SAGESSE');
-        if (attCarBonusCible < 1) attCarBonusCible = "";
+        attCarBonusCible = modCarac(target, 'sagesse');
+        if (attCarBonusCible < 1) attCarBonusCible = '';
         else attCarBonusCible = " +" + attCarBonusCible;
       } else {
         target.messages.push(target.tokName + " semble immunisé aux armes ordinaires");
@@ -9135,15 +9135,15 @@ var COFantasy = COFantasy || function() {
       case '@{FOR}':
         return modCarac(perso, 'force');
       case '@{DEX}':
-        return modCarac(perso, 'DEXTERITE');
+        return modCarac(perso, 'dexterite');
       case '@{CON}':
-        return modCarac(perso, 'CONSTITUTION');
+        return modCarac(perso, 'constitution');
       case '@{INT}':
-        return modCarac(perso, 'INTELLIGENCE');
+        return modCarac(perso, 'intelligence');
       case '@{SAG}':
-        return modCarac(perso, 'SAGESSE');
+        return modCarac(perso, 'sagesse');
       case '@{CHA}':
-        return modCarac(perso, 'CHARISME');
+        return modCarac(perso, 'charisme');
       default:
         return;
     }
@@ -9248,7 +9248,7 @@ var COFantasy = COFantasy || function() {
       attDMBonusCommun += " -" + options.rayonAffaiblissant;
     }
     if (attributeAsBool(attaquant, 'masqueDuPredateur')) {
-      var bonusMasque = getValeurOfEffet(attaquant, 'masqueDuPredateur', modCarac(attaquant, 'SAGESSE'));
+      var bonusMasque = getValeurOfEffet(attaquant, 'masqueDuPredateur', modCarac(attaquant, 'sagesse'));
       if (bonusMasque > 0) attDMBonusCommun += " +" + bonusMasque;
     }
     if (options.rageBerserk) {
@@ -9503,7 +9503,7 @@ var COFantasy = COFantasy || function() {
       if (options.distance && !options.grenaille) {
         var tirPrecis = charAttributeAsInt(attaquant, 'tirPrecis', 0);
         if (tirPrecis > 0) {
-          var modDex = modCarac(attaquant, 'DEXTERITE');
+          var modDex = modCarac(attaquant, 'dexterite');
           if (target.distance <= 5 * modDex) {
             attDMBonus += " + " + tirPrecis;
             target.messages.push("Tir précis : +" + tirPrecis + " DM");
@@ -10565,7 +10565,8 @@ var COFantasy = COFantasy || function() {
       name: carac + '_SUP'
     });
     if (typeJet.length === 0) return 1;
-    switch (typeJet[0].get('current')) {
+    typeJet = typeJet[0].get('current');
+    switch (typeJet) {
       case '@{JETNORMAL}':
       case '@{jetnormal}':
         return 1;
@@ -10575,7 +10576,9 @@ var COFantasy = COFantasy || function() {
       case '@{jetsuphero}':
         return 2;
       default:
-        error("Jet inconnu", typeJet[0].get('current'));
+        if (typeJet.startsWith('1d')) return 1;
+        if (typeJet.startsWith('2d')) return 2;
+        error("Jet inconnu", typeJet);
     }
     return 1;
   }
@@ -11187,7 +11190,7 @@ var COFantasy = COFantasy || function() {
     if (reglesOptionelles.blessures_graves.val && estPJ(target) && (dmgTotal == 'mort' ||
         dmgTotal >
         (ficheAttributeAsInt(target, 'niveau', 1) +
-          ficheAttributeAsInt(target, 'CONSTITUTION', 10)))) {
+          ficheAttributeAsInt(target, 'constitution', 10)))) {
       var pr = pointsDeRecuperation(target);
       if (pr.current > 0) {
         expliquer("Les dégâts sont si importants que " + target.tokName + " perd 1 PR");
@@ -12761,7 +12764,7 @@ var COFantasy = COFantasy || function() {
         error("Plusieurs personnages nommés " + ecuyerDe + ". Attention aux ambiguités.");
       }
       charChevalier = charChevalier[0].id;
-      var maxASoigner = modCarac(charChevalier, 'CHARISME') + 1;
+      var maxASoigner = modCarac(charChevalier, 'charisme') + 1;
       var allies = alliesParPerso[ecuyer.charId] || new Set();
       var alliesASoigner = [];
       var nbCibles = 0;
@@ -13544,7 +13547,7 @@ var COFantasy = COFantasy || function() {
           pr.current--;
         }
       }
-      var conMod = modCarac(perso, 'CONSTITUTION');
+      var conMod = modCarac(perso, 'constitution');
       var niveau = ficheAttributeAsInt(perso, 'niveau', 1);
       var rollExpr = addOrigin(characterName, "[[1d" + dVie + "]]");
       sendChat("COF", rollExpr, function(res) {
@@ -15567,8 +15570,8 @@ var COFantasy = COFantasy || function() {
         }
         if (dvB === 0) return -1;
         //Entre joueurs, priorité à la plus grosse sagesse
-        var sagA = ficheAttributeAsInt(persoA, 'SAGESSE', 10);
-        var sagB = ficheAttributeAsInt(persoB, 'SAGESSE', 10);
+        var sagA = ficheAttributeAsInt(persoA, 'sagesse', 10);
+        var sagB = ficheAttributeAsInt(persoB, 'sagesse', 10);
         if (sagA < sagB) return 1;
         if (sagB > sagA) return -1;
         return 0;
@@ -15965,7 +15968,7 @@ var COFantasy = COFantasy || function() {
             defenseAffichee += ficheAttributeAsInt(perso, 'DEFARMURE', 0) * ficheAttributeAsInt(perso, 'DEFARMUREON', 1);
             defenseAffichee += ficheAttributeAsInt(perso, 'DEFBOUCLIER', 0) * ficheAttributeAsInt(perso, 'DEFBOUCLIERON', 1);
             defenseAffichee += ficheAttributeAsInt(perso, 'DEFDIV', 0);
-            defenseAffichee += modCarac(perso, 'DEXTERITE');
+            defenseAffichee += modCarac(perso, 'dexterite');
           }
           if (defense != defenseAffichee)
             addLineToFramedDisplay(display, "Défense actuelle : " + defense);
@@ -17063,7 +17066,7 @@ var COFantasy = COFantasy || function() {
               break;
             case 'peauDePierreMag':
               if (options.valeur === undefined) {
-                var rd = 5 + modCarac(perso, 'INTELLIGENCE');
+                var rd = 5 + modCarac(perso, 'intelligence');
                 var absorbe = 40;
                 if (options.tempeteDeManaIntence) {
                   rd += options.tempeteDeManaIntense;
@@ -17502,7 +17505,7 @@ var COFantasy = COFantasy || function() {
       allies.forEach(function(cid) {
         if (charIdAttributeAsBool(cid, 'sansPeur')) {
           allieSansPeur =
-            Math.max(allieSansPeur, 2 + modCarac(cid, 'CHARISME'));
+            Math.max(allieSansPeur, 2 + modCarac(cid, 'charisme'));
         }
       });
     }
@@ -17810,7 +17813,7 @@ var COFantasy = COFantasy || function() {
           setTokenAttr(cible, 'tueurFantasmagorique', true, evt);
           var s = {
             carac: 'SAG',
-            seuil: 10 + modCarac(attaquant, 'CHARISME')
+            seuil: 10 + modCarac(attaquant, 'charisme')
           };
           var niveauAttaquant = ficheAttributeAsInt(attaquant, 'niveau', 1);
           var niveauCible = ficheAttributeAsInt(cible, 'niveau', 1);
@@ -17869,7 +17872,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       var casterCharName = casterChar.get('name');
-      var cha = modCarac(caster, 'CHARISME');
+      var cha = modCarac(caster, 'charisme');
       var attMagText = addOrigin(casterCharName, '[[' + computeArmeAtk(caster, '@{ATKMAG}') + ']]');
       var action = "<b>Capacité</b> : Sort de sommeil";
       var display = startFramedDisplay(playerId, action, caster);
@@ -18077,7 +18080,7 @@ var COFantasy = COFantasy || function() {
           sendChar(perso.charId, "n'a pas besoin de méditer");
           return;
         }
-        var sagMod = modCarac(perso, 'SAGESSE');
+        var sagMod = modCarac(perso, 'sagesse');
         var niveau = ficheAttributeAsInt(perso, 'niveau', 1);
         var soin = niveau + sagMod;
         if (soin < 0) soin = 0;
@@ -18502,7 +18505,7 @@ var COFantasy = COFantasy || function() {
             message: " a déjà repris son souffle durant ce combat",
             limite: 1
           };
-        soins = "[[1d10+" + niveau + "+" + modCarac(soigneur, 'CONSTITUTION') +
+        soins = "[[1d10+" + niveau + "+" + modCarac(soigneur, 'constitution') +
           "]]";
         cible = soigneur;
         options.recuperation = true;
@@ -19201,7 +19204,7 @@ var COFantasy = COFantasy || function() {
             evt.tokens = [newImage];
             toFront(newImage);
             setTokenAttr(lanceur, 'murDeForceId', newImage.id, evt);
-            var duree = 5 + modCarac(lanceur, 'CHARISME');
+            var duree = 5 + modCarac(lanceur, 'charisme');
             if (options.tempeteDeManaDuree) duree += duree;
             setAttrDuree(lanceur, 'murDeForce', duree, evt);
           } else {
@@ -19529,7 +19532,7 @@ var COFantasy = COFantasy || function() {
     var deStrang = 6;
     if (msg.content.includes(' --puissant')) deStrang = 8;
     var dmgExpr = "[[1d" + deStrang + " ";
-    var modInt = modCarac(necromancien, 'INTELLIGENCE');
+    var modInt = modCarac(necromancien, 'intelligence');
     if (modInt > 0) dmgExpr += "+" + modInt;
     else if (modInt < 0) dmgExpr += modInt;
     dmgExpr += "]]";
@@ -19695,7 +19698,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //retourne true si le joueur est effectivement déplacé
-  function movePlayerToMap(pid, oldPageId, newPageId) {
+  function movePlayerToPage(pid, oldPageId, newPageId) {
     if (getObj('player', pid) === undefined) return;
     var c = Campaign();
     var playerPages = c.get('playerspecificpages');
@@ -19877,12 +19880,12 @@ var COFantasy = COFantasy || function() {
               return playerIsGM(p.id);
             });
             if (gm) {
-              if (newPageId != pageId) movePlayerToMap(gm.id, pageId, newPageId);
+              if (newPageId != pageId) movePlayerToPage(gm.id, pageId, newPageId);
               sendPing(left, top, newPageId, gm.id, true, gm.id);
             }
           } else {
             charControlledby.split(",").forEach(function(pid) {
-              if (newPageId != pageId) movePlayerToMap(pid, pageId, newPageId);
+              if (newPageId != pageId) movePlayerToPage(pid, pageId, newPageId);
               sendPing(left, top, newPageId, pid, true, pid);
             });
           }
@@ -20200,7 +20203,7 @@ var COFantasy = COFantasy || function() {
           if (stateCOF.setting_arran ||
             (stateCOF.setting_mixte && ficheAttribute(guerrier, 'option_setting', 'generique') == 'arran')) {
             if (options.sortilege) {
-              attBonus += modCarac(guerrier, 'INTELLIGENCE');
+              attBonus += modCarac(guerrier, 'intelligence');
               attBonus += ficheAttributeAsInt(guerrier, 'mod_atkmag', 0);
               attBonus += ficheAttributeAsInt(guerrier, 'ATKMAG_DIV', 0);
             } else {
@@ -20210,7 +20213,7 @@ var COFantasy = COFantasy || function() {
             }
           } else {
             if (options.sortilege) {
-              attBonus += modCarac(guerrier, 'SAGESSE');
+              attBonus += modCarac(guerrier, 'sagesse');
               attBonus += ficheAttributeAsInt(guerrier, 'ATKMAG_DIV', 0);
             } else {
               attBonus += modCarac(guerrier, 'force');
@@ -20330,7 +20333,7 @@ var COFantasy = COFantasy || function() {
       var total = attackRoll.results.total;
       var msgResister = buildinline(attackRoll);
       var attBonus = ficheAttributeAsInt(barbare, 'niveau', 1);
-      attBonus += modCarac(barbare, 'SAGESSE');
+      attBonus += modCarac(barbare, 'sagesse');
       attBonus += ficheAttributeAsInt(barbare, 'ATKMAG_DIV', 0);
       total += attBonus;
       if (attBonus > 0) msgResister += "+" + attBonus;
@@ -20431,7 +20434,7 @@ var COFantasy = COFantasy || function() {
       var totalEsquive = attackRoll.results.total;
       var msgEsquiver = buildinline(attackRoll);
       var attBonus = ficheAttributeAsInt(barde, 'niveau', 1);
-      attBonus += modCarac(barde, 'DEXTERITE');
+      attBonus += modCarac(barde, 'dexterite');
       attBonus += ficheAttributeAsInt(barde, 'ATKTIR_DIV', 0);
       if (stateCOF.setting_arran ||
         (stateCOF.setting_mixte && ficheAttribute(barde, 'option_setting', 'generique') == 'arran')) {
@@ -20550,7 +20553,7 @@ var COFantasy = COFantasy || function() {
       var totalParade = attackRoll.results.total;
       var msgParer = buildinline(attackRoll);
       var attBonus = ficheAttributeAsInt(duelliste, 'niveau', 1);
-      attBonus += modCarac(duelliste, 'DEXTERITE');
+      attBonus += modCarac(duelliste, 'dexterite');
       attBonus += ficheAttributeAsInt(duelliste, 'ATKTIR_DIV', 0);
       if (stateCOF.setting_arran ||
         (stateCOF.setting_mixte && ficheAttribute(duelliste, 'option_setting', 'generique') == 'arran')) {
@@ -21129,9 +21132,9 @@ var COFantasy = COFantasy || function() {
     }); //fin de getSelected
   }
 
-  var consommableNomRegExp = new RegExp(/^(repeating_equipement_.*_)equip-nom/);
-  var consommableQuantiteRegExp = new RegExp(/^(repeating_equipement_.*_)equip-qte/);
-  var consommableEffetRegExp = new RegExp(/^(repeating_equipement_.*_)equip-effet/);
+  var consommableNomRegExp = new RegExp(/^(repeating_equipement_.*_)equip[-,_]nom/);
+  var consommableQuantiteRegExp = new RegExp(/^(repeating_equipement_.*_)equip[-,_]qte/);
+  var consommableEffetRegExp = new RegExp(/^(repeating_equipement_.*_)equip[-,_]effet/);
 
   function listeConsommables(msg) {
     getSelected(msg, function(selected, playerId) {
@@ -21689,7 +21692,7 @@ var COFantasy = COFantasy || function() {
     var attr = tokenAttribute(forgesort, attrName);
     if (attr.length === 0) {
       var action = elixir.action.replace(/\$rang/g, voieDesElixirs);
-      action = action.replace(/\$INT/g, modCarac(forgesort, 'INTELLIGENCE'));
+      action = action.replace(/\$INT/g, modCarac(forgesort, 'intelligence'));
       setTokenAttr(forgesort, attrName, 1, evt, {
         msg: message,
         maxVal: action
@@ -21763,7 +21766,7 @@ var COFantasy = COFantasy || function() {
           if (nbElixirs > 0) {
             action = elixir.action;
             action = action.replace(/\$rang/g, voieDesElixirs);
-            action = action.replace(/\$INT/g, modCarac(forgesort, 'INTELLIGENCE'));
+            action = action.replace(/\$INT/g, modCarac(forgesort, 'intelligence'));
             options += bouton(action, nomElixir, forgesort, attr);
           } else {
             options += nomElixir;
@@ -22265,7 +22268,7 @@ var COFantasy = COFantasy || function() {
       }], evt);
     }
     setTokenAttr(barde, 'armeSecreteBardeUtilisee', true, evt);
-    var intCible = ficheAttributeAsInt(cible, 'INTELLIGENCE', 10);
+    var intCible = ficheAttributeAsInt(cible, 'intelligence', 10);
     testCaracteristique(barde, 'CHA', intCible, 'armeSecreteBarde', {}, evt, function(testRes) {
       var display = startFramedDisplay(getPlayerIdFromMsg(msg),
         "Arme secrète", barde, {
@@ -22362,15 +22365,15 @@ var COFantasy = COFantasy || function() {
         niveau: niveau,
         force: 18,
         pnj_for: 4,
-        DEXTERITE: 7,
+        dexterite: 7,
         pnj_dex: -2,
-        CONSTITUTION: 20,
+        constitution: 20,
         pnj_con: 5,
-        INTELLIGENCE: 8,
+        intelligence: 8,
         pnj_int: -1,
-        SAGESSE: 14,
+        sagesse: 14,
         pnj_sag: 2,
-        CHARISME: 6,
+        charisme: 6,
         pnj_cha: -2,
         DEFDIV: 5,
         pnj_def: 13,
@@ -23343,19 +23346,19 @@ var COFantasy = COFantasy || function() {
         niveau: 1,
         force: 12,
         pnj_for: 1,
-        DEXTERITE: 12,
+        dexterite: 12,
         pnj_dex: 1,
-        CONSTITUTION: 12,
+        constitution: 12,
         pnj_con: 1,
         CON_SUP: '@{jetsup}',
         pnj_con_sup: 'on',
-        INTELLIGENCE: 2,
+        intelligence: 2,
         pnj_int: -4,
-        SAGESSE: 14,
+        sagesse: 14,
         pnj_sag: 2,
         SAG_SUP: '@{jetsup}',
         pnj_sag_sup: 'on',
-        CHARISME: 6,
+        charisme: 6,
         pnj_cha: -2,
         DEFDIV: 3,
         pnj_def: 14,
@@ -23383,19 +23386,19 @@ var COFantasy = COFantasy || function() {
         niveau: 2,
         force: 16,
         pnj_for: 3,
-        DEXTERITE: 12,
+        dexterite: 12,
         pnj_dex: 1,
-        CONSTITUTION: 16,
+        constitution: 16,
         pnj_con: 3,
         CON_SUP: '@{jetsup}',
         pnj_con_sup: 'on',
-        INTELLIGENCE: 2,
+        intelligence: 2,
         pnj_int: -4,
-        SAGESSE: 14,
+        sagesse: 14,
         pnj_sag: 2,
         SAG_SUP: '@{jetsup}',
         pnj_sag_sup: 'on',
-        CHARISME: 6,
+        charisme: 6,
         pnj_cha: -2,
         DEFDIV: 4,
         pnj_def: 15,
@@ -23433,19 +23436,19 @@ var COFantasy = COFantasy || function() {
         niveau: 3,
         force: 16,
         pnj_for: 3,
-        DEXTERITE: 12,
+        dexterite: 12,
         pnj_dex: 1,
-        CONSTITUTION: 16,
+        constitution: 16,
         pnj_con: 3,
         CON_SUP: '@{jetsup}',
         pnj_con_sup: 'on',
-        INTELLIGENCE: 4,
+        intelligence: 4,
         pnj_int: -3,
-        SAGESSE: 14,
+        sagesse: 14,
         pnj_sag: 2,
         SAG_SUP: '@{jetsup}',
         pnj_sag_sup: 'on',
-        CHARISME: 6,
+        charisme: 6,
         pnj_cha: -2,
         DEFDIV: 6,
         pnj_def: 17,
@@ -23483,19 +23486,19 @@ var COFantasy = COFantasy || function() {
         niveau: 4,
         force: 20,
         pnj_for: 5,
-        DEXTERITE: 18,
+        dexterite: 18,
         pnj_dex: 4,
         DEX_SUP: '@{jetsup}',
         pnj_dex_sup: 'on',
-        CONSTITUTION: 20,
+        constitution: 20,
         pnj_con: 5,
-        INTELLIGENCE: 4,
+        intelligence: 4,
         pnj_int: -3,
-        SAGESSE: 14,
+        sagesse: 14,
         pnj_sag: 2,
         SAG_SUP: '@{jetsup}',
         pnj_sag_sup: 'on',
-        CHARISME: 6,
+        charisme: 6,
         pnj_cha: -3,
         DEFDIV: 4,
         pnj_def: 18,
@@ -23536,19 +23539,19 @@ var COFantasy = COFantasy || function() {
         niveau: 5,
         force: 22,
         pnj_for: 6,
-        DEXTERITE: 18,
+        dexterite: 18,
         pnj_dex: 3,
         DEX_SUP: '@{jetsup}',
         pnj_dex_sup: 'on',
-        CONSTITUTION: 20,
+        constitution: 20,
         pnj_con: 5,
-        INTELLIGENCE: 2,
+        intelligence: 2,
         pnj_int: -4,
-        SAGESSE: 14,
+        sagesse: 14,
         pnj_sag: 2,
         SAG_SUP: '@{jetsup}',
         pnj_sag_sup: 'on',
-        CHARISME: 14,
+        charisme: 14,
         pnj_cha: 2,
         DEFDIV: 6,
         pnj_def: 20,
@@ -23590,17 +23593,17 @@ var COFantasy = COFantasy || function() {
         pnj_for: 8,
         FOR_SUP: '@{jetsup}',
         pnj_for_sup: 'on',
-        DEXTERITE: 11,
+        dexterite: 11,
         pnj_dex: 0,
-        CONSTITUTION: 26,
+        constitution: 26,
         pnj_con: 8,
         CON_SUP: '@{jetsup}',
         pnj_con_sup: 'on',
-        INTELLIGENCE: 2,
+        intelligence: 2,
         pnj_int: -4,
-        SAGESSE: 14,
+        sagesse: 14,
         pnj_sag: 2,
-        CHARISME: 6,
+        charisme: 6,
         pnj_cha: -2,
         DEFDIV: 10,
         pnj_def: 20,
@@ -23636,19 +23639,19 @@ var COFantasy = COFantasy || function() {
         pnj_for: 8,
         FOR_SUP: '@{jetsup}',
         pnj_for_sup: 'on',
-        DEXTERITE: 18,
+        dexterite: 18,
         pnj_dex: 4,
         DEX_SUP: '@{jetsup}',
         pnj_dex_sup: 'on',
-        CONSTITUTION: 26,
+        constitution: 26,
         pnj_con: 8,
-        INTELLIGENCE: 2,
+        intelligence: 2,
         pnj_int: -4,
-        SAGESSE: 12,
+        sagesse: 12,
         pnj_sag: 1,
         SAG_SUP: '@{jetsup}',
         pnj_sag_sup: 'on',
-        CHARISME: 2,
+        charisme: 2,
         pnj_cha: -4,
         DEFDIV: 8,
         pnj_def: 22,
@@ -23688,17 +23691,17 @@ var COFantasy = COFantasy || function() {
         niveau: 8,
         force: 32,
         pnj_for: 11,
-        DEXTERITE: 10,
+        dexterite: 10,
         pnj_dex: 0,
-        CONSTITUTION: 32,
+        constitution: 32,
         pnj_con: 11,
         CON_SUP: '@{jetsup}',
         pnj_con_sup: 'on',
-        INTELLIGENCE: 2,
+        intelligence: 2,
         pnj_int: -4,
-        SAGESSE: 14,
+        sagesse: 14,
         pnj_sag: 2,
-        CHARISME: 6,
+        charisme: 6,
         pnj_cha: -2,
         DEFDIV: 12,
         pnj_def: 22,
@@ -23801,7 +23804,7 @@ var COFantasy = COFantasy || function() {
         createObj('attribute', {
           name: 'predateurConjure',
           _characterid: charPredateur.id,
-          current: 5 + modCarac(invocateur, 'CHARISME'),
+          current: 5 + modCarac(invocateur, 'charisme'),
           max: getInit()
         });
         evt.characters = [charPredateur];
@@ -27402,7 +27405,7 @@ var COFantasy = COFantasy || function() {
         var increvableActif = charAttribute(perso.charId, 'increvableActif');
         if (increvableActif.length > 0) {
           increvableActif[0].remove();
-          var soins = randomInteger(6) + randomInteger(6) + randomInteger(6) + modCarac(perso, "CONSTITUTION");
+          var soins = randomInteger(6) + randomInteger(6) + randomInteger(6) + modCarac(perso, 'constitution');
           soigneToken(perso, soins, evt, function(soinsEffectifs) {
             var msgSoins = "est increvable et récupère ";
             if (soinsEffectifs == soins.val) msgSoins += soins + " points de vie";
@@ -28569,8 +28572,8 @@ on('ready', function() {
         current: true,
         max: scriptVersion
       });
-      state.COFantasy.scriptSheets = true;
     });
+    state.COFantasy.scriptSheets = true;
     log("Mise à jour effectuée.");
   }
   if (state.COFantasy.version < 2.02) {
@@ -28818,21 +28821,48 @@ on('ready', function() {
       var quantite = parseInt(a.get('current'));
       if (isNaN(quantite) || quantite < 0) return;
       var pref = 'repeating_equipement_' + generateRowID() + '_';
-      createObj('attribute', {
+      var versionFiche = findObjs({
+        _type: 'attribute',
         _characterid: charId,
-        name: pref + 'equip-nom',
-        current: consName
+        name: 'version',
+      }, {
+        caseInsensitive: true
       });
-      createObj('attribute', {
-        _characterid: charId,
-        name: pref + 'equip-qte',
-        current: quantite
-      });
-      createObj('attribute', {
-        _characterid: charId,
-        name: pref + 'equip-effet',
-        current: a.get('max').trim(),
-      });
+      if (versionFiche.length === 0) versionFiche = 0;
+      else versionFiche = parseFloat(versionFiche[0].get('current'));
+      if (versionFiche < 4.01) {
+        createObj('attribute', {
+          _characterid: charId,
+          name: pref + 'equip-nom',
+          current: consName
+        });
+        createObj('attribute', {
+          _characterid: charId,
+          name: pref + 'equip-qte',
+          current: quantite
+        });
+        createObj('attribute', {
+          _characterid: charId,
+          name: pref + 'equip-effet',
+          current: a.get('max').trim(),
+        });
+      } else {
+        createObj('attribute', {
+          _characterid: charId,
+          name: pref + 'equip_nom',
+          current: consName
+        });
+        createObj('attribute', {
+          _characterid: charId,
+          name: pref + 'equip_qte',
+          current: quantite
+        });
+        createObj('attribute', {
+          _characterid: charId,
+          name: pref + 'equip_effet',
+          current: a.get('max').trim(),
+        });
+      }
       a.remove();
     });
     log("Déplacement des attributs de consommables vers la fiche");
@@ -28845,6 +28875,7 @@ on('ready', function() {
       }).forEach(function(c) {
         COFantasy.scriptVersionToCharacter(c, true);
       });
+      state.COFantasy.scriptSheets = true;
     }
   } else {
     if (state.COFantasy.scriptSheets) {
@@ -28854,6 +28885,7 @@ on('ready', function() {
         COFantasy.scriptVersionToCharacter(c, false);
       });
     }
+    state.COFantasy.scriptSheets = false;
   }
   handout.forEach(function(hand) {
     COFantasy.changeHandout(hand);
@@ -28885,7 +28917,7 @@ on("change:campaign:turnorder", COFantasy.nextTurn);
 on("destroy:token", COFantasy.destroyToken);
 on("change:token", COFantasy.moveToken);
 on("add:character", function(c) {
-  if (COF_loaded && state.COFantasy.scriptSheets) {
+  if (COF_loaded) {
     COFantasy.scriptVersionToCharacter(c, true);
   }
 });
