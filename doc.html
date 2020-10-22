@@ -121,7 +121,7 @@
 						</div>
 					</div>
 					<div class="col-md-9 col-sm-8 content">
-            <h1>Documentation pour la version 2.11 de COFantasy</h1>
+            <h1>Documentation pour la version 2.12 de COFantasy</h1>
 						<h2 class="text-primary" id="comment_utiliser_script">1. Comment utiliser Le script</h2>
             <div class="decalage">
               <h3 class="text-info" id="token_personnages">1.1 Tokens et personnages</h3>
@@ -296,6 +296,7 @@
                   <li><code>--vampirise</code> : soigne de tous les DM infligés</li>
                   <li><code>--seulementVivant</code> : n'affecte que les cibles vivantes</li>
                   <li><code>--tueurDeGeants</code> : bonus de +2 en attaque et +2d6 DM contre les géants, ogres, ettins et cyclopes.</li>
+                  <li><code>--tueurDeGrands</code> : bonus de +1d6 DM contre les créatures de taille grande et +2d6 DM contre les créatures de taille énorme ou plus.</li>
                   <li><code>--ignoreObstacles</code> : ignore les tokens sur le trajet. Ça semble nécessaire pour les attaques magiques d'après Kegron.</li>
                   <li><code>--puissant</code> : augmente la valeur max des dés de dégâts de 2. Si <code>--puissant</code> est suivi d'un argument <i>effet</i>, on teste la présence d'un attribut <i>effet</i><code>Puissant</code> pour décider si l'attaque est puissante ou non. Il est aussi possible de donner <code>oui</code> ou <code>non</code> en argument (ce n'est alors pas considéré comme un effet).</li>
                   <li><code>--attaqueAssuree</code> : implémente une attaque assurée (+5 à l'attaque, dégâts divisés par 2, critique impossible).</li>
@@ -1702,6 +1703,7 @@
                   <li><strong>Énergie de la mort</strong> (pour la campagne Vengeance) : ajouter un attribut <code>energieDeLaMort</code> de valeur <code>true</code>. Le MJ devra être attentif au message indiquant le retour à la vie, car c'est lui qui devra enlever l'état mort et ajuster les PVs.</li>
                   <li><strong>Enveloppement</strong> (cube gélatineux) : ajouter l'option <code>--enveloppe</code>, puis quand le bouton apparaît si l'attaque réussit, cliquer dessus. En cas d'enveloppement, la cible ne peut plus bouger et se déplace avec le cube (déplacer le cube met la cible dans le cube), et au tour du cube, il faut presser les boutons de dégâts pour les infliger aux cibles enveloppées.</li>
                   <li><strong>Étreinte</strong> (serpents) : ajouter l'option <code>--etreinte <i>difficulte</i></code>, puis quand le bouton apparaît si l'attaque réussit, cliquer dessus. En cas d'étreinte réussie, la cible ne peut plus bouger et se déplace avec le serpent, et au tour du serpent, il faut presser les boutons de dégâts pour les infliger aux cibles étreintes.</li>
+                  <li><strong>Faucheuse de géants</strong>: ajouter le modifcateur <code>tueurDeGrands</code> aux attaques.</li>
                   <li><strong>Frénésie</strong> : Ajouter une attribut <code>frenesie</code> avec comme valeur le nombre de PV en-dessous duquel la créature devient frénétique (+2 aus jets d'attaque).</li>
                   <li><strong>Huile de fort assaut</strong> : <code>!cof-effet-temp dmgArme(<i>L</i>) 10 --valeur 1d6</code> où <i>L</i> est le label de l'arme qu'on veut enduire d'huile de fort assaut.</li>
                   <li><strong>Hurlement</strong> : Pour les chiens infernaux, <code>!cof-peur [[10+?{Nombre de chiens?}]] [[2d4]] --portee 50 --equipe Joueurs</code>, et pour les fantômes, <code>!cof-peur 12 [[1d6]] --portee 10 --equipe Joueurs</code>. Pour l'instant, pas de prise en compte de l'immunité au hurlement apès avoir réussi son jet de SAG.</li>

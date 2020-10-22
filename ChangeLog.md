@@ -1,5 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.12
+### Capacités
+* Faucheuse de géants
+
 ### Autres améliorations
 * Ajout des résistances permettant de diviser les dégâts d'un type donné.
 * Utilisation des consommables sur la fiche pour les PJs (au lieu des attributs dose_ ou consommable_).

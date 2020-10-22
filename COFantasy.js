@@ -1528,6 +1528,7 @@ var COFantasy = COFantasy || function() {
     if (pageId === undefined) {
       pageId = tok1.get('pageid');
     }
+    options = options || {};
     //perso montés
     var pseudoTok1 = tok1;
     if (!options.strict1) {
@@ -1555,7 +1556,6 @@ var COFantasy = COFantasy || function() {
     var pt1 = tokenCenter(pseudoTok1);
     var pt2 = tokenCenter(pseudoTok2);
     var distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
-    options = options || {};
     if (!options.strict1) distance_pix -= tokenSize(pseudoTok1, PIX_PER_UNIT / 2);
     if (!options.strict2) distance_pix -= tokenSize(pseudoTok2, PIX_PER_UNIT / 2);
     if (options.allonge) distance_pix -= (options.allonge * PIX_PER_UNIT) / scale;
@@ -4384,6 +4384,7 @@ var COFantasy = COFantasy || function() {
         case 'test':
         case 'traquenard':
         case 'tueurDeGeants':
+        case 'tueurDeGrands':
         case 'grenaille':
         case 'attaqueArmeeConjuree':
         case 'difficultePVmax':
@@ -9599,6 +9600,22 @@ var COFantasy = COFantasy || function() {
           value: target.feinte + options.d6
         });
       }
+      if (options.tueurDeGrands) {
+        target.taille = target.taille || taillePersonnage(target, 4);
+        if (target.taille == 5) {
+          target.additionalDmg.push({
+            type: mainDmgType,
+            value: '1d6'
+          });
+          target.message.push("Cible grande => +1d6 DM");
+        } else if (target.taille > 5) {
+          target.additionalDmg.push({
+            type: mainDmgType,
+            value: '2d6'
+          });
+          target.message.push("Cible énorme => +2d6 DM");
+        }
+      }
       if (!options.pasDeDmg) {
         var loupParmiLesLoups = charAttributeAsInt(attaquant, 'loupParmiLesLoups', 0);
         if (loupParmiLesLoups > 0 && estHumanoide(target)) {
@@ -10950,7 +10967,7 @@ var COFantasy = COFantasy || function() {
           divide();
           expliquer(target.token.get('name') + " est protégé contre les dégâts de zone");
         }
-        if (attributeAsBool('resistanceA_'+dmgType)) {
+        if (attributeAsBool('resistanceA_' + dmgType)) {
           divide();
         }
         if (estElementaire(dmgType)) {
