@@ -10787,11 +10787,7 @@ var COFantasy = COFantasy || function() {
       res.sauf.feu_tranchant = res.sauf.feu_tranchant || 0;
       res.sauf.feu_tranchant += 10;
     }
-    var attrRD = 'RDS';
-    if (persoEstPNJ(perso)) {
-      attrRD = 'pnj_rd';
-    }
-    var rd = ficheAttribute(perso, attrRD, '').trim();
+    var rd = ficheAttribute(perso, 'RDS', '').trim();
     if (rd === '') {
       perso.rd = res;
       return res;
@@ -22429,7 +22425,6 @@ var COFantasy = COFantasy || function() {
         pnj_def: 13,
         pnj_init: 7,
         RDS: '10/feu_tranchant',
-        pnj_rd: '10/feu_tranchant',
         race: 'arbre',
         taille: 'grand'
       },
@@ -23757,7 +23752,6 @@ var COFantasy = COFantasy || function() {
         pnj_def: 22,
         pnj_init: 10,
         RDS: 2,
-        pnj_rd: 2,
         race: 'ours',
         taille: 'énorme'
       },
