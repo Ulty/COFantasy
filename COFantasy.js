@@ -1474,6 +1474,10 @@ var COFantasy = COFantasy || function() {
     var sp = splitIdName(idn);
     if (sp === undefined) return;
     var perso = persoOfId(sp.id, sp.name, pageId);
+    if (perso === undefined) {
+      log("Impossible de trouver le personnage correspondant à "+sp.name);
+      return;
+    }
     perso.tokName = perso.token.get('name');
     if (perso.tokName == sp.name) return perso;
     log("En cherchant le token " + idn + ", on trouve " + perso.tokName);
