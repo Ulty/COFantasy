@@ -26320,7 +26320,7 @@ var COFantasy = COFantasy || function() {
       actif: "est bloqué par des toiles d'araignées",
       fin: "se libère des toiles",
       prejudiciable: true,
-      statusMarker: 'green' //À changer
+      statusMarker: 'cobweb' //À changer
     },
     prisonVegetale: {
       activation: "voit des plantes pousser et s'enrouler autour de ses jambes",
@@ -27927,6 +27927,7 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(perso, 'bloqueManoeuvre')) return true;
       if (attributeAsBool(perso, 'enveloppePar')) return true;
       if (attributeAsBool(perso, 'prisonVegetale')) return true;
+      if (attributeAsBool(perso, 'toiles')) return true;
       return false;
     }
     return true;
