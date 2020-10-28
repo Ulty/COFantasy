@@ -395,6 +395,12 @@ var COFantasy = COFantasy || function() {
     return attrAsBool(attr);
   }
 
+  function error(msg, obj) {
+    log(msg);
+    log(obj);
+    sendChat("COFantasy", msg);
+  }
+
   function determineSettingDeJeu() {
     var characters = findObjs({
       _type: 'character'
@@ -768,12 +774,6 @@ var COFantasy = COFantasy || function() {
       etat == 'etourdi' || etat == 'paralyse' || etat == 'endormi' ||
       etat == 'apeure';
     return res;
-  }
-
-  function error(msg, obj) {
-    log(msg);
-    log(obj);
-    sendChat("COFantasy", msg);
   }
 
   // retourne un tableau contenant la liste des ID de joueurs connectés controlant le personnage lié au Token
@@ -1475,7 +1475,7 @@ var COFantasy = COFantasy || function() {
     if (sp === undefined) return;
     var perso = persoOfId(sp.id, sp.name, pageId);
     if (perso === undefined) {
-      log("Impossible de trouver le personnage correspondant à "+sp.name);
+      log("Impossible de trouver le personnage correspondant à " + sp.name);
       return;
     }
     perso.tokName = perso.token.get('name');
@@ -28501,7 +28501,7 @@ on("destroy:handout", function(prev) {
 });
 
 on('ready', function() {
-  var scriptVersion = '2.12';
+  var scriptVersion = '2.13';
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
@@ -28918,6 +28918,46 @@ on('ready', function() {
       a.remove();
     });
     log("Déplacement des attributs de consommables vers la fiche");
+  }
+  if (state.COFantasy.version < 2.13) {
+    //On enlève les attributs obsolètes de la verison 4.00 de la fiche
+    attrs = findObjs({
+      _type: 'attribute',
+    });
+    attrs.forEach(function(a) {
+      if (a.get('name').toLowerCase() == 'equip-div') {
+        if (a.get('current') === '') {
+          a.remove();
+          return;
+        }
+        var charId = a.get('characterid');
+        var newAttr = findObjs({
+          _type: 'attribute',
+          _characterid: charId,
+          name: 'equip_div',
+        }, {
+          caseInsensitive: true
+        });
+        newAttr = newAttr.filter(function(na) {
+          if (na.get('current') === '') {
+            na.remove();
+            return false;
+          }
+          return true;
+        });
+        if (newAttr.length === 0) {
+          a.set('name', 'equip_div');
+        } else {
+          var character = getObj('character', charId);
+          if (character === undefined) return;
+          sendChat("COFantasy", "Supprimer l'attribut 'equip-div' du personnage" + character.get('name'));
+          log("Supprimer l'attribut 'equip-div' du personnage" + character.get('name'));
+          log("valeur courante " + newAttr[0].get('current'));
+          log("Ancienne valeur " + a.get('current'));
+          return;
+        }
+      }
+    });
   }
   state.COFantasy.version = scriptVersion;
   if (state.COFantasy.options.affichage.val.fiche.val) {

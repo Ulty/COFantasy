@@ -1,4 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.13
+### Corrections de bugs
+* Mise à jour des attributs d'équipement divers
+
 ## 2.12
 ### Capacités
 * Faucheuse de géants
