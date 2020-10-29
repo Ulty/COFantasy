@@ -12385,6 +12385,8 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'chairACanon', evt);
     // Réinitialiser le kiai
     resetAttr(attrs, 'kiai', evt);
+    // Réinitialiser riposteGuerrier
+    resetAttr(attrs, 'riposteGuerrier', evt);
     // On diminue l'ébriété des personnages sous vapeurs éthyliques
     allAttributesNamed(attrs, 'vapeursEthyliques').forEach(function(attr) {
       var veCharId = attr.get('characterid');
