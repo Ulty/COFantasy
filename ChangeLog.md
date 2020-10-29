@@ -1,4 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.14
+### Autres améliorations
+* Réorganisation des menus de règles optionnelles
+
 ## 2.13
 ### Corrections de bugs
 * Mise à jour des attributs d'équipement divers
