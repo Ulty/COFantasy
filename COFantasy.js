@@ -62,81 +62,111 @@ var COFantasy = COFantasy || function() {
       explications: "Options qui influent sur les règles du jeu",
       type: 'options',
       val: {
-        blessures_graves: {
-          explications: "Si les DMs dépassent CON+niveau, ou si on arrive à 0 PV, on perd un PR, et si plus de PR, affaibli.",
-          val: true,
-          type: 'bool'
+        divers: {
+          explications: "Options diverses",
+          type: 'options',
+          val: {
+            forme_d_arbre_amelioree: {
+              explications: "+50% à l'effet de la peau d'écorce en forme d'arbre.",
+              val: true,
+              type: 'bool'
+            },
+            poudre_explosif: {
+              explications: "Les armes à poudre font des dégâts explosifs",
+              val: true,
+              type: 'bool',
+            },
+            interchangeable_attaque: {
+              explications: "La capacité interchangeable donne moins de DEF mais plus d'attaque",
+              val: true,
+              type: 'bool',
+            }
+          }
         },
-        dm_minimum: {
-          explications: "Dégâts minimum d'une attaque ou autre source de DM.",
-          val: 0,
-          type: 'int'
+        dommages: {
+          explications: "Règles optionnelles sur les dommages",
+          type: 'options',
+          val: {
+            blessures_graves: {
+              explications: "Si les DMs dépassent CON+niveau, ou si on arrive à 0 PV, on perd un PR, et si plus de PR, affaibli.",
+              val: true,
+              type: 'bool'
+            },
+            dm_minimum: {
+              explications: "Dégâts minimum d'une attaque ou autre source de DM.",
+              val: 0,
+              type: 'int'
+            },
+            crit_elementaire: {
+              explications: "Les DMs constants d'un autre type que celui de l'arme sont aussi multipliés en cas de critique",
+              val: false,
+              type: 'bool'
+            }
+          }
         },
-        crit_elementaire: {
-          explications: "Les DMs constants d'un autre type que celui de l'arme sont aussi multipliés en cas de critique",
-          val: false,
-          type: 'bool'
+        haute_DEF: {
+          explications: "Options de jeu pour gérer la haute DEF",
+          type: 'options',
+          val: {
+            usure_DEF: {
+              explications: "Malus de -2 en DEF tous les n tours. Mettre à 0 pour ne pas avoir de malus d'usure",
+              val: 5,
+              type: 'int',
+            },
+            generer_options_attaques: {
+              explications: "Ajouter automatiquement les options d'attaques (normale / assurée / risquée) aux boutons d'attaques dans le chat (Actions)",
+              val: false,
+              type: 'bool',
+            },
+            generer_attaque_groupe: {
+              explications: "Ajouter automatiquement une option 'Attaque de groupe' (cf. Compagnon p.99) pour les PNJ",
+              val: false,
+              type: 'bool',
+            },
+            bonus_attaque_groupe: {
+              explications: "Lors d'une attaque de groupe, bonus à la touche par créature supplémentaire",
+              val: 2,
+              type: 'int',
+            },
+            crit_attaque_groupe: {
+              explications: "Lors d'une attaque de groupe, si le jet de touche dépasse DEF + cette valeur, les dommages sont doublés (0 = jamais)",
+              val: 5,
+              type: 'int',
+            }
+          }
         },
-        forme_d_arbre_amelioree: {
-          explications: "+50% à l'effet de la peau d'écorce en forme d'arbre.",
-          val: true,
-          type: 'bool'
+        initiative: {
+          explications: "Options qui influent sur les règles du jeu",
+          type: 'options',
+          val: {
+            initiative_variable: {
+              explications: "Ajoute 1d6 à l'initiative, lancé une fois par combat par type de créature",
+              val: false,
+              type: 'bool',
+            },
+            initiative_variable_individuelle: {
+              explications: "Lancer l'initiative variable pour chaque créature (nécessite d'activer l'Initiative variable)",
+              val: false,
+              type: 'bool',
+            }
+          }
         },
-        initiative_variable: {
-          explications: "Ajoute 1d6 à l'initiative, lancé une fois par combat par type de créature",
-          val: false,
-          type: 'bool'
-        },
-        initiative_variable_individuelle: {
-          explications: "Lancer l'initiative variable pour chaque créature (nécessite d'activer l'Initiative variable)",
-          val: false,
-          type: 'bool'
-        },
-        usure_DEF: {
-          explications: "Malus de -2 en DEF tous les n tours. Mettre à 0 pour ne pas avoir de malus d'usure",
-          val: 5,
-          type: 'int'
-        },
-        poudre_explosif: {
-          explications: "Les armes à poudre font des dégâts explosifs",
-          val: true,
-          type: 'bool'
-        },
-        generer_options_attaques: {
-          explications: "Ajouter automatiquement les options d'attaques (normale / assurée / risquée) aux boutons d'attaques dans le chat (Actions)",
-          val: false,
-          type: 'bool'
-        },
-        generer_attaque_groupe: {
-          explications: "Ajouter automatiquement une option 'Attaque de groupe' (cf. Compagnon p.99) pour les PNJ",
-          val: false,
-          type: 'bool'
-        },
-        bonus_attaque_groupe: {
-          explications: "Lors d'une attaque de groupe, bonus à la touche par créature supplémentaire",
-          val: 2,
-          type: 'int'
-        },
-        crit_attaque_groupe: {
-          explications: "Lors d'une attaque de groupe, si le jet de touche dépasse DEF + cette valeur, les dommages sont doublés (0 = jamais)",
-          val: 5,
-          type: 'int'
-        },
-        mana_totale: {
-          explications: "Tous les sorts ont un coût, celui des tempêtes de mana est multiplié par 3",
-          val: false,
-          type: 'bool'
-        },
-        elixirs_sorts: {
-          explications: "Toutes fabrications d'élixir sont considérées comme des sorts (qui peuvent coûter de la mana)",
-          val: true,
-          type: 'bool'
-        },
-        interchangeable_attaque: {
-          explications: "La capacité interchangeable donne moins de DEF mais plus d'attaque",
-          val: true,
-          type: 'bool'
-        },
+        mana: {
+          explications: "Options de Mana",
+          type: 'options',
+          val: {
+            mana_totale: {
+              explications: "Tous les sorts ont un coût, celui des tempêtes de mana est multiplié par 3",
+              val: false,
+              type: 'bool',
+            },
+            elixirs_sorts: {
+              explications: "Toutes fabrications d'élixir sont considérées comme des sorts (qui peuvent coûter de la mana)",
+              val: true,
+              type: 'bool',
+            }
+          }
+        }
       }
     },
     affichage: {
@@ -2449,17 +2479,17 @@ var COFantasy = COFantasy || function() {
                   // attaque distance
                   picto = '<span style="font-family: \'Pictos Custom\'">[</span> ';
                   style = 'background-color:#48b92c';
-                  if (reglesOptionelles.generer_options_attaques.val) {
+                  if (reglesOptionelles.haute_DEF.val.generer_options_attaques.val) {
                     act += " ?{Type d'Attaque|Normale,&#32;|Assurée,--attaqueAssuree}";
                   }
                 } else {
                   // attaque contact
                   picto = '<span style="font-family: \'Pictos Custom\'">t</span> ';
                   style = 'background-color:#cc0000';
-                  if (reglesOptionelles.generer_options_attaques.val) {
+                  if (reglesOptionelles.haute_DEF.val.generer_options_attaques.val) {
                     act += " ?{Type d'Attaque|Normale,&#32;|Assurée,--attaqueAssuree|Risquée,--attaqueRisquee}";
                   }
-                  if (reglesOptionelles.generer_attaque_groupe.val &&
+                  if (reglesOptionelles.haute_DEF.val.generer_attaque_groupe.val &&
                     perso.pnj && perso.token.get('bar1_link') === '') {
                     groupe = true;
                   }
@@ -4058,7 +4088,7 @@ var COFantasy = COFantasy || function() {
     var mana = options.mana || 0;
     var niveau = ficheAttributeAsInt(perso, 'niveau', 1);
     var cout_par_effet = 1;
-    if (reglesOptionelles.mana_totale.val) cout_par_effet = 3;
+    if (reglesOptionelles.mana.val.mana_totale.val) cout_par_effet = 3;
     if (max === undefined || max > niveau - (mana / cout_par_effet))
       max = Math.floor(niveau - (mana / cout_par_effet));
     if (max < 1) {
@@ -4119,7 +4149,7 @@ var COFantasy = COFantasy || function() {
       }
     });
     options.mana = options.mana || 0;
-    if (reglesOptionelles.mana_totale.val)
+    if (reglesOptionelles.mana.val.mana_totale.val)
       options.mana += options.tempeteDeMana.cout * 3;
     else options.mana += options.tempeteDeMana.cout;
   }
@@ -5308,7 +5338,7 @@ var COFantasy = COFantasy || function() {
           if (options.tempeteDeMana && options.tempeteDeMana.cout)
             options.tempeteDeMana.cout--;
           if (options.mana) {
-            if (reglesOptionelles.mana_totale.val) options.mana -= 3;
+            if (reglesOptionelles.mana.val.mana_totale.val) options.mana -= 3;
             else options.mana--;
           }
         }
@@ -5350,7 +5380,7 @@ var COFantasy = COFantasy || function() {
       }
       updateCurrentBar(personnage, 2, bar2 - cout, evt);
       var niveau = ficheAttributeAsInt(personnage, 'niveau', 1);
-      if (reglesOptionelles.mana_totale.val) {
+      if (reglesOptionelles.mana.val.mana_totale.val) {
         if (cout > niveau * 3) {
           sendChar(charId, "Attention, la dépense totale de mana est supérieure au niveau * 3");
         }
@@ -5794,10 +5824,10 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(perso, 'formeDArbre')) init = 7;
     //Règle optionelle : +1d6, à lancer en entrant en combat
     //Un seul jet par "character" pour les mook
-    if (reglesOptionelles.initiative_variable.val) {
+    if (reglesOptionelles.initiative.val.initiative_variable.val) {
       var bonusVariable;
       var tokenAUtiliser;
-      if (reglesOptionelles.initiative_variable_individuelle.val) {
+      if (reglesOptionelles.initiative.val.initiative_variable_individuelle.val) {
         bonusVariable = attributeAsInt(perso, 'bonusInitVariable', 0);
         tokenAUtiliser = perso;
       } else {
@@ -6266,8 +6296,8 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(target, 'statueDeBois')) defense = 10;
     // Malus de défense global pour les longs combats
-    if (reglesOptionelles.usure_DEF.val && !stateCOF.usureOff && stateCOF.tour > 1)
-      defense -= (Math.floor((stateCOF.tour - 1) / reglesOptionelles.usure_DEF.val) * 2);
+    if (reglesOptionelles.haute_DEF.val.usure_DEF.val && !stateCOF.usureOff && stateCOF.tour > 1)
+      defense -= (Math.floor((stateCOF.tour - 1) / reglesOptionelles.haute_DEF.val.usure_DEF.val) * 2);
     // Autres modificateurs de défense
     defense += attributeAsInt(target, 'defenseTotale', 0);
     defense += attributeAsInt(target, 'pacifisme', 0);
@@ -6278,7 +6308,7 @@ var COFantasy = COFantasy || function() {
       var bonusPeau = getValeurOfEffet(target, 'peauDEcorce', 1, 'voieDesVegetaux');
       var peauIntense = attributeAsInt(target, 'peauDEcorceTempeteDeManaIntense', 0);
       bonusPeau += peauIntense;
-      if (reglesOptionelles.forme_d_arbre_amelioree.val && formeDarbre) {
+      if (reglesOptionelles.divers.val.forme_d_arbre_amelioree.val && formeDarbre) {
         bonusPeau = Math.ceil(bonusPeau * 1.5);
       }
       defense += bonusPeau;
@@ -6610,7 +6640,7 @@ var COFantasy = COFantasy || function() {
       options.attaqueDeGroupe = ficheAttributeAsInt(attaquant, 'attaque_de_groupe', 1);
     }
     if (options.attaqueDeGroupe > 1) {
-      var bonusTouche = reglesOptionelles.bonus_attaque_groupe.val * (options.attaqueDeGroupe - 1);
+      var bonusTouche = reglesOptionelles.haute_DEF.val.bonus_attaque_groupe.val * (options.attaqueDeGroupe - 1);
       attBonus += bonusTouche;
       explications.push("Attaque en groupe => +" + bonusTouche + " en Attaque");
     }
@@ -6904,7 +6934,7 @@ var COFantasy = COFantasy || function() {
         target.estAgrippee = true;
       }
     });
-    if (reglesOptionelles.interchangeable_attaque.val) {
+    if (reglesOptionelles.divers.val.interchangeable_attaque.val) {
       if (interchangeable(target.token, attaquant, pageId).result) {
         attBonus += 3;
         explications.push("Attaque en meute => +3 en Attaque et +2 en DEF");
@@ -8003,7 +8033,7 @@ var COFantasy = COFantasy || function() {
     var dmgCoef = options.dmgCoef || 1;
     if (options.attaqueDeGroupeDmgCoef) {
       dmgCoef++;
-      expliquer("Attaque en groupe > DEF +" + reglesOptionelles.crit_attaque_groupe.val + " => DMGx" + (crit ? "3" : "2"));
+      expliquer("Attaque en groupe > DEF +" + reglesOptionelles.haute_DEF.val.crit_attaque_groupe.val + " => DMGx" + (crit ? "3" : "2"));
     }
     if (target.dmgCoef) dmgCoef += target.dmgCoef;
     var critCoef = 1;
@@ -8725,7 +8755,7 @@ var COFantasy = COFantasy || function() {
             if (options.aoe === undefined) {
               interchange = interchangeable(attackingToken, target, pageId);
               if (interchange.result) {
-                if (reglesOptionelles.interchangeable_attaque.val) {
+                if (reglesOptionelles.divers.val.interchangeable_attaque.val) {
                   defense += 2;
                 } else {
                   defense += 5;
@@ -8819,7 +8849,8 @@ var COFantasy = COFantasy || function() {
                   target.messages.push("tombe par terre");
                 }
               }
-              if (options.attaqueDeGroupe > 1 && reglesOptionelles.crit_attaque_groupe.val > 0 && attackRoll >= (defense + reglesOptionelles.crit_attaque_groupe.val)) {
+              if (options.attaqueDeGroupe > 1 && reglesOptionelles.haute_DEF.val.crit_attaque_groupe.val > 0
+                  && attackRoll >= (defense + reglesOptionelles.haute_DEF.val.crit_attaque_groupe.val)) {
                 options.attaqueDeGroupeDmgCoef = true;
               }
               if (d20roll == 1 && options.chance === undefined) {
@@ -9125,7 +9156,7 @@ var COFantasy = COFantasy || function() {
     if (options.reroll1) attDice += "r1";
     if (options.reroll2) attDice += "r2";
     if (options.explodeMax) attDice += '!';
-    else if (options.poudre && reglesOptionelles.poudre_explosif.val) attDice += '!p';
+    else if (options.poudre && reglesOptionelles.divers.val.poudre_explosif.val) attDice += '!p';
     return attDice;
   }
 
@@ -11033,7 +11064,7 @@ var COFantasy = COFantasy || function() {
       } else
         count += dmgParType[dt].length;
     }
-    var critOther = crit && reglesOptionelles.crit_elementaire.val;
+    var critOther = crit && reglesOptionelles.dommages.val.crit_elementaire.val;
     var dealOneType = function(dmgType) {
       if (dmgType == mainDmgType) {
         count -= dmgParType[dmgType].length;
@@ -11238,7 +11269,7 @@ var COFantasy = COFantasy || function() {
 
   function testBlessureGrave(target, dmgTotal, expliquer, evt) {
     target.tokName = target.tokName || target.token.get('name');
-    if (reglesOptionelles.blessures_graves.val && estPJ(target) && (dmgTotal == 'mort' ||
+    if (reglesOptionelles.dommages.val.blessures_graves.val && estPJ(target) && (dmgTotal == 'mort' ||
         dmgTotal >
         (ficheAttributeAsInt(target, 'niveau', 1) +
           ficheAttributeAsInt(target, 'constitution', 10)))) {
@@ -11469,9 +11500,9 @@ var COFantasy = COFantasy || function() {
             });
           }
         }
-        if (dmgTotal < reglesOptionelles.dm_minimum.val) {
-          dmgTotal = reglesOptionelles.dm_minimum.val;
-          dmgDisplay += "-> " + reglesOptionelles.dm_minimum.val;
+        if (dmgTotal < reglesOptionelles.dommages.val.dm_minimum.val) {
+          dmgTotal = reglesOptionelles.dommages.val.dm_minimum.val;
+          dmgDisplay += "-> " + reglesOptionelles.dommages.val.dm_minimum.val;
         }
         if (options.divise) {
           dmgTotal = Math.ceil(dmgTotal / options.divise);
@@ -21706,8 +21737,8 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Création d'élixir"
     };
-    if (reglesOptionelles.elixirs_sorts.val && ficheAttributeAsBool(forgesort, 'option_pm', true)) {
-      if (reglesOptionelles.mana_totale.val) {
+    if (reglesOptionelles.mana.val.elixirs_sorts.val && ficheAttributeAsBool(forgesort, 'option_pm', true)) {
+      if (reglesOptionelles.mana.val.mana_totale.val) {
         switch (elixir.rang) {
           case 1:
             options.mana = 1;
@@ -22057,7 +22088,7 @@ var COFantasy = COFantasy || function() {
       type: "Création de rune"
     };
     if (ficheAttributeAsBool(forgesort, 'option_pm', true)) {
-      if (reglesOptionelles.mana_totale.val) {
+      if (reglesOptionelles.mana.val.mana_totale.val) {
         switch (rune.rang) {
           case 2:
             options.mana = 3;
@@ -28502,7 +28533,7 @@ on("destroy:handout", function(prev) {
 });
 
 on('ready', function() {
-  var scriptVersion = '2.13';
+  var scriptVersion = '2.14';
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
@@ -28959,6 +28990,76 @@ on('ready', function() {
         }
       }
     });
+  }
+  if (state.COFantasy.version < 2.14) {
+    //Migration des éléments de règles optionnels
+    //Divers
+    if(state.COFantasy.options.regles.val.poudre_explosif) {
+      state.COFantasy.options.regles.val.divers.val.poudre_explosif.val = state.COFantasy.options.regles.val.poudre_explosif.val;
+      delete state.COFantasy.options.regles.val.poudre_explosif;
+    }
+    if(state.COFantasy.options.regles.val.forme_d_arbre_amelioree) {
+      state.COFantasy.options.regles.val.divers.val.forme_d_arbre_amelioree.val = state.COFantasy.options.regles.val.forme_d_arbre_amelioree.val;
+      delete state.COFantasy.options.regles.val.forme_d_arbre_amelioree;
+    }
+    if(state.COFantasy.options.regles.val.interchangeable_attaque) {
+      state.COFantasy.options.regles.val.divers.val.interchangeable_attaque.val = state.COFantasy.options.regles.val.interchangeable_attaque.val;
+      delete state.COFantasy.options.regles.val.interchangeable_attaque;
+    }
+    //Dommages
+    if(state.COFantasy.options.regles.val.dm_minimum) {
+      state.COFantasy.options.regles.val.dommages.val.dm_minimum.val = state.COFantasy.options.regles.val.dm_minimum.val;
+      delete state.COFantasy.options.regles.val.dm_minimum;
+    }
+    if(state.COFantasy.options.regles.val.crit_elementaire) {
+      state.COFantasy.options.regles.val.dommages.val.crit_elementaire.val = state.COFantasy.options.regles.val.crit_elementaire.val;
+      delete state.COFantasy.options.regles.val.crit_elementaire;
+    }
+    if(state.COFantasy.options.regles.val.blessures_graves) {
+      state.COFantasy.options.regles.val.dommages.val.blessures_graves.val = state.COFantasy.options.regles.val.blessures_graves.val;
+      delete state.COFantasy.options.regles.val.blessures_graves;
+    }
+    //Haute DEF
+    if(state.COFantasy.options.regles.val.usure_DEF) {
+      state.COFantasy.options.regles.val.haute_DEF.val.usure_DEF.val = state.COFantasy.options.regles.val.usure_DEF.val;
+      delete state.COFantasy.options.regles.val.usure_DEF;
+    }
+    if(state.COFantasy.options.regles.val.generer_options_attaques) {
+      state.COFantasy.options.regles.val.haute_DEF.val.generer_options_attaques.val = state.COFantasy.options.regles.val.generer_options_attaques.val;
+      delete state.COFantasy.options.regles.val.generer_options_attaques;
+    }
+    if(state.COFantasy.options.regles.val.generer_attaque_groupe) {
+      state.COFantasy.options.regles.val.haute_DEF.val.generer_attaque_groupe.val = state.COFantasy.options.regles.val.generer_attaque_groupe.val;
+      delete state.COFantasy.options.regles.val.generer_attaque_groupe;
+    }
+    if(state.COFantasy.options.regles.val.bonus_attaque_groupe) {
+      state.COFantasy.options.regles.val.haute_DEF.val.bonus_attaque_groupe.val = state.COFantasy.options.regles.val.bonus_attaque_groupe.val;
+      delete state.COFantasy.options.regles.val.bonus_attaque_groupe;
+    }
+    if(state.COFantasy.options.regles.val.crit_attaque_groupe) {
+      state.COFantasy.options.regles.val.haute_DEF.val.crit_attaque_groupe.val = state.COFantasy.options.regles.val.crit_attaque_groupe.val;
+      delete state.COFantasy.options.regles.val.crit_attaque_groupe;
+    }
+    //Initiative
+    if(state.COFantasy.options.regles.val.initiative_variable) {
+      state.COFantasy.options.regles.val.initiative.val.initiative_variable.val = state.COFantasy.options.regles.val.initiative_variable.val;
+      delete state.COFantasy.options.regles.val.initiative_variable;
+    }
+    if(state.COFantasy.options.regles.val.initiative_variable_individuelle) {
+      state.COFantasy.options.regles.val.initiative.val.initiative_variable_individuelle.val = state.COFantasy.options.regles.val.initiative_variable_individuelle.val;
+      delete state.COFantasy.options.regles.val.initiative_variable_individuelle;
+    }
+    //Mana
+    if(state.COFantasy.options.regles.val.mana_totale) {
+      state.COFantasy.options.regles.val.mana.val.mana_totale.val = state.COFantasy.options.regles.val.mana_totale.val;
+      delete state.COFantasy.options.regles.val.mana_totale;
+    }
+    if(state.COFantasy.options.regles.val.elixirs_sorts) {
+      state.COFantasy.options.regles.val.mana.val.elixirs_sorts.val = state.COFantasy.options.regles.val.elixirs_sorts.val;
+      delete state.COFantasy.options.regles.val.elixirs_sorts;
+    }
+    reglesOptionelles = state.COFantasy.options.regles.val;
+    log("Règles optionelles mises à jour");
   }
   state.COFantasy.version = scriptVersion;
   if (state.COFantasy.options.affichage.val.fiche.val) {
