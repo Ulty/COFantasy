@@ -304,7 +304,7 @@
                   <li><code>--tueurDeGeants</code> : bonus de +2 en attaque et +2d6 DM contre les géants, ogres, ettins et cyclopes.</li>
                   <li><code>--tueurDeGrands</code> : bonus de +1d6 DM contre les créatures de taille grande et +2d6 DM contre les créatures de taille énorme ou plus.</li>
                   <li><code>--ignoreObstacles</code> : ignore les tokens sur le trajet. Ça semble nécessaire pour les attaques magiques d'après Kegron.</li>
-                  <li><code>--puissant</code> : augmente la valeur max des dés de dégâts de 2. Si <code>--puissant</code> est suivi d'un argument <i>effet</i>, on teste la présence d'un attribut <i>effet</i><code>Puissant</code> pour décider si l'attaque est puissante ou non. Il est aussi possible de donner <code>oui</code> ou <code>non</code> en argument (ce n'est alors pas considéré comme un effet).</li>
+                  <li><code>--puissant</code> : augmente la valeur max des dés de dégâts de 2. Si <code>--puissant</code> est suivi d'un argument <i>effet</i>, on teste la présence d'un attribut <i>effet</i><code>Puissant</code> pour décider si l'attaque est puissante ou non. Il est aussi possible de donner <code>oui</code> ou <code>non</code> en argument (ce n'est alors pas considéré comme un effet). <code>--puissant portee</code> permet de doubler la portée de l'attaque (utile pour l'option de Magie Puissante)</li>
                   <li><code>--attaqueAssuree</code> : implémente une attaque assurée (+5 à l'attaque, dégâts divisés par 2, critique impossible).</li>
                   <li><code>--attaqueRisquee</code> : implémente une attaque risquée (+2 à l'attaque au contact, -4 en DEF pendant un tour).</li>
                   <li><code>--attaqueDeGroupe <i>n</i></code> : <i>n</i> est le nombre de créatures qui attaquent ; implémente une attaque de groupe (+2 à l'attaque par attaquant au-delà du premier, x2 DMG si l'attaque dépasse la DEF de 5 ou plus, x3 DMG si critique).</li>
@@ -641,6 +641,7 @@
                     <li><code>--puissant oui</code> : idem</li>
                     <li><code>--puissant non</code> : lance la version non puissante (efface le dernier effet puissant)</li>
                     <li><code>--puissant duree</code> : multiplie la durée par 2</li>
+                    <li><code>--puissant portee</code> : multiplie la portée par 2</li>
                     <li><code>--saveParTour <i>carac seuil</i></code> : la cible peut se sortir de l'effet chaque tour grâce à un test de <i>carac</i> de difficulte <i>seuil</i>.</li>
                     <li><code>--save <i>carac seuil</i></code> : la cible peut faire un jet pour échapper à l'effet. Si on ajoute l'argument <code>demiDuree</code>, alors réussir la sauvegarde ne fait que diviser la durée.</li>
                   <li><code>--tempeteDeMana <i>liste</i></code> : indique des effets de tempête de mana. La liste peut contenir un nombre (pour l'effet intense), <code>duree</code>, <code>rapide</code> et <code>portee</code>. Si le rang du sort est spécifié (par l'option <code>--rang</code>, un message est affichée si le coût en mana est supérieur au rang. Si la liste d'options est vide, le script affiche un menu dans le chat pour spécifier les options de tempête de mana.</li>
