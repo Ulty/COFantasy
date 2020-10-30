@@ -29015,9 +29015,11 @@ on('ready', function() {
       delete state.COFantasy.options.regles.val.usure_DEF;
     }
     if(state.COFantasy.options.regles.val.generer_options_attaques) {
+      log("Options d'attaques supprimées ; veuiller utiliser le bouton 'Options' de la liste d'Actions à la place")
       delete state.COFantasy.options.regles.val.generer_options_attaques;
     }
     if(state.COFantasy.options.regles.val.generer_attaque_groupe) {
+      log("Attaques de groupe supprimées ; veuiller utiliser le bouton 'Options' de la liste d'Actions à la place")
       delete state.COFantasy.options.regles.val.generer_attaque_groupe;
     }
     if(state.COFantasy.options.regles.val.bonus_attaque_groupe) {
