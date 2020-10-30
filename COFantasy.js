@@ -369,6 +369,7 @@ var COFantasy = COFantasy || function() {
     return false;
   }
 
+  // Attention, def, la valeur par défaut, doit être la même que sur la fiche
   function ficheAttribute(personnage, name, def) {
     var attr = charAttribute(personnage.charId, name, {
       caseInsensitive: true
@@ -5373,9 +5374,10 @@ var COFantasy = COFantasy || function() {
         sendChar(charId, " n'a pas assez de points de mana pour " + msg);
         return false;
       } else if (bar2 < cout && !reglesOptionelles.mana.val.mana_totale.val &&
-          reglesOptionelles.mana.val.brulure_de_magie.val) {
-        var famille = ficheAttribute(personnage, "famille", "mystique").trim();
-        var degats = (famille == "combattant") ? ((cout - bar2) * 2) : (cout - bar2);
+        reglesOptionelles.mana.val.brulure_de_magie.val) {
+        var famille = ficheAttribute(personnage, 'famille', 'aventurier').trim();
+        var degats = cout - bar2;
+        if (famille == "combattant") degats *= 2;
         var bar1 = parseInt(token.get('bar1_value'));
         updateCurrentBar(personnage, 2, 0, evt);
         updateCurrentBar(personnage, 1, bar1 - degats, evt);
@@ -5393,7 +5395,6 @@ var COFantasy = COFantasy || function() {
           }
         }
       }
-
       return true;
     }
     sendChar(charId, " n'a pas de points de mana, action impossible");
