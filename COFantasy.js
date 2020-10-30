@@ -4926,6 +4926,9 @@ var COFantasy = COFantasy || function() {
             case 'duree':
               scope.puissantDuree = true;
               return;
+            case 'portee':
+              scope.puissantPortee = true;
+              return;
             default:
               scope.puissant = attributeAsBool(attaquant, cmd[1] + "Puissant");
           }
@@ -5328,7 +5331,7 @@ var COFantasy = COFantasy || function() {
           });
         }
       } else {
-        if (options.tempeteDeManDuree) {
+        if (options.tempeteDeManaDuree) {
           sendChar(attaquant.charId, "Attention, l'option tempête de mana pour la durée n'est pas prise en compte. Utiliser l'option --pasDeDmg si le sort ne fait pas de DM");
           options.tempeteDeManaDuree = false;
           if (options.tempeteDeMana && options.tempeteDeMana.cout)
@@ -7347,7 +7350,7 @@ var COFantasy = COFantasy || function() {
         sendChar(attaquant.charId, "est en rage du berserk, il ne veut attaquer qu'au contact");
         return;
       }
-      if (options.tempeteDeManaPortee) {
+      if (options.puissantPortee || options.tempeteDeManaPortee) {
         portee = portee * 2;
         weaponStats.portee = portee;
       }
@@ -17041,7 +17044,7 @@ var COFantasy = COFantasy || function() {
         }
       }
       if (options.portee !== undefined) {
-        if (options.tempeteDeManaPortee) options.portee = options.portee * 2;
+        if (options.puissantPortee || options.tempeteDeManaPortee) options.portee = options.portee * 2;
         selected = selected.filter(function(sel) {
           var token = getObj('graphic', sel._id);
           var dist = distanceCombat(lanceur.token, token);
@@ -17338,7 +17341,7 @@ var COFantasy = COFantasy || function() {
         }
       }
       if (options.portee !== undefined) {
-        if (options.tempeteDeManaPortee) options.portee = options.portee * 2;
+        if (options.puissantPortee || options.tempeteDeManaPortee) options.portee = options.portee * 2;
         selected = selected.filter(function(sel) {
           var token = getObj('graphic', sel._id);
           var dist = distanceCombat(lanceur.token, token);
@@ -18725,7 +18728,7 @@ var COFantasy = COFantasy || function() {
           var sujet = onGenre(cible, 'il', 'elle');
           var Sujet = onGenre(cible, 'Il', 'Elle');
           if (options.portee !== undefined) {
-            if (options.tempeteDeManaPortee) options.portee = options.portee * 2;
+            if (options.puissantPortee || options.tempeteDeManaPortee) options.portee = options.portee * 2;
             var distance = distanceCombat(soigneur.token, token2, pageId);
             if (distance > options.portee) {
               if (display)
@@ -19274,7 +19277,7 @@ var COFantasy = COFantasy || function() {
         if (sphere) {
           var scale = computeScale(pageId);
           var diametre = PIX_PER_UNIT * (6 / scale);
-          if (options.tempeteDeManaPortee) diametre += diametre;
+          if (options.puissantPortee || options.tempeteDeManaPortee) diametre += diametre;
           if (options.tempeteDeManaIntence)
             diametre *= (1 + options.tempeteDeManaIntense);
           var imageFields = {
@@ -19295,7 +19298,7 @@ var COFantasy = COFantasy || function() {
             toFront(newImage);
             setTokenAttr(lanceur, 'murDeForceId', newImage.id, evt);
             var duree = 5 + modCarac(lanceur, 'charisme');
-            if (options.tempeteDeManaDuree) duree += duree;
+            if (options.puissantDuree || options.tempeteDeManaDuree) duree += duree;
             setAttrDuree(lanceur, 'murDeForce', duree, evt);
           } else {
             error("Impossible de créer l'image " + options.image, imageFields);
