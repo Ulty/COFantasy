@@ -166,7 +166,13 @@
               </div>
               <h3 class="text-info" id="regles_optionnelles">1.4 Règles optionnelles utilisées</h3>
               <div class="decalage">
-                <p>Les scripts supportent l'utilisation de la règle des points de chance, des points de récupérations, des points de mana (et de magie puissante ou rapide, ainsi que de tempête de mana).</p>
+                <p>Les scripts supportent l'utilisation de la règle des points de chance, des points de récupérations, des points de mana. Plusieurs systèmes de mana sont gérés par le script.</p>
+                <ul>
+                  <li>Système de base (COF p. 79) : utiliser les options de mana présentées ci-dessous.</li>
+                  <li>Mana Totale (COF p. 180) : activer l'option <code>mana totale</code> via <code>!cof-options</code></li>
+                  <li>Tempête de Mana (COF Compagnon p. 105) : utiliser l'option <code>--tempeteDeMana</code> présentée ci-dessous. Tempête de Mana est compatible avec Mana Totale et Brûlure de Magie.</li>
+                  <li>Terres d'Arran (COTA p. 112) : activation l'option <code>brulure de magie</code> via <code>!cof-options</code> et utiliser les options de mana standard (voire ci-dessous). Si vous désirez appliquer ce système à COF, vous pouvez créer un attribut de personnage de nom <code>famille</code> avec comme valeur courante <code>combattant</code> pour doubler les dégâts sur les profils combattants. Brûlure de Magie est incompatible avec Mana Totale.</li>
+                </ul>
                 <p>J'ai aussi choisi, comme proposé par Kegron, de diminuer la DEF de tous les protagonistes après un certain nombre de tours de combat (-2 tous les 5 tours, peut être désactivé pendant un combat par la commande <code>!cof-usure-off</code>, ou bien dans les options de jeu).</p>
                 <p>Le script utilise aussi une règle de blessures graves : chaque fois qu'un personnage reçoit plus de DM que la somme de sa constitution et de son niveau, ou qu'il tombe à 0 PV, il encaisse une perte d'un point de récupération. Si il était à 0 points de récupération, il devient gravement blessé, ce qui le rend <i>affaibli</i>. Si le personnage était déjà gravement blessé, mais qu'il lui reste des PV, il tombe inconscient, et sinon, il meurt. Pour récupérer d'une blessure grave, le personnage doit se reposer une nuit, et réussir un test de CON difficulté 8 (avec le d12). Il est impossible de régénérer les points de récupération quand on est gravement blessé.<p>
                 <p>Il est possible de changer les options du script avec la commande <code>!cof-options</code>.</p>

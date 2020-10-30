@@ -3,6 +3,7 @@
 ### Autres améliorations
 * Réorganisation des menus de règles optionnelles
 * Suppression des options de génération d'attaques devenues obsolètes
+* Implémentation d'une option pour Brûlure de Magie (COTA, applicable à COF)
 
 ## 2.13
 ### Corrections de bugs
