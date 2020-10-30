@@ -369,6 +369,7 @@ var COFantasy = COFantasy || function() {
     return false;
   }
 
+  // Attention, def, la valeur par défaut, doit être la même que sur la fiche
   function ficheAttribute(personnage, name, def) {
     var attr = charAttribute(personnage.charId, name, {
       caseInsensitive: true
@@ -4925,6 +4926,9 @@ var COFantasy = COFantasy || function() {
             case 'duree':
               scope.puissantDuree = true;
               return;
+            case 'portee':
+              scope.puissantPortee = true;
+              return;
             default:
               scope.puissant = attributeAsBool(attaquant, cmd[1] + "Puissant");
           }
@@ -5327,7 +5331,7 @@ var COFantasy = COFantasy || function() {
           });
         }
       } else {
-        if (options.tempeteDeManDuree) {
+        if (options.tempeteDeManaDuree) {
           sendChar(attaquant.charId, "Attention, l'option tempête de mana pour la durée n'est pas prise en compte. Utiliser l'option --pasDeDmg si le sort ne fait pas de DM");
           options.tempeteDeManaDuree = false;
           if (options.tempeteDeMana && options.tempeteDeMana.cout)
@@ -5373,9 +5377,10 @@ var COFantasy = COFantasy || function() {
         sendChar(charId, " n'a pas assez de points de mana pour " + msg);
         return false;
       } else if (bar2 < cout && !reglesOptionelles.mana.val.mana_totale.val &&
-          reglesOptionelles.mana.val.brulure_de_magie.val) {
-        var famille = ficheAttribute(personnage, "famille", "mystique").trim();
-        var degats = (famille == "combattant") ? ((cout - bar2) * 2) : (cout - bar2);
+        reglesOptionelles.mana.val.brulure_de_magie.val) {
+        var famille = ficheAttribute(personnage, 'famille', 'aventurier').trim();
+        var degats = cout - bar2;
+        if (famille == "combattant") degats *= 2;
         var bar1 = parseInt(token.get('bar1_value'));
         updateCurrentBar(personnage, 2, 0, evt);
         updateCurrentBar(personnage, 1, bar1 - degats, evt);
@@ -5393,7 +5398,6 @@ var COFantasy = COFantasy || function() {
           }
         }
       }
-
       return true;
     }
     sendChar(charId, " n'a pas de points de mana, action impossible");
@@ -7346,7 +7350,7 @@ var COFantasy = COFantasy || function() {
         sendChar(attaquant.charId, "est en rage du berserk, il ne veut attaquer qu'au contact");
         return;
       }
-      if (options.tempeteDeManaPortee) {
+      if (options.puissantPortee || options.tempeteDeManaPortee) {
         portee = portee * 2;
         weaponStats.portee = portee;
       }
@@ -17040,7 +17044,7 @@ var COFantasy = COFantasy || function() {
         }
       }
       if (options.portee !== undefined) {
-        if (options.tempeteDeManaPortee) options.portee = options.portee * 2;
+        if (options.puissantPortee || options.tempeteDeManaPortee) options.portee = options.portee * 2;
         selected = selected.filter(function(sel) {
           var token = getObj('graphic', sel._id);
           var dist = distanceCombat(lanceur.token, token);
@@ -17337,7 +17341,7 @@ var COFantasy = COFantasy || function() {
         }
       }
       if (options.portee !== undefined) {
-        if (options.tempeteDeManaPortee) options.portee = options.portee * 2;
+        if (options.puissantPortee || options.tempeteDeManaPortee) options.portee = options.portee * 2;
         selected = selected.filter(function(sel) {
           var token = getObj('graphic', sel._id);
           var dist = distanceCombat(lanceur.token, token);
@@ -18724,7 +18728,7 @@ var COFantasy = COFantasy || function() {
           var sujet = onGenre(cible, 'il', 'elle');
           var Sujet = onGenre(cible, 'Il', 'Elle');
           if (options.portee !== undefined) {
-            if (options.tempeteDeManaPortee) options.portee = options.portee * 2;
+            if (options.puissantPortee || options.tempeteDeManaPortee) options.portee = options.portee * 2;
             var distance = distanceCombat(soigneur.token, token2, pageId);
             if (distance > options.portee) {
               if (display)
@@ -19273,7 +19277,7 @@ var COFantasy = COFantasy || function() {
         if (sphere) {
           var scale = computeScale(pageId);
           var diametre = PIX_PER_UNIT * (6 / scale);
-          if (options.tempeteDeManaPortee) diametre += diametre;
+          if (options.puissantPortee || options.tempeteDeManaPortee) diametre += diametre;
           if (options.tempeteDeManaIntence)
             diametre *= (1 + options.tempeteDeManaIntense);
           var imageFields = {
@@ -19294,7 +19298,7 @@ var COFantasy = COFantasy || function() {
             toFront(newImage);
             setTokenAttr(lanceur, 'murDeForceId', newImage.id, evt);
             var duree = 5 + modCarac(lanceur, 'charisme');
-            if (options.tempeteDeManaDuree) duree += duree;
+            if (options.puissantDuree || options.tempeteDeManaDuree) duree += duree;
             setAttrDuree(lanceur, 'murDeForce', duree, evt);
           } else {
             error("Impossible de créer l'image " + options.image, imageFields);
