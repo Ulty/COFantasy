@@ -74,12 +74,12 @@ var COFantasy = COFantasy || function() {
             poudre_explosif: {
               explications: "Les armes à poudre font des dégâts explosifs",
               val: true,
-              type: 'bool',
+              type: 'bool'
             },
             interchangeable_attaque: {
               explications: "La capacité interchangeable donne moins de DEF mais plus d'attaque",
               val: true,
-              type: 'bool',
+              type: 'bool'
             }
           }
         },
@@ -111,17 +111,17 @@ var COFantasy = COFantasy || function() {
             usure_DEF: {
               explications: "Malus de -2 en DEF tous les n tours. Mettre à 0 pour ne pas avoir de malus d'usure",
               val: 5,
-              type: 'int',
+              type: 'int'
             },
             bonus_attaque_groupe: {
               explications: "Lors d'une attaque de groupe, bonus à la touche par créature supplémentaire",
               val: 2,
-              type: 'int',
+              type: 'int'
             },
             crit_attaque_groupe: {
               explications: "Lors d'une attaque de groupe, si le jet de touche dépasse DEF + cette valeur, les dommages sont doublés (0 = jamais)",
               val: 5,
-              type: 'int',
+              type: 'int'
             }
           }
         },
@@ -132,12 +132,12 @@ var COFantasy = COFantasy || function() {
             initiative_variable: {
               explications: "Ajoute 1d6 à l'initiative, lancé une fois par combat par type de créature",
               val: false,
-              type: 'bool',
+              type: 'bool'
             },
             initiative_variable_individuelle: {
               explications: "Lancer l'initiative variable pour chaque créature (nécessite d'activer l'Initiative variable)",
               val: false,
-              type: 'bool',
+              type: 'bool'
             }
           }
         },
@@ -148,12 +148,17 @@ var COFantasy = COFantasy || function() {
             mana_totale: {
               explications: "Tous les sorts ont un coût, celui des tempêtes de mana est multiplié par 3",
               val: false,
-              type: 'bool',
+              type: 'bool'
             },
             elixirs_sorts: {
               explications: "Toutes fabrications d'élixir sont considérées comme des sorts (qui peuvent coûter de la mana)",
               val: true,
-              type: 'bool',
+              type: 'bool'
+            },
+            brulure_de_magie: {
+              explications: "Permettre d'utiliser ses PV comme PM (Magie de CO Terres d'Arran, incompatible avec Mana Totale)",
+              val: false,
+              type: 'bool'
             }
           }
         }
@@ -5363,22 +5368,32 @@ var COFantasy = COFantasy || function() {
           bar2 = parseInt(manaAttr[0].get('current'));
         }
       }
-      if (bar2 < cout) {
+      if (bar2 < cout && !reglesOptionelles.mana.val.brulure_de_magie.val) {
         msg = msg || '';
         sendChar(charId, " n'a pas assez de points de mana pour " + msg);
         return false;
-      }
-      updateCurrentBar(personnage, 2, bar2 - cout, evt);
-      var niveau = ficheAttributeAsInt(personnage, 'niveau', 1);
-      if (reglesOptionelles.mana.val.mana_totale.val) {
-        if (cout > niveau * 3) {
-          sendChar(charId, "Attention, la dépense totale de mana est supérieure au niveau * 3");
-        }
+      } else if (bar2 < cout && !reglesOptionelles.mana.val.mana_totale.val &&
+          reglesOptionelles.mana.val.brulure_de_magie.val) {
+        var famille = ficheAttribute(personnage, "famille", "mystique").trim();
+        var degats = (famille == "combattant") ? ((cout - bar2) * 2) : (cout - bar2);
+        var bar1 = parseInt(token.get('bar1_value'));
+        updateCurrentBar(personnage, 2, 0, evt);
+        updateCurrentBar(personnage, 1, bar1 - degats, evt);
+        sendChar(charId, "Perd " + degats + " PV à cause de la Brûlure de Magie");
       } else {
-        if (cout > niveau) {
-          sendChar(charId, "Attention, la dépense totale de mana est supérieure au niveau");
+        updateCurrentBar(personnage, 2, bar2 - cout, evt);
+        var niveau = ficheAttributeAsInt(personnage, 'niveau', 1);
+        if (reglesOptionelles.mana.val.mana_totale.val) {
+          if (cout > niveau * 3) {
+            sendChar(charId, "Attention, la dépense totale de mana est supérieure au niveau * 3");
+          }
+        } else {
+          if (cout > niveau) {
+            sendChar(charId, "Attention, la dépense totale de mana est supérieure au niveau");
+          }
         }
       }
+
       return true;
     }
     sendChar(charId, " n'a pas de points de mana, action impossible");
