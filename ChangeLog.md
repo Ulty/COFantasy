@@ -2,6 +2,7 @@
 ## 2.14
 ### Autres améliorations
 * Réorganisation des menus de règles optionnelles
+* Suppression des options de génération d'attaques devenues obsolètes
 
 ## 2.13
 ### Corrections de bugs

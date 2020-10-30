@@ -113,16 +113,6 @@ var COFantasy = COFantasy || function() {
               val: 5,
               type: 'int',
             },
-            generer_options_attaques: {
-              explications: "Ajouter automatiquement les options d'attaques (normale / assurée / risquée) aux boutons d'attaques dans le chat (Actions)",
-              val: false,
-              type: 'bool',
-            },
-            generer_attaque_groupe: {
-              explications: "Ajouter automatiquement une option 'Attaque de groupe' (cf. Compagnon p.99) pour les PNJ",
-              val: false,
-              type: 'bool',
-            },
             bonus_attaque_groupe: {
               explications: "Lors d'une attaque de groupe, bonus à la touche par créature supplémentaire",
               val: 2,
@@ -29025,11 +29015,9 @@ on('ready', function() {
       delete state.COFantasy.options.regles.val.usure_DEF;
     }
     if(state.COFantasy.options.regles.val.generer_options_attaques) {
-      state.COFantasy.options.regles.val.haute_DEF.val.generer_options_attaques.val = state.COFantasy.options.regles.val.generer_options_attaques.val;
       delete state.COFantasy.options.regles.val.generer_options_attaques;
     }
     if(state.COFantasy.options.regles.val.generer_attaque_groupe) {
-      state.COFantasy.options.regles.val.haute_DEF.val.generer_attaque_groupe.val = state.COFantasy.options.regles.val.generer_attaque_groupe.val;
       delete state.COFantasy.options.regles.val.generer_attaque_groupe;
     }
     if(state.COFantasy.options.regles.val.bonus_attaque_groupe) {
