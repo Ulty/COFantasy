@@ -193,6 +193,11 @@ var COFantasy = COFantasy || function() {
           val: true,
           type: 'bool'
         },
+        duree_effets: {
+          explications: "Le script indique la durée des effets associés aux tokens",
+          val: false,
+          type: 'bool'
+        },
         init_dynamique: {
           explications: "Fait apparître une aura dynamique sur le token qui a l'initiative",
           val: true,
@@ -9943,9 +9948,10 @@ var COFantasy = COFantasy || function() {
                   target.messages.push(target.tokName + " a déjà été dédoublé pendant ce combat");
                   return;
                 }
-                target.messages.push("Un double translucide de " +
-                  target.tokName + " apparaît. Il est aux ordres de " +
-                  attackerTokName);
+                var dedoubleMsg = "Un double translucide de " + target.tokName + " apparaît. Il est aux ordres de "
+                    + attackerTokName;
+                if(stateCOF.options.affichage.val.duree_effets.val) dedoubleMsg += " (" + ef.duree + " tours)";
+                target.messages.push(dedoubleMsg);
                 setTokenAttr(target, 'dedouble', true, evt);
                 copieToken(target, undefined, stateCOF.options.images.val.image_double.val,
                   "Double de " + target.tokName, 'dedoublement', ef.duree,
@@ -9977,8 +9983,11 @@ var COFantasy = COFantasy || function() {
                     return; //Pas besoin de réappliquer, effet toujours en cours
                   }
                 }
-                if (ef.message)
-                  target.messages.push(target.tokName + " " + ef.message.activation);
+                if (ef.message) {
+                  var targetMsg = target.tokName + " " + ef.message.activation;
+                  if(stateCOF.options.affichage.val.duree_effets.val) targetMsg += " (" + ef.duree + " tours)";
+                  target.messages.push(targetMsg);
+                }
                 var attrEffet = setAttrDuree(target, ef.effet, ef.duree, evt);
                 var effet = messageEffetTemp[ef.effet];
                 if (options.mana !== undefined && effet && effet.prejudiciable) {
@@ -10247,9 +10256,10 @@ var COFantasy = COFantasy || function() {
                 if (ef.save) {
                   var msgPour = " pour résister à un effet";
                   var msgRate = ", " + target.tokName + " ";
-                  if (ef.duree && ef.message)
+                  if (ef.duree && ef.message) {
                     msgRate += ef.message.activation;
-                  else if (ef.effetIndetermine)
+                    if (stateCOF.options.affichage.val.duree_effets.val) msgRate += " (" + ef.duree + " tours)";
+                  } else if (ef.effetIndetermine)
                     msgRate += messageEffetIndetermine[ef.effet].activation;
                   else
                     msgRate += messageEffetCombat[ef.effet].activation;
@@ -10267,6 +10277,7 @@ var COFantasy = COFantasy || function() {
                       if (reussite && duree && ef.save.demiDuree) {
                         reussite = false;
                         duree = Math.ceil(duree / 2);
+                        if(stateCOF.options.affichage.val.duree_effets.val) expliquer("La durée est réduite à " + duree + " tours");
                       }
                       if (!reussite) {
                         if (ef.duree) {
@@ -17188,6 +17199,7 @@ var COFantasy = COFantasy || function() {
             perso.token.set('status_' + mEffet.statusMarker, true);
           }
           var actMsg = mEffet.activation;
+          if (stateCOF.options.affichage.val.duree_effets.val) actMsg += " (" + d + " tours)";
           var img = options.image;
           if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
             var newLineimg = '<span style="padding: 4px 0;" >  ';
