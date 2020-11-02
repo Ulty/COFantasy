@@ -1904,8 +1904,7 @@ var COFantasy = COFantasy || function() {
   }*/
 
   /* Événements, utilisés pour les undo, en particulier undo pour refaire
-   * une action quand une règle le permet (utilisation de points de chance,
-   * esquive acrobatique, etc..
+   * une action quand une règle le permet (utilisation de points de chance, etc..)
    * Champ d'un événement (variables evt en général dans le code:
    * id               : identificateur unique (int)
    * type             : description de l'événement (string)
@@ -2142,12 +2141,12 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-confirmer-attaque", cmd);
       return;
     }
-    var evtARefaire = findEvent(cmd[1]);
-    if (evtARefaire === undefined) {
+    var evt = findEvent(cmd[1]);
+    if (evt === undefined) {
       error("L'action est trop ancienne ou a été annulée", cmd);
       return;
     }
-    var action = evtARefaire.action;
+    var action = evt.action;
     if (action === undefined) {
       error("Erreur interne du bouton de rune de protection : l'évènement n'a pas d'action", cmd);
       return;
@@ -2156,11 +2155,9 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton");
       return;
     }
-    var options = action.options || {};
-    options.redo = true;
-    options.rolls = action.rolls;
-    options.noPreDmg = true;
-    attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
+    var options = action.currentOptions || {};
+    delete options.preDmg;
+    attackDealDmg(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.ciblesAttaquees);
   }
 
   function undoTokenEffect(evt) {
@@ -2480,20 +2477,10 @@ var COFantasy = COFantasy || function() {
                   // attaque distance
                   picto = '<span style="font-family: \'Pictos Custom\'">[</span> ';
                   style = 'background-color:#48b92c';
-                  if (reglesOptionelles.haute_DEF.val.generer_options_attaques.val) {
-                    act += " ?{Type d'Attaque|Normale,&#32;|Assurée,--attaqueAssuree}";
-                  }
                 } else {
                   // attaque contact
                   picto = '<span style="font-family: \'Pictos Custom\'">t</span> ';
                   style = 'background-color:#cc0000';
-                  if (reglesOptionelles.haute_DEF.val.generer_options_attaques.val) {
-                    act += " ?{Type d'Attaque|Normale,&#32;|Assurée,--attaqueAssuree|Risquée,--attaqueRisquee}";
-                  }
-                  if (reglesOptionelles.haute_DEF.val.generer_attaque_groupe.val &&
-                    perso.pnj && perso.token.get('bar1_link') === '') {
-                    groupe = true;
-                  }
                 }
                 break;
               case 'lancer-sort':
@@ -9273,6 +9260,14 @@ var COFantasy = COFantasy || function() {
 
   function attackDealDmg(attaquant, cibles, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees) {
     if (options.preDmg) {
+      evt.action.currentOptions = options;
+      evt.action.echecCritique = echecCritique;
+      evt.action.attackLabel = attackLabel;
+      evt.action.attackd20roll = d20roll;
+      evt.action.display = JSON.parse(JSON.stringify(display));
+      evt.action.explications = JSON.parse(JSON.stringify(explications));
+      evt.action.pageId = pageId;
+      evt.action.ciblesAttaquees = ciblesAttaquees;
       addLineToFramedDisplay(display, "<b>Attaque :</b> Touche !");
       finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options, echecCritique);
       return;
@@ -9948,8 +9943,9 @@ var COFantasy = COFantasy || function() {
                   target.messages.push(target.tokName + " a déjà été dédoublé pendant ce combat");
                   return;
                 }
-                var dedoubleMsg = "Un double translucide de " + target.tokName + " apparaît. Il est aux ordres de "
-                    + attackerTokName;
+                var dedoubleMsg = 
+                  "Un double translucide de " + target.tokName + 
+                  " apparaît. Il est aux ordres de " + attackerTokName;
                 if(stateCOF.options.affichage.val.duree_effets.val) dedoubleMsg += " (" + ef.duree + " tours)";
                 target.messages.push(dedoubleMsg);
                 setTokenAttr(target, 'dedouble', true, evt);
