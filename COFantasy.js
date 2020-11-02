@@ -8987,7 +8987,7 @@ var COFantasy = COFantasy || function() {
             if (target.touche) {
               ciblesTouchees.push(target);
               //Possibilités d'annuler l'attaque
-              if (!options.auto && !options.noPreDmg) {
+              if (!options.auto) {
                 //Seulement si elle n'est pas automatiquement réussie
                 if (!options.pasDeDmg && !target.utiliseRuneProtection &&
                   attributeAsBool(target, 'runeForgesort_protection') &&
@@ -9259,15 +9259,16 @@ var COFantasy = COFantasy || function() {
   }
 
   function attackDealDmg(attaquant, cibles, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees) {
+    //Sauvegarde de l'état pour pouvoir relancer au niveau de cette fonction
+    evt.action.currentOptions = options;
+    evt.action.echecCritique = echecCritique;
+    evt.action.attackLabel = attackLabel;
+    evt.action.attackd20roll = d20roll;
+    evt.action.display = JSON.parse(JSON.stringify(display));
+    evt.action.explications = JSON.parse(JSON.stringify(explications));
+    evt.action.pageId = pageId;
+    evt.action.ciblesAttaquees = ciblesAttaquees;
     if (options.preDmg) {
-      evt.action.currentOptions = options;
-      evt.action.echecCritique = echecCritique;
-      evt.action.attackLabel = attackLabel;
-      evt.action.attackd20roll = d20roll;
-      evt.action.display = JSON.parse(JSON.stringify(display));
-      evt.action.explications = JSON.parse(JSON.stringify(explications));
-      evt.action.pageId = pageId;
-      evt.action.ciblesAttaquees = ciblesAttaquees;
       addLineToFramedDisplay(display, "<b>Attaque :</b> Touche !");
       finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options, echecCritique);
       return;
@@ -9943,10 +9944,10 @@ var COFantasy = COFantasy || function() {
                   target.messages.push(target.tokName + " a déjà été dédoublé pendant ce combat");
                   return;
                 }
-                var dedoubleMsg = 
-                  "Un double translucide de " + target.tokName + 
+                var dedoubleMsg =
+                  "Un double translucide de " + target.tokName +
                   " apparaît. Il est aux ordres de " + attackerTokName;
-                if(stateCOF.options.affichage.val.duree_effets.val) dedoubleMsg += " (" + ef.duree + " tours)";
+                if (stateCOF.options.affichage.val.duree_effets.val) dedoubleMsg += " (" + ef.duree + " tours)";
                 target.messages.push(dedoubleMsg);
                 setTokenAttr(target, 'dedouble', true, evt);
                 copieToken(target, undefined, stateCOF.options.images.val.image_double.val,
@@ -9981,7 +9982,7 @@ var COFantasy = COFantasy || function() {
                 }
                 if (ef.message) {
                   var targetMsg = target.tokName + " " + ef.message.activation;
-                  if(stateCOF.options.affichage.val.duree_effets.val) targetMsg += " (" + ef.duree + " tours)";
+                  if (stateCOF.options.affichage.val.duree_effets.val) targetMsg += " (" + ef.duree + " tours)";
                   target.messages.push(targetMsg);
                 }
                 var attrEffet = setAttrDuree(target, ef.effet, ef.duree, evt);
@@ -10273,7 +10274,7 @@ var COFantasy = COFantasy || function() {
                       if (reussite && duree && ef.save.demiDuree) {
                         reussite = false;
                         duree = Math.ceil(duree / 2);
-                        if(stateCOF.options.affichage.val.duree_effets.val) expliquer("La durée est réduite à " + duree + " tours");
+                        if (stateCOF.options.affichage.val.duree_effets.val) expliquer("La durée est réduite à " + duree + " tours");
                       }
                       if (!reussite) {
                         if (ef.duree) {
@@ -20157,13 +20158,13 @@ var COFantasy = COFantasy || function() {
 
   //!cof-encaisser-un-coup, avec la personne qui encaisse sélectionnée
   function doEncaisserUnCoup(msg) {
-    var options = parseOptions(msg);
-    if (options === undefined) return;
-    var cmd = options.cmd;
-    var evtARefaire = lastEvent();
+    var optionsEncaisser = parseOptions(msg);
+    if (optionsEncaisser === undefined) return;
+    var cmd = optionsEncaisser.cmd;
+    var evt = lastEvent();
     if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
-      evtARefaire = findEvent(cmd[1]);
-      if (evtARefaire === undefined) {
+      evt = findEvent(cmd[1]);
+      if (evt === undefined) {
         error("L'action est trop ancienne ou a été annulée", cmd);
         return;
       }
@@ -20173,23 +20174,21 @@ var COFantasy = COFantasy || function() {
         error("Personne n'est sélectionné pour encaisser un coup", msg);
         return;
       }
-      if (evtARefaire === undefined) {
+      if (evt === undefined) {
         sendChat('', "Historique d'actions vide, pas d'action trouvée pour encaisser un coup");
         return;
       }
-      if (evtARefaire.type != 'Attaque' || evtARefaire.succes === false) {
+      if (evt.type != 'Attaque' || evt.succes === false) {
         sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour encaisser le coup d'une action précédente");
         return;
       }
-      var attaque = evtARefaire.action;
-      if (attaque.options.distance) {
+      var action = evt.action;
+      if (action.options.distance) {
         sendChat('', "Impossible d'encaisser le dernier coup, ce n'était pas une attaque au contact");
         return;
       }
       var toProceed;
-      var evt = {
-        type: "Encaisser un coup"
-      };
+      var options = action.currentOptions || {};
       iterSelected(selected, function(chevalier) {
         if (!attributeAsBool(chevalier, 'encaisserUnCoup')) {
           sendChar(chevalier.charId, "n'est pas placé pour encaisser un coup");
@@ -20199,7 +20198,7 @@ var COFantasy = COFantasy || function() {
           sendPlayer(msg, "pas le droit d'utiliser ce bouton");
           return;
         }
-        var cible = attaque.cibles.find(function(target) {
+        var cible = action.cibles.find(function(target) {
           return (target.token.id === chevalier.token.id);
         });
         if (cible === undefined) {
@@ -20212,14 +20211,20 @@ var COFantasy = COFantasy || function() {
           ficheAttributeAsInt(chevalier, 'DEFARMUREON', 1) +
           ficheAttributeAsInt(chevalier, 'DEFBOUCLIER', 0) *
           ficheAttributeAsInt(chevalier, 'DEFBOUCLIERON', 1);
+        if (options.preDmg) {
+          if (options.preDmg[chevalier.token.id]) {
+            if (options.preDmg[chevalier.token.id].encaisserUnCoup) {
+              delete options.preDmg[chevalier.token.id].encaisserUnCoup;
+            }
+            if (_.isEmpty(options.preDmg[chevalier.token.id]))
+              delete options.preDmg[chevalier.token.id];
+          }
+          if (_.isEmpty(options.preDmg)) delete options.preDmg;
+        }
         toProceed = true;
       }); //fin iterSelected
       if (toProceed) {
-        var options = attaque.options;
-        options.rolls = attaque.rolls;
-        options.evt = evt;
-        options.redo = true;
-        attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+        attackDealDmg(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.ciblesAttaquees);
       }
     }); //fin getSelected
   }
