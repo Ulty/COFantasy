@@ -193,6 +193,11 @@ var COFantasy = COFantasy || function() {
           val: true,
           type: 'bool'
         },
+        duree_effets: {
+          explications: "Le script indique la durée des effets associés aux tokens",
+          val: false,
+          type: 'bool'
+        },
         init_dynamique: {
           explications: "Fait apparître une aura dynamique sur le token qui a l'initiative",
           val: true,
@@ -1899,8 +1904,7 @@ var COFantasy = COFantasy || function() {
   }*/
 
   /* Événements, utilisés pour les undo, en particulier undo pour refaire
-   * une action quand une règle le permet (utilisation de points de chance,
-   * esquive acrobatique, etc..
+   * une action quand une règle le permet (utilisation de points de chance, etc..)
    * Champ d'un événement (variables evt en général dans le code:
    * id               : identificateur unique (int)
    * type             : description de l'événement (string)
@@ -2137,12 +2141,12 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-confirmer-attaque", cmd);
       return;
     }
-    var evtARefaire = findEvent(cmd[1]);
-    if (evtARefaire === undefined) {
+    var evt = findEvent(cmd[1]);
+    if (evt === undefined) {
       error("L'action est trop ancienne ou a été annulée", cmd);
       return;
     }
-    var action = evtARefaire.action;
+    var action = evt.action;
     if (action === undefined) {
       error("Erreur interne du bouton de rune de protection : l'évènement n'a pas d'action", cmd);
       return;
@@ -2151,11 +2155,9 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton");
       return;
     }
-    var options = action.options || {};
-    options.redo = true;
-    options.rolls = action.rolls;
-    options.noPreDmg = true;
-    attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
+    var options = action.currentOptions || {};
+    delete options.preDmg;
+    attackDealDmg(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.ciblesAttaquees);
   }
 
   function undoTokenEffect(evt) {
@@ -2475,20 +2477,10 @@ var COFantasy = COFantasy || function() {
                   // attaque distance
                   picto = '<span style="font-family: \'Pictos Custom\'">[</span> ';
                   style = 'background-color:#48b92c';
-                  if (reglesOptionelles.haute_DEF.val.generer_options_attaques.val) {
-                    act += " ?{Type d'Attaque|Normale,&#32;|Assurée,--attaqueAssuree}";
-                  }
                 } else {
                   // attaque contact
                   picto = '<span style="font-family: \'Pictos Custom\'">t</span> ';
                   style = 'background-color:#cc0000';
-                  if (reglesOptionelles.haute_DEF.val.generer_options_attaques.val) {
-                    act += " ?{Type d'Attaque|Normale,&#32;|Assurée,--attaqueAssuree|Risquée,--attaqueRisquee}";
-                  }
-                  if (reglesOptionelles.haute_DEF.val.generer_attaque_groupe.val &&
-                    perso.pnj && perso.token.get('bar1_link') === '') {
-                    groupe = true;
-                  }
                 }
                 break;
               case 'lancer-sort':
@@ -3225,7 +3217,7 @@ var COFantasy = COFantasy || function() {
       type: "Jet de " + caracteristique
     };
     var optionsDisplay = {};
-    if (options.secret) {
+    if (options.secret || ficheAttributeAsBool(perso, 'jets_caches', false)) {
       if (playerIsGM(playerId)) optionsDisplay.chuchote = true;
       else {
         var character = getObj('character', perso.charId);
@@ -5467,27 +5459,29 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  //Si l'attribut est un mod. de caractéristique, va chercher le
+  //bon attribut, selon que perso est un PNJ ou nom
+  function valAttribute(perso, originalAttr, caracAttr) {
+    if (caracAttr) {
+      if (persoEstPNJ(perso)) {
+        return 10 + ficheAttributeAsInt(perso, PNJCaracOfMod(originalAttr), 0) * 2;
+      }
+      return ficheAttributeAsInt(perso, caracAttr, 0);
+    }
+    return charAttributeAsInt(perso, originalAttr, 0);
+  }
+
   function testCondition(cond, attaquant, cibles, deAttaque) {
     if (cond == 'toujoursVrai') return true;
     switch (cond.type) {
       case "moins":
         // Au cas où on utilise les MOD au lieu de l'attribut de base:
-        var attribute = caracOfMod(cond.attribute);
-        var attackerAttr = 0;
-        if (attribute) {
-          if (persoEstPNJ(attaquant)) {
-            cond.attribute = PNJCaracOfMod(cond.attribute);
-          } else {
-            cond.attribute = attribute;
-          }
-          attackerAttr = ficheAttributeAsInt(attaquant, cond.attribute, 0);
-        } else {
-          attackerAttr = charAttributeAsInt(attaquant, cond.attribute, 0);
-        }
+        var caracAttr = caracOfMod(cond.attribute);
+        var attackerAttr = valAttribute(attaquant, cond.attribute, caracAttr);
         var resMoins = true;
         cibles.forEach(function(target) {
           if (resMoins) {
-            var targetAttr = charAttributeAsInt(target, cond.attribute, 0);
+            var targetAttr = valAttribute(target, cond.attribute, caracAttr);
             if (targetAttr >= attackerAttr) resMoins = false;
           }
         });
@@ -8608,6 +8602,7 @@ var COFantasy = COFantasy || function() {
           label_type = BS_LABEL_WARNING;
         }
         action += "<span style='" + BS_LABEL + " " + label_type + "; text-transform: none; font-size: 100%;'>" + weaponName + "</span>";
+        options.secret = options.secret || ficheAttributeAsBool(attaquant, 'jets_caches', false);
         var display = startFramedDisplay(playerId, action, attaquant, {
           perso2: target,
           chuchote: options.secret,
@@ -8995,7 +8990,7 @@ var COFantasy = COFantasy || function() {
             if (target.touche) {
               ciblesTouchees.push(target);
               //Possibilités d'annuler l'attaque
-              if (!options.auto && !options.noPreDmg) {
+              if (!options.auto) {
                 //Seulement si elle n'est pas automatiquement réussie
                 if (!options.pasDeDmg && !target.utiliseRuneProtection &&
                   attributeAsBool(target, 'runeForgesort_protection') &&
@@ -9267,6 +9262,15 @@ var COFantasy = COFantasy || function() {
   }
 
   function attackDealDmg(attaquant, cibles, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees) {
+    //Sauvegarde de l'état pour pouvoir relancer au niveau de cette fonction
+    evt.action.currentOptions = options;
+    evt.action.echecCritique = echecCritique;
+    evt.action.attackLabel = attackLabel;
+    evt.action.attackd20roll = d20roll;
+    evt.action.display = JSON.parse(JSON.stringify(display));
+    evt.action.explications = JSON.parse(JSON.stringify(explications));
+    evt.action.pageId = pageId;
+    evt.action.ciblesAttaquees = ciblesAttaquees;
     if (options.preDmg) {
       addLineToFramedDisplay(display, "<b>Attaque :</b> Touche !");
       finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options, echecCritique);
@@ -9943,9 +9947,11 @@ var COFantasy = COFantasy || function() {
                   target.messages.push(target.tokName + " a déjà été dédoublé pendant ce combat");
                   return;
                 }
-                target.messages.push("Un double translucide de " +
-                  target.tokName + " apparaît. Il est aux ordres de " +
-                  attackerTokName);
+                var dedoubleMsg =
+                  "Un double translucide de " + target.tokName +
+                  " apparaît. Il est aux ordres de " + attackerTokName;
+                if (stateCOF.options.affichage.val.duree_effets.val) dedoubleMsg += " (" + ef.duree + " tours)";
+                target.messages.push(dedoubleMsg);
                 setTokenAttr(target, 'dedouble', true, evt);
                 copieToken(target, undefined, stateCOF.options.images.val.image_double.val,
                   "Double de " + target.tokName, 'dedoublement', ef.duree,
@@ -9977,8 +9983,11 @@ var COFantasy = COFantasy || function() {
                     return; //Pas besoin de réappliquer, effet toujours en cours
                   }
                 }
-                if (ef.message)
-                  target.messages.push(target.tokName + " " + ef.message.activation);
+                if (ef.message) {
+                  var targetMsg = target.tokName + " " + ef.message.activation;
+                  if (stateCOF.options.affichage.val.duree_effets.val) targetMsg += " (" + ef.duree + " tours)";
+                  target.messages.push(targetMsg);
+                }
                 var attrEffet = setAttrDuree(target, ef.effet, ef.duree, evt);
                 var effet = messageEffetTemp[ef.effet];
                 if (options.mana !== undefined && effet && effet.prejudiciable) {
@@ -10247,9 +10256,10 @@ var COFantasy = COFantasy || function() {
                 if (ef.save) {
                   var msgPour = " pour résister à un effet";
                   var msgRate = ", " + target.tokName + " ";
-                  if (ef.duree && ef.message)
+                  if (ef.duree && ef.message) {
                     msgRate += ef.message.activation;
-                  else if (ef.effetIndetermine)
+                    if (stateCOF.options.affichage.val.duree_effets.val) msgRate += " (" + ef.duree + " tours)";
+                  } else if (ef.effetIndetermine)
                     msgRate += messageEffetIndetermine[ef.effet].activation;
                   else
                     msgRate += messageEffetCombat[ef.effet].activation;
@@ -10267,6 +10277,7 @@ var COFantasy = COFantasy || function() {
                       if (reussite && duree && ef.save.demiDuree) {
                         reussite = false;
                         duree = Math.ceil(duree / 2);
+                        if (stateCOF.options.affichage.val.duree_effets.val) expliquer("La durée est réduite à " + duree + " tours");
                       }
                       if (!reussite) {
                         if (ef.duree) {
@@ -17188,6 +17199,7 @@ var COFantasy = COFantasy || function() {
             perso.token.set('status_' + mEffet.statusMarker, true);
           }
           var actMsg = mEffet.activation;
+          if (stateCOF.options.affichage.val.duree_effets.val) actMsg += " (" + d + " tours)";
           var img = options.image;
           if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
             var newLineimg = '<span style="padding: 4px 0;" >  ';
@@ -20149,13 +20161,13 @@ var COFantasy = COFantasy || function() {
 
   //!cof-encaisser-un-coup, avec la personne qui encaisse sélectionnée
   function doEncaisserUnCoup(msg) {
-    var options = parseOptions(msg);
-    if (options === undefined) return;
-    var cmd = options.cmd;
-    var evtARefaire = lastEvent();
+    var optionsEncaisser = parseOptions(msg);
+    if (optionsEncaisser === undefined) return;
+    var cmd = optionsEncaisser.cmd;
+    var evt = lastEvent();
     if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
-      evtARefaire = findEvent(cmd[1]);
-      if (evtARefaire === undefined) {
+      evt = findEvent(cmd[1]);
+      if (evt === undefined) {
         error("L'action est trop ancienne ou a été annulée", cmd);
         return;
       }
@@ -20165,23 +20177,21 @@ var COFantasy = COFantasy || function() {
         error("Personne n'est sélectionné pour encaisser un coup", msg);
         return;
       }
-      if (evtARefaire === undefined) {
+      if (evt === undefined) {
         sendChat('', "Historique d'actions vide, pas d'action trouvée pour encaisser un coup");
         return;
       }
-      if (evtARefaire.type != 'Attaque' || evtARefaire.succes === false) {
+      if (evt.type != 'Attaque' || evt.succes === false) {
         sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour encaisser le coup d'une action précédente");
         return;
       }
-      var attaque = evtARefaire.action;
-      if (attaque.options.distance) {
+      var action = evt.action;
+      if (action.options.distance) {
         sendChat('', "Impossible d'encaisser le dernier coup, ce n'était pas une attaque au contact");
         return;
       }
       var toProceed;
-      var evt = {
-        type: "Encaisser un coup"
-      };
+      var options = action.currentOptions || {};
       iterSelected(selected, function(chevalier) {
         if (!attributeAsBool(chevalier, 'encaisserUnCoup')) {
           sendChar(chevalier.charId, "n'est pas placé pour encaisser un coup");
@@ -20191,7 +20201,7 @@ var COFantasy = COFantasy || function() {
           sendPlayer(msg, "pas le droit d'utiliser ce bouton");
           return;
         }
-        var cible = attaque.cibles.find(function(target) {
+        var cible = action.cibles.find(function(target) {
           return (target.token.id === chevalier.token.id);
         });
         if (cible === undefined) {
@@ -20204,14 +20214,20 @@ var COFantasy = COFantasy || function() {
           ficheAttributeAsInt(chevalier, 'DEFARMUREON', 1) +
           ficheAttributeAsInt(chevalier, 'DEFBOUCLIER', 0) *
           ficheAttributeAsInt(chevalier, 'DEFBOUCLIERON', 1);
+        if (options.preDmg) {
+          if (options.preDmg[chevalier.token.id]) {
+            if (options.preDmg[chevalier.token.id].encaisserUnCoup) {
+              delete options.preDmg[chevalier.token.id].encaisserUnCoup;
+            }
+            if (_.isEmpty(options.preDmg[chevalier.token.id]))
+              delete options.preDmg[chevalier.token.id];
+          }
+          if (_.isEmpty(options.preDmg)) delete options.preDmg;
+        }
         toProceed = true;
       }); //fin iterSelected
       if (toProceed) {
-        var options = attaque.options;
-        options.rolls = attaque.rolls;
-        options.evt = evt;
-        options.redo = true;
-        attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
+        attackDealDmg(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.ciblesAttaquees);
       }
     }); //fin getSelected
   }
@@ -24859,7 +24875,7 @@ var COFantasy = COFantasy || function() {
         var titre = "Tentative de sortir de " + cube.tokName;
         if (etreinte) titre = "Tentative de se libérer de l'etreinte de " + cube.tokName;
         var display = startFramedDisplay(playerId, titre, perso, {
-          chuchote: options.secret
+          chuchote: options.secret || ficheAttributeAsBool(perso, 'jets_caches', false)
         });
         if (options.chance) options.bonus = options.chance * 10;
         testCaracteristique(perso, 'FOR', difficulte, 'enveloppement', options, evt,
@@ -24944,7 +24960,7 @@ var COFantasy = COFantasy || function() {
         };
         var titre = "Tentative de se libérer de " + agrippant.tokName;
         var display = startFramedDisplay(playerId, titre, perso, {
-          chuchote: options.secret
+          chuchote: options.secret || ficheAttributeAsBool(perso, 'jets_caches', false)
         });
         var explications = [];
         if (options.chance) options.bonus = options.chance * 10;

@@ -1,10 +1,15 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.14
 ### Autres améliorations
+* Utilisation de l'obglet des jets cachés des PNJs par le script
 * Réorganisation des menus de règles optionnelles
 * Suppression des options de génération d'attaques devenues obsolètes
 * Implémentation d'une option pour Brûlure de Magie (COTA, applicable à COF)
 * Implémentation d'une option de portée augmentée pour magie puissante (hors Tempête de Mana)
+* Implémentation d'une option pour l'affichage des durées des effets
+
+### Corrections de bugs
+* Correction d'un bug pour les conditions moins (comme moins FOR), quand l'attaquant est un PNJ et le défenseur un PJ.
 
 ## 2.13
 ### Corrections de bugs
