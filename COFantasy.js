@@ -5459,27 +5459,29 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  //Si l'attribut est un mod. de caractéristique, va chercher le
+  //bon attribut, selon que perso est un PNJ ou nom
+  function valAttribute(perso, originalAttr, caracAttr) {
+    if (caracAttr) {
+      if (persoEstPNJ(perso)) {
+        return 10 + ficheAttributeAsInt(perso, PNJCaracOfMod(originalAttr), 0) * 2;
+      }
+      return ficheAttributeAsInt(perso, caracAttr, 0);
+    }
+    return charAttributeAsInt(perso, originalAttr, 0);
+  }
+
   function testCondition(cond, attaquant, cibles, deAttaque) {
     if (cond == 'toujoursVrai') return true;
     switch (cond.type) {
       case "moins":
         // Au cas où on utilise les MOD au lieu de l'attribut de base:
-        var attribute = caracOfMod(cond.attribute);
-        var attackerAttr = 0;
-        if (attribute) {
-          if (persoEstPNJ(attaquant)) {
-            cond.attribute = PNJCaracOfMod(cond.attribute);
-          } else {
-            cond.attribute = attribute;
-          }
-          attackerAttr = ficheAttributeAsInt(attaquant, cond.attribute, 0);
-        } else {
-          attackerAttr = charAttributeAsInt(attaquant, cond.attribute, 0);
-        }
+        var caracAttr = caracOfMod(cond.attribute);
+        var attackerAttr = valAttribute(attaquant, cond.attribute, caracAttr);
         var resMoins = true;
         cibles.forEach(function(target) {
           if (resMoins) {
-            var targetAttr = charAttributeAsInt(target, cond.attribute, 0);
+            var targetAttr = valAttribute(target, cond.attribute, caracAttr);
             if (targetAttr >= attackerAttr) resMoins = false;
           }
         });
