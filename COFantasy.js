@@ -3217,7 +3217,7 @@ var COFantasy = COFantasy || function() {
       type: "Jet de " + caracteristique
     };
     var optionsDisplay = {};
-    if (options.secret) {
+    if (options.secret || ficheAttributeAsBool(perso, 'jets_caches', false)) {
       if (playerIsGM(playerId)) optionsDisplay.chuchote = true;
       else {
         var character = getObj('character', perso.charId);
@@ -8602,6 +8602,7 @@ var COFantasy = COFantasy || function() {
           label_type = BS_LABEL_WARNING;
         }
         action += "<span style='" + BS_LABEL + " " + label_type + "; text-transform: none; font-size: 100%;'>" + weaponName + "</span>";
+        options.secret = options.secret || ficheAttributeAsBool(attaquant, 'jets_caches', false);
         var display = startFramedDisplay(playerId, action, attaquant, {
           perso2: target,
           chuchote: options.secret,
@@ -24874,7 +24875,7 @@ var COFantasy = COFantasy || function() {
         var titre = "Tentative de sortir de " + cube.tokName;
         if (etreinte) titre = "Tentative de se libérer de l'etreinte de " + cube.tokName;
         var display = startFramedDisplay(playerId, titre, perso, {
-          chuchote: options.secret
+          chuchote: options.secret || ficheAttributeAsBool(perso, 'jets_caches', false)
         });
         if (options.chance) options.bonus = options.chance * 10;
         testCaracteristique(perso, 'FOR', difficulte, 'enveloppement', options, evt,
@@ -24959,7 +24960,7 @@ var COFantasy = COFantasy || function() {
         };
         var titre = "Tentative de se libérer de " + agrippant.tokName;
         var display = startFramedDisplay(playerId, titre, perso, {
-          chuchote: options.secret
+          chuchote: options.secret || ficheAttributeAsBool(perso, 'jets_caches', false)
         });
         var explications = [];
         if (options.chance) options.bonus = options.chance * 10;
