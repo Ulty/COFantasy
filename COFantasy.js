@@ -8034,22 +8034,31 @@ var COFantasy = COFantasy || function() {
       return 0;
     }
     var dmgCoef = options.dmgCoef || 1;
+    if (target.dmgCoef) dmgCoef += target.dmgCoef;
+    var diviseDmg = options.diviseDmg || 1;
+    if (target.diviseDmg) diviseDmg *= target.diviseDmg;
     if (options.attaqueDeGroupeDmgCoef) {
       dmgCoef++;
       expliquer("Attaque en groupe > DEF +" + reglesOptionelles.haute_DEF.val.crit_attaque_groupe.val + " => DMGx" + (crit ? "3" : "2"));
     }
-    if (target.dmgCoef) dmgCoef += target.dmgCoef;
     var critCoef = 1;
     if (crit) {
       if (attributeAsBool(target, 'armureLourdeGuerrier') &&
         attributeAsBool(target, 'DEFARMUREON') &&
         attributeAsInt(target, 'DEFARMURE', 0) >= 8) {
         expliquer("L'armure lourde de " + target.token.get('name') + " lui permet d'ignorer les dégâts critiques");
-        critCoef = 0;
       } else {
         if (options.critCoef) critCoef = options.critCoef;
         if (target.critCoef) critCoef += target.critCoef;
         dmgCoef += critCoef;
+        if(attributeAsBool(target, 'armureProtection') &&  attributeAsBool(target, 'DEFARMUREON')) {
+          expliquer("L'armure de protection de " + target.token.get('name') + " le protège du critique");
+          diviseDmg++;
+        }
+        if(attributeAsBool(target, 'bouclierProtection') &&  attributeAsBool(target, 'DEFBOUCLIERON')) {
+          expliquer("Le bouclier de protection de " + target.token.get('name') + " le protège du critique");
+          diviseDmg++;
+        }
       }
     }
     otherDmg = otherDmg || [];
@@ -8065,8 +8074,6 @@ var COFantasy = COFantasy || function() {
       dmgTotal = dmgTotal * dmgCoef;
       showTotal = true;
     }
-    var diviseDmg = options.diviseDmg || 1;
-    if (target.diviseDmg) diviseDmg *= target.diviseDmg;
     if (diviseDmg > 1) {
       if (showTotal) dmgDisplay = '(' + dmgDisplay + ')';
       dmgDisplay += " / " + diviseDmg;
@@ -9603,9 +9610,17 @@ var COFantasy = COFantasy || function() {
           } else {
             target.messages.push("Attaque sournoise => +" + sournoise + options.d6 + " DM");
           }
+          var valueSournoise = sournoise + options.d6;
+          if(attributeAsBool(target, 'armureProtection') &&  attributeAsBool(target, 'DEFARMUREON')) {
+            target.messages.push("L'armure de protection de " + target.token.get('name') + " réduit l'attaque sournoise");
+            valueSournoise = "ceil(" + valueSournoise+"/2)";
+          } else if(attributeAsBool(target, 'bouclierProtection') &&  attributeAsBool(target, 'DEFBOUCLIERON')) {
+            target.messages.push("Le bouclier de protection de " + target.token.get('name') + " réduit l'attaque sournoise");
+            valueSournoise = "ceil(" + valueSournoise+"/2)";
+          }
           target.additionalDmg.push({
             type: mainDmgType,
-            value: sournoise + options.d6
+            value: valueSournoise
           });
         }
       }
