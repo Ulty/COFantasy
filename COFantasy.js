@@ -2789,7 +2789,7 @@ var COFantasy = COFantasy || function() {
       action: action,
       action_right: options.action_right
     };
-    if (options.retarde === undefined)
+    if (!options.retarde)
       addFramedHeader(display, playerId, options.chuchote);
     return display;
   }
