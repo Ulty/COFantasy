@@ -10569,7 +10569,7 @@ var COFantasy = COFantasy || function() {
               action = "!cof-esquive-acrobatique " + target.token.id + ' ' + evt.id;
               if (preDmgToken.esquiveAcrobatique == 'chance') {
                 action += ' chance';
-                addLineToFramedDisplay(display, target.messages[target.indexMsgEsquiveAcrobatique] + " " + boutonSimple(action, 'Chance'), 80);
+                addLineToFramedDisplay(display, target.messages[target.indexMsgesquiveAcrobatique] + " " + boutonSimple(action, 'Chance'), 80);
               } else {
                 line += "<br/>" + boutonSimple(action, "tenter une esquive acrobatique");
                 nbBoutons++;
@@ -10585,11 +10585,14 @@ var COFantasy = COFantasy || function() {
               });
             }
             if (preDmgToken.resistanceALaMagieBarbare) {
-              line += "<br/>" +
-                boutonSimple(
-                  "!cof-resister-a-la-magie " + target.token.id + ' ' + evt.id,
-                  "tenter de résister à la magie");
-              nbBoutons++;
+              action = "!cof-resister-a-la-magie " + target.token.id + ' ' + evt.id;
+              if (preDmgToken.resistanceALaMagieBarbare == 'chance') {
+                action += ' chance';
+                addLineToFramedDisplay(display, target.messages[target.indexMsgresistanceALaMagieBarbare] + " " + boutonSimple(action, 'Chance'), 80);
+              } else {
+                line += "<br/>" + boutonSimple(action, "tenter de résister à la magie");
+                nbBoutons++;
+              }
             }
             if (preDmgToken.runeForgesort_protection) {
               line += "<br/>" +
@@ -14416,6 +14419,8 @@ var COFantasy = COFantasy || function() {
       current: dispo
     });
     attr.set('current', 0);
+    //On va refaire complètement l'attaque
+    undoEvent(evtARefaire);
     addEvent(evt);
     adversaire.msgEsquiveFatale = perso.tokName + " esquive l'attaque qui touche " + adversaire.tokName;
     options.redo = true;
@@ -20280,6 +20285,175 @@ var COFantasy = COFantasy || function() {
     }); //fin getSelected
   }
 
+  // asynchrone : on fait les jets du personnage en opposition
+  //eviter id [evtid] [chance]
+  function evitementGenerique(msg, verbe, attributeName, actionName, tente, msgDejaFait, carac, typeAttaque, critiqueDevientNormal, msgReussite) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 1) {
+      error("Impossible de trouve la commande !", msg.content);
+      return;
+    }
+    if (cmd.length < 2) {
+      error("Pas assez d'arguments pour " + cmd[0], cmd);
+      return;
+    }
+    var evt;
+    var chance;
+    if (cmd.length > 2) { //On relance pour un événement particulier
+      evt = findEvent(cmd[2]);
+      if (evt === undefined) {
+        error("L'action est trop ancienne ou a été annulée", cmd);
+        return;
+      }
+      chance = cmd.length > 3 && cmd[3] == 'chance';
+    } else {
+      evt = lastEvent();
+    }
+    if (evt === undefined) {
+      sendChat('', "Historique d'actions vide, pas d'action trouvée pour esquiver");
+      return;
+    }
+    if (evt.type != 'Attaque') {
+      sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour " + verbe + " l'attaque précédente");
+      return;
+    }
+    var perso = persoOfId(cmd[1]);
+    if (perso === undefined) {
+      error("Le premier argument de " + cmd[0] + " n'est pas un token de personnage", cmd);
+      return;
+    }
+    if (!peutController(msg, perso)) {
+      sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+      return;
+    }
+    var action = evt.action;
+    var optionsAttaque = action.currentOptions;
+    var cible = action.cibles.find(function(target) {
+      return (target.token.id === perso.token.id);
+    });
+    if (cible === undefined) {
+      sendChar(perso.charId, "n'est pas la cible de la dernière attaque");
+      return;
+    }
+    var jetAdversaire = cible.attackRoll;
+    if (jetAdversaire === undefined) {
+      error("Impossible de trouver le jet de l'attaquant", cible);
+      return;
+    }
+    var pc = ficheAttributeAsInt(perso, 'PC', 0);
+    if (chance) {
+      if (pc <= 0) {
+        sendChar(perso.charId, " n'a plus de point de chance à dépenser...");
+        chance = false;
+      } else {
+        setFicheAttr(perso, 'PC', pc - 1, evt);
+      }
+    } else {
+      var attribut = tokenAttribute(perso, attributeName);
+      if (attribut.length === 0) {
+        sendChar(perso.charId, "ne sait pas faire " + actionName);
+        return;
+      }
+      attribut = attribut[0];
+      var curAttribut = parseInt(attribut.get('current'));
+      if (isNaN(curAttribut)) {
+        error("Resource pour " + actionName + " mal formée", attribut);
+        return;
+      }
+      if (curAttribut < 1) {
+        sendChar(perso.charId, msgDejaFait);
+        return;
+      }
+      evt.attributes = evt.attributes || [];
+      evt.attributes.push({
+        attribute: attribut,
+        current: curAttribut
+      });
+      attribut.set('current', curAttribut - 1);
+    }
+    var attackRollExpr = "[[" + computeDice(perso) + "]]";
+    sendChat('', attackRollExpr, function(res) {
+      var msg = cible['msg'+attributeName];
+      var totalEvitement = cible['total'+attributeName];
+      var pageId = action.pageId;
+      if (chance) {
+        msg += '+10';
+        totalEvitement += 10;
+      } else {
+        var rolls = res[0];
+        var attackRoll = rolls.inlinerolls[0];
+        totalEvitement = attackRoll.results.total;
+        msg = buildinline(attackRoll);
+        var attBonus = ficheAttributeAsInt(perso, 'niveau', 1);
+        attBonus += modCarac(perso, carac);
+        switch (typeAttaque) {
+          case 'distance':
+        attBonus += ficheAttributeAsInt(perso, 'ATKTIR_DIV', 0);
+        if (stateCOF.setting_arran ||
+          (stateCOF.setting_mixte && ficheAttribute(perso, 'option_setting', 'generique') == 'arran')) {
+          attBonus += ficheAttributeAsInt(perso, 'mod_atktir', 0);
+        }
+            break;
+          case 'magique':
+        attBonus += ficheAttributeAsInt(perso, 'ATKMAG_DIV', 0);
+        if (stateCOF.setting_arran ||
+          (stateCOF.setting_mixte && ficheAttribute(perso, 'option_setting', 'generique') == 'arran')) {
+          attBonus += ficheAttributeAsInt(perso, 'mod_atkmag', 0);
+        }
+            break;
+          case 'contact':
+            break;
+          default:
+        }
+        totalEvitement += attBonus;
+        if (attBonus > 0) msg += "+" + attBonus;
+        else if (attBonus < 0) msg += attBonus;
+        var optionsEvitement = {
+          displayName: true,
+          pasDeDmg: true
+        };
+        var attAbsBonus = bonusAttaqueA(cible, actionName, evt, cible.messages, optionsEvitement);
+        var bad = bonusAttaqueD(cible, action.attaquant, 0, pageId, evt, cible.messages, optionsEvitement);
+        attAbsBonus += bad;
+        if (attAbsBonus > 0) msg += "+" + attAbsBonus;
+        else if (attAbsBonus < 0) msg += attAbsBonus;
+        msg = cible.tokName + " tente " + tente + ". " + 
+          onGenre(cible, "Il", "elle") + " fait " + msg;
+      }
+      if (totalEvitement < jetAdversaire) {
+        cible.messages.push(msg + " => Raté");
+        if (pc <= 0 || totalEvitement < jetAdversaire - 10) {
+          removePreDmg(optionsAttaque, perso, attributeName);
+        } else {
+          removePreDmg(optionsAttaque, perso, attributeName, 'chance');
+          cible['msg'+attributeName] = msg;
+          cible['total'+attributeName] = totalEvitement;
+          cible['indexMsg'+attributeName] = cible.messages.length - 1;
+        }
+      } else { //Esquive réussie
+        if (critiqueDevientNormal && cible.critique) {
+          cible.critique = false;
+          msg += " => Réussi, l'attaque fait des dégâts normaux";
+          removePreDmg(optionsAttaque, perso, attributeName);
+        } else {
+          cible.touche = false;
+          action.cibles = action.cibles.filter(function(c) {
+            return c.token.id != cible.token.id;
+          });
+          msg += " => Réussi, " + msgReussite;
+          removePreDmg(optionsAttaque, perso);
+        }
+        if (cible['indexMsg'+attributeName] === undefined)
+          cible.messages.push(msg);
+        else
+          cible.messages[cible['indexMsg'+attributeName]] = msg;
+      }
+      attackDealDmg(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, pageId, action.ciblesAttaquees);
+    }); //fin lancé de dés asynchrone
+  }
+
   // asynchrone : on fait les jets du guerrier en opposition
   // !cof-absorber-au-bouclier
   function absorberAuBouclier(msg) {
@@ -20408,258 +20582,15 @@ var COFantasy = COFantasy || function() {
   }
 
   // asynchrone : on fait les jets du barbare en opposition
-  //!cof-resister-a-la-magie id [evtid]
+  //!cof-resister-a-la-magie id [evtid] [chance]
   function resisterALaMagie(msg) {
-    var options = parseOptions(msg);
-    if (options === undefined) return;
-    var cmd = options.cmd;
-    if (cmd === undefined || cmd.length < 2) {
-      error("Pas assez d'arguments pour !cof-resister-a-la-magie", cmd);
-      return;
-    }
-    var evtARefaire;
-    if (cmd.length > 2) { //On relance pour un événement particulier
-      evtARefaire = findEvent(cmd[2]);
-      if (evtARefaire === undefined) {
-        error("L'action est trop ancienne ou a été annulée", cmd);
-        return;
-      }
-    } else {
-      evtARefaire = lastEvent();
-    }
-    if (evtARefaire === undefined) {
-      sendChat('', "Historique d'actions vide, pas d'action trouvée pour résister");
-      return;
-    }
-    if (evtARefaire.type != 'Attaque') {
-      sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour résister à l'attaque précédente");
-      return;
-    }
-    var attaque = evtARefaire.action;
-    if (attaque === undefined) {
-      error("Événement sans action dans !cof-resister-a-la-magie", evtARefaire);
-      return;
-    }
-    var barbare = persoOfId(cmd[1]);
-    if (barbare === undefined) {
-      error("Le premier argument de !cof-resister-a-la-magie doit être le token d'un personnage", cmd);
-      return;
-    }
-    if (!peutController(msg, barbare)) {
-      sendPlayer(msg, "pas le droit d'utiliser ce bouton");
-      return;
-    }
-    var attr = tokenAttribute(barbare, 'resistanceALaMagieBarbare');
-    if (attr.length === 0) {
-      sendChar(barbare.charId, "ne sait pas résister à la magie");
-      return;
-    }
-    attr = attr[0];
-    var curAttr = parseInt(attr.get('current'));
-    if (isNaN(curAttr)) {
-      error("Resource pour résistance à la magie du barbare mal formée", attr);
-      return;
-    }
-    if (curAttr < 1) {
-      sendChar(barbare.charId, " a déjà essayé de résister à la magie ce tour");
-      return;
-    }
-    var cible = attaque.cibles.find(function(target) {
-      return (target.token.id === barbare.token.id);
-    });
-    if (cible === undefined) {
-      sendChar(barbare.charId, "n'est pas la cible de la dernière attaque");
-      return;
-    }
-    var optionsRedo = attaque.options;
-    optionsRedo.rolls = attaque.rolls;
-    var evt = {
-      type: "résistance à la magie",
-      attributes: [{
-        attribute: attr,
-        current: curAttr
-      }]
-    };
-    optionsRedo.evt = evt;
-    optionsRedo.redo = true;
-    attr.set('current', curAttr - 1);
-    var attackRollExpr = "[[" + computeDice(barbare) + "]]";
-    sendChat('', attackRollExpr, function(res) {
-      var rolls = res[0];
-      var attackRoll = rolls.inlinerolls[0];
-      var total = attackRoll.results.total;
-      var msgResister = buildinline(attackRoll);
-      var attBonus = ficheAttributeAsInt(barbare, 'niveau', 1);
-      attBonus += modCarac(barbare, 'sagesse');
-      attBonus += ficheAttributeAsInt(barbare, 'ATKMAG_DIV', 0);
-      total += attBonus;
-      if (attBonus > 0) msgResister += "+" + attBonus;
-      else if (attBonus < 0) msgResister += attBonus;
-      var expl = [];
-      var attAbsBonus = bonusAttaqueA(cible, 'résistance à la magie', evt, expl, {
-        pasDeDmg: true
-      });
-      var pageId = barbare.token.get('pageid');
-      var bad = bonusAttaqueD(cible, attaque.attaquant, 0, pageId, evt, expl, {});
-      attAbsBonus += bad;
-      if (attAbsBonus > 0) msgResister += "+" + attAbsBonus;
-      else if (attAbsBonus < 0) msgResister += attAbsBonus;
-      expl.push(cible.tokName + " tente de résister à la magie. " + onGenre(cible, "Il", "elle") + " fait " + msgResister);
-      cible.absorber = total;
-      cible.absorberDisplay = msgResister;
-      cible.absorberExpl = expl;
-      attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, optionsRedo);
-    }); //fin lancé de dés asynchrone
+    evitementGenerique(msg, 'résister à la magie', 'resistanceALaMagieBarbare', 'résistance à la magie', "de résister à la nagie", " a déjà essayé de résister à la magie ce tour", 'sagesse', 'magique', false, "");
   }
 
   // asynchrone : on fait les jets du barde en opposition
   //!cof-esquive-acrobatique id [evtid] [chance]
   function doEsquiveAcrobatique(msg) {
-    var options = parseOptions(msg);
-    if (options === undefined) return;
-    var cmd = options.cmd;
-    if (cmd === undefined || cmd.length < 2) {
-      error("Pas assez d'arguments pour !cof-esquive-acrobatique", cmd);
-      return;
-    }
-    var evt;
-    var chance;
-    if (cmd.length > 2) { //On relance pour un événement particulier
-      evt = findEvent(cmd[2]);
-      if (evt === undefined) {
-        error("L'action est trop ancienne ou a été annulée", cmd);
-        return;
-      }
-      chance = cmd.length > 3 && cmd[3] == 'chance';
-    } else {
-      evt = lastEvent();
-    }
-    if (evt === undefined) {
-      sendChat('', "Historique d'actions vide, pas d'action trouvée pour esquiver");
-      return;
-    }
-    if (evt.type != 'Attaque') {
-      sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour esquiver l'attaque précédente");
-      return;
-    }
-    var barde = persoOfId(cmd[1]);
-    if (barde === undefined) {
-      error("Le premier argument de !cof-esquive-acrobatique n'est pas un token de personnage", cmd);
-      return;
-    }
-    if (!peutController(msg, barde)) {
-      sendPlayer(msg, "pas le droit d'utiliser ce bouton");
-      return;
-    }
-    var action = evt.action;
-    var optionsAttaque = action.currentOptions;
-    var cible = action.cibles.find(function(target) {
-      return (target.token.id === barde.token.id);
-    });
-    if (cible === undefined) {
-      sendChar(barde.charId, "n'est pas la cible de la dernière attaque");
-      return;
-    }
-    var jetAdversaire = cible.attackRoll;
-    if (jetAdversaire === undefined) {
-      error("Impossible de trouver le jet de l'attaquant", cible);
-      return;
-    }
-    var pc = ficheAttributeAsInt(barde, 'PC', 0);
-    if (chance) {
-      if (pc <= 0) {
-        sendChar(barde.charId, " n'a plus de point de chance à dépenser...");
-        chance = false;
-      } else {
-        setFicheAttr(barde, 'PC', pc - 1, evt);
-      }
-    } else {
-      var esquiveAcrobatique = tokenAttribute(barde, 'esquiveAcrobatique');
-      if (esquiveAcrobatique.length === 0) {
-        sendChar(barde.charId, "ne sait pas faire d'esquive acrobatique");
-        return;
-      }
-      esquiveAcrobatique = esquiveAcrobatique[0];
-      var curEsquiveAcrobatique = parseInt(esquiveAcrobatique.get('current'));
-      if (isNaN(curEsquiveAcrobatique)) {
-        error("Resource pour esquive acrobatique mal formée", esquiveAcrobatique);
-        return;
-      }
-      if (curEsquiveAcrobatique < 1) {
-        sendChar(barde.charId, " a déjà fait une esquive acrobatique ce tour");
-        return;
-      }
-      evt.attributes = evt.attributes || [];
-      evt.attributes.push({
-        attribute: esquiveAcrobatique,
-        current: curEsquiveAcrobatique
-      });
-      esquiveAcrobatique.set('current', curEsquiveAcrobatique - 1);
-    }
-    var attackRollExpr = "[[" + computeDice(barde) + "]]";
-    sendChat('', attackRollExpr, function(res) {
-      var msgEsquiver = cible.msgEsquiveAcrobatique;
-      var totalEsquive = cible.totalEsquiveAcrobatique;
-      var pageId = action.pageId;
-      if (chance) {
-        msgEsquiver += '+10';
-        totalEsquive += 10;
-      } else {
-        var rolls = res[0];
-        var attackRoll = rolls.inlinerolls[0];
-        totalEsquive = attackRoll.results.total;
-        msgEsquiver = buildinline(attackRoll);
-        var attBonus = ficheAttributeAsInt(barde, 'niveau', 1);
-        attBonus += modCarac(barde, 'dexterite');
-        attBonus += ficheAttributeAsInt(barde, 'ATKTIR_DIV', 0);
-        if (stateCOF.setting_arran ||
-          (stateCOF.setting_mixte && ficheAttribute(barde, 'option_setting', 'generique') == 'arran')) {
-          attBonus += ficheAttributeAsInt(barde, 'mod_atktir', 0);
-        }
-        totalEsquive += attBonus;
-        if (attBonus > 0) msgEsquiver += "+" + attBonus;
-        else if (attBonus < 0) msgEsquiver += attBonus;
-        var optionsEsquive = {
-          displayName: true,
-          pasDeDmg: true
-        };
-        var attAbsBonus = bonusAttaqueA(cible, 'esquive acrobatique', evt, cible.messages, optionsEsquive);
-        var bad = bonusAttaqueD(cible, action.attaquant, 0, pageId, evt, cible.messages, optionsEsquive);
-        attAbsBonus += bad;
-        if (attAbsBonus > 0) msgEsquiver += "+" + attAbsBonus;
-        else if (attAbsBonus < 0) msgEsquiver += attAbsBonus;
-        msgEsquiver = cible.tokName + " tente une esquive acrobatique. " + onGenre(cible, "Il", "elle") + " fait " + msgEsquiver;
-      }
-      if (totalEsquive < jetAdversaire) {
-        cible.messages.push(msgEsquiver + " => Raté");
-        if (pc <= 0 || totalEsquive < jetAdversaire - 10) {
-          removePreDmg(optionsAttaque, barde, 'esquiveAcrobatique');
-        } else {
-          removePreDmg(optionsAttaque, barde, 'esquiveAcrobatique', 'chance');
-          cible.msgEsquiveAcrobatique = msgEsquiver;
-          cible.totalEsquiveAcrobatique = totalEsquive;
-          cible.indexMsgEsquiveAcrobatique = cible.messages.length - 1;
-        }
-      } else { //Esquive réussie
-        if (cible.critique) {
-          cible.critique = false;
-          msgEsquiver += " => Réussi, l'attaque fait des dégâts normaux";
-          removePreDmg(optionsAttaque, barde, 'esquiveAcrobatique');
-        } else {
-          cible.touche = false;
-          action.cibles = action.cibles.filter(function(c) {
-            return c.token.id != cible.token.id;
-          });
-          msgEsquiver += " => Réussi, l'attaque est esquivée !";
-          removePreDmg(optionsAttaque, barde);
-        }
-        if (cible.indexMsgEsquiveAcrobatique === undefined)
-          cible.messages.push(msgEsquiver);
-        else
-          cible.messages[cible.indexMsgEsquiveAcrobatique] = msgEsquiver;
-      }
-      attackDealDmg(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, pageId, action.ciblesAttaquees);
-    }); //fin lancé de dés asynchrone
+    evitementGenerique(msg, 'esquiver', 'esquiveAcrobatique', 'esquive acrobatique', "une esquive acrobatique", " a déjà fait une esquive acrobatique ce tour", 'dexterite', 'distance', true, "l'attaque est esquivée !");
   }
 
   // asynchrone : on fait les jets du duelliste en opposition
