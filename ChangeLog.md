@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.14
 ### Autres améliorations
+* Prise en compte de la chance pour les esquives acrobatiques.
 * Utilisation de l'obglet des jets cachés des PNJs par le script
 * Réorganisation des menus de règles optionnelles
 * Suppression des options de génération d'attaques devenues obsolètes
