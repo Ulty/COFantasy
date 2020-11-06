@@ -8793,9 +8793,6 @@ var COFantasy = COFantasy || function() {
                 absorber = target.absorberDisplay;
               }
             }
-            if (target.utiliseRuneProtection) {
-              target.messages.push(target.utiliseRuneProtection);
-            }
             if (target.msgEsquiveFatale) {
               target.messages.push(target.msgEsquiveFatale);
             }
@@ -22561,15 +22558,15 @@ var COFantasy = COFantasy || function() {
     var options = parseOptions(msg);
     if (options === undefined) return;
     var cmd = options.cmd;
-    var evtARefaire = lastEvent();
+    var evt = lastEvent();
     if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
-      evtARefaire = findEvent(cmd[1]);
-      if (evtARefaire === undefined) {
+      evt = findEvent(cmd[1]);
+      if (evt === undefined) {
         error("L'action est trop ancienne ou a été annulée", cmd);
         return;
       }
     }
-    if (evtARefaire.type != 'Attaque') {
+    if (evt.type != 'Attaque') {
       sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour absorber l'attaque précédente");
       return;
     }
@@ -22578,20 +22575,14 @@ var COFantasy = COFantasy || function() {
         error("Personne n'est sélectionné pour utiliser une rune", msg);
         return;
       }
-      var attaque = evtARefaire.action;
-      var options = attaque.options || {};
-      options.rolls = attaque.rolls;
-      var evt = {
-        type: "rune de protection "
-      };
-      options.evt = evt;
-      options.redo = true;
+      var action = evt.action;
+      var optionsAttaque = action.currentOptions || {};
       iterSelected(selected, function(perso) {
         if (!peutController(msg, perso)) {
           sendPlayer(msg, "pas le droit d'utiliser ce bouton");
           return;
         }
-        var cible = attaque.cibles.find(function(target) {
+        var cible = action.cibles.find(function(target) {
           return (target.token.id === perso.token.id);
         });
         if (cible === undefined) {
@@ -22599,10 +22590,15 @@ var COFantasy = COFantasy || function() {
           return;
         }
         if (!persoUtiliseRuneProtection(perso, evt)) return;
-        cible.utiliseRuneProtection = cible.tokName + " utilise sa Rune de Protection pour annuler les dommages";
-        attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
-        return;
+        cible.messages.push(cible.tokName + " utilise sa Rune de Protection pour annuler les dommages");
+        cible.touche = false; //On pourrait laisser toucher et mettre les DM à 0 ?
+        action.cibles = action.cibles.filter(function(c) {
+          return c.token.id != cible.token.id;
+        });
+        removePreDmg(optionsAttaque, cible);
       }); //fin iterSelected
+        attackDealDmg(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, action.pageId, action.ciblesAttaquees);
+      
     }); //fin getSelected
   }
 
