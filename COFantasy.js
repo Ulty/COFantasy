@@ -9008,7 +9008,7 @@ var COFantasy = COFantasy || function() {
               //Possibilités d'annuler l'attaque
               if (!options.auto) {
                 //Seulement si elle n'est pas automatiquement réussie
-                if (!options.pasDeDmg && !target.utiliseRuneProtection &&
+                if (!options.pasDeDmg &&
                   attributeAsBool(target, 'runeForgesort_protection') &&
                   attributeAsInt(target, 'limiteParCombat_runeForgesort_protection', 1) > 0) {
                   options.preDmg = options.preDmg || {};
@@ -22591,10 +22591,7 @@ var COFantasy = COFantasy || function() {
         }
         if (!persoUtiliseRuneProtection(perso, evt)) return;
         cible.messages.push(cible.tokName + " utilise sa Rune de Protection pour annuler les dommages");
-        cible.touche = false; //On pourrait laisser toucher et mettre les DM à 0 ?
-        action.cibles = action.cibles.filter(function(c) {
-          return c.token.id != cible.token.id;
-        });
+        cible.utiliseRuneProtection = true;
         removePreDmg(optionsAttaque, cible);
       }); //fin iterSelected
         attackDealDmg(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, action.pageId, action.ciblesAttaquees);
