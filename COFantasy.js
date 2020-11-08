@@ -20584,7 +20584,7 @@ var COFantasy = COFantasy || function() {
   // asynchrone : on fait les jets du barbare en opposition
   //!cof-resister-a-la-magie id [evtid] [chance]
   function resisterALaMagie(msg) {
-    evitementGenerique(msg, 'résister à la magie', 'resistanceALaMagieBarbare', 'résistance à la magie', "de résister à la nagie", " a déjà essayé de résister à la magie ce tour", 'sagesse', 'magique', false, "");
+    evitementGenerique(msg, 'résister à la magie', 'resistanceALaMagieBarbare', 'résistance à la magie', "de résister à la magie", " a déjà essayé de résister à la magie ce tour", 'sagesse', 'magique', false, "");
   }
 
   // asynchrone : on fait les jets du barde en opposition
