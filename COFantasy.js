@@ -9006,15 +9006,15 @@ var COFantasy = COFantasy || function() {
             if (target.touche) {
               ciblesTouchees.push(target);
               //Possibilités d'annuler l'attaque
-              if (!options.auto) {
-                //Seulement si elle n'est pas automatiquement réussie
-                if (!options.pasDeDmg &&
+              if (!options.pasDeDmg &&
                   attributeAsBool(target, 'runeForgesort_protection') &&
                   attributeAsInt(target, 'limiteParCombat_runeForgesort_protection', 1) > 0) {
-                  options.preDmg = options.preDmg || {};
-                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                  options.preDmg[target.token.id].runeForgesort_protection = true;
-                }
+                options.preDmg = options.preDmg || {};
+                options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                options.preDmg[target.token.id].runeForgesort_protection = true;
+              }
+              if (!options.auto) {
+                //Seulement si elle n'est pas automatiquement réussie
                 if (!target.absorber) {
                   if (!options.pasDeDmg && options.contact &&
                     !options.ignoreTouteRD &&
@@ -27165,7 +27165,7 @@ var COFantasy = COFantasy || function() {
           };
           var pv = token.get('bar1_value');
           if (pv == 0) { //jshint ignore:line
-            mort(perso, undefined, evt);
+            mort(perso, undefined, evt);z
           } else {
             //On note qu'il l'a déjà fait pour qu'il ne puisse le refaire dans le combat
             setTokenAttr(perso, 'aAgiAZeroPV', true, evt);
