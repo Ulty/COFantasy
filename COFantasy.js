@@ -5627,7 +5627,7 @@ var COFantasy = COFantasy || function() {
   //Evaluation récursive des if-then-else
   function evalITE(attaquant, target, deAttaque, options, evt, explications, scope, callback, inTarget, etatParent) {
     etatParent = etatParent || {};
-    if (scope.ite === undefined) {
+    if (scope.ite === undefined || scope.ite.length < 1) {
       etatParent.aTraiter = 1;
       callIfAllDone(etatParent, callback);
       return;
@@ -27199,7 +27199,7 @@ var COFantasy = COFantasy || function() {
           };
           var pv = token.get('bar1_value');
           if (pv == 0) { //jshint ignore:line
-            mort(perso, undefined, evt);
+            mort(perso, undefined, evt);z
           } else {
             //On note qu'il l'a déjà fait pour qu'il ne puisse le refaire dans le combat
             setTokenAttr(perso, 'aAgiAZeroPV', true, evt);
