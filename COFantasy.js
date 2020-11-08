@@ -5626,7 +5626,7 @@ var COFantasy = COFantasy || function() {
   //Evaluation récursive des if-then-else
   function evalITE(attaquant, target, deAttaque, options, evt, explications, scope, callback, inTarget, etatParent) {
     etatParent = etatParent || {};
-    if (scope.ite === undefined) {
+    if (scope.ite === undefined || scope.ite.length < 1) {
       etatParent.aTraiter = 1;
       callIfAllDone(etatParent, callback);
       return;
