@@ -5059,7 +5059,7 @@ var COFantasy = COFantasy || function() {
             }
             attr = attr[0];
           }
-          scope.decrAttribute = attr;
+          scope.decrAttribute = attr.id; //Seulement l'id pour pouvoir cloner
           return;
         case 'incrDmgCoef':
           scope.dmgCoef = (scope.dmgCoef || 1);
@@ -5594,7 +5594,11 @@ var COFantasy = COFantasy || function() {
           }
           break;
         case 'decrAttribute':
-          var attr = branch.decrAttribute;
+          var attr = getObj('attribute', branch.decrAttribute);
+          if (attr === undefined) {
+            sendChar(attr.get('characterid'), "ne peut plus faire cela");
+            break;
+          }
           var oldval = parseInt(attr.get('current'));
           if (isNaN(oldval) || oldval < 1) {
             sendChar(attr.get('characterid'), "ne peut plus faire cela");
@@ -7188,7 +7192,11 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (options.decrAttribute) {
-      var attr = options.decrAttribute;
+      var attr = getObj('attribute', options.decrAttribute);
+      if (attr === undefined) {
+        sendChar(attr.get('characterid'), "ne peut plus faire cela");
+        return true;
+      }
       var oldval = parseInt(attr.get('current'));
       if (isNaN(oldval) || oldval < 1) {
         sendChar(attr.get('characterid'), "ne peut plus faire cela");
