@@ -9059,7 +9059,8 @@ var COFantasy = COFantasy || function() {
                   }
                 }
                 if (options.sortilege) {
-                  if (attributeAsBool(target, 'absorberUnSort') && !target.absorber) {
+                  if (attributeAsBool(target, 'absorberUnSort') &&
+                    ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) == 1) {
                     options.preDmg = options.preDmg || {};
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].absorberUnSort = true;
@@ -10618,12 +10619,24 @@ var COFantasy = COFantasy || function() {
               nbBoutons++;
             }
             if (preDmgToken.absorberUnSort) {
-              line += "<br/>" + boutonSimple("!cof-absorber-au-bouclier " + evt.id + ' --target ' + target.token.id, "absorber le sort");
-              nbBoutons++;
+              action = "!cof-absorber-sort-au-bouclier " + target.token.id + ' ' + evt.id;
+              if (preDmgToken.absorberUnSort == 'chance') {
+                action += ' chance';
+                addLineToFramedDisplay(display, target.messages[target.indexMsgabsorberUnSort] + " " + boutonSimple(action, 'Chance'), 80);
+              } else {
+                line += "<br/>" + boutonSimple(action, "absorber le sort");
+                nbBoutons++;
+              }
             }
             if (preDmgToken.absorberUnCoup) {
-              line += "<br/>" + boutonSimple("!cof-absorber-au-bouclier " + evt.id + ' --target ' + target.token.id, "absorber le coup");
-              nbBoutons++;
+              action = "!cof-absorber-coup-au-bouclier " + target.token.id + ' ' + evt.id;
+              if (preDmgToken.absorberUnCoup == 'chance') {
+                action += ' chance';
+                addLineToFramedDisplay(display, target.messages[target.indexMsgabsorberUnCoup] + " " + boutonSimple(action, 'Chance'), 80);
+              } else {
+                line += "<br/>" + boutonSimple(action, "absorber le coup");
+                nbBoutons++;
+              }
             }
             if (nbBoutons > 0) addLineToFramedDisplay(display, line);
           }
@@ -20284,7 +20297,7 @@ var COFantasy = COFantasy || function() {
 
   // asynchrone : on fait les jets du personnage en opposition
   //eviter id [evtid] [chance]
-  function evitementGenerique(msg, verbe, attributeName, actionName, tente, msgDejaFait, carac, typeAttaque, critiqueDevientNormal, msgReussite) {
+  function evitementGenerique(msg, verbe, attributeName, actionName, tente, msgDejaFait, carac, typeAttaque, msgReussite, opt) {
     var options = parseOptions(msg);
     if (options === undefined) return;
     var cmd = options.cmd;
@@ -20327,12 +20340,16 @@ var COFantasy = COFantasy || function() {
     }
     var action = evt.action;
     var optionsAttaque = action.currentOptions;
+    var pageId = action.pageId;
     var cible = action.cibles.find(function(target) {
       return (target.token.id === perso.token.id);
     });
     if (cible === undefined) {
       sendChar(perso.charId, "n'est pas la cible de la dernière attaque");
       return;
+    }
+    if (opt && opt.condition && !opt.condition(perso)) {
+      attackDealDmg(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, pageId, action.ciblesAttaquees);
     }
     var jetAdversaire = cible.attackRoll;
     if (jetAdversaire === undefined) {
@@ -20354,27 +20371,35 @@ var COFantasy = COFantasy || function() {
         return;
       }
       attribut = attribut[0];
-      var curAttribut = parseInt(attribut.get('current'));
-      if (isNaN(curAttribut)) {
-        error("Resource pour " + actionName + " mal formée", attribut);
-        return;
+      if (opt && opt.attrAsBool) {
+        if (!attribut.get('current')) {
+          sendChar(perso.charId, msgDejaFait);
+          return;
+        }
+        evt.deletedAttributes = evt.deletedAttributes || [];
+        evt.deletedAttributes.push(attribut);
+      } else {
+        var curAttribut = parseInt(attribut.get('current'));
+        if (isNaN(curAttribut)) {
+          error("Resource pour " + actionName + " mal formée", attribut);
+          return;
+        }
+        if (curAttribut < 1) {
+          sendChar(perso.charId, msgDejaFait);
+          return;
+        }
+        evt.attributes = evt.attributes || [];
+        evt.attributes.push({
+          attribute: attribut,
+          current: curAttribut
+        });
+        attribut.set('current', curAttribut - 1);
       }
-      if (curAttribut < 1) {
-        sendChar(perso.charId, msgDejaFait);
-        return;
-      }
-      evt.attributes = evt.attributes || [];
-      evt.attributes.push({
-        attribute: attribut,
-        current: curAttribut
-      });
-      attribut.set('current', curAttribut - 1);
     }
     var attackRollExpr = "[[" + computeDice(perso) + "]]";
     sendChat('', attackRollExpr, function(res) {
-      var msg = cible['msg'+attributeName];
-      var totalEvitement = cible['total'+attributeName];
-      var pageId = action.pageId;
+      var msg = cible['msg' + attributeName];
+      var totalEvitement = cible['total' + attributeName];
       if (chance) {
         msg += '+10';
         totalEvitement += 10;
@@ -20384,23 +20409,27 @@ var COFantasy = COFantasy || function() {
         totalEvitement = attackRoll.results.total;
         msg = buildinline(attackRoll);
         var attBonus = ficheAttributeAsInt(perso, 'niveau', 1);
-        attBonus += modCarac(perso, carac);
         switch (typeAttaque) {
           case 'distance':
-        attBonus += ficheAttributeAsInt(perso, 'ATKTIR_DIV', 0);
-        if (stateCOF.setting_arran ||
-          (stateCOF.setting_mixte && ficheAttribute(perso, 'option_setting', 'generique') == 'arran')) {
-          attBonus += ficheAttributeAsInt(perso, 'mod_atktir', 0);
-        }
+            attBonus += modCarac(perso, carac);
+            attBonus += ficheAttributeAsInt(perso, 'ATKTIR_DIV', 0);
+            if (stateCOF.setting_arran ||
+              (stateCOF.setting_mixte && ficheAttribute(perso, 'option_setting', 'generique') == 'arran')) {
+              attBonus += ficheAttributeAsInt(perso, 'mod_atktir', 0);
+            }
             break;
           case 'magique':
-        attBonus += ficheAttributeAsInt(perso, 'ATKMAG_DIV', 0);
-        if (stateCOF.setting_arran ||
-          (stateCOF.setting_mixte && ficheAttribute(perso, 'option_setting', 'generique') == 'arran')) {
-          attBonus += ficheAttributeAsInt(perso, 'mod_atkmag', 0);
-        }
+            attBonus += ficheAttributeAsInt(perso, 'ATKMAG_DIV', 0);
+            if (stateCOF.setting_arran ||
+              (stateCOF.setting_mixte && ficheAttribute(perso, 'option_setting', 'generique') == 'arran')) {
+              attBonus += ficheAttributeAsInt(perso, 'mod_atkmag', 0);
+              attBonus += modCarac(perso, 'intelligence');
+            } else {
+              attBonus += modCarac(perso, carac);
+            }
             break;
           case 'contact':
+            attBonus += ficheAttributeAsInt(perso, 'ATKCAC_DIV', 0);
             break;
           default:
         }
@@ -20416,7 +20445,7 @@ var COFantasy = COFantasy || function() {
         attAbsBonus += bad;
         if (attAbsBonus > 0) msg += "+" + attAbsBonus;
         else if (attAbsBonus < 0) msg += attAbsBonus;
-        msg = cible.tokName + " tente " + tente + ". " + 
+        msg = cible.tokName + " tente " + tente + ". " +
           onGenre(cible, "Il", "elle") + " fait " + msg;
       }
       if (totalEvitement < jetAdversaire) {
@@ -20425,12 +20454,12 @@ var COFantasy = COFantasy || function() {
           removePreDmg(optionsAttaque, perso, attributeName);
         } else {
           removePreDmg(optionsAttaque, perso, attributeName, 'chance');
-          cible['msg'+attributeName] = msg;
-          cible['total'+attributeName] = totalEvitement;
-          cible['indexMsg'+attributeName] = cible.messages.length - 1;
+          cible['msg' + attributeName] = msg;
+          cible['total' + attributeName] = totalEvitement;
+          cible['indexMsg' + attributeName] = cible.messages.length - 1;
         }
       } else { //Esquive réussie
-        if (critiqueDevientNormal && cible.critique) {
+        if (opt && opt.critiqueDevientNormal && cible.critique) {
           cible.critique = false;
           msg += " => Réussi, l'attaque fait des dégâts normaux";
           removePreDmg(optionsAttaque, perso, attributeName);
@@ -20442,152 +20471,65 @@ var COFantasy = COFantasy || function() {
           msg += " => Réussi, " + msgReussite;
           removePreDmg(optionsAttaque, perso);
         }
-        if (cible['indexMsg'+attributeName] === undefined)
+        if (cible['indexMsg' + attributeName] === undefined)
           cible.messages.push(msg);
         else
-          cible.messages[cible['indexMsg'+attributeName]] = msg;
+          cible.messages[cible['indexMsg' + attributeName]] = msg;
       }
       attackDealDmg(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, pageId, action.ciblesAttaquees);
     }); //fin lancé de dés asynchrone
   }
 
-  // asynchrone : on fait les jets du guerrier en opposition
-  // !cof-absorber-au-bouclier
-  function absorberAuBouclier(msg) {
-    var options = parseOptions(msg);
-    if (options === undefined) return;
-    var cmd = options.cmd;
-    var evtARefaire = lastEvent();
-    if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
-      evtARefaire = findEvent(cmd[1]);
-      if (evtARefaire === undefined) {
-        error("L'action est trop ancienne ou a été annulée", cmd);
-        return;
+  //!cof-absorber-coup-au-bouclier id [evtid] [chance]
+  function absorberCoupAuBouclier(msg) {
+    var condition = function(guerrier) {
+      if (ficheAttributeAsInt(guerrier, 'DEFBOUCLIERON', 1) != 1) {
+        sendChar(guerrier.charId, "ne porte pas son bouclier, il ne peut pas aborber de coup");
+        return false;
       }
-    }
-    getSelected(msg, function(selected, playerId) {
-      if (selected.length === 0) {
-        error("Personne n'est sélectionné pour absorber", msg);
-        return;
+      return true;
+    };
+    evitementGenerique(msg, "absorber un coup au bouclier", 'absorberUnCoup',
+      "d'absorption de coup au bouclier", "d'absorber un coup au bouclier",
+      " a déjà essayé d'absorber un coup au bouclier ce tour", 'force', 'contact', "le coup est absorbé !", {
+        attrAsBool: true,
+        condition: condition
+      });
+  }
+
+  //!cof-absorber-sort-au-bouclier id [evtid] [chance]
+  function absorberSortAuBouclier(msg) {
+    var condition = function(guerrier) {
+      if (ficheAttributeAsInt(guerrier, 'DEFBOUCLIERON', 1) != 1) {
+        sendChar(guerrier.charId, "ne porte pas son bouclier, il ne peut pas aborber un sort");
+        return false;
       }
-      if (evtARefaire === undefined) {
-        sendChat('', "Historique d'actions vide, pas d'action trouvée pour absorber un coup ou un sort");
-        return;
-      }
-      if (evtARefaire.type != 'Attaque') {
-        sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour absorber l'attaque précédente");
-        return;
-      }
-      var attaque = evtARefaire.action;
-      var options = attaque.options;
-      options.rolls = attaque.rolls;
-      var evt = {
-        type: "absorber un "
-      };
-      options.evt = evt;
-      options.redo = true;
-      var attrAbsorbe = 'absorberUn';
-      if (options.sortilege) {
-        evt.type += "sort";
-        attrAbsorbe += "Sort";
-      } else {
-        evt.type += "coup";
-        attrAbsorbe += "Coup";
-      }
-      var toProceed;
-      var count = selected.length;
-      iterSelected(selected, function(guerrier) {
-        if (!peutController(msg, guerrier)) {
-          sendPlayer(msg, "pas le droit d'utiliser ce bouton");
-          return;
-        }
-        if (ficheAttributeAsInt(guerrier, 'DEFBOUCLIERON', 1) != 1) {
-          sendChar(guerrier.charId, "ne porte pas son bouclier, il ne peut pas " + evt.type);
-          count--;
-          return;
-        }
-        if (!attributeAsBool(guerrier, attrAbsorbe)) {
-          sendChar(guerrier.charId, "n'est pas placé pour " + evt.type);
-          count--;
-          return;
-        }
-        var cible = attaque.cibles.find(function(target) {
-          return (target.token.id === guerrier.token.id);
-        });
-        if (cible === undefined) {
-          sendChar(guerrier.charId, "n'est pas la cible de la dernière attaque");
-          count--;
-          return;
-        }
-        removeTokenAttr(guerrier, attrAbsorbe, evt);
-        toProceed = true;
-        var attackRollExpr = "[[" + computeDice(guerrier) + "]]";
-        sendChat('', attackRollExpr, function(res) {
-          var rolls = res[0];
-          var attackRoll = rolls.inlinerolls[0];
-          var totalAbsorbe = attackRoll.results.total;
-          var msgAbsorber = buildinline(attackRoll);
-          var attBonus = ficheAttributeAsInt(guerrier, 'niveau', 1);
-          if (stateCOF.setting_arran ||
-            (stateCOF.setting_mixte && ficheAttribute(guerrier, 'option_setting', 'generique') == 'arran')) {
-            if (options.sortilege) {
-              attBonus += modCarac(guerrier, 'intelligence');
-              attBonus += ficheAttributeAsInt(guerrier, 'mod_atkmag', 0);
-              attBonus += ficheAttributeAsInt(guerrier, 'ATKMAG_DIV', 0);
-            } else {
-              attBonus += modCarac(guerrier, 'force');
-              attBonus += ficheAttributeAsInt(guerrier, 'mod_atkcac', 0);
-              attBonus += ficheAttributeAsInt(guerrier, 'ATKCAC_DIV', 0);
-            }
-          } else {
-            if (options.sortilege) {
-              attBonus += modCarac(guerrier, 'sagesse');
-              attBonus += ficheAttributeAsInt(guerrier, 'ATKMAG_DIV', 0);
-            } else {
-              attBonus += modCarac(guerrier, 'force');
-              attBonus += ficheAttributeAsInt(guerrier, 'ATKCAC_DIV', 0);
-            }
-          }
-          totalAbsorbe += attBonus;
-          if (attBonus > 0) msgAbsorber += "+" + attBonus;
-          else if (attBonus < 0) msgAbsorber += attBonus;
-          var explAbsorber = [];
-          var attAbsBonus = bonusAttaqueA(cible, 'bouclier', evt, explAbsorber, {
-            pasDeDmg: true
-          });
-          var pageId = guerrier.token.get('pageid');
-          var bad = bonusAttaqueD(cible, attaque.attaquant, 0, pageId, evt, explAbsorber, {});
-          attAbsBonus += bad;
-          if (attAbsBonus > 0) msgAbsorber += "+" + attAbsBonus;
-          else if (attAbsBonus < 0) msgAbsorber += attAbsBonus;
-          explAbsorber.push(cible.tokName + " tente d'absorber l'attaque avec son bouclier. " +
-            onGenre(cible, "Il", "elle") + " fait " + msgAbsorber);
-          cible.absorber = totalAbsorbe;
-          cible.absorberDisplay = msgAbsorber;
-          cible.absorberExpl = explAbsorber;
-          count--;
-          if (count === 0) {
-            toProceed = false;
-            attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
-          }
-        }); //fin lancé de dés asynchrone
-      }); //fin iterSelected
-      if (count === 0 && toProceed) {
-        attack(attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
-      }
-    }); //fin getSelected
+      return true;
+    };
+    evitementGenerique(msg, "absorber un sort au bouclier", 'absorberUnSort',
+      "d'absorption de sort au bouclier", "d'absorber un sort au bouclier",
+      " a déjà essayé d'absorber un sort au bouclier ce tour", 'sagesse', 'magique', "le sort est absorbé !", {
+        attrAsBool: true,
+        condition: condition
+      });
   }
 
   // asynchrone : on fait les jets du barbare en opposition
   //!cof-resister-a-la-magie id [evtid] [chance]
   function resisterALaMagie(msg) {
-    evitementGenerique(msg, 'résister à la magie', 'resistanceALaMagieBarbare', 'résistance à la magie', "de résister à la nagie", " a déjà essayé de résister à la magie ce tour", 'sagesse', 'magique', false, "");
+    evitementGenerique(msg, 'résister à la magie', 'resistanceALaMagieBarbare',
+      'résistance à la magie', "de résister à la magie",
+      " a déjà essayé de résister à la magie ce tour",
+      'sagesse', 'magique', "");
   }
 
   // asynchrone : on fait les jets du barde en opposition
   //!cof-esquive-acrobatique id [evtid] [chance]
   function doEsquiveAcrobatique(msg) {
-    evitementGenerique(msg, 'esquiver', 'esquiveAcrobatique', 'esquive acrobatique', "une esquive acrobatique", " a déjà fait une esquive acrobatique ce tour", 'dexterite', 'distance', true, "l'attaque est esquivée !");
+    evitementGenerique(msg, 'esquiver', 'esquiveAcrobatique',
+      'esquive acrobatique', "une esquive acrobatique", " a déjà fait une esquive acrobatique ce tour", 'dexterite', 'distance', "l'attaque est esquivée !", {
+        critiqueDevientNormal: true
+      });
   }
 
   // asynchrone : on fait les jets du duelliste en opposition
@@ -20802,6 +20744,7 @@ var COFantasy = COFantasy || function() {
       }]
     };
     chairACanon.set('current', curChairACanon - 1);
+    undoEvent(evtARefaire);
     optionsRedo.evt = evt;
     optionsRedo.redo = true;
     attack(attaque.playerId, attaque.attaquant, cibles, attaque.weaponStats, optionsRedo);
@@ -22594,8 +22537,8 @@ var COFantasy = COFantasy || function() {
         cible.utiliseRuneProtection = true;
         removePreDmg(optionsAttaque, cible);
       }); //fin iterSelected
-        attackDealDmg(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, action.pageId, action.ciblesAttaquees);
-      
+      attackDealDmg(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, action.pageId, action.ciblesAttaquees);
+
     }); //fin getSelected
   }
 
@@ -25920,7 +25863,11 @@ var COFantasy = COFantasy || function() {
         doParadeMagistrale(msg);
         return;
       case "!cof-absorber-au-bouclier":
-        absorberAuBouclier(msg);
+      case "!cof-absorber-coup-au-bouclier":
+        absorberCoupAuBouclier(msg);
+        return;
+      case "!cof-absorber-sort-au-bouclier":
+        absorberSortAuBouclier(msg);
         return;
       case "!cof-chair-a-canon":
         doChairACanon(msg);
