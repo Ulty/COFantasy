@@ -5681,12 +5681,19 @@ var COFantasy = COFantasy || function() {
           var saveOpts = {
             msgPour: msgPour,
             msgRate: msgRate,
-            attaquant: attaquant
+            attaquant: attaquant,
+            avecPC: true
           };
-          var saveId = 'ifSave_' + attaquant.token.id;
+          var saveId = condInTarget ? 'ifSave_' + etatParent + '_' + target.token.id : 'ifSave_' + etatParent + '_' + attaquant.token.id ;
           var expliquer = function(msg) {
             target.messages.push(msg);
           };
+          if (options.rolls) {
+            saveOpts.roll = options.rolls[rollId];
+            if(options.chanceRollId && options.chanceRollId[rollId]) {
+              saveOpts.chanceRollId = options.chanceRollId[rollId];
+            }
+          }
           save(ite.condition.save, target, saveId, expliquer, saveOpts, evt,
             function(reussite, rolltext) {
               var branch;
@@ -10251,7 +10258,8 @@ var COFantasy = COFantasy || function() {
                     var saveOpts = {
                       msgPour: msgPour,
                       msgRate: msgRate,
-                      attaquant: attaquant
+                      attaquant: attaquant,
+                      avecPC: true
                     };
                     var rollId = 'etat_' + ce.etat + index + '_' + target.token.id;
                     if (options.rolls) {
@@ -10306,10 +10314,16 @@ var COFantasy = COFantasy || function() {
                   var saveOpts = {
                     msgPour: msgPour,
                     msgRate: msgRate,
-                    attaquant: attaquant
+                    attaquant: attaquant,
+                    avecPC: true
                   };
                   var rollId = 'effet_' + ef.effet + index + '_' + target.token.id;
-                  if (options.rolls) saveOpts.roll = options.rolls[rollId];
+                  if (options.rolls) {
+                    saveOpts.roll = options.rolls[rollId];
+                    if(options.chanceRollId && options.chanceRollId[rollId]) {
+                      saveOpts.chanceRollId = options.chanceRollId[rollId];
+                    }
+                  }
                   var duree = ef.duree;
                   save(ef.save, target, rollId, expliquer, saveOpts, evt,
                     function(reussite, rollText, roll) {
@@ -10836,8 +10850,10 @@ var COFantasy = COFantasy || function() {
         } else {
           smsg += " => échec";
           if (options.msgRate) smsg += options.msgRate;
-          var pcTarget = pointsDeChance(target);
-          if (pcTarget > 0) smsg += "<br/>" + boutonSimple("!cof-bouton-chance " + evt.id + " " + saveId, "Chance") + " (reste " + pcTarget + " PC)";
+          if(options.avecPC) {
+            var pcTarget = pointsDeChance(target);
+            if (pcTarget > 0) smsg += "<br/>" + boutonSimple("!cof-bouton-chance " + evt.id + " " + saveId, "Chance") + " (reste " + pcTarget + " PC)";
+          }
         }
         expliquer(smsg);
         afterSave(tr.reussite, tr.texte, tr.roll);
@@ -10866,6 +10882,7 @@ var COFantasy = COFantasy || function() {
         });
         return;
       }
+      //TODO Supporter PC
       save(ps.partialSave, target, 'partialSave', expliquer, {
           msgPour: " pour réduire les dégâts",
           msgReussite: ", dégâts divisés par 2",
@@ -11808,14 +11825,23 @@ var COFantasy = COFantasy || function() {
               } else {
                 var defierLaMort = charAttributeAsInt(target, 'defierLaMort', 0);
                 if (defierLaMort > 0) {
+                  var rollId = 'defierLaMort_' + target.token.id;
+                  var saveOpts = {
+                    msgPour: " pour défier la mort",
+                    msgReussite: ", conserve 1 PV",
+                    avecPC: true
+                  };
+                  if (options.rolls) {
+                    saveOpts.roll = options.rolls[rollId];
+                    if(options.chanceRollId && options.chanceRollId[rollId]) {
+                      saveOpts.chanceRollId = options.chanceRollId[rollId];
+                    }
+                  }
                   save({
                       carac: 'CON',
                       seuil: defierLaMort
-                    }, target, 'defierLaMort', expliquer, {
-                      msgPour: " pour défier la mort",
-                      msgReussite: ", conserve 1 PV"
-                    }, evt,
-                    function(reussite, rollText) {
+                    }, target, rollId, expliquer, saveOpts, evt,
+                    function(reussite, rollText, roll) {
                       if (reussite) {
                         updateCurrentBar(target, 1, 1, evt);
                         bar1 = 1;
@@ -11830,6 +11856,9 @@ var COFantasy = COFantasy || function() {
                         setState(target, 'assome', true, evt);
                       }
                       if (showTotal) dmgDisplay += " = " + dmgTotal;
+                      evt.action = evt.action || {};
+                      evt.action.rolls = evt.action.rolls || {};
+                      evt.action.rolls[rollId] = roll;
                       if (displayRes === undefined) return dmgDisplay;
                       displayRes(dmgDisplay, pvPerdus);
                     });
@@ -13528,6 +13557,7 @@ var COFantasy = COFantasy || function() {
         msgReussite: msgReussite,
         msgRate: msgRate
       };
+      //TODO Supporter PC
       save({
           carac: carac,
           seuil: seuil
@@ -13931,7 +13961,7 @@ var COFantasy = COFantasy || function() {
     return (res !== undefined);
   }
 
-  //!cof-bouton-chance [evt.id]
+  //!cof-bouton-chance [evt.id] [rollId]
   function boutonChance(msg) {
     var args = msg.content.split(' ');
     if (args.length < 2) {
@@ -14086,7 +14116,7 @@ var COFantasy = COFantasy || function() {
 
   function chanceCombat(action, rollId) {
     // assumes that the original action was undone, re-attack with bonus
-    var options = action.options;
+    var options = action.options || {};
     if(rollId) {
       options.chanceRollId = options.chanceRollId || {};
       options.chanceRollId[rollId] = (options.chanceRollId[rollId] + 10) || 10;
@@ -16571,41 +16601,42 @@ var COFantasy = COFantasy || function() {
       var lanceur = options.lanceur;
       if (lanceur === undefined && selected.length == 1)
         lanceur = persoOfId(selected[0]._id);
-      if (limiteRessources(lanceur, options, etat, etat, evt)) return;
-      if (options.messages) {
-        options.messages.forEach(function(m) {
-          if (lanceur) sendChar(lanceur.charId, m);
-          else sendChat('', m);
-        });
-      }
-      iterSelected(selected, function(perso) {
-        function setEffect() {
-          setState(perso, etat, valeur, evt);
-          if (saveParTour) {
-            setTokenAttr(perso, etat + 'Save', saveParTour.carac, evt, {
-              maxVal: saveParTour.difficulte
-            });
-          }
-        }
-        if (options.save) {
-          var saveOpts = {
-            msgPour: " pour résister à l'effet " + stringOfEtat(etat),
-            msgRate: ", raté.",
-          };
-          var expliquer = function(s) {
-            sendChar(perso.charId, s);
-          };
-          var saveId = 'effet_' + etat;
-          save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, rollText) {
-            if (!reussite) {
-              setEffect();
-            }
-          });
-        } else {
-          setEffect();
-        }
+    if (limiteRessources(lanceur, options, etat, etat, evt)) return;
+    if (options.messages) {
+      options.messages.forEach(function(m) {
+        if (lanceur) sendChar(lanceur.charId, m);
+        else sendChat('', m);
       });
-      addEvent(evt);
+    }
+      iterSelected(selected, function(perso) {
+      function setEffect() {
+        setState(perso, etat, valeur, evt);
+        if (saveParTour) {
+          setTokenAttr(perso, etat + 'Save', saveParTour.carac, evt, {
+            maxVal: saveParTour.difficulte
+          });
+        }
+      }
+      if (options.save) {
+        var saveOpts = {
+          msgPour: " pour résister à l'effet " + stringOfEtat(etat),
+          msgRate: ", raté.",
+        };
+        var expliquer = function(s) {
+          sendChar(perso.charId, s);
+        };
+          var saveId = 'effet_' + etat;
+          //TODO Supporter PC
+          save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, rollText) {
+          if (!reussite) {
+            setEffect();
+          }
+        });
+      } else {
+        setEffect();
+      }
+    });
+    addEvent(evt);
     });
   }
 
@@ -16956,6 +16987,7 @@ var COFantasy = COFantasy || function() {
             sendChar(perso.charId, s);
           };
           var saveId = 'garderArme';
+          //TODO Supporter PC
           save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, rollText) {
             if (!reussite) {
               afterSave();
@@ -17361,6 +17393,7 @@ var COFantasy = COFantasy || function() {
             };
             var d = duree;
             var saveId = 'effet_' + effetC;
+            //TODO Supporter PC
             save(options.save, perso, saveId, expliquer, saveOpts, evt,
               function(reussite, rollText) {
                 if (reussite && options.save.demiDuree) {
@@ -18040,6 +18073,7 @@ var COFantasy = COFantasy || function() {
             msgPour: " pour résister au tueur fantasmagorique",
             attaquant: attaquant
           };
+          //TODO Supporter PC
           save(s, cible, 'tueurFantasmagorique', expliquer, saveOpts, evt,
             function(reussiteSave) {
               if (reussiteSave) {
@@ -25023,6 +25057,7 @@ var COFantasy = COFantasy || function() {
       iterSelected(selected, function(perso) {
         perso.tokName = perso.tokName || perso.token.get('name');
         if (options.save) {
+          //TODO Supporter PC
           save(options.save, perso, 'alcool', expliquer, {
               msgPour: " pour résister aux vapeurs éthyliques",
               hideSaveTitle: true
@@ -25092,6 +25127,7 @@ var COFantasy = COFantasy || function() {
       iterSelected(selected, function(perso) {
         perso.tokName = perso.tokName || perso.token.get('name');
         if (options.save) {
+          //TODO Supporter PC
           save(options.save, perso, 'alcool', expliquer, {
               hideSaveTitle: true
             }, evt,
@@ -27518,6 +27554,7 @@ var COFantasy = COFantasy || function() {
           msgReussite: msgReussite,
           msgRate: msgRate
         };
+        //TODO Supporter PC
         save({
             carac: carac,
             seuil: seuil
