@@ -1946,6 +1946,10 @@ var COFantasy = COFantasy || function() {
    */
 
   function addEvent(evt) {
+    if (evt.id) {
+      error("Tentative d'ajouter un événement déjà dans l'historique", evt);
+      return;
+    }
     evt.id = stateCOF.eventId++;
     eventHistory.push(evt);
     if (eventHistory.length > HISTORY_SIZE) {
