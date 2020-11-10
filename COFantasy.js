@@ -5684,13 +5684,13 @@ var COFantasy = COFantasy || function() {
             attaquant: attaquant,
             avecPC: true
           };
-          var saveId = condInTarget ? 'ifSave_' + etatParent + '_' + target.token.id : 'ifSave_' + etatParent + '_' + attaquant.token.id ;
+          var saveId = condInTarget ? 'ifSave_' + etatParent + '_' + target.token.id : 'ifSave_' + etatParent + '_' + attaquant.token.id;
           var expliquer = function(msg) {
             target.messages.push(msg);
           };
           if (options.rolls) {
             saveOpts.roll = options.rolls[saveId];
-            if(options.chanceRollId && options.chanceRollId[saveId]) {
+            if (options.chanceRollId && options.chanceRollId[saveId]) {
               saveOpts.chanceRollId = options.chanceRollId[saveId];
             }
           }
@@ -8803,15 +8803,6 @@ var COFantasy = COFantasy || function() {
                 }
               }
             }
-            //Absorption au bouclier
-            var absorber;
-            if (target.absorber) {
-              target.messages.push(target.absorberExpl);
-              if (target.absorber > defense) {
-                defense = target.absorber;
-                absorber = target.absorberDisplay;
-              }
-            }
             if (target.msgEsquiveFatale) {
               target.messages.push(target.msgEsquiveFatale);
             }
@@ -8947,10 +8938,7 @@ var COFantasy = COFantasy || function() {
               line += ":<br>";
               line += attRollValue + ' ';
               if (stateCOF.options.affichage.val.montre_def.val) {
-                line += "vs <b>";
-                if (absorber) line += absorber;
-                else line += defense;
-                line += "</b> ";
+                line += "vs <b>" + defense + "</b> ";
               }
               line += attackResult;
               if (options.test) line += " (" + attackRoll + ")";
@@ -9034,34 +9022,32 @@ var COFantasy = COFantasy || function() {
               }
               if (!options.auto) {
                 //Seulement si elle n'est pas automatiquement réussie
-                if (!target.absorber) {
-                  if (!options.pasDeDmg && options.contact &&
-                    !options.ignoreTouteRD &&
-                    attributeAsBool(target, 'encaisserUnCoup')) {
-                    options.preDmg = options.preDmg || {};
-                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                    options.preDmg[target.token.id].encaisserUnCoup = true;
-                  }
-                  if (charAttributeAsBool(target, 'esquiveAcrobatique')) {
-                    options.preDmg = options.preDmg || {};
-                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                    options.preDmg[target.token.id].esquiveAcrobatique = true;
-                  }
-                  if (charAttributeAsBool(target, 'paradeMagistrale')) {
-                    options.preDmg = options.preDmg || {};
-                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                    options.preDmg[target.token.id].paradeMagistrale = true;
-                  }
-                  if (options.sortilege && charAttributeAsBool(target, 'resistanceALaMagieBarbare')) {
-                    options.preDmg = options.preDmg || {};
-                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                    options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
-                  }
-                  if (attributeAsBool(target, 'chairACanon') && target.chairACanon && target.chairACanon.length > 0) {
-                    options.preDmg = options.preDmg || {};
-                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                    options.preDmg[target.token.id].chairACanon = target.chairACanon;
-                  }
+                if (!options.pasDeDmg && options.contact &&
+                  !options.ignoreTouteRD &&
+                  attributeAsBool(target, 'encaisserUnCoup')) {
+                  options.preDmg = options.preDmg || {};
+                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                  options.preDmg[target.token.id].encaisserUnCoup = true;
+                }
+                if (charAttributeAsBool(target, 'esquiveAcrobatique')) {
+                  options.preDmg = options.preDmg || {};
+                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                  options.preDmg[target.token.id].esquiveAcrobatique = true;
+                }
+                if (charAttributeAsBool(target, 'paradeMagistrale')) {
+                  options.preDmg = options.preDmg || {};
+                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                  options.preDmg[target.token.id].paradeMagistrale = true;
+                }
+                if (options.sortilege && charAttributeAsBool(target, 'resistanceALaMagieBarbare')) {
+                  options.preDmg = options.preDmg || {};
+                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                  options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
+                }
+                if (attributeAsBool(target, 'chairACanon') && target.chairACanon && target.chairACanon.length > 0) {
+                  options.preDmg = options.preDmg || {};
+                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                  options.preDmg[target.token.id].chairACanon = target.chairACanon;
                 }
                 if (attributeAsBool(target, 'esquiveFatale')) {
                   if (target.ennemisAuContact === undefined) {
@@ -9085,7 +9071,7 @@ var COFantasy = COFantasy || function() {
                     options.preDmg[target.token.id].absorberUnSort = true;
                   }
                 } else {
-                  if (attributeAsBool(target, 'absorberUnCoup') && !target.absorber) {
+                  if (attributeAsBool(target, 'absorberUnCoup')) {
                     options.preDmg = options.preDmg || {};
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].absorberUnCoup = true;
@@ -10267,7 +10253,7 @@ var COFantasy = COFantasy || function() {
                     var rollId = 'etat_' + ce.etat + index + '_' + target.token.id;
                     if (options.rolls) {
                       saveOpts.roll = options.rolls[rollId];
-                      if(options.chanceRollId && options.chanceRollId[rollId]) {
+                      if (options.chanceRollId && options.chanceRollId[rollId]) {
                         saveOpts.chanceRollId = options.chanceRollId[rollId];
                       }
                     }
@@ -10323,7 +10309,7 @@ var COFantasy = COFantasy || function() {
                   var rollId = 'effet_' + ef.effet + index + '_' + target.token.id;
                   if (options.rolls) {
                     saveOpts.roll = options.rolls[rollId];
-                    if(options.chanceRollId && options.chanceRollId[rollId]) {
+                    if (options.chanceRollId && options.chanceRollId[rollId]) {
                       saveOpts.chanceRollId = options.chanceRollId[rollId];
                     }
                   }
@@ -10853,7 +10839,7 @@ var COFantasy = COFantasy || function() {
         } else {
           smsg += " => échec";
           if (options.msgRate) smsg += options.msgRate;
-          if(options.avecPC) {
+          if (options.avecPC) {
             var pcTarget = pointsDeChance(target);
             if (pcTarget > 0) smsg += "<br/>" + boutonSimple("!cof-bouton-chance " + evt.id + " " + saveId, "Chance") + " (reste " + pcTarget + " PC)";
           }
@@ -11836,7 +11822,7 @@ var COFantasy = COFantasy || function() {
                   };
                   if (options.rolls) {
                     saveOpts.roll = options.rolls[rollId];
-                    if(options.chanceRollId && options.chanceRollId[rollId]) {
+                    if (options.chanceRollId && options.chanceRollId[rollId]) {
                       saveOpts.chanceRollId = options.chanceRollId[rollId];
                     }
                   }
@@ -13984,11 +13970,11 @@ var COFantasy = COFantasy || function() {
         return;
       }
       var roll = evt.action.rolls[args[2]];
-      if(roll === undefined) {
+      if (roll === undefined) {
         error("Erreur interne du bouton de chance : roll non identifié", args);
         return;
       }
-      if(roll.token === undefined) {
+      if (roll.token === undefined) {
         error("Erreur interne du bouton de chance : roll sans token", args);
         return;
       }
@@ -14120,7 +14106,7 @@ var COFantasy = COFantasy || function() {
   function chanceCombat(action, rollId) {
     // assumes that the original action was undone, re-attack with bonus
     var options = action.options || {};
-    if(rollId) {
+    if (rollId) {
       options.chanceRollId = options.chanceRollId || {};
       options.chanceRollId[rollId] = (options.chanceRollId[rollId] + 10) || 10;
     } else {
@@ -16604,42 +16590,42 @@ var COFantasy = COFantasy || function() {
       var lanceur = options.lanceur;
       if (lanceur === undefined && selected.length == 1)
         lanceur = persoOfId(selected[0]._id);
-    if (limiteRessources(lanceur, options, etat, etat, evt)) return;
-    if (options.messages) {
-      options.messages.forEach(function(m) {
-        if (lanceur) sendChar(lanceur.charId, m);
-        else sendChat('', m);
-      });
-    }
-      iterSelected(selected, function(perso) {
-      function setEffect() {
-        setState(perso, etat, valeur, evt);
-        if (saveParTour) {
-          setTokenAttr(perso, etat + 'Save', saveParTour.carac, evt, {
-            maxVal: saveParTour.difficulte
-          });
-        }
+      if (limiteRessources(lanceur, options, etat, etat, evt)) return;
+      if (options.messages) {
+        options.messages.forEach(function(m) {
+          if (lanceur) sendChar(lanceur.charId, m);
+          else sendChat('', m);
+        });
       }
-      if (options.save) {
-        var saveOpts = {
-          msgPour: " pour résister à l'effet " + stringOfEtat(etat),
-          msgRate: ", raté.",
-        };
-        var expliquer = function(s) {
-          sendChar(perso.charId, s);
-        };
+      iterSelected(selected, function(perso) {
+        function setEffect() {
+          setState(perso, etat, valeur, evt);
+          if (saveParTour) {
+            setTokenAttr(perso, etat + 'Save', saveParTour.carac, evt, {
+              maxVal: saveParTour.difficulte
+            });
+          }
+        }
+        if (options.save) {
+          var saveOpts = {
+            msgPour: " pour résister à l'effet " + stringOfEtat(etat),
+            msgRate: ", raté.",
+          };
+          var expliquer = function(s) {
+            sendChar(perso.charId, s);
+          };
           var saveId = 'effet_' + etat;
           //TODO Supporter PC
           save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, rollText) {
-          if (!reussite) {
-            setEffect();
-          }
-        });
-      } else {
-        setEffect();
-      }
-    });
-    addEvent(evt);
+            if (!reussite) {
+              setEffect();
+            }
+          });
+        } else {
+          setEffect();
+        }
+      });
+      addEvent(evt);
     });
   }
 
