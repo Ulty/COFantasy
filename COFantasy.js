@@ -14000,7 +14000,7 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton");
       return;
     }
-    var chance = ficheAttributeAsInt(perso, 'PC', 0);
+    var chance = pointsDeChance(perso);
     if (chance <= 0) {
       sendChar(perso.charId, " n'a plus de point de chance à dépenser...");
       return;
@@ -14013,7 +14013,7 @@ var COFantasy = COFantasy || function() {
     var action = evt.action;
     if (action) { //alors on peut faire le undo
       undoEvent(evt);
-      setFicheAttr(perso, 'PC', chance, evtChance, {
+      setFicheAttr(perso, 'pc', chance, evtChance, {
         msg: " a dépensé un point de chance. Il lui en reste " + chance
       });
       addEvent(evtChance);
@@ -14083,7 +14083,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    var chance = ficheAttributeAsInt(perso, 'PC', 0);
+    var chance = pointsDeChance(perso);
     if (chance <= 0) {
       sendChat("", name + " n'a plus de point de chance à dépenser...");
       return;
@@ -14094,14 +14094,14 @@ var COFantasy = COFantasy || function() {
     chance--;
     switch (cmd[1]) {
       case 'autre':
-        setFicheAttr(perso, 'PC', chance, evt, {
+        setFicheAttr(perso, 'pc', chance, evt, {
           msg: " a dépensé un point de chance. Il lui en reste " + chance
         });
         addEvent(evt);
         return;
       case 'combat':
         undoEvent();
-        setFicheAttr(perso, 'PC', chance, evt, {
+        setFicheAttr(perso, 'pc', chance, evt, {
           msg: " a dépensé un point de chance. Il lui en reste " + chance
         });
         addEvent(evt);
@@ -20439,13 +20439,13 @@ var COFantasy = COFantasy || function() {
       error("Impossible de trouver le jet de l'attaquant", cible);
       return;
     }
-    var pc = ficheAttributeAsInt(perso, 'PC', 0);
+    var pc = pointsDeChance(perso);
     if (chance) {
       if (pc <= 0) {
         sendChar(perso.charId, " n'a plus de point de chance à dépenser...");
         chance = false;
       } else {
-        setFicheAttr(perso, 'PC', pc - 1, evt);
+        setFicheAttr(perso, 'pc', pc - 1, evt);
       }
     } else {
       var attribut = tokenAttribute(perso, attributeName);
@@ -24849,7 +24849,7 @@ var COFantasy = COFantasy || function() {
                 options: options
               };
               evt.type = 'echapperEnveloppement';
-              var pc = ficheAttributeAsInt(perso, 'PC', 0);
+              var pc = pointsDeChance(perso);
               if (pc > 0) {
                 options.roll = options.roll || tr.roll;
                 msgRate += ' ' +
@@ -24919,7 +24919,7 @@ var COFantasy = COFantasy || function() {
               options: options
             };
             evt.type = 'libererAgrippe';
-            var pc = ficheAttributeAsInt(perso, 'PC', 0);
+            var pc = pointsDeChance(perso);
             if (pc > 0) {
               options.roll = options.roll || tr.roll;
               msgRate += ' ' +
