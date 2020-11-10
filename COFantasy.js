@@ -5689,13 +5689,13 @@ var COFantasy = COFantasy || function() {
             target.messages.push(msg);
           };
           if (options.rolls) {
-            saveOpts.roll = options.rolls[rollId];
-            if(options.chanceRollId && options.chanceRollId[rollId]) {
-              saveOpts.chanceRollId = options.chanceRollId[rollId];
+            saveOpts.roll = options.rolls[saveId];
+            if(options.chanceRollId && options.chanceRollId[saveId]) {
+              saveOpts.chanceRollId = options.chanceRollId[saveId];
             }
           }
           save(ite.condition.save, target, saveId, expliquer, saveOpts, evt,
-            function(reussite, rolltext) {
+            function(reussite, rolltext, roll) {
               var branch;
               if (reussite) branch = ite.else;
               else branch = ite.then; //on teste si le save est raté
@@ -5703,6 +5703,9 @@ var COFantasy = COFantasy || function() {
                 callIfAllDone(etatParent, callback);
                 return;
               }
+              evt.action = evt.action || {};
+              evt.action.rolls = evt.action.rolls || {};
+              evt.action.rolls[saveId] = roll;
               copyBranchOptions(branch, options, target, evt, explications, true);
               var etat = {
                 parent: etatParent
