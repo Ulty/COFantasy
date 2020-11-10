@@ -5596,7 +5596,7 @@ var COFantasy = COFantasy || function() {
         case 'decrAttribute':
           var attr = getObj('attribute', branch.decrAttribute);
           if (attr === undefined) {
-            sendChar(attr.get('characterid'), "ne peut plus faire cela");
+            error("Attribut introuvable", branch.decrAttribute);
             break;
           }
           var oldval = parseInt(attr.get('current'));
@@ -7194,7 +7194,7 @@ var COFantasy = COFantasy || function() {
     if (options.decrAttribute) {
       var attr = getObj('attribute', options.decrAttribute);
       if (attr === undefined) {
-        sendChar(attr.get('characterid'), "ne peut plus faire cela");
+        error("Attribut introuvable", options.decrAttribute);
         return true;
       }
       var oldval = parseInt(attr.get('current'));
@@ -13218,7 +13218,7 @@ var COFantasy = COFantasy || function() {
             log(cmd);
             return;
           }
-          options.decrAttribute = attr;
+          options.decrAttribute = attr.id;
           return;
         case 'valeur':
           if (cmd.length < 2) {
@@ -21670,7 +21670,7 @@ var COFantasy = COFantasy || function() {
       error(forgesort.token.get('name') + " ne peut créer d'élixirs " + cmd[2], cmd);
       return;
     }
-    options.decrAttribute = elixirsACreer[0];
+    options.decrAttribute = elixirsACreer[0].id;
     if (limiteRessources(forgesort, options, 'elixirsACreer', 'élixirs à créer', evt)) return;
     var attrName = 'elixir_' + elixir.attrName;
     var message = "crée un " + elixir.nom;
