@@ -17398,7 +17398,6 @@ var COFantasy = COFantasy || function() {
               });
           } else setOneEffect(perso, duree);
         });
-        addEvent(evt);
       } else { //On met fin à l'effet
         var opt = {
           pageId: options.pageId
@@ -27261,6 +27260,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //evt a un champ attributes et un champ deletedAttributes
+  //evt est ajouté à l'historique à la fin de cette fonction
   function nextTurnOfActive(active, attrs, evt, pageId) {
     if (active === undefined) return;
     if (active.id == "-1" && active.custom == "Tour") {
@@ -27561,8 +27561,8 @@ var COFantasy = COFantasy || function() {
       }); //fin boucle attrSave
     } else { // change the active token
       setActiveToken(active.id, evt);
+      addEvent(evt);
     }
-    addEvent(evt);
   }
 
   function nextTurn(cmp) {
