@@ -5699,13 +5699,13 @@ var COFantasy = COFantasy || function() {
               var branch;
               if (reussite) branch = ite.else;
               else branch = ite.then; //on teste si le save est raté
+              evt.action = evt.action || {};
+              evt.action.rolls = evt.action.rolls || {};
+              evt.action.rolls[saveId] = roll;
               if (branch === undefined) {
                 callIfAllDone(etatParent, callback);
                 return;
               }
-              evt.action = evt.action || {};
-              evt.action.rolls = evt.action.rolls || {};
-              evt.action.rolls[saveId] = roll;
               copyBranchOptions(branch, options, target, evt, explications, true);
               var etat = {
                 parent: etatParent
