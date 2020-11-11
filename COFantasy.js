@@ -1946,6 +1946,10 @@ var COFantasy = COFantasy || function() {
    */
 
   function addEvent(evt) {
+    if (evt.id) {
+      error("Tentative d'ajouter un événement déjà dans l'historique", evt);
+      return;
+    }
     evt.id = stateCOF.eventId++;
     eventHistory.push(evt);
     if (eventHistory.length > HISTORY_SIZE) {
@@ -20253,7 +20257,7 @@ var COFantasy = COFantasy || function() {
         var evt = {
           type: "Tour de force"
         };
-        testCaracteristique(barbare, 'FOR', 'tourDeForce', seuil, {
+        testCaracteristique(barbare, 'FOR', seuil, 'tourDeForce', {
             bonus: 10
           }, evt,
           function(testRes) {
