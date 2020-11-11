@@ -20257,7 +20257,7 @@ var COFantasy = COFantasy || function() {
         var evt = {
           type: "Tour de force"
         };
-        testCaracteristique(barbare, 'FOR', 'tourDeForce', seuil, {
+        testCaracteristique(barbare, 'FOR', seuil, 'tourDeForce', {
             bonus: 10
           }, evt,
           function(testRes) {
