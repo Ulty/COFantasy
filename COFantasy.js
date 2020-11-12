@@ -2608,6 +2608,7 @@ var COFantasy = COFantasy || function() {
         act.indexOf('cof-guerison') == -1 &&
         act.indexOf('cof-as ') == -1 &&
         act.indexOf('cof-jouer-son ') == -1 &&
+        act.indexOf('cof-utilise-consommable ') == -1 &&
         act.indexOf('--equipe') == -1 &&
         act.indexOf('--target ' + tid) == -1) {
         //Si on n'a pas de cible, on fait comme si le token était sélectionné.
@@ -10909,7 +10910,7 @@ var COFantasy = COFantasy || function() {
             showTotal = true;
             total = Math.ceil(total / 2);
           }
-          if(saveOpts.avecPC) {
+          if (saveOpts.avecPC) {
             evt.action = evt.action || {};
             evt.action.rolls = evt.action.rolls || {};
             evt.action.rolls[saveId] = roll;
@@ -21207,9 +21208,9 @@ var COFantasy = COFantasy || function() {
     }); //fin de getSelected
   }
 
-  var consommableNomRegExp = new RegExp(/^(repeating_equipement_.*_)equip[-,_]nom/);
-  var consommableQuantiteRegExp = new RegExp(/^(repeating_equipement_.*_)equip[-,_]qte/);
-  var consommableEffetRegExp = new RegExp(/^(repeating_equipement_.*_)equip[-,_]effet/);
+  var consommableNomRegExp = new RegExp(/^(repeating_equipement_.*_)equip_nom/);
+  var consommableQuantiteRegExp = new RegExp(/^(repeating_equipement_.*_)equip_qte/);
+  var consommableEffetRegExp = new RegExp(/^(repeating_equipement_.*_)equip_effet/);
 
   function listeConsommables(msg) {
     getSelected(msg, function(selected, playerId) {
@@ -21267,6 +21268,7 @@ var COFantasy = COFantasy || function() {
             consName = consName.replace(/_/g, ' ');
           }
           var quantite = parseInt(attr.get('current'));
+          if (isNaN(quantite) || quantite === 0) return;
           var action = attr.get('max').trim();
           while (consommables[attrName]) {
             attrName += randomInteger(1000);
@@ -21279,12 +21281,19 @@ var COFantasy = COFantasy || function() {
           };
         }); //fin de la boucle sur les attributs
         var aConsommable;
-        _.each(consommables, function(c) {
-          if (isNaN(c.quantite) || c.quantite < 1) {
-            //addLineToFramedDisplay(display, "0 " + consName);
+        _.each(consommables, function(c, prefix) {
+          if (c.effet === undefined || c.effet === '' || c.nom === undefined || c.nom === '') return;
+          //La quantité est de 1 par défaut sur la fiche
+          if (c.quantite === undefined) {
+            c.quantite = 1;
+            c.attr = createObj('attribute', {
+              _characterid: perso.charId,
+              name: prefix+'equip_qte',
+              current: 1
+            });
+          } else if (isNaN(c.quantite) || c.quantite < 1) {
             return;
           }
-          if (c.effet === undefined || c.effet === '' || c.nom === undefined || c.nom === '') return;
           aConsommable = true;
           var ligne = c.quantite + ' ';
           ligne += bouton(c.effet, c.nom, perso, {
@@ -21307,6 +21316,7 @@ var COFantasy = COFantasy || function() {
   }
 
   // !cof-utilise-consommable tok_id attr_id [msg]
+  // utilisation d'un consommable sans action en jeu
   function utiliseConsommable(msg) {
     var cmd = msg.content.split(' ');
     if (cmd.length < 3) {
@@ -21341,42 +21351,50 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    //on récupère l'attribut à utiliser/échanger de perso1
+    //on récupère l'attribut à utiliser
     cmd.shift();
-    var attr1 = getObj('attribute', cmd[0]);
-    if (attr1 === undefined) {
+    var attr = getObj('attribute', cmd[0]);
+    if (attr === undefined) {
       log("Attribut a changé/perdu");
       log(msg.content);
       sendChat('COF', "Plus possible d'utiliser cette action. Veuillez réafficher les consommables.");
       return;
     }
-    var attrName = attr1.get('name').trim();
-    var effet = attr1.get('max').trim();
     //Nom du consommable (pour affichage)
-    var consName = attrName.substring(attrName.indexOf('_') + 1);
-    consName = "<code>" + consName.replace(/_/g, ' ').trim() + "</code>";
-    // quantité actuelle pour perso1
-    var quantite1 = parseInt(attr1.get('current'));
-    if (isNaN(quantite1) || quantite1 < 1) {
-      attr1.set('current', 0);
-      whisperChar(perso.charId + '" Vous ne disposez plus de ' + consName);
-      return;
-    }
+    var consName;
+    var quantite = parseInt(attr.get('current'));
     var evt = {
       type: "Utilisation de consommable",
-      attributes: []
+      attributes: [{
+        attribute: attr,
+        current: quantite,
+      }]
     };
-    // on utilise le consommable
-    attr1.set('current', quantite1 - 1);
-    evt.attributes.push({
-      attribute: attr1,
-      current: quantite1,
-      max: effet
-    });
+    var attrName = attr.get('name').trim();
+    //On regarde si c'est un cosommable sur la fiche
+    var m = consommableQuantiteRegExp.exec(attrName);
+    if (m) {
+      var consoPrefix = m[1];
+      var attrConsName = charAttribute(perso.charId, consoPrefix + 'equip_nom');
+      if (attrConsName.length === 0) {
+        error("Impossible de trouver le nom du consommable", attr);
+        return;
+      }
+      consName = attrConsName[0].get('current').trim();
+    } else {
+      consName = attrName.substring(attrName.indexOf('_') + 1);
+      consName = consName.replace(/_/g, ' ').trim();
+    }
+    if (isNaN(quantite) || quantite < 1) {
+      attr.set('current', 0);
+      whisperChar(perso.charId + "Vous ne disposez plus de " + consName);
+      return;
+    }
     if (cmd.length > 1) {
       cmd.shift();
       sendChar(perso.charId, cmd.join(' '));
     }
+    attr.set('current', quantite - 1);
     addEvent(evt);
   }
 
