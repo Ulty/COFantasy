@@ -10876,19 +10876,33 @@ var COFantasy = COFantasy || function() {
         });
         return;
       }
-      //TODO Supporter PC
-      save(ps.partialSave, target, 'partialSave', expliquer, {
-          msgPour: " pour réduire les dégâts",
-          msgReussite: ", dégâts divisés par 2",
-          attaquant: ps.attaquant
-        }, evt,
-        function(succes, rollText) {
+      var saveOpts = {
+        msgPour: " pour réduire les dégâts",
+        msgReussite: ", dégâts divisés par 2",
+        attaquant: ps.attaquant,
+        avecPC: (evt.type == "Attaque")
+      };
+      var saveId = 'parseSave_' + target.token.id;
+      if (ps.rolls) {
+        saveOpts.roll = ps.rolls[saveId];
+        if (ps.chanceRollId && ps.chanceRollId[saveId]) {
+          saveOpts.chanceRollId = ps.chanceRollId[saveId];
+        }
+      }
+      //TODO Supporter PC hors attaques
+      save(ps.partialSave, target, saveId, expliquer, saveOpts, evt,
+        function(succes, rollText, roll) {
           if (succes) {
             if (showTotal) dmgDisplay = "(" + dmgDisplay + ")";
             dmgDisplay = dmgDisplay + " / 2";
             showTotal = true;
             total = Math.ceil(total / 2);
-          } else {}
+          }
+          if(saveOpts.avecPC) {
+            evt.action = evt.action || {};
+            evt.action.rolls = evt.action.rolls || {};
+            evt.action.rolls[saveId] = roll;
+          }
           afterSave({
             succes: succes,
             dmgDisplay: dmgDisplay,
