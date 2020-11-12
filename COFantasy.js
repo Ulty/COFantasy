@@ -20486,12 +20486,12 @@ var COFantasy = COFantasy || function() {
         var attBonus = ficheAttributeAsInt(perso, 'niveau', 1);
         switch (typeAttaque) {
           case 'distance':
-            attBonus += modCarac(perso, carac);
             attBonus += ficheAttributeAsInt(perso, 'ATKTIR_DIV', 0);
             if (stateCOF.setting_arran ||
               (stateCOF.setting_mixte && ficheAttribute(perso, 'option_setting', 'generique') == 'arran')) {
               attBonus += ficheAttributeAsInt(perso, 'mod_atktir', 0);
             }
+            attBonus += modCarac(perso, carac);
             break;
           case 'magique':
             attBonus += ficheAttributeAsInt(perso, 'ATKMAG_DIV', 0);
@@ -20505,6 +20505,7 @@ var COFantasy = COFantasy || function() {
             break;
           case 'contact':
             attBonus += ficheAttributeAsInt(perso, 'ATKCAC_DIV', 0);
+            attBonus += modCarac(perso, carac);
             break;
           default:
         }

@@ -12,6 +12,7 @@
 * Implémentation d'une option pour les armures/bouclier "de protection" (COF p. 203)
 
 ### Corrections de bugs
+* Correction d'un bug sur le tour de force du barbare.
 * Correction d'un crash lors de l'utilisation d'un point de chance sur une riposte.
 * Correction d'un bug pour les conditions moins (comme moins FOR), quand l'attaquant est un PNJ et le défenseur un PJ.
 
