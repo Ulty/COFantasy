@@ -1,4 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.15
+### Autres améliorations
+* Utilisation des consommables sur la fiche pour les PNJs aussi.
+
 ## 2.14
 ### Autres améliorations
 * Prise en compte de la chance pour les saves.

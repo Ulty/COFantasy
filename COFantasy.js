@@ -28669,7 +28669,7 @@ on("destroy:handout", function(prev) {
 });
 
 on('ready', function() {
-  var scriptVersion = '2.14';
+  var scriptVersion = '2.15';
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
@@ -29197,6 +29197,48 @@ on('ready', function() {
       delete state.COFantasy.options.regles.val.elixirs_sorts;
     }
     log("Règles optionelles mises à jour");
+  }
+  if (state.COFantasy.version < 2.15) {
+    attrs = findObjs({
+      _type: 'attribute',
+    });
+    attrs.forEach(function(a) {
+      var attrName = a.get('name');
+      if (!attrName.startsWith('dose_') && !attrName.startsWith('consommable_')) return;
+      var charId = a.get('characterid');
+      //On ne passe dans la liste que pour les persos de type PNJ
+      var typePerso = findObjs({
+        _type: 'attribute',
+        _characterid: charId,
+        name: 'type_personnage',
+      }, {
+        caseInsensitive: true
+      });
+      if (typePerso.length > 0 && typePerso[0].get('current') == 'PJ') return;
+      var consName = attrName.substring(attrName.indexOf('_') + 1);
+      consName = consName.replace(/_/g, ' ');
+      if (consName === '') return;
+      var quantite = parseInt(a.get('current'));
+      if (isNaN(quantite) || quantite < 0) return;
+      var pref = 'repeating_equipement_' + generateRowID() + '_';
+      createObj('attribute', {
+        _characterid: charId,
+        name: pref + 'equip_nom',
+        current: consName
+      });
+      createObj('attribute', {
+        _characterid: charId,
+        name: pref + 'equip_qte',
+        current: quantite
+      });
+      createObj('attribute', {
+        _characterid: charId,
+        name: pref + 'equip_effet',
+        current: a.get('max').trim(),
+      });
+      a.remove();
+    });
+    log("Déplacement des attributs de consommables de PNJs vers la fiche");
   }
   state.COFantasy.version = scriptVersion;
   if (state.COFantasy.options.affichage.val.fiche.val) {
