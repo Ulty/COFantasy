@@ -3274,13 +3274,14 @@ var COFantasy = COFantasy || function() {
           evt.type = 'jetPerso';
           var boutonsReroll = '';
           var pc = pointsDeChance(perso);
-          if (pc > 0) {
+          if (pc > 0 && !rt.echecCritique) {
             options.roll = options.roll || rt.roll;
             boutonsReroll +=
               ' ' + boutonSimple("!cof-bouton-chance " + evt.id, "Chance") +
               " (reste " + pc + " PC)";
           }
-          if (attributeAsBool(perso, 'runeForgesort_énergie') && (caracteristique == 'FOR' || caracteristique == 'CON' || caracteristique == 'DEX')) {
+          if (stateCOF.combat && attributeAsBool(perso, 'runeForgesort_énergie') &&
+              (caracteristique == 'FOR' || caracteristique == 'CON' || caracteristique == 'DEX')) {
             boutonsReroll += ' ' + boutonSimple("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie");
           }
           if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
