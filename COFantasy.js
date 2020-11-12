@@ -2411,10 +2411,15 @@ var COFantasy = COFantasy || function() {
     return weaponStats;
   }
 
-  //ressource est optionnel, et si présent doit être un attribut
-  function bouton(action, text, perso, ressource, overlay, buttonStyle, attackStats) {
+  //options peut avoir les champs:
+  // - ressource, un attribut
+  // - overlay
+  // - buttonStyle
+  // - attackStats
+  function bouton(action, text, perso, options) {
     if (action === undefined || action.trim().length === 0) return text;
     else action = action.trim();
+    options = options || {};
     //Expansion des macros et abilities
     action = replaceAction(action, perso);
     var tid = perso.token.id;
@@ -2437,7 +2442,7 @@ var COFantasy = COFantasy || function() {
       }
       if (act.charAt(0) == '!') {
         if (act.startsWith('!cof-')) {
-          if (ressource) act += " --decrAttribute " + ressource.id;
+          if (options.ressource) act += " --decrAttribute " + options.ressource.id;
           if (picto === '') {
             // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
             switch (act.split(' ', 1)[0].substring(5)) {
@@ -2448,6 +2453,7 @@ var COFantasy = COFantasy || function() {
                 var sortilege;
                 var args = act.split(' --');
                 var cmd = args.shift().split(' ');
+                var attackStats = options.attackStats;
                 if (attackStats === undefined && cmd.length > 3) {
                   var attackLabel = cmd[3].trim();
                   if (!attackLabel.startsWith('?{')) {
@@ -2558,8 +2564,8 @@ var COFantasy = COFantasy || function() {
           }
         } else if (!act.startsWith('!&#13')) return act; //On ne touche pas aux commandes des autres scripts
       } else {
-        if (ressource) {
-          act = "!cof-utilise-consommable " + tid + " " + ressource.id + " --message " + act;
+        if (options.ressource) {
+          act = "!cof-utilise-consommable " + tid + ' ' + options.ressource.id + ' ' + act;
           picto = '<span style="font-family: \'Pictos\'">b</span> ';
           style = 'background-color:#ce0f69';
         } else {
@@ -2617,10 +2623,11 @@ var COFantasy = COFantasy || function() {
       return act;
     });
     text = picto + text;
-    if (buttonStyle) buttonStyle = ' style="' + buttonStyle + '"';
+    var buttonStyle = '';
+    if (options.buttonStyle) buttonStyle = ' style="' + options.buttonStyle + '"';
     else if (style !== '') buttonStyle = ' style="' + style + '"';
-    if (overlay) overlay = ' title="' + overlay + '"';
-    else overlay = '';
+    var overlay = '';
+    if (options.overlay) overlay = ' title="' + options.overlay + '"';
     if (actions.length == 1) {
       action = actions[0];
       var toReturn = boutonSimple(action, text, buttonStyle + overlay);
@@ -3376,7 +3383,9 @@ var COFantasy = COFantasy || function() {
         overlay = 'Charisme';
         break;
     }
-    var cell = bouton(action, pictoCarac, perso, undefined, overlay);
+    var cell = bouton(action, pictoCarac, perso, {
+      overlay: overlay
+    });
     addCellInFramedDisplay(display, cell, 150, true);
     var comps = listeCompetences[carac];
     cell = '';
@@ -3384,7 +3393,9 @@ var COFantasy = COFantasy || function() {
     comps.forEach(function(comp) {
       if (sec) cell += ' ';
       else sec = true;
-      cell += bouton(action + " --nom " + comp, comp, perso, undefined, undefined, "background-color:#996600");
+      cell += bouton(action + " --nom " + comp, comp, perso, {
+        buttonStyle: "background-color:#996600"
+      });
     });
     addCellInFramedDisplay(display, cell, 80, false);
   }
@@ -13050,7 +13061,9 @@ var COFantasy = COFantasy || function() {
         var action = "!cof-soin " + ecuyer.token.id + " ";
         alliesASoigner.forEach(function(c) {
           var nom = c.token.get('name');
-          addLineToFramedDisplay(display, bouton(action + c.token.id + " 2d6", nom, ecuyer, attr));
+          addLineToFramedDisplay(display, bouton(action + c.token.id + " 2d6", nom, ecuyer, {
+            ressource: attr
+          }));
         });
         finSoin();
       }
@@ -15316,7 +15329,10 @@ var COFantasy = COFantasy || function() {
       if (feuxGregeois > 0) {
 
         var command = attrFeuxGregeois.get('max').trim();
-        ligne += bouton(command, 'Feu grégeois', perso, attrFeuxGregeois) + " (reste " + feuxGregeois + ")";
+        ligne += bouton(command, 'Feu grégeois', perso, {
+          ressource: attrFeuxGregeois
+        });
+        ligne += " (reste " + feuxGregeois + ")";
       }
     }
     return ligne;
@@ -15425,33 +15441,33 @@ var COFantasy = COFantasy || function() {
           command = abEnveloppe.get('action').trim();
           command = replaceAction(command, perso);
           command = command.replace(new RegExp(escapeRegExp('@{target|token_id}'), 'g'), cible.token.id);
-          ligne += bouton(command, "Infliger DMS à " + cible.tokName, perso, false) + '<br />';
+          ligne += bouton(command, "Infliger DMS à " + cible.tokName, perso) + '<br />';
         }
       } else if (enveloppeDM.startsWith('label ')) {
         actionsAAfficher = true;
         command = '!cof-attack ' + perso.token.id + ' ' + cible.token.id + ' ' + enveloppeDM.substring(6) + ' --auto --acide --effet paralyseTemp [[2d6]] --save CON 15';
-        ligne += bouton(command, "Infliger DMs à " + cible.tokName, perso, false) + '<br />';
+        ligne += bouton(command, "Infliger DMs à " + cible.tokName, perso) + '<br />';
       } else if (enveloppeDM.startsWith('etreinte ')) {
         actionsAAfficher = true;
         enveloppeDM = enveloppeDM.substring(9);
         command = '!cof-attack ' + perso.token.id + ' ' + cible.token.id + ' --dm ' + enveloppeDM + ' --auto --nom étreinte ';
-        ligne += bouton(command, "Infliger DMs à " + cible.tokName, perso, false) + '<br />';
+        ligne += bouton(command, "Infliger DMs à " + cible.tokName, perso) + '<br />';
       } //else pas reconnu
     });
     if (attributeAsBool(perso, 'enveloppePar')) {
       actionsAAfficher = true;
       command = '!cof-echapper-enveloppement --target ' + perso.token.id;
-      ligne += bouton(command, 'Se libérer', perso, false) + '<br />';
+      ligne += bouton(command, 'Se libérer', perso) + '<br />';
     } else {
       if (attributeAsBool(perso, 'estAgrippePar')) {
         actionsAAfficher = true;
         command = '!cof-liberer-agrippe --target ' + perso.token.id;
-        ligne += bouton(command, 'Se libérer', perso, false) + '<br />';
+        ligne += bouton(command, 'Se libérer', perso) + '<br />';
       }
       if (formeDarbre) {
         actionsAAfficher = true;
         command = '!cof-attack @{selected|token_id} @{target|token_id} ["Branches",["@{selected|niveau}",0],20,[1,6,3,0],0]';
-        ligne += bouton(command, 'Attaque', perso, false) + '<br />';
+        ligne += bouton(command, 'Attaque', perso) + '<br />';
       }
       //On cherche si il y a une armée conjurée à attaquer
       var attrs_armee =
@@ -15493,7 +15509,7 @@ var COFantasy = COFantasy || function() {
               var ty = t.get('top');
               if (tx < pxp && tx > pxm && ty < pyp && ty > pym) {
                 command = '!cof-attack ' + perso.token.id + ' ' + t.id + ' ["AttaqueArmée",[0,0],20,[0,6,' + (ficheAttributeAsInt(perso, 'niveau', 1) + 1) + ',0],20] --auto --attaqueArmeeConjuree';
-                ligne += bouton(command, "Attaque de l'armée", perso, false) + '<br />';
+                ligne += bouton(command, "Attaque de l'armée", perso) + '<br />';
               }
             }
           });
@@ -15502,7 +15518,7 @@ var COFantasy = COFantasy || function() {
       //Les soins pour les élémentaires
       if (charAttributeAsBool(perso, 'corpsElementaire')) {
         command = '!cof-soin 5';
-        ligne += bouton(command, "Régénération", perso, false) + " si source élémentaire proche<br />";
+        ligne += bouton(command, "Régénération", perso) + " si source élémentaire proche<br />";
       }
       //Les attaques de la fiche à afficher dans la liste d'actions
       var afficherAttaquesFiche =
@@ -15557,7 +15573,7 @@ var COFantasy = COFantasy || function() {
                       command += action.substr(action.indexOf(' '));
                     }
                     command += options;
-                    ligne += bouton(command, actionText, perso, false) + '<br />';
+                    ligne += bouton(command, actionText, perso) + '<br />';
                   }
                 });
                 break;
@@ -15570,7 +15586,10 @@ var COFantasy = COFantasy || function() {
                   var attackStats = getWeaponStats(perso, attackLabel);
                   actionText = attackStats.name;
                   action += options;
-                  ligne += bouton(action, actionText, perso, false, undefined, undefined, attackStats) + '<br />';
+                  ligne += bouton(action, actionText, perso, {
+                    attackStats: attackStats
+                  });
+                  ligne += '<br />';
                 } else {
                   actionCmd = actionCmd.substr(1);
                   actionText = actionText.substr(1);
@@ -15584,7 +15603,7 @@ var COFantasy = COFantasy || function() {
                         command += action.substr(action.indexOf(' '));
                       }
                       command += options;
-                      ligne += bouton(command, actionText, perso, false) + '<br />';
+                      ligne += bouton(command, actionText, perso) + '<br />';
                     }
                   });
                 }
@@ -15604,7 +15623,7 @@ var COFantasy = COFantasy || function() {
                     actionText = actionCommands[1].replace(/-/g, ' ').replace(/_/g, ' ');
                   }
                   command = action + options;
-                  ligne += bouton(command, actionText, perso, false) + '<br />';
+                  ligne += bouton(command, actionText, perso) + '<br />';
                   found = true;
                 }
             }
@@ -15621,28 +15640,28 @@ var COFantasy = COFantasy || function() {
         abilities.forEach(function(a) {
           var actionAbility = a.get('name').replace(/-/g, ' ').replace(/_/g, ' ');
           command = a.get('action').trim();
-          ligne += bouton(command, actionAbility, perso, false) + '<br />';
+          ligne += bouton(command, actionAbility, perso) + '<br />';
         });
       }
       if (actionsParDefaut) {
         actionsAAfficher = true;
         command = "!cof-attendre ?{Nouvelle initiative}";
-        ligne += bouton(command, 'Attendre', perso, false) + '<br />';
+        ligne += bouton(command, 'Attendre', perso) + '<br />';
         if (!charAttributeAsBool(perso, 'armeeConjuree')) {
           command = "!cof-action-defensive ?{Action défensive|simple|totale}";
-          ligne += bouton(command, 'Se défendre', perso, false) + '<br />';
+          ligne += bouton(command, 'Se défendre', perso) + '<br />';
           var manoeuvreDuelliste = charAttributeAsBool(perso, 'manoeuvreDuelliste');
           if (manoeuvreDuelliste) {
             command = "!cof-manoeuvre @{selected|token_id} @{target|token_id} ?{Manoeuvre?|bloquer|desarmer|renverser|tenirADistance|repousser}";
-            ligne += bouton(command, 'Manoeuvres de duelliste', perso, false) + '<br />';
+            ligne += bouton(command, 'Manoeuvres de duelliste', perso) + '<br />';
           }
           if (stateCOF.options.affichage.val.manoeuvres.val) {
             if (manoeuvreDuelliste) {
               command = "!cof-manoeuvre @{selected|token_id} @{target|token_id} ?{Manoeuvre?|aveugler|faireDiversion|menacer}";
-              ligne += bouton(command, 'Autres manoeuvres', perso, false) + '<br />';
+              ligne += bouton(command, 'Autres manoeuvres', perso) + '<br />';
             } else {
               command = "!cof-manoeuvre @{selected|token_id} @{target|token_id} ?{Manoeuvre?|aveugler|bloquer|desarmer|faireDiversion|menacer|renverser|tenirADistance|repousser}";
-              ligne += bouton(command, 'Manoeuvres', perso, false) + '<br />';
+              ligne += bouton(command, 'Manoeuvres', perso) + '<br />';
             }
           }
         }
@@ -21268,9 +21287,14 @@ var COFantasy = COFantasy || function() {
           if (c.effet === undefined || c.effet === '' || c.nom === undefined || c.nom === '') return;
           aConsommable = true;
           var ligne = c.quantite + ' ';
-          ligne += bouton(c.effet, c.nom, perso, c.attr);
+          ligne += bouton(c.effet, c.nom, perso, {
+            ressource: c.attr
+          });
           // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
-          ligne += bouton('!cof-echange-consommables @{selected|token_id} @{target|token_id}', '<span style="font-family:Pictos">r</span>', perso, c.attr, 'Cliquez pour échanger');
+          ligne += bouton('!cof-echange-consommables @{selected|token_id} @{target|token_id}', '<span style="font-family:Pictos">r</span>', perso, {
+            ressource: c.attr,
+            overlay: 'Cliquez pour échanger'
+          });
           addLineToFramedDisplay(display, ligne);
         }); //fin de la boucle sur les onsommables
         if (aConsommable)
@@ -21282,11 +21306,83 @@ var COFantasy = COFantasy || function() {
     }); //fin du getSelected
   }
 
-  // Le premier argument est le message reçu : msg => String
-  // Le deuxième nous indique si on effectue un échange ou pas : echange => true/false
-  function utiliseConsommable(msg, echange) {
+  // !cof-utilise-consommable tok_id attr_id [msg]
+  function utiliseConsommable(msg) {
     var cmd = msg.content.split(' ');
-    if ((!echange && cmd.length < 3) || (echange && cmd.length < 5)) {
+    if (cmd.length < 3) {
+      error("Erreur interne d'utilisation de consommables", cmd);
+      return;
+    }
+    cmd.shift();
+    var perso = persoOfId(cmd[0]);
+    if (perso === undefined) {
+      log("Propriétaire perdu");
+      sendChat('COF', "Plus possible d'utiliser cette action. Réafficher les consommables.");
+      return;
+    }
+    perso.tokName = perso.token.get('name');
+    // Vérifie les droits d'utiliser le consommable
+    if (msg.selected && msg.selected.length == 1) {
+      var utilisateur = persoOfId(msg.selected[0]._id);
+      if (utilisateur === undefined) {
+        sendChat('COF', "Le token sélectionné n'est pas valide");
+        return;
+      }
+      var d = distanceCombat(perso.token, utilisateur.token);
+      if (d > 0) {
+        sendChar(utilisateur.charId, "est trop loin de " + perso.tokName + " pour utiliser ses objets");
+        return;
+      }
+      perso = utilisateur;
+    } else {
+      //On regarde si le joueur contrôle le token
+      if (!peutController(msg, perso)) {
+        sendPlayer(msg, "Pas les droits pour ça");
+        return;
+      }
+    }
+    //on récupère l'attribut à utiliser/échanger de perso1
+    cmd.shift();
+    var attr1 = getObj('attribute', cmd[0]);
+    if (attr1 === undefined) {
+      log("Attribut a changé/perdu");
+      log(msg.content);
+      sendChat('COF', "Plus possible d'utiliser cette action. Veuillez réafficher les consommables.");
+      return;
+    }
+    var attrName = attr1.get('name').trim();
+    var effet = attr1.get('max').trim();
+    //Nom du consommable (pour affichage)
+    var consName = attrName.substring(attrName.indexOf('_') + 1);
+    consName = "<code>" + consName.replace(/_/g, ' ').trim() + "</code>";
+    // quantité actuelle pour perso1
+    var quantite1 = parseInt(attr1.get('current'));
+    if (isNaN(quantite1) || quantite1 < 1) {
+      attr1.set('current', 0);
+      whisperChar(perso.charId + '" Vous ne disposez plus de ' + consName);
+      return;
+    }
+    var evt = {
+      type: "Utilisation de consommable",
+      attributes: []
+    };
+    // on utilise le consommable
+    attr1.set('current', quantite1 - 1);
+    evt.attributes.push({
+      attribute: attr1,
+      current: quantite1,
+      max: effet
+    });
+    if (cmd.length > 1) {
+      cmd.shift();
+      sendChar(perso.charId, cmd.join(' '));
+    }
+    addEvent(evt);
+  }
+
+  function echangeConsommable(msg) {
+    var cmd = msg.content.split(' ');
+    if (cmd.length < 5) {
       error("Erreur interne de consommables", cmd);
       return;
     }
@@ -21304,23 +21400,20 @@ var COFantasy = COFantasy || function() {
     }
     perso1.name = char1.get('name');
     perso1.tokName = perso1.token.get('name');
-    var perso2;
-    if (echange) {
-      //perso2 = token avec lequel on va faire l'échange
-      perso2 = persoOfId(cmd[2]);
-      if (perso2 === undefined) {
-        log("Destinataire perdu");
-        sendChat('COF', "Erreur concernant le destinataire. Veuillez réessayer.");
-        return;
-      }
-      var char2 = getObj('character', perso2.charId);
-      if (char2 === undefined) {
-        error("Token sans personnage", perso2);
-        return;
-      }
-      perso2.name = char2.get('name');
-      perso2.tokName = perso2.token.get('name');
+    //perso2 = token avec lequel on va faire l'échange
+    var perso2 = persoOfId(cmd[2]);
+    if (perso2 === undefined) {
+      log("Destinataire perdu");
+      sendChat('COF', "Erreur concernant le destinataire. Veuillez réessayer.");
+      return;
     }
+    var char2 = getObj('character', perso2.charId);
+    if (char2 === undefined) {
+      error("Token sans personnage", perso2);
+      return;
+    }
+    perso2.name = char2.get('name');
+    perso2.tokName = perso2.token.get('name');
     // Vérifie les droits d'utiliser le consommable
     if (msg.selected && msg.selected.length == 1) {
       var utilisateur = persoOfId(msg.selected[0]._id);
@@ -21342,9 +21435,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     //on récupère l'attribut à utiliser/échanger de perso1
-    var attr1;
-    if (echange) attr1 = getObj('attribute', cmd[4]);
-    else attr1 = getObj('attribute', cmd[2]);
+    var attr1 = getObj('attribute', cmd[4]);
     if (attr1 === undefined) {
       log("Attribut a changé/perdu");
       log(cmd);
@@ -21364,79 +21455,65 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var evt = {
-      type: "Utilisation de consommable",
+      type: "Échange de consommable",
       attributes: []
     };
-    if (echange) {
-      //c'est un échange
-      evt.type = "Échange de consommable";
-      if (perso1.charId != perso2.charId) {
-        // on baisse la valeur de 1 du consommable qu'on s'apprête à échanger
-        attr1.set('current', quantite1 - 1);
-        evt.attributes.push({
-          attribute: attr1,
-          current: quantite1,
-          max: effet
-        });
-        // ajout du consommable dans perso2 :
-        var attributes = findObjs({
-          _type: 'attribute',
-          _characterid: perso2.charId
-        });
-        var found = false;
-        var quantite2;
-        // on recherche si le consommable existe chez perso2
-        attributes.forEach(function(attr2) {
-          var attrName2 = attr2.get('name').trim();
-          if (!found && attrName == attrName2) {
-            if (attr2.get('max').trim() != effet) {
-              error("Échange dangereux : pas le même effet pour le consommable selon le personnage \n" + effet + "\n" + attr2.get('max'), attr2);
-              return;
-            }
-            found = true;
-            // si oui, on augmente sa quantité de 1
-            quantite2 = parseInt(attr2.get('current'));
-            if (isNaN(quantite2) || quantite2 < 1) quantite2 = 0;
-            attr2.set('current', quantite2 + 1);
-            evt.attributes.push({
-              attribute: attr2,
-              current: quantite2,
-              max: effet
-            });
-          }
-        });
-        // si le consommable n'a pas été trouvé, on le créé avec une valeur de 1.
-        if (!found) {
-          var attr2 = createObj("attribute", {
-            name: attrName,
-            current: 1,
-            max: effet,
-            characterid: perso2.charId
-          });
-          evt.attributes.push({
-            attribute: attr2,
-            current: null,
-          });
-        }
-        // on envoie un petit message précisant la résultante de l'action.
-        sendChat('COF', "Echange entre " + perso1.tokName + " et " + perso2.tokName + " terminée.");
-        sendChat('COF', '/w "' + perso1.name + '" Il vous reste <strong>' + parseInt(attr1.get('current')) + "</strong> " + consName + ".");
-        sendChat('COF', '/w "' + perso2.name + '" Vous possédez désormais <strong>' + quantite2 + "</strong> " + consName + ".");
-        // le MJ est notifié :
-        sendChat('COF', "/w GM " + perso1.tokName + " vient de donner <strong>1</strong> " + consName + " à " + perso2.tokName + ".");
-      } else {
-        sendChat('COF', '"/w ' + perso1.name + '" Vous ne pouvez pas échanger un consommable avec vous-même ...');
-      }
-    } else {
-      // on utilise le consommable
+    if (perso1.charId != perso2.charId) {
+      // on baisse la valeur de 1 du consommable qu'on s'apprête à échanger
       attr1.set('current', quantite1 - 1);
       evt.attributes.push({
         attribute: attr1,
         current: quantite1,
         max: effet
       });
-      var start = msg.content.indexOf(' --message ') + 10;
-      sendChar(perso1.charId, msg.content.substring(start));
+      // ajout du consommable dans perso2 :
+      var attributes = findObjs({
+        _type: 'attribute',
+        _characterid: perso2.charId
+      });
+      var found = false;
+      var quantite2;
+      // on recherche si le consommable existe chez perso2
+      attributes.forEach(function(attr2) {
+        var attrName2 = attr2.get('name').trim();
+        if (!found && attrName == attrName2) {
+          if (attr2.get('max').trim() != effet) {
+            error("Échange dangereux : pas le même effet pour le consommable selon le personnage \n" + effet + "\n" + attr2.get('max'), attr2);
+            return;
+          }
+          found = true;
+          // si oui, on augmente sa quantité de 1
+          quantite2 = parseInt(attr2.get('current'));
+          if (isNaN(quantite2) || quantite2 < 1) quantite2 = 0;
+          attr2.set('current', quantite2 + 1);
+          evt.attributes.push({
+            attribute: attr2,
+            current: quantite2,
+            max: effet
+          });
+        }
+      });
+      // si le consommable n'a pas été trouvé, on le créé avec une valeur de 1.
+      if (!found) {
+        var attr2 = createObj("attribute", {
+          name: attrName,
+          current: 1,
+          max: effet,
+          characterid: perso2.charId
+        });
+        evt.attributes.push({
+          attribute: attr2,
+          current: null,
+        });
+      }
+      // on envoie un petit message précisant la résultante de l'action.
+      sendChat('COF', "Echange entre " + perso1.tokName + " et " + perso2.tokName + " terminée.");
+      sendChat('COF', '/w "' + perso1.name + '" Il vous reste <strong>' + parseInt(attr1.get('current')) + "</strong> " + consName + ".");
+      sendChat('COF', '/w "' + perso2.name + '" Vous possédez désormais <strong>' + quantite2 + "</strong> " + consName + ".");
+      // le MJ est notifié :
+      sendChat('COF', "/w GM " + perso1.tokName + " vient de donner <strong>1</strong> " + consName + " à " + perso2.tokName + ".");
+    } else {
+      sendChat('COF', '"/w ' + perso1.name + '" Vous ne pouvez pas échanger un consommable avec vous-même ...');
     }
     addEvent(evt);
   }
@@ -21823,7 +21900,9 @@ var COFantasy = COFantasy || function() {
             action = elixir.action;
             action = action.replace(/\$rang/g, voieDesElixirs);
             action = action.replace(/\$INT/g, modCarac(forgesort, 'intelligence'));
-            options += bouton(action, nomElixir, forgesort, attr);
+            options += bouton(action, nomElixir, forgesort, {
+              ressource: attr
+            });
           } else {
             options += nomElixir;
           }
@@ -21944,11 +22023,15 @@ var COFantasy = COFantasy || function() {
             ligneBoutons += bouton(action, nomElixirComplet.replace("Elixir de ", "").replace("Elixir d'", ""), forgesort);
           }
         }
-        ligneBoutons += bouton(actionTout, "Tout", forgesort, undefined, undefined, "background-color: blue;");
+        ligneBoutons += bouton(actionTout, "Tout", forgesort, {
+          buttonStyle: "background-color: blue;"
+        });
         addLineToFramedDisplay(display, ligneBoutons, undefined, true);
       }
       var boutonToutRenouveler =
-        bouton(actionToutRenouveler, "Tout renouveler", forgesort, undefined, undefined, "background-color: green;");
+        bouton(actionToutRenouveler, "Tout renouveler", forgesort, {
+          buttonStyle: "background-color: green;"
+        });
       addLineToFramedDisplay(display, boutonToutRenouveler, undefined, true);
       sendChar(forgesortCharId, endFramedDisplay(display));
     }
@@ -22230,13 +22313,17 @@ var COFantasy = COFantasy || function() {
           }
           actionTout += action + "\n";
           actionToutRenouveler += action + "\n";
-          ligneBoutons += bouton(action, rune.target.token.get('name'), forgesort, undefined, false);
+          ligneBoutons += bouton(action, rune.target.token.get('name'), forgesort);
         }
-        ligneBoutons += bouton(actionTout, "Tout", forgesort, undefined, undefined, "background-color: blue;");
+        ligneBoutons += bouton(actionTout, "Tout", forgesort, {
+          buttonStyle: "background-color: blue;"
+        });
         addLineToFramedDisplay(display, ligneBoutons, undefined, true);
       }
       var boutonToutRenouveler =
-        bouton(actionToutRenouveler, "Tout renouveler", forgesort, undefined, undefined, "background-color: green;");
+        bouton(actionToutRenouveler, "Tout renouveler", forgesort, {
+          buttonStyle: "background-color: green;"
+        });
       addLineToFramedDisplay(display, boutonToutRenouveler, undefined, true);
       sendChar(forgesortCharId, endFramedDisplay(display));
     }
@@ -25890,10 +25977,10 @@ var COFantasy = COFantasy || function() {
         listeConsommables(msg);
         return;
       case "!cof-utilise-consommable": //Usage interne seulement
-        utiliseConsommable(msg, false);
+        utiliseConsommable(msg);
         return;
       case "!cof-echange-consommables": //Usage interne seulement
-        utiliseConsommable(msg, true);
+        echangeConsommable(msg);
         return;
       case "!cof-provocation":
         provocation(msg);
