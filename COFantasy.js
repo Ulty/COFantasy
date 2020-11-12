@@ -3274,13 +3274,14 @@ var COFantasy = COFantasy || function() {
           evt.type = 'jetPerso';
           var boutonsReroll = '';
           var pc = pointsDeChance(perso);
-          if (pc > 0) {
+          if (pc > 0 && !rt.echecCritique) {
             options.roll = options.roll || rt.roll;
             boutonsReroll +=
               ' ' + boutonSimple("!cof-bouton-chance " + evt.id, "Chance") +
               " (reste " + pc + " PC)";
           }
-          if (attributeAsBool(perso, 'runeForgesort_énergie') && (caracteristique == 'FOR' || caracteristique == 'CON' || caracteristique == 'DEX')) {
+          if (stateCOF.combat && attributeAsBool(perso, 'runeForgesort_énergie') &&
+            (caracteristique == 'FOR' || caracteristique == 'CON' || caracteristique == 'DEX')) {
             boutonsReroll += ' ' + boutonSimple("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie");
           }
           if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
@@ -12947,14 +12948,8 @@ var COFantasy = COFantasy || function() {
   }
 
   //Asynchrone
+  // ne rajoute pas evt à l'historique
   function soinsEcuyers(ecuyers, manquePV, playerId, evt) {
-    var count = ecuyers.length;
-    var finalize = function() {
-      count--;
-      if (count === 0) {
-        addEvent(evt);
-      }
-    };
     ecuyers.forEach(function(ec) {
       var ecuyer = ec.perso;
       var ecuyerDe = ec.ecuyerDe;
@@ -12964,7 +12959,6 @@ var COFantasy = COFantasy || function() {
       });
       if (charChevalier.length === 0) {
         error("Pas de chevalier " + ecuyerDe + " pour l'écuyer " + ecuyer.token.get('name'), ec);
-        finalize();
         return;
       }
       if (charChevalier.length > 1) {
@@ -12999,7 +12993,6 @@ var COFantasy = COFantasy || function() {
       }); //fin de détermination des cibles
       if (chevalier === undefined && monture === undefined &&
         (maxASoigner < 1 || alliesASoigner.length === 0)) { //Personne à soigner
-        finalize();
         return;
       }
       //TODO: utiliser l'id d'un player qui contrôle le chevalier
@@ -13008,7 +13001,6 @@ var COFantasy = COFantasy || function() {
         nbCibles--;
         if (nbCibles === 0) {
           if (display) sendChat("", endFramedDisplay(display));
-          finalize();
         }
       };
       var soigneUneCible = function(c) {
@@ -13324,6 +13316,7 @@ var COFantasy = COFantasy || function() {
   }
 
   // Récupération pour tous les tokens sélectionnés
+  // si evt est défini, n'est pas ajouté à l'historique
   function nuit(msg, evt) {
     var options = parseOptions(msg);
     if (stateCOF.combat) sortirDuCombat();
@@ -13344,10 +13337,13 @@ var COFantasy = COFantasy || function() {
           });
         });
       }
-      if (evt === undefined) evt = {
-        type: "Nuit",
-        attributes: []
-      };
+      if (evt === undefined) {
+        evt = {
+          type: "Nuit",
+          attributes: []
+        };
+        addEvent(evt);
+      }
       if (msg.content.startsWith('!cof-nuit')) jour(evt);
       recuperation(selection, true, playerId, evt, options);
     });
@@ -13447,6 +13443,7 @@ var COFantasy = COFantasy || function() {
   }
 
   // Remise à zéro de toutes les limites journalières
+  // N'ajoute pas evt à l'historique
   function jour(evt) {
     var attrs;
     attrs = removeAllAttributes('pressionMortelle', evt);
@@ -13475,14 +13472,12 @@ var COFantasy = COFantasy || function() {
     //Les saves sont asynchrones
     var count = attrsSave.length;
     if (count === 0) {
-      addEvent(evt);
       proposerFinEffetsIndetermines();
       return;
     }
     var finalize = function() {
       count--;
       if (count > 0) return;
-      addEvent(evt);
       proposerFinEffetsIndetermines();
     };
     attrsSave.forEach(function(attr) {
@@ -13563,7 +13558,6 @@ var COFantasy = COFantasy || function() {
             });
           }
           count--;
-          if (count === 0) addEvent(evt);
         });
     }); //fin boucle attrSave
   }
@@ -13573,6 +13567,7 @@ var COFantasy = COFantasy || function() {
       type: "Nouveau jour",
       attributes: []
     };
+    addEvent(evt);
     var playerId = getPlayerIdFromMsg(msg);
     var fromMsg = 'player|' + playerId;
     var player = getObj('player', playerId);
@@ -13583,7 +13578,6 @@ var COFantasy = COFantasy || function() {
     sendChat(fromMsg, "Un nouveau jour se lève");
     jour(evt);
     if (msg.content.includes(' --repos')) nuit(msg, evt);
-    else addEvent(evt);
   }
 
   function recuperer(msg) {
@@ -13593,21 +13587,23 @@ var COFantasy = COFantasy || function() {
     }
     var reposLong = false;
     if (msg.content.includes(' --reposLong')) reposLong = true;
+    var evt = {
+      type: "Récuperation",
+      attributes: []
+    };
+    addEvent(evt);
     getSelected(msg, function(selection, playerId) {
       if (selection.length === 0) {
         sendPlayer(msg, "!cof-recuperer sans sélection de tokens");
         log("!cof-recuperer requiert des tokens sélectionnés");
         return;
       }
-      var evt = {
-        type: "Récuperation",
-        attributes: []
-      };
       recuperation(selection, reposLong, playerId, evt);
     });
   }
 
   //Asynchrone (jets de dés)
+  // ne rajoute pas evt à l'historique
   function recuperation(selection, reposLong, playerId, evt, options) {
     options = options || {};
     var manquePV = [];
@@ -13618,7 +13614,7 @@ var COFantasy = COFantasy || function() {
       if (count === 0) {
         if (ecuyers.length > 0 && manquePV.length > 0) {
           soinsEcuyers(ecuyers, manquePV, playerId, evt);
-        } else addEvent(evt);
+        }
       }
     };
     iterSelected(selection, function(perso) {
@@ -25632,8 +25628,8 @@ var COFantasy = COFantasy || function() {
         evt = {
           type: "Nouveau jour"
         };
-        jour(evt);
         addEvent(evt);
+        jour(evt);
         return;
       case "!cof-nouveau-jour":
         nouveauJour(msg);
