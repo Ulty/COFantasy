@@ -14035,6 +14035,7 @@ var COFantasy = COFantasy || function() {
       });
       addEvent(evtChance);
       var options = action.options || {};
+      options.rolls = action.rolls;
       addChanceToOptions(options, rollId);
       switch (evt.type) {
         case 'Attaque':
@@ -14044,6 +14045,7 @@ var COFantasy = COFantasy || function() {
               delete target.partialSaveAuto;
             });
           }
+          log(options);
           attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
           return;
         case 'jetPerso':
@@ -14136,13 +14138,12 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function addChanceToOptions(action, rollId) {
-    action.options = action.options || {};
+  function addChanceToOptions(options, rollId) {
     if (rollId) {
-      action.options.chanceRollId = action.options.chanceRollId || {};
-      action.options.chanceRollId[rollId] = (action.options.chanceRollId[rollId] + 10) || 10;
+      options.chanceRollId = options.chanceRollId || {};
+      options.chanceRollId[rollId] = (options.chanceRollId[rollId] + 10) || 10;
     } else {
-      action.options.chance = (action.options.chance + 10) || 10;
+      options.chance = (options.chance + 10) || 10;
     }
   }
 
