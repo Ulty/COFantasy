@@ -9705,13 +9705,13 @@ var COFantasy = COFantasy || function() {
             type: mainDmgType,
             value: '1d6'
           });
-          target.message.push("Cible grande => +1d6 DM");
+          target.messages.push("Cible grande => +1d6 DM");
         } else if (target.taille > 5) {
           target.additionalDmg.push({
             type: mainDmgType,
             value: '2d6'
           });
-          target.message.push("Cible énorme => +2d6 DM");
+          target.messages.push("Cible énorme => +2d6 DM");
         }
       }
       if (!options.pasDeDmg) {
