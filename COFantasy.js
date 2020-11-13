@@ -3246,7 +3246,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     var display = startFramedDisplay(playerId, titre, perso, optionsDisplay);
-    if (options.chance) options.bonus = options.chance * 10;
+    if (options.chance) options.bonus = options.chance;
     if (difficulte === undefined) {
       jetCaracteristique(perso, caracteristique, options, evt,
         function(rt, explications) {
@@ -10892,7 +10892,7 @@ var COFantasy = COFantasy || function() {
         msgPour: " pour réduire les dégâts",
         msgReussite: ", dégâts divisés par 2",
         attaquant: ps.attaquant,
-        avecPC: (evt.type == "Attaque")
+        avecPC: (evt.type == "Attaque" || evt.type == "dmgDirects")
       };
       var saveId = 'parseSave_' + target.token.id;
       if (ps.rolls) {
@@ -14034,26 +14034,33 @@ var COFantasy = COFantasy || function() {
         msg: " a dépensé un point de chance. Il lui en reste " + chance
       });
       addEvent(evtChance);
+      var options = action.options || {};
+      options.rolls = action.rolls;
+      addChanceToOptions(options, rollId);
       switch (evt.type) {
         case 'Attaque':
-          chanceCombat(action, rollId);
+          options.redo = true;
+          if (action.cibles) {
+            action.cibles.forEach(function(target) {
+              delete target.partialSaveAuto;
+            });
+          }
+          log(options);
+          attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
           return;
         case 'jetPerso':
-          var options = action.options || {};
-          options.rolls = action.rolls;
-          options.chance = (options.chance === undefined) ? 1 : options.chance + 1;
           jetPerso(perso, action.caracteristique, action.difficulte, action.titre, action.playerId, options);
           return;
         case 'echapperEnveloppement':
-          var optionsEE = action.options || {};
-          options.rolls = action.rolls;
-          optionsEE.chance = (optionsEE.chance === undefined) ? 1 : optionsEE.chance + 1;
           echapperEnveloppement({
             selected: action.selected,
             content: '!cof-chance-echapper-enveloppement',
             playerId: action.playerId,
-            options: optionsEE
+            options: options
           });
+          return;
+        case 'dmgDirects':
+          dmgDirects(action.playerId, action.cibles, action.dmg, options);
           return;
         default:
           error("Evenement avec une action, mais inconnue au niveau chance. Impossible d'annuler !", evt);
@@ -14131,23 +14138,13 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function chanceCombat(action, rollId) {
-    // assumes that the original action was undone, re-attack with bonus
-    var options = action.options || {};
+  function addChanceToOptions(options, rollId) {
     if (rollId) {
       options.chanceRollId = options.chanceRollId || {};
       options.chanceRollId[rollId] = (options.chanceRollId[rollId] + 10) || 10;
     } else {
       options.chance = (options.chance + 10) || 10;
     }
-    options.rolls = action.rolls;
-    options.redo = true;
-    if (action.cibles) {
-      action.cibles.forEach(function(target) {
-        delete target.partialSaveAuto;
-      });
-    }
-    attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
   }
 
   function echecTotal(msg) {
@@ -16366,7 +16363,7 @@ var COFantasy = COFantasy || function() {
   }
 
   // Ne pas remplacer les inline rolls, il faut les afficher correctement
-  function dmgDirects(msg) {
+  function parseDmgDirects(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
     var cmd = options.cmd;
@@ -16380,11 +16377,6 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, "pas de cible trouvée, action annulée");
         return;
       }
-      var evt = {
-        type: 'dégâts directs',
-      };
-      if (limiteRessources(options.lanceur, options, 'dmg', 'dmg', evt)) return;
-      var action = "<b>Dégâts.</b>";
       var optArgs = msg.content.split(' --');
       options.aoe = true;
       optArgs.forEach(function(opt) {
@@ -16404,9 +16396,6 @@ var COFantasy = COFantasy || function() {
             var psaveParams = parseSave(opt);
             if (psaveParams) {
               psaveopt.partialSave = psaveParams;
-              action +=
-                " Jet de " + psaveParams.carac + " difficulté " + psaveParams.seuil +
-                " pour réduire les dégâts";
             }
             return;
           case 'once':
@@ -16492,6 +16481,10 @@ var COFantasy = COFantasy || function() {
             return;
         }
       });
+      var cibles = [];
+      iterSelected(selected, function(perso) {
+        cibles.push(perso);
+      });
       if (options.return) return;
       //L'expression à lancer est tout ce qui est entre le premier blanc et le premier --
       var debutDmgRollExpr = msg.content.indexOf(' ') + 1;
@@ -16509,66 +16502,81 @@ var COFantasy = COFantasy || function() {
       if (options.maxDmg) {
         dmgRollExpr = dmgRollExpr.replace(/d([1-9])/g, "*$1");
       }
-      try {
-        sendChat('', '[[' + dmgRollExpr + ']]', function(resDmg) {
-          var rollsDmg = resDmg[0];
-          var afterEvaluateDmg = rollsDmg.content.split(' ');
-          var dmgRollNumber = rollNumber(afterEvaluateDmg[0]);
-          dmg.total = rollsDmg.inlinerolls[dmgRollNumber].results.total;
-          dmg.display = buildinline(rollsDmg.inlinerolls[dmgRollNumber], dmgType, options.magique);
-          var display = startFramedDisplay(playerId, action);
-          var tokensToProcess = selected.length;
-          var someDmgDone;
-          var finalDisplay = function() {
-            if (tokensToProcess == 1) {
-              if (someDmgDone) {
-                sendChat("", endFramedDisplay(display));
-                if (evt.affectes || evt.attributes) {
-                  if (evt.waitingForAoe) {
-                    delete evt.waitingForAoe;
-                  } else {
-                    addEvent(evt);
-                  }
-                }
-              } else {
-                sendPlayer(msg, "Aucune cible valide n'a été sélectionée");
-              }
-            }
-            tokensToProcess--;
-          };
-          iterSelected(selected, function(perso) {
-            if (getState(perso, 'mort')) { //pas de dégâts aux morts
-              finalDisplay();
-              return;
-            }
-            if (options.mortsVivants && !(estMortVivant(perso))) {
-              sendPlayer(msg, perso.token.get('name') + " n'est pas un mort-vivant");
-              finalDisplay();
-              return;
-            }
-            var name = perso.token.get('name');
-            var explications = [];
-            perso.ignoreRD = options.ignoreRD;
-            perso.ignoreTouteRD = options.ignoreTouteRD;
-            perso.ignoreMoitieRD = options.ignoreMoitieRD;
-            perso.tempDmg = options.tempDmg;
-            perso.attaquant = options.attaquant;
-            dealDamage(perso, dmg, [], evt, false, options, explications,
-              function(dmgDisplay, dmgFinal) {
-                someDmgDone = true;
-                addLineToFramedDisplay(display,
-                  name + " reçoit " + dmgDisplay + " DM");
-                explications.forEach(function(e) {
-                  addLineToFramedDisplay(display, e, 80, false);
-                });
-                finalDisplay();
-              });
-          }, finalDisplay); //fin iterSelected
-        }); //fin du jet de dés
-      } catch (rollError) {
-        error("Jet " + dmgRollExpr + " mal formé", cmd);
-      }
+      dmgDirects(playerId, cibles, dmg, options);
     }, options); //fin du getSelected
+  }
+
+  function dmgDirects(playerId, cibles, dmg, options) {
+    var evt = {
+      type: 'dmgDirects',
+      action: {
+        titre: "Dégâts",
+        playerId: playerId,
+        cibles: cibles,
+        dmg: dmg,
+        options: options
+      }
+    };
+    addEvent(evt);
+    if (options.attaquant && limiteRessources(options.attaquant, options, 'dmg', 'dmg', evt)) return;
+    var action = "<b>Dégâts.</b>";
+    if(options.partialSave) {
+      action +=
+          " Jet de " + options.partialSave.carac + " difficulté " + options.partialSave.seuil +
+          " pour réduire les dégâts";
+    }
+    try {
+      sendChat('', '[[' + dmg.value + ']]', function(resDmg) {
+        dmg.roll = dmg.roll || resDmg[0];
+        var afterEvaluateDmg = dmg.roll.content.split(' ');
+        var dmgRollNumber = rollNumber(afterEvaluateDmg[0]);
+        dmg.total = dmg.roll.inlinerolls[dmgRollNumber].results.total;
+        dmg.display = buildinline(dmg.roll.inlinerolls[dmgRollNumber], dmg.type, options.magique);
+        var display = startFramedDisplay(playerId, action);
+        var tokensToProcess = cibles.length;
+        var someDmgDone;
+        var finalDisplay = function() {
+          if (tokensToProcess == 1) {
+            if (someDmgDone) {
+              sendChat("", endFramedDisplay(display));
+            } else {
+              sendPlayer(msg, "Aucune cible valide n'a été sélectionée");
+            }
+          }
+          tokensToProcess--;
+        };
+        cibles.forEach(function(perso) {
+          if (getState(perso, 'mort')) { //pas de dégâts aux morts
+            finalDisplay();
+            return;
+          }
+          if (options.mortsVivants && !(estMortVivant(perso))) {
+            sendPlayer(playerId, perso.token.get('name') + " n'est pas un mort-vivant");
+            finalDisplay();
+            return;
+          }
+          var name = perso.token.get('name');
+          var explications = [];
+          perso.ignoreRD = options.ignoreRD;
+          perso.ignoreTouteRD = options.ignoreTouteRD;
+          perso.ignoreMoitieRD = options.ignoreMoitieRD;
+          perso.tempDmg = options.tempDmg;
+          perso.attaquant = options.attaquant;
+          dealDamage(perso, dmg, [], evt, false, options, explications, function(dmgDisplay, dmgFinal) {
+            someDmgDone = true;
+            addLineToFramedDisplay(display,
+                name + " reçoit " + dmgDisplay + " DM");
+            explications.forEach(function(e) {
+              addLineToFramedDisplay(display, e, 80, false);
+            });
+            finalDisplay();
+          });
+        }); //fin forEach
+        log(evt);
+      }); //fin du jet de dés
+    } catch (rollError) {
+      error("Jet " + dmg.value + " mal formé", cmd);
+    }
   }
 
   function estElementaire(t) {
@@ -24974,7 +24982,7 @@ var COFantasy = COFantasy || function() {
         var display = startFramedDisplay(playerId, titre, perso, {
           chuchote: options.secret || ficheAttributeAsBool(perso, 'jets_caches', false)
         });
-        if (options.chance) options.bonus = options.chance * 10;
+        if (options.chance) options.bonus = options.chance;
         testCaracteristique(perso, 'FOR', difficulte, 'enveloppement', options, evt,
           function(tr) {
             addLineToFramedDisplay(display, "<b>Résultat :</b> " + tr.texte);
@@ -25864,7 +25872,7 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-aoe": //deprecated
       case "!cof-dmg":
-        dmgDirects(msg);
+        parseDmgDirects(msg);
         return;
       case "!cof-set-state":
         interfaceSetState(msg);
