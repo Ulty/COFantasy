@@ -3079,6 +3079,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     var bonusCarac = bonusTestCarac(carac, personnage, options, evt);
+    var jetCache = ficheAttributeAsBool(personnage, 'jets_caches', false);
     var testsRatesDuTour;
     var listeTestsRatesDuTour;
     var testDejaRate;
@@ -3119,7 +3120,7 @@ var COFantasy = COFantasy || function() {
         testRes.roll.token = personnage.token;
         var d20roll = roll.results.total;
         var bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
-        testRes.texte = buildinline(roll) + bonusText;
+        testRes.texte = jetCache ? d20roll+bonusCarac : buildinline(roll) + bonusText;
         if (d20roll == 20) {
           testRes.reussite = true;
           testRes.critique = true;
@@ -3163,6 +3164,7 @@ var COFantasy = COFantasy || function() {
             }
           }
         }
+        if(jetCache) sendChat('COF', "/w GM Jet caché de sauvegarde : " + buildinline(roll) + bonusText);
         callback(testRes);
       });
     } catch (e) {
@@ -3187,6 +3189,7 @@ var COFantasy = COFantasy || function() {
     var explications = [];
     var bonusCarac = bonusTestCarac(carac, personnage, options, evt, explications);
     var carSup = nbreDeTestCarac(carac, personnage);
+    var jetCache = ficheAttributeAsBool(personnage, 'jets_caches', false);
     var de = computeDice(personnage, {
       nbDe: carSup,
       carac: carac
@@ -3207,7 +3210,7 @@ var COFantasy = COFantasy || function() {
     sendChat("", rollExpr, function(res) {
       var roll = options.roll || res[0].inlinerolls[0];
       var d20roll = roll.results.total;
-      var rtext = buildinline(roll) + bonusText;
+      var rtext = jetCache ? d20roll+bonusCarac : buildinline(roll) + bonusText;
       var rt = {
         total: d20roll + bonusCarac,
       };
@@ -3217,9 +3220,10 @@ var COFantasy = COFantasy || function() {
       } else if (d20roll == 20) {
         rtext += " -> réussite critique";
         rt.critique = true;
-      } else if (bonusCarac !== 0) rtext += " = " + rt.total;
+      } else if (bonusCarac !== 0 && !jetCache) rtext += " = " + rt.total;
       rt.texte = rtext;
       rt.roll = roll;
+      if(jetCache) sendChat('COF', "/w GM Jet caché de caractéristique : " + buildinline(roll) + bonusText);
       callback(rt, explications);
     });
   }
@@ -3230,7 +3234,7 @@ var COFantasy = COFantasy || function() {
       type: "Jet de " + caracteristique
     };
     var optionsDisplay = {};
-    if (options.secret || ficheAttributeAsBool(perso, 'jets_caches', false)) {
+    if (options.secret) {
       if (playerIsGM(playerId)) optionsDisplay.chuchote = true;
       else {
         var character = getObj('character', perso.charId);
@@ -8656,7 +8660,6 @@ var COFantasy = COFantasy || function() {
           label_type = BS_LABEL_WARNING;
         }
         action += "<span style='" + BS_LABEL + " " + label_type + "; text-transform: none; font-size: 100%;'>" + weaponName + "</span>";
-        options.secret = options.secret || ficheAttributeAsBool(attaquant, 'jets_caches', false);
         var display = startFramedDisplay(playerId, action, attaquant, {
           perso2: target,
           chuchote: options.secret,
@@ -8902,7 +8905,7 @@ var COFantasy = COFantasy || function() {
                 options.attaqueDeGroupeDmgCoef = true;
               }
               if (d20roll == 1 && options.chance === undefined) {
-                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
+                attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
                 attackResult += addAttackImg("imgAttackEchecCritique", weaponStats.divers, options);
                 addAttackSound("soundAttackEchecCritique", weaponStats.divers, options);
                 if (options.demiAuto) {
@@ -8912,17 +8915,17 @@ var COFantasy = COFantasy || function() {
                 echecCritique = true;
               } else if ((paralyse || options.ouvertureMortelle || d20roll == 20 ||
                   (d20roll >= target.crit && attackRoll >= defense)) && !options.attaqueAssuree) {
-                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
+                attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
                 attackResult += addAttackImg("imgAttackSuccesCritique", weaponStats.divers, options);
                 addAttackSound("soundAttackSuccesCritique", weaponStats.divers, options);
                 touche = true;
                 critique = true;
               } else if (options.champion || d20roll == 20 || paralyse) {
-                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
+                attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
                 attackResult += addAttackImg("imgAttackSuccesChampion", weaponStats.divers, options);
                 addAttackSound("soundAttackSuccesChampion", weaponStats.divers, options);
               } else if (attackRoll < defense && d20roll < target.crit) {
-                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
+                attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
                 attackResult += addAttackImg("imgAttackEchec", weaponStats.divers, options);
                 addAttackSound("soundAttackEchec", weaponStats.divers, options);
                 evt.succes = false;
@@ -8931,7 +8934,7 @@ var COFantasy = COFantasy || function() {
                 } else touche = false;
               } else if (d20roll % 2 && attributeAsBool(target, 'clignotement')) {
                 target.messages.push(target.tokName + " disparaît au moment où l'attaque aurait du l" + onGenre(target, 'e', 'a') + " toucher");
-                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
+                attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
                 attackResult += addAttackImg("imgAttackEchecClignotement", weaponStats.divers, options);
                 addAttackSound("soundAttackEchecClignotement", weaponStats.divers, options);
                 target.clignotement = true;
@@ -8939,15 +8942,22 @@ var COFantasy = COFantasy || function() {
                   target.partialSaveAuto = true;
                 } else touche = false;
               } else { // Touché normal
-                attackResult = " : <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
+                attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
                 attackResult += addAttackImg("imgAttackSucces", weaponStats.divers, options);
                 addAttackSound("soundAttackSucces", weaponStats.divers, options);
               }
-              var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
-              if (attSkill > 0) attRollValue += "+" + attSkill;
-              else if (attSkill < 0) attRollValue += attSkill;
-              if (attBonus > 0) attRollValue += "+" + attBonus;
-              else if (attBonus < 0) attRollValue += attBonus;
+              var attRollValue;
+              var bonusTexte = '';
+              if (attSkill > 0) bonusTexte += "+" + attSkill;
+              else if (attSkill < 0) bonusTexte += attSkill;
+              if (attBonus > 0) bonusTexte += "+" + attBonus;
+              else if (attBonus < 0) bonusTexte += attBonus;
+              if(ficheAttributeAsBool(attaquant, 'jets_caches', false)){
+                attRollValue = attackRoll;
+                sendChat('COF', "/w GM Jet caché d'attaque : " + buildinline(rollsAttack.inlinerolls[attRollNumber]) + bonusTexte);
+              } else {
+                attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]) + bonusTexte;
+              }
               var line = "<b>Attaque</b> ";
               if (options.aoe || cibles.length > 1) {
                 line += "contre <b>" + target.tokName + "</b> ";
@@ -10140,7 +10150,13 @@ var COFantasy = COFantasy || function() {
                         " PV");
                     });
                   }
-                  target.dmgMessage = "<b>DM :</b> " + dmgDisplay;
+                  target.dmgMessage = "<b>DM :</b> ";
+                  if(ficheAttributeAsBool(attaquant, 'jets_caches', false)){
+                    target.dmgMessage += dmg;
+                    sendChat('COF', "/w GM Jet caché de dommages : " + dmgDisplay);
+                  } else {
+                    target.dmgMessage += dmgDisplay;
+                  }
                   if (options.contact) {
                     //Les DMs automatiques en cas de toucher une cible
                     if (attributeAsBool(target, 'sousTension')) {
@@ -10697,8 +10713,6 @@ var COFantasy = COFantasy || function() {
     if (options === undefined || !options.secret) {
       sendChat("", endFramedDisplay(display));
     } else { //option.secret
-      log("Attaque en secret");
-      log(display);
       var playerIds;
       playerIds = getPlayerIds(attaquant);
       playerIds.forEach(function(playerid) {
@@ -10856,7 +10870,7 @@ var COFantasy = COFantasy || function() {
         } else {
           smsg += " => échec";
           if (options.msgRate) smsg += options.msgRate;
-          if (options.avecPC) {
+          if (options.avecPC && !tr.echecCritique) {
             var pcTarget = pointsDeChance(target);
             if (pcTarget > 0) smsg += "<br/>" + boutonSimple("!cof-bouton-chance " + evt.id + " " + saveId, "Chance") + " (reste " + pcTarget + " PC)";
           }
@@ -24980,7 +24994,7 @@ var COFantasy = COFantasy || function() {
         var titre = "Tentative de sortir de " + cube.tokName;
         if (etreinte) titre = "Tentative de se libérer de l'etreinte de " + cube.tokName;
         var display = startFramedDisplay(playerId, titre, perso, {
-          chuchote: options.secret || ficheAttributeAsBool(perso, 'jets_caches', false)
+          chuchote: options.secret
         });
         if (options.chance) options.bonus = options.chance;
         testCaracteristique(perso, 'FOR', difficulte, 'enveloppement', options, evt,
@@ -25065,7 +25079,7 @@ var COFantasy = COFantasy || function() {
         };
         var titre = "Tentative de se libérer de " + agrippant.tokName;
         var display = startFramedDisplay(playerId, titre, perso, {
-          chuchote: options.secret || ficheAttributeAsBool(perso, 'jets_caches', false)
+          chuchote: options.secret
         });
         var explications = [];
         if (options.chance) options.bonus = options.chance * 10;
