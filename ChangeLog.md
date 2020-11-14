@@ -2,6 +2,7 @@
 ## 2.15
 ### Autres améliorations
 * Utilisation des consommables sur la fiche pour les PNJs aussi.
+* Si "Jet Secret" est configuré sur une fiche de PNJ, seul le total des jets d'attaques, de dommages, de caractéristiques et de sauvegardes sont affichés, sans les détails. Le MJ reçoit un whisper avec le détail du jet.
 
 ## 2.14
 ### Autres améliorations
