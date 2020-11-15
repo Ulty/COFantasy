@@ -4394,6 +4394,7 @@ var COFantasy = COFantasy || function() {
         case 'enflamme':
         case 'malediction':
         case 'pietine':
+        case 'percute':
         case 'maxDmg':
         case 'ouvertureMortelle':
         case 'seulementVivant':
@@ -7255,11 +7256,11 @@ var COFantasy = COFantasy || function() {
     var nom2 = perso2.token.get('name');
     jetCaracteristique(perso1, carac1, options1, evt, function(rt1, expl1) {
       jetCaracteristique(perso2, carac2, options2, evt, function(rt2, expl2) {
-        explications.push("Jet de " + carac1 + " de " + nom1 + " :" + rt1.texte);
+        explications.push("Jet de " + carac1 + " de " + nom1 + " : " + rt1.texte);
         expl1.forEach(function(m) {
           explications.push(m);
         });
-        explications.push("Jet de " + carac2 + " de " + nom2 + " :" + rt2.texte);
+        explications.push("Jet de " + carac2 + " de " + nom2 + " : " + rt2.texte);
         expl2.forEach(function(m) {
           explications.push(m);
         });
@@ -8789,6 +8790,7 @@ var COFantasy = COFantasy || function() {
             target.enflamme = target.enflamme || options.enflamme;
             target.malediction = target.malediction || options.malediction;
             target.pietine = target.pietine || options.pietine;
+            target.percute = target.percute || options.percute;
             target.maxDmg = target.maxDmg || options.maxDmg;
             //Les bonus d'attaque qui dépendent de la cible
             var bad = bonusAttaqueD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
@@ -10432,7 +10434,7 @@ var COFantasy = COFantasy || function() {
             } else etatsAvecSave();
           };
           var effetPietinement = function() {
-            if (target.pietine && estAussiGrandQue(attaquant, target)) {
+            if ((target.pietine || target.percute) && estAussiGrandQue(attaquant, target)) {
               var rollId = '_pietinement_' + target.token.id;
               var options1 = {};
               if (options.rolls && options.rolls['attaquant' + rollId])
@@ -10446,6 +10448,25 @@ var COFantasy = COFantasy || function() {
                   setState(target, 'renverse', true, evt);
                   options.dmgCoef = (options.dmgCoef || 1) + 1;
                   target.touche++;
+                  if(target.percute) {
+                    target.messages.push(target.tokName + " est projeté à "
+                        + rollDePlus(6, {bonus: 1}).val + " mètres");
+                    effets = effets || [];
+                    effets.push({
+                      effet: 'etourdiTemp',
+                      duree: 100,
+                      message: messageOfEffetTemp('etourdiTemp'),
+                      save: {
+                        carac: 'CON',
+                        seuil: 15
+                      },
+                      saveParTour : {
+                        carac: 'CON',
+                        seuil: 15
+                      }
+                    });
+                    savesEffets++;
+                  }
                 } else {
                   if (resultat === 0) diminueMalediction(attaquant, evt);
                   target.messages.push(target.tokName + " n'est pas piétiné.");
