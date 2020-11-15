@@ -10151,8 +10151,14 @@ var COFantasy = COFantasy || function() {
                   if (options.vampirise || target.vampirise) {
                     soigneToken(attaquant, dmg, evt, function(soins) {
                       target.messages.push(
-                        "L'attaque soigne " + attackerTokName + " de " + soins +
-                        " PV");
+                        "L'attaque soigne " + attackerTokName + " de " + soins + " PV");
+                    });
+                  }
+                  var absorptionEnergie = attributeAsInt(attaquant, "absorptionEnergie", 0);
+                  if (absorptionEnergie > 0) {
+                    soigneToken(attaquant, absorptionEnergie, evt, function(soins) {
+                      target.messages.push(
+                        "L'attaque soigne " + attackerTokName + " de " + soins + " PV");
                     });
                   }
                   target.dmgMessage = "<b>DM :</b> ";
@@ -14083,7 +14089,6 @@ var COFantasy = COFantasy || function() {
               delete target.partialSaveAuto;
             });
           }
-          log(options);
           attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
           return;
         case 'jetPerso':
