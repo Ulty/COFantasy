@@ -327,6 +327,7 @@
                   <li><code>--asDeLaGachette</code> : ajoute 1d6 DM si le jet d'attaque dépasse une DEF de 25.</li>
                   <li><code>--armeDArgent</code> : bonus de +2 en attaque et 1d6 aux DM si la cible est un mort-vivant ou un démon (utilise le champ <code>Race</code> de la fiche ou si présent un attribut <code>mortVivant</code>).</li>
                   <li><code>--pietine</code> : si l'attaquant est de taille au moins égale à celle de la cible (ou si la taille de l'un des deux n'est pas connue), fait un test opposé de FOR. En cas d'échec de la cible, elle est renversée et les DM sont doublés.</li>
+                  <li><code>--percute</code> : comme <code>--pietine</code>, mais la cible est en plus projetée à 1d6+1 mètres et étourdie si elle rate un test de CON difficulté 15, renouvelable chaque tour.</li>
                   <li><code>--feinte</code> : L'attaque ne fait pas de dégât, mais un bonus de +5 en attaque est donné sur les attaques du tour suivant sur cette cible (par celui qui a fait la feinte), et +2d6 DM si l'attaque fictive était un succès. Si l'attaquant possède un attribut <code>bonusFeinte</code>, c'est la valeur de cet attribut qui est donné en bonus aux attaques, à la place de +5.</li>
                   <li><code>--enveloppe <i>difficulte type expr</i></code> : si l'attaque touche, elle a une chance d'envelopper la cible. Dans ce cas, un bouton apparaît qui lance un test en opposition. Si celui-ci est remporté par l'attaquant, <i>difficulte</i> est la difficulté du test pour se sortir de l'enveloppement, <i>type</i> est soit <code>label</code>, et dans ce cas, <i>expr</i> doit être le label d'une attaque de l'attaquant, soit <code>ability</code>, et dans ce cas, <i>expr</i> est le nom d'une ability de l'attaquant. Cette attaque ou ability est appelée pour les dégâts périodiques. Si les deux derniers arguments sont ommis, le script prend <code>label</code> et le label de l'attaque courante, et si le premier argument est ommis, la difficulté est de 15.</li>
                   <li><code>--etreinte <i>difficulte</i></code> : si l'attaque touche, il y a une chance que l'attaquant puisse s'enrouler autour de la cible. Dans ce cas, un bouton apparaît qui lance un test en opposition. Si celui-ci est remporté par l'attaquant, <i>difficulte</i> est la difficulté du test pour se sortir de l'enveloppement. Cela fera apparaître un bouton pour les dégâts de l'étreinte, par défait <code>1d6</code>, mais on peut spécifier une autre expression pour les dégâts (optionelle, juste après la difficulté).</li>
@@ -1632,6 +1633,7 @@
                 <ol>
                   <li><strong>Charge</strong> : Faire l'attaque avec les arguments <code>--m2d20 --pietine</code>.</li>
                   <li><strong>Enrager</strong> : ajouter un attribut <code>peutEnrager</code> de valeur <code>true</code>.</li>
+                  <li><strong>Percuter</strong> : Remplacer <code>--pietine</code> par <code>--percute</code> dans l'attaque de Charge.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du colosse</h4>
                 <ol>
