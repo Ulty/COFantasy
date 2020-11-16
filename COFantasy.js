@@ -8077,12 +8077,17 @@ var COFantasy = COFantasy || function() {
       if (displayRes) displayRes('0', 0);
       return 0;
     }
-    if (options.asphyxie &&
-      (charAttributeAsBool(target, 'creatureArtificielle') ||
-        estNonVivant(target))) {
-      expliquer("L'asphyxie est sans effet sur une créature non-vivante");
-      if (displayRes) displayRes('0', 0);
-      return 0;
+    if (options.asphyxie) {
+      if (charAttributeAsBool(target, 'creatureArtificielle') ||
+        estNonVivant(target)) {
+        expliquer("L'asphyxie est sans effet sur une créature non-vivante");
+        if (displayRes) displayRes('0', 0);
+        return 0;
+      } else if (estDemon(target)) {
+        expliquer("L'asphyxie est sans effet sur un démon");
+        if (displayRes) displayRes('0', 0);
+        return 0;
+      }
     }
     var dmgCoef = options.dmgCoef || 1;
     if (target.dmgCoef) dmgCoef += target.dmgCoef;
@@ -18361,16 +18366,41 @@ var COFantasy = COFantasy || function() {
   }
 
   function raceIs(perso, race) {
-    var charRace = ficheAttribute(perso, 'race');
-    if (charRace === undefined) return false;
-    return (charRace.toLowerCase() == race.toLowerCase());
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '');
+      perso.race = perso.race.toLowerCase();
+    }
+    return (perso.race == race.toLowerCase());
+  }
+
+  function estDemon(perso) {
+    if (charAttributeAsBool(perso, 'démon')) return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '');
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    switch (perso.race) {
+      case 'démon':
+      case 'demon':
+      case 'balor':
+      case 'marilith':
+      case 'quasit':
+      case 'succube':
+        return true;
+      default:
+        return false;
+    }
   }
 
   function estMortVivant(perso) {
     if (charAttributeAsBool(perso, 'mortVivant')) return true;
-    var charRace = ficheAttribute(perso, 'race');
-    if (charRace === undefined) return false;
-    switch (charRace.toLowerCase()) {
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '');
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    switch (perso.race) {
       case 'squelette':
       case 'zombie':
       case 'mort-vivant':
@@ -18389,9 +18419,12 @@ var COFantasy = COFantasy || function() {
   }
 
   function estUnGeant(perso) {
-    var charRace = ficheAttribute(perso, 'race');
-    if (charRace === undefined) return false;
-    switch (charRace.trim().toLowerCase()) {
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race','');
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    switch (perso.race) {
       case 'géant':
       case 'geant':
       case 'ogre':
@@ -18405,9 +18438,12 @@ var COFantasy = COFantasy || function() {
 
   function estHumanoide(perso) {
     if (charAttributeAsBool(perso, 'humanoide')) return true;
-    var charRace = ficheAttribute(perso, 'race');
-    if (charRace === undefined) return false;
-    switch (charRace.trim().toLowerCase()) {
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '');
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    switch (perso.race) {
       case 'humain':
       case 'nain':
       case 'elfe':
@@ -18441,9 +18477,12 @@ var COFantasy = COFantasy || function() {
 
   function estQuadrupede(perso) {
     if (charAttributeAsBool(perso, 'quadrupede')) return true;
-    var charRace = ficheAttribute(perso, 'race');
-    if (charRace === undefined) return false;
-    switch (charRace.trim().toLowerCase()) {
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '');
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    switch (perso.race) {
       case 'ankheg':
       case 'araignée':
       case 'araignee':
@@ -18555,13 +18594,11 @@ var COFantasy = COFantasy || function() {
 
   function estMauvais(perso) {
     if (charAttributeAsBool(perso, 'mauvais')) return true;
-    var charRace = ficheAttribute(perso, 'race');
-    if (charRace === undefined) return false;
-    switch (charRace.trim().toLowerCase()) {
+    if (estDemon(perso)) return true; //remplit perso.race
+    switch (perso.race) {
       case 'squelette':
       case 'zombie':
       case 'élémentaire':
-      case 'démon':
       case 'momie':
         return true;
       default:
@@ -20949,7 +20986,7 @@ var COFantasy = COFantasy || function() {
         var evt = {
           type: "Destruction des morts-vivants"
         };
-            addEvent(evt);
+        addEvent(evt);
         if (!depenseMana(lanceur, options.mana, "lancer une destruction des mort-vivants", evt)) {
           return;
         }
