@@ -340,11 +340,22 @@ var COFantasy = COFantasy || function() {
 
   function tokenAttribute(personnage, name) {
     var token = personnage.token;
-    if (token) {
-      var link = token.get('bar1_link');
-      if (link === '') name += "_" + token.get('name');
-    }
-    return findObjs({
+    // Tokens Mook : attribut mook d'abord, attribut character sinon
+    if (token && token.get('bar1_link') === '') {
+        var mookName = name + "_" + token.get('name');
+        var attrs = findObjs({
+          _type: 'attribute',
+          _characterid: personnage.charId,
+        });
+        var attrMook = [];
+        var attrCharacter = [];
+        attrs.forEach(function (attr) {
+          if(attr.get('name') == mookName) attrMook.push(attr);
+          else if(attr.get('name') == name) attrCharacter.push(attr);
+        });
+        return attrMook.length > 0 ? attrMook : attrCharacter;
+    } // Tokens Characters : recherche normale
+    else return findObjs({
       _type: 'attribute',
       _characterid: personnage.charId,
       name: name
@@ -11182,7 +11193,7 @@ var COFantasy = COFantasy || function() {
           divide();
           expliquer(target.token.get('name') + " est protégé contre les dégâts de zone");
         }
-        if (attributeAsBool('resistanceA_' + dmgType)) {
+        if (attributeAsBool(target, 'resistanceA_' + dmgType)) {
           divide();
         }
         if (estElementaire(dmgType)) {
