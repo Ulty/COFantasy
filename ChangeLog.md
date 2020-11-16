@@ -8,6 +8,7 @@
 ### Capacités
 * Absorption d'énergie (spectre, vampire, sylvanien maudit)
 * Projeter (voie du Cogneur rang 3)
+* Second ennemi juré (voie du Traqueur rang 4)
 
 ## 2.14
 ### Autres améliorations
