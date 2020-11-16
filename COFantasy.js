@@ -4359,6 +4359,7 @@ var COFantasy = COFantasy || function() {
     switch (weaponStats.typeDegats) {
       case 'mental':
         options.attaqueMentale = true;
+        /* falls through */
       case 'feu':
       case 'froid':
       case 'acide':
@@ -10447,8 +10448,8 @@ var COFantasy = COFantasy || function() {
                   options.dmgCoef = (options.dmgCoef || 1) + 1;
                   target.touche++;
                   if(target.percute) {
-                    target.messages.push(target.tokName + " est projeté à "
-                        + rollDePlus(6, {bonus: 1}).val + " mètres");
+                    target.messages.push(target.tokName + " est projeté à " + 
+                      rollDePlus(6, {bonus: 1}).val + " mètres");
                     effets = effets || [];
                     effets.push({
                       effet: 'etourdiTemp',
