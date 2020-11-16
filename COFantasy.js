@@ -16378,7 +16378,7 @@ var COFantasy = COFantasy || function() {
               psaveopt.partialSave = psaveParams;
             }
             return;
-          case 'once':
+          case 'waitingForAoe':
             if (opt.length < 2) {
               error("Il manque l'id de l'événement qui a provoqué les dégâts", optArgs);
               options.return = true;
@@ -16390,13 +16390,8 @@ var COFantasy = COFantasy || function() {
               options.return = true;
               return;
             }
-            if (originalEvt.waitingForAoe) {
-              options.evt = originalEvt;
-              // Il faudra enlever waitingForAoe à la place de faire un addEvent
-              return;
-            }
-            sendPlayer(msg, "Action déjà effectuée");
-            options.return = true;
+            options.evt = originalEvt;
+            // Il faudra enlever evt à la place de faire un addEvent
             return;
           case 'asphyxie':
           case 'affute':
@@ -16492,7 +16487,6 @@ var COFantasy = COFantasy || function() {
     var evt;
     if (options.evt) {
       evt = options.evt;
-      delete evt.waitingForAoe;
     } else {
       evt = {
         type: 'dmgDirects'
@@ -20956,8 +20950,8 @@ var COFantasy = COFantasy || function() {
         var evt = {
           type: "Destruction des morts-vivants"
         };
+            addEvent(evt);
         if (!depenseMana(lanceur, options.mana, "lancer une destruction des mort-vivants", evt)) {
-          addEvent(evt);
           return;
         }
         var display = startFramedDisplay(playerId,
@@ -20969,7 +20963,7 @@ var COFantasy = COFantasy || function() {
             if (testRes.reussite) {
               var action = "!cof-dmg " + dm + " --sortilege --mortsVivants";
               action += " --attaquant " + lanceur.token.id;
-              evt.waitingForAoe = true;
+              action += " --waitingForAoe " + evt.id;
               addLineToFramedDisplay(display, msgJet + " &ge; 13");
               sendChat(name, endFramedDisplay(display));
               threadSync++; //Pour arrêter le roundMarker
@@ -20979,7 +20973,6 @@ var COFantasy = COFantasy || function() {
               addLineToFramedDisplay(display, name + " ne réussit pas à invoquer son dieu.");
               sendChat(name, endFramedDisplay(display));
             }
-            addEvent(evt);
           });
       });
     });
