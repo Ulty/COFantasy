@@ -2134,6 +2134,30 @@ var COFantasy = COFantasy || function() {
       Campaign().set('initiativepage', evt.initiativepage);
   }
 
+  //origin peut être un message ou un nom de joueur
+  function sendPlayer(origin, msg) {
+    var dest = origin;
+    if (origin.who) {
+      if (playerIsGM(getPlayerIdFromMsg(origin))) dest = 'GM';
+      else dest = origin.who;
+    }
+    sendChat('COF', '/w "' + dest + '" ' + msg);
+  }
+
+  function isCarac(x) {
+    switch (x) {
+      case 'FOR':
+      case 'DEX':
+      case 'CON':
+      case 'SAG':
+      case 'INT':
+      case 'CHA':
+        return true;
+      default:
+        return false;
+    }
+  }
+
   // !cof-confirmer-attaque evtid
   function confirmerAttaque(msg) {
     if (!stateCOF.combat) {
@@ -3760,30 +3784,6 @@ var COFantasy = COFantasy || function() {
       } else playerId = players[0].id;
     }
     return playerId;
-  }
-
-  //origin peut être un message ou un nom de joueur
-  function sendPlayer(origin, msg) {
-    var dest = origin;
-    if (origin.who) {
-      if (playerIsGM(getPlayerIdFromMsg(origin))) dest = 'GM';
-      else dest = origin.who;
-    }
-    sendChat('COF', '/w "' + dest + '" ' + msg);
-  }
-
-  function isCarac(x) {
-    switch (x) {
-      case 'FOR':
-      case 'DEX':
-      case 'CON':
-      case 'SAG':
-      case 'INT':
-      case 'CHA':
-        return true;
-      default:
-        return false;
-    }
   }
 
   function jet(msg) {
@@ -17154,7 +17154,7 @@ var COFantasy = COFantasy || function() {
     var pp = effet.indexOf('(');
     var mEffet = (pp > 0) ? messageEffetTemp[effet.substring(effet, pp)] : messageEffetTemp[effet];
     if (mEffet === undefined) {
-      error("Impossible de trouver l'effet " + effetC, cmd);
+      error("Impossible de trouver l'effet " + effet, cmd);
       return;
     }
     var duree = parseInt(cmd[2]);
