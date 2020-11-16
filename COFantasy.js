@@ -16553,7 +16553,7 @@ var COFantasy = COFantasy || function() {
         log(evt);
       }); //fin du jet de dés
     } catch (rollError) {
-      error("Jet " + dmg.value + " mal formé", cmd);
+      error("Jet " + dmg.value + " mal formé", dmg);
     }
   }
 
