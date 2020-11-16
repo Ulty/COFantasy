@@ -16555,7 +16555,6 @@ var COFantasy = COFantasy || function() {
             finalDisplay();
           });
         }); //fin forEach
-        log(evt);
       }); //fin du jet de dés
     } catch (rollError) {
       error("Jet " + dmg.value + " mal formé", dmg);
