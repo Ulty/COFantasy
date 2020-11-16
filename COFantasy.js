@@ -11187,7 +11187,7 @@ var COFantasy = COFantasy || function() {
           divide();
           expliquer(target.token.get('name') + " est protégé contre les dégâts de zone");
         }
-        if (attributeAsBool('resistanceA_' + dmgType)) {
+        if (attributeAsBool(target, 'resistanceA_' + dmgType)) {
           divide();
         }
         if (estElementaire(dmgType)) {
@@ -11202,17 +11202,23 @@ var COFantasy = COFantasy || function() {
           } else if ((dmgType == 'froid' || dmgType == 'electrique') && attributeAsBool(target, 'mutationFourrureViolette')) {
             divide();
           }
-        } else {
-          if (dmgType == 'poison' || dmgType == 'maladie') {
-            if (invulnerable ||
+        } else if (dmgType == 'poison' || dmgType == 'maladie') {
+          if (invulnerable ||
               charAttributeAsBool(target, 'creatureArtificielle') ||
               estNonVivant(target)) {
-              zero();
-            } else if (attributeAsBool(target, 'mutationSangNoir')) {
-              divide();
-            }
-
-          } else if (attributeAsBool(target, 'armureMagique')) {
+            zero();
+          } else if (attributeAsBool(target, 'mutationSangNoir')) {
+            divide();
+          }
+        } else {
+          if(options.tranchant && attributeAsBool(target, 'resistanceA_tranchant')) {
+            divide();
+          } else if(options.percant && attributeAsBool(target, 'resistanceA_percant')) {
+            divide();
+          } else if(options.contondant && attributeAsBool(target, 'resistanceA_contondant')) {
+            divide();
+          }
+          if (attributeAsBool(target, 'armureMagique')) {
             divide();
           }
         }
