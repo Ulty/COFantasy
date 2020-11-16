@@ -3144,7 +3144,7 @@ var COFantasy = COFantasy || function() {
         testRes.roll.token = personnage.token;
         var d20roll = roll.results.total;
         var bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
-        testRes.texte = jetCache ? d20roll+bonusCarac : buildinline(roll) + bonusText;
+        testRes.texte = jetCache ? d20roll + bonusCarac : buildinline(roll) + bonusText;
         if (d20roll == 20) {
           testRes.reussite = true;
           testRes.critique = true;
@@ -3188,7 +3188,7 @@ var COFantasy = COFantasy || function() {
             }
           }
         }
-        if(jetCache) sendChat('COF', "/w GM Jet caché de sauvegarde : " + buildinline(roll) + bonusText);
+        if (jetCache) sendChat('COF', "/w GM Jet caché de sauvegarde : " + buildinline(roll) + bonusText);
         callback(testRes);
       });
     } catch (e) {
@@ -3234,7 +3234,7 @@ var COFantasy = COFantasy || function() {
     sendChat("", rollExpr, function(res) {
       var roll = options.roll || res[0].inlinerolls[0];
       var d20roll = roll.results.total;
-      var rtext = jetCache ? d20roll+bonusCarac : buildinline(roll) + bonusText;
+      var rtext = jetCache ? d20roll + bonusCarac : buildinline(roll) + bonusText;
       var rt = {
         total: d20roll + bonusCarac,
       };
@@ -3247,7 +3247,7 @@ var COFantasy = COFantasy || function() {
       } else if (bonusCarac !== 0 && !jetCache) rtext += " = " + rt.total;
       rt.texte = rtext;
       rt.roll = roll;
-      if(jetCache) sendChat('COF', "/w GM Jet caché de caractéristique : " + buildinline(roll) + bonusText);
+      if (jetCache) sendChat('COF', "/w GM Jet caché de caractéristique : " + buildinline(roll) + bonusText);
       callback(rt, explications);
     });
   }
@@ -8205,9 +8205,9 @@ var COFantasy = COFantasy || function() {
   // attaquant est optionnel
   function entrerEnCombat(attaquant, cibles, explications, evt) {
     var selected = [];
-    if(attaquant) {
+    if (attaquant) {
       selected.push({
-            _id: attaquant.token.id
+        _id: attaquant.token.id
       });
       if (getState(attaquant, 'invisible')) {
         explications.push(attaquant.tokName + " redevient visible");
@@ -8956,7 +8956,7 @@ var COFantasy = COFantasy || function() {
               else if (attSkill < 0) bonusTexte += attSkill;
               if (attBonus > 0) bonusTexte += "+" + attBonus;
               else if (attBonus < 0) bonusTexte += attBonus;
-              if(ficheAttributeAsBool(attaquant, 'jets_caches', false)){
+              if (ficheAttributeAsBool(attaquant, 'jets_caches', false)) {
                 attRollValue = attackRoll;
                 sendChat('COF', "/w GM Jet caché d'attaque : " + buildinline(rollsAttack.inlinerolls[attRollNumber]) + bonusTexte);
               } else {
@@ -10161,7 +10161,7 @@ var COFantasy = COFantasy || function() {
                     });
                   }
                   target.dmgMessage = "<b>DM :</b> ";
-                  if(ficheAttributeAsBool(attaquant, 'jets_caches', false)){
+                  if (ficheAttributeAsBool(attaquant, 'jets_caches', false)) {
                     target.dmgMessage += dmg;
                     sendChat('COF', "/w GM Jet caché de dommages : " + dmgDisplay);
                   } else {
@@ -10453,9 +10453,11 @@ var COFantasy = COFantasy || function() {
                   setState(target, 'renverse', true, evt);
                   options.dmgCoef = (options.dmgCoef || 1) + 1;
                   target.touche++;
-                  if(target.percute) {
-                    target.messages.push(target.tokName + " est projeté à " + 
-                      rollDePlus(6, {bonus: 1}).val + " mètres");
+                  if (target.percute) {
+                    target.messages.push(target.tokName + " est projeté à " +
+                      rollDePlus(6, {
+                        bonus: 1
+                      }).val + " mètres");
                     effets = effets || [];
                     effets.push({
                       effet: 'etourdiTemp',
@@ -10465,7 +10467,7 @@ var COFantasy = COFantasy || function() {
                         carac: 'CON',
                         seuil: 15
                       },
-                      saveParTour : {
+                      saveParTour: {
                         carac: 'CON',
                         seuil: 15
                       }
@@ -16389,7 +16391,7 @@ var COFantasy = COFantasy || function() {
               return;
             }
             if (originalEvt.waitingForAoe) {
-              evt = originalEvt;
+              options.evt = originalEvt;
               // Il faudra enlever waitingForAoe à la place de faire un addEvent
               return;
             }
@@ -16487,24 +16489,30 @@ var COFantasy = COFantasy || function() {
   }
 
   function dmgDirects(playerId, playerName, cibles, dmg, options) {
-    var evt = {
-      type: 'dmgDirects',
-      action: {
-        titre: "Dégâts",
-        playerId: playerId,
-        playerName: playerName,
-        cibles: cibles,
-        dmg: dmg,
-        options: options
-      }
+    var evt;
+    if (options.evt) {
+      evt = options.evt;
+      delete evt.waitingForAoe;
+    } else {
+      evt = {
+        type: 'dmgDirects'
+      };
+      addEvent(evt);
+    }
+    evt.action = {
+      titre: "Dégâts",
+      playerId: playerId,
+      playerName: playerName,
+      cibles: cibles,
+      dmg: dmg,
+      options: options
     };
-    addEvent(evt);
     if (options.attaquant && limiteRessources(options.attaquant, options, 'dmg', 'dmg', evt)) return;
     var action = "<b>Dégâts.</b>";
-    if(options.partialSave) {
+    if (options.partialSave) {
       action +=
-          " Jet de " + options.partialSave.carac + " difficulté " + options.partialSave.seuil +
-          " pour réduire les dégâts";
+        " Jet de " + options.partialSave.carac + " difficulté " + options.partialSave.seuil +
+        " pour réduire les dégâts";
     }
     try {
       sendChat('', '[[' + dmg.value + ']]', function(resDmg) {
@@ -16546,7 +16554,7 @@ var COFantasy = COFantasy || function() {
           dealDamage(perso, dmg, [], evt, false, options, explications, function(dmgDisplay, dmgFinal) {
             someDmgDone = true;
             addLineToFramedDisplay(display,
-                name + " reçoit " + dmgDisplay + " DM");
+              name + " reçoit " + dmgDisplay + " DM");
             explications.forEach(function(e) {
               addLineToFramedDisplay(display, e, 80, false);
             });
@@ -17139,7 +17147,7 @@ var COFantasy = COFantasy || function() {
     if (lanceur) charId = lanceur.charId;
     if (effet == 'forgeron' || effet == 'armeEnflammee') {
       //Compléter description de l'effet
-      if(!lanceur) {
+      if (!lanceur) {
         error("Pas de lanceur pour forgeron ou armeEnflammee", msg.content);
         return;
       }
@@ -17214,7 +17222,7 @@ var COFantasy = COFantasy || function() {
         }
         cibles.push(perso);
       });
-      if(cibles.length == 0) {
+      if (cibles.length == 0) {
         sendChar(charId, "Aucune cible éligible sélectionnée");
         return;
       }
@@ -17360,9 +17368,9 @@ var COFantasy = COFantasy || function() {
         }
         if (options.saveParTour) {
           setTokenAttr(perso, effet + 'SaveParTour',
-              options.saveParTour.carac, evt, {
-                maxVal: options.saveParTour.seuil
-              });
+            options.saveParTour.carac, evt, {
+              maxVal: options.saveParTour.seuil
+            });
         }
         if (options.puissant) {
           var puissant = true;
