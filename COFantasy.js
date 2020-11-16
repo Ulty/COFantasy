@@ -14102,7 +14102,7 @@ var COFantasy = COFantasy || function() {
           });
           return;
         case 'dmgDirects':
-          dmgDirects(action.playerId, action.cibles, action.dmg, options);
+          dmgDirects(action.playerId, action.playerName, action.cibles, action.dmg, options);
           return;
         case 'effetTemp':
           effetTemporaire(action.playerId, action.cibles, action.effet, action.mEffet, action.duree, options);
@@ -16480,16 +16480,19 @@ var COFantasy = COFantasy || function() {
       if (options.maxDmg) {
         dmgRollExpr = dmgRollExpr.replace(/d([1-9])/g, "*$1");
       }
-      dmgDirects(playerId, cibles, dmg, options);
+      var playerName = msg.who;
+      if (playerIsGM(playerId)) playerName = 'GM';
+      dmgDirects(playerId, playerName, cibles, dmg, options);
     }, options); //fin du getSelected
   }
 
-  function dmgDirects(playerId, cibles, dmg, options) {
+  function dmgDirects(playerId, playerName, cibles, dmg, options) {
     var evt = {
       type: 'dmgDirects',
       action: {
         titre: "Dégâts",
         playerId: playerId,
+        playerName: playerName,
         cibles: cibles,
         dmg: dmg,
         options: options
@@ -16518,7 +16521,7 @@ var COFantasy = COFantasy || function() {
             if (someDmgDone) {
               sendChat("", endFramedDisplay(display));
             } else {
-              sendPlayer(msg, "Aucune cible valide n'a été sélectionée");
+              sendPlayer(playerName, "Aucune cible valide n'a été sélectionée");
             }
           }
           tokensToProcess--;
@@ -16529,7 +16532,7 @@ var COFantasy = COFantasy || function() {
             return;
           }
           if (options.mortsVivants && !(estMortVivant(perso))) {
-            sendPlayer(playerId, perso.token.get('name') + " n'est pas un mort-vivant");
+            sendPlayer(playerName, perso.token.get('name') + " n'est pas un mort-vivant");
             finalDisplay();
             return;
           }
