@@ -14116,73 +14116,6 @@ var COFantasy = COFantasy || function() {
     addEvent(evtChance);
   }
 
-  function chance(msg) {
-    if (msg.selected === undefined) {
-      sendPlayer(msg, "!cof-chance sans sélection de token");
-      log("!cof-chance requiert de sélectionner un token");
-      return;
-    } else if (msg.selected.length != 1) {
-      sendPlayer(msg, "!cof-chance ne doit selectionner qu'un token");
-      log("!cof-chance requiert de sélectionner exactement un token");
-      return;
-    }
-    var cmd = msg.content.split(' ');
-    if (cmd.length < 2) {
-      error("La fonction !cof-chance attend au moins un argument (combat ou autre)", msg);
-      return;
-    }
-    var tokenId = msg.selected[0]._id;
-    var perso = persoOfId(tokenId);
-    if (perso === undefined) {
-      error(" !cof-chance ne fonctionne qu'avec des tokens qui représentent des personnages", perso);
-      return;
-    }
-    var name = perso.token.get('name');
-    var action;
-    if (cmd[1] == 'combat') { //further checks
-      var lastAct = lastEvent();
-      if (lastAct !== undefined) {
-        if (lastAct.type != 'Attaque' || lastAct.succes !== false) {
-          action = lastAct.action;
-        }
-      }
-      if (action === undefined ||
-        lastAct.action.attaquant.token.id != tokenId) {
-        error("Pas de dernière action de combat ratée trouvée pour " + name, lastAct);
-        return;
-      }
-    }
-    var chance = pointsDeChance(perso);
-    if (chance <= 0) {
-      sendChat("", name + " n'a plus de point de chance à dépenser...");
-      return;
-    }
-    var evt = {
-      type: 'chance'
-    };
-    chance--;
-    switch (cmd[1]) {
-      case 'autre':
-        setFicheAttr(perso, 'pc', chance, evt, {
-          msg: " a dépensé un point de chance. Il lui en reste " + chance
-        });
-        addEvent(evt);
-        return;
-      case 'combat':
-        undoEvent();
-        setFicheAttr(perso, 'pc', chance, evt, {
-          msg: " a dépensé un point de chance. Il lui en reste " + chance
-        });
-        addEvent(evt);
-        chanceCombat(action);
-        return;
-      default:
-        error("argument de chance inconnu", cmd);
-        addEvent(evt);
-        return;
-    }
-  }
-
   function addChanceToOptions(options, rollId) {
     if (rollId) {
       options.chanceRollId = options.chanceRollId || {};
@@ -25860,9 +25793,6 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-recharger":
         recharger(msg);
-        return;
-      case "!cof-chance": //deprecated
-        chance(msg);
         return;
       case "!cof-bouton-chance":
         boutonChance(msg);
