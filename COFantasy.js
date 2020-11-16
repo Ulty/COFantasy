@@ -2134,6 +2134,30 @@ var COFantasy = COFantasy || function() {
       Campaign().set('initiativepage', evt.initiativepage);
   }
 
+  //origin peut être un message ou un nom de joueur
+  function sendPlayer(origin, msg) {
+    var dest = origin;
+    if (origin.who) {
+      if (playerIsGM(getPlayerIdFromMsg(origin))) dest = 'GM';
+      else dest = origin.who;
+    }
+    sendChat('COF', '/w "' + dest + '" ' + msg);
+  }
+
+  function isCarac(x) {
+    switch (x) {
+      case 'FOR':
+      case 'DEX':
+      case 'CON':
+      case 'SAG':
+      case 'INT':
+      case 'CHA':
+        return true;
+      default:
+        return false;
+    }
+  }
+
   // !cof-confirmer-attaque evtid
   function confirmerAttaque(msg) {
     if (!stateCOF.combat) {
@@ -3762,30 +3786,6 @@ var COFantasy = COFantasy || function() {
     return playerId;
   }
 
-  //origin peut être un message ou un nom de joueur
-  function sendPlayer(origin, msg) {
-    var dest = origin;
-    if (origin.who) {
-      if (playerIsGM(getPlayerIdFromMsg(origin))) dest = 'GM';
-      else dest = origin.who;
-    }
-    sendChat('COF', '/w "' + dest + '" ' + msg);
-  }
-
-  function isCarac(x) {
-    switch (x) {
-      case 'FOR':
-      case 'DEX':
-      case 'CON':
-      case 'SAG':
-      case 'INT':
-      case 'CHA':
-        return true;
-      default:
-        return false;
-    }
-  }
-
   function jet(msg) {
     // Les arguments pour cof-jet sont :
     // - Caracteristique (FOR, DEX, CON, INT, SAG, CHA)
@@ -4357,6 +4357,9 @@ var COFantasy = COFantasy || function() {
       sortilege: weaponStats.sortilege
     };
     switch (weaponStats.typeDegats) {
+      case 'mental':
+        options.attaqueMentale = true;
+        /* falls through */
       case 'feu':
       case 'froid':
       case 'acide':
@@ -4370,11 +4373,7 @@ var COFantasy = COFantasy || function() {
       case 'percant':
       case 'contondant':
       case 'magique':
-
         options[weaponStats.typeDegats] = true;
-        break;
-      case 'mental':
-        options.attaqueMentale = true;
         break;
     }
     var lastEtat; //dernier de etats et effets
@@ -10151,8 +10150,14 @@ var COFantasy = COFantasy || function() {
                   if (options.vampirise || target.vampirise) {
                     soigneToken(attaquant, dmg, evt, function(soins) {
                       target.messages.push(
-                        "L'attaque soigne " + attackerTokName + " de " + soins +
-                        " PV");
+                        "L'attaque soigne " + attackerTokName + " de " + soins + " PV");
+                    });
+                  }
+                  var absorptionEnergie = attributeAsInt(attaquant, "absorptionEnergie", 0);
+                  if (absorptionEnergie > 0) {
+                    soigneToken(attaquant, absorptionEnergie, evt, function(soins) {
+                      target.messages.push(
+                        "L'attaque soigne " + attackerTokName + " de " + soins + " PV");
                     });
                   }
                   target.dmgMessage = "<b>DM :</b> ";
@@ -10449,8 +10454,8 @@ var COFantasy = COFantasy || function() {
                   options.dmgCoef = (options.dmgCoef || 1) + 1;
                   target.touche++;
                   if(target.percute) {
-                    target.messages.push(target.tokName + " est projeté à "
-                        + rollDePlus(6, {bonus: 1}).val + " mètres");
+                    target.messages.push(target.tokName + " est projeté à " + 
+                      rollDePlus(6, {bonus: 1}).val + " mètres");
                     effets = effets || [];
                     effets.push({
                       effet: 'etourdiTemp',
@@ -14083,7 +14088,6 @@ var COFantasy = COFantasy || function() {
               delete target.partialSaveAuto;
             });
           }
-          log(options);
           attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
           return;
         case 'jetPerso':
@@ -14110,73 +14114,6 @@ var COFantasy = COFantasy || function() {
     }
     error("Type d'évènement pas encore géré pour la chance", evt);
     addEvent(evtChance);
-  }
-
-  function chance(msg) {
-    if (msg.selected === undefined) {
-      sendPlayer(msg, "!cof-chance sans sélection de token");
-      log("!cof-chance requiert de sélectionner un token");
-      return;
-    } else if (msg.selected.length != 1) {
-      sendPlayer(msg, "!cof-chance ne doit selectionner qu'un token");
-      log("!cof-chance requiert de sélectionner exactement un token");
-      return;
-    }
-    var cmd = msg.content.split(' ');
-    if (cmd.length < 2) {
-      error("La fonction !cof-chance attend au moins un argument (combat ou autre)", msg);
-      return;
-    }
-    var tokenId = msg.selected[0]._id;
-    var perso = persoOfId(tokenId);
-    if (perso === undefined) {
-      error(" !cof-chance ne fonctionne qu'avec des tokens qui représentent des personnages", perso);
-      return;
-    }
-    var name = perso.token.get('name');
-    var action;
-    if (cmd[1] == 'combat') { //further checks
-      var lastAct = lastEvent();
-      if (lastAct !== undefined) {
-        if (lastAct.type != 'Attaque' || lastAct.succes !== false) {
-          action = lastAct.action;
-        }
-      }
-      if (action === undefined ||
-        lastAct.action.attaquant.token.id != tokenId) {
-        error("Pas de dernière action de combat ratée trouvée pour " + name, lastAct);
-        return;
-      }
-    }
-    var chance = pointsDeChance(perso);
-    if (chance <= 0) {
-      sendChat("", name + " n'a plus de point de chance à dépenser...");
-      return;
-    }
-    var evt = {
-      type: 'chance'
-    };
-    chance--;
-    switch (cmd[1]) {
-      case 'autre':
-        setFicheAttr(perso, 'pc', chance, evt, {
-          msg: " a dépensé un point de chance. Il lui en reste " + chance
-        });
-        addEvent(evt);
-        return;
-      case 'combat':
-        undoEvent();
-        setFicheAttr(perso, 'pc', chance, evt, {
-          msg: " a dépensé un point de chance. Il lui en reste " + chance
-        });
-        addEvent(evt);
-        chanceCombat(action);
-        return;
-      default:
-        error("argument de chance inconnu", cmd);
-        addEvent(evt);
-        return;
-    }
   }
 
   function addChanceToOptions(options, rollId) {
@@ -16616,7 +16553,7 @@ var COFantasy = COFantasy || function() {
         log(evt);
       }); //fin du jet de dés
     } catch (rollError) {
-      error("Jet " + dmg.value + " mal formé", cmd);
+      error("Jet " + dmg.value + " mal formé", dmg);
     }
   }
 
@@ -17217,7 +17154,7 @@ var COFantasy = COFantasy || function() {
     var pp = effet.indexOf('(');
     var mEffet = (pp > 0) ? messageEffetTemp[effet.substring(effet, pp)] : messageEffetTemp[effet];
     if (mEffet === undefined) {
-      error("Impossible de trouver l'effet " + effetC, cmd);
+      error("Impossible de trouver l'effet " + effet, cmd);
       return;
     }
     var duree = parseInt(cmd[2]);
@@ -25856,9 +25793,6 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-recharger":
         recharger(msg);
-        return;
-      case "!cof-chance": //deprecated
-        chance(msg);
         return;
       case "!cof-bouton-chance":
         boutonChance(msg);

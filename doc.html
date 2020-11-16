@@ -497,7 +497,6 @@
               <h3 class="text-info" id="chance">2.5 Chance</h3>
               <div class="decalage">
                 <p>Le script essaie de détecter les cas où un point de chance peut être utile, et dans ce cas fournit un bouton (utilisable par les joueurs contrôlant le perosnnage ou le GM), permettant de dépenser un point de chance. Attention, pour l'instant, il n'est pas possible de faire juste un undo de la dépense de point de chnce. Le undo après la dépense de point de chance annule toute l'action. Il faut ensuite faire un undo par point de chance dépensé.</p>
-                <p>Pour les cas non prévus par le script, on peut faire juste <code>!cof-chance autre</code>.</p>
               </div>
               <h3 class="text-info" id="surprise">2.6 Surprise : <code>!cof-surprise ?difficulte</code></h3>
               <div class="decalage">
@@ -1711,6 +1710,7 @@
               <h3 class="text-info" id="Capacites_diverses">4.5 Autres capacités</h3>
               <div class="decalage">
                 <ul>
+                  <li><strong>Absorption d'énergie</strong> : ajouter un attribut <code>absorptionEnergie</code> de valeur courante la valeur du soin accordé à l'attaquant à chaque fois qu'il endommage une cible.</li>
                   <li><strong>Attaque en meute</strong> : ajouter un attribut <code>attaqueEnMeute</code> de valeur courante le bonus d'attaque (2 pour un gobelin). Cela confère le bonus pour toutes les attaques de personnages avec cet attribut suivant une effectuée par un autre personnage avec cet attribut, jusqu'au prochain tour de ce personnage. Ainsi, si 2 créatures continuent d'attaquer la même cible, elles bénéficieront du bonus tout le temps, sauf la toute première attaque.</li>
                   <li><strong>Baroud d'honneur</strong> : ajouter un attribut <code>baroudHonneur</code> (=true) (Quand le personnage arrive à 0 PV, il ne meurt pas jusqu'à sa prochaine attaque, qui se fait avec un bonus de +5)</li>
                   <li><strong>Cibles multiples</strong> (nuées) : ajouter un attribut <code>ciblesMultiples</code>, de valeur <code>true</code>.</li>
