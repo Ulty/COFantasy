@@ -4357,6 +4357,8 @@ var COFantasy = COFantasy || function() {
       sortilege: weaponStats.sortilege
     };
     switch (weaponStats.typeDegats) {
+      case 'mental':
+        options.attaqueMentale = true;
       case 'feu':
       case 'froid':
       case 'acide':
@@ -4370,11 +4372,7 @@ var COFantasy = COFantasy || function() {
       case 'percant':
       case 'contondant':
       case 'magique':
-
         options[weaponStats.typeDegats] = true;
-        break;
-      case 'mental':
-        options.attaqueMentale = true;
         break;
     }
     var lastEtat; //dernier de etats et effets
