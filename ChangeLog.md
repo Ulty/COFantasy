@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.15
 ### Autres améliorations
+* Prise en compte de l'immunité à l'asphyxie des démons.
 * Utilisation des consommables sur la fiche pour les PNJs aussi.
 * Si "Jet Secret" est configuré sur une fiche de PNJ, seul le total des jets d'attaques, de dommages, de caractéristiques et de sauvegardes sont affichés, sans les détails. Le MJ reçoit un whisper avec le détail du jet.
 
