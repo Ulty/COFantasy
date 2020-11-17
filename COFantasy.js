@@ -7176,7 +7176,7 @@ var COFantasy = COFantasy || function() {
         }
         setTokenAttr(personnage, ressource, utilisations - 1, evt);
       } else {
-        error("Impossible de à qui appliquer la limite journalière", options);
+        error("Impossible de savoir à qui appliquer la limite journalière", options);
         return true;
       }
     }
@@ -13407,6 +13407,14 @@ var COFantasy = COFantasy || function() {
           return;
       }
     });
+    //Quelques vérifications
+    if (!options.lanceur) {
+      if (options.limiteParJour) {
+        error("Il faut préciser la personne pour laquelle on met une limite par jours", msg.selected);
+      } else if (options.limitePaCombat) {
+        error("Il faut préciser la personne pour laquelle on met une limite par combat", msg.selected);
+      }
+    }
     return options;
   }
 

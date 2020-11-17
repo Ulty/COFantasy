@@ -231,6 +231,7 @@
                       <div class="decalage"><code>!cof-attack @{selected|token_id} @{target|token_id} Flèche Enflammée --toucher [[@{selected|ATKMAG}]] --dm 1d6 + [[@{selected|INT}]] --portee 30 --fx beam-fire --feu --sortilege --enflamme</code></div>
                     </div>
               <p>Malus ou bonus temporaire à une attaque : utiliser la barre 3.</p>
+              <p>Toutes les attaques ayant une portée non nulles sont considérées par le script comme des attaques à distance.</p>
               <p>Le test d'attaque à distance tient compte de la portée (malus de -1 à -5 si distance entre portée et deux fois cette valeur), ainsi que des tokens sur le trajet de l'attaque. Une attaque de trop loin ne porte jamais.</p>
               <p>Utiliser une attaque fait rentrer l'attaquant en combat (et le rajoute au turn tracker).</p>
               <h4 class="text-secondary">Options pour l'attaque&nbsp;:</h4>
@@ -641,8 +642,8 @@
                   <ul>
                     <li><code>--lanceur <i>id</i></code> : indique quel est le lanceur. Utile pour un certain nombre d'autres options.</li>
                     <li><code>--mana <i>id cout</i></code> : impose au token <i>id</i> de dépenser <i>cout</i> mana. Si <code>--lanceur</code> est donné, <i>id</i> est inutile. La présence de cette option, même avec un coût de 0, indique au script que l'effet devrait être supprimé à la mort du lanceur.</li>
-                    <li><code>--limiteParJour <i>l</i></code> : limite le nombre d'utilisations de cette effet à <i>l</i> fois par jour. On peut préciser un nom après <i>l</i>, qui va correspondre à une ressource pouvant être partagée avec d'autres attaques ou d'autres effets (voir <code>!cof-attack</code>). Par défaut, le nom de cette ressource est <i>effet</i>.</li>
-                    <li><code>--limiteParCombat</code> : même effet que la limite par jour. Si aucun argument n'est donné, la limite est de une fois par combat.</li>
+                    <li><code>--limiteParJour <i>l</i></code> : limite le nombre d'utilisations de cette effet à <i>l</i> fois par jour. On peut préciser un nom après <i>l</i>, qui va correspondre à une ressource pouvant être partagée avec d'autres attaques ou d'autres effets (voir <code>!cof-attack</code>). Par défaut, le nom de cette ressource est <i>effet</i>. Attention, il faut un lanceur auquel appliquer la limite par jour !</li>
+                    <li><code>--limiteParCombat</code> : même effet que la limite par jour. Si aucun argument n'est donné, la limite est de une fois par combat.  Attention, il faut un lanceur auquel appliquer la limite par combat !</li>
                     <li><code>--dose <i>nom</i></code>: définie une ressource nommée <code>dose_<i>nom</i></code>, dont la valeur doit être positive (à la manière des munitions). Utile par exemple pour les parchemins, les potions ou les baguettes.</li>
                     <li><code>--portee <i>id d</i></code> : impose aux cibles de l'effet d'être à moins de <i>d</i> mètres du token <i>id</i>. Si <code>--lanceur</code> est précisé, inutile de donner <i>id</i>.</li>
                     <li><code>--puissant</code> : lance la version puissante de l'effet</li>
