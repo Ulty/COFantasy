@@ -4337,7 +4337,11 @@ var COFantasy = COFantasy || function() {
       }
     } else {
       //On trouve l'attaque correspondant au label
-      weaponStats = getWeaponStats(attaquant, attackLabel);
+      if (attackLabel == -1) { //attaque avec l'arme en main
+        weaponStats = armesEnMain(attaquant);
+        if (weaponStats === undefined)
+          weaponStats = getWeaponStats(attaquant, attackLabel);
+      } else weaponStats = getWeaponStats(attaquant, attackLabel);
     }
     //Ajout des options de l'arme
     var wo = weaponStats.options.trim();

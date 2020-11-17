@@ -7,6 +7,7 @@
 * Second ennemi juré (voie du Traqueur rang 4)
 
 ### Autres améliorations
+* Une attaque avec le label -1 utilise l'arme en main, si il y en a une.
 * Prise en compte de l'immunité à l'asphyxie des démons.
 * Utilisation des consommables sur la fiche pour les PNJs aussi.
 * Si "Jet Secret" est configuré sur une fiche de PNJ, seul le total des jets d'attaques, de dommages, de caractéristiques et de sauvegardes sont affichés, sans les détails. Le MJ reçoit un whisper avec le détail du jet.
