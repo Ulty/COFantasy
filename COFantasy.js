@@ -1495,7 +1495,7 @@ var COFantasy = COFantasy || function() {
       if (tokens.length === 0) return undefined;
       if (tokens.length > 1) {
         error("Ambigüité sur le choix d'un token : il y a " +
-          tokens.length + " tokens nommés" + name, tokens);
+          tokens.length + " tokens nommés " + name, tokens);
       }
       token = tokens[0];
     }
@@ -1557,7 +1557,6 @@ var COFantasy = COFantasy || function() {
   function persoOfToken(token) {
     var charId = token.get('represents');
     if (charId === '') {
-      error("le token sélectionné ne représente pas de personnage", token);
       return undefined;
     }
     return {
