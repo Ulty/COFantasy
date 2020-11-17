@@ -342,18 +342,18 @@ var COFantasy = COFantasy || function() {
     var token = personnage.token;
     // Tokens Mook : attribut mook d'abord, attribut character sinon
     if (token && token.get('bar1_link') === '') {
-        var mookName = name + "_" + token.get('name');
-        var attrs = findObjs({
-          _type: 'attribute',
-          _characterid: personnage.charId,
-        });
-        var attrMook = [];
-        var attrCharacter = [];
-        attrs.forEach(function (attr) {
-          if(attr.get('name') == mookName) attrMook.push(attr);
-          else if(attr.get('name') == name) attrCharacter.push(attr);
-        });
-        return attrMook.length > 0 ? attrMook : attrCharacter;
+      var mookName = name + "_" + token.get('name');
+      var attrs = findObjs({
+        _type: 'attribute',
+        _characterid: personnage.charId,
+      });
+      var attrMook = [];
+      var attrCharacter = [];
+      attrs.forEach(function(attr) {
+        if (attr.get('name') == mookName) attrMook.push(attr);
+        else if (attr.get('name') == name) attrCharacter.push(attr);
+      });
+      return attrMook.length > 0 ? attrMook : attrCharacter;
     } // Tokens Characters : recherche normale
     else return findObjs({
       _type: 'attribute',
@@ -1495,7 +1495,7 @@ var COFantasy = COFantasy || function() {
       if (tokens.length === 0) return undefined;
       if (tokens.length > 1) {
         error("Ambigüité sur le choix d'un token : il y a " +
-          tokens.length + " tokens nommés" + name, tokens);
+          tokens.length + " tokens nommés " + name, tokens);
       }
       token = tokens[0];
     }
@@ -1557,7 +1557,6 @@ var COFantasy = COFantasy || function() {
   function persoOfToken(token) {
     var charId = token.get('represents');
     if (charId === '') {
-      error("le token sélectionné ne représente pas de personnage", token);
       return undefined;
     }
     return {
@@ -6624,6 +6623,21 @@ var COFantasy = COFantasy || function() {
       defense += bonusCapitaine;
       explications.push(target.tokName + " suit les ordres de son commandant => +" + bonusCapitaine + " en DEF");
     }
+    if (attaquant && charAttributeAsBool(target, 'reduireLaDistance')) {
+      switch (taillePersonnage(attaquant, 4)) {
+        case 5:
+          defense += 2;
+          explications.push(target.tokName + " réduit la distance => +2 en DEF");
+          break;
+        case 6:
+          defense += 3;
+          explications.push(target.tokName + " réduit la distance => +3 en DEF");
+          break;
+        case 7:
+          defense += 4;
+          explications.push(target.tokName + " réduit la distance => +4 en DEF");
+      }
+    }
     if (target.realCharId) target.charId = target.realCharId;
     return defense;
   }
@@ -6909,13 +6923,19 @@ var COFantasy = COFantasy || function() {
       explications.push(explChasseurEmerite);
       target.chasseurEmerite = true;
     }
-    var ennemiJure = findObjs({
+    var ennemiJureAttr = findObjs({
       _type: 'attribute',
       _characterid: attackingCharId,
       name: 'ennemiJure'
     });
-    if (ennemiJure.length === 0) ennemiJure = false;
-    else ennemiJure = raceIs(target, ennemiJure[0].get('current'));
+    var ennemiJure = false;
+    if (ennemiJureAttr.length != 0) {
+      var races = ennemiJureAttr[0].get('current');
+      races.split(/[_, ]/).forEach(function(race) {
+        if (race === '') return;
+        if (raceIs(target, race)) ennemiJure = true;
+      });
+    }
     if (ennemiJure) {
       var ejSag = modCarac(attaquant, 'sagesse');
       attBonus += ejSag;
@@ -7176,7 +7196,7 @@ var COFantasy = COFantasy || function() {
         }
         setTokenAttr(personnage, ressource, utilisations - 1, evt);
       } else {
-        error("Impossible de à qui appliquer la limite journalière", options);
+        error("Impossible de savoir à qui appliquer la limite journalière", options);
         return true;
       }
     }
@@ -9729,14 +9749,14 @@ var COFantasy = COFantasy || function() {
         });
       }
       if (options.tueurDeGrands) {
-        target.taille = target.taille || taillePersonnage(target, 4);
-        if (target.taille == 5) {
+        var targetTaille = taillePersonnage(target, 4);
+        if (targetTaille == 5) {
           target.additionalDmg.push({
             type: mainDmgType,
             value: '1d6'
           });
           target.messages.push("Cible grande => +1d6 DM");
-        } else if (target.taille > 5) {
+        } else if (targetTaille > 5) {
           target.additionalDmg.push({
             type: mainDmgType,
             value: '2d6'
@@ -11215,18 +11235,18 @@ var COFantasy = COFantasy || function() {
           }
         } else if (dmgType == 'poison' || dmgType == 'maladie') {
           if (invulnerable ||
-              charAttributeAsBool(target, 'creatureArtificielle') ||
-              estNonVivant(target)) {
+            charAttributeAsBool(target, 'creatureArtificielle') ||
+            estNonVivant(target)) {
             zero();
           } else if (attributeAsBool(target, 'mutationSangNoir')) {
             divide();
           }
         } else {
-          if(options.tranchant && attributeAsBool(target, 'resistanceA_tranchant')) {
+          if (options.tranchant && attributeAsBool(target, 'resistanceA_tranchant')) {
             divide();
-          } else if(options.percant && attributeAsBool(target, 'resistanceA_percant')) {
+          } else if (options.percant && attributeAsBool(target, 'resistanceA_percant')) {
             divide();
-          } else if(options.contondant && attributeAsBool(target, 'resistanceA_contondant')) {
+          } else if (options.contondant && attributeAsBool(target, 'resistanceA_contondant')) {
             divide();
           }
           if (attributeAsBool(target, 'armureMagique')) {
@@ -13407,6 +13427,14 @@ var COFantasy = COFantasy || function() {
           return;
       }
     });
+    //Quelques vérifications
+    if (!options.lanceur) {
+      if (options.limiteParJour) {
+        error("Il faut préciser la personne pour laquelle on met une limite par jours", msg.selected);
+      } else if (options.limitePaCombat) {
+        error("Il faut préciser la personne pour laquelle on met une limite par combat", msg.selected);
+      }
+    }
     return options;
   }
 
@@ -17219,8 +17247,8 @@ var COFantasy = COFantasy || function() {
           if (options.rang && options.tempeteDeMana.cout > options.rang) {
             sendChar(charId, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
           }
-          if (cibles.length == 1 && options.tempeteDeMana.altruiste) {
-            cibles[0]._id = options.tempeteDeMana.altruiste.token.id;
+          if (selected.length == 1 && options.tempeteDeMana.altruiste) {
+            selected[0]._id = options.tempeteDeMana.altruiste.token.id;
             if (options.portee === undefined) options.portee = 0;
           }
         }
@@ -18437,7 +18465,7 @@ var COFantasy = COFantasy || function() {
 
   function estUnGeant(perso) {
     if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race','');
+      perso.race = ficheAttribute(perso, 'race', '');
       perso.race = perso.race.toLowerCase();
     }
     if (perso.race === '') return false;
@@ -18632,69 +18660,72 @@ var COFantasy = COFantasy || function() {
   // 6 : énorme
   // 7 : colossal
   function taillePersonnage(perso, def) {
-    var attr = findObjs({
-      _type: 'attribute',
-      _characterid: perso.charId,
-    });
-    var attrTaille = attr.filter(function(a) {
-      return a.get('name').toUpperCase() == 'TAILLE';
-    });
-    if (attrTaille.length > 0) {
-      switch (attrTaille[0].get('current').trim().toLowerCase()) {
-        case "minuscule":
-          return 1;
-        case "très petit":
-        case "très petite":
-        case "tres petit":
-          return 2;
-        case "petit":
-        case "petite":
-          return 3;
-        case "moyen":
-        case "moyenne":
-        case "normal":
-        case "normale":
-          return 4;
-        case "grand":
-        case "grande":
-          return 5;
-        case "énorme":
-        case "enorme":
-          return 6;
-        case "colossal":
-        case "colossale":
-          return 7;
-        default: //On passe à la méthode suivante
-      }
+    if (perso.taille) return perso.taille;
+    switch (ficheAttribute(perso, 'taille', '').trim().toLowerCase()) {
+      case "minuscule":
+        perso.taille = 1;
+        return 1;
+      case "très petit":
+      case "très petite":
+      case "tres petit":
+        perso.taille = 2;
+        return 2;
+      case "petit":
+      case "petite":
+        perso.taille = 3;
+        return 3;
+      case "moyen":
+      case "moyenne":
+      case "normal":
+      case "normale":
+        perso.taille = 4;
+        return 4;
+      case "grand":
+      case "grande":
+        perso.taille = 5;
+        return 5;
+      case "énorme":
+      case "enorme":
+        perso.taille = 6;
+        return 6;
+      case "colossal":
+      case "colossale":
+        perso.taille = 7;
+        return 7;
+      default: //On passe à la méthode suivante
     }
-    var attrRace = attr.filter(function(a) {
-      return a.get('name').toUpperCase() == 'RACE';
-    });
-    if (attrRace.length > 0) {
-      switch (attrRace[0].get('current').trim().toLowerCase()) {
-        case 'lutin':
-        case 'fee':
-          return 2;
-        case 'halfelin':
-        case 'gobelin':
-        case 'kobold':
-          return 3;
-        case 'humain':
-        case 'elfe':
-        case 'nain':
-        case 'demi-elfe':
-        case 'demi-orque':
-        case 'orque':
-        case 'gnome':
-        case 'âme-forgée':
-          return 4;
-        case 'centaure':
-        case 'demi-ogre':
-        case 'ogre':
-        case 'minotaure':
-          return 5;
-      }
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '');
+      perso.race = perso.race.trim().toLowerCase();
     }
+    switch (perso.race) {
+      case 'lutin':
+      case 'fee':
+        perso.taille = 2;
+        return 2;
+      case 'halfelin':
+      case 'gobelin':
+      case 'kobold':
+        perso.taille = 3;
+        return 3;
+      case 'humain':
+      case 'elfe':
+      case 'nain':
+      case 'demi-elfe':
+      case 'demi-orque':
+      case 'orque':
+      case 'gnome':
+      case 'âme-forgée':
+        perso.taille = 4;
+        return 4;
+      case 'centaure':
+      case 'demi-ogre':
+      case 'ogre':
+      case 'minotaure':
+        perso.taille = 5;
+        return 5;
+    }
+    perso.taille = def;
     return def;
   }
 
