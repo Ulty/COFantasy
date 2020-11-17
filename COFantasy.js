@@ -6909,13 +6909,18 @@ var COFantasy = COFantasy || function() {
       explications.push(explChasseurEmerite);
       target.chasseurEmerite = true;
     }
-    var ennemiJure = findObjs({
+    var ennemiJureAttr = findObjs({
       _type: 'attribute',
       _characterid: attackingCharId,
       name: 'ennemiJure'
     });
-    if (ennemiJure.length === 0) ennemiJure = false;
-    else ennemiJure = raceIs(target, ennemiJure[0].get('current'));
+    var ennemiJure = false;
+    if (ennemiJureAttr.length != 0) {
+      var races = ennemiJureAttr[0].get('current');
+      races.split("_").forEach(function (race) {
+        if (raceIs(target, race)) ennemiJure = true;
+      });
+    }
     if (ennemiJure) {
       var ejSag = modCarac(attaquant, 'sagesse');
       attBonus += ejSag;
