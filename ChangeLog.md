@@ -1,14 +1,15 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.15
+### Capacités
+* Réduire la distance de la Voie du tueur de géants.
+* Absorption d'énergie (spectre, vampire, sylvanien maudit)
+* Projeter (voie du Cogneur rang 3)
+* Second ennemi juré (voie du Traqueur rang 4)
+
 ### Autres améliorations
 * Prise en compte de l'immunité à l'asphyxie des démons.
 * Utilisation des consommables sur la fiche pour les PNJs aussi.
 * Si "Jet Secret" est configuré sur une fiche de PNJ, seul le total des jets d'attaques, de dommages, de caractéristiques et de sauvegardes sont affichés, sans les détails. Le MJ reçoit un whisper avec le détail du jet.
-
-### Capacités
-* Absorption d'énergie (spectre, vampire, sylvanien maudit)
-* Projeter (voie du Cogneur rang 3)
-* Second ennemi juré (voie du Traqueur rang 4)
 
 ## 2.14
 ### Autres améliorations
