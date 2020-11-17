@@ -17232,8 +17232,8 @@ var COFantasy = COFantasy || function() {
           if (options.rang && options.tempeteDeMana.cout > options.rang) {
             sendChar(charId, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
           }
-          if (cibles.length == 1 && options.tempeteDeMana.altruiste) {
-            cibles[0]._id = options.tempeteDeMana.altruiste.token.id;
+          if (selected.length == 1 && options.tempeteDeMana.altruiste) {
+            selected[0]._id = options.tempeteDeMana.altruiste.token.id;
             if (options.portee === undefined) options.portee = 0;
           }
         }
