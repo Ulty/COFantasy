@@ -6916,7 +6916,8 @@ var COFantasy = COFantasy || function() {
     var ennemiJure = false;
     if (ennemiJureAttr.length != 0) {
       var races = ennemiJureAttr[0].get('current');
-      races.split("_").forEach(function (race) {
+      races.split(/[_, ]/).forEach(function (race) {
+        if (race === '') return;
         if (raceIs(target, race)) ennemiJure = true;
       });
     }
