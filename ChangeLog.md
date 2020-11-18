@@ -5,6 +5,7 @@
 * Absorption d'énergie (spectre, vampire, sylvanien maudit)
 * Projeter (voie du Cogneur rang 3)
 * Second ennemi juré (voie du Traqueur rang 4)
+* Injonction Mortelle (Magie Maléfique rang 3)
 
 ### Autres améliorations
 * Une attaque avec le label -1 utilise l'arme en main, si il y en a une.
