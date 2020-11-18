@@ -5,6 +5,7 @@
 * Absorption d'énergie (spectre, vampire, sylvanien maudit)
 * Projeter (voie du Cogneur rang 3)
 * Second ennemi juré (voie du Traqueur rang 4)
+* Injonction Mortelle (Magie Maléfique rang 3)
 
 ### Autres améliorations
 * Prise en compte de l'immunité à l'asphyxie des démons.

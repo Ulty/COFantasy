@@ -2529,6 +2529,7 @@ var COFantasy = COFantasy || function() {
                 break;
               case 'lancer-sort':
               case 'injonction':
+              case 'injonction-mortelle':
                 picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
                 style = 'background-color:#9900ff';
                 break;
@@ -12631,6 +12632,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('testsRatesDuTour', evt, attrs);
     attrs = removeAllAttributes('effetsTemporairesLies', evt, attrs);
     attrs = removeAllAttributes('aAgiAZeroPV', evt, attrs);
+    attrs = removeAllAttributes('injonctionMortelle', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -14158,6 +14160,9 @@ var COFantasy = COFantasy || function() {
           return;
         case 'effetTemp':
           effetTemporaire(action.playerId, action.cibles, action.effet, action.mEffet, action.duree, options);
+          return;
+        case 'injonctionMortelle':
+          injonctionMortelle(action.playerId, action.attaquant, action.cible, options);
           return;
         default:
           error("Evenement avec une action, mais inconnue au niveau chance. Impossible d'annuler !", evt);
@@ -18155,6 +18160,110 @@ var COFantasy = COFantasy || function() {
           addEvent(evt);
         }
       });
+  }
+
+  function parseInjonctionMortelle(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined || options.cmd === undefined) return;
+    var cmd = options.cmd;
+    if (cmd.length < 3) {
+      error("Il faut au moins 2 arguments à !cof-injonction-mortelle", cmd);
+      return;
+    }
+    var attaquant = persoOfId(cmd[1], cmd[1]);
+    var cible = persoOfId(cmd[2], cmd[2]);
+    if (attaquant === undefined || cible === undefined) {
+      error("Arguments de !cof-attaque-magique-contre-pv incorrects", cmd);
+      return;
+    }
+    var distance = distanceCombat(attaquant.token, cible.token, options.pageId);
+    if (distance > 30) {
+      sendChar(attaquant.charId, "est trop loin de " + cible.token.get('name') +
+          " pour l'injonction mortelle");
+      return;
+    }
+    injonctionMortelle(getPlayerIdFromMsg(msg), attaquant, cible, options);
+  }
+
+  function injonctionMortelle(playerId, attaquant, cible, options) {
+    var evt = {
+      type: 'injonctionMortelle',
+      action: {
+        titre: "Injonction Mortelle",
+        playerId: playerId,
+        attaquant: attaquant,
+        cible: cible,
+        options: options
+      }
+    };
+    addEvent(evt);
+    var explications = options.messages || [];
+    entrerEnCombat(attaquant, [cible], explications, evt);
+    var display = startFramedDisplay(playerId, evt.action.titre, attaquant, {
+      perso2: cible
+    });
+    explications.forEach(msg => addLineToFramedDisplay(display, msg, 80 ));
+    if (attributeAsBool(cible, 'injonctionMortelle')) {
+      addLineToFramedDisplay(display, cible.token.get('name') + " a déjà été victime d'une injonction mortelle ce combat, c'est sans effet");
+      sendChat("", endFramedDisplay(display));
+      return;
+    }
+    setTokenAttr(cible, 'injonctionMortelle', true, evt);
+    var saveOpts = {
+      msgPour: " pour résister à l'injonction mortelle",
+      msgReussite: ", réussi.",
+      msgRate: ", raté.",
+      attaquant: attaquant,
+      avecPC: true
+    };
+    var saveId = 'injonctionMortelle_' + cible.token.id;
+    if (options.rolls) {
+      saveOpts.roll = options.rolls[saveId];
+      if (options.chanceRollId && options.chanceRollId[saveId]) {
+        saveOpts.chanceRollId = options.chanceRollId[saveId];
+      }
+    }
+    var expliquer = function(message) {
+      addLineToFramedDisplay(display, message, 80);
+    };
+    save({
+        carac: 'CON',
+        seuil: 15
+      }, cible, saveId, expliquer, saveOpts, evt,
+    function(reussite, rollText, roll) {
+      evt.action.rolls = evt.action.rolls || {};
+      evt.action.rolls[saveId] = roll;
+      if(reussite) {
+        var nc = attributeAsInt(attaquant, "niveau", 0);
+        var dmg = {
+          type: 'normal',
+          value: '2d6+' + nc
+        };
+        sendChat('', '[[' + dmg.value + ']]', function(resDmg) {
+          dmg.roll = dmg.roll || resDmg[0];
+          var afterEvaluateDmg = dmg.roll.content.split(' ');
+          var dmgRollNumber = rollNumber(afterEvaluateDmg[0]);
+          dmg.total = dmg.roll.inlinerolls[dmgRollNumber].results.total;
+          dmg.display = buildinline(dmg.roll.inlinerolls[dmgRollNumber], dmg.type, options.magique);
+          var name = cible.token.get('name');
+          var explicationsDmg = [];
+          cible.attaquant = attaquant;
+          dealDamage(cible, dmg, [], evt, false, options, explicationsDmg, function(dmgDisplay, dmgFinal) {
+            addLineToFramedDisplay(display,
+                name + " reçoit " + dmgDisplay + " DM");
+            explicationsDmg.forEach(function(e) {
+              addLineToFramedDisplay(display, e, 80, false);
+            });
+            sendChat("", endFramedDisplay(display));
+          });
+        });
+      } else {
+        addLineToFramedDisplay(display, cible.token.get('name') + " meurt sous l'injonction mortelle !", 80);
+        updateCurrentBar(cible, 1, 0, evt);
+        setState(cible, 'mort', true, evt);
+        sendChat("", endFramedDisplay(display));
+      }
+    });
   }
 
   function sommeil(msg) { //sort de sommeil
@@ -26056,6 +26165,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-tueur-fantasmagorique':
         tueurFantasmagorique(msg);
+        return;
+      case '!cof-injonction-mortelle':
+        parseInjonctionMortelle(msg);
         return;
       case '!cof-tour-de-force':
         tourDeForce(msg);
