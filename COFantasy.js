@@ -17818,9 +17818,23 @@ var COFantasy = COFantasy || function() {
     var allieSansPeur = 0;
     var allies = alliesParPerso[target.charId];
     if (allies) {
+      pageId = pageId || target.token.get('pageid');
+      var allTokens;
       allies.forEach(function(cid) {
         if (charIdAttributeAsBool(cid, 'sansPeur')) {
-          allieSansPeur =
+          //On cherche si l'allié est présent sur la même page
+          allTokens = allTokens ||
+            findObjs({
+              _type: "graphic",
+              _pageid: pageId,
+              _subtype: "token",
+              layer: "objects"
+            });
+          var alliePresent = allTokens.find(function(tok) {
+            return tok.get('represents') == cid;
+          });
+          if (alliePresent)
+            allieSansPeur =
             Math.max(allieSansPeur, 2 + modCarac(cid, 'charisme'));
         }
       });
@@ -18183,7 +18197,7 @@ var COFantasy = COFantasy || function() {
     var distance = distanceCombat(attaquant.token, cible.token, options.pageId);
     if (distance > 30) {
       sendChar(attaquant.charId, "est trop loin de " + cible.token.get('name') +
-          " pour l'injonction mortelle");
+        " pour l'injonction mortelle");
       return;
     }
     injonctionMortelle(getPlayerIdFromMsg(msg), attaquant, cible, options);
@@ -18206,7 +18220,7 @@ var COFantasy = COFantasy || function() {
     var display = startFramedDisplay(playerId, evt.action.titre, attaquant, {
       perso2: cible
     });
-    explications.forEach(msg => addLineToFramedDisplay(display, msg, 80 ));
+    explications.forEach(msg => addLineToFramedDisplay(display, msg, 80));
     if (attributeAsBool(cible, 'injonctionMortelle')) {
       addLineToFramedDisplay(display, cible.token.get('name') + " a déjà été victime d'une injonction mortelle ce combat, c'est sans effet");
       sendChat("", endFramedDisplay(display));
@@ -18234,40 +18248,40 @@ var COFantasy = COFantasy || function() {
         carac: 'CON',
         seuil: 15
       }, cible, saveId, expliquer, saveOpts, evt,
-    function(reussite, rollText, roll) {
-      evt.action.rolls = evt.action.rolls || {};
-      evt.action.rolls[saveId] = roll;
-      if(reussite) {
-        var nc = attributeAsInt(attaquant, "niveau", 0);
-        var dmg = {
-          type: 'normal',
-          value: '2d6+' + nc
-        };
-        sendChat('', '[[' + dmg.value + ']]', function(resDmg) {
-          dmg.roll = dmg.roll || resDmg[0];
-          var afterEvaluateDmg = dmg.roll.content.split(' ');
-          var dmgRollNumber = rollNumber(afterEvaluateDmg[0]);
-          dmg.total = dmg.roll.inlinerolls[dmgRollNumber].results.total;
-          dmg.display = buildinline(dmg.roll.inlinerolls[dmgRollNumber], dmg.type, options.magique);
-          var name = cible.token.get('name');
-          var explicationsDmg = [];
-          cible.attaquant = attaquant;
-          dealDamage(cible, dmg, [], evt, false, options, explicationsDmg, function(dmgDisplay, dmgFinal) {
-            addLineToFramedDisplay(display,
+      function(reussite, rollText, roll) {
+        evt.action.rolls = evt.action.rolls || {};
+        evt.action.rolls[saveId] = roll;
+        if (reussite) {
+          var nc = attributeAsInt(attaquant, "niveau", 0);
+          var dmg = {
+            type: 'normal',
+            value: '2d6+' + nc
+          };
+          sendChat('', '[[' + dmg.value + ']]', function(resDmg) {
+            dmg.roll = dmg.roll || resDmg[0];
+            var afterEvaluateDmg = dmg.roll.content.split(' ');
+            var dmgRollNumber = rollNumber(afterEvaluateDmg[0]);
+            dmg.total = dmg.roll.inlinerolls[dmgRollNumber].results.total;
+            dmg.display = buildinline(dmg.roll.inlinerolls[dmgRollNumber], dmg.type, options.magique);
+            var name = cible.token.get('name');
+            var explicationsDmg = [];
+            cible.attaquant = attaquant;
+            dealDamage(cible, dmg, [], evt, false, options, explicationsDmg, function(dmgDisplay, dmgFinal) {
+              addLineToFramedDisplay(display,
                 name + " reçoit " + dmgDisplay + " DM");
-            explicationsDmg.forEach(function(e) {
-              addLineToFramedDisplay(display, e, 80, false);
+              explicationsDmg.forEach(function(e) {
+                addLineToFramedDisplay(display, e, 80, false);
+              });
+              sendChat("", endFramedDisplay(display));
             });
-            sendChat("", endFramedDisplay(display));
           });
-        });
-      } else {
-        addLineToFramedDisplay(display, cible.token.get('name') + " meurt sous l'injonction mortelle !", 80);
-        updateCurrentBar(cible, 1, 0, evt);
-        setState(cible, 'mort', true, evt);
-        sendChat("", endFramedDisplay(display));
-      }
-    });
+        } else {
+          addLineToFramedDisplay(display, cible.token.get('name') + " meurt sous l'injonction mortelle !", 80);
+          updateCurrentBar(cible, 1, 0, evt);
+          setState(cible, 'mort', true, evt);
+          sendChat("", endFramedDisplay(display));
+        }
+      });
   }
 
   function sommeil(msg) { //sort de sommeil
