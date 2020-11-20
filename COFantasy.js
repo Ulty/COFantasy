@@ -7172,11 +7172,11 @@ var COFantasy = COFantasy || function() {
   }
 
   //Retourne true si il existe une limite qui empêche de lancer le sort
+  //N'ajoute pas l'événement à l'historique
   function limiteRessources(personnage, options, defResource, msg, evt) {
     if (options.mana) {
       if (personnage) {
         if (!depenseMana(personnage, options.mana, msg, evt)) {
-          addEvent(evt);
           return true;
         }
       } else {
@@ -7196,7 +7196,6 @@ var COFantasy = COFantasy || function() {
           attributeAsInt(personnage, ressource, options.limiteParJour);
         if (utilisations === 0) {
           sendChar(personnage.charId, "ne peut plus faire cette action aujourd'hui");
-          addEvent(evt);
           return true;
         }
         setTokenAttr(personnage, ressource, utilisations - 1, evt);
@@ -7209,7 +7208,6 @@ var COFantasy = COFantasy || function() {
       if (personnage) {
         if (!stateCOF.combat) {
           sendChar(personnage.charId, "ne peut pas faire cette action en dehors des combats");
-          addEvent(evt);
           return true;
         }
         if (options.limiteParCombatRessource)
@@ -7220,7 +7218,6 @@ var COFantasy = COFantasy || function() {
         if (utilisations === 0) {
           var msgToSend = msg || "ne peut plus faire cette action pour ce combat";
           sendChar(personnage.charId, msgToSend);
-          addEvent(evt);
           return true;
         }
         setTokenAttr(personnage, ressource, utilisations - 1, evt);
@@ -7235,7 +7232,6 @@ var COFantasy = COFantasy || function() {
         var doses = attributeAsInt(personnage, 'dose_' + options.dose, 0);
         if (doses === 0) {
           sendChar(personnage.charId, "n'a plus de " + nomDose);
-          addEvent(evt);
           return true;
         }
         setTokenAttr(personnage, 'dose_' + options.dose, doses - 1, evt);
@@ -7250,7 +7246,6 @@ var COFantasy = COFantasy || function() {
         var currentAttr = attributeAsInt(personnage, nomAttr, 0);
         if (currentAttr >= options.limiteAttribut.limite) {
           sendChar(personnage.charId, options.limiteAttribut.message);
-          addEvent(evt);
           return true;
         }
         setTokenAttr(personnage, nomAttr, currentAttr + 1, evt);
@@ -8633,8 +8628,10 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    if (limiteRessources(attaquant, options, attackLabel, weaponName, evt))
+    if (limiteRessources(attaquant, options, attackLabel, weaponName, evt)) {
+      addEvent(evt);
       return;
+    }
     // Effets quand on rentre en combat
     entrerEnCombat(attaquant, cibles, explications, evt);
     // On commence par le jet d'attaque de base : juste le ou les dés d'attaque
@@ -14220,13 +14217,14 @@ var COFantasy = COFantasy || function() {
       sendChar(perso.charId, "n'a pas de rune d'énergie");
       return false;
     }
-    if (!limiteRessources(perso, {
+    if (limiteRessources(perso, {
         limiteParCombat: 1
       }, "runeForgesort_énergie", "a déjà utilisé sa rune d'énergie durant ce combat", evt)) {
+      addEvent(evt);
+      return false;
+    }
       sendChar(perso.charId, "utilise sa rune d'énergie pour relancer un d20 sur un test d'attaque, de FOR, DEX ou CON");
       return true;
-    }
-    return false;
   }
 
   //!cof-bouton-rune-energie
@@ -14328,13 +14326,14 @@ var COFantasy = COFantasy || function() {
       return false;
     }
 
-    if (!limiteRessources(perso, {
+    if (limiteRessources(perso, {
         limiteParCombat: 1
       }, attrName, "a déjà utilisé sa rune de puissance durant ce combat", evt)) {
+      addEvent(evt);
+      return false;
+    }
       sendChar(perso.charId, "utilise sa rune de puissance pour obtenir les DM maximum de son arme (");
       return true;
-    }
-    return false;
   }
 
   //!cof-rune-puissance label
@@ -16662,6 +16661,7 @@ var COFantasy = COFantasy || function() {
         error("Pas de cible pour le changement d'état", msg);
         return;
       }
+      addEvent(evt);
       var lanceur = options.lanceur;
       if (lanceur === undefined && selected.length == 1)
         lanceur = persoOfId(selected[0]._id);
@@ -17297,8 +17297,8 @@ var COFantasy = COFantasy || function() {
         whisper = '/w "' + player.get('displayname') + '" ';
       }
     }
-    if (limiteRessources(lanceur, options, effet, effet, evt)) return;
     addEvent(evt);
+    if (limiteRessources(lanceur, options, effet, effet, evt)) return;
     entrerEnCombat(lanceur, cibles, explications, evt);
     if (duree > 0) {
       var setOneEffect = function(perso, d) {
@@ -17568,10 +17568,11 @@ var COFantasy = COFantasy || function() {
         });
       }
       if (selected.length === 0) return;
-      if (limiteRessources(lanceur, options, effet, effet, evt)) return;
-      if (selected.length > 0) {
-        initiative(selected, evt);
+      if (limiteRessources(lanceur, options, effet, effet, evt)) {
+        addEvent(evt);
+        return;
       }
+      initiative(selected, evt);
       var mEffet = messageEffetCombat[effet];
       var actMsg = mEffet.activation;
       var img = options.image;
@@ -17696,7 +17697,10 @@ var COFantasy = COFantasy || function() {
       }
       if (selected.length === 0) return;
       if (activer) {
-        if (limiteRessources(lanceur, options, effet, effet, evt)) return;
+        if (limiteRessources(lanceur, options, effet, effet, evt)) {
+          addEvent(evt);
+          return;
+        }
         if (options.classeEffet) {
           selected = selected.filter(function(sel) {
             var perso = persoOfId(sel._id);
@@ -18018,7 +18022,10 @@ var COFantasy = COFantasy || function() {
       }
     }
     defResource = defResource || 'attaqueMagique';
-    if (limiteRessources(attaquant, options, defResource, "l'attaque magique", evt)) return;
+    if (limiteRessources(attaquant, options, defResource, "l'attaque magique", evt)) {
+      addEvent(evt);
+      return;
+    }
     var bonus1 = bonusDAttaque(attaquant, explications, evt);
     if (bonus1 === 0) bonus1 = "";
     else if (bonus1 > 0) bonus1 = " +" + bonus1;
@@ -18431,6 +18438,7 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: 'Attaque magique',
     };
+    addEvent(evt);
     if (limiteRessources(attaquant, options, 'attaque magique', "l'attaque magique", evt)) return;
     var attaquantChar = getObj('character', attaquant.charId);
     if (attaquantChar === undefined) {
@@ -18475,7 +18483,6 @@ var COFantasy = COFantasy || function() {
         addLineToFramedDisplay(display, "<b>L'attaque échoue.</b>");
       }
       sendChat("", endFramedDisplay(display));
-      addEvent(evt);
     }); //Fin du jet de dés pour l'attaque
   }
 
@@ -19493,12 +19500,13 @@ var COFantasy = COFantasy || function() {
       error("Rang du fortifiant incorrect", cmd);
       return;
     }
-    getSelected(msg, function(selection) {
-      iterSelected(selection, function(beneficiaire) {
         var evt = {
           type: 'fortifiant',
           attributes: []
         };
+        addEvent(evt);
+    getSelected(msg, function(selection) {
+      iterSelected(selection, function(beneficiaire) {
         if (limiteRessources(beneficiaire, options, 'elixir_fortifiant', "boire un fortifiant", evt)) return;
         var soins = rollDePlus(4, {
           bonus: rang
@@ -19512,7 +19520,6 @@ var COFantasy = COFantasy || function() {
         });
         // Finalement on met l'effet fortifie
         setTokenAttr(beneficiaire, 'fortifie', rang + 1, evt);
-        addEvent(evt);
       });
     });
   }
@@ -19541,6 +19548,7 @@ var COFantasy = COFantasy || function() {
       var evt = {
         type: "lancement de sort"
       };
+        addEvent(evt);
       if (options.son) playSound(options.son);
       iterSelected(selected, function(lanceur) {
         if (options.tempeteDeMana) {
@@ -19566,7 +19574,6 @@ var COFantasy = COFantasy || function() {
         options.messages.forEach(function(m) {
           whisperChar(lanceur.charId, m);
         });
-        addEvent(evt);
       });
     });
   }
@@ -19616,6 +19623,7 @@ var COFantasy = COFantasy || function() {
       var evt = {
         type: "Mur de force"
       };
+      addEvent(evt);
       initiative(selected, evt);
       iterSelected(selected, function(lanceur) {
         if (options.tempeteDeMana) {
@@ -19676,7 +19684,6 @@ var COFantasy = COFantasy || function() {
           sendChar(charId, '/w "' + token.get('name') + '" ' + "placer l'image du mur sur la carte");
         }
       });
-      addEvent(evt);
     });
   }
 
@@ -19829,6 +19836,7 @@ var COFantasy = COFantasy || function() {
       var evt = {
         type: "consommer une baie"
       };
+      addEvent(evt);
       iterSelected(msg.selected, function(perso) {
         if (limiteRessources(perso, options, 'baieMagique', "a déjà mangé une baie aujourd'hui. Pas d'effet.", evt)) return;
         var soins = rollDePlus(6, {
@@ -19844,7 +19852,6 @@ var COFantasy = COFantasy || function() {
             sendChar(perso.charId, "mange une baie magique. " + onGenre(perso, "Il", "Elle") + " se sent rassasié" + onGenre(perso, '', 'e') + '.');
           });
       });
-      addEvent(evt);
     }); //fin de getSelected
   }
 
@@ -22049,6 +22056,7 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Création d'élixir"
     };
+    addEvent(evt);
     if (reglesOptionelles.mana.val.elixirs_sorts.val && ficheAttributeAsBool(forgesort, 'option_pm', true)) {
       if (reglesOptionelles.mana.val.mana_totale.val) {
         switch (elixir.rang) {
@@ -22097,7 +22105,6 @@ var COFantasy = COFantasy || function() {
         msg: message
       });
     }
-    addEvent(evt);
   }
 
   function gestionElixir(msg) {
@@ -22405,6 +22412,7 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Création de rune"
     };
+    addEvent(evt);
     if (ficheAttributeAsBool(forgesort, 'option_pm', true)) {
       if (reglesOptionelles.mana.val.mana_totale.val) {
         switch (rune.rang) {
@@ -22451,7 +22459,6 @@ var COFantasy = COFantasy || function() {
       msg: message,
       maxVal: forgesort.charId
     });
-    addEvent(evt);
   }
 
   //TODO: passer pageId en argument au lieu de prendre la page des joueurs
@@ -22754,6 +22761,7 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Animation d'un arbre"
     };
+    addEvent(evt);
     if (limiteRessources(druide, options, 'animerUnArbre', 'animer un arbre', evt)) return;
     if (!stateCOF.combat) {
       initPerso(druide, evt);
@@ -22805,7 +22813,6 @@ var COFantasy = COFantasy || function() {
     initiative([{
       _id: tokenArbre.id
     }], evt);
-    addEvent(evt);
   }
 
   function persoUtiliseRuneProtection(perso, evt) {
@@ -22814,12 +22821,13 @@ var COFantasy = COFantasy || function() {
       sendChar(perso.charId, "n'a pas de rune de protection");
       return false;
     }
-    if (!limiteRessources(perso, {
+    if (limiteRessources(perso, {
         limiteParCombat: 1
       }, "runeForgesort_protection", "a déjà utilisé sa rune de protection durant ce combat", evt)) {
-      return true;
+      addEvent(evt);
+      return false;
     }
-    return false;
+      return true;
   }
 
   //!cof-rune-protection
@@ -22903,6 +22911,7 @@ var COFantasy = COFantasy || function() {
       type: "Délivrance",
       deletedAttributes: []
     };
+    addEvent(evt);
     if (limiteRessources(pretre, options, 'délivrance', 'délivrance', evt)) return;
     var attr;
     var display = startFramedDisplay(getPlayerIdFromMsg(msg), 'Délivrance', pretre, {
@@ -22967,7 +22976,6 @@ var COFantasy = COFantasy || function() {
       setState(cible, 'apeure', false, evt);
     }
     sendChat('', endFramedDisplay(display));
-    addEvent(evt);
   }
 
   //!cof-guerison @{selected|token_id} @{target|token_id}
@@ -23002,6 +23010,7 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Guérison",
     };
+    addEvent(evt);
     if (limiteRessources(lanceur, options, 'guérison', 'guérison', evt)) return;
     updateCurrentBar(cible, 1, cible.token.get('bar1_max'), evt);
     if (getState(cible, 'blesse')) {
@@ -23015,7 +23024,6 @@ var COFantasy = COFantasy || function() {
     }
     msgSoin += ' de toutes les blessures subies';
     sendChar(lanceur.charId, msgSoin);
-    addEvent(evt);
   }
 
   function armeDeContact(perso, arme, labelArmeDefaut, armeContact) {
@@ -24234,7 +24242,10 @@ var COFantasy = COFantasy || function() {
         var evt = {
           type: "Conjuration d'armée"
         };
-        if (limiteRessources(invocateur, options, 'conjurationArmee', "conjurer une armée", evt)) return;
+        if (limiteRessources(invocateur, options, 'conjurationArmee', "conjurer une armée", evt)) {
+          addEvent(evt);
+          return;
+        }
         var deDM;
         var nbDeDM;
         if (cmd.length > 1) {
@@ -24488,9 +24499,9 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: 'lumiere',
     };
+    addEvent(evt);
     if (limiteRessources(options.lanceur, options, 'lumière', "lumière", evt)) return;
     ajouteUneLumiere(cible, nomToken, radius, dimRadius, evt);
-    addEvent(evt);
   }
 
   // prend en compte l'unité de mesure utilisée sur la page
@@ -25340,13 +25351,13 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Animer un cadvre"
     };
+    addEvent(evt);
     if (limiteRessources(lanceur, options, 'animerUnCadavre', "animer un cadavre", evt)) return;
     sendChar(lanceur.charId, 'réanime ' + cible.tokName);
     setState(cible, 'mort', false, evt);
     setTokenAttr(cible, 'cadavreAnime', true, evt, {
       msg: 'se relève'
     });
-    addEvent(evt);
   }
 
   var niveauxEbriete = [
@@ -25385,7 +25396,10 @@ var COFantasy = COFantasy || function() {
       var evt = {
         type: 'Vapeurs éthyliques'
       };
-      if (limiteRessources(options.lanceur, options, 'vapeursEthyliques', "lancer une fiole de vapeurs éthyliques", evt)) return;
+      if (limiteRessources(options.lanceur, options, 'vapeursEthyliques', "lancer une fiole de vapeurs éthyliques", evt)) {
+        addEvent(evt);
+        return;
+      }
       var display = startFramedDisplay(playerId, 'Vapeurs éthyliques');
       if (options.save) {
         var title = " Jet de " + options.save.carac + " " + options.save.seuil;
@@ -25456,7 +25470,10 @@ var COFantasy = COFantasy || function() {
       var evt = {
         type: 'Boire alcool'
       };
-      if (limiteRessources(options.lanceur, options, 'boireAlcool', "est affecté par l'alcool", evt)) return;
+      if (limiteRessources(options.lanceur, options, 'boireAlcool', "est affecté par l'alcool", evt)) {
+        addEvent(evt);
+        return;
+      }
       var display = startFramedDisplay(playerId, 'Alcool');
       if (options.save) {
         var title = " Jet de " + options.save.carac + " " + options.save.seuil;
@@ -25544,6 +25561,7 @@ var COFantasy = COFantasy || function() {
       var evt = {
         type: 'Bonus couvert'
       };
+      addEvent(evt);
       if (limiteRessources(options.lanceur, options, 'bonus couvert', 'bonus couvert', evt)) return;
       iterSelected(selected, function(perso) {
         if (nouveauBonus) {
@@ -25583,6 +25601,7 @@ var COFantasy = COFantasy || function() {
       var evt = {
         type: 'Changement attribut'
       };
+      addEvent(evt);
       if (limiteRessources(options.lanceur, options, 'changementAttribut', 'changementAttribut', evt)) return;
       iterSelected(selected, function(perso) {
         setTokenAttr(perso, cmd[1], cmd[2], evt, opt);
