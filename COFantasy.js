@@ -17227,7 +17227,10 @@ var COFantasy = COFantasy || function() {
         }
         if (selected.length == 1) {
           lanceur = persoOfId(selected[0]._id);
-          if (lanceur) charId = lanceur.charId;
+          if (lanceur) {
+            options.lanceur = lanceur;
+            charId = lanceur.charId;
+          }
         }
       }
       if (lanceur && options.tempeteDeMana) {
