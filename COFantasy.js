@@ -3781,7 +3781,7 @@ var COFantasy = COFantasy || function() {
           name: nom
         });
         if (characters.length === 0) {
-          error("Impossible de trouver l'id du joueur " + nom);
+          error("Impossible de trouver l'id du joueur " + nom, msg);
           return playerId;
         }
         var pids = characters[0].get('controlledby');
@@ -21651,9 +21651,9 @@ var COFantasy = COFantasy || function() {
     var effet;
     var attrName = attr1.get('name').trim();
     //On regarde si c'est un consommable sur la fiche
-    var m = consommableQuantiteRegExp.exec(attrName);
-    if (m) {
-      var consoPrefix = m[1];
+    var m1 = consommableQuantiteRegExp.exec(attrName);
+    if (m1) {
+      var consoPrefix = m1[1];
       var attrConsName = charAttribute(perso1.charId, consoPrefix + 'equip_nom');
       var attrEffet = charAttribute(perso1.charId, consoPrefix + 'equip_effet');
       if (attrConsName.length === 0 || attrEffet.length === 0) {
@@ -21700,7 +21700,9 @@ var COFantasy = COFantasy || function() {
             current: null
           });
         } else if (attrEffet2[0].get('current').trim() != effet) {
-          error("Échange dangereux : pas le même effet pour le consommable selon le personnage \n" + effet + "\n" + attrEffet2[0].get('current'), attr2);
+          error("Échange dangereux : pas le même effet pour le consommable selon le personnage \n" +
+            "Effet chez " + perso1.tokName + " : " + effet + "\n" +
+            "Effet chez " + perso2.tokName + " : " + attrEffet2[0].get('current'), attr2.get('name'));
           return false;
         }
         var attrQte2 = charAttribute(perso2.charId, consoPrefix2 + 'equip_qte');
@@ -21726,9 +21728,11 @@ var COFantasy = COFantasy || function() {
           current: quantite2
         });
         return true;
-      } else if (attrName == attrName2.trim()) {
+      } else if (!m1 && attrName == attrName2.trim()) {
         if (attr2.get('max').trim() != effet) {
-          error("Échange dangereux : pas le même effet pour le consommable selon le personnage \n" + effet + "\n" + attr2.get('max'), attr2);
+          error("Échange dangereux : pas le même effet pour le consommable selon le personnage \n" + 
+            "Effet chez " + perso1.tokName + " : " + effet + "\n" + 
+            "Effet chez " + perso2.tokName + " : " + attr2.get('max'), attr2);
           return false;
         }
         quantite2 = parseInt(attr2.get('current'));
@@ -21745,7 +21749,7 @@ var COFantasy = COFantasy || function() {
     });
     // si le consommable n'a pas été trouvé, on le crée avec une valeur de 1.
     if (!found) {
-      if (m) {
+      if (m1) {
         var pref = 'repeating_equipement_' + generateRowID() + '_';
         var attre = createObj("attribute", {
           name: pref + 'equip_nom',
