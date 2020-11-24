@@ -11930,7 +11930,8 @@ var COFantasy = COFantasy || function() {
                 msgAgitZ += eForFemale(target) + ", mais ";
                 msgAgitZ += onGenre(target, 'il', 'elle') + " continue à se battre !";
                 expliquer(msgAgitZ);
-                setAttrDuree(target, 'agitAZeroPV', 1, evt);
+                if (!attributeAsBool(target, 'agitAZeroPV'))
+                  setAttrDuree(target, 'agitAZeroPV', 1, evt);
               } else {
                 var defierLaMort = charAttributeAsInt(target, 'defierLaMort', 0);
                 if (defierLaMort > 0) {
@@ -14223,8 +14224,8 @@ var COFantasy = COFantasy || function() {
       addEvent(evt);
       return false;
     }
-      sendChar(perso.charId, "utilise sa rune d'énergie pour relancer un d20 sur un test d'attaque, de FOR, DEX ou CON");
-      return true;
+    sendChar(perso.charId, "utilise sa rune d'énergie pour relancer un d20 sur un test d'attaque, de FOR, DEX ou CON");
+    return true;
   }
 
   //!cof-bouton-rune-energie
@@ -14332,8 +14333,8 @@ var COFantasy = COFantasy || function() {
       addEvent(evt);
       return false;
     }
-      sendChar(perso.charId, "utilise sa rune de puissance pour obtenir les DM maximum de son arme (");
-      return true;
+    sendChar(perso.charId, "utilise sa rune de puissance pour obtenir les DM maximum de son arme (");
+    return true;
   }
 
   //!cof-rune-puissance label
@@ -19503,11 +19504,11 @@ var COFantasy = COFantasy || function() {
       error("Rang du fortifiant incorrect", cmd);
       return;
     }
-        var evt = {
-          type: 'fortifiant',
-          attributes: []
-        };
-        addEvent(evt);
+    var evt = {
+      type: 'fortifiant',
+      attributes: []
+    };
+    addEvent(evt);
     getSelected(msg, function(selection) {
       iterSelected(selection, function(beneficiaire) {
         if (limiteRessources(beneficiaire, options, 'elixir_fortifiant', "boire un fortifiant", evt)) return;
@@ -19551,7 +19552,7 @@ var COFantasy = COFantasy || function() {
       var evt = {
         type: "lancement de sort"
       };
-        addEvent(evt);
+      addEvent(evt);
       if (options.son) playSound(options.son);
       iterSelected(selected, function(lanceur) {
         if (options.tempeteDeMana) {
@@ -21730,8 +21731,8 @@ var COFantasy = COFantasy || function() {
         return true;
       } else if (!m1 && attrName == attrName2.trim()) {
         if (attr2.get('max').trim() != effet) {
-          error("Échange dangereux : pas le même effet pour le consommable selon le personnage \n" + 
-            "Effet chez " + perso1.tokName + " : " + effet + "\n" + 
+          error("Échange dangereux : pas le même effet pour le consommable selon le personnage \n" +
+            "Effet chez " + perso1.tokName + " : " + effet + "\n" +
             "Effet chez " + perso2.tokName + " : " + attr2.get('max'), attr2);
           return false;
         }
@@ -22834,7 +22835,7 @@ var COFantasy = COFantasy || function() {
       addEvent(evt);
       return false;
     }
-      return true;
+    return true;
   }
 
   //!cof-rune-protection
