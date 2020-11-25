@@ -2432,15 +2432,39 @@ var COFantasy = COFantasy || function() {
     //On cherche si c'est un arc
     var p = weaponStats.name.search(/\barc\b/i);
     if (p >= 0) weaponStats.arc = true;
-    else if (weaponStats.divers) {
+    else {
+      if (weaponStats.divers) {
       p = weaponStats.divers.search(/\barc\b/i);
+      }
       if (p >= 0) weaponStats.arc = true;
+      else {
+        p = weaponStats.modificateurs.search(/\barc\b/i);
+        if (p >= 0) weaponStats.arc = true;
+      }
     }
     p = weaponStats.name.search(/\barbal([eè])te\b/i);
     if (p >= 0) weaponStats.arbalete = true;
-    else if (weaponStats.divers) {
+    else {
+      if (weaponStats.divers) {
       p = weaponStats.divers.search(/\barbal([eè])te\b/i);
+      }
       if (p >= 0) weaponStats.arbalete = true;
+      else {
+        p = weaponStats.modificateurs.search(/\barbal([eè])te\b/i);
+        if (p >= 0) weaponStats.arbalete = true;
+      }
+    }
+    p = weaponStats.name.search(/\bhache\b/i);
+    if (p >= 0) weaponStats.hache = true;
+    else {
+      if (weaponStats.divers) {
+      p = weaponStats.divers.search(/\bhache\b/i);
+      }
+      if (p >= 0) weaponStats.hache = true;
+      else {
+        p = weaponStats.modificateurs.search(/\barbal([eè])te\b/i);
+        if (p >= 0) weaponStats.arbalete = true;
+      }
     }
     return weaponStats;
   }
@@ -4395,7 +4419,8 @@ var COFantasy = COFantasy || function() {
     var playerId = getPlayerIdFromMsg(msg);
     // Optional arguments
     var options = {
-      sortilege: weaponStats.sortilege
+      sortilege: weaponStats.sortilege,
+      hache: weaponStats.hache
     };
     switch (weaponStats.typeDegats) {
       case 'mental':
@@ -4443,6 +4468,7 @@ var COFantasy = COFantasy || function() {
         case 'arc':
         case 'arbalete':
         case 'epieu':
+        case 'hache':
         case 'affute':
         case 'choc':
         case 'armeDArgent':
@@ -11050,8 +11076,8 @@ var COFantasy = COFantasy || function() {
     });
     //Fin compatibilité
     if (attributeAsBool(perso, 'formeDArbre')) {
-      res.sauf.feu_tranchant = res.sauf.feu_tranchant || 0;
-      res.sauf.feu_tranchant += 10;
+      res.sauf.feu_hache = res.sauf.feu_hache || 0;
+      res.sauf.feu_hache += 10;
     }
     var rd = ficheAttribute(perso, 'RDS', '').trim();
     if (rd === '') {
@@ -22829,7 +22855,7 @@ var COFantasy = COFantasy || function() {
         DEFDIV: 5,
         pnj_def: 13,
         pnj_init: 7,
-        RDS: '10/feu_tranchant',
+        RDS: '10/feu_hache',
         race: 'arbre',
         taille: 'grand'
       },
