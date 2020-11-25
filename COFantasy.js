@@ -4677,7 +4677,7 @@ var COFantasy = COFantasy || function() {
             return;
           }
           var effet = cmd[1];
-          if (cof_states[effet]) {//remplacer par sa version effet temporaire
+          if (cof_states[effet]) { //remplacer par sa version effet temporaire
             effet += 'Temp';
           }
           if (estEffetTemp(effet)) {
@@ -17211,7 +17211,7 @@ var COFantasy = COFantasy || function() {
     var lanceur = options.lanceur;
     var charId;
     if (lanceur) charId = lanceur.charId;
-    if (cof_states[effet]) {//remplacer par sa version effet temporaire
+    if (cof_states[effet]) { //remplacer par sa version effet temporaire
       effet += 'Temp';
     }
     if (effet == 'forgeron' || effet == 'armeEnflammee') {
@@ -17300,7 +17300,7 @@ var COFantasy = COFantasy || function() {
         cibles.push(perso);
       });
       if (cibles.length == 0) {
-        sendChar(charId, "Aucune cible éligible sélectionnée");
+      //  sendChar(charId, "Aucune cible éligible sélectionnée");
         return;
       }
       effetTemporaire(playerId, cibles, effet, mEffet, duree, options);
@@ -17333,6 +17333,9 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
     if (limiteRessources(lanceur, options, effet, effet, evt)) return;
     entrerEnCombat(lanceur, cibles, explications, evt);
+    explications.forEach(function(e) {
+      sendChar('', e);
+    });
     if (duree > 0) {
       var setOneEffect = function(perso, d) {
         if (options.limiteCibleParJour) {
@@ -17476,7 +17479,7 @@ var COFantasy = COFantasy || function() {
       cibles.forEach(function(perso) {
         if (options.save) {
           var saveOpts = {
-            msgPour: " pour résister à un effet",
+            msgPour: " pour résister à l'effet " + effet,
             msgRate: ", raté.",
             attaquant: lanceur,
             avecPC: true
@@ -27951,6 +27954,84 @@ var COFantasy = COFantasy || function() {
           }
         });
     }); //fin boucle attrSave
+    //les effets d'aura possiblement aussi -> aucun ordre garanti
+    var auras = attrs.filter(function(a) {
+      return a.get('name').trim() == 'aura';
+    });
+    var allTokens;
+    var gmId;
+    auras.forEach(function(aura) {
+      var portee = parseInt(aura.get('current'));
+      if (isNaN(portee) || portee < 0) return;
+      var charId = aura.get('characterid');
+      if (!allTokens) {
+        allTokens = findObjs({
+          _type: "graphic",
+          _pageid: pageId,
+          _subtype: "token",
+          layer: "objects"
+        });
+        allTokens = allTokens.filter(function(t) {
+          var cid = t.get('represents');
+          if (cid === '') return false;
+          var c = getObj('character', cid);
+          if (c === undefined) {
+            t.remove();
+            return false;
+          }
+          return true;
+        });
+      }
+      var targets = {};
+      //For each token representing that character
+      allTokens.forEach(function(auraToken) {
+        if (auraToken.get('represents') != charId) return;
+        var tokName;
+        //On cherche ensuite les tokens à portee
+        allTokens.forEach(function(tok) {
+          if (tok.id == auraToken.id) return;
+          if (tok.get('represents') == charId) return;
+          if (distanceCombat(auraToken, tok, pageId) > portee) return;
+          tokName = tokName || auraToken.get('name');
+          targets[tok.id] = tokName;
+        });
+      });
+      if (_.isEmpty(targets)) return;
+        if (!gmId) {
+          var gm = findObjs({
+            _type: "player"
+          }).find(function(p) {
+            return playerIsGM(p.id);
+          });
+          if (gm) gmId = gm.id;
+          else {
+            error("Impossible de trouver un MJ");
+            return;
+          }
+        }
+      var effet = aura.get('max');
+      if (effet.includes('$TOKEN')) {
+        //On groupe les cibles par token qui génère l'aura
+        var targetsPerSource = {};
+        _.forEach(targets, function(auraTokName, tid) {
+          targetsPerSource[auraTokName] = targetsPerSource[auraTokName] || new Set();
+          targetsPerSource[auraTokName].add(tid);
+        });
+        _.forEach(targetsPerSource, function(tset, auraTokenName) {
+        var effetFinal = effet.replace(/$TOKEN/g, auraTokenName);
+          tset.forEach(function(tid) {
+        effetFinal += " --target "+tid;
+          });
+        sendChat('player|' + gmId, effetFinal);
+        });
+      } else {
+        //Toutes les cibles ensemble
+      _.forEach(targets, function(auraTokenName, tid) {
+        effet += " --target "+tid;
+      });
+        sendChat('player|' + gmId, effet);
+      }
+    });
   }
 
   //evt a un champ attributes et un champ deletedAttributes
@@ -27969,11 +28050,11 @@ var COFantasy = COFantasy || function() {
       sendChat("GM", "Début du tour " + tour);
       stateCOF.tour = tour;
       stateCOF.init = 1000;
+      addEvent(evt);
       changementDeTour(tour, attrs, evt, pageId);
-      addEvent(evt);
     } else { // change the active token
-      setActiveToken(active.id, evt);
       addEvent(evt);
+      setActiveToken(active.id, evt);
     }
   }
 
