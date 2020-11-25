@@ -28018,7 +28018,7 @@ var COFantasy = COFantasy || function() {
           targetsPerSource[auraTokName].add(tid);
         });
         _.forEach(targetsPerSource, function(tset, auraTokenName) {
-        var effetFinal = effet.replace(/$TOKEN/g, auraTokenName);
+        var effetFinal = effet.replace(/\$TOKEN/g, auraTokenName);
           tset.forEach(function(tid) {
         effetFinal += " --target "+tid;
           });
