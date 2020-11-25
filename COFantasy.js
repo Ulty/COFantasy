@@ -8650,14 +8650,14 @@ var COFantasy = COFantasy || function() {
       dice = 12;
       explications.push("Attaquant mort mais n'abandonne pas => D12 au lieu de D20 en Attaque");
     } else {
-    var ebriete = attributeAsInt(attaquant, 'niveauEbriete', 0);
-    if (ebriete > 0) {
-      if (options.distance || options.sortilege || ebriete > 1) {
-        dice = 12;
-        if (ebriete > 3) ebriete = 3;
-        explications.push("Attaquant " + niveauxEbriete[ebriete] + " => D12 au lieu de D20 en Attaque");
+      var ebriete = attributeAsInt(attaquant, 'niveauEbriete', 0);
+      if (ebriete > 0) {
+        if (options.distance || options.sortilege || ebriete > 1) {
+          dice = 12;
+          if (ebriete > 3) ebriete = 3;
+          explications.push("Attaquant " + niveauxEbriete[ebriete] + " => D12 au lieu de D20 en Attaque");
+        }
       }
-    }
     }
     if (options.avecd12) dice = 12;
     var nbDe = 1;
@@ -13198,6 +13198,7 @@ var COFantasy = COFantasy || function() {
       cmd = arg.trim().split(' ');
       switch (cmd[0]) {
         case 'attaqueMentale':
+        case 'seulementVivant':
         case 'secret':
           options[cmd[0]] = true;
           break;
@@ -16683,6 +16684,10 @@ var COFantasy = COFantasy || function() {
         });
       }
       iterSelected(selected, function(perso) {
+        if (options.seulementVivant && estNonVivant(perso)) {
+          sendPlayer(msg, "cet effet n'affecte que les créatures vivantes");
+          return;
+        }
         function setEffect() {
           setState(perso, etat, valeur, evt);
           if (saveParTour) {
@@ -17276,6 +17281,11 @@ var COFantasy = COFantasy || function() {
             sendChar(charId, " est trop loin de " + perso.token.get('name'));
             return;
           }
+        }
+        if ((mEffet.seulementVivant || options.seulementVivant) &&
+          estNonVivant(perso)) {
+          sendPlayer(msg, "cet effet n'affecte que les créatures vivantes");
+          return;
         }
         cibles.push(perso);
       });
