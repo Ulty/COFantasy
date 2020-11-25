@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.15
 ### Capacités
+* Capacité "n'abandonne jamais", des guerriers maudits.
 * Réduire la distance de la Voie du tueur de géants.
 * Absorption d'énergie (spectre, vampire, sylvanien maudit)
 * Projeter (voie du Cogneur rang 3)

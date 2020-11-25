@@ -3095,6 +3095,31 @@ var COFantasy = COFantasy || function() {
     return bonus;
   }
 
+  function computeDice(lanceur, options) {
+    options = options || {};
+    var nbDe = options.nbDe;
+    if (nbDe === undefined) nbDe = 1;
+    var plusFort = options.plusFort;
+    if (plusFort === undefined) plusFort = true;
+    var dice = options.dice;
+    if (dice === undefined) dice = deTest(lanceur, options.carac);
+    if (attributeAsBool(lanceur, 'malediction')) {
+      if (plusFort) {
+        if (nbDe > 1) nbDe--;
+        else {
+          nbDe = 2;
+          plusFort = false;
+        }
+      } else nbDe++;
+    }
+    var de = nbDe + "d" + dice;
+    if (nbDe > 1) {
+      if (plusFort) de += "kh1";
+      else de += "kl1";
+    }
+    return de;
+  }
+
   // Test de caractéristique
   // options : bonusAttrs, bonus, roll
   // Après le test, lance callback(testRes)
@@ -7090,31 +7115,6 @@ var COFantasy = COFantasy || function() {
     return attBonus;
   }
 
-  function computeDice(lanceur, options) {
-    options = options || {};
-    var nbDe = options.nbDe;
-    if (nbDe === undefined) nbDe = 1;
-    var plusFort = options.plusFort;
-    if (plusFort === undefined) plusFort = true;
-    var dice = options.dice;
-    if (dice === undefined) dice = deTest(lanceur, options.carac);
-    if (attributeAsBool(lanceur, 'malediction')) {
-      if (plusFort) {
-        if (nbDe > 1) nbDe--;
-        else {
-          nbDe = 2;
-          plusFort = false;
-        }
-      } else nbDe++;
-    }
-    var de = nbDe + "d" + dice;
-    if (nbDe > 1) {
-      if (plusFort) de += "kh1";
-      else de += "kl1";
-    }
-    return de;
-  }
-
   function diminueMalediction(lanceur, evt, attr) {
     var attrMalediction = attr || tokenAttribute(lanceur, 'malediction');
     if (attrMalediction.length > 0) {
@@ -8645,8 +8645,11 @@ var COFantasy = COFantasy || function() {
       explications.push("Attaquant affaibli => D12 au lieu de D20 en Attaque");
     } else if (getState(attaquant, 'immobilise')) {
       dice = 12;
-      explications.push("Attaquant aimmobilisé => D12 au lieu de D20 en Attaque");
-    }
+      explications.push("Attaquant immobilisé => D12 au lieu de D20 en Attaque");
+    } else if (attributeAsBool(attaquant, 'mortMaisNAbandonnePas')) {
+      dice = 12;
+      explications.push("Attaquant mort mais n'abandonne pas => D12 au lieu de D20 en Attaque");
+    } else {
     var ebriete = attributeAsInt(attaquant, 'niveauEbriete', 0);
     if (ebriete > 0) {
       if (options.distance || options.sortilege || ebriete > 1) {
@@ -8654,6 +8657,7 @@ var COFantasy = COFantasy || function() {
         if (ebriete > 3) ebriete = 3;
         explications.push("Attaquant " + niveauxEbriete[ebriete] + " => D12 au lieu de D20 en Attaque");
       }
+    }
     }
     if (options.avecd12) dice = 12;
     var nbDe = 1;
@@ -11932,6 +11936,11 @@ var COFantasy = COFantasy || function() {
                 expliquer(msgAgitZ);
                 if (!attributeAsBool(target, 'agitAZeroPV'))
                   setAttrDuree(target, 'agitAZeroPV', 1, evt);
+              } else if (charAttributeAsBool(target, 'nAbandonneJamais') &&
+                !attributeAsBool(target, 'mortMaisNAbandonnePas')) {
+                expliquer(token.get('name') + " est pratiquement détruit, mais continue à bouger !");
+                setTokenAttr(target, 'mortMaisNAbandonnePas', true, evt);
+                setState(target, 'ralenti', true, evt);
               } else {
                 var defierLaMort = charAttributeAsInt(target, 'defierLaMort', 0);
                 if (defierLaMort > 0) {
@@ -16383,7 +16392,7 @@ var COFantasy = COFantasy || function() {
   function deTest(personnage, carac) {
     var dice = 20;
     if (estAffaibli(personnage) || getState(personnage, 'immobilise') ||
-      (carac == 'DEX' && getState(personnage, 'encombre')))
+      attributeAsBool(personnage, 'mortMaisNAbandonnePas'))
       dice = 12;
     else {
       var ebriete = attributeAsInt(personnage, 'niveauEbriete', 0);
