@@ -9,6 +9,7 @@
 * Injonction Mortelle (Magie Maléfique rang 3)
 
 ### Autres améliorations
+* Possibilité d'utiliser directement le nom d'un état lorsqu'on veut appliquer cet état seulement un certain nombre de tours (avec --effet d'une attaque ou avec !cof-effet-temp).
 * Il faut que le membre du groupe avec la capacité Sans peur soit sur la même page que l'allié pour lui faire bénéficier du bonus.
 * Une attaque avec le label -1 utilise l'arme en main, si il y en a une.
 * Prise en compte de l'immunité à l'asphyxie des démons.
