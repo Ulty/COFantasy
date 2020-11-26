@@ -11237,6 +11237,7 @@ var COFantasy = COFantasy || function() {
         percant: options.percant,
         contondant: options.contondant,
         sortilege: options.sortilege,
+        hache: options.hache,
       };
       var resSauf = applyRDSauf(rdTarget.sauf, mainDmgType, dmgTotal, dmgDisplay, additionalType, target);
       dmgTotal = resSauf.total;
