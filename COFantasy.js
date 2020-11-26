@@ -27473,7 +27473,6 @@ var COFantasy = COFantasy || function() {
             };
             var tokenChange = attributeAsBool(perso, 'changementDeToken');
             if (tokenChange) {
-              removeTokenAttr(perso, 'changementDeToken', evt);
               var tokenMJ =
                 findObjs({
                   _type: 'graphic',
@@ -27484,6 +27483,7 @@ var COFantasy = COFantasy || function() {
                   name: token.get('name')
                 });
               if (tokenMJ.length === 0) return;
+              removeTokenAttr(perso, 'changementDeToken', evt);
               var nouveauToken = tokenMJ[0];
               setToken(nouveauToken, 'layer', 'objects', evt);
               setToken(nouveauToken, 'left', token.get('left'), evt);
