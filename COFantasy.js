@@ -14201,6 +14201,9 @@ var COFantasy = COFantasy || function() {
         case 'injonctionMortelle':
           injonctionMortelle(action.playerId, action.attaquant, action.cible, options);
           return;
+        case 'tueurFantasmagorique':
+          tueurFantasmagorique(action.playerId, action.attaquant, action.cible, options);
+          return;
         default:
           error("Evenement avec une action, mais inconnue au niveau chance. Impossible d'annuler !", evt);
           return;
@@ -18030,105 +18033,120 @@ var COFantasy = COFantasy || function() {
     }, options);
   }
 
-  // callback est seulement appelé si on fait le test
-  function attaqueMagiqueOpposee(msg, evt, defResource, callback) {
+  function parseAttaqueMagique(msg, type) {
     var options = parseOptions(msg);
-    if (options === undefined) return;
+    if (options === undefined || options.cmd === undefined) return;
     var cmd = options.cmd;
     if (cmd.length < 3) {
-      error("Pas assez d'arguments pour " + msg.content, cmd);
+      error("Il faut au moins 2 arguments à !cof-attaque-magique", cmd);
       return;
     }
     var attaquant = persoOfId(cmd[1], cmd[1]);
-    if (attaquant === undefined) {
-      error("L'attaquant n'est pas un token valide", cmd[1]);
+    var cible = persoOfId(cmd[2], cmd[2]);
+    if (attaquant === undefined || cible === undefined) {
+      error("Arguments de !cof-attaque-magique", cmd);
       return;
     }
-    var token1 = attaquant.token;
-    var charId1 = attaquant.charId;
-    var char1 = getObj("character", attaquant.charId);
-    if (char1 === undefined) {
-      error("Unexpected undefined 1", attaquant);
-      return;
-    }
-    var name1 = char1.get('name');
-    var pageId = attaquant.token.get('pageid');
-    var cible = persoOfId(cmd[2], cmd[2], pageId);
-    if (cible === undefined) {
-      error("La cible n'est pas un token valide" + msg.content, cmd[2]);
-      return;
-    }
-    var token2 = cible.token;
-    var charId2 = cible.charId;
-    var char2 = getObj("character", charId2);
-    if (char2 === undefined) {
-      error("Unexpected undefined 1", token2);
-      return;
-    }
-    var name2 = char2.get('name');
-    if (msg.content.includes('--attaqueMentale') && charAttributeAsBool(cible, 'sansEsprit')) {
-      sendChat('', token2.get('name') + " est sans esprit, " +
-        onGenre(cible, 'il', 'elle') +
-        " est immunisé" + onGenre(cible, '', 'e') + " aux attaques mentales.");
-      return;
-    }
-    var explications = [];
-    evt = evt || {
-      type: 'Attaque magique'
-    };
-    if (options.portee !== undefined) {
-      var distance = distanceCombat(token1, token2, pageId);
+    if(options.portee) {
+      var distance = distanceCombat(attaquant.token, cible.token, options.pageId);
       if (distance > options.portee) {
-        sendChar(charId1, "est trop loin de " + cible.token.get('name') +
-          " pour l'attaque magique");
+        sendChar(attaquant.charId, "est trop loin de " + cible.token.get('name') +
+            " pour l'attaque magique");
         return;
       }
     }
-    defResource = defResource || 'attaqueMagique';
-    if (limiteRessources(attaquant, options, defResource, "l'attaque magique", evt)) {
+    type = type || "";
+    switch (type) {
+      case 'tueurFantasmagorique':
+        tueurFantasmagorique(getPlayerIdFromMsg(msg), attaquant, cible, options);
+        break;
+      case 'injonction':
+        injonction(getPlayerIdFromMsg(msg), attaquant, cible, options);
+        break;
+      default:
+        attaqueMagiqueOpposee(getPlayerIdFromMsg(msg), attaquant, cible, options);
+        break;
+    }
+  }
+
+  // callback est seulement appelé si on fait le test
+  // evt est facultatif ; si absent, en crée un nouveau générique et l'ajoute à l'historique
+  function attaqueMagiqueOpposee(playerId, attaquant, cible, options, callback, evt) {
+    if (options.attaqueMentale && charAttributeAsBool(cible, 'sansEsprit')) {
+      sendChar(attaquant.charId, " est sans esprit, " + onGenre(cible, 'il', 'elle') +
+        " est immunisé" + onGenre(cible, '', 'e') + " aux attaques mentales.");
+      return;
+    }
+    var explications = options.messages || [];
+    if(!evt) {
+      evt = {
+        type: 'attaqueMagique',
+        action: {
+          titre: "Attaque magique",
+          attaquant: attaquant,
+          cible: cible,
+          options: options
+        }
+      };
       addEvent(evt);
+    } else if(!evt.action) {
+      evt.action = {
+        titre: "Attaque magique",
+        attaquant: attaquant,
+        cible: cible,
+        options: options
+      }
+    }
+    entrerEnCombat(attaquant, [cible], explications, evt);
+    if (limiteRessources(attaquant, options, 'attaqueMagique', "l'attaque magique", evt)) {
       return;
     }
     var bonus1 = bonusDAttaque(attaquant, explications, evt);
     if (bonus1 === 0) bonus1 = "";
     else if (bonus1 > 0) bonus1 = " +" + bonus1;
-    var attk1 = addOrigin(name1, "[[" + computeArmeAtk(attaquant, '@{ATKMAG}') +
+    var attk1 = addOrigin(attaquant.token.get("name"), "[[" + computeArmeAtk(attaquant, '@{ATKMAG}') +
       bonus1 + "]]");
     var bonus2 = bonusDAttaque(cible, explications, evt);
     if (bonus2 === 0) bonus2 = "";
     else if (bonus2 > 0) bonus2 = " +" + bonus2;
-    var attk2 = addOrigin(name2, "[[" + computeArmeAtk(cible, '@{ATKMAG}') +
+    var attk2 = addOrigin(cible.token.get("name"), "[[" + computeArmeAtk(cible, '@{ATKMAG}') +
       bonus1 + "]]");
     var de1 = computeDice(attaquant);
     var de2 = computeDice(cible);
     var toEvaluate = "[[" + de1 + "]] [[" + de2 + "]] " + attk1 + " " + attk2;
     sendChat("", toEvaluate, function(res) {
       var rolls = res[0];
+      options.rolls = options.rolls || {};
       // Determine which roll number correspond to which expression
       var afterEvaluate = rolls.content.split(" ");
       var att1RollNumber = rollNumber(afterEvaluate[0]);
       var att2RollNumber = rollNumber(afterEvaluate[1]);
       var attk1SkillNumber = rollNumber(afterEvaluate[2]);
       var attk2SkillNumber = rollNumber(afterEvaluate[3]);
-      var d20roll1 = rolls.inlinerolls[att1RollNumber].results.total;
-      var att1Skill = rolls.inlinerolls[attk1SkillNumber].results.total;
+      var roll1 = (options.rolls && options.rolls['roll1']) ? options.rolls['roll1'] : rolls.inlinerolls[att1RollNumber];
+      var atk1 = (options.rolls && options.rolls['atk1']) ? options.rolls['atk1'] : rolls.inlinerolls[attk1SkillNumber];
+      var roll2 = (options.rolls && options.rolls['roll2']) ? options.rolls['roll2'] : rolls.inlinerolls[att2RollNumber];
+      var atk2 = (options.rolls && options.rolls['atk2']) ? options.rolls['atk2'] : rolls.inlinerolls[attk2SkillNumber];
+      evt.action.rolls = evt.action.rolls || {};
+      evt.action.rolls['roll1'] = roll1;
+      evt.action.rolls['atk1'] = atk1;
+      evt.action.rolls['roll2'] = roll2;
+      evt.action.rolls['atk2'] = atk2;
+      var d20roll1 = roll1.results.total;
+      var att1Skill = atk1.results.total;
       var attackRoll1 = d20roll1 + att1Skill;
-      var d20roll2 = rolls.inlinerolls[att2RollNumber].results.total;
-      var att2Skill = rolls.inlinerolls[attk2SkillNumber].results.total;
+      var d20roll2 = roll2.results.total;
+      var att2Skill = atk2.results.total;
       var attackRoll2 = d20roll2 + att2Skill;
       var action = "Attaque magique opposée";
-      var display = startFramedDisplay(getPlayerIdFromMsg(msg), action, attaquant, {
+      var display = startFramedDisplay(playerId, action, attaquant, {
         perso2: cible
       });
-      var line =
-        token1.get('name') + " fait " +
-        buildinline(rolls.inlinerolls[att1RollNumber]);
+      var line = attaquant.token.get('name') + " fait " + buildinline(roll1);
       if (att1Skill > 0) line += "+" + att1Skill + " = " + attackRoll1;
       else if (att1Skill < 0) line += att1Skill + " = " + attackRoll1;
       addLineToFramedDisplay(display, line);
-      line =
-        token2.get('name') + " fait " +
-        buildinline(rolls.inlinerolls[att2RollNumber]);
+      line = cible.token.get('name') + " fait " + buildinline(roll2);
       if (att2Skill > 0) line += "+" + att2Skill + " = " + attackRoll2;
       else if (att2Skill < 0) line += att2Skill + " = " + attackRoll2;
       addLineToFramedDisplay(display, line);
@@ -18148,58 +18166,66 @@ var COFantasy = COFantasy || function() {
         diminueMalediction(attaquant, evt);
         addLineToFramedDisplay(display, "<b>L'attaque échoue.</b>");
       }
-      if (callback) callback(attaquant, cible, display, reussi);
+      explications.forEach(explication => addLineToFramedDisplay(display, explication, 80));
+      if (callback) callback(display, reussi);
       else {
         sendChat("", endFramedDisplay(display));
-        addEvent(evt);
       }
     });
   }
 
-  function injonction(msg) {
+  function injonction(playerId, attaquant, cible, options) {
+    options.attaqueMentale = true;
     var evt = {
-      type: 'Injonction'
+      type: 'injonction',
+      action: {
+        titre: "Injonction",
+        attaquant: attaquant,
+        cible: cible,
+        options: options
+      }
     };
-    if (!msg.content.includes(' --attaqueMentale'))
-      msg.content += ' --attaqueMentale';
-    attaqueMagiqueOpposee(msg, evt, 'injonction',
-      function(attaquant, cible, display, reussi) {
+    addEvent(evt);
+    attaqueMagiqueOpposee(playerId, attaquant, cible, options,
+      function(display, reussi) {
         if (reussi) {
           if (attributeAsBool(cible, 'resisteInjonction')) {
             addLineToFramedDisplay(display, cible.token.get('name') + " a déjà résisté à une injonction aujourd'hui, c'est sans effet");
             sendChat("", endFramedDisplay(display));
-            addEvent(evt);
             return;
           }
           addLineToFramedDisplay(display, cible.token.get('name') + " obéit à l'injonction");
           sendChat("", endFramedDisplay(display));
-          addEvent(evt);
         } else {
           setTokenAttr(cible, 'resisteInjonction', true, evt);
           addLineToFramedDisplay(display, cible.token.get('name') + " n'obéit pas à l'injonction");
           sendChat("", endFramedDisplay(display));
-          addEvent(evt);
         }
-      });
+      }, evt);
   }
 
-  function tueurFantasmagorique(msg) {
+  function tueurFantasmagorique(playerId, attaquant, cible, options) {
     var evt = {
-      type: 'Tueur fantasmagorique'
+      type: 'tueurFantasmagorique',
+      action: {
+        titre: "Tueur Fantasmagorique",
+        attaquant: attaquant,
+        cible: cible,
+        options: options
+      }
     };
-    attaqueMagiqueOpposee(msg, evt, 'tueurFantasmagorique',
-      function(attaquant, cible, display, reussi) {
+    addEvent(evt);
+    attaqueMagiqueOpposee(playerId, attaquant, cible, options,
+      function(display, reussi) {
         if (reussi) {
           if (estNonVivant(cible)) {
             addLineToFramedDisplay(display, cible.token.get('name') + " n'est pas une créature vivante, il ne peut croire à sa mort");
             sendChat("", endFramedDisplay(display));
-            addEvent(evt);
             return;
           }
           if (attributeAsBool(cible, 'tueurFantasmagorique')) {
             addLineToFramedDisplay(display, cible.token.get('name') + " a déjà été victime d'un tueur fantasmagorique aujourd'hui, c'est sans effet");
             sendChat("", endFramedDisplay(display));
-            addEvent(evt);
             return;
           }
           setTokenAttr(cible, 'tueurFantasmagorique', true, evt);
@@ -18218,11 +18244,20 @@ var COFantasy = COFantasy || function() {
           };
           var saveOpts = {
             msgPour: " pour résister au tueur fantasmagorique",
-            attaquant: attaquant
+            attaquant: attaquant,
+            avecPC: true
           };
-          //TODO Supporter PC
-          save(s, cible, 'tueurFantasmagorique', expliquer, saveOpts, evt,
-            function(reussiteSave) {
+          if (options.rolls) {
+            saveOpts.roll = options.rolls[saveId];
+            if (options.chanceRollId && options.chanceRollId[saveId]) {
+              saveOpts.chanceRollId = options.chanceRollId[saveId];
+            }
+          }
+          var saveId = 'tueurFantasmagorique_' + cible.token.id;
+          save(s, cible, saveId, expliquer, saveOpts, evt,
+            function(reussiteSave, texte, roll) {
+              evt.action.rolls = evt.action.rolls || {};
+              evt.action.rolls[saveId] = roll;
               if (reussiteSave) {
                 addLineToFramedDisplay(display, cible.token.get('name') + " perd l'équilibre et tombe par terre");
                 setState(cible, 'renverse', true, evt);
@@ -18232,14 +18267,12 @@ var COFantasy = COFantasy || function() {
                 setState(cible, 'mort', true, evt);
               }
               sendChat("", endFramedDisplay(display));
-              addEvent(evt);
             });
         } else {
           setTokenAttr(cible, 'tueurFantasmagorique', true, evt);
           sendChat("", endFramedDisplay(display));
-          addEvent(evt);
         }
-      });
+      }, evt);
   }
 
   function parseInjonctionMortelle(msg) {
@@ -18253,7 +18286,7 @@ var COFantasy = COFantasy || function() {
     var attaquant = persoOfId(cmd[1], cmd[1]);
     var cible = persoOfId(cmd[2], cmd[2]);
     if (attaquant === undefined || cible === undefined) {
-      error("Arguments de !cof-attaque-magique-contre-pv incorrects", cmd);
+      error("Arguments de !cof-injonction-mortelle", cmd);
       return;
     }
     var distance = distanceCombat(attaquant.token, cible.token, options.pageId);
@@ -26173,10 +26206,10 @@ var COFantasy = COFantasy || function() {
         finClasseDEffet(msg);
         return;
       case "!cof-attaque-magique":
-        attaqueMagiqueOpposee(msg);
+        parseAttaqueMagique(msg);
         return;
       case "!cof-injonction":
-        injonction(msg);
+        parseAttaqueMagique(msg, 'injonction');
         return;
       case "!cof-sommeil":
         sommeil(msg);
@@ -26260,7 +26293,7 @@ var COFantasy = COFantasy || function() {
         devientCapitaine(msg);
         return;
       case '!cof-tueur-fantasmagorique':
-        tueurFantasmagorique(msg);
+        parseAttaqueMagique(msg, 'tueurFantasmagorique');
         return;
       case '!cof-injonction-mortelle':
         parseInjonctionMortelle(msg);
