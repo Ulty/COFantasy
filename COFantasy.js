@@ -1195,7 +1195,7 @@ var COFantasy = COFantasy || function() {
           case 'formeDArbre':
             //On copie les PVs pour pouvoir les restaurer à la fin de l'effet
             setTokenAttr(personnage, 'anciensPV', token.get('bar1_value'), evt, {
-              maxval: token.get('bar1_max')
+              maxVal: token.get('bar1_max')
             });
             //On va créer une copie de token, mais avec une image d'arbre
             var tokenFields = {
@@ -1263,6 +1263,8 @@ var COFantasy = COFantasy || function() {
               tokenArbre = createObj('graphic', tokenFields);
             }
             if (tokenArbre) {
+              evt.tokens = evt.tokens || [];
+              evt.tokens.push(tokenArbre);
               //On met l'ancien token dans le gmlayer, car si l'image vient du marketplace, il est impossible de le recréer depuis l'API
               setToken(token, 'layer', 'gmlayer', evt);
               setTokenAttr(personnage, 'changementDeToken', true, evt);
@@ -1924,7 +1926,7 @@ var COFantasy = COFantasy || function() {
    * attributes       : liste de attributs créés ou modifiés
    * deletesAttributes: lites des attributs effacés
    * characters       : liste des personnages créés
-   * deletedCjaracters: liste des personnages effacés
+   * deletedCharacters: liste des personnages effacés
    * combat           : valeur de la variable d'état combat
    * combat_pageid    : id de la page où se déroule le combat
    * tour             : valeur du tour de combat (si il a changé)
@@ -2434,7 +2436,7 @@ var COFantasy = COFantasy || function() {
     if (p >= 0) weaponStats.arc = true;
     else {
       if (weaponStats.divers) {
-      p = weaponStats.divers.search(/\barc\b/i);
+        p = weaponStats.divers.search(/\barc\b/i);
       }
       if (p >= 0) weaponStats.arc = true;
       else {
@@ -2446,7 +2448,7 @@ var COFantasy = COFantasy || function() {
     if (p >= 0) weaponStats.arbalete = true;
     else {
       if (weaponStats.divers) {
-      p = weaponStats.divers.search(/\barbal([eè])te\b/i);
+        p = weaponStats.divers.search(/\barbal([eè])te\b/i);
       }
       if (p >= 0) weaponStats.arbalete = true;
       else {
@@ -2458,7 +2460,7 @@ var COFantasy = COFantasy || function() {
     if (p >= 0) weaponStats.hache = true;
     else {
       if (weaponStats.divers) {
-      p = weaponStats.divers.search(/\bhache\b/i);
+        p = weaponStats.divers.search(/\bhache\b/i);
       }
       if (p >= 0) weaponStats.hache = true;
       else {
@@ -4486,6 +4488,7 @@ var COFantasy = COFantasy || function() {
         case 'pointsVitaux':
         case 'poudre':
         case 'metal':
+        case 'ferFroid':
         case 'reroll1':
         case 'reroll2':
         case 'semonce':
@@ -8153,6 +8156,7 @@ var COFantasy = COFantasy || function() {
     }
     var dmgCoef = options.dmgCoef || 1;
     if (target.dmgCoef) dmgCoef += target.dmgCoef;
+    if (options.ferFroid && (estDemon(target) || estFee(target))) dmgCoef += 1;
     var diviseDmg = options.diviseDmg || 1;
     if (target.diviseDmg) diviseDmg *= target.diviseDmg;
     if (options.attaqueDeGroupeDmgCoef) {
@@ -17327,7 +17331,7 @@ var COFantasy = COFantasy || function() {
         cibles.push(perso);
       });
       if (cibles.length == 0) {
-      //  sendChar(charId, "Aucune cible éligible sélectionnée");
+        //  sendChar(charId, "Aucune cible éligible sélectionnée");
         return;
       }
       effetTemporaire(playerId, cibles, effet, mEffet, duree, options);
@@ -18605,6 +18609,25 @@ var COFantasy = COFantasy || function() {
       perso.race = perso.race.toLowerCase();
     }
     return (perso.race == race.toLowerCase());
+  }
+
+  function estFee(perso) {
+    if (charAttributeAsBool(perso, 'fée')) return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '');
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    switch (perso.race) {
+      case 'licorne':
+      case 'fee':
+      case 'fée':
+      case 'pixie':
+      case 'lutin':
+        return true;
+      default:
+        return false;
+    }
   }
 
   function estDemon(perso) {
@@ -27458,18 +27481,18 @@ var COFantasy = COFantasy || function() {
         }
         return res; //Pas besoin de faire le reste, car plus de perso
       case 'formeDArbre':
-        var tokenChange = charIdAttributeAsBool(charId, 'changementDeToken');
-        var iterTokOptions = {};
-        if (tokenChange) {
-          removeCharAttr(charId, 'changementDeToken', evt);
-          iterTokOptions.tousLesTokens = true;
-        }
+        var iterTokOptions = {
+          filterAffected: function(token) {
+            return token.get('layer') == 'objects';
+          }
+        };
         iterTokensOfAttribute(charId, options.pageId, effet, attrName,
           function(token) {
             var perso = {
               token: token,
               charId: charId
             };
+            var tokenChange = attributeAsBool(perso, 'changementDeToken');
             if (tokenChange) {
               var tokenMJ =
                 findObjs({
@@ -27481,6 +27504,7 @@ var COFantasy = COFantasy || function() {
                   name: token.get('name')
                 });
               if (tokenMJ.length === 0) return;
+              removeTokenAttr(perso, 'changementDeToken', evt);
               var nouveauToken = tokenMJ[0];
               setToken(nouveauToken, 'layer', 'objects', evt);
               setToken(nouveauToken, 'left', token.get('left'), evt);
@@ -28024,18 +28048,18 @@ var COFantasy = COFantasy || function() {
         });
       });
       if (_.isEmpty(targets)) return;
-        if (!gmId) {
-          var gm = findObjs({
-            _type: "player"
-          }).find(function(p) {
-            return playerIsGM(p.id);
-          });
-          if (gm) gmId = gm.id;
-          else {
-            error("Impossible de trouver un MJ");
-            return;
-          }
+      if (!gmId) {
+        var gm = findObjs({
+          _type: "player"
+        }).find(function(p) {
+          return playerIsGM(p.id);
+        });
+        if (gm) gmId = gm.id;
+        else {
+          error("Impossible de trouver un MJ");
+          return;
         }
+      }
       var effet = aura.get('max');
       if (effet.includes('$TOKEN')) {
         //On groupe les cibles par token qui génère l'aura
@@ -28045,17 +28069,17 @@ var COFantasy = COFantasy || function() {
           targetsPerSource[auraTokName].add(tid);
         });
         _.forEach(targetsPerSource, function(tset, auraTokenName) {
-        var effetFinal = effet.replace(/\$TOKEN/g, auraTokenName);
+          var effetFinal = effet.replace(/\$TOKEN/g, auraTokenName);
           tset.forEach(function(tid) {
-        effetFinal += " --target "+tid;
+            effetFinal += " --target " + tid;
           });
-        sendChat('player|' + gmId, effetFinal);
+          sendChat('player|' + gmId, effetFinal);
         });
       } else {
         //Toutes les cibles ensemble
-      _.forEach(targets, function(auraTokenName, tid) {
-        effet += " --target "+tid;
-      });
+        _.forEach(targets, function(auraTokenName, tid) {
+          effet += " --target " + tid;
+        });
         sendChat('player|' + gmId, effet);
       }
     });
