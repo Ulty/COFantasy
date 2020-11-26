@@ -4488,6 +4488,7 @@ var COFantasy = COFantasy || function() {
         case 'pointsVitaux':
         case 'poudre':
         case 'metal':
+        case 'ferFroid':
         case 'reroll1':
         case 'reroll2':
         case 'semonce':
@@ -8155,6 +8156,7 @@ var COFantasy = COFantasy || function() {
     }
     var dmgCoef = options.dmgCoef || 1;
     if (target.dmgCoef) dmgCoef += target.dmgCoef;
+    if (options.ferFroid && (estDemon(target) || estFee(target))) dmgCoef += 1;
     var diviseDmg = options.diviseDmg || 1;
     if (target.diviseDmg) diviseDmg *= target.diviseDmg;
     if (options.attaqueDeGroupeDmgCoef) {
@@ -18607,6 +18609,25 @@ var COFantasy = COFantasy || function() {
       perso.race = perso.race.toLowerCase();
     }
     return (perso.race == race.toLowerCase());
+  }
+
+  function estFee(perso) {
+    if (charAttributeAsBool(perso, 'fée')) return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '');
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    switch (perso.race) {
+      case 'licorne':
+      case 'fee':
+      case 'fée':
+      case 'pixie':
+      case 'lutin':
+        return true;
+      default:
+        return false;
+    }
   }
 
   function estDemon(perso) {
