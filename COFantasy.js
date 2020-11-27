@@ -2556,6 +2556,8 @@ var COFantasy = COFantasy || function() {
               case 'lancer-sort':
               case 'injonction':
               case 'injonction-mortelle':
+              case 'attaque-magique':
+              case 'tueur-fantasmagorique':
                 picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
                 style = 'background-color:#9900ff';
                 break;
@@ -14208,6 +14210,12 @@ var COFantasy = COFantasy || function() {
           return;
         case 'tueurFantasmagorique':
           tueurFantasmagorique(action.playerId, action.attaquant, action.cible, options);
+          return;
+        case 'injonction':
+          injonction(action.playerId, action.attaquant, action.cible, options);
+          return;
+        case 'attaqueMagique':
+          attaqueMagiqueOpposee(action.playerId, action.attaquant, action.cible, options);
           return;
         default:
           error("Evenement avec une action, mais inconnue au niveau chance. Impossible d'annuler !", evt);
