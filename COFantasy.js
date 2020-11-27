@@ -18132,6 +18132,10 @@ var COFantasy = COFantasy || function() {
       var atk1 = (options.rolls && options.rolls['atk1']) ? options.rolls['atk1'] : rolls.inlinerolls[attk1SkillNumber];
       var roll2 = (options.rolls && options.rolls['roll2']) ? options.rolls['roll2'] : rolls.inlinerolls[att2RollNumber];
       var atk2 = (options.rolls && options.rolls['atk2']) ? options.rolls['atk2'] : rolls.inlinerolls[attk2SkillNumber];
+      roll1.token = attaquant.token;
+      atk1.token = attaquant.token;
+      roll2.token = cible.token;
+      atk2.token = cible.token;
       evt.action.rolls = evt.action.rolls || {};
       evt.action.rolls['roll1'] = roll1;
       evt.action.rolls['atk1'] = atk1;
@@ -18140,21 +18144,12 @@ var COFantasy = COFantasy || function() {
       var d20roll1 = roll1.results.total;
       var att1Skill = atk1.results.total;
       var attackRoll1 = d20roll1 + att1Skill;
+      if(options.chanceRollId && options.chanceRollId["roll1"]) attackRoll1 += options.chanceRollId["roll1"];
       var d20roll2 = roll2.results.total;
       var att2Skill = atk2.results.total;
       var attackRoll2 = d20roll2 + att2Skill;
+      if(options.chanceRollId && options.chanceRollId["roll2"]) attackRoll2 += options.chanceRollId["roll2"];
       var action = "Attaque magique opposée";
-      var display = startFramedDisplay(playerId, action, attaquant, {
-        perso2: cible
-      });
-      var line = attaquant.token.get('name') + " fait " + buildinline(roll1);
-      if (att1Skill > 0) line += "+" + att1Skill + " = " + attackRoll1;
-      else if (att1Skill < 0) line += att1Skill + " = " + attackRoll1;
-      addLineToFramedDisplay(display, line);
-      line = cible.token.get('name') + " fait " + buildinline(roll2);
-      if (att2Skill > 0) line += "+" + att2Skill + " = " + attackRoll2;
-      else if (att2Skill < 0) line += att2Skill + " = " + attackRoll2;
-      addLineToFramedDisplay(display, line);
       var reussi;
       if (d20roll1 == 1) {
         if (d20roll2 == 1) reussi = (attackRoll1 >= attackRoll2);
@@ -18164,6 +18159,31 @@ var COFantasy = COFantasy || function() {
         if (d20roll2 == 20) reussi = (attackRoll1 >= attackRoll2);
         else reussi = true;
       } else reussi = (attackRoll1 >= attackRoll2);
+      var display = startFramedDisplay(playerId, action, attaquant, {
+        perso2: cible
+      });
+      var line = attaquant.token.get('name') + " fait " + buildinline(roll1);
+      if (att1Skill > 0) line += "+" + att1Skill;
+      else if (att1Skill < 0) line += att1Skill;
+      if(options.chanceRollId && options.chanceRollId["roll1"]) line += "+" + options.chanceRollId["roll1"];
+      line += " = " + attackRoll1;
+      if(!reussi) {
+        var pcAttaquant = pointsDeChance(attaquant);
+        if (pcAttaquant > 0) line += "<br/>" + boutonSimple("!cof-bouton-chance " + evt.id + " roll1", "Chance")
+            + " (reste " + pcAttaquant + " PC)";
+      }
+      addLineToFramedDisplay(display, line);
+      line = cible.token.get('name') + " fait " + buildinline(roll2);
+      if (att2Skill > 0) line += "+" + att2Skill;
+      else if (att2Skill < 0) line += att2Skill;
+      if(options.chanceRollId && options.chanceRollId["roll2"]) line += "+" + options.chanceRollId["roll2"];
+      line += " = " + attackRoll2;
+      if(reussi) {
+        var pcCible = pointsDeChance(cible);
+        if (pcCible > 0) line += "<br/>" + boutonSimple("!cof-bouton-chance " + evt.id + " roll2", "Chance")
+            + " (reste " + pcCible + " PC)";
+      }
+      addLineToFramedDisplay(display, line);
       if (reussi) {
         diminueMalediction(cible, evt);
         addLineToFramedDisplay(display, "<b>Attaque réussie !</b>");
