@@ -5779,7 +5779,8 @@ var COFantasy = COFantasy || function() {
             attaquant: attaquant,
             avecPC: true
           };
-          var saveId = condInTarget ? 'ifSave_' + etatParent + '_' + target.token.id : 'ifSave_' + etatParent + '_' + attaquant.token.id;
+          var saveId = condInTarget ? 'ifSave_' + etatParent.aTraiter + '_' + target.token.id
+              : 'ifSave_' + etatParent.aTraiter + '_' + attaquant.token.id;
           var expliquer = function(msg) {
             target.messages.push(msg);
           };
