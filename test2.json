@@ -1,0 +1,199 @@
+{
+  "roll1": {
+    "expression": "1d20",
+    "results": {
+      "type": "V",
+      "rolls": [
+        {
+          "type": "R",
+          "dice": 1,
+          "sides": 20,
+          "mods": {},
+          "results": [
+            {
+              "v": 11
+            }
+          ]
+        }
+      ],
+      "resultType": "sum",
+      "total": 11
+    },
+    "signature": "103fe587d191eac8e3f1098365bb632e8428217b1861595cc2e190f209d3a06727655602b74b7ea2cbae122e1415ea8cec0a1b768fd57902f023d6a2bf007803",
+    "rollid": "-MN7ihth6t-ZfkK-eFyh"
+  },
+  "atk1": {
+    "expression": "12",
+    "results": {
+      "type": "V",
+      "rolls": [
+        {
+          "type": "M",
+          "expr": 12
+        }
+      ],
+      "resultType": "M",
+      "total": 12
+    },
+    "signature": false,
+    "rollid": null
+  },
+  "roll2": {
+    "expression": "1d20",
+    "results": {
+      "type": "V",
+      "rolls": [
+        {
+          "type": "R",
+          "dice": 1,
+          "sides": 20,
+          "mods": {},
+          "results": [
+            {
+              "v": 9
+            }
+          ]
+        }
+      ],
+      "resultType": "sum",
+      "total": 9
+    },
+    "signature": "12cd6b654b318ae62b18c1de72e614ba98c39c1d24f20772ce7657ddf7da00fabbda3d70b0a9cc42207f8e3dacc8ffee7d6ab5671aff9bddcd3f2441bd087aab",
+    "rollid": "-MN7ihti0R4HMLktkVvK"
+  },
+  "atk2": {
+    "expression": "8",
+    "results": {
+      "type": "V",
+      "rolls": [
+        {
+          "type": "M",
+          "expr": 8
+        }
+      ],
+      "resultType": "M",
+      "total": 8
+    },
+    "signature": false,
+    "rollid": null
+  },
+  "tueurFantasmagorique_-MN3HI3JA03_7SFnpdPH": {
+    "expression": "1d20cs20cf1",
+    "results": {
+      "type": "V",
+      "rolls": [
+        {
+          "type": "R",
+          "dice": 1,
+          "sides": 20,
+          "mods": {
+            "customCrit": [
+              {
+                "comp": "==",
+                "point": 20
+              }
+            ],
+            "customFumble": [
+              {
+                "comp": "==",
+                "point": 1
+              }
+            ]
+          },
+          "results": [
+            {
+              "v": 13
+            }
+          ]
+        }
+      ],
+      "resultType": "sum",
+      "total": 13
+    },
+    "signature": "69bb07c00db6a003284a02087511019b8dd7a146bf5a155eadff3d017e514852cf9a40dd39b0fcaa33e9cce1b93b7e4ffeb5605ec20d680e4aaba505f801decd",
+    "rollid": "-MN7ihuYORiSz6u0Yhhr",
+    "token": {
+      "_id": "-MN3HI3JA03_7SFnpdPH",
+      "_pageid": "-M7Nv36c7prdMjcm9EL3",
+      "left": 997,
+      "top": 662,
+      "width": 70,
+      "height": 70,
+      "rotation": 0,
+      "layer": "objects",
+      "isdrawing": false,
+      "flipv": false,
+      "fliph": false,
+      "imgsrc": "https://s3.amazonaws.com/files.d20.io/images/113628366/0-FkiTyFb-s7Vi-aAFinOQ/thumb.png?15853903245",
+      "name": "Thorgrimm Poingdacier",
+      "gmnotes": "",
+      "controlledby": "",
+      "bar1_value": "70",
+      "bar1_max": 82,
+      "bar1_link": "-M3Rpp4WbjWC3yKVT2x5",
+      "bar2_value": "",
+      "bar2_max": "",
+      "bar2_link": "",
+      "bar3_value": "",
+      "bar3_max": "",
+      "bar3_link": "",
+      "represents": "-M3Rla3Boq8nhGbSsQtj",
+      "aura1_radius": "",
+      "aura1_color": "#FFFF99",
+      "aura1_square": false,
+      "aura2_radius": "",
+      "aura2_color": "#59E594",
+      "aura2_square": false,
+      "tint_color": "transparent",
+      "statusmarkers": "",
+      "showname": false,
+      "showplayers_name": false,
+      "showplayers_bar1": true,
+      "showplayers_bar2": false,
+      "showplayers_bar3": false,
+      "showplayers_aura1": false,
+      "showplayers_aura2": false,
+      "playersedit_name": true,
+      "playersedit_bar1": true,
+      "playersedit_bar2": true,
+      "playersedit_bar3": true,
+      "playersedit_aura1": true,
+      "playersedit_aura2": true,
+      "light_radius": 30,
+      "light_dimradius": -1,
+      "light_otherplayers": false,
+      "light_hassight": true,
+      "light_angle": 360,
+      "light_losangle": "",
+      "light_multiplier": 1,
+      "adv_fow_view_distance": "",
+      "sides": "",
+      "currentSide": 0,
+      "lastmove": "997,662",
+      "_type": "graphic",
+      "_subtype": "token",
+      "_cardid": "",
+      "has_bright_light_vision": false,
+      "has_night_vision": false,
+      "night_vision_tint": null,
+      "night_vision_distance": 0,
+      "emits_bright_light": false,
+      "bright_light_distance": 0,
+      "emits_low_light": false,
+      "low_light_distance": 0,
+      "has_limit_field_of_vision": false,
+      "limit_field_of_vision_center": 0,
+      "limit_field_of_vision_total": 0,
+      "has_limit_field_of_night_vision": false,
+      "limit_field_of_night_vision_center": 0,
+      "limit_field_of_night_vision_total": 0,
+      "has_directional_bright_light": false,
+      "directional_bright_light_total": 0,
+      "directional_bright_light_center": 0,
+      "has_directional_low_light": false,
+      "directional_low_light_total": 0,
+      "directional_low_light_center": 0
+    }
+  }
+}
+{"tueurFantasmagorique_-MN3HI3JA03_7SFnpdPH":10}

@@ -18252,13 +18252,13 @@ var COFantasy = COFantasy || function() {
             attaquant: attaquant,
             avecPC: true
           };
+          var saveId = 'tueurFantasmagorique_' + cible.token.id;
           if (options.rolls) {
             saveOpts.roll = options.rolls[saveId];
             if (options.chanceRollId && options.chanceRollId[saveId]) {
               saveOpts.chanceRollId = options.chanceRollId[saveId];
             }
           }
-          var saveId = 'tueurFantasmagorique_' + cible.token.id;
           save(s, cible, saveId, expliquer, saveOpts, evt,
             function(reussiteSave, texte, roll) {
               evt.action.rolls = evt.action.rolls || {};
