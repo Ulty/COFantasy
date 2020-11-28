@@ -1086,7 +1086,9 @@ var COFantasy = COFantasy || function() {
     var fieldm;
     if (maxVal) fieldm = 'bar' + barNumber + '_max';
     var attrId = token.get('bar' + barNumber + '_link');
-    if (attrId === '') {
+    var attr;
+    if (attrId !== '') attr = getObj('attribute', attrId);
+    if (attr === undefined) {
       var prevVal = token.get(fieldv);
       if (evt) affectToken(token, fieldv, prevVal, evt);
       token.set(fieldv, val);
@@ -1097,7 +1099,6 @@ var COFantasy = COFantasy || function() {
       if (HTdeclared) HealthColors.Update(token, prevToken);
       return;
     }
-    var attr = getObj('attribute', attrId);
     if (evt) {
       evt.attributes = evt.attributes || [];
       evt.attributes.push({
