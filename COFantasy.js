@@ -1086,7 +1086,9 @@ var COFantasy = COFantasy || function() {
     var fieldm;
     if (maxVal) fieldm = 'bar' + barNumber + '_max';
     var attrId = token.get('bar' + barNumber + '_link');
-    if (attrId === '') {
+    var attr;
+    if (attrId !== '') attr = getObj('attribute', attrId);
+    if (attr === undefined) {
       var prevVal = token.get(fieldv);
       if (evt) affectToken(token, fieldv, prevVal, evt);
       token.set(fieldv, val);
@@ -1097,7 +1099,6 @@ var COFantasy = COFantasy || function() {
       if (HTdeclared) HealthColors.Update(token, prevToken);
       return;
     }
-    var attr = getObj('attribute', attrId);
     if (evt) {
       evt.attributes = evt.attributes || [];
       evt.attributes.push({
@@ -5781,8 +5782,8 @@ var COFantasy = COFantasy || function() {
             attaquant: attaquant,
             avecPC: true
           };
-          var saveId = condInTarget ? 'ifSave_' + etatParent.aTraiter + '_' + target.token.id
-              : 'ifSave_' + etatParent.aTraiter + '_' + attaquant.token.id;
+          var saveId = condInTarget ? 'ifSave_' + etatParent.aTraiter + '_' + target.token.id :
+            'ifSave_' + etatParent.aTraiter + '_' + attaquant.token.id;
           var expliquer = function(msg) {
             target.messages.push(msg);
           };
@@ -5908,6 +5909,7 @@ var COFantasy = COFantasy || function() {
     return false;
   }
 
+  //ne rajoute pas evt à l'historique
   function tokenInit(perso, evt) {
     var initDerivee = charAttribute(perso.charId, 'initiativeDeriveeDe');
     if (initDerivee.length > 0) {
@@ -6004,6 +6006,7 @@ var COFantasy = COFantasy || function() {
     return init;
   }
 
+  //ne rajoute pas evt à l'historique
   function initiative(selected, evt, recompute) { //set initiative for selected tokens
     // Always called when entering combat mode
     // set the initiative counter, if not yet set
@@ -15882,6 +15885,7 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  //ne rajoute pas evt à l'historique
   function setTurnOrder(to, evt) {
     if (to.pasAgi.length > 0) {
       to.pasAgi.sort(function(a, b) {
@@ -16765,7 +16769,6 @@ var COFantasy = COFantasy || function() {
           setEffect();
         }
       });
-      addEvent(evt);
     });
   }
 
@@ -18060,11 +18063,11 @@ var COFantasy = COFantasy || function() {
       error("Arguments de !cof-attaque-magique", cmd);
       return;
     }
-    if(options.portee) {
+    if (options.portee) {
       var distance = distanceCombat(attaquant.token, cible.token, options.pageId);
       if (distance > options.portee) {
         sendChar(attaquant.charId, "est trop loin de " + cible.token.get('name') +
-            " pour l'attaque magique");
+          " pour l'attaque magique");
         return;
       }
     }
@@ -18091,7 +18094,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var explications = options.messages || [];
-    if(!evt) {
+    if (!evt) {
       evt = {
         type: 'attaqueMagique',
         action: {
@@ -18102,13 +18105,13 @@ var COFantasy = COFantasy || function() {
         }
       };
       addEvent(evt);
-    } else if(!evt.action) {
+    } else if (!evt.action) {
       evt.action = {
         titre: "Attaque magique",
         attaquant: attaquant,
         cible: cible,
         options: options
-      }
+      };
     }
     entrerEnCombat(attaquant, [cible], explications, evt);
     if (limiteRessources(attaquant, options, 'attaqueMagique', "l'attaque magique", evt)) {
@@ -18136,27 +18139,29 @@ var COFantasy = COFantasy || function() {
       var att2RollNumber = rollNumber(afterEvaluate[1]);
       var attk1SkillNumber = rollNumber(afterEvaluate[2]);
       var attk2SkillNumber = rollNumber(afterEvaluate[3]);
-      var roll1 = (options.rolls && options.rolls['roll1']) ? options.rolls['roll1'] : rolls.inlinerolls[att1RollNumber];
-      var atk1 = (options.rolls && options.rolls['atk1']) ? options.rolls['atk1'] : rolls.inlinerolls[attk1SkillNumber];
-      var roll2 = (options.rolls && options.rolls['roll2']) ? options.rolls['roll2'] : rolls.inlinerolls[att2RollNumber];
-      var atk2 = (options.rolls && options.rolls['atk2']) ? options.rolls['atk2'] : rolls.inlinerolls[attk2SkillNumber];
+      var roll1 = (options.rolls && options.rolls.roll1) ? options.rolls.roll1 : rolls.inlinerolls[att1RollNumber];
+      var atk1 = (options.rolls && options.rolls.atk1) ? options.rolls.atk1 : rolls.inlinerolls[attk1SkillNumber];
+      var roll2 = (options.rolls && options.rolls.roll2) ? options.rolls.roll2 : rolls.inlinerolls[att2RollNumber];
+      var atk2 = (options.rolls && options.rolls.atk2) ? options.rolls.atk2 : rolls.inlinerolls[attk2SkillNumber];
       roll1.token = attaquant.token;
       atk1.token = attaquant.token;
       roll2.token = cible.token;
       atk2.token = cible.token;
       evt.action.rolls = evt.action.rolls || {};
-      evt.action.rolls['roll1'] = roll1;
-      evt.action.rolls['atk1'] = atk1;
-      evt.action.rolls['roll2'] = roll2;
-      evt.action.rolls['atk2'] = atk2;
+      evt.action.rolls.roll1 = roll1;
+      evt.action.rolls.atk1 = atk1;
+      evt.action.rolls.roll2 = roll2;
+      evt.action.rolls.atk2 = atk2;
       var d20roll1 = roll1.results.total;
       var att1Skill = atk1.results.total;
       var attackRoll1 = d20roll1 + att1Skill;
-      if(options.chanceRollId && options.chanceRollId["roll1"]) attackRoll1 += options.chanceRollId["roll1"];
+      if (options.chanceRollId && options.chanceRollId.roll1)
+        attackRoll1 += options.chanceRollId.roll1;
       var d20roll2 = roll2.results.total;
       var att2Skill = atk2.results.total;
       var attackRoll2 = d20roll2 + att2Skill;
-      if(options.chanceRollId && options.chanceRollId["roll2"]) attackRoll2 += options.chanceRollId["roll2"];
+      if (options.chanceRollId && options.chanceRollId.roll2)
+        attackRoll2 += options.chanceRollId.roll2;
       var action = "Attaque magique opposée";
       var reussi;
       if (d20roll1 == 1) {
@@ -18173,23 +18178,27 @@ var COFantasy = COFantasy || function() {
       var line = attaquant.token.get('name') + " fait " + buildinline(roll1);
       if (att1Skill > 0) line += "+" + att1Skill;
       else if (att1Skill < 0) line += att1Skill;
-      if(options.chanceRollId && options.chanceRollId["roll1"]) line += "+" + options.chanceRollId["roll1"];
+      if (options.chanceRollId && options.chanceRollId.roll1)
+        line += "+" + options.chanceRollId.roll1;
       line += " = " + attackRoll1;
-      if(!reussi) {
+      if (!reussi) {
         var pcAttaquant = pointsDeChance(attaquant);
-        if (pcAttaquant > 0) line += "<br/>" + boutonSimple("!cof-bouton-chance " + evt.id + " roll1", "Chance")
-            + " (reste " + pcAttaquant + " PC)";
+        if (pcAttaquant > 0)
+          line += "<br/>" + boutonSimple("!cof-bouton-chance " + evt.id + " roll1", "Chance") +
+          " (reste " + pcAttaquant + " PC)";
       }
       addLineToFramedDisplay(display, line);
       line = cible.token.get('name') + " fait " + buildinline(roll2);
       if (att2Skill > 0) line += "+" + att2Skill;
       else if (att2Skill < 0) line += att2Skill;
-      if(options.chanceRollId && options.chanceRollId["roll2"]) line += "+" + options.chanceRollId["roll2"];
+      if (options.chanceRollId && options.chanceRollId.roll2)
+        line += "+" + options.chanceRollId.roll2;
       line += " = " + attackRoll2;
-      if(reussi) {
+      if (reussi) {
         var pcCible = pointsDeChance(cible);
-        if (pcCible > 0) line += "<br/>" + boutonSimple("!cof-bouton-chance " + evt.id + " roll2", "Chance")
-            + " (reste " + pcCible + " PC)";
+        if (pcCible > 0)
+          line += "<br/>" + boutonSimple("!cof-bouton-chance " + evt.id + " roll2", "Chance") +
+          " (reste " + pcCible + " PC)";
       }
       addLineToFramedDisplay(display, line);
       if (reussi) {
