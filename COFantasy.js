@@ -6461,6 +6461,19 @@ var COFantasy = COFantasy || function() {
     }
     if (getState(target, 'etourdi') || attributeAsBool(target, 'peurEtourdi'))
       defense -= 5;
+    if (getState(target, 'invisible') && attaquant && !attributeAsBool(attaquant, 'detectionDeLInvisible')) {
+      if (options.distance) {
+        if (charAttributeAsBool(attaquant, 'tirAveugle')) {
+          explications.push("Cible invisible, mais "+attaquant.tokName+ " sait tirer à l'aveugle");
+        } else {
+        defense -= 10;
+        explications.push("Invisible : +10 en DEF");
+        }
+      } else {
+        defense -= 5;
+        explications.push("Invisible : +5 en DEF");
+      }
+    }
     defense += attributeAsInt(target, 'bufDEF', 0);
     defense += attributeAsInt(target, 'actionConcertee', 0);
     if (ficheAttributeAsInt(target, 'DEFARMUREON', 1) === 0) {
@@ -6954,6 +6967,9 @@ var COFantasy = COFantasy || function() {
         else
           explications.push("Attaquant aveuglé => -5 en Attaque et aux DM");
       }
+    } else if (getState(attaquant, 'invisible') && !attributeAsBool(target, 'detectionDeLInvisible')) {
+      attBonus += 5;
+      explications.push ("Attaque venant d'un personnage invisible => +5 en Attaque");
     }
     if (options.mainsDEnergie) {
       if (options.aoe) error("Mains d'énergie n'est pas compatible avec les AOE", options.aoe);
@@ -8286,7 +8302,7 @@ var COFantasy = COFantasy || function() {
       selected.push({
         _id: attaquant.token.id
       });
-      if (getState(attaquant, 'invisible')) {
+      if (getState(attaquant, 'invisible') && !charAttributeAsBool('invisibleEnCombat')) {
         explications.push(attaquant.tokName + " redevient visible");
         setState(attaquant, 'invisible', false, evt);
       }
@@ -27032,6 +27048,11 @@ var COFantasy = COFantasy || function() {
       fin: "effet activé",
       generic: true
     },
+    detectionDeLInvisible: {
+      activation: "voit les choses invibles et cachées",
+      actif: "détecte l'invisible",
+      fin: "ne voit plus les choses invisibles",
+    },
   };
 
   function buildPatternEffets(listeEffets, postfix) {
@@ -28629,7 +28650,7 @@ var COFantasy = COFantasy || function() {
     var deplacement = prev && (prev.left != x || prev.top != y);
     if (!deplacement) return;
     if (nePeutPasBouger(perso)) {
-      sendChar(charId, "ne peut pas se déplacer.");
+      whisperChar(charId, "ne peut pas se déplacer.");
       sendChat('COF', "/w GM " +
         '<a href="!cof-deplacer-token ' + x + ' ' + y + ' --target ' + token.id + '">Déplacer </a>' +
         '<a href="!cof-permettre-deplacement --target ' + token.id + '">Décoincer</a>');
