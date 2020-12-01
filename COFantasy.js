@@ -6464,10 +6464,10 @@ var COFantasy = COFantasy || function() {
     if (getState(target, 'invisible') && attaquant && !attributeAsBool(attaquant, 'detectionDeLInvisible')) {
       if (options.distance) {
         if (charAttributeAsBool(attaquant, 'tirAveugle')) {
-          explications.push("Cible invisible, mais "+attaquant.tokName+ " sait tirer à l'aveugle");
+          explications.push("Cible invisible, mais " + attaquant.tokName + " sait tirer à l'aveugle");
         } else {
-        defense -= 10;
-        explications.push("Invisible : +10 en DEF");
+          defense -= 10;
+          explications.push("Invisible : +10 en DEF");
         }
       } else {
         defense -= 5;
@@ -6969,7 +6969,7 @@ var COFantasy = COFantasy || function() {
       }
     } else if (getState(attaquant, 'invisible') && !attributeAsBool(target, 'detectionDeLInvisible')) {
       attBonus += 5;
-      explications.push ("Attaque venant d'un personnage invisible => +5 en Attaque");
+      explications.push("Attaque venant d'un personnage invisible => +5 en Attaque");
     }
     if (options.mainsDEnergie) {
       if (options.aoe) error("Mains d'énergie n'est pas compatible avec les AOE", options.aoe);
@@ -9152,61 +9152,63 @@ var COFantasy = COFantasy || function() {
               }
               if (!options.auto) {
                 //Seulement si elle n'est pas automatiquement réussie
-                if (!options.pasDeDmg && options.contact &&
-                  !options.ignoreTouteRD &&
-                  attributeAsBool(target, 'encaisserUnCoup')) {
-                  options.preDmg = options.preDmg || {};
-                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                  options.preDmg[target.token.id].encaisserUnCoup = true;
-                }
-                if (charAttributeAsBool(target, 'esquiveAcrobatique')) {
-                  options.preDmg = options.preDmg || {};
-                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                  options.preDmg[target.token.id].esquiveAcrobatique = true;
-                }
-                if (charAttributeAsBool(target, 'paradeMagistrale')) {
-                  options.preDmg = options.preDmg || {};
-                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                  options.preDmg[target.token.id].paradeMagistrale = true;
-                }
-                if (options.sortilege && charAttributeAsBool(target, 'resistanceALaMagieBarbare')) {
-                  options.preDmg = options.preDmg || {};
-                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                  options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
-                }
-                if (attributeAsBool(target, 'chairACanon') && target.chairACanon && target.chairACanon.length > 0) {
-                  options.preDmg = options.preDmg || {};
-                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                  options.preDmg[target.token.id].chairACanon = target.chairACanon;
-                }
-                if (attributeAsBool(target, 'esquiveFatale')) {
-                  if (target.ennemisAuContact === undefined) {
-                    error(target.token.get('name') + " a la possibilité d'une esquive fatale, mais les ennemis au contact ne sont pas calculés", target);
-                  } else {
-                    var ciblesEsquiveFatale = target.ennemisAuContact.filter(function(tok) {
-                      return (tok.id != attaquant.token.id);
-                    });
-                    if (ciblesEsquiveFatale.length > 0) {
+                if (isActive(target)) {
+                  if (!options.pasDeDmg && options.contact &&
+                    !options.ignoreTouteRD &&
+                    attributeAsBool(target, 'encaisserUnCoup')) {
+                    options.preDmg = options.preDmg || {};
+                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                    options.preDmg[target.token.id].encaisserUnCoup = true;
+                  }
+                  if (charAttributeAsBool(target, 'esquiveAcrobatique')) {
+                    options.preDmg = options.preDmg || {};
+                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                    options.preDmg[target.token.id].esquiveAcrobatique = true;
+                  }
+                  if (charAttributeAsBool(target, 'paradeMagistrale')) {
+                    options.preDmg = options.preDmg || {};
+                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                    options.preDmg[target.token.id].paradeMagistrale = true;
+                  }
+                  if (attributeAsBool(target, 'esquiveFatale')) {
+                    if (target.ennemisAuContact === undefined) {
+                      error(target.token.get('name') + " a la possibilité d'une esquive fatale, mais les ennemis au contact ne sont pas calculés", target);
+                    } else {
+                      var ciblesEsquiveFatale = target.ennemisAuContact.filter(function(tok) {
+                        return (tok.id != attaquant.token.id);
+                      });
+                      if (ciblesEsquiveFatale.length > 0) {
+                        options.preDmg = options.preDmg || {};
+                        options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                        options.preDmg[target.token.id].esquiveFatale = ciblesEsquiveFatale;
+                      }
+                    }
+                  }
+                  if (options.sortilege) {
+                    if (attributeAsBool(target, 'absorberUnSort') &&
+                      ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) == 1) {
                       options.preDmg = options.preDmg || {};
                       options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                      options.preDmg[target.token.id].esquiveFatale = ciblesEsquiveFatale;
+                      options.preDmg[target.token.id].absorberUnSort = true;
+                    }
+                  } else {
+                    if (attributeAsBool(target, 'absorberUnCoup')) {
+                      options.preDmg = options.preDmg || {};
+                      options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                      options.preDmg[target.token.id].absorberUnCoup = true;
                     }
                   }
                 }
-                if (options.sortilege) {
-                  if (attributeAsBool(target, 'absorberUnSort') &&
-                    ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) == 1) {
-                    options.preDmg = options.preDmg || {};
-                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                    options.preDmg[target.token.id].absorberUnSort = true;
-                  }
-                } else {
-                  if (attributeAsBool(target, 'absorberUnCoup')) {
-                    options.preDmg = options.preDmg || {};
-                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                    options.preDmg[target.token.id].absorberUnCoup = true;
-                  }
-                }
+              }
+              if (options.sortilege && charAttributeAsBool(target, 'resistanceALaMagieBarbare')) {
+                options.preDmg = options.preDmg || {};
+                options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
+              }
+              if (attributeAsBool(target, 'chairACanon') && target.chairACanon && target.chairACanon.length > 0) {
+                options.preDmg = options.preDmg || {};
+                options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                options.preDmg[target.token.id].chairACanon = target.chairACanon;
               }
             }
             if (options.feinte) {
