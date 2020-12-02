@@ -6920,11 +6920,29 @@ var COFantasy = COFantasy || function() {
       }
     }
     var frenesie = charAttributeAsInt(attaquant, 'frenesie', 0);
+    var pv;
     if (frenesie > 0) {
-      var pv = parseInt(attaquant.token.get('bar1_value'));
+      pv = parseInt(attaquant.token.get('bar1_value'));
       if (pv <= frenesie) {
         attBonus += 2;
         explications.push("Frénésie => +2 en Attaque");
+      }
+    }
+    if (charAttributeAsBool(attaquant, 'hausserLeTon')) {
+      if (pv === undefined)
+        pv = parseInt(attaquant.token.get('bar1_value'));
+      if (pv <= parseInt(attaquant.token.get('bar1_max') / 2)) {
+        attBonus += 5;
+        var msgHausserLeTon = "Hausse le ton => +5 en Attaque";
+        if (!options.pasDeDmg) {
+          msgHausserLeTon += " et +1d6 DM";
+          options.additionalDmg = options.additionalDmg || [];
+          options.additionalDmg.push({
+            type: 'normal',
+            value: '1d6'
+          });
+        }
+        explications.push(msgHausserLeTon);
       }
     }
     if (options.lamesJumelles) {
@@ -11107,7 +11125,13 @@ var COFantasy = COFantasy || function() {
       res.sauf.feu_hache = res.sauf.feu_hache || 0;
       res.sauf.feu_hache += 10;
     }
-    var rd = ficheAttribute(perso, 'RDS', '').trim();
+    if (charAttributeAsBool(perso, 'hausserLeTon')) {
+      if (parseInt(perso.token.get('bar1_value')) <= perso.token.get('bar1_max') / 2) {
+        res.rdt += 5;
+      }
+    }
+    var rd = ficheAttribute(perso, 'RDS', '');
+    rd = (rd + '').trim();
     if (rd === '') {
       perso.rd = res;
       return res;

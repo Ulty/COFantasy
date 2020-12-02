@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.15
 ### Capacités
+* Ajout de la capacité Hausser le ton de la Voie du champion
 * Gestion des capacités d'auras.
 * Capacité "n'abandonne jamais", des guerriers maudits.
 * Réduire la distance de la Voie du tueur de géants.
