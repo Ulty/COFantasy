@@ -5124,7 +5124,7 @@ var COFantasy = COFantasy || function() {
           scope.limiteParJour = limiteParJour;
           if (cmd.length > 2) {
             cmd.splice(0, 2);
-            scope.limiteParJourRessource = cmd.joins('_');
+            scope.limiteParJourRessource = cmd.join('_');
           }
           return;
         case 'limiteParCombat':
