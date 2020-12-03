@@ -16653,7 +16653,7 @@ var COFantasy = COFantasy || function() {
       dmg: dmg,
       options: options
     };
-    if (options.attaquant && limiteRessources(options.attaquant, options, 'dmg', 'dmg', evt)) return;
+    if (options.lanceur && limiteRessources(options.lanceur, options, 'dmg', 'dmg', evt)) return;
     var action = "<b>Dégâts.</b>";
     if (options.partialSave) {
       action +=
@@ -16696,7 +16696,7 @@ var COFantasy = COFantasy || function() {
           perso.ignoreTouteRD = options.ignoreTouteRD;
           perso.ignoreMoitieRD = options.ignoreMoitieRD;
           perso.tempDmg = options.tempDmg;
-          perso.attaquant = options.attaquant;
+          perso.attaquant = options.lanceur;
           dealDamage(perso, dmg, [], evt, false, options, explications, function(dmgDisplay, dmgFinal) {
             someDmgDone = true;
             addLineToFramedDisplay(display,
