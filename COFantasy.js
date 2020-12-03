@@ -6461,6 +6461,19 @@ var COFantasy = COFantasy || function() {
     }
     if (getState(target, 'etourdi') || attributeAsBool(target, 'peurEtourdi'))
       defense -= 5;
+    if (getState(target, 'invisible') && attaquant && !attributeAsBool(attaquant, 'detectionDeLInvisible')) {
+      if (options.distance) {
+        if (charAttributeAsBool(attaquant, 'tirAveugle')) {
+          explications.push("Cible invisible, mais " + attaquant.tokName + " sait tirer à l'aveugle");
+        } else {
+          defense -= 10;
+          explications.push("Invisible : +10 en DEF");
+        }
+      } else {
+        defense -= 5;
+        explications.push("Invisible : +5 en DEF");
+      }
+    }
     defense += attributeAsInt(target, 'bufDEF', 0);
     defense += attributeAsInt(target, 'actionConcertee', 0);
     if (ficheAttributeAsInt(target, 'DEFARMUREON', 1) === 0) {
@@ -6907,11 +6920,29 @@ var COFantasy = COFantasy || function() {
       }
     }
     var frenesie = charAttributeAsInt(attaquant, 'frenesie', 0);
+    var pv;
     if (frenesie > 0) {
-      var pv = parseInt(attaquant.token.get('bar1_value'));
+      pv = parseInt(attaquant.token.get('bar1_value'));
       if (pv <= frenesie) {
         attBonus += 2;
         explications.push("Frénésie => +2 en Attaque");
+      }
+    }
+    if (charAttributeAsBool(attaquant, 'hausserLeTon')) {
+      if (pv === undefined)
+        pv = parseInt(attaquant.token.get('bar1_value'));
+      if (pv <= parseInt(attaquant.token.get('bar1_max') / 2)) {
+        attBonus += 5;
+        var msgHausserLeTon = "Hausse le ton => +5 en Attaque";
+        if (!options.pasDeDmg) {
+          msgHausserLeTon += " et +1d6 DM";
+          options.additionalDmg = options.additionalDmg || [];
+          options.additionalDmg.push({
+            type: 'normal',
+            value: '1d6'
+          });
+        }
+        explications.push(msgHausserLeTon);
       }
     }
     if (options.lamesJumelles) {
@@ -6954,6 +6985,9 @@ var COFantasy = COFantasy || function() {
         else
           explications.push("Attaquant aveuglé => -5 en Attaque et aux DM");
       }
+    } else if (getState(attaquant, 'invisible') && !attributeAsBool(target, 'detectionDeLInvisible')) {
+      attBonus += 5;
+      explications.push("Attaque venant d'un personnage invisible => +5 en Attaque");
     }
     if (options.mainsDEnergie) {
       if (options.aoe) error("Mains d'énergie n'est pas compatible avec les AOE", options.aoe);
@@ -8286,7 +8320,7 @@ var COFantasy = COFantasy || function() {
       selected.push({
         _id: attaquant.token.id
       });
-      if (getState(attaquant, 'invisible')) {
+      if (getState(attaquant, 'invisible') && !charAttributeAsBool('invisibleEnCombat')) {
         explications.push(attaquant.tokName + " redevient visible");
         setState(attaquant, 'invisible', false, evt);
       }
@@ -9136,61 +9170,63 @@ var COFantasy = COFantasy || function() {
               }
               if (!options.auto) {
                 //Seulement si elle n'est pas automatiquement réussie
-                if (!options.pasDeDmg && options.contact &&
-                  !options.ignoreTouteRD &&
-                  attributeAsBool(target, 'encaisserUnCoup')) {
-                  options.preDmg = options.preDmg || {};
-                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                  options.preDmg[target.token.id].encaisserUnCoup = true;
-                }
-                if (charAttributeAsBool(target, 'esquiveAcrobatique')) {
-                  options.preDmg = options.preDmg || {};
-                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                  options.preDmg[target.token.id].esquiveAcrobatique = true;
-                }
-                if (charAttributeAsBool(target, 'paradeMagistrale')) {
-                  options.preDmg = options.preDmg || {};
-                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                  options.preDmg[target.token.id].paradeMagistrale = true;
-                }
-                if (options.sortilege && charAttributeAsBool(target, 'resistanceALaMagieBarbare')) {
-                  options.preDmg = options.preDmg || {};
-                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                  options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
-                }
-                if (attributeAsBool(target, 'chairACanon') && target.chairACanon && target.chairACanon.length > 0) {
-                  options.preDmg = options.preDmg || {};
-                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                  options.preDmg[target.token.id].chairACanon = target.chairACanon;
-                }
-                if (attributeAsBool(target, 'esquiveFatale')) {
-                  if (target.ennemisAuContact === undefined) {
-                    error(target.token.get('name') + " a la possibilité d'une esquive fatale, mais les ennemis au contact ne sont pas calculés", target);
-                  } else {
-                    var ciblesEsquiveFatale = target.ennemisAuContact.filter(function(tok) {
-                      return (tok.id != attaquant.token.id);
-                    });
-                    if (ciblesEsquiveFatale.length > 0) {
+                if (isActive(target)) {
+                  if (!options.pasDeDmg && options.contact &&
+                    !options.ignoreTouteRD &&
+                    attributeAsBool(target, 'encaisserUnCoup')) {
+                    options.preDmg = options.preDmg || {};
+                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                    options.preDmg[target.token.id].encaisserUnCoup = true;
+                  }
+                  if (charAttributeAsBool(target, 'esquiveAcrobatique')) {
+                    options.preDmg = options.preDmg || {};
+                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                    options.preDmg[target.token.id].esquiveAcrobatique = true;
+                  }
+                  if (charAttributeAsBool(target, 'paradeMagistrale')) {
+                    options.preDmg = options.preDmg || {};
+                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                    options.preDmg[target.token.id].paradeMagistrale = true;
+                  }
+                  if (attributeAsBool(target, 'esquiveFatale')) {
+                    if (target.ennemisAuContact === undefined) {
+                      error(target.token.get('name') + " a la possibilité d'une esquive fatale, mais les ennemis au contact ne sont pas calculés", target);
+                    } else {
+                      var ciblesEsquiveFatale = target.ennemisAuContact.filter(function(tok) {
+                        return (tok.id != attaquant.token.id);
+                      });
+                      if (ciblesEsquiveFatale.length > 0) {
+                        options.preDmg = options.preDmg || {};
+                        options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                        options.preDmg[target.token.id].esquiveFatale = ciblesEsquiveFatale;
+                      }
+                    }
+                  }
+                  if (options.sortilege) {
+                    if (attributeAsBool(target, 'absorberUnSort') &&
+                      ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) == 1) {
                       options.preDmg = options.preDmg || {};
                       options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                      options.preDmg[target.token.id].esquiveFatale = ciblesEsquiveFatale;
+                      options.preDmg[target.token.id].absorberUnSort = true;
+                    }
+                  } else {
+                    if (attributeAsBool(target, 'absorberUnCoup')) {
+                      options.preDmg = options.preDmg || {};
+                      options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                      options.preDmg[target.token.id].absorberUnCoup = true;
                     }
                   }
                 }
-                if (options.sortilege) {
-                  if (attributeAsBool(target, 'absorberUnSort') &&
-                    ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) == 1) {
-                    options.preDmg = options.preDmg || {};
-                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                    options.preDmg[target.token.id].absorberUnSort = true;
-                  }
-                } else {
-                  if (attributeAsBool(target, 'absorberUnCoup')) {
-                    options.preDmg = options.preDmg || {};
-                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                    options.preDmg[target.token.id].absorberUnCoup = true;
-                  }
-                }
+              }
+              if (options.sortilege && charAttributeAsBool(target, 'resistanceALaMagieBarbare')) {
+                options.preDmg = options.preDmg || {};
+                options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
+              }
+              if (attributeAsBool(target, 'chairACanon') && target.chairACanon && target.chairACanon.length > 0) {
+                options.preDmg = options.preDmg || {};
+                options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                options.preDmg[target.token.id].chairACanon = target.chairACanon;
               }
             }
             if (options.feinte) {
@@ -11089,7 +11125,13 @@ var COFantasy = COFantasy || function() {
       res.sauf.feu_hache = res.sauf.feu_hache || 0;
       res.sauf.feu_hache += 10;
     }
-    var rd = ficheAttribute(perso, 'RDS', '').trim();
+    if (charAttributeAsBool(perso, 'hausserLeTon')) {
+      if (parseInt(perso.token.get('bar1_value')) <= perso.token.get('bar1_max') / 2) {
+        res.rdt += 5;
+      }
+    }
+    var rd = ficheAttribute(perso, 'RDS', '');
+    rd = (rd + '').trim();
     if (rd === '') {
       perso.rd = res;
       return res;
@@ -27032,6 +27074,11 @@ var COFantasy = COFantasy || function() {
       fin: "effet activé",
       generic: true
     },
+    detectionDeLInvisible: {
+      activation: "voit les choses invibles et cachées",
+      actif: "détecte l'invisible",
+      fin: "ne voit plus les choses invisibles",
+    },
   };
 
   function buildPatternEffets(listeEffets, postfix) {
@@ -28629,7 +28676,7 @@ var COFantasy = COFantasy || function() {
     var deplacement = prev && (prev.left != x || prev.top != y);
     if (!deplacement) return;
     if (nePeutPasBouger(perso)) {
-      sendChar(charId, "ne peut pas se déplacer.");
+      whisperChar(charId, "ne peut pas se déplacer.");
       sendChat('COF', "/w GM " +
         '<a href="!cof-deplacer-token ' + x + ' ' + y + ' --target ' + token.id + '">Déplacer </a>' +
         '<a href="!cof-permettre-deplacement --target ' + token.id + '">Décoincer</a>');
