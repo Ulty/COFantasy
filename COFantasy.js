@@ -16068,15 +16068,11 @@ var COFantasy = COFantasy || function() {
         }
         var dmTemp = parseInt(token.get('bar2_value'));
         if (hasMana) { //ne peut pas être un PNJ
-          var mana = dmTemp;
           if (lie) {
-            mana = manaAttr[0].get('current');
             dmTemp = ficheAttributeAsInt(perso, 'DMTEMP', 0);
           } else {
             dmTemp = attributeAsInt(perso, 'DMTEMP', 0);
           }
-          line = "Points de mana   : " + mana + " / " + manaAttr[0].get('max');
-          addLineToFramedDisplay(display, line);
         } else if (lie) {
           var nameAttrDMTEMP = 'DMTEMP';
           var versionFiche = parseFloat(ficheAttribute(perso, 'version', 0));
