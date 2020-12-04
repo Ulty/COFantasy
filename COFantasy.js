@@ -8347,7 +8347,7 @@ var COFantasy = COFantasy || function() {
       selected.push({
         _id: attaquant.token.id
       });
-      if (getState(attaquant, 'invisible') && !charAttributeAsBool('invisibleEnCombat')) {
+      if (getState(attaquant, 'invisible') && !charAttributeAsBool(attaquant, 'invisibleEnCombat')) {
         explications.push(attaquant.tokName + " redevient visible");
         setState(attaquant, 'invisible', false, evt);
       }
