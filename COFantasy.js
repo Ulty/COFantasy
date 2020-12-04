@@ -6489,11 +6489,11 @@ var COFantasy = COFantasy || function() {
         if (charAttributeAsBool(attaquant, 'tirAveugle')) {
           explications.push("Cible invisible, mais " + attaquant.tokName + " sait tirer à l'aveugle");
         } else {
-          defense -= 10;
+          defense += 10;
           explications.push("Invisible : +10 en DEF");
         }
       } else {
-        defense -= 5;
+        defense += 5;
         explications.push("Invisible : +5 en DEF");
       }
     }
