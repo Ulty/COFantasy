@@ -14308,6 +14308,12 @@ var COFantasy = COFantasy || function() {
         case 'attaqueMagique':
           attaqueMagiqueOpposee(action.playerId, action.attaquant, action.cible, options);
           return;
+        case 'set_state':
+          doSetState(action.cibles, action.etat, action.valeur, options);
+          return;
+        case 'save_state':
+          doSaveState(action.perso, action.etat, action.carac, options, action.opposant, action.seuil);
+          return;
         default:
           error("Evenement avec une action, mais inconnue au niveau chance. Impossible d'annuler !", evt);
           return;
@@ -16769,7 +16775,7 @@ var COFantasy = COFantasy || function() {
     return (t == "feu" || t == "froid" || t == "acide" || t == "electrique");
   }
 
-  function interfaceSetState(msg) {
+  function parseSetState(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
     var cmd = options.cmd;
@@ -16785,79 +16791,99 @@ var COFantasy = COFantasy || function() {
       error("Le premier argument de !cof-set-state n'est pas un état valide", cmd);
       return;
     }
-    var saveParTour;
     if (isCarac(cmd[2])) {
       if (cmd.length < 4) {
         error("Il manque la difficulté du jet de sauvegarde.", cmd);
         return;
       }
       valeur = true;
-      saveParTour = {
+      options.saveParTour = {
         carac: cmd[2]
       };
       var opposition = persoOfId(cmd[3]);
       if (opposition) {
-        saveParTour.difficulte = cmd[3] + ' ' + opposition.token.get('name');
+        options.saveParTour.difficulte = cmd[3] + ' ' + opposition.token.get('name');
       } else {
-        saveParTour.difficulte = parseInt(cmd[3]);
-        if (isNaN(saveParTour.difficulte)) {
+        options.saveParTour.difficulte = parseInt(cmd[3]);
+        if (isNaN(options.saveParTour.difficulte)) {
           error("Difficulté du jet de sauvegarde incorrecte", cmd);
           return;
         }
       }
     }
-    var evt = {
-      type: "set_state",
-    };
+    var cibles = [];
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
         error("Pas de cible pour le changement d'état", msg);
         return;
-      }
-      addEvent(evt);
-      var lanceur = options.lanceur;
-      if (lanceur === undefined && selected.length == 1)
-        lanceur = persoOfId(selected[0]._id);
-      if (limiteRessources(lanceur, options, etat, etat, evt)) return;
-      if (options.messages) {
-        options.messages.forEach(function(m) {
-          if (lanceur) sendChar(lanceur.charId, m);
-          else sendChat('', m);
-        });
       }
       iterSelected(selected, function(perso) {
         if (options.seulementVivant && estNonVivant(perso)) {
           sendPlayer(msg, "cet effet n'affecte que les créatures vivantes");
           return;
         }
+        cibles.push(perso);
+      });
+    });
+    doSetState(cibles, etat, valeur, options);
+  }
 
-        function setEffect() {
-          setState(perso, etat, valeur, evt);
-          if (saveParTour) {
-            setTokenAttr(perso, etat + 'Save', saveParTour.carac, evt, {
-              maxVal: saveParTour.difficulte
-            });
+  function doSetState(cibles, etat, valeur, options) {
+    var evt = {
+      type: "set_state",
+      action: {
+        titre: "Interface Set State",
+        cibles: cibles,
+        etat: etat,
+        valeur: valeur,
+        options: options
+      }
+    };
+    addEvent(evt);
+    var lanceur = options.lanceur;
+    if (lanceur === undefined && cibles.length == 1) lanceur = persoOfId(cibles[0].token.id);
+    if (limiteRessources(lanceur, options, etat, etat, evt)) return;
+    if (options.messages) {
+      options.messages.forEach(function(m) {
+        if (lanceur) sendChar(lanceur.charId, m);
+        else sendChat('', m);
+      });
+    }
+    cibles.forEach(function(perso) {
+      function setEffect() {
+        setState(perso, etat, valeur, evt);
+        if (options.saveParTour) {
+          setTokenAttr(perso, etat + 'Save', options.saveParTour.carac, evt, {
+            maxVal: options.saveParTour.difficulte
+          });
+        }
+      }
+      if (options.save) {
+        var saveOpts = {
+          msgPour: " pour résister à l'effet " + stringOfEtat(etat),
+          msgRate: ", raté.",
+          avecPC: true
+        };
+        var expliquer = function(s) {
+          sendChar(perso.charId, s);
+        };
+        var saveId = 'effet_' + etat + '_' + perso.token.id;
+        if (options.rolls) {
+          saveOpts.roll = options.rolls[saveId];
+          if (options.chanceRollId && options.chanceRollId[saveId]) {
+            saveOpts.chanceRollId = options.chanceRollId[saveId];
           }
         }
-        if (options.save) {
-          var saveOpts = {
-            msgPour: " pour résister à l'effet " + stringOfEtat(etat),
-            msgRate: ", raté.",
-          };
-          var expliquer = function(s) {
-            sendChar(perso.charId, s);
-          };
-          var saveId = 'effet_' + etat;
-          //TODO Supporter PC
-          save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, rollText) {
-            if (!reussite) {
-              setEffect();
-            }
-          });
-        } else {
-          setEffect();
-        }
-      });
+        save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, rollText, roll) {
+          evt.action.rolls = evt.action.rolls || {};
+          evt.action.rolls[saveId] = roll;
+          if (!reussite) {
+            setEffect();
+          }
+        });
+      } else {
+        setEffect();
+      }
     });
   }
 
@@ -16882,12 +16908,12 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function saveState(msg) {
+  function parseSaveState(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
     var cmd = options.cmd;
     if (cmd === undefined || cmd.length < 4 ||
-      !_.has(cof_states, cmd[1]) || !isCarac(cmd[2])) {
+        !_.has(cof_states, cmd[1]) || !isCarac(cmd[2])) {
       error("Paramètres de !cof-save-state incorrects", cmd);
       return;
     }
@@ -16913,27 +16939,8 @@ var COFantasy = COFantasy || function() {
             sendChar(perso.charId, "n'est pas " + stringOfEtat(etat, perso));
             return;
           }
-          var evt = {
-            type: titre
-          };
-          var display = startFramedDisplay(playerId, titre, perso, {
-            perso2: opposant
-          });
-          var explications = [];
-          testOppose(perso, carac, {}, opposant, carac, {}, explications, evt, function(resultat, crit) {
-            if (resultat == 2) {
-              explications.push(perso.token.get('name') + " est toujours " + stringOfEtat(etat, perso));
-            } else {
-              setState(perso, etat, false, evt);
-              explications.push(perso.token.get('name') + " n'est plus " + stringOfEtat(etat, perso));
-            }
-            explications.forEach(function(e) {
-              addLineToFramedDisplay(display, e);
-            });
-            addEvent(evt);
-            sendChat("", endFramedDisplay(display));
-          }); //fin test opposé (asynchrone)
-        }); //fin iterSelected du cas avec opposant
+          doSaveState(perso, etat, carac, options, opposant);
+        });
       } else {
         var seuil = parseInt(cmd[3]);
         if (isNaN(seuil)) {
@@ -16945,23 +16952,71 @@ var COFantasy = COFantasy || function() {
             sendChar(perso.charId, "n'est pas " + stringOfEtat(etat, perso));
             return;
           }
-          var evt = {
-            type: titre
-          };
-          var testId = 'saveState_' + carac + seuil;
-          testCaracteristique(perso, carac, seuil, testId, {}, evt, function(res) {
-            sendChar(perso.charId, titre + " : " + res.texte);
-            if (res.reussite) {
-              setState(perso, etat, false, evt);
-              sendChar(perso.charId, res.texte + " &ge; " + seuil + ", " + perso.token.get('name') + " n'est plus " + stringOfEtat(etat, perso));
-            } else {
-              sendChar(perso.charId, res.texte + " &lt; " + seuil + ", " + perso.token.get('name') + " est toujours " + stringOfEtat(etat, perso));
-            }
-            addEvent(evt);
-          }); //fin test carac
-        }); //fin iterSelected du cas sans opposant
+          doSaveState(perso, etat, carac, options, undefined, seuil);
+        });
       }
-    }); //fin getSelected
+    });
+  }
+
+  function doSaveState(perso, etat, carac, options, opposant, seuil) {
+    var evt = {
+      type: "save_state",
+      action: {
+        titre: "Interface Save State",
+        perso: perso,
+        etat: etat,
+        carac: carac,
+        options: options,
+        opposant: opposant,
+        seuil: seuil
+      }
+    };
+    addEvent(evt);
+    var titre = "Jet de " + carac + " pour " + textOfSaveState(etat, perso);
+    if (opposant) {
+      var display = startFramedDisplay(playerId, titre, perso, {
+        perso2: opposant
+      });
+      var explications = [];
+      //TODO Add PC
+      testOppose(perso, carac, {}, opposant, carac, {}, explications, evt, function(resultat, crit) {
+        if (resultat == 2) {
+          explications.push(perso.token.get('name') + " est toujours " + stringOfEtat(etat, perso));
+        } else {
+          setState(perso, etat, false, evt);
+          explications.push(perso.token.get('name') + " n'est plus " + stringOfEtat(etat, perso));
+        }
+        explications.forEach(function(e) {
+          addLineToFramedDisplay(display, e);
+        });
+        sendChat("", endFramedDisplay(display));
+      });
+    } else {
+      var testId = 'saveState_' + carac + seuil;
+      var testOpts = {};
+      if (options.rolls) {
+        testOpts.roll = options.rolls[testId];
+        if (options.chanceRollId && options.chanceRollId[testId]) {
+          testOpts.bonus = options.chanceRollId[testId];
+        }
+      }
+      testCaracteristique(perso, carac, seuil, testId, testOpts, evt, function(res) {
+        evt.action.rolls = evt.action.rolls || {};
+        evt.action.rolls[testId] = res.roll;
+        sendChar(perso.charId, titre);
+        if (res.reussite) {
+          setState(perso, etat, false, evt);
+          sendChar(perso.charId, res.texte + " &ge; " + seuil + ", " + perso.token.get('name') + " n'est plus " + stringOfEtat(etat, perso));
+        } else {
+          sendChar(perso.charId, res.texte + " &lt; " + seuil + ", " + perso.token.get('name') + " est toujours " + stringOfEtat(etat, perso));
+          if (!res.echecCritique) {
+            var pcTarget = pointsDeChance(perso);
+            if (pcTarget > 0) sendChar(perso.charId, boutonSimple("!cof-bouton-chance "
+                + evt.id + " " + testId, "Chance") + " (reste " + pcTarget + " PC)");
+          }
+        }
+      });
+    }
   }
 
   //Renvoie false si le personnage n'a pas d'attribut etatSave
@@ -26341,10 +26396,10 @@ var COFantasy = COFantasy || function() {
         parseDmgDirects(msg);
         return;
       case "!cof-set-state":
-        interfaceSetState(msg);
+        parseSetState(msg);
         return;
       case "!cof-save-state":
-        saveState(msg);
+        parseSaveState(msg);
         return;
       case "!cof-degainer":
         degainer(msg);
