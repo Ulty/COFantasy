@@ -1700,10 +1700,31 @@ var COFantasy = COFantasy || function() {
               var attrCible = tokenAttribute(cible, 'estAgrippePar');
               attrCible.forEach(function(a) {
                 var agrippant = persoOfIdName(a.get('current', pageId));
-                if (agrippant.token.id == personnage.id) {
+                if (agrippant.token.id == personnage.token.id) {
                   sendChar(cible.charId, 'se libère de ' + agrippant.tokName);
                   toFront(cible.token);
                   if (a.get('max')) setState(cible, 'immobilise', false, evt);
+                  evt.deletedAttributes.push(a);
+                  a.remove();
+                }
+              });
+            }
+            evt.deletedAttributes.push(a);
+            a.remove();
+          });
+          //On libère les personnages sous étreinte et immolation
+          var attrEtreinteImmole = tokenAttribute(personnage, 'etreinteImmole');
+          attrEtreinteImmole.forEach(function(a) {
+            var cible = persoOfIdName(a.get('current'), pageId);
+            if (cible) {
+              evt.deletedAttributes = evt.deletedAttributes || [];
+              var attrCible = tokenAttribute(cible, 'etreinteImmolePar');
+              attrCible.forEach(function(a) {
+                var agrippant = persoOfIdName(a.get('current', pageId));
+                if (agrippant.token.id == personnage.token.id) {
+                  sendChar(cible.charId, 'se libère de ' + agrippant.tokName);
+                  toFront(cible.token);
+                  setState(cible, 'immobilise', false, evt);
                   evt.deletedAttributes.push(a);
                   a.remove();
                 }
@@ -3282,7 +3303,8 @@ var COFantasy = COFantasy || function() {
     var jetCache = ficheAttributeAsBool(personnage, 'jets_caches', false);
     var de = computeDice(personnage, {
       nbDe: carSup,
-      carac: carac
+      carac: carac,
+      dice: options.dice
     });
     var bonusText = '';
     if (bonusCarac > 0) {
@@ -4468,6 +4490,7 @@ var COFantasy = COFantasy || function() {
         case 'maxDmg':
         case 'ouvertureMortelle':
         case 'seulementVivant':
+        case 'etreinteImmole':
           scope[cmd[0]] = true;
           return;
         case 'arc':
@@ -6721,6 +6744,10 @@ var COFantasy = COFantasy || function() {
           explications.push(target.tokName + " réduit la distance => +4 en DEF");
       }
     }
+    if (attributeAsBool(target, 'etreinteImmole')) {
+      defense -= 5;
+      explications.push(target.tokName + " étreint quelqu'un => -5 en DEF");
+    }
     if (target.realCharId) target.charId = target.realCharId;
     return defense;
   }
@@ -8505,7 +8532,7 @@ var COFantasy = COFantasy || function() {
     var explications = options.messages || [];
     var sujetAttaquant = onGenre(attaquant, 'il', 'elle');
     if (options.contact) {
-      //Pris en compte du corps élémentaire
+      //Prise en compte du corps élémentaire
       var attrCorpsElem = findObjs({
         _type: 'attribute',
         _characterid: attackingCharId,
@@ -8715,22 +8742,24 @@ var COFantasy = COFantasy || function() {
     // chances de critique
     var crit = critEnAttaque(attaquant, weaponStats, options);
     var dice = 20;
-    if (estAffaibli(attaquant)) {
-      dice = 12;
-      explications.push("Attaquant affaibli => D12 au lieu de D20 en Attaque");
-    } else if (getState(attaquant, 'immobilise')) {
-      dice = 12;
-      explications.push("Attaquant immobilisé => D12 au lieu de D20 en Attaque");
-    } else if (attributeAsBool(attaquant, 'mortMaisNAbandonnePas')) {
-      dice = 12;
-      explications.push("Attaquant mort mais n'abandonne pas => D12 au lieu de D20 en Attaque");
-    } else {
-      var ebriete = attributeAsInt(attaquant, 'niveauEbriete', 0);
-      if (ebriete > 0) {
-        if (options.distance || options.sortilege || ebriete > 1) {
-          dice = 12;
-          if (ebriete > 3) ebriete = 3;
-          explications.push("Attaquant " + niveauxEbriete[ebriete] + " => D12 au lieu de D20 en Attaque");
+    if (!options.auto) {
+      if (estAffaibli(attaquant)) {
+        dice = 12;
+        explications.push("Attaquant affaibli => D12 au lieu de D20 en Attaque");
+      } else if (getState(attaquant, 'immobilise')) {
+        dice = 12;
+        explications.push("Attaquant immobilisé => D12 au lieu de D20 en Attaque");
+      } else if (attributeAsBool(attaquant, 'mortMaisNAbandonnePas')) {
+        dice = 12;
+        explications.push("Attaquant mort mais n'abandonne pas => D12 au lieu de D20 en Attaque");
+      } else {
+        var ebriete = attributeAsInt(attaquant, 'niveauEbriete', 0);
+        if (ebriete > 0) {
+          if (options.distance || options.sortilege || ebriete > 1) {
+            dice = 12;
+            if (ebriete > 3) ebriete = 3;
+            explications.push("Attaquant " + niveauxEbriete[ebriete] + " => D12 au lieu de D20 en Attaque");
+          }
         }
       }
     }
@@ -8947,6 +8976,10 @@ var COFantasy = COFantasy || function() {
             if (target.msgEsquiveFatale) {
               target.messages.push(target.msgEsquiveFatale);
             }
+            if (options.etreinteImmole && attributeAsBool(target, 'etreinteImmolePar')) {
+              options.auto = true;
+              target.etreinteImmole = true;
+            }
             var touche = true;
             var critique = false;
             // Calcule si touché, et les messages de dégats et attaque
@@ -9012,6 +9045,13 @@ var COFantasy = COFantasy || function() {
                   options.champion = true;
                 if (options.contact && charAttributeAsBool(attaquant, 'agripper'))
                   options.agripper = true;
+                if (options.etreinteImmole) {
+                  setTokenAttr(attaquant, 'etreinteImmole', target.token.id + ' ' + target.tokName, evt);
+                  setTokenAttr(target, 'etreinteImmolePar', attaquant.token.id + ' ' + attaquant.tokName, evt);
+                  setState(target, 'immobilise', true, evt);
+                  target.messages.push(attaquant.tokName + "étreint " + target.tokName + " et s'immole !");
+                  target.etreinteImmole = true;
+                }
               }
               if (d20roll >= 17 && options.contact &&
                 charAttributeAsBool(attaquant, 'crocEnJambe')) {
@@ -9217,11 +9257,11 @@ var COFantasy = COFantasy || function() {
                     }
                   }
                 }
-              }
-              if (options.sortilege && charAttributeAsBool(target, 'resistanceALaMagieBarbare')) {
-                options.preDmg = options.preDmg || {};
-                options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
+                if (options.sortilege && charAttributeAsBool(target, 'resistanceALaMagieBarbare')) {
+                  options.preDmg = options.preDmg || {};
+                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                  options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
+                }
               }
               if (attributeAsBool(target, 'chairACanon') && target.chairACanon && target.chairACanon.length > 0) {
                 options.preDmg = options.preDmg || {};
@@ -9926,6 +9966,12 @@ var COFantasy = COFantasy || function() {
         }
         additionalDmg.forEach(function(dmSpec) {
           dmSpec.value += " +" + dmSpec.Value;
+        });
+      }
+      if (target.etreinteImmole) {
+        additionalDmg.push({
+          value: mainDmgRollExpr,
+          type: 'feu'
         });
       }
       var ExtraDmgRollExpr = "";
@@ -15594,8 +15640,13 @@ var COFantasy = COFantasy || function() {
     } else {
       if (attributeAsBool(perso, 'estAgrippePar')) {
         actionsAAfficher = true;
-        command = '!cof-liberer-agrippe --target ' + perso.token.id;
-        ligne += bouton(command, 'Se libérer', perso) + '<br />';
+        command = '!cof-liberer-agrippe ' + perso.token.id;
+        ligne += bouton(command, 'Se libérer', perso) + '(action de mvt)<br />';
+      }
+      if (attributeAsBool(perso, 'etreinteImmolePar')) {
+        actionsAAfficher = true;
+        command = '!cof-liberer-agrippe ' + perso.token.id;
+        ligne += bouton(command, 'Se libérer', perso) + ' (action limitée)<br />';
       }
       if (formeDarbre) {
         actionsAAfficher = true;
@@ -25431,91 +25482,106 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  //!cof-liberer-agrippe
+  //!cof-liberer-agrippe token_id
   function libererAgrippe(msg) {
     var options = msg.options || parseOptions(msg);
     if (options === undefined) return;
-    getSelected(msg, function(selected, playerId) {
-      if (selected.length === 0) {
-        sendPlayer(msg, "fonction !cof-liberer-agrippe sans sélection de token");
-        log("!cof-liberer-agrippe requiert de sélectionner des tokens");
+    var cmd = options.cmd;
+    if (cmd === undefined) {
+      error("Problème de parse options", msg.content);
+      return;
+    }
+    if (cmd.length < 2) {
+      error("Il faut l'id du token en argument de !cof-liberer-agrippe", msg.content);
+      return;
+    }
+    var perso = persoOfId(cmd[1], cmd[1], options.pageId);
+    perso.tokName = perso.token.get('name');
+    var attrName = 'estAgrppePar';
+    var attr = tokenAttribute(perso, 'estAgrippePar');
+    var etreinteImmole;
+    if (attr.length === 0) {
+      attr = tokenAttribute(perso, 'etreinteImmolePar');
+      if (attr.length === 0) {
+        sendPlayer(msg, perso.tokName + " n'est pas agrippé.");
         return;
       }
-      iterSelected(selected, function(perso) {
-        var attr = tokenAttribute(perso, 'estAgrippePar');
-        perso.tokName = perso.token.get('name');
-        if (attr.length === 0) {
-          sendPlayer(msg, perso.tokName + " n'est pas agrippé.");
-          return;
-        }
-        attr = attr[0];
-        var agrippant = persoOfIdName(attr.get('current'), options.pageId);
-        if (agrippant === undefined) {
-          error("Attribut estAgrippePar mal formé, on le supprime", attr.get('current'));
-          attr.remove();
-          return;
-        }
-        var evt = {
-          type: "Tentative de se libérer"
-        };
-        var titre = "Tentative de se libérer de " + agrippant.tokName;
-        var display = startFramedDisplay(playerId, titre, perso, {
-          chuchote: options.secret
-        });
-        var explications = [];
-        if (options.chance) options.bonus = options.chance * 10;
-        testOppose(perso, 'FOR', {}, agrippant, 'FOR', {}, explications, evt, function(tr, crit) {
-          explications.forEach(function(e) {
-            addLineToFramedDisplay(display, e);
-          });
-          if (tr == 2) {
-            var msgRate = "C'est raté, " + perso.tokName + " est toujours agrippé" + eForFemale(perso) + ".";
-            evt.personnage = perso;
-            evt.action = {
-              selected: [{
-                _id: perso.token.id
-              }],
-              playerId: playerId,
-              options: options
-            };
-            evt.type = 'libererAgrippe';
-            var pc = pointsDeChance(perso);
-            if (pc > 0) {
-              options.roll = options.roll || tr.roll;
-              msgRate += ' ' +
-                boutonSimple("!cof-bouton-chance " + evt.id, "Chance") +
-                " (reste " + pc + " PC)";
-            }
-            if (attributeAsBool(perso, 'runeForgesort_énergie')) {
-              msgRate += ' ' + boutonSimple("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie");
-            }
-            if (attributeAsBool(perso, 'petitVeinard')) {
-              msgRate += ' ' + boutonSimple("!cof-bouton-petit-veinard" + evt.id, "Petit veinard");
-            }
-            addLineToFramedDisplay(display, msgRate);
-          } else {
-            if (tr === 0)
-              addLineToFramedDisplay(display, "Réussi de justesse, " + perso.tokName + " se libère.");
-            else //tr == 1
-              addLineToFramedDisplay(display, "Réussi, " + perso.tokName + " se libère.");
-            toFront(perso.token);
-            if (attr.get('max')) setState(perso, 'immobilise', false, evt);
-            evt.deletedAttributes = evt.deletedAttributes || [];
-            evt.deletedAttributes.push(attr);
-            attr.remove();
-            attr = tokenAttribute(agrippant, 'agrippe');
-            attr.forEach(function(a) {
-              var ca = persoOfIdName(a.get('current'));
-              if (ca && ca.token.id == perso.token.id) {
-                evt.deletedAttributes.push(a);
-                a.remove();
-              }
-            });
-          }
-          addEvent(evt);
-          sendChat('', endFramedDisplay(display));
-        });
+      etreinteImmole = true;
+      attrName = 'etreinteImmolePar';
+    }
+    attr = attr[0];
+    var agrippant = persoOfIdName(attr.get('current'), options.pageId);
+    if (agrippant === undefined) {
+      error("Attribut " + attrName + " mal formé, on le supprime", attr.get('current'));
+      attr.remove();
+      return;
+    }
+    var evt = {
+      type: "Tentative de se libérer"
+    };
+    var titre = "Tentative de se libérer de " + agrippant.tokName;
+    var playerId = getPlayerIdFromMsg(msg);
+    var display = startFramedDisplay(playerId, titre, perso, {
+      chuchote: options.secret
+    });
+    var explications = [];
+    if (options.chance) options.bonus = options.chance * 10;
+    if (etreinteImmole) options.dice = 20;
+    testOppose(perso, 'FOR', options, agrippant, 'FOR', {}, explications, evt, function(tr, crit) {
+      explications.forEach(function(e) {
+        addLineToFramedDisplay(display, e);
       });
+      if (tr == 2) {
+        var msgRate = "C'est raté, " + perso.tokName + " est toujours ";
+        if (etreinteImmole)
+          msgRate += "prisonnier de l'étreinte de " + agrippant.tokName;
+        else msgRate += "agrippé" + eForFemale(perso) + ".";
+        evt.personnage = perso;
+        evt.action = {
+          selected: [{
+            _id: perso.token.id
+          }],
+          playerId: playerId,
+          options: options
+        };
+        evt.type = 'libererAgrippe';
+        var pc = pointsDeChance(perso);
+        if (pc > 0) {
+          options.roll = options.roll || tr.roll;
+          msgRate += ' ' +
+            boutonSimple("!cof-bouton-chance " + evt.id, "Chance") +
+            " (reste " + pc + " PC)";
+        }
+        if (attributeAsBool(perso, 'runeForgesort_énergie')) {
+          msgRate += ' ' + boutonSimple("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie");
+        }
+        if (attributeAsBool(perso, 'petitVeinard')) {
+          msgRate += ' ' + boutonSimple("!cof-bouton-petit-veinard" + evt.id, "Petit veinard");
+        }
+        addLineToFramedDisplay(display, msgRate);
+      } else {
+        if (tr === 0)
+          addLineToFramedDisplay(display, "Réussi de justesse, " + perso.tokName + " se libère.");
+        else //tr == 1
+          addLineToFramedDisplay(display, "Réussi, " + perso.tokName + " se libère.");
+        toFront(perso.token);
+        if (etreinteImmole || attr.get('max')) setState(perso, 'immobilise', false, evt);
+        evt.deletedAttributes = evt.deletedAttributes || [];
+        evt.deletedAttributes.push(attr);
+        attr.remove();
+        var attrAgrippant = 'agrippe';
+        if (etreinteImmole) attrAgrippant = 'etreinteImmole';
+        attr = tokenAttribute(agrippant, attrAgrippant);
+        attr.forEach(function(a) {
+          var ca = persoOfIdName(a.get('current'));
+          if (ca && ca.token.id == perso.token.id) {
+            evt.deletedAttributes.push(a);
+            a.remove();
+          }
+        });
+      }
+      addEvent(evt);
+      sendChat('', endFramedDisplay(display));
     });
   }
 
