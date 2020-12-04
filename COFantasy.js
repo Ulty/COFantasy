@@ -335,7 +335,8 @@ var COFantasy = COFantasy || function() {
     apeure: 'status_screaming',
     invisible: 'status_ninja-mask',
     blesse: 'status_arrowed',
-    encombre: 'status_frozen-orb'
+    encombre: 'status_frozen-orb',
+    penombre: 'status_archery-target'
   };
 
   function tokenAttribute(personnage, name) {
@@ -14312,7 +14313,7 @@ var COFantasy = COFantasy || function() {
           doSetState(action.cibles, action.etat, action.valeur, options);
           return;
         case 'save_state':
-          doSaveState(action.perso, action.etat, action.carac, options, action.opposant, action.seuil);
+          doSaveState(action.playerId, action.perso, action.etat, action.carac, options, action.opposant, action.seuil);
           return;
         default:
           error("Evenement avec une action, mais inconnue au niveau chance. Impossible d'annuler !", evt);
@@ -16919,7 +16920,6 @@ var COFantasy = COFantasy || function() {
     }
     var etat = cmd[1];
     var carac = cmd[2];
-    var titre = 'Jet de ' + carac + ' pour ' + textOfSaveState(etat);
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         error("Pas de token sélectionné", msg.content);
@@ -16939,7 +16939,7 @@ var COFantasy = COFantasy || function() {
             sendChar(perso.charId, "n'est pas " + stringOfEtat(etat, perso));
             return;
           }
-          doSaveState(perso, etat, carac, options, opposant);
+          doSaveState(playerId, perso, etat, carac, options, opposant);
         });
       } else {
         var seuil = parseInt(cmd[3]);
@@ -16952,13 +16952,13 @@ var COFantasy = COFantasy || function() {
             sendChar(perso.charId, "n'est pas " + stringOfEtat(etat, perso));
             return;
           }
-          doSaveState(perso, etat, carac, options, undefined, seuil);
+          doSaveState(playerId, perso, etat, carac, options, undefined, seuil);
         });
       }
     });
   }
 
-  function doSaveState(perso, etat, carac, options, opposant, seuil) {
+  function doSaveState(playerId, perso, etat, carac, options, opposant, seuil) {
     var evt = {
       type: "save_state",
       action: {
@@ -16968,7 +16968,8 @@ var COFantasy = COFantasy || function() {
         carac: carac,
         options: options,
         opposant: opposant,
-        seuil: seuil
+        seuil: seuil,
+        playerId: playerId
       }
     };
     addEvent(evt);
@@ -17011,8 +17012,9 @@ var COFantasy = COFantasy || function() {
           sendChar(perso.charId, res.texte + " &lt; " + seuil + ", " + perso.token.get('name') + " est toujours " + stringOfEtat(etat, perso));
           if (!res.echecCritique) {
             var pcTarget = pointsDeChance(perso);
-            if (pcTarget > 0) sendChar(perso.charId, boutonSimple("!cof-bouton-chance "
-                + evt.id + " " + testId, "Chance") + " (reste " + pcTarget + " PC)");
+            if (pcTarget > 0) 
+              sendChar(perso.charId, boutonSimple("!cof-bouton-chance " + 
+                evt.id + " " + testId, "Chance") + " (reste " + pcTarget + " PC)");
           }
         }
       });
