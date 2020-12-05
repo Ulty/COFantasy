@@ -104,7 +104,7 @@ var COFantasy = COFantasy || function() {
             },
             max_rune_protection: {
               explications: "Les DMs qu'une rune de protection est capable d'absorber sont limités à 10x le rang du forgesort dans la voie des runes",
-              val: false,
+              val: true,
               type: 'bool'
             }
           }
