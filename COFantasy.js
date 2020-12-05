@@ -4537,6 +4537,7 @@ var COFantasy = COFantasy || function() {
         case 'attaqueAssuree':
         case 'attaqueRisquee':
         case 'attaqueOptions':
+        case 'tirAveugle':
           options[cmd[0]] = true;
           return;
         case 'm2d20':
@@ -6487,7 +6488,7 @@ var COFantasy = COFantasy || function() {
       defense -= 5;
     if (getState(target, 'invisible') && attaquant && !attributeAsBool(attaquant, 'detectionDeLInvisible')) {
       if (options.distance) {
-        if (charAttributeAsBool(attaquant, 'tirAveugle')) {
+        if (charAttributeAsBool(attaquant, 'tirAveugle') || options.tirAveugle) {
           explications.push("Cible invisible, mais " + attaquant.tokName + " sait tirer à l'aveugle");
         } else {
           defense += 10;
@@ -6992,7 +6993,7 @@ var COFantasy = COFantasy || function() {
     if (target.bonusAttaque) attBonus += target.bonusAttaque;
     if (getState(attaquant, 'aveugle')) {
       if (options.distance) {
-        if (charAttributeAsBool(attaquant, 'tirAveugle')) {
+        if (charAttributeAsBool(attaquant, 'tirAveugle') || options.tirAveugle) {
           explications.push("Attaquant aveuglé, mais il sait tirer à l'aveugle");
         } else {
           attBonus -= 10;

@@ -325,6 +325,7 @@
                   <li><code>--difficultePV</code> : la difficulté du jet d'attaque est la valeur courante des PVs au lieu de la défense.</li>
                   <li><code>--affute</code> : augmente de 1 les chances de crit et +1d6 aux DM des crit.</li>
                   <li><code>--tirDeBarrage</code> : ignore la charge, multiplie les DM par 2 et message pour undo si la cible bouge.</li>
+                  <li><code>--tirAveugle</code> : ignore le malus de tir sur une cible invisible.</li>
                   <li><code>--enflamme</code> : enflamme la cible, lui infligeant 1d6 DM par tour. Les flammes s'éteindent sur un 1 ou 2. Si l'option <code>--puissant</code> est donnée en conjonction, les DM augmentent de 1.</li>
                   <li><code>--malediction</code> : maudit la cible pour 3 jets.</li>
                   <li><code>--asDeLaGachette</code> : ajoute 1d6 DM si le jet d'attaque dépasse une DEF de 25.</li>
@@ -1426,7 +1427,7 @@
                 <h4 class="text-secondary">Voie de l'archer</h4>
                 <ol>
                   <li><strong>Sens affutés</strong> : ajouter le bonus à un attribut <code>perception</code></li>
-                  <li><strong>Tir aveugle</strong> : ajouter un attribut <code>tirAveugle</code>, avec comme valeur <code>true</code>.</li>
+                  <li><strong>Tir aveugle</strong> : utiliser une attaque avec l'option <code>--tirAveugle</code>.</li>
                   <li><strong>Tir rapide</strong> : faire simplement deux attaques dans le tour</li>
                   <li><strong>Flèche de mort</strong> : faire l'attaque avec les options <code>--m2d20 --incrDmgCoef</code></li>
                   <li><strong>Dans le mille</strong> : faire l'attaque avec les options <code>--avecd12 --plus 2d6</code></li>
