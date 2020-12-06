@@ -101,6 +101,11 @@ var COFantasy = COFantasy || function() {
               explications: "Les DMs constants d'un autre type que celui de l'arme sont aussi multipliés en cas de critique",
               val: false,
               type: 'bool'
+            },
+            max_rune_protection: {
+              explications: "Les DMs qu'une rune de protection est capable d'absorber sont limités à 10x le rang du forgesort dans la voie des runes",
+              val: true,
+              type: 'bool'
             }
           }
         },
@@ -10337,8 +10342,8 @@ var COFantasy = COFantasy || function() {
           var afterSaves = function() {
             if (saves > 0) return; //On n'a pas encore fait tous les saves
             if (options.pasDeDmg ||
-              target.utiliseRuneProtection ||
-              (additionalDmg.length === 0 && mainDmgRoll.total === 0 && attNbDices === 0)) {
+                target.utiliseRuneProtection ||
+                (additionalDmg.length === 0 && mainDmgRoll.total === 0 && attNbDices === 0)) {
               // Pas de dégâts, donc pas d'appel à dealDamage
               finCibles();
             } else {
@@ -11845,6 +11850,12 @@ var COFantasy = COFantasy || function() {
         else if (target.ignoreMoitieRD) rd = parseInt(rd / 2);
         if (target.ignoreRD) {
           rd -= target.ignoreRD; //rd peut être négatif
+        }
+        //Option Max Rune de Protection
+        if(target.utiliseRuneProtectionMax){
+          rd += target.utiliseRuneProtectionMax;
+          if(dmgTotal <= rd) expliquer("La rune de protection absorbe tous les dommages");
+          else expliquer("La rune de protection encaisse " + target.utiliseRuneProtectionMax + " dommages");
         }
         //RD PeauDePierre à prendre en compte en dernier
         if (!target.defautCuirasse && !target.ignoreTouteRD && rd < dmgTotal && attributeAsBool(target, 'peauDePierreMag')) {
@@ -22964,6 +22975,11 @@ var COFantasy = COFantasy || function() {
       msg: message,
       maxVal: forgesort.charId
     });
+    if (rune.rang === 3 && reglesOptionelles.dommages.val.max_rune_protection.val) {
+      setTokenAttr(target, "runeProtectionMax", voieDesRunes*10, evt, {
+        maxVal: forgesort.charId
+      });
+    }
   }
 
   //TODO: passer pageId en argument au lieu de prendre la page des joueurs
@@ -23376,12 +23392,16 @@ var COFantasy = COFantasy || function() {
           return;
         }
         if (!persoUtiliseRuneProtection(perso, evt)) return;
-        cible.messages.push(cible.tokName + " utilise sa Rune de Protection pour annuler les dommages");
-        cible.utiliseRuneProtection = true;
+        if (reglesOptionelles.dommages.val.max_rune_protection.val) {
+          cible.messages.push(cible.tokName + " utilise sa Rune de Protection");
+          cible.utiliseRuneProtectionMax = attributeAsInt(perso, 'runeProtectionMax', 30);
+        } else {
+          cible.messages.push(cible.tokName + " utilise sa Rune de Protection pour annuler les dommages");
+          cible.utiliseRuneProtection = true;
+        }
         removePreDmg(optionsAttaque, cible);
       }); //fin iterSelected
       attackDealDmg(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, action.pageId, action.ciblesAttaquees);
-
     }); //fin getSelected
   }
 
