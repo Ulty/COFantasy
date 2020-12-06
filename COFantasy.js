@@ -746,7 +746,8 @@ var COFantasy = COFantasy || function() {
         apeure: 'status_cof-apeure',
         invisible: 'status_cof-invisible',
         blesse: 'status_cof-blesse',
-        encombre: 'status_cof-encombre'
+        encombre: 'status_cof-encombre',
+        penombre: 'status_cof-penombre'
       };
       // On boucle sur la liste des états pour vérifier que les markers sont bien présents !
       var markersAbsents = [];
@@ -7026,6 +7027,13 @@ var COFantasy = COFantasy || function() {
     } else if (getState(attaquant, 'invisible') && !attributeAsBool(target, 'detectionDeLInvisible')) {
       attBonus += 5;
       explications.push("Attaque venant d'un personnage invisible => +5 en Attaque");
+    } else if (options.distance && getState(attaquant, 'penombre')) {
+        if (options.tirAveugle) {
+          explications.push("Attaquant dans la pénombre, mais il sait tirer à l'aveugle");
+        } else {
+          attBonus -= 5;
+          explications.push("Attaquant dans la pénombre => -5 en Attaque à distance");
+        }
     }
     if (options.mainsDEnergie) {
       if (options.aoe) error("Mains d'énergie n'est pas compatible avec les AOE", options.aoe);
@@ -9348,6 +9356,17 @@ var COFantasy = COFantasy || function() {
       error("Erreur pendant l'évaluation de " + toEvaluateAttack + " du test d'attaque", weaponStats);
       log(e.name + ": " + e.message);
     }
+  }
+
+  function stringOfEtat(etat, perso) {
+    if (etat == 'invisible') return etat;
+    else if (etat == 'penombre') return "dans la pénombre";
+    var etext = etat;
+    if (etat.endsWith('e')) {
+      etext = etat.substring(0, etat.length - 1) + 'é';
+    }
+    if (perso === undefined) return etext;
+    return etext + eForFemale(perso);
   }
 
   function findAttackParam(attackParam, divers, options) {
@@ -16224,16 +16243,6 @@ var COFantasy = COFantasy || function() {
       setTurnOrder(to, evt);
       addEvent(evt);
     });
-  }
-
-  function stringOfEtat(etat, perso) {
-    if (etat == 'invisible') return etat;
-    var etext = etat;
-    if (etat.endsWith('e')) {
-      etext = etat.substring(0, etat.length - 1) + 'é';
-    }
-    if (perso === undefined) return etext;
-    return etext + eForFemale(perso);
   }
 
   function statut(msg) { // show some character informations

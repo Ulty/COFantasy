@@ -12,6 +12,7 @@
 * Injonction Mortelle (Magie Maléfique rang 3)
 
 ### Autres améliorations
+* Support de la pénombre
 * Support pour les personnages invisibles en combat
 * Ajout du fer froid.
 * Reconnaissance des haches, et prise en compte des RD/hache.
