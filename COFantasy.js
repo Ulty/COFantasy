@@ -8062,6 +8062,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
+    addEvent(evt);
     //On fait les tests pour les cibles qui bénéficieraient d'un sanctuaire
     var ciblesATraiter = cibles.length;
     var attaqueImpossible = false;
@@ -8075,8 +8076,9 @@ var COFantasy = COFantasy || function() {
             if (tr.reussite) {
               cible.messages.push(attaquant.tokName + " réussi à passer outre le sanctuaire de " + cible.tokName + " (jet de SAG " + tr.texte + "&ge;15)");
               ciblesATraiter--;
-              if (ciblesATraiter === 0)
+              if (ciblesATraiter === 0) {
                 resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options, chargesArme);
+              }
             } else {
               sendChar(attaquant.charId, "ne peut se résoudre à attaquer " + cible.tokName + " (sanctuaire, jet de SAG " + tr.texte + "< 15)");
               attaqueImpossible = true;
@@ -8084,8 +8086,9 @@ var COFantasy = COFantasy || function() {
           });
         } else {
           ciblesATraiter--;
-          if (ciblesATraiter === 0)
+          if (ciblesATraiter === 0) {
             resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options, chargesArme);
+          }
         }
       };
       // Attaque de Disparition avec jet opposé
@@ -8413,6 +8416,7 @@ var COFantasy = COFantasy || function() {
 
   // Effets quand on rentre en combat
   // attaquant est optionnel
+  // ne rajoute pas evt à l'historique
   function entrerEnCombat(attaquant, cibles, explications, evt) {
     var selected = [];
     if (attaquant) {
@@ -8596,6 +8600,7 @@ var COFantasy = COFantasy || function() {
     return attackRollExpr + " " + attackSkillExpr;
   }
 
+  //N'ajoute evt à l'historique
   function resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options, chargesArme) {
     var attackingCharId = attaquant.charId;
     var attackingToken = attaquant.token;
@@ -8631,7 +8636,7 @@ var COFantasy = COFantasy || function() {
       });
       if (munitionsAttr.length === 0) {
         error("Pas de munition nommée " + options.munition.nom + " pour " + attackerName);
-        return; //evt toujours vide
+        return;
       }
       munitionsAttr = munitionsAttr[0];
       var munitions = munitionsAttr.get('current');
@@ -8639,14 +8644,13 @@ var COFantasy = COFantasy || function() {
         sendChar(attackingCharId,
           "ne peut pas utiliser cette attaque, car " + sujetAttaquant +
           " n'a plus de " + options.munition.nom.replace(/_/g, ' '));
-        return; //evt toujours vide
+        return; 
       }
       var munitionsMax = parseInt(munitionsAttr.get('max'));
       if (isNaN(munitionsMax)) {
         error("Attribut de munitions mal formé", munitionsMax);
         return;
       }
-      //À partir de ce point, tout return doit ajouter evt
       evt.attributes = evt.attributes || [];
       evt.attributes.push({
         attribute: munitionsAttr,
@@ -8702,7 +8706,6 @@ var COFantasy = COFantasy || function() {
         var currentCharge = parseInt(chargesArme[0].get('current'));
         if (isNaN(currentCharge) || currentCharge < 1) {
           sendChar(attackingCharId, "ne peut pas attaquer avec " + weaponName + " car elle n'est pas chargée");
-          addEvent(evt);
           return;
         }
         if (options.tirDouble &&
@@ -8711,7 +8714,6 @@ var COFantasy = COFantasy || function() {
           sendChar(attackingCharId,
             "ne peut pas faire de tir double avec ses" + weaponName + "s car " +
             sujetAttaquant + " n'en a pas au moins 2 chargées");
-          addEvent(evt);
           return;
         }
         evt.attributes = evt.attributes || [];
@@ -8721,7 +8723,6 @@ var COFantasy = COFantasy || function() {
             var currentChargeGrenaille = parseInt(chargesGrenaille[0].get('current'));
             if (isNaN(currentChargeGrenaille) || currentChargeGrenaille < 1) {
               sendChar(attackingCharId, "ne peut pas attaquer avec " + weaponName + " car elle n'est pas chargée en grenaille");
-              addEvent(evt);
               return;
             }
             if (options.tirDouble &&
@@ -8730,7 +8731,6 @@ var COFantasy = COFantasy || function() {
               sendChar(attackingCharId,
                 "ne peut pas faire de tir double de grenaille avec ses" + weaponName + "s car " +
                 sujetAttaquant + " n'en a pas au moins 2 chargées de grenaille");
-              addEvent(evt);
               return;
             }
             evt.attributes.push({
@@ -8769,7 +8769,6 @@ var COFantasy = COFantasy || function() {
           var currentCharge2 = parseInt(chargesSecondeArme[0].get('current'));
           if (isNaN(currentCharge2) || currentCharge2 < 1) {
             sendChar(attackingCharId, "ne peut pas faire de tir double avec " + secondNom + " car ce n'est pas chargé");
-            addEvent(evt);
             return;
           }
           evt.attributes = evt.attributes || [];
@@ -8779,7 +8778,6 @@ var COFantasy = COFantasy || function() {
               var currentChargeGrenaille2 = parseInt(chargesGrenaille2[0].get('current'));
               if (isNaN(currentChargeGrenaille2) || currentChargeGrenaille2 < 1) {
                 sendChar(attackingCharId, "ne peut pas faire de tir double avec " + secondNom + " car ce n'est pas chargé en grenaille");
-                addEvent(evt);
                 return;
               }
               evt.attributes.push({
@@ -8803,7 +8801,6 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (limiteRessources(attaquant, options, attackLabel, weaponName, evt)) {
-      addEvent(evt);
       return;
     }
     // Effets quand on rentre en combat
@@ -8870,7 +8867,6 @@ var COFantasy = COFantasy || function() {
         evt.action.weaponStats = weaponStats;
         evt.action.rolls = evt.action.rolls || {};
         evt.action.rolls.attack = rollsAttack;
-        addEvent(evt);
         // debut de la partie affichage
         var action = "<b>Arme</b> : ";
         if (options.sortilege) action = "<b>Sort</b> : ";
