@@ -7028,12 +7028,12 @@ var COFantasy = COFantasy || function() {
       attBonus += 5;
       explications.push("Attaque venant d'un personnage invisible => +5 en Attaque");
     } else if (options.distance && getState(attaquant, 'penombre')) {
-        if (options.tirAveugle) {
-          explications.push("Attaquant dans la pénombre, mais il sait tirer à l'aveugle");
-        } else {
-          attBonus -= 5;
-          explications.push("Attaquant dans la pénombre => -5 en Attaque à distance");
-        }
+      if (options.tirAveugle) {
+        explications.push("Attaquant dans la pénombre, mais il sait tirer à l'aveugle");
+      } else {
+        attBonus -= 5;
+        explications.push("Attaquant dans la pénombre => -5 en Attaque à distance");
+      }
     }
     if (options.mainsDEnergie) {
       if (options.aoe) error("Mains d'énergie n'est pas compatible avec les AOE", options.aoe);
@@ -8644,7 +8644,7 @@ var COFantasy = COFantasy || function() {
         sendChar(attackingCharId,
           "ne peut pas utiliser cette attaque, car " + sujetAttaquant +
           " n'a plus de " + options.munition.nom.replace(/_/g, ' '));
-        return; 
+        return;
       }
       var munitionsMax = parseInt(munitionsAttr.get('max'));
       if (isNaN(munitionsMax)) {
@@ -10357,8 +10357,8 @@ var COFantasy = COFantasy || function() {
           var afterSaves = function() {
             if (saves > 0) return; //On n'a pas encore fait tous les saves
             if (options.pasDeDmg ||
-                target.utiliseRuneProtection ||
-                (additionalDmg.length === 0 && mainDmgRoll.total === 0 && attNbDices === 0)) {
+              target.utiliseRuneProtection ||
+              (additionalDmg.length === 0 && mainDmgRoll.total === 0 && attNbDices === 0)) {
               // Pas de dégâts, donc pas d'appel à dealDamage
               finCibles();
             } else {
@@ -10886,6 +10886,59 @@ var COFantasy = COFantasy || function() {
         }
         if (attributeAsBool(perso, 'petitVeinard')) {
           addLineToFramedDisplay(display, boutonSimple("!cof-bouton-petit-veinard --target" + perso.token.id, "Petit veinard") + " pour relancer un dé");
+        }
+      }
+      if (options && options.contact && cibles && attaquant && charAttributeAsBool(attaquant, 'enchainement')) {
+        var cibleMorte = cibles.find(function(target) {
+          return target.token.get('bar1_value') == 0;
+        });
+        if (cibleMorte) {
+          if (attaquant.ennemisAuContact === undefined) {
+            var tokensContact = findObjs({
+              _type: 'graphic',
+              _subtype: "token",
+              _pageid: evt.action.pageId,
+              layer: 'objects'
+            });
+            tokensContact = tokensContact.filter(function(tok) {
+              if (tok.id == attaquant.token.id) return false;
+              return distanceCombat(attaquant.token, tok, evt.action.pageId) === 0;
+            });
+            var tokensEnnemis = [];
+            var allies = alliesParPerso[attaquant.charId] || new Set();
+            tokensContact.forEach(function(tok) {
+              var ci = tok.get('represents');
+              if (ci === '') return; //next token au contact
+              if (!isActive({
+                  token: tok,
+                  charId: ci
+                })) return;
+              if (!allies.has(ci)) tokensEnnemis.push(tok);
+            });
+            attaquant.ennemisAuContact = tokensEnnemis;
+          }
+          if (attaquant.ennemisAuContact.length > 0) {
+            var msgEnchainement = attaquant.token.get('name') + " a droit à une attaque au contact gratuite contre ";
+            var sep = "";
+            var armeEnMain = tokenAttribute(attaquant, 'armeEnMain');
+            var act;
+            if (armeEnMain.length === 0) {
+              armeEnMain = false;
+            } else {
+              armeEnMain = armeEnMain[0].get('current');
+              act = '!cof-attack ' + attaquant.token.id + ' ';
+            }
+            msgEnchainement += sep;
+            attaquant.ennemisAuContact.forEach(function(tok) {
+              if (armeEnMain) {
+                msgEnchainement += boutonSimple(act + tok.id + ' ' + armeEnMain, tok.get('name'));
+              } else {
+                msgEnchainement += tok.get('name');
+              }
+              sep = ", ou ";
+            });
+            addLineToFramedDisplay(display, msgEnchainement);
+          }
         }
       }
       if (options.preDmg) {
@@ -11867,9 +11920,9 @@ var COFantasy = COFantasy || function() {
           rd -= target.ignoreRD; //rd peut être négatif
         }
         //Option Max Rune de Protection
-        if(target.utiliseRuneProtectionMax){
+        if (target.utiliseRuneProtectionMax) {
           rd += target.utiliseRuneProtectionMax;
-          if(dmgTotal <= rd) expliquer("La rune de protection absorbe tous les dommages");
+          if (dmgTotal <= rd) expliquer("La rune de protection absorbe tous les dommages");
           else expliquer("La rune de protection encaisse " + target.utiliseRuneProtectionMax + " dommages");
         }
         //RD PeauDePierre à prendre en compte en dernier
@@ -22981,7 +23034,7 @@ var COFantasy = COFantasy || function() {
       maxVal: forgesort.charId
     });
     if (rune.rang === 3 && reglesOptionelles.dommages.val.max_rune_protection.val) {
-      setTokenAttr(target, "runeProtectionMax", voieDesRunes*10, evt, {
+      setTokenAttr(target, "runeProtectionMax", voieDesRunes * 10, evt, {
         maxVal: forgesort.charId
       });
     }
