@@ -8097,11 +8097,11 @@ var COFantasy = COFantasy || function() {
         //pas empêcher le bonus de +5 à l'attaque.
         var rollId = 'disparition_' + cible.token.id;
         var options1 = {
-          //TODO avecPC: true,
+          avecPC: true,
           bonusAttrs: ["discrétion"]
         };
         var options2 = {
-          //TODO avecPC: true,
+          avecPC: true,
           bonusAttrs: ["perception"]
         };
         if (options.rolls) {
