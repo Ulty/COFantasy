@@ -631,6 +631,13 @@
                         <td><code>lightning-helix</code></td>
                         <td><code>cof-surpris</code></td>
                       </tr>
+                      <tr>
+                        <th scope="row">Pénombre</hd>
+                        <td>LdB p71</td>
+                        <td></td>
+                        <td><code>archery-target</code></td>
+                        <td><code>cof-penombre</code></td>
+                      </tr>
                     </tbody>
                   </table>
                   <p>Pour faciliter la gestion des états, on peut deux macros dans la barre du GM, <code>!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|immobilise|endormi|apeure|invisible|blessé|encombre} true</code>, et la même avec <code>false</code>. (N'oubliez pas que la commande <code>!cof-set-macros</code> permet de générer automatiquement les macros utiles au script). Une fois qu'on connaît bien les icônes, on peut directement les changer sur les tokens pour le même effet (et même faire un undo de ces changements si besoin).
@@ -858,7 +865,7 @@
                 <ol>
                   <li><strong>Réflexes félins</strong> : ajouter un attribut <code>reflexesFelins</code>, avec comme valeur le bonus aux saves et à l'initiative</li>
                   <li><strong>Charge</strong> : faire une attaque avec les options <code>--bonusAttaque 2</code> <code>--plus 1d6</code>. Pour gérer plusieurs armes, vous pouvez aussi créer une liste d'actions, comme avec l'attaque sournoise du voleur.</li>
-                  <li><strong>Enchaînement</strong> : à gérer par le MJ</li>
+                  <li><strong>Enchaînement</strong> : ajouter un attribut <code>enchainement</code>, de valeur <code>true</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du primitif</h4>
                 <ol>
@@ -1108,7 +1115,7 @@
                 <ol>
                   <li><strong>Runes de défense</strong> : ajuster la DEF sur la fiche.</li>
                   <li><strong>Runes d'énergie</strong> : La fabrication des runes de combat est gérée par la commande <code>!cof-runes</code> (il est fortement conseillé de créer une ability pour le forgesort). Le script tente de détecter quand les runes peuvent être utilisées en combat et propose un bouton (à la manière des points de chance). Lors de chaque nuit (utilisation de la commande <code>!cof-nuit</code>) toutes les runes sont retirées, mais le script va suggérer des raccourcis au forgesort pour les restaurer facilement à tous les tokens présents sur la page des joueurs (par personnage, type de rune, et aussi un bouton "Tout renouveler"). Les points de mana sont automatiquement décomptés.</li>
-                  <li><strong>Runes de protection</strong> : cf. ci-dessus.</li>
+                  <li><strong>Runes de protection</strong> : cf. ci-dessus. Le script implémente par défaut un maximum de dommages absorbés par la rune équivalent au rang du forgesort dans la voie des Runes multiplié par 10. Il est possible de désactiver cette limitation via !cof-options.</li>
                   <li><strong>Runes de puissance</strong> : cf. ci-dessus. Créer une rune de puissance vous demandera d'indiquer en plus le numéro de l'arme sur la fiche du propriétaire.</li>
                 </ol>
               </div>

@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.15
 ### Capacités
+* Support de la capacité Enchaînement du barbare.
 * Ajout de l'attaque d'étreinte et immolation de certains démons gardiens
 * Ajout de la capacité Hausser le ton de la Voie du champion
 * Gestion des capacités d'auras.
@@ -12,6 +13,7 @@
 * Injonction Mortelle (Magie Maléfique rang 3)
 
 ### Autres améliorations
+* Support de la pénombre
 * Support pour les personnages invisibles en combat
 * Ajout du fer froid.
 * Reconnaissance des haches, et prise en compte des RD/hache.
