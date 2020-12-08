@@ -14487,6 +14487,16 @@ var COFantasy = COFantasy || function() {
         case 'provocation':
           doProvocation(action.voleur, action.cible, options);
           return;
+        case 'nextTurn':
+          var turnOrder = Campaign().get("turnorder");
+          if (turnOrder === '') return; // nothing in the turn order
+          turnOrder = JSON.parse(turnOrder);
+          if (turnOrder.length < 1) return; // Juste le compteur de tour
+          var lastTurn = turnOrder.shift();
+          turnOrder.push(lastTurn);
+          Campaign().set("turnorder", JSON.stringify(turnOrder));
+          nextTurn(Campaign(), options);
+          return;
         default:
           error("Evenement avec une action, mais inconnue au niveau chance. Impossible d'annuler !", evt);
           return;
@@ -14664,6 +14674,16 @@ var COFantasy = COFantasy || function() {
           return;
         case 'libererAgrippe':
           doLibererAgrippe(action.perso, action.agrippant, action.attrName, options);
+          return;
+        case 'nextTurn':
+          var turnOrder = Campaign().get("turnorder");
+          if (turnOrder === '') return; // nothing in the turn order
+          turnOrder = JSON.parse(turnOrder);
+          if (turnOrder.length < 1) return; // Juste le compteur de tour
+          var lastTurn = turnOrder.shift();
+          turnOrder.push(lastTurn);
+          Campaign().set("turnorder", JSON.stringify(turnOrder));
+          nextTurn(Campaign(), options);
           return;
         default:
           return;
@@ -28297,7 +28317,7 @@ var COFantasy = COFantasy || function() {
   // gestion des effets qui se déclenchent à la fin de chaque tour
   // N'ajoute pas evt à l'historique
   // Asynchrone (à cause des saves par tour)
-  function changementDeTour(tour, attrs, evt, pageId) {
+  function changementDeTour(tour, attrs, evt, pageId, options) {
     // Enlever les bonus d'un tour
     attrs = removeAllAttributes('actionConcertee', evt, attrs);
     attrs = removeAllAttributes('intercepter', evt, attrs);
@@ -28552,14 +28572,24 @@ var COFantasy = COFantasy || function() {
       var saveOpts = {
         msgPour: msgPour,
         msgReussite: msgReussite,
-        msgRate: msgRate
+        msgRate: msgRate,
+        avecPC: true
       };
-      //TODO Supporter PC
+      var saveId = 'saveParTour_' + attrEffet.id + '_' +  perso.token.id;
+      if (options.rolls) {
+        saveOpts.roll = options.rolls[saveId];
+        if (options.chanceRollId && options.chanceRollId[saveId]) {
+          saveOpts.chanceRollId = options.chanceRollId[saveId];
+        }
+      }
       save({
           carac: carac,
           seuil: seuil
-        }, perso, attrEffet.id, expliquer, saveOpts, evt,
-        function(reussite) { //asynchrone
+        }, perso, saveId, expliquer, saveOpts, evt,
+        function(reussite, texte, roll) { //asynchrone
+          evt.action = evt.action || {};
+          evt.action.rolls = evt.action.rolls || {};
+          evt.action.rolls[saveId] = roll;
           if (reussite) {
             finDEffet(attrEffet, effetTempOfAttribute(attrEffet), attrName, charId, evt, {
               attrSave: attr,
@@ -28650,7 +28680,7 @@ var COFantasy = COFantasy || function() {
 
   //evt a un champ attributes et un champ deletedAttributes
   //evt est ajouté à l'historique à la fin de cette fonction
-  function nextTurnOfActive(active, attrs, evt, pageId) {
+  function nextTurnOfActive(active, attrs, evt, pageId, options) {
     if (active === undefined) return;
     if (active.id == "-1" && active.custom == "Tour") { //Nouveau tour
       var tour = parseInt(active.pr);
@@ -28665,14 +28695,14 @@ var COFantasy = COFantasy || function() {
       stateCOF.tour = tour;
       stateCOF.init = 1000;
       addEvent(evt);
-      changementDeTour(tour, attrs, evt, pageId);
+      changementDeTour(tour, attrs, evt, pageId, options);
     } else { // change the active token
       addEvent(evt);
       setActiveToken(active.id, evt);
     }
   }
 
-  function nextTurn(cmp) {
+  function nextTurn(cmp, options) {
     if (!cmp.get('initiativepage')) return;
     var turnOrder = cmp.get('turnorder');
     var pageId = stateCOF.combat_pageid;
@@ -28681,7 +28711,7 @@ var COFantasy = COFantasy || function() {
     turnOrder = JSON.parse(turnOrder);
     if (turnOrder.length < 1) return; // Juste le compteur de tour
     var evt = {
-      type: 'Personnage suivant',
+      type: 'nextTurn',
       attributes: [],
       deletedAttributes: []
     };
@@ -28779,7 +28809,7 @@ var COFantasy = COFantasy || function() {
                 },
                 function() {
                   count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
                 });
               return;
             case 'asphyxie': //prend 1d6 DM
@@ -28792,13 +28822,13 @@ var COFantasy = COFantasy || function() {
                 },
                 function() {
                   count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
                 });
               return;
             case 'saignementsSang': //prend 1d6 DM
               if (charIdAttributeAsBool(charId, 'immuniteSaignement')) {
                 count--;
-                if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
                 return;
               }
               degatsParTour(charId, pageId, effet, attrName, {
@@ -28810,7 +28840,7 @@ var COFantasy = COFantasy || function() {
                 },
                 function() {
                   count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
                 });
               return;
             case 'armureBrulante': //prend 1d4 DM
@@ -28821,7 +28851,7 @@ var COFantasy = COFantasy || function() {
                 "brûle dans son armure", evt, {},
                 function() {
                   count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
                 });
               return;
             case 'nueeDInsectes': //prend 1 DM
@@ -28831,7 +28861,7 @@ var COFantasy = COFantasy || function() {
                 "est piqué par les insectes", evt, {},
                 function() {
                   count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
                 });
               return;
             case 'nueeDeCriquets': //prend 1 DM
@@ -28841,7 +28871,7 @@ var COFantasy = COFantasy || function() {
                 "est piqué par les criquets", evt, {},
                 function() {
                   count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
                 });
               return;
             case 'armeBrulante': //prend 1 DM
@@ -28851,7 +28881,7 @@ var COFantasy = COFantasy || function() {
                 "se brûle avec son arme", evt, {},
                 function() {
                   count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
                 });
               return;
             case 'regeneration': //soigne
@@ -28860,7 +28890,7 @@ var COFantasy = COFantasy || function() {
                 },
                 function() {
                   count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
                 });
 
               return;
@@ -28912,7 +28942,7 @@ var COFantasy = COFantasy || function() {
                 },
                 function() {
                   count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
                 });
               return;
             default:
@@ -28922,7 +28952,7 @@ var COFantasy = COFantasy || function() {
         }
       }); //fin de la boucle sur tous les attributs d'effets
     }
-    if (count === 0) nextTurnOfActive(active, attrs, evt, pageId);
+    if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
   }
 
   //Fonction appelée par !cof-tour-suivant
