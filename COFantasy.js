@@ -11215,7 +11215,8 @@ var COFantasy = COFantasy || function() {
           smsg += " => échec";
           if (options.msgRate) smsg += options.msgRate;
           if (options.avecPC) {
-            if ((carac == 'FOR' || carac == 'DEX' || carac == 'CON') &&
+            if (stateCOF.combat &&
+              (carac == 'FOR' || carac == 'DEX' || carac == 'CON') &&
               attributeAsBool(target, 'runeForgesort_énergie') &&
               attributeAsInt(target, 'limiteParCombat_runeForgesort_énergie', 1) > 0) {
               smsg += boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + saveId, "Rune d'énergie");
@@ -14497,6 +14498,9 @@ var COFantasy = COFantasy || function() {
           Campaign().set("turnorder", JSON.stringify(turnOrder));
           nextTurn(Campaign(), options);
           return;
+        case 'degainer':
+          doDegainer(action.persos, action.armeLabel, options);
+          return;
         default:
           error("Evenement avec une action, mais inconnue au niveau chance. Impossible d'annuler !", evt);
           return;
@@ -14684,6 +14688,9 @@ var COFantasy = COFantasy || function() {
           turnOrder.push(lastTurn);
           Campaign().set("turnorder", JSON.stringify(turnOrder));
           nextTurn(Campaign(), options);
+          return;
+        case 'degainer':
+          doDegainer(action.persos, action.armeLabel, options);
           return;
         default:
           return;
@@ -17476,7 +17483,7 @@ var COFantasy = COFantasy || function() {
       updateNextInit(perso);
   }
 
-  function degainer(msg) {
+  function parseDegainer(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
     var cmd = options.cmd;
@@ -17487,41 +17494,62 @@ var COFantasy = COFantasy || function() {
     var armeLabel = '';
     if (cmd.length > 1) armeLabel = cmd[1];
     if (cmd.length > 2 && cmd[2] == 'gauche') options.gauche = true;
-    var evt = {
-      type: "Dégainer",
-      attributes: []
-    };
+    var personnages = [];
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
         error("Qui doit dégainer ?", msg);
         return;
       }
-      if (options.son) playSound(options.son);
       iterSelected(selected, function(perso) {
-        function afterSave() {
-          var nomArme = degainerArme(perso, armeLabel, evt, options);
-          if (nomArme) sendChar(perso.charId, "a déjà " + nomArme + " en main");
-        }
-        if (options.save) {
-          var saveOpts = {
-            msgPour: " pour garder son arme en main",
-            msgRate: ", raté.",
-          };
-          var expliquer = function(s) {
-            sendChar(perso.charId, s);
-          };
-          var saveId = 'garderArme';
-          //TODO Supporter PC
-          save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, rollText) {
-            if (!reussite) {
-              afterSave();
-            }
-          });
-        } else {
-          afterSave();
-        }
+        personnages.push(perso);
       });
-      addEvent(evt);
+    });
+    doDegainer(personnages, armeLabel, options);
+  }
+
+  function doDegainer(persos, armeLabel, options) {
+    var evt = {
+      type: "degainer",
+      attributes: [],
+      action : {
+        persos: persos,
+        armeLabel: armeLabel,
+        options: options
+      }
+    };
+    addEvent(evt);
+    if (options.son) playSound(options.son);
+    persos.forEach(function(perso) {
+      function afterSave() {
+        var nomArme = degainerArme(perso, armeLabel, evt, options);
+        if (nomArme) sendChar(perso.charId, "a déjà " + nomArme + " en main");
+      }
+      if (options.save) {
+        var saveOpts = {
+          msgPour: " pour garder son arme en main",
+          msgRate: ", raté.",
+          avecPC: true
+        };
+        var expliquer = function(s) {
+          sendChar(perso.charId, s);
+        };
+        var saveId = 'garderArme_' + perso.token.id;
+        if (options.rolls) {
+          saveOpts.roll = options.rolls[saveId];
+          if (options.chanceRollId && options.chanceRollId[saveId]) {
+            saveOpts.chanceRollId = options.chanceRollId[saveId];
+          }
+        }
+        save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, rollText, roll) {
+          evt.action.rolls = evt.action.rolls || {};
+          evt.action.rolls[saveId] = roll;
+          if (!reussite) {
+            afterSave();
+          }
+        });
+      } else {
+        afterSave();
+      }
     });
   }
 
@@ -26750,7 +26778,7 @@ var COFantasy = COFantasy || function() {
         parseSaveState(msg);
         return;
       case "!cof-degainer":
-        degainer(msg);
+        parseDegainer(msg);
         return;
       case "!cof-echange-init":
         echangeInit(msg);
