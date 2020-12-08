@@ -14492,7 +14492,8 @@ var COFantasy = COFantasy || function() {
           if (turnOrder === '') return; // nothing in the turn order
           turnOrder = JSON.parse(turnOrder);
           if (turnOrder.length < 1) return; // Juste le compteur de tour
-          turnOrder.pop();
+          var lastTurn = turnOrder.shift();
+          turnOrder.push(lastTurn);
           Campaign().set("turnorder", JSON.stringify(turnOrder));
           nextTurn(Campaign(), options);
           return;
@@ -14673,6 +14674,16 @@ var COFantasy = COFantasy || function() {
           return;
         case 'libererAgrippe':
           doLibererAgrippe(action.perso, action.agrippant, action.attrName, options);
+          return;
+        case 'nextTurn':
+          var turnOrder = Campaign().get("turnorder");
+          if (turnOrder === '') return; // nothing in the turn order
+          turnOrder = JSON.parse(turnOrder);
+          if (turnOrder.length < 1) return; // Juste le compteur de tour
+          var lastTurn = turnOrder.shift();
+          turnOrder.push(lastTurn);
+          Campaign().set("turnorder", JSON.stringify(turnOrder));
+          nextTurn(Campaign(), options);
           return;
         default:
           return;
