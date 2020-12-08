@@ -14501,6 +14501,12 @@ var COFantasy = COFantasy || function() {
         case 'degainer':
           doDegainer(action.persos, action.armeLabel, options);
           return;
+        case 'boireAlcool':
+          doBoireAlcool(action.playerId, action.persos, options);
+          return;
+        case 'vapeursEthyliques':
+          doVapeursEthyliques(action.playerId, action.persos, options);
+          return;
         default:
           error("Evenement avec une action, mais inconnue au niveau chance. Impossible d'annuler !", evt);
           return;
@@ -14691,6 +14697,12 @@ var COFantasy = COFantasy || function() {
           return;
         case 'degainer':
           doDegainer(action.persos, action.armeLabel, options);
+          return;
+        case 'boireAlcool':
+          doBoireAlcool(action.playerId, action.persos, options);
+          return;
+        case 'vapeursEthyliques':
+          doVapeursEthyliques(action.playerId, action.persos, options);
           return;
         default:
           return;
@@ -26085,59 +26097,83 @@ var COFantasy = COFantasy || function() {
     setTokenAttr(personnage, 'niveauEbriete', n, evt);
   }
 
-  function vapeursEthyliques(msg) {
+  function parseVapeursEthyliques(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
+    var cibles = [];
     getSelected(msg, function(selected, playerId) {
-      var evt = {
-        type: 'Vapeurs éthyliques'
-      };
-      if (limiteRessources(options.lanceur, options, 'vapeursEthyliques', "lancer une fiole de vapeurs éthyliques", evt)) {
-        addEvent(evt);
+      if (selected === undefined || selected.length === 0) {
+        sendPlayer(msg, "pas de cible trouvée, action annulée");
         return;
       }
-      var display = startFramedDisplay(playerId, 'Vapeurs éthyliques');
-      if (options.save) {
-        var title = " Jet de " + options.save.carac + " " + options.save.seuil;
-        title += " pour résister à l'alcool";
-        addLineToFramedDisplay(display, title);
-        title += options.msgPour;
-      }
-      initiative(selected, evt);
-      var count = selected.length;
-      var finalize = function() {
-        count--;
-        if (count > 0) return;
-        sendChat('', endFramedDisplay(display));
-        addEvent(evt);
-      };
-      var expliquer = function(m) {
-        addLineToFramedDisplay(display, m);
-      };
       iterSelected(selected, function(perso) {
-        perso.tokName = perso.tokName || perso.token.get('name');
-        if (options.save) {
-          //TODO Supporter PC
-          save(options.save, perso, 'alcool', expliquer, {
-              msgPour: " pour résister aux vapeurs éthyliques",
-              hideSaveTitle: true
-            }, evt,
-            function(succes, rollText) {
-              if (!succes) {
-                augmenteEbriete(perso, evt, expliquer);
-                setTokenAttr(perso, 'vapeursEthyliques', 0, evt, {
-                  maxVal: options.save.seuil
-                });
-              }
-              finalize();
-            });
-        } else { //pas de save
-          augmenteEbriete(perso, evt, expliquer);
-          setTokenAttr(perso, 'vapeursEthyliques', 0, evt);
-          finalize();
-        }
-      }, finalize); //fin iterSelected
+        cibles.push(perso);
+      });
+      doVapeursEthyliques(playerId, cibles, options);
     }, options); //fin getSelected
+  }
+
+  function doVapeursEthyliques(playerId, persos, options) {
+    var evt = {
+      type: 'vapeursEthyliques',
+      action: {
+        playerId: playerId,
+        persos: persos,
+        options: options
+      }
+    };
+    addEvent(evt);
+    if (limiteRessources(options.lanceur, options, 'vapeursEthyliques', "lancer une fiole de vapeurs éthyliques", evt)) {
+      addEvent(evt);
+      return;
+    }
+    var display = startFramedDisplay(playerId, 'Vapeurs éthyliques');
+    var expliquer = function(m) {
+      addLineToFramedDisplay(display, m);
+    };
+    var explications = [];
+    if (options.save) {
+      explications.push(" Jet de " + options.save.carac + " " + options.save.seuil + " pour résister à l'alcool");
+    }
+    entrerEnCombat(options.lanceur, persos, explications, evt);
+    explications.forEach(explication => expliquer(explications));
+    var count = persos.length;
+    var finalize = function() {
+      if (count == 1) sendChat('', endFramedDisplay(display));
+      count--;
+    };
+    persos.forEach( function(perso) {
+      perso.tokName = perso.tokName || perso.token.get('name');
+      if (options.save) {
+        var saveOpts = {
+          hideSaveTitle: true,
+          avecPC: true
+        };
+        var saveId = 'vapeursEthyliques_' + perso.token.id;
+        if (options.rolls) {
+          saveOpts.roll = options.rolls[saveId];
+          if (options.chanceRollId && options.chanceRollId[saveId]) {
+            saveOpts.chanceRollId = options.chanceRollId[saveId];
+          }
+        }
+        save(options.save, perso, saveId, expliquer, saveOpts, evt,
+          function(succes, rollText, roll) {
+            evt.action.rolls = evt.action.rolls || {};
+            evt.action.rolls[saveId] = roll;
+            if (!succes) {
+              augmenteEbriete(perso, evt, expliquer);
+              setTokenAttr(perso, 'vapeursEthyliques', 0, evt, {
+                maxVal: options.save.seuil
+              });
+            }
+            finalize();
+          });
+      } else { //pas de save
+        augmenteEbriete(perso, evt, expliquer);
+        setTokenAttr(perso, 'vapeursEthyliques', 0, evt);
+        finalize();
+      }
+    });
   }
 
   function desaouler(msg) {
@@ -26159,53 +26195,72 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function boireAlcool(msg) {
+  function parseBoireAlcool(msg){
     var options = parseOptions(msg);
     if (options === undefined) return;
+    var persos = [];
     getSelected(msg, function(selected, playerId) {
-      var evt = {
-        type: 'Boire alcool'
-      };
-      if (limiteRessources(options.lanceur, options, 'boireAlcool', "est affecté par l'alcool", evt)) {
-        addEvent(evt);
-        return;
-      }
-      var display = startFramedDisplay(playerId, 'Alcool');
-      if (options.save) {
-        var title = " Jet de " + options.save.carac + " " + options.save.seuil;
-        title += " pour résister à l'alcool";
-        addLineToFramedDisplay(display, title);
-        title += options.msgPour;
-      }
-      var count = selected.length;
-      var finalize = function() {
-        count--;
-        if (count > 0) return;
-        sendChat('', endFramedDisplay(display));
-        addEvent(evt);
-      };
-      var expliquer = function(m) {
-        addLineToFramedDisplay(display, m);
-      };
       iterSelected(selected, function(perso) {
-        perso.tokName = perso.tokName || perso.token.get('name');
-        if (options.save) {
-          //TODO Supporter PC
-          save(options.save, perso, 'alcool', expliquer, {
-              hideSaveTitle: true
-            }, evt,
-            function(succes, rollText) {
-              if (!succes) {
-                augmenteEbriete(perso, evt, expliquer);
-              }
-              finalize();
-            });
-        } else { //pas de save
-          augmenteEbriete(perso, evt, expliquer);
-          finalize();
-        }
-      }, finalize); //fin iterSelected
+        persos.push(perso);
+      });
+      doBoireAlcool(playerId, persos, options);
     }, options); //fin getSelected
+  }
+
+  function doBoireAlcool(playerId, persos, options) {
+    var evt = {
+      type: 'boireAlcool',
+      action: {
+        playerId: playerId,
+        persos: persos,
+        options: options
+      }
+    };
+    addEvent(evt);
+    if (limiteRessources(options.lanceur, options, 'boireAlcool', "est affecté par l'alcool", evt)) {
+      return;
+    }
+    var display = startFramedDisplay(playerId, 'Alcool');
+    var expliquer = function(m) {
+      addLineToFramedDisplay(display, m);
+    };
+    if (options.save) {
+      expliquer("Jet de " + options.save.carac + " " + options.save.seuil + " pour résister à l'alcool");
+    }
+    var count = persos.length;
+    var finalize = function() {
+      if(count == 1) sendChat('', endFramedDisplay(display));
+      count--;
+    }
+    persos.forEach( function(perso) {
+      perso.tokName = perso.tokName || perso.token.get('name');
+      if (options.save) {
+        var saveOpts = {
+          hideSaveTitle: true,
+          avecPC: true
+        };
+        var saveId = 'boireAlcool_' + perso.token.id;
+        if (options.rolls) {
+          saveOpts.roll = options.rolls[saveId];
+          if (options.chanceRollId && options.chanceRollId[saveId]) {
+            saveOpts.chanceRollId = options.chanceRollId[saveId];
+          }
+        }
+        save(options.save, perso, saveId, expliquer, saveOpts, evt,
+          function(succes, rollText, roll) {
+            evt.action.rolls = evt.action.rolls || {};
+            evt.action.rolls[saveId] = roll;
+            if (!succes) {
+              augmenteEbriete(perso, evt, expliquer);
+            }
+            finalize();
+          });
+      } else { //pas de save
+        augmenteEbriete(perso, evt, expliquer);
+        finalize();
+      }
+    });
+
   }
 
   function jouerSon(msg) {
@@ -27052,13 +27107,13 @@ var COFantasy = COFantasy || function() {
         animerCadavre(msg);
         return;
       case '!cof-vapeurs-ethyliques':
-        vapeursEthyliques(msg);
+        parseVapeursEthyliques(msg);
         return;
       case '!cof-desaouler':
         desaouler(msg);
         return;
       case '!cof-boire-alcool':
-        boireAlcool(msg);
+        parseBoireAlcool(msg);
         return;
       case '!cof-jouer-son':
         jouerSon(msg);
