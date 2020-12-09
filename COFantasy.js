@@ -1408,6 +1408,8 @@ var COFantasy = COFantasy || function() {
     if (bar1 === 0) {
       if (attributeAsBool(perso, 'etatExsangue')) {
         removeTokenAttr(perso, 'etatExsangue', evt, "retrouve des couleurs");
+      } else if (getState(perso, 'mort')) {
+        setState(perso, 'mort', false, evt);
       }
     }
     if (charAttributeAsBool(perso, 'vieArtificielle')) {
@@ -13970,12 +13972,12 @@ var COFantasy = COFantasy || function() {
       if (selection.length === 0) {
         var pageId = getPageId(playerId);
         var tokens =
-            findObjs({
-              _type: 'graphic',
-              _subtype: 'token',
-              layer: 'objects',
-              _pageid: pageId
-            });
+          findObjs({
+            _type: 'graphic',
+            _subtype: 'token',
+            layer: 'objects',
+            _pageid: pageId
+          });
         tokens.forEach(function(tok) {
           if (tok.get('represents') === '') return;
           selection.push({
@@ -14056,7 +14058,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     };
-    persos.forEach( function(perso) {
+    persos.forEach(function(perso) {
       if (getState(perso, 'mort')) {
         finalize();
         return;
@@ -14195,7 +14197,7 @@ var COFantasy = COFantasy || function() {
       var rollExpr = addOrigin(characterName, "[[1d" + dVie + "]]");
       sendChat("COF", rollExpr, function(res) {
         var rollRecupID = "rollRecup_" + perso.token.id;
-        options.rolls = options.rolls || {} ;
+        options.rolls = options.rolls || {};
         var roll = options.rolls[rollRecupID] ? options.rolls[rollRecupID] : res[0].inlinerolls[0];
         evt.action = evt.action || {};
         evt.action.rolls = evt.action.rolls || {};
@@ -28583,16 +28585,24 @@ var COFantasy = COFantasy || function() {
       }
       var vitaliteSurnatAttr = charAttribute(perso.charId, 'vitaliteSurnaturelle');
       if (vitaliteSurnatAttr.length > 0) {
-        var vitaliteSurnat = parseInt(vitaliteSurnatAttr[0].get('current'));
-        if (vitaliteSurnat > 0) {
-          soigneToken(perso, vitaliteSurnat, evt,
-            function(s) {
-              sendChar(charId, 'récupère ' + s + ' PVs.');
-            },
-            function() {}, {
-              saufDMType: vitaliteSurnatAttr[0].get('max').split(',')
-            }
-          );
+        var vitaliteSurnat = vitaliteSurnatAttr[0].get('current');
+        var regenereMemeMort;
+        if ((vitaliteSurnat + '').trim().endsWith('+')) {
+          vitaliteSurnat = vitaliteSurnat.substr(0, vitaliteSurnat.length - 1);
+          regenereMemeMort = true;
+        }
+        if (regenereMemeMort || !getState(perso, 'mort')) {
+          vitaliteSurnat = parseInt(vitaliteSurnat);
+          if (vitaliteSurnat > 0) {
+            soigneToken(perso, vitaliteSurnat, evt,
+              function(s) {
+                sendChar(charId, 'récupère ' + s + ' PVs.');
+              },
+              function() {}, {
+                saufDMType: vitaliteSurnatAttr[0].get('max').split(',')
+              }
+            );
+          }
         }
       }
       var increvableActif = charAttribute(perso.charId, 'increvableActif');
