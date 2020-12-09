@@ -1408,6 +1408,8 @@ var COFantasy = COFantasy || function() {
     if (bar1 === 0) {
       if (attributeAsBool(perso, 'etatExsangue')) {
         removeTokenAttr(perso, 'etatExsangue', evt, "retrouve des couleurs");
+      } else if (getState(perso, 'mort')) {
+        setState(perso, 'mort', false, evt);
       }
     }
     if (charAttributeAsBool(perso, 'vieArtificielle')) {
@@ -12230,11 +12232,14 @@ var COFantasy = COFantasy || function() {
                 expliquer(msgAgitZ);
                 if (!attributeAsBool(target, 'agitAZeroPV'))
                   setAttrDuree(target, 'agitAZeroPV', 1, evt);
-              } else if (charAttributeAsBool(target, 'nAbandonneJamais') &&
-                !attributeAsBool(target, 'mortMaisNAbandonnePas')) {
-                expliquer(token.get('name') + " est pratiquement détruit, mais continue à bouger !");
-                setTokenAttr(target, 'mortMaisNAbandonnePas', true, evt);
-                setState(target, 'ralenti', true, evt);
+              } else if (charAttributeAsBool(target, 'nAbandonneJamais')) {
+                if (attributeAsBool(target, 'mortMaisNAbandonnePas')) {
+                  expliquer(token.get('name') + " est dans un état lamentable, mais continue à bouger. Il faudrait une action limitée pour le réduire en miettes.");
+                } else {
+                  expliquer(token.get('name') + " est pratiquement détruit, mais continue à bouger !");
+                  setTokenAttr(target, 'mortMaisNAbandonnePas', true, evt);
+                  setState(target, 'ralenti', true, evt);
+                }
               } else {
                 var defierLaMort = charAttributeAsInt(target, 'defierLaMort', 0);
                 if (defierLaMort > 0) {
@@ -13967,12 +13972,12 @@ var COFantasy = COFantasy || function() {
       if (selection.length === 0) {
         var pageId = getPageId(playerId);
         var tokens =
-            findObjs({
-              _type: 'graphic',
-              _subtype: 'token',
-              layer: 'objects',
-              _pageid: pageId
-            });
+          findObjs({
+            _type: 'graphic',
+            _subtype: 'token',
+            layer: 'objects',
+            _pageid: pageId
+          });
         tokens.forEach(function(tok) {
           if (tok.get('represents') === '') return;
           selection.push({
@@ -14053,7 +14058,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     };
-    persos.forEach( function(perso) {
+    persos.forEach(function(perso) {
       if (getState(perso, 'mort')) {
         finalize();
         return;
@@ -14192,7 +14197,7 @@ var COFantasy = COFantasy || function() {
       var rollExpr = addOrigin(characterName, "[[1d" + dVie + "]]");
       sendChat("COF", rollExpr, function(res) {
         var rollRecupID = "rollRecup_" + perso.token.id;
-        options.rolls = options.rolls || {} ;
+        options.rolls = options.rolls || {};
         var roll = options.rolls[rollRecupID] ? options.rolls[rollRecupID] : res[0].inlinerolls[0];
         evt.action = evt.action || {};
         evt.action.rolls = evt.action.rolls || {};
@@ -17543,7 +17548,7 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "degainer",
       attributes: [],
-      action : {
+      action: {
         persos: persos,
         armeLabel: armeLabel,
         options: options
@@ -26162,7 +26167,7 @@ var COFantasy = COFantasy || function() {
       if (count == 1) sendChat('', endFramedDisplay(display));
       count--;
     };
-    persos.forEach( function(perso) {
+    persos.forEach(function(perso) {
       perso.tokName = perso.tokName || perso.token.get('name');
       if (options.save) {
         var saveOpts = {
@@ -26215,7 +26220,7 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function parseBoireAlcool(msg){
+  function parseBoireAlcool(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
     var persos = [];
@@ -26249,10 +26254,10 @@ var COFantasy = COFantasy || function() {
     }
     var count = persos.length;
     var finalize = function() {
-      if(count == 1) sendChat('', endFramedDisplay(display));
+      if (count == 1) sendChat('', endFramedDisplay(display));
       count--;
-    }
-    persos.forEach( function(perso) {
+    };
+    persos.forEach(function(perso) {
       perso.tokName = perso.tokName || perso.token.get('name');
       if (options.save) {
         var saveOpts = {
@@ -28580,16 +28585,24 @@ var COFantasy = COFantasy || function() {
       }
       var vitaliteSurnatAttr = charAttribute(perso.charId, 'vitaliteSurnaturelle');
       if (vitaliteSurnatAttr.length > 0) {
-        var vitaliteSurnat = parseInt(vitaliteSurnatAttr[0].get('current'));
-        if (vitaliteSurnat > 0) {
-          soigneToken(perso, vitaliteSurnat, evt,
-            function(s) {
-              sendChar(charId, 'récupère ' + s + ' PVs.');
-            },
-            function() {}, {
-              saufDMType: vitaliteSurnatAttr[0].get('max').split(',')
-            }
-          );
+        var vitaliteSurnat = vitaliteSurnatAttr[0].get('current');
+        var regenereMemeMort;
+        if ((vitaliteSurnat + '').trim().endsWith('+')) {
+          vitaliteSurnat = vitaliteSurnat.substr(0, vitaliteSurnat.length - 1);
+          regenereMemeMort = true;
+        }
+        if (regenereMemeMort || !getState(perso, 'mort')) {
+          vitaliteSurnat = parseInt(vitaliteSurnat);
+          if (vitaliteSurnat > 0) {
+            soigneToken(perso, vitaliteSurnat, evt,
+              function(s) {
+                sendChar(charId, 'récupère ' + s + ' PVs.');
+              },
+              function() {}, {
+                saufDMType: vitaliteSurnatAttr[0].get('max').split(',')
+              }
+            );
+          }
         }
       }
       var increvableActif = charAttribute(perso.charId, 'increvableActif');
@@ -28674,7 +28687,7 @@ var COFantasy = COFantasy || function() {
         msgRate: msgRate,
         avecPC: true
       };
-      var saveId = 'saveParTour_' + attrEffet.id + '_' +  perso.token.id;
+      var saveId = 'saveParTour_' + attrEffet.id + '_' + perso.token.id;
       if (options.rolls) {
         saveOpts.roll = options.rolls[saveId];
         if (options.chanceRollId && options.chanceRollId[saveId]) {
