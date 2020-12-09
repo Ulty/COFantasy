@@ -11219,12 +11219,12 @@ var COFantasy = COFantasy || function() {
               (carac == 'FOR' || carac == 'DEX' || carac == 'CON') &&
               attributeAsBool(target, 'runeForgesort_énergie') &&
               attributeAsInt(target, 'limiteParCombat_runeForgesort_énergie', 1) > 0) {
-              smsg += boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + saveId, "Rune d'énergie");
+              smsg += "</br>" + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + saveId, "Rune d'énergie");
             }
             if (!tr.echecCritique) {
               var pcTarget = pointsDeChance(target);
               if (pcTarget > 0)
-                smsg += boutonSimple("!cof-bouton-chance " + evt.id + " " +
+                smsg += "</br>" + boutonSimple("!cof-bouton-chance " + evt.id + " " +
                   saveId, "Chance") + " (reste " + pcTarget + " PC)";
             }
           }
@@ -13494,6 +13494,7 @@ var COFantasy = COFantasy || function() {
       switch (cmd[0]) {
         case 'attaqueMentale':
         case 'seulementVivant':
+        case 'repos':
         case 'secret':
           options[cmd[0]] = true;
           break;
@@ -13739,40 +13740,6 @@ var COFantasy = COFantasy || function() {
     return options;
   }
 
-  // Récupération pour tous les tokens sélectionnés
-  // si evt est défini, n'est pas ajouté à l'historique
-  function nuit(msg, evt) {
-    var options = parseOptions(msg);
-    if (stateCOF.combat) sortirDuCombat();
-    getSelected(msg, function(selection, playerId) {
-      if (selection.length === 0) {
-        var pageId = getPageId(playerId);
-        var tokens =
-          findObjs({
-            _type: 'graphic',
-            _subtype: 'token',
-            layer: 'objects',
-            _pageid: pageId
-          });
-        tokens.forEach(function(tok) {
-          if (tok.get('represents') === '') return;
-          selection.push({
-            _id: tok.id
-          });
-        });
-      }
-      if (evt === undefined) {
-        evt = {
-          type: "Nuit",
-          attributes: []
-        };
-        addEvent(evt);
-      }
-      if (msg.content.startsWith('!cof-nuit')) jour(evt);
-      recuperation(selection, true, playerId, evt, options);
-    });
-  }
-
   //Si il y a des effets à durée indéterminées, les rappeler au MJ, avec un bouton pour facilement y mettre fin si nécessaire
   function proposerFinEffetsIndetermines() {
     var attrs = findObjs({
@@ -13868,7 +13835,7 @@ var COFantasy = COFantasy || function() {
 
   // Remise à zéro de toutes les limites journalières
   // N'ajoute pas evt à l'historique
-  function jour(evt) {
+  function jour(evt, options) {
     var attrs;
     attrs = removeAllAttributes('pressionMortelle', evt);
     attrs = removeAllAttributes('soinsLegers', evt, attrs);
@@ -13955,26 +13922,33 @@ var COFantasy = COFantasy || function() {
       var expliquer = function(msg) {
         sendChar(charId, msg);
       };
-      var msgPour = " pour ne plus être sous l'effet de " + effetC;
       var sujet = onGenre(perso, 'il', 'elle');
       var met = messageEffetIndetermine[effetC];
       if (met === undefined) met = {
         fin: "résiste à l'effet",
-        actf: "reste ous l'emprise de l'effet"
+        actf: "reste sous l'emprise de l'effet"
       };
-      var msgReussite = ", " + sujet + " " + met.fin;
-      var msgRate = ", " + sujet + " " + met.actif;
       var saveOpts = {
-        msgPour: msgPour,
-        msgReussite: msgReussite,
-        msgRate: msgRate
+        msgPour: " pour ne plus être sous l'effet " + effetC,
+        msgReussite: ", " + sujet + " " + met.fin,
+        msgRate: ", " + sujet + " " + met.actif,
+        avecPC: true
       };
-      //TODO Supporter PC
+      var saveId = 'saveParJour_' + effetC + "_" + perso.token.id;
+      if (options.rolls) {
+        saveOpts.roll = options.rolls[saveId];
+        if (options.chanceRollId && options.chanceRollId[saveId]) {
+          saveOpts.chanceRollId = options.chanceRollId[saveId];
+        }
+      }
       save({
           carac: carac,
           seuil: seuil
-        }, perso, attrEffet.id, expliquer, saveOpts, evt,
-        function(reussite) { //asynchrone
+        }, perso, saveId, expliquer, saveOpts, evt,
+        function(reussite, texte, roll) { //asynchrone
+          evt.action = evt.action || {};
+          evt.action.rolls = evt.action.rolls || {};
+          evt.action.rolls[saveId] = roll;
           if (reussite) {
             finDEffet(attrEffet, effetC, attrName, charId, evt, {
               attrSave: attr,
@@ -13986,22 +13960,56 @@ var COFantasy = COFantasy || function() {
     }); //fin boucle attrSave
   }
 
-  function nouveauJour(msg) {
+  function parseNouveauJour(msg) {
+    var options = parseOptions(msg);
+    getSelected(msg, function(selection, playerId) {
+      options.playerId = playerId;
+      if (selection.length === 0) {
+        var pageId = getPageId(playerId);
+        var tokens =
+            findObjs({
+              _type: 'graphic',
+              _subtype: 'token',
+              layer: 'objects',
+              _pageid: pageId
+            });
+        tokens.forEach(function(tok) {
+          if (tok.get('represents') === '') return;
+          selection.push({
+            _id: tok.id
+          });
+        });
+      }
+      var persos = [];
+      iterSelected(selection, function(perso) {
+        persos.push(perso);
+      });
+      doNouveauJour(persos, options);
+    }, options);
+  }
+
+  function doNouveauJour(persos, options) {
     var evt = {
-      type: "Nouveau jour",
-      attributes: []
+      type: "nouveauJour",
+      attributes: [],
+      action: {
+        persos: persos,
+        options: options
+      }
     };
     addEvent(evt);
-    var playerId = getPlayerIdFromMsg(msg);
-    var fromMsg = 'player|' + playerId;
-    var player = getObj('player', playerId);
+    var fromMsg = 'player|' + options.playerId;
+    var player = getObj('player', options.playerId);
     if (player) {
       var speaksAs = player.get('speakingas');
       if (speaksAs !== '') fromMsg = speaksAs;
     }
     sendChat(fromMsg, "Un nouveau jour se lève");
-    jour(evt);
-    if (msg.content.includes(' --repos')) nuit(msg, evt);
+    if (stateCOF.combat) sortirDuCombat();
+    jour(evt, options);
+    if (options.repos) {
+      recuperation(persos, true, options.playerId, evt, options);
+    }
   }
 
   function recuperer(msg) {
@@ -14022,17 +14030,21 @@ var COFantasy = COFantasy || function() {
         log("!cof-recuperer requiert des tokens sélectionnés");
         return;
       }
-      recuperation(selection, reposLong, playerId, evt);
+      var persos = [];
+      iterSelected(selection, function(perso) {
+        persos.push(perso);
+      });
+      recuperation(persos, reposLong, playerId, evt);
     });
   }
 
   //Asynchrone (jets de dés)
   // ne rajoute pas evt à l'historique
-  function recuperation(selection, reposLong, playerId, evt, options) {
+  function recuperation(persos, reposLong, playerId, evt, options) {
     options = options || {};
     var manquePV = [];
     var ecuyers = [];
-    var count = selection.length;
+    var count = persos.length;
     var finalize = function() {
       count--;
       if (count === 0) {
@@ -14041,7 +14053,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     };
-    iterSelected(selection, function(perso) {
+    persos.forEach( function(perso) {
       if (getState(perso, 'mort')) {
         finalize();
         return;
@@ -14179,8 +14191,13 @@ var COFantasy = COFantasy || function() {
       var niveau = ficheAttributeAsInt(perso, 'niveau', 1);
       var rollExpr = addOrigin(characterName, "[[1d" + dVie + "]]");
       sendChat("COF", rollExpr, function(res) {
-        var rolls = res[0];
-        var dVieRoll = rolls.inlinerolls[0].results.total;
+        var rollRecupID = "rollRecup_" + perso.token.id;
+        options.rolls = options.rolls || {} ;
+        var roll = options.rolls[rollRecupID] ? options.rolls[rollRecupID] : res[0].inlinerolls[0];
+        evt.action = evt.action || {};
+        evt.action.rolls = evt.action.rolls || {};
+        evt.action.rolls[rollRecupID] = roll;
+        var dVieRoll = roll.results.total;
         var bonus = conMod + niveau;
         var total = dVieRoll + bonus;
         if (total < 0) total = 0;
@@ -14199,11 +14216,11 @@ var COFantasy = COFantasy || function() {
           message = "Après 5 minutes de minutes de repos, ";
         }
         message +=
-          characterName + " récupère " + buildinline(rolls.inlinerolls[0]) + "+" + bonus + " PV. Il lui reste " + pr.current + " points de récupération";
+          characterName + " récupère " + buildinline(roll) + "+" + bonus + " PV. Il lui reste " + pr.current + " points de récupération";
         sendChar(charId, "/direct " + message);
         finalize();
       });
-    }, finalize); //fin de iterSelected
+    });
   }
 
   function recharger(msg) {
@@ -14506,6 +14523,9 @@ var COFantasy = COFantasy || function() {
           return;
         case 'vapeursEthyliques':
           doVapeursEthyliques(action.playerId, action.persos, options);
+          return;
+        case 'nouveauJour':
+          doNouveauJour(action.persos, options);
           return;
         default:
           error("Evenement avec une action, mais inconnue au niveau chance. Impossible d'annuler !", evt);
@@ -26753,17 +26773,13 @@ var COFantasy = COFantasy || function() {
         sortirDuCombat();
         return;
       case "!cof-nuit": //deprecated
-        nuit(msg);
+        error("!cof-nuit n'est plus supporté, utiliser !cof-nouveau-jour", msg);
         return;
       case "!cof-jour": //deprecated
-        evt = {
-          type: "Nouveau jour"
-        };
-        addEvent(evt);
-        jour(evt);
+        error("!cof-jour n'est plus supporté, utiliser !cof-nouveau-jour", msg);
         return;
       case "!cof-nouveau-jour":
-        nouveauJour(msg);
+        parseNouveauJour(msg);
         return;
       case "!cof-recuperation":
         recuperer(msg);
