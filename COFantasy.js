@@ -7085,7 +7085,9 @@ var COFantasy = COFantasy || function() {
       var races = ennemiJureAttr[0].get('current');
       races.split(/[_, ]/).forEach(function(race) {
         if (race === '') return;
-        if (raceIs(target, race)) ennemiJure = true;
+        if (race == 'mort-vivant') {
+          if (estMortVivant(target)) ennemiJure = true;
+        } else if (raceIs(target, race)) ennemiJure = true;
       });
     }
     if (ennemiJure) {
