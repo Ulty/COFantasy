@@ -2799,7 +2799,12 @@ var COFantasy = COFantasy || function() {
     }
     res +=
       '<div class="all_content" style="-webkit-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); -moz-box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); box-shadow: 2px 2px 5px 0px rgba(0,0,0,0.75); border: 1px solid #000; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px; overflow: hidden; position: relative;">';
-    if (avatar1) {
+    if (display.image) {
+      res +=
+        '<div class="line_header" style="overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: ' + playerTXColor + '; background-color: ' + playerBGColor + ';" title=""> ';
+      res += '<img src="' + display.image + '" style="width: ' + 100 + '%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+      res += '</div>';
+    } else if (avatar1) {
       res +=
         '<div class="line_header" style="overflow:auto; text-align: center; vertical-align: middle; padding: 5px 5px; border-bottom: 1px solid #000; color: ' + playerTXColor + '; background-color: ' + playerBGColor + ';" title=""> ' +
         '<table>';
@@ -2893,7 +2898,8 @@ var COFantasy = COFantasy || function() {
       perso1: perso,
       perso2: options.perso2,
       action: action,
-      action_right: options.action_right
+      action_right: options.action_right,
+      image: options.image
     };
     if (!options.retarde)
       addFramedHeader(display, playerId, options.chuchote);
@@ -26750,6 +26756,265 @@ var COFantasy = COFantasy || function() {
     sendPing(token.get('left'), token.get('top'), pageId, playerId, true, playerId);
   }
 
+  function afficherRichesse(perso, dest) {
+    var msg = '';
+    var possede;
+    var pp = charAttributeAsInt(perso, 'bourse_pp', 0);
+    if (pp > 0) {
+      msg = pp + " PP";
+      possede = true;
+    }
+    var po = charAttributeAsInt(perso, 'bourse_po', 0);
+    if (po > 0) {
+      if (possede) msg += ', ';
+      else possede = true;
+      msg += po + " PO";
+    }
+    var pa = charAttributeAsInt(perso, 'bourse_pa', 0);
+    if (pa > 0) {
+      if (possede) msg += ', ';
+      else possede = true;
+      msg += pa + " PA";
+    }
+    var pc = charAttributeAsInt(perso, 'bourse_pc', 0);
+    if (pc > 0) {
+      if (possede) msg += ' et ';
+      else possede = true;
+      msg += pc + " PC";
+    }
+    if (possede) msg = 'possède ' + msg;
+    else msg = "n'a pas d'argent";
+    if (dest) sendPlayer(dest, perso.token.get('name') + ' ' + msg);
+    else whisperChar(perso.charId, msg);
+  }
+
+  function depenserSous(perso, unite, bourse, depense) {
+    if (depense <= 0) return 0;
+    var retenue = 0;
+    if (bourse[unite] < depense) {
+      retenue = Math.ceil((depense - bourse[unite]) / 10);
+      bourse[unite] += retenue * 10;
+    }
+    bourse[unite] -= depense;
+    return retenue;
+  }
+
+  function ajouteLignePieces(perso, display, unite, nom, piece) {
+    var finAction = unite + " --target " + perso.token.id;
+    var val = charAttributeAsInt(perso, 'bourse_' + unite, 0);
+    var line = '<table style="width:100%"><tr><td>';
+    var action = 
+      "!cof-bourse fixer ?{Nouveau montant de pièces " + piece + " ?} " + finAction;
+    line += boutonSimple(action, val) + '<b>' + nom + '</b>';
+    line += '</td><td style="text-align: right;">';
+    action = "!cof-bourse depenser ?{Pièces " + piece + " à dépenser ?} " + finAction;
+    line += boutonSimple(action, 'Dépenser');
+    action = "!cof-bourse gagner ?{Pièces " + piece + "  ?} " + finAction;
+    line += boutonSimple(action, 'Gagner');
+    line += '</td></tr></table>';
+    addLineToFramedDisplay(display, line);
+  }
+
+  //!cof-bourse [action]
+  //Les actions peuvent être depenser val [unite], fixer val unite ou gagner val [unite]
+  function gestionBourse(msg) {
+    var cmd = msg.content.split(' ').filter(function(c) {
+      return c.trim() !== '';
+    });
+    var action = '';
+    var montant;
+    var unite = 'pa';
+    var depense = {
+      pc: 0,
+      pa: 0,
+      po: 0,
+      pp: 0
+    };
+    if (cmd.length > 1) {
+      switch (cmd[1]) {
+        case 'depenser':
+        case 'dépenser':
+        case 'gagner':
+        case 'fixer':
+          if (cmd.length < 3) {
+            error("Il faut spécifier un montant à " + cmd[1], msg.content);
+            return;
+          }
+          montant = parseInt(cmd[2]);
+          if (isNaN(montant)) {
+            error("montant " + cmd[2] + " incorrect", cmd);
+            return;
+          }
+          if (cmd[1] == 'gagner') {
+            montant = -montant;
+            action = 'depenser';
+          } else if (cmd[1] == 'fixer') {
+            if (montant < 0) {
+              error("On ne peut avoir qu'un nombre positif de pièces", cmd);
+              return;
+            }
+            action = 'fixer';
+          } else action = 'depenser';
+          if (cmd.length > 3 && !cmd[3].startsWith('--')) {
+            unite = cmd[3].toLowerCase().trim();
+            if (unite != 'pp' && unite != 'po' && unite != 'pa' && unite != 'pc') {
+              error("Pièces non reconnues : " + cmd[3], cmd);
+              return;
+            }
+            depense[unite] = montant;
+          } else if (action == 'fixer') {
+            error("Il faut préciser les unités pour !cof-bourse fixer", msg.content);
+            return;
+          }
+          depense.total = depense.pc + 10 * (depense.pa + 10 * (depense.po + 10 * depense.pp));
+      }
+    }
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        sendPlayer(msg, "Pas de personnage sélectionné pour !cof-bourse");
+        return;
+      }
+      var evt = {
+        type: 'bourse'
+      };
+      iterSelected(selected, function(perso) {
+        switch (action) {
+          case 'depenser':
+            var pc = charAttributeAsInt(perso, 'bourse_pc', 0);
+            var pa = charAttributeAsInt(perso, 'bourse_pa', 0);
+            var po = charAttributeAsInt(perso, 'bourse_po', 0);
+            var pp = charAttributeAsInt(perso, 'bourse_pp', 0);
+            if (depense.total < 0) {
+              if (depense.pc < 0) {
+                pc -= depense.pc;
+                setTokenAttr(perso, 'bourse_pc', pc, evt, {
+                  charAttr: true
+                });
+              }
+              if (depense.pa < 0) {
+                pa -= depense.pa;
+                setTokenAttr(perso, 'bourse_pa', pa, evt, {
+                  charAttr: true
+                });
+              }
+              if (depense.po < 0) {
+                po -= depense.po;
+                setTokenAttr(perso, 'bourse_po', po, evt, {
+                  charAttr: true
+                });
+              }
+              if (depense.pp < 0) {
+                pp -= depense.pp;
+                setTokenAttr(perso, 'bourse_pp', pp, evt, {
+                  charAttr: true
+                });
+                addEvent(evt);
+                afficherRichesse(perso);
+                return;
+              }
+            }
+            var montantPossede = pc + 10 * (pa + 10 * (po + 10 * pp));
+            if (montantPossede < depense.total) {
+              sendPlayer(msg, perso.token.get('name') + " ne possède pas assez d'argent pour cette dépense");
+              afficherRichesse(perso, msg);
+              return;
+            }
+            var bourse = {
+              pc: pc,
+              pa: pa,
+              po: po,
+              pp: pp
+            };
+            // On privilégie les dépenses directes
+            var dpp = depense.pp;
+            if (dpp <= bourse.pp) {
+              bourse.pp -= dpp;
+              dpp = 0;
+            } else {
+              dpp -= bourse.pp;
+              bourse.pp = 0;
+            }
+            var dpo = depense.po;
+            if (dpo < bourse.po) {
+              bourse.po -= dpo;
+              dpo = 0;
+            } else {
+              dpo -= bourse.po;
+              bourse.po = 0;
+            }
+            var dpa = depense.pa;
+            if (dpa <= bourse.pa) {
+              bourse.pa -= dpa;
+              dpa = 0;
+            } else {
+              dpa -= bourse.pa;
+              bourse.pa = 0;
+            }
+            var dpc = depense.pc;
+            if (dpc < bourse.pc) {
+              bourse.pc -= dpc;
+              dpc = 0;
+            } else {
+              dpc -= bourse.pc;
+              bourse.pc = 0;
+            }
+            // Puis on dépense d'abord la petite monnaie
+            var v = dpc + 10 * (dpa + 10 * (dpo + 10 * dpp));
+            v = depenserSous(perso, 'pc', bourse, v);
+            v = depenserSous(perso, 'pa', bourse, v);
+            v = depenserSous(perso, 'po', bourse, v);
+            v = depenserSous(perso, 'pp', bourse, v);
+            if (v > 0) {
+              error("Erreur interne de calcul, il reste "+v+" PP à dépenser ??", bourse);
+              return;
+            }
+            if (bourse.pc != pc)
+              setTokenAttr(perso, 'bourse_pc', bourse.pc, evt, {
+                charAttr: true
+              });
+            if (bourse.pa != pa)
+              setTokenAttr(perso, 'bourse_pa', bourse.pa, evt, {
+                charAttr: true
+              });
+            if (bourse.po != po)
+              setTokenAttr(perso, 'bourse_po', bourse.po, evt, {
+                charAttr: true
+              });
+            if (bourse.pp != pp)
+              setTokenAttr(perso, 'bourse_pp', bourse.pp, evt, {
+                charAttr: true
+              });
+            addEvent(evt);
+            afficherRichesse(perso);
+            return;
+          case 'fixer':
+            addEvent(evt);
+            setTokenAttr(perso, 'bourse_' + unite, montant, evt, {
+              charAttr: true
+            });
+            afficherRichesse(perso);
+            return;
+          default:
+            if (selected.length > 1) {
+              afficherRichesse(perso, msg);
+              return;
+            }
+            var optionsDisplay = {
+              chuchote: true,
+              image: 'https://www.on6rm.be/wp-content/uploads/2015/08/vignette_2_bourse-argent.png'
+            };
+            var titre = "Bourse de " + perso.token.get('name');
+            var display = startFramedDisplay(playerId, titre, perso, optionsDisplay);
+            ajouteLignePieces(perso, display, 'pp', 'Platine', "de platine");
+            ajouteLignePieces(perso, display, 'po', 'Or', "d'or");
+            ajouteLignePieces(perso, display, 'pa', 'Argent', "d'argent");
+            ajouteLignePieces(perso, display, 'pc', 'Cuivre', "de cuivre");
+            sendChat('', endFramedDisplay(display));
+        }
+      });
+    });
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -27114,13 +27379,13 @@ var COFantasy = COFantasy || function() {
       case "!cof-torche":
         switchTorche(msg);
         return;
-      case "!cof-defi-samourai":
+      case '!cof-defi-samourai':
         lancerDefiSamourai(msg);
         return;
-      case "!cof-enveloppement":
+      case '!cof-enveloppement':
         parseEnveloppement(msg);
         return;
-      case "!cof-echapper-enveloppement":
+      case '!cof-echapper-enveloppement':
         echapperEnveloppement(msg);
         return;
       case '!cof-liberer-agrippe':
@@ -27163,6 +27428,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-centrer-sur-token':
         centrerSurToken(msg);
+        return;
+      case '!cof-bourse':
+        gestionBourse(msg);
         return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);

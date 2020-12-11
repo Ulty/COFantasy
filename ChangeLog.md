@@ -14,6 +14,7 @@
 * Injonction Mortelle (Magie Maléfique rang 3)
 
 ### Autres améliorations
+* Ajout d'une interface de gestion de la bourse.
 * Support de la pénombre
 * Support pour les personnages invisibles en combat
 * Ajout du fer froid.
