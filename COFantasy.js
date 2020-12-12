@@ -26908,10 +26908,10 @@ var COFantasy = COFantasy || function() {
                 setTokenAttr(perso, 'bourse_pp', pp, evt, {
                   charAttr: true
                 });
-                addEvent(evt);
-                afficherRichesse(perso);
-                return;
               }
+              addEvent(evt);
+              afficherRichesse(perso);
+              return;
             }
             var montantPossede = pc + 10 * (pa + 10 * (po + 10 * pp));
             if (montantPossede < depense.total) {
