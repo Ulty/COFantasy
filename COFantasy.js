@@ -9016,7 +9016,8 @@ var COFantasy = COFantasy || function() {
             target.percute = target.percute || options.percute;
             target.maxDmg = target.maxDmg || options.maxDmg;
             //Les bonus d'attaque qui dépendent de la cible
-            var bad = bonusAttaqueD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
+            var bad = 0;
+            if (!options.auto) bad = bonusAttaqueD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
             var attBonus = attBonusCommun + bad;
             if (options.traquenard) {
               var initTarg = tokenInit(target, evt);
@@ -9127,7 +9128,7 @@ var COFantasy = COFantasy || function() {
                   setTokenAttr(attaquant, 'etreinteImmole', target.token.id + ' ' + target.tokName, evt);
                   setTokenAttr(target, 'etreinteImmolePar', attaquant.token.id + ' ' + attaquant.tokName, evt);
                   setState(target, 'immobilise', true, evt);
-                  target.messages.push(attaquant.tokName + "étreint " + target.tokName + " et s'immole !");
+                  target.messages.push(attaquant.tokName + " étreint " + target.tokName + " et s'immole !");
                   target.etreinteImmole = true;
                 }
               }
@@ -15696,15 +15697,19 @@ var COFantasy = COFantasy || function() {
       roundMarkerSpec.imgsrc = stateCOF.options.images.val.image_init.val;
       var localImage;
       var gmNotes = token.get('gmnotes');
-      gmNotes = _.unescape(decodeURIComponent(gmNotes)).replace('&nbsp;', ' ');
-      gmNotes = linesOfNote(gmNotes);
-      gmNotes.forEach(function(l) {
-        if (localImage) return;
-        if (l.startsWith('init_aura:')) {
-          roundMarkerSpec.imgsrc = l.substring(10).trim();
-          localImage = true;
-        }
-      });
+      try {
+        gmNotes = _.unescape(decodeURIComponent(gmNotes)).replace('&nbsp;', ' ');
+        gmNotes = linesOfNote(gmNotes);
+        gmNotes.forEach(function(l) {
+          if (localImage) return;
+          if (l.startsWith('init_aura:')) {
+            roundMarkerSpec.imgsrc = l.substring(10).trim();
+            localImage = true;
+          }
+        });
+      } catch (uriError) {
+        log("Erreur de décodage URI dans la note GM de " + token.get('name') + " : " + gmNotes);
+      }
       roundMarker = createObj('graphic', roundMarkerSpec);
       if (roundMarker === undefined && localImage) {
         error("Image locale de " + token.get('name') + " incorrecte (" + roundMarkerSpec.imgsrc + ")", gmNotes);
@@ -26803,7 +26808,7 @@ var COFantasy = COFantasy || function() {
     var finAction = unite + " --target " + perso.token.id;
     var val = charAttributeAsInt(perso, 'bourse_' + unite, 0);
     var line = '<table style="width:100%"><tr><td>';
-    var action = 
+    var action =
       "!cof-bourse fixer ?{Nouveau montant de pièces " + piece + " ?} " + finAction;
     line += boutonSimple(action, val) + '<b>' + nom + '</b>';
     line += '</td><td style="text-align: right;">';
@@ -26908,10 +26913,10 @@ var COFantasy = COFantasy || function() {
                 setTokenAttr(perso, 'bourse_pp', pp, evt, {
                   charAttr: true
                 });
-                addEvent(evt);
-                afficherRichesse(perso);
-                return;
               }
+              addEvent(evt);
+              afficherRichesse(perso);
+              return;
             }
             var montantPossede = pc + 10 * (pa + 10 * (po + 10 * pp));
             if (montantPossede < depense.total) {
@@ -26965,7 +26970,7 @@ var COFantasy = COFantasy || function() {
             v = depenserSous(perso, 'po', bourse, v);
             v = depenserSous(perso, 'pp', bourse, v);
             if (v > 0) {
-              error("Erreur interne de calcul, il reste "+v+" PP à dépenser ??", bourse);
+              error("Erreur interne de calcul, il reste " + v + " PP à dépenser ??", bourse);
               return;
             }
             if (bourse.pc != pc)
