@@ -28295,6 +28295,17 @@ var COFantasy = COFantasy || function() {
             tousLesTokens: true
           });
         break;
+      case 'immobiliseTemp':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+          function(token) {
+            setState({
+              token: token,
+              charId: charId
+            }, 'immobilise', false, evt);
+          }, {
+            tousLesTokens: true
+          });
+        break;
       case 'etourdiTemp':
         iterTokensOfAttribute(charId, options.pageId, effet, attrName,
           function(token) {
