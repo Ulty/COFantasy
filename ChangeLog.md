@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.15
 ### Capacités
+* Gestion du mot de pouvoir qui immobilise.
 * Différence entre vitalité surnaturelle qui continue à la mort, comme celle des trolls et celle qui s'arrête à la mort.
 * Support de la capacité Enchaînement du barbare.
 * Ajout de l'attaque d'étreinte et immolation de certains démons gardiens

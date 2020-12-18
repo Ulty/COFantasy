@@ -6999,6 +6999,11 @@ var COFantasy = COFantasy || function() {
         explications.push("Lames jumelles => " + (force - 2) + " en Attaque");
       }
     }
+    if (attributeAsBool(attaquant, 'bonusAttaqueTemp')) {
+      var bonusTemp = getValeurOfEffet(attaquant, 'bonusAttaqueTemp', 5);
+      attBonus += bonusTemp;
+      explications.push("Bonus d'attaque temporaire de " + bonusTemp);
+    }
     return attBonus;
   }
 
@@ -27020,6 +27025,47 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //!cof-mot-de-pouvoir-immobilise --lanceur toid
+  function motDePouvoirImmobilise(msg) {
+    var options = parseOptions(msg);
+    var pageId = options.pageId;
+    var evt = {
+      type: 'Mot de pouvoir'
+    };
+    addEvent(evt);
+    if (options.lanceur) {
+      sendChar(options.lanceur.charId, "Prononce un mot avec la Voix d'une puissance supérieure. Tous ses ennemis sont immobilisés et ses alliés sont galvanisés.");
+
+      var allies = alliesParPerso[options.lanceur.charId];
+      if (allies) {
+        var tokens = findObjs({
+          _type: 'graphic',
+          _subtype: 'token',
+          _pageid: pageId,
+          layer: 'objects'
+        });
+        tokens.forEach(function(tok) {
+          var ci = tok.get('represents');
+          if (ci === '') return;
+          if (!allies.has(ci)) return;
+          var perso = {
+            charId: ci,
+            token: tok
+          };
+
+          setAttrDuree(perso, 'bonusAttaqueTemp', 1, evt);
+        });
+      }
+    }
+    getSelected(msg, function(selected, playerId) {
+      iterSelected(selected, function(perso) {
+        setState(perso, 'immobilise', true, evt);
+        setAttrDuree(perso, 'immobiliseTemp', 1, evt);
+      });
+
+    });
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -27436,6 +27482,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-bourse':
         gestionBourse(msg);
+        return;
+      case '!cof-mot-de-pouvoir-immobilise':
+        motDePouvoirImmobilise(msg);
         return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);
@@ -27923,6 +27972,11 @@ var COFantasy = COFantasy || function() {
       actif: "détecte l'invisible",
       fin: "ne voit plus les choses invisibles",
     },
+    bonusAttaqueTemp: {
+      activation: "affecte son attaque",
+      actif: "a son attaque affectée",
+      fin: "retrouve son attaque normale",
+    }
   };
 
   function buildPatternEffets(listeEffets, postfix) {
