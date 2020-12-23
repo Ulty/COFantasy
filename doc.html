@@ -160,6 +160,7 @@
                   <li>option <code>--self</code> : pour rajouter le personnage sélectionné. Utile si on veut le personnage et ses alliés, par exemple.</li>
                   <li>option <code>--target</code> : pour ajouter une seule cible, avec une id de token. Le personnage qui agit est celui qui est sélectionné.</li>
                   <li>option <code>--disque</code> : le premier argument doit être l'id ou le nom d'un token qui représente un personnage, le deuxième argument un rayon. Cela sélectionne tous les tokens à une distamce de moins que le rayon du premier argument. Si un troisième argument est donné, il est interprété comme la portée maximum entre le centre du disque et le token actif (qui est supposé être celui sélectionné). Si le premier argument représente un personnage avec un max de PV à 0, il est compris comme un personnage fictif créé juste pour définir le disque, et il sera supprimé après la sélection. À noter que le script crée par défaut un tel personnage, utilisable par tous, et appelé Cible.</li>
+                  <li>option <code>--enVue</code> : sélectionne tous les tokens en vue du personnage qui lance l'effet. Accepte aussi un argument d'id de token, dans ce cas on garde les token en vue de celui avec cette id.</li>
                   <li>option <code>--saufAllies</code> permet d'exclure les alliés de la sélection (voir plus haut pour la définition des alliés).</li>
                 </ul>
                 <p id="exemple_equipe"><img class="img-fluid" src="https://i.imgur.com/WHfwsKo.png" data-href="https://i.imgur.com/WHfwsKo.png"></p>
@@ -1375,6 +1376,7 @@
                   <li><strong>Bouclier de la foi</strong> : ajuster le bonus de DEF du bouclier</li>
                   <li><strong>Marteau sprirituel</strong> : utiliser une attaque, avec les options <code>--magique</code>, <code>--sortilege</code>, <code>--mana 1</code>. Si vous utilisez les options de magie puissante, ajoutez <code>?{Y passer tout le tour ?|oui,--puissant|non,&amp;#32;}</code>. Si vous préférez utiliser l'option de tempête de mana, rajoutez <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
                   <li><strong>Châtiment divin</strong> : faire une attaque de contact avec les modificateurs <code>--bonusAttaque [[@{selected|SAG}]] --plus [[@{selected|SAG}]]</code></li>
+                  <li><strong>Mot de pouvoir</strong> : <code>!cof-effet-temp etourdi 1 --lanceur @{selected|token_id} --enVue --saufAllies --mana 3 --message @{selected|name} prononce un mot avec la voix de son dieu</code> </li>
                 </ol>
                 <h4 class="text-secondary">Voie de la prière</h4>
                 <ol>
@@ -1758,7 +1760,7 @@
                   <li><strong>Hurlement</strong> : Pour les chiens infernaux, <code>!cof-peur [[10+?{Nombre de chiens?}]] [[2d4]] --portee 50 --equipe Joueurs</code>, et pour les fantômes, <code>!cof-peur 12 [[1d6]] --portee 10 --equipe Joueurs</code>. Pour l'instant, pas de prise en compte de l'immunité au hurlement apès avoir réussi son jet de SAG.</li>
                   <li><strong>Immunité aux armes</strong> : ajouter un attribut <code>immuniteAuxArmes</code> avec comme valeur <code>true</code></li>
                   <li><strong>Invisible</strong> : passer le personnage invisible (<code>!cof-set-state invisible true</code>, ou mettre directment le statut sur le token). Si il peut rester invisible en combat, lui ajouter un attribut <code>invisibleEnCombat</code>, de valeur true. Si il est attaqué autrement qu'avec tir en aveugle par quelqu'un qui ne voit pas l'invisble (à vous de montrer au moins temporairement le token), un malus de +5 en DEF au contact et +10 à distance sera appliqué, de même que le bonus de +5 en attaque contre ceux qui ne voient pas l'invisible. Le script suppose toujours qu'un personnage qui dispose de tir aveugle utilise sa capacité contre les cibles invisibles: à vous de vérifier qu'il ne cumule pas ça avec une capacité limitée.</li>
-                  <li><strong>Mot de pouvoir</strong> qui immobilise : <code>!cof-mot-de-pouvoir-immobilise --lanceur @{selected|token_id} --equipe joueurs</code> (en supposant que vous ayez une équipe de joueurs dont le nom est <code>joueurs</code>, sinon vous pouvez changer le nom ou sélectionner juste les joueurs).</li>
+                  <li><strong>Mot de pouvoir</strong> qui immobilise : <code>!cof-mot-de-pouvoir-immobilise --lanceur @{selected|token_id} --enVue --saufAllies</code> </li>
                   <li><strong>N'abandonne jamais</strong> : ajouter un attribut <code>nAbandonnejamais</code> de valeur <code>true</code>.</li>
                   <li><strong>Piqûres d'insectes</strong> : Rajouter un attribut <code>piquresDInsectes</code> avec comme valeur la résistance aux dégâts à distance appropriée</li>
                   <li>

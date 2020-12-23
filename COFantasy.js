@@ -3628,6 +3628,11 @@ var COFantasy = COFantasy || function() {
     var called;
     options = options || {};
     var actif = options.lanceur;
+    if (actif === undefined) {
+      if (msg.selected !== undefined && msg.selected.length == 1) {
+        actif = persoOfId(msg.selected[0]._id, msg.selected[0]._id, pageId);
+      }
+    }
     var finalCall = function() {
       called = true;
       var seen = new Set();
@@ -3763,7 +3768,7 @@ var COFantasy = COFantasy || function() {
             return;
           case 'disque':
             if (cmdSplit.length < 3) {
-              error("Pas assez d'argument pour définir un disque", cmdSplit);
+              error("Pas assez d'arguments pour définir un disque", cmdSplit);
               return;
             }
             var centre = persoOfId(cmdSplit[1], cmdSplit[1], pageId);
@@ -3785,11 +3790,8 @@ var COFantasy = COFantasy || function() {
                 return;
               }
               if (actif === undefined) {
-                if (msg.selected === undefined || msg.selected.length != 1) {
                   error("Pas de token sélectionné pour calculer la distance du disque", msg);
                   return;
-                }
-                actif = persoOfId(msg.selected[0]._id, msg.selected[0]._id, pageId);
               }
               if (distanceCombat(tokenCentre, actif.token, pageId, {
                   strict1: true
@@ -3832,6 +3834,68 @@ var COFantasy = COFantasy || function() {
               tokenCentre.remove(); //On l'enlève, normalement plus besoin
               delete options.targetFx;
             }
+            return;
+          case 'enVue':
+            var observateur = actif;
+            if (cmdSplit.length > 1) {
+              observateur = persoOfId(cmdSplit[1], cmdSplit[1], pageId);
+            }
+            if (observateur === undefined) {
+              error("Impossible de trouver la personne à partir de laquelle on sélectionne les tokens en vue", msg);
+              return;
+            }
+            var murs;
+            var page = getObj("page", pageId);
+            var pt;
+            if (page.get('lightrestrictmove')) {
+              pt = {
+                x: observateur.token.get('left'),
+                y: observateur.token.get('top')
+              };
+              murs = findObjs({
+                _type: 'path',
+                _pageid: pageId,
+                layer: 'walls'
+              });
+              murs = murs.map(function(path) {
+                var p = {
+                  angle: path.get('rotation') / 180 * Math.PI,
+                  width: path.get('width'),
+                  height: path.get('height'),
+                  top: path.get('top'),
+                  left: path.get('left'),
+                  scaleX: path.get('scaleX'),
+                  scaleY: path.get('scaleY'),
+                };
+                var chemin = JSON.parse(path.get('_path'));
+                if (chemin.length < 2) return [];
+                if (chemin[1][0] != 'L') return [];
+                chemin = chemin.map(function(v) {
+                  return translatePathCoordinates(v[1], v[2], p);
+                });
+                return chemin;
+              });
+            }
+            var tokensEnVue = findObjs({
+              _type: "graphic",
+              _pageid: pageId,
+              _subtype: "token",
+              layer: "objects"
+            });
+            tokensEnVue.forEach(function(obj) {
+              if (obj.id == actif.token.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
+              var objCharId = obj.get('represents');
+              if (objCharId === '') return;
+              if (obj.get('bar1_max') == 0) return; // jshint ignore:line
+              var objChar = getObj('character', objCharId);
+              if (objChar === undefined) return;
+              if (murs) {
+                if (obstaclePresent(obj.get('left'), obj.get('top'), pt, murs)) return;
+              }
+              selected.push({
+                _id: obj.id
+              });
+            });
             return;
           default:
         }
@@ -29589,6 +29653,7 @@ var COFantasy = COFantasy || function() {
     });
     return obstacle;
   }
+
   //Réagit au déplacement manuel d'un token.
   function moveToken(token, prev) {
     var charId = token.get('represents');
