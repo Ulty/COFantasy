@@ -3790,8 +3790,8 @@ var COFantasy = COFantasy || function() {
                 return;
               }
               if (actif === undefined) {
-                  error("Pas de token sélectionné pour calculer la distance du disque", msg);
-                  return;
+                error("Pas de token sélectionné pour calculer la distance du disque", msg);
+                return;
               }
               if (distanceCombat(tokenCentre, actif.token, pageId, {
                   strict1: true
@@ -11793,7 +11793,7 @@ var COFantasy = COFantasy || function() {
       sendChat('', '/w GM ' + personnage.tokName + ' réapparaîtra dans ' + duree.roll + ' tours.');
       var effet = 'effetRetarde(réapparition)';
       setAttrDuree(personnage, effet, duree.val - 1, evt);
-      personnage.token.set('layer', 'gmlayer');
+      setToken(personnage.token, 'layer', 'gmlayer', evt);
       if (personnage.attaquant) {
         var dm = rollDePlus(6);
         var dmg = {
@@ -11801,6 +11801,9 @@ var COFantasy = COFantasy || function() {
           display: dm.roll,
           total: dm.val
         };
+        var pvMax = parseInt(personnage.token.get('bar1_max'));
+        pvMax += dm.val;
+        updateCurrentBar(personnage, 1, pvMax, evt, pvMax);
         var explications = [];
         dealDamage(personnage.attaquant, dmg, [], evt, false, {}, explications,
           function(dmgDisplay, dmgFinal) {
