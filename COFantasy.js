@@ -21759,7 +21759,6 @@ var COFantasy = COFantasy || function() {
                 evt: evt
               };
               var cibles = [];
-              var allies = alliesParPerso[lanceur.charId] || new Set();
               var page = getObj("page", pageId);
               var murs = getWalls(page, pageId);
               var pt;
@@ -21779,7 +21778,6 @@ var COFantasy = COFantasy || function() {
                 if (obj.id == lanceur.token.id) return;
                 var objCharId = obj.get('represents');
                 if (objCharId === '') return;
-                if (allies.has(objCharId)) return;
                 if (obj.get('bar1_max') == 0) return; // jshint ignore:line
                 var objChar = getObj('character', objCharId);
                 if (objChar === undefined) return;
