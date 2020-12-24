@@ -3790,8 +3790,8 @@ var COFantasy = COFantasy || function() {
                 return;
               }
               if (actif === undefined) {
-                  error("Pas de token sélectionné pour calculer la distance du disque", msg);
-                  return;
+                error("Pas de token sélectionné pour calculer la distance du disque", msg);
+                return;
               }
               if (distanceCombat(tokenCentre, actif.token, pageId, {
                   strict1: true
@@ -5887,27 +5887,20 @@ var COFantasy = COFantasy || function() {
             msgPour: msgPour,
             msgRate: msgRate,
             attaquant: attaquant,
-            avecPC: true
+            avecPC: true,
+            rolls: options.rolls,
+            chanceRollId: options.chanceRollId
           };
           var saveId = condInTarget ? 'ifSave_' + etatParent.aTraiter + '_' + target.token.id :
             'ifSave_' + etatParent.aTraiter + '_' + attaquant.token.id;
           var expliquer = function(msg) {
             target.messages.push(msg);
           };
-          if (options.rolls) {
-            saveOpts.roll = options.rolls[saveId];
-            if (options.chanceRollId && options.chanceRollId[saveId]) {
-              saveOpts.chanceRollId = options.chanceRollId[saveId];
-            }
-          }
           save(ite.condition.save, target, saveId, expliquer, saveOpts, evt,
-            function(reussite, rolltext, roll) {
+            function(reussite, rolltext) {
               var branch;
               if (reussite) branch = ite.else;
               else branch = ite.then; //on teste si le save est raté
-              evt.action = evt.action || {};
-              evt.action.rolls = evt.action.rolls || {};
-              evt.action.rolls[saveId] = roll;
               if (branch === undefined) {
                 callIfAllDone(etatParent, callback);
                 return;
@@ -10615,17 +10608,13 @@ var COFantasy = COFantasy || function() {
                       msgPour: msgPour,
                       msgRate: msgRate,
                       attaquant: attaquant,
-                      avecPC: true
+                      avecPC: true,
+                      rolls: options.rolls,
+                      chanceRollId: options.chanceRollId
                     };
                     var rollId = 'etat_' + ce.etat + index + '_' + target.token.id;
-                    if (options.rolls) {
-                      saveOpts.roll = options.rolls[rollId];
-                      if (options.chanceRollId && options.chanceRollId[rollId]) {
-                        saveOpts.chanceRollId = options.chanceRollId[rollId];
-                      }
-                    }
                     save(ce.save, target, rollId, expliquer, saveOpts, evt,
-                      function(reussite, rolltext, roll) {
+                      function(reussite, rolltext) {
                         if (!reussite) {
                           setState(target, ce.etat, true, evt);
                           if (ce.saveCarac) {
@@ -10634,9 +10623,6 @@ var COFantasy = COFantasy || function() {
                             });
                           }
                         }
-                        evt.action = evt.action || {};
-                        evt.action.rolls = evt.action.rolls || {};
-                        evt.action.rolls[rollId] = roll;
                         saves--;
                         afterSaves();
                       });
@@ -10671,18 +10657,14 @@ var COFantasy = COFantasy || function() {
                     msgPour: msgPour,
                     msgRate: msgRate,
                     attaquant: attaquant,
-                    avecPC: true
+                    avecPC: true,
+                    rolls: options.rolls,
+                    chanceRollId: options.chanceRollId
                   };
                   var rollId = 'effet_' + ef.effet + index + '_' + target.token.id;
-                  if (options.rolls) {
-                    saveOpts.roll = options.rolls[rollId];
-                    if (options.chanceRollId && options.chanceRollId[rollId]) {
-                      saveOpts.chanceRollId = options.chanceRollId[rollId];
-                    }
-                  }
                   var duree = ef.duree;
                   save(ef.save, target, rollId, expliquer, saveOpts, evt,
-                    function(reussite, rollText, roll) {
+                    function(reussite, rollText) {
                       if (reussite && duree && ef.save.demiDuree) {
                         reussite = false;
                         duree = Math.ceil(duree / 2);
@@ -10751,9 +10733,6 @@ var COFantasy = COFantasy || function() {
                             });
                         }
                       }
-                      evt.action = evt.action || {};
-                      evt.action.rolls = evt.action.rolls || {};
-                      evt.action.rolls[rollId] = roll;
                       saves--;
                       savesEffets--;
                       etatsAvecSave();
@@ -11251,10 +11230,6 @@ var COFantasy = COFantasy || function() {
   //   - attaquant : le {charId, token} de l'attaquant contre lequel le save se fait (si il y en a un)
   function save(s, target, saveId, expliquer, options, evt, afterSave) {
     var bonus = 0;
-    if (options.chanceRollId) {
-      bonus += options.chanceRollId;
-      expliquer("Chance : +" + options.chanceRollId + " au jet de sauvegarde");
-    }
     if (options.attaquant &&
       charAttributeAsBool(target, 'protectionContreLeMal') &&
       estMauvais(options.attaquant)) {
@@ -11284,9 +11259,18 @@ var COFantasy = COFantasy || function() {
       bonusAttrs: bonusAttrs,
       bonus: bonus,
     };
-    if (options.roll) optionsTest.roll = options.roll;
+    if (options.rolls && options.rolls[saveId]) {
+      optionsTest.roll = options.rolls[saveId];
+      if (options.chanceRollId && options.chanceRollId[saveId]) {
+        optionsTest.bonus += options.chanceRollId[saveId];
+        expliquer("Chance : +" + options.chanceRollId[saveId] + " au jet de sauvegarde");
+      }
+    }
     testCaracteristique(target, carac, s.seuil, saveId, optionsTest, evt,
       function(tr) {
+        evt.action = evt.action || {};
+        evt.action.rolls = evt.action.rolls || {};
+        evt.action.rolls[saveId] = tr.roll;
         var smsg = target.token.get('name') + " fait " + tr.texte;
         if (tr.reussite) {
           smsg += " => réussite";
@@ -11310,7 +11294,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         expliquer(smsg);
-        afterSave(tr.reussite, tr.texte, tr.roll);
+        afterSave(tr.reussite, tr.texte);
       });
   }
 
@@ -11340,28 +11324,19 @@ var COFantasy = COFantasy || function() {
         msgPour: " pour réduire les dégâts",
         msgReussite: ", dégâts divisés par 2",
         attaquant: ps.attaquant,
-        avecPC: (evt.type == "Attaque" || evt.type == "dmgDirects")
+        avecPC: (evt.type == "Attaque" || evt.type == "dmgDirects"),
+        rolls: ps.rolls,
+        chanceRollId: ps.chanceRollId
       };
       var saveId = 'parseSave_' + target.token.id;
-      if (ps.rolls) {
-        saveOpts.roll = ps.rolls[saveId];
-        if (ps.chanceRollId && ps.chanceRollId[saveId]) {
-          saveOpts.chanceRollId = ps.chanceRollId[saveId];
-        }
-      }
       //TODO Supporter PC hors attaques
       save(ps.partialSave, target, saveId, expliquer, saveOpts, evt,
-        function(succes, rollText, roll) {
+        function(succes, rollText) {
           if (succes) {
             if (showTotal) dmgDisplay = "(" + dmgDisplay + ")";
             dmgDisplay = dmgDisplay + " / 2";
             showTotal = true;
             total = Math.ceil(total / 2);
-          }
-          if (saveOpts.avecPC) {
-            evt.action = evt.action || {};
-            evt.action.rolls = evt.action.rolls || {};
-            evt.action.rolls[saveId] = roll;
           }
           afterSave({
             succes: succes,
@@ -11793,7 +11768,7 @@ var COFantasy = COFantasy || function() {
       sendChat('', '/w GM ' + personnage.tokName + ' réapparaîtra dans ' + duree.roll + ' tours.');
       var effet = 'effetRetarde(réapparition)';
       setAttrDuree(personnage, effet, duree.val - 1, evt);
-      personnage.token.set('layer', 'gmlayer');
+      setToken(personnage.token, 'layer', 'gmlayer', evt);
       if (personnage.attaquant) {
         var dm = rollDePlus(6);
         var dmg = {
@@ -11801,6 +11776,9 @@ var COFantasy = COFantasy || function() {
           display: dm.roll,
           total: dm.val
         };
+        var pvMax = parseInt(personnage.token.get('bar1_max'));
+        pvMax += dm.val;
+        updateCurrentBar(personnage, 1, pvMax, evt, pvMax);
         var explications = [];
         dealDamage(personnage.attaquant, dmg, [], evt, false, {}, explications,
           function(dmgDisplay, dmgFinal) {
@@ -12325,19 +12303,15 @@ var COFantasy = COFantasy || function() {
                   var saveOpts = {
                     msgPour: " pour défier la mort",
                     msgReussite: ", conserve 1 PV",
-                    avecPC: true
+                    avecPC: true,
+                    rolls: options.rolls,
+                    chanceRollId: options.chanceRollId
                   };
-                  if (options.rolls) {
-                    saveOpts.roll = options.rolls[rollId];
-                    if (options.chanceRollId && options.chanceRollId[rollId]) {
-                      saveOpts.chanceRollId = options.chanceRollId[rollId];
-                    }
-                  }
                   save({
                       carac: 'CON',
                       seuil: defierLaMort
                     }, target, rollId, expliquer, saveOpts, evt,
-                    function(reussite, rollText, roll) {
+                    function(reussite, rollText) {
                       if (reussite) {
                         updateCurrentBar(target, 1, 1, evt);
                         bar1 = 1;
@@ -12352,9 +12326,6 @@ var COFantasy = COFantasy || function() {
                         setState(target, 'assome', true, evt);
                       }
                       if (showTotal) dmgDisplay += " = " + dmgTotal;
-                      evt.action = evt.action || {};
-                      evt.action.rolls = evt.action.rolls || {};
-                      evt.action.rolls[rollId] = roll;
                       if (displayRes === undefined) return dmgDisplay;
                       displayRes(dmgDisplay, pvPerdus);
                     });
@@ -14015,23 +13986,16 @@ var COFantasy = COFantasy || function() {
         msgPour: " pour ne plus être sous l'effet " + effetC,
         msgReussite: ", " + sujet + " " + met.fin,
         msgRate: ", " + sujet + " " + met.actif,
-        avecPC: true
+        avecPC: true,
+        rolls: options.rolls,
+        chanceRollId: options.chanceRollId
       };
       var saveId = 'saveParJour_' + effetC + "_" + perso.token.id;
-      if (options.rolls) {
-        saveOpts.roll = options.rolls[saveId];
-        if (options.chanceRollId && options.chanceRollId[saveId]) {
-          saveOpts.chanceRollId = options.chanceRollId[saveId];
-        }
-      }
       save({
           carac: carac,
           seuil: seuil
         }, perso, saveId, expliquer, saveOpts, evt,
-        function(reussite, texte, roll) { //asynchrone
-          evt.action = evt.action || {};
-          evt.action.rolls = evt.action.rolls || {};
-          evt.action.rolls[saveId] = roll;
+        function(reussite, texte) { //asynchrone
           if (reussite) {
             finDEffet(attrEffet, effetC, attrName, charId, evt, {
               attrSave: attr,
@@ -14533,90 +14497,94 @@ var COFantasy = COFantasy || function() {
       var options = action.options || {};
       options.rolls = action.rolls;
       addChanceToOptions(options, rollId);
-      switch (evt.type) {
-        case 'Attaque':
-          options.redo = true;
-          if (action.cibles) {
-            action.cibles.forEach(function(target) {
-              delete target.partialSaveAuto;
-            });
-          }
-          attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
-          return;
-        case 'jetPerso':
-          jetPerso(perso, action.caracteristique, action.difficulte, action.titre, action.playerId, options);
-          return;
-        case 'echapperEnveloppement':
-          echapperEnveloppement({
-            selected: action.selected,
-            content: '!cof-chance-echapper-enveloppement',
-            playerId: action.playerId,
-            options: options
-          });
-          return;
-        case 'dmgDirects':
-          dmgDirects(action.playerId, action.playerName, action.cibles, action.dmg, options);
-          return;
-        case 'effetTemp':
-          effetTemporaire(action.playerId, action.cibles, action.effet, action.mEffet, action.duree, options);
-          return;
-        case 'injonctionMortelle':
-          injonctionMortelle(action.playerId, action.attaquant, action.cible, options);
-          return;
-        case 'tueurFantasmagorique':
-          tueurFantasmagorique(action.playerId, action.attaquant, action.cible, options);
-          return;
-        case 'injonction':
-          injonction(action.playerId, action.attaquant, action.cible, options);
-          return;
-        case 'attaqueMagique':
-          attaqueMagiqueOpposee(action.playerId, action.attaquant, action.cible, options);
-          return;
-        case 'set_state':
-          doSetState(action.cibles, action.etat, action.valeur, options);
-          return;
-        case 'save_state':
-          doSaveState(action.playerId, action.perso, action.etat, action.carac, options, action.opposant, action.seuil);
-          return;
-        case 'enveloppement':
-        case 'étreinte':
-          doEnveloppement(action.attaquant, action.cible, action.difficulte, action.type, action.exprDM, options);
-          return;
-        case 'libererAgrippe':
-          doLibererAgrippe(action.perso, action.agrippant, action.attrName, options);
-          return;
-        case 'provocation':
-          doProvocation(action.voleur, action.cible, options);
-          return;
-        case 'nextTurn':
-          var turnOrder = Campaign().get("turnorder");
-          if (turnOrder === '') return; // nothing in the turn order
-          turnOrder = JSON.parse(turnOrder);
-          if (turnOrder.length < 1) return; // Juste le compteur de tour
-          var lastTurn = turnOrder.shift();
-          turnOrder.push(lastTurn);
-          Campaign().set("turnorder", JSON.stringify(turnOrder));
-          nextTurn(Campaign(), options);
-          return;
-        case 'degainer':
-          doDegainer(action.persos, action.armeLabel, options);
-          return;
-        case 'boireAlcool':
-          doBoireAlcool(action.playerId, action.persos, options);
-          return;
-        case 'vapeursEthyliques':
-          doVapeursEthyliques(action.playerId, action.persos, options);
-          return;
-        case 'nouveauJour':
-          doNouveauJour(action.persos, options);
-          return;
-        default:
-          error("Evenement avec une action, mais inconnue au niveau chance. Impossible d'annuler !", evt);
-          return;
-      }
+      if (redoEvent(evt, action, perso, options)) return;
     }
     error("Type d'évènement pas encore géré pour la chance", evt);
     addEvent(evtChance);
+  }
+
+  //Renvoie true si redo possible, false sinon
+  function redoEvent(evt, action, perso, options) {
+    switch (evt.type) {
+      case 'Attaque':
+        options.redo = true;
+        if (action.cibles) {
+          action.cibles.forEach(function(target) {
+            delete target.partialSaveAuto;
+          });
+        }
+        attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
+        return true;
+      case 'jetPerso':
+        jetPerso(perso, action.caracteristique, action.difficulte, action.titre, action.playerId, options);
+        return true;
+      case 'echapperEnveloppement':
+        echapperEnveloppement({
+          selected: action.selected,
+          content: '!cof-chance-echapper-enveloppement',
+          playerId: action.playerId,
+          options: options
+        });
+        return true;
+      case 'dmgDirects':
+        dmgDirects(action.playerId, action.playerName, action.cibles, action.dmg, options);
+        return true;
+      case 'effetTemp':
+        effetTemporaire(action.playerId, action.cibles, action.effet, action.mEffet, action.duree, options);
+        return true;
+      case 'injonctionMortelle':
+        injonctionMortelle(action.playerId, action.attaquant, action.cible, options);
+        return true;
+      case 'tueurFantasmagorique':
+        tueurFantasmagorique(action.playerId, action.attaquant, action.cible, options);
+        return true;
+      case 'injonction':
+        injonction(action.playerId, action.attaquant, action.cible, options);
+        return true;
+      case 'attaqueMagique':
+        attaqueMagiqueOpposee(action.playerId, action.attaquant, action.cible, options);
+        return true;
+      case 'set_state':
+        doSetState(action.cibles, action.etat, action.valeur, options);
+        return true;
+      case 'save_state':
+        doSaveState(action.playerId, action.perso, action.etat, action.carac, options, action.opposant, action.seuil);
+        return true;
+      case 'enveloppement':
+      case 'étreinte':
+        doEnveloppement(action.attaquant, action.cible, action.difficulte, action.type, action.exprDM, options);
+        return true;
+      case 'libererAgrippe':
+        doLibererAgrippe(action.perso, action.agrippant, action.attrName, options);
+        return true;
+      case 'provocation':
+        doProvocation(action.voleur, action.cible, options);
+        return true;
+      case 'nextTurn':
+        var turnOrder = Campaign().get("turnorder");
+        if (turnOrder === '') return false; // nothing in the turn order
+        turnOrder = JSON.parse(turnOrder);
+        if (turnOrder.length < 1) return false; // Juste le compteur de tour
+        var lastTurn = turnOrder.shift();
+        turnOrder.push(lastTurn);
+        Campaign().set("turnorder", JSON.stringify(turnOrder));
+        nextTurn(Campaign(), options);
+        return true;
+      case 'degainer':
+        doDegainer(action.persos, action.armeLabel, options);
+        return true;
+      case 'boireAlcool':
+        doBoireAlcool(action.playerId, action.persos, options);
+        return true;
+      case 'vapeursEthyliques':
+        doVapeursEthyliques(action.playerId, action.persos, options);
+        return true;
+      case 'nouveauJour':
+        doNouveauJour(action.persos, options);
+        return true;
+      default:
+        return false;
+    }
   }
 
   function addChanceToOptions(options, rollId) {
@@ -14738,78 +14706,9 @@ var COFantasy = COFantasy || function() {
       undoEvent(evtARefaire);
       addEvent(evt);
       if (rollId) delete options.rolls[rollId];
-      else if (options.rolls && options.rolls.attack)
-        delete options.rolls.attack;
-      switch (evtARefaire.type) {
-        case 'Attaque':
-          options.redo = true;
-          if (action.cibles) {
-            action.cibles.forEach(function(target) {
-              delete target.partialSaveAuto;
-            });
-          }
-          attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
-          return;
-        case 'jetPerso':
-          delete options.roll;
-          jetPerso(perso, action.caracteristique, action.difficulte, action.titre, action.playerId, options);
-          return;
-        case 'echapperEnveloppement':
-          delete options.roll;
-          echapperEnveloppement({
-            selected: action.selected,
-            content: '!cof-chance-echapper-enveloppement',
-            playerId: action.playerId,
-            options: options
-          });
-          return;
-        case 'dmgDirects':
-          dmgDirects(action.playerId, action.playerName, action.cibles, action.dmg, options);
-          return;
-        case 'effetTemp':
-          effetTemporaire(action.playerId, action.cibles, action.effet, action.mEffet, action.duree, options);
-          return;
-        case 'injonctionMortelle':
-          injonctionMortelle(action.playerId, action.attaquant, action.cible, options);
-          return;
-        case 'tueurFantasmagorique':
-          tueurFantasmagorique(action.playerId, action.attaquant, action.cible, options);
-          return;
-        case 'set_state':
-          doSetState(action.cibles, action.etat, action.valeur, options);
-          return;
-        case 'save_state':
-          doSaveState(action.playerId, action.perso, action.etat, action.carac, options, action.opposant, action.seuil);
-          return;
-        case 'enveloppement':
-        case 'étreinte':
-          doEnveloppement(action.attaquant, action.cible, action.difficulte, action.type, action.exprDM, options);
-          return;
-        case 'libererAgrippe':
-          doLibererAgrippe(action.perso, action.agrippant, action.attrName, options);
-          return;
-        case 'nextTurn':
-          var turnOrder = Campaign().get("turnorder");
-          if (turnOrder === '') return; // nothing in the turn order
-          turnOrder = JSON.parse(turnOrder);
-          if (turnOrder.length < 1) return; // Juste le compteur de tour
-          var lastTurn = turnOrder.shift();
-          turnOrder.push(lastTurn);
-          Campaign().set("turnorder", JSON.stringify(turnOrder));
-          nextTurn(Campaign(), options);
-          return;
-        case 'degainer':
-          doDegainer(action.persos, action.armeLabel, options);
-          return;
-        case 'boireAlcool':
-          doBoireAlcool(action.playerId, action.persos, options);
-          return;
-        case 'vapeursEthyliques':
-          doVapeursEthyliques(action.playerId, action.persos, options);
-          return;
-        default:
-          return;
-      }
+      else if (options.rolls && options.rolls.attack) delete options.rolls.attack;
+      if (!redoEvent(evtARefaire, action, perso, options))
+        error("Type d'évènement pas supporté par le bouton Rune d'Energie", evt);
     } else { //Juste pour vérifier l'attribut et le diminuer
       getSelected(msg, function(selection) {
         if (selection.length === 0) {
@@ -17210,21 +17109,15 @@ var COFantasy = COFantasy || function() {
         var saveOpts = {
           msgPour: " pour résister à l'effet " + stringOfEtat(etat),
           msgRate: ", raté.",
-          avecPC: true
+          avecPC: true,
+          rolls: options.rolls,
+          chanceRollId: options.chanceRollId
         };
         var expliquer = function(s) {
           sendChar(perso.charId, s);
         };
         var saveId = 'effet_' + etat + '_' + perso.token.id;
-        if (options.rolls) {
-          saveOpts.roll = options.rolls[saveId];
-          if (options.chanceRollId && options.chanceRollId[saveId]) {
-            saveOpts.chanceRollId = options.chanceRollId[saveId];
-          }
-        }
-        save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, rollText, roll) {
-          evt.action.rolls = evt.action.rolls || {};
-          evt.action.rolls[saveId] = roll;
+        save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, rollText) {
           if (!reussite) {
             setEffect();
           }
@@ -17647,21 +17540,15 @@ var COFantasy = COFantasy || function() {
         var saveOpts = {
           msgPour: " pour garder son arme en main",
           msgRate: ", raté.",
-          avecPC: true
+          avecPC: true,
+          rolls: options.rolls,
+          chanceRollId: options.chanceRollId
         };
         var expliquer = function(s) {
           sendChar(perso.charId, s);
         };
         var saveId = 'garderArme_' + perso.token.id;
-        if (options.rolls) {
-          saveOpts.roll = options.rolls[saveId];
-          if (options.chanceRollId && options.chanceRollId[saveId]) {
-            saveOpts.chanceRollId = options.chanceRollId[saveId];
-          }
-        }
-        save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, rollText, roll) {
-          evt.action.rolls = evt.action.rolls || {};
-          evt.action.rolls[saveId] = roll;
+        save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, rollText) {
           if (!reussite) {
             afterSave();
           }
@@ -18067,27 +17954,21 @@ var COFantasy = COFantasy || function() {
             msgPour: " pour résister à l'effet " + effet,
             msgRate: ", raté.",
             attaquant: lanceur,
-            avecPC: true
+            avecPC: true,
+            rolls: options.rolls,
+            chanceRollId: options.chanceRollId
           };
           var expliquer = function(s) {
             sendChar(perso.charId, s);
           };
           var d = duree;
           var saveId = 'effet_' + effet + "_" + perso.token.id;
-          if (options.rolls) {
-            saveOpts.roll = options.rolls[saveId];
-            if (options.chanceRollId && options.chanceRollId[saveId]) {
-              saveOpts.chanceRollId = options.chanceRollId[saveId];
-            }
-          }
           save(options.save, perso, saveId, expliquer, saveOpts, evt,
-            function(reussite, rollText, roll) {
+            function(reussite, rollText) {
               if (reussite && options.save.demiDuree) {
                 reussite = false;
                 d = Math.ceil(d / 2);
               }
-              evt.action.rolls = evt.action.rolls || {};
-              evt.action.rolls[saveId] = roll;
               if (!reussite) {
                 setOneEffect(perso, d);
               }
@@ -18826,19 +18707,13 @@ var COFantasy = COFantasy || function() {
           var saveOpts = {
             msgPour: " pour résister au tueur fantasmagorique",
             attaquant: attaquant,
-            avecPC: true
+            avecPC: true,
+            rolls: options.rolls,
+            chanceRollId: options.chanceRollId
           };
           var saveId = 'tueurFantasmagorique_' + cible.token.id;
-          if (options.rolls) {
-            saveOpts.roll = options.rolls[saveId];
-            if (options.chanceRollId && options.chanceRollId[saveId]) {
-              saveOpts.chanceRollId = options.chanceRollId[saveId];
-            }
-          }
           save(s, cible, saveId, expliquer, saveOpts, evt,
-            function(reussiteSave, texte, roll) {
-              evt.action.rolls = evt.action.rolls || {};
-              evt.action.rolls[saveId] = roll;
+            function(reussiteSave, texte) {
               if (reussiteSave) {
                 addLineToFramedDisplay(display, cible.token.get('name') + " perd l'équilibre et tombe par terre");
                 setState(cible, 'renverse', true, evt);
@@ -18908,15 +18783,11 @@ var COFantasy = COFantasy || function() {
       msgReussite: ", réussi.",
       msgRate: ", raté.",
       attaquant: attaquant,
-      avecPC: true
+      avecPC: true,
+      rolls: options.rolls,
+      chanceRollId: options.chanceRollId
     };
     var saveId = 'injonctionMortelle_' + cible.token.id;
-    if (options.rolls) {
-      saveOpts.roll = options.rolls[saveId];
-      if (options.chanceRollId && options.chanceRollId[saveId]) {
-        saveOpts.chanceRollId = options.chanceRollId[saveId];
-      }
-    }
     var expliquer = function(message) {
       addLineToFramedDisplay(display, message, 80);
     };
@@ -18924,9 +18795,7 @@ var COFantasy = COFantasy || function() {
         carac: 'CON',
         seuil: 15
       }, cible, saveId, expliquer, saveOpts, evt,
-      function(reussite, rollText, roll) {
-        evt.action.rolls = evt.action.rolls || {};
-        evt.action.rolls[saveId] = roll;
+      function(reussite, rollText) {
         if (reussite) {
           var nc = attributeAsInt(attaquant, "niveau", 0);
           var dmg = {
@@ -26254,19 +26123,13 @@ var COFantasy = COFantasy || function() {
       if (options.save) {
         var saveOpts = {
           hideSaveTitle: true,
-          avecPC: true
+          avecPC: true,
+          rolls: options.rolls,
+          chanceRollId: options.chanceRollId
         };
         var saveId = 'vapeursEthyliques_' + perso.token.id;
-        if (options.rolls) {
-          saveOpts.roll = options.rolls[saveId];
-          if (options.chanceRollId && options.chanceRollId[saveId]) {
-            saveOpts.chanceRollId = options.chanceRollId[saveId];
-          }
-        }
         save(options.save, perso, saveId, expliquer, saveOpts, evt,
-          function(succes, rollText, roll) {
-            evt.action.rolls = evt.action.rolls || {};
-            evt.action.rolls[saveId] = roll;
+          function(succes, rollText) {
             if (!succes) {
               augmenteEbriete(perso, evt, expliquer);
               setTokenAttr(perso, 'vapeursEthyliques', 0, evt, {
@@ -26344,19 +26207,13 @@ var COFantasy = COFantasy || function() {
       if (options.save) {
         var saveOpts = {
           hideSaveTitle: true,
-          avecPC: true
+          avecPC: true,
+          rolls: options.rolls,
+          chanceRollId: options.chanceRollId
         };
         var saveId = 'boireAlcool_' + perso.token.id;
-        if (options.rolls) {
-          saveOpts.roll = options.rolls[saveId];
-          if (options.chanceRollId && options.chanceRollId[saveId]) {
-            saveOpts.chanceRollId = options.chanceRollId[saveId];
-          }
-        }
         save(options.save, perso, saveId, expliquer, saveOpts, evt,
-          function(succes, rollText, roll) {
-            evt.action.rolls = evt.action.rolls || {};
-            evt.action.rolls[saveId] = roll;
+          function(succes, rollText) {
             if (!succes) {
               augmenteEbriete(perso, evt, expliquer);
             }
@@ -26367,7 +26224,6 @@ var COFantasy = COFantasy || function() {
         finalize();
       }
     });
-
   }
 
   function jouerSon(msg) {
@@ -29089,23 +28945,16 @@ var COFantasy = COFantasy || function() {
         msgPour: msgPour,
         msgReussite: msgReussite,
         msgRate: msgRate,
-        avecPC: true
+        avecPC: true,
+        rolls: options.rolls,
+        chanceRollId: options.chanceRollId
       };
       var saveId = 'saveParTour_' + attrEffet.id + '_' + perso.token.id;
-      if (options.rolls) {
-        saveOpts.roll = options.rolls[saveId];
-        if (options.chanceRollId && options.chanceRollId[saveId]) {
-          saveOpts.chanceRollId = options.chanceRollId[saveId];
-        }
-      }
       save({
           carac: carac,
           seuil: seuil
         }, perso, saveId, expliquer, saveOpts, evt,
-        function(reussite, texte, roll) { //asynchrone
-          evt.action = evt.action || {};
-          evt.action.rolls = evt.action.rolls || {};
-          evt.action.rolls[saveId] = roll;
+        function(reussite, texte) { //asynchrone
           if (reussite) {
             finDEffet(attrEffet, effetTempOfAttribute(attrEffet), attrName, charId, evt, {
               attrSave: attr,
