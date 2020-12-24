@@ -1985,7 +1985,6 @@ var COFantasy = COFantasy || function() {
    *     - defenseur_pietinement_targetid: jet de du défenseur pour le piétinement
    *   - options : options de l'action
    * attenteResultat  : permet de savoir que le jet est en attente de décision pour savoir si c'est un succès ou non (quand il n'y a pas de difficulté donnée et que le personnage est sous l'emprise d'une malédiction)
-   * waitingForAoe   : même usage que attenteResultat
    */
 
   function addEvent(evt) {
@@ -3615,6 +3614,58 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function getWalls(page, pageId, murs) {
+    murs = findObjs({
+      _type: 'path',
+      _pageid: pageId,
+      layer: 'walls'
+    });
+    murs = murs.map(function(path) {
+      var p = {
+        angle: path.get('rotation') / 180 * Math.PI,
+        width: path.get('width'),
+        height: path.get('height'),
+        top: path.get('top'),
+        left: path.get('left'),
+        scaleX: path.get('scaleX'),
+        scaleY: path.get('scaleY'),
+      };
+      var chemin = JSON.parse(path.get('_path'));
+      if (chemin.length < 2) return [];
+      if (chemin[1][0] != 'L') return [];
+      chemin = chemin.map(function(v) {
+        return translatePathCoordinates(v[1], v[2], p);
+      });
+      return chemin;
+    });
+    if (murs) return murs;
+    if (!page.get('lightrestrictmove')) return;
+    murs = findObjs({
+      _type: 'path',
+      _pageid: pageId,
+      layer: 'walls'
+    });
+    murs = murs.map(function(path) {
+      var p = {
+        angle: path.get('rotation') / 180 * Math.PI,
+        width: path.get('width'),
+        height: path.get('height'),
+        top: path.get('top'),
+        left: path.get('left'),
+        scaleX: path.get('scaleX'),
+        scaleY: path.get('scaleY'),
+      };
+      var chemin = JSON.parse(path.get('_path'));
+      if (chemin.length < 2) return [];
+      if (chemin[1][0] != 'L') return [];
+      chemin = chemin.map(function(v) {
+        return translatePathCoordinates(v[1], v[2], p);
+      });
+      return chemin;
+    });
+    return murs;
+  }
+
   // callback(selected, playerId)
   function getSelected(msg, callback, options) {
     var playerId = getPlayerIdFromMsg(msg);
@@ -3844,37 +3895,14 @@ var COFantasy = COFantasy || function() {
               error("Impossible de trouver la personne à partir de laquelle on sélectionne les tokens en vue", msg);
               return;
             }
-            var murs;
             var page = getObj("page", pageId);
+            var murs = getWalls(page, pageId);
             var pt;
-            if (page.get('lightrestrictmove')) {
+            if (murs) {
               pt = {
                 x: observateur.token.get('left'),
                 y: observateur.token.get('top')
               };
-              murs = findObjs({
-                _type: 'path',
-                _pageid: pageId,
-                layer: 'walls'
-              });
-              murs = murs.map(function(path) {
-                var p = {
-                  angle: path.get('rotation') / 180 * Math.PI,
-                  width: path.get('width'),
-                  height: path.get('height'),
-                  top: path.get('top'),
-                  left: path.get('left'),
-                  scaleX: path.get('scaleX'),
-                  scaleY: path.get('scaleY'),
-                };
-                var chemin = JSON.parse(path.get('_path'));
-                if (chemin.length < 2) return [];
-                if (chemin[1][0] != 'L') return [];
-                chemin = chemin.map(function(v) {
-                  return translatePathCoordinates(v[1], v[2], p);
-                });
-                return chemin;
-              });
             }
             var tokensEnVue = findObjs({
               _type: "graphic",
@@ -16834,21 +16862,6 @@ var COFantasy = COFantasy || function() {
               psaveopt.partialSave = psaveParams;
             }
             return;
-          case 'waitingForAoe':
-            if (opt.length < 2) {
-              error("Il manque l'id de l'événement qui a provoqué les dégâts", optArgs);
-              options.return = true;
-              return;
-            }
-            var originalEvt = findEvent(opt[1]);
-            if (originalEvt === undefined) {
-              sendPlayer(msg, "Trop tard pour les dégâts : l'action de départ est trop ancienne ou a été annulée");
-              options.return = true;
-              return;
-            }
-            options.evt = originalEvt;
-            // Il faudra enlever evt à la place de faire un addEvent
-            return;
           case 'asphyxie':
           case 'affute':
           case "metal":
@@ -21672,6 +21685,7 @@ var COFantasy = COFantasy || function() {
   function destructionDesMortsVivants(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
+    var pageId = options.pageId;
     var args = options.cmd;
     if (args === undefined || args.length < 2) {
       error("Il faut au moins un argument à !cof-destruction-des-morts-vivants", args);
@@ -21736,13 +21750,56 @@ var COFantasy = COFantasy || function() {
           function(testRes) {
             var msgJet = "Jet de SAG : " + testRes.texte;
             if (testRes.reussite) {
-              var action = "!cof-dmg " + dm + " --sortilege --mortsVivants";
-              action += " --attaquant " + lanceur.token.id;
-              action += " --waitingForAoe " + evt.id;
               addLineToFramedDisplay(display, msgJet + " &ge; 13");
               sendChat(name, endFramedDisplay(display));
-              threadSync++; //Pour arrêter le roundMarker
-              sendChat('COF', "/w GM Sélectionner les token en vue de " + name + ", et [cliquer ici](" + action + ")");
+              var optionsDM = {
+                sortilege: true,
+                lanceur: lanceur,
+                aoe: true,
+                evt: evt
+              };
+              var cibles = [];
+              var allies = alliesParPerso[lanceur.charId] || new Set();
+              var page = getObj("page", pageId);
+              var murs = getWalls(page, pageId);
+              var pt;
+              if (murs) {
+                pt = {
+                  x: lanceur.token.get('left'),
+                  y: lanceur.token.get('top')
+                };
+              }
+              var tokensEnVue = findObjs({
+                _type: "graphic",
+                _pageid: pageId,
+                _subtype: "token",
+                layer: "objects"
+              });
+              tokensEnVue.forEach(function(obj) {
+                if (obj.id == lanceur.token.id) return;
+                var objCharId = obj.get('represents');
+                if (objCharId === '') return;
+                if (allies.has(objCharId)) return;
+                if (obj.get('bar1_max') == 0) return; // jshint ignore:line
+                var objChar = getObj('character', objCharId);
+                if (objChar === undefined) return;
+                if (murs) {
+                  if (obstaclePresent(obj.get('left'), obj.get('top'), pt, murs)) return;
+                }
+                var cible = {
+                  charId: objCharId,
+                  token: obj
+                };
+                if (!estMortVivant(cible)) return;
+                cibles.push(cible);
+              });
+              var dmg = {
+                type: 'normal',
+                value: dm.trim(),
+              };
+              var playerName = msg.who;
+              if (playerIsGM(playerId)) playerName = 'GM';
+              dmgDirects(playerId, playerName, cibles, dmg, optionsDM);
             } else {
               addLineToFramedDisplay(display, msgJet + " < 13");
               addLineToFramedDisplay(display, name + " ne réussit pas à invoquer son dieu.");
@@ -29586,34 +29643,9 @@ var COFantasy = COFantasy || function() {
           x: x,
           y: y
         };
-        var murs = prev.murs;
+        var murs = getWalls(page, pageId, prev.murs);
         var distance =
           Math.sqrt((x - prev.left) * (x - prev.left) + (y - prev.top) * (y - prev.top));
-        if (murs === undefined && page.get('lightrestrictmove')) {
-          murs = findObjs({
-            _type: 'path',
-            _pageid: pageId,
-            layer: 'walls'
-          });
-          murs = murs.map(function(path) {
-            var p = {
-              angle: path.get('rotation') / 180 * Math.PI,
-              width: path.get('width'),
-              height: path.get('height'),
-              top: path.get('top'),
-              left: path.get('left'),
-              scaleX: path.get('scaleX'),
-              scaleY: path.get('scaleY'),
-            };
-            var chemin = JSON.parse(path.get('_path'));
-            if (chemin.length < 2) return [];
-            if (chemin[1][0] != 'L') return [];
-            chemin = chemin.map(function(v) {
-              return translatePathCoordinates(v[1], v[2], p);
-            });
-            return chemin;
-          });
-        }
         attrSuivi.forEach(function(as) {
           var suivants = as.get('current').split(':::');
           var removedSuivant;
