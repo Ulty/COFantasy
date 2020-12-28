@@ -6000,6 +6000,19 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  function getValeurStringOfEffet(perso, effet, def, attrDef) {
+    var attrsVal = tokenAttribute(perso, effet + 'Valeur');
+    if (attrsVal.length === 0) {
+      if (attrDef) {
+        var attr = charAttribute(perso, attrDef);
+        if (attr.length === 0) return def;
+        return attr[0].get('current');
+      }
+      return def;
+    }
+    return attrsVal[0].get('current');
+  }
+
   // renvoie la valeur du bonus si il y a un capitaine (ou commandant)
   function aUnCapitaine(cible, evt, pageId) {
     var charId = cible.charId;
@@ -6624,8 +6637,9 @@ var COFantasy = COFantasy || function() {
       defense -= 10;
     }
     if (options.metal && attributeAsBool(target, 'magnetisme')) {
-      defense += 5;
-      explications.push(tokenName + " contrôle le magnétisme (+5 DEF)");
+      var magnetisme = getValeurOfEffet(target, 'magnetisme', 5);
+      defense += magnetisme;
+      explications.push(tokenName + " contrôle le magnétisme (+" + magnetisme + " DEF)");
     }
     if (attributeAsBool(target, 'diversionManoeuvre')) {
       var diversion = getValeurOfEffet(target, 'diversionManoeuvre', -5);
@@ -10516,7 +10530,8 @@ var COFantasy = COFantasy || function() {
                     //Les DMs automatiques en cas de toucher une cible
                     if (attributeAsBool(target, 'sousTension')) {
                       ciblesCount++;
-                      sendChat("", "[[1d6]]", function(res) {
+                      var exprSousTension = '[[' + getValeurStringOfEffet(target, 'sousTension', '1d6') + ']]';
+                      sendChat('', exprSousTension, function(res) {
                         var rolls = res[0];
                         var explRoll = rolls.inlinerolls[0];
                         var r = {
@@ -21792,7 +21807,7 @@ var COFantasy = COFantasy || function() {
                 cibles.push(cible);
               });
               var dmg = {
-                type: 'normal',
+                type: 'magique',
                 value: dm.trim(),
               };
               var playerName = msg.who;
