@@ -271,6 +271,7 @@
                       <li><code>etatCible</code> <i>e</i> : vrai si l'état <i>e</i> est actif sur toutes la cible. Cet état peut être un des états définis plus bas, ou un attribut quelconque.</li>
                       <li><code>attributCible</code> <i>attr</i> <i>val</i>: vrai si la cible possède un attribut <i>attr</i>, de valeur <i>val</i>, aux majuscules près. On peut optionnellement préciser qu'il s'agit d'un attribut par token en rajoutant le mot clé <code>local</code>, ou encore qu'il sagit d'un attribut de la fiche, avec éventuellement sa valeur par défaut, en ajoutant le mot clé <code>fiche <i>defaut</i></code>.</li>
                       <li><code>deAttaque</code> <i>n</i> : vrai si le jet de dé d'attaque est supérieur ou égal à <i>n</i>.</li>
+                      <li><code>touche</code> : vrai si l'attaque touche.</li>
                       <li><code>critique</code> : vrai si l'attaque est un critique.</li>
                       <li><code>echecCritique</code> : vrai si l'attaque est un échec critique.</li>
                     </ul>
@@ -921,6 +922,7 @@
                   <li><strong>Charmant</strong> : ajouter les compétences sur la fiche</li>
                   <li><strong>Dentelles et rapière</strong> : Ajouter un attribut <code>dentellesEtRapiere</code> avec comme valeur le rang dans la voie de la séduction. Cela augmente la DEF, mais seulement lorsque le barde ne porte pas d'armure et seulement contre les attaques au contact. (ne se voit pas sur le total de DEF de la fiche)</li>
                   <li><strong>Arme secrète</strong> : <code>!cof-arme-secrete @{selected|token_id} @{target|token_id}</code></li>
+                  <li><strong>Suggestion</strong> : faire une attaque magique de portée 20 m (?), type sortilège mental, modificateurs <code>pasDeDmg, difficultePVmax</code> et options <code>--if touche --message la cible doit faire l'action suggérée --endif --mana 2</code>. Si utilisez l'option de tempête de mana, rajoutez <code>--rang 4 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. En version parchemin, <code>#Attaque Suggestion --toucher [[@{selected|ATKMAG}]] --portee 20 --pasDeDmg --difficultePVmax --sortilege --mental --if touche --message la cible doit faire l'action suggérée --endif</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du vagabond</h4>
                 <ol>
