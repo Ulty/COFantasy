@@ -344,6 +344,9 @@ var COFantasy = COFantasy || function() {
     penombre: 'status_archery-target'
   };
 
+  //Remplis quand on sait quels sont les markers dans setStateCOF
+  var etat_de_marker = {};
+
   function tokenAttribute(personnage, name) {
     var token = personnage.token;
     // Tokens Mook : attribut mook d'abord, attribut character sinon
@@ -386,7 +389,7 @@ var COFantasy = COFantasy || function() {
   function attrAsBool(attr) {
     if (attr.length === 0) return false;
     attr = attr[0].get('current');
-    if (attr == '0') return false;
+    if (attr == '0' || attr == 'false') return false;
     if (attr) return true;
     return false;
   }
@@ -764,7 +767,6 @@ var COFantasy = COFantasy || function() {
           no_error = false;
         }
       });
-
       // Cas particulier des deux markers d'initiative
       if (markerCatalog["cof-init-ally"]) {
         stateCOF.statusForInitAlly = "status_" + markerCatalog["cof-init-ally"].tag;
@@ -814,6 +816,12 @@ var COFantasy = COFantasy || function() {
         else
           log("Markers personnalisés manquants -> Retour aux markers standards Roll20. Voir erreur(s) ci-dessus.");
       }
+    }
+    //Construction de la table markers => etat
+    etat_de_marker = {};
+    for (var etat in cof_states) {
+      var marker = cof_states[etat].substring(7);
+      etat_de_marker[marker] = etat;
     }
   }
 
@@ -1623,6 +1631,10 @@ var COFantasy = COFantasy || function() {
   function setState(personnage, etat, value, evt) {
     var token = personnage.token;
     var charId = personnage.charId;
+    if (value && charAttributeAsBool(personnage, 'immunite_' + etat)) {
+      sendChar(charId, 'ne peut pas être ' + stringOfEtat(etat, personnage));
+      return false;
+    }
     var aff =
       affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
     if (value && etatRendInactif(etat) && isActive(personnage)) {
@@ -1635,7 +1647,7 @@ var COFantasy = COFantasy || function() {
     }
     var pageId = token.get('pageid');
     if (etat == 'aveugle') {
-      // We also change vision of the token
+      // On change la vision du token
       var page = getObj('page', pageId);
       var udl = page && page.get('dynamic_lighting_enabled');
       if (udl) {
@@ -1835,7 +1847,7 @@ var COFantasy = COFantasy || function() {
     if (token.get('bar1_link') !== '') {
       if (charId === '') {
         error("token with a linked bar1 but representing no character", token);
-        return;
+        return true;
       }
       if (etat == 'affaibli') { //special case due to new character sheet
         var attr =
@@ -1934,6 +1946,7 @@ var COFantasy = COFantasy || function() {
     }
     if (!value && etatRendInactif(etat) && isActive(personnage) ||
       etat == 'aveugle') updateInit(token, evt);
+    return true;
   }
 
   /*
@@ -2961,20 +2974,13 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
-  //retourne un entier
-  // evt n'est défini que si la caractéristique est effectivement utlilisée
-  function bonusTestCarac(carac, personnage, options, evt, explications) {
-    var expliquer = function(msg) {
-      if (explications) explications.push(msg);
-    };
-    var bonus = 0;
-    if (persoEstPNJ(personnage)) {
-      bonus = ficheAttributeAsInt(personnage, PNJCaracOfMod(carac), 0);
-    } else {
-      bonus = modCarac(personnage, caracOfMod(carac));
-      bonus += ficheAttributeAsInt(personnage, carac + "_BONUS", 0);
+  function bonusTestToutesCaracs(personnage, options, evt, expliquer) {
+    if (options && options.cacheBonusToutesCaracs) {
+      if (options.cacheBonusToutesCaracs.val !== undefined) {
+        return options.cacheBonusToutesCaracs.val;
+      }
     }
-    expliquer("Bonus de " + carac + " : " + bonus);
+    var bonus = 0;
     if (attributeAsBool(personnage, 'chantDesHeros')) {
       var bonusChantDesHeros = getValeurOfEffet(personnage, 'chantDesHeros', 1);
       var chantDesHerosIntense = attributeAsInt(personnage, 'chantDesHerosTempeteDeManaIntense', 0);
@@ -3039,6 +3045,78 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
+    if (options) {
+      if (options.bonus) bonus += options.bonus;
+      var malusCasque = false;
+      if (options.bonusAttrs) {
+        options.bonusAttrs.forEach(function(attr) {
+          var bonusAttribut = charAttributeAsInt(personnage, attr, 0);
+          switch (attr) {
+            case 'perception':
+              malusCasque = true;
+              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+                expliquer("Forêt hostile : -5 en perception");
+                bonus -= 5;
+              }
+              break;
+            case 'survie':
+              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+                expliquer("Forêt hostile : -5 en survie");
+                bonus -= 5;
+              }
+              break;
+            case 'orientation':
+              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+                expliquer("Forêt hostile : -5 en orientation");
+                bonusAttribut -= 5;
+              }
+              break;
+            case 'discrétion':
+            case 'discretion':
+              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+                expliquer("Forêt hostile : -5 en discrétion");
+                bonus -= 5;
+              }
+              break;
+            case 'vigilance':
+              malusCasque = true;
+              break;
+          }
+          if (bonusAttribut !== 0) {
+            expliquer("Attribut " + attr + " : " + ((bonusAttribut < 0) ? "-" : "+") + bonusAttribut);
+            bonus += bonusAttribut;
+          }
+        });
+      }
+      if (malusCasque && ficheAttributeAsBool(personnage, 'casque_on', false)) {
+        malusCasque = ficheAttributeAsInt(personnage, 'casque_malus', 0);
+        if (malusCasque > 0) {
+          expliquer("Malus de casque : -" + malusCasque);
+          bonus -= malusCasque;
+        }
+      }
+      if (options.cacheBonusToutesCaracs) {
+        options.cacheBonusToutesCaracs.val = bonus;
+      }
+    }
+    return bonus;
+  }
+
+  //retourne un entier
+  // evt n'est défini que si la caractéristique est effectivement utlilisée
+  function bonusTestCarac(carac, personnage, options, evt, explications) {
+    var expliquer = function(msg) {
+      if (explications) explications.push(msg);
+    };
+    var bonus = 0;
+    // D'abord la partie qui dépend de la caractéristique
+    if (persoEstPNJ(personnage)) {
+      bonus = ficheAttributeAsInt(personnage, PNJCaracOfMod(carac), 0);
+    } else {
+      bonus = modCarac(personnage, caracOfMod(carac));
+      bonus += ficheAttributeAsInt(personnage, carac + "_BONUS", 0);
+    }
+    expliquer("Bonus de " + carac + " : " + bonus);
     var bonusAspectDuDemon;
     switch (carac) {
       case 'DEX':
@@ -3103,57 +3181,9 @@ var COFantasy = COFantasy || function() {
         }
         break;
     }
-    if (options) {
-      if (options.bonus) bonus += options.bonus;
-      var malusCasque = false;
-      if (options.bonusAttrs) {
-        options.bonusAttrs.forEach(function(attr) {
-          var bonusAttribut = charAttributeAsInt(personnage, attr, 0);
-          switch (attr) {
-            case 'perception':
-              malusCasque = true;
-              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-                expliquer("Forêt hostile : -5 en perception");
-                bonus -= 5;
-              }
-              break;
-            case 'survie':
-              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-                expliquer("Forêt hostile : -5 en survie");
-                bonus -= 5;
-              }
-              break;
-            case 'orientation':
-              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-                expliquer("Forêt hostile : -5 en orientation");
-                bonusAttribut -= 5;
-              }
-              break;
-            case 'discrétion':
-            case 'discretion':
-              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-                expliquer("Forêt hostile : -5 en discrétion");
-                bonus -= 5;
-              }
-              break;
-            case 'vigilance':
-              malusCasque = true;
-              break;
-          }
-          if (bonusAttribut !== 0) {
-            expliquer("Attribut " + attr + " : " + ((bonusAttribut < 0) ? "-" : "+") + bonusAttribut);
-            bonus += bonusAttribut;
-          }
-        });
-      }
-      if (malusCasque && ficheAttributeAsBool(personnage, 'casque_on', false)) {
-        malusCasque = ficheAttributeAsInt(personnage, 'casque_malus', 0);
-        if (malusCasque > 0) {
-          expliquer("Malus de casque : -" + malusCasque);
-          bonus -= malusCasque;
-        }
-      }
-    }
+    // Puis la partie commune
+    options = options || {};
+    bonus += bonusTestToutesCaracs(personnage, options, evt, expliquer);
     //Pas besoin de mettre la valeur de caractéristique si c'est le seul bonus
     if (explications && explications.length == 1) explications.pop();
     return bonus;
@@ -3985,11 +4015,10 @@ var COFantasy = COFantasy || function() {
     return playerId;
   }
 
+  //!cof-jet [carac] [difficulte]
+  // - carac : FOR, DEX, CON, INT, SAG, CHA
+  // Les tokens sélectionnés sont ceux qui doivent faire le jet
   function jet(msg) {
-    // Les arguments pour cof-jet sont :
-    // - Caracteristique (FOR, DEX, CON, INT, SAG, CHA)
-    // - difficulté (optionelle)
-    // Les tokens sélectionnés sont ceux qui doivent faire le jet
     var opts = msg.content.split(' --');
     var cmd = opts.shift().split(' ');
     var options = {
@@ -11244,12 +11273,15 @@ var COFantasy = COFantasy || function() {
 
   // Meilleure carac parmis 2 pour un save.
   function meilleureCarac(carac1, carac2, personnage, seuil) {
-    var bonus1 = bonusTestCarac(carac1, personnage);
+    var options = {
+      cacheBonusToutesCaracs: {}
+    };
+    var bonus1 = bonusTestCarac(carac1, personnage, options);
     if (carac1 == 'DEX') {
       bonus1 += charAttributeAsInt(personnage, 'reflexesFelins', 0);
       bonus1 += charAttributeAsInt(personnage, 'esquiveVoleur', 0);
     }
-    var bonus2 = bonusTestCarac(carac2, personnage);
+    var bonus2 = bonusTestCarac(carac2, personnage, options);
     if (carac2 == 'DEX') {
       bonus2 += charAttributeAsInt(personnage, 'reflexesFelins', 0);
       bonus2 += charAttributeAsInt(personnage, 'esquiveVoleur', 0);
@@ -15426,7 +15458,9 @@ var COFantasy = COFantasy || function() {
           return;
         }
         var name = perso.token.get('name');
-        if (charAttributeAsBool(perso, 'immuniteContreSurprise')) {
+        if (charAttributeAsBool(perso, 'immuniteContreSurprise') ||
+          charAttributeAsBool(perso, 'immunite_surpris')
+        ) {
           addLineToFramedDisplay(display, name + " n'est pas surpris" + eForFemale(perso));
           sendEvent();
           return;
@@ -18330,7 +18364,8 @@ var COFantasy = COFantasy || function() {
     messages, evt, callback) {
     var targetName = target.token.get('name');
     if (charAttributeAsBool(target, 'sansPeur') ||
-      charAttributeAsBool(target, 'immunitePeur') ||
+      charAttributeAsBool(target, 'immunitePeur') || //deprecated
+      charAttributeAsBool(target, 'immunite_peur') ||
       charAttributeAsBool(target, 'proprioception') ||
       attributeAsBool(target, 'enragé')) {
       messages.push(targetName + " est insensible à la peur !");
@@ -29976,41 +30011,35 @@ var COFantasy = COFantasy || function() {
       charId: charId
     };
     var evt = {
-      type: "set_state", // evt est un objet avec type="set_state"
+      type: "set_state",
     };
     affectToken(token, 'statusmarkers', prev.statusmarkers, evt);
     var currentMarkers = [];
-    if (token.get("statusmarkers") !== '') {
-      currentMarkers = token.get("statusmarkers").split(',');
+    var markers = token.get("statusmarkers");
+    if (markers !== '') {
+      currentMarkers = markers.split(',');
     }
     var previousMarkers = [];
     if (prev.statusmarkers !== '') {
       previousMarkers = prev.statusmarkers.split(',');
     }
-    // Si un ancien Marker a disparu
-    if (previousMarkers) {
-      var supprMarkers = previousMarkers.filter(x => !currentMarkers.includes(x));
-      supprMarkers.forEach(function(state) {
-        var value = "status_" + state;
-        var etat = Object.keys(cof_states).find(key => cof_states[key] === value);
-        // Si on ne retrouve pas le Marker dans cof_states, on oublie
-        if (etat !== undefined) {
-          setState(perso, etat, false, evt);
-        }
-      });
-    }
-    // Si un nouveau Marker est apparu
-    if (currentMarkers !== null) {
-      let addMarkers = currentMarkers.filter(x => !previousMarkers.includes(x));
-      addMarkers.forEach(function(state) {
-        var value = "status_" + state;
-        var etat = Object.keys(cof_states).find(key => cof_states[key] === value);
-        // Si on ne retrouve pas le Marker dans cof_states, on oublie
-        if (etat !== undefined) {
-          setState(perso, etat, true, evt);
-        }
-      });
-    }
+    // Pour tous les markers disparus
+    previousMarkers.forEach(function(marker) {
+      if (currentMarkers.includes(marker)) return;
+      var etat = etat_de_marker[marker];
+      if (etat) {
+        setState(perso, etat, false, evt);
+      }
+    });
+    // Ensuite les markers apparuts
+    currentMarkers.forEach(function(marker) {
+      if (previousMarkers.includes(marker)) return;
+      var etat = etat_de_marker[marker];
+      if (etat) {
+        var succes = setState(perso, etat, true, evt);
+        if (!succes) token.set('status_' + marker, false);
+      }
+    });
     addEvent(evt);
   }
 

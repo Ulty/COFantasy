@@ -642,8 +642,8 @@
                       </tr>
                     </tbody>
                   </table>
-                  <p>Pour faciliter la gestion des états, on peut deux macros dans la barre du GM, <code>!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|immobilise|endormi|apeure|invisible|blessé|encombre} true</code>, et la même avec <code>false</code>. (N'oubliez pas que la commande <code>!cof-set-macros</code> permet de générer automatiquement les macros utiles au script). Une fois qu'on connaît bien les icônes, on peut directement les changer sur les tokens pour le même effet (et même faire un undo de ces changements si besoin).
-                  </p>
+                  <p>Pour faciliter la gestion des états, on peut deux macros dans la barre du GM, <code>!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|immobilise|endormi|apeure|invisible|blessé|encombre} true</code>, et la même avec <code>false</code>. (N'oubliez pas que la commande <code>!cof-set-macros</code> permet de générer automatiquement les macros utiles au script). Une fois qu'on connaît bien les icônes, on peut directement les changer sur les tokens pour le même effet (et même faire un undo de ces changements si besoin).  </p>
+                  <p>À noter qu'un personnage ayant un attribut nommé <code>immunite_<i>etat</i></code> de valeur <code>true</code> ne pourra pas être mis dans l'état <i>etat</i>.</p>
                   <p>Enfin, il est possible de faire réaliser un jet pour se libérer d'un état, en utilisant la commande <code>!cof-save-state <i>etat</i> <i>carac</i> <i>seuil</i></code>. Il est possible de remplacer <i>seuil</i> par une id de token pour faire faire un test en opposition avec ce token. On peut aussi passer la caractéristique et le seuil en argument à <code>!cof-set-state</code> pour proposer le jet à chaque fois qu'on affiche les <code>#Actions#</code> ou qu'on affiche le statut du personnage.</p>
                 </div>
                 <h4 class="text-secondary">Autres bufs et debufs</h4>
@@ -1496,7 +1496,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie de l'honneur</h4>
                 <ol>
-                  <li><strong>Chef né</strong> : ajouter un attrubut <code>immunitePeur</code>, de valeur <code>true</code>, et des attributs ou compétences pour l'intimidation et commander.</li>
+                  <li><strong>Chef né</strong> : ajouter un attrubut <code>immunite_peur</code>, de valeur <code>true</code>, et des attributs ou compétences pour l'intimidation et commander.</li>
                   <li><strong>Défi</strong> : <code>!cof-defi-samourai @{selected|token_id} @{target|token_id} <i>bonus</i></code>. Le bonus en argument est optionnel. Si il n'est pas présent, le script utilise la valeur d'un attribut <code>voieDeLHonneur</code>.</li>
                   <li><strong>Honorable</strong> : pas de support particulier. </li>
                 </ol>
@@ -1520,7 +1520,7 @@
                   <li><strong>Discrétion</strong> : on peut ajouter une compétence discrétion sur la fiche, avec le bon bonus. Pour l'utilisation de <code>!cof-jet</code>, ajouter un attribut <code>discrétion</code> avec la valeur du bonus total.</li>
                   <li><strong>Attaque sournoise</strong> : Faire des versions des attaques avec <code>--sournoise <i>n</i></code>, où <i>n</i> est le nombre de dés de l'attaque sournoise. Au MJ de vérifier que les conditions de l'attaque sournoise sont remplies. Le plus pratique pour l'utilisation avec differentes armes, est de créer une ability nommée <code>#Attaque-sournoise#</code>, commençant avec une ligne <code>!options --sournoise 2</code> (pour 2 dés), et ensuite oit une ligne <code>!attaques</code>, soit une liste d'attaques du voleur. Cette ability peut elle-même se trouver dans les <code>#Actions#</code> (sous la forme d'une ligne <code>%#Attaque-sournoise#</code>), permettant ainsi au voleur de choisir son arme.</li>
                   <li><strong>Ombre mouvante</strong> : pas beaucoup de support. Faire <code>!cof-jet DEX 10</code> pour le jet de dextérité, le reste est géré par le MJ.</li>
-                  <li><strong>Surprise</strong> : ajouter un attribut <code>immuniteContreSurprise</code> de valeur <code>true</code>. Pour le reste, à gérer par le MJ.</li>
+                  <li><strong>Surprise</strong> : ajouter un attribut <code>immunite_surpris</code> de valeur <code>true</code>. Pour le reste, à gérer par le MJ.</li>
                   <li><strong>Ouverture mortelle</strong> : ajouter les options <code>--ouvertureMortelle --limiteParCombat 1 ouvertureMortelle --sournoise <i>rang</i></code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'aventurier</h4>

@@ -15,6 +15,7 @@
 * Injonction Mortelle (Magie Maléfique rang 3)
 
 ### Autres améliorations
+* Ajout des immunités aux différents états.
 * Ajout de la possibilité de sélectionner les tokens en vue d'un personnage.
 * Ajout d'une interface de gestion de la bourse.
 * Support de la pénombre
