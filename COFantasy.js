@@ -6907,7 +6907,7 @@ var COFantasy = COFantasy || function() {
       if (ficheAttributeAsBool(attaquant, 'attaque_en_puissance_check')) {
         options.attaqueEnPuissance = ficheAttributeAsInt(attaquant, 'attaque_en_puissance', 1);
       }
-      if (options.attaqueEnPuissance) {
+      if (!options.auto && options.attaqueEnPuissance) {
         attBonus -= 5 * options.attaqueEnPuissance;
         explications.push("Attaque en puissance => -" + (5 * options.attaqueEnPuissance) + " en Attaque et +" + options.attaqueEnPuissance + options.d6 + " DM");
       }
@@ -9759,7 +9759,7 @@ var COFantasy = COFantasy || function() {
       });
       explications.push("Même pas mal => +1" + options.d6 + " DM");
     }
-    if (options.attaqueEnPuissance) {
+    if (!options.auto && options.attaqueEnPuissance) {
       options.additionalDmg.push({
         type: mainDmgType,
         value: options.attaqueEnPuissance + options.d6
