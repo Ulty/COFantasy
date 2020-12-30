@@ -4618,6 +4618,7 @@ var COFantasy = COFantasy || function() {
         break;
     }
     var lastEtat; //dernier de etats et effets
+    var lastType = options.type; //dernier type de dégâts infligés
     var scope = options; //Pour les conditionnelles
     optArgs.forEach(function(arg) {
       arg = arg.trim();
@@ -4901,17 +4902,20 @@ var COFantasy = COFantasy || function() {
             lastEtat = {
               effet: effet,
               duree: duree,
-              message: m
+              message: m,
+              typeDmg: lastType
             };
             scope.seulementVivant = scope.seulementVivant || (m && m.seulementVivant);
           } else if (estEffetCombat(effet)) {
             lastEtat = {
-              effet: effet
+              effet: effet,
+              typeDmg: lastType
             };
           } else if (estEffetIndetermine(effet)) {
             lastEtat = {
               effet: effet,
-              effetIndetermine: true
+              effetIndetermine: true,
+              typeDmg: lastType
             };
           } else {
             error(cmd[1] + " n'est pas un effet temporaire répertorié", cmd);
@@ -4930,7 +4934,12 @@ var COFantasy = COFantasy || function() {
             return;
           }
           scope.effets[0].valeur = cmd[1];
-          if (cmd.length > 2) scope.effets[0].valeurMax = cmd[2];
+          if (cmd.length > 2) {
+            scope.effets[0].valeurMax = cmd[2];
+            if (scope.effets[0].effet && scope.effets[0].effet.startsWith('dotGen(')) {
+              scope.effets[0].typeDmg = cmd[2];
+            }
+          }
           return;
         case 'accumuleDuree':
           if (cmd.length < 2) {
@@ -4970,7 +4979,8 @@ var COFantasy = COFantasy || function() {
           scope.etats = scope.etats || [];
           lastEtat = {
             etat: etat,
-            condition: condition
+            condition: condition,
+            typeDmg: lastType
           };
           if (cmd[0] == 'etat' && cmd.length > 3) {
             if (isCarac(cmd[2])) {
@@ -5028,6 +5038,7 @@ var COFantasy = COFantasy || function() {
         case 'poison':
         case 'maladie':
         case 'argent':
+          lastType = cmd[0];
           var l = 0;
           if (scope.additionalDmg) l = scope.additionalDmg.length;
           if (l > 0) {
@@ -10517,6 +10528,7 @@ var COFantasy = COFantasy || function() {
                     ef.saveParTour.carac, evt, {
                       maxVal: ef.saveParTour.seuil
                     });
+                  setTokenAttr(target, ef.effet + 'SaveParTourType', ef.typeDmg, evt);
                 }
               });
             }
@@ -10705,7 +10717,8 @@ var COFantasy = COFantasy || function() {
                         attaquant: attaquant,
                         avecPC: true,
                         rolls: options.rolls,
-                        chanceRollId: options.chanceRollId
+                        chanceRollId: options.chanceRollId,
+                        type: ce.typeDmg
                       };
                       var rollId = 'etat_' + ce.etat + index + '_' + target.token.id;
                       save(ce.save, target, rollId, expliquer, saveOpts, evt,
@@ -10754,7 +10767,8 @@ var COFantasy = COFantasy || function() {
                       attaquant: attaquant,
                       avecPC: true,
                       rolls: options.rolls,
-                      chanceRollId: options.chanceRollId
+                      chanceRollId: options.chanceRollId,
+                      type: ef.typeDmg
                     };
                     var rollId = 'effet_' + ef.effet + index + '_' + target.token.id;
                     var duree = ef.duree;
@@ -10819,6 +10833,7 @@ var COFantasy = COFantasy || function() {
                               evt, {
                                 maxVal: ef.saveParTour.seuil
                               });
+                            setTokenAttr(target, ef.effet + 'SaveParTourType', ef.typeDmg, evt);
                           }
                           if (ef.saveParJour) {
                             setTokenAttr(target,
@@ -10826,6 +10841,7 @@ var COFantasy = COFantasy || function() {
                               evt, {
                                 maxVal: ef.saveParJour.seuil
                               });
+                            setTokenAttr(target, ef.effet + 'SaveParJourType', ef.typeDmg, evt);
                           }
                         }
                         saves--;
@@ -11327,6 +11343,7 @@ var COFantasy = COFantasy || function() {
   //   - msgReussite : message à afficher en cas de réussite
   //   - msgRate : message à afficher si l'action rate
   //   - attaquant : le {charId, token} de l'attaquant contre lequel le save se fait (si il y en a un)
+  //   - type : le type de dégâts contre lequel on fait le save
   function save(s, target, saveId, expliquer, options, evt, afterSave) {
     var bonus = 0;
     if (options.attaquant &&
@@ -11348,6 +11365,9 @@ var COFantasy = COFantasy || function() {
     }
     if (options.sortilege) {
       bonusAttrs.push('resistanceALaMagie');
+    }
+    if (options.type) {
+      bonusAttrs.push('bonusSaveContre_' + options.type);
     }
     if (!options.hideSaveTitle) {
       var title = " Jet de " + carac + " " + s.seuil;
@@ -11398,53 +11418,56 @@ var COFantasy = COFantasy || function() {
   }
 
   function partialSave(ps, target, showTotal, dmgDisplay, total, expliquer, evt, afterSave) {
-    if (ps.partialSave !== undefined) {
-      if ((ps.partialSave.carac == 'CON' || ps.partialSave.carac2 == 'CON') && estNonVivant(target)) {
-        expliquer("Les créatures non-vivantes sont immnunisées aux attaques qui demandent un test de constitution");
+    if (ps.partialSave === undefined) {
+      afterSave();
+      return;
+    }
+    if ((ps.partialSave.carac == 'CON' || ps.partialSave.carac2 == 'CON') && estNonVivant(target)) {
+      expliquer("Les créatures non-vivantes sont immnunisées aux attaques qui demandent un test de constitution");
+      afterSave({
+        succes: true,
+        dmgDisplay: '0',
+        total: 0,
+        showTotal: false
+      });
+      return;
+    }
+    if (target.partialSaveAuto) {
+      if (showTotal) dmgDisplay = '(' + dmgDisplay + ')';
+      afterSave({
+        succes: true,
+        dmgDisplay: dmgDisplay + '/2',
+        total: Math.ceil(total / 2),
+        showTotal: true
+      });
+      return;
+    }
+    var saveOpts = {
+      msgPour: " pour réduire les dégâts",
+      msgReussite: ", dégâts divisés par 2",
+      attaquant: ps.attaquant,
+      avecPC: (evt.type == "Attaque" || evt.type == "dmgDirects"),
+      rolls: ps.rolls,
+      chanceRollId: ps.chanceRollId,
+      type: ps.type
+    };
+    var saveId = 'parseSave_' + target.token.id;
+    //TODO Supporter PC hors attaques
+    save(ps.partialSave, target, saveId, expliquer, saveOpts, evt,
+      function(succes, rollText) {
+        if (succes) {
+          if (showTotal) dmgDisplay = "(" + dmgDisplay + ")";
+          dmgDisplay = dmgDisplay + " / 2";
+          showTotal = true;
+          total = Math.ceil(total / 2);
+        }
         afterSave({
-          succes: true,
-          dmgDisplay: '0',
-          total: 0,
-          showTotal: false
+          succes: succes,
+          dmgDisplay: dmgDisplay,
+          total: total,
+          showTotal: showTotal
         });
-        return;
-      }
-      if (target.partialSaveAuto) {
-        if (showTotal) dmgDisplay = '(' + dmgDisplay + ')';
-        afterSave({
-          succes: true,
-          dmgDisplay: dmgDisplay + '/2',
-          total: Math.ceil(total / 2),
-          showTotal: true
-        });
-        return;
-      }
-      var saveOpts = {
-        msgPour: " pour réduire les dégâts",
-        msgReussite: ", dégâts divisés par 2",
-        attaquant: ps.attaquant,
-        avecPC: (evt.type == "Attaque" || evt.type == "dmgDirects"),
-        rolls: ps.rolls,
-        chanceRollId: ps.chanceRollId
-      };
-      var saveId = 'parseSave_' + target.token.id;
-      //TODO Supporter PC hors attaques
-      save(ps.partialSave, target, saveId, expliquer, saveOpts, evt,
-        function(succes, rollText) {
-          if (succes) {
-            if (showTotal) dmgDisplay = "(" + dmgDisplay + ")";
-            dmgDisplay = dmgDisplay + " / 2";
-            showTotal = true;
-            total = Math.ceil(total / 2);
-          }
-          afterSave({
-            succes: succes,
-            dmgDisplay: dmgDisplay,
-            total: total,
-            showTotal: showTotal
-          });
-        });
-    } else afterSave();
+      });
   }
 
   function getRDS(perso) {
@@ -13886,6 +13909,15 @@ var COFantasy = COFantasy || function() {
           }
           options.son = cmd.slice(1).join(' ');
           return;
+        case 'feu':
+        case 'froid':
+        case 'acide':
+        case 'electrique':
+        case 'sonique':
+        case 'poison':
+        case 'maladie':
+          options.type = cmd[0];
+          return;
         default:
           return;
       }
@@ -14011,7 +14043,9 @@ var COFantasy = COFantasy || function() {
     var attrsSave = attrs.filter(function(attr) {
       var attrName = attr.get('name');
       var indexSave = attrName.indexOf('SaveParJour');
-      return indexSave > 0;
+      if (indexSave <= 0) return false;
+      indexSave = attrName.indexOf('SaveParJourType');
+      return indexSave <= 0;
     });
     //Les saves sont asynchrones
     var count = attrsSave.length;
@@ -14067,6 +14101,13 @@ var COFantasy = COFantasy || function() {
       });
       if (attrEffet === undefined || attrEffet.length === 0) {
         error("Save sans effet associé " + attrName, attr);
+        findObjs({
+          _type: 'attribute',
+          _characterid: charId,
+          name: attr.get('name').replace('SaveParJour', 'SaveParJourType')
+        }).forEach(function(a) {
+          a.remove();
+        });
         attr.remove();
         finalize();
         return;
@@ -14089,6 +14130,14 @@ var COFantasy = COFantasy || function() {
         rolls: options.rolls,
         chanceRollId: options.chanceRollId
       };
+      var attrType = findObjs({
+        _type: 'attribute',
+        _characterid: charId,
+        name: attr.get('name').replace('SaveParJour', 'SaveParJourType')
+      });
+      if (attrType.length > 0) {
+        saveOpts.type = attrType[0].get('current');
+      }
       var saveId = 'saveParJour_' + effetC + "_" + perso.token.id;
       save({
           carac: carac,
@@ -17197,7 +17246,8 @@ var COFantasy = COFantasy || function() {
           msgRate: ", raté.",
           avecPC: true,
           rolls: options.rolls,
-          chanceRollId: options.chanceRollId
+          chanceRollId: options.chanceRollId,
+          type: options.type
         };
         var expliquer = function(s) {
           sendChar(perso.charId, s);
@@ -17789,6 +17839,9 @@ var COFantasy = COFantasy || function() {
       error(effet + " n'est pas un effet temporaire répertorié", msg.content);
       return;
     }
+    if (!options.type && options.valeurMax && effet.startsWith('dotGen(')) {
+      options.type = options.valeurMax;
+    }
     var pp = effet.indexOf('(');
     var mEffet = (pp > 0) ? messageEffetTemp[effet.substring(effet, pp)] : messageEffetTemp[effet];
     if (mEffet === undefined) {
@@ -18009,6 +18062,9 @@ var COFantasy = COFantasy || function() {
             options.saveParTour.carac, evt, {
               maxVal: options.saveParTour.seuil
             });
+          if (options.type) {
+            setTokenAttr(perso, effet + 'SaveParTourType', options.type, evt);
+          }
         }
         if (options.puissant) {
           var puissant = true;
@@ -18042,7 +18098,8 @@ var COFantasy = COFantasy || function() {
             attaquant: lanceur,
             avecPC: true,
             rolls: options.rolls,
-            chanceRollId: options.chanceRollId
+            chanceRollId: options.chanceRollId,
+            type: options.type
           };
           var expliquer = function(s) {
             sendChar(perso.charId, s);
@@ -18796,7 +18853,8 @@ var COFantasy = COFantasy || function() {
             attaquant: attaquant,
             avecPC: true,
             rolls: options.rolls,
-            chanceRollId: options.chanceRollId
+            chanceRollId: options.chanceRollId,
+            type: 'magique'
           };
           var saveId = 'tueurFantasmagorique_' + cible.token.id;
           save(s, cible, saveId, expliquer, saveOpts, evt,
@@ -18880,7 +18938,8 @@ var COFantasy = COFantasy || function() {
     };
     save({
         carac: 'CON',
-        seuil: 15
+        seuil: 15,
+        type: 'magique'
       }, cible, saveId, expliquer, saveOpts, evt,
       function(reussite, rollText) {
         if (reussite) {
@@ -26254,7 +26313,8 @@ var COFantasy = COFantasy || function() {
           hideSaveTitle: true,
           avecPC: true,
           rolls: options.rolls,
-          chanceRollId: options.chanceRollId
+          chanceRollId: options.chanceRollId,
+          type: 'poison'
         };
         var saveId = 'vapeursEthyliques_' + perso.token.id;
         save(options.save, perso, saveId, expliquer, saveOpts, evt,
@@ -26338,7 +26398,8 @@ var COFantasy = COFantasy || function() {
           hideSaveTitle: true,
           avecPC: true,
           rolls: options.rolls,
-          chanceRollId: options.chanceRollId
+          chanceRollId: options.chanceRollId,
+          type: 'poison'
         };
         var saveId = 'boireAlcool_' + perso.token.id;
         save(options.save, perso, saveId, expliquer, saveOpts, evt,
@@ -28056,7 +28117,7 @@ var COFantasy = COFantasy || function() {
     return (patternEffetsTemp.test(name));
   }
 
-  var patternAttributEffetsTemp = buildPatternEffets(messageEffetTemp, ["Puissant", "Valeur", "SaveParTour", "TempeteDeManaIntense"]);
+  var patternAttributEffetsTemp = buildPatternEffets(messageEffetTemp, ["Puissant", "Valeur", "SaveParTour", "SaveParTourType", "TempeteDeManaIntense"]);
 
   function estAttributEffetTemp(name) {
     return (patternAttributEffetsTemp.test(name));
@@ -28180,7 +28241,7 @@ var COFantasy = COFantasy || function() {
     return (patternEffetsCombat.test(name));
   }
 
-  var patternAttributEffetsCombat = buildPatternEffets(messageEffetCombat, ["Puissant", "Valeur", "SaveParTour", "TempeteDeManaIntense"]);
+  var patternAttributEffetsCombat = buildPatternEffets(messageEffetCombat, ["Puissant", "Valeur", "SaveParTour", "SaveParTourType", "TempeteDeManaIntense"]);
 
   function estAttributEffetCombat(name) {
     return (patternAttributEffetsCombat.test(name));
@@ -28327,6 +28388,7 @@ var COFantasy = COFantasy || function() {
       options.attrSave.remove();
     } else if (options.gardeAutresAttributs === undefined) { //On cherche si il y en a un
       enleverEffetAttribut(charId, efComplet, attrName, 'SaveParTour', evt);
+      enleverEffetAttribut(charId, efComplet, attrName, 'SaveParTourType', evt);
     }
     var mEffet = messageEffetTemp[effet];
     if (mEffet && mEffet.statusMarker) {
@@ -29014,6 +29076,8 @@ var COFantasy = COFantasy || function() {
       var attrName = attr.get('name');
       var indexSave = attrName.indexOf('SaveParTour');
       if (indexSave < 0) return false;
+      var indexSaveType = attrName.indexOf('SaveParTourType');
+      if (indexSaveType > 0) return false;
       return estEffetTemp(attrName.substring(0, indexSave));
     });
     //Les saves sont asynchrones
@@ -29055,6 +29119,13 @@ var COFantasy = COFantasy || function() {
       });
       if (attrEffet === undefined || attrEffet.length === 0) {
         error("Save sans effet temporaire " + attrName, attr);
+        findObjs({
+          _type: 'attribute',
+          _characterid: charId,
+          name: attr.get('name').replace('SaveParTour', 'SaveParTourType')
+        }).forEach(function(a) {
+          a.remove();
+        });
         attr.remove();
         return;
       }
@@ -29078,6 +29149,14 @@ var COFantasy = COFantasy || function() {
         rolls: options.rolls,
         chanceRollId: options.chanceRollId
       };
+      var attrType = findObjs({
+        _type: 'attribute',
+        _characterid: charId,
+        name: attr.get('name').replace('SaveParTour', 'SaveParTourType')
+      });
+      if (attrType.length > 0) {
+        saveOpts.type = attrType[0].get('current');
+      }
       var saveId = 'saveParTour_' + attrEffet.id + '_' + perso.token.id;
       save({
           carac: carac,

@@ -16,6 +16,7 @@
 * Injonction Mortelle (Magie Maléfique rang 3)
 
 ### Autres améliorations
+* Possibilité d'avoir des bonus aux saves contre un type donné.
 * Ajout des immunités aux différents états.
 * Ajout de la possibilité de sélectionner les tokens en vue d'un personnage.
 * Ajout d'une interface de gestion de la bourse.
