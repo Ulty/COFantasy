@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.15
 ### Capacités
+* Suggestion de la Voie de la séduction du barde
 * Gestion du mot de pouvoir qui immobilise.
 * Différence entre vitalité surnaturelle qui continue à la mort, comme celle des trolls et celle qui s'arrête à la mort.
 * Support de la capacité Enchaînement du barbare.
@@ -15,6 +16,7 @@
 * Injonction Mortelle (Magie Maléfique rang 3)
 
 ### Autres améliorations
+* Ajout des immunités aux différents états.
 * Ajout de la possibilité de sélectionner les tokens en vue d'un personnage.
 * Ajout d'une interface de gestion de la bourse.
 * Support de la pénombre
