@@ -11313,6 +11313,16 @@ var COFantasy = COFantasy || function() {
 
   // Meilleure carac parmis 2 pour un save.
   function meilleureCarac(carac1, carac2, personnage, seuil) {
+    var sansEsprit;
+    if (carac1 == 'SAG' || carac1 == 'INT' || carac1 == 'CHA') {
+      sansEsprit = charAttributeAsBool(personnage, 'sansEsprit');
+      if (sansEsprit) return carac1;
+    }
+    if (sansEsprit === undefined &&
+      (carac2 == 'SAG' || carac2 == 'INT' || carac2 == 'CHA')) {
+      sansEsprit = charAttributeAsBool(personnage, 'sansEsprit');
+      if (sansEsprit) return carac2;
+    }
     var options = {
       cacheBonusToutesCaracs: {}
     };
@@ -18448,6 +18458,7 @@ var COFantasy = COFantasy || function() {
       charAttributeAsBool(target, 'immunitePeur') || //deprecated
       charAttributeAsBool(target, 'immunite_peur') ||
       charAttributeAsBool(target, 'proprioception') ||
+      charAttributeAsBool(target, 'sansEsprit') ||
       attributeAsBool(target, 'enragé')) {
       messages.push(targetName + " est insensible à la peur !");
       callback();
