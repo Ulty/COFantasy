@@ -9733,14 +9733,25 @@ var COFantasy = COFantasy || function() {
     if (ef.effet == 'dedoublement') {
       if (attributeAsBool(target, 'dedouble') ||
         attributeAsBool(target, 'dedoublement')) {
-        target.messages.push(target.tokName + " a déjà été dédoublé pendant ce combat");
+        if (ef.whisper !== undefined) {
+          sendChar(target.charId, ef.whisper + " a déjà été dédoublé pendant ce combat");
+        } else {
+          target.messages.push(target.tokName + " a déjà été dédoublé pendant ce combat");
+        }
         return;
       }
       var dedoubleMsg =
-        "Un double translucide de " + target.tokName +
-        " apparaît. Il est aux ordres de " + attaquant.tokName;
+        "Un double translucide de " + target.tokName + " apparaît.";
+      if (attaquant) {
+        if (attaquant.tokName === undefined) attaquant.tokName = attaquant.token.get('name');
+        dedoubleMsg += " Il est aux ordres de " + attaquant.tokName;
+      }
       if (stateCOF.options.affichage.val.duree_effets.val) dedoubleMsg += " (" + duree + " tours)";
-      target.messages.push(dedoubleMsg);
+      if (ef.whisper !== undefined) {
+        sendChar(target.charId, ef.whisper + dedoubleMsg);
+      } else {
+        target.messages.push(dedoubleMsg);
+      }
       setTokenAttr(target, 'dedouble', true, evt);
       copieToken(target, undefined, stateCOF.options.images.val.image_double.val,
         "Double de " + target.tokName, 'dedoublement', duree,
@@ -9748,10 +9759,17 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (ef.effet == 'saignementsSang' && charAttributeAsBool(target, 'immuniteSaignement')) {
-      target.messages.push(target.tokName + " ne peut pas saigner");
+      if (ef.whisper !== undefined) {
+        sendChar(target.charId, ef.whisper + "ne peut pas saigner");
+      } else {
+        target.messages.push(target.tokName + " ne peut pas saigner");
+      }
       return;
     }
     if (ef.duree) {
+      if (ef.typeDmg && (!ef.message || !ef.message.dm) && charAttributeAsBool(target, 'diviseEffet_' + ef.typeDmg)) {
+        duree = Math.ceil(duree / 2);
+      }
       if (ef.accumuleDuree) {
         if (ef.accumuleDuree > 1 && attributeAsBool(target, ef.effet)) {
           var accumuleAttr = tokenAttribute(target, ef.effet + 'DureeAccumulee');
@@ -9772,17 +9790,29 @@ var COFantasy = COFantasy || function() {
           return; //Pas besoin de réappliquer, effet toujours en cours
         }
       }
-      if (ef.typeDmg && (!ef.message || !ef.message.dm) && charAttributeAsBool(target, 'diviseEffet_' + ef.typeDmg)) {
-        duree = Math.ceil(duree / 2);
-      }
+      var targetMsg;
       if (ef.message) {
-        var targetMsg = target.tokName + " " + ef.message.activation;
+        if (ef.whisper === undefined) {
+          targetMsg = target.tokName + " " + ef.message.activation;
+        } else {
+          targetMsg = ef.whisper + ef.message.activation;
+        }
         if (stateCOF.options.affichage.val.duree_effets.val) targetMsg += " (" + duree + " tours)";
-        target.messages.push(targetMsg);
+        var img = ef.image;
+        if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
+          var newLineimg = '<span style="padding: 4px 0;" >  ';
+          newLineimg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+          newLineimg += '</span>';
+          targetMsg += newLineimg;
+        }
+        if (ef.whisper === undefined) {
+          target.messages.push(targetMsg);
+          targetMsg = undefined;
+        }
       }
-      var attrEffet = setAttrDuree(target, ef.effet, duree, evt);
+      var attrEffet = setAttrDuree(target, ef.effet, duree, evt, targetMsg);
       var effet = messageEffetTemp[ef.effet];
-      if (options.mana !== undefined && effet && effet.prejudiciable) {
+      if (attaquant && options.mana !== undefined && effet && effet.prejudiciable) {
         addEffetTemporaireLie(attaquant, attrEffet, evt);
       }
       switch (ef.effet) {
@@ -9819,7 +9849,7 @@ var COFantasy = COFantasy || function() {
       var effetC = messageEffetCombat[ef.effet];
       target.messages.push(target.tokName + " " + effetC.activation);
       var attrEffetCombat = setTokenAttr(target, ef.effet, true, evt);
-      if (options.mana !== undefined && effetC.prejudiciable) {
+      if (attaquant && options.mana !== undefined && effetC.prejudiciable) {
         addEffetTemporaireLie(attaquant, attrEffetCombat, evt);
       }
     }
@@ -9835,7 +9865,8 @@ var COFantasy = COFantasy || function() {
         ef.saveParTour.carac, evt, {
           maxVal: ef.saveParTour.seuil
         });
-      setTokenAttr(target, ef.effet + 'SaveParTourType', ef.typeDmg, evt);
+      if (ef.typeDmg)
+        setTokenAttr(target, ef.effet + 'SaveParTourType', ef.typeDmg, evt);
     }
   }
 
@@ -10536,6 +10567,10 @@ var COFantasy = COFantasy || function() {
                   savesEffets++;
                   return; //on le fera plus tard
                 }
+                if (ef.typeDmg && charAttributeAsBool(target, 'immunite_' + ef.typeDmg)) {
+                  target.messages.push(target.tokName + " ne semble pas affecté par " + stringOfType(ef.typeDmg));
+                  return;
+                }
                 setEffetTemporaire(target, ef, ef.duree, attaquant, pageId, evt, options);
               });
             }
@@ -10759,6 +10794,13 @@ var COFantasy = COFantasy || function() {
               if (effets && savesEffets > 0) {
                 effets.forEach(function(ef, index) {
                   if (ef.save) {
+                    if (ef.typeDmg && charAttributeAsBool(target, 'immunite_' + ef.typeDmg)) {
+                      target.messages.push(target.tokName + " ne semble pas affecté par " + stringOfType(ef.typeDmg));
+                      saves--;
+                      savesEffets--;
+                      etatsAvecSave();
+                      return;
+                    }
                     var msgPour = " pour résister à un effet";
                     var msgRate = ", " + target.tokName + " ";
                     if (ef.duree && ef.message) {
@@ -11553,6 +11595,23 @@ var COFantasy = COFantasy || function() {
     };
   }
 
+  function stringOfType(t) {
+    switch (t) {
+      case 'acide':
+        return "l'acide";
+      case 'electrique':
+        return "l'électricité";
+      case 'soniqe':
+        return "le son";
+      case 'maladie':
+        return "les maladies";
+      case 'argent':
+        return "l'argent";
+      default:
+        return 'le ' + t;
+    }
+  }
+
   //On a déterminé les DM du type principal(possiblement après save des dmgExtra, maintenant on applique les résistances, puis on ajoute les DM d'autres types
   function dealDamageAfterDmgExtra(target, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes) {
     if (options.pointsVitaux && dmgTotal > 0) { //dégâts retardés pour une pression mortelle
@@ -11572,7 +11631,7 @@ var COFantasy = COFantasy || function() {
     if (charAttributeAsBool(target, 'immunite_' + mainDmgType)) {
       if (expliquer) {
         target.tokName = target.tokName || target.token.get('name');
-        expliquer(target.tokName + " ne semble pas affecté par le type " + mainDmgType);
+        expliquer(target.tokName + " ne semble pas affecté par " + stringOfType(mainDmgType));
       }
       dmgTotal = 0;
       dmgDisplay = '0';
@@ -11710,7 +11769,7 @@ var COFantasy = COFantasy || function() {
       if (charAttributeAsBool(target, 'immunite_' + dt)) {
         if (expliquer) {
           target.tokName = target.tokName || target.token.get('name');
-          expliquer(target.tokName + " ne semble pas affecté par le type " + dt);
+          expliquer(target.tokName + " ne semble pas affecté par " + stringOfType(dt));
         }
         delete dmgParType[dt];
       } else
@@ -17903,6 +17962,17 @@ var COFantasy = COFantasy || function() {
       sendChar('', e);
     });
     if (duree > 0) {
+      var ef = {
+        effet: effet,
+        duree: duree,
+        acumuleDuree: options.accumuleDuree,
+        typeDmg: options.type,
+        message: mEffet,
+        valeur: options.valeur,
+        valeurMax: options.valeurMax,
+        saveParTour: options.saveparTour,
+        whisper: whisper,
+      };
       var setOneEffect = function(perso, d) {
         if (options.limiteCibleParJour) {
           var ressource = effet;
@@ -17916,33 +17986,7 @@ var COFantasy = COFantasy || function() {
           }
           setTokenAttr(perso, ressource, utilisations - 1, evt);
         }
-        if (options.valeur !== undefined) {
-          setTokenAttr(perso, effet + 'Valeur', options.valeur, evt, {
-            maxVal: options.valeurMax
-          });
-        }
-        if (options.type && !mEffet.dm && charAttributeAsBool(perso, 'diviseEffet_' + options.type)) {
-          d = Math.ceil(d / 2);
-        }
-        if (options.accumuleDuree) {
-          if (options.accumuleDuree > 1 && attributeAsBool(perso, effet)) {
-            var accumuleAttr = tokenAttribute(perso, effet + 'DureeAccumulee');
-            if (accumuleAttr.length === 0) {
-              setTokenAttr(perso, effet + 'DureeAccumulee', d, evt);
-            } else {
-              accumuleAttr = accumuleAttr[0];
-              var dureeAccumulee = accumuleAttr.get('current') + '';
-              if (dureeAccumulee.split(',').length < options.accumuleDuree - 1) {
-                evt.attributes = evt.attributes || [];
-                evt.attributes.push({
-                  attribute: accumuleAttr,
-                  current: dureeAccumulee
-                });
-                accumuleAttr.set('current', d + ',' + dureeAccumulee);
-              }
-            }
-          }
-        }
+        setEffetTemporaire(perso, ef, d, options.lanceur, options.pageId, evt, options);
         switch (effet) { //effets supplémentaires associés
           case 'aspectDuDemon':
             //On retire l'autre aspect du Nécromancien si il est présent
@@ -17950,27 +17994,6 @@ var COFantasy = COFantasy || function() {
             break;
           case 'aspectDeLaSuccube':
             finDEffetDeNom(perso, "aspectDuDemon", evt);
-            break;
-          case 'aveugleTemp':
-            setState(perso, 'aveugle', true, evt);
-            break;
-          case 'ralentiTemp':
-            setState(perso, 'ralenti', true, evt);
-            break;
-          case 'paralyseTemp':
-            setState(perso, 'paralyse', true, evt);
-            break;
-          case 'immobiliseTemp':
-            setState(perso, 'immobilise', true, evt);
-            break;
-          case 'etourdiTemp':
-            setState(perso, 'etourdi', true, evt);
-            break;
-          case 'affaibliTemp':
-            setState(perso, 'affaibli', true, evt);
-            break;
-          case 'apeureTemp':
-            setState(perso, 'apeure', true, evt);
             break;
           case 'peauDePierreMag':
             if (options.valeur === undefined) {
@@ -17998,39 +18021,10 @@ var COFantasy = COFantasy || function() {
               ajouteUneLumiere(perso, effet, 9, 3, evt);
             }
         }
-        if (mEffet.statusMarker) {
-          affectToken(perso.token, 'statusmarkers', perso.token.get('statusmarkers'), evt);
-          perso.token.set('status_' + mEffet.statusMarker, true);
-        }
-        var actMsg = mEffet.activation;
-        if (stateCOF.options.affichage.val.duree_effets.val) actMsg += " (" + d + " tours)";
-        var img = options.image;
-        if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
-          var newLineimg = '<span style="padding: 4px 0;" >  ';
-          newLineimg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
-          newLineimg += '</span>';
-          actMsg += newLineimg;
-        }
-        var effetAttr = setAttrDuree(perso, effet, d, evt, whisper + actMsg);
-        if (options.lanceur && options.mana !== undefined && mEffet.prejudiciable) {
-          addEffetTemporaireLie(options.lanceur, effetAttr, evt);
-        }
-        if (options.saveParTour) {
-          setTokenAttr(perso, effet + 'SaveParTour',
-            options.saveParTour.carac, evt, {
-              maxVal: options.saveParTour.seuil
-            });
-          if (options.type) {
-            setTokenAttr(perso, effet + 'SaveParTourType', options.type, evt);
-          }
-        }
         if (options.puissant) {
           var puissant = true;
           if (options.puissant == "off") puissant = false;
           setTokenAttr(perso, effet + "Puissant", puissant, evt);
-        }
-        if (options.tempeteDeManaIntense !== undefined) {
-          setTokenAttr(perso, effet + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
         }
         if (lanceur && options.fx) {
           var p1e = {
@@ -18049,6 +18043,10 @@ var COFantasy = COFantasy || function() {
         }
       };
       cibles.forEach(function(perso) {
+        if (options.type && charAttributeAsBool(perso, 'immunite_' + options.type)) {
+          sendChar(perso.charId, "ne semble pas affecté par " + stringOfType(options.type));
+          return;
+        }
         if (options.save) {
           var saveOpts = {
             msgPour: " pour résister à l'effet " + effet,
@@ -20828,6 +20826,8 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
+    evt.tokens = evt.tokens || [];
+    evt.tokens.push(newToken);
     var perso = {
       token: newToken,
       charId: cible.charId
