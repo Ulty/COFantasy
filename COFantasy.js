@@ -4613,6 +4613,7 @@ var COFantasy = COFantasy || function() {
         break;
     }
     var lastEtat; //dernier de etats et effets
+    var lastType = options.type; //dernier type de dégâts infligés
     var scope = options; //Pour les conditionnelles
     optArgs.forEach(function(arg) {
       arg = arg.trim();
@@ -4896,17 +4897,20 @@ var COFantasy = COFantasy || function() {
             lastEtat = {
               effet: effet,
               duree: duree,
-              message: m
+              message: m,
+              typeDmg: lastType
             };
             scope.seulementVivant = scope.seulementVivant || (m && m.seulementVivant);
           } else if (estEffetCombat(effet)) {
             lastEtat = {
-              effet: effet
+              effet: effet,
+              typeDmg: lastType
             };
           } else if (estEffetIndetermine(effet)) {
             lastEtat = {
               effet: effet,
-              effetIndetermine: true
+              effetIndetermine: true,
+              typeDmg: lastType
             };
           } else {
             error(cmd[1] + " n'est pas un effet temporaire répertorié", cmd);
@@ -4925,7 +4929,12 @@ var COFantasy = COFantasy || function() {
             return;
           }
           scope.effets[0].valeur = cmd[1];
-          if (cmd.length > 2) scope.effets[0].valeurMax = cmd[2];
+          if (cmd.length > 2) {
+            scope.effets[0].valeurMax = cmd[2];
+            if (scope.effets[0].effet && scope.effets[0].effet.startsWith('dotGen(')) {
+              scope.effets[0].typeDmg = cmd[2];
+            }
+          }
           return;
         case 'accumuleDuree':
           if (cmd.length < 2) {
@@ -4965,7 +4974,8 @@ var COFantasy = COFantasy || function() {
           scope.etats = scope.etats || [];
           lastEtat = {
             etat: etat,
-            condition: condition
+            condition: condition,
+            typeDmg: lastType
           };
           if (cmd[0] == 'etat' && cmd.length > 3) {
             if (isCarac(cmd[2])) {
@@ -5023,6 +5033,7 @@ var COFantasy = COFantasy || function() {
         case 'poison':
         case 'maladie':
         case 'argent':
+          lastType = cmd[0];
           var l = 0;
           if (scope.additionalDmg) l = scope.additionalDmg.length;
           if (l > 0) {
@@ -9690,6 +9701,147 @@ var COFantasy = COFantasy || function() {
     return attCarBonus;
   }
 
+  function setEffetTemporaire(target, ef, duree, attaquant, pageId, evt, options) {
+    if (ef.effet == 'dedoublement') {
+      if (attributeAsBool(target, 'dedouble') ||
+        attributeAsBool(target, 'dedoublement')) {
+        if (ef.whisper !== undefined) {
+          sendChar(target.charId, ef.whisper + " a déjà été dédoublé pendant ce combat");
+        } else {
+          target.messages.push(target.tokName + " a déjà été dédoublé pendant ce combat");
+        }
+        return;
+      }
+      var dedoubleMsg =
+        "Un double translucide de " + target.tokName + " apparaît.";
+      if (attaquant) {
+        if (attaquant.tokName === undefined) attaquant.tokName = attaquant.token.get('name');
+        dedoubleMsg += " Il est aux ordres de " + attaquant.tokName;
+      }
+      if (stateCOF.options.affichage.val.duree_effets.val) dedoubleMsg += " (" + duree + " tours)";
+      if (ef.whisper !== undefined) {
+        sendChar(target.charId, ef.whisper + dedoubleMsg);
+      } else {
+        target.messages.push(dedoubleMsg);
+      }
+      setTokenAttr(target, 'dedouble', true, evt);
+      copieToken(target, undefined, stateCOF.options.images.val.image_double.val,
+        "Double de " + target.tokName, 'dedoublement', duree,
+        pageId, evt);
+      return;
+    }
+    if (ef.effet == 'saignementsSang' && charAttributeAsBool(target, 'immuniteSaignement')) {
+      if (ef.whisper !== undefined) {
+        sendChar(target.charId, ef.whisper + "ne peut pas saigner");
+      } else {
+        target.messages.push(target.tokName + " ne peut pas saigner");
+      }
+      return;
+    }
+    if (ef.duree) {
+      if (ef.typeDmg && (!ef.message || !ef.message.dm) && charAttributeAsBool(target, 'diviseEffet_' + ef.typeDmg)) {
+        duree = Math.ceil(duree / 2);
+      }
+      if (ef.accumuleDuree) {
+        if (ef.accumuleDuree > 1 && attributeAsBool(target, ef.effet)) {
+          var accumuleAttr = tokenAttribute(target, ef.effet + 'DureeAccumulee');
+          if (accumuleAttr.length === 0) {
+            setTokenAttr(target, ef.effet + 'DureeAccumulee', duree, evt);
+          } else {
+            accumuleAttr = accumuleAttr[0];
+            var dureeAccumulee = accumuleAttr.get('current') + '';
+            if (dureeAccumulee.split(',').length < ef.accumuleDuree - 1) {
+              evt.attributes = evt.attributes || [];
+              evt.attributes.push({
+                attribute: accumuleAttr,
+                current: dureeAccumulee
+              });
+              accumuleAttr.set('current', duree + ',' + dureeAccumulee);
+            }
+          }
+          return; //Pas besoin de réappliquer, effet toujours en cours
+        }
+      }
+      var targetMsg;
+      if (ef.message) {
+        if (ef.whisper === undefined) {
+          targetMsg = target.tokName + " " + ef.message.activation;
+        } else {
+          targetMsg = ef.whisper + ef.message.activation;
+        }
+        if (stateCOF.options.affichage.val.duree_effets.val) targetMsg += " (" + duree + " tours)";
+        var img = ef.image;
+        if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
+          var newLineimg = '<span style="padding: 4px 0;" >  ';
+          newLineimg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+          newLineimg += '</span>';
+          targetMsg += newLineimg;
+        }
+        if (ef.whisper === undefined) {
+          target.messages.push(targetMsg);
+          targetMsg = undefined;
+        }
+      }
+      var attrEffet = setAttrDuree(target, ef.effet, duree, evt, targetMsg);
+      var effet = messageEffetTemp[ef.effet];
+      if (attaquant && options.mana !== undefined && effet && effet.prejudiciable) {
+        addEffetTemporaireLie(attaquant, attrEffet, evt);
+      }
+      switch (ef.effet) {
+        case 'apeureTemp':
+          setState(target, 'apeure', true, evt);
+          break;
+        case 'aveugleTemp':
+          setState(target, 'aveugle', true, evt);
+          break;
+        case 'ralentiTemp':
+          setState(target, 'ralenti', true, evt);
+          break;
+        case 'paralyseTemp':
+          setState(target, 'paralyse', true, evt);
+          break;
+        case 'immobiliseTemp':
+          setState(target, 'immobilise', true, evt);
+          break;
+        case 'etourdiTemp':
+          setState(target, 'etourdi', true, evt);
+          break;
+        case 'affaibliTemp':
+          setState(target, 'affaibli', true, evt);
+          break;
+      }
+      if (effet && effet.statusMarker) {
+        affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
+        target.token.set('status_' + effet.statusMarker, true);
+      }
+    } else if (ef.effetIndetermine) {
+      target.messages.push(target.tokName + " " + messageEffetIndetermine[ef.effet].activation);
+      setTokenAttr(target, ef.effet, true, evt);
+    } else { //On a un effet de combat
+      var effetC = messageEffetCombat[ef.effet];
+      target.messages.push(target.tokName + " " + effetC.activation);
+      var attrEffetCombat = setTokenAttr(target, ef.effet, true, evt);
+      if (attaquant && options.mana !== undefined && effetC.prejudiciable) {
+        addEffetTemporaireLie(attaquant, attrEffetCombat, evt);
+      }
+    }
+    if (ef.valeur !== undefined) {
+      setTokenAttr(target, ef.effet + 'Valeur', ef.valeur, evt, {
+        maxVal: ef.valeurMax
+      });
+    }
+    if (options.tempeteDeManaIntense)
+      setTokenAttr(target, ef.effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
+    if (ef.saveParTour) {
+      setTokenAttr(target, ef.effet + 'SaveParTour',
+        ef.saveParTour.carac, evt, {
+          maxVal: ef.saveParTour.seuil
+        });
+      if (ef.typeDmg)
+        setTokenAttr(target, ef.effet + 'SaveParTourType', ef.typeDmg, evt);
+    }
+  }
+
   function attackDealDmg(attaquant, cibles, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees) {
     //Sauvegarde de l'état pour pouvoir relancer au niveau de cette fonction
     evt.action.currentOptions = options;
@@ -10387,109 +10539,11 @@ var COFantasy = COFantasy || function() {
                   savesEffets++;
                   return; //on le fera plus tard
                 }
-                if (ef.effet == 'dedoublement') {
-                  if (attributeAsBool(target, 'dedouble') ||
-                    attributeAsBool(target, 'dedoublement')) {
-                    target.messages.push(target.tokName + " a déjà été dédoublé pendant ce combat");
-                    return;
-                  }
-                  var dedoubleMsg =
-                    "Un double translucide de " + target.tokName +
-                    " apparaît. Il est aux ordres de " + attackerTokName;
-                  if (stateCOF.options.affichage.val.duree_effets.val) dedoubleMsg += " (" + ef.duree + " tours)";
-                  target.messages.push(dedoubleMsg);
-                  setTokenAttr(target, 'dedouble', true, evt);
-                  copieToken(target, undefined, stateCOF.options.images.val.image_double.val,
-                    "Double de " + target.tokName, 'dedoublement', ef.duree,
-                    pageId, evt);
+                if (ef.typeDmg && charAttributeAsBool(target, 'immunite_' + ef.typeDmg)) {
+                  target.messages.push(target.tokName + " ne semble pas affecté par " + stringOfType(ef.typeDmg));
                   return;
                 }
-                if (ef.effet == 'saignementsSang' && charAttributeAsBool(target, 'immuniteSaignement')) {
-                  target.messages.push(target.tokName + " ne peut pas saigner");
-                  return;
-                }
-                if (ef.duree) {
-                  if (ef.accumuleDuree) {
-                    if (ef.accumuleDuree > 1 && attributeAsBool(target, ef.effet)) {
-                      var accumuleAttr = tokenAttribute(target, ef.effet + 'DureeAccumulee');
-                      if (accumuleAttr.length === 0) {
-                        setTokenAttr(target, ef.effet + 'DureeAccumulee', ef.duree, evt);
-                      } else {
-                        accumuleAttr = accumuleAttr[0];
-                        var dureeAccumulee = accumuleAttr.get('current') + '';
-                        if (dureeAccumulee.split(',').length < ef.accumuleDuree - 1) {
-                          evt.attributes = evt.attributes || [];
-                          evt.attributes.push({
-                            attribute: accumuleAttr,
-                            current: dureeAccumulee
-                          });
-                          accumuleAttr.set('current', ef.duree + ',' + dureeAccumulee);
-                        }
-                      }
-                      return; //Pas besoin de réappliquer, effet toujours en cours
-                    }
-                  }
-                  if (ef.message) {
-                    var targetMsg = target.tokName + " " + ef.message.activation;
-                    if (stateCOF.options.affichage.val.duree_effets.val) targetMsg += " (" + ef.duree + " tours)";
-                    target.messages.push(targetMsg);
-                  }
-                  var attrEffet = setAttrDuree(target, ef.effet, ef.duree, evt);
-                  var effet = messageEffetTemp[ef.effet];
-                  if (options.mana !== undefined && effet && effet.prejudiciable) {
-                    addEffetTemporaireLie(attaquant, attrEffet, evt);
-                  }
-                  switch (ef.effet) {
-                    case 'apeureTemp':
-                      setState(target, 'apeure', true, evt);
-                      break;
-                    case 'aveugleTemp':
-                      setState(target, 'aveugle', true, evt);
-                      break;
-                    case 'ralentiTemp':
-                      setState(target, 'ralenti', true, evt);
-                      break;
-                    case 'paralyseTemp':
-                      setState(target, 'paralyse', true, evt);
-                      break;
-                    case 'immobiliseTemp':
-                      setState(target, 'immobilise', true, evt);
-                      break;
-                    case 'etourdiTemp':
-                      setState(target, 'etourdi', true, evt);
-                      break;
-                    case 'affaibliTemp':
-                      setState(target, 'affaibli', true, evt);
-                      break;
-                  }
-                  if (effet && effet.statusMarker) {
-                    affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
-                    target.token.set('status_' + effet.statusMarker, true);
-                  }
-                } else if (ef.effetIndetermine) {
-                  target.messages.push(target.tokName + " " + messageEffetIndetermine[ef.effet].activation);
-                  setTokenAttr(target, ef.effet, true, evt);
-                } else { //On a un effet de combat
-                  var effetC = messageEffetCombat[ef.effet];
-                  target.messages.push(target.tokName + " " + effetC.activation);
-                  var attrEffetCombat = setTokenAttr(target, ef.effet, true, evt);
-                  if (options.mana !== undefined && effetC.prejudiciable) {
-                    addEffetTemporaireLie(attaquant, attrEffetCombat, evt);
-                  }
-                }
-                if (ef.valeur !== undefined) {
-                  setTokenAttr(target, ef.effet + 'Valeur', ef.valeur, evt, {
-                    maxVal: ef.valeurMax
-                  });
-                }
-                if (options.tempeteDeManaIntense)
-                  setTokenAttr(target, ef.effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
-                if (ef.saveParTour) {
-                  setTokenAttr(target, ef.effet + 'SaveParTour',
-                    ef.saveParTour.carac, evt, {
-                      maxVal: ef.saveParTour.seuil
-                    });
-                }
+                setEffetTemporaire(target, ef, ef.duree, attaquant, pageId, evt, options);
               });
             }
             // Tout ce qui se passe après les saves (autres que saves de diminution des dmg
@@ -10676,7 +10730,8 @@ var COFantasy = COFantasy || function() {
                         msgRate: msgRate,
                         attaquant: attaquant,
                         rolls: options.rolls,
-                        chanceRollId: options.chanceRollId
+                        chanceRollId: options.chanceRollId,
+                        type: ce.typeDmg
                       };
                       var rollId = 'etat_' + ce.etat + index + '_' + target.token.id;
                       save(ce.save, target, rollId, expliquer, saveOpts, evt,
@@ -10710,6 +10765,13 @@ var COFantasy = COFantasy || function() {
               if (effets && savesEffets > 0) {
                 effets.forEach(function(ef, index) {
                   if (ef.save) {
+                    if (ef.typeDmg && charAttributeAsBool(target, 'immunite_' + ef.typeDmg)) {
+                      target.messages.push(target.tokName + " ne semble pas affecté par " + stringOfType(ef.typeDmg));
+                      saves--;
+                      savesEffets--;
+                      etatsAvecSave();
+                      return;
+                    }
                     var msgPour = " pour résister à un effet";
                     var msgRate = ", " + target.tokName + " ";
                     if (ef.duree && ef.message) {
@@ -10724,7 +10786,8 @@ var COFantasy = COFantasy || function() {
                       msgRate: msgRate,
                       attaquant: attaquant,
                       rolls: options.rolls,
-                      chanceRollId: options.chanceRollId
+                      chanceRollId: options.chanceRollId,
+                      type: ef.typeDmg
                     };
                     var rollId = 'effet_' + ef.effet + index + '_' + target.token.id;
                     var duree = ef.duree;
@@ -10736,67 +10799,7 @@ var COFantasy = COFantasy || function() {
                           if (stateCOF.options.affichage.val.duree_effets.val) expliquer("La durée est réduite à " + duree + " tours");
                         }
                         if (!reussite) {
-                          if (ef.duree) {
-                            var attrEffetTemp = setAttrDuree(target, ef.effet, duree, evt);
-                            var effet = messageEffetTemp[ef.effet];
-                            if (options.mana !== undefined && effet && effet.prejudiciable) {
-                              addEffetTemporaireLie(attaquant, attrEffetTemp, evt);
-                            }
-                            switch (ef.effet) {
-                              case 'apeureTemp':
-                                setState(target, 'apeure', true, evt);
-                                break;
-                              case 'aveugleTemp':
-                                setState(target, 'aveugle', true, evt);
-                                break;
-                              case 'ralentiTemp':
-                                setState(target, 'ralenti', true, evt);
-                                break;
-                              case 'paralyseTemp':
-                                setState(target, 'paralyse', true, evt);
-                                break;
-                              case 'immobiliseTemp':
-                                setState(target, 'immobilise', true, evt);
-                                break;
-                              case 'etourdiTemp':
-                                setState(target, 'etourdi', true, evt);
-                                break;
-                              case 'affaibliTemp':
-                                setState(target, 'affaibli', true, evt);
-                                break;
-                            }
-                            if (effet && effet.statusMarker) {
-                              affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
-                              target.token.set('status_' + effet.statusMarker, true);
-                            }
-                          } else {
-                            var attrEffet = setTokenAttr(target, ef.effet, true, evt);
-                            var effetC = messageEffetCombat[ef.effet];
-                            if (options.mana !== undefined && effetC && effetC.prejudiciable) {
-                              addEffetTemporaireLie(attaquant, attrEffet, evt);
-                            }
-                          }
-                          if (ef.valeur !== undefined) {
-                            setTokenAttr(target, ef.effet + 'Valeur', ef.valeur, evt, {
-                              maxVal: ef.valeurMax
-                            });
-                          }
-                          if (options.tempeteDeManaIntense)
-                            setTokenAttr(target, ef.effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
-                          if (ef.saveParTour) {
-                            setTokenAttr(target,
-                              ef.effet + 'SaveParTour', ef.saveParTour.carac,
-                              evt, {
-                                maxVal: ef.saveParTour.seuil
-                              });
-                          }
-                          if (ef.saveParJour) {
-                            setTokenAttr(target,
-                              ef.effet + "SaveParJour", ef.saveParJour.carac,
-                              evt, {
-                                maxVal: ef.saveParJour.seuil
-                              });
-                          }
+                          setEffetTemporaire(target, ef, duree, attaquant, pageId, evt, options);
                         }
                         saves--;
                         savesEffets--;
@@ -11243,6 +11246,16 @@ var COFantasy = COFantasy || function() {
 
   // Meilleure carac parmis 2 pour un save.
   function meilleureCarac(carac1, carac2, personnage, seuil) {
+    var sansEsprit;
+    if (carac1 == 'SAG' || carac1 == 'INT' || carac1 == 'CHA') {
+      sansEsprit = charAttributeAsBool(personnage, 'sansEsprit');
+      if (sansEsprit) return carac1;
+    }
+    if (sansEsprit === undefined &&
+      (carac2 == 'SAG' || carac2 == 'INT' || carac2 == 'CHA')) {
+      sansEsprit = charAttributeAsBool(personnage, 'sansEsprit');
+      if (sansEsprit) return carac2;
+    }
     var options = {
       cacheBonusToutesCaracs: {}
     };
@@ -11273,6 +11286,7 @@ var COFantasy = COFantasy || function() {
   //   - msgReussite : message à afficher en cas de réussite
   //   - msgRate : message à afficher si l'action rate
   //   - attaquant : le {charId, token} de l'attaquant contre lequel le save se fait (si il y en a un)
+  //   - type : le type de dégâts contre lequel on fait le save
   function save(s, target, saveId, expliquer, options, evt, afterSave) {
     var bonus = 0;
     if (options.attaquant &&
@@ -11294,6 +11308,9 @@ var COFantasy = COFantasy || function() {
     }
     if (options.sortilege) {
       bonusAttrs.push('resistanceALaMagie');
+    }
+    if (options.type) {
+      bonusAttrs.push('bonusSaveContre_' + options.type);
     }
     if (!options.hideSaveTitle) {
       var title = " Jet de " + carac + " " + s.seuil;
@@ -11331,52 +11348,54 @@ var COFantasy = COFantasy || function() {
   }
 
   function partialSave(ps, target, showTotal, dmgDisplay, total, expliquer, evt, afterSave) {
-    if (ps.partialSave !== undefined) {
-      if ((ps.partialSave.carac == 'CON' || ps.partialSave.carac2 == 'CON') && estNonVivant(target)) {
-        expliquer("Les créatures non-vivantes sont immnunisées aux attaques qui demandent un test de constitution");
+    if (ps.partialSave === undefined) {
+      afterSave();
+      return;
+    }
+    if ((ps.partialSave.carac == 'CON' || ps.partialSave.carac2 == 'CON') && estNonVivant(target)) {
+      expliquer("Les créatures non-vivantes sont immnunisées aux attaques qui demandent un test de constitution");
+      afterSave({
+        succes: true,
+        dmgDisplay: '0',
+        total: 0,
+        showTotal: false
+      });
+      return;
+    }
+    if (target.partialSaveAuto) {
+      if (showTotal) dmgDisplay = '(' + dmgDisplay + ')';
+      afterSave({
+        succes: true,
+        dmgDisplay: dmgDisplay + '/2',
+        total: Math.ceil(total / 2),
+        showTotal: true
+      });
+      return;
+    }
+    var saveOpts = {
+      msgPour: " pour réduire les dégâts",
+      msgReussite: ", dégâts divisés par 2",
+      attaquant: ps.attaquant,
+      rolls: ps.rolls,
+      chanceRollId: ps.chanceRollId,
+      type: ps.type
+    };
+    var saveId = 'parseSave_' + target.token.id;
+    save(ps.partialSave, target, saveId, expliquer, saveOpts, evt,
+      function(succes, rollText) {
+        if (succes) {
+          if (showTotal) dmgDisplay = "(" + dmgDisplay + ")";
+          dmgDisplay = dmgDisplay + " / 2";
+          showTotal = true;
+          total = Math.ceil(total / 2);
+        }
         afterSave({
-          succes: true,
-          dmgDisplay: '0',
-          total: 0,
-          showTotal: false
+          succes: succes,
+          dmgDisplay: dmgDisplay,
+          total: total,
+          showTotal: showTotal
         });
-        return;
-      }
-      if (target.partialSaveAuto) {
-        if (showTotal) dmgDisplay = '(' + dmgDisplay + ')';
-        afterSave({
-          succes: true,
-          dmgDisplay: dmgDisplay + '/2',
-          total: Math.ceil(total / 2),
-          showTotal: true
-        });
-        return;
-      }
-      var saveOpts = {
-        msgPour: " pour réduire les dégâts",
-        msgReussite: ", dégâts divisés par 2",
-        attaquant: ps.attaquant,
-        rolls: ps.rolls,
-        chanceRollId: ps.chanceRollId
-      };
-      var saveId = 'parseSave_' + target.token.id;
-      //TODO Supporter PC hors attaques
-      save(ps.partialSave, target, saveId, expliquer, saveOpts, evt,
-        function(succes, rollText) {
-          if (succes) {
-            if (showTotal) dmgDisplay = "(" + dmgDisplay + ")";
-            dmgDisplay = dmgDisplay + " / 2";
-            showTotal = true;
-            total = Math.ceil(total / 2);
-          }
-          afterSave({
-            succes: succes,
-            dmgDisplay: dmgDisplay,
-            total: total,
-            showTotal: showTotal
-          });
-        });
-    } else afterSave();
+      });
   }
 
   function getRDS(perso) {
@@ -11507,6 +11526,23 @@ var COFantasy = COFantasy || function() {
     };
   }
 
+  function stringOfType(t) {
+    switch (t) {
+      case 'acide':
+        return "l'acide";
+      case 'electrique':
+        return "l'électricité";
+      case 'soniqe':
+        return "le son";
+      case 'maladie':
+        return "les maladies";
+      case 'argent':
+        return "l'argent";
+      default:
+        return 'le ' + t;
+    }
+  }
+
   //On a déterminé les DM du type principal(possiblement après save des dmgExtra, maintenant on applique les résistances, puis on ajoute les DM d'autres types
   function dealDamageAfterDmgExtra(target, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes) {
     if (options.pointsVitaux && dmgTotal > 0) { //dégâts retardés pour une pression mortelle
@@ -11526,7 +11562,7 @@ var COFantasy = COFantasy || function() {
     if (charAttributeAsBool(target, 'immunite_' + mainDmgType)) {
       if (expliquer) {
         target.tokName = target.tokName || target.token.get('name');
-        expliquer(target.tokName + " ne semble pas affecté par le type " + mainDmgType);
+        expliquer(target.tokName + " ne semble pas affecté par " + stringOfType(mainDmgType));
       }
       dmgTotal = 0;
       dmgDisplay = '0';
@@ -11598,7 +11634,7 @@ var COFantasy = COFantasy || function() {
           divide();
           expliquer(target.token.get('name') + " est protégé contre les dégâts de zone");
         }
-        if (attributeAsBool(target, 'resistanceA_' + dmgType)) {
+        if (attributeAsBool(target, 'resistanceA_' + dmgType) || charAttributeAsBool(target, 'diviseEffet_' + dmgType)) {
           divide();
         }
         if (estElementaire(dmgType)) {
@@ -11664,7 +11700,7 @@ var COFantasy = COFantasy || function() {
       if (charAttributeAsBool(target, 'immunite_' + dt)) {
         if (expliquer) {
           target.tokName = target.tokName || target.token.get('name');
-          expliquer(target.tokName + " ne semble pas affecté par le type " + dt);
+          expliquer(target.tokName + " ne semble pas affecté par " + stringOfType(dt));
         }
         delete dmgParType[dt];
       } else
@@ -13817,6 +13853,15 @@ var COFantasy = COFantasy || function() {
           }
           options.son = cmd.slice(1).join(' ');
           return;
+        case 'feu':
+        case 'froid':
+        case 'acide':
+        case 'electrique':
+        case 'sonique':
+        case 'poison':
+        case 'maladie':
+          options.type = cmd[0];
+          return;
         default:
           return;
       }
@@ -13942,7 +13987,9 @@ var COFantasy = COFantasy || function() {
     var attrsSave = attrs.filter(function(attr) {
       var attrName = attr.get('name');
       var indexSave = attrName.indexOf('SaveParJour');
-      return indexSave > 0;
+      if (indexSave <= 0) return false;
+      indexSave = attrName.indexOf('SaveParJourType');
+      return indexSave <= 0;
     });
     //Les saves sont asynchrones
     var count = attrsSave.length;
@@ -13998,6 +14045,13 @@ var COFantasy = COFantasy || function() {
       });
       if (attrEffet === undefined || attrEffet.length === 0) {
         error("Save sans effet associé " + attrName, attr);
+        findObjs({
+          _type: 'attribute',
+          _characterid: charId,
+          name: attr.get('name').replace('SaveParJour', 'SaveParJourType')
+        }).forEach(function(a) {
+          a.remove();
+        });
         attr.remove();
         finalize();
         return;
@@ -14019,6 +14073,14 @@ var COFantasy = COFantasy || function() {
         rolls: options.rolls,
         chanceRollId: options.chanceRollId
       };
+      var attrType = findObjs({
+        _type: 'attribute',
+        _characterid: charId,
+        name: attr.get('name').replace('SaveParJour', 'SaveParJourType')
+      });
+      if (attrType.length > 0) {
+        saveOpts.type = attrType[0].get('current');
+      }
       var saveId = 'saveParJour_' + effetC + "_" + perso.token.id;
       save({
           carac: carac,
@@ -17098,7 +17160,8 @@ var COFantasy = COFantasy || function() {
           msgPour: " pour résister à l'effet " + stringOfEtat(etat),
           msgRate: ", raté.",
           rolls: options.rolls,
-          chanceRollId: options.chanceRollId
+          chanceRollId: options.chanceRollId,
+          type: options.type
         };
         var expliquer = function(s) {
           sendChar(perso.charId, s);
@@ -17664,6 +17727,9 @@ var COFantasy = COFantasy || function() {
       error(effet + " n'est pas un effet temporaire répertorié", msg.content);
       return;
     }
+    if (!options.type && options.valeurMax && effet.startsWith('dotGen(')) {
+      options.type = options.valeurMax;
+    }
     var pp = effet.indexOf('(');
     var mEffet = (pp > 0) ? messageEffetTemp[effet.substring(effet, pp)] : messageEffetTemp[effet];
     if (mEffet === undefined) {
@@ -17770,6 +17836,17 @@ var COFantasy = COFantasy || function() {
       sendChar('', e);
     });
     if (duree > 0) {
+      var ef = {
+        effet: effet,
+        duree: duree,
+        acumuleDuree: options.accumuleDuree,
+        typeDmg: options.type,
+        message: mEffet,
+        valeur: options.valeur,
+        valeurMax: options.valeurMax,
+        saveParTour: options.saveparTour,
+        whisper: whisper,
+      };
       var setOneEffect = function(perso, d) {
         if (options.limiteCibleParJour) {
           var ressource = effet;
@@ -17783,30 +17860,7 @@ var COFantasy = COFantasy || function() {
           }
           setTokenAttr(perso, ressource, utilisations - 1, evt);
         }
-        if (options.valeur !== undefined) {
-          setTokenAttr(perso, effet + 'Valeur', options.valeur, evt, {
-            maxVal: options.valeurMax
-          });
-        }
-        if (options.accumuleDuree) {
-          if (options.accumuleDuree > 1 && attributeAsBool(perso, effet)) {
-            var accumuleAttr = tokenAttribute(perso, effet + 'DureeAccumulee');
-            if (accumuleAttr.length === 0) {
-              setTokenAttr(perso, effet + 'DureeAccumulee', duree, evt);
-            } else {
-              accumuleAttr = accumuleAttr[0];
-              var dureeAccumulee = accumuleAttr.get('current') + '';
-              if (dureeAccumulee.split(',').length < options.accumuleDuree - 1) {
-                evt.attributes = evt.attributes || [];
-                evt.attributes.push({
-                  attribute: accumuleAttr,
-                  current: dureeAccumulee
-                });
-                accumuleAttr.set('current', duree + ',' + dureeAccumulee);
-              }
-            }
-          }
-        }
+        setEffetTemporaire(perso, ef, d, options.lanceur, options.pageId, evt, options);
         switch (effet) { //effets supplémentaires associés
           case 'aspectDuDemon':
             //On retire l'autre aspect du Nécromancien si il est présent
@@ -17814,27 +17868,6 @@ var COFantasy = COFantasy || function() {
             break;
           case 'aspectDeLaSuccube':
             finDEffetDeNom(perso, "aspectDuDemon", evt);
-            break;
-          case 'aveugleTemp':
-            setState(perso, 'aveugle', true, evt);
-            break;
-          case 'ralentiTemp':
-            setState(perso, 'ralenti', true, evt);
-            break;
-          case 'paralyseTemp':
-            setState(perso, 'paralyse', true, evt);
-            break;
-          case 'immobiliseTemp':
-            setState(perso, 'immobilise', true, evt);
-            break;
-          case 'etourdiTemp':
-            setState(perso, 'etourdi', true, evt);
-            break;
-          case 'affaibliTemp':
-            setState(perso, 'affaibli', true, evt);
-            break;
-          case 'apeureTemp':
-            setState(perso, 'apeure', true, evt);
             break;
           case 'peauDePierreMag':
             if (options.valeur === undefined) {
@@ -17862,36 +17895,10 @@ var COFantasy = COFantasy || function() {
               ajouteUneLumiere(perso, effet, 9, 3, evt);
             }
         }
-        if (mEffet.statusMarker) {
-          affectToken(perso.token, 'statusmarkers', perso.token.get('statusmarkers'), evt);
-          perso.token.set('status_' + mEffet.statusMarker, true);
-        }
-        var actMsg = mEffet.activation;
-        if (stateCOF.options.affichage.val.duree_effets.val) actMsg += " (" + d + " tours)";
-        var img = options.image;
-        if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
-          var newLineimg = '<span style="padding: 4px 0;" >  ';
-          newLineimg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
-          newLineimg += '</span>';
-          actMsg += newLineimg;
-        }
-        var effetAttr = setAttrDuree(perso, effet, d, evt, whisper + actMsg);
-        if (options.lanceur && options.mana !== undefined && mEffet.prejudiciable) {
-          addEffetTemporaireLie(options.lanceur, effetAttr, evt);
-        }
-        if (options.saveParTour) {
-          setTokenAttr(perso, effet + 'SaveParTour',
-            options.saveParTour.carac, evt, {
-              maxVal: options.saveParTour.seuil
-            });
-        }
         if (options.puissant) {
           var puissant = true;
           if (options.puissant == "off") puissant = false;
           setTokenAttr(perso, effet + "Puissant", puissant, evt);
-        }
-        if (options.tempeteDeManaIntense !== undefined) {
-          setTokenAttr(perso, effet + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
         }
         if (lanceur && options.fx) {
           var p1e = {
@@ -17910,13 +17917,18 @@ var COFantasy = COFantasy || function() {
         }
       };
       cibles.forEach(function(perso) {
+        if (options.type && charAttributeAsBool(perso, 'immunite_' + options.type)) {
+          sendChar(perso.charId, "ne semble pas affecté par " + stringOfType(options.type));
+          return;
+        }
         if (options.save) {
           var saveOpts = {
             msgPour: " pour résister à l'effet " + effet,
             msgRate: ", raté.",
             attaquant: lanceur,
             rolls: options.rolls,
-            chanceRollId: options.chanceRollId
+            chanceRollId: options.chanceRollId,
+            type: options.type
           };
           var expliquer = function(s) {
             sendChar(perso.charId, s);
@@ -18265,6 +18277,7 @@ var COFantasy = COFantasy || function() {
       charAttributeAsBool(target, 'immunitePeur') || //deprecated
       charAttributeAsBool(target, 'immunite_peur') ||
       charAttributeAsBool(target, 'proprioception') ||
+      charAttributeAsBool(target, 'sansEsprit') ||
       attributeAsBool(target, 'enragé')) {
       messages.push(targetName + " est insensible à la peur !");
       callback();
@@ -18669,7 +18682,8 @@ var COFantasy = COFantasy || function() {
             msgPour: " pour résister au tueur fantasmagorique",
             attaquant: attaquant,
             rolls: options.rolls,
-            chanceRollId: options.chanceRollId
+            chanceRollId: options.chanceRollId,
+            type: 'magique'
           };
           var saveId = 'tueurFantasmagorique_' + cible.token.id;
           save(s, cible, saveId, expliquer, saveOpts, evt,
@@ -18752,7 +18766,8 @@ var COFantasy = COFantasy || function() {
     };
     save({
         carac: 'CON',
-        seuil: 15
+        seuil: 15,
+        type: 'magique'
       }, cible, saveId, expliquer, saveOpts, evt,
       function(reussite, rollText) {
         if (reussite) {
@@ -20682,6 +20697,8 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
+    evt.tokens = evt.tokens || [];
+    evt.tokens.push(newToken);
     var perso = {
       token: newToken,
       charId: cible.charId
@@ -26060,7 +26077,8 @@ var COFantasy = COFantasy || function() {
         var saveOpts = {
           hideSaveTitle: true,
           rolls: options.rolls,
-          chanceRollId: options.chanceRollId
+          chanceRollId: options.chanceRollId,
+          type: 'poison'
         };
         var saveId = 'vapeursEthyliques_' + perso.token.id;
         save(options.save, perso, saveId, expliquer, saveOpts, evt,
@@ -26143,7 +26161,8 @@ var COFantasy = COFantasy || function() {
         var saveOpts = {
           hideSaveTitle: true,
           rolls: options.rolls,
-          chanceRollId: options.chanceRollId
+          chanceRollId: options.chanceRollId,
+          type: 'poison'
         };
         var saveId = 'boireAlcool_' + perso.token.id;
         save(options.save, perso, saveId, expliquer, saveOpts, evt,
@@ -27861,7 +27880,7 @@ var COFantasy = COFantasy || function() {
     return (patternEffetsTemp.test(name));
   }
 
-  var patternAttributEffetsTemp = buildPatternEffets(messageEffetTemp, ["Puissant", "Valeur", "SaveParTour", "TempeteDeManaIntense"]);
+  var patternAttributEffetsTemp = buildPatternEffets(messageEffetTemp, ["Puissant", "Valeur", "SaveParTour", "SaveParTourType", "TempeteDeManaIntense"]);
 
   function estAttributEffetTemp(name) {
     return (patternAttributEffetsTemp.test(name));
@@ -27985,7 +28004,7 @@ var COFantasy = COFantasy || function() {
     return (patternEffetsCombat.test(name));
   }
 
-  var patternAttributEffetsCombat = buildPatternEffets(messageEffetCombat, ["Puissant", "Valeur", "SaveParTour", "TempeteDeManaIntense"]);
+  var patternAttributEffetsCombat = buildPatternEffets(messageEffetCombat, ["Puissant", "Valeur", "SaveParTour", "SaveParTourType", "TempeteDeManaIntense"]);
 
   function estAttributEffetCombat(name) {
     return (patternAttributEffetsCombat.test(name));
@@ -28132,6 +28151,7 @@ var COFantasy = COFantasy || function() {
       options.attrSave.remove();
     } else if (options.gardeAutresAttributs === undefined) { //On cherche si il y en a un
       enleverEffetAttribut(charId, efComplet, attrName, 'SaveParTour', evt);
+      enleverEffetAttribut(charId, efComplet, attrName, 'SaveParTourType', evt);
     }
     var mEffet = messageEffetTemp[effet];
     if (mEffet && mEffet.statusMarker) {
@@ -28819,6 +28839,8 @@ var COFantasy = COFantasy || function() {
       var attrName = attr.get('name');
       var indexSave = attrName.indexOf('SaveParTour');
       if (indexSave < 0) return false;
+      var indexSaveType = attrName.indexOf('SaveParTourType');
+      if (indexSaveType > 0) return false;
       return estEffetTemp(attrName.substring(0, indexSave));
     });
     //Les saves sont asynchrones
@@ -28860,6 +28882,13 @@ var COFantasy = COFantasy || function() {
       });
       if (attrEffet === undefined || attrEffet.length === 0) {
         error("Save sans effet temporaire " + attrName, attr);
+        findObjs({
+          _type: 'attribute',
+          _characterid: charId,
+          name: attr.get('name').replace('SaveParTour', 'SaveParTourType')
+        }).forEach(function(a) {
+          a.remove();
+        });
         attr.remove();
         return;
       }
@@ -28882,6 +28911,14 @@ var COFantasy = COFantasy || function() {
         rolls: options.rolls,
         chanceRollId: options.chanceRollId
       };
+      var attrType = findObjs({
+        _type: 'attribute',
+        _characterid: charId,
+        name: attr.get('name').replace('SaveParTour', 'SaveParTourType')
+      });
+      if (attrType.length > 0) {
+        saveOpts.type = attrType[0].get('current');
+      }
       var saveId = 'saveParTour_' + attrEffet.id + '_' + perso.token.id;
       save({
           carac: carac,
