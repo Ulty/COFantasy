@@ -9783,8 +9783,7 @@ var COFantasy = COFantasy || function() {
         }
       }
       var attrEffet = setAttrDuree(target, ef.effet, duree, evt, targetMsg);
-      var effet = messageEffetTemp[ef.effet];
-      if (attaquant && options.mana !== undefined && effet && effet.prejudiciable) {
+      if (attaquant && options.mana !== undefined && ef.message && ef.message.prejudiciable) {
         addEffetTemporaireLie(attaquant, attrEffet, evt);
       }
       switch (ef.effet) {
@@ -9809,10 +9808,30 @@ var COFantasy = COFantasy || function() {
         case 'affaibliTemp':
           setState(target, 'affaibli', true, evt);
           break;
+          case 'aspectDuDemon':
+            //On retire l'autre aspect du Nécromancien si il est présent
+            finDEffetDeNom(target, "aspectDeLaSuccube", evt);
+            break;
+          case 'aspectDeLaSuccube':
+            finDEffetDeNom(target, "aspectDuDemon", evt);
+            break;
+          case 'peauDePierreMag':
+            if (ef.valeur === undefined) {
+              var rd = 5 + modCarac(target, 'intelligence');
+              var absorbe = 40;
+              if (options.tempeteDeManaIntence) {
+                rd += options.tempeteDeManaIntense;
+                absorbe += options.tempeteDeManaIntense * 5;
+              }
+              setTokenAttr(target, 'peauDePierreMagValeur', rd, evt, {
+                maxVal: absorbe
+              });
+            }
+            break;
       }
-      if (effet && effet.statusMarker) {
+      if (ef.message && ef.message.statusMarker) {
         affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
-        target.token.set('status_' + effet.statusMarker, true);
+        target.token.set('status_' + ef.message.statusMarker, true);
       }
     } else if (ef.effetIndetermine) {
       target.messages.push(target.tokName + " " + messageEffetIndetermine[ef.effet].activation);
@@ -17861,28 +17880,6 @@ var COFantasy = COFantasy || function() {
           setTokenAttr(perso, ressource, utilisations - 1, evt);
         }
         setEffetTemporaire(perso, ef, d, options.lanceur, options.pageId, evt, options);
-        switch (effet) { //effets supplémentaires associés
-          case 'aspectDuDemon':
-            //On retire l'autre aspect du Nécromancien si il est présent
-            finDEffetDeNom(perso, "aspectDeLaSuccube", evt);
-            break;
-          case 'aspectDeLaSuccube':
-            finDEffetDeNom(perso, "aspectDuDemon", evt);
-            break;
-          case 'peauDePierreMag':
-            if (options.valeur === undefined) {
-              var rd = 5 + modCarac(perso, 'intelligence');
-              var absorbe = 40;
-              if (options.tempeteDeManaIntence) {
-                rd += options.tempeteDeManaIntense;
-                absorbe += options.tempeteDeManaIntense * 5;
-              }
-              setTokenAttr(perso, 'peauDePierreMagValeur', rd, evt, {
-                maxVal: absorbe
-              });
-            }
-            break;
-          default:
             if (effet.startsWith('forgeron(')) {
               //Il faut dégainer l'arme si elle n'est pas en main, et ajouter une lumière
               var labelArmeForgeron = effet.substring(9, effet.indexOf(')'));
@@ -17894,7 +17891,6 @@ var COFantasy = COFantasy || function() {
               degainerArme(perso, labelArmeEnflammee, evt);
               ajouteUneLumiere(perso, effet, 9, 3, evt);
             }
-        }
         if (options.puissant) {
           var puissant = true;
           if (options.puissant == "off") puissant = false;
