@@ -16,6 +16,9 @@
 * Injonction Mortelle (Magie Maléfique rang 3)
 
 ### Autres améliorations
+* Prise en compte des immunités pour les effets temporaires.
+* Attribut pour diviser par 2 les effets ou les dm d'un type donné
+* Possibilité d'avoir des bonus aux saves contre un type donné.
 * Ajout des immunités aux différents états.
 * Ajout de la possibilité de sélectionner les tokens en vue d'un personnage.
 * Ajout d'une interface de gestion de la bourse.
@@ -31,6 +34,7 @@
 * Si "Jet Secret" est configuré sur une fiche de PNJ, seul le total des jets d'attaques, de dommages, de caractéristiques et de sauvegardes sont affichés, sans les détails. Le MJ reçoit un whisper avec le détail du jet.
 
 ### Corrections de bugs
+* Quand une créature peut résister avec SAG, INT ou CHA et qu'elle est sans esprit, alors on choisit cette caractéristique (car la réussite est alors automatique). Test un peu plus précoce pour la résistance à la peur.
 * Correction d'un bug avec la forme d'arbre du druide.
 * Dur à cuir et enragés ne mourraient pas si tapé plus d'une fois dans le tour.
 
