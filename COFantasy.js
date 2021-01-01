@@ -3226,6 +3226,7 @@ var COFantasy = COFantasy || function() {
   function testCaracteristique(personnage, carac, seuil, testId, options, evt, callback) { //asynchrone
     options = options || {};
     var testRes = {};
+    var explications = [];
     if (carac == 'SAG' || carac == 'INT' || carac == 'CHA') {
       if (charAttributeAsBool(personnage, 'sansEsprit')) {
         testRes.reussite = true;
@@ -3234,7 +3235,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    var bonusCarac = bonusTestCarac(carac, personnage, options, testId, evt);
+    var bonusCarac = bonusTestCarac(carac, personnage, options, testId, evt, explications);
     var jetCache = ficheAttributeAsBool(personnage, 'jets_caches', false);
     var testsRatesDuTour;
     var listeTestsRatesDuTour;
@@ -3273,11 +3274,11 @@ var COFantasy = COFantasy || function() {
       sendChat("", rollExpr, function(res) {
         options.rolls = options.rolls || {};
         var roll = options.rolls[testId] || options.roll || res[0].inlinerolls[0];
+        roll.token = personnage.token;
         evt.action = evt.action || {};
         evt.action.rolls = evt.action.rolls || {};
         evt.action.rolls[testId] = roll;
         testRes.roll = roll;
-        testRes.roll.token = personnage.token;
         var d20roll = roll.results.total;
         var bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
         testRes.texte = jetCache ? d20roll + bonusCarac : buildinline(roll) + bonusText;
@@ -3325,7 +3326,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (jetCache) sendChat('COF', "/w GM Jet caché de sauvegarde : " + buildinline(roll) + bonusText);
-        callback(testRes);
+        callback(testRes, explications);
       });
     } catch (e) {
       error("Erreur pendant l'évaluation de " + rollExpr + " dans un test de caractéristiques");
@@ -3474,8 +3475,11 @@ var COFantasy = COFantasy || function() {
         });
     } else {
       testCaracteristique(perso, caracteristique, difficulte, testId, options, evt,
-        function(tr) {
+        function(tr, explications) {
           addLineToFramedDisplay(display, "<b>Résultat :</b> " + tr.texte);
+          explications.forEach(function(m) {
+            addLineToFramedDisplay(display, m, 80);
+          });
           if (tr.reussite) {
             addLineToFramedDisplay(display, "C'est réussi.");
           } else {
@@ -8166,7 +8170,14 @@ var COFantasy = COFantasy || function() {
       return true;
     });
     var evt = options.evt || {
-      type: "Tentative d'attaque"
+      type: "Attaque",
+      action: {
+        playerId: playerId,
+        attaquant: attaquant,
+        cibles: cibles,
+        weaponStats: weaponStats,
+        options: options
+      }
     };
     if (options.attaqueArmeeConjuree) {
       setAttrDuree(attaquant, 'attaqueArmeeConjuree', 1, evt);
@@ -8241,7 +8252,7 @@ var COFantasy = COFantasy || function() {
       var evalSanctuaire = function() {
         if (attributeAsBool(cible, 'sanctuaire')) {
           var testId = 'sanctuaire_' + cible.token.id;
-          testCaracteristique(attaquant, 'SAG', 15, testId, {}, evt, function(tr) {
+          testCaracteristique(attaquant, 'SAG', 15, testId, options, evt, function(tr) {
             if (tr.reussite) {
               cible.messages.push(attaquant.tokName + " réussi à passer outre le sanctuaire de " + cible.tokName + " (jet de SAG " + tr.texte + "&ge;15)");
               ciblesATraiter--;
@@ -8249,7 +8260,17 @@ var COFantasy = COFantasy || function() {
                 resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options, chargesArme);
               }
             } else {
-              sendChar(attaquant.charId, "ne peut se résoudre à attaquer " + cible.tokName + " (sanctuaire, jet de SAG " + tr.texte + "< 15)");
+              var msgRate = "ne peut se résoudre à attaquer " + cible.tokName + " (sanctuaire, jet de SAG " + tr.texte + "< 15)";
+              var pc = pointsDeChance(attaquant);
+              if (pc > 0) {
+                msgRate += ' ' +
+                    boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+                    " (reste " + pc + " PC)";
+              }
+              if (stateCOF.combat && attributeAsBool(attaquant, 'petitVeinard')) {
+                msgRate += ' ' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
+              }
+              sendChar(attaquant.charId, msgRate);
               attaqueImpossible = true;
             }
           });
@@ -15352,6 +15373,24 @@ var COFantasy = COFantasy || function() {
         return;
       }
       var perso = evtARefaire.personnage;
+      var rollId;
+      if (cmd.length > 2) {
+        if (!evtARefaire.action) {
+          error("Le dernier évènement n'est pas une action", args);
+          return;
+        }
+        var roll = evtARefaire.action.rolls[cmd[2]];
+        if (roll === undefined) {
+          error("Erreur interne du bouton de chance : roll non identifié", args);
+          return;
+        }
+        if (roll.token === undefined) {
+          error("Erreur interne du bouton de chance : roll sans token", args);
+          return;
+        }
+        perso = persoOfId(roll.token.id, roll.token.name, roll.token.pageId);
+        rollId = cmd[2];
+      }
       if (perso === undefined) {
         error("Erreur interne du bouton petit veinard : l'évenement n'a pas de personnage", evtARefaire);
         return;
