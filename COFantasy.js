@@ -14725,6 +14725,9 @@ var COFantasy = COFantasy || function() {
       case 'nouveauJour':
         doNouveauJour(action.persos, options);
         return true;
+      case 'destructionMortsVivants':
+        doDestructionDesMortsVivants(action.lanceur, action.playerName, action.dm, options);
+        return true;
       default:
         return false;
     }
@@ -21697,7 +21700,7 @@ var COFantasy = COFantasy || function() {
     sendChat("COF", endFramedDisplay(display));
   }
 
-  function destructionDesMortsVivants(msg) {
+  function parseDestructionDesMortsVivants(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
     var pageId = options.pageId;
@@ -21723,7 +21726,9 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, "Ne sélectionner qu'un token à la fois pour lancer la destruction des mort-vivants.");
         return;
       }
-      iterSelected(selected, function(lanceur) {
+      var playerName = msg.who;
+      if (playerIsGM(playerId)) playerName = 'GM';
+      iterSelected(selected, function (lanceur) {
         if (options.tempeteDeMana) {
           if (options.tempeteDeMana.cout === 0) {
             //On demande de préciser les options
@@ -21751,76 +21756,95 @@ var COFantasy = COFantasy || function() {
             log("Pas réussi à trouver le nombre de dés dans " + dm);
           }
         }
-        var evt = {
-          type: "Destruction des morts-vivants"
-        };
-        addEvent(evt);
-        if (!depenseMana(lanceur, options.mana, "lancer une destruction des mort-vivants", evt)) {
-          return;
-        }
-        var display = startFramedDisplay(playerId,
-          "<b>Sort :<b> destruction des morts-vivants", lanceur);
-        var name = lanceur.token.get('name');
-        testCaracteristique(lanceur, 'SAG', 13, 'destructionDesMortsVivants', {}, evt,
-          function(testRes) {
-            var msgJet = "Jet de SAG : " + testRes.texte;
-            if (testRes.reussite) {
-              addLineToFramedDisplay(display, msgJet + " &ge; 13");
-              sendChat(name, endFramedDisplay(display));
-              var optionsDM = {
-                sortilege: true,
-                lanceur: lanceur,
-                aoe: true,
-                evt: evt
-              };
-              var cibles = [];
-              var page = getObj("page", pageId);
-              var murs = getWalls(page, pageId);
-              var pt;
-              if (murs) {
-                pt = {
-                  x: lanceur.token.get('left'),
-                  y: lanceur.token.get('top')
-                };
-              }
-              var tokensEnVue = findObjs({
-                _type: "graphic",
-                _pageid: pageId,
-                _subtype: "token",
-                layer: "objects"
-              });
-              tokensEnVue.forEach(function(obj) {
-                if (obj.id == lanceur.token.id) return;
-                var objCharId = obj.get('represents');
-                if (objCharId === '') return;
-                if (obj.get('bar1_max') == 0) return; // jshint ignore:line
-                var objChar = getObj('character', objCharId);
-                if (objChar === undefined) return;
-                if (murs) {
-                  if (obstaclePresent(obj.get('left'), obj.get('top'), pt, murs)) return;
-                }
-                var cible = {
-                  charId: objCharId,
-                  token: obj
-                };
-                if (!estMortVivant(cible)) return;
-                cibles.push(cible);
-              });
-              var dmg = {
-                type: 'magique',
-                value: dm.trim(),
-              };
-              var playerName = msg.who;
-              if (playerIsGM(playerId)) playerName = 'GM';
-              dmgDirects(playerId, playerName, cibles, dmg, optionsDM);
-            } else {
-              addLineToFramedDisplay(display, msgJet + " < 13");
-              addLineToFramedDisplay(display, name + " ne réussit pas à invoquer son dieu.");
-              sendChat(name, endFramedDisplay(display));
-            }
-          });
+        doDestructionDesMortsVivants(lanceur, playerName, dm, options);
       });
     });
+  }
+
+  function doDestructionDesMortsVivants(lanceur, playerName, dm, options) {
+    var evt = {
+      type: "destructionMortsVivants",
+      action: {
+        lanceur: lanceur,
+        playerName: playerName,
+        dm: dm,
+        options: options
+      }
+    };
+    addEvent(evt);
+    if (!depenseMana(lanceur, options.mana, "lancer une destruction des mort-vivants", evt)) {
+      return;
+    }
+    var display = startFramedDisplay(options.playerId,
+      "<b>Sort :<b> destruction des morts-vivants", lanceur);
+    var name = lanceur.token.get('name');
+    var testId = 'destructionDesMortsVivants_' + lanceur.token.id;
+    testCaracteristique(lanceur, 'SAG', 13, testId, options, evt,
+      function(testRes) {
+        var msgJet = "Jet de SAG : " + testRes.texte;
+        if (testRes.reussite) {
+          addLineToFramedDisplay(display, msgJet + " &ge; 13");
+          sendChat(name, endFramedDisplay(display));
+          var optionsDM = {
+            sortilege: true,
+            lanceur: lanceur,
+            aoe: true,
+            evt: evt
+          };
+          var cibles = [];
+          var page = getObj("page", options.pageId);
+          var murs = getWalls(page, options.pageId);
+          var pt;
+          if (murs) {
+            pt = {
+              x: lanceur.token.get('left'),
+              y: lanceur.token.get('top')
+            };
+          }
+          var tokensEnVue = findObjs({
+            _type: "graphic",
+            _pageid: options.pageId,
+            _subtype: "token",
+            layer: "objects"
+          });
+          tokensEnVue.forEach(function(obj) {
+            if (obj.id == lanceur.token.id) return;
+            var objCharId = obj.get('represents');
+            if (objCharId === '') return;
+            if (obj.get('bar1_max') == 0) return; // jshint ignore:line
+            var objChar = getObj('character', objCharId);
+            if (objChar === undefined) return;
+            if (murs) {
+              if (obstaclePresent(obj.get('left'), obj.get('top'), pt, murs)) return;
+            }
+            var cible = {
+              charId: objCharId,
+              token: obj
+            };
+            if (!estMortVivant(cible)) return;
+            cibles.push(cible);
+          });
+          var dmg = {
+            type: 'magique',
+            value: dm.trim(),
+          };
+          dmgDirects(options.playerId, playerName, cibles, dmg, optionsDM);
+        } else {
+          addLineToFramedDisplay(display, msgJet + " < 13");
+          var msgRate = name + " ne réussit pas à invoquer son dieu.";
+          var pc = pointsDeChance(lanceur);
+          if (pc > 0) {
+            msgRate += '<br/>' +
+                boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+                " (reste " + pc + " PC)";
+          }
+          if (attributeAsBool(lanceur, 'petitVeinard')) {
+            msgRate += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
+          }
+          addLineToFramedDisplay(display, msgRate);
+          sendChat(name, endFramedDisplay(display));
+        }
+      });
   }
 
   //!cof-enduire-poison label type dm save
@@ -27262,7 +27286,7 @@ var COFantasy = COFantasy || function() {
         displayStatistics(msg);
         return;
       case "!cof-destruction-des-morts-vivants":
-        destructionDesMortsVivants(msg);
+        parseDestructionDesMortsVivants(msg);
         return;
       case "!cof-enduire-poison":
         enduireDePoison(msg);
