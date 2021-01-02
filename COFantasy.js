@@ -5671,10 +5671,10 @@ var COFantasy = COFantasy || function() {
         var source = reglesOptionelles.mana.val.brulure_de_magie.val ? "de la Brûlure de Magie" : "du Contrecoup";
         updateCurrentBar(personnage, 2, 0, evt);
         updateCurrentBar(personnage, 1, bar1 - degats, evt);
-        var pre = (reglesOptionelles.affichage.val.depense_mana.val && bar2 != 0) ? "Dépense " + bar2 + " PM et p" : "P";
+        var pre = (stateCOF.options.affichage.val.depense_mana.val && bar2 != 0) ? "Dépense " + bar2 + " PM et p" : "P";
         sendChar(charId, pre + "erd " + degats + " PV à cause " + source + " pour " + msg);
       } else {
-        if(reglesOptionelles.affichage.val.depense_mana.val)
+        if(stateCOF.options.affichage.val.depense_mana.val)
           sendChar(charId, "Dépense " + cout + " PM pour " + msg);
         updateCurrentBar(personnage, 2, bar2 - cout, evt);
         var niveau = ficheAttributeAsInt(personnage, 'niveau', 1);
