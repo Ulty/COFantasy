@@ -6158,14 +6158,13 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(perso, 'formeDArbre')) init = 7;
     //Règle optionelle : +1d6, à lancer en entrant en combat
-    //Un seul jet par "character" pour les mook
     if (reglesOptionelles.initiative.val.initiative_variable.val) {
       var bonusVariable;
       var tokenAUtiliser;
-      if (reglesOptionelles.initiative.val.initiative_variable_individuelle.val) {
+      if (reglesOptionelles.initiative.val.initiative_variable_individuelle.val) { // Un jet par perso mook
         bonusVariable = attributeAsInt(perso, 'bonusInitVariable', 0);
         tokenAUtiliser = perso;
-      } else {
+      } else { //Un seul pour tous les mook du même personnage
         bonusVariable = charAttributeAsInt(perso, 'bonusInitVariable', 0);
         tokenAUtiliser = {
           charId: perso.charId
@@ -14728,6 +14727,9 @@ var COFantasy = COFantasy || function() {
       case 'peur':
         doPeur(action.cibles, action.difficulte, action.duree, options);
         return true;
+      case 'surprise':
+        doSurprise(action.cibles, action.testSurprise, options);
+        return true;
       case 'destructionMortsVivants':
         doDestructionDesMortsVivants(action.lanceur, action.playerName, action.dm, options);
         return true;
@@ -15483,7 +15485,7 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function surprise(msg) {
+  function parseSurprise(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
     var cmd = options.cmd;
@@ -15496,76 +15498,111 @@ var COFantasy = COFantasy || function() {
       testSurprise = parseInt(cmd[1]);
       if (isNaN(testSurprise)) testSurprise = undefined;
     }
-    var bonusAttrs = ['vigilance', 'perception'];
-    if (!options.nonVivant) bonusAttrs.push('radarMental');
+    var cibles = [];
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         sendPlayer(msg, "!cof-surprise sans sélection de token");
         log("!cof-surprise requiert de sélectionner des tokens");
         return;
       }
-      var display;
-      if (testSurprise === undefined) {
-        display = startFramedDisplay(playerId, "<b>Surprise !</b>");
-      } else {
-        display = startFramedDisplay(playerId, "Test de surprise difficulté " + testSurprise);
-      }
-      var evt = {
-        type: 'surprise',
-      };
-      var tokensToProcess = selected.length;
-      var sendEvent = function() {
-        if (tokensToProcess == 1) {
-          addEvent(evt);
-          sendChat("", endFramedDisplay(display));
-        }
-        tokensToProcess--;
-      };
       iterSelected(selected, function(perso) {
         if (!isActive(perso)) {
-          sendEvent();
           return;
         }
-        var name = perso.token.get('name');
-        if (charAttributeAsBool(perso, 'immuniteContreSurprise') ||
-          charAttributeAsBool(perso, 'immunite_surpris')
-        ) {
-          addLineToFramedDisplay(display, name + " n'est pas surpris" + eForFemale(perso));
-          sendEvent();
-          return;
-        }
-        var bonusSurprise = 0;
-        if (surveillance(perso)) {
-          bonusSurprise += 5;
-          setTokenAttr(perso, 'bonusInitEmbuscade', 5, evt, {
-            msg: "garde un temps d'avance grâce à son compagnon animal"
-          });
-          initPerso(perso, evt, true);
-        }
-        if (attributeAsBool(perso, 'sixiemeSens')) bonusSurprise += 5;
-        if (testSurprise !== undefined) {
-          testCaracteristique(perso, 'SAG', testSurprise, 'surprise', {
-              bonus: bonusSurprise,
-              bonusAttrs: bonusAttrs
-            }, evt,
-            function(tr) {
-              var result;
-              if (tr.reussite) result = "réussi";
-              else {
-                result = "raté, " + name + " est surpris";
-                result += eForFemale(perso);
-                setState(perso, 'surpris', true, evt);
+        cibles.push(perso);
+      });
+    });
+    if(cibles.length > 0) {
+      doSurprise(cibles, testSurprise, options);
+    } else {
+      error("Pas de cible valable sélectionnée pour la surprise", msg.content);
+    }
+  }
+
+  function doSurprise(cibles, testSurprise, options) {
+    var evt = {
+      type: 'surprise',
+      action: {
+        cibles: cibles,
+        testSurprise: testSurprise,
+        options: options
+      }
+    };
+    addEvent(evt);
+    var bonusAttrs = ['vigilance', 'perception'];
+    if (!options.nonVivant) bonusAttrs.push('radarMental');
+    var display;
+    if (testSurprise === undefined) {
+      display = startFramedDisplay(options.playerId, "<b>Surprise !</b>");
+    } else {
+      display = startFramedDisplay(options.playerId, "Test de surprise difficulté " + testSurprise);
+    }
+    var tokensToProcess = cibles.length;
+    var sendEvent = function() {
+      if (tokensToProcess == 1) {
+        sendChat("", endFramedDisplay(display));
+      }
+      tokensToProcess--;
+    };
+    cibles.forEach(function(perso) {
+      var name = perso.token.get('name');
+      if (charAttributeAsBool(perso, 'immuniteContreSurprise') ||
+        charAttributeAsBool(perso, 'immunite_surpris')
+      ) {
+        addLineToFramedDisplay(display, name + " n'est pas surpris" + eForFemale(perso));
+        sendEvent();
+        return;
+      }
+      var bonusSurprise = 0;
+      var bonusMessages = [];
+      if (surveillance(perso)) {
+        bonusSurprise += 5;
+        setTokenAttr(perso, 'bonusInitEmbuscade', 5, evt);
+        bonusMessages.push(name + " garde un temps d'avance grâce à son compagnon animal : +5");
+        initPerso(perso, evt, true);
+      }
+      if (attributeAsBool(perso, 'sixiemeSens')) {
+        bonusSurprise += 5;
+        bonusMessages.push(name + " a un sixième sens : +5");
+      }
+      if (testSurprise !== undefined) {
+        var testId = 'surprise_' + perso.token.id;
+        var optionsTest = {...options};
+        optionsTest.bonus = bonusSurprise;
+        optionsTest.bonusAttrs = bonusAttrs;
+        testCaracteristique(perso, 'SAG', testSurprise, testId, optionsTest, evt,
+          function(tr, explications) {
+            var result;
+            if (tr.reussite) result = "réussi";
+            else {
+              result = "raté, " + name + " est surpris";
+              result += eForFemale(perso);
+              var pc = pointsDeChance(perso);
+              if (!tr.echecCritique && pc > 0) {
+                result += '<br/>' +
+                    boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+                    " (reste " + pc + " PC)";
               }
-              var message = name + " fait " + tr.texte + " : " + result;
-              addLineToFramedDisplay(display, message);
-              sendEvent();
+              if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
+                result += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
+              }
+              setState(perso, 'surpris', true, evt);
+            }
+            var message = name + " fait " + tr.texte + " : " + result;
+            addLineToFramedDisplay(display, message);
+            explications.forEach(function(m) {
+              addLineToFramedDisplay(display, m, 80);
             });
-        } else { //no test
-          setState(perso, 'surpris', true, evt);
-          addLineToFramedDisplay(display, name + " est surpris." + eForFemale(perso));
-          sendEvent();
-        }
-      }, sendEvent);
+            bonusMessages.forEach(function(m) {
+              addLineToFramedDisplay(display, m, 80);
+            });
+            sendEvent();
+          });
+      } else { //no test
+        setState(perso, 'surpris', true, evt);
+        addLineToFramedDisplay(display, name + " est surpris." + eForFemale(perso));
+        sendEvent();
+      }
     });
   }
 
@@ -27103,7 +27140,7 @@ var COFantasy = COFantasy || function() {
         runeProtection(msg);
         return;
       case "!cof-surprise":
-        surprise(msg);
+        parseSurprise(msg);
         return;
       case "!cof-init":
         if (msg.selected === undefined) {
