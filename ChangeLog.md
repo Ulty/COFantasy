@@ -32,6 +32,8 @@
 * Prise en compte de l'immunité à l'asphyxie des démons.
 * Utilisation des consommables sur la fiche pour les PNJs aussi.
 * Si "Jet Secret" est configuré sur une fiche de PNJ, seul le total des jets d'attaques, de dommages, de caractéristiques et de sauvegardes sont affichés, sans les détails. Le MJ reçoit un whisper avec le détail du jet.
+* Ajout d'une option pour gérer le Contrecoup de l'option Mana Totale + Coût aléatoire
+* Ajout d'une option permettant l'affichage des coûts effectifs en PM au lancement du sort
 
 ### Corrections de bugs
 * Quand une créature peut résister avec SAG, INT ou CHA et qu'elle est sans esprit, alors on choisit cette caractéristique (car la réussite est alors automatique). Test un peu plus précoce pour la résistance à la peur.
