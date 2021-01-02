@@ -155,16 +155,21 @@ var COFantasy = COFantasy || function() {
               val: false,
               type: 'bool'
             },
-            elixirs_sorts: {
-              explications: "Toutes fabrications d'élixir sont considérées comme des sorts (qui peuvent coûter de la mana)",
-              val: true,
+            contrecoup: {
+              explications: "Avec la Mana Totale, permet au lanceur de sort de payer un déficit de PM en PV (COF p. 181)",
+              val: false,
               type: 'bool'
             },
             brulure_de_magie: {
               explications: "Permettre d'utiliser ses PV comme PM (Magie de CO Terres d'Arran, incompatible avec Mana Totale)",
               val: false,
               type: 'bool'
-            }
+            },
+            elixirs_sorts: {
+              explications: "Toutes fabrications d'élixir sont considérées comme des sorts (qui peuvent coûter de la mana)",
+              val: true,
+              type: 'bool'
+            },
           }
         }
       }
@@ -223,6 +228,11 @@ var COFantasy = COFantasy || function() {
           val: false,
           type: 'bool'
         },
+        depense_mana: {
+          explications: "Le script précise la quantité de mana utilisée dans le chat à chaque fois",
+          val: false,
+          type: 'bool'
+        }
       }
     },
     images: {
@@ -5645,20 +5655,27 @@ var COFantasy = COFantasy || function() {
           bar2 = parseInt(manaAttr[0].get('current'));
         }
       }
-      if (bar2 < cout && !reglesOptionelles.mana.val.brulure_de_magie.val) {
-        msg = msg || '';
+      msg = msg || '';
+      if ((reglesOptionelles.mana.val.contrecoup.val && bar2 <= 0) ||
+          (!reglesOptionelles.mana.val.contrecoup.val && !reglesOptionelles.mana.val.brulure_de_magie.val && bar2 < cout)) {
         sendChar(charId, " n'a pas assez de points de mana pour " + msg);
         return false;
-      } else if (bar2 < cout && !reglesOptionelles.mana.val.mana_totale.val &&
-        reglesOptionelles.mana.val.brulure_de_magie.val) {
-        var famille = ficheAttribute(personnage, 'famille', 'aventurier').trim();
+      } else if (bar2 < cout && (reglesOptionelles.mana.val.contrecoup.val ||
+        reglesOptionelles.mana.val.brulure_de_magie.val)) {
         var degats = cout - bar2;
-        if (famille == "combattant") degats *= 2;
+        if(reglesOptionelles.mana.val.brulure_de_magie.val) {
+          var famille = ficheAttribute(personnage, 'famille', 'aventurier').trim();
+          if (famille == "combattant") degats *= 2;
+        }
         var bar1 = parseInt(token.get('bar1_value'));
+        var source = reglesOptionelles.mana.val.brulure_de_magie.val ? "de la Brûlure de Magie" : "du Contrecoup";
         updateCurrentBar(personnage, 2, 0, evt);
         updateCurrentBar(personnage, 1, bar1 - degats, evt);
-        sendChar(charId, "Perd " + degats + " PV à cause de la Brûlure de Magie");
+        var pre = (stateCOF.options.affichage.val.depense_mana.val && bar2 != 0) ? "Dépense " + bar2 + " PM et p" : "P";
+        sendChar(charId, pre + "erd " + degats + " PV à cause " + source + " pour " + msg);
       } else {
+        if(stateCOF.options.affichage.val.depense_mana.val)
+          sendChar(charId, "Dépense " + cout + " PM pour " + msg);
         updateCurrentBar(personnage, 2, bar2 - cout, evt);
         var niveau = ficheAttributeAsInt(personnage, 'niveau', 1);
         if (reglesOptionelles.mana.val.mana_totale.val) {
