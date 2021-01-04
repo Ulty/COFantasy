@@ -5657,13 +5657,13 @@ var COFantasy = COFantasy || function() {
       }
       msg = msg || '';
       if ((reglesOptionelles.mana.val.contrecoup.val && bar2 <= 0) ||
-          (!reglesOptionelles.mana.val.contrecoup.val && !reglesOptionelles.mana.val.brulure_de_magie.val && bar2 < cout)) {
+        (!reglesOptionelles.mana.val.contrecoup.val && !reglesOptionelles.mana.val.brulure_de_magie.val && bar2 < cout)) {
         sendChar(charId, " n'a pas assez de points de mana pour " + msg);
         return false;
       } else if (bar2 < cout && (reglesOptionelles.mana.val.contrecoup.val ||
-        reglesOptionelles.mana.val.brulure_de_magie.val)) {
+          reglesOptionelles.mana.val.brulure_de_magie.val)) {
         var degats = cout - bar2;
-        if(reglesOptionelles.mana.val.brulure_de_magie.val) {
+        if (reglesOptionelles.mana.val.brulure_de_magie.val) {
           var famille = ficheAttribute(personnage, 'famille', 'aventurier').trim();
           if (famille == "combattant") degats *= 2;
         }
@@ -5674,7 +5674,7 @@ var COFantasy = COFantasy || function() {
         var pre = (stateCOF.options.affichage.val.depense_mana.val && bar2 != 0) ? "Dépense " + bar2 + " PM et p" : "P";
         sendChar(charId, pre + "erd " + degats + " PV à cause " + source + " pour " + msg);
       } else {
-        if(stateCOF.options.affichage.val.depense_mana.val)
+        if (stateCOF.options.affichage.val.depense_mana.val)
           sendChar(charId, "Dépense " + cout + " PM pour " + msg);
         updateCurrentBar(personnage, 2, bar2 - cout, evt);
         var niveau = ficheAttributeAsInt(personnage, 'niveau', 1);
@@ -8280,8 +8280,8 @@ var COFantasy = COFantasy || function() {
               var pc = pointsDeChance(attaquant);
               if (!tr.echecCritique && pc > 0) {
                 msgRate += '<br/>' +
-                    boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                    " (reste " + pc + " PC)";
+                  boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+                  " (reste " + pc + " PC)";
               }
               if (stateCOF.combat && attributeAsBool(attaquant, 'petitVeinard')) {
                 msgRate += ' ' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
@@ -8302,9 +8302,11 @@ var COFantasy = COFantasy || function() {
         //L'immunité aux attaques sournoise est testée plus loin et ne devrait
         //pas empêcher le bonus de +5 à l'attaque.
         var rollId = 'disparition_' + cible.token.id;
-        var options1 = { ...options};
-        options1.bonusAttrs =  ["discrétion"];
-        var options2 = { ...options};
+        var options1 = {...options
+        };
+        options1.bonusAttrs = ["discrétion"];
+        var options2 = {...options
+        };
         options2.bonusAttrs = ["perception"];
         testOppose(rollId, attaquant, "DEX", options1, cible, "SAG", options2,
           cible.messages, evt,
@@ -9845,26 +9847,26 @@ var COFantasy = COFantasy || function() {
         case 'affaibliTemp':
           setState(target, 'affaibli', true, evt);
           break;
-          case 'aspectDuDemon':
-            //On retire l'autre aspect du Nécromancien si il est présent
-            finDEffetDeNom(target, "aspectDeLaSuccube", evt);
-            break;
-          case 'aspectDeLaSuccube':
-            finDEffetDeNom(target, "aspectDuDemon", evt);
-            break;
-          case 'peauDePierreMag':
-            if (ef.valeur === undefined) {
-              var rd = 5 + modCarac(target, 'intelligence');
-              var absorbe = 40;
-              if (options.tempeteDeManaIntence) {
-                rd += options.tempeteDeManaIntense;
-                absorbe += options.tempeteDeManaIntense * 5;
-              }
-              setTokenAttr(target, 'peauDePierreMagValeur', rd, evt, {
-                maxVal: absorbe
-              });
+        case 'aspectDuDemon':
+          //On retire l'autre aspect du Nécromancien si il est présent
+          finDEffetDeNom(target, "aspectDeLaSuccube", evt);
+          break;
+        case 'aspectDeLaSuccube':
+          finDEffetDeNom(target, "aspectDuDemon", evt);
+          break;
+        case 'peauDePierreMag':
+          if (ef.valeur === undefined) {
+            var rd = 5 + modCarac(target, 'intelligence');
+            var absorbe = 40;
+            if (options.tempeteDeManaIntence) {
+              rd += options.tempeteDeManaIntense;
+              absorbe += options.tempeteDeManaIntense * 5;
             }
-            break;
+            setTokenAttr(target, 'peauDePierreMagValeur', rd, evt, {
+              maxVal: absorbe
+            });
+          }
+          break;
       }
       if (ef.message && ef.message.statusMarker) {
         affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
@@ -11373,7 +11375,8 @@ var COFantasy = COFantasy || function() {
       if (options.msgPour) title += options.msgPour;
       expliquer(title);
     }
-    var optionsTest = { ...options};
+    var optionsTest = {...options
+    };
     optionsTest.bonusAttrs = bonusAttrs;
     optionsTest.bonus = bonus;
     testCaracteristique(target, carac, s.seuil, saveId, optionsTest, evt,
@@ -15379,9 +15382,9 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "On ne peut utiliser petit veinard qu'en combat");
       return;
     }
-    var options = parseOptions(msg);
-    if (options === undefined) return;
-    var cmd = options.cmd;
+    var msgOptions = parseOptions(msg);
+    if (msgOptions === undefined) return;
+    var cmd = msgOptions.cmd;
     if (cmd === undefined) {
       error("Problème de parse options", msg.content);
       return;
@@ -15401,16 +15404,16 @@ var COFantasy = COFantasy || function() {
       var rollId;
       if (cmd.length > 2) {
         if (!evtARefaire.action) {
-          error("Le dernier évènement n'est pas une action", args);
+          error("Le dernier évènement n'est pas une action", msg.content);
           return;
         }
         var roll = evtARefaire.action.rolls[cmd[2]];
         if (roll === undefined) {
-          error("Erreur interne du bouton de chance : roll non identifié", args);
+          error("Erreur interne du bouton de chance : roll non identifié", msg.content);
           return;
         }
         if (roll.token === undefined) {
-          error("Erreur interne du bouton de chance : roll sans token", args);
+          error("Erreur interne du bouton de chance : roll sans token", msg.content);
           return;
         }
         perso = persoOfId(roll.token.id, roll.token.name, roll.token.pageId);
@@ -15512,7 +15515,7 @@ var COFantasy = COFantasy || function() {
         cibles.push(perso);
       });
     });
-    if(cibles.length > 0) {
+    if (cibles.length > 0) {
       doSurprise(cibles, testSurprise, options);
     } else {
       error("Pas de cible valable sélectionnée pour la surprise", msg.content);
@@ -15567,7 +15570,8 @@ var COFantasy = COFantasy || function() {
       }
       if (testSurprise !== undefined) {
         var testId = 'surprise_' + perso.token.id;
-        var optionsTest = {...options};
+        var optionsTest = {...options
+        };
         optionsTest.bonus = bonusSurprise;
         optionsTest.bonusAttrs = bonusAttrs;
         testCaracteristique(perso, 'SAG', testSurprise, testId, optionsTest, evt,
@@ -15580,8 +15584,8 @@ var COFantasy = COFantasy || function() {
               var pc = pointsDeChance(perso);
               if (!tr.echecCritique && pc > 0) {
                 result += '<br/>' +
-                    boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                    " (reste " + pc + " PC)";
+                  boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+                  " (reste " + pc + " PC)";
               }
               if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
                 result += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
@@ -17979,17 +17983,17 @@ var COFantasy = COFantasy || function() {
           setTokenAttr(perso, ressource, utilisations - 1, evt);
         }
         setEffetTemporaire(perso, ef, d, options.lanceur, options.pageId, evt, options);
-            if (effet.startsWith('forgeron(')) {
-              //Il faut dégainer l'arme si elle n'est pas en main, et ajouter une lumière
-              var labelArmeForgeron = effet.substring(9, effet.indexOf(')'));
-              degainerArme(perso, labelArmeForgeron, evt);
-              var feu = getValeurOfEffet(perso, effet, 1, 'voieDuMetal');
-              ajouteUneLumiere(perso, effet, feu * 3, feu, evt);
-            } else if (effet.startsWith('armeEnflammee(')) {
-              var labelArmeEnflammee = effet.substring(14, effet.indexOf(')'));
-              degainerArme(perso, labelArmeEnflammee, evt);
-              ajouteUneLumiere(perso, effet, 9, 3, evt);
-            }
+        if (effet.startsWith('forgeron(')) {
+          //Il faut dégainer l'arme si elle n'est pas en main, et ajouter une lumière
+          var labelArmeForgeron = effet.substring(9, effet.indexOf(')'));
+          degainerArme(perso, labelArmeForgeron, evt);
+          var feu = getValeurOfEffet(perso, effet, 1, 'voieDuMetal');
+          ajouteUneLumiere(perso, effet, feu * 3, feu, evt);
+        } else if (effet.startsWith('armeEnflammee(')) {
+          var labelArmeEnflammee = effet.substring(14, effet.indexOf(')'));
+          degainerArme(perso, labelArmeEnflammee, evt);
+          ajouteUneLumiere(perso, effet, 9, 3, evt);
+        }
         if (options.puissant) {
           var puissant = true;
           if (options.puissant == "off") puissant = false;
@@ -18404,9 +18408,10 @@ var COFantasy = COFantasy || function() {
         }
       });
     }
-    var optionsPeur = {...options};
+    var optionsPeur = {...options
+    };
     optionsPeur.bonus = allieSansPeur;
-    var testId = 'peurOne_'+target.token.id;
+    var testId = 'peurOne_' + target.token.id;
     testCaracteristique(target, carac, difficulte, testId, optionsPeur, evt,
       function(tr) {
         var line = "Jet de résistance de " + targetName + " :" + tr.texte;
@@ -18430,8 +18435,8 @@ var COFantasy = COFantasy || function() {
           var pc = pointsDeChance(target);
           if (!tr.echecCritique && pc > 0) {
             line += '<br/>' +
-                boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                " (reste " + pc + " PC)";
+              boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+              " (reste " + pc + " PC)";
           }
           if (stateCOF.combat && attributeAsBool(target, 'petitVeinard')) {
             line += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
@@ -18444,7 +18449,7 @@ var COFantasy = COFantasy || function() {
       }); //fin testCaracteristique (asynchrone)
   }
 
-  function parsePeur(msg){
+  function parsePeur(msg) {
     var optArgs = msg.content.split(' --');
     var cmd = optArgs[0].split(' ');
     if (cmd.length < 3) {
@@ -21766,7 +21771,6 @@ var COFantasy = COFantasy || function() {
   function parseDestructionDesMortsVivants(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
-    var pageId = options.pageId;
     var args = options.cmd;
     if (args === undefined || args.length < 2) {
       error("Il faut au moins un argument à !cof-destruction-des-morts-vivants", args);
@@ -21791,7 +21795,7 @@ var COFantasy = COFantasy || function() {
       }
       var playerName = msg.who;
       if (playerIsGM(playerId)) playerName = 'GM';
-      iterSelected(selected, function (lanceur) {
+      iterSelected(selected, function(lanceur) {
         if (options.tempeteDeMana) {
           if (options.tempeteDeMana.cout === 0) {
             //On demande de préciser les options
@@ -21898,8 +21902,8 @@ var COFantasy = COFantasy || function() {
           var pc = pointsDeChance(lanceur);
           if (pc > 0) {
             msgRate += '<br/>' +
-                boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                " (reste " + pc + " PC)";
+              boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+              " (reste " + pc + " PC)";
           }
           if (attributeAsBool(lanceur, 'petitVeinard')) {
             msgRate += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
@@ -25930,7 +25934,6 @@ var COFantasy = COFantasy || function() {
         var maxAttr = attr.get('max') + '';
         if (maxAttr.startsWith('etreinte ')) {
           etreinte = true;
-          evt.type = "Tentative de libération d'étreinte";
           maxAttr = maxAttr.substring(9);
         }
         var difficulte = parseInt(maxAttr);
@@ -25945,9 +25948,9 @@ var COFantasy = COFantasy || function() {
 
   function doEchapperEnveloppement(perso, etreinte, cube, difficulte, options) {
     var evt = {
-      type: "echapperEnveloppement",
-      personnage : perso,
-      action : {
+      type: (etreinte) ? "Tentative de libération d'étreinte" : "echapperEnveloppement",
+      personnage: perso,
+      action: {
         perso: perso,
         etreinte: etreinte,
         cube: cube,
@@ -26056,7 +26059,8 @@ var COFantasy = COFantasy || function() {
     });
     var explications = [];
     var rollId = 'libererAgrippe_' + perso.token.id;
-    var options1 = { ...options };
+    var options1 = {...options
+    };
     if (attrName == 'etreinteImmolePar') options1.dice = 20;
     testOppose(rollId, perso, 'FOR', options1, agrippant, 'FOR',
       options, explications, evt,
