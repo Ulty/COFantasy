@@ -36,6 +36,7 @@
 * Ajout d'une option permettant l'affichage des coûts effectifs en PM au lancement du sort
 
 ### Corrections de bugs
+* Le script ne prennait pas en compte la sagesse de l'attaquant contre les créatures immunisées aux armes.
 * Quand une créature peut résister avec SAG, INT ou CHA et qu'elle est sans esprit, alors on choisit cette caractéristique (car la réussite est alors automatique). Test un peu plus précoce pour la résistance à la peur.
 * Correction d'un bug avec la forme d'arbre du druide.
 * Dur à cuir et enragés ne mourraient pas si tapé plus d'une fois dans le tour.
