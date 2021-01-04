@@ -8517,7 +8517,7 @@ var COFantasy = COFantasy || function() {
     otherDmg = otherDmg || [];
     var dmgDisplay = dmg.display;
     var dmgTotal = dmg.total;
-    if (dmgTotal < 1) {
+    if (dmgTotal < 1 && !(dmg.value && dmg.value.startsWith('0'))) {
       dmgDisplay += ' -> 1';
       dmgTotal = 1;
     }
@@ -9672,7 +9672,7 @@ var COFantasy = COFantasy || function() {
       if (options.magique) {
         attNbDicesCible = options.magique;
         attDiceCible = "6";
-        attCarBonusCible = modCarac(target, 'sagesse');
+        attCarBonusCible = modCarac(attaquant, 'sagesse');
         if (attCarBonusCible < 1) attCarBonusCible = '';
         else attCarBonusCible = " +" + attCarBonusCible;
       } else {
