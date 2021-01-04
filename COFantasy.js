@@ -4895,17 +4895,15 @@ var COFantasy = COFantasy || function() {
             effet += 'Temp';
           }
           if (estEffetTemp(effet)) {
-            if (cmd.length < 3) {
-              error("Il manque un argument à l'option --effet de !cof-attack", cmd);
-              return;
-            }
-            var duree;
-            duree = parseInt(cmd[2]);
-            if (isNaN(duree) || duree < 1) {
-              error(
-                "Le deuxième argument de --effet doit être un nombre positif",
-                cmd);
-              return;
+            var duree = 1;
+            if (cmd.length > 2) {
+              duree = parseInt(cmd[2]);
+              if (isNaN(duree) || duree < 1) {
+                error(
+                  "Le deuxième argument de --effet doit être un nombre positif",
+                  cmd);
+                return;
+              }
             }
             var m = messageOfEffetTemp(effet);
             lastEtat = {
@@ -6063,6 +6061,11 @@ var COFantasy = COFantasy || function() {
     var sex = ficheAttribute(perso, 'sexe', '');
     if (sex.startsWith('F')) return female;
     return male;
+  }
+
+  function messageActivation(perso, message) {
+    if (message.activationF) return onGenre(perso, message.activation, message.activationF);
+    return message.activation;
   }
 
   function getValeurOfEffet(perso, effet, def, attrDef) {
@@ -9542,6 +9545,10 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function eForFemale(perso) {
+    return onGenre(perso, '', 'e');
+  }
+
   function stringOfEtat(etat, perso) {
     if (etat == 'invisible') return etat;
     else if (etat == 'penombre') return "dans la pénombre";
@@ -9801,12 +9808,13 @@ var COFantasy = COFantasy || function() {
           return; //Pas besoin de réappliquer, effet toujours en cours
         }
       }
-      var targetMsg;
-      if (ef.message) {
+      var targetMsg = '';
+      if (ef.message && !ef.pasDeMessageDActivation) {
+        var msgAct = messageActivation(target, ef.message);
         if (ef.whisper === undefined) {
-          targetMsg = target.tokName + " " + ef.message.activation;
+          targetMsg = target.tokName + " " + msgAct;
         } else {
-          targetMsg = ef.whisper + ef.message.activation;
+          targetMsg = ef.whisper + msgAct;
         }
         if (stateCOF.options.affichage.val.duree_effets.val) targetMsg += " (" + duree + " tours)";
         var img = ef.image;
@@ -10833,12 +10841,13 @@ var COFantasy = COFantasy || function() {
                     var msgPour = " pour résister à un effet";
                     var msgRate = ", " + target.tokName + " ";
                     if (ef.duree && ef.message) {
-                      msgRate += ef.message.activation;
+                      msgRate += messageActivation(target, ef.message);
                       if (stateCOF.options.affichage.val.duree_effets.val) msgRate += " (" + ef.duree + " tours)";
                     } else if (ef.effetIndetermine)
                       msgRate += messageEffetIndetermine[ef.effet].activation;
                     else
                       msgRate += messageEffetCombat[ef.effet].activation;
+                    ef.pasDeMessageDActivation = true;
                     var saveOpts = {
                       msgPour: msgPour,
                       msgRate: msgRate,
@@ -16909,10 +16918,6 @@ var COFantasy = COFantasy || function() {
     Campaign().set('turnorder', JSON.stringify(turnOrder));
     if (tidOld == stateCOF.activeTokenId)
       stateCOF.activeTokenId = tidNew;
-  }
-
-  function eForFemale(perso) {
-    return onGenre(perso, '', 'e');
   }
 
   function armureMagique(msg) {
@@ -27538,6 +27543,7 @@ var COFantasy = COFantasy || function() {
     },
     benediction: {
       activation: "est touché par la bénédiction",
+      activationF: "est touchée par la bénédiction",
       actif: "est béni",
       fin: "l'effet de la bénédiction s'estompe"
     },
@@ -27548,6 +27554,7 @@ var COFantasy = COFantasy || function() {
     },
     rayonAffaiblissant: {
       activation: "est touché par un rayon affaiblissant",
+      activationF: "est touchée par un rayon affaiblissant",
       actif: "est sous l'effet d'un rayon affaiblissant",
       fin: "n'est plus affaibli",
       prejudiciable: true
@@ -27560,6 +27567,7 @@ var COFantasy = COFantasy || function() {
     },
     peurEtourdi: {
       activation: "prend peur: il peut fuir ou rester recroquevillé",
+      activationF: "prend peur: elle peut fuir ou rester recroquevillé",
       actif: "est paralysé par la peur",
       fin: "retrouve du courage et peut à nouveau agir",
       prejudiciable: true
@@ -27572,24 +27580,28 @@ var COFantasy = COFantasy || function() {
     },
     ralentiTemp: {
       activation: "est ralenti : une seule action, pas d'action limitée",
+      activationF: "est ralentie : une seule action, pas d'action limitée",
       actif: "est ralenti",
       fin: "n'est plus ralenti",
       prejudiciable: true
     },
     paralyseTemp: {
       activation: "est paralysé : aucune action ni déplacement possible",
+      activationF: "est paralysée : aucune action ni déplacement possible",
       actif: "est paralysé",
       fin: "n'est plus paralysé",
       prejudiciable: true
     },
     immobiliseTemp: {
       activation: "est immobilisé : aucun déplacement possible",
+      activationF: "est immobilisée : aucun déplacement possible",
       actif: "est immobilisé",
       fin: "n'est plus immobilisé",
       prejudiciable: true
     },
     etourdiTemp: {
       activation: "est étourdi : aucune action et -5 en DEF",
+      activationF: "est étourdie : aucune action et -5 en DEF",
       actif: "est étourdi",
       fin: "n'est plus étourdi",
       prejudiciable: true
@@ -27602,24 +27614,28 @@ var COFantasy = COFantasy || function() {
     },
     aveugleManoeuvre: {
       activation: "est aveuglé par la manoeuvre",
+      activationF: "est aveuglée par la manoeuvre",
       actif: "a du mal à voir où sont ses adversaires",
       fin: "retrouve une vision normale",
       prejudiciable: true
     },
     bloqueManoeuvre: {
       activation: "est bloqué par la manoeuvre",
+      activationF: "est bloquée par la manoeuvre",
       actif: "est bloqué et ne peut pas se déplacer",
       fin: "peut à nouveau se déplacer",
       prejudiciable: true
     },
     diversionManoeuvre: {
       activation: "est déconcentré",
+      activationF: "est déconcentrée",
       actif: "a été perturbé par une diversion",
       fin: "se reconcentre sur le combat",
       prejudiciable: true
     },
     menaceManoeuvre: {
       activation: "est menacé",
+      activationF: "est menacée",
       actif: "a été menacée, risque de plus de DM",
       fin: "n'est plus sous la menace",
       prejudiciable: true,
@@ -27627,6 +27643,7 @@ var COFantasy = COFantasy || function() {
     },
     tenuADistanceManoeuvre: {
       activation: "est tenu à distance",
+      activationF: "est tenue à distance",
       actif: "est tenu à distance de son adversaire, il ne peut pas l'attaquer",
       fin: "peut à nouveau attaquer son adversaire",
       prejudiciable: true,
@@ -27688,6 +27705,7 @@ var COFantasy = COFantasy || function() {
     },
     flou: {
       activation: "devient flou",
+      activationF: "devient floue",
       actif: "apparaît flou",
       fin: "redevient net"
     },
@@ -27722,6 +27740,7 @@ var COFantasy = COFantasy || function() {
     },
     dedoublement: {
       activation: "voit un double translucide sortir de lui",
+      activationF: "voit un double translucide sortir d'elle",
       actif: "est un double translucide",
       fin: "le double disparaît",
       dm: true
@@ -27739,6 +27758,7 @@ var COFantasy = COFantasy || function() {
     },
     confusion: {
       activation: "ne sait plus très bien ce qu'il fait là",
+      activationF: "ne sait plus très bien ce qu'elle fait là",
       actif: "est en pleine confusion",
       fin: "retrouve ses esprits",
       prejudiciable: true
@@ -27759,6 +27779,7 @@ var COFantasy = COFantasy || function() {
     },
     forceDeGeant: {
       activation: "devient plus fort",
+      activationE: "devient plus forte",
       actif: "a une force de géant",
       fin: "retrouve sa force normale"
     },
@@ -27792,6 +27813,7 @@ var COFantasy = COFantasy || function() {
     },
     nueeDInsectes: {
       activation: "est attaqué par une nuée d'insectes",
+      activationF: "est attaquée par une nuée d'insectes",
       actif: "est entouré d'une nuée d'insectes",
       fin: "est enfin débarassé des insectes",
       prejudiciable: true,
@@ -27799,6 +27821,7 @@ var COFantasy = COFantasy || function() {
     },
     nueeDeCriquets: {
       activation: "est attaqué par une nuée de criquets",
+      activationF: "est attaquée par une nuée de criquets",
       actif: "est entouré d'une nuée de criquets",
       fin: "est enfin débarassé des criquets",
       prejudiciable: true,
@@ -27862,6 +27885,7 @@ var COFantasy = COFantasy || function() {
     },
     armeSecreteBarde: {
       activation: "est déstabilisé",
+      activationF: "est déstabilisée",
       actif: "est déstabilisé par une action de charme",
       fin: "retrouve ses esprits",
       prejudiciable: true
@@ -27904,6 +27928,7 @@ var COFantasy = COFantasy || function() {
     },
     paralysieRoublard: {
       activation: "est paralysé par la douleur",
+      activationF: "est paralysée par la douleur",
       actif: "ne peut pas attaquer ni se déplacer",
       fin: "peut à nouveau attaquer et se déplacer",
       prejudiciable: true,
