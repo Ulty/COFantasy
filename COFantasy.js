@@ -14680,6 +14680,7 @@ var COFantasy = COFantasy || function() {
       case 'jetPerso':
         jetPerso(perso, action.caracteristique, action.difficulte, action.titre, action.playerId, options);
         return true;
+      case 'echapperEtreinte':
       case 'echapperEnveloppement':
         doEchapperEnveloppement(action.perso, action.etreinte, action.cube, action.difficulte, options);
         return true;
@@ -25956,7 +25957,7 @@ var COFantasy = COFantasy || function() {
 
   function doEchapperEnveloppement(perso, etreinte, cube, difficulte, options) {
     var evt = {
-      type: (etreinte) ? "Tentative de libération d'étreinte" : "echapperEnveloppement",
+      type: (etreinte) ? "echapperEtreinte" : "echapperEnveloppement",
       personnage: perso,
       action: {
         perso: perso,
