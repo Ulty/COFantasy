@@ -1681,6 +1681,7 @@ var COFantasy = COFantasy || function() {
         //pour suivre
         nePlusSuivre(personnage, pageId, evt);
       } else {
+        removeTokenAttr(personnage, 'aveugleTemp', evt);
         if (udl) {
           token.set('has_limit_field_of_vision', false);
           token.set('has_limit_field_of_night_vision', false);
@@ -1880,6 +1881,8 @@ var COFantasy = COFantasy || function() {
         case 'apeure':
           nePlusSuivre(personnage, pageId, evt);
       }
+    } else {//value est false
+      removeTokenAttr(personnage, etat + 'Temp', evt);
     }
     if (token.get('bar1_link') !== '') {
       if (charId === '') {
