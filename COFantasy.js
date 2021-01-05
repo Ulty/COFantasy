@@ -1722,6 +1722,33 @@ var COFantasy = COFantasy || function() {
             evt.deletedAttributes.push(a);
             a.remove();
           });
+          //Si le mort est enveloppé, il est relaché
+          attrEnveloppe = tokenAttribute(personnage, 'enveloppePar');
+          attrEnveloppe.forEach(function(a) {
+            var cube = persoOfIdName(a.get('current'), pageId);
+            if (cube) {
+              var envDiff = a.get('max');
+              if (envDiff.startsWith('etreinte')) {
+                //On a une étreinte, on enlève donc l'état immobilisé
+                setState(personnage, 'immobilise', false, evt);
+              }
+              evt.deletedAttributes = evt.deletedAttributes || [];
+              var attrCube = tokenAttribute(cube, 'enveloppe');
+              attrCube.forEach(function(a) {
+                var cible = persoOfIdName(a.get('current', pageId));
+                if (cible === undefined) {
+                  evt.deletedAttributes.push(a);
+                  a.remove();
+                } else if (cible.token.id == personnage.token.id) {
+                  sendChar(cube.charId, 'relache ' + personnage.tokName);
+                  evt.deletedAttributes.push(a);
+                  a.remove();
+                }
+              });
+            }
+            evt.deletedAttributes.push(a);
+            a.remove();
+          });
           //On libère les personnages agrippés, si il y en a.
           var attrAgrippe = tokenAttribute(personnage, 'agrippe');
           attrAgrippe.forEach(function(a) {
@@ -5856,6 +5883,8 @@ var COFantasy = COFantasy || function() {
     if (condInTarget) opt = target;
     for (var field in branch) {
       switch (field) {
+        case 'ite':
+          break;
         case 'additionalDmg':
         case 'additionalCritDmg':
         case 'effets':
@@ -5928,7 +5957,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //Evaluation récursive des if-then-else
-  function evalITE(attaquant, target, deAttaque, options, evt, explications, scope, callback, inTarget, etatParent) {
+  function evalITE(attaquant, target, deAttaque, options, phase, evt, explications, scope, callback, inTarget, etatParent) {
     etatParent = etatParent || {};
     if (scope.ite === undefined || scope.ite.length < 1) {
       etatParent.aTraiter = 1;
@@ -5969,6 +5998,7 @@ var COFantasy = COFantasy || function() {
             return true;
           }
           condInTarget = true;
+          phase = 0;
           resCondition = testCondition(ite.condition, attaquant, [target], deAttaque);
           break;
         case 'echecCritique':
@@ -5995,14 +6025,25 @@ var COFantasy = COFantasy || function() {
           };
           var saveId = condInTarget ? 'ifSave_' + etatParent.aTraiter + '_' + target.token.id :
             'ifSave_' + etatParent.aTraiter + '_' + attaquant.token.id;
+          if (phase > 0) { //le save a déjà été résolu
+            condInTarget = true;
+            resCondition = target.saveResults && target.saveResults[saveId];
+            break;
+          }
           var expliquer = function(msg) {
             target.messages.push(msg);
           };
           save(ite.condition.save, target, saveId, expliquer, saveOpts, evt,
             function(reussite, rolltext) {
               var branch;
-              if (reussite) branch = ite.else;
-              else branch = ite.then; //on teste si le save est raté
+              target.saveResults = target.saveResults || {};
+              if (reussite) {
+                branch = ite.else;
+                target.saveResults[saveId] = true;
+              } else {
+                branch = ite.then; //on teste si le save est raté
+                target.saveResults[saveId] = false;
+              }
               if (branch === undefined) {
                 callIfAllDone(etatParent, callback);
                 return;
@@ -6011,7 +6052,7 @@ var COFantasy = COFantasy || function() {
               var etat = {
                 parent: etatParent
               };
-              evalITE(attaquant, target, deAttaque, options, evt, explications, branch, callback, condInTarget, etat);
+              evalITE(attaquant, target, deAttaque, options, 0, evt, explications, branch, callback, condInTarget, etat);
             });
           return true; //on ne fait pas la suite, mais on garde l'ite
         default:
@@ -6023,14 +6064,15 @@ var COFantasy = COFantasy || function() {
       else branch = ite.else;
       if (branch === undefined) {
         callIfAllDone(etatParent, callback);
-        return condInTarget; //On garde l'ite si on dépende de la cible
+        return condInTarget; //On garde l'ite si on dépend de la cible
       }
       //On copie les champs de scope dans options ou dans target
-      copyBranchOptions(branch, options, target, evt, explications, condInTarget);
+      if (phase === 0)
+        copyBranchOptions(branch, options, target, evt, explications, condInTarget);
       var etat = {
         parent: etatParent
       };
-      evalITE(attaquant, target, deAttaque, options, evt, explications, branch, callback, condInTarget, etat);
+      evalITE(attaquant, target, deAttaque, options, phase, evt, explications, branch, callback, condInTarget, etat);
       return condInTarget;
     });
   }
@@ -9184,7 +9226,7 @@ var COFantasy = COFantasy || function() {
               removeTokenAttr(attaquant, 'attaqueGratuiteAutomatique(' + target.token.id + ')', evt);
             }
           }
-          evalITE(attaquant, target, d20roll, options, evt, explications, options, function() {
+          evalITE(attaquant, target, d20roll, options, 0, evt, explications, options, function() {
             target.ignoreTouteRD = target.ignoreTouteRD || options.ignoreTouteRD;
             target.ignoreRD = target.ignoreRD || options.ignoreRD;
             target.ignoreMoitieRD = target.ignoreMoitieRD || options.ignoreMoitieRD;
@@ -9855,6 +9897,9 @@ var COFantasy = COFantasy || function() {
         case 'affaibliTemp':
           setState(target, 'affaibli', true, evt);
           break;
+        case 'assomeTemp':
+          setState(target, 'assome', true, evt);
+          break;
         case 'aspectDuDemon':
           //On retire l'autre aspect du Nécromancien si il est présent
           finDEffetDeNom(target, "aspectDeLaSuccube", evt);
@@ -10188,7 +10233,7 @@ var COFantasy = COFantasy || function() {
       });
     }
     cibles.forEach(function(target) {
-      evalITE(attaquant, target, d20roll, options, evt, explications, options, function() {
+      evalITE(attaquant, target, d20roll, options, 1, evt, explications, options, function() {
         target.attaquant = attaquant;
         if (options.enveloppe !== undefined) {
           var ligneEnveloppe = attaquant.tokName + " peut ";
@@ -14677,6 +14722,7 @@ var COFantasy = COFantasy || function() {
       case 'jetPerso':
         jetPerso(perso, action.caracteristique, action.difficulte, action.titre, action.playerId, options);
         return true;
+      case 'echapperEtreinte':
       case 'echapperEnveloppement':
         doEchapperEnveloppement(action.perso, action.etreinte, action.cube, action.difficulte, options);
         return true;
@@ -25953,7 +25999,7 @@ var COFantasy = COFantasy || function() {
 
   function doEchapperEnveloppement(perso, etreinte, cube, difficulte, options) {
     var evt = {
-      type: (etreinte) ? "Tentative de libération d'étreinte" : "echapperEnveloppement",
+      type: (etreinte) ? "echapperEtreinte" : "echapperEnveloppement",
       personnage: perso,
       action: {
         perso: perso,
@@ -27612,6 +27658,13 @@ var COFantasy = COFantasy || function() {
       fin: "se sent moins faible",
       prejudiciable: true
     },
+    assomeTemp: {
+      activation: "est assomé",
+      activationF: "est assomée",
+      actif: "est assomé",
+      fin: "reprend conscience",
+      prejudiciable: true
+    },
     aveugleManoeuvre: {
       activation: "est aveuglé par la manoeuvre",
       activationF: "est aveuglée par la manoeuvre",
@@ -28420,6 +28473,17 @@ var COFantasy = COFantasy || function() {
               token: token,
               charId: charId
             }, 'affaibli', false, evt);
+          }, {
+            tousLesTokens: true
+          });
+        break;
+      case 'assomeTemp':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+          function(token) {
+            setState({
+              token: token,
+              charId: charId
+            }, 'assome', false, evt);
           }, {
             tousLesTokens: true
           });
