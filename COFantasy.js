@@ -11587,11 +11587,6 @@ var COFantasy = COFantasy || function() {
       res.sauf.feu_hache = res.sauf.feu_hache || 0;
       res.sauf.feu_hache += 10;
     }
-    if (charAttributeAsBool(perso, 'hausserLeTon')) {
-      if (parseInt(perso.token.get('bar1_value')) <= perso.token.get('bar1_max') / 2) {
-        res.rdt += 5;
-      }
-    }
     var rd = ficheAttribute(perso, 'RDS', '');
     rd = (rd + '').trim();
     if (rd === '') {
@@ -12160,6 +12155,20 @@ var COFantasy = COFantasy || function() {
         }
         var rdTarget = getRDS(target);
         var rd = rdTarget.rdt || 0;
+        if (rd > 0 && options.attaquant && charAttributeAsBool(options.attaquant, 'ventreMou')) {
+          var taille = taillePersonnage(target, 4);
+          if (taille > 4) {
+            if (target.messages) target.messages.push("Ventre mou => L'attaque ignore la RD dûe à la taille");
+            rd -= 3 * (taille - 4);
+            if (taille > 6) rd--;
+            if (rd < 0) rd = 0;
+          }
+        }
+        if (charAttributeAsBool(target, 'hausserLeTon')) {
+          if (parseInt(target.token.get('bar1_value')) <= target.token.get('bar1_max') / 2) {
+            rd += 5;
+          }
+        }
         if (attributeAsBool(target, 'statueDeBois')) rd += 10;
         if (attributeAsBool(target, 'mutationSilhouetteMassive')) rd += 3;
         if (crit) {
