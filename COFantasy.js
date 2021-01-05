@@ -21588,7 +21588,7 @@ var COFantasy = COFantasy || function() {
       if (chance) {
         msg += '+10';
         totalEvitement += 10;
-      } else {
+      } else if (!msg || !totalEvitement) {
         var rolls = res[0];
         var attackRoll = rolls.inlinerolls[0];
         totalEvitement = attackRoll.results.total;
