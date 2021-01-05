@@ -1681,6 +1681,7 @@ var COFantasy = COFantasy || function() {
         //pour suivre
         nePlusSuivre(personnage, pageId, evt);
       } else {
+        removeTokenAttr(personnage, 'aveugleTemp', evt);
         if (udl) {
           token.set('has_limit_field_of_vision', false);
           token.set('has_limit_field_of_night_vision', false);
@@ -1880,6 +1881,8 @@ var COFantasy = COFantasy || function() {
         case 'apeure':
           nePlusSuivre(personnage, pageId, evt);
       }
+    } else {//value est false
+      removeTokenAttr(personnage, etat + 'Temp', evt);
     }
     if (token.get('bar1_link') !== '') {
       if (charId === '') {
@@ -2250,6 +2253,26 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  //msg peut être un message ou un playerId
+  function peutController(msg, perso) {
+    if (msg === undefined) return true;
+    var playerId = getPlayerIdFromMsg(msg);
+    if (playerIsGM(playerId)) return true;
+    if (msg.selected && msg.selected.length > 0) {
+      if (perso.token.id == msg.selected[0]._id) return true;
+      var selectedPerso = persoOfId(msg.selected[0]._id);
+      if (selectedPerso !== undefined && selectedPerso.charId == perso.charId) return true;
+    }
+    var character = getObj('character', perso.charId);
+    if (character === undefined) return false;
+    var cb = character.get('controlledby');
+    var res = cb.split(',').find(function(pid) {
+      if (pid == 'all') return true;
+      return (pid == playerId);
+    });
+    return (res !== undefined);
+  }
+
   // !cof-confirmer-attaque evtid
   function confirmerAttaque(msg) {
     if (!stateCOF.combat) {
@@ -2271,11 +2294,27 @@ var COFantasy = COFantasy || function() {
       error("Erreur interne du bouton de rune de protection : l'évènement n'a pas d'action", cmd);
       return;
     }
-    if (!peutController(msg, action.attaquant)) {
+    var options = action.currentOptions || {};
+    var playerId = getPlayerIdFromMsg(msg);
+    var ctrl = playerIsGM(playerId);
+    if (!ctrl && options.preDmg) {
+      var tokens = _.allKeys(options.preDmg);
+      ctrl = tokens.every(function(tid) {
+        var perso = persoOfId(tid);
+        if (perso === undefined) return true;
+        var character = getObj('character', perso.charId);
+        if (character === undefined) return true;
+        var cb = character.get('controlledby');
+        var res = cb.split(',').find(function(pid) {
+          if (pid == 'all') return true;
+        });
+        return (res !== undefined);
+      });
+    }
+    if (!ctrl) {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton");
       return;
     }
-    var options = action.currentOptions || {};
     delete options.preDmg;
     attackDealDmg(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.ciblesAttaquees);
   }
@@ -8831,13 +8870,14 @@ var COFantasy = COFantasy || function() {
     return attackRollExpr + " " + attackSkillExpr;
   }
 
-  //N'ajoute evt à l'historique
+  //N'ajoute as evt à l'historique
   function resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options, chargesArme) {
     var attackingCharId = attaquant.charId;
     var attackingToken = attaquant.token;
     var attackerName = attaquant.name;
     var attackerTokName = attaquant.tokName;
-    var explications = options.messages || [];
+    var explications = [];
+    if (options.messages) explications = [ ...options.messages];
     var sujetAttaquant = onGenre(attaquant, 'il', 'elle');
     if (options.contact) {
       //Prise en compte du corps élémentaire
@@ -13454,37 +13494,6 @@ var COFantasy = COFantasy || function() {
       return;
     }
     evt.attributes = evt.attributes || [];
-    if (versionFiche < 3.6) {
-      for (var i = 1; i < 6; i++) {
-        var prAttr = findObjs({
-          _type: 'attribute',
-          _characterid: perso.charId,
-          name: "PR" + i
-        });
-        if (prAttr.length === 0) {
-          prAttr = createObj("attribute", {
-            characterid: perso.charId,
-            name: "PR" + i,
-            current: 1,
-            max: 1
-          });
-          evt.attributes.push({
-            attribute: prAttr,
-            current: null
-          });
-          return;
-        } else if (prAttr[0].get('current') == 0) { // jshint ignore:line
-          prAttr[0].set("current", 1);
-          evt.attributes.push({
-            attribute: prAttr[0],
-            current: 0
-          });
-          return;
-        }
-      }
-      sendChat("COF", "Plus de point de récupération à enlever");
-      return;
-    }
     attrPR = charAttribute(perso.charId, 'pr', {
       caseInsensitive: true
     });
@@ -14620,26 +14629,6 @@ var COFantasy = COFantasy || function() {
       });
     });
     addEvent(evt);
-  }
-
-  //msg peut être un message ou un playerId
-  function peutController(msg, perso) {
-    if (msg === undefined) return true;
-    var playerId = getPlayerIdFromMsg(msg);
-    if (playerIsGM(playerId)) return true;
-    if (msg.selected && msg.selected.length > 0) {
-      if (perso.token.id == msg.selected[0]._id) return true;
-      var selectedPerso = persoOfId(msg.selected[0]._id);
-      if (selectedPerso !== undefined && selectedPerso.charId == perso.charId) return true;
-    }
-    var character = getObj('character', perso.charId);
-    if (character === undefined) return false;
-    var cb = character.get('controlledby');
-    var res = cb.split(',').find(function(pid) {
-      if (pid == 'all') return true;
-      return (pid == playerId);
-    });
-    return (res !== undefined);
   }
 
   //!cof-bouton-chance [evt.id] [rollId]
@@ -20497,25 +20486,101 @@ var COFantasy = COFantasy || function() {
       var display = startFramedDisplay(playerId, action, druide);
       iterSelected(selected, function(perso) {
         var nom = perso.token.get('name');
-        var baie = tokenAttribute(perso, 'dose_Baie_magique');
-        var nbBaies = 1;
-        if (baie.length > 0) {
-          var actionAncienne = baie[0].get('max');
-          var indexNiveau = actionAncienne.indexOf(' ') + 1;
-          var ancienNiveau = parseInt(actionAncienne.substring(indexNiveau));
-          if (ancienNiveau > niveau) {
-            addLineToFramedDisplay(display, nom + " a déjà une baie plus puissante");
-            return;
+        if (perso.token.get('bar1_link') === '') { //Perso non lié, on utilise un attribut
+          var baie = tokenAttribute(perso, 'dose_Baie_magique');
+          var nbBaies = 1;
+          if (baie.length > 0) {
+            var actionAncienne = baie[0].get('max');
+            var indexNiveau = actionAncienne.indexOf(' ') + 1;
+            var ancienNiveau = parseInt(actionAncienne.substring(indexNiveau));
+            if (ancienNiveau > niveau) {
+              addLineToFramedDisplay(display, nom + " a déjà une baie plus puissante");
+              return;
+            }
+            if (ancienNiveau == niveau) {
+              nbBaies = parseInt(baie[0].get('current'));
+              if (isNaN(nbBaies) || nbBaies < 0) nbBaies = 0;
+              nbBaies++;
+            }
           }
-          if (ancienNiveau == niveau) {
-            nbBaies = parseInt(baie[0].get('current'));
-            if (isNaN(nbBaies) || nbBaies < 0) nbBaies = 0;
-            nbBaies++;
+          setTokenAttr(perso, 'dose_Baie_magique', nbBaies, evt, {
+            maxVal: mangerBaie
+          });
+        } else {
+          var attributes = findObjs({
+            _type: 'attribute',
+            _characterid: perso.charId
+          });
+          var found = attributes.find(function(attr) {
+            var attrName = attr.get('name');
+            var m = consommableNomRegExp.exec(attrName);
+            if (!m) return false;
+            if (attr.get('current').trim() != 'Baie magique') return false;
+            var consoPrefix = m[1];
+            var attrEffet = charAttribute(perso.charId, consoPrefix + 'equip_effet');
+            if (attrEffet.length === 0) {
+              attrEffet = createObj('attribute', {
+                characterid: perso.charId,
+                name: consoPrefix + 'equip_effet',
+                current: mangerBaie
+              });
+              evt.attributes = evt.attributes || [];
+              evt.attributes.push({
+                attribute: attrEffet,
+                current: null
+              });
+            } else if (attrEffet[0].get('current').trim() != mangerBaie) {
+              return false;
+            }
+            var attrQte = charAttribute(perso.charId, consoPrefix + 'equip_qte');
+            if (attrQte.length === 0) {
+              attrQte = createObj('attribute', {
+                characterid: perso.charId,
+                name: consoPrefix + 'equip_qte',
+                current: 2
+              });
+              evt.attributes = evt.attributes || [];
+              evt.attributes.push({
+                attribute: attrQte,
+                current: null
+              });
+              return true;
+            }
+            attrQte = attrQte[0];
+            var quantite = parseInt(attrQte.get('current'));
+            if (isNaN(quantite) || quantite < 1) quantite = 0;
+            attrQte.set('current', quantite + 1);
+            evt.attributes = evt.attributes || [];
+            evt.attributes.push({
+              attribute: attrQte,
+              current: quantite
+            });
+            return true;
+          });
+          // si le consommable n'a pas été trouvé, on le crée avec une valeur de 1.
+          if (!found) {
+            var pref = 'repeating_equipement_' + generateRowID() + '_';
+            var attre = createObj("attribute", {
+              name: pref + 'equip_nom',
+              current: 'Baie magique',
+              characterid: perso.charId
+            });
+            evt.attributes = evt.attributes || [];
+            evt.attributes.push({
+              attribute: attre,
+              current: null,
+            });
+            attre = createObj('attribute', {
+              name: pref + 'equip_effet',
+              current: mangerBaie,
+              characterid: perso.charId
+            });
+            evt.attributes.push({
+              attribute: attre,
+              current: null,
+            });
           }
         }
-        setTokenAttr(perso, 'dose_Baie_magique', nbBaies, evt, {
-          maxVal: mangerBaie
-        });
         var line = nom + " reçoit une baie";
         if (perso.token.id == druide.token.id)
           line = nom + " en garde une pour " + onGenre(druide, "lui", "elle");
@@ -20528,6 +20593,7 @@ var COFantasy = COFantasy || function() {
     }); //fin du getSelected
   }
 
+  //!cof-consommer-baie niveau
   function consommerBaie(msg) {
     var options = parseOptions(msg);
     if (options === undefined) return;
