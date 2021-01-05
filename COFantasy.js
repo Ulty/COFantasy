@@ -2250,6 +2250,26 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  //msg peut être un message ou un playerId
+  function peutController(msg, perso) {
+    if (msg === undefined) return true;
+    var playerId = getPlayerIdFromMsg(msg);
+    if (playerIsGM(playerId)) return true;
+    if (msg.selected && msg.selected.length > 0) {
+      if (perso.token.id == msg.selected[0]._id) return true;
+      var selectedPerso = persoOfId(msg.selected[0]._id);
+      if (selectedPerso !== undefined && selectedPerso.charId == perso.charId) return true;
+    }
+    var character = getObj('character', perso.charId);
+    if (character === undefined) return false;
+    var cb = character.get('controlledby');
+    var res = cb.split(',').find(function(pid) {
+      if (pid == 'all') return true;
+      return (pid == playerId);
+    });
+    return (res !== undefined);
+  }
+
   // !cof-confirmer-attaque evtid
   function confirmerAttaque(msg) {
     if (!stateCOF.combat) {
@@ -2271,11 +2291,27 @@ var COFantasy = COFantasy || function() {
       error("Erreur interne du bouton de rune de protection : l'évènement n'a pas d'action", cmd);
       return;
     }
-    if (!peutController(msg, action.attaquant)) {
+    var options = action.currentOptions || {};
+    var playerId = getPlayerIdFromMsg(msg);
+    var ctrl = playerIsGM(playerId);
+    if (!ctrl && options.preDmg) {
+      var tokens = _.allKeys(options.preDmg);
+      ctrl = tokens.every(function(tid) {
+        var perso = persoOfId(tid);
+        if (perso === undefined) return true;
+        var character = getObj('character', perso.charId);
+        if (character === undefined) return true;
+        var cb = character.get('controlledby');
+        var res = cb.split(',').find(function(pid) {
+          if (pid == 'all') return true;
+        });
+        return (res !== undefined);
+      });
+    }
+    if (!ctrl) {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton");
       return;
     }
-    var options = action.currentOptions || {};
     delete options.preDmg;
     attackDealDmg(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.ciblesAttaquees);
   }
@@ -14589,26 +14625,6 @@ var COFantasy = COFantasy || function() {
       });
     });
     addEvent(evt);
-  }
-
-  //msg peut être un message ou un playerId
-  function peutController(msg, perso) {
-    if (msg === undefined) return true;
-    var playerId = getPlayerIdFromMsg(msg);
-    if (playerIsGM(playerId)) return true;
-    if (msg.selected && msg.selected.length > 0) {
-      if (perso.token.id == msg.selected[0]._id) return true;
-      var selectedPerso = persoOfId(msg.selected[0]._id);
-      if (selectedPerso !== undefined && selectedPerso.charId == perso.charId) return true;
-    }
-    var character = getObj('character', perso.charId);
-    if (character === undefined) return false;
-    var cb = character.get('controlledby');
-    var res = cb.split(',').find(function(pid) {
-      if (pid == 'all') return true;
-      return (pid == playerId);
-    });
-    return (res !== undefined);
   }
 
   //!cof-bouton-chance [evt.id] [rollId]
