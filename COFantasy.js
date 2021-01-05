@@ -9855,6 +9855,9 @@ var COFantasy = COFantasy || function() {
         case 'affaibliTemp':
           setState(target, 'affaibli', true, evt);
           break;
+        case 'assomeTemp':
+          setState(target, 'assome', true, evt);
+          break;
         case 'aspectDuDemon':
           //On retire l'autre aspect du Nécromancien si il est présent
           finDEffetDeNom(target, "aspectDeLaSuccube", evt);
@@ -27612,6 +27615,13 @@ var COFantasy = COFantasy || function() {
       fin: "se sent moins faible",
       prejudiciable: true
     },
+    assomeTemp: {
+      activation: "est assomé",
+      activationF: "est assomée",
+      actif: "est assomé",
+      fin: "reprend conscience",
+      prejudiciable: true
+    },
     aveugleManoeuvre: {
       activation: "est aveuglé par la manoeuvre",
       activationF: "est aveuglée par la manoeuvre",
@@ -28420,6 +28430,17 @@ var COFantasy = COFantasy || function() {
               token: token,
               charId: charId
             }, 'affaibli', false, evt);
+          }, {
+            tousLesTokens: true
+          });
+        break;
+      case 'assomeTemp':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+          function(token) {
+            setState({
+              token: token,
+              charId: charId
+            }, 'assome', false, evt);
           }, {
             tousLesTokens: true
           });
