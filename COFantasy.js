@@ -1722,6 +1722,33 @@ var COFantasy = COFantasy || function() {
             evt.deletedAttributes.push(a);
             a.remove();
           });
+          //Si le mort est enveloppé, il est relaché
+          attrEnveloppe = tokenAttribute(personnage, 'enveloppePar');
+          attrEnveloppe.forEach(function(a) {
+            var cube = persoOfIdName(a.get('current'), pageId);
+            if (cube) {
+              var envDiff = a.get('max');
+              if (envDiff.startsWith('etreinte')) {
+                //On a une étreinte, on enlève donc l'état immobilisé
+                setState(personnage, 'immobilise', false, evt);
+              }
+              evt.deletedAttributes = evt.deletedAttributes || [];
+              var attrCube = tokenAttribute(cube, 'enveloppe');
+              attrCube.forEach(function(a) {
+                var cible = persoOfIdName(a.get('current', pageId));
+                if (cible === undefined) {
+                  evt.deletedAttributes.push(a);
+                  a.remove();
+                } else if (cible.token.id == personnage.token.id) {
+                  sendChar(cube.charId, 'relache ' + personnage.tokName);
+                  evt.deletedAttributes.push(a);
+                  a.remove();
+                }
+              });
+            }
+            evt.deletedAttributes.push(a);
+            a.remove();
+          });
           //On libère les personnages agrippés, si il y en a.
           var attrAgrippe = tokenAttribute(personnage, 'agrippe');
           attrAgrippe.forEach(function(a) {
