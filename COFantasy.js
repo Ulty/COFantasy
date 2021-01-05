@@ -1008,8 +1008,16 @@ var COFantasy = COFantasy || function() {
   }
 
   function estAffaibli(perso) {
-    if (getState(perso, 'affaibli')) return true;
-    if (getState(perso, 'blesse')) return true;
+    if (perso.affaibli !== undefined) return perso.affaibli;
+    if (getState(perso, 'affaibli')) {
+      perso.affaibli = true;
+      return true;
+    }
+    if (getState(perso, 'blesse')) {
+      perso.affaibli = true;
+      return true;
+    }
+    perso.affaibli = false;
     return false;
   }
 
@@ -1881,7 +1889,7 @@ var COFantasy = COFantasy || function() {
         case 'apeure':
           nePlusSuivre(personnage, pageId, evt);
       }
-    } else {//value est false
+    } else { //value est false
       removeTokenAttr(personnage, etat + 'Temp', evt);
     }
     if (token.get('bar1_link') !== '') {
@@ -3339,6 +3347,7 @@ var COFantasy = COFantasy || function() {
       nbDe: carSup,
       carac: carac
     });
+    if (estAffaibli(personnage) && charAttributeAsBool(personnage, 'insensibleAffaibli')) bonusCarac -= 2;
     var plageEC = 1;
     var plageECText = '1';
     if (options.plageEchecCritique) {
@@ -3432,6 +3441,7 @@ var COFantasy = COFantasy || function() {
       carac: carac,
       dice: options.dice
     });
+    if (estAffaibli(personnage) && charAttributeAsBool(personnage, 'insensibleAffaibli')) bonusCarac -= 2;
     var bonusText = '';
     if (bonusCarac > 0) {
       bonusText = ' + ' + bonusCarac;
@@ -7026,6 +7036,10 @@ var COFantasy = COFantasy || function() {
       defense -= 5;
       explications.push(target.tokName + " étreint quelqu'un => -5 en DEF");
     }
+    if (attaquant && charAttributeAsBool(target, 'langageSombreHetre') && estElfeNoir(attaquant)) {
+      defense += 1;
+      explications.push(target.tokName + " comprend le langage sombre => +1 en DEF");
+    }
     if (target.realCharId) target.charId = target.realCharId;
     return defense;
   }
@@ -7788,7 +7802,8 @@ var COFantasy = COFantasy || function() {
         save: {
           carac: 'FOR',
           carac2: 'DEX',
-          seuil: seuilFauchage
+          seuil: seuilFauchage,
+          fauchage: true
         }
       });
     }
@@ -8129,7 +8144,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    if (options.avecd12 && (estAffaibli(attaquant) || getState(attaquant, 'immobilise'))) {
+    if (options.avecd12 && ((estAffaibli(attaquant) && !charAttributeAsBool(attaquant, 'insensibleAffaibli')) || getState(attaquant, 'immobilise'))) {
       sendChar(attackingCharId, "ne peut pas utiliser cette capacité quand il est affaibli.");
       return;
     }
@@ -8531,6 +8546,17 @@ var COFantasy = COFantasy || function() {
     x.dmgTotal += bonusCrit.val;
   }
 
+  function immuniseAuType(target, dmgType, attaquant) {
+    if (charAttributeAsBool(target, 'immunite_' + dmgType)) return true;
+    if (dmgType == 'poison' && attaquant) {
+      if (charAttributeAsBool(target,'sangDeFerIf')) {
+        return estElfeNoir(attaquant) || estInsecte(attaquant);
+      }
+      return false;
+    }
+    return false;
+  }
+
   // Fonction asynchrone
   // displayRes est optionnel, et peut avoir 2 arguments
   // - un texte affichant le jet de dégâts
@@ -8658,7 +8684,7 @@ var COFantasy = COFantasy || function() {
     // Dommages de même type que le principal, mais à part, donc non affectés par les critiques
     var mainDmgType = dmg.type;
     var dmgExtra = dmgParType[mainDmgType];
-    if (dmgExtra && dmgExtra.length > 0 && !charAttributeAsBool(target, 'immunite_' + mainDmgType)) {
+    if (dmgExtra && dmgExtra.length > 0 && !immuniseAuType(target, mainDmgType, options.attaquant)) {
       if (dmgCoef > 1) dmgDisplay = "(" + dmgDisplay + ")";
       showTotal = true;
       var count = dmgExtra.length;
@@ -8877,7 +8903,7 @@ var COFantasy = COFantasy || function() {
     var attackerName = attaquant.name;
     var attackerTokName = attaquant.tokName;
     var explications = [];
-    if (options.messages) explications = [ ...options.messages];
+    if (options.messages) explications = [...options.messages];
     var sujetAttaquant = onGenre(attaquant, 'il', 'elle');
     if (options.contact) {
       //Prise en compte du corps élémentaire
@@ -9082,10 +9108,16 @@ var COFantasy = COFantasy || function() {
     // chances de critique
     var crit = critEnAttaque(attaquant, weaponStats, options);
     var dice = 20;
+    var malusAttaque = 0;
     if (!options.auto) {
       if (estAffaibli(attaquant)) {
-        dice = 12;
-        explications.push("Attaquant affaibli => D12 au lieu de D20 en Attaque");
+        if (charAttributeAsBool(attaquant, 'insensibleAffaibli')) {
+          malusAttaque = -2;
+          explications.push("Attaquant affaibli, mais insensible => -2 en Attaque");
+        } else {
+          dice = 12;
+          explications.push("Attaquant affaibli => D12 au lieu de D20 en Attaque");
+        }
       } else if (getState(attaquant, 'immobilise')) {
         dice = 12;
         explications.push("Attaquant immobilisé => D12 au lieu de D20 en Attaque");
@@ -9217,6 +9249,7 @@ var COFantasy = COFantasy || function() {
         //Modificateurs en Attaque qui ne dépendent pas de la cible
         var attBonusCommun =
           bonusAttaqueA(attaquant, weaponName, evt, explications, options);
+        attBonusCommun += malusAttaque;
         if (options.traquenard) {
           if (attributeAsInt(attaquant, 'traquenard', 0) === 0) {
             sendChar(attackingCharId, "ne peut pas faire de traquenard, car ce n'est pas sa première attaque du combat");
@@ -10414,6 +10447,10 @@ var COFantasy = COFantasy || function() {
             attDMBonus += "+" + loupParmiLesLoups;
             target.messages.push("Loup parmi les loups : +" + loupParmiLesLoups + " DM");
           }
+          if (charAttributeAsBool(attaquant, 'langageSombreHetre') && estElfeNoir(target)) {
+            attDMBonus += "+1";
+            target.messages.push("Langage sombre : +1 DM");
+          }
         }
         //Bonus aux DMs dus au défi samouraï
         var defiSamouraiAttr = tokenAttribute(attaquant, 'defiSamourai');
@@ -10690,7 +10727,7 @@ var COFantasy = COFantasy || function() {
                   savesEffets++;
                   return; //on le fera plus tard
                 }
-                if (ef.typeDmg && charAttributeAsBool(target, 'immunite_' + ef.typeDmg)) {
+                if (ef.typeDmg && immuniseAuType(target, ef.typeDmg, attaquant)) {
                   target.messages.push(target.tokName + " ne semble pas affecté par " + stringOfType(ef.typeDmg));
                   return;
                 }
@@ -10916,7 +10953,7 @@ var COFantasy = COFantasy || function() {
               if (effets && savesEffets > 0) {
                 effets.forEach(function(ef, index) {
                   if (ef.save) {
-                    if (ef.typeDmg && charAttributeAsBool(target, 'immunite_' + ef.typeDmg)) {
+                    if (ef.typeDmg && immuniseAuType(target, ef.typeDmg, attaquant)) {
                       target.messages.push(target.tokName + " ne semble pas affecté par " + stringOfType(ef.typeDmg));
                       saves--;
                       savesEffets--;
@@ -11423,6 +11460,7 @@ var COFantasy = COFantasy || function() {
     }
     var nbrDe1 = nbreDeTestCarac(carac1, personnage);
     var nbrDe2 = nbreDeTestCarac(carac2, personnage);
+    if (estAffaibli(personnage) && charAttributeAsBool(personnage, 'insensibleAffaibli')) seuil += 2;
     var de1 = deTest(personnage, carac1);
     var proba1 = probaSucces(de1, seuil - bonus1, nbrDe1);
     var de2 = deTest(personnage, carac2);
@@ -11441,6 +11479,10 @@ var COFantasy = COFantasy || function() {
   //   - type : le type de dégâts contre lequel on fait le save
   function save(s, target, saveId, expliquer, options, evt, afterSave) {
     var bonus = 0;
+    if (s.fauchage && charAttributeAsBool(target, 'inderacinable')) {
+      expliquer(target.token.get('name') + " est indéracinable.");
+      afterSave(true, '');
+    }
     if (options.attaquant &&
       charAttributeAsBool(target, 'protectionContreLeMal') &&
       estMauvais(options.attaquant)) {
@@ -11587,6 +11629,7 @@ var COFantasy = COFantasy || function() {
       res.sauf.feu_hache = res.sauf.feu_hache || 0;
       res.sauf.feu_hache += 10;
     }
+    if (charAttributeAsBool('fievreChene')) res.feu = (res.feu || 0) + 5;
     var rd = ficheAttribute(perso, 'RDS', '');
     rd = (rd + '').trim();
     if (rd === '') {
@@ -11707,7 +11750,7 @@ var COFantasy = COFantasy || function() {
       dmgTotal = 0;
     }
 
-    if (charAttributeAsBool(target, 'immunite_' + mainDmgType)) {
+    if (immuniseAuType(target, mainDmgType), options.attaquant) {
       if (expliquer) {
         target.tokName = target.tokName || target.token.get('name');
         expliquer(target.tokName + " ne semble pas affecté par " + stringOfType(mainDmgType));
@@ -11845,7 +11888,7 @@ var COFantasy = COFantasy || function() {
     // First count all other sources of damage, for synchronization
     var count = 0;
     for (var dt in dmgParType) {
-      if (charAttributeAsBool(target, 'immunite_' + dt)) {
+      if (immuniseAuType(target, dt, options.attaquant)) {
         if (expliquer) {
           target.tokName = target.tokName || target.token.get('name');
           expliquer(target.tokName + " ne semble pas affecté par " + stringOfType(dt));
@@ -17023,7 +17066,8 @@ var COFantasy = COFantasy || function() {
 
   function deTest(personnage, carac) {
     var dice = 20;
-    if (estAffaibli(personnage) || getState(personnage, 'immobilise') ||
+    if ((estAffaibli(personnage) && !charAttributeAsBool(personnage, 'insensibleAffaibli')) ||
+      getState(personnage, 'immobilise') ||
       attributeAsBool(personnage, 'mortMaisNAbandonnePas'))
       dice = 12;
     else {
@@ -18065,7 +18109,7 @@ var COFantasy = COFantasy || function() {
         }
       };
       cibles.forEach(function(perso) {
-        if (options.type && charAttributeAsBool(perso, 'immunite_' + options.type)) {
+        if (options.type && immuniseAuType(perso, options.type, lanceur)) {
           sendChar(perso.charId, "ne semble pas affecté par " + stringOfType(options.type));
           return;
         }
@@ -18720,11 +18764,13 @@ var COFantasy = COFantasy || function() {
       evt.action.rolls.atk2 = atk2;
       var d20roll1 = roll1.results.total;
       var att1Skill = atk1.results.total;
+      if (estAffaibli(attaquant) && charAttributeAsBool(attaquant, 'insensibleAffaibli')) att1Skill -= 2;
       var attackRoll1 = d20roll1 + att1Skill;
       if (options.chanceRollId && options.chanceRollId.roll1)
         attackRoll1 += options.chanceRollId.roll1;
       var d20roll2 = roll2.results.total;
       var att2Skill = atk2.results.total;
+      if (estAffaibli(cible) && charAttributeAsBool(cible, 'insensibleAffaibli')) att2Skill -= 2;
       var attackRoll2 = d20roll2 + att2Skill;
       if (options.chanceRollId && options.chanceRollId.roll2)
         attackRoll2 += options.chanceRollId.roll2;
@@ -19157,6 +19203,7 @@ var COFantasy = COFantasy || function() {
       var attSkillNumber = rollNumber(afterEvaluate[1]);
       var d20roll = rolls.inlinerolls[attRollNumber].results.total;
       var attSkill = rolls.inlinerolls[attSkillNumber].results.total;
+      if (estAffaibli(attaquant) && charAttributeAsBool(attaquant, 'insensibleAffaibli')) attSkill -= 2;
       var attackRoll = d20roll + attSkill;
       var line =
         attaquant.tokName + " fait " +
@@ -19312,6 +19359,48 @@ var COFantasy = COFantasy || function() {
       case 'ogre':
       case 'ettin':
       case 'cyclope':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function estElfeNoir(perso) {
+    if (charAttributeAsBool(perso, 'elfeNoir')) return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '');
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    if (perso.race.includes('elf') && perso.race.includes('noir')) return true;
+    switch (perso.race) {
+      case 'drider':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  //Vrai pour les insectes et araignées
+  function estInsecte(perso) {
+    if (charAttributeAsBool(perso, 'insecte')) return true;
+    if (perso.profil === undefined) {
+      perso.profil = ficheAttribute(perso, 'profil', '');
+      perso.profil = perso.profil.toLowerCase();
+    }
+    if (perso.profil == 'insecte') return true;
+    if (perso.profil == 'araignée') return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '');
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    if (perso.race.includes('elf') && perso.race.includes('noir')) return true;
+    switch (perso.race) {
+      case 'ankheg':
+      case 'araignée':
+      case 'araignee':
+      case 'insecte':
         return true;
       default:
         return false;
@@ -21505,6 +21594,7 @@ var COFantasy = COFantasy || function() {
         totalEvitement = attackRoll.results.total;
         msg = buildinline(attackRoll);
         var attBonus = ficheAttributeAsInt(perso, 'niveau', 1);
+        if (estAffaibli(perso) && charAttributeAsBool(perso, 'insensibleAffaibli')) attBonus -= 2;
         switch (typeAttaque) {
           case 'distance':
             attBonus += ficheAttributeAsInt(perso, 'ATKTIR_DIV', 0);
@@ -23969,9 +24059,15 @@ var COFantasy = COFantasy || function() {
     });
     var critAttaquant = critEnAttaque(attaquant, armeAttaquant, options);
     var dice = 20;
+    var malusAttaque = 0;
     if (estAffaibli(attaquant)) {
-      dice = 12;
-      explications.push("Attaquant affaibli => D12 au lieu de D20 en Attaque");
+      if (charAttributeAsBool(attaquant, 'insensibleAffaibli')) {
+        malusAttaque = -2;
+        explications.push("Attaquant affaibli, mais insensible => -2 en Attaque");
+      } else {
+        dice = 12;
+        explications.push("Attaquant affaibli => D12 au lieu de D20 en Attaque");
+      }
     } else if (getState(attaquant, 'immobilise')) {
       dice = 12;
       explications.push("Attaquant immobilisé => D12 au lieu de D20 en Attaque");
@@ -23988,6 +24084,7 @@ var COFantasy = COFantasy || function() {
       var attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
       var attBonus =
         bonusAttaqueA(attaquant, armeAttaquant.name, evt, explications, options);
+      attBonus += malusAttaque;
       var pageId = options.pageId || attaquant.token.get('pageid');
       attBonus +=
         bonusAttaqueD(attaquant, defenseur, 0, pageId, evt, explications, options);
@@ -24005,9 +24102,15 @@ var COFantasy = COFantasy || function() {
       addLineToFramedDisplay(display, "Jet de " + attaquant.tokName + " : " + attRollValue);
       var critDefenseur = critEnAttaque(defenseur, armeDefenseur, options);
       var dice = 20;
+      var malusAttaque = 0;
       if (estAffaibli(defenseur)) {
-        dice = 12;
-        explications.push("Défenseur affaibli => D12 au lieu de D20 en Attaque");
+        if (charAttributeAsBool(defenseur, 'insensibleAffaibli')) {
+          malusAttaque = -2;
+          explications.push("Défenseur affaibli, mais insensible => -2 en Attaque");
+        } else {
+          dice = 12;
+          explications.push("Défenseur affaibli => D12 au lieu de D20 en Attaque");
+        }
       } else if (getState(defenseur, 'immobilise')) {
         dice = 12;
         explications.push("Défenseur immobilisé => D12 au lieu de D20 en Attaque");
@@ -24024,6 +24127,7 @@ var COFantasy = COFantasy || function() {
         var attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
         attBonus =
           bonusAttaqueA(defenseur, armeDefenseur.name, evt, explications, options);
+        attBonus += malusAttaque;
         attBonus +=
           bonusAttaqueD(defenseur, attaquant, 0, pageId, evt, explications, options);
         var attackRollDefenseur = d20rollDefenseur + attSkill + attBonus;
