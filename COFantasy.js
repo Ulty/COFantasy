@@ -8684,7 +8684,7 @@ var COFantasy = COFantasy || function() {
     // Dommages de même type que le principal, mais à part, donc non affectés par les critiques
     var mainDmgType = dmg.type;
     var dmgExtra = dmgParType[mainDmgType];
-    if (dmgExtra && dmgExtra.length > 0 && immuniseAuType(target, mainDmgType, options.attaquant)) {
+    if (dmgExtra && dmgExtra.length > 0 && !immuniseAuType(target, mainDmgType, options.attaquant)) {
       if (dmgCoef > 1) dmgDisplay = "(" + dmgDisplay + ")";
       showTotal = true;
       var count = dmgExtra.length;
@@ -11758,7 +11758,7 @@ var COFantasy = COFantasy || function() {
       dmgTotal = 0;
     }
 
-    if (immuniseAuType(target, mainDmgType), options.attaquant) {
+    if (immuniseAuType(target, mainDmgType, options.attaquant)) {
       if (expliquer) {
         target.tokName = target.tokName || target.token.get('name');
         expliquer(target.tokName + " ne semble pas affecté par " + stringOfType(mainDmgType));
