@@ -7803,7 +7803,7 @@ var COFantasy = COFantasy || function() {
           carac: 'FOR',
           carac2: 'DEX',
           seuil: seuilFauchage,
-          fauchage: true
+          fauchage: taillePersonnage(attaquant, 4)
         }
       });
     }
@@ -8549,7 +8549,7 @@ var COFantasy = COFantasy || function() {
   function immuniseAuType(target, dmgType, attaquant) {
     if (charAttributeAsBool(target, 'immunite_' + dmgType)) return true;
     if (dmgType == 'poison' && attaquant) {
-      if (charAttributeAsBool(target,'sangDeFerIf')) {
+      if (charAttributeAsBool(target, 'sangDeFerIf')) {
         return estElfeNoir(attaquant) || estInsecte(attaquant);
       }
       return false;
@@ -8684,7 +8684,7 @@ var COFantasy = COFantasy || function() {
     // Dommages de même type que le principal, mais à part, donc non affectés par les critiques
     var mainDmgType = dmg.type;
     var dmgExtra = dmgParType[mainDmgType];
-    if (dmgExtra && dmgExtra.length > 0 && !immuniseAuType(target, mainDmgType, options.attaquant)) {
+    if (dmgExtra && dmgExtra.length > 0 && immuniseAuType(target, mainDmgType, options.attaquant)) {
       if (dmgCoef > 1) dmgDisplay = "(" + dmgDisplay + ")";
       showTotal = true;
       var count = dmgExtra.length;
@@ -11479,9 +11479,17 @@ var COFantasy = COFantasy || function() {
   //   - type : le type de dégâts contre lequel on fait le save
   function save(s, target, saveId, expliquer, options, evt, afterSave) {
     var bonus = 0;
-    if (s.fauchage && charAttributeAsBool(target, 'inderacinable')) {
-      expliquer(target.token.get('name') + " est indéracinable.");
-      afterSave(true, '');
+    if (s.fauchage) {
+      if (s.fauchage <= taillePersonnage(target, 4)) {
+        expliquer(target.token.get('name') + " est trop grand pour être fauché.");
+        afterSave(true, '');
+        return;
+      }
+      if (charAttributeAsBool(target, 'inderacinable')) {
+        expliquer(target.token.get('name') + " est indéracinable.");
+        afterSave(true, '');
+        return;
+      }
     }
     if (options.attaquant &&
       charAttributeAsBool(target, 'protectionContreLeMal') &&
