@@ -17633,6 +17633,8 @@ var COFantasy = COFantasy || function() {
         }
         if (options.messages) message += "rengaine " + ancienneArme.name + " et ";
         else sendChar(perso.charId, "rengaine " + ancienneArme.name);
+        if (charAttributeAsInt(perso, "initEnMain" + labelArmeActuelle, 0) > 0)
+          updateNextInit(perso);
         if (charAttributeAsBool(perso, 'eclaire_' + labelArmeActuelle)) {
           eteindreUneLumiere(perso, pageId, undefined, 'eclaire_' + labelArmeActuelle, evt);
         }

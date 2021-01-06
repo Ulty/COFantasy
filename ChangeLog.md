@@ -38,6 +38,7 @@
 * Ajout d'une option permettant l'affichage des coûts effectifs en PM au lancement du sort
 
 ### Corrections de bugs
+* Mise à jour de l'initiative quand on rengaine son arme à distance avec la voie du pistolero.
 * Donne le droit au joueur qui doit faire une réaction à une attaque de ne pas réagir.
 * Les créatures qui enveloppent ou étreignent leur cible la relachent quand elle meurt.
 * Le script ne prennait pas en compte la sagesse de l'attaquant contre les créatures immunisées aux armes.
