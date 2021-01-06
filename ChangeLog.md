@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.15
 ### Capacités
+* Project de la Voie du colosse.
 * Ventre mou de la Voie du tueur de géants.
 * Suggestion de la Voie de la séduction du barde
 * Gestion du mot de pouvoir qui immobilise.

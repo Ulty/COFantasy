@@ -9246,6 +9246,9 @@ var COFantasy = COFantasy || function() {
             return;
           }
         }
+        if (d20roll > 14 && charAttributeAsBool(attaquant, 'projection')) {
+          options.projection = true;
+        }
         //Modificateurs en Attaque qui ne dépendent pas de la cible
         var attBonusCommun =
           bonusAttaqueA(attaquant, weaponName, evt, explications, options);
@@ -10329,6 +10332,36 @@ var COFantasy = COFantasy || function() {
           if (immobilise) setState(target, 'immobilise', true, evt);
           target.messages.push("est agrippé");
         }
+        if (options.projection && taillePersonnage(attaquant, 4) > taillePersonnage(target, 4)) {
+          var bonusProjection = 5 - taillePersonnage(target, 4);
+          var distanceProjetee = rollDePlus(6, {
+            bonus: bonusProjection
+          }).val;
+          var dmgProjection = "3d6";
+          if (charAttributeAsBool(target, 'inderacinable')) {
+            distanceProjetee /= 2;
+            dmgProjection = "floor(" + dmgProjection + "/2)";
+          }
+          target.effets = target.effets || [];
+          target.effets.push({
+            effet: 'etourdiTemp',
+            duree: 100,
+            message: messageOfEffetTemp('etourdiTemp'),
+            save: {
+              carac: 'CON',
+              seuil: 15
+            },
+            saveParTour: {
+              carac: 'CON',
+              seuil: 15
+            }
+          });
+          target.additionalDmg.push({
+            type: 'normal',
+            value: dmgProjection
+          });
+          target.messages.push(target.tokName + " est projeté sur " + distanceProjetee + " mètres");
+        }
         var attDMBonus = attDMBonusCommun;
         //Les modificateurs de dégâts qui dépendent de la cible
         if (target.tempDmg) {
@@ -11007,13 +11040,13 @@ var COFantasy = COFantasy || function() {
                     if (resultat == 2) {
                       target.messages.push(target.tokName + " est piétiné par " + attackerTokName + ", dommages doublés");
                       setState(target, 'renverse', true, evt);
-                      options.dmgCoef = (options.dmgCoef || 1) + 1;
+                      target.dmgCoef = (target.dmgCoef || 0) + 1;
                       target.touche++;
                       if (target.percute) {
                         target.messages.push(target.tokName + " est projeté à " +
                           rollDePlus(6, {
                             bonus: 1
-                          }).val + " mètres");
+                          }).roll + " mètres");
                         effets = effets || [];
                         effets.push({
                           effet: 'etourdiTemp',
