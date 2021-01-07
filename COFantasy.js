@@ -2235,6 +2235,8 @@ var COFantasy = COFantasy || function() {
       Campaign().set('turnorder', evt.turnorder);
     if (_.has(evt, 'initiativepage'))
       Campaign().set('initiativepage', evt.initiativepage);
+    if (evt.chargeFantastique)
+      stateCOF.chargeFantastique = evt.chargeFantastique;
   }
 
   //origin peut être un message ou un nom de joueur
@@ -6263,7 +6265,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //ne rajoute pas evt à l'historique
-  function tokenInit(perso, evt) {
+  function persoInit(perso, evt) {
     var initDerivee = charAttribute(perso.charId, 'initiativeDeriveeDe');
     if (initDerivee.length > 0) {
       var charDerive = findObjs({
@@ -6275,13 +6277,13 @@ var COFantasy = COFantasy || function() {
           charId: charDerive[0].id,
           token: perso.token
         };
-        return tokenInit(persoD, evt);
+        return persoInit(persoD, evt);
       }
     }
     var persoMonte = tokenAttribute(perso, 'estMontePar');
     if (persoMonte.length > 0) {
       var cavalier = persoOfId(persoMonte[0].get('current'), persoMonte[0].get('max'), perso.token.get('pageid'));
-      if (cavalier !== undefined) return tokenInit(cavalier, evt);
+      if (cavalier !== undefined) return persoInit(cavalier, evt);
     }
     var init;
     if (persoEstPNJ(perso)) {
@@ -6399,7 +6401,7 @@ var COFantasy = COFantasy || function() {
     iterSelected(selected, function(perso) {
       stateCOF.combat_pageid = perso.token.get('pageid');
       if (!isActive(perso)) return;
-      var init = tokenInit(perso, evt);
+      var init = persoInit(perso, evt);
       // On place le token à sa place dans la liste du tour
       var dejaIndex =
         to.dejaAgi.findIndex(function(elt) {
@@ -7263,9 +7265,25 @@ var COFantasy = COFantasy || function() {
           }
           var dmArmeGauche = modCarac(attaquant, 'dexterite');
           dmArmeGauche += attaquant.armeGauche.attDMBonusCommun;
+          var typeDMGauche = 'normal';
+          switch (attaquant.armeGauche.typeDegats) {
+            case 'feu':
+            case 'froid':
+            case 'acide':
+            case 'electrique':
+            case 'sonique':
+            case 'poison':
+            case 'maladie':
+            case 'magique':
+              typeDMGauche = attaquant.armeGauche.typeDegats;
+          }
+          if (typeDMGauche == 'normal' && attaquant.armeGauche.modificateurs &&
+            attaquant.armeGauche.modificateurs.includes("magique")) {
+            typeDMGauche = 'magique';
+          }
           options.additionalDmg = options.additionalDmg || [];
           options.additionalDmg.push({
-            type: 'normal',
+            type: typeDMGauche,
             value: dmArmeGauche
           });
           attBonus += bonusArmeGauche;
@@ -7299,7 +7317,7 @@ var COFantasy = COFantasy || function() {
           msgHausserLeTon += " et +1d6 DM";
           options.additionalDmg = options.additionalDmg || [];
           options.additionalDmg.push({
-            type: 'normal',
+            type: options.type || 'normal',
             value: '1d6'
           });
         }
@@ -7317,6 +7335,20 @@ var COFantasy = COFantasy || function() {
       var bonusTemp = getValeurOfEffet(attaquant, 'bonusAttaqueTemp', 5);
       attBonus += bonusTemp;
       explications.push("Bonus d'attaque temporaire de " + bonusTemp);
+    }
+    if (stateCOF.chargeFantastique &&
+      stateCOF.chargeFantastique.tokenAttaque == attaquant.token.id) {
+      attBonus += 3;
+      var msgCharge = "Charge fantastique => +3 en Attaque";
+      if (!options.pasDeDmg) {
+        msgCharge += " et +1d6 DM";
+        options.additionalDmg = options.additionalDmg || [];
+        options.additionalDmg.push({
+          type: options.type || 'normal',
+          value: '1d6'
+        });
+      }
+      explications.push(msgCharge);
     }
     return attBonus;
   }
@@ -9300,7 +9332,7 @@ var COFantasy = COFantasy || function() {
             sendChar(attackingCharId, "ne peut pas faire de traquenard, car ce n'est pas sa première attaque du combat");
             return;
           }
-          options.traquenard = tokenInit(attaquant, evt);
+          options.traquenard = persoInit(attaquant, evt);
         }
         if (attributeAsInt(attaquant, 'traquenard', 0) > 0) {
           setTokenAttr(attaquant, 'traquenard', 0, evt);
@@ -9359,7 +9391,7 @@ var COFantasy = COFantasy || function() {
             if (!options.auto) bad = bonusAttaqueD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
             var attBonus = attBonusCommun + bad;
             if (options.traquenard) {
-              var initTarg = tokenInit(target, evt);
+              var initTarg = persoInit(target, evt);
               if (options.traquenard >= initTarg) {
                 attBonus += 2;
                 target.additionalDmg.push({
@@ -13315,9 +13347,11 @@ var COFantasy = COFantasy || function() {
       combat: true,
       tour: stateCOF.tour,
       init: stateCOF.init,
-      deletedAttributes: []
+      deletedAttributes: [],
+      chargeFantastique: stateCOF.chargeFantastique
     };
     stateCOF.combat = false;
+    stateCOF.chargeFantastique = undefined;
     setActiveToken(undefined, evt);
     Campaign().set('initiativepage', false);
     var attrs = findObjs({
@@ -16157,6 +16191,7 @@ var COFantasy = COFantasy || function() {
       _characterid: perso.charId,
     });
     var title = 'Actions possibles :';
+    if (stateCOF.chargeFantastique) title = "Charge fantastique: action d'attaque";
     var opt_display = {
       chuchote: true
     };
@@ -27397,6 +27432,137 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  // Ajoute evt à l'historique si présent
+  // msg n'est pas forcément présent
+  function nextTurnChargeFantastique(msg, oldTurnOrder) {
+    if (oldTurnOrder) Campaign().set('turnorder', oldTurnOrder);
+    var cf = stateCOF.chargeFantastique;
+    if (cf === undefined) {
+      sendChat("Pas de charge fantastique en cours");
+      return;
+    }
+    var evt = {
+      type: "Tour de charge fantastique",
+      chargeFantastique: cf
+    };
+    var tid, perso;
+    if (cf.mouvements && cf.mouvements.length > 0) {
+      evt.chargeFantastique.mouvements = [...cf.mouvements];
+      evt.chargeFantastique.attaques = cf.attaques;
+      tid = cf.mouvements.shift();
+      perso = persoOfId(tid);
+      if (perso === undefined) {
+        error("Personnage en charge fantastique manquant", tid);
+        return;
+      }
+      addEvent(evt);
+      var playerIds = getPlayerIds(perso);
+      var playerId;
+      var optionsDisplay = {
+        chuchote: 'gm'
+      };
+      if (playerIds.length > 0) {
+        playerId = playerIds[0];
+        optionsDisplay.chuchote = true;
+      }
+      var display = startFramedDisplay(playerId, "Charge fantastique", perso, optionsDisplay);
+      addLineToFramedDisplay(display, "Phase de mouvement : déplacez votre token en ligne droite");
+      addLineToFramedDisplay(display, "puis " + boutonSimple("!cof-next-charge-fantastique", "cliquez ici"));
+      sendChat('', endFramedDisplay(display));
+      return;
+    }
+    if (cf.attaques && cf.attaques.length > 0) {
+      evt.chargeFantastique.attaques = [...cf.attaques];
+      tid = cf.attaques.shift();
+      cf.tokenAttaque = tid;
+      if (cf.attaques.length === 0) cf.attaques = undefined;
+      perso = persoOfId(tid);
+      if (perso === undefined) {
+        error("Personnage en charge fantastique manquant", tid);
+        return;
+      }
+      addEvent(evt);
+      turnAction(perso);
+      return;
+    }
+    stateCOF.chargeFantastique = undefined;
+  }
+
+  // !cof-charge-fantastique token_id
+  function chargeFantastque(msg) {
+    var options = parseOptions(msg);
+    var cmd = options.cmd;
+    if (!cmd || cmd.length < 2) {
+      error("Pas assez d'arguments pour !cof-charge-fantastique", cmd);
+      return;
+    }
+    var chevalier = persoOfId(cmd[1], cmd[1], options.pageId);
+    if (chevalier === undefined) {
+      error("Le token sélectionné ne représente pas un personnage", cmd);
+      return;
+    }
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        error('pas de token sélectionné pour !cof-charge-fantastique', msg.content);
+        return;
+      }
+      var evt = {
+        type: 'Charge fantastique'
+      };
+      addEvent(evt);
+      if (limiteRessources(chevalier, options, 'chargeFantastique', 'charge fantastique', evt)) return;
+      sendChar(chevalier.charId, "mène une charge fantastique !");
+      initiative(selected, evt);
+      stateCOF.chargeFantastique = {};
+      var ordreActions = [];
+      var chevalierIn;
+      iterSelected(selected, function(perso) {
+        if (perso.token.id == chevalier.token.id) {
+          chevalierIn = true;
+          return;
+        }
+        ordreActions.push({
+          init: persoInit(perso, evt),
+          perso: perso
+        });
+      });
+      ordreActions.sort(function(p1, p2) {
+        if (p1.init < p2.init) return 1;
+        if (p1.init > p2.init) return -1;
+        // Priorité aux joueurs
+        // Premier critère : la barre de PV des joueurs est liée
+        if (p1.perso.token.get('bar1_link') === '') {
+          if (p2.perso.token.get('bar1_link') === '') return 0;
+          return 1;
+        }
+        if (p2.perso.token.get('bar1_link') === '') return -1;
+        // Deuxième critère : les joueurs ont un DV
+        var dvA = ficheAttributeAsInt(p1.perso, "DV", 0);
+        var dvB = ficheAttributeAsInt(p2.perso, "DV", 0);
+        if (dvA === 0) {
+          if (dvB === 0) return 0;
+          return 1;
+        }
+        if (dvB === 0) return -1;
+        //Entre joueurs, priorité à la plus grosse sagesse
+        var sagA = ficheAttributeAsInt(p1.perso, 'sagesse', 10);
+        var sagB = ficheAttributeAsInt(p2.perso, 'sagesse', 10);
+        if (sagA < sagB) return 1;
+        if (sagB > sagA) return -1;
+        return 0;
+      });
+      var mouvements = ordreActions.map(function(p) {
+        return p.perso.token.id;
+      });
+      if (chevalierIn) mouvements.unshift(chevalier.token.id);
+      stateCOF.chargeFantastique.mouvements = mouvements;
+      stateCOF.chargeFantastique.attaques = [...mouvements];
+      nextTurnChargeFantastique();
+    }, {
+      lanceur: chevalier
+    }); //fin du getSelected
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -27664,101 +27830,101 @@ var COFantasy = COFantasy || function() {
           delete stateCOF.statistiques;
         } // sinon, ne pas écraser les statistiques déjà en pause
         return;
-      case "!cof-statistiques":
+      case '!cof-statistiques':
         displayStatistics(msg);
         return;
-      case "!cof-destruction-des-morts-vivants":
+      case '!cof-destruction-des-morts-vivants':
         parseDestructionDesMortsVivants(msg);
         return;
-      case "!cof-enduire-poison":
+      case '!cof-enduire-poison':
         enduireDePoison(msg);
         return;
-      case "!cof-consommables":
+      case '!cof-consommables':
         listeConsommables(msg);
         return;
-      case "!cof-utilise-consommable": //Usage interne seulement
+      case '!cof-utilise-consommable': //Usage interne seulement
         utiliseConsommable(msg);
         return;
-      case "!cof-echange-consommable": //Usage interne seulement
+      case '!cof-echange-consommable': //Usage interne seulement
         echangeConsommable(msg);
         return;
-      case "!cof-provocation":
+      case '!cof-provocation':
         parseProvocation(msg);
         return;
-      case "!cof-en-selle":
+      case '!cof-en-selle':
         enSelle(msg);
         return;
-      case "!cof-creer-elixir": //usage interne seulement
+      case '!cof-creer-elixir': //usage interne seulement
         creerElixir(msg);
         return;
-      case "!cof-elixirs":
+      case '!cof-elixirs':
         gestionElixir(msg);
         return;
-      case "!cof-runes":
+      case '!cof-runes':
         gestionRunes(msg);
         return;
-      case "!cof-creer-rune": // usage interne seulement
+      case '!cof-creer-rune': // usage interne seulement
         creerRune(msg);
         return;
-      case "!cof-rage-du-berserk":
+      case '!cof-rage-du-berserk':
         rageDuBerserk(msg);
         return;
-      case "!cof-arme-secrete":
+      case '!cof-arme-secrete':
         armeSecrete(msg);
         return;
-      case "!cof-animer-arbre":
+      case '!cof-animer-arbre':
         animerUnArbre(msg);
         return;
-      case "!cof-delivrance":
-      case "!cof-guerir":
+      case '!cof-delivrance':
+      case '!cof-guerir':
         delivrance(msg);
         return;
-      case "!cof-guerison":
+      case '!cof-guerison':
         guerison(msg);
         return;
-      case "!cof-test-attaque-opposee":
+      case '!cof-test-attaque-opposee':
         testAttaqueOpposee(msg);
         return;
-      case "!cof-manoeuvre":
+      case '!cof-manoeuvre':
         manoeuvreRisquee(msg);
         return;
-      case "!cof-appliquer-manoeuvre":
+      case '!cof-appliquer-manoeuvre':
         appliquerManoeuvre(msg);
         return;
-      case "!cof-desarmer":
+      case '!cof-desarmer':
         desarmer(msg);
         return;
-      case "!cof-tempete-de-mana":
+      case '!cof-tempete-de-mana':
         optionsDeTempeteDeMana(msg);
         return;
-      case "!cof-deplacer-token":
+      case '!cof-deplacer-token':
         deplacerToken(msg);
         return;
-      case "!cof-permettre-deplacement":
+      case '!cof-permettre-deplacement':
         permettreDeplacement(msg);
         return;
-      case "!cof-tour-suivant":
+      case '!cof-tour-suivant':
         tourSuivant(msg);
         return;
-      case "!cof-multi-command":
+      case '!cof-multi-command':
         multiCommand(msg);
         return;
-      case "!cof-conjuration-de-predateur":
+      case '!cof-conjuration-de-predateur':
         conjurationPredateur(msg);
         return;
-      case "!cof-conjuration-armee":
+      case '!cof-conjuration-armee':
         conjurationArmee(msg);
         return;
-      case "!cof-set-macros":
+      case '!cof-set-macros':
         setGameMacros(msg);
         return;
-      case "!cof-lumiere":
+      case '!cof-lumiere':
         ajouteLumiere(msg);
         return;
-      case "!cof-eteindre-lumiere":
+      case '!cof-eteindre-lumiere':
         eteindreLumieres(msg);
         return;
-      case "!cof-torche":
+      case '!cof-torche':
         switchTorche(msg);
         return;
       case '!cof-defi-samourai':
@@ -27816,6 +27982,12 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-mot-de-pouvoir-immobilise':
         motDePouvoirImmobilise(msg);
+        return;
+      case '!cof-charge-fantastique':
+        chargeFantastque(msg);
+        return;
+      case '!cof-next-charge-fantastique':
+        nextTurnChargeFantastique(msg);
         return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);
@@ -29550,6 +29722,14 @@ var COFantasy = COFantasy || function() {
     var lastHead = turnOrder.pop();
     turnOrder.unshift(lastHead);
     evt.turnorder = JSON.stringify(turnOrder);
+    if (stateCOF.chargeFantastique) {
+      //cmp.set('turnorder', evt.turnorder);
+      if (stateCOF.chargeFantastique.attaques) {
+        nextTurnChargeFantastique(cmp, evt.turnorder);
+        return;
+      }
+      stateCOF.chargeFantastique = undefined;
+    }
     var attrs = findObjs({
       _type: 'attribute'
     });

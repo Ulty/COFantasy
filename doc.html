@@ -978,6 +978,7 @@
                   <li><strong>Intercepter</strong> : Juste après l'attaque réussie, utiliser <code>!cof-intercepter</code>. Il faut un attribut <code>voieDuMeneurDHomme</code> avec comme valeur le rang dans la voie.</li>
                   <li><strong>Exemplaire</strong> : <code>!cof-exemplaire</code>, juste après l'attaque ratée.</li>
                   <li><strong>Ordre de bataille</strong> : pas de support</li>
+                  <li><strong>Charge fantastique</strong> : <code>!cof-charge-fantastique @{selected|token_id} --alliesEnVue --self --limiteParJour 1</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de la noblesse</h4>
                 <ol>
@@ -1048,7 +1049,7 @@
                 <ol>
                   <li><strong>6eme sens</strong> : ajouter le bonus en DEF divers et initiative diver, ajouter un attribut <code>vigilance</code>, de valeur 2*rang (le bonus aux jet de surprise).</li>
                   <li><strong>Détection de l'invisible</strong> : <code>!cof-effet-temp detectionDeLInvisible [[5+@{selected|CHA}]]</code>.  Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
-                  <li><strong>Clairvoyance</strong> : pas de support particulier</li>
+                  <li><strong>Clairvoyance</strong> : pas de support particulier. Pour le coût en mana, vous pouvez utiliser <code>!cof-lancer-sort peut voir et entendre à distance --mana 1</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'envoûteur</h4>
                 <ol>
