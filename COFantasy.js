@@ -3799,6 +3799,9 @@ var COFantasy = COFantasy || function() {
         actif = persoOfId(msg.selected[0]._id, msg.selected[0]._id, pageId);
       }
     }
+    var page;
+    var murs;
+    var pt;
     var finalCall = function() {
       called = true;
       var seen = new Set();
@@ -4010,11 +4013,10 @@ var COFantasy = COFantasy || function() {
               error("Impossible de trouver la personne à partir de laquelle on sélectionne les tokens en vue", msg);
               return;
             }
-            var page = getObj("page", pageId);
-            var murs = getWalls(page, pageId);
-            var pt;
+            page = page || getObj("page", pageId);
+            murs = getWalls(page, pageId, murs);
             if (murs) {
-              pt = {
+              pt = pt || {
                 x: observateur.token.get('left'),
                 y: observateur.token.get('top')
               };
@@ -4029,6 +4031,46 @@ var COFantasy = COFantasy || function() {
               if (obj.id == actif.token.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
               var objCharId = obj.get('represents');
               if (objCharId === '') return;
+              if (obj.get('bar1_max') == 0) return; // jshint ignore:line
+              var objChar = getObj('character', objCharId);
+              if (objChar === undefined) return;
+              if (murs) {
+                if (obstaclePresent(obj.get('left'), obj.get('top'), pt, murs)) return;
+              }
+              selected.push({
+                _id: obj.id
+              });
+            });
+            return;
+          case 'alliesEnVue':
+            if (actif === undefined) {
+              error("Impossible de trouver la personne dont on sélectionne les lliés en vue", msg);
+              return;
+            }
+            var alliesEnVue = alliesParPerso[actif.charId];
+            if (alliesEnVue === undefined) {
+              log("Personnage sans allié", actif);
+              return;
+            }
+            page = page || getObj("page", pageId);
+            murs = getWalls(page, pageId, murs);
+            if (murs) {
+              pt = pt || {
+                x: actif.token.get('left'),
+                y: actif.token.get('top')
+              };
+            }
+            var tokensAlliesEnVue = findObjs({
+              _type: "graphic",
+              _pageid: pageId,
+              _subtype: "token",
+              layer: "objects"
+            });
+            tokensAlliesEnVue.forEach(function(obj) {
+              if (obj.id == actif.token.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
+              var objCharId = obj.get('represents');
+              if (objCharId === '') return;
+              if (!alliesEnVue.has(objCharId)) return;
               if (obj.get('bar1_max') == 0) return; // jshint ignore:line
               var objChar = getObj('character', objCharId);
               if (objChar === undefined) return;
@@ -19799,7 +19841,7 @@ var COFantasy = COFantasy || function() {
         else soins = "[[" + nbDes + "d8";
         var bonusGroupe = niveau + charAttributeAsInt(soigneur, 'voieDuGuerisseur', 0);
         soins += " + " + bonusGroupe + "]]";
-        msg.content += " --allies --self";
+        msg.content += " --alliesEnVue --self";
         if (options.mana === undefined) {
           if (ficheAttributeAsBool(soigneur, 'option_pm', true))
             options.mana = 1;
