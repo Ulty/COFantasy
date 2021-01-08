@@ -19,6 +19,7 @@
 * Injonction Mortelle (Magie Maléfique rang 3)
 
 ### Autres améliorations
+* Prise en compte des compétences sur la fiche
 * Ajout d'une option de sélection alliesEnVue
 * Prise en compte des immunités pour les effets temporaires.
 * Attribut pour diviser par 2 les effets ou les dm d'un type donné
