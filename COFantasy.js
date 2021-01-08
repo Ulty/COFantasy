@@ -18202,7 +18202,7 @@ var COFantasy = COFantasy || function() {
         message: mEffet,
         valeur: options.valeur,
         valeurMax: options.valeurMax,
-        saveParTour: options.saveparTour,
+        saveParTour: options.saveParTour,
         whisper: whisper,
       };
       var setOneEffect = function(perso, d) {
