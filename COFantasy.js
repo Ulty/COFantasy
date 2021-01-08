@@ -14949,6 +14949,9 @@ var COFantasy = COFantasy || function() {
       case 'destructionMortsVivants':
         doDestructionDesMortsVivants(action.lanceur, action.playerName, action.dm, options);
         return true;
+      case 'rage':
+        doRageDuBerserk(action.persos, options);
+        return true;
       default:
         return false;
     }
@@ -23686,7 +23689,7 @@ var COFantasy = COFantasy || function() {
     return removeAllAttributes("runeForgesort", evt, attrs);
   }
 
-  function rageDuBerserk(msg) {
+  function parseRageDuBerserk(msg) {
     var typeRage = 'rage';
     if (msg.content.includes(' --furie')) typeRage = 'furie';
     getSelected(msg, function(selection, playerId) {
@@ -23697,45 +23700,67 @@ var COFantasy = COFantasy || function() {
       var options = parseOptions(msg);
       if (options === undefined) return;
       if (options.son) playSound(options.son);
-      iterSelected(selection, function(perso) {
-        var evt = {
-          type: "Rage"
-        };
-        var attrRage = tokenAttribute(perso, 'rageDuBerserk');
-        if (attrRage.length > 0) {
-          attrRage = attrRage[0];
-          typeRage = attrRage.get('current');
-          var difficulte = 13;
-          if (typeRage == 'furie') difficulte = 16;
-          //Jet de sagesse difficulté 13 pou 16 pour sortir de cet état
-          var options = {};
-          var display = startFramedDisplay(playerId, "Essaie de calmer sa " + typeRage, perso);
-          testCaracteristique(perso, 'SAG', difficulte, 'rageDuBerserk', options, evt,
-            function(tr) {
-              addLineToFramedDisplay(display, "<b>Résultat du jet de SAG :</b> " + tr.texte);
-              addEvent(evt);
-              if (tr.reussite) {
-                addLineToFramedDisplay(display, "C'est réussi, " + perso.token.get('name') + " se calme.");
-                removeTokenAttr(perso, 'rageDuBerserk', evt);
-              } else {
-                var msgRate = "C'est raté, " + perso.token.get('name') + " reste enragé";
-                //TODO : ajouter un bouton de chance
-                addLineToFramedDisplay(display, msgRate);
+      var persos = [];
+      iterSelected(selection, function (perso) {
+        persos.push(perso);
+      });
+      doRageDuBerserk(persos, options);
+    });
+  }
+
+  function doRageDuBerserk(persos, options) {
+    var evt = {
+      type: "rage",
+      action: {
+        persos: persos,
+        options: options
+      }
+    };
+    var typeRage = 'rage';
+    addEvent(evt);
+    persos.forEach(function (perso) {
+      var attrRage = tokenAttribute(perso, 'rageDuBerserk');
+      if (attrRage.length > 0) {
+        attrRage = attrRage[0];
+        typeRage = attrRage.get('current');
+        var difficulte = 13;
+        if (typeRage == 'furie') difficulte = 16;
+        //Jet de sagesse difficulté 13 pou 16 pour sortir de cet état
+        var display = startFramedDisplay(options.playerId, "Essaie de calmer sa " + typeRage, perso);
+        var testId = 'rageDuBerserk_' + perso.token.id;
+        testCaracteristique(perso, 'SAG', difficulte, testId, options, evt,
+          function(tr) {
+            addLineToFramedDisplay(display, "<b>Résultat du jet de SAG :</b> " + tr.texte);
+            if (tr.reussite) {
+              addLineToFramedDisplay(display, "C'est réussi, " + perso.token.get('name') + " se calme.");
+              removeTokenAttr(perso, 'rageDuBerserk', evt);
+            } else {
+              var msgRate = "C'est raté, " + perso.token.get('name') + " reste enragé";
+              var pc = pointsDeChance(perso);
+              if (!tr.echecCritique && pc > 0) {
+                msgRate += '<br/>' +
+                    boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+                    " (reste " + pc + " PC)";
               }
-              sendChat('', endFramedDisplay(display));
-            });
-        } else {
-          //Le barbare passe en rage
-          if (!stateCOF.combat) {
-            initiative(selection, evt);
-          }
-          setTokenAttr(perso, 'rageDuBerserk', typeRage, evt, {
-            msg: "entre dans une " + typeRage + " berserk !"
+              if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
+                msgRate += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
+              }
+              addLineToFramedDisplay(display, msgRate);
+            }
+            sendChat('', endFramedDisplay(display));
           });
-          addEvent(evt);
+      } else {
+        //Le barbare passe en rage
+        if (!stateCOF.combat) {
+          initiative([{
+            _id: perso.token.id
+          }], evt);
         }
-      }); //fin iterSelected
-    }); //fin getSelected
+        setTokenAttr(perso, 'rageDuBerserk', typeRage, evt, {
+          msg: "entre dans une " + typeRage + " berserk !"
+        });
+      }
+    });
   }
 
   //!cof-arme-secrete @{selected|token_id} @{target|token_id}
@@ -27867,7 +27892,7 @@ var COFantasy = COFantasy || function() {
         creerRune(msg);
         return;
       case '!cof-rage-du-berserk':
-        rageDuBerserk(msg);
+        parseRageDuBerserk(msg);
         return;
       case '!cof-arme-secrete':
         armeSecrete(msg);
