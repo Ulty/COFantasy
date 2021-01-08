@@ -819,7 +819,7 @@ var COFantasy = COFantasy || function() {
       if (no_error) {
         cof_states = cof_states_perso;
         stateCOF.markers_personnalises = true;
-        log("Markers personnalisés activés. (vous pouvez désactiver les Markers standards Roll20 si vous le souhaitez)");
+        log("Markers personnalisés activés.");
       } else {
         stateCOF.markers_personnalises = false;
         if (ancientSet) log("Utilisation des markers par défaut");
