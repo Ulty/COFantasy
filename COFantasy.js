@@ -29414,7 +29414,8 @@ var COFantasy = COFantasy || function() {
             charId: veCharId,
             token: tok
           };
-          testCaracteristique(perso, 'CON', veSeuil, 'vapeursEthyliques', {}, evt, function(testRes) {
+          var testId = 'vapeursEthyliques_' + perso.token.id;
+          testCaracteristique(perso, 'CON', veSeuil, testId, options, evt, function(testRes) {
             var res = "tente un jet de CON " + veSeuil + " pour combattre les vapeurs éthyliques " + testRes.texte;
             if (testRes.reussite) {
               res += " => réussi";
@@ -29433,6 +29434,17 @@ var COFantasy = COFantasy || function() {
               diminueEbriete(perso, evt, expliquer);
             } else {
               res += " => raté";
+              if (stateCOF.combat &&
+                  attributeAsBool(target, 'runeForgesort_énergie') &&
+                  attributeAsInt(target, 'limiteParCombat_runeForgesort_énergie', 1) > 0) {
+                res += "</br>" + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + saveId, "Rune d'énergie");
+              }
+              if (!tr.echecCritique) {
+                var pcTarget = pointsDeChance(target);
+                if (pcTarget > 0)
+                  res += "</br>" + boutonSimple("!cof-bouton-chance " + evt.id + " " +
+                      saveId, "Chance") + " (reste " + pcTarget + " PC)";
+              }
               sendChar(veCharId, res);
             }
           });
