@@ -14441,18 +14441,13 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function recuperer(msg) {
+  function parseRecuperer(msg) {
     if (stateCOF.combat) {
       sendPlayer(msg, "impossible de se reposer en combat");
       return;
     }
     var reposLong = false;
     if (msg.content.includes(' --reposLong')) reposLong = true;
-    var evt = {
-      type: "Récuperation",
-      attributes: []
-    };
-    addEvent(evt);
     getSelected(msg, function(selection, playerId) {
       if (selection.length === 0) {
         sendPlayer(msg, "!cof-recuperer sans sélection de tokens");
@@ -14463,8 +14458,23 @@ var COFantasy = COFantasy || function() {
       iterSelected(selection, function(perso) {
         persos.push(perso);
       });
-      recuperation(persos, reposLong, playerId, evt);
+      doRecuperation(persos, reposLong, playerId);
     });
+  }
+
+  function doRecuperation(persos, reposLong, playerId, options) {
+    var evt = {
+      type: "recuperation",
+      attributes: [],
+      action: {
+        persos: persos,
+        reposLong: reposLong,
+        playerId: playerId,
+        options: options
+      }
+    };
+    addEvent(evt);
+    recuperation(persos, reposLong, playerId, evt, options);
   }
 
   //Asynchrone (jets de dés)
@@ -14580,13 +14590,26 @@ var COFantasy = COFantasy || function() {
       if (reposLong && pr.current < pr.max) { // on récupère un PR
         //Sauf si on a une blessure gave
         if (getState(perso, 'blesse')) {
-          testCaracteristique(perso, 'CON', 8, 'guérir_blessure', {}, evt, function(tr) {
+          var testId = 'guérir_blessure_' + perso.token.id;
+          testCaracteristique(perso, 'CON', 8, testId, options, evt, function(tr) {
             sendChar(charId, "fait un jet de CON pour guérir de sa blessure");
             var m = "/direct " + onGenre(perso, 'Il', 'Elle') + " fait " + tr.texte;
             if (tr.reussite) {
               sendChar(charId, m + "&ge; 8, son état s'améliore nettement.");
               setState(perso, 'blesse', false, evt);
-            } else sendChar(charId, m + "< 8, son état reste préoccupant.");
+            } else {
+              var msgRate = m + "< 8, son état reste préoccupant.";
+              var pc = pointsDeChance(perso);
+              if (!tr.echecCritique && pc > 0) {
+                msgRate += '<br/>' +
+                    boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+                    " (reste " + pc + " PC)";
+              }
+              if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
+                msgRate += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
+              }
+              sendChar(charId, msgRate);
+            }
             finalize();
           });
           return;
@@ -14939,6 +14962,9 @@ var COFantasy = COFantasy || function() {
         return true;
       case 'nouveauJour':
         doNouveauJour(action.persos, options);
+        return true;
+      case 'recuperation':
+        doRecuperation(action.persos, action.reposLong, action.playerId, options);
         return true;
       case 'peur':
         doPeur(action.cibles, action.difficulte, action.duree, options);
@@ -27602,7 +27628,7 @@ var COFantasy = COFantasy || function() {
         parseNouveauJour(msg);
         return;
       case "!cof-recuperation":
-        recuperer(msg);
+        parseRecuperer(msg);
         return;
       case "!cof-recharger":
         recharger(msg);
