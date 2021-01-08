@@ -14605,9 +14605,6 @@ var COFantasy = COFantasy || function() {
                     boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
                     " (reste " + pc + " PC)";
               }
-              if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
-                msgRate += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
-              }
               sendChar(charId, msgRate);
             }
             finalize();
