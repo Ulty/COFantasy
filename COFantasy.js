@@ -15173,6 +15173,9 @@ var COFantasy = COFantasy || function() {
       case 'sommeil':
         doSommeil(action.lanceur, action.cibles, options, action.ciblesSansSave, action.ciblesAvecSave);
         return true;
+      case 'natureNourriciere':
+        doNatureNourriciere(action.perso, options);
+        return true;
       default:
         return false;
     }
@@ -20512,73 +20515,96 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function natureNourriciere(msg) {
+  function parseNatureNourriciere(msg) {
+    var options = parseOptions(msg);
     getSelected(msg, function(selected) {
-      iterSelected(selected, function(lanceur) {
+      iterSelected(selected, function (lanceur) {
         var charId = lanceur.charId;
         var voieDeLaSurvie = charAttributeAsInt(lanceur, 'voieDeLaSurvie', 0);
         if (voieDeLaSurvie < 1) {
           sendChar(charId, " ne connaît pas la Voie de la Survie ?");
         }
-        var trouveBaies = charAttributeAsBool(lanceur, 'natureNourriciereBaies');
-
-        var duree = rollDePlus(6);
-        var attrName = 'dose_Plante médicinale';
-        var output = "cherche des herbes. ";
-        if (trouveBaies) output = "cherche des baies. ";
-        output += "Après " + duree.roll + " heures, " +
-          onGenre(lanceur, "il", "elle");
-        var evt = {
-          type: "recherche d'herbes"
-        };
-        testCaracteristique(lanceur, 'SAG', 10, 'natureNourriciere', {}, evt,
-          function(testRes) {
-            if ((testRes.reussite && !trouveBaies) || (trouveBaies && !testRes.reussite && testRes.valeur > 7)) {
-              if (voieDeLaSurvie > 0) {
-                setTokenAttr(lanceur, attrName, voieDeLaSurvie, evt, {
-                  maxVal: "!cof-soin @{selected|token_id} @{selected|token_id} 1D6"
-                });
-                output += " revient avec " + voieDeLaSurvie + " plantes médicinales.";
-              } else {
-                output += " revient avec de quoi soigner les blessés.";
-              }
-            } else if (testRes.reussite && trouveBaies) {
-              attrName = 'dose_Baie_magique';
-              var niveau = ficheAttributeAsInt(lanceur, 'niveau', 1);
-              var actionBaies = "!cof-consommer-baie " + niveau + " --limiteParJour 1 baieMagique";
-              var nbBaies = voieDeLaSurvie + Math.floor((testRes.valeur - 10) / 2);
-              if (nbBaies === 0) nbBaies = 1;
-              output += " revient avec " + nbBaies + " baies magiques.";
-              var baies = tokenAttribute(lanceur, attrName);
-              if (baies.length > 0) {
-                baies = baies[0];
-                var bd = parseInt(baies.get('current'));
-                if (!isNaN(bd) && bd > 0) nbBaies += bd;
-                evt.attributes = evt.attributes || [];
-                evt.attributes.push({
-                  attribute: baies,
-                  current: bd,
-                  max: baies.get('max')
-                });
-                baies.set({
-                  current: nbBaies,
-                  max: actionBaies
-                });
-              } else {
-                setTokenAttr(lanceur, attrName, nbBaies, evt, {
-                  maxVal: actionBaies
-                });
-              }
-            } else {
-              //TODO: ajouter la possibilité d'utiliser un point de chance
-              output += " revient bredouille.";
-            }
-            output += "(test de SAG:" + testRes.texte + ")";
-            sendChar(charId, output);
-            addEvent(evt);
-          });
+        doNatureNourriciere(lanceur, options);
       });
     });
+  }
+
+  function doNatureNourriciere(perso, options) {
+    var evt = {
+      type: "natureNourriciere",
+      action: {
+        perso: perso,
+        options: options,
+        rolls : {}
+      }
+    };
+    addEvent(evt);
+    var charId = perso.charId;
+    var voieDeLaSurvie = charAttributeAsInt(perso, 'voieDeLaSurvie', 0);
+    var trouveBaies = charAttributeAsBool(perso, 'natureNourriciereBaies');
+    if(options.rolls && options.rolls['duree']) {
+      evt.action.rolls['duree'] = options.rolls['duree'];
+    } else {
+      evt.action.rolls['duree'] = rollDePlus(6);
+    }
+    var attrName = 'dose_Plante médicinale';
+    var output = "cherche des herbes. ";
+    if (trouveBaies) output = "cherche des baies. ";
+    output += "Après " + evt.action.rolls['duree'].roll + " heures, " +
+      onGenre(perso, "il", "elle");
+    var testId = 'natureNourriciere';
+    testCaracteristique(perso, 'SAG', 10, testId, options, evt,
+      function(tr) {
+        var post = "";
+        if ((tr.reussite && !trouveBaies) || (trouveBaies && !tr.reussite && tr.valeur > 7)) {
+          if (voieDeLaSurvie > 0) {
+            setTokenAttr(perso, attrName, voieDeLaSurvie, evt, {
+              maxVal: "!cof-soin @{selected|token_id} @{selected|token_id} 1D6"
+            });
+            output += " revient avec " + voieDeLaSurvie + " plantes médicinales.";
+          } else {
+            output += " revient avec de quoi soigner les blessés.";
+          }
+        } else if (tr.reussite && trouveBaies) {
+          attrName = 'dose_Baie_magique';
+          var niveau = ficheAttributeAsInt(perso, 'niveau', 1);
+          var actionBaies = "!cof-consommer-baie " + niveau + " --limiteParJour 1 baieMagique";
+          var nbBaies = voieDeLaSurvie + Math.floor((tr.valeur - 10) / 2);
+          if (nbBaies === 0) nbBaies = 1;
+          output += " revient avec " + nbBaies + " baies magiques.";
+          var baies = tokenAttribute(perso, attrName);
+          if (baies.length > 0) {
+            baies = baies[0];
+            var bd = parseInt(baies.get('current'));
+            if (!isNaN(bd) && bd > 0) nbBaies += bd;
+            evt.attributes = evt.attributes || [];
+            evt.attributes.push({
+              attribute: baies,
+              current: bd,
+              max: baies.get('max')
+            });
+            baies.set({
+              current: nbBaies,
+              max: actionBaies
+            });
+          } else {
+            setTokenAttr(perso, attrName, nbBaies, evt, {
+              maxVal: actionBaies
+            });
+          }
+        } else {
+          output += " revient bredouille.";
+          var pc = pointsDeChance(perso);
+          if (!tr.echecCritique && pc > 0) {
+            post += '<br/>' +
+                boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+                " (reste " + pc + " PC)";
+          }
+        }
+        output += "(test de SAG:" + tr.texte + ")";
+        output += post;
+        sendChar(charId, output);
+      });
   }
 
   function ignorerLaDouleur(msg) {
@@ -28005,7 +28031,7 @@ var COFantasy = COFantasy || function() {
         aoeSoin(msg);
         return;
       case "!cof-nature-nourriciere":
-        natureNourriciere(msg);
+        parseNatureNourriciere(msg);
         return;
       case "!cof-ignorer-la-douleur":
         ignorerLaDouleur(msg);
