@@ -3786,7 +3786,7 @@ var COFantasy = COFantasy || function() {
       overlay: overlay
     });
     addCellInFramedDisplay(display, cell, 150, true);
-    var comps = listeCompetences[carac];
+    var comps = [ ...listeCompetences[carac]];
     var attributes = findObjs({
       _type: 'attribute',
       _characterid: perso.charId,
@@ -21831,8 +21831,8 @@ var COFantasy = COFantasy || function() {
           }
         }
         addLineToFramedDisplay(display, smsg);
-        var d4 = options.rolls['tourDeForceDmg'] || rollDePlus(4);
-        evt.action.rolls['tourDeForceDmg'] = d4;
+        var d4 = options.rolls.tourDeForceDmg || rollDePlus(4);
+        evt.action.rolls.tourDeForceDmg = d4;
         var r = {
           total: d4.val,
           type: 'normal',
@@ -22607,8 +22607,6 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var testINT = 14;
-    var dose;
-    var decrAttribute;
     optArgs.forEach(function(arg) {
       cmd = arg.split(' ');
       switch (cmd[0]) {
@@ -22699,7 +22697,7 @@ var COFantasy = COFantasy || function() {
         infosAdditionelles: infosAdditionelles,
         options: options
       }
-    }
+    };
     addEvent(evt);
     if (limiteRessources(perso, options, 'enduirePoison', 'enduire de poison', evt)) return;
     perso.tokName = perso.token.get('name');
@@ -22715,12 +22713,12 @@ var COFantasy = COFantasy || function() {
           addLineToFramedDisplay(display, perso.tokName + " s'empoisonne.");
           sendChat('', "[[" + forcePoison + "]]", function(res) {
             var dmgRoll;
-            if(options.rolls && options.rolls['enduireSelfDmg']) {
-              dmgRoll = options.rolls['enduireSelfDmg'];
+            if(options.rolls && options.rolls.enduireSelfDmg) {
+              dmgRoll = options.rolls.enduireSelfDmg;
             } else {
               dmgRoll = res[0].inlinerolls[0];
             }
-            evt.action.rolls['enduireSelfDmg'] = dmgRoll;
+            evt.action.rolls.enduireSelfDmg = dmgRoll;
             var r = {
               total: dmgRoll.results.total,
               type: 'poison',
