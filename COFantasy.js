@@ -3189,6 +3189,30 @@ var COFantasy = COFantasy || function() {
     return bonus;
   }
 
+  var competenceNameRegExp = new RegExp(/^(repeating_competences_.*_)comp_nom$/);
+  var competenceNameCapaRegExp = new RegExp(/^(repeating_competences_.*_)comp_nomCapa$/);
+  var competenceTotalRegExp = new RegExp(/^(repeating_competences_.*_)comp_bonusTotal$/);
+  var competenceCaracsRegExp = new RegExp(/^(repeating_competences_.*_)comp_caracs$/);
+  var competenceCaracRegExp = new RegExp(/^(repeating_competences_.*_)comp_carac$/);
+
+  function validateCompetence(carac, comp, prefix, compInfos, prefixesNom) {
+    if (compInfos.total === undefined) return;
+    var res = {
+      total: compInfos.total,
+      bestFit: false
+    };
+    if (compInfos.carac == carac) res.bestFit = true;
+    if (!res.bestFit && compInfos.caracs === undefined) return;
+    if (compInfos.caracs && compInfos.caracs.length > 0) {
+      if (compInfos.caracs.includes(carac)) res.bestFit = true;
+      else if (compInfos.carac === undefined) {
+        prefixesNom.delete(prefix);
+        return;
+      }
+    }
+    return res;
+  }
+
   //retourne un entier
   // evt n'est défini que si la caractéristique est effectivement utlilisée
   function bonusTestCarac(carac, personnage, options, testId, evt, explications) {
@@ -3207,15 +3231,6 @@ var COFantasy = COFantasy || function() {
     var bonusAspectDuDemon;
     switch (carac) {
       case 'DEX':
-        var malusArmure = 0;
-        if (ficheAttributeAsInt(personnage, 'DEFARMUREON', 1))
-          malusArmure += ficheAttributeAsInt(personnage, 'DEFARMUREMALUS', 0);
-        if (ficheAttributeAsInt(personnage, 'DEFBOUCLIERON', 1))
-          malusArmure += ficheAttributeAsInt(personnage, 'DEFBOUCLIERMALUS', 0);
-        if (malusArmure > 0) {
-          expliquer("Armure : -" + malusArmure + " au jet de DEX");
-          bonus -= malusArmure;
-        }
         if (attributeAsBool(personnage, 'agrandissement')) {
           expliquer("Agrandi : -2 au jet de DEX");
           bonus -= 2;
@@ -3267,6 +3282,138 @@ var COFantasy = COFantasy || function() {
           bonus += bonusAspectDuDemon;
         }
         break;
+    }
+    var bonusCompetence;
+    if (options && options.competence) {
+      var comp = options.competence.trim().toLowerCase();
+      var attributes = findObjs({
+        _type: 'attribute',
+        _characterid: personnage.charId,
+      });
+      var competences = {};
+      var prefixesNom = new Set();
+      var res;
+      attributes.find(function(attr) {
+        var attrName = attr.get('name');
+        var m = competenceNameRegExp.exec(attrName);
+        if (!m) m = competenceNameCapaRegExp.exec(attrName);
+        if (m) {
+          if (attr.get('current').trim().toLowerCase() != comp) return false;
+          prefixesNom.add(m[1]);
+          var compInfos = competences[m[1]];
+          if (compInfos === undefined) return false;
+          res = validateCompetence(carac, comp, m[1], compInfos, prefixesNom);
+          if (res === undefined) return false;
+          bonusCompetence = res.total;
+          return res.bestFit;
+        }
+        m = competenceCaracRegExp.exec(attrName);
+        if (m) {
+          competences[m[1]] = competences[m[1]] || {};
+          competences[m[1]].carac = attr.get('current');
+          if (!prefixesNom.has(m[1])) return false;
+          res = validateCompetence(carac, comp, m[1], competences[m[1]], prefixesNom);
+          if (res === undefined) return false;
+          bonusCompetence = res.total;
+          return res.bestFit;
+        }
+        m = competenceCaracsRegExp.exec(attrName);
+        if (m) {
+          competences[m[1]] = competences[m[1]] || {};
+          competences[m[1]].caracsLimitees = attr.get('current').split(',');
+          if (!prefixesNom.has(m[1])) return false;
+          res = validateCompetence(carac, comp, m[1], competences[m[1]], prefixesNom);
+          if (res === undefined) return false;
+          bonusCompetence = res.total;
+          return res.bestFit;
+        }
+        m = competenceTotalRegExp.exec(attrName);
+        if (!m) return false;
+        competences[m[1]] = competences[m[1]] || {};
+        competences[m[1]].total = parseInt(attr.get('current'));
+        if (isNaN(competences[m[1]].total)) competences[m[1]] = 0;
+        if (!prefixesNom.has(m[1])) return false;
+        res = validateCompetence(carac, comp, m[1], competences[m[1]], prefixesNom);
+        if (res === undefined) return false;
+        bonusCompetence = res.total;
+        return res.bestFit;
+      });
+      if (bonusCompetence === undefined) {
+        var found;
+        prefixesNom.forEach(function(prefix) {
+          if (found) return;
+          var compInfos = competences[prefix];
+          if (compInfos === undefined)
+            compInfos = {
+              total: 0,
+              carac: 'FOR',
+              caracs: []
+            };
+          else {
+            if (compInfos.total === undefined) compInfos.total = 0;
+            if (compInfos.carac === undefined) compInfos.carac = 'FOR';
+            if (compInfos.caracs === undefined) compInfos.caracs = [];
+          }
+          var res = validateCompetence(carac, comp, prefix, compInfos, prefixesNom);
+          if (res === undefined) return;
+          bonusCompetence = res.total;
+          found = res.bestFit;
+        });
+      }
+      if (bonusCompetence === undefined) {
+        options.bonusAttrs = options.bonusAttrs || [];
+        options.bonusAttrs.push(options.competence);
+      } else {
+        switch (comp) {
+          case 'perception':
+            if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+              expliquer("Forêt hostile : -5 en perception");
+              bonus -= 5;
+            }
+            break;
+          case 'survie':
+            if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+              expliquer("Forêt hostile : -5 en survie");
+              bonus -= 5;
+            }
+            break;
+          case 'orientation':
+            if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+              expliquer("Forêt hostile : -5 en orientation");
+              bonus -= 5;
+            }
+            break;
+          case 'discrétion':
+          case 'discretion':
+            if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+              expliquer("Forêt hostile : -5 en discrétion");
+              bonus -= 5;
+            }
+            break;
+        }
+        var msgComp = "Compétence " + options.competence + " : ";
+        if (bonusCompetence === 0) {
+          msgComp += 0;
+        } else {
+          bonus += bonusCompetence;
+          if (bonusCompetence > 0) msgComp += "+" + bonusCompetence;
+          else msgComp += bonusCompetence;
+        }
+        expliquer(msgComp);
+      }
+    }
+    if (bonusCompetence === undefined) {
+      if (carac == 'DEX') {
+        var malusArmure = 0;
+        if (ficheAttributeAsInt(personnage, 'DEFARMUREON', 1))
+          malusArmure += ficheAttributeAsInt(personnage, 'DEFARMUREMALUS', 0);
+        if (ficheAttributeAsInt(personnage, 'DEFBOUCLIERON', 1))
+          malusArmure += ficheAttributeAsInt(personnage, 'DEFBOUCLIERMALUS', 0);
+        if (malusArmure > 0) {
+          expliquer("Armure : -" + malusArmure + " au jet de DEX");
+          bonus -= malusArmure;
+        }
+      }
     }
     // Puis la partie commune
     options = options || {};
@@ -3640,6 +3787,50 @@ var COFantasy = COFantasy || function() {
     });
     addCellInFramedDisplay(display, cell, 150, true);
     var comps = listeCompetences[carac];
+    var attributes = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+    });
+    var prefixes = new Set();
+    var prefixesFOR = new Set();
+    var caracFound = new Set();
+    //D'abord on cherche les compétences qui correspondent à la carac
+    attributes.forEach(function(attr) {
+      var attrName = attr.get('name');
+      var m = competenceCaracRegExp.exec(attrName);
+      if (m) {
+        prefixesFOR.delete(m[1]);
+        caracFound.add(m[1]);
+        if (attr.get('current') == carac) prefixes.add(m[1]);
+        return;
+      }
+      m = competenceCaracsRegExp.exec(attrName);
+      if (m) {
+        if (attr.get('current').includes(carac)) prefixes.add(m[1]);
+        return;
+      }
+      if (carac != 'FOR') return;
+      //Pour le cas de la FOR, il faut connaître les compétences avec carac par défaut
+      m = competenceNameRegExp.exec(attrName);
+      if (!m) return;
+      if (caracFound.has(m[1])) return;
+      prefixesFOR.add(m[1]);
+    });
+    if (carac == 'FOR') {
+      prefixesFOR.forEach(function(p) {
+        prefixes.add(p);
+      });
+    }
+    prefixes.forEach(function(prefix) {
+      var nom = prefix + 'comp_nom';
+      var nomAttr = attributes.find(function(a) {
+        return a.get('name') == nom;
+      });
+      if (!nomAttr) return;
+      var nomComp = nomAttr.get('current').trim().toLowerCase();
+      if (comps.includes(nomComp)) return;
+      comps.push(nomComp);
+    });
     cell = '';
     var sec = false;
     comps.forEach(function(comp) {
@@ -4161,8 +4352,13 @@ var COFantasy = COFantasy || function() {
             error("Il manque un argument à l'option " + args[0], opts);
             return;
           }
+          if (options.nom && options.nom != args[1]) {
+            error("Nom du jet défini deux fois !", options.nom);
+          }
           options.nom = args[1];
-          options.bonusAttrs.push(args[1].toLowerCase());
+          if (options.competence)
+            options.bonusAttrs.push(args[1].toLowerCase());
+          else options.competence = args[1];
           return;
         case "attribut":
           if (args.length < 2) {
@@ -4272,7 +4468,6 @@ var COFantasy = COFantasy || function() {
       titre += nomJet;
       titre += "</b>";
       if (nj == 'perception') {
-        options.bonusAttrs = options.bonusAttrs || [];
         options.bonusAttrs.push('diversionManoeuvreValeur');
       }
       if (options.bonus)
@@ -7340,7 +7535,7 @@ var COFantasy = COFantasy || function() {
       stateCOF.chargeFantastique.tokenAttaque == attaquant.token.id) {
       attBonus += 3;
       var msgCharge = "Charge fantastique => +3 en Attaque";
-      if (!options.pasDeDmg) {
+      if (!options.pasDeDmg && !options.redo) {
         msgCharge += " et +1d6 DM";
         options.additionalDmg = options.additionalDmg || [];
         options.additionalDmg.push({
@@ -8477,10 +8672,10 @@ var COFantasy = COFantasy || function() {
         var rollId = 'disparition_' + cible.token.id;
         var options1 = {...options
         };
-        options1.bonusAttrs = ["discrétion"];
+        options1.competence = "discrétion";
         var options2 = {...options
         };
-        options2.bonusAttrs = ["perception"];
+        options2.competence = "perception";
         testOppose(rollId, attaquant, "DEX", options1, cible, "SAG", options2,
           cible.messages, evt,
           function(resultat, crit, rt1, rt2) {
@@ -14602,8 +14797,8 @@ var COFantasy = COFantasy || function() {
               var pc = pointsDeChance(perso);
               if (!tr.echecCritique && pc > 0) {
                 msgRate += '<br/>' +
-                    boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                    " (reste " + pc + " PC)";
+                  boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+                  " (reste " + pc + " PC)";
               }
               sendChar(charId, msgRate);
             }
@@ -14977,6 +15172,9 @@ var COFantasy = COFantasy || function() {
         return true;
       case 'sommeil':
         doSommeil(action.lanceur, action.cibles, options, action.ciblesSansSave, action.ciblesAvecSave);
+        return true;
+      case 'natureNourriciere':
+        doNatureNourriciere(action.perso, options);
         return true;
       case 'tourDeForce':
         doTourDeForce(action.perso, action.seuil, options);
@@ -15777,7 +15975,7 @@ var COFantasy = COFantasy || function() {
       }
     };
     addEvent(evt);
-    var bonusAttrs = ['vigilance', 'perception'];
+    var bonusAttrs = [];
     if (!options.nonVivant) bonusAttrs.push('radarMental');
     var display;
     if (testSurprise === undefined) {
@@ -15819,6 +16017,7 @@ var COFantasy = COFantasy || function() {
         };
         optionsTest.bonus = bonusSurprise;
         optionsTest.bonusAttrs = bonusAttrs;
+        optionsTest.competence = 'vigilance';
         testCaracteristique(perso, 'SAG', testSurprise, testId, optionsTest, evt,
           function(tr, explications) {
             var result;
@@ -19198,7 +19397,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       var cibles = [];
-      iterSelected(selected, function (perso) {
+      iterSelected(selected, function(perso) {
         cibles.push(perso);
       });
       doSommeil(lanceur, cibles, options);
@@ -19238,7 +19437,7 @@ var COFantasy = COFantasy || function() {
       var attMag = rolls.inlinerolls[attMagRollNumber].results.total;
       var targetsWithSave = [];
       var targetsWithoutSave = [];
-      cibles.forEach(function (perso) {
+      cibles.forEach(function(perso) {
         perso.name = perso.token.get('name');
         if (estNonVivant(perso)) { //le sort de sommeil n'affecte que les créatures vivantes
           addLineToFramedDisplay(display, perso.name + " n'est pas affecté par le sommeil");
@@ -19288,12 +19487,12 @@ var COFantasy = COFantasy || function() {
         } else {
           ciblesAvecSave = [];
           if (targetsWithSave.length > nbTargetsMax) {
-            i = 0;
+            var j = 0;
             while (nbTargetsMax > 0) {
-              r = randomInteger(nbTargetsMax) + i;
-              ciblesAvecSave.push(targetsWithSave[r]);
-              targetsWithSave[r] = targetsWithSave[i];
-              i++;
+              var ra = randomInteger(nbTargetsMax) + j;
+              ciblesAvecSave.push(targetsWithSave[ra]);
+              targetsWithSave[ra] = targetsWithSave[j];
+              j++;
               nbTargetsMax--;
             }
           } else {
@@ -19324,8 +19523,8 @@ var COFantasy = COFantasy || function() {
                 var pc = pointsDeChance(perso);
                 if (!tr.echecCritique && pc > 0) {
                   line += '<br/>' +
-                      boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                      " (reste " + pc + " PC)";
+                    boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+                    " (reste " + pc + " PC)";
                 }
                 if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
                   line += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
@@ -20319,7 +20518,8 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function natureNourriciere(msg) {
+  function parseNatureNourriciere(msg) {
+    var options = parseOptions(msg);
     getSelected(msg, function(selected) {
       iterSelected(selected, function(lanceur) {
         var charId = lanceur.charId;
@@ -20327,65 +20527,87 @@ var COFantasy = COFantasy || function() {
         if (voieDeLaSurvie < 1) {
           sendChar(charId, " ne connaît pas la Voie de la Survie ?");
         }
-        var trouveBaies = charAttributeAsBool(lanceur, 'natureNourriciereBaies');
-
-        var duree = rollDePlus(6);
-        var attrName = 'dose_Plante médicinale';
-        var output = "cherche des herbes. ";
-        if (trouveBaies) output = "cherche des baies. ";
-        output += "Après " + duree.roll + " heures, " +
-          onGenre(lanceur, "il", "elle");
-        var evt = {
-          type: "recherche d'herbes"
-        };
-        testCaracteristique(lanceur, 'SAG', 10, 'natureNourriciere', {}, evt,
-          function(testRes) {
-            if ((testRes.reussite && !trouveBaies) || (trouveBaies && !testRes.reussite && testRes.valeur > 7)) {
-              if (voieDeLaSurvie > 0) {
-                setTokenAttr(lanceur, attrName, voieDeLaSurvie, evt, {
-                  maxVal: "!cof-soin @{selected|token_id} @{selected|token_id} 1D6"
-                });
-                output += " revient avec " + voieDeLaSurvie + " plantes médicinales.";
-              } else {
-                output += " revient avec de quoi soigner les blessés.";
-              }
-            } else if (testRes.reussite && trouveBaies) {
-              attrName = 'dose_Baie_magique';
-              var niveau = ficheAttributeAsInt(lanceur, 'niveau', 1);
-              var actionBaies = "!cof-consommer-baie " + niveau + " --limiteParJour 1 baieMagique";
-              var nbBaies = voieDeLaSurvie + Math.floor((testRes.valeur - 10) / 2);
-              if (nbBaies === 0) nbBaies = 1;
-              output += " revient avec " + nbBaies + " baies magiques.";
-              var baies = tokenAttribute(lanceur, attrName);
-              if (baies.length > 0) {
-                baies = baies[0];
-                var bd = parseInt(baies.get('current'));
-                if (!isNaN(bd) && bd > 0) nbBaies += bd;
-                evt.attributes = evt.attributes || [];
-                evt.attributes.push({
-                  attribute: baies,
-                  current: bd,
-                  max: baies.get('max')
-                });
-                baies.set({
-                  current: nbBaies,
-                  max: actionBaies
-                });
-              } else {
-                setTokenAttr(lanceur, attrName, nbBaies, evt, {
-                  maxVal: actionBaies
-                });
-              }
-            } else {
-              //TODO: ajouter la possibilité d'utiliser un point de chance
-              output += " revient bredouille.";
-            }
-            output += "(test de SAG:" + testRes.texte + ")";
-            sendChar(charId, output);
-            addEvent(evt);
-          });
+        doNatureNourriciere(lanceur, options);
       });
     });
+  }
+
+  function doNatureNourriciere(perso, options) {
+    var evt = {
+      type: "natureNourriciere",
+      action: {
+        perso: perso,
+        options: options,
+        rolls: {}
+      }
+    };
+    addEvent(evt);
+    var charId = perso.charId;
+    var voieDeLaSurvie = charAttributeAsInt(perso, 'voieDeLaSurvie', 0);
+    var trouveBaies = charAttributeAsBool(perso, 'natureNourriciereBaies');
+    if (options.rolls && options.rolls.duree) {
+      evt.action.rolls.duree = options.rolls.duree;
+    } else {
+      evt.action.rolls.duree = rollDePlus(6);
+    }
+    var attrName = 'dose_Plante médicinale';
+    var output = "cherche des herbes. ";
+    if (trouveBaies) output = "cherche des baies. ";
+    output += "Après " + evt.action.rolls.duree.roll + " heures, " +
+      onGenre(perso, "il", "elle");
+    var testId = 'natureNourriciere';
+    testCaracteristique(perso, 'SAG', 10, testId, options, evt,
+      function(tr) {
+        var post = "";
+        if ((tr.reussite && !trouveBaies) || (trouveBaies && !tr.reussite && tr.valeur > 7)) {
+          if (voieDeLaSurvie > 0) {
+            setTokenAttr(perso, attrName, voieDeLaSurvie, evt, {
+              maxVal: "!cof-soin @{selected|token_id} @{selected|token_id} 1D6"
+            });
+            output += " revient avec " + voieDeLaSurvie + " plantes médicinales.";
+          } else {
+            output += " revient avec de quoi soigner les blessés.";
+          }
+        } else if (tr.reussite && trouveBaies) {
+          attrName = 'dose_Baie_magique';
+          var niveau = ficheAttributeAsInt(perso, 'niveau', 1);
+          var actionBaies = "!cof-consommer-baie " + niveau + " --limiteParJour 1 baieMagique";
+          var nbBaies = voieDeLaSurvie + Math.floor((tr.valeur - 10) / 2);
+          if (nbBaies === 0) nbBaies = 1;
+          output += " revient avec " + nbBaies + " baies magiques.";
+          var baies = tokenAttribute(perso, attrName);
+          if (baies.length > 0) {
+            baies = baies[0];
+            var bd = parseInt(baies.get('current'));
+            if (!isNaN(bd) && bd > 0) nbBaies += bd;
+            evt.attributes = evt.attributes || [];
+            evt.attributes.push({
+              attribute: baies,
+              current: bd,
+              max: baies.get('max')
+            });
+            baies.set({
+              current: nbBaies,
+              max: actionBaies
+            });
+          } else {
+            setTokenAttr(perso, attrName, nbBaies, evt, {
+              maxVal: actionBaies
+            });
+          }
+        } else {
+          output += " revient bredouille.";
+          var pc = pointsDeChance(perso);
+          if (!tr.echecCritique && pc > 0) {
+            post += '<br/>' +
+              boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+              " (reste " + pc + " PC)";
+          }
+        }
+        output += "(test de SAG:" + tr.texte + ")";
+        output += post;
+        sendChar(charId, output);
+      });
   }
 
   function ignorerLaDouleur(msg) {
@@ -23798,7 +24020,7 @@ var COFantasy = COFantasy || function() {
       if (options === undefined) return;
       if (options.son) playSound(options.son);
       var persos = [];
-      iterSelected(selection, function (perso) {
+      iterSelected(selection, function(perso) {
         persos.push(perso);
       });
       doRageDuBerserk(persos, options);
@@ -23815,7 +24037,7 @@ var COFantasy = COFantasy || function() {
     };
     var typeRage = 'rage';
     addEvent(evt);
-    persos.forEach(function (perso) {
+    persos.forEach(function(perso) {
       var attrRage = tokenAttribute(perso, 'rageDuBerserk');
       if (attrRage.length > 0) {
         attrRage = attrRage[0];
@@ -23836,8 +24058,8 @@ var COFantasy = COFantasy || function() {
               var pc = pointsDeChance(perso);
               if (!tr.echecCritique && pc > 0) {
                 msgRate += '<br/>' +
-                    boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                    " (reste " + pc + " PC)";
+                  boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+                  " (reste " + pc + " PC)";
               }
               if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
                 msgRate += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
@@ -27836,7 +28058,7 @@ var COFantasy = COFantasy || function() {
         aoeSoin(msg);
         return;
       case "!cof-nature-nourriciere":
-        natureNourriciere(msg);
+        parseNatureNourriciere(msg);
         return;
       case "!cof-ignorer-la-douleur":
         ignorerLaDouleur(msg);
@@ -29534,15 +29756,15 @@ var COFantasy = COFantasy || function() {
             } else {
               res += " => raté";
               if (stateCOF.combat &&
-                  attributeAsBool(target, 'runeForgesort_énergie') &&
-                  attributeAsInt(target, 'limiteParCombat_runeForgesort_énergie', 1) > 0) {
-                res += "</br>" + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + saveId, "Rune d'énergie");
+                attributeAsBool(perso, 'runeForgesort_énergie') &&
+                attributeAsInt(perso, 'limiteParCombat_runeForgesort_énergie', 1) > 0) {
+                res += "</br>" + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + testId, "Rune d'énergie");
               }
-              if (!tr.echecCritique) {
-                var pcTarget = pointsDeChance(target);
+              if (!testRes.echecCritique) {
+                var pcTarget = pointsDeChance(perso);
                 if (pcTarget > 0)
                   res += "</br>" + boutonSimple("!cof-bouton-chance " + evt.id + " " +
-                      saveId, "Chance") + " (reste " + pcTarget + " PC)";
+                    testId, "Chance") + " (reste " + pcTarget + " PC)";
               }
               sendChar(veCharId, res);
             }
@@ -30752,7 +30974,7 @@ on("destroy:handout", function(prev) {
 });
 
 on('ready', function() {
-  var scriptVersion = '2.15';
+  var scriptVersion = '2.16';
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
@@ -31322,6 +31544,207 @@ on('ready', function() {
       a.remove();
     });
     log("Déplacement des attributs de consommables de PNJs vers la fiche");
+  }
+  if (state.COFantasy.version < 2.16) {
+    attrs = findObjs({
+      _type: 'attribute',
+    });
+    var handouts = findObjs({
+      _type: 'handout'
+    });
+    var handhoutComp = handouts.find(function(h) {
+      var handName = h.get('name');
+      return (handName == 'Compétences' || handName == 'Competences');
+    });
+    if (handhoutComp) {
+      var listeCompetences = {
+        FOR: [],
+        DEX: [],
+        CON: [],
+        SAG: [],
+        INT: [],
+        CHA: []
+      };
+      handhoutComp.get('notes', function(note) { // asynchronous
+        var carac; //La carac dont on spécifie les compétences actuellement
+        note = note.trim();
+        if (note.startsWith('<p>')) note = note.substring(3);
+        note = note.trim().replace(/<span[^>]*>|<\/span>/g, '');
+        note = note.replace(/<p>/g, '<br>');
+        note = note.replace(/<\/p>/g, '');
+        var lignes = note.trim().split('<br>');
+        lignes.forEach(function(ligne) {
+          ligne = ligne.trim();
+          var header = ligne.split(':');
+          if (header.length > 1) {
+            var c = header.shift().trim().toUpperCase();
+            if (c != 'FOR' && c != 'CON' && c != 'DEX' && c != 'INT' && c != 'SAG' && c != 'CHA') return;
+            carac = c;
+            ligne = header.join(':').trim();
+          }
+          if (ligne.length === 0) return;
+          if (carac === undefined) {
+            log("Compétences sans caractéristique associée");
+            return;
+          }
+          var comps = ligne.split(/, |\/| /);
+          comps.forEach(function(comp) {
+            if (comp.length === 0) return;
+            listeCompetences[carac].push(comp);
+          });
+        });
+        var compToCarac = {};
+        listeCompetences.FOR.forEach(function(c) {
+          compToCarac[c] = 'FOR';
+        });
+        listeCompetences.CON.forEach(function(c) {
+          compToCarac[c] = 'CON';
+        });
+        listeCompetences.DEX.forEach(function(c) {
+          compToCarac[c] = 'DEX';
+        });
+        listeCompetences.INT.forEach(function(c) {
+          compToCarac[c] = 'INT';
+        });
+        listeCompetences.SAG.forEach(function(c) {
+          compToCarac[c] = 'SAG';
+        });
+        listeCompetences.CHA.forEach(function(c) {
+          compToCarac[c] = 'CHA';
+        });
+        attrs.forEach(function(a) {
+          var attrName = a.get('name');
+          switch (attrName) {
+            case 'RACE':
+              a.set('name', 'race');
+              return;
+            case 'PROFIL':
+              a.set('name', 'profil');
+              return;
+            case 'NIVEAU':
+              a.set('name', 'niveau');
+              return;
+            case 'SEXE':
+              a.set('name', 'sexe');
+              return;
+            case 'AGE':
+              a.set('name', 'age');
+              return;
+            case 'TAILLE':
+              a.set('name', 'taille');
+              return;
+            case 'POIDS':
+              a.set('name', 'poids');
+              return;
+            case 'FORCE':
+              a.set('name', 'force');
+              return;
+            case 'DEXTERITE':
+              a.set('name', 'dexterite');
+              return;
+            case 'CONSTITUTION':
+              a.set('name', 'constitution');
+              return;
+            case 'INTELLIGENCE':
+              a.set('name', 'intelligence');
+              return;
+            case 'SAGESSE':
+              a.set('name', 'sagesse');
+              return;
+            case 'CHARISME':
+              a.set('name', 'charisme');
+              return;
+          }
+          //Les compétences
+          var charId = a.get('characterid');
+          //On ne bouge les compétences que pour les persos de type PJ
+          var typePerso = findObjs({
+            _type: 'attribute',
+            _characterid: charId,
+            name: 'type_personnage',
+          }, {
+            caseInsensitive: true
+          });
+          if (typePerso.length > 0 && typePerso[0].get('current') != 'PJ') return;
+          if (compToCarac[attrName] === undefined) return;
+          var prefix = 'repeating_competences_' + generateRowID() + '_comp_';
+          var attrSpec = {
+            characterid: charId
+          };
+          attrSpec.name = prefix + 'nom';
+          attrSpec.current = attrName;
+          createObj('attribute', attrSpec);
+          attrSpec.name = prefix + 'bonus';
+          attrSpec.current = a.get('current');
+          var attrBonus = createObj('attribute', attrSpec);
+          attrSpec.name = prefix + 'bonusTotal';
+          createObj('attribute', attrSpec);
+          attrSpec.name = prefix + 'carac';
+          attrSpec.current = compToCarac[attrName];
+          createObj('attribute', attrSpec);
+          if ((attrSpec.current == 'DEX' && attrName != 'crochetage' && attrName != 'désamorçage') ||
+            (attrSpec.current == 'CON' && attrName == 'survie') ||
+            attrName == 'natation' || attrName == 'escalade') {
+            attrSpec.name = prefix + 'malus';
+            attrSpec.current = 'armure';
+            createObj('attribute', attrSpec);
+            attrBonus.setWithWorker('current', a.get('current'));
+          } else if (attrName == 'perception' || attrName == 'vigilance') {
+            attrSpec.name = prefix + 'malus';
+            attrSpec.current = 'casque';
+            createObj('attribute', attrSpec);
+            attrBonus.setWithWorker('current', a.get('current'));
+          }
+          a.remove();
+        });
+      }); //end hand.get(notes)
+    } else {
+      attrs.forEach(function(a) {
+        var attrName = a.get('name');
+        switch (attrName) {
+          case 'RACE':
+            a.set('name', 'race');
+            return;
+          case 'PROFIL':
+            a.set('name', 'profil');
+            return;
+          case 'NIVEAU':
+            a.set('name', 'niveau');
+            return;
+          case 'SEXE':
+            a.set('name', 'sexe');
+            return;
+          case 'AGE':
+            a.set('name', 'age');
+            return;
+          case 'TAILLE':
+            a.set('name', 'taille');
+            return;
+          case 'POIDS':
+            a.set('name', 'poids');
+            return;
+          case 'FORCE':
+            a.set('name', 'force');
+            return;
+          case 'DEXTERITE':
+            a.set('name', 'dexterite');
+            return;
+          case 'CONSTITUTION':
+            a.set('name', 'constitution');
+            return;
+          case 'INTELLIGENCE':
+            a.set('name', 'intelligence');
+            return;
+          case 'SAGESSE':
+            a.set('name', 'sagesse');
+            return;
+          case 'CHARISME':
+            a.set('name', 'charisme');
+            return;
+        }
+      });
+    }
+    log("Mise à jour des attributs de compétence effectué");
   }
   state.COFantasy.version = scriptVersion;
   if (state.COFantasy.options.affichage.val.fiche.val) {
