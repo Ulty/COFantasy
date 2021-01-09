@@ -14978,6 +14978,9 @@ var COFantasy = COFantasy || function() {
       case 'sommeil':
         doSommeil(action.lanceur, action.cibles, options, action.ciblesSansSave, action.ciblesAvecSave);
         return true;
+      case 'tourDeForce':
+        doTourDeForce(action.perso, action.seuil, options);
+        return true;
       default:
         return false;
     }
@@ -21542,57 +21545,81 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function tourDeForce(msg) {
-    var args = msg.content.split(' ');
-    if (args.length < 2) {
-      error("Il manque un argument à !cof-tour-de-force", args);
+  function parseTourDeForce(msg) {
+    var options = parseOptions(msg);
+    var cmd = options.cmd;
+    if (cmd < 2) {
+      error("Il manque un argument à !cof-tour-de-force", cmd);
       return;
     }
-    var seuil = parseInt(args[1]);
-    var action = "<b>Capacité</b> : Tour de force";
+    var seuil = parseInt(cmd[1]);
     getSelected(msg, function(selected, playerId) {
-      iterSelected(selected, function(barbare) {
+      iterSelected(selected, function (barbare) {
         if (isNaN(seuil)) {
           sendChar(barbare.charId, "le seuil de difficulté du tour de force doit être un nombre");
           return;
         }
-        var display = startFramedDisplay(playerId, action, barbare);
-        var evt = {
-          type: "Tour de force"
-        };
-        testCaracteristique(barbare, 'FOR', seuil, 'tourDeForce', {
-            bonus: 10
-          }, evt,
-          function(testRes) {
-            addLineToFramedDisplay(display, " Jet de force difficulté " + seuil);
-            var smsg = barbare.token.get('name') + " fait " + testRes.texte;
-            if (testRes.reussite) {
-              smsg += " => réussite";
-            } else {
-              smsg += " => échec";
-            }
-            addLineToFramedDisplay(display, smsg);
-            var d4 = rollDePlus(4);
-            var r = {
-              total: d4.val,
-              type: 'normal',
-              display: d4.roll
-            };
-            var explications = [];
-            barbare.ignoreTouteRD = true;
-            dealDamage(barbare, r, [], evt, false, {}, explications,
-              function(dmgDisplay, dmg) {
-                var dmgMsg = "mais cela lui coûte " + dmgDisplay + " PV";
-                addLineToFramedDisplay(display, dmgMsg);
-                explications.forEach(function(expl) {
-                  addLineToFramedDisplay(display, expl, 80);
-                });
-                sendChat('', endFramedDisplay(display));
-                addEvent(evt);
-              });
-          });
+        doTourDeForce(barbare, seuil, options);
       });
     });
+  }
+
+  function doTourDeForce(perso, seuil, options) {
+    var evt = {
+      type: "tourDeForce",
+      action: {
+        perso: perso,
+        seuil: seuil,
+        options: options
+      }
+    };
+    addEvent(evt);
+    var action = "<b>Capacité</b> : Tour de force";
+    var display = startFramedDisplay(options.playerId, action, perso);
+    var testId = 'tourDeForce';
+    options.bonus = 10;
+    testCaracteristique(perso, 'FOR', seuil, testId, options, evt,
+      function(tr) {
+        addLineToFramedDisplay(display, " Jet de force difficulté " + seuil);
+        var smsg = perso.token.get('name') + " fait " + tr.texte;
+        if (tr.reussite) {
+          smsg += " => réussite";
+        } else {
+          smsg += " => échec";
+          var pc = pointsDeChance(perso);
+          if (!tr.echecCritique && pc > 0) {
+            smsg += '<br/>' +
+                boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+                " (reste " + pc + " PC)";
+          }
+          if (stateCOF.combat && attributeAsBool(perso, 'runeForgesort_énergie') &&
+              attributeAsInt(perso, 'limiteParCombat_runeForgesort_énergie', 1) > 0) {
+            smsg += '<br/>' + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + testId, "Rune d'énergie");
+          }
+          if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
+            smsg += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
+          }
+        }
+        addLineToFramedDisplay(display, smsg);
+        var d4 = options.rolls['tourDeForceDmg'] || rollDePlus(4);
+        evt.action.rolls['tourDeForceDmg'] = d4;
+        var r = {
+          total: d4.val,
+          type: 'normal',
+          display: d4.roll
+        };
+        var explications = [];
+        perso.ignoreTouteRD = true;
+        dealDamage(perso, r, [], evt, false, {}, explications,
+          function(dmgDisplay, dmg) {
+            var dmgMsg = "mais cela lui coûte " + dmgDisplay + " PV";
+            addLineToFramedDisplay(display, dmgMsg);
+            explications.forEach(function(expl) {
+              addLineToFramedDisplay(display, expl, 80);
+            });
+            sendChat('', endFramedDisplay(display));
+          });
+      });
   }
 
   function removePreDmg(options, perso, champ, newVal) {
@@ -27881,7 +27908,7 @@ var COFantasy = COFantasy || function() {
         parseInjonctionMortelle(msg);
         return;
       case '!cof-tour-de-force':
-        tourDeForce(msg);
+        parseTourDeForce(msg);
         return;
       case '!cof-encaisser-un-coup':
         doEncaisserUnCoup(msg);
