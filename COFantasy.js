@@ -7535,7 +7535,7 @@ var COFantasy = COFantasy || function() {
       stateCOF.chargeFantastique.tokenAttaque == attaquant.token.id) {
       attBonus += 3;
       var msgCharge = "Charge fantastique => +3 en Attaque";
-      if (!options.pasDeDmg) {
+      if (!options.pasDeDmg && !options.redo) {
         msgCharge += " et +1d6 DM";
         options.additionalDmg = options.additionalDmg || [];
         options.additionalDmg.push({
@@ -20518,7 +20518,7 @@ var COFantasy = COFantasy || function() {
   function parseNatureNourriciere(msg) {
     var options = parseOptions(msg);
     getSelected(msg, function(selected) {
-      iterSelected(selected, function (lanceur) {
+      iterSelected(selected, function(lanceur) {
         var charId = lanceur.charId;
         var voieDeLaSurvie = charAttributeAsInt(lanceur, 'voieDeLaSurvie', 0);
         if (voieDeLaSurvie < 1) {
@@ -20535,22 +20535,22 @@ var COFantasy = COFantasy || function() {
       action: {
         perso: perso,
         options: options,
-        rolls : {}
+        rolls: {}
       }
     };
     addEvent(evt);
     var charId = perso.charId;
     var voieDeLaSurvie = charAttributeAsInt(perso, 'voieDeLaSurvie', 0);
     var trouveBaies = charAttributeAsBool(perso, 'natureNourriciereBaies');
-    if(options.rolls && options.rolls['duree']) {
-      evt.action.rolls['duree'] = options.rolls['duree'];
+    if (options.rolls && options.rolls.duree) {
+      evt.action.rolls.duree = options.rolls.duree;
     } else {
-      evt.action.rolls['duree'] = rollDePlus(6);
+      evt.action.rolls.duree = rollDePlus(6);
     }
     var attrName = 'dose_Plante médicinale';
     var output = "cherche des herbes. ";
     if (trouveBaies) output = "cherche des baies. ";
-    output += "Après " + evt.action.rolls['duree'].roll + " heures, " +
+    output += "Après " + evt.action.rolls.duree.roll + " heures, " +
       onGenre(perso, "il", "elle");
     var testId = 'natureNourriciere';
     testCaracteristique(perso, 'SAG', 10, testId, options, evt,
@@ -20597,8 +20597,8 @@ var COFantasy = COFantasy || function() {
           var pc = pointsDeChance(perso);
           if (!tr.echecCritique && pc > 0) {
             post += '<br/>' +
-                boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                " (reste " + pc + " PC)";
+              boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+              " (reste " + pc + " PC)";
           }
         }
         output += "(test de SAG:" + tr.texte + ")";
@@ -31655,7 +31655,7 @@ on('ready', function() {
           attrSpec.name = prefix + 'carac';
           attrSpec.current = compToCarac[attrName];
           createObj('attribute', attrSpec);
-          if ((attrSpec.current == 'DEX' && attrName != 'crochetage' && attrName !='désamorçage') ||
+          if ((attrSpec.current == 'DEX' && attrName != 'crochetage' && attrName != 'désamorçage') ||
             (attrSpec.current == 'CON' && attrName == 'survie') ||
             attrName == 'natation' || attrName == 'escalade') {
             attrSpec.name = prefix + 'malus';
