@@ -3197,7 +3197,10 @@ var COFantasy = COFantasy || function() {
 
   function validateCompetence(carac, comp, prefix, compInfos, prefixesNom) {
     if (compInfos.total === undefined) return;
-    var res = {total: compInfos.total, bestFit:false};
+    var res = {
+      total: compInfos.total,
+      bestFit: false
+    };
     if (compInfos.carac == carac) res.bestFit = true;
     if (!res.bestFit && compInfos.caracs === undefined) return;
     if (compInfos.caracs && compInfos.caracs.length > 0) {
@@ -3340,8 +3343,12 @@ var COFantasy = COFantasy || function() {
         prefixesNom.forEach(function(prefix) {
           if (found) return;
           var compInfos = competences[prefix];
-          if (compInfos === undefined) 
-            compInfos = {total:0, carac:'FOR', caracs:[]};
+          if (compInfos === undefined)
+            compInfos = {
+              total: 0,
+              carac: 'FOR',
+              caracs: []
+            };
           else {
             if (compInfos.total === undefined) compInfos.total = 0;
             if (compInfos.carac === undefined) compInfos.carac = 'FOR';
@@ -3350,7 +3357,7 @@ var COFantasy = COFantasy || function() {
           var res = validateCompetence(carac, comp, prefix, compInfos, prefixesNom);
           if (res === undefined) return;
           bonusCompetence = res.total;
-          found =  res.bestFit;
+          found = res.bestFit;
         });
       }
       if (bonusCompetence === undefined) {
@@ -3780,6 +3787,50 @@ var COFantasy = COFantasy || function() {
     });
     addCellInFramedDisplay(display, cell, 150, true);
     var comps = listeCompetences[carac];
+    var attributes = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+    });
+    var prefixes = new Set();
+    var prefixesFOR = new Set();
+    var caracFound = new Set();
+    //D'abord on cherche les compétences qui correspondent à la carac
+    attributes.forEach(function(attr) {
+      var attrName = attr.get('name');
+      var m = competenceCaracRegExp.exec(attrName);
+      if (m) {
+        prefixesFOR.delete(m[1]);
+        caracFound.add(m[1]);
+        if (attr.get('current') == carac) prefixes.add(m[1]);
+        return;
+      }
+      m = competenceCaracsRegExp.exec(attrName);
+      if (m) {
+        if (attr.get('current').includes(carac)) prefixes.add(m[1]);
+        return;
+      }
+      if (carac != 'FOR') return;
+      //Pour le cas de la FOR, il faut connaître les compétences avec carac par défaut
+      m = competenceNameRegExp.exec(attrName);
+      if (!m) return;
+      if (caracFound.has(m[1])) return;
+      prefixesFOR.add(m[1]);
+    });
+    if (carac == 'FOR') {
+      prefixesFOR.forEach(function(p) {
+        prefixes.add(p);
+      });
+    }
+    prefixes.forEach(function(prefix) {
+      var nom = prefix + 'comp_nom';
+      var nomAttr = attributes.find(function(a) {
+        return a.get('name') == nom;
+      });
+      if (!nomAttr) return;
+      var nomComp = nomAttr.get('current').trim().toLowerCase();
+      if (comps.includes(nomComp)) return;
+      comps.push(nomComp);
+    });
     cell = '';
     var sec = false;
     comps.forEach(function(comp) {
@@ -19340,7 +19391,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       var cibles = [];
-      iterSelected(selected, function (perso) {
+      iterSelected(selected, function(perso) {
         cibles.push(perso);
       });
       doSommeil(lanceur, cibles, options);
@@ -19380,7 +19431,7 @@ var COFantasy = COFantasy || function() {
       var attMag = rolls.inlinerolls[attMagRollNumber].results.total;
       var targetsWithSave = [];
       var targetsWithoutSave = [];
-      cibles.forEach(function (perso) {
+      cibles.forEach(function(perso) {
         perso.name = perso.token.get('name');
         if (estNonVivant(perso)) { //le sort de sommeil n'affecte que les créatures vivantes
           addLineToFramedDisplay(display, perso.name + " n'est pas affecté par le sommeil");
@@ -19430,12 +19481,12 @@ var COFantasy = COFantasy || function() {
         } else {
           ciblesAvecSave = [];
           if (targetsWithSave.length > nbTargetsMax) {
-            i = 0;
+            var j = 0;
             while (nbTargetsMax > 0) {
-              r = randomInteger(nbTargetsMax) + i;
-              ciblesAvecSave.push(targetsWithSave[r]);
-              targetsWithSave[r] = targetsWithSave[i];
-              i++;
+              var ra = randomInteger(nbTargetsMax) + j;
+              ciblesAvecSave.push(targetsWithSave[ra]);
+              targetsWithSave[ra] = targetsWithSave[j];
+              j++;
               nbTargetsMax--;
             }
           } else {
@@ -19466,8 +19517,8 @@ var COFantasy = COFantasy || function() {
                 var pc = pointsDeChance(perso);
                 if (!tr.echecCritique && pc > 0) {
                   line += '<br/>' +
-                      boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                      " (reste " + pc + " PC)";
+                    boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+                    " (reste " + pc + " PC)";
                 }
                 if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
                   line += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
@@ -31445,12 +31496,12 @@ on('ready', function() {
     attrs = findObjs({
       _type: 'attribute',
     });
-      var handouts = findObjs({
-        _type: 'handout'
-      });
+    var handouts = findObjs({
+      _type: 'handout'
+    });
     var handhoutComp = handouts.find(function(h) {
       var handName = h.get('name');
-    return (handName == 'Compétences' || handName == 'Competences');
+      return (handName == 'Compétences' || handName == 'Competences');
     });
     if (handhoutComp) {
       var listeCompetences = {
@@ -31463,12 +31514,12 @@ on('ready', function() {
       };
       handhoutComp.get('notes', function(note) { // asynchronous
         var carac; //La carac dont on spécifie les compétences actuellement
-    note = note.trim();
-    if (note.startsWith('<p>')) note = note.substring(3);
-    note = note.trim().replace(/<span[^>]*>|<\/span>/g, '');
-    note = note.replace(/<p>/g, '<br>');
-    note = note.replace(/<\/p>/g, '');
-    var lignes = note.trim().split('<br>');
+        note = note.trim();
+        if (note.startsWith('<p>')) note = note.substring(3);
+        note = note.trim().replace(/<span[^>]*>|<\/span>/g, '');
+        note = note.replace(/<p>/g, '<br>');
+        note = note.replace(/<\/p>/g, '');
+        var lignes = note.trim().split('<br>');
         lignes.forEach(function(ligne) {
           ligne = ligne.trim();
           var header = ligne.split(':');
@@ -31489,152 +31540,156 @@ on('ready', function() {
             listeCompetences[carac].push(comp);
           });
         });
-      var compToCarac = {};
-      listeCompetences.FOR.forEach(function (c) {
-        compToCarac[c] = 'FOR';
-      });
-      listeCompetences.CON.forEach(function (c) {
-        compToCarac[c] = 'CON';
-      });
-      listeCompetences.DEX.forEach(function (c) {
-        compToCarac[c] = 'DEX';
-      });
-      listeCompetences.INT.forEach(function (c) {
-        compToCarac[c] = 'INT';
-      });
-      listeCompetences.SAG.forEach(function (c) {
-        compToCarac[c] = 'SAG';
-      });
-      listeCompetences.CHA.forEach(function (c) {
-        compToCarac[c] = 'CHA';
-      });
-    attrs.forEach(function (a) {
-      var attrName = a.get('name');
-      switch(attrName) {
-        case 'RACE':
-          a.set('name', 'race');
-          return;
-        case 'PROFIL':
-          a.set('name', 'profil');
-          return;
-        case 'NIVEAU':
-          a.set('name', 'niveau');
-          return;
-        case 'SEXE':
-          a.set('name', 'sexe');
-          return;
-        case 'AGE':
-          a.set('name', 'age');
-          return;
-        case 'TAILLE':
-          a.set('name', 'taille');
-          return;
-        case 'POIDS':
-          a.set('name', 'poids');
-          return;
-        case 'FORCE':
-          a.set('name', 'force');
-          return;
-        case 'DEXTERITE':
-          a.set('name', 'dexterite');
-          return;
-        case 'CONSTITUTION':
-          a.set('name', 'constitution');
-          return;
-        case 'INTELLIGENCE':
-          a.set('name', 'intelligence');
-          return;
-        case 'SAGESSE':
-          a.set('name', 'sagesse');
-          return;
-        case 'CHARISME':
-          a.set('name', 'charisme');
-          return;
-      }
-      //Les compétences
-      var charId = a.get('characterid');
-      //On ne bouge les compétences que pour les persos de type PJ
-      var typePerso = findObjs({
-        _type: 'attribute',
-        _characterid: charId,
-        name: 'type_personnage',
-      }, {
-        caseInsensitive: true
-      });
-      if (typePerso.length > 0 && typePerso[0].get('current') != 'PJ') return;
-      if (compToCarac[attrName] === undefined) return;
-      var prefix = 'repeating_competences_' + generateRowID() + '_comp_';
-      var attrSpec = {characterid:charId};
-        attrSpec.name = prefix+'nom';
-        attrSpec.current = attrName;
-        createObj('attribute', attrSpec);
-        attrSpec.name = prefix+'bonus';
-        attrSpec.current = a.get('current');
-        var attrBonus = createObj('attribute', attrSpec);
-        attrSpec.name = prefix+'bonusTotal';
-        createObj('attribute', attrSpec);
-        attrSpec.name = prefix+'carac';
-        attrSpec.current = compToCarac[attrName];
-        createObj('attribute', attrSpec);
-        if (attrSpec.current == 'DEX') {
-        attrSpec.name = prefix+'malus';
-        attrSpec.current = 'armure';
-        createObj('attribute', attrSpec);
-          attrBonus.setWithWorker('current', a.get('current'));
-        } else if (attrName == 'perception' || attrName == 'vigilance') {
-        attrSpec.name = prefix+'malus';
-        attrSpec.current = 'casque';
-        createObj('attribute', attrSpec);
-          attrBonus.setWithWorker('current', a.get('current'));
-        }
-        a.remove();
-    });
+        var compToCarac = {};
+        listeCompetences.FOR.forEach(function(c) {
+          compToCarac[c] = 'FOR';
+        });
+        listeCompetences.CON.forEach(function(c) {
+          compToCarac[c] = 'CON';
+        });
+        listeCompetences.DEX.forEach(function(c) {
+          compToCarac[c] = 'DEX';
+        });
+        listeCompetences.INT.forEach(function(c) {
+          compToCarac[c] = 'INT';
+        });
+        listeCompetences.SAG.forEach(function(c) {
+          compToCarac[c] = 'SAG';
+        });
+        listeCompetences.CHA.forEach(function(c) {
+          compToCarac[c] = 'CHA';
+        });
+        attrs.forEach(function(a) {
+          var attrName = a.get('name');
+          switch (attrName) {
+            case 'RACE':
+              a.set('name', 'race');
+              return;
+            case 'PROFIL':
+              a.set('name', 'profil');
+              return;
+            case 'NIVEAU':
+              a.set('name', 'niveau');
+              return;
+            case 'SEXE':
+              a.set('name', 'sexe');
+              return;
+            case 'AGE':
+              a.set('name', 'age');
+              return;
+            case 'TAILLE':
+              a.set('name', 'taille');
+              return;
+            case 'POIDS':
+              a.set('name', 'poids');
+              return;
+            case 'FORCE':
+              a.set('name', 'force');
+              return;
+            case 'DEXTERITE':
+              a.set('name', 'dexterite');
+              return;
+            case 'CONSTITUTION':
+              a.set('name', 'constitution');
+              return;
+            case 'INTELLIGENCE':
+              a.set('name', 'intelligence');
+              return;
+            case 'SAGESSE':
+              a.set('name', 'sagesse');
+              return;
+            case 'CHARISME':
+              a.set('name', 'charisme');
+              return;
+          }
+          //Les compétences
+          var charId = a.get('characterid');
+          //On ne bouge les compétences que pour les persos de type PJ
+          var typePerso = findObjs({
+            _type: 'attribute',
+            _characterid: charId,
+            name: 'type_personnage',
+          }, {
+            caseInsensitive: true
+          });
+          if (typePerso.length > 0 && typePerso[0].get('current') != 'PJ') return;
+          if (compToCarac[attrName] === undefined) return;
+          var prefix = 'repeating_competences_' + generateRowID() + '_comp_';
+          var attrSpec = {
+            characterid: charId
+          };
+          attrSpec.name = prefix + 'nom';
+          attrSpec.current = attrName;
+          createObj('attribute', attrSpec);
+          attrSpec.name = prefix + 'bonus';
+          attrSpec.current = a.get('current');
+          var attrBonus = createObj('attribute', attrSpec);
+          attrSpec.name = prefix + 'bonusTotal';
+          createObj('attribute', attrSpec);
+          attrSpec.name = prefix + 'carac';
+          attrSpec.current = compToCarac[attrName];
+          createObj('attribute', attrSpec);
+          if ((attrSpec.current == 'DEX' && attrName != 'crochetage' && attrName !='désamorçage') ||
+            (attrSpec.current == 'CON' && attrName == 'survie') ||
+            attrName == 'natation' || attrName == 'escalade') {
+            attrSpec.name = prefix + 'malus';
+            attrSpec.current = 'armure';
+            createObj('attribute', attrSpec);
+            attrBonus.setWithWorker('current', a.get('current'));
+          } else if (attrName == 'perception' || attrName == 'vigilance') {
+            attrSpec.name = prefix + 'malus';
+            attrSpec.current = 'casque';
+            createObj('attribute', attrSpec);
+            attrBonus.setWithWorker('current', a.get('current'));
+          }
+          a.remove();
+        });
       }); //end hand.get(notes)
     } else {
-    attrs.forEach(function (a) {
-      var attrName = a.get('name');
-      switch(attrName) {
-        case 'RACE':
-          a.set('name', 'race');
-          return;
-        case 'PROFIL':
-          a.set('name', 'profil');
-          return;
-        case 'NIVEAU':
-          a.set('name', 'niveau');
-          return;
-        case 'SEXE':
-          a.set('name', 'sexe');
-          return;
-        case 'AGE':
-          a.set('name', 'age');
-          return;
-        case 'TAILLE':
-          a.set('name', 'taille');
-          return;
-        case 'POIDS':
-          a.set('name', 'poids');
-          return;
-        case 'FORCE':
-          a.set('name', 'force');
-          return;
-        case 'DEXTERITE':
-          a.set('name', 'dexterite');
-          return;
-        case 'CONSTITUTION':
-          a.set('name', 'constitution');
-          return;
-        case 'INTELLIGENCE':
-          a.set('name', 'intelligence');
-          return;
-        case 'SAGESSE':
-          a.set('name', 'sagesse');
-          return;
-        case 'CHARISME':
-          a.set('name', 'charisme');
-          return;
-      }
-    });
+      attrs.forEach(function(a) {
+        var attrName = a.get('name');
+        switch (attrName) {
+          case 'RACE':
+            a.set('name', 'race');
+            return;
+          case 'PROFIL':
+            a.set('name', 'profil');
+            return;
+          case 'NIVEAU':
+            a.set('name', 'niveau');
+            return;
+          case 'SEXE':
+            a.set('name', 'sexe');
+            return;
+          case 'AGE':
+            a.set('name', 'age');
+            return;
+          case 'TAILLE':
+            a.set('name', 'taille');
+            return;
+          case 'POIDS':
+            a.set('name', 'poids');
+            return;
+          case 'FORCE':
+            a.set('name', 'force');
+            return;
+          case 'DEXTERITE':
+            a.set('name', 'dexterite');
+            return;
+          case 'CONSTITUTION':
+            a.set('name', 'constitution');
+            return;
+          case 'INTELLIGENCE':
+            a.set('name', 'intelligence');
+            return;
+          case 'SAGESSE':
+            a.set('name', 'sagesse');
+            return;
+          case 'CHARISME':
+            a.set('name', 'charisme');
+            return;
+        }
+      });
     }
     log("Mise à jour des attributs de compétence effectué");
   }

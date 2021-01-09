@@ -74,7 +74,7 @@
 									<li><a class="text-info" href="#bourse">Bourse</a></li>
 									<li><a class="text-info" href="#deplacements">Déplacements</a></li>
 									<li><a class="text-info" href="#lumiere">Lumière</a></li>
-									<li><a class="text-info" href="#jet_caracteristiques">Jet de Caractéristiques</a></li>
+									<li><a class="text-info" href="#jet_caracteristiques">Jet de caractéristiques</a></li>
 									<li><a class="text-info" href="#son">Jouer un son</a></li>
 								</ul>
 								<li data-toggle="collapse" data-target="#abilities"><a href="#CapacitesClasse">Capacités par Classe</a></li>
@@ -122,7 +122,7 @@
 						</div>
 					</div>
 					<div class="col-md-9 col-sm-8 content">
-            <h1>Documentation pour la version 2.15 de COFantasy</h1>
+            <h1>Documentation pour la version 2.16 de COFantasy</h1>
 						<h2 class="text-primary" id="comment_utiliser_script">1. Comment utiliser Le script</h2>
             <div class="decalage">
               <h3 class="text-info" id="token_personnages">1.1 Tokens et personnages</h3>
@@ -789,18 +789,18 @@
                 <p>Pour les torches, le script propose d'automatiser la gestion en utilisant la commande <code>!cof-torche <i>token_id</i></code>. Si le token tient une torche allumée, cela éteint la torche (et propose au MJ d'indiquer combien de temps la torche est restée allumée), et sinon, si le token possède des torches, cela allume une torche. Le nombre de torche et leur état est stocké dans un attribut <code>torches</code>, dont la valeur courante contient le nombre de torches dans l'inventaire, et la valeur max le temps restant pour la torche en cours d'utilisation (60 minutes pour une torche neuve). Si aucun attribut de ce nom n'existe, le script se contente d'allumer ou d'éteindre une torche, sans gérer leur nombre.</p>
                 <p>Pour les armes qui font de la lumière, on peut préciser un attribut <code>eclaire_<i>n</i></code>, où <i>n</i> est le label de l'arme. La valeur courante de l'attribut doit être la distance à laquelle l'arme éclaire, et la valeur max, le début de la lumière faible, si besoin. Ça peut aussi être une façon de gérer les torches.</p>
               </div>
-              <h3 class="text-info" id="jet_caracteristiques">2.13 Jet de Caractéristiques</h3>
+              <h3 class="text-info" id="jet_caracteristiques">2.13 Jet de caractéristiques</h3>
               <div class="decalage">
                 <p><code>!cof-jet ?{Faire un jet de |Charisme, CHA|Constitution, CON|Dextérité, DEX|Force, FOR|Intelligence, INT|Sagesse, SAG}</code> : fait un simple jet pour la caractérisique sélectionnée.</p>
                 <p>Il est aussi possible de donner en argument une difficulté au jet. Par exemple en faisant <code>!cof-jet INT ?{difficulté}</code>.</p>
-                <p>Si on ne donne aucun argument (en dehors des options), la commande demande de préciser la caractéristique à tester. Si il existe un handout nommé <code>Compétences</code>, celui-ci sera utilisé pour proposer pour chaque caractéristique un choix de compétences à tester. Le handout doit contenir dans ses notes des lignes commençant par une caractéristique (FOR, DEX, ...), suivi de <code>:</code>, puis des noms de compétences, séparés par des blancs, des retours à la ligne, des virgules ou des <code>/</code>.</p>
+                <p>Si on ne donne aucun argument (en dehors des options), la commande demande de préciser la caractéristique à tester. Pour chaque caractéristique, le script va proposer d'utiliser une des compétences définies sur la fiche (liste sous les capacités). Si il existe un handout nommé <code>Compétences</code>, celui-ci sera aussi utilisé pour proposer pour chaque caractéristique un choix de compétences à tester. Le handout doit contenir dans ses notes des lignes commençant par une caractéristique (FOR, DEX, ...), suivi de <code>:</code>, puis des noms de compétences, séparés par des blancs, des retours à la ligne, des virgules ou des <code>/</code>.</p>
                 <p>Enfin, la fonction accepte les arguments suivants:</p>
                 <ul>
                   <li><code>--bonus</code> pour spécifier un bonus numérique au jet.</li>
                   <li><code>--attribut</code> pour spécifier un attribut dont la valeur doit être ajoutée au jet. Il est possible de spécifier plusieurs attributs, comme par exemple <code>--attribut perception --attribut vigilance</code> pour un jet de vigilance.</li>
-                  <li><code>--nom</code> précise le nom du jet à afficher. De plus, cela va aussi faire rechercher un attribut de même nom (en mettant les caractères en minuscule). Par exemple <code>!cof-jet DEX --nom Discrétion</code> va lancer un jet de DEX, qui sera affiché comme un jet de Discrétion, et qui va ajouter au jet le bonus d'un éventuel attribut <code>discrétion</code>.</li>
+                  <li><code>--nom</code> précise le nom du jet à afficher. De plus, cela va aussi faire rechercher une compétence de même nom (sans tenir compte des majuscules) pour une fiche de PJ et nu attribut pour une fiche de PNJ. Par exemple <code>!cof-jet DEX --nom Discrétion</code> va lancer un jet de DEX, qui sera affiché comme un jet de Discrétion, et qui va ajouter au jet le bonus d'une compétence discrétion ou d'un éventuel attribut <code>discrétion</code>.</li>
                   <li><code>--secret</code> : le jet n'est visible que par les personnes qui contrôlent le personnage, plus le MJ. Si la personne qui a lancé la commande est MJ, il sera le seul à voir le résultat.</li>
-                  <li><code>--competences</code> : si la commande n'a pas déjà d'option <code>--nom</code>, invite l'utilisateur à choisir une compétence parmis une liste correspondant à la caractéristique (et provenant du handout <code>Compétences</code> tel que défini plus haut).</li>
+                  <li><code>--competences</code> : si la commande n'a pas déjà d'option <code>--nom</code>, invite l'utilisateur à choisir une compétence parmis une liste correspondant à la caractéristique (incluant celles provenant du handout <code>Compétences</code> tel que défini plus haut).</li>
                   <li><code>--plageEchecCritique <i>c</i></code> : permet de considérer tout jet de dé inférieur ou égal à <i>c</i> comme un échec critique.</li>
                 </ul>
               </div>
@@ -824,7 +824,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie des explosifs</h4>
                 <ol>
-                  <li><strong>Chimiste</strong> : mettre un attribut <code>chimiste</code> à <code>true</code>, et ajoutez les attributs pour les capacités de chimie et alchimie. Si vous utilisez la capacité alternative <strong>Grenaille</strong>, vous pouvez soit gérer les charges de grenaille avec <code>!cof-recharger <i>L</i> --grenaille</code>, soit (si vous ne voulez pas faire gérer les charges) utiliser l'option <code>--grenaille</code>. Si vous utilisez la même attaque pour plusieurs armes et que seule une partie est chargée de grenaille, il faudra aussi utiliser cette option pour utiliser l'arme chargée de grenaille.</li>
+                  <li><strong>Chimiste</strong> : mettre un attribut <code>chimiste</code> à <code>true</code>, et ajoutez les compétences de chimie et alchimie sur la fiche. Si vous utilisez la capacité alternative <strong>Grenaille</strong>, vous pouvez soit gérer les charges de grenaille avec <code>!cof-recharger <i>L</i> --grenaille</code>, soit (si vous ne voulez pas faire gérer les charges) utiliser l'option <code>--grenaille</code>. Si vous utilisez la même attaque pour plusieurs armes et que seule une partie est chargée de grenaille, il faudra aussi utiliser cette option pour utiliser l'arme chargée de grenaille.</li>
                   <li><strong>Démolition</strong> : pas de support particulier</li>
                   <li><strong>Poudre puissante</strong> : ajuster les attaques</li>
                 </ol>
@@ -867,7 +867,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie du pagne</h4>
                 <ol>
-                  <li><strong>Vigueur</strong> : ajouter les capacités avec leurs bonus sur la fiche</li>
+                  <li><strong>Vigueur</strong> : ajouter les compétences avec leurs bonus sur la fiche</li>
                   <li><strong>Peau de pierre</strong> : ajouter un attribut <code>peauDePierre</code>, de valeur <code>true</code>. La nouvelle DEF sera calculée automatiquement.</li>
                   <li><strong>Tatouages</strong> : ajouter le bonus choisi sur la fiche</li>
                   <li><strong>Peau d'acier</strong> : ajouter dans la partie RD de la fiche, <code>3/1</code></li>
@@ -880,9 +880,9 @@
                 </ol>
                 <h4 class="text-secondary">Voie du primitif</h4>
                 <ol>
-                  <li><strong>Proche de la nature</strong> : ajouter le rang à un attribut <code>perception</code></li>
+                  <li><strong>Proche de la nature</strong> : ajouter le rang à une compétence <code>perception</code></li>
                   <li><strong>Armure de vent</strong> : Ajouter un attribut <code>armureDeVent</code> avec comme valeur le rang dans la voie du primitif. Cela augmente la DEF, mais seulement lorsque le barbare ne porte pas d'armure (ne se voit pas sur le total de DEF de la fiche)</li>
-                  <li><strong>Vigilance</strong> : ajouter 5 à un attribut <code>vigilance</code> et ajouter un attribut <code>immuniteAuxSournoises</code> avec comme valeur <code>true</code></li>
+                  <li><strong>Vigilance</strong> : ajouter 5 à une compétence <code>vigilance</code> et ajouter un attribut <code>immuniteAuxSournoises</code> avec comme valeur <code>true</code></li>
                   <li><strong>Résistance à la magie</strong> : ajouter un attribut <code>resistanceALaMagieBarbare</code>, de valeur courante 1 et de valeur maximale 1.</li>
                   <li><strong>Vitalité débordante</strong> : faire une ability de type token action, avec le code <code>!cof-soin ?{Nombre d'heures écoulées}d6</code> --message guérit à une vitesse surnaturelle</li>
                 </ol>
@@ -1005,14 +1005,14 @@
                 </ol>
                 <h4 class="text-secondary">Voie du fauve</h4>
                 <ol>
-                  <li><strong>Vitesse du félin</strong> : simplement ajouter les bonus sur la fiche, ainsi que les competences course, escalade et saut.</li>
+                  <li><strong>Vitesse du félin</strong> : simplement ajouter les bonus sur la fiche, ainsi que les competénces course, escalade et saut.</li>
                   <li><strong>Panthère</strong> : ajouter un personnage pour la panthère, qui sera contrôlé par le joueur.</li>
                   <li><strong>Attaque bondissante</strong> : faire l'attaque avec les options <code>--bonusAttaque 5</code> <code>--plus 1d6</code>. Les conditions d'utilisation sont à vérifier par le MJ.</li>
                   <li><strong>Grand félin</strong> : ajuster la fiche de la panthère, et pour le soin, utiliser <code>!cof-soin @{selected|token_id} nom_familier ?{Montant des soins} --transfer</code>.
                 </ol>
                 <h4 class="text-secondary">Voie de la nature</h4>
                 <ol>
-                  <li><strong>Maître de la survie</strong> : Ajouter +2 à un attribut <code>vigilance</code></li>
+                  <li><strong>Maître de la survie</strong> : Ajouter +2 par rang à une compétence <code>vigilance</code></li>
                   <li><strong>Marche sylvestre</strong> : quand le druide est en terrain difficile, faire <code>!cof-effet marcheSylvestre oui</code>. Faire <code>!cof-effet marcheSylvestre non</code> quand il en sort.</li>
                   <li><strong>Résistant</strong> : ajouter dans la RD sur la fiche, <code>nature:<i>v</i></code>, avec comme valeur <i>v</i> la RD (donc deux fois le rang dans la voie). Cette RD s'applique à toute attaque ou dommages avec l'option <code>--nature</code> ou <code>--naturel</code>. Il s'applique aussi à toute attaque venant d'un personnage avec un attribut <code>animal</code>, ou <code>insecte</code> ou bien avec un profil animal ou insecte, ou avec une race reconnue comme étant un animal ou un insecte. Dans ce cas, si on souhaite qu'une attaque d'une telle créature ne soit pas considérée comme naturelle, on peut utiliser l'option <code>--artificiel</code> à l'attaque.</li>
                   <li><strong>Bâton de druide</strong> : Simplement créer l'attaque correspondante et permettre les deux attaques en action limitée.</li>
@@ -1047,7 +1047,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie de la divination</h4>
                 <ol>
-                  <li><strong>6eme sens</strong> : ajouter le bonus en DEF divers et initiative diver, ajouter un attribut <code>vigilance</code>, de valeur 2*rang (le bonus aux jet de surprise).</li>
+                  <li><strong>6eme sens</strong> : ajouter le bonus en DEF divers et initiative diver, ajouter une compétence <code>vigilance</code>, de valeur 2*rang (le bonus aux jet de surprise).</li>
                   <li><strong>Détection de l'invisible</strong> : <code>!cof-effet-temp detectionDeLInvisible [[5+@{selected|CHA}]]</code>.  Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
                   <li><strong>Clairvoyance</strong> : pas de support particulier. Pour le coût en mana, vous pouvez utiliser <code>!cof-lancer-sort peut voir et entendre à distance --mana 1</code></li>
                 </ol>
@@ -1279,7 +1279,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie de la maîtrise</h4>
                 <ol>
-                  <li><strong>Esquive du singe</strong> : mettre à jour la défense sur la fiche, et ajouter un attribut <code>acrobatie</code> avec le bonus donné par la capacité.</li>
+                  <li><strong>Esquive du singe</strong> : mettre à jour la défense sur la fiche, et ajouter une compétence <code>acrobatie</code> avec le bonus donné par la capacité.</li>
                   <li><strong>Morsure du serpent</strong> : pour ne pas avoir à modifier les chances de critique pour toutes les attaques au contact, utiliser un attribut <code>morsureDuSerpent</code> (valeur <code>true</code>). Attention à ne pas faire ça ET modifier les chances de critiques de l'attaque, car ça s'additionne. (En revanche, pas de soucis avec la science du critique).</li>
                   <li><strong>Griffes du tigre</strong> : rajouter l'option <code>--exploseMax</code> aux attaques à mains nues.</li>
                 </ol>
@@ -1364,7 +1364,7 @@
               <div class="decalage">
                 <h4 class="text-secondary">Voie de la foi</h4>
                 <ol>
-                  <li><strong>Parole divine</strong> : ajouter un attribut <code>convaincre</code>, de valeur 2 fois le rang dans la voie, et ajouter cette compétence dans la liste.</li>
+                  <li><strong>Parole divine</strong> : ajouter une compétence <code>convaincre</code>, de valeur 2 fois le rang dans la voie, et ajouter cette compétence dans la liste.</li>
                   <li>
                     <strong>Arme d'argent</strong> :
                     <ul>
@@ -1447,7 +1447,7 @@
               <div class="decalage">
                 <h4 class="text-secondary">Voie de l'archer</h4>
                 <ol>
-                  <li><strong>Sens affutés</strong> : ajouter le bonus à un attribut <code>perception</code></li>
+                  <li><strong>Sens affutés</strong> : ajouter le bonus aux compétences <code>perception</code> et <code>vigilance</code> (ou créez-les).</li>
                   <li><strong>Tir aveugle</strong> : utiliser une attaque avec l'option <code>--tirAveugle</code>.</li>
                   <li><strong>Tir rapide</strong> : faire simplement deux attaques dans le tour</li>
                   <li><strong>Flèche de mort</strong> : faire l'attaque avec les options <code>--m2d20 --incrDmgCoef</code></li>
@@ -1455,7 +1455,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie du compagnon animal</h4>
                 <ol>
-                  <li><strong>Odorat</strong> : faire un jet de capacité "pistage", test de SAG bonus +5</li>
+                  <li><strong>Odorat</strong> : ajouter une compétence <code>pistage<code>, de valeur 5 (ou augmentée de 5)</li>
                   <li><strong>Surveillance</strong> : ajouter un attribut <code>surveillance</code>, avec comme valeur le nom du compagnon (doit être exactement le même que celui du token du compagnon). Cela automatise l'initiative et le bonus aux jets de surprise, le reste se gère manuellement</li>
                   <li><strong>Combat</strong> : ajouter le loup sous contrôle du joueur</li>
                   <li><strong>Empathie animale</strong> : pour soigner, utiliser <code>!cof-soin @{selected|token_id} <i>nom_familier</i> ?{Montant des soins} --transfer</code></li>
@@ -1463,7 +1463,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie de l'escarmouche</h4>
                 <ol>
-                  <li><strong>Chasseur émérite</strong> : ajouter un attribut <code>chasseurEmerite</code> (valeur true). Puis, si dans le profil (attribut PROFIL) de la cible, il y a <code>animal</code>, le bonus s'applique.</li>
+                  <li><strong>Chasseur émérite</strong> : ajouter un attribut <code>chasseurEmerite</code> (valeur true). Puis, si dans le profil (attribut PROFIL) de la cible, il y a <code>animal</code>, le bonus s'applique. Ajouter aussi le bonus à une compétence <code>pistage</code>.</li>
                   <li><strong>Traquenard</strong> : ajouter un attribut <code>traquenard</code> (valeur courante 1, valeur maximale 1), puis option <code>--traquenard</code> pour l'attaque. En interne, chaque fois que le personnage fait une attaque, la valeur courante de son attribut <code>traquenard</code> passe à 0. Cette valeur courante repasse à 1 automatiquement en fin de combat. C'est cette valeur qui détermine si l'option <code>--traquenard</code> est valide ou non. Pour une utilisation pratique, le mieux est de faire une liste d'actions (par exemple nommée <code>#Traquenard#</code>), commençant par la ligne <code>!options --traquenard</code>, puis contenant toutes les attaques avec lequelles le rôdeur est susceptible de faire un traquenard (sachant qu'une ligne <code>!attaques</code> fait apparaître toutes les attaques visibles de la fiche). En mettant un appel à cette liste dans la liste <code>#Actions#</code> (avec une ligne <code>%#Traquenard#</code>), le rôdeur pourra facilement choisir son arme.</li>
                   <li><strong>Attaque éclair</strong> : <code>--plus [[@{selected|DEX}]] --bonusAttaque [[@{selected|DEX}]]</code></li>
                   <li><strong>Repli</strong> : simplement faire un jet en utilisant par exemple <code>!cof-jet DEX 10</code>, et décrire le résultat.</li>
@@ -1471,15 +1471,15 @@
                 </ol>
                 <h4 class="text-secondary">Voie de la survie</h4>
                 <ol>
-                  <li><strong>Endurant</strong> : ajouter un jet de capacité "survie", test de CON avec le bonus</li>
+                  <li><strong>Endurant</strong> : ajouter une compétence <code>survie</code>, de caractéristique CON, avec le bonus 2xrang dans la Voie.</li>
                   <li><strong>Nature nourricière</strong> : pour la recherche d'herbes, créer un attribut <code>voieDeLaSurvie</code> avec comme valeur le rang du personnage dans la voie. On peut utiliser <code>!cof-nature-nourriciere</code> pour lancer la recherche. Cela crée automatiquement les doses de plantes médicinales dans les consommables du personnage. Ces doses sont supprimées toutes les nuits. Pour les besoins d'un personnage, j'ai aussi donné la possibilité de trouver des baies magiques à la place des herbes médicinales. Pour cela, il faut un attribut <code>natureNourriciereBaies</code> de valeur <code>true</code>.</li>
-                  <li><strong>Grand pas</strong> : ajouter les compétences natation et escalade</li>
+                  <li><strong>Grand pas</strong> : ajouter les compétences <code>natation</code> et <code>escalade</code>, de valeur 5.</li>
                   <li><strong>Increvable</strong> : ajouter un attribut <code>increvable</code> de valeur courante et maximum 1</li>
                   <li><strong>Constitution héroïque</strong> : reporter les bonus sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary">Voie du traqueur</h4>
                 <ol>
-                  <li><strong>Pas de loup</strong> : ok</li>
+                  <li><strong>Pas de loup</strong> : ajouter le bonus à une compétence <code>discrétion</code>.</li>
                   <li><strong>Ennemi juré</strong> : ajouter un attribut <code>ennemiJure</code> avec comme valeur la race des ennemis. Cette race doit se retrouver dans le champ race de l'ennemi. Le script reconnait aussi le type <code>mort-vivant</code> (tout en minuscules) et dans ce cas va déterminer si la cible est un mort-vivant (attribut <code>mortVivant</code> ou race reconnue comme mort-vivant).</li>
                   <li><strong>Embuscade</strong> : en cas d'attaque sur les ennemis, les mettre tous surpris avec la commande <code>!cof-set-state surpris true</code></li>
                   <li><strong>Second ennemi juré</strong> : on peut renseigner une seconde race dans l'attribut <code>ennemiJure</code> en la séparant de la première par une virgule et/ou un blanc(exemple : <code>orque, araignée</code>)</li>
@@ -1496,13 +1496,13 @@
                 </ol>
                 <h4 class="text-secondary">Voie du dirigeant</h4>
                 <ol>
-                  <li><strong>Éduqué</strong> : simplement noter les bonus et compétences sur la fiche, ou des attributs <code>art</code> et <code>seduction</code>, si vous utilisez <code>!cof-jet</code>.</li>
-                  <li><strong>Homme de cour</strong> : ajouter un attribut <code>étiquette</code>, de valeur 5.</li>
+                  <li><strong>Éduqué</strong> : simplement noter les bonus et compétences sur la fiche.</li>
+                  <li><strong>Homme de cour</strong> : ajouter une compétence <code>étiquette</code>, de valeur 5.</li>
                   <li><strong>Lame de lignée</strong> : pas de support particulier pour l'arme, mais quand le samouraï perd l'arme, vous pouvez rajouter un attribut <code>lameDeLigneePerdue</code>, de valeur <code>true</code> (à effacer quand il la retrouve).</li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'honneur</h4>
                 <ol>
-                  <li><strong>Chef né</strong> : ajouter un attrubut <code>immunite_peur</code>, de valeur <code>true</code>, et des attributs ou compétences pour l'intimidation et commander.</li>
+                  <li><strong>Chef né</strong> : ajouter un attrubut <code>immunite_peur</code>, de valeur <code>true</code>, et des compétences pour l'intimidation et commander.</li>
                   <li><strong>Défi</strong> : <code>!cof-defi-samourai @{selected|token_id} @{target|token_id} <i>bonus</i></code>. Le bonus en argument est optionnel. Si il n'est pas présent, le script utilise la valeur d'un attribut <code>voieDeLHonneur</code>.</li>
                   <li><strong>Honorable</strong> : pas de support particulier. </li>
                 </ol>
@@ -1523,7 +1523,7 @@
               <div class="decalage">
                 <h4 class="text-secondary">Voie de l'assassin</h4>
                 <ol>
-                  <li><strong>Discrétion</strong> : on peut ajouter une compétence discrétion sur la fiche, avec le bon bonus. Pour l'utilisation de <code>!cof-jet</code>, ajouter un attribut <code>discrétion</code> avec la valeur du bonus total.</li>
+                  <li><strong>Discrétion</strong> : ajouter une compétence discrétion sur la fiche, avec le bon bonus. </li>
                   <li><strong>Attaque sournoise</strong> : Faire des versions des attaques avec <code>--sournoise <i>n</i></code>, où <i>n</i> est le nombre de dés de l'attaque sournoise. Au MJ de vérifier que les conditions de l'attaque sournoise sont remplies. Le plus pratique pour l'utilisation avec differentes armes, est de créer une ability nommée <code>#Attaque-sournoise#</code>, commençant avec une ligne <code>!options --sournoise 2</code> (pour 2 dés), et ensuite oit une ligne <code>!attaques</code>, soit une liste d'attaques du voleur. Cette ability peut elle-même se trouver dans les <code>#Actions#</code> (sous la forme d'une ligne <code>%#Attaque-sournoise#</code>), permettant ainsi au voleur de choisir son arme.</li>
                   <li><strong>Ombre mouvante</strong> : pas beaucoup de support. Faire <code>!cof-jet DEX 10</code> pour le jet de dextérité, le reste est géré par le MJ.</li>
                   <li><strong>Surprise</strong> : ajouter un attribut <code>immunite_surpris</code> de valeur <code>true</code>. Pour le reste, à gérer par le MJ.</li>
