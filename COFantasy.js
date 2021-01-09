@@ -819,7 +819,7 @@ var COFantasy = COFantasy || function() {
       if (no_error) {
         cof_states = cof_states_perso;
         stateCOF.markers_personnalises = true;
-        log("Markers personnalisés activés. (vous pouvez désactiver les Markers standards Roll20 si vous le souhaitez)");
+        log("Markers personnalisés activés.");
       } else {
         stateCOF.markers_personnalises = false;
         if (ancientSet) log("Utilisation des markers par défaut");
@@ -14441,18 +14441,13 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function recuperer(msg) {
+  function parseRecuperer(msg) {
     if (stateCOF.combat) {
       sendPlayer(msg, "impossible de se reposer en combat");
       return;
     }
     var reposLong = false;
     if (msg.content.includes(' --reposLong')) reposLong = true;
-    var evt = {
-      type: "Récuperation",
-      attributes: []
-    };
-    addEvent(evt);
     getSelected(msg, function(selection, playerId) {
       if (selection.length === 0) {
         sendPlayer(msg, "!cof-recuperer sans sélection de tokens");
@@ -14463,8 +14458,23 @@ var COFantasy = COFantasy || function() {
       iterSelected(selection, function(perso) {
         persos.push(perso);
       });
-      recuperation(persos, reposLong, playerId, evt);
+      doRecuperation(persos, reposLong, playerId);
     });
+  }
+
+  function doRecuperation(persos, reposLong, playerId, options) {
+    var evt = {
+      type: "recuperation",
+      attributes: [],
+      action: {
+        persos: persos,
+        reposLong: reposLong,
+        playerId: playerId,
+        options: options
+      }
+    };
+    addEvent(evt);
+    recuperation(persos, reposLong, playerId, evt, options);
   }
 
   //Asynchrone (jets de dés)
@@ -14580,13 +14590,23 @@ var COFantasy = COFantasy || function() {
       if (reposLong && pr.current < pr.max) { // on récupère un PR
         //Sauf si on a une blessure gave
         if (getState(perso, 'blesse')) {
-          testCaracteristique(perso, 'CON', 8, 'guérir_blessure', {}, evt, function(tr) {
+          var testId = 'guérir_blessure_' + perso.token.id;
+          testCaracteristique(perso, 'CON', 8, testId, options, evt, function(tr) {
             sendChar(charId, "fait un jet de CON pour guérir de sa blessure");
             var m = "/direct " + onGenre(perso, 'Il', 'Elle') + " fait " + tr.texte;
             if (tr.reussite) {
               sendChar(charId, m + "&ge; 8, son état s'améliore nettement.");
               setState(perso, 'blesse', false, evt);
-            } else sendChar(charId, m + "< 8, son état reste préoccupant.");
+            } else {
+              var msgRate = m + "< 8, son état reste préoccupant.";
+              var pc = pointsDeChance(perso);
+              if (!tr.echecCritique && pc > 0) {
+                msgRate += '<br/>' +
+                    boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+                    " (reste " + pc + " PC)";
+              }
+              sendChar(charId, msgRate);
+            }
             finalize();
           });
           return;
@@ -14940,6 +14960,9 @@ var COFantasy = COFantasy || function() {
       case 'nouveauJour':
         doNouveauJour(action.persos, options);
         return true;
+      case 'recuperation':
+        doRecuperation(action.persos, action.reposLong, action.playerId, options);
+        return true;
       case 'peur':
         doPeur(action.cibles, action.difficulte, action.duree, options);
         return true;
@@ -14948,6 +14971,12 @@ var COFantasy = COFantasy || function() {
         return true;
       case 'destructionMortsVivants':
         doDestructionDesMortsVivants(action.lanceur, action.playerName, action.dm, options);
+        return true;
+      case 'rage':
+        doRageDuBerserk(action.persos, options);
+        return true;
+      case 'sommeil':
+        doSommeil(action.lanceur, action.cibles, options, action.ciblesSansSave, action.ciblesAvecSave);
         return true;
       default:
         return false;
@@ -18179,7 +18208,7 @@ var COFantasy = COFantasy || function() {
         message: mEffet,
         valeur: options.valeur,
         valeurMax: options.valeurMax,
-        saveParTour: options.saveparTour,
+        saveParTour: options.saveParTour,
         whisper: whisper,
       };
       var setOneEffect = function(perso, d) {
@@ -19141,18 +19170,20 @@ var COFantasy = COFantasy || function() {
       });
   }
 
-  function sommeil(msg) { //sort de sommeil
-    var args = msg.content.split(' ');
+  function parseSommeil(msg) { //sort de sommeil
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var args = options.cmd;
     if (args.length < 2) {
       error("La fonction !cof-sommeil a besoin du nom ou de l'id du lanceur de sort", args);
       return;
     }
-    var caster = persoOfId(args[1], args[1]);
-    if (caster === undefined) {
+    var lanceur = persoOfId(args[1], args[1]);
+    if (lanceur === undefined) {
       error("Aucun personnage nommé " + args[1], args);
       return;
     }
-    var casterCharId = caster.charId;
+    var casterCharId = lanceur.charId;
     var casterChar = getObj('character', casterCharId);
     if (casterChar === undefined) {
       error("Fiche de personnage manquante");
@@ -19163,105 +19194,147 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, "Pas de cible sélectionnée pour le sort de sommeil");
         return;
       }
-      var casterCharName = casterChar.get('name');
-      var cha = modCarac(caster, 'charisme');
-      var attMagText = addOrigin(casterCharName, '[[' + computeArmeAtk(caster, '@{ATKMAG}') + ']]');
-      var action = "<b>Capacité</b> : Sort de sommeil";
-      var display = startFramedDisplay(playerId, action, caster);
-      sendChat("", "[[1d6]] [[" + attMagText + "]]", function(res) {
-        var rolls = res[0];
-        var afterEvaluate = rolls.content.split(" ");
-        var d6RollNumber = rollNumber(afterEvaluate[0]);
-        var attMagRollNumber = rollNumber(afterEvaluate[1]);
-        var nbTargets = rolls.inlinerolls[d6RollNumber].results.total + cha;
-        var attMag = rolls.inlinerolls[attMagRollNumber].results.total;
-        var evt = {
-          type: 'sommeil',
-        };
-        var targetsWithSave = [];
-        var targetsWithoutSave = [];
-        iterSelected(selected, function(perso) {
-          perso.name = perso.token.get('name');
-          if (estNonVivant(perso)) { //le sort de sommeil n'affecte que les créatures vivantes
-            addLineToFramedDisplay(display, perso.name + " n'est pas affecté par le sommeil");
-            return;
-          }
-          var pv = perso.token.get('bar1_max');
-          if (pv > 2 * attMag) {
-            var line =
-              perso.name + " a trop de PV pour être affecté par le sort";
-            addLineToFramedDisplay(display, line);
-          } else if (pv > attMag) {
-            targetsWithSave.push(perso);
-          } else {
-            targetsWithoutSave.push(perso);
-          }
-        });
-        var targets = [];
-        var i, r;
-        if (targetsWithoutSave.length > nbTargets) {
-          i = 0; //position to decide
-          while (nbTargets > 0) {
-            r = randomInteger(nbTargets) + i;
-            targets.push(targetsWithoutSave[r]);
-            targetsWithoutSave[r] = targetsWithoutSave[i];
-            i++;
-            nbTargets--;
-          }
-        } else {
-          targets = targetsWithoutSave;
-          nbTargets -= targets.length;
+      var cibles = [];
+      iterSelected(selected, function (perso) {
+        cibles.push(perso);
+      });
+      doSommeil(lanceur, cibles, options);
+    }, {
+      lanceur: lanceur
+    });
+  }
+
+  function doSommeil(lanceur, cibles, options, ciblesSansSave, ciblesAvecSave) {
+    var evt = {
+      type: 'sommeil',
+      action: {
+        lanceur: lanceur,
+        cibles: cibles,
+        ciblesSansSave: ciblesSansSave,
+        ciblesAvecSave: ciblesAvecSave,
+        options: options
+      }
+    };
+    addEvent(evt);
+    if (limiteRessources(lanceur, options, 'sommeil', "lancer un sort de sommeil", evt)) return;
+    var casterCharName = lanceur.token.get("name");
+    var cha = modCarac(lanceur, 'charisme');
+    var attMagText = addOrigin(casterCharName, '[[' + computeArmeAtk(lanceur, '@{ATKMAG}') + ']]');
+    sendChat("", "[[1d6]] [[" + attMagText + "]]", function(res) {
+      evt.action.rolls = options.rolls || {};
+      var rollD6Id = 'sommeilD6';
+      var rolls = res[0];
+      var afterEvaluate = rolls.content.split(" ");
+      var d6RollNumber = rollNumber(afterEvaluate[0]);
+      var attMagRollNumber = rollNumber(afterEvaluate[1]);
+      var rollD6 = evt.action.rolls[rollD6Id] || rolls.inlinerolls[d6RollNumber];
+      evt.action.rolls[rollD6Id] = rollD6;
+      var nbTargetsMax = rollD6.results.total + cha;
+      var action = "<b>Capacité</b> : Sort de sommeil (max " + nbTargetsMax + " cibles)";
+      var display = startFramedDisplay(options.playerId, action, lanceur);
+      var attMag = rolls.inlinerolls[attMagRollNumber].results.total;
+      var targetsWithSave = [];
+      var targetsWithoutSave = [];
+      cibles.forEach(function (perso) {
+        perso.name = perso.token.get('name');
+        if (estNonVivant(perso)) { //le sort de sommeil n'affecte que les créatures vivantes
+          addLineToFramedDisplay(display, perso.name + " n'est pas affecté par le sommeil");
+          return;
         }
-        targets.forEach(function(t) {
-          setState(t, 'endormi', true, evt);
-          addLineToFramedDisplay(display, t.name + " s'endort");
-        });
-        if (nbTargets > 0 && targetsWithSave.length > 0) {
-          if (targetsWithSave.length > nbTargets) {
-            i = 0;
-            targets = [];
-            while (nbTargets > 0) {
-              r = randomInteger(nbTargets) + i;
-              targets.push(targetsWithSave[r]);
-              targetsWithSave[r] = targetsWithSave[i];
-              i++;
-              nbTargets--;
-            }
-          } else {
-            targets = targetsWithSave;
-            nbTargets -= targets.length;
-          }
-          var seuil = 10 + cha;
-          var tokensToProcess = targets.length;
-          var sendEvent = function() {
-            if (tokensToProcess == 1) {
-              addEvent(evt);
-              sendChat("", endFramedDisplay(display));
-            }
-            tokensToProcess--;
-          };
-          targets.forEach(function(t) {
-            testCaracteristique(t, 'SAG', seuil, 'sommeil', {}, evt,
-              function(testRes) {
-                var line = "Jet de résistance de " + t.name + ":" + testRes.texte;
-                var sujet = onGenre(t, 'il', 'elle');
-                if (testRes.reussite) {
-                  line += "&gt;=" + seuil + ",  " + sujet + " ne s'endort pas";
-                } else {
-                  setState(t, 'endormi', true, evt);
-                  line += "&lt;" + seuil + ", " + sujet + " s'endort";
-                }
-                addLineToFramedDisplay(display, line);
-                sendEvent();
-              });
-          });
-        } else { // all targets are without save
-          addEvent(evt);
-          sendChat("", endFramedDisplay(display));
+        var pv = perso.token.get('bar1_max');
+        if (pv > 2 * attMag) {
+          var line = perso.name + " a trop de PV pour être affecté par le sort";
+          addLineToFramedDisplay(display, line);
+        } else if (pv > attMag) {
+          targetsWithSave.push(perso);
+        } else {
+          targetsWithoutSave.push(perso);
         }
       });
-    }, {
-      lanceur: caster
+      var ciblesSansSave;
+      if (evt.action.ciblesSansSave) {
+        ciblesSansSave = evt.action.ciblesSansSave;
+        nbTargetsMax -= ciblesSansSave.length;
+      } else {
+        ciblesSansSave = [];
+        var i, r;
+        if (targetsWithoutSave.length > nbTargetsMax) {
+          i = 0; //position to decide
+          while (nbTargetsMax > 0) {
+            r = randomInteger(nbTargetsMax) + i;
+            ciblesSansSave.push(targetsWithoutSave[r]);
+            targetsWithoutSave[r] = targetsWithoutSave[i];
+            i++;
+            nbTargetsMax--;
+          }
+        } else {
+          ciblesSansSave = targetsWithoutSave;
+          nbTargetsMax -= ciblesSansSave.length;
+        }
+      }
+      evt.action.ciblesSansSave = ciblesSansSave;
+      ciblesSansSave.forEach(function(t) {
+        setState(t, 'endormi', true, evt);
+        addLineToFramedDisplay(display, t.name + " s'endort");
+      });
+      if (nbTargetsMax > 0 && targetsWithSave.length > 0) {
+        var ciblesAvecSave;
+        if (evt.action.ciblesAvecSave) {
+          ciblesAvecSave = evt.action.ciblesAvecSave;
+          nbTargetsMax -= ciblesAvecSave.length;
+        } else {
+          ciblesAvecSave = [];
+          if (targetsWithSave.length > nbTargetsMax) {
+            i = 0;
+            while (nbTargetsMax > 0) {
+              r = randomInteger(nbTargetsMax) + i;
+              ciblesAvecSave.push(targetsWithSave[r]);
+              targetsWithSave[r] = targetsWithSave[i];
+              i++;
+              nbTargetsMax--;
+            }
+          } else {
+            ciblesAvecSave = targetsWithSave;
+            nbTargetsMax -= ciblesAvecSave.length;
+          }
+        }
+        var seuil = 10 + cha;
+        var tokensToProcess = ciblesAvecSave.length;
+        var finalize = function() {
+          if (tokensToProcess == 1) {
+            sendChat("", endFramedDisplay(display));
+          }
+          tokensToProcess--;
+        };
+        evt.action.ciblesAvecSave = ciblesAvecSave;
+        ciblesAvecSave.forEach(function(perso) {
+          var testId = 'resisteSommeil_' + perso.token.id;
+          testCaracteristique(perso, 'SAG', seuil, testId, options, evt,
+            function(tr) {
+              var line = "Jet de résistance de " + perso.name + ": " + tr.texte;
+              var sujet = onGenre(perso, 'il', 'elle');
+              if (tr.reussite) {
+                line += "&gt;=" + seuil + ",  " + sujet + " ne s'endort pas";
+              } else {
+                setState(perso, 'endormi', true, evt);
+                line += "&lt;" + seuil + ", " + sujet + " s'endort";
+                var pc = pointsDeChance(perso);
+                if (!tr.echecCritique && pc > 0) {
+                  line += '<br/>' +
+                      boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+                      " (reste " + pc + " PC)";
+                }
+                if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
+                  line += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
+                }
+              }
+              addLineToFramedDisplay(display, line);
+              finalize();
+            });
+        });
+      } else { // all targets are without save
+        sendChat("", endFramedDisplay(display));
+      }
     });
   }
 
@@ -23686,7 +23759,7 @@ var COFantasy = COFantasy || function() {
     return removeAllAttributes("runeForgesort", evt, attrs);
   }
 
-  function rageDuBerserk(msg) {
+  function parseRageDuBerserk(msg) {
     var typeRage = 'rage';
     if (msg.content.includes(' --furie')) typeRage = 'furie';
     getSelected(msg, function(selection, playerId) {
@@ -23697,45 +23770,67 @@ var COFantasy = COFantasy || function() {
       var options = parseOptions(msg);
       if (options === undefined) return;
       if (options.son) playSound(options.son);
-      iterSelected(selection, function(perso) {
-        var evt = {
-          type: "Rage"
-        };
-        var attrRage = tokenAttribute(perso, 'rageDuBerserk');
-        if (attrRage.length > 0) {
-          attrRage = attrRage[0];
-          typeRage = attrRage.get('current');
-          var difficulte = 13;
-          if (typeRage == 'furie') difficulte = 16;
-          //Jet de sagesse difficulté 13 pou 16 pour sortir de cet état
-          var options = {};
-          var display = startFramedDisplay(playerId, "Essaie de calmer sa " + typeRage, perso);
-          testCaracteristique(perso, 'SAG', difficulte, 'rageDuBerserk', options, evt,
-            function(tr) {
-              addLineToFramedDisplay(display, "<b>Résultat du jet de SAG :</b> " + tr.texte);
-              addEvent(evt);
-              if (tr.reussite) {
-                addLineToFramedDisplay(display, "C'est réussi, " + perso.token.get('name') + " se calme.");
-                removeTokenAttr(perso, 'rageDuBerserk', evt);
-              } else {
-                var msgRate = "C'est raté, " + perso.token.get('name') + " reste enragé";
-                //TODO : ajouter un bouton de chance
-                addLineToFramedDisplay(display, msgRate);
+      var persos = [];
+      iterSelected(selection, function (perso) {
+        persos.push(perso);
+      });
+      doRageDuBerserk(persos, options);
+    });
+  }
+
+  function doRageDuBerserk(persos, options) {
+    var evt = {
+      type: "rage",
+      action: {
+        persos: persos,
+        options: options
+      }
+    };
+    var typeRage = 'rage';
+    addEvent(evt);
+    persos.forEach(function (perso) {
+      var attrRage = tokenAttribute(perso, 'rageDuBerserk');
+      if (attrRage.length > 0) {
+        attrRage = attrRage[0];
+        typeRage = attrRage.get('current');
+        var difficulte = 13;
+        if (typeRage == 'furie') difficulte = 16;
+        //Jet de sagesse difficulté 13 pou 16 pour sortir de cet état
+        var display = startFramedDisplay(options.playerId, "Essaie de calmer sa " + typeRage, perso);
+        var testId = 'rageDuBerserk_' + perso.token.id;
+        testCaracteristique(perso, 'SAG', difficulte, testId, options, evt,
+          function(tr) {
+            addLineToFramedDisplay(display, "<b>Résultat du jet de SAG :</b> " + tr.texte);
+            if (tr.reussite) {
+              addLineToFramedDisplay(display, "C'est réussi, " + perso.token.get('name') + " se calme.");
+              removeTokenAttr(perso, 'rageDuBerserk', evt);
+            } else {
+              var msgRate = "C'est raté, " + perso.token.get('name') + " reste enragé";
+              var pc = pointsDeChance(perso);
+              if (!tr.echecCritique && pc > 0) {
+                msgRate += '<br/>' +
+                    boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+                    " (reste " + pc + " PC)";
               }
-              sendChat('', endFramedDisplay(display));
-            });
-        } else {
-          //Le barbare passe en rage
-          if (!stateCOF.combat) {
-            initiative(selection, evt);
-          }
-          setTokenAttr(perso, 'rageDuBerserk', typeRage, evt, {
-            msg: "entre dans une " + typeRage + " berserk !"
+              if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
+                msgRate += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
+              }
+              addLineToFramedDisplay(display, msgRate);
+            }
+            sendChat('', endFramedDisplay(display));
           });
-          addEvent(evt);
+      } else {
+        //Le barbare passe en rage
+        if (!stateCOF.combat) {
+          initiative([{
+            _id: perso.token.id
+          }], evt);
         }
-      }); //fin iterSelected
-    }); //fin getSelected
+        setTokenAttr(perso, 'rageDuBerserk', typeRage, evt, {
+          msg: "entre dans une " + typeRage + " berserk !"
+        });
+      }
+    });
   }
 
   //!cof-arme-secrete @{selected|token_id} @{target|token_id}
@@ -27602,7 +27697,7 @@ var COFantasy = COFantasy || function() {
         parseNouveauJour(msg);
         return;
       case "!cof-recuperation":
-        recuperer(msg);
+        parseRecuperer(msg);
         return;
       case "!cof-recharger":
         recharger(msg);
@@ -27699,7 +27794,7 @@ var COFantasy = COFantasy || function() {
         parseAttaqueMagique(msg, 'injonction');
         return;
       case "!cof-sommeil":
-        sommeil(msg);
+        parseSommeil(msg);
         return;
       case "!cof-attaque-magique-contre-pv":
         attaqueMagiqueContrePV(msg);
@@ -27867,7 +27962,7 @@ var COFantasy = COFantasy || function() {
         creerRune(msg);
         return;
       case '!cof-rage-du-berserk':
-        rageDuBerserk(msg);
+        parseRageDuBerserk(msg);
         return;
       case '!cof-arme-secrete':
         armeSecrete(msg);
@@ -29391,7 +29486,8 @@ var COFantasy = COFantasy || function() {
             charId: veCharId,
             token: tok
           };
-          testCaracteristique(perso, 'CON', veSeuil, 'vapeursEthyliques', {}, evt, function(testRes) {
+          var testId = 'vapeursEthyliques_' + perso.token.id;
+          testCaracteristique(perso, 'CON', veSeuil, testId, options, evt, function(testRes) {
             var res = "tente un jet de CON " + veSeuil + " pour combattre les vapeurs éthyliques " + testRes.texte;
             if (testRes.reussite) {
               res += " => réussi";
@@ -29410,6 +29506,17 @@ var COFantasy = COFantasy || function() {
               diminueEbriete(perso, evt, expliquer);
             } else {
               res += " => raté";
+              if (stateCOF.combat &&
+                  attributeAsBool(target, 'runeForgesort_énergie') &&
+                  attributeAsInt(target, 'limiteParCombat_runeForgesort_énergie', 1) > 0) {
+                res += "</br>" + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + saveId, "Rune d'énergie");
+              }
+              if (!tr.echecCritique) {
+                var pcTarget = pointsDeChance(target);
+                if (pcTarget > 0)
+                  res += "</br>" + boutonSimple("!cof-bouton-chance " + evt.id + " " +
+                      saveId, "Chance") + " (reste " + pcTarget + " PC)";
+              }
               sendChar(veCharId, res);
             }
           });
