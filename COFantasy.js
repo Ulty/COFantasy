@@ -7042,6 +7042,7 @@ var COFantasy = COFantasy || function() {
       defense += modCarac(target, 'sagesse');
     }
     if (attributeAsBool(target, 'armeSecreteBarde')) {
+      explications.push(tokenName + " est déstabilisé par une action de charme => -10 en DEF");
       defense -= 10;
     }
     if (options.metal && attributeAsBool(target, 'magnetisme')) {
@@ -15182,6 +15183,9 @@ var COFantasy = COFantasy || function() {
       case 'enduireDePoison':
         doEnduireDePoison(action.perso, action.armeEnduite, action.savePoison, action.forcePoison, action.attribut,
             action.testINT, action.infosAdditionelles, options);
+        return true;
+      case 'armeSecrete':
+        doArmeSecrete(action.perso, action.cible, options);
         return true;
       default:
         return false;
@@ -24052,8 +24056,8 @@ var COFantasy = COFantasy || function() {
   }
 
   //!cof-arme-secrete @{selected|token_id} @{target|token_id}
-  // TODO: ajouter la possibilité d'utiliser la chance
-  function armeSecrete(msg) {
+  function parseArmeSecrete(msg) {
+    var options = parseOptions(msg);
     var cmd = msg.content.split(' ');
     if (cmd.length < 3) {
       error("Il faut deux arguments à !cof-arme-secrete", cmd);
@@ -24069,40 +24073,56 @@ var COFantasy = COFantasy || function() {
       sendChar(barde.charId, "a déjà utilisé son arme secrète durant ce combat");
       return;
     }
+    doArmeSecrete(barde, cible, options);
+  }
+
+  function doArmeSecrete(perso, cible, options) {
     var evt = {
-      type: 'Arme secrète'
+      type: 'armeSecrete',
+      action: {
+        perso: perso,
+        cible: cible,
+        options: options
+      }
     };
+    addEvent(evt);
     if (!stateCOF.combat) {
       initiative([{
-        _id: barde.token.id
+        _id: perso.token.id
       }, {
         _id: cible.token.id
       }], evt);
     }
-    setTokenAttr(barde, 'armeSecreteBardeUtilisee', true, evt);
+    setTokenAttr(perso, 'armeSecreteBardeUtilisee', true, evt);
     var intCible = ficheAttributeAsInt(cible, 'intelligence', 10);
-    testCaracteristique(barde, 'CHA', intCible, 'armeSecreteBarde', {}, evt, function(testRes) {
-      var display = startFramedDisplay(getPlayerIdFromMsg(msg),
-        "Arme secrète", barde, {
+    var testId = 'armeSecreteBarde';
+    testCaracteristique(perso, 'CHA', intCible, testId, options, evt, function(tr) {
+      var display = startFramedDisplay(options.playerId,
+        "Arme secrète", perso, {
           perso2: cible
         });
-      var line = "Jet de CHA : " + testRes.texte;
-      if (testRes) {
+      var line = "Jet de CHA : " + tr.texte;
+      if (tr.reussite) {
         line += " &ge; " + intCible;
         addLineToFramedDisplay(display, line);
         addLineToFramedDisplay(display, cible.token.get('name') + " est complètement déstabilisé");
         setAttrDuree(cible, 'armeSecreteBarde', 1, evt);
       } else {
-        line += "< " + intCible;
+        line += " &lt; " + intCible;
+        var pc = pointsDeChance(perso);
+        if (!tr.echecCritique && pc > 0) {
+          line += '<br/>' +
+              boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+              " (reste " + pc + " PC)";
+        }
+        if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
+          line += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
+        }
         addLineToFramedDisplay(display, line);
-        addLineToFramedDisplay(display, cible.token.get('name') + " reste insensible au charme de " + barde.token.get('name'));
+        addLineToFramedDisplay(display, cible.token.get('name') + " reste insensible au charme de " + perso.token.get('name'));
       }
       sendChat("", endFramedDisplay(display));
-      addEvent(evt);
     }); //fin testCarac
-    // testRes.texte est l'affichage du jet de dé
-    // testRes.reussite indique si le jet est réussi
-    // testRes.echecCritique, testRes.critique pour le type
   }
 
   function nouveauNomDePerso(nom) {
@@ -28183,7 +28203,7 @@ var COFantasy = COFantasy || function() {
         parseRageDuBerserk(msg);
         return;
       case '!cof-arme-secrete':
-        armeSecrete(msg);
+        parseArmeSecrete(msg);
         return;
       case '!cof-animer-arbre':
         animerUnArbre(msg);
