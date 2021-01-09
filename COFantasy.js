@@ -4352,13 +4352,15 @@ var COFantasy = COFantasy || function() {
             error("Il manque un argument à l'option " + args[0], opts);
             return;
           }
-          if (options.nom && options.nom != args[1]) {
+          args.shift();
+          var nom = args.join(' ');
+          if (options.nom && options.nom != nom) {
             error("Nom du jet défini deux fois !", options.nom);
           }
-          options.nom = args[1];
+          options.nom = nom;
           if (options.competence)
-            options.bonusAttrs.push(args[1].toLowerCase());
-          else options.competence = args[1];
+            options.bonusAttrs.push(nom.toLowerCase());
+          else options.competence = nom;
           return;
         case "attribut":
           if (args.length < 2) {
