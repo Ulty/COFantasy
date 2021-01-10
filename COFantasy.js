@@ -3450,12 +3450,14 @@ var COFantasy = COFantasy || function() {
 
   // Test de caractéristique
   // options : bonusAttrs, bonus, roll
-  // Après le test, lance callback(testRes)
+  // Après le test, lance callback(testRes, explications
   // testRes.texte est l'affichage du jet de dé
   // testRes.reussite indique si le jet est réussi
   // testRes.echecCritique, testRes.critique pour le type
   // testRes.valeur pour la valeur totale du jet
-  // ne rajoute as evt à l'historique
+  // testRes.rerolls pour le texte avec les boutons de rerolls adaptés.
+  // Pour que les boutons de rerolls fonctionnent, le type d'évènement doit être supporté par redoEvent()
+  // ne rajoute pas evt à l'historique
   function testCaracteristique(personnage, carac, seuil, testId, options, evt, callback) { //asynchrone
     options = options || {};
     var testRes = {};
@@ -3559,7 +3561,22 @@ var COFantasy = COFantasy || function() {
             }
           }
         }
-        if (jetCache) sendChat('COF', "/w GM Jet caché de sauvegarde : " + buildinline(roll) + bonusText);
+        testRes.rerolls = '';
+        var pc = pointsDeChance(personnage);
+        if (!testRes.echecCritique && pc > 0) {
+          testRes.rerolls += '<br/>' +
+              boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+              " (reste " + pc + " PC)";
+        }
+        if (stateCOF.combat && attributeAsBool(personnage, 'runeForgesort_énergie') &&
+            attributeAsInt(personnage, 'limiteParCombat_runeForgesort_énergie', 1) > 0 &&
+            (carac == 'FOR' || carac == 'CON' || carac == 'DEX')) {
+          testRes.rerolls += '<br/>' + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + testId, "Rune d'énergie");
+        }
+        if (stateCOF.combat && attributeAsBool(personnage, 'petitVeinard')) {
+          testRes.rerolls += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
+        }
+        if (jetCache) sendChat('COF', "/w GM Jet caché : " + buildinline(roll) + bonusText);
         callback(testRes, explications);
       });
     } catch (e) {
@@ -3719,21 +3736,7 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, "C'est réussi.");
           } else {
             //TODO : ajouter le pacte sanglant, la prouesse et le tour de force
-            var msgRate = "C'est raté.";
-            var pc = pointsDeChance(perso);
-            if (!tr.echecCritique && pc > 0) {
-              msgRate += '<br/>' +
-                boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                " (reste " + pc + " PC)";
-            }
-            if (stateCOF.combat && attributeAsBool(perso, 'runeForgesort_énergie') &&
-              attributeAsInt(perso, 'limiteParCombat_runeForgesort_énergie', 1) > 0 &&
-              (caracteristique == 'FOR' || caracteristique == 'CON' || caracteristique == 'DEX')) {
-              msgRate += '<br/>' + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + testId, "Rune d'énergie");
-            }
-            if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
-              msgRate += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
-            }
+            var msgRate = "C'est raté." + tr.rerolls;
             addLineToFramedDisplay(display, msgRate);
           }
           if (optionsDisplay.retarde) {
@@ -8647,16 +8650,7 @@ var COFantasy = COFantasy || function() {
                 resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options, chargesArme);
               }
             } else {
-              var msgRate = "ne peut se résoudre à attaquer " + cible.tokName + " (sanctuaire, jet de SAG " + tr.texte + "< 15)";
-              var pc = pointsDeChance(attaquant);
-              if (!tr.echecCritique && pc > 0) {
-                msgRate += '<br/>' +
-                  boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                  " (reste " + pc + " PC)";
-              }
-              if (stateCOF.combat && attributeAsBool(attaquant, 'petitVeinard')) {
-                msgRate += ' ' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
-              }
+              var msgRate = "ne peut se résoudre à attaquer " + cible.tokName + " (sanctuaire, jet de SAG " + tr.texte + "< 15)" + tr.rerolls;
               sendChar(attaquant.charId, msgRate);
               attaqueImpossible = true;
             }
@@ -11838,18 +11832,7 @@ var COFantasy = COFantasy || function() {
         } else {
           smsg += " => échec";
           if (options.msgRate) smsg += options.msgRate;
-          if (stateCOF.combat &&
-            (carac == 'FOR' || carac == 'DEX' || carac == 'CON') &&
-            attributeAsBool(target, 'runeForgesort_énergie') &&
-            attributeAsInt(target, 'limiteParCombat_runeForgesort_énergie', 1) > 0) {
-            smsg += "</br>" + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + saveId, "Rune d'énergie");
-          }
-          if (!tr.echecCritique) {
-            var pcTarget = pointsDeChance(target);
-            if (pcTarget > 0)
-              smsg += "</br>" + boutonSimple("!cof-bouton-chance " + evt.id + " " +
-                saveId, "Chance") + " (reste " + pcTarget + " PC)";
-          }
+          smsg += tr.rerolls;
         }
         expliquer(smsg);
         afterSave(tr.reussite, tr.texte);
@@ -14797,13 +14780,7 @@ var COFantasy = COFantasy || function() {
               sendChar(charId, m + "&ge; 8, son état s'améliore nettement.");
               setState(perso, 'blesse', false, evt);
             } else {
-              var msgRate = m + "< 8, son état reste préoccupant.";
-              var pc = pointsDeChance(perso);
-              if (!tr.echecCritique && pc > 0) {
-                msgRate += '<br/>' +
-                  boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                  " (reste " + pc + " PC)";
-              }
+              var msgRate = m + "< 8, son état reste préoccupant." + tr.rerolls;
               sendChar(charId, msgRate);
             }
             finalize();
@@ -15096,46 +15073,53 @@ var COFantasy = COFantasy || function() {
         }
         attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
         return true;
-      case 'jetPerso':
-        jetPerso(perso, action.caracteristique, action.difficulte, action.titre, action.playerId, options);
+      case 'attaqueMagique':
+        attaqueMagiqueOpposee(action.playerId, action.attaquant, action.cible, options);
+        return true;
+      case 'armeSecrete':
+        doArmeSecrete(action.perso, action.cible, options);
+        return true;
+      case 'boireAlcool':
+        doBoireAlcool(action.playerId, action.persos, options);
+        return true;
+      case 'dmgDirects':
+        dmgDirects(action.playerId, action.playerName, action.cibles, action.dmg, options);
+        return true;
+      case 'degainer':
+        doDegainer(action.persos, action.armeLabel, options);
+        return true;
+      case 'destructionMortsVivants':
+        doDestructionDesMortsVivants(action.lanceur, action.playerName, action.dm, options);
         return true;
       case 'echapperEtreinte':
       case 'echapperEnveloppement':
         doEchapperEnveloppement(action.perso, action.etreinte, action.cube, action.difficulte, options);
         return true;
-      case 'dmgDirects':
-        dmgDirects(action.playerId, action.playerName, action.cibles, action.dmg, options);
-        return true;
       case 'effetTemp':
         effetTemporaire(action.playerId, action.cibles, action.effet, action.mEffet, action.duree, options);
         return true;
-      case 'injonctionMortelle':
-        injonctionMortelle(action.playerId, action.attaquant, action.cible, options);
-        return true;
-      case 'tueurFantasmagorique':
-        tueurFantasmagorique(action.playerId, action.attaquant, action.cible, options);
-        return true;
-      case 'injonction':
-        injonction(action.playerId, action.attaquant, action.cible, options);
-        return true;
-      case 'attaqueMagique':
-        attaqueMagiqueOpposee(action.playerId, action.attaquant, action.cible, options);
-        return true;
-      case 'set_state':
-        doSetState(action.cibles, action.etat, action.valeur, options);
-        return true;
-      case 'save_state':
-        doSaveState(action.playerId, action.perso, action.etat, action.carac, options, action.opposant, action.seuil);
+      case 'enduireDePoison':
+        doEnduireDePoison(action.perso, action.armeEnduite, action.savePoison, action.forcePoison, action.attribut,
+            action.testINT, action.infosAdditionelles, options);
         return true;
       case 'enveloppement':
       case 'étreinte':
         doEnveloppement(action.attaquant, action.cible, action.difficulte, action.type, action.exprDM, options);
         return true;
+      case 'injonction':
+        injonction(action.playerId, action.attaquant, action.cible, options);
+        return true;
+      case 'injonctionMortelle':
+        injonctionMortelle(action.playerId, action.attaquant, action.cible, options);
+        return true;
+      case 'jetPerso':
+        jetPerso(perso, action.caracteristique, action.difficulte, action.titre, action.playerId, options);
+        return true;
       case 'libererAgrippe':
         doLibererAgrippe(action.perso, action.agrippant, action.attrName, options);
         return true;
-      case 'provocation':
-        doProvocation(action.voleur, action.cible, options);
+      case 'natureNourriciere':
+        doNatureNourriciere(action.perso, options);
         return true;
       case 'nextTurn':
         var turnOrder = Campaign().get("turnorder");
@@ -15147,48 +15131,41 @@ var COFantasy = COFantasy || function() {
         Campaign().set("turnorder", JSON.stringify(turnOrder));
         nextTurn(Campaign(), options);
         return true;
-      case 'degainer':
-        doDegainer(action.persos, action.armeLabel, options);
-        return true;
-      case 'boireAlcool':
-        doBoireAlcool(action.playerId, action.persos, options);
-        return true;
-      case 'vapeursEthyliques':
-        doVapeursEthyliques(action.playerId, action.persos, options);
-        return true;
       case 'nouveauJour':
         doNouveauJour(action.persos, options);
-        return true;
-      case 'recuperation':
-        doRecuperation(action.persos, action.reposLong, action.playerId, options);
         return true;
       case 'peur':
         doPeur(action.cibles, action.difficulte, action.duree, options);
         return true;
-      case 'surprise':
-        doSurprise(action.cibles, action.testSurprise, options);
-        return true;
-      case 'destructionMortsVivants':
-        doDestructionDesMortsVivants(action.lanceur, action.playerName, action.dm, options);
+      case 'provocation':
+        doProvocation(action.voleur, action.cible, options);
         return true;
       case 'rage':
         doRageDuBerserk(action.persos, options);
         return true;
+      case 'recuperation':
+        doRecuperation(action.persos, action.reposLong, action.playerId, options);
+        return true;
+      case 'save_state':
+        doSaveState(action.playerId, action.perso, action.etat, action.carac, options, action.opposant, action.seuil);
+        return true;
+      case 'set_state':
+        doSetState(action.cibles, action.etat, action.valeur, options);
+        return true;
       case 'sommeil':
         doSommeil(action.lanceur, action.cibles, options, action.ciblesSansSave, action.ciblesAvecSave);
         return true;
-      case 'natureNourriciere':
-        doNatureNourriciere(action.perso, options);
+      case 'surprise':
+        doSurprise(action.cibles, action.testSurprise, options);
         return true;
       case 'tourDeForce':
         doTourDeForce(action.perso, action.seuil, options);
         return true;
-      case 'enduireDePoison':
-        doEnduireDePoison(action.perso, action.armeEnduite, action.savePoison, action.forcePoison, action.attribut,
-            action.testINT, action.infosAdditionelles, options);
+      case 'tueurFantasmagorique':
+        tueurFantasmagorique(action.playerId, action.attaquant, action.cible, options);
         return true;
-      case 'armeSecrete':
-        doArmeSecrete(action.perso, action.cible, options);
+      case 'vapeursEthyliques':
+        doVapeursEthyliques(action.playerId, action.persos, options);
         return true;
       default:
         return false;
@@ -16036,15 +16013,7 @@ var COFantasy = COFantasy || function() {
             else {
               result = "raté, " + name + " est surpris";
               result += eForFemale(perso);
-              var pc = pointsDeChance(perso);
-              if (!tr.echecCritique && pc > 0) {
-                result += '<br/>' +
-                  boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                  " (reste " + pc + " PC)";
-              }
-              if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
-                result += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
-              }
+              result += tr.rerolls;
               setState(perso, 'surpris', true, evt);
             }
             var message = name + " fait " + tr.texte + " : " + result;
@@ -17874,13 +17843,7 @@ var COFantasy = COFantasy || function() {
           setState(perso, etat, false, evt);
           sendChar(perso.charId, res.texte + " &ge; " + seuil + ", " + perso.token.get('name') + " n'est plus " + stringOfEtat(etat, perso));
         } else {
-          sendChar(perso.charId, res.texte + " &lt; " + seuil + ", " + perso.token.get('name') + " est toujours " + stringOfEtat(etat, perso));
-          if (!res.echecCritique) {
-            var pcTarget = pointsDeChance(perso);
-            if (pcTarget > 0)
-              sendChar(perso.charId, boutonSimple("!cof-bouton-chance " +
-                evt.id + " " + testId, "Chance") + " (reste " + pcTarget + " PC)");
-          }
+          sendChar(perso.charId, res.texte + " &lt; " + seuil + ", " + perso.token.get('name') + " est toujours " + stringOfEtat(etat, perso) + res.rerolls);
         }
       });
     }
@@ -18887,15 +18850,7 @@ var COFantasy = COFantasy || function() {
           } else {
             line += "s'enfuit.";
           }
-          var pc = pointsDeChance(target);
-          if (!tr.echecCritique && pc > 0) {
-            line += '<br/>' +
-              boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-              " (reste " + pc + " PC)";
-          }
-          if (stateCOF.combat && attributeAsBool(target, 'petitVeinard')) {
-            line += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
-          }
+          line += tr.rerolls;
           setState(target, etat, true, evt);
           setAttrDuree(target, effet, duree, evt);
         }
@@ -19530,16 +19485,7 @@ var COFantasy = COFantasy || function() {
                 line += "&gt;=" + seuil + ",  " + sujet + " ne s'endort pas";
               } else {
                 setState(perso, 'endormi', true, evt);
-                line += "&lt;" + seuil + ", " + sujet + " s'endort";
-                var pc = pointsDeChance(perso);
-                if (!tr.echecCritique && pc > 0) {
-                  line += '<br/>' +
-                    boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                    " (reste " + pc + " PC)";
-                }
-                if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
-                  line += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
-                }
+                line += "&lt;" + seuil + ", " + sujet + " s'endort" + tr.rerolls;
               }
               addLineToFramedDisplay(display, line);
               finalize();
@@ -20607,13 +20553,7 @@ var COFantasy = COFantasy || function() {
             });
           }
         } else {
-          output += " revient bredouille.";
-          var pc = pointsDeChance(perso);
-          if (!tr.echecCritique && pc > 0) {
-            post += '<br/>' +
-              boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-              " (reste " + pc + " PC)";
-          }
+          output += " revient bredouille." + tr.rerolls;
         }
         output += "(test de SAG:" + tr.texte + ")";
         output += post;
@@ -21818,20 +21758,7 @@ var COFantasy = COFantasy || function() {
         if (tr.reussite) {
           smsg += " => réussite";
         } else {
-          smsg += " => échec";
-          var pc = pointsDeChance(perso);
-          if (!tr.echecCritique && pc > 0) {
-            smsg += '<br/>' +
-                boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                " (reste " + pc + " PC)";
-          }
-          if (stateCOF.combat && attributeAsBool(perso, 'runeForgesort_énergie') &&
-              attributeAsInt(perso, 'limiteParCombat_runeForgesort_énergie', 1) > 0) {
-            smsg += '<br/>' + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + testId, "Rune d'énergie");
-          }
-          if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
-            smsg += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
-          }
+          smsg += " => échec" + tr.rerolls;
         }
         addLineToFramedDisplay(display, smsg);
         var d4 = options.rolls.tourDeForceDmg || rollDePlus(4);
@@ -22567,16 +22494,7 @@ var COFantasy = COFantasy || function() {
           dmgDirects(options.playerId, playerName, cibles, dmg, optionsDM);
         } else {
           addLineToFramedDisplay(display, msgJet + " < 13");
-          var msgRate = name + " ne réussit pas à invoquer son dieu.";
-          var pc = pointsDeChance(lanceur);
-          if (pc > 0) {
-            msgRate += '<br/>' +
-              boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-              " (reste " + pc + " PC)";
-          }
-          if (attributeAsBool(lanceur, 'petitVeinard')) {
-            msgRate += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
-          }
+          var msgRate = name + " ne réussit pas à invoquer son dieu." + testRes.rerolls;
           addLineToFramedDisplay(display, msgRate);
           sendChat(name, endFramedDisplay(display));
         }
@@ -22711,7 +22629,7 @@ var COFantasy = COFantasy || function() {
       function(tr) {
         var jet = "Jet d'INT : " + tr.texte;
         if (tr.echecCritique) { //échec critique
-          jet += " Échec critique !";
+          jet += " Échec critique !" + tr.rerolls;
           addLineToFramedDisplay(display, jet);
           addLineToFramedDisplay(display, perso.tokName + " s'empoisonne.");
           sendChat('', "[[" + forcePoison + "]]", function(res) {
@@ -22750,16 +22668,7 @@ var COFantasy = COFantasy || function() {
           addLineToFramedDisplay(display, armeEnduite + " est maintenant enduit de poison");
           sendChat("", endFramedDisplay(display));
         } else { //echec normal au jet d'INT
-          jet += " < " + testINT + " : échec";
-          var pc = pointsDeChance(perso);
-          if (!tr.echecCritique && pc > 0) {
-            jet += '<br/>' +
-                boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                " (reste " + pc + " PC)";
-          }
-          if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
-            jet += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
-          }
+          jet += " < " + testINT + " : échec" + tr.rerolls;
           addLineToFramedDisplay(display, jet);
           sendChat("", endFramedDisplay(display));
         }
@@ -24028,16 +23937,7 @@ var COFantasy = COFantasy || function() {
               addLineToFramedDisplay(display, "C'est réussi, " + perso.token.get('name') + " se calme.");
               removeTokenAttr(perso, 'rageDuBerserk', evt);
             } else {
-              var msgRate = "C'est raté, " + perso.token.get('name') + " reste enragé";
-              var pc = pointsDeChance(perso);
-              if (!tr.echecCritique && pc > 0) {
-                msgRate += '<br/>' +
-                  boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-                  " (reste " + pc + " PC)";
-              }
-              if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
-                msgRate += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
-              }
+              var msgRate = "C'est raté, " + perso.token.get('name') + " reste enragé" + tr.rerolls;
               addLineToFramedDisplay(display, msgRate);
             }
             sendChat('', endFramedDisplay(display));
@@ -24109,16 +24009,7 @@ var COFantasy = COFantasy || function() {
         addLineToFramedDisplay(display, cible.token.get('name') + " est complètement déstabilisé");
         setAttrDuree(cible, 'armeSecreteBarde', 1, evt);
       } else {
-        line += " &lt; " + intCible;
-        var pc = pointsDeChance(perso);
-        if (!tr.echecCritique && pc > 0) {
-          line += '<br/>' +
-              boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-              " (reste " + pc + " PC)";
-        }
-        if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
-          line += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
-        }
+        line += " &lt; " + intCible + tr.rerolls;
         addLineToFramedDisplay(display, line);
         addLineToFramedDisplay(display, cible.token.get('name') + " reste insensible au charme de " + perso.token.get('name'));
       }
@@ -26671,19 +26562,7 @@ var COFantasy = COFantasy || function() {
           });
         } else {
           //TODO : ajouter le pacte sanglant, la prouesse et le tour de force
-          var msgRate = "C'est raté.";
-          var pc = pointsDeChance(perso);
-          if (!tr.echecCritique && pc > 0) {
-            msgRate += '<br/>' +
-              boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-              " (reste " + pc + " PC)";
-          }
-          if (attributeAsBool(perso, 'runeForgesort_énergie')) {
-            msgRate += '<br/>' + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + testId, "Rune d'énergie");
-          }
-          if (attributeAsBool(perso, 'petitVeinard')) {
-            msgRate += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
-          }
+          var msgRate = "C'est raté." + tr.rerolls;
           addLineToFramedDisplay(display, msgRate);
         }
         sendChat('', endFramedDisplay(display));
@@ -29744,18 +29623,7 @@ var COFantasy = COFantasy || function() {
               expliquer(res);
               diminueEbriete(perso, evt, expliquer);
             } else {
-              res += " => raté";
-              if (stateCOF.combat &&
-                attributeAsBool(perso, 'runeForgesort_énergie') &&
-                attributeAsInt(perso, 'limiteParCombat_runeForgesort_énergie', 1) > 0) {
-                res += "</br>" + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + testId, "Rune d'énergie");
-              }
-              if (!testRes.echecCritique) {
-                var pcTarget = pointsDeChance(perso);
-                if (pcTarget > 0)
-                  res += "</br>" + boutonSimple("!cof-bouton-chance " + evt.id + " " +
-                    testId, "Chance") + " (reste " + pcTarget + " PC)";
-              }
+              res += " => raté" + testRes.rerolls;
               sendChar(veCharId, res);
             }
           });
