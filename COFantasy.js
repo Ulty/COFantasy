@@ -2327,7 +2327,7 @@ var COFantasy = COFantasy || function() {
     }
     options.choices = options.choices || [];
     options.choices['Continuer'] = true;
-    resolvePreDmgOptions(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.ciblesAttaquees);
+    redoEvent(evt, action);
   }
 
   function undoTokenEffect(evt) {
@@ -9921,7 +9921,6 @@ var COFantasy = COFantasy || function() {
             }
             count--;
             if (count === 0) {
-              log("test");
               resolvePreDmgOptions(attaquant, ciblesTouchees, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles);
             }
           });
@@ -10369,7 +10368,6 @@ var COFantasy = COFantasy || function() {
         }
       }
     });
-
   }
 
   function attackDealDmg(attaquant, cibles, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees) {
@@ -15112,17 +15110,17 @@ var COFantasy = COFantasy || function() {
         msg: " a dépensé un point de chance. Il lui en reste " + chance
       });
       addEvent(evtChance);
-      var options = action.options || {};
-      options.rolls = action.rolls;
-      addChanceToOptions(options, rollId);
-      if (redoEvent(evt, action, perso, options)) return;
+      addChanceToOptions(action.options, rollId);
+      if (redoEvent(evt, action, perso)) return;
     }
     error("Type d'évènement pas encore géré pour la chance", evt);
     addEvent(evtChance);
   }
 
   //Renvoie true si redo possible, false sinon
-  function redoEvent(evt, action, perso, options) {
+  function redoEvent(evt, action, perso) {
+    var options = action.options || {};
+    options.rolls = action.rolls;
     switch (evt.type) {
       case 'Attaque':
         options.redo = true;
@@ -15131,8 +15129,6 @@ var COFantasy = COFantasy || function() {
             delete target.partialSaveAuto;
           });
         }
-        log("redoOptions");
-        log(options);
         attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
         return true;
       case 'attaqueMagique':
@@ -15348,13 +15344,11 @@ var COFantasy = COFantasy || function() {
         return;
       }
       if (!persoUtiliseRuneEnergie(perso, evt)) return;
-      var options = action.options || {};
-      options.rolls = action.rolls;
       undoEvent(evtARefaire);
       addEvent(evt);
-      if (rollId) delete options.rolls[rollId];
-      else if (options.rolls && options.rolls.attack) delete options.rolls.attack;
-      if (!redoEvent(evtARefaire, action, perso, options))
+      if (rollId) delete action.rolls[rollId];
+      else if (action.rolls && action.rolls.attack) delete action.rolls.attack;
+      if (!redoEvent(evtARefaire, action, perso))
         error("Type d'évènement pas supporté par le bouton Rune d'Energie", evt);
     } else { //Juste pour vérifier l'attribut et le diminuer
       getSelected(msg, function(selection) {
@@ -15590,8 +15584,6 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton");
       return;
     }
-    var options = action.options || {};
-    options.rolls = action.rolls;
     var attr = tokenAttribute(perso, 'esquiveFatale');
     if (attr.length === 0) {
       sendChar(perso.charId, "ne sait pas faire d'esquive fatale");
@@ -15613,10 +15605,10 @@ var COFantasy = COFantasy || function() {
     undoEvent(evtARefaire);
     addEvent(evt);
     adversaire.msgEsquiveFatale = perso.tokName + " esquive l'attaque qui touche " + adversaire.tokName;
-    options.redo = true;
-    var cibles = action.cibles.filter(cible => cible.token.id !== perso.token.id);
-    cibles.push(adversaire);
-    attack(action.playerId, attaquant, cibles, action.weaponStats, options);
+    action.cibles = action.cibles.filter(cible => cible.token.id !== perso.token.id);
+    action.cibles.push(adversaire);
+    removePreDmg(action.options, perso);
+    redoEvent(evtARefaire, action);
   }
 
   function intercepter(msg) {
@@ -15942,13 +15934,11 @@ var COFantasy = COFantasy || function() {
         current: pvd
       });
       petitVeinardAttr.set('current', pvd - 1);
-      var options = action.options || {};
-      options.rolls = action.rolls;
       undoEvent(evtARefaire);
       addEvent(evt);
-      if (rollId) delete options.rolls[rollId];
-      else if (options.rolls && options.rolls.attack) delete options.rolls.attack;
-      if (!redoEvent(evtARefaire, action, perso, options))
+      if (rollId) delete action.rolls[rollId];
+      else if (action.rolls && action.rolls.attack) delete action.rolls.attack;
+      if (!redoEvent(evtARefaire, action, perso))
         error("Type d'évènement pas supporté par le bouton Petit Veinard", evt);
     } else { //Juste pour vérifier l'attribut et le diminuer
       getSelected(msg, function(selection) {
@@ -21845,22 +21835,14 @@ var COFantasy = COFantasy || function() {
   }
 
   function removePreDmg(options, perso, champ, newVal) {
-    log("1");
     if (options.preDmg) {
-      log("2");
       if (options.preDmg[perso.token.id]) {
-        log("3");
-        log(options.preDmg[perso.token.id]);
-        log(champ);
         if (champ && options.preDmg[perso.token.id][champ]) {
-          log("4");
           if (newVal) options.preDmg[perso.token.id][champ] = newVal;
           else delete options.preDmg[perso.token.id][champ];
         }
         if (champ === undefined || _.isEmpty(options.preDmg[perso.token.id]))
           delete options.preDmg[perso.token.id];
-        log("5");
-        log(options.preDmg[perso.token.id]);
       }
       if (_.isEmpty(options.preDmg)) delete options.preDmg;
     }
@@ -21921,7 +21903,7 @@ var COFantasy = COFantasy || function() {
         toProceed = true;
       }); //fin iterSelected
       if (toProceed) {
-        resolvePreDmgOptions(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.ciblesAttaquees);
+        redoEvent(evt, action);
       }
     }); //fin getSelected
   }
@@ -22033,7 +22015,7 @@ var COFantasy = COFantasy || function() {
       typeAttaque: typeAttaque,
       msgReussite: msgReussite
     });
-    resolvePreDmgOptions(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, pageId, action.ciblesAttaquees);
+    redoEvent(evt, action);
   }
 
   function appliquerEvitementGenerique(cible, jetAdversaire, attribut, opt, attributeName, actionName, tente, carac, typeAttaque, msgReussite, pageId, options, evt, callback) {
@@ -22268,8 +22250,8 @@ var COFantasy = COFantasy || function() {
       sendChat('', "Historique d'actions vide, pas d'action trouvée pour la chair à canon");
       return;
     }
-    if (evtARefaire.type != 'Attaque' || evtARefaire.succes === false) {
-      sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour utiliser la chair à canon");
+    if (evtARefaire.type != 'Attaque') {
+      sendChat('', "la dernière action n'est pas une attaque");
       return;
     }
     var attaque = evtARefaire.action;
@@ -22278,7 +22260,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var originalTarget;
-    var cibles = attaque.cibles.filter(function(c) {
+    attaque.cibles = attaque.cibles.filter(function(c) {
       if (originalTarget) return true;
       if (c.token.id != cmd[1]) return true;
       originalTarget = c;
@@ -22291,7 +22273,7 @@ var COFantasy = COFantasy || function() {
     sousFifre.rollDmg = originalTarget.rollDmg;
     sousFifre.tokName = sousFifre.token.get('name');
     sousFifre.chairACanon = true;
-    cibles.push(sousFifre);
+    attaque.cibles.push(sousFifre);
     var optionsRedo = attaque.options;
     optionsRedo.rolls = attaque.rolls;
     var evt = {
@@ -22303,9 +22285,9 @@ var COFantasy = COFantasy || function() {
     };
     chairACanon.set('current', curChairACanon - 1);
     undoEvent(evtARefaire);
-    optionsRedo.evt = evt;
-    optionsRedo.redo = true;
-    attack(attaque.playerId, attaque.attaquant, cibles, attaque.weaponStats, optionsRedo);
+    addEvent(evt);
+    removePreDmg(attaque.options, originalTarget);
+    redoEvent(evtARefaire, attaque);
   }
 
   // modifie res et le retourne (au cas où il ne serait pas donné)
@@ -24283,11 +24265,13 @@ var COFantasy = COFantasy || function() {
         optionsAttaque.choices[perso.token.id] = optionsAttaque.choices[perso.token.id] || {};
         optionsAttaque.choices[perso.token.id]['runeForgesort_protection'] = true;
       }); //fin iterSelected
-      resolvePreDmgOptions(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, action.pageId, action.ciblesAttaquees);
+      redoEvent(evt, action);
     }); //fin getSelected
   }
 
   function appliquerRuneDeProtection(cible, options, evt) {
+    log("optionsPre");
+    log(options);
     if (reglesOptionelles.dommages.val.max_rune_protection.val) {
       cible.messages.push(cible.tokName + " utilise sa Rune de Protection");
       cible.utiliseRuneProtectionMax = attributeAsInt(cible, 'runeProtectionMax', 30);
@@ -24296,6 +24280,8 @@ var COFantasy = COFantasy || function() {
       cible.utiliseRuneProtection = true;
     }
     removePreDmg(options, cible, 'runeForgesort_protection');
+    log("optionsPost");
+    log(options);
   }
 
   //!cof-delivrance @{selected|token_id} @{target|token_id}
