@@ -2325,7 +2325,7 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton");
       return;
     }
-    action.choices = action.choices || [];
+    action.choices = action.choices || {};
     action.choices['Continuer'] = true;
     redoEvent(evt, action);
   }
@@ -9863,17 +9863,17 @@ var COFantasy = COFantasy || function() {
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].encaisserUnCoup = true;
                   }
-                  if (charAttributeAsBool(target, 'esquiveAcrobatique')) {
+                  if (attributeAsInt(target, 'esquiveAcrobatique', 0) > 0) {
                     options.preDmg = options.preDmg || {};
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].esquiveAcrobatique = true;
                   }
-                  if (charAttributeAsBool(target, 'paradeMagistrale')) {
+                  if (attributeAsInt(target, 'paradeMagistrale', 0) > 0) {
                     options.preDmg = options.preDmg || {};
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].paradeMagistrale = true;
                   }
-                  if (attributeAsBool(target, 'esquiveFatale')) {
+                  if (attributeAsInt(target, 'esquiveFatale', 0) > 0) {
                     if (target.ennemisAuContact === undefined) {
                       error(target.token.get('name') + " a la possibilité d'une esquive fatale, mais les ennemis au contact ne sont pas calculés", target);
                     } else {
@@ -9888,27 +9888,29 @@ var COFantasy = COFantasy || function() {
                     }
                   }
                   if (options.sortilege) {
-                    if (attributeAsBool(target, 'absorberUnSort') &&
+                    if (attributeAsInt(target, 'absorberUnSort', 0) > 0 &&
                       ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) == 1) {
                       options.preDmg = options.preDmg || {};
                       options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                       options.preDmg[target.token.id].absorberUnSort = true;
                     }
                   } else {
-                    if (attributeAsBool(target, 'absorberUnCoup')) {
+                    if (attributeAsInt(target, 'absorberUnCoup', 0) > 0 &&
+                      ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) == 1) {
                       options.preDmg = options.preDmg || {};
                       options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                       options.preDmg[target.token.id].absorberUnCoup = true;
                     }
                   }
                 }
-                if (options.sortilege && charAttributeAsBool(target, 'resistanceALaMagieBarbare')) {
+                if (options.sortilege && attributeAsInt(target, 'resistanceALaMagieBarbare', 0) > 0) {
                   options.preDmg = options.preDmg || {};
                   options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                   options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
                 }
               }
-              if (attributeAsBool(target, 'chairACanon') && target.chairACanon && target.chairACanon.length > 0) {
+              if (attributeAsInt(target, 'chairACanon', 0) > 0
+                && target.chairACanon && target.chairACanon.length > 0) {
                 options.preDmg = options.preDmg || {};
                 options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                 options.preDmg[target.token.id].chairACanon = target.chairACanon;
@@ -10323,12 +10325,13 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
+    var continuer = evt.action.choices['Continuer'];
     var nbCibles = cibles.length;
     cibles.forEach(function (cible) {
       var finaliseTarget = function(){
         nbCibles--;
         if(nbCibles === 0) {
-          if (evt.action.choices['Continuer']) {
+          if (continuer) {
             delete options.preDmg;
           }
           if(options.preDmg) {
@@ -10342,15 +10345,23 @@ var COFantasy = COFantasy || function() {
       };
       var preDmgToken = evt.action.choices[cible.token.id];
       if (preDmgToken !== undefined) {
+        var termineCible = false;
         if (preDmgToken.encaisserUnCoup) {
           appliquerEncaisserUnCoup(cible, options, evt);
+          termineCible = true;
         }
         if (preDmgToken.runeForgesort_protection) {
           appliquerRuneDeProtection(cible, options, evt);
+          termineCible = true;
         }
         if (preDmgToken.evitementGenerique && preDmgToken.evitementGenerique.length > 0) {
           var nbEvitementsGenerique = preDmgToken.evitementGenerique.length;
-          var finaliseTargetPreDmg = function() {
+          var finaliseTargetPreDmg = function(msg, rerolls) {
+            if (rerolls !== '' && !continuer && !termineCible) { // rerolls uniquement si pas terminé
+              explications.push(msg+rerolls);
+            } else {
+              cible.messages.push(msg);
+            }
             nbEvitementsGenerique--;
             if(nbEvitementsGenerique === 0) {
               finaliseTarget();
@@ -10365,6 +10376,8 @@ var COFantasy = COFantasy || function() {
         } else {
           finaliseTarget();
         }
+      } else {
+        finaliseTarget();
       }
     });
   }
@@ -11604,15 +11617,10 @@ var COFantasy = COFantasy || function() {
                   "encaisser le coup");
               nbBoutons++;
             }
-            if (preDmgToken.esquiveAcrobatique) {
+            if (preDmgToken.esquiveAcrobatique && preDmgToken.esquiveAcrobatique !== 'reroll') {
               action = "!cof-esquive-acrobatique " + target.token.id + ' ' + evt.id;
-              if (preDmgToken.esquiveAcrobatique == 'chance') {
-                action += ' chance';
-                addLineToFramedDisplay(display, target.messages[target.indexMsgesquiveAcrobatique] + " " + boutonSimple(action, 'Chance'), 80);
-              } else {
-                line += "<br/>" + boutonSimple(action, "tenter une esquive acrobatique");
-                nbBoutons++;
-              }
+              line += "<br/>" + boutonSimple(action, "tenter une esquive acrobatique");
+              nbBoutons++;
             }
             if (preDmgToken.esquiveFatale) {
               preDmgToken.esquiveFatale.forEach(function(tok) {
@@ -11623,15 +11631,10 @@ var COFantasy = COFantasy || function() {
                 nbBoutons++;
               });
             }
-            if (preDmgToken.resistanceALaMagieBarbare) {
+            if (preDmgToken.resistanceALaMagieBarbare && preDmgToken.resistanceALaMagieBarbare !== 'reroll') {
               action = "!cof-resister-a-la-magie " + target.token.id + ' ' + evt.id;
-              if (preDmgToken.resistanceALaMagieBarbare == 'chance') {
-                action += ' chance';
-                addLineToFramedDisplay(display, target.messages[target.indexMsgresistanceALaMagieBarbare] + " " + boutonSimple(action, 'Chance'), 80);
-              } else {
-                line += "<br/>" + boutonSimple(action, "tenter de résister à la magie");
-                nbBoutons++;
-              }
+              line += "<br/>" + boutonSimple(action, "tenter de résister à la magie");
+              nbBoutons++;
             }
             if (preDmgToken.runeForgesort_protection) {
               line += "<br/>" +
@@ -11646,7 +11649,7 @@ var COFantasy = COFantasy || function() {
                 nbBoutons++;
               });
             }
-            if (preDmgToken.paradeMagistrale) {
+            if (preDmgToken.paradeMagistrale && preDmgToken.paradeMagistrale !== 'reroll') {
               action = "!cof-esquive-magistrale ";
               var actionParade = "esquive acrobatique";
               if (options.contact) {
@@ -11657,34 +11660,18 @@ var COFantasy = COFantasy || function() {
                 }
               }
               action += target.token.id + ' ' + evt.id;
-              if (preDmgToken.paradeMagistrale == 'chance') {
-                action += ' chance';
-                addLineToFramedDisplay(display, target.messages[target.indexMsgparadeMagistrale] + " " + boutonSimple(action, 'Chance'), 80);
-              } else {
-                line += "<br/>" +
-                  boutonSimple(action, "tenter une " + actionParade);
-                nbBoutons++;
-              }
+              line += "<br/>" + boutonSimple(action, "tenter une " + actionParade);
+              nbBoutons++;
             }
-            if (preDmgToken.absorberUnSort) {
+            if (preDmgToken.absorberUnSort && preDmgToken.absorberUnSort !== 'reroll') {
               action = "!cof-absorber-sort-au-bouclier " + target.token.id + ' ' + evt.id;
-              if (preDmgToken.absorberUnSort == 'chance') {
-                action += ' chance';
-                addLineToFramedDisplay(display, target.messages[target.indexMsgabsorberUnSort] + " " + boutonSimple(action, 'Chance'), 80);
-              } else {
-                line += "<br/>" + boutonSimple(action, "absorber le sort");
-                nbBoutons++;
-              }
+              line += "<br/>" + boutonSimple(action, "absorber le sort");
+              nbBoutons++;
             }
-            if (preDmgToken.absorberUnCoup) {
+            if (preDmgToken.absorberUnCoup && preDmgToken.absorberUnCoup !== 'reroll') {
               action = "!cof-absorber-coup-au-bouclier " + target.token.id + ' ' + evt.id;
-              if (preDmgToken.absorberUnCoup == 'chance') {
-                action += ' chance';
-                addLineToFramedDisplay(display, target.messages[target.indexMsgabsorberUnCoup] + " " + boutonSimple(action, 'Chance'), 80);
-              } else {
-                line += "<br/>" + boutonSimple(action, "absorber le coup");
-                nbBoutons++;
-              }
+              line += "<br/>" + boutonSimple(action, "absorber le coup");
+              nbBoutons++;
             }
             if (nbBoutons > 0) addLineToFramedDisplay(display, line);
           }
@@ -22091,23 +22078,28 @@ var COFantasy = COFantasy || function() {
       else if (attEvBonus < 0) msg += attEvBonus;
       msg = cible.tokName + " tente " + tente + ". " +
           onGenre(cible, "Il", "elle") + " fait " + msg;
+      var rerolls = '';
       if (totalEvitement < jetAdversaire) {
         msg += " => Raté";
         var pc = pointsDeChance(cible);
         if (!(attackRoll.results.total == 1) && pc > 0) {
-          msg += '<br/>' +
+          rerolls += '<br/>' +
               boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
               " (reste " + pc + " PC)";
         }
         if (stateCOF.combat && attributeAsBool(cible, 'runeForgesort_énergie') &&
             attributeAsInt(cible, 'limiteParCombat_runeForgesort_énergie', 1) > 0 &&
-            (carac == 'FOR' || carac == 'CON' || carac == 'DEX')) {
-          msg += '<br/>' + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + testId, "Rune d'énergie");
+            (carac == 'force' || carac == 'constitution' || carac == 'dexterite')) {
+          rerolls += '<br/>' + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + testId, "Rune d'énergie");
         }
         if (stateCOF.combat && attributeAsBool(cible, 'petitVeinard')) {
-          msg += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
+          rerolls += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
         }
-        removePreDmg(options, cible, attributeName);
+        if(rerolls === '') { //Ne retirer l'option que si aucun reroll possible
+          removePreDmg(options, cible, attributeName);
+        } else { //Sinon cacher le bouton mais laisser l'option reroll
+          removePreDmg(options, cible, attributeName, 'reroll');
+        }
       } else { //Évitement réussi
         if (opt && opt.critiqueDevientNormal && cible.critique) {
           cible.critique = false;
@@ -22122,8 +22114,7 @@ var COFantasy = COFantasy || function() {
           removePreDmg(options, cible);
         }
       }
-      cible.messages.push(msg);
-      callback();
+      callback(msg, rerolls);
     });
   }
 
@@ -24276,7 +24267,7 @@ var COFantasy = COFantasy || function() {
       cible.messages.push(cible.tokName + " utilise sa Rune de Protection pour annuler les dommages");
       cible.utiliseRuneProtection = true;
     }
-    removePreDmg(options, cible, 'runeForgesort_protection');
+    removePreDmg(options, cible);
   }
 
   //!cof-delivrance @{selected|token_id} @{target|token_id}
