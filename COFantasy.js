@@ -24270,8 +24270,6 @@ var COFantasy = COFantasy || function() {
   }
 
   function appliquerRuneDeProtection(cible, options, evt) {
-    log("optionsPre");
-    log(options);
     if (reglesOptionelles.dommages.val.max_rune_protection.val) {
       cible.messages.push(cible.tokName + " utilise sa Rune de Protection");
       cible.utiliseRuneProtectionMax = attributeAsInt(cible, 'runeProtectionMax', 30);
@@ -24280,8 +24278,6 @@ var COFantasy = COFantasy || function() {
       cible.utiliseRuneProtection = true;
     }
     removePreDmg(options, cible, 'runeForgesort_protection');
-    log("optionsPost");
-    log(options);
   }
 
   //!cof-delivrance @{selected|token_id} @{target|token_id}
@@ -31720,19 +31716,19 @@ on('ready', function() {
 on("chat:message", function(msg) {
   "use strict";
   if (COF_loaded && msg.type == "api" && msg.content.startsWith('!cof-')) {
-    // try {
+    try {
       COFantasy.apiCommand(msg);
-    // } catch (e) {
-    //   sendChat('COF', "Erreur durant l'exécution de " + msg.content);
-    //   log("Erreur durant l'exécution de " + msg.content);
-    //   log(msg);
-    //   var errMsg = e.name;
-    //   if (e.lineNumber) errMsg += " at " + e.lineNumber;
-    //   else if (e.number) errMsg += " at " + e.number;
-    //   errMsg += ': ' + e.message;
-    //   sendChat('COF', errMsg);
-    //   log(errMsg);
-    // }
+    } catch (e) {
+      sendChat('COF', "Erreur durant l'exécution de " + msg.content);
+      log("Erreur durant l'exécution de " + msg.content);
+      log(msg);
+      var errMsg = e.name;
+      if (e.lineNumber) errMsg += " at " + e.lineNumber;
+      else if (e.number) errMsg += " at " + e.number;
+      errMsg += ': ' + e.message;
+      sendChat('COF', errMsg);
+      log(errMsg);
+    }
   }
 });
 
