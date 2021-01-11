@@ -2325,8 +2325,8 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton");
       return;
     }
-    options.choices = options.choices || [];
-    options.choices['Continuer'] = true;
+    action.choices = action.choices || [];
+    action.choices['Continuer'] = true;
     redoEvent(evt, action);
   }
 
@@ -10312,8 +10312,8 @@ var COFantasy = COFantasy || function() {
     evt.action.explications = JSON.parse(JSON.stringify(explications));
     evt.action.pageId = pageId;
     evt.action.ciblesAttaquees = ciblesAttaquees;
-    var choices = options.choices;
-    if (choices === undefined) {
+    evt.action.choices = options.choices;
+    if (evt.action.choices === undefined) {
       if(options.preDmg) {
         addLineToFramedDisplay(display, "<b>Attaque :</b> Touche !");
         finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options, echecCritique);
@@ -10328,7 +10328,7 @@ var COFantasy = COFantasy || function() {
       var finaliseTarget = function(){
         nbCibles--;
         if(nbCibles === 0) {
-          if (choices['Continuer']) {
+          if (evt.action.choices['Continuer']) {
             delete options.preDmg;
           }
           if(options.preDmg) {
@@ -10340,7 +10340,7 @@ var COFantasy = COFantasy || function() {
           }
         }
       };
-      var preDmgToken = choices[cible.token.id];
+      var preDmgToken = evt.action.choices[cible.token.id];
       if (preDmgToken !== undefined) {
         if (preDmgToken.encaisserUnCoup) {
           appliquerEncaisserUnCoup(cible, options, evt);
@@ -10348,7 +10348,6 @@ var COFantasy = COFantasy || function() {
         if (preDmgToken.runeForgesort_protection) {
           appliquerRuneDeProtection(cible, options, evt);
         }
-        //TODO compléter
         if (preDmgToken.evitementGenerique && preDmgToken.evitementGenerique.length > 0) {
           var nbEvitementsGenerique = preDmgToken.evitementGenerique.length;
           var finaliseTargetPreDmg = function() {
@@ -10399,7 +10398,6 @@ var COFantasy = COFantasy || function() {
     //Dégâts insrits sur la ligne de l'arme
     var mainDmgType = options.type || 'normal';
     var attNbDices = weaponStats.attNbDices;
-
     if (isNaN(attNbDices) || attNbDices < 0) {
       error("Dés de l'attaque incorrect", attNbDices);
       return;
@@ -15121,6 +15119,7 @@ var COFantasy = COFantasy || function() {
   function redoEvent(evt, action, perso) {
     var options = action.options || {};
     options.rolls = action.rolls;
+    options.choices = action.choices;
     switch (evt.type) {
       case 'Attaque':
         options.redo = true;
@@ -21897,9 +21896,9 @@ var COFantasy = COFantasy || function() {
           sendChar(chevalier.charId, "n'est pas la cible de la dernière attaque");
           return;
         }
-        options.choices = options.choices || {};
-        options.choices[chevalier.token.id] = options.choices[chevalier.token.id] || {};
-        options.choices[chevalier.token.id]['encaisserUnCoup'] = true;
+        action.choices = action.choices || {};
+        action.choices[chevalier.token.id] = action.choices[chevalier.token.id] || {};
+        action.choices[chevalier.token.id]['encaisserUnCoup'] = true;
         toProceed = true;
       }); //fin iterSelected
       if (toProceed) {
@@ -22001,10 +22000,10 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    optionsAttaque.choices = optionsAttaque.choices || {};
-    optionsAttaque.choices[perso.token.id] = optionsAttaque.choices[perso.token.id] || {};
-    optionsAttaque.choices[perso.token.id]['evitementGenerique'] = optionsAttaque.choices[perso.token.id]['evitementGenerique'] || [];
-    optionsAttaque.choices[perso.token.id]['evitementGenerique'].push({
+    action.choices = action.choices || {};
+    action.choices[perso.token.id] = action.choices[perso.token.id] || {};
+    action.choices[perso.token.id]['evitementGenerique'] = action.choices[perso.token.id]['evitementGenerique'] || [];
+    action.choices[perso.token.id]['evitementGenerique'].push({
       jetAdversaire: jetAdversaire,
       attribut: attribut,
       opt: opt,
@@ -24261,9 +24260,9 @@ var COFantasy = COFantasy || function() {
           return;
         }
         if (!persoUtiliseRuneProtection(perso, evt)) return;
-        optionsAttaque.choices = optionsAttaque.choices || {};
-        optionsAttaque.choices[perso.token.id] = optionsAttaque.choices[perso.token.id] || {};
-        optionsAttaque.choices[perso.token.id]['runeForgesort_protection'] = true;
+        action.choices = action.choices || {};
+        action.choices[perso.token.id] = action.choices[perso.token.id] || {};
+        action.choices[perso.token.id]['runeForgesort_protection'] = true;
       }); //fin iterSelected
       redoEvent(evt, action);
     }); //fin getSelected
