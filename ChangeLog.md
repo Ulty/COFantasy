@@ -10,6 +10,7 @@
 * Support de la capacité Enchaînement du barbare.
 * Ajout de l'attaque d'étreinte et immolation de certains démons gardiens
 * Ajout de la capacité Hausser le ton de la Voie du champion
+* Ajout de la capacité Liberté d'Action du barde
 
 ### Autres améliorations
 * Prise en compte des compétences sur la fiche
@@ -22,6 +23,7 @@
 * Ajout d'une interface de gestion de la bourse.
 * Support de la pénombre
 * Support pour les personnages invisibles en combat
+* Meilleur support de la Prouesse du guerrier
 
 ### Corrections de bugs
 * Mise à jour de l'initiative quand on rengaine son arme à distance avec la voie du pistolero.
