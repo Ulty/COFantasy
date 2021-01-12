@@ -2326,7 +2326,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     action.choices = action.choices || {};
-    action.choices['Continuer'] = true;
+    action.choices.Continuer = true;
     redoEvent(evt, action);
   }
 
@@ -3825,6 +3825,7 @@ var COFantasy = COFantasy || function() {
         prefixes.add(p);
       });
     }
+    var compsMinuscules = comps.map(function(c) { return c.toLowerCase(); });
     prefixes.forEach(function(prefix) {
       var nom = prefix + 'comp_nom';
       var nomAttr = attributes.find(function(a) {
@@ -3832,7 +3833,7 @@ var COFantasy = COFantasy || function() {
       });
       if (!nomAttr) return;
       var nomComp = nomAttr.get('current').trim().toLowerCase();
-      if (comps.includes(nomComp)) return;
+      if (compsMinuscules.includes(nomComp)) return;
       comps.push(nomComp);
     });
     cell = '';
@@ -7552,6 +7553,10 @@ var COFantasy = COFantasy || function() {
       }
       explications.push(msgCharge);
     }
+    if (attributeAsBool(attaquant, 'enerve')) {
+      attBonus -= 2;
+      explications.push("Attaquant énervé => -2 en Attaque");
+    }
     return attBonus;
   }
 
@@ -9909,8 +9914,8 @@ var COFantasy = COFantasy || function() {
                   options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
                 }
               }
-              if (attributeAsInt(target, 'chairACanon', 0) > 0
-                && target.chairACanon && target.chairACanon.length > 0) {
+              if (attributeAsInt(target, 'chairACanon', 0) > 0 && 
+                target.chairACanon && target.chairACanon.length > 0) {
                 options.preDmg = options.preDmg || {};
                 options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                 options.preDmg[target.token.id].chairACanon = target.chairACanon;
@@ -10325,7 +10330,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    var continuer = evt.action.choices['Continuer'];
+    var continuer = evt.action.choices.Continuer;
     var nbCibles = cibles.length;
     cibles.forEach(function (cible) {
       var finaliseTarget = function(){
@@ -10366,7 +10371,7 @@ var COFantasy = COFantasy || function() {
             if(nbEvitementsGenerique === 0) {
               finaliseTarget();
             }
-          }
+          };
           preDmgToken.evitementGenerique.forEach(function (evitementGenerique){
             appliquerEvitementGenerique(cible, evitementGenerique.jetAdversaire, evitementGenerique.attribut,
                 evitementGenerique.opt, evitementGenerique.attributeName, evitementGenerique.actionName,
@@ -12364,7 +12369,7 @@ var COFantasy = COFantasy || function() {
         bonus: 5
       });
       sendChat('', '/w GM ' + personnage.tokName + ' réapparaîtra dans ' + duree.roll + ' tours.');
-      var effet = 'effetRetarde(réapparition)';
+      var effet = 'messageRetarde(réapparition)';
       setAttrDuree(personnage, effet, duree.val - 1, evt);
       setToken(personnage.token, 'layer', 'gmlayer', evt);
       if (personnage.attaquant) {
@@ -21866,7 +21871,6 @@ var COFantasy = COFantasy || function() {
         return;
       }
       var toProceed;
-      var options = action.currentOptions || {};
       iterSelected(selected, function(chevalier) {
         if (!attributeAsBool(chevalier, 'encaisserUnCoup')) {
           sendChar(chevalier.charId, "n'est pas placé pour encaisser un coup");
@@ -21885,7 +21889,7 @@ var COFantasy = COFantasy || function() {
         }
         action.choices = action.choices || {};
         action.choices[chevalier.token.id] = action.choices[chevalier.token.id] || {};
-        action.choices[chevalier.token.id]['encaisserUnCoup'] = true;
+        action.choices[chevalier.token.id].encaisserUnCoup = true;
         toProceed = true;
       }); //fin iterSelected
       if (toProceed) {
@@ -21989,8 +21993,8 @@ var COFantasy = COFantasy || function() {
     }
     action.choices = action.choices || {};
     action.choices[perso.token.id] = action.choices[perso.token.id] || {};
-    action.choices[perso.token.id]['evitementGenerique'] = action.choices[perso.token.id]['evitementGenerique'] || [];
-    action.choices[perso.token.id]['evitementGenerique'].push({
+    action.choices[perso.token.id].evitementGenerique = action.choices[perso.token.id].evitementGenerique || [];
+    action.choices[perso.token.id].evitementGenerique.push({
       jetAdversaire: jetAdversaire,
       attribut: attribut,
       opt: opt,
@@ -22082,7 +22086,7 @@ var COFantasy = COFantasy || function() {
       if (totalEvitement < jetAdversaire) {
         msg += " => Raté";
         var pc = pointsDeChance(cible);
-        if (!(attackRoll.results.total == 1) && pc > 0) {
+        if (attackRoll.results.total != 1 && pc > 0) {
           rerolls += '<br/>' +
               boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
               " (reste " + pc + " PC)";
@@ -23144,6 +23148,7 @@ var COFantasy = COFantasy || function() {
       error("Le deuxième argument de !cof-provocation n'est pas un token valide");
       return;
     }
+    if (cmd.length > 3 && cmd[3] == 'raillerie') options.raillerie = true;
     doProvocation(voleur, cible, options);
   }
 
@@ -23160,8 +23165,14 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
     var nomVoleur = voleur.token.get('name');
     var nomCible = cible.token.get('name');
+    var titre = 'Provocation';
+    var action = 'provocation';
+    if (options.raillerie) {
+      titre = 'Raillerie';
+      action = 'raillerie';
+    }
     var display =
-      startFramedDisplay(options.playerId, 'Provocation', voleur, {
+      startFramedDisplay(options.playerId, titre, voleur, {
         perso2: cible
       });
     var explications = [];
@@ -23178,29 +23189,36 @@ var COFantasy = COFantasy || function() {
             diminueMalediction(cible, evt);
             switch (crit) {
               case -1:
-                reussite = "Sur un malentendu, la provocation réussit...";
+                reussite = "Sur un malentendu, la " + action + " réussit...";
+                if (options.raillerie) setAttrDuree(cible, 'enerve', 1, evt);
                 break;
               case 0:
               case 1:
-                reussite = "La provocation réussit tout juste.";
+                reussite = "La " + action + " réussit tout juste.";
+                if (options.raillerie) setAttrDuree(cible, 'enerve', 1, evt);
             }
             break;
           case 1:
             switch (crit) {
               case -1:
                 reussite = nomCible + " marche complètement, il attaque " + nomVoleur;
+                if (options.raillerie) setAttrDuree(cible, 'enerve', 1, evt);
                 break;
               case 0:
-                reussite = "La provocation réussit.";
+                if (options.raillerie) {
+                  setAttrDuree(cible, 'enerve', 1, evt);
+                  reussite = nomVoleur + " a réussi à bien énerver " + nomCible;
+                } else reussite = "La provocation réussit.";
                 break;
               case 1:
                 reussite = "La provocation est une réussite critique !";
+                setAttrDuree(cible, 'enerve', 1, evt);
             }
             break;
           case 2:
             switch (crit) {
               case -1:
-                reussite = "Échec critique de la provocation !";
+                reussite = "Échec critique de la " + action + " !";
                 break;
               case 0:
                 reussite = "La provocation échoue";
@@ -24237,7 +24255,6 @@ var COFantasy = COFantasy || function() {
         return;
       }
       var action = evt.action;
-      var optionsAttaque = action.currentOptions || {};
       iterSelected(selected, function(perso) {
         if (!peutController(msg, perso)) {
           sendPlayer(msg, "pas le droit d'utiliser ce bouton");
@@ -24253,7 +24270,7 @@ var COFantasy = COFantasy || function() {
         if (!persoUtiliseRuneProtection(perso, evt)) return;
         action.choices = action.choices || {};
         action.choices[perso.token.id] = action.choices[perso.token.id] || {};
-        action.choices[perso.token.id]['runeForgesort_protection'] = true;
+        action.choices[perso.token.id].runeForgesort_protection = true;
       }); //fin iterSelected
       redoEvent(evt, action);
     }); //fin getSelected
@@ -28782,6 +28799,12 @@ var COFantasy = COFantasy || function() {
       fin: "effet activé",
       generic: true
     },
+    messageRetarde: {
+      activation: "il va bientôt se produire quelque chose",
+      actif: "s'attend à un effet",
+      fin: "effet activé",
+      generic: true
+    },
     detectionDeLInvisible: {
       activation: "voit les choses invibles et cachées",
       actif: "détecte l'invisible",
@@ -28791,7 +28814,14 @@ var COFantasy = COFantasy || function() {
       activation: "affecte son attaque",
       actif: "a son attaque affectée",
       fin: "retrouve son attaque normale",
-    }
+    },
+    enerve: {
+      activation: "est énervé par ces railleries",
+      activationF: "est énervée par ces railleries",
+      actif: "est énervé",
+      fin: "retrouve son calme",
+      prejudiciable: true
+    },
   };
 
   function buildPatternEffets(listeEffets, postfix) {
@@ -29429,6 +29459,7 @@ var COFantasy = COFantasy || function() {
         });
         break;
       case 'effetRetarde':
+      case 'messageRetarde':
         if (efComplet.length > 14) {
           var messageRetarde = efComplet.substring(13, efComplet.length - 1);
           iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
@@ -31526,21 +31557,27 @@ on('ready', function() {
         var compToCarac = {};
         listeCompetences.FOR.forEach(function(c) {
           compToCarac[c] = 'FOR';
+          compToCarac[c.toLowerCase()] = 'FOR';
         });
         listeCompetences.CON.forEach(function(c) {
           compToCarac[c] = 'CON';
+          compToCarac[c.toLowerCase()] = 'CON';
         });
         listeCompetences.DEX.forEach(function(c) {
           compToCarac[c] = 'DEX';
+          compToCarac[c.toLowerCase()] = 'DEX';
         });
         listeCompetences.INT.forEach(function(c) {
           compToCarac[c] = 'INT';
+          compToCarac[c.toLowerCase()] = 'INT';
         });
         listeCompetences.SAG.forEach(function(c) {
           compToCarac[c] = 'SAG';
+          compToCarac[c.toLowerCase()] = 'SAG';
         });
         listeCompetences.CHA.forEach(function(c) {
           compToCarac[c] = 'CHA';
+          compToCarac[c.toLowerCase()] = 'CHA';
         });
         attrs.forEach(function(a) {
           var attrName = a.get('name');
