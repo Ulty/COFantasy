@@ -11073,6 +11073,17 @@ var COFantasy = COFantasy || function() {
             }
             if (etats) {
               etats.forEach(function(ce) {
+                if (charAttributeAsBool(target, "liberteDAction") && options.sortilege && (
+                  ce.etat == 'apeure' ||
+                  ce.etat == 'endormi' ||
+                  ce.etat == 'etourdi' ||
+                  ce.etat == 'immobilise' ||
+                  ce.etat == 'paralyse' ||
+                  ce.etat == 'ralenti'
+                )) {
+                  target.messages.push(target.tokName + " reste libre de ses mouvements !");
+                  return;
+                }
                 if (ce.save) {
                   saves++;
                   return; //on le fera plus tard
@@ -11108,6 +11119,17 @@ var COFantasy = COFantasy || function() {
             }
             if (effets) {
               effets.forEach(function(ef) {
+                if (charAttributeAsBool(target, "liberteDAction") && options.sortilege && (
+                    ef.effet == 'apeureTemp' ||
+                    ef.effet == 'endormiTemp' ||
+                    ef.effet == 'etourdiTemp' ||
+                    ef.effet == 'immobiliseTemp' ||
+                    ef.effet == 'paralyseTemp' ||
+                    ef.effet == 'ralentiTemp'
+                )) {
+                  target.messages.push(target.tokName + " reste libre de ses mouvements !");
+                  return;
+                }
                 if (ef.save) {
                   saves++;
                   savesEffets++;
@@ -14149,6 +14171,7 @@ var COFantasy = COFantasy || function() {
         case 'seulementVivant':
         case 'repos':
         case 'secret':
+        case 'magique':
           options[cmd[0]] = true;
           break;
         case "lanceur":
@@ -18391,6 +18414,23 @@ var COFantasy = COFantasy || function() {
           sendPlayer(msg, "cet effet n'affecte que les créatures vivantes");
           return;
         }
+        if (charAttributeAsBool(perso, 'liberteDAction') &&
+          (effet == 'confusion ' ||
+          effet == 'charmé ' ||
+          effet == 'prisonVegetale' ||
+          effet == 'toiles' ||
+          effet == 'foretVivanteEnnemie' ||
+          ((options.magique || options.mana) &&
+            (effet == 'apeureTemp' ||
+            effet == 'endormiTemp' ||
+            effet == 'etourdiTemp' ||
+            effet == 'immobiliseTemp' ||
+            effet == 'paralyseTemp' ||
+            effet == 'ralentiTemp'))
+          )) {
+          sendChar(perso.charId, "reste libre de ses mouvements !");
+          return;
+        }
         cibles.push(perso);
       });
       if (cibles.length == 0) {
@@ -18849,7 +18889,8 @@ var COFantasy = COFantasy || function() {
       charAttributeAsBool(target, 'immunite_peur') ||
       charAttributeAsBool(target, 'proprioception') ||
       charAttributeAsBool(target, 'sansEsprit') ||
-      attributeAsBool(target, 'enragé')) {
+      attributeAsBool(target, 'enragé') ||
+      charAttributeAsBool(target, 'liberteDAction')) {
       messages.push(targetName + " est insensible à la peur !");
       callback();
       return;
@@ -19070,10 +19111,15 @@ var COFantasy = COFantasy || function() {
   // callback est seulement appelé si on fait le test
   // evt est facultatif ; si absent, en crée un nouveau générique et l'ajoute à l'historique
   function attaqueMagiqueOpposee(playerId, attaquant, cible, options, callback, evt) {
-    if (options.attaqueMentale && charAttributeAsBool(cible, 'sansEsprit')) {
-      sendChar(attaquant.charId, " est sans esprit, " + onGenre(cible, 'il', 'elle') +
-        " est immunisé" + onGenre(cible, '', 'e') + " aux attaques mentales.");
-      return;
+    if (options.attaqueMentale) {
+      if (charAttributeAsBool(cible, 'sansEsprit')) {
+        sendChar(attaquant.charId, " est sans esprit, " + onGenre(cible, 'il', 'elle') +
+            " est immunisé" + onGenre(cible, '', 'e') + " aux attaques mentales.");
+        return;
+      } else if (charAttributeAsBool(cible, 'liberteDAction')) {
+        sendChar(attaquant.charId, cible.token.get("name") + " reste libre de ses actions !");
+        return;
+      }
     }
     var explications = options.messages || [];
     if (!evt) {
@@ -19217,10 +19263,11 @@ var COFantasy = COFantasy || function() {
         if (reussi) {
           if (attributeAsBool(cible, 'resisteInjonction')) {
             addLineToFramedDisplay(display, cible.token.get('name') + " a déjà résisté à une injonction aujourd'hui, c'est sans effet");
-            sendChat("", endFramedDisplay(display));
-            return;
+          } else if (charAttributeAsBool(cible, 'liberteDAction')) {
+            addLineToFramedDisplay(display, cible.token.get('name') + " reste libre de ses actions !");
+          } else {
+            addLineToFramedDisplay(display, cible.token.get('name') + " obéit à l'injonction");
           }
-          addLineToFramedDisplay(display, cible.token.get('name') + " obéit à l'injonction");
           sendChat("", endFramedDisplay(display));
         } else {
           setTokenAttr(cible, 'resisteInjonction', true, evt);
@@ -19338,6 +19385,11 @@ var COFantasy = COFantasy || function() {
     explications.forEach(msg => addLineToFramedDisplay(display, msg, 80));
     if (attributeAsBool(cible, 'injonctionMortelle')) {
       addLineToFramedDisplay(display, cible.token.get('name') + " a déjà été victime d'une injonction mortelle ce combat, c'est sans effet");
+      sendChat("", endFramedDisplay(display));
+      return;
+    }
+    if (charAttributeAsBool(cible, 'liberteDAction')) {
+      addLineToFramedDisplay(display, cible.token.get('name') + " reste libre de ses actions !");
       sendChat("", endFramedDisplay(display));
       return;
     }
@@ -19462,6 +19514,10 @@ var COFantasy = COFantasy || function() {
         perso.name = perso.token.get('name');
         if (estNonVivant(perso)) { //le sort de sommeil n'affecte que les créatures vivantes
           addLineToFramedDisplay(display, perso.name + " n'est pas affecté par le sommeil");
+          return;
+        }
+        if (charAttributeAsBool(perso, "liberteDAction")) {
+          addLineToFramedDisplay(display, perso.name + " reste libre de ses mouvements !");
           return;
         }
         var pv = perso.token.get('bar1_max');
@@ -27715,7 +27771,6 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
     if (options.lanceur) {
       sendChar(options.lanceur.charId, "Prononce un mot avec la Voix d'une puissance supérieure. Tous ses ennemis sont immobilisés et ses alliés sont galvanisés.");
-
       var allies = alliesParPerso[options.lanceur.charId];
       if (allies) {
         var tokens = findObjs({
@@ -27732,7 +27787,6 @@ var COFantasy = COFantasy || function() {
             charId: ci,
             token: tok
           };
-
           setAttrDuree(perso, 'bonusAttaqueTemp', 1, evt);
         });
       }
