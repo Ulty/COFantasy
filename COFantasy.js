@@ -3566,12 +3566,12 @@ var COFantasy = COFantasy || function() {
         var pc = pointsDeChance(personnage);
         if (!testRes.echecCritique && pc > 0) {
           testRes.rerolls += '<br/>' +
-              boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-              " (reste " + pc + " PC)";
+            boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+            " (reste " + pc + " PC)";
         }
         if (stateCOF.combat && attributeAsBool(personnage, 'runeForgesort_énergie') &&
-            attributeAsInt(personnage, 'limiteParCombat_runeForgesort_énergie', 1) > 0 &&
-            (carac == 'FOR' || carac == 'CON' || carac == 'DEX')) {
+          attributeAsInt(personnage, 'limiteParCombat_runeForgesort_énergie', 1) > 0 &&
+          (carac == 'FOR' || carac == 'CON' || carac == 'DEX')) {
           testRes.rerolls += '<br/>' + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + testId, "Rune d'énergie");
         }
         if (stateCOF.combat && attributeAsBool(personnage, 'petitVeinard')) {
@@ -3790,7 +3790,7 @@ var COFantasy = COFantasy || function() {
       overlay: overlay
     });
     addCellInFramedDisplay(display, cell, 150, true);
-    var comps = [ ...listeCompetences[carac]];
+    var comps = [...listeCompetences[carac]];
     var attributes = findObjs({
       _type: 'attribute',
       _characterid: perso.charId,
@@ -3825,7 +3825,9 @@ var COFantasy = COFantasy || function() {
         prefixes.add(p);
       });
     }
-    var compsMinuscules = comps.map(function(c) { return c.toLowerCase(); });
+    var compsMinuscules = comps.map(function(c) {
+      return c.toLowerCase();
+    });
     prefixes.forEach(function(prefix) {
       var nom = prefix + 'comp_nom';
       var nomAttr = attributes.find(function(a) {
@@ -9730,6 +9732,16 @@ var COFantasy = COFantasy || function() {
                 addAttackSound("soundAttackSuccesCritique", weaponStats.divers, options);
                 touche = true;
                 critique = true;
+                if (attributeAsBool(target, 'enerve')) {
+                  var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
+                  if (faireMouche > 0) {
+                    target.additionalDmg.push({
+                      type: mainDmgType,
+                      value: faireMouche + options.d6
+                    });
+                    target.messages.push(attaquant.tokName + " profite de l'ouverture et sont attaque fait mouche !");
+                  }
+                }
               } else if (options.champion || d20roll == 20 || paralyse) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
                 attackResult += addAttackImg("imgAttackSuccesChampion", weaponStats.divers, options);
@@ -9914,7 +9926,7 @@ var COFantasy = COFantasy || function() {
                   options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
                 }
               }
-              if (attributeAsInt(target, 'chairACanon', 0) > 0 && 
+              if (attributeAsInt(target, 'chairACanon', 0) > 0 &&
                 target.chairACanon && target.chairACanon.length > 0) {
                 options.preDmg = options.preDmg || {};
                 options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
@@ -10321,7 +10333,7 @@ var COFantasy = COFantasy || function() {
     evt.action.ciblesAttaquees = ciblesAttaquees;
     evt.action.choices = options.choices;
     if (evt.action.choices === undefined) {
-      if(options.preDmg) {
+      if (options.preDmg) {
         addLineToFramedDisplay(display, "<b>Attaque :</b> Touche !");
         finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options, echecCritique);
         return;
@@ -10332,14 +10344,14 @@ var COFantasy = COFantasy || function() {
     }
     var continuer = evt.action.choices.Continuer;
     var nbCibles = cibles.length;
-    cibles.forEach(function (cible) {
-      var finaliseTarget = function(){
+    cibles.forEach(function(cible) {
+      var finaliseTarget = function() {
         nbCibles--;
-        if(nbCibles === 0) {
+        if (nbCibles === 0) {
           if (continuer) {
             delete options.preDmg;
           }
-          if(options.preDmg) {
+          if (options.preDmg) {
             addLineToFramedDisplay(display, "<b>Attaque :</b> Touche !");
             finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options, echecCritique);
             return;
@@ -10363,20 +10375,20 @@ var COFantasy = COFantasy || function() {
           var nbEvitementsGenerique = preDmgToken.evitementGenerique.length;
           var finaliseTargetPreDmg = function(msg, rerolls) {
             if (rerolls !== '' && !continuer && !termineCible) { // rerolls uniquement si pas terminé
-              explications.push(msg+rerolls);
+              explications.push(msg + rerolls);
             } else {
               cible.messages.push(msg);
             }
             nbEvitementsGenerique--;
-            if(nbEvitementsGenerique === 0) {
+            if (nbEvitementsGenerique === 0) {
               finaliseTarget();
             }
           };
-          preDmgToken.evitementGenerique.forEach(function (evitementGenerique){
+          preDmgToken.evitementGenerique.forEach(function(evitementGenerique) {
             appliquerEvitementGenerique(cible, evitementGenerique.jetAdversaire, evitementGenerique.attribut,
-                evitementGenerique.opt, evitementGenerique.attributeName, evitementGenerique.actionName,
-                evitementGenerique.tente, evitementGenerique.carac, evitementGenerique.typeAttaque,
-                evitementGenerique.msgReussite, pageId, options, evt, finaliseTargetPreDmg);
+              evitementGenerique.opt, evitementGenerique.attributeName, evitementGenerique.actionName,
+              evitementGenerique.tente, evitementGenerique.carac, evitementGenerique.typeAttaque,
+              evitementGenerique.msgReussite, pageId, options, evt, finaliseTargetPreDmg);
           });
         } else {
           finaliseTarget();
@@ -15149,7 +15161,7 @@ var COFantasy = COFantasy || function() {
         return true;
       case 'enduireDePoison':
         doEnduireDePoison(action.perso, action.armeEnduite, action.savePoison, action.forcePoison, action.attribut,
-            action.testINT, action.infosAdditionelles, options);
+          action.testINT, action.infosAdditionelles, options);
         return true;
       case 'enveloppement':
       case 'étreinte':
@@ -21770,7 +21782,7 @@ var COFantasy = COFantasy || function() {
     }
     var seuil = parseInt(cmd[1]);
     getSelected(msg, function(selected, playerId) {
-      iterSelected(selected, function (barbare) {
+      iterSelected(selected, function(barbare) {
         if (isNaN(seuil)) {
           sendChar(barbare.charId, "le seuil de difficulté du tour de force doit être un nombre");
           return;
@@ -21901,10 +21913,10 @@ var COFantasy = COFantasy || function() {
   function appliquerEncaisserUnCoup(cible, options, evt) {
     removeTokenAttr(cible, 'encaisserUnCoup', evt);
     cible.extraRD =
-        ficheAttributeAsInt(cible, 'DEFARMURE', 0) *
-        ficheAttributeAsInt(cible, 'DEFARMUREON', 1) +
-        ficheAttributeAsInt(cible, 'DEFBOUCLIER', 0) *
-        ficheAttributeAsInt(cible, 'DEFBOUCLIERON', 1);
+      ficheAttributeAsInt(cible, 'DEFARMURE', 0) *
+      ficheAttributeAsInt(cible, 'DEFARMUREON', 1) +
+      ficheAttributeAsInt(cible, 'DEFBOUCLIER', 0) *
+      ficheAttributeAsInt(cible, 'DEFBOUCLIERON', 1);
     removePreDmg(options, cible, 'encaisserUnCoup');
   }
 
@@ -22024,7 +22036,7 @@ var COFantasy = COFantasy || function() {
     }
     var attackRollExpr = "[[" + computeDice(cible) + "]]";
     sendChat('', attackRollExpr, function(res) {
-      var testId = attributeName+"_"+cible.token.id;
+      var testId = attributeName + "_" + cible.token.id;
       options.rolls = options.rolls || {};
       var attackRoll = options.rolls[testId] || res[0].inlinerolls[0];
       attackRoll.token = cible.token;
@@ -22038,7 +22050,7 @@ var COFantasy = COFantasy || function() {
         case 'distance':
           attBonus += ficheAttributeAsInt(cible, 'ATKTIR_DIV', 0);
           if (stateCOF.setting_arran ||
-              (stateCOF.setting_mixte && ficheAttribute(cible, 'option_setting', 'generique') == 'arran')) {
+            (stateCOF.setting_mixte && ficheAttribute(cible, 'option_setting', 'generique') == 'arran')) {
             attBonus += ficheAttributeAsInt(cible, 'mod_atktir', 0);
           }
           attBonus += modCarac(cible, carac);
@@ -22046,7 +22058,7 @@ var COFantasy = COFantasy || function() {
         case 'magique':
           attBonus += ficheAttributeAsInt(cible, 'ATKMAG_DIV', 0);
           if (stateCOF.setting_arran ||
-              (stateCOF.setting_mixte && ficheAttribute(cible, 'option_setting', 'generique') == 'arran')) {
+            (stateCOF.setting_mixte && ficheAttribute(cible, 'option_setting', 'generique') == 'arran')) {
             attBonus += ficheAttributeAsInt(cible, 'mod_atkmag', 0);
             attBonus += modCarac(cible, 'intelligence');
           } else {
@@ -22066,7 +22078,7 @@ var COFantasy = COFantasy || function() {
       totalEvitement += attBonus;
       if (attBonus > 0) msg += "+" + attBonus;
       else if (attBonus < 0) msg += attBonus;
-      if(options.chanceRollId && options.chanceRollId[testId]) {
+      if (options.chanceRollId && options.chanceRollId[testId]) {
         totalEvitement += options.chanceRollId[testId];
         msg += "+" + options.chanceRollId[testId];
       }
@@ -22081,25 +22093,25 @@ var COFantasy = COFantasy || function() {
       if (attEvBonus > 0) msg += "+" + attEvBonus;
       else if (attEvBonus < 0) msg += attEvBonus;
       msg = cible.tokName + " tente " + tente + ". " +
-          onGenre(cible, "Il", "elle") + " fait " + msg;
+        onGenre(cible, "Il", "elle") + " fait " + msg;
       var rerolls = '';
       if (totalEvitement < jetAdversaire) {
         msg += " => Raté";
         var pc = pointsDeChance(cible);
         if (attackRoll.results.total != 1 && pc > 0) {
           rerolls += '<br/>' +
-              boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
-              " (reste " + pc + " PC)";
+            boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
+            " (reste " + pc + " PC)";
         }
         if (stateCOF.combat && attributeAsBool(cible, 'runeForgesort_énergie') &&
-            attributeAsInt(cible, 'limiteParCombat_runeForgesort_énergie', 1) > 0 &&
-            (carac == 'force' || carac == 'constitution' || carac == 'dexterite')) {
+          attributeAsInt(cible, 'limiteParCombat_runeForgesort_énergie', 1) > 0 &&
+          (carac == 'force' || carac == 'constitution' || carac == 'dexterite')) {
           rerolls += '<br/>' + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + testId, "Rune d'énergie");
         }
         if (stateCOF.combat && attributeAsBool(cible, 'petitVeinard')) {
           rerolls += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
         }
-        if(rerolls === '') { //Ne retirer l'option que si aucun reroll possible
+        if (rerolls === '') { //Ne retirer l'option que si aucun reroll possible
           removePreDmg(options, cible, attributeName);
         } else { //Sinon cacher le bouton mais laisser l'option reroll
           removePreDmg(options, cible, attributeName, 'reroll');
@@ -22615,7 +22627,7 @@ var COFantasy = COFantasy || function() {
       }
     }); //fin du traitement des options
     getSelected(msg, function(selected, playerId) {
-      iterSelected(selected, function (perso) {
+      iterSelected(selected, function(perso) {
         var armeEnduite;
         var attr = tokenAttribute(perso, attribut);
         var infosAdditionelles = savePoison;
@@ -22704,7 +22716,7 @@ var COFantasy = COFantasy || function() {
           addLineToFramedDisplay(display, perso.tokName + " s'empoisonne.");
           sendChat('', "[[" + forcePoison + "]]", function(res) {
             var dmgRoll;
-            if(options.rolls && options.rolls.enduireSelfDmg) {
+            if (options.rolls && options.rolls.enduireSelfDmg) {
               dmgRoll = options.rolls.enduireSelfDmg;
             } else {
               dmgRoll = res[0].inlinerolls[0];
@@ -22725,7 +22737,7 @@ var COFantasy = COFantasy || function() {
                 explications.forEach(function(e) {
                   addLineToFramedDisplay(display, e);
                 });
-                addLineToFramedDisplay(display,perso.tokName + " subit " + dmgDisplay + " DM");
+                addLineToFramedDisplay(display, perso.tokName + " subit " + dmgDisplay + " DM");
                 sendChat("", endFramedDisplay(display));
               }); //fin de dmg dus à l'échec critique
           }); //fin du jet de dmg
