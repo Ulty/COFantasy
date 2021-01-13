@@ -3577,6 +3577,10 @@ var COFantasy = COFantasy || function() {
         if (stateCOF.combat && attributeAsBool(personnage, 'petitVeinard')) {
           testRes.rerolls += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
         }
+        if (stateCOF.combat && !testRes.echecCritique && attributeAsBool(personnage, 'prouesse')
+            && (carac == 'FOR' || carac == 'DEX')) {
+          testRes.rerolls += '<br/>' + boutonSimple("!cof-prouesse " + evt.id + " " + testId, "Prouesse");
+        }
         if (jetCache) sendChat('COF', "/w GM Jet caché : " + buildinline(roll) + bonusText);
         callback(testRes, explications);
       });
@@ -3717,6 +3721,10 @@ var COFantasy = COFantasy || function() {
           }
           if (stateCOF.combat && attributeAsBool(perso, 'petitVeinard')) {
             boutonsReroll += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
+          }
+          if (stateCOF.combat && !rt.echecCritique && attributeAsBool(perso, 'prouesse')
+              && (caracteristique == 'FOR' || caracteristique == 'DEX')) {
+            boutonsReroll += '<br/>' + boutonSimple("!cof-prouesse " + evt.id + " " + testId, "Prouesse");
           }
           addLineToFramedDisplay(display, boutonsReroll);
           if (optionsDisplay.retarde) {
@@ -8018,6 +8026,10 @@ var COFantasy = COFantasy || function() {
             if (pcPerso1 > 0)
               texte1 += "<br/>" + boutonSimple("!cof-bouton-chance " +
                 evt.id + " " + rollId + "_roll1", "Chance") + " (reste " + pcPerso1 + " PC)";
+            if (stateCOF.combat && attributeAsBool(perso1, 'prouesse')
+                && (carac1 == 'FOR' || carac1 == 'DEX')) {
+              texte1 += '<br/>' + boutonSimple("!cof-prouesse " + evt.id + " " + rollId + "_roll1", "Prouesse");
+            }
           }
         }
         explications.push(texte1);
@@ -8036,6 +8048,10 @@ var COFantasy = COFantasy || function() {
             if (pcPerso2 > 0)
               texte2 += "<br/>" + boutonSimple("!cof-bouton-chance " +
                 evt.id + " " + rollId + "_roll2", "Chance") + " (reste " + pcPerso2 + " PC)";
+            if (stateCOF.combat && attributeAsBool(pcPerso2, 'prouesse')
+                && (carac2 == 'FOR' || carac2 == 'DEX')) {
+              texte2 += '<br/>' + boutonSimple("!cof-prouesse " + evt.id + " " + rollId + "_roll1", "Prouesse");
+            }
           }
         }
         explications.push(texte2);
@@ -15140,6 +15156,102 @@ var COFantasy = COFantasy || function() {
     }
     error("Type d'évènement pas encore géré pour la chance", evt);
     addEvent(evtChance);
+  }
+
+  //!cof-prouesse [evt.id] [rollId]
+  function boutonProuesse(msg) {
+    var args = msg.content.split(' ');
+    if (args.length < 2) {
+      error("La fonction !cof-prouesse n'a pas assez d'arguments", args);
+      return;
+    }
+    var evt = findEvent(args[1]);
+    if (evt === undefined) {
+      error("L'action est trop ancienne ou éte annulée", args);
+      return;
+    }
+    var perso = evt.personnage;
+    var rollId;
+    if (args.length > 2) {
+      if (!evt.action) {
+        error("Le dernier évènement n'est pas une action", args);
+        return;
+      }
+      var roll = evt.action.rolls[args[2]];
+      if (roll === undefined) {
+        error("Erreur interne du bouton de chance : roll non identifié", args);
+        return;
+      }
+      if (roll.token === undefined) {
+        error("Erreur interne du bouton de prouesse : roll sans token", args);
+        return;
+      }
+      perso = persoOfId(roll.token.id, roll.token.name, roll.token.pageId);
+      rollId = args[2];
+    }
+    if (perso === undefined) {
+      error("Erreur interne du bouton de chance : l'évenement n'a pas de personnage", evt);
+      return;
+    }
+    if (!peutController(msg, perso)) {
+      sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+      return;
+    }
+    var attrs = tokenAttribute(perso, "prouesse");
+    if(attrs.length < 1) {
+      error("Resource pour prouesse mal formée", attrs);
+      return;
+    }
+    var curAttribut = attrAsInt(attrs, 0);
+    if (curAttribut == 0) {
+      error(perso.token.name + " ne peut plus utiliser sa prouesse");
+      return;
+    }
+    var action = evt.action;
+    if (action) { //alors on peut faire le undo
+      var options = evt.action.options || {};
+      options.rolls = action.rolls || {};
+      undoEvent(evt);
+      var d4 = rollDePlus(4);
+      var r = {
+        total: d4.val,
+        type: 'normal',
+        display: d4.roll
+      };
+      var evtProuesse = {
+        type: 'prouesse',
+        rollId: rollId,
+        attributes: [{
+          attribute: attrs[0],
+          current: curAttribut
+        }],
+        action: {
+          rolls: {
+            "prouesseDmg": d4
+          }
+        }
+      };
+      addEvent(evtProuesse);
+      var explications = [];
+      perso.ignoreTouteRD = true;
+      dealDamage(perso, r, [], evtProuesse, false, {}, explications,
+          function(dmgDisplay, dmg) {
+            sendChar(perso.charId, "réalise une prouesse et perd " + dmgDisplay + " PV");
+            explications.forEach(function(expl) {
+              sendChar(perso.charId, expl);
+            });
+          });
+      attrs[0].set('current', curAttribut - 1);
+
+      if (rollId) {
+        options.chanceRollId = options.chanceRollId || {};
+        options.chanceRollId[rollId] = (options.chanceRollId[rollId] + 5) || 5;
+      } else {
+        options.chance = (options.chance + 10) || 10;
+      }
+      if (redoEvent(evt, action, perso)) return;
+    }
+    error("Type d'évènement pas encore géré pour la chance", evt);
   }
 
   //Renvoie true si redo possible, false sinon
@@ -28156,6 +28268,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-tour-de-force':
         parseTourDeForce(msg);
         return;
+      case '!cof-prouesse':
+        boutonProuesse(msg);
+        return;
       case '!cof-encaisser-un-coup':
         doEncaisserUnCoup(msg);
         return;
@@ -29699,6 +29814,7 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'paradeMagistrale', evt);
     resetAttr(attrs, 'chairACanon', evt);
     resetAttr(attrs, 'riposteGuerrier', evt);
+    resetAttr(attrs, 'prouesse', evt);
     // Pour défaut dans la cuirasse, on diminue si la valeur est 2, et on supprime si c'est 1
     var defautsDansLaCuirasse = allAttributesNamed(attrs, 'defautDansLaCuirasse');
     defautsDansLaCuirasse.forEach(function(attr) {
