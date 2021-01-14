@@ -12066,7 +12066,7 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
-  function applyRDSauf(rds, dmgType, total, display, options, target) {
+  function applyRDSauf(rds, dmgType, total, display, options, target, showTotal) {
     options = options || {};
     var typeTrouve = function(t) {
       if (t == dmgType) return true;
@@ -12098,19 +12098,22 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (total < rd) {
-          display += "-" + total;
+          display += " - " + total;
           rds[saufType] -= total;
           total = 0;
+          showTotal = true;
         } else {
-          display += "-" + rd;
+          display += " - " + rd;
           total -= rd;
           rds[saufType] = 0;
+          showTotal = true;
         }
       }
     }
     return {
       total: total,
-      display: display
+      display: display,
+      showTotal: showTotal
     };
   }
 
@@ -12205,9 +12208,10 @@ var COFantasy = COFantasy || function() {
         sortilege: options.sortilege,
         hache: options.hache,
       };
-      var resSauf = applyRDSauf(rdTarget.sauf, mainDmgType, dmgTotal, dmgDisplay, additionalType, target);
+      var resSauf = applyRDSauf(rdTarget.sauf, mainDmgType, dmgTotal, dmgDisplay, additionalType, target, showTotal);
       dmgTotal = resSauf.total;
       dmgDisplay = resSauf.display;
+      showTotal = resSauf.showTotal;
       var invulnerable = charAttributeAsBool(target, 'invulnerable');
       var mitigate = function(dmgType, divide, zero) {
         if (!options.sortilege && attributeAsBool(target, 'flou')) {
