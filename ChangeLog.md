@@ -13,6 +13,7 @@
 * Ajout de la capacité Liberté d'Action du barde
 
 ### Autres améliorations
+* Ajout de la possibilité de faire des attaques de d12 qui font des critiques
 * Prise en compte des compétences sur la fiche
 * Ajout d'une option de sélection alliesEnVue
 * Prise en compte des immunités pour les effets temporaires.

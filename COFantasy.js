@@ -5041,6 +5041,9 @@ var COFantasy = COFantasy || function() {
           options.avantage = options.avantage || 1;
           options.avantage--;
           return;
+        case 'avecd12crit':
+          options.avecd12 = {crit: true};
+          return;
         case 'tranchant':
         case 'contondant':
         case 'percant':
@@ -9428,7 +9431,10 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    if (options.avecd12) dice = 12;
+    if (options.avecd12) {
+      dice = 12;
+      if (options.avecd12.crit) crit = Math.floor(crit/2) + 3;
+    }
     var nbDe = 1;
     var plusFort = true;
     if (options.avantage !== undefined) {
@@ -10982,7 +10988,7 @@ var COFantasy = COFantasy || function() {
               if (rRoll) {
                 target.additionalCritDmg.push(dmSpec);
                 dmSpec.total = dmSpec.total || rRoll.results.total;
-                var addDmType = dmSpec.type;
+                var addDmType = dmSpec.type || 'normal';
                 dmSpec.display = dmSpec.display || buildinline(rRoll, addDmType, options.magique);
               } else { //l'expression de DM additionel est mal formée
                 error("Expression de dégâts de critiques mal formée : " + options.additionalCritDmg[i].value, options.additionalCritDmg[i]);
@@ -12066,7 +12072,7 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
-  function applyRDSauf(rds, dmgType, total, display, options, target) {
+  function applyRDSauf(rds, dmgType, total, display, options, target, showTotal) {
     options = options || {};
     var typeTrouve = function(t) {
       if (t == dmgType) return true;
@@ -12098,19 +12104,22 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (total < rd) {
-          display += "-" + total;
+          display += " - " + total;
           rds[saufType] -= total;
           total = 0;
+          showTotal = true;
         } else {
-          display += "-" + rd;
+          display += " - " + rd;
           total -= rd;
           rds[saufType] = 0;
+          showTotal = true;
         }
       }
     }
     return {
       total: total,
-      display: display
+      display: display,
+      showTotal: showTotal
     };
   }
 
@@ -12205,9 +12214,10 @@ var COFantasy = COFantasy || function() {
         sortilege: options.sortilege,
         hache: options.hache,
       };
-      var resSauf = applyRDSauf(rdTarget.sauf, mainDmgType, dmgTotal, dmgDisplay, additionalType, target);
+      var resSauf = applyRDSauf(rdTarget.sauf, mainDmgType, dmgTotal, dmgDisplay, additionalType, target, showTotal);
       dmgTotal = resSauf.total;
       dmgDisplay = resSauf.display;
+      showTotal = resSauf.showTotal;
       var invulnerable = charAttributeAsBool(target, 'invulnerable');
       var mitigate = function(dmgType, divide, zero) {
         if (!options.sortilege && attributeAsBool(target, 'flou')) {
@@ -14555,6 +14565,7 @@ var COFantasy = COFantasy || function() {
     attrs = proposerRenouveauRunes(evt, attrs);
     //Les plantes médicinales
     attrs = removeAllAttributes('dose_Plante médicinale', evt, attrs);
+    attrs = removeConsommables('Plante médicinale', evt, attrs);
     //On pourrait diviser par 2 le nombre de baies
     //var attrsBaie = allAttributesNamed(attrs, 'dose_Baie_magique');
     //Saves journaliers
@@ -20700,6 +20711,40 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function removeConsommables(nom, evt, attrs) {
+    var prefixes = new Set();
+    var empty = true;
+    attrs = attrs.filter(function(a) {
+      var attrName = a.get('name');
+      var m = consommableNomRegExp.exec(attrName);
+      if (!m) return true;
+      if (a.get('current').trim() == nom) {
+        prefixes.add(m[1]);
+        a.remove();
+        empty = false;
+        return false;
+      }
+      return true;
+    });
+    if (empty) return attrs;
+    var regExp = '^(';
+    var notFirst = false;
+    prefixes.forEach(function(pref) {
+      if (notFirst) regExp += '|';
+      regExp += pref;
+    });
+    regExp += ').*?$';
+    regExp = new RegExp(regExp);
+    attrs = attrs.filter(function(a) {
+      if (regExp.test(a.get('name'))) {
+        a.remove();
+        return false;
+      }
+      return true;
+    });
+    return attrs;
+  }
+
   function ajouterConsommable(perso, nom, nb, action, evt) {
     if (perso.token.get('bar1_link') === '') { //Perso non lié, on utilise un attribut
       var attrName = 'dose_' + nom;
@@ -20732,7 +20777,7 @@ var COFantasy = COFantasy || function() {
         var attrName = attr.get('name');
         var m = consommableNomRegExp.exec(attrName);
         if (!m) return false;
-        if (attr.get('current').trim() != 'Baie magique') return false;
+        if (attr.get('current').trim() != nom) return false;
         var consoPrefix = m[1];
         var attrEffet = charAttribute(perso.charId, consoPrefix + 'equip_effet');
         if (attrEffet.length === 0) {
@@ -20779,7 +20824,7 @@ var COFantasy = COFantasy || function() {
         var pref = 'repeating_equipement_' + generateRowID() + '_';
         var attre = createObj("attribute", {
           name: pref + 'equip_nom',
-          current: 'Baie magique',
+          current: nom,
           characterid: perso.charId
         });
         evt.attributes = evt.attributes || [];
