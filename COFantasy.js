@@ -14555,6 +14555,7 @@ var COFantasy = COFantasy || function() {
     attrs = proposerRenouveauRunes(evt, attrs);
     //Les plantes médicinales
     attrs = removeAllAttributes('dose_Plante médicinale', evt, attrs);
+    attrs = removeConsommables('Plante médicinale', evt, attrs);
     //On pourrait diviser par 2 le nombre de baies
     //var attrsBaie = allAttributesNamed(attrs, 'dose_Baie_magique');
     //Saves journaliers
@@ -20698,6 +20699,40 @@ var COFantasy = COFantasy || function() {
       sendChat("", endFramedDisplay(display));
       addEvent(evt);
     });
+  }
+
+  function removeConsommables(nom, evt, attrs) {
+    var prefixes = new Set();
+    var empty = true;
+    attrs = attrs.filter(function(a) {
+      var attrName = a.get('name');
+      var m = consommableNomRegExp.exec(attrName);
+      if (!m) return true;
+      if (a.get('current').trim() == nom) {
+        prefixes.add(m[1]);
+        a.remove();
+        empty = false;
+        return false;
+      }
+      return true;
+    });
+    if (empty) return attrs;
+    var regExp = '^(';
+    var notFirst = false;
+    prefixes.forEach(function(pref) {
+      if (notFirst) regExp += '|';
+      regExp += pref;
+    });
+    regExp += ').*?$';
+    regExp = new RegExp(regExp);
+    attrs = attrs.filter(function(a) {
+      if (regExp.test(a.get('name'))) {
+        a.remove();
+        return false;
+      }
+      return true;
+    });
+    return attrs;
   }
 
   function ajouterConsommable(perso, nom, nb, action, evt) {
