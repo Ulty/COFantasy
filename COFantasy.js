@@ -20732,7 +20732,7 @@ var COFantasy = COFantasy || function() {
         var attrName = attr.get('name');
         var m = consommableNomRegExp.exec(attrName);
         if (!m) return false;
-        if (attr.get('current').trim() != 'Baie magique') return false;
+        if (attr.get('current').trim() != nom) return false;
         var consoPrefix = m[1];
         var attrEffet = charAttribute(perso.charId, consoPrefix + 'equip_effet');
         if (attrEffet.length === 0) {
@@ -20779,7 +20779,7 @@ var COFantasy = COFantasy || function() {
         var pref = 'repeating_equipement_' + generateRowID() + '_';
         var attre = createObj("attribute", {
           name: pref + 'equip_nom',
-          current: 'Baie magique',
+          current: nom,
           characterid: perso.charId
         });
         evt.attributes = evt.attributes || [];
