@@ -5041,6 +5041,9 @@ var COFantasy = COFantasy || function() {
           options.avantage = options.avantage || 1;
           options.avantage--;
           return;
+        case 'avecd12crit':
+          options.avecd12 = {crit: true};
+          return;
         case 'tranchant':
         case 'contondant':
         case 'percant':
@@ -9428,7 +9431,10 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    if (options.avecd12) dice = 12;
+    if (options.avecd12) {
+      dice = 12;
+      if (options.avecd12.crit) crit = Math.floor(crit/2) + 3;
+    }
     var nbDe = 1;
     var plusFort = true;
     if (options.avantage !== undefined) {
@@ -10982,7 +10988,7 @@ var COFantasy = COFantasy || function() {
               if (rRoll) {
                 target.additionalCritDmg.push(dmSpec);
                 dmSpec.total = dmSpec.total || rRoll.results.total;
-                var addDmType = dmSpec.type;
+                var addDmType = dmSpec.type || 'normal';
                 dmSpec.display = dmSpec.display || buildinline(rRoll, addDmType, options.magique);
               } else { //l'expression de DM additionel est mal formée
                 error("Expression de dégâts de critiques mal formée : " + options.additionalCritDmg[i].value, options.additionalCritDmg[i]);

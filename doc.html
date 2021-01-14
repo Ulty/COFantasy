@@ -320,6 +320,7 @@
                   <li><code>--avantage</code> : lance un dé de plus en attaque et garde le meilleur. plusieurs arguments avantage se cumulent et sont annulés par les désavantages (syntaxe alertnative: (<code>--m2d20</code>)</li>
                   <li><code>--desavantage</code> : lance un dé de plus en attaque et garde le moins bon. plusieurs arguments désavantage se cumulent et sont annulés par les avantages.</li>
                   <li><code>--avecd12</code> : lance un d12 au lieu du d20 pour le jet d'attaque. L'attaque est impossible si l'attaquant est déjà affaibli.</li>
+                  <li><code>--avecd12crit</code> : comme <code>--avecd12</code>, mais le jet peut faire un critique. La plage de critique est divisée par 2, arrondie à l'inférieur. Ainsi si le d20 sevait critiquer sur un 20 seulement, le d12 ne fait pas de critique. Il fait un critique sur un 12 si le d20 devait faire un critique sur un 19 ou un 18, et ainsi de suite.</li>
                   <li><code>--incrDmgCoef <i>n</i></code> : augmente le coefficient des dégâts de base de 1. Les dégâts de base comprennent les dés de dommage de l'arme (ou du sort), plus tous les bonus constants. Le coefficient par défaut est de 1, et une réussite critique augmente ce coefficient de 1.</li>
                   <li><code>--incrCritCoef <i>n</i></code> : augmente le coefficient des dégâts critiques de 1.</li>
                   <li><code>--diviseDmg <i>n</i></code> : divise les dégâts de base par <i>n</i>.</li>
@@ -854,7 +855,7 @@
                   <li><strong>Tir précis</strong> : créer un attribut <code>tirPrecis</code>, valeur 1 ou 2 (le bonus apporté par la capacité)</li>
                   <li><strong>Défaut dans la cuirasse</strong> : utiliser <code>!cof-defaut-dans-la-cuirasse @{selected|token_id} @{target|token_id}</code></li>
                   <li><strong>Tir parabolique</strong> : créer un attribut <code>tirParabolique</code>, valeur <code>true</code>. Surtout ne pas changer la portée des armes, pour que le script gère correctement les distances entre portéex2 et portéex3.</li>
-                  <li><strong>Tir mortel</strong> : Ajouter <code>?{Tir mortel ?|Oui, --avecd12 --plus 2d6|Non,}</code> aux attaques à distance du personnage</li>
+                  <li><strong>Tir mortel</strong> : Ajouter <code>?{Tir mortel ?|Oui, --avecd12crit --plus 2d6|Non,}</code> aux attaques à distance du personnage</li>
                 </ol>
               </div>
               <h3 class="text-info" id="Barbare">Barbare</h3>
@@ -963,7 +964,7 @@
                     </ul>
                   </li>
                   <li><strong>Coup de bouclier</strong> : faire une attaque de bouclier, avec l'option <code>--avecd12</code></li>
-                  <li><strong>Frappe lourde</strong> : faire l'attaque avec les options <code>--avecd12 --plus 2d6 --ignoreMoitieRD</code></li>
+                  <li><strong>Frappe lourde</strong> : faire l'attaque avec les options <code>--avecd12crit --plus 2d6 --ignoreMoitieRD</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie du héro</h4>
                 <ol>
@@ -1160,7 +1161,7 @@
                   <li><strong>Désarmer</strong> : <code>!cof-desarmer @{selected|token_id} @{target|token_id}</code>. On peut utiliser un troisième argument optionnel, qui est le label d'une arme par défaut, au cas où le guerrier n'aurait pas d'arme en main. Le script determine si la cible tient une arme à 2 mains en cherchant dans le nom de l'arme, puis dans le champ <code>SPÉCIAL</code> de l'arme. Pour savoir comment le script détermine quelle est l'arme en main, se référer à la section <a href='#degainer'>dégainer</a>.</li>
                   <li><strong>Double attaque</strong> : faire deux attaques, avec l'option supplémentaire <code>--bonusAttaque -2</code>.</li>
                   <li><strong>Attaque circulaire</strong> : faire les attaques normalement, ce n'est pas considéré comme une aoe.</li>
-                  <li><strong>Attaque puissante</strong> : utiliser les options <code>--avecd12 --plus 2d6</code>.</li>
+                  <li><strong>Attaque puissante</strong> : utiliser les options <code>--avecd12crit --plus 2d6</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du maître d'armes</h4>
                 <ol>
@@ -1243,7 +1244,7 @@
                   <li><strong>Rayon affaiblissant</strong> : faire une attaque de type <code>Sortilege</code>, avec les modificateur <code>pasDeDmg</code> et les options <code>--effet rayonAffaiblissant [[1d6+@{selected|INT}]] --mana 0 --fx splatter-magic</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. En version parchemin, <code>#Attaque  --toucher [[@{selected|ATKMAG}]] --portee 10 --pasDeDmg --effet rayonAffaiblissant [[1d6+@{selected|INT}]] --sortilege --fx splatter-magic</code>.</li>
                   <li><strong>Flèche enflammée</strong> : Utiliser une attaque sur la fiche, et la lancer avec les options <code>--fx beam-fire --feu --mana 1 --sortilege --enflamme</code>. Si vous utilisez les options de magie puissante, vous pouvez rajouter <code>?{Y consacrer le tour entier ?|oui,--puissant|non,&amp;#32;}</code>. Si vous souhaitez à la place utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
                   <li><strong>Boule de feu</strong> : Utiliser une attaque sur la fiche (attaque magique, portée 30 m, 4d6+INT de DM), et la lancer avec les options <code>--targetFx explode-fire --feu --mana 2 --sortilege --disque 6 --demiAuto --psave DEX [[10+@{selected|INT}]]</code>. Si vous utilisez l'option de magie puissante, vous pouvez aussi rajouter <code>?{Y consacrer tout le tour?|Oui,--puissant|Non,&amp;#32;}</code>. Si vous souhaitez utiliser à la place l'option de tempête de mana, vous pouvez rajouter <code>--rang 4 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. Version pour un parchemin&nbsp;: <code>#Attaque Boule de feu --toucher [[@{selected|ATKMAG}]] --dm 5d6 + [[@{selected|INT}]] --portee 30 --targetFx explode-fire --feu --sortilege --disque 6 --demiAuto --psave DEX [[10+@{selected|INT}]]</code></li>
-                  <li><strong>Rituel de puissance</strong> : lancer les attaques utilisant le rituel avec les options <code>--avecd12 --plus 2d6</code>.</li>
+                  <li><strong>Rituel de puissance</strong> : lancer les attaques utilisant le rituel avec les options <code>--avecd12crit --plus 2d6</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la magie élémentaire</h4>
                 <ol>
@@ -1298,7 +1299,7 @@
                   <li><strong>Parade de projectiles</strong> : annuler l'attaque (<code>!cof-undo</code>) si le moine utilise ça.</li>
                   <li><strong>Peau de fer</strong> : ajuster la DEF sur la fiche.</li>
                   <li><strong>Déluge de coups</strong> : le MJ gère le nombre d'attaques. Pour les attaques au d12, utiliser l'option <code>--avecd12</code>.</li>
-                  <li><strong>Puissance du ki</strong> : utiliser les options <code>--avecd12 --plus 2d6</code>.</li>
+                  <li><strong>Puissance du ki</strong> : utiliser les options <code>--avecd12crit --plus 2d6</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du vent</h4>
                 <ol>
@@ -1452,7 +1453,7 @@
                   <li><strong>Tir aveugle</strong> : utiliser une attaque avec l'option <code>--tirAveugle</code>.</li>
                   <li><strong>Tir rapide</strong> : faire simplement deux attaques dans le tour</li>
                   <li><strong>Flèche de mort</strong> : faire l'attaque avec les options <code>--m2d20 --incrDmgCoef</code></li>
-                  <li><strong>Dans le mille</strong> : faire l'attaque avec les options <code>--avecd12 --plus 2d6</code></li>
+                  <li><strong>Dans le mille</strong> : faire l'attaque avec les options <code>--avecd12crit --plus 2d6</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie du compagnon animal</h4>
                 <ol>
