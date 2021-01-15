@@ -5042,7 +5042,9 @@ var COFantasy = COFantasy || function() {
           options.avantage--;
           return;
         case 'avecd12crit':
-          options.avecd12 = {crit: true};
+          options.avecd12 = {
+            crit: true
+          };
           return;
         case 'tranchant':
         case 'contondant':
@@ -9120,7 +9122,13 @@ var COFantasy = COFantasy || function() {
           return atkcac;
         }
         attDiv = ficheAttributeAsInt(attaquant, 'ATKCAC_DIV', 0);
-        attCar = getAttrByName(attaquant.charId, 'ATKCAC_CARAC');
+        if (stateCOF.setting_arran ||
+          (stateCOF.setting_mixte && ficheAttribute(attaquant, 'option_setting', 'generique') == 'arran')) {
+          attDiv += ficheAttributeAsInt(attaquant, 'mod_atkcac', 0);
+          attCar = '@{FOR}';
+        } else {
+          attCar = getAttrByName(attaquant.charId, 'ATKCAC_CARAC');
+        }
         break;
       case '@{ATKTIR}':
         if (persoEstPNJ(attaquant)) {
@@ -9143,7 +9151,13 @@ var COFantasy = COFantasy || function() {
           return atktir;
         }
         attDiv = ficheAttributeAsInt(attaquant, 'ATKTIR_DIV', 0);
-        attCar = getAttrByName(attaquant.charId, 'ATKTIR_CARAC');
+        if (stateCOF.setting_arran ||
+          (stateCOF.setting_mixte && ficheAttribute(attaquant, 'option_setting', 'generique') == 'arran')) {
+          attDiv += ficheAttributeAsInt(attaquant, 'mod_atktir', 0);
+          attCar = '@{DEX}';
+        } else {
+          attCar = getAttrByName(attaquant.charId, 'ATKTIR_CARAC');
+        }
         break;
       case '@{ATKMAG}':
         if (persoEstPNJ(attaquant)) {
@@ -9164,7 +9178,13 @@ var COFantasy = COFantasy || function() {
           return atkmag;
         }
         attDiv = ficheAttributeAsInt(attaquant, 'ATKMAG_DIV', 0);
-        attCar = getAttrByName(attaquant.charId, 'ATKMAG_CARAC');
+        if (stateCOF.setting_arran ||
+          (stateCOF.setting_mixte && ficheAttribute(attaquant, 'option_setting', 'generique') == 'arran')) {
+          attDiv += ficheAttributeAsInt(attaquant, 'mod_atkmag', 0);
+          attCar = '@{INT}';
+        } else {
+          attCar = getAttrByName(attaquant.charId, 'ATKMAG_CARAC');
+        }
         break;
       default:
         return x;
@@ -9433,7 +9453,7 @@ var COFantasy = COFantasy || function() {
     }
     if (options.avecd12) {
       dice = 12;
-      if (options.avecd12.crit) crit = Math.floor(crit/2) + 3;
+      if (options.avecd12.crit) crit = Math.floor(crit / 2) + 3;
     }
     var nbDe = 1;
     var plusFort = true;
@@ -12015,7 +12035,7 @@ var COFantasy = COFantasy || function() {
       var name = a.get('name');
       if (!name.startsWith('RD_')) return;
       var rds = parseInt(a.get('current'));
-      if (isNaN(rds) || rds < 1) return;
+      if (isNaN(rds) || rds === 0) return;
       name = name.substring(3);
       if (name.startsWith('sauf_')) {
         name = name.substr(5);
@@ -12049,7 +12069,7 @@ var COFantasy = COFantasy || function() {
         var type = r.substring(0, index);
         if (type == 'rdt' || type == 'sauf') return;
         rds = parseInt(r.substring(index + 1));
-        if (isNaN(rds) || rds < 1) return;
+        if (isNaN(rds) || rds === 0) return;
         res[type] = res[type] || 0;
         res[type] += rds;
         return;
@@ -12057,7 +12077,7 @@ var COFantasy = COFantasy || function() {
       index = r.indexOf('/');
       if (index > 0) { //RD sauf à des types
         rds = parseInt(r.substring(0, index));
-        if (isNaN(rds) || rds < 1) return;
+        if (isNaN(rds) || rds === 0) return;
         var sauf = r.substring(index + 1);
         res.sauf[sauf] = res.sauf[sauf] || 0;
         res.sauf[sauf] += rds;
@@ -12065,7 +12085,7 @@ var COFantasy = COFantasy || function() {
       }
       //finalement, RD totale
       rds = parseInt(r);
-      if (isNaN(rds) || rds < 1) return;
+      if (isNaN(rds) || rds === 0) return;
       res.rdt += rds;
     });
     perso.rd = res;
@@ -12169,6 +12189,9 @@ var COFantasy = COFantasy || function() {
       var rdMain = typeRD(rd, mainDmgType);
       if (rd.drain && (options.vampirise || target.vampirise)) {
         rdMain += rd.drain;
+      }
+      if (options.hache && rd.hache) {
+        rdMain += rd.hache;
       }
       if (target.ignoreMoitieRD) rdMain = parseInt(rdMain / 2);
       if (target.ignoreRD) {
@@ -15350,7 +15373,7 @@ var COFantasy = COFantasy || function() {
         doProvocation(action.voleur, action.cible, options);
         return true;
       case 'rage':
-        doRageDuBerserk(action.persos, options);
+        doRageDuBerserk(action.persos, action.typeRage, options);
         return true;
       case 'recuperation':
         doRecuperation(action.persos, action.reposLong, action.playerId, options);
@@ -17099,7 +17122,7 @@ var COFantasy = COFantasy || function() {
         var sagA = ficheAttributeAsInt(persoA, 'sagesse', 10);
         var sagB = ficheAttributeAsInt(persoB, 'sagesse', 10);
         if (sagA < sagB) return 1;
-        if (sagB > sagA) return -1;
+        if (sagA > sagB) return -1;
         return 0;
       });
       setActiveToken(to.pasAgi[0].id, evt);
@@ -24213,19 +24236,19 @@ var COFantasy = COFantasy || function() {
       iterSelected(selection, function(perso) {
         persos.push(perso);
       });
-      doRageDuBerserk(persos, options);
+      doRageDuBerserk(persos, typeRage, options);
     });
   }
 
-  function doRageDuBerserk(persos, options) {
+  function doRageDuBerserk(persos, typeRage, options) {
     var evt = {
       type: "rage",
       action: {
         persos: persos,
+        typeRage: typeRage,
         options: options
       }
     };
-    var typeRage = 'rage';
     addEvent(evt);
     persos.forEach(function(perso) {
       var attrRage = tokenAttribute(perso, 'rageDuBerserk');
