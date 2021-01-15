@@ -17122,7 +17122,7 @@ var COFantasy = COFantasy || function() {
         var sagA = ficheAttributeAsInt(persoA, 'sagesse', 10);
         var sagB = ficheAttributeAsInt(persoB, 'sagesse', 10);
         if (sagA < sagB) return 1;
-        if (sagB > sagA) return -1;
+        if (sagA > sagB) return -1;
         return 0;
       });
       setActiveToken(to.pasAgi[0].id, evt);

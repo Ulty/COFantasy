@@ -13,6 +13,7 @@
 * Ajout de la capacité Liberté d'Action du barde
 
 ### Autres améliorations
+* Correction sur l'initiative entre PJs qui doivent comparer la sagesse
 * Ajout de la possibilité de faire des attaques de d12 qui font des critiques
 * Prise en compte des compétences sur la fiche
 * Ajout d'une option de sélection alliesEnVue
