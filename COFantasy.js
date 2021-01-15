@@ -15350,7 +15350,7 @@ var COFantasy = COFantasy || function() {
         doProvocation(action.voleur, action.cible, options);
         return true;
       case 'rage':
-        doRageDuBerserk(action.persos, options);
+        doRageDuBerserk(action.persos, action.typeRage, options);
         return true;
       case 'recuperation':
         doRecuperation(action.persos, action.reposLong, action.playerId, options);
@@ -24213,19 +24213,19 @@ var COFantasy = COFantasy || function() {
       iterSelected(selection, function(perso) {
         persos.push(perso);
       });
-      doRageDuBerserk(persos, options);
+      doRageDuBerserk(persos, typeRage, options);
     });
   }
 
-  function doRageDuBerserk(persos, options) {
+  function doRageDuBerserk(persos, typeRage, options) {
     var evt = {
       type: "rage",
       action: {
         persos: persos,
+        typeRage: typeRage,
         options: options
       }
     };
-    var typeRage = 'rage';
     addEvent(evt);
     persos.forEach(function(perso) {
       var attrRage = tokenAttribute(perso, 'rageDuBerserk');
