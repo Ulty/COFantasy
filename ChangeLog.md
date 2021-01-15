@@ -27,6 +27,7 @@
 * Meilleur support de la Prouesse du guerrier
 
 ### Corrections de bugs
+* Calcul de score d'attaque corrigé pour les Terres d'Arran.
 * Mise à jour de l'initiative quand on rengaine son arme à distance avec la voie du pistolero.
 * Donne le droit au joueur qui doit faire une réaction à une attaque de ne pas réagir.
 * Les créatures qui enveloppent ou étreignent leur cible la relachent quand elle meurt.

@@ -9122,7 +9122,13 @@ var COFantasy = COFantasy || function() {
           return atkcac;
         }
         attDiv = ficheAttributeAsInt(attaquant, 'ATKCAC_DIV', 0);
-        attCar = getAttrByName(attaquant.charId, 'ATKCAC_CARAC');
+        if (stateCOF.setting_arran ||
+          (stateCOF.setting_mixte && ficheAttribute(attaquant, 'option_setting', 'generique') == 'arran')) {
+          attDiv += ficheAttributeAsInt(attaquant, 'mod_atkcac', 0);
+          attCar = '@{FOR}';
+        } else {
+          attCar = getAttrByName(attaquant.charId, 'ATKCAC_CARAC');
+        }
         break;
       case '@{ATKTIR}':
         if (persoEstPNJ(attaquant)) {
@@ -9145,7 +9151,13 @@ var COFantasy = COFantasy || function() {
           return atktir;
         }
         attDiv = ficheAttributeAsInt(attaquant, 'ATKTIR_DIV', 0);
-        attCar = getAttrByName(attaquant.charId, 'ATKTIR_CARAC');
+        if (stateCOF.setting_arran ||
+          (stateCOF.setting_mixte && ficheAttribute(attaquant, 'option_setting', 'generique') == 'arran')) {
+          attDiv += ficheAttributeAsInt(attaquant, 'mod_atktir', 0);
+          attCar = '@{DEX}';
+        } else {
+          attCar = getAttrByName(attaquant.charId, 'ATKTIR_CARAC');
+        }
         break;
       case '@{ATKMAG}':
         if (persoEstPNJ(attaquant)) {
@@ -9166,7 +9178,13 @@ var COFantasy = COFantasy || function() {
           return atkmag;
         }
         attDiv = ficheAttributeAsInt(attaquant, 'ATKMAG_DIV', 0);
-        attCar = getAttrByName(attaquant.charId, 'ATKMAG_CARAC');
+        if (stateCOF.setting_arran ||
+          (stateCOF.setting_mixte && ficheAttribute(attaquant, 'option_setting', 'generique') == 'arran')) {
+          attDiv += ficheAttributeAsInt(attaquant, 'mod_atkmag', 0);
+          attCar = '@{INT}';
+        } else {
+          attCar = getAttrByName(attaquant.charId, 'ATKMAG_CARAC');
+        }
         break;
       default:
         return x;
