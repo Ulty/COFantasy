@@ -12092,7 +12092,7 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
-  function applyRDSauf(rds, dmgType, total, display, options, target, showTotal) {
+  function applyRDSauf(rds, dmgType, total, display, options, target, showTotal, remainingRD) {
     options = options || {};
     var typeTrouve = function(t) {
       if (t == dmgType) return true;
@@ -12110,11 +12110,11 @@ var COFantasy = COFantasy || function() {
       for (var saufType in rds) {
         if (saufType == '1') break;
         var rd = rds[saufType];
-        if (rd < 1) break;
+        if (rd === 0) break;
         var types = saufType.split('_');
         if (types.find(typeTrouve)) break;
         if (target.ignoreMoitieRD) rd = parseInt(rd / 2);
-        if (target.ignoreRD) {
+        if (target.ignoreRD && rd > 0) {
           if (target.ignoreRD > rd) {
             target.ignoreRD -= rd;
             break;
@@ -12123,6 +12123,7 @@ var COFantasy = COFantasy || function() {
             target.ignoreRD = 0;
           }
         }
+        if (remainingRD) rd += remainingRD;
         if (total < rd) {
           display += " - " + total;
           rds[saufType] -= total;
@@ -12228,7 +12229,6 @@ var COFantasy = COFantasy || function() {
           dmgTotal = 0;
         }
       }
-      var rdTarget = getRDS(target);
       var additionalType = {
         magique: options.magique,
         tranchant: options.tranchant,
@@ -12237,7 +12237,9 @@ var COFantasy = COFantasy || function() {
         sortilege: options.sortilege,
         hache: options.hache,
       };
-      var resSauf = applyRDSauf(rdTarget.sauf, mainDmgType, dmgTotal, dmgDisplay, additionalType, target, showTotal);
+      var remainingRD = 0;
+      if (rdMain < 0) remainingRD = rdMain;
+      var resSauf = applyRDSauf(rd.sauf, mainDmgType, dmgTotal, dmgDisplay, additionalType, target, showTotal, remainingRD);
       dmgTotal = resSauf.total;
       dmgDisplay = resSauf.display;
       showTotal = resSauf.showTotal;
@@ -12399,7 +12401,7 @@ var COFantasy = COFantasy || function() {
                   sortilege: options.sortilege,
                   magique: options.magique
                 };
-                var resSauf = applyRDSauf(rdTarget.sauf, dmgType, dm, typeDisplay, additionalType, target);
+                var resSauf = applyRDSauf(rd.sauf, dmgType, dm, typeDisplay, additionalType, target);
                 dm = resSauf.total;
                 typeDisplay = resSauf.display;
                 mitigate(dmgType,
