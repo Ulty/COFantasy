@@ -12170,6 +12170,9 @@ var COFantasy = COFantasy || function() {
       if (rd.drain && (options.vampirise || target.vampirise)) {
         rdMain += rd.drain;
       }
+      if (options.hache && rd.hache) {
+        rdMain += rd.hache;
+      }
       if (target.ignoreMoitieRD) rdMain = parseInt(rdMain / 2);
       if (target.ignoreRD) {
         if (target.ignoreRD > rdMain) {
