@@ -5042,7 +5042,9 @@ var COFantasy = COFantasy || function() {
           options.avantage--;
           return;
         case 'avecd12crit':
-          options.avecd12 = {crit: true};
+          options.avecd12 = {
+            crit: true
+          };
           return;
         case 'tranchant':
         case 'contondant':
@@ -9433,7 +9435,7 @@ var COFantasy = COFantasy || function() {
     }
     if (options.avecd12) {
       dice = 12;
-      if (options.avecd12.crit) crit = Math.floor(crit/2) + 3;
+      if (options.avecd12.crit) crit = Math.floor(crit / 2) + 3;
     }
     var nbDe = 1;
     var plusFort = true;
@@ -12015,7 +12017,7 @@ var COFantasy = COFantasy || function() {
       var name = a.get('name');
       if (!name.startsWith('RD_')) return;
       var rds = parseInt(a.get('current'));
-      if (isNaN(rds) || rds < 1) return;
+      if (isNaN(rds) || rds === 0) return;
       name = name.substring(3);
       if (name.startsWith('sauf_')) {
         name = name.substr(5);
@@ -12049,7 +12051,7 @@ var COFantasy = COFantasy || function() {
         var type = r.substring(0, index);
         if (type == 'rdt' || type == 'sauf') return;
         rds = parseInt(r.substring(index + 1));
-        if (isNaN(rds) || rds < 1) return;
+        if (isNaN(rds) || rds === 0) return;
         res[type] = res[type] || 0;
         res[type] += rds;
         return;
@@ -12057,7 +12059,7 @@ var COFantasy = COFantasy || function() {
       index = r.indexOf('/');
       if (index > 0) { //RD sauf à des types
         rds = parseInt(r.substring(0, index));
-        if (isNaN(rds) || rds < 1) return;
+        if (isNaN(rds) || rds === 0) return;
         var sauf = r.substring(index + 1);
         res.sauf[sauf] = res.sauf[sauf] || 0;
         res.sauf[sauf] += rds;
@@ -12065,7 +12067,7 @@ var COFantasy = COFantasy || function() {
       }
       //finalement, RD totale
       rds = parseInt(r);
-      if (isNaN(rds) || rds < 1) return;
+      if (isNaN(rds) || rds === 0) return;
       res.rdt += rds;
     });
     perso.rd = res;
