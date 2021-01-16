@@ -11796,7 +11796,7 @@ var COFantasy = COFantasy || function() {
     }
     if (attaquant) {
       cibles.forEach(function(target) {
-        if (evt.succes == false && charAttributeAsBool(target, 'riposteGuerrier')) {
+        if (evt.succes == false && options.contact && charAttributeAsBool(target, 'riposteGuerrier')) {
           displayAttaqueOpportunite(target.token.id, [attaquant], "de riposte", '#ActionsRiposte#', '--decrAttribute riposteGuerrier');
         } else if (charAttributeAsBool(target, 'seulContreTous')) {
           displayAttaqueOpportunite(target.token.id, [attaquant], "de riposte", '#ActionsRiposte#');
