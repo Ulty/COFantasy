@@ -3363,7 +3363,7 @@ var COFantasy = COFantasy || function() {
       }
       if (bonusCompetence === undefined) {
         options.bonusAttrs = options.bonusAttrs || [];
-        options.bonusAttrs.push(options.competence);
+        options.bonusAttrs.push(options.competence.toLowerCase().replace(/ /g, '_'));
       } else {
         switch (comp) {
           case 'perception':
@@ -3800,7 +3800,7 @@ var COFantasy = COFantasy || function() {
       overlay: overlay
     });
     addCellInFramedDisplay(display, cell, 150, true);
-    var comps = [...listeCompetences[carac]];
+    var comps = [...listeCompetences[carac].list];
     var attributes = findObjs({
       _type: 'attribute',
       _characterid: perso.charId,
@@ -3835,17 +3835,16 @@ var COFantasy = COFantasy || function() {
         prefixes.add(p);
       });
     }
-    var compsMinuscules = comps.map(function(c) {
-      return c.toLowerCase();
-    });
+    var compsMinuscules = listeCompetences[carac].elts;
     prefixes.forEach(function(prefix) {
       var nom = prefix + 'comp_nom';
       var nomAttr = attributes.find(function(a) {
         return a.get('name') == nom;
       });
       if (!nomAttr) return;
-      var nomComp = nomAttr.get('current').trim().toLowerCase();
-      if (compsMinuscules.includes(nomComp)) return;
+      var nomComp = nomAttr.get('current');
+      var nomCompMinuscule = nomComp.trim().toLowerCase();
+      if (compsMinuscules.has(nomCompMinuscule)) return;
       comps.push(nomComp);
     });
     cell = '';
@@ -16309,12 +16308,12 @@ var COFantasy = COFantasy || function() {
 
   var alliesParPerso = {};
   var listeCompetences = {
-    FOR: [],
-    DEX: [],
-    CON: [],
-    SAG: [],
-    INT: [],
-    CHA: []
+    FOR: {list:[], elts:new Set()},
+    DEX: {list:[], elts:new Set()},
+    CON: {list:[], elts:new Set()},
+    SAG: {list:[], elts:new Set()},
+    INT: {list:[], elts:new Set()},
+    CHA: {list:[], elts:new Set()}
   };
   // Appelé uniquement après le "ready" et lorsqu'on modifie un handout (fonctionne après l'ajout et la destruction d'un handout)
   // Du coup, alliesParPerso est toujours à jour
@@ -16392,14 +16391,14 @@ var COFantasy = COFantasy || function() {
         });
       }); //end hand.get('notes')
     } else if (handName == 'Compétences' || handName == 'Competences') {
-      listeCompetences = {
-        FOR: [],
-        DEX: [],
-        CON: [],
-        SAG: [],
-        INT: [],
-        CHA: []
-      };
+  listeCompetences = {
+    FOR: {list:[], elts:new Set()},
+    DEX: {list:[], elts:new Set()},
+    CON: {list:[], elts:new Set()},
+    SAG: {list:[], elts:new Set()},
+    INT: {list:[], elts:new Set()},
+    CHA: {list:[], elts:new Set()}
+  };
       hand.get('notes', function(note) { // asynchronous
         var carac; //La carac dont on spécifie les compétences actuellement
         var lignes = linesOfNote(note);
@@ -16420,7 +16419,9 @@ var COFantasy = COFantasy || function() {
           var comps = ligne.split(/, |\/| /);
           comps.forEach(function(comp) {
             if (comp.length === 0) return;
-            listeCompetences[carac].push(comp);
+            comp = comp.replace(/_/g, ' ');
+            listeCompetences[carac].list.push(comp);
+            listeCompetences[carac].elts.add(comp.toLowerCase());
           });
         });
       }); //end hand.get(notes)
