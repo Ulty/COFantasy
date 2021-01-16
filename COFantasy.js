@@ -4011,6 +4011,7 @@ var COFantasy = COFantasy || function() {
     var page;
     var murs;
     var pt;
+    var target;
     var finalCall = function() {
       called = true;
       var seen = new Set();
@@ -4022,7 +4023,7 @@ var COFantasy = COFantasy || function() {
         });
         return (interdit === undefined);
       });
-      callback(res, playerId);
+      callback(res, playerId, target);
     };
     if (args.length > 1) {
       args.shift();
@@ -4155,6 +4156,10 @@ var COFantasy = COFantasy || function() {
               return;
             }
             var tokenCentre = centre.token;
+            target = {
+              left: tokenCentre.get('left'),
+              top: tokenCentre.get('top')
+            }
             var rayon = parseInt(cmdSplit[2]);
             if (isNaN(rayon) || rayon < 0) {
               error("Rayon du disque mal défini", cmdSplit);
@@ -4305,11 +4310,11 @@ var COFantasy = COFantasy || function() {
               });
               return (interdit === undefined);
             });
-            callback(res, playerId);
+            callback(res, playerId, target);
           }
           return;
         }
-        if (!called) callback([], playerId);
+        if (!called) callback([], playerId, target);
         return;
       }
       if (!called) finalCall();
@@ -26069,6 +26074,73 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function tenebres(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 2) {
+      error("!cof-tenebres mal formé, il faut un token comme premier argument", msg.content);
+      return;
+    }
+    var necromant = persoOfId(cmd[1], cmd[1], options.pageId);
+    if (necromant === undefined) {
+      error("Le premier argument de !cof-animer-arbre n'est pas un token valie", cmd);
+      return;
+    }
+    options.lanceur = necromant;
+    getSelected(msg, function(selected, playerId, centre){
+      var evt = {
+        type: 'tenebres'
+      }
+      addEvent(evt);
+      if (limiteRessources(necromant, options, 'tenebres', 'lancer un sort de ténèbres', evt)) return;
+      if (!stateCOF.combat) {
+        initPerso(necromant, evt);
+      }
+
+      var tokenTenebres = "Ténèbres de " + necromant.token.get('name');
+      if(centre) {
+        var token = createObj('graphic', {
+          name: tokenTenebres,
+          showname: true,
+          subtype: 'token',
+          pageid: options.pageId,
+          imgsrc: 'https://s3.amazonaws.com/files.d20.io/images/192072874/eJXFx20fD931DuBDvzAnQQ/thumb.png?1610469273',
+          left: centre.left,
+          top: centre.top,
+          width: 70,
+          height: 70,
+          layer: 'objects',
+          aura1_radius: 0,
+          aura1_color: "#c1c114",
+          aura1_square: true,
+          aura2_radius: scaleDistance(necromant, 5),
+          aura2_color: "#000000",
+          showplayers_aura2: true
+        });
+        evt.tokens = [token];
+      }
+      var duree = 5 + modCarac(necromant, "intelligence");
+      if(stateCOF.options.affichage.val.duree_effets.val) {
+        sendChar(necromant.charId, "lance un sort de ténèbres pour " + duree + "tours");
+      }
+      var effetAveugle = {
+        effet: 'aveugleTemp',
+        duree: duree
+      };
+      iterSelected(selected, function(perso) {
+        setEffetTemporaire(perso, effetAveugle, duree, undefined, options.pageId, evt, {});
+      });
+      var effetTenebres = {
+        effet: 'tenebres',
+        duree: duree,
+        valeur: token.id,
+        pasDeMessageDActivation: true
+      };
+      setEffetTemporaire(necromant, effetTenebres, duree, necromant, options.pageId, evt, options);
+    }, options);
+  }
+
   //Crée les macros utiles au jeu
   var gameMacros = [{
     name: 'Actions',
@@ -28621,6 +28693,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-next-charge-fantastique':
         nextTurnChargeFantastique(msg);
         return;
+      case '!cof-tenebres':
+        tenebres(msg);
+        return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);
         return;
@@ -29157,6 +29232,11 @@ var COFantasy = COFantasy || function() {
       activationF: "est protégée par le Cercle de protection",
       actif: "est dans le Cercle de protection",
       fin: "sort du Cercle de protection",
+    },
+    tenebres: {
+      activation: "lance un sort de Ténèbres",
+      actif: "maintient un sort de Ténèbres",
+      fin: "les ténèbres se dissipent"
     }
   };
 
@@ -29810,6 +29890,18 @@ var COFantasy = COFantasy || function() {
               whisperChar(charId, valAttr[0].get('current'));
           });
         }
+        break;
+      case 'tenebres':
+        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+          //Puis on regarde si il y a une valeur à afficher
+          var perso = {
+            token: token,
+            charId: charId
+          };
+          var valAttr = tokenAttribute(perso, efComplet + 'Valeur');
+          var tokenTenebres = getObj('graphic', valAttr[0].get('current'));
+          if(tokenTenebres) tokenTenebres.remove();
+        });
         break;
       default:
     }
