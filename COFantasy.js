@@ -4144,7 +4144,7 @@ var COFantasy = COFantasy || function() {
               error("le premier argument du disque n'est pas un token valide", cmdSplit);
               return;
             }
-            tokenCentre = centre.token;
+            var tokenCentre = centre.token;
             target = {
               left: tokenCentre.get('left'),
               top: tokenCentre.get('top')
@@ -4299,11 +4299,11 @@ var COFantasy = COFantasy || function() {
               });
               return (interdit === undefined);
             });
-            callback(res, playerId);
+            callback(res, playerId, target);
           }
           return;
         }
-        if (!called) callback([], playerId);
+        if (!called) callback([], playerId, target);
         return;
       }
       if (!called) finalCall();
@@ -25756,7 +25756,7 @@ var COFantasy = COFantasy || function() {
       error("Problème de parse options", msg.content);
       return;
     }
-    var necromant = persoOfId(cmd[1], cmd[1], options.pageId);
+    var necromant = options.lanceur;
     if (necromant === undefined) {
       error("Le premier argument de !cof-animer-arbre n'est pas un token valie", cmd);
       return;
@@ -25771,29 +25771,42 @@ var COFantasy = COFantasy || function() {
         initPerso(necromant, evt);
       }
       var tokenTenebres = "Ténèbres de " + necromant.token.get('name');
-      var token = createObj('graphic', {
-        name: tokenTenebres,
-        showname: true,
-        subtype: 'token',
-        pageid: options.pageId,
-        imgsrc: 'https://s3.amazonaws.com/files.d20.io/images/192072874/eJXFx20fD931DuBDvzAnQQ/thumb.png?1610469273',
-        left: centre.left,
-        top: centre.top,
-        width: 70,
-        height: 70,
-        layer: 'objects',
-        aura1_radius: 0,
-        aura1_color: "#c1c114",
-        aura1_square: true,
-        aura2_radius: scaleDistance(necromant, 5),
-        aura2_color: "#000000",
-        showplayers_aura2: true
-      });
-      evt.tokens = [token];
+      if(centre) {
+        var token = createObj('graphic', {
+          name: tokenTenebres,
+          showname: true,
+          subtype: 'token',
+          pageid: options.pageId,
+          imgsrc: 'https://s3.amazonaws.com/files.d20.io/images/192072874/eJXFx20fD931DuBDvzAnQQ/thumb.png?1610469273',
+          left: centre.left,
+          top: centre.top,
+          width: 70,
+          height: 70,
+          layer: 'objects',
+          aura1_radius: 0,
+          aura1_color: "#c1c114",
+          aura1_square: true,
+          aura2_radius: scaleDistance(necromant, 5),
+          aura2_color: "#000000",
+          showplayers_aura2: true
+        });
+        evt.tokens = [token];
+      }
       iterSelected(selected, function(perso) {
-        setState(perso, aveugle, true, evt);
+        setState(perso, "aveugle", true, evt);
       });
-    });
+      var duree = 5 + modCarac(necromant, "intelligence");
+      if(stateCOF.options.affichage.val.duree_effets.val) {
+        sendChar(necromant.charId, "lance un sort de ténèbres pour " + duree + "tours");
+      }
+      var effet = {
+        effet: 'tenebres',
+        duree: duree,
+        valeur: token.id,
+        pasDeMessageDActivation: true
+      };
+      setEffetTemporaire(necromant, effet, duree, necromant, options.pageId, evt, options);
+    }, options);
   }
 
   //Crée les macros utiles au jeu
@@ -28878,6 +28891,11 @@ var COFantasy = COFantasy || function() {
       fin: "retrouve son calme",
       prejudiciable: true
     },
+    tenebres: {
+      activation: "lance un sort de Ténèbres",
+      actif: "maintient un sort de Ténèbres",
+      fin: "interrompt son sort de Ténèbres"
+    }
   };
 
   function buildPatternEffets(listeEffets, postfix) {
@@ -29530,6 +29548,18 @@ var COFantasy = COFantasy || function() {
               whisperChar(charId, valAttr[0].get('current'));
           });
         }
+        break;
+      case 'tenebres':
+        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+          //Puis on regarde si il y a une valeur à afficher
+          var perso = {
+            token: token,
+            charId: charId
+          };
+          var valAttr = tokenAttribute(perso, efComplet + 'Valeur');
+          var tokenTenebres = getObj('graphic', valAttr[0].get('current'));
+          if(tokenTenebres) tokenTenebres.remove();
+        });
         break;
       default:
     }
