@@ -1347,7 +1347,7 @@
                 <h4 class="text-secondary">Voie de la sombre magie</h4>
                 <p style="margin-top:0px; margin-bottom:0px">Ajouter sur la fiche une compétence <code>Occultisme</code> avec en bonus 2 fois le rang dans cette voie.</p>
                 <ol>
-                  <li><strong>Ténèbres</strong> : faire une attaque Ténèbres, de portée 20 m. Pour l'attaque, utiliser les arguments <code>--pasDeDmg --disque 5 --auto --effet aveugle [[5+@{selected|INT}]]</code>. Au MJ ensuite d'enlever l'état aveuglé quand les cibles sortent de la zone.</li>
+                  <li><strong>Ténèbres</strong> : <code>!cof-tenebres @{selected|token_id} --disque @{target|token_id} 5 20</code>. La commande pose un token transparent avec une aura noire visible par les joueurs pour visualiser la zone, et une petite aura jaune visible uniquement par le MJ (pour sélectionner le token si nécessaire). Tous les tokens présents dans la zone au lancement du sort sont automatiquement aveuglés. Au MJ ensuite d'enlever l'état aveuglé quand les cibles sortent de la zone. A la fin de la durée du sort, ou à la fin du combat, la zone et les états aveuglés restant disparaissent automatiquement.</li>
                   <li><strong>Pattes d'araignées</strong> : <code>!cof-lancer-sort peut se déplacer sur les murs pendants [[5+@{selected|INT]] tours</code></li>
                   <li><strong>Strangulation</strong> : 
                     <ul>
