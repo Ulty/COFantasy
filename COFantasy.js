@@ -10411,7 +10411,7 @@ var COFantasy = COFantasy || function() {
           if (continuer) {
             delete options.preDmg;
           }
-          if (options.preDmg || evt.action.cibles.length == 0) {
+          if (options.preDmg || options.preDmgAnnule) {
             addLineToFramedDisplay(display, "<b>Attaque :</b> Touche !");
             finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options, echecCritique);
             return;
@@ -22419,8 +22419,8 @@ var COFantasy = COFantasy || function() {
         } else {
           cible.touche = false;
           if (opt.annule) {
-            action.cibles = [];
             delete options.preDmg;
+            options.preDmgAnnule = true;
             generalMsg += " => Réussi, " + msgReussite;
           } else {
             action.cibles = action.cibles.filter(function(c) {
