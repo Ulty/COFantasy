@@ -1259,6 +1259,13 @@
                   <li><strong>Armure du mage</strong> : <code>!cof-effet-combat armureDuMage</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
                   <li><strong>Chute ralentie</strong> : pas de support.</li>
                   <li><strong>Flou</strong> : <code>!cof-effet-temp flou [[1d4+@{selected|INT}]] --mana 1</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
+                  <li><strong>Cercle de protection</strong> : Le script ne gère pas le cercle en lui-même, mais vous pouvez créer deux abilities.
+                    <ul>
+                      <li><code>!cof-effet-temp cercleDeProtection 100 --target @{target|token_id} --lanceur @{selected|token_id} --valeur @{selected|token_id}</code> et cibler un personnage pour lui appliquer l'effet.</li>
+                      <li><code>!cof-effet-temp cercleDeProtection fin --target @{target|token_id} --lanceur @{selected|token_id}</code> pour supprimer l'effet sur un personnage.</li>
+                    </ul>
+                    Le script proposera alors automatiquement à ces personnages un bouton avec le nom du magicien si une cible protégée est ciblée par une attaque magique. Le jet d'attaque magique opposé sera automatisé. Si vous utilisez les options de mana, rajoutez <code>--mana {Coût ?}</code> à la première ability. Indiquer le coût au lancement, et 0 pour les autres applications.
+                  </li>
                 </ol>
                 <h4 class="text-secondary">Voie de la magie universelle</h4>
                 <ol>
