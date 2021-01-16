@@ -25752,15 +25752,16 @@ var COFantasy = COFantasy || function() {
     var options = parseOptions(msg);
     if (options === undefined) return;
     var cmd = options.cmd;
-    if (cmd === undefined) {
-      error("Problème de parse options", msg.content);
+    if (cmd === undefined || cmd.length < 2) {
+      error("!cof-tenebres mal formé, il faut un token comme premier argument", msg.content);
       return;
     }
-    var necromant = options.lanceur;
+    var necromant = persoOfId(cmd[1], cmd[1], options.pageId);
     if (necromant === undefined) {
       error("Le premier argument de !cof-animer-arbre n'est pas un token valie", cmd);
       return;
     }
+    options.lanceur = necromant;
     getSelected(msg, function(selected, playerId, centre){
       var evt = {
         type: 'tenebres'
@@ -25770,6 +25771,7 @@ var COFantasy = COFantasy || function() {
       if (!stateCOF.combat) {
         initPerso(necromant, evt);
       }
+
       var tokenTenebres = "Ténèbres de " + necromant.token.get('name');
       if(centre) {
         var token = createObj('graphic', {
@@ -25792,20 +25794,24 @@ var COFantasy = COFantasy || function() {
         });
         evt.tokens = [token];
       }
-      iterSelected(selected, function(perso) {
-        setState(perso, "aveugle", true, evt);
-      });
       var duree = 5 + modCarac(necromant, "intelligence");
       if(stateCOF.options.affichage.val.duree_effets.val) {
         sendChar(necromant.charId, "lance un sort de ténèbres pour " + duree + "tours");
       }
-      var effet = {
+      var effetAveugle = {
+        effet: 'aveugleTemp',
+        duree: duree
+      };
+      iterSelected(selected, function(perso) {
+        setEffetTemporaire(perso, effetAveugle, duree, undefined, options.pageId, evt, {});
+      });
+      var effetTenebres = {
         effet: 'tenebres',
         duree: duree,
         valeur: token.id,
         pasDeMessageDActivation: true
       };
-      setEffetTemporaire(necromant, effet, duree, necromant, options.pageId, evt, options);
+      setEffetTemporaire(necromant, effetTenebres, duree, necromant, options.pageId, evt, options);
     }, options);
   }
 
@@ -28894,7 +28900,7 @@ var COFantasy = COFantasy || function() {
     tenebres: {
       activation: "lance un sort de Ténèbres",
       actif: "maintient un sort de Ténèbres",
-      fin: "interrompt son sort de Ténèbres"
+      fin: "les ténèbres se dissipent"
     }
   };
 
@@ -31829,19 +31835,19 @@ on('ready', function() {
 on("chat:message", function(msg) {
   "use strict";
   if (COF_loaded && msg.type == "api" && msg.content.startsWith('!cof-')) {
-    // try {
+    try {
       COFantasy.apiCommand(msg);
-    // } catch (e) {
-    //   sendChat('COF', "Erreur durant l'exécution de " + msg.content);
-    //   log("Erreur durant l'exécution de " + msg.content);
-    //   log(msg);
-    //   var errMsg = e.name;
-    //   if (e.lineNumber) errMsg += " at " + e.lineNumber;
-    //   else if (e.number) errMsg += " at " + e.number;
-    //   errMsg += ': ' + e.message;
-    //   sendChat('COF', errMsg);
-    //   log(errMsg);
-    // }
+    } catch (e) {
+      sendChat('COF', "Erreur durant l'exécution de " + msg.content);
+      log("Erreur durant l'exécution de " + msg.content);
+      log(msg);
+      var errMsg = e.name;
+      if (e.lineNumber) errMsg += " at " + e.lineNumber;
+      else if (e.number) errMsg += " at " + e.number;
+      errMsg += ': ' + e.message;
+      sendChat('COF', errMsg);
+      log(errMsg);
+    }
   }
 });
 
