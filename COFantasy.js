@@ -9963,10 +9963,26 @@ var COFantasy = COFantasy || function() {
                     }
                   }
                 }
-                if (options.sortilege && attributeAsInt(target, 'resistanceALaMagieBarbare', 0) > 0) {
-                  options.preDmg = options.preDmg || {};
-                  options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                  options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
+                if (options.sortilege) {
+                  if (attributeAsInt(target, 'resistanceALaMagieBarbare', 0) > 0) {
+                    options.preDmg = options.preDmg || {};
+                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                    options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
+                  }
+                  if (attributeAsBool(target, 'cercleDeProtection')) {
+                    var attrs = tokenAttribute(target, 'cercleDeProtectionValeur');
+                    if(attrs.length > 0) {
+                      var protecteur = persoOfId(attrs[0].get('current'));
+                      if(protecteur) {
+                        if (attributeAsInt(protecteur, "cercleDeProtectionActif", 0) > 0) {
+                          options.preDmg = options.preDmg || {};
+                          options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                          options.preDmg[target.token.id].cercleDeProtection = true;
+                          options.preDmg[target.token.id].cercleDeProtectionDe = protecteur.token.get("name");
+                        }
+                      }
+                    }
+                  }
                 }
               }
               if (attributeAsInt(target, 'chairACanon', 0) > 0 &&
@@ -10394,7 +10410,7 @@ var COFantasy = COFantasy || function() {
           if (continuer) {
             delete options.preDmg;
           }
-          if (options.preDmg) {
+          if (options.preDmg || options.preDmgAnnule) {
             addLineToFramedDisplay(display, "<b>Attaque :</b> Touche !");
             finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options, echecCritique);
             return;
@@ -10416,9 +10432,9 @@ var COFantasy = COFantasy || function() {
         }
         if (preDmgToken.evitementGenerique && preDmgToken.evitementGenerique.length > 0) {
           var nbEvitementsGenerique = preDmgToken.evitementGenerique.length;
-          var finaliseTargetPreDmg = function(msg, rerolls) {
-            if (rerolls !== '' && !continuer && !termineCible) { // rerolls uniquement si pas terminé
-              explications.push(msg + rerolls);
+          var finaliseTargetPreDmg = function(msg, generalMsg) {
+            if (generalMsg !== '' && !continuer && !termineCible) { // rerolls uniquement si pas terminé
+              explications.push(msg + generalMsg);
             } else {
               cible.messages.push(msg);
             }
@@ -11686,6 +11702,7 @@ var COFantasy = COFantasy || function() {
         }
       }
       if (options.preDmg) {
+        var cerclesDeProtection = [];
         cibles.forEach(function(target) {
           var preDmgToken = options.preDmg[target.token.id];
           var action;
@@ -11717,6 +11734,13 @@ var COFantasy = COFantasy || function() {
               action = "!cof-resister-a-la-magie " + target.token.id + ' ' + evt.id;
               line += "<br/>" + boutonSimple(action, "tenter de résister à la magie");
               nbBoutons++;
+            }
+            if (preDmgToken.cercleDeProtection && preDmgToken.cercleDeProtectionDe &&
+                preDmgToken.cercleDeProtection !== 'reroll') {
+              cerclesDeProtection.push({
+                nom: preDmgToken.cercleDeProtectionDe,
+                target: target
+              });
             }
             if (preDmgToken.runeForgesort_protection) {
               line += "<br/>" +
@@ -11758,15 +11782,21 @@ var COFantasy = COFantasy || function() {
             if (nbBoutons > 0) addLineToFramedDisplay(display, line);
           }
         });
+        if (cerclesDeProtection.length > 0) {
+          cerclesDeProtection.forEach(function(cercle){
+            addLineToFramedDisplay(display,
+              cercle.nom + " peut " + boutonSimple("!cof-cercle-protection " + cercle.target.token.id + ' ' + evt.id,
+              "activer le Cercle de Protection"));
+          });
+        }
         addLineToFramedDisplay(display, boutonSimple("!cof-confirmer-attaque " + evt.id, "Continuer"));
-      }
-      if (evt.action.options && !evt.action.options.auto && evt.action.cibles) {
+      } else if (evt.action.options && !evt.action.options.auto && evt.action.cibles) {
         evt.action.cibles.forEach(function(target) {
           if (!options.pasDeDmg && target.touche &&
-            attributeAsBool(target, 'ignorerLaDouleur') &&
-            attributeAsInt(target, 'douleurIgnoree', 0) === 0) {
+              attributeAsBool(target, 'ignorerLaDouleur') &&
+              attributeAsInt(target, 'douleurIgnoree', 0) === 0) {
             addLineToFramedDisplay(display, target.tokName + " peut " +
-              boutonSimple("!cof-ignorer-la-douleur " + evt.id + ' --target ' + target.token.id, "ignorer la douleur")
+                boutonSimple("!cof-ignorer-la-douleur " + evt.id + ' --target ' + target.token.id, "ignorer la douleur")
             );
           }
         });
@@ -13697,6 +13727,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('effetsTemporairesLies', evt, attrs);
     attrs = removeAllAttributes('aAgiAZeroPV', evt, attrs);
     attrs = removeAllAttributes('injonctionMortelle', evt, attrs);
+    attrs = removeAllAttributes('cercleDeProtectionActif', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -18658,6 +18689,14 @@ var COFantasy = COFantasy || function() {
           degainerArme(perso, labelArmeEnflammee, evt);
           ajouteUneLumiere(perso, effet, 9, 3, evt);
         }
+        if (effet = 'cercleDeProtection') {
+          var protecteur = options.lanceur || perso;
+          if (!attributeAsBool(protecteur, 'cercleDeProtectionActif')) {
+            setTokenAttr(protecteur, 'cercleDeProtectionActif', 1, evt, {
+              maxVal: 1
+            });
+          }
+        }
         if (options.puissant) {
           var puissant = true;
           if (options.puissant == "off") puissant = false;
@@ -22196,10 +22235,6 @@ var COFantasy = COFantasy || function() {
       error("Le premier argument de " + cmd[0] + " n'est pas un token de personnage", cmd);
       return;
     }
-    if (!peutController(msg, perso)) {
-      sendPlayer(msg, "pas le droit d'utiliser ce bouton");
-      return;
-    }
     var action = evt.action;
     var optionsAttaque = action.currentOptions;
     var pageId = action.pageId;
@@ -22210,6 +22245,26 @@ var COFantasy = COFantasy || function() {
       sendChar(perso.charId, "n'est pas la cible de la dernière attaque");
       return;
     }
+    var attributAVerifier = attributeName;
+    var persoAttribut = perso;
+    if (opt.protecteur) { // c'est un personnage tiers qui protège la cible
+      var protecteurAttrs = tokenAttribute(perso, attributeName + 'Valeur');
+      if (protecteurAttrs.length < 1) {
+        error("Erreur interne dans le bouton de protection, protecteur introuvable", cmd);
+        return;
+      }
+      persoAttribut = persoOfId(protecteurAttrs[0].get("current"));
+      attributAVerifier = attributeName + "Actif";
+      if (persoAttribut === undefined) {
+        error("Erreur interne dans le bouton de protection, protecteur introuvable", cmd);
+        return;
+      }
+      opt.protecteur = persoAttribut;
+    }
+    if (!peutController(msg, persoAttribut)) {
+      sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+      return;
+    }
     if (opt && opt.condition && !opt.condition(perso)) {
       resolvePreDmgOptions(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, pageId, action.ciblesAttaquees);
     }
@@ -22218,15 +22273,15 @@ var COFantasy = COFantasy || function() {
       error("Impossible de trouver le jet de l'attaquant", cible);
       return;
     }
-    var attribut = tokenAttribute(perso, attributeName);
+    var attribut = tokenAttribute(persoAttribut, attributAVerifier);
     if (attribut.length === 0) {
-      sendChar(perso.charId, "ne sait pas faire " + actionName);
+      sendChar(persoAttribut.charId, "ne sait pas faire " + actionName);
       return;
     }
     attribut = attribut[0];
     if (opt && opt.attrAsBool) {
       if (!attribut.get('current')) {
-        sendChar(perso.charId, msgDejaFait);
+        sendChar(persoAttribut.charId, msgDejaFait);
         return;
       }
     } else {
@@ -22236,7 +22291,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       if (curAttribut < 1) {
-        sendChar(perso.charId, msgDejaFait);
+        sendChar(persoAttribut.charId, msgDejaFait);
         return;
       }
     }
@@ -22259,6 +22314,10 @@ var COFantasy = COFantasy || function() {
 
   function appliquerEvitementGenerique(cible, jetAdversaire, attribut, opt, attributeName, actionName, tente, carac, typeAttaque, msgReussite, pageId, options, evt, callback) {
     var action = evt.action;
+    var lanceur = cible;
+    if (opt && opt.protecteur) {
+      lanceur = opt.protecteur;
+    }
     if (opt && opt.attrAsBool) {
       evt.deletedAttributes = evt.deletedAttributes || [];
       evt.deletedAttributes.push(attribut);
@@ -22271,46 +22330,46 @@ var COFantasy = COFantasy || function() {
       });
       attribut.set('current', curAttribut - 1);
     }
-    var attackRollExpr = "[[" + computeDice(cible) + "]]";
+    var attackRollExpr = "[[" + computeDice(lanceur) + "]]";
     sendChat('', attackRollExpr, function(res) {
-      var testId = attributeName + "_" + cible.token.id;
+      var testId = attributeName + "_" + lanceur.token.id;
       options.rolls = options.rolls || {};
       var attackRoll = options.rolls[testId] || res[0].inlinerolls[0];
-      attackRoll.token = cible.token;
+      attackRoll.token = lanceur.token;
       evt.action.rolls = evt.action.rolls || {};
       evt.action.rolls[testId] = attackRoll;
       var totalEvitement = attackRoll.results.total;
       var msg = buildinline(attackRoll);
-      var attBonus = ficheAttributeAsInt(cible, 'niveau', 1);
-      if (estAffaibli(cible) && charAttributeAsBool(cible, 'insensibleAffaibli')) attBonus -= 2;
+      var attBonus = ficheAttributeAsInt(lanceur, 'niveau', 1);
+      if (estAffaibli(lanceur) && charAttributeAsBool(lanceur, 'insensibleAffaibli')) attBonus -= 2;
       switch (typeAttaque) {
         case 'distance':
-          attBonus += ficheAttributeAsInt(cible, 'ATKTIR_DIV', 0);
+          attBonus += ficheAttributeAsInt(lanceur, 'ATKTIR_DIV', 0);
           if (stateCOF.setting_arran ||
-            (stateCOF.setting_mixte && ficheAttribute(cible, 'option_setting', 'generique') == 'arran')) {
-            attBonus += ficheAttributeAsInt(cible, 'mod_atktir', 0);
+            (stateCOF.setting_mixte && ficheAttribute(lanceur, 'option_setting', 'generique') == 'arran')) {
+            attBonus += ficheAttributeAsInt(lanceur, 'mod_atktir', 0);
           }
-          attBonus += modCarac(cible, carac);
+          attBonus += modCarac(lanceur, carac);
           break;
         case 'magique':
-          attBonus += ficheAttributeAsInt(cible, 'ATKMAG_DIV', 0);
+          attBonus += ficheAttributeAsInt(lanceur, 'ATKMAG_DIV', 0);
           if (stateCOF.setting_arran ||
-            (stateCOF.setting_mixte && ficheAttribute(cible, 'option_setting', 'generique') == 'arran')) {
-            attBonus += ficheAttributeAsInt(cible, 'mod_atkmag', 0);
-            attBonus += modCarac(cible, 'intelligence');
+            (stateCOF.setting_mixte && ficheAttribute(lanceur, 'option_setting', 'generique') == 'arran')) {
+            attBonus += ficheAttributeAsInt(lanceur, 'mod_atkmag', 0);
+            attBonus += modCarac(lanceur, 'intelligence');
           } else {
-            attBonus += modCarac(cible, carac);
+            attBonus += modCarac(lanceur, carac);
           }
           break;
         case 'contact':
-          attBonus += ficheAttributeAsInt(cible, 'ATKCAC_DIV', 0);
-          attBonus += modCarac(cible, carac);
+          attBonus += ficheAttributeAsInt(lanceur, 'ATKCAC_DIV', 0);
+          attBonus += modCarac(lanceur, carac);
           break;
         default:
       }
-      if (opt && opt.arme && cible.arme) {
-        actionName = cible.arme.nom;
-        if (cible.arme.attSkillDiv) attBonus += cible.arme.attSkillDiv;
+      if (opt && opt.arme && lanceur.arme) {
+        actionName = lanceur.arme.nom;
+        if (lanceur.arme.attSkillDiv) attBonus += lanceur.arme.attSkillDiv;
       }
       totalEvitement += attBonus;
       if (attBonus > 0) msg += "+" + attBonus;
@@ -22324,31 +22383,31 @@ var COFantasy = COFantasy || function() {
         pasDeDmg: true
       };
       var attEvBonus = bonusAttaqueA(cible, actionName, evt, cible.messages, optionsEvitement);
-      var bad = bonusAttaqueD(cible, action.attaquant, 0, pageId, evt, cible.messages, optionsEvitement);
+      var bad = bonusAttaqueD(lanceur, action.attaquant, 0, pageId, evt, cible.messages, optionsEvitement);
       attEvBonus += bad;
       if (opt && opt.bonusAttaque) attEvBonus += opt.bonusAttaque;
       if (attEvBonus > 0) msg += "+" + attEvBonus;
       else if (attEvBonus < 0) msg += attEvBonus;
-      msg = cible.tokName + " tente " + tente + ". " +
-        onGenre(cible, "Il", "elle") + " fait " + msg;
-      var rerolls = '';
+      msg = lanceur.tokName + " tente " + tente + ". " +
+        onGenre(lanceur, "Il", "elle") + " fait " + msg;
+      var generalMsg = '';
       if (totalEvitement < jetAdversaire) {
         msg += " => Raté";
-        var pc = pointsDeChance(cible);
+        var pc = pointsDeChance(lanceur);
         if (attackRoll.results.total != 1 && pc > 0) {
-          rerolls += '<br/>' +
+          generalMsg += '<br/>' +
             boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
             " (reste " + pc + " PC)";
         }
-        if (stateCOF.combat && attributeAsBool(cible, 'runeForgesort_énergie') &&
-          attributeAsInt(cible, 'limiteParCombat_runeForgesort_énergie', 1) > 0 &&
+        if (stateCOF.combat && attributeAsBool(lanceur, 'runeForgesort_énergie') &&
+          attributeAsInt(lanceur, 'limiteParCombat_runeForgesort_énergie', 1) > 0 &&
           (carac == 'force' || carac == 'constitution' || carac == 'dexterite')) {
-          rerolls += '<br/>' + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + testId, "Rune d'énergie");
+          generalMsg += '<br/>' + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + testId, "Rune d'énergie");
         }
-        if (stateCOF.combat && attributeAsBool(cible, 'petitVeinard')) {
-          rerolls += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
+        if (stateCOF.combat && attributeAsBool(lanceur, 'petitVeinard')) {
+          generalMsg += '<br/>' + boutonSimple("!cof-bouton-petit-veinard " + evt.id + " " + testId, "Petit veinard");
         }
-        if (rerolls === '') { //Ne retirer l'option que si aucun reroll possible
+        if (generalMsg === '') { //Ne retirer l'option que si aucun reroll possible
           removePreDmg(options, cible, attributeName);
         } else { //Sinon cacher le bouton mais laisser l'option reroll
           removePreDmg(options, cible, attributeName, 'reroll');
@@ -22360,14 +22419,20 @@ var COFantasy = COFantasy || function() {
           removePreDmg(options, cible, attributeName);
         } else {
           cible.touche = false;
-          action.cibles = action.cibles.filter(function(c) {
-            return c.token.id != cible.token.id;
-          });
-          msg += " => Réussi, " + msgReussite;
-          removePreDmg(options, cible);
+          if (opt.annule) {
+            delete options.preDmg;
+            options.preDmgAnnule = true;
+            generalMsg += " => Réussi, " + msgReussite;
+          } else {
+            action.cibles = action.cibles.filter(function(c) {
+              return c.token.id != cible.token.id;
+            });
+            removePreDmg(options, cible);
+            msg += " => Réussi, " + msgReussite;
+          }
         }
       }
-      callback(msg, rerolls);
+      callback(msg, generalMsg);
     });
   }
 
@@ -22411,7 +22476,19 @@ var COFantasy = COFantasy || function() {
     evitementGenerique(msg, 'résister à la magie', 'resistanceALaMagieBarbare',
       'résistance à la magie', "de résister à la magie",
       " a déjà essayé de résister à la magie ce tour",
-      'sagesse', 'magique', "");
+      'sagesse', 'magique', "il résiste à la magie !");
+  }
+
+  // asynchrone : on fait les jets du magicien protecteur en opposition
+  //!cof-cercle-protection id [evtid] [chance]
+  function cercleDeProtection(msg) {
+    evitementGenerique(msg, 'activer le cercle de protection', 'cercleDeProtection',
+      'activation du cercle de protection', "de bloquer le sort avec le Cercle de Protection",
+      " a déjà active le Cercle de Protection ce tour",
+      'intelligence', 'magique', "le sort est annulé !", {
+        protecteur: true,
+        annule: true
+      });
   }
 
   // asynchrone : on fait les jets du barde en opposition
@@ -28349,6 +28426,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-resister-a-la-magie":
         resisterALaMagie(msg);
         return;
+      case "!cof-cercle-protection":
+        cercleDeProtection(msg);
+        return;
       case "!cof-parade-magistrale":
         doParadeMagistrale(msg);
         return;
@@ -29072,6 +29152,12 @@ var COFantasy = COFantasy || function() {
       fin: "retrouve son calme",
       prejudiciable: true
     },
+    cercleDeProtection: {
+      activation: "est protégé par le Cercle de protection",
+      activationF: "est protégée par le Cercle de protection",
+      actif: "est dans le Cercle de protection",
+      fin: "sort du Cercle de protection",
+    }
   };
 
   function buildPatternEffets(listeEffets, postfix) {
@@ -29884,6 +29970,7 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'chairACanon', evt);
     resetAttr(attrs, 'riposteGuerrier', evt);
     resetAttr(attrs, 'prouesse', evt);
+    resetAttr(attrs, 'cercleDeProtectionActif', evt);
     // Pour défaut dans la cuirasse, on diminue si la valeur est 2, et on supprime si c'est 1
     var defautsDansLaCuirasse = allAttributesNamed(attrs, 'defautDansLaCuirasse');
     defautsDansLaCuirasse.forEach(function(attr) {

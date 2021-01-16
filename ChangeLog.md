@@ -11,6 +11,7 @@
 * Ajout de l'attaque d'étreinte et immolation de certains démons gardiens
 * Ajout de la capacité Hausser le ton de la Voie du champion
 * Ajout de la capacité Liberté d'Action du barde
+* Implémentation des effets de Cercle de Protection
 
 ### Autres améliorations
 * Correction sur l'initiative entre PJs qui doivent comparer la sagesse
