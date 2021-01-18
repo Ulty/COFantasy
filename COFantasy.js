@@ -9928,6 +9928,12 @@ var COFantasy = COFantasy || function() {
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].encaisserUnCoup = true;
                   }
+                  if (options.distance && !options.poudre && cibles.length == 1 && !target.critique &&
+                      attributeAsBool(target, 'paradeDeProjectiles')) {
+                    options.preDmg = options.preDmg || {};
+                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                    options.preDmg[target.token.id].paradeDeProjectiles = true;
+                  }
                   if (attributeAsInt(target, 'esquiveAcrobatique', 0) > 0) {
                     options.preDmg = options.preDmg || {};
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
@@ -10429,11 +10435,17 @@ var COFantasy = COFantasy || function() {
         var termineCible = false;
         if (preDmgToken.encaisserUnCoup) {
           appliquerEncaisserUnCoup(cible, options, evt);
-          termineCible = true;
+          finaliseTarget();
+        }
+        if (preDmgToken.paradeDeProjectiles) {
+          appliquerParadeProjectiles(cible, options, evt);
+          explications.push(cible.token.get("name") + " pare le projectile !");
+          options.preDmgAnnule = true;
+          finaliseTarget();
         }
         if (preDmgToken.runeForgesort_protection) {
           appliquerRuneDeProtection(cible, options, evt);
-          termineCible = true;
+          finaliseTarget();
         }
         if (preDmgToken.evitementGenerique && preDmgToken.evitementGenerique.length > 0) {
           var nbEvitementsGenerique = preDmgToken.evitementGenerique.length;
@@ -11719,6 +11731,13 @@ var COFantasy = COFantasy || function() {
                 boutonSimple(
                   "!cof-encaisser-un-coup " + evt.id + ' --target ' + target.token.id,
                   "encaisser le coup");
+              nbBoutons++;
+            }
+            if (preDmgToken.paradeDeProjectiles) {
+              line += "<br/>" +
+                  boutonSimple(
+                      "!cof-parade-projectiles " + evt.id + ' --target ' + target.token.id,
+                      "parer le projectile");
               nbBoutons++;
             }
             if (preDmgToken.esquiveAcrobatique && preDmgToken.esquiveAcrobatique !== 'reroll') {
@@ -22198,7 +22217,80 @@ var COFantasy = COFantasy || function() {
       ficheAttributeAsInt(cible, 'DEFARMUREON', 1) +
       ficheAttributeAsInt(cible, 'DEFBOUCLIER', 0) *
       ficheAttributeAsInt(cible, 'DEFBOUCLIERON', 1);
-    removePreDmg(options, cible, 'encaisserUnCoup');
+    removePreDmg(options, cible);
+  }
+
+  //!cof-parade-projectiles
+  function doParadeProjectiles(msg) {
+    var optionsParade = parseOptions(msg);
+    if (optionsParade === undefined) return;
+    var cmd = optionsParade.cmd;
+    var evt = lastEvent();
+    if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
+      evt = findEvent(cmd[1]);
+      if (evt === undefined) {
+        error("L'action est trop ancienne ou a été annulée", cmd);
+        return;
+      }
+    }
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        error("Personne n'est sélectionné pour parer le projectile", msg);
+        return;
+      }
+      if (evt === undefined) {
+        sendChat('', "Historique d'actions vide, pas d'action trouvée pour parer le projectile");
+        return;
+      }
+      if (evt.type != 'Attaque' || evt.succes === false) {
+        sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour parer le projectile d'une action précédente");
+        return;
+      }
+      var action = evt.action;
+      if (!action.options.distance) {
+        sendChat('', "Impossible de parer le projectile, ce n'était pas une attaque au contact");
+        return;
+      }
+      if (action.options.poudre) {
+        sendChat('', "Impossible de parer le projectile, il s'agit d'une arme à poudre");
+        return;
+      }
+      if (action.cibles.length > 1) {
+        sendChat('', "Impossible de parer un projectile qui touche plusieurs cibles");
+        return;
+      }
+      var toProceed;
+      iterSelected(selected, function(moine) {
+        if (attributeAsInt(moine, 'paradeDeProjectiles', 0) < 1) {
+          sendChar(moine.charId, "ne peut plus parer de projectiles");
+          return;
+        }
+        if (!peutController(msg, moine)) {
+          sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+          return;
+        }
+        var cible = action.cibles.find(function(target) {
+          return (target.token.id === moine.token.id);
+        });
+        if (cible === undefined) {
+          sendChar(moine.charId, "n'est pas la cible de la dernière attaque");
+          return;
+        }
+        action.choices = action.choices || {};
+        action.choices[moine.token.id] = action.choices[moine.token.id] || {};
+        action.choices[moine.token.id].paradeDeProjectiles = true;
+        toProceed = true;
+      }); //fin iterSelected
+      if (toProceed) {
+        redoEvent(evt, action);
+      }
+    }); //fin getSelected
+  }
+
+  function appliquerParadeProjectiles(cible, options, evt) {
+    setTokenAttr(cible, 'paradeDeProjectiles', 0, evt, {maxVal: 1});
+    options.preDmgAnnule = true;
+    removePreDmg(options, cible);
   }
 
   // asynchrone : on fait les jets du personnage en opposition
@@ -28492,6 +28584,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-encaisser-un-coup':
         doEncaisserUnCoup(msg);
         return;
+      case '!cof-parade-projectiles':
+        doParadeProjectiles(msg);
+        return;
       case "!cof-esquive-acrobatique":
         doEsquiveAcrobatique(msg);
         return;
@@ -30057,6 +30152,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('attaqueMalgreMenace', evt, attrs);
     resetAttr(attrs, 'attaqueEnTraitre', evt);
     resetAttr(attrs, 'esquiveAcrobatique', evt);
+    resetAttr(attrs, 'paradeDeProjectiles', evt);
     resetAttr(attrs, 'resistanceALaMagieBarbare', evt);
     resetAttr(attrs, 'paradeMagistrale', evt);
     resetAttr(attrs, 'chairACanon', evt);

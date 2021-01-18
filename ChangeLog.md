@@ -27,6 +27,7 @@
 * Support de la pénombre
 * Support pour les personnages invisibles en combat
 * Meilleur support de la Prouesse du guerrier
+* Meilleur support de la Parade de projectiles du moine
 
 ### Corrections de bugs
 * Calcul de score d'attaque corrigé pour les Terres d'Arran.
