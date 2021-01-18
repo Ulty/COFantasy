@@ -4159,7 +4159,7 @@ var COFantasy = COFantasy || function() {
             target = {
               left: tokenCentre.get('left'),
               top: tokenCentre.get('top')
-            }
+            };
             var rayon = parseInt(cmdSplit[2]);
             if (isNaN(rayon) || rayon < 0) {
               error("Rayon du disque mal défini", cmdSplit);
@@ -9929,7 +9929,7 @@ var COFantasy = COFantasy || function() {
                     options.preDmg[target.token.id].encaisserUnCoup = true;
                   }
                   if (options.distance && !options.poudre && cibles.length == 1 && !target.critique &&
-                      attributeAsBool(target, 'paradeDeProjectiles')) {
+                    attributeAsBool(target, 'paradeDeProjectiles')) {
                     options.preDmg = options.preDmg || {};
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].paradeDeProjectiles = true;
@@ -9982,9 +9982,9 @@ var COFantasy = COFantasy || function() {
                   }
                   if (attributeAsBool(target, 'cercleDeProtection')) {
                     var attrs = tokenAttribute(target, 'cercleDeProtectionValeur');
-                    if(attrs.length > 0) {
+                    if (attrs.length > 0) {
                       var protecteur = persoOfId(attrs[0].get('current'));
-                      if(protecteur) {
+                      if (protecteur) {
                         if (attributeAsInt(protecteur, "cercleDeProtectionActif", 0) > 0) {
                           options.preDmg = options.preDmg || {};
                           options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
@@ -11735,9 +11735,9 @@ var COFantasy = COFantasy || function() {
             }
             if (preDmgToken.paradeDeProjectiles) {
               line += "<br/>" +
-                  boutonSimple(
-                      "!cof-parade-projectiles " + evt.id + ' --target ' + target.token.id,
-                      "parer le projectile");
+                boutonSimple(
+                  "!cof-parade-projectiles " + evt.id + ' --target ' + target.token.id,
+                  "parer le projectile");
               nbBoutons++;
             }
             if (preDmgToken.esquiveAcrobatique && preDmgToken.esquiveAcrobatique !== 'reroll') {
@@ -11760,7 +11760,7 @@ var COFantasy = COFantasy || function() {
               nbBoutons++;
             }
             if (preDmgToken.cercleDeProtection && preDmgToken.cercleDeProtectionDe &&
-                preDmgToken.cercleDeProtection !== 'reroll') {
+              preDmgToken.cercleDeProtection !== 'reroll') {
               cerclesDeProtection.push({
                 nom: preDmgToken.cercleDeProtectionDe,
                 target: target
@@ -11807,20 +11807,20 @@ var COFantasy = COFantasy || function() {
           }
         });
         if (cerclesDeProtection.length > 0) {
-          cerclesDeProtection.forEach(function(cercle){
+          cerclesDeProtection.forEach(function(cercle) {
             addLineToFramedDisplay(display,
               cercle.nom + " peut " + boutonSimple("!cof-cercle-protection " + cercle.target.token.id + ' ' + evt.id,
-              "activer le Cercle de Protection"));
+                "activer le Cercle de Protection"));
           });
         }
         addLineToFramedDisplay(display, boutonSimple("!cof-confirmer-attaque " + evt.id, "Continuer"));
       } else if (evt.action.options && !evt.action.options.auto && evt.action.cibles) {
         evt.action.cibles.forEach(function(target) {
           if (!options.pasDeDmg && target.touche &&
-              attributeAsBool(target, 'ignorerLaDouleur') &&
-              attributeAsInt(target, 'douleurIgnoree', 0) === 0) {
+            attributeAsBool(target, 'ignorerLaDouleur') &&
+            attributeAsInt(target, 'douleurIgnoree', 0) === 0) {
             addLineToFramedDisplay(display, target.tokName + " peut " +
-                boutonSimple("!cof-ignorer-la-douleur " + evt.id + ' --target ' + target.token.id, "ignorer la douleur")
+              boutonSimple("!cof-ignorer-la-douleur " + evt.id + ' --target ' + target.token.id, "ignorer la douleur")
             );
           }
         });
@@ -15444,7 +15444,7 @@ var COFantasy = COFantasy || function() {
         doSommeil(action.lanceur, action.cibles, options, action.ciblesSansSave, action.ciblesAvecSave);
         return true;
       case 'surprise':
-        doSurprise(action.cibles, action.testSurprise, options);
+        doSurprise(action.cibles, action.testSurprise, action.selected, options);
         return true;
       case 'tourDeForce':
         doTourDeForce(action.perso, action.seuil, options);
@@ -16215,12 +16215,14 @@ var COFantasy = COFantasy || function() {
       if (isNaN(testSurprise)) testSurprise = undefined;
     }
     var cibles = [];
+    var ciblesSelectionnees;
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         sendPlayer(msg, "!cof-surprise sans sélection de token");
         log("!cof-surprise requiert de sélectionner des tokens");
         return;
       }
+      ciblesSelectionnees = selected;
       iterSelected(selected, function(perso) {
         if (!isActive(perso)) {
           return;
@@ -16229,22 +16231,24 @@ var COFantasy = COFantasy || function() {
       });
     });
     if (cibles.length > 0) {
-      doSurprise(cibles, testSurprise, options);
+      doSurprise(cibles, testSurprise, ciblesSelectionnees, options);
     } else {
       error("Pas de cible valable sélectionnée pour la surprise", msg.content);
     }
   }
 
-  function doSurprise(cibles, testSurprise, options) {
+  function doSurprise(cibles, testSurprise, selected, options) {
     var evt = {
       type: 'surprise',
       action: {
         cibles: cibles,
         testSurprise: testSurprise,
+        selected: selected,
         options: options
       }
     };
     addEvent(evt);
+    initiative(selected, evt);
     var bonusAttrs = [];
     if (!options.nonVivant) bonusAttrs.push('radarMental');
     var display;
@@ -16363,12 +16367,30 @@ var COFantasy = COFantasy || function() {
 
   var alliesParPerso = {};
   var listeCompetences = {
-    FOR: {list:[], elts:new Set()},
-    DEX: {list:[], elts:new Set()},
-    CON: {list:[], elts:new Set()},
-    SAG: {list:[], elts:new Set()},
-    INT: {list:[], elts:new Set()},
-    CHA: {list:[], elts:new Set()}
+    FOR: {
+      list: [],
+      elts: new Set()
+    },
+    DEX: {
+      list: [],
+      elts: new Set()
+    },
+    CON: {
+      list: [],
+      elts: new Set()
+    },
+    SAG: {
+      list: [],
+      elts: new Set()
+    },
+    INT: {
+      list: [],
+      elts: new Set()
+    },
+    CHA: {
+      list: [],
+      elts: new Set()
+    }
   };
   // Appelé uniquement après le "ready" et lorsqu'on modifie un handout (fonctionne après l'ajout et la destruction d'un handout)
   // Du coup, alliesParPerso est toujours à jour
@@ -16446,14 +16468,32 @@ var COFantasy = COFantasy || function() {
         });
       }); //end hand.get('notes')
     } else if (handName == 'Compétences' || handName == 'Competences') {
-  listeCompetences = {
-    FOR: {list:[], elts:new Set()},
-    DEX: {list:[], elts:new Set()},
-    CON: {list:[], elts:new Set()},
-    SAG: {list:[], elts:new Set()},
-    INT: {list:[], elts:new Set()},
-    CHA: {list:[], elts:new Set()}
-  };
+      listeCompetences = {
+        FOR: {
+          list: [],
+          elts: new Set()
+        },
+        DEX: {
+          list: [],
+          elts: new Set()
+        },
+        CON: {
+          list: [],
+          elts: new Set()
+        },
+        SAG: {
+          list: [],
+          elts: new Set()
+        },
+        INT: {
+          list: [],
+          elts: new Set()
+        },
+        CHA: {
+          list: [],
+          elts: new Set()
+        }
+      };
       hand.get('notes', function(note) { // asynchronous
         var carac; //La carac dont on spécifie les compétences actuellement
         var lignes = linesOfNote(note);
@@ -18713,7 +18753,7 @@ var COFantasy = COFantasy || function() {
           degainerArme(perso, labelArmeEnflammee, evt);
           ajouteUneLumiere(perso, effet, 9, 3, evt);
         }
-        if (effet = 'cercleDeProtection') {
+        if (effet == 'cercleDeProtection') {
           var protecteur = options.lanceur || perso;
           if (!attributeAsBool(protecteur, 'cercleDeProtectionActif')) {
             setTokenAttr(protecteur, 'cercleDeProtectionActif', 1, evt, {
@@ -22288,7 +22328,9 @@ var COFantasy = COFantasy || function() {
   }
 
   function appliquerParadeProjectiles(cible, options, evt) {
-    setTokenAttr(cible, 'paradeDeProjectiles', 0, evt, {maxVal: 1});
+    setTokenAttr(cible, 'paradeDeProjectiles', 0, evt, {
+      maxVal: 1
+    });
     options.preDmgAnnule = true;
     removePreDmg(options, cible);
   }
@@ -26180,10 +26222,10 @@ var COFantasy = COFantasy || function() {
       return;
     }
     options.lanceur = necromant;
-    getSelected(msg, function(selected, playerId, centre){
+    getSelected(msg, function(selected, playerId, centre) {
       var evt = {
         type: 'tenebres'
-      }
+      };
       addEvent(evt);
       if (limiteRessources(necromant, options, 'tenebres', 'lancer un sort de ténèbres', evt)) return;
       if (!stateCOF.combat) {
@@ -26191,8 +26233,9 @@ var COFantasy = COFantasy || function() {
       }
 
       var tokenTenebres = "Ténèbres de " + necromant.token.get('name');
-      if(centre) {
-        var token = createObj('graphic', {
+      var token = necromant.token;
+      if (centre) {
+        token = createObj('graphic', {
           name: tokenTenebres,
           showname: true,
           subtype: 'token',
@@ -26213,7 +26256,7 @@ var COFantasy = COFantasy || function() {
         evt.tokens = [token];
       }
       var duree = 5 + modCarac(necromant, "intelligence");
-      if(stateCOF.options.affichage.val.duree_effets.val) {
+      if (stateCOF.options.affichage.val.duree_effets.val) {
         sendChar(necromant.charId, "lance un sort de ténèbres pour " + duree + "tours");
       }
       var effetAveugle = {
@@ -29995,7 +30038,7 @@ var COFantasy = COFantasy || function() {
           };
           var valAttr = tokenAttribute(perso, efComplet + 'Valeur');
           var tokenTenebres = getObj('graphic', valAttr[0].get('current'));
-          if(tokenTenebres) tokenTenebres.remove();
+          if (tokenTenebres) tokenTenebres.remove();
         });
         break;
       default:
