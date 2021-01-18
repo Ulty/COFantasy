@@ -9911,7 +9911,7 @@ var COFantasy = COFantasy || function() {
             if (target.touche) {
               ciblesTouchees.push(target);
               //Possibilités d'annuler l'attaque
-              if (!options.pasDeDmg &&
+              if (!options.pasDeDmg && isActive(target) &&
                 attributeAsBool(target, 'runeForgesort_protection') &&
                 attributeAsInt(target, 'limiteParCombat_runeForgesort_protection', 1) > 0) {
                 options.preDmg = options.preDmg || {};
@@ -12696,6 +12696,11 @@ var COFantasy = COFantasy || function() {
           if (parseInt(target.token.get('bar1_value')) <= target.token.get('bar1_max') / 2) {
             rd += 5;
           }
+        }
+        if (target.attaquant && charAttributeAsBool(target, 'combatKinetique') && !getState(target, 'endormi')
+            && !getState(target, 'assome') && !getState(target, 'mort') && !getState(target, 'surpris')
+            && !getState(target, 'etourdi')) {
+          rd += 3;
         }
         if (attributeAsBool(target, 'statueDeBois')) rd += 10;
         if (attributeAsBool(target, 'mutationSilhouetteMassive')) rd += 3;
