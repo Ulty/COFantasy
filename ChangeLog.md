@@ -10,10 +10,12 @@
 * Support de la capacité Enchaînement du barbare.
 * Ajout de l'attaque d'étreinte et immolation de certains démons gardiens
 * Ajout de la capacité Hausser le ton de la Voie du champion
-* Ajout de la capacité Liberté d'Action du barde
-* Implémentation des effets de Cercle de Protection
+* Ajout de la capacité Liberté d'action du barde
+* Implémentation des effets de Cercle de protection
+* Ajout de la capacité Combat kinétique du Psionique
 
 ### Autres améliorations
+* Ajout de RD aux éléments.
 * Correction sur l'initiative entre PJs qui doivent comparer la sagesse
 * Ajout de la possibilité de faire des attaques de d12 qui font des critiques
 * Prise en compte des compétences sur la fiche

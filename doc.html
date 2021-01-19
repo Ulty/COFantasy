@@ -378,7 +378,7 @@
                 <h5>RD simple</h5>
                 <p>Dans le cas d'une RD simple (résistance à tous les dégâts), il suffit d'indiquer un nombre. Exemple : <code>3</code></p>
                 <h5>RD à un type de dégâts particuliers</h5>
-                <p>Pour une RD qui ne s'applique qu'à un type de dégâts particuliers, indiquer le type et la valeur séparés par <code>:</code>. Exemple : <code>feu:5</code></p>
+                <p>Pour une RD qui ne s'applique qu'à un type de dégâts particuliers, indiquer le type et la valeur séparés par <code>:</code>. Exemple : <code>feu:5</code>. On peut aussi spécifier une RD conte tous les types élémentaires avec le mot clé <code>elementaire</code>.</p>
                 <h5>RD sauf un ou plusieurs types de dégâts particuliers</h5>
                 <p>Pour une RD qui s'applique tout le temps sauf un ou plusieurs types de dégâts particuliers, indiquer la valeur puis <code>/</code> puis les différents types séparés par <code>_</code>. Exemple <code>/</code>. Exemple : <code>5/argent_magique</code><br/>
                 Pour une RD qui s'appliquerait à tous les types d'armes sauf une, utiliser à la place une résistance aux 2 autres types d'armes. Exemple, pour 5/tranchant, utiliser <code>percant:5,contondant:5</code>.</p>
@@ -872,6 +872,7 @@
                   <li><strong>Peau de pierre</strong> : ajouter un attribut <code>peauDePierre</code>, de valeur <code>true</code>. La nouvelle DEF sera calculée automatiquement.</li>
                   <li><strong>Tatouages</strong> : ajouter le bonus choisi sur la fiche</li>
                   <li><strong>Peau d'acier</strong> : ajouter dans la partie RD de la fiche, <code>3/1</code></li>
+                  <li><strong>Constitution héroïque</strong> : reporter les bonus sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary">Voie du pourfendeur</h4>
                 <ol>
@@ -1425,6 +1426,11 @@
                   <li><strong>Attaque mentale</strong> : faire 2 attaques, une pour les DMs léthaux, avec les options <code>--sortilege --attaqueMentale</code> et l'autre avec l'option supplémentaire <code>--tempDmg</code> (et en ajustant les DM).</li>
                   <li><strong>Bouclier psi</strong> : ajouter un attribut <code>bouclierPsi</code> de valeur <code>true</code>.</li>
                   <li><strong>Attaque étourdissante</strong> : faire une attaque mentale, avec les options <code>--avecd12 --if moins niveau --if etatCible bouclierPsi --effet etourdi 1 --save CHA [[8+@{selected|CHA}]] --else --effet etourdi 1 --endif --endif</code>.</li>
+                  <li><strong>Vague psionique</strong> : faire les attaques mentales sur toutes les cibles. En cas d'utilisation avec la Mana, le plus simple est de faire deux ability :
+                    <ul><li><code>!cof-lancer-sort lance une vague psychique ?{Incantation ?|Econome (L),--mana 2|Normale,--mana 4}</code> qui lance le sort et dépense la Mana</li>
+                    <li>Une ability qui exécute permet de faire une attaque mentale avec options et <code>--mana 0</code></li></ul>
+                  </li>
+                  <li><strong>Ego héroïque</strong> : reporter les bonus sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary">Voie du contrôle corporel</h4>
                 <ol>
@@ -1438,12 +1444,15 @@
                   <li><strong>Défense intuitive</strong> : ajouter un attribut <code>defenseIntuitive</code> de valeur <code>true</code>. Ne pas modifier la DEF sur la fiche, la sagesse sera automatiquement prise en compte.</li>
                   <li><strong>Perception du passé</strong> : on peut faire le jet en utilisant <code>!cof-jet SAG 15</code>.</li>
                   <li><strong>Vision lointaine</strong> : pas de support particulier. Utiliser <code>!cof-jet SAG</code> pour les jets de sagesse.</li>
+                  <li><strong>Perception héroïque</strong> : reporter les bonus sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la télékinésie</h4>
                 <ol>
                   <li><strong>Manipulation à distance</strong> : pour les attaques à distance, le plus simple est d'utiliser une autre attaque en utilisant le score d'attaque magique et le bon modificateur de DMs.</li>
                   <li><strong>Champ de protection</strong> : pour l'effet de base, si vous suivez les règles, ajustez simplement la DEF sur la fiche. Si vous préférez en faire un sort, vous pouvez utiliser la commande <code>!cof-effet-temp champDeProtection [[5+@{selected|CHA}]]</code>. La valeur par défaut est celle d'un attribut <code>voieDeLaTelekinesie</code>, et pour utiliser une autre valeur, on peut utiliser l'option <code>--valeur</code>. Pour le champ à distance, faire <code>!cof-effet-temp champDeProtection 1 --lanceur @{selected|token_id} --portee 10 --valeur <em>n</em> --target @{target|token_id}</code>. </li>
                   <li><strong>Onde de choc</strong> : faire une attaque magique de contact (portée non définie ou nulle), de dégâts 2d6 + Mod. de CHA. Si le lbale de cette attaque est <i>L</i>, la macro pour l'utiliser sera <code>!cof-attack @{selected|token_id} @{selected|token_id} <i>L</i> --auto --disque ?{Portée (max 10) ?|10} --etat renverse --save FOR [[10+@{selected|CHA}]] --mana 1 --targetFx explode-magic</code>. Si vous souhaitez utiliser les options de tempête de mana pour ce profil, rajoutez <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
+                  <li><strong>Combat kinétique</strong> : créer un attribut <code>combatKinetique</code> de valeur true. Cela appliquera automatiquement la RD dans tous les cas où le personnage est attaqué par un adversaire et qu'il est conscient. Pour l'augmentation des dommages, reporter sur les attaques sur la fiche.</li>
+                  <li><strong>Psychoportation</strong> : <code>!cof-lancer-sort s'élève dans les airs pendant [[5+@{selected|INT}]] tours --mana 3</code>. Pas de support particulier pour le vol. Passer la FOR en caractéristique supérieure via la fiche.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la télépathie</h4>
                 <ol>
@@ -1644,10 +1653,15 @@
                 <ol>
                   <li><strong>Nuée de criquets</strong> : ajouter une attaque magique, de portée 20 m. Puis appeler cette attaque (avec <code>!cof-attack</code>) avec les arguments <code>--pasDeDmg --sortilege --effet nueeDeCriquets [[5+@{selected|SAG}]]</code>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDeCriquets</code> sur la cible dans ce cas). Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. À noter que l'option <code>--mana 0</code> est là pour indiquer au script de terminer l'effet au cas où le druide meurt.</li>
                 </ol>
+                <h4 class="text-secondary">Voie du porteur de bouclier</h4>
+                <ol>
+                  <li><strong>Expertise du bouclier</strong> : reporter le bonus sur la fiche</li>
+                  <li><strong>Progresser à couvert</strong> : <code>!cof-effet-temp progresserACouvert 1 --lanceur @{selected|token_id} --target @{target|token_id} --self --portee 1</code>. A utiliser pour cibler un allié à portée si nécessaire. Au MJ de vérifier qu'elle reste bien près du chevalier pour profiter du bonus.</li>
+                </ol>
                 <h4 class="text-secondary">Voie du tueur de géant</h4>
                 <ol>
-                  <li> <strong>Réduire la distance</strong> : ajouter un attribut <code>reduirelaDistance</code>, de valeur <code>true</code>.</li>
-                  <li> <strong>Ventre mou</strong> : ajouter un attribut <code>ventreMou</code> de valeur <code>true</code>. Cela va diminuer la RD fixe de 3 maximum pour une créature grande, 6 maximum pour une créature énorme et 10 maximum pour une créature colossale.</li>
+                  <li><strong>Réduire la distance</strong> : ajouter un attribut <code>reduirelaDistance</code>, de valeur <code>true</code>.</li>
+                  <li><strong>Ventre mou</strong> : ajouter un attribut <code>ventreMou</code> de valeur <code>true</code>. Cela va diminuer la RD fixe de 3 maximum pour une créature grande, 6 maximum pour une créature énorme et 10 maximum pour une créature colossale.</li>
                 </ol>
                 <h4 class="text-secondary">Capacités épiques</h4>
                 <ul>

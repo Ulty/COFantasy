@@ -7247,6 +7247,10 @@ var COFantasy = COFantasy || function() {
         defense += bonusCouvert;
         explications.push("Cible à couvert => +" + bonusCouvert + " DEF");
       }
+      if (attributeAsBool(target, 'progresserACouvert')) {
+        defense += 5;
+        explications.push("Cible à couvert de bouclier => +5 DEF");
+      }
     } else {
       if (charAttributeAsBool(target, 'ambidextreDuelliste')) {
         if (target.armeGauche && target.armeGauche.portee === 0) {
@@ -9911,7 +9915,7 @@ var COFantasy = COFantasy || function() {
             if (target.touche) {
               ciblesTouchees.push(target);
               //Possibilités d'annuler l'attaque
-              if (!options.pasDeDmg &&
+              if (!options.pasDeDmg && isActive(target) &&
                 attributeAsBool(target, 'runeForgesort_protection') &&
                 attributeAsInt(target, 'limiteParCombat_runeForgesort_protection', 1) > 0) {
                 options.preDmg = options.preDmg || {};
@@ -12270,6 +12274,7 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(target, 'protectionContreLesElements')) {
         rdElems = getValeurOfEffet(target, 'protectionContreLesElements', 1, 'voieDeLaMagieElementaire') * 2;
       }
+      if (rd.elementaire) rdElems += rd.elementaire;
       if (target.ignoreMoitieRD) rdElems = parseInt(rdElems / 2);
       if (rdElems > 0 && dmgTotal > 0 && estElementaire(mainDmgType)) {
         if (dmgTotal > rdElems) {
@@ -12696,6 +12701,12 @@ var COFantasy = COFantasy || function() {
           if (parseInt(target.token.get('bar1_value')) <= target.token.get('bar1_max') / 2) {
             rd += 5;
           }
+        }
+        if (target.attaquant && charAttributeAsBool(target, 'combatKinetique') &&
+          !getState(target, 'endormi') && !getState(target, 'assome') &&
+          !getState(target, 'mort') && !getState(target, 'surpris') &&
+          !getState(target, 'etourdi')) {
+          rd += 3;
         }
         if (attributeAsBool(target, 'statueDeBois')) rd += 10;
         if (attributeAsBool(target, 'mutationSilhouetteMassive')) rd += 3;
@@ -13773,6 +13784,8 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'paradeMagistrale', evt);
     resetAttr(attrs, 'petitVeinard', evt);
     resetAttr(attrs, 'chairACanon', evt);
+    resetAttr(attrs, 'paradeDeProjectiles', evt);
+    resetAttr(attrs, 'prouesse', evt);
     // Réinitialiser le kiai
     resetAttr(attrs, 'kiai', evt);
     // Réinitialiser riposteGuerrier
@@ -29375,6 +29388,11 @@ var COFantasy = COFantasy || function() {
       activation: "lance un sort de Ténèbres",
       actif: "maintient un sort de Ténèbres",
       fin: "les ténèbres se dissipent"
+    },
+    progresserACouvert: {
+      activation: "est à couvert de bouclier",
+      actif: "est à couvert de bouclier",
+      fin: "n'est plus à couvert de bouclier"
     }
   };
 
