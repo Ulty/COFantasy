@@ -7247,6 +7247,10 @@ var COFantasy = COFantasy || function() {
         defense += bonusCouvert;
         explications.push("Cible à couvert => +" + bonusCouvert + " DEF");
       }
+      if (attributeAsBool(target, 'progresserACouvert')) {
+        defense += 5;
+        explications.push("Cible à couvert de bouclier => +5 DEF");
+      }
     } else {
       if (charAttributeAsBool(target, 'ambidextreDuelliste')) {
         if (target.armeGauche && target.armeGauche.portee === 0) {
@@ -13773,6 +13777,8 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'paradeMagistrale', evt);
     resetAttr(attrs, 'petitVeinard', evt);
     resetAttr(attrs, 'chairACanon', evt);
+    resetAttr(attrs, 'paradeDeProjectiles', evt);
+    resetAttr(attrs, 'prouesse', evt);
     // Réinitialiser le kiai
     resetAttr(attrs, 'kiai', evt);
     // Réinitialiser riposteGuerrier
@@ -29375,6 +29381,11 @@ var COFantasy = COFantasy || function() {
       activation: "lance un sort de Ténèbres",
       actif: "maintient un sort de Ténèbres",
       fin: "les ténèbres se dissipent"
+    },
+    progresserACouvert: {
+      activation: "est à couvert de bouclier",
+      actif: "est à couvert de bouclier",
+      fin: "n'est plus à couvert de bouclier"
     }
   };
 
