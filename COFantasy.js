@@ -2529,6 +2529,7 @@ var COFantasy = COFantasy || function() {
     weaponStats.options = weaponStats.options.trim();
     switch (weaponStats.typeAttaque) {
       case 'Naturel':
+        weaponStats.armeNaturelle = true;
         break;
       case 'Arme 1 main':
         weaponStats.arme = true;
@@ -4942,7 +4943,8 @@ var COFantasy = COFantasy || function() {
     // Optional arguments
     var options = {
       sortilege: weaponStats.sortilege,
-      hache: weaponStats.hache
+      hache: weaponStats.hache,
+      armeNaturelle: weaponStats.armeNaturelle
     };
     switch (weaponStats.typeDegats) {
       case 'mental':
@@ -7312,6 +7314,11 @@ var COFantasy = COFantasy || function() {
       defense += 1;
       explications.push(target.tokName + " comprend le langage sombre => +1 en DEF");
     }
+    if (attributeAsBool(target, 'presenceGlaciale')) {
+      var defenseGlaciale = getValeurOfEffet(target, 'presenceGlaciale', 4);
+      explications.push("Présence glaciale => +" + defenseGlaciale + " en DEF");
+      defense += defenseGlaciale;
+    }
     if (target.realCharId) target.charId = target.realCharId;
     return defense;
   }
@@ -8630,7 +8637,8 @@ var COFantasy = COFantasy || function() {
       degainerArme(attaquant, attackLabel, evt, options);
     }
     var riposte = charAttributeAsBool(attaquant, 'riposte');
-    options.attaqueEnMeute = charAttributeAsInt(attaquant, 'attaqueEnMeute', 0);
+    var attaqueEnMeute = charAttributeAsInt(attaquant, 'attaqueEnMeute', 0);
+    if (attaqueEnMeute > 0) options.attaqueEnMeute = attaqueEnMeute;
     var attrLienEpique = charAttribute(attaquant.charId, 'lienEpique');
     if (attrLienEpique.length > 0) {
       options.lienEpique = attrLienEpique[0].get('current');
@@ -8853,11 +8861,14 @@ var COFantasy = COFantasy || function() {
 
   function immuniseAuType(target, dmgType, attaquant) {
     if (charAttributeAsBool(target, 'immunite_' + dmgType)) return true;
-    if (dmgType == 'poison' && attaquant) {
-      if (charAttributeAsBool(target, 'sangDeFerIf')) {
-        return estElfeNoir(attaquant) || estInsecte(attaquant);
-      }
-      return false;
+    switch (dmgType) {
+      case 'poison':
+        if (attaquant && charAttributeAsBool(target, 'sangDeFerIf')) {
+          return estElfeNoir(attaquant) || estInsecte(attaquant);
+        }
+        return false;
+      case 'froid':
+        return attributeAsBool(target, 'presenceGlaciale');
     }
     return false;
   }
@@ -11325,6 +11336,32 @@ var COFantasy = COFantasy || function() {
                             });
                         });
                       }
+                      if (options.armeNaturelle && attributeAsBool(target, 'presenceGlaciale')) {
+                        ciblesCount++;
+                        var exprPresenceGlaciale = '[[';
+                        var attrsPGValeur = tokenAttribute(target, 'presenceGlacialeValeur');
+                        if (attrsPGValeur.length === 0) exprPresenceGlaciale += '1d6';
+                        else exprPresenceGlaciale += attrsPGValeur[0].get('max');
+                        exprPresenceGlaciale += ']]';
+                        sendChat("", exprPresenceGlaciale, function(res) {
+                          var rolls = res[0];
+                          var explRoll = rolls.inlinerolls[0];
+                          var r = {
+                            total: explRoll.results.total,
+                            type: 'froid',
+                            display: buildinline(explRoll, 'froid', true)
+                          };
+                          dealDamage(attaquant, r, [], evt, false, options,
+                            target.messages,
+                            function(dmgDisplay, dmg) {
+                              var dmgMsg =
+                                "<b>" + attackerTokName + " est glacé :</b> " +
+                                dmgDisplay + " DM";
+                              target.messages.push(dmgMsg);
+                              finCibles();
+                            });
+                        });
+                      }
                       var attrDmSiToucheContact = findObjs({
                         _type: 'attribute',
                         _characterid: target.charId,
@@ -12322,13 +12359,21 @@ var COFantasy = COFantasy || function() {
           if (invulnerable) {
             divide();
           }
-          if (dmgType == 'froid' && attributeAsBool(target, 'masqueMortuaire')) {
-            divide();
-          }
-          if ((dmgType == 'feu' || dmgType == 'acide') && attributeAsBool(target, 'mutationEcaillesRouges')) {
-            divide();
-          } else if ((dmgType == 'froid' || dmgType == 'electrique') && attributeAsBool(target, 'mutationFourrureViolette')) {
-            divide();
+          switch (dmgType) {
+            case 'froid':
+              if (attributeAsBool(target, 'masqueMortuaire')) divide();
+              if (attributeAsBool(target, 'mutationFourrureViolette')) divide();
+              break;
+            case 'feu':
+              if (attributeAsBool(target, 'presenceGlaciale')) divide();
+              if (attributeAsBool(target, 'mutationEcaillesRouges')) divide();
+              break;
+            case 'acide':
+              if (attributeAsBool(target, 'mutationEcaillesRouges')) divide();
+              break;
+            case 'electrique':
+              if (attributeAsBool(target, 'mutationFourrureViolette')) divide();
+              break;
           }
         } else if (dmgType == 'poison' || dmgType == 'maladie') {
           if (invulnerable ||
@@ -18945,7 +18990,7 @@ var COFantasy = COFantasy || function() {
         if (options.puissant) {
           var puissant = true;
           if (options.puissant == "off") puissant = false;
-          setTokenAttr(perso, effet + "Puissant", puissant, evt);
+          setTokenAttr(perso, effet + 'Puissant', puissant, evt);
         }
         if (options.valeur !== undefined) {
           setTokenAttr(perso, effet + 'Valeur', options.valeur, evt, {
@@ -19087,10 +19132,15 @@ var COFantasy = COFantasy || function() {
           if (options.puissant) {
             var puissant = true;
             if (options.puissant == "off") puissant = false;
-            setTokenAttr(perso, effet + "Puissant", puissant, evt);
+            setTokenAttr(perso, effet + 'Puissant', puissant, evt);
+          }
+          if (options.valeur !== undefined) {
+            setTokenAttr(perso, effet + 'Valeur', options.valeur, evt, {
+              maxVal: options.valeurMax
+            });
           }
           if (options.tempeteDeManaIntense !== undefined) {
-            setTokenAttr(perso, effet + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
+            setTokenAttr(perso, effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
           }
         });
       } else {
@@ -19105,6 +19155,9 @@ var COFantasy = COFantasy || function() {
             ace[0].remove();
           }
           removeTokenAttr(perso, effet, evt, messageEffetIndetermine[effet].fin);
+          removeTokenAttr(perso, effet + 'Puissant', evt);
+          removeTokenAttr(perso, effet + 'Valeur', evt);
+          removeTokenAttr(perso, effet + 'TempeteDeManaIntense', evt);
           if (effet == 'foretVivanteEnnemie' && stateCOF.combat) {
             updateNextInit(perso);
           }
@@ -29621,6 +29674,11 @@ var COFantasy = COFantasy || function() {
       activation: "devient plus massif",
       actif: "a une silhouette massive",
       fin: "retrouve une silhouette normale",
+    },
+    presenceGlaciale: {
+      activation: "transforme son corps en glace vivante",
+      actif: "est formé de glace",
+      fin: "retrouve un corps normal",
     },
     sixiemeSens: {
       activation: "fait un rituel de divination",
