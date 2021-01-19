@@ -15,6 +15,7 @@
 * Ajout de la capacité Combat kinétique du Psionique
 
 ### Autres améliorations
+* Ajout de RD aux éléments.
 * Correction sur l'initiative entre PJs qui doivent comparer la sagesse
 * Ajout de la possibilité de faire des attaques de d12 qui font des critiques
 * Prise en compte des compétences sur la fiche

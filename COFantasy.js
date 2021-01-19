@@ -12274,6 +12274,7 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(target, 'protectionContreLesElements')) {
         rdElems = getValeurOfEffet(target, 'protectionContreLesElements', 1, 'voieDeLaMagieElementaire') * 2;
       }
+      if (rd.elementaire) rdElems += rd.elementaire;
       if (target.ignoreMoitieRD) rdElems = parseInt(rdElems / 2);
       if (rdElems > 0 && dmgTotal > 0 && estElementaire(mainDmgType)) {
         if (dmgTotal > rdElems) {
@@ -12701,9 +12702,10 @@ var COFantasy = COFantasy || function() {
             rd += 5;
           }
         }
-        if (target.attaquant && charAttributeAsBool(target, 'combatKinetique') && !getState(target, 'endormi')
-            && !getState(target, 'assome') && !getState(target, 'mort') && !getState(target, 'surpris')
-            && !getState(target, 'etourdi')) {
+        if (target.attaquant && charAttributeAsBool(target, 'combatKinetique') &&
+          !getState(target, 'endormi') && !getState(target, 'assome') &&
+          !getState(target, 'mort') && !getState(target, 'surpris') &&
+          !getState(target, 'etourdi')) {
           rd += 3;
         }
         if (attributeAsBool(target, 'statueDeBois')) rd += 10;
