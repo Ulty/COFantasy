@@ -28782,7 +28782,7 @@ var COFantasy = COFantasy || function() {
         parseInjonctionMortelle(msg);
         return;
       case '!cof-tour-de-force': // Deprecrated
-        boutonTourDeForce();
+        parseTourDeForce(msg);
         return;
       case '!cof-prouesse':
         boutonProuesse(msg);
