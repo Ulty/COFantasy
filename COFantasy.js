@@ -19832,7 +19832,7 @@ var COFantasy = COFantasy || function() {
       var targetsWithoutSave = [];
       cibles.forEach(function(perso) {
         perso.name = perso.token.get('name');
-        if (estNonVivant(perso)) { //le sort de sommeil n'affecte que les créatures vivantes
+        if (estNonVivant(perso) || charAttributeAsBool(perso, 'immunite_endormi')) { //le sort de sommeil n'affecte que les créatures vivantes
           addLineToFramedDisplay(display, perso.name + " n'est pas affecté par le sommeil");
           return;
         }
