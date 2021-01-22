@@ -3458,6 +3458,7 @@ var COFantasy = COFantasy || function() {
   // testRes.echecCritique, testRes.critique pour le type
   // testRes.valeur pour la valeur totale du jet
   // testRes.rerolls pour le texte avec les boutons de rerolls adaptés.
+  // testRes.modifiers pour les boutons qui peuvent être activés sur le roll, qu'il soit réussi ou non.
   // Pour que les boutons de rerolls fonctionnent, le type d'évènement doit être supporté par redoEvent()
   // ne rajoute pas evt à l'historique
   function testCaracteristique(personnage, carac, seuil, testId, options, evt, callback) { //asynchrone
@@ -3582,6 +3583,10 @@ var COFantasy = COFantasy || function() {
           attributeAsBool(personnage, 'prouesse') &&
           (carac == 'FOR' || carac == 'DEX')) {
           testRes.rerolls += '<br/>' + boutonSimple("!cof-prouesse " + evt.id + " " + testId, "Prouesse");
+        }
+        testRes.modifiers = '';
+        if (attributeAsBool(personnage, 'tourDeForce') && carac == 'FOR') {
+          testRes.modifiers += '<br/>' + boutonSimple("!cof-tour-force " + evt.id + " " + testId, "Tour de Force");
         }
         if (jetCache) sendChat('COF', "/w GM Jet caché : " + buildinline(roll) + bonusText);
         callback(testRes, explications);
@@ -3729,6 +3734,9 @@ var COFantasy = COFantasy || function() {
             (caracteristique == 'FOR' || caracteristique == 'DEX')) {
             boutonsReroll += '<br/>' + boutonSimple("!cof-prouesse " + evt.id + " " + testId, "Prouesse");
           }
+          if (caracteristique == 'FOR' && attributeAsBool(perso, 'tourDeForce')) {
+            boutonsReroll += '<br/>' + boutonSimple("!cof-tour-force " + evt.id + " " + testId, "Tour De Force");
+          }
           addLineToFramedDisplay(display, boutonsReroll);
           if (optionsDisplay.retarde) {
             addFramedHeader(display, playerId, true);
@@ -3745,10 +3753,9 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, m, 80);
           });
           if (tr.reussite) {
-            addLineToFramedDisplay(display, "C'est réussi.");
+            addLineToFramedDisplay(display, "C'est réussi." + tr.modifiers);
           } else {
-            //TODO : ajouter le pacte sanglant, la prouesse et le tour de force
-            var msgRate = "C'est raté." + tr.rerolls;
+            var msgRate = "C'est raté." + tr.rerolls + tr.modifiers;
             addLineToFramedDisplay(display, msgRate);
           }
           if (optionsDisplay.retarde) {
@@ -8052,6 +8059,9 @@ var COFantasy = COFantasy || function() {
               (carac1 == 'FOR' || carac1 == 'DEX')) {
               texte1 += '<br/>' + boutonSimple("!cof-prouesse " + evt.id + " " + rollId + "_roll1", "Prouesse");
             }
+            if (attributeAsBool(perso1, 'tourDeForce') && carac1 == 'FOR') {
+              texte1 += '<br/>' + boutonSimple("!cof-tour-force " + evt.id + " " + rollId + "_roll1", "Tour de force");
+            }
           }
         }
         explications.push(texte1);
@@ -8070,9 +8080,12 @@ var COFantasy = COFantasy || function() {
             if (pcPerso2 > 0)
               texte2 += "<br/>" + boutonSimple("!cof-bouton-chance " +
                 evt.id + " " + rollId + "_roll2", "Chance") + " (reste " + pcPerso2 + " PC)";
-            if (stateCOF.combat && attributeAsBool(pcPerso2, 'prouesse') &&
+            if (stateCOF.combat && attributeAsBool(perso2, 'prouesse') &&
               (carac2 == 'FOR' || carac2 == 'DEX')) {
-              texte2 += '<br/>' + boutonSimple("!cof-prouesse " + evt.id + " " + rollId + "_roll1", "Prouesse");
+              texte2 += '<br/>' + boutonSimple("!cof-prouesse " + evt.id + " " + rollId + "_roll2", "Prouesse");
+            }
+            if (attributeAsBool(perso2, 'tourDeForce') && carac2 == 'FOR') {
+              texte2 += '<br/>' + boutonSimple("!cof-tour-force " + evt.id + " " + rollId + "_roll2", "Tour de force");
             }
           }
         }
@@ -8691,13 +8704,13 @@ var COFantasy = COFantasy || function() {
           var testId = 'sanctuaire_' + cible.token.id;
           testCaracteristique(attaquant, 'SAG', 15, testId, options, evt, function(tr) {
             if (tr.reussite) {
-              cible.messages.push(attaquant.tokName + " réussi à passer outre le sanctuaire de " + cible.tokName + " (jet de SAG " + tr.texte + "&ge;15)");
+              cible.messages.push(attaquant.tokName + " réussi à passer outre le sanctuaire de " + cible.tokName + " (jet de SAG " + tr.texte + "&ge;15)" + tr.modifiers);
               ciblesATraiter--;
               if (ciblesATraiter === 0) {
                 resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options, chargesArme);
               }
             } else {
-              var msgRate = "ne peut se résoudre à attaquer " + cible.tokName + " (sanctuaire, jet de SAG " + tr.texte + "< 15)" + tr.rerolls;
+              var msgRate = "ne peut se résoudre à attaquer " + cible.tokName + " (sanctuaire, jet de SAG " + tr.texte + "< 15)" + tr.rerolls + tr.modifiers;
               sendChar(attaquant.charId, msgRate);
               attaqueImpossible = true;
             }
@@ -10776,7 +10789,7 @@ var COFantasy = COFantasy || function() {
           if (immobilise) setState(target, 'immobilise', true, evt);
           target.messages.push("est agrippé");
         }
-        if (options.projection && taillePersonnage(attaquant, 4) > taillePersonnage(target, 4)) {
+        if (!options.redo && options.projection && taillePersonnage(attaquant, 4) > taillePersonnage(target, 4)) {
           var bonusProjection = 5 - taillePersonnage(target, 4);
           var distanceProjetee = rollDePlus(6, {
             bonus: bonusProjection
@@ -12049,10 +12062,11 @@ var COFantasy = COFantasy || function() {
         if (tr.reussite) {
           smsg += " => réussite";
           if (options.msgReussite) smsg += options.msgReussite;
+          smsg += tr.modifiers;
         } else {
           smsg += " => échec";
           if (options.msgRate) smsg += options.msgRate;
-          smsg += tr.rerolls;
+          smsg += tr.rerolls + tr.modifiers;
         }
         expliquer(smsg);
         afterSave(tr.reussite, tr.texte);
@@ -15026,10 +15040,10 @@ var COFantasy = COFantasy || function() {
             sendChar(charId, "fait un jet de CON pour guérir de sa blessure");
             var m = "/direct " + onGenre(perso, 'Il', 'Elle') + " fait " + tr.texte;
             if (tr.reussite) {
-              sendChar(charId, m + "&ge; 8, son état s'améliore nettement.");
+              sendChar(charId, m + "&ge; 8, son état s'améliore nettement." + tr.modifiers);
               setState(perso, 'blesse', false, evt);
             } else {
-              var msgRate = m + "< 8, son état reste préoccupant." + tr.rerolls;
+              var msgRate = m + "< 8, son état reste préoccupant." + tr.rerolls + tr.modifiers;
               sendChar(charId, msgRate);
             }
             finalize();
@@ -15340,7 +15354,7 @@ var COFantasy = COFantasy || function() {
       rollId = args[2];
     }
     if (perso === undefined) {
-      error("Erreur interne du bouton de chance : l'évenement n'a pas de personnage", evt);
+      error("Erreur interne du bouton de prouesse : l'évenement n'a pas de personnage", evt);
       return;
     }
     if (!peutController(msg, perso)) {
@@ -15396,6 +15410,90 @@ var COFantasy = COFantasy || function() {
       if (rollId) {
         options.chanceRollId = options.chanceRollId || {};
         options.chanceRollId[rollId] = (options.chanceRollId[rollId] + 5) || 5;
+      } else {
+        options.chance = (options.chance + 10) || 10;
+      }
+      if (redoEvent(evt, action, perso)) return;
+    }
+    error("Type d'évènement pas encore géré pour la chance", evt);
+  }
+
+  //!cof-tour-force [evt.id] [rollId]
+  function boutonTourDeForce(msg) {
+    var args = msg.content.split(' ');
+    if (args.length < 2) {
+      error("La fonction !cof-tour-force n'a pas assez d'arguments", args);
+      return;
+    }
+    var evt = findEvent(args[1]);
+    if (evt === undefined) {
+      error("L'action est trop ancienne ou éte annulée", args);
+      return;
+    }
+    var perso = evt.personnage;
+    var rollId;
+    if (args.length > 2) {
+      if (!evt.action) {
+        error("Le dernier évènement n'est pas une action", args);
+        return;
+      }
+      var roll = evt.action.rolls[args[2]];
+      if (roll === undefined) {
+        error("Erreur interne du bouton de tour de force : roll non identifié", args);
+        return;
+      }
+      if (roll.token === undefined) {
+        error("Erreur interne du bouton de tour de force : roll sans token", args);
+        return;
+      }
+      perso = persoOfId(roll.token.id, roll.token.name, roll.token.pageId);
+      rollId = args[2];
+    }
+    if (perso === undefined) {
+      error("Erreur interne du bouton de tour de force : l'évenement n'a pas de personnage", evt);
+      return;
+    }
+    if (!peutController(msg, perso)) {
+      sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+      return;
+    }
+    var attrTourDeForce = attributeAsBool(perso, 'tourDeForce');
+    if (!attrTourDeForce) {
+      error(perso.token.name + " ne peut pas faire ça !");
+      return;
+    }
+    var action = evt.action;
+    if (action) { //alors on peut faire le undo
+      var options = action.options || {};
+      undoEvent(evt);
+      var d4 = rollDePlus(4);
+      var r = {
+        total: d4.val,
+        type: 'normal',
+        display: d4.roll
+      };
+      var evtTourDeForce = {
+        type: 'tourDeForce',
+        rollId: rollId,
+        action: {
+          rolls: {
+            "tourDeForceDmg": d4
+          }
+        }
+      };
+      addEvent(evtTourDeForce);
+      var explications = [];
+      perso.ignoreTouteRD = true;
+      dealDamage(perso, r, [], evtTourDeForce, false, {}, explications,
+          function(dmgDisplay, dmg) {
+            sendChar(perso.charId, "réalise un Tour de force et perd " + dmgDisplay + " PV");
+            explications.forEach(function(expl) {
+              sendChar(perso.charId, expl);
+            });
+          });
+      if (rollId) {
+        options.chanceRollId = options.chanceRollId || {};
+        options.chanceRollId[rollId] = (options.chanceRollId[rollId] + 10) || 10;
       } else {
         options.chance = (options.chance + 10) || 10;
       }
@@ -15504,7 +15602,7 @@ var COFantasy = COFantasy || function() {
       case 'surprise':
         doSurprise(action.cibles, action.testSurprise, action.selected, options);
         return true;
-      case 'tourDeForce':
+      case 'tourDeForce': //Deprecated
         doTourDeForce(action.perso, action.seuil, options);
         return true;
       case 'tueurFantasmagorique':
@@ -16353,11 +16451,11 @@ var COFantasy = COFantasy || function() {
         testCaracteristique(perso, 'SAG', testSurprise, testId, optionsTest, evt,
           function(tr, explications) {
             var result;
-            if (tr.reussite) result = "réussi";
+            if (tr.reussite) result = "réussi." + tr.modifiers;
             else {
               result = "raté, " + name + " est surpris";
               result += eForFemale(perso);
-              result += tr.rerolls;
+              result += tr.rerolls + tr.modifiers;
               setState(perso, 'surpris', true, evt);
             }
             var message = name + " fait " + tr.texte + " : " + result;
@@ -18223,9 +18321,9 @@ var COFantasy = COFantasy || function() {
         sendChar(perso.charId, titre);
         if (res.reussite) {
           setState(perso, etat, false, evt);
-          sendChar(perso.charId, res.texte + " &ge; " + seuil + ", " + perso.token.get('name') + " n'est plus " + stringOfEtat(etat, perso));
+          sendChar(perso.charId, res.texte + " &ge; " + seuil + ", " + perso.token.get('name') + " n'est plus " + stringOfEtat(etat, perso) + res.modifiers);
         } else {
-          sendChar(perso.charId, res.texte + " &lt; " + seuil + ", " + perso.token.get('name') + " est toujours " + stringOfEtat(etat, perso) + res.rerolls);
+          sendChar(perso.charId, res.texte + " &lt; " + seuil + ", " + perso.token.get('name') + " est toujours " + stringOfEtat(etat, perso) + res.rerolls + res.modifiers);
         }
       });
     }
@@ -19251,7 +19349,7 @@ var COFantasy = COFantasy || function() {
         var line = "Jet de résistance de " + targetName + " :" + tr.texte;
         var sujet = onGenre(target, 'il', 'elle');
         if (tr.reussite) {
-          line += "&gt;=" + difficulte + ",  " + sujet + " résiste à la peur.";
+          line += "&gt;=" + difficulte + ",  " + sujet + " résiste à la peur." + tr.modifiers;
         } else {
           line += "&lt;" + difficulte + ", " + sujet + ' ';
           var effet = 'apeureTemp';
@@ -19266,7 +19364,7 @@ var COFantasy = COFantasy || function() {
           } else {
             line += "s'enfuit.";
           }
-          line += tr.rerolls;
+          line += tr.rerolls + tr.modifiers;
           setState(target, etat, true, evt);
           setAttrDuree(target, effet, duree, evt);
         }
@@ -19913,10 +20011,10 @@ var COFantasy = COFantasy || function() {
               var line = "Jet de résistance de " + perso.name + ": " + tr.texte;
               var sujet = onGenre(perso, 'il', 'elle');
               if (tr.reussite) {
-                line += "&gt;=" + seuil + ",  " + sujet + " ne s'endort pas";
+                line += "&gt;=" + seuil + ",  " + sujet + " ne s'endort pas." + tr.modifiers;
               } else {
                 setState(perso, 'endormi', true, evt);
-                line += "&lt;" + seuil + ", " + sujet + " s'endort" + tr.rerolls;
+                line += "&lt;" + seuil + ", " + sujet + " s'endort" + tr.rerolls + tr.modifiers;
               }
               addLineToFramedDisplay(display, line);
               finalize();
@@ -21094,21 +21192,21 @@ var COFantasy = COFantasy || function() {
         var post = "";
         if ((tr.reussite && !trouveBaies) || (trouveBaies && !tr.reussite && tr.valeur > 7)) {
           if (voieDeLaSurvie > 0) {
-            output += " revient avec " + voieDeLaSurvie + " plantes médicinales.";
+            output += " revient avec " + voieDeLaSurvie + " plantes médicinales." + tr.modifiers;
             var actionHerbes = "!cof-soin @{selected|token_id} @{selected|token_id} 1d6";
             ajouterConsommable(perso, 'Plante médicinale', voieDeLaSurvie, actionHerbes, evt);
           } else {
-            output += " revient avec de quoi soigner les blessés.";
+            output += " revient avec de quoi soigner les blessés." + tr.modifiers;
           }
         } else if (tr.reussite && trouveBaies) {
           var niveau = ficheAttributeAsInt(perso, 'niveau', 1);
           var actionBaies = "!cof-consommer-baie " + niveau + " --limiteParJour 1 baieMagique";
           var nbBaies = voieDeLaSurvie + Math.floor((tr.valeur - 10) / 2);
           if (nbBaies === 0) nbBaies = 1;
-          output += " revient avec " + nbBaies + " baies magiques.";
+          output += " revient avec " + nbBaies + " baies magiques." + tr.modifiers;
           ajouterConsommable(perso, 'Baie magique', nbBaies, actionBaies, evt);
         } else {
-          output += " revient bredouille." + tr.rerolls;
+          output += " revient bredouille." + tr.rerolls + tr.modifiers;
         }
         output += "(test de SAG:" + tr.texte + ")";
         output += post;
@@ -22179,7 +22277,7 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function parseTourDeForce(msg) {
+  function parseTourDeForce(msg) { // Deprecated
     var options = parseOptions(msg);
     var cmd = options.cmd;
     if (cmd < 2) {
@@ -22198,7 +22296,7 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function doTourDeForce(perso, seuil, options) {
+  function doTourDeForce(perso, seuil, options) { // Deprecated
     var evt = {
       type: "tourDeForce",
       action: {
@@ -23047,7 +23145,7 @@ var COFantasy = COFantasy || function() {
       function(testRes) {
         var msgJet = "Jet de SAG : " + testRes.texte;
         if (testRes.reussite) {
-          addLineToFramedDisplay(display, msgJet + " &ge; 13");
+          addLineToFramedDisplay(display, msgJet + " &ge; 13" + testRes.modifiers);
           sendChat(name, endFramedDisplay(display));
           var optionsDM = {
             sortilege: true,
@@ -23095,7 +23193,7 @@ var COFantasy = COFantasy || function() {
           dmgDirects(options.playerId, playerName, cibles, dmg, optionsDM);
         } else {
           addLineToFramedDisplay(display, msgJet + " < 13");
-          var msgRate = name + " ne réussit pas à invoquer son dieu." + testRes.rerolls;
+          var msgRate = name + " ne réussit pas à invoquer son dieu." + testRes.rerolls + testRes.modifiers;
           addLineToFramedDisplay(display, msgRate);
           sendChat(name, endFramedDisplay(display));
         }
@@ -23230,7 +23328,7 @@ var COFantasy = COFantasy || function() {
       function(tr) {
         var jet = "Jet d'INT : " + tr.texte;
         if (tr.echecCritique) { //échec critique
-          jet += " Échec critique !" + tr.rerolls;
+          jet += " Échec critique !" + tr.rerolls + tr.modifiers;
           addLineToFramedDisplay(display, jet);
           addLineToFramedDisplay(display, perso.tokName + " s'empoisonne.");
           sendChat('', "[[" + forcePoison + "]]", function(res) {
@@ -23261,7 +23359,7 @@ var COFantasy = COFantasy || function() {
               }); //fin de dmg dus à l'échec critique
           }); //fin du jet de dmg
         } else if (tr.reussite) {
-          jet += " &ge; " + testINT;
+          jet += " &ge; " + testINT + tr.modifiers;
           addLineToFramedDisplay(display, jet);
           setTokenAttr(perso, attribut, forcePoison, evt, {
             maxVal: infosAdditionelles
@@ -23269,7 +23367,7 @@ var COFantasy = COFantasy || function() {
           addLineToFramedDisplay(display, armeEnduite + " est maintenant enduit de poison");
           sendChat("", endFramedDisplay(display));
         } else { //echec normal au jet d'INT
-          jet += " < " + testINT + " : échec" + tr.rerolls;
+          jet += " < " + testINT + " : échec" + tr.rerolls + tr.modifiers;
           addLineToFramedDisplay(display, jet);
           sendChat("", endFramedDisplay(display));
         }
@@ -24549,10 +24647,10 @@ var COFantasy = COFantasy || function() {
           function(tr) {
             addLineToFramedDisplay(display, "<b>Résultat du jet de SAG :</b> " + tr.texte);
             if (tr.reussite) {
-              addLineToFramedDisplay(display, "C'est réussi, " + perso.token.get('name') + " se calme.");
+              addLineToFramedDisplay(display, "C'est réussi, " + perso.token.get('name') + " se calme." + tr.modifiers);
               removeTokenAttr(perso, 'rageDuBerserk', evt);
             } else {
-              var msgRate = "C'est raté, " + perso.token.get('name') + " reste enragé" + tr.rerolls;
+              var msgRate = "C'est raté, " + perso.token.get('name') + " reste enragé" + tr.rerolls + tr.modifiers;
               addLineToFramedDisplay(display, msgRate);
             }
             sendChat('', endFramedDisplay(display));
@@ -24619,12 +24717,12 @@ var COFantasy = COFantasy || function() {
         });
       var line = "Jet de CHA : " + tr.texte;
       if (tr.reussite) {
-        line += " &ge; " + intCible;
+        line += " &ge; " + intCible + tr.modifiers;
         addLineToFramedDisplay(display, line);
         addLineToFramedDisplay(display, cible.token.get('name') + " est complètement déstabilisé");
         setAttrDuree(cible, 'armeSecreteBarde', 1, evt);
       } else {
-        line += " &lt; " + intCible + tr.rerolls;
+        line += " &lt; " + intCible + tr.rerolls + tr.modifiers;
         addLineToFramedDisplay(display, line);
         addLineToFramedDisplay(display, cible.token.get('name') + " reste insensible au charme de " + perso.token.get('name'));
       }
@@ -27233,7 +27331,7 @@ var COFantasy = COFantasy || function() {
       function(tr) {
         addLineToFramedDisplay(display, "<b>Résultat :</b> " + tr.texte);
         if (tr.reussite) {
-          addLineToFramedDisplay(display, "C'est réussi, " + perso.token.get('name') + " s'extirpe de " + cube.tokName);
+          addLineToFramedDisplay(display, "C'est réussi, " + perso.token.get('name') + " s'extirpe de " + cube.tokName + tr.modifiers);
           toFront(perso.token);
           evt.deletedAttributes = evt.deletedAttributes || [];
           var attr = tokenAttribute(perso, 'enveloppePar')[0];
@@ -27249,8 +27347,7 @@ var COFantasy = COFantasy || function() {
             }
           });
         } else {
-          //TODO : ajouter le pacte sanglant, la prouesse et le tour de force
-          var msgRate = "C'est raté." + tr.rerolls;
+          var msgRate = "C'est raté." + tr.rerolls + tr.modifiers;
           addLineToFramedDisplay(display, msgRate);
         }
         sendChat('', endFramedDisplay(display));
@@ -28684,11 +28781,14 @@ var COFantasy = COFantasy || function() {
       case '!cof-injonction-mortelle':
         parseInjonctionMortelle(msg);
         return;
-      case '!cof-tour-de-force':
+      case '!cof-tour-de-force': // Deprecrated
         parseTourDeForce(msg);
         return;
       case '!cof-prouesse':
         boutonProuesse(msg);
+        return;
+      case '!cof-tour-force':
+        boutonTourDeForce(msg);
         return;
       case '!cof-encaisser-un-coup':
         doEncaisserUnCoup(msg);
@@ -30356,7 +30456,7 @@ var COFantasy = COFantasy || function() {
           testCaracteristique(perso, 'CON', veSeuil, testId, options, evt, function(testRes) {
             var res = "tente un jet de CON " + veSeuil + " pour combattre les vapeurs éthyliques " + testRes.texte;
             if (testRes.reussite) {
-              res += " => réussi";
+              res += " => réussi." + testRes.modifiers;
               var expliquer;
               if (attr.get('name') == 'vapeursEthyliques') {
                 expliquer = function(s) {
@@ -30371,7 +30471,7 @@ var COFantasy = COFantasy || function() {
               expliquer(res);
               diminueEbriete(perso, evt, expliquer);
             } else {
-              res += " => raté" + testRes.rerolls;
+              res += " => raté" + testRes.rerolls + testRes.modifiers;
               sendChar(veCharId, res);
             }
           });
