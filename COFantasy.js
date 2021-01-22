@@ -6119,7 +6119,7 @@ var COFantasy = COFantasy || function() {
     return charAttributeAsInt(perso, originalAttr, 0);
   }
 
-  function testCondition(cond, attaquant, cibles, deAttaque) {
+  function testCondition(cond, attaquant, cibles, deAttaque, options) {
     if (cond == 'toujoursVrai') return true;
     switch (cond.type) {
       case 'moins':
@@ -6177,6 +6177,7 @@ var COFantasy = COFantasy || function() {
         }
         return resAttrCible;
       case 'deAttaque':
+        if (options && options.auto) return false;
         if (deAttaque === undefined) {
           error("Condition de dé d'attaque non supportée ici", cond);
           return true;
@@ -6300,6 +6301,10 @@ var COFantasy = COFantasy || function() {
           resCondition = testCondition(ite.condition, attaquant, [], deAttaque);
           break;
         case 'deAttaque':
+          if (options.auto) {
+            resCondition = false;
+            break;
+          }
           if (deAttaque === undefined) {
             callIfAllDone(etatParent, callback);
             return true;
@@ -9730,7 +9735,7 @@ var COFantasy = COFantasy || function() {
             return;
           }
         }
-        if (d20roll > 14 && charAttributeAsBool(attaquant, 'projection')) {
+        if (!options.auto && d20roll > 14 && charAttributeAsBool(attaquant, 'projection')) {
           options.projection = true;
         }
         //Modificateurs en Attaque qui ne dépendent pas de la cible
@@ -10642,7 +10647,8 @@ var COFantasy = COFantasy || function() {
       ciblesAttaquees.forEach(function(target) {
         if (options.test || options.feinte || !target.touche) {
           //On a fini avec cette cible, on imprime ce qui la concerne
-          addLineToFramedDisplay(display, target.attackMessage);
+          if (target.attackMessage) 
+            addLineToFramedDisplay(display, target.attackMessage);
           target.messages.forEach(function(expl) {
             addLineToFramedDisplay(display, expl, 80);
           });
@@ -11120,7 +11126,7 @@ var COFantasy = COFantasy || function() {
         additionalDmg = additionalDmg.filter(function(dmSpec) {
           if (dmSpec.conditions === undefined) return true;
           return dmSpec.conditions.every(function(cond) {
-            return testCondition(cond, attaquant, [target], d20roll);
+            return testCondition(cond, attaquant, [target], d20roll, options);
           });
         });
         if (!options.sortilege && !options.magique &&
@@ -11326,7 +11332,7 @@ var COFantasy = COFantasy || function() {
                   saves++;
                   return; //on le fera plus tard
                 }
-                if (testCondition(ce.condition, attaquant, [target], d20roll)) {
+                if (testCondition(ce.condition, attaquant, [target], d20roll, options)) {
                   setState(target, ce.etat, true, evt);
                   var msgEtat;
                   if (ce.etat == 'mort')
@@ -11577,7 +11583,7 @@ var COFantasy = COFantasy || function() {
               if (etats && saves > 0) {
                 etats.forEach(function(ce, index) {
                   if (ce.save) {
-                    if (testCondition(ce.condition, attaquant, [target], d20roll)) {
+                    if (testCondition(ce.condition, attaquant, [target], d20roll, options)) {
                       var msgPour = " pour résister à un effet";
                       var msgEtat;
                       if (ce.etat == 'mort')
