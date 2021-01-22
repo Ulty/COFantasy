@@ -7326,6 +7326,10 @@ var COFantasy = COFantasy || function() {
       explications.push("Présence glaciale => +" + defenseGlaciale + " en DEF");
       defense += defenseGlaciale;
     }
+    if (attributeAsBool(target, 'cyclone')) {
+      explications.push("Cyclone => +5 en DEF");
+      defense += 5;
+    }
     if (target.realCharId) target.charId = target.realCharId;
     return defense;
   }
@@ -8776,7 +8780,6 @@ var COFantasy = COFantasy || function() {
       if (an == '#Actions#' || an == '#TurnAction#') actions = a;
     });
     var actionsOpportunite = [];
-
     if (actions) {
       actions = actions.get('action').replace(/\n/gm, '').replace(/\r/gm, '').replace(/%/g, '\n%').replace(/#/g, '\n#').split("\n");
       if (actions.length > 0) {
@@ -15485,12 +15488,12 @@ var COFantasy = COFantasy || function() {
       var explications = [];
       perso.ignoreTouteRD = true;
       dealDamage(perso, r, [], evtTourDeForce, false, {}, explications,
-          function(dmgDisplay, dmg) {
-            sendChar(perso.charId, "réalise un Tour de force et perd " + dmgDisplay + " PV");
-            explications.forEach(function(expl) {
-              sendChar(perso.charId, expl);
-            });
+        function(dmgDisplay, dmg) {
+          sendChar(perso.charId, "réalise un Tour de force et perd " + dmgDisplay + " PV");
+          explications.forEach(function(expl) {
+            sendChar(perso.charId, expl);
           });
+        });
       if (rollId) {
         options.chanceRollId = options.chanceRollId || {};
         options.chanceRollId[rollId] = (options.chanceRollId[rollId] + 10) || 10;
@@ -17065,6 +17068,13 @@ var COFantasy = COFantasy || function() {
         (actionsDuTour.length === 0 && stateCOF.options.affichage.val.actions_par_defaut.val);
       if (afficherAttaquesFiche) {
         ligne += listeAttaquesVisibles(perso);
+      }
+      //L'action de traverser pour un cyclone
+      if (attributeAsBool(perso, 'cyclone')) {
+        var labelCyclone = getValeurOfEffet(perso, 'cyclone', 1);
+        var diffRenverse = 10 + modCarac(perso, 'force');
+        var commandTraverser = "!cof-attack @{selected|token_id} @{target|token_id} " + labelCyclone + " --auto --ifSaveFails DEXFOR " + diffRenverse + " --etat renverse --else --diviseDmg 2 --endif";
+        ligne += bouton(commandTraverser, 'Traverser', perso) + '<br />';
       }
       //La liste d'action proprement dite
       if (actionsDuTour.length > 0) {
@@ -29546,6 +29556,11 @@ var COFantasy = COFantasy || function() {
       activation: "est à couvert de bouclier",
       actif: "est à couvert de bouclier",
       fin: "n'est plus à couvert de bouclier"
+    },
+    cyclone: {
+      activation: "se transforme en tourbillon de matière élémentaire",
+      actif: "est en cyclone",
+      fin: "retrouve sa forme habituelle",
     }
   };
 

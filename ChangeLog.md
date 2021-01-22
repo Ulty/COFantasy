@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.16
 ### Capacités
+* Capacité de cyclone des élémentaires.
 * Présence glaciale de la Voie du gel
 * Charge fantastique du chevalier
 * Project de la Voie du colosse.
