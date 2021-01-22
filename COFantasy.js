@@ -5763,7 +5763,7 @@ var COFantasy = COFantasy || function() {
           scope.ite = scope.ite || [];
           var ifSaveCond = {
             type: 'save',
-            save: save
+            saveCond: save
           };
           scope.ite.push({
             condition: ifSaveCond,
@@ -6358,7 +6358,7 @@ var COFantasy = COFantasy || function() {
           var expliquer = function(msg) {
             target.messages.push(msg);
           };
-          save(ite.condition.save, target, saveId, expliquer, saveOpts, evt,
+          save(ite.condition.saveCond, target, saveId, expliquer, saveOpts, evt,
             function(reussite, rolltext) {
               var branch;
               target.saveResults = target.saveResults || {};
@@ -9691,7 +9691,8 @@ var COFantasy = COFantasy || function() {
               if (target.crit > 2) target.crit -= 1;
             }
             //Defense de la cible
-            var defense = defenseOfPerso(attaquant, target, pageId, evt, options);
+            var defense = 0;
+            if (!options.auto) defense = defenseOfPerso(attaquant, target, pageId, evt, options);
             var interchange;
             if (options.aoe === undefined) {
               interchange = interchangeable(attackingToken, target, pageId);
