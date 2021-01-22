@@ -8756,6 +8756,151 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  // On affiche les options d'attaque à droite
+  function afficherOptionsAttaque(perso, opt_display) {
+    var action_opts = '!cof-options-d-attaque --target ' + perso.token.id;
+    var text_opts = '';
+    if (persoEstPNJ(perso) && ficheAttributeAsInt(perso, 'attaque_de_groupe', 1) > 1) {
+      text_opts = "Groupe de " + ficheAttributeAsInt(perso, 'attaque_de_groupe', 1);
+    }
+    if (ficheAttributeAsInt(perso, 'attaque_en_puissance_check')) {
+      if (text_opts !== '') text_opts += '<br>';
+      text_opts += "En puissance " + ficheAttributeAsInt(perso, 'attaque_en_puissance', 1);
+    }
+    if (ficheAttributeAsInt(perso, 'attaque_risquee_check')) {
+      if (text_opts !== '') text_opts += '<br>';
+      text_opts += "Risquée";
+    }
+    if (ficheAttributeAsInt(perso, 'attaque_assuree_check')) {
+      if (text_opts !== '') text_opts += '<br>';
+      text_opts += "Assurée";
+    }
+    if (ficheAttributeAsInt(perso, 'attaque_dm_temp_check')) {
+      if (text_opts !== '') text_opts += '<br>';
+      text_opts += "Pour assomer";
+    }
+    if (text_opts === '') text_opts = 'Options';
+    opt_display.action_right =
+      boutonSimple(action_opts, text_opts,
+        'style="color: #a94442; background-color: #f2dede;"');
+  }
+
+  // on récupère la valeur de l'action dont chaque Macro #/Ability % est mis dans un tableau 'action'
+  //Pour chaque action, on a une commande, un texte et des options.
+  //On appelle f(commande, texte, macros, option)
+  function treatActions(perso, actionsDuTour, abilities, f) {
+    var actions = actionsDuTour.get('action')
+      .replace(/\n/gm, '').replace(/\r/gm, '')
+      .replace(/%#([^#]*)#/g, '\n!cof-liste-actions $1')
+      .replace(/\/\/%/g, '\n\/\/')
+      .replace(/\/\/#/g, '\n\/\/')
+      .replace(/\/\/!/g, '\n\/\/')
+      .replace(/%/g, '\n%').replace(/#/g, '\n#').replace(/!/g, '\n!')
+      .split('\n');
+    var actionsAAfficher;
+    if (actions.length > 0) {
+      // Toutes les Macros
+      var macros = findObjs({
+        _type: 'macro'
+      });
+      var found;
+      var command;
+      var options = '';
+      // On recherche si l'action existe (Ability % ou Macro #)
+      actions.forEach(function(action) {
+        action = action.trim();
+        if (action === '') return;
+        if (action.startsWith('//')) return; //commented out line
+        var actionCommands = action.split(' ');
+        actionCommands = actionCommands.filter(function(c) {
+          return c !== '';
+        });
+        var actionCmd = actionCommands[0];
+        var actionText = actionCmd.replace(/-/g, ' ').replace(/_/g, ' ');
+        found = false;
+        switch (actionCmd.charAt(0)) {
+          case '%':
+            // Ability
+            actionCmd = actionCmd.substr(1);
+            actionText = actionText.substr(1);
+            abilities.forEach(function(abilitie, index) {
+              if (found) return;
+              if (abilitie.get('name') === actionCmd) {
+                // l'ability existe
+                found = true;
+                command = abilitie.get('action').trim();
+                if (actionCommands.length > 1) {
+                  //On rajoute les options de l'ability
+                  command += action.substr(action.indexOf(' '));
+                }
+                command += options;
+                f(command, actionText, macros);
+              }
+            });
+            break;
+          case '#':
+            // Macro
+            //D'abord le cas de #Attaque
+            if (actionCmd == '#Attaque' && actionCommands.length > 1) {
+              found = true;
+              var attackLabel = actionCommands[1].trim();
+              var attackStats;
+              if (attackLabel == -1) { //attaque avec l'arme en main
+                attackStats = armesEnMain(perso);
+              } else attackStats = getWeaponStats(perso, attackLabel);
+              actionText = attackStats.name;
+              action += options;
+              f(action, actionText, macros, {
+                attackStats: attackStats
+              });
+            } else {
+              actionCmd = actionCmd.substr(1);
+              actionText = actionText.substr(1);
+              macros.forEach(function(macro, index) {
+                if (found) return;
+                if (macro.get('name') === actionCmd) {
+                  found = true;
+                  command = macro.get('action').trim();
+                  if (actionCommands.length > 1) {
+                    //On rajoute les options de la macro
+                    command += action.substr(action.indexOf(' '));
+                  }
+                  command += options;
+                  f(command, actionText, macros);
+                }
+              });
+            }
+            break;
+          case '!':
+            if (actionCmd.toLowerCase() == '!options') {
+              found = true;
+              if (actionCommands.length > 1) {
+                options = action.substring(8); //démarre par ' '
+              }
+            } else if (actionCmd.toLowerCase() == '!attaques') {
+              found = true;
+              f('liste des attaques', '', macros, options);
+            } else {
+              // commande API
+              if (actionCommands.length > 1) {
+                actionText = actionCommands[1].replace(/-/g, ' ').replace(/_/g, ' ');
+              }
+              command = action + options;
+              f(command, actionText, macros);
+              found = true;
+            }
+        }
+        if (found) {
+          actionsAAfficher = true;
+        } else {
+          // Si on n'a toujours rien trouvé, on ajoute un petit log
+          log('Ability et macro non trouvé : ' + action);
+        }
+      });
+    }
+    return actionsAAfficher;
+  }
+
   function displayAttaqueOpportunite(vid, cibles, type, action, option) {
     var attaquant = persoOfId(vid);
     if (attaquant === undefined) {
@@ -8768,74 +8913,51 @@ var COFantasy = COFantasy || function() {
       _characterid: attaquant.charId,
     });
     var actions;
-    var actionTrouvee;
-    abilities.forEach(function(a) {
-      if (actionTrouvee) return;
+    var actionsParDefaut = true;
+    abilities.find(function(a) {
       var an = a.get('name');
       if (an == action) {
         actions = a;
-        actionTrouvee = true;
-        return;
+        actionsParDefaut = false;
+        return true;
       }
-      if (an == '#Actions#' || an == '#TurnAction#') actions = a;
+      if (an == '#Actions#') {
+        actions = a;
+        actionsParDefaut = true;
+      } else if (an == '#TurnAction#') {
+        actions = a;
+        actionsParDefaut = false;
+      }
+      return false;
     });
     var actionsOpportunite = [];
     if (actions) {
-      actions = actions.get('action').replace(/\n/gm, '').replace(/\r/gm, '').replace(/%/g, '\n%').replace(/#/g, '\n#').split("\n");
-      if (actions.length > 0) {
-        var macros = findObjs({
-          _type: 'macro'
-        });
-        var command = '';
-        actions.forEach(function(action, i) {
-          action = action.trim();
-          if (action.length > 0) {
-            var actionCmd = action.split(' ')[0];
-            var actionText = action.replace(/-/g, ' ').replace(/_/g, ' ');
-            if (actionCmd.startsWith('%')) {
-              actionCmd = actionCmd.substr(1);
-              actionText = actionText.substr(1);
-              abilities.forEach(function(abilitie, index) {
-                if (abilitie.get('name') === actionCmd) {
-                  command = abilitie.get('action').trim();
-                  command = replaceAction(command, attaquant, macros, abilities);
-                  if (command.startsWith('!cof-attack')) {
-                    actionsOpportunite.push({
-                      command: command,
-                      text: actionText
-                    });
-                  }
-                }
-              });
-            } else if (actionCmd.startsWith('#')) {
-              actionCmd = actionCmd.substr(1);
-              actionText = actionText.substr(1);
-              macros.forEach(function(macro, index) {
-                if (macro.get('name') === actionCmd) {
-                  command = macro.get('action').trim();
-                  command = replaceAction(command, attaquant, macros, abilities);
-                  if (command.startsWith('!cof-attack')) {
-                    actionsOpportunite.push({
-                      command: command,
-                      text: actionText
-                    });
-                  }
-                }
-              });
-            } else if (actionCmd.startsWith('!cof-attack')) {
-              actionsOpportunite.push({
-                command: actionCmd,
-                text: actionText
-              });
-            }
+      treatActions(attaquant, actions, abilities, function(command, text, macros, options) {
+        if (command == 'liste des attaques') {
+          actionsOpportunite.push({
+            listeActions: true,
+            options: options
+          });
+        } else {
+          command = replaceAction(command, attaquant, macros, abilities);
+          if (command.startsWith('!cof-attack')) {
+            actionsOpportunite.push({
+              command: command,
+              text: text,
+              options: options
+            });
           }
-        });
-      }
+        }
+      });
+      actionsOpportunite.reverse();
     }
+    var opt_display = {
+      chuchote: true,
+      retarde: true,
+    };
+    afficherOptionsAttaque(attaquant, opt_display);
     //On crée un display sans le header
-    var display = startFramedDisplay(undefined, "Attaque " + type + " possible", attaquant, {
-      retarde: true
-    });
+    var display = startFramedDisplay(undefined, "Attaque " + type + " possible", attaquant, opt_display);
     cibles.forEach(function(target) {
       target.tokName = target.tokName || target.token.get('name');
       if (target.name === undefined) {
@@ -8847,12 +8969,20 @@ var COFantasy = COFantasy || function() {
         target.name = targetChar.get('name');
       }
       addLineToFramedDisplay(display, "contre " + target.tokName, 100, true);
-      addLineToFramedDisplay(display, listeAttaquesVisibles(attaquant, option, target.token.id));
+      if (actionsParDefaut) addLineToFramedDisplay(display, listeAttaquesVisibles(attaquant, option, target.token.id));
       actionsOpportunite.forEach(function(action) {
+        var opt = action.options;
+        if (opt) {
+          if (option) opt = option + opt;
+        } else opt = option;
+        if (action.listeActions) {
+          addLineToFramedDisplay(display, listeAttaquesVisibles(attaquant, opt, target.token.id));
+          return;
+        }
         var cmd = action.command.replace(/@\{target\|token_id\}/g, target.token.id);
         cmd = cmd.replace(/@\{target\|token_name\}/g, target.tokName);
         cmd = cmd.replace(/@\{target\|/g, '@{' + target.name + '|');
-        if (option) cmd += ' ' + option;
+        if (opt) cmd += ' ' + opt;
         addLineToFramedDisplay(display, bouton(cmd, action.text, attaquant));
       });
     });
@@ -16897,32 +17027,7 @@ var COFantasy = COFantasy || function() {
         return a.get('name') == fullListActions;
       });
     } else {
-      // On affiche les options d'attaque à droite
-      var action_opts = '!cof-options-d-attaque --target ' + perso.token.id;
-      var text_opts = '';
-      if (persoEstPNJ(perso) && ficheAttributeAsInt(perso, 'attaque_de_groupe', 1) > 1) {
-        text_opts = "Groupe de " + ficheAttributeAsInt(perso, 'attaque_de_groupe', 1);
-      }
-      if (ficheAttributeAsInt(perso, 'attaque_en_puissance_check')) {
-        if (text_opts !== '') text_opts += '<br>';
-        text_opts += "En puissance " + ficheAttributeAsInt(perso, 'attaque_en_puissance', 1);
-      }
-      if (ficheAttributeAsInt(perso, 'attaque_risquee_check')) {
-        if (text_opts !== '') text_opts += '<br>';
-        text_opts += "Risquée";
-      }
-      if (ficheAttributeAsInt(perso, 'attaque_assuree_check')) {
-        if (text_opts !== '') text_opts += '<br>';
-        text_opts += "Assurée";
-      }
-      if (ficheAttributeAsInt(perso, 'attaque_dm_temp_check')) {
-        if (text_opts !== '') text_opts += '<br>';
-        text_opts += "Pour assomer";
-      }
-      if (text_opts === '') text_opts = 'Options';
-      opt_display.action_right =
-        boutonSimple(action_opts, text_opts,
-          'style="color: #a94442; background-color: #f2dede;"');
+      afficherOptionsAttaque(perso, opt_display);
     }
     var actionsDuTour = [];
     var actionsParDefaut = false;
@@ -17079,112 +17184,11 @@ var COFantasy = COFantasy || function() {
       }
       //La liste d'action proprement dite
       if (actionsDuTour.length > 0) {
-        // on récupère la valeur de l'action dont chaque Macro #/Ability % est mis dans un tableau 'action'
-        var actions = actionsDuTour[0].get('action')
-          .replace(/\n/gm, '').replace(/\r/gm, '')
-          .replace(/%#([^#]*)#/g, '\n!cof-liste-actions $1')
-          .replace(/\/\/%/g, '\n\/\/')
-          .replace(/\/\/#/g, '\n\/\/')
-          .replace(/\/\/!/g, '\n\/\/')
-          .replace(/%/g, '\n%').replace(/#/g, '\n#').replace(/!/g, '\n!')
-          .split('\n');
-        if (actions.length > 0) {
-          // Toutes les Macros
-          var macros = findObjs({
-            _type: 'macro'
-          });
-          var found;
-          var options = '';
-          // On recherche si l'action existe (Ability % ou Macro #)
-          actions.forEach(function(action) {
-            action = action.trim();
-            if (action === '') return;
-            if (action.startsWith('//')) return; //commented out line
-            var actionCommands = action.split(' ');
-            actionCommands = actionCommands.filter(function(c) {
-              return c !== '';
-            });
-            var actionCmd = actionCommands[0];
-            var actionText = actionCmd.replace(/-/g, ' ').replace(/_/g, ' ');
-            found = false;
-            switch (actionCmd.charAt(0)) {
-              case '%':
-                // Ability
-                actionCmd = actionCmd.substr(1);
-                actionText = actionText.substr(1);
-                abilities.forEach(function(abilitie, index) {
-                  if (found) return;
-                  if (abilitie.get('name') === actionCmd) {
-                    // l'ability existe
-                    found = true;
-                    command = abilitie.get('action').trim();
-                    if (actionCommands.length > 1) {
-                      //On rajoute les options de l'ability
-                      command += action.substr(action.indexOf(' '));
-                    }
-                    command += options;
-                    ligne += bouton(command, actionText, perso) + '<br />';
-                  }
-                });
-                break;
-              case '#':
-                // Macro
-                //D'abord le cas de #Attaque
-                if (actionCmd == '#Attaque' && actionCommands.length > 1) {
-                  found = true;
-                  var attackLabel = actionCommands[1].trim();
-                  var attackStats = getWeaponStats(perso, attackLabel);
-                  actionText = attackStats.name;
-                  action += options;
-                  ligne += bouton(action, actionText, perso, {
-                    attackStats: attackStats
-                  });
-                  ligne += '<br />';
-                } else {
-                  actionCmd = actionCmd.substr(1);
-                  actionText = actionText.substr(1);
-                  macros.forEach(function(macro, index) {
-                    if (found) return;
-                    if (macro.get('name') === actionCmd) {
-                      found = true;
-                      command = macro.get('action').trim();
-                      if (actionCommands.length > 1) {
-                        //On rajoute les options de la macro
-                        command += action.substr(action.indexOf(' '));
-                      }
-                      command += options;
-                      ligne += bouton(command, actionText, perso) + '<br />';
-                    }
-                  });
-                }
-                break;
-              case '!':
-                if (actionCmd.toLowerCase() == '!options') {
-                  found = true;
-                  if (actionCommands.length > 1) {
-                    options = action.substring(8); //démarre par ' '
-                  }
-                } else if (actionCmd.toLowerCase() == '!attaques') {
-                  found = true;
-                  ligne += listeAttaquesVisibles(perso, options);
-                } else {
-                  // commande API
-                  if (actionCommands.length > 1) {
-                    actionText = actionCommands[1].replace(/-/g, ' ').replace(/_/g, ' ');
-                  }
-                  command = action + options;
-                  ligne += bouton(command, actionText, perso) + '<br />';
-                  found = true;
-                }
-            }
-            if (found) {
-              actionsAAfficher = true;
-            } else {
-              // Si on n'a toujours rien trouvé, on ajoute un petit log
-              log('Ability et macro non trouvé : ' + action);
-            }
-          });
-        }
+        actionsAAfficher = treatActions(perso, actionsDuTour[0], abilities, function(command, text, macros, options) {
+          if (command == 'liste des attaques') {
+            ligne += listeAttaquesVisibles(perso, options);
+          } else ligne += bouton(command, text, perso, options) + '<br />';
+        });
       } else if (stateCOF.options.affichage.val.actions_par_defaut.val) {
         actionsParDefaut = true;
         abilities.forEach(function(a) {
