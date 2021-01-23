@@ -30581,7 +30581,7 @@ var COFantasy = COFantasy || function() {
         var soins = randomInteger(6) + randomInteger(6) + randomInteger(6) + modCarac(perso, 'constitution');
         soigneToken(perso, soins, evt, function(soinsEffectifs) {
           var msgSoins = "est increvable et récupère ";
-          if (soinsEffectifs == soins.val) msgSoins += soins + " points de vie";
+          if (soinsEffectifs == soins) msgSoins += soins + " points de vie";
           else msgSoins += soinsEffectifs + " PV (le jet était " + soins + ")";
           sendChar(perso.charId, msgSoins);
         });
