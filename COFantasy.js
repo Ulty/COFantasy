@@ -5763,7 +5763,7 @@ var COFantasy = COFantasy || function() {
           scope.ite = scope.ite || [];
           var ifSaveCond = {
             type: 'save',
-            save: save
+            saveCond: save
           };
           scope.ite.push({
             condition: ifSaveCond,
@@ -6119,7 +6119,7 @@ var COFantasy = COFantasy || function() {
     return charAttributeAsInt(perso, originalAttr, 0);
   }
 
-  function testCondition(cond, attaquant, cibles, deAttaque) {
+  function testCondition(cond, attaquant, cibles, deAttaque, options) {
     if (cond == 'toujoursVrai') return true;
     switch (cond.type) {
       case 'moins':
@@ -6177,6 +6177,7 @@ var COFantasy = COFantasy || function() {
         }
         return resAttrCible;
       case 'deAttaque':
+        if (options && options.auto) return false;
         if (deAttaque === undefined) {
           error("Condition de dé d'attaque non supportée ici", cond);
           return true;
@@ -6300,6 +6301,10 @@ var COFantasy = COFantasy || function() {
           resCondition = testCondition(ite.condition, attaquant, [], deAttaque);
           break;
         case 'deAttaque':
+          if (options.auto) {
+            resCondition = false;
+            break;
+          }
           if (deAttaque === undefined) {
             callIfAllDone(etatParent, callback);
             return true;
@@ -6358,7 +6363,7 @@ var COFantasy = COFantasy || function() {
           var expliquer = function(msg) {
             target.messages.push(msg);
           };
-          save(ite.condition.save, target, saveId, expliquer, saveOpts, evt,
+          save(ite.condition.saveCond, target, saveId, expliquer, saveOpts, evt,
             function(reussite, rolltext) {
               var branch;
               target.saveResults = target.saveResults || {};
@@ -7325,6 +7330,10 @@ var COFantasy = COFantasy || function() {
       var defenseGlaciale = getValeurOfEffet(target, 'presenceGlaciale', 4);
       explications.push("Présence glaciale => +" + defenseGlaciale + " en DEF");
       defense += defenseGlaciale;
+    }
+    if (attributeAsBool(target, 'cyclone')) {
+      explications.push("Cyclone => +5 en DEF");
+      defense += 5;
     }
     if (target.realCharId) target.charId = target.realCharId;
     return defense;
@@ -8752,6 +8761,151 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  // On affiche les options d'attaque à droite
+  function afficherOptionsAttaque(perso, opt_display) {
+    var action_opts = '!cof-options-d-attaque --target ' + perso.token.id;
+    var text_opts = '';
+    if (persoEstPNJ(perso) && ficheAttributeAsInt(perso, 'attaque_de_groupe', 1) > 1) {
+      text_opts = "Groupe de " + ficheAttributeAsInt(perso, 'attaque_de_groupe', 1);
+    }
+    if (ficheAttributeAsInt(perso, 'attaque_en_puissance_check')) {
+      if (text_opts !== '') text_opts += '<br>';
+      text_opts += "En puissance " + ficheAttributeAsInt(perso, 'attaque_en_puissance', 1);
+    }
+    if (ficheAttributeAsInt(perso, 'attaque_risquee_check')) {
+      if (text_opts !== '') text_opts += '<br>';
+      text_opts += "Risquée";
+    }
+    if (ficheAttributeAsInt(perso, 'attaque_assuree_check')) {
+      if (text_opts !== '') text_opts += '<br>';
+      text_opts += "Assurée";
+    }
+    if (ficheAttributeAsInt(perso, 'attaque_dm_temp_check')) {
+      if (text_opts !== '') text_opts += '<br>';
+      text_opts += "Pour assomer";
+    }
+    if (text_opts === '') text_opts = 'Options';
+    opt_display.action_right =
+      boutonSimple(action_opts, text_opts,
+        'style="color: #a94442; background-color: #f2dede;"');
+  }
+
+  // on récupère la valeur de l'action dont chaque Macro #/Ability % est mis dans un tableau 'action'
+  //Pour chaque action, on a une commande, un texte et des options.
+  //On appelle f(commande, texte, macros, option)
+  function treatActions(perso, actionsDuTour, abilities, f) {
+    var actions = actionsDuTour.get('action')
+      .replace(/\n/gm, '').replace(/\r/gm, '')
+      .replace(/%#([^#]*)#/g, '\n!cof-liste-actions $1')
+      .replace(/\/\/%/g, '\n\/\/')
+      .replace(/\/\/#/g, '\n\/\/')
+      .replace(/\/\/!/g, '\n\/\/')
+      .replace(/%/g, '\n%').replace(/#/g, '\n#').replace(/!/g, '\n!')
+      .split('\n');
+    var actionsAAfficher;
+    if (actions.length > 0) {
+      // Toutes les Macros
+      var macros = findObjs({
+        _type: 'macro'
+      });
+      var found;
+      var command;
+      var options = '';
+      // On recherche si l'action existe (Ability % ou Macro #)
+      actions.forEach(function(action) {
+        action = action.trim();
+        if (action === '') return;
+        if (action.startsWith('//')) return; //commented out line
+        var actionCommands = action.split(' ');
+        actionCommands = actionCommands.filter(function(c) {
+          return c !== '';
+        });
+        var actionCmd = actionCommands[0];
+        var actionText = actionCmd.replace(/-/g, ' ').replace(/_/g, ' ');
+        found = false;
+        switch (actionCmd.charAt(0)) {
+          case '%':
+            // Ability
+            actionCmd = actionCmd.substr(1);
+            actionText = actionText.substr(1);
+            abilities.forEach(function(abilitie, index) {
+              if (found) return;
+              if (abilitie.get('name') === actionCmd) {
+                // l'ability existe
+                found = true;
+                command = abilitie.get('action').trim();
+                if (actionCommands.length > 1) {
+                  //On rajoute les options de l'ability
+                  command += action.substr(action.indexOf(' '));
+                }
+                command += options;
+                f(command, actionText, macros);
+              }
+            });
+            break;
+          case '#':
+            // Macro
+            //D'abord le cas de #Attaque
+            if (actionCmd == '#Attaque' && actionCommands.length > 1) {
+              found = true;
+              var attackLabel = actionCommands[1].trim();
+              var attackStats;
+              if (attackLabel == -1) { //attaque avec l'arme en main
+                attackStats = armesEnMain(perso);
+              } else attackStats = getWeaponStats(perso, attackLabel);
+              actionText = attackStats.name;
+              action += options;
+              f(action, actionText, macros, {
+                attackStats: attackStats
+              });
+            } else {
+              actionCmd = actionCmd.substr(1);
+              actionText = actionText.substr(1);
+              macros.forEach(function(macro, index) {
+                if (found) return;
+                if (macro.get('name') === actionCmd) {
+                  found = true;
+                  command = macro.get('action').trim();
+                  if (actionCommands.length > 1) {
+                    //On rajoute les options de la macro
+                    command += action.substr(action.indexOf(' '));
+                  }
+                  command += options;
+                  f(command, actionText, macros);
+                }
+              });
+            }
+            break;
+          case '!':
+            if (actionCmd.toLowerCase() == '!options') {
+              found = true;
+              if (actionCommands.length > 1) {
+                options = action.substring(8); //démarre par ' '
+              }
+            } else if (actionCmd.toLowerCase() == '!attaques') {
+              found = true;
+              f('liste des attaques', '', macros, options);
+            } else {
+              // commande API
+              if (actionCommands.length > 1) {
+                actionText = actionCommands[1].replace(/-/g, ' ').replace(/_/g, ' ');
+              }
+              command = action + options;
+              f(command, actionText, macros);
+              found = true;
+            }
+        }
+        if (found) {
+          actionsAAfficher = true;
+        } else {
+          // Si on n'a toujours rien trouvé, on ajoute un petit log
+          log('Ability et macro non trouvé : ' + action);
+        }
+      });
+    }
+    return actionsAAfficher;
+  }
+
   function displayAttaqueOpportunite(vid, cibles, type, action, option) {
     var attaquant = persoOfId(vid);
     if (attaquant === undefined) {
@@ -8764,75 +8918,51 @@ var COFantasy = COFantasy || function() {
       _characterid: attaquant.charId,
     });
     var actions;
-    var actionTrouvee;
-    abilities.forEach(function(a) {
-      if (actionTrouvee) return;
+    var actionsParDefaut = true;
+    abilities.find(function(a) {
       var an = a.get('name');
       if (an == action) {
         actions = a;
-        actionTrouvee = true;
-        return;
+        actionsParDefaut = false;
+        return true;
       }
-      if (an == '#Actions#' || an == '#TurnAction#') actions = a;
+      if (an == '#Actions#') {
+        actions = a;
+        actionsParDefaut = true;
+      } else if (an == '#TurnAction#') {
+        actions = a;
+        actionsParDefaut = false;
+      }
+      return false;
     });
     var actionsOpportunite = [];
-
     if (actions) {
-      actions = actions.get('action').replace(/\n/gm, '').replace(/\r/gm, '').replace(/%/g, '\n%').replace(/#/g, '\n#').split("\n");
-      if (actions.length > 0) {
-        var macros = findObjs({
-          _type: 'macro'
-        });
-        var command = '';
-        actions.forEach(function(action, i) {
-          action = action.trim();
-          if (action.length > 0) {
-            var actionCmd = action.split(' ')[0];
-            var actionText = action.replace(/-/g, ' ').replace(/_/g, ' ');
-            if (actionCmd.startsWith('%')) {
-              actionCmd = actionCmd.substr(1);
-              actionText = actionText.substr(1);
-              abilities.forEach(function(abilitie, index) {
-                if (abilitie.get('name') === actionCmd) {
-                  command = abilitie.get('action').trim();
-                  command = replaceAction(command, attaquant, macros, abilities);
-                  if (command.startsWith('!cof-attack')) {
-                    actionsOpportunite.push({
-                      command: command,
-                      text: actionText
-                    });
-                  }
-                }
-              });
-            } else if (actionCmd.startsWith('#')) {
-              actionCmd = actionCmd.substr(1);
-              actionText = actionText.substr(1);
-              macros.forEach(function(macro, index) {
-                if (macro.get('name') === actionCmd) {
-                  command = macro.get('action').trim();
-                  command = replaceAction(command, attaquant, macros, abilities);
-                  if (command.startsWith('!cof-attack')) {
-                    actionsOpportunite.push({
-                      command: command,
-                      text: actionText
-                    });
-                  }
-                }
-              });
-            } else if (actionCmd.startsWith('!cof-attack')) {
-              actionsOpportunite.push({
-                command: actionCmd,
-                text: actionText
-              });
-            }
+      treatActions(attaquant, actions, abilities, function(command, text, macros, options) {
+        if (command == 'liste des attaques') {
+          actionsOpportunite.push({
+            listeActions: true,
+            options: options
+          });
+        } else {
+          command = replaceAction(command, attaquant, macros, abilities);
+          if (command.startsWith('!cof-attack')) {
+            actionsOpportunite.push({
+              command: command,
+              text: text,
+              options: options
+            });
           }
-        });
-      }
+        }
+      });
+      actionsOpportunite.reverse();
     }
+    var opt_display = {
+      chuchote: true,
+      retarde: true,
+    };
+    afficherOptionsAttaque(attaquant, opt_display);
     //On crée un display sans le header
-    var display = startFramedDisplay(undefined, "Attaque " + type + " possible", attaquant, {
-      retarde: true
-    });
+    var display = startFramedDisplay(undefined, "Attaque " + type + " possible", attaquant, opt_display);
     cibles.forEach(function(target) {
       target.tokName = target.tokName || target.token.get('name');
       if (target.name === undefined) {
@@ -8844,12 +8974,20 @@ var COFantasy = COFantasy || function() {
         target.name = targetChar.get('name');
       }
       addLineToFramedDisplay(display, "contre " + target.tokName, 100, true);
-      addLineToFramedDisplay(display, listeAttaquesVisibles(attaquant, option, target.token.id));
+      if (actionsParDefaut) addLineToFramedDisplay(display, listeAttaquesVisibles(attaquant, option, target.token.id));
       actionsOpportunite.forEach(function(action) {
+        var opt = action.options;
+        if (opt) {
+          if (option) opt = option + opt;
+        } else opt = option;
+        if (action.listeActions) {
+          addLineToFramedDisplay(display, listeAttaquesVisibles(attaquant, opt, target.token.id));
+          return;
+        }
         var cmd = action.command.replace(/@\{target\|token_id\}/g, target.token.id);
         cmd = cmd.replace(/@\{target\|token_name\}/g, target.tokName);
         cmd = cmd.replace(/@\{target\|/g, '@{' + target.name + '|');
-        if (option) cmd += ' ' + option;
+        if (opt) cmd += ' ' + opt;
         addLineToFramedDisplay(display, bouton(cmd, action.text, attaquant));
       });
     });
@@ -9597,7 +9735,7 @@ var COFantasy = COFantasy || function() {
             return;
           }
         }
-        if (d20roll > 14 && charAttributeAsBool(attaquant, 'projection')) {
+        if (!options.auto && d20roll > 14 && charAttributeAsBool(attaquant, 'projection')) {
           options.projection = true;
         }
         //Modificateurs en Attaque qui ne dépendent pas de la cible
@@ -9688,7 +9826,8 @@ var COFantasy = COFantasy || function() {
               if (target.crit > 2) target.crit -= 1;
             }
             //Defense de la cible
-            var defense = defenseOfPerso(attaquant, target, pageId, evt, options);
+            var defense = 0;
+            if (!options.auto) defense = defenseOfPerso(attaquant, target, pageId, evt, options);
             var interchange;
             if (options.aoe === undefined) {
               interchange = interchangeable(attackingToken, target, pageId);
@@ -10508,7 +10647,8 @@ var COFantasy = COFantasy || function() {
       ciblesAttaquees.forEach(function(target) {
         if (options.test || options.feinte || !target.touche) {
           //On a fini avec cette cible, on imprime ce qui la concerne
-          addLineToFramedDisplay(display, target.attackMessage);
+          if (target.attackMessage) 
+            addLineToFramedDisplay(display, target.attackMessage);
           target.messages.forEach(function(expl) {
             addLineToFramedDisplay(display, expl, 80);
           });
@@ -10986,7 +11126,7 @@ var COFantasy = COFantasy || function() {
         additionalDmg = additionalDmg.filter(function(dmSpec) {
           if (dmSpec.conditions === undefined) return true;
           return dmSpec.conditions.every(function(cond) {
-            return testCondition(cond, attaquant, [target], d20roll);
+            return testCondition(cond, attaquant, [target], d20roll, options);
           });
         });
         if (!options.sortilege && !options.magique &&
@@ -11192,7 +11332,7 @@ var COFantasy = COFantasy || function() {
                   saves++;
                   return; //on le fera plus tard
                 }
-                if (testCondition(ce.condition, attaquant, [target], d20roll)) {
+                if (testCondition(ce.condition, attaquant, [target], d20roll, options)) {
                   setState(target, ce.etat, true, evt);
                   var msgEtat;
                   if (ce.etat == 'mort')
@@ -11443,7 +11583,7 @@ var COFantasy = COFantasy || function() {
               if (etats && saves > 0) {
                 etats.forEach(function(ce, index) {
                   if (ce.save) {
-                    if (testCondition(ce.condition, attaquant, [target], d20roll)) {
+                    if (testCondition(ce.condition, attaquant, [target], d20roll, options)) {
                       var msgPour = " pour résister à un effet";
                       var msgEtat;
                       if (ce.etat == 'mort')
@@ -15485,12 +15625,12 @@ var COFantasy = COFantasy || function() {
       var explications = [];
       perso.ignoreTouteRD = true;
       dealDamage(perso, r, [], evtTourDeForce, false, {}, explications,
-          function(dmgDisplay, dmg) {
-            sendChar(perso.charId, "réalise un Tour de force et perd " + dmgDisplay + " PV");
-            explications.forEach(function(expl) {
-              sendChar(perso.charId, expl);
-            });
+        function(dmgDisplay, dmg) {
+          sendChar(perso.charId, "réalise un Tour de force et perd " + dmgDisplay + " PV");
+          explications.forEach(function(expl) {
+            sendChar(perso.charId, expl);
           });
+        });
       if (rollId) {
         options.chanceRollId = options.chanceRollId || {};
         options.chanceRollId[rollId] = (options.chanceRollId[rollId] + 10) || 10;
@@ -16893,32 +17033,7 @@ var COFantasy = COFantasy || function() {
         return a.get('name') == fullListActions;
       });
     } else {
-      // On affiche les options d'attaque à droite
-      var action_opts = '!cof-options-d-attaque --target ' + perso.token.id;
-      var text_opts = '';
-      if (persoEstPNJ(perso) && ficheAttributeAsInt(perso, 'attaque_de_groupe', 1) > 1) {
-        text_opts = "Groupe de " + ficheAttributeAsInt(perso, 'attaque_de_groupe', 1);
-      }
-      if (ficheAttributeAsInt(perso, 'attaque_en_puissance_check')) {
-        if (text_opts !== '') text_opts += '<br>';
-        text_opts += "En puissance " + ficheAttributeAsInt(perso, 'attaque_en_puissance', 1);
-      }
-      if (ficheAttributeAsInt(perso, 'attaque_risquee_check')) {
-        if (text_opts !== '') text_opts += '<br>';
-        text_opts += "Risquée";
-      }
-      if (ficheAttributeAsInt(perso, 'attaque_assuree_check')) {
-        if (text_opts !== '') text_opts += '<br>';
-        text_opts += "Assurée";
-      }
-      if (ficheAttributeAsInt(perso, 'attaque_dm_temp_check')) {
-        if (text_opts !== '') text_opts += '<br>';
-        text_opts += "Pour assomer";
-      }
-      if (text_opts === '') text_opts = 'Options';
-      opt_display.action_right =
-        boutonSimple(action_opts, text_opts,
-          'style="color: #a94442; background-color: #f2dede;"');
+      afficherOptionsAttaque(perso, opt_display);
     }
     var actionsDuTour = [];
     var actionsParDefaut = false;
@@ -17066,114 +17181,20 @@ var COFantasy = COFantasy || function() {
       if (afficherAttaquesFiche) {
         ligne += listeAttaquesVisibles(perso);
       }
+      //L'action de traverser pour un cyclone
+      if (attributeAsBool(perso, 'cyclone')) {
+        var labelCyclone = getValeurOfEffet(perso, 'cyclone', 1);
+        var diffRenverse = 10 + modCarac(perso, 'force');
+        var commandTraverser = "!cof-attack @{selected|token_id} @{target|token_id} " + labelCyclone + " --auto --ifSaveFails DEXFOR " + diffRenverse + " --etat renverse --else --diviseDmg 2 --endif";
+        ligne += bouton(commandTraverser, 'Traverser', perso) + '<br />';
+      }
       //La liste d'action proprement dite
       if (actionsDuTour.length > 0) {
-        // on récupère la valeur de l'action dont chaque Macro #/Ability % est mis dans un tableau 'action'
-        var actions = actionsDuTour[0].get('action')
-          .replace(/\n/gm, '').replace(/\r/gm, '')
-          .replace(/%#([^#]*)#/g, '\n!cof-liste-actions $1')
-          .replace(/\/\/%/g, '\n\/\/')
-          .replace(/\/\/#/g, '\n\/\/')
-          .replace(/\/\/!/g, '\n\/\/')
-          .replace(/%/g, '\n%').replace(/#/g, '\n#').replace(/!/g, '\n!')
-          .split('\n');
-        if (actions.length > 0) {
-          // Toutes les Macros
-          var macros = findObjs({
-            _type: 'macro'
-          });
-          var found;
-          var options = '';
-          // On recherche si l'action existe (Ability % ou Macro #)
-          actions.forEach(function(action) {
-            action = action.trim();
-            if (action === '') return;
-            if (action.startsWith('//')) return; //commented out line
-            var actionCommands = action.split(' ');
-            actionCommands = actionCommands.filter(function(c) {
-              return c !== '';
-            });
-            var actionCmd = actionCommands[0];
-            var actionText = actionCmd.replace(/-/g, ' ').replace(/_/g, ' ');
-            found = false;
-            switch (actionCmd.charAt(0)) {
-              case '%':
-                // Ability
-                actionCmd = actionCmd.substr(1);
-                actionText = actionText.substr(1);
-                abilities.forEach(function(abilitie, index) {
-                  if (found) return;
-                  if (abilitie.get('name') === actionCmd) {
-                    // l'ability existe
-                    found = true;
-                    command = abilitie.get('action').trim();
-                    if (actionCommands.length > 1) {
-                      //On rajoute les options de l'ability
-                      command += action.substr(action.indexOf(' '));
-                    }
-                    command += options;
-                    ligne += bouton(command, actionText, perso) + '<br />';
-                  }
-                });
-                break;
-              case '#':
-                // Macro
-                //D'abord le cas de #Attaque
-                if (actionCmd == '#Attaque' && actionCommands.length > 1) {
-                  found = true;
-                  var attackLabel = actionCommands[1].trim();
-                  var attackStats = getWeaponStats(perso, attackLabel);
-                  actionText = attackStats.name;
-                  action += options;
-                  ligne += bouton(action, actionText, perso, {
-                    attackStats: attackStats
-                  });
-                  ligne += '<br />';
-                } else {
-                  actionCmd = actionCmd.substr(1);
-                  actionText = actionText.substr(1);
-                  macros.forEach(function(macro, index) {
-                    if (found) return;
-                    if (macro.get('name') === actionCmd) {
-                      found = true;
-                      command = macro.get('action').trim();
-                      if (actionCommands.length > 1) {
-                        //On rajoute les options de la macro
-                        command += action.substr(action.indexOf(' '));
-                      }
-                      command += options;
-                      ligne += bouton(command, actionText, perso) + '<br />';
-                    }
-                  });
-                }
-                break;
-              case '!':
-                if (actionCmd.toLowerCase() == '!options') {
-                  found = true;
-                  if (actionCommands.length > 1) {
-                    options = action.substring(8); //démarre par ' '
-                  }
-                } else if (actionCmd.toLowerCase() == '!attaques') {
-                  found = true;
-                  ligne += listeAttaquesVisibles(perso, options);
-                } else {
-                  // commande API
-                  if (actionCommands.length > 1) {
-                    actionText = actionCommands[1].replace(/-/g, ' ').replace(/_/g, ' ');
-                  }
-                  command = action + options;
-                  ligne += bouton(command, actionText, perso) + '<br />';
-                  found = true;
-                }
-            }
-            if (found) {
-              actionsAAfficher = true;
-            } else {
-              // Si on n'a toujours rien trouvé, on ajoute un petit log
-              log('Ability et macro non trouvé : ' + action);
-            }
-          });
-        }
+        actionsAAfficher = treatActions(perso, actionsDuTour[0], abilities, function(command, text, macros, options) {
+          if (command == 'liste des attaques') {
+            ligne += listeAttaquesVisibles(perso, options);
+          } else ligne += bouton(command, text, perso, options) + '<br />';
+        });
       } else if (stateCOF.options.affichage.val.actions_par_defaut.val) {
         actionsParDefaut = true;
         abilities.forEach(function(a) {
@@ -29546,6 +29567,11 @@ var COFantasy = COFantasy || function() {
       activation: "est à couvert de bouclier",
       actif: "est à couvert de bouclier",
       fin: "n'est plus à couvert de bouclier"
+    },
+    cyclone: {
+      activation: "se transforme en tourbillon de matière élémentaire",
+      actif: "est en cyclone",
+      fin: "retrouve sa forme habituelle",
     }
   };
 
