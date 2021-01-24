@@ -15,6 +15,7 @@
 * Ajout de la capacité Liberté d'action du barde
 * Implémentation des effets de Cercle de protection
 * Ajout de la capacité Combat kinétique du Psionique
+* Support du sort Armure d'eau
 
 ### Autres améliorations
 * Ajout de RD aux éléments.
