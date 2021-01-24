@@ -6990,6 +6990,11 @@ var COFantasy = COFantasy || function() {
           if (defense > 12) defense += bonusArmureDuMage / 2; // On a déjà une armure physique, ça ne se cumule pas.
           else defense += bonusArmureDuMage;
         }
+        if (attributeAsBool(target, 'armureDEau')) {
+          var bonusArmureDEau = getValeurOfEffet(target, 'armureDEau', 2);
+          defense += bonusArmureDEau;
+          explications.push("Armure d'eau : +" + bonusArmureDEau + " en DEF");
+        }
         defense += ficheAttributeAsInt(target, 'DEFDIV', 0);
       } // Dans le cas contraire, on n'utilise pas ces bonus
       defense += modCarac(target, 'dexterite');
@@ -10909,25 +10914,33 @@ var COFantasy = COFantasy || function() {
       evalITE(attaquant, target, d20roll, options, 1, evt, explications, options, function() {
         target.attaquant = attaquant;
         if (options.enveloppe !== undefined) {
-          var ligneEnveloppe = attaquant.tokName + " peut ";
-          var commandeEnvelopper =
-            '!cof-enveloppement ' + attaquant.token.id + ' ' + target.token.id + ' ' +
-            options.enveloppe.difficulte + ' ' +
-            options.enveloppe.type + ' ' + options.enveloppe.expression;
-          var verbeEnv = 'envelopper';
-          if (options.enveloppe.type == 'etreinte') verbeEnv = 'étreindre';
-          ligneEnveloppe += boutonSimple(commandeEnvelopper, verbeEnv);
-          ligneEnveloppe += target.tokName;
-          target.messages.push(ligneEnveloppe);
+          if (options.enveloppe.type == 'etreinte' && attributeAsBool(target, 'armureDEau')) {
+            target.messages.push("L'armure d'eau empêche " + target.tokName + " d'être étreint");
+          } else {
+            var ligneEnveloppe = attaquant.tokName + " peut ";
+            var commandeEnvelopper =
+                '!cof-enveloppement ' + attaquant.token.id + ' ' + target.token.id + ' ' +
+                options.enveloppe.difficulte + ' ' +
+                options.enveloppe.type + ' ' + options.enveloppe.expression;
+            var verbeEnv = 'envelopper';
+            if (options.enveloppe.type == 'etreinte') verbeEnv = 'étreindre';
+            ligneEnveloppe += boutonSimple(commandeEnvelopper, verbeEnv);
+            ligneEnveloppe += target.tokName;
+            target.messages.push(ligneEnveloppe);
+          }
         }
         if (options.agripper) {
-          var immobilise = estAussiGrandQue(attaquant, target);
-          setTokenAttr(attaquant, 'agrippe', target.token.id + ' ' + target.tokName, evt);
-          setTokenAttr(target, 'estAgrippePar', attaquant.token.id + ' ' + attaquant.tokName, evt, {
-            maxVal: immobilise
-          });
-          if (immobilise) setState(target, 'immobilise', true, evt);
-          target.messages.push("est agrippé");
+          if (attributeAsBool(target, 'armureDEau')) {
+            target.messages.push("L'armure d'eau empêche " + target.tokName + " d'être aggripé");
+          } else {
+            var immobilise = estAussiGrandQue(attaquant, target);
+            setTokenAttr(attaquant, 'agrippe', target.token.id + ' ' + target.tokName, evt);
+            setTokenAttr(target, 'estAgrippePar', attaquant.token.id + ' ' + attaquant.tokName, evt, {
+              maxVal: immobilise
+            });
+            if (immobilise) setState(target, 'immobilise', true, evt);
+            target.messages.push("est agrippé");
+          }
         }
         if (!options.redo && options.projection && taillePersonnage(attaquant, 4) > taillePersonnage(target, 4)) {
           var bonusProjection = 5 - taillePersonnage(target, 4);
@@ -12300,7 +12313,11 @@ var COFantasy = COFantasy || function() {
       res.sauf.feu_hache = res.sauf.feu_hache || 0;
       res.sauf.feu_hache += 10;
     }
-    if (charAttributeAsBool('fievreChene')) res.feu = (res.feu || 0) + 5;
+    if (charAttributeAsBool(perso, 'fievreChene')) res.feu = (res.feu || 0) + 5;
+    if (attributeAsBool(perso, 'armureDEau')) {
+      res.acide = (res.acide || 0) + 5;
+      res.feu = (res.feu || 0) + 5;
+    }
     var rd = ficheAttribute(perso, 'RDS', '');
     rd = (rd + '').trim();
     if (rd === '') {
@@ -13240,7 +13257,7 @@ var COFantasy = COFantasy || function() {
                 msgBarroud += onGenre(target, 'il', 'elle') + " continue à se battre !";
                 expliquer(msgBarroud);
                 setTokenAttr(target, 'baroudHonneurActif', true, evt);
-              } else if (charAttributeAsInt(target, 'increvable') > 0) {
+              } else if (attrAsInt(tokenAttribute(target, 'increvable'), 0) > 0) {
                 var msgIncrevable = token.get('name') + " devrait être mort";
                 msgIncrevable += eForFemale(target) + ", mais ";
                 msgIncrevable += onGenre(target, 'il', 'elle') + " est increvable !";
@@ -29651,6 +29668,11 @@ var COFantasy = COFantasy || function() {
       actif: "est entouré d'une armure du mage",
       fin: "n'a plus son armure du mage"
     },
+    armureDEau: {
+      activation: "fait apparaître une couche d'eau de quelques centimètres qui le protège",
+      actif: "est entouré d'une armure d'eau'",
+      fin: "n'a plus son armure d'eau'"
+    },
     armeDArgent: {
       activation: "crée une arme d'argent et de lumière",
       actif: "possède une arme d'argent et de lumière",
@@ -30575,13 +30597,13 @@ var COFantasy = COFantasy || function() {
           }
         }
       }
-      var increvableActif = charAttribute(perso.charId, 'increvableActif');
+      var increvableActif = tokenAttribute(perso, 'increvableActif');
       if (increvableActif.length > 0) {
         increvableActif[0].remove();
         var soins = randomInteger(6) + randomInteger(6) + randomInteger(6) + modCarac(perso, 'constitution');
         soigneToken(perso, soins, evt, function(soinsEffectifs) {
           var msgSoins = "est increvable et récupère ";
-          if (soinsEffectifs == soins.val) msgSoins += soins + " points de vie";
+          if (soinsEffectifs == soins) msgSoins += soins + " points de vie";
           else msgSoins += soinsEffectifs + " PV (le jet était " + soins + ")";
           sendChar(perso.charId, msgSoins);
         });
