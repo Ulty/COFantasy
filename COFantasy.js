@@ -12314,7 +12314,7 @@ var COFantasy = COFantasy || function() {
       res.sauf.feu_hache += 10;
     }
     if (charAttributeAsBool(perso, 'fievreChene')) res.feu = (res.feu || 0) + 5;
-    if (charAttributeAsBool(perso, 'armureDEau')) {
+    if (attributeAsBool(perso, 'armureDEau')) {
       res.acide = (res.acide || 0) + 5;
       res.feu = (res.feu || 0) + 5;
     }
