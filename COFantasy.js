@@ -13257,7 +13257,7 @@ var COFantasy = COFantasy || function() {
                 msgBarroud += onGenre(target, 'il', 'elle') + " continue à se battre !";
                 expliquer(msgBarroud);
                 setTokenAttr(target, 'baroudHonneurActif', true, evt);
-              } else if (charAttributeAsInt(target, 'increvable') > 0) {
+              } else if (attrAsInt(tokenAttribute(target, 'increvable'), 0) > 0) {
                 var msgIncrevable = token.get('name') + " devrait être mort";
                 msgIncrevable += eForFemale(target) + ", mais ";
                 msgIncrevable += onGenre(target, 'il', 'elle') + " est increvable !";
@@ -30597,13 +30597,13 @@ var COFantasy = COFantasy || function() {
           }
         }
       }
-      var increvableActif = charAttribute(perso.charId, 'increvableActif');
+      var increvableActif = tokenAttribute(perso, 'increvableActif');
       if (increvableActif.length > 0) {
         increvableActif[0].remove();
         var soins = randomInteger(6) + randomInteger(6) + randomInteger(6) + modCarac(perso, 'constitution');
         soigneToken(perso, soins, evt, function(soinsEffectifs) {
           var msgSoins = "est increvable et récupère ";
-          if (soinsEffectifs == soins.val) msgSoins += soins + " points de vie";
+          if (soinsEffectifs == soins) msgSoins += soins + " points de vie";
           else msgSoins += soinsEffectifs + " PV (le jet était " + soins + ")";
           sendChar(perso.charId, msgSoins);
         });
