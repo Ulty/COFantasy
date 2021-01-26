@@ -1070,6 +1070,7 @@ var COFantasy = COFantasy || function() {
   //champs val et roll
   function rollDePlus(de, options) {
     options = options || {};
+    var count = options.nbDes || 1;
     var bonus = options.bonus || 0;
     var explose = options.deExplosif || false;
     var texteJetDeTotal = '';
@@ -1079,12 +1080,19 @@ var COFantasy = COFantasy || function() {
       texteJetDeTotal += jetDe;
       jetTotal += jetDe;
       explose = explose && (jetDe === de);
-      if (explose) texteJetDeTotal += ',';
-    } while (explose && jetTotal < 1000);
+      if (explose) {
+        texteJetDeTotal += ',';
+      } else {
+        count--;
+        if (count > 0) {
+          texteJetDeTotal += ',';
+        }
+      }
+    } while ((explose || count > 0) && jetTotal < 1000);
     var res = {
       val: jetTotal + bonus
     };
-    var msg = '<span style="display: inline-block; border-radius: 5px; padding: 0 4px; background-color: #F1E6DA; color: #000;" title="1d';
+    var msg = '<span style="display: inline-block; border-radius: 5px; padding: 0 4px; background-color: #F1E6DA; color: #000;" title="' + options.nbDes + 'd';
     msg += de;
     if (options.deExplosif) msg += '!';
     if (bonus > 0) {
@@ -3588,6 +3596,12 @@ var COFantasy = COFantasy || function() {
         if (attributeAsBool(personnage, 'tourDeForce') && carac == 'FOR') {
           testRes.modifiers += '<br/>' + boutonSimple("!cof-tour-force " + evt.id + " " + testId, "Tour de Force");
         }
+        if (attributeAsInt(personnage, 'pacteSanglant', 0) >= 3) {
+          testRes.modifiers += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 3 " + testId, "Pacte sanglant (+3)");
+        }
+        if (attributeAsInt(personnage, 'pacteSanglant', 0) >= 5) {
+          testRes.modifiers += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 5 " + testId, "Pacte sanglant (+5)");
+        }
         if (jetCache) sendChat('COF', "/w GM Jet caché : " + buildinline(roll) + bonusText);
         callback(testRes, explications);
       });
@@ -3736,6 +3750,12 @@ var COFantasy = COFantasy || function() {
           }
           if (caracteristique == 'FOR' && attributeAsBool(perso, 'tourDeForce')) {
             boutonsReroll += '<br/>' + boutonSimple("!cof-tour-force " + evt.id + " " + testId, "Tour De Force");
+          }
+          if (attributeAsInt(perso, 'pacteSanglant', 0) >= 3) {
+            boutonsReroll += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 3 " + testId, "Pacte sanglant (+3)");
+          }
+          if (attributeAsInt(perso, 'pacteSanglant', 0) >= 5) {
+            boutonsReroll += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 5 " + testId, "Pacte sanglant (+5)");
           }
           addLineToFramedDisplay(display, boutonsReroll);
           if (optionsDisplay.retarde) {
@@ -7340,6 +7360,10 @@ var COFantasy = COFantasy || function() {
       explications.push("Cyclone => +5 en DEF");
       defense += 5;
     }
+    if (options.pacteSanglantDef && options.pacteSanglantDef[target.token.id]) {
+      explications.push("Pacte Sanglant => +" + options.pacteSanglantDef[target.token.id] + " en DEF");
+      defense += options.pacteSanglantDef[target.token.id];
+    }
     if (target.realCharId) target.charId = target.realCharId;
     return defense;
   }
@@ -8076,6 +8100,12 @@ var COFantasy = COFantasy || function() {
             if (attributeAsBool(perso1, 'tourDeForce') && carac1 == 'FOR') {
               texte1 += '<br/>' + boutonSimple("!cof-tour-force " + evt.id + " " + rollId + "_roll1", "Tour de force");
             }
+            if (attributeAsInt(perso1, 'pacteSanglant', 0) >= 3) {
+              texte1 += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 3 " + rollId + "_roll1", "Pacte sanglant (+3)");
+            }
+            if (attributeAsInt(perso1, 'pacteSanglant', 0) >= 5) {
+              texte1 += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 5 " + rollId + "_roll1", "Pacte sanglant (+5)");
+            }
           }
         }
         explications.push(texte1);
@@ -8100,6 +8130,12 @@ var COFantasy = COFantasy || function() {
             }
             if (attributeAsBool(perso2, 'tourDeForce') && carac2 == 'FOR') {
               texte2 += '<br/>' + boutonSimple("!cof-tour-force " + evt.id + " " + rollId + "_roll2", "Tour de force");
+            }
+            if (attributeAsInt(perso2, 'pacteSanglant', 0) >= 3) {
+              texte2 += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 3 " + rollId + "_roll2", "Pacte sanglant (+3)");
+            }
+            if (attributeAsInt(perso2, 'pacteSanglant', 0) >= 5) {
+              texte2 += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 5 " + rollId + "_roll2", "Pacte sanglant (+5)");
             }
           }
         }
@@ -11854,7 +11890,12 @@ var COFantasy = COFantasy || function() {
         if (attributeAsBool(perso, 'petitVeinard')) {
           addLineToFramedDisplay(display, boutonSimple("!cof-bouton-petit-veinard " + evt.id, "Petit veinard"));
         }
-        //TODO: pacte sanglant
+        if (attributeAsInt(perso, 'pacteSanglant', 0) >= 3) {
+          addLineToFramedDisplay(display, boutonSimple("!cof-pacte-sanglant " + evt.id + " 3", "Pacte sanglant (+3)"));
+        }
+        if (attributeAsInt(perso, 'pacteSanglant', 0) >= 5) {
+          addLineToFramedDisplay(display, boutonSimple("!cof-pacte-sanglant " + evt.id + " 5", "Pacte sanglant (+5)"));
+        }
       } else {
         if (evt.action.weaponStats) {
           var attLabel = evt.action.weaponStats.label;
@@ -12031,6 +12072,14 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, target.tokName + " peut " +
               boutonSimple("!cof-ignorer-la-douleur " + evt.id + ' --target ' + target.token.id, "ignorer la douleur")
             );
+          }
+          var attrPacteSanglant = attributeAsInt(target, 'pacteSanglant', 0);
+          if (attrPacteSanglant >= 3) {
+            var msg = target.tokName + " fait un Pacte sanglant" + boutonSimple("!cof-pacte-sanglant-def " + evt.id + ' 3 ' + target.token.id, "(+3 DEF)");
+            if (attrPacteSanglant >= 5) {
+              msg += boutonSimple("!cof-pacte-sanglant-def " + evt.id + ' 5 ' + target.token.id, "(+5 DEF)");
+            }
+            addLineToFramedDisplay(display, msg);
           }
         });
       }
@@ -15577,6 +15626,169 @@ var COFantasy = COFantasy || function() {
     error("Type d'évènement pas encore géré pour la chance", evt);
   }
 
+  //!cof-pacte-sanglant [evt.id] [3|5] [rollId]
+  function boutonPacteSanglant(msg) {
+    var args = msg.content.split(' ');
+    if (args.length < 3) {
+      error("La fonction !cof-pacte-sanglant n'a pas assez d'arguments", args);
+      return;
+    }
+    var evt = findEvent(args[1]);
+    if (evt === undefined) {
+      error("L'action est trop ancienne ou éte annulée", args);
+      return;
+    }
+    var bonus = parseInt(args[2]);
+    if (isNaN(bonus)) {
+      error("Il manque un choix de bonus au Pacte sanglant", args);
+      return;
+    }
+    var perso = evt.personnage;
+    var rollId;
+    if (args.length > 3) {
+      if (!evt.action) {
+        error("Le dernier évènement n'est pas une action", args);
+        return;
+      }
+      var roll = evt.action.rolls[args[3]];
+      if (roll === undefined) {
+        error("Erreur interne du bouton de pacte sanglant : roll non identifié", args);
+        return;
+      }
+      if (roll.token === undefined) {
+        error("Erreur interne du bouton de pacte sanglant : roll sans token", args);
+        return;
+      }
+      perso = persoOfId(roll.token.id, roll.token.name, roll.token.pageId);
+      rollId = args[3];
+    }
+    if (perso === undefined) {
+      error("Erreur interne du bouton de pacte sanglant : l'évenement n'a pas de personnage", evt);
+      return;
+    }
+    if (!peutController(msg, perso)) {
+      sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+      return;
+    }
+    var valPacteSanglant = attributeAsInt(perso, 'pacteSanglant', 0);
+    if (valPacteSanglant < bonus) {
+      error(perso.token.name + " ne peut pas faire ça !");
+      return;
+    }
+    var action = evt.action;
+    if (action) { //alors on peut faire le undo
+      var options = action.options || {};
+      undoEvent(evt);
+      var d4 = (valPacteSanglant < 5) ? rollDePlus(4) : rollDePlus(4, {
+        nbDes: 2
+      });
+      var r = {
+        total: d4.val,
+        type: 'normal',
+        display: d4.roll
+      };
+      var evtPacteSanglant = {
+        type: 'pacteSanglant',
+        rollId: rollId,
+        action: {
+          rolls: {
+            "pacteSanglantDmg": d4
+          }
+        }
+      };
+      addEvent(evtPacteSanglant);
+      var explications = [];
+      perso.ignoreTouteRD = true;
+      dealDamage(perso, r, [], evtPacteSanglant, false, {}, explications,
+        function(dmgDisplay, dmg) {
+          sendChar(perso.charId, "réalise un Pacte sanglant et perd " + dmgDisplay + " PV");
+          explications.forEach(function(expl) {
+            sendChar(perso.charId, expl);
+          });
+        });
+      if (rollId) {
+        options.chanceRollId = options.chanceRollId || {};
+        options.chanceRollId[rollId] = (options.chanceRollId[rollId] + bonus) || bonus;
+      } else {
+        options.chance = (options.chance + bonus) || bonus;
+      }
+      if (redoEvent(evt, action, perso)) return;
+    }
+    error("Type d'évènement pas encore géré pour la chance", evt);
+  }
+
+  //!cof-pacte-sanglant [evt.id] [3|5] [targetId]
+  function boutonPacteSanglantDef(msg) {
+    var args = msg.content.split(' ');
+    if (args.length < 4) {
+      error("La fonction !cof-pacte-sanglant-def n'a pas assez d'arguments", args);
+      return;
+    }
+    var evt = findEvent(args[1]);
+    if (evt === undefined) {
+      error("L'action est trop ancienne ou éte annulée", args);
+      return;
+    }
+    if (!evt.action) {
+      error("Le dernier évènement n'est pas une action", args);
+      return;
+    }
+    var bonus = parseInt(args[2]);
+    if (isNaN(bonus)) {
+      error("Il manque un choix de bonus au Pacte sanglant", args);
+      return;
+    }
+    var perso = persoOfId([args[3]]);
+    if (perso === undefined) {
+      error("Erreur interne du bouton de pacte sanglant (DEF) : pas de cible trouvée", args);
+      return;
+    }
+    if (!peutController(msg, perso)) {
+      sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+      return;
+    }
+    var valPacteSanglant = attributeAsInt(perso, 'pacteSanglant', 0);
+    if (valPacteSanglant < bonus) {
+      error(perso.token.name + " ne peut pas faire ça !");
+      return;
+    }
+    var action = evt.action;
+    if (action) { //alors on peut faire le undo
+      var options = action.options || {};
+      undoEvent(evt);
+      var d4 = (valPacteSanglant < 5) ? rollDePlus(4) : rollDePlus(4, {
+        nbDes: 2
+      });
+      var r = {
+        total: d4.val,
+        type: 'normal',
+        display: d4.roll
+      };
+      var evtPacteSanglant = {
+        type: 'pacteSanglantDEF',
+        action: {
+          rolls: {
+            "pacteSanglantDmg": d4
+          }
+        }
+      };
+      addEvent(evtPacteSanglant);
+      var explications = [];
+      perso.ignoreTouteRD = true;
+      dealDamage(perso, r, [], evtPacteSanglant, false, {}, explications,
+          function(dmgDisplay, dmg) {
+            sendChar(perso.charId, "réalise un Pacte sanglant et perd " + dmgDisplay + " PV");
+            explications.forEach(function(expl) {
+              sendChar(perso.charId, expl);
+            });
+          });
+      options.pacteSanglantDef = options.pacteSanglantDef || {};
+      options.pacteSanglantDef[perso.token.id] = (options.pacteSanglantDef[perso.token.id] + bonus) || bonus;
+      if (redoEvent(evt, action, perso)) return;
+    }
+    error("Type d'évènement pas encore géré pour la chance", evt);
+  }
+
   //!cof-tour-force [evt.id] [rollId]
   function boutonTourDeForce(msg) {
     var args = msg.content.split(' ');
@@ -15644,12 +15856,12 @@ var COFantasy = COFantasy || function() {
       var explications = [];
       perso.ignoreTouteRD = true;
       dealDamage(perso, r, [], evtTourDeForce, false, {}, explications,
-        function(dmgDisplay, dmg) {
-          sendChar(perso.charId, "réalise un Tour de force et perd " + dmgDisplay + " PV");
-          explications.forEach(function(expl) {
-            sendChar(perso.charId, expl);
+          function(dmgDisplay, dmg) {
+            sendChar(perso.charId, "réalise un Tour de force et perd " + dmgDisplay + " PV");
+            explications.forEach(function(expl) {
+              sendChar(perso.charId, expl);
+            });
           });
-        });
       if (rollId) {
         options.chanceRollId = options.chanceRollId || {};
         options.chanceRollId[rollId] = (options.chanceRollId[rollId] + 10) || 10;
@@ -19674,6 +19886,12 @@ var COFantasy = COFantasy || function() {
         if (pcAttaquant > 0)
           line += "<br/>" + boutonSimple("!cof-bouton-chance " + evt.id + " roll1", "Chance") +
           " (reste " + pcAttaquant + " PC)";
+        if (attributeAsInt(attaquant, 'pacteSanglant', 0) >= 3) {
+          line += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 3 roll1", "Pacte sanglant (+3)");
+        }
+        if (attributeAsInt(attaquant, 'pacteSanglant', 0) >= 5) {
+          line += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 5 roll1", "Pacte sanglant (+5)");
+        }
       }
       addLineToFramedDisplay(display, line);
       line = cible.token.get('name') + " fait " + buildinline(roll2);
@@ -19687,6 +19905,12 @@ var COFantasy = COFantasy || function() {
         if (pcCible > 0)
           line += "<br/>" + boutonSimple("!cof-bouton-chance " + evt.id + " roll2", "Chance") +
           " (reste " + pcCible + " PC)";
+        if (attributeAsInt(cible, 'pacteSanglant', 0) >= 3) {
+          line += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 3 roll2", "Pacte sanglant (+3)");
+        }
+        if (attributeAsInt(cible, 'pacteSanglant', 0) >= 5) {
+          line += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 5 roll2", "Pacte sanglant (+5)");
+        }
       }
       addLineToFramedDisplay(display, line);
       if (reussi) {
@@ -28829,6 +29053,12 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-tour-force':
         boutonTourDeForce(msg);
+        return;
+      case '!cof-pacte-sanglant':
+        boutonPacteSanglant(msg);
+        return;
+      case '!cof-pacte-sanglant-def':
+        boutonPacteSanglantDef(msg);
         return;
       case '!cof-encaisser-un-coup':
         doEncaisserUnCoup(msg);
