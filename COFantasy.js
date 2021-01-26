@@ -10027,6 +10027,7 @@ var COFantasy = COFantasy || function() {
                 attackResult += addAttackImg("imgAttackSucces", weaponStats.divers, options);
                 addAttackSound("soundAttackSucces", weaponStats.divers, options);
               }
+
               var attRollValue;
               var bonusTexte = '';
               if (attSkill > 0) bonusTexte += "+" + attSkill;
@@ -10067,31 +10068,42 @@ var COFantasy = COFantasy || function() {
                     value: '2' + options.d6
                   });
                 }
-              } else { //Effet si on ne touche pas
-                // Draw failed effect
-                if (_.has(options, "fx") && options.distance) {
-                  var p1 = {
-                    x: attackingToken.get('left'),
-                    y: attackingToken.get('top')
-                  };
-                  var p2 = {
-                    x: target.token.get('left'),
-                    y: target.token.get('top')
-                  };
-                  // Compute some gaussian deviation in [0, 1]
-                  var dev =
-                    (Math.random() + Math.random() + Math.random() + Math.random() +
-                      Math.random() + 1) / 6;
-                  // take into account by how far we miss
-                  dev = dev * (d20roll == 1) ? 2 : ((attackRoll - defense) / 20);
-                  if (Math.random() > 0.5) dev = -dev;
-                  p2.x += dev * (p2.y - p1.y);
-                  p2.y += dev * (p2.x - p1.x);
-                  spawnFxBetweenPoints(p1, p2, options.fx, pageId);
-                }
-                if (target.clignotement === undefined) {
+                if(attributeAsBool(target, 'momentDePerfection')) {
+                  target.messages.push("Grâce à son instant de perfection, " + target.tokName + " évite le coup !");
+                  touche = false;
                   evt.succes = false;
-                  diminueMalediction(attaquant, evt);
+                }
+              } else { //Effet si on ne touche pas
+                if(attributeAsBool(attaquant, 'momentDePerfection')) {
+                  target.messages.push("Grâce à son instant de perfection, " + attaquant.tokName + " touche !");
+                  touche = true;
+                  evt.succes = true;
+                } else {
+                  // Draw failed effect
+                  if (_.has(options, "fx") && options.distance) {
+                    var p1 = {
+                      x: attackingToken.get('left'),
+                      y: attackingToken.get('top')
+                    };
+                    var p2 = {
+                      x: target.token.get('left'),
+                      y: target.token.get('top')
+                    };
+                    // Compute some gaussian deviation in [0, 1]
+                    var dev =
+                        (Math.random() + Math.random() + Math.random() + Math.random() +
+                            Math.random() + 1) / 6;
+                    // take into account by how far we miss
+                    dev = dev * (d20roll == 1) ? 2 : ((attackRoll - defense) / 20);
+                    if (Math.random() > 0.5) dev = -dev;
+                    p2.x += dev * (p2.y - p1.y);
+                    p2.y += dev * (p2.x - p1.x);
+                    spawnFxBetweenPoints(p1, p2, options.fx, pageId);
+                  }
+                  if (target.clignotement === undefined) {
+                    evt.succes = false;
+                    diminueMalediction(attaquant, evt);
+                  }
                 }
               }
             }
@@ -29822,6 +29834,11 @@ var COFantasy = COFantasy || function() {
       activation: "se transforme en tourbillon de matière élémentaire",
       actif: "est en cyclone",
       fin: "retrouve sa forme habituelle",
+    },
+    momentDePerfection: {
+      activation: "atteint un instant de perfection",
+      actif: "semble tout voir au ralenti autour de lui",
+      fin: "voit le temps reprendre son cours normal",
     }
   };
 
