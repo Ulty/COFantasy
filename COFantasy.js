@@ -23966,7 +23966,7 @@ var COFantasy = COFantasy || function() {
     liste.push({
       nom: 'Elixir de feu grégeois',
       attrName: 'feu_grégeois',
-      action: "!cof-dmg $rangd6 --feu --psave DEX [[10+@{selected|INT}]] --disque @{target|token_id} 3 10 --lanceur @{selected|token_id} --targetFx burst-fire",
+      action: "!cof-attack @{selected|token_id} @{target|token_id} Feu Grégeois --auto --dm $rangd6 --feu --psave DEX [[10+@{selected|INT}]] --disque 3 --portee 10 --targetFx burst-fire",
       rang: 2
     });
     if (rang < 3) return liste;
