@@ -2316,7 +2316,7 @@ var COFantasy = COFantasy || function() {
         if (character === undefined) return true;
         var cb = character.get('controlledby');
         var res = cb.split(',').find(function(pid) {
-          if (pid == 'all') return true;
+          return (pid == 'all' || pid == playerId);
         });
         return (res !== undefined);
       });
