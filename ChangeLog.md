@@ -36,6 +36,7 @@
 * Meilleur support du Tour de force
 
 ### Corrections de bugs
+* Correction du test d'attaque opposée
 * Calcul de score d'attaque corrigé pour les Terres d'Arran.
 * Mise à jour de l'initiative quand on rengaine son arme à distance avec la voie du pistolero.
 * Donne le droit au joueur qui doit faire une réaction à une attaque de ne pas réagir.
