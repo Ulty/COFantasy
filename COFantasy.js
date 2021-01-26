@@ -10561,7 +10561,7 @@ var COFantasy = COFantasy || function() {
 
   // Applique toutes les options de preDmg déjà sélectionnées
   // Retourne vrai si l'option "continuer" a déjà été choisie
-  function resolvePreDmgOptions(attaquant, cibles, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees) {
+  function resolvePreDmgOptions(attaquant, ciblesTouchees, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles) {
     //Sauvegarde de l'état pour pouvoir relancer au niveau de cette fonction
     evt.action.currentOptions = options;
     evt.action.echecCritique = echecCritique;
@@ -10572,21 +10572,21 @@ var COFantasy = COFantasy || function() {
     evt.action.display.perso2 = display.perso2;
     evt.action.explications = JSON.parse(JSON.stringify(explications));
     evt.action.pageId = pageId;
-    evt.action.ciblesAttaquees = ciblesAttaquees;
+    evt.action.ciblesTouchees = ciblesTouchees;
     evt.action.choices = options.choices;
     if (evt.action.choices === undefined) {
       if (options.preDmg) {
         addLineToFramedDisplay(display, "<b>Attaque :</b> Touche !");
-        finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options, echecCritique);
+        finaliseDisplay(display, explications, evt, attaquant, cibles, options, echecCritique);
         return;
       } else {
-        attackDealDmg(attaquant, cibles, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees);
+        attackDealDmg(attaquant, evt.action.ciblesTouchees, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles);
         return;
       }
     }
     var continuer = evt.action.choices.Continuer;
-    var nbCibles = cibles.length;
-    cibles.forEach(function(cible) {
+    var nbCibles = ciblesTouchees.length;
+    ciblesTouchees.forEach(function(cible) {
       var finaliseTarget = function() {
         nbCibles--;
         if (nbCibles === 0) {
@@ -10595,10 +10595,10 @@ var COFantasy = COFantasy || function() {
           }
           if (options.preDmg || options.preDmgAnnule) {
             addLineToFramedDisplay(display, "<b>Attaque :</b> Touche !");
-            finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options, echecCritique);
+            finaliseDisplay(display, explications, evt, attaquant, cibles, options, echecCritique);
             return;
           } else {
-            attackDealDmg(attaquant, cibles, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees);
+            attackDealDmg(attaquant, evt.action.ciblesTouchees, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles);
           }
         }
       };
@@ -10647,9 +10647,9 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function attackDealDmg(attaquant, cibles, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, ciblesAttaquees) {
-    if (ciblesAttaquees.length > cibles.length) {
-      ciblesAttaquees.forEach(function(target) {
+  function attackDealDmg(attaquant, ciblesTouchees, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles) {
+    if (cibles.length > ciblesTouchees.length) {
+      cibles.forEach(function(target) {
         if (options.test || options.feinte || !target.touche) {
           //On a fini avec cette cible, on imprime ce qui la concerne
           if (target.attackMessage) 
@@ -10660,12 +10660,12 @@ var COFantasy = COFantasy || function() {
         }
       });
     }
-    if (cibles.length === 0 || options.test || options.feinte) {
-      finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options, echecCritique);
+    if (ciblesTouchees.length === 0 || options.test || options.feinte) {
+      finaliseDisplay(display, explications, evt, attaquant, cibles, options, echecCritique);
       if (echecCritique) {
         if (stateCOF.options.affichage.val.table_crit.val)
           sendChat('COF', "[[1t[Echec-Critique-Contact]]]");
-        else sendChat('COF', "/w GM " + suggererEchecCritique(attaquant, weaponStats, ciblesAttaquees, options, evt));
+        else sendChat('COF', "/w GM " + suggererEchecCritique(attaquant, weaponStats, cibles, options, evt));
       }
       return;
     }
@@ -10852,12 +10852,12 @@ var COFantasy = COFantasy || function() {
     }
     /////////////////////////////////////////////////////////////////
     //Tout ce qui dépend de la cible
-    var ciblesCount = cibles.length; //Pour l'asynchronie
+    var ciblesCount = ciblesTouchees.length; //Pour l'asynchronie
     var attaquesEnTraitrePossibles = {};
     var finCibles = function() {
       ciblesCount--;
       if (ciblesCount === 0) {
-        cibles.forEach(function(target) {
+        ciblesTouchees.forEach(function(target) {
           if (target.attackMessage) {
             addLineToFramedDisplay(display, target.attackMessage);
           } else if (options.aoe) { //par exemple si attaque automatique
@@ -10868,7 +10868,7 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, expl, 80);
           });
         });
-        finaliseDisplay(display, explications, evt, attaquant, ciblesAttaquees, options);
+        finaliseDisplay(display, explications, evt, attaquant, cibles, options);
         for (var vid in attaquesEnTraitrePossibles) {
           var voleur = persoOfId(vid);
           if (voleur === undefined) continue;
@@ -10910,7 +10910,7 @@ var COFantasy = COFantasy || function() {
         });
       });
     }
-    cibles.forEach(function(target) {
+    ciblesTouchees.forEach(function(target) {
       evalITE(attaquant, target, d20roll, options, 1, evt, explications, options, function() {
         target.attaquant = attaquant;
         if (options.enveloppe !== undefined) {
@@ -22607,7 +22607,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (opt && opt.condition && !opt.condition(perso)) {
-      resolvePreDmgOptions(action.attaquant, action.cibles, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, pageId, action.ciblesAttaquees);
+      resolvePreDmgOptions(action.attaquant, action.ciblesTouchees, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, pageId, action.cibles);
     }
     var jetAdversaire = cible.attackRoll;
     if (jetAdversaire === undefined) {
@@ -22765,7 +22765,7 @@ var COFantasy = COFantasy || function() {
             options.preDmgAnnule = true;
             generalMsg += " => Réussi, " + msgReussite;
           } else {
-            action.cibles = action.cibles.filter(function(c) {
+            action.ciblesTouchees = action.ciblesTouchees.filter(function(c) {
               return c.token.id != cible.token.id;
             });
             removePreDmg(options, cible);
