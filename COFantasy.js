@@ -8533,37 +8533,39 @@ var COFantasy = COFantasy || function() {
       return true;
     });
     if (cibles.length === 0) return;
-    //Prise en compte de la distance
-    var optDistance = {};
-    if (options.contact) optDistance.allonge = options.allonge;
-    // Si l'attaquant est monté, distance mesurée à partir de sa monture
-    var pseudoAttackingToken = attackingToken;
-    var attrMonture = tokenAttribute(attaquant, 'monteSur');
-    if (attrMonture.length > 0) {
-      var pseudoAttacker =
-        persoOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
-      if (pseudoAttacker) pseudoAttackingToken = pseudoAttacker.token;
-    }
-    cibles = cibles.filter(function(target) {
-      // Si la cible est montée, distance mesurée vers sa monture
-      var pseudoTargetToken = target.token;
-      attrMonture = tokenAttribute(target, 'monteSur');
+    if(!options.redo) {
+      //Prise en compte de la distance
+      var optDistance = {};
+      if (options.contact) optDistance.allonge = options.allonge;
+      // Si l'attaquant est monté, distance mesurée à partir de sa monture
+      var pseudoAttackingToken = attackingToken;
+      var attrMonture = tokenAttribute(attaquant, 'monteSur');
       if (attrMonture.length > 0) {
-        var pseudoTarget =
-          persoOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
-        if (pseudoTarget) pseudoTargetToken = pseudoTarget.token;
+        var pseudoAttacker =
+            persoOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
+        if (pseudoAttacker) pseudoAttackingToken = pseudoAttacker.token;
       }
-      target.distance =
-        distanceCombat(pseudoAttackingToken, pseudoTargetToken, pageId, optDistance);
-      if (options.intercepter || options.interposer) return true;
-      if (target.distance > portee && target.msgEsquiveFatale === undefined && !target.chairACanon) {
-        if (options.aoe || options.auto) return false; //distance stricte
-        if (target.distance > (charAttributeAsBool(attaquant, "tirParabolique") ? 3 : 2) * portee) return false;
-        // On peut aller jusqu'à 2x portee si unique cible et jet d'attaque, 3x si le personnage a Tir Parabolique
+      cibles = cibles.filter(function(target) {
+        // Si la cible est montée, distance mesurée vers sa monture
+        var pseudoTargetToken = target.token;
+        attrMonture = tokenAttribute(target, 'monteSur');
+        if (attrMonture.length > 0) {
+          var pseudoTarget =
+              persoOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
+          if (pseudoTarget) pseudoTargetToken = pseudoTarget.token;
+        }
+        target.distance =
+            distanceCombat(pseudoAttackingToken, pseudoTargetToken, pageId, optDistance);
+        if (options.intercepter || options.interposer) return true;
+        if (target.distance > portee && target.msgEsquiveFatale === undefined && !target.chairACanon) {
+          if (options.aoe || options.auto) return false; //distance stricte
+          if (target.distance > (charAttributeAsBool(attaquant, "tirParabolique") ? 3 : 2) * portee) return false;
+          // On peut aller jusqu'à 2x portee si unique cible et jet d'attaque, 3x si le personnage a Tir Parabolique
+          return true;
+        }
         return true;
-      }
-      return true;
-    });
+      });
+    }
     //On enlève les alliés si l'option saufAllies est active
     if (options.saufAllies) {
       var allies = new Set();
