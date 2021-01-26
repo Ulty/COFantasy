@@ -1070,7 +1070,8 @@ var COFantasy = COFantasy || function() {
   //champs val et roll
   function rollDePlus(de, options) {
     options = options || {};
-    var count = options.nbDes || 1;
+    options.nbDes = options.nbDes || 1;
+    var count = options.nbDes;
     var bonus = options.bonus || 0;
     var explose = options.deExplosif || false;
     var texteJetDeTotal = '';
