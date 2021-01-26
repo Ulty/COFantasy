@@ -13257,7 +13257,7 @@ var COFantasy = COFantasy || function() {
                 msgBarroud += onGenre(target, 'il', 'elle') + " continue à se battre !";
                 expliquer(msgBarroud);
                 setTokenAttr(target, 'baroudHonneurActif', true, evt);
-              } else if (attrAsInt(tokenAttribute(target, 'increvable'), 0) > 0) {
+              } else if (attributeAsInt(target, 'increvable', 0) > 0) {
                 var msgIncrevable = token.get('name') + " devrait être mort";
                 msgIncrevable += eForFemale(target) + ", mais ";
                 msgIncrevable += onGenre(target, 'il', 'elle') + " est increvable !";
