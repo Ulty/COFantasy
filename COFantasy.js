@@ -25202,8 +25202,8 @@ var COFantasy = COFantasy || function() {
       }
       addLineToFramedDisplay(display, "Jet de " + attaquant.tokName + " : " + attRollValue);
       var critDefenseur = critEnAttaque(defenseur, armeDefenseur, options);
-      var dice = 20;
-      var malusAttaque = 0;
+      dice = 20;
+      malusAttaque = 0;
       if (estAffaibli(defenseur)) {
         if (charAttributeAsBool(defenseur, 'insensibleAffaibli')) {
           malusAttaque = -2;
@@ -25225,7 +25225,7 @@ var COFantasy = COFantasy || function() {
         attRollNumber = rollNumber(afterEvaluateAttack[0]);
         attSkillNumber = rollNumber(afterEvaluateAttack[1]);
         var d20rollDefenseur = rollsAttack.inlinerolls[attRollNumber].results.total;
-        var attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
+        attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
         attBonus =
           bonusAttaqueA(defenseur, armeDefenseur.name, evt, explications, options);
         attBonus += malusAttaque;
@@ -25303,9 +25303,9 @@ var COFantasy = COFantasy || function() {
     attaqueContactOpposee(playerId, attaquant, defenseur, evt, options,
       function(res, display, explications) {
         if (res.succes)
-          addLineToFramedDisplay(display, attaquant.token.get('name') + " remporte le test");
+          addLineToFramedDisplay(display, attaquant.tokName + " remporte le test");
         else
-          addLineToFramedDisplay(display, defenseur.token.get('name') + " remporte le test");
+          addLineToFramedDisplay(display, defenseur.tokName + " remporte le test");
         explications.forEach(function(expl) {
           addLineToFramedDisplay(display, expl, 80);
         });
