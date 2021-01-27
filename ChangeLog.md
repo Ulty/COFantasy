@@ -16,6 +16,7 @@
 * Implémentation des effets de Cercle de protection
 * Ajout de la capacité Combat kinétique du Psionique
 * Support du sort Armure d'eau
+* Support de Moment de perfection (moine)
 
 ### Autres améliorations
 * Ajout de RD aux éléments.
