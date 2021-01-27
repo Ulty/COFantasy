@@ -17102,7 +17102,11 @@ var COFantasy = COFantasy || function() {
     name: 'Init marker',
     aura1_color: '#ff00ff',
     aura2_color: '#00ff00',
-    imgsrc: DEFAULT_DYNAMIC_INIT_IMG
+    imgsrc: DEFAULT_DYNAMIC_INIT_IMG,
+    shownname: false,
+    light_hassight: false,
+    has_bright_light_vision: false,
+    has_night_vision: false,
   };
   var threadSync = 0;
 
