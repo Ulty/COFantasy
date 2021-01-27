@@ -240,7 +240,7 @@ var COFantasy = COFantasy || function() {
       type: 'options',
       val: {
         image_init: {
-          explications: 'Image utilisée pour la capacité dédoublement',
+          explications: "Image utilisée pour indiquer le personnage dont c'est le tour",
           type: 'image',
           val: DEFAULT_DYNAMIC_INIT_IMG
         },
@@ -6500,6 +6500,11 @@ var COFantasy = COFantasy || function() {
       pageId = cible.token.get('pageid');
     }
     var capitaine = persoOfIdName(attrCapitaine.get('current'), pageId);
+    if (capitaine === undefined) {
+      evt.deletedAttributes = evt.deletedAttributes || [];
+      evt.deletedAttributes.push(attrCapitaine);
+      attrCapitaine.remove();
+    }
     var capitaineActif = attrs.find(function(a) {
       return (a.get('name') == 'capitaineActif');
     });
