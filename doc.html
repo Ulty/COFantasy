@@ -1292,6 +1292,7 @@
                   <li><strong>Esquive du singe</strong> : mettre à jour la défense sur la fiche, et ajouter une compétence <code>acrobatie</code> avec le bonus donné par la capacité.</li>
                   <li><strong>Morsure du serpent</strong> : pour ne pas avoir à modifier les chances de critique pour toutes les attaques au contact, utiliser un attribut <code>morsureDuSerpent</code> (valeur <code>true</code>). Attention à ne pas faire ça ET modifier les chances de critiques de l'attaque, car ça s'additionne. (En revanche, pas de soucis avec la science du critique).</li>
                   <li><strong>Griffes du tigre</strong> : rajouter l'option <code>--exploseMax</code> aux attaques à mains nues.</li>
+                  <li><strong>Fureur du dragon</strong> : Créer une ability : <code>!cof-attack @{selected|token_id} @{selected|token_id} Fureur du dragon --auto --portee 0 --disque 1 --saufAllies --dm 2D6+[[@{selected|FOR}]] --etat renverse --save FOR 10</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de la méditation</h4>
                 <ol>
@@ -1331,7 +1332,7 @@
                       <li> Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter à la transformation <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
                     </ul>
                   </li>
-                  <li><strong>Pacte sanglant</strong> : un support est prévu, mais en attendant, le MJ doit gérer les bonus. Il peut infliger les dégâts avec la commande <code>!cof-dmg 1d4 --ignoreRD</code></li>
+                  <li><strong>Pacte sanglant</strong> : créer un attribut <code>pacteSanglant</code> de valeur 3 (rang 3) ou 5 (rang 5). Le script va automatiser l'ajout de boutons sur tous les tests <i>a posteriori</i>, y compris sur les attaques qui ciblent le personnage. Aux joueurs de s'accorder sur la nécessité d'une déclaration <i>a priori</i> nécessaire pour l'utilisation de la capacité.</li>
                   <li><strong>Aspect du démon</strong> : <code>!cof-effet-temp aspectDuDemon [[5+@{selected|INT}]] --mana 2</code>. Ajouter une attaque 1d6+4 au contact avec l'option <code>--si etat aspectDuDemon</code> (attaquer 2 fois au besoin).</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la mort</h4>

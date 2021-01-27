@@ -34,6 +34,7 @@
 * Meilleur support de la Prouesse du guerrier
 * Meilleur support de la Parade de projectiles du moine
 * Meilleur support du Tour de force
+* Meilleur support du Pacte Sanglant 
 
 ### Corrections de bugs
 * Correction du test d'attaque opposée
