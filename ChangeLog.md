@@ -16,6 +16,7 @@
 * Implémentation des effets de Cercle de protection
 * Ajout de la capacité Combat kinétique du Psionique
 * Support du sort Armure d'eau
+* Support de Moment de perfection (moine)
 
 ### Autres améliorations
 * Ajout de RD aux éléments.
@@ -34,6 +35,7 @@
 * Meilleur support de la Prouesse du guerrier
 * Meilleur support de la Parade de projectiles du moine
 * Meilleur support du Tour de force
+* Meilleur support du Pacte Sanglant 
 
 ### Corrections de bugs
 * Correction du test d'attaque opposée
