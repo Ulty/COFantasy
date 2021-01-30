@@ -351,7 +351,8 @@ var COFantasy = COFantasy || function() {
     invisible: 'status_ninja-mask',
     blesse: 'status_arrowed',
     encombre: 'status_frozen-orb',
-    penombre: 'status_archery-target'
+    penombre: 'status_archery-target',
+    enseveli: 'status_edge-crack'
   };
 
   //Remplis quand on sait quels sont les markers dans setStateCOF
@@ -760,7 +761,8 @@ var COFantasy = COFantasy || function() {
         invisible: 'status_cof-invisible',
         blesse: 'status_cof-blesse',
         encombre: 'status_cof-encombre',
-        penombre: 'status_cof-penombre'
+        penombre: 'status_cof-penombre',
+        enseveli: 'status_edge-crack'
       };
       // On boucle sur la liste des états pour vérifier que les markers sont bien présents !
       var markersAbsents = [];
@@ -5363,18 +5365,21 @@ var COFantasy = COFantasy || function() {
             typeDmg: lastType
           };
           if (cmd[0] == 'etat' && cmd.length > 3) {
-            if (isCarac(cmd[2])) {
-              lastEtat.saveCarac = cmd[2];
-              var opposition = persoOfId(cmd[3]);
-              if (opposition) {
-                lastEtat.saveDifficulte = cmd[3] + ' ' + opposition.token.get('name');
-              } else {
-                lastEtat.saveDifficulte = parseInt(cmd[3]);
-                if (isNaN(lastEtat.saveDifficulte)) {
-                  error("Difficulté du jet de sauvegarde incorrecte", cmd);
-                  delete lastEtat.saveCarac;
-                  delete lastEtat.saveDifficulte;
-                }
+            if (!isCarac(cmd[2]) && (cmd[2].length != 6 ||
+              !isCarac(cmd[2].substring(0,3)) || !isCarac(cmd[2].substring(3,6)))) {
+              error("Caractéristique du jet de sauvegarde incorrecte", cmd);
+              return;
+            }
+            lastEtat.saveCarac = cmd[2];
+            var opposition = persoOfId(cmd[3]);
+            if (opposition) {
+              lastEtat.saveDifficulte = cmd[3] + ' ' + opposition.token.get('name');
+            } else {
+              lastEtat.saveDifficulte = parseInt(cmd[3]);
+              if (isNaN(lastEtat.saveDifficulte)) {
+                error("Difficulté du jet de sauvegarde incorrecte", cmd);
+                delete lastEtat.saveCarac;
+                delete lastEtat.saveDifficulte;
               }
             }
           }
@@ -8545,6 +8550,10 @@ var COFantasy = COFantasy || function() {
       ripostesDuTour = new Set(attrCiblesAttaquees[0].get('max').split(' '));
     }
     cibles = cibles.filter(function(target) {
+      if (getState(target, 'enseveli')) {
+        sendChar(attackingCharId, "impossible d'attaquer un personnage enseveli");
+        return false;
+      }
       if (attributeAsBool(target, 'ombreMortelle')) {
         sendChar(attackingCharId, "impossible d'attaquer une ombre");
         return false;
@@ -14823,6 +14832,14 @@ var COFantasy = COFantasy || function() {
         case 'maladie':
           options.type = cmd[0];
           return;
+        case 'bonus':
+          if (cmd.length >= 2) {
+            var bonus = parseInt(cmd[1]);
+            if (!isNaN(bonus)) {
+              options.bonus = bonus;
+            }
+          }
+          return;
         default:
           return;
       }
@@ -17360,6 +17377,9 @@ var COFantasy = COFantasy || function() {
       actionsAAfficher = true;
       command = '!cof-echapper-enveloppement --target ' + perso.token.id;
       ligne += bouton(command, 'Se libérer', perso) + '<br />';
+    } else if (getState(perso, 'enseveli')) {
+      actionsAAfficher = true;
+      ligne += boutonSaveState(perso, 'enseveli') + '<br />';
     } else {
       if (attributeAsBool(perso, 'estAgrippePar')) {
         actionsAAfficher = true;
@@ -18492,6 +18512,8 @@ var COFantasy = COFantasy || function() {
         return "se réveiller";
       case 'apeure':
         return "retrouver du courage";
+      case 'enseveli':
+        return "sortir de terre";
       default:
         return "ne plus être " + stringOfEtat(etat, perso);
     }
@@ -18501,13 +18523,25 @@ var COFantasy = COFantasy || function() {
     var options = parseOptions(msg);
     if (options === undefined) return;
     var cmd = options.cmd;
-    if (cmd === undefined || cmd.length < 4 ||
-      !_.has(cof_states, cmd[1]) || !isCarac(cmd[2])) {
+    if (cmd === undefined || cmd.length < 4 || !_.has(cof_states, cmd[1])) {
       error("Paramètres de !cof-save-state incorrects", cmd);
       return;
     }
     var etat = cmd[1];
     var carac = cmd[2];
+    var carac2;
+    if (!isCarac(carac) && carac.length == 6) {
+      carac2 = carac.substring(3,6);
+      carac = carac.substring(0,3);
+      if (!isCarac(carac) || !isCarac(carac)) {
+        error("Paramètres de !cof-save-state incorrects", cmd);
+        return;
+      }
+    }
+    else {
+      error("Paramètres de !cof-save-state incorrects", cmd);
+      return;
+    }
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         error("Pas de token sélectionné", msg.content);
@@ -18540,6 +18574,7 @@ var COFantasy = COFantasy || function() {
             sendChar(perso.charId, "n'est pas " + stringOfEtat(etat, perso));
             return;
           }
+          if (carac2) carac = meilleureCarac(carac, carac2, perso, seuil);
           doSaveState(playerId, perso, etat, carac, options, undefined, seuil);
         });
       }
@@ -18584,14 +18619,7 @@ var COFantasy = COFantasy || function() {
         });
     } else {
       var testId = 'saveState_' + carac + seuil;
-      var testOpts = {};
-      if (options.rolls) {
-        testOpts.roll = options.rolls[testId];
-        if (options.chanceRollId && options.chanceRollId[testId]) {
-          testOpts.bonus = options.chanceRollId[testId];
-        }
-      }
-      testCaracteristique(perso, carac, seuil, testId, testOpts, evt, function(res) {
+      testCaracteristique(perso, carac, seuil, testId, options, evt, function(res) {
         sendChar(perso.charId, titre);
         if (res.reussite) {
           setState(perso, etat, false, evt);
@@ -18609,12 +18637,10 @@ var COFantasy = COFantasy || function() {
     if (attr.length === 0) return false;
     attr = attr[0];
     var carac = attr.get('current');
-    if (!isCarac(carac)) {
-      log("Caractéristiques du save contre " + etat + " de " + perso.token.get('name') + " n'est pas une caractéristique " + carac);
-      return false;
-    }
-    var b = bouton("!cof-save-state " + etat + ' ' + carac + ' ' + attr.get('max'), "Jet", perso);
-    return b + " de " + carac + " pour " + textOfSaveState(etat, perso);
+    var action = "!cof-save-state " + etat + ' ' + carac + ' ' + attr.get('max');
+    if (etat == 'enseveli') action += " --bonus ?{Bonus au jet}";
+    var b = bouton(action, "Jet", perso);
+    return b + " pour " + textOfSaveState(etat, perso);
   }
 
   function updateInit(token, evt) {
@@ -30816,6 +30842,23 @@ var COFantasy = COFantasy || function() {
         selected.push({
           _id: tok.id
         });
+      }
+      if (getState(perso, 'enseveli')) {
+        var enseveliAttr = tokenAttribute(perso, 'enseveli');
+        // Pour ne pas faire les dégâts plusieurs fois (plusieurs tokens pour un même personnage), on utilise la valeur max de l'attribut
+        var dernierTourEnseveli = parseInt(enseveliAttr[0].get('max'));
+        if (isNaN(dernierTourEnseveli) || dernierTourEnseveli < tour) {
+          var degats = randomInteger(6) + randomInteger(6);
+          var dmg = {
+            type: 'magique',
+            total: degats,
+            display: degats
+          };
+          degats = dealDamage(perso, dmg, [], evt);
+          sendChar(charId, " est écrasé ! " +
+              onGenre(perso, 'Il', 'Elle') + " subit " + degats + " DM");
+          enseveliAttr[0].set('max', tour);
+        }
       }
       var enflammeAttr = tokenAttribute(perso, 'enflamme');
       if (enflammeAttr.length > 0) {
