@@ -8550,6 +8550,10 @@ var COFantasy = COFantasy || function() {
       ripostesDuTour = new Set(attrCiblesAttaquees[0].get('max').split(' '));
     }
     cibles = cibles.filter(function(target) {
+      if (getState(target, 'enseveli')) {
+        sendChar(attackingCharId, "impossible d'attaquer un personnage enseveli");
+        return false;
+      }
       if (attributeAsBool(target, 'ombreMortelle')) {
         sendChar(attackingCharId, "impossible d'attaquer une ombre");
         return false;
