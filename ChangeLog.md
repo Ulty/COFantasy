@@ -17,6 +17,7 @@
 * Ajout de la capacité Combat kinétique du Psionique
 * Support du sort Armure d'eau
 * Support de Moment de perfection (moine)
+* Support d'Ensevelissement (nécromancien)
 
 ### Autres améliorations
 * Ajout de RD aux éléments.
