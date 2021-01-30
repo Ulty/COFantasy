@@ -28723,6 +28723,10 @@ var COFantasy = COFantasy || function() {
       sendChat("Pas de charge fantastique en cours");
       return;
     }
+    if (stateCOF.chargeFantastique.activeTokenId && !peutController(msg, persoOfId(stateCOF.chargeFantastique.activeTokenId))) {
+      sendPlayer(msg, "ne peut utiliser ce bouton maintenant");
+      return;
+    }
     var evt = {
       type: "Tour de charge fantastique",
       chargeFantastique: cf
@@ -28747,6 +28751,8 @@ var COFantasy = COFantasy || function() {
         playerId = playerIds[0];
         optionsDisplay.chuchote = true;
       }
+      stateCOF.chargeFantastique.activeTokenId = perso.token.id;
+      setTokenInitAura(perso);
       var display = startFramedDisplay(playerId, "Charge fantastique", perso, optionsDisplay);
       addLineToFramedDisplay(display, "Phase de mouvement : déplacez votre token en ligne droite");
       addLineToFramedDisplay(display, "puis " + boutonSimple("!cof-next-charge-fantastique", "cliquez ici"));
@@ -28764,6 +28770,8 @@ var COFantasy = COFantasy || function() {
         return;
       }
       addEvent(evt);
+      stateCOF.chargeFantastique.activeTokenId = perso.token.id;
+      setTokenInitAura(perso);
       turnAction(perso);
       return;
     }
@@ -31094,7 +31102,7 @@ var COFantasy = COFantasy || function() {
     if (stateCOF.chargeFantastique) {
       //cmp.set('turnorder', evt.turnorder);
       if (stateCOF.chargeFantastique.attaques) {
-        nextTurnChargeFantastique(cmp, evt.turnorder);
+        nextTurnChargeFantastique(undefined, evt.turnorder);
         return;
       }
       stateCOF.chargeFantastique = undefined;
@@ -31686,7 +31694,9 @@ var COFantasy = COFantasy || function() {
       }
       // Update position du token d'initiative dynamique
       if (stateCOF.options.affichage.val.init_dynamique.val) {
-        if (roundMarker && stateCOF.activeTokenId == token.id) {
+        if (roundMarker && (
+          (!stateCOF.chargeFantastique && stateCOF.activeTokenId == token.id)
+          || (stateCOF.chargeFantastique && stateCOF.chargeFantastique.activeTokenId == token.id))) {
           roundMarker.set('left', x);
           roundMarker.set('top', y);
         } else if (roundMarker) {
