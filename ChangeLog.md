@@ -17,6 +17,8 @@
 * Ajout de la capacité Combat kinétique du Psionique
 * Support du sort Armure d'eau
 * Support de Moment de perfection (moine)
+* Support d'Ensevelissement (nécromancien)
+* Support d'Armée des Morts (nécromancien) 
 
 ### Autres améliorations
 * Ajout de RD aux éléments.
@@ -38,6 +40,7 @@
 * Meilleur support du Pacte Sanglant 
 
 ### Corrections de bugs
+* Crash de statut pour les personnages ayant un capitaine.
 * Correction du test d'attaque opposée
 * Calcul de score d'attaque corrigé pour les Terres d'Arran.
 * Mise à jour de l'initiative quand on rengaine son arme à distance avec la voie du pistolero.
