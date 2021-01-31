@@ -14033,6 +14033,7 @@ var COFantasy = COFantasy || function() {
     };
     stateCOF.combat = false;
     stateCOF.chargeFantastique = undefined;
+    stateCOF.armeesDesMorts = undefined;
     setActiveToken(undefined, evt);
     Campaign().set('initiativepage', false);
     var attrs = findObjs({
@@ -17387,10 +17388,20 @@ var COFantasy = COFantasy || function() {
       actionsAAfficher = true;
       ligne += boutonSaveState(perso, 'enseveli') + '<br />';
     } else {
-      if (stateCOF.armeesDesMorts && stateCOF.armeesDesMorts > 0) {
-        actionsAAfficher = true;
-        command = '!cof-defense-armee-des-morts ' + perso.token.id;
-        ligne += bouton(command, 'Combattre les Morts-Vivants', perso) + '<br />';
+      if (stateCOF.armeesDesMorts) {
+        var combattreArmee = false
+        stateCOF.armeesDesMorts.forEach(function(armee) {
+          var persoArmee = persoOfId(armee);
+          if(persoArmee && distanceCombat(perso.token, persoArmee.token, pageId) <= 20 &&
+            (!alliesParPerso[persoArmee.charId] || !alliesParPerso[persoArmee.charId].has(perso.charId))) {
+            actionsAAfficher = true;
+            combattreArmee = true;
+          }
+        });
+        if(combattreArmee) {
+          command = '!cof-defense-armee-des-morts ' + perso.token.id;
+          ligne += bouton(command, 'Combattre les Morts-Vivants', perso) + '<br />';
+        }
       }
       if (attributeAsBool(perso, 'estAgrippePar')) {
         actionsAAfficher = true;
@@ -19237,9 +19248,8 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (effet == 'armeeDesMorts') {
-          log("here");
-          stateCOF.armeesDesMorts = stateCOF.armeesDesMorts + 1 || 1;
-          log(stateCOF.armeesDesMorts);
+          stateCOF.armeesDesMorts = stateCOF.armeesDesMorts || [];
+          stateCOF.armeesDesMorts.push(perso.token.id);
         }
         if (options.puissant) {
           var puissant = true;
@@ -30620,8 +30630,11 @@ var COFantasy = COFantasy || function() {
       case 'armeeDesMorts':
         iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
           token.set("aura2_radius", 0);
+          if(stateCOF.armeesDesMorts) {
+            var index = stateCOF.armeesDesMorts.indexOf(token.id);
+            if (index > -1) stateCOF.armeesDesMorts.splice(index, 1);
+          }
         });
-        stateCOF.armeesDesMorts = stateCOF.armeesDesMorts - 1 || 0;
         break;
       default:
     }
@@ -31165,6 +31178,8 @@ var COFantasy = COFantasy || function() {
       }
     });
     var armeesDesMorts = allAttributesNamed(attrs, 'armeeDesMorts');
+    var degatsArmeeFull = {};
+    var degatsArmeeDefense = {};
     armeesDesMorts.forEach(function(armee) {
       var charId = armee.get('characterid');
       var allies = alliesParPerso[charId] || new Set();
@@ -31196,11 +31211,16 @@ var COFantasy = COFantasy || function() {
           var tokRepresents = tok.get('represents');
           if (tokRepresents == charId) return;
           if (allies.has(tokRepresents)) return;
+          if (degatsArmeeDefense[tok.id] != undefined || degatsArmeeFull[tok.id] != undefined) return;
           if (distanceCombat(auraToken, tok, pageId) > 20) return;
-          targets[tok.id] = tok.get('name');
+          var perso = persoOfToken(tok);
+          if (attributeAsBool(perso, "defenseArmeeDesMorts")) {
+            degatsArmeeDefense[tok.id] = perso;
+          } else {
+            degatsArmeeFull[tok.id] = perso;
+          }
         });
       });
-      if (_.isEmpty(targets)) return;
       if (!gmId) {
         var gm = findObjs({
           _type: "player"
@@ -31213,19 +31233,19 @@ var COFantasy = COFantasy || function() {
           return;
         }
       }
-      _.forEach(targets, function(auraTokenName, tid) {
-        var dmg, msg;
-        var perso = persoOfId(tid);
-        if (attributeAsBool(perso, "defenseArmeeDesMorts")) {
-          dmg = "1d6";
-          msg = "Les morts-vivants attaquent, mais " + auraTokenName+ " se défend !";
-        } else {
-          dmg = "3d6";
-          msg = "Les morts-vivants attaquent !";
-        }
-        sendChat('player|' + gmId, "!cof-dmg " + dmg + " --target " + tid + " --titre " + msg);
-      });
     });
+    var targetLine = "";
+    Object.keys(degatsArmeeFull).forEach(function(tokId){
+      targetLine += " --target " + tokId;
+    });
+    if (targetLine != "")
+      sendChat('player|' + gmId, "!cof-dmg 3d6" + targetLine + " --titre Dégâts des morts-vivants animés");
+    targetLine = "";
+    Object.keys(degatsArmeeDefense).forEach(function(tokId){
+      targetLine += " --target " + tokId;
+    });
+    if (targetLine != "")
+      sendChat('player|' + gmId, "!cof-dmg 1d6" + targetLine + " --titre Dégâts des morts-vivants animés sur les cibles qui les combattent");
     removeAllAttributes("defenseArmeeDesMorts", evt, attrs);
   }
 
