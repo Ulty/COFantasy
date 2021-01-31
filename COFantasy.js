@@ -17389,7 +17389,7 @@ var COFantasy = COFantasy || function() {
       ligne += boutonSaveState(perso, 'enseveli') + '<br />';
     } else {
       if (stateCOF.armeesDesMorts) {
-        var combattreArmee = false
+        var combattreArmee = false;
         stateCOF.armeesDesMorts.forEach(function(armee) {
           var persoArmee = persoOfId(armee);
           if(persoArmee && distanceCombat(perso.token, persoArmee.token, pageId) <= 20 &&
