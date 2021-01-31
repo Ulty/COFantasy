@@ -28135,6 +28135,7 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "DefenseArmeeDesMorts"
     };
+    addEvent(evt);
     var opt = {
       msg: "se défend contre les morts"
     }
