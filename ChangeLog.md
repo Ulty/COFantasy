@@ -18,6 +18,7 @@
 * Support du sort Armure d'eau
 * Support de Moment de perfection (moine)
 * Support d'Ensevelissement (nécromancien)
+* Support d'Armée des Morts (nécromancien) 
 
 ### Autres améliorations
 * Ajout de RD aux éléments.
