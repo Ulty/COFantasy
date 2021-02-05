@@ -12990,7 +12990,7 @@ var COFantasy = COFantasy || function() {
         }
         var rdTarget = getRDS(target);
         var rd = rdTarget.rdt || 0;
-        if (rd > 0 && options.attaquant && charAttributeAsBool(options.attaquant, 'ventreMou')) {
+        if (rd > 0 && !options.aoe && options.attaquant && charAttributeAsBool(options.attaquant, 'ventreMou')) {
           var taille = taillePersonnage(target, 4);
           if (taille > 4) {
             if (target.messages) target.messages.push("Ventre mou => L'attaque ignore la RD dûe à la taille");
