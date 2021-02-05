@@ -2826,7 +2826,7 @@ var COFantasy = COFantasy || function() {
         act.indexOf('--target ' + tid) == -1) {
         //Si on n'a pas de cible, on fait comme si le token était sélectionné.
         var add_token = " --target " + tid;
-        if (act.indexOf(' --allies') >= 0 || act.indexOf(' --alliesEnVue') >= 0) {
+        if (act.indexOf(' --allie') >= 0) {
           if (act.indexOf('--lanceur') == -1)
             add_token = " --lanceur " + tid;
           else add_token = ""; //La cible sont les alliés de --lanceur.
