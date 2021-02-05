@@ -2706,6 +2706,7 @@ var COFantasy = COFantasy || function() {
               case 'injonction-mortelle':
               case 'attaque-magique':
               case 'tueur-fantasmagorique':
+              case 'mot-de-pouvoir-immobilise':
                 picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
                 style = 'background-color:#9900ff';
                 break;
@@ -2821,6 +2822,7 @@ var COFantasy = COFantasy || function() {
         act.indexOf('cof-jouer-son ') == -1 &&
         act.indexOf('cof-utilise-consommable ') == -1 &&
         act.indexOf('--equipe') == -1 &&
+        act.indexOf('--enVue') == -1 &&
         act.indexOf('--target ' + tid) == -1) {
         //Si on n'a pas de cible, on fait comme si le token était sélectionné.
         var add_token = " --target " + tid;
@@ -28800,7 +28802,7 @@ var COFantasy = COFantasy || function() {
         setState(perso, 'immobilise', true, evt);
         setAttrDuree(perso, 'immobiliseTemp', 1, evt);
       });
-    });
+    }, options);
   }
 
   // Ajoute evt à l'historique si présent
