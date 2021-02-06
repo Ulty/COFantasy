@@ -2706,6 +2706,7 @@ var COFantasy = COFantasy || function() {
               case 'injonction-mortelle':
               case 'attaque-magique':
               case 'tueur-fantasmagorique':
+              case 'mot-de-pouvoir-immobilise':
                 picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
                 style = 'background-color:#9900ff';
                 break;
@@ -2821,6 +2822,7 @@ var COFantasy = COFantasy || function() {
         act.indexOf('cof-jouer-son ') == -1 &&
         act.indexOf('cof-utilise-consommable ') == -1 &&
         act.indexOf('--equipe') == -1 &&
+        act.indexOf('--enVue') == -1 &&
         act.indexOf('--target ' + tid) == -1) {
         //Si on n'a pas de cible, on fait comme si le token était sélectionné.
         var add_token = " --target " + tid;
@@ -3209,7 +3211,6 @@ var COFantasy = COFantasy || function() {
   }
 
   var competenceNameRegExp = new RegExp(/^(repeating_competences_.*_)comp_nom$/);
-  var competenceNameCapaRegExp = new RegExp(/^(repeating_competences_.*_)comp_nomCapa$/);
   var competenceTotalRegExp = new RegExp(/^(repeating_competences_.*_)comp_bonusTotal$/);
   var competenceCaracsRegExp = new RegExp(/^(repeating_competences_.*_)comp_caracs$/);
   var competenceCaracRegExp = new RegExp(/^(repeating_competences_.*_)comp_carac$/);
@@ -3315,7 +3316,6 @@ var COFantasy = COFantasy || function() {
       attributes.find(function(attr) {
         var attrName = attr.get('name');
         var m = competenceNameRegExp.exec(attrName);
-        if (!m) m = competenceNameCapaRegExp.exec(attrName);
         if (m) {
           if (attr.get('current').trim().toLowerCase() != comp) return false;
           prefixesNom.add(m[1]);
@@ -18358,7 +18358,7 @@ var COFantasy = COFantasy || function() {
     };
     if (options.lanceur && limiteRessources(options.lanceur, options, 'dmg', 'dmg', evt)) return;
     var action = "<b>Dégâts.</b> ";
-    if (options.titre) action += options.titre + "<br/>"
+    if (options.titre) action += options.titre + "<br/>";
     if (options.partialSave) {
       action +=
         " Jet de " + options.partialSave.carac + " difficulté " + options.partialSave.seuil +
@@ -28130,7 +28130,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if(!peutController(msg, perso)) {
-      sendPlayer(msg, "ne peut pas faire ça.")
+      sendPlayer(msg, "ne peut pas faire ça.");
       return;
     }
     var evt = {
@@ -28139,7 +28139,7 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
     var opt = {
       msg: "se défend contre les morts"
-    }
+    };
     setTokenAttr(perso, "defenseArmeeDesMorts", true, evt, opt);
   }
 
@@ -28800,7 +28800,7 @@ var COFantasy = COFantasy || function() {
         setState(perso, 'immobilise', true, evt);
         setAttrDuree(perso, 'immobiliseTemp', 1, evt);
       });
-    });
+    }, options);
   }
 
   // Ajoute evt à l'historique si présent
@@ -31203,7 +31203,6 @@ var COFantasy = COFantasy || function() {
           return true;
         });
       }
-      var targets = {};
       //For each token representing that character
       allTokens.forEach(function(auraToken) {
         if (auraToken.get('represents') != charId) return;
