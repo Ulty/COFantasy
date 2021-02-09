@@ -5393,7 +5393,7 @@ var COFantasy = COFantasy || function() {
           return;
         case 'psi': //deprecated
           var psil = 0;
-          if (scope.adiitionalDmg) psil = scope.additionalDmg.length;
+          if (scope.additionalDmg) psil = scope.additionalDmg.length;
           if (psil === 0) {
             error("option --psi non précédée d'un --plus", optArgs);
             return;
@@ -5486,7 +5486,7 @@ var COFantasy = COFantasy || function() {
               }
             }
             psaveopt.partialSave = psaveParams;
-            psaveopt.attaquant = attaquant;
+            psaveopt.attaquant = {...attaquant};
           }
           return;
         case 'save':
