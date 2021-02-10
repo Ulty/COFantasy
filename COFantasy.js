@@ -1452,6 +1452,7 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(perso, 'etatExsangue')) {
         removeTokenAttr(perso, 'etatExsangue', evt, "retrouve des couleurs");
       } else if (getState(perso, 'mort')) {
+        setState(perso, 'renverse', true, evt);
         setState(perso, 'mort', false, evt);
       }
     }
@@ -4907,12 +4908,12 @@ var COFantasy = COFantasy || function() {
     }
     var attaquant = persoOfId(args[1]);
     if (attaquant === undefined) {
-      error("Le premier argument de !cof-attack n'est pas un token valide" + msg.content, args[1]);
+      error("Le premier argument de !cof-attack n'est pas un token valide", args[1]);
       return;
     }
     var targetToken = getObj('graphic', args[2]);
     if (targetToken === undefined) {
-      error("le second argument de !cof-attack doit être un token" + msg.content, args[2]);
+      error("le second argument de !cof-attack doit être un token", args[2]);
       return;
     }
     var attackLabel;
@@ -6633,6 +6634,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //ne rajoute pas evt à l'historique
+  //options: recompute : si pas encore agi, on remet à sa place dans le turn order
   function initiative(selected, evt, recompute) { //set initiative for selected tokens
     // Always called when entering combat mode
     // set the initiative counter, if not yet set
@@ -6690,12 +6692,17 @@ var COFantasy = COFantasy || function() {
             }
             return true;
           });
-        if (push)
+        if (push) {
+          if (init >= stateCOF.init) {//On ne peut pas remonter le temps.
+            init = stateCOF.init -1;
+            updateNextInit(perso);
+          }
           to.pasAgi.push({
             id: perso.token.id,
             pr: init,
             custom: ''
           });
+        }
       } else {
         to.dejaAgi[dejaIndex].pr = init;
       }
@@ -10921,7 +10928,10 @@ var COFantasy = COFantasy || function() {
         type: mainDmgType,
         value: '1' + options.d6
       });
-      explications.push(attackerTokName + " est un champion, son attaque porte !");
+      var msgChampion = 
+        attaquant.TokName + " est un" + eForFemale(attaquant) + " champion" +
+        onGenre(attaquant, '', 'ne') +", son attaque porte !";
+      explications.push(msgChampion);
     }
     /////////////////////////////////////////////////////////////////
     //Tout ce qui dépend de la cible
