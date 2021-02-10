@@ -6927,10 +6927,13 @@ var COFantasy = COFantasy || function() {
       compToken.forEach(function(tok) {
         var compCharId = tok.get('represents');
         if (compCharId === '') return;
-        if (isActive({
-            token: tok,
-            charId: compCharId
-          })) compagnonPresent = true;
+        compagnon = {
+          token: tok,
+          charId: compCharId
+        };
+        compagnonPresent = !getState(compagnon, 'mort') && !getState(compagnon, 'assome') &&
+          !getState(compagnon, 'etourdi') && !getState(compagnon, 'endormi') &&
+          !getState(compagnon, 'apeure') && !getState(compagnon, 'paralyse');
       });
       return compagnonPresent;
     }
@@ -13328,11 +13331,56 @@ var COFantasy = COFantasy || function() {
             }
           }
           if (bar1 <= 0) {
+            var defierLaMort = charAttributeAsInt(target, 'defierLaMort', 0);
             if (charAttributeAsBool(target, 'sergent') &&
               !attributeAsBool(target, 'sergentUtilise')) {
               expliquer(token.get('name') + " évite l'attaque in-extremis");
               setTokenAttr(target, 'sergentUtilise', true, evt);
               pvPerdus = 0;
+            } else if (defierLaMort > 0) {
+              pvPerdus += bar1;
+              var rollId = 'defierLaMort_' + target.token.id;
+              var saveOpts = {
+                msgPour: " pour défier la mort",
+                msgReussite: ", conserve 1 PV",
+                rolls: options.rolls,
+                chanceRollId: options.chanceRollId
+              };
+              save({
+                    carac: 'CON',
+                    seuil: defierLaMort
+                  }, target, rollId, expliquer, saveOpts, evt,
+                  function(reussite, rollText) {
+                    if (reussite) {
+                      updateCurrentBar(target, 1, 1, evt);
+                      bar1 = 1;
+                      pvPerdus--;
+                      setTokenAttr(target, 'defierLaMort', defierLaMort + 10, evt);
+                      enlevePVStatueDeBois(target, pvPerdus, evt);
+                    } else {
+                      testBlessureGrave(target, dmgTotal, expliquer, evt);
+                      updateCurrentBar(target, 1, 0, evt);
+                      if (charAttributeAsBool(target, 'durACuire') &&
+                        !attributeAsBool(target, 'aAgiAZeroPV')) {
+                        var msgAgitZero = token.get('name') + " devrait être mort";
+                        msgAgitZero += eForFemale(target) + ", mais ";
+                        msgAgitZero += onGenre(target, 'il', 'elle') + " continue à se battre !";
+                        expliquer(msgAgitZero);
+                        if (!attributeAsBool(target, 'agitAZeroPV'))
+                          setAttrDuree(target, 'agitAZeroPV', 1, evt);
+                      } else {
+                        mort(target, expliquer, evt);
+                      }
+                    }
+                    if (bar1 > 0 && tempDmg >= bar1) { //assomé
+                      setState(target, 'assome', true, evt);
+                    }
+                    if (showTotal) dmgDisplay += " = " + dmgTotal;
+                    if (displayRes === undefined) return dmgDisplay;
+                    displayRes(dmgDisplay, pvPerdus);
+                  });
+              if (displayRes === undefined) return dmgDisplay;
+              return;
             } else {
               testBlessureGrave(target, dmgTotal, expliquer, evt);
               updateCurrentBar(target, 1, 0, evt);
@@ -13367,43 +13415,8 @@ var COFantasy = COFantasy || function() {
                   setState(target, 'ralenti', true, evt);
                 }
               } else {
-                var defierLaMort = charAttributeAsInt(target, 'defierLaMort', 0);
-                if (defierLaMort > 0) {
-                  var rollId = 'defierLaMort_' + target.token.id;
-                  var saveOpts = {
-                    msgPour: " pour défier la mort",
-                    msgReussite: ", conserve 1 PV",
-                    rolls: options.rolls,
-                    chanceRollId: options.chanceRollId
-                  };
-                  save({
-                      carac: 'CON',
-                      seuil: defierLaMort
-                    }, target, rollId, expliquer, saveOpts, evt,
-                    function(reussite, rollText) {
-                      if (reussite) {
-                        updateCurrentBar(target, 1, 1, evt);
-                        bar1 = 1;
-                        pvPerdus--;
-                        setTokenAttr(target, 'defierLaMort', defierLaMort + 10, evt);
-                        enlevePVStatueDeBois(target, pvPerdus, evt);
-                      } else {
-                        mort(target, expliquer, evt);
-                        testBlessureGrave(target, 'mort', expliquer, evt);
-                      }
-                      if (bar1 > 0 && tempDmg >= bar1) { //assomé
-                        setState(target, 'assome', true, evt);
-                      }
-                      if (showTotal) dmgDisplay += " = " + dmgTotal;
-                      if (displayRes === undefined) return dmgDisplay;
-                      displayRes(dmgDisplay, pvPerdus);
-                    });
-                  if (displayRes === undefined) return dmgDisplay;
-                  return;
-                } else {
-                  mort(target, expliquer, evt);
-                  testBlessureGrave(target, 'mort', expliquer, evt);
-                }
+                mort(target, expliquer, evt);
+                testBlessureGrave(target, 'mort', expliquer, evt);
               }
             }
           } else { // bar1>0
@@ -17321,8 +17334,10 @@ var COFantasy = COFantasy || function() {
       actionsDuTour = [listActions];
     } else {
       if (!isActive(perso)) {
-        sendChar(perso.charId, "ne peut pas agir à ce tour");
-        return true;
+        if(!getState(perso, 'surpris') || !surveillance(perso)) {
+          sendChar(perso.charId, "ne peut pas agir à ce tour");
+          return true;
+        }
       }
       //On recherche dans le Personnage s'il a une "Ability" dont le nom est #Actions#" ou "#TurnAction#".
       formeDarbre = attributeAsBool(perso, 'formeDArbre');
