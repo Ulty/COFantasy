@@ -1484,12 +1484,8 @@ var COFantasy = COFantasy || function() {
       if (bar1 > pvmax) {
         var hasMana = (ficheAttributeAsInt(perso, 'PM', 0) > 0);
         var dmgTemp;
-        var estPNJ = persoEstPNJ(perso);
         var estMook = token.get("bar1_link") === '';
         var nameAttrDMTEMP = 'DMTEMP';
-        var versionFiche = parseFloat(ficheAttribute(perso, 'version', 0));
-        if (isNaN(versionFiche)) versionFiche = 0;
-        if (estPNJ && !estMook && versionFiche < 3.7) nameAttrDMTEMP = 'pnj_dmtemp';
         if (hasMana) {
           if (estMook) dmgTemp = attributeAsInt(perso, 'DMTEMP', 0);
           else dmgTemp = ficheAttributeAsInt(perso, nameAttrDMTEMP, 0);
@@ -5486,7 +5482,8 @@ var COFantasy = COFantasy || function() {
               }
             }
             psaveopt.partialSave = psaveParams;
-            psaveopt.attaquant = {...attaquant};
+            psaveopt.attaquant = {...attaquant
+            };
           }
           return;
         case 'save':
@@ -13195,12 +13192,8 @@ var COFantasy = COFantasy || function() {
         }
         var hasMana = (ficheAttributeAsInt(target, 'PM', 0) > 0);
         var tempDmg = 0;
-        var estPNJ = persoEstPNJ(target);
         var estMook = token.get("bar1_link") === '';
         var nameAttrDMTEMP = 'DMTEMP';
-        var versionFiche = parseFloat(ficheAttribute(target, 'version', 0));
-        if (isNaN(versionFiche)) versionFiche = 0;
-        if (estPNJ && !estMook && versionFiche < 3.7) nameAttrDMTEMP = 'pnj_dmtemp';
         if (hasMana) {
           if (estMook) tempDmg = attributeAsInt(target, 'DMTEMP', 0);
           else tempDmg = ficheAttributeAsInt(target, nameAttrDMTEMP, 0);
@@ -14298,20 +14291,6 @@ var COFantasy = COFantasy || function() {
         max: prm
       };
     }
-    var versionFiche = parseFloat(ficheAttribute(perso, 'version', 0));
-    if (isNaN(versionFiche)) versionFiche = 0;
-    if (versionFiche < 3.6) {
-      var pr = 5;
-      var x;
-      for (var i = 1; i < 6; i++) {
-        x = ficheAttribute(perso, "PR" + i, 0);
-        if (x == 1) pr--;
-      }
-      return {
-        current: pr,
-        max: 5
-      };
-    }
     attrPR = charAttribute(perso.charId, 'pr', {
       caseInsensitive: true
     });
@@ -14342,28 +14321,8 @@ var COFantasy = COFantasy || function() {
   }
 
   function enleverPointDeRecuperation(perso, evt) {
-    var versionFiche = parseFloat(ficheAttribute(perso, 'version', 0));
-    if (isNaN(versionFiche)) versionFiche = 0;
-    var attrPR = tokenAttribute(perso, 'pointsDeRecuperation');
-    var prc = 5;
-    if (attrPR.length > 0) {
-      prc = parseInt(attrPR[0].get('current'));
-      if (prc > 0) {
-        if (versionFiche > 3.5) {
-          setFicheAttr(perso, 'pr', prc - 1, evt, {
-            maxVal: attrPR[0].get('max')
-          });
-          removeTokenAttr(perso, 'pointsDeRecuperation', evt);
-        } else {
-          setTokenAttr(perso, 'pointsDeRecuperation', prc - 1, evt);
-        }
-        return;
-      }
-      sendChat("COF", "Plus de point de récupération à enlever");
-      return;
-    }
     evt.attributes = evt.attributes || [];
-    attrPR = charAttribute(perso.charId, 'pr', {
+    var attrPR = charAttribute(perso.charId, 'pr', {
       caseInsensitive: true
     });
     if (attrPR.length === 0) {
@@ -14379,7 +14338,7 @@ var COFantasy = COFantasy || function() {
       });
       return;
     }
-    prc = attrPR[0].get('current');
+    var prc = attrPR[0].get('current');
     if (prc === '') prc = 5;
     else prc = parseInt(prc);
     if (isNaN(prc) || prc < 1) {
@@ -14394,89 +14353,41 @@ var COFantasy = COFantasy || function() {
   }
 
   function rajouterPointDeRecuperation(perso, evt) {
-    var versionFiche = parseFloat(ficheAttribute(perso, 'version', 0));
-    if (isNaN(versionFiche)) versionFiche = 0;
-    var prc = 5;
-    var prmax = 5;
-    var attrPR = tokenAttribute(perso, 'pointsDeRecuperation');
-    if (attrPR.length > 0) {
-      prc = parseInt(attrPR[0].get('current'));
-      prmax = parseInt(attrPR[0].get('max'));
-      if (prc < prmax) {
-        if (versionFiche > 3.5) {
-          setFicheAttr(perso, 'pr', prc + 1, evt, {
-            maxVal: prmax
-          });
-          removeTokenAttr(perso, 'pointsDeRecuperation', evt);
-        } else {
-          setTokenAttr(perso, 'pointsDeRecuperation', prc + 1, evt);
-        }
-        return true;
-      }
-      if (versionFiche > 3.5) {
-        setFicheAttr(perso, 'pr', prc, evt, {
-          maxVal: prmax
-        });
-        removeTokenAttr(perso, 'pointsDeRecuperation', evt);
-      }
+    evt.attributes = evt.attributes || [];
+    var attrPR = charAttribute(perso.charId, 'pr', {
+      caseInsensitive: true
+    });
+    if (attrPR.length === 0) {
+      attrPR = createObj("attribute", {
+        characterid: perso.charId,
+        name: 'pr',
+        current: 5,
+        max: 5
+      });
+      evt.attributes.push({
+        attribute: attrPR,
+        current: null
+      });
       return;
     }
-    if (versionFiche < 3.6) {
-      for (var i = 1; i < 6; i++) {
-        var prAttr =
-          findObjs({
-            _type: "attribute",
-            _characterid: perso.charId,
-            name: "PR" + i
-          });
-        if (prAttr.length > 0 && prAttr[0].get("current") == 1) {
-          prAttr[0].set("current", 0);
-          evt.attributes = evt.attributes || [];
-          evt.attributes.push({
-            attribute: prAttr[0],
-            current: 1
-          });
-          return true;
-        }
-      }
-      log("Pas de point de récupération à récupérer pour " + perso.token.get('name'));
-    } else {
-      evt.attributes = evt.attributes || [];
-      attrPR = charAttribute(perso.charId, 'pr', {
-        caseInsensitive: true
-      });
-      if (attrPR.length === 0) {
-        attrPR = createObj("attribute", {
-          characterid: perso.charId,
-          name: 'pr',
-          current: 5,
-          max: 5
-        });
-        evt.attributes.push({
-          attribute: attrPR,
-          current: null
-        });
-        return;
-      }
-      prmax = attrPR[0].get('max');
-      if (prmax === '') prmax = 5;
-      else {
-        prmax = parseInt(prmax);
-        if (isNaN(prmax) || prmax < 0) prmax = 5;
-      }
-      prc = attrPR[0].get('current');
-      if (prc === '') prc = 5;
-      else prc = parseInt(prc);
-      if (isNaN(prc) || prc >= prmax) {
-        return;
-      }
-      evt.attributes.push({
-        attribute: attrPR[0],
-        current: prc
-      });
-      attrPR[0].set('current', prc + 1);
-      return true;
+    var prmax = attrPR[0].get('max');
+    if (prmax === '') prmax = 5;
+    else {
+      prmax = parseInt(prmax);
+      if (isNaN(prmax) || prmax < 0) prmax = 5;
     }
+    var prc = attrPR[0].get('current');
+    if (prc === '') prc = 5;
+    else prc = parseInt(prc);
+    if (isNaN(prc) || prc >= prmax) {
+      return;
+    }
+    evt.attributes.push({
+      attribute: attrPR[0],
+      current: prc
+    });
+    attrPR[0].set('current', prc + 1);
+    return true;
   }
 
   //Asynchrone
@@ -17409,13 +17320,13 @@ var COFantasy = COFantasy || function() {
         var combattreArmee = false;
         stateCOF.armeesDesMorts.forEach(function(armee) {
           var persoArmee = persoOfId(armee);
-          if(persoArmee && distanceCombat(perso.token, persoArmee.token, pageId) <= 20 &&
+          if (persoArmee && distanceCombat(perso.token, persoArmee.token, pageId) <= 20 &&
             (!alliesParPerso[persoArmee.charId] || !alliesParPerso[persoArmee.charId].has(perso.charId))) {
             actionsAAfficher = true;
             combattreArmee = true;
           }
         });
-        if(combattreArmee) {
+        if (combattreArmee) {
           command = '!cof-defense-armee-des-morts ' + perso.token.id;
           ligne += bouton(command, 'Combattre les Morts-Vivants', perso) + '<br />';
         }
@@ -26032,7 +25943,7 @@ var COFantasy = COFantasy || function() {
       createObj('attribute', {
         _characterid: charId,
         name: 'version',
-        current: '3.6'
+        current: '4.04'
       });
     }
     var pnj = true;
@@ -28144,7 +28055,7 @@ var COFantasy = COFantasy || function() {
       error("Le token renseigné pour !cof-defense-armee-des-morts est inconnu", cmd);
       return;
     }
-    if(!peutController(msg, perso)) {
+    if (!peutController(msg, perso)) {
       sendPlayer(msg, "ne peut pas faire ça.");
       return;
     }
@@ -30647,7 +30558,7 @@ var COFantasy = COFantasy || function() {
       case 'armeeDesMorts':
         iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
           token.set("aura2_radius", 0);
-          if(stateCOF.armeesDesMorts) {
+          if (stateCOF.armeesDesMorts) {
             var index = stateCOF.armeesDesMorts.indexOf(token.id);
             if (index > -1) stateCOF.armeesDesMorts.splice(index, 1);
           }
@@ -31251,13 +31162,13 @@ var COFantasy = COFantasy || function() {
       }
     });
     var targetLine = "";
-    Object.keys(degatsArmeeFull).forEach(function(tokId){
+    Object.keys(degatsArmeeFull).forEach(function(tokId) {
       targetLine += " --target " + tokId;
     });
     if (targetLine != "")
       sendChat('player|' + gmId, "!cof-dmg 3d6" + targetLine + " --titre Dégâts des morts-vivants animés");
     targetLine = "";
-    Object.keys(degatsArmeeDefense).forEach(function(tokId){
+    Object.keys(degatsArmeeDefense).forEach(function(tokId) {
       targetLine += " --target " + tokId;
     });
     if (targetLine != "")
@@ -32918,18 +32829,21 @@ on('ready', function() {
           attrSpec.name = prefix + 'carac';
           attrSpec.current = compToCarac[attrName];
           createObj('attribute', attrSpec);
+          var attrMalus;
           if ((attrSpec.current == 'DEX' && attrName != 'crochetage' && attrName != 'désamorçage') ||
             (attrSpec.current == 'CON' && attrName == 'survie') ||
             attrName == 'natation' || attrName == 'escalade') {
             attrSpec.name = prefix + 'malus';
             attrSpec.current = 'armure';
-            createObj('attribute', attrSpec);
+            attrMalus = createObj('attribute', attrSpec);
             attrBonus.setWithWorker('current', a.get('current'));
+            attrMalus.setWithWorker('current', 'armure');
           } else if (attrName == 'perception' || attrName == 'vigilance') {
             attrSpec.name = prefix + 'malus';
             attrSpec.current = 'casque';
-            createObj('attribute', attrSpec);
+            attrMalus = createObj('attribute', attrSpec);
             attrBonus.setWithWorker('current', a.get('current'));
+            attrMalus.setWithWorker('current', 'casque');
           }
           a.remove();
         });
