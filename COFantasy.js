@@ -10363,7 +10363,7 @@ var COFantasy = COFantasy || function() {
     return '';
   }
 
-  function computeAttackDice(d, options) {
+  function computeAttackDice(d, maxDmg, options) {
     if (isNaN(d) || d < 0) {
       error("Dé d'attaque incorrect", d);
       return 0;
@@ -10372,6 +10372,7 @@ var COFantasy = COFantasy || function() {
     if (options.puissant) {
       attDice += 2;
     }
+    if (maxDmg) return attDice;//Dans ce cas, pas de reroll ni d'explosion
     if (options.reroll1) attDice += "r1";
     if (options.reroll2) attDice += "r2";
     if (options.explodeMax) attDice += '!';
@@ -10385,7 +10386,7 @@ var COFantasy = COFantasy || function() {
     else if (attDMArme > 0) attDMArme = '+' + attDMArme;
     attDMBonus = attDMArme + attDMBonus;
     var attNbDicesCible = attNbDices;
-    var attDiceCible = computeAttackDice(weaponStats.attDice, options);
+    var attDiceCible = computeAttackDice(weaponStats.attDice, target.maxDmg, options);
     var attCarBonusCible =
       computeAttackCarBonus(attaquant, weaponStats.attCarBonus);
     if (options.epieu && !ficheAttributeAsBool(target, 'DEFARMUREON', false)) {
@@ -10399,7 +10400,7 @@ var COFantasy = COFantasy || function() {
     if (!options.sortilege && charAttributeAsBool(target, 'immuniteAuxArmes')) {
       if (options.magique) {
         attNbDicesCible = options.magique;
-        attDiceCible = "6";
+        attDiceCible = '6';
         attCarBonusCible = modCarac(attaquant, 'sagesse');
         if (attCarBonusCible < 1) attCarBonusCible = '';
         else attCarBonusCible = " +" + attCarBonusCible;
