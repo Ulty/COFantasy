@@ -10509,7 +10509,11 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(target, 'dedouble') ||
         attributeAsBool(target, 'dedoublement')) {
         if (ef.whisper !== undefined) {
-          sendChar(target.charId, ef.whisper + " a déjà été dédoublé pendant ce combat");
+          if (ef.whisper === true) {
+            whisperChar(target.charId, "a déjà été dédoublé pendant ce combat");
+          } else {
+            sendChar(target.charId, ef.whisper + " a déjà été dédoublé pendant ce combat");
+          }
         } else {
           target.messages.push(target.tokName + " a déjà été dédoublé pendant ce combat");
         }
@@ -10523,7 +10527,11 @@ var COFantasy = COFantasy || function() {
       }
       if (stateCOF.options.affichage.val.duree_effets.val) dedoubleMsg += " (" + duree + " tours)";
       if (ef.whisper !== undefined) {
-        sendChar(target.charId, ef.whisper + dedoubleMsg);
+        if (ef.whisper === true) {
+          whisperChar(target.charId, dedoubleMsg);
+        } else {
+          sendChar(target.charId, ef.whisper + dedoubleMsg);
+        }
       } else {
         target.messages.push(dedoubleMsg);
       }
@@ -10535,7 +10543,11 @@ var COFantasy = COFantasy || function() {
     }
     if (ef.effet == 'saignementsSang' && charAttributeAsBool(target, 'immuniteSaignement')) {
       if (ef.whisper !== undefined) {
-        sendChar(target.charId, ef.whisper + "ne peut pas saigner");
+        if (ef.whisper === true) {
+          whisperChar(target.charId, "ne peut pas saigner");
+        } else {
+          sendChar(target.charId, ef.whisper + "ne peut pas saigner");
+        }
       } else {
         target.messages.push(target.tokName + " ne peut pas saigner");
       }
@@ -10570,7 +10582,7 @@ var COFantasy = COFantasy || function() {
         var msgAct = messageActivation(target, ef.message);
         if (ef.whisper === undefined) {
           targetMsg = target.tokName + " " + msgAct;
-        } else {
+        } else if (ef.whisper !== true) {
           targetMsg = ef.whisper + msgAct;
         }
         if (stateCOF.options.affichage.val.duree_effets.val) targetMsg += " (" + duree + " tours)";
@@ -11758,7 +11770,7 @@ var COFantasy = COFantasy || function() {
                   if (ef.save) {
                     if (ef.typeDmg && immuniseAuType(target, ef.typeDmg, attaquant)) {
                       target.messages.push(target.tokName + " ne semble pas affecté par " + stringOfType(ef.typeDmg));
-                      target['msgImmunite_'+ef.typeDmg] = true;
+                      target['msgImmunite_' + ef.typeDmg] = true;
                       saves--;
                       savesEffets--;
                       etatsAvecSave();
@@ -12569,7 +12581,7 @@ var COFantasy = COFantasy || function() {
     }
 
     if (immuniseAuType(target, mainDmgType, options.attaquant)) {
-      if (expliquer && !target['msgImmunite_'+mainDmgType]) {
+      if (expliquer && !target['msgImmunite_' + mainDmgType]) {
         target.tokName = target.tokName || target.token.get('name');
         expliquer(target.tokName + " ne semble pas affecté par " + stringOfType(mainDmgType));
       }
@@ -12721,7 +12733,7 @@ var COFantasy = COFantasy || function() {
     var count = 0;
     for (var dt in dmgParType) {
       if (immuniseAuType(target, dt, options.attaquant)) {
-        if (expliquer && !target['msgImmunite_'+dt]) {
+        if (expliquer && !target['msgImmunite_' + dt]) {
           target.tokName = target.tokName || target.token.get('name');
           expliquer(target.tokName + " ne semble pas affecté par " + stringOfType(dt));
         }
@@ -29863,7 +29875,7 @@ var COFantasy = COFantasy || function() {
     effetRetarde: {
       activation: "il va bientôt se produire quelque chose",
       actif: "s'attend à un effet",
-      fin: "effet activé",
+      fin: "effet retardé activé",
       generic: true
     },
     messageRetarde: {
@@ -30567,9 +30579,61 @@ var COFantasy = COFantasy || function() {
         });
         break;
       case 'effetRetarde':
-      case 'messageRetarde':
         if (efComplet.length > 14) {
-          var messageRetarde = efComplet.substring(13, efComplet.length - 1);
+          var effetRetarde = efComplet.substring(13, efComplet.length - 1);
+          if (_.has(cof_states, effetRetarde)) {
+            iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+              var perso = {
+                token: token,
+                charId: charId
+              };
+              if (getState(perso, 'mort')) return;
+              setState(perso, effetRetarde, true, evt);
+            });
+          } else if (estEffetTemp(effetRetarde)) {
+            options.print = function(m) {}; //Pour ne pas afficher le message final.
+            var pp = effetRetarde.indexOf('(');
+            var mEffetRetarde = (pp > 0) ? messageEffetTemp[effetRetarde.substring(effetRetarde, pp)] : messageEffetTemp[effetRetarde];
+            var ef = {
+              effet: effetRetarde,
+              duree: 1,
+              message: mEffetRetarde,
+              whisper: true,
+            };
+            iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+              var perso = {
+                token: token,
+                charId: charId
+              };
+              if (getState(perso, 'mort')) return;
+              if (!stateCOF.combat) {
+                sendChat('', "Il restait un effet retardé " + effetRetarde + " qui devait se déclencher pour " + token.get('name'));
+                return;
+              }
+              var duree = getValeurOfEffet(perso, efComplet, 1);
+              ef.duree = duree;
+              setEffetTemporaire(perso, ef, duree, undefined, options.pageId, evt, {});
+            });
+          } else {
+            options.print = function(m) {}; //Pour ne pas afficher le message final.
+            iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+              var perso = {
+                token: token,
+                charId: charId
+              };
+              if (getState(perso, 'mort')) return;
+              var val = true;
+              var valAttr = tokenAttribute(perso, efComplet + 'Valeur');
+              if (valAttr.length > 0) val = valAttr[0].get('current');
+              whisperChar(charId, effetRetarde + ' ' + val);
+              setTokenAttr(perso, effetRetarde, val, evt, {});
+            });
+          }
+        }
+        break;
+      case 'messageRetarde':
+        if (efComplet.length > 16) {
+          var messageRetarde = efComplet.substring(15, efComplet.length - 1);
           iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
             whisperChar(charId, messageRetarde);
             //Puis on regarde si il y a une valeur à afficher

@@ -21,6 +21,7 @@
 * Support d'Armée des Morts (nécromancien) 
 
 ### Autres améliorations
+* Ajout d'un effet temporaire effetRetarde
 * Les aires d'effet en disque ne passent plus les murs.
 * Ajout de RD aux éléments.
 * Correction sur l'initiative entre PJs qui doivent comparer la sagesse
