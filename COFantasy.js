@@ -5793,7 +5793,8 @@ var COFantasy = COFantasy || function() {
           scope.ite = scope.ite || [];
           var ifSaveCond = {
             type: 'save',
-            saveCond: save
+            saveCond: save,
+            typeDmg: lastType
           };
           scope.ite.push({
             condition: ifSaveCond,
@@ -6381,7 +6382,8 @@ var COFantasy = COFantasy || function() {
             msgRate: msgRate,
             attaquant: attaquant,
             rolls: options.rolls,
-            chanceRollId: options.chanceRollId
+            chanceRollId: options.chanceRollId,
+            type: ite.condition.typeDmg
           };
           var saveId = condInTarget ? 'ifSave_' + etatParent.aTraiter + '_' + target.token.id :
             'ifSave_' + etatParent.aTraiter + '_' + attaquant.token.id;
@@ -11732,6 +11734,7 @@ var COFantasy = COFantasy || function() {
                   if (ef.save) {
                     if (ef.typeDmg && immuniseAuType(target, ef.typeDmg, attaquant)) {
                       target.messages.push(target.tokName + " ne semble pas affecté par " + stringOfType(ef.typeDmg));
+                      target['msgImmunite_'+ef.typeDmg] = true;
                       saves--;
                       savesEffets--;
                       etatsAvecSave();
@@ -12542,7 +12545,7 @@ var COFantasy = COFantasy || function() {
     }
 
     if (immuniseAuType(target, mainDmgType, options.attaquant)) {
-      if (expliquer) {
+      if (expliquer && !target['msgImmunite_'+mainDmgType]) {
         target.tokName = target.tokName || target.token.get('name');
         expliquer(target.tokName + " ne semble pas affecté par " + stringOfType(mainDmgType));
       }
@@ -12694,7 +12697,7 @@ var COFantasy = COFantasy || function() {
     var count = 0;
     for (var dt in dmgParType) {
       if (immuniseAuType(target, dt, options.attaquant)) {
-        if (expliquer) {
+        if (expliquer && !target['msgImmunite_'+dt]) {
           target.tokName = target.tokName || target.token.get('name');
           expliquer(target.tokName + " ne semble pas affecté par " + stringOfType(dt));
         }
