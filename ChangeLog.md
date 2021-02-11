@@ -21,6 +21,7 @@
 * Support d'Armée des Morts (nécromancien) 
 
 ### Autres améliorations
+* Les aires d'effet en disque ne passent plus les murs.
 * Ajout de RD aux éléments.
 * Correction sur l'initiative entre PJs qui doivent comparer la sagesse
 * Ajout de la possibilité de faire des attaques de d12 qui font des critiques

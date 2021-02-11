@@ -4217,6 +4217,15 @@ var COFantasy = COFantasy || function() {
                 return;
               }
             }
+            page = page || getObj("page", pageId);
+            murs = getWalls(page, pageId, murs);
+            var pc;
+            if (murs) {
+              pc = {
+                x: tokenCentre.get('left'),
+                y: tokenCentre.get('top')
+              };
+            }
             var allToksDisque =
               findObjs({
                 _type: "graphic",
@@ -4239,6 +4248,9 @@ var COFantasy = COFantasy || function() {
                 strict1: true
               });
               if (distanceCentre > rayon) return;
+              if (murs) {
+                if (obstaclePresent(obj.get('left'), obj.get('top'), pc, murs)) return;
+              }
               selected.push({
                 _id: obj.id
               });
@@ -8429,6 +8441,15 @@ var COFantasy = COFantasy || function() {
                 " (distance " + distanceTarget + ", portée " + portee + ")");
               return;
             }
+            var page = page || getObj("page", pageId);
+            var murs = getWalls(page, pageId);
+            var pc;
+            if (murs) {
+              pc = {
+                x: targetToken.get('left'),
+                y: targetToken.get('top')
+              };
+            }
             var allToksDisque =
               findObjs({
                 _type: "graphic",
@@ -8453,6 +8474,9 @@ var COFantasy = COFantasy || function() {
               if (distanceCentre > options.aoe.rayon) return;
               var objChar = getObj('character', objCharId);
               if (objChar === undefined) return;
+              if (murs) {
+                if (obstaclePresent(obj.get('left'), obj.get('top'), pc, murs)) return;
+              }
               cible.name = objChar.get('name');
               cible.tokName = obj.get('name');
               cibles.push(cible);
