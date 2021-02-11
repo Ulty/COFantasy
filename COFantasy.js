@@ -23065,7 +23065,7 @@ var COFantasy = COFantasy || function() {
     evitementGenerique(msg, 'résister à la magie', 'resistanceALaMagieBarbare',
       'résistance à la magie', "de résister à la magie",
       " a déjà essayé de résister à la magie ce tour",
-      'sagesse', 'magique', "il résiste à la magie !");
+      'sagesse', 'magique', "il résiste à la magie !", {});
   }
 
   // asynchrone : on fait les jets du magicien protecteur en opposition
