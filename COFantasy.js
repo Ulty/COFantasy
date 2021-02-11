@@ -20139,7 +20139,6 @@ var COFantasy = COFantasy || function() {
     setTokenAttr(cible, 'injonctionMortelle', true, evt);
     var saveOpts = {
       msgPour: " pour résister à l'injonction mortelle",
-      msgReussite: ", réussi.",
       msgRate: ", raté.",
       attaquant: attaquant,
       rolls: options.rolls,
@@ -29876,7 +29875,8 @@ var COFantasy = COFantasy || function() {
       activation: "il va bientôt se produire quelque chose",
       actif: "s'attend à un effet",
       fin: "effet retardé activé",
-      generic: true
+      generic: true,
+      prejudiciable: true
     },
     messageRetarde: {
       activation: "il va bientôt se produire quelque chose",
