@@ -6693,8 +6693,8 @@ var COFantasy = COFantasy || function() {
             return true;
           });
         if (push) {
-          if (init >= stateCOF.init) {//On ne peut pas remonter le temps.
-            init = stateCOF.init -1;
+          if (init >= stateCOF.init) { //On ne peut pas remonter le temps.
+            init = stateCOF.init - 1;
             updateNextInit(perso);
           }
           to.pasAgi.push({
@@ -8777,6 +8777,16 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
     //On fait les tests pour les cibles qui bénéficieraient d'un sanctuaire
     var ciblesATraiter = cibles.length;
+    var cibleTraitee = function() {
+      ciblesATraiter--;
+      if (ciblesATraiter === 0) {
+        var explications = [];
+        if (options.messages) explications = [...options.messages];
+        evalITE(attaquant, undefined, undefined, options, 0, evt, explications, options, function() {
+          resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, explications, options, chargesArme);
+        });
+      }
+    };
     var attaqueImpossible = false;
     cibles.forEach(function(cible) {
       if (attaqueImpossible) return;
@@ -8787,10 +8797,7 @@ var COFantasy = COFantasy || function() {
           testCaracteristique(attaquant, 'SAG', 15, testId, options, evt, function(tr) {
             if (tr.reussite) {
               cible.messages.push(attaquant.tokName + " réussi à passer outre le sanctuaire de " + cible.tokName + " (jet de SAG " + tr.texte + "&ge;15)" + tr.modifiers);
-              ciblesATraiter--;
-              if (ciblesATraiter === 0) {
-                resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options, chargesArme);
-              }
+              cibleTraitee();
             } else {
               var msgRate = "ne peut se résoudre à attaquer " + cible.tokName + " (sanctuaire, jet de SAG " + tr.texte + "< 15)" + tr.rerolls + tr.modifiers;
               sendChar(attaquant.charId, msgRate);
@@ -8798,10 +8805,7 @@ var COFantasy = COFantasy || function() {
             }
           });
         } else {
-          ciblesATraiter--;
-          if (ciblesATraiter === 0) {
-            resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options, chargesArme);
-          }
+          cibleTraitee();
         }
       };
       // Attaque de Disparition avec jet opposé
@@ -9455,13 +9459,11 @@ var COFantasy = COFantasy || function() {
   }
 
   //N'ajoute as evt à l'historique
-  function resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, options, chargesArme) {
+  function resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, explications, options, chargesArme) {
     var attackingCharId = attaquant.charId;
     var attackingToken = attaquant.token;
     var attackerName = attaquant.name;
     var attackerTokName = attaquant.tokName;
-    var explications = [];
-    if (options.messages) explications = [...options.messages];
     attaquant.additionalDmg = [...options.additionalDmg]; // Reset du calcul des dommages additionnels liés à l'attaquant
     var sujetAttaquant = onGenre(attaquant, 'il', 'elle');
     if (options.contact) {
@@ -10372,7 +10374,7 @@ var COFantasy = COFantasy || function() {
     if (options.puissant) {
       attDice += 2;
     }
-    if (maxDmg) return attDice;//Dans ce cas, pas de reroll ni d'explosion
+    if (maxDmg) return attDice; //Dans ce cas, pas de reroll ni d'explosion
     if (options.reroll1) attDice += "r1";
     if (options.reroll2) attDice += "r2";
     if (options.explodeMax) attDice += '!';
@@ -10929,9 +10931,9 @@ var COFantasy = COFantasy || function() {
         type: mainDmgType,
         value: '1' + options.d6
       });
-      var msgChampion = 
+      var msgChampion =
         attaquant.TokName + " est un" + eForFemale(attaquant) + " champion" +
-        onGenre(attaquant, '', 'ne') +", son attaque porte !";
+        onGenre(attaquant, '', 'ne') + ", son attaque porte !";
       explications.push(msgChampion);
     }
     /////////////////////////////////////////////////////////////////
@@ -13351,38 +13353,38 @@ var COFantasy = COFantasy || function() {
                 chanceRollId: options.chanceRollId
               };
               save({
-                    carac: 'CON',
-                    seuil: defierLaMort
-                  }, target, rollId, expliquer, saveOpts, evt,
-                  function(reussite, rollText) {
-                    if (reussite) {
-                      updateCurrentBar(target, 1, 1, evt);
-                      bar1 = 1;
-                      pvPerdus--;
-                      setTokenAttr(target, 'defierLaMort', defierLaMort + 10, evt);
-                      enlevePVStatueDeBois(target, pvPerdus, evt);
+                  carac: 'CON',
+                  seuil: defierLaMort
+                }, target, rollId, expliquer, saveOpts, evt,
+                function(reussite, rollText) {
+                  if (reussite) {
+                    updateCurrentBar(target, 1, 1, evt);
+                    bar1 = 1;
+                    pvPerdus--;
+                    setTokenAttr(target, 'defierLaMort', defierLaMort + 10, evt);
+                    enlevePVStatueDeBois(target, pvPerdus, evt);
+                  } else {
+                    testBlessureGrave(target, dmgTotal, expliquer, evt);
+                    updateCurrentBar(target, 1, 0, evt);
+                    if (charAttributeAsBool(target, 'durACuire') &&
+                      !attributeAsBool(target, 'aAgiAZeroPV')) {
+                      var msgAgitZero = token.get('name') + " devrait être mort";
+                      msgAgitZero += eForFemale(target) + ", mais ";
+                      msgAgitZero += onGenre(target, 'il', 'elle') + " continue à se battre !";
+                      expliquer(msgAgitZero);
+                      if (!attributeAsBool(target, 'agitAZeroPV'))
+                        setAttrDuree(target, 'agitAZeroPV', 1, evt);
                     } else {
-                      testBlessureGrave(target, dmgTotal, expliquer, evt);
-                      updateCurrentBar(target, 1, 0, evt);
-                      if (charAttributeAsBool(target, 'durACuire') &&
-                        !attributeAsBool(target, 'aAgiAZeroPV')) {
-                        var msgAgitZero = token.get('name') + " devrait être mort";
-                        msgAgitZero += eForFemale(target) + ", mais ";
-                        msgAgitZero += onGenre(target, 'il', 'elle') + " continue à se battre !";
-                        expliquer(msgAgitZero);
-                        if (!attributeAsBool(target, 'agitAZeroPV'))
-                          setAttrDuree(target, 'agitAZeroPV', 1, evt);
-                      } else {
-                        mort(target, expliquer, evt);
-                      }
+                      mort(target, expliquer, evt);
                     }
-                    if (bar1 > 0 && tempDmg >= bar1) { //assomé
-                      setState(target, 'assome', true, evt);
-                    }
-                    if (showTotal) dmgDisplay += " = " + dmgTotal;
-                    if (displayRes === undefined) return dmgDisplay;
-                    displayRes(dmgDisplay, pvPerdus);
-                  });
+                  }
+                  if (bar1 > 0 && tempDmg >= bar1) { //assomé
+                    setState(target, 'assome', true, evt);
+                  }
+                  if (showTotal) dmgDisplay += " = " + dmgTotal;
+                  if (displayRes === undefined) return dmgDisplay;
+                  displayRes(dmgDisplay, pvPerdus);
+                });
               if (displayRes === undefined) return dmgDisplay;
               return;
             } else {
@@ -17256,7 +17258,7 @@ var COFantasy = COFantasy || function() {
       actionsDuTour = [listActions];
     } else {
       if (!isActive(perso)) {
-        if(!getState(perso, 'surpris') || !surveillance(perso)) {
+        if (!getState(perso, 'surpris') || !surveillance(perso)) {
           sendChar(perso.charId, "ne peut pas agir à ce tour");
           return true;
         }
