@@ -10182,7 +10182,7 @@ var COFantasy = COFantasy || function() {
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].encaisserUnCoup = true;
                   }
-                  if (options.distance && !options.poudre && cibles.length == 1 && !target.critique &&
+                  if (options.distance && !options.sortilege && !options.poudre && cibles.length == 1 && !target.critique &&
                     attributeAsBool(target, 'paradeDeProjectiles')) {
                     options.preDmg = options.preDmg || {};
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
@@ -10193,12 +10193,12 @@ var COFantasy = COFantasy || function() {
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].esquiveAcrobatique = true;
                   }
-                  if (attributeAsInt(target, 'paradeMagistrale', 0) > 0) {
+                  if (!options.sortilege && !options.aoe && attributeAsInt(target, 'paradeMagistrale', 0) > 0) {
                     options.preDmg = options.preDmg || {};
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].paradeMagistrale = true;
                   }
-                  if (attributeAsInt(target, 'esquiveFatale', 0) > 0) {
+                  if (!options.aoe && attributeAsInt(target, 'esquiveFatale', 0) > 0) {
                     if (target.ennemisAuContact === undefined) {
                       error(target.token.get('name') + " a la possibilité d'une esquive fatale, mais les ennemis au contact ne sont pas calculés", target);
                     } else {
