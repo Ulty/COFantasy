@@ -7384,7 +7384,7 @@ var COFantasy = COFantasy || function() {
     }
     var bonusCapitaine = aUnCapitaine(target, evt, pageId);
     if (bonusCapitaine && bonusCapitaine > 2) {
-      defense += bonusCapitaine;
+      defense += parseInt(bonusCapitaine);
       explications.push(target.tokName + " suit les ordres de son commandant => +" + bonusCapitaine + " en DEF");
     }
     if (attaquant && charAttributeAsBool(target, 'reduireLaDistance')) {
