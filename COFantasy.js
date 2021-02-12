@@ -27813,6 +27813,12 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, cible.tokName + " a déjà été animé" + eForFemale(cible) + ".");
       return;
     }
+    var niveauLanceur = ficheAttributeAsInt(lanceur, 'niveau', 1);
+    var niveauCible = ficheAttributeAsInt(cible, 'niveau', 1);
+    if (niveauCible > niveauLanceur) {
+      sendPlayer(msg, cible.tokName + " est de NC "+niveauCible+", supérieur à celui de " + lanceur.token.get('name') + " ("+niveauLanceur+")");
+      return;
+    }
     var evt = {
       type: "Animer un cadvre"
     };
