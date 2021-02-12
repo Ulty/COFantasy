@@ -7352,6 +7352,11 @@ var COFantasy = COFantasy || function() {
         var tokCharId = tok.get('represents');
         if (tokCharId === '') return false;
         if (distanceCombat(target.token, tok, pageId) > 3) return false;
+        var pChair = {
+          token: tok,
+          charId: tokCharId,
+        };
+        if (getState(pChair, 'mort')) return;
         var tokAttrs = charAttribute(tokCharId, 'chairACanonDe');
         var estChair = tokAttrs.find(function(a) {
           return a.get('current') == target.tokName;
