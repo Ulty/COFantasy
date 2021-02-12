@@ -21,6 +21,8 @@
 * Support d'Armée des Morts (nécromancien) 
 
 ### Autres améliorations
+* Ajout d'un effet temporaire effetRetarde
+* Les aires d'effet en disque ne passent plus les murs.
 * Ajout de RD aux éléments.
 * Correction sur l'initiative entre PJs qui doivent comparer la sagesse
 * Ajout de la possibilité de faire des attaques de d12 qui font des critiques
@@ -40,6 +42,7 @@
 * Meilleur support du Pacte Sanglant 
 
 ### Corrections de bugs
+* Compatibilité de --maxDmg avec --reroll1 et --explodeMax
 * Crash de statut pour les personnages ayant un capitaine.
 * Correction du test d'attaque opposée
 * Calcul de score d'attaque corrigé pour les Terres d'Arran.
