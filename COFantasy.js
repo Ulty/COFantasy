@@ -27820,6 +27820,8 @@ var COFantasy = COFantasy || function() {
     if (limiteRessources(lanceur, options, 'animerUnCadavre', "animer un cadavre", evt)) return;
     sendChar(lanceur.charId, 'réanime ' + cible.tokName);
     setState(cible, 'mort', false, evt);
+    var pvmax = parseInt(cible.token.get("bar1_max"));
+    updateCurrentBar(cible, 1, pvmax, evt);
     setTokenAttr(cible, 'cadavreAnime', true, evt, {
       msg: 'se relève'
     });
