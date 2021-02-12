@@ -5644,7 +5644,7 @@ var COFantasy = COFantasy || function() {
             type: 'ligne'
           };
           return;
-        case "disque":
+        case 'disque':
           if (options.aoe) {
             error("Deux options pour définir une aoe", args);
             return;
@@ -5662,7 +5662,7 @@ var COFantasy = COFantasy || function() {
             delete options.aoe;
           }
           return;
-        case "cone":
+        case 'cone':
           if (options.aoe) {
             error("Deux options pour définir une aoe", args);
             return;
@@ -8371,6 +8371,9 @@ var COFantasy = COFantasy || function() {
       } else if (cibles.length == 1) targetToken = cibles[0].token;
       nomCiblePrincipale = cibles[0].tokName;
     } else {
+      var murs;
+      var pc;
+      var page;
       nomCiblePrincipale = targetToken.get('name');
       if (options.aoe) {
         if (options.targetFx) {
@@ -8441,13 +8444,12 @@ var COFantasy = COFantasy || function() {
                 " (distance " + distanceTarget + ", portée " + portee + ")");
               return;
             }
-            var page = page || getObj("page", pageId);
-            var murs = getWalls(page, pageId);
-            var pc;
+            page = page || getObj("page", pageId);
+            murs = getWalls(page, pageId, murs);
             if (murs) {
               pc = {
-                x: targetToken.get('left'),
-                y: targetToken.get('top')
+                x: ptt[0],
+                y: ptt[1],
               };
             }
             var allToksDisque =
@@ -8509,6 +8511,14 @@ var COFantasy = COFantasy || function() {
               cibles = [];
               targetToken.remove(); //On l'enlève, normalement plus besoin
             }
+            page = page || getObj("page", pageId);
+            murs = getWalls(page, pageId, murs);
+            if (murs) {
+              pc = {
+                x: pta[0],
+                y: pta[1],
+              };
+            }
             var allToksCone =
               findObjs({
                 _type: "graphic",
@@ -8531,6 +8541,9 @@ var COFantasy = COFantasy || function() {
               // La distance sera comparée à la portée plus loin
               var objChar = getObj('character', objCharId);
               if (objChar === undefined) return;
+              if (murs) {
+                if (obstaclePresent(pt[0], pt[1], pc, murs)) return;
+              }
               cible.name = objChar.get('name');
               cible.tokName = obj.get('name');
               cibles.push(cible);
