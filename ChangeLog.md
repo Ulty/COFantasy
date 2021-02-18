@@ -42,6 +42,7 @@
 * Meilleur support du Pacte Sanglant 
 
 ### Corrections de bugs
+* Correction des RD seulement contre perçant ou tranchant ou contondant.
 * Compatibilité de --maxDmg avec --reroll1 et --explodeMax
 * Crash de statut pour les personnages ayant un capitaine.
 * Correction du test d'attaque opposée

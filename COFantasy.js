@@ -12623,6 +12623,11 @@ var COFantasy = COFantasy || function() {
     } else if (!target.ignoreTouteRD) {
       var rd = getRDS(target);
       var rdMain = typeRD(rd, mainDmgType);
+      if (mainDmgType == 'normal') {
+        if (options.tranchant && rd.tranchant) rdMain += rd.tranchant;
+        if (options.percant && rd.percant) rdMain += rd.percant;
+        if (options.contondant && rd.contondant) rdMain += rd.contondant;
+      }
       if (rd.drain && (options.vampirise || target.vampirise)) {
         rdMain += rd.drain;
       }
@@ -12812,6 +12817,11 @@ var COFantasy = COFantasy || function() {
             if (typeCount === 0) {
               if (!target.ignoreTouteRD) {
                 var rdl = typeRD(rd, dmgType);
+                if (dmgType == 'normal') {
+                  if (options.tranchant && rd.tranchant) rdl += rd.tranchant;
+                  if (options.percant && rd.percant) rdl += rd.percant;
+                  if (options.contondant && rd.contondant) rdl += rd.contondant;
+                }
                 if (target.ignoreMoitieRD) rdl = parseInt(rdl / 2);
                 if (target.ignoreRD) {
                   if (target.ignoreRD > rdl) {
@@ -13103,9 +13113,6 @@ var COFantasy = COFantasy || function() {
           rd += rdCrit;
           if (options.memePasMal) options.memePasMal -= rdCrit;
         }
-        if (options.tranchant && rdTarget.tranchant) rd += rdTarget.tranchant;
-        if (options.percant && rdTarget.percant) rd += rdTarget.percant;
-        if (options.contondant && rdTarget.contondant) rd += rdTarget.contondant;
         if (options.distance) {
           if (rdTarget.distance) rd += rdTarget.distance;
           var piqures = charAttributeAsInt(target, 'piquresDInsectes', 0);
