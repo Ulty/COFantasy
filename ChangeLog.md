@@ -18,7 +18,8 @@
 * Support du sort Armure d'eau
 * Support de Moment de perfection (moine)
 * Support d'Ensevelissement (nécromancien)
-* Support d'Armée des Morts (nécromancien) 
+* Support d'Armée des Morts (nécromancien)
+* Support d'Invocation d'un démon (nécromancien)
 
 ### Autres améliorations
 * Ajout d'un effet temporaire effetRetarde
