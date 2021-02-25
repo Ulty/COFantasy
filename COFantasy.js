@@ -7373,7 +7373,10 @@ var COFantasy = COFantasy || function() {
         if (getState(pChair, 'mort')) return;
         var tokAttrs = charAttribute(tokCharId, 'chairACanonDe');
         var estChair = tokAttrs.find(function(a) {
-          return a.get('current') == target.tokName;
+          var chairACanonDe = a.get('current').split(",");
+          return chairACanonDe.find(function(b) {
+            return b.trim() == target.tokName;
+          });
         });
         return estChair;
       });
