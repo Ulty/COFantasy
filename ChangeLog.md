@@ -18,7 +18,8 @@
 * Support du sort Armure d'eau
 * Support de Moment de perfection (moine)
 * Support d'Ensevelissement (nécromancien)
-* Support d'Armée des Morts (nécromancien) 
+* Support d'Armée des Morts (nécromancien)
+* Support d'Invocation d'un démon (nécromancien)
 
 ### Autres améliorations
 * Ajout d'un effet temporaire effetRetarde
@@ -40,6 +41,7 @@
 * Meilleur support de la Parade de projectiles du moine
 * Meilleur support du Tour de force
 * Meilleur support du Pacte Sanglant 
+* Permettre à un personnage d'être la Chair à canon de plusieurs autres
 
 ### Corrections de bugs
 * Correction des RD seulement contre perçant ou tranchant ou contondant.

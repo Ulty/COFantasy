@@ -385,7 +385,7 @@
                 <h5>RD critique</h5>
                 <p>Utiliser un attribut <code>RD_critique</code> avec comme valeur courante la résistance aux critiques. Se combine avec une éventuelle RD critique fournie par le port d'un casque.</p>
                 <h5>Résistances</h5>
-                <p>Pour les effets qui divisent la dégâts subits d'un type donné, utilisez un attribut <code>resistanceA_<i>type</i></code>. Il est aussi possible d'octroyer une résistance temporaire, par exemple une potion de résistance au feu pourra être simulée par la commande <code>!cof-set-attribute resistanceA_feu true</code>. Il faut ensuite effacer l'attribut à la fin de l'effet.</p>
+                <p>Pour les effets qui divisent la dégâts subits d'un type donné, utilisez un attribut <code>resistanceA_<i>type</i></code>. Une resistance à tous les dégâts non-magiques est possible avec <code>resistanceA_nonMagique</code>.Il est aussi possible d'octroyer une résistance temporaire, par exemple une potion de résistance au feu pourra être simulée par la commande <code>!cof-set-attribute resistanceA_feu true</code>. Il faut ensuite effacer l'attribut à la fin de l'effet.</p>
                 <p>Pour les effets qui divisent par 2 les dégâts ou la durée, utiliser un attribut <code>diviseEffet_<i>type</i></code>.</p>
                 <p>Pour les effets qui donnent un bonus aux tests pour résister aux effets ou dégâts d'un certain type, utiliser un attribut <code>bonusSaveContre_<i>type</i></code> de valeur le bonus accordé. Par exemple, un objet qui donnerait +5 à tous les tests pour résister au poison pourrait être encodé par un attribut <code>bonusSaveContre_poison</code> de valeur <code>5</code>.</p>
                 <h5>Armures/Boucliers de Protection (COF p. 203)</h5>
@@ -1336,6 +1336,7 @@
                   </li>
                   <li><strong>Pacte sanglant</strong> : créer un attribut <code>pacteSanglant</code> de valeur 3 (rang 3) ou 5 (rang 5). Le script va automatiser l'ajout de boutons sur tous les tests <i>a posteriori</i>, y compris sur les attaques qui ciblent le personnage. Aux joueurs de s'accorder sur la nécessité d'une déclaration <i>a priori</i> nécessaire pour l'utilisation de la capacité.</li>
                   <li><strong>Aspect du démon</strong> : <code>!cof-effet-temp aspectDuDemon [[5+@{selected|INT}]] --mana 2</code>. Ajouter une attaque 1d6+4 au contact avec l'option <code>--si etat aspectDuDemon</code> (attaquer 2 fois au besoin).</li>
+                  <li><strong>Invocation d'un démon</strong> : <code>!cof-invocation-demon @{selected|token_id} --mana 3</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la mort</h4>
                 <ol>
@@ -1761,7 +1762,7 @@
                 <h4 class="text-secondary">Voie du PNJ récurrent</h4>
                 <ol>
                   <li><strong>Instinct de survie</strong> : ajouter un attribut <code>instinctDeSurvie</code> avec comme valeur le nombre de PV en-dessous duquel le PNJ gagne un bonus de DEF. les autres effets sont à faire par le MJ.</li>
-                  <li><strong>Chair à canon</strong> : ajouter un attribut <code>chairACanon</code> de valeur courante et maximale <code>1</code>. Ajouter ensuite à tous ses sous-fifres un attribut <code>chairACanonDe</code> de valeur le nom exact du token du PNJ.</li>
+                  <li><strong>Chair à canon</strong> : ajouter un attribut <code>chairACanon</code> de valeur courante et maximale <code>1</code>. Ajouter ensuite à tous ses sous-fifres un attribut <code>chairACanonDe</code> de valeur le nom exact du token du PNJ. On peut y mettre plusieurs noms séparés par des virgules.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du prédateur</h4>
                 <ol>

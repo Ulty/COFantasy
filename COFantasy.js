@@ -7373,7 +7373,10 @@ var COFantasy = COFantasy || function() {
         if (getState(pChair, 'mort')) return;
         var tokAttrs = charAttribute(tokCharId, 'chairACanonDe');
         var estChair = tokAttrs.find(function(a) {
-          return a.get('current') == target.tokName;
+          var chairACanonDe = a.get('current').split(",");
+          return chairACanonDe.find(function(b) {
+            return b.trim() == target.tokName;
+          });
         });
         return estChair;
       });
@@ -7802,7 +7805,7 @@ var COFantasy = COFantasy || function() {
     if (options.armeDArgent) {
       if (estMortVivant(target) || raceIs(target, 'demon') || raceIs(target, 'démon')) {
         attBonus += 2;
-        if (options.psaDeDmg)
+        if (options.pasDeDmg)
           explications.push("Arme en argent => +2 en attaque");
         else
           explications.push("Arme en argent => +2 en attaque et +1d6 aux DM");
@@ -12699,6 +12702,9 @@ var COFantasy = COFantasy || function() {
           expliquer(target.token.get('name') + " est protégé contre les dégâts de zone");
         }
         if (attributeAsBool(target, 'resistanceA_' + dmgType) || charAttributeAsBool(target, 'diviseEffet_' + dmgType)) {
+          divide();
+        }
+        if (attributeAsBool(target, 'resistanceA_nonMagique') && !options.magique && !options.sortilege) {
           divide();
         }
         if (estElementaire(dmgType)) {
@@ -22699,7 +22705,7 @@ var COFantasy = COFantasy || function() {
               addLineToFramedDisplay(display, expl, 80);
             });
             sendChat('', endFramedDisplay(display));
-          });
+        });
       });
   }
 
@@ -26802,6 +26808,135 @@ var COFantasy = COFantasy || function() {
     }, options);
   }
 
+  var demonInvoque = {
+    nom: 'Démon',
+    avatar: "https://s3.amazonaws.com/files.d20.io/images/183633585/DWpHYp4SLPCDCMHdmTyKOw/thumb.png?1607339938",
+    token: "https://s3.amazonaws.com/files.d20.io/images/183633585/DWpHYp4SLPCDCMHdmTyKOw/thumb.png?1607339938",
+    attributesFiche: {
+      type_personnage: 'PNJ',
+      niveau: 5,
+      force: 20,
+      pnj_for: 5,
+      FOR_SUP: '@{jetsup}',
+      pnj_for_sup: 'on',
+      dexterite: 14,
+      pnj_dex: 2,
+      constitution: 18,
+      pnj_con: 4,
+      CON_SUP: '@{jetsup}',
+      pnj_con_sup: 'on',
+      intelligence: 14,
+      pnj_int: 2,
+      sagesse: 14,
+      pnj_sag: 2,
+      charisme: 10,
+      pnj_cha: 0,
+      DEFDIV: 3,
+      pnj_def: 17,
+      pnj_init: 16,
+      race: 'démon',
+      taille: 'moyen'
+    },
+    attaques: [{
+      nom: 'Griffes',
+      dmnbde: 1,
+      dmde: 8,
+      dm: 5,
+      modificateurs: 'magique'
+    }],
+    attributes: [],
+    abilities: []
+  }
+
+  function invocationDemon(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 2) {
+      error("!cof-invoquer-demon mal formé, il faut un token comme premier argument", msg.content);
+      return;
+    }
+    var necromant = persoOfId(cmd[1], cmd[1], options.pageId);
+    if (necromant === undefined) {
+      error("Le premier argument de !cof-invoquer-demon n'est pas un token valie", cmd);
+      return;
+    }
+    options.lanceur = necromant;
+    getSelected(msg, function(selected, playerId) {
+      var evt = {
+        type: 'invocationDemon',
+        action: {
+          rolls: {
+          }
+        }
+      };
+      addEvent(evt);
+      if (limiteRessources(necromant, options, 'tenebres', 'lancer un sort de ténèbres', evt)) return;
+      var d6 = rollDePlus(6);
+      evt.action.rolls.invocationDemonDmg = d6;
+      var r = {
+        total: d6.val,
+        type: 'normal',
+        display: d6.roll
+      };
+      var explications = [];
+      necromant.ignoreTouteRD = true;
+      dealDamage(necromant, r, [], evt, false, {}, explications,
+      function(dmgDisplay, dmg) {
+        if (!stateCOF.combat) {
+          initPerso(necromant, evt);
+        }
+        var tokenDemon = "Démon de " + necromant.token.get('name');
+        var token = createObj('graphic', {
+          name: tokenDemon,
+          showname: 'true',
+          subtype: 'token',
+          pageid: options.pageId,
+          imgsrc: demonInvoque.token,
+          left: necromant.token.get('left'),
+          top: necromant.token.get('top'),
+          width: 70,
+          height: 70,
+          layer: 'objects',
+          showplayers_bar1: 'true',
+          light_hassight: 'true',
+          light_angle: 0,
+          has_bright_light_vision: true,
+          has_limit_field_of_vision: true,
+        });
+        toFront(token);
+        var niveau = ficheAttributeAsInt(necromant, "niveau", 1);
+        var demon = {...demonInvoque};
+        demon.pv = niveau*5;
+        demon.attaques[0].atk= niveau;
+        var charDemon = createCharacter(tokenDemon, playerId, demonInvoque.avatar, token, demon);
+        evt.characters = [charDemon];
+        evt.tokens = [token];
+        var duree = 5 + modCarac(necromant, "intelligence");
+        //Attribut de démon invoqué pour la disparition automatique
+        createObj('attribute', {
+          name: 'demonInvoque',
+          _characterid: charDemon.id,
+          current: duree,
+          max: getInit()
+        });
+        //Attribut de démon invoqué pour la disparition automatique
+        createObj('attribute', {
+          name: 'resistanceA_nonMagique',
+          _characterid: charDemon.id,
+          current: 'true',
+        });
+        initiative([{
+          _id: token.id
+        }], evt);
+        var msg = "invoque un démon";
+        if (stateCOF.options.affichage.val.duree_effets.val) msg += " pour " + duree + " tours";
+        msg += " mais cela lui coûte " + dmgDisplay + " PV";
+        sendChar(necromant.charId, msg);
+      });
+    }, options);
+  }
+
   //Crée les macros utiles au jeu
   var gameMacros = [{
     name: 'Actions',
@@ -29415,6 +29550,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-defense-armee-des-morts':
         defenseArmeeDesMorts(msg);
         return;
+      case '!cof-invoquer-demon':
+        invocationDemon(msg);
+        return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);
         return;
@@ -29977,6 +30115,12 @@ var COFantasy = COFantasy || function() {
       activation: "invoque d'innombrables squelettes émergeant du sol",
       actif: "invoque d'innombrables squelettes",
       fin: "laisse les morts en paix",
+    },
+    demonInvoque: {
+      activation: "apparaît depuis un autre plan",
+      actif: "est un démon invoqué",
+      fin: "disparaît",
+      dm: true
     }
   };
 
@@ -30456,6 +30600,7 @@ var COFantasy = COFantasy || function() {
               });
           });
         break;
+      case 'demonInvoque':
       case 'predateurConjure':
       case 'arbreAnime': //effacer le personnage
         //On efface d'abord les attributs et les abilities
@@ -30499,7 +30644,7 @@ var COFantasy = COFantasy || function() {
               setToken(token, 'showplayers_name', false, evt);
               setToken(token, 'name', '', evt);
             });
-        } else if (effet == 'predateurConjure') {
+        } else {
           iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
             var perso = {
               token: token,
@@ -30516,7 +30661,10 @@ var COFantasy = COFantasy || function() {
         }
         attr.remove();
         if (options.print && mEffet) options.print(mEffet.fin);
-        else sendChar(charId, 'disparaît');
+        else {
+          sendChar(charId, 'disparaît');
+          options.print = function(m) {};
+        }
         var arbreChar = getObj('character', charId);
         if (arbreChar) {
           evt.deletedCharacters = evt.deletedCharacters || [];
