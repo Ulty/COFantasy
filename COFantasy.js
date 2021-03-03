@@ -821,7 +821,6 @@ var COFantasy = COFantasy || function() {
       } else {
         markersAbsents.push("cof-prison-vegetale");
       }
-
       if (!ancientSet) {
         markersAbsents.forEach(function(m) {
           log("Marker " + m + " introuvable");
@@ -2870,7 +2869,8 @@ var COFantasy = COFantasy || function() {
     if (image_url) {
       image_url = image_url.replace('/med.png', '/thumb.png');
       image_url = image_url.replace('/max.png', '/thumb.png');
-      image_url = image_url.substring(0, image_url.indexOf('?'));
+      var index = image_url.indexOf('?');
+      if (index > 0) image_url = image_url.substring(0, index);
       return image_url;
     }
   }
@@ -4244,8 +4244,8 @@ var COFantasy = COFantasy || function() {
               findObjs({
                 _type: "graphic",
                 _pageid: pageId,
-                _subtype: "token",
-                layer: "objects"
+                _subtype: 'token',
+                layer: 'objects'
               });
             allToksDisque.forEach(function(obj) {
               if (portee === 0 && obj.id == actif.token.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
@@ -4296,10 +4296,10 @@ var COFantasy = COFantasy || function() {
               };
             }
             var tokensEnVue = findObjs({
-              _type: "graphic",
+              _type: 'graphic',
               _pageid: pageId,
-              _subtype: "token",
-              layer: "objects"
+              _subtype: 'token',
+              layer: 'objects'
             });
             tokensEnVue.forEach(function(obj) {
               if (obj.id == actif.token.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
@@ -4335,10 +4335,10 @@ var COFantasy = COFantasy || function() {
               };
             }
             var tokensAlliesEnVue = findObjs({
-              _type: "graphic",
+              _type: 'graphic',
               _pageid: pageId,
-              _subtype: "token",
-              layer: "objects"
+              _subtype: 'token',
+              layer: 'objects'
             });
             tokensAlliesEnVue.forEach(function(obj) {
               if (obj.id == actif.token.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
@@ -7282,7 +7282,7 @@ var COFantasy = COFantasy || function() {
     if (combatEnPhalange || attributeAsBool(target, 'esquiveFatale')) {
       var tokensContact = findObjs({
         _type: 'graphic',
-        _subtype: "token",
+        _subtype: 'token',
         _pageid: pageId,
         layer: 'objects'
       });
@@ -7357,7 +7357,7 @@ var COFantasy = COFantasy || function() {
       if (target.tokName === undefined) target.tokName = target.get('name');
       var tokensChairACanon = findObjs({
         _type: 'graphic',
-        _subtype: "token",
+        _subtype: 'token',
         _pageid: pageId,
         layer: 'objects'
       });
@@ -7881,7 +7881,7 @@ var COFantasy = COFantasy || function() {
     if (charAttributeAsBool(attaquant, 'combatEnPhalange')) {
       var tokensContact = findObjs({
         _type: 'graphic',
-        _subtype: "token",
+        _subtype: 'token',
         _pageid: pageId,
         layer: 'objects'
       });
@@ -8434,10 +8434,10 @@ var COFantasy = COFantasy || function() {
             }
             var allToks =
               findObjs({
-                _type: "graphic",
+                _type: 'graphic',
                 _pageid: pageId,
-                _subtype: "token",
-                layer: "objects"
+                _subtype: 'token',
+                layer: 'objects'
               });
             allToks.forEach(function(obj) {
               if (obj.id == attackingToken.id) return; //on ne se cible pas
