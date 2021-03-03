@@ -9246,6 +9246,11 @@ var COFantasy = COFantasy || function() {
       showTotal = true;
     }
     if (crit) {
+      var messageCrit = charAttribute(target.charId, 'messageSiCritique');
+      if (messageCrit.length > 0) {
+        messageCrit = messageCrit[0].get('current');
+        expliquer(messageCrit);
+      }
       if (attributeAsBool(target, 'memePasMal')) {
         options.memePasMal = (dmgTotal / dmgCoef) * critCoef;
       }
@@ -22705,7 +22710,7 @@ var COFantasy = COFantasy || function() {
               addLineToFramedDisplay(display, expl, 80);
             });
             sendChat('', endFramedDisplay(display));
-        });
+          });
       });
   }
 
@@ -26846,7 +26851,7 @@ var COFantasy = COFantasy || function() {
     }],
     attributes: [],
     abilities: []
-  }
+  };
 
   function invocationDemon(msg) {
     var options = parseOptions(msg);
@@ -26866,8 +26871,7 @@ var COFantasy = COFantasy || function() {
       var evt = {
         type: 'invocationDemon',
         action: {
-          rolls: {
-          }
+          rolls: {}
         }
       };
       addEvent(evt);
@@ -26882,58 +26886,59 @@ var COFantasy = COFantasy || function() {
       var explications = [];
       necromant.ignoreTouteRD = true;
       dealDamage(necromant, r, [], evt, false, {}, explications,
-      function(dmgDisplay, dmg) {
-        if (!stateCOF.combat) {
-          initPerso(necromant, evt);
-        }
-        var tokenDemon = "Démon de " + necromant.token.get('name');
-        var token = createObj('graphic', {
-          name: tokenDemon,
-          showname: 'true',
-          subtype: 'token',
-          pageid: options.pageId,
-          imgsrc: demonInvoque.token,
-          left: necromant.token.get('left'),
-          top: necromant.token.get('top'),
-          width: 70,
-          height: 70,
-          layer: 'objects',
-          showplayers_bar1: 'true',
-          light_hassight: 'true',
-          light_angle: 0,
-          has_bright_light_vision: true,
-          has_limit_field_of_vision: true,
+        function(dmgDisplay, dmg) {
+          if (!stateCOF.combat) {
+            initPerso(necromant, evt);
+          }
+          var tokenDemon = "Démon de " + necromant.token.get('name');
+          var token = createObj('graphic', {
+            name: tokenDemon,
+            showname: 'true',
+            subtype: 'token',
+            pageid: options.pageId,
+            imgsrc: demonInvoque.token,
+            left: necromant.token.get('left'),
+            top: necromant.token.get('top'),
+            width: 70,
+            height: 70,
+            layer: 'objects',
+            showplayers_bar1: 'true',
+            light_hassight: 'true',
+            light_angle: 0,
+            has_bright_light_vision: true,
+            has_limit_field_of_vision: true,
+          });
+          toFront(token);
+          var niveau = ficheAttributeAsInt(necromant, "niveau", 1);
+          var demon = {...demonInvoque
+          };
+          demon.pv = niveau * 5;
+          demon.attaques[0].atk = niveau;
+          var charDemon = createCharacter(tokenDemon, playerId, demonInvoque.avatar, token, demon);
+          evt.characters = [charDemon];
+          evt.tokens = [token];
+          var duree = 5 + modCarac(necromant, "intelligence");
+          //Attribut de démon invoqué pour la disparition automatique
+          createObj('attribute', {
+            name: 'demonInvoque',
+            _characterid: charDemon.id,
+            current: duree,
+            max: getInit()
+          });
+          //Attribut de démon invoqué pour la disparition automatique
+          createObj('attribute', {
+            name: 'resistanceA_nonMagique',
+            _characterid: charDemon.id,
+            current: 'true',
+          });
+          initiative([{
+            _id: token.id
+          }], evt);
+          var msg = "invoque un démon";
+          if (stateCOF.options.affichage.val.duree_effets.val) msg += " pour " + duree + " tours";
+          msg += " mais cela lui coûte " + dmgDisplay + " PV";
+          sendChar(necromant.charId, msg);
         });
-        toFront(token);
-        var niveau = ficheAttributeAsInt(necromant, "niveau", 1);
-        var demon = {...demonInvoque};
-        demon.pv = niveau*5;
-        demon.attaques[0].atk= niveau;
-        var charDemon = createCharacter(tokenDemon, playerId, demonInvoque.avatar, token, demon);
-        evt.characters = [charDemon];
-        evt.tokens = [token];
-        var duree = 5 + modCarac(necromant, "intelligence");
-        //Attribut de démon invoqué pour la disparition automatique
-        createObj('attribute', {
-          name: 'demonInvoque',
-          _characterid: charDemon.id,
-          current: duree,
-          max: getInit()
-        });
-        //Attribut de démon invoqué pour la disparition automatique
-        createObj('attribute', {
-          name: 'resistanceA_nonMagique',
-          _characterid: charDemon.id,
-          current: 'true',
-        });
-        initiative([{
-          _id: token.id
-        }], evt);
-        var msg = "invoque un démon";
-        if (stateCOF.options.affichage.val.duree_effets.val) msg += " pour " + duree + " tours";
-        msg += " mais cela lui coûte " + dmgDisplay + " PV";
-        sendChar(necromant.charId, msg);
-      });
     }, options);
   }
 
@@ -27976,7 +27981,7 @@ var COFantasy = COFantasy || function() {
     var niveauLanceur = ficheAttributeAsInt(lanceur, 'niveau', 1);
     var niveauCible = ficheAttributeAsInt(cible, 'niveau', 1);
     if (niveauCible > niveauLanceur) {
-      sendPlayer(msg, cible.tokName + " est de NC "+niveauCible+", supérieur à celui de " + lanceur.token.get('name') + " ("+niveauLanceur+")");
+      sendPlayer(msg, cible.tokName + " est de NC " + niveauCible + ", supérieur à celui de " + lanceur.token.get('name') + " (" + niveauLanceur + ")");
       return;
     }
     var evt = {
@@ -30478,7 +30483,9 @@ var COFantasy = COFantasy || function() {
             setState({
               token: token,
               charId: charId
-            }, 'aveugle', false, evt, {fromTemp:true});
+            }, 'aveugle', false, evt, {
+              fromTemp: true
+            });
           }, {
             tousLesTokens: true
           });
@@ -30489,7 +30496,9 @@ var COFantasy = COFantasy || function() {
             setState({
               token: token,
               charId: charId
-            }, 'ralenti', false, evt, {fromTemp: true});
+            }, 'ralenti', false, evt, {
+              fromTemp: true
+            });
           }, {
             tousLesTokens: true
           });
@@ -30500,7 +30509,9 @@ var COFantasy = COFantasy || function() {
             setState({
               token: token,
               charId: charId
-            }, 'paralyse', false, evt, {fromTemp: true});
+            }, 'paralyse', false, evt, {
+              fromTemp: true
+            });
           }, {
             tousLesTokens: true
           });
@@ -30511,7 +30522,9 @@ var COFantasy = COFantasy || function() {
             setState({
               token: token,
               charId: charId
-            }, 'immobilise', false, evt, {fromTemp: true});
+            }, 'immobilise', false, evt, {
+              fromTemp: true
+            });
           }, {
             tousLesTokens: true
           });
@@ -30522,7 +30535,9 @@ var COFantasy = COFantasy || function() {
             setState({
               token: token,
               charId: charId
-            }, 'etourdi', false, evt, {fromTemp: true});
+            }, 'etourdi', false, evt, {
+              fromTemp: true
+            });
           }, {
             tousLesTokens: true
           });
@@ -30533,7 +30548,9 @@ var COFantasy = COFantasy || function() {
             setState({
               token: token,
               charId: charId
-            }, 'affaibli', false, evt, {fromTemp: true});
+            }, 'affaibli', false, evt, {
+              fromTemp: true
+            });
           }, {
             tousLesTokens: true
           });
@@ -30544,7 +30561,9 @@ var COFantasy = COFantasy || function() {
             setState({
               token: token,
               charId: charId
-            }, 'assome', false, evt, {fromTemp: true});
+            }, 'assome', false, evt, {
+              fromTemp: true
+            });
           }, {
             tousLesTokens: true
           });
@@ -30556,7 +30575,9 @@ var COFantasy = COFantasy || function() {
             setState({
               token: token,
               charId: charId
-            }, 'apeure', false, evt, {fromTemp: true});
+            }, 'apeure', false, evt, {
+              fromTemp: true
+            });
           }, {
             tousLesTokens: true
           });
