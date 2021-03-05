@@ -754,10 +754,8 @@ var COFantasy = COFantasy || function() {
     });
     // Option Markers personnalisés activé
     if (stateCOF.options.affichage.val.markers_personnalises.val) {
-      var no_error = true;
       var cof_states_perso = {
         assome: 'status_cof-assomme',
-        mort: 'status_dead',
         surpris: 'status_cof-surpris',
         renverse: 'status_cof-renverse',
         aveugle: 'status_cof-aveugle',
@@ -778,15 +776,13 @@ var COFantasy = COFantasy || function() {
       var markersAbsents = [];
       var ancientSet = true;
       Object.keys(cof_states_perso).forEach(function(etat) {
-        if (etat === "mort") return; // Cas du statut mort. Cas particulier (n'est pas présent dans le catalogue) on laisse en l'état ...
         var markerName = cof_states_perso[etat].substring(7);
         var marker = markerCatalog[markerName];
         if (marker) {
-          cof_states_perso[etat] = "status_" + marker.tag;
+          cof_states[etat] = "status_" + marker.tag;
           ancientSet = false;
         } else {
           markersAbsents.push(markerName);
-          no_error = false;
         }
       });
       // Cas particulier des deux markers d'initiative
@@ -794,18 +790,14 @@ var COFantasy = COFantasy || function() {
         stateCOF.statusForInitAlly = "status_" + markerCatalog["cof-init-ally"].tag;
       } else {
         markersAbsents.push("cof-init-ally");
-        no_error = false;
       }
       if (markerCatalog["cof-init-enemy"]) {
         stateCOF.statusForInitEnemy = "status_" + markerCatalog["cof-init-enemy"].tag;
       } else {
         markersAbsents.push("cof-init-enemy");
-        no_error = false;
       }
       // Cas des markers d'effet temporaire, 3 cas particuliers :
-      // 1. uniquement le tag sans "status_" devant
-      // 2. on signale absence mais on on ne touche pas à no_error
-      // 3. on met à jour directement messageEffetTemp
+      // uniquement le tag sans "status_" devant
       if (markerCatalog["cof-asphyxie"]) {
         messageEffetTemp.asphyxie.statusMarker = markerCatalog["cof-asphyxie"].tag;
       } else {
@@ -825,17 +817,9 @@ var COFantasy = COFantasy || function() {
         markersAbsents.forEach(function(m) {
           log("Marker " + m + " introuvable");
         });
-      }
-      // Si aucune erreur de marker non trouvé
-      if (no_error) {
-        cof_states = cof_states_perso;
-        stateCOF.markers_personnalises = true;
         log("Markers personnalisés activés.");
       } else {
-        stateCOF.markers_personnalises = false;
-        if (ancientSet) log("Utilisation des markers par défaut");
-        else
-          log("Markers personnalisés manquants -> Retour aux markers standards Roll20. Voir erreur(s) ci-dessus.");
+        log("Utilisation des markers par défaut");
       }
     }
     //Construction de la table markers => etat
@@ -13987,7 +13971,7 @@ var COFantasy = COFantasy || function() {
     } else {
       var status = '';
       // Cas des tokens personnalisés
-      if (stateCOF.markers_personnalises) {
+      if (stateCOF.statusForInitEnemy && stateCOF.statusForInitAlly) {
         // ennemi => rouge
         status = stateCOF.statusForInitEnemy;
         if (estAllieJoueur(perso)) {
@@ -17258,7 +17242,7 @@ var COFantasy = COFantasy || function() {
       token.set('showplayers_aura2', false);
     } else {
       // Cas des tokens personnalisés
-      if (stateCOF.markers_personnalises) {
+      if (stateCOF.statusForInitEnemy && stateCOF.statusForInitAlly) {
         token.set(stateCOF.statusForInitAlly, false);
         token.set(stateCOF.statusForInitEnemy, false);
       } else token.set('status_flying-flag', false);
