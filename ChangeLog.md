@@ -22,6 +22,7 @@
 * Support d'Invocation d'un démon (nécromancien)
 
 ### Autres améliorations
+* Possibilité d'afficher un message en cas de coup critique reçu.
 * Ajout d'un effet temporaire effetRetarde
 * Les aires d'effet en disque ne passent plus les murs.
 * Ajout de RD aux éléments.
