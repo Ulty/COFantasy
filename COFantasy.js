@@ -512,6 +512,9 @@ var COFantasy = COFantasy || function() {
     stateCOF.setting_arran = true;
   }
 
+  var statusForInitAlly;
+  var statusForInitEnemy;
+
   //Appelé au lancement du script, mise à jour de certaines variables globales
   function setStateCOF() {
     stateCOF = state.COFantasy;
@@ -787,12 +790,12 @@ var COFantasy = COFantasy || function() {
       });
       // Cas particulier des deux markers d'initiative
       if (markerCatalog["cof-init-ally"]) {
-        stateCOF.statusForInitAlly = "status_" + markerCatalog["cof-init-ally"].tag;
+        statusForInitAlly = "status_" + markerCatalog["cof-init-ally"].tag;
       } else {
         markersAbsents.push("cof-init-ally");
       }
       if (markerCatalog["cof-init-enemy"]) {
-        stateCOF.statusForInitEnemy = "status_" + markerCatalog["cof-init-enemy"].tag;
+        statusForInitEnemy = "status_" + markerCatalog["cof-init-enemy"].tag;
       } else {
         markersAbsents.push("cof-init-enemy");
       }
@@ -13971,12 +13974,12 @@ var COFantasy = COFantasy || function() {
     } else {
       var status = '';
       // Cas des tokens personnalisés
-      if (stateCOF.statusForInitEnemy && stateCOF.statusForInitAlly) {
+      if (statusForInitEnemy && statusForInitAlly) {
         // ennemi => rouge
-        status = stateCOF.statusForInitEnemy;
+        status = statusForInitEnemy;
         if (estAllieJoueur(perso)) {
           // equipe => vert
-          status = stateCOF.statusForInitAlly;
+          status = statusForInitAlly;
         }
       } else status = 'status_flying-flag';
       token.set(status, true);
@@ -17242,9 +17245,9 @@ var COFantasy = COFantasy || function() {
       token.set('showplayers_aura2', false);
     } else {
       // Cas des tokens personnalisés
-      if (stateCOF.statusForInitEnemy && stateCOF.statusForInitAlly) {
-        token.set(stateCOF.statusForInitAlly, false);
-        token.set(stateCOF.statusForInitEnemy, false);
+      if (statusForInitEnemy && statusForInitAlly) {
+        token.set(statusForInitAlly, false);
+        token.set(statusForInitEnemy, false);
       } else token.set('status_flying-flag', false);
     }
   }
