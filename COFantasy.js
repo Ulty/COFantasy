@@ -31153,21 +31153,15 @@ var COFantasy = COFantasy || function() {
         });
       }
       if (getState(perso, 'enseveli')) {
-        var enseveliAttr = tokenAttribute(perso, 'enseveli');
-        // Pour ne pas faire les dégâts plusieurs fois (plusieurs tokens pour un même personnage), on utilise la valeur max de l'attribut
-        var dernierTourEnseveli = parseInt(enseveliAttr[0].get('max'));
-        if (isNaN(dernierTourEnseveli) || dernierTourEnseveli < tour) {
-          var degats = randomInteger(6) + randomInteger(6);
-          var dmg = {
-            type: 'magique',
-            total: degats,
-            display: degats
-          };
-          degats = dealDamage(perso, dmg, [], evt);
-          sendChar(charId, " est écrasé ! " +
-            onGenre(perso, 'Il', 'Elle') + " subit " + degats + " DM");
-          enseveliAttr[0].set('max', tour);
-        }
+        var degats = randomInteger(6) + randomInteger(6);
+        var dmg = {
+          type: 'magique',
+          total: degats,
+          display: degats
+        };
+        degats = dealDamage(perso, dmg, [], evt);
+        sendChar(charId, " est écrasé ! " +
+          onGenre(perso, 'Il', 'Elle') + " subit " + degats + " DM");
       }
       var enflammeAttr = tokenAttribute(perso, 'enflamme');
       if (enflammeAttr.length > 0) {
