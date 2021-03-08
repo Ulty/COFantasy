@@ -1194,7 +1194,8 @@ var COFantasy = COFantasy || function() {
     var maxval = '';
     if (options && options.maxVal !== undefined) maxval = options.maxVal;
     if (options && options.msg !== undefined) {
-      sendChar(charId, options.msg);
+      if (options.secret) whisperChar(charId, options.msg);
+      else sendChar(charId, options.msg);
     }
     evt.attributes = evt.attributes || [];
     // check if the token is linked to the character. If not, use token name
@@ -1347,8 +1348,9 @@ var COFantasy = COFantasy || function() {
     return attr;
   }
 
-  // evt et msg peuvent être undefined
-  function removeTokenAttr(personnage, attribute, evt, msg) {
+  // evt peut être undefined
+  // options peut avoir les champs msg et secret
+  function removeTokenAttr(personnage, attribute, evt, options) {
     var charId = personnage.charId;
     var token = personnage.token;
     // check if the token is linked to the character. If not, use token name
@@ -1363,8 +1365,9 @@ var COFantasy = COFantasy || function() {
       name: attribute
     });
     if (attr.length === 0) return;
-    if (msg !== undefined) {
-      sendChar(charId, msg);
+    if (options && options.msg !== undefined) {
+      if (options.secret) whisperChar(charId, options.msg);
+      else sendChar(charId, options.msg);
     }
     attr = attr[0];
     if (evt) {
@@ -1377,7 +1380,9 @@ var COFantasy = COFantasy || function() {
   function removeCharAttr(charId, attribute, evt, msg) {
     removeTokenAttr({
       charId: charId
-    }, attribute, evt, msg);
+    }, attribute, evt, {
+      msg: msg
+    });
   }
 
   //fonction avec callback, mais synchrone
@@ -1446,7 +1451,9 @@ var COFantasy = COFantasy || function() {
     pvmax -= nonSoignable;
     if (bar1 === 0) {
       if (attributeAsBool(perso, 'etatExsangue')) {
-        removeTokenAttr(perso, 'etatExsangue', evt, "retrouve des couleurs");
+        removeTokenAttr(perso, 'etatExsangue', evt, {
+          msg: "retrouve des couleurs"
+        });
       } else if (getState(perso, 'mort')) {
         setState(perso, 'renverse', true, evt);
         setState(perso, 'mort', false, evt);
@@ -8027,6 +8034,8 @@ var COFantasy = COFantasy || function() {
         return true;
       }
     }
+    var expliquer = sendChar;
+    if (options.secret) expliquer = whisperChar;
     var ressource = '';
     if (defResource !== undefined) ressource = defResource;
     var utilisations;
@@ -8038,7 +8047,7 @@ var COFantasy = COFantasy || function() {
         utilisations =
           attributeAsInt(personnage, ressource, options.limiteParJour);
         if (utilisations === 0) {
-          sendChar(personnage.charId, "ne peut plus faire cette action aujourd'hui");
+          expliquer(personnage.charId, "ne peut plus faire cette action aujourd'hui");
           return true;
         }
         setTokenAttr(personnage, ressource, utilisations - 1, evt);
@@ -8050,7 +8059,7 @@ var COFantasy = COFantasy || function() {
     if (options.limiteParCombat) {
       if (personnage) {
         if (!stateCOF.combat) {
-          sendChar(personnage.charId, "ne peut pas faire cette action en dehors des combats");
+          expliquer(personnage.charId, "ne peut pas faire cette action en dehors des combats");
           return true;
         }
         if (options.limiteParCombatRessource)
@@ -8060,7 +8069,7 @@ var COFantasy = COFantasy || function() {
           attributeAsInt(personnage, ressource, options.limiteParCombat);
         if (utilisations === 0) {
           var msgToSend = msg || "ne peut plus faire cette action pour ce combat";
-          sendChar(personnage.charId, msgToSend);
+          expliquer(personnage.charId, msgToSend);
           return true;
         }
         setTokenAttr(personnage, ressource, utilisations - 1, evt);
@@ -8074,7 +8083,7 @@ var COFantasy = COFantasy || function() {
         var nomDose = options.dose.replace(/_/g, ' ');
         var doses = attributeAsInt(personnage, 'dose_' + options.dose, 0);
         if (doses === 0) {
-          sendChar(personnage.charId, "n'a plus de " + nomDose);
+          expliquer(personnage.charId, "n'a plus de " + nomDose);
           return true;
         }
         setTokenAttr(personnage, 'dose_' + options.dose, doses - 1, evt);
@@ -8088,7 +8097,7 @@ var COFantasy = COFantasy || function() {
         var nomAttr = options.limiteAttribut.nom;
         var currentAttr = attributeAsInt(personnage, nomAttr, 0);
         if (currentAttr >= options.limiteAttribut.limite) {
-          sendChar(personnage.charId, options.limiteAttribut.message);
+          expliquer(personnage.charId, options.limiteAttribut.message);
           return true;
         }
         setTokenAttr(personnage, nomAttr, currentAttr + 1, evt);
@@ -8105,7 +8114,7 @@ var COFantasy = COFantasy || function() {
       }
       var oldval = parseInt(attr.get('current'));
       if (isNaN(oldval) || oldval < 1) {
-        sendChar(attr.get('characterid'), "ne peut plus faire cela");
+        expliquer(attr.get('characterid'), "ne peut plus faire cela");
         return true;
       }
       evt.attributes = evt.attributes || [];
@@ -14233,7 +14242,9 @@ var COFantasy = COFantasy || function() {
             charId: veCharId,
             token: tok
           };
-          removeTokenAttr(perso, 'niveauEbriete', evt, "désaoûle");
+          removeTokenAttr(perso, 'niveauEbriete', evt, {
+            msg: "désaoûle"
+          });
         });
     });
     attrs = removeAllAttributes('vapeursEthyliques', evt, attrs);
@@ -15386,7 +15397,9 @@ var COFantasy = COFantasy || function() {
         if (total < 0) total = 0;
         if (bar1 === 0) {
           if (attributeAsBool(perso, 'etatExsangue')) {
-            removeTokenAttr(perso, 'etatExsangue', evt, "retrouve des couleurs");
+            removeTokenAttr(perso, 'etatExsangue', evt, {
+              msg: "retrouve des couleurs"
+            });
           }
         }
         bar1 += total;
@@ -18113,7 +18126,7 @@ var COFantasy = COFantasy || function() {
         }
         var bonusCouvert = attributeAsInt(perso, 'bonusCouvert');
         if (bonusCouvert) {
-          addLineToFramedDisplay(display, "est à couvert (+" + bonusCouvert + " DEF");
+          addLineToFramedDisplay(display, "est à couvert (+" + bonusCouvert + " DEF)");
         }
         if (!defenseMontree) {
           var defenseAffichee = 10;
@@ -18232,7 +18245,9 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, "Pas de token sélectionné pour !cof-remove-buf-def");
       }
       iterSelected(selected, function(perso) {
-        removeTokenAttr(perso, 'bufDEF', evt, "retrouve sa défense normale");
+        removeTokenAttr(perso, 'bufDEF', evt, {
+          msg: "retrouve sa défense normale"
+        });
         setToken(perso.token, 'status_blue', false, evt);
       });
       addEvent(evt);
@@ -19085,9 +19100,13 @@ var COFantasy = COFantasy || function() {
       type: "aCouvert"
     };
     var init = getInit();
+    var secret = args.some(function(arg) {
+      return arg == '--secret';
+    });
     setTokenAttr(perso1, 'aCouvert', 1, evt, {
       msg: "reste à couvert",
-      maxVal: init
+      maxVal: init,
+      secret: secret
     });
     if (args.length > 2) {
       var perso2 = persoOfId(args[2], args[2]);
@@ -19097,17 +19116,26 @@ var COFantasy = COFantasy || function() {
         return;
       }
       if (perso2.token.id == perso1.token.id) {
-        sendChar(perso1.charId, "s'est ciblé lui-même, il est donc le seul à couvert");
+        if (secret) {
+          whisperChar(perso1.charId, "s'est ciblé lui-même, il est donc le seul à couvert");
+        } else {
+          sendChar(perso1.charId, "s'est ciblé lui-même, il est donc le seul à couvert");
+        }
         addEvent(evt);
         return;
       }
       var d = distanceCombat(perso1.token, perso2.token);
       if (d > 0) {
-        sendChar(perso2.charId, "est trop éloigné de " + perso1.token.get('name') + " pour rester à couvert avec lui");
+        if (secret) {
+          whisperChar(perso2.charId, "est trop éloigné de " + perso1.token.get('name') + " pour rester à couvert avec lui");
+        } else {
+          sendChar(perso2.charId, "est trop éloigné de " + perso1.token.get('name') + " pour rester à couvert avec lui");
+        }
       } else {
         setTokenAttr(perso2, 'aCouvert', 1, evt, {
           msg: "suit " + perso1.token.get('name') + " et reste à couvert",
-          maxVal: init
+          maxVal: init,
+          secret: secret
         });
       }
     }
@@ -19659,7 +19687,9 @@ var COFantasy = COFantasy || function() {
             evt.deletedAttributes.push(ace[0]);
             ace[0].remove();
           }
-          removeTokenAttr(perso, effet, evt, messageEffetIndetermine[effet].fin);
+          removeTokenAttr(perso, effet, evt, {
+            msg: messageEffetIndetermine[effet].fin
+          });
           removeTokenAttr(perso, effet + 'Puissant', evt);
           removeTokenAttr(perso, effet + 'Valeur', evt);
           removeTokenAttr(perso, effet + 'TempeteDeManaIntense', evt);
@@ -20558,7 +20588,9 @@ var COFantasy = COFantasy || function() {
         if (soin < 0) soin = 0;
         if (bar1 === 0) {
           if (attributeAsBool(perso, 'etatExsangue')) {
-            removeTokenAttr(perso, 'etatExsangue', evt, "retrouve des couleurs");
+            removeTokenAttr(perso, 'etatExsangue', evt, {
+              msg: "retrouve des couleurs"
+            });
           }
         }
         bar1 += soin;
@@ -22135,8 +22167,9 @@ var COFantasy = COFantasy || function() {
           sendChar(charIdProtecteur, "protège déjà " + nameTarget);
           return;
         }
-        removeTokenAttr(previousTarget, protegePar, evt,
-          "n'est plus protégé par " + nameProtecteur);
+        removeTokenAttr(previousTarget, protegePar, evt, {
+          msg: "n'est plus protégé par " + nameProtecteur
+        });
       }
     }
     setTokenAttr(protecteur, 'protegerUnAllie',
@@ -28279,10 +28312,14 @@ var COFantasy = COFantasy || function() {
       iterSelected(selected, function(perso) {
         if (nouveauBonus) {
           setTokenAttr(perso, 'bonusCouvert', nouveauBonus, evt, {
-            msg: "se met à couvert"
+            msg: "se met à couvert",
+            secret: options.secret
           });
         } else {
-          removeTokenAttr(perso, 'bonusCouvert', evt, "n'est plus à couvert");
+          removeTokenAttr(perso, 'bonusCouvert', evt, {
+            msg: "n'est plus à couvert",
+            secret: options.secret
+          });
         }
       }); //fin iterSelected
     }, options); //fin getSelected
