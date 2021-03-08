@@ -6013,6 +6013,7 @@ var COFantasy = COFantasy || function() {
             }
           });
         }
+        if (options.peur && options.peur.duree) optMana.duree = true;
         setTempeteDeMana(playerId, attaquant, msg.content, optMana);
         return;
       } else {
