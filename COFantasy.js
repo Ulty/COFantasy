@@ -1186,6 +1186,7 @@ var COFantasy = COFantasy || function() {
   //options peut contenir
   // msg: un message à afficher
   // maxVal: la valeur max de l'attribut
+  // secret: le message n'est pas affiché pour tout le monde.
   // charAttr: si présent, on utilise un attribut de personnage
   // renvoie l'attribut crée ou mis à jour
   function setTokenAttr(personnage, attribute, value, evt, options) {
@@ -28336,10 +28337,12 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-set-attribute", cmd);
       return;
     }
-    var opt = {};
+    var opt = {secret:options.secret};
     if (cmd.length > 3) {
       opt.maxVal = cmd[3];
     }
+    if (options.messages && options.messages.length > 0) 
+      opt.msg = options.messages[0];
     getSelected(msg, function(selected, playerId) {
       if (!playerIsGM(playerId)) {
         sendChat('COF', "Seul le MJ peut utiliser la commande !cof-set-attributes");
