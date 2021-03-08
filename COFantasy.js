@@ -3048,7 +3048,7 @@ var COFantasy = COFantasy || function() {
     display.output += formatedLine;
   }
 
-  function startTableInFramedDisplay(display) {
+  function startTableInFramedDisplay(display, options) {
     display.output += "<table>";
     display.endColumn = true;
   }
@@ -3059,13 +3059,15 @@ var COFantasy = COFantasy || function() {
   }
 
   //newLine indique qu'on commence une nouvelle rangée
-  function addCellInFramedDisplay(display, cell, size, newLine) {
+  function addCellInFramedDisplay(display, cell, size, newLine, fond) {
     size = size || 100;
     if (display.endColumn) {
       display.output += '<tr>';
       display.endColumn = false;
     } else if (newLine) display.output += '</tr><tr>';
-    display.output += '<td style="background-color: #FFF; font-size: ' + size + '%; height: ' + size + '%">' + cell + '</td>';
+    var color = '#FFF';
+    if (fond) color =  "#d3d3d3";
+    display.output += '<td style="background-color: ' + color + '; font-size: ' + size + '%;">' + cell + '</td>';
   }
 
   function endFramedDisplay(display) {
@@ -3797,7 +3799,7 @@ var COFantasy = COFantasy || function() {
 
   //Par construction, msg.content ne doit pas contenir d'option --nom,
   //et commencer par !cof-jet
-  function boutonsCompetences(display, perso, carac, msg) {
+  function boutonsCompetences(display, perso, carac, msg, fond) {
     var action = msg.content;
     action = action.replace(/ --competences /, '');
     action = action.replace(/ --competences/, ''); //au cas où ce serait le dernier argument
@@ -3831,10 +3833,9 @@ var COFantasy = COFantasy || function() {
         overlay = 'Charisme';
         break;
     }
-    var cell = bouton(action, pictoCarac, perso, {
-      overlay: overlay
-    });
-    addCellInFramedDisplay(display, cell, 150, true);
+    var charButtonStyle = ' style="border-radius:10px;" title="'+overlay+'"';
+    var cell = boutonSimple(action, pictoCarac, charButtonStyle);
+    addCellInFramedDisplay(display, cell, 150, true, fond);
     var comps = [...listeCompetences[carac].list];
     var attributes = findObjs({
       _type: 'attribute',
@@ -3887,11 +3888,10 @@ var COFantasy = COFantasy || function() {
     comps.forEach(function(comp) {
       if (sec) cell += ' ';
       else sec = true;
-      cell += bouton(action + " --nom " + comp, comp, perso, {
-        buttonStyle: "background-color:#996600"
-      });
+      var buttonStyle = ' style="background-color:#996600; padding:1px 2px; border-radius:5px;"';
+      cell += boutonSimple(action + " --nom " + comp, comp, buttonStyle);
     });
-    addCellInFramedDisplay(display, cell, 80, false);
+    addCellInFramedDisplay(display, cell, 80, false, fond);
   }
 
   // prend une distance en mètre et retourne une distance dans l'unité
@@ -4477,17 +4477,18 @@ var COFantasy = COFantasy || function() {
           error("Il manque la caractéristique à utiliser pour la compétence " + options.nom, msg.content);
           return;
         }
+        var fond = listeCompetences.nombre > 25;
         iterSelected(selected, function(perso) {
           var display = startFramedDisplay(playerId, "Jet de caractéristique", perso, {
             chuchote: true
           });
           startTableInFramedDisplay(display);
           boutonsCompetences(display, perso, 'FOR', msg);
-          boutonsCompetences(display, perso, 'DEX', msg);
+          boutonsCompetences(display, perso, 'DEX', msg, fond);
           boutonsCompetences(display, perso, 'CON', msg);
-          boutonsCompetences(display, perso, 'SAG', msg);
+          boutonsCompetences(display, perso, 'SAG', msg, fond);
           boutonsCompetences(display, perso, 'INT', msg);
-          boutonsCompetences(display, perso, 'CHA', msg);
+          boutonsCompetences(display, perso, 'CHA', msg, fond);
           endTableInFramedDisplay(display);
           sendChat('', endFramedDisplay(display));
         }); //fin de iterSelected
@@ -16974,7 +16975,8 @@ var COFantasy = COFantasy || function() {
     CHA: {
       list: [],
       elts: new Set()
-    }
+    },
+    nombre: 0
   };
   // Appelé uniquement après le "ready" et lorsqu'on modifie un handout (fonctionne après l'ajout et la destruction d'un handout)
   // Du coup, alliesParPerso est toujours à jour
@@ -17076,7 +17078,8 @@ var COFantasy = COFantasy || function() {
         CHA: {
           list: [],
           elts: new Set()
-        }
+        },
+        nombre: 0
       };
       hand.get('notes', function(note) { // asynchronous
         var carac; //La carac dont on spécifie les compétences actuellement
@@ -17100,6 +17103,7 @@ var COFantasy = COFantasy || function() {
             if (comp.length === 0) return;
             comp = comp.replace(/_/g, ' ');
             listeCompetences[carac].list.push(comp);
+            listeCompetences.nombre++;
             listeCompetences[carac].elts.add(comp.toLowerCase());
           });
         });
@@ -33012,7 +33016,8 @@ on('ready', function() {
         CON: [],
         SAG: [],
         INT: [],
-        CHA: []
+        CHA: [],
+        nombre: 0
       };
       handhoutComp.get('notes', function(note) { // asynchronous
         var carac; //La carac dont on spécifie les compétences actuellement
@@ -33040,6 +33045,7 @@ on('ready', function() {
           comps.forEach(function(comp) {
             if (comp.length === 0) return;
             listeCompetences[carac].push(comp);
+            listeCompetences.nombre++;
           });
         });
         var compToCarac = {};
