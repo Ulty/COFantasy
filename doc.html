@@ -725,27 +725,6 @@
                   </ul>
                 </div>
                 <p>Pour les PNJs, qui n'ont pas encore d'onglet d'équipement, le script regarde tous les attributs qui commencent par <code>dose_</code>, <code>elixir_</code> ou <code>consommable_</code>. Pour ces attributs, la valeur courante doit être le nombre d'éléments possédé, et le max peut être une commande à effectuer pour activer l'effet. La fonction est à réserver aux tokens liés à un personnage. Il est aussi possible de simplement écrire un message qui s'affichera (et diminuera la quantité de consommables).</p>
-                <div class="alert alert-success">
-                  <p><strong>Exemple de consommables, à ajouter dans la case Effet d'un consommable du personnage :</strong></p>
-                  <ul>
-                    <li>
-                      Potions de soins légers
-                      <ul>
-                        <li>Name : <code>dose_Potion soins légers</code></li>
-                        <li>Current : <code>1</code> (la quantité)</li>
-                        <li>Max : <code>!cof-soin @{selected|token_id} @{selected|token_id} 1D8+@{selected|niveau}</code></li>
-                      </ul>
-                    </li>
-                    <li>
-                      Parchemin Flèche enflammée
-                      <ul>
-                        <li>Name : <code>dose_Parch. Flèche enflammée</code></li>
-                        <li>Current : <code>1</code> (la quantité)</li>
-                        <li>Max : <code>!cof-attack @{selected|token_id} @{target|token_id} ["Flèche_Enflammée",["@{selected|ATKCAC}",0],20,[1,6,"@{selected|SAG}",0],30] --fx beam-fire --feu --sortilege --enflamme</code></li>
-                      </ul>
-                    </li>
-                  </ul>
-                </div>
                 <p>L'échange via le symbole <span class="text-danger"><strong>&#8596;</strong></span> vous permettra de sélectionner un token destinataire qui recevra le consommable dans sa liste. Si le consommable existe déjà pour le destinataire, sa quantité sera augmenté de 1, sinon le consommable sera créé.</p>
                 <div class="alert alert-secondary">
                 <p>Cette fonction peut-être très utile pour que les PJ échangent entre eux un consommable, mais aussi pour faciliter la vente d'objet entre PNJ et PJ.</p>
