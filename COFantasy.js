@@ -2613,6 +2613,23 @@ var COFantasy = COFantasy || function() {
         if (p >= 0) weaponStats.arbalete = true;
       }
     }
+    //Informations dans le champ spécial
+    var parse = weaponStats.divers.split(' ');
+    var lastParsed;
+    parse.forEach(function(p) {
+      p = p.trim();
+      if (p === '') return;
+      if (p.startsWith('+') && lastParsed == 'DEF') {
+        var bonus = parseInt(p.substring(1));
+        if (!isNaN(bonus) && bonus > 0) {
+          weaponStats.bonusDef = weaponStats.bonusDef || 0;
+          weaponStats.bonusDef += bonus;
+          lastParsed = undefined;
+          return;
+        }
+      }
+      lastParsed = p;
+    });
     return weaponStats;
   }
 
@@ -3066,7 +3083,7 @@ var COFantasy = COFantasy || function() {
       display.endColumn = false;
     } else if (newLine) display.output += '</tr><tr>';
     var color = '#FFF';
-    if (fond) color =  "#d3d3d3";
+    if (fond) color = "#d3d3d3";
     display.output += '<td style="background-color: ' + color + '; font-size: ' + size + '%;">' + cell + '</td>';
   }
 
@@ -3833,7 +3850,7 @@ var COFantasy = COFantasy || function() {
         overlay = 'Charisme';
         break;
     }
-    var charButtonStyle = ' style="border-radius:10px;" title="'+overlay+'"';
+    var charButtonStyle = ' style="border-radius:10px;" title="' + overlay + '"';
     var cell = boutonSimple(action, pictoCarac, charButtonStyle);
     addCellInFramedDisplay(display, cell, 150, true, fond);
     var comps = [...listeCompetences[carac].list];
@@ -7413,6 +7430,16 @@ var COFantasy = COFantasy || function() {
     if (options.pacteSanglantDef && options.pacteSanglantDef[target.token.id]) {
       explications.push("Pacte Sanglant => +" + options.pacteSanglantDef[target.token.id] + " en DEF");
       defense += options.pacteSanglantDef[target.token.id];
+    }
+    var defArme = charAttributeAsInt(target, 'armeBonusDef', 0);
+    if (defArme > 0) {
+      explications.push("Arme de parade en main => +" + defArme + " en DEF");
+      defense += defArme;
+    }
+    defArme = charAttributeAsInt(target, 'armeGaucheBonusDef', 0);
+    if (defArme > 0) {
+      explications.push("Arme de parade en main gauche => +" + defArme + " en DEF");
+      defense += defArme;
     }
     if (target.realCharId) target.charId = target.realCharId;
     return defense;
@@ -12266,7 +12293,9 @@ var COFantasy = COFantasy || function() {
       _type: 'attribute',
       _characterid: perso.charId,
       name: carac + '_SUP'
-    }, {caseInsensitive: true});
+    }, {
+      caseInsensitive: true
+    });
     if (typeJet.length === 0) return 1;
     typeJet = typeJet[0].get('current');
     switch (typeJet) {
@@ -18725,16 +18754,16 @@ var COFantasy = COFantasy || function() {
     var message = perso.token.get('name') + " ";
     if (armeActuelle.length > 0) {
       armeActuelle = armeActuelle[0];
-      if (options.gauche) labelArmeActuelle = armeActuelle.get('max');
+      if (options.gauche) labelArmeActuelleGauche = armeActuelle.get('max');
       else {
         labelArmeActuelle = armeActuelle.get('current');
         labelArmeActuelleGauche = armeActuelle.get('max');
       }
-      if (labelArmeActuelle == labelArme) {
+      if (labelArmeActuelle == labelArme ||
+        (options.gauche && labelArmeActuelleGauche == labelArme)) {
         //Pas besoin de dégainer. Pas de message ?
         if (options.weaponStats) return options.weaponStats.name;
-        ancienneArme = getWeaponStats(perso, labelArmeActuelle);
-        if (ancienneArme) return ancienneArme.name;
+        if (nouvelleArme) return nouvelleArme.name;
         return;
       }
       //On dégaine une nouvelle arme
@@ -18742,6 +18771,14 @@ var COFantasy = COFantasy || function() {
         ancienneArme = getWeaponStats(perso, labelArmeActuelle);
         if (attributeAsBool(perso, 'forgeron(' + labelArmeActuelle + ')')) {
           finDEffetDeNom(perso, 'forgeron(' + labelArmeActuelle + ')', evt);
+        }
+        if (ancienneArme.bonusDef) {
+          var attrBonusDef = tokenAttribute(perso, 'armeBonusDef');
+          if (attrBonusDef.length > 0) {
+            evt.deletedAttributes = evt.deletedAttributes || [];
+            evt.deletedAttributes.push(attrBonusDef[0]);
+            attrBonusDef[0].remove();
+          }
         }
         if (options.messages) message += "rengaine " + ancienneArme.name + " et ";
         else sendChar(perso.charId, "rengaine " + ancienneArme.name);
@@ -18751,10 +18788,19 @@ var COFantasy = COFantasy || function() {
           eteindreUneLumiere(perso, pageId, undefined, 'eclaire_' + labelArmeActuelle, evt);
         }
       }
-      if ((!nouvelleArme || nouvelleArme.deuxMains) && labelArmeActuelleGauche) {
+      if ((!nouvelleArme || nouvelleArme.deuxMains || options.gauche) &&
+        labelArmeActuelleGauche) {
         var ancienneArmeGauche = getWeaponStats(perso, labelArmeActuelleGauche);
         if (attributeAsBool(perso, 'forgeron(' + labelArmeActuelleGauche + ')')) {
           finDEffetDeNom(perso, 'forgeron(' + labelArmeActuelleGauche + ')', evt);
+        }
+        if (ancienneArmeGauche.bonusDef) {
+          var attrBonusDefGauche = tokenAttribute(perso, 'armeGaucheBonusDef');
+          if (attrBonusDefGauche.length > 0) {
+            evt.deletedAttributes = evt.deletedAttributes || [];
+            evt.deletedAttributes.push(attrBonusDefGauche[0]);
+            attrBonusDefGauche[0].remove();
+          }
         }
         if (options.messages) {
           if (ancienneArme) message += ancienneArmeGauche.name + " et ";
@@ -18787,6 +18833,13 @@ var COFantasy = COFantasy || function() {
         }
       }
       return;
+    }
+    if (nouvelleArme.bonusDef) {
+      if (nouvelleArme.armeGauche) {
+        setTokenAttr(perso, 'armeGaucheBonusDef', nouvelleArme.bonusDef, evt);
+      } else {
+        setTokenAttr(perso, 'armeBonusDef', nouvelleArme.bonusDef, evt);
+      }
     }
     if (nouvelleArme.deuxMains) {
       if (ficheAttributeAsBool(perso, 'DEFBOUCLIER', false) &&
