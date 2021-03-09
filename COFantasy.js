@@ -6050,9 +6050,10 @@ var COFantasy = COFantasy || function() {
     attack(playerId, attaquant, targetToken, weaponStats, options);
   }
 
-  // Fait dépenser de la mana, et si pas possible, retourne false
-  function depenseMana(personnage, cout, msg, evt) {
-    if (isNaN(cout) || cout === 0) return true;
+  function depenseManaPossible(personnage, cout, msg) {
+    if (isNaN(cout) || cout === 0) return {
+      cout_nul: true
+    };
     var token = personnage.token;
     var charId = personnage.charId;
     var manaAttr = findObjs({
@@ -6081,7 +6082,8 @@ var COFantasy = COFantasy || function() {
         (!reglesOptionelles.mana.val.contrecoup.val && !reglesOptionelles.mana.val.brulure_de_magie.val && bar2 < cout)) {
         sendChar(charId, " n'a pas assez de points de mana pour " + msg);
         return false;
-      } else if (bar2 < cout && (reglesOptionelles.mana.val.contrecoup.val ||
+      }
+      if (bar2 < cout && (reglesOptionelles.mana.val.contrecoup.val ||
           reglesOptionelles.mana.val.brulure_de_magie.val)) {
         var degats = cout - bar2;
         if (reglesOptionelles.mana.val.brulure_de_magie.val) {
@@ -6089,30 +6091,53 @@ var COFantasy = COFantasy || function() {
           if (famille == "combattant") degats *= 2;
         }
         var bar1 = parseInt(token.get('bar1_value'));
-        var source = reglesOptionelles.mana.val.brulure_de_magie.val ? "de la Brûlure de Magie" : "du Contrecoup";
-        updateCurrentBar(personnage, 2, 0, evt);
-        updateCurrentBar(personnage, 1, bar1 - degats, evt);
-        var pre = (stateCOF.options.affichage.val.depense_mana.val && bar2 != 0) ? "Dépense " + bar2 + " PM et p" : "P";
-        sendChar(charId, pre + "erd " + degats + " PV à cause " + source + " pour " + msg);
-      } else {
-        if (stateCOF.options.affichage.val.depense_mana.val)
-          sendChar(charId, "Dépense " + cout + " PM pour " + msg);
-        updateCurrentBar(personnage, 2, bar2 - cout, evt);
-        var niveau = ficheAttributeAsInt(personnage, 'niveau', 1);
-        if (reglesOptionelles.mana.val.mana_totale.val) {
-          if (cout > niveau * 3) {
-            sendChar(charId, "Attention, la dépense totale de mana est supérieure au niveau * 3");
-          }
-        } else {
-          if (cout > niveau) {
-            sendChar(charId, "Attention, la dépense totale de mana est supérieure au niveau");
-          }
+        if (bar1 < degats) {
+          sendChar(charId, " n'a pas assez de points de mana et de PV pour " + msg);
+          return false;
         }
+        return {
+          pm: 0,
+          depense_pm: bar2,
+          pv: bar1 - degats,
+          depense_pv: degats
+        };
       }
-      return true;
+      return {
+        pm: bar2 - cout,
+        depense_pm: cout
+      };
     }
     sendChar(charId, " n'a pas de points de mana, action impossible");
     return false;
+  }
+
+  // Fait dépenser de la mana, dep doit contenir une dépense possible
+  function depenseMana(perso, dep, msg, evt) {
+    if (!dep || dep.cout_null) return;
+    updateCurrentBar(perso, 2, dep.pm, evt);
+    msg = msg || '';
+    if (dep.depense_pv) {
+      var source = reglesOptionelles.mana.val.brulure_de_magie.val ? "de la Brûlure de Magie" : "du Contrecoup";
+      updateCurrentBar(perso, 1, dep.pv, evt);
+      var pre = 'P';
+      if (stateCOF.options.affichage.val.depense_mana.val && dep.depense_pm > 0)
+        pre = "Dépense " + dep.depense_pm + " PM et p";
+      sendChar(perso.charId, pre + "erd " + dep.depense_pv + " PV à cause " + source + " pour " + msg);
+    } else {
+      if (stateCOF.options.affichage.val.depense_mana.val)
+        sendChar(perso.charId, "Dépense " + dep.depense_pm + " PM pour " + msg);
+    }
+    var niveau = ficheAttributeAsInt(perso, 'niveau', 1);
+    if (reglesOptionelles.mana.val.mana_totale.val) {
+      if (dep.depense_pm > niveau * 3) {
+        sendChar(perso.charId, "Attention, la dépense totale de mana est supérieure au niveau * 3");
+      }
+    } else {
+      if (dep.depense_pm > niveau) {
+        sendChar(perso.charId, "Attention, la dépense totale de mana est supérieure au niveau");
+      }
+    }
+    return;
   }
 
   function parseSave(cmd) {
@@ -8026,11 +8051,13 @@ var COFantasy = COFantasy || function() {
   //Retourne true si il existe une limite qui empêche de lancer le sort
   //N'ajoute pas l'événement à l'historique
   function limiteRessources(personnage, options, defResource, msg, evt) {
+    var depMana = {
+      cout_null: true
+    };
     if (options.mana) {
       if (personnage) {
-        if (!depenseMana(personnage, options.mana, msg, evt)) {
-          return true;
-        }
+        depMana = depenseManaPossible(personnage, options.mana, msg);
+        if (!depMana) return true;
       } else {
         error("Impossible de savoir qui doit dépenser de la mana", options);
         return true;
@@ -8127,6 +8154,7 @@ var COFantasy = COFantasy || function() {
       });
       attr.set('current', oldval - 1);
     }
+    if (personnage) depenseMana(personnage, depMana, msg, evt);
     return false;
   }
 
@@ -23453,9 +23481,7 @@ var COFantasy = COFantasy || function() {
       }
     };
     addEvent(evt);
-    if (!depenseMana(lanceur, options.mana, "lancer une destruction des mort-vivants", evt)) {
-      return;
-    }
+    if (limiteRessources(lanceur, options, 'destructionDesMortsVivants', "lancer une destruction des mort-vivants", evt)) return;
     var display = startFramedDisplay(options.playerId,
       "<b>Sort :<b> destruction des morts-vivants", lanceur);
     var name = lanceur.token.get('name');
