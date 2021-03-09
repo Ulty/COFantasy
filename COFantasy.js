@@ -27310,6 +27310,7 @@ var COFantasy = COFantasy || function() {
       error("Token invalide", cmd);
       return;
     }
+    pageId = pageId || perso.token.get('pageid');
     var diminueDuree = 0;
     if (cmd.length > 2) {
       //Dans ce cas, c'est pour diminuer la durée de vie de la torche
