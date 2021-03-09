@@ -80,6 +80,11 @@ var COFantasy = COFantasy || function() {
               explications: "La capacité interchangeable donne moins de DEF mais plus d'attaque",
               val: true,
               type: 'bool'
+            },
+            coups_critiques_etendus: {
+              explications: "Coup critique à une attaque dès qu'elle dépasse DEF + 10",
+              val: false,
+              type: 'bool'
             }
           }
         },
@@ -10137,7 +10142,8 @@ var COFantasy = COFantasy || function() {
                 } else touche = false;
                 echecCritique = true;
               } else if ((paralyse || options.ouvertureMortelle || d20roll == 20 ||
-                  (d20roll >= target.crit && attackRoll >= defense)) && !options.attaqueAssuree) {
+                  (d20roll >= target.crit && attackRoll >= defense) ||
+              (reglesOptionelles.divers.val.coups_critiques_etendus.val && attackRoll > defense + 9)) && !options.attaqueAssuree) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
                 attackResult += addAttackImg("imgAttackSuccesCritique", weaponStats.divers, options);
                 addAttackSound("soundAttackSuccesCritique", weaponStats.divers, options);
