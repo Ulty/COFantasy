@@ -21361,101 +21361,6 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  //Deprecated
-  function aoeSoin(msg) {
-    var args = msg.content.split(' ');
-    if (args.length < 2) {
-      error("Pas assez d'arguments pour !cof-aoe-soin: " + msg.content, args);
-      return;
-    }
-    var evt = {
-      type: 'soins'
-    };
-    var soigneur;
-    var soins;
-    var rollSoins;
-    if (args[1] == "groupe") {
-      if (msg.selected === undefined || msg.selected.length === 0) {
-        error("Il faut sélectionner un token qui lance le sort de soins de groupe", msg);
-        return;
-      }
-      if (msg.selected.length > 1) {
-        error("Plusieurs tokens sélectionnés comme lançant le sort de soins de groupe.", msg.selected);
-      }
-      var persoSoigneur = persoOfId(msg.selected[0]._id);
-      if (persoSoigneur === undefined) {
-        error("Le token sélectionné ne représente aucun personnage", tokSoigneur);
-        return;
-      }
-      var tokSoigneur = persoSoigneur.token;
-      var charIdSoigneur = persoSoigneur.charId;
-      var niveau = ficheAttributeAsInt(persoSoigneur, 'niveau', 1);
-      if (stateCOF.combat) {
-        var dejaSoigne = charAttributeAsBool(persoSoigneur, 'soinsDeGroupe');
-        if (dejaSoigne) {
-          sendChar(charIdSoigneur, " a déjà fait un soin de groupe durant ce combat");
-          return;
-        }
-        setTokenAttr(persoSoigneur, 'soinsDeGroupe', true, evt);
-      }
-      if (!depenseMana(persoSoigneur, 1, "lancer un soin de groupe", evt))
-        return;
-      if (msg.content.includes(' --puissant')) {
-        soins = rollDePlus(10, {
-          bonus: niveau
-        });
-      } else {
-        soins = rollDePlus(8, {
-          bonus: niveau
-        });
-      }
-      rollSoins = soins.roll;
-      soins = soins.val;
-      soigneur = getObj('character', charIdSoigneur);
-      if (soigneur === undefined) {
-        error("Fiche du soigneur introuvable");
-      }
-      msg.content += " --allies --self";
-    } else { // soin générique
-      soins = parseInt(args[1]);
-      rollSoins = soins;
-      if (isNaN(soins) || soins < 1) {
-        error(
-          "L'argument de !cof-aoe-soin doit être un nombre positif",
-          msg.content);
-        return;
-      }
-    }
-    if (soins <= 0) {
-      sendChat('', "Pas de soins (total de soins " + rollSoins + ")");
-      return;
-    }
-
-    var action = "Soins de groupe (" + rollSoins + ")";
-    getSelected(msg, function(selected, playerId) {
-      var display = startFramedDisplay(playerId, action, soigneur);
-      if (selected.length === 0) {
-        addLineToFramedDisplay(display, "Aucune cible sélectionnée pour le soin");
-        sendChat("", endFramedDisplay(display));
-        addEvent(evt);
-        return;
-      }
-      iterSelected(selected, function(perso) {
-        var name = perso.token.get('name');
-        var callMax = function() {
-          addLineToFramedDisplay(display, "<b>" + name + "</b> : Pas besoin de soins.");
-        };
-        var callTrue = function(soinsEffectifs) {
-          addLineToFramedDisplay(display,
-            "<b>" + name + "</b> : + " + soinsEffectifs + " PV");
-        };
-        soigneToken(perso, soins, evt, callTrue, callMax);
-      });
-      sendChat("", endFramedDisplay(display));
-      addEvent(evt);
-    });
-  }
-
   function removeConsommables(nom, evt, attrs) {
     var prefixes = new Set();
     var empty = true;
@@ -22281,68 +22186,31 @@ var COFantasy = COFantasy || function() {
 
 
   function ombreMortelle(msg) {
-    var args = msg.content.split(' ');
-    if (args.length < 4) {
-      error("Pas assez d'arguments pour " + args[0], args);
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 4) {
+      error("Pas assez d'arguments pour " + cmd[0], cmd);
       return;
     }
-    var lanceur = persoOfId(args[1], args[1]);
+    var lanceur = persoOfId(cmd[1], cmd[1]);
     if (lanceur === undefined) {
-      error("Le premier argument n'est pas un token valide", args[1]);
+      error("Le premier argument n'est pas un token valide", cmd[1]);
       return;
     }
-    var pageId = lanceur.token.get('pageid');
-    var cible = persoOfId(args[2], args[2], pageId);
+    var pageId = options.pageId || lanceur.token.get('pageid');
+    var cible = persoOfId(cmd[2], cmd[2], pageId);
     if (cible === undefined) {
-      error("La cible n'est pas un token valide", args[2]);
+      error("La cible n'est pas un token valide", cmd[2]);
       return;
     }
     cible.name = cible.token.get('name');
-    var duree = parseInt(args[3]);
+    var duree = parseInt(cmd[3]);
     if (isNaN(duree) || duree <= 0) {
-      error("La durée doit être un nombre positif", args);
+      error("La durée doit être un nombre positif", cmd);
       return;
     }
-    var image = stateCOF.options.images.val.image_ombre.val;
-    var options = {};
-    var opts = msg.content.split(' --');
-    opts.shift();
-    opts.forEach(function(option) {
-      var cmd = option.split(' ');
-      switch (cmd[0]) {
-        case 'portee':
-          if (cmd.length < 2) {
-            error("Il manque l'argument de --portee", msg.content);
-            return;
-          }
-          options.portee = parseInt(cmd[1]);
-          if (isNaN(options.portee) || options.portee < 0) {
-            error("La portée doit être un nombre positif", cmd);
-            delete options.portee;
-          }
-          return;
-        case 'mana':
-          if (cmd.length < 2) {
-            error("Il manque l'argument de --mana", msg.content);
-            return;
-          }
-          options.mana = parseInt(cmd[1]);
-          if (isNaN(options.mana) || options.mana < 0) {
-            error("Le coût en mana doit être un nombre positif", cmd);
-            delete options.mana;
-          }
-          return;
-        case 'image':
-          if (cmd.length < 2) {
-            error("Il manque l'argument de --image", msg.content);
-            return;
-          }
-          image = cmd[1];
-          return;
-        default:
-          return;
-      }
-    });
+    var image = options.image || stateCOF.options.images.val.image_ombre.val;
     if (options.portee !== undefined) {
       var distance = distanceCombat(lanceur.token, cible.token, pageId);
       if (distance > options.portee) {
@@ -22354,14 +22222,12 @@ var COFantasy = COFantasy || function() {
     var evt = {
       type: "Ombre mortelle"
     };
-    if (options.mana) {
-      var msgMana = "invoquer une ombre mortelle";
-      if (!depenseMana(lanceur, options.mana, msgMana, evt)) return;
-    }
+    var msgRes = "invoquer une ombre mortelle";
+    if (limiteRessources(lanceur, options, "Ombre_mortelle", msgRes, evt)) return;
     copieToken(cible, image, stateCOF.options.images.val.image_ombre.val, "Ombre de " + cible.name, 'ombreMortelle', duree, pageId, evt);
-    sendChar(lanceur.charId,
-      "anime l'ombre de " + cible.name + ". Celle-ci commence à attaquer " +
-      cible.name + "&nbsp;!");
+    var msgOmbre = "anime l'ombre de " + cible.name + ". Celle-ci commence à attaquer " + cible.name + "&nbsp;!";
+    if (options.secret) whisperChar(lanceur.charId, msgOmbre);
+    else sendChar(lanceur.charId, msgOmbre);
     addEvent(evt);
   }
 
@@ -28337,11 +28203,13 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-set-attribute", cmd);
       return;
     }
-    var opt = {secret:options.secret};
+    var opt = {
+      secret: options.secret
+    };
     if (cmd.length > 3) {
       opt.maxVal = cmd[3];
     }
-    if (options.messages && options.messages.length > 0) 
+    if (options.messages && options.messages.length > 0)
       opt.msg = options.messages[0];
     getSelected(msg, function(selected, playerId) {
       if (!playerIsGM(playerId)) {
@@ -29337,9 +29205,6 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-soin":
         soigner(msg);
-        return;
-      case "!cof-aoe-soin": //Deprecated
-        aoeSoin(msg);
         return;
       case "!cof-nature-nourriciere":
         parseNatureNourriciere(msg);
