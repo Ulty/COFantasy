@@ -19245,7 +19245,7 @@ var COFantasy = COFantasy || function() {
         }
       }
       if (lanceur && options.tempeteDeMana) {
-        if (options.tempeteDeMana.cout === 0) {
+        if (duree > 0 && options.tempeteDeMana.cout === 0) {
           //On demande de préciser les options
           var optMana = {
             mana: options.mana,
