@@ -7516,7 +7516,7 @@ var COFantasy = COFantasy || function() {
     if (options.semonce) {
       attBonus += 5;
     }
-    if (!options.pasDeDmg) {
+    if (!options.pasDeDmg && !options.feinte) {
       if (ficheAttributeAsBool(attaquant, 'attaque_en_puissance_check')) {
         options.attaqueEnPuissance = ficheAttributeAsInt(attaquant, 'attaque_en_puissance', 1);
       }
@@ -7886,12 +7886,22 @@ var COFantasy = COFantasy || function() {
     }
     var attrFeinte = tokenAttribute(target, 'feinte_' + attaquant.tokName);
     if (attrFeinte.length > 0 && attrFeinte[0].get('current')) {
-      var bonusFeinte = charAttributeAsInt(attaquant, 'bonusFeinte', 5);
+      var bonusFeinte = 5;
+      var attrBonusFeinte = charAttribute(attaquant.charId, 'bonusFeinte');
+      if (attrBonusFeinte.length > 0) {
+        bonusFeinte = parseInt(attrBonusFeinte[0].get('current'));
+        if (isNaN(bonusFeinte) || bonusFeinte < 0) bonusFeinte = 5;
+      }
       attBonus += bonusFeinte;
       var msgFeinte = "Feinte => +" + bonusFeinte + " en attaque";
       if (attrFeinte[0].get('max')) {
-        target.feinte = 2;
-        if (!options.pasDeDmg) msgFeinte += " et +2d6 DM";
+        var desFeinte = 2;
+        if (attrBonusFeinte.length > 0) {
+          desFeinte = parseInt(attrBonusFeinte[0].get('max'));
+          if (isNaN(desFeinte) || desFeinte < 0) desFeinte = 2;
+        }
+        target.feinte = desFeinte;
+        if (!options.pasDeDmg) msgFeinte += " et +" + desFeinte + "d6 DM";
       }
       explications.push(msgFeinte);
     }
@@ -10143,7 +10153,7 @@ var COFantasy = COFantasy || function() {
                 echecCritique = true;
               } else if ((paralyse || options.ouvertureMortelle || d20roll == 20 ||
                   (d20roll >= target.crit && attackRoll >= defense) ||
-              (reglesOptionelles.divers.val.coups_critiques_etendus.val && attackRoll > defense + 9)) && !options.attaqueAssuree) {
+                  (reglesOptionelles.divers.val.coups_critiques_etendus.val && attackRoll > defense + 9)) && !options.attaqueAssuree) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
                 attackResult += addAttackImg("imgAttackSuccesCritique", weaponStats.divers, options);
                 addAttackSound("soundAttackSuccesCritique", weaponStats.divers, options);
@@ -10870,18 +10880,16 @@ var COFantasy = COFantasy || function() {
   }
 
   function attackDealDmg(attaquant, ciblesTouchees, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles) {
-    if (cibles.length > ciblesTouchees.length) {
-      cibles.forEach(function(target) {
-        if (options.test || options.feinte || !target.touche) {
-          //On a fini avec cette cible, on imprime ce qui la concerne
-          if (target.attackMessage)
-            addLineToFramedDisplay(display, target.attackMessage);
-          target.messages.forEach(function(expl) {
-            addLineToFramedDisplay(display, expl, 80);
-          });
-        }
-      });
-    }
+    cibles.forEach(function(target) {
+      if (options.test || options.feinte || !target.touche) {
+        //On a fini avec cette cible, on imprime ce qui la concerne
+        if (target.attackMessage)
+          addLineToFramedDisplay(display, target.attackMessage);
+        target.messages.forEach(function(expl) {
+          addLineToFramedDisplay(display, expl, 80);
+        });
+      }
+    });
     if (ciblesTouchees.length === 0 || options.test || options.feinte) {
       finaliseDisplay(display, explications, evt, attaquant, cibles, options, echecCritique);
       if (echecCritique) {
