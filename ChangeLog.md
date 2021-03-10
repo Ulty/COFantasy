@@ -22,6 +22,7 @@
 * Support d'Invocation d'un démon (nécromancien)
 
 ### Autres améliorations
+* Implémentation de la règle de coups critiques étendus (dans les options, catégorie divers).
 * Pas de dépense de mana si une autre contrainte de resource rend une action impossible.
 * Prise en compte de l'option --secret pour !cof-bonus-couvert
 * Armes avec bonus de DEF

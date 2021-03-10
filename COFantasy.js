@@ -21784,9 +21784,15 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (limiteRessources(lanceur, options, undefined, "lancer un sort", evt)) return;
-        options.messages.forEach(function(m) {
-          whisperChar(lanceur.charId, m);
-        });
+        if (options.secret) {
+          options.messages.forEach(function(m) {
+            whisperChar(lanceur.charId, m);
+          });
+        } else {
+          options.messages.forEach(function(m) {
+            sendChar(lanceur.charId, m);
+          });
+        }
       });
     });
   }
