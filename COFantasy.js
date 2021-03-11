@@ -7894,14 +7894,22 @@ var COFantasy = COFantasy || function() {
       }
       attBonus += bonusFeinte;
       var msgFeinte = "Feinte => +" + bonusFeinte + " en attaque";
-      if (attrFeinte[0].get('max')) {
-        var desFeinte = 2;
-        if (attrBonusFeinte.length > 0) {
-          desFeinte = parseInt(attrBonusFeinte[0].get('max'));
-          if (isNaN(desFeinte) || desFeinte < 0) desFeinte = 2;
+      if (attrFeinte[0].get('max')) { //La feinte avait touché cette cible
+        var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
+        if (faireMouche > 0) {
+          if (!options.pasDeDmg) {
+            target.faireMouche = faireMouche;
+            msgFeinte += " et peut faire mouche";
+          }
+        } else {
+          var desFeinte = 2;
+          if (attrBonusFeinte.length > 0) {
+            desFeinte = parseInt(attrBonusFeinte[0].get('max'));
+            if (isNaN(desFeinte) || desFeinte < 0) desFeinte = 2;
+          }
+          target.feinte = desFeinte;
+          if (!options.pasDeDmg) msgFeinte += " et +" + desFeinte + "d6 DM";
         }
-        target.feinte = desFeinte;
-        if (!options.pasDeDmg) msgFeinte += " et +" + desFeinte + "d6 DM";
       }
       explications.push(msgFeinte);
     }
@@ -10159,15 +10167,9 @@ var COFantasy = COFantasy || function() {
                 addAttackSound("soundAttackSuccesCritique", weaponStats.divers, options);
                 touche = true;
                 critique = true;
-                if (attributeAsBool(target, 'enerve')) {
+                if (!target.faireMouche && attributeAsBool(target, 'enerve')) {
                   var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
-                  if (faireMouche > 0) {
-                    target.additionalDmg.push({
-                      type: mainDmgType,
-                      value: faireMouche + options.d6
-                    });
-                    target.messages.push(attaquant.tokName + " profite de l'ouverture et sont attaque fait mouche !");
-                  }
+                  if (faireMouche > 0) target.faireMouche = faireMouche;
                 }
               } else if (options.champion || d20roll == 20 || paralyse) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
@@ -11260,6 +11262,13 @@ var COFantasy = COFantasy || function() {
               value: valueSournoise
             });
           }
+        }
+        if (target.faireMouche) {
+          target.additionalDmg.push({
+            type: mainDmgType,
+            value: target.faireMouche + options.d6
+          });
+          target.messages.push(attaquant.tokName + " profite de l'ouverture et son attaque fait mouche !");
         }
         if (target.chasseurEmerite) {
           attDMBonus += "+2";
