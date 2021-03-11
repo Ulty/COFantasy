@@ -4076,7 +4076,6 @@ var COFantasy = COFantasy || function() {
     var page;
     var murs;
     var pt;
-    var target;
     var finalCall = function() {
       called = true;
       var seen = new Set();
@@ -4088,7 +4087,7 @@ var COFantasy = COFantasy || function() {
         });
         return (interdit === undefined);
       });
-      callback(res, playerId, target);
+      callback(res, playerId);
     };
     if (args.length > 1) {
       args.shift();
@@ -4221,10 +4220,6 @@ var COFantasy = COFantasy || function() {
               return;
             }
             var tokenCentre = centre.token;
-            target = {
-              left: tokenCentre.get('left'),
-              top: tokenCentre.get('top')
-            };
             var rayon = parseInt(cmdSplit[2]);
             if (isNaN(rayon) || rayon < 0) {
               error("Rayon du disque mal défini", cmdSplit);
@@ -4387,11 +4382,11 @@ var COFantasy = COFantasy || function() {
               });
               return (interdit === undefined);
             });
-            callback(res, playerId, target);
+            callback(res, playerId);
           }
           return;
         }
-        if (!called) callback([], playerId, target);
+        if (!called) callback([], playerId);
         return;
       }
       if (!called) finalCall();
