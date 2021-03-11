@@ -22,6 +22,11 @@
 * Support d'Invocation d'un démon (nécromancien)
 
 ### Autres améliorations
+* Joli coup permet d'ignorer les bonus de couvert.
+* Implémentation de la règle de coups critiques étendus (dans les options, catégorie divers).
+* Pas de dépense de mana si une autre contrainte de resource rend une action impossible.
+* Prise en compte de l'option --secret pour !cof-bonus-couvert
+* Armes avec bonus de DEF
 * Possibilité d'afficher un message en cas de coup critique reçu.
 * Ajout d'un effet temporaire effetRetarde
 * Les aires d'effet en disque ne passent plus les murs.
