@@ -7368,25 +7368,35 @@ var COFantasy = COFantasy || function() {
       explications.push("Suite à une attaque risquée, -4 en DEF");
     }
     //gestion de l'épieu
-    var armeTarget = armesEnMain(target); //peuple target.arme et armeGauche
-    if (armeTarget) {
-      if (armeTarget.name.search(/[ée]pieu/i) >= 0 || (armeTarget.divers && armeTarget.name.search(/[ée]pieu/i) >= 0)) {
-        var armeAttaquant = tokenAttribute(attaquant, 'armeEnMain');
-        if (armeAttaquant.length === 0) {
-          defense += 2;
-          explications.push("Épieu contre une attaque sans arme => +2 DEF");
+    if (attaquant) {
+      var armeTarget = armesEnMain(target); //peuple target.arme et armeGauche
+      if (armeTarget) {
+        if (armeTarget.name.search(/[ée]pieu/i) >= 0 || (armeTarget.divers && armeTarget.name.search(/[ée]pieu/i) >= 0)) {
+          var armeAttaquant = tokenAttribute(attaquant, 'armeEnMain');
+          if (armeAttaquant.length === 0) {
+            defense += 2;
+            explications.push("Épieu contre une attaque sans arme => +2 DEF");
+          }
         }
       }
     }
     if (options.distance) {
       var bonusCouvert = attributeAsInt(target, 'bonusCouvert');
       if (bonusCouvert) {
-        defense += bonusCouvert;
-        explications.push("Cible à couvert => +" + bonusCouvert + " DEF");
+        if (attaquant && charAttributeAsBool(attaquant, 'joliCoup')) {
+          explications.push("Cible à couvert, mais " + attaquant.tokName + " sait bien viser");
+        } else {
+          defense += bonusCouvert;
+          explications.push("Cible à couvert => +" + bonusCouvert + " DEF");
+        }
       }
       if (attributeAsBool(target, 'progresserACouvert')) {
-        defense += 5;
-        explications.push("Cible à couvert de bouclier => +5 DEF");
+        if (attaquant && charAttributeAsBool(attaquant, 'joliCoup')) {
+          explications.push("Cible à couvert de bouclier, mais " + attaquant.tokName + " sait bien viser");
+        } else {
+          defense += 5;
+          explications.push("Cible à couvert de bouclier => +5 DEF");
+        }
       }
     } else {
       if (charAttributeAsBool(target, 'ambidextreDuelliste')) {
