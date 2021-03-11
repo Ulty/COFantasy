@@ -1,4 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.17
+### Autres améliorations
+* Refactoring !cof-tenebres pour supporter les options de Mana (y compris Tempête de Mana)
+
 ## 2.16
 ### Capacités
 * Capacité de cyclone des élémentaires.
@@ -58,7 +62,7 @@
 * Mise à jour de l'initiative quand on rengaine son arme à distance avec la voie du pistolero.
 * Donne le droit au joueur qui doit faire une réaction à une attaque de ne pas réagir.
 * Les créatures qui enveloppent ou étreignent leur cible la relachent quand elle meurt.
-* Le script ne prennait pas en compte la sagesse de l'attaquant contre les créatures immunisées aux armes.
+* Le script ne prenait pas en compte la sagesse de l'attaquant contre les créatures immunisées aux armes.
 * Quand une créature peut résister avec SAG, INT ou CHA et qu'elle est sans esprit, alors on choisit cette caractéristique (car la réussite est alors automatique). Test un peu plus précoce pour la résistance à la peur.
 
 ## 2.15

@@ -10761,7 +10761,7 @@ var COFantasy = COFantasy || function() {
           if (ef.valeur === undefined) {
             var rd = 5 + modCarac(target, 'intelligence');
             var absorbe = 40;
-            if (options.tempeteDeManaIntence) {
+            if (options.tempeteDeManaIntense) {
               rd += options.tempeteDeManaIntense;
               absorbe += options.tempeteDeManaIntense * 5;
             }
@@ -21901,7 +21901,7 @@ var COFantasy = COFantasy || function() {
           var scale = computeScale(pageId);
           var diametre = PIX_PER_UNIT * (6 / scale);
           if (options.puissantPortee || options.tempeteDeManaPortee) diametre += diametre;
-          if (options.tempeteDeManaIntence)
+          if (options.tempeteDeManaIntense)
             diametre *= (1 + options.tempeteDeManaIntense);
           var imageFields = {
             _pageid: pageId,
@@ -26766,62 +26766,123 @@ var COFantasy = COFantasy || function() {
     }
     var necromant = persoOfId(cmd[1], cmd[1], options.pageId);
     if (necromant === undefined) {
-      error("Le premier argument de !cof-animer-arbre n'est pas un token valie", cmd);
+      error("Le premier argument de !cof-tenebres n'est pas un token valide", cmd);
+      return;
+    }
+    var targetToken = persoOfId(cmd[2], cmd[2], options.pageId);
+    if (targetToken === undefined) {
+      error("Le second argument de !cof-tenebres n'est pas un token valide", cmd);
       return;
     }
     options.lanceur = necromant;
-    getSelected(msg, function(selected, playerId, centre) {
-      var evt = {
-        type: 'tenebres'
-      };
-      addEvent(evt);
-      if (limiteRessources(necromant, options, 'tenebres', 'lancer un sort de ténèbres', evt)) return;
-      if (!stateCOF.combat) {
-        initPerso(necromant, evt);
+    if (options.tempeteDeMana) {
+      if (options.tempeteDeMana.cout === 0) {
+        //On demande de préciser les options
+        var optMana = {
+          mana: options.mana,
+          portee: true,
+          duree: true,
+          intense: 0,
+          rang: 1
+        };
+        setTempeteDeMana(getPlayerIdFromMsg(msg), options.lanceur, msg.content, optMana);
+        return;
+      } else {
+        if (options.tempeteDeMana.cout > 1) {
+          sendChar(necromant.charId, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
+        }
       }
-
-      var tokenTenebres = "Ténèbres de " + necromant.token.get('name');
-      var token = necromant.token;
-      if (centre) {
-        token = createObj('graphic', {
-          name: tokenTenebres,
-          showname: true,
-          subtype: 'token',
-          pageid: options.pageId,
-          imgsrc: 'https://s3.amazonaws.com/files.d20.io/images/192072874/eJXFx20fD931DuBDvzAnQQ/thumb.png?1610469273',
-          left: centre.left,
-          top: centre.top,
-          width: 70,
-          height: 70,
-          layer: 'objects',
-          aura1_radius: 0,
-          aura1_color: "#c1c114",
-          aura1_square: true,
-          aura2_radius: scaleDistance(necromant, 5),
-          aura2_color: "#000000",
-          showplayers_aura2: true
+    }
+    var portee = 20;
+    if (options.puissantPortee || options.tempeteDeManaPortee) {
+      portee = portee * 2;
+    }
+    var rayon = 5;
+    if (options.puissant || options.tempeteDeManaIntense) rayon = 7;
+    if (distanceCombat(necromant.token, targetToken.token, options.pageId, { strict2: true }) > portee) {
+      sendChar(necromant.charId, "Le point visé est trop loin (portée " + portee + ")");
+      return;
+    }
+    var duree = 5 + modCarac(necromant, "intelligence");
+    if (options.puissantDuree || options.tempeteDeManaDuree) {
+      duree = duree * 2;
+    }
+    var evt = {
+      type: 'tenebres'
+    };
+    addEvent(evt);
+    if (limiteRessources(necromant, options, 'tenebres', 'lancer un sort de ténèbres', evt)) return;
+    if (!stateCOF.combat) {
+      initPerso(necromant, evt);
+    }
+    var tokenTenebres = "Ténèbres de " + necromant.token.get('name');
+    var token = createObj('graphic', {
+      name: tokenTenebres,
+      showname: true,
+      subtype: 'token',
+      pageid: options.pageId,
+      imgsrc: 'https://s3.amazonaws.com/files.d20.io/images/192072874/eJXFx20fD931DuBDvzAnQQ/thumb.png?1610469273',
+      left: targetToken.token.get("left"),
+      top: targetToken.token.get("top"),
+      width: 70,
+      height: 70,
+      layer: 'objects',
+      aura1_radius: 0,
+      aura1_color: "#c1c114",
+      aura1_square: true,
+      aura2_radius: scaleDistance(necromant, rayon),
+      aura2_color: "#000000",
+      showplayers_aura2: true
+    });
+    evt.tokens = [token];
+    if (stateCOF.options.affichage.val.duree_effets.val) {
+      sendChar(necromant.charId, "lance un sort de ténèbres pour " + duree + " tours");
+    }
+    // Calcul des cibles à aveugler
+    var cibles = [];
+    var allToksDisque =
+        findObjs({
+          _type: "graphic",
+          _pageid: options.pageId,
+          _subtype: "token",
+          layer: "objects"
         });
-        evt.tokens = [token];
-      }
-      var duree = 5 + modCarac(necromant, "intelligence");
-      if (stateCOF.options.affichage.val.duree_effets.val) {
-        sendChar(necromant.charId, "lance un sort de ténèbres pour " + duree + "tours");
-      }
-      var effetAveugle = {
-        effet: 'aveugleTemp',
-        duree: duree
+    allToksDisque.forEach(function(obj) {
+      if (portee === 0 && obj.id == attackingToken.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
+      if (obj.get('bar1_max') == 0) return; // jshint ignore:line
+      var objCharId = obj.get('represents');
+      if (objCharId === '') return;
+      var cible = {
+        token: obj,
+        charId: objCharId
       };
-      iterSelected(selected, function(perso) {
-        setEffetTemporaire(perso, effetAveugle, duree, undefined, options.pageId, evt, {});
-      });
-      var effetTenebres = {
-        effet: 'tenebres',
-        duree: duree,
-        valeur: token.id,
-        pasDeMessageDActivation: true
-      };
-      setEffetTemporaire(necromant, effetTenebres, duree, necromant, options.pageId, evt, options);
-    }, options);
+      if (getState(cible, 'mort')) return; //pas de dégâts aux morts
+      var distanceCentre =
+          distanceCombat(targetToken.token, obj, options.pageId, {
+            strict1: true
+          });
+      if (distanceCentre > rayon) return;
+      var cible = persoOfId(obj.id);
+      cibles.push(cible);
+    });
+    var effetAveugle = {
+      effet: 'aveugleTemp',
+      duree: duree
+    };
+    cibles.forEach(function (perso){
+      setEffetTemporaire(perso, effetAveugle, duree, undefined, options.pageId, evt, {});
+    });
+    var effetTenebres = {
+      effet: 'tenebres',
+      duree: duree,
+      valeur: token.id,
+      pasDeMessageDActivation: true
+    };
+    setEffetTemporaire(necromant, effetTenebres, duree, necromant, options.pageId, evt, options);
+    if (targetToken.token.get('bar1_max') == 0) { // jshint ignore:line
+      //C'est juste un token utilisé pour définir le disque
+      targetToken.token.remove(); //On l'enlève, normalement plus besoin
+    }
   }
 
   var demonInvoque = {
@@ -32452,7 +32513,7 @@ on("destroy:handout", function(prev) {
 });
 
 on('ready', function() {
-  var scriptVersion = '2.16';
+  var scriptVersion = '2.17';
   on('add:token', COFantasy.addToken);
   on("change:graphic:statusmarkers", COFantasy.changeMarker);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
@@ -33234,6 +33295,21 @@ on('ready', function() {
       });
     }
     log("Mise à jour des attributs de compétence effectué");
+  }
+  if (state.COFantasy.version < 2.17) {
+    macros = findObjs({
+      _type: 'macro'
+    }).concat(findObjs({
+      _type: 'ability'
+    }));
+    macros.forEach(function(m) {
+      var macro = m.get("action");
+      var newMacro = macro.replace("!cof-tenebres @{selected|token_id} --disque @{target|token_id} 5 20",
+          "!cof-tenebres @{selected|token_id} @{target|token_id}")
+      if (macro !== newMacro)
+        m.set("action", newMacro);
+    });
+    log("Mise à jour des ability Ténèbres effectuée");
   }
   state.COFantasy.version = scriptVersion;
   if (state.COFantasy.options.affichage.val.fiche.val) {
