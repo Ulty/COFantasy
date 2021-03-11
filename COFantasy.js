@@ -10362,14 +10362,14 @@ var COFantasy = COFantasy || function() {
                     }
                   }
                   if (options.sortilege) {
-                    if (attributeAsInt(target, 'absorberUnSort', 0) > 0 &&
+                    if (attributeAsBool(target, 'absorberUnSort') &&
                       ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) == 1) {
                       options.preDmg = options.preDmg || {};
                       options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                       options.preDmg[target.token.id].absorberUnSort = true;
                     }
                   } else {
-                    if (attributeAsInt(target, 'absorberUnCoup', 0) > 0 &&
+                    if (attributeAsBool(target, 'absorberUnCoup') &&
                       ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) == 1) {
                       options.preDmg = options.preDmg || {};
                       options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
