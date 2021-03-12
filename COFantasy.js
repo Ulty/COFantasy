@@ -14734,6 +14734,9 @@ var COFantasy = COFantasy || function() {
             case "duree":
               options.puissantDuree = true;
               return;
+            case 'portee':
+              scope.puissantPortee = true;
+              return;
             default:
               error("Option puissant non reconnue", cmd);
           }
@@ -14954,10 +14957,11 @@ var COFantasy = COFantasy || function() {
           options.type = cmd[0];
           return;
         case 'bonus':
+        case 'rayon':
           if (cmd.length >= 2) {
-            var bonus = parseInt(cmd[1]);
-            if (!isNaN(bonus)) {
-              options.bonus = bonus;
+            var value = parseInt(cmd[1]);
+            if (!isNaN(value)) {
+              options[cmd[0]] = value;
             }
           }
           return;
@@ -26788,12 +26792,12 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    var portee = 20;
+    var portee = options.portee || 20;
     if (options.puissantPortee || options.tempeteDeManaPortee) {
       portee = portee * 2;
     }
-    var rayon = 5;
-    if (options.puissant || options.tempeteDeManaIntense) rayon = 7;
+    var rayon = options.rayon || 5;
+    if (options.puissant || options.tempeteDeManaIntense) rayon = Math.floor(Math.sqrt(2)*rayon);
     if (distanceCombat(necromant.token, targetToken.token, options.pageId, { strict2: true }) > portee) {
       sendChar(necromant.charId, "Le point visé est trop loin (portée " + portee + ")");
       return;
