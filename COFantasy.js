@@ -7889,34 +7889,36 @@ var COFantasy = COFantasy || function() {
         explications.push("Tueur de géant => +2 att. et 2d6 DM");
       target.tueurDeGeants = true;
     }
-    var attrFeinte = tokenAttribute(target, 'feinte_' + attaquant.tokName);
-    if (attrFeinte.length > 0 && attrFeinte[0].get('current')) {
-      var bonusFeinte = 5;
-      var attrBonusFeinte = charAttribute(attaquant.charId, 'bonusFeinte');
-      if (attrBonusFeinte.length > 0) {
-        bonusFeinte = parseInt(attrBonusFeinte[0].get('current'));
-        if (isNaN(bonusFeinte) || bonusFeinte < 0) bonusFeinte = 5;
-      }
-      attBonus += bonusFeinte;
-      var msgFeinte = "Feinte => +" + bonusFeinte + " en attaque";
-      if (attrFeinte[0].get('max')) { //La feinte avait touché cette cible
-        var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
-        if (faireMouche > 0) {
-          if (!options.pasDeDmg) {
-            target.faireMouche = faireMouche;
-            msgFeinte += " et peut faire mouche";
-          }
-        } else {
-          var desFeinte = 2;
-          if (attrBonusFeinte.length > 0) {
-            desFeinte = parseInt(attrBonusFeinte[0].get('max'));
-            if (isNaN(desFeinte) || desFeinte < 0) desFeinte = 2;
-          }
-          target.feinte = desFeinte;
-          if (!options.pasDeDmg) msgFeinte += " et +" + desFeinte + "d6 DM";
+    if (options.contact) {
+      var attrFeinte = tokenAttribute(target, 'feinte_' + attaquant.tokName);
+      if (attrFeinte.length > 0 && attrFeinte[0].get('current')) {
+        var bonusFeinte = 5;
+        var attrBonusFeinte = charAttribute(attaquant.charId, 'bonusFeinte');
+        if (attrBonusFeinte.length > 0) {
+          bonusFeinte = parseInt(attrBonusFeinte[0].get('current'));
+          if (isNaN(bonusFeinte) || bonusFeinte < 0) bonusFeinte = 5;
         }
+        attBonus += bonusFeinte;
+        var msgFeinte = "Feinte => +" + bonusFeinte + " en attaque";
+        if (attrFeinte[0].get('max')) { //La feinte avait touché cette cible
+          var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
+          if (faireMouche > 0) {
+            if (!options.pasDeDmg) {
+              target.faireMouche = faireMouche;
+              msgFeinte += " et peut faire mouche";
+            }
+          } else {
+            var desFeinte = 2;
+            if (attrBonusFeinte.length > 0) {
+              desFeinte = parseInt(attrBonusFeinte[0].get('max'));
+              if (isNaN(desFeinte) || desFeinte < 0) desFeinte = 2;
+            }
+            target.feinte = desFeinte;
+            if (!options.pasDeDmg) msgFeinte += " et +" + desFeinte + "d6 DM";
+          }
+        }
+        explications.push(msgFeinte);
       }
-      explications.push(msgFeinte);
     }
     if (attributeAsBool(target, 'expose')) {
       var attrsExposeValeur = tokenAttribute(target, "exposeValeur");
@@ -10010,9 +10012,6 @@ var COFantasy = COFantasy || function() {
                 value: '1d6'
               });
               removeTokenAttr(target, amm, evt);
-            } else if (attributeAsBool(attaquant, 'attaqueGratuiteAutomatique(' + target.token.id + ')')) {
-              options.auto = true;
-              removeTokenAttr(attaquant, 'attaqueGratuiteAutomatique(' + target.token.id + ')', evt);
             }
           }
           evalITE(attaquant, target, d20roll, options, 0, evt, explications, options, function() {
@@ -14259,6 +14258,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('aAgiAZeroPV', evt, attrs);
     attrs = removeAllAttributes('injonctionMortelle', evt, attrs);
     attrs = removeAllAttributes('cercleDeProtectionActif', evt, attrs);
+    attrs = removeAllAttributes('feinte', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -14735,7 +14735,7 @@ var COFantasy = COFantasy || function() {
               options.puissantDuree = true;
               return;
             case 'portee':
-              scope.puissantPortee = true;
+              options.puissantPortee = true;
               return;
             default:
               error("Option puissant non reconnue", cmd);
@@ -25956,8 +25956,8 @@ var COFantasy = COFantasy || function() {
           addLineToFramedDisplay(display, expl, 80);
         });
         if (dmSupp) {
-          addLineToFramedDisplay(display, attaquant.tokName + " fait en plus des dégâts à " + cible.tokName + " (lancer une attaque pour déterminer le montant)", 80);
-          setTokenAttr(attaquant, 'attaqueGratuiteAutomatique(' + cible.token.id + ')', true, evt);
+          var actionGratuite = "!cof-attack " + attaquant.token.id + " " + cible.token.id + " -1 --auto";
+          addLineToFramedDisplay(display, attaquant.tokName + " fait en plus des dégâts à " + cible.tokName + boutonSimple(actionGratuite, "lancer une attaque pour déterminer le montant"), 80);
         }
         sendChat("", endFramedDisplay(display));
         addEvent(evt);
@@ -26797,8 +26797,10 @@ var COFantasy = COFantasy || function() {
       portee = portee * 2;
     }
     var rayon = options.rayon || 5;
-    if (options.puissant || options.tempeteDeManaIntense) rayon = Math.floor(Math.sqrt(2)*rayon);
-    if (distanceCombat(necromant.token, targetToken.token, options.pageId, { strict2: true }) > portee) {
+    if (options.puissant || options.tempeteDeManaIntense) rayon = Math.floor(Math.sqrt(2) * rayon);
+    if (distanceCombat(necromant.token, targetToken.token, options.pageId, {
+        strict2: true
+      }) > portee) {
       sendChar(necromant.charId, "Le point visé est trop loin (portée " + portee + ")");
       return;
     }
@@ -26840,14 +26842,13 @@ var COFantasy = COFantasy || function() {
     // Calcul des cibles à aveugler
     var cibles = [];
     var allToksDisque =
-        findObjs({
-          _type: "graphic",
-          _pageid: options.pageId,
-          _subtype: "token",
-          layer: "objects"
-        });
+      findObjs({
+        _type: "graphic",
+        _pageid: options.pageId,
+        _subtype: "token",
+        layer: "objects"
+      });
     allToksDisque.forEach(function(obj) {
-      if (portee === 0 && obj.id == attackingToken.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
       if (obj.get('bar1_max') == 0) return; // jshint ignore:line
       var objCharId = obj.get('represents');
       if (objCharId === '') return;
@@ -26857,18 +26858,17 @@ var COFantasy = COFantasy || function() {
       };
       if (getState(cible, 'mort')) return; //pas de dégâts aux morts
       var distanceCentre =
-          distanceCombat(targetToken.token, obj, options.pageId, {
-            strict1: true
-          });
+        distanceCombat(targetToken.token, obj, options.pageId, {
+          strict1: true
+        });
       if (distanceCentre > rayon) return;
-      var cible = persoOfId(obj.id);
       cibles.push(cible);
     });
     var effetAveugle = {
       effet: 'aveugleTemp',
       duree: duree
     };
-    cibles.forEach(function (perso){
+    cibles.forEach(function(perso) {
       setEffetTemporaire(perso, effetAveugle, duree, undefined, options.pageId, evt, {});
     });
     var effetTenebres = {
@@ -33304,7 +33304,7 @@ on('ready', function() {
     macros.forEach(function(m) {
       var macro = m.get("action");
       var newMacro = macro.replace("!cof-tenebres @{selected|token_id} --disque @{target|token_id} 5 20",
-          "!cof-tenebres @{selected|token_id} @{target|token_id}")
+        "!cof-tenebres @{selected|token_id} @{target|token_id}");
       if (macro !== newMacro)
         m.set("action", newMacro);
     });
