@@ -6943,6 +6943,10 @@ var COFantasy = COFantasy || function() {
       if (malusNueeCriquets > 3)
         removeTokenAttr(personnage, 'nueeDeCriquetsTempeteDeManaIntense', evt);
     }
+    if (attributeAsBool(personnage, 'nueeDeScorpions')) {
+      attBonus -= 3;
+      explications.push("Nuée de scorpions => -3 en Attaque");
+    }
     if (attributeAsBool(personnage, 'etatExsangue')) {
       attBonus -= 2;
       explications.push("Exsangue => -2 en Attaque");
