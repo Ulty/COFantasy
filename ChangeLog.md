@@ -1,5 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.17
+### Capacités
+* Hors de portée (shaman scorpion)
+
 ### Autres améliorations
 * Refactoring !cof-tenebres pour supporter les options de Mana (y compris Tempête de Mana)
 

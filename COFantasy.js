@@ -7219,9 +7219,15 @@ var COFantasy = COFantasy || function() {
       defense += 5;
       explications.push(tokenName + " bénéficie d'un bouclier psi => +5 DEF");
     }
-    if (attributeAsBool(target, 'monteSur') && charAttributeAsBool(target, 'montureLoyale')) {
-      defense += 1;
-      explications.push(tokenName + " est sur une monture => +1 DEF");
+    if (attributeAsBool(target, 'monteSur')){
+      if (charAttributeAsBool(target, 'montureLoyale')) {
+        defense += 1;
+        explications.push(tokenName + " est sur une monture => +1 DEF");
+      }
+      if (options.contact && attributeAsBool(target, "horsDePortee")) {
+        defense += 5;
+        explications.push(tokenName + " est hors de portée sur sa monture => +5 DEF");
+      }
     }
     var attrsProtegePar = findObjs({
       _type: 'attribute',
