@@ -1,5 +1,9 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.17
+### Capacités
+* Cône de froid (doc)
+* Gros Monstre, grosse arme (Voie des armes à 2 mains)
+
 ### Autres améliorations
 * Refactoring !cof-tenebres pour supporter les options de Mana (y compris Tempête de Mana)
 
