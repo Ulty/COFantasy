@@ -11336,6 +11336,14 @@ var COFantasy = COFantasy || function() {
             target.messages.push("Cible énorme => +2d6 DM");
           }
         }
+        if (charAttributeAsBool(attaquant, "grosMonstreGrosseArme") &&
+            options.contact && weaponStats && weaponStats.typeAttaque === "Arme 2 mains") {
+          var targetTaille = taillePersonnage(target, 4);
+          if (targetTaille > 4) {
+            options.puissant = true;
+            target.messages.push("Gros Monstre, grosse arme => dégâts de base augmentés");
+          }
+        }
         if (!options.pasDeDmg) {
           var loupParmiLesLoups = charAttributeAsInt(attaquant, 'loupParmiLesLoups', 0);
           if (loupParmiLesLoups > 0 && estHumanoide(target)) {
