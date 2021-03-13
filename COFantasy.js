@@ -3161,6 +3161,10 @@ var COFantasy = COFantasy || function() {
       if (malusNueeCriquets > 3 && evt)
         removeTokenAttr(personnage, 'nueeDeCriquetsTempeteDeManaIntense', evt);
     }
+    if (attributeAsBool(personnage, 'nueeDeScorpions')) {
+      expliquer("Nuée de scorpions : -3 au jet");
+      bonus -= 3;
+    }
     if (attributeAsBool(personnage, 'etatExsangue')) {
       expliquer("Exsangue : -2 au jet");
       bonus -= 2;
@@ -29976,6 +29980,14 @@ var COFantasy = COFantasy || function() {
       prejudiciable: true,
       dm: true
     },
+    nueeDeScorpions: {
+      activation: "est attaqué par une nuée de scorpions",
+      activationF: "est attaquée par une nuée de scorpions",
+      actif: "est entouré d'une nuée de scorpions",
+      fin: "est enfin débarassé des scorpions",
+      prejudiciable: true,
+      dm: true
+    },
     toiles: {
       activation: "voit des toiles d'araignées apparaître tout autour",
       actif: "est bloqué par des toiles d'araignées",
@@ -31790,6 +31802,17 @@ var COFantasy = COFantasy || function() {
                   count--;
                   if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
                 });
+              return;
+            case 'nueeDeScorpions': //prend 1D6 DM
+              degatsParTour(charId, pageId, effet, attrName, {
+                    nbDe: 1,
+                    de: 6
+                  }, 'normal',
+                  "est piqué par les scorpions", evt, {},
+                  function() {
+                    count--;
+                    if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
+                  });
               return;
             case 'armeBrulante': //prend 1 DM
               degatsParTour(charId, pageId, effet, attrName, {
