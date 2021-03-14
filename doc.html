@@ -1635,16 +1635,18 @@
               </div>
               <h3 class="text-info" id="Prestige">4.2 Voies de prestige et capacités épiques</h3>
               <div class="decalage">
+                <h4 class="text-secondary">Voie des armes à deux mains</h4>
+                <ol>
+                  <li><strong>Gros Monstre, grosse arme</strong> : ajouter un attribut grosMonstreGrosseArme de valeur <code>true</code>.</li>
+                </ol>
                 <h4 class="text-secondary">Voie des vermines</h4>
                 <ol>
                   <li><strong>Nuée de criquets</strong> : ajouter une attaque magique, de portée 20 m. Puis appeler cette attaque (avec <code>!cof-attack</code>) avec les arguments <code>--pasDeDmg --sortilege --effet nueeDeCriquets [[5+@{selected|SAG}]]</code>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDeCriquets</code> sur la cible dans ce cas). Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. À noter que l'option <code>--mana 0</code> est là pour indiquer au script de terminer l'effet au cas où le druide meurt.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du gel</h4>
                 <ol>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li><strong>Présence glaciale</strong> : <code>!cof-effet presenceGlaciale oui --mana 2</code>. Utiliser <code>!cof-effet presenceGlaciale non</code> pour mettre fin à l'effet. On peut préciser un bonus de DEF et des dégâts différents avec l'option <code>--valeur</code>. Ainsi, la version grimoire sera <code>!cof-effet presenceGlaciale oui --valeur 3 1d4</code>.</li>
+                  <li><strong>3. Cône de froid</strong> : faire une attaque portee 20m, dégâts 2d6+INT de froid, avec comme modificateur <code>auto</code> et comme options <code>--cone 30 --fx breath-frost --ifSaveFails CON 13 --effet ralenti 1 --else --diviseDmg 2 --endif</code>. Pour un objet de sort : <code>!cof-attack @{selected|token_id} @{target|token_id} Cône de froid --sortilege --auto --dm 2d6+[[@{selected|INT}]] --froid --portee 20 --cone 30 --fx breath-frost --ifSaveFails CON 13 --effet ralentiTemp 1 --else --diviseDmg 2 --endif</code></li>
+                  <li><strong>4. Présence glaciale</strong> : <code>!cof-effet presenceGlaciale oui --mana 2</code>. Utiliser <code>!cof-effet presenceGlaciale non</code> pour mettre fin à l'effet. On peut préciser un bonus de DEF et des dégâts différents avec l'option <code>--valeur</code>. Ainsi, la version grimoire sera <code>!cof-effet presenceGlaciale oui --valeur 3 1d4</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du guérisseur</h4>
                 <ol>
@@ -1787,6 +1789,7 @@
                   <li><strong>Faucheuse de géants</strong>: ajouter le modifcateur <code>tueurDeGrands</code> aux attaques.</li>
                   <li><strong>Fièvre</strong> : pour ajouter encore une RD de 5 contre le feu, créez un attribut <code>fievreChene</code> de valeur <code>true</code>.</li>
                   <li><strong>Frénésie</strong> : Ajouter une attribut <code>frenesie</code> avec comme valeur le nombre de PV en-dessous duquel la créature devient frénétique (+2 aus jets d'attaque).</li>
+                  <li><strong>Hors de portée</strong> : ajouter un attribut <code>horsDePortee</code> avec comme valeur <code>true</code></li>
                   <li><strong>Huile de fort assaut</strong> : <code>!cof-effet-temp dmgArme(<i>L</i>) 10 --valeur 1d6</code> où <i>L</i> est le label de l'arme qu'on veut enduire d'huile de fort assaut.</li>
                   <li><strong>Hurlement</strong> : Pour les chiens infernaux, <code>!cof-peur [[10+?{Nombre de chiens?}]] [[2d4]] --portee 50 --equipe Joueurs</code>, et pour les fantômes, <code>!cof-peur 12 [[1d6]] --portee 10 --equipe Joueurs</code>. Pour l'instant, pas de prise en compte de l'immunité au hurlement apès avoir réussi son jet de SAG.</li>
                   <li><strong>Immunité aux armes</strong> : ajouter un attribut <code>immuniteAuxArmes</code> avec comme valeur <code>true</code></li>

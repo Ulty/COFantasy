@@ -7219,9 +7219,15 @@ var COFantasy = COFantasy || function() {
       defense += 5;
       explications.push(tokenName + " bénéficie d'un bouclier psi => +5 DEF");
     }
-    if (attributeAsBool(target, 'monteSur') && charAttributeAsBool(target, 'montureLoyale')) {
-      defense += 1;
-      explications.push(tokenName + " est sur une monture => +1 DEF");
+    if (attributeAsBool(target, 'monteSur')){
+      if (charAttributeAsBool(target, 'montureLoyale')) {
+        defense += 1;
+        explications.push(tokenName + " est sur une monture => +1 DEF");
+      }
+      if (options.contact && attributeAsBool(target, "horsDePortee")) {
+        defense += 5;
+        explications.push(tokenName + " est hors de portée sur sa monture => +5 DEF");
+      }
     }
     var attrsProtegePar = findObjs({
       _type: 'attribute',
@@ -11314,8 +11320,9 @@ var COFantasy = COFantasy || function() {
             value: target.feinte + options.d6
           });
         }
+        var targetTaille;
         if (options.tueurDeGrands) {
-          var targetTaille = taillePersonnage(target, 4);
+          targetTaille = taillePersonnage(target, 4);
           if (targetTaille == 5) {
             target.additionalDmg.push({
               type: mainDmgType,
@@ -11328,6 +11335,14 @@ var COFantasy = COFantasy || function() {
               value: '2d6'
             });
             target.messages.push("Cible énorme => +2d6 DM");
+          }
+        }
+        if (charAttributeAsBool(attaquant, "grosMonstreGrosseArme") &&
+            options.contact && weaponStats && weaponStats.typeAttaque === "Arme 2 mains") {
+          targetTaille = targetTaille || taillePersonnage(target, 4);
+          if (targetTaille > 4) {
+            options.puissant = true;
+            target.messages.push("Gros Monstre, grosse arme => dégâts de base augmentés");
           }
         }
         if (!options.pasDeDmg) {
@@ -13232,7 +13247,13 @@ var COFantasy = COFantasy || function() {
         if (target.ignoreTouteRD) rd = 0;
         else if (target.ignoreMoitieRD) rd = parseInt(rd / 2);
         if (target.ignoreRD) {
-          rd -= target.ignoreRD; //rd peut être négatif
+          if (target.ignoreRD > rd) {
+            target.ignoreRD -= rd;
+            rd = 0;
+          } else {
+            rd -= target.ignoreRD;
+            target.ignoreRD = 0;
+          }
         }
         //Option Max Rune de Protection
         if (target.utiliseRuneProtectionMax) {
