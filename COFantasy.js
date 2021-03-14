@@ -11320,8 +11320,9 @@ var COFantasy = COFantasy || function() {
             value: target.feinte + options.d6
           });
         }
+        var targetTaille;
         if (options.tueurDeGrands) {
-          var targetTaille = taillePersonnage(target, 4);
+          targetTaille = taillePersonnage(target, 4);
           if (targetTaille == 5) {
             target.additionalDmg.push({
               type: mainDmgType,
@@ -11338,7 +11339,7 @@ var COFantasy = COFantasy || function() {
         }
         if (charAttributeAsBool(attaquant, "grosMonstreGrosseArme") &&
             options.contact && weaponStats && weaponStats.typeAttaque === "Arme 2 mains") {
-          var targetTaille = taillePersonnage(target, 4);
+          targetTaille = targetTaille || taillePersonnage(target, 4);
           if (targetTaille > 4) {
             options.puissant = true;
             target.messages.push("Gros Monstre, grosse arme => dégâts de base augmentés");
@@ -13246,7 +13247,13 @@ var COFantasy = COFantasy || function() {
         if (target.ignoreTouteRD) rd = 0;
         else if (target.ignoreMoitieRD) rd = parseInt(rd / 2);
         if (target.ignoreRD) {
-          rd -= target.ignoreRD; //rd peut être négatif
+          if (target.ignoreRD > rd) {
+            target.ignoreRD -= rd;
+            rd = 0;
+          } else {
+            rd -= target.ignoreRD;
+            target.ignoreRD = 0;
+          }
         }
         //Option Max Rune de Protection
         if (target.utiliseRuneProtectionMax) {
