@@ -16775,6 +16775,7 @@ var COFantasy = COFantasy || function() {
           type: "Intervention divine",
           attributes: []
         };
+        if (limiteRessources(pretre, options, 'intervention divine', ' faire une intervention divine', evt)) return;
         evt.attributes.push({
           attribute: interventionDivine,
           current: curinterventionDivine
