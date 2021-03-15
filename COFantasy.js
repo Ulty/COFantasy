@@ -18203,6 +18203,14 @@ var COFantasy = COFantasy || function() {
               addLineToFramedDisplay(display, "ne peut plus faire de soin modéré aujourd'hui");
             }
           }
+          if (rangSoin > 3) {
+            var soinsGuerison = attributeAsInt(perso, 'limiteParJour_guérison', 1);
+            if (soinsGuerison) {
+              addLineToFramedDisplay(display, "peut encore faire " + soinsGuerison + "guérison"+(soinsGuerison>1?'s':'') + " aujourd'hui");
+            } else {
+              addLineToFramedDisplay(display, "ne peut plus faire de guérison aujourd'hui");
+            }
+          }
         }
         var ebriete = attributeAsInt(perso, 'niveauEbriete', 0);
         if (ebriete > 0 && ebriete < niveauxEbriete.length) {
