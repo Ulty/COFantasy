@@ -1,4 +1,13 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.17
+### Capacités
+* Cône de froid (doc)
+* Gros Monstre, grosse arme (Voie des armes à 2 mains)
+* Hors de portée (shaman scorpion)
+
+### Autres améliorations
+* Refactoring !cof-tenebres pour supporter les options de Mana (y compris Tempête de Mana)
+
 ## 2.16
 ### Capacités
 * Capacité de cyclone des élémentaires.
@@ -22,6 +31,11 @@
 * Support d'Invocation d'un démon (nécromancien)
 
 ### Autres améliorations
+* Joli coup permet d'ignorer les bonus de couvert.
+* Implémentation de la règle de coups critiques étendus (dans les options, catégorie divers).
+* Pas de dépense de mana si une autre contrainte de resource rend une action impossible.
+* Prise en compte de l'option --secret pour !cof-bonus-couvert
+* Armes avec bonus de DEF
 * Possibilité d'afficher un message en cas de coup critique reçu.
 * Ajout d'un effet temporaire effetRetarde
 * Les aires d'effet en disque ne passent plus les murs.
@@ -54,7 +68,7 @@
 * Mise à jour de l'initiative quand on rengaine son arme à distance avec la voie du pistolero.
 * Donne le droit au joueur qui doit faire une réaction à une attaque de ne pas réagir.
 * Les créatures qui enveloppent ou étreignent leur cible la relachent quand elle meurt.
-* Le script ne prennait pas en compte la sagesse de l'attaquant contre les créatures immunisées aux armes.
+* Le script ne prenait pas en compte la sagesse de l'attaquant contre les créatures immunisées aux armes.
 * Quand une créature peut résister avec SAG, INT ou CHA et qu'elle est sans esprit, alors on choisit cette caractéristique (car la réussite est alors automatique). Test un peu plus précoce pour la résistance à la peur.
 
 ## 2.15
