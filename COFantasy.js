@@ -3161,6 +3161,10 @@ var COFantasy = COFantasy || function() {
       if (malusNueeCriquets > 3 && evt)
         removeTokenAttr(personnage, 'nueeDeCriquetsTempeteDeManaIntense', evt);
     }
+    if (attributeAsBool(personnage, 'nueeDeScorpions')) {
+      expliquer("Nuée de scorpions : -3 au jet");
+      bonus -= 3;
+    }
     if (attributeAsBool(personnage, 'etatExsangue')) {
       expliquer("Exsangue : -2 au jet");
       bonus -= 2;
@@ -6939,6 +6943,10 @@ var COFantasy = COFantasy || function() {
       if (malusNueeCriquets > 3)
         removeTokenAttr(personnage, 'nueeDeCriquetsTempeteDeManaIntense', evt);
     }
+    if (attributeAsBool(personnage, 'nueeDeScorpions')) {
+      attBonus -= 3;
+      explications.push("Nuée de scorpions => -3 en Attaque");
+    }
     if (attributeAsBool(personnage, 'etatExsangue')) {
       attBonus -= 2;
       explications.push("Exsangue => -2 en Attaque");
@@ -7219,7 +7227,7 @@ var COFantasy = COFantasy || function() {
       defense += 5;
       explications.push(tokenName + " bénéficie d'un bouclier psi => +5 DEF");
     }
-    if (attributeAsBool(target, 'monteSur')){
+    if (attributeAsBool(target, 'monteSur')) {
       if (charAttributeAsBool(target, 'montureLoyale')) {
         defense += 1;
         explications.push(tokenName + " est sur une monture => +1 DEF");
@@ -11338,7 +11346,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (charAttributeAsBool(attaquant, "grosMonstreGrosseArme") &&
-            options.contact && weaponStats && weaponStats.typeAttaque === "Arme 2 mains") {
+          options.contact && weaponStats && weaponStats.typeAttaque === "Arme 2 mains") {
           targetTaille = targetTaille || taillePersonnage(target, 4);
           if (targetTaille > 4) {
             options.puissant = true;
@@ -18213,7 +18221,7 @@ var COFantasy = COFantasy || function() {
           if (rangSoin > 3) {
             var soinsGuerison = attributeAsInt(perso, 'limiteParJour_guérison', 1);
             if (soinsGuerison) {
-              addLineToFramedDisplay(display, "peut encore faire " + soinsGuerison + "guérison"+(soinsGuerison>1?'s':'') + " aujourd'hui");
+              addLineToFramedDisplay(display, "peut encore faire " + soinsGuerison + "guérison" + (soinsGuerison > 1 ? 's' : '') + " aujourd'hui");
             } else {
               addLineToFramedDisplay(display, "ne peut plus faire de guérison aujourd'hui");
             }
@@ -18724,16 +18732,18 @@ var COFantasy = COFantasy || function() {
     var etat = cmd[1];
     var carac = cmd[2];
     var carac2;
-    if (!isCarac(carac) && carac.length == 6) {
-      carac2 = carac.substring(3, 6);
-      carac = carac.substring(0, 3);
-      if (!isCarac(carac) || !isCarac(carac)) {
+    if (!isCarac(carac)) {
+      if (carac.length == 6) {
+        carac2 = carac.substring(3, 6);
+        carac = carac.substring(0, 3);
+        if (!isCarac(carac) || !isCarac(carac)) {
+          error("Paramètres de !cof-save-state incorrects", cmd);
+          return;
+        }
+      } else {
         error("Paramètres de !cof-save-state incorrects", cmd);
         return;
       }
-    } else {
-      error("Paramètres de !cof-save-state incorrects", cmd);
-      return;
     }
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
@@ -30116,6 +30126,14 @@ var COFantasy = COFantasy || function() {
       prejudiciable: true,
       dm: true
     },
+    nueeDeScorpions: {
+      activation: "est attaqué par une nuée de scorpions",
+      activationF: "est attaquée par une nuée de scorpions",
+      actif: "est entouré d'une nuée de scorpions",
+      fin: "est enfin débarassé des scorpions",
+      prejudiciable: true,
+      dm: true
+    },
     toiles: {
       activation: "voit des toiles d'araignées apparaître tout autour",
       actif: "est bloqué par des toiles d'araignées",
@@ -31961,6 +31979,17 @@ var COFantasy = COFantasy || function() {
                   cst: 2
                 }, 'normal',
                 "est piqué par les criquets", evt, {},
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
+                });
+              return;
+            case 'nueeDeScorpions': //prend 1D6 DM
+              degatsParTour(charId, pageId, effet, attrName, {
+                  nbDe: 1,
+                  de: 6
+                }, 'normal',
+                "est piqué par les scorpions", evt, {},
                 function() {
                   count--;
                   if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
