@@ -11353,6 +11353,13 @@ var COFantasy = COFantasy || function() {
             target.messages.push("Gros Monstre, grosse arme => dégâts de base augmentés");
           }
         }
+        if (attributeAsBool(target, "hemorragie") && !options.sortilege && !options.armeNaturelle) {
+          target.additionalDmg.push({
+            type: mainDmgType,
+            value: '1d6'
+          });
+          target.messages.push("Hémorragie => +1d6 DM");
+        }
         if (!options.pasDeDmg) {
           var loupParmiLesLoups = charAttributeAsInt(attaquant, 'loupParmiLesLoups', 0);
           if (loupParmiLesLoups > 0 && estHumanoide(target)) {
@@ -11388,7 +11395,6 @@ var COFantasy = COFantasy || function() {
             target.messages.push(attackerTokName + " bénéficie d'un bonus de +" + bonusDefi + " aux DMs contre " + target.tokName);
           }
         }
-
         if (attributeAsBool(attaquant, 'ombreMortelle') ||
           attributeAsBool(attaquant, 'dedoublement') ||
           (charAttributeAsBool(attaquant, 'armeeConjuree') && attributeAsBool(target, 'attaqueArmeeConjuree'))) {
@@ -30381,6 +30387,12 @@ var COFantasy = COFantasy || function() {
       actif: "est un zombie animé",
       fin: "tombe en poussière",
       dm: true
+    },
+    hemorragie: {
+      activation: "saigne à la moindre blessure",
+      actif: "saigne à la moindre blessure",
+      fin: "soigne son hémorragie",
+      prejudiciable: true
     }
   };
 
