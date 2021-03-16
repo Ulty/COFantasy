@@ -6,6 +6,7 @@
 * Hors de portée (shaman scorpion)
 * Nuée de scorpions (shaman scorpion)
 * Animation des Morts (Voie de l'outre-tombe)
+* Etreinte (scorpions)
 
 ### Autres améliorations
 * Refactoring !cof-tenebres pour supporter les options de Mana (y compris Tempête de Mana)
