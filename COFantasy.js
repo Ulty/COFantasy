@@ -16775,6 +16775,7 @@ var COFantasy = COFantasy || function() {
           type: "Intervention divine",
           attributes: []
         };
+        if (limiteRessources(pretre, options, 'intervention divine', ' faire une intervention divine', evt)) return;
         evt.attributes.push({
           attribute: interventionDivine,
           current: curinterventionDivine
@@ -18200,6 +18201,14 @@ var COFantasy = COFantasy || function() {
               addLineToFramedDisplay(display, msgSoins);
             } else {
               addLineToFramedDisplay(display, "ne peut plus faire de soin modéré aujourd'hui");
+            }
+          }
+          if (rangSoin > 3) {
+            var soinsGuerison = attributeAsInt(perso, 'limiteParJour_guérison', 1);
+            if (soinsGuerison) {
+              addLineToFramedDisplay(display, "peut encore faire " + soinsGuerison + "guérison"+(soinsGuerison>1?'s':'') + " aujourd'hui");
+            } else {
+              addLineToFramedDisplay(display, "ne peut plus faire de guérison aujourd'hui");
             }
           }
         }
