@@ -17587,7 +17587,7 @@ var COFantasy = COFantasy || function() {
     } else if (attributeAsBool(perso, 'etreinteScorpionPar')) {
       actionsAAfficher = true;
       command = '!cof-liberer-agrippe ' + perso.token.id;
-      ligne += bouton(command, 'Se libérer', perso) + ' (action limitée)<br />';
+      ligne += bouton(command, 'Se libérer', perso) + '<br />';
     } else {
       if (stateCOF.armeesDesMorts) {
         var combattreArmee = false;
