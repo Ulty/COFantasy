@@ -13056,6 +13056,12 @@ var COFantasy = COFantasy || function() {
       }
       return;
     }
+    // Suppression Zombies
+    var attrsDegradationZombie = tokenAttribute(personnage, 'degradationZombie');
+    if (attrsDegradationZombie.length > 0) {
+      finDEffet(attrsDegradationZombie[0], 'degradationZombie', attrsDegradationZombie[0].get("name"), personnage.charId, evt);
+      return;
+    }
     setState(personnage, 'mort', true, evt);
     var targetPos = {
       x: personnage.token.get('left'),
@@ -13065,6 +13071,7 @@ var COFantasy = COFantasy || function() {
       x: 400,
       y: 400
     }, "splatter-blood");
+
   }
 
   function dmgNaturel(options) {
@@ -26986,7 +26993,7 @@ var COFantasy = COFantasy || function() {
         }
       };
       addEvent(evt);
-      if (limiteRessources(necromant, options, 'tenebres', 'lancer un sort de ténèbres', evt)) return;
+      if (limiteRessources(necromant, options, 'invoquerDemon', 'lance une invocation de démon', evt)) return;
       var d6 = rollDePlus(6);
       evt.action.rolls.invocationDemonDmg = d6;
       var r = {
@@ -27036,7 +27043,6 @@ var COFantasy = COFantasy || function() {
             current: duree,
             max: getInit()
           });
-          //Attribut de démon invoqué pour la disparition automatique
           createObj('attribute', {
             name: 'resistanceA_nonMagique',
             _characterid: charDemon.id,
@@ -27051,6 +27057,121 @@ var COFantasy = COFantasy || function() {
           sendChar(necromant.charId, msg);
         });
     }, options);
+  }
+
+  var zombieAnime = {
+    nom: 'Zombie',
+    avatar: "https://s3.amazonaws.com/files.d20.io/images/147503510/RKFKQefVjSiyNPJtvBuGOg/thumb.png?1593643543",
+    token: "https://s3.amazonaws.com/files.d20.io/images/147503510/RKFKQefVjSiyNPJtvBuGOg/thumb.png?1593643543",
+    attributesFiche: {
+      type_personnage: 'PNJ',
+      niveau: 1,
+      force: 12,
+      pnj_for: 1,
+      dexterite: 8,
+      pnj_dex: -1,
+      constitution: 12,
+      pnj_con: 1,
+      intelligence: 2,
+      pnj_int: -4,
+      sagesse: 6,
+      pnj_sag: -2,
+      charisme: 2,
+      pnj_cha: -4,
+      pnj_def: 10,
+      pnj_init: 8,
+      race: 'mort-vivant',
+      taille: 'moyen'
+    },
+    attaques: [{
+      nom: 'Coup',
+      atk: 3,
+      dmnbde: 1,
+      dmde: 6,
+      dm: 1
+    }],
+    pv: 12,
+    attributes: [],
+    abilities: []
+  };
+
+  function animerMort(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 2) {
+      error("!cof-animer-mort mal formé, il faut un token comme premier argument", msg.content);
+      return;
+    }
+    var necromant = persoOfId(cmd[1], cmd[1], options.pageId);
+    if (necromant === undefined) {
+      error("Le premier argument de !cof-animer-mort n'est pas un token valie", cmd);
+      return;
+    }
+    var zombiesControles = attributeAsInt(necromant, "zombiesControles", 0);
+    var rangVoie = attributeAsInt(necromant, "voieOutreTombe", 1);
+    if(zombiesControles >= rangVoie) {
+      sendChar(necromant.charId, "ne peut plus animer un Zombie car il en contrôle déjà assez.");
+      return;
+    }
+    options.lanceur = necromant;
+    getSelected(msg, function(selected, playerId) {
+      var evt = {
+        type: 'animerMort',
+        action: {
+          rolls: {}
+        }
+      };
+      addEvent(evt);
+      if (limiteRessources(necromant, options, 'animerMort', "lancer un sort d'Animation des morts", evt)) return;
+      var explications = [];
+      if (!stateCOF.combat) {
+        initPerso(necromant, evt);
+      }
+      var nomToken = "Zombie de " + necromant.token.get('name');
+      var token = createObj('graphic', {
+        name: nomToken,
+        showname: 'true',
+        subtype: 'token',
+        pageid: options.pageId,
+        imgsrc: zombieAnime.token,
+        left: necromant.token.get('left'),
+        top: necromant.token.get('top'),
+        width: 70,
+        height: 70,
+        layer: 'objects',
+        showplayers_bar1: 'true',
+        light_hassight: 'true',
+        light_angle: 0,
+        has_bright_light_vision: true,
+        has_limit_field_of_vision: true,
+      });
+      toFront(token);
+      var zombie = {
+        ...zombieAnime
+      };
+      var charZombie = createCharacter(nomToken, playerId, zombieAnime.avatar, token, zombie);
+      evt.characters = [charZombie];
+      evt.tokens = [token];
+      // Dégradation du Zombie
+      createObj('attribute', {
+        name: 'degradationZombie',
+        _characterid: charZombie.id,
+        current: 71,
+        max: getInit()
+      });
+      // Gestion de la limitation des zombies
+      createObj('attribute', {
+        name: 'necromant',
+        _characterid: charZombie.id,
+        current: necromant.token.id,
+      });
+      initiative([{
+        _id: token.id
+      }], evt);
+      sendChar(necromant.charId, "anime un Zombie");
+      setTokenAttr(necromant, "zombiesControles", zombiesControles+1, evt);
+    });
   }
 
   //Crée les macros utiles au jeu
@@ -29675,6 +29796,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-invoquer-demon':
         invocationDemon(msg);
         return;
+      case '!cof-animer-mort':
+        animerMort(msg);
+        return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);
         return;
@@ -30251,6 +30375,12 @@ var COFantasy = COFantasy || function() {
       actif: "est un démon invoqué",
       fin: "disparaît",
       dm: true
+    },
+    degradationZombie: {
+      activation: "se relève d'entre les morts",
+      actif: "est un zombie animé",
+      fin: "tombe en poussière",
+      dm: true
     }
   };
 
@@ -30402,7 +30532,7 @@ var COFantasy = COFantasy || function() {
       activation: "commence à être gêné par son armure",
       actif: "est gêné par son armure",
       fin: "réajuste son armure",
-    },
+    }
   };
 
   var patternEffetsCombat = buildPatternEffets(messageEffetCombat);
@@ -30749,6 +30879,21 @@ var COFantasy = COFantasy || function() {
       case 'demonInvoque':
       case 'predateurConjure':
       case 'arbreAnime': //effacer le personnage
+      case 'degradationZombie':
+        //Dans le cas d'un Zombie, diminuer la limite du nécromant si nécessaire
+        if (effet == 'degradationZombie') {
+          var attrNecromant = charAttribute(charId, "necromant");
+          if (attrNecromant.length > 0) {
+            var necromantId = attrNecromant[0].get("current");
+            var necromant = persoOfId(necromantId, necromantId, options.pageId);
+            var attrNbZombie = tokenAttribute(necromant, "zombiesControles");
+            if (attrNbZombie.length > 0) {
+              var nbZombie = attrAsInt(attrNbZombie, 1);
+              if (nbZombie > 1) setTokenAttr(necromant, "zombiesControles", nbZombie-1, evt);
+              else attrNbZombie[0].remove();
+            }
+          }
+        }
         //On efface d'abord les attributs et les abilities
         var charAttributes = findObjs({
           _type: 'attribute',
@@ -30808,20 +30953,20 @@ var COFantasy = COFantasy || function() {
         attr.remove();
         if (options.print && mEffet) options.print(mEffet.fin);
         else {
-          sendChar(charId, 'disparaît');
+          sendChar(charId, mEffet.fin);
           options.print = function(m) {};
         }
-        var arbreChar = getObj('character', charId);
-        if (arbreChar) {
+        var character = getObj('character', charId);
+        if (character) {
           evt.deletedCharacters = evt.deletedCharacters || [];
           evt.deletedCharacters.push({
             id: charId,
-            name: arbreChar.get('name'),
-            avatar: arbreChar.get('avatar'),
+            name: character.get('name'),
+            avatar: character.get('avatar'),
             attributes: charAttributes,
             abilities: charAbilities
           });
-          arbreChar.remove();
+          character.remove();
         }
         return res; //Pas besoin de faire le reste, car plus de perso
       case 'formeDArbre':
@@ -31364,6 +31509,20 @@ var COFantasy = COFantasy || function() {
           if (soinsEffectifs == soins) msgSoins += soins + " points de vie";
           else msgSoins += soinsEffectifs + " PV (le jet était " + soins + ")";
           sendChar(perso.charId, msgSoins);
+        });
+      }
+      var degradationZombie = attributeAsInt(perso, 'degradationZombie', -1);
+      if (degradationZombie % 6  === 0) {
+        var r = {
+          total: 1,
+          type: 'normal',
+          display: 1
+        };
+        perso.ignoreTouteRD = true;
+        dealDamage(perso, r, [], evt, false, {}, [], function() {
+          // Vérification si le Zombie est toujours vivant
+          var tokens = getObj('graphic', perso.token.id);
+          if (tokens) sendChar(perso.charId, "se dégrade et perd 1 PV");
         });
       }
     });

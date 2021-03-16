@@ -5,6 +5,7 @@
 * Gros Monstre, grosse arme (Voie des armes à 2 mains)
 * Hors de portée (shaman scorpion)
 * Nuée de scorpions (shaman scorpion)
+* Animation des Morts (Voie de l'outre-tombe)
 
 ### Autres améliorations
 * Refactoring !cof-tenebres pour supporter les options de Mana (y compris Tempête de Mana)
@@ -58,6 +59,7 @@
 * Meilleur support du Tour de force
 * Meilleur support du Pacte Sanglant 
 * Permettre à un personnage d'être la Chair à canon de plusieurs autres
+* Rework Animation des Morts : meilleur support et automatisation
 
 ### Corrections de bugs
 * Correction des RD seulement contre perçant ou tranchant ou contondant.
