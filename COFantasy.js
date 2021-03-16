@@ -3182,6 +3182,10 @@ var COFantasy = COFantasy || function() {
       if (malusNueeCriquets > 3 && evt)
         removeTokenAttr(personnage, 'nueeDeCriquetsTempeteDeManaIntense', evt);
     }
+    if (attributeAsBool(personnage, 'nueeDeScorpions')) {
+      expliquer("Nuée de scorpions : -3 au jet");
+      bonus -= 3;
+    }
     if (attributeAsBool(personnage, 'etatExsangue')) {
       expliquer("Exsangue : -2 au jet");
       bonus -= 2;
@@ -6961,6 +6965,10 @@ var COFantasy = COFantasy || function() {
       if (malusNueeCriquets > 3)
         removeTokenAttr(personnage, 'nueeDeCriquetsTempeteDeManaIntense', evt);
     }
+    if (attributeAsBool(personnage, 'nueeDeScorpions')) {
+      attBonus -= 3;
+      explications.push("Nuée de scorpions => -3 en Attaque");
+    }
     if (attributeAsBool(personnage, 'etatExsangue')) {
       attBonus -= 2;
       explications.push("Exsangue => -2 en Attaque");
@@ -7241,9 +7249,15 @@ var COFantasy = COFantasy || function() {
       defense += 5;
       explications.push(tokenName + " bénéficie d'un bouclier psi => +5 DEF");
     }
-    if (attributeAsBool(target, 'monteSur') && charAttributeAsBool(target, 'montureLoyale')) {
-      defense += 1;
-      explications.push(tokenName + " est sur une monture => +1 DEF");
+    if (attributeAsBool(target, 'monteSur')) {
+      if (charAttributeAsBool(target, 'montureLoyale')) {
+        defense += 1;
+        explications.push(tokenName + " est sur une monture => +1 DEF");
+      }
+      if (options.contact && attributeAsBool(target, "horsDePortee")) {
+        defense += 5;
+        explications.push(tokenName + " est hors de portée sur sa monture => +5 DEF");
+      }
     }
     var attrsProtegePar = findObjs({
       _type: 'attribute',
@@ -11346,8 +11360,9 @@ var COFantasy = COFantasy || function() {
             value: target.feinte + options.d6
           });
         }
+        var targetTaille;
         if (options.tueurDeGrands) {
-          var targetTaille = taillePersonnage(target, 4);
+          targetTaille = taillePersonnage(target, 4);
           if (targetTaille == 5) {
             target.additionalDmg.push({
               type: mainDmgType,
@@ -11360,6 +11375,14 @@ var COFantasy = COFantasy || function() {
               value: '2d6'
             });
             target.messages.push("Cible énorme => +2d6 DM");
+          }
+        }
+        if (charAttributeAsBool(attaquant, "grosMonstreGrosseArme") &&
+          options.contact && weaponStats && weaponStats.typeAttaque === "Arme 2 mains") {
+          targetTaille = targetTaille || taillePersonnage(target, 4);
+          if (targetTaille > 4) {
+            options.puissant = true;
+            target.messages.push("Gros Monstre, grosse arme => dégâts de base augmentés");
           }
         }
         if (!options.pasDeDmg) {
@@ -13065,6 +13088,12 @@ var COFantasy = COFantasy || function() {
       }
       return;
     }
+    // Suppression Zombies
+    var attrsDegradationZombie = tokenAttribute(personnage, 'degradationZombie');
+    if (attrsDegradationZombie.length > 0) {
+      finDEffet(attrsDegradationZombie[0], 'degradationZombie', attrsDegradationZombie[0].get("name"), personnage.charId, evt);
+      return;
+    }
     setState(personnage, 'mort', true, evt);
     var targetPos = {
       x: personnage.token.get('left'),
@@ -13074,6 +13103,7 @@ var COFantasy = COFantasy || function() {
       x: 400,
       y: 400
     }, "splatter-blood");
+
   }
 
   function dmgNaturel(options) {
@@ -13264,7 +13294,13 @@ var COFantasy = COFantasy || function() {
         if (target.ignoreTouteRD) rd = 0;
         else if (target.ignoreMoitieRD) rd = parseInt(rd / 2);
         if (target.ignoreRD) {
-          rd -= target.ignoreRD; //rd peut être négatif
+          if (target.ignoreRD > rd) {
+            target.ignoreRD -= rd;
+            rd = 0;
+          } else {
+            rd -= target.ignoreRD;
+            target.ignoreRD = 0;
+          }
         }
         //Option Max Rune de Protection
         if (target.utiliseRuneProtectionMax) {
@@ -16786,6 +16822,7 @@ var COFantasy = COFantasy || function() {
           type: "Intervention divine",
           attributes: []
         };
+        if (limiteRessources(pretre, options, 'intervention divine', ' faire une intervention divine', evt)) return;
         evt.attributes.push({
           attribute: interventionDivine,
           current: curinterventionDivine
@@ -18218,6 +18255,14 @@ var COFantasy = COFantasy || function() {
               addLineToFramedDisplay(display, "ne peut plus faire de soin modéré aujourd'hui");
             }
           }
+          if (rangSoin > 3) {
+            var soinsGuerison = attributeAsInt(perso, 'limiteParJour_guérison', 1);
+            if (soinsGuerison) {
+              addLineToFramedDisplay(display, "peut encore faire " + soinsGuerison + "guérison" + (soinsGuerison > 1 ? 's' : '') + " aujourd'hui");
+            } else {
+              addLineToFramedDisplay(display, "ne peut plus faire de guérison aujourd'hui");
+            }
+          }
         }
         var ebriete = attributeAsInt(perso, 'niveauEbriete', 0);
         if (ebriete > 0 && ebriete < niveauxEbriete.length) {
@@ -18724,16 +18769,18 @@ var COFantasy = COFantasy || function() {
     var etat = cmd[1];
     var carac = cmd[2];
     var carac2;
-    if (!isCarac(carac) && carac.length == 6) {
-      carac2 = carac.substring(3, 6);
-      carac = carac.substring(0, 3);
-      if (!isCarac(carac) || !isCarac(carac)) {
+    if (!isCarac(carac)) {
+      if (carac.length == 6) {
+        carac2 = carac.substring(3, 6);
+        carac = carac.substring(0, 3);
+        if (!isCarac(carac) || !isCarac(carac)) {
+          error("Paramètres de !cof-save-state incorrects", cmd);
+          return;
+        }
+      } else {
         error("Paramètres de !cof-save-state incorrects", cmd);
         return;
       }
-    } else {
-      error("Paramètres de !cof-save-state incorrects", cmd);
-      return;
     }
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
@@ -26983,7 +27030,7 @@ var COFantasy = COFantasy || function() {
         }
       };
       addEvent(evt);
-      if (limiteRessources(necromant, options, 'tenebres', 'lancer un sort de ténèbres', evt)) return;
+      if (limiteRessources(necromant, options, 'invoquerDemon', 'lance une invocation de démon', evt)) return;
       var d6 = rollDePlus(6);
       evt.action.rolls.invocationDemonDmg = d6;
       var r = {
@@ -27033,7 +27080,6 @@ var COFantasy = COFantasy || function() {
             current: duree,
             max: getInit()
           });
-          //Attribut de démon invoqué pour la disparition automatique
           createObj('attribute', {
             name: 'resistanceA_nonMagique',
             _characterid: charDemon.id,
@@ -27048,6 +27094,121 @@ var COFantasy = COFantasy || function() {
           sendChar(necromant.charId, msg);
         });
     }, options);
+  }
+
+  var zombieAnime = {
+    nom: 'Zombie',
+    avatar: "https://s3.amazonaws.com/files.d20.io/images/147503510/RKFKQefVjSiyNPJtvBuGOg/thumb.png?1593643543",
+    token: "https://s3.amazonaws.com/files.d20.io/images/147503510/RKFKQefVjSiyNPJtvBuGOg/thumb.png?1593643543",
+    attributesFiche: {
+      type_personnage: 'PNJ',
+      niveau: 1,
+      force: 12,
+      pnj_for: 1,
+      dexterite: 8,
+      pnj_dex: -1,
+      constitution: 12,
+      pnj_con: 1,
+      intelligence: 2,
+      pnj_int: -4,
+      sagesse: 6,
+      pnj_sag: -2,
+      charisme: 2,
+      pnj_cha: -4,
+      pnj_def: 10,
+      pnj_init: 8,
+      race: 'mort-vivant',
+      taille: 'moyen'
+    },
+    attaques: [{
+      nom: 'Coup',
+      atk: 3,
+      dmnbde: 1,
+      dmde: 6,
+      dm: 1
+    }],
+    pv: 12,
+    attributes: [],
+    abilities: []
+  };
+
+  function animerMort(msg) {
+    var options = parseOptions(msg);
+    if (options === undefined) return;
+    var cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 2) {
+      error("!cof-animer-mort mal formé, il faut un token comme premier argument", msg.content);
+      return;
+    }
+    var necromant = persoOfId(cmd[1], cmd[1], options.pageId);
+    if (necromant === undefined) {
+      error("Le premier argument de !cof-animer-mort n'est pas un token valie", cmd);
+      return;
+    }
+    var zombiesControles = attributeAsInt(necromant, "zombiesControles", 0);
+    var rangVoie = attributeAsInt(necromant, "voieOutreTombe", 1);
+    if(zombiesControles >= rangVoie) {
+      sendChar(necromant.charId, "ne peut plus animer un Zombie car il en contrôle déjà assez.");
+      return;
+    }
+    options.lanceur = necromant;
+    getSelected(msg, function(selected, playerId) {
+      var evt = {
+        type: 'animerMort',
+        action: {
+          rolls: {}
+        }
+      };
+      addEvent(evt);
+      if (limiteRessources(necromant, options, 'animerMort', "lancer un sort d'Animation des morts", evt)) return;
+      var explications = [];
+      if (!stateCOF.combat) {
+        initPerso(necromant, evt);
+      }
+      var nomToken = "Zombie de " + necromant.token.get('name');
+      var token = createObj('graphic', {
+        name: nomToken,
+        showname: 'true',
+        subtype: 'token',
+        pageid: options.pageId,
+        imgsrc: zombieAnime.token,
+        left: necromant.token.get('left'),
+        top: necromant.token.get('top'),
+        width: 70,
+        height: 70,
+        layer: 'objects',
+        showplayers_bar1: 'true',
+        light_hassight: 'true',
+        light_angle: 0,
+        has_bright_light_vision: true,
+        has_limit_field_of_vision: true,
+      });
+      toFront(token);
+      var zombie = {
+        ...zombieAnime
+      };
+      var charZombie = createCharacter(nomToken, playerId, zombieAnime.avatar, token, zombie);
+      evt.characters = [charZombie];
+      evt.tokens = [token];
+      // Dégradation du Zombie
+      createObj('attribute', {
+        name: 'degradationZombie',
+        _characterid: charZombie.id,
+        current: 71,
+        max: getInit()
+      });
+      // Gestion de la limitation des zombies
+      createObj('attribute', {
+        name: 'necromant',
+        _characterid: charZombie.id,
+        current: necromant.token.id,
+      });
+      initiative([{
+        _id: token.id
+      }], evt);
+      sendChar(necromant.charId, "anime un Zombie");
+      setTokenAttr(necromant, "zombiesControles", zombiesControles+1, evt);
+    });
   }
 
   //Crée les macros utiles au jeu
@@ -29699,6 +29860,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-invoquer-demon':
         invocationDemon(msg);
         return;
+      case '!cof-animer-mort':
+        animerMort(msg);
+        return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);
         return;
@@ -30026,6 +30190,14 @@ var COFantasy = COFantasy || function() {
       prejudiciable: true,
       dm: true
     },
+    nueeDeScorpions: {
+      activation: "est attaqué par une nuée de scorpions",
+      activationF: "est attaquée par une nuée de scorpions",
+      actif: "est entouré d'une nuée de scorpions",
+      fin: "est enfin débarassé des scorpions",
+      prejudiciable: true,
+      dm: true
+    },
     toiles: {
       activation: "voit des toiles d'araignées apparaître tout autour",
       actif: "est bloqué par des toiles d'araignées",
@@ -30267,6 +30439,12 @@ var COFantasy = COFantasy || function() {
       actif: "est un démon invoqué",
       fin: "disparaît",
       dm: true
+    },
+    degradationZombie: {
+      activation: "se relève d'entre les morts",
+      actif: "est un zombie animé",
+      fin: "tombe en poussière",
+      dm: true
     }
   };
 
@@ -30418,7 +30596,7 @@ var COFantasy = COFantasy || function() {
       activation: "commence à être gêné par son armure",
       actif: "est gêné par son armure",
       fin: "réajuste son armure",
-    },
+    }
   };
 
   var patternEffetsCombat = buildPatternEffets(messageEffetCombat);
@@ -30765,6 +30943,21 @@ var COFantasy = COFantasy || function() {
       case 'demonInvoque':
       case 'predateurConjure':
       case 'arbreAnime': //effacer le personnage
+      case 'degradationZombie':
+        //Dans le cas d'un Zombie, diminuer la limite du nécromant si nécessaire
+        if (effet == 'degradationZombie') {
+          var attrNecromant = charAttribute(charId, "necromant");
+          if (attrNecromant.length > 0) {
+            var necromantId = attrNecromant[0].get("current");
+            var necromant = persoOfId(necromantId, necromantId, options.pageId);
+            var attrNbZombie = tokenAttribute(necromant, "zombiesControles");
+            if (attrNbZombie.length > 0) {
+              var nbZombie = attrAsInt(attrNbZombie, 1);
+              if (nbZombie > 1) setTokenAttr(necromant, "zombiesControles", nbZombie-1, evt);
+              else attrNbZombie[0].remove();
+            }
+          }
+        }
         //On efface d'abord les attributs et les abilities
         var charAttributes = findObjs({
           _type: 'attribute',
@@ -30824,20 +31017,20 @@ var COFantasy = COFantasy || function() {
         attr.remove();
         if (options.print && mEffet) options.print(mEffet.fin);
         else {
-          sendChar(charId, 'disparaît');
+          sendChar(charId, mEffet.fin);
           options.print = function(m) {};
         }
-        var arbreChar = getObj('character', charId);
-        if (arbreChar) {
+        var character = getObj('character', charId);
+        if (character) {
           evt.deletedCharacters = evt.deletedCharacters || [];
           evt.deletedCharacters.push({
             id: charId,
-            name: arbreChar.get('name'),
-            avatar: arbreChar.get('avatar'),
+            name: character.get('name'),
+            avatar: character.get('avatar'),
             attributes: charAttributes,
             abilities: charAbilities
           });
-          arbreChar.remove();
+          character.remove();
         }
         return res; //Pas besoin de faire le reste, car plus de perso
       case 'formeDArbre':
@@ -31382,6 +31575,20 @@ var COFantasy = COFantasy || function() {
           sendChar(perso.charId, msgSoins);
         });
       }
+      var degradationZombie = attributeAsInt(perso, 'degradationZombie', -1);
+      if (degradationZombie % 6  === 0) {
+        var r = {
+          total: 1,
+          type: 'normal',
+          display: 1
+        };
+        perso.ignoreTouteRD = true;
+        dealDamage(perso, r, [], evt, false, {}, [], function() {
+          // Vérification si le Zombie est toujours vivant
+          var tokens = getObj('graphic', perso.token.id);
+          if (tokens) sendChar(perso.charId, "se dégrade et perd 1 PV");
+        });
+      }
     });
     setActiveToken(undefined, evt);
     initiative(selected, evt, true); // met Tour à la fin et retrie
@@ -31836,6 +32043,17 @@ var COFantasy = COFantasy || function() {
                   cst: 2
                 }, 'normal',
                 "est piqué par les criquets", evt, {},
+                function() {
+                  count--;
+                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
+                });
+              return;
+            case 'nueeDeScorpions': //prend 1D6 DM
+              degatsParTour(charId, pageId, effet, attrName, {
+                  nbDe: 1,
+                  de: 6
+                }, 'normal',
+                "est piqué par les scorpions", evt, {},
                 function() {
                   count--;
                   if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);

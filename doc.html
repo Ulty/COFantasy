@@ -1329,7 +1329,7 @@
                 <h4 class="text-secondary">Voie de l'outre-tombe</h4>
                 <ol>
                   <li><strong>Peur</strong> : Faire une attaque <code>Peur</code> utilisant le score d'attaque magique, de portée 20 m. Pour l'attaque, ajouter les arguments <code>--sortilege --pasDeDmg --peur [[10+@{selected|INT}]] [[1d4+<i>r</i>]]</code> où <i>r</i> est le rang dans la voie. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Animation d'un mort-vivant</strong> : simplement faire un personnage pour le mort-vivant contrôlé. Le MJ devra se charger de la perte de 1PV tous les 6 tours, si besoin.</li>
+                  <li><strong>Animation d'un mort-vivant</strong> : <code>!cof-animer-mort @{selected|token_id}</code>. Cela met directement le nécromant et le zombie en combat. Les Zombies perdent automatiquement 1 PV tous les 6 rounds. Lorsqu'ils atteignent 0 PV (quelle qu'en soit la raison) ou à la fin du combat, ils sont automatiquement détruits et supprimés. Si un attribut <code>voieOutreTombe</code> est présent sur le lanceur du sort, le script gère le maximum de zombies qu'il peut invoquer. Mana, consommables et limites sont gérées, mais pas Tempête de Mana.</li>
                   <li><strong>Putréfaction</strong> : ajouter une attaque magique de portée 10 m, de DM 1d6+INT de dégâts magiques, lancée avec les options <code>--effet putrefactionOutreTombe --save CON [[12+@{selected|INT}]] --mana 1</code>. Si vous utilisez les options de magie puissante, rajoutez <code>?{Y consacrer le tour?|Oui,--puissant|Non,&amp;#32;}</code>. Si vous préférez utiliser l'option de tempête de mana, rajoutez <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
                   <li><strong>Ensevelissement</strong> : ajouter une attaque magique de portée 20 m, type Sortilege, lancée avec les options <code>--pasDeDmg --etat enseveli FORDEX [[13+@{selected|INT}]] --mana 2</code>. Les dégâts sont infligés au début de chaque tour, et la cible recevra à son initiative un bouton lui permettant d'effectuer le jet pour sortir. Elle pourra également ajouter un bonus manuel au jet, en fonction des actions réalisées pour l'aider à sortir.</li>
                   <li><strong>Armée des morts</strong> : <code>!cof-effet-temp armeeDesMorts @{selected|niveau} --mana 3 --limiteParJour 1</code>. La zone couverte est symbolisée par l'activation d'une aura sur le token du lanceur. Le script utilisera pour cela  l'aura 2 du token, donc attention si vous l'utilisez déjà sur le token du lanceur, elle sera écrasée. Toute cible (le script ignore les alliés du lanceur) qui s'active dans une zone couverte par une armée recevra dans ses actions un bouton spécial pour se défendre. Les dégâts sont infligés automatiquement en début de tour.</li>
@@ -1394,7 +1394,7 @@
                   <li><strong>Soins légers</strong> : <code>!cof-soin @{selected|token_id} @{target|token_id} leger</code>. Vous pouvez rajouter un petit effet visuel, par exemple avec <code>--targetFx bubbling-holy</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
                   <li><strong>Soins modérés</strong> : <code>!cof-soin @{selected|token_id} @{target|token_id} modere</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
                   <li><strong>Soins de groupe</strong> : <code>!cof-soin @{selected|token_id} groupe</code> (ne pas oublier de définir des <a href="#allie">alliés</a>). Le sort nécessite un point de mana (barre 2 du token), et accepte l'option <code>--puissant</code> et les options de tempête de mana. Attention, toutefois, le sort ne va pas automatiquement soigner les personnages notés comme morts, ce qui est le cas général si ils sont tombés à 0 PV. Si certains alliés notés morts ne sont pas vraiment morts, mais juste inconscient, il faudra que le MJ fasse la mise à jour de l'état et des PV lui-même.</li>
-                  <li><strong>Guérison</strong> : <code>!cof-guerison @{selected|token_id} @{target|token_id} --portee 0 --mana 2</code>. Pour l'instant ça ne fait que remettre les points de vie au maximum.</li>
+                  <li><strong>Guérison</strong> : <code>!cof-guerison @{selected|token_id} @{target|token_id} --portee 0 --mana 2 --limiteParJour 1</code>. Pour l'instant ça ne fait que remettre les points de vie au maximum.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la spiritualité</h4>
                 <ol>
@@ -1635,16 +1635,18 @@
               </div>
               <h3 class="text-info" id="Prestige">4.2 Voies de prestige et capacités épiques</h3>
               <div class="decalage">
+                <h4 class="text-secondary">Voie des armes à deux mains</h4>
+                <ol>
+                  <li><strong>Gros Monstre, grosse arme</strong> : ajouter un attribut grosMonstreGrosseArme de valeur <code>true</code>.</li>
+                </ol>
                 <h4 class="text-secondary">Voie des vermines</h4>
                 <ol>
                   <li><strong>Nuée de criquets</strong> : ajouter une attaque magique, de portée 20 m. Puis appeler cette attaque (avec <code>!cof-attack</code>) avec les arguments <code>--pasDeDmg --sortilege --effet nueeDeCriquets [[5+@{selected|SAG}]]</code>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDeCriquets</code> sur la cible dans ce cas). Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. À noter que l'option <code>--mana 0</code> est là pour indiquer au script de terminer l'effet au cas où le druide meurt.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du gel</h4>
                 <ol>
-                  <li></li>
-                  <li></li>
-                  <li></li>
-                  <li><strong>Présence glaciale</strong> : <code>!cof-effet presenceGlaciale oui --mana 2</code>. Utiliser <code>!cof-effet presenceGlaciale non</code> pour mettre fin à l'effet. On peut préciser un bonus de DEF et des dégâts différents avec l'option <code>--valeur</code>. Ainsi, la version grimoire sera <code>!cof-effet presenceGlaciale oui --valeur 3 1d4</code>.</li>
+                  <li><strong>3. Cône de froid</strong> : faire une attaque portee 20m, dégâts 2d6+INT de froid, avec comme modificateur <code>auto</code> et comme options <code>--cone 30 --fx breath-frost --ifSaveFails CON 13 --effet ralenti 1 --else --diviseDmg 2 --endif</code>. Pour un objet de sort : <code>!cof-attack @{selected|token_id} @{target|token_id} Cône de froid --sortilege --auto --dm 2d6+[[@{selected|INT}]] --froid --portee 20 --cone 30 --fx breath-frost --ifSaveFails CON 13 --effet ralentiTemp 1 --else --diviseDmg 2 --endif</code></li>
+                  <li><strong>4. Présence glaciale</strong> : <code>!cof-effet presenceGlaciale oui --mana 2</code>. Utiliser <code>!cof-effet presenceGlaciale non</code> pour mettre fin à l'effet. On peut préciser un bonus de DEF et des dégâts différents avec l'option <code>--valeur</code>. Ainsi, la version grimoire sera <code>!cof-effet presenceGlaciale oui --valeur 3 1d4</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du guérisseur</h4>
                 <ol>
@@ -1762,6 +1764,7 @@
                 <ul>
                   <li><strong>Armure d'eau</strong> : <code>!cof-effet-combat armureDEau</code>. Le script automatise l'immunité aux étreintes (pas aux enveloppements) et à la capacité Agripper des créatures volantes.</li>
                   <li><strong>Force de géant</strong> : <code>!cof-effet-temp forceDeGeant 10</code>. Le bonus est de 2 par défaut, mais peut être modifié en utilisant l'option <code>--valeur</code>.</li>
+                  <li><strong>Nuée de scorpions</strong> : ajouter une attaque magique, de portée 20 m. Puis appeler cette attaque (avec <code>!cof-attack</code>) avec les arguments <code>--pasDeDmg --sortilege --effet nueeDeScorpions 10 --mana 0</code>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDeScorpions</code> sur la cible dans ce cas). À noter que l'option <code>--mana 0</code> est là pour indiquer au script de terminer l'effet au cas où le lanceur de sort meurt.</li>
                   <li><strong>Résistance à la magie</strong> : pour l'augmentation de la DEF contre la magie, utiliser un attribut <code>DEF_magie</code> et pour le bonus aux tests, <code>resistanceALaMagie</code></li>
                   <li><strong>Sixième sens</strong> : <code>!cof-effet sixiemeSens true</code>. Pour mettre fin à l'effet du sort (qui a une durée en heures), on peut effacer l'attribut <code>sixiemeSens</code>, ou mieux encore, sélectionner le token et faire <code>!cof-effet sixiemeSens false</code>.</li>
                   <li><strong>Toiles</strong> : <code>!cof-effet-temp toiles [[5+@{selected|SAG}]] --saveParTour FOR [[10+@{selected|SAG}]] --lanceur @{selected|token_id} --disque @{target|token_id} 5 20 --saufAllies --mana 0</code>. </li>
@@ -1787,6 +1790,7 @@
                   <li><strong>Faucheuse de géants</strong>: ajouter le modifcateur <code>tueurDeGrands</code> aux attaques.</li>
                   <li><strong>Fièvre</strong> : pour ajouter encore une RD de 5 contre le feu, créez un attribut <code>fievreChene</code> de valeur <code>true</code>.</li>
                   <li><strong>Frénésie</strong> : Ajouter une attribut <code>frenesie</code> avec comme valeur le nombre de PV en-dessous duquel la créature devient frénétique (+2 aus jets d'attaque).</li>
+                  <li><strong>Hors de portée</strong> : ajouter un attribut <code>horsDePortee</code> avec comme valeur <code>true</code></li>
                   <li><strong>Huile de fort assaut</strong> : <code>!cof-effet-temp dmgArme(<i>L</i>) 10 --valeur 1d6</code> où <i>L</i> est le label de l'arme qu'on veut enduire d'huile de fort assaut.</li>
                   <li><strong>Hurlement</strong> : Pour les chiens infernaux, <code>!cof-peur [[10+?{Nombre de chiens?}]] [[2d4]] --portee 50 --equipe Joueurs</code>, et pour les fantômes, <code>!cof-peur 12 [[1d6]] --portee 10 --equipe Joueurs</code>. Pour l'instant, pas de prise en compte de l'immunité au hurlement apès avoir réussi son jet de SAG.</li>
                   <li><strong>Immunité aux armes</strong> : ajouter un attribut <code>immuniteAuxArmes</code> avec comme valeur <code>true</code></li>
