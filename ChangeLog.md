@@ -4,6 +4,7 @@
 * Cône de froid (doc)
 * Gros Monstre, grosse arme (Voie des armes à 2 mains)
 * Hors de portée (shaman scorpion)
+* Animation des Morts (Voie de l'outre-tombe)
 
 ### Autres améliorations
 * Refactoring !cof-tenebres pour supporter les options de Mana (y compris Tempête de Mana)

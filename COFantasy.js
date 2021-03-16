@@ -31502,7 +31502,9 @@ var COFantasy = COFantasy || function() {
         };
         perso.ignoreTouteRD = true;
         dealDamage(perso, r, [], evt, false, {}, [], function() {
-          sendChar(perso.charId, "se dégrade et perd 1 PV");
+          // Vérification si le Zombie est toujours vivant
+          var tokens = getObj('graphic', perso.token.id);
+          if (tokens) sendChar(perso.charId, "se dégrade et perd 1 PV");
         });
       }
     });
