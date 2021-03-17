@@ -1826,6 +1826,31 @@ var COFantasy = COFantasy || function() {
             evt.deletedAttributes.push(a);
             a.remove();
           });
+          //On libère les personnages sous étreinte de scorpion
+          var attrEtreinteScorpion = tokenAttribute(personnage, 'etreinteScorpionSur');
+          attrEtreinteScorpion.forEach(function(a) {
+            var cible = persoOfIdName(a.get('current'), pageId);
+            if (cible) {
+              evt.deletedAttributes = evt.deletedAttributes || [];
+              var attrCible = tokenAttribute(cible, 'etreinteScorpionPar');
+              var attrRatee = tokenAttribute(cible, 'etreinteScorpionRatee');
+              attrCible.forEach(function(a) {
+                var agrippant = persoOfIdName(a.get('current', pageId));
+                if (agrippant.token.id == personnage.token.id) {
+                  sendChar(cible.charId, 'se libère de ' + agrippant.tokName);
+                  toFront(cible.token);
+                  evt.deletedAttributes.push(a);
+                  a.remove();
+                  attrRatee.forEach(function (attrR) {
+                    evt.deletedAttributes.push(attrR);
+                    attrR.remove();
+                  });
+                }
+              });
+            }
+            evt.deletedAttributes.push(a);
+            a.remove();
+          });
           //On termine les effets temporaires liés au personnage
           var etlAttr = tokenAttribute(personnage, 'effetsTemporairesLies');
           if (etlAttr.length > 0) {
@@ -5065,6 +5090,7 @@ var COFantasy = COFantasy || function() {
         case 'ouvertureMortelle':
         case 'seulementVivant':
         case 'etreinteImmole':
+        case 'etreinteScorpion':
           scope[cmd[0]] = true;
           return;
         case 'arc':
@@ -7471,6 +7497,10 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(target, 'etreinteImmole')) {
       defense -= 5;
       explications.push(target.tokName + " étreint quelqu'un => -5 en DEF");
+    }
+    if (attributeAsBool(target, 'etreinteScorpionRatee')) {
+      defense -= 5;
+      explications.push(target.tokName + " est étreint par un scorpion => -5 DEF");
     }
     if (attaquant && charAttributeAsBool(target, 'langageSombreHetre') && estElfeNoir(attaquant)) {
       defense += 1;
@@ -10154,6 +10184,11 @@ var COFantasy = COFantasy || function() {
                   setState(target, 'immobilise', true, evt);
                   target.messages.push(attaquant.tokName + " étreint " + target.tokName + " et s'immole !");
                   target.etreinteImmole = true;
+                }
+                if (options.etreinteScorpion) {
+                  setTokenAttr(attaquant, 'etreinteScorpionSur', target.token.id + ' ' + target.tokName, evt);
+                  setTokenAttr(target, 'etreinteScorpionPar', attaquant.token.id + ' ' + attaquant.tokName, evt);
+                  target.messages.push(attaquant.tokName + " étreint " + target.tokName + " !");
                 }
               }
               if (d20roll >= 17 && options.contact &&
@@ -17555,6 +17590,10 @@ var COFantasy = COFantasy || function() {
     } else if (getState(perso, 'enseveli')) {
       actionsAAfficher = true;
       ligne += boutonSaveState(perso, 'enseveli') + '<br />';
+    } else if (attributeAsBool(perso, 'etreinteScorpionPar')) {
+      actionsAAfficher = true;
+      command = '!cof-liberer-agrippe ' + perso.token.id;
+      ligne += bouton(command, 'Se libérer', perso) + '<br />';
     } else {
       if (stateCOF.armeesDesMorts) {
         var combattreArmee = false;
@@ -28112,11 +28151,15 @@ var COFantasy = COFantasy || function() {
     var attr = tokenAttribute(perso, 'estAgrippePar');
     if (attr.length === 0) {
       attr = tokenAttribute(perso, 'etreinteImmolePar');
-      if (attr.length === 0) {
-        sendPlayer(msg, perso.tokName + " n'est pas agrippé.");
-        return;
-      }
       attrName = 'etreinteImmolePar';
+      if (attr.length === 0) {
+        attr = tokenAttribute(perso, 'etreinteScorpionPar');
+        attrName = 'etreinteScorpionPar';
+        if (attr.length === 0) {
+          sendPlayer(msg, perso.tokName + " n'est pas agrippé.");
+          return;
+        }
+      }
     }
     attr = attr[0];
     var agrippant = persoOfIdName(attr.get('current'), options.pageId);
@@ -28159,23 +28202,54 @@ var COFantasy = COFantasy || function() {
         });
         if (tr == 2) {
           var msgRate = "C'est raté, " + perso.token.get('name') + " est toujours ";
-          if (attrName == 'etreinteImmolePar')
+          if (attrName == 'etreinteImmolePar' || attrName == 'etreinteScorpionPar')
             msgRate += "prisonnier de l'étreinte de " + agrippant.token.get('name');
           else msgRate += "agrippé" + eForFemale(perso) + ".";
           addLineToFramedDisplay(display, msgRate);
+          if (attrName == 'etreinteScorpionPar') { // Cas d'étreinte de scorpion avec dommages automatiques
+            var d6 = evt.action.rolls.etreinteDmg || rollDePlus(6, {bonus : 3});
+            evt.action.rolls.etreinteDmg = d6;
+            var r = {
+              total: d6.val,
+              type: 'normal',
+              display: d6.roll
+            };
+            var explications2 = [];
+            perso.ignoreTouteRD = true;
+            dealDamage(perso, r, [], evt, false, {}, explications2, function(dmgDisplay) {
+              var dmgMsg = "L'étreinte du scorpion inflige " + dmgDisplay + " dégâts.";
+              setTokenAttr(perso, "etreinteScorpionRatee", true, evt);
+              addLineToFramedDisplay(display, dmgMsg);
+              explications2.forEach(function(expl) {
+                addLineToFramedDisplay(display, expl, 80);
+              });
+              sendChat('', endFramedDisplay(display));
+            });
+          } else {
+            sendChat('', endFramedDisplay(display));
+          }
         } else {
           if (tr === 0)
             addLineToFramedDisplay(display, "Réussi de justesse, " + perso.token.get('name') + " se libère.");
           else //tr == 1
             addLineToFramedDisplay(display, "Réussi, " + perso.token.get('name') + " se libère.");
           toFront(perso.token);
-          var attr = tokenAttribute(perso, attrName);
-          if (attrName == 'etreinteImmolePar' || attr[0].get('max')) setState(perso, 'immobilise', false, evt);
           evt.deletedAttributes = evt.deletedAttributes || [];
-          evt.deletedAttributes.push(attr[0]);
+          var attr = tokenAttribute(perso, attrName);
           attr[0].remove();
+          evt.deletedAttributes.push(attr[0]);
+          if (attrName == 'etreinteImmolePar' || attr[0].get('max'))
+            setState(perso, 'immobilise', false, evt);
+          if (attrName == 'etreinteScorpionPar') {
+            var etrScorpAttr = tokenAttribute(perso, "etreinteScorpionRatee");
+            if (etrScorpAttr) {
+              etrScorpAttr[0].remove();
+              evt.deletedAttributes.push(etrScorpAttr[0]);
+            }
+          }
           var attrAgrippant = 'agrippe';
           if (attrName == 'etreinteImmolePar') attrAgrippant = 'etreinteImmole';
+          if (attrName == 'etreinteScorpionPar') attrAgrippant = 'etreinteScorpionSur';
           attr = tokenAttribute(agrippant, attrAgrippant);
           attr.forEach(function(a) {
             var ca = persoOfIdName(a.get('current'));
@@ -28184,8 +28258,11 @@ var COFantasy = COFantasy || function() {
               a.remove();
             }
           });
+          sendChat('', endFramedDisplay(display));
+          if (attrName == 'etreinteScorpionPar') {
+            turnAction(perso);
+          }
         }
-        sendChat('', endFramedDisplay(display));
       });
   }
 

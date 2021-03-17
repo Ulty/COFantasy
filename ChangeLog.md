@@ -6,6 +6,7 @@
 * Hors de portée (shaman scorpion)
 * Nuée de scorpions (shaman scorpion)
 * Animation des Morts (Voie de l'outre-tombe)
+* Etreinte (scorpions)
 * Hémorragie (Voie du sang)
 
 ### Autres améliorations
