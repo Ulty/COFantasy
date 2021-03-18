@@ -8,6 +8,7 @@
 * Animation des Morts (Voie de l'outre-tombe)
 * Etreinte (scorpions)
 * Hémorragie (Voie du sang)
+* Lien de sang (Voie du sang)
 
 ### Autres améliorations
 * Refactoring !cof-tenebres pour supporter les options de Mana (y compris Tempête de Mana)

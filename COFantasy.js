@@ -10719,6 +10719,9 @@ var COFantasy = COFantasy || function() {
       }
       return;
     }
+    if (ef.effet === 'lienDeSang') {
+      setTokenAttr(attaquant, 'lienDeSangVers', target.token.id, evt);
+    }
     if (ef.duree) {
       if (ef.typeDmg && (!ef.message || !ef.message.dm) && charAttributeAsBool(target, 'diviseEffet_' + ef.typeDmg)) {
         duree = Math.ceil(duree / 2);
@@ -30466,6 +30469,12 @@ var COFantasy = COFantasy || function() {
       dm: true
     },
     hemorragie: {
+      activation: "saigne à la moindre blessure",
+      actif: "saigne à la moindre blessure",
+      fin: "soigne son hémorragie",
+      prejudiciable: true
+    },
+    lienDeSang: {
       activation: "saigne à la moindre blessure",
       actif: "saigne à la moindre blessure",
       fin: "soigne son hémorragie",
