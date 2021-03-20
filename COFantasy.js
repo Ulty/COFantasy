@@ -7298,7 +7298,9 @@ var COFantasy = COFantasy || function() {
             tokenName);
           return;
         }
-        var defBouclierProtecteur = ficheAttributeAsInt(protecteur, 'DEFBOUCLIER', 0);
+        var defBouclierProtecteur;
+        if (persoEstPNJ(protecteur)) defBouclierProtecteur = 2;
+        else defBouclierProtecteur = ficheAttributeAsInt(protecteur, 'DEFBOUCLIER', 0);
         defense += defBouclierProtecteur;
         explications.push(nameProtecteur + " protège " +
           tokenName + " de son bouclier (+" + defBouclierProtecteur + "DEF)");
@@ -11134,7 +11136,7 @@ var COFantasy = COFantasy || function() {
         value: '1' + options.d6
       });
       var msgChampion =
-        attaquant.TokName + " est un" + eForFemale(attaquant) + " champion" +
+        attaquant.tokName + " est un" + eForFemale(attaquant) + " champion" +
         onGenre(attaquant, '', 'ne') + ", son attaque porte !";
       explications.push(msgChampion);
     }
@@ -21242,7 +21244,7 @@ var COFantasy = COFantasy || function() {
         var bonusGroupe = niveau + charAttributeAsInt(soigneur, 'voieDuGuerisseur', 0);
         soins += " + " + bonusGroupe + "]]";
         msg.content += " --alliesEnVue --self";
-        if (options.mana === undefined) {
+        if (options.mana === undefined && estPJ(soigneur)) {
           if (ficheAttributeAsBool(soigneur, 'option_pm', true))
             options.mana = 1;
         }
