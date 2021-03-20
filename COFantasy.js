@@ -30508,8 +30508,8 @@ var COFantasy = COFantasy || function() {
     lienDeSang: {
       activation: "est lié par le sang",
       activationF: "est liée par le sang",
-      actif: "est lié par le sang",
-      fin: "n'est plus lié par le sang",
+      actif: "a un lien de sang",
+      fin: "perd son lien de sang",
       prejudiciable: true
     }
   };
