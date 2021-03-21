@@ -1841,7 +1841,7 @@ var COFantasy = COFantasy || function() {
                   toFront(cible.token);
                   evt.deletedAttributes.push(a);
                   a.remove();
-                  attrRatee.forEach(function (attrR) {
+                  attrRatee.forEach(function(attrR) {
                     evt.deletedAttributes.push(attrR);
                     attrR.remove();
                   });
@@ -13639,7 +13639,7 @@ var COFantasy = COFantasy || function() {
                   }
                   var attrsLienDeSang = tokenAttribute(target, "lienDeSangVers");
                   if (attrsLienDeSang.length > 0) {
-                    var lienDuSangDmg = Math.floor(dmgTotal/2);
+                    var lienDuSangDmg = Math.floor(dmgTotal / 2);
                     var r = {
                       total: lienDuSangDmg,
                       type: 'normal',
@@ -13706,7 +13706,7 @@ var COFantasy = COFantasy || function() {
         }
         var attrsLienDeSang = tokenAttribute(target, "lienDeSangVers");
         if (attrsLienDeSang.length > 0) {
-          var lienDuSangDmg = Math.floor(dmgTotal/2);
+          var lienDuSangDmg = Math.floor(dmgTotal / 2);
           var r = {
             total: lienDuSangDmg,
             type: 'normal',
@@ -22457,7 +22457,7 @@ var COFantasy = COFantasy || function() {
       bar3_max: cible.token.get('bar3_max'),
       showname: true,
       showplayers_name: true,
-      showplayers_bar1: true,
+      showplayers_bar1: cible.token.get('showplayers_bar1'),
     };
     var newToken;
     if (image1) newToken = createObj('graphic', tokenFields);
@@ -27191,7 +27191,7 @@ var COFantasy = COFantasy || function() {
     }
     var zombiesControles = attributeAsInt(necromant, "zombiesControles", 0);
     var rangVoie = attributeAsInt(necromant, "voieOutreTombe", 1);
-    if(zombiesControles >= rangVoie) {
+    if (zombiesControles >= rangVoie) {
       sendChar(necromant.charId, "ne peut plus animer un Zombie car il en contrôle déjà assez.");
       return;
     }
@@ -27205,7 +27205,6 @@ var COFantasy = COFantasy || function() {
       };
       addEvent(evt);
       if (limiteRessources(necromant, options, 'animerMort', "lancer un sort d'Animation des morts", evt)) return;
-      var explications = [];
       if (!stateCOF.combat) {
         initPerso(necromant, evt);
       }
@@ -27251,7 +27250,7 @@ var COFantasy = COFantasy || function() {
         _id: token.id
       }], evt);
       sendChar(necromant.charId, "anime un Zombie");
-      setTokenAttr(necromant, "zombiesControles", zombiesControles+1, evt);
+      setTokenAttr(necromant, "zombiesControles", zombiesControles + 1, evt);
     });
   }
 
@@ -28243,7 +28242,9 @@ var COFantasy = COFantasy || function() {
           else msgRate += "agrippé" + eForFemale(perso) + ".";
           addLineToFramedDisplay(display, msgRate);
           if (attrName == 'etreinteScorpionPar') { // Cas d'étreinte de scorpion avec dommages automatiques
-            var d6 = evt.action.rolls.etreinteDmg || rollDePlus(6, {bonus : 3});
+            var d6 = evt.action.rolls.etreinteDmg || rollDePlus(6, {
+              bonus: 3
+            });
             evt.action.rolls.etreinteDmg = d6;
             var r = {
               total: d6.val,
@@ -30836,9 +30837,10 @@ var COFantasy = COFantasy || function() {
         tousLesTokens: true
       });
     }
+    var character;
     switch (effet) {
       case 'agrandissement': //redonner sa taille normale
-        var character = getObj('character', charId);
+        character = getObj('character', charId);
         if (character === undefined) {
           error("Personnage introuvable");
           return;
@@ -31021,7 +31023,7 @@ var COFantasy = COFantasy || function() {
             var attrNbZombie = tokenAttribute(necromant, "zombiesControles");
             if (attrNbZombie.length > 0) {
               var nbZombie = attrAsInt(attrNbZombie, 1);
-              if (nbZombie > 1) setTokenAttr(necromant, "zombiesControles", nbZombie-1, evt);
+              if (nbZombie > 1) setTokenAttr(necromant, "zombiesControles", nbZombie - 1, evt);
               else attrNbZombie[0].remove();
             }
           }
@@ -31088,7 +31090,7 @@ var COFantasy = COFantasy || function() {
           sendChar(charId, mEffet.fin);
           options.print = function(m) {};
         }
-        var character = getObj('character', charId);
+        character = getObj('character', charId);
         if (character) {
           evt.deletedCharacters = evt.deletedCharacters || [];
           evt.deletedCharacters.push({
@@ -31292,15 +31294,15 @@ var COFantasy = COFantasy || function() {
             charId: charId
           };
           var attrsLienDeSangDe = tokenAttribute(perso, "lienDeSangDe");
-          if(attrsLienDeSangDe.length > 0) {
+          if (attrsLienDeSangDe.length > 0) {
             var tokenLie = persoOfId(attrsLienDeSangDe[0].get("current"));
             if (tokenLie) {
-              tokenAttribute(tokenLie, "lienDeSangVers").forEach(function(attr){
+              tokenAttribute(tokenLie, "lienDeSangVers").forEach(function(attr) {
                 attr.remove();
               });
             }
           }
-          attrsLienDeSangDe.forEach(function (attr){
+          attrsLienDeSangDe.forEach(function(attr) {
             attr.remove();
           });
         });
@@ -31664,7 +31666,7 @@ var COFantasy = COFantasy || function() {
         });
       }
       var degradationZombie = attributeAsInt(perso, 'degradationZombie', -1);
-      if (degradationZombie % 6  === 0) {
+      if (degradationZombie % 6 === 0) {
         var r = {
           total: 1,
           type: 'normal',
