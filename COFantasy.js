@@ -10721,6 +10721,10 @@ var COFantasy = COFantasy || function() {
       }
       return;
     }
+    if (ef.effet === 'lienDeSang') {
+      setTokenAttr(attaquant, 'lienDeSangVers', target.token.id, evt);
+      setTokenAttr(target, 'lienDeSangDe', attaquant.token.id, evt);
+    }
     if (ef.duree) {
       if (ef.typeDmg && (!ef.message || !ef.message.dm) && charAttributeAsBool(target, 'diviseEffet_' + ef.typeDmg)) {
         duree = Math.ceil(duree / 2);
@@ -13633,6 +13637,20 @@ var COFantasy = COFantasy || function() {
                   if (bar1 > 0 && tempDmg >= bar1) { //assomé
                     setState(target, 'assome', true, evt);
                   }
+                  var attrsLienDeSang = tokenAttribute(target, "lienDeSangVers");
+                  if (attrsLienDeSang.length > 0) {
+                    var lienDuSangDmg = Math.floor(dmgTotal/2);
+                    var r = {
+                      total: lienDuSangDmg,
+                      type: 'normal',
+                      display: lienDuSangDmg
+                    };
+                    var personnageLie = persoOfId(attrsLienDeSang[0].get("current"));
+                    if (personnageLie) {
+                      expliquer("Le lien de sang inflige " + lienDuSangDmg + " dégâts à " + personnageLie.token.get("name"));
+                      dealDamage(personnageLie, r, [], evt, false);
+                    }
+                  }
                   if (showTotal) dmgDisplay += " = " + dmgTotal;
                   if (displayRes === undefined) return dmgDisplay;
                   displayRes(dmgDisplay, pvPerdus);
@@ -13685,6 +13703,20 @@ var COFantasy = COFantasy || function() {
         }
         if (bar1 > 0 && tempDmg >= bar1) { //assomé
           setState(target, 'assome', true, evt);
+        }
+        var attrsLienDeSang = tokenAttribute(target, "lienDeSangVers");
+        if (attrsLienDeSang.length > 0) {
+          var lienDuSangDmg = Math.floor(dmgTotal/2);
+          var r = {
+            total: lienDuSangDmg,
+            type: 'normal',
+            display: lienDuSangDmg
+          };
+          var personnageLie = persoOfId(attrsLienDeSang[0].get("current"));
+          if (personnageLie) {
+            expliquer("Le lien de sang inflige " + lienDuSangDmg + " dégâts à " + personnageLie.token.get("name"));
+            dealDamage(personnageLie, r, [], evt, false);
+          }
         }
         if (showTotal) dmgDisplay += " = " + dmgTotal;
         if (displayRes === undefined) return dmgDisplay;
@@ -14338,6 +14370,8 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('injonctionMortelle', evt, attrs);
     attrs = removeAllAttributes('cercleDeProtectionActif', evt, attrs);
     attrs = removeAllAttributes('feinte', evt, attrs);
+    attrs = removeAllAttributes('lienDeSangVers', evt, attrs);
+    attrs = removeAllAttributes('lienDeSangDe', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -30472,6 +30506,13 @@ var COFantasy = COFantasy || function() {
       actif: "saigne à la moindre blessure",
       fin: "soigne son hémorragie",
       prejudiciable: true
+    },
+    lienDeSang: {
+      activation: "est lié par le sang",
+      activationF: "est liée par le sang",
+      actif: "a un lien de sang",
+      fin: "perd son lien de sang",
+      prejudiciable: true
     }
   };
 
@@ -31242,6 +31283,26 @@ var COFantasy = COFantasy || function() {
             var index = stateCOF.armeesDesMorts.indexOf(token.id);
             if (index > -1) stateCOF.armeesDesMorts.splice(index, 1);
           }
+        });
+        break;
+      case 'lienDeSang':
+        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+          var perso = {
+            token: token,
+            charId: charId
+          };
+          var attrsLienDeSangDe = tokenAttribute(perso, "lienDeSangDe");
+          if(attrsLienDeSangDe.length > 0) {
+            var tokenLie = persoOfId(attrsLienDeSangDe[0].get("current"));
+            if (tokenLie) {
+              tokenAttribute(tokenLie, "lienDeSangVers").forEach(function(attr){
+                attr.remove();
+              });
+            }
+          }
+          attrsLienDeSangDe.forEach(function (attr){
+            attr.remove();
+          });
         });
         break;
       default:
