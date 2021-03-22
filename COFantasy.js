@@ -8530,7 +8530,7 @@ var COFantasy = COFantasy || function() {
       nomCiblePrincipale = targetToken.get('name');
       if (options.aoe) {
         //cas de la boule de feu qui fait un échec critique : on déplace la cible si elle est artificielle
-        if (!options.redo && options.demiAuto && 
+        if (!options.redo && options.demiAuto &&
           (!options.triche || options.triche == 'echecCritique') &&
           targetToken.get('bar1_max') == 0) { // jshint ignore:line
           var dice = 20;
@@ -8550,6 +8550,8 @@ var COFantasy = COFantasy || function() {
             var top = targetToken.get('top') + randomInteger(1400) - 700;
             targetToken.set('left', left);
             targetToken.set('top', top);
+          } else {
+            if (options.triche === undefined) options.triche = 'pasDEchecCritique';
           }
         }
         if (options.targetFx) {
@@ -10176,6 +10178,9 @@ var COFantasy = COFantasy || function() {
                     break;
                   case "echecCritique":
                     if (d20roll > 1) d20roll = 1;
+                    break;
+                  case 'pasDEchecCritique':
+                    if (d20roll == 1) d20roll = randomInteger(dice - 1) + 1;
                     break;
                   default:
                     error("Option inconnue", triche);
