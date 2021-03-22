@@ -20139,7 +20139,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    type = type || "";
+    type = type || '';
     switch (type) {
       case 'tueurFantasmagorique':
         tueurFantasmagorique(getPlayerIdFromMsg(msg), attaquant, cible, options);
