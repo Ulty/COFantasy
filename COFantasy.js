@@ -8529,6 +8529,29 @@ var COFantasy = COFantasy || function() {
       var page;
       nomCiblePrincipale = targetToken.get('name');
       if (options.aoe) {
+        //cas de la boule de feu qui fait un échec critique : on déplace la cible si elle est artificielle
+        if (!options.redo && options.demiAuto && 
+          (!options.triche || options.triche == 'echecCritique') &&
+          targetToken.get('bar1_max') == 0) { // jshint ignore:line
+          var dice = 20;
+          if (options.avecd12 ||
+
+            (estAffaibli(attaquant) && !charAttributeAsBool(attaquant, 'insensibleAffaibli')) ||
+            getState(attaquant, 'immobilise') ||
+            attributeAsBool(attaquant, 'mortMaisNAbandonnePas') ||
+            attributeAsInt(attaquant, 'niveauEbriete', 0) > 0
+          ) {
+            dice = 12;
+          }
+          if (randomInteger(dice) == 1 ||
+            (options.triche && options.triche.echecCritique)) {
+            options.triche = 'echecCritique';
+            var left = targetToken.get('left') + randomInteger(1400) - 700;
+            var top = targetToken.get('top') + randomInteger(1400) - 700;
+            targetToken.set('left', left);
+            targetToken.set('top', top);
+          }
+        }
         if (options.targetFx) {
           spawnFx(targetToken.get('left'), targetToken.get('top'), options.targetFx, pageId);
         }
