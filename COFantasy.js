@@ -85,6 +85,11 @@ var COFantasy = COFantasy || function() {
               explications: "Coup critique à une attaque dès qu'elle dépasse DEF + 10",
               val: false,
               type: 'bool'
+            },
+            echec_critique_boule_de_feu: {
+              explications: "Nombre de mètre dont le centre d'une boule de feu peut être déplacé de manière aléatoire en cas d'échec critique. La probabilité est inversement proportionelle à la distance.",
+              val: 15,
+              type: 'int'
             }
           }
         },
@@ -5627,8 +5632,8 @@ var COFantasy = COFantasy || function() {
           if (scope[cmd[0]] === undefined) scope[cmd[0]] = 0;
           scope[cmd[0]] += bAtt;
           return;
-        case "bonusCritique":
-        case "attaqueDeGroupe":
+        case 'bonusCritique':
+        case 'attaqueDeGroupe':
           if (cmd.length < 2) {
             error("Usage : --" + cmd[0] + " b", cmd);
             return;
@@ -5665,10 +5670,11 @@ var COFantasy = COFantasy || function() {
               scope.puissant = attributeAsBool(attaquant, cmd[1] + "Puissant");
           }
           return;
-        case "rate":
-        case "touche":
-        case "critique":
-        case "echecCritique":
+        case 'rate':
+        case 'touche':
+        case 'critique':
+        case 'echecCritique':
+        case 'pasDEchecCritique':
           if (options.triche === undefined) {
             options.triche = cmd[0];
           } else {
@@ -8544,12 +8550,44 @@ var COFantasy = COFantasy || function() {
             dice = 12;
           }
           if (randomInteger(dice) == 1 ||
-            (options.triche && options.triche.echecCritique)) {
+            (options.triche && options.triche == 'echecCritique')) {
             options.triche = 'echecCritique';
-            var left = targetToken.get('left') + randomInteger(1400) - 700;
-            var top = targetToken.get('top') + randomInteger(1400) - 700;
-            targetToken.set('left', left);
-            targetToken.set('top', top);
+            var left = targetToken.get('left');
+            var top = targetToken.get('top');
+            pc = {
+              x: left,
+              y: top,
+            };
+            var angle = Math.random() * 2 * Math.PI;
+            var distance = Math.random() * reglesOptionelles.divers.val.echec_critique_boule_de_feu.val * PIX_PER_UNIT / computeScale(pageId);
+            pc.x = Math.round(left + Math.cos(angle) * distance);
+            pc.y = Math.round(top + Math.sin(angle) * distance);
+            page = page || getObj("page", pageId);
+            var width = page.get('width') * PIX_PER_UNIT;
+            var height = page.get('height') * PIX_PER_UNIT;
+            if (pc.x < 0) pc.x = 0;
+            if (pc.y < 0) pc.y = 0;
+            if (pc.x > width) pc.y = width;
+            if (pc.y > height) pc.y = height;
+            murs = getWalls(page, pageId, murs);
+            if (murs) {
+              if (obstaclePresent(left, top, pc, murs)) {
+                angle = Math.random() * 2 * Math.PI;
+                distance = (Math.random() * reglesOptionelles.divers.val.echec_critique_boule_de_feu.val * PIX_PER_UNIT / computeScale(pageId)) / 2;
+                pc.x = Math.round(left + Math.cos(angle) * distance);
+                pc.y = Math.round(top + Math.sin(angle) * distance);
+                if (pc.x < 0) pc.x = 0;
+                if (pc.y < 0) pc.y = 0;
+                if (pc.x > width) pc.y = width;
+                if (pc.y > height) pc.y = height;
+                if (obstaclePresent(left, top, pc, murs)) {
+                  pc.x = left;
+                  pc.y = top;
+                }
+              }
+            }
+            targetToken.set('left', pc.x);
+            targetToken.set('top', pc.y);
           } else {
             if (options.triche === undefined) options.triche = 'pasDEchecCritique';
           }
@@ -32559,7 +32597,7 @@ var COFantasy = COFantasy || function() {
             if (nsy + sh / 2 > height) nsy = Math.floor(height - sh / 2);
             //vérifie si de la nouvelle position on peut voir le suivi
             if (obstaclePresent(nsx, nsy, pt, murs)) {
-              //On essaie de suivre le chemin du token, à la lace
+              //On essaie de suivre le chemin du token, à la place
               //D'abord se déplacer vers l'ancienne position de perso, au maximum de distance pixels
               var distLoc = distance;
               if (distLoc - dp < 5) {
