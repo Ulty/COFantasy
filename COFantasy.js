@@ -851,7 +851,7 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
-  // retourne un tableau contenant la liste des ID de joueurs connectés controlant le personnage lié au Token
+  // retourne un tableau contenant la liste des ID de joueurs connectés controllant le personnage lié au Token
   function getPlayerIds(perso) {
     var character = getObj('character', perso.charId);
     if (character === undefined) return;
@@ -32398,6 +32398,8 @@ var COFantasy = COFantasy || function() {
 
   function nePeutPasBouger(perso) {
     if (attributeAsBool(perso, 'peutEtreDeplace')) return false;
+    var players = getPlayerIds(perso);
+    if (!players || players.every(playerIsGM)) return false;
     if (isActive(perso)) {
       if (getState(perso, 'immobilise')) return true;
       if (attributeAsBool(perso, 'bloqueManoeuvre')) return true;
