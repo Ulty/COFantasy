@@ -12602,8 +12602,10 @@ var COFantasy = COFantasy || function() {
   //   - msgRate : message à afficher si l'action rate
   //   - attaquant : le {charId, token} de l'attaquant contre lequel le save se fait (si il y en a un)
   //   - type : le type de dégâts contre lequel on fait le save
+  //   - hideSaveTitle : cache le titre du save
+  //   - bonus : bonus au jet de save
   function save(s, target, saveId, expliquer, options, evt, afterSave) {
-    var bonus = 0;
+    var bonus = options.bonus || 0;
     if (s.fauchage) {
       if (s.fauchage <= taillePersonnage(target, 4)) {
         expliquer(target.token.get('name') + " est trop grand pour être fauché.");
@@ -12644,8 +12646,7 @@ var COFantasy = COFantasy || function() {
       if (options.msgPour) title += options.msgPour;
       expliquer(title);
     }
-    var optionsTest = {...options
-    };
+    var optionsTest = {...options};
     optionsTest.bonusAttrs = bonusAttrs;
     optionsTest.bonus = bonus;
     testCaracteristique(target, carac, s.seuil, saveId, optionsTest, evt,
@@ -13715,6 +13716,7 @@ var COFantasy = COFantasy || function() {
                 rolls: options.rolls,
                 chanceRollId: options.chanceRollId
               };
+              if (attributeAsBool(target, 'rageDuBerserk')) saveOpts.bonus = 10;
               save({
                   carac: 'CON',
                   seuil: defierLaMort
