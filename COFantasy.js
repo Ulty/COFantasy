@@ -43,7 +43,7 @@ var COFantasy = COFantasy || function() {
   "use strict";
 
   const PIX_PER_UNIT = 70;
-  const HISTORY_SIZE = 150;
+  const HISTORY_SIZE = 200;
   const BS_LABEL = 'text-transform: uppercase; display: inline; padding: .2em .6em .3em; font-size: 75%; line-height: 2; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25em;';
   const BS_LABEL_SUCCESS = 'background-color: #5cb85c;';
   const BS_LABEL_INFO = 'background-color: #5bc0de;';
@@ -6730,6 +6730,9 @@ var COFantasy = COFantasy || function() {
     }
     // Réflexes felins de la Voie du pourfendeur
     init += charAttributeAsInt(perso, 'reflexesFelins', 0);
+    //Prescience de l'ensorceleur
+    if (attributeAsBool(perso, 'prescienceUtilisee')) init += 10;
+    //Forêt vivante
     if (attributeAsBool(perso, 'foretVivanteEnnemie')) {
       init -= 5;
     }
@@ -6739,8 +6742,8 @@ var COFantasy = COFantasy || function() {
   //ne rajoute pas evt à l'historique
   //options: recompute : si pas encore agi, on remet à sa place dans le turn order
   function initiative(selected, evt, recompute) { //set initiative for selected tokens
-    // Always called when entering combat mode
-    // set the initiative counter, if not yet set
+    // Toujours appelé quand on entre en combat
+    // Initialise le compteur de tour, si besoin
     // Assumption: all tokens that have not acted yet are those before the turn
     // counter.
     // When initiative for token not present, assumes it has not acted
@@ -6748,6 +6751,7 @@ var COFantasy = COFantasy || function() {
     // current initiative.
     // Tokens appearing before the turn are sorted
     if (!Campaign().get('initiativepage')) evt.initiativepage = false;
+    var debutCombat = false;
     if (!stateCOF.combat) { //actions de début de combat
       evt.combat = false;
       evt.combat_pageid = stateCOF.combat_pageid;
@@ -6766,6 +6770,7 @@ var COFantasy = COFantasy || function() {
       evt.init = stateCOF.init;
       stateCOF.init = 1000;
       removeAllAttributes('transeDeGuérison', evt);
+      debutCombat = true;
     }
     if (!Campaign().get('initiativepage')) {
       Campaign().set('initiativepage', true);
@@ -6810,6 +6815,38 @@ var COFantasy = COFantasy || function() {
         to.dejaAgi[dejaIndex].pr = init;
       }
     });
+    if (debutCombat) { //On cherche si un des personnages de la carte a la capacité Prescience
+      var allToks =
+        findObjs({
+          _type: 'graphic',
+          _pageid: stateCOF.combat_pageid,
+          _subtype: 'token',
+        });
+      var prescience = allToks.find(function(tok) {
+        var ci = tok.get('represents');
+        if (ci === undefined) return false;
+        var perso = {
+          token: tok,
+          charId: ci
+        };
+        return charAttributeAsBool(perso, 'prescience');
+      });
+      if (prescience) { //Il faut stoquer les positions de tous les token pour le retour en arrière.
+        stateCOF.prescience = {
+          evt: evt,
+          dernieresPositions: []
+        };
+        allToks.forEach(function(tok) {
+          var ci = tok.get('represents');
+          if (ci == undefined) return;
+          stateCOF.prescience.dernieresPositions.push({
+            token: tok,
+            left: tok.get('left'),
+            top: tok.get('top')
+          });
+        });
+      }
+    }
     setTurnOrder(to, evt);
   }
 
@@ -7536,6 +7573,10 @@ var COFantasy = COFantasy || function() {
     if (defArme > 0) {
       explications.push("Arme de parade en main gauche => +" + defArme + " en DEF");
       defense += defArme;
+    }
+    if (attributeAsBool(target, 'prescienceUtilisee')) {
+      explications.push("Prescience => +10 en DEF");
+      defense += 10;
     }
     if (target.realCharId) target.charId = target.realCharId;
     return defense;
@@ -14385,6 +14426,8 @@ var COFantasy = COFantasy || function() {
 
   function sortirDuCombat() {
     stateCOF.usureOff = undefined;
+    stateCOF.prescience = undefined;
+    stateCOF.nextPrescience = undefined;
     if (!stateCOF.combat) {
       log("Pas en combat");
       sendChat("GM", "/w GM Le combat est déjà terminé");
@@ -14438,6 +14481,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('feinte', evt, attrs);
     attrs = removeAllAttributes('lienDeSangVers', evt, attrs);
     attrs = removeAllAttributes('lienDeSangDe', evt, attrs);
+    attrs = removeAllAttributes('prescienceUtilisee', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -14461,6 +14505,7 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'chairACanon', evt);
     resetAttr(attrs, 'paradeDeProjectiles', evt);
     resetAttr(attrs, 'prouesse', evt);
+    resetAttr(attrs, 'prescience', evt);
     // Réinitialiser le kiai
     resetAttr(attrs, 'kiai', evt);
     // Réinitialiser riposteGuerrier
@@ -29532,6 +29577,90 @@ var COFantasy = COFantasy || function() {
     }); //fin du getSelected
   }
 
+  //!cof-prescience token_id
+  function utiliserPrescience(msg) {
+    var options = parseOptions(msg);
+    var cmd = options.cmd;
+    if (!cmd || cmd.length < 2) {
+      error("Pas assez d'arguments pour !cof-prescience", cmd);
+      return;
+    }
+    var ensorceleur = persoOfId(cmd[1], cmd[1], options.pageId);
+    if (ensorceleur === undefined) {
+      error("Impossible de trouver le personnage qui utilise prescience", cmd);
+      return;
+    }
+    if (!stateCOF.combat) {
+      sendPlayer(msg, "On ne peut utiliser prescience qu'en combat");
+      return;
+    }
+    if (stateCOF.prescience === undefined) {
+      error("Pas de sauvegarde disponible pour la prescience", stateCOF);
+      return;
+    }
+    var prescience = tokenAttribute(ensorceleur, 'prescience');
+    if (prescience === undefined || prescience.length === 0) {
+      sendPlayer(msg, ensorceleur.token.get('name') + " ne peut pas faire de prescience");
+      return;
+    }
+    prescience = prescience[0];
+    var nbPrescience = parseInt(prescience.get('current'));
+    if (isNaN(nbPrescience)) {
+      error("Attribut de prescience mal formé", prescience);
+      return;
+    }
+    if (nbPrescience < 1) {
+      sendPlayer(msg, ensorceleur.token.get('name') + " ne peut plus utiliser son pouvoir de prescience pendant ce combat");
+      return;
+    }
+    //On commence par faire les undo
+    var evt = lastEvent();
+    if (evt === undefined) {
+      error("Impossible d'utiliser la prescience car l'historique est vide", cmd);
+      return;
+    }
+    //Au cas où, on vérifie que l'événement de début de tour est bien présent
+    if (!findEvent(stateCOF.prescience.evt.id)) {
+      error("Impossible de trouver le début du tour dans l'historique.", stateCOF.prescience);
+      return;
+    }
+    while (evt && evt.id != stateCOF.prescience.evt.id) {
+      undoEvent();
+      evt = lastEvent();
+    }
+    //Ensuite on remet les tokens en position
+    stateCOF.prescience.dernieresPositions.forEach(function(pos) {
+      pos.token.set('left', pos.left);
+      pos.token.set('top', pos.top);
+    });
+    //Et enfin, on diminue les utilisations de prescience et on diminue la mana si possible.
+    prescience.set('current', nbPrescience - 1);
+    //Pas d'undo possible
+    //on cherche si un autre personnage dispose de prescience
+    var allToks =
+      findObjs({
+        _type: 'graphic',
+        _pageid: stateCOF.combat_pageid,
+        _subtype: 'token',
+      });
+    var prescienceActif = allToks.find(function(tok) {
+      var ci = tok.get('represents');
+      if (ci === undefined) return false;
+      var perso = {
+        token: tok,
+        charId: ci
+      };
+      return charAttributeAsBool(perso, 'prescience');
+    });
+    if (!prescienceActif) stateCOF.prescience = undefined;
+    if (limiteRessources(ensorceleur, options, "prescience", "lancer un sort de prescience", {})) return;
+    setTokenAttr(ensorceleur, 'prescienceUtilisee', true, {});
+    initiative([{
+      _id: ensorceleur.token.id
+    }], {}, true);
+    updateNextInit(ensorceleur);
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -29984,6 +30113,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-animer-mort':
         animerMort(msg);
+        return;
+      case '!cof-prescience':
+        utiliserPrescience(msg);
         return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);
@@ -31525,6 +31657,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('exemplaire', evt, attrs);
     attrs = removeAllAttributes('peutEtreDeplace', evt, attrs);
     attrs = removeAllAttributes('attaqueMalgreMenace', evt, attrs);
+    attrs = removeAllAttributes('prescienceUtilisee', evt, attrs);
     resetAttr(attrs, 'attaqueEnTraitre', evt);
     resetAttr(attrs, 'esquiveAcrobatique', evt);
     resetAttr(attrs, 'paradeDeProjectiles', evt);
@@ -31995,6 +32128,39 @@ var COFantasy = COFantasy || function() {
     if (targetLine != "")
       sendChat('player|' + gmId, "!cof-dmg 1d6" + targetLine + " --titre Dégâts des morts-vivants animés sur les cibles qui les combattent");
     removeAllAttributes("defenseArmeeDesMorts", evt, attrs);
+    if (stateCOF.prescience) {
+      allTokens = allTokens || findObjs({
+        _type: "graphic",
+        _pageid: pageId,
+        _subtype: "token",
+      });
+      //On affiche la prescience aux joueurs concernés
+      var prescience = attrs.filter(function(attr) {
+        if (attr.get('name') != 'prescience') return false;
+        return (parseInt(attr.get('current')) > 0);
+      });
+      prescience.forEach(function(attr) {
+        var charId = attr.get('characterid');
+        var token = allTokens.find(function(tok) {
+          return (tok.get('represents') == charId);
+        });
+        if (token === undefined) return;
+        whisperChar(charId, "Possibilité d'utiliser la " + boutonSimple('!cof-prescience ' + token.id + ' --mana 2', "Prescience"));
+      });
+      stateCOF.nextPrescience = {
+        evt: evt,
+        dernieresPositions: []
+      };
+      allTokens.forEach(function(tok) {
+        var ci = tok.get('represents');
+        if (ci == undefined) return;
+        stateCOF.nextPrescience.dernieresPositions.push({
+          token: tok,
+          left: tok.get('left'),
+          top: tok.get('top')
+        });
+      });
+    }
   }
 
   //evt a un champ attributes et un champ deletedAttributes
@@ -32032,6 +32198,10 @@ var COFantasy = COFantasy || function() {
     if (turnOrder === '') return; // nothing in the turn order
     turnOrder = JSON.parse(turnOrder);
     if (turnOrder.length < 1) return; // Juste le compteur de tour
+    if (stateCOF.nextPrescience) {
+      stateCOF.prescience = stateCOF.nextPrescience;
+      stateCOF.nextPrescience = undefined;
+    }
     var evt = {
       type: 'nextTurn',
       attributes: [],

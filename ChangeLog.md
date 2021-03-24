@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.17
 ### Capacités
+* Prescience (Voie de la divination)
 * Cône de froid (doc)
 * Gros Monstre, grosse arme (Voie des armes à 2 mains)
 * Hors de portée (shaman scorpion)
