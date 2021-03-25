@@ -9092,9 +9092,11 @@ var COFantasy = COFantasy || function() {
       }
     };
     var attaqueImpossible = false;
+    if (charAttributeAsBool(attaquant, 'chatimentDuMale')) options.chatimentDuMale = true;
     cibles.forEach(function(cible) {
       if (attaqueImpossible) return;
       cible.messages = [];
+      if (options.chatimentDuMale && onGenre(cible, true, false)) cible.chatimentDuMale = true;
       var evalSanctuaire = function() {
         if (attributeAsBool(cible, 'sanctuaire')) {
           var testId = 'sanctuaire_' + cible.token.id;
@@ -10281,7 +10283,17 @@ var COFantasy = COFantasy || function() {
                   }
                 });
               }
-              var attackRoll = d20roll + attSkill + attBonus;
+              var targetd20roll = d20roll;
+              if (target.chatimentDuMale) {
+                target.chatimentDuMaleRoll = target.chatimentDuMaleRoll || randomInteger(dice);
+                target.chatimentDuMaleLowRoll = target.chatimentDuMaleRoll;
+                target.messages.push("Bénédiction de Maëdra => relance à " + target.chatimentDuMaleRoll + " du jet d'attaque contre un mâle");
+                if (target.chatimentDuMaleRoll > targetd20roll) {
+                  targetd20roll = target.chatimentDuMaleRoll;
+                  target.chatimentDuMaleLowRoll = target.d20roll;
+                }
+              }
+              var attackRoll = targetd20roll + attSkill + attBonus;
               target.attackRoll = attackRoll;
               var attackResult; // string
               var paralyse = false;
@@ -10290,7 +10302,7 @@ var COFantasy = COFantasy || function() {
                 if (!options.attaqueAssuree)
                   target.messages.push("Cible paralysée => réussite critique automatique");
               }
-              if (d20roll >= 15) {
+              if (targetd20roll >= 15) {
                 if (charAttributeAsBool(attaquant, 'champion'))
                   options.champion = true;
                 if (options.contact && charAttributeAsBool(attaquant, 'agripper'))
@@ -10308,9 +10320,9 @@ var COFantasy = COFantasy || function() {
                   target.messages.push(attaquant.tokName + " étreint " + target.tokName + " !");
                 }
               }
-              if (d20roll >= 17 && options.contact &&
+              if (targetd20roll >= 17 && options.contact &&
                 charAttributeAsBool(attaquant, 'crocEnJambe')) {
-                if (d20roll >= 19 || !estQuadrupede(target)) {
+                if (targetd20roll >= 19 || !estQuadrupede(target)) {
                   setState(target, 'renverse', true, evt);
                   target.messages.push("tombe par terre");
                 }
@@ -10320,7 +10332,7 @@ var COFantasy = COFantasy || function() {
                 attackRoll >= (defense + reglesOptionelles.haute_DEF.val.crit_attaque_groupe.val)) {
                 options.attaqueDeGroupeDmgCoef = true;
               }
-              if (d20roll == 1 && options.chance === undefined) {
+              if (targetd20roll == 1 && options.chance === undefined) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
                 attackResult += addAttackImg("imgAttackEchecCritique", weaponStats.divers, options);
                 addAttackSound("soundAttackEchecCritique", weaponStats.divers, options);
@@ -10329,8 +10341,8 @@ var COFantasy = COFantasy || function() {
                   evt.succes = false;
                 } else touche = false;
                 echecCritique = true;
-              } else if ((paralyse || options.ouvertureMortelle || d20roll == 20 ||
-                  (d20roll >= target.crit && attackRoll >= defense) ||
+              } else if ((paralyse || options.ouvertureMortelle || targetd20roll == 20 ||
+                  (targetd20roll >= target.crit && attackRoll >= defense) ||
                   (reglesOptionelles.divers.val.coups_critiques_etendus.val && attackRoll > defense + 9)) && !options.attaqueAssuree) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
                 attackResult += addAttackImg("imgAttackSuccesCritique", weaponStats.divers, options);
@@ -10341,11 +10353,11 @@ var COFantasy = COFantasy || function() {
                   var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
                   if (faireMouche > 0) target.faireMouche = faireMouche;
                 }
-              } else if (options.champion || d20roll == 20 || paralyse) {
+              } else if (options.champion || targetd20roll == 20 || paralyse) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
                 attackResult += addAttackImg("imgAttackSuccesChampion", weaponStats.divers, options);
                 addAttackSound("soundAttackSuccesChampion", weaponStats.divers, options);
-              } else if (attackRoll < defense && d20roll < target.crit) {
+              } else if (attackRoll < defense && targetd20roll < target.crit) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
                 attackResult += addAttackImg("imgAttackEchec", weaponStats.divers, options);
                 addAttackSound("soundAttackEchec", weaponStats.divers, options);
@@ -10353,7 +10365,7 @@ var COFantasy = COFantasy || function() {
                 if (options.demiAuto) {
                   target.partialSaveAuto = true;
                 } else touche = false;
-              } else if (d20roll % 2 && attributeAsBool(target, 'clignotement')) {
+              } else if (targetd20roll % 2 && attributeAsBool(target, 'clignotement')) {
                 target.messages.push(target.tokName + " disparaît au moment où l'attaque aurait du l" + onGenre(target, 'e', 'a') + " toucher");
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
                 attackResult += addAttackImg("imgAttackEchecClignotement", weaponStats.divers, options);
@@ -10367,7 +10379,6 @@ var COFantasy = COFantasy || function() {
                 attackResult += addAttackImg("imgAttackSucces", weaponStats.divers, options);
                 addAttackSound("soundAttackSucces", weaponStats.divers, options);
               }
-
               var attRollValue;
               var bonusTexte = '';
               if (attSkill > 0) bonusTexte += "+" + attSkill;
@@ -10408,6 +10419,15 @@ var COFantasy = COFantasy || function() {
                     value: '2' + options.d6
                   });
                 }
+                if (target.chatimentDuMale) {
+                  if (target.chatimentDuMaleLowRoll + attSkill + attBonus >= defense) {
+                    target.additionalDmg.push({
+                      type: mainDmgType,
+                      value: '2' + options.d6
+                    });
+                    target.messages.push("Châtiment du mâle => +2d6 DM");
+                  }
+                }
                 if (attributeAsBool(target, 'momentDePerfection')) {
                   target.messages.push("Grâce à son instant de perfection, " + target.tokName + " évite le coup !");
                   touche = false;
@@ -10434,7 +10454,7 @@ var COFantasy = COFantasy || function() {
                       (Math.random() + Math.random() + Math.random() + Math.random() +
                         Math.random() + 1) / 6;
                     // take into account by how far we miss
-                    dev = dev * (d20roll == 1) ? 2 : ((attackRoll - defense) / 20);
+                    dev = dev * (targetd20roll == 1) ? 2 : ((attackRoll - defense) / 20);
                     if (Math.random() > 0.5) dev = -dev;
                     p2.x += dev * (p2.y - p1.y);
                     p2.y += dev * (p2.x - p1.x);

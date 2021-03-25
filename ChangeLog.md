@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.17
 ### Capacités
+* Châtiment du mâle du Xyrufa.
 * Prise en compte de la rage dans la capacité Défier la mort du barbare.
 * Prescience (Voie de la divination)
 * Cône de froid (doc)
