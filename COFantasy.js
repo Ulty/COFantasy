@@ -88,7 +88,7 @@ var COFantasy = COFantasy || function() {
             },
             echec_critique_boule_de_feu: {
               explications: "Nombre de mètre dont le centre d'une boule de feu peut être déplacé de manière aléatoire en cas d'échec critique. La probabilité est inversement proportionelle à la distance.",
-              val: 15,
+              val: 12,
               type: 'int'
             }
           }
@@ -7941,9 +7941,17 @@ var COFantasy = COFantasy || function() {
       races.split(",").forEach(function(race) {
         race = race.trim();
         if (race === '') return;
-        if (race == 'mort-vivant') {
-          if (estMortVivant(target)) ennemiJure = true;
-        } else if (raceIs(target, race)) ennemiJure = true;
+        switch (race) {
+          case 'mort-vivant':
+            if (estMortVivant(target)) ennemiJure = true;
+            break;
+          case 'geant':
+          case 'géant':
+            if (estGeant(target)) ennemiJure = true;
+            break;
+          default:
+            if (raceIs(target, race)) ennemiJure = true;
+        }
       });
     }
     if (ennemiJure) {
@@ -12646,7 +12654,8 @@ var COFantasy = COFantasy || function() {
       if (options.msgPour) title += options.msgPour;
       expliquer(title);
     }
-    var optionsTest = {...options};
+    var optionsTest = {...options
+    };
     optionsTest.bonusAttrs = bonusAttrs;
     optionsTest.bonus = bonus;
     testCaracteristique(target, carac, s.seuil, saveId, optionsTest, evt,
@@ -20970,6 +20979,27 @@ var COFantasy = COFantasy || function() {
       case 'momie':
       case 'goule':
       case 'vampire':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function estGeant(perso) {
+    if (charAttributeAsBool(perso, 'geant')) return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '');
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    switch (perso.race) {
+      case 'géant':
+      case 'geant':
+      case 'ogre':
+      case 'troll':
+      case 'ettin':
+      case 'cyclope':
+      case 'yai':
         return true;
       default:
         return false;
