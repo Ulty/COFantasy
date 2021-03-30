@@ -7364,6 +7364,13 @@ var COFantasy = COFantasy || function() {
         explications.push("Posture de combat => +" + postureVal + " DEF");
       }
     }
+    var attrAttaqueAOutrance = tokenAttribute(target, 'attaqueAOutrance');
+    if (attrAttaqueAOutrance.length > 0) {
+      attrAttaqueAOutrance = attrAttaqueAOutrance[0];
+      var attaqueAOutranceVal = parseInt(attrAttaqueAOutrance.get('current'));
+      defense -= attaqueAOutranceVal;
+      explications.push("Attaque à outrance => -" + attaqueAOutranceVal + " DEF");
+    }
     var instinctSurvie = charAttributeAsInt(target, 'instinctDeSurvie', 0);
     if (instinctSurvie > 0 && target.token.get('bar1_value') <= instinctSurvie)
       defense += 5;
@@ -7577,6 +7584,10 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(target, 'prescienceUtilisee')) {
       explications.push("Prescience => +10 en DEF");
       defense += 10;
+    }
+    if (options.contact && attributeAsBool(target, 'tenirADistance')) {
+      explications.push("Tient l'ennemi à distance => +5 en DEF");
+      defense += 5;
     }
     if (target.realCharId) target.charId = target.realCharId;
     return defense;
@@ -11170,6 +11181,24 @@ var COFantasy = COFantasy || function() {
         explications.push("Posture de combat => +" + postureVal + " DM");
       }
     }
+    var attrAttaqueAOutrance = tokenAttribute(attaquant, 'attaqueAOutrance');
+    if (attrAttaqueAOutrance.length > 0) {
+      attrAttaqueAOutrance = attrAttaqueAOutrance[0];
+      var attaqueAOutranceVal = parseInt(attrAttaqueAOutrance.get('current'));
+      if (attaqueAOutranceVal == 2) {
+        attaquant.additionalDmg.push({
+          type: mainDmgType,
+          value: '1' + options.d6
+        });
+        explications.push("Attaque à outrance => +1d6 DM");
+      } else if (attaqueAOutranceVal == 5) {
+        attaquant.additionalDmg.push({
+          type: mainDmgType,
+          value: '2' + options.d6
+        });
+        explications.push("Attaque à outrance => +2d6 DM");
+      }
+    }
     if (attaquant.bonusCapitaine) attDMBonusCommun += " +" + attaquant.bonusCapitaine;
     // Les autres sources de dégâts
     if (options.distance) {
@@ -14513,6 +14542,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('lienDeSangVers', evt, attrs);
     attrs = removeAllAttributes('lienDeSangDe', evt, attrs);
     attrs = removeAllAttributes('prescienceUtilisee', evt, attrs);
+    attrs = removeAllAttributes('attaqueAOutrance', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -18414,6 +18444,22 @@ var COFantasy = COFantasy || function() {
             default:
           }
           addLineToFramedDisplay(display, postureMsg);
+        }
+        var attrattaqueAOutrance = tokenAttribute(perso, 'attaqueAOutrance');
+        if (attrattaqueAOutrance.length > 0) {
+          attrattaqueAOutrance = attrattaqueAOutrance[0];
+          var attaqueAOutrance = attrattaqueAOutrance.get('current');
+          var attaqueAOutranceMsg = "attaque à outrance ";
+          switch (attaqueAOutrance) {
+            case 2:
+              attaqueAOutranceMsg += "(-2 DEF, +1D6 DM)";
+              break;
+            case 5:
+              attaqueAOutranceMsg += "(-5 DEF, +2D6 DM)";
+              break;
+            default:
+          }
+          addLineToFramedDisplay(display, attaqueAOutranceMsg);
         }
         var rangSoin = charAttributeAsInt(perso, 'voieDesSoins', 0);
         if (rangSoin > 0) {
@@ -22947,6 +22993,46 @@ var COFantasy = COFantasy || function() {
         setTokenAttr(guerrier, 'postureDeCombat', bonus, evt, {
           msg: msg,
           maxVal: attrDebuf + "_" + attrBuf
+        });
+        addEvent(evt);
+      });
+    });
+  }
+
+  function attaqueAOutrance(msg) {
+    var args = msg.content.split(' ');
+    if (args.length < 2) {
+      error("Pas assez d'arguments pour !cof-attaque-a-outrance", args);
+      return;
+    }
+    var bonus = parseInt(args[1]);
+    if (bonus != 0 && bonus != 2 && bonus != 5) {
+      error("Le malus de DEF ne peut être que 0, 2 ou 5", args);
+      return;
+    }
+    getSelected(msg, function(selected) {
+      iterSelected(selected, function(guerrier) {
+        var evt = {
+          type: "Attaque à outrance"
+        };
+        if (bonus === 0) {
+          sendChar(guerrier.charId, "n'attaque plus à outrance");
+          removeTokenAttr(guerrier, 'attaqueAOutrance', evt);
+          addEvent(evt);
+          return;
+        }
+        msg = "attaque à outrance ";
+        switch (bonus) {
+          case 2:
+            msg += "(-2 DEF, +1D6 DM)";
+            break;
+          case 5:
+            msg += "(-5 DEF, +2D6 DM)";
+            break;
+          default:
+        }
+        setTokenAttr(guerrier, 'attaqueAOutrance', bonus, evt, {
+          msg: msg,
         });
         addEvent(evt);
       });
@@ -29920,6 +30006,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-posture-de-combat':
         postureDeCombat(msg);
         return;
+      case '!cof-attaque-a-outrance':
+        attaqueAOutrance(msg);
+        return;
       case '!cof-mur-de-force':
         murDeForce(msg);
         return;
@@ -30764,7 +30853,12 @@ var COFantasy = COFantasy || function() {
       actif: "a un lien de sang",
       fin: "perd son lien de sang",
       prejudiciable: true
-    }
+    },
+    tenirADistance: {
+      activation: "utilise son allonge pour tenir ses ennemis à distance",
+      actif: "utilise son allonge pour tenir ses ennemis à distance",
+      fin: "ne tient plus ses ennemis à distance"
+    },
   };
 
   function buildPatternEffets(listeEffets, postfix) {
