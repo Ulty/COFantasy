@@ -3297,6 +3297,43 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  function bonusArgumentDeTaille(perso, expliquer) {
+    var bonus = 0;
+    if (charAttributeAsBool(perso, 'argumentDeTaille')) {
+      var modFor = modCarac(perso, 'force');
+      if (modFor > 0) {
+        bonus += modFor;
+        expliquer("Argument de taille : +" + modFor);
+      }
+    }
+    var allies = alliesParPerso[perso.charId];
+    if (allies === undefined) return bonus;
+    var pageId = perso.token.get('pageid');
+    var tokens = findObjs({
+      _type: 'graphic',
+      _subtype: 'token',
+      _pageid: pageId,
+      layer: 'objects'
+    });
+    tokens.forEach(function(tok) {
+      if (tok.id == perso.token.id) return;
+      var ci = tok.get('represents');
+      if (ci === '') return;
+      if (!allies.has(ci)) return;
+      var allie = {
+        token: tok,
+        charId: ci
+      };
+      if (!charAttributeAsBool(allie, 'argumentDeTaille')) return;
+      if (distanceCombat(perso.token, tok, pageId) > 0) return;
+      var modFor = modCarac(allie, 'force');
+      if (modFor <= 0) return;
+      bonus += modFor;
+      expliquer("Argument de taille de " + tok.get('name') + " : +" + modFor);
+    });
+    return bonus;
+  }
+
   //retourne un entier
   // evt n'est défini que si la caractéristique est effectivement utlilisée
   function bonusTestCarac(carac, personnage, options, testId, evt, explications) {
@@ -3448,17 +3485,17 @@ var COFantasy = COFantasy || function() {
         options.bonusAttrs.push(options.competence.toLowerCase().replace(/ /g, '_'));
       } else {
         switch (comp) {
-          case 'perception':
+          case 'discrétion':
+          case 'discretion':
             if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-              expliquer("Forêt hostile : -5 en perception");
+              expliquer("Forêt hostile : -5 en discrétion");
               bonus -= 5;
             }
             break;
-          case 'survie':
-            if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-              expliquer("Forêt hostile : -5 en survie");
-              bonus -= 5;
-            }
+          case 'intimidation':
+          case 'négociation':
+          case 'negiciation':
+            bonus += bonusArgumentDeTaille(personnage, expliquer);
             break;
           case 'orientation':
             if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
@@ -3466,10 +3503,18 @@ var COFantasy = COFantasy || function() {
               bonus -= 5;
             }
             break;
-          case 'discrétion':
-          case 'discretion':
+          case 'perception':
             if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-              expliquer("Forêt hostile : -5 en discrétion");
+              expliquer("Forêt hostile : -5 en perception");
+              bonus -= 5;
+            }
+            break;
+          case 'persuasion':
+            bonus += bonusArgumentDeTaille(personnage, expliquer);
+            break;
+          case 'survie':
+            if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+              expliquer("Forêt hostile : -5 en survie");
               bonus -= 5;
             }
             break;
