@@ -18395,7 +18395,16 @@ var COFantasy = COFantasy || function() {
                 if (attrName.indexOf(')_') > 0) return;
               } else if (effet != attrName) return;
             }
-            addLineToFramedDisplay(display, mt.actif);
+            var explEffetMsg = mt.actif;
+            if (stateCOF.options.affichage.val.duree_effets.val) {
+              var effetVal = attr.get('current');
+              if(parseInt(effetVal)){
+                explEffetMsg += " (" + effetVal + " tours)";
+              } else {
+                explEffetMsg += " (tour final)";
+              }
+            }
+            addLineToFramedDisplay(display, explEffetMsg);
           } else if (estEffetCombat(attrName)) {
             var effetC = effetCombatOfAttribute(attr);
             if (lie && effetC != attrName) return;
