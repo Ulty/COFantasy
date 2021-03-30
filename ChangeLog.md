@@ -15,6 +15,7 @@
 * Support complet de la Voie des armes à 2 mains (prestige)
 
 ### Autres améliorations
+* Possibilité de rajouter des attributs à afficher dans le statut.
 * Le script ne bloque plus que le déplacement des personnages immobilisés contrôlés par un joueur connecté.
 * En cas d'échec critique d'une boule de feu qui cible une cible artificielle, la cible est déplacée aléatoirement de 15 m.
 * Refactoring !cof-tenebres pour supporter les options de Mana (y compris Tempête de Mana)

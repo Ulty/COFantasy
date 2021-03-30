@@ -18162,7 +18162,8 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function statut(msg) { // show some character informations
+  // Affiche des informations sur le personnage sélectionné
+  function statut(msg) {
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         error("Dans !cof-statut : rien à faire, pas de token selectionné", msg);
@@ -18398,7 +18399,7 @@ var COFantasy = COFantasy || function() {
             var explEffetMsg = mt.actif;
             if (stateCOF.options.affichage.val.duree_effets.val) {
               var effetVal = attr.get('current');
-              if(parseInt(effetVal)){
+              if (parseInt(effetVal)) {
                 explEffetMsg += " (" + effetVal + " tours)";
               } else {
                 explEffetMsg += " (tour final)";
@@ -18526,6 +18527,21 @@ var COFantasy = COFantasy || function() {
           if (defense != defenseAffichee)
             addLineToFramedDisplay(display, "Défense actuelle : " + defense);
         }
+        var autresAttributs = charAttribute(charId, 'attributsDeStatut');
+        autresAttributs.forEach(function(attr) {
+          var listeAttrs = attr.get('current').split(',');
+          listeAttrs.forEach(function(a) {
+            a = a.trim();
+            if (a === '') return;
+            var aDisplay = tokenAttribute(perso, a);
+            aDisplay.forEach(function(ad) {
+              var line = a + " : " + ad.get('current');
+              var admax = ad.get('max');
+              if (admax) line += " / " + admax;
+              addLineToFramedDisplay(display, line);
+            });
+          });
+        });
         sendChat("", endFramedDisplay(display));
       });
     });
