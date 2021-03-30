@@ -122,7 +122,7 @@
 						</div>
 					</div>
 					<div class="col-md-9 col-sm-8 content">
-            <h1>Documentation pour la version 2.16 de COFantasy</h1>
+            <h1>Documentation pour la version 2.17 de COFantasy</h1>
 						<h2 class="text-primary" id="comment_utiliser_script">1. Comment utiliser Le script</h2>
             <div class="decalage">
               <h3 class="text-info" id="token_personnages">1.1 Tokens et personnages</h3>
@@ -1641,7 +1641,11 @@
               <div class="decalage">
                 <h4 class="text-secondary">Voie des armes à deux mains</h4>
                 <ol>
+                  <li><strong>Allonge</strong> : reporter le bonus d'attaque sur la fiche. Par facilité, j'ai considéré que le bonus d'Init était permanent et nous l'avons reporté sur la fiche.</li>
                   <li><strong>Gros Monstre, grosse arme</strong> : ajouter un attribut grosMonstreGrosseArme de valeur <code>true</code>.</li>
+                  <li><strong>Tenir à distance (L)</strong> : <code>!cof-effet-temp tenirADistance 1</code>.</li>
+                  <li><strong>Attaque à outrance</strong> : <code>!cof-attaque-a-outrance ?{Attaque à outrance ?|Non,0|-2 DEF / +1D6 DM,2}</code>. Par facilité, cette "posture de combat" perdure jusqu'à la fin du combat ou jusqu'à ce que le guerrier en change. Au rang 5, on pourra utiliser <code>!cof-attaque-a-outrance ?{Attaque à outrance ?|Non,0|-2 DEF/+1D6 DM,2|-5 DEF/+2D6 DM,5}</code></li>
+                  <li><strong>Critique destructeur</strong> : ajouter <code>--plusCrit 2d6</code> aux attaques d'armes à 2 mains</li>
                 </ol>
                 <h4 class="text-secondary">Voie des vermines</h4>
                 <ol>

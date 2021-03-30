@@ -12,6 +12,7 @@
 * Etreinte (scorpions)
 * Hémorragie (Voie du sang)
 * Lien de sang (Voie du sang)
+* Support complet de la Voie des armes à 2 mains (prestige)
 
 ### Autres améliorations
 * Le script ne bloque plus que le déplacement des personnages immobilisés contrôlés par un joueur connecté.
