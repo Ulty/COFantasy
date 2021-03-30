@@ -1521,6 +1521,11 @@ var COFantasy = COFantasy || function() {
         bar1 = pvmax;
       }
     }
+    if (bar1 == pvmax && attributeAsBool(perso, 'osBrises')) {
+      removeTokenAttr(perso, 'osBrises', evt, {
+        msg: "soigne ses os"
+      });
+    }
     if (updateBar1) updateCurrentBar(perso, 1, bar1, evt);
     if (soinsEffectifs > 0) {
       if (callTrue) callTrue(soinsEffectifs);
@@ -3361,6 +3366,10 @@ var COFantasy = COFantasy || function() {
           expliquer("Aspect du démon : +" + bonusAspectDuDemon + " au jet de DEX");
           bonus += bonusAspectDuDemon;
         }
+        if (attributeAsBool(personnage, 'osBrises')) {
+          expliquer("Des os sont brisés : -2 au jet de DEX");
+          bonus -= 2;
+        }
         break;
       case 'FOR':
         if (attributeAsBool(personnage, 'rayonAffaiblissant')) {
@@ -3376,6 +3385,10 @@ var COFantasy = COFantasy || function() {
           bonusAspectDuDemon = getValeurOfEffet(personnage, 'aspectDuDemon', 2);
           expliquer("Aspect du démon : +" + bonusAspectDuDemon + " au jet de FOR");
           bonus += bonusAspectDuDemon;
+        }
+        if (attributeAsBool(personnage, 'osBrises')) {
+          expliquer("Des os sont brisés : -2 au jet de FOR");
+          bonus -= 2;
         }
         break;
       case 'CHA':
@@ -7904,6 +7917,10 @@ var COFantasy = COFantasy || function() {
       attBonus -= 2;
       explications.push("Attaquant énervé => -2 en Attaque");
     }
+    if (attributeAsBool(attaquant, 'osBrises')) {
+      attBonus -= 2;
+      explications.push("Des os sont brisés => -2 en Attaque");
+    }
     return attBonus;
   }
 
@@ -9666,7 +9683,8 @@ var COFantasy = COFantasy || function() {
       crit = 20;
     }
     if (charAttributeAsBool(attaquant, 'scienceDuCritique') ||
-      (!options.distance && !options.sortilege && charAttributeAsBool(attaquant, 'morsureDuSerpent')) ||
+      (!options.distance && !options.sortilege &&
+        (charAttributeAsBool(attaquant, 'morsureDuSerpent') || charAttributeAsBool(attaquant, 'briseurDOs'))) ||
       (crit == 20 && charAttributeAsBool(attaquant, 'ecuyer'))) crit -= 1;
     if (options.bonusCritique) crit -= options.bonusCritique;
     if (options.affute) crit -= 1;
@@ -10408,6 +10426,9 @@ var COFantasy = COFantasy || function() {
                 if (!target.faireMouche && attributeAsBool(target, 'enerve')) {
                   var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
                   if (faireMouche > 0) target.faireMouche = faireMouche;
+                }
+                if (options.contact && charAttributeAsBool(attaquant, 'briseurDOs')) {
+                  target.osBrises = true;
                 }
               } else if (options.champion || targetd20roll == 20 || paralyse) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
@@ -11370,6 +11391,10 @@ var COFantasy = COFantasy || function() {
           target.messages.forEach(function(expl) {
             addLineToFramedDisplay(display, expl, 80);
           });
+          if (target.osBrises) {
+            addLineToFramedDisplay(display, target.tokName + " a des os brisés ");
+            setTokenAttr(target, 'osBrises', true, evt);
+          }
         });
         finaliseDisplay(display, explications, evt, attaquant, cibles, options);
         for (var vid in attaquesEnTraitrePossibles) {

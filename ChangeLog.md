@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.17
 ### Capacités
+* Ajout de la capacité Briseur d'os du barbare.
 * Meilleure automatisation de l'Argument de taille du barbare.
 * Châtiment du mâle du Xyrufa.
 * Prise en compte de la rage dans la capacité Défier la mort du barbare.
