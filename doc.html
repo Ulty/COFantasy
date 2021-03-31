@@ -1025,7 +1025,7 @@
               <div class="decalage">
                 <h4 class="text-secondary">Voie de l'air</h4>
                 <ol>
-                  <li><strong>Murmures dans le vent</strong> : rien à faire</li>
+                  <li><strong>Murmures dans le vent</strong> : pas de support autre que <code>!cof-lancer-sort lance un sort de Murmures dans le vent</code></li>
                   <li><strong>Sous tension</strong> : <code>!cof-effet-temp sousTension [[5+@{selected|CHA}]]</code>. Pour l'attaque, définir une attaque magique à 1d6+CHA, et l'appeler avec les options <code>--si etat sousTension --electrique --sortilege --fx beam-holy</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>, seulement pour la mise sous tension (pas l'attaque). Il est possible de spécifier une autre valeur de DM que <code>1d6</code> avec l'option <code>--valeur</code> (pour les dégâts quand le personnage est touché).</li>
                   <li><strong>Télékinésie</strong> : Pas de support autre que <code>!cof-lancer-sort lance un sort de télékinésie --mana 1</code></li>
                   <li><strong>Foudre</strong> : Faire une attaque de foudre de portée 10 m (attaque magique, dégâts 4d6 + CHA), et faire les attaques avec les options <code>--psave DEX [[12+@{selected|DEX}]] --mana 2 --electrique --sortilege --ligne --fx beam-holy</code>. Si vous utilisez l'option de magie puissante, vous pouvez rajouter <code>?{Y consacrer le tour entier ?|oui,--puissant|non,&amp;#32;}</code>. Et si, à la place, vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 4 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. </li>
@@ -1050,7 +1050,7 @@
                 <h4 class="text-secondary">Voie des illusions</h4>
                 <ol>
                   <li><strong>Image décalée</strong> : <code>!cof-effet-temp imageDecalee [[5+@{selected|CHA}]]</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
-                  <li><strong>Mirage</strong> : pas de support particulier</li>
+                  <li><strong>Mirage</strong> : pas de support autre que <code>!cof-lancer-sort lance un sort de mirage ([[5+@{selected|CHA}]] minutes)</code></li>
                   <li><strong>Imitation</strong> : pas de support autre que <code>!cof-lancer-sort lance un sort d'imitation ([[5+@{selected|CHA}]] minutes) --mana 1</code>.</li>
                   <li><strong>Dédoublement</strong> : ajouter une attaque magique, de portée 20 m, avec les options <code>--pasDeDmg --sortilege --mana 2 --effet dedoublement [[5+@{selected|CHA}]]</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 4 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
                   <li><strong>Tueur fantasmagorique</strong> : <code>!cof-tueur-fantasmagorique @{selected|token_id} @{target|token_id} --portee 20 --mana 3</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 5 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
@@ -1652,6 +1652,13 @@
                 <h4 class="text-secondary">Voie des vermines</h4>
                 <ol>
                   <li><strong>Nuée de criquets</strong> : ajouter une attaque magique, de portée 20 m. Puis appeler cette attaque (avec <code>!cof-attack</code>) avec les arguments <code>--pasDeDmg --sortilege --effet nueeDeCriquets [[5+@{selected|SAG}]]</code>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDeCriquets</code> sur la cible dans ce cas). Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. À noter que l'option <code>--mana 0</code> est là pour indiquer au script de terminer l'effet au cas où le druide meurt.</li>
+                </ol>
+                <h4 class="text-secondary">Voie du chevalier dragon</h4>
+                <ol>
+                  <li><strong>Ordre du chevalier dragon</strong> : créer les compétences Persuasion et Intimidation avec les bonus de base de +5. Créer un attribut <code>ordreDuChevalierDragon</code> de valeur <code>true</code>. Quand le personnage est monté, le script rajoutera automatiquement un bonus de +5 via <code>!cof-jet</code></li>
+                  <li><strong>Épée de feu</strong> : <code>!cof-effet-temp armeEnflammee [[5+@{selected|CHA}]] --lanceur @{selected|token_id} --target @{selected|token_id}</code>. Ne se cumule pas avec l'Arme enflammée du Magicien.</li>
+                  <li><strong>Résistance au feu</strong> : rajouter <code>feu:5</code> (ou 10 au rang 5) dans la partie RD de la fiche</li>
+                  <li><strong>Monture puissante</strong> : modifier la fiche du Drake</li>
                 </ol>
                 <h4 class="text-secondary">Voie du gel</h4>
                 <ol>

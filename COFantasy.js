@@ -3506,8 +3506,13 @@ var COFantasy = COFantasy || function() {
             }
             break;
           case 'intimidation':
+            bonus += bonusArgumentDeTaille(personnage, expliquer);
+            if (attributeAsBool(personnage, 'ordreDuChevalierDragon') && attributeAsBool(personnage, 'monteSur')) {
+              expliquer("Chevalier Dragon monté : +5 en intimidation");
+              bonus += 5;
+            }
           case 'négociation':
-          case 'negiciation':
+          case 'negociation':
             bonus += bonusArgumentDeTaille(personnage, expliquer);
             break;
           case 'orientation':
@@ -3524,6 +3529,10 @@ var COFantasy = COFantasy || function() {
             break;
           case 'persuasion':
             bonus += bonusArgumentDeTaille(personnage, expliquer);
+            if (attributeAsBool(personnage, 'ordreDuChevalierDragon') && attributeAsBool(personnage, 'monteSur')) {
+              expliquer("Chevalier Dragon monté : +5 en persuasion");
+              bonus += 5;
+            }
             break;
           case 'survie':
             if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
