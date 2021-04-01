@@ -1671,8 +1671,11 @@
                 </ol>
                 <h4 class="text-secondary">Voie du porteur de bouclier</h4>
                 <ol>
-                  <li><strong>Expertise du bouclier</strong> : reporter le bonus sur la fiche</li>
+                  <li><strong>Expertise du bouclier</strong> : reporter le bonus sur la fiche dans le bonus de DEF conféré par le bouclier.</li>
                   <li><strong>Progresser à couvert</strong> : <code>!cof-effet-temp progresserACouvert 1 --lanceur @{selected|token_id} --target @{target|token_id} --self --portee 1</code>. A utiliser pour cibler un allié à portée si nécessaire. Au MJ de vérifier qu'elle reste bien près du chevalier pour profiter du bonus.</li>
+                  <li><strong>Attaque au bouclier</strong> : Ajouter une arme avec son Bouclier en "Arme gauche" sur la fiche du personnage. Créer une ability en appelant cette arme avec <code>--avecd12</code> pour représenter l'action Coup de bouclier.</li>
+                  <li><strong>Dévier les coups</strong> : Ajouter un attribut <code>devierLesCoups</code> de valeur courante et maximum 1. Le script ajoute automatiquement un bouton sur les attaques sur lesquelles cette capacité peut-être utilisée.</li>
+                  <li><strong>Parade au bouclier</strong> : Ajouter un attribut <code>paradeAuBouclier</code> de valeur courante et maximum 1. Sur l'ability Coup de bouclier créé pour le rang 3, ajouter <code>--attaqueBouclierRenverse --decrAttribute paradeAuBouclier</code>. Le script ajoute automatiquement un bouton sur les attaques sur lesquelles cette capacité peut-être utilisée. Si le personnage possède un bouclier en arme gauche, le script utilisera le bonus éventuel de l'arme en question sur le jet opposé.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du tueur de géant</h4>
                 <ol>

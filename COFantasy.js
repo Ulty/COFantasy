@@ -5209,6 +5209,7 @@ var COFantasy = COFantasy || function() {
         case 'attaqueRisquee':
         case 'attaqueOptions':
         case 'tirAveugle':
+        case 'attaqueBouclierRenverse':
           options[cmd[0]] = true;
           return;
         case 'm2d20':
@@ -10590,18 +10591,30 @@ var COFantasy = COFantasy || function() {
               if (!options.auto) {
                 //Seulement si elle n'est pas automatiquement réussie
                 if (isActive(target)) {
-                  if (!options.pasDeDmg && options.contact &&
-                    !options.ignoreTouteRD &&
-                    attributeAsBool(target, 'encaisserUnCoup')) {
-                    options.preDmg = options.preDmg || {};
-                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
-                    options.preDmg[target.token.id].encaisserUnCoup = true;
+                  if (!options.pasDeDmg && options.contact && !options.ignoreTouteRD) {
+                    if (attributeAsBool(target, 'encaisserUnCoup')) {
+                      options.preDmg = options.preDmg || {};
+                      options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                      options.preDmg[target.token.id].encaisserUnCoup = true;
+                    }
+                    if (attributeAsInt(target, 'devierLesCoups', 0) > 0 &&
+                      ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) > 0) {
+                      options.preDmg = options.preDmg || {};
+                      options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                      options.preDmg[target.token.id].devierLesCoups = true;
+                    }
                   }
                   if (options.distance && !options.sortilege && !options.poudre && cibles.length == 1 && !target.critique &&
-                    attributeAsBool(target, 'paradeDeProjectiles')) {
+                    attributeAsInt(target, 'paradeDeProjectiles', 0) > 0) {
                     options.preDmg = options.preDmg || {};
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].paradeDeProjectiles = true;
+                  }
+                  if (options.contact && attributeAsInt(target, 'paradeAuBouclier', 0) > 0 &&
+                    ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) > 0) {
+                    options.preDmg = options.preDmg || {};
+                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                    options.preDmg[target.token.id].paradeAuBouclier = true;
                   }
                   if (attributeAsInt(target, 'esquiveAcrobatique', 0) > 0) {
                     options.preDmg = options.preDmg || {};
@@ -11121,7 +11134,9 @@ var COFantasy = COFantasy || function() {
         var termineCible = false;
         if (preDmgToken.encaisserUnCoup) {
           appliquerEncaisserUnCoup(cible, options, evt);
-          finaliseTarget();
+        }
+        if (preDmgToken.devierLesCoups) {
+          appliquerDevierLesCoups(cible, options, evt);
         }
         if (preDmgToken.paradeDeProjectiles) {
           appliquerParadeProjectiles(cible, options, evt);
@@ -11859,6 +11874,18 @@ var COFantasy = COFantasy || function() {
               setTokenAttr(target, 'malediction', 3, evt);
               target.messages.push(target.tokName + " est maudit...");
             }
+            if (options.attaqueBouclierRenverse && weaponStats.attDice === 4
+              && rollsDmg.inlinerolls[mainDmgRollNumber].results.rolls[0].results[0].v >= 4) {
+              target.etats = target.etats || [];
+              target.etats.push({
+                etat: 'renverse',
+                condition: {
+                  type: "moins",
+                  attribute: "FOR",
+                  text: "force"
+                }
+              });
+            }
             // Draw effect, if any
             if (options.fx) {
               //Pour les cones, on fait un seul effet, car c'est bien géré.
@@ -12505,11 +12532,23 @@ var COFantasy = COFantasy || function() {
                   "encaisser le coup");
               nbBoutons++;
             }
+            if (preDmgToken.devierLesCoups) {
+              line += "<br/>" +
+                  boutonSimple(
+                      "!cof-devier-les-coups " + evt.id + ' --target ' + target.token.id,
+                      "dévier les coups");
+              nbBoutons++;
+            }
             if (preDmgToken.paradeDeProjectiles) {
               line += "<br/>" +
                 boutonSimple(
                   "!cof-parade-projectiles " + evt.id + ' --target ' + target.token.id,
                   "parer le projectile");
+              nbBoutons++;
+            }
+            if (preDmgToken.paradeAuBouclier && preDmgToken.paradeAuBouclier !== 'reroll') {
+              action = "!cof-parade-au-bouclier " + target.token.id + ' ' + evt.id;
+              line += "<br/>" + boutonSimple(action, "tenter une parade au bouclier");
               nbBoutons++;
             }
             if (preDmgToken.esquiveAcrobatique && preDmgToken.esquiveAcrobatique !== 'reroll') {
@@ -13549,7 +13588,11 @@ var COFantasy = COFantasy || function() {
         if (options.intercepter) rd += options.intercepter;
         if (target.extraRD) {
           rd += target.extraRD;
-          expliquer(target.tokName + " dévie le coup sur son armure");
+          expliquer(target.tokName + " encaisse le coup avec son armure");
+        }
+        if (target.extraRDBouclier) {
+          rd += target.extraRDBouclier;
+          expliquer(target.tokName + " dévie le coup avec son bouclier");
         }
         if (target.ignoreTouteRD) rd = 0;
         else if (target.ignoreMoitieRD) rd = parseInt(rd / 2);
@@ -14646,6 +14689,7 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'paradeDeProjectiles', evt);
     resetAttr(attrs, 'prouesse', evt);
     resetAttr(attrs, 'prescience', evt);
+    resetAttr(attrs, 'paradeAuBouclier', evt);
     // Réinitialiser le kiai
     resetAttr(attrs, 'kiai', evt);
     // Réinitialiser riposteGuerrier
@@ -23287,7 +23331,76 @@ var COFantasy = COFantasy || function() {
       ficheAttributeAsInt(cible, 'DEFARMUREON', 1) +
       ficheAttributeAsInt(cible, 'DEFBOUCLIER', 0) *
       ficheAttributeAsInt(cible, 'DEFBOUCLIERON', 1);
-    removePreDmg(options, cible);
+    removePreDmg(options, cible, "encaisserUnCoup");
+  }
+
+  //!cof-devier-les-coups, avec la personne qui encaisse sélectionnée
+  function doDevierLesCoups(msg) {
+    var optionsDevier = parseOptions(msg);
+    if (optionsDevier === undefined) return;
+    var cmd = optionsDevier.cmd;
+    var evt = lastEvent();
+    if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
+      evt = findEvent(cmd[1]);
+      if (evt === undefined) {
+        error("L'action est trop ancienne ou a été annulée", cmd);
+        return;
+      }
+    }
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        error("Personne n'est sélectionné pour dévier les coups", msg);
+        return;
+      }
+      if (evt === undefined) {
+        sendChat('', "Historique d'actions vide, pas d'action trouvée pour dévier les coups");
+        return;
+      }
+      if (evt.type != 'Attaque' || evt.succes === false) {
+        sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour dévier les coups d'une action précédente");
+        return;
+      }
+      var action = evt.action;
+      if (action.options.distance) {
+        sendChat('', "Impossible d'encaisser le dernier coup, ce n'était pas une attaque au contact");
+        return;
+      }
+      var toProceed;
+      iterSelected(selected, function(chevalier) {
+        if (attributeAsInt(chevalier, 'devierLesCoups', 0) < 1) {
+          sendChar(chevalier.charId, "ne peut plus dévier les coups à ce tour-ci");
+          return;
+        }
+        if (!peutController(msg, chevalier)) {
+          sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+          return;
+        }
+        var cible = action.cibles.find(function(target) {
+          return (target.token.id === chevalier.token.id);
+        });
+        if (cible === undefined) {
+          sendChar(chevalier.charId, "n'est pas la cible de la dernière attaque");
+          return;
+        }
+        action.choices = action.choices || {};
+        action.choices[chevalier.token.id] = action.choices[chevalier.token.id] || {};
+        action.choices[chevalier.token.id].devierLesCoups = true;
+        toProceed = true;
+      }); //fin iterSelected
+      if (toProceed) {
+        redoEvent(evt, action);
+      }
+    }); //fin getSelected
+  }
+
+  function appliquerDevierLesCoups(cible, options, evt) {
+    setTokenAttr(cible, 'devierLesCoups', 0, evt, {
+      maxVal: 1
+    });
+    cible.extraRDBouclier =
+        ficheAttributeAsInt(cible, 'DEFBOUCLIER', 0) *
+        ficheAttributeAsInt(cible, 'DEFBOUCLIERON', 1);
+    removePreDmg(options, cible, "devierLesCoups");
   }
 
   //!cof-parade-projectiles
@@ -23318,7 +23431,7 @@ var COFantasy = COFantasy || function() {
       }
       var action = evt.action;
       if (!action.options.distance) {
-        sendChat('', "Impossible de parer le projectile, ce n'était pas une attaque au contact");
+        sendChat('', "Impossible de parer le projectile, ce n'était pas une attaque à distance");
         return;
       }
       if (action.options.poudre) {
@@ -23499,7 +23612,7 @@ var COFantasy = COFantasy || function() {
       });
       attribut.set('current', curAttribut - 1);
     }
-    var attackRollExpr = "[[" + computeDice(lanceur) + "]]";
+    var attackRollExpr = "[[" + computeDice(lanceur) + "cs20cf1]]";
     sendChat('', attackRollExpr, function(res) {
       var testId = attributeName + "_" + lanceur.token.id;
       options.rolls = options.rolls || {};
@@ -23507,7 +23620,7 @@ var COFantasy = COFantasy || function() {
       attackRoll.token = lanceur.token;
       evt.action.rolls = evt.action.rolls || {};
       evt.action.rolls[testId] = attackRoll;
-      var totalEvitement = attackRoll.results.total;
+      var d20roll = attackRoll.results.total;
       var msg = buildinline(attackRoll);
       var attBonus = ficheAttributeAsInt(lanceur, 'niveau', 1);
       if (estAffaibli(lanceur) && charAttributeAsBool(lanceur, 'insensibleAffaibli')) attBonus -= 2;
@@ -23540,7 +23653,11 @@ var COFantasy = COFantasy || function() {
         actionName = lanceur.arme.nom;
         if (lanceur.arme.attSkillDiv) attBonus += lanceur.arme.attSkillDiv;
       }
-      totalEvitement += attBonus;
+      if (opt && opt.armeGauche && lanceur.armeGauche) {
+        actionName = lanceur.armeGauche.nom;
+        if (lanceur.armeGauche.attSkillDiv) attBonus += lanceur.armeGauche.attSkillDiv;
+      }
+      var totalEvitement = d20roll + attBonus;
       if (attBonus > 0) msg += "+" + attBonus;
       else if (attBonus < 0) msg += attBonus;
       if (options.chanceRollId && options.chanceRollId[testId]) {
@@ -23582,7 +23699,7 @@ var COFantasy = COFantasy || function() {
           removePreDmg(options, cible, attributeName, 'reroll');
         }
       } else { //Évitement réussi
-        if (opt && opt.critiqueDevientNormal && cible.critique) {
+        if (opt && cible.critique && (opt.critiqueDevientNormal || (opt.critiqueAnnuleCritique && d20roll != 20))) {
           cible.critique = false;
           msg += " => Réussi, l'attaque fait des dégâts normaux";
           removePreDmg(options, cible, attributeName);
@@ -23683,6 +23800,15 @@ var COFantasy = COFantasy || function() {
         arme: true,
         critiqueDevientNormal: true
       });
+  }
+
+  //!cof-parade-au-bouclier
+  function doParadeAuBouclier(msg) {
+    evitementGenerique(msg, 'parer', 'paradeAuBouclier',
+        'parade au bouclier', "une parade au bouclier", " a déjà fait une parade au bouclier ce tour", 'force', 'contact', "l'attaque est parée !", {
+          armeGauche: true,
+          critiqueAnnuleCritique: true
+        });
   }
 
   //!cof-chair-a-canon id1 id2 [evt_id]
@@ -30143,8 +30269,14 @@ var COFantasy = COFantasy || function() {
       case '!cof-encaisser-un-coup':
         doEncaisserUnCoup(msg);
         return;
+      case '!cof-devier-les-coups':
+        doDevierLesCoups(msg);
+        return;
       case '!cof-parade-projectiles':
         doParadeProjectiles(msg);
+        return;
+      case "!cof-parade-au-bouclier":
+        doParadeAuBouclier(msg);
         return;
       case "!cof-esquive-acrobatique":
         doEsquiveAcrobatique(msg);
@@ -31910,7 +32042,9 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('prescienceUtilisee', evt, attrs);
     resetAttr(attrs, 'attaqueEnTraitre', evt);
     resetAttr(attrs, 'esquiveAcrobatique', evt);
+    resetAttr(attrs, 'devierLesCoups', evt);
     resetAttr(attrs, 'paradeDeProjectiles', evt);
+    resetAttr(attrs, 'paradeAuBouclier', evt);
     resetAttr(attrs, 'resistanceALaMagieBarbare', evt);
     resetAttr(attrs, 'paradeMagistrale', evt);
     resetAttr(attrs, 'chairACanon', evt);
