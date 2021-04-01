@@ -23677,7 +23677,6 @@ var COFantasy = COFantasy || function() {
       msg = lanceur.tokName + " tente " + tente + ". " +
         onGenre(lanceur, "Il", "elle") + " fait " + msg;
       var generalMsg = '';
-      log(attackRoll);
       if (totalEvitement < jetAdversaire) {
         msg += " => Raté";
         var pc = pointsDeChance(lanceur);
