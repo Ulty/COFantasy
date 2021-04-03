@@ -21401,6 +21401,8 @@ var COFantasy = COFantasy || function() {
     switch (charRace) {
       case 'animal':
       case 'aigle':
+      case 'araignee':
+      case 'araignée':
       case 'basilic':
       case 'bulette':
       case 'bison':
@@ -21417,6 +21419,7 @@ var COFantasy = COFantasy || function() {
       case 'griffon':
       case 'hipogriffe':
       case 'hydre':
+      case 'insecte':
       case 'lion':
       case 'loup':
       case 'mammouth':
