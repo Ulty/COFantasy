@@ -58,6 +58,7 @@
 									<li><a class="text-info" href="#token_personnages">Tokens et personnages</a></li>
 									<li><a class="text-info" href="#macros_abilities">Macros et Abilities</a></li>
 									<li><a class="text-info" href="#methode_selection_groupes">Méthodes de sélection de groupes</a></li>
+                                    <li><a class="text-info" href="#options_mana">Options de Mana</a></li>
 									<li><a class="text-info" href="#regles_optionnelles">Règles optionnelles utilisées</a></li>
 								</ul>
 								<li data-toggle="collapse" data-target="#main_action"><a href="#action_principales">Actions principales</a></li>
@@ -166,18 +167,55 @@
                 <p id="exemple_equipe"><img class="img-fluid" src="https://i.imgur.com/WHfwsKo.png" data-href="https://i.imgur.com/WHfwsKo.png"></p>
                 <figcaption>Exemple d'<i>handout</i> avec différentes équipes.</figcaption>
               </div>
-              <h3 class="text-info" id="regles_optionnelles">1.4 Règles optionnelles utilisées</h3>
+              <h3 class="text-info" id="options_mana">1.4 Options de mana</h3>
               <div class="decalage">
-                <p>Les scripts supportent l'utilisation de la règle des points de chance, des points de récupérations, des points de mana. Plusieurs systèmes de mana sont gérés par le script.</p>
+                <p>COF sous ses différentes formes est une boîte à outils et nombreuses sont les variantes de système de magie qui peuvent être utilisées. Le script propose un support pour les plus populaires d'entre elles. Voici quelques consignes pour les implémenter.</p>
+                <h4>Spécifier un coût en mana</h4>
                 <ul>
-                  <li>Système de base (COF p. 79) : utiliser les options de mana présentées ci-dessous.</li>
-                  <li>Mana Totale (COF p. 180) : activer l'option <code>mana totale</code> via <code>!cof-options</code></li>
-                  <li>Tempête de Mana (COF Compagnon p. 105) : utiliser l'option <code>--tempeteDeMana</code> présentée ci-dessous. Tempête de Mana est compatible avec Mana Totale et Brûlure de Magie.</li>
-                  <li>Terres d'Arran (COTA p. 112) : activation l'option <code>brulure de magie</code> via <code>!cof-options</code> et utiliser les options de mana standard (voire ci-dessous). Si vous désirez appliquer ce système à COF, vous pouvez créer un attribut de personnage de nom <code>famille</code> avec comme valeur courante <code>combattant</code> pour doubler les dégâts sur les profils combattants. Brûlure de Magie est incompatible avec Mana Totale.</li>
+                  <li>Les points de mana sont dépensés en ajoutant l'option <code>--mana X</code> à une ability ou dans les options d'une attaque. Toutes les capacités implémentées dans la documentation donnent par défaut le coût en mana selon les règles de base.</li>
+                  <li>Même un sort qui ne coûte pas de mana devrait utiliser <code>--mana 0</code>. Cela permet au script de dissiper automatiquement un effet généré par un lanceur de sort mis hors de combat.</li>
+                  <li>Une option d'affichage disponible via <code>!cof-options</code> permet de demander au script d'afficher explicitement dans le chat toute dépense de PM effectuée par un personnage.</li>
                 </ul>
+                <h4>Système de base (COF p. 79)</h4>
+                <p>Le support des effets supplémentaires à disposition du lanceur de sort sont gérées via l'utilisation d'options sur les commandes utilisées.</p>
+                <ul>
+                  <li><b>Magie rapide :</b> pas de support particulier</li>
+                  <li><b>Magie puissante (dés) :</b> utiliser l'option <code>--puissant</code> dans vos abilities ou attaques</li>
+                  <li><b>Magie puissante (portée) :</b> utiliser l'option <code>--puissant portee</code> dans vos abilities ou attaques</li>
+                  <li><b>Magie puissante (durée) :</b> utiliser l'option <code>--puissant duree</code> dans vos abilities ou attaques</li>
+                </ul>
+                <p>On peut facilement combiner ces options avec un input de choix roll20 qui permettra au joueur de choisir le type d'incantation lorsqu'il lance le sort, tout en spécifiant la dépense de Mana.</p>
+                <p><code>--mana <i>X</i> ?{Incantation ?|Rapide,|Puissante (L),--puissant|Portée étendue (L),--puissant portee|Durée étendue (L),--puissant duree}</code></p>
+                <h4>Mana Totale (COF p. 180)</h4>
+                <p>La première chose à faire est d'activer l'option Mana totale via <code>!cof-options</code>. Pour le reste, vous pouvez réutiliser le principe du système de base ci-dessus.</p>
+                <h5>Coût aléatoire</h5>
+                <p>Vous pouvez utiliser des lancers de dés dans vos options <code>--mana</code>. Par exemple pour un sort de rang 1, on peut renseigner <code>--mana [[1d3]]</code>. L'option d'affichage de la dépense de mana prend ici tout son sens, activable via <code>!cof-options</code>.</p>
+                <h5>Contrecoup</h5>
+                <p>Vous pouvez activer la règle spécifique de Contrecoup via <code>!cof-options</code>.</p>
+                <h4>Tempête de Mana (COF Compagnon p. 105)</h4>
+                <p>Le script implémente un support complet des règles de Tempête de Mana. Pour ce faire, il faut ajouter les options <code>--tempeteDeMana --rang <i>X</i></code> sur les sorts combinables avec Tempête de Mana. L'option <code>rang</code> permet d'indiquer le rang du sort afin que le script puisse calculer le maximum de PM qu'on peut dépenser lors du lancement du sort. Pour mettre ça de manière générique sur une ability ou une attaque et permettre au joueur de choisir de faire appel à Tempête de Mana ou pas, on peut utiliser :</p>
+                <p><code><i>--mana X</i> --rang <i>Y</i> ?{Tempête de Mana ?|Non,|Oui,--tempeteDeMana}</code></p>
+                <p>Tempête de Mana est compatible avec Mana Totale et Brûlure de Magie.</p>
+                <h5>Option altruiste</h5>
+                <p>Si vous désirez jouer avec l'option de Magie altruiste, il suffit de changer l'option en <code>--tempeteDeMana altruiste</code> sur les sorts où c'est utile.</p>
+                <h4>Terres d'Arran (COTA p. 112)</h4>
+                <p>Première chose à faire, activer l'option Brûlure de Magie via <code>!cof-options</code>. <i>Note : L'option Brûlure de Magie n'est pas compatible avec l'option Mana Totale, utilisez l'option Contrecoup à la place.</i></p>
+                <p>Vous pouvez ensuite réutiliser le même principe que le système de base en combinant dépense de Mana et effets supplémentaires. Voici un exemple pour une Boule de Feu (Voie de l'élémentaliste, rang 4) :</p>
+                <p><code>?{Incantation ?|Normale,--mana 4|Econome (L),--mana 2|Puissante (L),--mana 4 --puissant|Portée étendue (L),--mana 4 --puissant portee}</code></p>
+              </div>
+              <h3 class="text-info" id="regles_optionnelles">1.5 Règles optionnelles utilisées</h3>
+              <div class="decalage">
+                <p>Le script supportent l'utilisation de la règle des points de chance et des points de récupération.</p>
                 <p>J'ai aussi choisi, comme proposé par Kegron, de diminuer la DEF de tous les protagonistes après un certain nombre de tours de combat (-2 tous les 5 tours, peut être désactivé pendant un combat par la commande <code>!cof-usure-off</code>, ou bien dans les options de jeu).</p>
-                <p>Le script utilise aussi une règle de blessures graves : chaque fois qu'un personnage reçoit plus de DM que la somme de sa constitution et de son niveau, ou qu'il tombe à 0 PV, il encaisse une perte d'un point de récupération. Si il était à 0 points de récupération, il devient gravement blessé, ce qui le rend <i>affaibli</i>. Si le personnage était déjà gravement blessé, mais qu'il lui reste des PV, il tombe inconscient, et sinon, il meurt. Pour récupérer d'une blessure grave, le personnage doit se reposer une nuit, et réussir un test de CON difficulté 8 (avec le d12). Il est impossible de régénérer les points de récupération quand on est gravement blessé.</p>
-                <p>Il est possible de changer les options du script avec la commande <code>!cof-options</code>.</p>
+                <p>Le script utilise aussi une règle de blessures grave : chaque fois qu'un personnage reçoit plus de DM que la somme de sa constitution et de son niveau, ou qu'il tombe à 0 PV, il encaisse une perte d'un point de récupération. Si il était à 0 points de récupération, il devient gravement blessé, ce qui le rend <i>affaibli</i>. Si le personnage était déjà gravement blessé, mais qu'il lui reste des PV, il tombe inconscient, et sinon, il meurt. Pour récupérer d'une blessure grave, le personnage doit se reposer une nuit, et réussir un test de CON difficulté 8 (avec le d12). Il est impossible de régénérer les points de récupération quand on est gravement blessé.</p>
+                <p>Le script propose également quelques autres options qui sont activables et/ou modifiables via la commande <code>!cof-options</code>. Quelques exemples :</p>
+                <ul>
+                  <li>Initiative variable (individuelle / de groupe)</li>
+                  <li>Versions alternatives de capacités (interchangeable, forme d'arbre, rune de protection)</li>
+                  <li>Critiques étendus</li>
+                  <li>Dommages minimums</li>
+                  <li>Attaques de groupe</li>
+                </ul>
               </div>
             </div>
             <h2 class="text-primary" id="action_principales">2. Actions principales</h2>
@@ -202,7 +240,6 @@
                       </li>
                     </ul>
                   </div>
-
                   <h4>Liste d'actions pour le personnage dont c'est le tour</h4>
                     <p>Par défaut, le script affiche, pour le personnage dont c'est le tour, une liste d'actions. Cette liste est chuchotée au joueur qui contrôle le perosnnage. Elle se compose des attaques du personnage, des abilities et des actions d'attendre, se défendre et faire une manoeuvre. Il est possible de ne pas afficher une attaque en décochant la case sous le dé dans les options d'attaque.</p>
                     <p>Si une "Abilities" dont le nom est <code>#Actions#</code> existe pour le personnage dont c'est le tour, la liste de toutes les abilities est remplacée par les %Ability et #Macro cliquables de <code>#Actions#</code>.</p>
@@ -793,7 +830,7 @@
                 Le script est compatible avec <a href="https://wiki.roll20.net/Script:Roll20_Audio_Master">Roll20AM</a>, et si ce script est installé, il fera appel à lui. Mais si il n'est pas installé (et seulement dans ce cas !), il va simplement utiliser les sons dans le jukebox.
               </div>
             </div>
-						<h2 class="text-primary" id="CapacitesClasse">3. Capacités par Classe</h2>
+			<h2 class="text-primary" id="CapacitesClasse">3. Capacités par Classe</h2>
             <div class="decalage">
               <h3 class="text-info" id="Arquebusier">Arquebusier</h3>
               <div class="decalage">
@@ -809,12 +846,16 @@
                   <li><strong>Chimiste</strong> : mettre un attribut <code>chimiste</code> à <code>true</code>, et ajoutez les compétences de chimie et alchimie sur la fiche. Si vous utilisez la capacité alternative <strong>Grenaille</strong>, vous pouvez soit gérer les charges de grenaille avec <code>!cof-recharger <i>L</i> --grenaille</code>, soit (si vous ne voulez pas faire gérer les charges) utiliser l'option <code>--grenaille</code>. Si vous utilisez la même attaque pour plusieurs armes et que seule une partie est chargée de grenaille, il faudra aussi utiliser cette option pour utiliser l'arme chargée de grenaille.</li>
                   <li><strong>Démolition</strong> : pas de support particulier</li>
                   <li><strong>Poudre puissante</strong> : ajuster les attaques</li>
+                  <li><strong>Piège explosif</strong> : </li>
+                  <li><strong>Boulet explosif</strong> : ajouter une attaque de type Arme de jet, dégâts 5d6 de type contondant (ou feu ?), portée 20, modificateurs <code>auto</code>, options <code>--disque 5 --psave DEX [[12+@{selected|DEX}]]</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie du champ de bataille</h4>
                 <ol>
                   <li><strong>Action concertée</strong> : utiliser <code>!cof-echange-init @{selected|token_id} @{target|token_id} <i>n</i></code> où <i>n</i> peut valoir 1 ou 2 selon le rang dans la voie. !Pas testé!</li>
                   <li><strong>À couvert</strong> : <code>!cof-a-couvert @{selected|token_id} @{target|token_id}</code> le target est l'allié qui se déplace avec l'arquebusier. Se sélectionner soi-même si pas d'allié.</li>
                   <li><strong>Combattant aguerri</strong> : se reporter à la capacité choisie</li>
+                  <li><strong>Combat de masse</strong> : pas de support particulier, effectuer les actions supplémentaires en fonction des situations.</li>
+                  <li><strong>Constitution héroïque</strong> : reporter le bonus sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary">Voie du Pistolero</h4>
                 <ol>
@@ -829,6 +870,7 @@
                   <li><strong>Cadence de tir</strong> : pas de support</li>
                   <li><strong>Tir double</strong> : utiliser l'option <code>--tirDouble</code> si deux tirs sur une même cible. Si les deux armes sont différentes, rajouter le label de la deuxième arme après l'option (si le label est <i>l2</i>, cela donne <code>--tirDouble <i>l2</i></code>).</li>
                   <li><strong>As de la gâchette</strong> : utiliser l'option <code>--asDeLaGachette</code> pour les attaques avec des armes à poudre ou des arbalètes.</li>
+                  <li><strong>Dextérité héroïque</strong> : reporter le bonus sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la précision</h4>
                 <ol>
@@ -862,6 +904,8 @@
                   <li><strong>Réflexes félins</strong> : ajouter un attribut <code>reflexesFelins</code>, avec comme valeur le bonus aux saves et à l'initiative</li>
                   <li><strong>Charge</strong> : faire une attaque avec les options <code>--bonusAttaque 2</code> <code>--plus 1d6</code>. Pour gérer plusieurs armes, vous pouvez aussi créer une liste d'actions, comme avec l'attaque sournoise du voleur.</li>
                   <li><strong>Enchaînement</strong> : ajouter un attribut <code>enchainement</code>, de valeur <code>true</code>.</li>
+                  <li><strong>Déchaînement d'acier</strong> : pas de support particulier pour l'instant. Déplacer le token et faire les attaques au passage.</li>
+                  <li><strong>Attaque tourbillon</strong> : créer une ability <code>#Attaque-tourbillon#</code> reprise dans le menu <code>#Actions#</code>, avec sur la première ligne <code>!options --auto --portee 0 --disque 5</code> et sur les autres les lignes les attaques, ou bien <code>!attaques</code> pour les listes toutes, et utiliser l'attaque en se ciblant lui-même.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du primitif</h4>
                 <ol>
@@ -892,11 +936,21 @@
                 </ol>
                 <h4 class="text-secondary">Voie du musicien</h4>
                 <ol>
-                  <li><strong>Chant des héros</strong> : <code>!cof-effet-temp chantDesHeros [[5+@{selected|CHA}]] --allies</code>. Il faut avoir défini une <a href="#allie">équipe</a> avec le barde. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--lanceur @{selected|token_id} --rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Attaque sonore</strong> : Ajouter une attaque sur la fiche, utilisant l'attaque magique, de portée 10 m, et de DM 1d6+CHA. Appeler cette attaque avec les options <code>--sonique --magique --sortilege --cone --fx breath-smoke</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Zone de silence</strong> : <code>!cof-effet-temp zoneDeSilence [[1d6+@{selected|CHA}]] --lanceur @{selected|token_id} --mana 1 --portee 35 --disque @{target|token_id} 3</code>. Le script ne gère pas le moment où les cibles sortent de la zone. Si cela arrive, le MJ doit enlever à la main l'attribut <code>zoneDeSilence</code> crée par le script pour le personnage concerné. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Danse irrésisitible</strong> : Ajouter une attaque sur la fiche, de portée 100 m, utilisant l'attaque magique, avec les options <code>--mana 2 --sortilege --pasDeDmg --effet danseIrresistible [[1d4+@{selected|CHA]]</code>. Si vous utilisez les options de mana puissante, rajoutez <code>?{Y consacrer tout le tour?|Oui,--puissant duree|Non,&amp;#32;}</code>. Si vous péférez utiliser l'option de tempête de mana, rajoutez <code>--rang 4 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Musique fascinante</strong> : pas de support particulier</li>
+                  <li><strong>Chant des héros</strong> : <code>!cof-effet-temp chantDesHeros [[5+@{selected|CHA}]] --allies</code>. Il faut avoir défini une <a href="#allie">équipe</a> avec le barde.</li>
+                  <li><strong>Attaque sonore</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, DM 1d6+CHA, de portée 10, type Sortilège, dégâts soniques, options <code><i>--mana 0</i> --cone --fx breath-smoke</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Attaque sonore --toucher [[@{selected|ATKMAG}]] --dm 1d6+[[@{selected|CHA}]] --portee 10 --sortilege --sonique --cone --fx breath-smoke</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Zone de silence</strong> : <code>!cof-effet-temp zoneDeSilence [[1d6+@{selected|CHA}]] --lanceur @{selected|token_id} --portee 35 --disque @{target|token_id} 3 <i>--mana 1</i></code>. Le script ne gère pas le moment où les cibles sortent de la zone. Si cela arrive, le MJ doit enlever à la main l'attribut <code>zoneDeSilence</code> crée par le script pour le personnage concerné.</li>
+                  <li><strong>Danse irrésisitible</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateur <code>pasDeDmg</code>, options <code><i>--mana 2</i> --effet danseIrresistible [[1d4+@{selected|CHA]]</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Danse irrésisitible --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --effet danseIrresistible [[1d4+@{selected|CHA]]</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Musique fascinante</strong> : <code>!cof-lancer-sort joue une musique fascinante qui contrôle toutes les créatures de son choix de moins de [[5+@{selected|CHA}]] PV <i>--mana 3</i></code></li>
                 </ol>
                 <h4 class="text-secondary">Voie du saltimbanque</h4>
                 <ol>
@@ -911,14 +965,20 @@
                   <li><strong>Charmant</strong> : ajouter les compétences sur la fiche</li>
                   <li><strong>Dentelles et rapière</strong> : Ajouter un attribut <code>dentellesEtRapiere</code> avec comme valeur le rang dans la voie de la séduction. Cela augmente la DEF, mais seulement lorsque le barde ne porte pas d'armure et seulement contre les attaques au contact. (ne se voit pas sur le total de DEF de la fiche)</li>
                   <li><strong>Arme secrète</strong> : <code>!cof-arme-secrete @{selected|token_id} @{target|token_id}</code></li>
-                  <li><strong>Suggestion</strong> : faire une attaque magique de portée 20 m (?), type sortilège mental, modificateurs <code>pasDeDmg, difficultePVmax</code> et options <code>--if touche --message la cible doit faire l'action suggérée --endif --mana 2</code>. Si utilisez l'option de tempête de mana, rajoutez <code>--rang 4 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. En version parchemin, <code>#Attaque Suggestion --toucher [[@{selected|ATKMAG}]] --portee 20 --pasDeDmg --difficultePVmax --sortilege --attaqueMentale --if touche --message la cible doit faire l'action suggérée --endif</code>.</li>
+                  <li><strong>Suggestion</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg</code>, options <code><i>--mana 2</i> --difficultePVmax --attaqueMentale --if touche --message la cible doit faire l'action suggérée --endif</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Suggestion --toucher [[@{selected|ATKMAG}]] --portee 20 --pasDeDmg --difficultePVmax --sortilege --attaqueMentale --if touche --message la cible doit faire l'action suggérée --endif</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Charisme héroïque</strong> : Reporter le bonus sur la fiche.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du vagabond</h4>
                 <ol>
                   <li><strong>Rumeurs et légendes</strong> : ajouter les compétences sur la fiche</li>
-                  <li><strong>Compréhension des langues</strong> : <code>!cof-lancer-sort lance un sort de compréhension des langues qui dure [[1d6+@{selected|CHA}]] minutes</code></li>
+                  <li><strong>Compréhension des langues</strong> : <code>!cof-lancer-sort lance un sort de compréhension des langues qui dure [[1d6+@{selected|CHA}]] minutes <i>--mana 0</i></code></li>
                   <li><strong>Débrouillard</strong> : pas de support particulier. Ajouter le bonus aux compétences que vous souhaitez noter.</li>
-                  <li><strong>Déguisement</strong> : !cof-lancer-sort lance un sort de déguisement --mana 1</li>
+                  <li><strong>Déguisement</strong> :<code>!cof-lancer-sort lance un sort de déguisement <i>--mana 2</i></code></li>
                   <li><strong>Touche à tout</strong> : se reporter aux capacités choisies</li>
                 </ol>
               </div>
@@ -949,6 +1009,7 @@
                   </li>
                   <li><strong>Coup de bouclier</strong> : faire une attaque de bouclier, avec l'option <code>--avecd12</code></li>
                   <li><strong>Frappe lourde</strong> : faire l'attaque avec les options <code>--avecd12crit --plus 2d6 --ignoreMoitieRD</code></li>
+                  <li><strong>Force héroïque</strong> : reporter les bonus sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary">Voie du héro</h4>
                 <ol>
@@ -974,7 +1035,7 @@
                     <ul>
                       <li> Pour le bonus au critique, ajouter un attribut <code>ecuyer</code> de valeur <code>true</code>. </li>
                       <li> Pour les soins de nuit, ajouter à l'écuyer un attribut <code>ecuyerDe</code>, avec comme valeur le nom du chevalier. L'écuyer pourra soigner chaque nuit le chevalier et certains alliés, mais pour qu'il soigne les alliés, il ne faut pas oublier de le mettre dans la <a href="#methode_selection_groupes">liste de l'équipe</a> du chevalier.</li>
-                        <li>Si on souhaite que l'écuyer puisse soigner gratuitement la monture, il faut aussi que celle-ci ait un attribut <code>montureDe</code>, avec comme valeur le nom du chevalier.</li>
+                      <li>Si on souhaite que l'écuyer puisse soigner gratuitement la monture, il faut aussi que celle-ci ait un attribut <code>montureDe</code>, avec comme valeur le nom du chevalier.</li>
                     </ul>
                   </li>
                 </ol>
@@ -984,17 +1045,23 @@
                 <h4 class="text-secondary">Voie des animaux</h4>
                 <ol>
                   <li><strong>Langage des animaux</strong> : pas de support particulier</li>
-                  <li><strong>Nuée d'insectes</strong> : ajouter une attaque magique, de portée 20 m. Puis appeler cette attaque (avec <code>!cof-attack</code>) avec les arguments <code>--pasDeDmg --sortilege --effet nueeDInsectes [[5+@{selected|SAG}]] --mana 0</code>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDInsecte</code> sur la cible dans ce cas). Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. À noter que l'option <code>--mana 0</code> est là pour indiquer au script de terminer l'effet au cas où le druide meurt.</li>
+                  <li><strong>Nuée d'insectes</strong> : Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDInsecte</code> sur la cible dans ce cas).
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateur <code>pasDeDmg</code>, options <code><i>--mana 0</i> --effet nueeDInsectes [[5+@{selected|SAG}]]</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Nuée d'insectes --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --effet nueeDInsectes [[5+@{selected|SAG}]]</code></li>
+                    </ul>
+                  </li>
                   <li><strong>Le guetteur</strong> : Créer une compétence <code>perception</code> avec un bonus de 5. Ajouter un personnage et un token pour l'oiseau.</li>
-                  <li><strong>Masque du prédateur</strong> : <code>!cof-effet-temp masqueDuPredateur [[5+@{selected|SAG}]] --mana 2</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 4 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
-                  <li><strong>Forme animale</strong> : pas d'autre support que <code>!cof-lancer-sort se transforme en ?{Transformation en ?} --mana 3</code> </li>
+                  <li><strong>Masque du prédateur</strong> : <code>!cof-effet-temp masqueDuPredateur [[5+@{selected|SAG}]] <i>--mana 2</i></code></li>
+                  <li><strong>Forme animale</strong> : pas d'autre support que <code>!cof-lancer-sort se transforme en ?{Transformation en ?} <i>--mana 3</i></code></li>
                 </ol>
                 <h4 class="text-secondary">Voie du fauve</h4>
                 <ol>
-                  <li><strong>Vitesse du félin</strong> : simplement ajouter les bonus sur la fiche, ainsi que les competénces course, escalade et saut.</li>
+                  <li><strong>Vitesse du félin</strong> : simplement ajouter les bonus sur la fiche, ainsi que les compétences course, escalade et saut.</li>
                   <li><strong>Panthère</strong> : ajouter un personnage pour la panthère, qui sera contrôlé par le joueur.</li>
                   <li><strong>Attaque bondissante</strong> : faire l'attaque avec les options <code>--bonusAttaque 5</code> <code>--plus 1d6</code>. Les conditions d'utilisation sont à vérifier par le MJ.</li>
-                  <li><strong>Grand félin</strong> : ajuster la fiche de la panthère, et pour le soin, utiliser <code>!cof-soin @{selected|token_id} nom_familier ?{Montant des soins} --transfer</code>.
+                  <li><strong>Grand félin</strong> : ajuster la fiche de la panthère, et pour le soin, utiliser <code>!cof-soin @{selected|token_id} nom_familier ?{Montant des soins} --transfer</code>.</li>
+                  <li><strong>Les sept vies du chat</strong> : pas de support particulier, la commande Undo peut être utilisée pour annuler l'action qui a mené le Druide à 0 PV.</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de la nature</h4>
                 <ol>
@@ -1007,18 +1074,23 @@
                 <h4 class="text-secondary">Voie du protecteur</h4>
                 <ol>
                   <li><strong>Baies magiques</strong> : Utiliser <code>!cof-distribuer-baies</code> avec option <code>--allies --self</code> ou <code>--target</code> pour donner des baies (en ayant sélectionné le druide, le mieux est d'utiliser une ability). Pour consommer ensuite une baie, il faut utiliser <code>!cof-consommables</code>.</li>
-                  <li><strong>Forêt vivante</strong> : on peut mettre un effet (avec <code>!cof-effet</code>) <code>foretVivanteEnnemie</code> aux personnages affectés. Par exemple, si on veut donner l'effet aux personnages non alliés du druide, on peut faire <code>!cof-effet foretVivanteEnnemie oui --disque @{selected|token_id} 2000 --saufAllies</code>. Attention, l'effet ne disparaît que si on fait un <code>!cof-effet foretVivanteEnnemie non</code> sur les personnages.</li>
-                  <li><strong>Régénération</strong> : <code>!cof-effet-temp regeneration [[@{selected|niveau} + @{selected|SAG}]] --lanceur @{selected|token_id} --target @{target|token_id} --limiteCibleParJour 1 --portee 0 --mana 1</code>. Si vous utilisez l'option de magie puissante, vous pouvez rajouter <code>?{Y consacrer tout le tour ?|oui,--valeur 4|non,&amp;#32;}</code>, et si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>, à la place.</li>
-                  <li><strong>Forme d'arbre</strong> : <code>!cof-effet-temp formeDArbre [[5+@{selected|SAG}]] --mana 2</code>. J'ai choisi de donner comme pouvoir supplémentaire à cette forme d'avoir ses propres PVs, et le druide récupère ses PVs originaux à la fin de l'effet. La transformation est annulée aussi si l'arbre perd tous ses PVs. Le nombre de PVs par défaut est de niveau x 5, mais il peut être modifié en ajoutant au argument <code>--valeur <i>pv</i></code>. Pour augmenter un peu l'intérêt de ce sort, je lui fais aussi augmenter de 50% le bonus de peau d'écorce. Si vous utilisez les actions à afficher à chaque tour, vous pouvez aussi créer une ability de nom <code>#FormeArbre#</code> contenant les sorts et actions possibles en forme d'arbre. Si une telle ability existe, elle va toujours afficher au moins les actions défensive, d'attente et d'attaque sous forme d'arbre (pas besoin de créer une attaque dédiée sur la fiche). Il est possible de spécifier une image pour le token en forme d'arbre, en utilisant le valeur courante d'un attribut <code>tokenFormeDArbre</code>.</li>
+                  <li><strong>Forêt vivante</strong> : on peut mettre un effet (avec <code>!cof-effet</code>) <code>foretVivanteEnnemie</code> aux personnages affectés. Par exemple, si on veut donner l'effet aux personnages non alliés du druide, on peut faire <code>!cof-effet foretVivanteEnnemie oui --disque @{selected|token_id} 2000 --saufAllies <i>--mana 0</i></code>. Attention, l'effet ne disparaît que si on fait un <code>!cof-effet foretVivanteEnnemie non</code> sur les personnages.</li>
+                  <li><strong>Régénération</strong> : <code>!cof-effet-temp regeneration [[@{selected|niveau} + @{selected|SAG}]] --lanceur @{selected|token_id} --target @{target|token_id} --limiteCibleParJour 1 --portee 0 <i>--mana 1</i></code>.</li>
+                  <li><strong>Forme d'arbre</strong> : <code>!cof-effet-temp formeDArbre [[5+@{selected|SAG}]] <i>--mana 2</i></code>. J'ai choisi de donner comme pouvoir supplémentaire à cette forme d'avoir ses propres PVs, et le druide récupère ses PVs originaux à la fin de l'effet. La transformation est annulée aussi si l'arbre perd tous ses PVs. Le nombre de PVs par défaut est de niveau x 5, mais il peut être modifié en ajoutant au argument <code>--valeur <i>pv</i></code>. Pour augmenter un peu l'intérêt de ce sort, je lui fais aussi augmenter de 50% le bonus de peau d'écorce. Si vous utilisez les actions à afficher à chaque tour, vous pouvez aussi créer une ability de nom <code>#FormeArbre#</code> contenant les sorts et actions possibles en forme d'arbre. Si une telle ability existe, elle va toujours afficher au moins les actions défensive, d'attente et d'attaque sous forme d'arbre (pas besoin de créer une attaque dédiée sur la fiche). Il est possible de spécifier une image pour le token en forme d'arbre, en utilisant le valeur courante d'un attribut <code>tokenFormeDArbre</code>.</li>
                   <li><strong>Sagesse héroïque</strong> : reporter sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary" id="voie_végétaux">Voie des végétaux</h4>
                 <ol>
-                  <li><strong>Peau d'écorce</strong> : <code>!cof-effet-temp peauDEcorce [[5+@{selected|SAG}]]</code>. Par défaut, utilise la valeur d'un attribut <code>voieDesVegetaux</code> (qui devrait avoir comme valeur le rang dans la voie). Il est possible de choisir une autre valeur en utilisant l'option <code>--valeur</code>, et si aucune des deux méthodes n'est utilisée, le bonus de DEF est de 1. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
-                  <li><strong>Prison végétale</strong> : <code>!cof-effet-temp prisonVegetale [[5+@{selected|SAG}]] --saveParTour FOR [[10+@{selected|SAG}]] --lanceur @{selected|token_id} --disque @{target|token_id} 5 20 --saufAllies --mana 0</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Animation d'un arbre</strong> :  <code>!cof-animer-arbre @{selected|token_id} @{target|token_id} --mana 1 --portee 0</code>. Cela implique d'avoir un token représentant l'arbre sur la carte. Ce que je fais, c'est de passer un token d'arbre du layer map au layer tokens, puis je laisse le joueur faire le sort. Si c'est trop compliqué, vous pouvez aussi préparer un personnage arbre, avec les caractéristiques décrites, et le faire arriver sur la carte à la main (ne pas oublier sa RD <code>10/feu_hache</code>, dans ce cas).</li>
-                  <li><strong>Gland de pouvoir</strong> : Faire une attaque magique de portée 10 m, et l'utiliser avec les options <code>--pasDeDmg --sortilege --effet statueDeBois [[2d6+@{selected|SAG}]] --valeur 10 10 --mana 2</code>.</li>
-                  <li><strong>Porte végétale</strong> : Pas de support au niveau du script, à part <code>!cof-lancer-sort lance un sort de porte végétale --mana 3</code>.</li>
+                  <li><strong>Peau d'écorce</strong> : <code>!cof-effet-temp peauDEcorce [[5+@{selected|SAG}]] <i>--mana 0</i></code>. Par défaut, utilise la valeur d'un attribut <code>voieDesVegetaux</code> (qui devrait avoir comme valeur le rang dans la voie). Il est possible de choisir une autre valeur en utilisant l'option <code>--valeur</code>, et si aucune des deux méthodes n'est utilisée, le bonus de DEF est de 1.</li>
+                  <li><strong>Prison végétale</strong> : <code>!cof-effet-temp prisonVegetale [[5+@{selected|SAG}]] --saveParTour FOR [[10+@{selected|SAG}]] --lanceur @{selected|token_id} --disque @{target|token_id} 5 20 --saufAllies <i>--mana 0</i></code>.</li>
+                  <li><strong>Animation d'un arbre</strong> :  <code>!cof-animer-arbre @{selected|token_id} @{target|token_id} --portee 0 <i>--mana 1</i></code>. Cela implique d'avoir un token représentant l'arbre sur la carte. Ce que je fais, c'est de passer un token d'arbre du layer map au layer tokens, puis je laisse le joueur faire le sort. Si c'est trop compliqué, vous pouvez aussi préparer un personnage arbre, avec les caractéristiques décrites, et le faire arriver sur la carte à la main (ne pas oublier sa RD <code>10/feu_hache</code>, dans ce cas).</li>
+                  <li><strong>Gland de pouvoir</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 10, type Sortilège, modificateur <code>pasDeDmg</code>, options <code><i>--mana 2</i> --effet statueDeBois [[2d6+@{selected|SAG}]] --valeur 10 10</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Gland de pouvoir --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 10 --sortilege --effet statueDeBois [[2d6+@{selected|SAG}]] --valeur 10 10</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Porte végétale</strong> : Pas de support au niveau du script, à part <code>!cof-lancer-sort lance un sort de porte végétale <i>--mana 3</i></code>.</li>
                 </ol>
               </div>
               <h3 class="text-info" id="Ensorceleur">Ensorceleur</h3>
@@ -1026,34 +1098,70 @@
                 <h4 class="text-secondary">Voie de l'air</h4>
                 <ol>
                   <li><strong>Murmures dans le vent</strong> : pas de support autre que <code>!cof-lancer-sort lance un sort de Murmures dans le vent</code></li>
-                  <li><strong>Sous tension</strong> : <code>!cof-effet-temp sousTension [[5+@{selected|CHA}]]</code>. Pour l'attaque, définir une attaque magique à 1d6+CHA, et l'appeler avec les options <code>--si etat sousTension --electrique --sortilege --fx beam-holy</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>, seulement pour la mise sous tension (pas l'attaque). Il est possible de spécifier une autre valeur de DM que <code>1d6</code> avec l'option <code>--valeur</code> (pour les dégâts quand le personnage est touché).</li>
+                  <li><strong>Sous tension</strong> :
+                    <ul>
+                      <li>Sort :
+                        <ol>
+                          <li><code>!cof-effet-temp sousTension [[5+@{selected|CHA}]] <i>--mana 0</i></code> pour lancer le sort et mettre l'ensorceleur sous tension</li>
+                          <li>Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d6+CHA, portée 10, type Sortilège, dégâts électriques, options <code>--si etat sousTension --fx beam-holy</code>.</li>
+                        </ol>
+                      </li>
+                      <li>Objet de sort : créer une ability <code>#Sous-tension#</code> référencée dans le menu <code>#Actions#</code> du personnage et dont le contenu est, sur deux lignes<br/>
+                        <ol>
+                          <li><code>!cof-effet-temp sousTension [[5+@{selected|CHA}]]</code></li>
+                          <li><code>#Attaque Décharge électrique --toucher [[@{selected|ATKMAG}]] --dm 1d6+[[@{selected|CHA}]] --electrique --portee 10 --sortilege --si etat sousTension --fx beam-holy</code></li>
+                        </ol>
+                      </li>
+                    </ul>
+                    <i>Note :</i> Il est possible de spécifier une autre valeur pour les DM automatiques quand le lanceur est touché en contact, en rajoutant <code>--valeur X</code> à la première ability</code>.
+                  </li>
                   <li><strong>Télékinésie</strong> : Pas de support autre que <code>!cof-lancer-sort lance un sort de télékinésie --mana 1</code></li>
-                  <li><strong>Foudre</strong> : Faire une attaque de foudre de portée 10 m (attaque magique, dégâts 4d6 + CHA), et faire les attaques avec les options <code>--psave DEX [[12+@{selected|DEX}]] --mana 2 --electrique --sortilege --ligne --fx beam-holy</code>. Si vous utilisez l'option de magie puissante, vous pouvez rajouter <code>?{Y consacrer le tour entier ?|oui,--puissant|non,&amp;#32;}</code>. Et si, à la place, vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 4 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. </li>
-                  <li><strong>Forme éthérée</strong> : <code>!cof-effet-temp intangible [[5 + @{selected|CHA}]] --mana 3</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 5 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code></li>
+                  <li><strong>Foudre</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, 4d6+CHA, portée 10, type Sortilège, options <code><i>--mana 2</i> --psave DEX [[12+@{selected|DEX}]] --ligne --fx beam-holy</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Gland de pouvoir --toucher [[@{selected|ATKMAG}]] --dm 4d6+[[@{selected|CHA}]] --portee 10 --sortilege --psave DEX [[12+@{selected|DEX}]] --ligne --fx beam-holy</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Forme éthérée</strong> : <code>!cof-effet-temp intangible [[5 + @{selected|CHA}]] <i>--mana 3</i></code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la divination</h4>
                 <ol>
                   <li><strong>6eme sens</strong> : ajouter le bonus en DEF divers et initiative diver, ajouter une compétence <code>vigilance</code>, de valeur 2*rang (le bonus aux jet de surprise).</li>
-                  <li><strong>Détection de l'invisible</strong> : <code>!cof-effet-temp detectionDeLInvisible [[5+@{selected|CHA}]]</code>.  Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
-                  <li><strong>Clairvoyance</strong> : pas de support particulier. Pour le coût en mana, vous pouvez utiliser <code>!cof-lancer-sort peut voir et entendre à distance --mana 1</code></li>
+                  <li><strong>Détection de l'invisible</strong> : <code>!cof-effet-temp detectionDeLInvisible [[5+@{selected|CHA}]] <i>--mana 0</i></code>.</li>
+                  <li><strong>Clairvoyance</strong> : <code>!cof-lancer-sort peut voir et entendre à distance <i>--mana 1</i></code></li>
                   <li><strong>Prescience</strong> : ajouter un attribut prescience de valeur courante <code>1</code> et de valeur maximale <code>1</code>. Si le personnage était sur la carte au moment de lancer le combat, il se verra proposer un bouton pour utiliser sa prescience à la fin de chaque tour. Attention, en l'état, il est impossible d'annuler l'utilisation de ce bouton. De plus, ce bouton ne fera rien si le script a été interrompu depuis le début du tour (interruption de la partie, redémarrage du script, etc...).</li>
                   <li><strong>Hyperconscience</strong> : reporter sur la fiche.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'envoûteur</h4>
                 <ol>
-                  <li><strong>Injonction</strong> : utiliser <code>!cof-injonction @{selected|token_id} @{target|token_id} --portee 20</code></li>
-                  <li><strong>Sommeil</strong> : <code>!cof-sommeil @{selected|token_id} --disque @{target|token_id} 5 20</code>. Pour sélectionner le centre de la zone, on peut utiliser un personnage fictif (avec un token représentant une cible, par exemple) ayant 0 de max de PV.</li>
-                  <li><strong>Confusion</strong>: faire une attaque de portée 20 m, et pour la macro, utiliser les options <code>--pasDeDmg --sortilege --attaqueMentale --mana 1 --effet confusion [[3+@{selected|CHA}]] --saveParTour SAG [[10+@{selected|CHA}]]</code>. Si vous utilisez les options de magie puissante, vous pouvez remplacer la durée par <code>?{Y consacrer tout le tour?|Oui,[[6+2*@{selected|CHA}]]|Non,[[3+@{selected|CHA}]]}</code>.  Et si à la place, vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Amitié</strong>:<code>#Attaque Amitié --toucher [[@{selected|ATKMAG}]] --difficultePVmax --portee 10 --sortilege --pasDeDmg --mana 2 --effet charmé --save SAG [[12+@{selected|CHA}]] --saveParJour SAG [[12+@{selected|CHA}]]</code></li>
-                  <li><strong>Domination</strong> : utiliser <code>!cof-attaque-magique @{selected|token_id} @{target|token_id} --mana 3 --portee 20 --attaqueMentale</code></li>
+                  <li><strong>Injonction</strong> : utiliser <code>!cof-injonction @{selected|token_id} @{target|token_id} --portee 20 <i>--mana 0</i></code></li>
+                  <li><strong>Sommeil</strong> : <code>!cof-sommeil @{selected|token_id} --disque @{target|token_id} 5 20 <i>--mana 0</i></code>. Pour sélectionner le centre de la zone, on peut utiliser un personnage fictif (avec un token représentant une cible, par exemple) ayant 0 de max de PV.</li>
+                  <li><strong>Confusion</strong>:
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg</code> options <code><i>--mana 1</i> --attaqueMentale --effet confusion [[3+@{selected|CHA}]] --saveParTour SAG [[10+@{selected|CHA}]]</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Confusion --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --attaqueMentale --effet confusion [[3+@{selected|CHA}]] --saveParTour SAG [[10+@{selected|CHA}]]</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Amitié</strong>:
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg</code> options <code><i>--mana 2</i> --attaqueMentale --difficultePVmax --effet charmé --save SAG [[12+@{selected|CHA}]] --saveParJour SAG [[12+@{selected|CHA}]]</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Amitié --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --attaqueMentale --difficultePVmax --effet charmé --save SAG [[12+@{selected|CHA}]] --saveParJour SAG [[12+@{selected|CHA}]]</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Domination</strong> : utiliser <code>!cof-attaque-magique @{selected|token_id} @{target|token_id} --portee 20 --attaqueMentale</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie des illusions</h4>
                 <ol>
-                  <li><strong>Image décalée</strong> : <code>!cof-effet-temp imageDecalee [[5+@{selected|CHA}]]</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
-                  <li><strong>Mirage</strong> : pas de support autre que <code>!cof-lancer-sort lance un sort de mirage ([[5+@{selected|CHA}]] minutes)</code></li>
-                  <li><strong>Imitation</strong> : pas de support autre que <code>!cof-lancer-sort lance un sort d'imitation ([[5+@{selected|CHA}]] minutes) --mana 1</code>.</li>
-                  <li><strong>Dédoublement</strong> : ajouter une attaque magique, de portée 20 m, avec les options <code>--pasDeDmg --sortilege --mana 2 --effet dedoublement [[5+@{selected|CHA}]]</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 4 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Tueur fantasmagorique</strong> : <code>!cof-tueur-fantasmagorique @{selected|token_id} @{target|token_id} --portee 20 --mana 3</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 5 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
+                  <li><strong>Image décalée</strong> : <code>!cof-effet-temp imageDecalee [[5+@{selected|CHA}]] <i>--mana 0</i></code>.</li>
+                  <li><strong>Mirage</strong> : pas de support autre que <code>!cof-lancer-sort lance un sort de mirage ([[5+@{selected|CHA}]] minutes) <i>--mana 0</i></code></li>
+                  <li><strong>Imitation</strong> : pas de support autre que <code>!cof-lancer-sort lance un sort d'imitation ([[5+@{selected|CHA}]] minutes) <i>--mana 1</i></code></li>
+                  <li><strong>Dédoublement</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg</code> options <code><i>--mana 2</i> --effet dedoublement [[5+@{selected|CHA}]]</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Dédoublement --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --effet dedoublement [[5+@{selected|CHA}]]</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Tueur fantasmagorique</strong> : <code>!cof-tueur-fantasmagorique @{selected|token_id} @{target|token_id} --portee 20 <i>--mana 3</i></code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'invocation</h4>
                 <ol>
@@ -1065,15 +1173,22 @@
                       <li>L'initiative ne devrait pas être très utile, mais si besoin, ajoutez un attribut <code>initiativeDeriveeDe</code> de valeur le nom du personnage.</li>
                     </ul>
                   </li>
-                  <li><strong>Serviteur invisible&nbsp;</strong>: pas de support particulier.</li>
-                  <li><strong>Mur de force</strong> : <code>!cof-mur-de-force ?{Spherique?|Oui,&amp;#32;|Non,mur} --mana 1</code>. Cela affiche une image d'un champ de force, mais seulement si il est sphérique. Il est possible de ne pas afficher d'image avec la commande <code>!cof-mur-de-force noImage</code>. Il est possible d'utiliser une autre image que l'image par défaut en utilisant la commande <code>!cof-mur-de-force <i>path</i></code> où <i>path</i> est l'adresse url d'une image de la librairie Roll20 qui représente un mur de force sphérique. On peut aussi changer l'image par défaut dans les options de jeu. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li>
-                    <strong>Épée dansante</strong> :
+                  <li><strong>Serviteur invisible&nbsp;</strong>: pas de support autre que <code>!cof-lancer-sort crée une force invisible pour ([[5+@{selected|CHA}]] minutes) <i>--mana 0</i></code></li>
+                  <li><strong>Mur de force</strong> : <code>!cof-mur-de-force ?{Spherique?|Oui,&amp;#32;|Non,mur} <i>--mana 1</i></code>. Cela affiche une image d'un champ de force, mais seulement si il est sphérique. Il est possible de ne pas afficher d'image avec la commande <code>!cof-mur-de-force noImage</code>. Il est possible d'utiliser une autre image que l'image par défaut en utilisant la commande <code>!cof-mur-de-force <i>path</i></code> où <i>path</i> est l'adresse url d'une image de la librairie Roll20 qui représente un mur de force sphérique. On peut aussi changer l'image par défaut dans les options de jeu.</li>
+                  <li><strong>Épée dansante</strong> :
                     <ul>
-                      <li>sort: <code>!cof-effet-temp epeeDansante [[5+@{selected|CHA}]] --mana 2</code></li>
-                      <li>attaque: faire une attaque de portée 20 m, avec les options <code>--si etat epeeDansante</code> <code>--magique</code> <code>--ignoreObstacles</code></li>
-                        <li>si vous jouez les options de magie puissante, rajoutez <code>--puissant ?{Y passer tout le tour ?|oui|non}</code> pour le sort, et <code>--puissant epeeDansante</code> pour l'attaque. </li>
-                        <li>si vous utilisez les options de tempête de mana, ajoutez juste <code>--rang 4 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code> au sort.</li>
+                      <li>Sort :
+                        <ol>
+                          <li><code>!cof-effet-temp epeeDansante [[5+@{selected|CHA}]] <i>--mana 2</i></code> pour lancer le sort</li>
+                          <li>Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d8+CHA, portée 20, type Sortilège, dégâts magiques, options <code>--si etat epeeDansante --ignoreObstacles</code>.</li>
+                        </ol>
+                      </li>
+                      <li>Objet de sort : créer une ability <code>#Epée-dansante#</code> référencée dans le menu <code>#Actions#</code> du personnage et dont le contenu est, sur deux lignes<br/>
+                        <ol>
+                          <li><code>!cof-effet-temp epeeDansante [[5+@{selected|CHA}]]</code> pour lancer le sort</li>
+                          <li><code>#Attaque Épée dansante --toucher [[@{selected|ATKMAG}]] --dm 1d8+[[@{selected|CHA}]] --magique --portee 20 --sortilege --si etat epeeDansante --ignoreObstacles</code></li>
+                        </ol>
+                      </li>
                     </ul>
                   </li>
                   <li><strong>Charisme héroïque</strong> : reporter sur la fiche</li>
@@ -1084,9 +1199,10 @@
                 <h4 class="text-secondary">Voie des artefacts</h4>
                 <ol>
                   <li><strong>Bâton de mage</strong> : simplement adapter l'attaque, avec aussi <code>--magique</code>. Pour l'éclair d'énergie, le mieux est d'ajouter une autre attaque.</li>
-                  <li><strong>Blocage</strong> : pas de support particulier</li>
+                  <li><strong>Blocage</strong> : pas de support autre que <code>!cof-lancer-sort scelle une porte ou un coffre (+5 solidité & RD) pour [[@{selected|INT}]] minutes <i>--mana 0</i></code></li>
                   <li><strong>Sac sans fond</strong> : pas de support particulier</li>
-                  <li><strong>Frappe des arcanes</strong> : le plus simple est d'utiliser la même ligne d'attaque (disons que son label est <code>E</code>) que pour l'attaque d'énergie (mais si besoin, rien n'empèche d'en utiliser une autre). La commande sera alors <code>!cof-attack @{selected|token_id} @{selected|token_id} E --auto --magique --sortilege --disque 10 --etat renverse --save FOR [[10+@{selected|INT}]] --mana 2</code>. Si vous utilisez les options de magie puissante, rajoutez <code>?{Y consacrer tout le tour ?|Oui,--puissant|Non,&amp;#32;}</code>. Sinon, si vous utilisez les options de tempête de mana, rajouez <code>--rang 4 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code></li>
+                  <li><strong>Frappe des arcanes</strong> : le plus simple est d'utiliser la même ligne d'attaque (disons que son label est <code>E</code>) que pour l'attaque d'énergie (mais si besoin, rien n'empêche d'en utiliser une autre). La commande sera alors <code>#Attaque E --auto --magique --sortilege --disque 10 --etat renverse --save FOR [[10+@{selected|INT}]]</code>.</li>
+                  <li><strong>Artefact majeur</strong> : pas de support particulier</li>
                 </ol>
                 <h4 class="text-secondary">Voie des élixirs</h4>
                 <p style="margin-top:0px; margin-bottom:0px">Pour créer ou juste voir ses élixirs, utiliser la commande <code>!cof-elixirs</code>. Pour cela, il faut aussi un attribut <code>voieDesElixirs</code> avec comme valeur le rang dans la voie. Noter que la commande <code>!cof-elixirs</code> affiche une liste d'élixirs, et que pour effectivement créer un élixir, il faut cliquer sur le bouton correspondant dans cette liste. Le script propose les élixirs par défaut du jeu, mais vous pouvez modifier cette liste : pour changer un élixir de rang k (k&lt;4), ajouter un attribut de nom <code>Elixir <i>k</i></code>, de valeur courante le nom et de valeur maximale l'effet.</p>
@@ -1099,9 +1215,17 @@
                 </ol>
                 <h4 class="text-secondary">Voie du métal</h4>
                 <ol>
-                  <li><strong>Forgeron</strong> : Il faut un attribut <code>voieDuMetal</code> pour connaître le rang (ou utiliser l'option <code>--valeur</code>). Lancer le sort avec <code>!cof-effet-temp forgeron(<i>L</i>) [[5+@{selected|INT}]]</code> où <i>L</i> est le label d'une attaque. Ensuite, chaque fois que cette attaque sera utilisée, les dégâts seront ajoutés. Limitations : si deux attaques utilisent la même arme, il faut faire deux fois l'action, une pour chaque attaque. Si vous utilisez les options de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Métal brûlant</strong> : faire une attaque, de type magique et de portée 20 m. L'appeler (avec <code>!cof-attack</code>) avec les options <code>--pasDeDmg --sortilege --effet ?{Chauffer|une arme,armeBrulante|une armure,armureBrulante} [[5+@{selected|INT}]]</code>. Si vous utilisez les options de tempête de mana, rajoutez <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. Pour mettre fin à l'effet (si la cible lache son arme ou enlève son arnure), vous pouvez utiliser la macro <code>!cof-effet-temp ?{Se débarrasser d'une |arme,armeBrulante|armure,armureBrulante} 0</code>.</li>
-                  <li><strong>Magnétisme</strong> : <code>!cof-effet-temp magnetisme [[3+@{selected|INT}]] --mana 1</code>. L'effet n'est actif que contre les attaques ayant l'option <code>--metal</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. Il est possible de changer le bonus de DEF apporté avec l'option <code>--valeur</code>.</li>
+                  <li><strong>Forgeron</strong> : Il faut un attribut <code>voieDuMetal</code> pour connaître le rang (ou utiliser l'option <code>--valeur</code>). Lancer le sort avec <code>!cof-effet-temp forgeron(<i>L</i>) [[5+@{selected|INT}]]</code> où <i>L</i> est le label d'une attaque. Ensuite, chaque fois que cette attaque sera utilisée, les dégâts seront ajoutés. Limitations : si deux attaques utilisent la même arme, il faut faire deux fois l'action, une pour chaque attaque.</li>
+                  <li><strong>Métal brûlant</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg</code> options <code><i>--mana 0</i> --effet ?{Chauffer|une arme,armeBrulante|une armure,armureBrulante} [[5+@{selected|INT}]]</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Métal brûlant --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --effet ?{Chauffer|une arme,armeBrulante|une armure,armureBrulante} [[5+@{selected|INT}]]</code></li>
+                    </ul>
+                    Pour mettre fin à l'effet (si la cible lâche son arme ou enlève son armure), vous pouvez utiliser la macro <code>!cof-effet-temp ?{Se débarrasser d'une |arme,armeBrulante|armure,armureBrulante} 0</code>
+                  </li>
+                  <li><strong>Magnétisme</strong> : <code>!cof-effet-temp magnetisme [[3+@{selected|INT}]] <i>--mana 1</i></code>. L'effet n'est actif que contre les attaques ayant l'option <code>--metal</code>. Il est possible de changer le bonus de DEF apporté avec l'option <code>--valeur</code>.</li>
+                  <li><strong>Métal hurlant</strong> : </li>
+                  <li><strong>Endurer</strong> : reporter les bonus sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary">Voie du golem</h4>
                 <ol>
@@ -1115,9 +1239,10 @@
                 <p style="margin-top:0px; margin-bottom:0px">Créer un attribut <code>voieDesRunes</code> pour le personnage avec comme valeur le niveau dans la voie des Runes.</p>
                 <ol>
                   <li><strong>Runes de défense</strong> : ajuster la DEF sur la fiche.</li>
-                  <li><strong>Runes d'énergie</strong> : La fabrication des runes de combat est gérée par la commande <code>!cof-runes</code> (il est fortement conseillé de créer une ability pour le forgesort). Le script tente de détecter quand les runes peuvent être utilisées en combat et propose un bouton (à la manière des points de chance). Lors de chaque nuit (utilisation de la commande <code>!cof-nouveau-jour</code>) toutes les runes sont retirées, mais le script va suggérer des raccourcis au forgesort pour les restaurer facilement à tous les tokens présents sur la page des joueurs (par personnage, type de rune, et aussi un bouton "Tout renouveler"). Les points de mana sont automatiquement décomptés.</li>
-                  <li><strong>Runes de protection</strong> : cf. ci-dessus. Le script implémente par défaut un maximum de dommages absorbés par la rune équivalent au rang du forgesort dans la voie des Runes multiplié par 10. Il est possible de désactiver cette limitation via !cof-options.</li>
-                  <li><strong>Runes de puissance</strong> : cf. ci-dessus. Créer une rune de puissance vous demandera d'indiquer en plus le numéro de l'arme sur la fiche du propriétaire.</li>
+                  <li><strong>Rune d'énergie</strong> : La fabrication des runes de combat est gérée par la commande <code>!cof-runes</code> (il est fortement conseillé de créer une ability pour le forgesort). Le script tente de détecter quand les runes peuvent être utilisées en combat et propose un bouton (à la manière des points de chance). Lors de chaque nuit (utilisation de la commande <code>!cof-nouveau-jour</code>) toutes les runes sont retirées, mais le script va suggérer des raccourcis au forgesort pour les restaurer facilement à tous les tokens présents sur la page des joueurs (par personnage, type de rune, et aussi un bouton "Tout renouveler"). Les points de mana sont automatiquement décomptés.</li>
+                  <li><strong>Rune de protection</strong> : cf. ci-dessus. Le script implémente par défaut un maximum de dommages absorbés par la rune équivalent au rang du forgesort dans la voie des Runes multiplié par 10. Il est possible de désactiver cette limitation via !cof-options.</li>
+                  <li><strong>Rune de puissance</strong> : cf. ci-dessus. Créer une rune de puissance vous demandera d'indiquer en plus le numéro de l'arme sur la fiche du propriétaire.</li>
+                  <li><strong>Rune de pouvoir</strong> : pas de support particulier, créer l'objet de pouvoir approprié.</li>
                 </ol>
               </div>
               <h3 class="text-info" id="Guerrier">Guerrier</h3>
@@ -1178,15 +1303,14 @@
               <div class="decalage">
                 <h4 class="text-secondary">Voie de la conjuration</h4>
                 <ol>
-                  <li><strong>Conjuration de prédateur</strong> : <code>!cof-conjuration-de-predateur</code>.</li>
+                  <li><strong>Conjuration de prédateur</strong> : <code>!cof-conjuration-de-predateur <i>--mana 0</i></code>.</li>
                   <li><strong>Conjuration renforcée</strong> : vous pouvez soit utiliser un attribut <code>voieDeLaConjuration</code>, de valeur le rang dans la voie, soit ajouter ce rang en premier argument de <code>!cof-conjuration-de-predateur</code>.</li>
-                  <li><strong>Conjuration d'armée</strong> : <code>!cof-conjuration-armee --mana 1 --limiteParJour 1</code>. Le niveau de puissance de l'armée et déterminé par la valeur d'un attribut <code>voieDeLaConjuration</code>, ou sinon par un argument optionnel qui donne les DMs infligés par l'armée (par exemple, <code>!cof-conjuration-armee 2d6</code>). L'armée va apparaître comme un token normal, mais avec une aura de 20m de coté qui représente la place qu'elle occupe. Pour les dégâts qu'elle inflige, utiliser son attaque sur toutes les cibles désignées par l'invocateur. Pour faire disparaître l'armée, il suffit de la tuer (par exemple en utilisant <code>!cof-set-state mort true</code>). Tous les personnages dans la zone de l'armée et qui ne sont pas alliés de l'invocateurs ont automatiquement une nouvelle action dans leur liste pour attaquer l'armée. Cette action leur permet aussi de bénéficier d'une division des DM par 2 lorsque l'armée les attaque.</li>
+                  <li><strong>Conjuration d'armée</strong> : <code>!cof-conjuration-armee --limiteParJour 1 <i>--mana 1</i></code>. Le niveau de puissance de l'armée et déterminé par la valeur d'un attribut <code>voieDeLaConjuration</code>, ou sinon par un argument optionnel qui donne les DMs infligés par l'armée (par exemple, <code>!cof-conjuration-armee 2d6</code>). L'armée va apparaître comme un token normal, mais avec une aura de 20m de coté qui représente la place qu'elle occupe. Pour les dégâts qu'elle inflige, utiliser son attaque sur toutes les cibles désignées par l'invocateur. Pour faire disparaître l'armée, il suffit de la tuer (par exemple en utilisant <code>!cof-set-state mort true</code>). Tous les personnages dans la zone de l'armée et qui ne sont pas alliés de l'invocateurs ont automatiquement une nouvelle action dans leur liste pour attaquer l'armée. Cette action leur permet aussi de bénéficier d'une division des DM par 2 lorsque l'armée les attaque.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'entité</h4>
                 <ol>
                   <li><strong>Invocation d'une entité</strong> : ajouter la fiche correspondante.</li>
-                  <li><strong>Lien magique</strong> : pour l'instant, gérer à la main le transfer de dégâts.</li>
-                  <!-- TODO -->
+                  <li><strong>Lien magique</strong> : pour l'instant, gérer à la main le transfert de dégâts.</li>
                   <li><strong>Amélioration</strong> : ajuster la fiche de l'entité.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du familier</h4>
@@ -1197,54 +1321,94 @@
                 </ol>
                 <h4 class="text-secondary">Voie des mutations</h4>
                 <ol>
-                  <li><strong>Mutation offensive</strong> : 
+                  <li><strong>Mutation offensive</strong> :
                     <ul>
-                      <li> Faire une attaque correspondant à l'appendice monstrueux, en tenant compte d'un +3 en force. La lancer avec l'option <code>--si etat mutationOffensive</code>.</li>
-                      <li> Pour faire la mutation, <code>!cof-effet-temp mutationOffensive [[5+@{selected|CHA}]]</code>.</li>
-                      <li> Si vous utilisez les options de tempête de mana, vous pouvew rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code> à la mutation.</li>
-                    </ul></li>
-                    <li><strong>Mutation protectrice</strong> : <code>!cof-effet ?{Mutation protectrice|Cuirasse,mutationCuirasse|Écailles rouges,mutationEcaillesRouges|Fourrure violette,mutationFourrureViolette|Ouïes,mutationOuies|Sang noir,mutationSangNoir} true --classeEffet mutationProtectrice</code>. Pour la valeur de protection de la cuirasse, vous pouvez soit utiliser un attribut <code>voieDesMutations</code>, de valeur le rang dans la voie, soit remplacer <code>mutationCuirasse</code> par <code>mutationCuirasse --valeur <i>rang</i></code>. Pour enlever la mutation, le MJ peut ensuite simplement sélectionner le personnage et utiliser <code>!cof-fin-classe-effet mutationProtectrice</code>.</li>
-                    <li><strong>Surpuissance physique</strong> : <code>!cof-effet ?{Surpuissance physique|Muscles hypertrophiés,mutationMusclesHypertrophies|Silhouette filiforme,mutationSilhouetteFiliforme|Silhouette massive,mutationSilhouetteMassive} true --classeEffet surpuissancePhysique --mana 1</code>. Pour enlever la mutation, le MJ peut ensuite simplement sélectionner le personnage et utiliser <code>!cof-fin-classe-effet surpuissancePhysique</code>.</li>
-                  <li><strong>Adaptation motrice</strong> : pas d'autre support que <code>!cof-lancer-sort --message se fait pousser ?{Adaptation motrice ?|Ailes|des ailes|Pattes demesurées,des pattes demesurées|Queue de poisson,une queue de poisson} --mana 2</code> </li>.
+                      <li>Sort :
+                        <ol>
+                          <li><code>!cof-effet-temp mutationOffensive [[5+@{selected|CHA}]] <i>--mana 0</i></code> pour lancer le sort</li>
+                          <li>Ajouter une attaque sur la fiche utilisant l'attaque au contact, dommages 1d6+FOR+3, type Naturel, dégâts magiques, options <code>--si etat mutationOffensive</code></li>
+                        </ol>
+                      </li>
+                      <li>Objet de sort : créer une ability <code>#Mutation-offensive#</code> référencée dans le menu <code>#Actions#</code> du personnage et dont le contenu est, sur deux lignes<br/>
+                        <ol>
+                          <li><code>!cof-effet-temp mutationOffensive [[5+@{selected|CHA}]]</code> pour lancer le sort</li>
+                          <li><code>#Attaque Mutation offensive --toucher [[@{selected|ATKCAC}]] --dm 1d6+[[3+@{selected|FOR}]] --magique --naturel --si etat mutationOffensive</code></li>
+                        </ol>
+                      </li>
+                    </ul>
+                  </li>
+                  <li><strong>Mutation protectrice</strong> : <code>!cof-effet ?{Mutation protectrice|Cuirasse,mutationCuirasse|Écailles rouges,mutationEcaillesRouges|Fourrure violette,mutationFourrureViolette|Ouïes,mutationOuies|Sang noir,mutationSangNoir} true --classeEffet mutationProtectrice <i>--mana 0</i></code>. Pour la valeur de protection de la cuirasse, vous pouvez soit utiliser un attribut <code>voieDesMutations</code>, de valeur le rang dans la voie, soit remplacer <code>mutationCuirasse</code> par <code>mutationCuirasse --valeur <i>rang</i></code>. Pour enlever la mutation, le MJ peut ensuite simplement sélectionner le personnage et utiliser <code>!cof-fin-classe-effet mutationProtectrice</code>.</li>
+                  <li><strong>Surpuissance physique</strong> : <code>!cof-effet ?{Surpuissance physique|Muscles hypertrophiés,mutationMusclesHypertrophies|Silhouette filiforme,mutationSilhouetteFiliforme|Silhouette massive,mutationSilhouetteMassive} true --classeEffet surpuissancePhysique <i>--mana 1</i></code>. Pour enlever la mutation, le MJ peut ensuite simplement sélectionner le personnage et utiliser <code>!cof-fin-classe-effet surpuissancePhysique</code>.</li>
+                  <li><strong>Adaptation motrice</strong> : pas d'autre support que <code>!cof-lancer-sort --message se fait pousser ?{Adaptation motrice ?|Ailes|des ailes|Pattes demesurées,des pattes demesurées|Queue de poisson,une queue de poisson} <i>--mana 2</i></code></li>
                 </ol>
                 <h4 class="text-secondary">Voie des portes</h4>
                 <ol>
-                  <li><strong>Raccourci</strong> : pas de support particulier.</li>
-                  <li><strong>Porte artificielle</strong> : pas de support particulier.</li>
-                  <li><strong>Manoir d'outre-tombe</strong> : pas d'autre support que <code>!cof-lancer-sort enchante une porte... --mana 1</code> </li>.
+                  <li><strong>Raccourci</strong> : pas de support autre que <code>!cof-lancer-sort lance un sort de Raccourci <i>--mana 0</i></code></li>
+                  <li><strong>Porte artificielle</strong> : pas de support autre que <code>!cof-lancer-sort lance un sort de Porte artificielle <i>--mana 0</i></code></li>
+                  <li><strong>Manoir d'outre-tombe</strong> : pas d'autre support que <code>!cof-lancer-sort enchante une porte <i>--mana 1</i></code></li>
                 </ol>
               </div>
               <h3 class="text-info" id="Magicien">Magicien</h3>
               <div class="decalage">
                 <h4 class="text-secondary">Voie de la magie des arcanes</h4>
                 <ol>
-                  <li><strong>Agrandissement</strong> : <code>!cof-effet-temp agrandissement [[5+@{selected|INT}]] --target @{target|token_id} --lanceur @{selected|token_id} --portee 0</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Forme gazeuse</strong> : <code>!cof-effet-temp formeGazeuse [[1d4 + @{selected|INT}]]</code>. Au MJ de faire attention que sous cette forme, toutes les capacités sont interdites. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
-                  <li><strong>Hâte</strong> : Pour garder le compte de l'effet, on peut utiliser <code>!cof-effet-temp hate [[1d6+@{selected|INT}]] --mana 1</code>, au MJ de gérer ensuite les actions possibles chaque tour. Pour savoir si le sort est encore actif, on peut utiliser <code>!cof-statut</code>.</li>
-                  <li><strong>Téléportation</strong> : Pas de support autre que <code>!cof-lancer-sort se téléporte (à [[@{selected|INTELLIGENCE}*10]] m maximum) --mana 2</code>.</li>
-                  <li><strong>Désintégration</strong> : faire une attaque magique de portée 20 m, de dégâts 5d6, modificateur INT, type <code>Sortilege</code>, dégâts de type magique. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez mettre dans les options de l'attaque <code>--rang 5 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
+                  <li><strong>Agrandissement</strong> : <code>!cof-effet-temp agrandissement [[5+@{selected|INT}]] --target @{target|token_id} --lanceur @{selected|token_id} --portee 0 <i>--mana 0</i></code>.</li>
+                  <li><strong>Forme gazeuse</strong> : <code>!cof-effet-temp formeGazeuse [[1d4 + @{selected|INT}]] <i>--mana 0</i></code>. Au MJ de faire attention que sous cette forme, toutes les capacités sont interdites.</li>
+                  <li><strong>Hâte</strong> : <code>!cof-effet-temp hate [[1d6+@{selected|INT}]] <i>--mana 1</i></code>, au MJ de gérer ensuite les actions possibles chaque tour.</li>
+                  <li><strong>Téléportation</strong> : Pas de support autre que <code>!cof-lancer-sort se téléporte (à [[@{selected|INTELLIGENCE}*10]] m maximum) <i>--mana 2</i></code>.</li>
+                  <li><strong>Désintégration</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 5D6+INT, portée 20, type Sortilège, dégâts magiques, options <code><i>--mana 3</i></code>.</li>
+                      <li>Objet de sort : <code>#Attaque Désintégration --toucher [[@{selected|ATKMAG}]] --dm 5d6+[[@{selected|INT}]] --magique --portee 20 --sortilege</code></li>
+                    </ul>
+                  </li>
                 </ol>
                 <h4 class="text-secondary">Voie de la magie destructrice</h4>
                 <ol>
-                  <li><strong>Projectile magique</strong> : faire une attaque de type <code>Sortilege</code>, faisant des dégâts magiques, avec le modificateur <code>auto</code> et les options <code>--fx beam-magic</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. En ligne de code, ou pour un parchemin, utilisez <code>#Attaque projectile magique --dmg 1d4 --portee 50 --auto --magique --sortilege --fx beam-magic</code>.</li>
-                  <li><strong>Rayon affaiblissant</strong> : faire une attaque de type <code>Sortilege</code>, avec les modificateur <code>pasDeDmg</code> et les options <code>--effet rayonAffaiblissant [[1d6+@{selected|INT}]] --mana 0 --fx splatter-magic</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. En version parchemin, <code>#Attaque  --toucher [[@{selected|ATKMAG}]] --portee 10 --pasDeDmg --effet rayonAffaiblissant [[1d6+@{selected|INT}]] --sortilege --fx splatter-magic</code>.</li>
-                  <li><strong>Flèche enflammée</strong> : Utiliser une attaque sur la fiche, et la lancer avec les options <code>--fx beam-fire --feu --mana 1 --sortilege --enflamme</code>. Si vous utilisez les options de magie puissante, vous pouvez rajouter <code>?{Y consacrer le tour entier ?|oui,--puissant|non,&amp;#32;}</code>. Si vous souhaitez à la place utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Boule de feu</strong> : Utiliser une attaque sur la fiche (attaque magique, portée 30 m, 4d6+INT de DM), et la lancer avec les options <code>--targetFx explode-fire --feu --mana 2 --sortilege --disque 6 --demiAuto --psave DEX [[10+@{selected|INT}]]</code>. Si vous utilisez l'option de magie puissante, vous pouvez aussi rajouter <code>?{Y consacrer tout le tour?|Oui,--puissant|Non,&amp;#32;}</code>. Si vous souhaitez utiliser à la place l'option de tempête de mana, vous pouvez rajouter <code>--rang 4 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. Version pour un parchemin&nbsp;: <code>#Attaque Boule de feu --toucher [[@{selected|ATKMAG}]] --dm 5d6 + [[@{selected|INT}]] --portee 30 --targetFx explode-fire --feu --sortilege --disque 6 --demiAuto --psave DEX [[10+@{selected|INT}]]</code></li>
-                  <li><strong>Rituel de puissance</strong> : lancer les attaques utilisant le rituel avec les options <code>--avecd12crit --plus 2d6</code>.</li>
+                  <li><strong>Projectile magique</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d4, portée 50, type Sortilège, modificateurs <code>auto</code> dégâts magiques, options <code><i>--mana 0</i> --fx beam-magic</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Projectile Magique --auto --dm 1d4 --magique --portee 50 --sortilege --fx beam-magic</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Rayon affaiblissant</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 10, type Sortilège, modificateurs <code>pasDeDmg</code> dégâts magiques, options <code><i>--mana 0</i> --effet rayonAffaiblissant [[1d6+@{selected|INT}]] --fx splatter-magic</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Rayon affaiblissant --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 10 --sortilege --effet rayonAffaiblissant [[1d6+@{selected|INT}]] --fx splatter-magic</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Flèche enflammée</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d6+INT, portée 30, type Sortilège, dégâts feu, options <code><i>--mana 1</i> --fx beam-fire --feu --enflamme</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Flèche enflammée --toucher [[@{selected|ATKMAG}]] --dm 1d6+[[@{selected|INT}]] --feu --portee 30 --sortilege --fx beam-fire --enflamme</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Boule de feu</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 4d6+INT, portée 30, type Sortilège, dégâts feu, options <code><i>--mana 2</i> --demiAuto --disque 6 --psave DEX [[10+@{selected|INT}]] --targetFx explode-fire</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Boule de feu --toucher [[@{selected|ATKMAG}]] --dm 4d6+[[@{selected|INT}]] --feu --magique --portee 30 --sortilege --demiAuto --disque 6 --psave DEX [[10+@{selected|INT}]] --targetFx explode-fire</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Rituel de puissance</strong> : faire l'appel aux attaques avec <code>--avecd12crit --plus 2d6</code>. On peut par exemple ajouter ceci dans les options des attaques lorsque le Rituel peut être utilisé :<code>?{Rituel de puissance?|Non,|Oui,--avecd12crit --plus 2d6}</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de la magie élémentaire</h4>
                 <ol>
-                  <li><strong>Asphyxie</strong> : ajouter une attaque magique sur la fiche, de portée 20 m, de type <code>Sortilege</code>, avec comme modificateur <code>pasDeDmg</code> et comme options<code>--effet asphyxie [[1+@{selected|INT}]] --mana 0</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. À noter que l'option <code>--mana 0</code> est là pour indiquer au script que l'effet doit s'arrêter si le magicien meurt. En version ligne de commande (pour un parchemin, par exemple), ça donne <code>#Attaque Asphyxie --toucher [[@{selected|ATKMAG}]] --portee 20 --sortilege --pasDeDmg --effet asphyxie [[1+@{selected|INT}]]</code>.</li>
-                  <li><strong>Protection contre les éléments</strong> : ajouter un attribut <code>voieDeLaMagieElementaire</code> avec comme valeur le rang dans la voie. Pour lancer le sort, faire <code>!cof-effet-temp protectionContreLesElements [[5+@{selected|INT}]]</code>. Notez que si vous utilisez une option <code>--valeur</code> à la place d'utiliser l'attribut, la RD sera cette valeur multipliée par 2.</li>
-                  <li><strong>Arme enflammée</strong> : Lancer le sort avec <code>!cof-effet-temp armeEnflammee [[5+@{selected|INT}]] --lanceur @{selected|token_id} --target @{target|token_id} --portee 0 --mana 1</code>. Il faut que la cible tienne une arme en main (voir <code>!cof-degainer</code>). Limitations : si deux attaques utilisent la même arme, il faut faire deux fois l'action, une pour chaque attaque. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Respiration aquatique</strong> : pas de support autre que <code>!cof-lancer-sort lance un sort de respiration aquatique (durée 10 minutes, sur soi plus [[@{selected|INT]] compagnons) --mana 2</code>.</li>
-                  <li><strong>Peau de pierre</strong> : <code>!cof-effet-temp peauDePierreMag [[5+@{selected|INT}]] --mana 3</code>. Le script va appliquer une RD de [5+Mod. d'INT] en dernier lieu, et compter le maximum des 40 dégâts par défaut. Il est possible de changer la valeur de la RD et le nombre de points de dégâts absorbés en ajoutant l'option <code>--valeur <i>rd absorbe</i></code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 5 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. À noter que le script rajoute +1 à la RD et +5 au total de dégâts absorbés par point de mana depensée en magie intense. </li>
+                  <li><strong>Asphyxie</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège,modificateurs <code>pasDeDmg</code>, options <code><i>--mana 0</i> --effet asphyxie [[1+@{selected|INT}]]</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Asphyxie --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --effet asphyxie [[1+@{selected|INT}]]</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Protection contre les éléments</strong> : ajouter un attribut <code>voieDeLaMagieElementaire</code> avec comme valeur le rang dans la voie. Pour lancer le sort, faire <code>!cof-effet-temp protectionContreLesElements [[5+@{selected|INT}]] <i>--mana 0</i></code>. Notez que si vous utilisez une option <code>--valeur</code> à la place d'utiliser l'attribut, la RD sera cette valeur multipliée par 2.</li>
+                  <li><strong>Arme enflammée</strong> : Lancer le sort avec <code>!cof-effet-temp armeEnflammee [[5+@{selected|INT}]] --lanceur @{selected|token_id} --target @{target|token_id} --portee 0 <i>--mana 1</i></code>. Il faut que la cible tienne une arme en main (voir <code>!cof-degainer</code>). Limitations : si deux attaques utilisent la même arme, il faut faire deux fois l'action, une pour chaque attaque.</li>
+                  <li><strong>Respiration aquatique</strong> : pas de support autre que <code>!cof-lancer-sort lance un sort de respiration aquatique (durée 10 minutes, sur soi plus [[@{selected|INT]] compagnons) <i>--mana 2</i></code>.</li>
+                  <li><strong>Peau de pierre</strong> : <code>!cof-effet-temp peauDePierreMag [[5+@{selected|INT}]] <i>--mana 3</i></code>. Le script va appliquer une RD de [5+Mod. d'INT] en dernier lieu, et compter le maximum des 40 dégâts par défaut. Il est possible de changer la valeur de la RD et le nombre de points de dégâts absorbés en ajoutant l'option <code>--valeur <i>rd absorbe</i></code>. À noter que le script rajoute +1 à la RD et +5 au total de dégâts absorbés en cas de magie puissante, ou par point de mana depensé en magie intense. </li>
                 </ol>
                 <h4 class="text-secondary">Voie de la magie protectrice</h4>
                 <ol>
-                  <li><strong>Armure du mage</strong> : <code>!cof-effet-combat armureDuMage</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
-                  <li><strong>Chute ralentie</strong> : pas de support.</li>
-                  <li><strong>Flou</strong> : <code>!cof-effet-temp flou [[1d4+@{selected|INT}]] --mana 1</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
+                  <li><strong>Armure du mage</strong> : <code>!cof-effet-combat armureDuMage <i>--mana 0</i></code>.</li>
+                  <li><strong>Chute ralentie</strong> : pas de support autre que <code>!cof-lancer-sort lance un sort de Chute ralentie <i>--mana 0</i></code></li>
+                  <li><strong>Flou</strong> : <code>!cof-effet-temp flou [[1d4+@{selected|INT}]] <i>--mana 1</i></code>.</li>
                   <li><strong>Cercle de protection</strong> : Le script ne gère pas le cercle en lui-même, mais vous pouvez créer deux abilities.
                     <ul>
                       <li><code>!cof-effet-temp cercleDeProtection 100 --target @{target|token_id} --lanceur @{selected|token_id} --valeur @{selected|token_id}</code> et cibler un personnage pour lui appliquer l'effet.</li>
@@ -1252,13 +1416,14 @@
                     </ul>
                     Le script proposera alors automatiquement à ces personnages un bouton avec le nom du magicien si une cible protégée est ciblée par une attaque magique. Le jet d'attaque magique opposé sera automatisé. Si vous utilisez les options de mana, rajoutez <code>--mana {Coût ?}</code> à la première ability. Indiquer le coût au lancement, et 0 pour les autres applications.
                   </li>
+                  <li><strong>Arrêt du temps</strong> : pas de support autre que <code>!cof-lancer-sort arrête le temps pour [[1d6+@{selected|INT}]] tours <i>--mana 3</i></code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de la magie universelle</h4>
                 <ol>
-                  <li><strong>Lumière</strong> : <code>!cof-lumiere @{target|token_id} 20</code>. On peut utiliser une cible qui ne soit qu'un personnage sans PV, et dans ce cas le token disparaît, et pour éteindre la lumière, le MJ doit supprimer le token dans le layer de l'éclairage dynamique. Si la cible est un personnage avec des PV, alors la lumière se déplacera avec lui, et pour étaindre la lumière, il faut séclectionner le ou les tokens et lancer <code>!cof-eteindre-lumiere lumiere</code>.</li>
-                  <li><strong>Détection de la magie</strong> : pas de support</li>
-                  <li><strong>Invisibilité</strong> : utiliser <code>!cof-set-state invisible true --mana 1 --message se rend invisible ([[1d6+@{selected|INT}]] minutes)</code>. Pour les ennemis, mettre dans le layer gm, pour les joueurs, ne pas les cibler. Reste le problème des AOE...</li>
-                  <li><strong>Vol</strong> : pas de support autre que <code>!cof-lancer-sort vole ([[1d6+@{selected|INT}]] minutes) --mana 2</code></li>
+                  <li><strong>Lumière</strong> : <code>!cof-lumiere @{target|token_id} 20 <i>--mana 0</i></code>. On peut utiliser une cible qui ne soit qu'un personnage sans PV, et dans ce cas le token disparaît, et pour éteindre la lumière, le MJ doit supprimer le token dans le layer de l'éclairage dynamique. Si la cible est un personnage avec des PV, alors la lumière se déplacera avec lui, et pour étaindre la lumière, il faut séclectionner le ou les tokens et lancer <code>!cof-eteindre-lumiere lumiere</code>.</li>
+                  <li><strong>Détection de la magie</strong> : pas de support autre que <code>!cof-lancer-sort lance un sort de Détection de la Magie <i>--mana 0</i></code>.</li>
+                  <li><strong>Invisibilité</strong> : utiliser <code>!cof-set-state invisible true --message se rend invisible ([[1d6+@{selected|INT}]] minutes) <i>--mana 1</i></code>. Pour les ennemis, mettre dans le layer gm, pour les joueurs, ne pas les cibler. Reste le problème des AOE...</li>
+                  <li><strong>Vol</strong> : pas de support autre que <code>!cof-lancer-sort vole ([[1d6+@{selected|INT}]] minutes) <i>--mana 2</i></code></li>
                   <li><strong>Intelligence héroïque</strong> : reporter sur la fiche</li>
                 </ol>
               </div>
@@ -1309,56 +1474,144 @@
               <div class="decalage">
                 <h4 class="text-secondary">Voie du démon</h4>
                 <ol>
-                  <li><strong>Malédiction</strong> : Ajouter une attaque magiquede portée 20 m, avec les options <code>--pasDeDmg --sortilege --malediction</code></li>
+                  <li><strong>Malédiction</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg</code>, options <code><i>--mana 0</i> --malediction</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Malédiction --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --malediction</code></li>
+                    </ul>
+                  </li>
                   <li>
                     <strong>Aspect de la succube</strong> :
                     <ul>
-                      <li>Transformation : <code>!cof-effet-temp aspectDeLaSuccube [[5+@{selected|INT}]]</code>.</li>
-                      <li>Pour l'attaque, faire une attaque magique de contact, et l'invoquer avec les arguments <code>--sortilege --vampirise --si etat aspectDeLaSuccube</code>.</li>
-                      <li> Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter à la transformation <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
+                      <li>Sort :
+                        <ol>
+                          <li><code>!cof-effet-temp aspectDeLaSuccube [[5+@{selected|INT}]] <i>--mana 0</i></code> pour lancer le sort</li>
+                          <li>Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d4+CHA, portée 0, type Sortilège, dégâts magiques, options <code>--si etat aspectDeLaSuccube --vampirise</code>.</li>
+                        </ol>
+                      </li>
+                      <li>Objet de sort : créer une ability <code>#Aspect-de-la-succube#</code> référencée dans le menu <code>#Actions#</code> du personnage et dont le contenu est, sur deux lignes<br/>
+                        <ol>
+                          <li><code>!cof-effet-temp aspectDeLaSuccube [[5+@{selected|INT}]]</code> pour lancer le sort</li>
+                          <li><code>#Attaque Attaque de la succube --toucher [[@{selected|ATKMAG}]] --dm 1d4+[[@{selected|CHA}]] --magique --portee 0 --sortilege --si etat aspectDeLaSuccube --vampirise</code></li>
+                        </ol>
+                      </li>
                     </ul>
                   </li>
                   <li><strong>Pacte sanglant</strong> : créer un attribut <code>pacteSanglant</code> de valeur 3 (rang 3) ou 5 (rang 5). Le script va automatiser l'ajout de boutons sur tous les tests <i>a posteriori</i>, y compris sur les attaques qui ciblent le personnage. Aux joueurs de s'accorder sur la nécessité d'une déclaration <i>a priori</i> nécessaire pour l'utilisation de la capacité.</li>
-                  <li><strong>Aspect du démon</strong> : <code>!cof-effet-temp aspectDuDemon [[5+@{selected|INT}]] --mana 2</code>. Ajouter une attaque 1d6+4 au contact avec l'option <code>--si etat aspectDuDemon</code> (attaquer 2 fois au besoin).</li>
-                  <li><strong>Invocation d'un démon</strong> : <code>!cof-invoquer-demon @{selected|token_id} --mana 3</code>.</li>
+                  <li><strong>Aspect du démon</strong> :
+                    <ul>
+                      <li>Sort :
+                        <ol>
+                          <li><code>!cof-effet-temp aspectDuDemon [[5+@{selected|INT}]] <i>--mana 2</i></code> pour lancer le sort</li>
+                          <li>Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d6+4, portée 0, type Sortilège, dégâts magiques, options <code>--si etat aspectDuDemon</code></li>
+                        </ol>
+                      </li>
+                      <li>Objet de sort : créer une ability <code>#Aspect-du-démon#</code> référencée dans le menu <code>#Actions#</code> du personnage et dont le contenu est, sur deux lignes<br/>
+                        <ol>
+                          <li><code>!cof-effet-temp aspectDuDemon [[5+@{selected|INT}]]</code> pour lancer le sort</li>
+                          <li><code>#Attaque Attaque du démon --toucher [[@{selected|ATKMAG}]] --dm 1d6+4 --magique --portee 0 --sortilege --si etat aspectDuDemon</code></li>
+                        </ol>
+                      </li>
+                    </ul>
+                  </li>
+                  <li><strong>Invocation d'un démon</strong> : <code>!cof-invoquer-demon @{selected|token_id} <i>--mana 3</i></code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de la mort</h4>
                 <ol>
                   <li><strong>Siphon des âmes</strong> : ajouter un attribut <code>siphonDesAmes</code>, de valeur <code>true</code>.</li>
-                  <li><strong>Masque mortuaire</strong> : <code>!cof-effet-temp masqueMortuaire [[5+@{selected|INT}]]</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
-                  <li><strong>Baiser du vampire</strong> : faire une attaque magique de portée 50 m et de DM 1d8+INT, à lancer avec les options <code>--sortilege --magique --vampirise --seulementVivant --mana 1</code>. Si vous utilisez les options de magie puissante, rajoutez <code>?{Y consacrer le tour?|oui,--puissant|non,&amp;#32;}</code>. Si vous préférez l'option de tempête de mana, rajoutez <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Briser les coeurs</strong> : faire une attaque magique de portée 20, de DM 5d6+INT, lancée avec les options <code>--sortilege --magique --psave CON [[10+@{selected|INT}]] tempete 2 --seulementVivant --mana 2</code>. Pour les options de mana puissante ou de tempête de mana, procédez comme avec le Baiser du vampire. À noter que la partie <code>tempete 2</code> implémente une chose qui n'est pas dans les règles, à savoir augmenter la difficulté du test de constitution de 2 par point de mana investi en tempête de mana intense. Je trouvais en effet que sans cet ajout, à mana égale, le sort était moins intéressant que le baiser du vampire. Il reste moins fort et plus situationnel que la désintégration du magicien (à mana égale), même avec ce changement.</li>
-                  <li><strong>Mot de mort</strong> : faire une attaque magique, avec les options <code>--difficultePV --pasDeDmg --etat mort --save CON [[10+@{selected|INT}]] tempete 2 --mana 3</code>. Comme pour <strong>Briser les coeurs</strong>, je pense qu'on peut augmenter la difficulté du jet de résistance avec la puissance de la tempête de mana.</li>
+                  <li><strong>Masque mortuaire</strong> : <code>!cof-effet-temp masqueMortuaire [[5+@{selected|INT}]] <i>--mana 0</i></code></li>
+                  <li><strong>Baiser du vampire</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d8+INT, portée 50, type Sortilège, options <code><i>--mana 1</i> --vampirise --seulementVivant</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Baiser du vampire --toucher [[@{selected|ATKMAG}]] --dm 1d8+[[@{selected|INT}]] --portee 50 --sortilege --vampirise --seulementVivant</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Briser les coeurs</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 5d6+INT, portée 20, type Sortilège, options <code><i>--mana 2</i> --psave CON [[10+@{selected|INT}]] tempete 2 --seulementVivant</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Briser les coeurs --toucher [[@{selected|ATKMAG}]] --dm 5d6+[[@{selected|INT}]] --portee 20 --sortilege --psave CON [[10+@{selected|INT}]] tempete 2 --seulementVivant</code></li>
+                    </ul>
+                    À noter que la partie <code>tempete 2</code> implémente une chose qui n'est pas dans les règles, à savoir augmenter la difficulté du test de constitution de 2 par point de mana investi en tempête de mana intense. Je trouvais en effet que sans cet ajout, à mana égale, le sort était moins intéressant que le baiser du vampire. Il reste moins fort et plus situationnel que la désintégration du magicien (à mana égale), même avec ce changement.
+                  </li>
+                  <li><strong>Mot de mort</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg</code>, options <code><i>--mana 3</i> --difficultePV --etat mort --save CON [[10+@{selected|INT}]] tempete 2</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Mot de mort --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --difficultePV --etat mort --save CON [[10+@{selected|INT}]] tempete 2</code></li>
+                    </ul>
+                    Comme pour <strong>Briser les coeurs</strong>, je pense qu'on peut augmenter la difficulté du jet de résistance avec la puissance de la tempête de mana.
+                  </li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'outre-tombe</h4>
                 <ol>
-                  <li><strong>Peur</strong> : Faire une attaque <code>Peur</code> utilisant le score d'attaque magique, de portée 20 m. Pour l'attaque, ajouter les arguments <code>--sortilege --pasDeDmg --peur [[10+@{selected|INT}]] [[1d4+<i>r</i>]]</code> où <i>r</i> est le rang dans la voie. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Animation d'un mort-vivant</strong> : <code>!cof-animer-mort @{selected|token_id}</code>. Cela met directement le nécromant et le zombie en combat. Les Zombies perdent automatiquement 1 PV tous les 6 rounds. Lorsqu'ils atteignent 0 PV (quelle qu'en soit la raison) ou à la fin du combat, ils sont automatiquement détruits et supprimés. Si un attribut <code>voieOutreTombe</code> est présent sur le lanceur du sort, le script gère le maximum de zombies qu'il peut invoquer. Mana, consommables et limites sont gérées, mais pas Tempête de Mana.</li>
-                  <li><strong>Putréfaction</strong> : ajouter une attaque magique de portée 10 m, de DM 1d6+INT de dégâts magiques, lancée avec les options <code>--effet putrefactionOutreTombe --save CON [[12+@{selected|INT}]] --mana 1</code>. Si vous utilisez les options de magie puissante, rajoutez <code>?{Y consacrer le tour?|Oui,--puissant|Non,&amp;#32;}</code>. Si vous préférez utiliser l'option de tempête de mana, rajoutez <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Ensevelissement</strong> : ajouter une attaque magique de portée 20 m, type Sortilege, lancée avec les options <code>--pasDeDmg --etat enseveli FORDEX [[13+@{selected|INT}]] --mana 2</code>. Les dégâts sont infligés au début de chaque tour, et la cible recevra à son initiative un bouton lui permettant d'effectuer le jet pour sortir. Elle pourra également ajouter un bonus manuel au jet, en fonction des actions réalisées pour l'aider à sortir.</li>
-                  <li><strong>Armée des morts</strong> : <code>!cof-effet-temp armeeDesMorts @{selected|niveau} --mana 3 --limiteParJour 1</code>. La zone couverte est symbolisée par l'activation d'une aura sur le token du lanceur. Le script utilisera pour cela  l'aura 2 du token, donc attention si vous l'utilisez déjà sur le token du lanceur, elle sera écrasée. Toute cible (le script ignore les alliés du lanceur) qui s'active dans une zone couverte par une armée recevra dans ses actions un bouton spécial pour se défendre. Les dégâts sont infligés automatiquement en début de tour.</li>
+                  <li><strong>Peur</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg</code>, options <code><i>--mana 0</i> --peur [[10+@{selected|INT}]] [[1d4+<i>r</i>]]</code>où <i>r</i> est le rang dans la voie</li>
+                      <li>Objet de sort : <code>#Attaque Peur --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --peur [[10+@{selected|INT}]] [[1d4+<i>r</i>]]</code>où <i>r</i> est le niveau de l'objet</li>
+                    </ul>
+                  </li>
+                  <li><strong>Animation d'un mort-vivant</strong> : <code>!cof-animer-mort @{selected|token_id} <i>--mana 0</i></code>. Cela met directement le nécromant et le zombie en combat. Les Zombies perdent automatiquement 1 PV tous les 6 rounds. Lorsqu'ils atteignent 0 PV (quelle qu'en soit la raison) ou à la fin du combat, ils sont automatiquement détruits et supprimés. Si un attribut <code>voieOutreTombe</code> est présent sur le lanceur du sort, le script gère le maximum de zombies qu'il peut invoquer. Mana, consommables et limites sont gérées, mais pas Tempête de Mana.</li>
+                  <li><strong>Putréfaction</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d6+INT, portée 10, type Sortilège, options <code><i>--mana 1</i> --effet putrefactionOutreTombe --save CON [[12+@{selected|INT}]]</code></li>
+                      <li>Objet de sort : <code>#Attaque Putréfaction --toucher [[@{selected|ATKMAG}]] --dm 1d6+[[@{selected|INT}]] --portee 10 --sortilege --effet putrefactionOutreTombe --save CON [[12+@{selected|INT}]]</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Ensevelissement</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg</code>, options <code><i>--mana 2</i> --etat enseveli FORDEX [[13+@{selected|INT}]]</code></li>
+                      <li>Objet de sort : <code>#Attaque Ensevelissement --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --etat enseveli FORDEX [[13+@{selected|INT}]]</code></li>
+                    </ul>
+                    Les dégâts sont infligés au début de chaque tour, et la cible recevra à son initiative un bouton lui permettant d'effectuer le jet pour sortir. Elle pourra également ajouter un bonus manuel au jet, en fonction des actions réalisées pour l'aider à sortir.
+                  </li>
+                  <li><strong>Armée des morts</strong> : <code>!cof-effet-temp armeeDesMorts @{selected|niveau} --limiteParJour 1 <i>--mana 3</i></code>. La zone couverte est symbolisée par l'activation d'une aura sur le token du lanceur. Le script utilisera pour cela l'aura 2 du token, donc attention si vous l'utilisez déjà sur le token du lanceur, elle sera écrasée. Toute cible (le script ignore les alliés du lanceur) qui s'active dans une zone couverte par une armée recevra dans ses actions un bouton spécial pour se défendre. Les dégâts sont infligés automatiquement en début de tour.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du sang</h4>
                 <ol>
-                  <li><strong>Saignements</strong> : ajouter une attaque magique, portée 10 m, type Sortilège, avec comme modificateur <code>pasDeDmg</code>, et comme options <code>--effet saignementsSang <i>rang</i> --mana 0</code>, où <i>rang</i> est le rang dans la Voie. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. Si vous souhaitez que le saignement ne puisse pas être appliqué à certains personnages (comme des golems ou des squelettes), vous pouvez leur ajouter un attribut <code>immuniteSaignement</code> de valeur courante <code>true</code>. À noter que l'option <code>--mana 0</code> n'est là que pour indiquer au script d'arrêter le saignement si le nécromancien meurt.</li>
-                  <li><strong>Sang mordant</strong> : <code>!cof-effet-temp sangMordant [[5+@{selected|INT}]]</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
+                  <li><strong>Saignements</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 10, type Sortilège, modificateurs <code>pasDeDmg</code>, options <code><i>--mana 0</i> --effet saignementsSang <i>rang</i></code>, où <i>rang</i> est le rang dans la Voie</li>
+                      <li>Objet de sort : <code>#Attaque Saignements --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 10 --sortilege --effet saignementsSang <i>rang</i></code>, où <i>rang</i> est le niveau de l'objet</li>
+                    </ul>
+                    Si vous souhaitez que le saignement ne puisse pas être appliqué à certains personnages (comme des golems ou des squelettes), vous pouvez leur ajouter un attribut <code>immuniteSaignement</code> de valeur courante <code>true</code>.
+                  </li>
+                  <li><strong>Sang mordant</strong> : <code>!cof-effet-temp sangMordant [[5+@{selected|INT}]] <i>--mana 0</i></code>.</li>
                   <li><strong>Exsangue</strong> : ajouter un attribut <code>exsangue</code>, avec comme valeur <code>true</code>.</li>
-                  <li><strong>Hémorragie</strong> : ajouter une attaque magique, portée 10 m, type Sortilège, avec comme modificateur <code>pasDeDmg</code>, et comme options <code>--effet hemorragie [[5+@{selected|INT}]] --mana 2</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 4 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. Pour un objet de sort : <code>#Attaque Hémorragie --toucher [[@{selected|ATKMAG}]] --portee 10 --sortilege --pasDeDmg --effet hemorragie [[5+@{selected|INT}]]</code></li>
-                  <li><strong>Lien de sang</strong> : ajouter une attaque magique, portée 20 m, type Sortilège, avec comme modificateur <code>pasDeDmg</code>, et comme options <code>--effet lienDeSang [[5+@{selected|INT}]] --mana 3</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 5 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. Pour un objet de sort : <code>#Attaque Lien de sang --toucher [[@{selected|ATKMAG}]] --portee 20 --sortilege --pasDeDmg --effet lienDeSang [[5+@{selected|INT}]]</code>. Pas de support pour le lancement de sort sans ligne de vue.</li>
+                  <li><strong>Hémorragie</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 10, type Sortilège, modificateurs <code>pasDeDmg</code>, options <code><i>--mana 2</i> --effet hemorragie [[5+@{selected|INT}]]</code></li>
+                      <li>Objet de sort : <code>#Attaque Hémorragie --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 10 --sortilege --effet hemorragie [[5+@{selected|INT}]]</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Lien de sang</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg</code>, options <code><i>--mana 3</i> --effet lienDeSang [[5+@{selected|INT}]]</code></li>
+                      <li>Objet de sort : <code>#Attaque Lien de sang --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --effet lienDeSang [[5+@{selected|INT}]]</code></li>
+                    </ul>
+                    Pas de support pour le lancement de sort sans ligne de vue.
+                  </li>
                 </ol>
                 <h4 class="text-secondary">Voie de la sombre magie</h4>
                 <p style="margin-top:0px; margin-bottom:0px">Ajouter sur la fiche une compétence <code>Occultisme</code> avec en bonus 2 fois le rang dans cette voie.</p>
                 <ol>
-                  <li><strong>Ténèbres</strong> : <code>!cof-tenebres @{selected|token_id} @{target|token_id}</code>. La commande pose un token transparent avec une aura noire visible par les joueurs pour visualiser la zone, et une petite aura jaune visible uniquement par le MJ (pour sélectionner le token si nécessaire). Tous les tokens présents dans la zone au lancement du sort sont automatiquement aveuglés. Au MJ ensuite d'enlever l'état aveuglé quand les cibles sortent de la zone. A la fin de la durée du sort, ou à la fin du combat, la zone et les états aveuglés restant disparaissent automatiquement. Tempete de Mana est supporté. Il est aussi possible de changer les valeurs par défaut du sort (portée 20m, rayon 5m) avec les options <code>--portee X</code> et <code>--rayon X</code>. En règle custom, l'option <code>puissant</code> permet de doubler la superficie couverte (le script calcule le rayon approprié si custom).</li>
-                  <li><strong>Pattes d'araignées</strong> : <code>!cof-lancer-sort peut se déplacer sur les murs pendants [[5+@{selected|INT}]] tours</code></li>
-                  <li><strong>Strangulation</strong> : 
+                  <li><strong>Ténèbres</strong> : <code>!cof-tenebres @{selected|token_id} @{target|token_id} <i>--mana 0</i></code>. La commande pose un token transparent avec une aura noire visible par les joueurs pour visualiser la zone, et une petite aura jaune visible uniquement par le MJ (pour sélectionner le token si nécessaire). Tous les tokens présents dans la zone au lancement du sort sont automatiquement aveuglés. Au MJ ensuite d'enlever l'état aveuglé quand les cibles sortent de la zone. A la fin de la durée du sort, ou à la fin du combat, la zone et les états aveuglés restant disparaissent automatiquement. Il est aussi possible de changer les valeurs par défaut du sort (portée 20m, rayon 5m) avec les options <code>--portee X</code> et <code>--rayon X</code>. En règle custom, l'option <code>puissant</code> permet de doubler la superficie couverte (le script calcule le rayon approprié si custom).</li>
+                  <li><strong>Pattes d'araignées</strong> : <code>!cof-lancer-sort peut se déplacer sur les murs pendants [[5+@{selected|INT}]] tours <i>--mana 0</i></code></li>
+                  <li><strong>Strangulation</strong> : Le script va vérifier que la cible est bien vivante, en se basant sur la race, et sinon sur la présence éventuelle d'un attribut <code>nonVivant</code>.
                     <ul>
-                      <li>Attaque initiale : attaque magique, de portée 20 m, et de dégâts 1d6+INT, avec les options <code>--effet strangulation <i>rang</i> --mana 1 --sortilege</code>. Le script va vérifier que la cible est bien vivante, en se basant sur la race, et sinon sur la présence éventuelle d'un attribut <code>nonVivant</code>.</li>
-                      <li>Maintenir la strangulation: <code>!cof-strangulation @{selected|token_id} @{target|token_id}</code>.</li>
-                      <li>Option de magie puissante : ajouter <code>?{Y consacrer le tour entier ?|Oui,--puissant|Non,&amp;#32;}</code> à l'attaque initiale.</li>
-                      <li>Option de tempête de mana : rajoutez <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code> à l'attaque.</li>.
+                      <li>Sort :
+                        <ol>
+                          <li>Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d6+INT, portée 20, type Sortilège, dégâts magiques, options <code><i>--mana 1</i> --effet strangulation <i>rang</i></code></li>
+                          <li><code>!cof-strangulation @{selected|token_id} @{target|token_id}</code> pour maintenir la strangulation</li>
+                        </ol>
+                      </li>
+                      <li>Objet de sort : créer une ability <code>#Strangulation#</code> référencée dans le menu <code>#Actions#</code> du personnage et dont le contenu est, sur deux lignes<br/>
+                        <ol>
+                          <li><code>#Attaque Strangulation --toucher [[@{selected|ATKMAG}]] --dm 1d6+[[@{selected|INT}]] --magique --portee 20 --sortilege --effet strangulation <i>rang</i></code></li>
+                          <li><code>!cof-strangulation @{selected|token_id} @{target|token_id}</code></li>
+                        </ol>
+                      </li>
                     </ul>
-                  <li><strong>Ombre mortelle</strong> : <code>!cof-ombre-mortelle @{selected|token_id} @{target|token_id} [[3+@{selected|INT}]] --portee 20 --mana 2</code> va créer un double de la cible, (à condition de disposer de 2 points de mana) et ajouter ce double à l'initiative. Au MJ ensuite de la faire attaquer à son tour (pas d'aoe, juste attaquer le token dont elle est l'ombre). Le token disparaît lorsque le nombre de tours est écoulé. Il est possible de choisir l'image utilisée pour représenter l'ombre en passant l'url de l'image avec l'option <code>--image</code>. Si vous utilisez le script <code>marchingOrder</code>, vous pouvez même faire que l'ombre suive son propriétaire automatiquement.</li>
+                  </li>
+                  <li><strong>Ombre mortelle</strong> : <code>!cof-ombre-mortelle @{selected|token_id} @{target|token_id} [[3+@{selected|INT}]] --portee 20 <i>--mana 2</i></code> va créer un double de la cible, (à condition de disposer de 2 points de mana) et ajouter ce double à l'initiative. Au MJ ensuite de la faire attaquer à son tour (pas d'aoe, juste attaquer le token dont elle est l'ombre). Le token disparaît lorsque le nombre de tours est écoulé. Il est possible de choisir l'image utilisée pour représenter l'ombre en passant l'url de l'image avec l'option <code>--image</code>.</li>
                   <li><strong>Intelligence héroïque</strong> : utiliser la fiche</li>
                 </ol>
               </div>
@@ -1370,87 +1623,104 @@
                   <li>
                     <strong>Arme d'argent</strong> :
                     <ul>
-                      <li><code>!cof-effet-combat armeDArgent</code> pour lancer le sort.</li>
+                      <li><code>!cof-effet-combat armeDArgent <i>--mana 0</i></code> pour lancer le sort.</li>
                       <li>Pour attaquer avec l'arme d'argent, faire l'attaque avec les DM appropriés, puis l'utiliser avec les options <code>--si etat armeDArgent --armeDArgent --magique</code>.</li>
-                      <li>Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code> au lancement du sort.</li>
                     </ul>
                   </li>
-                  <li><strong>Ailes célestes</strong> : <code>!cof-effet-temp ailesCelestes [[5+@{selected|SAG}]] --mana 1</code>. Si vous utilisez l'option de magie puissante. rajoutez <code> ?{Y consacrer tout le tour?|Oui,--puissant duree|Non,&amp;#32;}</code>. Si vous préférez plutôt utiliser l'option de tempête de mana, rajoutez <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
-                  <li><strong>Foudres divines</strong> : créer une attaque magique, de label <code>L</code>, de portée nulle, et la lancer avec la ligne <code>!cof-attack @{selected|token_id} @{selected|token_id} L --electrique --sortilege --disque 10 --saufAllies --mana 2</code>. Si vous utilisez les options de magie puissante, rajoutez <code>?{Y consacrer tout le tour ?|Oui,--puissant|Non,&amp;#32;}</code>. Sinon, si vous utilisez les options de tempête de mana, rajouez <code>--rang 4 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code></li>
+                  <li><strong>Ailes célestes</strong> : <code>!cof-effet-temp ailesCelestes [[5+@{selected|SAG}]] <i>--mana 1</i></code>.</li>
+                  <li><strong>Foudres divines</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d6+SAG, portée 0, type Sortilège, dégâts électrique, options <code><i>--mana 2</i> --disque 10 --saufAllies</code></li>
+                      <li>Objet de sort : <code>#Attaque Foudres divines --toucher [[@{selected|ATKMAG}]] --dm 1d6+[[@{selected|SAG}]] --electrique --portee 0 --sortilege --disque 10 --saufAllies</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Charisme héroïque</strong> : reporter les bonus sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la guerre sainte</h4>
                 <ol>
-                  <li><strong>Arme bénie</strong> : utiliser l'option <code>--reroll1</code> et <code>--magique</code> à l'attaque</li>
+                  <li><strong>Arme bénie</strong> : utiliser les modificateurs <code>reroll1</code> et <code>magique</code> à l'attaque</li>
                   <li><strong>Bouclier de la foi</strong> : ajuster le bonus de DEF du bouclier</li>
-                  <li><strong>Marteau sprirituel</strong> : utiliser une attaque, avec les options <code>--magique</code>, <code>--sortilege</code>, <code>--mana 1</code>. Si vous utilisez les options de magie puissante, ajoutez <code>?{Y passer tout le tour ?|oui,--puissant|non,&amp;#32;}</code>. Si vous préférez utiliser l'option de tempête de mana, rajoutez <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Châtiment divin</strong> : faire une attaque de contact avec les modificateurs <code>--bonusAttaque [[@{selected|SAG}]] --plus [[@{selected|SAG}]]</code></li>
-                  <li><strong>Mot de pouvoir</strong> : <code>!cof-effet-temp etourdi 1 --lanceur @{selected|token_id} --enVue --saufAllies --mana 3 --message @{selected|token_name} prononce un mot avec la voix de son dieu</code> </li>
+                  <li><strong>Marteau sprirituel</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d8+SAG, portée 30, type Sortilège, options <code><i>--mana 1</i></code></li>
+                      <li>Objet de sort : <code>#Attaque Marteau sprirituel --toucher [[@{selected|ATKMAG}]] --dm 1d8+[[@{selected|SAG}]] --portee 30 --sortilege</code></li>
+                    </ul>
+                  </li>
+                  <li><strong>Châtiment divin</strong> : le plus efficace est de faire une ability <code>#Châtiment-divin#</code> à reprendre dans le menu <code>#Actions#</code> dont le contenu est sur la première ligne <code>!options --bonusAttaque [[@{selected|SAG}]] --plus [[@{selected|SAG}]]</code> et ensuite soit une ligne par attaque, soit <code>!attaques</code> pour lister automatiquement les attaques de base</li>
+                  <li><strong>Mot de pouvoir</strong> : <code>!cof-effet-temp etourdi 1 --lanceur @{selected|token_id} --enVue --saufAllies --message @{selected|token_name} prononce un mot avec la voix de son dieu <i>--mana 3</i></code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de la prière</h4>
                 <ol>
-                  <li><strong>Bénédiction</strong> : <code>!cof-effet-temp benediction [[3+@{selected|SAG}]] --alliesEnVue --self</code>. Il faut avoir défini une <a href="#allie">équipe</a> avec le prêtre. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--lanceur @{selected|token_id} --rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Destruction des morts-vivants</strong> : <code>!cof-destruction-des-morts-vivants 2d6</code>. Au rang 4 dans la voie, ajuster les dégâts. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. Noter que le script considère comme mort-vivant tout personnage avec le champ race à <code>squelette</code>, <code>zombie</code>, <code>momie</code>, <code>goule</code>,<code>vampire</code> ou <code>mort-vivant</code>, ou alors qui possède un attribut <code>mortVivant</code> de valeur <code>true</code>.</li>
-                  <li><strong>Sanctuaire</strong> : <code>!cof-effet-temp sanctuaire [[5+@{selected|SAG}]] --mana 1</code>. Si vous utilisez les options de magie Puissante, rajoutez <code>?{Y consacrer tout le tour ?|Oui,--puissant duree|Non,&amp;#32;}</code>. Si vous préférez utiliser l'option de tempête de mana, rajoutez <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana altruiste}</code>. Notez que le mot clé <code>altruiste</code> est facultatif, ici. À vous de choisir si vous l'autorisez ou pas.</li>
+                  <li><strong>Bénédiction</strong> : <code>!cof-effet-temp benediction [[3+@{selected|SAG}]] --alliesEnVue --self <i>--mana 0</i></code>. Il faut avoir défini une <a href="#allie">équipe</a> avec le prêtre.</li>
+                  <li><strong>Destruction des morts-vivants</strong> : <code>!cof-destruction-des-morts-vivants 2d6 <i>--mana 0</i></code>. Au rang 4 dans la voie, ajuster les dégâts. Notez que le script considère comme mort-vivant tout personnage avec le champ race à <code>squelette</code>, <code>zombie</code>, <code>momie</code>, <code>goule</code>,<code>vampire</code> ou <code>mort-vivant</code>, ou alors qui possède un attribut <code>mortVivant</code> de valeur <code>true</code>.</li>
+                  <li><strong>Sanctuaire</strong> : <code>!cof-effet-temp sanctuaire [[5+@{selected|SAG}]] <i>--mana 1</i></code>.</li>
                   <li><strong>Intervention Divine</strong> : ajouter au personnage un attribut <code>interventionDivine</code> de valeur courante et maximale 1. Ensuite, utiliser <code>!cof-intervention-divine ?{Type ?|rate|touche}</code> juste après l'attaque en sélectionnant le token du Prêtre pour modifier le résultat selon le choix. Il est très pratique de mettre cette commande dans une Ability à afficher en Token Action. Ne supporte que le jet de touche de la dernière attaque effectuée.</li>
                   <li><strong>Sagesse héroïque</strong> : Reporter les bonus sur la fiche.</li>
                 </ol>
                 <h4 class="text-secondary">Voie des soins</h4>
                 <p style="margin-top:0px; margin-bottom:0px">Utiliser un attribut <code>voieDesSoins</code> avec comme valeur le rang dans la voie</p>
                 <ol>
-                  <li><strong>Soins légers</strong> : <code>!cof-soin @{selected|token_id} @{target|token_id} leger</code>. Vous pouvez rajouter un petit effet visuel, par exemple avec <code>--targetFx bubbling-holy</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 1 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Soins modérés</strong> : <code>!cof-soin @{selected|token_id} @{target|token_id} modere</code>. Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Soins de groupe</strong> : <code>!cof-soin @{selected|token_id} groupe</code> (ne pas oublier de définir des <a href="#allie">alliés</a>). Le sort nécessite un point de mana (barre 2 du token), et accepte l'option <code>--puissant</code> et les options de tempête de mana. Attention, toutefois, le sort ne va pas automatiquement soigner les personnages notés comme morts, ce qui est le cas général si ils sont tombés à 0 PV. Si certains alliés notés morts ne sont pas vraiment morts, mais juste inconscient, il faudra que le MJ fasse la mise à jour de l'état et des PV lui-même.</li>
-                  <li><strong>Guérison</strong> : <code>!cof-guerison @{selected|token_id} @{target|token_id} --portee 0 --mana 2 --limiteParJour 1</code>. Pour l'instant ça ne fait que remettre les points de vie au maximum.</li>
+                  <li><strong>Soins légers</strong> : <code>!cof-soin @{selected|token_id} @{target|token_id} leger <i>--mana 0</i></code>. Vous pouvez rajouter un petit effet visuel, par exemple avec <code>--targetFx bubbling-holy</code>.</li>
+                  <li><strong>Soins modérés</strong> : <code>!cof-soin @{selected|token_id} @{target|token_id} modere <i>--mana 0</i></code>.</li>
+                  <li><strong>Soins de groupe</strong> : <code>!cof-soin @{selected|token_id} groupe <i>--mana 1</i></code> (ne pas oublier de définir des <a href="#allie">alliés</a>). Attention, toutefois, le sort ne va pas automatiquement soigner les personnages notés comme morts, ce qui est le cas général si ils sont tombés à 0 PV. Si certains alliés notés morts ne sont pas vraiment morts, mais juste inconscient, il faudra que le MJ fasse la mise à jour de l'état et des PV lui-même.</li>
+                  <li><strong>Guérison</strong> : <code>!cof-guerison @{selected|token_id} @{target|token_id} --portee 0 --limiteParJour 1 <i>--mana 2</i></code>. Pour l'instant ça ne fait que remettre les points de vie au maximum.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la spiritualité</h4>
                 <ol>
                   <li><strong>Vêtements sacrés</strong> : Ajouter un attribut <code>vetementsSacres</code> avec comme valeur le rang dans la voie de la spiritualité. Cela augmente la DEF, mais seulement lorsque le prêtre ne porte pas d'armure (ne se voit pas sur le total de DEF de la fiche)</li>
-                  <li><strong>Protection contre le mal</strong> : <code>!cof-effet-combat protectionContreLeMal --lanceur @{selected|token_id} --target @{target|token_id} --portee 0</code>. Donne le bonus contre toute créature dont l'attribut <code>race</code> est <code>squelette</code>, <code>zombie</code>, <code>démon</code>, <code>élémentaire</code>, ou bien qui possède l'attribut <code>mauvais</code> (valeur <code>true</code>). Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
-                  <li><strong>Délivrance</strong> : <code>!cof-delivrance @{selected|token_id} @{target|token_id} --mana 1 --portee 0</code></li>
-                  <li><strong>Marche des plans</strong> : <code>!cof-lancer-sort marche entre les plans (il peut se déplacer de [[(3+@{selected|SAG})*10]] km) --mana 2</code>.</li>
-                  <li><strong>Messie</strong> : aucun support.</li>
+                  <li><strong>Protection contre le mal</strong> : <code>!cof-effet-combat protectionContreLeMal --lanceur @{selected|token_id} --target @{target|token_id} --portee 0 <i>--mana 0</i></code>. Donne le bonus contre toute créature dont l'attribut <code>race</code> est <code>squelette</code>, <code>zombie</code>, <code>démon</code>, <code>élémentaire</code>, ou bien qui possède l'attribut <code>mauvais</code> (valeur <code>true</code>).</li>
+                  <li><strong>Délivrance</strong> : <code>!cof-delivrance @{selected|token_id} @{target|token_id} --portee 0 <i>--mana 1</i></code></li>
+                  <li><strong>Marche des plans</strong> : <code>!cof-lancer-sort marche entre les plans (il peut se déplacer de [[(3+@{selected|SAG})*10]] km) <i>--mana 2</i></code>.</li>
+                  <li><strong>Messie</strong> : pas d'autre support que <code>!cof-lancer-sort entre directement en contact avec son dieu pour réaliser un miracle <i>--mana 3</i></code></li>
                 </ol>
               </div>
               <h3 class="text-info" id="Psionique">Psionique</h3>
               <div class="decalage">
                 <h4 class="text-secondary">Voie de l'attaque mentale</h4>
                 <ol>
-                  <li><strong>Attaque mentale</strong> : faire 2 attaques, une pour les DMs léthaux, avec les options <code>--sortilege --attaqueMentale</code> et l'autre avec l'option supplémentaire <code>--tempDmg</code> (et en ajustant les DM).</li>
+                  <li><strong>Attaque mentale</strong> : faire 2 attaques, une pour les DMs létaux, avec les options <code>--sortilege --attaqueMentale <i>--mana 0</i></code> et l'autre avec l'option supplémentaire <code>--tempDmg</code> (et en ajustant les DM).</li>
                   <li><strong>Bouclier psi</strong> : ajouter un attribut <code>bouclierPsi</code> de valeur <code>true</code>.</li>
-                  <li><strong>Attaque étourdissante</strong> : faire une attaque mentale, avec les options <code>--avecd12 --if moins niveau --if etatCible bouclierPsi --effet etourdi 1 --save CHA [[8+@{selected|CHA}]] --else --effet etourdi 1 --endif --endif</code>.</li>
+                  <li><strong>Attaque étourdissante</strong> : faire une attaque mentale, avec les options <code>--avecd12 --if moins niveau --if etatCible bouclierPsi --effet etourdi 1 --save CHA [[8+@{selected|CHA}]] --else --effet etourdi 1 --endif --endif <i>--mana 1</i></code>.</li>
                   <li><strong>Vague psionique</strong> : faire les attaques mentales sur toutes les cibles. En cas d'utilisation avec la Mana, le plus simple est de faire deux ability :
-                    <ul><li><code>!cof-lancer-sort lance une vague psychique ?{Incantation ?|Econome (L),--mana 2|Normale,--mana 4}</code> qui lance le sort et dépense la Mana</li>
-                    <li>Une ability qui exécute permet de faire une attaque mentale avec options et <code>--mana 0</code></li></ul>
+                    <ul>
+                      <li><code>!cof-lancer-sort lance une vague psychique <i>--mana 2</i></code> qui lance le sort (pratique pour y mettre votre dépense de Mana unique)</li>
+                      <li>Une ability qui permet de faire une attaque mentale (sans dépense de Mana)</li>
+                    </ul>
                   </li>
                   <li><strong>Ego héroïque</strong> : reporter les bonus sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary">Voie du contrôle corporel</h4>
                 <ol>
                   <li><strong>Proprioception</strong> : ajouter les PVs sur la fiche, et mettre un attribut <code>proprioception</code> à <code>true</code>. </li>
-                  <li><strong>Transe de régénération</strong> : <code>!cof-soin @{selected|token_id} 1d6+[[@{selected|niveau} + @{selected|CHA}]] --limiteParJour <i>rang</i></code>. Il faut tirer les 2d6 pour savoir la durée de la transe. Si vous autorisez les options de tempête de mana pour ce profil, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code></li>
+                  <li><strong>Transe de régénération</strong> : Faire une ability <code>#Transe-de-régénération#</code> reprise dans le menu <code>#Actions#</code> du personnage. Elle doit lister deux ability. La première est <code>!cof-lancer-sort entre en transe de régénération pour [[2d6]] tours</code> et la seconde qui effectue les soins <code>!cof-soin @{selected|token_id} 1d6+[[@{selected|niveau} + @{selected|CHA}]] --limiteParJour <i>rang</i> <i>--mana 0</i></code></li>
                   <li><strong>Contrôle du métabolisme</strong> : ajouter un attribut <code>controleDuMetabolisme</code>, de valeur <code>true</code>. Ne pas modifier l'initiative, le bonus de charisme sera pris en compte par le script.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'empathie</h4>
                 <ol>
                   <li><strong>Perception extra-sensorielle</strong> : ajuster l'initiative et ajouter le bonus à un attribut <code>perception</code> (pour les jets).</li>
                   <li><strong>Défense intuitive</strong> : ajouter un attribut <code>defenseIntuitive</code> de valeur <code>true</code>. Ne pas modifier la DEF sur la fiche, la sagesse sera automatiquement prise en compte.</li>
-                  <li><strong>Perception du passé</strong> : on peut faire le jet en utilisant <code>!cof-jet SAG 15</code>.</li>
-                  <li><strong>Vision lointaine</strong> : pas de support particulier. Utiliser <code>!cof-jet SAG</code> pour les jets de sagesse.</li>
+                  <li><strong>Perception du passé</strong> : <code>!cof-lancer-sort tente de percevoir le passé <i>--mana 1</i></code> pour lancer le sort. On peut faire le jet en utilisant <code>!cof-jet SAG 15</code>.</li>
+                  <li><strong>Vision lointaine</strong> : pas de support autre que <code>!cof-lancer-sort projette son esprit à grande distance <i>--mana 2</i></code>. Utiliser <code>!cof-jet SAG</code> pour les jets de sagesse.</li>
                   <li><strong>Perception héroïque</strong> : reporter les bonus sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la télékinésie</h4>
                 <ol>
                   <li><strong>Manipulation à distance</strong> : pour les attaques à distance, le plus simple est d'utiliser une autre attaque en utilisant le score d'attaque magique et le bon modificateur de DMs.</li>
                   <li><strong>Champ de protection</strong> : pour l'effet de base, si vous suivez les règles, ajustez simplement la DEF sur la fiche. Si vous préférez en faire un sort, vous pouvez utiliser la commande <code>!cof-effet-temp champDeProtection [[5+@{selected|CHA}]]</code>. La valeur par défaut est celle d'un attribut <code>voieDeLaTelekinesie</code>, et pour utiliser une autre valeur, on peut utiliser l'option <code>--valeur</code>. Pour le champ à distance, faire <code>!cof-effet-temp champDeProtection 1 --lanceur @{selected|token_id} --portee 10 --valeur <em>n</em> --target @{target|token_id}</code>. </li>
-                  <li><strong>Onde de choc</strong> : faire une attaque magique de contact (portée non définie ou nulle), de dégâts 2d6 + Mod. de CHA. Si le label de cette attaque est <i>L</i>, la macro pour l'utiliser sera <code>!cof-attack @{selected|token_id} @{selected|token_id} <i>L</i> --auto --disque ?{Portée (max 10) ?|10} --etat renverse --save FOR [[10+@{selected|CHA}]] --mana 1 --targetFx explode-magic</code>. Si vous souhaitez utiliser les options de tempête de mana pour ce profil, rajoutez <code>--rang 3 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>.</li>
+                  <li><strong>Onde de choc</strong> :
+                    <ul>
+                      <li>Sort : Ajouter une attaque sur la fiche dommages 1d8+CHA, portée 0, type Sortilège, modificateurs <code>auto</code>, options <code><i>--mana 1</i> --disque ?{Portée (max 10) ?|10} --etat renverse --save FOR [[10+@{selected|CHA}]] --targetFx explode-magic</code></li>
+                      <li>Objet de sort : <code>!cof-attack @{selected|token_id} @{selected|token_id} Onde de choc --auto --dm 1d8+[[@{selected|SAG}]] --portee 0 --sortilege --disque ?{Portée (max 10) ?|10} --etat renverse --save FOR [[10+@{selected|CHA}]] --targetFx explode-magic</code></li>
+                    </ul>
+                  </li>
                   <li><strong>Combat kinétique</strong> : créer un attribut <code>combatKinetique</code> de valeur true. Cela appliquera automatiquement la RD dans tous les cas où le personnage est attaqué par un adversaire et qu'il est conscient. Pour l'augmentation des dommages, reporter sur les attaques sur la fiche.</li>
-                  <li><strong>Psychoportation</strong> : <code>!cof-lancer-sort s'élève dans les airs pendant [[5+@{selected|INT}]] tours --mana 3</code>. Pas de support particulier pour le vol. Passer la FOR en caractéristique supérieure via la fiche.</li>
+                  <li><strong>Psychoportation</strong> : <code>!cof-lancer-sort s'élève dans les airs pendant [[5+@{selected|INT}]] tours <i>--mana 3</i></code>. Passer la FOR en caractéristique supérieure via la fiche.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la télépathie</h4>
                 <ol>
-                  <li><strong>Télépathie</strong> : pas de support particulier.</li>
+                  <li><strong>Télépathie</strong> : pas de support autre que <code>!cof-lancer-sort communique par télépathie pendant [[5+@{selected|SAG}]] tours <i>--mana 0</i></code></li>
                   <li><strong>Radar mental</strong> : ajouter un attribut <code>radarMental</code>, de valeur le bonus procuré par le radar mental (2 fois le rang dans la voie).</li>
-                  <li><strong>Suggestion</strong> : utiliser <code>!cof-attaque-magique-contre-pv @{selected|token_id} @{target|token_id} --limiteParJour 1 suggestion --mana 1</code> (attention, ça ne teste pas si la cible a un niveau inférieur au psionique, ni si la cible est pensante). </li>
+                  <li><strong>Suggestion</strong> : utiliser <code>!cof-attaque-magique-contre-pv @{selected|token_id} @{target|token_id} --limiteParJour 1 suggestion <i>--mana 1</i></code> (attention, ça ne teste pas si la cible a un niveau inférieur au psionique, ni si la cible est pensante).</li>
                 </ol>
               </div>
               <h3 class="text-info" id="Rôdeur">Rôdeur</h3>
@@ -1651,7 +1921,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie des vermines</h4>
                 <ol>
-                  <li><strong>Nuée de criquets</strong> : ajouter une attaque magique, de portée 20 m. Puis appeler cette attaque (avec <code>!cof-attack</code>) avec les arguments <code>--pasDeDmg --sortilege --effet nueeDeCriquets [[5+@{selected|SAG}]]</code>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDeCriquets</code> sur la cible dans ce cas). Si vous souhaitez utiliser l'option de tempête de mana, vous pouvez rajouter <code>--rang 2 ?{Tempête de mana?|Non,&amp;#32;|Oui,--tempeteDeMana}</code>. À noter que l'option <code>--mana 0</code> est là pour indiquer au script de terminer l'effet au cas où le druide meurt.</li>
+                  <li><strong>Nuée de criquets</strong> : ajouter une attaque magique, de portée 20 m. Puis appeler cette attaque (avec <code>!cof-attack</code>) avec les arguments <code>--pasDeDmg --sortilege --effet nueeDeCriquets [[5+@{selected|SAG}]]</code>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDeCriquets</code> sur la cible dans ce cas).</li>
                 </ol>
                 <h4 class="text-secondary">Voie du chevalier dragon</h4>
                 <ol>
@@ -1663,7 +1933,7 @@
                 <h4 class="text-secondary">Voie du gel</h4>
                 <ol>
                   <li><strong>3. Cône de froid</strong> : faire une attaque portee 20m, dégâts 2d6+INT de froid, avec comme modificateur <code>auto</code> et comme options <code>--cone 30 --fx breath-frost --ifSaveFails CON 13 --effet ralenti 1 --else --diviseDmg 2 --endif</code>. Pour un objet de sort : <code>!cof-attack @{selected|token_id} @{target|token_id} Cône de froid --sortilege --auto --dm 2d6+[[@{selected|INT}]] --froid --portee 20 --cone 30 --fx breath-frost --ifSaveFails CON 13 --effet ralentiTemp 1 --else --diviseDmg 2 --endif</code></li>
-                  <li><strong>4. Présence glaciale</strong> : <code>!cof-effet presenceGlaciale oui --mana 2</code>. Utiliser <code>!cof-effet presenceGlaciale non</code> pour mettre fin à l'effet. On peut préciser un bonus de DEF et des dégâts différents avec l'option <code>--valeur</code>. Ainsi, la version grimoire sera <code>!cof-effet presenceGlaciale oui --valeur 3 1d4</code>.</li>
+                  <li><strong>4. Présence glaciale</strong> : <code>!cof-effet presenceGlaciale oui</code>. Utiliser <code>!cof-effet presenceGlaciale non</code> pour mettre fin à l'effet. On peut préciser un bonus de DEF et des dégâts différents avec l'option <code>--valeur</code>. Ainsi, la version grimoire sera <code>!cof-effet presenceGlaciale oui --valeur 3 1d4</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du guérisseur</h4>
                 <ol>
@@ -1679,7 +1949,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie du tueur de géant</h4>
                 <ol>
-                  <li><strong>Réduire la distance</strong> : ajouter un attribut <code>reduirelaDistance</code>, de valeur <code>true</code>.</li>
+                  <li><strong>Réduire la distance</strong> : ajouter un attribut <code>reduireLaDistance</code>, de valeur <code>true</code>.</li>
                   <li><strong>Ventre mou</strong> : ajouter un attribut <code>ventreMou</code> de valeur <code>true</code>. Cela va diminuer la RD fixe de 3 maximum pour une créature grande, 6 maximum pour une créature énorme et 10 maximum pour une créature colossale.</li>
                 </ol>
                 <h4 class="text-secondary">Capacités épiques</h4>
@@ -1784,10 +2054,10 @@
                 <ul>
                   <li><strong>Armure d'eau</strong> : <code>!cof-effet-combat armureDEau</code>. Le script automatise l'immunité aux étreintes (pas aux enveloppements) et à la capacité Agripper des créatures volantes.</li>
                   <li><strong>Force de géant</strong> : <code>!cof-effet-temp forceDeGeant 10</code>. Le bonus est de 2 par défaut, mais peut être modifié en utilisant l'option <code>--valeur</code>.</li>
-                  <li><strong>Nuée de scorpions</strong> : ajouter une attaque magique, de portée 20 m. Puis appeler cette attaque (avec <code>!cof-attack</code>) avec les arguments <code>--pasDeDmg --sortilege --effet nueeDeScorpions 10 --mana 0</code>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDeScorpions</code> sur la cible dans ce cas). À noter que l'option <code>--mana 0</code> est là pour indiquer au script de terminer l'effet au cas où le lanceur de sort meurt.</li>
+                  <li><strong>Nuée de scorpions</strong> : ajouter une attaque magique, de portée 20 m. Puis appeler cette attaque (avec <code>!cof-attack</code>) avec les arguments <code>--pasDeDmg --sortilege --effet nueeDeScorpions 10</code>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDeScorpions</code> sur la cible dans ce cas).</li>
                   <li><strong>Résistance à la magie</strong> : pour l'augmentation de la DEF contre la magie, utiliser un attribut <code>DEF_magie</code> et pour le bonus aux tests, <code>resistanceALaMagie</code></li>
                   <li><strong>Sixième sens</strong> : <code>!cof-effet sixiemeSens true</code>. Pour mettre fin à l'effet du sort (qui a une durée en heures), on peut effacer l'attribut <code>sixiemeSens</code>, ou mieux encore, sélectionner le token et faire <code>!cof-effet sixiemeSens false</code>.</li>
-                  <li><strong>Toiles</strong> : <code>!cof-effet-temp toiles [[5+@{selected|SAG}]] --saveParTour FOR [[10+@{selected|SAG}]] --lanceur @{selected|token_id} --disque @{target|token_id} 5 20 --saufAllies --mana 0</code>. </li>
+                  <li><strong>Toiles</strong> : <code>!cof-effet-temp toiles [[5+@{selected|SAG}]] --saveParTour FOR [[10+@{selected|SAG}]] --lanceur @{selected|token_id} --disque @{target|token_id} 5 20 --saufAllies --mana 0</code>.</li>
                 </ul>
               </div>
               <h3 class="text-info" id="Capacites_diverses">4.5 Autres capacités</h3>
