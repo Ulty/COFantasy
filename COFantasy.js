@@ -5405,6 +5405,18 @@ var COFantasy = COFantasy || function() {
             type: scope.type
           });
           break;
+        case 'dmSiRate':
+        case 'dmCible':
+          if (cmd.length < 2) {
+            error("Il manque un argument à l'option --" + cmd[0] + " de !cof-attack", cmd);
+            return;
+          }
+          var val = arg.substring(arg.indexOf(' ') + 1);
+          options[cmd[0]] = {
+            value: val,
+            type: scope.type
+          };
+          break;
         case 'effet':
           if (cmd.length < 2) {
             error("Il manque un argument à l'option --effet de !cof-attack", cmd);
@@ -8673,7 +8685,6 @@ var COFantasy = COFantasy || function() {
           targetToken.get('bar1_max') == 0) { // jshint ignore:line
           var dice = 20;
           if (options.avecd12 ||
-
             (estAffaibli(attaquant) && !charAttributeAsBool(attaquant, 'insensibleAffaibli')) ||
             getState(attaquant, 'immobilise') ||
             attributeAsBool(attaquant, 'mortMaisNAbandonnePas') ||
@@ -8726,6 +8737,9 @@ var COFantasy = COFantasy || function() {
         }
         if (options.targetFx) {
           spawnFx(targetToken.get('left'), targetToken.get('top'), options.targetFx, pageId);
+        }
+        if (options.dmCible) {
+          options.dmCible.target = targetToken;
         }
         var distanceTarget = distanceCombat(targetToken, attackingToken, pageId, {
           strict1: true,
@@ -10423,6 +10437,9 @@ var COFantasy = COFantasy || function() {
                 if (options.demiAuto) {
                   target.partialSaveAuto = true;
                   evt.succes = false;
+                } else if (options.dmSiRate) {
+                  target.dmRate = true;
+                  evt.succes = false;
                 } else touche = false;
                 echecCritique = true;
               } else if ((paralyse || options.ouvertureMortelle || targetd20roll == 20 ||
@@ -10451,6 +10468,9 @@ var COFantasy = COFantasy || function() {
                 evt.succes = false;
                 if (options.demiAuto) {
                   target.partialSaveAuto = true;
+                } else if (options.dmSiRate) {
+                  target.dmRate = true;
+                  evt.succes = false;
                 } else touche = false;
               } else if (targetd20roll % 2 && attributeAsBool(target, 'clignotement')) {
                 target.messages.push(target.tokName + " disparaît au moment où l'attaque aurait du l" + onGenre(target, 'e', 'a') + " toucher");
@@ -10460,6 +10480,9 @@ var COFantasy = COFantasy || function() {
                 target.clignotement = true;
                 if (options.demiAuto) {
                   target.partialSaveAuto = true;
+                } else if (options.dmSiRate) {
+                  target.dmRate = true;
+                  evt.succes = false;
                 } else touche = false;
               } else { // Touché normal
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
@@ -11704,9 +11727,17 @@ var COFantasy = COFantasy || function() {
           if (options.divise) options.divise *= 2;
           else options.divise = 2;
         }
-        var mainDmgRollExpr =
-          computeMainDmgRollExpr(attaquant, target, weaponStats, attNbDices,
-            attDMBonus, options);
+        var mainDmgRollExpr;
+        if (target.dmRate) {
+          mainDmgRollExpr = options.dmSiRate.value;
+          mainDmgType = options.dmSiRate.type;
+        } else if (options.dmCible && options.dmCible.target && options.dmCible.target.id === target.token.id) {
+          mainDmgRollExpr = options.dmCible.value;
+          mainDmgType = options.dmCible.type;
+        } else {
+          mainDmgRollExpr = computeMainDmgRollExpr(attaquant, target, weaponStats, attNbDices,
+              attDMBonus, options);
+        }
         //Additional damage
         var additionalDmg = attaquant.additionalDmg.concat(target.additionalDmg);
         //On enlève les DM qui ne passent pas les conditions
@@ -16454,6 +16485,7 @@ var COFantasy = COFantasy || function() {
         if (action.cibles) {
           action.cibles.forEach(function(target) {
             delete target.partialSaveAuto;
+            delete target.dmRate;
           });
         }
         attack(action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
@@ -17178,6 +17210,7 @@ var COFantasy = COFantasy || function() {
         if (action.cibles) {
           action.cibles.forEach(function(target) {
             delete target.partialSaveAuto;
+            delete target.dmRate;
           });
         }
         optionsRedo.interventionDivine = cmd[1];
