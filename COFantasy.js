@@ -10449,7 +10449,8 @@ var COFantasy = COFantasy || function() {
                 addAttackSound("soundAttackSuccesCritique", weaponStats.divers, options);
                 touche = true;
                 critique = true;
-                if (!target.faireMouche && attributeAsBool(target, 'enerve')) {
+                if (options.contact && !target.faireMouche &&
+                  attributeAsBool(target, 'enerve')) {
                   var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
                   if (faireMouche > 0) target.faireMouche = faireMouche;
                 }
@@ -11735,7 +11736,7 @@ var COFantasy = COFantasy || function() {
           mainDmgType = options.dmCible.type;
         } else {
           mainDmgRollExpr = computeMainDmgRollExpr(attaquant, target, weaponStats, attNbDices,
-              attDMBonus, options);
+            attDMBonus, options);
         }
         //Additional damage
         var additionalDmg = attaquant.additionalDmg.concat(target.additionalDmg);
@@ -11904,7 +11905,7 @@ var COFantasy = COFantasy || function() {
               setTokenAttr(target, 'malediction', 3, evt);
               target.messages.push(target.tokName + " est maudit...");
             }
-            if (options.attaqueBouclierRenverse && weaponStats.attDice == 4 && 
+            if (options.attaqueBouclierRenverse && weaponStats.attDice == 4 &&
               rollsDmg.inlinerolls[mainDmgRollNumber].results.rolls[0].results[0].v >= 4) {
               target.etats = target.etats || [];
               target.etats.push({
@@ -12564,9 +12565,9 @@ var COFantasy = COFantasy || function() {
             }
             if (preDmgToken.devierLesCoups) {
               line += "<br/>" +
-                  boutonSimple(
-                      "!cof-devier-les-coups " + evt.id + ' --target ' + target.token.id,
-                      "dévier les coups");
+                boutonSimple(
+                  "!cof-devier-les-coups " + evt.id + ' --target ' + target.token.id,
+                  "dévier les coups");
               nbBoutons++;
             }
             if (preDmgToken.paradeDeProjectiles) {
@@ -23433,8 +23434,8 @@ var COFantasy = COFantasy || function() {
       maxVal: 1
     });
     cible.extraRDBouclier =
-        ficheAttributeAsInt(cible, 'DEFBOUCLIER', 0) *
-        ficheAttributeAsInt(cible, 'DEFBOUCLIERON', 1);
+      ficheAttributeAsInt(cible, 'DEFBOUCLIER', 0) *
+      ficheAttributeAsInt(cible, 'DEFBOUCLIERON', 1);
     removePreDmg(options, cible, "devierLesCoups");
   }
 
@@ -23840,10 +23841,10 @@ var COFantasy = COFantasy || function() {
   //!cof-parade-au-bouclier
   function doParadeAuBouclier(msg) {
     evitementGenerique(msg, 'parer', 'paradeAuBouclier',
-        'parade au bouclier', "une parade au bouclier", " a déjà fait une parade au bouclier ce tour", 'force', 'contact', "l'attaque est parée !", {
-          armeGauche: true,
-          critiqueAnnuleCritique: true
-        });
+      'parade au bouclier', "une parade au bouclier", " a déjà fait une parade au bouclier ce tour", 'force', 'contact', "l'attaque est parée !", {
+        armeGauche: true,
+        critiqueAnnuleCritique: true
+      });
   }
 
   //!cof-chair-a-canon id1 id2 [evt_id]
