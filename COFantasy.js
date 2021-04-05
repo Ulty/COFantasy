@@ -3511,6 +3511,7 @@ var COFantasy = COFantasy || function() {
               expliquer("Chevalier Dragon monté : +5 en intimidation");
               bonus += 5;
             }
+            break;
           case 'négociation':
           case 'negociation':
             bonus += bonusArgumentDeTaille(personnage, expliquer);
@@ -5411,9 +5412,9 @@ var COFantasy = COFantasy || function() {
             error("Il manque un argument à l'option --" + cmd[0] + " de !cof-attack", cmd);
             return;
           }
-          var val = arg.substring(arg.indexOf(' ') + 1);
+          var valDm = arg.substring(arg.indexOf(' ') + 1);
           options[cmd[0]] = {
-            value: val,
+            value: valDm,
             type: scope.type
           };
           break;
@@ -8097,7 +8098,7 @@ var COFantasy = COFantasy || function() {
       var msgFeinte = "Feinte => +" + bonusFeinte + " en attaque";
       if (attrFeinte[0].get('max')) { //La feinte avait touché cette cible
         var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
-        if (faireMouche > 0) {
+        if (options.contact && faireMouche > 0) {
           if (!options.pasDeDmg) {
             target.faireMouche = faireMouche;
             msgFeinte += " et peut faire mouche";
@@ -11903,8 +11904,8 @@ var COFantasy = COFantasy || function() {
               setTokenAttr(target, 'malediction', 3, evt);
               target.messages.push(target.tokName + " est maudit...");
             }
-            if (options.attaqueBouclierRenverse && weaponStats.attDice === 4
-              && rollsDmg.inlinerolls[mainDmgRollNumber].results.rolls[0].results[0].v >= 4) {
+            if (options.attaqueBouclierRenverse && weaponStats.attDice == 4 && 
+              rollsDmg.inlinerolls[mainDmgRollNumber].results.rolls[0].results[0].v >= 4) {
               target.etats = target.etats || [];
               target.etats.push({
                 etat: 'renverse',
