@@ -15,7 +15,7 @@
 * Hémorragie (Voie du sang)
 * Lien de sang (Voie du sang)
 * Support complet de la Voie des armes à 2 mains (prestige)
-* Support + documentation Voie du Chevalier Dragon (prestige) jusqu'au rang 4
+* Support + documentation Voie du Chevalier Dragon (prestige)
 * Support complet de la Voie du porteur de bouclier (prestige)
 
 ### Autres améliorations
