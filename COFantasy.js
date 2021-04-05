@@ -8085,36 +8085,34 @@ var COFantasy = COFantasy || function() {
         explications.push("Tueur de géant => +2 att. et 2d6 DM");
       target.tueurDeGeants = true;
     }
-    if (options.contact) {
-      var attrFeinte = tokenAttribute(target, 'feinte_' + attaquant.tokName);
-      if (attrFeinte.length > 0 && attrFeinte[0].get('current')) {
-        var bonusFeinte = 5;
-        var attrBonusFeinte = charAttribute(attaquant.charId, 'bonusFeinte');
-        if (attrBonusFeinte.length > 0) {
-          bonusFeinte = parseInt(attrBonusFeinte[0].get('current'));
-          if (isNaN(bonusFeinte) || bonusFeinte < 0) bonusFeinte = 5;
-        }
-        attBonus += bonusFeinte;
-        var msgFeinte = "Feinte => +" + bonusFeinte + " en attaque";
-        if (attrFeinte[0].get('max')) { //La feinte avait touché cette cible
-          var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
-          if (faireMouche > 0) {
-            if (!options.pasDeDmg) {
-              target.faireMouche = faireMouche;
-              msgFeinte += " et peut faire mouche";
-            }
-          } else {
-            var desFeinte = 2;
-            if (attrBonusFeinte.length > 0) {
-              desFeinte = parseInt(attrBonusFeinte[0].get('max'));
-              if (isNaN(desFeinte) || desFeinte < 0) desFeinte = 2;
-            }
-            target.feinte = desFeinte;
-            if (!options.pasDeDmg) msgFeinte += " et +" + desFeinte + "d6 DM";
-          }
-        }
-        explications.push(msgFeinte);
+    var attrFeinte = tokenAttribute(target, 'feinte_' + attaquant.tokName);
+    if (attrFeinte.length > 0 && attrFeinte[0].get('current')) {
+      var bonusFeinte = 5;
+      var attrBonusFeinte = charAttribute(attaquant.charId, 'bonusFeinte');
+      if (attrBonusFeinte.length > 0) {
+        bonusFeinte = parseInt(attrBonusFeinte[0].get('current'));
+        if (isNaN(bonusFeinte) || bonusFeinte < 0) bonusFeinte = 5;
       }
+      attBonus += bonusFeinte;
+      var msgFeinte = "Feinte => +" + bonusFeinte + " en attaque";
+      if (attrFeinte[0].get('max')) { //La feinte avait touché cette cible
+        var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
+        if (faireMouche > 0) {
+          if (!options.pasDeDmg) {
+            target.faireMouche = faireMouche;
+            msgFeinte += " et peut faire mouche";
+          }
+        } else {
+          var desFeinte = 2;
+          if (attrBonusFeinte.length > 0) {
+            desFeinte = parseInt(attrBonusFeinte[0].get('max'));
+            if (isNaN(desFeinte) || desFeinte < 0) desFeinte = 2;
+          }
+          target.feinte = desFeinte;
+          if (!options.pasDeDmg) msgFeinte += " et +" + desFeinte + "d6 DM";
+        }
+      }
+      explications.push(msgFeinte);
     }
     if (attributeAsBool(target, 'expose')) {
       var attrsExposeValeur = tokenAttribute(target, "exposeValeur");
