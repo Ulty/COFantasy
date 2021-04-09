@@ -6809,6 +6809,10 @@ var COFantasy = COFantasy || function() {
         init += charAttributeAsInt(perso, 'initEnMain' + armeL, 0);
       }
     }
+    //Intelligence du combat
+    if (charAttributeAsBool(perso, 'intelligenceDuCombat')) {
+      init += modCarac(perso, 'intelligence');
+    }
     // Réflexes felins de la Voie du pourfendeur
     init += charAttributeAsInt(perso, 'reflexesFelins', 0);
     //Prescience de l'ensorceleur
@@ -7358,6 +7362,9 @@ var COFantasy = COFantasy || function() {
     }
     if (charAttributeAsBool(target, 'defenseIntuitive')) {
       defense += modCarac(target, 'sagesse');
+    }
+    if (charAttributeAsBool(target, 'intelligenceDuCombat')) {
+      defense += modCarac(target, 'intelligence');
     }
     if (attributeAsBool(target, 'armeSecreteBarde')) {
       explications.push(tokenName + " est déstabilisé par une action de charme => -10 en DEF");
