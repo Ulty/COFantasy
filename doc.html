@@ -956,7 +956,7 @@
                 <h4 class="text-secondary">Voie du saltimbanque</h4>
                 <ol>
                   <li><strong>Acrobate</strong> : ajouter les compétences sur la fiche</li>
-                  <li><strong>Grâce féline</strong> : simplement ajouter les bonus sur la fiche</li>
+                  <li><strong>Grâce féline</strong> : ajouter un attribut <code>graceFeline</code> avec comme valeur <code>true</code>. Cela va affecter l'initiative et la DEF, mais sans se voir sur la fiche.</li>
                   <li><strong>Lanceur de couteau</strong> : faire normalement l'attaque.</li>
                   <li><strong>Esquive acrobatique</strong> : ajouter un attribut <code>esquiveAcrobatique</code>, de valeur courante <code>1</code>, et de valeur maximale <code>1</code>.</li>
                   <li><strong>Liberté d'action</strong> : ajouter un attribut <code>liberteDAction</code>.</li>
@@ -1814,7 +1814,7 @@
                 <ol>
                   <li><strong>Sprint</strong> : pas de support, au MJ de vérifier que ce n'est utilisé qu'une fois par combat.</li>
                   <li><strong>Provocation</strong> : <code>!cof-provocation @{selected|token_id} @{target|token_id}</code>. Au joueur ensuite de faire son attaque gratuite si la provocation est réussie et que l'adversaire l'attaque.</li>
-                  <li><strong>Grâce féline</strong> : ajouter un attribut <code>graceFeline</code> avec comme valeur <code>true</code>. Cela va affecter l'initiative et la DEF, mais sans se voir sur la fiche. Pour les tests de déplacement, il faut gérer à part.</li>
+                  <li><strong>Grâce féline</strong> : ajouter un attribut <code>graceFeline</code> avec comme valeur <code>true</code>. Cela va affecter l'initiative et la DEF, mais sans se voir sur la fiche. Pour les tests de déplacement, ajouter un attribut <code>graceFelineVoleur</code> de valeur <code>true</code> (penser à proposer l'utilisation de compétences, en ajoutant les compétences <code>course</code>, <code>saut</code>, <code>acrobatie</code> et <code>escalade</code> au voleur ou sur le handout de compétences).</li>
                 </ol>
                 <h4 class="text-secondary">Voie du déplacement</h4>
                 <ol>
@@ -2106,6 +2106,7 @@
                   </li>
                   <li><strong>Protection contre les souffles</strong> et dégâts de zone : ajouter un attribut <code>protectionDMZone</code>, de valeur <code>true</code>. Pour une protection contre un seul élément (feu, froid, etc), ajouter <code>_</code> et le nom de l'élément. Par exemple, contre le feu, on aura un attribut <code>protectionDMZone_feu</code>.</li>
                   <li><strong>Putréfaction</strong> : ajouter à l'attaque <code>--effet putrefaction 5 --save CON 14</code> (pour les données des momies)</li>
+                  <li><strong>Résistant (insectes)</strong> : ajouter un attribut <code>durACuire</code> de valeur <code>true</code>.</li>
                   <li><strong>Sang de fer</strong> : ajouter un attribut <code>sangDeFerIf</code> de valeur <code>true</code>.</li>
                   <li><strong>Sans esprit</strong> : ajouter un attribut <code>sansEsprit</code> (=true) permet la réussite automatique des jets de résistance basés sur INT, SAG ou CHA.</li>
                   <li><strong>Vulnérabilité aux coups critiques</strong> : si la créature possède un attribut <code>vulnerableCritique</code>, le script interprète la valeur de cet attribut comme les chances (sur 100) qu'un coup critique tue directment la créature. Par exemple, la valeur sera de 25 pour un esprit du givre.</li>

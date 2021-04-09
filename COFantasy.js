@@ -3497,7 +3497,27 @@ var COFantasy = COFantasy || function() {
         options.bonusAttrs = options.bonusAttrs || [];
         options.bonusAttrs.push(options.competence.toLowerCase().replace(/ /g, '_'));
       } else {
+        var bonusGraceFeline;
         switch (comp) {
+          case 'acrobatie':
+          case 'acrobaties':
+            if (charAttributeAsBool(personnage, 'graceFelineVoleur')) {
+              bonusGraceFeline = modCarac(personnage, 'charisme');
+              if (bonusGraceFeline > 0) {
+                expliquer("Grâce féline : +" + bonusGraceFeline + " en acrobaties");
+                bonus += bonusGraceFeline;
+              }
+            }
+            break;
+          case 'course':
+            if (charAttributeAsBool(personnage, 'graceFelineVoleur')) {
+              bonusGraceFeline = modCarac(personnage, 'charisme');
+              if (bonusGraceFeline > 0) {
+                expliquer("Grâce féline : +" + bonusGraceFeline + " en course");
+                bonus += bonusGraceFeline;
+              }
+            }
+            break;
           case 'discrétion':
           case 'discretion':
             if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
@@ -3510,6 +3530,15 @@ var COFantasy = COFantasy || function() {
             if (attributeAsBool(personnage, 'ordreDuChevalierDragon') && attributeAsBool(personnage, 'monteSur')) {
               expliquer("Chevalier Dragon monté : +5 en intimidation");
               bonus += 5;
+            }
+            break;
+          case 'escalade':
+            if (charAttributeAsBool(personnage, 'graceFelineVoleur')) {
+              bonusGraceFeline = modCarac(personnage, 'charisme');
+              if (bonusGraceFeline > 0) {
+                expliquer("Grâce féline : +" + bonusGraceFeline + " en escalade");
+                bonus += bonusGraceFeline;
+              }
             }
             break;
           case 'négociation':
@@ -3533,6 +3562,16 @@ var COFantasy = COFantasy || function() {
             if (attributeAsBool(personnage, 'ordreDuChevalierDragon') && attributeAsBool(personnage, 'monteSur')) {
               expliquer("Chevalier Dragon monté : +5 en persuasion");
               bonus += 5;
+            }
+            break;
+          case 'saut':
+          case 'sauter':
+            if (charAttributeAsBool(personnage, 'graceFelineVoleur')) {
+              bonusGraceFeline = modCarac(personnage, 'charisme');
+              if (bonusGraceFeline > 0) {
+                expliquer("Grâce féline : +" + bonusGraceFeline + " en saut");
+                bonus += bonusGraceFeline;
+              }
             }
             break;
           case 'survie':
