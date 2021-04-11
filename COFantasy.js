@@ -25729,6 +25729,9 @@ var COFantasy = COFantasy || function() {
           });
       } else {
         //Le barbare passe en rage
+        if (limiteRessources(perso, options, 'rageDuBerserk', "entrer en rage du berserk", evt)) {
+          return;
+        }
         if (!stateCOF.combat) {
           initiative([{
             _id: perso.token.id
