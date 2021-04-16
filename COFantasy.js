@@ -13585,6 +13585,43 @@ var COFantasy = COFantasy || function() {
     finDEffet(attrs, effetTempOfAttribute(attrs), attrs.get('name'), perso.charId, evt, options);
   }
 
+  function mettreAZeroPV(target, evt, expliquer) {
+    updateCurrentBar(target, 1, 0, evt);
+    if (charAttributeAsBool(target, 'baroudHonneur')) {
+      var msgBarroud = target.tokName + " devrait être mort";
+      msgBarroud += eForFemale(target) + ", mais ";
+      msgBarroud += onGenre(target, 'il', 'elle') + " continue à se battre !";
+      expliquer(msgBarroud);
+      setTokenAttr(target, 'baroudHonneurActif', true, evt);
+    } else if (attributeAsInt(target, 'increvable', 0) > 0) {
+      var msgIncrevable = target.tokName + " devrait être mort";
+      msgIncrevable += eForFemale(target) + ", mais ";
+      msgIncrevable += onGenre(target, 'il', 'elle') + " est increvable !";
+      expliquer(msgIncrevable);
+      setTokenAttr(target, 'increvable', 0, evt);
+      setTokenAttr(target, 'increvableActif', true, evt);
+    } else if ((attributeAsBool(target, 'enragé') || charAttributeAsBool(target, 'durACuire')) &&
+      !attributeAsBool(target, 'aAgiAZeroPV')) {
+      var msgAgitZ = target.tokName + " devrait être mort";
+      msgAgitZ += eForFemale(target) + ", mais ";
+      msgAgitZ += onGenre(target, 'il', 'elle') + " continue à se battre !";
+      expliquer(msgAgitZ);
+      if (!attributeAsBool(target, 'agitAZeroPV'))
+        setAttrDuree(target, 'agitAZeroPV', 1, evt);
+    } else if (charAttributeAsBool(target, 'nAbandonneJamais')) {
+      if (attributeAsBool(target, 'mortMaisNAbandonnePas')) {
+        expliquer(target.tokName + " est dans un état lamentable, mais continue à bouger. Il faudrait une action limitée pour le réduire en miettes.");
+      } else {
+        expliquer(target.tokName + " est pratiquement détruit, mais continue à bouger !");
+        setTokenAttr(target, 'mortMaisNAbandonnePas', true, evt);
+        setState(target, 'ralenti', true, evt);
+      }
+    } else {
+      mort(target, expliquer, evt);
+      testBlessureGrave(target, 'mort', expliquer, evt);
+    }
+  }
+
   function dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal, dmSuivis) {
     var charId = target.charId;
     var token = target.token;
@@ -13958,108 +13995,44 @@ var COFantasy = COFantasy || function() {
             }
           }
           if (bar1 <= 0) {
-            var defierLaMort = charAttributeAsInt(target, 'defierLaMort', 0);
             if (charAttributeAsBool(target, 'sergent') &&
               !attributeAsBool(target, 'sergentUtilise')) {
               expliquer(token.get('name') + " évite l'attaque in-extremis");
               setTokenAttr(target, 'sergentUtilise', true, evt);
               pvPerdus = 0;
-            } else if (defierLaMort > 0) {
+            } else { //Le personnage va prendre le coup
               pvPerdus += bar1;
-              var rollId = 'defierLaMort_' + target.token.id;
-              var saveOpts = {
-                msgPour: " pour défier la mort",
-                msgReussite: ", conserve 1 PV",
-                rolls: options.rolls,
-                chanceRollId: options.chanceRollId
-              };
-              if (attributeAsBool(target, 'rageDuBerserk')) saveOpts.bonus = 10;
-              save({
-                  carac: 'CON',
-                  seuil: defierLaMort
-                }, target, rollId, expliquer, saveOpts, evt,
-                function(reussite, rollText) {
-                  if (reussite) {
-                    updateCurrentBar(target, 1, 1, evt);
-                    bar1 = 1;
-                    pvPerdus--;
-                    setTokenAttr(target, 'defierLaMort', defierLaMort + 10, evt);
-                    enlevePVStatueDeBois(target, pvPerdus, evt);
-                  } else {
-                    testBlessureGrave(target, dmgTotal, expliquer, evt);
-                    updateCurrentBar(target, 1, 0, evt);
-                    if (charAttributeAsBool(target, 'durACuire') &&
-                      !attributeAsBool(target, 'aAgiAZeroPV')) {
-                      var msgAgitZero = token.get('name') + " devrait être mort";
-                      msgAgitZero += eForFemale(target) + ", mais ";
-                      msgAgitZero += onGenre(target, 'il', 'elle') + " continue à se battre !";
-                      expliquer(msgAgitZero);
-                      if (!attributeAsBool(target, 'agitAZeroPV'))
-                        setAttrDuree(target, 'agitAZeroPV', 1, evt);
-                    } else {
-                      mort(target, expliquer, evt);
-                    }
-                  }
-                  if (bar1 > 0 && tempDmg >= bar1) { //assomé
-                    setState(target, 'assome', true, evt);
-                  }
-                  var attrsLienDeSang = tokenAttribute(target, "lienDeSangVers");
-                  if (attrsLienDeSang.length > 0) {
-                    var lienDuSangDmg = Math.floor(dmgTotal / 2);
-                    var r = {
-                      total: lienDuSangDmg,
-                      type: 'normal',
-                      display: lienDuSangDmg
-                    };
-                    var personnageLie = persoOfId(attrsLienDeSang[0].get("current"));
-                    if (personnageLie) {
-                      expliquer("Le lien de sang inflige " + lienDuSangDmg + " dégâts à " + personnageLie.token.get("name"));
-                      dealDamage(personnageLie, r, [], evt, false);
-                    }
-                  }
-                  if (showTotal) dmgDisplay += " = " + dmgTotal;
-                  if (displayRes === undefined) return dmgDisplay;
-                  displayRes(dmgDisplay, pvPerdus);
-                });
-              if (displayRes === undefined) return dmgDisplay;
-              return;
-            } else {
               testBlessureGrave(target, dmgTotal, expliquer, evt);
-              updateCurrentBar(target, 1, 0, evt);
-              pvPerdus += bar1;
-              if (charAttributeAsBool(target, 'baroudHonneur')) {
-                var msgBarroud = token.get('name') + " devrait être mort";
-                msgBarroud += eForFemale(target) + ", mais ";
-                msgBarroud += onGenre(target, 'il', 'elle') + " continue à se battre !";
-                expliquer(msgBarroud);
-                setTokenAttr(target, 'baroudHonneurActif', true, evt);
-              } else if (attributeAsInt(target, 'increvable', 0) > 0) {
-                var msgIncrevable = token.get('name') + " devrait être mort";
-                msgIncrevable += eForFemale(target) + ", mais ";
-                msgIncrevable += onGenre(target, 'il', 'elle') + " est increvable !";
-                expliquer(msgIncrevable);
-                setTokenAttr(target, 'increvable', 0, evt);
-                setTokenAttr(target, 'increvableActif', true, evt);
-              } else if ((attributeAsBool(target, 'enragé') || charAttributeAsBool(target, 'durACuire')) &&
-                !attributeAsBool(target, 'aAgiAZeroPV')) {
-                var msgAgitZ = token.get('name') + " devrait être mort";
-                msgAgitZ += eForFemale(target) + ", mais ";
-                msgAgitZ += onGenre(target, 'il', 'elle') + " continue à se battre !";
-                expliquer(msgAgitZ);
-                if (!attributeAsBool(target, 'agitAZeroPV'))
-                  setAttrDuree(target, 'agitAZeroPV', 1, evt);
-              } else if (charAttributeAsBool(target, 'nAbandonneJamais')) {
-                if (attributeAsBool(target, 'mortMaisNAbandonnePas')) {
-                  expliquer(token.get('name') + " est dans un état lamentable, mais continue à bouger. Il faudrait une action limitée pour le réduire en miettes.");
-                } else {
-                  expliquer(token.get('name') + " est pratiquement détruit, mais continue à bouger !");
-                  setTokenAttr(target, 'mortMaisNAbandonnePas', true, evt);
-                  setState(target, 'ralenti', true, evt);
-                }
-              } else {
-                mort(target, expliquer, evt);
-                testBlessureGrave(target, 'mort', expliquer, evt);
+              var defierLaMort = charAttributeAsInt(target, 'defierLaMort', 0);
+              if (defierLaMort > 0) {
+                var rollId = 'defierLaMort_' + target.token.id;
+                var saveOpts = {
+                  msgPour: " pour défier la mort",
+                  msgReussite: ", conserve 1 PV",
+                  rolls: options.rolls,
+                  chanceRollId: options.chanceRollId
+                };
+                if (attributeAsBool(target, 'rageDuBerserk')) saveOpts.bonus = 10;
+                save({
+                    carac: 'CON',
+                    seuil: defierLaMort
+                  }, target, rollId, expliquer, saveOpts, evt,
+                  function(reussite, rollText) {
+                    if (reussite) {
+                      bar1 = 1;
+                      pvPerdus--;
+                      setTokenAttr(target, 'defierLaMort', defierLaMort + 10, evt);
+                      updateCurrentBar(target, 1, 1, evt);
+                      enlevePVStatueDeBois(target, pvPerdus, evt);
+                    } else {
+                      mettreAZeroPV(target, evt, expliquer);
+                    }
+                    postBarUpdateForDealDamage(target, dmgTotal, pvPerdus, bar1, tempDmg, dmgDisplay, showTotal, displayRes, evt, expliquer);
+                  });
+                //On arrête là, car tout le reste est fait dans la continuation du save.
+                return;
               }
+              mettreAZeroPV(target, evt, expliquer);
             }
           } else { // bar1>0
             testBlessureGrave(target, dmgTotal, expliquer, evt);
@@ -14067,28 +14040,32 @@ var COFantasy = COFantasy || function() {
             enlevePVStatueDeBois(target, pvPerdus, evt);
           }
         }
-        if (bar1 > 0 && tempDmg >= bar1) { //assomé
-          setState(target, 'assome', true, evt);
-        }
-        var attrsLienDeSang = tokenAttribute(target, "lienDeSangVers");
-        if (attrsLienDeSang.length > 0) {
-          var lienDuSangDmg = Math.floor(dmgTotal / 2);
-          var r = {
-            total: lienDuSangDmg,
-            type: 'normal',
-            display: lienDuSangDmg
-          };
-          var personnageLie = persoOfId(attrsLienDeSang[0].get("current"));
-          if (personnageLie) {
-            expliquer("Le lien de sang inflige " + lienDuSangDmg + " dégâts à " + personnageLie.token.get("name"));
-            dealDamage(personnageLie, r, [], evt, false);
-          }
-        }
-        if (showTotal) dmgDisplay += " = " + dmgTotal;
-        if (displayRes === undefined) return dmgDisplay;
-        displayRes(dmgDisplay, pvPerdus);
+        postBarUpdateForDealDamage(target, dmgTotal, pvPerdus, bar1, tempDmg, dmgDisplay, showTotal, displayRes, evt, expliquer);
       });
     return dmgDisplay;
+  }
+
+  function postBarUpdateForDealDamage(target, dmgTotal, pvPerdus, bar1, tempDmg, dmgDisplay, showTotal, displayRes, evt, expliquer) {
+    if (bar1 > 0 && tempDmg >= bar1) { //assomé
+      setState(target, 'assome', true, evt);
+    }
+    var attrsLienDeSang = tokenAttribute(target, "lienDeSangVers");
+    if (attrsLienDeSang.length > 0) {
+      var lienDuSangDmg = Math.floor(dmgTotal / 2);
+      var r = {
+        total: lienDuSangDmg,
+        type: 'normal',
+        display: lienDuSangDmg
+      };
+      var personnageLie = persoOfId(attrsLienDeSang[0].get("current"));
+      if (personnageLie) {
+        expliquer("Le lien de sang inflige " + lienDuSangDmg + " dégâts à " + personnageLie.token.get("name"));
+        dealDamage(personnageLie, r, [], evt, false);
+      }
+    }
+    if (showTotal) dmgDisplay += " = " + dmgTotal;
+    if (displayRes === undefined) return;
+    displayRes(dmgDisplay, pvPerdus);
   }
 
   function buildinline(inlineroll, dmgType, magique) {
