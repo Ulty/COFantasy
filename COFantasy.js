@@ -13622,6 +13622,44 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  //target prend un coup qui lui fait perdre tous ses PVs
+  // Asynchrone
+  function prendreUnCoupMortel(target, dmgTotal, pvPerdus, bar1, tempDmg, dmgDisplay, showTotal, displayRes, options, evt, expliquer) {
+    pvPerdus += bar1;
+    testBlessureGrave(target, dmgTotal, expliquer, evt);
+    var defierLaMort = charAttributeAsInt(target, 'defierLaMort', 0);
+    if (defierLaMort > 0) {
+      var rollId = 'defierLaMort_' + target.token.id;
+      var saveOpts = {
+        msgPour: " pour défier la mort",
+        msgReussite: ", conserve 1 PV",
+        rolls: options.rolls,
+        chanceRollId: options.chanceRollId
+      };
+      if (attributeAsBool(target, 'rageDuBerserk')) saveOpts.bonus = 10;
+      save({
+          carac: 'CON',
+          seuil: defierLaMort
+        }, target, rollId, expliquer, saveOpts, evt,
+        function(reussite, rollText) {
+          if (reussite) {
+            bar1 = 1;
+            pvPerdus--;
+            setTokenAttr(target, 'defierLaMort', defierLaMort + 10, evt);
+            updateCurrentBar(target, 1, 1, evt);
+            enlevePVStatueDeBois(target, pvPerdus, evt);
+          } else {
+            mettreAZeroPV(target, evt, expliquer);
+          }
+          postBarUpdateForDealDamage(target, dmgTotal, pvPerdus, bar1, tempDmg, dmgDisplay, showTotal, displayRes, evt, expliquer);
+        });
+      //On arrête là, car tout le reste est fait dans la continuation du save.
+      return;
+    }
+    mettreAZeroPV(target, evt, expliquer);
+    postBarUpdateForDealDamage(target, dmgTotal, pvPerdus, bar1, tempDmg, dmgDisplay, showTotal, displayRes, evt, expliquer);
+  }
+
   function dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal, dmSuivis) {
     var charId = target.charId;
     var token = target.token;
@@ -13927,8 +13965,12 @@ var COFantasy = COFantasy || function() {
               return Math.ceil(d / 2);
             });
             if (dmgTotal < 1) dmgTotal = 1;
-            dmgDisplay += "/2";
-            showTotal = true;
+            if (showTotal) {
+              dmgDisplay = "(" + dmgDisplay + ") / 2";
+            } else {
+              dmgDisplay += " / 2";
+              showTotal = true;
+            }
             expliquer("L'instinct de survie aide à réduire une attaque fatale");
           }
           pvPerdus = dmgTotal;
@@ -14000,39 +14042,96 @@ var COFantasy = COFantasy || function() {
               expliquer(token.get('name') + " évite l'attaque in-extremis");
               setTokenAttr(target, 'sergentUtilise', true, evt);
               pvPerdus = 0;
-            } else { //Le personnage va prendre le coup
-              pvPerdus += bar1;
-              testBlessureGrave(target, dmgTotal, expliquer, evt);
-              var defierLaMort = charAttributeAsInt(target, 'defierLaMort', 0);
-              if (defierLaMort > 0) {
-                var rollId = 'defierLaMort_' + target.token.id;
-                var saveOpts = {
-                  msgPour: " pour défier la mort",
-                  msgReussite: ", conserve 1 PV",
-                  rolls: options.rolls,
-                  chanceRollId: options.chanceRollId
-                };
-                if (attributeAsBool(target, 'rageDuBerserk')) saveOpts.bonus = 10;
-                save({
-                    carac: 'CON',
-                    seuil: defierLaMort
-                  }, target, rollId, expliquer, saveOpts, evt,
-                  function(reussite, rollText) {
-                    if (reussite) {
-                      bar1 = 1;
-                      pvPerdus--;
-                      setTokenAttr(target, 'defierLaMort', defierLaMort + 10, evt);
-                      updateCurrentBar(target, 1, 1, evt);
-                      enlevePVStatueDeBois(target, pvPerdus, evt);
-                    } else {
-                      mettreAZeroPV(target, evt, expliquer);
-                    }
-                    postBarUpdateForDealDamage(target, dmgTotal, pvPerdus, bar1, tempDmg, dmgDisplay, showTotal, displayRes, evt, expliquer);
-                  });
-                //On arrête là, car tout le reste est fait dans la continuation du save.
-                return;
+            } else if (target.attackRoll &&
+              charAttributeAsBool(target, 'increvableHumain') &&
+              !attributeAsBool(target, 'increvableHumainUtilise')) {
+              setTokenAttr(target, 'increvableHumainUtilise', true, evt);
+              var weaponStatsIncrevable = {
+                attSkillDiv: 0,
+                crit: 20,
+                parDefaut: true,
+              };
+              if (options.sortilege) {
+                weaponStatsIncrevable.name = "Attaque magique";
+                weaponStatsIncrevable.attSkill = '@{ATKMAG}';
+              } else if (options.contact) {
+                var enMain = armesEnMain(target);
+                if (!enMain || enMain.sortilege || enMain.portee > 0) {
+                  weaponStatsIncrevable.name = "Attaque au contact";
+                  weaponStatsIncrevable.attSkill = '@{ATKCAC}';
+                } else {
+                  weaponStatsIncrevable = enMain;
+                }
+              } else { //attaque à distance
+                weaponStatsIncrevable.name = "Attaque à distance";
+                weaponStatsIncrevable.attSkill = '@{ATKTIR}';
               }
-              mettreAZeroPV(target, evt, expliquer);
+              var optionsIncrevable = {...options};
+              optionsIncrevable.pasDeDmg = true;
+              var critIncrevable = critEnAttaque(target, weaponStatsIncrevable, optionsIncrevable);
+              var dice = 20;
+              var malusAttaque = 0;
+              if (estAffaibli(target)) {
+                if (charAttributeAsBool(target, 'insensibleAffaibli')) {
+                  malusAttaque = -2;
+                  expliquer(target.tokName + " affaibli, mais insensible => -2 en Attaque");
+                } else {
+                  dice = 12;
+                  expliquer(target.tokName + " affaibli => D12 au lieu de D20 en Attaque");
+                }
+              } else if (getState(target, 'immobilise')) {
+                dice = 12;
+                expliquer(target.tokName + " immobilisé => D12 au lieu de D20 en Attaque");
+              } else if (attributeAsBool(target, 'mortMaisNAbandonnePas')) {
+                dice = 12;
+                expliquer(target.tokName + " mort mais n'abandonne pas => D12 au lieu de D20 en Attaque");
+              } else {
+                var ebriete = attributeAsInt(target, 'niveauEbriete', 0);
+                if (ebriete > 0) {
+                  if (options.distance || options.sortilege || ebriete > 1) {
+                    dice = 12;
+                    if (ebriete > 3) ebriete = 3;
+                    expliquer(target.tokName + ' ' + niveauxEbriete[ebriete] + " => D12 au lieu de D20 en Attaque");
+                  }
+                }
+              }
+              var toEvaluateAttackIncrevable =
+                attackExpression(target, 1, dice, critIncrevable, true, weaponStatsIncrevable);
+              sendChat('', toEvaluateAttackIncrevable, function(resAttackIncrevable) {
+                var rollsAttack = resAttackIncrevable[0];
+                var afterEvaluateAttack = rollsAttack.content.split(' ');
+                var attRollNumber = rollNumber(afterEvaluateAttack[0]);
+                var attSkillNumber = rollNumber(afterEvaluateAttack[1]);
+                var d20rollAttaquant = rollsAttack.inlinerolls[attRollNumber].results.total;
+                var attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
+                var explications = [];
+                var attBonus =
+                  bonusAttaqueA(target, weaponStatsIncrevable.name, evt, explications, optionsIncrevable);
+                attBonus += malusAttaque;
+                var pageId = options.pageId || token.get('pageid');
+                attBonus +=
+                  bonusAttaqueD(target, target.attaquant, 0, pageId, evt, explications, optionsIncrevable);
+                var attackRollAttaquant = d20rollAttaquant + attSkill + attBonus;
+                var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
+                attRollValue += (attSkill > 0) ? "+" + attSkill : (attSkill < 0) ? attSkill : "";
+                attRollValue += (attBonus > 0) ? "+" + attBonus : (attBonus < 0) ? attBonus : "";
+                var msgIncrevable = "Increvable : " + target.tokName + " fait " + attRollValue;
+                //TODO: afficher les explications de calcul des bonus d'attaque ?
+                if (attackRollAttaquant < target.attackRoll) {
+                  expliquer(msgIncrevable + " < " + target.attackRoll + " => échec ");
+                  prendreUnCoupMortel(target, dmgTotal, pvPerdus, bar1, tempDmg, dmgDisplay, showTotal, displayRes, options, evt, expliquer);
+                  return;
+                }
+                //L'attaque est évitée
+                expliquer(msgIncrevable + " > " + target.attackRoll + " => l'attaque est évitée ! ");
+
+                postBarUpdateForDealDamage(target, dmgTotal, 0, bar1, tempDmg, dmgDisplay, showTotal, displayRes, evt, expliquer);
+              });
+              return;
+            } else { //la cible prend le coup
+              prendreUnCoupMortel(target, dmgTotal, pvPerdus, bar1, tempDmg, dmgDisplay, showTotal, displayRes, options, evt, expliquer);
+              //La suite est fait en continuation car la fonction est asynchrone
+              return;
             }
           } else { // bar1>0
             testBlessureGrave(target, dmgTotal, expliquer, evt);
@@ -32102,6 +32201,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('peutEtreDeplace', evt, attrs);
     attrs = removeAllAttributes('attaqueMalgreMenace', evt, attrs);
     attrs = removeAllAttributes('prescienceUtilisee', evt, attrs);
+    attrs = removeAllAttributes('increvableHumainUtilise', evt, attrs);
     resetAttr(attrs, 'attaqueEnTraitre', evt);
     resetAttr(attrs, 'esquiveAcrobatique', evt);
     resetAttr(attrs, 'devierLesCoups', evt);
