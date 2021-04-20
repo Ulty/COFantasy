@@ -12062,7 +12062,10 @@ var COFantasy = COFantasy || function() {
                   return; //on le fera plus tard
                 }
                 if (ef.typeDmg && immuniseAuType(target, ef.typeDmg, attaquant)) {
-                  target.messages.push(target.tokName + " ne semble pas affecté par " + stringOfType(ef.typeDmg));
+                  if (!target['msgImmunite_' + ef.typeDmg]) {
+                    target.messages.push(target.tokName + " ne semble pas affecté par " + stringOfType(ef.typeDmg));
+                    target['msgImmunite_' + ef.typeDmg] = true;
+                  }
                   return;
                 }
                 setEffetTemporaire(target, ef, ef.duree, attaquant, pageId, evt, options);
@@ -12314,8 +12317,10 @@ var COFantasy = COFantasy || function() {
                 effets.forEach(function(ef, index) {
                   if (ef.save) {
                     if (ef.typeDmg && immuniseAuType(target, ef.typeDmg, attaquant)) {
-                      target.messages.push(target.tokName + " ne semble pas affecté par " + stringOfType(ef.typeDmg));
-                      target['msgImmunite_' + ef.typeDmg] = true;
+                      if (!target['msgImmunite_' + ef.typeDmg]) {
+                        target.messages.push(target.tokName + " ne semble pas affecté par " + stringOfType(ef.typeDmg));
+                        target['msgImmunite_' + ef.typeDmg] = true;
+                      }
                       saves--;
                       savesEffets--;
                       etatsAvecSave();
@@ -12863,19 +12868,28 @@ var COFantasy = COFantasy || function() {
   //   - hideSaveTitle : cache le titre du save
   //   - bonus : bonus au jet de save
   function save(s, target, saveId, expliquer, options, evt, afterSave) {
-    var bonus = options.bonus || 0;
+    target.tokName = target.tokName || target.token.get('name');
+    if (options.type && immuniseAuType(target, options.type, options.attaquant)) {
+      if (!target['msgImmunite_' + options.type]) {
+        expliquer(target.tokName + " ne semble pas affecté par " + stringOfType(options.type));
+        target['msgImmunite_' + options.type] = true;
+      }
+      afterSave(true, '');
+      return;
+    }
     if (s.fauchage) {
       if (s.fauchage <= taillePersonnage(target, 4)) {
-        expliquer(target.token.get('name') + " est trop grand pour être fauché.");
+        expliquer(target.tokName + " est trop grand pour être fauché.");
         afterSave(true, '');
         return;
       }
       if (charAttributeAsBool(target, 'inderacinable')) {
-        expliquer(target.token.get('name') + " est indéracinable.");
+        expliquer(target.tokName + " est indéracinable.");
         afterSave(true, '');
         return;
       }
     }
+    var bonus = options.bonus || 0;
     if (options.attaquant &&
       charAttributeAsBool(target, 'protectionContreLeMal') &&
       estMauvais(options.attaquant)) {
@@ -12910,7 +12924,7 @@ var COFantasy = COFantasy || function() {
     optionsTest.bonus = bonus;
     testCaracteristique(target, carac, s.seuil, saveId, optionsTest, evt,
       function(tr) {
-        var smsg = target.token.get('name') + " fait " + tr.texte;
+        var smsg = target.tokName + " fait " + tr.texte;
         if (tr.reussite) {
           smsg += " => réussite";
           if (options.msgReussite) smsg += options.msgReussite;
@@ -13141,10 +13155,11 @@ var COFantasy = COFantasy || function() {
       dmgTotal = 0;
     }
 
-    if (immuniseAuType(target, mainDmgType, options.attaquant)) {
+    if (dmgTotal > 0 && immuniseAuType(target, mainDmgType, options.attaquant)) {
       if (expliquer && !target['msgImmunite_' + mainDmgType]) {
         target.tokName = target.tokName || target.token.get('name');
         expliquer(target.tokName + " ne semble pas affecté par " + stringOfType(mainDmgType));
+        target['msgImmunite_' + mainDmgType] = true;
       }
       dmgTotal = 0;
       dmgDisplay = '0';
@@ -13305,6 +13320,7 @@ var COFantasy = COFantasy || function() {
         if (expliquer && !target['msgImmunite_' + dt]) {
           target.tokName = target.tokName || target.token.get('name');
           expliquer(target.tokName + " ne semble pas affecté par " + stringOfType(dt));
+          target['msgImmunite_' + dt] = true;
         }
         delete dmgParType[dt];
       } else
