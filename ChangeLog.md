@@ -20,6 +20,7 @@
 * Support complet de la Voie du porteur de bouclier (prestige)
 
 ### Autres améliorations
+* Tirage d'initiative aléatoire secret pour les tokens sur le layer MJ.
 * Possibilité de rajouter des attributs à afficher dans le statut.
 * Le script ne bloque plus que le déplacement des personnages immobilisés contrôlés par un joueur connecté.
 * En cas d'échec critique d'une boule de feu qui cible une cible artificielle, la cible est déplacée aléatoirement de 15 m.

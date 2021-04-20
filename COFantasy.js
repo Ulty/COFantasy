@@ -6810,10 +6810,16 @@ var COFantasy = COFantasy || function() {
         });
         bonusVariable = rollD6.val;
         var msg = "entre en combat. ";
-        msg += onGenre(perso, 'Il', 'Elle') + " fait " + rollD6.roll;
-        msg += " à son jet d'initiative";
+        var msgSecret =
+          ficheAttributeAsBool(perso, 'jets_caches', false) ||
+          (tokenAUtiliser.get('layer') == 'gmlayer');
+        if (!msgSecret) {
+          msg += onGenre(perso, 'Il', 'Elle') + " fait " + rollD6.roll;
+          msg += " à son jet d'initiative";
+        }
         setTokenAttr(tokenAUtiliser, 'bonusInitVariable', bonusVariable, evt, {
-          msg: msg
+          msg: msg,
+          secret: msgSecret
         });
       }
       init += bonusVariable;
@@ -14066,7 +14072,8 @@ var COFantasy = COFantasy || function() {
                 weaponStatsIncrevable.name = "Attaque à distance";
                 weaponStatsIncrevable.attSkill = '@{ATKTIR}';
               }
-              var optionsIncrevable = {...options};
+              var optionsIncrevable = {...options
+              };
               optionsIncrevable.pasDeDmg = true;
               var critIncrevable = critEnAttaque(target, weaponStatsIncrevable, optionsIncrevable);
               var dice = 20;
