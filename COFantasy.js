@@ -29282,10 +29282,10 @@ var COFantasy = COFantasy || function() {
     if (options.messages && options.messages.length > 0)
       opt.msg = options.messages[0];
     getSelected(msg, function(selected, playerId) {
-      if (!playerIsGM(playerId)) {
+      /*if (!playerIsGM(playerId)) {
         sendChat('COF', "Seul le MJ peut utiliser la commande !cof-set-attributes");
         return;
-      }
+      }*/
       if (selected.length === 0) {
         error('pas de token sélectionné pour !cof-set-attribute');
         return;
