@@ -1815,6 +1815,27 @@ var COFantasy = COFantasy || function() {
             evt.deletedAttributes.push(a);
             a.remove();
           });
+          //On libère les personnages dévorés, si il y en a.
+          var attrDevore = tokenAttribute(personnage, 'devore');
+          attrDevore.forEach(function(a) {
+            var cible = persoOfIdName(a.get('current'), pageId);
+            if (cible) {
+              evt.deletedAttributes = evt.deletedAttributes || [];
+              var attrCible = tokenAttribute(cible, 'estDevorePar');
+              attrCible.forEach(function(a) {
+                var agrippant = persoOfIdName(a.get('current', pageId));
+                if (agrippant.token.id == personnage.token.id) {
+                  sendChar(cible.charId, 'se libère de ' + agrippant.tokName);
+                  toFront(cible.token);
+                  setState(cible, 'immobilise', false, evt);
+                  evt.deletedAttributes.push(a);
+                  a.remove();
+                }
+              });
+            }
+            evt.deletedAttributes.push(a);
+            a.remove();
+          });
           //On libère les personnages sous étreinte et immolation
           var attrEtreinteImmole = tokenAttribute(personnage, 'etreinteImmole');
           attrEtreinteImmole.forEach(function(a) {
@@ -10454,8 +10475,12 @@ var COFantasy = COFantasy || function() {
               if (targetd20roll >= 15) {
                 if (charAttributeAsBool(attaquant, 'champion'))
                   options.champion = true;
-                if (options.contact && charAttributeAsBool(attaquant, 'agripper'))
-                  options.agripper = true;
+                if (options.contact) {
+                  if (charAttributeAsBool(attaquant, 'agripper'))
+                    options.agripper = true;
+                  if (charAttributeAsBool(attaquant, 'devorer'))
+                    options.devorer = true;
+                }
                 if (options.etreinteImmole) {
                   setTokenAttr(attaquant, 'etreinteImmole', target.token.id + ' ' + target.tokName, evt);
                   setTokenAttr(target, 'etreinteImmolePar', attaquant.token.id + ' ' + attaquant.tokName, evt);
@@ -11567,6 +11592,22 @@ var COFantasy = COFantasy || function() {
             });
             if (immobilise) setState(target, 'immobilise', true, evt);
             target.messages.push("est agrippé");
+          }
+        }
+        if (options.devorer) {
+          target.messages.push(attaquant.tokName + " saisit " + target.tokName + " entre ses crocs et ses griffes");
+          target.dmgCoef = (target.dmgCoef || 0) + 1;
+          var attackerForce = valAttribute(attaquant, 'FOR', 'force');
+          var targetForce = valAttribute(target, 'FOR', 'force');
+          if (targetForce <= attackerForce) {
+            if (attributeAsBool(target, 'armureDEau')) {
+              target.messages.push("L'armure d'eau empêche " + target.tokName + " d'être saisi");
+            } else {
+              setState(target, 'renverse', true, evt);
+              setState(target, 'immobilise', true, evt);
+              setTokenAttr(attaquant, 'devore', target.token.id + ' ' + target.tokName, evt);
+              setTokenAttr(target, 'estDevorePar', attaquant.token.id + ' ' + attaquant.tokName, evt);
+            }
           }
         }
         if (!options.redo && options.projection && taillePersonnage(attaquant, 4) > taillePersonnage(target, 4)) {
@@ -18119,7 +18160,7 @@ var COFantasy = COFantasy || function() {
           ligne += bouton(command, 'Combattre les Morts-Vivants', perso) + '<br />';
         }
       }
-      if (attributeAsBool(perso, 'estAgrippePar')) {
+      if (attributeAsBool(perso, 'estAgrippePar') || attributeAsBool(perso, 'estDevorePar')) {
         actionsAAfficher = true;
         command = '!cof-liberer-agrippe ' + perso.token.id;
         ligne += bouton(command, 'Se libérer', perso) + '(action de mvt)<br />';
@@ -27148,16 +27189,20 @@ var COFantasy = COFantasy || function() {
       attributes: [{
         name: 'discrétion',
         current: 5
-      }],
+      },
+        {
+          name: 'devorer',
+          current: true
+        }],
       abilities: [{
         name: 'Embuscade',
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --sournoise 1 --if moins FOR --etat renverse --endif'
       }, {
         name: 'Dévorer',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} 1'
       }]
     },
     grandLion: {
@@ -27200,16 +27245,20 @@ var COFantasy = COFantasy || function() {
       attributes: [{
         name: 'discrétion',
         current: 5
-      }],
+      },
+        {
+          name: 'devorer',
+          current: true
+        }],
       abilities: [{
         name: 'Embuscade',
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --sournoise 1 --if moins FOR --etat renverse --endif'
       }, {
         name: 'Dévorer',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} 1'
       }]
     },
     oursPolaire: {
@@ -27300,16 +27349,20 @@ var COFantasy = COFantasy || function() {
       attributes: [{
         name: 'discrétion',
         current: 5
+      },
+        {
+          name: 'devorer',
+          current: true
       }],
       abilities: [{
         name: 'Embuscade',
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }, {
         name: 'Attaque-embuscade',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --sournoise 1 --if moins FOR --etat renverse --endif --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --sournoise 1 --if moins FOR --etat renverse --endif'
       }, {
         name: 'Dévorer',
-        action: '!cof-attack @{selected|token_id} @{target|token_id} 1 --if deAttaque 15 --message @{selected|token_name} saisit sa proie entre ses crocs et peut faire une attaque gratuite --if moins FOR --etat renverse --etat immobilise FOR @{selected|token_id} --endif --endif'
+        action: '!cof-attack @{selected|token_id} @{target|token_id} 1'
       }]
     },
     oursPrehistorique: {
@@ -28854,8 +28907,12 @@ var COFantasy = COFantasy || function() {
         attr = tokenAttribute(perso, 'etreinteScorpionPar');
         attrName = 'etreinteScorpionPar';
         if (attr.length === 0) {
-          sendPlayer(msg, perso.tokName + " n'est pas agrippé.");
-          return;
+          attr = tokenAttribute(perso, 'estDevorePar');
+          attrName = 'estDevorePar';
+          if (attr.length === 0) {
+            sendPlayer(msg, perso.tokName + " n'est pas agrippé.");
+            return;
+          }
         }
       }
     }
@@ -28902,6 +28959,8 @@ var COFantasy = COFantasy || function() {
           var msgRate = "C'est raté, " + perso.token.get('name') + " est toujours ";
           if (attrName == 'etreinteImmolePar' || attrName == 'etreinteScorpionPar')
             msgRate += "prisonnier de l'étreinte de " + agrippant.token.get('name');
+          else if (attrName == 'estDevorePar')
+            msgRate += 'saisi' + eForFemale(perso) + '.';
           else msgRate += "agrippé" + eForFemale(perso) + ".";
           addLineToFramedDisplay(display, msgRate);
           if (attrName == 'etreinteScorpionPar') { // Cas d'étreinte de scorpion avec dommages automatiques
@@ -28938,7 +28997,7 @@ var COFantasy = COFantasy || function() {
           var attr = tokenAttribute(perso, attrName);
           attr[0].remove();
           evt.deletedAttributes.push(attr[0]);
-          if (attrName == 'etreinteImmolePar' || attr[0].get('max'))
+          if (attrName == 'etreinteImmolePar' || attrName == 'estDevorePar' || attr[0].get('max'))
             setState(perso, 'immobilise', false, evt);
           if (attrName == 'etreinteScorpionPar') {
             var etrScorpAttr = tokenAttribute(perso, "etreinteScorpionRatee");
@@ -28950,6 +29009,7 @@ var COFantasy = COFantasy || function() {
           var attrAgrippant = 'agrippe';
           if (attrName == 'etreinteImmolePar') attrAgrippant = 'etreinteImmole';
           if (attrName == 'etreinteScorpionPar') attrAgrippant = 'etreinteScorpionSur';
+          if (attrName == 'estDevorePar') attrAgrippant = 'devore';
           attr = tokenAttribute(agrippant, attrAgrippant);
           attr.forEach(function(a) {
             var ca = persoOfIdName(a.get('current'));
@@ -31423,6 +31483,16 @@ var COFantasy = COFantasy || function() {
     estAgrippePar: {
       activation: "est agrippé",
       actif: "est agrippé",
+      fin: "se libère"
+    },
+    devore: {
+      activation: "saisit sa cible",
+      actif: "saisit sa cible",
+      fin: "lache sa cible"
+    },
+    estDevorePar: {
+      activation: "est saisi",
+      actif: "est saisi",
       fin: "se libère"
     },
     inconfort: {
