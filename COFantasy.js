@@ -6835,13 +6835,13 @@ var COFantasy = COFantasy || function() {
     //Règle optionelle : +1d6, à lancer en entrant en combat
     if (reglesOptionelles.initiative.val.initiative_variable.val) {
       var bonusVariable;
-      var tokenAUtiliser;
+      var persoAUtiliser;
       if (reglesOptionelles.initiative.val.initiative_variable_individuelle.val) { // Un jet par perso mook
         bonusVariable = attributeAsInt(perso, 'bonusInitVariable', 0);
-        tokenAUtiliser = perso;
+        persoAUtiliser = perso;
       } else { //Un seul pour tous les mook du même personnage
         bonusVariable = charAttributeAsInt(perso, 'bonusInitVariable', 0);
-        tokenAUtiliser = {
+        persoAUtiliser = {
           charId: perso.charId
         };
       }
@@ -6853,12 +6853,12 @@ var COFantasy = COFantasy || function() {
         var msg = "entre en combat. ";
         var msgSecret =
           ficheAttributeAsBool(perso, 'jets_caches', false) ||
-          (tokenAUtiliser.get('layer') == 'gmlayer');
+          (persoAUtiliser.token.get('layer') == 'gmlayer');
         if (!msgSecret) {
           msg += onGenre(perso, 'Il', 'Elle') + " fait " + rollD6.roll;
           msg += " à son jet d'initiative";
         }
-        setTokenAttr(tokenAUtiliser, 'bonusInitVariable', bonusVariable, evt, {
+        setTokenAttr(persoAUtiliser, 'bonusInitVariable', bonusVariable, evt, {
           msg: msg,
           secret: msgSecret
         });
