@@ -12415,8 +12415,8 @@ var COFantasy = COFantasy || function() {
                             target.messages.push(target.tokName + " est entièrement avalé par " + attackerTokName);
                             setTokenAttr(attaquant, 'aGobe', target.token.id + ' ' + target.tokName, evt);
                             setTokenAttr(target, 'estGobePar', attaquant.token.id + ' ' + attaquant.tokName, evt);
-      target.token.set('left', attaquant.token.get('left'));
-      target.token.set('top', attaquant.token.get('top'));
+                            target.token.set('left', attaquant.token.get('left'));
+                            target.token.set('top', attaquant.token.get('top'));
                           } else {
                             if (resultat === 0) diminueMalediction(attaquant, evt);
                             target.messages.push(target.tokName + " n'est pas avalé.");
@@ -20358,6 +20358,11 @@ var COFantasy = COFantasy || function() {
         if (options.valeur !== undefined) {
           setTokenAttr(perso, effet + 'Valeur', options.valeur, evt, {
             maxVal: options.valeurMax
+          });
+        }
+        if (options.saveParTour) {
+          setTokenAttr(perso, effet + 'SaveParTour', options.saveParTour.carac, evt, {
+            maxVal: options.saveParTour.seuil
           });
         }
         if (options.tempeteDeManaIntense !== undefined) {
