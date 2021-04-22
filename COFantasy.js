@@ -6853,7 +6853,7 @@ var COFantasy = COFantasy || function() {
         var msg = "entre en combat. ";
         var msgSecret =
           ficheAttributeAsBool(perso, 'jets_caches', false) ||
-          (persoAUtiliser.token.get('layer') == 'gmlayer');
+          (perso.token.get('layer') == 'gmlayer');
         if (!msgSecret) {
           msg += onGenre(perso, 'Il', 'Elle') + " fait " + rollD6.roll;
           msg += " à son jet d'initiative";
