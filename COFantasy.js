@@ -4186,29 +4186,6 @@ var COFantasy = COFantasy || function() {
   }
 
   function getWalls(page, pageId, murs) {
-    murs = findObjs({
-      _type: 'path',
-      _pageid: pageId,
-      layer: 'walls'
-    });
-    murs = murs.map(function(path) {
-      var p = {
-        angle: path.get('rotation') / 180 * Math.PI,
-        width: path.get('width'),
-        height: path.get('height'),
-        top: path.get('top'),
-        left: path.get('left'),
-        scaleX: path.get('scaleX'),
-        scaleY: path.get('scaleY'),
-      };
-      var chemin = JSON.parse(path.get('_path'));
-      if (chemin.length < 2) return [];
-      if (chemin[1][0] != 'L') return [];
-      chemin = chemin.map(function(v) {
-        return translatePathCoordinates(v[1], v[2], p);
-      });
-      return chemin;
-    });
     if (murs) return murs;
     if (!page.get('lightrestrictmove')) return;
     murs = findObjs({
