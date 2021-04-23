@@ -21476,6 +21476,7 @@ var COFantasy = COFantasy || function() {
       case 'squelette':
       case 'zombie':
       case 'mort-vivant':
+      case 'mort vivant':
       case 'momie':
       case 'goule':
       case 'vampire':
