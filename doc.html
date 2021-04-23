@@ -1162,7 +1162,7 @@
                       <li>Objet de sort : <code>#Attaque Dédoublement --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --effet dedoublement [[5+@{selected|CHA}]]</code></li>
                     </ul>
                   </li>
-                  <li><strong>Tueur fantasmagorique</strong> : <code>!cof-tueur-fantasmagorique @{selected|token_id} @{target|token_id} --portee 20 <i>--mana 3</i></code></li>
+                  <li><strong>Tueur fantasmagorique</strong> : <code>!cof-tueur-fantasmagorique @{selected|token_id} @{target|token_id} --portee 20 <i>--mana 3</i></code>. Attention, j'en ai fait une interprétation un peu personnelle : au lieu de ne pas pouvoir toucher les cibles de niveau supérieur au lanceur, les cible de niveau supérieur gagnent un bonus de 5 par niveau au dessus de celui du lanceur pour résister au tueur fantasmagorique. Et ceux de niveau inférieur un malus de 1 par niveau de différence. Si cette interprétation ne vous convient pas, n'hésitez pas à me demander des changements.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'invocation</h4>
                 <ol>
@@ -1435,7 +1435,7 @@
                   <li><strong>Main d'énergie</strong> : utiliser l'attaque à mains nues avec l'option <code>--mainsDEnergie</code>. D'autre part, ajouter l'option <code>--magique</code> à toutes les attaques à mains nues.</li>
                   <li><strong>Pression mortelle</strong> : utiliser l'option <code>--pointsVitaux</code> pour ne pas infliger immédiatement les dégâts, et l'option <code>--pressionMortelle</code> pour libérer les dégâts.</li>
                   <li><strong>Invulnérable</strong>: utiliser un attribut <code>invulnerable</code> = true</li>
-                  <li><strong>Projection du ki</strong> : ajouter simplement l'attaque sur la fiche, et utiliser les options <code>--sortilege --magique</code>.</li>
+                  <li><strong>Projection du ki</strong> : ajouter simplement l'attaque sur la fiche, et utiliser le type d'attaque <code>Sortilege</code> et le type de dégâts <code>magique</code>.</li>
                   <li><strong>Ascétisme</strong> : noter la constitution comme une caractéristique supérieure sur la fiche.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la maîtrise</h4>
