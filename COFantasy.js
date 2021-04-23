@@ -14929,6 +14929,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('lienDeSangDe', evt, attrs);
     attrs = removeAllAttributes('prescienceUtilisee', evt, attrs);
     attrs = removeAllAttributes('attaqueAOutrance', evt, attrs);
+    attrs = removeAllAttributes('increvableHumainUtilise', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
