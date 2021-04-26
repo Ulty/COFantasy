@@ -1973,10 +1973,10 @@ var COFantasy = COFantasy || function() {
                       ". Il récupère ";
                     if (s == soin.val) siphMsg += soin.roll + " pv.";
                     else siphMsg += s + " pv (jet " + soin.roll + ").";
-                    sendChar(p.charId, siphMsg);
+                    whisperChar(p.charId, siphMsg);
                   },
                   function() {
-                    sendChar(p.charId, "est déjà au maximum de point de vie. Il laisse échapper l'âme de " + token.get('name'));
+                    whisperChar(p.charId, "est déjà au maximum de point de vie. Il laisse échapper l'âme de " + token.get('name'));
                   });
               }
             });
@@ -7745,9 +7745,10 @@ var COFantasy = COFantasy || function() {
   }
 
   // renvoie l'attribut créé ou mis à jour
-  function setAttrDuree(perso, attr, duree, evt, msg) {
+  function setAttrDuree(perso, attr, duree, evt, msg, secret) {
     var options = {
       maxVal: getInit(),
+      secret: secret
     };
     if (msg) options.msg = msg;
     return setTokenAttr(perso, attr, duree, evt, options);
@@ -11029,11 +11030,7 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(target, 'dedouble') ||
         attributeAsBool(target, 'dedoublement')) {
         if (ef.whisper !== undefined) {
-          if (ef.whisper === true) {
-            whisperChar(target.charId, "a déjà été dédoublé pendant ce combat");
-          } else {
-            sendChar(target.charId, ef.whisper + " a déjà été dédoublé pendant ce combat");
-          }
+          whisperChar(target.charId, "a déjà été dédoublé pendant ce combat");
         } else {
           target.messages.push(target.tokName + " a déjà été dédoublé pendant ce combat");
         }
@@ -11122,7 +11119,7 @@ var COFantasy = COFantasy || function() {
           targetMsg = undefined;
         }
       }
-      var attrEffet = setAttrDuree(target, ef.effet, duree, evt, targetMsg);
+      var attrEffet = setAttrDuree(target, ef.effet, duree, evt, targetMsg, !ef.visible);
       if (attaquant && options.mana !== undefined && ef.message && ef.message.prejudiciable) {
         addEffetTemporaireLie(attaquant, attrEffet, evt);
       }
@@ -30816,12 +30813,14 @@ var COFantasy = COFantasy || function() {
   // prejudiciable: est un effet préjudiciable, qui peut être enlevé par délivrance
   // generic: admet un argument entre parenthèses
   // seulementVivant: ne peut s'appliquer qu'aux créatures vivantes
+  // visible : l'effet est visible
   var messageEffetTemp = {
     sousTension: {
       activation: "se charge d'énergie électrique",
       actif: "est chargé d'énergie électrique",
       fin: "n'est plus chargé d'énergie électrique",
-      dm: true
+      dm: true,
+      visible: false
     },
     aCouvert: {
       activation: "reste à couvert",
@@ -30831,7 +30830,8 @@ var COFantasy = COFantasy || function() {
     imageDecalee: {
       activation: "décale légèrement son image",
       actif: "a décalé son image",
-      fin: "apparaît à nouveau là où il se trouve"
+      fin: "apparaît à nouveau là où il se trouve",
+      visible: false
     },
     chantDesHeros: {
       activation: "écoute le chant du barde",
@@ -30847,7 +30847,8 @@ var COFantasy = COFantasy || function() {
     peauDEcorce: {
       activation: "donne à sa peau la consistance de l'écorce",
       actif: "a la peau dure comme l'écorce",
-      fin: "retrouve une peau normale"
+      fin: "retrouve une peau normale",
+      visible: true
     },
     rayonAffaiblissant: {
       activation: "est touché par un rayon affaiblissant",
@@ -30860,48 +30861,55 @@ var COFantasy = COFantasy || function() {
       activation: "prend peur",
       actif: "est dominé par sa peur",
       fin: "retrouve du courage",
-      prejudiciable: true
+      prejudiciable: true,
+      visible: true
     },
     peurEtourdi: {
       activation: "prend peur: il peut fuir ou rester recroquevillé",
       activationF: "prend peur: elle peut fuir ou rester recroquevillé",
       actif: "est paralysé par la peur",
       fin: "retrouve du courage et peut à nouveau agir",
-      prejudiciable: true
+      prejudiciable: true,
+      visible: true
     },
     aveugleTemp: {
       activation: "n'y voit plus rien !",
       actif: "est aveuglé",
       fin: "retrouve la vue",
-      prejudiciable: true
+      prejudiciable: true,
+      visible: true
     },
     ralentiTemp: {
       activation: "est ralenti : une seule action, pas d'action limitée",
       activationF: "est ralentie : une seule action, pas d'action limitée",
       actif: "est ralenti",
       fin: "n'est plus ralenti",
-      prejudiciable: true
+      prejudiciable: true,
+      visible: true
     },
     paralyseTemp: {
       activation: "est paralysé : aucune action ni déplacement possible",
       activationF: "est paralysée : aucune action ni déplacement possible",
       actif: "est paralysé",
       fin: "n'est plus paralysé",
-      prejudiciable: true
+      prejudiciable: true,
+      visible: true
     },
     immobiliseTemp: {
       activation: "est immobilisé : aucun déplacement possible",
       activationF: "est immobilisée : aucun déplacement possible",
       actif: "est immobilisé",
       fin: "n'est plus immobilisé",
-      prejudiciable: true
+      prejudiciable: true,
+      visible: true
     },
     etourdiTemp: {
       activation: "est étourdi : aucune action et -5 en DEF",
       activationF: "est étourdie : aucune action et -5 en DEF",
       actif: "est étourdi",
       fin: "n'est plus étourdi",
-      prejudiciable: true
+      prejudiciable: true,
+      visible: true
     },
     affaibliTemp: {
       activation: "se sent faible",
@@ -30914,14 +30922,16 @@ var COFantasy = COFantasy || function() {
       activationF: "est assomée",
       actif: "est assomé",
       fin: "reprend conscience",
-      prejudiciable: true
+      prejudiciable: true,
+      visible: true
     },
     aveugleManoeuvre: {
       activation: "est aveuglé par la manoeuvre",
       activationF: "est aveuglée par la manoeuvre",
       actif: "a du mal à voir où sont ses adversaires",
       fin: "retrouve une vision normale",
-      prejudiciable: true
+      prejudiciable: true,
+      visible: true
     },
     bloqueManoeuvre: {
       activation: "est bloqué par la manoeuvre",
@@ -30935,7 +30945,8 @@ var COFantasy = COFantasy || function() {
       activationF: "est déconcentrée",
       actif: "a été perturbé par une diversion",
       fin: "se reconcentre sur le combat",
-      prejudiciable: true
+      prejudiciable: true,
+      visible: true
     },
     menaceManoeuvre: {
       activation: "est menacé",
@@ -30951,40 +30962,46 @@ var COFantasy = COFantasy || function() {
       actif: "est tenu à distance de son adversaire, il ne peut pas l'attaquer",
       fin: "peut à nouveau attaquer son adversaire",
       prejudiciable: true,
-      generic: true
+      generic: true,
+      visible: true
     },
     epeeDansante: {
       activation: "fait apparaître une lame d'énergie lumineuse",
       actif: "contrôle une lame d'énergie lumineuse",
       fin: "La lame d'énergie lumineuse disparaît",
-      dm: true
+      dm: true,
+      visible: true
     },
     putrefaction: {
       activation: "vient de contracter une sorte de lèpre fulgurante",
       actif: "est en pleine putréfaction",
       fin: "La putréfaction s'arrête.",
       prejudiciable: true,
-      dm: true
+      dm: true,
+      visible: true
     },
     forgeron: {
       activation: "enflamme son arme",
       actif: "a une arme en feu",
       fin: "L'arme n'est plus enflammée.",
       dm: true,
-      generic: true
+      generic: true,
+      visible: true
     },
     armeEnflammee: {
       activation: "voit son arme prendre feu",
       actif: "a une arme enflammée",
       fin: "L'arme n'est plus enflammée.",
       dm: true,
-      generic: true
+      generic: true,
+      visible: true
     },
     armesEnflammees: {
       activation: "voit ses armes prendre feu",
       actif: "a des armes enflammées",
       fin: "Les armes ne sont plus enflammées.",
       dm: true,
+      visible: true
     },
     dotGen: {
       activation: "subit un effet",
@@ -31011,22 +31028,26 @@ var COFantasy = COFantasy || function() {
       activation: "devient flou",
       activationF: "devient floue",
       actif: "apparaît flou",
-      fin: "redevient net"
+      fin: "redevient net",
+      visible: true
     },
     agrandissement: {
       activation: "se met à grandir",
       actif: "est vraiment très grand",
-      fin: "retrouve sa taille normale"
+      fin: "retrouve sa taille normale",
+      visible: true
     },
     formeGazeuse: {
       activation: "semble perdre de la consistance",
       actif: "est en forme gazeuse",
-      fin: "retrouve sa consistance normale"
+      fin: "retrouve sa consistance normale",
+      visible: true
     },
     intangible: {
       activation: "devient translucide",
       actif: "est intangible",
-      fin: "redevient solide"
+      fin: "redevient solide",
+      visible: true
     },
     strangulation: {
       activation: "commence à étouffer",
@@ -31034,20 +31055,23 @@ var COFantasy = COFantasy || function() {
       fin: "respire enfin",
       prejudiciable: true,
       seulementVivant: true,
-      dm: true
+      dm: true,
+      visible: true
     },
     ombreMortelle: {
       activation: "voit son ombre s'animer et l'attaquer !",
       actif: "est une ombre animée",
       fin: "retrouve une ombre normale",
-      dm: true
+      dm: true,
+      visible: true
     },
     dedoublement: {
       activation: "voit un double translucide sortir de lui",
       activationF: "voit un double translucide sortir d'elle",
       actif: "est un double translucide",
       fin: "le double disparaît",
-      dm: true
+      dm: true,
+      visible: true
     },
     zoneDeSilence: {
       activation: "n'entend plus rien",
@@ -31058,19 +31082,22 @@ var COFantasy = COFantasy || function() {
       activation: "se met à danser",
       actif: "danse malgré lui",
       fin: "s'arrête de danser",
-      prejudiciable: true
+      prejudiciable: true,
+      visible: true
     },
     confusion: {
       activation: "ne sait plus très bien ce qu'il fait là",
       activationF: "ne sait plus très bien ce qu'elle fait là",
       actif: "est en pleine confusion",
       fin: "retrouve ses esprits",
-      prejudiciable: true
+      prejudiciable: true,
+      visible: true
     },
     murDeForce: {
       activation: "fait apparaître un mur de force",
       actif: "en entouré d'un mur de force",
-      fin: "voit son mur de force disparaître"
+      fin: "voit son mur de force disparaître",
+      visible: true
     },
     asphyxie: {
       activation: "commence à manquer d'air",
@@ -31079,7 +31106,8 @@ var COFantasy = COFantasy || function() {
       prejudiciable: true,
       seulementVivant: true,
       statusMarker: 'blue',
-      dm: true
+      dm: true,
+      visible: true
     },
     forceDeGeant: {
       activation: "devient plus fort",
@@ -31093,7 +31121,8 @@ var COFantasy = COFantasy || function() {
       fin: "ne saigne plus",
       prejudiciable: true,
       statusMarker: 'red',
-      dm: true
+      dm: true,
+      visible: true
     },
     encaisserUnCoup: {
       activation: "se place de façon à dévier un coup sur son armure",
@@ -31121,7 +31150,8 @@ var COFantasy = COFantasy || function() {
       actif: "est entouré d'une nuée d'insectes",
       fin: "est enfin débarassé des insectes",
       prejudiciable: true,
-      dm: true
+      dm: true,
+      visible: true
     },
     nueeDeCriquets: {
       activation: "est attaqué par une nuée de criquets",
@@ -31129,7 +31159,8 @@ var COFantasy = COFantasy || function() {
       actif: "est entouré d'une nuée de criquets",
       fin: "est enfin débarassé des criquets",
       prejudiciable: true,
-      dm: true
+      dm: true,
+      visible: true
     },
     nueeDeScorpions: {
       activation: "est attaqué par une nuée de scorpions",
@@ -31137,21 +31168,24 @@ var COFantasy = COFantasy || function() {
       actif: "est entouré d'une nuée de scorpions",
       fin: "est enfin débarassé des scorpions",
       prejudiciable: true,
-      dm: true
+      dm: true,
+      visible: true
     },
     toiles: {
       activation: "voit des toiles d'araignées apparaître tout autour",
       actif: "est bloqué par des toiles d'araignées",
       fin: "se libère des toiles",
       prejudiciable: true,
-      statusMarker: 'cobweb' //À changer
+      statusMarker: 'cobweb', //À changer
+      visible: true
     },
     prisonVegetale: {
       activation: "voit des plantes pousser et s'enrouler autour de ses jambes",
       actif: "est bloqué par des plantes",
       fin: "se libère des plantes",
       prejudiciable: true,
-      statusMarker: 'green'
+      statusMarker: 'green',
+      visible: true
     },
     protectionContreLesElements: {
       activation: "lance un sort de protection contre les éléments",
@@ -31161,7 +31195,8 @@ var COFantasy = COFantasy || function() {
     masqueMortuaire: {
       activation: "prend l'apparence de la mort",
       actif: "semble mort et animé",
-      fin: "retrouve une apparence de vivant"
+      fin: "retrouve une apparence de vivant",
+      visible: true
     },
     armeBrulante: {
       activation: "sent son arme lui chauffer la main",
@@ -31178,17 +31213,20 @@ var COFantasy = COFantasy || function() {
     masqueDuPredateur: {
       activation: "prend les traits d'un prédateur",
       actif: "a les traits d'un prédateur",
-      fin: "redevient normal"
+      fin: "redevient normal",
+      visible: true
     },
     aspectDeLaSuccube: {
       activation: "acquiert une beauté fascinante",
       actif: "est d'une beauté fascinante",
-      fin: "retrouve sa beauté habituelle"
+      fin: "retrouve sa beauté habituelle",
+      visible: true
     },
     aspectDuDemon: {
       activation: "prend l’apparence d’un démon",
       actif: "a l’apparence d’un démon",
-      fin: "retrouve son apparence habituelle"
+      fin: "retrouve son apparence habituelle",
+      visible: true
     },
     sangMordant: {
       activation: "transforme son sang",
@@ -31200,18 +31238,21 @@ var COFantasy = COFantasy || function() {
       activationF: "est déstabilisée",
       actif: "est déstabilisé par une action de charme",
       fin: "retrouve ses esprits",
-      prejudiciable: true
+      prejudiciable: true,
+      visible: true
     },
     regeneration: {
       activation: "commence à se régénérer",
       actif: "se régénère",
       fin: "a fini de se régénérer",
-      soins: true
+      soins: true,
+      visible: true
     },
     arbreAnime: {
       activation: "commence à bouger",
       actif: "est un arbre animé",
-      fin: "redevient un arbre ordinaire"
+      fin: "redevient un arbre ordinaire",
+      visible: true
     },
     magnetisme: {
       activation: "contrôle le magnétisme",
@@ -31226,7 +31267,8 @@ var COFantasy = COFantasy || function() {
     ailesCelestes: {
       activation: "sent des ailes célestes lui pousser dans le dos",
       actif: "possède des ailes célestes",
-      fin: "n'a plus d'aile céleste. Espérons qu'il était au sol..."
+      fin: "n'a plus d'aile céleste. Espérons qu'il était au sol...",
+      visible: true
     },
     sanctuaire: {
       activation: "lance un sort de sanctuaire",
@@ -31244,33 +31286,39 @@ var COFantasy = COFantasy || function() {
       actif: "ne peut pas attaquer ni se déplacer",
       fin: "peut à nouveau attaquer et se déplacer",
       prejudiciable: true,
-      seulementVivant: true
+      seulementVivant: true,
+      visible: true
     },
     mutationOffensive: {
       activation: "échange une partie de son corps avec celle d'une créature monstrueuse",
       actif: "possède un appendice monstrueux",
-      fin: "retrouve un corps normal"
+      fin: "retrouve un corps normal",
+      visible: true
     },
     formeDArbre: {
       activation: "se transorme en arbre",
       actif: "est transformé en arbre",
-      fin: "retrouve sa forme normale"
+      fin: "retrouve sa forme normale",
+      visible: true
     },
     statueDeBois: {
       activation: "se transforme en statue de bois",
       actif: "est transformé en statue de bois",
       fin: "retrouve sa forme normale",
-      prejudiciable: true
+      prejudiciable: true,
+      visible: true
     },
     clignotement: {
       activation: "disparaît, puis réapparaît",
       actif: "clignote",
-      fin: "ne disparaît plus"
+      fin: "ne disparaît plus",
+      visible: true
     },
     agitAZeroPV: {
       activation: "continue à agir malgré les blessures",
       actif: "devrait être à terre",
-      fin: "subit l'effet de ses blessures"
+      fin: "subit l'effet de ses blessures",
+      visible: true
     },
     predateurConjure: {
       activation: "apparaît depuis un autre plan",
@@ -31307,6 +31355,7 @@ var COFantasy = COFantasy || function() {
       activation: "transforme sa peau en pierre",
       actif: "voit ses dégâts réduits par sa Peau de pierre",
       fin: "retrouve sa peau normale",
+      visible: true
     },
     expose: {
       activation: "s'expose aux attaques de sa cible",
@@ -31342,7 +31391,8 @@ var COFantasy = COFantasy || function() {
       activationF: "est énervée par ces railleries",
       actif: "est énervé",
       fin: "retrouve son calme",
-      prejudiciable: true
+      prejudiciable: true,
+      visible: true
     },
     cercleDeProtection: {
       activation: "est protégé par le Cercle de protection",
@@ -31353,7 +31403,8 @@ var COFantasy = COFantasy || function() {
     tenebres: {
       activation: "lance un sort de Ténèbres",
       actif: "maintient un sort de Ténèbres",
-      fin: "les ténèbres se dissipent"
+      fin: "les ténèbres se dissipent",
+      visible: true
     },
     progresserACouvert: {
       activation: "est à couvert de bouclier",
@@ -31364,6 +31415,7 @@ var COFantasy = COFantasy || function() {
       activation: "se transforme en tourbillon de matière élémentaire",
       actif: "est en cyclone",
       fin: "retrouve sa forme habituelle",
+      visible: true
     },
     momentDePerfection: {
       activation: "atteint un instant de perfection",
@@ -31374,6 +31426,7 @@ var COFantasy = COFantasy || function() {
       activation: "invoque d'innombrables squelettes émergeant du sol",
       actif: "invoque d'innombrables squelettes",
       fin: "laisse les morts en paix",
+      visible: true
     },
     demonInvoque: {
       activation: "apparaît depuis un autre plan",
