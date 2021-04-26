@@ -9152,7 +9152,7 @@ var COFantasy = COFantasy || function() {
         } else if (persoEstPNJ(target)) {
           //cible la moins prioritaire, on l'enlève si on trouve un autre représentant
           var representantPresent = cibles.find(function(target2, index2) {
-            if (index2 <= index) return false;//déjà traité
+            if (index2 <= index) return false; //déjà traité
             if (target2.name === undefined) {
               var target2Char = getObj('character', target2.charId);
               if (target2Char === undefined) return false;
@@ -16355,7 +16355,13 @@ var COFantasy = COFantasy || function() {
         msg: " a dépensé un point de chance. Il lui en reste " + chance
       });
       addEvent(evtChance);
-      addChanceToOptions(action.options, rollId);
+      action.options = action.options || {};
+      if (rollId) {
+        action.options.chanceRollId = action.options.chanceRollId || {};
+        action.options.chanceRollId[rollId] = (action.options.chanceRollId[rollId] + 10) || 10;
+      } else {
+        action.options.chance = (action.options.chance + 10) || 10;
+      }
       if (redoEvent(evt, action, perso)) return;
     }
     error("Type d'évènement pas encore géré pour la chance", evt);
@@ -16817,15 +16823,6 @@ var COFantasy = COFantasy || function() {
         return true;
       default:
         return false;
-    }
-  }
-
-  function addChanceToOptions(options, rollId) {
-    if (rollId) {
-      options.chanceRollId = options.chanceRollId || {};
-      options.chanceRollId[rollId] = (options.chanceRollId[rollId] + 10) || 10;
-    } else {
-      options.chance = (options.chance + 10) || 10;
     }
   }
 
