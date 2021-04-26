@@ -9151,14 +9151,14 @@ var COFantasy = COFantasy || function() {
         } else if (persoEstPNJ(target)) {
           //cible la moins prioritaire, on l'enlève si on trouve un autre représentant
           var representantPresent = cibles.find(function(target2, index2) {
-            if (index2 < index) return false;
+            if (index2 <= index) return false;//déjà traité
             if (target2.name === undefined) {
               var target2Char = getObj('character', target2.charId);
               if (target2Char === undefined) return false;
               target2.name = target2Char.get('name');
             }
-            return ciblePartagee.find(function(cn) {
-              return cn == target2.name;
+            return ciblePartagee.find(function(attr) {
+              return attr.get('current') == target2.name;
             });
           });
           if (representantPresent) return false;

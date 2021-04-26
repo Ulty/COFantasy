@@ -28,6 +28,9 @@
 * En cas d'échec critique d'une boule de feu qui cible une cible artificielle, la cible est déplacée aléatoirement de 15 m.
 * Refactoring !cof-tenebres pour supporter les options de Mana (y compris Tempête de Mana)
 
+### Corrections de bugs
+* Correction de la prise en compte des familiers dans les aoe.
+
 ## 2.16
 ### Capacités
 * Capacité de cyclone des élémentaires.
