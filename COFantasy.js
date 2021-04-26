@@ -33421,6 +33421,7 @@ var COFantasy = COFantasy || function() {
 
   //vérifie si de la nouvelle position on peut voir le suivi
   function obstaclePresent(nsx, nsy, pt, murs) {
+    if (nsx == pt.x && nsy == pt.y) return false;
     var ps = {
       x: nsx,
       y: nsy
