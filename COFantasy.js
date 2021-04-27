@@ -32641,7 +32641,7 @@ var COFantasy = COFantasy || function() {
           if (vitaliteSurnat > 0) {
             soigneToken(perso, vitaliteSurnat, evt,
               function(s) {
-                sendChar(charId, 'récupère ' + s + ' PVs.');
+                whisperChar(charId, 'récupère ' + s + ' PVs.');
               },
               function() {}, {
                 saufDMType: vitaliteSurnatAttr[0].get('max').split(',')
@@ -32658,7 +32658,7 @@ var COFantasy = COFantasy || function() {
           var msgSoins = "est increvable et récupère ";
           if (soinsEffectifs == soins) msgSoins += soins + " points de vie";
           else msgSoins += soinsEffectifs + " PV (le jet était " + soins + ")";
-          sendChar(perso.charId, msgSoins);
+          whisperChar(perso.charId, msgSoins);
         });
       }
       var degradationZombie = attributeAsInt(perso, 'degradationZombie', -1);
@@ -32672,7 +32672,7 @@ var COFantasy = COFantasy || function() {
         dealDamage(perso, r, [], evt, false, {}, [], function() {
           // Vérification si le Zombie est toujours vivant
           var tokens = getObj('graphic', perso.token.id);
-          if (tokens) sendChar(perso.charId, "se dégrade et perd 1 PV");
+          if (tokens) whisperChar(perso.charId, "se dégrade et perd 1 PV");
         });
       }
     });
