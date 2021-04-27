@@ -11120,7 +11120,8 @@ var COFantasy = COFantasy || function() {
           targetMsg = undefined;
         }
       }
-      var attrEffet = setAttrDuree(target, ef.effet, duree, evt, targetMsg, !ef.visible);
+      var secret = !(ef.message && ef.message.visible);
+      var attrEffet = setAttrDuree(target, ef.effet, duree, evt, targetMsg, secret);
       if (attaquant && options.mana !== undefined && ef.message && ef.message.prejudiciable) {
         addEffetTemporaireLie(attaquant, attrEffet, evt);
       }
