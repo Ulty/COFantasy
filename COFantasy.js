@@ -1397,6 +1397,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //fonction avec callback, mais synchrone
+  // n'ajoute pas evt à l'historique
   function soigneToken(perso, soins, evt, callTrue, callMax, options) {
     options = options || {};
     var token = perso.token;
@@ -26326,10 +26327,6 @@ var COFantasy = COFantasy || function() {
     };
     addEvent(evt);
     if (limiteRessources(lanceur, options, 'guérison', 'guérison', evt)) return;
-    updateCurrentBar(cible, 1, cible.token.get('bar1_max'), evt);
-    if (getState(cible, 'blesse')) {
-      setState(cible, 'blesse', false, evt);
-    }
     var msgSoin;
     if (lanceur.token.id == cible.token.id) {
       msgSoin = 'se soigne';
@@ -26338,6 +26335,19 @@ var COFantasy = COFantasy || function() {
     }
     msgSoin += ' de toutes les blessures subies';
     sendChar(lanceur.charId, msgSoin);
+    if (getState(cible, 'blesse')) {
+      setState(cible, 'blesse', false, evt);
+    }
+    var soins = cible.token.get('bar1_max') - cible.token.get('bar1_value');
+    if (isNaN(soins)) {
+      updateCurrentBar(cible, 1, cible.token.get('bar1_max'), evt);
+      return;
+    }
+    if (soins <= 0) {
+      //Rien d'autre à faire (le script ne gère pas encore le reste)
+      return;
+    }
+    soigneToken(cible, soins, evt);
   }
 
   function armeDeContact(perso, arme, labelArmeDefaut, armeContact) {
