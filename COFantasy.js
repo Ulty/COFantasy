@@ -8028,6 +8028,11 @@ var COFantasy = COFantasy || function() {
         options.attaqueEnEtantGobe = true;
       }
     }
+    if (attributeAsBool(attaquant, 'noyade')) {
+      attBonus -= 3;
+      options.noyade = true;
+      explications.push("L'attaquant se noie => -3 en Att. et DMs");
+    }
     return attBonus;
   }
 
@@ -11343,6 +11348,9 @@ var COFantasy = COFantasy || function() {
     var attDMBonusCommun = '';
     if (options.rayonAffaiblissant) {
       attDMBonusCommun += " -" + options.rayonAffaiblissant;
+    }
+    if (options.noyade && weaponStats.arme) {
+      attDMBonusCommun += " - 3";
     }
     if (attributeAsBool(attaquant, 'masqueDuPredateur')) {
       var bonusMasque = getValeurOfEffet(attaquant, 'masqueDuPredateur', modCarac(attaquant, 'sagesse'));
@@ -31636,7 +31644,16 @@ var COFantasy = COFantasy || function() {
       activation: "commence à être gêné par son armure",
       actif: "est gêné par son armure",
       fin: "réajuste son armure",
-    }
+    },
+    noyade: {
+      activation: "commence à se noyer",
+      actif: "se noie",
+      fin: "peut à nouveau respirer",
+      prejudiciable: true,
+      seulementVivant: true,
+      dm: true,
+      visible: true
+    },
   };
 
   var patternEffetsCombat = buildPatternEffets(messageEffetCombat);
@@ -32312,68 +32329,111 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  function rollAndDealDmg(perso, dmg, type, effet, attrName, msg, count, evt, options, callback, display) {
+    var dmgExpr = dmg;
+    var tdmi = attributeAsInt(perso, effet + "TempeteDeManaIntense", 0);
+    if (dmg.de) {
+      if (tdmi) {
+        dmgExpr = (tdmi + dmg.nbDe) + 'd' + dmg.de;
+        removeTokenAttr(perso, effet + "TempeteDeManaIntense", evt);
+      } else dmgExpr = dmg.nbDe + 'd' + dmg.de;
+    } else if (dmg.cst) {
+      if (tdmi) {
+        dmgExpr = dmg.cst * (1 + tdmi);
+        removeTokenAttr(perso, effet + "TempeteDeManaIntense", evt);
+      } else dmgExpr = dmg.cst;
+    } else if (options.dotGen) {
+      //alors dmg = '' et type = ''
+      var valAttr = tokenAttribute(perso, effet + 'Valeur');
+      if (valAttr.length === 0) {
+        //Par défaut, 1d6 DM normaux
+        dmgExpr = "1d6";
+        type = 'normal';
+      } else {
+        dmgExpr = valAttr[0].get('current');
+        type = valAttr[0].get('max');
+        if (type === '') type = 'normal';
+      }
+    }
+    sendChat('', "[[" + dmgExpr + "]]", function(res) {
+      var rolls = res[0];
+      var dmgRoll = rolls.inlinerolls[0];
+      var r = {
+        total: dmgRoll.results.total,
+        type: type,
+        display: buildinline(dmgRoll, type)
+      };
+      var explications;
+      if (display) explications = [];
+      dealDamage(perso, r, [], evt, false, options, explications,
+        function(dmgDisplay, dmg) {
+          if (dmg > 0) {
+            var msgDm;
+            if (msg) msgDm = msg + '. ' + onGenre(perso, 'Il', 'Elle');
+            else msgDm = '';
+            if (display) {
+              explications.forEach(function(m) {
+                addLineToFramedDisplay(display, m);
+              });
+              addLineToFramedDisplay(display, perso.token.get('name') + ' ' + msgDm + " subit " + dmgDisplay + " DM");
+              sendChat('', endFramedDisplay(display));
+            } else if (effet == attrName) {
+              sendChar(perso.charId, msgDm + " subit " + dmgDisplay + " DM");
+            } else {
+              var tokenName = attrName.substring(attrName.indexOf('_') + 1);
+              sendChat('', tokenName + ' ' + msgDm + " subit " + dmgDisplay + " DM");
+            }
+          }
+          count.v--;
+          if (count.v === 0) callback();
+        });
+    }); //fin sendChat du jet de dé
+  }
+
   //asynchrone
   // effet est le nom complet de l'effet
   function degatsParTour(charId, pageId, effet, attrName, dmg, type, msg, evt, options, callback) {
     options = options || {};
-    var count = -1;
+    var count;
     iterTokensOfAttribute(charId, pageId, effet, attrName,
       function(token, total) {
-        if (count < 0) count = total;
+        if (count === undefined) count = {
+          v: total
+        };
         var perso = {
           token: token,
           charId: charId
         };
-        var dmgExpr = dmg;
-        var tdmi = attributeAsInt(perso, effet + "TempeteDeManaIntense", 0);
-        if (dmg.de) {
-          if (tdmi) {
-            dmgExpr = (tdmi + dmg.nbDe) + 'd' + dmg.de;
-            removeTokenAttr(perso, effet + "TempeteDeManaIntense", evt);
-          } else dmgExpr = dmg.nbDe + 'd' + dmg.de;
-        } else if (dmg.cst) {
-          if (tdmi) {
-            dmgExpr = dmg.cst * (1 + tdmi);
-            removeTokenAttr(perso, effet + "TempeteDeManaIntense", evt);
-          } else dmgExpr = dmg.cst;
-        } else if (options.dotGen) {
-          //alors dmg = '' et type = ''
-          var valAttr = tokenAttribute(perso, effet + 'Valeur');
-          if (valAttr.length === 0) {
-            //Par défaut, 1d6 DM normaux
-            dmgExpr = "1d6";
-            type = 'normal';
-          } else {
-            dmgExpr = valAttr[0].get('current');
-            type = valAttr[0].get('max');
-            if (type === '') type = 'normal';
-          }
-        }
-        sendChat('', "[[" + dmgExpr + "]]", function(res) {
-          var rolls = res[0];
-          var dmgRoll = rolls.inlinerolls[0];
-          var r = {
-            total: dmgRoll.results.total,
-            type: type,
-            display: buildinline(dmgRoll, type)
+        if (options.save) {
+          var playerId = getPlayerIds(perso);
+          var nameEffet = effet;
+          if (effet.startsWith('dotGen('))
+            nameEffet = effet.substring(7, effet.indexOf(')'));
+          var display = startFramedDisplay(playerId, "Effet de " + nameEffet, perso);
+          var saveId = "degatsParTour_" + effet + "_" + token.id;
+          var expliquer = function(m) {
+            addLineToFramedDisplay(display, m);
           };
-          dealDamage(perso, r, [], evt, false, options, undefined,
-            function(dmgDisplay, dmg) {
-              if (dmg > 0) {
-                var msgDm;
-                if (msg) msgDm = msg + '. ' + onGenre(perso, 'Il', 'Elle');
-                else msgDm = '';
-                if (effet == attrName) {
-                  sendChar(charId, msgDm + " subit " + dmgDisplay + " DM");
-                } else {
-                  var tokenName = attrName.substring(attrName.indexOf('_') + 1);
-                  sendChat('', tokenName + ' ' + msgDm + " subit " + dmgDisplay + " DM");
-                }
-              }
-              count--;
-              if (count === 0) callback();
-            });
-        }); //fin sendChat du jet de dé
+          var msgPour = " pour ne pas prendre de dégâts de " + nameEffet;
+          var sujet = onGenre(perso, 'il', 'elle');
+          var msgReussite = ", " + sujet + " ne perd pas de PV ce tour";
+          var saveOpts = {
+            msgPour: msgPour,
+            msgReussite: msgReussite,
+            rolls: options.rolls,
+            chanceRollId: options.chanceRollId,
+            type: type
+          };
+          save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, texte) {
+            if (reussite) {
+              sendChat('', endFramedDisplay(display));
+              return;
+            }
+            rollAndDealDmg(perso, dmg, type, effet, attrName, msg, count, evt, options, callback, display);
+          });
+          return;
+        }
+        rollAndDealDmg(perso, dmg, type, effet, attrName, msg, count, evt, options, callback);
       }); //fin iterTokensOfAttribute
   }
 
@@ -32627,6 +32687,49 @@ var COFantasy = COFantasy || function() {
           function(dmgDisplay, dmgFinal) {
             sendChar(charId, "est en train d'être digéré. Il perd " + dmgDisplay + " PVs");
           });
+      }
+      if (attributeAsBool(perso, 'noyade') && !getState(perso, 'mort') && !immuniseAsphyxie(perso)) {
+        var playerId = getPlayerIds(perso);
+        var display = startFramedDisplay(playerId, "Noyade", perso);
+        var saveId = "Noyade_" + perso.token.id;
+        var expliquer = function(m) {
+          addLineToFramedDisplay(display, m);
+        };
+        var msgPour = " pour ne pas prendre de dégâts de noyade";
+        var sujet = onGenre(perso, 'il', 'elle');
+        var msgReussite = ", " + sujet + " ne perd pas de PV ce tour";
+        var saveOpts = {
+          msgPour: msgPour,
+          msgReussite: msgReussite,
+          rolls: options.rolls,
+          chanceRollId: options.chanceRollId,
+          type: 'normal'
+        };
+        var saveNoyade = {
+          carac: 'CON',
+          seuil: 15
+        };
+        save(saveNoyade, perso, saveId, expliquer, saveOpts, evt, function(reussite, texte) {
+          if (reussite) {
+            sendChat('', endFramedDisplay(display));
+            return;
+          }
+          var jetNoyade = rollDePlus(6);
+          var dmNoyade = {
+            type: 'normal',
+            total: jetNoyade.val,
+            display: jetNoyade.roll
+          };
+          var explications = [];
+          dealDamage(perso, dmNoyade, [], evt, false, options, explications,
+            function(dmgDisplay, dmg) {
+              explications.forEach(function(m) {
+                addLineToFramedDisplay(display, m);
+              });
+              addLineToFramedDisplay(display, perso.token.get('name') + "se noie et subit " + dmgDisplay + " DM");
+              sendChat('', endFramedDisplay(display));
+            });
+        });
       }
       var vitaliteSurnatAttr = charAttribute(perso.charId, 'vitaliteSurnaturelle');
       if (vitaliteSurnatAttr.length > 0) {
@@ -33258,7 +33361,7 @@ var COFantasy = COFantasy || function() {
               return;
           }
         }
-      }); //fin de la boucle sur tous les attributs d'effets
+      }); //fin de la boucle sur tous les attributs d'effets temporaires
     }
     if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
   }
@@ -33305,9 +33408,25 @@ var COFantasy = COFantasy || function() {
   }
 
   //when set is true, sets the version, when false, remove it
-  function scriptVersionToCharacter(character, set) {
+  function scriptVersionToCharacter(character, set, nb) {
     var charId = character.id;
+    //On vérifie que les attributs sont peuplés
     var attrs = findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+    });
+    if (attrs.length === 0) {
+      nb = nb || 1;
+      if (nb > 10) {
+        error("Impossible de trouver d'attribut", character);
+        return;
+      }
+      _.delay(function() {
+        scriptVersionToCharacter(character, set, nb + 1);
+      }, 2000);
+      return;
+    }
+    attrs = findObjs({
       _type: 'attribute',
       _characterid: charId,
       name: 'scriptVersion',

@@ -2098,6 +2098,7 @@
                   <li><strong>Message en cas de coup critique reçu</strong> : on peut utiliser un attribut <code>messageSiCritique</code> avec en valeur courante un message à afficher en cas d'echec critique subit.</li>
                   <li><strong>Mot de pouvoir</strong> qui immobilise : <code>!cof-mot-de-pouvoir-immobilise --lanceur @{selected|token_id} --enVue --saufAllies</code> </li>
                   <li><strong>N'abandonne jamais</strong> : ajouter un attribut <code>nAbandonnejamais</code> de valeur <code>true</code>.</li>
+                  <li><strong>Noyade (plante carnivore)</strong> : il existe un effet de combat nommé <code>noyade</code> (pas de durée, il dure par défaut tout le combat) qui fait perdre 1d6 PV par tour, sauf à réussir un test de CON difficulté 15, et qui impose un malus de -3 aux attaques et aux DMs.</li>
                   <li><strong>Piqûres d'insectes</strong> : Rajouter un attribut <code>piquresDInsectes</code> avec comme valeur la résistance aux dégâts à distance appropriée</li>
                   <li>
                     <strong>Poison</strong> : pour enduire une arme de label <i>L</i> de poison, utiliser <code>!cof-enduire-poison <i>L type force save</i></code>. Pour l'instant, <i>type</i> ne peut être que <code>rapide</code>, et <i>force</i> est une expression pour les dégâts (typiquement, <code>2d6</code> pour un poison rapide). <i>save</i> est la difficulté du jet de CON pour résister au poison. On peut rajouter deux arguments optionnels :

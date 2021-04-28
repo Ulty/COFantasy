@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.17
 ### Capacités
+* Ajout de l'effet noyade des plantes carnivores.
 * Ajout de la capacité Gober de la Voie du prédateur.
 * Meilleure prise en charge de la capacité Dévorer des prédateurs
 * Ajout de la capacité Increvable de la Voie de l'humain.
