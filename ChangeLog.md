@@ -23,6 +23,7 @@
 * Support complet de la Voie du porteur de bouclier (prestige)
 
 ### Autres améliorations
+* Ajout d'un attribut pour des modification de tous les tests d'un personnage (bonus ou malus)
 * Tirage d'initiative aléatoire secret pour les tokens sur le layer MJ.
 * Possibilité de rajouter des attributs à afficher dans le statut.
 * Le script ne bloque plus que le déplacement des personnages immobilisés contrôlés par un joueur connecté.

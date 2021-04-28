@@ -3263,6 +3263,15 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
+    var bonusCondition = attributeAsInt(personnage, 'modificateurTests', 0);
+    if (bonusCondition != 0) {
+      bonus += bonusCondition;
+      if (bonusCondition > 0) {
+      expliquer("Bonus de condition : +"+bonusCondition);
+      } else {
+      expliquer("Pénalité de condition : "+bonusCondition);
+      }
+    }
     if (options) {
       if (options.bonus) bonus += options.bonus;
       if (options.chanceRollId && options.chanceRollId[testId]) bonus += options.chanceRollId[testId];

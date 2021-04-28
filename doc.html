@@ -814,7 +814,7 @@
                 <p><code>!cof-jet ?{Faire un jet de |Charisme, CHA|Constitution, CON|Dextérité, DEX|Force, FOR|Intelligence, INT|Sagesse, SAG}</code> : fait un simple jet pour la caractérisique sélectionnée.</p>
                 <p>Il est aussi possible de donner en argument une difficulté au jet. Par exemple en faisant <code>!cof-jet INT ?{difficulté}</code>.</p>
                 <p>Si on ne donne aucun argument (en dehors des options), la commande demande de préciser la caractéristique à tester. Pour chaque caractéristique, le script va proposer d'utiliser une des compétences définies sur la fiche (liste sous les capacités). Si il existe un handout nommé <code>Compétences</code>, celui-ci sera aussi utilisé pour proposer pour chaque caractéristique un choix de compétences à tester. Le handout doit contenir dans ses notes des lignes commençant par une caractéristique (FOR, DEX, ...), suivi de <code>:</code>, puis des noms de compétences, séparés par des blancs, des retours à la ligne, des virgules ou des <code>/</code>.</p>
-                <p>Enfin, la fonction accepte les arguments suivants:</p>
+                <p>La fonction accepte les arguments suivants:</p>
                 <ul>
                   <li><code>--bonus</code> pour spécifier un bonus numérique au jet.</li>
                   <li><code>--attribut</code> pour spécifier un attribut dont la valeur doit être ajoutée au jet. Il est possible de spécifier plusieurs attributs, comme par exemple <code>--attribut perception --attribut vigilance</code> pour un jet de vigilance.</li>
@@ -823,6 +823,7 @@
                   <li><code>--competences</code> : si la commande n'a pas déjà d'option <code>--nom</code>, invite l'utilisateur à choisir une compétence parmis une liste correspondant à la caractéristique (incluant celles provenant du handout <code>Compétences</code> tel que défini plus haut).</li>
                   <li><code>--plageEchecCritique <i>c</i></code> : permet de considérer tout jet de dé inférieur ou égal à <i>c</i> comme un échec critique.</li>
                 </ul>
+                <p>Si le personnage possède un attribut numérique <code>modificateurTests</code>, ce modificateur sera pris en compte pour tous les tests.</p>
               </div>
               <h3 class="text-info" id="son">2.14 Jouer un son</h3>
               <div class="decalage">
