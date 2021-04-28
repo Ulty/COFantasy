@@ -28101,9 +28101,9 @@ var COFantasy = COFantasy || function() {
   }, {
     name: 'Repos',
     action: "!cof-recuperation",
-    visibleto: '',
-    istokenaction: false,
-    inBar: true
+    visibleto: 'all',
+    istokenaction: true,
+    inBar: false
   }, {
     name: 'Statut',
     action: "!cof-statut",
