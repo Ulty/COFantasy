@@ -1500,7 +1500,7 @@ var COFantasy = COFantasy || function() {
       if (bar1 > pvmax) {
         var hasMana = (ficheAttributeAsInt(perso, 'PM', 0) > 0);
         var dmgTemp;
-        var estMook = token.get("bar1_link") === '';
+        var estMook = token.get('bar1_link') === '';
         var nameAttrDMTEMP = 'DMTEMP';
         if (hasMana) {
           if (estMook) dmgTemp = attributeAsInt(perso, 'DMTEMP', 0);
@@ -3267,9 +3267,9 @@ var COFantasy = COFantasy || function() {
     if (bonusCondition != 0) {
       bonus += bonusCondition;
       if (bonusCondition > 0) {
-      expliquer("Bonus de condition : +"+bonusCondition);
+        expliquer("Bonus de condition : +" + bonusCondition);
       } else {
-      expliquer("Pénalité de condition : "+bonusCondition);
+        expliquer("Pénalité de condition : " + bonusCondition);
       }
     }
     if (options) {
@@ -6940,6 +6940,10 @@ var COFantasy = COFantasy || function() {
     }
     iterSelected(selected, function(perso) {
       stateCOF.combat_pageid = perso.token.get('pageid');
+      //Si besoin, on stoque les PVs de début de combat
+      if (!attributeAsBool(perso, 'PVsDebutCombat')) {
+        setTokenAttr(perso, 'PVsDebutCombat', perso.token.get('bar1_value'), evt);
+      }
       if (!isActive(perso)) return;
       var init = persoInit(perso, evt);
       // On place le token à sa place dans la liste du tour
@@ -14917,7 +14921,6 @@ var COFantasy = COFantasy || function() {
     });
     // Fin des effets qui durent pour le combat
     attrs = removeAllAttributes('soinsDeGroupe', evt, attrs);
-    attrs = removeAllAttributes('secondSouffle', evt, attrs);
     attrs = removeAllAttributes('sergentUtilise', evt, attrs);
     attrs = removeAllAttributes('enflamme', evt, attrs);
     attrs = removeAllAttributes('protegerUnAllie', evt, attrs);
@@ -14975,6 +14978,56 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'kiai', evt);
     // Réinitialiser riposteGuerrier
     resetAttr(attrs, 'riposteGuerrier', evt);
+    //Utilisation automatique de second souffle, si pas utilisé
+    attrs.forEach(function(a) {
+      if (a.get('name') != 'secondSouffle') return;
+      var charId = a.get('characterid');
+      if (charId === undefined || charId === '') {
+        error("Attribut sans personnage associé", a);
+        a.remove();
+        return;
+      }
+      var tokens = findObjs({
+        _type: 'graphic',
+        _subtype: 'token',
+        _pageid: stateCOF.combat_pageid,
+        represents: charId
+      });
+      tokens.forEach(function(token) {
+        var perso = {
+          token: token,
+          charId: charId
+        };
+        if (!isActive(perso)) return;
+        if (attributeAsBool(perso, 'secondSouffleUtilise')) return;
+        var pvDebut = attributeAsInt(perso, 'PVsDebutCombat', 0);
+        if (pvDebut === 0) return; //personnage pas en combat.
+        var pv = parseInt(token.get('bar1_value'));
+        if (isNaN(pv)) return;
+        if (pvDebut <= pv) return;
+        var bonus = ficheAttributeAsInt(perso, 'niveau', 1);
+        bonus += modCarac(perso, 'constitution');
+        var jetSoins = rollDePlus(10, {
+          bonus: bonus
+        });
+        var msg = ' reprend son souffle et récupère ';
+        var soins = jetSoins.val;
+        if (pv + soins > pvDebut) {
+          soins = pvDebut - pv;
+          msg += soins + " PV (le jet était " + jetSoins.roll + ")";
+        } else {
+          msg += jetSoins.roll + " PVs";
+        }
+        if (token.get('bar1_link') === '') {
+          sendChat('', token.get('name') + msg);
+        } else {
+          sendChar(charId, msg);
+        }
+        soigneToken(perso, soins, evt);
+      });
+    });
+    attrs = removeAllAttributes('secondSouffleUtilise', evt, attrs);
+    attrs = removeAllAttributes('PVsDebutCombat', evt, attrs);
     // On diminue l'ébriété des personnages sous vapeurs éthyliques
     allAttributesNamed(attrs, 'vapeursEthyliques').forEach(function(attr) {
       var veCharId = attr.get('characterid');
@@ -16032,7 +16085,7 @@ var COFantasy = COFantasy || function() {
       var hasMana = false;
       var dmTemp = bar2;
       var estPNJ = persoEstPNJ(perso);
-      var estMook = token.get("bar1_link") === '';
+      var estMook = token.get('bar1_link') === '';
       var nameAttrDMTEMP = 'DMTEMP';
       var versionFiche = parseFloat(ficheAttribute(perso, 'version', 0));
       if (isNaN(versionFiche)) versionFiche = 0;
@@ -18313,6 +18366,16 @@ var COFantasy = COFantasy || function() {
         var diffRenverse = 10 + modCarac(perso, 'force');
         var commandTraverser = "!cof-attack @{selected|token_id} @{target|token_id} " + labelCyclone + " --auto --ifSaveFails DEXFOR " + diffRenverse + " --etat renverse --else --diviseDmg 2 --endif";
         ligne += bouton(commandTraverser, 'Traverser', perso) + '<br />';
+      }
+      //Affichage du second souffle
+      if (actionsParDefaut && charAttributeAsBool(perso, 'secondSouffle') &&
+        !attributeAsBool(perso, 'secondSouffleUtilise')) {
+        var pvDebut = attributeAsInt(perso, 'PVsDebutCombat', 0);
+        var pv = parseInt(perso.token.get('bar1_value'));
+        if (!isNaN(pv) && pv < pvDebut) {
+          command = "!cof-soin @{selected|token_id} secondSouffle";
+          ligne += bouton(command, 'Second souffle', perso) + '<br/>';
+        }
       }
       //La liste d'action proprement dite
       if (actionsDuTour.length > 0) {
@@ -21952,7 +22015,7 @@ var COFantasy = COFantasy || function() {
         effet = "second souffle";
         if (options.dose === undefined && options.limiteParJour === undefined)
           options.limiteAttribut = {
-            nom: 'secondSouffle',
+            nom: 'secondSouffleUtilise',
             message: " a déjà repris son souffle durant ce combat",
             limite: 1
           };
@@ -21960,6 +22023,17 @@ var COFantasy = COFantasy || function() {
           "]]";
         cible = soigneur;
         options.recuperation = true;
+        if (charAttributeAsBool(soigneur, 'secondSouffle')) {
+          //On limite les soins à ce qui a été perdu dans ce combat
+          var pvDebut = attributeAsInt(soigneur, 'PVsDebutCombat', 0);
+          var pv = parseInt(soigneur.token.get('bar1_value'));
+          if (isNaN(pv)) return;
+          if (pvDebut <= pv) {
+            whisperChar(charId, "Aucun PV perdu pendant ce combat, second souffle sans effet");
+            return;
+          }
+          options.limiteSoins = pvDebut - pv;
+        }
         break;
       default:
         //TODO : augmenter les dés en cas de tempete de mana intense
@@ -22002,6 +22076,11 @@ var COFantasy = COFantasy || function() {
         if (soins <= 0) {
           sendChar(charId, "ne réussit pas à soigner (total de soins " + soinTxt + ")");
           return;
+        }
+        var limiteSoinsAtteinte;
+        if (options.limiteSoins && soins > options.limiteSoins) {
+          soins = options.limiteSoins;
+          limiteSoinsAtteinte = true;
         }
         var evt = {
           type: effet
@@ -22146,7 +22225,7 @@ var COFantasy = COFantasy || function() {
               }
               msgSoin += " de ";
               if (options.recuperation) msgSoin = "récupère ";
-              if (s < soins)
+              if (limiteSoinsAtteinte || s < soins)
                 msgSoin += s + " PV. (Le résultat du jet était " + soinTxt + ")";
               else msgSoin += soinTxt + " PV.";
               msgSoin += extraImg;
@@ -25213,83 +25292,83 @@ var COFantasy = COFantasy || function() {
 
   function listeElixirs(rang) {
     var liste = [{
-      nom: 'Elixir fortifiant',
+      nom: 'Élixir fortifiant',
       attrName: 'fortifiant',
       action: "!cof-fortifiant $rang",
       rang: 1
     }];
     if (rang < 2) return liste;
     liste.push({
-      nom: 'Elixir de feu grégeois',
+      nom: 'Élixir de feu grégeois',
       attrName: 'feu_grégeois',
       action: "!cof-attack @{selected|token_id} @{target|token_id} Feu Grégeois --auto --dm $rangd6 --feu --psave DEX [[10+@{selected|INT}]] --disque 3 --portee 10 --targetFx burst-fire",
       rang: 2
     });
     if (rang < 3) return liste;
     liste.push({
-      nom: 'Elixir de guérison',
+      nom: 'Élixir de guérison',
       attrName: 'élixir_de_guérison',
       action: "!cof-soin 3d6+$INT",
       rang: 3
     });
     if (rang < 4) return liste;
     liste.push({
-      nom: "Elixir d'agrandissement",
+      nom: "Élixir d'agrandissement",
       attrName: "potion_d_agrandissement",
       action: "!cof-effet-temp agrandissement [[5+$INT]]",
       rang: 4
     });
     liste.push({
-      nom: "Elixir de forme gazeuse",
+      nom: "Élixir de forme gazeuse",
       attrName: "potion_de_forme_gazeuse",
       action: "!cof-effet-temp formeGazeuse [[1d4+$INT]]",
       rang: 4
     });
     liste.push({
-      nom: "Elixir de protection contre les éléments",
+      nom: "Élixir de protection contre les éléments",
       attrName: "potion_de_protection_contre_les_éléments",
       action: "!cof-effet-temp protectionContreLesElements [[5+$INT]] --valeur $rang",
       rang: 4
     });
     liste.push({
-      nom: "Elixir d'armure de mage",
+      nom: "Élixir d'armure de mage",
       attrName: "potion_d_armure_de_mage",
       action: "!cof-effet-combat armureDuMage",
       rang: 4
     });
     liste.push({
-      nom: "Elixir de chute ralentie",
+      nom: "Élixir de chute ralentie",
       attrName: "potion_de_chute_ralentie",
       action: "est léger comme une plume.",
       rang: 4
     });
     if (rang < 5) return liste;
     liste.push({
-      nom: "Elixir d'invisibilité",
+      nom: "Élixir d'invisibilité",
       attrName: "potion_d_invisibilité",
       action: "!cof-set-state invisible true --message se rend invisible ([[1d6+$INT]] minutes)",
       rang: 5
     });
     liste.push({
-      nom: "Elixir de vol",
+      nom: "Élixir de vol",
       attrName: "potion_de_vol",
       action: "se met à voler",
       rang: 5
     });
     liste.push({
-      nom: "Elixir de respiration aquatique",
+      nom: "Élixir de respiration aquatique",
       attrName: "potion_de_respiration_aquatique",
       action: "peut respirer sous l'eau",
       rang: 5
     });
     liste.push({
-      nom: "Elixir de flou",
+      nom: "Élixir de flou",
       attrName: "potion_de_flou",
       action: "!cof-effet-temp flou [[1d4+$INT]]",
       rang: 5
     });
     liste.push({
-      nom: "Elixir de hâte",
+      nom: "Élixir de hâte",
       attrName: "potion_de_hâte",
       action: "!cof-effet-temp hate [[1d6+$INT]]",
       rang: 5
