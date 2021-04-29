@@ -6865,6 +6865,9 @@ var COFantasy = COFantasy || function() {
     if (charAttributeAsBool(perso, 'graceFeline')) {
       init += modCarac(perso, 'charisme');
     }
+    if (charAttributeAsBool(perso, 'sensAffutes')) {
+      init += modCarac(perso, 'sagesse');
+    }
     if (attributeAsBool(perso, 'masqueDuPredateur')) {
       init += getValeurOfEffet(perso, 'masqueDuPredateur', modCarac(perso, 'sagesse'));
     }
