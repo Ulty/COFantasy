@@ -8198,7 +8198,8 @@ var COFantasy = COFantasy || function() {
       }
       attBonus += bonusFeinte;
       var msgFeinte = "Feinte => +" + bonusFeinte + " en attaque";
-      if (attrFeinte[0].get('max')) { //La feinte avait touché cette cible
+      var niveauTouche = attrFeinte[0].get('max');
+      if (niveauTouche > 0) { //La feinte avait touché cette cible
         var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
         if (options.contact && faireMouche > 0) {
           if (!options.pasDeDmg) {
@@ -8211,6 +8212,7 @@ var COFantasy = COFantasy || function() {
             desFeinte = parseInt(attrBonusFeinte[0].get('max'));
             if (isNaN(desFeinte) || desFeinte < 0) desFeinte = 2;
           }
+          desFeinte *= niveauTouche;
           target.feinte = desFeinte;
           if (!options.pasDeDmg) msgFeinte += " et +" + desFeinte + "d6 DM";
         }
@@ -10824,8 +10826,11 @@ var COFantasy = COFantasy || function() {
               }
             }
             if (options.feinte) {
+              var niveauTouche = 0;
+              if (target.touche) niveauTouche = 1;
+              if (target.critique) niveauTouche = 2;
               setTokenAttr(target, 'feinte_' + attaquant.tokName, 0, evt, {
-                maxVal: target.touche
+                maxVal: niveauTouche
               });
             }
             count--;
