@@ -359,7 +359,7 @@
                   <li><code>--avecd12</code> : lance un d12 au lieu du d20 pour le jet d'attaque. L'attaque est impossible si l'attaquant est déjà affaibli.</li>
                   <li><code>--avecd12crit</code> : comme <code>--avecd12</code>, mais le jet peut faire un critique. La plage de critique est divisée par 2, arrondie à l'inférieur. Ainsi si le d20 sevait critiquer sur un 20 seulement, le d12 ne fait pas de critique. Il fait un critique sur un 12 si le d20 devait faire un critique sur un 19 ou un 18, et ainsi de suite.</li>
                   <li><code>--incrDmgCoef <i>n</i></code> : augmente le coefficient des dégâts de base de 1. Les dégâts de base comprennent les dés de dommage de l'arme (ou du sort), plus tous les bonus constants. Le coefficient par défaut est de 1, et une réussite critique augmente ce coefficient de 1.</li>
-                  <li><code>--incrCritCoef <i>n</i></code> : augmente le coefficient des dégâts critiques de 1.</li>
+                  <li><code>--incrCritCoef <i>n</i></code> : augmente le coefficient des dégâts critiques de <i>n</i> (1 si on ne donne pas d'argument).</li>
                   <li><code>--diviseDmg <i>n</i></code> : divise les dégâts de base par <i>n</i>.</li>
                   <li><code>--maxDmg</code> : l'attaque inflige le maximum de DM permis par les dés de base.</li>
                   <li><code>--difficultePVmax</code> : la difficulté du jet d'attaque est le maximum de PVs au lieu de la défense.</li>
@@ -1857,10 +1857,18 @@
                 <a href="#Vision_dans_le_noir">Vision dans le noir</a>.
                 <ol>
                   <li><strong>Force de la nature</strong> : ajouter les bonus sur la fiche</li>
+                  <li><strong>Talent pour la violence</strong> : voir les capacités choisies</li>
+                  <li><strong>Critique brutal</strong> : pour l'instant, ajouter le modificateur <code>incrCritCoef</code> pour toutes les attaques au contact.</li>
+                  <li><strong>Attaque sanglante</strong> : faire une attaque (ou liste d'attaques) avec les options <code>--effet blessureQuiSaigne --saveParTour CON [[12 + @{selected|FOR}]]</code></li>
+                  <li><strong>Colosse</strong> : augmenter les caractéristiques sur la fiche.</li>
                 </ol>
                 <h4 class="text-secondary">Elfe sylvain</h4>
                 <ol>
                   <li><strong>Grâce elfique</strong> : simplement reporter sur la fiche</li>
+                  <li><strong>Enfant de la forêt</strong> : voir les capacités choisies</li>
+                  <li><strong>Archer émérite</strong> : ajuster les chances de critique sur les attaques à l'arc</li>
+                  <li><strong>Flèche sanglante</strong> : faire une attaque (ou liste d'attaques) avec les options <code>--effet blessureQuiSaigne --saveParTour CON [[12 + @{selected|DEX}]]</code></li>
+                  <li><strong>Supériorité elfique</strong> : augmenter les caractéristiques sur la fiche.</li>
                 </ol>
                 <h4 class="text-secondary" id="fee_et_lutin">Fée et lutin</h4>
                 <ul>

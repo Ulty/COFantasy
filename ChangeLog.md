@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.17
 ### Capacités
+* Ajout des capacités Attaque sanglante et Flèche sanglante.
 * Amélioration de la prise en compte des sens affûtés.
 * Amélioration de la prise en charge du second souffle du guerrier.
 * Ajout de l'effet noyade des plantes carnivores.
