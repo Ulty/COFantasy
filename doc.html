@@ -1926,7 +1926,7 @@
                 <h4 class="text-secondary">Voie des armes à deux mains</h4>
                 <ol>
                   <li><strong>Allonge</strong> : reporter le bonus d'attaque sur la fiche. Par facilité, j'ai considéré que le bonus d'Init était permanent et nous l'avons reporté sur la fiche.</li>
-                  <li><strong>Gros Monstre, grosse arme</strong> : ajouter un attribut grosMonstreGrosseArme de valeur <code>true</code>.</li>
+                  <li><strong>Gros Monstre, grosse arme</strong> : ajouter un attribut <code>grosMonstreGrosseArme</code> de valeur <code>true</code>.</li>
                   <li><strong>Tenir à distance (L)</strong> : <code>!cof-effet-temp tenirADistance 1</code>.</li>
                   <li><strong>Attaque à outrance</strong> : <code>!cof-attaque-a-outrance ?{Attaque à outrance ?|Non,0|-2 DEF / +1D6 DM,2}</code>. Par facilité, cette "posture de combat" perdure jusqu'à la fin du combat ou jusqu'à ce que le guerrier en change. Au rang 5, on pourra utiliser <code>!cof-attaque-a-outrance ?{Attaque à outrance ?|Non,0|-2 DEF/+1D6 DM,2|-5 DEF/+2D6 DM,5}</code></li>
                   <li><strong>Critique destructeur</strong> : ajouter <code>--plusCrit 2d6</code> aux attaques d'armes à 2 mains</li>
@@ -1945,8 +1945,10 @@
                 </ol>
                 <h4 class="text-secondary">Voie du gel</h4>
                 <ol>
-                  <li><strong>3. Cône de froid</strong> : faire une attaque portee 20m, dégâts 2d6+INT de froid, avec comme modificateur <code>auto</code> et comme options <code>--cone 30 --fx breath-frost --ifSaveFails CON 13 --effet ralenti 1 --else --diviseDmg 2 --endif</code>. Pour un objet de sort : <code>!cof-attack @{selected|token_id} @{target|token_id} Cône de froid --sortilege --auto --dm 2d6+[[@{selected|INT}]] --froid --portee 20 --cone 30 --fx breath-frost --ifSaveFails CON 13 --effet ralentiTemp 1 --else --diviseDmg 2 --endif</code></li>
-                  <li><strong>4. Présence glaciale</strong> : <code>!cof-effet presenceGlaciale oui</code>. Utiliser <code>!cof-effet presenceGlaciale non</code> pour mettre fin à l'effet. On peut préciser un bonus de DEF et des dégâts différents avec l'option <code>--valeur</code>. Ainsi, la version grimoire sera <code>!cof-effet presenceGlaciale oui --valeur 3 1d4</code>.</li>
+                  <li></li>
+                  <li></li>
+                  <li><strong>Cône de froid</strong> : faire une attaque portee 20m, dégâts 2d6+INT de froid, avec comme modificateur <code>auto</code> et comme options <code>--cone 30 --fx breath-frost --ifSaveFails CON 13 --effet ralenti 1 --else --diviseDmg 2 --endif</code>. Pour un objet de sort : <code>!cof-attack @{selected|token_id} @{target|token_id} Cône de froid --sortilege --auto --dm 2d6+[[@{selected|INT}]] --froid --portee 20 --cone 30 --fx breath-frost --ifSaveFails CON 13 --effet ralentiTemp 1 --else --diviseDmg 2 --endif</code></li>
+                  <li><strong>Présence glaciale</strong> : <code>!cof-effet presenceGlaciale oui</code>. Utiliser <code>!cof-effet presenceGlaciale non</code> pour mettre fin à l'effet. On peut préciser un bonus de DEF et des dégâts différents avec l'option <code>--valeur</code>. Ainsi, la version grimoire sera <code>!cof-effet presenceGlaciale oui --valeur 3 1d4</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du guérisseur</h4>
                 <ol>
@@ -1964,6 +1966,7 @@
                 <ol>
                   <li><strong>Réduire la distance</strong> : ajouter un attribut <code>reduireLaDistance</code>, de valeur <code>true</code>.</li>
                   <li><strong>Ventre mou</strong> : ajouter un attribut <code>ventreMou</code> de valeur <code>true</code>. Cela va diminuer la RD fixe de 3 maximum pour une créature grande, 6 maximum pour une créature énorme et 10 maximum pour une créature colossale.</li>
+                  <li><strong>Bûcheron</strong> : ajouter un attribut <code>bucheron</code> de valeur <code>true</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Capacités épiques</h4>
                 <ul>

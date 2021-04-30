@@ -11679,10 +11679,10 @@ var COFantasy = COFantasy || function() {
         if (options.devorer) {
           target.messages.push(attaquant.tokName + " saisit " + target.tokName + " entre ses crocs et ses griffes");
           if (attackLabel) {
-            var cmdAttaqueGratuite = '!cof-attack '+attaquant.token.id + ' ' + target.token.id + ' ' + attackLabel;
+            var cmdAttaqueGratuite = '!cof-attack ' + attaquant.token.id + ' ' + target.token.id + ' ' + attackLabel;
             target.messages.push(boutonSimple(cmdAttaqueGratuite, 'Attaque gratuite'));
           } else {
-            target.messages.push(attaquant.tokName+" a droit à une attaque gratuite contre "+target.tokName);
+            target.messages.push(attaquant.tokName + " a droit à une attaque gratuite contre " + target.tokName);
           }
           var attackerForce = valAttribute(attaquant, 'FOR', 'force');
           var targetForce = valAttribute(target, 'FOR', 'force');
@@ -11838,9 +11838,8 @@ var COFantasy = COFantasy || function() {
             value: target.feinte + options.d6
           });
         }
-        var targetTaille;
+        var targetTaille = taillePersonnage(target, 4);
         if (options.tueurDeGrands) {
-          targetTaille = taillePersonnage(target, 4);
           if (targetTaille == 5) {
             target.additionalDmg.push({
               type: mainDmgType,
@@ -11855,10 +11854,23 @@ var COFantasy = COFantasy || function() {
             target.messages.push("Cible énorme => +2d6 DM");
           }
         }
-        if (charAttributeAsBool(attaquant, "grosMonstreGrosseArme") &&
-          options.contact && weaponStats && weaponStats.typeAttaque === "Arme 2 mains") {
-          targetTaille = targetTaille || taillePersonnage(target, 4);
-          if (targetTaille > 4) {
+        if (options.contact && weaponStats.deuxMains && targetTaille > 4) {
+          if (charAttributeAsBool(attaquant, 'bucheron')) {
+            if (targetTaille == 5) {
+              target.additionalDmg.push({
+                type: mainDmgType,
+                value: '1d6'
+              });
+              target.messages.push("Arme tenue à 2 mains => +1d6 DM");
+            } else if (targetTaille > 5) {
+              target.additionalDmg.push({
+                type: mainDmgType,
+                value: '2d6'
+              });
+              target.messages.push("Arme tenue à 2 mains et cible énorme => +2d6 DM");
+            }
+          }
+          if (charAttributeAsBool(attaquant, "grosMonstreGrosseArme")) {
             options.puissant = true;
             target.messages.push("Gros Monstre, grosse arme => dégâts de base augmentés");
           }
