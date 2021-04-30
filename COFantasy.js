@@ -11692,7 +11692,7 @@ var COFantasy = COFantasy || function() {
             }
           }
         }
-        if (!options.redo && options.projection && taillePersonnage(attaquant, 4) > taillePersonnage(target, 4)) {
+        if (options.projection && taillePersonnage(attaquant, 4) > taillePersonnage(target, 4)) {
           var bonusProjection = 5 - taillePersonnage(target, 4);
           var distanceProjetee = rollDePlus(6, {
             bonus: bonusProjection
