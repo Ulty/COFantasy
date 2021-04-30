@@ -13078,6 +13078,7 @@ var COFantasy = COFantasy || function() {
     }
     if (options.sortilege) {
       bonusAttrs.push('resistanceALaMagie');
+      if (carac == 'SAG') bonusAttrs.push('bonusSagesseMagie');
     }
     if (options.type) {
       bonusAttrs.push('bonusSaveContre_' + options.type);
