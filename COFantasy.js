@@ -11678,7 +11678,12 @@ var COFantasy = COFantasy || function() {
         }
         if (options.devorer) {
           target.messages.push(attaquant.tokName + " saisit " + target.tokName + " entre ses crocs et ses griffes");
-          target.dmgCoef = (target.dmgCoef || 0) + 1;
+          if (attackLabel) {
+            var cmdAttaqueGratuite = '!cof-attack '+attaquant.token.id + ' ' + target.token.id + ' ' + attackLabel;
+            target.messages.push(boutonSimple(cmdAttaqueGratuite, 'Attaque gratuite'));
+          } else {
+            target.messages.push(attaquant.tokName+" a droit à une attaque gratuite contre "+target.tokName);
+          }
           var attackerForce = valAttribute(attaquant, 'FOR', 'force');
           var targetForce = valAttribute(target, 'FOR', 'force');
           if (targetForce <= attackerForce) {
