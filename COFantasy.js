@@ -98,7 +98,12 @@ var COFantasy = COFantasy || function() {
           type: 'options',
           val: {
             blessures_graves: {
-              explications: "Si les DMs dépassent CON+niveau, ou si on arrive à 0 PV, on perd un PR, et si plus de PR, affaibli.",
+              explications: "Si on arrive à 0 PV, on perd 1PR, et si on a plus de PR, on a une blessure grave.",
+              val: true,
+              type: 'bool'
+            },
+            degats_importants: {
+              explications: "Si les DMs dépassent CON+niveau en une attaque, on applique aussi la règle de blessure grave.",
               val: true,
               type: 'bool'
             },
@@ -13716,10 +13721,10 @@ var COFantasy = COFantasy || function() {
 
   function testBlessureGrave(target, dmgTotal, expliquer, evt) {
     target.tokName = target.tokName || target.token.get('name');
-    if (reglesOptionelles.dommages.val.blessures_graves.val && estPJ(target) && (dmgTotal == 'mort' ||
-        dmgTotal >
+    if (estPJ(target) && ((dmgTotal == 'mort' && reglesOptionelles.dommages.val.blessures_graves.val) ||
+        (reglesOptionelles.dommages.val.degats_importants.val && dmgTotal >
         (ficheAttributeAsInt(target, 'niveau', 1) +
-          ficheAttributeAsInt(target, 'constitution', 10)))) {
+          ficheAttributeAsInt(target, 'constitution', 10))))) {
       var pr = pointsDeRecuperation(target);
       if (pr.current > 0) {
         expliquer("Les dégâts sont si importants que " + target.tokName + " perd 1 PR");
