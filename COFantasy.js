@@ -2354,6 +2354,12 @@ var COFantasy = COFantasy || function() {
         token.remove();
       });
     }
+    if (evt.movedTokens) {
+      evt.movedTokens.forEach(function(movedToken) {
+        movedToken.token.set('left', movedToken.oldPosition.left);
+        movedToken.token.set('top', movedToken.oldPosition.top);
+      });
+    }
     if (_.has(evt, 'combat')) stateCOF.combat = evt.combat;
     if (_.has(evt, 'combat_pageid')) stateCOF.combat_pageid = evt.combat_pageid;
     if (_.has(evt, 'tour')) stateCOF.tour = evt.tour;
@@ -10401,6 +10407,7 @@ var COFantasy = COFantasy || function() {
         cibles.forEach(function(target) {
           // reset les champs de target qui vont être recalculés
           target.additionalDmg = [];
+          target.effets = [];
           target.dmgCoef = 0;
           target.critCoef = 0;
           target.diviseDmg = 1;
@@ -11704,15 +11711,16 @@ var COFantasy = COFantasy || function() {
         }
         if (options.projection && taillePersonnage(attaquant, 4) > taillePersonnage(target, 4)) {
           var bonusProjection = 5 - taillePersonnage(target, 4);
-          var distanceProjetee = rollDePlus(6, {
+          options.rolls = options.rolls || [];
+          var distanceProjetee = options.rolls['distanceProjection_'+target.token.id] || rollDePlus(6, {
             bonus: bonusProjection
           }).val;
+          evt.action.rolls['distanceProjection'+target.token.id] = distanceProjetee;
           var dmgProjection = "3d6";
           if (charAttributeAsBool(target, 'inderacinable')) {
             distanceProjetee /= 2;
             dmgProjection = "floor(" + dmgProjection + "/2)";
           }
-          target.effets = target.effets || [];
           target.effets.push({
             effet: 'etourdiTemp',
             duree: 100,
@@ -11732,8 +11740,7 @@ var COFantasy = COFantasy || function() {
           });
           target.messages.push(target.tokName + " est projeté sur " + distanceProjetee + " mètres");
         }
-        if (!options.redo && options.gober && taillePersonnage(attaquant, 4) > taillePersonnage(target, 4)) {
-          target.effets = target.effets || [];
+        if (options.gober && taillePersonnage(attaquant, 4) > taillePersonnage(target, 4)) {
           //On utilise la liste d'effets pour pouvoir gérer les jets asynchrones
           target.effets.push({
             gober: true,
@@ -12478,6 +12485,18 @@ var COFantasy = COFantasy || function() {
                             target.messages.push(target.tokName + " est entièrement avalé par " + attackerTokName);
                             setTokenAttr(attaquant, 'aGobe', target.token.id + ' ' + target.tokName, evt);
                             setTokenAttr(target, 'estGobePar', attaquant.token.id + ' ' + attaquant.tokName, evt);
+                            evt.movedTokens = evt.movedTokens || [];
+                            evt.movedTokens.push({
+                              token: target.token,
+                              oldPosition: {
+                                left: target.token.get('left'),
+                                top: target.token.get('top'),
+                              },
+                              newPosition: {
+                                left: attaquant.token.get('left'),
+                                top: attaquant.token.get('top'),
+                              }
+                            });
                             target.token.set('left', attaquant.token.get('left'));
                             target.token.set('top', attaquant.token.get('top'));
                           } else {
