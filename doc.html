@@ -798,11 +798,16 @@
                 <p>Pour qu'un personnage puisse monter sur une monture, il faut que cette monture soit associée à une fiche de personnage et qu'il possède l'attribute <code>monture</code> à <code>true</code>. La commande pour monter sur la monture est <code>!cof-en-selle @{selected|token_id} @{target|token_id}</code>, à lancer en sélectionnant le cavalier.</p>
                 <p>On peut ensuite bouger la monture, cela déplace le cavalier. Le mieux est de lancer la commander alors que le token du cavalier est sur le token de la monture. Si on déplace le cavalier, cela le fait descendre de sa monture.</p>
               </div>
-              <h4 class="text-secondary" id="montures">Suivre un autre personnages</h4>
+              <h4 class="text-secondary" id="suivre">Suivre un autre personnages</h4>
               <div class="decalage">
-                Le principe est le suivant : on sélectionne un token, dans les abilities qui s'affichent en haut de la map, on clique sur Suivre, puis on sélectionne le token à suivre. À partir de ce moment, le script déplace le premier token à chaque fois qu'on déplace le second (en tenant compte des états qui empêchent le mouvement et des obstacles sur le layer de lumière, si ils doivent empêcher le mouvement). On peut aussi suivre un token qui en suit un autre. Et pour arrêter de suivre un token, il suffit de déplacer manuellement le premier token.
+                Le principe est le suivant : on sélectionne un token, dans les abilities qui s'affichent en haut de la map, on clique sur <code>Suivre</code>, puis on sélectionne le token à suivre. À partir de ce moment, le script déplace le premier token à chaque fois qu'on déplace le second (en tenant compte des états qui empêchent le mouvement et des obstacles sur le layer de lumière, si ils doivent empêcher le mouvement). On peut aussi suivre un token qui en suit un autre. Et pour arrêter de suivre un token, il suffit de déplacer manuellement le premier token.
 
 Ça permet donc d'avoir un familier qui suit un personnage, ou bien de faire automatiquement bouger un groupe de perosnnage dont l'ordre de marche est déterminé.
+              </div>
+              <h4 class="text-secondary" id="multi-cartes">Déplacer un personnage sur plusieurs cartes</h4>
+              <div class="decalage">
+                <p>Il est possible de synchroniser des tokens de même nom (représentant le même personnage) sur plusieurs cartes. Ainsi, déplacer le token sur une carte déplace aussi les token sur les autres cartes. Cela peut servir par exemple si tous les joueurs ne doivent pas voir la même chose sur une carte : chaque joueur est alors sur la carte qui lui montre ce qu'il doit voir, et tous les tokens des joueurs sont synchronisés entre les cartes.</p>
+                <p>La commande pour activer la synchonisation d'un (ou plusieurs) tokens séléctionnés est <code>!cof-multi-cartes</code>. Pour mettre fin à la synchronisation, on peut sélectionner ces tokens et faire <code>!cof-multi-cartes false</code>. Enfin, cette même commande sans selectionner aucun token met fin à toutes les synchronisations.</p>
               </div>
               <h3 class="text-info" id="lumiere">2.12 Lumière</h3>
               <div class="decalage">
@@ -1205,7 +1210,7 @@
                   <li><strong>Bâton de mage</strong> : simplement adapter l'attaque, avec aussi <code>--magique</code>. Pour l'éclair d'énergie, le mieux est d'ajouter une autre attaque.</li>
                   <li><strong>Blocage</strong> : pas de support autre que <code>!cof-lancer-sort scelle une porte ou un coffre (+5 solidité & RD) pour [[@{selected|INT}]] minutes <i>--mana 0</i></code></li>
                   <li><strong>Sac sans fond</strong> : pas de support particulier</li>
-                  <li><strong>Frappe des arcanes</strong> : le plus simple est d'utiliser la même ligne d'attaque (disons que son label est <code>E</code>) que pour l'attaque d'énergie (mais si besoin, rien n'empêche d'en utiliser une autre). La commande sera alors <code>#Attaque E --auto --magique --sortilege --disque 10 --etat renverse --save FOR [[10+@{selected|INT}]]</code>.</li>
+                  <li><strong>Frappe des arcanes</strong> : le plus simple est d'utiliser la même ligne d'attaque (disons que son label est <code>E</code>) que pour l'attaque d'énergie (mais si besoin, rien n'empêche d'en utiliser une autre). La commande sera alors <code>!cof-attack @{selected|token_id} @{selected|token_id} E --auto --magique --sortilege --disque 10 --etat renverse --save FOR [[10+@{selected|INT}]]</code>.</li>
                   <li><strong>Artefact majeur</strong> : pas de support particulier</li>
                 </ol>
                 <h4 class="text-secondary">Voie des élixirs</h4>
@@ -1634,8 +1639,8 @@
                   <li><strong>Ailes célestes</strong> : <code>!cof-effet-temp ailesCelestes [[5+@{selected|SAG}]] <i>--mana 1</i></code>.</li>
                   <li><strong>Foudres divines</strong> :
                     <ul>
-                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d6+SAG, portée 0, type Sortilège, dégâts électrique, options <code><i>--mana 2</i> --disque 10 --saufAllies</code></li>
-                      <li>Objet de sort : <code>#Attaque Foudres divines --toucher [[@{selected|ATKMAG}]] --dm 1d6+[[@{selected|SAG}]] --electrique --portee 0 --sortilege --disque 10 --saufAllies</code></li>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d6+SAG, portée 0, type Sortilège, dégâts électrique, options <code><i>--mana 2</i> --disque 10 --saufAllies</code>. Si le label de ce sort est <code><i>L</i></code>, il ne vous reste plus qu'à faire une ability avec <code>!cof-attack @{selected|token_id} @{selected|token_id} <i>L</i></code>.</li>
+                      <li>Objet de sort : <code>!cof-attack @{selected|token_id} @{selected|token_id} Foudres divines --toucher [[@{selected|ATKMAG}]] --dm 1d6+[[@{selected|SAG}]] --electrique --portee 0 --sortilege --disque 10 --saufAllies</code></li>
                     </ul>
                   </li>
                   <li><strong>Charisme héroïque</strong> : reporter les bonus sur la fiche</li>

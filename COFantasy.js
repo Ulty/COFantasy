@@ -30510,6 +30510,59 @@ var COFantasy = COFantasy || function() {
     updateNextInit(ensorceleur);
   }
 
+  //Synchronise les tokens de même nom entre les cartes
+  function multiCartes(msg) {
+    var options = parseOptions(msg);
+    var enlever = options && options.cmd && options.cmd.length > 1 && options.cmd[1] == 'false';
+    getSelected(msg, function(selected, playerId) {
+      var evt = {
+        type:"Synchronisation des tokens"
+      };
+      if (selected.length === 0) {
+        if (enlever) {
+          removeAllAttributes('tokensSynchronises', evt);
+          addEvent(evt);
+          return;
+        }
+        sendPlayer(playerId, "Aucun token selectionné pour !cof-multi-cartes");
+        return;
+      }
+      addEvent(evt);
+      if (enlever) {
+        iterSelected(selected, function(perso) {
+          sendPlayer(playerId, perso.token.get('name') + " n'est plus synchronisé");
+          removeTokenAttr(perso, 'tokensSynchronises', evt);
+        });
+        return;
+      }
+      var allTokens = findObjs({
+        _type: 'graphic',
+                  _subtype: 'token',
+                  layer: 'objects',
+      });
+      iterSelected(selected, function(perso) {
+        var name = perso.token.get('name');
+        var left = perso.token.get('left');
+        var top = perso.token.get('top');
+        var listTokens = [perso.token.id];
+        //On cherche les tokens de même nom et on les met en même position
+        allTokens.forEach(function(tok) {
+          if (tok.get('represents') != perso.charId) return;
+          if (tok.get('name') != name) return;
+          if (tok.id == perso.token.id) return;
+          tok.set('left', left);
+          tok.set('top', top);
+          listTokens.push(tok.id);
+        });
+        if (listTokens.length < 2) {
+          sendPlayer(playerId, name + " n'a qu'un seul token sur toutes les cartes");
+          return;
+        }
+        setTokenAttr(perso, 'tokensSynchronises', listTokens.join(), evt);
+      });
+    });
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -30974,6 +31027,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-prescience':
         utiliserPrescience(msg);
+        return;
+      case '!cof-multi-cartes':
+        multiCartes(msg);
         return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);
@@ -33692,7 +33748,15 @@ var COFantasy = COFantasy || function() {
       token: token
     };
     nePlusSuivre(perso, token.get('pageid'));
-    if (token.get('bar1_link') !== "") return;
+    var deplacementsSynchronises = tokenAttribute(perso, 'tokensSynchronises');
+    var keepToken;
+    deplacementsSynchronises.forEach(function(attr) {
+      var listTokens = attr.get('current').split(',');
+      listTokens = listTokens.filter(function(tid) { return tid != token.id; });
+      if (listTokens.length < 2) attr.remove();
+      else keepToken = true;
+    });
+    if (keepToken || token.get('bar1_link') !== "") return;
     var endName = "_" + token.get('name');
     var tokAttr = findObjs({
       _type: 'attribute',
@@ -33798,7 +33862,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //Réagit au déplacement manuel d'un token.
-  function moveToken(token, prev) {
+  function moveToken(token, prev, synchronisation) {
     var charId = token.get('represents');
     if (charId === '') return;
     var perso = {
@@ -33810,6 +33874,23 @@ var COFantasy = COFantasy || function() {
     var y = token.get('top');
     var deplacement = prev && (prev.left != x || prev.top != y);
     if (!deplacement) return;
+    if (!synchronisation) {
+    var deplacementsSynchronises = tokenAttribute(perso, 'tokensSynchronises');
+      deplacementsSynchronises.forEach(function(attr) {
+        var listTokens = attr.get('current');
+        listTokens.split(',').forEach(function(tid) {
+          if (tid == token.id) return;
+          var tok = getObj('graphic', tid);
+          if (tok === undefined) {
+            error("Impossible de trouver le token d'id "+tid+" synchronisé avec "+token.get('name'), attr);
+            return;
+          }
+          tok.set('left', x);
+          tok.set('top', y);
+          moveToken(tok, prev, true);
+        });
+      });
+    }
     if (nePeutPasBouger(perso)) {
       whisperChar(charId, "ne peut pas se déplacer.");
       sendChat('COF', "/w GM " +
