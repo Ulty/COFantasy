@@ -50,6 +50,7 @@ var COFantasy = COFantasy || function() {
   const BS_LABEL_WARNING = 'background-color: #f0ad4e;';
   const BS_LABEL_DANGER = 'background-color: #d9534f;';
   const DEFAULT_DYNAMIC_INIT_IMG = 'https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/thumb.png?1400535580';
+  const IMG_INVISIBLE = 'https://s3.amazonaws.com/files.d20.io/images/24377109/6L7tn91HZLAQfrLKQI7-Ew/thumb.png?1476950708';
 
   var markerCatalog = {};
   var eventHistory = [];
@@ -971,6 +972,11 @@ var COFantasy = COFantasy || function() {
     var token = personnage.token;
     var charId = personnage.charId;
     var res = false;
+    var attrInvisible = tokenAttribute(personnage, 'tokenInvisible');
+    if (attrInvisible.length > 0 && token.id == attrInvisible[0].get('max')) {
+      var tokenInvisible = getObj('graphic', attrInvisible[0].get('current'));
+      if (tokenInvisible) token = tokenInvisible;
+    }
     if (token !== undefined) {
       res = token.get(cof_states[etat]);
       if (token.get('bar1_link') === '') return res;
@@ -1767,6 +1773,131 @@ var COFantasy = COFantasy || function() {
           token.set('has_limit_field_of_night_vision', false);
         } else {
           token.set('light_losangle', 360);
+        }
+      }
+    } else if (etat == 'invisible') {
+      if (value) {
+        //On va créer une copie de token, mais avec une image invisible et aura visible seulement de ceux qui contrôlent le token
+        var tokenFields = {
+          _pageid: pageId,
+          represents: personnage.charId,
+          left: token.get('left'),
+          top: token.get('top'),
+          width: token.get('width'),
+          height: token.get('height'),
+          rotation: token.get('rotation'),
+          layer: 'objects',
+          name: token.get('name'),
+          bar1_value: token.get('bar1_value'),
+          bar1_max: token.get('bar1_max'),
+          bar1_link: token.get('bar1_link'),
+          bar2_value: token.get('bar2_value'),
+          bar2_max: token.get('bar2_max'),
+          bar2_link: token.get('bar2_link'),
+          bar3_value: token.get('bar3_value'),
+          bar3_max: token.get('bar3_max'),
+          aura1_radius: 1,
+          aura1_color: "#FF9900",
+          aura1_square: false,
+          showplayers_aura1: false,
+          aura2_radius: token.get('aura2_radius'),
+          aura2_color: token.get('aura2_color'),
+          aura2_square: token.get('aura2_square'),
+          showplayers_aura2: token.get('showplayers_aura2'),
+          statusmarkers: "",
+          light_radius: token.get('light_radius'),
+          light_dimradius: token.get('light_dimradius'),
+          light_otherplayers: token.get('light_otherplayers'),
+          light_hassight: token.get('light_hassight'),
+          light_angle: token.get('light_angle'),
+          light_losangle: token.get('light_losangle'),
+          light_multiplier: token.get('light_multiplier'),
+          has_bright_light_vision: token.get('has_bright_light_vision'),
+          has_night_vision: token.get('has_night_vision'),
+          night_vision_distance: token.get('night_vision_distance'),
+          night_vision_tint: token.get('night_vision_tint'),
+          emits_bright_light: token.get('emits_bright_light'),
+          bright_light_distance: token.get('bright_light_distance'),
+          emits_low_light: token.get('emits_low_light'),
+          low_light_distance: token.get('low_light_distance'),
+          has_limit_field_of_vision: token.get('has_limit_field_of_vision'),
+          has_limit_field_of_night_vision: token.get('has_limit_field_of_night_vision'),
+          limit_field_of_vision_center: token.get('limit_field_of_vision_center'),
+          limit_field_of_vision_total: token.get('limit_field_of_vision_total'),
+          showname: token.get('showname'),
+          showplayers_name: false,
+          showplayers_bar1: false,
+          showplayers_bar2: false,
+          showplayers_bar3: false,
+          adv_fow_view_distance: token.get('adv_fow_view_distance'),
+          imgsrc: IMG_INVISIBLE,
+        };
+        var tokenInvisible = createObj('graphic', tokenFields);
+        if (tokenInvisible) {
+          evt.tokens = evt.tokens || [];
+          evt.tokens.push(tokenInvisible);
+          //On met l'ancien token dans le gmlayer, car si l'image vient du marketplace, il est impossible de le recréer depuis l'API
+          setToken(token, 'layer', 'gmlayer', evt);
+          setTokenAttr(personnage, 'tokenInvisible', token.id, evt, {
+            maxVal: tokenInvisible.id
+          });
+        }
+      } else { //On enlève l'état invisible
+        var attrInvisible = tokenAttribute(personnage, 'tokenInvisible');
+        if (attrInvisible.length > 0) {
+          var tokenOriginel = getObj('graphic', attrInvisible[0].get('current'));
+          if (!tokenOriginel) {
+            if (token.get('layer') == 'gmlayer') tokenOriginel = token;
+            else {
+              tokenOriginel =
+                findObjs({
+                  _type: 'graphic',
+                  _subtype: 'token',
+                  _pageid: token.get('pageid'),
+                  layer: 'gmlayer',
+                  represents: personnage.charId,
+                  name: token.get('name')
+                });
+              if (tokenOriginel.length > 0) tokenOriginel = tokenOriginel[0];
+            }
+          }
+          var tokenCourant = getObj('graphic', attrInvisible[0].get('max'));
+          if (!tokenCourant) {
+            if (token.get('layer') == 'objects') tokenCourant = token;
+            else {
+              tokenCourant =
+                findObjs({
+                  _type: 'graphic',
+                  _subtype: 'token',
+                  _pageid: token.get('pageid'),
+                  layer: 'objects',
+                  represents: personnage.charId,
+                  name: token.get('name')
+                });
+              if (tokenCourant.length > 0) tokenCourant = tokenCourant[0];
+            }
+          }
+          removeTokenAttr(personnage, 'tokenInvisible', evt);
+          if (tokenOriginel) {
+            setToken(tokenOriginel, 'layer', 'objects', evt);
+            if (tokenCourant) {
+              setToken(tokenOriginel, 'left', tokenCourant.get('left'), evt);
+              setToken(tokenOriginel, 'top', tokenCourant.get('top'), evt);
+              setToken(tokenOriginel, 'width', tokenCourant.get('width'), evt);
+              setToken(tokenOriginel, 'height', tokenCourant.get('height'), evt);
+              setToken(tokenOriginel, 'rotation', tokenCourant.get('rotation'), evt);
+              setToken(tokenOriginel, 'bar2_value', tokenCourant.get('bar2_value'), evt);
+              setToken(tokenOriginel, 'aura2_radius', tokenCourant.get('aura2_radius'), evt);
+              setToken(tokenOriginel, 'aura2_color', tokenCourant.get('aura2_color'), evt);
+              setToken(tokenOriginel, 'aura2_square', tokenCourant.get('aura2_square'), evt);
+              setToken(tokenOriginel, 'showplayers_aura2', tokenCourant.get('showplayers_aura2'), evt);
+              setToken(tokenOriginel, 'statusmarkers', tokenCourant.get('statusmarkers'), evt);
+              setToken(tokenOriginel, 'light_angle', tokenCourant.get('light_angle'), evt);
+              setToken(tokenOriginel, 'has_limit_field_of_vision', tokenCourant.get('has_limit_field_of_vision'), evt);
+              setToken(tokenOriginel, 'has_limit_field_of_night_vision', tokenCourant.get('has_limit_field_of_night_vision'), evt);
+            }
+          }
+          if (tokenCourant) tokenCourant.remove();
         }
       }
     } else if (value) {
@@ -9828,6 +9959,13 @@ var COFantasy = COFantasy || function() {
       selected.push({
         _id: attaquant.token.id
       });
+      var attrAttInvisible = tokenAttribute(attaquant, 'tokenInvisible');
+      if (attrAttInvisible.length > 0 && attaquant.token.id == attrAttInvisible[0].get('max')) {
+        var tokenAttInvisible = getObj('graphic', attrAttInvisible[0].get('current'));
+        if (tokenAttInvisible) selected = [{
+          _id: tokenAttInvisible.id
+        }];
+      }
       if (getState(attaquant, 'invisible') && !charAttributeAsBool(attaquant, 'invisibleEnCombat')) {
         explications.push(attaquant.tokName + " redevient visible");
         setState(attaquant, 'invisible', false, evt);
@@ -9848,8 +9986,14 @@ var COFantasy = COFantasy || function() {
       }
     }
     cibles.forEach(function(target) {
+      var token = target.token;
+      var attrInvisible = tokenAttribute(target, 'tokenInvisible');
+      if (attrInvisible.length > 0 && target.token.id == attrInvisible[0].get('max')) {
+        var tokenInvisible = getObj('graphic', attrInvisible[0].get('current'));
+        if (tokenInvisible) token = tokenInvisible;
+      }
       selected.push({
-        _id: target.token.id
+        _id: token.id
       });
     });
     initiative(selected, evt); //ne recalcule pas l'init
@@ -11709,10 +11853,10 @@ var COFantasy = COFantasy || function() {
         if (options.projection && taillePersonnage(attaquant, 4) > taillePersonnage(target, 4)) {
           var bonusProjection = 5 - taillePersonnage(target, 4);
           options.rolls = options.rolls || [];
-          var distanceProjetee = options.rolls['distanceProjection_'+target.token.id] || rollDePlus(6, {
+          var distanceProjetee = options.rolls['distanceProjection_' + target.token.id] || rollDePlus(6, {
             bonus: bonusProjection
           }).val;
-          evt.action.rolls['distanceProjection'+target.token.id] = distanceProjetee;
+          evt.action.rolls['distanceProjection' + target.token.id] = distanceProjetee;
           var dmgProjection = "3d6";
           if (charAttributeAsBool(target, 'inderacinable')) {
             distanceProjetee /= 2;
@@ -13739,8 +13883,8 @@ var COFantasy = COFantasy || function() {
     target.tokName = target.tokName || target.token.get('name');
     if (estPJ(target) && ((dmgTotal == 'mort' && reglesOptionelles.dommages.val.blessures_graves.val) ||
         (reglesOptionelles.dommages.val.degats_importants.val && dmgTotal >
-        (ficheAttributeAsInt(target, 'niveau', 1) +
-          ficheAttributeAsInt(target, 'constitution', 10))))) {
+          (ficheAttributeAsInt(target, 'niveau', 1) +
+            ficheAttributeAsInt(target, 'constitution', 10))))) {
       var pr = pointsDeRecuperation(target);
       if (pr.current > 0) {
         expliquer("Les dégâts sont si importants que " + target.tokName + " perd 1 PR");
@@ -30513,7 +30657,7 @@ var COFantasy = COFantasy || function() {
     var enlever = options && options.cmd && options.cmd.length > 1 && options.cmd[1] == 'false';
     getSelected(msg, function(selected, playerId) {
       var evt = {
-        type:"Synchronisation des tokens"
+        type: "Synchronisation des tokens"
       };
       if (selected.length === 0) {
         if (enlever) {
@@ -30534,8 +30678,8 @@ var COFantasy = COFantasy || function() {
       }
       var allTokens = findObjs({
         _type: 'graphic',
-                  _subtype: 'token',
-                  layer: 'objects',
+        _subtype: 'token',
+        layer: 'objects',
       });
       iterSelected(selected, function(perso) {
         var name = perso.token.get('name');
@@ -33749,7 +33893,9 @@ var COFantasy = COFantasy || function() {
     var keepToken;
     deplacementsSynchronises.forEach(function(attr) {
       var listTokens = attr.get('current').split(',');
-      listTokens = listTokens.filter(function(tid) { return tid != token.id; });
+      listTokens = listTokens.filter(function(tid) {
+        return tid != token.id;
+      });
       if (listTokens.length < 2) attr.remove();
       else keepToken = true;
     });
@@ -33872,14 +34018,14 @@ var COFantasy = COFantasy || function() {
     var deplacement = prev && (prev.left != x || prev.top != y);
     if (!deplacement) return;
     if (!synchronisation) {
-    var deplacementsSynchronises = tokenAttribute(perso, 'tokensSynchronises');
+      var deplacementsSynchronises = tokenAttribute(perso, 'tokensSynchronises');
       deplacementsSynchronises.forEach(function(attr) {
         var listTokens = attr.get('current');
         listTokens.split(',').forEach(function(tid) {
           if (tid == token.id) return;
           var tok = getObj('graphic', tid);
           if (tok === undefined) {
-            error("Impossible de trouver le token d'id "+tid+" synchronisé avec "+token.get('name'), attr);
+            error("Impossible de trouver le token d'id " + tid + " synchronisé avec " + token.get('name'), attr);
             return;
           }
           tok.set('left', x);
@@ -33919,6 +34065,73 @@ var COFantasy = COFantasy || function() {
         if (stateCOF.options.affichage.val.init_dynamique.val) {
           setTokenInitAura(perso);
         }
+      }
+    }
+    //Si il est invisible, on bouge aussi l'autre token
+    var attrInvisible = tokenAttribute(perso, 'tokenInvisible');
+    if (attrInvisible.length > 0) {
+      attrInvisible = attrInvisible[0];
+      var tidInv1 = attrInvisible.get('current'); //Originel, normalement sur le gmlayer
+      var tidInv2 = attrInvisible.get('max');
+      var autreInvisible;
+      if (token.id == tidInv1) {
+        autreInvisible = getObj('graphic', tidInv2);
+        if (!autreInvisible) {
+          autreInvisible =
+            findObjs({
+              _type: 'graphic',
+              _subtype: 'token',
+              _pageid: token.get('pageid'),
+              layer: 'objects',
+              represents: perso.charId,
+              name: token.get('name')
+            });
+        }
+      } else if (token.id == tidInv2) {
+        autreInvisible = getObj('graphic', tidInv1);
+        if (!autreInvisible) {
+          autreInvisible =
+            findObjs({
+              _type: 'graphic',
+              _subtype: 'token',
+              _pageid: token.get('pageid'),
+              layer: 'gmlayer',
+              represents: perso.charId,
+              name: token.get('name')
+            });
+        }
+      }
+      if (!autreInvisible) {
+        switch (token.get('layer')) {
+          case 'objects':
+            autreInvisible =
+              findObjs({
+                _type: 'graphic',
+                _subtype: 'token',
+                _pageid: token.get('pageid'),
+                layer: 'gmlayer',
+                represents: perso.charId,
+                name: token.get('name')
+              });
+            break;
+          case 'gmlayer':
+            autreInvisible =
+              findObjs({
+                _type: 'graphic',
+                _subtype: 'token',
+                _pageid: token.get('pageid'),
+                layer: 'objects',
+                represents: perso.charId,
+                name: token.get('name')
+              });
+            break;
+          default:
+            error("Impossible de trouver la couche du token " + token.get('name'), token);
+        }
+      }
+      if (autreInvisible) {
+        autreInvisible.set('left', x);
+        autreInvisible.set('top', y);
       }
     }
     //si non, perso est peut-être une monture
