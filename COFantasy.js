@@ -1841,6 +1841,12 @@ var COFantasy = COFantasy || function() {
           setTokenAttr(personnage, 'tokenInvisible', token.id, evt, {
             maxVal: tokenInvisible.id
           });
+    if (stateCOF.options.affichage.val.init_dynamique.val &&
+      roundMarker && (
+          (!stateCOF.chargeFantastique && stateCOF.activeTokenId == token.id) ||
+          (stateCOF.chargeFantastique && stateCOF.chargeFantastique.activeTokenId == token.id))) {
+        roundMarker.set('layer', 'gmlayer');
+      }
         }
       } else { //On enlève l'état invisible
         var attrInvisible = tokenAttribute(personnage, 'tokenInvisible');
