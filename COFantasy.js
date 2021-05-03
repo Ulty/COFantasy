@@ -6869,15 +6869,12 @@ var COFantasy = COFantasy || function() {
     //Règle optionelle : +1d6, à lancer en entrant en combat
     if (reglesOptionelles.initiative.val.initiative_variable.val) {
       var bonusVariable;
-      var persoAUtiliser;
+      var jetPartage;
       if (reglesOptionelles.initiative.val.initiative_variable_individuelle.val) { // Un jet par perso mook
         bonusVariable = attributeAsInt(perso, 'bonusInitVariable', 0);
-        persoAUtiliser = perso;
       } else { //Un seul pour tous les mook du même personnage
         bonusVariable = charAttributeAsInt(perso, 'bonusInitVariable', 0);
-        persoAUtiliser = {
-          charId: perso.charId
-        };
+        jetPartage = true;
       }
       if (bonusVariable === 0) {
         var rollD6 = rollDePlus(6, {
@@ -6885,16 +6882,16 @@ var COFantasy = COFantasy || function() {
         });
         bonusVariable = rollD6.val;
         var msg = "entre en combat. ";
-        var msgSecret =
-          ficheAttributeAsBool(perso, 'jets_caches', false) ||
-          (perso.token.get('layer') == 'gmlayer');
-        if (!msgSecret) {
+        var jetCache = ficheAttributeAsBool(perso, 'jets_caches', false);
+        var msgSecret = perso.token.get('layer') == 'gmlayer';
+        if (!jetCache) {
           msg += onGenre(perso, 'Il', 'Elle') + " fait " + rollD6.roll;
           msg += " à son jet d'initiative";
         }
-        setTokenAttr(persoAUtiliser, 'bonusInitVariable', bonusVariable, evt, {
+        setTokenAttr(perso, 'bonusInitVariable', bonusVariable, evt, {
           msg: msg,
-          secret: msgSecret
+          secret: msgSecret,
+          charAttr: jetPartage
         });
       }
       init += bonusVariable;
