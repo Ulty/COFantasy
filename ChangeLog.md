@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.17
 ### Capacités
+* Amélioration de la prise en charge d'ombre mouvante.
 * Ajout de la capacité Force d'âme du haut elfe.
 * Ajout de la capacité Bûcheron
 * Ajout des capacités Attaque sanglante et Flèche sanglante.
