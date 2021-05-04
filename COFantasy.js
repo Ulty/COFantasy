@@ -16646,14 +16646,15 @@ var COFantasy = COFantasy || function() {
       error("L'action est trop ancienne ou éte annulée", args);
       return;
     }
+    var action = evt.action;
+    if (!action) {
+      error("Type d'évènement pas encore géré pour la chance", evt);
+      return;
+    }
     var perso = evt.personnage;
     var rollId;
     if (args.length > 2) {
-      if (!evt.action) {
-        error("Le dernier évènement n'est pas une action", args);
-        return;
-      }
-      var roll = evt.action.rolls[args[2]];
+      var roll = action.rolls[args[2]];
       if (roll === undefined) {
         error("Erreur interne du bouton de chance : roll non identifié", args);
         return;
@@ -16683,23 +16684,19 @@ var COFantasy = COFantasy || function() {
       rollId: rollId
     };
     chance--;
-    var action = evt.action;
-    if (action) { //alors on peut faire le undo
-      undoEvent(evt);
-      setFicheAttr(perso, 'pc', chance, evtChance, {
-        msg: " a dépensé un point de chance. Il lui en reste " + chance
-      });
-      addEvent(evtChance);
-      action.options = action.options || {};
-      if (rollId) {
-        action.options.chanceRollId = action.options.chanceRollId || {};
-        action.options.chanceRollId[rollId] = (action.options.chanceRollId[rollId] + 10) || 10;
-      } else {
-        action.options.chance = (action.options.chance + 10) || 10;
-      }
-      if (redoEvent(evt, action, perso)) return;
+    undoEvent(evt);
+    setFicheAttr(perso, 'pc', chance, evtChance, {
+      msg: " a dépensé un point de chance. Il lui en reste " + chance
+    });
+    action.options = action.options || {};
+    if (rollId) {
+      action.options.chanceRollId = action.options.chanceRollId || {};
+      action.options.chanceRollId[rollId] = (action.options.chanceRollId[rollId] + 10) || 10;
+    } else {
+      action.options.chance = (action.options.chance + 10) || 10;
     }
-    error("Type d'évènement pas encore géré pour la chance", evt);
+    if (!redoEvent(evt, action, perso))
+      error("Type d'évènement pas encore géré pour la chance", evt);
     addEvent(evtChance);
   }
 
