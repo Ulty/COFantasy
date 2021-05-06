@@ -1091,17 +1091,17 @@ var COFantasy = COFantasy || function() {
         var character = getObj('character', perso.charId);
         if (character) {
           var controlled = character.get('controlledby');
-          if (controlled.includes('all')) sendChar('', msg);
+          if (controlled.includes('all')) sendChat('', msg);
           else {
             controlled.split(',').forEach(function(c) {
               if (c !== '' && !playerIsGM(c)) {
                 var p = getObj('player', c);
                 if (p && p.get('online')) {
-                  sendChar('', '/w "' + p.get('_displayname') + '" ' + msg);
+                  sendChat('', '/w "' + p.get('_displayname') + '" ' + msg);
                 }
               }
             });
-            sendChar('', "/w GM " + msg);
+            sendChat('', "/w GM " + msg);
           }
         } else sendChat('', msg);
       } else sendChat('', msg);
