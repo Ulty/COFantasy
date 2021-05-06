@@ -1055,9 +1055,29 @@ var COFantasy = COFantasy || function() {
     return !inactif;
   }
 
-  function sendChar(charId, msg) {
+  function sendChar(charId, msg, checkAlias) {
     var dest = '';
-    if (charId) dest = 'character|' + charId;
+    if (charId) {
+      if (checkAlias) {
+        var attrDisplay = charAttribute(charId, 'displayname', {
+          caseInsensitive: true
+        });
+        if (attrDisplay.length > 0 && attrDisplay[0].get('current') == '@{alias}') {
+          var attrAlias = charAttribute(charId, 'alias', {
+            caseInsensitive: true
+          });
+          if (attrAlias.length > 0) {
+            msg = attrAlias[0].get('current') + ' ' + msg;
+          } else {
+            dest = 'character|' + charId;
+          }
+        } else {
+          dest = 'character|' + charId;
+        }
+      } else {
+        dest = 'character|' + charId;
+      }
+    }
     sendChat(dest, msg);
   }
 
@@ -1107,7 +1127,14 @@ var COFantasy = COFantasy || function() {
       } else sendChat('', msg);
     } else {
       if (secret) whisperChar(perso.charId, msg);
-      else sendChar(perso.charId, msg);
+      else {
+        if (perso.alias === undefined) {
+          perso.alias =
+            ficheAttribute(perso, 'displayname', '@{character_name}') == '@{alias}';
+        }
+        if (perso.alias) sendChat('', perso.token.get('name') + ' ' + msg);
+        else sendChar(perso.charId, msg);
+      }
     }
   }
 
@@ -2090,7 +2117,7 @@ var COFantasy = COFantasy || function() {
                 finDEffet(attrEffet, effetTempOfAttribute(attrEffet), nomAttrEffet, charId, evt);
               } else if (estEffetCombat(nomAttrEffet)) {
                 var mc = messageEffetCombat[effetCombatOfAttribute(attrEffet)].fin;
-                if (mc && mc !== '') sendChar(charId, mc);
+                if (mc && mc !== '') sendChar(charId, mc, true);
                 evt.deletedAttributes.push(attrEffet);
                 attrEffet.remove();
               }
@@ -6725,7 +6752,7 @@ var COFantasy = COFantasy || function() {
           }
           var oldval = parseInt(attr.get('current'));
           if (isNaN(oldval) || oldval < 1) {
-            sendChar(attr.get('characterid'), "ne peut plus faire cela");
+            sendChar(attr.get('characterid'), "ne peut plus faire cela", true);
             break;
           }
           evt.attributes = evt.attributes || [];
@@ -8661,7 +8688,7 @@ var COFantasy = COFantasy || function() {
       if (isNaN(oldval) || oldval < 1) {
         var expliquer = sendChar;
         if (options.secret) expliquer = whisperChar;
-        expliquer(attr.get('characterid'), "ne peut plus faire cela");
+        expliquer(attr.get('characterid'), "ne peut plus faire cela", true);
         return true;
       }
       evt.attributes = evt.attributes || [];
@@ -15398,15 +15425,15 @@ var COFantasy = COFantasy || function() {
         if (newPv < 0) newPv = 0;
         pvAttr.set('current', newPv);
         if (pv > 0 && newPv === 0) {
-          sendChar(charId, "s'écroule. Il semble sans vie. La douleur qu'il avait ignorée l'a finalement rattrapé...");
+          sendChar(charId, "s'écroule. Il semble sans vie. La douleur qu'il avait ignorée l'a finalement rattrapé...", true);
         } else {
           var nameAttrDMTEMP = 'DMTEMP';
           if (estPNJ && versionFiche < 3.7) nameAttrDMTEMP = 'pnj_dmtemp';
           var tempDmg = ficheAttributeAsInt(charId, nameAttrDMTEMP, 0);
           if (pv > tempDmg && newPv <= tempDmg) {
-            sendChar(charId, "s'écroule, assomé. La douleur qu'il avait ignorée l'a finalement rattrapé...");
+            sendChar(charId, "s'écroule, assomé. La douleur qu'il avait ignorée l'a finalement rattrapé...", true);
           } else {
-            sendChar(charId, "subit le contrecoup de la douleur qu'il avait ignorée");
+            sendChar(charId, "subit le contrecoup de la douleur qu'il avait ignorée", true);
           }
         }
       } else { // ignorer la douleur d'un token
@@ -15422,7 +15449,7 @@ var COFantasy = COFantasy || function() {
           return;
         }
         if (tokensIld.length > 1) {
-          sendChar(charId, "a plusieurs tokens nommés " + tokName + ". Un seul d'entre eux subira l'effet d'ignorer la douleur");
+          sendChar(charId, "a plusieurs tokens nommés " + tokName + ". Un seul d'entre eux subira l'effet d'ignorer la douleur", true);
         }
         var tokPv = parseInt(tokensIld[0].get('bar1_value'));
         var tokNewPv = tokPv - douleur;
@@ -15460,7 +15487,7 @@ var COFantasy = COFantasy || function() {
         obj.remove();
       } else if (estEffetCombat(attrName)) {
         var mc = messageEffetCombat[effetCombatOfAttribute(obj)].fin;
-        if (mc && mc !== '') sendChar(charId, mc);
+        if (mc && mc !== '') sendChar(charId, mc, true);
         evt.deletedAttributes.push(obj);
         obj.remove();
       } else if (estAttributEffetCombat(attrName)) {
@@ -16413,11 +16440,11 @@ var COFantasy = COFantasy || function() {
             sendPerso(perso, "fait un jet de CON pour guérir de sa blessure");
             var m = "/direct " + onGenre(perso, 'Il', 'Elle') + " fait " + tr.texte;
             if (tr.reussite) {
-              sendChar(charId, m + "&ge; 8, son état s'améliore nettement." + tr.modifiers);
+              sendChar(charId, m + "&ge; 8, son état s'améliore nettement." + tr.modifiers, true);
               setState(perso, 'blesse', false, evt);
             } else {
               var msgRate = m + "< 8, son état reste préoccupant." + tr.rerolls + tr.modifiers;
-              sendChar(charId, msgRate);
+              sendChar(charId, msgRate, true);
             }
             finalize();
           });
@@ -16432,7 +16459,7 @@ var COFantasy = COFantasy || function() {
         message =
           "Au cours de la nuit, les points de récupération de " + characterName +
           " passent de " + pr.current + " à " + (pr.current + 1);
-        sendChar(charId, message);
+        sendChar(charId, message, true);
         if (bar1 < pvmax) manquePV.push(perso);
         finalize();
         return;
@@ -16479,8 +16506,8 @@ var COFantasy = COFantasy || function() {
           message = "Après 5 minutes de minutes de repos, ";
         }
         message +=
-          characterName + " récupère " + buildinline(roll) + "+" + bonus + " PV. Il lui reste " + pr.current + " points de récupération";
-        sendChar(charId, "/direct " + message);
+          "récupère " + buildinline(roll) + "+" + bonus + " PV. Il lui reste " + pr.current + " points de récupération";
+        sendPerso(perso, message);
         finalize();
       });
     });
@@ -16676,7 +16703,7 @@ var COFantasy = COFantasy || function() {
     }
     var chance = pointsDeChance(perso);
     if (chance <= 0) {
-      sendChar(perso.charId, " n'a plus de point de chance à dépenser...");
+      sendPerso(perso, "n'a plus de point de chance à dépenser...");
       return;
     }
     var evtChance = {
@@ -20369,7 +20396,7 @@ var COFantasy = COFantasy || function() {
           return;
         } else {
           if (options.rang && options.tempeteDeMana.cout > options.rang) {
-            sendChar(charId, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
+            sendPlayer(msg, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
           }
           if (selected.length == 1 && options.tempeteDeMana.altruiste) {
             selected[0]._id = options.tempeteDeMana.altruiste.token.id;
@@ -20383,7 +20410,7 @@ var COFantasy = COFantasy || function() {
           if (options.puissantPortee || options.tempeteDeManaPortee) options.portee = options.portee * 2;
           var dist = distanceCombat(lanceur.token, perso.token);
           if (dist > options.portee) {
-            sendChar(charId, " est trop loin de " + perso.token.get('name'));
+            sendPerso(perso, " est trop loin de " + perso.token.get('name'));
             return;
           }
         }
@@ -20445,7 +20472,7 @@ var COFantasy = COFantasy || function() {
     if (limiteRessources(lanceur, options, effet, effet, evt)) return;
     entrerEnCombat(lanceur, cibles, explications, evt);
     explications.forEach(function(e) {
-      sendChar('', e);
+      sendChat('', e);
     });
     if (duree > 0) {
       var ef = {
@@ -20637,7 +20664,7 @@ var COFantasy = COFantasy || function() {
           var token = getObj('graphic', sel._id);
           var dist = distanceCombat(lanceur.token, token);
           if (dist > options.portee) {
-            sendChar(charId, whisper + " est trop loin de " + token.get('name'));
+            whisperChar(charId, " est trop loin de " + token.get('name'));
             return false;
           }
           return true;
@@ -20774,7 +20801,7 @@ var COFantasy = COFantasy || function() {
           var token = getObj('graphic', sel._id);
           var dist = distanceCombat(lanceur.token, token);
           if (dist > options.portee) {
-            sendChar(charId, whisper + " est trop loin de " + token.get('name'));
+            whisperChar(charId, " est trop loin de " + token.get('name'));
             return false;
           }
           return true;
@@ -22252,7 +22279,7 @@ var COFantasy = COFantasy || function() {
         break;
       case 'groupe':
         if (!stateCOF.combat) {
-          sendChar(charId, " ne peut pas lancer de soin de groupe en dehors des combats");
+          whisperChar(charId, " ne peut pas lancer de soin de groupe en dehors des combats");
           return;
         }
         effet += ' de groupe';
@@ -22274,7 +22301,7 @@ var COFantasy = COFantasy || function() {
         break;
       case 'secondSouffle':
         if (!stateCOF.combat) {
-          sendChar(charId, " ne peut pas utiliser la capacité second souffle en dehors des combats");
+          whisperChar(charId, " ne peut pas utiliser la capacité second souffle en dehors des combats");
           return;
         }
         effet = "second souffle";
@@ -22339,7 +22366,7 @@ var COFantasy = COFantasy || function() {
         soins = res[0].inlinerolls[0].results.total;
         var soinTxt = buildinline(res[0].inlinerolls[0], 'normal', true);
         if (soins <= 0) {
-          sendChar(charId, "ne réussit pas à soigner (total de soins " + soinTxt + ")");
+          sendChar(charId, "ne réussit pas à soigner (total de soins " + soinTxt + ")", true);
           return;
         }
         var limiteSoinsAtteinte;
@@ -22372,7 +22399,7 @@ var COFantasy = COFantasy || function() {
               if (nbCibles > 1) {
                 display = startFramedDisplay(playerId, effet, soigneur);
               } else if (nbCibles === 0) {
-                sendChar(charId, "personne à soigner");
+                sendChar(charId, "personne à soigner", true);
                 return;
               }
               iterSelected(selected, callback);
@@ -22386,7 +22413,7 @@ var COFantasy = COFantasy || function() {
             if (options.messages) {
               options.messages.forEach(function(message) {
                 if (display) addLineToFramedDisplay(display, message);
-                else sendChar(charId, message);
+                else sendChar(charId, message, true);
               });
             }
             if (display) sendChat("", endFramedDisplay(display));
@@ -22437,7 +22464,7 @@ var COFantasy = COFantasy || function() {
                 addLineToFramedDisplay(display, "<b>" + nomCible + "</b> : trop loin pour le soin.");
               else
                 sendChar(charId,
-                  "est trop loin de " + nomCible + " pour le soigner.");
+                  "est trop loin de " + nomCible + " pour le soigner.", true);
               return;
             }
           }
@@ -22466,7 +22493,7 @@ var COFantasy = COFantasy || function() {
               } else {
                 maxMsg += "soigner " + nomCible;
               }
-              sendChar(charId, maxMsg + ". " + Sujet + " est déjà au maximum de PV");
+              sendChar(charId, maxMsg + ". " + Sujet + " est déjà au maximum de PV", true);
             }
           };
           var img = options.image;
@@ -22494,7 +22521,7 @@ var COFantasy = COFantasy || function() {
                 msgSoin += s + " PV. (Le résultat du jet était " + soinTxt + ")";
               else msgSoin += soinTxt + " PV.";
               msgSoin += extraImg;
-              sendChar(charId, msgSoin);
+              sendChar(charId, msgSoin, true);
             }
           };
           var pvSoigneur;
@@ -22510,7 +22537,7 @@ var COFantasy = COFantasy || function() {
               if (display)
                 addLineToFramedDisplay(display, "<b>" + nomCible + "</b> : plus assez de PV pour le soigner");
               else
-                sendChar(charId,
+                sendPerso(soigneur,
                   "ne peut pas soigner " + nomCible + ", " + sujet + " n'a plus de PV");
               soinImpossible = true;
               finSoin();
@@ -26465,7 +26492,7 @@ var COFantasy = COFantasy || function() {
     };
     var charArbre = createCharacter(nomArbre, options.playerId, avatar, tokenArbre, specArbre);
     evt.characters = [charArbre];
-    sendChar(charArbre.id, "commence à s'animer");
+    sendChar(charArbre.id, "commence à s'animer", true);
     initiative([{
       _id: tokenArbre.id
     }], evt);
@@ -32615,7 +32642,7 @@ var COFantasy = COFantasy || function() {
         attr.remove();
         if (options.print && mEffet) options.print(mEffet.fin);
         else {
-          sendChar(charId, mEffet.fin);
+          sendChar(charId, mEffet.fin, true);
           options.print = function(m) {};
         }
         character = getObj('character', charId);
@@ -32849,7 +32876,7 @@ var COFantasy = COFantasy || function() {
         if (options.print) options.print(mEffet.fin);
         else {
           if (attrName == efComplet)
-            sendChar(charId, mEffet.fin);
+            sendChar(charId, mEffet.fin, true);
           else {
             var tokenName = attrName.substring(attrName.indexOf('_') + 1);
             sendChat('', tokenName + ' ' + mEffet.fin);
@@ -32918,7 +32945,7 @@ var COFantasy = COFantasy || function() {
               addLineToFramedDisplay(display, perso.token.get('name') + ' ' + msgDm + " subit " + dmgDisplay + " DM");
               sendChat('', endFramedDisplay(display));
             } else if (effet == attrName) {
-              sendChar(perso.charId, msgDm + " subit " + dmgDisplay + " DM");
+              sendPerso(perso, msgDm + " subit " + dmgDisplay + " DM");
             } else {
               var tokenName = attrName.substring(attrName.indexOf('_') + 1);
               sendChat('', tokenName + ' ' + msgDm + " subit " + dmgDisplay + " DM");
@@ -33125,7 +33152,7 @@ var COFantasy = COFantasy || function() {
               var expliquer;
               if (attr.get('name') == 'vapeursEthyliques') {
                 expliquer = function(s) {
-                  sendChar(veCharId, s);
+                  sendChar(veCharId, s, true);
                 };
               } else {
                 perso.tokName = tok.get('name');
@@ -33892,7 +33919,7 @@ var COFantasy = COFantasy || function() {
                   });
                   dureeStrang[0].set('max', false);
                 } else { //Ça fait trop longtemps, on arrête tout
-                  sendChar(charId, messageEffetTemp[effet].fin);
+                  sendChar(charId, messageEffetTemp[effet].fin, true);
                   attr.set('current', v);
                   evt.attributes.pop(); //On enlève des attributs modifiés pour mettre dans les attribute supprimés.
                   evt.deletedAttributes.push(attr);
