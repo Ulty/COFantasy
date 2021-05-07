@@ -29,6 +29,7 @@
 * Support complet de la Voie du porteur de bouclier (prestige)
 
 ### Autres améliorations
+* Possibilité de passer des options aux effets à dégâts sur la durée.
 * Un personnage invisible ne peut plus être vu des autres joueurs.
 * Ajout d'une possibilité de synchronisation des tokens entre cartes.
 * Une réussite critique à une feinte double les bonus de DM à l'attaque suivante.
