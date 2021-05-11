@@ -29,6 +29,7 @@
 * Support complet de la Voie du porteur de bouclier (prestige)
 
 ### Autres améliorations
+* Gestion des identités secrètes.
 * Possibilité de passer des options aux effets à dégâts sur la durée.
 * Un personnage invisible ne peut plus être vu des autres joueurs.
 * Ajout d'une possibilité de synchronisation des tokens entre cartes.

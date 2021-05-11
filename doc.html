@@ -77,6 +77,7 @@
 									<li><a class="text-info" href="#lumiere">Lumière</a></li>
 									<li><a class="text-info" href="#jet_caracteristiques">Jet de caractéristiques</a></li>
 									<li><a class="text-info" href="#son">Jouer un son</a></li>
+									<li><a class="text-info" href="#anonymat">Anonymat et fausses identités</a></li>
 								</ul>
 								<li data-toggle="collapse" data-target="#abilities"><a href="#CapacitesClasse">Capacités par Classe</a></li>
 								<ul id="abilities" class="collapse">
@@ -839,6 +840,21 @@
                 Les fonctions d'attaque peuvent jouer un son (options commençant par <code>--soundAttack</code>). Une partie des actions admet aussi une option <code>--son</code> pour jouer un son. Finalement, il est aussi possible de simplement jouer un son en utilisant <code>!cof-jouer-son <i>son</i></code>. Il est possible d'arrêter tous les sons avec la commande <code>!cof-jouer-son</code>, sans argument.
 
                 Le script est compatible avec <a href="https://wiki.roll20.net/Script:Roll20_Audio_Master">Roll20AM</a>, et si ce script est installé, il fera appel à lui. Mais si il n'est pas installé (et seulement dans ce cas !), il va simplement utiliser les sons dans le jukebox.
+              </div>
+              <h3 class="text-info" id="anonymat">2.15 Anonymat et fausses identités</h3>
+              <div class="decalage">
+                <p>La fiche de personnage propose deux noms par personnage : le nom principal (appelé simplement "nom") et un alias. Le nom principal est celui visible dans la liste des personnages de l'interface Roll20. C'est aussi celui qui est montré quand on montre une fiche aux joueurs. La fiche propose de choisir le nom affiché lors des jets (champ "connu") : soit le nom principal, soit l'alias. Le script part toujours de l'hypothèse que c'est ce nom qui est connu des joueurs, et que le second est le "vrai" nom. Je laisse le choix au MJ de décider lequel est quoi, car les deux méthodes ont leurs avantages et leurs inconvénients : si on choisit d'avoir l'alias en nom caché, on peut montrer la fiche aux joueurs, sans dévoiler le vrai nom. En revanche, dans la liste des personnages, il peut être plus difficile de s'y retrouver, car le MJ ne verra pas le vrai nom. Si on choisit d'avoir le vrai nom caché, tout est bien clair pour le MJ, mais il doit faire attention à ne pas montrer la fiche aux joueurs.</p>
+                <p>Concernant les tokens, le script suppose que vous mettez en "connu" le nom visible par les joueurs.</p>
+              <h4 class="text-secondary" id="reveler">Révéler le vrai nom d'un personnage</h4>
+              <div class="decalage">
+                <p>Pour révéler le vrai nom d'un personnage au joueurs, vous pourrez utiliser <code>!cof-reveler-nom</code>. L'effet s'applique à tous les personnages sélectionnés (voir les méthodes de sélection). L'effet est le suivant&nbsp;:</p>
+                <ul>
+                  <li>Si le personnage était connu par son nom, et que l'alias était non vide, alors on copie l'alias à la place du nom, et on efface l'alias.</li>
+                  <li>Si le personnage était connu par son alias, alors on le passe en connu par son nom et on efface l'alias.</li>
+                  <li>Si on a fait un des deux changements ci-dessus, alors on change aussi les noms des tokens&nbsp;: si on a passé un nom en argument à <code>!cof-reveler-nom</code>, alors on utilise ce nom. Sinon, on utilise le nouveau nom public. Tous les tokens liés prennent ce nom, et tous les tokens non liés gardent leur numéro et changent juste la partie avant le numéro en ce nom. On n'applique cette transformation qu'aux tokens dont les noms n'ont pas été modifiés (par rapport au token par défaut défini sur la fiche).</li>
+                  <li>Et on change aussi le nom du token par défaut.</li>
+                </ul>
+              </div>
               </div>
             </div>
 			<h2 class="text-primary" id="CapacitesClasse">3. Capacités par Classe</h2>
