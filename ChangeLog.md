@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.17
 ### Capacités
+* Saisir et broyer pour les chaoses.
 * Amélioration de la prise en charge d'ombre mouvante.
 * Ajout de la capacité Force d'âme du haut elfe.
 * Ajout de la capacité Bûcheron

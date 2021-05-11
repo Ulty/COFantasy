@@ -2382,8 +2382,8 @@ var COFantasy = COFantasy || function() {
     var oldTokenFields = {};
     for (const field in spec) {
       if (field.startsWith('_')) continue;
-      if (field == 'imgsrc' || field == 'represents' || field == 'top' || 
-        field == 'left' || field == 'page_id' || field == 'layer' || 
+      if (field == 'imgsrc' || field == 'represents' || field == 'top' ||
+        field == 'left' || field == 'page_id' || field == 'layer' ||
         field == 'lastmove') continue;
       var oldValue = token.get(field);
       if (oldValue == spec[field]) continue;
@@ -6498,7 +6498,9 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    attack(msg.who, playerId, attaquant, targetToken, weaponStats, options);
+    var playerName = msg.who;
+    if (playerIsGM(playerId)) playerName = 'GM';
+    attack(playerName, playerId, attaquant, targetToken, weaponStats, options);
   }
 
   function depenseManaPossible(personnage, cout, msg) {
@@ -10611,8 +10613,12 @@ var COFantasy = COFantasy || function() {
             return;
           }
         }
-        if (!options.auto && d20roll > 14 && charAttributeAsBool(attaquant, 'projection')) {
-          options.projection = true;
+        if (!options.auto && d20roll > 14) {
+          if (charAttributeAsBool(attaquant, 'saisirEtBroyer')) {
+            options.saisirEtBroyer = true;
+          } else if (charAttributeAsBool(attaquant, 'projection')) {
+            options.projection = true;
+          }
         }
         //Modificateurs en Attaque qui ne dépendent pas de la cible
         var attBonusCommun =
@@ -11970,13 +11976,40 @@ var COFantasy = COFantasy || function() {
             }
           }
         }
+        if (options.saisirEtBroyer) {
+          target.messages.push(attaquant.tokName + " soulève " + target.tokName + " gesticulant" + eForFemale(target));
+          if (attackLabel) {
+            var cmdAttaqueGratuiteSaisi = '!cof-attack ' + attaquant.token.id + ' ' + target.token.id + ' ' + attackLabel + ' --bonusAttaque 5';
+            target.messages.push(boutonSimple(cmdAttaqueGratuiteSaisi, 'Attaque gratuite'));
+          } else {
+            target.messages.push(attaquant.tokName + " a droit à une attaque gratuite contre " + target.tokName);
+          }
+          if (valAttribute(target, 'FOR', 'force') < valAttribute(attaquant, 'FOR', 'force')) {
+            options.rolls = options.rolls || [];
+            var distanceSaisiProjete = options.rolls['distanceSaisiProjection_' + target.token.id] ||
+              rollDePlus(6, {
+                nbDes: 2
+              });
+            evt.action.rolls['distanceSaisiProjection_' + target.token.id] = distanceSaisiProjete;
+            if (charAttributeAsBool(target, 'inderacinable')) {
+              distanceSaisiProjete.val /= 2;
+              distanceSaisiProjete.roll = '(' + distanceSaisiProjete.roll + ')/2 = ' + distanceSaisiProjete.val;
+            }
+            target.additionalDmg.push({
+              type: 'normal',
+              value: Math.floor(distanceSaisiProjete.val)
+            });
+            target.messages.push(target.tokName + " est projeté" + eForFemale(target) + " sur " + distanceSaisiProjete.roll + " mètres");
+          }
+        }
         if (options.projection && taillePersonnage(attaquant, 4) > taillePersonnage(target, 4)) {
           var bonusProjection = 5 - taillePersonnage(target, 4);
           options.rolls = options.rolls || [];
-          var distanceProjetee = options.rolls['distanceProjection_' + target.token.id] || rollDePlus(6, {
-            bonus: bonusProjection
-          }).val;
-          evt.action.rolls['distanceProjection' + target.token.id] = distanceProjetee;
+          var distanceProjetee = options.rolls['distanceProjection_' + target.token.id] ||
+            rollDePlus(6, {
+              bonus: bonusProjection
+            }).val;
+          evt.action.rolls['distanceProjection_' + target.token.id] = distanceProjetee;
           var dmgProjection = "3d6";
           if (charAttributeAsBool(target, 'inderacinable')) {
             distanceProjetee /= 2;
@@ -30993,7 +31026,8 @@ var COFantasy = COFantasy || function() {
             defaultToken = JSON.parse(defaultToken);
             evt.defaultTokens.push({
               character: character,
-              defaultToken: {...defaultToken}
+              defaultToken: {...defaultToken
+              }
             });
             defaultTokenName = defaultToken.name;
             defaultToken.name = nouveauNomToken;
