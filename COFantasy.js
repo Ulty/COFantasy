@@ -5771,7 +5771,8 @@ var COFantasy = COFantasy || function() {
           } else if (estEffetCombat(effet)) {
             lastEtat = {
               effet: effet,
-              typeDmg: lastType
+              typeDmg: lastType,
+              message: messageEffetCombat[effet]
             };
           } else if (estEffetIndetermine(effet)) {
             lastEtat = {
@@ -5984,6 +5985,8 @@ var COFantasy = COFantasy || function() {
             var saveParams = parseSave(cmd);
             if (saveParams) {
               lastEtat.save = saveParams;
+              lastEtat.save.entrave =
+                lastEtat.etat == 'paralyse' || lastEtat.etat == 'immobilise' || lastEtat.etat == 'ralenti' || (lastEtat.message && lastEtat.message.entrave);
               return;
             }
             return;
@@ -8154,7 +8157,7 @@ var COFantasy = COFantasy || function() {
         if (options.pasDeDmg) explications.push(msgRA);
         else explications.push(msgRA + " et aux DM");
       }
-      if (attributeAsBool(attaquant, 'enragé')) {
+      if (attributeAsBool(attaquant, 'enrage')) {
         attBonus += 5;
         if (options.pasDeDmg)
           explications.push("Enragé => +5 en Attaque");
@@ -8879,7 +8882,7 @@ var COFantasy = COFantasy || function() {
     var weaponName = options.nom || weaponStats.name;
     //Options automatically set by some attributes
     if (attributeAsBool(attaquant, 'paralysieRoublard')) {
-      if (attributeAsBool(attaquant, 'enragé')) {
+      if (attributeAsBool(attaquant, 'enrage')) {
         sendPerso(attaquant, "est trop enragé pour sentir la douleur");
       } else if (charAttributeAsBool(attaquant, 'proprioception')) {
         sendPerso(attaquant, "est immunisé à la douleur");
@@ -11698,7 +11701,7 @@ var COFantasy = COFantasy || function() {
         value: options.rageBerserk + options.d6
       });
     }
-    if (attributeAsBool(attaquant, 'enragé')) {
+    if (attributeAsBool(attaquant, 'enrage')) {
       attaquant.additionalDmg.push({
         type: mainDmgType,
         value: '1' + options.d6
@@ -12453,14 +12456,16 @@ var COFantasy = COFantasy || function() {
             }
             if (etats) {
               etats.forEach(function(ce) {
-                if (charAttributeAsBool(target, "liberteDAction") && options.sortilege && (
-                    ce.etat == 'apeure' ||
-                    ce.etat == 'endormi' ||
-                    ce.etat == 'etourdi' ||
-                    ce.etat == 'immobilise' ||
-                    ce.etat == 'paralyse' ||
-                    ce.etat == 'ralenti'
-                  )) {
+                if (options.sortilege &&
+                  ((charAttributeAsBool(target, "liberteDAction") && (
+                      ce.etat == 'apeure' ||
+                      ce.etat == 'endormi' ||
+                      ce.etat == 'etourdi' ||
+                      ce.etat == 'immobilise' ||
+                      ce.etat == 'paralyse' ||
+                      ce.etat == 'ralenti'
+                    )) ||
+                    (attributeAsBool(target, 'actionLibre') && (ce.etat == 'ralenti' || ce.etat == 'immobilise' || ce.etat == 'paralyse')))) {
                   target.messages.push(target.tokName + " reste libre de ses mouvements !");
                   return;
                 }
@@ -12499,14 +12504,16 @@ var COFantasy = COFantasy || function() {
             }
             if (effets) {
               effets.forEach(function(ef) {
-                if (charAttributeAsBool(target, "liberteDAction") && options.sortilege && (
+                if (options.sortilege &&
+                  (charAttributeAsBool(target, "liberteDAction") && (options.sortilege && (
                     ef.effet == 'apeureTemp' ||
                     ef.effet == 'endormiTemp' ||
                     ef.effet == 'etourdiTemp' ||
                     ef.effet == 'immobiliseTemp' ||
                     ef.effet == 'paralyseTemp' ||
                     ef.effet == 'ralentiTemp'
-                  )) {
+                  ))) ||
+                  (attributeAsBool(target, 'actionLibre') && (ef.effet == 'ralentiTemp' || ef.effet == 'immobiliseTemp' || ef.effet == 'paralyseTemp'))) {
                   target.messages.push(target.tokName + " reste libre de ses mouvements !");
                   return;
                 }
@@ -13356,6 +13363,12 @@ var COFantasy = COFantasy || function() {
   //   - type : le type de dégâts contre lequel on fait le save
   //   - hideSaveTitle : cache le titre du save
   //   - bonus : bonus au jet de save
+  // s peut contenir:
+  //   - carac : la caractéristique à utiliser pour le save
+  //   - carac2 : caractéristique alternative
+  //   - seuil : la difficulté du jet de sauvegarde
+  //   - fauchage
+  //   - entrave (pour les action qui immobilisent, ralentissent ou paralysent)
   function save(s, target, saveId, expliquer, options, evt, afterSave) {
     target.tokName = target.tokName || target.token.get('name');
     if (options.type && immuniseAuType(target, options.type, options.attaquant)) {
@@ -13385,6 +13398,10 @@ var COFantasy = COFantasy || function() {
       var bonusProtectionContreLeMal = getValeurOfEffet(target, 'protectionContreLeMal', 2);
       bonus += bonusProtectionContreLeMal;
       expliquer("Protection contre le mal => +" + bonusProtectionContreLeMal + " au jet de sauvegarde");
+    }
+    if (s.entrave && attributeAsBool(target, 'actionLibre')) {
+      bonus += 5;
+      expliquer("Action libre => +5 pour résister aux entraves");
     }
     var bonusAttrs = [];
     var carac = s.carac;
@@ -14112,7 +14129,7 @@ var COFantasy = COFantasy || function() {
       expliquer(msgIncrevable);
       setTokenAttr(target, 'increvable', 0, evt);
       setTokenAttr(target, 'increvableActif', true, evt);
-    } else if ((attributeAsBool(target, 'enragé') || charAttributeAsBool(target, 'durACuire')) &&
+    } else if ((attributeAsBool(target, 'enrage') || charAttributeAsBool(target, 'durACuire')) &&
       !attributeAsBool(target, 'aAgiAZeroPV')) {
       var msgAgitZ = target.tokName + " devrait être mort";
       msgAgitZ += eForFemale(target) + ", mais ";
@@ -14504,8 +14521,8 @@ var COFantasy = COFantasy || function() {
           }
           if ((crit || bar1 < pvmax / 2) &&
             charAttributeAsBool(target, 'peutEnrager') &&
-            !attributeAsBool(target, 'enragé')) {
-            setTokenAttr(target, 'enragé', true, evt);
+            !attributeAsBool(target, 'enrage')) {
+            setTokenAttr(target, 'enrage', true, evt);
             expliquer(target.tokName + " devient enragé" + eForFemale(target) + ".");
             finDEffetDeNom(target, 'apeureTemp', evt);
             finDEffetDeNom(target, 'peurEtourdi', evt);
@@ -20525,7 +20542,7 @@ var COFantasy = COFantasy || function() {
         }
         if (charAttributeAsBool(perso, 'liberteDAction') &&
           (effet == 'confusion ' ||
-            effet == 'charmé ' ||
+            effet == 'charme ' ||
             effet == 'prisonVegetale' ||
             effet == 'toiles' ||
             effet == 'foretVivanteEnnemie' ||
@@ -20537,6 +20554,11 @@ var COFantasy = COFantasy || function() {
                 effet == 'paralyseTemp' ||
                 effet == 'ralentiTemp'))
           )) {
+          sendPerso(perso, "reste libre de ses mouvements !");
+          return;
+        }
+        if ((options.magique || options.mana) && attributeAsBool(perso, 'actionLibre') &&
+          (effet == 'immobiliseTep' || effet == 'paralyseTemp' || effet == 'ralentiTemp')) {
           sendPerso(perso, "reste libre de ses mouvements !");
           return;
         }
@@ -20664,6 +20686,7 @@ var COFantasy = COFantasy || function() {
             chanceRollId: options.chanceRollId,
             type: options.type
           };
+          options.save.entrave = mEffet.entrave;
           var expliquer = function(s) {
             sendPerso(perso, s);
           };
@@ -21034,7 +21057,7 @@ var COFantasy = COFantasy || function() {
       charAttributeAsBool(target, 'immunite_peur') ||
       charAttributeAsBool(target, 'proprioception') ||
       charAttributeAsBool(target, 'sansEsprit') ||
-      attributeAsBool(target, 'enragé') ||
+      attributeAsBool(target, 'enrage') ||
       charAttributeAsBool(target, 'liberteDAction')) {
       messages.push(targetName + " est insensible à la peur !");
       callback();
@@ -31609,6 +31632,7 @@ var COFantasy = COFantasy || function() {
   // seulementVivant: ne peut s'appliquer qu'aux créatures vivantes
   // visible : l'effet est visible
   // msgSave: message à afficher quand on résiste à l'effet. Sera précédé de "pour "
+  // entrave: effet qui immobilise, paralyse ou ralentit
   var messageEffetTemp = {
     sousTension: {
       activation: "se charge d'énergie électrique",
@@ -31685,7 +31709,8 @@ var COFantasy = COFantasy || function() {
       msgSave: "ne plus être ralenti",
       fin: "n'est plus ralenti",
       prejudiciable: true,
-      visible: true
+      visible: true,
+      entrave: true
     },
     paralyseTemp: {
       activation: "est paralysé : aucune action ni déplacement possible",
@@ -31694,7 +31719,8 @@ var COFantasy = COFantasy || function() {
       fin: "n'est plus paralysé",
       msgSave: "ne plus être paralysé",
       prejudiciable: true,
-      visible: true
+      visible: true,
+      entrave: true
     },
     immobiliseTemp: {
       activation: "est immobilisé : aucun déplacement possible",
@@ -31703,7 +31729,8 @@ var COFantasy = COFantasy || function() {
       fin: "n'est plus immobilisé",
       msgSave: "pouvoir bouger",
       prejudiciable: true,
-      visible: true
+      visible: true,
+      entrave: true
     },
     etourdiTemp: {
       activation: "est étourdi : aucune action et -5 en DEF",
@@ -31752,7 +31779,8 @@ var COFantasy = COFantasy || function() {
       actif: "est bloqué et ne peut pas se déplacer",
       fin: "peut à nouveau se déplacer",
       msgSave: "pouvoir se déplacer",
-      prejudiciable: true
+      prejudiciable: true,
+      entrave: true
     },
     diversionManoeuvre: {
       activation: "est déconcentré",
@@ -31780,7 +31808,8 @@ var COFantasy = COFantasy || function() {
       msgSave: "pouvoir à nouveau attaquer son adversaire",
       prejudiciable: true,
       generic: true,
-      visible: true
+      visible: true,
+      entrave: true
     },
     epeeDansante: {
       activation: "fait apparaître une lame d'énergie lumineuse",
@@ -32003,8 +32032,9 @@ var COFantasy = COFantasy || function() {
       fin: "se libère des toiles",
       msgSave: "se libérer des toiles",
       prejudiciable: true,
-      statusMarker: 'cobweb', //À changer
-      visible: true
+      statusMarker: 'cobweb',
+      visible: true,
+      entrave: true
     },
     prisonVegetale: {
       activation: "voit des plantes pousser et s'enrouler autour de ses jambes",
@@ -32013,7 +32043,8 @@ var COFantasy = COFantasy || function() {
       msgSave: "se libérer des plantes",
       prejudiciable: true,
       statusMarker: 'green',
-      visible: true
+      visible: true,
+      entrave: true
     },
     protectionContreLesElements: {
       activation: "lance un sort de protection contre les éléments",
@@ -32117,7 +32148,8 @@ var COFantasy = COFantasy || function() {
       msgSave: "résister à la douleur",
       prejudiciable: true,
       seulementVivant: true,
-      visible: true
+      visible: true,
+      entrave: true
     },
     mutationOffensive: {
       activation: "échange une partie de son corps avec celle d'une créature monstrueuse",
@@ -32403,7 +32435,7 @@ var COFantasy = COFantasy || function() {
       fin: "retrouve son calme",
       msgSave: "retrouver son calme",
     },
-    enragé: {
+    enrage: {
       activation: "devient enragé",
       actif: "est enragé",
       fin: "retrouve son calme",
@@ -32442,6 +32474,7 @@ var COFantasy = COFantasy || function() {
       actif: "est agrippé",
       fin: "se libère",
       msgSave: "se libérer",
+      entrave: true
     },
     devore: {
       activation: "saisit sa cible",
@@ -32453,6 +32486,7 @@ var COFantasy = COFantasy || function() {
       actif: "est saisi",
       fin: "se libère",
       msgSave: "se libérer",
+      entrave: true
     },
     aGobe: {
       activation: "avale sa cible",
@@ -32464,6 +32498,7 @@ var COFantasy = COFantasy || function() {
       actif: "est dans le ventre d'une créature",
       fin: "fin de la digestion, sort du ventre",
       msgSave: "sortir du ventre",
+      entrave: true
     },
     inconfort: {
       activation: "commence à être gêné par son armure",
@@ -32528,7 +32563,8 @@ var COFantasy = COFantasy || function() {
     foretVivanteEnnemie: {
       activation: "est gêné par la forêt",
       actif: "est désorienté par la forêt",
-      fin: "se retrouve dans une forêt normale"
+      fin: "se retrouve dans une forêt normale",
+      entrave: true
     },
     mutationCuirasse: {
       activation: "endurcit sa peau",
@@ -32580,7 +32616,7 @@ var COFantasy = COFantasy || function() {
       actif: "sait un peu à l'avance ce qu'il va se passer",
       fin: "l'effet du rituel de divination prend fin",
     },
-    charmé: {
+    charme: {
       activation: "devient un ami de longue date",
       actif: "est sous le charme de quelqu'un",
       fin: "retrouve ses esprits"
@@ -33747,10 +33783,12 @@ var COFantasy = COFantasy || function() {
         saveOpts.type = attrType[0].get('current');
       }
       var saveId = 'saveParTour_' + attrEffet.id + '_' + perso.token.id;
-      save({
-          carac: carac,
-          seuil: seuil
-        }, perso, saveId, expliquer, saveOpts, evt,
+      var s = {
+        carac: carac,
+        seuil: seuil,
+        entrave: met.entrave
+      };
+      save(s, perso, saveId, expliquer, saveOpts, evt,
         function(reussite, texte) { //asynchrone
           if (reussite) {
             var eff = effetC;
