@@ -8473,8 +8473,8 @@ var COFantasy = COFantasy || function() {
       var niveauTouche = attrFeinte[0].get('max');
       if (niveauTouche > 0) { //La feinte avait touché cette cible
         var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
-        if (options.contact && faireMouche > 0) {
-          if (!options.pasDeDmg) {
+        if (faireMouche > 0) {
+          if (options.contact && !options.pasDeDmg) {
             target.faireMouche = faireMouche * niveauTouche;
             msgFeinte += " et peut faire mouche";
           }
@@ -10858,13 +10858,14 @@ var COFantasy = COFantasy || function() {
                 addAttackSound("soundAttackSuccesCritique", weaponStats.divers, options);
                 touche = true;
                 critique = true;
-                if (options.contact && !target.faireMouche &&
-                  attributeAsBool(target, 'enerve')) {
+                if (options.contact) {
+                  if (attributeAsBool(target, 'enerve')) {
                   var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
-                  if (faireMouche > 0) target.faireMouche = faireMouche;
+                  if (faireMouche > 0) target.faireMouche = (target.faireMouche || 0) + faireMouche;
                 }
-                if (options.contact && charAttributeAsBool(attaquant, 'briseurDOs')) {
+                if (charAttributeAsBool(attaquant, 'briseurDOs')) {
                   target.osBrises = true;
+                }
                 }
               } else if (options.champion || targetd20roll == 20 || paralyse) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
@@ -12577,7 +12578,7 @@ var COFantasy = COFantasy || function() {
                           "L'attaque soigne " + attackerTokName + " de " + soins + " PV");
                       });
                     }
-                    var absorptionEnergie = attributeAsInt(attaquant, "absorptionEnergie", 0);
+                    var absorptionEnergie = charAttributeAsInt(attaquant, "absorptionEnergie", 0);
                     if (absorptionEnergie > 0) {
                       soigneToken(attaquant, absorptionEnergie, evt, function(soins) {
                         target.messages.push(
@@ -15346,6 +15347,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('prescienceUtilisee', evt, attrs);
     attrs = removeAllAttributes('attaqueAOutrance', evt, attrs);
     attrs = removeAllAttributes('increvableHumainUtilise', evt, attrs);
+    attrs = removeAllAttributes('resistanceRaillerie', evt, attrs);
     // Autres attributs
     // Remettre le pacifisme au max
     resetAttr(attrs, 'pacifisme', evt, "retrouve son pacifisme");
@@ -25562,7 +25564,15 @@ var COFantasy = COFantasy || function() {
       error("Le deuxième argument de !cof-provocation n'est pas un token valide");
       return;
     }
-    if (cmd.length > 3 && cmd[3] == 'raillerie') options.raillerie = true;
+    if (cmd.length > 3 && cmd[3] == 'raillerie') {
+      if (charAttributeAsBool(cible, 'raillerieImpossible')) {
+        sendPerso(cible, "ne semble pas comprendre les railleries de " + voleur.token.get('name'));
+        return;
+      }
+      options.raillerie = true;
+      options.bonusAttrs = options.bonusAttrs || [];
+      options.bonusAttrs.push('resistanceRaillerie');
+    }
     doProvocation(voleur, cible, options);
   }
 
@@ -25609,35 +25619,58 @@ var COFantasy = COFantasy || function() {
               case 0:
               case 1:
                 reussite = "La " + action + " réussit tout juste.";
-                if (options.raillerie) setAttrDuree(cible, 'enerve', 1, evt);
+                if (options.raillerie) {
+                  setAttrDuree(cible, 'enerve', 1, evt);
+                  setTokenAttr(cible, 'resistanceRaillerie',
+                    attributeAsInt(cible, 'resistanceRaillerie', 0) + 2, evt);
+                }
             }
             break;
           case 1:
             switch (crit) {
               case -1:
                 reussite = nomCible + " marche complètement, il attaque " + nomVoleur;
-                if (options.raillerie) setAttrDuree(cible, 'enerve', 1, evt);
+                if (options.raillerie) {
+                  setAttrDuree(cible, 'enerve', 1, evt);
+                  removeTokenAttr(cible, 'resistanceRaillerie', evt);
+                }
                 break;
               case 0:
                 if (options.raillerie) {
                   setAttrDuree(cible, 'enerve', 1, evt);
                   reussite = nomVoleur + " a réussi à bien énerver " + nomCible;
+                  setTokenAttr(cible, 'resistanceRaillerie',
+                    attributeAsInt(cible, 'resistanceRaillerie', 0) + 1, evt);
                 } else reussite = "La provocation réussit.";
                 break;
               case 1:
                 reussite = "La provocation est une réussite critique !";
                 setAttrDuree(cible, 'enerve', 1, evt);
+                  setTokenAttr(cible, 'resistanceRaillerie',
+                    attributeAsInt(cible, 'resistanceRaillerie', 0) - 1, evt);
             }
             break;
           case 2:
             switch (crit) {
               case -1:
                 reussite = "Échec critique de la " + action + " !";
+                if (options.raillerie) {
+                  setTokenAttr(cible, 'resistanceRaillerie',
+                    attributeAsInt(cible, 'resistanceRaillerie', 0) + 5, evt);
+                }
                 break;
               case 0:
+                if (options.raillerie) {
+                  setTokenAttr(cible, 'resistanceRaillerie',
+                    attributeAsInt(cible, 'resistanceRaillerie', 0) + 1, evt);
+                }
                 reussite = "La provocation échoue";
                 break;
               case 1:
+                if (options.raillerie) {
+                  setTokenAttr(cible, 'resistanceRaillerie',
+                    attributeAsInt(cible, 'resistanceRaillerie', 0) + 10, evt);
+                }
                 reussite = nomCible + " voit clair dans le jeu de " + nomCible + ". La provocation échoue.";
             }
         }
