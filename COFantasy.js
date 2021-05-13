@@ -1596,6 +1596,12 @@ var COFantasy = COFantasy || function() {
         removeTokenAttr(perso, 'blessureQuiSaigne', evt, {
           msg: ": les soins referment la blessure"
         });
+        removeTokenAttr(perso, 'blessureQuiSaignePuissant', evt);
+        removeTokenAttr(perso, 'blessureQuiSaigneValeur', evt);
+        removeTokenAttr(perso, 'blessureQuiSaigneSaveParTour', evt);
+        removeTokenAttr(perso, 'blessureQuiSaigneSaveParTourType', evt);
+        removeTokenAttr(perso, 'blessureQuiSaigneTempeteDeManaIntense', evt);
+        removeTokenAttr(perso, 'blessureQuiSaigneOptions', evt);
       }
       if (callTrue) callTrue(soinsEffectifs);
     } else {
