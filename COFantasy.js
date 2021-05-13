@@ -1809,80 +1809,82 @@ var COFantasy = COFantasy || function() {
         }
       }
     } else if (etat == 'invisible') {
+      var attrInvisible = tokenAttribute(personnage, 'tokenInvisible');
       if (value) {
-        //On va créer une copie de token, mais avec une image invisible et aura visible seulement de ceux qui contrôlent le token
-        var tokenFields = {
-          _pageid: pageId,
-          represents: personnage.charId,
-          left: token.get('left'),
-          top: token.get('top'),
-          width: token.get('width'),
-          height: token.get('height'),
-          rotation: token.get('rotation'),
-          layer: 'objects',
-          name: token.get('name'),
-          bar1_value: token.get('bar1_value'),
-          bar1_max: token.get('bar1_max'),
-          bar1_link: token.get('bar1_link'),
-          bar2_value: token.get('bar2_value'),
-          bar2_max: token.get('bar2_max'),
-          bar2_link: token.get('bar2_link'),
-          bar3_value: token.get('bar3_value'),
-          bar3_max: token.get('bar3_max'),
-          aura1_radius: 0,
-          aura1_color: "#FF9900",
-          aura1_square: false,
-          showplayers_aura1: false,
-          aura2_radius: token.get('aura2_radius'),
-          aura2_color: token.get('aura2_color'),
-          aura2_square: token.get('aura2_square'),
-          showplayers_aura2: token.get('showplayers_aura2'),
-          statusmarkers: "",
-          light_radius: token.get('light_radius'),
-          light_dimradius: token.get('light_dimradius'),
-          light_otherplayers: token.get('light_otherplayers'),
-          light_hassight: token.get('light_hassight'),
-          light_angle: token.get('light_angle'),
-          light_losangle: token.get('light_losangle'),
-          light_multiplier: token.get('light_multiplier'),
-          has_bright_light_vision: token.get('has_bright_light_vision'),
-          has_night_vision: token.get('has_night_vision'),
-          night_vision_distance: token.get('night_vision_distance'),
-          night_vision_tint: token.get('night_vision_tint'),
-          emits_bright_light: token.get('emits_bright_light'),
-          bright_light_distance: token.get('bright_light_distance'),
-          emits_low_light: token.get('emits_low_light'),
-          low_light_distance: token.get('low_light_distance'),
-          has_limit_field_of_vision: token.get('has_limit_field_of_vision'),
-          has_limit_field_of_night_vision: token.get('has_limit_field_of_night_vision'),
-          limit_field_of_vision_center: token.get('limit_field_of_vision_center'),
-          limit_field_of_vision_total: token.get('limit_field_of_vision_total'),
-          showname: token.get('showname'),
-          showplayers_name: false,
-          showplayers_bar1: false,
-          showplayers_bar2: false,
-          showplayers_bar3: false,
-          adv_fow_view_distance: token.get('adv_fow_view_distance'),
-          imgsrc: IMG_INVISIBLE,
-        };
-        var tokenInvisible = createObj('graphic', tokenFields);
-        if (tokenInvisible) {
-          evt.tokens = evt.tokens || [];
-          evt.tokens.push(tokenInvisible);
-          //On met l'ancien token dans le gmlayer, car si l'image vient du marketplace, il est impossible de le recréer depuis l'API
-          setToken(token, 'layer', 'gmlayer', evt);
-          setTokenAttr(personnage, 'tokenInvisible', token.id, evt, {
-            maxVal: tokenInvisible.id
-          });
-          if (stateCOF.options.affichage.val.init_dynamique.val &&
-            roundMarker && (
-              (!stateCOF.chargeFantastique && stateCOF.activeTokenId == token.id) ||
-              (stateCOF.chargeFantastique && stateCOF.chargeFantastique.activeTokenId == token.id))) {
-            setToken(roundMarker, 'layer', 'gmlayer', evt);
+        if (attrInvisible.length === 0) {
+          //On va créer une copie de token, mais avec une image invisible et aura visible seulement de ceux qui contrôlent le token
+          var tokenFields = {
+            _pageid: pageId,
+            represents: personnage.charId,
+            left: token.get('left'),
+            top: token.get('top'),
+            width: token.get('width'),
+            height: token.get('height'),
+            rotation: token.get('rotation'),
+            layer: 'objects',
+            name: token.get('name'),
+            bar1_value: token.get('bar1_value'),
+            bar1_max: token.get('bar1_max'),
+            bar1_link: token.get('bar1_link'),
+            bar2_value: token.get('bar2_value'),
+            bar2_max: token.get('bar2_max'),
+            bar2_link: token.get('bar2_link'),
+            bar3_value: token.get('bar3_value'),
+            bar3_max: token.get('bar3_max'),
+            aura1_radius: 0,
+            aura1_color: "#FF9900",
+            aura1_square: false,
+            showplayers_aura1: false,
+            aura2_radius: token.get('aura2_radius'),
+            aura2_color: token.get('aura2_color'),
+            aura2_square: token.get('aura2_square'),
+            showplayers_aura2: token.get('showplayers_aura2'),
+            statusmarkers: "",
+            light_radius: token.get('light_radius'),
+            light_dimradius: token.get('light_dimradius'),
+            light_otherplayers: token.get('light_otherplayers'),
+            light_hassight: token.get('light_hassight'),
+            light_angle: token.get('light_angle'),
+            light_losangle: token.get('light_losangle'),
+            light_multiplier: token.get('light_multiplier'),
+            has_bright_light_vision: token.get('has_bright_light_vision'),
+            has_night_vision: token.get('has_night_vision'),
+            night_vision_distance: token.get('night_vision_distance'),
+            night_vision_tint: token.get('night_vision_tint'),
+            emits_bright_light: token.get('emits_bright_light'),
+            bright_light_distance: token.get('bright_light_distance'),
+            emits_low_light: token.get('emits_low_light'),
+            low_light_distance: token.get('low_light_distance'),
+            has_limit_field_of_vision: token.get('has_limit_field_of_vision'),
+            has_limit_field_of_night_vision: token.get('has_limit_field_of_night_vision'),
+            limit_field_of_vision_center: token.get('limit_field_of_vision_center'),
+            limit_field_of_vision_total: token.get('limit_field_of_vision_total'),
+            showname: token.get('showname'),
+            showplayers_name: false,
+            showplayers_bar1: false,
+            showplayers_bar2: false,
+            showplayers_bar3: false,
+            adv_fow_view_distance: token.get('adv_fow_view_distance'),
+            imgsrc: IMG_INVISIBLE,
+          };
+          var tokenInvisible = createObj('graphic', tokenFields);
+          if (tokenInvisible) {
+            evt.tokens = evt.tokens || [];
+            evt.tokens.push(tokenInvisible);
+            //On met l'ancien token dans le gmlayer, car si l'image vient du marketplace, il est impossible de le recréer depuis l'API
+            setToken(token, 'layer', 'gmlayer', evt);
+            setTokenAttr(personnage, 'tokenInvisible', token.id, evt, {
+              maxVal: tokenInvisible.id
+            });
+            if (stateCOF.options.affichage.val.init_dynamique.val &&
+              roundMarker && (
+                (!stateCOF.chargeFantastique && stateCOF.activeTokenId == token.id) ||
+                (stateCOF.chargeFantastique && stateCOF.chargeFantastique.activeTokenId == token.id))) {
+              setToken(roundMarker, 'layer', 'gmlayer', evt);
+            }
           }
         }
       } else { //On enlève l'état invisible
-        var attrInvisible = tokenAttribute(personnage, 'tokenInvisible');
         if (attrInvisible.length > 0) {
           var tokenOriginel = getObj('graphic', attrInvisible[0].get('current'));
           if (!tokenOriginel) {
@@ -9915,7 +9917,8 @@ var COFantasy = COFantasy || function() {
     if (options.interposer) {
       return dealDamageAfterOthers(target, crit, {}, evt, expliquer, displayRes, options.interposer, dmg.display, false);
     }
-    if (attributeAsBool(target, 'intangible') ||
+    if ((attributeAsBool(target, 'intangible') && attributeAsInt(target, 'intangibleValeur', 1)) ||
+      (attributeAsBool(target, 'intangibleInvisible') && attributeAsInt(target, 'intangibleInvisibleValeur', 1)) ||
       attributeAsBool(target, 'ombreMortelle') ||
       (options.aoe === undefined &&
         attributeAsBool(target, 'formeGazeuse'))) {
@@ -10866,12 +10869,12 @@ var COFantasy = COFantasy || function() {
                 critique = true;
                 if (options.contact) {
                   if (attributeAsBool(target, 'enerve')) {
-                  var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
-                  if (faireMouche > 0) target.faireMouche = (target.faireMouche || 0) + faireMouche;
-                }
-                if (charAttributeAsBool(attaquant, 'briseurDOs')) {
-                  target.osBrises = true;
-                }
+                    var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
+                    if (faireMouche > 0) target.faireMouche = (target.faireMouche || 0) + faireMouche;
+                  }
+                  if (charAttributeAsBool(attaquant, 'briseurDOs')) {
+                    target.osBrises = true;
+                  }
                 }
               } else if (options.champion || targetd20roll == 20 || paralyse) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
@@ -11496,6 +11499,7 @@ var COFantasy = COFantasy || function() {
           setState(target, 'assome', true, evt);
           break;
         case 'invisibleTemp':
+        case 'intangibleInvisible':
           setState(target, 'invisible', true, evt);
           break;
         case 'aspectDuDemon':
@@ -14969,9 +14973,13 @@ var COFantasy = COFantasy || function() {
         token: obj,
         charId: objCharId
       };
-      if (objCharId !== '' && (getState(perso, 'mort') ||
+      if (objCharId !== '' &&
+        (getState(perso, 'mort') ||
           getState(perso, 'assome') || getState(perso, 'endormi') ||
-          attributeAsBool(perso, 'intangible')))
+          (attributeAsBool(perso, 'intangible') && attributeAsInt(perso, 'intangibleValeur', 1)) ||
+          (attributeAsBool(perso, 'intangibleInvisible') && attributeAsInt(perso, 'intangibleInvisibleValeur', 1))
+        )
+      )
         return;
       //On regarde si le token est une monture d'un des personnages
       var attrMonte = tokenAttribute(perso, 'estMontePar');
@@ -16117,6 +16125,16 @@ var COFantasy = COFantasy || function() {
               options[cmd[0]] = value;
             }
           }
+          return;
+        case 'etat':
+          if (cmd.length < 3) {
+            error("Il manque le nom de l'etat et sa valeur après --etat", cmd);
+            return;
+          }
+          options.etats = options.etats || {};
+          if (cmd[2] == 'false' || cmd[2] == 'non') options.etats[cmd[1]] = false;
+          else if (cmd[2] == 'true' || cmd[2] == 'oui') options.etats[cmd[1]] = true;
+          else options.etats[cmd[1]] = cmd[2];
           return;
         default:
           return;
@@ -18785,6 +18803,25 @@ var COFantasy = COFantasy || function() {
         if (!isNaN(pv) && pv < pvDebut) {
           command = "!cof-soin @{selected|token_id} secondSouffle";
           ligne += bouton(command, 'Second souffle', perso) + '<br/>';
+        }
+      }
+      //Changement de phase pour intangibilité avec changement de phase
+      if (attributeAsBool(perso, 'intangiblePuissant')) {
+        if (attributeAsInt(perso, 'intangibleValeur', 1)) {
+          command = "!cof-set-attribute intangibleValeur 0 --target " + perso.token.id + " --message redevient tangible";
+          ligne += boutonSimple(command, "Redevenir tangible") + '<br/>';
+        } else {
+          command = "!cof-set-attribute intangibleValeur 1 --target " + perso.token.id + " --message devient légèrement translucide";
+          ligne += boutonSimple(command, "Redevenir intangible") + '<br/>';
+        }
+      }
+      if (attributeAsBool(perso, 'intangibleInvisiblePuissant')) {
+        if (attributeAsInt(perso, 'intangibleInvisibleValeur', 1)) {
+          command = "!cof-set-attribute intangibleInvisibleValeur 0 --etat invisible false --target " + perso.token.id + " --message réapparaît";
+          ligne += boutonSimple(command, "Redevenir tangible") + '<br/>';
+        } else {
+          command = "!cof-set-attribute intangibleInvisibleValeur 1 --etat invisible true --target " + perso.token.id + " --message disparaît";
+          ligne += boutonSimple(command, "Redevenir intangible") + '<br/>';
         }
       }
       //La liste d'action proprement dite
@@ -25652,8 +25689,8 @@ var COFantasy = COFantasy || function() {
               case 1:
                 reussite = "La provocation est une réussite critique !";
                 setAttrDuree(cible, 'enerve', 1, evt);
-                  setTokenAttr(cible, 'resistanceRaillerie',
-                    attributeAsInt(cible, 'resistanceRaillerie', 0) - 1, evt);
+                setTokenAttr(cible, 'resistanceRaillerie',
+                  attributeAsInt(cible, 'resistanceRaillerie', 0) - 1, evt);
             }
             break;
           case 2:
@@ -29961,6 +29998,11 @@ var COFantasy = COFantasy || function() {
       if (limiteRessources(options.lanceur, options, 'changementAttribut', 'changementAttribut', evt)) return;
       iterSelected(selected, function(perso) {
         setTokenAttr(perso, cmd[1], cmd[2], evt, opt);
+        if (options.etats) {
+          for (var etat in options.etats) {
+            setState(perso, etat, options.etats[etat], evt);
+          }
+        }
       }); //fin iterSelected
     }, options);
   }
@@ -31935,6 +31977,12 @@ var COFantasy = COFantasy || function() {
       fin: "redevient solide",
       visible: true
     },
+    intangibleInvisible: {
+      activation: "disparaît",
+      actif: "est intangible et invisible",
+      fin: "réapparaît",
+      visible: true
+    },
     strangulation: {
       activation: "commence à étouffer",
       actif: "est étranglé",
@@ -32856,6 +32904,7 @@ var COFantasy = COFantasy || function() {
           });
         break;
       case 'invisibleTemp':
+      case 'intangibleInvisible':
         iterTokensOfAttribute(charId, options.pageId, effet, attrName,
           function(token) {
             setState({
@@ -33777,15 +33826,17 @@ var COFantasy = COFantasy || function() {
         name: attrName
       });
       if (attrEffet === undefined || attrEffet.length === 0) {
-        error("Save sans effet temporaire " + attrName, attr);
-        findObjs({
-          _type: 'attribute',
-          _characterid: charId,
-          name: attr.get('name').replace('SaveParTour', 'SaveParTourType')
-        }).forEach(function(a) {
-          a.remove();
-        });
-        attr.remove();
+        if (getObj('attribute', attr.id)) {
+          error("Save sans effet temporaire " + attrName, attr);
+          findObjs({
+            _type: 'attribute',
+            _characterid: charId,
+            name: attr.get('name').replace('SaveParTour', 'SaveParTourType')
+          }).forEach(function(a) {
+            a.remove();
+          });
+          attr.remove();
+        }
         return;
       }
       attrEffet = attrEffet[0];
