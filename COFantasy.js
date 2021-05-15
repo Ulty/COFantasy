@@ -11511,7 +11511,9 @@ var COFantasy = COFantasy || function() {
           break;
         case 'peauDePierreMag':
           if (ef.valeur === undefined) {
-            var rd = 5 + modCarac(target, 'intelligence');
+            var lanceur = target;
+            if (ef.attaquant) lanceur = ef.attaquant;
+            var rd = 5 + modCarac(lanceur, 'intelligence');
             var absorbe = 40;
             if (options.tempeteDeManaIntense) {
               rd += options.tempeteDeManaIntense;
