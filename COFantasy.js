@@ -1404,12 +1404,9 @@ var COFantasy = COFantasy || function() {
             nePlusSuivre(personnage, pageId, evt);
             break;
           case 'armeeDesMorts':
-            evt.aura2 = {
-              token: personnage.token,
-              radius: personnage.token.get("aura2_radius"),
-              color: personnage.token.get("aura2_color"),
-              showplayers: personnage.token.get("showplayers_aura2")
-            }
+            affectToken(personnage.token, "aura2_radius", personnage.token.get("aura2_radius"), evt);
+            affectToken(personnage.token, "aura2_color", personnage.token.get("aura2_color"), evt);
+            affectToken(personnage.token, "showplayers_aura2", personnage.token.get("showplayers_aura2"), evt);
             personnage.token.set("aura2_radius", 20);
             personnage.token.set("aura2_color", "#b6d7a8");
             personnage.token.set("showplayers_aura2", true);
@@ -2582,11 +2579,6 @@ var COFantasy = COFantasy || function() {
         movedToken.token.set('left', movedToken.oldPosition.left);
         movedToken.token.set('top', movedToken.oldPosition.top);
       });
-    }
-    if (evt.aura2) {
-      evt.aura2.token.set('aura2_radius', evt.aura2.radius);
-      evt.aura2.token.set('aura2_color', evt.aura2.color);
-      evt.aura2.token.set('showplayers_aura2', evt.aura2.showplayers);
     }
     if (_.has(evt, 'combat')) stateCOF.combat = evt.combat;
     if (_.has(evt, 'combat_pageid')) stateCOF.combat_pageid = evt.combat_pageid;
