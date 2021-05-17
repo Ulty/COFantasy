@@ -1404,9 +1404,18 @@ var COFantasy = COFantasy || function() {
             nePlusSuivre(personnage, pageId, evt);
             break;
           case 'armeeDesMorts':
+            affectToken(personnage.token, "aura2_radius", personnage.token.get("aura2_radius"), evt);
+            affectToken(personnage.token, "aura2_color", personnage.token.get("aura2_color"), evt);
+            affectToken(personnage.token, "showplayers_aura2", personnage.token.get("showplayers_aura2"), evt);
             personnage.token.set("aura2_radius", 20);
             personnage.token.set("aura2_color", "#b6d7a8");
             personnage.token.set("showplayers_aura2", true);
+            break;
+          case 'armeeDesMortsPuissant':
+            personnage.token.set("aura2_radius", 28);
+            break;
+          case 'armeeDesMortsTempeteDeManaIntense':
+            personnage.token.set("aura2_radius", Math.floor(20*Math.sqrt(1+value)));
             break;
         }
       }
@@ -18701,7 +18710,11 @@ var COFantasy = COFantasy || function() {
         var combattreArmee = false;
         stateCOF.armeesDesMorts.forEach(function(armee) {
           var persoArmee = persoOfId(armee);
-          if (persoArmee && distanceCombat(perso.token, persoArmee.token, pageId) <= 20 &&
+          var boost = 0;
+          if (charAttributeAsBool(persoArmee, "armeeDesMortsPuissant")) boost = 1;
+          else boost = charAttributeAsInt(persoArmee, "armeeDesMortsTempeteDeManaIntense", 0);
+          var rayon = Math.floor(20*Math.sqrt(1+boost));
+          if (persoArmee && distanceCombat(perso.token, persoArmee.token, pageId) <= rayon &&
             (!alliesParPerso[persoArmee.charId] || !alliesParPerso[persoArmee.charId].has(perso.charId))) {
             actionsAAfficher = true;
             combattreArmee = true;
@@ -33975,6 +33988,10 @@ var COFantasy = COFantasy || function() {
     var degatsArmeeDefense = {};
     armeesDesMorts.forEach(function(armee) {
       var charId = armee.get('characterid');
+      var boost = 0;
+      if (charAttribute(charId, "armeeDesMortsPuissant").length > 0) boost = 1;
+      else boost = attrAsInt(charAttribute(charId, "armeeDesMortsTempeteDeManaIntense"), 0);
+      var rayon = Math.floor(20 * Math.sqrt(1+boost));
       var allies = alliesParPerso[charId] || new Set();
       if (!allTokens) {
         allTokens = findObjs({
@@ -34004,7 +34021,7 @@ var COFantasy = COFantasy || function() {
           if (tokRepresents == charId) return;
           if (allies.has(tokRepresents)) return;
           if (degatsArmeeDefense[tok.id] != undefined || degatsArmeeFull[tok.id] != undefined) return;
-          if (distanceCombat(auraToken, tok, pageId) > 20) return;
+          if (distanceCombat(auraToken, tok, pageId) > rayon) return;
           var perso = persoOfToken(tok);
           if (attributeAsBool(perso, "defenseArmeeDesMorts")) {
             degatsArmeeDefense[tok.id] = perso;
