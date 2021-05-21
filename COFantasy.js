@@ -1415,7 +1415,7 @@ var COFantasy = COFantasy || function() {
             personnage.token.set("aura2_radius", 28);
             break;
           case 'armeeDesMortsTempeteDeManaIntense':
-            personnage.token.set("aura2_radius", Math.floor(20*Math.sqrt(1+value)));
+            personnage.token.set("aura2_radius", Math.floor(20 * Math.sqrt(1 + value)));
             break;
         }
       }
@@ -2673,7 +2673,7 @@ var COFantasy = COFantasy || function() {
     }
     var action = evt.action;
     if (action === undefined) {
-      error("Erreur interne du bouton de rune de protection : l'évènement n'a pas d'action", cmd);
+      error("Erreur interne du bouton de confirmation: l'évènement n'a pas d'action", cmd);
       return;
     }
     var options = action.currentOptions || {};
@@ -2697,9 +2697,10 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton", playerId);
       return;
     }
-    action.choices = action.choices || {};
-    action.choices.Continuer = true;
-    redoEvent(evt, action);
+    options.rolls = action.rolls;
+    options.choices = action.choices || {};
+    options.choices.Continuer = true;
+    resolvePreDmgOptions(action.attaquant, action.ciblesTouchees, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.cibles);
   }
 
   function undoTokenEffect(evt) {
@@ -2848,8 +2849,8 @@ var COFantasy = COFantasy || function() {
     return action;
   }
 
-  function getWeaponStats(perso, attackLabel) {
-    var weaponStats = {
+  function getWeaponStats(perso, attackLabel, defWeapon) {
+    var weaponStats = defWeapon || {
       name: 'Attaque',
       attSkill: '@{ATKCAC}',
       attNbDices: 1,
@@ -7571,12 +7572,12 @@ var COFantasy = COFantasy || function() {
   //Remplis les champs arme et armeGauche de perso
   //renvoie undefined si aucune arme en main principale
   //renvoie l'arme principale sinon
-  function armesEnMain(perso) {
+  function armesEnMain(perso, defWeapon) {
     if (perso.armesEnMain) return perso.arme;
     var labelArme = tokenAttribute(perso, 'armeEnMain');
     if (labelArme.length > 0) {
       var labelArmePrincipale = labelArme[0].get('current');
-      if (labelArmePrincipale) perso.arme = getWeaponStats(perso, labelArmePrincipale);
+      if (labelArmePrincipale) perso.arme = getWeaponStats(perso, labelArmePrincipale, defWeapon);
       var labelArmeGauche = labelArme[0].get('max');
       if (labelArmeGauche) perso.armeGauche = getWeaponStats(perso, labelArmeGauche);
       perso.armesEnMain = 'calculee';
@@ -9726,7 +9727,18 @@ var COFantasy = COFantasy || function() {
               var attackLabel = actionCommands[1].trim();
               var attackStats;
               if (attackLabel == -1) { //attaque avec l'arme en main
-                attackStats = armesEnMain(perso);
+                attackStats = armesEnMain(perso, {
+                  name: 'Mains nues',
+                  attSkill: '@{ATKCAC}',
+                  attNbDices: 1,
+                  attDice: 4,
+                  attDMBonusCommun: 0,
+                  attCarBonus: '@{FOR}',
+                  crit: 20,
+                  divers: 'tempDmg',
+                  portee: 0,
+                  options: '',
+                });
               } else attackStats = getWeaponStats(perso, attackLabel);
               actionText = attackStats.name;
               action += options;
@@ -9752,22 +9764,25 @@ var COFantasy = COFantasy || function() {
             }
             break;
           case '!':
-            if (actionCmd.toLowerCase() == '!options') {
-              found = true;
-              if (actionCommands.length > 1) {
-                options = action.substring(8); //démarre par ' '
-              }
-            } else if (actionCmd.toLowerCase() == '!attaques') {
-              found = true;
-              f('liste des attaques', '', macros, options);
-            } else {
-              // commande API
-              if (actionCommands.length > 1) {
-                actionText = actionCommands[1].replace(/-/g, ' ').replace(/_/g, ' ');
-              }
-              command = action + options;
-              f(command, actionText, macros);
-              found = true;
+            switch (actionCmd.toLowerCase()) {
+              case '!options':
+                found = true;
+                if (actionCommands.length > 1) {
+                  options = action.substring(8); //démarre par ' '
+                }
+                break;
+              case '!attaques':
+                found = true;
+                f('liste des attaques', '', macros, options);
+                break;
+              default:
+                // commande API
+                if (actionCommands.length > 1) {
+                  actionText = actionCommands[1].replace(/-/g, ' ').replace(/_/g, ' ');
+                }
+                command = action + options;
+                f(command, actionText, macros);
+                found = true;
             }
         }
         if (found) {
@@ -10482,7 +10497,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    if (limiteRessources(attaquant, options, attackLabel, weaponName, evt)) {
+    if (!options.redo && limiteRessources(attaquant, options, attackLabel, weaponName, evt)) {
       return;
     }
     // Effets quand on rentre en combat
@@ -11624,7 +11639,6 @@ var COFantasy = COFantasy || function() {
         if (preDmgToken.paradeDeProjectiles) {
           appliquerParadeProjectiles(cible, options, evt);
           explications.push(cible.token.get("name") + " pare le projectile !");
-          options.preDmgAnnule = true;
           finaliseTarget();
         }
         if (preDmgToken.runeForgesort_protection) {
@@ -18713,7 +18727,7 @@ var COFantasy = COFantasy || function() {
           var boost = 0;
           if (charAttributeAsBool(persoArmee, "armeeDesMortsPuissant")) boost = 1;
           else boost = charAttributeAsInt(persoArmee, "armeeDesMortsTempeteDeManaIntense", 0);
-          var rayon = Math.floor(20*Math.sqrt(1+boost));
+          var rayon = Math.floor(20 * Math.sqrt(1 + boost));
           if (persoArmee && distanceCombat(perso.token, persoArmee.token, pageId) <= rayon &&
             (!alliesParPerso[persoArmee.charId] || !alliesParPerso[persoArmee.charId].has(perso.charId))) {
             actionsAAfficher = true;
@@ -33991,7 +34005,7 @@ var COFantasy = COFantasy || function() {
       var boost = 0;
       if (charAttribute(charId, "armeeDesMortsPuissant").length > 0) boost = 1;
       else boost = attrAsInt(charAttribute(charId, "armeeDesMortsTempeteDeManaIntense"), 0);
-      var rayon = Math.floor(20 * Math.sqrt(1+boost));
+      var rayon = Math.floor(20 * Math.sqrt(1 + boost));
       var allies = alliesParPerso[charId] || new Set();
       if (!allTokens) {
         allTokens = findObjs({
