@@ -10497,7 +10497,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    if (!options.redo && limiteRessources(attaquant, options, attackLabel, weaponName, evt)) {
+    if (limiteRessources(attaquant, options, attackLabel, weaponName, evt)) {
       return;
     }
     // Effets quand on rentre en combat
@@ -24188,7 +24188,10 @@ var COFantasy = COFantasy || function() {
         toProceed = true;
       }); //fin iterSelected
       if (toProceed) {
-        redoEvent(evt, action);
+        var options = action.currentOptions || {};
+        options.rolls = action.rolls;
+        options.choices = action.choices;
+        resolvePreDmgOptions(action.attaquant, action.ciblesTouchees, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.cibles);
       }
     }); //fin getSelected
   }
