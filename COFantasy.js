@@ -24260,7 +24260,10 @@ var COFantasy = COFantasy || function() {
         toProceed = true;
       }); //fin iterSelected
       if (toProceed) {
-        redoEvent(evt, action);
+        var options = action.currentOptions || {};
+        options.rolls = action.rolls;
+        options.choices = action.choices;
+        resolvePreDmgOptions(action.attaquant, action.ciblesTouchees, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.cibles);
       }
     }); //fin getSelected
   }
@@ -24337,7 +24340,10 @@ var COFantasy = COFantasy || function() {
         toProceed = true;
       }); //fin iterSelected
       if (toProceed) {
-        redoEvent(evt, action);
+        var options = action.currentOptions || {};
+        options.rolls = action.rolls;
+        options.choices = action.choices;
+        resolvePreDmgOptions(action.attaquant, action.ciblesTouchees, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.cibles);
       }
     }); //fin getSelected
   }
@@ -24449,10 +24455,11 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    action.choices = action.choices || {};
-    action.choices[perso.token.id] = action.choices[perso.token.id] || {};
-    action.choices[perso.token.id].evitementGenerique = action.choices[perso.token.id].evitementGenerique || [];
-    action.choices[perso.token.id].evitementGenerique.push({
+    optionsAttaque.choices = action.choices || {};
+    optionsAttaque.choices[perso.token.id] = optionsAttaque.choices[perso.token.id] || {};
+    optionsAttaque.choices[perso.token.id].evitementGenerique =
+      optionsAttaque.choices[perso.token.id].evitementGenerique || [];
+    optionsAttaque.choices[perso.token.id].evitementGenerique.push({
       jetAdversaire: jetAdversaire,
       attribut: attribut,
       opt: opt,
@@ -24463,7 +24470,8 @@ var COFantasy = COFantasy || function() {
       typeAttaque: typeAttaque,
       msgReussite: msgReussite
     });
-    redoEvent(evt, action);
+    optionsAttaque.rolls = action.rolls;
+    resolvePreDmgOptions(action.attaquant, action.ciblesTouchees, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, action.pageId, action.cibles);
   }
 
   function appliquerEvitementGenerique(cible, jetAdversaire, attribut, opt, attributeName, actionName, tente, carac, typeAttaque, msgReussite, pageId, options, evt, callback) {
@@ -26797,7 +26805,10 @@ var COFantasy = COFantasy || function() {
         action.choices[perso.token.id] = action.choices[perso.token.id] || {};
         action.choices[perso.token.id].runeForgesort_protection = true;
       }); //fin iterSelected
-      redoEvent(evt, action);
+      var options = action.currentOptions || {};
+      options.rolls = action.rolls;
+      options.choices = action.choices;
+      resolvePreDmgOptions(action.attaquant, action.ciblesTouchees, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.cibles);
     }); //fin getSelected
   }
 
