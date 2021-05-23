@@ -33265,7 +33265,7 @@ var COFantasy = COFantasy || function() {
             };
             var valAttr = tokenAttribute(perso, efComplet + 'Valeur');
             if (valAttr.length > 0)
-              whisperChar(charId, valAttr[0].get('current'));
+              whisperChar(charId, valAttr[0].get('current').replace(/_/g, ' '));
           });
         }
         break;
