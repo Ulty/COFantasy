@@ -17381,11 +17381,13 @@ var COFantasy = COFantasy || function() {
       type: 'echecTotal'
     };
     addEvent(evtEchecTotal);
-    // assumes that the original action was undone, re-attack with bonus
+    // Attaquer avec les mêmes options, vider redo et preDmg éventuels
     var options = action.options;
     options.auto = true;
     options.echecTotal = true;
-    attack(action.playerName, action.playerId, perso, perso.token, action.weaponStats, options);
+    delete options.redo;
+    delete options.preDmg;
+    attack(action.playerName, action.playerId, perso, [perso.token], action.weaponStats, options);
   }
 
   function persoUtiliseRuneEnergie(perso, evt) {
@@ -17784,6 +17786,7 @@ var COFantasy = COFantasy || function() {
         options.rolls = attaque.rolls;
         options.evt = evt;
         options.redo = true;
+        delete options.preDmg;
         cible.rollsDmg = attaque.cibles[0].rollsDmg;
         attack(attaque.playerName, attaque.playerId, attaque.attaquant, [cible], attaque.weaponStats, options);
       });
