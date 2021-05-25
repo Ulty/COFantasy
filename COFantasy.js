@@ -2481,19 +2481,26 @@ var COFantasy = COFantasy || function() {
         tokens.forEach(function(tok) {
           tok.set('represents', charId);
         });
-        eventHistory.forEach(function(evt) {
-          if (evt.characters) {
-            evt.characters = evt.characters.map(function(oldCharac) {
+        eventHistory.forEach(function(evt2) {
+          if (evt2.characters) {
+            evt2.characters = evt2.characters.map(function(oldCharac) {
               if (oldCharac.id == character.id) return newCharacter;
               return oldCharac;
             });
           }
-          if (evt.deletedAttributes) {
-            evt.deletedAttributes.forEach(function(attr) {
-              if (attr.id == character.id) attr.newCharId = charId;
+          if (evt2.deletedAttributes) {
+            evt2.deletedAttributes.forEach(function(attr) {
+              if (attr.get('characterid') == character.id) attr.newCharId = charId;
             });
           }
         });
+        if (evt.deletedAttributes) {
+          evt.deletedAttributes.forEach(function(attr) {
+            if (attr.get('characterid') == character.id) {
+              attr.newCharId = charId;
+            }
+          });
+        }
         //Maintenant on remet les attributs
         if (character.attributes) {
           character.attributes.forEach(function(attr) {
@@ -2527,6 +2534,14 @@ var COFantasy = COFantasy || function() {
             });
           });
         }
+        // On le remet chez ses alliés
+        if (character.allies.length > 0) {
+          Object.values(character.allies).forEach(function (allie) {
+            var alliesPerso = alliesParPerso[allie] || new Set();
+            alliesPerso.add(charId);
+            alliesParPerso[allie] = alliesPerso;
+          });
+        }
       });
     }
     // deletedAttributes have a quadratic cost in the size of the history
@@ -2544,8 +2559,8 @@ var COFantasy = COFantasy || function() {
           });
         eventHistory.forEach(function(evt) {
           if (evt.attributes !== undefined) {
-            evt.attributes.forEach(function(attr) {
-              if (attr.attribute.id == oldId) attr.attribute = newAttr;
+            evt.attributes.forEach(function(attr2) {
+              if (attr2.attribute && attr2.attribute.id == oldId) attr2.attribute = newAttr;
             });
           }
         });
@@ -26744,6 +26759,10 @@ var COFantasy = COFantasy || function() {
     initiative([{
       _id: tokenArbre.id
     }], evt);
+    // Ajout de l'arbre animé aux alliés du Druide
+    var alliesDruide = alliesParPerso[druide.charId] || new Set();
+    alliesDruide.add(charArbre.id);
+    alliesParPerso[druide.charId] = alliesDruide;
   }
 
   function persoUtiliseRuneProtection(perso, evt) {
@@ -28176,6 +28195,10 @@ var COFantasy = COFantasy || function() {
         initiative([{
           _id: token.id
         }], evt);
+        // Ajout du Prédateur aux alliés de l'invocateur
+        var alliesInvocateur = alliesParPerso[invocateur.charId] || new Set();
+        alliesInvocateur.add(charPredateur.id);
+        alliesParPerso[invocateur.charId] = alliesInvocateur;
       }); //end iterSelected
       addEvent(evt);
     }); //end getSelected
@@ -28532,6 +28555,10 @@ var COFantasy = COFantasy || function() {
           initiative([{
             _id: token.id
           }], evt);
+          // Ajout du Démon aux alliés du Nécromant
+          var alliesNecromant = alliesParPerso[necromant.charId] || new Set();
+          alliesNecromant.add(charDemon.id);
+          alliesParPerso[necromant.charId] = alliesNecromant;
           var msg = "invoque un démon";
           if (stateCOF.options.affichage.val.duree_effets.val) msg += " pour " + duree + " tours";
           msg += " mais cela lui coûte " + dmgDisplay + " PV";
@@ -28649,6 +28676,10 @@ var COFantasy = COFantasy || function() {
       initiative([{
         _id: token.id
       }], evt);
+      // Ajout du Zombie aux alliés du Nécromant
+      var alliesNecromant = alliesParPerso[necromant.charId] || new Set();
+      alliesNecromant.add(charZombie.id);
+      alliesParPerso[necromant.charId] = alliesNecromant;
       sendPerso(necromant, "anime un Zombie");
       setTokenAttr(necromant, "zombiesControles", zombiesControles + 1, evt);
     });
@@ -33015,8 +33046,8 @@ var COFantasy = COFantasy || function() {
         break;
       case 'demonInvoque':
       case 'predateurConjure':
-      case 'arbreAnime': //effacer le personnage
-      case 'degradationZombie':
+      case 'arbreAnime':
+      case 'degradationZombie': //effacer le personnage
         //Dans le cas d'un Zombie, diminuer la limite du nécromant si nécessaire
         if (effet == 'degradationZombie') {
           var attrNecromant = charAttribute(charId, "necromant");
@@ -33096,14 +33127,23 @@ var COFantasy = COFantasy || function() {
         character = getObj('character', charId);
         if (character) {
           evt.deletedCharacters = evt.deletedCharacters || [];
-          evt.deletedCharacters.push({
+          var deletedChar = {
             id: charId,
             name: character.get('name'),
             avatar: character.get('avatar'),
             attributes: charAttributes,
-            abilities: charAbilities
-          });
+            abilities: charAbilities,
+            allies: []
+          };
+          // Retrait du perso de toutes les listes d'alliés
+          for (const [perso, alliesPerso] of Object.entries(alliesParPerso)) {
+            if (alliesPerso.has(charId)) {
+              deletedChar.allies.push(perso);
+              alliesPerso.delete(charId);
+            }
+          }
           character.remove();
+          evt.deletedCharacters.push(deletedChar);
         }
         return res; //Pas besoin de faire le reste, car plus de perso
       case 'formeDArbre':
