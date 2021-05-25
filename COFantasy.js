@@ -2536,7 +2536,7 @@ var COFantasy = COFantasy || function() {
         }
         // On le remet chez ses alliés
         if (character.allies.length > 0) {
-          Object.values(character.allies).forEach(function (allie) {
+          Object.values(character.allies).forEach(function(allie) {
             var alliesPerso = alliesParPerso[allie] || new Set();
             alliesPerso.add(charId);
             alliesParPerso[allie] = alliesPerso;
@@ -13065,96 +13065,6 @@ var COFantasy = COFantasy || function() {
     if (evt.action) {
       var perso = evt.action.attaquant;
       evt.personnage = perso;
-      if (evt.succes === false) {
-        var pc = pointsDeChance(perso);
-        if (pc > 0 && !echecCritique) {
-          addLineToFramedDisplay(display, boutonSimple("!cof-bouton-chance " + evt.id, "Chance") + " (reste " + pc + " PC)");
-        }
-        if (attributeAsBool(perso, 'runeForgesort_énergie') &&
-          attributeAsInt(perso, 'limiteParCombat_runeForgesort_énergie', 1) > 0) {
-          addLineToFramedDisplay(display, boutonSimple("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie"));
-        }
-        if (attributeAsBool(perso, 'petitVeinard')) {
-          addLineToFramedDisplay(display, boutonSimple("!cof-bouton-petit-veinard " + evt.id, "Petit veinard"));
-        }
-        if (attributeAsInt(perso, 'pacteSanglant', 0) >= 3) {
-          addLineToFramedDisplay(display, boutonSimple("!cof-pacte-sanglant " + evt.id + " 3", "Pacte sanglant (+3)"));
-        }
-        if (attributeAsInt(perso, 'pacteSanglant', 0) >= 5) {
-          addLineToFramedDisplay(display, boutonSimple("!cof-pacte-sanglant " + evt.id + " 5", "Pacte sanglant (+5)"));
-        }
-      } else {
-        if (evt.action.weaponStats) {
-          var attLabel = evt.action.weaponStats.label;
-          if (attributeAsBool(perso, 'runeForgesort_puissance(' + attLabel + ')') &&
-            attributeAsInt(perso, 'limiteParCombat_runeForgesort_puissance(' + attLabel + ')', 1) > 0) {
-            addLineToFramedDisplay(display,
-              boutonSimple(
-                "!cof-bouton-rune-puissance " + attLabel + ' ' + evt.id,
-                "Rune de puissance"));
-          }
-        }
-        if (attributeAsBool(perso, 'kiai') && !attributeAsBool(perso, 'rechargeDuKiai')) {
-          addLineToFramedDisplay(display,
-            boutonSimple("!cof-bouton-pousser-kiai " + evt.id, "Kiai"));
-        }
-        if (attributeAsBool(perso, 'petitVeinard')) {
-          addLineToFramedDisplay(display, boutonSimple("!cof-bouton-petit-veinard " + evt.id, "Petit veinard") + " pour relancer un dé");
-        }
-      }
-      if (options && options.contact && cibles && attaquant && charAttributeAsBool(attaquant, 'enchainement')) {
-        var cibleMorte = cibles.find(function(target) {
-          return target.token.get('bar1_value') == 0;
-        });
-        if (cibleMorte) {
-          if (attaquant.ennemisAuContact === undefined) {
-            var tokensContact = findObjs({
-              _type: 'graphic',
-              _subtype: "token",
-              _pageid: evt.action.pageId,
-              layer: 'objects'
-            });
-            tokensContact = tokensContact.filter(function(tok) {
-              if (tok.id == attaquant.token.id) return false;
-              return distanceCombat(attaquant.token, tok, evt.action.pageId) === 0;
-            });
-            var tokensEnnemis = [];
-            var allies = alliesParPerso[attaquant.charId] || new Set();
-            tokensContact.forEach(function(tok) {
-              var ci = tok.get('represents');
-              if (ci === '') return; //next token au contact
-              if (!isActive({
-                  token: tok,
-                  charId: ci
-                })) return;
-              if (!allies.has(ci)) tokensEnnemis.push(tok);
-            });
-            attaquant.ennemisAuContact = tokensEnnemis;
-          }
-          if (attaquant.ennemisAuContact.length > 0) {
-            var msgEnchainement = attaquant.token.get('name') + " a droit à une attaque au contact gratuite contre ";
-            var sep = "";
-            var armeEnMain = tokenAttribute(attaquant, 'armeEnMain');
-            var act;
-            if (armeEnMain.length === 0) {
-              armeEnMain = false;
-            } else {
-              armeEnMain = armeEnMain[0].get('current');
-              act = '!cof-attack ' + attaquant.token.id + ' ';
-            }
-            msgEnchainement += sep;
-            attaquant.ennemisAuContact.forEach(function(tok) {
-              if (armeEnMain) {
-                msgEnchainement += boutonSimple(act + tok.id + ' ' + armeEnMain, tok.get('name'));
-              } else {
-                msgEnchainement += tok.get('name');
-              }
-              sep = ", ou ";
-            });
-            addLineToFramedDisplay(display, msgEnchainement);
-          }
-        }
-      }
       if (options.preDmg) {
         var cerclesDeProtection = [];
         cibles.forEach(function(target) {
@@ -13263,24 +13173,116 @@ var COFantasy = COFantasy || function() {
           });
         }
         addLineToFramedDisplay(display, boutonSimple("!cof-confirmer-attaque " + evt.id, "Continuer"));
-      } else if (evt.action.options && !evt.action.options.auto && evt.action.cibles) {
-        evt.action.cibles.forEach(function(target) {
-          if (!options.pasDeDmg && target.touche &&
-            attributeAsBool(target, 'ignorerLaDouleur') &&
-            attributeAsInt(target, 'douleurIgnoree', 0) === 0) {
-            addLineToFramedDisplay(display, target.tokName + " peut " +
-              boutonSimple("!cof-ignorer-la-douleur " + evt.id + ' --target ' + target.token.id, "ignorer la douleur")
-            );
+      } else {
+        if (evt.succes === false) {
+          var pc = pointsDeChance(perso);
+          if (pc > 0 && !echecCritique) {
+            addLineToFramedDisplay(display, boutonSimple("!cof-bouton-chance " + evt.id, "Chance") + " (reste " + pc + " PC)");
           }
-          var attrPacteSanglant = attributeAsInt(target, 'pacteSanglant', 0);
-          if (attrPacteSanglant >= 3) {
-            var msg = target.tokName + " fait un Pacte sanglant" + boutonSimple("!cof-pacte-sanglant-def " + evt.id + ' 3 ' + target.token.id, "(+3 DEF)");
-            if (attrPacteSanglant >= 5) {
-              msg += boutonSimple("!cof-pacte-sanglant-def " + evt.id + ' 5 ' + target.token.id, "(+5 DEF)");
+          if (attributeAsBool(perso, 'runeForgesort_énergie') &&
+            attributeAsInt(perso, 'limiteParCombat_runeForgesort_énergie', 1) > 0) {
+            addLineToFramedDisplay(display, boutonSimple("!cof-bouton-rune-energie " + evt.id, "Rune d'énergie"));
+          }
+          if (attributeAsBool(perso, 'petitVeinard')) {
+            addLineToFramedDisplay(display, boutonSimple("!cof-bouton-petit-veinard " + evt.id, "Petit veinard"));
+          }
+          if (attributeAsInt(perso, 'pacteSanglant', 0) >= 3) {
+            addLineToFramedDisplay(display, boutonSimple("!cof-pacte-sanglant " + evt.id + " 3", "Pacte sanglant (+3)"));
+          }
+          if (attributeAsInt(perso, 'pacteSanglant', 0) >= 5) {
+            addLineToFramedDisplay(display, boutonSimple("!cof-pacte-sanglant " + evt.id + " 5", "Pacte sanglant (+5)"));
+          }
+        } else {
+          if (evt.action.weaponStats) {
+            var attLabel = evt.action.weaponStats.label;
+            if (attributeAsBool(perso, 'runeForgesort_puissance(' + attLabel + ')') &&
+              attributeAsInt(perso, 'limiteParCombat_runeForgesort_puissance(' + attLabel + ')', 1) > 0) {
+              addLineToFramedDisplay(display,
+                boutonSimple(
+                  "!cof-bouton-rune-puissance " + attLabel + ' ' + evt.id,
+                  "Rune de puissance"));
             }
-            addLineToFramedDisplay(display, msg);
           }
-        });
+          if (attributeAsBool(perso, 'kiai') && !attributeAsBool(perso, 'rechargeDuKiai')) {
+            addLineToFramedDisplay(display,
+              boutonSimple("!cof-bouton-pousser-kiai " + evt.id, "Kiai"));
+          }
+          if (attributeAsBool(perso, 'petitVeinard')) {
+            addLineToFramedDisplay(display, boutonSimple("!cof-bouton-petit-veinard " + evt.id, "Petit veinard") + " pour relancer un dé");
+          }
+        }
+        if (options && options.contact && cibles && attaquant && charAttributeAsBool(attaquant, 'enchainement')) {
+          var cibleMorte = cibles.find(function(target) {
+            return target.token.get('bar1_value') == 0;
+          });
+          if (cibleMorte) {
+            if (attaquant.ennemisAuContact === undefined) {
+              var tokensContact = findObjs({
+                _type: 'graphic',
+                _subtype: "token",
+                _pageid: evt.action.pageId,
+                layer: 'objects'
+              });
+              tokensContact = tokensContact.filter(function(tok) {
+                if (tok.id == attaquant.token.id) return false;
+                return distanceCombat(attaquant.token, tok, evt.action.pageId) === 0;
+              });
+              var tokensEnnemis = [];
+              var allies = alliesParPerso[attaquant.charId] || new Set();
+              tokensContact.forEach(function(tok) {
+                var ci = tok.get('represents');
+                if (ci === '') return; //next token au contact
+                if (!isActive({
+                    token: tok,
+                    charId: ci
+                  })) return;
+                if (!allies.has(ci)) tokensEnnemis.push(tok);
+              });
+              attaquant.ennemisAuContact = tokensEnnemis;
+            }
+            if (attaquant.ennemisAuContact.length > 0) {
+              var msgEnchainement = attaquant.token.get('name') + " a droit à une attaque au contact gratuite contre ";
+              var sep = "";
+              var armeEnMain = tokenAttribute(attaquant, 'armeEnMain');
+              var act;
+              if (armeEnMain.length === 0) {
+                armeEnMain = false;
+              } else {
+                armeEnMain = armeEnMain[0].get('current');
+                act = '!cof-attack ' + attaquant.token.id + ' ';
+              }
+              msgEnchainement += sep;
+              attaquant.ennemisAuContact.forEach(function(tok) {
+                if (armeEnMain) {
+                  msgEnchainement += boutonSimple(act + tok.id + ' ' + armeEnMain, tok.get('name'));
+                } else {
+                  msgEnchainement += tok.get('name');
+                }
+                sep = ", ou ";
+              });
+              addLineToFramedDisplay(display, msgEnchainement);
+            }
+          }
+        }
+        if (evt.action.options && !evt.action.options.auto && evt.action.cibles) {
+          evt.action.cibles.forEach(function(target) {
+            if (!options.pasDeDmg && target.touche &&
+              attributeAsBool(target, 'ignorerLaDouleur') &&
+              attributeAsInt(target, 'douleurIgnoree', 0) === 0) {
+              addLineToFramedDisplay(display, target.tokName + " peut " +
+                boutonSimple("!cof-ignorer-la-douleur " + evt.id + ' --target ' + target.token.id, "ignorer la douleur")
+              );
+            }
+            var attrPacteSanglant = attributeAsInt(target, 'pacteSanglant', 0);
+            if (attrPacteSanglant >= 3) {
+              var msg = target.tokName + " fait un Pacte sanglant" + boutonSimple("!cof-pacte-sanglant-def " + evt.id + ' 3 ' + target.token.id, "(+3 DEF)");
+              if (attrPacteSanglant >= 5) {
+                msg += boutonSimple("!cof-pacte-sanglant-def " + evt.id + ' 5 ' + target.token.id, "(+5 DEF)");
+              }
+              addLineToFramedDisplay(display, msg);
+            }
+          });
+        }
       }
     }
     if (options === undefined || !options.secret) {
@@ -26326,13 +26328,13 @@ var COFantasy = COFantasy || function() {
       error(forgesort.token.get('name') + " est incapable de créer " + cmd[3], cmd);
       return;
     }
-    var numeroArme;
+    var labelArme;
     if (rune.rang == 4) {
       if (cmd.length < 5) {
-        error("La rune de puissance nécessite de choisir un numéro d'arme.");
+        error("La rune de puissance nécessite de choisir un label d'arme.");
         return;
       }
-      numeroArme = parseInt(cmd[4]);
+      labelArme = parseInt(cmd[4]);
     }
     var evt = {
       type: "Création de rune"
@@ -26356,7 +26358,6 @@ var COFantasy = COFantasy || function() {
       }
     }
     var attrName = rune.attrName;
-    if (rune.rang === 4) attrName += "(" + numeroArme + ")";
     var message = "reçoit ";
     var typeRune;
     switch (rune.rang) {
@@ -26367,7 +26368,11 @@ var COFantasy = COFantasy || function() {
         typeRune = "une rune de protection";
         break;
       case 4:
-        typeRune = "une rune de puissance sur son arme " + numeroArme;
+        typeRune = "une rune de puissance sur son ";
+        var arme = getWeaponStats(target, labelArme);
+        if (arme) typeRune += arme.name;
+        else typeRune += "arme " + labelArme;
+        attrName += "(" + labelArme + ")";
         break;
     }
     message += typeRune;
