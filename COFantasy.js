@@ -3730,7 +3730,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //retourne un entier
-  // evt n'est défini que si la caractéristique est effectivement utlilisée
+  // evt n'est défini que si la caractéristique est effectivement utilisée
   function bonusTestCarac(carac, personnage, options, testId, evt, explications) {
     var expliquer = function(msg) {
       if (explications) explications.push(msg);
@@ -3744,6 +3744,7 @@ var COFantasy = COFantasy || function() {
       bonus += ficheAttributeAsInt(personnage, carac + "_BONUS", 0);
     }
     expliquer("Bonus de " + carac + " : " + bonus);
+    var bonusCarac = bonus;
     var bonusAspectDuDemon;
     switch (carac) {
       case 'DEX':
@@ -3779,6 +3780,24 @@ var COFantasy = COFantasy || function() {
         if (attributeAsBool(personnage, 'osBrises')) {
           expliquer("Des os sont brisés : -2 au jet de FOR");
           bonus -= 2;
+        }
+        if (charAttributeAsBool(personnage, 'grosseTete')) {
+          var bonusInt;
+          if (persoEstPNJ(personnage)) {
+            bonusInt = ficheAttributeAsInt(personnage, 'pnj_int', 0);
+          } else {
+            bonusInt = modCarac(personnage, 'intelligence');
+            bonusInt += ficheAttributeAsInt(personnage, "INT_BONUS", 0);
+          }
+          if (bonusInt > bonusCarac) {
+            var msgGrosseTete = "Grosse tête : ";
+            if (bonusInt > 0) msgGrosseTete += '+';
+            msgGrosseTete += bonusInt + " au lieu de ";
+            if (bonusCarac > 0) msgGrosseTete += '+';
+            msgGrosseTete += bonusCarac;
+            expliquer(msgGrosseTete);
+            bonus += bonusInt - bonusCarac;
+          }
         }
         break;
       case 'CHA':
@@ -4362,22 +4381,22 @@ var COFantasy = COFantasy || function() {
         overlay = 'Force';
         break;
       case 'DEX':
-       // pictoCarac = '<span style="font-family: \'Pictos Custom\'">t</span>';
+        // pictoCarac = '<span style="font-family: \'Pictos Custom\'">t</span>';
         pictoCarac = 'DEX';
         overlay = 'Dextérité';
         break;
       case 'CON':
-       // pictoCarac = '<span style="font-family: \'Pictos\'">k</span>';
+        // pictoCarac = '<span style="font-family: \'Pictos\'">k</span>';
         pictoCarac = 'CON';
         overlay = 'Constitution';
         break;
       case 'INT':
-       // pictoCarac = '<span style="font-family: \'Pictos Custom\'">y</span>';
+        // pictoCarac = '<span style="font-family: \'Pictos Custom\'">y</span>';
         pictoCarac = 'INT';
         overlay = 'Intelligence';
         break;
       case 'SAG':
-       // pictoCarac = '&#9775;';
+        // pictoCarac = '&#9775;';
         pictoCarac = 'SAG';
         overlay = 'Sagesse';
         break;

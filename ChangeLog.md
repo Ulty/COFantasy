@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.17
 ### Capacités
+* Support de la capacité Grosse tête du forgesort
 * Capacité d'objet magique "Action libre"
 * Saisir et broyer pour les chaoses.
 * Amélioration de la prise en charge d'ombre mouvante.
