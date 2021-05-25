@@ -534,12 +534,12 @@ var COFantasy = COFantasy || function() {
 
   function registerMarkerEffet(marker, effet) {
     var m = markerCatalog[marker];
-      if (m) {
-        messageEffetTemp[effet].statusMarker = m.tag;
-        effet_de_marker[m.tag] = effet;
-      } else {
-          log("Marker " + m + " introuvable. Pas de marker pour l'effet "+effet);
-      }
+    if (m) {
+      messageEffetTemp[effet].statusMarker = m.tag;
+      effet_de_marker[m.tag] = effet;
+    } else {
+      log("Marker " + m + " introuvable. Pas de marker pour l'effet " + effet);
+    }
   }
 
   //Appelé au lancement du script, mise à jour de certaines variables globales
@@ -3910,90 +3910,6 @@ var COFantasy = COFantasy || function() {
         options.bonusAttrs = options.bonusAttrs || [];
         options.bonusAttrs.push(options.competence.toLowerCase().replace(/ /g, '_'));
       } else {
-        var bonusGraceFeline;
-        switch (comp) {
-          case 'acrobatie':
-          case 'acrobaties':
-            if (charAttributeAsBool(personnage, 'graceFelineVoleur')) {
-              bonusGraceFeline = modCarac(personnage, 'charisme');
-              if (bonusGraceFeline > 0) {
-                expliquer("Grâce féline : +" + bonusGraceFeline + " en acrobaties");
-                bonus += bonusGraceFeline;
-              }
-            }
-            break;
-          case 'course':
-            if (charAttributeAsBool(personnage, 'graceFelineVoleur')) {
-              bonusGraceFeline = modCarac(personnage, 'charisme');
-              if (bonusGraceFeline > 0) {
-                expliquer("Grâce féline : +" + bonusGraceFeline + " en course");
-                bonus += bonusGraceFeline;
-              }
-            }
-            break;
-          case 'discrétion':
-          case 'discretion':
-            if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-              expliquer("Forêt hostile : -5 en discrétion");
-              bonus -= 5;
-            }
-            break;
-          case 'intimidation':
-            bonus += bonusArgumentDeTaille(personnage, expliquer);
-            if (attributeAsBool(personnage, 'ordreDuChevalierDragon') && attributeAsBool(personnage, 'monteSur')) {
-              expliquer("Chevalier Dragon monté : +5 en intimidation");
-              bonus += 5;
-            }
-            break;
-          case 'escalade':
-            if (charAttributeAsBool(personnage, 'graceFelineVoleur')) {
-              bonusGraceFeline = modCarac(personnage, 'charisme');
-              if (bonusGraceFeline > 0) {
-                expliquer("Grâce féline : +" + bonusGraceFeline + " en escalade");
-                bonus += bonusGraceFeline;
-              }
-            }
-            break;
-          case 'négociation':
-          case 'negociation':
-            bonus += bonusArgumentDeTaille(personnage, expliquer);
-            break;
-          case 'orientation':
-            if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-              expliquer("Forêt hostile : -5 en orientation");
-              bonus -= 5;
-            }
-            break;
-          case 'perception':
-            if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-              expliquer("Forêt hostile : -5 en perception");
-              bonus -= 5;
-            }
-            break;
-          case 'persuasion':
-            bonus += bonusArgumentDeTaille(personnage, expliquer);
-            if (attributeAsBool(personnage, 'ordreDuChevalierDragon') && attributeAsBool(personnage, 'monteSur')) {
-              expliquer("Chevalier Dragon monté : +5 en persuasion");
-              bonus += 5;
-            }
-            break;
-          case 'saut':
-          case 'sauter':
-            if (charAttributeAsBool(personnage, 'graceFelineVoleur')) {
-              bonusGraceFeline = modCarac(personnage, 'charisme');
-              if (bonusGraceFeline > 0) {
-                expliquer("Grâce féline : +" + bonusGraceFeline + " en saut");
-                bonus += bonusGraceFeline;
-              }
-            }
-            break;
-          case 'survie':
-            if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-              expliquer("Forêt hostile : -5 en survie");
-              bonus -= 5;
-            }
-            break;
-        }
         var msgComp = "Compétence " + options.competence + " : ";
         if (bonusCompetence === 0) {
           msgComp += 0;
@@ -4003,6 +3919,90 @@ var COFantasy = COFantasy || function() {
           else msgComp += bonusCompetence;
         }
         expliquer(msgComp);
+      }
+      var bonusGraceFeline;
+      switch (comp) {
+        case 'acrobatie':
+        case 'acrobaties':
+          if (charAttributeAsBool(personnage, 'graceFelineVoleur')) {
+            bonusGraceFeline = modCarac(personnage, 'charisme');
+            if (bonusGraceFeline > 0) {
+              expliquer("Grâce féline : +" + bonusGraceFeline + " en acrobaties");
+              bonus += bonusGraceFeline;
+            }
+          }
+          break;
+        case 'course':
+          if (charAttributeAsBool(personnage, 'graceFelineVoleur')) {
+            bonusGraceFeline = modCarac(personnage, 'charisme');
+            if (bonusGraceFeline > 0) {
+              expliquer("Grâce féline : +" + bonusGraceFeline + " en course");
+              bonus += bonusGraceFeline;
+            }
+          }
+          break;
+        case 'discrétion':
+        case 'discretion':
+          if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+            expliquer("Forêt hostile : -5 en discrétion");
+            bonus -= 5;
+          }
+          break;
+        case 'intimidation':
+          bonus += bonusArgumentDeTaille(personnage, expliquer);
+          if (attributeAsBool(personnage, 'ordreDuChevalierDragon') && attributeAsBool(personnage, 'monteSur')) {
+            expliquer("Chevalier Dragon monté : +5 en intimidation");
+            bonus += 5;
+          }
+          break;
+        case 'escalade':
+          if (charAttributeAsBool(personnage, 'graceFelineVoleur')) {
+            bonusGraceFeline = modCarac(personnage, 'charisme');
+            if (bonusGraceFeline > 0) {
+              expliquer("Grâce féline : +" + bonusGraceFeline + " en escalade");
+              bonus += bonusGraceFeline;
+            }
+          }
+          break;
+        case 'négociation':
+        case 'negociation':
+          bonus += bonusArgumentDeTaille(personnage, expliquer);
+          break;
+        case 'orientation':
+          if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+            expliquer("Forêt hostile : -5 en orientation");
+            bonus -= 5;
+          }
+          break;
+        case 'perception':
+          if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+            expliquer("Forêt hostile : -5 en perception");
+            bonus -= 5;
+          }
+          break;
+        case 'persuasion':
+          bonus += bonusArgumentDeTaille(personnage, expliquer);
+          if (attributeAsBool(personnage, 'ordreDuChevalierDragon') && attributeAsBool(personnage, 'monteSur')) {
+            expliquer("Chevalier Dragon monté : +5 en persuasion");
+            bonus += 5;
+          }
+          break;
+        case 'saut':
+        case 'sauter':
+          if (charAttributeAsBool(personnage, 'graceFelineVoleur')) {
+            bonusGraceFeline = modCarac(personnage, 'charisme');
+            if (bonusGraceFeline > 0) {
+              expliquer("Grâce féline : +" + bonusGraceFeline + " en saut");
+              bonus += bonusGraceFeline;
+            }
+          }
+          break;
+        case 'survie':
+          if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+            expliquer("Forêt hostile : -5 en survie");
+            bonus -= 5;
+          }
+          break;
       }
     }
     if (bonusCompetence === undefined) {
@@ -35256,9 +35256,9 @@ var COFantasy = COFantasy || function() {
       } else {
         var effet = effet_de_marker[marker];
         if (effet) {
-        var attr = tokenAttribute(perso, effet);
-        if (attr.length === 0) return;
-        finDEffet(attr[0], effetTempOfAttribute(attr[0]), attr[0].get('name'), perso.charId, evt);
+          var attr = tokenAttribute(perso, effet);
+          if (attr.length === 0) return;
+          finDEffet(attr[0], effetTempOfAttribute(attr[0]), attr[0].get('name'), perso.charId, evt);
         }
       }
     });
