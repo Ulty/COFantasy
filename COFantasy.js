@@ -8754,7 +8754,7 @@ var COFantasy = COFantasy || function() {
 
   //Retourne true si il existe une limite qui empêche de lancer le sort
   //N'ajoute pas l'événement à l'historique
-  function limiteRessources(personnage, options, defResource, msg, evt) {
+  function limiteRessources(personnage, options, defResource, msg, evt, explications) {
     var depMana = {
       cout_null: true
     };
@@ -8782,6 +8782,18 @@ var COFantasy = COFantasy || function() {
           return true;
         }
         setTokenAttr(personnage, ressource, utilisations - 1, evt);
+        if (options.limiteParJourRessource) {
+          var msgJour = personnage.token.get('name') + " ";
+          if (utilisations < 2) msgJour += "ne pourra plus utiliser ";
+          else {
+            msgJour += "pourra encore utiliser ";
+            if (utilisations == 2) msgJour += "une fois ";
+            else msgJour += (utilisations-1) + " fois ";
+          }
+          msgJour += options.limiteParJourRessource + " aujourd'hui.";
+          if (explications) explications.push(msgJour);
+          else sendPerso(personnage, msgJour, options.secret);
+        }
       } else {
         error("Impossible de savoir à qui appliquer la limite journalière", options);
         return true;
@@ -8804,6 +8816,18 @@ var COFantasy = COFantasy || function() {
           return true;
         }
         setTokenAttr(personnage, ressource, utilisations - 1, evt);
+        if (options.limiteParCombatRessource) {
+          var msgCombat = personnage.token.get('name') + " ";
+          if (utilisations < 2) msgCombat += "ne pourra plus utiliser ";
+          else {
+            msgCombat += "pourra encore utiliser ";
+            if (utilisations == 2) msgCombat += "une fois ";
+            else msgCombat += (utilisations-1) + " fois ";
+          }
+          msgCombat += options.limiteParCombatRessource + " durant ce combat.";
+          if (explications) explications.push(msgCombat);
+          else sendPerso(personnage, msgCombat, options.secret);
+        }
       } else {
         error("Impossible de savoir à qui appliquer la limite par combat", options);
         return true;
@@ -10582,7 +10606,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    if (limiteRessources(attaquant, options, attackLabel, weaponName, evt)) {
+    if (limiteRessources(attaquant, options, attackLabel, weaponName, evt, explications)) {
       return;
     }
     // Effets quand on rentre en combat
