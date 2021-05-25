@@ -12587,8 +12587,11 @@ var COFantasy = COFantasy || function() {
             // Tout ce qui se passe après les saves (autres que saves de diminution des dmg
             var afterSaves = function() {
               if (saves > 0) return; //On n'a pas encore fait tous les saves
-              if (options.pasDeDmg ||
-                target.utiliseRuneProtection ||
+              if (target.utiliseRuneProtection) {
+                target.messages.push(target.tokName + " utilise sa Rune de Protection pour annuler les dommages");
+                // Pas de dégâts, donc pas d'appel à dealDamage
+                finCibles();
+              } else if (options.pasDeDmg ||
                 (additionalDmg.length === 0 && mainDmgRoll.total === 0 && attNbDices === 0)) {
                 // Pas de dégâts, donc pas d'appel à dealDamage
                 finCibles();
@@ -14339,6 +14342,7 @@ var COFantasy = COFantasy || function() {
         }
         //Option Max Rune de Protection
         if (target.utiliseRuneProtectionMax) {
+          target.messages.push(target.tokName + " utilise sa Rune de Protection");
           rd += target.utiliseRuneProtectionMax;
           if (dmgTotal <= rd) expliquer("La rune de protection absorbe tous les dommages");
           else expliquer("La rune de protection encaisse " + target.utiliseRuneProtectionMax + " dommages");
@@ -26836,10 +26840,8 @@ var COFantasy = COFantasy || function() {
 
   function appliquerRuneDeProtection(cible, options, evt) {
     if (reglesOptionelles.dommages.val.max_rune_protection.val) {
-      cible.messages.push(cible.tokName + " utilise sa Rune de Protection");
       cible.utiliseRuneProtectionMax = attributeAsInt(cible, 'runeProtectionMax', 30);
     } else {
-      cible.messages.push(cible.tokName + " utilise sa Rune de Protection pour annuler les dommages");
       cible.utiliseRuneProtection = true;
     }
     removePreDmg(options, cible);
