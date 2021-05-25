@@ -1468,6 +1468,43 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //cherche l'attribut attribute de valeur par défaut def
+  //et lui ajoute la valeur val. Crée l'attribut si besoin
+  function addToAttributeAsInt(perso, attribute, def, val, evt) {
+    evt.attributes = evt.attributes || [];
+    var fullAttribute = attribute;
+    if (perso.token) {
+      var link = perso.token.get('bar1_link');
+      if (link === '') fullAttribute += "_" + perso.token.get('name');
+    }
+    var attr = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+      name: fullAttribute
+    });
+    if (attr.length === 0) {
+      attr = createObj('attribute', {
+        characterid: perso.charId,
+        name: fullAttribute,
+        current: def + val,
+      });
+      evt.attributes.push({
+        attribute: attr,
+        current: null
+      });
+      return;
+    }
+    attr = attr[0];
+    var c = parseInt(attr.get('current'));
+    evt.attributes.push({
+      attribute: attr,
+      current: c
+    });
+    if (isNaN(c)) c = def;
+    attr.set('current', c + val);
+    return;
+  }
+
   //fonction avec callback, mais synchrone
   // n'ajoute pas evt à l'historique
   function soigneToken(perso, soins, evt, callTrue, callMax, options) {
@@ -12589,6 +12626,7 @@ var COFantasy = COFantasy || function() {
               if (saves > 0) return; //On n'a pas encore fait tous les saves
               if (target.utiliseRuneProtection) {
                 target.messages.push(target.tokName + " utilise sa Rune de Protection pour annuler les dommages");
+                addToAttributeAsInt(target, 'limiteParCombat_runeForgesort_protection', 1, -1, evt);
                 // Pas de dégâts, donc pas d'appel à dealDamage
                 finCibles();
               } else if (options.pasDeDmg ||
@@ -14345,6 +14383,7 @@ var COFantasy = COFantasy || function() {
         //Option Max Rune de Protection
         if (target.utiliseRuneProtectionMax) {
           target.messages.push(target.tokName + " utilise sa Rune de Protection");
+          addToAttributeAsInt(target, 'limiteParCombat_runeForgesort_protection', 1, -1, evt);
           rd += target.utiliseRuneProtectionMax;
           if (dmgTotal <= rd) expliquer("La rune de protection absorbe tous les dommages");
           else expliquer("La rune de protection encaisse " + target.utiliseRuneProtectionMax + " dommages");
@@ -26777,21 +26816,6 @@ var COFantasy = COFantasy || function() {
     alliesParPerso[druide.charId] = alliesDruide;
   }
 
-  function persoUtiliseRuneProtection(perso, evt) {
-    var attr = tokenAttribute(perso, 'runeForgesort_protection');
-    if (attr.length < 1 || attr[0].get('current') < 1) {
-      sendPerso(perso, "n'a pas de rune de protection");
-      return false;
-    }
-    if (limiteRessources(perso, {
-        limiteParCombat: 1
-      }, "runeForgesort_protection", "a déjà utilisé sa rune de protection durant ce combat", evt)) {
-      addEvent(evt);
-      return false;
-    }
-    return true;
-  }
-
   //!cof-rune-protection
   function runeProtection(msg) {
     if (!stateCOF.combat) {
@@ -26831,7 +26855,14 @@ var COFantasy = COFantasy || function() {
           sendPerso(perso, "n'est pas la cible de la dernière attaque");
           return;
         }
-        if (!persoUtiliseRuneProtection(perso, evt)) return;
+        if (!attributeAsBool(perso, 'runeForgesort_protection')) {
+          sendPerso(perso, "n'a pas de rune de protection");
+          return;
+        }
+        if (attributeAsInt(perso, 'limiteParCombat_runeForgesort_protection', 1) < 1) {
+          sendPerso(perso, "a déjà utilisé sa rune de protection durant ce combat");
+          return;
+        }
         action.choices = action.choices || {};
         action.choices[perso.token.id] = action.choices[perso.token.id] || {};
         action.choices[perso.token.id].runeForgesort_protection = true;
