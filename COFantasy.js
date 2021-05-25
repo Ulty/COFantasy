@@ -373,6 +373,7 @@ var COFantasy = COFantasy || function() {
 
   //Remplis quand on sait quels sont les markers dans setStateCOF
   var etat_de_marker = {};
+  var effet_de_marker = {};
 
   function tokenAttribute(personnage, name) {
     var token = personnage.token;
@@ -530,6 +531,16 @@ var COFantasy = COFantasy || function() {
 
   var statusForInitAlly;
   var statusForInitEnemy;
+
+  function registerMarkerEffet(marker, effet) {
+    var m = markerCatalog[marker];
+      if (m) {
+        messageEffetTemp[effet].statusMarker = m.tag;
+        effet_de_marker[m.tag] = effet;
+      } else {
+          log("Marker " + m + " introuvable. Pas de marker pour l'effet "+effet);
+      }
+  }
 
   //Appelé au lancement du script, mise à jour de certaines variables globales
   function setStateCOF() {
@@ -766,6 +777,11 @@ var COFantasy = COFantasy || function() {
       }
       stateCOF.gameMacros = gameMacros;
     }
+    //Utilisation des markers d'effets temporaires
+    for (var effet in messageEffetTemp) {
+      var ms = messageEffetTemp[effet].statusMarker;
+      if (ms) effet_de_marker[ms] = effet;
+    }
     // Récupération des token Markers attachés à la campagne image, nom, tag, Id
     var markers = JSON.parse(Campaign().get("token_markers"));
     markers.forEach(function(m) {
@@ -794,44 +810,32 @@ var COFantasy = COFantasy || function() {
       // On boucle sur la liste des états pour vérifier que les markers sont bien présents !
       var markersAbsents = [];
       var ancientSet = true;
-      Object.keys(cof_states_perso).forEach(function(etat) {
-        var markerName = cof_states_perso[etat].substring(7);
-        var marker = markerCatalog[markerName];
-        if (marker) {
-          cof_states[etat] = "status_" + marker.tag;
+      for (var etat_perso in cof_states_perso) {
+        var markerName = cof_states_perso[etat_perso].substring(7);
+        var marker_perso = markerCatalog[markerName];
+        if (marker_perso) {
+          cof_states[etat_perso] = 'status_' + marker_perso.tag;
           ancientSet = false;
         } else {
           markersAbsents.push(markerName);
         }
-      });
-      // Cas particulier des deux markers d'initiative
-      if (markerCatalog["cof-init-ally"]) {
-        statusForInitAlly = "status_" + markerCatalog["cof-init-ally"].tag;
-      } else {
-        markersAbsents.push("cof-init-ally");
       }
-      if (markerCatalog["cof-init-enemy"]) {
-        statusForInitEnemy = "status_" + markerCatalog["cof-init-enemy"].tag;
+      // Cas particulier des deux markers d'initiative
+      if (markerCatalog['cof-init-ally']) {
+        statusForInitAlly = 'status_' + markerCatalog['cof-init-ally'].tag;
       } else {
-        markersAbsents.push("cof-init-enemy");
+        markersAbsents.push('cof-init-ally');
+      }
+      if (markerCatalog['cof-init-enemy']) {
+        statusForInitEnemy = 'status_' + markerCatalog['cof-init-enemy'].tag;
+      } else {
+        markersAbsents.push('cof-init-enemy');
       }
       // Cas des markers d'effet temporaire, 3 cas particuliers :
       // uniquement le tag sans "status_" devant
-      if (markerCatalog["cof-asphyxie"]) {
-        messageEffetTemp.asphyxie.statusMarker = markerCatalog["cof-asphyxie"].tag;
-      } else {
-        markersAbsents.push("cof-asphyxie");
-      }
-      if (markerCatalog["cof-saigne"]) {
-        messageEffetTemp.saignementsSang.statusMarker = markerCatalog["cof-saigne"].tag;
-      } else {
-        markersAbsents.push("cof-saigne");
-      }
-      if (markerCatalog["cof-prison-vegetale"]) {
-        messageEffetTemp.prisonVegetale.statusMarker = markerCatalog["cof-prison-vegetale"].tag;
-      } else {
-        markersAbsents.push("cof-prison-vegetale");
-      }
+      registerMarkerEffet('cof-asphyxie', 'asphyxie');
+      registerMarkerEffet('cof-saigne', 'saignementsSang');
+      registerMarkerEffet('cof-prison-vegetale', 'prisonVegetale');
       if (!ancientSet) {
         markersAbsents.forEach(function(m) {
           log("Marker " + m + " introuvable");
@@ -31854,6 +31858,7 @@ var COFantasy = COFantasy || function() {
   // visible : l'effet est visible
   // msgSave: message à afficher quand on résiste à l'effet. Sera précédé de "pour "
   // entrave: effet qui immobilise, paralyse ou ralentit
+  // statusMarker: marker par défaut pour l'effet
   var messageEffetTemp = {
     sousTension: {
       activation: "se charge d'énergie électrique",
@@ -35248,9 +35253,16 @@ var COFantasy = COFantasy || function() {
       var etat = etat_de_marker[marker];
       if (etat) {
         setState(perso, etat, false, evt);
+      } else {
+        var effet = effet_de_marker[marker];
+        if (effet) {
+        var attr = tokenAttribute(perso, effet);
+        if (attr.length === 0) return;
+        finDEffet(attr[0], effetTempOfAttribute(attr[0]), attr[0].get('name'), perso.charId, evt);
+        }
       }
     });
-    // Ensuite les markers apparuts
+    // Ensuite les markers apparus
     currentMarkers.forEach(function(marker) {
       if (previousMarkers.includes(marker)) return;
       var etat = etat_de_marker[marker];
@@ -35287,18 +35299,9 @@ var COFantasy = COFantasy || function() {
 
 }();
 
-on("change:handout", function(obj, prev) {
-  COFantasy.changeHandout(obj, prev);
-});
-
-on("destroy:handout", function(prev) {
-  COFantasy.changeHandout(undefined, prev);
-});
-
 on('ready', function() {
   var scriptVersion = '2.17';
   on('add:token', COFantasy.addToken);
-  on("change:graphic:statusmarkers", COFantasy.changeMarker);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
   state.COFantasy = state.COFantasy || {
     combat: false,
@@ -36140,8 +36143,13 @@ on("chat:message", function(msg) {
   }
 });
 
+on("change:handout", COFantasy.changeHandout);
+on("destroy:handout", function(prev) {
+  COFantasy.changeHandout(undefined, prev);
+});
 on("change:campaign:turnorder", COFantasy.nextTurn);
 on("destroy:token", COFantasy.destroyToken);
+on("change:graphic:statusmarkers", COFantasy.changeMarker);
 on("change:token", COFantasy.moveToken);
 on("add:character", function(c) {
   if (COF_loaded) {

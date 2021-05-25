@@ -32,6 +32,7 @@
 * Support complet de la Voie du porteur de bouclier (prestige)
 
 ### Autres améliorations
+* Termine les effets dont on enlève le marker à la main.
 * Utilisation des nom de caractéristiques au lieu de pictogrammes douteux pour les jets de caractéristiques et de compétences.
 * Gestion des identités secrètes.
 * Possibilité de passer des options aux effets à dégâts sur la durée.
