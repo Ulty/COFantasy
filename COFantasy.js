@@ -4357,33 +4357,39 @@ var COFantasy = COFantasy || function() {
     var overlay;
     switch (carac) {
       case 'FOR':
-        pictoCarac = '<span style="font-family: \'Pictos\'">S</span>';
+        //pictoCarac = '<span style="font-family: \'Pictos\'">S</span>';
+        pictoCarac = 'FOR';
         overlay = 'Force';
         break;
       case 'DEX':
-        pictoCarac = '<span style="font-family: \'Pictos Custom\'">t</span>';
+       // pictoCarac = '<span style="font-family: \'Pictos Custom\'">t</span>';
+        pictoCarac = 'DEX';
         overlay = 'Dextérité';
         break;
       case 'CON':
-        pictoCarac = '<span style="font-family: \'Pictos\'">k</span>';
+       // pictoCarac = '<span style="font-family: \'Pictos\'">k</span>';
+        pictoCarac = 'CON';
         overlay = 'Constitution';
         break;
       case 'INT':
-        pictoCarac = '<span style="font-family: \'Pictos Custom\'">y</span>';
+       // pictoCarac = '<span style="font-family: \'Pictos Custom\'">y</span>';
+        pictoCarac = 'INT';
         overlay = 'Intelligence';
         break;
       case 'SAG':
-        pictoCarac = '&#9775;';
+       // pictoCarac = '&#9775;';
+        pictoCarac = 'SAG';
         overlay = 'Sagesse';
         break;
       case 'CHA':
-        pictoCarac = '<span style="font-family: \'Pictos\'">w</span>';
+        //pictoCarac = '<span style="font-family: \'Pictos\'">w</span>';
+        pictoCarac = 'CHA';
         overlay = 'Charisme';
         break;
     }
     var charButtonStyle = ' style="border-radius:10px;" title="' + overlay + '"';
     var cell = boutonSimple(action, pictoCarac, charButtonStyle);
-    addCellInFramedDisplay(display, cell, 150, true, fond);
+    addCellInFramedDisplay(display, cell, 60, true, fond);
     var comps = [...listeCompetences[carac].list];
     var attributes = findObjs({
       _type: 'attribute',
