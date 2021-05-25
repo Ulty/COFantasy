@@ -2668,6 +2668,10 @@ var COFantasy = COFantasy || function() {
       if (playerIsGM(playerId)) dest = 'GM';
       else dest = origin.who;
     }
+    if (dest.includes('"')) {
+      sendChat('COF', msg);
+      log("Impossible d'envoyer des messages privés à "+dest+" car le nom contient des guillemets");
+    }
     sendChat('COF', '/w "' + dest + '" ' + msg);
   }
 
