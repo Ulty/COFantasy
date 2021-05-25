@@ -20529,7 +20529,9 @@ var COFantasy = COFantasy || function() {
       setTokenAttr(perso1, 'actionConcertee', attackBonus, evt, {
         msg: "gagne un bonus de " + attackBonus + " à ses attaques et en DEF pour ce tour"
       });
-      addEvent(evt);
+      setActiveToken(perso2.token.id, evt);
+    } else {
+      setActiveToken(perso1.token.id, evt);
     }
     to.pasAgi[tourTok1].pr = pr2;
     to.pasAgi[tourTok2].pr = pr1;
