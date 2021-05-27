@@ -6648,6 +6648,7 @@ var COFantasy = COFantasy || function() {
         if (reglesOptionelles.mana.val.brulure_de_magie.val) {
           var famille = ficheAttribute(personnage, 'famille', 'aventurier').trim();
           if (famille == "combattant") degats *= 2;
+          degats = Math.ceil(degats / charAttributeAsInt(personnage, 'coefPVMana', 1));
         }
         var bar1 = parseInt(token.get('bar1_value'));
         if (bar1 < degats) {
