@@ -34605,7 +34605,7 @@ var COFantasy = COFantasy || function() {
     nextTurn(cmp);
   }
 
-  //when set is true, sets the version, when false, remove it
+  //quand set est true, ajoute la version, sinon, l'enlève
   function scriptVersionToCharacter(character, set, nb) {
     var charId = character.id;
     //On vérifie que les attributs sont peuplés
@@ -36114,6 +36114,7 @@ on('ready', function() {
     log("Mise à jour des attributs de compétence effectué");
   }
   if (state.COFantasy.version < 2.17) {
+    state.COFantasy.scriptSheets = true;//mise à jour de la version
     macros = findObjs({
       _type: 'macro'
     }).concat(findObjs({
@@ -36183,7 +36184,7 @@ on("destroy:token", COFantasy.destroyToken);
 on("change:graphic:statusmarkers", COFantasy.changeMarker);
 on("change:token", COFantasy.moveToken);
 on("add:character", function(c) {
-  if (COF_loaded) {
+  if (COF_loaded && state.COFantasy.options.affichage.val.fiche.val) {
     COFantasy.scriptVersionToCharacter(c, true);
   }
 });
