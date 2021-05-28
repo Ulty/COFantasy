@@ -2670,7 +2670,7 @@ var COFantasy = COFantasy || function() {
     }
     if (dest.includes('"')) {
       sendChat('COF', msg);
-      log("Impossible d'envoyer des messages privés à "+dest+" car le nom contient des guillemets");
+      log("Impossible d'envoyer des messages privés à " + dest + " car le nom contient des guillemets");
     }
     sendChat('COF', '/w "' + dest + '" ' + msg);
   }
@@ -8789,7 +8789,7 @@ var COFantasy = COFantasy || function() {
           else {
             msgJour += "pourra encore utiliser ";
             if (utilisations == 2) msgJour += "une fois ";
-            else msgJour += (utilisations-1) + " fois ";
+            else msgJour += (utilisations - 1) + " fois ";
           }
           msgJour += options.limiteParJourRessource + " aujourd'hui.";
           if (explications) explications.push(msgJour);
@@ -8823,7 +8823,7 @@ var COFantasy = COFantasy || function() {
           else {
             msgCombat += "pourra encore utiliser ";
             if (utilisations == 2) msgCombat += "une fois ";
-            else msgCombat += (utilisations-1) + " fois ";
+            else msgCombat += (utilisations - 1) + " fois ";
           }
           msgCombat += options.limiteParCombatRessource + " durant ce combat.";
           if (explications) explications.push(msgCombat);
@@ -34107,6 +34107,11 @@ var COFantasy = COFantasy || function() {
       //For each token representing that character
       allTokens.forEach(function(auraToken) {
         if (auraToken.get('represents') != charId) return;
+        var perso = {
+          token: auraToken,
+          charId: charId
+        };
+        if (getState(perso, 'mort')) return;
         var tokName;
         //On cherche ensuite les tokens à portee
         allTokens.forEach(function(tok) {
@@ -36114,7 +36119,7 @@ on('ready', function() {
     log("Mise à jour des attributs de compétence effectué");
   }
   if (state.COFantasy.version < 2.17) {
-    state.COFantasy.scriptSheets = true;//mise à jour de la version
+    state.COFantasy.scriptSheets = true; //mise à jour de la version
     macros = findObjs({
       _type: 'macro'
     }).concat(findObjs({
