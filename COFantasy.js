@@ -30500,15 +30500,7 @@ var COFantasy = COFantasy || function() {
     var attr = tokenAttribute(cible, 'estSuiviPar');
     var suiveurs;
     if (attr.length === 0) {
-      attr = createObj('attribute', {
-        characterid: cible.charId,
-        name: 'estSuiviPar',
-        current: '',
-      });
-      evt.attributes.push({
-        attribute: attr,
-        current: null
-      });
+      attr = setTokenAttr(cible, 'estSuiviPar', '', evt);
       suiveurs = [];
     } else {
       attr = attr[0];
@@ -34783,7 +34775,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //Réagit au déplacement manuel d'un token.
-  function moveToken(token, prev, synchronisation) {
+  function moveToken(token, prev, synchronisation, suivis) {
     var charId = token.get('represents');
     if (charId === '') return;
     var perso = {
@@ -34936,101 +34928,106 @@ var COFantasy = COFantasy || function() {
     //Si le token suivait quelqu'un, ce n'est plus le cas
     if (prev.suit === undefined) nePlusSuivre(perso, pageId);
     //On bouge tous les tokens qui suivent le personnage
-    var attrSuivi = tokenAttribute(perso, 'estSuiviPar');
-    var page = getObj('page', pageId);
-    if (page === undefined) {
-      error("Impossible de trouver la page du token", perso);
-      return;
-    }
-    if (attrSuivi.length > 0) {
-      var width = page.get('width') * PIX_PER_UNIT;
-      var height = page.get('height') * PIX_PER_UNIT;
-      var pt = {
-        x: x,
-        y: y
-      };
-      var murs = getWalls(page, pageId, prev.murs);
-      var distance =
-        Math.sqrt((x - prev.left) * (x - prev.left) + (y - prev.top) * (y - prev.top));
-      attrSuivi.forEach(function(as) {
-        var suivants = as.get('current').split(':::');
-        var removedSuivant;
-        suivants = suivants.filter(function(idn) {
-          var suivant = persoOfIdName(idn, pageId);
-          if (suivant === undefined) {
-            removedSuivant = true;
-            return false;
-          }
-          var sw = suivant.token.get('width');
-          var sh = suivant.token.get('height');
-          if (sw > width) return false;
-          if (sh > width) return false;
-          var sx = suivant.token.get('left');
-          var sy = suivant.token.get('top');
-          //On essaie de garder la même position par rapport au token, en supposant qu'on était derrière lui
-          var attrSuit = tokenAttribute(suivant, 'suit');
-          var dp;
-          if (attrSuit.length > 0) {
-            dp = parseInt(attrSuit[0].get('max'));
-          }
-          if (dp === undefined || isNaN(dp) || dp < 1) {
-            dp = Math.sqrt((prev.left - sx) * (prev.left - sx) + (prev.top - sy) * (prev.top - sy));
-          }
-          var nsx = x + (prev.left - x) * dp / distance;
-          var nsy = y + (prev.top - y) * dp / distance;
-          if (nsx < 0) nsx = 0;
-          if (nsy < 0) nsy = 0;
-          if (nsx + sw / 2 > width) nsx = Math.floor(width - sw / 2);
-          if (nsy + sh / 2 > height) nsy = Math.floor(height - sh / 2);
-          //vérifie si de la nouvelle position on peut voir le suivi
-          if (obstaclePresent(nsx, nsy, pt, murs)) {
-            //On essaie de suivre le chemin du token, à la place
-            //D'abord se déplacer vers l'ancienne position de perso, au maximum de distance pixels
-            var distLoc = distance;
-            if (distLoc - dp < 5) {
-              nsx = prev.left;
-              nsy = prev.top;
-            } else {
-              if (dp > distLoc) {
-                nsx = sx + (prev.left - sx) * distLoc / dp;
-                nsy = sy + (prev.top - sy) * distLoc / dp;
-                if (obstaclePresent(nsx, nsy, pt, murs)) {
-                  sendPerso(suivant, "ne peut plus suivre " + perso.token.get('name') + " car " + onGenre(suivant, 'il', 'elle') + " ne " + onGenre(perso, 'le', 'la') + " voit plus");
-                  removeTokenAttr(suivant, 'suit');
-                  removedSuivant = true;
-                  return false;
-                }
+    //sauf si on a déjà été bougé.
+    suivis = suivis || new Set();
+    if (!suivis.has(token.id)) {
+      suivis.add(token.id);
+      var attrSuivi = tokenAttribute(perso, 'estSuiviPar');
+      var page = getObj('page', pageId);
+      if (page === undefined) {
+        error("Impossible de trouver la page du token", perso);
+        return;
+      }
+      if (attrSuivi.length > 0) {
+        var width = page.get('width') * PIX_PER_UNIT;
+        var height = page.get('height') * PIX_PER_UNIT;
+        var pt = {
+          x: x,
+          y: y
+        };
+        var murs = getWalls(page, pageId, prev.murs);
+        var distance =
+          Math.sqrt((x - prev.left) * (x - prev.left) + (y - prev.top) * (y - prev.top));
+        attrSuivi.forEach(function(as) {
+          var suivants = as.get('current').split(':::');
+          var removedSuivant;
+          suivants = suivants.filter(function(idn) {
+            var suivant = persoOfIdName(idn, pageId);
+            if (suivant === undefined) {
+              removedSuivant = true;
+              return false;
+            }
+            var sw = suivant.token.get('width');
+            var sh = suivant.token.get('height');
+            if (sw > width) return false;
+            if (sh > width) return false;
+            var sx = suivant.token.get('left');
+            var sy = suivant.token.get('top');
+            //On essaie de garder la même position par rapport au token, en supposant qu'on était derrière lui
+            var attrSuit = tokenAttribute(suivant, 'suit');
+            var dp;
+            if (attrSuit.length > 0) {
+              dp = parseInt(attrSuit[0].get('max'));
+            }
+            if (dp === undefined || isNaN(dp) || dp < 1) {
+              dp = Math.sqrt((prev.left - sx) * (prev.left - sx) + (prev.top - sy) * (prev.top - sy));
+            }
+            var nsx = x + (prev.left - x) * dp / distance;
+            var nsy = y + (prev.top - y) * dp / distance;
+            if (nsx < 0) nsx = 0;
+            if (nsy < 0) nsy = 0;
+            if (nsx + sw / 2 > width) nsx = Math.floor(width - sw / 2);
+            if (nsy + sh / 2 > height) nsy = Math.floor(height - sh / 2);
+            //vérifie si de la nouvelle position on peut voir le suivi
+            if (obstaclePresent(nsx, nsy, pt, murs)) {
+              //On essaie de suivre le chemin du token, à la place
+              //D'abord se déplacer vers l'ancienne position de perso, au maximum de distance pixels
+              var distLoc = distance;
+              if (distLoc - dp < 5) {
+                nsx = prev.left;
+                nsy = prev.top;
               } else {
-                //On part de l'ancienne position, et on peut encore avancer
-                distLoc -= dp;
-                nsx = prev.left + (x - prev.left) * distLoc / distance;
-                nsy = prev.top + (y - prev.top) * distLoc / distance;
-                if (obstaclePresent(nsx, nsy, pt, murs)) {
-                  nsx = prev.left;
-                  nsy = prev.top;
+                if (dp > distLoc) {
+                  nsx = sx + (prev.left - sx) * distLoc / dp;
+                  nsy = sy + (prev.top - sy) * distLoc / dp;
+                  if (obstaclePresent(nsx, nsy, pt, murs)) {
+                    sendPerso(suivant, "ne peut plus suivre " + perso.token.get('name') + " car " + onGenre(suivant, 'il', 'elle') + " ne " + onGenre(perso, 'le', 'la') + " voit plus");
+                    removeTokenAttr(suivant, 'suit');
+                    removedSuivant = true;
+                    return false;
+                  }
+                } else {
+                  //On part de l'ancienne position, et on peut encore avancer
+                  distLoc -= dp;
+                  nsx = prev.left + (x - prev.left) * distLoc / distance;
+                  nsy = prev.top + (y - prev.top) * distLoc / distance;
+                  if (obstaclePresent(nsx, nsy, pt, murs)) {
+                    nsx = prev.left;
+                    nsy = prev.top;
+                  }
                 }
               }
             }
+            suivant.token.set('left', nsx);
+            suivant.token.set('top', nsy);
+            var sprev = {
+              left: sx,
+              top: sy,
+              suit: true,
+              murs: murs
+            };
+            moveToken(suivant.token, sprev, synchronisation, suivis); //pour faire suivre ceux qui le suivent
+            return true;
+          });
+          if (removedSuivant) {
+            if (suivants.length === 0) {
+              as.remove();
+            } else {
+              as.set('current', suivants.join(':::'));
+            }
           }
-          suivant.token.set('left', nsx);
-          suivant.token.set('top', nsy);
-          var sprev = {
-            left: sx,
-            top: sy,
-            suit: true,
-            murs: murs
-          };
-          moveToken(suivant.token, sprev); //pour faire suivre ceux qui le suivent
-          return true;
         });
-        if (removedSuivant) {
-          if (suivants.length === 0) {
-            as.remove();
-          } else {
-            as.set('current', suivants.join(':::'));
-          }
-        }
-      });
+      }
     }
     // Update position du token d'initiative dynamique
     if (stateCOF.options.affichage.val.init_dynamique.val) {
