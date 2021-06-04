@@ -1804,6 +1804,68 @@ var COFantasy = COFantasy || function() {
     return ((distance_pix / PIX_PER_UNIT) * scale);
   }
 
+  //Attention, seulement faire pour les tokens avec une image dans la librairie
+  //C'est toujours le cas pour un token créé par le script
+  function deleteTokenWithUndo(token, evt) {
+    var tokenFields = {
+      _pageid: token.get('pageid'),
+      represents: token.get('represents'),
+      left: token.get('left'),
+      top: token.get('top'),
+      width: token.get('width'),
+      height: token.get('height'),
+      rotation: token.get('rotation'),
+      layer: token.get('layer'),
+      name: token.get('name'),
+      bar1_value: token.get('bar1_value'),
+      bar1_max: token.get('bar1_max'),
+      bar1_link: token.get('bar1_link'),
+      bar2_value: token.get('bar2_value'),
+      bar2_max: token.get('bar2_max'),
+      bar2_link: token.get('bar2_link'),
+      bar3_value: token.get('bar3_value'),
+      bar3_max: token.get('bar3_max'),
+      aura1_radius: token.get('aura1_radius'),
+      aura1_color: token.get('aura1_color'),
+      aura1_square: token.get('aura1_square'),
+      showplayers_aura1: token.get('showplayers_aura1'),
+      aura2_radius: token.get('aura2_radius'),
+      aura2_color: token.get('aura2_color'),
+      aura2_square: token.get('aura2_square'),
+      showplayers_aura2: token.get('showplayers_aura2'),
+      statusmarkers: token.get('statusmarkers'),
+      light_radius: token.get('light_radius'),
+      light_dimradius: token.get('light_dimradius'),
+      light_otherplayers: token.get('light_otherplayers'),
+      light_hassight: token.get('light_hassight'),
+      light_angle: token.get('light_angle'),
+      light_losangle: token.get('light_losangle'),
+      light_multiplier: token.get('light_multiplier'),
+      has_bright_light_vision: token.get('has_bright_light_vision'),
+      has_night_vision: token.get('has_night_vision'),
+      night_vision_distance: token.get('night_vision_distance'),
+      night_vision_tint: token.get('night_vision_tint'),
+      emits_bright_light: token.get('emits_bright_light'),
+      bright_light_distance: token.get('bright_light_distance'),
+      emits_low_light: token.get('emits_low_light'),
+      low_light_distance: token.get('low_light_distance'),
+      has_limit_field_of_vision: token.get('has_limit_field_of_vision'),
+      has_limit_field_of_night_vision: token.get('has_limit_field_of_night_vision'),
+      limit_field_of_vision_center: token.get('limit_field_of_vision_center'),
+      limit_field_of_vision_total: token.get('limit_field_of_vision_total'),
+      showname: token.get('showname'),
+      showplayers_name: token.get('showplayers_name'),
+      showplayers_bar1: token.get('showplayers_bar1'),
+      showplayers_bar2: token.get('showplayers_bar2'),
+      showplayers_bar3: token.get('showplayers_bar3'),
+      adv_fow_view_distance: token.get('adv_fow_view_distance'),
+      imgsrc: token.get('imgsrc')
+    };
+    evt.deletedTokens = evt.deletedTokens || [];
+    evt.deletedTokens.push(tokenFields);
+    token.remove();
+  }
+
   //options:
   //fromTemp si on est en train de supprimer un effet temporaire
   function setState(personnage, etat, value, evt, options) {
@@ -1950,6 +2012,10 @@ var COFantasy = COFantasy || function() {
                   name: token.get('name')
                 });
               if (tokenOriginel.length > 0) tokenOriginel = tokenOriginel[0];
+              else {
+                error("Impossible de retrouver le token de départ de " + token.get('name') + " quand on enlève l'état invisible", attrInvisible);
+                tokenOriginel = false;
+              }
             }
           }
           var tokenCourant = getObj('graphic', attrInvisible[0].get('max'));
@@ -1966,9 +2032,16 @@ var COFantasy = COFantasy || function() {
                   name: token.get('name')
                 });
               if (tokenCourant.length > 0) tokenCourant = tokenCourant[0];
+              else {
+                error("Impossible de retrouver le token visible de " + token.get('name') + " quand on enlève l'état invisible", attrInvisible);
+                tokenCourant = false;
+              }
             }
           }
           removeTokenAttr(personnage, 'tokenInvisible', evt);
+          if (!(options && options.fromTemp)) {
+            removeTokenAttr(personnage, 'invisibleTemp', evt);
+          }
           if (tokenOriginel) {
             setToken(tokenOriginel, 'layer', 'objects', evt);
             if (tokenCourant) {
@@ -1988,7 +2061,7 @@ var COFantasy = COFantasy || function() {
               setToken(tokenOriginel, 'has_limit_field_of_night_vision', tokenCourant.get('has_limit_field_of_night_vision'), evt);
             }
           }
-          if (tokenCourant) tokenCourant.remove();
+          if (tokenCourant) deleteTokenWithUndo(tokenCourant, evt);
         }
       }
     } else if (value) {
@@ -2370,12 +2443,13 @@ var COFantasy = COFantasy || function() {
 
   /* Événements, utilisés pour les undo, en particulier undo pour refaire
    * une action quand une règle le permet (utilisation de points de chance, etc..)
-   * Champ d'un événement (variables evt en général dans le code:
+   * Champ d'un événement (variables evt en général dans le code):
    * id               : identificateur unique (int)
    * type             : description de l'événement (string)
    * affectes         : liste de tokens affectés par l'événement
    * tokens           : liste des tokens créés
-   * -> on ne garde pas les tokens effacés, car il est impossible au niveau de l'API de recréer un token si son image n'est pas au bon endroit
+   * deletedTokens    : liste de tokens effacés
+   * !!!!! -> ne garde pas les tokens effacés si on n'est pas sûr que son image est au bon endroit. Typiquement, on ne va le faire que pour les tokens crées dans le script
    * attributes       : liste de attributs créés ou modifiés
    * deletesAttributes: lites des attributs effacés
    * characters       : liste des personnages créés
@@ -2503,6 +2577,13 @@ var COFantasy = COFantasy || function() {
         });
         if (tokens.length === 0) return;
         setDefaultTokenFromSpec(dt.character, dt.defaultToken, tokens[0]);
+      });
+    }
+    if (evt.deletedTokens) {
+      evt.deletedTokens.forEach(function(token) {
+        var nameDel = token.name;
+        log("Restoring token " + nameDel);
+        createObj('graphic', token);
       });
     }
     if (evt.deletedCharacters) {
@@ -10204,6 +10285,7 @@ var COFantasy = COFantasy || function() {
         }];
       }
       if (getState(attaquant, 'invisible') && !charAttributeAsBool(attaquant, 'invisibleEnCombat')) {
+        attaquant.tokName = attaquant.tokName || attaquant.token.get('name');
         explications.push(attaquant.tokName + " redevient visible");
         setState(attaquant, 'invisible', false, evt);
       }
