@@ -2948,7 +2948,7 @@ var COFantasy = COFantasy || function() {
       weaponStats.attCarBonus =
         ficheAttribute(perso, attPrefix + "armedmcar", '@{FOR}');
       weaponStats.attDMBonusCommun =
-        ficheAttribute(perso, attPrefix + "armedmdiv", 0);
+        ficheAttributeAsInt(perso, attPrefix + "armedmdiv", 0);
     }
     weaponStats.portee =
       ficheAttributeAsInt(perso, attPrefix + "armeportee", 0);
@@ -3008,6 +3008,7 @@ var COFantasy = COFantasy || function() {
         if (p >= 0) weaponStats.arc = true;
       }
     }
+    //On cherche si c'est une arbalète
     p = weaponStats.name.search(/\barbal([eè])te\b/i);
     if (p >= 0) weaponStats.arbalete = true;
     else {
@@ -3020,6 +3021,7 @@ var COFantasy = COFantasy || function() {
         if (p >= 0) weaponStats.arbalete = true;
       }
     }
+    //On cherche si c'est une hache
     p = weaponStats.name.search(/\bhache\b/i);
     if (p >= 0) weaponStats.hache = true;
     else {
@@ -8026,13 +8028,6 @@ var COFantasy = COFantasy || function() {
           explications.push("Cible à couvert de bouclier => +5 DEF");
         }
       }
-    } else {
-      if (charAttributeAsBool(target, 'ambidextreDuelliste')) {
-        if (target.armeGauche && target.armeGauche.portee === 0) {
-          defense += 1;
-          explications.push("La cible utilise son arme en main gauche => +1 DEF");
-        }
-      }
     }
     //Chair à canon
     if (attributeAsInt(target, 'chairACanon', -1) >= 0) {
@@ -8304,14 +8299,16 @@ var COFantasy = COFantasy || function() {
       if (charAttributeAsBool(attaquant, 'ambidextreDuelliste')) {
         if (attaquant.armesEnMain === undefined) armesEnMain(attaquant);
         if (attaquant.armeGauche && attaquant.armeGauche.portee === 0) {
-          var bonusArmeGauche = 0;
-          if (attaquant.pnj) {
-            bonusArmeGauche = attaquant.armeGauche.attSkill;
-          } else {
-            bonusArmeGauche = attaquant.armeGauche.attSkillDiv;
-          }
           var dmArmeGauche = modCarac(attaquant, 'dexterite');
-          dmArmeGauche += attaquant.armeGauche.attDMBonusCommun;
+          var bonusArmeGauche = 0;
+          if (attaquant.armeGauche.bonusDef) {
+            if (attaquant.pnj) {
+              bonusArmeGauche = attaquant.armeGauche.attSkill;
+            } else {
+              bonusArmeGauche = attaquant.armeGauche.attSkillDiv;
+            }
+            dmArmeGauche += attaquant.armeGauche.attDMBonusCommun;
+          }
           var typeDMGauche = 'normal';
           switch (attaquant.armeGauche.typeDegats) {
             case 'feu':
