@@ -34935,6 +34935,8 @@ var COFantasy = COFantasy || function() {
               represents: perso.charId,
               name: token.get('name')
             });
+          if (autreInvisible.length > 0) autreInvisible = autreInvisible[0];
+          else autreInvisible = undefined;
         }
       } else if (token.id == tidInv2) {
         autreInvisible = getObj('graphic', tidInv1);
@@ -34948,6 +34950,8 @@ var COFantasy = COFantasy || function() {
               represents: perso.charId,
               name: token.get('name')
             });
+          if (autreInvisible.length > 0) autreInvisible = autreInvisible[0];
+          else autreInvisible = undefined;
         }
       }
       if (!autreInvisible) {
@@ -34962,6 +34966,8 @@ var COFantasy = COFantasy || function() {
                 represents: perso.charId,
                 name: token.get('name')
               });
+            if (autreInvisible.length > 0) autreInvisible = autreInvisible[0];
+            else autreInvisible = undefined;
             break;
           case 'gmlayer':
             autreInvisible =
@@ -34973,6 +34979,8 @@ var COFantasy = COFantasy || function() {
                 represents: perso.charId,
                 name: token.get('name')
               });
+            if (autreInvisible.length > 0) autreInvisible = autreInvisible[0];
+            else autreInvisible = undefined;
             break;
           default:
             error("Impossible de trouver la couche du token " + token.get('name'), token);
