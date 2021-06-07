@@ -5597,7 +5597,12 @@ var COFantasy = COFantasy || function() {
         weaponStats = armesEnMain(attaquant);
         if (weaponStats === undefined)
           weaponStats = getWeaponStats(attaquant, attackLabel);
-      } else weaponStats = getWeaponStats(attaquant, attackLabel);
+      } else if (attackLabel == -2) { //attaque avec l'arme en main gauche
+        if (attaquant.armeGauche === undefined) armesEnMain(attaquant);
+        weaponStats = attaquant.armeGauche;
+        if (weaponStats === undefined)
+          weaponStats = getWeaponStats(attaquant, attackLabel);
+      }else weaponStats = getWeaponStats(attaquant, attackLabel);
     }
     //Ajout des options de l'arme
     var wo = weaponStats.options.trim();
@@ -9928,6 +9933,10 @@ var COFantasy = COFantasy || function() {
                   portee: 0,
                   options: '',
                 });
+              } else if (attackLabel == -2) {//attaque avec l'arme en main gauche
+                if (perso.armeGauche === undefined) armesEnMain(perso);
+                attackStats = perso.armeGauche;
+                if (!attackStats) return;
               } else attackStats = getWeaponStats(perso, attackLabel);
               actionText = attackStats.name;
               action += options;
