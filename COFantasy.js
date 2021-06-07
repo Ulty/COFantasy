@@ -225,7 +225,7 @@ var COFantasy = COFantasy || function() {
           type: 'bool'
         },
         init_dynamique: {
-          explications: "Fait apparître une aura dynamique sur le token qui a l'initiative",
+          explications: "Fait apparaître une aura dynamique sur le token qui a l'initiative",
           val: true,
           type: 'bool'
         },
@@ -5719,6 +5719,7 @@ var COFantasy = COFantasy || function() {
         case 'attaqueOptions':
         case 'tirAveugle':
         case 'attaqueBouclierRenverse':
+        case 'runeDePuissance':
           options[cmd[0]] = true;
           return;
         case 'm2d20':
@@ -11350,6 +11351,14 @@ var COFantasy = COFantasy || function() {
             }
             count--;
             if (count === 0) {
+              if (ciblesTouchees.length > 0 &&
+                options.runeDePuissance && !options.maxDmg && evt.action.weaponStats) {
+                var al = evt.action.weaponStats.label;
+                if (attributeAsInt(attaquant, 'limiteParCombat_runeDePuissance' + al, 1)) {
+                  options.preDmg = options.preDmg || {};
+                  options.preDmg.runeDePuissance = al;
+                }
+              }
               resolvePreDmgOptions(attaquant, ciblesTouchees, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles);
             }
           });
@@ -12514,22 +12523,25 @@ var COFantasy = COFantasy || function() {
             type: 'feu'
           });
         }
-        var ExtraDmgRollExpr = "";
+        var extraDmgRollExpr = "";
         additionalDmg = additionalDmg.filter(function(dmSpec) {
           dmSpec.type = dmSpec.type || 'normal';
           if (dmSpec.type != mainDmgType || isNaN(dmSpec.value)) {
-            ExtraDmgRollExpr += " [[" + dmSpec.value + "]]";
+            extraDmgRollExpr += " [[" + dmSpec.value + "]]";
             return true;
           }
           // We have the same type and a constant -> should be multiplied by crit
           mainDmgRollExpr += " + " + dmSpec.value;
           return false;
         });
-        // ON ajoute le jet pour les dégâts de critiques supplémentaires
+        // On ajoute le jet pour les dégâts de critiques supplémentaires
         if (target.critique && options.additionalCritDmg) {
           options.additionalCritDmg.forEach(function(dmSpec) {
-            ExtraDmgRollExpr += " [[" + dmSpec.value + "]]";
+            extraDmgRollExpr += " [[" + dmSpec.value + "]]";
           });
+        }
+        if (options.maxDmg && options.runeDePuissance) {
+          extraDmgRollExpr = extraDmgRollExpr.replace(/\[\[(\d+)d([\d\+\-]+)\]\]/g, '[[$1*$2]]');
         }
         if (options.aveugleManoeuvre) {
           mainDmgRollExpr += " -5";
@@ -12542,7 +12554,7 @@ var COFantasy = COFantasy || function() {
         // 0 : roll de dégâts principaux
         // 1+ : les rolls de dégâts supplémentaires
         // 1+nb dégâts supplémentaires + : rolls de dégâts critiques
-        var toEvaluateDmg = "[[" + mainDmgRollExpr + "]]" + ExtraDmgRollExpr;
+        var toEvaluateDmg = "[[" + mainDmgRollExpr + "]]" + extraDmgRollExpr;
         sendChat('', toEvaluateDmg, function(resDmg) {
           var rollsDmg = target.rollsDmg || resDmg[0];
           var afterEvaluateDmg = rollsDmg.content.split(' ');
@@ -13346,6 +13358,15 @@ var COFantasy = COFantasy || function() {
               cercle.nom + " peut " + boutonSimple("!cof-cercle-protection " + cercle.target.token.id + ' ' + evt.id,
                 "activer le Cercle de Protection"));
           });
+        }
+        if (options.preDmg.runeDePuissance) {
+          var al = options.preDmg.runeDePuissance;
+          if (attributeAsInt(perso, 'limiteParCombat_runeDePuissance' + al, 1)) {
+            addLineToFramedDisplay(display,
+              boutonSimple(
+                "!cof-bouton-rune-puissance " + al + ' ' + evt.id + ' permanent',
+                "Rune de puissance"));
+          }
         }
         addLineToFramedDisplay(display, boutonSimple("!cof-confirmer-attaque " + evt.id, "Continuer"));
       } else {
@@ -17676,7 +17697,7 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function persoUtiliseRunePuissance(perso, labelArme, evt) {
+  function persoUtiliseRunePuissance(perso, labelArme, evt, permanent) {
     var attrName = "runeForgesort_puissance(" + labelArme + ")";
     var attr = tokenAttribute(perso, attrName);
     var arme = getAttack(labelArme, perso);
@@ -17700,7 +17721,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //!cof-rune-puissance label
-  //!cof-bouton-rune-puissance label evt.id
+  //!cof-bouton-rune-puissance label evt.id [permanent]
   function runePuissance(msg) {
     if (!stateCOF.combat) {
       sendPlayer(msg, "On ne peut utiliser les runes de puissance qu'en combat");
@@ -17744,7 +17765,16 @@ var COFantasy = COFantasy || function() {
       action.cibles.forEach(function(target) {
         delete target.rollsDmg;
       });
-      if (!persoUtiliseRunePuissance(perso, labelArme, evt)) return;
+      if (cmd.length > 3 && cmd[3] == 'permanent') {
+
+        if (limiteRessources(perso, {
+            limiteParCombat: 1
+          }, 'runeDePuissance' + labelArme, "a déjà utilisé sa rune de puissance durant ce combat", evt)) {
+          addEvent(evt);
+          return;
+        }
+        delete options.preDmg;
+      } else if (!persoUtiliseRunePuissance(perso, labelArme, evt)) return;
       addEvent(evt);
       switch (evtARefaire.type) {
         case 'Attaque':
