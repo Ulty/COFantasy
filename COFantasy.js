@@ -700,7 +700,7 @@ var COFantasy = COFantasy || function() {
               if (m.get('name') != gm.name) return;
               if (m.get('action') != gm.action) return;
               m.remove();
-              sendChat('COF', '/w GM Macro ' + ngm.name + ' effacée.');
+              sendChat('COF', '/w GM Macro ' + gm.name + ' effacée.');
             });
           }
         });
