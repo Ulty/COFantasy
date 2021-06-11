@@ -6368,6 +6368,17 @@ var COFantasy = COFantasy || function() {
           options.ciblesSupplementaires = options.ciblesSupplementaires || [];
           options.ciblesSupplementaires.push(targetS);
           return;
+        case 'ciblesDansDisque':
+          if (cmd.length < 2) {
+            error("Il manque le rayon du disque dans lequel les cibles doivent tnir", cmd);
+            return;
+          }
+          options.ciblesDansDisque = parseInt(cmd[1]);
+          if (isNaN(options.ciblesDansDisque) || options.ciblesDansDisque < 1) {
+            error("le rayon du disque n'est pas un nombre positif", cmd);
+            delete options.ciblesDansDisque;
+          }
+          return;
         case 'limiteParJour':
           if (cmd.length < 2) {
             error("Il manque la limite journalière", cmd);
@@ -9629,6 +9640,37 @@ var COFantasy = COFantasy || function() {
       cibles = cibles.filter(function(target) {
         return !(allies.has(target.charId));
       });
+    }
+    //On vérifie que les cibles sont assez proches les unes des autres
+    if (options.ciblesDansDisque && cibles.length > 1) {
+      var l1, l2, t1, t2;
+      cibles.forEach(function(target) {
+        var l = target.token.get('left');
+        var t = target.token.get('top');
+        if (l1 === undefined || l1 > l) l1 = l;
+        if (l2 === undefined || l2 < l) l2 = l;
+        if (t1 === undefined || t1 > t) t1 = t;
+        if (t2 === undefined || t2 < t) t2 = t;
+      });
+      var maxpix = options.ciblesDansDisque * computeScale(pageId) / PIX_PER_UNIT;
+      if ((l2 - l1) > 2 * maxpix || (t2 - t1) > 2 * maxpix) {
+        sendPlayer(playerName, "Cibles trop éloignées les unes des autres");
+        return;
+      }
+      //On calcule la longueur des diagonales du rectangle minimal
+      var diag = Math.sqrt((l2 - l1) * (t2 - t1));
+      if (diag > maxpix) {
+        var centre = [(l1 + l2) / 2, (t1 + t2) / 2];
+        //C'est aproché, mais sûrement assez bon pour ce qui nous occupe
+        var tropLoin = cibles.some(function(target) {
+          var pt = tokenCenter(target);
+          return (VecMath.length(VecMath.vec(centre, pt)) > maxpix);
+        });
+        if (tropLoin) {
+          sendPlayer(playerName, "Cibles trop éloignées les unes des autres");
+          return;
+        }
+      }
     }
     if (cibles.length === 0) {
       if (options.aoe) {
