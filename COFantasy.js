@@ -5602,7 +5602,7 @@ var COFantasy = COFantasy || function() {
         weaponStats = attaquant.armeGauche;
         if (weaponStats === undefined)
           weaponStats = getWeaponStats(attaquant, attackLabel);
-      }else weaponStats = getWeaponStats(attaquant, attackLabel);
+      } else weaponStats = getWeaponStats(attaquant, attackLabel);
     }
     //Ajout des options de l'arme
     var wo = weaponStats.options.trim();
@@ -9933,7 +9933,7 @@ var COFantasy = COFantasy || function() {
                   portee: 0,
                   options: '',
                 });
-              } else if (attackLabel == -2) {//attaque avec l'arme en main gauche
+              } else if (attackLabel == -2) { //attaque avec l'arme en main gauche
                 if (perso.armeGauche === undefined) armesEnMain(perso);
                 attackStats = perso.armeGauche;
                 if (!attackStats) return;
@@ -16197,6 +16197,22 @@ var COFantasy = COFantasy || function() {
           if (cmd.length > 2) {
             cmd.splice(0, 2);
             options.limiteParJourRessource = cmd.join('_');
+          }
+          return;
+        case 'limiteSoinsParJour':
+          if (cmd.length < 2) {
+            error("Il manque la limite de soins journalière", cmd);
+            return;
+          }
+          var limiteSoinsParJour = parseInt(cmd[1]);
+          if (isNaN(limiteSoinsParJour) || limiteSoinsParJour < 1) {
+            error("La limite de soins journalière doit être un nombre positif", cmd);
+            return;
+          }
+          options.limiteSoinsParJour = limiteSoinsParJour;
+          if (cmd.length > 2) {
+            cmd.splice(0, 2);
+            options.limiteSoinsParJourRessource = cmd.join('_');
           }
           return;
         case 'limiteCibleParJour':
@@ -22683,7 +22699,7 @@ var COFantasy = COFantasy || function() {
     } else { //on a juste le montant des soins
       argSoin = cmd[1];
     }
-    if (soigneur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour || options.limiteParCombat || options.dose)) {
+    if (soigneur === undefined && (options.mana || (options.portee !== undefined) || options.limiteParJour || options.limiteParCombat || options.dose || options.limiteSoinsParJour)) {
       error("Il faut préciser un soigneur pour ces options d'effet", options);
       return;
     }
@@ -22789,6 +22805,21 @@ var COFantasy = COFantasy || function() {
         }
         soins = "[[" + argSoin + "]]";
     }
+    var ressourceLimiteSoinsParJour;
+    if (soigneur && options.limiteSoinsParJour) {
+      ressourceLimiteSoinsParJour = effet;
+      if (options.limiteSoinsParJourRessource)
+        ressourceLimiteSoinsParJour = options.limiteSoinsParJourRessource;
+      ressourceLimiteSoinsParJour = "limiteParJour_Soins" + ressourceLimiteSoinsParJour;
+      var soinsRestantsDuJour = attributeAsInt(soigneur, ressourceLimiteSoinsParJour, options.limiteSoinsParJour);
+      if (soinsRestantsDuJour < 1) {
+        whisperChar(charId, "Plus possible de faire ces soins aujourd'hui");
+        return;
+      }
+      if (options.limiteSoins === undefined || options.limiteSoins > soinsRestantsDuJour) {
+        options.limiteSoins = soinsRestantsDuJour;
+      }
+    }
     var playerId = getPlayerIdFromMsg(msg);
     if (options.tempeteDeMana && soigneur) {
       if (options.tempeteDeMana.cout === 0) {
@@ -22864,6 +22895,9 @@ var COFantasy = COFantasy || function() {
               });
             }
             if (display) sendChat("", endFramedDisplay(display));
+            if (ressourceLimiteSoinsParJour) {
+              whisperChar(charId, "peut encore soigner de " + attributeAsInt(soigneur, ressourceLimiteSoinsParJour, options.limiteSoinsParJour) + " PV aujourd'hui.");
+            }
             addEvent(evt);
           }
           nbCibles--;
@@ -22951,6 +22985,9 @@ var COFantasy = COFantasy || function() {
             extraImg += '</span>';
           }
           var printTrue = function(s) {
+            if (ressourceLimiteSoinsParJour) {
+              addToAttributeAsInt(soigneur, ressourceLimiteSoinsParJour, options.limiteSoinsParJour, -s, evt);
+            }
             if (display) {
               addLineToFramedDisplay(display,
                 "<b>" + nomCible + "</b> : + " + s + " PV" + extraImg);
@@ -31651,6 +31688,7 @@ var COFantasy = COFantasy || function() {
         transeGuerison(msg);
         return;
       case "!cof-soin":
+      case "!cof-soins":
         soigner(msg);
         return;
       case "!cof-nature-nourriciere":

@@ -517,11 +517,12 @@
                 <div class="decalage">
                   <p><i>x</i> peut être un nombre, un jet de dé ou <code>leger</code>, <code>modere</code>, <code>groupe</code> ou <code>secondSouffle</code>.</p>
                   <p>Les deux premiers arguments sont optionnels. Si <code>!cof-soin</code> n'a qu'un seul argument, c'est interprété comme le montant des soins, et les tokens soignés sont ceux sélectionnés. Si <code>!cof-soin</code> n'a que 2 arguments, le premier argument est le token du soigneur, et les cibles doivent être désignées avec une option de sélection de groupe.</p>
-                  <span>Options :</span>
+                  <span>Options (en plus de options normales de commandes):</span>
                   <ul>
                     <li><code>--portee <i>n</i></code> : permet de spécifier une distance maximum entre le soigneur et le soigné (au-delà, le soin échoue)</li>
                     <li><code>--transfer</code> : le soin est payé avec les PV du soigneur</li>
                     <li><code>--mana <i>n</i></code> : demande au lanceur de payer <i>n</i> points de mana</li>
+                    <li><code>--limiteSoinsParJour <i>n</i></code> : limite le nombre total de PVs soignés par jour. Cette limite peut être associée à une ressource (spécifier en deuxième argument de l'option, peut contenir des espaces), de sorte que seuls les soins qui mentionnent cette ressource sont concernés par cette limitation. Cette option n'a de sens que si un soigneur est précisé.</li>
                   </ul>
                 </div>
               </div>
