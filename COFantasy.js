@@ -9658,7 +9658,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       //On calcule la longueur des diagonales du rectangle minimal
-      var diag = Math.sqrt((l2 - l1) * (t2 - t1));
+      var diag = Math.sqrt((l2 - l1)*(l2 - l1) + (t2-t1)*(t2-t1));
       if (diag > maxpix) {
         var centre = [(l1 + l2) / 2, (t1 + t2) / 2];
         //C'est aproché, mais sûrement assez bon pour ce qui nous occupe
