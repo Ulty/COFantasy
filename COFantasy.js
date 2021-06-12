@@ -9652,18 +9652,18 @@ var COFantasy = COFantasy || function() {
         if (t1 === undefined || t1 > t) t1 = t;
         if (t2 === undefined || t2 < t) t2 = t;
       });
-      var maxpix = options.ciblesDansDisque * computeScale(pageId) / PIX_PER_UNIT;
+      var maxpix = options.ciblesDansDisque * PIX_PER_UNIT / computeScale(pageId);
       if ((l2 - l1) > 2 * maxpix || (t2 - t1) > 2 * maxpix) {
         sendPlayer(playerName, "Cibles trop éloignées les unes des autres");
         return;
       }
       //On calcule la longueur des diagonales du rectangle minimal
-      var diag = Math.sqrt((l2 - l1)*(l2 - l1) + (t2-t1)*(t2-t1));
+      var diag = Math.sqrt((l2-l1)*(l2-l1) + (t2-t1)*(t2-t1));
       if (diag > maxpix) {
-        var centre = [(l1 + l2) / 2, (t1 + t2) / 2];
-        //C'est aproché, mais sûrement assez bon pour ce qui nous occupe
+        var centre = [(l1+l2)/2, (t1+t2)/2];
+        //C'est approché, mais sûrement assez bon pour ce qui nous occupe
         var tropLoin = cibles.some(function(target) {
-          var pt = tokenCenter(target);
+          var pt = tokenCenter(target.token);
           return (VecMath.length(VecMath.vec(centre, pt)) > maxpix);
         });
         if (tropLoin) {
