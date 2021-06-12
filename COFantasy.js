@@ -9540,10 +9540,10 @@ var COFantasy = COFantasy || function() {
       }
       if (options.ciblesSupplementaires) {
         options.ciblesSupplementaires.forEach(function(c) {
-          var i = cibles.indexOf(function(t) {
+          var i = cibles.some(function(t) {
             return (t.token.id == c.token.id);
           });
-          if (i < 0) cibles.push(c);
+          if (!i) cibles.push(c);
         });
       }
     }
