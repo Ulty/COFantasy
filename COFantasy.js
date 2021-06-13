@@ -9658,13 +9658,13 @@ var COFantasy = COFantasy || function() {
         return;
       }
       //On calcule la longueur des diagonales du rectangle minimal
-      var diag = Math.sqrt((l2-l1)*(l2-l1) + (t2-t1)*(t2-t1));
+      var diag = Math.sqrt((l2 - l1) * (l2 - l1) + (t2 - t1) * (t2 - t1));
       if (diag > maxpix) {
-        var centre = [(l1+l2)/2, (t1+t2)/2];
+        var centre = [(l1 + l2) / 2, (t1 + t2) / 2];
         //C'est approché, mais sûrement assez bon pour ce qui nous occupe
         var tropLoin = cibles.some(function(target) {
           var pt = tokenCenter(target.token);
-          return (VecMath.length(VecMath.vec(centre, pt)) > maxpix);
+          return (VecMath.length(VecMath.vec(centre, pt)) > maxpix + 1);
         });
         if (tropLoin) {
           sendPlayer(playerName, "Cibles trop éloignées les unes des autres");
@@ -11112,6 +11112,7 @@ var COFantasy = COFantasy || function() {
                 attackRoll >= (defense + reglesOptionelles.haute_DEF.val.crit_attaque_groupe.val)) {
                 options.attaqueDeGroupeDmgCoef = true;
               }
+              var faireMouche;
               if (targetd20roll == 1 && options.chance === undefined) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
                 attackResult += addAttackImg("imgAttackEchecCritique", weaponStats.divers, options);
@@ -11134,7 +11135,8 @@ var COFantasy = COFantasy || function() {
                 critique = true;
                 if (options.contact) {
                   if (attributeAsBool(target, 'enerve')) {
-                    var faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
+                    if (faireMouche === undefined)
+                      faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
                     if (faireMouche > 0) target.faireMouche = (target.faireMouche || 0) + faireMouche;
                   }
                   if (charAttributeAsBool(attaquant, 'briseurDOs')) {
@@ -11205,13 +11207,30 @@ var COFantasy = COFantasy || function() {
                     value: '1' + options.d6
                   });
                 }
-                if (options.contact && attackRoll > defense + 9 &&
+                //Botte mortelle (barde et duelliste)
+                if (options.contact && !options.feinte && !options.pasDeDmg && attackRoll > defense + 4 &&
                   charAttributeAsBool(attaquant, 'botteMortelle')) {
-                  target.messages.push("Botte mortelle => + 2" + options.d6 + " aux DM");
-                  target.additionalDmg.push({
-                    type: mainDmgType,
-                    value: '2' + options.d6
-                  });
+                  if (faireMouche === undefined)
+                    faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
+                  if (faireMouche > 0) { //botte mortelle du duelliste
+                    if (target.faireMouche) {
+                      var bonusBotteMortelle = Math.floor((attackRoll - defense) / 5) + options.d6;
+                      target.messages.push("Botte mortelle => + " + bonusBotteMortelle + " aux DM");
+                      target.additionalDmg.push({
+                        type: mainDmgType,
+                        value: bonusBotteMortelle
+                      });
+                    } else if (attackRoll > defense + 9) {
+                      target.messages.push("Botte mortelle => l'attaque fait mouche");
+                      target.faireMouche = faireMouche;
+                    }
+                  } else if (attackRoll > defense + 9) { //botte mortelle du barde
+                    target.messages.push("Botte mortelle => + 2" + options.d6 + " aux DM");
+                    target.additionalDmg.push({
+                      type: mainDmgType,
+                      value: '2' + options.d6
+                    });
+                  }
                 }
                 if (target.chatimentDuMale) {
                   if (target.chatimentDuMaleLowRoll + attSkill + attBonus >= defense) {
