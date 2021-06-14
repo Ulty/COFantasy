@@ -3847,6 +3847,7 @@ var COFantasy = COFantasy || function() {
     expliquer("Bonus de " + carac + " : " + bonus);
     var bonusCarac = bonus;
     var bonusAspectDuDemon;
+    var bonusForce;
     switch (carac) {
       case 'DEX':
         if (attributeAsBool(personnage, 'agrandissement')) {
@@ -3861,6 +3862,15 @@ var COFantasy = COFantasy || function() {
         if (attributeAsBool(personnage, 'osBrises')) {
           expliquer("Des os sont brisés : -2 au jet de DEX");
           bonus -= 2;
+        }
+        if (attributeAsBool(personnage, 'espaceExigu')) {
+          bonusForce = modCarac(personnage, 'force');
+          if (bonusForce < 1) bonusForce = 1;
+          expliquer("Espace exigu : -" + bonusForce + " au jet de DEX");
+          bonus -= bonusForce;
+        } else if (attributeAsBool(personnage, 'constructionTailleHumaine')) {
+          expliquer("Construction de taille humaine : -1 au jet de DEX");
+          bonus -= 1;
         }
         break;
       case 'FOR':
@@ -3881,6 +3891,15 @@ var COFantasy = COFantasy || function() {
         if (attributeAsBool(personnage, 'osBrises')) {
           expliquer("Des os sont brisés : -2 au jet de FOR");
           bonus -= 2;
+        }
+        if (attributeAsBool(personnage, 'espaceExigu')) {
+          bonusForce = modCarac(personnage, 'force');
+          if (bonusForce < 1) bonusForce = 1;
+          expliquer("Espace exigu : -" + bonusForce + " au jet de FOR");
+          bonus -= bonusForce;
+        } else if (attributeAsBool(personnage, 'constructionTailleHumaine')) {
+          expliquer("Construction de taille humaine : -1 au jet de FOR");
+          bonus -= 1;
         }
         if (charAttributeAsBool(personnage, 'grosseTete')) {
           var bonusInt;
@@ -7693,6 +7712,15 @@ var COFantasy = COFantasy || function() {
       attBonus -= 10;
       explications.push("Déstabilisé par une action de charme => -10 en Attaque");
     }
+    if (attributeAsBool(personnage, 'espaceExigu')) {
+      var bonusForce = modCarac(personnage, 'force');
+      if (bonusForce < 1) bonusForce = 1;
+      explications.push("Espace exigu : -" + bonusForce + " en Attaque");
+      attBonus -= bonusForce;
+    } else if (attributeAsBool(personnage, 'constructionTailleHumaine')) {
+      explications.push("Construction de taille humaine : -1 en Attaque");
+      attBonus -= 1;
+    }
     return attBonus;
   }
 
@@ -8096,6 +8124,15 @@ var COFantasy = COFantasy || function() {
           explications.push("Combat en phalange => +" + defensePhalange + " DEF");
         }
       }
+    }
+    if (attributeAsBool(target, 'espaceExigu')) {
+      var bonusForce = modCarac(target, 'force');
+      if (bonusForce < 1) bonusForce = 1;
+      explications.push("Espace exigu : -" + bonusForce + " en DEF");
+      defense -= bonusForce;
+    } else if (attributeAsBool(target, 'constructionTailleHumaine')) {
+      explications.push("Construction de taille humaine : -1 en DEF");
+      defense -= 1;
     }
     if (attributeAsBool(target, 'attaqueRisquee')) {
       defense -= 4;
@@ -20514,6 +20551,10 @@ var COFantasy = COFantasy || function() {
     var nouvelleArme;
     if (options.weaponStats) nouvelleArme = options.weaponStats;
     else if (labelArme && labelArme !== '') nouvelleArme = getWeaponStats(perso, labelArme);
+    if (nouvelleArme.deuxMains && attributeAsBool(perso, 'espaceExigu')) {
+      sendPerso(perso, "ne peut pas utiliser " + nouvelleArme.name + ", l'endroit est trop exigu pour l'utiliser");
+      return;
+    }
     if (nouvelleArme && nouvelleArme.armeGauche) options.gauche = true;
     //D'abord, on rengaine l'arme en main, si besoin.
     var armeActuelle = tokenAttribute(perso, 'armeEnMain');
@@ -33197,6 +33238,16 @@ var COFantasy = COFantasy || function() {
       activation: "devient un ami de longue date",
       actif: "est sous le charme de quelqu'un",
       fin: "retrouve ses esprits"
+    },
+    constructionTailleHumaine: {
+      activation: "rentre dans une construction de taille humaine.",
+      actif: "est un peu à l'étroit, le bâtiment est trop petit",
+      fin: "sort de la construction de taille humains."
+    },
+    espaceExigu: {
+      activation: "entre dans un espace exigu.",
+      actif: "est à l'étroit.",
+      fin: "sort de l'espace exigu."
     },
   };
 
