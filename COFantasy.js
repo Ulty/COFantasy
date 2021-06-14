@@ -3140,6 +3140,7 @@ var COFantasy = COFantasy || function() {
   // - overlay
   // - buttonStyle
   // - attackStats
+  // et la fonction peut écrire actionImpossible = true dans options.
   function bouton(action, text, perso, options) {
     if (action === undefined || action.trim().length === 0) return text;
     else action = action.trim();
@@ -3166,6 +3167,8 @@ var COFantasy = COFantasy || function() {
       }
       if (act.charAt(0) == '!') {
         if (act.startsWith('!cof-')) {
+          var args = act.split(' --');
+          if (actionImpossible(perso, args, '')) options.actionImpossible = true;
           if (options.ressource) act += " --decrAttribute " + options.ressource.id;
           if (picto === '') {
             // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
@@ -3175,7 +3178,6 @@ var COFantasy = COFantasy || function() {
               case 'confirmer-attaque':
                 var portee = 0;
                 var sortilege;
-                var args = act.split(' --');
                 var cmd = args.shift().split(' ');
                 var attackStats = options.attackStats;
                 if (attackStats === undefined && cmd.length > 3) {
@@ -18877,6 +18879,55 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  //options est un tableaux d'options obtenues par split(' --')
+  function actionImpossible(perso, options, defResource) {
+    var ai = options.some(function(opt) {
+      opt = opt.trim();
+      if (opt === '') return false;
+      var cmd = opt.split(' ');
+      switch (cmd[0]) {
+        case 'si':
+          var condition = parseCondition(cmd.slice(1));
+          switch (condition.type) {
+            case 'etat':
+              return !getState(perso, condition.etat);
+            case 'attribut':
+              return !attributeAsBool(perso, condition.attribute);
+          }
+          return false;
+        case 'mana':
+          if (cmd.length < 2) return false;
+          var mana = parseInt(cmd[1]);
+          if (isNaN(mana) || mana < 0) return false;
+          return !depenseManaPossible(perso, mana);
+        case 'limiteParJour':
+          if (cmd.length < 2) return false;
+          var limiteParJour = parseInt(cmd[1]);
+          if (isNaN(limiteParJour) || limiteParJour < 1) return false;
+          var ressourceParJour = defResource;
+          if (cmd.length > 2) {
+            cmd.splice(0, 2);
+            ressourceParJour = cmd.join('_');
+          }
+          ressourceParJour = "limiteParJour_" + ressourceParJour;
+          return attributeAsInt(perso, ressourceParJour, limiteParJour) === 0;
+        case 'limiteParCombat':
+          if (cmd.length < 2) return false;
+          var limiteParCombat = parseInt(cmd[1]);
+          if (isNaN(limiteParCombat) || limiteParCombat < 1) return false;
+          var ressourceParCombat = defResource;
+          if (cmd.length > 2) {
+            cmd.splice(0, 2);
+            ressourceParCombat = cmd.join('_');
+          }
+          ressourceParCombat = "limiteParCombat_" + ressourceParJour;
+          return attributeAsInt(perso, ressourceParCombat, limiteParCombat) === 0;
+      }
+      return false;
+    });
+    return ai;
+  }
+
   function listeAttaquesVisibles(perso, options, target) {
     options = options || '';
     target = target || '@{target|token_id}';
@@ -18910,51 +18961,7 @@ var COFantasy = COFantasy || function() {
       var attLabel = ficheAttribute(perso, attPrefix + "armelabel", 0);
       //Vérification que des options n'empêchent pas l'utilisation de l'attaque
       var attackOptions = ' ' + ficheAttribute(perso, attPrefix + 'armeoptions', '');
-      var attaqueImpossible = attackOptions.split(' --').some(function(opt) {
-        opt = opt.trim();
-        if (opt === '') return false;
-        var cmd = opt.split(' ');
-        switch (cmd[0]) {
-          case 'si':
-            var condition = parseCondition(cmd.slice(1));
-            switch (condition.type) {
-              case 'etat':
-                return !getState(perso, condition.etat);
-              case 'attribut':
-                return !attributeAsBool(perso, condition.attribute);
-            }
-            return false;
-          case 'mana':
-            if (cmd.length < 2) return false;
-            var mana = parseInt(cmd[1]);
-            if (isNaN(mana) || mana < 0) return false;
-            return !depenseManaPossible(perso, mana);
-          case 'limiteParJour':
-            if (cmd.length < 2) return false;
-            var limiteParJour = parseInt(cmd[1]);
-            if (isNaN(limiteParJour) || limiteParJour < 1) return false;
-            var ressourceParJour = attLabel;
-            if (cmd.length > 2) {
-              cmd.splice(0, 2);
-              ressourceParJour = cmd.join('_');
-            }
-            ressourceParJour = "limiteParJour_" + ressourceParJour;
-            return attributeAsInt(perso, ressourceParJour, limiteParJour) === 0;
-          case 'limiteParCombat':
-            if (cmd.length < 2) return false;
-            var limiteParCombat = parseInt(cmd[1]);
-            if (isNaN(limiteParCombat) || limiteParCombat < 1) return false;
-            var ressourceParCombat = attLabel;
-            if (cmd.length > 2) {
-              cmd.splice(0, 2);
-              ressourceParCombat = cmd.join('_');
-            }
-            ressourceParCombat = "limiteParCombat_" + ressourceParJour;
-            return attributeAsInt(perso, ressourceParCombat, limiteParCombat) === 0;
-        }
-        return false;
-      });
-      if (attaqueImpossible) return;
+      if (actionImpossible(perso, attackOptions.split(' --'), attLabel)) return;
       var command = "!cof-attack @{selected|token_id} " + target + " " + attLabel + " " + options;
       attaquesTriees[attLabel] = bouton(command, weaponName, perso);
     });
@@ -19235,7 +19242,12 @@ var COFantasy = COFantasy || function() {
             if (gobePar)
               ligne += listeAttaquesVisibles(perso, options, gobePar.token.id);
             else ligne += listeAttaquesVisibles(perso, options);
-          } else ligne += bouton(command, text, perso, options) + '<br />';
+          } else {
+            options = options || {};
+            var b = bouton(command, text, perso, options);
+            if (options.actionImpossible) return;
+            ligne += b + '<br />';
+          }
         });
       } else if (stateCOF.options.affichage.val.actions_par_defaut.val) {
         actionsParDefaut = true;
