@@ -32,6 +32,7 @@
 * Support complet de la Voie du porteur de bouclier (prestige)
 
 ### Autres améliorations
+* On n'affiche pas les attaques qui ne sont pas possibles (limites épuisées, condition --si non remplie, pas assez de mana).
 * Ajout d'une option pour vérifier que les cibles d'une attaque peuvent tenir dans un disque d'un rayon donné.
 * Ajout d'une option de limitation du montant des soins par jour.
 * Label -2 pour l'arme en main gauche.

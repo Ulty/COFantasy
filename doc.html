@@ -244,7 +244,7 @@
                     </ul>
                   </div>
                   <h4>Liste d'actions pour le personnage dont c'est le tour</h4>
-                    <p>Par défaut, le script affiche, pour le personnage dont c'est le tour, une liste d'actions. Cette liste est chuchotée au joueur qui contrôle le perosnnage. Elle se compose des attaques du personnage, des abilities et des actions d'attendre, se défendre et faire une manoeuvre. Il est possible de ne pas afficher une attaque en décochant la case sous le dé dans les options d'attaque.</p>
+                    <p>Par défaut, le script affiche, pour le personnage dont c'est le tour, une liste d'actions. Cette liste est chuchotée au joueur qui contrôle le perosnnage. Elle se compose des attaques du personnage, des abilities et des actions d'attendre, se défendre et faire une manoeuvre. Il est possible de ne pas afficher une attaque en décochant la case sous le dé dans les options d'attaque. Les attaques sont affichées dans l'ordre des labels d'attaques. les attaques avec des conditions impossibles (du genre limite par jour épuisée, etc.) ne sont pas affichées.</p>
                     <p>Si une "Abilities" dont le nom est <code>#Actions#</code> existe pour le personnage dont c'est le tour, la liste de toutes les abilities est remplacée par les %Ability et #Macro cliquables de <code>#Actions#</code>.</p>
                     <p>Pour voir ce message en dehors du changement d'initiative, ou pour le MJ, on peut utiliser <code>!cof-liste-actions</code> en sélectionnant le token (un bon candidat pour une macro de type token action, d'ailleurs généré par la commande <code>!cof-set-macros</code>). Il est possible de commenter temporairement une ligne de cette liste, en ajoutant <code>//</code> au début de celle-ci.</p>
                         <p><img class="img-fluid" src="https://i.imgur.com/tTfFoPW.png" data-href="https://i.imgur.com/tTfFoPW.png"></p>
@@ -726,6 +726,7 @@
                     <li><code>--son <i>son</i></code> : joue le son (normalement compatible avec Roll20AM)</li>
                     <li><code>--image <i>img</i></code> : affiche l'image dans le texte d'activation de l'effet.</li>
                     <li><code>--<i>type</i></code> : il est possible d'associer un type à l'effet. L'utilisation la plus courante est le type <code>poison</code> ou <code>maladie</code>, qui vont permettre de tenir compte des bonus ou immunités contre les effets de ce type.</li>
+                    <li><code>--montreActions</code> : affiche les actions du tours de la cible après avoir appliqué l'effet. Utile si les actions du tours dépendent de cet effet, pour afficher une liste à jour.</li>
                   </ul>
                   <p><code>!cof-boire-alcool</code> et <code>!cof-desaouler</code> permettent de faire varier le niveau d'ébriété. Par exemple, pour tester si le niveau d'ébriété augmente après avoir bu un certain nombre de verres, on peut utiliser la macro <code>!cof-boire-alcool --save CON [[10+?{Nombre de verres}]]</code>.
                 </div>
@@ -935,7 +936,7 @@
                   <li><strong>Charge</strong> : faire une attaque avec les options <code>--bonusAttaque 2</code> <code>--plus 1d6</code>. Pour gérer plusieurs armes, vous pouvez aussi créer une liste d'actions, comme avec l'attaque sournoise du voleur.</li>
                   <li><strong>Enchaînement</strong> : ajouter un attribut <code>enchainement</code>, de valeur <code>true</code>.</li>
                   <li><strong>Déchaînement d'acier</strong> : pas de support particulier pour l'instant. Déplacer le token et faire les attaques au passage.</li>
-                  <li><strong>Attaque tourbillon</strong> : Faite une ability avec le code <code>!cof-attack @{selected|token_id} @{selected|token_id} -1 --auto--disque 5 --saufAllies --limiteParCombat 1 tourbillon --message @{selected|token_name} utilise son attaque tourbillon !</code>.</li>
+                  <li><strong>Attaque tourbillon</strong> : Faite une ability avec le code <code>!cof-attack @{selected|token_id} @{selected|token_id} -1 --auto --disque 5 --saufAllies --limiteParCombat 1 tourbillon</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du primitif</h4>
                 <ol>
@@ -1220,6 +1221,7 @@
                         </ol>
                       </li>
                     </ul>
+                        Pour une rapière dansante, il existe aussi un effet temporaire <code>rapiereDansante</code>.
                   </li>
                   <li><strong>Charisme héroïque</strong> : reporter sur la fiche</li>
                 </ol>
@@ -1661,7 +1663,7 @@
                   <li><strong>Foudres divines</strong> :
                     <ul>
                       <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d6+SAG, portée 0, type Sortilège, dégâts électrique, options <code><i>--mana 2</i> --disque 10 --saufAllies</code>. Si le label de ce sort est <code><i>L</i></code>, il ne vous reste plus qu'à faire une ability avec <code>!cof-attack @{selected|token_id} @{selected|token_id} <i>L</i></code>.</li>
-                      <li>Objet de sort : <code>!cof-attack @{selected|token_id} @{selected|token_id} Foudres divines --toucher [[@{selected|ATKMAG}]] --dm 1d6+[[@{selected|SAG}]] --electrique --portee 0 --sortilege --disque 10 --saufAllies</code></li>
+                      <li>Objet de sort : <code>!cof-attack @{selected|token_id} @{selected|token_id} Foudres divines --toucher [[@{selected|ATKMAG}]] --dm 1d6+[[@{selected|SAG}]] --electrique --sortilege --disque 10 --saufAllies</code></li>
                     </ul>
                   </li>
                   <li><strong>Charisme héroïque</strong> : reporter les bonus sur la fiche</li>

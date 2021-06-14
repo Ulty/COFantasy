@@ -5539,12 +5539,8 @@ var COFantasy = COFantasy || function() {
     } else obj[argName] = cmd[1];
   }
 
+  //!cof-attack id_attaquant id_cible label_attaque [options]
   function parseAttack(msg) {
-    // Arguments to cof-attack should be:
-    // - attacking token
-    // - target token
-    // - attack number (referring to the character sheet) or attack name
-    // - some optional arguments, preceded by --
     var optArgs = msg.content.split(' --');
     var args = optArgs[0].split(' ');
     args = args.filter(function(a) {
@@ -8907,7 +8903,7 @@ var COFantasy = COFantasy || function() {
         utilisations =
           attributeAsInt(personnage, ressource, options.limiteParCombat);
         if (utilisations === 0) {
-          var msgToSend = msg || "ne peut plus faire cette action pour ce combat";
+          var msgToSend = "ne peut plus faire cette action pour ce combat";
           sendPerso(personnage, msgToSend, options.secret);
           return true;
         }
@@ -16173,6 +16169,7 @@ var COFantasy = COFantasy || function() {
         case 'repos':
         case 'secret':
         case 'magique':
+        case 'montreActions':
           options[cmd[0]] = true;
           break;
         case "lanceur":
@@ -16207,7 +16204,7 @@ var COFantasy = COFantasy || function() {
               error("Option puissant non reconnue", cmd);
           }
           return;
-        case "mana":
+        case 'mana':
           if (cmd.length < 2) {
             error("Pas assez d'argument pour --mana", cmd);
             return;
@@ -16229,10 +16226,10 @@ var COFantasy = COFantasy || function() {
           }
           options.mana = cout;
           return;
-        case "tempeteDeMana":
+        case 'tempeteDeMana':
           parseTempeteDeMana(cmd, options);
           return;
-        case "rang":
+        case 'rang':
           if (cmd.length < 2) {
             error("Usage : --rang r", cmd);
             return;
@@ -18898,12 +18895,63 @@ var COFantasy = COFantasy || function() {
         attaques[attPrefix] = weaponName;
       }
     });
+    var attaquesTriees = {};
     _.forEach(attaques, function(weaponName, attPrefix) {
       var attaqueVisible = ficheAttributeAsInt(perso, attPrefix + 'armeactionvisible', 1);
       if (attaqueVisible === 0) return;
       var attLabel = ficheAttribute(perso, attPrefix + "armelabel", 0);
+      //Vérification que des options n'empêchent pas l'utilisation de l'attaque
+      var attackOptions = ' ' + ficheAttribute(perso, attPrefix + 'armeoptions', '');
+      var attaqueImpossible = attackOptions.split(' --').some(function(opt) {
+        opt = opt.trim();
+        if (opt === '') return false;
+        var cmd = opt.split(' ');
+        switch (cmd[0]) {
+          case 'si':
+            var condition = parseCondition(cmd.slice(1));
+            switch (condition.type) {
+              case 'etat':
+                return !getState(perso, condition.etat);
+              case 'attribut':
+                return !attributeAsBool(perso, condition.attribute);
+            }
+            return false;
+          case 'mana':
+            if (cmd.length < 2) return false;
+            var mana = parseInt(cmd[1]);
+            if (isNaN(mana) || mana < 0) return false;
+            return !depenseManaPossible(perso, mana);
+          case 'limiteParJour':
+            if (cmd.length < 2) return false;
+            var limiteParJour = parseInt(cmd[1]);
+            if (isNaN(limiteParJour) || limiteParJour < 1) return false;
+            var ressourceParJour = attLabel;
+            if (cmd.length > 2) {
+              cmd.splice(0, 2);
+              ressourceParJour = cmd.join('_');
+            }
+            ressourceParJour = "limiteParJour_" + ressourceParJour;
+            return attributeAsInt(perso, ressourceParJour, limiteParJour) === 0;
+          case 'limiteParCombat':
+            if (cmd.length < 2) return false;
+            var limiteParCombat = parseInt(cmd[1]);
+            if (isNaN(limiteParCombat) || limiteParCombat < 1) return false;
+            var ressourceParCombat = attLabel;
+            if (cmd.length > 2) {
+              cmd.splice(0, 2);
+              ressourceParCombat = cmd.join('_');
+            }
+            ressourceParCombat = "limiteParCombat_" + ressourceParJour;
+            return attributeAsInt(perso, ressourceParCombat, limiteParCombat) === 0;
+        }
+        return false;
+      });
+      if (attaqueImpossible) return;
       var command = "!cof-attack @{selected|token_id} " + target + " " + attLabel + " " + options;
-      ligne += bouton(command, weaponName, perso) + '<br />';
+      attaquesTriees[attLabel] = bouton(command, weaponName, perso);
+    });
+    _.forEach(attaquesTriees, function(b) {
+     ligne+= b + '<br />';
     });
     //On ajoute aussi les lancers de feu grégeois, si il y en a
     var attrFeuxGregeois = tokenAttribute(perso, 'elixir_feu_grégeois');
@@ -18985,6 +19033,9 @@ var COFantasy = COFantasy || function() {
     var actionsAAfficher;
     var ligne = '';
     var command = '';
+    if (actionsParDefaut && !stateCOF.chargeFantastique && attributeAsBool(perso, 'hate')) {
+      ligne += "Effet de hâte : une action d'attaque ou de mouvement en plus <br />";
+    }
     //Les dégâts aux personnages enveloppés par perso
     var attrs_enveloppe = tokenAttribute(perso, 'enveloppe');
     attrs_enveloppe.forEach(function(a) {
@@ -21111,6 +21162,8 @@ var COFantasy = COFantasy || function() {
         finDEffet(attr[0], effetTempOfAttribute(attr[0]), attr[0].get('name'), perso.charId, evt, opt);
       });
     }
+    if (options.montreActions && cibles.length === 1)
+      turnAction(cibles[0], playerId);
   }
 
   function effetCombat(msg) {
@@ -32281,6 +32334,13 @@ var COFantasy = COFantasy || function() {
       activation: "fait apparaître une lame d'énergie lumineuse",
       actif: "contrôle une lame d'énergie lumineuse",
       fin: "La lame d'énergie lumineuse disparaît",
+      dm: true,
+      visible: true
+    },
+    rapiereDansante: {
+      activation: "fait apparaître une rapière d'énergie lumineuse",
+      actif: "contrôle une rapière d'énergie lumineuse",
+      fin: "La rapière d'énergie lumineuse disparaît",
       dm: true,
       visible: true
     },
