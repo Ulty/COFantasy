@@ -18951,7 +18951,7 @@ var COFantasy = COFantasy || function() {
       attaquesTriees[attLabel] = bouton(command, weaponName, perso);
     });
     _.forEach(attaquesTriees, function(b) {
-     ligne+= b + '<br />';
+      ligne += b + '<br />';
     });
     //On ajoute aussi les lancers de feu grégeois, si il y en a
     var attrFeuxGregeois = tokenAttribute(perso, 'elixir_feu_grégeois');
@@ -23543,8 +23543,8 @@ var COFantasy = COFantasy || function() {
         type: "lancement de sort"
       };
       addEvent(evt);
-      if (options.son) playSound(options.son);
-      iterSelected(selected, function(lanceur) {
+      if (options.lanceur) {
+        var lanceur = options.lanceur;
         if (options.tempeteDeMana) {
           if (options.tempeteDeMana.cout === 0) {
             //On demande de préciser les options
@@ -23565,8 +23565,33 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (limiteRessources(lanceur, options, undefined, "lancer un sort", evt)) return;
+      }
+      if (options.son) playSound(options.son);
+      iterSelected(selected, function(cible) {
+        if (!options.lanceur) {
+          if (options.tempeteDeMana) {
+            if (options.tempeteDeMana.cout === 0) {
+              //On demande de préciser les options
+              var optMana = {
+                mana: options.mana,
+                dm: false,
+                soins: false,
+                duree: true,
+                portee: true,
+                rang: options.rang,
+              };
+              setTempeteDeMana(playerId, cible, msg.content, optMana);
+              return;
+            } else {
+              if (options.rang && options.tempeteDeMana.cout > options.rang) {
+                sendPerso(cible, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
+              }
+            }
+          }
+          if (limiteRessources(cible, options, undefined, "lancer un sort", evt)) return;
+        }
         options.messages.forEach(function(m) {
-          sendPerso(lanceur, m, options.secret);
+          sendPerso(cible, m, options.secret);
         });
       });
     });

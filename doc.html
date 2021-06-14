@@ -743,7 +743,7 @@
               <h3 class="text-info" id="sorts">2.8 Sorts</h3>
               <div class="decalage">
                 <p><code>!cof-attaque-magique @{selected|token_id} @{target|token_id}</code> : fait un jet d'attaque magique opposé entre le lanceur et sa cible, et dit juste si le sort est raté ou réussi. Options disponibles : <code>--portee</code> et <code>--mana</code>.</p>
-                <p><code>!cof-lancer-sort <i>texte</i></code> : le token sélectionné lance un sort sans support particulier du script (seul un whisper est envoyé au joueur et au MJ). Options disponibles : <code>--mana</code>pour indiquer un coût en mana et <code>--son</code> pour jouer un son.</p>
+                <p><code>!cof-lancer-sort <i>texte</i></code> : le token sélectionné lance un sort sans support particulier du script (seul un whisper est envoyé au joueur et au MJ). Options disponibles : <code>--mana</code>pour indiquer un coût en mana et <code>--son</code> pour jouer un son. Pour un sort sur plusieurs cibles, utiliser l'option <code>--lanceur @{selected|token_id}</code>.</p>
                 <p><code>!cof-peur <i>difficulté durée</i></code> : effet de peur (nécromant, dragon, etc). Tant que la peur est active, statut screaming. <i>difficulté</i> est la difficulté du jet de SAG.</p>
                 <span>Options :</span>
                 <ul>
@@ -1843,7 +1843,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie de l'aventurier</h4>
                 <ol>
-                  <li><strong>Sprint</strong> : pas de support, au MJ de vérifier que ce n'est utilisé qu'une fois par combat.</li>
+                  <li><strong>Sprint</strong> : Pour vérifier que ce n'est bien utilisé qu'une fois par combat, on pourra utiliser <code>!cof-lancer-sort pousse un sprint --limiteParCombat 1 sprint</code>.</li>
                   <li><strong>Provocation</strong> : <code>!cof-provocation @{selected|token_id} @{target|token_id}</code>. Au joueur ensuite de faire son attaque gratuite si la provocation est réussie et que l'adversaire l'attaque.</li>
                   <li><strong>Grâce féline</strong> : ajouter un attribut <code>graceFeline</code> avec comme valeur <code>true</code>. Cela va affecter l'initiative et la DEF, mais sans se voir sur la fiche. Pour les tests de déplacement, ajouter un attribut <code>graceFelineVoleur</code> de valeur <code>true</code> (penser à proposer l'utilisation de compétences, en ajoutant les compétences <code>course</code>, <code>saut</code>, <code>acrobatie</code> et <code>escalade</code> au voleur ou sur le handout de compétences).</li>
                 </ol>
