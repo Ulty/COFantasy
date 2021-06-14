@@ -3238,8 +3238,16 @@ var COFantasy = COFantasy || function() {
               case 'effet':
               case 'effet-temp':
               case 'effet-combat':
-              case 'fortifiant':
               case 'set-state':
+                if (act.includes(' --mana')) {
+                  picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
+                  style = 'background-color:#9900ff';
+                } else {
+                  picto = '<span style="font-family: \'Pictos\'">S</span> ';
+                  style = 'background-color:#4a86e8';
+                }
+                break;
+              case 'fortifiant':
                 picto = '<span style="font-family: \'Pictos\'">S</span> ';
                 style = 'background-color:#4a86e8';
                 break;
