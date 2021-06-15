@@ -5629,6 +5629,10 @@ var COFantasy = COFantasy || function() {
           weaponStats = getWeaponStats(attaquant, attackLabel);
       } else weaponStats = getWeaponStats(attaquant, attackLabel);
     }
+    if (weaponStats.deuxMains && attributeAsBool(attaquant, 'espaceExigu')) {
+      sendPerso(attaquant, "ne peut pas utiliser d'arme à deux mains dans un espace aussi exigu.");
+      return;
+    }
     //Ajout des options de l'arme
     var wo = weaponStats.options.trim();
     //Pour la partie options, il est possible qu'elle soit déjà passée en ligne de commande
