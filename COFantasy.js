@@ -42,6 +42,7 @@ var COFantasy = COFantasy || function() {
 
   "use strict";
 
+  const version3 = false;
   const PIX_PER_UNIT = 70;
   const HISTORY_SIZE = 200;
   const BS_LABEL = 'text-transform: uppercase; display: inline; padding: .2em .6em .3em; font-size: 75%; line-height: 2; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25em;';
@@ -2259,7 +2260,7 @@ var COFantasy = COFantasy || function() {
           }
           if (charAttributeAsBool(personnage, 'armeeConjuree')) {
             removeFromTurnTracker(personnage, evt);
-            personnage.token.remove();
+            deleteTokenWithUndo(personnage.token, evt);
             sendPerso(personnage, 'disparaît');
             var armeeChar = getObj('character', personnage.charId);
             if (armeeChar) {
@@ -8790,7 +8791,7 @@ var COFantasy = COFantasy || function() {
     attrAgrippe.forEach(function(a) {
       var cibleAgrippee = persoOfIdName(a.get('current'), pageId);
       if (cibleAgrippee && cibleAgrippee.id == target.id &&
-      !attributeAsBool(cibleAgrippee, 'agrippeParUnDemon')) {
+        !attributeAsBool(cibleAgrippee, 'agrippeParUnDemon')) {
         attBonus += 5;
         if (options.pasDeDmg)
           explications.push("Cible agrippée => +5 em Attaque");
@@ -19090,9 +19091,26 @@ var COFantasy = COFantasy || function() {
     return ligne;
   }
 
+  //retourne soit une ability, soit un nombre entre 1 et 4, soit undefined si
+  // la liste n'existe pas
+  function findListeActions(perso, listActions, abilities) {
+    if (version3) {
+      if (listActions == ficheAttribute(perso, 'nomlisteaction1', 'Liste 1')) return 1;
+      if (listActions == ficheAttribute(perso, 'nomlisteaction2', 'Liste 2')) return 2;
+      if (listActions == ficheAttribute(perso, 'nomlisteaction3', 'Liste 3')) return 3;
+      if (listActions == ficheAttribute(perso, 'nomlisteaction4', 'Liste 4')) return 4;
+    }
+    var fullListActions = '#' + listActions + '#';
+    var res = abilities.find(function(a) {
+        return a.get('name') == fullListActions;
+      });
+    return res;
+  }
+
   //Si listActions est fourni, ça doit faire référence à une ability
   //dont le nom commence et termine par #, contenant une liste d'actions
   //à afficher
+  // version 3 : peut faire référence à une des listes d'action de la fiche
   function turnAction(perso, playerId, listActions) {
     var pageId = perso.token.get('pageid');
     // Toutes les Abilities du personnage lié au Token
@@ -19105,38 +19123,36 @@ var COFantasy = COFantasy || function() {
     var opt_display = {
       chuchote: true
     };
+    var actionsDuTour;
     if (listActions) {
       title = listActions;
-      var fullListActions = '#' + listActions + '#';
-      listActions = abilities.find(function(a) {
-        return a.get('name') == fullListActions;
-      });
+      actionsDuTour = findListeActions(perso, listActions, abilities);
     } else {
       afficherOptionsAttaque(perso, opt_display);
     }
-    var actionsDuTour = [];
     var actionsParDefaut = false;
     var formeDarbre = false;
-    if (listActions) {
-      actionsDuTour = [listActions];
-    } else {
+    if (actionsDuTour === undefined) {
       if (!isActive(perso)) {
         if (!getState(perso, 'surpris') || !surveillance(perso)) {
           sendPerso(perso, "ne peut pas agir à ce tour");
           return true;
         }
       }
-      //On recherche dans le Personnage s'il a une "Ability" dont le nom est #Actions#" ou "#TurnAction#".
       formeDarbre = attributeAsBool(perso, 'formeDArbre');
       if (formeDarbre) {
-        actionsDuTour = abilities.filter(function(a) {
-          return (a.get('name') == '#FormeArbre#');
-        });
-        if (actionsDuTour.length === 0) formeDarbre = false;
-        else actionsParDefaut = true;
+        actionsDuTour = findListeActions(perso, 'FormeArbre', abilities);
+        if (actionsDuTour) {
+          actionsParDefaut = true;
+        } else {
+          formeDarbre = false;
+        }
       }
-      if (actionsDuTour.length === 0) {
-        actionsDuTour = abilities.filter(function(a) {
+      if (actionsDuTour === undefined) {
+        if (version3) actionsDuTour = 0;
+        else {
+      //On recherche dans le Personnage s'il a une "Ability" dont le nom est #Actions#" ou "#TurnAction#".
+        actionsDuTour = abilities.find(function(a) {
           switch (a.get('name')) {
             case '#TurnAction#':
               return true;
@@ -19147,6 +19163,7 @@ var COFantasy = COFantasy || function() {
               return false;
           }
         });
+        }
       }
     }
     //Si elle existe, on lui chuchotte son exécution
@@ -19298,7 +19315,8 @@ var COFantasy = COFantasy || function() {
       //Les attaques de la fiche à afficher dans la liste d'actions
       var afficherAttaquesFiche =
         actionsParDefaut ||
-        (actionsDuTour.length === 0 && stateCOF.options.affichage.val.actions_par_defaut.val);
+        (actionsDuTour === 0 && ficheAttributeAsBool(perso, 'montrerattaques')) ||
+        (actionsDuTour === undefined && stateCOF.options.affichage.val.actions_par_defaut.val);
       if (afficherAttaquesFiche) {
         if (gobePar)
           ligne += listeAttaquesVisibles(perso, '', gobePar.token.id);
@@ -19341,8 +19359,8 @@ var COFantasy = COFantasy || function() {
         }
       }
       //La liste d'action proprement dite
-      if (actionsDuTour.length > 0) {
-        actionsAAfficher = treatActions(perso, actionsDuTour[0], abilities, function(command, text, macros, options) {
+      if (actionsDuTour !== undefined) {
+        actionsAAfficher = treatActions(perso, actionsDuTour, abilities, function(command, text, macros, options) {
           if (command == 'liste des attaques') {
             if (gobePar)
               ligne += listeAttaquesVisibles(perso, options, gobePar.token.id);
@@ -19414,7 +19432,7 @@ var COFantasy = COFantasy || function() {
         sendChat('', endFramedDisplay(display));
       }
     }
-    return (actionsDuTour.length > 0 || actionsAAfficher);
+    return (actionsDuTour !== undefined || actionsAAfficher);
   }
 
   function apiTurnAction(msg) {
@@ -29486,7 +29504,7 @@ var COFantasy = COFantasy || function() {
         attribute: attr,
         current: null
       }];
-    } else { //cible temporaire, à effacer7
+    } else { //cible temporaire, à effacer
       ct.remove();
     }
   }
@@ -31838,7 +31856,7 @@ var COFantasy = COFantasy || function() {
         sendPlayer('GM', "Les personnages sont déjà dans des ténèbres magiques");
         return;
       }
-        sendPlayer('GM', "Les personnages entrent dans des ténèbres magiques");
+      sendPlayer('GM', "Les personnages entrent dans des ténèbres magiques");
       stateCOF.tenebresMagiques = {};
     } else {
       stateCOF.tenebresMagiques = undefined;
@@ -31901,7 +31919,9 @@ var COFantasy = COFantasy || function() {
   //!cof-agripper-de-demon @{selected|token_id} @{target|token_id}
   function agripperDeDemon(msg) {
     var cmd = msg.content.split(' ');
-    cmd = cmd.filter(function(c) { return c !== ''; });
+    cmd = cmd.filter(function(c) {
+      return c !== '';
+    });
     if (cmd.length < 3) {
       error("Il faut spécifier un attaquant et un défenseur pour !cof-agripper-de-demon", cmd);
       return;
@@ -31931,9 +31951,9 @@ var COFantasy = COFantasy || function() {
     attaqueContactOpposee(playerId, attaquant, defenseur, evt, options,
       function(res, display, explications) {
         if (res.succes) {
-          addLineToFramedDisplay(display, attaquant.tokName + " agrippe fermement "+defenseur.tokName);
-            setTokenAttr(attaquant, 'agrippe', defenseur.token.id + ' ' + defenseur.tokName, evt);
-            setTokenAttr(defenseur, 'estAgrippePar', attaquant.token.id + ' ' + attaquant.tokName, evt);
+          addLineToFramedDisplay(display, attaquant.tokName + " agrippe fermement " + defenseur.tokName);
+          setTokenAttr(attaquant, 'agrippe', defenseur.token.id + ' ' + defenseur.tokName, evt);
+          setTokenAttr(defenseur, 'estAgrippePar', attaquant.token.id + ' ' + attaquant.tokName, evt);
           setTokenAttr(defenseur, 'agrippeParUnDemon', true, evt);
         } else {
           addLineToFramedDisplay(display, defenseur.tokName + " échappe à la tentative de saisie.");
@@ -33687,7 +33707,7 @@ var COFantasy = COFantasy || function() {
       case 'ombreMortelle':
       case 'dedoublement':
         iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
-          token.remove();
+          deleteTokenWithUndo(token, evt);
         });
         break;
       case 'murDeForce':
@@ -33794,7 +33814,7 @@ var COFantasy = COFantasy || function() {
               res.oldTokenId = token.id;
               res.newTokenId = nP.nextId;
             }
-            token.remove();
+            deleteTokenWithUndo(token, evt);
           });
         }
         attr.remove();
@@ -33877,7 +33897,7 @@ var COFantasy = COFantasy || function() {
               res.oldTokenId = token.id;
               res.newTokenId = nouveauToken.id;
               res.newToken = nouveauToken;
-              token.remove();
+              deleteTokenWithUndo(token, evt);
               token = nouveauToken;
               perso.token = nouveauToken;
             }
