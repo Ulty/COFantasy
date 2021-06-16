@@ -8270,6 +8270,10 @@ var COFantasy = COFantasy || function() {
       explications.push("Tient l'ennemi à distance => +5 en DEF");
       defense += 5;
     }
+    if (stateCOF.tenebresMagiques && !estDemon(target)) {
+      explications.push("Ténèbres magiques => -5 en DEF");
+      defense -= 5;
+    }
     if (target.realCharId) target.charId = target.realCharId;
     return defense;
   }
@@ -8835,6 +8839,20 @@ var COFantasy = COFantasy || function() {
       } else {
         setTokenAttr(target, 'attaqueParMeute', attaquant.token.id, evt);
       }
+    }
+    if (stateCOF.tenebresMagiques && !estDemon(attaquant)) {
+      var riposte;
+      if (stateCOF.tenebresMagiques.attaques && stateCOF.tenebresMagiques.attaques[target.token.id]) {
+        riposte = stateCOF.tenebresMagiques.attaques[target.token.id].some(function(cible) { return cible.token.id == attaquant.token.id; });
+      }
+      if (riposte) {
+        explications.push("Riposte dans le noir => -2 en attaque");
+        attBonus -= 2;
+      } else {
+        explications.push("Attaque dans le noir => -5 en attaque et aux DMs");
+        attBonus -= 5;
+      }
+
     }
     return attBonus;
   }
@@ -9610,6 +9628,10 @@ var COFantasy = COFantasy || function() {
     var ripostesDuTour = new Set();
     if (attrCiblesAttaquees.length > 0) {
       ripostesDuTour = new Set(attrCiblesAttaquees[0].get('max').split(' '));
+    }
+    if (stateCOF.tenebresMagiques && estDemon(attaquant)) {
+      stateCOF.tenebresMagiques.attaques = stateCOF.tenebresMagiques.attaques || {};
+      stateCOF.tenebresMagiques.attaques[attaquant.token.id] = cibles;
     }
     cibles = cibles.filter(function(target) {
       if (getState(target, 'enseveli')) {
@@ -19286,7 +19308,7 @@ var COFantasy = COFantasy || function() {
           } else {
             options = options || {};
             var b = bouton(command, text, perso, options);
-            if (options.actionImpossible) return;
+            if (options.actionImpossible) ligne += text + '<br />';
             ligne += b + '<br />';
           }
         });
@@ -20555,10 +20577,6 @@ var COFantasy = COFantasy || function() {
     var nouvelleArme;
     if (options.weaponStats) nouvelleArme = options.weaponStats;
     else if (labelArme && labelArme !== '') nouvelleArme = getWeaponStats(perso, labelArme);
-    if (nouvelleArme.deuxMains && attributeAsBool(perso, 'espaceExigu')) {
-      sendPerso(perso, "ne peut pas utiliser " + nouvelleArme.name + ", l'endroit est trop exigu pour l'utiliser");
-      return;
-    }
     if (nouvelleArme && nouvelleArme.armeGauche) options.gauche = true;
     //D'abord, on rengaine l'arme en main, si besoin.
     var armeActuelle = tokenAttribute(perso, 'armeEnMain');
@@ -31746,6 +31764,83 @@ var COFantasy = COFantasy || function() {
       });
     });
   }
+  
+  function tenebresMagiques(msg) {
+    var cmd = msg.content.split(' ');
+    cmd = cmd.filter(function(c) { return c.trim() === '';});
+    var b = true;
+    if (cmd.length > 1) {
+      switch (cmd[1]) {
+        case 'true':
+        case 'oui':
+        case 'noir': b = true; break;
+        case 'non':
+        case 'sortir':
+        case 'false':
+        case 'fin': b = false; break;
+        default:
+          error("Option de !cof-tenebres-magiques non reconnue", cmd);
+          return;
+      }
+    }
+    if (b) {
+      if (stateCOF.tenebresMagiques) {
+      sendPlayer('GM', "Les personnages sont déjà dans des ténèbres magiques");
+        return;
+      }
+      stateCOF.tenebresMagiques = {};
+    } else {
+      stateCOF.tenebresMagiques = undefined;
+      sendPlayer('GM', "Les personnages sortent des ténèbres magiques");
+    }
+  }
+
+  function fioleDeLumiere(msg) {
+    var cmd = msg.content.split(' ');
+    if (stateCOF.tenebresMagiques === undefined) {
+      sendPlayer(msg, "Pas de ténèbres magiques, pas d'effet de fiole");
+      return;
+    }
+    cmd = cmd.filter(function(c) { return c.trim() === '';});
+    if (cmd.length < 2) {
+      error("Il faut un argument à !cof-fiole-de-lumière", cmd);
+      return;
+    }
+    var distance = parseInt(cmd[1]);
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        error("Aucun personnage sélectionné", cmd);
+        return;
+      }
+      if (selected.length > 1) {
+        error("Il n'y a qu'une seule fiole de lumière", cmd);
+        return;
+      }
+      var evt = {type:'fioleDeLumiere'};
+      addEvent(evt);
+      iterSelected(selected, function(perso){
+        if (cmd[1] == 'fin' || isNaN(distance) || distance < 0) {
+          stateCOF.tenebresMagiques.fioleDeLumiere = undefined;
+          var pageId = perso.token.get('pageid');
+          eteindreUneLumiere(perso, pageId, undefined, 'fioleDeLumiere', evt);
+        } else {
+          stateCOF.tenebresMagiques.fioleDeLumiere = {
+            porteur: perso,
+            distance: distance
+          };
+          var dimRadius = '';
+    if (cmd.length > 3) {
+      dimRadius = parseInt(cmd[3]);
+      if (isNaN(dimRadius)) {
+        error("La distance de vue de la lumière assombrie doit être un nombre", cmd[3]);
+        dimRadius = '';
+      }
+    }
+    ajouteUneLumiere(perso, 'fioleDeLumiere', distance, dimRadius, evt);
+        }
+      });
+    });
+  }
 
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
@@ -32219,8 +32314,14 @@ var COFantasy = COFantasy || function() {
       case '!cof-ombre-mouvante':
         ombreMouvante(msg);
         return;
-      case "!cof-reveler-nom":
+      case '!cof-reveler-nom':
         revelerNom(msg);
+        return;
+      case '!cof-tenebres-magiques':
+        tenebresMagiques(msg);
+        return;
+      case '!cof-fiole-de-lumiere':
+        fioleDeLumiere(msg);
         return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);
@@ -34633,6 +34734,9 @@ var COFantasy = COFantasy || function() {
         });
       });
     }
+    if (stateCOF.tenebresMagiques && stateCOF.tenebresMagiques.attaques) {
+      stateCOF.tenebresMagiques.attaques = undefined;
+    }
   }
 
   //evt a un champ attributes et un champ deletedAttributes
@@ -35081,7 +35185,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function permettreDeplacement(msg) {
-    getSelected(msg, function(selected) {
+    getSelected(msg, function(selected, playerId) {
       var evt = {
         type: 'Permettre le déplacement pour un tour'
       };
@@ -35501,7 +35605,7 @@ var COFantasy = COFantasy || function() {
       error("Il manque un argument à !cof-deplacer-token", cmd);
       return;
     }
-    getSelected(msg, function(selected) {
+    getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         error("Il faut sélectionner un token", cmd);
         return;
