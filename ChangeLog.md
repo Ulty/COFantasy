@@ -32,6 +32,7 @@
 * Support complet de la Voie du porteur de bouclier (prestige)
 
 ### Autres améliorations
+* Ajout de fonctions pour aider en Noirbois.
 * Quelques effets pour simuler la limitation Grande taille du minotaure.
 * On n'affiche pas les attaques qui ne sont pas possibles (limites épuisées, condition --si non remplie, pas assez de mana).
 * Ajout d'une option pour vérifier que les cibles d'une attaque peuvent tenir dans un disque d'un rayon donné.
