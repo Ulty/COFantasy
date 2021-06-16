@@ -2142,6 +2142,7 @@ var COFantasy = COFantasy || function() {
                   a.remove();
                 }
               });
+              removeTokenAttr(cible, 'agrippeParUnDemon', evt);
             }
             evt.deletedAttributes.push(a);
             a.remove();
@@ -7725,6 +7726,10 @@ var COFantasy = COFantasy || function() {
       explications.push("Construction de taille humaine : -1 en Attaque");
       attBonus -= 1;
     }
+    if (attributeAsBool(personnage, 'agrippeParUnDemon')) {
+      explications.push("agrippé : -3 en Attaque");
+      attBonus -= 3;
+    }
     return attBonus;
   }
 
@@ -8290,6 +8295,10 @@ var COFantasy = COFantasy || function() {
         defense -= 5;
       }
     }
+    if (attributeAsBool(target, 'agrippeParUnDemon')) {
+      explications.push("agrippé => -3 en DEF");
+      defense -= 3;
+    }
     if (target.realCharId) target.charId = target.realCharId;
     return defense;
   }
@@ -8780,7 +8789,8 @@ var COFantasy = COFantasy || function() {
     var attrAgrippe = tokenAttribute(attaquant, 'agrippe');
     attrAgrippe.forEach(function(a) {
       var cibleAgrippee = persoOfIdName(a.get('current'), pageId);
-      if (cibleAgrippee && cibleAgrippee.id == target.id) {
+      if (cibleAgrippee && cibleAgrippee.id == target.id &&
+      !attributeAsBool(cibleAgrippee, 'agrippeParUnDemon')) {
         attBonus += 5;
         if (options.pasDeDmg)
           explications.push("Cible agrippée => +5 em Attaque");
@@ -27530,6 +27540,7 @@ var COFantasy = COFantasy || function() {
     return arme;
   }
 
+  //peuple tokName de l'attaquant et du défenseur
   function attaqueContactOpposee(playerId, attaquant, defenseur, evt, options, callback) {
     var explications = [];
     options = options || {
@@ -30222,6 +30233,7 @@ var COFantasy = COFantasy || function() {
           var attr = tokenAttribute(perso, attrName);
           attr[0].remove();
           evt.deletedAttributes.push(attr[0]);
+          if (attrName == 'estAgrippePar') removeTokenAttr(perso, 'agrippeParUnDemon', evt);
           if (attrName == 'etreinteImmolePar' || attrName == 'estDevorePar' || attr[0].get('max'))
             setState(perso, 'immobilise', false, evt);
           if (attrName == 'etreinteScorpionPar') {
@@ -31886,6 +31898,54 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //!cof-agripper-de-demon @{selected|token_id} @{target|token_id}
+  function agripperDeDemon(msg) {
+    var cmd = msg.content.split(' ');
+    cmd = cmd.filter(function(c) { return c !== ''; });
+    if (cmd.length < 3) {
+      error("Il faut spécifier un attaquant et un défenseur pour !cof-agripper-de-demon", cmd);
+      return;
+    }
+    var attaquant = persoOfId(cmd[1], cmd[1]);
+    var defenseur = persoOfId(cmd[2], cmd[2]);
+    if (attaquant === undefined) {
+      error("Le premier argument de !cof-agripper-de-demon doit être un token valide", cmd[1]);
+      return;
+    }
+    if (defenseur === undefined) {
+      error("Le deuxième argument de !cof-agripper-de-demon doit être un token valide", cmd[2]);
+      return;
+    }
+    if (attributeAsBool(defenseur, 'armureDEau')) {
+      sendChat("L'armure d'eau empêche " + defenseur.token.get('name') + " d'être aggripé");
+      return;
+    }
+    var evt = {
+      type: "Agripper (démon)"
+    };
+    var options = {
+      pasDeDmg: true
+    };
+    if (cmd.length > 3) options.labelArmeAttaquant = cmd[3];
+    var playerId = getPlayerIdFromMsg(msg);
+    attaqueContactOpposee(playerId, attaquant, defenseur, evt, options,
+      function(res, display, explications) {
+        if (res.succes) {
+          addLineToFramedDisplay(display, attaquant.tokName + " agrippe fermement "+defenseur.tokName);
+            setTokenAttr(attaquant, 'agrippe', defenseur.token.id + ' ' + defenseur.tokName, evt);
+            setTokenAttr(defenseur, 'estAgrippePar', attaquant.token.id + ' ' + attaquant.tokName, evt);
+          setTokenAttr(defenseur, 'agrippeParUnDemon', true, evt);
+        } else {
+          addLineToFramedDisplay(display, defenseur.tokName + " échappe à la tentative de saisie.");
+        }
+        explications.forEach(function(expl) {
+          addLineToFramedDisplay(display, expl, 80);
+        });
+        sendChat("", endFramedDisplay(display));
+        addEvent(evt);
+      });
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -32366,6 +32426,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-fiole-de-lumiere':
         fioleDeLumiere(msg);
+        return;
+      case '!cof-agripper-de-demon':
+        agripperDeDemon(msg);
         return;
       default:
         error("Commande " + command[0] + " non reconnue.", command);
@@ -35223,6 +35286,7 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(perso, 'prisonVegetale')) return true;
       if (attributeAsBool(perso, 'toiles')) return true;
       if (attributeAsBool(perso, 'estGobePar')) return true;
+      if (attributeAsBool(perso, 'agrippeParUnDemon')) return true;
       return false;
     }
     return true;
