@@ -291,6 +291,7 @@
                   <li><code>--poudre</code> : l'arme est une arme à poudre, utilisation d'un dé de poudre</li>
                   <li><code>--epieu</code> : l'arme est un épieu. À noter que l'arme est aussi considérée comme un épieu si elle contient <code>épieu</code> dans son nom ou dans son champs divers. Cette option augmente de 1 le nombre de dés contre un adversaire sans armure.</li>
                   <li><code>--hache</code> : l'arme est une hache. À noter que l'arme est aussi considérée comme une hache si elle contient <code>hache</code> dans son nom ou dans son champs divers. Cette option permet de passer la RD/hache (pour les sylvaniens, par exemple).</li>
+                  <li><code>--marteau</code> : l'arme est un marteau. À noter que l'arme est aussi considérée comme un marteau si elle contient <code>marteau</code> dans son nom ou dans son champs divers.</li>
                   <li><code>--auto</code> : l'attaque réussit automatiquement</li>
                   <li><code>--bonusAttaque <i>n</i></code> : ajoute <i>n</i> au jet d'attaque</li>
                   <li><code>--bonusCritique <i>n</i></code> : augmente <i>n</i> à la plage de coups critiques</li>
@@ -1849,7 +1850,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie du déplacement</h4>
                 <ol>
-                  <li><strong>Esquive</strong> : Ajouter un attribut <code>esquiveVoleur</code>, de valeur courante le rang dans la voie. Ne pas modifier la DEF sur la fiche, le script fera les ajustements (et montrera le total avec <code>!cof-statut</code>.</li>
+                  <li><strong>Esquive</strong> : Ajouter un attribut <code>esquiveVoleur</code>, de valeur courante le rang dans la voie. Ne pas modifier la DEF sur la fiche, le script fera les ajustements (et montrera le total avec <code>!cof-statut</code>).</li>
                   <li><strong>Chute</strong> : pas de support particulier.</li>
                   <li><strong>Acrobaties</strong> : faire <code>!cof-jet DEX 15</code> pour le jet de dextérité, le reste est géré par le MJ.</li>
                 </ol>
@@ -1943,6 +1944,7 @@
                 <ol>
                   <li><strong>Résistance</strong> : ajouter les bonus sur la fiche</li>
                   <li><strong>Solide comme un roc</strong> : ajouter le texte <code>2/1</code> dans la RD sur la fiche.</li>
+                  <li><strong>Haches et marteaux</strong> : ajouter un attribut <code>hachesEtMarteaux</code> de valeur <code>true</code>. Ne pas oublier de mettre le modificateur <code>hache</code> ou <code>marteau</code> pour les attaques qui sont concernées.</li>
                 </ol>
                 <h4 class="text-secondary">Minotaure</h4>
                 <ul>

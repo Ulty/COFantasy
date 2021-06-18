@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.17
 ### Capacités
+* Haches et marteaux des nains.
 * Support de la capacité Agripper du démon de Noirbois.
 * Support de la capacité Grosse tête du forgesort
 * Capacité d'objet magique "Action libre"

@@ -2992,6 +2992,21 @@ var COFantasy = COFantasy || function() {
     return action;
   }
 
+  function identifierArme(weaponStats, nom, pattern) {
+    var p = weaponStats.name.search(pattern);
+    if (p >= 0) weaponStats[nom] = true;
+    else {
+      if (weaponStats.divers) {
+        p = weaponStats.divers.search(pattern);
+      }
+      if (p >= 0) weaponStats[nom] = true;
+      else {
+        p = weaponStats.modificateurs.search(pattern);
+        if (p >= 0) weaponStats[nom] = true;
+      }
+    }
+  }
+
   function getWeaponStats(perso, attackLabel, defWeapon) {
     var weaponStats = defWeapon || {
       name: 'Attaque',
@@ -3078,45 +3093,12 @@ var COFantasy = COFantasy || function() {
           }
         }
     }
-    //On cherche si c'est un arc
-    var p = weaponStats.name.search(/\barc\b/i);
-    if (p >= 0) weaponStats.arc = true;
-    else {
-      if (weaponStats.divers) {
-        p = weaponStats.divers.search(/\barc\b/i);
-      }
-      if (p >= 0) weaponStats.arc = true;
-      else {
-        p = weaponStats.modificateurs.search(/\barc\b/i);
-        if (p >= 0) weaponStats.arc = true;
-      }
-    }
-    //On cherche si c'est une arbalète
-    p = weaponStats.name.search(/\barbal([eè])te\b/i);
-    if (p >= 0) weaponStats.arbalete = true;
-    else {
-      if (weaponStats.divers) {
-        p = weaponStats.divers.search(/\barbal([eè])te\b/i);
-      }
-      if (p >= 0) weaponStats.arbalete = true;
-      else {
-        p = weaponStats.modificateurs.search(/\barbal([eè])te\b/i);
-        if (p >= 0) weaponStats.arbalete = true;
-      }
-    }
-    //On cherche si c'est une hache
-    p = weaponStats.name.search(/\bhache\b/i);
-    if (p >= 0) weaponStats.hache = true;
-    else {
-      if (weaponStats.divers) {
-        p = weaponStats.divers.search(/\bhache\b/i);
-      }
-      if (p >= 0) weaponStats.hache = true;
-      else {
-        p = weaponStats.modificateurs.search(/\barbal([eè])te\b/i);
-        if (p >= 0) weaponStats.arbalete = true;
-      }
-    }
+    //Identification des catégories d'armes utilisées en jeu
+    identifierArme(weaponStats, 'arc', /\barc\b/i);
+    identifierArme(weaponStats, 'arbalete', /\barbal([eè])te\b/i);
+    identifierArme(weaponStats, 'hache', /\bhache\b/i);
+    identifierArme(weaponStats, 'marteau', /\bmarteau\b/i);
+    identifierArme(weaponStats, 'epieu', /\b[eé]pieu\b/i);
     //Informations dans le champ spécial
     var parse = weaponStats.divers.split(' ');
     var lastParsed;
@@ -5714,6 +5696,7 @@ var COFantasy = COFantasy || function() {
         case 'arbalete':
         case 'epieu':
         case 'hache':
+        case 'marteau':
         case 'affute':
         case 'choc':
         case 'armeDArgent':
@@ -8593,6 +8576,12 @@ var COFantasy = COFantasy || function() {
       attBonus -= 3;
       options.noyade = true;
       explications.push("L'attaquant se noie => -3 en Att. et DMs");
+    }
+    if ((options.marteau || options.hache) && charAttributeAsBool(attaquant, 'hachesEtMarteaux')) {
+      attBonus += 1;
+      options.bonusDM = options.bonusDM || 0;
+      options.bonusDM += 1;
+      explications.push("Haches et marteaux => +1 en att. et DM");
     }
     return attBonus;
   }
@@ -12107,6 +12096,9 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(attaquant, 'masqueDuPredateur')) {
       var bonusMasque = getValeurOfEffet(attaquant, 'masqueDuPredateur', modCarac(attaquant, 'sagesse'));
       if (bonusMasque > 0) attDMBonusCommun += " +" + bonusMasque;
+    }
+    if (options.bonusDM) {
+      attDMBonusCommun += " +" + options.bonusDM;
     }
     if (options.rageBerserk) {
       attaquant.additionalDmg.push({
@@ -19102,8 +19094,8 @@ var COFantasy = COFantasy || function() {
     }
     var fullListActions = '#' + listActions + '#';
     var res = abilities.find(function(a) {
-        return a.get('name') == fullListActions;
-      });
+      return a.get('name') == fullListActions;
+    });
     return res;
   }
 
@@ -19151,18 +19143,18 @@ var COFantasy = COFantasy || function() {
       if (actionsDuTour === undefined) {
         if (version3) actionsDuTour = 0;
         else {
-      //On recherche dans le Personnage s'il a une "Ability" dont le nom est #Actions#" ou "#TurnAction#".
-        actionsDuTour = abilities.find(function(a) {
-          switch (a.get('name')) {
-            case '#TurnAction#':
-              return true;
-            case '#Actions#':
-              actionsParDefaut = true;
-              return true;
-            default:
-              return false;
-          }
-        });
+          //On recherche dans le Personnage s'il a une "Ability" dont le nom est #Actions#" ou "#TurnAction#".
+          actionsDuTour = abilities.find(function(a) {
+            switch (a.get('name')) {
+              case '#TurnAction#':
+                return true;
+              case '#Actions#':
+                actionsParDefaut = true;
+                return true;
+              default:
+                return false;
+            }
+          });
         }
       }
     }
