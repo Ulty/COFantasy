@@ -9257,21 +9257,25 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    if (!options.redo && charAttributeAsBool(attaquant, 'fauchage')) {
-      var seuilDeFauchage = charAttributeAsInt(attaquant, 'fauchage', 15);
+    var attrFauchage = charAttribute(attaquant.charId, 'fauchage');
+    if (!options.redo && attrAsBool(attrFauchage)) {
+      var deFauchage = attrAsInt(attrFauchage, 15);
+      var tailleFauchage = parseInt(attrFauchage[0].get('max'));
+      if (isNaN(tailleFauchage) || tailleFauchage < 1) 
+        tailleFauchage = taillePersonnage(attaquant, 4);
       var seuilFauchage = 10 + modCarac(attaquant, 'force');
       options.etats = options.etats || [];
       options.etats.push({
         etat: 'renverse',
         condition: {
           type: 'deAttaque',
-          seuil: seuilDeFauchage
+          seuil: deFauchage
         },
         save: {
           carac: 'FOR',
           carac2: 'DEX',
           seuil: seuilFauchage,
-          fauchage: taillePersonnage(attaquant, 4)
+          fauchage: tailleFauchage
         }
       });
     }
