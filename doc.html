@@ -348,6 +348,7 @@
                   <li><code>--munition <i>nom</i> <i>taux</i></code> : l'attaque utilise des munitions dont on garde le compte. Le nombre de munitions doit être inscrit dans un attribut <code>munition_<i>nom</i></code>. <i>nom</i> ne doit pas contenir de blanc, mais à l'affichage les <code>_</code> seront remplacés par des blancs. La valeur courante de l'attribut est le nombre qu'il reste sur le personnage, alors que le maximum contient ce qu'il a plus ce qu'il peut récupérer après le combat. À chaque attaque portée, une munition est utilisée, et il y a <i>taux</i> chances (sur 100) que la munition ne soit pas récupérable. En fin de combat, on considère que le personnage récupère toutes les munitions récupérables. Par défaut, le taux de pertes est de 100&nbsp;%.</li>
                   <li><code>--vampirise</code> : soigne de tous les DM infligés</li>
                   <li><code>--seulementVivant</code> : n'affecte que les cibles vivantes</li>
+                  <li><code>--necromancie</code> : l'attaque est de la nécromancie</li>
                   <li><code>--ferFroid</code> : multiplie par 2 les dégâts contre les fées et les démons (le script reconnaît certaines races et les attributs <code>démon</code> et <code>fée</code>).</li>
                   <li><code>--tueurDeGeants</code> : bonus de +2 en attaque et +2d6 DM contre les géants, ogres, ettins et cyclopes.</li>
                   <li><code>--tueurDeGrands</code> : bonus de +1d6 DM contre les créatures de taille grande et +2d6 DM contre les créatures de taille énorme ou plus.</li>
@@ -1509,7 +1510,7 @@
                 <ol>
                   <li><strong>Malédiction</strong> :
                     <ul>
-                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg</code>, options <code><i>--mana 0</i> --malediction</code>.</li>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg malediction</code>, options <code><i>--mana 0</i></code>.</li>
                       <li>Objet de sort : <code>#Attaque Malédiction --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --malediction</code></li>
                     </ul>
                   </li>
@@ -1561,15 +1562,15 @@
                   </li>
                   <li><strong>Briser les coeurs</strong> :
                     <ul>
-                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 5d6+INT, portée 20, type Sortilège, options <code><i>--mana 2</i> --psave CON [[10+@{selected|INT}]] tempete 2 --seulementVivant</code>.</li>
-                      <li>Objet de sort : <code>#Attaque Briser les coeurs --toucher [[@{selected|ATKMAG}]] --dm 5d6+[[@{selected|INT}]] --portee 20 --sortilege --psave CON [[10+@{selected|INT}]] tempete 2 --seulementVivant</code></li>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 5d6+INT, portée 20, type Sortilège, modificateurs <code>seulementVivant necromancie</code>, options <code><i>--mana 2</i> --psave CON [[10+@{selected|INT}]] tempete 2</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Briser les coeurs --toucher [[@{selected|ATKMAG}]] --dm 5d6+[[@{selected|INT}]] --portee 20 --sortilege --psave CON [[10+@{selected|INT}]] tempete 2 --seulementVivant --necromancie</code></li>
                     </ul>
                     À noter que la partie <code>tempete 2</code> implémente une chose qui n'est pas dans les règles, à savoir augmenter la difficulté du test de constitution de 2 par point de mana investi en tempête de mana intense. Je trouvais en effet que sans cet ajout, à mana égale, le sort était moins intéressant que le baiser du vampire. Il reste moins fort et plus situationnel que la désintégration du magicien (à mana égale), même avec ce changement.
                   </li>
                   <li><strong>Mot de mort</strong> :
                     <ul>
-                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg</code>, options <code><i>--mana 3</i> --difficultePV --etat mort --save CON [[10+@{selected|INT}]] tempete 2</code>.</li>
-                      <li>Objet de sort : <code>#Attaque Mot de mort --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --difficultePV --etat mort --save CON [[10+@{selected|INT}]] tempete 2</code></li>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg necromancie difficultePV</code>, options <code><i>--mana 3</i> --etat mort --save CON [[10+@{selected|INT}]] tempete 2</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Mot de mort --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --necromancie --difficultePV --etat mort --save CON [[10+@{selected|INT}]] tempete 2</code></li>
                     </ul>
                     Comme pour <strong>Briser les coeurs</strong>, je pense qu'on peut augmenter la difficulté du jet de résistance avec la puissance de la tempête de mana.
                   </li>
@@ -1585,14 +1586,14 @@
                   <li><strong>Animation d'un mort-vivant</strong> : <code>!cof-animer-mort @{selected|token_id} <i>--mana 0</i></code>. Cela met directement le nécromant et le zombie en combat. Les Zombies perdent automatiquement 1 PV tous les 6 rounds. Lorsqu'ils atteignent 0 PV (quelle qu'en soit la raison) ou à la fin du combat, ils sont automatiquement détruits et supprimés. Si un attribut <code>voieOutreTombe</code> est présent sur le lanceur du sort, le script gère le maximum de zombies qu'il peut invoquer. Mana, consommables et limites sont gérées, mais pas Tempête de Mana.</li>
                   <li><strong>Putréfaction</strong> :
                     <ul>
-                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d6+INT, portée 10, type Sortilège, options <code><i>--mana 1</i> --effet putrefactionOutreTombe --save CON [[12+@{selected|INT}]]</code></li>
-                      <li>Objet de sort : <code>#Attaque Putréfaction --toucher [[@{selected|ATKMAG}]] --dm 1d6+[[@{selected|INT}]] --portee 10 --sortilege --effet putrefactionOutreTombe --save CON [[12+@{selected|INT}]]</code></li>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d6+INT, portée 10, type Sortilège, modificateurs <code>necromancie</code>, options <code><i>--mana 1</i> --effet putrefactionOutreTombe --save CON [[12+@{selected|INT}]]</code></li>
+                      <li>Objet de sort : <code>#Attaque Putréfaction --toucher [[@{selected|ATKMAG}]] --dm 1d6+[[@{selected|INT}]] --portee 10 --sortilege --necromancie --effet putrefactionOutreTombe --save CON [[12+@{selected|INT}]]</code></li>
                     </ul>
                   </li>
                   <li><strong>Ensevelissement</strong> :
                     <ul>
-                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg</code>, options <code><i>--mana 2</i> --etat enseveli FORDEX [[13+@{selected|INT}]]</code></li>
-                      <li>Objet de sort : <code>#Attaque Ensevelissement --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --etat enseveli FORDEX [[13+@{selected|INT}]]</code></li>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg necromancie</code>, options <code><i>--mana 2</i> --etat enseveli FORDEX [[13+@{selected|INT}]]</code></li>
+                      <li>Objet de sort : <code>#Attaque Ensevelissement --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --necromancie --etat enseveli FORDEX [[13+@{selected|INT}]]</code></li>
                     </ul>
                     Les dégâts sont infligés au début de chaque tour, et la cible recevra à son initiative un bouton lui permettant d'effectuer le jet pour sortir. Elle pourra également ajouter un bonus manuel au jet, en fonction des actions réalisées pour l'aider à sortir.
                   </li>
@@ -1602,8 +1603,8 @@
                 <ol>
                   <li><strong>Saignements</strong> :
                     <ul>
-                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 10, type Sortilège, modificateurs <code>pasDeDmg</code>, options <code><i>--mana 0</i> --effet saignementsSang <i>rang</i></code>, où <i>rang</i> est le rang dans la Voie</li>
-                      <li>Objet de sort : <code>#Attaque Saignements --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 10 --sortilege --effet saignementsSang <i>rang</i></code>, où <i>rang</i> est le niveau de l'objet</li>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 10, type Sortilège, modificateurs <code>pasDeDmg necromancie</code>, options <code><i>--mana 0</i> --effet saignementsSang <i>rang</i></code>, où <i>rang</i> est le rang dans la Voie</li>
+                      <li>Objet de sort : <code>#Attaque Saignements --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 10 --sortilege --necromancie --effet saignementsSang <i>rang</i></code>, où <i>rang</i> est le niveau de l'objet</li>
                     </ul>
                     Si vous souhaitez que le saignement ne puisse pas être appliqué à certains personnages (comme des golems ou des squelettes), vous pouvez leur ajouter un attribut <code>immuniteSaignement</code> de valeur courante <code>true</code>.
                   </li>
@@ -1611,14 +1612,14 @@
                   <li><strong>Exsangue</strong> : ajouter un attribut <code>exsangue</code>, avec comme valeur <code>true</code>.</li>
                   <li><strong>Hémorragie</strong> :
                     <ul>
-                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 10, type Sortilège, modificateurs <code>pasDeDmg</code>, options <code><i>--mana 2</i> --effet hemorragie [[5+@{selected|INT}]]</code></li>
-                      <li>Objet de sort : <code>#Attaque Hémorragie --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 10 --sortilege --effet hemorragie [[5+@{selected|INT}]]</code></li>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 10, type Sortilège, modificateurs <code>pasDeDmg necromancie</code>, options <code><i>--mana 2</i> --effet hemorragie [[5+@{selected|INT}]]</code></li>
+                      <li>Objet de sort : <code>#Attaque Hémorragie --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 10 --sortilege --necromancie --effet hemorragie [[5+@{selected|INT}]]</code></li>
                     </ul>
                   </li>
                   <li><strong>Lien de sang</strong> :
                     <ul>
-                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg</code>, options <code><i>--mana 3</i> --effet lienDeSang [[5+@{selected|INT}]]</code></li>
-                      <li>Objet de sort : <code>#Attaque Lien de sang --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --effet lienDeSang [[5+@{selected|INT}]]</code></li>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg necromancie</code>, options <code><i>--mana 3</i> --effet lienDeSang [[5+@{selected|INT}]]</code></li>
+                      <li>Objet de sort : <code>#Attaque Lien de sang --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --necromancie --effet lienDeSang [[5+@{selected|INT}]]</code></li>
                     </ul>
                     Pas de support pour le lancement de sort sans ligne de vue.
                   </li>
@@ -1632,7 +1633,7 @@
                     <ul>
                       <li>Sort :
                         <ol>
-                          <li>Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d6+INT, portée 20, type Sortilège, dégâts magiques, options <code><i>--mana 1</i> --effet strangulation <i>rang</i></code></li>
+                          <li>Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d6+INT, portée 20, type Sortilège, dégâts magiques, modificateurs <code>necromancie</code>, options <code><i>--mana 1</i> --effet strangulation <i>rang</i></code></li>
                           <li><code>!cof-strangulation @{selected|token_id} @{target|token_id}</code> pour maintenir la strangulation</li>
                         </ol>
                       </li>
@@ -2162,6 +2163,7 @@
                     </ul>
                     Il est aussi possible d'enduire de poison des munitions. Pour ce faire, remplacer le label de l'attaque par le nom de l'attribut contenant les mutions (ce nom commence donc par <code>munition_</code>). Le script suppose que toute munition lancée perd son poison.
                   </li>
+                  <li><strong>Potion de sang de l'Arbre-Coeur</strong> : <code>!cof-effet sangDeLArbreCoeur true</code>, à enlever quand les 24h sont passées.</li>
                   <li><strong>Protection contre les souffles</strong> et dégâts de zone : ajouter un attribut <code>protectionDMZone</code>, de valeur <code>true</code>. Pour une protection contre un seul élément (feu, froid, etc), ajouter <code>_</code> et le nom de l'élément. Par exemple, contre le feu, on aura un attribut <code>protectionDMZone_feu</code>.</li>
                   <li><strong>Putréfaction</strong> : ajouter à l'attaque <code>--effet putrefaction 5 --save CON 14</code> (pour les données des momies)</li>
                   <li><strong>Résistant (insectes)</strong> : ajouter un attribut <code>durACuire</code> de valeur <code>true</code>.</li>

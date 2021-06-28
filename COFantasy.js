@@ -376,7 +376,7 @@ var COFantasy = COFantasy || function() {
   var etat_de_marker = {};
   var effet_de_marker = {};
 
-  //Rtourne une liste d'attributs
+  //Retourne une liste d'attributs
   function tokenAttribute(personnage, name) {
     var token = personnage.token;
     // Tokens Mook : attribut mook d'abord, attribut character sinon
@@ -5789,6 +5789,7 @@ var COFantasy = COFantasy || function() {
         case 'tirAveugle':
         case 'attaqueBouclierRenverse':
         case 'runeDePuissance':
+        case 'necromancie':
           options[cmd[0]] = true;
           return;
         case 'm2d20':
@@ -7023,6 +7024,11 @@ var COFantasy = COFantasy || function() {
     return false;
   }
 
+  function estNecromancie(options) {
+    return options.necromancie || options.malediction || options.vampirise ||
+      options.peur;
+  }
+
   //On copie les champs de scope dans options ou dans target
   function copyBranchOptions(branch, options, target, evt, explications, condInTarget) {
     var opt = options;
@@ -7172,7 +7178,8 @@ var COFantasy = COFantasy || function() {
             attaquant: attaquant,
             rolls: options.rolls,
             chanceRollId: options.chanceRollId,
-            type: ite.condition.typeDmg
+            type: ite.condition.typeDmg,
+            necromancie: estNecromancie(options)
           };
           var saveId = condInTarget ? 'ifSave_' + etatParent.aTraiter + '_' + target.token.id :
             'ifSave_' + etatParent.aTraiter + '_' + attaquant.token.id;
@@ -8333,6 +8340,10 @@ var COFantasy = COFantasy || function() {
       explications.push("agrippé => -3 en DEF");
       defense -= 3;
     }
+    if (estNecromancie(options) && attributeAsBool(target, 'sangDeLArbreCoeur')) {
+      explications.push("Sang de l'Arbre-Coeur => +5 en DEF");
+      defense += 5;
+    }
     if (target.realCharId) target.charId = target.realCharId;
     return defense;
   }
@@ -9261,7 +9272,7 @@ var COFantasy = COFantasy || function() {
     if (!options.redo && attrAsBool(attrFauchage)) {
       var deFauchage = attrAsInt(attrFauchage, 15);
       var tailleFauchage = parseInt(attrFauchage[0].get('max'));
-      if (isNaN(tailleFauchage) || tailleFauchage < 1) 
+      if (isNaN(tailleFauchage) || tailleFauchage < 1)
         tailleFauchage = taillePersonnage(attaquant, 4);
       var seuilFauchage = 10 + modCarac(attaquant, 'force');
       options.etats = options.etats || [];
@@ -10296,12 +10307,15 @@ var COFantasy = COFantasy || function() {
     if (charAttributeAsBool(target, 'immunite_' + dmgType)) return true;
     switch (dmgType) {
       case 'poison':
+        if (attributeAsBool(target, 'sangDeLArbreCoeur')) return true;
         if (attaquant && charAttributeAsBool(target, 'sangDeFerIf')) {
           return estElfeNoir(attaquant) || estInsecte(attaquant);
         }
         return false;
       case 'froid':
         return attributeAsBool(target, 'presenceGlaciale');
+      case 'maladie':
+        return attributeAsBool(target, 'sangDeLArbreCoeur');
     }
     return false;
   }
@@ -11360,7 +11374,7 @@ var COFantasy = COFantasy || function() {
                   });
                 }
                 //Botte mortelle (barde et duelliste)
-                if (options.contact && !options.feinte && !options.pasDeDmg && attackRoll > defense + 4 &&
+                if (options.contact && !options.feinte && !options.attaqueAssuree && !options.pasDeDmg && attackRoll > defense + 4 &&
                   charAttributeAsBool(attaquant, 'botteMortelle')) {
                   if (faireMouche === undefined)
                     faireMouche = charAttributeAsInt(attaquant, 'faireMouche', 0);
@@ -13213,7 +13227,8 @@ var COFantasy = COFantasy || function() {
                         attaquant: attaquant,
                         rolls: options.rolls,
                         chanceRollId: options.chanceRollId,
-                        type: ce.typeDmg
+                        type: ce.typeDmg,
+                        necromancie: estNecromancie(options)
                       };
                       var rollId = 'etat_' + ce.etat + index + '_' + target.token.id;
                       save(ce.save, target, rollId, expliquer, saveOpts, evt,
@@ -13305,7 +13320,8 @@ var COFantasy = COFantasy || function() {
                         attaquant: attaquant,
                         rolls: options.rolls,
                         chanceRollId: options.chanceRollId,
-                        type: ef.typeDmg
+                        type: ef.typeDmg,
+                        necromancie: estNecromancie(options)
                       };
                       var rollId = 'effet_' + ef.effet + index + '_' + target.token.id;
                       var duree = ef.duree;
@@ -13849,6 +13865,7 @@ var COFantasy = COFantasy || function() {
   //   - seuil : la difficulté du jet de sauvegarde
   //   - fauchage
   //   - entrave (pour les action qui immobilisent, ralentissent ou paralysent)
+  //   - necromancie
   function save(s, target, saveId, expliquer, options, evt, afterSave) {
     target.tokName = target.tokName || target.token.get('name');
     if (options.type && immuniseAuType(target, options.type, options.attaquant)) {
@@ -13882,6 +13899,10 @@ var COFantasy = COFantasy || function() {
     if (s.entrave && attributeAsBool(target, 'actionLibre')) {
       bonus += 5;
       expliquer("Action libre => +5 pour résister aux entraves");
+    }
+    if (options.necromancie && attributeAsBool(target, 'sangDeLArbreCoeur')) {
+      bonus += 5;
+      expliquer("Sang de l'Arbre-Coeur => +5 pour résister à la nécromancie");
     }
     var bonusAttrs = [];
     var carac = s.carac;
@@ -21556,8 +21577,13 @@ var COFantasy = COFantasy || function() {
             perso, effet, true, evt, {
               msg: whisper + messageEffetIndetermine[effet].activation
             });
-          if (effet == 'foretVivanteEnnemie' && stateCOF.combat) {
-            updateNextInit(perso);
+          switch (effet) {
+            case 'foretVivanteEnnemie':
+              if (stateCOF.combat) updateNextInit(perso);
+              break;
+            case 'sangDeLArbreCoeur':
+              guerisonPerso(perso, evt);
+              break;
           }
           if (options.puissant) {
             var puissant = true;
@@ -22164,7 +22190,8 @@ var COFantasy = COFantasy || function() {
       msgRate: ", raté.",
       attaquant: attaquant,
       rolls: options.rolls,
-      chanceRollId: options.chanceRollId
+      chanceRollId: options.chanceRollId,
+      necromancie: true
     };
     var saveId = 'injonctionMortelle_' + cible.token.id;
     var expliquer = function(message) {
@@ -27475,6 +27502,35 @@ var COFantasy = COFantasy || function() {
     sendChat('', endFramedDisplay(display));
   }
 
+  function guerisonPerso(perso, evt, lanceur) {
+    var msgSoin;
+    if (lanceur) {
+      if (lanceur.token.id == perso.token.id) {
+        msgSoin = 'se soigne';
+      } else {
+        msgSoin = 'soigne ' + perso.token.get('name');
+      }
+    } else {
+      msgSoin = 'récupère';
+    }
+    msgSoin += ' de toutes les blessures subies';
+    if (lanceur) sendPerso(lanceur, msgSoin);
+    else sendPerso(perso, msgSoin);
+    if (getState(perso, 'blesse')) {
+      setState(perso, 'blesse', false, evt);
+    }
+    var soins = perso.token.get('bar1_max') - perso.token.get('bar1_value');
+    if (isNaN(soins)) {
+      updateCurrentBar(perso, 1, perso.token.get('bar1_max'), evt);
+      return;
+    }
+    if (soins <= 0) {
+      //Rien d'autre à faire (le script ne gère pas encore le reste)
+      return;
+    }
+    soigneToken(perso, soins, evt);
+  }
+
   //!cof-guerison @{selected|token_id} @{target|token_id}
   function guerison(msg) {
     var options = parseOptions(msg);
@@ -27509,27 +27565,7 @@ var COFantasy = COFantasy || function() {
     };
     addEvent(evt);
     if (limiteRessources(lanceur, options, 'guérison', 'guérison', evt)) return;
-    var msgSoin;
-    if (lanceur.token.id == cible.token.id) {
-      msgSoin = 'se soigne';
-    } else {
-      msgSoin = 'soigne ' + cible.token.get('name');
-    }
-    msgSoin += ' de toutes les blessures subies';
-    sendPerso(lanceur, msgSoin);
-    if (getState(cible, 'blesse')) {
-      setState(cible, 'blesse', false, evt);
-    }
-    var soins = cible.token.get('bar1_max') - cible.token.get('bar1_value');
-    if (isNaN(soins)) {
-      updateCurrentBar(cible, 1, cible.token.get('bar1_max'), evt);
-      return;
-    }
-    if (soins <= 0) {
-      //Rien d'autre à faire (le script ne gère pas encore le reste)
-      return;
-    }
-    soigneToken(cible, soins, evt);
+    guerisonPerso(cible, evt, lanceur);
   }
 
   function armeDeContact(perso, arme, labelArmeDefaut, armeContact) {
@@ -33478,6 +33514,11 @@ var COFantasy = COFantasy || function() {
       actif: "est à l'étroit.",
       fin: "sort de l'espace exigu."
     },
+    sangDeLArbreCoeur: {
+      activation: "boit une potion de Sang de l'Arbre-Coeur",
+      actif: "a bu une potion de Sang de l'Arbre-Coeur",
+      fin: "les effets de la potion de Sang de l'Arbre-Coeur diminuent un peu"
+    },
   };
 
   var patternEffetsIndetermine = buildPatternEffets(messageEffetIndetermine);
@@ -34532,6 +34573,14 @@ var COFantasy = COFantasy || function() {
             );
           }
         }
+      }
+      if (attributeAsBool(perso, 'sangDeLArbreCoeur') && !getState(perso, 'mort')) {
+            soigneToken(perso, 5, evt,
+              function(s) {
+                whisperChar(charId, "régénère " + s + " PVs. (grâce à la potion de sang de l'Arbre Coeur)");
+              },
+              function() {}
+            );
       }
       var increvableActif = tokenAttribute(perso, 'increvableActif');
       if (increvableActif.length > 0) {
