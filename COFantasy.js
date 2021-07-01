@@ -1269,7 +1269,7 @@ var COFantasy = COFantasy || function() {
   // maxVal: la valeur max de l'attribut
   // secret: le message n'est pas affiché pour tout le monde.
   // charAttr: si présent, on utilise un attribut de personnage
-  // renvoie l'attribut crée ou mis à jour
+  // renvoie l'attribut créé ou mis à jour
   function setTokenAttr(personnage, attribute, value, evt, options) {
     var charId = personnage.charId;
     var token = personnage.token;
@@ -3736,6 +3736,13 @@ var COFantasy = COFantasy || function() {
           setTokenAttr(personnage, 'fortifie', fortifie, evt);
         }
       }
+    }
+    if (attributeAsBool(personnage, 'ondesCorruptrices') &&
+      !attributeAsBool(personnage, 'porteurDuBouclierDeGrabuge') &&
+      !attributeAsBool(personnage, 'sangDeLArbreCoeur')) {
+      var malusOndesCorruptrices = attributeAsInt(personnage, 'ondesCorruptrices', 2);
+      expliquer("nauséeux : -" + malusOndesCorruptrices + " aux tests");
+      bonus -= malusOndesCorruptrices;
     }
     var bonusCondition = attributeAsInt(personnage, 'modificateurTests', 0);
     if (bonusCondition != 0) {
@@ -7770,6 +7777,13 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(personnage, 'agrippeParUnDemon')) {
       explications.push("agrippé : -3 en Attaque");
       attBonus -= 3;
+    }
+    if (attributeAsBool(personnage, 'ondesCorruptrices') &&
+      !attributeAsBool(personnage, 'sangDeLArbreCoeur') &&
+      !attributeAsBool(personnage, 'porteurDuBouclierDeGrabuge')) {
+      var malusOndesCorruptrices = attributeAsInt(personnage, 'ondesCorruptrices', 2);
+      explications.push("nauséeux : -" + malusOndesCorruptrices + " aux tests");
+      attBonus -= malusOndesCorruptrices;
     }
     return attBonus;
   }
@@ -21489,6 +21503,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     var activer;
+    var valeur;
     switch (cmd[2]) {
       case 'oui':
       case 'Oui':
@@ -21501,8 +21516,12 @@ var COFantasy = COFantasy || function() {
         activer = false;
         break;
       default:
-        error("Option de !cof-effet inconnue", cmd);
-        return;
+        valeur = parseInt(cmd[2]);
+        if (isNaN(valeur)) {
+          error("Option de !cof-effet inconnue", cmd);
+          return;
+        }
+        activer = valeur !== 0;
     }
     var evt = {
       type: 'Effet ' + effet
@@ -21572,18 +21591,24 @@ var COFantasy = COFantasy || function() {
             return true;
           });
         }
+        var msgEffet = whisper + messageEffetIndetermine[effet].activation;
         iterSelected(selected, function(perso) {
-          setTokenAttr(
-            perso, effet, true, evt, {
-              msg: whisper + messageEffetIndetermine[effet].activation
-            });
-          switch (effet) {
-            case 'foretVivanteEnnemie':
-              if (stateCOF.combat) updateNextInit(perso);
-              break;
-            case 'sangDeLArbreCoeur':
-              guerisonPerso(perso, evt);
-              break;
+          if (valeur !== undefined && (cmd[2].startsWith('+') || valeur < 0)) {
+            addToAttributeAsInt(perso, effet, 0, valeur, evt);
+            sendPerso(perso, effet + " varie de " + valeur, options.secret);
+          } else {
+            setTokenAttr(
+              perso, effet, true, evt, {
+                msg: msgEffet
+              });
+            switch (effet) {
+              case 'foretVivanteEnnemie':
+                if (stateCOF.combat) updateNextInit(perso);
+                break;
+              case 'sangDeLArbreCoeur':
+                guerisonPerso(perso, evt);
+                break;
+            }
           }
           if (options.puissant) {
             var puissant = true;
@@ -33519,6 +33544,11 @@ var COFantasy = COFantasy || function() {
       actif: "a bu une potion de Sang de l'Arbre-Coeur",
       fin: "les effets de la potion de Sang de l'Arbre-Coeur diminuent un peu"
     },
+    ondesCorruptrices: { //nombre, à mettre avec !cof-effet ondesCorruptrices 2
+      activation: "se sent nauséeux",
+      actif: "se sent nauséeux",
+      fin: "se sent un peu mieux",
+    },
   };
 
   var patternEffetsIndetermine = buildPatternEffets(messageEffetIndetermine);
@@ -34575,12 +34605,12 @@ var COFantasy = COFantasy || function() {
         }
       }
       if (attributeAsBool(perso, 'sangDeLArbreCoeur') && !getState(perso, 'mort')) {
-            soigneToken(perso, 5, evt,
-              function(s) {
-                whisperChar(charId, "régénère " + s + " PVs. (grâce à la potion de sang de l'Arbre Coeur)");
-              },
-              function() {}
-            );
+        soigneToken(perso, 5, evt,
+          function(s) {
+            whisperChar(charId, "régénère " + s + " PVs. (grâce à la potion de sang de l'Arbre Coeur)");
+          },
+          function() {}
+        );
       }
       var increvableActif = tokenAttribute(perso, 'increvableActif');
       if (increvableActif.length > 0) {
