@@ -1,4 +1,6 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 2.18
+
 ## 2.17
 ### Capacités
 * Support des effets des ondes corruptrices

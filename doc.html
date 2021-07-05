@@ -1162,7 +1162,7 @@
                   <li><strong>6eme sens</strong> : ajouter le bonus en DEF divers et initiative diver, ajouter une compétence <code>vigilance</code>, de valeur 2*rang (le bonus aux jet de surprise).</li>
                   <li><strong>Détection de l'invisible</strong> : <code>!cof-effet-temp detectionDeLInvisible [[5+@{selected|CHA}]] <i>--mana 0</i></code>.</li>
                   <li><strong>Clairvoyance</strong> : <code>!cof-lancer-sort peut voir et entendre à distance <i>--mana 1</i></code></li>
-                  <li><strong>Prescience</strong> : ajouter un attribut prescience de valeur courante <code>1</code> et de valeur maximale <code>1</code>. Si le personnage était sur la carte au moment de lancer le combat, il se verra proposer un bouton pour utiliser sa prescience à la fin de chaque tour. Attention, en l'état, il est impossible d'annuler l'utilisation de ce bouton. De plus, ce bouton ne fera rien si le script a été interrompu depuis le début du tour (interruption de la partie, redémarrage du script, etc...).</li>
+                  <li><strong>Prescience</strong> : ajouter un attribut prescience de valeur courante <code>true</code> (on peut mettre un nombre à la place, pour avoir plus d'une prescience par tour). Si le personnage était sur la carte au moment de lancer le combat, il se verra proposer un bouton pour utiliser sa prescience à la fin de chaque tour. Attention, en l'état, il est impossible d'annuler l'utilisation de ce bouton. De plus, ce bouton ne fera rien si le script a été interrompu depuis le début du tour (interruption de la partie, redémarrage du script, etc...).</li>
                   <li><strong>Hyperconscience</strong> : reporter sur la fiche.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'envoûteur</h4>
@@ -1328,7 +1328,7 @@
                 <ol>
                   <li><strong>Posture de combat</strong> : <code>!cof-posture-de-combat <i>bonus attr1 attr2</i></code>, où les deux <i>attr</i> peuvent être soit <code>DEF</code> soit <code>ATT</code> soit <code>DM</code>, et le <i>bonus</i> est retiré au premier attribut pour être ajouté au second. Le bonus peut être limité si le guerrier a un attribut <code>voieDuSoldat</code> qui indique son rang dans la voie. Exemple d'utilisation&nbsp;: <code>!cof-posture-de-combat ?{Bonus} ?{Baisser|Défense,DEF|Attaque,ATT|Dégâts,DM} ?{Augmenter|Défense,DEF|Attaque,ATT|Dégâts,DM}</code>. Normalement, la règle fait décider de sa posture au guerrier à chaque tour, mais en pratique, il en change assez rarement. Une posture de combat reste donc active jusqu'à la fin du combat ou jusqu'à ce qu'on en change (elle est neutre si on a le même attribut à buffer et débuffer).</li>
                   <li><strong>Combat en phalange</strong> : ajouter un attribut <code>combatEnPhalange</code>, valeur <code>true</code>. Les bonus seront ajoutés automatiquement en fonctions des alliés définis selon <a href="#allie">cette méthode</a>.</li>
-                  <li><strong>Prouesse</strong> : ajouter un attribut <code>prouesse</code>, valeur courante et max <code>1</code>. Le script générera automatiquement les boutons Prouesse sur les test appropriés.</li>
+                  <li><strong>Prouesse</strong> : ajouter un attribut <code>prouesse</code> de valeur<code>true</code> (on peut remplacer cela par un nombre, si on souhaite plus d'une utilisation par tour). Le script générera automatiquement les boutons Prouesse sur les test appropriés.</li>
                   <li><strong>Dernier rempart</strong> : pas de support particulier, le MJ doit gérer les attaques supplémentaires.</li>
                   <li><strong>Force héroïque</strong> : reporter sur la fiche.</li>
                 </ol>
@@ -1688,7 +1688,7 @@
                   <li><strong>Bénédiction</strong> : <code>!cof-effet-temp benediction [[3+@{selected|SAG}]] --alliesEnVue --self <i>--mana 0</i></code>. Il faut avoir défini une <a href="#allie">équipe</a> avec le prêtre.</li>
                   <li><strong>Destruction des morts-vivants</strong> : <code>!cof-destruction-des-morts-vivants 2d6 <i>--mana 0</i></code>. Au rang 4 dans la voie, ajuster les dégâts. Notez que le script considère comme mort-vivant tout personnage avec le champ race à <code>squelette</code>, <code>zombie</code>, <code>momie</code>, <code>goule</code>,<code>vampire</code> ou <code>mort-vivant</code>, ou alors qui possède un attribut <code>mortVivant</code> de valeur <code>true</code>.</li>
                   <li><strong>Sanctuaire</strong> : <code>!cof-effet-temp sanctuaire [[5+@{selected|SAG}]] <i>--mana 1</i></code>.</li>
-                  <li><strong>Intervention Divine</strong> : ajouter au personnage un attribut <code>interventionDivine</code> de valeur courante et maximale 1. Ensuite, utiliser <code>!cof-intervention-divine ?{Type ?|rate|touche}</code> juste après l'attaque en sélectionnant le token du Prêtre pour modifier le résultat selon le choix. Il est très pratique de mettre cette commande dans une Ability à afficher en Token Action. Ne supporte que le jet de touche de la dernière attaque effectuée.</li>
+                  <li><strong>Intervention Divine</strong> : ajouter au personnage un attribut <code>interventionDivine</code> de valeur courante <code>true</code>. Ensuite, utiliser <code>!cof-intervention-divine ?{Type ?|rate|touche}</code> juste après l'attaque en sélectionnant le token du Prêtre pour modifier le résultat selon le choix. Il est très pratique de mettre cette commande dans une Ability à afficher en Token Action. Ne supporte que le jet de touche de la dernière attaque effectuée.</li>
                   <li><strong>Sagesse héroïque</strong> : Reporter les bonus sur la fiche.</li>
                 </ol>
                 <h4 class="text-secondary">Voie des soins</h4>
@@ -1788,7 +1788,7 @@
                   <li><strong>Endurant</strong> : ajouter une compétence <code>survie</code>, de caractéristique CON, avec le bonus 2xrang dans la Voie.</li>
                   <li><strong>Nature nourricière</strong> : pour la recherche d'herbes, créer un attribut <code>voieDeLaSurvie</code> avec comme valeur le rang du personnage dans la voie. On peut utiliser <code>!cof-nature-nourriciere</code> pour lancer la recherche. Cela crée automatiquement les doses de plantes médicinales dans les consommables du personnage. Ces doses sont supprimées toutes les nuits. Pour les besoins d'un personnage, j'ai aussi donné la possibilité de trouver des baies magiques à la place des herbes médicinales. Pour cela, il faut un attribut <code>natureNourriciereBaies</code> de valeur <code>true</code>.</li>
                   <li><strong>Grand pas</strong> : ajouter les compétences <code>natation</code> et <code>escalade</code>, de valeur 5.</li>
-                  <li><strong>Increvable</strong> : ajouter un attribut <code>increvable</code> de valeur courante et maximum 1</li>
+                  <li><strong>Increvable</strong> : ajouter un attribut <code>increvable</code> de valeur courante <code>true</code> (on peut mettre un nombre à la place pour indiquer plus d'une utilisation par combat).</li>
                   <li><strong>Constitution héroïque</strong> : reporter les bonus sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary">Voie du traqueur</h4>
@@ -1824,7 +1824,7 @@
                 <ol>
                   <li><strong>Esprit vide</strong> : reporter le bonus sur la fiche.</li>
                   <li><strong>Main vide</strong> : faire l'attaque à mains nues correspondant à la capacité.</li>
-                  <li><strong>Kiai</strong> : ajouter un attribut <code>kiai</code>, de valeur courante 1 et de valeur maximale 1. Au rang 5, mettre ces valeurs à 2, le script se charge d'attendre 1d6 tours avant de proposer le deuxième kiai.</li>
+                  <li><strong>Kiai</strong> : ajouter un attribut <code>kiai</code>, de valeur courante <code>1</code>. Au rang 5, mettre cette valeur à <code>2</code>, le script se charge d'attendre 1d6 tours avant de proposer le deuxième kiai.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du sabre</h4>
                 <ol>
@@ -1861,12 +1861,12 @@
                   <li><strong>Détecter les pièges</strong> : faire le jet avec <code>!cof-jet INT ?{Piège normal?|Oui,10|Magique,15} --secret</code></li>
                   <li><strong>Croc-en-jambe</strong> : ajouter un attribut <code>crocEnJambe</code> de valeur <code>true</code>. Pour distinguer les adversaires quadrupèdes qui ne seraient pas connues du script, lui ajouter un attribut <code>quadrupede</code>, de valeur <code>true</code>.</li>
                   <li><strong>Attaque paralysante</strong> : lancer une des attaques de contact du voleur en rajoutant les options <code>--limiteParCombat 1 attaqueParalysante --pasDeDmg --effet paralysieRoublard [[1d4]]</code>.</li>
-                  <li><strong>Attaque en traître</strong> : Ajouter un attribut <code>attaqueEnTraitre</code>, de valeur courante 1, et de valeur maximale 1. Les actions affichées en cas d'attaque en traître seront en priorité les attaques d'un ability <code>#AttaqueEnTraitre#</code> ou sinon les attaques des actions habituelles du personnages (venant donc de <code>#Actions#</code>).</li>
+                  <li><strong>Attaque en traître</strong> : Ajouter un attribut <code>attaqueEnTraitre</code>, de valeur courante <code>true</code>. Les actions affichées en cas d'attaque en traître seront en priorité les attaques d'un ability <code>#AttaqueEnTraitre#</code> ou sinon les attaques des actions habituelles du personnages (venant donc de <code>#Actions#</code>).</li>
                 </ol>
                 <h4 class="text-secondary">Voie du spadassin</h4>
                 <ol>
                   <li><strong>Attaque en finesse</strong> : faire les modifications sur la fiche</li>
-                  <li><strong>Esquive fatale</strong> : Ajouter un attribut <code>esquiveFatale</code> avec comme valeur courante 1 et comme valeur maximale 1. En combat, si la situation s'y prête, un bouton permettre d'utiliser l'esquive. Ne pas oublier de définir les alliés du voleur pour que la vérification des cibles soit correcte.</li>
+                  <li><strong>Esquive fatale</strong> : Ajouter un attribut <code>esquiveFatale</code> avec comme valeur courante <code>true</code> (on peut mettre un nombre à la place, pour permettre plus d'une utilisation par combat). En combat, si la situation s'y prête, un bouton permettre d'utiliser l'esquive. Ne pas oublier de définir les alliés du voleur pour que la vérification des cibles soit correcte.</li>
                   <li><strong>Frappe chirurgicale</strong> : ajouter un attribute <code>frappeChirurgicale</code>, de valeur <code>true</code>.</li>
                   <li><strong>Ambidextrie</strong> : pas géré par le script.</li>
                 </ol>
@@ -1919,7 +1919,7 @@
                 <h4 class="text-secondary">Halfelin</h4>
                 <p>Petite taille : ajouter le bonus de DEF sur la ficher, et ajouter 2 à un attribut <code>discrétion</code>.</p>
                 <ol>
-                  <li><strong>Petit veinard</strong> : ajouter un attribut <code>petitVeinard</code> de valeur courante 1, et de valeur maximale 1. Le script ne va automatiser que les relancer de dés d'attaque ou de jets de caractéristiques (et encore, pas tous). Il propose d'utiliser la chance à chaque attaque, même réussie, mais dans ce cas, c'est au joueur de relancer le dé concerné, et au MJ d'en appliquer les conséquences.</li>
+                  <li><strong>Petit veinard</strong> : ajouter un attribut <code>petitVeinard</code> de valeur <code>true</code> (on peut mettre un nombre à la place, si on veut plus d'une utilisation par combat). Le script ne va automatiser que les relancer de dés d'attaque ou de jets de caractéristiques (et encore, pas tous). Il propose d'utiliser la chance à chaque attaque, même réussie, mais dans ce cas, c'est au joueur de relancer le dé concerné, et au MJ d'en appliquer les conséquences.</li>
                   <li><strong>Résistance légendaire</strong> : ajouter le bonus en CON sur la fiche, et ajouter un attribut <code>DEF_magie</code> avec comme valeur 5.</li>
                 </ol>
                 <h4 class="text-secondary">Haut elfe</h4>
@@ -1999,7 +1999,7 @@
                   <li><strong>Expertise du bouclier</strong> : reporter le bonus sur la fiche dans le bonus de DEF conféré par le bouclier.</li>
                   <li><strong>Progresser à couvert</strong> : <code>!cof-effet-temp progresserACouvert 1 --lanceur @{selected|token_id} --target @{target|token_id} --self --portee 1</code>. A utiliser pour cibler un allié à portée si nécessaire. Au MJ de vérifier qu'elle reste bien près du chevalier pour profiter du bonus.</li>
                   <li><strong>Attaque au bouclier</strong> : Ajouter une arme avec son Bouclier en "Arme gauche" sur la fiche du personnage. Créer une ability en appelant cette arme avec <code>--avecd12</code> pour représenter l'action Coup de bouclier.</li>
-                  <li><strong>Dévier les coups</strong> : Ajouter un attribut <code>devierLesCoups</code> de valeur courante et maximum 1. Le script ajoute automatiquement un bouton sur les attaques sur lesquelles cette capacité peut-être utilisée.</li>
+                  <li><strong>Dévier les coups</strong> : Ajouter un attribut <code>devierLesCoups</code> de valeur <code>true</code> (on peut remplacer cette valeur par un nombre, si on souhaite plus d'une utlisation par tour). Le script ajoute automatiquement un bouton sur les attaques sur lesquelles cette capacité peut-être utilisée.</li>
                   <li><strong>Parade au bouclier</strong> : Ajouter un attribut <code>paradeAuBouclier</code> de valeur courante et maximum 1. Sur l'ability Coup de bouclier créé pour le rang 3, ajouter <code>--attaqueBouclierRenverse --decrAttribute paradeAuBouclier</code>. Le script ajoute automatiquement un bouton sur les attaques sur lesquelles cette capacité peut-être utilisée. Si le personnage possède un bouclier en arme gauche, le script utilisera le bonus éventuel de l'arme en question sur le jet opposé.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du tueur de géant</h4>
@@ -2090,7 +2090,7 @@
                 <h4 class="text-secondary">Voie du PNJ récurrent</h4>
                 <ol>
                   <li><strong>Instinct de survie</strong> : ajouter un attribut <code>instinctDeSurvie</code> avec comme valeur le nombre de PV en-dessous duquel le PNJ gagne un bonus de DEF. les autres effets sont à faire par le MJ.</li>
-                  <li><strong>Chair à canon</strong> : ajouter un attribut <code>chairACanon</code> de valeur courante et maximale <code>1</code>. Ajouter ensuite à tous ses sous-fifres un attribut <code>chairACanonDe</code> de valeur le nom exact du token du PNJ. On peut y mettre plusieurs noms séparés par des virgules.</li>
+                  <li><strong>Chair à canon</strong> : ajouter un attribut <code>chairACanon</code> de valeur courante <code>true</code>. Ajouter ensuite à tous ses sous-fifres un attribut <code>chairACanonDe</code> de valeur le nom exact du token du PNJ. On peut y mettre plusieurs noms séparés par des virgules.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du prédateur</h4>
                 <ol>
