@@ -1,5 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 2.18
+### Amélioration
+* Attribut aucuneActionCombat pour les personnages qui n'agissent pas en combat
+* Possibilité de préciser un pourcentage des dégâts transformés en soins avec l'option --vampirise.
 
 ## 2.17
 ### Capacités

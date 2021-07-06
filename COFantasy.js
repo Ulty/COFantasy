@@ -2306,7 +2306,7 @@ var COFantasy = COFantasy || function() {
                 soigneToken(p, soin.val, evt,
                   function(s) {
                     var siphMsg = "siphone l'âme de " + token.get('name') +
-                      ". Il récupère ";
+                      ". " + onGenre('Il', 'Elle') + " récupère ";
                     if (s == soin.val) siphMsg += soin.roll + " pv.";
                     else siphMsg += s + " pv (jet " + soin.roll + ").";
                     whisperChar(p.charId, siphMsg);
@@ -3739,7 +3739,7 @@ var COFantasy = COFantasy || function() {
       !attributeAsBool(personnage, 'porteurDuBouclierDeGrabuge') &&
       !attributeAsBool(personnage, 'sangDeLArbreCoeur')) {
       var malusOndesCorruptrices = attributeAsInt(personnage, 'ondesCorruptrices', 2);
-      var msgOndesCorruptrices = "Nauséeu" + onGenre(personnage,"x","se");
+      var msgOndesCorruptrices = "Nauséeu" + onGenre(personnage, "x", "se");
       msgOndesCorruptrices += " : -" + malusOndesCorruptrices;
       expliquer(msgOndesCorruptrices + " aux tests");
       bonus -= malusOndesCorruptrices;
@@ -5737,7 +5737,6 @@ var COFantasy = COFantasy || function() {
         case 'pressionMortelle':
         case 'ignoreMoitieRD':
         case 'tempDmg':
-        case 'vampirise':
         case 'enflamme':
         case 'malediction':
         case 'pietine':
@@ -6192,6 +6191,17 @@ var COFantasy = COFantasy || function() {
         case 'nature':
         case 'naturel':
           scope.nature = true;
+          return;
+        case 'vampirise':
+          var vampirise = 100;
+          if (cmd.length > 1) {
+            vampirise = parseInt(cmd[1]);
+            if (isNaN(vampirise)) {
+              error("Il faut un pourcentage entier comme argument à --vampirise", cmd);
+              vampirise = 100;
+            }
+          }
+          scope.vampirise = vampirise;
           return;
         case 'sournoise':
         case 'de6Plus': //deprecated
@@ -7508,6 +7518,7 @@ var COFantasy = COFantasy || function() {
         setTokenAttr(perso, 'PVsDebutCombat', perso.token.get('bar1_value'), evt);
       }
       if (!isActive(perso)) return;
+      if (charAttributeAsBool(perso, 'aucuneActionCombat')) return;
       var init = persoInit(perso, evt);
       // On place le token à sa place dans la liste du tour
       var dejaIndex =
@@ -13152,7 +13163,9 @@ var COFantasy = COFantasy || function() {
                       }
                     }
                     if (options.vampirise || target.vampirise) {
-                      soigneToken(attaquant, dmg, evt, function(soins) {
+                      var pcVampirise = target.vampirise || options.vampirise;
+                      var soinsVamp = Math.ceil(dmg * pcVampirise / 100);
+                      soigneToken(attaquant, soinsVamp, evt, function(soins) {
                         target.messages.push(
                           "L'attaque soigne " + attackerTokName + " de " + soins + " PV");
                       });
@@ -20193,7 +20206,6 @@ var COFantasy = COFantasy || function() {
         case 'asphyxie':
         case 'affute':
         case "metal":
-        case 'vampirise':
         case 'magique':
         case 'artificiel':
         case 'tranchant':
@@ -20226,6 +20238,17 @@ var COFantasy = COFantasy || function() {
         case "nature":
         case "naturel":
           options.nature = true;
+          return;
+        case 'vampirise':
+          var vampirise = 100;
+          if (opt.length > 1) {
+            vampirise = parseInt(opt[1]);
+            if (isNaN(vampirise)) {
+              error("Il faut un pourcentage entier comme argument à --vampirise", opt);
+              vampirise = 100;
+            }
+          }
+          options.vampirise = vampirise;
           return;
         case "ignoreRD":
           if (opt.length < 2) {
