@@ -1552,7 +1552,7 @@
                 </ol>
                 <h4 class="text-secondary">Voie de la mort</h4>
                 <ol>
-                  <li><strong>Siphon des âmes</strong> : ajouter un attribut <code>siphonDesAmes</code>, de valeur <code>true</code>.</li>
+                  <li><strong>Siphon des âmes</strong> : ajouter un attribut <code>siphonDesAmes</code>, de valeur <code>true</code>. Par défaut, si il y a plusieurs personnages avec ce pouvoir, tous vont siphoner les âmes sans interaction. Mais il est possible de déclarer un ordre de priorité, telle que si les personnages de plus haute priorité ont siphoné tous les points de vie qu'ils pouvaient, il ne reste rien à siphoner pour les autre. Pour se faire, utilisez un attribut <code>siphonDesAmesPrioritaire</code> avec la valeur numérique de la priorité (0 par défaut, plus la valeur est grande, plus le personnage est prioritaire).</li>
                   <li><strong>Masque mortuaire</strong> : <code>!cof-effet-temp masqueMortuaire [[5+@{selected|INT}]] <i>--mana 0</i></code></li>
                   <li><strong>Baiser du vampire</strong> :
                     <ul>
@@ -2076,7 +2076,7 @@
                   <li><strong>Vampirisation</strong> :
                     <ul>
                       <li> Ajouter une attaque magique avec les DMs de vampirisation, lancée avec l'option <code>--vampirise</code> (et probablement aussi <code>--sortilege</code> et <code>--magique</code>).</li>
-                      <li> Ajouter un attribut <code>siphonDesAmes</code>, de valeur de NC de la créature (ou <code>true</code> si le NC est 0).</li>
+                      <li> Ajouter un attribut <code>siphonDesAmes</code>, de valeur de NC de la créature (ou <code>true</code> si le NC est 0). Si vous voulez que ce siphon empêche un autre siphon des âmes, rajoutez un attribut <code>siphonDesAmesPrioritaire</code> contenant un nombre positif et supérieur à ceux sur lequel il est prioritaire.</li>
                     </ul>
                   </li>
                   <li><strong>Animer un cadavre</strong> : <code>!cof-animer-cadavre @{selected|token_id} @{target|token_id}</code>. Au cas où vous auriez besoin d'enlever l'état de cadavre, il suffit d'enlever l'attribut nommé <code>cadavreAnime</code>.</li>

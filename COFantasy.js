@@ -2292,30 +2292,62 @@ var COFantasy = COFantasy || function() {
                 _subtype: "token",
                 layer: "objects"
               });
+            //On cherche d'abord si un siphon des âmes est prioritaire
+            var prioriteSiphon = [];
             allToks.forEach(function(tok) {
               if (tok.id == token.id) return;
               var p = persoOfToken(tok);
               if (p === undefined) return;
               if (getState(p, 'mort')) return;
               if (distanceCombat(token, tok, pageId) > 20) return;
-              if (charIdAttributeAsBool(p.charId, 'siphonDesAmes')) {
+              if (charAttributeAsBool(p, 'siphonDesAmes')) {
+                prioriteSiphon.push({
+                  perso: p,
+                  priorite: charAttributeAsInt(p, 'siphonDesAmesPrioritaire', 0)
+                });
+              }
+            });
+            if (prioriteSiphon.length > 0) {
+              prioriteSiphon.sort(function(a, b) {
+                return b.priorite - a.priorite;
+              });
+              var fraction = 100;
+              var fractionPriorite = fraction;
+              var priorite = prioriteSiphon[0].priorite;
+              prioriteSiphon.forEach(function(x) {
+                if (x.priorite < priorite) {
+                  priorite = x.priorite;
+                  fractionPriorite = fraction;
+                }
+                var p = x.perso;
+                if (fractionPriorite < 1) {
+                  whisperChar(p.charId, "ne réussit pas à siphoner l'âme de " + token.get('name') + " un autre pouvoir l'a siphonée avant lui");
+                  return;
+                }
                 var bonus = charAttributeAsInt(p, 'siphonDesAmes', 0);
                 var soin = rollDePlus(6, {
                   bonus: bonus
                 });
+                var soinTotal = soin.val;
+                soin.val = Math.ceil(soin.val * fractionPriorite / 100);
                 soigneToken(p, soin.val, evt,
                   function(s) {
                     var siphMsg = "siphone l'âme de " + token.get('name') +
-                      ". " + onGenre('Il', 'Elle') + " récupère ";
-                    if (s == soin.val) siphMsg += soin.roll + " pv.";
-                    else siphMsg += s + " pv (jet " + soin.roll + ").";
+                      ". " + onGenre(p, 'Il', 'Elle') + " récupère ";
+                    if (s == soinTotal) {
+                      siphMsg += soin.roll + " pv.";
+                      fraction = 0;
+                    } else {
+                      siphMsg += s + " pv (jet " + soin.roll + ").";
+                      fraction -= Math.ceil(s * 100 / soinTotal);
+                    }
                     whisperChar(p.charId, siphMsg);
                   },
                   function() {
                     whisperChar(p.charId, "est déjà au maximum de point de vie. Il laisse échapper l'âme de " + token.get('name'));
                   });
-              }
-            });
+              });
+            }
           }
           break;
         case 'immobilise':
