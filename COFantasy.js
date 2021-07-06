@@ -21648,13 +21648,15 @@ var COFantasy = COFantasy || function() {
           });
         }
         var msgEffet = whisper + messageEffetIndetermine[effet].activation;
+        var val = (valeur === undefined)?true:valeur;
         iterSelected(selected, function(perso) {
           if (valeur !== undefined && (cmd[2].startsWith('+') || valeur < 0)) {
             addToAttributeAsInt(perso, effet, 0, valeur, evt);
             sendPerso(perso, effet + " varie de " + valeur, options.secret);
           } else {
+            
             setTokenAttr(
-              perso, effet, true, evt, {
+              perso, effet, val, evt, {
                 msg: msgEffet
               });
             switch (effet) {
