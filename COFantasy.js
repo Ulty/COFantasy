@@ -4259,7 +4259,7 @@ var COFantasy = COFantasy || function() {
       if (charAttributeAsBool(personnage, 'sansEsprit')) {
         testRes.reussite = true;
         testRes.texte = "(sans esprit : réussite automatique)";
-        callback(testRes);
+        callback(testRes, explications);
         return;
       }
     }
@@ -7226,6 +7226,7 @@ var COFantasy = COFantasy || function() {
             msgRate: msgRate,
             attaquant: attaquant,
             rolls: options.rolls,
+            sortilege: options.sortilege,
             chanceRollId: options.chanceRollId,
             type: ite.condition.typeDmg,
             necromancie: estNecromancie(options)
@@ -13367,6 +13368,7 @@ var COFantasy = COFantasy || function() {
                         msgPour: msgPour,
                         msgRate: msgRate,
                         attaquant: attaquant,
+                        sortilege: options.sortilege,
                         rolls: options.rolls,
                         chanceRollId: options.chanceRollId,
                         type: ce.typeDmg,
@@ -13461,6 +13463,7 @@ var COFantasy = COFantasy || function() {
                         msgRate: msgRate,
                         attaquant: attaquant,
                         rolls: options.rolls,
+                        sortilege: options.sortilege,
                         chanceRollId: options.chanceRollId,
                         type: ef.typeDmg,
                         necromancie: estNecromancie(options)
@@ -14009,6 +14012,7 @@ var COFantasy = COFantasy || function() {
   //   - fauchage
   //   - entrave (pour les action qui immobilisent, ralentissent ou paralysent)
   //   - necromancie
+  //   - sortilege
   function save(s, target, saveId, expliquer, options, evt, afterSave) {
     target.tokName = target.tokName || target.token.get('name');
     if (options.type && immuniseAuType(target, options.type, options.attaquant)) {
@@ -14074,8 +14078,18 @@ var COFantasy = COFantasy || function() {
     optionsTest.bonusAttrs = bonusAttrs;
     optionsTest.bonus = bonus;
     testCaracteristique(target, carac, s.seuil, saveId, optionsTest, evt,
-      function(tr) {
-        var smsg = target.tokName + " fait " + tr.texte;
+      function(tr, explications) {
+        var smsg = target.tokName + " fait ";
+        if (explications.length === 0) {
+          smsg += tr.texte;
+        } else {
+          smsg += '<span title="';
+          explications.forEach(function(e, i) {
+            if (i > 0) smsg += "&#13;";
+            smsg += e;
+          });
+          smsg += '">' + tr.texte + '</span>';
+        }
         if (tr.reussite) {
           smsg += " => réussite";
           if (options.msgReussite) smsg += options.msgReussite;
@@ -21564,11 +21578,14 @@ var COFantasy = COFantasy || function() {
       case 'oui':
       case 'Oui':
       case 'true':
+      case 'début':
+      case 'debut':
         activer = true;
         break;
       case 'non':
       case 'Non':
       case 'false':
+      case 'fin':
         activer = false;
         break;
       default:
@@ -21648,13 +21665,13 @@ var COFantasy = COFantasy || function() {
           });
         }
         var msgEffet = whisper + messageEffetIndetermine[effet].activation;
-        var val = (valeur === undefined)?true:valeur;
+        var val = (valeur === undefined) ? true : valeur;
         iterSelected(selected, function(perso) {
           if (valeur !== undefined && (cmd[2].startsWith('+') || valeur < 0)) {
             addToAttributeAsInt(perso, effet, 0, valeur, evt);
             sendPerso(perso, effet + " varie de " + valeur, options.secret);
           } else {
-            
+
             setTokenAttr(
               perso, effet, val, evt, {
                 msg: msgEffet

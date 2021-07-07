@@ -3,7 +3,10 @@
 ### Capacités
 * Ajout de la possibilité pour un siphon des âmes d'empêcher les autres siphons.
 
-### Amélioration
+### Correction de bugs
+* Prise en compte correcte des bonus de save contre les sorts.
+
+### Autres amélioration
 * Attribut aucuneActionCombat pour les personnages qui n'agissent pas en combat
 * Possibilité de préciser un pourcentage des dégâts transformés en soins avec l'option --vampirise.
 
