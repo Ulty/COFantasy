@@ -7,6 +7,7 @@
 * Prise en compte correcte des bonus de save contre les sorts.
 
 ### Autres amélioration
+* Ajout d'un type drain.
 * Attribut aucuneActionCombat pour les personnages qui n'agissent pas en combat
 * Possibilité de préciser un pourcentage des dégâts transformés en soins avec l'option --vampirise.
 
