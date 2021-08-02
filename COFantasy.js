@@ -7075,8 +7075,9 @@ var COFantasy = COFantasy || function() {
   }
 
   function estNecromancie(options) {
-    return options.necromancie || options.malediction || (options.vampirise && options.sortilege) ||
-      options.peur;
+    return options.necromancie || options.malediction ||
+      (options.vampirise && options.sortilege) || options.peur ||
+      options.type == 'drain';
   }
 
   //On copie les champs de scope dans options ou dans target
