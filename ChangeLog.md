@@ -1,4 +1,9 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 3.00
+* Passage des listes d'actions sur la fiche
+* Passage des attributs booléens qui ne dépendent pas des mooks en prédicats sur la fiche
+* Ajout d'une fonction !cof-set-predicate pour modifier les prédicats depuis le chat.
+
 ## 2.18
 ### Capacités
 * Ajout de la possibilité pour un siphon des âmes d'empêcher les autres siphons.
