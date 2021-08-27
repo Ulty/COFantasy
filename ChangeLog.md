@@ -1,4 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 3.01
+* Passage d'une partie des attributs numériques qui ne dépendent pas des mooks en prédicats sur la fiche.
+
 ## 3.00
 * Passage des listes d'actions sur la fiche
 * Passage des attributs booléens qui ne dépendent pas des mooks en prédicats sur la fiche
