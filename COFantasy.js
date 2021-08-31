@@ -34797,16 +34797,16 @@ var COFantasy = COFantasy || function() {
         }
       }
       if (attributeAsBool(perso, 'estGobePar') && !getState(perso, 'mort')) {
-        var jetGobe = rollDePlus(6, {
+        let jet = rollDePlus(6, {
           nbDes: 3
         });
-        var dmgGobe = {
+        let dmg = {
           type: 'normal', //correspond à de l'asphyxie
-          total: jetGobe.val,
-          display: jetGobe.roll
+          total: jet.val,
+          display: jet.roll
         };
-        if (immuniseAsphyxie(perso)) dmgGobe.type = 'acide';
-        dealDamage(perso, dmgGobe, [], evt, false, {}, undefined,
+        if (immuniseAsphyxie(perso)) dmg.type = 'acide';
+        dealDamage(perso, dmg, [], evt, false, {}, undefined,
           function(dmgDisplay, dmgFinal) {
             sendPerso(perso, "est en train d'être digéré. " + onGenre(perso, 'Il', 'Elle') + " perd " + dmgDisplay + " PVs");
           });
@@ -35296,7 +35296,7 @@ var COFantasy = COFantasy || function() {
     // Si on a changé d'initiative, alors diminue les effets temporaires
     var init = parseInt(active.pr);
     if (active.id == "-1" && active.custom == "Tour") init = 0;
-    var count = 0; // pour l'aspect asynchrone des effets temporaires
+    let count = 0; // pour l'aspect asynchrone des effets temporaires
     if (stateCOF.init > init) {
       var attrsTemp = attrs.filter(function(obj) {
         if (!estEffetTemp(obj.get('name'))) return false;
@@ -35308,8 +35308,8 @@ var COFantasy = COFantasy || function() {
       // Boucle sur les effets temps peut être asynchrone à cause des DM
       count = attrsTemp.length;
       attrsTemp.forEach(function(attr) {
-        var charId = attr.get('characterid');
-        var effet = effetTempOfAttribute(attr);
+        let charId = attr.get('characterid');
+        const effet = effetTempOfAttribute(attr);
         if (effet === undefined) {
           //erreur, on stoppe tout
           log(attr);
@@ -35397,7 +35397,7 @@ var COFantasy = COFantasy || function() {
                 });
               return;
             case 'saignementsSang': //prend 1d6 DM
-              if (predicateAsBool(charId, 'immuniteSaignement')) {
+              if (charPredicateAsBool(charId, 'immuniteSaignement')) {
                 count--;
                 if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
                 return;
