@@ -183,7 +183,7 @@
                 <p>COF sous ses différentes formes est une boîte à outils et nombreuses sont les variantes de système de magie qui peuvent être utilisées. Le script propose un support pour les plus populaires d'entre elles. Voici quelques consignes pour les implémenter.</p>
                 <h4>Spécifier un coût en mana</h4>
                 <ul>
-                  <li>Les points de mana sont dépensés en ajoutant l'option <code>--mana X</code> à une ability ou dans les options d'une attaque. Toutes les capacités implémentées dans la documentation donnent par défaut le coût en mana selon les règles de base.</li>
+                  <li>Les points de mana sont dépensés en ajoutant l'option <code>--mana X</code> à une action ou dans les options d'une attaque. Toutes les capacités implémentées dans la documentation donnent par défaut le coût en mana selon les règles de base.</li>
                   <li>Même un sort qui ne coûte pas de mana devrait utiliser <code>--mana 0</code>. Cela permet au script de dissiper automatiquement un effet généré par un lanceur de sort mis hors de combat.</li>
                   <li>Une option d'affichage disponible via <code>!cof-options</code> permet de demander au script d'afficher explicitement dans le chat toute dépense de PM effectuée par un personnage.</li>
                 </ul>
@@ -204,7 +204,7 @@
                 <h5>Contrecoup</h5>
                 <p>Vous pouvez activer la règle spécifique de Contrecoup via <code>!cof-options</code>.</p>
                 <h4>Tempête de Mana (COF Compagnon p. 105)</h4>
-                <p>Le script implémente un support complet des règles de Tempête de Mana. Pour ce faire, il faut ajouter les options <code>--tempeteDeMana --rang <i>X</i></code> sur les sorts combinables avec Tempête de Mana. L'option <code>rang</code> permet d'indiquer le rang du sort afin que le script puisse calculer le maximum de PM qu'on peut dépenser lors du lancement du sort. Pour mettre ça de manière générique sur une ability ou une attaque et permettre au joueur de choisir de faire appel à Tempête de Mana ou pas, on peut utiliser :</p>
+                <p>Le script implémente un support complet des règles de Tempête de Mana. Pour ce faire, il faut ajouter les options <code>--tempeteDeMana --rang <i>X</i></code> sur les sorts combinables avec Tempête de Mana. L'option <code>rang</code> permet d'indiquer le rang du sort afin que le script puisse calculer le maximum de PM qu'on peut dépenser lors du lancement du sort. Pour mettre ça de manière générique sur une action ou une attaque et permettre au joueur de choisir de faire appel à Tempête de Mana ou pas, on peut utiliser :</p>
                 <p><code><i>--mana X</i> --rang <i>Y</i> ?{Tempête de Mana ?|Non,|Oui,--tempeteDeMana}</code></p>
                 <p>Tempête de Mana est compatible avec Mana Totale et Brûlure de Magie.</p>
                 <h5>Option altruiste</h5>
@@ -260,7 +260,7 @@
                   Pour contrôler ce qui est affiché dans cette liste, vous pouvez principalement utiliser la liste des attaques du personnage et surtout la partie <code>script</code> de la fiche.</p>
                   <h5> Les attaques affichées </h5>
                   <p>Il est possible de ne pas afficher une attaque en décochant la case sous le dé dans les options d'attaque. Les attaques sont affichées dans l'ordre des labels d'attaques. les attaques avec des conditions impossibles (du genre limite par jour épuisée, etc.) ne sont pas affichées.</p>
-                  <p>À cela se rajoute éventuellement l'attaque avec l'arme en main, mais seulement si cette attaque n'est pas cochée (cela ferait doublon sinon). À côté de cette attaque, le script propose un bouton pour rengainer l'arme ou en dégainer une autre.</p>
+                  <p>À cela se rajoute éventuellement l'attaque avec l'arme en main, mais seulement si cette attaque n'est pas cochée (cela ferait doublon sinon). À côté de cette attaque, le script propose un bouton pour rengainer l'arme ou en dégainer une autre. Attention, encore une fois seules les attaques non cochées sont proposées dans le menu des armes à dégainer.</p>
                   <h5>Choisir les actions à afficher</h5>
                   <p>Pour changer les attaques affichées par défaut, rajouter des actions à la liste d'actions du tour, ou utiliser de nouvelles listes, il faut aller dans l'onglet <code>Script</code> de la fiche de personnage.</p>
                   <p><img class="img-fluid" src="images/liste_actions_magicien.jpg"></p>
@@ -270,7 +270,14 @@
 
                         <h5>Autres listes d'action</h5>
                         <p>Il est possible d'ouvrir d'autre listes d'actions, à partir des commandes ou même d'une liste d'actions. La fiche propose 4 emplacements pour ces listes d'action, mais si cela ne suffit pas, vous pouvez utiliser des abilities dont le nom commence et termine par <code>#</code>. Pour faire référence à une liste dans une action, inscrivez simplement le nom de la liste dans le titre de l'action et sélectionnez <code>Liste d'actions</code> dans le menu déroulant à côté. Les listes d'action sur la fiche fonctionnent de la même façon que la liste des actions du tour, sauf qu'il n'y a pas d'affichage par défaut des attaques ou de l'arme en main (pour cela, une simple ligne avec en titre <code>#Attaque -1</code> permet d'y remédier), et que la liste peut avoir une liste d'options globales (cliquer sur la roue à droite du nom de la liste).</p>
-                        <p>Si vous avez besoin d'utiliser une ability, la structure est un peu différente : il n'y a plus moyen de différencier titre et code, chaque ligne de l'ability doit correspondre à une action. Pour commenter une action, on peut ajouter <code>//</code> au début de la ligne correspondante. Pour appeler une liste d'actions, on peut écrire <code>%#</code>, suivi du nom de la iste, suivi de <code>#</code>.<p>
+                        <p>Pour les listes d'actions supplémentaires, dans les abilities, il faut respecter la syntaxe suivante :
+                        <ul>
+                          <li>une action par ligne</li>
+                          <li>chaque ligne est donc soit un commentaire, soit une macro (qui commence par <code>#</code>), soit une ability (qui commence par <code>%</code>), soit une commande qui commence par <code>!</code></li>
+                          <li>l'action affichée sera le nom de la macro ou de l'ability (sauf pour les attaques, pour lesquelles le nom de l'arme sera affichée)</li>
+                          <li>les commandes disponibles sont <code>!options</code> et <code>!attaques</code>.</li>
+                          <li>pour les listes d'actions, il suffit de mettre <code>%#</code> suivi du nom de la liste et terminé par <code>#</code>.</li>
+                        </ul>
                         <p>Il est aussi possible de faire afficher une liste quelconque avec une commande, avec <code>!cof-liste-actions <i>nom</i></code> (où le nom est celui de la liste, ou bien de l'ability sans les <code>#</code>). Par exemple, si on ne souhaite pas afficher la liste complète des sorts d'un personnage à son tour, on peut faire une liste <code>Sorts</code>, puis faire une macro qui lance <code>!cof-liste-actions Sorts</code> pour que le joueur puisse afficher la liste quand il le souhaite.</p>
               </div>
               <h4 class="text-secondary">Attaquer une (ou plusieurs) cible : <code>!cof-attack @{selected|token_id} @{target|token_id} <i>n</i></code></h4>
@@ -961,7 +968,7 @@
                   <li><strong>Charge</strong> : faire une attaque avec les options <code>--bonusAttaque 2</code> <code>--plus 1d6</code>. Pour gérer plusieurs armes, vous pouvez aussi créer une liste d'actions, comme avec l'attaque sournoise du voleur.</li>
                   <li><strong>Enchaînement</strong> : ajouter un <a href=#predicats>prédicat</a> <code>enchainement</code>.</li>
                   <li><strong>Déchaînement d'acier</strong> : pas de support particulier pour l'instant. Déplacer le token et faire les attaques au passage.</li>
-                  <li><strong>Attaque tourbillon</strong> : Faite une ability avec le code <code>!cof-attack @{selected|token_id} @{selected|token_id} -1 --auto --disque 5 --saufAllies --limiteParCombat 1 tourbillon</code>.</li>
+                  <li><strong>Attaque tourbillon</strong> : Faite une action avec le code <code>!cof-attack @{selected|token_id} @{selected|token_id} -1 --auto --disque 5 --saufAllies --limiteParCombat 1 tourbillon</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du primitif</h4>
                 <ol>
@@ -1473,7 +1480,7 @@
                   <li><strong>Esquive du singe</strong> : mettre à jour la défense sur la fiche, et ajouter une compétence <code>acrobatie</code> avec le bonus donné par la capacité.</li>
                   <li><strong>Morsure du serpent</strong> : pour ne pas avoir à modifier les chances de critique pour toutes les attaques au contact, utiliser un <a href=#predicats>prédicat</a> <code>morsureDuSerpent</code>. Attention à ne pas faire ça ET modifier les chances de critiques de l'attaque, car ça s'additionne. (En revanche, pas de soucis avec la science du critique).</li>
                   <li><strong>Griffes du tigre</strong> : rajouter l'option <code>--explodeMax</code> aux attaques à mains nues.</li>
-                  <li><strong>Fureur du dragon</strong> : Créer une ability : <code>!cof-attack @{selected|token_id} @{selected|token_id} Fureur du dragon --auto --portee 0 --disque 1 --saufAllies --dm 2D6+[[@{selected|FOR}]] --etat renverse --save FOR 10</code></li>
+                  <li><strong>Fureur du dragon</strong> : Créer une action : <code>!cof-attack @{selected|token_id} @{selected|token_id} Fureur du dragon --auto --portee 0 --disque 1 --saufAllies --dm 2D6+[[@{selected|FOR}]] --etat renverse --save FOR 10</code></li>
                   <li><strong>Moment de perfection</strong> : <code>!cof-effet-temp momentDePerfection 1 --limiteParCombat 1</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de la méditation</h4>
@@ -1627,14 +1634,14 @@
                   <li>
                     <strong>Arme d'argent</strong> :
                     <ul>
-                      <li><code>!cof-effet-combat armeDArgent <i>--mana 0</i></code> pour lancer le sort.</li>
+                      <li><code>!cof-effet-combat armeDArgent <i>--mana 0</i></code> pour lancer le sort. Vous pouvez ajouter l'option <code>--montrerActions</code> si vous souhaitez que le prêtre puisse prendre l'arme en main dans le même tour.</li>
                       <li>Pour attaquer avec l'arme d'argent, faire l'attaque avec les DM appropriés, puis l'utiliser avec les options <code>--si etat armeDArgent --armeDArgent --magique</code>.</li>
                     </ul>
                   </li>
                   <li><strong>Ailes célestes</strong> : <code>!cof-effet-temp ailesCelestes [[5+@{selected|SAG}]] <i>--mana 1</i></code>.</li>
                   <li><strong>Foudres divines</strong> :
                     <ul>
-                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d6+SAG, portée 0, type Sortilège, dégâts électrique, options <code><i>--mana 2</i> --disque 10 --saufAllies</code>. Si le label de ce sort est <code><i>L</i></code>, il ne vous reste plus qu'à faire une ability avec <code>!cof-attack @{selected|token_id} @{selected|token_id} <i>L</i></code>.</li>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d6+SAG, portée 0, type Sortilège, dégâts électrique, options <code><i>--mana 2</i> --disque 10 --saufAllies</code>. Si le label de ce sort est <code><i>L</i></code>, il ne vous reste plus qu'à faire une action avec <code>!cof-attack @{selected|token_id} @{selected|token_id} <i>L</i></code>.</li>
                       <li>Objet de sort : <code>!cof-attack @{selected|token_id} @{selected|token_id} Foudres divines --toucher [[@{selected|ATKMAG}]] --dm 1d6+[[@{selected|SAG}]] --electrique --sortilege --disque 10 --saufAllies</code></li>
                     </ul>
                   </li>
@@ -1968,7 +1975,7 @@
                 <ol>
                   <li><strong>Expertise du bouclier</strong> : reporter le bonus sur la fiche dans le bonus de DEF conféré par le bouclier.</li>
                   <li><strong>Progresser à couvert</strong> : <code>!cof-effet-temp progresserACouvert 1 --lanceur @{selected|token_id} --target @{target|token_id} --self --portee 1</code>. A utiliser pour cibler un allié à portée si nécessaire. Au MJ de vérifier qu'elle reste bien près du chevalier pour profiter du bonus.</li>
-                  <li><strong>Attaque au bouclier</strong> : Ajouter une arme avec son Bouclier en "Arme gauche" sur la fiche du personnage. Créer une ability en appelant cette arme avec <code>--avecd12</code> pour représenter l'action Coup de bouclier.</li>
+                  <li><strong>Attaque au bouclier</strong> : Ajouter une arme avec son Bouclier en "Arme gauche" sur la fiche du personnage. Dans les modificateurs de l'arme, ajoutez <code>avecd12</code>.</li>
                   <li><strong>Dévier les coups</strong> : Ajouter un attribut <code>devierLesCoups</code> de valeur <code>true</code> (on peut remplacer cette valeur par un nombre, si on souhaite plus d'une utlisation par tour). Le script ajoute automatiquement un bouton sur les attaques sur lesquelles cette capacité peut-être utilisée.</li>
                   <li><strong>Parade au bouclier</strong> : Ajouter un attribut <code>paradeAuBouclier</code> de valeur courante et maximum 1. Sur l'ability Coup de bouclier créé pour le rang 3, ajouter <code>--attaqueBouclierRenverse --decrAttribute paradeAuBouclier</code>. Le script ajoute automatiquement un bouton sur les attaques sur lesquelles cette capacité peut-être utilisée. Si le personnage possède un bouclier en arme gauche, le script utilisera le bonus éventuel de l'arme en question sur le jet opposé.</li>
                 </ol>
@@ -2131,7 +2138,7 @@
                     <strong>Poison</strong> : pour enduire une arme de label <i>L</i> de poison, utiliser <code>!cof-enduire-poison <i>L type force save</i></code>. Pour l'instant, <i>type</i> ne peut être que <code>rapide</code>, et <i>force</i> est une expression pour les dégâts (typiquement, <code>2d6</code> pour un poison rapide). <i>save</i> est la difficulté du jet de CON pour résister au poison. On peut rajouter deux arguments optionnels :
                     <ul>
                       <li><code>--testINT</code> <i>n</i>: fixe la difficulté du jet d'INT pour réussir à poser le poison. La difficulté par défaut est 14.</li>
-                      <li><code>--dose</code> <i>nom</i>: indique une ressource dans laquelle on puise pour enduire de poison (à la manière de munitions). Il faudra que le personnage ait une ability de nom <code>dose_</code><i>nom</i> avec comme valeur le nombre de doses possédées.</li>
+                      <li><code>--dose</code> <i>nom</i>: indique une ressource dans laquelle on puise pour enduire de poison (à la manière de munitions). Il faudra que le personnage ait un attribut de nom <code>dose_</code><i>nom</i> avec comme valeur le nombre de doses possédées.</li>
                     </ul>
                     Il est aussi possible d'enduire de poison des munitions. Pour ce faire, remplacer le label de l'attaque par le nom de l'attribut contenant les mutions (ce nom commence donc par <code>munition_</code>). Le script suppose que toute munition lancée perd son poison.
                   </li>

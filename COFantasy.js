@@ -1913,6 +1913,558 @@ var COFantasy = COFantasy || function() {
     token.remove();
   }
 
+  function finDEffet(attr, effet, attrName, charId, evt, options) { //L'effet arrive en fin de vie, doit être supprimé
+    options = options || {};
+    evt.deletedAttributes = evt.deletedAttributes || [];
+    var res;
+    var newInit = [];
+    var efComplet = effetComplet(effet, attrName);
+    //Si on a un attrSave, alors on a déjà imprimé le message de fin d'effet
+    if (options.attrSave) { //on a un attribut associé à supprimer)
+      evt.deletedAttributes.push(options.attrSave);
+      options.attrSave.remove();
+    } else if (options.gardeAutresAttributs === undefined) { //On cherche si il y en a un
+      enleverEffetAttribut(charId, efComplet, attrName, 'SaveParTour', evt);
+      enleverEffetAttribut(charId, efComplet, attrName, 'SaveParTourType', evt);
+    }
+    var mEffet = messageEffetTemp[effet];
+    if (mEffet === undefined) mEffet = messageEffetCombat[effet];
+    if (mEffet && mEffet.statusMarker) {
+      iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
+        affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
+        token.set('status_' + mEffet.statusMarker, false);
+      }, {
+        tousLesTokens: true
+      });
+    }
+    var character;
+    switch (effet) {
+      case 'agrandissement': //redonner sa taille normale
+        character = getObj('character', charId);
+        if (character === undefined) {
+          error("Personnage introuvable");
+          return;
+        }
+        character.get('defaulttoken', function(normalToken) {
+          if (normalToken === '') return;
+          normalToken = JSON.parse(normalToken);
+          var largeWidth = normalToken.width + normalToken.width / 2;
+          var largeHeight = normalToken.height + normalToken.height / 2;
+          iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
+            var width = token.get('width');
+            var height = token.get('height');
+            affectToken(token, 'width', width, evt);
+            token.set('width', normalToken.width);
+            affectToken(token, 'height', height, evt);
+            token.set('height', normalToken.height);
+          }, {
+            filterAffected: function(token) {
+              if (token.get('width') == largeWidth) return true;
+              if (token.get('height') == largeHeight) return true;
+              return false;
+            }
+          });
+        });
+        break;
+      case 'aveugleTemp':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+          function(token) {
+            setState({
+              token: token,
+              charId: charId
+            }, 'aveugle', false, evt, {
+              fromTemp: true
+            });
+          }, {
+            tousLesTokens: true
+          });
+        break;
+      case 'ralentiTemp':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+          function(token) {
+            setState({
+              token: token,
+              charId: charId
+            }, 'ralenti', false, evt, {
+              fromTemp: true
+            });
+          }, {
+            tousLesTokens: true
+          });
+        break;
+      case 'paralyseTemp':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+          function(token) {
+            setState({
+              token: token,
+              charId: charId
+            }, 'paralyse', false, evt, {
+              fromTemp: true
+            });
+          }, {
+            tousLesTokens: true
+          });
+        break;
+      case 'immobiliseTemp':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+          function(token) {
+            setState({
+              token: token,
+              charId: charId
+            }, 'immobilise', false, evt, {
+              fromTemp: true
+            });
+          }, {
+            tousLesTokens: true
+          });
+        break;
+      case 'etourdiTemp':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+          function(token) {
+            setState({
+              token: token,
+              charId: charId
+            }, 'etourdi', false, evt, {
+              fromTemp: true
+            });
+          }, {
+            tousLesTokens: true
+          });
+        break;
+      case 'affaibliTemp':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+          function(token) {
+            setState({
+              token: token,
+              charId: charId
+            }, 'affaibli', false, evt, {
+              fromTemp: true
+            });
+          }, {
+            tousLesTokens: true
+          });
+        break;
+      case 'assomeTemp':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+          function(token) {
+            setState({
+              token: token,
+              charId: charId
+            }, 'assome', false, evt, {
+              fromTemp: true
+            });
+          }, {
+            tousLesTokens: true
+          });
+        break;
+      case 'invisibleTemp':
+      case 'intangibleInvisible':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+          function(token) {
+            setState({
+              token: token,
+              charId: charId
+            }, 'invisible', false, evt, {
+              fromTemp: true
+            });
+          }, {
+            tousLesTokens: true
+          });
+        break;
+      case 'apeureTemp':
+      case 'peurEtourdi':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+          function(token) {
+            setState({
+              token: token,
+              charId: charId
+            }, 'apeure', false, evt, {
+              fromTemp: true
+            });
+          }, {
+            tousLesTokens: true
+          });
+        break;
+      case 'ombreMortelle':
+      case 'dedoublement':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
+          deleteTokenWithUndo(token, evt);
+        });
+        break;
+      case 'murDeForce':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
+          var attrM = tokenAttribute({
+            charId: charId,
+            token: token
+          }, 'murDeForceId');
+          if (attrM.length === 0) return;
+          var imageMur = getObj('graphic', attrM[0].get('current'));
+          if (imageMur) {
+            imageMur.remove();
+          }
+          attrM[0].remove();
+        });
+        break;
+      case 'regeneration': //faire les soins restants
+        var toursRestant = attr.get('current');
+        if (toursRestant == 'tourFinal' || isNaN(toursRestant)) break;
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+          function(token) {
+            var perso = {
+              token: token,
+              charId: charId
+            };
+            var regen = getValeurOfEffet(perso, 'regeneration', 3);
+            var soins = regen * (toursRestant + attributeAsInt(perso, 'regenerationTempeteDeManaIntense', 0));
+            soigneToken(perso, soins, evt,
+              function(s) {
+                options.print = function(m) {}; //Pour ne pas afficher le message final.
+                var tempsEffectif = Math.ceil(s / regen);
+                sendPerso(perso, "récupère encore " + s + " PV en " + tempsEffectif + " tours.");
+              });
+          });
+        break;
+      case 'demonInvoque':
+      case 'predateurConjure':
+      case 'arbreAnime':
+      case 'degradationZombie': //effacer le personnage
+        //Dans le cas d'un Zombie, diminuer la limite du nécromant si nécessaire
+        if (effet == 'degradationZombie') {
+          var attrNecromant = charAttribute(charId, "necromant");
+          if (attrNecromant.length > 0) {
+            var necromantId = attrNecromant[0].get("current");
+            var necromant = persoOfId(necromantId, necromantId, options.pageId);
+            var attrNbZombie = tokenAttribute(necromant, "zombiesControles");
+            if (attrNbZombie.length > 0) {
+              var nbZombie = attrAsInt(attrNbZombie, 1);
+              if (nbZombie > 1) setTokenAttr(necromant, "zombiesControles", nbZombie - 1, evt);
+              else attrNbZombie[0].remove();
+            }
+          }
+        }
+        //On efface d'abord les attributs et les abilities
+        var charAttributes = findObjs({
+          _type: 'attribute',
+          _characterid: charId
+        });
+        charAttributes.forEach(
+          function(otherAttr) {
+            if (otherAttr.id != attr.id) otherAttr.remove();
+          }
+        );
+        var charAbilities = findObjs({
+          _type: 'ability',
+          _characterid: charId
+        });
+        charAbilities.forEach(
+          function(ab) {
+            ab.remove();
+          }
+        );
+        if (effet == 'arbreAnime') {
+          iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+            function(token) {
+              var perso = {
+                token: token,
+                charId: charId
+              };
+              var nA = removeFromTurnTracker(perso, evt);
+              if (nA) {
+                res = res || {};
+                res.oldTokenId = token.id;
+                res.newTokenId = nA.nextId;
+              }
+              setToken(token, 'bar1_link', '', evt);
+              setToken(token, 'bar1_value', '', evt);
+              setToken(token, 'bar1_max', '', evt);
+              setToken(token, 'showplayers_bar1', false, evt);
+              setToken(token, 'represents', '', evt);
+              setToken(token, 'showname', false, evt);
+              setToken(token, 'showplayers_name', false, evt);
+              setToken(token, 'name', '', evt);
+            });
+        } else {
+          iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
+            var perso = {
+              token: token,
+              charId: charId
+            };
+            var nP = removeFromTurnTracker(perso, evt);
+            if (nP) {
+              res = res || {};
+              res.oldTokenId = token.id;
+              res.newTokenId = nP.nextId;
+            }
+            deleteTokenWithUndo(token, evt);
+          });
+        }
+        attr.remove();
+        if (options.print && mEffet) options.print(mEffet.fin);
+        else {
+          sendChar(charId, mEffet.fin, true);
+          options.print = function(m) {};
+        }
+        character = getObj('character', charId);
+        if (character) {
+          evt.deletedCharacters = evt.deletedCharacters || [];
+          var deletedChar = {
+            id: charId,
+            name: character.get('name'),
+            avatar: character.get('avatar'),
+            attributes: charAttributes,
+            abilities: charAbilities,
+            allies: []
+          };
+          // Retrait du perso de toutes les listes d'alliés
+          for (const [perso, alliesPerso] of Object.entries(alliesParPerso)) {
+            if (alliesPerso.has(charId)) {
+              deletedChar.allies.push(perso);
+              alliesPerso.delete(charId);
+            }
+          }
+          character.remove();
+          evt.deletedCharacters.push(deletedChar);
+        }
+        return res; //Pas besoin de faire le reste, car plus de perso
+      case 'formeDArbre':
+        var iterTokOptions = {
+          filterAffected: function(token) {
+            return token.get('layer') == 'objects';
+          }
+        };
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+          function(token) {
+            var perso = {
+              token: token,
+              charId: charId
+            };
+            var tokenChange = attributeAsBool(perso, 'changementDeToken');
+            if (tokenChange) {
+              var tokenMJ =
+                findObjs({
+                  _type: 'graphic',
+                  _subtype: 'token',
+                  _pageid: token.get('pageid'),
+                  layer: 'gmlayer',
+                  represents: charId,
+                  name: token.get('name')
+                });
+              if (tokenMJ.length === 0) return;
+              removeTokenAttr(perso, 'changementDeToken', evt);
+              var nouveauToken = tokenMJ[0];
+              setToken(nouveauToken, 'layer', 'objects', evt);
+              setToken(nouveauToken, 'left', token.get('left'), evt);
+              setToken(nouveauToken, 'top', token.get('top'), evt);
+              setToken(nouveauToken, 'width', token.get('width'), evt);
+              setToken(nouveauToken, 'height', token.get('height'), evt);
+              setToken(nouveauToken, 'rotation', token.get('rotation'), evt);
+              setToken(nouveauToken, 'bar2_value', token.get('bar2_value'), evt);
+              setToken(nouveauToken, 'aura1_radius', token.get('aura1_radius'), evt);
+              setToken(nouveauToken, 'aura1_color', token.get('aura1_color'), evt);
+              setToken(nouveauToken, 'aura1_square', token.get('aura1_square'), evt);
+              setToken(nouveauToken, 'showplayers_aura1', token.get('showplayers_aura1'), evt);
+              setToken(nouveauToken, 'aura2_radius', token.get('aura2_radius'), evt);
+              setToken(nouveauToken, 'aura2_color', token.get('aura2_color'), evt);
+              setToken(nouveauToken, 'aura2_square', token.get('aura2_square'), evt);
+              setToken(nouveauToken, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
+              setToken(nouveauToken, 'statusmarkers', token.get('statusmarkers'), evt);
+              setToken(nouveauToken, 'light_angle', token.get('light_angle'), evt);
+              setToken(nouveauToken, 'has_limit_field_of_vision', token.get('has_limit_field_of_vision'), evt);
+              setToken(nouveauToken, 'has_limit_field_of_night_vision', token.get('has_limit_field_of_night_vision'), evt);
+              if (stateCOF.combat) {
+                replaceInTurnTracker(token.id, nouveauToken.id, evt);
+              }
+              res = res || {};
+              res.oldTokenId = token.id;
+              res.newTokenId = nouveauToken.id;
+              res.newToken = nouveauToken;
+              deleteTokenWithUndo(token, evt);
+              token = nouveauToken;
+              perso.token = nouveauToken;
+            }
+            var apv = tokenAttribute(perso, 'anciensPV');
+            if (apv.length > 0) {
+              updateCurrentBar(perso, 1, apv[0].get('current'), evt, apv[0].get('max'));
+              removeTokenAttr(perso, 'anciensPV', evt);
+              if (stateCOF.combat) {
+                newInit.push({
+                  _id: token.id
+                });
+              }
+            }
+          },
+          iterTokOptions);
+        break;
+      case 'agitAZeroPV':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
+          var perso = {
+            charId: charId,
+            token: token
+          };
+          var pv = token.get('bar1_value');
+          if (pv == 0) { //jshint ignore:line
+            mort(perso, undefined, evt);
+          } else {
+            //On note qu'il l'a déjà fait pour qu'il ne puisse le refaire dans le combat
+            setTokenAttr(perso, 'aAgiAZeroPV', true, evt);
+          }
+        });
+        break;
+      case 'forgeron':
+      case 'armeEnflammee':
+        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+          var perso = {
+            token: token,
+            charId: charId
+          };
+          eteindreUneLumiere(perso, options.pageId, undefined, efComplet, evt);
+        });
+        break;
+      case 'effetRetarde':
+        if (efComplet.length > 14) {
+          var effetRetarde = efComplet.substring(13, efComplet.length - 1);
+          if (_.has(cof_states, effetRetarde)) {
+            iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+              var perso = {
+                token: token,
+                charId: charId
+              };
+              if (getState(perso, 'mort')) return;
+              setState(perso, effetRetarde, true, evt);
+            });
+          } else if (estEffetTemp(effetRetarde)) {
+            options.print = function(m) {}; //Pour ne pas afficher le message final.
+            var pp = effetRetarde.indexOf('(');
+            var mEffetRetarde = (pp > 0) ? messageEffetTemp[effetRetarde.substring(effetRetarde, pp)] : messageEffetTemp[effetRetarde];
+            var ef = {
+              effet: effetRetarde,
+              duree: 1,
+              message: mEffetRetarde,
+              whisper: true,
+            };
+            iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+              var perso = {
+                token: token,
+                charId: charId
+              };
+              if (getState(perso, 'mort')) return;
+              if (!stateCOF.combat) {
+                sendChat('', "Il restait un effet retardé " + effetRetarde + " qui devait se déclencher pour " + token.get('name'));
+                return;
+              }
+              var duree = getValeurOfEffet(perso, efComplet, 1);
+              ef.duree = duree;
+              setEffetTemporaire(perso, ef, duree, evt, {});
+            });
+          } else {
+            options.print = function(m) {}; //Pour ne pas afficher le message final.
+            iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+              var perso = {
+                token: token,
+                charId: charId
+              };
+              if (getState(perso, 'mort')) return;
+              var val = true;
+              var valAttr = tokenAttribute(perso, efComplet + 'Valeur');
+              if (valAttr.length > 0) val = valAttr[0].get('current');
+              whisperChar(charId, effetRetarde + ' ' + val);
+              setTokenAttr(perso, effetRetarde, val, evt, {});
+            });
+          }
+        }
+        break;
+      case 'messageRetarde':
+        if (efComplet.length > 16) {
+          var messageRetarde = efComplet.substring(15, efComplet.length - 1);
+          iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+            whisperChar(charId, messageRetarde);
+            //Puis on regarde si il y a une valeur à afficher
+            var perso = {
+              token: token,
+              charId: charId
+            };
+            var valAttr = tokenAttribute(perso, efComplet + 'Valeur');
+            if (valAttr.length > 0)
+              whisperChar(charId, valAttr[0].get('current').replace(/_/g, ' '));
+          });
+        }
+        break;
+      case 'tenebres':
+        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+          //Puis on regarde si il y a une valeur à afficher
+          var perso = {
+            token: token,
+            charId: charId
+          };
+          var valAttr = tokenAttribute(perso, efComplet + 'Valeur');
+          var tokenTenebres = getObj('graphic', valAttr[0].get('current'));
+          if (tokenTenebres) tokenTenebres.remove();
+        });
+        break;
+      case 'armeeDesMorts':
+        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+          token.set("aura2_radius", 0);
+          if (stateCOF.armeesDesMorts) {
+            var index = stateCOF.armeesDesMorts.indexOf(token.id);
+            if (index > -1) stateCOF.armeesDesMorts.splice(index, 1);
+          }
+        });
+        break;
+      case 'lienDeSang':
+        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+          var perso = {
+            token: token,
+            charId: charId
+          };
+          var attrsLienDeSangDe = tokenAttribute(perso, "lienDeSangDe");
+          if (attrsLienDeSangDe.length > 0) {
+            var tokenLie = persoOfId(attrsLienDeSangDe[0].get("current"));
+            if (tokenLie) {
+              tokenAttribute(tokenLie, "lienDeSangVers").forEach(function(attr) {
+                attr.remove();
+              });
+            }
+          }
+          attrsLienDeSangDe.forEach(function(attr) {
+            attr.remove();
+          });
+        });
+        break;
+      default:
+    }
+    if (options.attrSave === undefined && charId) {
+      var estMort = true;
+      iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+        estMort = estMort && getState({
+          charId: charId,
+          token: token
+        }, 'mort');
+      });
+      if (!estMort && mEffet) {
+        if (options.print) options.print(mEffet.fin);
+        else {
+          if (attrName == efComplet)
+            sendChar(charId, mEffet.fin, true);
+          else {
+            var tokenName = attrName.substring(attrName.indexOf('_') + 1);
+            sendChat('', tokenName + ' ' + mEffet.fin);
+          }
+        }
+      }
+    }
+    if (options.gardeAutresAttributs === undefined && charId) {
+      enleverEffetAttribut(charId, efComplet, attrName, 'Puissant', evt);
+      enleverEffetAttribut(charId, efComplet, attrName, 'Valeur', evt);
+      enleverEffetAttribut(charId, efComplet, attrName, 'TempeteDeManaIntense', evt);
+      enleverEffetAttribut(charId, efComplet, attrName, 'DureeAccumulee', evt);
+      enleverEffetAttribut(charId, efComplet, attrName, 'Options', evt);
+    }
+    evt.deletedAttributes.push(attr);
+    attr.remove();
+    if (newInit.length > 0) initiative(newInit, evt, true);
+    return res;
+  }
+
   //options:
   //fromTemp si on est en train de supprimer un effet temporaire
   function setState(personnage, etat, value, evt, options) {
@@ -3258,10 +3810,10 @@ var COFantasy = COFantasy || function() {
     options = options || {};
     //Expansion des macros et abilities
     action = replaceAction(action, perso);
-    var tid = perso.token.id;
+    const tid = perso.token.id;
     perso.tokName = perso.tokName || perso.token.get('name');
     if (perso.name === undefined) {
-      var character = getObj('character', perso.charId);
+      const character = getObj('character', perso.charId);
       if (character) perso.name = character.get('name');
       else perso.name = perso.tokName;
     }
@@ -3278,7 +3830,7 @@ var COFantasy = COFantasy || function() {
       }
       if (act.charAt(0) == '!') {
         if (act.startsWith('!cof-')) {
-          var args = act.split(' --');
+          const args = act.split(' --');
           if (actionImpossible(perso, args, '')) options.actionImpossible = true;
           if (options.ressource) act += " --decrAttribute " + options.ressource.id;
           if (picto === '') {
@@ -5580,9 +6132,9 @@ var COFantasy = COFantasy || function() {
   //renvoie l'arme principale sinon
   function armesEnMain(perso, defWeapon) {
     if (perso.armesEnMain) return perso.arme;
-    var labelArme = tokenAttribute(perso, 'armeEnMain');
+    let labelArme = tokenAttribute(perso, 'armeEnMain');
     if (labelArme.length > 0) {
-      var labelArmePrincipale = labelArme[0].get('current');
+      let labelArmePrincipale = labelArme[0].get('current');
       if (labelArmePrincipale) perso.arme = getWeaponStats(perso, labelArmePrincipale, defWeapon);
       var labelArmeGauche = labelArme[0].get('max');
       if (labelArmeGauche) perso.armeGauche = getWeaponStats(perso, labelArmeGauche);
@@ -16296,8 +16848,8 @@ var COFantasy = COFantasy || function() {
     }
     // fin des effets temporaires (durée en tours, ou durée = combat)
     attrs.forEach(function(obj) {
-      var attrName = obj.get('name');
-      var charId = obj.get('characterid');
+      let attrName = obj.get('name');
+      let charId = obj.get('characterid');
       if (estEffetTemp(attrName)) {
         finDEffet(obj, effetTempOfAttribute(obj), attrName, charId, evt, {
           pageId: stateCOF.combat_pageid
@@ -16306,7 +16858,33 @@ var COFantasy = COFantasy || function() {
         evt.deletedAttributes.push(obj);
         obj.remove();
       } else if (estEffetCombat(attrName)) {
-        var mc = messageEffetCombat[effetCombatOfAttribute(obj)].fin;
+        let effet = effetCombatOfAttribute(obj);
+        if (effet == 'armeDArgent') {
+          //Alors on va rengainer l'arme en main si c'est l'arme d'argent
+          iterTokensOfAttribute(charId, stateCOF.combat_pageid, effet, attrName, function(token) {
+            let perso = {
+              token: token,
+              charId: charId
+            };
+            let arme = armesEnMain(perso);
+            if (!arme) return;
+            let options = arme.options;
+            if (options === '') return;
+            if (!options.startsWith(' ')) options = ' ' + options;
+            options = options.split(' --');
+            options.find(function(o) {
+              if (o.startsWith('si ')) {
+                o = o.split(' ');
+                if (o.includes('armeDArgent')) {
+                  degainerArme(perso, '', evt);
+                  return true;
+                }
+              }
+              return false;
+            });
+          });
+        }
+        let mc = messageEffetCombat[effet].fin;
         if (mc && mc !== '') sendChar(charId, mc, true);
         evt.deletedAttributes.push(obj);
         obj.remove();
@@ -19456,9 +20034,11 @@ var COFantasy = COFantasy || function() {
         var armesGauches = {};
         var nBag = 0;
         var possedeAttaqueNaturelle;
-        for (var label in listeAttaques) {
-          var arme = listeAttaques[label];
-          if (!montrerAttaques || parseInt(arme.armeactionvisible) === 0) {
+        for (let label in listeAttaques) {
+          const arme = listeAttaques[label];
+          if (!montrerAttaques || fieldAsInt(arme, 'armeactionvisible', 1) === 0) {
+            let options = ' ' + fieldAsString(arme, 'armeoptions', '');
+            if (actionImpossible(perso, options.split(' --'), label)) continue;
             switch (arme.armetypeattaque) {
               case 'Naturel':
               case 'undefined':
@@ -21688,11 +22268,20 @@ var COFantasy = COFantasy || function() {
           spawnFx(target.token.get('left'), target.token.get('top'), options.targetFx, options.pageId);
         });
       }
+      if (options.montreActions) {
+        if (lanceur) {
+          turnAction(lanceur, playerId);
+        } else if (selected.length === 1) {
+          iterSelected(selected, function(target) {
+            turnAction(target, playerId);
+          });
+        }
+      }
     });
   }
 
   function effetIndetermine(msg) {
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined) return;
     var cmd = options.cmd;
     if (cmd === undefined || cmd.length < 3) {
@@ -33887,558 +34476,6 @@ var COFantasy = COFantasy || function() {
       if (p > 0) return attrName.substring(0, p + 1);
     }
     return effet;
-  }
-
-  function finDEffet(attr, effet, attrName, charId, evt, options) { //L'effet arrive en fin de vie, doit être supprimé
-    options = options || {};
-    evt.deletedAttributes = evt.deletedAttributes || [];
-    var res;
-    var newInit = [];
-    var efComplet = effetComplet(effet, attrName);
-    //Si on a un attrSave, alors on a déjà imprimé le message de fin d'effet
-    if (options.attrSave) { //on a un attribut associé à supprimer)
-      evt.deletedAttributes.push(options.attrSave);
-      options.attrSave.remove();
-    } else if (options.gardeAutresAttributs === undefined) { //On cherche si il y en a un
-      enleverEffetAttribut(charId, efComplet, attrName, 'SaveParTour', evt);
-      enleverEffetAttribut(charId, efComplet, attrName, 'SaveParTourType', evt);
-    }
-    var mEffet = messageEffetTemp[effet];
-    if (mEffet === undefined) mEffet = messageEffetCombat[effet];
-    if (mEffet && mEffet.statusMarker) {
-      iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
-        affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
-        token.set('status_' + mEffet.statusMarker, false);
-      }, {
-        tousLesTokens: true
-      });
-    }
-    var character;
-    switch (effet) {
-      case 'agrandissement': //redonner sa taille normale
-        character = getObj('character', charId);
-        if (character === undefined) {
-          error("Personnage introuvable");
-          return;
-        }
-        character.get('defaulttoken', function(normalToken) {
-          if (normalToken === '') return;
-          normalToken = JSON.parse(normalToken);
-          var largeWidth = normalToken.width + normalToken.width / 2;
-          var largeHeight = normalToken.height + normalToken.height / 2;
-          iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
-            var width = token.get('width');
-            var height = token.get('height');
-            affectToken(token, 'width', width, evt);
-            token.set('width', normalToken.width);
-            affectToken(token, 'height', height, evt);
-            token.set('height', normalToken.height);
-          }, {
-            filterAffected: function(token) {
-              if (token.get('width') == largeWidth) return true;
-              if (token.get('height') == largeHeight) return true;
-              return false;
-            }
-          });
-        });
-        break;
-      case 'aveugleTemp':
-        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
-          function(token) {
-            setState({
-              token: token,
-              charId: charId
-            }, 'aveugle', false, evt, {
-              fromTemp: true
-            });
-          }, {
-            tousLesTokens: true
-          });
-        break;
-      case 'ralentiTemp':
-        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
-          function(token) {
-            setState({
-              token: token,
-              charId: charId
-            }, 'ralenti', false, evt, {
-              fromTemp: true
-            });
-          }, {
-            tousLesTokens: true
-          });
-        break;
-      case 'paralyseTemp':
-        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
-          function(token) {
-            setState({
-              token: token,
-              charId: charId
-            }, 'paralyse', false, evt, {
-              fromTemp: true
-            });
-          }, {
-            tousLesTokens: true
-          });
-        break;
-      case 'immobiliseTemp':
-        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
-          function(token) {
-            setState({
-              token: token,
-              charId: charId
-            }, 'immobilise', false, evt, {
-              fromTemp: true
-            });
-          }, {
-            tousLesTokens: true
-          });
-        break;
-      case 'etourdiTemp':
-        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
-          function(token) {
-            setState({
-              token: token,
-              charId: charId
-            }, 'etourdi', false, evt, {
-              fromTemp: true
-            });
-          }, {
-            tousLesTokens: true
-          });
-        break;
-      case 'affaibliTemp':
-        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
-          function(token) {
-            setState({
-              token: token,
-              charId: charId
-            }, 'affaibli', false, evt, {
-              fromTemp: true
-            });
-          }, {
-            tousLesTokens: true
-          });
-        break;
-      case 'assomeTemp':
-        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
-          function(token) {
-            setState({
-              token: token,
-              charId: charId
-            }, 'assome', false, evt, {
-              fromTemp: true
-            });
-          }, {
-            tousLesTokens: true
-          });
-        break;
-      case 'invisibleTemp':
-      case 'intangibleInvisible':
-        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
-          function(token) {
-            setState({
-              token: token,
-              charId: charId
-            }, 'invisible', false, evt, {
-              fromTemp: true
-            });
-          }, {
-            tousLesTokens: true
-          });
-        break;
-      case 'apeureTemp':
-      case 'peurEtourdi':
-        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
-          function(token) {
-            setState({
-              token: token,
-              charId: charId
-            }, 'apeure', false, evt, {
-              fromTemp: true
-            });
-          }, {
-            tousLesTokens: true
-          });
-        break;
-      case 'ombreMortelle':
-      case 'dedoublement':
-        iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
-          deleteTokenWithUndo(token, evt);
-        });
-        break;
-      case 'murDeForce':
-        iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
-          var attrM = tokenAttribute({
-            charId: charId,
-            token: token
-          }, 'murDeForceId');
-          if (attrM.length === 0) return;
-          var imageMur = getObj('graphic', attrM[0].get('current'));
-          if (imageMur) {
-            imageMur.remove();
-          }
-          attrM[0].remove();
-        });
-        break;
-      case 'regeneration': //faire les soins restants
-        var toursRestant = attr.get('current');
-        if (toursRestant == 'tourFinal' || isNaN(toursRestant)) break;
-        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
-          function(token) {
-            var perso = {
-              token: token,
-              charId: charId
-            };
-            var regen = getValeurOfEffet(perso, 'regeneration', 3);
-            var soins = regen * (toursRestant + attributeAsInt(perso, 'regenerationTempeteDeManaIntense', 0));
-            soigneToken(perso, soins, evt,
-              function(s) {
-                options.print = function(m) {}; //Pour ne pas afficher le message final.
-                var tempsEffectif = Math.ceil(s / regen);
-                sendPerso(perso, "récupère encore " + s + " PV en " + tempsEffectif + " tours.");
-              });
-          });
-        break;
-      case 'demonInvoque':
-      case 'predateurConjure':
-      case 'arbreAnime':
-      case 'degradationZombie': //effacer le personnage
-        //Dans le cas d'un Zombie, diminuer la limite du nécromant si nécessaire
-        if (effet == 'degradationZombie') {
-          var attrNecromant = charAttribute(charId, "necromant");
-          if (attrNecromant.length > 0) {
-            var necromantId = attrNecromant[0].get("current");
-            var necromant = persoOfId(necromantId, necromantId, options.pageId);
-            var attrNbZombie = tokenAttribute(necromant, "zombiesControles");
-            if (attrNbZombie.length > 0) {
-              var nbZombie = attrAsInt(attrNbZombie, 1);
-              if (nbZombie > 1) setTokenAttr(necromant, "zombiesControles", nbZombie - 1, evt);
-              else attrNbZombie[0].remove();
-            }
-          }
-        }
-        //On efface d'abord les attributs et les abilities
-        var charAttributes = findObjs({
-          _type: 'attribute',
-          _characterid: charId
-        });
-        charAttributes.forEach(
-          function(otherAttr) {
-            if (otherAttr.id != attr.id) otherAttr.remove();
-          }
-        );
-        var charAbilities = findObjs({
-          _type: 'ability',
-          _characterid: charId
-        });
-        charAbilities.forEach(
-          function(ab) {
-            ab.remove();
-          }
-        );
-        if (effet == 'arbreAnime') {
-          iterTokensOfAttribute(charId, options.pageId, effet, attrName,
-            function(token) {
-              var perso = {
-                token: token,
-                charId: charId
-              };
-              var nA = removeFromTurnTracker(perso, evt);
-              if (nA) {
-                res = res || {};
-                res.oldTokenId = token.id;
-                res.newTokenId = nA.nextId;
-              }
-              setToken(token, 'bar1_link', '', evt);
-              setToken(token, 'bar1_value', '', evt);
-              setToken(token, 'bar1_max', '', evt);
-              setToken(token, 'showplayers_bar1', false, evt);
-              setToken(token, 'represents', '', evt);
-              setToken(token, 'showname', false, evt);
-              setToken(token, 'showplayers_name', false, evt);
-              setToken(token, 'name', '', evt);
-            });
-        } else {
-          iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
-            var perso = {
-              token: token,
-              charId: charId
-            };
-            var nP = removeFromTurnTracker(perso, evt);
-            if (nP) {
-              res = res || {};
-              res.oldTokenId = token.id;
-              res.newTokenId = nP.nextId;
-            }
-            deleteTokenWithUndo(token, evt);
-          });
-        }
-        attr.remove();
-        if (options.print && mEffet) options.print(mEffet.fin);
-        else {
-          sendChar(charId, mEffet.fin, true);
-          options.print = function(m) {};
-        }
-        character = getObj('character', charId);
-        if (character) {
-          evt.deletedCharacters = evt.deletedCharacters || [];
-          var deletedChar = {
-            id: charId,
-            name: character.get('name'),
-            avatar: character.get('avatar'),
-            attributes: charAttributes,
-            abilities: charAbilities,
-            allies: []
-          };
-          // Retrait du perso de toutes les listes d'alliés
-          for (const [perso, alliesPerso] of Object.entries(alliesParPerso)) {
-            if (alliesPerso.has(charId)) {
-              deletedChar.allies.push(perso);
-              alliesPerso.delete(charId);
-            }
-          }
-          character.remove();
-          evt.deletedCharacters.push(deletedChar);
-        }
-        return res; //Pas besoin de faire le reste, car plus de perso
-      case 'formeDArbre':
-        var iterTokOptions = {
-          filterAffected: function(token) {
-            return token.get('layer') == 'objects';
-          }
-        };
-        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
-          function(token) {
-            var perso = {
-              token: token,
-              charId: charId
-            };
-            var tokenChange = attributeAsBool(perso, 'changementDeToken');
-            if (tokenChange) {
-              var tokenMJ =
-                findObjs({
-                  _type: 'graphic',
-                  _subtype: 'token',
-                  _pageid: token.get('pageid'),
-                  layer: 'gmlayer',
-                  represents: charId,
-                  name: token.get('name')
-                });
-              if (tokenMJ.length === 0) return;
-              removeTokenAttr(perso, 'changementDeToken', evt);
-              var nouveauToken = tokenMJ[0];
-              setToken(nouveauToken, 'layer', 'objects', evt);
-              setToken(nouveauToken, 'left', token.get('left'), evt);
-              setToken(nouveauToken, 'top', token.get('top'), evt);
-              setToken(nouveauToken, 'width', token.get('width'), evt);
-              setToken(nouveauToken, 'height', token.get('height'), evt);
-              setToken(nouveauToken, 'rotation', token.get('rotation'), evt);
-              setToken(nouveauToken, 'bar2_value', token.get('bar2_value'), evt);
-              setToken(nouveauToken, 'aura1_radius', token.get('aura1_radius'), evt);
-              setToken(nouveauToken, 'aura1_color', token.get('aura1_color'), evt);
-              setToken(nouveauToken, 'aura1_square', token.get('aura1_square'), evt);
-              setToken(nouveauToken, 'showplayers_aura1', token.get('showplayers_aura1'), evt);
-              setToken(nouveauToken, 'aura2_radius', token.get('aura2_radius'), evt);
-              setToken(nouveauToken, 'aura2_color', token.get('aura2_color'), evt);
-              setToken(nouveauToken, 'aura2_square', token.get('aura2_square'), evt);
-              setToken(nouveauToken, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
-              setToken(nouveauToken, 'statusmarkers', token.get('statusmarkers'), evt);
-              setToken(nouveauToken, 'light_angle', token.get('light_angle'), evt);
-              setToken(nouveauToken, 'has_limit_field_of_vision', token.get('has_limit_field_of_vision'), evt);
-              setToken(nouveauToken, 'has_limit_field_of_night_vision', token.get('has_limit_field_of_night_vision'), evt);
-              if (stateCOF.combat) {
-                replaceInTurnTracker(token.id, nouveauToken.id, evt);
-              }
-              res = res || {};
-              res.oldTokenId = token.id;
-              res.newTokenId = nouveauToken.id;
-              res.newToken = nouveauToken;
-              deleteTokenWithUndo(token, evt);
-              token = nouveauToken;
-              perso.token = nouveauToken;
-            }
-            var apv = tokenAttribute(perso, 'anciensPV');
-            if (apv.length > 0) {
-              updateCurrentBar(perso, 1, apv[0].get('current'), evt, apv[0].get('max'));
-              removeTokenAttr(perso, 'anciensPV', evt);
-              if (stateCOF.combat) {
-                newInit.push({
-                  _id: token.id
-                });
-              }
-            }
-          },
-          iterTokOptions);
-        break;
-      case 'agitAZeroPV':
-        iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
-          var perso = {
-            charId: charId,
-            token: token
-          };
-          var pv = token.get('bar1_value');
-          if (pv == 0) { //jshint ignore:line
-            mort(perso, undefined, evt);
-          } else {
-            //On note qu'il l'a déjà fait pour qu'il ne puisse le refaire dans le combat
-            setTokenAttr(perso, 'aAgiAZeroPV', true, evt);
-          }
-        });
-        break;
-      case 'forgeron':
-      case 'armeEnflammee':
-        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-          var perso = {
-            token: token,
-            charId: charId
-          };
-          eteindreUneLumiere(perso, options.pageId, undefined, efComplet, evt);
-        });
-        break;
-      case 'effetRetarde':
-        if (efComplet.length > 14) {
-          var effetRetarde = efComplet.substring(13, efComplet.length - 1);
-          if (_.has(cof_states, effetRetarde)) {
-            iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-              var perso = {
-                token: token,
-                charId: charId
-              };
-              if (getState(perso, 'mort')) return;
-              setState(perso, effetRetarde, true, evt);
-            });
-          } else if (estEffetTemp(effetRetarde)) {
-            options.print = function(m) {}; //Pour ne pas afficher le message final.
-            var pp = effetRetarde.indexOf('(');
-            var mEffetRetarde = (pp > 0) ? messageEffetTemp[effetRetarde.substring(effetRetarde, pp)] : messageEffetTemp[effetRetarde];
-            var ef = {
-              effet: effetRetarde,
-              duree: 1,
-              message: mEffetRetarde,
-              whisper: true,
-            };
-            iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-              var perso = {
-                token: token,
-                charId: charId
-              };
-              if (getState(perso, 'mort')) return;
-              if (!stateCOF.combat) {
-                sendChat('', "Il restait un effet retardé " + effetRetarde + " qui devait se déclencher pour " + token.get('name'));
-                return;
-              }
-              var duree = getValeurOfEffet(perso, efComplet, 1);
-              ef.duree = duree;
-              setEffetTemporaire(perso, ef, duree, evt, {});
-            });
-          } else {
-            options.print = function(m) {}; //Pour ne pas afficher le message final.
-            iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-              var perso = {
-                token: token,
-                charId: charId
-              };
-              if (getState(perso, 'mort')) return;
-              var val = true;
-              var valAttr = tokenAttribute(perso, efComplet + 'Valeur');
-              if (valAttr.length > 0) val = valAttr[0].get('current');
-              whisperChar(charId, effetRetarde + ' ' + val);
-              setTokenAttr(perso, effetRetarde, val, evt, {});
-            });
-          }
-        }
-        break;
-      case 'messageRetarde':
-        if (efComplet.length > 16) {
-          var messageRetarde = efComplet.substring(15, efComplet.length - 1);
-          iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-            whisperChar(charId, messageRetarde);
-            //Puis on regarde si il y a une valeur à afficher
-            var perso = {
-              token: token,
-              charId: charId
-            };
-            var valAttr = tokenAttribute(perso, efComplet + 'Valeur');
-            if (valAttr.length > 0)
-              whisperChar(charId, valAttr[0].get('current').replace(/_/g, ' '));
-          });
-        }
-        break;
-      case 'tenebres':
-        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-          //Puis on regarde si il y a une valeur à afficher
-          var perso = {
-            token: token,
-            charId: charId
-          };
-          var valAttr = tokenAttribute(perso, efComplet + 'Valeur');
-          var tokenTenebres = getObj('graphic', valAttr[0].get('current'));
-          if (tokenTenebres) tokenTenebres.remove();
-        });
-        break;
-      case 'armeeDesMorts':
-        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-          token.set("aura2_radius", 0);
-          if (stateCOF.armeesDesMorts) {
-            var index = stateCOF.armeesDesMorts.indexOf(token.id);
-            if (index > -1) stateCOF.armeesDesMorts.splice(index, 1);
-          }
-        });
-        break;
-      case 'lienDeSang':
-        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-          var perso = {
-            token: token,
-            charId: charId
-          };
-          var attrsLienDeSangDe = tokenAttribute(perso, "lienDeSangDe");
-          if (attrsLienDeSangDe.length > 0) {
-            var tokenLie = persoOfId(attrsLienDeSangDe[0].get("current"));
-            if (tokenLie) {
-              tokenAttribute(tokenLie, "lienDeSangVers").forEach(function(attr) {
-                attr.remove();
-              });
-            }
-          }
-          attrsLienDeSangDe.forEach(function(attr) {
-            attr.remove();
-          });
-        });
-        break;
-      default:
-    }
-    if (options.attrSave === undefined && charId) {
-      var estMort = true;
-      iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-        estMort = estMort && getState({
-          charId: charId,
-          token: token
-        }, 'mort');
-      });
-      if (!estMort && mEffet) {
-        if (options.print) options.print(mEffet.fin);
-        else {
-          if (attrName == efComplet)
-            sendChar(charId, mEffet.fin, true);
-          else {
-            var tokenName = attrName.substring(attrName.indexOf('_') + 1);
-            sendChat('', tokenName + ' ' + mEffet.fin);
-          }
-        }
-      }
-    }
-    if (options.gardeAutresAttributs === undefined && charId) {
-      enleverEffetAttribut(charId, efComplet, attrName, 'Puissant', evt);
-      enleverEffetAttribut(charId, efComplet, attrName, 'Valeur', evt);
-      enleverEffetAttribut(charId, efComplet, attrName, 'TempeteDeManaIntense', evt);
-      enleverEffetAttribut(charId, efComplet, attrName, 'DureeAccumulee', evt);
-      enleverEffetAttribut(charId, efComplet, attrName, 'Options', evt);
-    }
-    evt.deletedAttributes.push(attr);
-    attr.remove();
-    if (newInit.length > 0) initiative(newInit, evt, true);
-    return res;
   }
 
   function rollAndDealDmg(perso, dmg, type, effet, attrName, msg, count, evt, options, callback, display) {
