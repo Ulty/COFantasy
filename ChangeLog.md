@@ -1,5 +1,6 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.01
+* Affichage des armes cochées au lieu des armes non cochées, qui doivent pouvoir exister pour garder des attaques avec des armes que le personnage a temporairement perdues.
 * Passage d'une partie des attributs numériques qui ne dépendent pas des mooks en prédicats sur la fiche.
 
 ## 3.00

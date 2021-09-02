@@ -54,9 +54,9 @@ var COFantasy = COFantasy || function() {
   const DEFAULT_DYNAMIC_INIT_IMG = 'https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/thumb.png?1400535580';
   const IMG_INVISIBLE = 'https://s3.amazonaws.com/files.d20.io/images/24377109/6L7tn91HZLAQfrLKQI7-Ew/thumb.png?1476950708';
 
-  var markerCatalog = {};
-  var eventHistory = [];
-  var updateNextInitSet = new Set();
+  let markerCatalog = {};
+  let eventHistory = [];
+  let updateNextInitSet = new Set();
 
   const flashyInitMarkerScale = 1.6;
 
@@ -1262,11 +1262,11 @@ var COFantasy = COFantasy || function() {
         attribute: attr,
         current: attr.get('current'),
         max: attr.get('max'),
-        withWorker: true
       });
     }
     var aset = {
-      current: val
+      current: val,
+        withWorker: true
     };
     if (maxVal) aset.max = maxVal;
     attr.setWithWorker(aset);
@@ -1661,10 +1661,9 @@ var COFantasy = COFantasy || function() {
         var hasMana = (ficheAttributeAsInt(perso, 'PM', 0) > 0);
         var dmgTemp;
         var estMook = token.get('bar1_link') === '';
-        var nameAttrDMTEMP = 'DMTEMP';
         if (hasMana) {
           if (estMook) dmgTemp = attributeAsInt(perso, 'DMTEMP', 0);
-          else dmgTemp = ficheAttributeAsInt(perso, nameAttrDMTEMP, 0);
+          else dmgTemp = ficheAttributeAsInt(perso, 'DMTEMP', 0);
         } else {
           dmgTemp = parseInt(token.get('bar2_value'));
           if (isNaN(dmgTemp)) dmgTemp = 0;
@@ -10921,7 +10920,11 @@ var COFantasy = COFantasy || function() {
           if (option) opt = option + opt;
         } else opt = option;
         if (action.listeActions) {
-          addLineToFramedDisplay(display, listeAttaquesVisibles(attaquant, opt, target.token.id));
+          let l = listeAttaquesVisibles(attaquant, {
+            ligneOptions: opt,
+            target: target.token.id
+          });
+          addLineToFramedDisplay(display, l);
           return;
         }
         var cmd = action.command.replace(/@\{target\|token_id\}/g, target.token.id);
@@ -15723,10 +15726,9 @@ var COFantasy = COFantasy || function() {
         var hasMana = (ficheAttributeAsInt(target, 'PM', 0) > 0);
         var tempDmg = 0;
         var estMook = token.get("bar1_link") === '';
-        var nameAttrDMTEMP = 'DMTEMP';
         if (hasMana) {
           if (estMook) tempDmg = attributeAsInt(target, 'DMTEMP', 0);
-          else tempDmg = ficheAttributeAsInt(target, nameAttrDMTEMP, 0);
+          else tempDmg = ficheAttributeAsInt(target, 'DMTEMP', 0);
         } else {
           tempDmg = parseInt(token.get("bar2_value"));
           if (isNaN(tempDmg)) {
@@ -15738,7 +15740,7 @@ var COFantasy = COFantasy || function() {
                   findObjs({
                     _type: "attribute",
                     _characterid: charId,
-                    name: nameAttrDMTEMP
+                    name: 'DMTEMP'
                   }, {
                     caseInsensitive: true
                   });
@@ -15747,7 +15749,7 @@ var COFantasy = COFantasy || function() {
                   dmTemp =
                     createObj("attribute", {
                       characterid: charId,
-                      name: nameAttrDMTEMP,
+                      name: 'DMTEMP',
                       current: 0,
                       max: pvmax
                     });
@@ -15773,7 +15775,7 @@ var COFantasy = COFantasy || function() {
             tempDmg = pvmax;
           }
           if (hasMana) {
-            setTokenAttr(target, nameAttrDMTEMP, tempDmg, evt);
+            setTokenAttr(target, 'DMTEMP', tempDmg, evt);
           } else {
             updateCurrentBar(target, 2, tempDmg, evt);
           }
@@ -16794,14 +16796,13 @@ var COFantasy = COFantasy || function() {
           attribute: pvAttr,
           current: pv
         });
-        var newPv = pv - douleur;
+        let newPv = pv - douleur;
         if (newPv < 0) newPv = 0;
         pvAttr.set('current', newPv);
         if (pv > 0 && newPv === 0) {
           sendChar(charId, "s'écroule. Il semble sans vie. La douleur qu'il avait ignorée l'a finalement rattrapé...", true);
         } else {
-          var nameAttrDMTEMP = 'DMTEMP';
-          var tempDmg = ficheAttributeAsInt(charId, nameAttrDMTEMP, 0);
+          let tempDmg = ficheAttributeAsInt(charId, 'DMTEMP', 0);
           if (pv > tempDmg && newPv <= tempDmg) {
             sendChar(charId, "s'écroule, assomé. La douleur qu'il avait ignorée l'a finalement rattrapé...", true);
           } else {
@@ -17805,18 +17806,13 @@ var COFantasy = COFantasy || function() {
       });
       var hasMana = false;
       var dmTemp = bar2;
-      var estPNJ = persoEstPNJ(perso);
       var estMook = token.get('bar1_link') === '';
-      var nameAttrDMTEMP = 'DMTEMP';
-      var versionFiche = parseFloat(ficheAttribute(perso, 'version', 0));
-      if (isNaN(versionFiche)) versionFiche = 0;
-      if (estPNJ && !estMook && versionFiche < 3.7) nameAttrDMTEMP = 'pnj_dmtemp';
       if (manaAttr.length > 0) { // Récupération des points de mana
         var manaMax = parseInt(manaAttr[0].get('max'));
         hasMana = !isNaN(manaMax) && manaMax > 0;
         if (hasMana) {
           if (estMook) dmTemp = attributeAsInt(perso, 'DMTEMP', 0);
-          else dmTemp = ficheAttributeAsInt(perso, nameAttrDMTEMP, 0);
+          else dmTemp = ficheAttributeAsInt(perso, 'DMTEMP', 0);
           if (reposLong && (isNaN(bar2) || bar2 < manaMax)) {
             updateCurrentBar(perso, 2, manaMax, evt);
           }
@@ -17826,7 +17822,7 @@ var COFantasy = COFantasy || function() {
         if (reposLong) dmTemp = 0;
         else dmTemp = Math.max(0, dmTemp - 10);
         if (hasMana) {
-          setTokenAttr(perso, nameAttrDMTEMP, dmTemp, evt);
+          setTokenAttr(perso, 'DMTEMP', dmTemp, evt);
         } else {
           updateCurrentBar(perso, 2, dmTemp, evt);
         }
@@ -19773,20 +19769,34 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function listeAttaquesVisibles(perso, options, target) {
-    options = options || '';
-    target = target || '@{target|token_id}';
-    var ligne = '';
+  function estArme(attaque) {
+    let t = fieldAsString(attaque, 'armetypeattaque', 'Naturel');
+    if (t.startsWith('Arme')) {
+      return t != 'Arme de jet';
+    }
+    return false;
+  }
+
+  //options peut contenir:
+  // - ligneOptions : une chaîne de caractères à ajouter aux attaques
+  // - target : l'id de la cible des attaques
+  // - nePasAfficherArmes : quand on affiche plus tard l'arme en main
+  function listeAttaquesVisibles(perso, options) {
+    options = options || {};
+    let ligneOptions = options.ligneOptions || '';
+    let target = options.target || '@{target|token_id}';
+    let ligne = '';
     //Cherche toutes les attaques à afficher
     let attaques = listAllAttacks(perso);
     let attaquesTriees = {};
     for (let attLabel in attaques) {
       let att = attaques[attLabel];
       if (fieldAsInt(att, 'armeactionvisible', 1) === 0) continue;
+      if (options.nePasAfficherArmes && estArme(att)) continue;
       //Vérification que des options n'empêchent pas l'utilisation de l'attaque
       let attackOptions = ' ' + fieldAsString(att, 'armeoptions', '');
       if (actionImpossible(perso, attackOptions.split(' --'), attLabel)) continue;
-      let command = "!cof-attack @{selected|token_id} " + target + " " + attLabel + " " + options;
+      let command = "!cof-attack @{selected|token_id} " + target + " " + attLabel + " " + ligneOptions;
       attaquesTriees[attLabel] = bouton(command, att.armenom, perso);
     }
     _.forEach(attaquesTriees, function(b) {
@@ -20014,103 +20024,81 @@ var COFantasy = COFantasy || function() {
         ligne += bouton(command, "Régénération", perso) + " si source élémentaire proche<br />";
       }
       //Les attaques de la fiche à afficher dans la liste d'actions
-      var afficherAttaquesFiche =
+      const montrerAttaques = ficheAttributeAsInt(perso, 'montrerattaques', 1);
+      const afficherAttaquesFiche =
         actionsParDefaut ||
-        (actionsDuTour === 0 && ficheAttributeAsInt(perso, 'montrerattaques', 1)) ||
+        (actionsDuTour === 0 && montrerAttaques) ||
         (actionsDuTour === undefined && stateCOF.options.affichage.val.actions_par_defaut.val);
+      const montrerArmeEnMain = (actionsDuTour === 0 && ficheAttributeAsInt(perso, 'montrerarmeenmain', 1));
       if (afficherAttaquesFiche) {
-        if (gobePar)
-          ligne += listeAttaquesVisibles(perso, '', gobePar.token.id);
-        else ligne += listeAttaquesVisibles(perso);
+        var attackOptions = {};
+        if (gobePar) attackOptions.target = gobePar.token.id;
+        if (montrerArmeEnMain) attackOptions.nePasAfficherArmes = true;
+        ligne += listeAttaquesVisibles(perso, attackOptions);
       }
       //L'arme en main et dégainer, si besoin
-      if (actionsDuTour === 0 && ficheAttributeAsInt(perso, 'montrerarmeenmain', 1)) {
-        var listeAttaques = listAllAttacks(perso);
-        var montrerAttaques = ficheAttributeAsInt(perso, 'montrerattaques', 1);
-        var attaquesNaturelles = {};
-        var nBan = 0;
-        var armes = {};
-        var nBa = 0;
-        var armesGauches = {};
-        var nBag = 0;
-        var possedeAttaqueNaturelle;
+      if (montrerArmeEnMain) {
+        const listeAttaques = listAllAttacks(perso);
+        let attaqueNaturelleNonVisible;
+        let armes = {};
+        let armeVisible = 0;
+        let possedeAttaqueNaturelle;
         for (let label in listeAttaques) {
           const arme = listeAttaques[label];
-          if (!montrerAttaques || fieldAsInt(arme, 'armeactionvisible', 1) === 0) {
+          const t = fieldAsString(arme, 'armetypeattaque', 'Naturel');
+          if (fieldAsInt(arme, 'armeactionvisible', 1) === 1) {
             let options = ' ' + fieldAsString(arme, 'armeoptions', '');
             if (actionImpossible(perso, options.split(' --'), label)) continue;
-            switch (arme.armetypeattaque) {
+            switch (t) {
               case 'Naturel':
-              case 'undefined':
-                attaquesNaturelles[label] = arme;
-                nBan++;
+                possedeAttaqueNaturelle = true;
                 break;
               case 'Arme 1 main':
               case 'Arme 2 mains':
-                armes[label] = arme;
-                nBa++;
-                break;
               case 'Arme gauche':
-                armesGauches[label] = arme;
-                nBag++;
+                armes[label] = arme;
+                armeVisible = true;
+                break;
             }
+          } else if (!attaqueNaturelleNonVisible && t == 'Naturel') {
+            attaqueNaturelleNonVisible = arme;
+          }
+        }
+        let labelArmePrincipale;
+        let labelArmeGauche;
+        let ligneArmePrincipale;
+        let ligneArmeGauche;
+        let labelArme = tokenAttribute(perso, 'armeEnMain');
+        if (labelArme.length > 0) {
+          labelArme = labelArme[0];
+          labelArmePrincipale = labelArme.get('current');
+          labelArmeGauche = labelArme.get('max');
+        }
+        if (labelArmePrincipale && listeAttaques[labelArmePrincipale]) {
+          ligneArmePrincipale = bouton("#Attaque " + labelArmePrincipale, listeAttaques[labelArmePrincipale].armenom, perso);
+        } else if (!possedeAttaqueNaturelle) {
+          if (attaqueNaturelleNonVisible) {
+            ligneArmePrincipale =
+              bouton("#Attaque " + attaqueNaturelleNonVisible.label, attaqueNaturelleNonVisible.armenom, perso);
           } else {
-            possedeAttaqueNaturelle = possedeAttaqueNaturelle || arme.armetypeattaque === undefined || arme.armetypeattaque === 'Naturel';
+            let bonusAtk = computeArmeAtk(perso, '@{ATKCAC}');
+            ligneArmePrincipale = bouton("#Attaque Mains nues --toucher " + bonusAtk + " --dm 1d4 + [[@{selected|FOR}]] --tempDmg", 'Mains nues', perso);
           }
         }
-        var labelArme;
-        var labelArmePrincipale;
-        var labelArmeGauche;
-        var ligneArmePrincipale;
-        var ligneArmeGauche;
-        if (nBa > 0) {
-          labelArme = tokenAttribute(perso, 'armeEnMain');
-          if (labelArme.length > 0) {
-            labelArme = labelArme[0];
-            labelArmePrincipale = labelArme.get('current');
-          } else labelArme = undefined;
-          if (labelArmePrincipale) {
-            if (armes[labelArmePrincipale]) {
-              ligneArmePrincipale = bouton("#Attaque " + labelArmePrincipale, armes[labelArmePrincipale].armenom, perso);
-              if (nBa > 1) {
-
-              }
-            }
-          } else if (nBan > 0) {
-            for (var lan in attaquesNaturelles) {
-              ligneArmePrincipale = bouton("#Attaque " + lan, attaquesNaturelles[lan].armenom, perso);
-            }
-          } else if (!possedeAttaqueNaturelle) {
-            ligneArmePrincipale = bouton("#Attaque Mains nues --toucher [[@{selected|ATKCAC}]] --dm 1d4 + [[@{selected|FOR}]] --tempDmg", 'Mains nues', perso);
-          }
-        }
-        if (nBag > 0) {
-          if (labelArme === undefined) {
-            labelArme = tokenAttribute(perso, 'armeEnMain');
-            if (labelArme.length > 0) labelArme = labelArme[0];
-            else labelArme = undefined;
-          }
-          if (labelArme) {
-            labelArmeGauche = labelArme.get('max');
-            if (labelArmeGauche && armesGauches[labelArmeGauche]) {
-              ligneArmeGauche = bouton("#Attaque " + labelArmeGauche, armesGauches[labelArmeGauche].armenom, perso);
-            }
-          }
+        if (labelArmeGauche && listeAttaques[labelArmeGauche]) {
+          ligneArmeGauche = bouton("#Attaque " + labelArmeGauche, listeAttaques[labelArmeGauche].armenom, perso);
         }
         //Maintenant on propose de dégainer
-        if (nBa > 0 || nBag > 0) {
-          var degainer = "!cof-degainer ?{Arme?|";
-          var toutesArmes = {...armes,
-            ...armesGauches
-          };
-          var armeADegainer;
-          for (var l in toutesArmes) {
+        if (armeVisible) {
+          let degainer = "!cof-degainer ?{Arme?|";
+          let armeADegainer;
+          for (var l in armes) {
             if (l != labelArmePrincipale && l != labelArmeGauche) {
-              degainer += toutesArmes[l].armenom + "," + l + "|";
+              degainer += armes[l].armenom + "," + l + "|";
               if (armeADegainer) armeADegainer.unique = undefined;
               else armeADegainer = {
                 unique: true,
-                nom: toutesArmes[l].armenom,
+                nom: armes[l].armenom,
                 label: l
               };
             }
@@ -20179,9 +20167,11 @@ var COFantasy = COFantasy || function() {
       if (actionsDuTour !== undefined) {
         actionsAAfficher = treatActions(perso, actionsDuTour, abilities, function(command, text, macros, options) {
           if (command == 'liste des attaques') {
-            if (gobePar)
-              ligne += listeAttaquesVisibles(perso, options, gobePar.token.id);
-            else ligne += listeAttaquesVisibles(perso, options);
+            let attackOptions = {
+              ligneOptions: options
+            };
+            if (gobePar) attackOptions.target = gobePar.token.id;
+            ligne += listeAttaquesVisibles(perso, attackOptions);
           } else {
             options = options || {};
             var b = bouton(command, text, perso, options);
