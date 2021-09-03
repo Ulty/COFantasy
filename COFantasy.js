@@ -1266,7 +1266,7 @@ var COFantasy = COFantasy || function() {
     }
     var aset = {
       current: val,
-        withWorker: true
+      withWorker: true
     };
     if (maxVal) aset.max = maxVal;
     attr.setWithWorker(aset);
@@ -10669,8 +10669,8 @@ var COFantasy = COFantasy || function() {
   //actionsDuTour peut être un nombre entre 0 et 4 (listes sur la fiche), ou
   //  une ability
   function treatActions(perso, actionsDuTour, abilities, f) {
-    var actions; // La liste des actions
-    var options = '';
+    let actions; // La liste des actions
+    let options = '';
     switch (actionsDuTour) {
       case 0:
         actions = sortedActionList(perso, '');
@@ -10693,10 +10693,10 @@ var COFantasy = COFantasy || function() {
           .replace(/%/g, '\n%').replace(/#/g, '\n#').replace(/!/g, '\n!')
           .split('\n');
     }
-    var actionsAAfficher;
+    let actionsAAfficher;
     if (actions.length > 0) {
       // Toutes les Macros
-      var macros = findObjs({
+      const macros = findObjs({
         _type: 'macro'
       });
       var found;
@@ -17106,7 +17106,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseOptions(msg) {
-    var pageId, playerId;
+    let pageId, playerId;
     if (msg.selected && msg.selected.length > 0) {
       var firstSelected = getObj('graphic', msg.selected[0]._id);
       if (firstSelected === undefined) {
@@ -17118,12 +17118,12 @@ var COFantasy = COFantasy || function() {
       playerId = getPlayerIdFromMsg(msg);
       pageId = getPageId(playerId);
     }
-    var opts = msg.content.split(' --');
-    var cmd = opts.shift().split(' ');
+    let opts = msg.content.split(' --');
+    let cmd = opts.shift().split(' ');
     cmd = cmd.filter(function(c) {
       return c !== '';
     });
-    var options = {
+    let options = {
       pageId: pageId,
       playerId: playerId,
       cmd: cmd
@@ -20243,15 +20243,20 @@ var COFantasy = COFantasy || function() {
   }
 
   function apiTurnAction(msg) {
-    var cmd = msg.content.split(' ');
-    var abil;
-    if (cmd.length > 1 && !(cmd[1].startsWith('--'))) abil = cmd[1];
+    const options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
+    if (cmd === undefined) return;
+    let liste;
+    if (cmd.length > 1) {
+      liste = cmd.slice(1).join(' ');
+    }
     getSelected(msg, function(selected, playerId) {
       iterSelected(selected, function(perso) {
-        var actions = turnAction(perso, playerId, abil);
+        let actions = turnAction(perso, playerId, liste);
         if (!actions) {
-          abil = abil || '';
-          sendPerso(perso, "n'a pas de liste d'actions " + abil + " définie");
+          let l = liste || '';
+          sendPerso(perso, "n'a pas de liste d'actions " + l + " définie");
         }
       });
     });
