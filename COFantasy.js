@@ -10699,12 +10699,12 @@ var COFantasy = COFantasy || function() {
       const macros = findObjs({
         _type: 'macro'
       });
-      var found;
-      var command;
+      let found;
+      let command;
       actions.forEach(function(action) {
         if (!action) return;
-        var actionCode;
-        var actionTextFinal;
+        let actionCode;
+        let actionTextFinal;
         if (action.actiontitre) {
           switch (action.actiontype) {
             case 'action':
@@ -10729,12 +10729,12 @@ var COFantasy = COFantasy || function() {
           if (actionCode === '') return;
           if (actionCode.startsWith('//')) return; //commented out line
         }
-        var actionCommands = actionCode.split(' ');
+        let actionCommands = actionCode.split(' ');
         actionCommands = actionCommands.filter(function(c) {
           return c !== '';
         });
-        var actionCmd = actionCommands[0];
-        var actionText = actionTextFinal || actionCmd.replace(/-/g, ' ').replace(/_/g, ' ');
+        let actionCmd = actionCommands[0];
+        let actionText = actionTextFinal || actionCmd.replace(/-/g, ' ').replace(/_/g, ' ');
         found = false;
         switch (actionCmd.charAt(0)) {
           case '%':
@@ -10825,6 +10825,10 @@ var COFantasy = COFantasy || function() {
                 f(command, actionText, macros);
                 found = true;
             }
+            break;
+          default: //On affiche juste le titre
+            f('', actionCode, macros);
+            found = true;
         }
         if (found) {
           actionsAAfficher = true;
@@ -10886,13 +10890,13 @@ var COFantasy = COFantasy || function() {
         if (parseInt(arme.armeactionvisible) === 0) continue;
         if (arme.armetypeattaque == 'Naturel' || arme.armetypeattaque === 'undefined') {
           actionsOpportunite.push({
-            command: '#Attaque ' + label,
+            command: '!cof-attack @{selected|token_id} @{target|token_id} ' + label,
             text: arme.armenom,
           });
         }
       }
       actionsOpportunite.push({
-        command: '#Attaque -1',
+        command: '!cof-attack @{selected|token_id} @{target|token_id} -1',
         text: "Attaque avec l'arme en main"
       });
     }
@@ -19853,13 +19857,16 @@ var COFantasy = COFantasy || function() {
     if (listActions) {
       title = listActions;
       actionsDuTour = findListeActions(perso, listActions, abilities);
+      if (actionsDuTour === undefined) {
+        return;
+      }
     } else {
       afficherOptionsAttaque(perso, opt_display);
       actionsDuTour = 0;
       actionsParDefaut = true;
     }
     var formeDarbre = false;
-    if (actionsDuTour === undefined) {
+    if (actionsDuTour === 0) {
       if (!isActive(perso)) {
         if (!getState(perso, 'surpris') || !surveillance(perso)) {
           sendPerso(perso, "ne peut pas agir à ce tour");
@@ -19873,14 +19880,15 @@ var COFantasy = COFantasy || function() {
         if (actionsDuTour) {
           actionsParDefaut = true;
         } else {
+          actionsDuTour = 0;
           formeDarbre = false;
         }
       }
     }
     //actionDuTour peut être undefined, pour la liste par défaut
-    var actionsAAfficher;
-    var ligne = '';
-    var command = '';
+    let actionsAAfficher;
+    let ligne = '';
+    let command = '';
     if (actionsParDefaut && !stateCOF.chargeFantastique && attributeAsBool(perso, 'hate')) {
       ligne += "Effet de hâte : une action d'attaque ou de mouvement en plus <br />";
     }
@@ -20027,8 +20035,7 @@ var COFantasy = COFantasy || function() {
       const montrerAttaques = ficheAttributeAsInt(perso, 'montrerattaques', 1);
       const afficherAttaquesFiche =
         actionsParDefaut ||
-        (actionsDuTour === 0 && montrerAttaques) ||
-        (actionsDuTour === undefined && stateCOF.options.affichage.val.actions_par_defaut.val);
+        (actionsDuTour === 0 && montrerAttaques);
       const montrerArmeEnMain = (actionsDuTour === 0 && ficheAttributeAsInt(perso, 'montrerarmeenmain', 1));
       if (afficherAttaquesFiche) {
         var attackOptions = {};
@@ -20075,18 +20082,18 @@ var COFantasy = COFantasy || function() {
           labelArmeGauche = labelArme.get('max');
         }
         if (labelArmePrincipale && listeAttaques[labelArmePrincipale]) {
-          ligneArmePrincipale = bouton("#Attaque " + labelArmePrincipale, listeAttaques[labelArmePrincipale].armenom, perso);
+          ligneArmePrincipale = bouton("!cof-attack @{selected|token_id} @{target|token_id} " + labelArmePrincipale, listeAttaques[labelArmePrincipale].armenom, perso);
         } else if (!possedeAttaqueNaturelle) {
           if (attaqueNaturelleNonVisible) {
             ligneArmePrincipale =
-              bouton("#Attaque " + attaqueNaturelleNonVisible.label, attaqueNaturelleNonVisible.armenom, perso);
+              bouton("!cof-attack @{selected|token_id} @{target|token_id} " + attaqueNaturelleNonVisible.label, attaqueNaturelleNonVisible.armenom, perso);
           } else {
             let bonusAtk = computeArmeAtk(perso, '@{ATKCAC}');
-            ligneArmePrincipale = bouton("#Attaque Mains nues --toucher " + bonusAtk + " --dm 1d4 + [[@{selected|FOR}]] --tempDmg", 'Mains nues', perso);
+            ligneArmePrincipale = bouton("!cof-attack @{selected|token_id} @{target|token_id} Mains nues --toucher " + bonusAtk + " --dm 1d4 + [[@{selected|FOR}]] --tempDmg", 'Mains nues', perso);
           }
         }
         if (labelArmeGauche && listeAttaques[labelArmeGauche]) {
-          ligneArmeGauche = bouton("#Attaque " + labelArmeGauche, listeAttaques[labelArmeGauche].armenom, perso);
+          ligneArmeGauche = bouton("!cof-attack @{selected|token_id} @{target|token_id} " + labelArmeGauche, listeAttaques[labelArmeGauche].armenom, perso);
         }
         //Maintenant on propose de dégainer
         if (armeVisible) {
@@ -20164,29 +20171,20 @@ var COFantasy = COFantasy || function() {
         }
       }
       //La liste d'action proprement dite
-      if (actionsDuTour !== undefined) {
-        actionsAAfficher = treatActions(perso, actionsDuTour, abilities, function(command, text, macros, options) {
-          if (command == 'liste des attaques') {
-            let attackOptions = {
-              ligneOptions: options
-            };
-            if (gobePar) attackOptions.target = gobePar.token.id;
-            ligne += listeAttaquesVisibles(perso, attackOptions);
-          } else {
-            options = options || {};
-            var b = bouton(command, text, perso, options);
-            if (options.actionImpossible) ligne += text + '<br />';
-            else ligne += b + '<br />';
-          }
-        });
-      } else if (stateCOF.options.affichage.val.actions_par_defaut.val) {
-        actionsParDefaut = true;
-        abilities.forEach(function(a) {
-          var actionAbility = a.get('name').replace(/-/g, ' ').replace(/_/g, ' ');
-          command = a.get('action').trim();
-          ligne += bouton(command, actionAbility, perso) + '<br />';
-        });
-      }
+      actionsAAfficher = treatActions(perso, actionsDuTour, abilities, function(command, text, macros, options) {
+        if (command == 'liste des attaques') {
+          let attackOptions = {
+            ligneOptions: options
+          };
+          if (gobePar) attackOptions.target = gobePar.token.id;
+          ligne += listeAttaquesVisibles(perso, attackOptions);
+        } else {
+          options = options || {};
+          var b = bouton(command, text, perso, options);
+          if (options.actionImpossible) ligne += text + '<br />';
+          else ligne += b + '<br />';
+        }
+      });
       if (actionsParDefaut) {
         actionsAAfficher = true;
         command = "!cof-attendre ?{Nouvelle initiative}";
@@ -20220,26 +20218,32 @@ var COFantasy = COFantasy || function() {
     }
     if (actionsAAfficher) {
       // on envoie la liste aux joueurs qui gèrent le personnage dont le token est lié
-      var lastPlayerid;
+      let lastPlayerid;
       // on récupère les players_ids qui controllent le Token
-      var playerIds;
+      let playerIds;
       if (playerId) playerIds = [playerId];
       else playerIds = getPlayerIds(perso);
       playerIds.forEach(function(playerid) {
         lastPlayerid = playerid;
-        var display = startFramedDisplay(playerid, title, perso, opt_display);
+        let display = startFramedDisplay(playerid, title, perso, opt_display);
         addLineToFramedDisplay(display, ligne);
         sendChat('', endFramedDisplay(display));
       });
       // En prime, on l'envoie au MJ, si besoin
-      if (stateCOF.options.affichage.val.MJ_voit_actions.val || playerIds.length === 0) {
+      let envoieAuMJ = playerIds.length === 0;
+      if (!envoieAuMJ && stateCOF.options.affichage.val.MJ_voit_actions.val) {
+        envoieAuMJ = playerIds.every(function(pid) {
+          return !playerIsGM(pid);
+        });
+      }
+      if (envoieAuMJ) {
         opt_display.chuchote = 'gm';
         var display = startFramedDisplay(lastPlayerid, title, perso, opt_display);
         addLineToFramedDisplay(display, ligne);
         sendChat('', endFramedDisplay(display));
       }
     }
-    return (actionsDuTour !== undefined || actionsAAfficher);
+    return actionsAAfficher;
   }
 
   function apiTurnAction(msg) {
