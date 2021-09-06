@@ -997,15 +997,15 @@ var COFantasy = COFantasy || function() {
   function persoEstPNJ(perso) {
     if (perso.pnj) return true;
     else if (perso.pj) return false;
-    var typePerso = ficheAttribute(perso, 'type_personnage', 'PJ');
+    const typePerso = ficheAttribute(perso, 'type_personnage', 'PJ');
     perso.pnj = (typePerso == 'PNJ');
     perso.pj = !perso.pnj;
     return perso.pnj;
   }
 
   function getAttackName(attackLabel, perso) {
-    var attaques = listAllAttacks(perso);
-    var arme = attaques[attackLabel];
+    const attaques = listAllAttacks(perso);
+    const arme = attaques[attackLabel];
     if (arme === undefined) return arme;
     return arme.armenom;
   }
@@ -3647,6 +3647,7 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  //retourne toujours quelque chose, par défaut mains nues
   function getWeaponStats(perso, attackLabel, defWeapon) {
     var weaponStats = defWeapon || {
       name: 'Attaque',
@@ -3657,6 +3658,7 @@ var COFantasy = COFantasy || function() {
       crit: 20,
       divers: '',
       portee: 0,
+      typeDegats: 'contondant',
       options: '',
     };
     if (attackLabel === undefined) return weaponStats;
@@ -3706,6 +3708,9 @@ var COFantasy = COFantasy || function() {
         break;
       case 'Arme de jet':
         weaponStats.armeDeJet = true;
+        weaponStats.tauxDePerte = fieldAsInt(att, 'armejettaux', 0);
+        weaponStats.nbArmesDeJet = fieldAsInt(att, 'armejetqte', 1);
+        weaponStats.prefixe = att.prefixe; //pour trouver l'attribut
         break;
       default:
         //On cherche si c'est une arme à 2 mains
@@ -6280,6 +6285,7 @@ var COFantasy = COFantasy || function() {
         case 'seulementVivant':
         case 'etreinteImmole':
         case 'etreinteScorpion':
+        case 'retourneEnMain':
           scope[cmd[0]] = true;
           return;
         case 'arc':
@@ -10611,14 +10617,14 @@ var COFantasy = COFantasy || function() {
   }
 
   function extractRepeating(perso, repeatingSection) {
-    var reg = new RegExp("^(repeating_" + repeatingSection + "_[^_]*_)(.*)$");
-    var attributes = findObjs({
+    const reg = new RegExp("^(repeating_" + repeatingSection + "_[^_]*_)(.*)$");
+    const attributes = findObjs({
       _type: 'attribute',
       _characterid: perso.charId,
     });
-    var rawList = {};
+    let rawList = {};
     attributes.forEach(function(a) {
-      var m = reg.exec(a.get('name'));
+      const m = reg.exec(a.get('name'));
       if (!m) return;
       rawList[m[1]] = rawList[m[1]] || {};
       rawList[m[1]][m[2]] = a.get('current');
@@ -10628,17 +10634,18 @@ var COFantasy = COFantasy || function() {
 
   function listAllAttacks(perso) {
     if (perso.toutesLesAttaques) return perso.toutesLesAttaques;
-    var rawList;
+    let rawList;
     if (persoEstPNJ(perso)) rawList = extractRepeating(perso, 'pnjatk');
     else rawList = extractRepeating(perso, 'armes');
-    var liste = {}; //liste triée par label d'attaque
-    for (var pref in rawList) {
-      var ra = rawList[pref];
+    let liste = {}; //liste triée par label d'attaque
+    for (let pref in rawList) {
+      let ra = rawList[pref];
       if (ra.armelabel === undefined) ra.armelabel = 0;
       if (liste[ra.armelabel]) {
         error("Plusieurs attaques de label " + ra.armelabel, ra);
         continue;
       }
+      ra.prefixe = pref;
       liste[ra.armelabel] = ra;
     }
     perso.toutesLesAttaques = liste;
@@ -11478,9 +11485,9 @@ var COFantasy = COFantasy || function() {
 
   //N'ajoute pas evt à l'historique
   function resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, explications, options, chargesArme) {
-    var attackingCharId = attaquant.charId;
-    var attackingToken = attaquant.token;
-    var attackerTokName = attaquant.tokName;
+    let attackingCharId = attaquant.charId;
+    let attackingToken = attaquant.token;
+    let attackerTokName = attaquant.tokName;
     attaquant.additionalDmg = [...options.additionalDmg]; // Reset du calcul des dommages additionnels liés à l'attaquant
     var sujetAttaquant = onGenre(attaquant, 'il', 'elle');
     if (options.contact) {
@@ -11499,9 +11506,100 @@ var COFantasy = COFantasy || function() {
         explications.push("Corps de " + typeCorpsElem + " => +1d6 DM");
       });
     }
+    const estMook = attackingToken.get('bar1_link') === '';
+    // Les armes de jet
+    if (weaponStats.armeDeJet && !estMook) {
+      if (weaponStats.nbArmesDeJet < 1) {
+        sendPerso(attaquant, "plus de " + weaponName + " à lancer.");
+        return;
+      }
+      let attrName = weaponStats.prefixe + 'armejetqte';
+      let attr = findObjs({
+        _type: 'attribute',
+        _characterid: attackingCharId,
+        name: attrName
+      }, {
+        caseInsensitive: true
+      });
+      evt.attributes = evt.attributes || [];
+      let max = 1;
+      if (attr.length > 0) {
+        attr = attr[0];
+        if (attr.length > 1) {
+          error("Plus d'un attribut pour la quantité d'armes de jet", attr);
+          attr[1].remove();
+        }
+        max = parseInt(attr.get('max'));
+        if (isNaN(max) || max < 1) {
+          error("Maximum de " + weaponName + " mal formé, vérifier sur la fiche", attr);
+          max = 1;
+        }
+        evt.attributes.push({
+          attribute: attr,
+          current: weaponStats.nbArmesDeJet,
+          max: max
+        });
+      } else {
+        attr = createObj('attribute', {
+          characterid: attackingCharId,
+          name: attrName,
+          current: 1,
+          max: 1
+        });
+        evt.attributes.push({
+          attribute: attr,
+        });
+      }
+      //On cherche si l'arme est empoisonée
+      let poisonAttr = tokenAttribute(attaquant, 'poisonRapide_' + attackLabel);
+      if (poisonAttr.length > 0) {
+        poisonAttr = poisonAttr[0];
+        let infosPoisonMunitions = poisonAttr.get('max');
+        let infosPoisonMunitionsIndex = infosPoisonMunitions.indexOf(' ');
+        let seuilMunitionsEmpoisonnees = parseInt(infosPoisonMunitions.substring(0, infosPoisonMunitionsIndex));
+        let nombreMunitionsEmpoisonnees = parseInt(infosPoisonMunitions.substring(infosPoisonMunitionsIndex + 1));
+        if (!isNaN(seuilMunitionsEmpoisonnees) && !isNaN(nombreMunitionsEmpoisonnees) && nombreMunitionsEmpoisonnees > 0) {
+          attaquant.additionalDmg.push({
+            type: 'poison',
+            value: poisonAttr.get('current'),
+            partialSave: {
+              carac: 'CON',
+              seuil: seuilMunitionsEmpoisonnees
+            }
+          });
+          explications.push("L'arme est empoisonnée");
+          if (nombreMunitionsEmpoisonnees == 1) {
+            evt.deletedAttributes = evt.deletedAttributes || [];
+            evt.deletedAttributes.push(poisonAttr);
+            poisonAttr.remove();
+          } else {
+            evt.attributes.push({
+              attribute: poisonAttr,
+              current: poisonAttr.get('current'),
+              max: infosPoisonMunitions
+            });
+            poisonAttr.set('max', seuilMunitionsEmpoisonnees + ' ' + (nombreMunitionsEmpoisonnees - 1));
+          }
+        }
+      }
+      let restant = weaponStats.nbArmesDeJet;
+      if (randomInteger(100) < weaponStats.tauxDePerte) {
+        if (weaponStats.tauxDePerte < 100)
+          explications.push(weaponName + " n'est pas récupérable");
+        attr.set('max', max - 1);
+        options.armeDeJetPerdue = true;
+      }
+      if (options.retourneEnMain && !options.armeDeJetPerdue) {
+        explications.push(weaponName + " retourne dans la main de son lanceur");
+      } else {
+        restant--;
+        attr.set('current', restant);
+      }
+      explications.push("Il reste " + restant + " " + weaponName + " à " + attackerTokName);
+    }
     // Munitions
     if (options.munition) {
-      if (attackingToken.get('bar1_link') === '') {
+      if (estMook) {
         error("Les munitions ne sont pas supportées pour les tokens qui ne sont pas liées à un personnage", attackingToken);
       }
       var munitionsAttr = findObjs({
@@ -11533,7 +11631,7 @@ var COFantasy = COFantasy || function() {
         max: munitionsMax
       });
       //On cherche si la munition est empoisonnée
-      var poisonAttr = tokenAttribute(attaquant, 'poisonRapide_munition_' + options.munition.nom);
+      let poisonAttr = tokenAttribute(attaquant, 'poisonRapide_munition_' + options.munition.nom);
       if (poisonAttr.length > 0) {
         poisonAttr = poisonAttr[0];
         var infosPoisonMunitions = poisonAttr.get('max');
@@ -13067,8 +13165,8 @@ var COFantasy = COFantasy || function() {
         value: nAEF + 'd6'
       });
     }
-    if (attackLabel) {
-      var poisonAttr = tokenAttribute(attaquant, 'poisonRapide_' + attackLabel);
+    if (attackLabel && (attackingToken.get('bar1_link') === '' || !weaponStats.armeDeJet)) {
+      let poisonAttr = tokenAttribute(attaquant, 'poisonRapide_' + attackLabel);
       if (poisonAttr.length > 0) {
         poisonAttr = poisonAttr[0];
         attaquant.additionalDmg.push({
@@ -15729,7 +15827,7 @@ var COFantasy = COFantasy || function() {
         }
         var hasMana = (ficheAttributeAsInt(target, 'PM', 0) > 0);
         var tempDmg = 0;
-        var estMook = token.get("bar1_link") === '';
+        const estMook = token.get("bar1_link") === '';
         if (hasMana) {
           if (estMook) tempDmg = attributeAsInt(target, 'DMTEMP', 0);
           else tempDmg = ficheAttributeAsInt(target, 'DMTEMP', 0);
@@ -16324,7 +16422,7 @@ var COFantasy = COFantasy || function() {
           });
           att.set("current", vm);
           if (msg) {
-            var charId = att.get('characterid');
+            const charId = att.get('characterid');
             whisperChar(charId, msg);
           }
         }
@@ -16585,6 +16683,32 @@ var COFantasy = COFantasy || function() {
     } else stateCOF.activeTokenId = undefined;
   }
 
+  const armeDeJetRegExpr = new RegExp(/^repeating_(armes|pnjatk)_[^_]*_armejetqte$/);
+
+  function recupererArmesDeJet(attrs, evt) {
+    attrs.forEach(function(a) {
+      const nom = a.get('name');
+      if (!armeDeJetRegExpr.test(nom)) return;
+      const charId = a.get('characterid');
+      let m = parseInt(a.get('max'));
+      if (isNaN(m) || m < 0) {
+        error("Erreur dans les quantités d'arme de jet", a);
+        a.remove();
+        return;
+      }
+      let n = parseInt(a.get('current'));
+      if (isNaN(n) || n < m) {
+        evt.attributes.push({
+          attribute: a,
+          current: n,
+          max: m
+        });
+        whisperChar(charId, "récupère ses armes de jet");
+        a.set('current', m);
+      }
+    });
+  }
+
   function sortirDuCombat() {
     stateCOF.usureOff = undefined;
     stateCOF.prescience = undefined;
@@ -16655,6 +16779,7 @@ var COFantasy = COFantasy || function() {
     resetAttr(attrs, 'charge', evt, "recharge ses armes");
     // Et on récupère les munitions récupérables
     resetAttr(attrs, 'munition', evt, "récupère ses munitions");
+    recupererArmesDeJet(attrs, evt);
     // Remettre défier la mort à 10
     resetAttr(attrs, 'defierLaMort', evt);
     resetAttr(attrs, 'esquiveAcrobatique', evt);
@@ -20548,7 +20673,7 @@ var COFantasy = COFantasy || function() {
           armeEnMainGauche = armeEnMain.get('max');
           armeEnMain = armeEnMain.get('current');
         }
-        _.forEach(attaques, function(armeLabel, att) {
+        _.forEach(attaques, function(att, armeLabel) {
           var nomArme = att.armenom;
           var charge = attrsChar.find(function(a) {
             return (a.get('name') == 'charge_' + armeLabel);
@@ -20585,6 +20710,9 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, "tient " + nomArme + " en main.");
           } else if (armeEnMainGauche == armeLabel) {
             addLineToFramedDisplay(display, "tient " + nomArme + " en main gauche.");
+          } else if (att.armetypeattaque == "Arme de jet") {
+            let n = fieldAsInt(att, 'armejetqte', 1);
+            addLineToFramedDisplay(display, nomArme + " : " + n);
           }
           if (attributeAsBool(perso, 'poisonRapide_' + armeLabel)) {
             addLineToFramedDisplay(display, nomArme + " est enduit de poison.");
@@ -26451,25 +26579,25 @@ var COFantasy = COFantasy || function() {
   //!cof-enduire-poison label type dm save
   //si label = munition_nom, alors on enduit des munitions et non une arme.
   function parseEnduireDePoison(msg) {
-    var options = parseOptions(msg);
-    var optArgs = msg.content.split(' --');
-    var cmd = options.cmd;
+    const options = parseOptions(msg);
+    let optArgs = msg.content.split(' --');
+    let cmd = options.cmd;
     optArgs.shift();
     if (cmd.length < 5) {
       error("Usage : !cof-enduire-poison L type force save", cmd);
       return;
     }
-    var labelArme = cmd[1];
-    var typePoison = cmd[2];
+    let labelArme = cmd[1];
+    let typePoison = cmd[2];
     if (typePoison != 'rapide') {
       error("Le seul type de poison géré est rapide, pas " + typePoison, cmd);
     }
-    var attribut = 'poisonRapide_' + labelArme;
-    var nomMunition;
-    var estMunition = labelArme.startsWith('munition_');
+    let attribut = 'poisonRapide_' + labelArme;
+    let nomMunition;
+    let estMunition = labelArme.startsWith('munition_');
     if (estMunition) nomMunition = labelArme.substring(9);
-    var forcePoison = cmd[3];
-    var savePoison = parseInt(cmd[4]);
+    let forcePoison = cmd[3];
+    let savePoison = parseInt(cmd[4]);
     if (isNaN(savePoison)) {
       error("Le dernier argument non optionnel doit être la difficulté du test de CON", cmd);
       return;
@@ -26493,36 +26621,70 @@ var COFantasy = COFantasy || function() {
     }); //fin du traitement des options
     getSelected(msg, function(selected, playerId) {
       iterSelected(selected, function(perso) {
-        var armeEnduite;
-        var attr = tokenAttribute(perso, attribut);
-        var infosAdditionelles = savePoison;
-        if (estMunition) {
-          armeEnduite = nomMunition.replace(/_/g, ' ');
-          var attrMunitions = tokenAttribute(perso, labelArme);
-          if (attrMunitions.length === 0) {
-            sendPerso(perso, "n'a pas de munition nommée " + nomMunition);
+        let armeEnduite;
+        let attr = tokenAttribute(perso, attribut);
+        let infosAdditionelles = savePoison;
+        let arme;
+        if (!estMunition) {
+          arme = getWeaponStats(perso, labelArme);
+          if (arme.sortilege) {
+            sendPerso(perso, "imossible d'enduire un sortilège de poison", true);
             return;
           }
-          attrMunitions = attrMunitions[0];
-          var munitionsCourantes = parseInt(attrMunitions.get('current'));
-          var maxMunitions = parseInt(attrMunitions.get('max'));
-          if (isNaN(munitionsCourantes) || isNaN(maxMunitions)) {
-            error("Attribut de munitions mal formé", attrMunitions);
-            return;
+          if (arme.typeDegats == 'contondant') {
+            sendPerso(perso, arme.name + " fait des dégâts contondants. Est-il vraiment possible de l'empoisonner ?", true);
+          }
+          if (arme.armeDeJet) estMunition = true;
+        }
+        if (estMunition) {
+          let munitionsCourantes;
+          let maxMunitions;
+          let attrQte;
+          if (arme) {
+            armeEnduite = arme.name;
+            attrQte = findObjs({
+              _type: 'attribute',
+              _characterid: perso.charId,
+              name: arme.prefixe + 'armejetqte'
+            }, {
+              caseInsensitive: true
+            });
+            if (attrQte.length === 0) {
+              munitionsCourantes = 1;
+              maxMunitions = 1;
+            } else {
+              attrQte = attrQte[0];
+            }
+          } else {
+            armeEnduite = nomMunition.replace(/_/g, ' ');
+            attrQte = tokenAttribute(perso, labelArme);
+            if (attrQte.length === 0) {
+              sendPerso(perso, "n'a pas de munition nommée " + nomMunition);
+              return;
+            }
+            attrQte = attrQte[0];
+          }
+          if (munitionsCourantes === undefined) {
+            munitionsCourantes = parseInt(attrQte.get('current'));
+            maxMunitions = parseInt(attrQte.get('max'));
+            if (isNaN(munitionsCourantes) || isNaN(maxMunitions)) {
+              error("Attribut de munitions mal formé", attrQte);
+              return;
+            }
           }
           if (munitionsCourantes === 0) {
             sendPlayer(msg, "Plus de munition " + nomMunition, playerId);
             return;
           }
-          var dejaEnduits = 0;
+          let dejaEnduits = 0;
           if (attr.length > 0) {
-            var infos = attr[0].get('max');
-            var indexInfos = infos.indexOf(' ');
+            let infos = attr[0].get('max');
+            let indexInfos = infos.indexOf(' ');
             if (indexInfos < 1) {
               error("Attribut de poison rapide de munition mal formé (il faudrait la difficulté du save + le nombre de munitions empoisonnées)", infos);
               return;
             }
-            var oldSave = parseInt(infos.substring(0, indexInfos));
+            let oldSave = parseInt(infos.substring(0, indexInfos));
             dejaEnduits = parseInt(infos.substring(indexInfos + 1));
             if (isNaN(dejaEnduits)) dejaEnduits = 0;
             if (dejaEnduits > 0 && (attr[0].get('current') != forcePoison || oldSave != savePoison)) {
@@ -36346,7 +36508,7 @@ var COFantasy = COFantasy || function() {
 }();
 
 on('ready', function() {
-  const scriptVersion = '3.01';
+  const scriptVersion = '3.02';
   on('add:token', COFantasy.addToken);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
   state.COFantasy = state.COFantasy || {
@@ -37696,6 +37858,122 @@ on('ready', function() {
       attr.set('current', predText);
     }
     log("Transformation des attributs numériques en prédicats");
+  }
+  if (state.COFantasy.version < 3.02) {
+    const regPJ = new RegExp("^(repeating_armes_[^_]*_)(.*)$");
+    const regPNJ = new RegExp("^(repeating_pnjatk_[^_]*_)(.*)$");
+    characters.forEach(function(c) {
+      const charId = c.id;
+      let reg;
+      const attrType = findObjs({
+        _type: 'attribute',
+        _characterid: charId,
+        name: 'type_personnage'
+      }, {
+        caseInsensitive: true
+      });
+      if (attrType.length === 0 || attrType[0].get('current') == 'PJ') {
+        reg = regPJ;
+      } else {
+        reg = regPNJ;
+      }
+      let attributes = findObjs({
+        _type: 'attribute',
+        _characterid: charId,
+      });
+      let munitions = {}; //map de nom de munition d'attaques vers attribut
+      let attaques = {};
+      attributes.forEach(function(attr) {
+        const nom = attr.get('name');
+        if (nom.length > 9 && nom.startsWith('munition_')) {
+          let fin = nom.substring(9);
+          munitions[fin] = attr;
+          return;
+        }
+        const m = reg.exec(nom);
+        if (!m) return;
+        attaques[m[1]] = attaques[m[1]] || {};
+        attaques[m[1]][m[2]] = attr;
+      });
+      _.forEach(attaques, function(att, pref) {
+        if (att.armetypeattaque === undefined) return;
+        if (att.armetypeattaque.get('current') != 'Arme de jet') return;
+        let options = [];
+        if (att.armeoptions !== undefined) {
+          options = att.armeoptions.get('current');
+          if (options.startsWith('-')) options = ' ' + options;
+          options = options.split(' --');
+        }
+        let typesMunitions = 0;
+        let current = 1;
+        let max = 1;
+        let taux = 0;
+        let attrMunition;
+        let optionsSansMunitions = options.filter(function(opt) {
+          opt = opt.trim();
+          let cmd = opt.split(' ');
+          if (cmd.length < 2) return true;
+          if (cmd[0] != 'munition') return true;
+          let ma = munitions[cmd[1]];
+          if (ma === undefined) return true;
+          attrMunition = ma;
+          typesMunitions++;
+          max = parseInt(ma.get('max'));
+          if (isNaN(max) || max < 0) max = 1;
+          current = parseInt(ma.get('current'));
+          if (isNaN(current) || current < 0 || current > max) current = max;
+          if (cmd.length > 2) {
+            taux = parseInt(cmd[2]);
+            if (isNaN(taux) || taux < 0 || taux > 100) taux = 0;
+          } else {
+            taux = 100; //La valeur par défaut en option.
+          }
+          return false;
+        });
+        if (typesMunitions == 1) {
+          let qte = att.armejetqte;
+          if (qte === undefined) {
+            if (current !== 1 || max !== 1) {
+              createObj('attribute', {
+                characterid: charId,
+                name: pref + 'armejetqte',
+                current: current,
+                max: max
+              });
+            }
+          } else {
+            qte.set('current', current);
+            qte.set('max', max);
+          }
+          let at = att.armejettaux;
+          if (at === undefined) {
+            if (taux !== 0) {
+              createObj('attribute', {
+                characterid: charId,
+                name: pref + 'armejettaux',
+                current: taux
+              });
+            }
+          } else {
+            at.set('current', taux);
+          }
+          att.armeoptions.set('current', optionsSansMunitions.join(' --'));
+          attrMunition.remove();
+        } else { // On ne sait pas faire la traduction
+          let mod = att.armemodificateurs;
+          if (mod === undefined) {
+            createObj('attribute', {
+              characterid: charId,
+              name: pref + 'armemodificateurs',
+              current: 'retourneEnMain'
+            });
+          } else {
+            mod.set('current', mod.get('current') + ' retourneEnMain');
+          }
+        }
+      });
+    });
+    log("Mise à jour des armes de jet effectuée");
   }
   state.COFantasy.version = scriptVersion;
   handout.forEach(function(hand) {
