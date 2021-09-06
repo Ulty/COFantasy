@@ -19925,6 +19925,8 @@ var COFantasy = COFantasy || function() {
       //Vérification que des options n'empêchent pas l'utilisation de l'attaque
       let attackOptions = ' ' + fieldAsString(att, 'armeoptions', '');
       if (actionImpossible(perso, attackOptions.split(' --'), attLabel)) continue;
+      //On regarde aussi si c'est une arme de jet
+      if (att.armetypeattaque == 'Arme de jet' && fieldAsInt(att, 'armejetqte', 1) === 0) continue;
       let command = "!cof-attack @{selected|token_id} " + target + " " + attLabel + " " + ligneOptions;
       attaquesTriees[attLabel] = bouton(command, att.armenom, perso);
     }
