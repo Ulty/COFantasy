@@ -11479,7 +11479,7 @@ var COFantasy = COFantasy || function() {
   function estAussiArmeDeJet(options) {
     if (options.startsWith('-')) options = ' ' + options;
     options = options.split(' --');
-    for (let opt in options) {
+    for (let opt of options) {
       opt = opt.trim();
       if (opt === '') continue;
       opt = opt.split(' ');
