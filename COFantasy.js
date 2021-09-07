@@ -17604,6 +17604,10 @@ var COFantasy = COFantasy || function() {
           else if (cmd[2] == 'true' || cmd[2] == 'oui') options.etats[cmd[1]] = true;
           else options.etats[cmd[1]] = cmd[2];
           return;
+        case 'degainer':
+          if (cmd.length > 1) options.degainer = cmd[1];
+          else options.degainer = '';
+          return;
         default:
           return;
       }
@@ -21831,17 +21835,17 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseDegainer(msg) {
-    var options = parseOptions(msg);
+    const options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined) {
       error("commande non formée", msg.content);
       return;
     }
-    var armeLabel = '';
+    let armeLabel = '';
     if (cmd.length > 1) armeLabel = cmd[1];
     if (cmd.length > 2 && cmd[2] == 'gauche') options.gauche = true;
-    var personnages = [];
+    let personnages = [];
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
         error("Qui doit dégainer ?", msg);
@@ -22451,6 +22455,15 @@ var COFantasy = COFantasy || function() {
         iterSelected(selected, function(target) {
           spawnFx(target.token.get('left'), target.token.get('top'), options.targetFx, options.pageId);
         });
+      }
+      if (options.degainer !== undefined) {
+        if (lanceur) {
+          degainerArme(lanceur, options.degainer, evt);
+        } else if (selected.length === 1) {
+          iterSelected(selected, function(target) {
+          degainerArme(target, options.degainer, evt);
+          });
+    }
       }
       if (options.montreActions) {
         if (lanceur) {

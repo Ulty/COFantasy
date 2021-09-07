@@ -1,5 +1,6 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.02
+* Options --degainer pour les effets de combat
 * Option d'attaque aussiArmeDeJet, pour les armes qui peuvent être utilisées au contact ou lancées.
 * Affichage du nombre d'armes de jets sur la fiche, plus besoin de munitions.
 

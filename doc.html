@@ -756,6 +756,7 @@
                     <li><code>--image <i>img</i></code> : affiche l'image dans le texte d'activation de l'effet.</li>
                     <li><code>--<i>type</i></code> : il est possible d'associer un type à l'effet. L'utilisation la plus courante est le type <code>poison</code> ou <code>maladie</code>, qui vont permettre de tenir compte des bonus ou immunités contre les effets de ce type.</li>
                     <li><code>--montreActions</code> : affiche les actions du tours de la cible après avoir appliqué l'effet. Utile si les actions du tours dépendent de cet effet, pour afficher une liste à jour.</li>
+                    <li><code>--degainer <i>L</i></code> : le lanceur dégaine l'arme de label <i>L</i>.</li>
                   </ul>
                   <p><code>!cof-boire-alcool</code> et <code>!cof-desaouler</code> permettent de faire varier le niveau d'ébriété. Par exemple, pour tester si le niveau d'ébriété augmente après avoir bu un certain nombre de verres, on peut utiliser la macro <code>!cof-boire-alcool --save CON [[10+?{Nombre de verres}]]</code>.
                 </div>
@@ -1636,8 +1637,8 @@
                   <li>
                     <strong>Arme d'argent</strong> :
                     <ul>
-                      <li><code>!cof-effet-combat armeDArgent <i>--mana 0</i></code> pour lancer le sort. Vous pouvez ajouter l'option <code>--montreActions</code> si vous souhaitez que le prêtre puisse prendre l'arme en main dans le même tour.</li>
-                      <li>Pour attaquer avec l'arme d'argent, faire l'attaque avec les DM appropriés, puis l'utiliser avec les options <code>--si etat armeDArgent --armeDArgent --magique</code>.</li>
+                      <li>Pour attaquer avec l'arme d'argent, faire l'attaque avec les DM appropriés, les modificateurs <code>armeDArgent, magique</code> et l'option <code>--si etat armeDArgent</code>.</li>
+                      <li><code>!cof-effet-combat armeDArgent <i>--mana 0</i></code> pour lancer le sort. Vous pouvez ajouter l'option <code>--degainer <i>L</i></code> (où <i>L</i> est le label de l'attaque avec l'arme d'argent) si vous souhaitez que le prêtre puisse prendre l'arme en main dans le même tour.</li>
                     </ul>
                   </li>
                   <li><strong>Ailes célestes</strong> : <code>!cof-effet-temp ailesCelestes [[5+@{selected|SAG}]] <i>--mana 1</i></code>.</li>
