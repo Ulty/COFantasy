@@ -3755,13 +3755,13 @@ var COFantasy = COFantasy || function() {
 
   //options est un tableaux d'options obtenues par split(' --')
   function actionImpossible(perso, options, defResource) {
-    var ai = options.some(function(opt) {
+    let ai = options.some(function(opt) {
       opt = opt.trim();
       if (opt === '') return false;
-      var cmd = opt.split(' ');
+      const cmd = opt.split(' ');
       switch (cmd[0]) {
         case 'si':
-          var condition = parseCondition(cmd.slice(1));
+          let condition = parseCondition(cmd.slice(1));
           switch (condition.type) {
             case 'etat':
               return !getState(perso, condition.etat);
@@ -3771,25 +3771,33 @@ var COFantasy = COFantasy || function() {
           return false;
         case 'mana':
           if (cmd.length < 2) return false;
-          var mana = parseInt(cmd[1]);
+          let mana = parseInt(cmd[1]);
           if (isNaN(mana) || mana < 0) return false;
           return !depenseManaPossible(perso, mana);
         case 'limiteParJour':
           if (cmd.length < 2) return false;
-          var limiteParJour = parseInt(cmd[1]);
+          let limiteParJour = parseInt(cmd[1]);
           if (isNaN(limiteParJour) || limiteParJour < 1) return false;
-          var ressourceParJour = defResource;
+          let ressourceParJour = defResource;
           if (cmd.length > 2) {
             cmd.splice(0, 2);
             ressourceParJour = cmd.join('_');
           }
-          ressourceParJour = "limiteParJour_" + ressourceParJour;
-          return attributeAsInt(perso, ressourceParJour, limiteParJour) === 0;
+          ressourceParJour = 'limiteParJour_' + ressourceParJour;
+          if (attributeAsInt(perso, ressourceParJour, limiteParJour) > 0) {
+            return false;
+          }
+          //Reste le cas où on peut dépasser cette limite par jour
+          let depasse = tokenAttribute(perso, 'depasseLimiteParJour_'+ressourceParJour);
+          if (depasse.length === 0) return true;
+          let coutDepasse = parseInt(depasse[0].get('current'));
+          if (isNaN(coutDepasse) || coutDepasse < 0) return true;
+          return !depenseManaPossible(perso, coutDepasse);
         case 'limiteParCombat':
           if (cmd.length < 2) return false;
-          var limiteParCombat = parseInt(cmd[1]);
+          let limiteParCombat = parseInt(cmd[1]);
           if (isNaN(limiteParCombat) || limiteParCombat < 1) return false;
-          var ressourceParCombat = defResource;
+          let ressourceParCombat = defResource;
           if (cmd.length > 2) {
             cmd.splice(0, 2);
             ressourceParCombat = cmd.join('_');
@@ -17717,6 +17725,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('soinsModeres', evt, attrs);
     attrs = removeAllAttributes('fortifie', evt, attrs);
     attrs = removeAllAttributes('limiteParJour', evt, attrs);
+    attrs = removeAllAttributes('depasseLimiteParJour', evt, attrs);
     attrs = removeAllAttributes('tueurFantasmagorique', evt, attrs);
     attrs = removeAllAttributes('resisteInjonction', evt, attrs);
     attrs = removeAllAttributes('testsRatesDuTour', evt, attrs);
@@ -37767,14 +37776,26 @@ on('ready', function() {
             current: n,
             characterid: cid,
           });
-          if (a.get('istokenaction')) {
+          let nom = a.get('name');
+          if (nom.startsWith('#') && nom.endsWith('#')) {
             createObj('attribute', {
               name: pref + 'actiontitre',
-              current: '%' + a.get('name'),
+              current: nom.substring(1, nom.length-2),
+              characterid: cid,
+            });
+            createObj('attribute', {
+              name: pref + 'actiontype',
+              current: 'liste',
+              characterid: cid,
+            });
+          } else if (a.get('istokenaction')) {
+            createObj('attribute', {
+              name: pref + 'actiontitre',
+              current: '%' + nom,
               characterid: cid,
             });
           } else { //On copie l'ability et on l'efface
-            let actionText = a.get('name').replace(/-/g, ' ').replace(/_/g, ' ');
+            let actionText = nom.replace(/-/g, ' ').replace(/_/g, ' ');
             let command = a.get('action').trim();
             createObj('attribute', {
               name: pref + 'actiontitre',
