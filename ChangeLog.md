@@ -1,5 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.02
+### Capacité
+* Possibilité optionelle de lancer plus de soins légers en une journée que le rang dans la voie, en échange d'un coût en mana.
 
 ### Corrections de bugs
 * Prise en compte du type drain dans les attaques sur la fiche.

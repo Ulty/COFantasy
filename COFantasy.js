@@ -3788,7 +3788,7 @@ var COFantasy = COFantasy || function() {
             return false;
           }
           //Reste le cas où on peut dépasser cette limite par jour
-          let depasse = tokenAttribute(perso, 'depasseLimiteParJour_'+ressourceParJour);
+          let depasse = tokenAttribute(perso, 'depasseLimiteParJour_' + ressourceParJour);
           if (depasse.length === 0) return true;
           let coutDepasse = parseInt(depasse[0].get('current'));
           if (isNaN(coutDepasse) || coutDepasse < 0) return true;
@@ -9574,7 +9574,7 @@ var COFantasy = COFantasy || function() {
   //Retourne true si il existe une limite qui empêche de lancer le sort
   //N'ajoute pas l'événement à l'historique
   function limiteRessources(personnage, options, defResource, msg, evt, explications) {
-    var depMana = {
+    let depMana = {
       cout_null: true
     };
     if (options.mana) {
@@ -9654,8 +9654,8 @@ var COFantasy = COFantasy || function() {
     }
     if (options.dose) {
       if (personnage) {
-        var nomDose = options.dose.replace(/_/g, ' ');
-        var doses = attributeAsInt(personnage, 'dose_' + options.dose, 0);
+        let nomDose = options.dose.replace(/_/g, ' ');
+        let doses = attributeAsInt(personnage, 'dose_' + options.dose, 0);
         if (doses === 0) {
           sendPerso(personnage, "n'a plus de " + nomDose, options.secret);
           return true;
@@ -9668,11 +9668,36 @@ var COFantasy = COFantasy || function() {
     }
     if (options.limiteAttribut) {
       if (personnage) {
-        var nomAttr = options.limiteAttribut.nom;
-        var currentAttr = attributeAsInt(personnage, nomAttr, 0);
+        let nomAttr = options.limiteAttribut.nom;
+        let currentAttr = attributeAsInt(personnage, nomAttr, 0);
         if (currentAttr >= options.limiteAttribut.limite) {
+          if (options.depasseLimite) {
+              options.mana = options.mana || 0;
+            let cout = options.depasseLimite;
+            let step = cout;
+            let depasseAttr = tokenAttribute(personnage, 'depasse'+nomAttr);
+            if (depasseAttr.length > 0) {
+              depasseAttr = depasseAttr[0];
+              cout = parseInt(depasseAttr.get('current'));
+              if (isNaN(cout) || cout < 1) cout = 1;
+              step = parseInt(depasseAttr.get('max'));
+              if (isNaN(step) || step < 1) step = 1;
+              evt.attributes = evt.attributes || [];
+              evt.attributes.push({
+                attribute: depasseAttr,
+                current: cout
+              });
+            } else {
+              depasseAttr = setTokenAttr(personnage, 'depasse'+nomAttr, cout, evt, {maxVal:cout});
+            }
+              options.mana += cout;
+              depMana = depenseManaPossible(personnage, options.mana, msg);
+              if (!depMana) return true;
+            depasseAttr.set('current', cout+step);
+          } else {
           sendPerso(personnage, options.limiteAttribut.message, options.secret);
           return true;
+          }
         }
         setTokenAttr(personnage, nomAttr, currentAttr + 1, evt);
       } else {
@@ -17397,7 +17422,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque la limite journalière", cmd);
             return;
           }
-          var limiteParJour = parseInt(cmd[1]);
+          let limiteParJour = parseInt(cmd[1]);
           if (isNaN(limiteParJour) || limiteParJour < 1) {
             error("La limite journalière doit être un nombre positif", cmd);
             return;
@@ -17407,6 +17432,18 @@ var COFantasy = COFantasy || function() {
             cmd.splice(0, 2);
             options.limiteParJourRessource = cmd.join('_');
           }
+          return;
+        case 'depasseLimite':
+          if (cmd.length < 2) {
+            error("Il manque le coût en mana pour depasser la limite", cmd);
+            return;
+          }
+          let depasse = parseInt(cmd[1]);
+          if (isNaN(depasse) || depasse < 1) {
+            error("Le coût de dépassement doit être un nombre positif", cmd);
+            return;
+          }
+          options.depasseLimite = depasse;
           return;
         case 'limiteSoinsParJour':
           if (cmd.length < 2) {
@@ -17723,7 +17760,9 @@ var COFantasy = COFantasy || function() {
     var attrs;
     attrs = removeAllAttributes('pressionMortelle', evt);
     attrs = removeAllAttributes('soinsLegers', evt, attrs);
+    attrs = removeAllAttributes('depassesoinsLegers', evt, attrs);
     attrs = removeAllAttributes('soinsModeres', evt, attrs);
+    attrs = removeAllAttributes('depassesoinsModeres', evt, attrs);
     attrs = removeAllAttributes('fortifie', evt, attrs);
     attrs = removeAllAttributes('limiteParJour', evt, attrs);
     attrs = removeAllAttributes('depasseLimiteParJour', evt, attrs);
@@ -22471,9 +22510,9 @@ var COFantasy = COFantasy || function() {
           degainerArme(lanceur, options.degainer, evt);
         } else if (selected.length === 1) {
           iterSelected(selected, function(target) {
-          degainerArme(target, options.degainer, evt);
+            degainerArme(target, options.degainer, evt);
           });
-    }
+        }
       }
       if (options.montreActions) {
         if (lanceur) {
@@ -23971,17 +24010,17 @@ var COFantasy = COFantasy || function() {
   }
 
   function soigner(msg) {
-    var options = parseOptions(msg);
+    const options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd.length < 2) {
       error("Il faut au moins un argument à !cof-soin", cmd);
       return;
     }
-    var soigneur = options.lanceur;
-    var pageId = options.pageId;
-    var cible;
-    var argSoin;
+    let soigneur = options.lanceur;
+    let pageId = options.pageId;
+    let cible;
+    let argSoin;
     if (cmd.length > 4) {
       error("Trop d'arguments à !cof-soin", cmd);
     }
@@ -24011,17 +24050,17 @@ var COFantasy = COFantasy || function() {
       error("Il faut préciser un soigneur pour ces options d'effet", options);
       return;
     }
-    var charId;
-    var niveau = 1;
-    var rangSoin = 0;
-    var soins;
+    let charId;
+    let niveau = 1;
+    let rangSoin = 0;
+    let soins;
     if (soigneur) {
       charId = soigneur.charId;
       niveau = ficheAttributeAsInt(soigneur, 'niveau', 1);
       rangSoin = predicateAsInt(soigneur, 'voieDesSoins', 0);
     }
-    var effet = "soins";
-    var nbDes = 1;
+    let effet = "soins";
+    let nbDes = 1;
     if (options.tempeteDeManaIntense) nbDes += options.tempeteDeManaIntense;
     switch (argSoin) {
       case 'leger':
@@ -24032,7 +24071,7 @@ var COFantasy = COFantasy || function() {
             message: "ne peut plus lancer de sort de soins légers aujourd'hui",
             limite: rangSoin
           };
-        var bonusLeger = niveau + predicateAsInt(soigneur, 'voieDuGuerisseur', 0);
+        let bonusLeger = niveau + predicateAsInt(soigneur, 'voieDuGuerisseur', 0);
         soins = "[[" + nbDes + (options.puissant ? "d10" : "d8") + " +" + bonusLeger + "]]";
         if (options.portee === undefined) options.portee = 0;
         break;
@@ -24045,7 +24084,7 @@ var COFantasy = COFantasy || function() {
             limite: rangSoin
           };
         if (options.portee === undefined) options.portee = 0;
-        var bonusModere = niveau + predicateAsInt(soigneur, 'voieDuGuerisseur', 0);
+        let bonusModere = niveau + predicateAsInt(soigneur, 'voieDuGuerisseur', 0);
         soins = "[[" + (nbDes + 1) + (options.puissant ? "d10" : "d8") + " +" + bonusModere + "]]";
         break;
       case 'groupe':
@@ -24062,7 +24101,7 @@ var COFantasy = COFantasy || function() {
           };
         if (options.puissant) soins = "[[1d10";
         else soins = "[[" + nbDes + "d8";
-        var bonusGroupe = niveau + predicateAsInt(soigneur, 'voieDuGuerisseur', 0);
+        let bonusGroupe = niveau + predicateAsInt(soigneur, 'voieDuGuerisseur', 0);
         soins += " + " + bonusGroupe + "]]";
         msg.content += " --alliesEnVue --self";
         if (options.mana === undefined && estPJ(soigneur)) {
@@ -24088,8 +24127,8 @@ var COFantasy = COFantasy || function() {
         options.recuperation = true;
         if (predicateAsBool(soigneur, 'secondSouffle')) {
           //On limite les soins à ce qui a été perdu dans ce combat
-          var pvDebut = attributeAsInt(soigneur, 'PVsDebutCombat', 0);
-          var pv = parseInt(soigneur.token.get('bar1_value'));
+          const pvDebut = attributeAsInt(soigneur, 'PVsDebutCombat', 0);
+          let pv = parseInt(soigneur.token.get('bar1_value'));
           if (isNaN(pv)) return;
           if (pvDebut <= pv) {
             whisperChar(charId, "Aucun PV perdu pendant ce combat, second souffle sans effet");
@@ -24099,7 +24138,6 @@ var COFantasy = COFantasy || function() {
         }
         break;
       default:
-        //TODO : augmenter les dés en cas de tempete de mana intense
         if (options.tempeteDeManaIntense) {
           var firstDicePart = argSoin.match(/[1-9][0-9]*d\d+/i);
           if (firstDicePart && firstDicePart.length > 0) {
@@ -24113,7 +24151,7 @@ var COFantasy = COFantasy || function() {
         }
         soins = "[[" + argSoin + "]]";
     }
-    var ressourceLimiteSoinsParJour;
+    let ressourceLimiteSoinsParJour;
     if (soigneur && options.limiteSoinsParJour) {
       ressourceLimiteSoinsParJour = effet;
       if (options.limiteSoinsParJourRessource)
@@ -24128,7 +24166,7 @@ var COFantasy = COFantasy || function() {
         options.limiteSoins = soinsRestantsDuJour;
       }
     }
-    var playerId = getPlayerIdFromMsg(msg);
+    const playerId = getPlayerIdFromMsg(msg);
     if (options.tempeteDeMana && soigneur) {
       if (options.tempeteDeMana.cout === 0) {
         //On demande de préciser les options
@@ -37781,7 +37819,7 @@ on('ready', function() {
           if (nom.startsWith('#') && nom.endsWith('#')) {
             createObj('attribute', {
               name: pref + 'actiontitre',
-              current: nom.substring(1, nom.length-2),
+              current: nom.substring(1, nom.length - 2),
               characterid: cid,
             });
             createObj('attribute', {

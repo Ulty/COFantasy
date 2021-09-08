@@ -552,6 +552,7 @@
                     <li><code>--portee <i>n</i></code> : permet de spécifier une distance maximum entre le soigneur et le soigné (au-delà, le soin échoue)</li>
                     <li><code>--transfer</code> : le soin est payé avec les PV du soigneur</li>
                     <li><code>--mana <i>n</i></code> : demande au lanceur de payer <i>n</i> points de mana</li>
+                    <li><code>--depasseLimite <i>n</i></code> : permet de lancer les sorts de soins léger, modéré ou de groupe quand la limite journalière est dépassée, mais en augmentant le coût en mana de <i>n</i> à chaque nouveau dépassement.</li>
                     <li><code>--limiteSoinsParJour <i>n</i></code> : limite le nombre total de PVs soignés par jour. Cette limite peut être associée à une ressource (spécifier en deuxième argument de l'option, peut contenir des espaces), de sorte que seuls les soins qui mentionnent cette ressource sont concernés par cette limitation. Cette option n'a de sens que si un soigneur est précisé.</li>
                   </ul>
                 </div>
@@ -1674,7 +1675,7 @@
                 <h4 class="text-secondary">Voie des soins</h4>
                 <p style="margin-top:0px; margin-bottom:0px">Ajouter un <a href=#predicats>prédicat</a> <code>voieDesSoins</code> avec comme valeur le rang dans la voie.</p>
                 <ol>
-                  <li><strong>Soins légers</strong> : <code>!cof-soin @{selected|token_id} @{target|token_id} leger <i>--mana 0</i></code>. Vous pouvez rajouter un petit effet visuel, par exemple avec <code>--targetFx bubbling-holy</code>.</li>
+                  <li><strong>Soins légers</strong> : <code>!cof-soin @{selected|token_id} @{target|token_id} leger <i>--mana 0</i></code>. Vous pouvez rajouter un petit effet visuel, par exemple avec <code>--targetFx bubbling-holy</code>. À titre personnel, j'ajoute <code>--depasseLimite 1</code> pour permettre de lancer plus de sorts de soins léger en une journée (mais avec une augmentation cumulative du coût en mana de 1 à chaque dépassement).</li>
                   <li><strong>Soins modérés</strong> : <code>!cof-soin @{selected|token_id} @{target|token_id} modere <i>--mana 0</i></code>.</li>
                   <li><strong>Soins de groupe</strong> : <code>!cof-soin @{selected|token_id} groupe <i>--mana 1</i></code> (ne pas oublier de définir des <a href="#allie">alliés</a>). Attention, toutefois, le sort ne va pas automatiquement soigner les personnages notés comme morts, ce qui est le cas général si ils sont tombés à 0 PV. Si certains alliés notés morts ne sont pas vraiment morts, mais juste inconscient, il faudra que le MJ fasse la mise à jour de l'état et des PV lui-même.</li>
                   <li><strong>Guérison</strong> : <code>!cof-guerison @{selected|token_id} @{target|token_id} --portee 0 --limiteParJour 1 <i>--mana 2</i></code>. Pour l'instant ça ne fait que remettre les points de vie au maximum.</li>
