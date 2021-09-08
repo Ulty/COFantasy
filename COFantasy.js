@@ -6265,6 +6265,7 @@ var COFantasy = COFantasy || function() {
       case 'sonique':
       case 'poison':
       case 'maladie':
+      case 'drain':
         options.type = weaponStats.typeDegats;
         break;
       case 'tranchant':
