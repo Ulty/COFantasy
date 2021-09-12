@@ -6298,7 +6298,6 @@ var COFantasy = COFantasy || function() {
         case 'seulementVivant':
         case 'etreinteImmole':
         case 'etreinteScorpion':
-        case 'retourneEnMain':
           scope[cmd[0]] = true;
           return;
         case 'arc':
@@ -6817,7 +6816,7 @@ var COFantasy = COFantasy || function() {
             if (lastEtat.save) {
               error("Redéfinition de la condition de save pour un effet", optArgs);
             }
-            var saveParams = parseSave(cmd);
+            let saveParams = parseSave(cmd);
             if (saveParams) {
               lastEtat.save = saveParams;
               lastEtat.save.entrave =
@@ -6842,6 +6841,13 @@ var COFantasy = COFantasy || function() {
             return;
           }
           error("Pas d'effet auquel appliquer le save", optArgs);
+          return;
+        case 'retourneEnMain':
+          scope.retourneEnMain = {};
+          if (cmd.length > 2) {
+            let conditionRetour = parseSave(cmd);
+            if (conditionRetour) scope.retourneEnMain = conditionRetour;
+          }
           return;
         case "mana":
           if (cmd.length < 2) {
@@ -7443,6 +7449,9 @@ var COFantasy = COFantasy || function() {
     return;
   }
 
+  //Retourne un objet avec
+  // - carac, et possiblement carac2 (si on a le choix)
+  // - seuil
   function parseSave(cmd) {
     if (cmd.length < 3) {
       if (cmd.length > 0)
@@ -7728,6 +7737,11 @@ var COFantasy = COFantasy || function() {
           break;
         case 'critique':
         case 'touche':
+          if (phase === 1 && target === undefined) {
+            resCondition = false;
+            phase = 0;
+            break;
+          }
           if (target === undefined || target.attaqueCalculee === undefined) {
             callIfAllDone(etatParent, callback);
             return true;
@@ -9672,10 +9686,10 @@ var COFantasy = COFantasy || function() {
         let currentAttr = attributeAsInt(personnage, nomAttr, 0);
         if (currentAttr >= options.limiteAttribut.limite) {
           if (options.depasseLimite) {
-              options.mana = options.mana || 0;
+            options.mana = options.mana || 0;
             let cout = options.depasseLimite;
             let step = cout;
-            let depasseAttr = tokenAttribute(personnage, 'depasse'+nomAttr);
+            let depasseAttr = tokenAttribute(personnage, 'depasse' + nomAttr);
             if (depasseAttr.length > 0) {
               depasseAttr = depasseAttr[0];
               cout = parseInt(depasseAttr.get('current'));
@@ -9688,15 +9702,17 @@ var COFantasy = COFantasy || function() {
                 current: cout
               });
             } else {
-              depasseAttr = setTokenAttr(personnage, 'depasse'+nomAttr, cout, evt, {maxVal:cout});
+              depasseAttr = setTokenAttr(personnage, 'depasse' + nomAttr, cout, evt, {
+                maxVal: cout
+              });
             }
-              options.mana += cout;
-              depMana = depenseManaPossible(personnage, options.mana, msg);
-              if (!depMana) return true;
-            depasseAttr.set('current', cout+step);
+            options.mana += cout;
+            depMana = depenseManaPossible(personnage, options.mana, msg);
+            if (!depMana) return true;
+            depasseAttr.set('current', cout + step);
           } else {
-          sendPerso(personnage, options.limiteAttribut.message, options.secret);
-          return true;
+            sendPerso(personnage, options.limiteAttribut.message, options.secret);
+            return true;
           }
         }
         setTokenAttr(personnage, nomAttr, currentAttr + 1, evt);
@@ -11523,6 +11539,19 @@ var COFantasy = COFantasy || function() {
     return;
   }
 
+  function degainerArmeLancee(attaquant, attackLabel, evt) {
+    let arme = armesEnMain(attaquant);
+    if (arme && arme.options && estAussiArmeDeJet(arme.options) == attackLabel) {
+      degainerArme(attaquant, '', evt, {
+        seulementDroite: true
+      });
+    } else if (attaquant.armeGauche && attaquant.armeGauche.options && estAussiArmeDeJet(attaquant.armeGauche.options) == attackLabel) {
+      degainerArme(attaquant, '', evt, {
+        gauche: true
+      });
+    }
+  }
+
   //attaquant doit avoir un champ name
   function attackExpression(attaquant, nbDe, dice, crit, plusFort, weaponStats) {
     var de = computeDice(attaquant, {
@@ -11646,22 +11675,16 @@ var COFantasy = COFantasy || function() {
         attr.set('max', max - 1);
         options.armeDeJetPerdue = true;
       }
-      if (options.retourneEnMain && !options.armeDeJetPerdue) {
-        explications.push(weaponName + " retourne dans la main de son lanceur");
+      restant--;
+      attr.set('current', restant);
+      if (!options.armeDeJetPerdue) { //prépare pour un éventuel retour en main
+        options.attrArmeDeJet = {
+          attribute: attr,
+          restant: restant
+        };
       } else {
-        restant--;
-        attr.set('current', restant);
         if (restant === 0) {
-          let arme = armesEnMain(attaquant);
-          if (arme && arme.options && estAussiArmeDeJet(arme.options) == attackLabel) {
-            degainerArme(attaquant, '', evt, {
-              seulementDroite: true
-            });
-          } else if (attaquant.armeGauche && attaquant.armeGauche.options && estAussiArmeDeJet(attaquant.armeGauche.options) == attackLabel) {
-            degainerArme(attaquant, '', evt, {
-              gauche: true
-            });
-          }
+          degainerArmeLancee(attaquant, attackLabel, evt);
         }
       }
       explications.push("Il reste " + restant + " " + weaponName + " à " + attackerTokName);
@@ -13071,12 +13094,25 @@ var COFantasy = COFantasy || function() {
       }
     });
     if (ciblesTouchees.length === 0 || options.test || options.feinte) {
-      finaliseDisplay(display, explications, evt, attaquant, cibles, options, echecCritique);
-      if (echecCritique) {
-        if (stateCOF.options.affichage.val.table_crit.val)
-          sendChat('COF', "[[1t[Echec-Critique-Contact]]]");
-        else sendChat('COF', "/w GM " + suggererEchecCritique(attaquant, weaponStats, cibles, options, evt));
-      }
+      //Évaluation finale pour le cas où l'attaque a raté
+      evalITE(attaquant, undefined, d20roll, options, 1, evt, explications, options, function() {
+        if (options.attrArmeDeJet) {
+          if (options.retourneEnMain) {
+            options.attrArmeDeJet.attribute.set('current', options.attrArmeDeJet.restant + 1);
+            explications.push(weaponStats.name + " retourne dans la main de son lanceur");
+          } else {
+            if (options.attrArmeDeJet.restant === 0) {
+              degainerArmeLancee(attaquant, attackLabel, evt);
+            }
+          }
+        }
+        finaliseDisplay(display, explications, evt, attaquant, cibles, options, echecCritique);
+        if (echecCritique) {
+          if (stateCOF.options.affichage.val.table_crit.val)
+            sendChat('COF', "[[1t[Echec-Critique-Contact]]]");
+          else sendChat('COF', "/w GM " + suggererEchecCritique(attaquant, weaponStats, cibles, options, evt));
+        }
+      });
       return;
     }
     var attackingCharId = attaquant.charId;
@@ -13347,8 +13383,20 @@ var COFantasy = COFantasy || function() {
       });
     }
     ciblesTouchees.forEach(function(target) {
+      //l'évaluation finale des conditions quand on sait si l'attaque a touché.
       evalITE(attaquant, target, d20roll, options, 1, evt, explications, options, function() {
         target.attaquant = attaquant;
+        if (options.attrArmeDeJet) {
+          if (options.retourneEnMain) {
+            options.attrArmeDeJet.attribute.set('current', options.attrArmeDeJet.restant + 1);
+            explications.push(weaponStats.name + " retourne dans la main de son lanceur");
+          } else {
+            if (options.attrArmeDeJet.restant === 0) {
+              degainerArmeLancee(attaquant, attackLabel, evt);
+            }
+          }
+          options.attrArmeDeJet = undefined;
+        }
         if (options.enveloppe !== undefined) {
           if (options.enveloppe.type == 'etreinte' && attributeAsBool(target, 'armureDEau')) {
             target.messages.push("L'armure d'eau empêche " + target.tokName + " d'être étreint");
