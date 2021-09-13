@@ -11686,8 +11686,8 @@ var COFantasy = COFantasy || function() {
         if (restant === 0) {
           degainerArmeLancee(attaquant, attackLabel, evt);
         }
+        explications.push("Il reste " + restant + " " + weaponName + " à " + attackerTokName);
       }
-      explications.push("Il reste " + restant + " " + weaponName + " à " + attackerTokName);
     }
     if (options.aussiArmeDeJet && !estMook) {
       let armeAssociee = getWeaponStats(attaquant, options.aussiArmeDeJet);
@@ -13082,6 +13082,15 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function attaqueNeTouchePas(attaquant, echecCritique, weaponStats, display, options, evt, explications, pageId, cibles) {
+    finaliseDisplay(display, explications, evt, attaquant, cibles, options, echecCritique);
+    if (echecCritique) {
+      if (stateCOF.options.affichage.val.table_crit.val)
+        sendChat('COF', "[[1t[Echec-Critique-Contact]]]");
+      else sendChat('COF', "/w GM " + suggererEchecCritique(attaquant, weaponStats, cibles, options, evt));
+    }
+  }
+
   function attackDealDmg(attaquant, ciblesTouchees, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles) {
     cibles.forEach(function(target) {
       if (options.test || options.feinte || !target.touche) {
@@ -13093,31 +13102,50 @@ var COFantasy = COFantasy || function() {
         });
       }
     });
+    let attackerTokName = attaquant.tokName;
     if (ciblesTouchees.length === 0 || options.test || options.feinte) {
       //Évaluation finale pour le cas où l'attaque a raté
       evalITE(attaquant, undefined, d20roll, options, 1, evt, explications, options, function() {
         if (options.attrArmeDeJet) {
           if (options.retourneEnMain) {
+            if (options.retourneEnMain.carac) {
+              explications.push(weaponStats.name + " retourne vers son lanceur");
+              let optAttrape = {
+                msgPour: " pour rattraper son arme"
+              };
+              let sid = 'retourEnMain_' + attaquant.charId;
+              let expliquer = function(msg) {
+                explications.push(msg);
+              };
+              save(options.retourneEnMain, attaquant, sid, expliquer, optAttrape, evt, function(reussite, rolltext) {
+                if (reussite) {
+                  options.attrArmeDeJet.attribute.set('current', options.attrArmeDeJet.restant + 1);
+                  explications.push(attackerTokName + " rattrape " + weaponStats.name);
+                } else {
+                  explications.push("Raté ! Il reste " + options.attrArmeDeJet.restant + " " + weaponStats.name + " à " + attackerTokName);
+                  if (options.attrArmeDeJet.restant === 0) {
+                    degainerArmeLancee(attaquant, attackLabel, evt);
+                  }
+                }
+                attaqueNeTouchePas(attaquant, echecCritique, weaponStats, display, options, evt, explications, pageId, cibles);
+              });
+              return;
+            }
             options.attrArmeDeJet.attribute.set('current', options.attrArmeDeJet.restant + 1);
             explications.push(weaponStats.name + " retourne dans la main de son lanceur");
           } else {
+            explications.push("Il reste " + options.attrArmeDeJet.restant + " " + weaponStats.name + " à " + attackerTokName);
             if (options.attrArmeDeJet.restant === 0) {
               degainerArmeLancee(attaquant, attackLabel, evt);
             }
           }
         }
-        finaliseDisplay(display, explications, evt, attaquant, cibles, options, echecCritique);
-        if (echecCritique) {
-          if (stateCOF.options.affichage.val.table_crit.val)
-            sendChat('COF', "[[1t[Echec-Critique-Contact]]]");
-          else sendChat('COF', "/w GM " + suggererEchecCritique(attaquant, weaponStats, cibles, options, evt));
-        }
+        attaqueNeTouchePas(attaquant, echecCritique, weaponStats, display, options, evt, explications, pageId, cibles);
       });
       return;
     }
     var attackingCharId = attaquant.charId;
     var attackingToken = attaquant.token;
-    var attackerTokName = attaquant.tokName;
     options.attaquant = attaquant;
     //Les dégâts
     //Dégâts insrits sur la ligne de l'arme
@@ -13370,12 +13398,12 @@ var COFantasy = COFantasy || function() {
       });
       allChars.forEach(function(ch) {
         if (ch.id == attackingCharId) return;
-        var attrLienEpique = charAttribute(ch.id, 'lienEpique');
+        let attrLienEpique = charAttribute(ch.id, 'lienEpique');
         if (attrLienEpique.length === 0) return;
         if (attrLienEpique[0].get('current') != options.lienEpique) return;
-        var attrCibles = charAttribute(ch.id, 'dernieresCiblesAttaquees');
+        let attrCibles = charAttribute(ch.id, 'dernieresCiblesAttaquees');
         if (attrCibles.length === 0) return;
-        var ciblesAttaquees = attrCibles[0].get('current');
+        let ciblesAttaquees = attrCibles[0].get('current');
         if (ciblesAttaquees === '') return;
         ciblesAttaquees.split(' ').forEach(function(ci) {
           attaqueParLienEpique.add(ci);
@@ -13391,6 +13419,7 @@ var COFantasy = COFantasy || function() {
             options.attrArmeDeJet.attribute.set('current', options.attrArmeDeJet.restant + 1);
             explications.push(weaponStats.name + " retourne dans la main de son lanceur");
           } else {
+            explications.push("Il reste " + options.attrArmeDeJet.restant + " " + weaponStats.name + " à " + attackerTokName);
             if (options.attrArmeDeJet.restant === 0) {
               degainerArmeLancee(attaquant, attackLabel, evt);
             }
@@ -14205,7 +14234,7 @@ var COFantasy = COFantasy || function() {
                   });
               }
             };
-            var expliquer = function(msg) {
+            let expliquer = function(msg) {
               target.messages.push(msg);
             };
             //Ajoute les états avec save à la cible
@@ -27463,41 +27492,55 @@ var COFantasy = COFantasy || function() {
   }
 
   function enSelle(msg) {
-    var cmd = msg.content.split(' ');
+    let cmd = msg.content.split(' ');
     if (cmd.length < 3) {
       error("Il faut 2 arguments pour !cof-en-selle", cmd);
       return;
     }
-    var cavalier = persoOfId(cmd[1]);
+    const cavalier = persoOfId(cmd[1]);
     if (cavalier === undefined) {
       error("Premier argument de !cof-en-selle incorrect", cmd);
       return;
     }
-    if (attributeAsBool(cavalier, 'monteSur')) {
-      sendPerso(cavalier, "est déjà en selle");
+    const tokenC = cavalier.token;
+    const pageId = tokenC.get('pageid');
+    let evt = {
+      type: 'En selle'
+    };
+    addEvent(evt);
+    let attrMonteSur = tokenAttribute(cavalier, 'monteSur');
+    if (attrMonteSur.length > 0) {
+      //Alors le cavalier va descendre de sa monture
+      attrMonteSur = attrMonteSur[0];
+      let monture = persoOfId(attrMonteSur.get('current'), attrMonteSur.get('max'), pageId);
+      evt.deletedAttributes = evt.deletedAttributes || [];
+      evt.deletedAttributes.push(attrMonteSur);
+      attrMonteSur.remove();
+      if (monture === undefined) {
+        sendPerso(cavalier, "descend de sa monture");
+      } else {
+        sendPerso(cavalier, "descend de " + monture.token.get('name'));
+        removeTokenAttr(monture, 'estMontePar', evt);
+        removeTokenAttr(monture, 'positionSurMonture', evt);
+      }
       return;
     }
-    var tokenC = cavalier.token;
-    var pageId = tokenC.get('pageid');
-    var monture = persoOfId(cmd[2], cmd[2], pageId);
+    let monture = persoOfId(cmd[2], cmd[2], pageId);
     if (monture === undefined || !predicateAsBool(monture, 'monture')) {
       sendPerso(cavalier, "ne peut pas monter là-dessus");
       log(cmd);
       return;
     }
-    var tokenM = monture.token;
-    var nomMonture = tokenM.get('name');
+    const tokenM = monture.token;
+    const nomMonture = tokenM.get('name');
     if (attributeAsBool(monture, 'estMontePar')) {
-      sendPerso(cavalier, "ne peut monter sur " + nomMonture + " car elle a déjà un cavalier");
+      sendPerso(cavalier, "ne peut monter sur " + nomMonture + " car " + onGenre(monture, 'il', 'elle') + " a déjà un cavalier");
       return;
     }
     if (distanceCombat(tokenC, tokenM, pageId) > 0) {
       sendPerso(cavalier, "est trop loin de " + nomMonture);
       return;
     }
-    var evt = {
-      type: 'En selle'
-    };
     setTokenAttr(cavalier, 'monteSur', tokenM.id, evt, {
       msg: " monte sur " + nomMonture,
       maxVal: nomMonture
@@ -27515,7 +27558,6 @@ var COFantasy = COFantasy || function() {
         setTokenInitAura(monture);
       }
     }
-    addEvent(evt);
   }
 
   function listeElixirs(rang) {
@@ -36108,6 +36150,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //Réagit au déplacement manuel d'un token.
+  // suivis est l'ensemble des tokens qui a déjà été bougé suite à ce déplacement
   function moveToken(token, prev, synchronisation, suivis) {
     var charId = token.get('represents');
     if (charId === '') return;
@@ -36146,18 +36189,32 @@ var COFantasy = COFantasy || function() {
       token.set('top', prev.top);
       return;
     }
+    suivis = suivis || new Set();
     //On regarde d'abord si perso est sur une monture
-    var attrMonteSur = tokenAttribute(perso, 'monteSur');
+    let attrMonteSur = tokenAttribute(perso, 'monteSur');
     if (attrMonteSur.length > 0) {
-      var monture = persoOfId(attrMonteSur[0].get('current'), attrMonteSur[0].get('max'), pageId);
-      attrMonteSur[0].remove();
+      let monture = persoOfId(attrMonteSur[0].get('current'), attrMonteSur[0].get('max'), pageId);
       if (monture === undefined) {
         sendPerso(perso, "descend de sa monture");
+        attrMonteSur[0].remove();
         return;
-      } else {
-        sendPerso(perso, "descend de " + monture.token.get('name'));
-        removeTokenAttr(monture, 'estMontePar');
-        removeTokenAttr(monture, 'positionSurMonture');
+      } else if (!suivis.has(monture.token.id)) {
+        let position = tokenAttribute(monture, 'positionSurMonture');
+        if (position.length > 0) {
+          let dx = parseInt(position[0].get('current'));
+          let dy = parseInt(position[0].get('max'));
+          if (!(isNaN(dx) || isNaN(dy))) {
+            let sprev = {
+              left: monture.token.get('left'),
+              top: monture.token.get('top'),
+            };
+            monture.token.set('left', x - dx);
+            monture.token.set('top', y - dy);
+            monture.token.set('rotation', token.get('rotation') - attributeAsInt(monture, 'directionSurMonture', 0));
+            suivis.add(token.id);
+            moveToken(monture.token, sprev, synchronisation, suivis);
+          }
+        }
       }
       if (stateCOF.combat) {
         var evt = {
@@ -36246,31 +36303,32 @@ var COFantasy = COFantasy || function() {
       }
     }
     //si non, perso est peut-être une monture
-    var attrMontePar = tokenAttribute(perso, 'estMontePar');
+    let attrMontePar = tokenAttribute(perso, 'estMontePar');
     attrMontePar.forEach(function(a) {
-      var cavalier = persoOfId(a.get('current'), a.get('max'), pageId);
+      let cavalier = persoOfId(a.get('current'), a.get('max'), pageId);
       if (cavalier === undefined) {
         a.remove();
         return;
       }
-      var position = tokenAttribute(perso, 'positionSurMonture');
-      if (position.length > 0) {
-        var dx = parseInt(position[0].get('current'));
-        var dy = parseInt(position[0].get('max'));
-        if (!(isNaN(dx) || isNaN(dy))) {
-          x += dx;
-          y += dy;
+      if (!suivis.has(cavalier.token.id)) {
+        let position = tokenAttribute(perso, 'positionSurMonture');
+        if (position.length > 0) {
+          let dx = parseInt(position[0].get('current'));
+          let dy = parseInt(position[0].get('max'));
+          if (!(isNaN(dx) || isNaN(dy))) {
+            x += dx;
+            y += dy;
+          }
         }
+        cavalier.token.set('left', x);
+        cavalier.token.set('top', y);
+        cavalier.token.set('rotation', token.get('rotation') + attributeAsInt(perso, 'directionSurMonture', 0));
       }
-      cavalier.token.set('left', x);
-      cavalier.token.set('top', y);
-      cavalier.token.set('rotation', token.get('rotation') + attributeAsInt(perso, 'directionSurMonture', 0));
     });
     //Si le token suivait quelqu'un, ce n'est plus le cas
     if (prev.suit === undefined) nePlusSuivre(perso, pageId);
     //On bouge tous les tokens qui suivent le personnage
     //sauf si on a déjà été bougé.
-    suivis = suivis || new Set();
     if (!suivis.has(token.id)) {
       suivis.add(token.id);
       var attrSuivi = tokenAttribute(perso, 'estSuiviPar');
@@ -36351,7 +36409,7 @@ var COFantasy = COFantasy || function() {
             }
             suivant.token.set('left', nsx);
             suivant.token.set('top', nsy);
-            var sprev = {
+            let sprev = {
               left: sx,
               top: sy,
               suit: true,

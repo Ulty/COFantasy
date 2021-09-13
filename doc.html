@@ -839,7 +839,7 @@
               <h4 class="text-secondary" id="montures">Montures</h4>
               <div class="decalage">
                 <p>Pour qu'un personnage puisse monter sur une monture, il faut que cette monture soit associée à une fiche de personnage et qu'il possède un <a href=#predicats>prédicat</a> <code>monture</code>. La commande pour monter sur la monture est <code>!cof-en-selle @{selected|token_id} @{target|token_id}</code>, à lancer en sélectionnant le cavalier.</p>
-                <p>On peut ensuite bouger la monture, cela déplace le cavalier. Le mieux est de lancer la commander alors que le token du cavalier est sur le token de la monture. Si on déplace le cavalier, cela le fait descendre de sa monture.</p>
+                <p>On peut ensuite bouger la monture, cela déplace le cavalier. Le mieux est de lancer la commander alors que le token du cavalier est sur le token de la monture. Si on déplace le cavalier, cela fait aussi bouger sa monture.</p>
               </div>
               <h4 class="text-secondary" id="suivre">Suivre un autre personnages</h4>
               <div class="decalage">
@@ -1053,7 +1053,7 @@
               <div class="decalage">
                 <h4 class="text-secondary">Voie du cavalier</h4>
                 <ol>
-                  <li><strong>Fidèle monture</strong> : Faire un personnage pour la monture, avec un <a href=#predicats>prédicat</a> <code>monture</code>. Pour monter sur la monture, on peut utiliser <code>!cof-en-selle @{selected|token_id} <i>nom_de_la_monture</i></code>. Pour en descendre, il suffit de bouger le token du chevalier.</li>
+                  <li><strong>Fidèle monture</strong> : Faire un personnage pour la monture, avec un <a href=#predicats>prédicat</a> <code>monture</code>. Pour monter sur la monture, on peut utiliser une ability de type token action, avec <code>!cof-en-selle @{selected|token_id} <i>nom_de_la_monture</i></code>. Pour en descendre, il suffit de cliquer à nouveau sur le bouton de l'ability.</li>
                   <li><strong>Cavalier émérite</strong> : ajuster la DEF de la monture. Ajouter au chevalier un <a href=#predicats>prédicat</a> <code>cavalierEmerite:2</code>.</li>
                   <li><strong>Monture magique</strong> : pour les soins automatiques de la nuit, ajouter un <a href=#predicats>prédicat</a> <code>montureMagique</code>.</li>
                   <li>
@@ -1785,7 +1785,7 @@
               <div class="decalage">
                 <h4 class="text-secondary">Voie de l'arc et du cheval</h4>
                 <ol>
-                  <li><strong>Monture loyale</strong> : ajouter un <a href=#predicats>prédicat</a> <code>montureLoyale</code>. Pour la monture, il faut faire un personnage avec un <a href=#predicats>prédicat</a> <code>monture</code>. Pour monter de la monture, utiliser <code>!cof-en-selle @{selected|token_id} nom_de_la_monture</code>, et pour en descendre, il suffit de bouger le token du samouraï.</li>
+                  <li><strong>Monture loyale</strong> : ajouter un <a href=#predicats>prédicat</a> <code>montureLoyale</code>. Pour la monture, il faut faire un personnage avec un <a href=#predicats>prédicat</a> <code>monture</code>. Pour monter de la monture, utiliser <code>!cof-en-selle @{selected|token_id} nom_de_la_monture</code>, et pour en descendre, il suffit de faire la même commande (utiliser une ability "token action" rend cela assez facile à l'usage).</li>
                   <li><strong>Tir en mouvement</strong> : pas de support particulier.</li>
                   <li><strong>Tir fatal</strong> : ajouter un attribut <code>tirFatal</code>, de valeur <code>true</code>. Pour tenir compte du bonus supplémentaire avec le rang dans la voie, ajouter un <a href=#predicats>prédicat</a> <code>voieDeLArcEtDuCheval</code> de valeur le rang atteint dans cette voie. Si vous souhaitez que cette capacité s'applique à une autre classe d'arme que les arcs, vous pouvez spécifier ce nom à la place de <code>true</code> dans la valeur courante de l'attribut <code>tirfatal</code> (attention, sans accent).</li>
                 </ol>
