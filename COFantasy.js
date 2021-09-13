@@ -6072,7 +6072,7 @@ var COFantasy = COFantasy || function() {
           error("Il manque un argument pour comparer l'attribut de la cible", args);
           return;
         }
-        var res = {
+        let res = {
           type: 'attributCible',
           attribute: args[1],
           valeur: args[2].toLowerCase(),
@@ -6089,6 +6089,19 @@ var COFantasy = COFantasy || function() {
           }
         }
         return res;
+      case 'predicatCible':
+        if (args.length < 2) {
+          error("Il manque le prédicat de la cible", args);
+          return;
+        }
+        let valeur;
+        if (args.length > 2) valeur = args[2];
+        return {
+          type: 'predicatCible',
+          predicat: args[1],
+          valeur: valeur,
+          text: args[1] + ' ' + valeur
+        };
       case 'deAttaque':
         if (args.length < 2) {
           error("condition non reconnue", args);
@@ -7584,6 +7597,12 @@ var COFantasy = COFantasy || function() {
           });
         }
         return resAttrCible;
+      case 'predicatCible':
+        let res = cibles.every(function(target) {
+          if (cond.valeur === undefined) return predicateAsBool(target, cond.predicat);
+          return predicateAsBool(target, cond.predicat) == cond.valeur;
+        });
+        return res;
       case 'deAttaque':
         if (options && options.auto) return false;
         if (deAttaque === undefined) {
@@ -7728,6 +7747,7 @@ var COFantasy = COFantasy || function() {
         case 'moins':
         case 'etatCible':
         case 'attributCible':
+        case 'predicatCible':
           if (target === undefined) {
             callIfAllDone(etatParent, callback);
             return true;
