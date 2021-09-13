@@ -12,6 +12,7 @@
 * Options --degainer pour les effets de combat
 * Option d'attaque aussiArmeDeJet, pour les armes qui peuvent être utilisées au contact ou lancées.
 * Affichage du nombre d'armes de jets sur la fiche, plus besoin de munitions.
+* Support de la ceinture de rage améliorée d'Anathazerïn
 
 ## 3.01
 * Affichage des armes cochées au lieu des armes non cochées, qui doivent pouvoir exister pour garder des attaques avec des armes que le personnage a temporairement perdues.

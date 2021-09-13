@@ -8737,13 +8737,20 @@ var COFantasy = COFantasy || function() {
     var rageBerserk = tokenAttribute(target, 'rageDuBerserk');
     if (rageBerserk.length > 0) {
       rageBerserk = rageBerserk[0].get('current');
+      var modRage;
+      var msgRage;
       if (rageBerserk == 'furie') {
-        defense -= 6;
-        explications.push("Furie du berserk => -6 DEF");
+        modRage = -6;
+        msgRage = "Furie";
       } else {
-        defense -= 4;
-        explications.push("Rage du berserk => -4 DEF");
+        modRage = -4;
+        msgRage = "Rage";
       }
+      if(predicateAsBool(target, 'rageDuBerserkAmelioree')) {
+        modRage /= 2;
+      }
+      explications.push(msgRage + " du berserk => " + modRage + " DEF");
+      defense += modRage;
     }
     var combatEnPhalange = predicateAsBool(target, 'combatEnPhalange');
     if (combatEnPhalange || capaciteDisponible(target, 'esquiveFatale', 'combat')) {
