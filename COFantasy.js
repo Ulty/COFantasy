@@ -44,6 +44,8 @@ var COFantasy = COFantasy || function() {
 
   "use strict";
 
+  const versionFiche = 5.0;
+
   const PIX_PER_UNIT = 70;
   const HISTORY_SIZE = 200;
   const BS_LABEL = 'text-transform: uppercase; display: inline; padding: .2em .6em .3em; font-size: 75%; line-height: 2; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25em;';
@@ -6173,6 +6175,46 @@ var COFantasy = COFantasy || function() {
     return;
   }
 
+  function parseDmg(expr) {
+    let dm = {
+      nbDe: 0,
+      dice: 4,
+      bonus: 0
+    };
+    let exprDM = expr.trim().toLowerCase();
+    let indexD = exprDM.indexOf('d');
+    if (indexD > 0) {
+      dm.nbDe = parseInt(exprDM.substring(0, indexD));
+      if (isNaN(dm.nbDe) || dm.nbDe < 0) {
+        error("Expression de dégâts " + exprDM + " mal formée", expr);
+        return;
+      }
+      exprDM = exprDM.substring(indexD + 1);
+      indexD = exprDM.search(/[+\-]/);
+      if (indexD <= 0) {
+        dm.dice = parseInt(exprDM);
+        if (isNaN(dm.dice) || dm.dice < 1) {
+          error("Nombre de faces incorrect dans l'expression des dégâts", expr);
+          return;
+        }
+        return dm;
+      }
+      exprDM = exprDM.replace('+-', '-');
+      dm.dice = parseInt(exprDM.substring(0, indexD));
+      if (isNaN(dm.dice) || dm.dice < 1) {
+        error("Nombre de faces incorrect dans l'expression des dégâts", expr);
+        return;
+      }
+      exprDM = exprDM.substring(indexD);
+    }
+    dm.bonus = parseInt(exprDM);
+    if (isNaN(dm.bonus)) {
+      error("Expression de dégâts incorrecte", expr);
+      return;
+    }
+    return dm;
+  }
+
   //!cof-attack id_attaquant id_cible label_attaque [options]
   function parseAttack(msg) {
     var optArgs = msg.content.split(' --');
@@ -6433,44 +6475,8 @@ var COFantasy = COFantasy || function() {
             error("Il manque la valeur après l'option --dm", cmd);
             return;
           }
-          var dm = {
-            nbDe: 0,
-            dice: 4,
-            bonus: 0
-          };
-          var exprDM = cmd.slice(1).join('').trim().toLowerCase();
-          var indexD = exprDM.indexOf('d');
-          if (indexD > 0) {
-            dm.nbDe = parseInt(exprDM.substring(0, indexD));
-            if (isNaN(dm.nbDe) || dm.nbDe < 0) {
-              error("Expression de dégâts " + exprDM + " mal formée", cmd);
-              return;
-            }
-            exprDM = exprDM.substring(indexD + 1);
-            indexD = exprDM.search(/[+\-]/);
-            if (indexD <= 0) {
-              dm.dice = parseInt(exprDM);
-              if (isNaN(dm.dice) || dm.dice < 1) {
-                error("Nombre de faces incorrect dans l'expression des dégâts", cmd);
-                return;
-              }
-              options.dm = dm;
-              return;
-            }
-            exprDM = exprDM.replace('+-', '-');
-            dm.dice = parseInt(exprDM.substring(0, indexD));
-            if (isNaN(dm.dice) || dm.dice < 1) {
-              error("Nombre de faces incorrect dans l'expression des dégâts", cmd);
-              return;
-            }
-            exprDM = exprDM.substring(indexD);
-          }
-          dm.bonus = parseInt(exprDM);
-          if (isNaN(dm.bonus)) {
-            error("Expression de dégâts incorrecte", cmd);
-            return;
-          }
-          options.dm = dm;
+          let dm = parseDmg(cmd.slice(1).join(''));
+          if (dm) options.dm = dm;
           return;
         case 'portee':
           if (cmd.length < 1) {
@@ -8746,7 +8752,7 @@ var COFantasy = COFantasy || function() {
         modRage = -4;
         msgRage = "Rage";
       }
-      if(predicateAsBool(target, 'rageDuBerserkAmelioree')) {
+      if (predicateAsBool(target, 'rageDuBerserkAmelioree')) {
         modRage /= 2;
       }
       explications.push(msgRage + " du berserk => " + modRage + " DEF");
@@ -29347,7 +29353,7 @@ var COFantasy = COFantasy || function() {
       createObj('attribute', {
         _characterid: charId,
         name: 'version',
-        current: '4.04'
+        current: versionFiche
       });
     }
     var pnj = true;
@@ -33295,6 +33301,662 @@ var COFantasy = COFantasy || function() {
       });
   }
 
+  function deleteAttribute(attr, evt) {
+    evt.deletedAttributes.push(attr);
+    attr.remove();
+  }
+
+  function changeAttributeName(attr, nom, evt) {
+    evt.attributes.push({
+      attribute: attr,
+      name: nom
+    });
+    attr.set('name', nom);
+  }
+
+  function ajouteCompetence(perso, comp, carac, val, evt) {
+    let prefix = 'repeating_competences_' + generateRowID() + '_comp_';
+    let attrSpec = {
+      characterid: perso.charId
+    };
+    attrSpec.name = prefix + 'nom';
+    attrSpec.current = comp;
+    let attr = createObj('attribute', attrSpec);
+    evt.attributes.push({
+      attribute: attr
+    });
+    attrSpec.name = prefix + 'bonus';
+    attrSpec.current = val;
+    let attrBonus = createObj('attribute', attrSpec);
+    evt.attributes.push({
+      attribute: attrBonus
+    });
+    attrSpec.name = prefix + 'bonusTotal';
+    attr = createObj('attribute', attrSpec);
+    evt.attributes.push({
+      attribute: attr
+    });
+    attrSpec.name = prefix + 'carac';
+    attrSpec.current = carac;
+    attr = createObj('attribute', attrSpec);
+    evt.attributes.push({
+      attribute: attr
+    });
+    if ((carac == 'DEX' && comp != 'crochetage' && comp != 'désamorçage') ||
+      (carac == 'CON' && comp == 'survie') ||
+      comp == 'natation' || comp == 'escalade') {
+      attrSpec.name = prefix + 'malus';
+      attrSpec.current = 'armure';
+      attr = createObj('attribute', attrSpec);
+      evt.attributes.push({
+        attribute: attr
+      });
+      attrBonus.setWithWorker('current', val);
+      attr.setWithWorker('current', 'armure');
+    } else if (comp == 'perception' || comp == 'vigilance') {
+      attrSpec.name = prefix + 'malus';
+      attrSpec.current = 'casque';
+      attr = createObj('attribute', attrSpec);
+      evt.attributes.push({
+        attribute: attr
+      });
+      attrBonus.setWithWorker('current', val);
+      attr.setWithWorker('current', 'casque');
+    }
+  }
+
+  const regAtkPF1 = new RegExp("^(repeating_npcatk-(melee|ranged)_[^_]*_)(.*)$");
+  const regAbilitiesPF1 = new RegExp("^(repeating_abilities_[^_]*_)(.*)$");
+
+  //Transforme les personnages des tokens de Pathfinder 1 en COF
+  //Suppose qu'il s'agit d'un PNJ
+  function translateFromPathfinder1(msg) {
+    let treatedChars = new Set();
+    const optAttr = {
+      charAttr: true
+    };
+    getSelected(msg, function(selected, playerId) {
+      var evt = {
+        type: 'Tranformation depuis Pathfinder 1',
+        deletedAttributes: [],
+        attributes: [],
+        defaultTokens: []
+      };
+      addEvent(evt);
+      iterSelected(selected, function(perso) {
+        if (treatedChars.has(perso.charId)) return;
+        treatedChars.add(perso.charId);
+        let attributes = findObjs({
+          _type: 'attribute',
+          _characterid: perso.charId,
+        });
+        let attributsIgnores = '';
+        let predicats = '';
+        let capacites = '';
+        let notes = '';
+        let equip_div = '';
+        let attaques = {};
+        let abilities = {};
+        attributes.forEach(function(attr) {
+          let nom = attr.get('name');
+          switch (nom) {
+            case 'ac':
+              changeAttributeName(attr, 'pnj_def', evt);
+              return;
+            case 'class':
+              changeAttributeName(attr, 'profil', evt);
+              return;
+            case 'hp':
+              changeAttributeName(attr, 'PV', evt);
+              return;
+            case 'immune':
+              let immunites = attr.get('current').split(' ');
+              let immunitesNonTraitees = '';
+              immunites.forEach(function(i) {
+                i = i.trim();
+                switch (i) {
+                  case 'disease':
+                    predicats += 'immunite_maladie ';
+                    break;
+                  default:
+                    log("Immunité à " + i + " non traitée");
+                    immunitesNonTraitees += i + ' ';
+                }
+              });
+              if (immunitesNonTraitees !== '') {
+                log("Immunités non traitées : " + immunitesNonTraitees);
+                attributsIgnores += 'immune : ' + immunitesNonTraitees + '.\n';
+              }
+              deleteAttribute(attr, evt);
+              return;
+            case 'initiative':
+              let init = parseInt(attr.get('current'));
+              setTokenAttr(perso, 'pnj_init', 10 + 2 * init, evt, optAttr);
+              deleteAttribute(attr, evt);
+              return;
+            case 'languages':
+              capacites += 'Langues: ' + attr.get('current') + '\n';
+              deleteAttribute(attr, evt);
+              return;
+            case 'npc_cr':
+              changeAttributeName(attr, 'niveau', evt);
+              return;
+            case 'npc_alignment':
+              if (attr.get('current').includes('E')) predicats += 'mauvais ';
+              deleteAttribute(attr, evt);
+              return;
+            case 'npc_type':
+              let npcType = attr.get('current');
+              switch (npcType.split(' ')[0]) {
+                case 'humanoid':
+                  predicats += 'humanoide ';
+                  break;
+                case 'animal':
+                  predicats += 'animal ';
+                  break;
+                case 'construct':
+                  predicats += 'nonVivant ';
+                  break;
+                case 'fey':
+                  predicats += 'fée ';
+                  break;
+                case 'undead':
+                  predicats += 'nonVivant mortVivant ';
+                  break;
+                case 'vermin':
+                  predicats += 'insecte ';
+                  break;
+                default:
+                  setTokenAttr(perso, 'race', npcType, optAttr);
+              }
+              deleteAttribute(attr, evt);
+              return;
+            case 'size':
+              let taille = '';
+              switch (attr.get('current')) {
+                case 'fine':
+                case 'diminutive':
+                  taille = 'minuscule';
+                  break;
+                case 'tiny':
+                  taille = 'très petit';
+                  break;
+                case 'small':
+                  taille = 'petite';
+                  break;
+                case 'medium':
+                  break;
+                case 'large':
+                  taille = 'grand';
+                  break;
+                case 'huge':
+                  taille = 'énorme';
+                  break;
+                case 'gargantuan':
+                case 'colossal':
+                  taille = 'colossal';
+                  break;
+                default:
+                  taille = attr.get('current');
+              }
+              if (taille !== '') setTokenAttr(perso, 'taille', taille, evt, optAttr);
+              deleteAttribute(attr, evt);
+              return;
+            case 'tactics':
+              let tactics = attr.get('current');
+              if (tactics !== '') notes += 'Tactiques : ' + tactics + '\n';
+              deleteAttribute(attr, evt);
+              return;
+            case 'treasure':
+            case 'combat_gear':
+              let gear = attr.get('current');
+              if (gear != 'none' && gear !== '') equip_div += gear + '\n';
+              deleteAttribute(attr, evt);
+              return;
+            case 'charisma':
+              changeAttributeName(attr, 'charisme', evt);
+              return;
+            case 'charisma_mod':
+              changeAttributeName(attr, 'pnj_cha', evt);
+              return;
+            case 'constitution':
+              return;
+            case 'constitution_mod':
+              changeAttributeName(attr, 'pnj_con', evt);
+              return;
+            case 'dexterity':
+              changeAttributeName(attr, 'dexterite', evt);
+              return;
+            case 'dexterity_mod':
+              changeAttributeName(attr, 'pnj_dex', evt);
+              return;
+            case 'intelligence':
+              return;
+            case 'intelligence_mod':
+              changeAttributeName(attr, 'pnj_int', evt);
+              return;
+            case 'strength':
+              changeAttributeName(attr, 'force', evt);
+              return;
+            case 'strength_mod':
+              changeAttributeName(attr, 'pnj_for', evt);
+              return;
+            case 'wisdom':
+              changeAttributeName(attr, 'sagesse', evt);
+              return;
+            case 'wisdom_mod':
+              changeAttributeName(attr, 'pnj_sag', evt);
+              return;
+            case 'acrobatics':
+              ajouteCompetence(perso, 'acrobatie', 'DEX', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'appraise':
+              ajouteCompetence(perso, 'estimation', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'bluff':
+              ajouteCompetence(perso, 'mentir', 'CHA', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'climb':
+              ajouteCompetence(perso, 'escalade', 'DEX', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'craft':
+              ajouteCompetence(perso, 'artisanat', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'diplomacy':
+              ajouteCompetence(perso, 'diplomatie', 'CHA', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'disable_device':
+              ajouteCompetence(perso, 'désamorçage', 'DEX', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'disguise':
+              ajouteCompetence(perso, 'déguisement', 'CHA', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'escape_artist':
+              ajouteCompetence(perso, 'évasion', 'DEX', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'fly':
+              ajouteCompetence(perso, 'vol', 'DEX', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'handle_animal':
+              ajouteCompetence(perso, 'dressage', 'CHA', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'heal':
+              ajouteCompetence(perso, 'soigner', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'intimidate':
+              ajouteCompetence(perso, 'intimidation', 'CHA', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'knowledge_arcana':
+              ajouteCompetence(perso, 'connaissance (arcanes)', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'knowledge_dungeoneering':
+              ajouteCompetence(perso, 'connaissance (donjons)', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'knowledge_engineering':
+              ajouteCompetence(perso, 'connaissance (ingéniérie)', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'knowledge_geography':
+              ajouteCompetence(perso, 'connaissance (géographie)', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'knowledge_history':
+              ajouteCompetence(perso, 'connaissance (histoire)', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'knowledge_local':
+              ajouteCompetence(perso, 'connaissance (local)', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'knowledge_nature':
+              ajouteCompetence(perso, 'connaissance (nature)', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'knowledge_nobility':
+              ajouteCompetence(perso, 'connaissance (noblesse)', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'knowledge_planes':
+              ajouteCompetence(perso, 'connaissance (plans)', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'knowledge_religion':
+              ajouteCompetence(perso, 'connaissance (religion)', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'linguistics':
+              ajouteCompetence(perso, 'linguistique', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'perception':
+              ajouteCompetence(perso, 'perception', 'SAG', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'perform':
+              ajouteCompetence(perso, 'arts', 'CHA', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'profession':
+              ajouteCompetence(perso, 'profession', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'ride':
+              ajouteCompetence(perso, 'Équitation', 'DEX', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'sense_motive':
+              ajouteCompetence(perso, 'psychologie', 'SAG', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'sleight_of_hand':
+              ajouteCompetence(perso, 'pick-pocket', 'DEX', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'spellcraft':
+              ajouteCompetence(perso, 'sortilèges', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'stealth':
+              ajouteCompetence(perso, 'discrétion', 'DEX', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'survival':
+              ajouteCompetence(perso, 'survie', 'SAG', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'swim':
+              ajouteCompetence(perso, 'natation', 'FOR', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'use_magic_device':
+              ajouteCompetence(perso, 'objets magiques', 'INT', attr.get('current'), evt);
+              deleteAttribute(attr, evt);
+              return;
+            case 'version':
+              evt.attributes.push({
+                attribute: attr,
+                current: versionFiche
+              });
+              attr.set('current', versionFiche);
+              return;
+            case 'whispertype':
+              if (attr.get('current') == '/w gm') {
+                changeAttributeName(attr, 'jets_caches', evt);
+              } else {
+                deleteAttribute(attr, evt);
+              }
+              return;
+            case 'scriptVersion':
+            case 'bab':
+            case 'background':
+            case 'environment':
+            case 'skills_racial_modifiers':
+            case 'fortitude':
+            case 'reflex':
+            case 'will': //On n'y touche pas pour l'instant. À voir plus tard
+              return;
+            case 'ac_touch':
+            case 'ac_flatfooted':
+            case 'ac_notes':
+            case 'ask_modifier':
+            case 'ask_atk_modifier':
+            case 'ask_dmg_modifier':
+            case 'ask_whisper':
+            case 'ask_public_roll':
+            case 'ask_whisper_roll':
+            case 'cmb_mod':
+            case 'cmd_mod':
+            case 'hd_roll':
+            case 'npc':
+            case 'npc_speed':
+            case 'npcdrop_name':
+            case 'npcdrop_category':
+            case 'npcdrop_data':
+            case 'options-flag-npc':
+            case 'build-flag-npc':
+            case 'npc_fromcompendium':
+            case 'armor_spell_failure':
+            case 'npc_icon_climate':
+            case 'npc_icon_terrain':
+            case 'npc_icon_type':
+            case 'npc_expansion':
+            case 'npc_xp':
+            case 'organization':
+            case 'senses':
+            case 'size_display':
+            case 'spell_flag':
+            case 'spellabilities_flag':
+            case 'xp':
+            case 'l1mancer_status': //Attributs ignorés
+              deleteAttribute(attr, evt);
+              return;
+            default:
+              if (nom.endsWith('_display') || nom.endsWith('_flag') ||
+                nom.endsWith('half_mod')) {
+                deleteAttribute(attr, evt);
+                return;
+              }
+              let m = regAtkPF1.exec(nom);
+              if (m) {
+                attaques[m[1]] = attaques[m[1]] || {};
+                attaques[m[1]][m[3]] = attr.get('current');
+                deleteAttribute(attr, evt);
+                return;
+              }
+              m = regAbilitiesPF1.exec(nom);
+              if (m) {
+                abilities[m[1]] = abilities[m[1]] || {};
+                abilities[m[1]][m[2]] = attr.get('current');
+                deleteAttribute(attr, evt);
+                return;
+              }
+              let v = attr.get('current');
+              if (v.trim() !== '') {
+                attributsIgnores += nom + ' : ' + v;
+                let max = attr.get('max');
+                if (max) attributsIgnores += ' , ' + max;
+                attributsIgnores += ' .\n';
+              }
+              deleteAttribute(attr, evt);
+          }
+        });
+        let maxAttackLabel = 0;
+        for (let pref in attaques) {
+          let attaque = attaques[pref];
+          log(attaque);
+          let prefix = 'repeating_pnjatk_' + generateRowID() + '_arme';
+          let nomAttaque = attaque.atkname || 'Attaque';
+          createObj('attribute', {
+            _characterid: perso.charId,
+            name: prefix + 'nom',
+            current: nomAttaque
+          });
+          let spec = '';
+          let options = '';
+          for (let field in attaque) {
+            switch (field) {
+              case 'atkmod':
+                createObj('attribute', {
+                  _characterid: perso.charId,
+                  name: prefix + 'atk',
+                  current: attaque.atkmod
+                });
+                break;
+              case 'atkcritrange':
+                createObj('attribute', {
+                  _characterid: perso.charId,
+                  name: prefix + 'crit',
+                  current: attaque.atkcritrange
+                });
+                break;
+              case 'dmgbase':
+                let dm = parseDmg(attaque.dmgbase);
+                if (dm) {
+                  if (dm.nbDe)
+                    createObj('attribute', {
+                      _characterid: perso.charId,
+                      name: prefix + 'dmnbde',
+                      current: dm.nbDe
+                    });
+                  if (dm.dice != 4)
+                    createObj('attribute', {
+                      _characterid: perso.charId,
+                      name: prefix + 'dmde',
+                      current: dm.dice
+                    });
+                  if (dm.bonus)
+                    createObj('attribute', {
+                      _characterid: perso.charId,
+                      name: prefix + 'dm',
+                      current: dm.bonus
+                    });
+                }
+                break;
+              case 'dmgtype':
+                let types = attaque.dmgtype.split('; ');
+                let typeInconnu = true;
+                for (let t of types) {
+                  switch (t) {
+                    case 'piercing':
+                      if (typeInconnu) {
+                        createObj('attribute', {
+                          _characterid: perso.charId,
+                          name: prefix + 'typedegats',
+                          current: 'percant'
+                        });
+                        typeInconnu = false;
+                      }
+                      break;
+                    case 'bludgeoning':
+                      if (typeInconnu) {
+                        createObj('attribute', {
+                          _characterid: perso.charId,
+                          name: prefix + 'typedegats',
+                          current: 'contondant'
+                        });
+                        typeInconnu = false;
+                      }
+                      break;
+                    case 'slashing':
+                      typeInconnu = false;
+                      break;
+                    default:
+                      spec += t + ' ';
+                  }
+                }
+                break;
+              case 'atkrange':
+                let range = parseInt(attaque.atkrange);
+                if (isNaN(range) || range < 0) range = 1;
+                else range = Math.floor(range / 2);
+                createObj('attribute', {
+                  _characterid: perso.charId,
+                  name: prefix + 'portee',
+                  current: range
+                });
+                break;
+              case 'dmgcritmulti':
+                let cm = parseInt(attaque.dmgcritmulti);
+                if (!isNaN(cm) && cm > 2) {
+                  options += '--incrCritCoef ' + (cm - 2) + ' ';
+                }
+                break;
+              case 'atkname': //déjà traité plus haut
+              case 'options-flag':
+              case 'dmgflag':
+              case 'dmg2type':
+              case 'atkdisplay':
+              case 'multipleatk':
+                break;
+              default:
+                spec += field + ' : ' + attaque[field];
+            }
+          }
+          if (spec)
+            createObj('attribute', {
+              _characterid: perso.charId,
+              name: prefix + 'spec',
+              current: spec
+            });
+          if (options)
+            createObj('attribute', {
+              _characterid: perso.charId,
+              name: prefix + 'options',
+              current: options
+            });
+          createObj('attribute', {
+            _characterid: perso.charId,
+            name: prefix + 'optflag',
+            current: 'on'
+          });
+          maxAttackLabel++;
+          createObj('attribute', {
+            _characterid: perso.charId,
+            name: prefix + 'label',
+            current: maxAttackLabel
+          });
+        }
+        for (let pref in abilities) {
+          let ab = abilities[pref];
+          if (ab.name) notes += ab.name + ' : ';
+          if (ab.description) notes += ab.description + '\n';
+        }
+        if (maxAttackLabel > 0) setTokenAttr(perso, 'max_attack_label', maxAttackLabel, evt, optAttr);
+        //Puis on met les attributs nécessaires
+        if (attributsIgnores !== '')
+          setTokenAttr(perso, 'Attributs Pathfinder', attributsIgnores, evt, optAttr);
+        if (predicats !== '')
+          setTokenAttr(perso, 'predicats_script', predicats, evt, optAttr);
+        if (capacites !== '')
+          setTokenAttr(perso, 'capacites_pnj', capacites, evt, optAttr);
+        if (notes !== '')
+          setTokenAttr(perso, 'notes', notes, evt, optAttr);
+        if (equip_div !== '')
+          setTokenAttr(perso, 'equip_div', equip_div, evt, optAttr);
+        setTokenAttr(perso, 'scriptVersion', 'true', evt, {
+          charAttr: true,
+          maxVal: stateCOF.version
+        });
+        setTokenAttr(perso, 'type_personnage', 'PNJ', evt, optAttr);
+        setTokenAttr(perso, 'tab', 'carac. pnj', evt, optAttr);
+        //Finalement, on change le token par défaut
+        let acAttr = perso.token.get('bar2_link');
+        affectToken(perso.token, 'bar2_link', acAttr, evt);
+        perso.token.set('bar2_link', '');
+        let ac = perso.token.get('bar2_value');
+        affectToken(perso.token, 'bar2_value', ac, evt);
+        perso.token.set('bar2_value', '');
+        let character = getObj('character', perso.charId);
+        if (character) {
+          let defaultToken = JSON.parse(JSON.stringify(perso.token));
+          evt.defaultTokens.push({
+            character: character,
+            defaultToken: defaultToken
+          });
+          setDefaultTokenForCharacter(character, perso.token);
+          sendChat('COFantasy', "/w gm traduction de " + character.get('name') + " vers COF");
+        } else {
+          sendChat('COFantasy', "/w gm traduction de " + perso.token.get('name') + " vers COF, mais personnage introuvable");
+        }
+      });
+    });
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     var command = msg.content.split(" ", 1);
@@ -33302,17 +33964,20 @@ var COFantasy = COFantasy || function() {
     replaceInline(msg);
     var evt;
     switch (command[0]) {
+      case '!cof-attack':
+        parseAttack(msg);
+        return;
       case '!cof-jet':
         jet(msg);
         return;
       case '!cof-options':
         setCofOptions(msg);
         return;
+      case '!cof-pathfinder1':
+        translateFromPathfinder1(msg);
+        return;
       case '!cof-resultat-jet':
         resultatJet(msg);
-        return;
-      case '!cof-attack':
-        parseAttack(msg);
         return;
       case '!cof-undo':
         undoEvent();

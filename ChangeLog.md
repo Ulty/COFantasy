@@ -7,6 +7,7 @@
 * Prise en compte du type drain dans les attaques sur la fiche.
 
 ### Autres améliorations
+* Outil de conversion de Pathfinder vers COF
 * Ajout d'un test de prédicat pour la cible d'une attaque
 * Changement d'interface pour les montures : déplacer le cavalier ne fait plus descendre de monture.
 * Options --degainer pour les effets de combat

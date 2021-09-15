@@ -116,6 +116,7 @@
                   <li><a class="text-info" href="#Markers_Check">Activation et Vérification</a></li>
                 </ul>
                 <li data-toggle="collapse" data-target="#console"><a href="#Console">Console API</a></li>
+                <li><a href="#pathfinder">Conversion depuis Pathfinder</a></li>
 								<ul id="console" class="collapse">
                   <li><a class="text-info" href="#Generalites_Console">Généralités sur la Console API</a></li>
                   <li><a class="text-info" href="#Erreurs_Console">Principaux messages d'erreur</a></li>
@@ -2224,7 +2225,11 @@
                 <li><code>Compétences sans caractéristique associée</code>Alerte : Erreur de déclaration dans le <a href="#jet_caracteristiques">handout de jets de caractéristique</a>.</li>
               </ul>
             </div>
-            <h2 class="text-primary" id="statistiques">7. Statistiques</h2>
+            <h2 class="text-primary" id="pathfinder">7. Utiliser des personnages Pathfinder</h2>
+						<div class="decalage">
+              <p>Il existe un support basique des fiches Roll20 venant du système Pathfinder 1. La fonction <code>!cof-pathfinder1</code> se lance en sélectionnant un ou plusieurs tokens liés à des fiches Pathfinder (par exemple obtenues en achetant des aventures Pathfinder sur le marketplace de Roll20). L'effet est d'une part de transformer une partie des attributs de la fiche en attributs compris par la fiche COF et le script COFantasy, de changer un peu le token associé à la fiche, mais surtout d'effacer les attributs inutiles pour COF. En effet, le script est relativement sensible au nombre total d'attributs en jeu, et les fiches Pathfinder ont tendence à en avoir vraiment beaucoup. Tout ce qui n'est pas compris par le script se retrouve dans un attribut <code>Attributs Pathfinder</code>. Mais le mieux est de compléter la fiche COF en se basant sur la fiche Pathfinder ouverte dans une autre partie.</p>
+            </div>
+            <h2 class="text-primary" id="statistiques">8. Statistiques</h2>
 						<div class="decalage">
 							<p>Il est possible d'activer la collecte de statistiques en utilisant la commande <code>!cof-demarrer-statistiques</code>.</p>
 							<p>On peut arrêter la collecte avec <code>!cof-arreter-statistiques</code>, et la mettre en pause avec <code>!cof-pause-statistiques</code>.<br />
