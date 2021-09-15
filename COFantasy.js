@@ -33766,7 +33766,7 @@ var COFantasy = COFantasy || function() {
                 return;
               }
               let v = attr.get('current');
-              if (v.trim() !== '') {
+              if (v && ('' + v).trim() !== '') {
                 attributsIgnores += nom + ' : ' + v;
                 let max = attr.get('max');
                 if (max) attributsIgnores += ' , ' + max;
