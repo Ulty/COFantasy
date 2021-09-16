@@ -33553,7 +33553,7 @@ var COFantasy = COFantasy || function() {
               return;
             case 'background':
               let background = attr.get('current');
-              if (background !== '') notes += 'Background : ' + tactics + '\n';
+              if (background !== '') notes += 'Background : ' + background + '\n';
               deleteAttribute(attr, evt);
               return;
             case 'treasure':
