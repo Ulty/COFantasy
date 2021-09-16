@@ -1690,16 +1690,23 @@ var COFantasy = COFantasy || function() {
     }
     if (updateBar1) updateCurrentBar(perso, 1, bar1, evt);
     if (soinsEffectifs > 0) {
-      if (!options.recuperation && attributeAsBool(perso, 'blessureQuiSaigne')) {
-        removeTokenAttr(perso, 'blessureQuiSaigne', evt, {
-          msg: ": les soins referment la blessure"
-        });
-        removeTokenAttr(perso, 'blessureQuiSaignePuissant', evt);
-        removeTokenAttr(perso, 'blessureQuiSaigneValeur', evt);
-        removeTokenAttr(perso, 'blessureQuiSaigneSaveParTour', evt);
-        removeTokenAttr(perso, 'blessureQuiSaigneSaveParTourType', evt);
-        removeTokenAttr(perso, 'blessureQuiSaigneTempeteDeManaIntense', evt);
-        removeTokenAttr(perso, 'blessureQuiSaigneOptions', evt);
+      if (!options.recuperation) {
+        if (attributeAsBool(perso, 'blessureQuiSaigne')) {
+          removeTokenAttr(perso, 'blessureQuiSaigne', evt, {
+            msg: ": les soins referment la blessure"
+          });
+          removeTokenAttr(perso, 'blessureQuiSaignePuissant', evt);
+          removeTokenAttr(perso, 'blessureQuiSaigneValeur', evt);
+          removeTokenAttr(perso, 'blessureQuiSaigneSaveParTour', evt);
+          removeTokenAttr(perso, 'blessureQuiSaigneSaveParTourType', evt);
+          removeTokenAttr(perso, 'blessureQuiSaigneTempeteDeManaIntense', evt);
+          removeTokenAttr(perso, 'blessureQuiSaigneOptions', evt);
+        }
+        if (attributeAsBool(perso, 'reactionAllergique')) {
+          removeTokenAttr(perso, 'reactionAllergique', evt, {
+            msg: ": les soins mettent fin à la réaction allergique"
+          });
+        }
       }
       if (callTrue) callTrue(soinsEffectifs);
     } else {
@@ -4509,10 +4516,10 @@ var COFantasy = COFantasy || function() {
   //retourne un entier
   // evt n'est défini que si la caractéristique est effectivement utilisée
   function bonusTestCarac(carac, personnage, options, testId, evt, explications) {
-    var expliquer = function(msg) {
+    const expliquer = function(msg) {
       if (explications) explications.push(msg);
     };
-    var bonus = 0;
+    let bonus = 0;
     // D'abord la partie qui dépend de la caractéristique
     if (persoEstPNJ(personnage)) {
       bonus = ficheAttributeAsInt(personnage, PNJCaracOfMod(carac), 0);
@@ -4521,9 +4528,9 @@ var COFantasy = COFantasy || function() {
       bonus += ficheAttributeAsInt(personnage, carac + "_BONUS", 0);
     }
     expliquer("Bonus de " + carac + " : " + bonus);
-    var bonusCarac = bonus;
-    var bonusAspectDuDemon;
-    var bonusForce;
+    let bonusCarac = bonus;
+    let bonusAspectDuDemon;
+    let bonusForce;
     switch (carac) {
       case 'DEX':
         if (attributeAsBool(personnage, 'agrandissement')) {
@@ -4548,10 +4555,14 @@ var COFantasy = COFantasy || function() {
           expliquer("Construction de taille humaine : -1 au jet de DEX");
           bonus -= 1;
         }
+        if (attributeAsBool(personnage, 'reactionAllergique')) {
+          expliquer("Démangeaisons : -2 au jet de DEX");
+          bonus -= 2;
+        }
         break;
       case 'FOR':
         if (attributeAsBool(personnage, 'rayonAffaiblissant')) {
-          var malusRayonAffaiblissant = getValeurOfEffet(personnage, 'rayonAffaiblissant', 2);
+          let malusRayonAffaiblissant = getValeurOfEffet(personnage, 'rayonAffaiblissant', 2);
           expliquer("Affaibli : -" + malusRayonAffaiblissant + " au jet de FOR");
           bonus -= malusRayonAffaiblissant;
         }
@@ -4578,7 +4589,7 @@ var COFantasy = COFantasy || function() {
           bonus -= 1;
         }
         if (predicateAsBool(personnage, 'grosseTete')) {
-          var bonusInt;
+          let bonusInt;
           if (persoEstPNJ(personnage)) {
             bonusInt = ficheAttributeAsInt(personnage, 'pnj_int', 0);
           } else {
@@ -4586,7 +4597,7 @@ var COFantasy = COFantasy || function() {
             bonusInt += ficheAttributeAsInt(personnage, "INT_BONUS", 0);
           }
           if (bonusInt > bonusCarac) {
-            var msgGrosseTete = "Grosse tête : ";
+            let msgGrosseTete = "Grosse tête : ";
             if (bonusInt > 0) msgGrosseTete += '+';
             msgGrosseTete += bonusInt + " au lieu de ";
             if (bonusCarac > 0) msgGrosseTete += '+';
@@ -4598,9 +4609,13 @@ var COFantasy = COFantasy || function() {
         break;
       case 'CHA':
         if (attributeAsBool(personnage, 'aspectDeLaSuccube')) {
-          var bonusAspectDeLaSuccube = getValeurOfEffet(personnage, 'aspectDeLaSuccube', 5);
+          let bonusAspectDeLaSuccube = getValeurOfEffet(personnage, 'aspectDeLaSuccube', 5);
           expliquer("Aspect de la succube : +" + bonusAspectDeLaSuccube + " au jet de CHA");
           bonus += bonusAspectDeLaSuccube;
+        }
+        if (attributeAsBool(personnage, 'reactionAllergique')) {
+          expliquer("Plaques allergiques : -2 au jet de CHA");
+          bonus -= 2;
         }
         break;
       case 'CON':
@@ -4609,10 +4624,10 @@ var COFantasy = COFantasy || function() {
           bonus += 5;
         }
         if (predicateAsBool(personnage, 'controleDuMetabolisme')) {
-          var modCha = modCarac(personnage, 'charisme');
-          if (modCha > 0) {
-            expliquer("Controle du métabolisme : +" + modCha + " au jet de CON");
-            bonus += modCha;
+          let mod = modCarac(personnage, 'charisme');
+          if (mod > 0) {
+            expliquer("Controle du métabolisme : +" + mod + " au jet de CON");
+            bonus += mod;
           }
         }
         if (attributeAsBool(personnage, 'aspectDuDemon')) {
@@ -4799,8 +4814,8 @@ var COFantasy = COFantasy || function() {
   // ne rajoute pas evt à l'historique
   function testCaracteristique(personnage, carac, seuil, testId, options, evt, callback) { //asynchrone
     options = options || {};
-    var testRes = {};
-    var explications = [];
+    let testRes = {};
+    let explications = [];
     if (carac == 'SAG' || carac == 'INT' || carac == 'CHA') {
       if (predicateAsBool(personnage, 'sansEsprit')) {
         testRes.reussite = true;
@@ -4809,12 +4824,12 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    var bonusCarac = bonusTestCarac(carac, personnage, options, testId, evt, explications);
-    var jetCache = ficheAttributeAsBool(personnage, 'jets_caches', false);
-    var testsRatesDuTour;
-    var listeTestsRatesDuTour;
-    var testDejaRate;
-    var adaptable = predicateAsInt(personnage, 'adaptable', 0);
+    let bonusCarac = bonusTestCarac(carac, personnage, options, testId, evt, explications);
+    let jetCache = ficheAttributeAsBool(personnage, 'jets_caches', false);
+    let testsRatesDuTour;
+    let listeTestsRatesDuTour;
+    let testDejaRate;
+    let adaptable = predicateAsInt(personnage, 'adaptable', 0);
     if (adaptable) {
       testsRatesDuTour = tokenAttribute(personnage, 'testsRatesDuTour');
       if (testsRatesDuTour.length > 0) {
@@ -23009,7 +23024,7 @@ var COFantasy = COFantasy || function() {
         action += "est vraiment effrayant" + eForFemale(options.lanceur);
       else action = "<b>Capacité</b> : Sort de peur";
     }
-    var messages = [];
+    let messages = [];
     entrerEnCombat(options.lanceur, cibles, messages, evt);
     var display = startFramedDisplay(options.playerId, action, options.lanceur);
     var counter = cibles.length;
@@ -24954,8 +24969,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    var message = cmd.join(' ');
-    sendChat(nomPerso, message);
+    sendChat(nomPerso, cmd.join(' '));
   }
 
 
@@ -27766,9 +27780,9 @@ var COFantasy = COFantasy || function() {
     }
     options.decrAttribute = elixirsACreer[0].id;
     if (limiteRessources(forgesort, options, 'elixirsACreer', 'élixirs à créer', evt)) return;
-    var attrName = 'elixir_' + elixir.attrName;
-    var message = "crée un " + elixir.nom;
-    var attr = tokenAttribute(forgesort, attrName);
+    let attrName = 'elixir_' + elixir.attrName;
+    let message = "crée un " + elixir.nom;
+    let attr = tokenAttribute(forgesort, attrName);
     if (attr.length === 0) {
       var action = elixir.action.replace(/\$rang/g, voieDesElixirs);
       action = action.replace(/\$INT/g, modCarac(forgesort, 'intelligence'));
@@ -27777,7 +27791,7 @@ var COFantasy = COFantasy || function() {
         maxVal: action
       });
     } else {
-      var nb = parseInt(attr[0].get('current'));
+      let nb = parseInt(attr[0].get('current'));
       if (isNaN(nb) || nb < 1) nb = 0;
       setTokenAttr(forgesort, attrName, nb + 1, evt, {
         msg: message
@@ -28108,9 +28122,9 @@ var COFantasy = COFantasy || function() {
         options.mana = rune.rang - 2;
       }
     }
-    var attrName = rune.attrName;
-    var message = "reçoit ";
-    var typeRune;
+    let attrName = rune.attrName;
+    let message = "reçoit ";
+    let typeRune;
     switch (rune.rang) {
       case 2:
         typeRune = "une rune d'énergie";
@@ -28120,7 +28134,7 @@ var COFantasy = COFantasy || function() {
         break;
       case 4:
         typeRune = "une rune de puissance sur son ";
-        var arme = getWeaponStats(target, labelArme);
+        let arme = getWeaponStats(target, labelArme);
         if (arme) typeRune += arme.name;
         else typeRune += "arme " + labelArme;
         attrName += "(" + labelArme + ")";
@@ -28648,6 +28662,16 @@ var COFantasy = COFantasy || function() {
       }
     });
     _.each(messageEffetCombat, function(effet, nomEffet) {
+      if (effet.prejudiciable) {
+        attr = tokenAttribute(cible, nomEffet);
+        if (attr.length > 0) {
+          printEffet(effet.fin);
+          evt.deletedAttributes.push(attr[0]);
+          attr[0].remove();
+        }
+      }
+    });
+    _.each(messageEffetIndetermine, function(effet, nomEffet) {
       if (effet.prejudiciable) {
         attr = tokenAttribute(cible, nomEffet);
         if (attr.length > 0) {
@@ -34467,7 +34491,7 @@ var COFantasy = COFantasy || function() {
   // msgSave: message à afficher quand on résiste à l'effet. Sera précédé de "pour "
   // entrave: effet qui immobilise, paralyse ou ralentit
   // statusMarker: marker par défaut pour l'effet
-  var messageEffetTemp = {
+  const messageEffetTemp = {
     sousTension: {
       activation: "se charge d'énergie électrique",
       actif: "est chargé d'énergie électrique",
@@ -35239,7 +35263,7 @@ var COFantasy = COFantasy || function() {
     error("Effet temporaire non trouvé", effetC);
   }
 
-  var messageEffetCombat = {
+  const messageEffetCombat = {
     armureMagique: {
       activation: "est entouré d'un halo magique",
       actif: "est protégé par une armure magique",
@@ -35396,22 +35420,18 @@ var COFantasy = COFantasy || function() {
     error("Impossible de déterminer l'effet correspondant à " + ef, attr);
   }
 
-  var messageEffetIndetermine = {
-    aCheval: { //deprecated, mieux vaut utiliser la commande !cof-en-selle
-      activation: "monte sur sa monture",
-      actif: "est sur sa monture",
-      fin: "descend de sa monture"
-    },
-    marcheSylvestre: {
-      activation: "se deplace maintenant en terrain difficile",
-      actif: "profite du terrain difficile",
-      fin: "est maintenant en terrain normal"
-    },
+  // Si un effet est prejudiciable, enlevé par délivrance
+  const messageEffetIndetermine = {
     foretVivanteEnnemie: {
       activation: "est gêné par la forêt",
       actif: "est désorienté par la forêt",
       fin: "se retrouve dans une forêt normale",
       entrave: true
+    },
+    marcheSylvestre: {
+      activation: "se deplace maintenant en terrain difficile",
+      actif: "profite du terrain difficile",
+      fin: "est maintenant en terrain normal"
     },
     mutationCuirasse: {
       activation: "endurcit sa peau",
@@ -35466,7 +35486,8 @@ var COFantasy = COFantasy || function() {
     charme: {
       activation: "devient un ami de longue date",
       actif: "est sous le charme de quelqu'un",
-      fin: "retrouve ses esprits"
+      fin: "retrouve ses esprits",
+      prejudiciable: true
     },
     constructionTailleHumaine: {
       activation: "rentre dans une construction de taille humaine.",
@@ -35487,6 +35508,13 @@ var COFantasy = COFantasy || function() {
       activation: "se sent nauséeux",
       actif: "se sent nauséeux",
       fin: "se sent un peu mieux",
+      prejudiciable: true
+    },
+    reactionAllergique: {
+      activation: "ressent de fortes démangeaisons",
+      actif: "est victime d'une réaction allergique",
+      fin: "les déamgeaisons cessent",
+      prejudiciable: true
     },
   };
 
