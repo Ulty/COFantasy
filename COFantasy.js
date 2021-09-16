@@ -6350,14 +6350,14 @@ var COFantasy = COFantasy || function() {
     var scope = options; //Pour les conditionnelles
     optArgs.forEach(function(arg) {
       arg = arg.trim();
-      var cmd = arg.split(' ');
+      let cmd = arg.split(' ');
       cmd = cmd.filter(function(c) {
         return c !== '';
       });
       if (cmd.length === 0) cmd = [arg];
       switch (cmd[0]) {
-        case 'pressionMortelle':
         case 'ignoreMoitieRD':
+        case 'pressionMortelle':
         case 'tempDmg':
         case 'enflamme':
         case 'malediction':
@@ -6368,6 +6368,7 @@ var COFantasy = COFantasy || function() {
         case 'seulementVivant':
         case 'etreinteImmole':
         case 'etreinteScorpion':
+        case 'seulementDistance':
           scope[cmd[0]] = true;
           return;
         case 'arc':
@@ -10453,6 +10454,10 @@ var COFantasy = COFantasy || function() {
           // On peut aller jusqu'à 2x portee si unique cible et jet d'attaque, 3x si le personnage a Tir Parabolique
           return true;
         }
+        if (target.distance === 0 && options.seulementDistance) {
+          sendPerso(attaquant, "est trop proche de "+target.token.get('name')+" pour cette attaque");
+          return false;
+        }
         return true;
       });
     }
@@ -10502,7 +10507,9 @@ var COFantasy = COFantasy || function() {
           playerId);
         return;
       }
+      if (!options.seulementDistance) {
       sendPerso(attaquant, "est hors de portée de " + nomCiblePrincipale + " pour une attaque utilisant " + weaponName + ", action annulée");
+      }
       return;
     }
     //On enlève les doublons de cibles qui partagent leurs PVs;
@@ -10633,11 +10640,11 @@ var COFantasy = COFantasy || function() {
     }
     addEvent(evt);
     //On fait les tests pour les cibles qui bénéficieraient d'un sanctuaire
-    var ciblesATraiter = cibles.length;
-    var cibleTraitee = function() {
+    let ciblesATraiter = cibles.length;
+    let cibleTraitee = function() {
       ciblesATraiter--;
       if (ciblesATraiter === 0) {
-        var explications = [];
+        let explications = [];
         if (options.messages) explications = [...options.messages];
         evalITE(attaquant, undefined, undefined, options, 0, evt, explications, options, function() {
           resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, explications, options, chargesArme);
