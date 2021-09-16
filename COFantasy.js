@@ -2677,6 +2677,15 @@ var COFantasy = COFantasy || function() {
           //On s'assure de mettre les PV de la cible à 0 (pour les insta kills sans dommages)
           if (token.get('bar1_value') > 0) updateCurrentBar(personnage, 1, 0, evt);
           nePlusSuivre(personnage, pageId, evt);
+          let persoMonte = tokenAttribute(personnage, 'estMontePar');
+          if (persoMonte.length > 0) {
+            const cavalier = persoOfId(persoMonte[0].get('current'), persoMonte[0].get('max'), pageId);
+            if (cavalier !== undefined) {
+              removeTokenAttr(cavalier, 'monteSur', evt);
+            }
+            removeTokenAttr(personnage, 'estMontePar', evt);
+            removeTokenAttr(personnage, 'positionSurMonture', evt);
+          }
           //On libère les personnages enveloppés, si il y en a.
           var attrEnveloppe = tokenAttribute(personnage, 'enveloppe');
           attrEnveloppe.forEach(function(a) {
@@ -10455,7 +10464,7 @@ var COFantasy = COFantasy || function() {
           return true;
         }
         if (target.distance === 0 && options.seulementDistance) {
-          sendPerso(attaquant, "est trop proche de "+target.token.get('name')+" pour cette attaque");
+          sendPerso(attaquant, "est trop proche de " + target.token.get('name') + " pour cette attaque");
           return false;
         }
         return true;
@@ -10508,7 +10517,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       if (!options.seulementDistance) {
-      sendPerso(attaquant, "est hors de portée de " + nomCiblePrincipale + " pour une attaque utilisant " + weaponName + ", action annulée");
+        sendPerso(attaquant, "est hors de portée de " + nomCiblePrincipale + " pour une attaque utilisant " + weaponName + ", action annulée");
       }
       return;
     }
