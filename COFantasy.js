@@ -9376,6 +9376,9 @@ var COFantasy = COFantasy || function() {
           case 'géant':
             if (estGeant(target)) ennemiJure = true;
             break;
+          case 'animal':
+            if (estAnimal(target)) ennemiJure = true;
+            break;
           default:
             if (raceIs(target, race)) ennemiJure = true;
         }
@@ -33438,10 +33441,11 @@ var COFantasy = COFantasy || function() {
               let immunitesNonTraitees = '';
               immunites.forEach(function(i) {
                 i = i.trim();
+                if (i === '') return;
                 switch (i) {
                   case 'disease':
                     predicats += 'immunite_maladie ';
-                    break;
+                    return;
                   default:
                     log("Immunité à " + i + " non traitée");
                     immunitesNonTraitees += i + ' ';
@@ -33529,6 +33533,11 @@ var COFantasy = COFantasy || function() {
             case 'tactics':
               let tactics = attr.get('current');
               if (tactics !== '') notes += 'Tactiques : ' + tactics + '\n';
+              deleteAttribute(attr, evt);
+              return;
+            case 'background':
+              let background = attr.get('current');
+              if (background !== '') notes += 'Background : ' + tactics + '\n';
               deleteAttribute(attr, evt);
               return;
             case 'treasure':
@@ -33727,24 +33736,35 @@ var COFantasy = COFantasy || function() {
               return;
             case 'scriptVersion':
             case 'bab':
-            case 'background':
             case 'environment':
             case 'skills_racial_modifiers':
             case 'fortitude':
             case 'reflex':
             case 'will': //On n'y touche pas pour l'instant. À voir plus tard
+              let x = attr.get('current');
+              if (x === undefined || x === '') deleteAttribute(attr, evt);
               return;
-            case 'ac_touch':
+            case 'ac_ability_primary':
+            case 'ac_ability_maximum':
             case 'ac_flatfooted':
             case 'ac_notes':
+            case 'ac_touch':
             case 'ask_modifier':
             case 'ask_atk_modifier':
             case 'ask_dmg_modifier':
             case 'ask_whisper':
             case 'ask_public_roll':
             case 'ask_whisper_roll':
+            case 'bab_multi':
             case 'cmb_mod':
             case 'cmd_mod':
+            case 'encumbrance':
+            case 'encumbrance_size':
+            case 'encumbrance_load_light':
+            case 'encumbrance_load_medium':
+            case 'encumbrance_load_heavy':
+            case 'encumbrance_run_factor':
+            case 'fob_multi':
             case 'hd_roll':
             case 'npc':
             case 'npc_speed':
@@ -36917,33 +36937,39 @@ var COFantasy = COFantasy || function() {
       if (monture === undefined) {
         sendPerso(perso, "descend de sa monture");
         attrMonteSur[0].remove();
-        return;
-      } else if (!suivis.has(monture.token.id)) {
-        let position = tokenAttribute(monture, 'positionSurMonture');
-        if (position.length > 0) {
-          let dx = parseInt(position[0].get('current'));
-          let dy = parseInt(position[0].get('max'));
-          if (!(isNaN(dx) || isNaN(dy))) {
-            let sprev = {
-              left: monture.token.get('left'),
-              top: monture.token.get('top'),
-            };
-            monture.token.set('left', x - dx);
-            monture.token.set('top', y - dy);
-            monture.token.set('rotation', token.get('rotation') - attributeAsInt(monture, 'directionSurMonture', 0));
-            suivis.add(token.id);
-            moveToken(monture.token, sprev, synchronisation, suivis);
+      } else {
+        if (monture.token.get('pageid') != pageId) {
+          sendPerso(perso, "descend de " + monture.token.get('name'));
+          removeTokenAttr(monture, 'estMontePar');
+          removeTokenAttr(monture, 'positionSurMonture');
+          attrMonteSur[0].remove();
+        } else if (!suivis.has(monture.token.id)) {
+          let position = tokenAttribute(monture, 'positionSurMonture');
+          if (position.length > 0) {
+            let dx = parseInt(position[0].get('current'));
+            let dy = parseInt(position[0].get('max'));
+            if (!(isNaN(dx) || isNaN(dy))) {
+              let sprev = {
+                left: monture.token.get('left'),
+                top: monture.token.get('top'),
+              };
+              monture.token.set('left', x - dx);
+              monture.token.set('top', y - dy);
+              monture.token.set('rotation', token.get('rotation') - attributeAsInt(monture, 'directionSurMonture', 0));
+              suivis.add(token.id);
+              moveToken(monture.token, sprev, synchronisation, suivis);
+            }
           }
         }
-      }
-      if (stateCOF.combat) {
-        var evt = {
-          type: "initiative"
-        };
-        updateInit(monture.token, evt);
-        // Réadapter l'init_dynamique au token du perso
-        if (stateCOF.options.affichage.val.init_dynamique.val) {
-          setTokenInitAura(perso);
+        if (stateCOF.combat) {
+          var evt = {
+            type: "initiative"
+          };
+          updateInit(monture.token, evt);
+          // Réadapter l'init_dynamique au token du perso
+          if (stateCOF.options.affichage.val.init_dynamique.val) {
+            setTokenInitAura(perso);
+          }
         }
       }
     }
@@ -37360,6 +37386,22 @@ var COFantasy = COFantasy || function() {
         token.set(cof_states[etat], false);
       }
     });
+    let attrMonteSur = tokenAttribute(perso, 'monteSur');
+    if (attrMonteSur.length > 0) {
+      let pageId = perso.token.get('pageid');
+      let monture = persoOfId(attrMonteSur[0].get('current'), attrMonteSur[0].get('max'), pageId);
+      if (monture === undefined) {
+        sendPerso(perso, "descend de sa monture");
+        attrMonteSur[0].remove();
+      } else {
+        if (monture.token.get('pageid') != pageId) {
+          sendPerso(perso, "descend de " + monture.token.get('name'));
+          removeTokenAttr(monture, 'estMontePar');
+          removeTokenAttr(monture, 'positionSurMonture');
+          attrMonteSur[0].remove();
+        }
+      }
+    }
   }
 
 
