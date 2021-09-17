@@ -863,18 +863,18 @@ var COFantasy = COFantasy || function() {
       stateCOF.gameMacros = gameMacros;
     }
     //Utilisation des markers d'effets temporaires
-    for (var effet in messageEffetTemp) {
+    for (let effet in messageEffetTemp) {
       var ms = messageEffetTemp[effet].statusMarker;
       if (ms) effet_de_marker[ms] = effet;
     }
     // Récupération des token Markers attachés à la campagne image, nom, tag, Id
-    var markers = JSON.parse(Campaign().get("token_markers"));
+    const markers = JSON.parse(Campaign().get("token_markers"));
     markers.forEach(function(m) {
       markerCatalog[m.name] = m;
     });
     // Option Markers personnalisés activé
     if (stateCOF.options.affichage.val.markers_personnalises.val) {
-      var cof_states_perso = {
+      const cof_states_perso = {
         assome: 'status_cof-assomme',
         surpris: 'status_cof-surpris',
         renverse: 'status_cof-renverse',
@@ -890,16 +890,16 @@ var COFantasy = COFantasy || function() {
         blesse: 'status_cof-blesse',
         encombre: 'status_cof-encombre',
         penombre: 'status_cof-penombre',
-        enseveli: 'status_edge-crack'
+        //enseveli: 'status_edge-crack' -> À dessiner
       };
       // On boucle sur la liste des états pour vérifier que les markers sont bien présents !
-      var markersAbsents = [];
-      var ancientSet = true;
-      for (var etat_perso in cof_states_perso) {
-        var markerName = cof_states_perso[etat_perso].substring(7);
-        var marker_perso = markerCatalog[markerName];
+      let markersAbsents = [];
+      let ancientSet = true;
+      for (let etat in cof_states_perso) {
+        let markerName = cof_states_perso[etat].substring(7);
+        let marker_perso = markerCatalog[markerName];
         if (marker_perso) {
-          cof_states[etat_perso] = 'status_' + marker_perso.tag;
+          cof_states[etat] = 'status_' + marker_perso.tag;
           ancientSet = false;
         } else {
           markersAbsents.push(markerName);
@@ -33462,6 +33462,12 @@ var COFantasy = COFantasy || function() {
                   case 'disease':
                     predicats += 'immunite_maladie ';
                     return;
+                  case 'cold':
+                    predicats += 'immunite_froid ';
+                    return;
+                  case 'undead':
+                  case 'traits':
+                    return;
                   default:
                     log("Immunité à " + i + " non traitée");
                     immunitesNonTraitees += i + ' ';
@@ -37294,13 +37300,28 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function synchronisationDesEtats(perso) {
+    for (let etat in cof_states) {
+      // Récupère la valeur de l'état sur la fiche
+      let valEtat;
+      if (etat == 'affaibli') { // Cas particulier affaibli sur la fiche perso
+        valEtat = (ficheAttributeAsInt(perso, 'affaibli', 20) == 12);
+      } else { // Autre cas
+        valEtat = ficheAttributeAsBool(perso, etat, false);
+      }
+      let field = cof_states[etat];
+      if (perso.token.get(field) != valEtat) perso.token.set(field, valEtat);
+    }
+  }
+
+  //Opérations diverses au moment où on pose un token.
   //Si le token représente un personnage et avec la barre de vie non liée,
   // assure un nom unique en ajoutant un numéro
   // On en profite aussi pour mettre certaines valeurs par défaut
   function renameToken(token, tokenName) {
-    var charId = token.get('represents');
+    let charId = token.get('represents');
     if (charId === undefined || charId === '') return;
-    var perso = {
+    let perso = {
       token: token,
       tokName: tokenName,
       charId: charId
@@ -37324,7 +37345,27 @@ var COFantasy = COFantasy || function() {
         token.set('light_angle', 360);
       }
     }
-    if (token.get('bar1_link') !== '') return;
+    if (token.get('bar1_link') !== '') {
+      //Cas des tokens non mooks
+      let attrMonteSur = tokenAttribute(perso, 'monteSur');
+      if (attrMonteSur.length > 0) {
+        let monture = persoOfId(attrMonteSur[0].get('current'), attrMonteSur[0].get('max'), pageId);
+        if (monture === undefined) {
+          sendPerso(perso, "descend de sa monture");
+          attrMonteSur[0].remove();
+        } else {
+          if (monture.token.get('pageid') != pageId) {
+            sendPerso(perso, "descend de " + monture.token.get('name'));
+            removeTokenAttr(monture, 'estMontePar');
+            removeTokenAttr(monture, 'positionSurMonture');
+            attrMonteSur[0].remove();
+          }
+        }
+        synchronisationDesEtats(perso);
+      }
+      return;
+    }
+    //cas des mooks : numérotation
     var copyOf = 0;
     var tokenBaseName = tokenName;
     if (tokenBaseName.includes('%%NUMBERED%%')) {
@@ -37377,47 +37418,14 @@ var COFantasy = COFantasy || function() {
   }
 
   function initTokenMarkers(token) {
-    var charId = token.get('represents');
+    let charId = token.get('represents');
     if (charId === undefined || charId === '') return; // Si token lié à un perso
     if (token.get('bar1_link') === '') return; // Si unique
-    var perso = {
+    let perso = {
       tokem: token,
       charId: charId
     };
-    // Boucle sur les états de cof_states
-    Object.keys(cof_states).forEach(function(etat) {
-      // Récupère la valeur de l'état sur la fiche
-      var attributeFicheValue;
-      if (etat == 'affaibli') { // Cas particulier affaibli sur la fiche perso
-        attributeFicheValue = (ficheAttributeAsInt(perso, 'affaibli', 20) == 12);
-      } else { // Autre cas
-        attributeFicheValue = ficheAttributeAsBool(perso, etat, false);
-      }
-      // Récupère la valeur de l'état sur le token
-      var attributeTokenValue = token.get(cof_states[etat]);
-      // En fonction des cas appel token.set avec true ou false
-      if (attributeFicheValue === true && attributeTokenValue === false) {
-        token.set(cof_states[etat], true);
-      } else if (attributeFicheValue === false && attributeTokenValue === true) {
-        token.set(cof_states[etat], false);
-      }
-    });
-    let attrMonteSur = tokenAttribute(perso, 'monteSur');
-    if (attrMonteSur.length > 0) {
-      let pageId = perso.token.get('pageid');
-      let monture = persoOfId(attrMonteSur[0].get('current'), attrMonteSur[0].get('max'), pageId);
-      if (monture === undefined) {
-        sendPerso(perso, "descend de sa monture");
-        attrMonteSur[0].remove();
-      } else {
-        if (monture.token.get('pageid') != pageId) {
-          sendPerso(perso, "descend de " + monture.token.get('name'));
-          removeTokenAttr(monture, 'estMontePar');
-          removeTokenAttr(monture, 'positionSurMonture');
-          attrMonteSur[0].remove();
-        }
-      }
-    }
+    synchronisationDesEtats(perso);
   }
 
 
@@ -37426,7 +37434,6 @@ var COFantasy = COFantasy || function() {
     //La plupart du temps, il faut attendre un peu que le nom soit affecté
     if (tokenName !== '') {
       renameToken(token, tokenName);
-      initTokenMarkers(token);
       return;
     }
     nb = nb || 1;
