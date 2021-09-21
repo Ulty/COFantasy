@@ -135,7 +135,7 @@ var COFantasy = COFantasy || function() {
           val: {
             usure_DEF: {
               explications: "Malus de -2 en DEF tous les n tours. Mettre à 0 pour ne pas avoir de malus d'usure",
-              val: 5,
+              val: 6,
               type: 'int'
             },
             bonus_attaque_groupe: {
@@ -6229,7 +6229,7 @@ var COFantasy = COFantasy || function() {
         error("Nombre de faces incorrect dans l'expression des dégâts", expr);
         return;
       }
-      exprDM = exprDM.substring(indexD);
+      exprDM = exprDM.substring(indexD).trim();
     }
     dm.bonus = parseInt(exprDM);
     if (isNaN(dm.bonus)) {
@@ -8563,7 +8563,8 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(target, 'statueDeBois')) defense = 10;
     // Malus de défense global pour les longs combats
-    if (reglesOptionelles.haute_DEF.val.usure_DEF.val && !stateCOF.usureOff && stateCOF.tour > 1)
+    if (reglesOptionelles.haute_DEF.val.usure_DEF.val && stateCOF.combat && 
+      !stateCOF.usureOff && stateCOF.tour > 1)
       defense -= (Math.floor((stateCOF.tour - 1) / reglesOptionelles.haute_DEF.val.usure_DEF.val) * 2);
     // Autres modificateurs de défense
     defense += attributeAsInt(target, 'defenseTotale', 0);
@@ -33438,6 +33439,9 @@ var COFantasy = COFantasy || function() {
         let capacites = '';
         let notes = '';
         let equip_div = '';
+        let dexterite = 10;
+        let mod_dex = 0;
+        let init = 0;
         let attaques = {};
         let abilities = {};
         attributes.forEach(function(attr) {
@@ -33480,8 +33484,8 @@ var COFantasy = COFantasy || function() {
               deleteAttribute(attr, evt);
               return;
             case 'initiative':
-              let init = parseInt(attr.get('current'));
-              setTokenAttr(perso, 'pnj_init', 10 + 2 * init, evt, optAttr);
+              init = parseInt(attr.get('current'));
+              if (isNaN(init)) init = 0;
               deleteAttribute(attr, evt);
               return;
             case 'languages':
@@ -33493,6 +33497,15 @@ var COFantasy = COFantasy || function() {
               return;
             case 'npc_alignment':
               if (attr.get('current').includes('E')) predicats += 'mauvais ';
+              deleteAttribute(attr, evt);
+              return;
+            case 'npc_dr':
+              let rd = attr.get('current');
+              if (rd) {
+                rd = ''+rd;
+                rd = rd.replace('bludgeoning','contondant').replace('slashing', 'tranchant').replace('piercing', 'percant');
+                setTokenAttr(perso, 'RDS', rd, evt, optAttr);
+              }
               deleteAttribute(attr, evt);
               return;
             case 'npc_type':
@@ -33580,9 +33593,11 @@ var COFantasy = COFantasy || function() {
               changeAttributeName(attr, 'pnj_con', evt);
               return;
             case 'dexterity':
+              dexterite = parseInt(attr.get('current'));
               changeAttributeName(attr, 'dexterite', evt);
               return;
             case 'dexterity_mod':
+              mod_dex = parseInt(attr.get('current'));
               changeAttributeName(attr, 'pnj_dex', evt);
               return;
             case 'intelligence':
@@ -33998,6 +34013,9 @@ var COFantasy = COFantasy || function() {
           charAttr: true,
           maxVal: stateCOF.version
         });
+        let initiative = dexterite + init - mod_dex;
+        if (isNaN(initiative)) initiative = 10 + 2*init;
+        setTokenAttr(perso, 'pnj_init', initiative, evt, optAttr);
         setTokenAttr(perso, 'type_personnage', 'PNJ', evt, optAttr);
         setTokenAttr(perso, 'tab', 'carac. pnj', evt, optAttr);
         //Finalement, on change le token par défaut
@@ -37422,7 +37440,7 @@ var COFantasy = COFantasy || function() {
     if (charId === undefined || charId === '') return; // Si token lié à un perso
     if (token.get('bar1_link') === '') return; // Si unique
     let perso = {
-      tokem: token,
+      token: token,
       charId: charId
     };
     synchronisationDesEtats(perso);
