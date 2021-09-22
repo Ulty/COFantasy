@@ -15742,12 +15742,13 @@ var COFantasy = COFantasy || function() {
       msgBarroud += onGenre(target, 'il', 'elle') + " continue à se battre !";
       expliquer(msgBarroud);
       setTokenAttr(target, 'baroudHonneurActif', true, evt);
-    } else if (predicateAsBool(target, 'increvable') && attributeAsInt(target, 'limiteParCombat__increvable', 0) > 0) {
+    } else if (predicateAsBool(target, 'increvable') && attributeAsInt(target, 'limiteParCombat__increvable', predicateAsInt(target, 'increvable', 1)) > 0) {
       var msgIncrevable = target.tokName + " devrait être mort";
       msgIncrevable += eForFemale(target) + ", mais ";
       msgIncrevable += onGenre(target, 'il', 'elle') + " est increvable !";
       expliquer(msgIncrevable);
-      setTokenAttr(target, 'limiteParCombat__increvable', 0, evt);
+      let restants = attributeAsInt(target, 'limiteParCombat__increvable', predicateAsInt(target, 'increvable', 1));
+      setTokenAttr(target, 'limiteParCombat__increvable', restants-1, evt);
       setTokenAttr(target, 'increvableActif', true, evt);
     } else if ((attributeAsBool(target, 'enrage') || predicateAsBool(target, 'durACuire')) &&
       !attributeAsBool(target, 'aAgiAZeroPV')) {
