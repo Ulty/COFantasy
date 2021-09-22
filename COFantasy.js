@@ -6196,7 +6196,11 @@ var COFantasy = COFantasy || function() {
       perso.armesEnMain = 'calculee';
       return perso.arme;
     }
-    return;
+    if (defWeapon) {
+      perso.armesEnMain = 'calculee';
+      perso.arme = defWeapon;
+    }
+    return defWeapon;
   }
 
   function parseDmg(expr) {

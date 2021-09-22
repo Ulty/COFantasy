@@ -5,6 +5,7 @@
 * Possibilité optionelle de lancer plus de soins légers en une journée que le rang dans la voie, en échange d'un coût en mana.
 
 ### Corrections de bugs
+* Correction d'un crash en cas de #Attaque -1 et pas d'arme en main.
 * Correction du prédicat increvable
 * Prise en compte du type drain dans les attaques sur la fiche.
 
