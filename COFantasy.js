@@ -20462,7 +20462,7 @@ var COFantasy = COFantasy || function() {
         } else if (!possedeAttaqueNaturelle) {
           if (attaqueNaturelleNonVisible) {
             ligneArmePrincipale =
-              bouton("!cof-attack @{selected|token_id} @{target|token_id} " + attaqueNaturelleNonVisible.label, attaqueNaturelleNonVisible.armenom, perso);
+              bouton("!cof-attack @{selected|token_id} @{target|token_id} " + attaqueNaturelleNonVisible.armelabel, attaqueNaturelleNonVisible.armenom, perso);
           } else {
             let bonusAtk = computeArmeAtk(perso, '@{ATKCAC}');
             ligneArmePrincipale = bouton("!cof-attack @{selected|token_id} @{target|token_id} Mains nues --toucher " + bonusAtk + " --dm 1d4 + [[@{selected|FOR}]] --tempDmg", 'Mains nues', perso);
