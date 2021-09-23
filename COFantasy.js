@@ -10953,6 +10953,7 @@ var COFantasy = COFantasy || function() {
                 f('liste des attaques', '', macros, options);
                 break;
               case '!arme-en-main':
+                found = true;
                 let attOptions = '';
                 if (actionCommands.length > 1)
                   attOptions = ' ' + actionCommands.slice(1).join(' ');
