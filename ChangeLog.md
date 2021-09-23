@@ -10,6 +10,7 @@
 * Prise en compte du type drain dans les attaques sur la fiche.
 
 ### Autres améliorations
+* Ajout de la commande d'action !arme-en-main
 * Possibilité de restreindre une attaque aux cibles qui ne sont pas au contact.
 * Outil de conversion de Pathfinder vers COF
 * Ajout d'un test de prédicat pour la cible d'une attaque

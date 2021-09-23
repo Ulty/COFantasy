@@ -6210,10 +6210,7 @@ var COFantasy = COFantasy || function() {
       perso.armesEnMain = 'calculee';
       return perso.arme;
     }
-    if (defWeapon) {
-      perso.armesEnMain = 'calculee';
-      perso.arme = defWeapon;
-    }
+    perso.arme = defWeapon;
     return defWeapon;
   }
 
@@ -10911,8 +10908,8 @@ var COFantasy = COFantasy || function() {
             //D'abord le cas de #Attaque
             if (actionCmd == '#Attaque' && actionCommands.length > 1) {
               found = true;
-              var attackLabel = actionCommands[1].trim();
-              var attackStats;
+              let attackLabel = actionCommands[1].trim();
+              let attackStats;
               if (attackLabel == -1) { //attaque avec l'arme en main
                 attackStats = armesEnMain(perso, attaqueAMainsNues);
               } else if (attackLabel == -2) { //attaque avec l'arme en main gauche
@@ -10923,7 +10920,7 @@ var COFantasy = COFantasy || function() {
               if (!actionTextFinal) actionText = attackStats.name;
               actionCode += options;
               f(actionCode, actionText, macros, {
-                attackStats: attackStats
+                attackStats
               });
             } else {
               actionCmd = actionCmd.substr(1);
@@ -10954,6 +10951,28 @@ var COFantasy = COFantasy || function() {
               case '!attaques':
                 found = true;
                 f('liste des attaques', '', macros, options);
+                break;
+              case '!arme-en-main':
+                let attOptions = '';
+                if (actionCommands.length > 1)
+                  attOptions = ' ' + actionCommands.slice(1).join(' ');
+                let attackStats = armesEnMain(perso);
+                if (attackStats === undefined) {
+                  let {
+                    attaqueNaturelleNonVisible
+                  } = listeDesArmes(perso);
+                  if (attaqueNaturelleNonVisible) attackStats = getWeaponStats(perso, attaqueNaturelleNonVisible.armelabel);
+                }
+                command = '!cof-attack ' + perso.token.id + ' @{target|token_id} ';
+                if (attackStats) {
+                  command += attackStats.label + attOptions;
+                  f(command, attackStats.name, macros, {
+                    attackStats
+                  });
+                } else {
+                  command += argsAttaqueAMainsNues(perso) + attOptions;
+                  f(command, 'Mains nues', macros);
+                }
                 break;
               default:
                 // commande API
@@ -20199,6 +20218,46 @@ var COFantasy = COFantasy || function() {
     return ligne;
   }
 
+  function argsAttaqueAMainsNues(perso) {
+    let bonusAtk = computeArmeAtk(perso, '@{ATKCAC}');
+    return "Mains nues --toucher " + bonusAtk + " --dm 1d4 + [[@{selected|FOR}]] --tempDmg";
+  }
+
+  function listeDesArmes(perso) {
+    const listeAttaques = listAllAttacks(perso);
+    let attaqueNaturelleNonVisible;
+    let armes = {};
+    let armeVisible = 0;
+    let possedeAttaqueNaturelle;
+    for (let label in listeAttaques) {
+      const arme = listeAttaques[label];
+      const t = fieldAsString(arme, 'armetypeattaque', 'Naturel');
+      if (fieldAsInt(arme, 'armeactionvisible', 1) === 1) {
+        let options = ' ' + fieldAsString(arme, 'armeoptions', '');
+        if (actionImpossible(perso, options.split(' --'), label)) continue;
+        switch (t) {
+          case 'Naturel':
+            possedeAttaqueNaturelle = true;
+            break;
+          case 'Arme 1 main':
+          case 'Arme 2 mains':
+          case 'Arme gauche':
+            armes[label] = arme;
+            armeVisible = true;
+            break;
+        }
+      } else if (!attaqueNaturelleNonVisible && t == 'Naturel') {
+        attaqueNaturelleNonVisible = arme;
+      }
+    }
+    return {
+      listeAttaques,
+      armes,
+      armeVisible,
+      possedeAttaqueNaturelle,
+      attaqueNaturelleNonVisible
+    };
+  }
   //retourne soit une ability, soit un nombre entre 1 et 4, soit undefined si
   // la liste n'existe pas
   function findListeActions(perso, listActions, abilities) {
@@ -20422,32 +20481,13 @@ var COFantasy = COFantasy || function() {
       }
       //L'arme en main et dégainer, si besoin
       if (montrerArmeEnMain) {
-        const listeAttaques = listAllAttacks(perso);
-        let attaqueNaturelleNonVisible;
-        let armes = {};
-        let armeVisible = 0;
-        let possedeAttaqueNaturelle;
-        for (let label in listeAttaques) {
-          const arme = listeAttaques[label];
-          const t = fieldAsString(arme, 'armetypeattaque', 'Naturel');
-          if (fieldAsInt(arme, 'armeactionvisible', 1) === 1) {
-            let options = ' ' + fieldAsString(arme, 'armeoptions', '');
-            if (actionImpossible(perso, options.split(' --'), label)) continue;
-            switch (t) {
-              case 'Naturel':
-                possedeAttaqueNaturelle = true;
-                break;
-              case 'Arme 1 main':
-              case 'Arme 2 mains':
-              case 'Arme gauche':
-                armes[label] = arme;
-                armeVisible = true;
-                break;
-            }
-          } else if (!attaqueNaturelleNonVisible && t == 'Naturel') {
-            attaqueNaturelleNonVisible = arme;
-          }
-        }
+        let {
+          listeAttaques,
+          armes,
+          armeVisible,
+          possedeAttaqueNaturelle,
+          attaqueNaturelleNonVisible
+        } = listeDesArmes(perso);
         let labelArmePrincipale;
         let labelArmeGauche;
         let ligneArmePrincipale;
@@ -20458,15 +20498,15 @@ var COFantasy = COFantasy || function() {
           labelArmePrincipale = labelArme.get('current');
           labelArmeGauche = labelArme.get('max');
         }
+        let command = '!cof-attack ' + perso.token.id + ' @{target|token_id} ';
         if (labelArmePrincipale && listeAttaques[labelArmePrincipale]) {
-          ligneArmePrincipale = bouton("!cof-attack @{selected|token_id} @{target|token_id} " + labelArmePrincipale, listeAttaques[labelArmePrincipale].armenom, perso);
+          ligneArmePrincipale = bouton(command + labelArmePrincipale, listeAttaques[labelArmePrincipale].armenom, perso);
         } else if (!possedeAttaqueNaturelle) {
           if (attaqueNaturelleNonVisible) {
             ligneArmePrincipale =
-              bouton("!cof-attack @{selected|token_id} @{target|token_id} " + attaqueNaturelleNonVisible.armelabel, attaqueNaturelleNonVisible.armenom, perso);
+              bouton(command + attaqueNaturelleNonVisible.armelabel, attaqueNaturelleNonVisible.armenom, perso);
           } else {
-            let bonusAtk = computeArmeAtk(perso, '@{ATKCAC}');
-            ligneArmePrincipale = bouton("!cof-attack @{selected|token_id} @{target|token_id} Mains nues --toucher " + bonusAtk + " --dm 1d4 + [[@{selected|FOR}]] --tempDmg", 'Mains nues', perso);
+            ligneArmePrincipale = bouton(command + argsAttaqueAMainsNues(perso), 'Mains nues', perso);
           }
         }
         if (labelArmeGauche && listeAttaques[labelArmeGauche]) {
