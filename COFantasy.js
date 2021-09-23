@@ -62,6 +62,20 @@ var COFantasy = COFantasy || function() {
 
   const flashyInitMarkerScale = 1.6;
 
+  const attaqueAMainsNues = {
+    name: 'Mains nues',
+    attSkill: '@{ATKCAC}',
+    attNbDices: 1,
+    attDice: 4,
+    attDMBonusCommun: 0,
+    attCarBonus: '@{FOR}',
+    crit: 20,
+    divers: '',
+    portee: 0,
+    typeDegats: 'contondant',
+    options: '--tempDmg',
+  };
+
   const defaultOptions = {
     regles: {
       explications: "Options qui influent sur les règles du jeu",
@@ -6294,9 +6308,7 @@ var COFantasy = COFantasy || function() {
     } else {
       //On trouve l'attaque correspondant au label
       if (attackLabel == -1) { //attaque avec l'arme en main
-        weaponStats = armesEnMain(attaquant);
-        if (weaponStats === undefined)
-          weaponStats = getWeaponStats(attaquant, attackLabel);
+        weaponStats = armesEnMain(attaquant, attaqueAMainsNues);
       } else if (attackLabel == -2) { //attaque avec l'arme en main gauche
         if (attaquant.armeGauche === undefined) armesEnMain(attaquant);
         weaponStats = attaquant.armeGauche;
@@ -8567,7 +8579,7 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(target, 'statueDeBois')) defense = 10;
     // Malus de défense global pour les longs combats
-    if (reglesOptionelles.haute_DEF.val.usure_DEF.val && stateCOF.combat && 
+    if (reglesOptionelles.haute_DEF.val.usure_DEF.val && stateCOF.combat &&
       !stateCOF.usureOff && stateCOF.tour > 1)
       defense -= (Math.floor((stateCOF.tour - 1) / reglesOptionelles.haute_DEF.val.usure_DEF.val) * 2);
     // Autres modificateurs de défense
@@ -10902,18 +10914,7 @@ var COFantasy = COFantasy || function() {
               var attackLabel = actionCommands[1].trim();
               var attackStats;
               if (attackLabel == -1) { //attaque avec l'arme en main
-                attackStats = armesEnMain(perso, {
-                  name: 'Mains nues',
-                  attSkill: '@{ATKCAC}',
-                  attNbDices: 1,
-                  attDice: 4,
-                  attDMBonusCommun: 0,
-                  attCarBonus: '@{FOR}',
-                  crit: 20,
-                  divers: 'tempDmg',
-                  portee: 0,
-                  options: '',
-                });
+                attackStats = armesEnMain(perso, attaqueAMainsNues);
               } else if (attackLabel == -2) { //attaque avec l'arme en main gauche
                 if (perso.armeGauche === undefined) armesEnMain(perso);
                 attackStats = perso.armeGauche;
@@ -15752,7 +15753,7 @@ var COFantasy = COFantasy || function() {
       msgIncrevable += onGenre(target, 'il', 'elle') + " est increvable !";
       expliquer(msgIncrevable);
       let restants = attributeAsInt(target, 'limiteParCombat__increvable', predicateAsInt(target, 'increvable', 1));
-      setTokenAttr(target, 'limiteParCombat__increvable', restants-1, evt);
+      setTokenAttr(target, 'limiteParCombat__increvable', restants - 1, evt);
       setTokenAttr(target, 'increvableActif', true, evt);
     } else if ((attributeAsBool(target, 'enrage') || predicateAsBool(target, 'durACuire')) &&
       !attributeAsBool(target, 'aAgiAZeroPV')) {
@@ -33507,8 +33508,8 @@ var COFantasy = COFantasy || function() {
             case 'npc_dr':
               let rd = attr.get('current');
               if (rd) {
-                rd = ''+rd;
-                rd = rd.replace('bludgeoning','contondant').replace('slashing', 'tranchant').replace('piercing', 'percant');
+                rd = '' + rd;
+                rd = rd.replace('bludgeoning', 'contondant').replace('slashing', 'tranchant').replace('piercing', 'percant');
                 setTokenAttr(perso, 'RDS', rd, evt, optAttr);
               }
               deleteAttribute(attr, evt);
@@ -34019,7 +34020,7 @@ var COFantasy = COFantasy || function() {
           maxVal: stateCOF.version
         });
         let initiative = dexterite + init - mod_dex;
-        if (isNaN(initiative)) initiative = 10 + 2*init;
+        if (isNaN(initiative)) initiative = 10 + 2 * init;
         setTokenAttr(perso, 'pnj_init', initiative, evt, optAttr);
         setTokenAttr(perso, 'type_personnage', 'PNJ', evt, optAttr);
         setTokenAttr(perso, 'tab', 'carac. pnj', evt, optAttr);
