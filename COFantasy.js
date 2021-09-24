@@ -13449,7 +13449,7 @@ var COFantasy = COFantasy || function() {
     //Tout ce qui dépend de la cible
     var ciblesCount = ciblesTouchees.length; //Pour l'asynchronie
     var attaquesEnTraitrePossibles = {};
-    var finCibles = function() {
+    let finCibles = function() {
       ciblesCount--;
       if (ciblesCount === 0) {
         ciblesTouchees.forEach(function(target) {
@@ -13905,7 +13905,7 @@ var COFantasy = COFantasy || function() {
         if (options.aveugleManoeuvre) {
           mainDmgRollExpr += " -5";
         }
-        var mainDmgRoll = {
+        let mainDmgRoll = {
           type: mainDmgType,
           value: mainDmgRollExpr
         };
@@ -13915,9 +13915,9 @@ var COFantasy = COFantasy || function() {
         // 1+nb dégâts supplémentaires + : rolls de dégâts critiques
         var toEvaluateDmg = "[[" + mainDmgRollExpr + "]]" + extraDmgRollExpr;
         sendChat('', toEvaluateDmg, function(resDmg) {
-          var rollsDmg = target.rollsDmg || resDmg[0];
-          var afterEvaluateDmg = rollsDmg.content.split(' ');
-          var mainDmgRollNumber = rollNumber(afterEvaluateDmg[0]);
+          let rollsDmg = target.rollsDmg || resDmg[0];
+          let afterEvaluateDmg = rollsDmg.content.split(' ');
+          let mainDmgRollNumber = rollNumber(afterEvaluateDmg[0]);
           mainDmgRoll.total = rollsDmg.inlinerolls[mainDmgRollNumber].results.total;
           mainDmgRoll.display = buildinline(rollsDmg.inlinerolls[mainDmgRollNumber], mainDmgType, options.magique);
           if (target.critique && options.additionalCritDmg) {
@@ -13964,7 +13964,7 @@ var COFantasy = COFantasy || function() {
               if (attaquant.alliesAvecAttaqueEnTraitre === undefined) {
                 attaquant.alliesAvecAttaqueEnTraitre = [];
                 //On cherche tous les alliés ayant l'attaque en traitre
-                var allies = alliesParPerso[attaquant.charId] || new Set();
+                const allies = alliesParPerso[attaquant.charId] || new Set();
                 allies.forEach(function(ci) {
                   var aet = findObjs({
                     _type: 'attribute',
@@ -17040,47 +17040,50 @@ var COFantasy = COFantasy || function() {
     // Réinitialiser riposteGuerrier
     resetAttr(attrs, 'riposteGuerrier', evt);
     //Utilisation automatique de second souffle, si pas utilisé
-    var characters = findObjs({
-      _type: 'character'
+    let tokens = findObjs({ // Les tokens sur la page du combat
+      _type: 'graphic',
+      _subtype: 'token',
+      _pageid: stateCOF.combat_pageid,
     });
-    characters.forEach(function(c) {
-      let charId = c.id;
-      if (!charPredicateAsBool(charId, 'secondSouffle')) return;
-      var tokens = findObjs({
-        _type: 'graphic',
-        _subtype: 'token',
-        _pageid: stateCOF.combat_pageid,
-        represents: charId
+    let persosDuCombat = []; //peuplé la première fois qu'on regarde les tokens
+    let persoParCharId = {}; //Pour ne garder qu'un jeu de prédicat par charId
+    tokens.forEach(function(token) {
+      let charId = token.get('represents');
+      if (charId === '' || charId === undefined) return;
+      let perso = {
+        token: token,
+        charId: charId
+      };
+      persosDuCombat.push(perso);
+      let persoTest = persoParCharId[charId];
+      if (persoTest === undefined) {
+        persoParCharId[charId] = perso;
+        persoTest = perso;
+      }
+      if (!predicateAsBool(perso, 'secondSouffle')) return;
+      if (!isActive(perso)) return;
+      if (attributeAsBool(perso, 'secondSouffleUtilise')) return;
+      let pvDebut = attributeAsInt(perso, 'PVsDebutCombat', 0);
+      if (pvDebut === 0) return; //personnage pas en combat.
+      let pv = parseInt(token.get('bar1_value'));
+      if (isNaN(pv)) return;
+      if (pvDebut <= pv) return;
+      let bonus = ficheAttributeAsInt(perso, 'niveau', 1);
+      bonus += modCarac(perso, 'constitution');
+      let jetSoins = rollDePlus(10, {
+        bonus: bonus
       });
-      tokens.forEach(function(token) {
-        var perso = {
-          token: token,
-          charId: charId
-        };
-        if (!isActive(perso)) return;
-        if (attributeAsBool(perso, 'secondSouffleUtilise')) return;
-        var pvDebut = attributeAsInt(perso, 'PVsDebutCombat', 0);
-        if (pvDebut === 0) return; //personnage pas en combat.
-        var pv = parseInt(token.get('bar1_value'));
-        if (isNaN(pv)) return;
-        if (pvDebut <= pv) return;
-        var bonus = ficheAttributeAsInt(perso, 'niveau', 1);
-        bonus += modCarac(perso, 'constitution');
-        var jetSoins = rollDePlus(10, {
-          bonus: bonus
-        });
-        var msg = ' reprend son souffle et récupère ';
-        var soins = jetSoins.val;
-        if (pv + soins > pvDebut) {
-          soins = pvDebut - pv;
-          msg += soins + " PV (le jet était " + jetSoins.roll + ")";
-        } else {
-          msg += jetSoins.roll + " PVs";
-        }
-        sendPerso(perso, msg);
-        soigneToken(perso, soins, evt, undefined, undefined, {
-          recuperation: true
-        });
+      let msg = ' reprend son souffle et récupère ';
+      let soins = jetSoins.val;
+      if (pv + soins > pvDebut) {
+        soins = pvDebut - pv;
+        msg += soins + " PV (le jet était " + jetSoins.roll + ")";
+      } else {
+        msg += jetSoins.roll + " PVs";
+      }
+      sendPerso(perso, msg);
+      soigneToken(perso, soins, evt, undefined, undefined, {
+        recuperation: true
       });
     });
     attrs = removeAllAttributes('secondSouffleUtilise', evt, attrs);
@@ -17123,21 +17126,13 @@ var COFantasy = COFantasy || function() {
         });
     });
     // On remet en main l'arme par défaut si elle est précisée
-    allAttributesNamed(attrs, 'armeParDefaut').forEach(function(attr) {
-      var apdCharId = attr.get('characterid');
-      if (apdCharId === undefined || apdCharId === '') {
-        error("Attribut sans personnage associé", attr);
-        return;
-      }
-      iterTokensOfAttribute(apdCharId, stateCOF.combat_pageid,
-        'armeParDefaut', attr.get('name'),
-        function(tok) {
-          var perso = {
-            charId: apdCharId,
-            token: tok
-          };
-          degainerArme(perso, attr.get('current'), evt);
-        });
+    persosDuCombat.forEach(function(perso) {
+      let persoTest = persoParCharId[perso.charId];
+      let arme = predicateAsBool(persoTest, 'armeParDefaut');
+      if (arme === undefined) return;
+      if (!isActive(perso)) return;
+      if (arme === true) degainerArme(perso, '', evt);
+      degainerArme(perso, arme, evt);
     });
     //Effet de ignorerLaDouleur
     var ilds = allAttributesNamed(attrs, 'douleurIgnoree');
@@ -21906,7 +21901,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (options.messages) message += "rengaine " + ancienneArme.name + " et ";
-        else sendPerso(perso, "rengaine " + ancienneArme.name);
+        else sendPerso(perso, "rengaine " + ancienneArme.name, options.secret);
         if (predicateAsInt(perso, "initEnMain" + labelArmeActuelle, 0) > 0)
           updateNextInit(perso);
         if (charAttributeAsBool(perso, 'eclaire_' + labelArmeActuelle)) {
@@ -21930,7 +21925,7 @@ var COFantasy = COFantasy || function() {
         if (options.messages) {
           if (ancienneArme) message += ancienneArmeGauche.name + " et ";
           else message += "rengaine " + ancienneArmeGauche.name + " et ";
-        } else sendPerso(perso, "rengaine " + ancienneArmeGauche.name);
+        } else sendPerso(perso, "rengaine " + ancienneArmeGauche.name, options.secret);
         if (charAttributeAsBool(perso, 'eclaire_' + labelArmeActuelleGauche)) {
           eteindreUneLumiere(perso, pageId, undefined, 'eclaire_' + labelArmeActuelleGauche, evt);
         }
@@ -22007,7 +22002,7 @@ var COFantasy = COFantasy || function() {
     } else if (ancienneArme && (ancienneArme.deuxMains || options.gauche)) {
       if (ficheAttributeAsBool(perso, 'DEFBOUCLIER', false) &&
         !ficheAttributeAsInt(perso, 'DEFBOUCLIERON', 0)) {
-        sendPerso(perso, "remet son bouclier");
+        sendPerso(perso, "remet son bouclier", options.secret);
         evt.attributes = evt.attributes || [];
         var attrBouclierOff = findObjs({
           _type: 'attribute',
@@ -22058,7 +22053,7 @@ var COFantasy = COFantasy || function() {
     if (options.messages) {
       message += "dégaine " + nouvelleArme.name;
       options.messages.push(message);
-    } else sendPerso(perso, "dégaine " + nouvelleArme.name);
+    } else sendPerso(perso, "dégaine " + nouvelleArme.name, options.secret);
     var eclaire = 'eclaire_' + labelArme;
     var attrEclaire = charAttribute(perso.charId, eclaire);
     if (attrEclaire.length > 0) {
@@ -37383,21 +37378,21 @@ var COFantasy = COFantasy || function() {
   //Si le token représente un personnage et avec la barre de vie non liée,
   // assure un nom unique en ajoutant un numéro
   // On en profite aussi pour mettre certaines valeurs par défaut
+  // retourne un perso si c'est un token de personnage
   function renameToken(token, tokenName) {
     let charId = token.get('represents');
     if (charId === undefined || charId === '') return;
     let perso = {
       token: token,
-      tokName: tokenName,
       charId: charId
     };
-    var pageId = token.get('pageid');
+    const pageId = token.get('pageid');
     //Vision
-    var visionNoir = predicateAsInt(perso, 'visionDansLeNoir', 0);
+    let visionNoir = predicateAsInt(perso, 'visionDansLeNoir', 0);
     if (visionNoir > 0) {
       visionNoir = scaleDistance(perso, visionNoir);
-      var page = getObj('page', pageId);
-      var udl = page && page.get('dynamic_lighting_enabled');
+      let page = getObj('page', pageId);
+      let udl = page && page.get('dynamic_lighting_enabled');
       if (udl) {
         token.set('has_night_vision', true);
         //token.set('night_vision_tint', '#555555');
@@ -37428,13 +37423,13 @@ var COFantasy = COFantasy || function() {
         }
         synchronisationDesEtats(perso);
       }
-      return;
+      return perso;
     }
     //cas des mooks : numérotation
     var copyOf = 0;
     var tokenBaseName = tokenName;
     if (tokenBaseName.includes('%%NUMBERED%%')) {
-      if (typeof TokenNameNumber !== 'undefined') return; //On laisse tokenNameNumber gérer ça
+      if (typeof TokenNameNumber !== 'undefined') return perso; //On laisse tokenNameNumber gérer ça
       tokenBaseName = tokenBaseName.replace('%%NUMBERED%%', '');
     } else {
       // On regarde si le nom se termine par un entier
@@ -37478,8 +37473,9 @@ var COFantasy = COFantasy || function() {
         if (n >= numero) numero = n + 1;
       }
     });
-    if (nePasModifier || copyOf > 0) return;
+    if (nePasModifier || copyOf > 0) return perso;
     token.set('name', tokenBaseName + ' ' + numero);
+    return perso;
   }
 
   function initTokenMarkers(token) {
@@ -37498,7 +37494,14 @@ var COFantasy = COFantasy || function() {
     var tokenName = token.get('name');
     //La plupart du temps, il faut attendre un peu que le nom soit affecté
     if (tokenName !== '') {
-      renameToken(token, tokenName);
+      let perso = renameToken(token, tokenName);
+      if (perso === undefined) return;
+      const arme = predicateAsBool(perso, 'armeParDefaut');
+      if (arme !== undefined && arme !== true) {
+        degainerArme(perso, arme, {}, {
+          secret: true
+        });
+      }
       return;
     }
     nb = nb || 1;
@@ -37582,7 +37585,7 @@ var COFantasy = COFantasy || function() {
 }();
 
 on('ready', function() {
-  const scriptVersion = '3.02';
+  const scriptVersion = '3.03';
   on('add:token', COFantasy.addToken);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
   state.COFantasy = state.COFantasy || {
@@ -39075,6 +39078,39 @@ on('ready', function() {
       });
     });
     log("Mise à jour des armes de jet effectuée");
+  }
+  if (state.COFantasy.version < 3.03) {
+    findObjs({
+      _type: 'attribute',
+    }).forEach(function(attribute) {
+      let nom = attribute.get('name');
+      if (nom != 'armeParDefaut') return;
+      let charId = attribute.get('characterid');
+      let arme = attribute.get('current');
+      attribute.remove();
+      let attr = findObjs({
+        _type: 'attribute',
+        _characterid: charId,
+        name: 'predicats_script'
+      }, {
+        caseInsensitive: true
+      });
+      let predText = '';
+      if (attr.length === 0) {
+        attr = createObj('attribute', {
+          name: 'predicats_script',
+          current: '',
+          characterid: charId
+        });
+      } else {
+        attr = attr[0];
+        predText = attr.get('current');
+        if (predText !== '') predText += '\n';
+      }
+      predText += 'armeParDefaut:' + arme;
+      attr.set('current', predText);
+    });
+    log("Mise à jour de prédicats effectuée");
   }
   state.COFantasy.version = scriptVersion;
   handout.forEach(function(hand) {

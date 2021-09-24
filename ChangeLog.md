@@ -1,4 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 3.03
+* Passage de armeParDefaut en prédicat, et prise en compte de ce prédicat au moment de poser un token.
+
 ## 3.02
 ### Capacité
 * Ajout des réaction allergiques pour les chiens gobelins
