@@ -10957,6 +10957,7 @@ var COFantasy = COFantasy || function() {
                 let attOptions = '';
                 if (actionCommands.length > 1)
                   attOptions = ' ' + actionCommands.slice(1).join(' ');
+                attOptions += options;
                 let attackStats = armesEnMain(perso);
                 if (attackStats === undefined) {
                   let {
