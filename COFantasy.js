@@ -10968,12 +10968,14 @@ var COFantasy = COFantasy || function() {
                 command = '!cof-attack ' + perso.token.id + ' @{target|token_id} ';
                 if (attackStats) {
                   command += attackStats.label + attOptions;
-                  f(command, attackStats.name, macros, {
+                  if (!actionTextFinal) actionText = attackStats.name;
+                  f(command, actionText, macros, {
                     attackStats
                   });
                 } else {
                   command += argsAttaqueAMainsNues(perso) + attOptions;
-                  f(command, 'Mains nues', macros);
+                  if (!actionTextFinal) actionText = 'Mains nues';
+                  f(command, actionText, macros);
                 }
                 break;
               default:
