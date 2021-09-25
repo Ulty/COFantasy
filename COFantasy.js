@@ -14611,6 +14611,30 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function sendDisplay(display, perso, autres, options) {
+    if (options === undefined || !options.secret) {
+      sendChat("", endFramedDisplay(display));
+    } else { //option.secret
+      let playerIds = getPlayerIds(perso);
+      playerIds.forEach(function(playerid) {
+        addFramedHeader(display, playerid, true);
+        sendChat('', endFramedDisplay(display));
+      });
+      addFramedHeader(display, undefined, 'gm');
+      sendChat('', endFramedDisplay(display));
+      autres.forEach(function(target) {
+        let addPlayers = getPlayerIds(target);
+        addPlayers.forEach(function(nid) {
+          if (!playerIds.includes(nid)) {
+            playerIds.push(nid);
+            addFramedHeader(display, nid, true);
+            sendChat('', endFramedDisplay(display));
+          }
+        });
+      });
+    }
+  }
+
   //Affichage final d'une attaque
   // attaquant est optionnel, mais si il est présent, cibles doit être un tableau et options un objet
   function finaliseDisplay(display, explications, evt, attaquant, cibles, options, echecCritique) {
@@ -14852,28 +14876,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    if (options === undefined || !options.secret) {
-      sendChat("", endFramedDisplay(display));
-    } else { //option.secret
-      var playerIds;
-      playerIds = getPlayerIds(attaquant);
-      playerIds.forEach(function(playerid) {
-        addFramedHeader(display, playerid, true);
-        sendChat('', endFramedDisplay(display));
-      });
-      addFramedHeader(display, undefined, 'gm');
-      sendChat('', endFramedDisplay(display));
-      cibles.forEach(function(target) {
-        var addPlayers = getPlayerIds(target);
-        addPlayers.forEach(function(nid) {
-          if (!playerIds.includes(nid)) {
-            playerIds.push(nid);
-            addFramedHeader(display, nid, true);
-            sendChat('', endFramedDisplay(display));
-          }
-        });
-      });
-    }
+    sendDisplay(display, attaquant, cibles, options);
     if (attaquant) {
       cibles.forEach(function(target) {
         if (evt.succes == false && options.contact && charAttributeAsBool(target, 'riposteGuerrier')) {
@@ -17132,7 +17135,7 @@ var COFantasy = COFantasy || function() {
       if (arme === undefined) return;
       if (!isActive(perso)) return;
       if (arme === true) degainerArme(perso, '', evt);
-      degainerArme(perso, arme, evt);
+      else degainerArme(perso, arme, evt);
     });
     //Effet de ignorerLaDouleur
     var ilds = allAttributesNamed(attrs, 'douleurIgnoree');
@@ -28009,10 +28012,10 @@ var COFantasy = COFantasy || function() {
     // Display par personnage
     for (const [forgesortCharId, elixirsDuForgesort] of Object.entries(forgesorts)) {
       // Init du display pour le personnage
-      var displayOpt = {
+      let displayOpt = {
         chuchote: true
       };
-      var allPlayers = getPlayerIds({
+      let allPlayers = getPlayerIds({
         charId: forgesortCharId
       });
       var playerId;
@@ -28310,10 +28313,10 @@ var COFantasy = COFantasy || function() {
     // Display par personnage
     for (const [forgesortCharId, runesDuForgesort] of Object.entries(forgesorts)) {
       // Init du desplay pour le personnage
-      var displayOpt = {
+      let displayOpt = {
         chuchote: true
       };
-      var allPlayers = getPlayerIds({
+      let allPlayers = getPlayerIds({
         charId: forgesortCharId
       });
       var playerId;
@@ -29372,7 +29375,7 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, ligneManoeuvre, 90);
           }
           // on envoie la liste aux joueurs qui gèrent le voleur
-          var playerIds = getPlayerIds(cible);
+          let playerIds = getPlayerIds(cible);
           playerIds.forEach(function(playerid) {
             addFramedHeader(display, playerid, true);
             sendChat('', endFramedDisplay(display));
@@ -32759,9 +32762,9 @@ var COFantasy = COFantasy || function() {
         return;
       }
       addEvent(evt);
-      var playerIds = getPlayerIds(perso);
-      var playerId;
-      var optionsDisplay = {
+      let playerIds = getPlayerIds(perso);
+      let playerId;
+      let optionsDisplay = {
         chuchote: 'gm'
       };
       if (playerIds.length > 0) {
@@ -35750,8 +35753,8 @@ var COFantasy = COFantasy || function() {
           charId: charId
         };
         if (options.save) {
-          var playerId = getPlayerIds(perso);
-          var nameEffet = effet;
+          let playerId = getPlayerIds(perso);
+          let nameEffet = effet;
           if (effet.startsWith('dotGen('))
             nameEffet = effet.substring(7, effet.indexOf(')'));
           var display = startFramedDisplay(playerId, "Effet de " + nameEffet, perso);
@@ -36053,7 +36056,7 @@ var COFantasy = COFantasy || function() {
           });
       }
       if (attributeAsBool(perso, 'noyade') && !getState(perso, 'mort') && !immuniseAsphyxie(perso)) {
-        var playerId = getPlayerIds(perso);
+        let playerId = getPlayerIds(perso);
         var display = startFramedDisplay(playerId, "Noyade", perso);
         var saveId = "Noyade_" + perso.token.id;
         var expliquer = function(m) {
