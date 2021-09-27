@@ -3679,9 +3679,8 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
-  //retourne toujours quelque chose, par défaut mains nues
-  function getWeaponStats(perso, attackLabel, defWeapon) {
-    var weaponStats = defWeapon || {
+  function getWeaponStats(perso, attackLabel) {
+    var weaponStats = {
       name: 'Attaque',
       attSkill: '@{ATKCAC}',
       attNbDices: 1,
@@ -3839,7 +3838,7 @@ var COFantasy = COFantasy || function() {
         case 'aussiArmeDeJet':
           if (cmd.length < 2) return false;
           let armeAssociee = getWeaponStats(perso, cmd[1]);
-          return armeAssociee.armeDeJet && armeAssociee.nbArmesDeJet < 1;
+          return armeAssociee && armeAssociee.armeDeJet && armeAssociee.nbArmesDeJet < 1;
       }
       return false;
     });
@@ -6198,20 +6197,19 @@ var COFantasy = COFantasy || function() {
 
   //Remplis les champs arme et armeGauche de perso
   //renvoie undefined si aucune arme en main principale
-  //renvoie l'arme principale sinon
-  function armesEnMain(perso, defWeapon) {
+  //renvoie l'arme principale sinon undefined
+  function armesEnMain(perso) {
     if (perso.armesEnMain) return perso.arme;
     let labelArme = tokenAttribute(perso, 'armeEnMain');
     if (labelArme.length > 0) {
       let labelArmePrincipale = labelArme[0].get('current');
-      if (labelArmePrincipale) perso.arme = getWeaponStats(perso, labelArmePrincipale, defWeapon);
+      if (labelArmePrincipale) perso.arme = getWeaponStats(perso, labelArmePrincipale);
       var labelArmeGauche = labelArme[0].get('max');
       if (labelArmeGauche) perso.armeGauche = getWeaponStats(perso, labelArmeGauche);
       perso.armesEnMain = 'calculee';
       return perso.arme;
     }
-    perso.arme = defWeapon;
-    return defWeapon;
+    return;
   }
 
   function parseDmg(expr) {
@@ -6305,13 +6303,18 @@ var COFantasy = COFantasy || function() {
     } else {
       //On trouve l'attaque correspondant au label
       if (attackLabel == -1) { //attaque avec l'arme en main
-        weaponStats = armesEnMain(attaquant, attaqueAMainsNues);
+        weaponStats = armesEnMain(attaquant);
+        if (weaponStats === undefined) weaponStats = attaqueAMainsNues;
       } else if (attackLabel == -2) { //attaque avec l'arme en main gauche
-        if (attaquant.armeGauche === undefined) armesEnMain(attaquant);
+        if (attaquant.armesEnMain === undefined) armesEnMain(attaquant);
         weaponStats = attaquant.armeGauche;
         if (weaponStats === undefined)
           weaponStats = getWeaponStats(attaquant, attackLabel);
       } else weaponStats = getWeaponStats(attaquant, attackLabel);
+    }
+    if (weaponStats === undefined) {
+      error("Impossible de trouver l'arme pour l'attaque", attackLabel);
+      return;
     }
     if (weaponStats.deuxMains && attributeAsBool(attaquant, 'espaceExigu')) {
       sendPerso(attaquant, "ne peut pas utiliser d'arme à deux mains dans un espace aussi exigu.");
@@ -10911,12 +10914,19 @@ var COFantasy = COFantasy || function() {
               let attackLabel = actionCommands[1].trim();
               let attackStats;
               if (attackLabel == -1) { //attaque avec l'arme en main
-                attackStats = armesEnMain(perso, attaqueAMainsNues);
+                attackStats = armesEnMain(perso);
+                if (attackStats === undefined) attackStats = attaqueAMainsNues;
               } else if (attackLabel == -2) { //attaque avec l'arme en main gauche
-                if (perso.armeGauche === undefined) armesEnMain(perso);
+                if (perso.armesEnMain === undefined) armesEnMain(perso);
                 attackStats = perso.armeGauche;
                 if (!attackStats) return;
-              } else attackStats = getWeaponStats(perso, attackLabel);
+              } else {
+                attackStats = getWeaponStats(perso, attackLabel);
+                if (!attackStats) {
+                  error("Impossible de trouver l'arme de label " + attackLabel, actionCommands);
+                  return;
+                }
+              }
               if (!actionTextFinal) actionText = attackStats.name;
               actionCode += options;
               f(actionCode, actionText, macros, {
@@ -11787,7 +11797,7 @@ var COFantasy = COFantasy || function() {
     }
     if (options.aussiArmeDeJet && !estMook) {
       let armeAssociee = getWeaponStats(attaquant, options.aussiArmeDeJet);
-      if (armeAssociee.armeDeJet) {
+      if (armeAssociee && armeAssociee.armeDeJet) {
         if (armeAssociee.nbArmesDeJet < 1) {
           sendPerso(attaquant, "a déjà lancé tous ses " + weaponName);
           return;
@@ -16228,7 +16238,7 @@ var COFantasy = COFantasy || function() {
               predicateAsBool(target, 'increvableHumain') &&
               !attributeAsBool(target, 'increvableHumainUtilise')) {
               setTokenAttr(target, 'increvableHumainUtilise', true, evt);
-              var weaponStatsIncrevable = {
+              let weaponStatsIncrevable = {
                 attSkillDiv: 0,
                 crit: 20,
                 parDefaut: true,
@@ -16237,7 +16247,7 @@ var COFantasy = COFantasy || function() {
                 weaponStatsIncrevable.name = "Attaque magique";
                 weaponStatsIncrevable.attSkill = '@{ATKMAG}';
               } else if (options.contact) {
-                var enMain = armesEnMain(target);
+                let enMain = armesEnMain(target);
                 if (!enMain || enMain.sortilege || enMain.portee > 0) {
                   weaponStatsIncrevable.name = "Attaque au contact";
                   weaponStatsIncrevable.attSkill = '@{ATKCAC}';
@@ -21895,6 +21905,10 @@ var COFantasy = COFantasy || function() {
       //On dégaine une nouvelle arme
       if (labelArmeActuelle) {
         ancienneArme = getWeaponStats(perso, labelArmeActuelle);
+        if (ancienneArme === undefined) {
+          error("Impossible de trouver l'arme en main", labelArmeActuelle);
+          return;
+        }
         if (attributeAsBool(perso, 'forgeron(' + labelArmeActuelle + ')')) {
           finDEffetDeNom(perso, 'forgeron(' + labelArmeActuelle + ')', evt);
         }
@@ -21917,6 +21931,10 @@ var COFantasy = COFantasy || function() {
       if ((!nouvelleArme || nouvelleArme.deuxMains || options.gauche) &&
         labelArmeActuelleGauche) {
         let ancienneArmeGauche = getWeaponStats(perso, labelArmeActuelleGauche);
+        if (ancienneArmeGauche === undefined) {
+          error("Impossible de trouver l'arme en main gauch", labelArmeActuelleGauche);
+          return;
+        }
         if (attributeAsBool(perso, 'forgeron(' + labelArmeActuelleGauche + ')')) {
           finDEffetDeNom(perso, 'forgeron(' + labelArmeActuelleGauche + ')', evt);
         }
@@ -26912,7 +26930,7 @@ var COFantasy = COFantasy || function() {
       error("Le dernier argument non optionnel doit être la difficulté du test de CON", cmd);
       return;
     }
-    var testINT = 14;
+    let testINT = 14;
     optArgs.forEach(function(arg) {
       cmd = arg.split(' ');
       switch (cmd[0]) {
@@ -26937,6 +26955,10 @@ var COFantasy = COFantasy || function() {
         let arme;
         if (!estMunition) {
           arme = getWeaponStats(perso, labelArme);
+          if (arme === undefined) {
+            error("Pas d'arme de label " + labelArme, cmd);
+            return;
+          }
           if (arme.sortilege) {
             sendPerso(perso, "imossible d'enduire un sortilège de poison", true);
             return;
