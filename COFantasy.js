@@ -365,7 +365,7 @@ var COFantasy = COFantasy || function() {
 
   // List of states:
   const cof_states = {
-    assome: 'status_pummeled',
+    assomme: 'status_pummeled',
     mort: 'status_dead',
     surpris: 'status_lightning-helix',
     renverse: 'status_back-pain',
@@ -889,7 +889,7 @@ var COFantasy = COFantasy || function() {
     // Option Markers personnalisés activé
     if (stateCOF.options.affichage.val.markers_personnalises.val) {
       const cof_states_perso = {
-        assome: 'status_cof-assomme',
+        assomme: 'status_cof-assomme',
         surpris: 'status_cof-surpris',
         renverse: 'status_cof-renverse',
         aveugle: 'status_cof-aveugle',
@@ -954,7 +954,7 @@ var COFantasy = COFantasy || function() {
 
   function etatRendInactif(etat) {
     var res =
-      etat == 'mort' || etat == 'surpris' || etat == 'assome' ||
+      etat == 'mort' || etat == 'surpris' || etat == 'assomme' ||
       etat == 'etourdi' || etat == 'paralyse' || etat == 'endormi' ||
       etat == 'apeure';
     return res;
@@ -1107,7 +1107,7 @@ var COFantasy = COFantasy || function() {
   function isActive(perso) {
     var inactif =
       getState(perso, 'mort') || getState(perso, 'surpris') ||
-      getState(perso, 'assome') || getState(perso, 'etourdi') ||
+      getState(perso, 'assomme') || getState(perso, 'etourdi') ||
       getState(perso, 'paralyse') || getState(perso, 'endormi') ||
       getState(perso, 'apeure') || attributeAsBool(perso, 'statueDeBois');
     return !inactif;
@@ -2066,13 +2066,13 @@ var COFantasy = COFantasy || function() {
             tousLesTokens: true
           });
         break;
-      case 'assomeTemp':
+      case 'assommeTemp':
         iterTokensOfAttribute(charId, options.pageId, effet, attrName,
           function(token) {
             setState({
               token: token,
               charId: charId
-            }, 'assome', false, evt, {
+            }, 'assomme', false, evt, {
               fromTemp: true
             });
           }, {
@@ -2978,7 +2978,7 @@ var COFantasy = COFantasy || function() {
           break;
         case 'immobilise':
         case 'surpris':
-        case 'assome':
+        case 'assomme':
         case 'etourdi':
         case 'paralyse':
         case 'endormi':
@@ -7996,26 +7996,26 @@ var COFantasy = COFantasy || function() {
 
   //ne rajoute pas evt à l'historique
   function persoInit(perso, evt) {
-    var initDerivee = charAttribute(perso.charId, 'initiativeDeriveeDe');
+    let initDerivee = charAttribute(perso.charId, 'initiativeDeriveeDe');
     if (initDerivee.length > 0) {
       var charDerive = findObjs({
         _type: 'character',
         name: initDerivee[0].get('current')
       });
       if (charDerive.length > 0) {
-        var persoD = {
+        let persoD = {
           charId: charDerive[0].id,
           token: perso.token
         };
         return persoInit(persoD, evt);
       }
     }
-    var persoMonte = tokenAttribute(perso, 'estMontePar');
+    let persoMonte = tokenAttribute(perso, 'estMontePar');
     if (persoMonte.length > 0) {
-      var cavalier = persoOfId(persoMonte[0].get('current'), persoMonte[0].get('max'), perso.token.get('pageid'));
+      let cavalier = persoOfId(persoMonte[0].get('current'), persoMonte[0].get('max'), perso.token.get('pageid'));
       if (cavalier !== undefined) return persoInit(cavalier, evt);
     }
-    var init;
+    let init;
     if (persoEstPNJ(perso)) {
       init = ficheAttributeAsInt(perso, 'pnj_init', 10);
     } else {
@@ -8027,8 +8027,8 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(perso, 'formeDArbre')) init = 7;
     //Règle optionelle : +1d6, à lancer en entrant en combat
     if (reglesOptionelles.initiative.val.initiative_variable.val) {
-      var bonusVariable;
-      var jetPartage;
+      let bonusVariable;
+      let jetPartage;
       if (reglesOptionelles.initiative.val.initiative_variable_individuelle.val) { // Un jet par perso mook
         bonusVariable = attributeAsInt(perso, 'bonusInitVariable', 0);
       } else { //Un seul pour tous les mook du même personnage
@@ -8036,13 +8036,13 @@ var COFantasy = COFantasy || function() {
         jetPartage = true;
       }
       if (bonusVariable === 0) {
-        var rollD6 = rollDePlus(6, {
+        let rollD6 = rollDePlus(6, {
           deExplosif: true
         });
         bonusVariable = rollD6.val;
-        var msg = "entre en combat. ";
-        var jetCache = ficheAttributeAsBool(perso, 'jets_caches', false);
-        var msgSecret = perso.token.get('layer') == 'gmlayer';
+        let msg = "entre en combat. ";
+        let jetCache = ficheAttributeAsBool(perso, 'jets_caches', false);
+        let msgSecret = perso.token.get('layer') == 'gmlayer';
         if (!jetCache) {
           msg += onGenre(perso, 'Il', 'Elle') + " fait " + rollD6.roll;
           msg += " à son jet d'initiative";
@@ -8474,7 +8474,7 @@ var COFantasy = COFantasy || function() {
           token: tok,
           charId: compCharId
         };
-        compagnonPresent = !getState(compagnon, 'mort') && !getState(compagnon, 'assome') &&
+        compagnonPresent = !getState(compagnon, 'mort') && !getState(compagnon, 'assomme') &&
           !getState(compagnon, 'etourdi') && !getState(compagnon, 'endormi') &&
           !getState(compagnon, 'apeure') && !getState(compagnon, 'paralyse');
       });
@@ -9060,7 +9060,7 @@ var COFantasy = COFantasy || function() {
         options.tempDmg = true;
         if (!options.choc) {
           attBonus -= 2;
-          explications.push("Attaque pour assomer => -2 en Attaque");
+          explications.push("Attaque pour assommer => -2 en Attaque");
         }
       }
     }
@@ -10751,7 +10751,7 @@ var COFantasy = COFantasy || function() {
     }
     if (ficheAttributeAsInt(perso, 'attaque_dm_temp_check')) {
       if (text_opts !== '') text_opts += '<br>';
-      text_opts += "Pour assomer";
+      text_opts += "Pour assommer";
     }
     if (text_opts === '') text_opts = 'Options';
     opt_display.action_right =
@@ -13034,8 +13034,8 @@ var COFantasy = COFantasy || function() {
         case 'affaibliTemp':
           setState(target, 'affaibli', true, evt);
           break;
-        case 'assomeTemp':
-          setState(target, 'assome', true, evt);
+        case 'assommeTemp':
+          setState(target, 'assomme', true, evt);
           break;
         case 'invisibleTemp':
         case 'intangibleInvisible':
@@ -15898,7 +15898,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (target.attaquant && predicateAsBool(target, 'combatKinetique') &&
-          !getState(target, 'endormi') && !getState(target, 'assome') &&
+          !getState(target, 'endormi') && !getState(target, 'assomme') &&
           !getState(target, 'mort') && !getState(target, 'surpris') &&
           !getState(target, 'etourdi')) {
           rd += 3;
@@ -16338,8 +16338,8 @@ var COFantasy = COFantasy || function() {
   }
 
   function postBarUpdateForDealDamage(target, dmgTotal, pvPerdus, bar1, tempDmg, dmgDisplay, showTotal, dmDrains, displayRes, evt, expliquer) {
-    if (bar1 > 0 && tempDmg >= bar1) { //assomé
-      setState(target, 'assome', true, evt);
+    if (bar1 > 0 && tempDmg >= bar1) { //assommé
+      setState(target, 'assomme', true, evt);
     }
     var attrsLienDeSang = tokenAttribute(target, "lienDeSangVers");
     if (attrsLienDeSang.length > 0) {
@@ -16632,7 +16632,7 @@ var COFantasy = COFantasy || function() {
       };
       if (objCharId !== '' &&
         (getState(perso, 'mort') ||
-          getState(perso, 'assome') || getState(perso, 'endormi') ||
+          getState(perso, 'assomme') || getState(perso, 'endormi') ||
           (attributeAsBool(perso, 'intangible') && attributeAsInt(perso, 'intangibleValeur', 1)) ||
           (attributeAsBool(perso, 'intangibleInvisible') && attributeAsInt(perso, 'intangibleInvisibleValeur', 1))
         )
@@ -17195,7 +17195,7 @@ var COFantasy = COFantasy || function() {
         } else {
           let tempDmg = ficheAttributeAsInt(charId, 'DMTEMP', 0);
           if (pv > tempDmg && newPv <= tempDmg) {
-            sendChar(charId, "s'écroule, assomé. La douleur qu'il avait ignorée l'a finalement rattrapé...", true);
+            sendChar(charId, "s'écroule, assommé. La douleur qu'il avait ignorée l'a finalement rattrapé...", true);
           } else {
             sendChar(charId, "subit le contrecoup de la douleur qu'il avait ignorée", true);
           }
@@ -17223,7 +17223,7 @@ var COFantasy = COFantasy || function() {
           token: tokensIld[0]
         };
         updateCurrentBar(perso, 1, tokNewPv, evt);
-        //TODO: faire mourrir, assomer
+        //TODO: faire mourrir, assommer
       }
     }); // end forEach on all attributes ignorerLaDouleur
     ilds.forEach(function(ild) {
@@ -21717,7 +21717,7 @@ var COFantasy = COFantasy || function() {
         return "retrouver la vue";
       case 'etourdi':
         return "reprendre ses esprits";
-      case 'assome':
+      case 'assomme':
         return "reprendre conscience";
       case 'renverse':
         return "se relever";
@@ -30690,13 +30690,13 @@ var COFantasy = COFantasy || function() {
     inBar: true
   }, {
     name: 'devient',
-    action: "!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|immobilise|endormi|apeure|invisible|blesse|encombre} true",
+    action: "!cof-set-state ?{État|mort|surpris|assomme|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|immobilise|endormi|apeure|invisible|blesse|encombre} true",
     visibleto: '',
     istokenaction: false,
     inBar: true
   }, {
     name: 'enlève',
-    action: "!cof-set-state ?{État|mort|surpris|assome|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|immobilise|endormi|apeure|invisible|blesse|encombre} false",
+    action: "!cof-set-state ?{État|mort|surpris|assomme|renverse|aveugle|affaibli|etourdi|paralyse|ralenti|immobilise|endormi|apeure|invisible|blesse|encombre} false",
     visibleto: '',
     istokenaction: false,
     inBar: true
@@ -32296,7 +32296,7 @@ var COFantasy = COFantasy || function() {
         addLineToFramedDisplay(display, ligne);
         addLigneOptionAttaque(display, perso, arc, "Attaque risquée", 'attaque_risquee');
         addLigneOptionAttaque(display, perso, aac, "Attaque assurée", 'attaque_assuree');
-        addLigneOptionAttaque(display, perso, adtc, "Attaque pour assomer", 'attaque_dm_temp');
+        addLigneOptionAttaque(display, perso, adtc, "Attaque pour assommer", 'attaque_dm_temp');
         sendChat('', endFramedDisplay(display));
       });
     });
@@ -34736,10 +34736,10 @@ var COFantasy = COFantasy || function() {
       msgSave: "retrouver des forces",
       prejudiciable: true
     },
-    assomeTemp: {
-      activation: "est assomé",
-      activationF: "est assomée",
-      actif: "est assomé",
+    assommeTemp: {
+      activation: "est assommé",
+      activationF: "est assommée",
+      actif: "est assommé",
       fin: "reprend conscience",
       msgSave: "reprendre conscience",
       prejudiciable: true,

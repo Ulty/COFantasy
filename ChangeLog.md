@@ -1,5 +1,9 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.03
+### Corrections de bugs
+* Correction de assome en assomme.
+
+### Autres améliorations
 * Passage de armeParDefaut en prédicat, et prise en compte de ce prédicat au moment de poser un token.
 
 ## 3.02
