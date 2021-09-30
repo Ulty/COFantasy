@@ -1745,13 +1745,13 @@ var COFantasy = COFantasy || function() {
   //on trouve un nom de token, sur la page passée en argument (ou sinon
   //sur la page active de la campagne)
   function persoOfId(id, name, pageId) {
-    var token = getObj('graphic', id);
+    let token = getObj('graphic', id);
     if (token === undefined) {
       if (name === undefined) return undefined;
       if (pageId === undefined) {
         pageId = Campaign().get('playerpageid');
       }
-      var tokens = findObjs({
+      let tokens = findObjs({
         _type: 'graphic',
         _subtype: 'token',
         _pageid: pageId,
@@ -2154,13 +2154,15 @@ var COFantasy = COFantasy || function() {
         if (effet == 'degradationZombie') {
           var attrNecromant = charAttribute(charId, "necromant");
           if (attrNecromant.length > 0) {
-            var necromantId = attrNecromant[0].get("current");
-            var necromant = persoOfId(necromantId, necromantId, options.pageId);
+            let id = attrNecromant[0].get("current");
+            let necromant = persoOfId(id, id, options.pageId);
+            if (necromant) {
             var attrNbZombie = tokenAttribute(necromant, "zombiesControles");
             if (attrNbZombie.length > 0) {
               var nbZombie = attrAsInt(attrNbZombie, 1);
               if (nbZombie > 1) setTokenAttr(necromant, "zombiesControles", nbZombie - 1, evt);
               else attrNbZombie[0].remove();
+            }
             }
           }
         }
@@ -2304,7 +2306,7 @@ var COFantasy = COFantasy || function() {
               token = nouveauToken;
               perso.token = nouveauToken;
             }
-            var apv = tokenAttribute(perso, 'anciensPV');
+            let apv = tokenAttribute(perso, 'anciensPV');
             if (apv.length > 0) {
               updateCurrentBar(perso, 1, apv[0].get('current'), evt, apv[0].get('max'));
               removeTokenAttr(perso, 'anciensPV', evt);
@@ -2381,13 +2383,13 @@ var COFantasy = COFantasy || function() {
           } else {
             options.print = function(m) {}; //Pour ne pas afficher le message final.
             iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-              var perso = {
+              let perso = {
                 token: token,
                 charId: charId
               };
               if (getState(perso, 'mort')) return;
-              var val = true;
-              var valAttr = tokenAttribute(perso, efComplet + 'Valeur');
+              let val = true;
+              let valAttr = tokenAttribute(perso, efComplet + 'Valeur');
               if (valAttr.length > 0) val = valAttr[0].get('current');
               whisperChar(charId, effetRetarde + ' ' + val);
               setTokenAttr(perso, effetRetarde, val, evt, {});
@@ -2401,11 +2403,11 @@ var COFantasy = COFantasy || function() {
           iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
             whisperChar(charId, messageRetarde);
             //Puis on regarde si il y a une valeur à afficher
-            var perso = {
+            let perso = {
               token: token,
               charId: charId
             };
-            var valAttr = tokenAttribute(perso, efComplet + 'Valeur');
+            let valAttr = tokenAttribute(perso, efComplet + 'Valeur');
             if (valAttr.length > 0)
               whisperChar(charId, valAttr[0].get('current').replace(/_/g, ' '));
           });
@@ -2414,11 +2416,11 @@ var COFantasy = COFantasy || function() {
       case 'tenebres':
         iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
           //Puis on regarde si il y a une valeur à afficher
-          var perso = {
+          let perso = {
             token: token,
             charId: charId
           };
-          var valAttr = tokenAttribute(perso, efComplet + 'Valeur');
+          let valAttr = tokenAttribute(perso, efComplet + 'Valeur');
           var tokenTenebres = getObj('graphic', valAttr[0].get('current'));
           if (tokenTenebres) tokenTenebres.remove();
         });
@@ -2434,13 +2436,13 @@ var COFantasy = COFantasy || function() {
         break;
       case 'lienDeSang':
         iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-          var perso = {
+          let perso = {
             token: token,
             charId: charId
           };
-          var attrsLienDeSangDe = tokenAttribute(perso, "lienDeSangDe");
+          let attrsLienDeSangDe = tokenAttribute(perso, "lienDeSangDe");
           if (attrsLienDeSangDe.length > 0) {
-            var tokenLie = persoOfId(attrsLienDeSangDe[0].get("current"));
+            let tokenLie = persoOfId(attrsLienDeSangDe[0].get("current"));
             if (tokenLie) {
               tokenAttribute(tokenLie, "lienDeSangVers").forEach(function(attr) {
                 attr.remove();
