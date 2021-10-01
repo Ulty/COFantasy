@@ -4,6 +4,7 @@
 * Correction de assome en assomme.
 
 ### Autres améliorations
+* Ajout d'une option d'affichage pour que le MJ puisse prendre le temps de décrire une attaque avant de montrer le résultat aux joueurs.
 * Passage de armeParDefaut en prédicat, et prise en compte de ce prédicat au moment de poser un token.
 
 ## 3.02

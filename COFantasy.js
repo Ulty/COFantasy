@@ -217,6 +217,11 @@ var COFantasy = COFantasy || function() {
           val: false,
           type: 'bool'
         },
+        MJ_valide_affichage_attaques: {
+          explications: "Les résultats des attaques sont d'abord montrées au MJ seul, qui peut ensuite les montrer aux joueurs",
+          val: false,
+          type: 'bool'
+        },
         avatar_dans_cadres: {
           explications: "Si faux, on utilise l'image du token.",
           val: true,
@@ -765,13 +770,13 @@ var COFantasy = COFantasy || function() {
     reglesOptionelles = stateCOF.options.regles.val;
     // Les macros utiles en jeu
     if (stateCOF.options.macros_a_jour.val) {
-      var macros = findObjs({
+      let macros = findObjs({
         _type: 'macro'
       });
-      var players = findObjs({
+      let players = findObjs({
         _type: 'player'
       });
-      var mjs = [];
+      let mjs = [];
       players.forEach(function(p) {
         if (playerIsGM(p.id)) mjs.push(p.id);
       });
@@ -2157,12 +2162,12 @@ var COFantasy = COFantasy || function() {
             let id = attrNecromant[0].get("current");
             let necromant = persoOfId(id, id, options.pageId);
             if (necromant) {
-            var attrNbZombie = tokenAttribute(necromant, "zombiesControles");
-            if (attrNbZombie.length > 0) {
-              var nbZombie = attrAsInt(attrNbZombie, 1);
-              if (nbZombie > 1) setTokenAttr(necromant, "zombiesControles", nbZombie - 1, evt);
-              else attrNbZombie[0].remove();
-            }
+              var attrNbZombie = tokenAttribute(necromant, "zombiesControles");
+              if (attrNbZombie.length > 0) {
+                var nbZombie = attrAsInt(attrNbZombie, 1);
+                if (nbZombie > 1) setTokenAttr(necromant, "zombiesControles", nbZombie - 1, evt);
+                else attrNbZombie[0].remove();
+              }
             }
           }
         }
@@ -4106,22 +4111,22 @@ var COFantasy = COFantasy || function() {
   //Fonction séparée pour pouvoir envoyer un frame à plusieurs joueurs
   // playerId peut être undefined (en particulier pour envoyer au mj)
   function addFramedHeader(display, playerId, chuchote) {
-    var perso1 = display.perso1;
-    var perso2 = display.perso2;
-    var action = display.action;
-    var playerBGColor = '#333';
-    var playerTXColor = '#FFF';
-    var displayname;
-    var player;
+    let perso1 = display.perso1;
+    let perso2 = display.perso2;
+    let action = display.action;
+    let playerBGColor = '#333';
+    let playerTXColor = '#FFF';
+    let displayname;
+    let player;
     if (playerId) player = getObj('player', playerId);
     if (player !== undefined) {
       playerBGColor = player.get("color");
       playerTXColor = (getBrightness(playerBGColor) < 50) ? "#FFF" : "#000";
       displayname = player.get('displayname');
     }
-    var res = '/direct ';
+    let res = '/direct ';
     if (chuchote) {
-      var who;
+      let who;
       if (chuchote !== true) who = chuchote;
       else who = displayname;
       if (who) res = '/w "' + who + '" ';
@@ -14626,10 +14631,39 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function montrerResultatsAttaque(msg) {
+    if (stateCOF.currentAttackDisplay) {
+      sendChat('', endFramedDisplay(stateCOF.currentAttackDisplay));
+      stateCOF.currentAttackDisplay = undefined;
+    } else {
+      sendPlayer(msg, "Pas de résultat d'attaque à montrer");
+    }
+  }
+
   function sendDisplay(display, perso, autres, options) {
+    if (stateCOF.options.affichage.val.MJ_valide_affichage_attaques.val) {
+      let players = findObjs({
+        _type: 'player'
+      });
+      let joueur;
+      let gm;
+      players.forEach(function(p) {
+        if (!p.get('online')) return;
+        if (playerIsGM(p.id)) gm = true;
+        else joueur = true;
+      });
+      if (gm && joueur) {
+        stateCOF.currentAttackDisplay = {...display
+        };
+        addLineToFramedDisplay(display, boutonSimple('!cof-montrer-resultats-attaque', "Montrer aux joueurs"));
+        addFramedHeader(display, undefined, 'gm');
+        sendChat('', endFramedDisplay(display));
+        return;
+      }
+    }
     if (options === undefined || !options.secret) {
-      sendChat("", endFramedDisplay(display));
-    } else { //option.secret
+      sendChat('', endFramedDisplay(display));
+    } else {
       let playerIds = getPlayerIds(perso);
       playerIds.forEach(function(playerid) {
         addFramedHeader(display, playerid, true);
@@ -34317,6 +34351,12 @@ var COFantasy = COFantasy || function() {
       case '!cof-jet':
         jet(msg);
         return;
+      case '!cof-montrer-resultats-attaque':
+        montrerResultatsAttaque(msg);
+        return;
+      case '!cof-nouveau-jour':
+        parseNouveauJour(msg);
+        return;
       case '!cof-options':
         setCofOptions(msg);
         return;
@@ -34332,15 +34372,6 @@ var COFantasy = COFantasy || function() {
       case '!cof-hors-combat':
       case '!cof-fin-combat':
         sortirDuCombat();
-        return;
-      case "!cof-nuit": //deprecated
-        error("!cof-nuit n'est plus supporté, utiliser !cof-nouveau-jour", msg);
-        return;
-      case "!cof-jour": //deprecated
-        error("!cof-jour n'est plus supporté, utiliser !cof-nouveau-jour", msg);
-        return;
-      case "!cof-nouveau-jour":
-        parseNouveauJour(msg);
         return;
       case "!cof-recuperation":
         parseRecuperer(msg);
