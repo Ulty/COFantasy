@@ -9008,6 +9008,10 @@ var COFantasy = COFantasy || function() {
       explications.push("Sang de l'Arbre-Coeur => +5 en DEF");
       defense += 5;
     }
+    if (predicateAsBool(target, 'liberateurDeDorn') && estUnGeant(attaquant)) {
+      explications.push(target, 'Libérateur de Dorn => +2 en DEF');
+      defense += 2;
+    }
     if (target.realCharId) target.charId = target.realCharId;
     return defense;
   }
