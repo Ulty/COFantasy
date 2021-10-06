@@ -9396,7 +9396,7 @@ var COFantasy = COFantasy || function() {
       _characterid: attackingCharId,
       name: 'ennemiJure'
     });
-    var ennemiJure = false;
+    let ennemiJure = false;
     if (ennemiJureAttr.length != 0) {
       var races = ennemiJureAttr[0].get('current');
       races.split(",").forEach(function(race) {
@@ -9473,7 +9473,7 @@ var COFantasy = COFantasy || function() {
             msgFeinte += " et peut faire mouche";
           }
         } else {
-          var desFeinte = 2;
+          let desFeinte = 2;
           if (attrBonusFeinte.length > 0) {
             desFeinte = parseInt(attrBonusFeinte[0].get('max'));
             if (isNaN(desFeinte) || desFeinte < 0) desFeinte = 2;
@@ -9487,7 +9487,7 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(target, 'expose')) {
       var attrsExposeValeur = tokenAttribute(target, "exposeValeur");
-      var expose = false;
+      let expose = false;
       attrsExposeValeur.forEach(function testExpose(attr) {
         if (attr.get("current") == attaquant.token.id) expose = true;
       });
@@ -9585,7 +9585,7 @@ var COFantasy = COFantasy || function() {
         setTokenAttr(target, 'attaqueParMeute', attaquant.token.id, evt);
       }
     }
-    var tm = stateCOF.tenebresMagiques;
+    let tm = stateCOF.tenebresMagiques;
     if (tm) {
       if (estDemon(attaquant)) {
         if (eclaireParFioleDeLumiere(attaquant, tm)) {
@@ -9609,6 +9609,33 @@ var COFantasy = COFantasy || function() {
           target.attaqueDansLeNoir = 5;
         }
 
+      }
+    }
+    if (predicateAsBool(attaquant, 'liberateurDeDorn') && estUnGeant(target)) {
+      attBonus += 2;
+      if (options.pasDeDmg) {
+        explications.push("Libérateur de Dorn => +2 en attaque");
+      } else {
+        explications.push("Libérateur de Dorn => +2 en attaque et +2d6 DM");
+        target.cibleLiberateurDeDorn = true;
+      }
+    }
+    if (predicateAsBool(attaquant, 'liberateurDeKerserac') && (estUnGeant(target) || estInsecte(target) || estElfeNoir(target))) {
+      attBonus += 2;
+      if (options.pasDeDmg) {
+        explications.push("Libérateur de Kerserac => +2 en attaque");
+      } else {
+        explications.push("Libérateur de Kerserac => +2 en attaque et +1d6 DM");
+        target.cibleLiberateurDeKerserac = true;
+      }
+    }
+    if (predicateAsBool(attaquant, 'liberateurDAnathazerin') && (estInsecte(target) || estElfeNoir(target))) {
+      attBonus += 2;
+      if (options.pasDeDmg) {
+        explications.push("Libérateur d'Anathazerïn => +2 en attaque");
+      } else {
+        explications.push("Libérateur d'Anathazerïn => +2 en attaque et +2d6 DM");
+        target.cibleLiberateurDAnathazerin = true;
       }
     }
     return attBonus;
@@ -13729,6 +13756,24 @@ var COFantasy = COFantasy || function() {
             value: '1' + options.d6
           });
         }
+        if (target.cibleLiberateurDeDorn) {
+          target.additionalDmg.push({
+            type: mainDmgType,
+            value: '2' + options.d6
+          });
+        }
+        if (target.cibleLiberateurDeKerserac) {
+          target.additionalDmg.push({
+            type: mainDmgType,
+            value: '1' + options.d6
+          });
+        }
+        if (target.cibleLiberateurDAnathazerin) {
+          target.additionalDmg.push({
+            type: mainDmgType,
+            value: '2' + options.d6
+          });
+        }
         if (target.tueurDeGeants) {
           target.additionalDmg.push({
             type: mainDmgType,
@@ -15084,9 +15129,13 @@ var COFantasy = COFantasy || function() {
       bonus += 5;
       expliquer("Sang de l'Arbre-Coeur => +5 pour résister à la nécromancie");
     }
-    var bonusAttrs = [];
-    var bonusPreds = [];
-    var carac = s.carac;
+    if (predicateAsBool(target, 'liberateurDAnathazerin') && options.type == 'poison') {
+      bonus += 2;
+      expliquer("Libérateur d'Anathazerïn => +2 pour résister au poison");
+    }
+    let bonusAttrs = [];
+    let bonusPreds = [];
+    let carac = s.carac;
     //Cas où le save peut se faire au choix parmis 2 caracs
     if (s.carac2) {
       carac = meilleureCarac(carac, s.carac2, target, s.seuil);
@@ -23978,6 +24027,7 @@ var COFantasy = COFantasy || function() {
     if (perso.race.includes('elf') && perso.race.includes('noir')) return true;
     switch (perso.race) {
       case 'drider':
+      case 'drow':
         return true;
       default:
         return false;

@@ -1,5 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.03
+### Capacités
+* Ajouts des capacités épiques d'Anathazerïn
+
 ### Corrections de bugs
 * Correction de assome en assomme.
 
