@@ -7,6 +7,7 @@
 * Correction de assome en assomme.
 
 ### Autres améliorations
+* Passage en prédicats d'un grand nombre de capacités qui utilisaient encore des attributs.
 * Ajout d'une option d'affichage pour que le MJ puisse prendre le temps de décrire une attaque avant de montrer le résultat aux joueurs.
 * Passage de armeParDefaut en prédicat, et prise en compte de ce prédicat au moment de poser un token.
 
