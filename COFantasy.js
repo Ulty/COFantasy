@@ -4489,11 +4489,15 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(personnage, 'ondesCorruptrices') &&
       !predicateAsBool(personnage, 'porteurDuBouclierDeGrabuge') &&
       !attributeAsBool(personnage, 'sangDeLArbreCoeur')) {
-      var malusOndesCorruptrices = attributeAsInt(personnage, 'ondesCorruptrices', 2);
-      var msgOndesCorruptrices = "Nauséeu" + onGenre(personnage, "x", "se");
+      let malusOndesCorruptrices = attributeAsInt(personnage, 'ondesCorruptrices', 2);
+      let msgOndesCorruptrices = "Nauséeu" + onGenre(personnage, "x", "se");
       msgOndesCorruptrices += " : -" + malusOndesCorruptrices;
       expliquer(msgOndesCorruptrices + " aux tests");
       bonus -= malusOndesCorruptrices;
+    }
+    if (attributeAsBool(personnage, 'fievreux')) {
+      bonus -=2;
+      expliquer("Fiévreu" + onGenre(personnage, 'x', 'se') + " : -2 aux tests");
     }
     let bonusCondition = attributeAsInt(personnage, 'modificateurTests', 0);
     if (bonusCondition != 0) {
@@ -9396,7 +9400,12 @@ var COFantasy = COFantasy || function() {
       attBonus += 1;
       options.bonusDM = options.bonusDM || 0;
       options.bonusDM += 1;
-      explications.push("Haches et marteaux => +1 en att. et DM");
+      explications.push("Haches et marteaux => +1 en Att. et DM");
+    }
+    if (attributeAsBool(attaquant, 'fievreux')) {
+      attBonus -= 2;
+      options.fievreux = true;
+      explications.push("Fiévreu"+onGenre(attaquant, 'x', 'se')+" => -2 en Att. et DM");
     }
     return attBonus;
   }
@@ -13338,6 +13347,9 @@ var COFantasy = COFantasy || function() {
     }
     if (options.noyade && weaponStats.arme) {
       attDMBonusCommun += " - 3";
+    }
+    if (options.fievreux && weaponStats.arme) {
+      attDMBonusCommun += " - 2";
     }
     if (attributeAsBool(attaquant, 'masqueDuPredateur')) {
       var bonusMasque = getValeurOfEffet(attaquant, 'masqueDuPredateur', modCarac(attaquant, 'sagesse'));
@@ -35966,6 +35978,11 @@ var COFantasy = COFantasy || function() {
       actif: "a la peau recouverte d'une fourrure violette",
       fin: "retrouve une peau normale"
     },
+    mutationMusclesHypertrophies: {
+      activation: "devient plus musclé",
+      actif: "a les muscles hypertrophiés",
+      fin: "retrouve des muscles normaux",
+    },
     mutationOuies: {
       activation: "se fait pousser des ouïes",
       actif: "possède des ouïes",
@@ -35976,11 +35993,6 @@ var COFantasy = COFantasy || function() {
       actif: "a le sang noir",
       fin: "retrouve un sang normal"
     },
-    mutationMusclesHypertrophies: {
-      activation: "devient plus musclé",
-      actif: "a les muscles hypertrophiés",
-      fin: "retrouve des muscles normaux",
-    },
     mutationSilhouetteFiliforme: {
       activation: "devient plus fin",
       actif: "a une silhouette filiforme",
@@ -35990,6 +36002,13 @@ var COFantasy = COFantasy || function() {
       activation: "devient plus massif",
       actif: "a une silhouette massive",
       fin: "retrouve une silhouette normale",
+    },
+    fievreux:{
+      activation: "se sent fiévreux",
+      activationF: "se sent fiévreuse",
+      actif: "est fiévreux",
+      fin: "se sent mieux",
+      prejudiciable: true
     },
     presenceGlaciale: {
       activation: "transforme son corps en glace vivante",
