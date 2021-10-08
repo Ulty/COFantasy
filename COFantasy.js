@@ -9066,7 +9066,7 @@ var COFantasy = COFantasy || function() {
       explications.push("Sang de l'Arbre-Coeur => +5 en DEF");
       defense += 5;
     }
-    if (predicateAsBool(target, 'liberateurDeDorn') && estUnGeant(attaquant)) {
+    if (predicateAsBool(target, 'liberateurDeDorn') && estGeant(attaquant)) {
       explications.push(target, 'Libérateur de Dorn => +2 en DEF');
       defense += 2;
     }
@@ -9453,14 +9453,14 @@ var COFantasy = COFantasy || function() {
       explications.push(explChasseurEmerite);
       target.chasseurEmerite = true;
     }
-    var ennemiJureAttr = findObjs({
+    let ennemiJureAttr = findObjs({
       _type: 'attribute',
       _characterid: attackingCharId,
       name: 'ennemiJure'
     });
     let ennemiJure = false;
     if (ennemiJureAttr.length != 0) {
-      var races = ennemiJureAttr[0].get('current');
+      let races = ennemiJureAttr[0].get('current');
       races.split(",").forEach(function(race) {
         race = race.trim();
         if (race === '') return;
@@ -9474,6 +9474,9 @@ var COFantasy = COFantasy || function() {
             break;
           case 'animal':
             if (estAnimal(target)) ennemiJure = true;
+            break;
+          case 'gobelin':
+            if (estGobelin(target)) ennemiJure = true;
             break;
           default:
             if (raceIs(target, race)) ennemiJure = true;
@@ -9508,7 +9511,7 @@ var COFantasy = COFantasy || function() {
         explications.push("L'adversaire porte un bouclier => " + ((bonusContreBouclier > 0) ? '+' : '') + bonusContreBouclier + " en attaque");
       }
     }
-    if (options.tueurDeGeants && estUnGeant(target)) {
+    if (options.tueurDeGeants && estGeant(target)) {
       attBonus += 2;
       if (options.pasDeDmg)
         explications.push("Tueur de géant => +2 en Attaque");
@@ -9664,7 +9667,7 @@ var COFantasy = COFantasy || function() {
 
       }
     }
-    if (predicateAsBool(attaquant, 'liberateurDeDorn') && estUnGeant(target)) {
+    if (predicateAsBool(attaquant, 'liberateurDeDorn') && estGeant(target)) {
       attBonus += 2;
       if (options.pasDeDmg) {
         explications.push("Libérateur de Dorn => +2 en attaque");
@@ -9673,7 +9676,7 @@ var COFantasy = COFantasy || function() {
         target.cibleLiberateurDeDorn = true;
       }
     }
-    if (predicateAsBool(attaquant, 'liberateurDeKerserac') && (estUnGeant(target) || estInsecte(target) || estElfeNoir(target))) {
+    if (predicateAsBool(attaquant, 'liberateurDeKerserac') && (estGeant(target) || estInsecte(target) || estElfeNoir(target))) {
       attBonus += 2;
       if (options.pasDeDmg) {
         explications.push("Libérateur de Kerserac => +2 en attaque");
@@ -23925,27 +23928,27 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function estNonVivant(perso) {
-    return (predicateAsBool(perso, 'nonVivant') ||
-      attributeAsBool(perso, 'masqueMortuaire') || estMortVivant(perso));
-  }
-
-  function estUnGeant(perso) {
+  function estGobelin(perso) {
+    if (predicateAsBool(perso, 'gobelin')) return true;
     if (perso.race === undefined) {
       perso.race = ficheAttribute(perso, 'race', '');
       perso.race = perso.race.toLowerCase();
     }
     if (perso.race === '') return false;
     switch (perso.race) {
-      case 'géant':
-      case 'geant':
-      case 'ogre':
-      case 'ettin':
-      case 'cyclope':
+      case 'gobelin':
+      case 'gobelours':
+      case 'hobgobelin':
+      case 'wikkawak':
         return true;
       default:
         return false;
     }
+  }
+
+  function estNonVivant(perso) {
+    return (predicateAsBool(perso, 'nonVivant') ||
+      attributeAsBool(perso, 'masqueMortuaire') || estMortVivant(perso));
   }
 
   function estElfeNoir(perso) {
@@ -33567,6 +33570,12 @@ var COFantasy = COFantasy || function() {
               changeAttributeName(attr, 'pnj_def', evt);
               return;
             case 'class':
+              let c = attr.get('current');
+              if (c.startsWith('Female ')) {
+                setFicheAttr(perso, 'sexe', 'F', evt);
+                c = c.substring(7);
+                attr.set('current', c);
+              }
               changeAttributeName(attr, 'profil', evt);
               return;
             case 'hp':
@@ -33987,8 +33996,38 @@ var COFantasy = COFantasy || function() {
         for (let pref in attaques) {
           let attaque = attaques[pref];
           log(attaque);
-          let prefix = 'repeating_pnjatk_' + generateRowID() + '_arme';
           let nomAttaque = attaque.atkname || 'Attaque';
+          if (nomAttaque.startsWith('favored enemy ')) {
+            let i = nomAttaque.indexOf('(');
+            let j = nomAttaque.indexOf(')');
+            if (i < 1 || i>j) {
+              notes += nomAttaque + '\n';
+            } else {
+              let ennemis = nomAttaque.substring(i+1, j).split(' ');
+              let ennemiJure = '';
+              let pasDEnnemi = true;
+              for (let e in ennemis) {
+                e = e.trim();
+                if (e === '') continue;
+                switch (e) {
+                  case 'goblinoids':
+                    if (pasDEnnemi) {
+                      ennemiJure = 'gobelin';
+                      pasDEnnemi = false;
+                    } else ennemiJure += ', gobelin';
+                    break;
+                  default:
+                    if (!e.startsWith('+')) {
+                      log("Ennemi juré non reconnu : "+e);
+                    }
+                }
+              }
+              if (ennemiJure !== '') setTokenAttr(perso, 'ennemiJure', ennemiJure, evt, optAttr);
+              else notes += nomAttaque + '\n';
+            }
+            continue;
+          }
+          let prefix = 'repeating_pnjatk_' + generateRowID() + '_arme';
           createObj('attribute', {
             _characterid: perso.charId,
             name: prefix + 'nom',
@@ -34090,6 +34129,7 @@ var COFantasy = COFantasy || function() {
               case 'dmg2type':
               case 'atkdisplay':
               case 'multipleatk':
+              case 'atkmod2':
                 break;
               default:
                 spec += field + ' : ' + attaque[field];

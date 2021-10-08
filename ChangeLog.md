@@ -1,5 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.03
+### Capacités
+* Ajout du type d'ennemi juré gobelin
+
 ### Autres améliorations
 * Un peu plus de discrétion avec les messages sur les limites par jour ou par combat
 * Passage en prédicats d'un grand nombre de capacités qui utilisaient encore des attributs.
