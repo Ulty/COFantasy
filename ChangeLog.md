@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
-## 3.03
+## 3.04
 ### Capacités
+* Jets de dégâts séparés par cible pour la destruction des morts-vivants
 * Ajout d'une option de malus de répétition pour la destruction des morts-vivants.
 * Ajout du type d'ennemi juré gobelin
 

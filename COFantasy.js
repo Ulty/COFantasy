@@ -5929,8 +5929,8 @@ var COFantasy = COFantasy || function() {
       error("Pas de tempête de mana en cours", tempeteDeManaCourante);
       return;
     }
-    var perso = tempeteDeManaCourante.perso;
-    var cmd = msg.content.split(' ');
+    let perso = tempeteDeManaCourante.perso;
+    let cmd = msg.content.split(' ');
     if (cmd.length > 1) {
       switch (cmd[1]) {
         case 'duree':
@@ -5944,7 +5944,7 @@ var COFantasy = COFantasy || function() {
         case '-portee':
         case '-rapide':
         case '-altruiste':
-          var opt = cmd[1].substring(1);
+          let opt = cmd[1].substring(1);
           if (tempeteDeManaCourante[opt]) {
             tempeteDeManaCourante[opt] = false;
             tempeteDeManaCourante.cout--;
@@ -5955,7 +5955,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque l'id du token pour l'option altruiste de la tempete de mana", cmd);
             return;
           }
-          var cible = persoOfId(cmd[2]);
+          let cible = persoOfId(cmd[2]);
           if (cmd[2] == perso.token.id) cible = undefined;
           if (cible) {
             if (!tempeteDeManaCourante.altruiste) tempeteDeManaCourante.cout++;
@@ -5965,7 +5965,7 @@ var COFantasy = COFantasy || function() {
           tempeteDeManaCourante.altruiste = cible;
           break;
         default:
-          var it = parseInt(cmd[1]);
+          let it = parseInt(cmd[1]);
           if (isNaN(it) || it < 0) {
             error("Argument de !cof-tempete-de-mana inconnu", cmd);
             return;
@@ -5976,16 +5976,16 @@ var COFantasy = COFantasy || function() {
           tempeteDeManaCourante.intense = it;
       }
     }
-    var title = "Tempête de mana";
+    let title = "Tempête de mana";
     if (tempeteDeManaCourante.cout) {
       title += " de puissance " + tempeteDeManaCourante.cout;
     }
-    var restant = 100;
+    let restant = 100;
     if (tempeteDeManaCourante.max) {
       title += " (max " + tempeteDeManaCourante.max + ")";
       restant = tempeteDeManaCourante.max - tempeteDeManaCourante.cout;
     }
-    var display = startFramedDisplay(tempeteDeManaCourante.playerId, title, perso, {
+    let display = startFramedDisplay(tempeteDeManaCourante.playerId, title, perso, {
       chuchote: true
     });
     if (tempeteDeManaCourante.dureeDeBase &&
@@ -5996,9 +5996,9 @@ var COFantasy = COFantasy || function() {
       ajouterOptionTempete(display, "portee", "Portée", restant);
     ajouterOptionTempete(display, "rapide", "Rapide", restant);
     if (tempeteDeManaCourante.altruistePossible) {
-      var la = 'Magie altruiste : ';
+      let la = 'Magie altruiste : ';
       if (restant || tempeteDeManaCourante.altruiste) {
-        var tla = "Sélectionner";
+        let tla = "Sélectionner";
         if (tempeteDeManaCourante.altruiste) {
           tla = tempeteDeManaCourante.altruiste.token.get('name');
         }
@@ -6006,11 +6006,11 @@ var COFantasy = COFantasy || function() {
       } else la += 'Non';
       addLineToFramedDisplay(display, la);
     }
-    var line = "Magie intense :";
-    var magieIntense = 0;
+    let line = "Magie intense :";
+    let magieIntense = 0;
     if (tempeteDeManaCourante.intense)
       magieIntense = tempeteDeManaCourante.intense;
-    var maxMagieIntense = magieIntense + restant;
+    let maxMagieIntense = magieIntense + restant;
     if (maxMagieIntense > 5 && restant > 0) maxMagieIntense = magieIntense + 1;
     for (var i = 0; i <= maxMagieIntense; i++) {
       if (i == magieIntense) line += " " + i;
@@ -6048,11 +6048,11 @@ var COFantasy = COFantasy || function() {
       altruistePossible: options.altruiste,
       cout: options.cout || 0
     };
-    var max;
+    let max;
     if (options.rang) max = options.rang;
-    var mana = options.mana || 0;
-    var niveau = ficheAttributeAsInt(perso, 'niveau', 1);
-    var cout_par_effet = 1;
+    let mana = options.mana || 0;
+    const niveau = ficheAttributeAsInt(perso, 'niveau', 1);
+    let cout_par_effet = 1;
     if (reglesOptionelles.mana.val.mana_totale.val) cout_par_effet = 3;
     if (max === undefined || max > niveau - (mana / cout_par_effet))
       max = Math.floor(niveau - (mana / cout_par_effet));
@@ -6071,7 +6071,7 @@ var COFantasy = COFantasy || function() {
     options.tempeteDeMana = {
       cout: 0
     };
-    var altruiste = false;
+    let altruiste = false;
     cmd.forEach(function(ta) {
       switch (ta) {
         case 'portee':
@@ -6096,13 +6096,13 @@ var COFantasy = COFantasy || function() {
         default:
           if (altruiste) {
             altruiste = false;
-            var cible = persoOfId(ta);
+            let cible = persoOfId(ta);
             if (cible) {
               options.tempeteDeMana.cout++;
               options.tempeteDeMana.altruiste = cible;
             }
           } else {
-            var intensite = parseInt(ta);
+            let intensite = parseInt(ta);
             if (isNaN(ta) || ta <= 0) {
               error("Option de tempête de mana " + ta + " non reconnue", cmd);
               break;
@@ -10688,7 +10688,7 @@ var COFantasy = COFantasy || function() {
       }
       return true;
     });
-    var evt = options.evt || {
+    let evt = options.evt || {
       type: "Attaque",
       action: {
         playerName: playerName,
@@ -21585,6 +21585,7 @@ var COFantasy = COFantasy || function() {
     target.attaquant = options.lanceur;
   }
 
+
   function dmgDirects(playerId, playerName, cibles, dmg, options) {
     let evt;
     if (options.evt) {
@@ -21611,6 +21612,19 @@ var COFantasy = COFantasy || function() {
         " Jet de " + options.partialSave.carac + " difficulté " + options.partialSave.seuil +
         " pour réduire les dégâts";
     }
+    let display = startFramedDisplay(playerId, action);
+    let tokensToProcess = cibles.length;
+    let someDmgDone;
+    let finalDisplay = function() {
+      if (tokensToProcess == 1) {
+        if (someDmgDone) {
+          sendChat("", endFramedDisplay(display));
+        } else {
+          sendPlayer(playerName, "Aucune cible valide n'a été sélectionée");
+        }
+      }
+      tokensToProcess--;
+    };
     try {
       sendChat('', '[[' + dmg.value + ']]', function(resDmg) {
         dmg.roll = dmg.roll || resDmg[0];
@@ -21618,19 +21632,6 @@ var COFantasy = COFantasy || function() {
         let dmgRollNumber = rollNumber(afterEvaluateDmg[0]);
         dmg.total = dmg.roll.inlinerolls[dmgRollNumber].results.total;
         dmg.display = buildinline(dmg.roll.inlinerolls[dmgRollNumber], dmg.type, options.magique);
-        let display = startFramedDisplay(playerId, action);
-        let tokensToProcess = cibles.length;
-        let someDmgDone;
-        let finalDisplay = function() {
-          if (tokensToProcess == 1) {
-            if (someDmgDone) {
-              sendChat("", endFramedDisplay(display));
-            } else {
-              sendPlayer(playerName, "Aucune cible valide n'a été sélectionée");
-            }
-          }
-          tokensToProcess--;
-        };
         cibles.forEach(function(perso) {
           if (getState(perso, 'mort')) { //pas de dégâts aux morts
             finalDisplay();
@@ -22539,9 +22540,8 @@ var COFantasy = COFantasy || function() {
           stateCOF.armeesDesMorts.push(perso.token.id);
         }
         if (options.puissant) {
-          var puissant = true;
-          if (options.puissant == "off") puissant = false;
-          setTokenAttr(perso, effet + "Puissant", puissant, evt);
+          let puissant = (options.puissant != 'off');
+          setTokenAttr(perso, effet + 'Puissant', puissant, evt);
         }
         if (lanceur && options.fx) {
           var p1e = {
@@ -22714,8 +22714,7 @@ var COFantasy = COFantasy || function() {
           addEffetTemporaireLie(options.lanceur, effetAttr, evt);
         }
         if (options.puissant) {
-          var puissant = true;
-          if (options.puissant == "off") puissant = false;
+          let puissant = (options.puissant != 'off');
           setTokenAttr(perso, effet + 'Puissant', puissant, evt);
         }
         if (options.valeur !== undefined) {
@@ -22903,8 +22902,7 @@ var COFantasy = COFantasy || function() {
             }
           }
           if (options.puissant) {
-            var puissant = true;
-            if (options.puissant == "off") puissant = false;
+            let puissant = (options.puissant != 'off');
             setTokenAttr(perso, effet + 'Puissant', puissant, evt);
           }
           if (options.valeur !== undefined) {
@@ -26861,7 +26859,6 @@ var COFantasy = COFantasy || function() {
               soins: false,
               duree: false,
               rang: options.rang,
-              aoe: true
             };
             setTempeteDeMana(playerId, lanceur, msg.content, optMana);
             return;
@@ -26879,6 +26876,14 @@ var COFantasy = COFantasy || function() {
           } else {
             log("Pas réussi à trouver le nombre de dés dans " + dm);
           }
+        } else if (options.puissant) {
+          let findValDes = dm.match(/^([0-9]+d)([0-9]+)/);
+          if (findValDes && findValDes.length > 2) {
+            let valDes = parseInt(findValDes[2]) + 2;
+            dm = dm.replace(findValDes[0], findValDes[1] + valDes);
+          } else {
+            log("Pas réussi à trouver le nombre de faces des dés dans " + dm);
+          }
         }
         doDestructionDesMortsVivants(lanceur, playerName, dm, options);
       });
@@ -26886,18 +26891,20 @@ var COFantasy = COFantasy || function() {
   }
 
   function doDestructionDesMortsVivants(lanceur, playerName, dm, options) {
+    let playerId = options.playerId;
     var evt = {
       type: "destructionMortsVivants",
       action: {
         lanceur: lanceur,
         playerName: playerName,
+        playerId: playerId,
         dm: dm,
         options: options
       }
     };
     addEvent(evt);
     if (limiteRessources(lanceur, options, 'destructionDesMortsVivants', "lancer une destruction des mort-vivants", evt)) return;
-    let display = startFramedDisplay(options.playerId,
+    let display = startFramedDisplay(playerId,
       "<b>Sort :<b> destruction des morts-vivants", lanceur);
     let testId = 'destructionDesMortsVivants_' + lanceur.token.id;
     let difficulte = 13;
@@ -26912,15 +26919,8 @@ var COFantasy = COFantasy || function() {
         var msgJet = "Jet de SAG : " + testRes.texte;
         if (testRes.reussite) {
           addLineToFramedDisplay(display, msgJet + " &ge; " + difficulte + testRes.modifiers);
-          sendChat('', endFramedDisplay(display));
           if (malusRepetition)
             setTokenAttr(lanceur, 'limiteParCombat_malusDestructionDesMortsVivants', malusRepetition, evt);
-          let optionsDM = {
-            sortilege: true,
-            lanceur: lanceur,
-            aoe: true,
-            evt: evt
-          };
           let cibles = [];
           let page = getObj("page", options.pageId);
           let murs = getWalls(page, options.pageId);
@@ -26952,13 +26952,63 @@ var COFantasy = COFantasy || function() {
               token: obj
             };
             if (!estMortVivant(cible)) return;
+            if (getState(cible, 'mort')) return;
             cibles.push(cible);
           });
-          let dmg = {
-            type: 'magique',
-            value: dm.trim(),
+          let nbCibles = cibles.length;
+          if (nbCibles === 0) {
+            addLineToFramedDisplay(display, "Aucun mort-vivant en vue");
+            sendChat("", endFramedDisplay(display));
+            return;
+          }
+          let expl = [];
+          entrerEnCombat(lanceur, cibles, expl, evt);
+          expl.forEach(function(e) {
+            addLineToFramedDisplay(display, e, 80, false);
+          });
+          let optionsDM = {
+            sortilege: true,
+            lanceur: lanceur,
+            aoe: true,
+            evt: evt
           };
-          dmgDirects(options.playerId, playerName, cibles, dmg, optionsDM);
+          dm = dm.trim();
+          evt.action.cibles = cibles;
+          let finalDisplay = function() {
+            nbCibles--;
+            if (nbCibles < 1) {
+              sendChat("", endFramedDisplay(display));
+            }
+          };
+          cibles.forEach(function(perso) {
+            let name = perso.token.get('name');
+            let explications = [];
+            perso.attaquant = lanceur;
+            try {
+              sendChat('', '[[' + dm + ']]', function(resDmg) {
+                let dmg = {
+                  type: 'magique',
+                  value: dm,
+                  roll: resDmg[0]
+                };
+                let afterEvaluateDmg = dmg.roll.content.split(' ');
+                let dmgRollNumber = rollNumber(afterEvaluateDmg[0]);
+                dmg.total = dmg.roll.inlinerolls[dmgRollNumber].results.total;
+                dmg.display = buildinline(dmg.roll.inlinerolls[dmgRollNumber], dmg.type, optionsDM.magique);
+                dealDamage(perso, dmg, [], evt, false, optionsDM, explications, function(dmgDisplay, dmgFinal) {
+                  addLineToFramedDisplay(display,
+                    name + " reçoit " + dmgDisplay + " DM");
+                  explications.forEach(function(e) {
+                    addLineToFramedDisplay(display, e, 80, false);
+                  });
+                  finalDisplay();
+                });
+              }); //fin du jet de dés
+            } catch (rollError) {
+              error("Jet " + dm + " mal formé", dm);
+            }
+          }); //fin forEach
+
         } else {
           addLineToFramedDisplay(display, msgJet + " < " + difficulte);
           var msgRate = lanceur.token.get('name') + " ne réussit pas à invoquer son dieu." + testRes.rerolls + testRes.modifiers;
@@ -34017,10 +34067,10 @@ var COFantasy = COFantasy || function() {
           if (nomAttaque.startsWith('favored enemy ')) {
             let i = nomAttaque.indexOf('(');
             let j = nomAttaque.indexOf(')');
-            if (i < 1 || i>j) {
+            if (i < 1 || i > j) {
               notes += nomAttaque + '\n';
             } else {
-              let ennemis = nomAttaque.substring(i+1, j).split(' ');
+              let ennemis = nomAttaque.substring(i + 1, j).split(' ');
               let ennemiJure = '';
               let pasDEnnemi = true;
               for (let e in ennemis) {
@@ -34035,7 +34085,7 @@ var COFantasy = COFantasy || function() {
                     break;
                   default:
                     if (!e.startsWith('+')) {
-                      log("Ennemi juré non reconnu : "+e);
+                      log("Ennemi juré non reconnu : " + e);
                     }
                 }
               }
@@ -34387,19 +34437,18 @@ var COFantasy = COFantasy || function() {
           dm = dm.replace(/d([1-9])/g, "*$1");
         }
         let dmgType = options.type || 'magique';
-        let dmg = {
-          type: dmgType,
-          value: options.dm
-        };
         cibles.forEach(function(target) {
           if (estMortVivant(target) != positif) {
             sync();
             return;
           }
-          sync();
           try {
             sendChat('', dm, function(res) {
-              dmg.roll = dmg.roll || res[0];
+              let dmg = {
+                type: dmgType,
+                value: options.dm,
+                roll: res[0],
+              };
               let afterEvaluateDmg = dmg.roll.content.split(' ');
               let dmgRollNumber = rollNumber(afterEvaluateDmg[0]);
               dmg.total = dmg.roll.inlinerolls[dmgRollNumber].results.total;
@@ -34416,7 +34465,7 @@ var COFantasy = COFantasy || function() {
               });
             });
           } catch (rollError) {
-            error("Jet " + dmg.value + " mal formé", dmg);
+            error("Jet " + options.dm + " mal formé", dm);
           }
         });
       }
