@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.03
 ### Capacités
+* Ajout d'une option de malus de répétition pour la destruction des morts-vivants.
 * Ajout du type d'ennemi juré gobelin
 
 ### Autres améliorations

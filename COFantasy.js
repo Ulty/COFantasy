@@ -17606,7 +17606,7 @@ var COFantasy = COFantasy || function() {
         case 'montreActions':
           options[cmd[0]] = true;
           break;
-        case "lanceur":
+        case 'lanceur':
           if (cmd.length < 2) {
             error("Il faut préciser l'id ou le nom du lanceur", arg);
             return;
@@ -17923,6 +17923,14 @@ var COFantasy = COFantasy || function() {
             error("Il manque l'expression pour les " + t + "s", opts);
           }
           options[t] = cmd.slice(1).join(' ');
+          return;
+        case 'malusRepetition':
+          let malusRepetition = 1;
+          if (cmd.length > 1) {
+            malusRepetition = parseInt(cmd[1]);
+            if (isNaN(malusRepetition)) malusRepetition = 1;
+          }
+          options.malusRepetition = malusRepetition;
           return;
         default:
           return;
@@ -26817,15 +26825,15 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseDestructionDesMortsVivants(msg) {
-    var options = parseOptions(msg);
+    const options = parseOptions(msg);
     if (options === undefined) return;
-    var args = options.cmd;
+    let args = options.cmd;
     if (args === undefined || args.length < 2) {
       error("Il faut au moins un argument à !cof-destruction-des-morts-vivants", args);
       return;
     }
     args.shift();
-    var dm = args.join(' ');
+    let dm = args.join(' ');
     dm = dm.replace(/%/g, '&#37;');
     dm = dm.replace(/\)/g, '&#41;');
     dm = dm.replace(/\?/g, '&#63;');
@@ -26841,7 +26849,7 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, "Ne sélectionner qu'un token à la fois pour lancer la destruction des mort-vivants.", playerId);
         return;
       }
-      var playerName = msg.who;
+      let playerName = msg.who;
       if (playerIsGM(playerId)) playerName = 'GM';
       iterSelected(selected, function(lanceur) {
         if (options.tempeteDeMana) {
@@ -26853,6 +26861,7 @@ var COFantasy = COFantasy || function() {
               soins: false,
               duree: false,
               rang: options.rang,
+              aoe: true
             };
             setTempeteDeMana(playerId, lanceur, msg.content, optMana);
             return;
@@ -26863,9 +26872,9 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (options.tempeteDeManaIntense) {
-          var findNbDes = dm.match(/^([0-9]+)d/);
+          let findNbDes = dm.match(/^([0-9]+)d/);
           if (findNbDes && findNbDes.length > 1) {
-            var nbDes = parseInt(findNbDes[1]);
+            let nbDes = parseInt(findNbDes[1]);
             dm = dm.replace(findNbDes[0], (nbDes + options.tempeteDeManaIntense) + 'd');
           } else {
             log("Pas réussi à trouver le nombre de dés dans " + dm);
@@ -26888,37 +26897,45 @@ var COFantasy = COFantasy || function() {
     };
     addEvent(evt);
     if (limiteRessources(lanceur, options, 'destructionDesMortsVivants', "lancer une destruction des mort-vivants", evt)) return;
-    var display = startFramedDisplay(options.playerId,
+    let display = startFramedDisplay(options.playerId,
       "<b>Sort :<b> destruction des morts-vivants", lanceur);
-    var name = lanceur.token.get('name');
-    var testId = 'destructionDesMortsVivants_' + lanceur.token.id;
-    testCaracteristique(lanceur, 'SAG', 13, testId, options, evt,
+    let testId = 'destructionDesMortsVivants_' + lanceur.token.id;
+    let difficulte = 13;
+    let malusRepetition;
+    if (options.malusRepetition) {
+      malusRepetition = attributeAsInt(lanceur, 'limiteParCombat_malusDestructionDesMortsVivants', 0);
+      difficulte += malusRepetition;
+      malusRepetition += options.malusRepetition;
+    }
+    testCaracteristique(lanceur, 'SAG', difficulte, testId, options, evt,
       function(testRes) {
         var msgJet = "Jet de SAG : " + testRes.texte;
         if (testRes.reussite) {
-          addLineToFramedDisplay(display, msgJet + " &ge; 13" + testRes.modifiers);
-          sendChat(name, endFramedDisplay(display));
-          var optionsDM = {
+          addLineToFramedDisplay(display, msgJet + " &ge; " + difficulte + testRes.modifiers);
+          sendChat('', endFramedDisplay(display));
+          if (malusRepetition)
+            setTokenAttr(lanceur, 'limiteParCombat_malusDestructionDesMortsVivants', malusRepetition, evt);
+          let optionsDM = {
             sortilege: true,
             lanceur: lanceur,
             aoe: true,
             evt: evt
           };
-          var cibles = [];
-          var page = getObj("page", options.pageId);
-          var murs = getWalls(page, options.pageId);
-          var pt;
+          let cibles = [];
+          let page = getObj("page", options.pageId);
+          let murs = getWalls(page, options.pageId);
+          let pt;
           if (murs) {
             pt = {
               x: lanceur.token.get('left'),
               y: lanceur.token.get('top')
             };
           }
-          var tokensEnVue = findObjs({
-            _type: "graphic",
+          let tokensEnVue = findObjs({
+            _type: 'graphic',
             _pageid: options.pageId,
-            _subtype: "token",
-            layer: "objects"
+            _subtype: 'token',
+            layer: 'objects'
           });
           tokensEnVue.forEach(function(obj) {
             if (obj.id == lanceur.token.id) return;
@@ -26937,16 +26954,16 @@ var COFantasy = COFantasy || function() {
             if (!estMortVivant(cible)) return;
             cibles.push(cible);
           });
-          var dmg = {
+          let dmg = {
             type: 'magique',
             value: dm.trim(),
           };
           dmgDirects(options.playerId, playerName, cibles, dmg, optionsDM);
         } else {
-          addLineToFramedDisplay(display, msgJet + " < 13");
-          var msgRate = name + " ne réussit pas à invoquer son dieu." + testRes.rerolls + testRes.modifiers;
+          addLineToFramedDisplay(display, msgJet + " < " + difficulte);
+          var msgRate = lanceur.token.get('name') + " ne réussit pas à invoquer son dieu." + testRes.rerolls + testRes.modifiers;
           addLineToFramedDisplay(display, msgRate);
-          sendChat(name, endFramedDisplay(display));
+          sendChat('', endFramedDisplay(display));
         }
       });
   }
@@ -27143,7 +27160,7 @@ var COFantasy = COFantasy || function() {
                   addLineToFramedDisplay(display, e);
                 });
                 addLineToFramedDisplay(display, perso.tokName + " subit " + dmgDisplay + " DM");
-                sendChat("", endFramedDisplay(display));
+                sendChat('', endFramedDisplay(display));
               }); //fin de dmg dus à l'échec critique
           }); //fin du jet de dmg
         } else if (tr.reussite) {
