@@ -9789,8 +9789,13 @@ var COFantasy = COFantasy || function() {
             else msgJour += (utilisations - 1) + " fois ";
           }
           msgJour += options.limiteParJourRessource + " aujourd'hui.";
-          if (explications) explications.push(msgJour);
-          else sendPerso(personnage, msgJour, options.secret);
+          if (explications) {
+            stateCOF.afterDisplay = stateCOF.afterDisplay || [];
+            stateCOF.afterDisplay.push({
+              msg: msgJour,
+              destinataire: personnage
+            });
+          } else sendPerso(personnage, msgJour, options.secret);
         }
       } else {
         error("Impossible de savoir à qui appliquer la limite journalière", options);
@@ -9815,7 +9820,7 @@ var COFantasy = COFantasy || function() {
         }
         setTokenAttr(personnage, ressource, utilisations - 1, evt);
         if (options.limiteParCombatRessource) {
-          var msgCombat = personnage.token.get('name') + " ";
+          let msgCombat = personnage.token.get('name') + " ";
           if (utilisations < 2) msgCombat += "ne pourra plus utiliser ";
           else {
             msgCombat += "pourra encore utiliser ";
@@ -9823,8 +9828,13 @@ var COFantasy = COFantasy || function() {
             else msgCombat += (utilisations - 1) + " fois ";
           }
           msgCombat += options.limiteParCombatRessource + " durant ce combat.";
-          if (explications) explications.push(msgCombat);
-          else sendPerso(personnage, msgCombat, options.secret);
+          if (explications) {
+            stateCOF.afterDisplay = stateCOF.afterDisplay || [];
+            stateCOF.afterDisplay.push({
+              msg: msgCombat,
+              destinataire: personnage
+            });
+          } else sendPerso(personnage, msgCombat, options.secret);
         }
       } else {
         error("Impossible de savoir à qui appliquer la limite par combat", options);
@@ -14651,6 +14661,12 @@ var COFantasy = COFantasy || function() {
     if (stateCOF.currentAttackDisplay) {
       sendChat('', endFramedDisplay(stateCOF.currentAttackDisplay));
       stateCOF.currentAttackDisplay = undefined;
+      if (stateCOF.afterDisplay) {
+        stateCOF.afterDisplay.forEach(function(d) {
+          sendPerso(d.destinataire, d.msg, true);
+        });
+        stateCOF.afterDisplay = undefined;
+      }
     } else {
       sendPlayer(msg, "Pas de résultat d'attaque à montrer");
     }
@@ -14697,6 +14713,12 @@ var COFantasy = COFantasy || function() {
           }
         });
       });
+    }
+    if (stateCOF.afterDisplay) {
+      stateCOF.afterDisplay.forEach(function(d) {
+        sendPerso(d.destinataire, d.msg, true);
+      });
+      stateCOF.afterDisplay = undefined;
     }
   }
 

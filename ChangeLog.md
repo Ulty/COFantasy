@@ -1,5 +1,10 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.03
+### Autres améliorations
+* Un peu plus de discrétion avec les messages sur les limites par jour ou par combat
+* Passage en prédicats d'un grand nombre de capacités qui utilisaient encore des attributs.
+
+## 3.03
 ### Capacités
 * Ajouts des capacités épiques d'Anathazerïn
 
@@ -7,7 +12,6 @@
 * Correction de assome en assomme.
 
 ### Autres améliorations
-* Passage en prédicats d'un grand nombre de capacités qui utilisaient encore des attributs.
 * Ajout d'une option d'affichage pour que le MJ puisse prendre le temps de décrire une attaque avant de montrer le résultat aux joueurs.
 * Passage de armeParDefaut en prédicat, et prise en compte de ce prédicat au moment de poser un token.
 
