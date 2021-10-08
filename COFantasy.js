@@ -3878,11 +3878,11 @@ var COFantasy = COFantasy || function() {
       else perso.name = perso.tokName;
     }
     //Cas de plusieurs actions après expansion
-    var actions = action.split('\n');
+    let actions = action.split('\n');
     //Cherche le picto et le style
-    var style = '';
-    var picto = '';
-    var groupe; //Pour générer un bouton d'attaque de groupe. À revoir
+    let style = '';
+    let picto = '';
+    let groupe; //Pour générer un bouton d'attaque de groupe. À revoir
     actions = actions.map(function(act) {
       act = act.trim();
       if (act.startsWith("/as ")) {
@@ -3892,6 +3892,33 @@ var COFantasy = COFantasy || function() {
         if (act.startsWith('!cof-')) {
           const args = act.split(' --');
           if (actionImpossible(perso, args, '')) options.actionImpossible = true;
+          else if (act.startsWith('!cof-soin ') && !act.includes('--limitePar') && !act.includes('--dose')) {//Limitations spéficiques
+            let rangSoin = predicateAsInt(perso, 'voieDesSoins', 0);
+            let cmd = args[0].split(' ');
+            if (cmd.includes('leger')) {
+              let soinsLegers = attributeAsInt(perso, 'soinsLegers', 0);
+              if (soinsLegers >= rangSoin) {
+                //Peut-être qu'on peut encore dépasser la limite
+                if (act.includes('--depasseLimite')) {
+                  let d = attributeAsInt(perso, 'depassesoinsLegers', 1);
+                  if (depenseManaPossible(perso, d)) {
+                    text += " (+"+d+"PM)";
+                  } else options.actionImpossible = true;
+                } else options.actionImpossible = true;
+              }
+            } else if (cmd.includes('modere')) {
+              let soinsModeres = attributeAsInt(perso, 'soinsModeres', 0);
+              if (soinsModeres >= rangSoin) {
+                //Peut-être qu'on peut encore dépasser la limite
+                if (act.includes('--depasseLimite')) {
+                  let d = attributeAsInt(perso, 'depassesoinsModeres', 0)+1;
+                  if (depenseManaPossible(perso, d)) {
+                    text += "(+"+d+"PM)";
+                  } else options.actionImpossible = true;
+                } else options.actionImpossible = true;
+              }
+            }
+          }
           if (options.ressource) act += " --decrAttribute " + options.ressource.id;
           if (picto === '') {
             // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
@@ -21232,12 +21259,12 @@ var COFantasy = COFantasy || function() {
           }
           addLineToFramedDisplay(display, attaqueAOutranceMsg);
         }
-        var rangSoin = predicateAsInt(perso, 'voieDesSoins', 0);
+        let rangSoin = predicateAsInt(perso, 'voieDesSoins', 0);
         if (rangSoin > 0) {
           var msgSoins;
           var soinsRestants;
           var soins = "";
-          var soinsLegers = attributeAsInt(perso, 'soinsLegers', 0);
+          let soinsLegers = attributeAsInt(perso, 'soinsLegers', 0);
           if (soinsLegers < rangSoin) {
             soinsRestants = rangSoin - soinsLegers;
             if (soinsRestants > 1) soins = 's';

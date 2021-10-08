@@ -6,6 +6,7 @@
 * Ajout du type d'ennemi juré gobelin
 
 ### Autres améliorations
+* Modifie l'affichage des boutons de soins si plus disponibles
 * Un peu plus de discrétion avec les messages sur les limites par jour ou par combat
 * Passage en prédicats d'un grand nombre de capacités qui utilisaient encore des attributs.
 
