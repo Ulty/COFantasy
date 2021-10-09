@@ -34051,7 +34051,6 @@ var COFantasy = COFantasy || function() {
             case 'npc_icon_terrain':
             case 'npc_icon_type':
             case 'npc_expansion':
-            case 'npcfeat_content:
             case 'npc_xp':
             case 'organization':
             case 'senses':
