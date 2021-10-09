@@ -3865,7 +3865,7 @@ var COFantasy = COFantasy || function() {
   // - attackStats
   // et la fonction peut écrire actionImpossible = true dans options.
   function bouton(action, text, perso, options) {
-    if (action === undefined || action.trim().length === 0) return text;
+    if (action === undefined || action.trim() === '') return text;
     else action = action.trim();
     options = options || {};
     //Expansion des macros et abilities
@@ -10931,10 +10931,11 @@ var COFantasy = COFantasy || function() {
   }
 
   function sortedActionList(perso, listNumber) {
-    var actions = [];
-    var rawActions = extractRepeating(perso, 'actions' + listNumber);
+    let actions = [];
+    let rawActions = extractRepeating(perso, 'actions' + listNumber);
     for (var pref in rawActions) {
-      var ra = rawActions[pref];
+      let ra = rawActions[pref];
+      if (ra.actiontitre === undefined) ra.actiontitre = ' ';
       if (ra.actionmontree === undefined || parseInt(ra.actionmontree) === 1) {
         var rang = parseInt(ra.actionrang);
         if (isNaN(rang) || rang < 0) rang = 0;
@@ -10990,7 +10991,7 @@ var COFantasy = COFantasy || function() {
         if (!action) return;
         let actionCode;
         let actionTextFinal;
-        if (action.actiontitre) {
+        if (action.actiontitre !== undefined) {
           switch (action.actiontype) {
             case 'action':
             case undefined:
@@ -11018,6 +11019,7 @@ var COFantasy = COFantasy || function() {
         actionCommands = actionCommands.filter(function(c) {
           return c !== '';
         });
+        if (actionCommands.length === 0) return;
         let actionCmd = actionCommands[0];
         let actionText = actionTextFinal || actionCmd.replace(/-/g, ' ').replace(/_/g, ' ');
         found = false;
