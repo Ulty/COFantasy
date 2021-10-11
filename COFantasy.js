@@ -3919,12 +3919,12 @@ var COFantasy = COFantasy || function() {
               case 'attack':
               case 'attaque':
               case 'confirmer-attaque':
-                var portee = 0;
-                var sortilege;
-                var cmd = args.shift().split(' ');
-                var attackStats = options.attackStats;
+                let portee = 0;
+                let sortilege;
+                let cmd = args.shift().split(' ');
+                let attackStats = options.attackStats;
                 if (attackStats === undefined && cmd.length > 3) {
-                  var attackLabel = cmd[3].trim();
+                  let attackLabel = cmd[3].trim();
                   if (!attackLabel.startsWith('?{')) {
                     attackStats = getWeaponStats(perso, attackLabel);
                   }
@@ -3933,7 +3933,7 @@ var COFantasy = COFantasy || function() {
                   portee = attackStats.portee;
                   sortilege = attackStats.sortilege;
                   if (attackStats.options) {
-                    var firstOptionIndex = act.indexOf(' --');
+                    let firstOptionIndex = act.indexOf(' --');
                     if (firstOptionIndex > 0) {
                       act = act.substring(0, firstOptionIndex) + ' --attaqueOptions ' + attackStats.options + act.substring(firstOptionIndex);
                     } else {
@@ -7220,12 +7220,7 @@ var COFantasy = COFantasy || function() {
             error("Erreur interne d'une commande générée par bouton", cmd);
             return;
           }
-          let attribute =
-            getAttributeUtilisationsCapa(attaquant, cmd[1], 'tour',
-              "Attaque plus possible, plus de " + cmd[1],
-              "Attaque impossible, pas de prédicat " + cmd[1]);
-          if (attribute === undefined) return;
-          scope.decrAttribute = attribute.id; //Seulement l'id pour pouvoir cloner
+          scope.decrLimitePredicatParTour = cmd[1];
           return;
         case 'incrDmgCoef':
           scope.dmgCoef = (scope.dmgCoef || 1);
@@ -7774,7 +7769,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //On copie les champs de scope dans options ou dans target
-  function copyBranchOptions(branch, options, target, evt, explications, condInTarget) {
+  function copyBranchOptions(attaquant, branch, options, target, evt, explications, condInTarget) {
     var opt = options;
     if (condInTarget) opt = target;
     for (var field in branch) {
@@ -7819,12 +7814,12 @@ var COFantasy = COFantasy || function() {
           }
           break;
         case 'decrAttribute':
-          var attr = getObj('attribute', branch.decrAttribute);
+          let attr = getObj('attribute', branch.decrAttribute);
           if (attr === undefined) {
             error("Attribut introuvable", branch.decrAttribute);
             break;
           }
-          var oldval = parseInt(attr.get('current'));
+          let oldval = parseInt(attr.get('current'));
           if (isNaN(oldval) || oldval < 1) {
             sendChar(attr.get('characterid'), "ne peut plus faire cela", true);
             break;
@@ -7836,6 +7831,15 @@ var COFantasy = COFantasy || function() {
             max: attr.get('max')
           });
           attr.set('current', oldval - 1);
+          break;
+        case 'decrLimitePredicatParTour':
+          //Ne fait que diminuer l'attribut, n'empêche pas l'attaque
+          let pred = branch.decrLimitePredicatParTour;
+          let test = testLimiteUtilisationsCapa(attaquant, pred, 'tour',
+            "ne peut plus utiliser " + pred + " ce tour",
+            "Attaque impossible, pas de prédicat " + pred);
+          if (test === undefined) break;
+          utiliseCapacite(attaquant, test, evt);
           break;
         default:
           opt[field] = branch[field];
@@ -7957,8 +7961,8 @@ var COFantasy = COFantasy || function() {
                 callIfAllDone(etatParent, callback);
                 return;
               }
-              copyBranchOptions(branch, options, target, evt, explications, true);
-              var etat = {
+              copyBranchOptions(attaquant, branch, options, target, evt, explications, true);
+              let etat = {
                 parent: etatParent
               };
               evalITE(attaquant, target, deAttaque, options, 0, evt, explications, branch, callback, condInTarget, etat);
@@ -7977,7 +7981,7 @@ var COFantasy = COFantasy || function() {
       }
       //On copie les champs de scope dans options ou dans target
       if (phase === 0)
-        copyBranchOptions(branch, options, target, evt, explications, condInTarget);
+        copyBranchOptions(attaquant, branch, options, target, evt, explications, condInTarget);
       var etat = {
         parent: etatParent
       };
@@ -9932,7 +9936,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (options.decrAttribute) {
-      var attr = getObj('attribute', options.decrAttribute);
+      let attr = getObj('attribute', options.decrAttribute);
       if (attr === undefined) {
         error("Attribut introuvable", options.decrAttribute);
         return true;
@@ -9951,6 +9955,19 @@ var COFantasy = COFantasy || function() {
         max: attr.get('max')
       });
       attr.set('current', oldval - 1);
+    }
+    if (options.decrLimitePredicatParTour) {
+      let pred = options.decrLimitePredicatParTour;
+      if (personnage) {
+        let test = testLimiteUtilisationsCapa(personnage, pred, 'tour',
+          "ne peut plus utiliser " + pred + " ce tour",
+          "Action impossible, pas de prédicat " + pred);
+        if (test === undefined) return true;
+        utiliseCapacite(personnage, test, evt);
+      } else {
+        error("Impossible de savoir à qui appliquer la limitation du prédicat " + pred, options);
+        return true;
+      }
     }
     if (personnage) depenseMana(personnage, depMana, msg, evt);
     return false;
@@ -11488,21 +11505,6 @@ var COFantasy = COFantasy || function() {
       });
     });
     initiative(selected, evt); //ne recalcule pas l'init
-  }
-
-  //Retourne toujours un attribut si la capacité est disponible
-  function getAttributeUtilisationsCapa(perso, capa, unite, msgPlusDispo, msgPasCapa) {
-    let test = testLimiteUtilisationsCapa(perso, capa, unite, msgPlusDispo, msgPasCapa);
-    if (test === undefined) return;
-    let attribut = test.attribut;
-    if (attribut === undefined) {
-      attribut = createObj('attribute', {
-        characterid: perso.charId,
-        name: fullAttributeName(perso, test.nomLimite),
-        current: test.utilisations,
-      });
-    }
-    return attribut;
   }
 
   //capa est le nom d'un prédicat. Si le prédicat est numérique, cela donne
@@ -13256,10 +13258,8 @@ var COFantasy = COFantasy || function() {
             }
           };
           preDmgToken.evitementGenerique.forEach(function(evitementGenerique) {
-            appliquerEvitementGenerique(cible, evitementGenerique.jetAdversaire, evitementGenerique.attribut,
-              evitementGenerique.opt, evitementGenerique.attributeName, evitementGenerique.actionName,
-              evitementGenerique.tente, evitementGenerique.carac, evitementGenerique.typeAttaque,
-              evitementGenerique.msgReussite, pageId, options, evt, finaliseTargetPreDmg);
+            appliquerEvitementGenerique(cible, evitementGenerique, pageId,
+              options, evt, finaliseTargetPreDmg);
           });
         } else {
           finaliseTarget();
@@ -13569,9 +13569,8 @@ var COFantasy = COFantasy || function() {
         for (let vid in attaquesEnTraitrePossibles) {
           let voleur = persoOfId(vid);
           if (voleur === undefined) continue;
-          let attaqueEnTraitre = getAttributeUtilisationsCapa(voleur, 'attaqueEnTraitre', 'tour');
-          if (attaqueEnTraitre) {
-            displayAttaqueOpportunite(vid, attaquesEnTraitrePossibles[vid], "en traître", 'Attaques en traitre', '--decrAttribute ' + attaqueEnTraitre.id);
+          if (capaciteDisponible(voleur, 'attaqueEnTraitre')) {
+            displayAttaqueOpportunite(vid, attaquesEnTraitrePossibles[vid], "en traître", 'Attaques en traitre', '--decrLimitePredicatParTour attaqueEnTraitre');
           }
         }
       }
@@ -26375,9 +26374,11 @@ var COFantasy = COFantasy || function() {
       return;
     }
     let attribut;
+    let testPredicat;
     if (opt && opt.predicat) {
-      attribut = getAttributeUtilisationsCapa(perso, attributeName, opt.predicat, msgDejaFait, "ne sait pas faire " + actionName);
-      if (attribut === undefined) return;
+      testPredicat = testLimiteUtilisationsCapa(perso, attributeName, opt.predicat, msgDejaFait, "ne sait pas faire " + actionName);
+      if (testPredicat === undefined) return;
+      testPredicat.perso = perso;
     } else {
       attribut = tokenAttribute(persoAttribut, attributAVerifier);
       if (attribut.length === 0) {
@@ -26407,37 +26408,57 @@ var COFantasy = COFantasy || function() {
     optionsAttaque.choices[perso.token.id].evitementGenerique =
       optionsAttaque.choices[perso.token.id].evitementGenerique || [];
     optionsAttaque.choices[perso.token.id].evitementGenerique.push({
-      jetAdversaire: jetAdversaire,
-      attribut: attribut,
-      opt: opt,
-      attributeName: attributeName,
-      actionName: actionName,
-      tente: tente,
-      carac: carac,
-      typeAttaque: typeAttaque,
-      msgReussite: msgReussite
+      jetAdversaire,
+      attribut,
+      testPredicat,
+      opt,
+      attributeName,
+      actionName,
+      tente,
+      carac,
+      typeAttaque,
+      msgReussite
     });
     optionsAttaque.rolls = action.rolls;
     resolvePreDmgOptions(action.attaquant, action.ciblesTouchees, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, action.pageId, action.cibles);
   }
 
-  function appliquerEvitementGenerique(cible, jetAdversaire, attribut, opt, attributeName, actionName, tente, carac, typeAttaque, msgReussite, pageId, options, evt, callback) {
+  function appliquerEvitementGenerique(cible, evitementGen, pageId, options, evt, callback) {
     let action = evt.action;
     let lanceur = cible;
+    let {
+      jetAdversaire,
+      attribut,
+      testPredicat,
+      opt,
+      attributeName,
+      actionName,
+      tente,
+      carac,
+      typeAttaque,
+      msgReussite
+    } = evitementGen;
     if (opt && opt.protecteur) {
       lanceur = opt.protecteur;
     }
-    if (opt && opt.attrAsBool) {
-      evt.deletedAttributes = evt.deletedAttributes || [];
-      evt.deletedAttributes.push(attribut);
-    } else {
-      let curAttribut = parseInt(attribut.get('current'));
-      evt.attributes = evt.attributes || [];
-      evt.attributes.push({
-        attribute: attribut,
-        current: curAttribut
-      });
-      attribut.set('current', curAttribut - 1);
+    if (attribut) {
+      if (opt && opt.attrAsBool) {
+        evt.deletedAttributes = evt.deletedAttributes || [];
+        evt.deletedAttributes.push(attribut);
+      } else {
+        let curAttribut = parseInt(attribut.get('current'));
+        evt.attributes = evt.attributes || [];
+        evt.attributes.push({
+          attribute: attribut,
+          current: curAttribut
+        });
+        attribut.set('current', curAttribut - 1);
+      }
+    } else if (testPredicat) {
+      utiliseCapacite(testPredicat.perso, testPredicat, evt);
+    } else { //ni attribut ni prédicat
+      error("On n'a ni attribut ni prédicat pour un évitement générique", evitementGen);
+      return;
     }
     let attackRollExpr = "[[" + computeDice(lanceur) + "cs20cf1]]";
     sendChat('', attackRollExpr, function(res) {
@@ -28475,26 +28496,27 @@ var COFantasy = COFantasy || function() {
         error("Impossible de trouver le token de la cible " + targetCharId + " sur la carte");
         return;
       }
-      var target = {
+      let target = {
         token: tokensTarget[0],
         charId: targetCharId
       };
       // Check de la rune à renouveler
-      var runeName = attr.get('name');
-      var typeRune = listeRunes(runesDuForgesort.voieDesRunes).find(function(i) {
-        return i.attrName == runeName.split("(")[0];
-      });
+      let runeName = attr.get('name');
+      let typeRune =
+        listeRunes(runesDuForgesort.voieDesRunes).find(function(i) {
+          return i.attrName == runeName.split("(")[0];
+        });
       if (typeRune === undefined) {
         error("Impossible de trouver la rune à renouveler");
         return;
       }
       // Tout est ok, création de l'item
-      var runeARenouveler = {
+      let runeARenouveler = {
         target: target,
         typeRune: typeRune,
         runeName: runeName
       };
-      var runesParRang = runesDuForgesort.runesParRang;
+      let runesParRang = runesDuForgesort.runesParRang;
       if (runesParRang[typeRune.rang] === undefined) {
         runesParRang[typeRune.rang] = [runeARenouveler];
       } else runesParRang[typeRune.rang].push(runeARenouveler);
