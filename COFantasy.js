@@ -1338,6 +1338,16 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  // Donne le nom de l'attribut, selon qu'il concerne un mook ou un personnage
+  // unique
+  function fullAttributeName(perso, attribute, options) {
+    if (perso.token && (!options || !options.charAttr)) {
+      let link = perso.token.get('bar1_link');
+      if (link === '') return attribute + '_' + perso.token.get('name');
+    }
+    return attribute;
+  }
+
   //options peut contenir
   // msg: un message à afficher
   // maxVal: la valeur max de l'attribut
@@ -1345,22 +1355,16 @@ var COFantasy = COFantasy || function() {
   // charAttr: si présent, on utilise un attribut de personnage
   // renvoie l'attribut créé ou mis à jour
   function setTokenAttr(personnage, attribute, value, evt, options) {
-    var charId = personnage.charId;
-    var token = personnage.token;
-    var maxval = '';
+    let charId = personnage.charId;
+    let token = personnage.token;
+    let maxval = '';
     if (options && options.maxVal !== undefined) maxval = options.maxVal;
     if (options && options.msg !== undefined) {
       sendPerso(personnage, options.msg, options.secret);
     }
     evt.attributes = evt.attributes || [];
-    // check if the token is linked to the character. If not, use token name
-    // in attribute name (token ids don't persist over API reload)
-    var fullAttribute = attribute;
-    if (token && (!options || !options.charAttr)) {
-      var link = token.get('bar1_link');
-      if (link === '') fullAttribute += "_" + token.get('name');
-    }
-    var attr = findObjs({
+    let fullAttribute = fullAttributeName(personnage, attribute, options);
+    let attr = findObjs({
       _type: 'attribute',
       _characterid: charId,
       name: fullAttribute
@@ -1514,17 +1518,10 @@ var COFantasy = COFantasy || function() {
   // evt peut être undefined
   // options peut avoir les champs msg et secret
   function removeTokenAttr(personnage, attribute, evt, options) {
-    var charId = personnage.charId;
-    var token = personnage.token;
-    // check if the token is linked to the character. If not, use token name
-    // in attribute name (token ids don't persist over API reload)
-    if (token) {
-      var link = token.get('bar1_link');
-      if (link === '') attribute += "_" + token.get('name');
-    }
-    var attr = findObjs({
+    attribute = fullAttributeName(personnage, attribute.options);
+    let attr = findObjs({
       _type: 'attribute',
-      _characterid: charId,
+      _characterid: personnage.charId,
       name: attribute
     });
     if (attr.length === 0) return;
@@ -1551,12 +1548,8 @@ var COFantasy = COFantasy || function() {
   //et lui ajoute la valeur val. Crée l'attribut si besoin
   function addToAttributeAsInt(perso, attribute, def, val, evt) {
     evt.attributes = evt.attributes || [];
-    var fullAttribute = attribute;
-    if (perso.token) {
-      var link = perso.token.get('bar1_link');
-      if (link === '') fullAttribute += "_" + perso.token.get('name');
-    }
-    var attr = findObjs({
+    let fullAttribute = fullAttributeName(perso, attribute);
+    let attr = findObjs({
       _type: 'attribute',
       _characterid: perso.charId,
       name: fullAttribute
@@ -3892,7 +3885,7 @@ var COFantasy = COFantasy || function() {
         if (act.startsWith('!cof-')) {
           const args = act.split(' --');
           if (actionImpossible(perso, args, '')) options.actionImpossible = true;
-          else if (act.startsWith('!cof-soin ') && !act.includes('--limitePar') && !act.includes('--dose')) {//Limitations spéficiques
+          else if (act.startsWith('!cof-soin ') && !act.includes('--limitePar') && !act.includes('--dose')) { //Limitations spéficiques
             let rangSoin = predicateAsInt(perso, 'voieDesSoins', 0);
             let cmd = args[0].split(' ');
             if (cmd.includes('leger')) {
@@ -3902,7 +3895,7 @@ var COFantasy = COFantasy || function() {
                 if (act.includes('--depasseLimite')) {
                   let d = attributeAsInt(perso, 'depassesoinsLegers', 1);
                   if (depenseManaPossible(perso, d)) {
-                    text += " (+"+d+"PM)";
+                    text += " (+" + d + "PM)";
                   } else options.actionImpossible = true;
                 } else options.actionImpossible = true;
               }
@@ -3911,9 +3904,9 @@ var COFantasy = COFantasy || function() {
               if (soinsModeres >= rangSoin) {
                 //Peut-être qu'on peut encore dépasser la limite
                 if (act.includes('--depasseLimite')) {
-                  let d = attributeAsInt(perso, 'depassesoinsModeres', 0)+1;
+                  let d = attributeAsInt(perso, 'depassesoinsModeres', 0) + 1;
                   if (depenseManaPossible(perso, d)) {
-                    text += "(+"+d+"PM)";
+                    text += "(+" + d + "PM)";
                   } else options.actionImpossible = true;
                 } else options.actionImpossible = true;
               }
@@ -4496,7 +4489,7 @@ var COFantasy = COFantasy || function() {
       bonus -= malusOndesCorruptrices;
     }
     if (attributeAsBool(personnage, 'fievreux')) {
-      bonus -=2;
+      bonus -= 2;
       expliquer("Fiévreu" + onGenre(personnage, 'x', 'se') + " : -2 aux tests");
     }
     let bonusCondition = attributeAsInt(personnage, 'modificateurTests', 0);
@@ -7227,9 +7220,12 @@ var COFantasy = COFantasy || function() {
             error("Erreur interne d'une commande générée par bouton", cmd);
             return;
           }
-          let test = testLimiteUtilisationsCapa(attaquant, cmd[1], 'tour', "Attaque plus possible, plus de " + cmd[1], "Attaque impossible, pas de prédicat " + cmd[1]);
-          if (test === undefined) return;
-          scope.decrAttribute = test.attribut.id; //Seulement l'id pour pouvoir cloner
+          let attribute =
+            getAttributeUtilisationsCapa(attaquant, cmd[1], 'tour',
+              "Attaque plus possible, plus de " + cmd[1],
+              "Attaque impossible, pas de prédicat " + cmd[1]);
+          if (attribute === undefined) return;
+          scope.decrAttribute = attribute.id; //Seulement l'id pour pouvoir cloner
           return;
         case 'incrDmgCoef':
           scope.dmgCoef = (scope.dmgCoef || 1);
@@ -9405,7 +9401,7 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(attaquant, 'fievreux')) {
       attBonus -= 2;
       options.fievreux = true;
-      explications.push("Fiévreu"+onGenre(attaquant, 'x', 'se')+" => -2 en Att. et DM");
+      explications.push("Fiévreu" + onGenre(attaquant, 'x', 'se') + " => -2 en Att. et DM");
     }
     return attBonus;
   }
@@ -11494,8 +11490,27 @@ var COFantasy = COFantasy || function() {
     initiative(selected, evt); //ne recalcule pas l'init
   }
 
+  //Retourne toujours un attribut si la capacité est disponible
+  function getAttributeUtilisationsCapa(perso, capa, unite, msgPlusDispo, msgPasCapa) {
+    let test = testLimiteUtilisationsCapa(perso, capa, unite, msgPlusDispo, msgPasCapa);
+    if (test === undefined) return;
+    let attribut = test.attribut;
+    if (attribut === undefined) {
+      attribut = createObj('attribute', {
+        characterid: perso.charId,
+        name: fullAttributeName(perso, test.nomLimite),
+        current: test.utilisations,
+      });
+    }
+    return attribut;
+  }
+
   //capa est le nom d'un prédicat. Si le prédicat est numérique, cela donne
   //la limite, sinon la limite est 1
+  // retourne 
+  // - utilisations: les nombre d'utilisations restantes, 
+  // - nomLimite: le nom de l'attribut qui stoque l'utilisation
+  // - attribut: si il y a un attribut, l'attribut en question.
   function testLimiteUtilisationsCapa(perso, capa, unite, msgPlusDispo, msgPasCapa) {
     let limite = predicateAsInt(perso, capa, 0, 1);
     if (limite === 0) {
@@ -11505,14 +11520,14 @@ var COFantasy = COFantasy || function() {
     let nomLimite = nomLimiteCapa(capa, unite);
     if (nomLimite === undefined) return;
     let utilisations = limite;
-    let attrCourant = tokenAttribute(perso, nomLimite);
-    if (attrCourant.length === 0) {
-      attrCourant = undefined;
+    let attribut = tokenAttribute(perso, nomLimite);
+    if (attribut.length === 0) {
+      attribut = undefined;
     } else {
-      attrCourant = attrCourant[0];
-      utilisations = parseInt(attrCourant.get('current'));
+      attribut = attribut[0];
+      utilisations = parseInt(attribut.get('current'));
       if (isNaN(utilisations)) {
-        error("Resource pour " + capa + " mal formée", attrCourant);
+        error("Resource pour " + capa + " mal formée", attribut);
         return;
       }
     }
@@ -11523,9 +11538,9 @@ var COFantasy = COFantasy || function() {
       return;
     }
     return {
-      utilisations: utilisations,
-      attribut: attrCourant,
-      nomLimite: nomLimite,
+      utilisations,
+      attribut,
+      nomLimite
     };
   }
 
@@ -13554,12 +13569,8 @@ var COFantasy = COFantasy || function() {
         for (let vid in attaquesEnTraitrePossibles) {
           let voleur = persoOfId(vid);
           if (voleur === undefined) continue;
-          let test = testLimiteUtilisationsCapa(voleur, 'attaqueEnTraitre', 'tour');
-          if (test) {
-            let attaqueEnTraitre = test.attribut;
-            if (attaqueEnTraitre === undefined) {
-              attaqueEnTraitre = setTokenAttr(voleur, test.nomLimite, test.utilisations, evt);
-            }
+          let attaqueEnTraitre = getAttributeUtilisationsCapa(voleur, 'attaqueEnTraitre', 'tour');
+          if (attaqueEnTraitre) {
             displayAttaqueOpportunite(vid, attaquesEnTraitrePossibles[vid], "en traître", 'Attaques en traitre', '--decrAttribute ' + attaqueEnTraitre.id);
           }
         }
@@ -19699,7 +19710,7 @@ var COFantasy = COFantasy || function() {
     }
     getSelected(msg, function(selected) {
       iterSelected(selected, function(pretre) {
-        var testIntervention = testLimiteUtilisationsCapa(pretre, 'interventionDivine', 'combat', "a déjà fait une intervention divine ce combat", "ne sait pas faire d'intervention divine");
+        let testIntervention = testLimiteUtilisationsCapa(pretre, 'interventionDivine', 'combat', "a déjà fait une intervention divine ce combat", "ne sait pas faire d'intervention divine");
         if (testIntervention === undefined) {
           return;
         }
@@ -26365,9 +26376,8 @@ var COFantasy = COFantasy || function() {
     }
     let attribut;
     if (opt && opt.predicat) {
-      let test = testLimiteUtilisationsCapa(perso, attributeName, opt.predicat, msgDejaFait, "ne sait pas faire " + actionName);
-      if (test === undefined) return;
-      attribut = test.attribut;
+      attribut = getAttributeUtilisationsCapa(perso, attributeName, opt.predicat, msgDejaFait, "ne sait pas faire " + actionName);
+      if (attribut === undefined) return;
     } else {
       attribut = tokenAttribute(persoAttribut, attributAVerifier);
       if (attribut.length === 0) {
@@ -36005,7 +36015,7 @@ var COFantasy = COFantasy || function() {
       actif: "a une silhouette massive",
       fin: "retrouve une silhouette normale",
     },
-    fievreux:{
+    fievreux: {
       activation: "se sent fiévreux",
       activationF: "se sent fiévreuse",
       actif: "est fiévreux",
@@ -36820,7 +36830,7 @@ var COFantasy = COFantasy || function() {
     if (stateCOF.prescience) {
       //On affiche la prescience aux joueurs concernés
       allPersos.forEach(function(perso) {
-        if (testLimiteUtilisationsCapa(perso, 'prescience', 'combat')) {
+        if (capaciteDisponible(perso, 'prescience', 'combat')) {
           whisperChar(perso.charId, "Possibilité d'utiliser la " + boutonSimple('!cof-prescience ' + perso.token.id + ' --mana 2', "Prescience"));
         }
       });
