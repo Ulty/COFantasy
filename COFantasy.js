@@ -587,7 +587,14 @@ var COFantasy = COFantasy || function() {
   function error(msg, obj) {
     log(msg);
     log(obj);
-    sendChat("COFantasy", msg);
+    if (msg) {
+      try {
+        sendChat('COFantasy', msg);
+      } catch (e) {
+        msg = msg.replace('[', '[ ');
+        sendChat('COFantasy', "Message sans jet : " + msg);
+      }
+    }
   }
 
   function determineSettingDeJeu() {
@@ -24703,7 +24710,13 @@ var COFantasy = COFantasy || function() {
       }); //fin du sendChat du jet de dés
     } catch (e) {
       if (soins) {
-        error("L'expression des soins (" + soins + ") n'est pas bien formée", msg.content);
+        log(msg.content);
+        log("L'expression des soins était " + soins + ", et il y a eu une erreur durant son évaluation");
+        if (argSoin) {
+          error("L'expression des soins (" + argSoin + ") n'est pas bien formée", msg.content);
+        } else {
+          error("Erreur pendant l'évaluation de l'expression des soins. Plus d'informations dans le log", msg);
+        }
       } else {
         error("Erreur pendant les soins ", msg.content);
         throw e;

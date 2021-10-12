@@ -126,7 +126,7 @@
 						</div>
 					</div>
 					<div class="col-md-9 col-sm-8 content">
-            <h1>Documentation pour la version 3.02 de COFantasy</h1>
+            <h1>Documentation pour la version 3.04 de COFantasy</h1>
 						<h2 class="text-primary" id="comment_utiliser_script">1. Comment utiliser Le script</h2>
             <div class="decalage">
               <h3 class="text-info" id="token_personnages">1.1 Tokens et personnages</h3>
@@ -1293,7 +1293,7 @@
                 <h4 class="text-secondary">Voie du golem</h4>
                 <ol>
                   <li><strong>Grosse tête</strong> : Vous pouvez ajouter un <a href=#predicats>prédicat</a> <code>grosseTete</code>. Normalement, le bonus devrait dépendre des actions du forgesort. Si vous souhaitez le faire, vous pouvez ne pas mettre le prédicat, mais juste avant un jet de force pour lequel vous pensez que la grosse tête s'applique, faire <code>!cof-set-predicate grosseTete true</code> (en sélectionnant le token du forgesort), puis après le jet faire  <code>!cof-set-predicate grosseTete false</code>. Si vous voulez l'ajout de grosse tête par défaut, vous pouvez aussi faire l'opération dans l'ordre inverse pour les jets pour lesquels vous pensez que le bonus ne peut pas s'appliquer.</li>
-                  <li><strong>Golem</strong> : ajouter un personnage et un token pour le golem (ne pas oublier le <a href=#predicats>prédicat</a> <code>nonVivant</code> pour le golem). Pour les réparations, utiliser <code>!cof-soin @{selected|token_id} <i>nom_du_golem</i> <i>rang</i>d6+@{selected|INT}</code>. Attention, le nom du golem est celui du token représentant le golem, et il ne doit pas contenir de blanc.</li>
+                  <li><strong>Golem</strong> : ajouter un personnage et un token pour le golem (ne pas oublier le <a href=#predicats>prédicat</a> <code>nonVivant</code> pour le golem). Pour les réparations, utiliser <code>!cof-soin @{selected|token_id} <i>nom_du_golem</i> <i>rang</i>d6+@{selected|INT}</code>. Bien remplacer <i>rang</i> par le rang dans la voie, dans cette commande. Attention, le nom du golem est celui du token représentant le golem, et il ne doit pas contenir de blanc.</li>
                   <li><strong>Protecteur</strong> : <code>!cof-interposer</code> permet de s'interposer à la place de la cible de la dernière attaque. (Attention, pas de undo pour cette action)</li>
                   <li><strong>Golem supérieur</strong> : reporter les avantages sur la fiche du golem.</li>
                   <li><strong>Intelligence héroïque</strong> : reporter sur la fiche</li>
