@@ -5,6 +5,7 @@
 * Jets de dégâts séparés par cible pour la destruction des morts-vivants
 * Ajout d'une option de malus de répétition pour la destruction des morts-vivants.
 * Ajout du type d'ennemi juré gobelin
+* Implémentation de base de la voie de l'expert du combat
 
 ### Autres améliorations
 * Modifie l'affichage des boutons de soins si plus disponibles
