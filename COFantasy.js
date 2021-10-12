@@ -30513,14 +30513,14 @@ var COFantasy = COFantasy || function() {
   };
 
   function conjurationPredateur(msg) {
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined) {
       error("Pas de commande", msg.content);
       return;
     }
-    var renforce = 0;
+    let renforce = 0;
     if (cmd.length > 1) {
       renforce = parseInt(cmd[1]);
       if (isNaN(renforce)) {
@@ -30533,19 +30533,19 @@ var COFantasy = COFantasy || function() {
         error("pas de lanceur pour la conjuration de prédateurs", msg);
         return;
       }
-      var evt = {
+      let evt = {
         type: 'conjuration de prédateurs'
       };
       initiative(selected, evt);
       iterSelected(selected, function(invocateur) {
-        var pageId = invocateur.token.get('pageid');
-        var niveau = ficheAttributeAsInt(invocateur, 'niveau', 1);
+        let pageId = invocateur.token.get('pageid');
+        let niveau = ficheAttributeAsInt(invocateur, 'niveau', 1);
         if (!renforce) {
           renforce = predicateAsInt(invocateur, 'voieDeLaConjuration', 0);
           if (renforce == 1) renforce = 0;
         }
         niveau += renforce;
-        var predateur;
+        let predateur;
         if (niveau < 5) predateur = predateurs.loup;
         else if (niveau < 9) predateur = predateurs.loupAlpha;
         else if (niveau < 12) predateur = predateurs.worg;
@@ -30554,9 +30554,9 @@ var COFantasy = COFantasy || function() {
         else if (niveau < 21) predateur = predateurs.oursPolaire;
         else if (niveau < 23) predateur = predateurs.tigreDentsDeSabre;
         else predateur = predateurs.oursPrehistorique;
-        var nomPredateur =
+        let nomPredateur =
           predateur.nom + ' de ' + invocateur.token.get('name');
-        var token = createObj('graphic', {
+        let token = createObj('graphic', {
           name: nomPredateur,
           subtype: 'token',
           pageid: pageId,
@@ -30574,7 +30574,7 @@ var COFantasy = COFantasy || function() {
           has_limit_field_of_vision: true,
         });
         toFront(token);
-        var charPredateur =
+        let charPredateur =
           createCharacter(nomPredateur, playerId, predateur.avatar, token, predateur);
         //Tous les prédateurs sont des quadrupèdes
         let persoPredateur = {
@@ -30595,7 +30595,7 @@ var COFantasy = COFantasy || function() {
           _id: token.id
         }], evt);
         // Ajout du Prédateur aux alliés de l'invocateur
-        var alliesInvocateur = alliesParPerso[invocateur.charId] || new Set();
+        let alliesInvocateur = alliesParPerso[invocateur.charId] || new Set();
         alliesInvocateur.add(charPredateur.id);
         alliesParPerso[invocateur.charId] = alliesInvocateur;
       }); //end iterSelected
