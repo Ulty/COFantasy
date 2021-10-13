@@ -8,6 +8,7 @@
 * Implémentation de base de la voie de l'expert du combat
 
 ### Autres améliorations
+* Ajout d'un type de dégâts "énergie", pour des settings science fiction.
 * Message plus explicite en cas d'expression de soins incorrecte.
 * Modifie l'affichage des boutons de soins si plus disponibles
 * Un peu plus de discrétion avec les messages sur les limites par jour ou par combat

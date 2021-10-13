@@ -6446,6 +6446,7 @@ var COFantasy = COFantasy || function() {
       case 'poison':
       case 'maladie':
       case 'drain':
+      case 'energie':
         options.type = weaponStats.typeDegats;
         break;
       case 'tranchant':
@@ -6884,6 +6885,7 @@ var COFantasy = COFantasy || function() {
         case 'maladie':
         case 'argent':
         case 'drain':
+        case 'energie':
           lastType = cmd[0];
           var l = 0;
           if (scope.additionalDmg) l = scope.additionalDmg.length;
@@ -9307,6 +9309,7 @@ var COFantasy = COFantasy || function() {
             case 'maladie':
             case 'magique':
             case 'drain':
+            case 'energie':
               typeDMGauche = attaquant.armeGauche.typeDegats;
           }
           if (typeDMGauche == 'normal' && attaquant.armeGauche.modificateurs &&
@@ -9432,7 +9435,7 @@ var COFantasy = COFantasy || function() {
         value: "1d6",
         total: valDesExpert.val,
         display: valDesExpert.roll
-      }
+      };
       explications.push("Expert du combat => +" + valDesExpert.roll + " aux DM");
     }
     return attBonus;
@@ -9832,9 +9835,9 @@ var COFantasy = COFantasy || function() {
         return true;
       }
     }
-    var ressource = '';
+    let ressource = '';
     if (defResource !== undefined) ressource = defResource;
-    var utilisations;
+    let utilisations;
     if (options.limiteParJour) {
       if (personnage) {
         if (options.limiteParJourRessource)
@@ -9849,7 +9852,7 @@ var COFantasy = COFantasy || function() {
         }
         setTokenAttr(personnage, ressource, utilisations - 1, evt);
         if (options.limiteParJourRessource) {
-          var msgJour = personnage.token.get('name') + " ";
+          let msgJour = personnage.token.get('name') + " ";
           if (utilisations < 2) msgJour += "ne pourra plus utiliser ";
           else {
             msgJour += "pourra encore utiliser ";
@@ -9883,7 +9886,7 @@ var COFantasy = COFantasy || function() {
         utilisations =
           attributeAsInt(personnage, ressource, options.limiteParCombat);
         if (utilisations === 0) {
-          var msgToSend = "ne peut plus faire cette action pour ce combat";
+          let msgToSend = "ne peut plus faire cette action pour ce combat";
           sendPerso(personnage, msgToSend, options.secret);
           return true;
         }
@@ -9922,7 +9925,7 @@ var COFantasy = COFantasy || function() {
           ressource = "limiteParTour_" + defResource;
         utilisations = attributeAsInt(personnage, ressource, options.limiteParTour);
         if (utilisations === 0) {
-          var msgToSend = "ne peut plus faire cette action pour ce tour";
+          let msgToSend = "ne peut plus faire cette action pour ce tour";
           sendPerso(personnage, msgToSend, options.secret);
           return true;
         }
@@ -15030,8 +15033,8 @@ var COFantasy = COFantasy || function() {
           }
           if (predicateAsInt(perso, 'expertDuCombat', 0) > 2 &&
             attributeAsInt(perso, 'limiteParCombat_expertDuCombat', 1) > 0 &&
-            attributeAsInt(perso, 'limiteParTour_expertDuCombat', 1) > 0
-            && !options.expertDuCombatDM) {
+            attributeAsInt(perso, 'limiteParTour_expertDuCombat', 1) > 0 &&
+            !options.expertDuCombatDM) {
             addLineToFramedDisplay(display, boutonSimple("!cof-expert-combat-dm " + evt.id, "Expert du Combat (DM +1D6)"));
           }
           if (capaciteDisponible(perso, 'kiai', 'combat') &&
@@ -16651,6 +16654,9 @@ var COFantasy = COFantasy || function() {
       case 'drain':
         InlineColorOverride = ' background-color: #0D1201; color: #E8F5C9;';
         break;
+      case 'energie':
+        InlineColorOverride = ' background-color: #FFEEAA; color: #221100;';
+        break;
       default:
         if (critCheck && failCheck) {
           InlineColorOverride = ' background-color: #8FA4D4; color: #061539;';
@@ -18039,6 +18045,7 @@ var COFantasy = COFantasy || function() {
         case 'sonique':
         case 'poison':
         case 'maladie':
+        case 'energie':
           options.type = cmd[0];
           return;
         case 'bonus':
@@ -19306,9 +19313,9 @@ var COFantasy = COFantasy || function() {
     else if (rangExpertDuCombat > 2) limiteParTour = 2;
     else limiteParTour = 1;
     if (limiteRessources(perso, {
-      limiteParCombat: rangExpertDuCombat*2,
-      limiteParTour: limiteParTour
-    }, "expertDuCombat", "a atteint sa limite de dé d'expert du combat", evt)) {
+        limiteParCombat: rangExpertDuCombat * 2,
+        limiteParTour: limiteParTour
+      }, "expertDuCombat", "a atteint sa limite de dé d'expert du combat", evt)) {
       addEvent(evt);
       return false;
     }
@@ -19355,9 +19362,9 @@ var COFantasy = COFantasy || function() {
       addEvent(evt);
       action.options = action.options || {};
       if (cmd[0].includes("-touche"))
-        action.options.expertDuCombatTouche = action.options.expertDuCombatTouche+1 || 1;
+        action.options.expertDuCombatTouche = action.options.expertDuCombatTouche + 1 || 1;
       else if (cmd[0].includes("-dm"))
-        action.options.expertDuCombatDM = action.options.expertDuCombatDM+1 || 1;
+        action.options.expertDuCombatDM = action.options.expertDuCombatDM + 1 || 1;
       if (!redoEvent(evtARefaire, action, perso))
         error("Type d'évènement pas supporté par le bouton Rune d'Energie", evt);
     } else { //Juste pour vérifier l'attribut et le diminuer
@@ -19406,7 +19413,7 @@ var COFantasy = COFantasy || function() {
     if (!persoUtiliseDeExpertDuCombat(perso, evt)) return;
     undoEvent(evtARefaire);
     addEvent(evt);
-    action.options = action.options || {}
+    action.options = action.options || {};
     action.options.expertDuCombatDEF = action.options.expertDuCombatDEF || {};
     action.options.expertDuCombatDEF[perso.token.id] = rollDePlus(6);
     removePreDmg(action.options, perso, 'expertDuCombatDEF');
@@ -21560,17 +21567,17 @@ var COFantasy = COFantasy || function() {
         }
         var predicatExpertDuCombat = predicateAsInt(perso, "expertDuCombat", 0);
         if (stateCOF.combat && predicatExpertDuCombat > 0) {
-          var nbDesExpertDuCombat_combat_max = predicatExpertDuCombat*2;
-          var nbDesExpertDuCombat_combat = attributeAsInt(perso, "limiteParCombat_expertDuCombat", predicatExpertDuCombat*2);
+          var nbDesExpertDuCombat_combat_max = predicatExpertDuCombat * 2;
+          var nbDesExpertDuCombat_combat = attributeAsInt(perso, "limiteParCombat_expertDuCombat", predicatExpertDuCombat * 2);
           var nbDesExpertDuCombat_tour_max;
           if (predicatExpertDuCombat > 4) nbDesExpertDuCombat_tour_max = 3;
           else if (predicatExpertDuCombat > 2) nbDesExpertDuCombat_tour_max = 2;
           else nbDesExpertDuCombat_tour_max = 1;
           var nbDesExpertDuCombat_tour = Math.min(nbDesExpertDuCombat_combat,
-              attributeAsInt(perso, "limiteParTour_expertDuCombat", nbDesExpertDuCombat_tour_max));
+            attributeAsInt(perso, "limiteParTour_expertDuCombat", nbDesExpertDuCombat_tour_max));
           addLineToFramedDisplay(display, "Dés d'expertise du combat : <br>" +
-              "Tour : " + nbDesExpertDuCombat_tour + "/" + nbDesExpertDuCombat_tour_max + "<br>" +
-              "Combat : " + nbDesExpertDuCombat_combat + "/" + nbDesExpertDuCombat_combat_max + "<br>");
+            "Tour : " + nbDesExpertDuCombat_tour + "/" + nbDesExpertDuCombat_tour_max + "<br>" +
+            "Combat : " + nbDesExpertDuCombat_combat + "/" + nbDesExpertDuCombat_combat_max + "<br>");
         }
         var autresAttributs = charAttribute(charId, 'attributsDeStatut');
         autresAttributs.forEach(function(attr) {
@@ -21750,14 +21757,15 @@ var COFantasy = COFantasy || function() {
         case 'sortilege':
           options[opt[0]] = true;
           return;
-        case "feu":
-        case "froid":
-        case "acide":
-        case "electrique":
-        case "sonique":
-        case "poison":
-        case "maladie":
-        case "argent":
+        case 'feu':
+        case 'froid':
+        case 'acide':
+        case 'electrique':
+        case 'sonique':
+        case 'poison':
+        case 'maladie':
+        case 'argent':
+        case 'energie':
           if (options.additionalDmg) {
             var l = options.additionalDmg.length;
             if (l > 0) {
@@ -21767,8 +21775,8 @@ var COFantasy = COFantasy || function() {
             }
           } else options.type = opt[0];
           return;
-        case "nature":
-        case "naturel":
+        case 'nature':
+        case 'naturel':
           options.nature = true;
           return;
         case 'vampirise':
@@ -26452,8 +26460,8 @@ var COFantasy = COFantasy || function() {
   function appliquerDevierLesCoups(cible, test, options, evt) {
     utiliseCapacite(cible, test, evt);
     cible.extraRDBouclier =
-        ficheAttributeAsInt(cible, 'DEFBOUCLIER', 0) *
-        ficheAttributeAsInt(cible, 'DEFBOUCLIERON', 1);
+      ficheAttributeAsInt(cible, 'DEFBOUCLIER', 0) *
+      ficheAttributeAsInt(cible, 'DEFBOUCLIERON', 1);
     removePreDmg(options, cible, 'devierLesCoups');
   }
 
@@ -29879,12 +29887,16 @@ var COFantasy = COFantasy || function() {
     var deExpertise = rollDePlus(6);
     var playerId = getPlayerIdFromMsg(msg);
     var explications = [];
-    testOppose("bouculer", expert, "FOR", { bonus: deExpertise.val}, cible, "FOR", {}, explications, evt, function(resultat, crit, rt1, rt2) {
-      var display = startFramedDisplay(playerId, "Bousculer", expert, {perso2 : cible});
+    testOppose("bouculer", expert, "FOR", {
+      bonus: deExpertise.val
+    }, cible, "FOR", {}, explications, evt, function(resultat, crit, rt1, rt2) {
+      var display = startFramedDisplay(playerId, "Bousculer", expert, {
+        perso2: cible
+      });
       explications.push("Dé d'expertise : " + deExpertise.roll);
       if (resultat === 1) {
         addLineToFramedDisplay(display, cible.tokName + " est repoussé de " +
-          Math.ceil(deExpertise.val/2) + " mètre" + (deExpertise.val > 1 ? "s" : "") + "<br/>S'il est acculé : " +
+          Math.ceil(deExpertise.val / 2) + " mètre" + (deExpertise.val > 1 ? "s" : "") + "<br/>S'il est acculé : " +
           boutonSimple("!cof-dmg " + deExpertise.val + " --target " + cmd[2], "Appliquer " + deExpertise.val + " DM"));
         setState(cible, "renverse", "true", evt);
       } else {
