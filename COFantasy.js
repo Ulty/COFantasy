@@ -6255,6 +6255,16 @@ var COFantasy = COFantasy || function() {
           valeur: valeur,
           text: args[1] + ' ' + valeur
         };
+      case 'typeCible':
+        if (args.length < 2) {
+          error("Il manque le type de la cible", args);
+          return;
+        }
+        return {
+          type: 'typeCible',
+          race: args[1],
+          text: args[1]
+        };
       case 'deAttaque':
         if (args.length < 2) {
           error("condition non reconnue", args);
@@ -7038,10 +7048,10 @@ var COFantasy = COFantasy || function() {
           if (scope.mana === undefined) scope.mana = 0;
           scope.mana += mana;
           break;
-        case "tempeteDeMana":
+        case 'tempeteDeMana':
           parseTempeteDeMana(cmd, options);
           return;
-        case "rang":
+        case 'rang':
           if (cmd.length < 2) {
             error("Usage : --rang r", cmd);
             return;
@@ -7053,8 +7063,8 @@ var COFantasy = COFantasy || function() {
           }
           scope.rang = rang;
           break;
-        case "bonusAttaque":
-        case "bonusContreBouclier":
+        case 'bonusAttaque':
+        case 'bonusContreBouclier':
           if (cmd.length < 2) {
             error("Usage : --" + cmd[0] + " b", cmd);
             return;
@@ -7737,7 +7747,7 @@ var COFantasy = COFantasy || function() {
       case 'attribut':
         return (attributeAsBool(attaquant, cond.attribute));
       case 'attributCible':
-        var resAttrCible = true;
+        let resAttrCible = true;
         if (cond.valeur === undefined) {
           cibles.forEach(function(target) {
             if (resAttrCible && !attributeAsBool(target, cond.attribute))
@@ -7768,11 +7778,41 @@ var COFantasy = COFantasy || function() {
         }
         return resAttrCible;
       case 'predicatCible':
-        let res = cibles.every(function(target) {
+        let resp = cibles.every(function(target) {
           if (cond.valeur === undefined) return predicateAsBool(target, cond.predicat);
           return predicateAsBool(target, cond.predicat) == cond.valeur;
         });
-        return res;
+        return resp;
+      case 'typeCible':
+        let rest = cibles.every(function(target) {
+          switch (cond.race) {
+            case 'animal':
+              return estAnimal(target);
+            case 'demon':
+            case 'démon':
+              return estDemon(target);
+            case 'drow':
+            case 'elfe-noir':
+              return estElfeNoir(target);
+            case 'fee':
+            case 'fée':
+              return estFee(target);
+            case 'géant':
+            case 'geant':
+              return estGeant(target);
+            case 'gobelin':
+              return estGobelin(target);
+            case 'insecte':
+              return estInsecte(target);
+            case 'mauvais':
+              return estMauvais(target);
+            case 'mort-vivant':
+              return estMortVivant(target);
+            default:
+              return raceIs(target, cond.race) || predicateAsBool(target, cond.race);
+          }
+        });
+        return rest;
       case 'deAttaque':
         if (options && options.auto) return false;
         if (deAttaque === undefined) {
@@ -7927,6 +7967,7 @@ var COFantasy = COFantasy || function() {
         case 'etatCible':
         case 'attributCible':
         case 'predicatCible':
+        case 'typeCible':
           if (target === undefined) {
             callIfAllDone(etatParent, callback);
             return true;
@@ -11329,7 +11370,7 @@ var COFantasy = COFantasy || function() {
     };
     afficherOptionsAttaque(attaquant, opt_display);
     //On crée un display sans le header
-    let display = 
+    let display =
       startFramedDisplay(undefined, "Attaque " + type + " possible", attaquant, opt_display);
     cibles.forEach(function(target) {
       target.tokName = target.tokName || target.token.get('name');
@@ -34037,6 +34078,10 @@ var COFantasy = COFantasy || function() {
       iterSelected(selected, function(perso) {
         if (treatedChars.has(perso.charId)) return;
         treatedChars.add(perso.charId);
+        if (!charAttributeAsBool(perso, 'xp')) {
+          sendPlayer(msg, perso.token.get('name') + " déjà converti (pas d'attribut d'xp)");
+          return;
+        }
         let attributes = findObjs({
           _type: 'attribute',
           _characterid: perso.charId,
@@ -34065,6 +34110,10 @@ var COFantasy = COFantasy || function() {
                 setFicheAttr(perso, 'sexe', 'F', evt);
                 c = c.substring(7);
                 attr.set('current', c);
+              } else if (c.startsWith('Male ')) {
+                setFicheAttr(perso, 'sexe', 'M', evt);
+                c = c.substring(5);
+                attr.set('current', c);
               }
               changeAttributeName(attr, 'profil', evt);
               return;
@@ -34075,9 +34124,9 @@ var COFantasy = COFantasy || function() {
               let hpNote = attr.get('current');
               if (hpNote.startsWith('fast healing ')) {
                 let n = parseInt(hpNote.substring(13));
-                if (!isNaN(n) && n >0) {
+                if (!isNaN(n) && n > 0) {
                   setTokenAttr(perso, 'vitaliteSurnaturelle', n, evt, optAttr);
-                  let index = 13 + (''+n).length;
+                  let index = 13 + ('' + n).length;
                   hpNote = hpNote.substring(index);
                 }
               }
@@ -34148,28 +34197,28 @@ var COFantasy = COFantasy || function() {
                 }
                 switch (res[0]) {
                   case 'acid':
-                    if (rd === '') rd = 'acide:'+resVal;
-                    else rd += ', acide:'+resVal;
+                    if (rd === '') rd = 'acide:' + resVal;
+                    else rd += ', acide:' + resVal;
                     return;
                   case 'cold':
-                    if (rd === '') rd = 'froid:'+resVal;
-                    else rd += ', froid:'+resVal;
+                    if (rd === '') rd = 'froid:' + resVal;
+                    else rd += ', froid:' + resVal;
                     return;
                   case 'disease':
-                    if (rd === '') rd = 'maladie:'+resVal;
-                    else rd += ', maladie:'+resVal;
+                    if (rd === '') rd = 'maladie:' + resVal;
+                    else rd += ', maladie:' + resVal;
                     return;
                   case 'electricity':
-                    if (rd === '') rd = 'electrique:'+resVal;
-                    else rd += ', electrique:'+resVal;
+                    if (rd === '') rd = 'electrique:' + resVal;
+                    else rd += ', electrique:' + resVal;
                     return;
                   case 'fire':
-                    if (rd === '') rd = 'feu:'+resVal;
-                    else rd += ', feu:'+resVal;
+                    if (rd === '') rd = 'feu:' + resVal;
+                    else rd += ', feu:' + resVal;
                     return;
                   case 'poison':
-                    if (rd === '') rd = 'poison:'+resVal;
-                    else rd += ', poison:'+resVal;
+                    if (rd === '') rd = 'poison:' + resVal;
+                    else rd += ', poison:' + resVal;
                     return;
                   default:
                     log("Résistance à " + res[0] + " non traitée");
@@ -34486,6 +34535,7 @@ var COFantasy = COFantasy || function() {
             case 'ac_flatfooted':
             case 'ac_notes':
             case 'ac_touch':
+            case 'alignment':
             case 'ask_modifier':
             case 'ask_atk_modifier':
             case 'ask_dmg_modifier':
@@ -34493,9 +34543,12 @@ var COFantasy = COFantasy || function() {
             case 'ask_public_roll':
             case 'ask_whisper_roll':
             case 'bab_multi':
+            case 'class_favored':
+            case 'class1_level':
             case 'cmb_mod':
             case 'cmd_mod':
             case 'encumbrance':
+            case 'encumbrance_ability_maximum':
             case 'encumbrance_size':
             case 'encumbrance_load_light':
             case 'encumbrance_load_medium':
@@ -34504,6 +34557,7 @@ var COFantasy = COFantasy || function() {
             case 'fob_multi':
             case 'hd':
             case 'hd_roll':
+            case 'level':
             case 'npc':
             case 'npc_speed':
             case 'npcdrop_name':
@@ -34589,6 +34643,12 @@ var COFantasy = COFantasy || function() {
                       ennemiJure = 'gobelin';
                       pasDEnnemi = false;
                     } else ennemiJure += ', gobelin';
+                    break;
+                  case 'elves':
+                    if (pasDEnnemi) {
+                      ennemiJure = 'elfe';
+                      pasDEnnemi = false;
+                    } else ennemiJure += ', elfe';
                     break;
                   default:
                     if (!e.startsWith('+')) {
@@ -34752,7 +34812,11 @@ var COFantasy = COFantasy || function() {
             case 'Defect Arrows':
               predicats += 'paradeDeProjectiles ';
               break;
+            case 'Point-Blank Shot':
+              predicats += 'tirPrecis:1 ';
+              break;
             default:
+              if (feat.name.startsWith('Wepon Focus (')) continue;
               notes += feat.name + ' : ';
               if (feat.benefits) notes += feat.benefits + '\n';
               else if (feat.description) notes += feat.description + '\n';
