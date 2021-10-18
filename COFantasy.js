@@ -11471,7 +11471,7 @@ var COFantasy = COFantasy || function() {
   function dealDamage(target, dmg, otherDmg, evt, crit, options, explications, displayRes) {
     if (target.tokName === undefined) target.tokName = target.token.get('name');
     if (options === undefined) options = {};
-    var expliquer = function(msg) {
+    let expliquer = function(msg) {
       if (explications) explications.push(msg);
       else sendPerso(target, msg);
     };
@@ -11483,7 +11483,7 @@ var COFantasy = COFantasy || function() {
       attributeAsBool(target, 'ombreMortelle') ||
       (options.aoe === undefined &&
         attributeAsBool(target, 'formeGazeuse'))) {
-      expliquer("L'attaque passe à travers de " + target.token.get('name'));
+      expliquer("L'attaque passe à travers de " + target.tokName);
       if (displayRes) displayRes('0', 0, 0);
       return 0;
     }
@@ -11492,6 +11492,11 @@ var COFantasy = COFantasy || function() {
         if (displayRes) displayRes('0', 0, 0);
         return 0;
       }
+    }
+    if (!options.magique && !options.sortilege && predicateOrAttributeAsBool(target, 'immunite_nonMagique')) {
+      expliquer("L'attaque ne semble pas affecter "+target.tokName);
+      if (displayRes) displayRes('0', 0, 0);
+      return 0;
     }
     var dmgCoef = options.dmgCoef || 1;
     if (target.dmgCoef) dmgCoef += target.dmgCoef;
@@ -15622,6 +15627,66 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function mitigate(target, dmgType, divide, zero, expliquer, options) {
+    if (!options.sortilege && attributeAsBool(target, 'flou')) {
+      divide();
+    }
+    if (options.attaqueMentale && predicateAsBool(target, 'bouclierPsi')) {
+      divide();
+    }
+    if (options.aoe &&
+      (predicateAsBool(target, 'protectionDMZone') ||
+        predicateAsBool(target, 'protectionDMZone_' + dmgType))) {
+      divide();
+      expliquer(target.token.get('name') + " est protégé contre les dégâts de zone");
+    }
+    if (predicateOrAttributeAsBool(target, 'resistanceA_' + dmgType) || predicateAsBool(target, 'diviseEffet_' + dmgType)) {
+      divide();
+    }
+    if (predicateOrAttributeAsBool(target, 'resistanceA_nonMagique') && !options.magique && !options.sortilege) {
+      divide();
+    }
+    if (estElementaire(dmgType)) {
+      if (predicateAsBool(target, 'invulnerable')) {
+        divide();
+      }
+      switch (dmgType) {
+        case 'froid':
+          if (attributeAsBool(target, 'masqueMortuaire')) divide();
+          if (attributeAsBool(target, 'mutationFourrureViolette')) divide();
+          break;
+        case 'feu':
+          if (attributeAsBool(target, 'presenceGlaciale')) divide();
+          if (attributeAsBool(target, 'mutationEcaillesRouges')) divide();
+          break;
+        case 'acide':
+          if (attributeAsBool(target, 'mutationEcaillesRouges')) divide();
+          break;
+        case 'electrique':
+          if (attributeAsBool(target, 'mutationFourrureViolette')) divide();
+          break;
+      }
+    } else if (dmgType == 'poison' || dmgType == 'maladie') {
+      if (predicateAsBool(target, 'invulnerable') ||
+        predicateAsBool(target, 'creatureArtificielle') ||
+        estNonVivant(target)) {
+        zero();
+      } else if (attributeAsBool(target, 'mutationSangNoir')) {
+        divide();
+      }
+    } else {
+      if (options.tranchant && predicateOrAttributeAsBool(target, 'resistanceA_tranchant')) {
+        divide();
+      } else if (options.percant && predicateOrAttributeAsBool(target, 'resistanceA_percant')) {
+        divide();
+      } else if (options.contondant && predicateOrAttributeAsBool(target, 'resistanceA_contondant')) {
+        divide();
+      }
+      if (attributeAsBool(target, 'armureMagique')) {
+        divide();
+      }
+    }
+  }
   //On a déterminé les DM du type principal(possiblement après save des dmgExtra, maintenant on applique les résistances, puis on ajoute les DM d'autres types
   function dealDamageAfterDmgExtra(target, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes) {
     if (options.pointsVitaux && dmgTotal > 0) { //dégâts retardés pour une pression mortelle
@@ -15698,7 +15763,7 @@ var COFantasy = COFantasy || function() {
           dmgTotal = 0;
         }
       }
-      var additionalType = {
+      let additionalType = {
         magique: options.magique,
         tranchant: options.tranchant,
         percant: options.percant,
@@ -15706,75 +15771,14 @@ var COFantasy = COFantasy || function() {
         sortilege: options.sortilege,
         hache: options.hache,
       };
-      var remainingRD = 0;
+      let remainingRD = 0;
       if (rdMain < 0) remainingRD = rdMain;
-      var resSauf = applyRDSauf(rd.sauf, mainDmgType, dmgTotal, dmgDisplay, additionalType, target, showTotal, remainingRD);
+      let resSauf = applyRDSauf(rd.sauf, mainDmgType, dmgTotal, dmgDisplay, additionalType, target, showTotal, remainingRD);
       dmgTotal = resSauf.total;
       dmgDisplay = resSauf.display;
       showTotal = resSauf.showTotal;
-      var invulnerable = predicateAsBool(target, 'invulnerable');
-      var mitigate = function(dmgType, divide, zero) {
-        if (!options.sortilege && attributeAsBool(target, 'flou')) {
-          divide();
-        }
-        if (options.attaqueMentale && predicateAsBool(target, 'bouclierPsi')) {
-          divide();
-        }
-        if (options.aoe &&
-          (predicateAsBool(target, 'protectionDMZone') ||
-            predicateAsBool(target, 'protectionDMZone_' + dmgType))) {
-          divide();
-          expliquer(target.token.get('name') + " est protégé contre les dégâts de zone");
-        }
-        if (predicateOrAttributeAsBool(target, 'resistanceA_' + dmgType) || predicateAsBool(target, 'diviseEffet_' + dmgType)) {
-          divide();
-        }
-        if (predicateOrAttributeAsBool(target, 'resistanceA_nonMagique') && !options.magique && !options.sortilege) {
-          divide();
-        }
-        if (estElementaire(dmgType)) {
-          if (invulnerable) {
-            divide();
-          }
-          switch (dmgType) {
-            case 'froid':
-              if (attributeAsBool(target, 'masqueMortuaire')) divide();
-              if (attributeAsBool(target, 'mutationFourrureViolette')) divide();
-              break;
-            case 'feu':
-              if (attributeAsBool(target, 'presenceGlaciale')) divide();
-              if (attributeAsBool(target, 'mutationEcaillesRouges')) divide();
-              break;
-            case 'acide':
-              if (attributeAsBool(target, 'mutationEcaillesRouges')) divide();
-              break;
-            case 'electrique':
-              if (attributeAsBool(target, 'mutationFourrureViolette')) divide();
-              break;
-          }
-        } else if (dmgType == 'poison' || dmgType == 'maladie') {
-          if (invulnerable ||
-            predicateAsBool(target, 'creatureArtificielle') ||
-            estNonVivant(target)) {
-            zero();
-          } else if (attributeAsBool(target, 'mutationSangNoir')) {
-            divide();
-          }
-        } else {
-          if (options.tranchant && predicateOrAttributeAsBool(target, 'resistanceA_tranchant')) {
-            divide();
-          } else if (options.percant && predicateOrAttributeAsBool(target, 'resistanceA_percant')) {
-            divide();
-          } else if (options.contondant && predicateOrAttributeAsBool(target, 'resistanceA_contondant')) {
-            divide();
-          }
-          if (attributeAsBool(target, 'armureMagique')) {
-            divide();
-          }
-        }
-      };
       // Damage mitigaters for main damage
-      mitigate(mainDmgType,
+      mitigate(target, mainDmgType,
         function() {
           dmgTotal = Math.ceil(dmgTotal / 2);
           if (dmgExtra) dmgDisplay = "(" + dmgDisplay + ")";
@@ -15786,7 +15790,7 @@ var COFantasy = COFantasy || function() {
             dmgDisplay += '-' + dmgTotal;
             dmgTotal = 0;
           }
-        });
+        }, expliquer, options);
     }
     var dmSuivis = {
       drain: 0
@@ -15886,14 +15890,14 @@ var COFantasy = COFantasy || function() {
                     dm = 0;
                   }
                 }
-                var additionalType = {
+                let additionalType = {
                   sortilege: options.sortilege,
                   magique: options.magique
                 };
-                var resSauf = applyRDSauf(rd.sauf, dmgType, dm, typeDisplay, additionalType, target);
+                let resSauf = applyRDSauf(rd.sauf, dmgType, dm, typeDisplay, additionalType, target);
                 dm = resSauf.total;
                 typeDisplay = resSauf.display;
-                mitigate(dmgType,
+                mitigate(target, dmgType,
                   function() {
                     dm = Math.ceil(dm / 2);
                     if (dmgParType[dmgType].length > 1) typeDisplay = "(" + typeDisplay + ")";
@@ -15904,7 +15908,7 @@ var COFantasy = COFantasy || function() {
                       typeDisplay += "-" + dm;
                       dm = 0;
                     }
-                  });
+                  }, expliquer, options);
                 dmgTotal += dm;
                 dmgDisplay += "+" + typeDisplay;
                 if (_.has(dmSuivis, dmgType)) {
