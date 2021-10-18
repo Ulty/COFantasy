@@ -9,6 +9,7 @@
 * Implémentation de base de la voie de l'expert du combat
 
 ### Autres améliorations
+* Possibilité d'utiliser --effet etat sans argument de durée.
 * Support pour les affaiblissements de caractéristiques
 * Ajout d'une condition d'attaque typeCible
 * Ajout d'un type de dégâts "énergie", pour des settings science fiction.

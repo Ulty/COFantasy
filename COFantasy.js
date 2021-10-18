@@ -6763,12 +6763,12 @@ var COFantasy = COFantasy || function() {
             error("Il manque un argument à l'option --effet de !cof-attack", cmd);
             return;
           }
-          var effet = cmd[1];
-          if (cof_states[effet]) { //remplacer par sa version effet temporaire
+          let effet = cmd[1];
+          if (cof_states[effet] && cmd.length > 2) { //remplacer par sa version effet temporaire
             effet += 'Temp';
           }
           if (estEffetTemp(effet)) {
-            var duree = 1;
+            let duree = 1;
             if (cmd.length > 2) {
               duree = parseInt(cmd[2]);
               if (isNaN(duree) || duree < 1) {
@@ -6778,7 +6778,7 @@ var COFantasy = COFantasy || function() {
                 return;
               }
             }
-            var m = messageOfEffetTemp(effet);
+            let m = messageOfEffetTemp(effet);
             lastEtat = {
               effet: effet,
               duree: duree,
