@@ -309,6 +309,7 @@
               <p>Toutes les attaques ayant une portée non nulles sont considérées par le script comme des attaques à distance.</p>
               <p>Le test d'attaque à distance tient compte de la portée (malus de -1 à -5 si distance entre portée et deux fois cette valeur), ainsi que des tokens sur le trajet de l'attaque. Une attaque de trop loin ne porte jamais.</p>
               <p>Utiliser une attaque fait rentrer l'attaquant en combat (et le rajoute au turn tracker).</p>
+              </div>
               <h4 class="text-secondary">Options pour l'attaque&nbsp;:</h4>
               <div class="decalage">
                 Toutes les options sans arguments peuvent être directement utilisées comme modificateurs dans le liste des modifcateurs d'une attaque.
@@ -737,6 +738,13 @@
                   <p>À noter qu'un personnage ayant un <a href=#predicats>prédicat</a> nommé <code>immunite_<i>etat</i></code> ne pourra pas être mis dans l'état <i>etat</i>.</p>
                   <p>Enfin, il est possible de faire réaliser un jet pour se libérer d'un état, en utilisant la commande <code>!cof-save-state <i>etat</i> <i>carac</i> <i>seuil</i></code>. Il est possible de remplacer <i>seuil</i> par une id de token pour faire faire un test en opposition avec ce token. On peut aussi passer la caractéristique et le seuil en argument à <code>!cof-set-state</code> pour proposer le jet à chaque fois qu'on affiche les <a href="#actions_du_tour">actions du tour</a> ou qu'on affiche le statut du personnage.</p>
                 </div>
+                <h4 class="text-secondary">Affaiblissements de caractéristiques</h4>
+                <div class="decalage">
+                  <p>
+                  <code>!cof-affaiblir-carac <i>carac</i> <i>valeur</i></code> permet d'affaiblir temporairement une caractéristique (force, dextérité, constitution, intelligence, sagesse ou charisme) d'une valeur positive. Une caractéristique affaiblie remonte de 1 après chaque nuit de repos. Le sort de régénération permet de récupérer 1d4 points d'une seule caractéristique physique (d'abord constitution, puis force puis dextérité). Le sort délivrance permet de récupérer 1d4 point d'une seule caractéristique, et comme indiqué dans les règles, le sort de guérison annule tous les affaiblissements de caractéritiques. Enfin le script propose une commande dédiée, <code>!cof-soigner-affaiblissement <i>carac</i> <i>valeur</i></code> pour soigner les affaiblissements.
+                  </p>
+                  <p> À noter que la diminution de constitution fait baisser les points de vie maximum, et qu'une constitution de 0 conduit à la mort.</p>
+                </div>
                 <h4 class="text-secondary">Autres bufs et debufs</h4>
                 <div class="decalage">
                   <p><code>!cof-buf-def <i>n</i></code> : buf ou debuf de la DEF.</p>
@@ -776,11 +784,10 @@
                 <div class="decalage">
                   <p>On peut utiliser l'effet temporaire générique <code>messageRetarde(<i>nom</i>)</code> pour programmer un message qui sera affiché après un certain nombre de tours. Au bout de ce nombre de tours, le nom est affiché, ainsi que le texte de valeur (avec <code>--valeur</code> si besoin). La syntaxe est <code>!cof-effet-temp messageRetarde(<i>nom</i>) <i>duree</i> --valeur <i>message</i></code>. Si vous avez besoin d'un message qui contienne des espaces, remplacez les espaces par des <code>_</code>.</p>
                   <p>On peut aussi déclencher un effet après un certain nombre de tour avec l'effet temporaire générique <code>effetRetarde(<i>effet</i>)</code>. Après la durée de l'effet retardé, si <i>effet</i> est un état, la cible est mise dans cet état, si c'est un effet temporaire, on lui applique cet effet pour une durée de 1 tour, ou si un argument <code>--valeur</code> a été donné, il sera utilisé comme durée. Enfin si ce n'est ni l'un ni l'autre, un attribut avec le nom <i>effet</i> sera créé, de valeur courante <code>true</code>, ou bien si un argument <code>--valeur</code> a été donné, cette valeur sera utilisée comme valeur courante de l'attribut <i>effet</i>.</p>
+              </div>
                 <h4 class="text-secondary">Prédicats : <code>!cof-set-predicate</code></h4>
                 <div class="decalage">
                   <p>Il est possible d'ajouter ou de retirer un <a href=#predicats>prédicat</a> avec la fonction <code>!cof-set-predicate <i>nom</i></code>, optionellement suivi de <code>true</code> ou <code>false</code>.</p>
-                </div>
-              </div>
                 </div>
                 <h4 class="text-secondary">Autres attributs : <code>!cof-set-attribute</code></h4>
                 <div class="decalage">
