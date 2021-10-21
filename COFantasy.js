@@ -6389,8 +6389,8 @@ var COFantasy = COFantasy || function() {
 
   //!cof-attack id_attaquant id_cible label_attaque [options]
   function parseAttack(msg) {
-    var optArgs = msg.content.split(' --');
-    var args = optArgs[0].split(' ');
+    let optArgs = msg.content.split(' --');
+    let args = optArgs[0].split(' ');
     args = args.filter(function(a) {
       return a !== '';
     });
@@ -6399,24 +6399,24 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-attack: " + msg.content, args);
       return;
     }
-    var attaquant = persoOfId(args[1]);
+    const attaquant = persoOfId(args[1]);
     if (attaquant === undefined) {
       error("Le premier argument de !cof-attack n'est pas un token valide", args[1]);
       return;
     }
-    var targetToken = getObj('graphic', args[2]);
+    let targetToken = getObj('graphic', args[2]);
     if (targetToken === undefined) {
       error("le second argument de !cof-attack doit être un token", args[2]);
       return;
     }
-    var attackLabel;
+    let attackLabel;
     if (args.length > 3) {
       attackLabel = args.slice(3).join(' ').trim();
     }
-    var weaponStats = {};
-    var attaqueArray;
+    let weaponStats = {};
+    let attaqueArray;
     try {
-      attaqueArray = JSON.parse(attackLabel);
+      attaqueArray = JSON.parse(attackLabel);//plus documenté depuis 2020
     } catch (e) {}
     if (Array.isArray(attaqueArray) && attaqueArray.length > 4 &&
       attaqueArray[1].length > 1 && attaqueArray[3].length > 3) {
@@ -6456,7 +6456,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     //Ajout des options de l'arme
-    var wo = weaponStats.options.trim();
+    let wo = weaponStats.options.trim();
     //Pour la partie options, il est possible qu'elle soit déjà passée en ligne de commande
     if (wo !== '' && (optArgs.length < 1 || !optArgs[0].startsWith('attaqueOptions'))) {
       wo = ' ' + wo;
@@ -7297,15 +7297,28 @@ var COFantasy = COFantasy || function() {
         case 'diviseDmg':
           scope.diviseDmg = (scope.diviseDmg || 1);
           if (cmd.length > 1) {
-            var diviseDmg = parseInt(cmd[1]);
-            if (isNaN(diviseDmg)) {
+            let divise = parseInt(cmd[1]);
+            if (isNaN(divise)) {
               error("L'option --diviseDmg attend un entier", cmd);
               return;
             }
-            scope.diviseDmg *= diviseDmg;
+            scope.diviseDmg *= divise;
             return;
           }
           scope.diviseDmg *= 2; //Par défaut, divise par 2
+          return;
+        case 'divisePortee':
+          scope.divisePortee = (scope.divisePortee || 1);
+          if (cmd.length > 1) {
+            let divise = parseInt(cmd[1]);
+            if (isNaN(divise)) {
+              error("L'option --divisePortee attend un entier", cmd);
+              return;
+            }
+            scope.divisePortee *= divise;
+            return;
+          }
+          scope.divisePortee *= 2; //Par défaut, divise par 2
           return;
         case 'incrCritCoef':
           scope.critCoef = (scope.critCoef || 1);
@@ -7334,13 +7347,13 @@ var COFantasy = COFantasy || function() {
           scope = ifThen;
           return;
         case 'ifSaveFails':
-          var save = parseSave(cmd);
+          let save = parseSave(cmd);
           if (save === undefined) return;
-          var ifSaveThen = {
+          let ifSaveThen = {
             parentScope: scope
           };
           scope.ite = scope.ite || [];
-          var ifSaveCond = {
+          let ifSaveCond = {
             type: 'save',
             saveCond: save,
             typeDmg: lastType
@@ -10294,6 +10307,9 @@ var COFantasy = COFantasy || function() {
     }
     if (options.portee !== undefined) {
       weaponStats.portee = options.portee;
+    }
+    if (options.divisePortee) {
+      weaponStats.portee /= options.divisePortee;
     }
     if (options.modifiePortee) {
       weaponStats.portee += options.modifiePortee;

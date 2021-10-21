@@ -10,6 +10,7 @@
 * Implémentation de base de la voie de l'expert du combat
 
 ### Autres améliorations
+* --divisePortee permet de diviser la portée d'une attaque.
 * Possibilité d'utiliser --effet etat sans argument de durée.
 * Support pour les affaiblissements de caractéristiques
 * Ajout d'une condition d'attaque typeCible
