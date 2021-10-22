@@ -22975,7 +22975,10 @@ var COFantasy = COFantasy || function() {
           return;
         }
         if ((options.magique || options.mana) && predicateAsBool(perso, 'actionLibre') &&
-          (effet == 'immobiliseTep' || effet == 'paralyseTemp' || effet == 'ralentiTemp')) {
+          (effet == 'immobiliseTemp' ||
+            effet == 'paralyseTemp' ||
+            effet == 'ralentiTemp' ||
+            effet == 'toiles')) {
           sendPerso(perso, "reste libre de ses mouvements !");
           return;
         }
