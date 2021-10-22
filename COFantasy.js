@@ -4798,6 +4798,8 @@ var COFantasy = COFantasy || function() {
       if (bonusCompetence === undefined) {
         options.bonusAttrs = options.bonusAttrs || [];
         options.bonusAttrs.push(options.competence.toLowerCase().replace(/ /g, '_'));
+        options.bonusPreds = options.bonusPreds || [];
+        options.bonusPreds.push(options.competence.toLowerCase().replace(/ /g, '_'));
       } else {
         let msgComp = "Compétence " + options.competence + " : ";
         if (bonusCompetence === 0) {
@@ -5106,39 +5108,39 @@ var COFantasy = COFantasy || function() {
   // - echecCritique, critique pour indiquer si 1 ou 20
   // - roll: le inlineroll
   function jetCaracteristique(personnage, carac, options, testId, evt, callback) {
-    var explications = [];
-    var bonusCarac = bonusTestCarac(carac, personnage, options, testId, evt, explications);
-    var carSup = nbreDeTestCarac(carac, personnage);
-    var jetCache = ficheAttributeAsBool(personnage, 'jets_caches', false);
-    var de = computeDice(personnage, {
+    let explications = [];
+    let bonusCarac = bonusTestCarac(carac, personnage, options, testId, evt, explications);
+    let carSup = nbreDeTestCarac(carac, personnage);
+    let jetCache = ficheAttributeAsBool(personnage, 'jets_caches', false);
+    let de = computeDice(personnage, {
       nbDe: carSup,
       carac: carac,
       dice: options.dice
     });
     if (estAffaibli(personnage) && predicateAsBool(personnage, 'insensibleAffaibli')) bonusCarac -= 2;
-    var bonusText = '';
+    let bonusText = '';
     if (bonusCarac > 0) {
       bonusText = ' + ' + bonusCarac;
     } else if (bonusCarac < 0) {
       bonusText = ' - ' + (-bonusCarac);
     }
-    var plageEC = 1;
-    var plageECText = '1';
+    let plageEC = 1;
+    let plageECText = '1';
     if (options && options.plageEchecCritique) {
       plageEC = options.plageEchecCritique;
       if (plageEC > 1) plageECText = '<' + plageEC;
     }
-    var rollExpr = "[[" + de + "cs20cf" + plageECText + "]]";
+    let rollExpr = "[[" + de + "cs20cf" + plageECText + "]]";
     sendChat("", rollExpr, function(res) {
       options.rolls = options.rolls || {};
-      var roll = options.rolls[testId] || res[0].inlinerolls[0];
+      let roll = options.rolls[testId] || res[0].inlinerolls[0];
       evt.action = evt.action || {};
       evt.action.rolls = evt.action.rolls || {};
       evt.action.rolls[testId] = roll;
       roll.token = personnage.token;
-      var d20roll = roll.results.total;
-      var rtext = jetCache ? d20roll + bonusCarac : buildinline(roll) + bonusText;
-      var rt = {
+      let d20roll = roll.results.total;
+      let rtext = jetCache ? d20roll + bonusCarac : buildinline(roll) + bonusText;
+      let rt = {
         total: d20roll + bonusCarac,
       };
       if (d20roll <= plageEC) {
@@ -5157,7 +5159,7 @@ var COFantasy = COFantasy || function() {
 
   function jetPerso(perso, caracteristique, difficulte, titre, playerId, options) {
     options = options || {};
-    var evt = options.evt || {
+    const evt = options.evt || {
       type: 'jetPerso',
       personnage: perso,
       action: {
@@ -5169,11 +5171,11 @@ var COFantasy = COFantasy || function() {
       }
     };
     addEvent(evt);
-    var optionsDisplay = {
+    let optionsDisplay = {
       secret: options.secret
     };
-    var display = startFramedDisplay(playerId, titre, perso, optionsDisplay);
-    var testId = 'jet_' + perso.charId + '_' + caracteristique;
+    const display = startFramedDisplay(playerId, titre, perso, optionsDisplay);
+    const testId = 'jet_' + perso.charId + '_' + caracteristique;
     if (difficulte === undefined) {
       jetCaracteristique(perso, caracteristique, options, testId, evt,
         function(rt, explications) {
@@ -5806,7 +5808,8 @@ var COFantasy = COFantasy || function() {
     var opts = msg.content.split(' --');
     var cmd = opts.shift().split(' ');
     var options = {
-      bonusAttrs: []
+      bonusAttrs: [],
+      bonusPreds: []
     };
     opts.forEach(function(o) {
       var args = o.split(' ');
@@ -6416,7 +6419,7 @@ var COFantasy = COFantasy || function() {
     let weaponStats = {};
     let attaqueArray;
     try {
-      attaqueArray = JSON.parse(attackLabel);//plus documenté depuis 2020
+      attaqueArray = JSON.parse(attackLabel); //plus documenté depuis 2020
     } catch (e) {}
     if (Array.isArray(attaqueArray) && attaqueArray.length > 4 &&
       attaqueArray[1].length > 1 && attaqueArray[3].length > 3) {
@@ -11510,7 +11513,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (!options.magique && !options.sortilege && predicateOrAttributeAsBool(target, 'immunite_nonMagique')) {
-      expliquer("L'attaque ne semble pas affecter "+target.tokName);
+      expliquer("L'attaque ne semble pas affecter " + target.tokName);
       if (displayRes) displayRes('0', 0, 0);
       return 0;
     }
