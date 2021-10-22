@@ -22963,7 +22963,7 @@ var COFantasy = COFantasy || function() {
             effet == 'prisonVegetale' ||
             effet == 'toiles' ||
             effet == 'foretVivanteEnnemie' ||
-            ((options.magique || options.mana) &&
+            ((options.magique || options.mana != undefined) &&
               (effet == 'apeureTemp' ||
                 effet == 'endormiTemp' ||
                 effet == 'etourdiTemp' ||
@@ -22974,8 +22974,11 @@ var COFantasy = COFantasy || function() {
           sendPerso(perso, "reste libre de ses mouvements !");
           return;
         }
-        if ((options.magique || options.mana) && predicateAsBool(perso, 'actionLibre') &&
-          (effet == 'immobiliseTep' || effet == 'paralyseTemp' || effet == 'ralentiTemp')) {
+        if ((options.magique || options.mana != undefined) && predicateAsBool(perso, 'actionLibre') &&
+          (effet == 'immobiliseTemp' ||
+            effet == 'paralyseTemp' ||
+            effet == 'ralentiTemp' ||
+            effet == 'toiles')) {
           sendPerso(perso, "reste libre de ses mouvements !");
           return;
         }
