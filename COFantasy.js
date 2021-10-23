@@ -1,6 +1,6 @@
 // Needs the Vector Math scripty
 // ------------------ generateRowID code from the Aaron ---------------------
-var generateUUID = (function() {
+const generateUUID = (function() {
     "use strict";
     let a = 0,
       b = [];
@@ -29583,6 +29583,11 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
     if (limiteRessources(lanceur, options, 'guérison', 'guérison', evt)) return;
     guerisonPerso(cible, evt, lanceur);
+    if (options.messages) {
+      options.messages.forEach(function(m) {
+        sendChat('', m);
+      });
+    }
   }
 
   function armeDeContact(perso, arme, labelArmeDefaut, armeContact) {
