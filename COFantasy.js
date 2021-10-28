@@ -40867,7 +40867,8 @@ on('ready', function() {
         attr,
         predText
       } = getPredicateAttr(charId);
-      predText += 'armeParDefaut:' + arme;
+      predText += 'armeParDefaut';
+      if (arme.trim() !== '') predText += ':'+arme;
       attr.set('current', predText);
     });
     log("Mise à jour de prédicats effectuée");
