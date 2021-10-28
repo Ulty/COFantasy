@@ -9140,6 +9140,18 @@ var COFantasy = COFantasy || function() {
           explications.push(target.tokName + " réduit la distance => +4 en DEF");
       }
     }
+    if (attaquant && predicateAsBool(target, 'insignifiant')) {
+      switch (taillePersonnage(attaquant, 4)) {
+        case 5:
+          defense += 2;
+          explications.push(target.tokName + " insignifiant => +2 en DEF");
+          break;
+        case 6:
+        case 7:
+          defense += 4;
+          explications.push(target.tokName + " insignifiant => +4 en DEF");
+      }
+    }
     if (attributeAsBool(target, 'etreinteImmole')) {
       defense -= 5;
       explications.push(target.tokName + " étreint quelqu'un => -5 en DEF");
