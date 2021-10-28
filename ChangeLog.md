@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.04
 ### Capacités
+* Réaction violente du demi-ogre.
 * Ajout de la capacité Insignifiant de la voie du gnome.
 * Implémentation de l'immunité à tout ce qui n'est pas magique.
 * Support du sort d'animation des objets
