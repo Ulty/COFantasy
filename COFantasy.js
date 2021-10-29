@@ -23062,10 +23062,6 @@ var COFantasy = COFantasy || function() {
     }
     addEvent(evt);
     if (limiteRessources(lanceur, options, effet, effet, evt)) return;
-    entrerEnCombat(lanceur, cibles, explications, evt);
-    explications.forEach(function(e) {
-      sendChat('', e);
-    });
     if (duree > 0) {
       let ef = {
         effet: effet,
@@ -23080,6 +23076,7 @@ var COFantasy = COFantasy || function() {
         attaquant: options.lanceur,
         options: options.optionsEffet
       };
+      let entreEnCombat = false;
       let setOneEffect = function(perso, d) {
         if (options.limiteCibleParJour) {
           let ressource = effet;
@@ -23092,6 +23089,13 @@ var COFantasy = COFantasy || function() {
             return;
           }
           setTokenAttr(perso, ressource, utilisations - 1, evt);
+        }
+        if (!entreEnCombat) {
+          entreEnCombat = true;
+          entrerEnCombat(lanceur, cibles, explications, evt);
+          explications.forEach(function(e) {
+            sendChat('', e);
+          });
         }
         setEffetTemporaire(perso, ef, d, evt, options);
         if (effet.startsWith('forgeron(')) {
@@ -23173,6 +23177,9 @@ var COFantasy = COFantasy || function() {
         }
       });
     } else { //On met fin à l'effet
+      explications.forEach(function(e) {
+        sendChat('', e);
+      });
       var opt = {
         pageId: options.pageId
       };

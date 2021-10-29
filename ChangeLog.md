@@ -15,6 +15,7 @@
 * Prise en compte correcte des malus d'armure et de casques pour les compétences sur la fiche.
 
 ### Autres améliorations
+* !cof-effet-temp ne fait entrer en combat que si au moins une des cibles est effectivement affectée.
 * --divisePortee permet de diviser la portée d'une attaque.
 * Possibilité d'utiliser --effet etat sans argument de durée.
 * Support pour les affaiblissements de caractéristiques
