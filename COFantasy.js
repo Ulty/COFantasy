@@ -21896,24 +21896,24 @@ var COFantasy = COFantasy || function() {
         if (attributeAsBool(perso, 'malediction')) {
           addLineToFramedDisplay(display, "est maudit...");
         }
-        var allAttrs = findObjs({
+        const allAttrs = findObjs({
           _type: 'attribute',
           _characterid: charId
         });
         allAttrs.forEach(function(attr) {
-          var attrName = attr.get('name');
+          const attrName = attr.get('name');
           if (!lie && !attrName.endsWith('_' + name)) return;
           if (estEffetTemp(attrName)) {
-            var effet = effetTempOfAttribute(attr);
-            var mt = messageEffetTemp[effet];
+            let effet = effetTempOfAttribute(attr);
+            let mt = messageEffetTemp[effet];
             if (lie) {
               if (mt.generic) {
                 if (attrName.indexOf(')_') > 0) return;
               } else if (effet != attrName) return;
             }
-            var explEffetMsg = mt.actif;
-            if (stateCOF.options.affichage.val.duree_effets.val) {
-              var effetVal = attr.get('current');
+            let explEffetMsg = mt.actif;
+            if (stateCOF.options.affichage.val.duree_effets.val || playerIsGM(playerId)) {
+              let effetVal = attr.get('current');
               if (parseInt(effetVal)) {
                 explEffetMsg += " (" + effetVal + " tours)";
               } else {
