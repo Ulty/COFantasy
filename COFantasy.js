@@ -4652,6 +4652,18 @@ var COFantasy = COFantasy || function() {
     return bonus;
   }
 
+  function malusArmure(personnage, expliquer, msg) {
+    let malusArmure = 0;
+    if (ficheAttributeAsInt(personnage, 'DEFARMUREON', 1))
+      malusArmure += ficheAttributeAsInt(personnage, 'DEFARMUREMALUS', 0);
+    if (ficheAttributeAsInt(personnage, 'DEFBOUCLIERON', 1))
+      malusArmure += ficheAttributeAsInt(personnage, 'DEFBOUCLIERMALUS', 0);
+    if (expliquer && malusArmure > 0) {
+      expliquer("Armure : -" + malusArmure + msg);
+    }
+    return malusArmure;
+  }
+
   //retourne un entier
   // evt n'est défini que si la caractéristique est effectivement utilisée
   function bonusTestCarac(carac, personnage, options, testId, evt, explications) {
@@ -4781,11 +4793,13 @@ var COFantasy = COFantasy || function() {
       let comp = options.competence.trim().toLowerCase();
       let competences = extractRepeating(personnage, 'competences');
       let bestFit = false;
+      let competenceTrouvee;
       for (let id in competences) {
         if (bestFit) continue;
         let c = competences[id];
         if (c.comp_nom === undefined) continue;
         if (c.comp_nom.trim().toLowerCase() != comp) continue;
+        competenceTrouvee = c;
         bonusCompetence = fieldAsInt(c, 'comp_bonus', 0);
         let compCarac = fieldAsString(c, 'comp_carac', 'FOR');
         if (compCarac == carac) {
@@ -4810,13 +4824,22 @@ var COFantasy = COFantasy || function() {
           else msgComp += bonusCompetence;
         }
         expliquer(msgComp);
+        let malus = fieldAsString(competenceTrouvee, 'comp_malus', '');
+        if (malus == 'armure') {
+          bonus -= malusArmure(personnage, expliquer, '');
+        } else if (malus == 'casque' && ficheAttributeAsBool(personnage, 'casque_on', false)) {
+          let malusCasque = ficheAttributeAsInt(personnage, 'casque_malus', 0);
+          if (malusCasque > 0) {
+            expliquer("Casque : -" + malusCasque);
+            bonus -= malusCasque;
+          }
+        }
       }
-      var bonusGraceFeline;
       switch (comp) {
         case 'acrobatie':
         case 'acrobaties':
           if (predicateAsBool(personnage, 'graceFelineVoleur')) {
-            bonusGraceFeline = modCarac(personnage, 'charisme');
+            let bonusGraceFeline = modCarac(personnage, 'charisme');
             if (bonusGraceFeline > 0) {
               expliquer("Grâce féline : +" + bonusGraceFeline + " en acrobaties");
               bonus += bonusGraceFeline;
@@ -4825,7 +4848,7 @@ var COFantasy = COFantasy || function() {
           break;
         case 'course':
           if (predicateAsBool(personnage, 'graceFelineVoleur')) {
-            bonusGraceFeline = modCarac(personnage, 'charisme');
+            let bonusGraceFeline = modCarac(personnage, 'charisme');
             if (bonusGraceFeline > 0) {
               expliquer("Grâce féline : +" + bonusGraceFeline + " en course");
               bonus += bonusGraceFeline;
@@ -4848,7 +4871,7 @@ var COFantasy = COFantasy || function() {
           break;
         case 'escalade':
           if (predicateAsBool(personnage, 'graceFelineVoleur')) {
-            bonusGraceFeline = modCarac(personnage, 'charisme');
+            let bonusGraceFeline = modCarac(personnage, 'charisme');
             if (bonusGraceFeline > 0) {
               expliquer("Grâce féline : +" + bonusGraceFeline + " en escalade");
               bonus += bonusGraceFeline;
@@ -4881,7 +4904,7 @@ var COFantasy = COFantasy || function() {
         case 'saut':
         case 'sauter':
           if (predicateAsBool(personnage, 'graceFelineVoleur')) {
-            bonusGraceFeline = modCarac(personnage, 'charisme');
+            let bonusGraceFeline = modCarac(personnage, 'charisme');
             if (bonusGraceFeline > 0) {
               expliquer("Grâce féline : +" + bonusGraceFeline + " en saut");
               bonus += bonusGraceFeline;
@@ -4898,15 +4921,7 @@ var COFantasy = COFantasy || function() {
     }
     if (bonusCompetence === undefined) {
       if (carac == 'DEX') {
-        var malusArmure = 0;
-        if (ficheAttributeAsInt(personnage, 'DEFARMUREON', 1))
-          malusArmure += ficheAttributeAsInt(personnage, 'DEFARMUREMALUS', 0);
-        if (ficheAttributeAsInt(personnage, 'DEFBOUCLIERON', 1))
-          malusArmure += ficheAttributeAsInt(personnage, 'DEFBOUCLIERMALUS', 0);
-        if (malusArmure > 0) {
-          expliquer("Armure : -" + malusArmure + " au jet de DEX");
-          bonus -= malusArmure;
-        }
+        bonus -= malusArmure(personnage, expliquer, ' aux jets de DEX');
       }
     }
     // Puis la partie commune
@@ -40868,7 +40883,7 @@ on('ready', function() {
         predText
       } = getPredicateAttr(charId);
       predText += 'armeParDefaut';
-      if (arme.trim() !== '') predText += ':'+arme;
+      if (arme.trim() !== '') predText += ':' + arme;
       attr.set('current', predText);
     });
     log("Mise à jour de prédicats effectuée");

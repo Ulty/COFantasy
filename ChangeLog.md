@@ -11,6 +11,9 @@
 * Ajout du type d'ennemi juré gobelin
 * Implémentation de base de la voie de l'expert du combat
 
+### Corrections de bugs
+* Prise en compte correcte des malus d'armure et de casques pour les compétences sur la fiche.
+
 ### Autres améliorations
 * --divisePortee permet de diviser la portée d'une attaque.
 * Possibilité d'utiliser --effet etat sans argument de durée.
