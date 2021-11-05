@@ -6438,9 +6438,8 @@ var COFantasy = COFantasy || function() {
         });
       });
     }
-    var playerId = getPlayerIdFromMsg(msg);
-    // Optional arguments
-    var options = {
+    const playerId = getPlayerIdFromMsg(msg);
+    const options = {
       sortilege: weaponStats.sortilege,
       hache: weaponStats.hache,
       armeNaturelle: weaponStats.armeNaturelle
@@ -6856,20 +6855,6 @@ var COFantasy = COFantasy || function() {
             }
           }
           scope.etats.push(lastEtat);
-          return;
-        case 'psi': //deprecated
-          var psil = 0;
-          if (scope.additionalDmg) psil = scope.additionalDmg.length;
-          if (psil === 0) {
-            error("option --psi non précédée d'un --plus", optArgs);
-            return;
-          }
-          var psiCond = parseCondition(cmd.slice(1));
-          if (psiCond) {
-            var psiDmg = scope.additionalDmg[psil - 1];
-            psiDmg.conditions = psiDmg.conditions || [];
-            psiDmg.conditions.push(psiCond);
-          }
           return;
         case 'peur':
           if (cmd.length < 3) {
@@ -7470,7 +7455,17 @@ var COFantasy = COFantasy || function() {
           options[soundCmd] = cmd.slice(1).join(' ');
           return;
         default:
+          let armeMagique = cmd[0].match(/^\+([0-9]+)$/);
+          if (armeMagique && armeMagique.length > 0) {
+            options.armeMagiquePlus = parseInt(armeMagique[1]);
+            if (options.magique === undefined) {
+              options.magique = options.armeMagiquePlus;
+            } else if (options.magique !== true) {
+              options.magique += options.armeMagiquePlus;
+            }
+          } else {
           error("Argument de !cof-attack '" + arg + "' non reconnu", cmd);
+          }
       }
     });
     closeIte(scope); //pour fermer les endif mal formés et éviter les boucles
@@ -9210,6 +9205,7 @@ var COFantasy = COFantasy || function() {
   function bonusAttaqueA(attaquant, weaponName, evt, explications, options) {
     var attBonus = 0;
     if (options.bonusAttaque) attBonus += options.bonusAttaque;
+    if (options.armeMagiquePlus) attBonus += options.armeMagiquePlus;
     attBonus += bonusDAttaque(attaquant, explications, evt);
     if (options.tirDouble) {
       attBonus += 2;
@@ -13785,6 +13781,9 @@ var COFantasy = COFantasy || function() {
     }
     // Les autres modifications aux dégâts qui ne dépendent pas de la cible
     let attDMBonusCommun = '';
+    if (options.armeMagiquePlus) {
+      attDMBonusCommun += " +" + options.armeMagiquePlus;
+    }
     if (options.rayonAffaiblissant) {
       attDMBonusCommun += " -" + options.rayonAffaiblissant;
     }
@@ -25013,7 +25012,7 @@ var COFantasy = COFantasy || function() {
         break;
       default:
         if (options.tempeteDeManaIntense) {
-          var firstDicePart = argSoin.match(/[1-9][0-9]*d\d+/i);
+          let firstDicePart = argSoin.match(/[1-9][0-9]*d\d+/i);
           if (firstDicePart && firstDicePart.length > 0) {
             var fdp = firstDicePart[0];
             nbDes = parseInt(fdp) + options.tempeteDeManaIntense;
