@@ -1110,7 +1110,7 @@
                 <h4 class="text-secondary">Voie du meneur d'hommes</h4>
                 <ol>
                   <li><strong>Sans peur</strong> : Ajouter un prédicat <code>sansPeur</code>, utilisé quand on essaiera de faire peur à un <a href="#allie">allié</a>.</li>
-                  <li><strong>Intercepter</strong> : Juste après l'attaque réussie, utiliser <code>!cof-intercepter</code>. Il faut un <a href=#predicats>prédicat</a> <code>voieDuMeneurDHomme</code> avec comme valeur le rang dans la voie.</li>
+                  <li><strong>Intercepter</strong> : Ajouter un <a href=#predicats>prédicat</a> <code>intercepter</code>, et un autre <code>voieDuMeneurDHomme</code> de valeur le rang dans la voie, s'il est différent de 2.</li>
                   <li><strong>Exemplaire</strong> : <code>!cof-exemplaire</code>, juste après l'attaque ratée.</li>
                   <li><strong>Ordre de bataille</strong> : pas de support</li>
                   <li><strong>Charge fantastique</strong> : <code>!cof-charge-fantastique @{selected|token_id} --alliesEnVue --self --limiteParCombat 1</code></li>
