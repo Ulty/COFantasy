@@ -302,6 +302,22 @@ var COFantasy = COFantasy || function() {
         },
       }
     },
+    sons: {
+      explications: "Sons par défaut",
+      type: 'options',
+      val: {
+        attaque_echec_critique: {
+          explication: "Son utilisé pour les échecs critiques d'attaques",
+          type: 'son',
+          val: ''
+        },
+        attaque_reussite_critique: {
+          explication: "Son utilisé pour les réussites critiques d'attaques",
+          type: 'son',
+          val: ''
+        }
+      }
+    },
     macros_a_jour: {
       explications: "Met automatiquement les macros à jour",
       type: 'bool',
@@ -7449,7 +7465,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque le son après --" + cmd[0], cmd);
             return;
           }
-          var soundCmd = cmd[0].replace('-a', 'A').replace('-e', 'E').replace('-c', 'C').replace('-n', 'N').replace('-s', 'S').replace('-t', 'T');
+          let soundCmd = cmd[0].replace('-a', 'A').replace('-e', 'E').replace('-c', 'C').replace('-n', 'N').replace('-s', 'S').replace('-t', 'T');
           if (soundCmd == 'soundAttackNormalTouch') soundCmd = 'soundAttackSucces';
           if (soundCmd == 'soundAttackChampionSucces') soundCmd = 'soundAttackSuccesChampion';
           options[soundCmd] = cmd.slice(1).join(' ');
@@ -7464,7 +7480,7 @@ var COFantasy = COFantasy || function() {
               options.magique += options.armeMagiquePlus;
             }
           } else {
-          error("Argument de !cof-attack '" + arg + "' non reconnu", cmd);
+            error("Argument de !cof-attack '" + arg + "' non reconnu", cmd);
           }
       }
     });
@@ -12666,9 +12682,9 @@ var COFantasy = COFantasy || function() {
               if (target.crit > 2) target.crit -= 1;
             }
             //Defense de la cible
-            var defense = 0;
+            let defense = 0;
             if (!options.auto) defense = defenseOfPerso(attaquant, target, pageId, evt, options);
-            var interchange;
+            let interchange;
             if (options.aoe === undefined) {
               interchange = interchangeable(attackingToken, target, pageId);
               if (interchange.result) {
@@ -12686,13 +12702,13 @@ var COFantasy = COFantasy || function() {
               options.auto = true;
               target.etreinteImmole = true;
             }
-            var touche = true;
-            var critique = false;
+            let touche = true;
+            let critique = false;
             // Calcule si touché, et les messages de dégats et attaque
             if (options.auto) {
               addAttackSound("soundAttackSucces", weaponStats.divers, options);
             } else if (!options.interposer) {
-              var triche = options.triche || options.interventionDivine;
+              let triche = options.triche || options.interventionDivine;
               if (triche) {
                 switch (triche) {
                   case "rate":
@@ -12701,7 +12717,7 @@ var COFantasy = COFantasy || function() {
                       else d20roll = randomInteger(target.crit - 1);
                     }
                     if ((d20roll + attSkill + attBonus) >= defense) {
-                      var maxd20roll = defense - attSkill - attBonus - 1;
+                      let maxd20roll = defense - attSkill - attBonus - 1;
                       if (maxd20roll >= target.crit) maxd20roll = target.crit - 1;
                       if (maxd20roll < 2) d20roll = 1;
                       else d20roll = randomInteger(maxd20roll);
@@ -12795,11 +12811,11 @@ var COFantasy = COFantasy || function() {
                 attackRoll >= (defense + reglesOptionelles.haute_DEF.val.crit_attaque_groupe.val)) {
                 options.attaqueDeGroupeDmgCoef = true;
               }
-              var faireMouche;
+              let faireMouche;
               if (targetd20roll == 1 && options.chance === undefined) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_DANGER + "'><b>échec&nbsp;critique</b></span>";
                 attackResult += addAttackImg("imgAttackEchecCritique", weaponStats.divers, options);
-                addAttackSound("soundAttackEchecCritique", weaponStats.divers, options);
+                addAttackSound('soundAttackEchecCritique', weaponStats.divers, options);
                 if (options.demiAuto) {
                   target.partialSaveAuto = true;
                   evt.succes = false;
@@ -12813,7 +12829,7 @@ var COFantasy = COFantasy || function() {
                   (reglesOptionelles.divers.val.coups_critiques_etendus.val && attackRoll > defense + 9)) && !options.attaqueAssuree) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>réussite critique</b></span>";
                 attackResult += addAttackImg("imgAttackSuccesCritique", weaponStats.divers, options);
-                addAttackSound("soundAttackSuccesCritique", weaponStats.divers, options);
+                addAttackSound('soundAttackSuccesCritique', weaponStats.divers, options);
                 touche = true;
                 critique = true;
                 if (options.contact) {
@@ -12833,7 +12849,7 @@ var COFantasy = COFantasy || function() {
               } else if (attackRoll < defense && targetd20roll < target.crit) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
                 attackResult += addAttackImg("imgAttackEchec", weaponStats.divers, options);
-                addAttackSound("soundAttackEchec", weaponStats.divers, options);
+                addAttackSound('soundAttackEchec', weaponStats.divers, options);
                 evt.succes = false;
                 if (options.demiAuto) {
                   target.partialSaveAuto = true;
@@ -12845,7 +12861,7 @@ var COFantasy = COFantasy || function() {
                 target.messages.push(target.tokName + " disparaît au moment où l'attaque aurait du l" + onGenre(target, 'e', 'a') + " toucher");
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
                 attackResult += addAttackImg("imgAttackEchecClignotement", weaponStats.divers, options);
-                addAttackSound("soundAttackEchecClignotement", weaponStats.divers, options);
+                addAttackSound('soundAttackEchecClignotement', weaponStats.divers, options);
                 target.clignotement = true;
                 if (options.demiAuto) {
                   target.partialSaveAuto = true;
@@ -13206,10 +13222,10 @@ var COFantasy = COFantasy || function() {
   }
 
   function findAttackParam(attackParam, divers, options) {
-    var param = options[attackParam];
+    let param = options[attackParam];
     if (param) return param;
-    var subParam = attackParam;
-    var subParamIndex = subParam.indexOf('C');
+    let subParam = attackParam;
+    let subParamIndex = subParam.indexOf('C');
     if (subParamIndex > 0) {
       subParam = subParam.substring(0, subParamIndex);
       param = options[subParam];
@@ -13227,12 +13243,12 @@ var COFantasy = COFantasy || function() {
       param = options[subParam];
       if (param) return param;
     }
-    var tag = attackParam.replace(/[A-Z]/g, function(c) {
+    let tag = attackParam.replace(/[A-Z]/g, function(c) {
       return '-' + c.toLowerCase();
     });
     tag = '[' + tag + ']';
     if (divers.includes(tag)) {
-      var soundAttack = divers.split(tag);
+      let soundAttack = divers.split(tag);
       if (soundAttack.length > 2) {
         param = soundAttack[1];
       }
@@ -13265,14 +13281,24 @@ var COFantasy = COFantasy || function() {
   }
 
   function addAttackSound(attackParam, divers, options) {
-    var sound = findAttackParam(attackParam, divers, options);
+    let sound = findAttackParam(attackParam, divers, options);
+    if (!sound) {
+      switch (attackParam) {
+        case 'soundAttackEchecCritique':
+          sound = stateCOF.options.sons.val.attaque_echec_critique.val;
+          break;
+        case 'soundAttackSuccesCritique':
+          sound = stateCOF.options.sons.val.attaque_reussite_critique.val;
+          break;
+      }
+    }
     if (sound) playSound(sound);
   }
 
   function addAttackImg(attackParam, divers, options) {
-    var img = findAttackParam(attackParam, divers, options);
-    if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
-      var newLineimg = '<span style="padding: 4px 0;" >  ';
+    let img = findAttackParam(attackParam, divers, options);
+    if (img !== '' && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
+      let newLineimg = '<span style="padding: 4px 0;" >  ';
       newLineimg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
       newLineimg += '</span>';
       return newLineimg;
@@ -32001,23 +32027,24 @@ var COFantasy = COFantasy || function() {
   //!cof-options [opt0 ... optk] reset remet toutes les options à leur valeur patr défaut
   //Dans tous les cas, affiche les options du niveau demandé
   function setCofOptions(msg) {
-    var playerId = getPlayerIdFromMsg(msg);
+    const playerId = getPlayerIdFromMsg(msg);
     if (!playerIsGM(playerId)) {
       sendPlayer(msg, "Seul le MJ peut changer les options du script", playerId);
       return;
     }
-    var cmd = msg.content.split(' ');
-    var cofOptions = stateCOF.options;
+    let cmd = msg.content.split(' ');
+    let cofOptions = stateCOF.options;
     if (cofOptions === undefined) {
       sendPlayer(msg, "Options non diponibles", playerId);
       return;
     }
-    var prefix = '';
-    var up;
-    var defOpt = defaultOptions;
-    var newOption;
-    var lastCmd;
-    var fini;
+    let prefix = '';
+    let up;
+    let defOpt = defaultOptions;
+    let newOption;
+    let lastCmd;
+    let fini;
+    let current = '';
     cmd.shift();
     cmd.forEach(function(c) {
       if (fini) {
@@ -32025,7 +32052,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       if (c == 'reset') {
-        for (var opt in cofOptions) delete cofOptions[opt];
+        for (let opt in cofOptions) delete cofOptions[opt];
         copyOptions(cofOptions, defOpt);
         fini = true;
       } else if (cofOptions[c]) {
@@ -32044,7 +32071,7 @@ var COFantasy = COFantasy || function() {
         }
       } else {
         if (newOption) { //on met newOption à c
-          var val = c;
+          let val = c;
           switch (newOption.type) {
             case 'bool':
               switch (c) {
@@ -32062,6 +32089,7 @@ var COFantasy = COFantasy || function() {
                   sendPlayer(msg, "L'option " + lastCmd + " ne peut être que true ou false", playerId);
                   val = newOption.val;
               }
+              fini = true;
               break;
             case 'int':
               val = parseInt(c);
@@ -32069,10 +32097,14 @@ var COFantasy = COFantasy || function() {
                 sendPlayer(msg, "L'option " + lastCmd + " est une valeur entière", playerId);
                 val = newOption.val;
               }
+              fini = true;
               break;
+            default:
+              if (current === '') current = val;
+              else current += ' ' + val;
+              val = current;
           }
           newOption.val = val;
-          fini = true;
         } else if (lastCmd) {
           sendPlayer(msg, "L'option " + lastCmd + " ne contient pas de sous-option " + c, playerId);
         } else {
@@ -32081,21 +32113,21 @@ var COFantasy = COFantasy || function() {
       }
       lastCmd = c;
     });
-    var titre = "Options de COFantasy";
+    let titre = "Options de COFantasy";
     if (prefix !== '') {
       titre += "<br>" + prefix + ' (';
       titre += boutonSimple('!cof-options' + up, 'retour') + ')';
     }
-    var display = startFramedDisplay(playerId, titre, undefined, {
+    let display = startFramedDisplay(playerId, titre, undefined, {
       chuchote: true
     });
-    for (var opt in cofOptions) {
-      var optVu = opt.replace(/_/g, ' ');
-      var line = '<span title="' + cofOptions[opt].explications + '">' +
+    for (let opt in cofOptions) {
+      let optVu = opt.replace(/_/g, ' ');
+      let line = '<span title="' + cofOptions[opt].explications + '">' +
         optVu + '</span> : ';
-      var action = '!cof-options' + prefix + ' ' + opt;
-      var displayedVal = cofOptions[opt].val;
-      var after = '';
+      let action = '!cof-options' + prefix + ' ' + opt;
+      let displayedVal = cofOptions[opt].val;
+      let after = '';
       switch (cofOptions[opt].type) {
         case 'options':
           displayedVal = '<span style="font-family: \'Pictos\'">l</span>';
@@ -32106,7 +32138,7 @@ var COFantasy = COFantasy || function() {
           // Bizarrement, le caractère '*' modifie la suite du tableau
             displayedVal = '<span style="font-family: \'Pictos\'">3</span>';
           else
-            displayedVal = '<span style="font-family: \'Pictos\'">*</span>';
+            displayedVal = '<span style="font-family: \'Pictos\'">&midast;</span>';
           break;
         case 'int':
           action += ' ?{Nouvelle valeur de ' + optVu + '(entier)}';
@@ -32116,6 +32148,16 @@ var COFantasy = COFantasy || function() {
           after =
             '<img src="' + displayedVal + '" style="width: 30%; height: auto; border-radius: 6px; margin: 0 auto;">';
           displayedVal = '<span style="font-family: \'Pictos\'">u</span>';
+          break;
+        case 'son':
+          action += " ?{Entrez le nom du son pour " + optVu + '}';
+          if (displayedVal === '') {
+            displayedVal = '<span title="pas de son" style="font-family: \'Pictos Custom\'">u</span>';
+          } else {
+            after = boutonSimple('!cof-jouer-son ' + displayedVal,
+              '<span style="font-family: \'Pictos\'">&gt;</span> ');
+            displayedVal = '<span title="' + displayedVal + '" style="font-family: \'Pictos\'">m</span>';
+          }
           break;
         default:
           action += ' ?{Nouvelle valeur de ' + optVu + '}';
@@ -34389,10 +34431,12 @@ var COFantasy = COFantasy || function() {
         let attaques = {};
         let abilities = {};
         let feats = {};
+        let def;
         attributes.forEach(function(attr) {
           let nom = attr.get('name');
           switch (nom) {
             case 'ac':
+              def = parseInt(attr.get('current'));
               changeAttributeName(attr, 'pnj_def', evt);
               return;
             case 'class':
@@ -34409,6 +34453,10 @@ var COFantasy = COFantasy || function() {
               if (c.startsWith('goblin ')) {
                 race = "Gobelin";
                 c = c.substring(7).trim();
+                attr.set('current', c);
+              } else if (c.startsWith('human')) {
+                race = "Gobelin";
+                c = c.substring(6).trim();
                 attr.set('current', c);
               }
               changeAttributeName(attr, 'profil', evt);
@@ -34556,6 +34604,9 @@ var COFantasy = COFantasy || function() {
             case 'npc_type':
               let npcType = attr.get('current');
               switch (npcType.split(' ')[0]) {
+                case 'aberration':
+                  predicats += 'aberration ';
+                  break;
                 case 'humanoid':
                   predicats += 'humanoide ';
                   break;
@@ -35162,6 +35213,13 @@ var COFantasy = COFantasy || function() {
         setTokenAttr(perso, 'pnj_init', initiative, evt, optAttr);
         setTokenAttr(perso, 'type_personnage', 'PNJ', evt, optAttr);
         setTokenAttr(perso, 'tab', 'carac. pnj', evt, optAttr);
+        if (def !== undefined) {
+          let defFinale = ficheAttributeAsInt(perso, 'pnj_def', 10);
+          if (defFinale !== def) {
+            log("Défense finale " + defFinale + " alors qu'on a vu " + def);
+            setFicheAttr(perso, 'pnj_def', def, evt);
+          }
+        }
         //Finalement, on change le token par défaut
         let acAttr = perso.token.get('bar2_link');
         affectToken(perso.token, 'bar2_link', acAttr, evt);
