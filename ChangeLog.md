@@ -17,6 +17,7 @@
 * Prise en compte correcte des malus d'armure et de casques pour les compétences sur la fiche.
 
 ### Autres améliorations
+* Passage de l'aura d'initiative dynamique au layer map, pour éviter les sélections involontaires.
 * Ajout d'options pour des sons de réussite et échec critiques d'attaques par défaut.
 * Ajout de modificateurs d'attaque +n pour les armes magiques.
 * La durée restante des effets est affichée pour le MJ dans le statut des persos.
