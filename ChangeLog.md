@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.04
 ### Capacités
+* Ajout d'un visuel pour la prison végétale
 * Meilleure automatisation de la capacité intercepter du chevalier.
 * Réaction violente du demi-ogre.
 * Ajout de la capacité Insignifiant de la voie du gnome.

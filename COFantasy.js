@@ -40,7 +40,7 @@ const generateUUID = (function() {
 
 const COF_BETA = true;
 
-var COF_loaded = false;
+let COF_loaded = false;
 
 var COFantasy = COFantasy || function() {
 
@@ -299,6 +299,11 @@ var COFantasy = COFantasy || function() {
           explication: "Image utilisée pour un mur de force sphérique",
           type: 'image',
           val: "https://s3.amazonaws.com/files.d20.io/images/33213510/5r3NGSso1QBJMJewTEKv0A/thumb.png?1495195634"
+        },
+        prison_vegetale: {
+          explication: "Image utilisée pour un mur de force sphérique",
+          type: 'image',
+          val: "https://s3.amazonaws.com/files.d20.io/images/254738719/c97DFw6JlEePDVXBf-MPsA/thumb.png?1636471250"
         },
       }
     },
@@ -1359,6 +1364,7 @@ var COFantasy = COFantasy || function() {
   function getTokenFields(token, pageId, charId) {
     return {
       _pageid: pageId || token.get('pageid'),
+      imgsrc: token.get('imgsrc'),
       represents: charId || token.get('represents'),
       left: token.get('left'),
       top: token.get('top'),
@@ -1844,12 +1850,12 @@ var COFantasy = COFantasy || function() {
   }
 
   function computeScale(pageId) {
-    var page = getObj("page", pageId);
-    var scale = parseFloat(page.get('scale_number'));
+    const page = getObj("page", pageId);
+    let scale = parseFloat(page.get('scale_number'));
     if (isNaN(scale) || scale <= 0) return 1.0;
     var cellSize = parseFloat(page.get('snapping_increment'));
     if (!isNaN(cellSize) && cellSize > 0) scale /= cellSize;
-    var unit = page.get('scale_units');
+    const unit = page.get('scale_units');
     switch (unit) {
       case 'ft':
         scale *= 0.3048;
@@ -1913,10 +1919,10 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    var scale = computeScale(pageId);
-    var pt1 = tokenCenter(pseudoTok1);
-    var pt2 = tokenCenter(pseudoTok2);
-    var distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
+    let scale = computeScale(pageId);
+    let pt1 = tokenCenter(pseudoTok1);
+    let pt2 = tokenCenter(pseudoTok2);
+    let distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
     if (!options.strict1) distance_pix -= tokenSize(pseudoTok1, PIX_PER_UNIT / 2);
     if (!options.strict2) distance_pix -= tokenSize(pseudoTok2, PIX_PER_UNIT / 2);
     if (options.allonge) distance_pix -= (options.allonge * PIX_PER_UNIT) / scale;
@@ -3240,22 +3246,21 @@ var COFantasy = COFantasy || function() {
     }
     if (evt.deletedTokens) {
       evt.deletedTokens.forEach(function(token) {
-        var nameDel = token.name;
-        log("Restoring token " + nameDel);
-        createObj('graphic', token);
+        log("Restoring token " + token.name);
+        let t = createObj('graphic', token);
+        if (token.layer == 'map') toFront(t);
       });
     }
     if (evt.deletedCharacters) {
       evt.deletedCharacters.forEach(function(character) {
-        var nameDel = character.name;
-        log("Restoring character " + nameDel);
-        var newCharacter =
+        log("Restoring character " + character.name);
+        let newCharacter =
           createObj('character', {
-            name: nameDel,
+            name: character.name,
             avatar: character.avatar
           });
-        var charId = newCharacter.id;
-        var tokens = findObjs({
+        let charId = newCharacter.id;
+        let tokens = findObjs({
           _type: 'graphic',
           represents: character.id
         });
@@ -3285,8 +3290,8 @@ var COFantasy = COFantasy || function() {
         //Maintenant on remet les attributs
         if (character.attributes) {
           character.attributes.forEach(function(attr) {
-            var oldId = attr.id;
-            var newAttr = createObj('attribute', {
+            let oldId = attr.id;
+            let newAttr = createObj('attribute', {
               characterid: charId,
               name: attr.get('name'),
               current: attr.get('current'),
@@ -3367,6 +3372,11 @@ var COFantasy = COFantasy || function() {
     }
     if (evt.tokens) {
       evt.tokens.forEach(function(token) {
+        if (stateCOF.tokensTemps) {
+          stateCOF.tokensTemps = stateCOF.tokensTemps.filter(function(tt) {
+            return tt.tid != token.id;
+          });
+        }
         token.remove();
       });
     }
@@ -3392,12 +3402,27 @@ var COFantasy = COFantasy || function() {
     }
     if (_.has(evt, 'updateNextInitSet'))
       updateNextInitSet = evt.updateNextInitSet;
-    if (_.has(evt, 'turnorder'))
-      Campaign().set('turnorder', evt.turnorder);
+    if (_.has(evt, 'turnorder')) Campaign().set('turnorder', evt.turnorder);
     if (_.has(evt, 'initiativepage'))
       Campaign().set('initiativepage', evt.initiativepage);
     if (evt.chargeFantastique)
       stateCOF.chargeFantastique = evt.chargeFantastique;
+    if (evt.deletedTokensTemps && evt.deletedTokensTemps.length > 0) {
+      stateCOF.tokensTemps = stateCOF.tokensTemps || [];
+      evt.deletedTokensTemps.forEach(function(tt) {
+          log("Restoring temp token " + tt.deletedToken.name);
+          let t = createObj('graphic', tt.deletedToken);
+          if (tt.deletedToken.layer == 'map') toFront(t);
+          delete tt.deletedToken;
+          tt.tid = t.id;
+          stateCOF.tokensTemps.push(tt);
+      });
+    }
+    if (evt.tokensTemps) {//ceux pour lesquels on a diminué la durée
+      evt.tokensTemps.forEach(function(tt) {
+        if (tt.tt) tt.tt.duree = tt.ancienneDuree;
+      });
+    }
   }
 
   //origin peut être un message ou un nom de joueur
@@ -5298,17 +5323,17 @@ var COFantasy = COFantasy || function() {
   // utilisée sur la page du personnage
   function scaleDistance(perso, distance) {
     if (perso.scale) return distance * perso.scale;
-    var pageId = perso.pageId;
+    let pageId = perso.pageId;
     if (pageId === undefined) {
       pageId = perso.token.get('pageid');
       perso.pageId = pageId;
     }
-    var page = getObj("page", pageId);
+    const page = getObj("page", pageId);
     if (page === undefined) {
       perso.scale = 1;
       return distance;
     }
-    var unit = page.get('scale_units');
+    let unit = page.get('scale_units');
     switch (unit) {
       case 'm':
         perso.scale = 1;
@@ -5402,7 +5427,7 @@ var COFantasy = COFantasy || function() {
     return murs;
   }
 
-  // callback(selected, playerId)
+  // callback(selected, playerId, aoe)
   function getSelected(msg, callback, options) {
     let playerId = getPlayerIdFromMsg(msg);
     let pageId;
@@ -5420,27 +5445,28 @@ var COFantasy = COFantasy || function() {
         actif = persoOfId(msg.selected[0]._id, msg.selected[0]._id, pageId);
       }
     }
-    var page;
-    var murs;
-    var pt;
+    let page;
+    let murs;
+    let pt;
+    let aoe;
     let finalCall = function() {
       called = true;
-      var seen = new Set();
-      var res = selected.filter(function(sel) {
+      let seen = new Set();
+      let res = selected.filter(function(sel) {
         if (seen.has(sel._id)) return false;
         seen.add(sel._id);
-        var interdit = enleveAuxSelected.find(function(i) {
+        let interdit = enleveAuxSelected.find(function(i) {
           return (i._id == sel._id);
         });
         return (interdit === undefined);
       });
-      callback(res, playerId);
+      callback(res, playerId, aoe);
     };
     if (args.length > 1) {
       args.shift();
       args.forEach(function(cmd) {
         count--;
-        var cmdSplit = cmd.split(' ');
+        const cmdSplit = cmd.split(' ');
         switch (cmdSplit[0]) {
           case 'equipe':
             var nomEquipe = 'Equipe' + cmd.substring(cmd.indexOf(' '));
@@ -5541,7 +5567,7 @@ var COFantasy = COFantasy || function() {
             }
             if (msg.selected === undefined) return;
             msg.selected.forEach(function(obj) {
-              var inSelf = selected.findIndex(function(o) {
+              let inSelf = selected.findIndex(function(o) {
                 return (o._id == obj._id);
               });
               if (inSelf < 0) selected.push(obj);
@@ -5590,6 +5616,10 @@ var COFantasy = COFantasy || function() {
                 return;
               }
             }
+            aoe = aoe || {};
+            aoe.type = 'disque';
+            aoe.centre = tokenCentre;
+            aoe.rayon = rayon;
             page = page || getObj("page", pageId);
             murs = getWalls(page, pageId, murs);
             let pc;
@@ -5723,17 +5753,17 @@ var COFantasy = COFantasy || function() {
       if (selected.length === 0) {
         if (msg.selected) {
           if (!called) {
-            var res = msg.selected.filter(function(sel) {
-              var interdit = enleveAuxSelected.find(function(i) {
+            let res = msg.selected.filter(function(sel) {
+              let interdit = enleveAuxSelected.find(function(i) {
                 return (i._id == sel._id);
               });
               return (interdit === undefined);
             });
-            callback(res, playerId);
+            callback(res, playerId, aoe);
           }
           return;
         }
-        if (!called) callback([], playerId);
+        if (!called) callback([], playerId, aoe);
         return;
       }
       if (!called) finalCall();
@@ -10654,14 +10684,14 @@ var COFantasy = COFantasy || function() {
           if (randomInteger(dice) == 1 ||
             (options.triche && options.triche == 'echecCritique')) {
             options.triche = 'echecCritique';
-            var left = targetToken.get('left');
-            var top = targetToken.get('top');
+            let left = targetToken.get('left');
+            let top = targetToken.get('top');
             pc = {
               x: left,
               y: top,
             };
-            var angle = Math.random() * 2 * Math.PI;
-            var distance = Math.random() * reglesOptionelles.divers.val.echec_critique_boule_de_feu.val * PIX_PER_UNIT / computeScale(pageId);
+            let angle = Math.random() * 2 * Math.PI;
+            let distance = Math.random() * reglesOptionelles.divers.val.echec_critique_boule_de_feu.val * PIX_PER_UNIT / computeScale(pageId);
             pc.x = Math.round(left + Math.cos(angle) * distance);
             pc.y = Math.round(top + Math.sin(angle) * distance);
             page = page || getObj("page", pageId);
@@ -11839,7 +11869,7 @@ var COFantasy = COFantasy || function() {
   // attaquant est optionnel
   // ne rajoute pas evt à l'historique
   function entrerEnCombat(attaquant, cibles, explications, evt) {
-    var selected = [];
+    let selected = [];
     if (attaquant) {
       selected.push({
         _id: attaquant.token.id
@@ -17895,6 +17925,19 @@ var COFantasy = COFantasy || function() {
         obj.remove();
       }
     });
+    if (stateCOF.tokensTemps) {
+      evt.deletedTokensTemps = [];
+      stateCOF.tokensTemps.forEach(function(tt) {
+        let token = getObj('graphic', tt.tid);
+        if (token) {
+          let ett = {... tt};
+          ett.deletedToken = getTokenFields(token);
+          evt.deletedTokensTemps.push(ett);
+          token.remove();
+        }
+      });
+      delete stateCOF.tokensTemps;
+    }
     addEvent(evt);
   }
 
@@ -23010,11 +23053,12 @@ var COFantasy = COFantasy || function() {
     let duree = parseInt(cmd[2]);
     if (isNaN(duree) || duree < 1) duree = 0; //On veut terminer l'effet
     if (options.puissantDuree || options.tempeteDeManaDuree) duree = duree * 2;
-    getSelected(msg, function(selected, playerId) {
+    getSelected(msg, function(selected, playerId, aoe) {
       if (selected === undefined || selected.length === 0) {
         sendPlayer(msg, "Pas de cible sélectionée pour l'effet", playerId);
         return;
       }
+      options.aoe = aoe;
       if (lanceur === undefined) {
         if (options.portee) {
           error("Impossible de savoir l'origine de l'effet", options);
@@ -23160,17 +23204,43 @@ var COFantasy = COFantasy || function() {
           explications.forEach(function(e) {
             sendChat('', e);
           });
+          if (options.aoe && options.pageId && effet == 'prisonVegetale' && options.aoe.type == 'disque') {
+            if (lanceur) {}
+            let diametre = options.aoe.rayon * 2 * PIX_PER_UNIT / computeScale(options.pageId);
+            let t = createObj('graphic', {
+              _pageid: options.pageId,
+              imgsrc: stateCOF.options.images.val.prison_vegetale.val,
+              represents: '',
+              left: options.aoe.centre.get('left'),
+              top: options.aoe.centre.get('top'),
+              width: diametre,
+              height: diametre,
+              layer: 'map',
+              isDrawing: true,
+              name: 'Prison végétale'
+            });
+            if (t) {
+              toFront(t);
+              evt.tokens = evt.tokens || [];
+              evt.tokens.push(t);
+              stateCOF.tokensTemps = stateCOF.tokensTemps || [];
+              stateCOF.tokensTemps.push({
+                tid: t.id,
+                duree,
+                init: getInit()
+              });
+            }
+          }
         }
         setEffetTemporaire(perso, ef, d, evt, options);
         if (effet.startsWith('forgeron(')) {
           //Il faut dégainer l'arme si elle n'est pas en main, et ajouter une lumière
-          var labelArmeForgeron = effet.substring(9, effet.indexOf(')'));
+          let labelArmeForgeron = effet.substring(9, effet.indexOf(')'));
           degainerArme(perso, labelArmeForgeron, evt);
-          var feu =
-            getValeurOfEffet(perso, effet, 1, 'voieDuMetal');
+          let feu = getValeurOfEffet(perso, effet, 1, 'voieDuMetal');
           ajouteUneLumiere(perso, effet, feu * 3, feu, evt);
         } else if (effet.startsWith('armeEnflammee(')) {
-          var labelArmeEnflammee = effet.substring(14, effet.indexOf(')'));
+          let labelArmeEnflammee = effet.substring(14, effet.indexOf(')'));
           degainerArme(perso, labelArmeEnflammee, evt);
           ajouteUneLumiere(perso, effet, 9, 3, evt);
         }
@@ -23191,11 +23261,11 @@ var COFantasy = COFantasy || function() {
           setTokenAttr(perso, effet + 'Puissant', puissant, evt);
         }
         if (lanceur && options.fx) {
-          var p1e = {
+          let p1e = {
             x: lanceur.token.get('left'),
             y: lanceur.token.get('top'),
           };
-          var p2e = {
+          let p2e = {
             x: perso.token.get('left'),
             y: perso.token.get('top'),
           };
@@ -25807,7 +25877,7 @@ var COFantasy = COFantasy || function() {
           if (options.puissantPortee || options.tempeteDeManaPortee) diametre += diametre;
           if (options.tempeteDeManaIntense)
             diametre *= (1 + options.tempeteDeManaIntense);
-          var imageFields = {
+          let imageFields = {
             _pageid: pageId,
             imgsrc: imageSphere,
             represents: '',
@@ -29340,7 +29410,7 @@ var COFantasy = COFantasy || function() {
       error("Le premier argument de !cof-animer-arbre n'est pas un token valie", cmd);
       return;
     }
-    var tokenArbre = getObj('graphic', cmd[2]);
+    let tokenArbre = getObj('graphic', cmd[2]);
     if (tokenArbre === undefined) {
       error("Le deuxième argument de !cof-animer-arbre n'est pas un token", cmd);
       return;
@@ -29350,7 +29420,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (options.portee !== undefined) {
-      var dist = distanceCombat(druide.token, tokenArbre, options.pageId);
+      let dist = distanceCombat(druide.token, tokenArbre, options.pageId);
       if (dist > options.portee) {
         sendPerso(druide, "est trop loin de l'arbre");
         return;
@@ -29363,7 +29433,7 @@ var COFantasy = COFantasy || function() {
         error("Le rang n'est pas un nombre valie. On utilise " + rang + " à la place", cmd);
       } else rang = cmd3;
     }
-    var evt = {
+    const evt = {
       type: "Animation d'un arbre"
     };
     addEvent(evt);
@@ -29371,10 +29441,10 @@ var COFantasy = COFantasy || function() {
     if (!stateCOF.combat) {
       initPerso(druide, evt);
     }
-    var niveau = ficheAttributeAsInt(druide, 'niveau', 1);
-    var nomArbre = nouveauNomDePerso('Arbre animé');
-    var avatar = "https://s3.amazonaws.com/files.d20.io/images/42323556/6qxlm965aFhBXGoYFy5fqg/thumb.png?1510582137";
-    var specArbre = {
+    let niveau = ficheAttributeAsInt(druide, 'niveau', 1);
+    let nomArbre = nouveauNomDePerso('Arbre animé');
+    let avatar = "https://s3.amazonaws.com/files.d20.io/images/42323556/6qxlm965aFhBXGoYFy5fqg/thumb.png?1510582137";
+    let specArbre = {
       pv: rang * 10,
       attributesFiche: {
         type_personnage: 'PNJ',
@@ -29412,14 +29482,14 @@ var COFantasy = COFantasy || function() {
         max: getInit(),
       }]
     };
-    var charArbre = createCharacter(nomArbre, options.playerId, avatar, tokenArbre, specArbre);
+    let charArbre = createCharacter(nomArbre, options.playerId, avatar, tokenArbre, specArbre);
     evt.characters = [charArbre];
     sendChar(charArbre.id, "commence à s'animer", true);
     initiative([{
       _id: tokenArbre.id
     }], evt);
     // Ajout de l'arbre animé aux alliés du Druide
-    var alliesDruide = alliesParPerso[druide.charId] || new Set();
+    let alliesDruide = alliesParPerso[druide.charId] || new Set();
     alliesDruide.add(charArbre.id);
     alliesParPerso[druide.charId] = alliesDruide;
   }
@@ -38400,17 +38470,41 @@ var COFantasy = COFantasy || function() {
       }
       stateCOF.chargeFantastique = undefined;
     }
-    var attrs = findObjs({
+    let attrs = findObjs({
       _type: 'attribute'
     });
     // Si on a changé d'initiative, alors diminue les effets temporaires
-    var init = parseInt(active.pr);
+    let init = parseInt(active.pr);
     if (active.id == "-1" && active.custom == "Tour") init = 0;
     let count = 0; // pour l'aspect asynchrone des effets temporaires
     if (stateCOF.init > init) {
-      var attrsTemp = attrs.filter(function(obj) {
+      if (stateCOF.tokensTemps && stateCOF.tokensTemps.length > 0) {
+        stateCOF.tokensTemps = stateCOF.tokensTemps.filter(function(tt) {
+          if (init < tt.init && tt.init <= stateCOF.init) {
+            if (tt.duree > 1) {
+              evt.tokensTemps = evt.tokensTemps || [];
+              evt.tokensTemps.push({tt, ancienneDuree:tt.duree});
+              tt.duree--;
+              return true;
+            } else {
+              let token = getObj('graphic', tt.tid);
+              if (token) {
+                let ett = {... tt};
+                ett.deletedToken = getTokenFields(token);
+                evt.deletedTokensTemps = evt.deletedTokensTemps || [];
+                evt.deletedTokensTemps.push(ett);
+                token.remove();
+              }
+              return false;
+            }
+          } else {
+            return true;
+          }
+        });
+      }
+      let attrsTemp = attrs.filter(function(obj) {
         if (!estEffetTemp(obj.get('name'))) return false;
-        var obji = obj.get('max');
+        let obji = obj.get('max');
         return (init < obji && obji <= stateCOF.init);
       });
       evt.init = stateCOF.init;
@@ -39373,7 +39467,7 @@ var COFantasy = COFantasy || function() {
 
 
   function addToken(token, nb) {
-    var tokenName = token.get('name');
+    let tokenName = token.get('name');
     //La plupart du temps, il faut attendre un peu que le nom soit affecté
     if (tokenName !== '') {
       let perso = renameToken(token, tokenName);
