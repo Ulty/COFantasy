@@ -15966,6 +15966,16 @@ var COFantasy = COFantasy || function() {
 
   function partialSave(ps, target, showTotal, dmgDisplay, total, expliquer, evt, afterSave) {
     if (ps.partialSave === undefined) {
+      if (target.partialSaveAuto) {
+        if (showTotal) dmgDisplay = '(' + dmgDisplay + ')';
+        afterSave({
+          succes: true,
+          dmgDisplay: dmgDisplay + '/2',
+          total: Math.ceil(total / 2),
+          showTotal: true
+        });
+        return;
+      }
       afterSave();
       return;
     }
@@ -16354,24 +16364,24 @@ var COFantasy = COFantasy || function() {
       } else
         count += dmgParType[dt].length;
     }
-    var critOther = crit && reglesOptionelles.dommages.val.crit_elementaire.val;
-    var dealOneType = function(dmgType) {
+    let critOther = crit && reglesOptionelles.dommages.val.crit_elementaire.val;
+    let dealOneType = function(dmgType) {
       if (dmgType == mainDmgType) {
         count -= dmgParType[dmgType].length;
         if (count === 0) dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal, dmSuivis);
         return; //type principal déjà géré
       }
       showTotal = true;
-      var dm = 0;
-      var typeDisplay = "";
-      var typeCount = dmgParType[dmgType].length;
+      let dm = 0;
+      let typeDisplay = "";
+      let typeCount = dmgParType[dmgType].length;
       dmgParType[dmgType].forEach(function(d) {
         if (d.partialSave && d.partialSave.tempete && options.tempeteDeManaIntense) {
           d.partialSave.seuil += d.partialSave.tempete * options.tempeteDeManaIntense;
         }
         partialSave(d, target, false, d.display, d.total, expliquer, evt,
           function(res) {
-            var addTypeDisplay = d.display;
+            let addTypeDisplay = d.display;
             if (res) {
               dm += res.total;
               if (critOther) {
@@ -16712,8 +16722,8 @@ var COFantasy = COFantasy || function() {
   }
 
   function dealDamageAfterOthers(target, crit, options, evt, expliquer, displayRes, dmgTotal, dmgDisplay, showTotal, dmSuivis) {
-    var charId = target.charId;
-    var token = target.token;
+    const charId = target.charId;
+    let token = target.token;
     // Now do some dmg mitigation rolls, if necessary
     if ((options.distance || options.aoe) &&
       attributeAsBool(target, 'aCouvert')) {
@@ -16741,8 +16751,8 @@ var COFantasy = COFantasy || function() {
           dmgDisplay = saveResult.dmgDisplay;
           showTotal = saveResult.showTotal;
         }
-        var rdTarget = getRDS(target);
-        var rd = rdTarget.rdt || 0;
+        let rdTarget = getRDS(target);
+        let rd = rdTarget.rdt || 0;
         if (rd > 0 && !options.aoe && options.attaquant && predicateAsBool(options.attaquant, 'ventreMou')) {
           var taille = taillePersonnage(target, 4);
           if (taille > 4) {
@@ -16819,18 +16829,18 @@ var COFantasy = COFantasy || function() {
         }
         //RD PeauDePierre à prendre en compte en dernier
         if (!target.defautCuirasse && !target.ignoreTouteRD && rd < dmgTotal && attributeAsBool(target, 'peauDePierreMag')) {
-          var peauDePierreMagValeur = tokenAttribute(target, 'peauDePierreMagValeur');
+          let peauDePierreMagValeur = tokenAttribute(target, 'peauDePierreMagValeur');
           if (peauDePierreMagValeur.length === 0) {
             error("compteur de Peau de Pierre non trouvé", target);
           } else {
             peauDePierreMagValeur = peauDePierreMagValeur[0];
-            var rdPeauDePierreMax = parseInt(peauDePierreMagValeur.get('current'));
-            var peauDePierreAbsorbe = parseInt(peauDePierreMagValeur.get('max'));
+            let rdPeauDePierreMax = parseInt(peauDePierreMagValeur.get('current'));
+            let peauDePierreAbsorbe = parseInt(peauDePierreMagValeur.get('max'));
             if (isNaN(rdPeauDePierreMax) || isNaN(peauDePierreAbsorbe) || rdPeauDePierreMax < 1 || peauDePierreAbsorbe < 1) {
               error("compteur de Peau de Pierre mal formé", peauDePierreMagValeur);
               finDEffetDeNom(target, "peauDePierreMag", evt);
             } else {
-              var rdPeauDePierreMag = rdPeauDePierreMax;
+              let rdPeauDePierreMag = rdPeauDePierreMax;
               if (target.ignoreMoitieRD) rdPeauDePierreMag = parseInt(rdPeauDePierreMag / 2);
               if (rd + rdPeauDePierreMag > dmgTotal) {
                 rdPeauDePierreMag = dmgTotal - rd;
@@ -16881,25 +16891,25 @@ var COFantasy = COFantasy || function() {
         }
         if (predicateAsBool(target, 'commandant')) {
           //On cherche si il y a au moins 4 créatures sous ses ordres à moins de 10 m
-          var pageId = target.token.get('pageid');
-          var tokens =
+          let pageId = target.token.get('pageid');
+          let tokens =
             findObjs({
               _type: 'graphic',
               _subtype: 'token',
               layer: 'objects',
               _pageid: pageId
             });
-          var nbCreatures = 0;
+          let nbCreatures = 0;
           tokens.forEach(function(tok) {
             if (tok.id === target.token.id) return;
-            var ci = tok.get('represents');
+            let ci = tok.get('represents');
             if (ci === '') return;
             if (distanceCombat(tok, target.token, pageId) > 10) return;
-            var attrCom = charAttribute(ci, 'capitaine');
+            let attrCom = charAttribute(ci, 'capitaine');
             if (attrCom.length === 0) return;
-            var capitaine = persoOfIdName(attrCom[0].get('current'), pageId);
+            let capitaine = persoOfIdName(attrCom[0].get('current'), pageId);
             if (!capitaine || capitaine.token.id != target.token.id) return;
-            var perso = {
+            let perso = {
               token: tok,
               charId: ci
             };
@@ -36157,8 +36167,13 @@ var COFantasy = COFantasy || function() {
   function affaiblirCaracPerso(perso, carac, valeur, expliquer, evt) {
     let nomAttr = 'affaiblissementde' + carac;
     let malus = addToAttributeAsInt(perso, nomAttr, 0, valeur, evt);
-    expliquer("perd " + valeur + " points de " + carac);
     let cn = caracNormale(perso, carac);
+    if (malus > cn) {
+      valeur += cn - malus;
+      setTokenAttr(perso, nomAttr, cn, evt);
+    }
+    if (valeur < 1) return;
+    expliquer("perd " + valeur + " points de " + carac);
     if (carac == 'constitution') {
       if (malus >= cn) {
         mort(perso, expliquer, evt);
