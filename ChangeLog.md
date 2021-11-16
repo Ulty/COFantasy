@@ -15,6 +15,7 @@
 * Implémentation de base de la voie de l'expert du combat
 
 ### Corrections de bugs
+* ne pas faire entrer en combat quand on fait un effet qui ne fait pas de DM ou qui n'est pas préjudiciable (conséquences sur pacifisme, sanctuaire, et).
 * Prise en compte correcte des malus d'armure et de casques pour les compétences sur la fiche.
 
 ### Autres améliorations

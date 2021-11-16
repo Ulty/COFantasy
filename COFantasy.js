@@ -12079,9 +12079,9 @@ var COFantasy = COFantasy || function() {
       selected.push({
         _id: attaquant.token.id
       });
-      var attrAttInvisible = tokenAttribute(attaquant, 'tokenInvisible');
+      let attrAttInvisible = tokenAttribute(attaquant, 'tokenInvisible');
       if (attrAttInvisible.length > 0 && attaquant.token.id == attrAttInvisible[0].get('max')) {
-        var tokenAttInvisible = getObj('graphic', attrAttInvisible[0].get('current'));
+        let tokenAttInvisible = getObj('graphic', attrAttInvisible[0].get('current'));
         if (tokenAttInvisible) selected = [{
           _id: tokenAttInvisible.id
         }];
@@ -12097,15 +12097,15 @@ var COFantasy = COFantasy || function() {
         sendPerso(attaquant, "perd son pacifisme");
       }
       if (attributeAsBool(attaquant, 'sanctuaire')) {
-        explications.push(attaquant.tokName + " met fin aux conditions du sanctuaire");
+        explications.push(attaquant.token.get('name') + " met fin aux conditions du sanctuaire");
         removeTokenAttr(attaquant, 'sanctuaire', evt);
       }
     }
     cibles.forEach(function(target) {
-      var token = target.token;
-      var attrInvisible = tokenAttribute(target, 'tokenInvisible');
+      let token = target.token;
+      let attrInvisible = tokenAttribute(target, 'tokenInvisible');
       if (attrInvisible.length > 0 && target.token.id == attrInvisible[0].get('max')) {
-        var tokenInvisible = getObj('graphic', attrInvisible[0].get('current'));
+        let tokenInvisible = getObj('graphic', attrInvisible[0].get('current'));
         if (tokenInvisible) token = tokenInvisible;
       }
       selected.push({
@@ -23238,7 +23238,7 @@ var COFantasy = COFantasy || function() {
       if (lanceur && options.tempeteDeMana) {
         if (duree > 0 && options.tempeteDeMana.cout === 0) {
           //On demande de préciser les options
-          var optMana = {
+          let optMana = {
             mana: options.mana,
             dm: mEffet.dm,
             soins: mEffet.soins,
@@ -23369,7 +23369,13 @@ var COFantasy = COFantasy || function() {
       }
       if (!entreEnCombat) {
         entreEnCombat = true;
-        entrerEnCombat(lanceur, cibles, explications, evt);
+        if (mEffet.dm || mEffet.prejudiciable) {
+          entrerEnCombat(lanceur, cibles, explications, evt);
+        } else { //On met juste dans la liste d'initiative
+          let ini = [...cibles];
+          if (lanceur) ini.push(lanceur);
+          entrerEnCombat(undefined, ini, explications, evt);
+        }
         if (options.aoe && options.pageId && effet == 'prisonVegetale' && options.aoe.type == 'disque') {
           if (lanceur) {}
           let diametre = options.aoe.rayon * 2 * PIX_PER_UNIT / computeScale(options.pageId);
@@ -35649,9 +35655,19 @@ var COFantasy = COFantasy || function() {
       });
       let nbCibles = cibles.length;
       if (options.soin && options.dm) nbCibles += nbCibles;
+      let ciblesAttaquees = [];
       let sync = function() {
         nbCibles--;
-        if (nbCibles < 1) sendChat('', endFramedDisplay(display));
+        if (nbCibles < 1) {
+          if (ciblesAttaquees.length > 0) {
+            let explications = [];
+            entrerEnCombat(pretre, ciblesAttaquees, explications, evt);
+            explications.forEach(function(e) {
+              addLineToFramedDisplay(display, e);
+            });
+          }
+          sendChat('', endFramedDisplay(display));
+        }
       };
       if (options.soin) {
         let soins = '[[' + options.soin + ']]';
@@ -35704,6 +35720,7 @@ var COFantasy = COFantasy || function() {
             sync();
             return;
           }
+          ciblesAttaquees.push(target);
           try {
             sendChat('', dm, function(res) {
               let dmg = {
