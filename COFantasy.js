@@ -16515,7 +16515,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     // Suppression Zombies
-    var attrsDegradationZombie = tokenAttribute(personnage, 'degradationZombie');
+    let attrsDegradationZombie = tokenAttribute(personnage, 'degradationZombie');
     if (attrsDegradationZombie.length > 0) {
       finDEffet(attrsDegradationZombie[0], 'degradationZombie', attrsDegradationZombie[0].get("name"), personnage.charId, evt);
       return;
@@ -31712,14 +31712,14 @@ var COFantasy = COFantasy || function() {
   };
 
   function animerMort(msg) {
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined || cmd.length < 2) {
       error("!cof-animer-mort mal formé, il faut un token comme premier argument", msg.content);
       return;
     }
-    var necromant = persoOfId(cmd[1], cmd[1], options.pageId);
+    const necromant = persoOfId(cmd[1], cmd[1], options.pageId);
     if (necromant === undefined) {
       error("Le premier argument de !cof-animer-mort n'est pas un token valie", cmd);
       return;
@@ -31731,66 +31731,72 @@ var COFantasy = COFantasy || function() {
       return;
     }
     options.lanceur = necromant;
-    getSelected(msg, function(selected, playerId) {
-      var evt = {
-        type: 'animerMort',
-        action: {
-          rolls: {}
-        }
-      };
-      addEvent(evt);
-      if (limiteRessources(necromant, options, 'animerMort', "lancer un sort d'Animation des morts", evt)) return;
-      if (!stateCOF.combat) {
-        initPerso(necromant, evt);
-      }
-      var nomToken = "Zombie de " + necromant.token.get('name');
-      var token = createObj('graphic', {
-        name: nomToken,
-        showname: 'true',
-        subtype: 'token',
-        pageid: options.pageId,
-        imgsrc: zombieAnime.token,
-        left: necromant.token.get('left'),
-        top: necromant.token.get('top'),
-        width: 70,
-        height: 70,
-        layer: 'objects',
-        showplayers_bar1: 'true',
-        light_hassight: 'true',
-        light_angle: 0,
-        has_bright_light_vision: true,
-        has_limit_field_of_vision: true,
-      });
-      toFront(token);
-      var zombie = {
-        ...zombieAnime
-      };
-      var charZombie = createCharacter(nomToken, playerId, zombieAnime.avatar, token, zombie);
-      evt.characters = [charZombie];
-      evt.tokens = [token];
-      // Dégradation du Zombie
-      createObj('attribute', {
-        name: 'degradationZombie',
-        _characterid: charZombie.id,
-        current: 71,
-        max: getInit()
-      });
-      // Gestion de la limitation des zombies
-      createObj('attribute', {
-        name: 'necromant',
-        _characterid: charZombie.id,
-        current: necromant.token.id,
-      });
-      initiative([{
-        _id: token.id
-      }], evt);
-      // Ajout du Zombie aux alliés du Nécromant
-      var alliesNecromant = alliesParPerso[necromant.charId] || new Set();
-      alliesNecromant.add(charZombie.id);
-      alliesParPerso[necromant.charId] = alliesNecromant;
-      sendPerso(necromant, "anime un Zombie");
-      setTokenAttr(necromant, "zombiesControles", zombiesControles + 1, evt);
+    const evt = {
+      type: 'animerMort',
+      action: {
+        rolls: {}
+      },
+      characters: [],
+      tokens: []
+    };
+    addEvent(evt);
+    if (limiteRessources(necromant, options, 'animerMort', "lancer un sort d'Animation des morts", evt)) return;
+    if (!stateCOF.combat) {
+      initPerso(necromant, evt);
+    }
+    let nomToken = "Zombie de " + necromant.token.get('name');
+    let token = createObj('graphic', {
+      name: nomToken,
+      showname: 'true',
+      subtype: 'token',
+      pageid: options.pageId,
+      imgsrc: zombieAnime.token,
+      left: necromant.token.get('left'),
+      top: necromant.token.get('top'),
+      width: 70,
+      height: 70,
+      layer: 'objects',
+      showplayers_bar1: 'true',
+      light_hassight: 'true',
+      light_angle: 0,
+      has_bright_light_vision: true,
+      has_limit_field_of_vision: true,
     });
+    toFront(token);
+    let zombie = {
+      ...zombieAnime
+    };
+    let playerId = getPlayerIdFromMsg(msg);
+    let charZombie = createCharacter(nomToken, playerId, zombieAnime.avatar, token, zombie);
+    evt.characters.push(charZombie);
+    evt.tokens.push(token);
+    // Dégradation du Zombie
+    createObj('attribute', {
+      name: 'degradationZombie',
+      _characterid: charZombie.id,
+      current: 71,
+      max: getInit()
+    });
+    // Gestion de la limitation des zombies
+    createObj('attribute', {
+      name: 'necromant',
+      _characterid: charZombie.id,
+      current: necromant.token.id,
+    });
+    initiative([{
+      _id: token.id
+    }], evt);
+    // Ajout du Zombie aux alliés du Nécromant
+    let alliesNecromant = alliesParPerso[necromant.charId] || new Set();
+    alliesNecromant.add(charZombie.id);
+    alliesParPerso[necromant.charId] = alliesNecromant;
+    sendPerso(necromant, "anime un Zombie", options.secret);
+    if (options.messages) {
+      options.messages.forEach(function(m) {
+        sendPerso(necromant, m, options.secret);
+      });
+    }
+    setTokenAttr(necromant, "zombiesControles", zombiesControles + 1, evt);
   }
 
   //Crée les macros utiles au jeu
@@ -38381,20 +38387,20 @@ var COFantasy = COFantasy || function() {
           function() {}
         );
       }
-      var increvableActif = tokenAttribute(perso, 'increvableActif');
+      let increvableActif = tokenAttribute(perso, 'increvableActif');
       if (increvableActif.length > 0) {
         increvableActif[0].remove();
-        var soins = randomInteger(6) + randomInteger(6) + randomInteger(6) + modCarac(perso, 'constitution');
+        let soins = randomInteger(6) + randomInteger(6) + randomInteger(6) + modCarac(perso, 'constitution');
         soigneToken(perso, soins, evt, function(soinsEffectifs) {
-          var msgSoins = "est increvable et récupère ";
+          let msgSoins = "est increvable et récupère ";
           if (soinsEffectifs == soins) msgSoins += soins + " points de vie";
           else msgSoins += soinsEffectifs + " PV (le jet était " + soins + ")";
           whisperChar(perso.charId, msgSoins);
         });
       }
-      var degradationZombie = attributeAsInt(perso, 'degradationZombie', -1);
+      let degradationZombie = attributeAsInt(perso, 'degradationZombie', -1);
       if (degradationZombie % 6 === 0) {
-        var r = {
+        let r = {
           total: 1,
           type: 'normal',
           display: 1
@@ -38402,7 +38408,7 @@ var COFantasy = COFantasy || function() {
         perso.ignoreTouteRD = true;
         dealDamage(perso, r, [], evt, false, {}, [], function() {
           // Vérification si le Zombie est toujours vivant
-          var tokens = getObj('graphic', perso.token.id);
+          let tokens = getObj('graphic', perso.token.id);
           if (tokens) whisperChar(perso.charId, "se dégrade et perd 1 PV");
         });
       }

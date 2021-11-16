@@ -18,6 +18,7 @@
 * Prise en compte correcte des malus d'armure et de casques pour les compétences sur la fiche.
 
 ### Autres améliorations
+* Prise en compte de --message pour !cof-animer-mort.
 * Ajout d'une option --affaiblirCarac pour les attaques.
 * Pour !cof-effet-temporaire, possibilité de prendre en compte la magie en armure.
 * Passage de l'aura d'initiative dynamique au layer map, pour éviter les sélections involontaires.
