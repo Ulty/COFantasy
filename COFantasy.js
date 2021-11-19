@@ -34790,6 +34790,7 @@ var COFantasy = COFantasy || function() {
               let nonPrisEnCompte = '';
               da.split(',').forEach(function(d) {
                 d = d.trim();
+                if (d === '') return;
                 switch (d) {
                   case 'incorporeal':
                     predicats += 'immunite_nonMagique ';
@@ -34799,7 +34800,7 @@ var COFantasy = COFantasy || function() {
                       log("Capacité défensive " + d + " non connue");
                     }
                     if (nonPrisEnCompte === '')
-                      nonPrisEnCompte = 'Capacités défensices : ' + d;
+                      nonPrisEnCompte = 'Capacités défensives : ' + d;
                     else nonPrisEnCompte += ', ' + d;
                 }
               });
@@ -34939,7 +34940,7 @@ var COFantasy = COFantasy || function() {
               let rdn = attr.get('current');
               if (rdn) {
                 rdn = '' + rdn;
-                rdn = rdn.replace('bludgeoning', 'contondant').replace('slashing', 'tranchant').replace('piercing', 'percant').replace('silver', 'argent');
+                rdn = rdn.replace('bludgeoning', 'contondant').replace('slashing', 'tranchant').replace('piercing', 'percant').replace('silver', 'argent').replace('magic', 'magique');
                 if (rd === '') rd = rdn;
                 else rd += ', ' + rdn;
               }
@@ -37100,7 +37101,7 @@ var COFantasy = COFantasy || function() {
       fin: "a récupéré",
       generic: true
     },
-    dmgArme1d6: {
+    dmgArme: {
       activation: "enduit son arme d'une huile magique",
       actif: "a une arme plus puissante",
       fin: "L'arme retrouve sa puissance normale",
