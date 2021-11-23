@@ -8627,6 +8627,21 @@ var COFantasy = COFantasy || function() {
     setTurnOrder(to, evt);
   }
 
+  function initiativeInterface(msg) {
+    getSelected(msg, function(selected) {
+      if (selected === undefined || selected.length === 0) {
+        error("Dans !cof-init : rien à faire, pas de token selectionné", msg);
+        return;
+      }
+      aura_token_on_turn = msg.content.indexOf('--aura') !== -1;
+      let evt = {
+        type: 'initiative'
+      };
+      initiative(selected, evt);
+      addEvent(evt);
+    });
+  }
+
   function initPerso(personnage, evt, recompute) {
     initiative([{
       _id: personnage.token.id
@@ -36434,19 +36449,8 @@ var COFantasy = COFantasy || function() {
         parseSurprise(msg);
         return;
       case "!cof-init":
-        {
-          if (msg.selected === undefined) {
-            error("Dans !cof-init : rien à faire, pas de token selectionné", msg);
-            return;
-          }
-          aura_token_on_turn = msg.content.indexOf('--aura') !== -1;
-          let evt = {
-            type: "initiative"
-          };
-          initiative(msg.selected, evt);
-          addEvent(evt);
-          return;
-        }
+        initiativeInterface(msg);
+        return;
       case '!cof-turn-action':
       case '!cof-liste-actions':
         apiTurnAction(msg);
