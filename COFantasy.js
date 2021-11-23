@@ -6896,7 +6896,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque un argument à l'option --plusCrit de !cof-attack", cmd);
             return;
           }
-          var valCrit = arg.substring(arg.indexOf(' ') + 1);
+          let valCrit = arg.substring(arg.indexOf(' ') + 1);
           scope.additionalCritDmg = scope.additionalCritDmg || [];
           scope.additionalCritDmg.push({
             value: valCrit,
@@ -6909,7 +6909,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque un argument à l'option --" + cmd[0] + " de !cof-attack", cmd);
             return;
           }
-          var valDm = arg.substring(arg.indexOf(' ') + 1);
+          let valDm = arg.substring(arg.indexOf(' ') + 1);
           options[cmd[0]] = {
             value: valDm,
             type: scope.type
@@ -7423,6 +7423,18 @@ var COFantasy = COFantasy || function() {
             return;
           }
           scope.decrLimitePredicatParTour = cmd[1];
+          return;
+        case 'forceminimum':
+          if (cmd.length < 2) {
+            error("Il faut indiquer le minimum de force", cmd);
+            return;
+          }
+          let forceMin = parseInt(cmd[1]);
+          if (isNaN(forceMin)) {
+            error("La force minimum doit être un nombre", cmd);
+            return;
+          }
+          scope.forceMinimum = forceMin;
           return;
         case 'incrDmgCoef':
           scope.dmgCoef = (scope.dmgCoef || 1);
@@ -8069,9 +8081,9 @@ var COFantasy = COFantasy || function() {
 
   //On copie les champs de scope dans options ou dans target
   function copyBranchOptions(attaquant, branch, options, target, evt, explications, condInTarget) {
-    var opt = options;
+    let opt = options;
     if (condInTarget) opt = target;
-    for (var field in branch) {
+    for (let field in branch) {
       switch (field) {
         case 'ite':
           break;
@@ -8079,14 +8091,14 @@ var COFantasy = COFantasy || function() {
         case 'additionalCritDmg':
         case 'effets':
         case 'etats':
-        case 'affaiblissementsCarac':
+        case 'affaiblissementsCarac': //Listes
           opt[field] = opt[field] || [];
           opt[field] = opt[field].concat(branch[field]);
           break;
         case 'sournoise':
         case 'mana':
         case 'bonusAttaque':
-        case 'bonusContreBouclier':
+        case 'bonusContreBouclier': //numériques additives
           opt[field] = opt[field] || 0;
           opt[field] += branch[field];
           break;
@@ -11153,13 +11165,18 @@ var COFantasy = COFantasy || function() {
       sendPerso(attaquant, "ne peut pas utiliser cette capacité quand il est affaibli.");
       return;
     }
+    if (options.forceMinimum &&
+      caracCourante(attaquant, 'force') < options.forceMinimum) {
+      sendPerso("n'est pas assez fort pour utiliser cette attaque (force minimum " + options.forceMinimum + ")");
+      return;
+    }
     //dernieresCiblesAttaquees contient en current les cibles attaquées, et en max les cibles sur lesquelles on a fait des ripostes
-    var attrCiblesAttaquees = tokenAttribute(attaquant, 'dernieresCiblesAttaquees');
-    var ripostesDuTour = new Set();
+    let attrCiblesAttaquees = tokenAttribute(attaquant, 'dernieresCiblesAttaquees');
+    let ripostesDuTour = new Set();
     if (attrCiblesAttaquees.length > 0) {
       ripostesDuTour = new Set(attrCiblesAttaquees[0].get('max').split(' '));
     }
-    var tm = stateCOF.tenebresMagiques;
+    let tm = stateCOF.tenebresMagiques;
     if (tm && estDemon(attaquant)) {
       tm.attaques = tm.attaques || {};
       tm.attaques[attaquant.token.id] = cibles;
@@ -11201,13 +11218,13 @@ var COFantasy = COFantasy || function() {
     if (cibles.length === 0) return;
     if (!options.redo) {
       //Prise en compte de la distance
-      var optDistance = {};
+      let optDistance = {};
       if (options.contact) optDistance.allonge = options.allonge;
       // Si l'attaquant est monté, distance mesurée à partir de sa monture
-      var pseudoAttackingToken = attackingToken;
-      var attrMonture = tokenAttribute(attaquant, 'monteSur');
+      let pseudoAttackingToken = attackingToken;
+      let attrMonture = tokenAttribute(attaquant, 'monteSur');
       if (attrMonture.length > 0) {
-        var pseudoAttacker =
+        let pseudoAttacker =
           persoOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
         if (pseudoAttacker) pseudoAttackingToken = pseudoAttacker.token;
       }
@@ -11247,22 +11264,22 @@ var COFantasy = COFantasy || function() {
     }
     //On vérifie que les cibles sont assez proches les unes des autres
     if (options.ciblesDansDisque && cibles.length > 1) {
-      var l1, l2, t1, t2;
+      let l1, l2, t1, t2;
       cibles.forEach(function(target) {
-        var l = target.token.get('left');
-        var t = target.token.get('top');
+        let l = target.token.get('left');
+        let t = target.token.get('top');
         if (l1 === undefined || l1 > l) l1 = l;
         if (l2 === undefined || l2 < l) l2 = l;
         if (t1 === undefined || t1 > t) t1 = t;
         if (t2 === undefined || t2 < t) t2 = t;
       });
-      var maxpix = options.ciblesDansDisque * PIX_PER_UNIT / computeScale(pageId);
+      let maxpix = options.ciblesDansDisque * PIX_PER_UNIT / computeScale(pageId);
       if ((l2 - l1) > 2 * maxpix || (t2 - t1) > 2 * maxpix) {
         sendPlayer(playerName, "Cibles trop éloignées les unes des autres");
         return;
       }
       //On calcule la longueur des diagonales du rectangle minimal
-      var diag = Math.sqrt((l2 - l1) * (l2 - l1) + (t2 - t1) * (t2 - t1));
+      let diag = Math.sqrt((l2 - l1) * (l2 - l1) + (t2 - t1) * (t2 - t1));
       if (diag > maxpix) {
         var centre = [(l1 + l2) / 2, (t1 + t2) / 2];
         //C'est approché, mais sûrement assez bon pour ce qui nous occupe
@@ -11288,16 +11305,16 @@ var COFantasy = COFantasy || function() {
       return;
     }
     //On enlève les doublons de cibles qui partagent leurs PVs;
-    var ciblesAvecPVsPartages = new Set();
+    let ciblesAvecPVsPartages = new Set();
     //va aussi peupler le champ name des cibles
     cibles = cibles.filter(function(target, index) {
       if (target.name === undefined) {
-        var targetChar = getObj('character', target.charId);
+        let targetChar = getObj('character', target.charId);
         if (targetChar === undefined) return false;
         target.name = targetChar.get('name');
       }
       if (ciblesAvecPVsPartages.has(target.name)) return false;
-      var ciblePartagee = charAttribute(target.charId, 'PVPartagesAvec');
+      let ciblePartagee = charAttribute(target.charId, 'PVPartagesAvec');
       if (ciblePartagee.length > 0) {
         if (charAttributeAsBool(target, 'familier')) {
           //c'est le personnage qui a un familier, on le garde en cible prioritaire
@@ -11306,10 +11323,10 @@ var COFantasy = COFantasy || function() {
           });
         } else if (persoEstPNJ(target)) {
           //cible la moins prioritaire, on l'enlève si on trouve un autre représentant
-          var representantPresent = cibles.find(function(target2, index2) {
+          let representantPresent = cibles.find(function(target2, index2) {
             if (index2 <= index) return false; //déjà traité
             if (target2.name === undefined) {
-              var target2Char = getObj('character', target2.charId);
+              let target2Char = getObj('character', target2.charId);
               if (target2Char === undefined) return false;
               target2.name = target2Char.get('name');
             }
@@ -11370,17 +11387,17 @@ var COFantasy = COFantasy || function() {
       options.messages = options.messages || [];
       degainerArme(attaquant, attackLabel, evt, options);
     }
-    var riposte = predicateAsBool(attaquant, 'riposte');
-    var attaqueEnMeute = predicateAsInt(attaquant, 'attaqueEnMeute', 0);
+    let riposte = predicateAsBool(attaquant, 'riposte');
+    let attaqueEnMeute = predicateAsInt(attaquant, 'attaqueEnMeute', 0);
     if (attaqueEnMeute > 0) options.attaqueEnMeute = attaqueEnMeute;
-    var attrLienEpique = charAttribute(attaquant.charId, 'lienEpique');
+    let attrLienEpique = charAttribute(attaquant.charId, 'lienEpique');
     if (attrLienEpique.length > 0) {
       options.lienEpique = attrLienEpique[0].get('current');
     }
     if (riposte || options.attaqueEnMeute || options.lienEpique) {
       //Dans ce cas, il faut stoquer les cibles attaquées
       //(dans le cas de riposte, pour ne pas les re-proposer en riposte
-      var listeCibles =
+      let listeCibles =
         cibles.map(function(target) {
           return target.token.id;
         }).join(' ');
@@ -19073,6 +19090,11 @@ var COFantasy = COFantasy || function() {
       return res;
     }
     return mod * 2 + 10;
+  }
+
+  function caracCourante(perso, carac) {
+    return caracNormale(perso, carac) -
+      attributeAsInt(perso, 'affaiblissementde' + carac, 0);
   }
 
   //N'ajoute pas evt à l'historique

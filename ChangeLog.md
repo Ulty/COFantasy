@@ -20,6 +20,7 @@
 * Prise en compte correcte des malus d'armure et de casques pour les compétences sur la fiche.
 
 ### Autres améliorations
+* Option d'attaque --forceMinimum
 * Prise en compte de --message pour !cof-animer-mort.
 * Ajout d'une option --affaiblirCarac pour les attaques.
 * Pour !cof-effet-temporaire, possibilité de prendre en compte la magie en armure.
