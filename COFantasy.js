@@ -732,13 +732,14 @@ var COFantasy = COFantasy || function() {
         if (monture !== undefined) token = monture.token;
       } else if (estMontePar.length > 0) {
         monture = personnage;
-        var cavalierId = estMontePar[0].get("current");
+        let cavalierId = estMontePar[0].get("current");
         cavalier = persoOfId(cavalierId);
       }
       removeRoundMarker();
       roundMarkerSpec._pageid = token.get('pageid');
       let tokenLayer = token.get('layer');
       if (tokenLayer !== 'objects') roundMarkerSpec.layer = tokenLayer;
+      else roundMarkerSpec.layer = 'map';
       roundMarkerSpec.left = token.get('left');
       roundMarkerSpec.top = token.get('top');
       let width = (token.get('width') + token.get('height')) / 2 * flashyInitMarkerScale;
@@ -17699,7 +17700,7 @@ var COFantasy = COFantasy || function() {
   var aura_token_on_turn = false;
 
   function setTokenInitAura(perso) {
-    var token = perso.token;
+    let token = perso.token;
     if (stateCOF.options.affichage.val.init_dynamique.val) {
       threadSync++;
       activateRoundMarker(threadSync, token);
@@ -17732,11 +17733,11 @@ var COFantasy = COFantasy || function() {
 
   //Ne rajoute pas evt à l'historique
   function setActiveToken(tokenId, evt) {
-    var pageId = stateCOF.combat_pageid;
+    let pageId = stateCOF.combat_pageid;
     if (stateCOF.activeTokenId) {
       if (tokenId == stateCOF.activeTokenId) return;
       evt.activeTokenId = stateCOF.activeTokenId;
-      var prevToken = getObj('graphic', stateCOF.activeTokenId);
+      let prevToken = getObj('graphic', stateCOF.activeTokenId);
       if (prevToken) {
         affectToken(prevToken, 'statusmarkers', prevToken.get('statusmarkers'), evt);
         affectToken(prevToken, 'aura2_radius', prevToken.get('aura2_radius'), evt);
@@ -17768,11 +17769,11 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (tokenId) {
-      var perso = persoOfId(tokenId, tokenId);
+      let perso = persoOfId(tokenId, tokenId);
       if (perso) {
         //On remet à 0 la liste des cibles attaquées par le personnage
         removeDernieresCiblesAttaquees(perso, evt);
-        var token = perso.token;
+        let token = perso.token;
         // personnage lié au Token
         affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
         affectToken(token, 'aura2_radius', token.get('aura2_radius'), evt);
@@ -19999,7 +20000,7 @@ var COFantasy = COFantasy || function() {
 
   //Renvoie true si redo possible, false sinon
   function redoEvent(evt, action, perso) {
-    var options = action.options || {};
+    let options = action.options || {};
     options.rolls = action.rolls;
     options.choices = action.choices;
     switch (evt.type) {
@@ -20062,7 +20063,7 @@ var COFantasy = COFantasy || function() {
         doNatureNourriciere(action.perso, options);
         return true;
       case 'nextTurn':
-        var turnOrder = Campaign().get("turnorder");
+        let turnOrder = Campaign().get("turnorder");
         if (turnOrder === '') return false; // nothing in the turn order
         turnOrder = JSON.parse(turnOrder);
         if (turnOrder.length < 1) return false; // Juste le compteur de tour
@@ -34122,21 +34123,21 @@ var COFantasy = COFantasy || function() {
         }
         if (p2.perso.token.get('bar1_link') === '') return -1;
         // Deuxième critère : les joueurs ont un DV
-        var dvA = ficheAttributeAsInt(p1.perso, "DV", 0);
-        var dvB = ficheAttributeAsInt(p2.perso, "DV", 0);
+        let dvA = ficheAttributeAsInt(p1.perso, "DV", 0);
+        let dvB = ficheAttributeAsInt(p2.perso, "DV", 0);
         if (dvA === 0) {
           if (dvB === 0) return 0;
           return 1;
         }
         if (dvB === 0) return -1;
         //Entre joueurs, priorité à la plus grosse sagesse
-        var sagA = ficheAttributeAsInt(p1.perso, 'sagesse', 10);
-        var sagB = ficheAttributeAsInt(p2.perso, 'sagesse', 10);
+        let sagA = ficheAttributeAsInt(p1.perso, 'sagesse', 10);
+        let sagB = ficheAttributeAsInt(p2.perso, 'sagesse', 10);
         if (sagA < sagB) return 1;
         if (sagB > sagA) return -1;
         return 0;
       });
-      var mouvements = ordreActions.map(function(p) {
+      let mouvements = ordreActions.map(function(p) {
         return p.perso.token.id;
       });
       if (chevalierIn) mouvements.unshift(chevalier.token.id);
@@ -34150,8 +34151,8 @@ var COFantasy = COFantasy || function() {
 
   //!cof-prescience token_id
   function utiliserPrescience(msg) {
-    var options = parseOptions(msg);
-    var cmd = options.cmd;
+    let options = parseOptions(msg);
+    let cmd = options.cmd;
     if (!cmd || cmd.length < 2) {
       error("Pas assez d'arguments pour !cof-prescience", cmd);
       return;
@@ -38721,7 +38722,7 @@ var COFantasy = COFantasy || function() {
   function nextTurnOfActive(active, attrs, evt, pageId, options) {
     if (active === undefined) return;
     if (active.id == "-1" && active.custom == "Tour") { //Nouveau tour
-      var tour = parseInt(active.pr);
+      let tour = parseInt(active.pr);
       if (isNaN(tour)) {
         error("Tour invalide", active);
         return;
@@ -38734,7 +38735,7 @@ var COFantasy = COFantasy || function() {
       stateCOF.init = 1000;
       addEvent(evt);
       changementDeTour(tour, attrs, evt, pageId, options);
-    } else { // change the active token
+    } else { // change le token actif
       addEvent(evt);
       setActiveToken(active.id, evt);
     }
