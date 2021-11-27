@@ -7820,7 +7820,7 @@ var COFantasy = COFantasy || function() {
       msg = msg || '';
       if ((reglesOptionelles.mana.val.contrecoup.val && bar2 <= 0) ||
         (!reglesOptionelles.mana.val.contrecoup.val && !reglesOptionelles.mana.val.brulure_de_magie.val && bar2 < cout)) {
-        sendPerso(personnage, "n'a pas assez de points de mana pour " + msg);
+        if (msg) sendPerso(personnage, "n'a pas assez de points de mana pour " + msg);
         return false;
       }
       if (bar2 < cout && (reglesOptionelles.mana.val.contrecoup.val ||
@@ -7833,7 +7833,7 @@ var COFantasy = COFantasy || function() {
         }
         let bar1 = parseInt(token.get('bar1_value'));
         if (bar1 < degats) {
-          sendPerso(personnage, "n'a pas assez de points de mana et de PV pour " + msg);
+          if (msg) sendPerso(personnage, "n'a pas assez de points de mana et de PV pour " + msg);
           return false;
         }
         return {
@@ -34242,10 +34242,11 @@ var COFantasy = COFantasy || function() {
 
   //Synchronise les tokens de même nom entre les cartes
   function multiCartes(msg) {
-    var options = parseOptions(msg);
-    var enlever = options && options.cmd && options.cmd.length > 1 && options.cmd[1] == 'false';
+    let options = parseOptions(msg);
+    let enlever = options && options.cmd && options.cmd.length > 1 && 
+      options.cmd[1] == 'false';
     getSelected(msg, function(selected, playerId) {
-      var evt = {
+      let evt = {
         type: "Synchronisation des tokens"
       };
       if (selected.length === 0) {
@@ -34265,16 +34266,16 @@ var COFantasy = COFantasy || function() {
         });
         return;
       }
-      var allTokens = findObjs({
+      let allTokens = findObjs({
         _type: 'graphic',
         _subtype: 'token',
         layer: 'objects',
       });
       iterSelected(selected, function(perso) {
-        var name = perso.token.get('name');
-        var left = perso.token.get('left');
-        var top = perso.token.get('top');
-        var listTokens = [perso.token.id];
+        let name = perso.token.get('name');
+        let left = perso.token.get('left');
+        let top = perso.token.get('top');
+        let listTokens = [perso.token.id];
         //On cherche les tokens de même nom et on les met en même position
         allTokens.forEach(function(tok) {
           if (tok.get('represents') != perso.charId) return;
