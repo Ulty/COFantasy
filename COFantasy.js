@@ -33285,7 +33285,7 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour !cof-set-predicate", cmd);
       return;
     }
-    let predicat = msg[1].trim();
+    let predicat = cmd[1].trim();
     let set = true;
     if (cmd.length > 2) {
       set = cmd[2];
