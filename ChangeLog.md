@@ -15,6 +15,7 @@
 * Implémentation de base de la voie de l'expert du combat
 
 ### Corrections de bugs
+* Pas de DOT sur les personnages déjà morts.
 * --demiAuto divise les dégâts par deux en cas d'échec, même si il n'y a pas de jet de sauvegarde.
 * ne pas faire entrer en combat quand on fait un effet qui ne fait pas de DM ou qui n'est pas préjudiciable (conséquences sur pacifisme, sanctuaire, et).
 * Prise en compte correcte des malus d'armure et de casques pour les compétences sur la fiche.

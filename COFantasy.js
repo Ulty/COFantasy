@@ -38082,16 +38082,20 @@ var COFantasy = COFantasy || function() {
   // effet est le nom complet de l'effet
   function degatsParTour(charId, pageId, effet, attrName, dmg, type, msg, evt, options, callback) {
     options = options || {};
-    var count;
+    let count;
     iterTokensOfAttribute(charId, pageId, effet, attrName,
       function(token, total) {
         if (count === undefined) count = {
           v: total
         };
-        var perso = {
+        let perso = {
           token: token,
           charId: charId
         };
+        if (getState(perso, 'mort')) {
+          if (callback) callback();
+          return;
+        }
         if (options.save) {
           let playerId = getPlayerIds(perso);
           let nameEffet = effet;
