@@ -1980,6 +1980,11 @@
               </div>
               <h3 class="text-info" id="Prestige">4.2 Voies de prestige et capacités épiques</h3>
               <div class="decalage">
+                <h4 class="text-secondary">Voie de l'archange</h4>
+                <ol>
+                  <li><strong>Forme d'ange</strong> : <code>!cof-effet-temp formeDAnge [[5+@{selected|SAG}]]</code>. Le MJ devra gérer l'aspect en vol.</li>
+                  <li><strong>Soins améliorés</strong> : utiliser un prédicat <code>voieDeLArchange</code> avec comme valeur le rang dans la voie.</li>
+                </ol>
                 <h4 class="text-secondary">Voie de l'expert du combat</h4>
                 <ol>
                   <li><strong>Expertise du combat</strong> : créer un prédicat <code>expertDuCombat</code> avec comme valeur le rang dans la voie. La commande <code>!cof-statut</code> donne un état des lieux des dés dépensés pendant le combat/le tour. Les dés ne sont actifs qu'en combat et sont réinitialisés à l'utilisation de <code>!cof-fin-combat</code>. L'implémentation part du principe que l'augmentation de la DEF doit être décidée avant le jet de dommages, comme une esquive acrobatique par exemple.</li>

@@ -3094,49 +3094,49 @@ var COFantasy = COFantasy || function() {
                 let siphoneur = prioriteSiphon[0].perso;
                 let bonus = predicateAsInt(siphoneur, 'siphonDesAmes', 0);
                 let jetSiphon = "(1d6";
-                if (bonus > 0) jetSiphon += '+'+bonus;
+                if (bonus > 0) jetSiphon += '+' + bonus;
                 jetSiphon += ")";
-                sendChat('COF', "/w GM "+personnage.token.get('name')+" est un personnage joueur, possible qu'il ne soit pas vraiment mort mais juste inconscient. Si il est vraiment mort, faire le siphon des âmes par " + siphoneur.token.get('name')+ " à la main "+jetSiphon);
+                sendChat('COF', "/w GM " + personnage.token.get('name') + " est un personnage joueur, possible qu'il ne soit pas vraiment mort mais juste inconscient. Si il est vraiment mort, faire le siphon des âmes par " + siphoneur.token.get('name') + " à la main " + jetSiphon);
               } else {
-              prioriteSiphon.sort(function(a, b) {
-                return b.priorite - a.priorite;
-              });
-              let fraction = 100;
-              let fractionPriorite = fraction;
-              let priorite = prioriteSiphon[0].priorite;
-              prioriteSiphon.forEach(function(x) {
-                if (x.priorite < priorite) {
-                  priorite = x.priorite;
-                  fractionPriorite = fraction;
-                }
-                let p = x.perso;
-                if (fractionPriorite < 1) {
-                  whisperChar(p.charId, "ne réussit pas à siphoner l'âme de " + token.get('name') + " un autre pouvoir l'a siphonée avant lui");
-                  return;
-                }
-                let bonus = predicateAsInt(p, 'siphonDesAmes', 0);
-                let soin = rollDePlus(6, {
-                  bonus: bonus
+                prioriteSiphon.sort(function(a, b) {
+                  return b.priorite - a.priorite;
                 });
-                let soinTotal = soin.val;
-                soin.val = Math.ceil(soin.val * fractionPriorite / 100);
-                soigneToken(p, soin.val, evt,
-                  function(s) {
-                    let siphMsg = "siphone l'âme de " + token.get('name') +
-                      ". " + onGenre(p, 'Il', 'Elle') + " récupère ";
-                    if (s == soinTotal) {
-                      siphMsg += soin.roll + " pv.";
-                      fraction = 0;
-                    } else {
-                      siphMsg += s + " pv (jet " + soin.roll + ").";
-                      fraction -= Math.ceil(s * 100 / soinTotal);
-                    }
-                    whisperChar(p.charId, siphMsg);
-                  },
-                  function() {
-                    whisperChar(p.charId, "est déjà au maximum de point de vie. Il laisse échapper l'âme de " + token.get('name'));
+                let fraction = 100;
+                let fractionPriorite = fraction;
+                let priorite = prioriteSiphon[0].priorite;
+                prioriteSiphon.forEach(function(x) {
+                  if (x.priorite < priorite) {
+                    priorite = x.priorite;
+                    fractionPriorite = fraction;
+                  }
+                  let p = x.perso;
+                  if (fractionPriorite < 1) {
+                    whisperChar(p.charId, "ne réussit pas à siphoner l'âme de " + token.get('name') + " un autre pouvoir l'a siphonée avant lui");
+                    return;
+                  }
+                  let bonus = predicateAsInt(p, 'siphonDesAmes', 0);
+                  let soin = rollDePlus(6, {
+                    bonus: bonus
                   });
-              });
+                  let soinTotal = soin.val;
+                  soin.val = Math.ceil(soin.val * fractionPriorite / 100);
+                  soigneToken(p, soin.val, evt,
+                    function(s) {
+                      let siphMsg = "siphone l'âme de " + token.get('name') +
+                        ". " + onGenre(p, 'Il', 'Elle') + " récupère ";
+                      if (s == soinTotal) {
+                        siphMsg += soin.roll + " pv.";
+                        fraction = 0;
+                      } else {
+                        siphMsg += s + " pv (jet " + soin.roll + ").";
+                        fraction -= Math.ceil(s * 100 / soinTotal);
+                      }
+                      whisperChar(p.charId, siphMsg);
+                    },
+                    function() {
+                      whisperChar(p.charId, "est déjà au maximum de point de vie. Il laisse échapper l'âme de " + token.get('name'));
+                    });
+                });
               }
             }
           }
@@ -13995,6 +13995,14 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //renvoie true si le personnage est immunisé aux sorts qui restreignent le déplacement
+  function actionLibre(perso) {
+    let res =
+      predicateAsBool(perso, 'actionLibre') ||
+      (predicateAsInt(perso, 'voieDeLArchange', 1) > 1 && attributeAsBool(perso, 'formeDAnge'));
+    return res;
+  }
+
   function attaqueNeTouchePas(attaquant, echecCritique, weaponStats, display, options, evt, explications, pageId, cibles) {
     finaliseDisplay(display, explications, evt, attaquant, cibles, options, echecCritique);
     if (echecCritique) {
@@ -14917,7 +14925,7 @@ var COFantasy = COFantasy || function() {
                       ce.etat == 'paralyse' ||
                       ce.etat == 'ralenti'
                     )) ||
-                    (predicateAsBool(target, 'actionLibre') && (ce.etat == 'ralenti' || ce.etat == 'immobilise' || ce.etat == 'paralyse')))) {
+                    (actionLibre(target) && (ce.etat == 'ralenti' || ce.etat == 'immobilise' || ce.etat == 'paralyse')))) {
                   target.messages.push(target.tokName + " reste libre de ses mouvements !");
                   return;
                 }
@@ -14965,7 +14973,7 @@ var COFantasy = COFantasy || function() {
                     ef.effet == 'paralyseTemp' ||
                     ef.effet == 'ralentiTemp'
                   ))) ||
-                  (predicateAsBool(target, 'actionLibre') && (ef.effet == 'ralentiTemp' || ef.effet == 'immobiliseTemp' || ef.effet == 'paralyseTemp'))) {
+                  (actionLibre(target) && (ef.effet == 'ralentiTemp' || ef.effet == 'immobiliseTemp' || ef.effet == 'paralyseTemp'))) {
                   target.messages.push(target.tokName + " reste libre de ses mouvements !");
                   return;
                 }
@@ -15939,9 +15947,15 @@ var COFantasy = COFantasy || function() {
       bonus += bonusProtectionContreLeMal;
       expliquer("Protection contre le mal => +" + bonusProtectionContreLeMal + " au jet de sauvegarde");
     }
-    if (s.entrave && predicateAsBool(target, 'actionLibre')) {
-      bonus += 5;
-      expliquer("Action libre => +5 pour résister aux entraves");
+    if (s.entrave) {
+      if (predicateAsInt(target, 'voieDeLArchange', 1) > 1 && attributeAsBool(target, 'formeDAnge')) {
+        expliquer(target.tokName + " est un ange, " + onGenre(target, 'il', 'elle') + " ne peut être entravé.");
+        afterSave(true, '');
+        return;
+      } else if (predicateAsBool(target, 'actionLibre')) {
+        bonus += 5;
+        expliquer("Action libre => +5 pour résister aux entraves");
+      }
     }
     if (options.necromancie && attributeAsBool(target, 'sangDeLArbreCoeur')) {
       bonus += 5;
@@ -23363,7 +23377,7 @@ var COFantasy = COFantasy || function() {
           sendPerso(perso, "reste libre de ses mouvements !");
           return;
         }
-        if ((options.magique || options.mana != undefined) && predicateAsBool(perso, 'actionLibre') &&
+        if ((options.magique || options.mana != undefined) && actionLibre(perso) &&
           (effet == 'immobiliseTemp' ||
             effet == 'paralyseTemp' ||
             effet == 'ralentiTemp' ||
@@ -25277,12 +25291,13 @@ var COFantasy = COFantasy || function() {
   }
 
   function estAussiGrandQue(perso1, perso2) {
-    var t1 = taillePersonnage(perso1);
-    var t2 = taillePersonnage(perso2);
+    let t1 = taillePersonnage(perso1);
+    let t2 = taillePersonnage(perso2);
     if (t1 === undefined || t2 === undefined) return true;
     return t1 >= t2;
   }
 
+  //!cof-soin
   function soigner(msg) {
     const options = parseOptions(msg);
     if (options === undefined) return;
@@ -25346,7 +25361,11 @@ var COFantasy = COFantasy || function() {
             limite: rangSoin
           };
         let bonusLeger = niveau + predicateAsInt(soigneur, 'voieDuGuerisseur', 0);
-        soins = "[[" + nbDes + (options.puissant ? "d10" : "d8") + " +" + bonusLeger + "]]";
+        soins = "[[" + nbDes + (options.puissant ? "d10" : "d8");
+        if (attributeAsBool(soigneur, 'formeDAnge') && predicateAsInt(soigneur, 'voieDeLArchange', 1) > 1) {
+          soins += 'ro1';
+        }
+        soins += " +" + bonusLeger + "]]";
         if (options.portee === undefined) options.portee = 0;
         break;
       case 'modere':
@@ -25359,7 +25378,11 @@ var COFantasy = COFantasy || function() {
           };
         if (options.portee === undefined) options.portee = 0;
         let bonusModere = niveau + predicateAsInt(soigneur, 'voieDuGuerisseur', 0);
-        soins = "[[" + (nbDes + 1) + (options.puissant ? "d10" : "d8") + " +" + bonusModere + "]]";
+        soins = "[[" + (nbDes + 1) + (options.puissant ? "d10" : "d8");
+        if (attributeAsBool(soigneur, 'formeDAnge') && predicateAsInt(soigneur, 'voieDeLArchange', 1) > 1) {
+          soins += 'ro1';
+        }
+        soins += " +" + bonusModere + "]]";
         break;
       case 'groupe':
         if (!stateCOF.combat) {
@@ -25375,6 +25398,9 @@ var COFantasy = COFantasy || function() {
           };
         if (options.puissant) soins = "[[1d10";
         else soins = "[[" + nbDes + "d8";
+        if (attributeAsBool(soigneur, 'formeDAnge') && predicateAsInt(soigneur, 'voieDeLArchange', 1) > 1) {
+          soins += 'ro1';
+        }
         let bonusGroupe = niveau + predicateAsInt(soigneur, 'voieDuGuerisseur', 0);
         soins += " + " + bonusGroupe + "]]";
         msg.content += " --alliesEnVue --self";
@@ -25415,13 +25441,18 @@ var COFantasy = COFantasy || function() {
         if (options.tempeteDeManaIntense) {
           let firstDicePart = argSoin.match(/[1-9][0-9]*d\d+/i);
           if (firstDicePart && firstDicePart.length > 0) {
-            var fdp = firstDicePart[0];
+            let fdp = firstDicePart[0];
             nbDes = parseInt(fdp) + options.tempeteDeManaIntense;
             argSoin =
               argSoin.replace(fdp, nbDes + fdp.substring(fdp.search(/d/i)));
           } else {
             argSoin = '(' + argSoin + ')*' + (1 + options.tempeteDeManaIntense);
           }
+        }
+        if (attributeAsBool(soigneur, 'formeDAnge') && predicateAsInt(soigneur, 'voieDeLArchange', 1) > 1) {
+          argSoin = argSoin.replace(/([1-9][0-9]*d\d+)/gi, function(all, d) {
+            return d + 'ro1';
+          });
         }
         soins = "[[" + argSoin + "]]";
     }
@@ -36897,7 +36928,7 @@ var COFantasy = COFantasy || function() {
   // activation : message à l'activation
   // activationF : message à l'activation si la cible est féminine
   // actif : message de statut
-  // activation : message à la fin de l'effet
+  // fin : message à la fin de l'effet
   // dm : permet d'infliger des dm
   // soins : soigne
   // prejudiciable: est un effet préjudiciable, qui peut être enlevé par délivrance
@@ -36908,12 +36939,11 @@ var COFantasy = COFantasy || function() {
   // entrave: effet qui immobilise, paralyse ou ralentit
   // statusMarker: marker par défaut pour l'effet
   const messageEffetTemp = {
-    sousTension: {
-      activation: "se charge d'énergie électrique",
-      actif: "est chargé d'énergie électrique",
-      fin: "n'est plus chargé d'énergie électrique",
-      dm: true,
-      visible: false
+    formeDAnge: {
+      activation: "prend la forme d'un ange ailé",
+      actif: "est en forme d'ange et peut jeter des sorts en vol stationnaire",
+      fin: "retrouve sa forme normale. Espérons qu'il était au sol...",
+      visible: true,
     },
     aCouvert: {
       activation: "reste à couvert",
@@ -37190,6 +37220,13 @@ var COFantasy = COFantasy || function() {
       actif: "est intangible et invisible",
       fin: "réapparaît",
       visible: true
+    },
+    sousTension: {
+      activation: "se charge d'énergie électrique",
+      actif: "est chargé d'énergie électrique",
+      fin: "n'est plus chargé d'énergie électrique",
+      dm: true,
+      visible: false
     },
     strangulation: {
       activation: "commence à étouffer",
