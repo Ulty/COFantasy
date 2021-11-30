@@ -28898,12 +28898,15 @@ var COFantasy = COFantasy || function() {
   }
 
   function enSelle(msg) {
-    let cmd = msg.content.split(' ');
-    if (cmd.length < 3) {
-      error("Il faut 2 arguments pour !cof-en-selle", cmd);
+    let options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 3) {
+      error("Il faut 2 arguments pour !cof-en-selle", msg.content);
       return;
     }
-    const cavalier = persoOfId(cmd[1]);
+    cmd.shift();
+    const cavalier = persoOfId(cmd[0]);
     if (cavalier === undefined) {
       error("Premier argument de !cof-en-selle incorrect", cmd);
       return;
@@ -28931,14 +28934,16 @@ var COFantasy = COFantasy || function() {
       }
       return;
     }
-    let monture = persoOfId(cmd[2], cmd[2], pageId);
+    cmd.shift();
+    let nomMonture = cmd.join(' ');
+    let monture = persoOfId(nomMonture, nomMonture, pageId);
     if (monture === undefined || !predicateAsBool(monture, 'monture')) {
       sendPerso(cavalier, "ne peut pas monter là-dessus");
-      log(cmd);
+      log(nomMonture);
       return;
     }
     const tokenM = monture.token;
-    const nomMonture = tokenM.get('name');
+    nomMonture = tokenM.get('name');
     if (attributeAsBool(monture, 'estMontePar')) {
       sendPerso(cavalier, "ne peut monter sur " + nomMonture + " car " + onGenre(monture, 'il', 'elle') + " a déjà un cavalier");
       return;
@@ -29054,14 +29059,14 @@ var COFantasy = COFantasy || function() {
 
   //!cof-creer-elixir token_id elixir
   function creerElixir(msg) {
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined || cmd.length < 3) {
       error("Pas assez d'arguments pour !cof-creer-elixir", msg.content);
       return;
     }
-    var forgesort = persoOfId(cmd[1], cmd[1], options.pageId);
+    let forgesort = persoOfId(cmd[1], cmd[1], options.pageId);
     if (forgesort === undefined) {
       if (msg.selected && msg.selected.length == 1) {
         forgesort = persoOfId(msg.selected[0]._id);
