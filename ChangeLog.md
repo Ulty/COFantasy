@@ -1,6 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.04
 ### Capacités
+* Ajout d'Épée céleste de la Voie de l'archange.
+* Ajout de la paralysie des goules.
 * Ajout des deux premiers rangs de la voie de l'archange.
 * Simulacre de vie
 * Ajout d'un visuel pour la prison végétale

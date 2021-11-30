@@ -2169,6 +2169,7 @@ var COFantasy = COFantasy || function() {
           });
         break;
       case 'paralyseTemp':
+      case 'paralyseGoule':
         iterTokensOfAttribute(charId, options.pageId, effet, attrName,
           function(token) {
             setState({
@@ -6365,7 +6366,7 @@ var COFantasy = COFantasy || function() {
       };
     }
     switch (args[0]) {
-      case "etat":
+      case 'etat':
         if (args.length < 2) {
           error("condition non reconnue", args);
           return;
@@ -6382,7 +6383,7 @@ var COFantasy = COFantasy || function() {
           attribute: args[1],
           text: args[1]
         };
-      case "etatCible":
+      case 'etatCible':
         if (args.length < 2) {
           error("condition non reconnue", args);
           return;
@@ -7988,7 +7989,11 @@ var COFantasy = COFantasy || function() {
         });
         return resEtatCible;
       case 'attribut':
-        return (attributeAsBool(attaquant, cond.attribute));
+        if (attributeAsBool(attaquant, cond.attribute)) return true;
+        if (cond.attribute == 'armeDArgent') {
+          return attributeAsBool(attaquant, 'formeDAnge') && predicateAsInt(attaquant, 'voieDeLArchange', 1) > 2;
+        }
+        return false;
       case 'attributCible':
         let resAttrCible = true;
         if (cond.valeur === undefined) {
@@ -11936,6 +11941,8 @@ var COFantasy = COFantasy || function() {
         return attributeAsBool(target, 'presenceGlaciale');
       case 'maladie':
         return attributeAsBool(target, 'sangDeLArbreCoeur');
+      case 'drain':
+        return predicateAsInt(target, 'voieDeLArchange', 1) > 2 && attributeAsBool(target, 'formeDAnge');
     }
     return false;
   }
@@ -13828,6 +13835,7 @@ var COFantasy = COFantasy || function() {
           setState(target, 'ralenti', true, evt);
           break;
         case 'paralyseTemp':
+        case 'paralyseGoule':
           setState(target, 'paralyse', true, evt);
           break;
         case 'immobiliseTemp':
@@ -14965,6 +14973,7 @@ var COFantasy = COFantasy || function() {
                     ef.effet == 'etourdiTemp' ||
                     ef.effet == 'immobiliseTemp' ||
                     ef.effet == 'paralyseTemp' ||
+                    ef.effet == 'paralyseGoule' ||
                     ef.effet == 'ralentiTemp' ||
                     ef.entrave
                   )) ||
@@ -14972,9 +14981,21 @@ var COFantasy = COFantasy || function() {
                     ef.effet == 'ralentiTemp' ||
                     ef.effet == 'immobiliseTemp' ||
                     ef.effet == 'paralyseTemp')) ||
+                  ef.effet == 'paralyseGoule' ||
                   (ef.entrave && predicateAsInt(target, 'voieDeLArchange', 1) > 1 && attributeAsBool(target, 'formeDAnge'))
                 ) {
                   target.messages.push(target.tokName + " reste libre de ses mouvements !");
+                  return;
+                }
+                if (ef.effet == 'paralyseGoule' &&
+                  (estElfe(target) ||
+                    (predicateAsInt(target, 'voieDeLArchange', 1) > 2 && attributeAsBool(target, 'formeDAnge')))
+                ) {
+                  target.messages.push(target.tokName + " est immunisé à la paralysie des goules");
+                  return;
+                }
+                if (ef.effet == 'affaibliTemp' && estMortVivant(attaquant) && predicateAsInt(target, 'voieDeLArchange', 1) > 2 && attributeAsBool(target, 'formeDAnge')) {
+                  target.messages.push(target.tokName + " est insensible aux affaiblissements des morts-vivants.");
                   return;
                 }
                 if (ef.save) {
@@ -15036,20 +15057,24 @@ var COFantasy = COFantasy || function() {
                       }
                     }
                     if (dmgDrain || (dmg > 0 && (options.vampirise || target.vampirise))) {
-                      var pcVampirise = target.vampirise || options.vampirise;
-                      var soinsVamp = dmgDrain || 0;
+                      let pcVampirise = target.vampirise || options.vampirise;
+                      let soinsVamp = dmgDrain || 0;
                       if (pcVampirise) soinsVamp += Math.ceil(dmg * pcVampirise / 100);
                       soigneToken(attaquant, soinsVamp, evt, function(soins) {
                         target.messages.push(
                           "L'attaque soigne " + attackerTokName + " de " + soins + " PV");
                       });
                     }
-                    var absorptionEnergie = predicateAsInt(attaquant, 'absorptionEnergie', 0);
+                    let absorptionEnergie = predicateAsInt(attaquant, 'absorptionEnergie', 0);
                     if (absorptionEnergie > 0) {
-                      soigneToken(attaquant, absorptionEnergie, evt, function(soins) {
-                        target.messages.push(
-                          "L'attaque soigne " + attackerTokName + " de " + soins + " PV");
-                      });
+                      if (estMortVivant(attaquant) && predicateAsInt(target, 'voieDeLArchange', 1) > 2 && attributeAsBool(target, 'formeDAnge')) {
+                        target.messages.push(target.tokName + "n'est pas affecté" + eForFemale(target) + " par l'absorption d'énergie");
+                      } else {
+                        soigneToken(attaquant, absorptionEnergie, evt, function(soins) {
+                          target.messages.push(
+                            "L'attaque soigne " + attackerTokName + " de " + soins + " PV");
+                        });
+                      }
                     }
                     target.dmgMessage = "<b>DM :</b> ";
                     if (ficheAttributeAsBool(attaquant, 'jets_caches', false)) {
@@ -23403,18 +23428,20 @@ var COFantasy = COFantasy || function() {
                 effet == 'etourdiTemp' ||
                 effet == 'immobiliseTemp' ||
                 effet == 'paralyseTemp' ||
+                effet == 'paralyseGoule' ||
                 effet == 'ralentiTemp'))
           )) {
           sendPerso(perso, "reste libre de ses mouvements !");
           return;
         }
-        if ((options.magique || options.mana != undefined) && mEffet.entrave &&
+        if ((options.magique || options.mana != undefined) &&
           ((predicateAsBool(perso, 'actionLibre') &&
               (effet == 'immobiliseTemp' ||
                 effet == 'paralyseTemp' ||
+                effet == 'paralyseGoule' ||
                 effet == 'ralentiTemp' ||
                 effet == 'toiles')) ||
-            (predicateAsInt(perso, 'voieDeLArchange', 1) > 1 && attributeAsBool(perso, 'formeDAnge'))
+            (mEffet.entrave && predicateAsInt(perso, 'voieDeLArchange', 1) > 1 && attributeAsBool(perso, 'formeDAnge'))
           )) {
           sendPerso(perso, "reste libre de ses mouvements !");
           return;
@@ -25045,6 +25072,17 @@ var COFantasy = COFantasy || function() {
       default:
         return false;
     }
+  }
+
+  function estElfe(perso) {
+    if (predicateAsBool(perso, 'elfe')) return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '');
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    if (perso.race.includes('elfe')) return true;
+    return false;
   }
 
   //Vrai pour les insectes et araignées
@@ -37059,6 +37097,15 @@ var COFantasy = COFantasy || function() {
       prejudiciable: true,
       visible: true,
       entrave: true
+    },
+    paralyseGoule: {
+      activation: "est paralysé : aucune action ni déplacement possible",
+      activationF: "est paralysée : aucune action ni déplacement possible",
+      actif: "est paralysé",
+      fin: "n'est plus paralysé",
+      msgSave: "ne plus être paralysé",
+      prejudiciable: true,
+      visible: true
     },
     immobiliseTemp: {
       activation: "est immobilisé : aucun déplacement possible",
