@@ -13995,14 +13995,6 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  //renvoie true si le personnage est immunisé aux sorts qui restreignent le déplacement
-  function actionLibre(perso) {
-    let res =
-      predicateAsBool(perso, 'actionLibre') ||
-      (predicateAsInt(perso, 'voieDeLArchange', 1) > 1 && attributeAsBool(perso, 'formeDAnge'));
-    return res;
-  }
-
   function attaqueNeTouchePas(attaquant, echecCritique, weaponStats, display, options, evt, explications, pageId, cibles) {
     finaliseDisplay(display, explications, evt, attaquant, cibles, options, echecCritique);
     if (echecCritique) {
@@ -14925,7 +14917,9 @@ var COFantasy = COFantasy || function() {
                       ce.etat == 'paralyse' ||
                       ce.etat == 'ralenti'
                     )) ||
-                    (actionLibre(target) && (ce.etat == 'ralenti' || ce.etat == 'immobilise' || ce.etat == 'paralyse')))) {
+                    (predicateAsBool(target, 'actionLibre') && (ce.etat == 'ralenti' || ce.etat == 'immobilise' || ce.etat == 'paralyse')) ||
+                    (predicateAsInt(target, 'voieDeLArchange', 1) > 1 && (ce.etat == 'ralenti' || ce.etat == 'immobilise') && attributeAsBool(target, 'formeDAnge'))
+                  )) {
                   target.messages.push(target.tokName + " reste libre de ses mouvements !");
                   return;
                 }
@@ -14965,15 +14959,21 @@ var COFantasy = COFantasy || function() {
             if (effets) {
               effets.forEach(function(ef) {
                 if (options.sortilege &&
-                  (predicateAsBool(target, 'liberteDAction') && (options.sortilege && (
+                  (predicateAsBool(target, 'liberteDAction') && (
                     ef.effet == 'apeureTemp' ||
                     ef.effet == 'endormiTemp' ||
                     ef.effet == 'etourdiTemp' ||
                     ef.effet == 'immobiliseTemp' ||
                     ef.effet == 'paralyseTemp' ||
-                    ef.effet == 'ralentiTemp'
-                  ))) ||
-                  (actionLibre(target) && (ef.effet == 'ralentiTemp' || ef.effet == 'immobiliseTemp' || ef.effet == 'paralyseTemp'))) {
+                    ef.effet == 'ralentiTemp' ||
+                    ef.entrave
+                  )) ||
+                  (predicateAsBool(target, 'actionLibre') && (
+                    ef.effet == 'ralentiTemp' ||
+                    ef.effet == 'immobiliseTemp' ||
+                    ef.effet == 'paralyseTemp')) ||
+                  (ef.entrave && predicateAsInt(target, 'voieDeLArchange', 1) > 1 && attributeAsBool(target, 'formeDAnge'))
+                ) {
                   target.messages.push(target.tokName + " reste libre de ses mouvements !");
                   return;
                 }
@@ -15947,15 +15947,9 @@ var COFantasy = COFantasy || function() {
       bonus += bonusProtectionContreLeMal;
       expliquer("Protection contre le mal => +" + bonusProtectionContreLeMal + " au jet de sauvegarde");
     }
-    if (s.entrave) {
-      if (predicateAsInt(target, 'voieDeLArchange', 1) > 1 && attributeAsBool(target, 'formeDAnge')) {
-        expliquer(target.tokName + " est un ange, " + onGenre(target, 'il', 'elle') + " ne peut être entravé.");
-        afterSave(true, '');
-        return;
-      } else if (predicateAsBool(target, 'actionLibre')) {
-        bonus += 5;
-        expliquer("Action libre => +5 pour résister aux entraves");
-      }
+    if (s.entrave && predicateAsBool(target, 'actionLibre')) {
+      bonus += 5;
+      expliquer("Action libre => +5 pour résister aux entraves");
     }
     if (options.necromancie && attributeAsBool(target, 'sangDeLArbreCoeur')) {
       bonus += 5;
@@ -22801,17 +22795,17 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseSetState(msg) {
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined || cmd.length < 3) {
       error("Pas assez d'arguments pour !cof-set-state", msg.content);
       return;
     }
-    var etat = cmd[1];
-    var valeur = cmd[2];
-    if (valeur == "false" || valeur == "0") valeur = false;
-    if (valeur == "true") valeur = true;
+    let etat = cmd[1];
+    let valeur = cmd[2];
+    if (valeur == 'false' || valeur == '0' || valeur == 'non' || valeur == 'no') valeur = false;
+    if (valeur == 'true' || valeur == 'oui' || valeur == 'yes') valeur = true;
     if (!_.has(cof_states, etat)) {
       error("Le premier argument de !cof-set-state n'est pas un état valide", cmd);
       return;
@@ -22825,7 +22819,7 @@ var COFantasy = COFantasy || function() {
       options.saveParTour = {
         carac: cmd[2]
       };
-      var opposition = persoOfId(cmd[3]);
+      let opposition = persoOfId(cmd[3]);
       if (opposition) {
         options.saveParTour.difficulte = cmd[3] + ' ' + opposition.token.get('name');
       } else {
@@ -22836,7 +22830,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    var cibles = [];
+    let cibles = [];
     getSelected(msg, function(selected, playerId) {
       if (selected === undefined || selected.length === 0) {
         error("Pas de cible pour le changement d'état", msg);
@@ -22846,6 +22840,43 @@ var COFantasy = COFantasy || function() {
         if (options.seulementVivant && estNonVivant(perso)) {
           sendPlayer(msg, "cet effet n'affecte que les créatures vivantes", playerId);
           return;
+        }
+        switch (etat) {
+          case 'apeure':
+          case 'endormi':
+            if (predicateAsBool(perso, 'liberteDAction')) {
+              sendPerso(perso, "reste libre de ses mouvements !");
+              return;
+            }
+            break;
+          case 'paralyse':
+            if (predicateAsBool(perso, 'liberteDAction')) {
+              sendPerso(perso, "reste libre de ses mouvements !");
+              return;
+            }
+            if ((options.magique || options.mana != undefined) &&
+              predicateAsBool(perso, 'actionLibre')) {
+              sendPerso(perso, "reste libre de ses mouvements !");
+              return;
+            }
+            break;
+          case 'immobilise':
+          case 'ralenti':
+            if (predicateAsBool(perso, 'liberteDAction')) {
+              sendPerso(perso, "reste libre de ses mouvements !");
+              return;
+            }
+            if ((options.magique || options.mana != undefined) &&
+              predicateAsBool(perso, 'actionLibre')) {
+              sendPerso(perso, "reste libre de ses mouvements !");
+              return;
+            }
+            if (predicateAsInt(perso, 'voieDeLArchange', 1) > 1 && attributeAsBool(perso, 'formeDAnge')) {
+              sendPerso(perso, "reste libre de ses mouvements !");
+              return;
+            }
+            break;
+          default:
         }
         cibles.push(perso);
       });
@@ -23377,11 +23408,14 @@ var COFantasy = COFantasy || function() {
           sendPerso(perso, "reste libre de ses mouvements !");
           return;
         }
-        if ((options.magique || options.mana != undefined) && actionLibre(perso) &&
-          (effet == 'immobiliseTemp' ||
-            effet == 'paralyseTemp' ||
-            effet == 'ralentiTemp' ||
-            effet == 'toiles')) {
+        if ((options.magique || options.mana != undefined) && mEffet.entrave &&
+          ((predicateAsBool(perso, 'actionLibre') &&
+              (effet == 'immobiliseTemp' ||
+                effet == 'paralyseTemp' ||
+                effet == 'ralentiTemp' ||
+                effet == 'toiles')) ||
+            (predicateAsInt(perso, 'voieDeLArchange', 1) > 1 && attributeAsBool(perso, 'formeDAnge'))
+          )) {
           sendPerso(perso, "reste libre de ses mouvements !");
           return;
         }
