@@ -14982,7 +14982,7 @@ var COFantasy = COFantasy || function() {
                     ef.effet == 'immobiliseTemp' ||
                     ef.effet == 'paralyseTemp')) ||
                   ef.effet == 'paralyseGoule' ||
-                  (ef.entrave && predicateAsInt(target, 'voieDeLArchange', 1) > 1 && attributeAsBool(target, 'formeDAnge'))
+                  (ef.entrave && ef.effet != 'paralyseTemp' && ef.effet != 'paralyseGoule' && predicateAsInt(target, 'voieDeLArchange', 1) > 1 && attributeAsBool(target, 'formeDAnge'))
                 ) {
                   target.messages.push(target.tokName + " reste libre de ses mouvements !");
                   return;
@@ -23441,7 +23441,7 @@ var COFantasy = COFantasy || function() {
                 effet == 'paralyseGoule' ||
                 effet == 'ralentiTemp' ||
                 effet == 'toiles')) ||
-            (mEffet.entrave && predicateAsInt(perso, 'voieDeLArchange', 1) > 1 && attributeAsBool(perso, 'formeDAnge'))
+            (mEffet.entrave && effet != 'paralyseTemp' && effet != 'paralyseGoule' && predicateAsInt(perso, 'voieDeLArchange', 1) > 1 && attributeAsBool(perso, 'formeDAnge'))
           )) {
           sendPerso(perso, "reste libre de ses mouvements !");
           return;
@@ -34121,27 +34121,27 @@ var COFantasy = COFantasy || function() {
 
   //!cof-mot-de-pouvoir-immobilise --lanceur toid
   function motDePouvoirImmobilise(msg) {
-    var options = parseOptions(msg);
-    var pageId = options.pageId;
-    var evt = {
+    let options = parseOptions(msg);
+    let pageId = options.pageId;
+    let evt = {
       type: 'Mot de pouvoir'
     };
     addEvent(evt);
     if (options.lanceur) {
       sendPerso(options.lanceur, "prononce un mot avec la Voix d'une puissance supérieure. Tous ses ennemis sont immobilisés et ses alliés sont galvanisés.");
-      var allies = alliesParPerso[options.lanceur.charId];
+      let allies = alliesParPerso[options.lanceur.charId];
       if (allies) {
-        var tokens = findObjs({
+        let tokens = findObjs({
           _type: 'graphic',
           _subtype: 'token',
           _pageid: pageId,
           layer: 'objects'
         });
         tokens.forEach(function(tok) {
-          var ci = tok.get('represents');
+          let ci = tok.get('represents');
           if (ci === '') return;
           if (!allies.has(ci)) return;
-          var perso = {
+          let perso = {
             charId: ci,
             token: tok
           };
@@ -34151,6 +34151,13 @@ var COFantasy = COFantasy || function() {
     }
     getSelected(msg, function(selected, playerId) {
       iterSelected(selected, function(perso) {
+        if (predicateAsBool(perso, 'liberteDAction') ||
+          predicateAsBool(perso, 'actionLibre') ||
+          (predicateAsInt(perso, 'voieDeLArchange', 1) > 1 && attributeAsBool(perso, 'formeDAnge'))
+        ) {
+          sendPerso(perso, "reste libre de ses mouvements");
+          return;
+        }
         setState(perso, 'immobilise', true, evt);
         setAttrDuree(perso, 'immobiliseTemp', 1, evt);
       });
