@@ -9098,7 +9098,7 @@ var COFantasy = COFantasy || function() {
     if (ficheAttributeAsInt(target, 'DEFARMUREON', 1) === 0) {
       defense += predicateAsInt(target, 'vetementsSacres', 0);
       defense += predicateAsInt(target, 'armureDeVent', 0);
-      if (!options.distance)
+      if (!options.distance && !options.sortilege)
         defense += predicateAsInt(target, 'dentellesEtRapiere', 0);
     }
     defense += predicateAsInt(target, 'esquiveVoleur', 0);
