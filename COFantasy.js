@@ -14678,6 +14678,14 @@ var COFantasy = COFantasy || function() {
             target.messages.push("Langage sombre : +1 DM");
           }
         }
+        if (predicateAsBool(attaquant, 'laissez-le-moi')
+          && attributeAsBool(target, 'seulContreTous_leader')) {
+          target.additionalDmg.push({
+            type: mainDmgType,
+            value: '1d6'
+          });
+          target.messages.push("Cible de " + attackerTokName + " : +1d6 DM");
+        }
         //Bonus aux DMs dus au défi samouraï
         var defiSamouraiAttr = tokenAttribute(attaquant, 'defiSamourai');
         if (defiSamouraiAttr.length > 0) {
@@ -18033,6 +18041,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('pacifismeImpossible', evt, attrs);
     attrs = removeAllAttributes('traquenardImpossible', evt, attrs);
     attrs = removeAllAttributes('niveauDesObjetsAnimes', evt, attrs);
+    attrs = removeAllAttributes('seulContreTous_leader', evt, attrs);
     // Autres attributs
     // On récupère les munitions récupérables
     resetAttr(attrs, 'munition', evt, "récupère ses munitions");
