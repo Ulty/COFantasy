@@ -1109,7 +1109,7 @@
                 <ol>
                   <li><strong>Ignorer la douleur</strong> : Ajouter un <a href=#predicats>prédicat</a> <code>ignorerLaDouleur</code>. Normalement, le script affiche un bouton quand cela est utilisable, mais on peut aussi le déclencher avec <code>!cof-ignorer-la-douleur</code> juste après le coup.</li>
                   <li><strong>Piqures d'insectes</strong> : ajouter un <a href=#predicats>prédicat</a> <code>piquresDInsectes</code>, avec comme valeur le rang dans la voie.</li>
-                  <li><strong>Laissez-le-moi</strong> : pas de support pour restreindre au chef de groupe. On pourraît peut-être utiliser la voie du chef d'armée pour le faire automatiquement ? Pour l'instant, utiliser l'option <code>--plus 1d6</code> contre les leaders.</li>
+                  <li><strong>Laissez-le-moi !</strong> : Ajouter un <a href=#predicats>prédicat</a> <code>laissez-le-moi</code>. Ensuite faire : <code>!cof-set-attribute seulContreTous_leader true --target @{target|token_id}</code> et désigner le leader. On peut par exemple mettre ceci en Token Action pour le Chevalier, ou bien en Macro pour GM uniquement, selon l'envie.</li>
                   <li><strong>Seul contre tous</strong> : Utiliser <code>!cof-effet-temp seulContreTous 1</code> pour se mettre en position. Les actions affichées en cas de riposte seront normalement une attaque avec l'arme en main si il y en a, plus les attaques naturelles cochées sur la liste d'attaque. Si ça ne convient pas, vous pouvez écrire une liste d'actions nommée<code>Ripostes</code> (voir les <a href="#actions_du_tour">actions du tour</a>).</li>
                   <li><strong>Charisme héroïque</strong> : reporter sur la fiche.</li>
                 </ol>

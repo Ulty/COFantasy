@@ -44,6 +44,7 @@
 * Modifie l'affichage des boutons de soins si plus disponibles
 * Un peu plus de discrétion avec les messages sur les limites par jour ou par combat
 * Passage en prédicats d'un grand nombre de capacités qui utilisaient encore des attributs.
+* Meilleur support de Laissez-le-moi (Chevalier, Voie du Héros R3)
 
 ## 3.03
 ### Capacités
