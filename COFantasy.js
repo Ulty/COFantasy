@@ -789,7 +789,10 @@ var COFantasy = COFantasy || function() {
     } else if (roundMarker) { //rotation
       let rotation = roundMarker.get('rotation');
       roundMarker.set('rotation', (rotation + 1) % 365);
-      setTimeout(_.bind(activateRoundMarker, undefined, sync), 100);
+      let timeout = 100;
+      //let page = getObj('page', roundMarker.get('pageid'));
+      //if (page && (page.get('dynamic_lighting_enabled') || page.get('showlighting'))) timeout = 2000;
+      setTimeout(_.bind(activateRoundMarker, undefined, sync), timeout);
     }
   }
 
@@ -5137,7 +5140,7 @@ var COFantasy = COFantasy || function() {
       if (testsRatesDuTour.length > 0) {
         testsRatesDuTour = testsRatesDuTour[0];
         listeTestsRatesDuTour = testsRatesDuTour.get('current').split(' ');
-        var testRate = listeTestsRatesDuTour.includes(testId);
+        let testRate = listeTestsRatesDuTour.includes(testId);
         if (testRate) {
           testDejaRate = true;
           bonusCarac += adaptable;
@@ -5149,19 +5152,19 @@ var COFantasy = COFantasy || function() {
         }
       } else testsRatesDuTour = undefined;
     }
-    var carSup = nbreDeTestCarac(carac, personnage);
-    var de = computeDice(personnage, {
+    let carSup = nbreDeTestCarac(carac, personnage);
+    let de = computeDice(personnage, {
       nbDe: carSup,
       carac: carac
     });
     if (estAffaibli(personnage) && predicateAsBool(personnage, 'insensibleAffaibli')) bonusCarac -= 2;
-    var plageEC = 1;
-    var plageECText = '1';
+    let plageEC = 1;
+    let plageECText = '1';
     if (options.plageEchecCritique) {
       plageEC = options.plageEchecCritique;
       if (plageEC > 1) plageECText = '<' + plageEC;
     }
-    var rollExpr = "[[" + de + "cs20cf" + plageECText + "]]";
+    let rollExpr = "[[" + de + "cs20cf" + plageECText + "]]";
     try {
       sendChat("", rollExpr, function(res) {
         options.rolls = options.rolls || {};
@@ -5171,8 +5174,8 @@ var COFantasy = COFantasy || function() {
         evt.action.rolls = evt.action.rolls || {};
         evt.action.rolls[testId] = roll;
         testRes.roll = roll;
-        var d20roll = roll.results.total;
-        var bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
+        let d20roll = roll.results.total;
+        let bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
         testRes.texte = jetCache ? d20roll + bonusCarac : buildinline(roll) + bonusText;
         if (d20roll == 20) {
           testRes.reussite = true;
@@ -7384,7 +7387,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque la limite journalière", cmd);
             return;
           }
-          var limiteParJour = parseInt(cmd[1]);
+          let limiteParJour = parseInt(cmd[1]);
           if (isNaN(limiteParJour) || limiteParJour < 1) {
             error("La limite journalière doit être un nombre positif", cmd);
             return;
@@ -7400,7 +7403,7 @@ var COFantasy = COFantasy || function() {
             scope.limiteParCombat = 1;
             return;
           }
-          var limiteParCombat = parseInt(cmd[1]);
+          let limiteParCombat = parseInt(cmd[1]);
           if (isNaN(limiteParCombat) || limiteParCombat < 1) {
             error("La limite par combat doit être un nombre positif", cmd);
             return;
@@ -7416,7 +7419,7 @@ var COFantasy = COFantasy || function() {
             error("Erreur interne d'une commande générée par bouton", cmd);
             return;
           }
-          var attr = getObj('attribute', cmd[1]);
+          let attr = getObj('attribute', cmd[1]);
           if (attr === undefined) {
             attr = tokenAttribute(attaquant, cmd[1]);
             if (attr.length === 0) {
@@ -8310,7 +8313,7 @@ var COFantasy = COFantasy || function() {
       //On copie les champs de scope dans options ou dans target
       if (phase === 0)
         copyBranchOptions(attaquant, branch, options, target, evt, explications, condInTarget);
-      var etat = {
+      let etat = {
         parent: etatParent
       };
       evalITE(attaquant, target, deAttaque, options, phase, evt, explications, branch, callback, condInTarget, etat);
@@ -8318,11 +8321,11 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  // Returns all attributes in attrs, with name name or starting with name_
+  // Retourne tous les attributs dans attrs, de nom name ou commençant par name_
   function allAttributesNamed(attrs, name) {
-    var reg = new RegExp("^" + name + "($|_|\\()");
+    let reg = new RegExp("^" + name + "($|_|\\()");
     return attrs.filter(function(obj) {
-      var attrName = obj.get('name');
+      let attrName = obj.get('name');
       return reg.test(attrName);
     });
   }
@@ -8333,7 +8336,7 @@ var COFantasy = COFantasy || function() {
         _type: 'attribute'
       });
     }
-    var attrsNamed = allAttributesNamed(attrs, name);
+    let attrsNamed = allAttributesNamed(attrs, name);
     if (attrsNamed.length === 0) return attrs;
     if (evt.deletedAttributes === undefined) evt.deletedAttributes = [];
     attrsNamed.forEach(function(attr) {
@@ -8341,7 +8344,7 @@ var COFantasy = COFantasy || function() {
       attr.remove();
     });
     attrs = attrs.filter(function(attr) {
-      var ind = attrsNamed.findIndex(function(nattr) {
+      let ind = attrsNamed.findIndex(function(nattr) {
         return nattr.id == attr.id;
       });
       return (ind == -1);
@@ -8350,8 +8353,8 @@ var COFantasy = COFantasy || function() {
   }
 
   function onGenre(perso, male, female) {
-    var sex = ficheAttribute(perso, 'sexe', '');
-    if (sex.startsWith('F')) return female;
+    let sexe = ficheAttribute(perso, 'sexe', '');
+    if (sexe.startsWith('F')) return female;
     return male;
   }
 
@@ -9802,9 +9805,8 @@ var COFantasy = COFantasy || function() {
   //Bonus d'attaque qui dépendent de la cible
   // si options.aoe, target doit avoir un champ tokName
   function bonusAttaqueD(attaquant, target, portee, pageId, evt, explications, options) {
-    var attackingCharId = attaquant.charId;
     attaquant.tokName = attaquant.tokName || attaquant.token.get('name');
-    var attBonus = 0;
+    let attBonus = 0;
     if (target.bonusAttaque) attBonus += target.bonusAttaque;
     if (getState(attaquant, 'aveugle')) {
       if (options.distance) {
@@ -9880,7 +9882,7 @@ var COFantasy = COFantasy || function() {
     }
     let ennemiJureAttr = findObjs({
       _type: 'attribute',
-      _characterid: attackingCharId,
+      _characterid: attaquant.charId,
       name: 'ennemiJure'
     });
     let ennemiJure = false;
@@ -10117,6 +10119,13 @@ var COFantasy = COFantasy || function() {
       } else {
         explications.push("Libérateur d'Anathazerïn => +2 en attaque et +2d6 DM");
         target.cibleLiberateurDAnathazerin = true;
+      }
+    }
+    if (predicateAsBool(attaquant, 'tenacite')) {
+      let bonus = attributeAsInt(target, 'attributDeCombat_tenaciteDe' + attaquant.tokName, 0);
+      if (bonus > 0) {
+        explications.push("Ténacité => +" + bonus + " en attaque");
+        attBonus += bonus;
       }
     }
     return attBonus;
@@ -10451,7 +10460,7 @@ var COFantasy = COFantasy || function() {
             diminueMalediction(perso1, evt);
             break;
         }
-        var texte1 = "Jet de " + carac1 + " de " + nom1 + " : " + rt1.texte;
+        let texte1 = "Jet de " + carac1 + " de " + nom1 + " : " + rt1.texte;
         if (reussite == 2) {
           if ((carac1 == 'FOR' || carac1 == 'DEX' || carac1 == 'CON') &&
             attributeAsBool(perso1, 'runeForgesort_énergie') &&
@@ -10459,7 +10468,7 @@ var COFantasy = COFantasy || function() {
             texte1 += "<br/>" + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + rollId + "_roll1", "Rune d'énergie");
           }
           if (!rt1.echecCritique && !rt2.critique) {
-            var pcPerso1 = pointsDeChance(perso1);
+            let pcPerso1 = pointsDeChance(perso1);
             if (pcPerso1 > 0)
               texte1 += "<br/>" + boutonSimple("!cof-bouton-chance " +
                 evt.id + " " + rollId + "_roll1", "Chance") + " (reste " + pcPerso1 + " PC)";
@@ -10482,7 +10491,7 @@ var COFantasy = COFantasy || function() {
         expl1.forEach(function(m) {
           explications.push(m);
         });
-        var texte2 = "Jet de " + carac2 + " de " + nom2 + " : " + rt2.texte;
+        let texte2 = "Jet de " + carac2 + " de " + nom2 + " : " + rt2.texte;
         if (reussite == 1) {
           if ((carac2 == 'FOR' || carac2 == 'DEX' || carac2 == 'CON') &&
             attributeAsBool(perso2, 'runeForgesort_énergie') &&
@@ -10490,7 +10499,7 @@ var COFantasy = COFantasy || function() {
             texte2 += "<br/>" + boutonSimple("!cof-bouton-rune-energie " + evt.id + " " + rollId + "_roll2", "Rune d'énergie");
           }
           if (!rt2.echecCritique && !rt1.critique) {
-            var pcPerso2 = pointsDeChance(perso2);
+            let pcPerso2 = pointsDeChance(perso2);
             if (pcPerso2 > 0)
               texte2 += "<br/>" + boutonSimple("!cof-bouton-chance " +
                 evt.id + " " + rollId + "_roll2", "Chance") + " (reste " + pcPerso2 + " PC)";
@@ -12399,6 +12408,25 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  //attaquant doit avoir un champ tokName
+  function increaseTenacite(attaquant, target, evt) {
+    if (!predicateAsBool(attaquant, 'tenacite')) return;
+    let attr = 'attributDeCombat_tenaciteDe' + attaquant.tokName;
+    let bonus = attributeAsInt(target, attr, 0);
+    if (bonus > 2) return;
+    if (bonus === 0) bonus = 2;
+    else bonus = 5;
+    setTokenAttr(target, attr, bonus, evt);
+  }
+
+  function resetTenacite(attaquant, target, evt) {
+    if (!predicateAsBool(attaquant, 'tenacite')) return;
+    let attr = tokenAttribute(target, 'attributDeCombat_tenaciteDe' + attaquant.tokName);
+    if (attr.length === 0) return;
+    evt.deletedAttributes = evt.deletedAttributes || [];
+    deleteAttribute(attr[0], evt);
+  }
+
   //attaquant doit avoir un champ name
   function attackExpression(attaquant, nbDe, dice, crit, plusFort, weaponStats) {
     var de = computeDice(attaquant, {
@@ -13108,6 +13136,7 @@ var COFantasy = COFantasy || function() {
                   evt.succes = false;
                 } else touche = false;
                 echecCritique = true;
+                increaseTenacite(attaquant, target, evt);
               } else if ((paralyse || options.ouvertureMortelle || targetd20roll == 20 ||
                   (targetd20roll >= target.crit && attackRoll >= defense) ||
                   (reglesOptionelles.divers.val.coups_critiques_etendus.val && attackRoll > defense + 9)) && !options.attaqueAssuree) {
@@ -13126,10 +13155,12 @@ var COFantasy = COFantasy || function() {
                     target.osBrises = true;
                   }
                 }
+                resetTenacite(attaquant, target, evt);
               } else if (options.champion || targetd20roll == 20 || paralyse) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
                 attackResult += addAttackImg("imgAttackSuccesChampion", weaponStats.divers, options);
                 addAttackSound("soundAttackSuccesChampion", weaponStats.divers, options);
+                resetTenacite(attaquant, target, evt);
               } else if (attackRoll < defense && targetd20roll < target.crit) {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
                 attackResult += addAttackImg("imgAttackEchec", weaponStats.divers, options);
@@ -13141,6 +13172,7 @@ var COFantasy = COFantasy || function() {
                   target.dmRate = true;
                   evt.succes = false;
                 } else touche = false;
+                increaseTenacite(attaquant, target, evt);
               } else if (targetd20roll % 2 && attributeAsBool(target, 'clignotement')) {
                 target.messages.push(target.tokName + " disparaît au moment où l'attaque aurait du l" + onGenre(target, 'e', 'a') + " toucher");
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_WARNING + "'><b>échec</b></span>";
@@ -13157,9 +13189,10 @@ var COFantasy = COFantasy || function() {
                 attackResult = " => <span style='" + BS_LABEL + " " + BS_LABEL_SUCCESS + "'><b>succès</b></span>";
                 attackResult += addAttackImg("imgAttackSucces", weaponStats.divers, options);
                 addAttackSound("soundAttackSucces", weaponStats.divers, options);
+                resetTenacite(attaquant, target, evt);
               }
-              var attRollValue;
-              var bonusTexte = '';
+              let attRollValue;
+              let bonusTexte = '';
               if (attSkill > 0) bonusTexte += "+" + attSkill;
               else if (attSkill < 0) bonusTexte += attSkill;
               if (attBonus > 0) bonusTexte += "+" + attBonus;
@@ -15853,7 +15886,7 @@ var COFantasy = COFantasy || function() {
 
   function probaSucces(de, seuil, nbreDe) {
     if (nbreDe == 2) {
-      var proba1 = probaSucces(de, seuil, 1);
+      let proba1 = probaSucces(de, seuil, 1);
       return 1 - (1 - proba1) * (1 - proba1);
     }
     if (seuil < 2) seuil = 2; // 1 est toujours un échec
@@ -15862,7 +15895,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function nbreDeTestCarac(carac, perso) {
-    var typeJet = findObjs({
+    let typeJet = findObjs({
       _type: 'attribute',
       _characterid: perso.charId,
       name: carac + '_SUP'
@@ -15968,7 +16001,7 @@ var COFantasy = COFantasy || function() {
     if (options.attaquant &&
       attributeAsBool(target, 'protectionContreLeMal') &&
       estMauvais(options.attaquant)) {
-      var bonusProtectionContreLeMal = getValeurOfEffet(target, 'protectionContreLeMal', 2);
+      let bonusProtectionContreLeMal = getValeurOfEffet(target, 'protectionContreLeMal', 2);
       bonus += bonusProtectionContreLeMal;
       expliquer("Protection contre le mal => +" + bonusProtectionContreLeMal + " au jet de sauvegarde");
     }
@@ -16003,18 +16036,18 @@ var COFantasy = COFantasy || function() {
       bonusPreds.push('bonusSaveContre_' + options.type);
     }
     if (!options.hideSaveTitle) {
-      var title = " Jet de " + carac + " " + s.seuil;
+      let title = " Jet de " + carac + " " + s.seuil;
       if (options.msgPour) title += options.msgPour;
       expliquer(title);
     }
-    var optionsTest = {...options
+    let optionsTest = {...options
     };
     optionsTest.bonusAttrs = bonusAttrs;
     optionsTest.bonusPreds = bonusPreds;
     optionsTest.bonus = bonus;
     testCaracteristique(target, carac, s.seuil, saveId, optionsTest, evt,
       function(tr, explications) {
-        var smsg = target.tokName + " fait ";
+        let smsg = target.tokName + " fait ";
         if (explications.length === 0) {
           smsg += tr.texte;
         } else {
@@ -16712,7 +16745,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function finDEffetDeNom(perso, effet, evt, options) { //Supprime l'effet si présent
-    var attrs = tokenAttribute(perso, effet);
+    let attrs = tokenAttribute(perso, effet);
     if (attrs.length === 0) return;
     attrs = attrs[0];
     options = options || {};
@@ -16723,7 +16756,7 @@ var COFantasy = COFantasy || function() {
   function mettreAZeroPV(target, evt, expliquer) {
     updateCurrentBar(target, 1, 0, evt);
     if (predicateAsBool(target, 'baroudHonneur')) {
-      var msgBarroud = target.tokName + " devrait être mort";
+      let msgBarroud = target.tokName + " devrait être mort";
       msgBarroud += eForFemale(target) + ", mais ";
       msgBarroud += onGenre(target, 'il', 'elle') + " continue à se battre !";
       expliquer(msgBarroud);
@@ -16738,7 +16771,7 @@ var COFantasy = COFantasy || function() {
       setTokenAttr(target, 'increvableActif', true, evt);
     } else if ((attributeAsBool(target, 'enrage') || predicateAsBool(target, 'durACuire')) &&
       !attributeAsBool(target, 'aAgiAZeroPV')) {
-      var msgAgitZ = target.tokName + " devrait être mort";
+      let msgAgitZ = target.tokName + " devrait être mort";
       msgAgitZ += eForFemale(target) + ", mais ";
       msgAgitZ += onGenre(target, 'il', 'elle') + " continue à se battre !";
       expliquer(msgAgitZ);
@@ -17189,9 +17222,9 @@ var COFantasy = COFantasy || function() {
           }
           if (bar1 <= 0) {
             if (predicateAsBool(target, 'sergent') &&
-              !attributeAsBool(target, 'sergentUtilise')) {
+              !attributeAsBool(target, 'attributDeCombat_sergentUtilise')) {
               expliquer(token.get('name') + " évite l'attaque in-extremis");
-              setTokenAttr(target, 'sergentUtilise', true, evt);
+              setTokenAttr(target, 'attributDeCombat_sergentUtilise', true, evt);
               pvPerdus = 0;
             } else if (target.attackRoll &&
               predicateAsBool(target, 'increvableHumain') &&
@@ -17247,27 +17280,27 @@ var COFantasy = COFantasy || function() {
                   }
                 }
               }
-              var toEvaluateAttackIncrevable =
+              let toEvaluateAttackIncrevable =
                 attackExpression(target, 1, dice, critIncrevable, true, weaponStatsIncrevable);
               sendChat('', toEvaluateAttackIncrevable, function(resAttackIncrevable) {
-                var rollsAttack = resAttackIncrevable[0];
-                var afterEvaluateAttack = rollsAttack.content.split(' ');
-                var attRollNumber = rollNumber(afterEvaluateAttack[0]);
-                var attSkillNumber = rollNumber(afterEvaluateAttack[1]);
-                var d20rollAttaquant = rollsAttack.inlinerolls[attRollNumber].results.total;
+                let rollsAttack = resAttackIncrevable[0];
+                let afterEvaluateAttack = rollsAttack.content.split(' ');
+                let attRollNumber = rollNumber(afterEvaluateAttack[0]);
+                let attSkillNumber = rollNumber(afterEvaluateAttack[1]);
+                let d20rollAttaquant = rollsAttack.inlinerolls[attRollNumber].results.total;
                 var attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
-                var explications = [];
-                var attBonus =
+                let explications = [];
+                let attBonus =
                   bonusAttaqueA(target, weaponStatsIncrevable.name, evt, explications, optionsIncrevable);
                 attBonus += malusAttaque;
-                var pageId = options.pageId || token.get('pageid');
+                let pageId = options.pageId || token.get('pageid');
                 attBonus +=
                   bonusAttaqueD(target, target.attaquant, 0, pageId, evt, explications, optionsIncrevable);
-                var attackRollAttaquant = d20rollAttaquant + attSkill + attBonus;
-                var attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
+                let attackRollAttaquant = d20rollAttaquant + attSkill + attBonus;
+                let attRollValue = buildinline(rollsAttack.inlinerolls[attRollNumber]);
                 attRollValue += (attSkill > 0) ? "+" + attSkill : (attSkill < 0) ? attSkill : "";
                 attRollValue += (attBonus > 0) ? "+" + attBonus : (attBonus < 0) ? attBonus : "";
-                var msgIncrevable = "Increvable : " + target.tokName + " fait " + attRollValue;
+                let msgIncrevable = "Increvable : " + target.tokName + " fait " + attRollValue;
                 //TODO: afficher les explications de calcul des bonus d'attaque ?
                 if (attackRollAttaquant < target.attackRoll) {
                   expliquer(msgIncrevable + " < " + target.attackRoll + " => échec ");
@@ -17966,8 +17999,7 @@ var COFantasy = COFantasy || function() {
       _type: 'attribute'
     });
     // Fin des effets qui durent pour le combat
-    attrs = removeAllAttributes('soinsDeGroupe', evt, attrs);
-    attrs = removeAllAttributes('sergentUtilise', evt, attrs);
+    attrs = removeAllAttributes('attributDeCombat', evt, attrs);
     attrs = removeAllAttributes('enflamme', evt, attrs);
     attrs = removeAllAttributes('protegerUnAllie', evt, attrs);
     attrs = removeAllAttributes('protegePar', evt, attrs);
@@ -25464,7 +25496,7 @@ var COFantasy = COFantasy || function() {
         effet += ' de groupe';
         if (options.dose === undefined && options.limiteParJour === undefined)
           options.limiteAttribut = {
-            nom: 'soinsDeGroupe',
+            nom: 'attributDeCombat_soinsDeGroupe',
             message: " a déjà fait un soin de groupe durant ce combat",
             limite: 1
           };
@@ -27102,7 +27134,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function doTourDeForce(perso, seuil, options) { // Deprecated
-    var evt = {
+    let evt = {
       type: "tourDeForce",
       action: {
         perso: perso,
@@ -27111,32 +27143,32 @@ var COFantasy = COFantasy || function() {
       }
     };
     addEvent(evt);
-    var action = "<b>Capacité</b> : Tour de force";
-    var display = startFramedDisplay(options.playerId, action, perso);
-    var testId = 'tourDeForce';
+    let action = "<b>Capacité</b> : Tour de force";
+    let display = startFramedDisplay(options.playerId, action, perso);
+    let testId = 'tourDeForce';
     options.bonus = 10;
     testCaracteristique(perso, 'FOR', seuil, testId, options, evt,
       function(tr) {
         addLineToFramedDisplay(display, " Jet de force difficulté " + seuil);
-        var smsg = perso.token.get('name') + " fait " + tr.texte;
+        let smsg = perso.token.get('name') + " fait " + tr.texte;
         if (tr.reussite) {
           smsg += " => réussite";
         } else {
           smsg += " => échec" + tr.rerolls;
         }
         addLineToFramedDisplay(display, smsg);
-        var d4 = options.rolls.tourDeForceDmg || rollDePlus(4);
+        let d4 = options.rolls.tourDeForceDmg || rollDePlus(4);
         evt.action.rolls.tourDeForceDmg = d4;
-        var r = {
+        let r = {
           total: d4.val,
           type: 'normal',
           display: d4.roll
         };
-        var explications = [];
+        let explications = [];
         perso.ignoreTouteRD = true;
         dealDamage(perso, r, [], evt, false, {}, explications,
           function(dmgDisplay, dmg) {
-            var dmgMsg = "mais cela lui coûte " + dmgDisplay + " PV";
+            let dmgMsg = "mais cela lui coûte " + dmgDisplay + " PV";
             addLineToFramedDisplay(display, dmgMsg);
             explications.forEach(function(expl) {
               addLineToFramedDisplay(display, expl, 80);
@@ -38360,12 +38392,12 @@ var COFantasy = COFantasy || function() {
     //Les tests ratés
     let trTour = allAttributesNamed(attrs, 'testsRatesDuTour');
     trTour.forEach(function(tr) {
-      var curTr = tr.get('current');
+      let curTr = tr.get('current');
       if (curTr === '') {
         evt.deletedAttributes.push(tr);
         tr.remove();
       } else {
-        var maxTr = tr.get('max');
+        let maxTr = tr.get('max');
         evt.attributes.push({
           attribute: tr,
           current: curTr,

@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.04
 ### Capacités
+* Ajout de la ténacité de la Voie du héro.
 * Ajout d'Épée céleste de la Voie de l'archange.
 * Ajout de la paralysie des goules.
 * Ajout des deux premiers rangs de la voie de l'archange.
