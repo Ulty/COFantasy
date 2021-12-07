@@ -7438,7 +7438,7 @@ var COFantasy = COFantasy || function() {
           }
           scope.decrLimitePredicatParTour = cmd[1];
           return;
-        case 'forceminimum':
+        case 'forceMinimum':
           if (cmd.length < 2) {
             error("Il faut indiquer le minimum de force", cmd);
             return;
@@ -14678,8 +14678,8 @@ var COFantasy = COFantasy || function() {
             target.messages.push("Langage sombre : +1 DM");
           }
         }
-        if (predicateAsBool(attaquant, 'laissez-le-moi')
-          && attributeAsBool(target, 'seulContreTous_leader')) {
+        if (predicateAsBool(attaquant, 'laissez-le-moi') &&
+          attributeAsBool(target, 'seulContreTous_leader')) {
           target.additionalDmg.push({
             type: mainDmgType,
             value: '1d6'
@@ -25562,7 +25562,7 @@ var COFantasy = COFantasy || function() {
             argSoin = '(' + argSoin + ')*' + (1 + options.tempeteDeManaIntense);
           }
         }
-        if (attributeAsBool(soigneur, 'formeDAnge') && predicateAsInt(soigneur, 'voieDeLArchange', 1) > 1) {
+        if (soigneur && attributeAsBool(soigneur, 'formeDAnge') && predicateAsInt(soigneur, 'voieDeLArchange', 1) > 1) {
           argSoin = argSoin.replace(/([1-9][0-9]*d\d+)/gi, function(all, d) {
             return d + 'ro1';
           });
