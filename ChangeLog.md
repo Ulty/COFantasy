@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.04
 ### Capacités
+* Quelques améliorations pour le guetteur, de la Voie des animaux.
 * Ajout de la ténacité de la Voie du héro.
 * Ajout d'Épée céleste de la Voie de l'archange.
 * Ajout de la paralysie des goules.
