@@ -9354,7 +9354,8 @@ var COFantasy = COFantasy || function() {
         let estChair = tokAttrs.find(function(a) {
           let chairACanonDe = a.get('current').split(",");
           return chairACanonDe.find(function(b) {
-            return b.trim() == target.tokName;
+            let trimmed = b.trim();
+            return trimmed == target.tokName || trimmed == target.name;
           });
         });
         return estChair;
