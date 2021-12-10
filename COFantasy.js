@@ -24661,7 +24661,7 @@ var COFantasy = COFantasy || function() {
       }, cible, saveId, expliquer, saveOpts, evt,
       function(reussite, rollText) {
         if (reussite) {
-          var nc = attributeAsInt(attaquant, "niveau", 0);
+          var nc = charAttributeAsInt(attaquant, "niveau", 0);
           var dmg = {
             type: 'normal',
             value: '2d6+' + nc
