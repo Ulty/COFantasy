@@ -4608,6 +4608,98 @@ var COFantasy = COFantasy || function() {
     return capaciteDisponibleSachantPred(perso, capa, unite);
   }
 
+  function bonusAuxCompetences(personnage, comp, expliquer) {
+    let bonus = 0;
+    switch (comp) {
+      case 'acrobatie':
+      case 'acrobaties':
+        if (predicateAsBool(personnage, 'graceFelineVoleur')) {
+          let bonusGraceFeline = modCarac(personnage, 'charisme');
+          if (bonusGraceFeline > 0) {
+            expliquer("Grâce féline : +" + bonusGraceFeline + " en acrobaties");
+            bonus += bonusGraceFeline;
+          }
+        }
+        break;
+      case 'course':
+        if (predicateAsBool(personnage, 'graceFelineVoleur')) {
+          let bonusGraceFeline = modCarac(personnage, 'charisme');
+          if (bonusGraceFeline > 0) {
+            expliquer("Grâce féline : +" + bonusGraceFeline + " en course");
+            bonus += bonusGraceFeline;
+          }
+        }
+        break;
+      case 'discrétion':
+      case 'discretion':
+        if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+          expliquer("Forêt hostile : -5 en discrétion");
+          bonus -= 5;
+        }
+        break;
+      case 'intimidation':
+        bonus += bonusArgumentDeTaille(personnage, expliquer);
+        if (predicateAsBool(personnage, 'ordreDuChevalierDragon') && attributeAsBool(personnage, 'monteSur')) {
+          expliquer("Chevalier Dragon monté : +5 en intimidation");
+          bonus += 5;
+        }
+        break;
+      case 'escalade':
+        if (predicateAsBool(personnage, 'graceFelineVoleur')) {
+          let bonusGraceFeline = modCarac(personnage, 'charisme');
+          if (bonusGraceFeline > 0) {
+            expliquer("Grâce féline : +" + bonusGraceFeline + " en escalade");
+            bonus += bonusGraceFeline;
+          }
+        }
+        break;
+      case 'négociation':
+      case 'negociation':
+        bonus += bonusArgumentDeTaille(personnage, expliquer);
+        break;
+      case 'orientation':
+        if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+          expliquer("Forêt hostile : -5 en orientation");
+          bonus -= 5;
+        }
+        break;
+      case 'perception':
+        if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+          expliquer("Forêt hostile : -5 en perception");
+          bonus -= 5;
+        }
+        if (compagnonPresent(personnage, 'guetteur')) {
+          expliquer("Guetteur : +5 en perception");
+          bonus += 5;
+        }
+        break;
+      case 'persuasion':
+        bonus += bonusArgumentDeTaille(personnage, expliquer);
+        if (predicateAsBool(personnage, 'ordreDuChevalierDragon') && attributeAsBool(personnage, 'monteSur')) {
+          expliquer("Chevalier Dragon monté : +5 en persuasion");
+          bonus += 5;
+        }
+        break;
+      case 'saut':
+      case 'sauter':
+        if (predicateAsBool(personnage, 'graceFelineVoleur')) {
+          let bonusGraceFeline = modCarac(personnage, 'charisme');
+          if (bonusGraceFeline > 0) {
+            expliquer("Grâce féline : +" + bonusGraceFeline + " en saut");
+            bonus += bonusGraceFeline;
+          }
+        }
+        break;
+      case 'survie':
+        if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
+          expliquer("Forêt hostile : -5 en survie");
+          bonus -= 5;
+        }
+        break;
+    }
+    return bonus;
+  }
+
   function bonusTestToutesCaracs(personnage, options, testId, evt, expliquer) {
     if (options && options.cacheBonusToutesCaracs) {
       if (options.cacheBonusToutesCaracs.val !== undefined) {
@@ -4670,7 +4762,7 @@ var COFantasy = COFantasy || function() {
       expliquer("Putréfié : -2 au jet");
       bonus -= 2;
     }
-    var fortifie = attributeAsInt(personnage, 'fortifie', 0);
+    let fortifie = attributeAsInt(personnage, 'fortifie', 0);
     if (fortifie > 0) {
       expliquer("Fortifié : +3 au jet");
       bonus += 3;
@@ -4712,45 +4804,12 @@ var COFantasy = COFantasy || function() {
       if (options.bonusAttrs) {
         options.bonusAttrs.forEach(function(attr) {
           let bonusAttribut = charAttributeAsInt(personnage, attr, 0);
-          switch (attr) {
-            case 'perception':
-              malusCasque = true;
-              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-                expliquer("Forêt hostile : -5 en perception");
-                bonus -= 5;
-              }
-              if (compagnonPresent(personnage, 'guetteur')) {
-                expliquer("Guetteur : +5 en perception");
-                bonus += 5;
-              }
-              break;
-            case 'survie':
-              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-                expliquer("Forêt hostile : -5 en survie");
-                bonus -= 5;
-              }
-              break;
-            case 'orientation':
-              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-                expliquer("Forêt hostile : -5 en orientation");
-                bonusAttribut -= 5;
-              }
-              break;
-            case 'discrétion':
-            case 'discretion':
-              if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-                expliquer("Forêt hostile : -5 en discrétion");
-                bonus -= 5;
-              }
-              break;
-            case 'vigilance':
-              malusCasque = true;
-              break;
-          }
           if (bonusAttribut !== 0) {
             expliquer("Attribut " + attr + " : " + ((bonusAttribut < 0) ? "-" : "+") + bonusAttribut);
             bonus += bonusAttribut;
           }
+          if (attr != options.competence)
+            bonus += bonusAuxCompetences(personnage, attr, expliquer);
         });
       }
       if (options.bonusPreds) {
@@ -4971,10 +5030,11 @@ var COFantasy = COFantasy || function() {
         }
       }
       if (bonusCompetence === undefined) {
+        let compSansBlanc = options.competence.toLowerCase().replace(/ /g, '_');
         options.bonusAttrs = options.bonusAttrs || [];
-        options.bonusAttrs.push(options.competence.toLowerCase().replace(/ /g, '_'));
+        options.bonusAttrs.push(compSansBlanc);
         options.bonusPreds = options.bonusPreds || [];
-        options.bonusPreds.push(options.competence.toLowerCase().replace(/ /g, '_'));
+        options.bonusPreds.push(compSansBlanc);
       } else {
         let msgComp = "Compétence " + options.competence + " : ";
         if (bonusCompetence === 0) {
@@ -4996,93 +5056,7 @@ var COFantasy = COFantasy || function() {
           }
         }
       }
-      switch (comp) {
-        case 'acrobatie':
-        case 'acrobaties':
-          if (predicateAsBool(personnage, 'graceFelineVoleur')) {
-            let bonusGraceFeline = modCarac(personnage, 'charisme');
-            if (bonusGraceFeline > 0) {
-              expliquer("Grâce féline : +" + bonusGraceFeline + " en acrobaties");
-              bonus += bonusGraceFeline;
-            }
-          }
-          break;
-        case 'course':
-          if (predicateAsBool(personnage, 'graceFelineVoleur')) {
-            let bonusGraceFeline = modCarac(personnage, 'charisme');
-            if (bonusGraceFeline > 0) {
-              expliquer("Grâce féline : +" + bonusGraceFeline + " en course");
-              bonus += bonusGraceFeline;
-            }
-          }
-          break;
-        case 'discrétion':
-        case 'discretion':
-          if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-            expliquer("Forêt hostile : -5 en discrétion");
-            bonus -= 5;
-          }
-          break;
-        case 'intimidation':
-          bonus += bonusArgumentDeTaille(personnage, expliquer);
-          if (predicateAsBool(personnage, 'ordreDuChevalierDragon') && attributeAsBool(personnage, 'monteSur')) {
-            expliquer("Chevalier Dragon monté : +5 en intimidation");
-            bonus += 5;
-          }
-          break;
-        case 'escalade':
-          if (predicateAsBool(personnage, 'graceFelineVoleur')) {
-            let bonusGraceFeline = modCarac(personnage, 'charisme');
-            if (bonusGraceFeline > 0) {
-              expliquer("Grâce féline : +" + bonusGraceFeline + " en escalade");
-              bonus += bonusGraceFeline;
-            }
-          }
-          break;
-        case 'négociation':
-        case 'negociation':
-          bonus += bonusArgumentDeTaille(personnage, expliquer);
-          break;
-        case 'orientation':
-          if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-            expliquer("Forêt hostile : -5 en orientation");
-            bonus -= 5;
-          }
-          break;
-        case 'perception':
-          if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-            expliquer("Forêt hostile : -5 en perception");
-            bonus -= 5;
-          }
-          if (compagnonPresent(personnage, 'guetteur')) {
-            expliquer("Guetteur : +5 en perception");
-            bonus += 5;
-          }
-          break;
-        case 'persuasion':
-          bonus += bonusArgumentDeTaille(personnage, expliquer);
-          if (predicateAsBool(personnage, 'ordreDuChevalierDragon') && attributeAsBool(personnage, 'monteSur')) {
-            expliquer("Chevalier Dragon monté : +5 en persuasion");
-            bonus += 5;
-          }
-          break;
-        case 'saut':
-        case 'sauter':
-          if (predicateAsBool(personnage, 'graceFelineVoleur')) {
-            let bonusGraceFeline = modCarac(personnage, 'charisme');
-            if (bonusGraceFeline > 0) {
-              expliquer("Grâce féline : +" + bonusGraceFeline + " en saut");
-              bonus += bonusGraceFeline;
-            }
-          }
-          break;
-        case 'survie':
-          if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
-            expliquer("Forêt hostile : -5 en survie");
-            bonus -= 5;
-          }
-          break;
-      }
+      bonus += bonusAuxCompetences(personnage, comp, expliquer);
     }
     if (bonusCompetence === undefined) {
       if (carac == 'DEX') {
@@ -5365,7 +5339,7 @@ var COFantasy = COFantasy || function() {
           });
           addStatistics(playerId, ["Jet de carac", caracteristique], rt.roll);
           // Maintenant, on diminue la malédiction si le test est un échec
-          var attrMalediction = tokenAttribute(perso, 'malediction');
+          let attrMalediction = tokenAttribute(perso, 'malediction');
           if (attrMalediction.length > 0) {
             if (rt.echecCritique)
               diminueMalediction(perso, evt, attrMalediction);
@@ -5379,8 +5353,8 @@ var COFantasy = COFantasy || function() {
               evt.attenteResultat = true;
             }
           }
-          var boutonsReroll = '';
-          var pc = pointsDeChance(perso);
+          let boutonsReroll = '';
+          let pc = pointsDeChance(perso);
           if (pc > 0 && !rt.echecCritique) {
             boutonsReroll +=
               '<br/>' + boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
@@ -5990,14 +5964,14 @@ var COFantasy = COFantasy || function() {
   // - carac : FOR, DEX, CON, INT, SAG, CHA
   // Les tokens sélectionnés sont ceux qui doivent faire le jet
   function jet(msg) {
-    var opts = msg.content.split(' --');
-    var cmd = opts.shift().split(' ');
-    var options = {
+    let opts = msg.content.split(' --');
+    let cmd = opts.shift().split(' ');
+    let options = {
       bonusAttrs: [],
       bonusPreds: []
     };
     opts.forEach(function(o) {
-      var args = o.split(' ');
+      let args = o.split(' ');
       switch (args[0]) {
         case 'nom':
           if (args.length < 2) {
@@ -6005,7 +5979,7 @@ var COFantasy = COFantasy || function() {
             return;
           }
           args.shift();
-          var nom = args.join(' ');
+          let nom = args.join(' ');
           if (options.nom && options.nom != nom) {
             error("Nom du jet défini deux fois !", options.nom);
           }
@@ -6068,9 +6042,9 @@ var COFantasy = COFantasy || function() {
           error("Il manque la caractéristique à utiliser pour la compétence " + options.nom, msg.content);
           return;
         }
-        var fond = listeCompetences.nombre > 25;
+        let fond = listeCompetences.nombre > 25;
         iterSelected(selected, function(perso) {
-          var display = startFramedDisplay(playerId, "Jet de caractéristique", perso, {
+          let display = startFramedDisplay(playerId, "Jet de caractéristique", perso, {
             chuchote: true
           });
           startTableInFramedDisplay(display);
@@ -6085,14 +6059,14 @@ var COFantasy = COFantasy || function() {
         }); //fin de iterSelected
         return;
       }
-      var caracteristique = cmd[1];
+      let caracteristique = cmd[1];
       if (!isCarac(caracteristique)) {
         error("Caracteristique '" + caracteristique + "' non reconnue (FOR, DEX, CON, INT, SAG, CHA).", cmd);
         return;
       }
       if (options.competences && options.nom === undefined) {
         iterSelected(selected, function(perso) {
-          var display = startFramedDisplay(playerId, "Jet de " + caracteristique, perso, {
+          let display = startFramedDisplay(playerId, "Jet de " + caracteristique, perso, {
             chuchote: true
           });
           addLineToFramedDisplay(display, "Choisissez la compétence");
@@ -6103,19 +6077,19 @@ var COFantasy = COFantasy || function() {
         }); //fin de iterSelected
         return;
       }
-      var difficulte;
+      let difficulte;
       if (cmd.length > 2) {
         difficulte = parseInt(cmd[2]);
         if (isNaN(difficulte)) difficulte = undefined;
       }
-      var titre = "Jet d";
-      var nomJet;
+      let titre = "Jet d";
+      let nomJet;
       if (options.nom && options.nom.length > 0) {
         nomJet = options.nom;
       } else {
         nomJet = caracOfMod(caracteristique).toLowerCase();
       }
-      var nj = nomJet.toLowerCase();
+      let nj = nomJet.toLowerCase();
       switch (nj[0]) {
         case 'a':
         case 'e':
@@ -8998,6 +8972,7 @@ var COFantasy = COFantasy || function() {
       }
       return pv;
     }
+    target.tokName = target.tokName || target.token.get('name');
     let defDerivee = charAttribute(target.charId, 'defDeriveeDe');
     if (defDerivee.length > 0) {
       let charDerive = findObjs({
@@ -9005,11 +8980,15 @@ var COFantasy = COFantasy || function() {
         name: defDerivee[0].get('current')
       });
       if (charDerive.length > 0) {
-        target.realCharId = target.charId;
-        target.charId = charDerive[0].id;
+        target = {
+          charId: charDerive[0].id,
+          token: target.token,
+          tokName: target.tokName,
+          messages: target.messages,
+          defautCuirasse: target.defautCuirasse,
+        };
       }
     }
-    target.tokName = target.tokName || target.token.get('name');
     let tokenName = target.tokName;
     let explications = target.messages || [];
     let defense = 10;
@@ -9158,7 +9137,7 @@ var COFantasy = COFantasy || function() {
         explications.push(tokenName + " est hors de portée sur sa monture => +5 DEF");
       }
     }
-    var attrsProtegePar = findObjs({
+    let attrsProtegePar = findObjs({
       _type: 'attribute',
       _characterid: target.charId,
     });
@@ -9284,7 +9263,7 @@ var COFantasy = COFantasy || function() {
       let tokensEnnemis = [];
       let allies = alliesParPerso[target.charId] || new Set();
       tokensContact.forEach(function(tok) {
-        var ci = tok.get('represents');
+        let ci = tok.get('represents');
         if (ci === '') return; //next token au contact
         if (!isActive({
             token: tok,
@@ -9355,7 +9334,6 @@ var COFantasy = COFantasy || function() {
     }
     //Chair à canon
     if (capaciteDisponible(target, 'chairACanon', 'tour')) {
-      if (target.tokName === undefined) target.tokName = target.get('name');
       let tokensChairACanon = findObjs({
         _type: 'graphic',
         _subtype: 'token',
@@ -9386,10 +9364,10 @@ var COFantasy = COFantasy || function() {
         explications.push(target.chairACanon[0].get('name') + " aide " + target.tokName + "! => +5 DEF");
       }
     }
-    var bonusCapitaine = aUnCapitaine(target, evt, pageId);
+    let bonusCapitaine = aUnCapitaine(target, evt, pageId);
     if (bonusCapitaine && bonusCapitaine > 2) {
       defense += parseInt(bonusCapitaine);
-      explications.push(target.tokName + " suit les ordres de son commandant => +" + bonusCapitaine + " en DEF");
+      explications.push(tokenName + " suit les ordres de son commandant => +" + bonusCapitaine + " en DEF");
     }
     if (attaquant && predicateAsBool(target, 'reduireLaDistance')) {
       switch (taillePersonnage(attaquant, 4)) {
@@ -9490,7 +9468,6 @@ var COFantasy = COFantasy || function() {
       explications.push(target, 'Libérateur de Dorn => +2 en DEF');
       defense += 2;
     }
-    if (target.realCharId) target.charId = target.realCharId;
     return defense;
   }
 
@@ -11394,7 +11371,7 @@ var COFantasy = COFantasy || function() {
           //N'a pas de familier mais n'est pas un PNJ
           //On cherche si il existe un autre perso plus prioritaire.
           let representantFamilier = cibles.find(function(target2, index2) {
-            if (index2 < index) return false;//déjà traité
+            if (index2 < index) return false; //déjà traité
             if (target2.name === undefined) {
               let target2Char = getObj('character', target2.charId);
               if (target2Char === undefined) return false;
@@ -11405,7 +11382,7 @@ var COFantasy = COFantasy || function() {
             });
             if (!estPartagee) return false;
             return charAttributeAsBool(target2, 'familier') ||
-            charAttributeAsBool(target2, 'guetteur');
+              charAttributeAsBool(target2, 'guetteur');
           });
           if (representantFamilier) return false;
           ciblePartagee.forEach(function(attr) {
@@ -22277,13 +22254,13 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, actE + cube.tokName);
           }
         }
-        var pageId = perso.token.get('pageid');
-        var defense = defenseOfPerso(undefined, perso, pageId, undefined, {
+        let pageId = perso.token.get('pageid');
+        let defense = defenseOfPerso(undefined, perso, pageId, undefined, {
           test: true
         });
 
-        var defenseMontree;
-        var bufDef = attributeAsInt(perso, 'bufDEF', 0);
+        let defenseMontree;
+        let bufDef = attributeAsInt(perso, 'bufDEF', 0);
         if (bufDef > 0) {
           addLineToFramedDisplay(display, "Défense temporairement modifiée de " + bufDef + " (DEF " + defense + ")");
           defenseMontree = true;
@@ -22449,16 +22426,16 @@ var COFantasy = COFantasy || function() {
             }
           }
         }
-        var ebriete = attributeAsInt(perso, 'niveauEbriete', 0);
+        let ebriete = attributeAsInt(perso, 'niveauEbriete', 0);
         if (ebriete > 0 && ebriete < niveauxEbriete.length) {
           addLineToFramedDisplay(display, "est " + niveauxEbriete[ebriete]);
         }
-        var bonusCouvert = attributeAsInt(perso, 'bonusCouvert');
+        let bonusCouvert = attributeAsInt(perso, 'bonusCouvert');
         if (bonusCouvert) {
           addLineToFramedDisplay(display, "est à couvert (+" + bonusCouvert + " DEF)");
         }
         if (!defenseMontree) {
-          var defenseAffichee = 10;
+          let defenseAffichee = 10;
           if (estPNJ) {
             defenseAffichee = ficheAttributeAsInt(perso, 'pnj_def', 10);
           } else {
