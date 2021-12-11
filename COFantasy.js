@@ -8999,7 +8999,7 @@ var COFantasy = COFantasy || function() {
         defense += ficheAttributeAsInt(target, 'DEFARMURE', 0) * ficheAttributeAsInt(target, 'DEFARMUREON', 1);
         defense += ficheAttributeAsInt(target, 'DEFBOUCLIER', 0) * ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1);
         if (attributeAsBool(target, 'armureDuMage')) {
-          var bonusArmureDuMage = getValeurOfEffet(target, 'armureDuMage', 4);
+          let bonusArmureDuMage = getValeurOfEffet(target, 'armureDuMage', 4);
           if (defense > 12) defense += bonusArmureDuMage / 2; // On a déjà une armure physique, ça ne se cumule pas.
           else defense += bonusArmureDuMage;
         }
@@ -9017,7 +9017,7 @@ var COFantasy = COFantasy || function() {
       defense -= inconfortValeur;
       explications.push("L'adversaire est gêné par son armure : -" + inconfortValeur + " en DEF");
     }
-    var formeDarbre;
+    let formeDarbre;
     if (attributeAsBool(target, 'formeDArbre')) {
       formeDarbre = true;
       defense = 13;
@@ -35000,7 +35000,7 @@ var COFantasy = COFantasy || function() {
                 c = c.substring(7).trim();
                 attr.set('current', c);
               } else if (c.startsWith('human')) {
-                race = "Gobelin";
+                race = "Humain";
                 c = c.substring(6).trim();
                 attr.set('current', c);
               }
