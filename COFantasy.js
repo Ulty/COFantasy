@@ -9354,7 +9354,8 @@ var COFantasy = COFantasy || function() {
         let estChair = tokAttrs.find(function(a) {
           let chairACanonDe = a.get('current').split(",");
           return chairACanonDe.find(function(b) {
-            return b.trim() == target.tokName;
+            let trimmed = b.trim();
+            return trimmed == target.tokName || trimmed == target.name;
           });
         });
         return estChair;
@@ -24661,7 +24662,7 @@ var COFantasy = COFantasy || function() {
       }, cible, saveId, expliquer, saveOpts, evt,
       function(reussite, rollText) {
         if (reussite) {
-          var nc = attributeAsInt(attaquant, "niveau", 0);
+          var nc = charAttributeAsInt(attaquant, "niveau", 0);
           var dmg = {
             type: 'normal',
             value: '2d6+' + nc
