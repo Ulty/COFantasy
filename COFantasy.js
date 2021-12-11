@@ -13507,10 +13507,12 @@ var COFantasy = COFantasy || function() {
             }
             count--;
             if (count === 0) {
-              if (ciblesTouchees.length > 0 &&
-                options.runeDePuissance && !options.maxDmg && evt.action.weaponStats) {
+              if (ciblesTouchees.length > 0 && !options.maxDmg && evt.action.weaponStats) {
                 var al = evt.action.weaponStats.label;
-                if (attributeAsInt(attaquant, 'limiteParCombat_runeDePuissance' + al, 1)) {
+                if ((options.runeDePuissance
+                  && attributeAsInt(attaquant, 'limiteParCombat_runeDePuissance' + al, 1))
+                  || (attributeAsBool(attaquant, 'runeForgesort_puissance(' + al + ')') &&
+                  attributeAsInt(attaquant, 'limiteParCombat_runeForgesort_puissance(' + al + ')', 1))) {
                   options.preDmg = options.preDmg || {};
                   options.preDmg.runeDePuissance = al;
                 }
@@ -15730,13 +15732,11 @@ var COFantasy = COFantasy || function() {
           });
         }
         if (options.preDmg.runeDePuissance) {
-          var al = options.preDmg.runeDePuissance;
-          if (attributeAsInt(perso, 'limiteParCombat_runeDePuissance' + al, 1)) {
-            addLineToFramedDisplay(display,
-              boutonSimple(
-                "!cof-bouton-rune-puissance " + al + ' ' + evt.id + ' permanent',
-                "Rune de puissance"));
-          }
+          let al = options.preDmg.runeDePuissance;
+          let permanent = options.runeDePuissance ? ' permanent' : '';
+          addLineToFramedDisplay(display,
+              boutonSimple( "!cof-bouton-rune-puissance " + al + ' ' + evt.id + permanent,
+                  "Rune de puissance"));
         }
         addLineToFramedDisplay(display, boutonSimple("!cof-confirmer-attaque " + evt.id, "Continuer"));
       } else {
@@ -15765,16 +15765,6 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, boutonSimple("!cof-expert-combat-touche " + evt.id, "Expert du Combat (Att. +1D6)"));
           }
         } else {
-          if (evt.action.weaponStats) {
-            var attLabel = evt.action.weaponStats.label;
-            if (attributeAsBool(perso, 'runeForgesort_puissance(' + attLabel + ')') &&
-              attributeAsInt(perso, 'limiteParCombat_runeForgesort_puissance(' + attLabel + ')', 1) > 0) {
-              addLineToFramedDisplay(display,
-                boutonSimple(
-                  "!cof-bouton-rune-puissance " + attLabel + ' ' + evt.id,
-                  "Rune de puissance"));
-            }
-          }
           if (predicateAsInt(perso, 'expertDuCombat', 0) > 2 &&
             attributeAsInt(perso, 'limiteParCombat_expertDuCombat', 1) > 0 &&
             attributeAsInt(perso, 'limiteParTour_expertDuCombat', 1) > 0 &&
@@ -20463,25 +20453,23 @@ var COFantasy = COFantasy || function() {
   }
 
   function persoUtiliseRunePuissance(perso, labelArme, evt, permanent) {
-    var attrName = "runeForgesort_puissance(" + labelArme + ")";
-    var attr = tokenAttribute(perso, attrName);
+    var attrName = permanent ? 'runeDePuissance' + labelArme : "runeForgesort_puissance(" + labelArme + ")";
     var arme = getAttackName(labelArme, perso);
     if (arme === undefined) {
       error(perso.tokNname + " n'a pas d'arme associée au label " + labelArme, perso);
       return false;
     }
-    if (attr.length === 0) {
+    if (!permanent && tokenAttribute(perso, attrName).length === 0) {
       sendPerso(perso, "n'a pas de rune de puissance sur " + arme);
       return false;
     }
-
     if (limiteRessources(perso, {
         limiteParCombat: 1
       }, attrName, "a déjà utilisé sa rune de puissance durant ce combat", evt)) {
       addEvent(evt);
       return false;
     }
-    sendPerso(perso, "utilise sa rune de puissance pour obtenir les DM maximum de son arme (");
+    sendPerso(perso, "utilise sa rune de puissance pour obtenir les DM maximum de son arme");
     return true;
   }
 
@@ -20492,14 +20480,14 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "On ne peut utiliser les runes de puissance qu'en combat");
       return;
     }
-    var cmd = msg.content.split(' ');
+    let cmd = msg.content.split(' ');
     if (cmd.length < 2) {
       error("Il faut spécifier le label de l'arme sur laquelle la rune de puissance est inscrite", cmd);
       return;
     }
-    var labelArme = cmd[1];
-    var evtARefaire;
-    var evt = {
+    let labelArme = cmd[1];
+    let evtARefaire;
+    let evt = {
       type: "Rune de puissance",
       attributes: []
     };
@@ -20509,7 +20497,7 @@ var COFantasy = COFantasy || function() {
         error("L'action est trop ancienne ou a été annulée", cmd);
         return;
       }
-      var perso = evtARefaire.personnage;
+      let perso = evtARefaire.personnage;
       if (perso === undefined) {
         error("Erreur interne du bouton de rune de puissance : l'évenement n'a pas de personnage", evtARefaire);
         return;
@@ -20518,28 +20506,23 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, "pas le droit d'utiliser ce bouton");
         return;
       }
-      var action = evtARefaire.action;
+      let action = evtARefaire.action;
       if (action === undefined) {
         error("Impossible de relancer l'action", evtARefaire);
         return;
       }
-      var options = action.options || {};
+      let permanent = (cmd.length > 3 && cmd[3] == 'permanent');
+      if (!persoUtiliseRunePuissance(perso, labelArme, evt, permanent)) return;
+      let options = action.options || {};
       options.redo = true;
       options.maxDmg = true;
+      options.runeDePuissance = true;
       options.rolls = action.rolls;
       action.cibles.forEach(function(target) {
         delete target.rollsDmg;
       });
-      if (cmd.length > 3 && cmd[3] == 'permanent') {
-
-        if (limiteRessources(perso, {
-            limiteParCombat: 1
-          }, 'runeDePuissance' + labelArme, "a déjà utilisé sa rune de puissance durant ce combat", evt)) {
-          addEvent(evt);
-          return;
-        }
-        delete options.preDmg;
-      } else if (!persoUtiliseRunePuissance(perso, labelArme, evt)) return;
+      delete options.preDmg.runeDePuissance;
+      if (_.isEmpty(options.preDmg)) delete options.preDmg;
       addEvent(evt);
       switch (evtARefaire.type) {
         case 'Attaque':
