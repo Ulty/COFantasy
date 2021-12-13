@@ -7170,11 +7170,11 @@ var COFantasy = COFantasy || function() {
           getFx(cmd, 'targetFx', scope, '!cof-attack');
           return;
         case 'psave':
-          var psaveopt = scope;
-          var psaveParams = parseSave(cmd);
+          let psaveopt = scope;
+          let psaveParams = parseSave(cmd);
           if (psaveParams) {
             if (psaveParams.local) {
-              var psavel = 0;
+              let psavel = 0;
               if (scope.additionalDmg) psavel = scope.additionalDmg.length;
               if (psavel > 0) {
                 psaveopt = scope.additionalDmg[psavel - 1];
@@ -7182,6 +7182,22 @@ var COFantasy = COFantasy || function() {
             }
             psaveopt.partialSave = psaveParams;
             psaveopt.attaquant = {...attaquant
+            };
+          }
+          return;
+        case 'saveDM':
+          let saveDMopt = scope;
+          let saveDMParams = parseSave(cmd);
+          if (saveDMParams) {
+            if (saveDMParams.local) {
+              let psavel = 0;
+              if (scope.additionalDmg) psavel = scope.additionalDmg.length;
+              if (psavel > 0) {
+                saveDMopt = scope.additionalDmg[psavel - 1];
+              }
+            }
+            saveDMopt.totalSave = saveDMParams;
+            saveDMopt.attaquant = {...attaquant
             };
           }
           return;
@@ -12106,9 +12122,12 @@ var COFantasy = COFantasy || function() {
     if (dmgExtra && dmgExtra.length > 0 && !immuniseAuType(target, mainDmgType, options.attaquant)) {
       if (dmgCoef > 1) dmgDisplay = "(" + dmgDisplay + ")";
       showTotal = true;
-      var count = dmgExtra.length;
+      let count = dmgExtra.length;
       dmgExtra.forEach(function(d) {
         count--;
+        if (d.totalSave && d.totalSave.tempete && options.tempeteDeManaIntense) {
+          d.totalSave.seuil += d.totalSave.tempete * options.tempeteDeManaIntense;
+        }
         if (d.partialSave && d.partialSave.tempete && options.tempeteDeManaIntense) {
           d.partialSave.seuil += d.partialSave.tempete * options.tempeteDeManaIntense;
         }
@@ -13498,7 +13517,7 @@ var COFantasy = COFantasy || function() {
               }
             }
             if (options.feinte) {
-              var niveauTouche = 0;
+              let niveauTouche = 0;
               if (target.touche) niveauTouche = 1;
               if (target.critique) niveauTouche = 2;
               setTokenAttr(target, 'feinte_' + attaquant.tokName, 0, evt, {
@@ -13508,7 +13527,7 @@ var COFantasy = COFantasy || function() {
             count--;
             if (count === 0) {
               if (ciblesTouchees.length > 0 && !options.maxDmg && evt.action.weaponStats) {
-                var al = evt.action.weaponStats.label;
+                let al = evt.action.weaponStats.label;
                 if ((options.runeDePuissance &&
                     attributeAsInt(attaquant, 'limiteParCombat_runeDePuissance' + al, 1)) ||
                   (attributeAsBool(attaquant, 'runeForgesort_puissance(' + al + ')') &&
@@ -16074,7 +16093,13 @@ var COFantasy = COFantasy || function() {
   }
 
   function partialSave(ps, target, showTotal, dmgDisplay, total, expliquer, evt, afterSave) {
-    if (ps.partialSave === undefined) {
+    let sav = ps.totalSave;
+    let totalSave = true;
+    if (sav === undefined) {
+      sav = ps.partialSave;
+      totalSave = false;
+    }
+    if (sav === undefined) {
       if (target.partialSaveAuto) {
         if (showTotal) dmgDisplay = '(' + dmgDisplay + ')';
         afterSave({
@@ -16088,7 +16113,7 @@ var COFantasy = COFantasy || function() {
       afterSave();
       return;
     }
-    if ((ps.partialSave.carac == 'CON' || ps.partialSave.carac2 == 'CON') && estNonVivant(target)) {
+    if ((sav.carac == 'CON' || sav.carac2 == 'CON') && estNonVivant(target)) {
       expliquer("Les créatures non-vivantes sont immnunisées aux attaques qui demandent un test de constitution");
       afterSave({
         succes: true,
@@ -16098,7 +16123,7 @@ var COFantasy = COFantasy || function() {
       });
       return;
     }
-    if (target.partialSaveAuto) {
+    if (!totalSave && target.partialSaveAuto) {
       if (showTotal) dmgDisplay = '(' + dmgDisplay + ')';
       afterSave({
         succes: true,
@@ -16108,7 +16133,7 @@ var COFantasy = COFantasy || function() {
       });
       return;
     }
-    var saveOpts = {
+    let saveOpts = {
       msgPour: " pour réduire les dégâts",
       msgReussite: ", dégâts divisés par 2",
       attaquant: ps.attaquant,
@@ -16116,14 +16141,23 @@ var COFantasy = COFantasy || function() {
       chanceRollId: ps.chanceRollId,
       type: ps.type
     };
-    var saveId = 'parseSave_' + target.token.id;
-    save(ps.partialSave, target, saveId, expliquer, saveOpts, evt,
+    if (totalSave) {
+      saveOpts.msgPour = " pour éviter les dégâts";
+      saveOpts.msgReussite = ", dégâts évités";
+    }
+    let saveId = 'parseSave_' + target.token.id;
+    save(sav, target, saveId, expliquer, saveOpts, evt,
       function(succes, rollText) {
         if (succes) {
-          if (showTotal) dmgDisplay = "(" + dmgDisplay + ")";
-          dmgDisplay = dmgDisplay + " / 2";
-          showTotal = true;
-          total = Math.ceil(total / 2);
+          if (totalSave) {
+            dmgDisplay = '0';
+            total = 0;
+          } else {
+            if (showTotal) dmgDisplay = "(" + dmgDisplay + ")";
+            dmgDisplay = dmgDisplay + " / 2";
+            showTotal = true;
+            total = Math.ceil(total / 2);
+          }
         }
         afterSave({
           succes: succes,
@@ -16485,6 +16519,9 @@ var COFantasy = COFantasy || function() {
       let typeDisplay = "";
       let typeCount = dmgParType[dmgType].length;
       dmgParType[dmgType].forEach(function(d) {
+        if (d.totalSave && d.totalSave.tempete && options.tempeteDeManaIntense) {
+          d.totalSave.seuil += d.totalSave.tempete * options.tempeteDeManaIntense;
+        }
         if (d.partialSave && d.partialSave.tempete && options.tempeteDeManaIntense) {
           d.partialSave.seuil += d.partialSave.tempete * options.tempeteDeManaIntense;
         }
@@ -16843,6 +16880,9 @@ var COFantasy = COFantasy || function() {
         return Math.ceil(d / 2);
       });
       showTotal = true;
+    }
+    if (options.totalSave && options.totalSave.tempete && options.tempeteDeManaIntense) {
+      options.totalSave.seuil += options.totalSave.tempete * options.tempeteDeManaIntense;
     }
     if (options.partialSave && options.partialSave.tempete && options.tempeteDeManaIntense) {
       options.partialSave.seuil += options.partialSave.tempete * options.tempeteDeManaIntense;
