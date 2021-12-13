@@ -29,6 +29,7 @@
 * Prise en compte correcte des malus d'armure et de casques pour les compétences sur la fiche.
 
 ### Autres améliorations
+* Si une arme est aussi une arme de jet, le script va automatiquement sélectionner la bonne attaque selon la distance de la cible.
 * Ajout d'une option --saveDM pour éviter tous les dégâts d'une attaque.
 * Prise en compte des options de sélections pour !cof-init.
 * Option d'attaque --forceMinimum

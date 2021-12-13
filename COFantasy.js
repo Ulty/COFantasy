@@ -6617,6 +6617,27 @@ var COFantasy = COFantasy || function() {
       sendPerso(attaquant, "ne peut pas utiliser d'arme à deux mains dans un espace aussi exigu.");
       return;
     }
+    //Si c'est aussi une arme de jet, et que le personnage attaque à distance, on va utiliser la version arme de jet de l'attaque.
+    let msgIndex = msg.content;
+    let indexAussiJet = msgIndex.indexOf('--aussiArmeDeJet ');
+    if (indexAussiJet == -1) {
+      msgIndex = weaponStats.options;
+      indexAussiJet = msgIndex.indexOf('--aussiArmeDeJet ');
+    }
+    if (indexAussiJet > 0) {
+      let labelAussiJet = parseInt(msgIndex.substring(indexAussiJet+17));
+      if (isNaN(labelAussiJet)) {
+        error("Label --aussiArmeDeJet n'est pas un entier", msgIndex.substring(indexAussiJet+17));
+      } else {
+        let armeAssociee = getWeaponStats(attaquant, labelAussiJet);
+        if (armeAssociee === undefined) {
+          error("Label --aussiArmeDeJet pas une attaque", labelAussiJet);
+        } else {
+          if (distanceCombat(attaquant.token, targetToken) > 0)
+            weaponStats = armeAssociee;
+        }
+      }
+    }
     //Ajout des options de l'arme
     let wo = weaponStats.options.trim();
     //Pour la partie options, il est possible qu'elle soit déjà passée en ligne de commande
@@ -10742,17 +10763,17 @@ var COFantasy = COFantasy || function() {
   //targetToken est soit un token, soit une structure avec un champs cibles qui contient toutes les cibles
   function attack(playerName, playerId, attaquant, targetToken, weaponStats, options) {
     // Attacker and target infos
-    var attackingToken = attaquant.token;
-    var attackingCharId = attaquant.charId;
+    let attackingToken = attaquant.token;
+    let attackingCharId = attaquant.charId;
     attaquant.tokName = attaquant.tokName || attaquant.token.get("name");
-    var attacker = getObj("character", attackingCharId);
+    let attacker = getObj("character", attackingCharId);
     if (attacker === undefined) {
       error("Unexpected undefined 1", attacker);
       return;
     }
     attaquant.name = attaquant.name || attacker.get("name");
-    var pageId = attaquant.token.get('pageid');
-    var weaponName = options.nom || weaponStats.name;
+    let pageId = attaquant.token.get('pageid');
+    let weaponName = options.nom || weaponStats.name;
     //Options automatically set by some attributes
     if (attributeAsBool(attaquant, 'paralysieRoublard')) {
       if (attributeAsBool(attaquant, 'enrage')) {
@@ -10821,7 +10842,7 @@ var COFantasy = COFantasy || function() {
     }
     weaponStats.attDMBonusCommun = parseInt(weaponStats.attDMBonusCommun);
     weaponStats.crit = parseInt(weaponStats.crit);
-    var portee = weaponStats.portee;
+    let portee = weaponStats.portee;
     if (options.tirDouble && options.tirDouble.label) {
       var stats2 = getWeaponStats(attaquant, options.tirDouble.label);
       if (stats2 === undefined) {
