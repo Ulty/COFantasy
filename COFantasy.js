@@ -26303,12 +26303,12 @@ var COFantasy = COFantasy || function() {
 
 
   function murDeForce(msg) {
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined) return;
-    var sphere = true;
-    var imageSphere = stateCOF.options.images.val.image_mur_de_force.val;
+    let sphere = true;
+    let imageSphere = stateCOF.options.images.val.image_mur_de_force.val;
     if (cmd.length > 1) {
       if (cmd[1] == 'mur') sphere = false;
       else if (cmd[1] == 'noImage') imageSphere = undefined;
@@ -31501,6 +31501,7 @@ var COFantasy = COFantasy || function() {
       };
       initiative(selected, evt);
       iterSelected(selected, function(invocateur) {
+        if (limiteRessources(invocateur, options, 'invocationPredateur', 'lancer une invocation de prédateur', evt)) return;
         let pageId = invocateur.token.get('pageid');
         let niveau = ficheAttributeAsInt(invocateur, 'niveau', 1);
         if (!renforce) {
@@ -31560,6 +31561,104 @@ var COFantasy = COFantasy || function() {
         // Ajout du Prédateur aux alliés de l'invocateur
         let alliesInvocateur = alliesParPerso[invocateur.charId] || new Set();
         alliesInvocateur.add(charPredateur.id);
+        alliesParPerso[invocateur.charId] = alliesInvocateur;
+      }); //end iterSelected
+      addEvent(evt);
+    }); //end getSelected
+  }
+
+  //!cof-sphere-de-feu
+  function sphereDeFeu(msg) {
+    let options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
+    if (cmd === undefined) {
+      error("Pas de commande", msg.content);
+      return;
+    }
+    getSelected(msg, function(selected, playerId) {
+      if (selected === undefined || selected.length === 0) {
+        error("pas de lanceur pour la sphere de feu", msg);
+        return;
+      }
+      let evt = {
+        type: "invocation d'une sphère de feu",
+      };
+      initiative(selected, evt);
+      iterSelected(selected, function(invocateur) {
+        if (limiteRessources(invocateur, options, 'sphereDeFeu', 'lancer un sort de sphère de feu', evt)) return;
+        let character = getObj('character', invocateur.charId);
+        if (character === undefined) {
+          error("Impossible de trouver le personnage de " + invocateur.token.get('name'), invocateur);
+          return;
+        }
+        let pageId = invocateur.token.get('pageid');
+        let niveau = ficheAttributeAsInt(invocateur, 'niveau', 1);
+        let sphere = {
+          nom: 'Sphère de feu',
+          avatar: "https://s3.amazonaws.com/files.d20.io/images/260057530/nL8O6US3f1BpeTJkodWNCg/max.png?16394116785",
+          token: "https://s3.amazonaws.com/files.d20.io/images/260057530/nL8O6US3f1BpeTJkodWNCg/thumb.png?16394116785",
+          attributesFiche: {
+            type_personnage: 'PNJ',
+            niveau: 1,
+          },
+          pv: 1,
+          attaques: [{
+            nom: 'Brûlure',
+            atk: 0,
+            dmnbde: 3,
+            dmde: 6,
+            dm: 0,
+            typedegats: 'feu',
+            modificateurs: 'auto',
+            options: '--saveDM DEX '+(10+modCarac(invocateur, 'intelligence')),
+          }],
+          attributes: [{
+            name: 'predicats_script',
+            current: 'nonVivant immunite_feu sansEsprit',
+          }, {
+            name: 'initiativeDeriveeDe',
+            current: character.get('name'),
+          }, {
+            name: 'predateurConjure', //Pas exactement ça, mais ça fait ce qu'il faut
+            current: niveau,
+            max: getInit()
+          }],
+        };
+        let nomSphere =
+          sphere.nom + ' de ' + invocateur.token.get('name');
+        let token = createObj('graphic', {
+          name: nomSphere,
+          subtype: 'token',
+          pageid: pageId,
+          imgsrc: sphere.token,
+          left: invocateur.token.get('left'),
+          top: invocateur.token.get('top'),
+          width: 35,
+          height: 35,
+          layer: 'objects',
+          showname: 'true',
+          showplayers_bar1: 'true',
+          light_hassight: 'true',
+          light_angle: 0, //Pour que le joueur ne voit rien par ses yeux
+          has_bright_light_vision: true,
+          has_limit_field_of_vision: true,
+        });
+        if (token === undefined) {
+          error("Impossible de créer le token de la sphère de feu ", sphere);
+          return;
+        }
+        toFront(token);
+        let charSphere =
+          createCharacter(nomSphere, playerId, sphere.avatar, token, sphere);
+        evt.characters = [charSphere];
+        evt.tokens = [token];
+        initiative([{
+          _id: token.id
+        }], evt);
+        // Ajout du Prédateur aux alliés de l'invocateur
+        let alliesInvocateur = alliesParPerso[invocateur.charId] || new Set();
+        alliesInvocateur.add(charSphere.id);
         alliesParPerso[invocateur.charId] = alliesInvocateur;
       }); //end iterSelected
       addEvent(evt);
@@ -31639,17 +31738,17 @@ var COFantasy = COFantasy || function() {
         });
         toFront(token);
         var avatar = "https://s3.amazonaws.com/files.d20.io/images/73283254/r6sbxbP1QKKtqXyYq-MlLA/max.png?1549547198";
-        var attaque = {
+        let attaque = {
           nom: 'Attaque',
           dmnbde: nbDeDM,
           dmde: deDM,
           modificateurs: 'auto',
         };
-        var attributes = [{
+        let attributes = [{
           name: 'armeeConjuree',
           current: invocateur.charId
         }];
-        var charArmee =
+        let charArmee =
           createCharacter(nomArmee, playerId, avatar, token, {
             pv: niveau * 10,
             attaques: [attaque],
@@ -31716,7 +31815,7 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "Le point visé est trop loin (portée " + portee + ")", playerId);
       return;
     }
-    var duree = 5 + modCarac(necromant, "intelligence");
+    var duree = 5 + modCarac(necromant, 'intelligence');
     if (options.puissantDuree || options.tempeteDeManaDuree) {
       duree = duree * 2;
     }
@@ -31896,15 +31995,15 @@ var COFantasy = COFantasy || function() {
             has_limit_field_of_vision: true,
           });
           toFront(token);
-          var niveau = ficheAttributeAsInt(necromant, "niveau", 1);
-          var demon = {...demonInvoque
+          let niveau = ficheAttributeAsInt(necromant, "niveau", 1);
+          let demon = {...demonInvoque
           };
           demon.pv = niveau * 5;
           demon.attaques[0].atk = niveau;
-          var charDemon = createCharacter(tokenDemon, playerId, demonInvoque.avatar, token, demon);
+          let charDemon = createCharacter(tokenDemon, playerId, demonInvoque.avatar, token, demon);
           evt.characters = [charDemon];
           evt.tokens = [token];
-          var duree = 5 + modCarac(necromant, "intelligence");
+          let duree = 5 + modCarac(necromant, 'intelligence');
           //Attribut de démon invoqué pour la disparition automatique
           createObj('attribute', {
             name: 'demonInvoque',
@@ -32832,7 +32931,7 @@ var COFantasy = COFantasy || function() {
   //!cof-enveloppement cubeId targetId Difficulte Attaque
   //Attaque peut être soit label l, soit ability a, soit etreinte expr
   function doEnveloppement(attaquant, cible, difficulte, type, exprDM, options) {
-    var evt = {
+    const evt = {
       type: type,
       action: {
         titre: "Enveloppement",
@@ -32846,7 +32945,7 @@ var COFantasy = COFantasy || function() {
     };
     addEvent(evt);
     //Choix de la caractéristique pour résister : FOR ou DEX
-    var caracRes = meilleureCarac('FOR', 'DEX', cible, 10 + modCarac(attaquant, 'force'));
+    let caracRes = meilleureCarac('FOR', 'DEX', cible, 10 + modCarac(attaquant, 'force'));
     var titre = (type == 'étreinte') ? 'Étreinte' : 'Enveloppement';
     var display = startFramedDisplay(options.playerId, titre, attaquant, {
       perso2: cible
@@ -36627,6 +36726,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-soigner-affaiblissement':
         soignerAffaiblissement(msg);
+        return;
+      case '!cof-sphere-de-feu':
+        sphereDeFeu(msg);
         return;
       case '!cof-undo':
         undoEvent();

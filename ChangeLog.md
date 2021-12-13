@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.04
 ### Capacités
+* Support pour le sort de sphère de feu (tiré de Pathfinder)
 * Quelques améliorations pour le guetteur, de la Voie des animaux.
 * Ajout de la ténacité de la Voie du héro.
 * Ajout d'Épée céleste de la Voie de l'archange.
