@@ -13509,10 +13509,10 @@ var COFantasy = COFantasy || function() {
             if (count === 0) {
               if (ciblesTouchees.length > 0 && !options.maxDmg && evt.action.weaponStats) {
                 var al = evt.action.weaponStats.label;
-                if ((options.runeDePuissance
-                  && attributeAsInt(attaquant, 'limiteParCombat_runeDePuissance' + al, 1))
-                  || (attributeAsBool(attaquant, 'runeForgesort_puissance(' + al + ')') &&
-                  attributeAsInt(attaquant, 'limiteParCombat_runeForgesort_puissance(' + al + ')', 1))) {
+                if ((options.runeDePuissance &&
+                    attributeAsInt(attaquant, 'limiteParCombat_runeDePuissance' + al, 1)) ||
+                  (attributeAsBool(attaquant, 'runeForgesort_puissance(' + al + ')') &&
+                    attributeAsInt(attaquant, 'limiteParCombat_runeForgesort_puissance(' + al + ')', 1))) {
                   options.preDmg = options.preDmg || {};
                   options.preDmg.runeDePuissance = al;
                 }
@@ -15735,8 +15735,8 @@ var COFantasy = COFantasy || function() {
           let al = options.preDmg.runeDePuissance;
           let permanent = options.runeDePuissance ? ' permanent' : '';
           addLineToFramedDisplay(display,
-              boutonSimple( "!cof-bouton-rune-puissance " + al + ' ' + evt.id + permanent,
-                  "Rune de puissance"));
+            boutonSimple("!cof-bouton-rune-puissance " + al + ' ' + evt.id + permanent,
+              "Rune de puissance"));
         }
         addLineToFramedDisplay(display, boutonSimple("!cof-confirmer-attaque " + evt.id, "Continuer"));
       } else {
@@ -18822,18 +18822,22 @@ var COFantasy = COFantasy || function() {
         case 'bonus':
         case 'rayon':
           if (cmd.length >= 2) {
-            var value = parseInt(cmd[1]);
+            let value = parseInt(cmd[1]);
             if (!isNaN(value)) {
               options[cmd[0]] = value;
             }
           }
           return;
         case 'etat':
-          if (cmd.length < 3) {
-            error("Il manque le nom de l'etat et sa valeur après --etat", cmd);
+          if (cmd.length < 2) {
+            error("Il manque le nom de l'état et sa valeur après --etat", cmd);
             return;
           }
           options.etats = options.etats || {};
+          if (cmd.length < 3) {
+            options.etats[cmd[1]] = true;
+            return;
+          }
           if (cmd[2] == 'false' || cmd[2] == 'non') options.etats[cmd[1]] = false;
           else if (cmd[2] == 'true' || cmd[2] == 'oui') options.etats[cmd[1]] = true;
           else options.etats[cmd[1]] = cmd[2];
