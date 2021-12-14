@@ -7159,12 +7159,11 @@ var COFantasy = COFantasy || function() {
           scope.vampirise = vampirise;
           return;
         case 'sournoise':
-        case 'de6Plus': //deprecated
+          if (scope.sournoise === undefined) scope.sournoise = 0;
           if (cmd.length < 2) {
-            error("Il manque un argument à l'option --sournoise de !cof-attack", cmd);
+            scope.sournoise += predicateAsInt(attaquant, 'attaqueSournoise', 1);
             return;
           }
-          if (scope.sournoise === undefined) scope.sournoise = 0;
           scope.sournoise += parseInt(cmd[1]);
           if (isNaN(scope.sournoise) || scope.sournoise < 0) {
             error("L'option --sournoise de !cof-attack attend un argument entier positif", cmd);
