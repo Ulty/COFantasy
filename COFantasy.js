@@ -6625,9 +6625,9 @@ var COFantasy = COFantasy || function() {
       indexAussiJet = msgIndex.indexOf('--aussiArmeDeJet ');
     }
     if (indexAussiJet > 0) {
-      let labelAussiJet = parseInt(msgIndex.substring(indexAussiJet+17));
+      let labelAussiJet = parseInt(msgIndex.substring(indexAussiJet + 17));
       if (isNaN(labelAussiJet)) {
-        error("Label --aussiArmeDeJet n'est pas un entier", msgIndex.substring(indexAussiJet+17));
+        error("Label --aussiArmeDeJet n'est pas un entier", msgIndex.substring(indexAussiJet + 17));
       } else {
         let armeAssociee = getWeaponStats(attaquant, labelAussiJet);
         if (armeAssociee === undefined) {
@@ -11523,9 +11523,9 @@ var COFantasy = COFantasy || function() {
       if (attaqueImpossible) return;
       cible.messages = [];
       if (options.chatimentDuMale && onGenre(cible, true, false)) cible.chatimentDuMale = true;
-      var evalSanctuaire = function() {
+      let evalSanctuaire = function() {
         if (attributeAsBool(cible, 'sanctuaire')) {
-          var testId = 'sanctuaire_' + cible.token.id;
+          let testId = 'sanctuaire_' + cible.token.id;
           testCaracteristique(attaquant, 'SAG', 15, testId, options, evt, function(tr) {
             if (tr.reussite) {
               cible.messages.push(attaquant.tokName + " réussi à passer outre le sanctuaire de " + cible.tokName + " (jet de SAG " + tr.texte + "&ge;15)" + tr.modifiers);
@@ -14554,7 +14554,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (options.pressionMortelle || target.pressionMortelle) {
-          var pMortelle = tokenAttribute(target, 'pressionMortelle');
+          let pMortelle = tokenAttribute(target, 'pressionMortelle');
           if (pMortelle.length === 0) {
             sendPerso(attaquant, "essaie une pression mortelle, mais aucun point vital de " + target.tokName + " n'a encore été affecté");
             ciblesCount--;
@@ -14564,39 +14564,50 @@ var COFantasy = COFantasy || function() {
           attDMBonus = "+ " + pMortelle[0].get('current');
         }
         if (options.distance && !options.grenaille) {
-          var tirPrecis = predicateAsInt(attaquant, 'tirPrecis', 0);
+          let tirPrecis = predicateAsInt(attaquant, 'tirPrecis', 0);
           if (tirPrecis > 0) {
-            var modDex = modCarac(attaquant, 'dexterite');
+            let modDex = modCarac(attaquant, 'dexterite');
             if (target.distance <= 5 * modDex) {
               attDMBonus += " + " + tirPrecis;
               target.messages.push("Tir précis : +" + tirPrecis + " DM");
             }
           }
         }
-        var sournoise = options.sournoise || 0;
+        let sournoise = options.sournoise || 0;
         if (target.sournoise) sournoise += target.sournoise;
+        if (target.critique && sournoise === 0 && predicateAsBool(attaquant, 'botteSecrete')) {
+          sournoise = predicateAsInt(attaquant, 'attaqueSournoise', 1);
+          target.messages.push("Botte secrète !");
+        }
         if (sournoise) {
-          if (predicateAsBool(target, 'immuniteAuxSournoises')) {
-            target.messages.push(target.tokName + " est immunisé" + eForFemale(target) + " aux attaques sournoises");
+          let limiteSournoisesParTour = predicateAsInt(attaquant, 'sournoisesParTour', 1);
+          let nbSournoises = attributeAsInt(attaquant, 'limiteParTour_sournoises', limiteSournoisesParTour);
+          if (nbSournoises < 1) {
+            explications.push("Plus d'attaque sournoise possible ce tour");
           } else {
-            if (options.ouvertureMortelle) {
-              target.messages.push("Ouverture mortelle => + 2 x " + sournoise + options.d6 + " DM");
-              sournoise = sournoise * 2;
+            setTokenAttr(attaquant, 'limiteParTour_sournoises', nbSournoises - 1, evt);
+            if (predicateAsBool(target, 'immuniteAuxSournoises')) {
+              target.messages.push(target.tokName + " est immunisé" + eForFemale(target) + " aux attaques sournoises");
             } else {
-              target.messages.push("Attaque sournoise => +" + sournoise + options.d6 + " DM");
+              if (options.ouvertureMortelle) {
+                target.messages.push("Ouverture mortelle => + 2 x " + sournoise + options.d6 + " DM");
+                sournoise = sournoise * 2;
+              } else {
+                target.messages.push("Attaque sournoise => +" + sournoise + options.d6 + " DM");
+              }
+              var valueSournoise = sournoise + options.d6;
+              if (predicateAsBool(target, 'armureProtection') && attributeAsBool(target, 'DEFARMUREON')) {
+                target.messages.push("L'armure de protection de " + target.token.get('name') + " réduit l'attaque sournoise");
+                valueSournoise = "ceil(" + valueSournoise + "/2)";
+              } else if (predicateAsBool(target, 'bouclierProtection') && attributeAsBool(target, 'DEFBOUCLIERON')) {
+                target.messages.push("Le bouclier de protection de " + target.token.get('name') + " réduit l'attaque sournoise");
+                valueSournoise = "ceil(" + valueSournoise + "/2)";
+              }
+              target.additionalDmg.push({
+                type: mainDmgType,
+                value: valueSournoise
+              });
             }
-            var valueSournoise = sournoise + options.d6;
-            if (predicateAsBool(target, 'armureProtection') && attributeAsBool(target, 'DEFARMUREON')) {
-              target.messages.push("L'armure de protection de " + target.token.get('name') + " réduit l'attaque sournoise");
-              valueSournoise = "ceil(" + valueSournoise + "/2)";
-            } else if (predicateAsBool(target, 'bouclierProtection') && attributeAsBool(target, 'DEFBOUCLIERON')) {
-              target.messages.push("Le bouclier de protection de " + target.token.get('name') + " réduit l'attaque sournoise");
-              valueSournoise = "ceil(" + valueSournoise + "/2)";
-            }
-            target.additionalDmg.push({
-              type: mainDmgType,
-              value: valueSournoise
-            });
           }
         }
         if (target.faireMouche) {
@@ -14817,7 +14828,7 @@ var COFantasy = COFantasy || function() {
             type: 'feu'
           });
         }
-        var extraDmgRollExpr = "";
+        let extraDmgRollExpr = "";
         additionalDmg = additionalDmg.filter(function(dmSpec) {
           dmSpec.type = dmSpec.type || 'normal';
           if (dmSpec.type != mainDmgType || isNaN(dmSpec.value)) {
@@ -31631,7 +31642,7 @@ var COFantasy = COFantasy || function() {
             dm: 0,
             typedegats: 'feu',
             modificateurs: 'auto',
-            options: '--saveDM DEX '+(10+modCarac(invocateur, 'intelligence')),
+            options: '--saveDM DEX ' + (10 + modCarac(invocateur, 'intelligence')),
           }],
           attributes: [{
             name: 'predicats_script',
