@@ -7782,6 +7782,16 @@ var COFantasy = COFantasy || function() {
             val: valAff
           });
           return;
+        case 'difficulteCarac':
+          if (cmd.length < 2) {
+            error("Il manque la caractéristique à laquelle mesurer le jet d'attaque", cmd);
+            return;
+          }
+          options.difficulteCarac = parseCarac(cmd[1]);
+          if (options.difficulteCarac === undefined) {
+            error("L'argument de --difficulteCarac n'est pas une caractéristique", cmd);
+          }
+          return;
         default:
           let armeMagique = cmd[0].match(/^\+([0-9]+)$/);
           if (armeMagique && armeMagique.length > 0) {
@@ -7950,6 +7960,24 @@ var COFantasy = COFantasy || function() {
     return;
   }
 
+  //renvoie un objet avec le champ carac (+carac2 possible), et undefined si erreur
+  function parseCarac(arg) {
+    if (arg.length == 3) {
+      if (!isCarac(arg)) return;
+      return {
+        carac: arg
+      };
+    } else if (arg.length == 6) { //Choix parmis 2 caracs
+      let carac = arg.substr(0, 3);
+      let carac2 = arg.substr(3, 3);
+      if (!isCarac(carac) || !isCarac(carac2)) return;
+      return {
+        carac,
+        carac2
+      };
+    }
+  }
+
   //Retourne un objet avec
   // - carac, et possiblement carac2 (si on a le choix)
   // - seuil
@@ -7961,21 +7989,8 @@ var COFantasy = COFantasy || function() {
         error("parsing de sauvegarde", cmd);
       return;
     }
-    const res = {};
-    if (cmd[1].length == 3) {
-      if (!isCarac(cmd[1])) {
-        error("Le premier argument de save n'est pas une caractéristique", cmd);
-        return;
-      }
-      res.carac = cmd[1];
-    } else if (cmd[1].length == 6) { //Choix parmis 2 caracs
-      res.carac = cmd[1].substr(0, 3);
-      res.carac2 = cmd[1].substr(3, 3);
-      if (!isCarac(res.carac) || !isCarac(res.carac2)) {
-        error("Le premier argument de save n'est pas une caractéristique", cmd);
-        return;
-      }
-    } else {
+    const res = parseCarac(cmd[1]);
+    if (res === undefined) {
       error("Le premier argument de save n'est pas une caractéristique", cmd);
       return;
     }
@@ -9007,6 +9022,23 @@ var COFantasy = COFantasy || function() {
         return 0;
       }
       return pv;
+    } else if (options.difficulteCarac) {
+      let carac = caracOfMod(options.difficulteCarac.carac);
+      target.messages = target.messages || [];
+      let diff = caracCourante(target, carac);
+      if (options.difficulteCarac.carac2) {
+      let carac2 = caracOfMod(options.difficulteCarac.carac2);
+        let diff2 = caracCourante(target, carac2);
+        if (diff2 > diff) {
+          diff = diff2;
+          target.messages.push("Attaque contre " + stringOfCarac(options.difficulteCarac.carac2));
+        } else {
+          target.messages.push("Attaque contre " + stringOfCarac(options.difficulteCarac.carac));
+        }
+      } else {
+        target.messages.push("Attaque contre " + stringOfCarac(options.difficulteCarac.carac));
+      }
+      return diff;
     }
     target.tokName = target.tokName || target.token.get('name');
     let defDerivee = charAttribute(target.charId, 'defDeriveeDe');
@@ -16345,6 +16377,23 @@ var COFantasy = COFantasy || function() {
         return "l'argent";
       default:
         return 'le ' + t;
+    }
+  }
+
+  function stringOfCarac(c) {
+    switch (c) {
+      case 'FOR':
+        return "la force";
+      case 'DEX':
+        return "la dextérité";
+      case 'CON':
+        return "la constitution";
+      case 'INT':
+        return "l'intelligence";
+      case 'SAG':
+        return "la sagesse";
+      case 'CHA':
+        return "le charisme";
     }
   }
 
@@ -26710,10 +26759,10 @@ var COFantasy = COFantasy || function() {
     setTokenAttr(target, 'dureeStrangulation', nouvelleDuree, evt, {
       maxVal: true
     });
-    var deStrang = 6;
+    let deStrang = 6;
     if (msg.content.includes(' --puissant')) deStrang = 8;
-    var dmgExpr = "[[1d" + deStrang + " ";
-    var modInt = modCarac(necromancien, 'intelligence');
+    let dmgExpr = "[[1d" + deStrang + " ";
+    let modInt = modCarac(necromancien, 'intelligence');
     if (modInt > 0) dmgExpr += "+" + modInt;
     else if (modInt < 0) dmgExpr += modInt;
     dmgExpr += "]]";
