@@ -491,7 +491,7 @@ var COFantasy = COFantasy || function() {
     return attrAsBool(attr);
   }
 
-  //Attention à ne pas utiliser si l'attribut ne dépend pas du token 
+  //Attention à ne pas utiliser si l'attribut ne dépend pas du token
   //defPresent est optionnel
   //personnage peut ne pas avoir de token
   function attributeAsInt(personnage, name, def, defPresent) {
@@ -4737,7 +4737,7 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(personnage, 'nueeDInsectes')) {
       var malusNuee = 2 + attributeAsInt(personnage, 'nueeDInsectesTempeteDeManaIntense', 0);
-      expliquer("Nuée d'insectes : -" + malusNuee + " au jet");
+      expliquer("Nuée d\'insectes : -" + malusNuee + " au jet");
       bonus -= malusNuee;
       if (malusNuee > 2 && evt)
         removeTokenAttr(personnage, 'nueeDInsectesTempeteDeManaIntense', evt);
@@ -8880,7 +8880,7 @@ var COFantasy = COFantasy || function() {
       var malusNuee =
         2 + attributeAsInt(personnage, 'nueeDInsectesTempeteDeManaIntense', 0);
       attBonus -= malusNuee;
-      explications.push("Nuée d’insectes => -" + malusNuee + " en Attaque");
+      explications.push("Nuée d\'insectes => -" + malusNuee + " en Attaque");
       if (malusNuee > 2)
         removeTokenAttr(personnage, 'nueeDInsectesTempeteDeManaIntense', evt);
     }
@@ -12247,8 +12247,8 @@ var COFantasy = COFantasy || function() {
 
   //capa est le nom d'un prédicat. Si le prédicat est numérique, cela donne
   //la limite, sinon la limite est 1
-  // retourne 
-  // - utilisations: les nombre d'utilisations restantes, 
+  // retourne
+  // - utilisations: les nombre d'utilisations restantes,
   // - nomLimite: le nom de l'attribut qui stoque l'utilisation
   // - attribut: si il y a un attribut, l'attribut en question.
   function testLimiteUtilisationsCapa(perso, capa, unite, msgPlusDispo, msgPasCapa) {
