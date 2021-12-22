@@ -10190,6 +10190,19 @@ var COFantasy = COFantasy || function() {
         attBonus += bonus;
       }
     }
+    let attrMeneurCible = tokenAttribute(target, 'meneurDHommesCible');
+    if (attrMeneurCible.length > 0) {
+      let meneurTokenId = attrMeneurCible[0].get('current');
+      let meneurDHommes = persoOfId(meneurTokenId, meneurTokenId, pageId);
+      let res = false;
+      if(meneurDHommes && alliesParPerso[meneurDHommes.charId]
+          && alliesParPerso[meneurDHommes.charId].has(attaquant.charId)) {
+        attBonus += 2;
+        if (!options.pasDeDmg) target.cibleMeneurDHommes = true;
+        explications.push(meneurDHommes.token.get('name') + " a désigné " + target.tokName +
+            " comme la cible des attaques du groupe : +2 attaque, +1d6 DM");
+      }
+    }
     return attBonus;
   }
 
@@ -14685,6 +14698,12 @@ var COFantasy = COFantasy || function() {
             value: '2' + options.d6
           });
         }
+        if (target.cibleMeneurDHommes) {
+          target.additionalDmg.push({
+            type: mainDmgType,
+            value: '1' + options.d6
+          });
+        }
         if (target.armeDArgent) {
           target.additionalDmg.push({
             type: mainDmgType,
@@ -18155,6 +18174,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('traquenardImpossible', evt, attrs);
     attrs = removeAllAttributes('niveauDesObjetsAnimes', evt, attrs);
     attrs = removeAllAttributes('seulContreTous_leader', evt, attrs);
+    attrs = removeAllAttributes('meneurDHommesCible', evt, attrs);
     // Autres attributs
     // On récupère les munitions récupérables
     resetAttr(attrs, 'munition', evt, "récupère ses munitions");
