@@ -12011,6 +12011,7 @@ var COFantasy = COFantasy || function() {
     switch (dmgType) {
       case 'poison':
         if (attributeAsBool(target, 'sangDeLArbreCoeur')) return true;
+        if (predicateOrAttributeAsBool(target, 'controleSanguin')) return true;
         if (attaquant && predicateAsBool(target, 'sangDeFerIf')) {
           return estElfeNoir(attaquant) || estInsecte(attaquant);
         }
@@ -16453,6 +16454,10 @@ var COFantasy = COFantasy || function() {
         divide();
       }
       if (attributeAsBool(target, 'armureMagique')) {
+        divide();
+      }
+      if (options.vampirise && predicateOrAttributeAsBool(target, 'controleSanguin')) {
+        expliquer(target.token.get('name') + " contrôle parfaitement son sang");
         divide();
       }
     }
@@ -38773,7 +38778,8 @@ var COFantasy = COFantasy || function() {
             sendPerso(perso, "est en train d'être digéré. " + onGenre(perso, 'Il', 'Elle') + " perd " + dmgDisplay + " PVs");
           });
       }
-      if (attributeAsBool(perso, 'blessureQuiSaigne') && !getState(perso, 'mort') && !predicateAsBool(perso, 'immuniteSaignement')) {
+      if (attributeAsBool(perso, 'blessureQuiSaigne') && !getState(perso, 'mort')
+        && !predicateAsBool(perso, 'immuniteSaignement') && !predicateAsBool(perso, 'controleSanguin')) {
         var jetSaignement = rollDePlus(6);
         var dmgSaignement = {
           type: 'normal',
@@ -39341,7 +39347,7 @@ var COFantasy = COFantasy || function() {
                 });
               return;
             case 'saignementsSang': //prend 1d6 DM
-              if (charPredicateAsBool(charId, 'immuniteSaignement')) {
+              if (charPredicateAsBool(charId, 'immuniteSaignement') || charPredicateAsBool(charId, 'controleSanguin')) {
                 count--;
                 if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
                 return;
