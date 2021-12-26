@@ -14308,13 +14308,13 @@ var COFantasy = COFantasy || function() {
         });
       }
     }
-    var nAEF = 0;
+    let nAEF = 0;
     if (attackLabel) {
-      var attrForgeron = 'forgeron(' + attackLabel + ')';
+      let attrForgeron = 'forgeron(' + attackLabel + ')';
       if (attributeAsBool(attaquant, attrForgeron)) {
-        var feuForgeron =
+        let feuForgeron =
           getValeurOfEffet(attaquant, attrForgeron, 1, 'voieDuMetal');
-        var feuForgeronIntense = attributeAsInt(attaquant, attrForgeron + 'TempeteDeManaIntense', 0);
+        let feuForgeronIntense = attributeAsInt(attaquant, attrForgeron + 'TempeteDeManaIntense', 0);
         if (feuForgeronIntense) {
           feuForgeron = feuForgeron * (1 + feuForgeronIntense);
           removeTokenAttr(attaquant, attrForgeron + 'TempeteDeManaIntense', evt);
@@ -14324,10 +14324,10 @@ var COFantasy = COFantasy || function() {
           value: feuForgeron
         });
       }
-      var attrAEF = 'armeEnflammee(' + attackLabel + ')';
+      let attrAEF = 'armeEnflammee(' + attackLabel + ')';
       if (attributeAsBool(attaquant, attrAEF)) {
         nAEF = 1;
-        var AEFIntense = attributeAsInt(attaquant, attrAEF + 'TempeteDeManaIntense', 0);
+        let AEFIntense = attributeAsInt(attaquant, attrAEF + 'TempeteDeManaIntense', 0);
         if (AEFIntense) {
           nAEF += AEFIntense;
           removeTokenAttr(attaquant, attrAEF + 'TempeteDeManaIntense', evt);
@@ -14336,7 +14336,7 @@ var COFantasy = COFantasy || function() {
     }
     if (nAEF === 0 && attributeAsBool(attaquant, 'armesEnflammees')) {
       nAEF = 1;
-      var AsEFIntense = attributeAsInt(attaquant, 'armesEnflammeesTempeteDeManaIntense', 0);
+      let AsEFIntense = attributeAsInt(attaquant, 'armesEnflammeesTempeteDeManaIntense', 0);
       if (AsEFIntense) {
         nAEF += AsEFIntense;
         removeTokenAttr(attaquant, 'armesEnflammeesTempeteDeManaIntense', evt);
