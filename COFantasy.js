@@ -491,7 +491,7 @@ var COFantasy = COFantasy || function() {
     return attrAsBool(attr);
   }
 
-  //Attention à ne pas utiliser si l'attribut ne dépend pas du token 
+  //Attention à ne pas utiliser si l'attribut ne dépend pas du token
   //defPresent est optionnel
   //personnage peut ne pas avoir de token
   function attributeAsInt(personnage, name, def, defPresent) {
@@ -4737,7 +4737,7 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(personnage, 'nueeDInsectes')) {
       var malusNuee = 2 + attributeAsInt(personnage, 'nueeDInsectesTempeteDeManaIntense', 0);
-      expliquer("Nuée d'insectes : -" + malusNuee + " au jet");
+      expliquer("Nuée d\'insectes : -" + malusNuee + " au jet");
       bonus -= malusNuee;
       if (malusNuee > 2 && evt)
         removeTokenAttr(personnage, 'nueeDInsectesTempeteDeManaIntense', evt);
@@ -8880,7 +8880,7 @@ var COFantasy = COFantasy || function() {
       var malusNuee =
         2 + attributeAsInt(personnage, 'nueeDInsectesTempeteDeManaIntense', 0);
       attBonus -= malusNuee;
-      explications.push("Nuée d’insectes => -" + malusNuee + " en Attaque");
+      explications.push("Nuée d\'insectes => -" + malusNuee + " en Attaque");
       if (malusNuee > 2)
         removeTokenAttr(personnage, 'nueeDInsectesTempeteDeManaIntense', evt);
     }
@@ -10188,6 +10188,19 @@ var COFantasy = COFantasy || function() {
       if (bonus > 0) {
         explications.push("Ténacité => +" + bonus + " en attaque");
         attBonus += bonus;
+      }
+    }
+    let attrMeneurCible = tokenAttribute(target, 'meneurDHommesCible');
+    if (attrMeneurCible.length > 0) {
+      let meneurTokenId = attrMeneurCible[0].get('current');
+      let meneurDHommes = persoOfId(meneurTokenId, meneurTokenId, pageId);
+      let res = false;
+      if(meneurDHommes && alliesParPerso[meneurDHommes.charId]
+          && alliesParPerso[meneurDHommes.charId].has(attaquant.charId)) {
+        attBonus += 2;
+        if (!options.pasDeDmg) target.cibleMeneurDHommes = true;
+        explications.push(meneurDHommes.token.get('name') + " a désigné " + target.tokName +
+            " comme la cible des attaques du groupe : +2 attaque, +1d6 DM");
       }
     }
     return attBonus;
@@ -12248,8 +12261,8 @@ var COFantasy = COFantasy || function() {
 
   //capa est le nom d'un prédicat. Si le prédicat est numérique, cela donne
   //la limite, sinon la limite est 1
-  // retourne 
-  // - utilisations: les nombre d'utilisations restantes, 
+  // retourne
+  // - utilisations: les nombre d'utilisations restantes,
   // - nomLimite: le nom de l'attribut qui stoque l'utilisation
   // - attribut: si il y a un attribut, l'attribut en question.
   function testLimiteUtilisationsCapa(perso, capa, unite, msgPlusDispo, msgPasCapa) {
@@ -14309,13 +14322,13 @@ var COFantasy = COFantasy || function() {
         });
       }
     }
-    var nAEF = 0;
+    let nAEF = 0;
     if (attackLabel) {
-      var attrForgeron = 'forgeron(' + attackLabel + ')';
+      let attrForgeron = 'forgeron(' + attackLabel + ')';
       if (attributeAsBool(attaquant, attrForgeron)) {
-        var feuForgeron =
+        let feuForgeron =
           getValeurOfEffet(attaquant, attrForgeron, 1, 'voieDuMetal');
-        var feuForgeronIntense = attributeAsInt(attaquant, attrForgeron + 'TempeteDeManaIntense', 0);
+        let feuForgeronIntense = attributeAsInt(attaquant, attrForgeron + 'TempeteDeManaIntense', 0);
         if (feuForgeronIntense) {
           feuForgeron = feuForgeron * (1 + feuForgeronIntense);
           removeTokenAttr(attaquant, attrForgeron + 'TempeteDeManaIntense', evt);
@@ -14325,10 +14338,10 @@ var COFantasy = COFantasy || function() {
           value: feuForgeron
         });
       }
-      var attrAEF = 'armeEnflammee(' + attackLabel + ')';
+      let attrAEF = 'armeEnflammee(' + attackLabel + ')';
       if (attributeAsBool(attaquant, attrAEF)) {
         nAEF = 1;
-        var AEFIntense = attributeAsInt(attaquant, attrAEF + 'TempeteDeManaIntense', 0);
+        let AEFIntense = attributeAsInt(attaquant, attrAEF + 'TempeteDeManaIntense', 0);
         if (AEFIntense) {
           nAEF += AEFIntense;
           removeTokenAttr(attaquant, attrAEF + 'TempeteDeManaIntense', evt);
@@ -14337,7 +14350,7 @@ var COFantasy = COFantasy || function() {
     }
     if (nAEF === 0 && attributeAsBool(attaquant, 'armesEnflammees')) {
       nAEF = 1;
-      var AsEFIntense = attributeAsInt(attaquant, 'armesEnflammeesTempeteDeManaIntense', 0);
+      let AsEFIntense = attributeAsInt(attaquant, 'armesEnflammeesTempeteDeManaIntense', 0);
       if (AsEFIntense) {
         nAEF += AsEFIntense;
         removeTokenAttr(attaquant, 'armesEnflammeesTempeteDeManaIntense', evt);
@@ -14684,6 +14697,12 @@ var COFantasy = COFantasy || function() {
           target.additionalDmg.push({
             type: mainDmgType,
             value: '2' + options.d6
+          });
+        }
+        if (target.cibleMeneurDHommes) {
+          target.additionalDmg.push({
+            type: mainDmgType,
+            value: '1' + options.d6
           });
         }
         if (target.armeDArgent) {
@@ -18160,6 +18179,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('traquenardImpossible', evt, attrs);
     attrs = removeAllAttributes('niveauDesObjetsAnimes', evt, attrs);
     attrs = removeAllAttributes('seulContreTous_leader', evt, attrs);
+    attrs = removeAllAttributes('meneurDHommesCible', evt, attrs);
     // Autres attributs
     // On récupère les munitions récupérables
     resetAttr(attrs, 'munition', evt, "récupère ses munitions");

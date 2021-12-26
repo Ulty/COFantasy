@@ -22,6 +22,7 @@
 * Implémentation de base de la voie de l'expert du combat
 * La Rune de Puissance du Forgesort maximise tous les dés mais doit s'utiliser avant le lancer des jets de dégâts
 * Implémentation de Contrôle Sanguin (Voie du contrôle corporel, R4)
+* Ajout de Meneur d'hommes (Voie du héros (prestige), R4)
 
 ### Corrections de bugs
 * Prise en compte de la liberté d'action pour le mot de pouvoir qui immobilise.
