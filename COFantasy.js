@@ -20044,7 +20044,7 @@ var COFantasy = COFantasy || function() {
     if (action) { //alors on peut faire le undo
       var options = action.options || {};
       undoEvent(evt);
-      var d4 = (valPacteSanglant < 5) ? rollDePlus(4) : rollDePlus(4, {
+      var d4 = (bonus < 5) ? rollDePlus(4) : rollDePlus(4, {
         nbDes: 2
       });
       var r = {
@@ -20121,7 +20121,7 @@ var COFantasy = COFantasy || function() {
     if (action) { //alors on peut faire le undo
       var options = action.options || {};
       undoEvent(evt);
-      var d4 = (valPacteSanglant < 5) ? rollDePlus(4) : rollDePlus(4, {
+      var d4 = (bonus < 5) ? rollDePlus(4) : rollDePlus(4, {
         nbDes: 2
       });
       var r = {
