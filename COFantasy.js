@@ -5234,11 +5234,12 @@ var COFantasy = COFantasy || function() {
         if (predicateAsBool(personnage, 'tourDeForce') && carac == 'FOR') {
           testRes.modifiers += '<br/>' + boutonSimple("!cof-tour-force " + evt.id + " " + testId, "Tour de Force");
         }
-        if (predicateAsInt(personnage, 'pacteSanglant', 0) >= 3) {
+        let pacteSanglant = predicateAsInt(personnage, 'pacteSanglant', 0);
+        if (pacteSanglant >= 3) {
           testRes.modifiers += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 3 " + testId, "Pacte sanglant (+3)");
-        }
-        if (predicateAsInt(personnage, 'pacteSanglant', 0) >= 5) {
-          testRes.modifiers += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 5 " + testId, "Pacte sanglant (+5)");
+          if (pacteSanglant >= 5) {
+            testRes.modifiers += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 5 " + testId, "Pacte sanglant (+5)");
+          }
         }
         if (jetCache) sendChat('COF', "/w GM Jet caché : " + buildinline(roll) + bonusText);
         callback(testRes, explications);
@@ -5376,11 +5377,12 @@ var COFantasy = COFantasy || function() {
           if (caracteristique == 'FOR' && predicateAsBool(perso, 'tourDeForce')) {
             boutonsReroll += '<br/>' + boutonSimple("!cof-tour-force " + evt.id + " " + testId, "Tour De Force");
           }
-          if (predicateAsInt(perso, 'pacteSanglant', 0) >= 3) {
+          let pacteSanglant = predicateAsInt(perso, 'pacteSanglant', 0);
+          if (pacteSanglant >= 3) {
             boutonsReroll += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 3 " + testId, "Pacte sanglant (+3)");
-          }
-          if (predicateAsInt(perso, 'pacteSanglant', 0) >= 5) {
-            boutonsReroll += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 5 " + testId, "Pacte sanglant (+5)");
+            if (pacteSanglant >= 5) {
+              boutonsReroll += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 5 " + testId, "Pacte sanglant (+5)");
+            }
           }
           addLineToFramedDisplay(display, boutonsReroll);
           if (display.retarde) {
@@ -9027,7 +9029,7 @@ var COFantasy = COFantasy || function() {
       target.messages = target.messages || [];
       let diff = caracCourante(target, carac);
       if (options.difficulteCarac.carac2) {
-      let carac2 = caracOfMod(options.difficulteCarac.carac2);
+        let carac2 = caracOfMod(options.difficulteCarac.carac2);
         let diff2 = caracCourante(target, carac2);
         if (diff2 > diff) {
           diff = diff2;
@@ -10194,13 +10196,12 @@ var COFantasy = COFantasy || function() {
     if (attrMeneurCible.length > 0) {
       let meneurTokenId = attrMeneurCible[0].get('current');
       let meneurDHommes = persoOfId(meneurTokenId, meneurTokenId, pageId);
-      let res = false;
-      if(meneurDHommes && alliesParPerso[meneurDHommes.charId]
-          && alliesParPerso[meneurDHommes.charId].has(attaquant.charId)) {
+      if (meneurDHommes && alliesParPerso[meneurDHommes.charId] &&
+        alliesParPerso[meneurDHommes.charId].has(attaquant.charId)) {
         attBonus += 2;
         if (!options.pasDeDmg) target.cibleMeneurDHommes = true;
         explications.push(meneurDHommes.token.get('name') + " a désigné " + target.tokName +
-            " comme la cible des attaques du groupe : +2 attaque, +1d6 DM");
+          " comme la cible des attaques du groupe : +2 attaque, +1d6 DM");
       }
     }
     return attBonus;
@@ -10554,11 +10555,12 @@ var COFantasy = COFantasy || function() {
             if (predicateAsBool(perso1, 'tourDeForce') && carac1 == 'FOR') {
               texte1 += '<br/>' + boutonSimple("!cof-tour-force " + evt.id + " " + rollId + "_roll1", "Tour de force");
             }
-            if (predicateAsInt(perso1, 'pacteSanglant', 0) >= 3) {
+            let pacteSanglant = predicateAsInt(perso1, 'pacteSanglant', 0);
+            if (pacteSanglant >= 3) {
               texte1 += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 3 " + rollId + "_roll1", "Pacte sanglant (+3)");
-            }
-            if (predicateAsInt(perso1, 'pacteSanglant', 0) >= 5) {
-              texte1 += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 5 " + rollId + "_roll1", "Pacte sanglant (+5)");
+              if (pacteSanglant >= 5) {
+                texte1 += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 5 " + rollId + "_roll1", "Pacte sanglant (+5)");
+              }
             }
           }
         }
@@ -10585,11 +10587,12 @@ var COFantasy = COFantasy || function() {
             if (predicateAsBool(perso2, 'tourDeForce') && carac2 == 'FOR') {
               texte2 += '<br/>' + boutonSimple("!cof-tour-force " + evt.id + " " + rollId + "_roll2", "Tour de force");
             }
-            if (predicateAsInt(perso2, 'pacteSanglant', 0) >= 3) {
+            let pacteSanglant = predicateAsInt(perso2, 'pacteSanglant', 0);
+            if (pacteSanglant >= 3) {
               texte2 += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 3 " + rollId + "_roll2", "Pacte sanglant (+3)");
-            }
-            if (predicateAsInt(perso2, 'pacteSanglant', 0) >= 5) {
-              texte2 += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 5 " + rollId + "_roll2", "Pacte sanglant (+5)");
+              if (pacteSanglant >= 5) {
+                texte2 += "<br/>" + boutonSimple("!cof-pacte-sanglant " + evt.id + " 5 " + rollId + "_roll2", "Pacte sanglant (+5)");
+              }
             }
           }
         }
@@ -15854,11 +15857,12 @@ var COFantasy = COFantasy || function() {
           if (capaciteDisponible(perso, 'petitVeinard', 'combat')) {
             addLineToFramedDisplay(display, boutonSimple("!cof-bouton-petit-veinard " + evt.id, "Petit veinard"));
           }
-          if (predicateAsInt(perso, 'pacteSanglant', 0) >= 3) {
+          let pacteSanglant = predicateAsInt(perso, 'pacteSanglant', 0);
+          if (pacteSanglant >= 3) {
             addLineToFramedDisplay(display, boutonSimple("!cof-pacte-sanglant " + evt.id + " 3", "Pacte sanglant (+3)"));
-          }
-          if (predicateAsInt(perso, 'pacteSanglant', 0) >= 5) {
-            addLineToFramedDisplay(display, boutonSimple("!cof-pacte-sanglant " + evt.id + " 5", "Pacte sanglant (+5)"));
+            if (pacteSanglant >= 5) {
+              addLineToFramedDisplay(display, boutonSimple("!cof-pacte-sanglant " + evt.id + " 5", "Pacte sanglant (+5)"));
+            }
           }
           if (predicateAsInt(perso, 'expertDuCombat', 0) > 0 &&
             attributeAsInt(perso, 'limiteParCombat_expertDuCombat', 1) > 0 &&
@@ -15947,7 +15951,7 @@ var COFantasy = COFantasy || function() {
             }
             let pacteSanglant = predicateAsInt(target, 'pacteSanglant', 0);
             if (pacteSanglant >= 3) {
-              var msg = target.tokName + " fait un Pacte sanglant" + boutonSimple("!cof-pacte-sanglant-def " + evt.id + ' 3 ' + target.token.id, "(+3 DEF)");
+              let msg = target.tokName + " fait un Pacte sanglant" + boutonSimple("!cof-pacte-sanglant-def " + evt.id + ' 3 ' + target.token.id, "(+3 DEF)");
               if (pacteSanglant >= 5) {
                 msg += boutonSimple("!cof-pacte-sanglant-def " + evt.id + ' 5 ' + target.token.id, "(+5 DEF)");
               }
@@ -20040,19 +20044,19 @@ var COFantasy = COFantasy || function() {
       sendPerso(perso, "ne peut pas faire ça !");
       return;
     }
-    var action = evt.action;
+    let action = evt.action;
     if (action) { //alors on peut faire le undo
-      var options = action.options || {};
+      let options = action.options || {};
       undoEvent(evt);
-      var d4 = (valPacteSanglant < 5) ? rollDePlus(4) : rollDePlus(4, {
+      let d4 = (bonus < 5) ? rollDePlus(4) : rollDePlus(4, {
         nbDes: 2
       });
-      var r = {
+      let r = {
         total: d4.val,
         type: 'normal',
         display: d4.roll
       };
-      var evtPacteSanglant = {
+      let evtPacteSanglant = {
         type: 'pacteSanglant',
         rollId: rollId,
         action: {
@@ -20098,12 +20102,12 @@ var COFantasy = COFantasy || function() {
       error("Le dernier évènement n'est pas une action", args);
       return;
     }
-    var bonus = parseInt(args[2]);
+    let bonus = parseInt(args[2]);
     if (isNaN(bonus)) {
       error("Il manque un choix de bonus au Pacte sanglant", args);
       return;
     }
-    var perso = persoOfId([args[3]]);
+    let perso = persoOfId([args[3]]);
     if (perso === undefined) {
       error("Erreur interne du bouton de pacte sanglant (DEF) : pas de cible trouvée", args);
       return;
@@ -20112,24 +20116,24 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton");
       return;
     }
-    var valPacteSanglant = predicateAsInt(perso, 'pacteSanglant', 0);
+    let valPacteSanglant = predicateAsInt(perso, 'pacteSanglant', 0);
     if (valPacteSanglant < bonus) {
       sendPerso(perso, "ne peut pas faire ça !");
       return;
     }
-    var action = evt.action;
+    let action = evt.action;
     if (action) { //alors on peut faire le undo
-      var options = action.options || {};
+      let options = action.options || {};
       undoEvent(evt);
-      var d4 = (valPacteSanglant < 5) ? rollDePlus(4) : rollDePlus(4, {
+      let d4 = (bonus < 5) ? rollDePlus(4) : rollDePlus(4, {
         nbDes: 2
       });
-      var r = {
+      let r = {
         total: d4.val,
         type: 'normal',
         display: d4.roll
       };
-      var evtPacteSanglant = {
+      let evtPacteSanglant = {
         type: 'pacteSanglantDEF',
         action: {
           rolls: {
@@ -20138,7 +20142,7 @@ var COFantasy = COFantasy || function() {
         }
       };
       addEvent(evtPacteSanglant);
-      var explications = [];
+      let explications = [];
       perso.ignoreTouteRD = true;
       dealDamage(perso, r, [], evtPacteSanglant, false, {}, explications,
         function(dmgDisplay, dmg) {
@@ -38798,15 +38802,17 @@ var COFantasy = COFantasy || function() {
             sendPerso(perso, "est en train d'être digéré. " + onGenre(perso, 'Il', 'Elle') + " perd " + dmgDisplay + " PVs");
           });
       }
-      if (attributeAsBool(perso, 'blessureQuiSaigne') && !getState(perso, 'mort')
-        && !predicateAsBool(perso, 'immuniteSaignement') && !predicateAsBool(perso, 'controleSanguin')) {
-        var jetSaignement = rollDePlus(6);
-        var dmgSaignement = {
+      if (attributeAsBool(perso, 'blessureQuiSaigne') &&
+        !getState(perso, 'mort') &&
+        !predicateAsBool(perso, 'immuniteSaignement') &&
+        !predicateAsBool(perso, 'controleSanguin')) {
+        let jetSaignement = rollDePlus(6);
+        let dmgSaignement = {
           type: 'normal',
           total: jetSaignement.val,
           display: jetSaignement.roll
         };
-        var optDMSaignements = getEffectOptions(perso, 'blessureQuiSaigne');
+        let optDMSaignements = getEffectOptions(perso, 'blessureQuiSaigne');
         dealDamage(perso, dmgSaignement, [], evt, false, optDMSaignements, undefined,
           function(dmgDisplay, dmgFinal) {
             sendPerso(perso, "saigne. " + onGenre(perso, 'Il', 'Elle') + " perd " + dmgDisplay + " PVs");
@@ -38814,15 +38820,15 @@ var COFantasy = COFantasy || function() {
       }
       if (attributeAsBool(perso, 'noyade') && !getState(perso, 'mort') && !immuniseAsphyxie(perso)) {
         let playerId = getPlayerIds(perso);
-        var display = startFramedDisplay(playerId, "Noyade", perso);
-        var saveId = "Noyade_" + perso.token.id;
-        var expliquer = function(m) {
+        let display = startFramedDisplay(playerId, "Noyade", perso);
+        let saveId = "Noyade_" + perso.token.id;
+        let expliquer = function(m) {
           addLineToFramedDisplay(display, m);
         };
-        var msgPour = " pour ne pas prendre de dégâts de noyade";
-        var sujet = onGenre(perso, 'il', 'elle');
-        var msgReussite = ", " + sujet + " ne perd pas de PV ce tour";
-        var saveOpts = {
+        let msgPour = " pour ne pas prendre de dégâts de noyade";
+        let sujet = onGenre(perso, 'il', 'elle');
+        let msgReussite = ", " + sujet + " ne perd pas de PV ce tour";
+        let saveOpts = {
           msgPour: msgPour,
           msgReussite: msgReussite,
           rolls: options.rolls,

@@ -25,6 +25,7 @@
 * Ajout de Meneur d'hommes (Voie du héros (prestige), R4)
 
 ### Corrections de bugs
+* Correction du coût de pacte sanglant.
 * Prise en compte de la liberté d'action pour le mot de pouvoir qui immobilise.
 * Pas de DOT sur les personnages déjà morts.
 * --demiAuto divise les dégâts par deux en cas d'échec, même si il n'y a pas de jet de sauvegarde.
