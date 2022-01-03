@@ -4808,7 +4808,7 @@ var COFantasy = COFantasy || function() {
             expliquer("Attribut " + attr + " : " + ((bonusAttribut < 0) ? "-" : "+") + bonusAttribut);
             bonus += bonusAttribut;
           }
-          if (attr != options.competence)
+          if (!options.competence || attr != options.competence.trim().toLowerCase())
             bonus += bonusAuxCompetences(personnage, attr, expliquer);
         });
       }
