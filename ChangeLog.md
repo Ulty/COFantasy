@@ -25,6 +25,7 @@
 * Ajout de Meneur d'hommes (Voie du héros (prestige), R4)
 
 ### Corrections de bugs
+* Correction d'un bug avec corps élémentaire.
 * Correction du bonus de compétence appliqué en double en cas de majuscule.
 * Correction du coût de pacte sanglant.
 * Prise en compte de la liberté d'action pour le mot de pouvoir qui immobilise.

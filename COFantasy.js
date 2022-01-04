@@ -1378,19 +1378,70 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  // options: bonus:int, deExplosif:bool, nbDes:int
+  const couleurType = {
+    'normal': {
+      background: '#F1E6DA',
+      color: '#000'
+    },
+    'magique': {
+      background: '#FFFFFF',
+      color: '#534200'
+    },
+    'maladie': { //Pour l'instant, comme normal
+      background: '#F1E6DA',
+      color: '#000'
+    },
+    'feu': {
+      background: '#FF3011',
+      color: '#440000'
+    },
+    'froid': {
+      background: '#77FFFF',
+      color: '#004444'
+    },
+    'acide': {
+      background: '#80BF40',
+      color: '#020401'
+    },
+    'sonique': {
+      background: '#E6CCFF',
+      color: '#001144'
+    },
+    'electrique': {
+      background: '#FFFF80',
+      color: '#222200'
+    },
+    'poison': {
+      background: '#58000',
+      color: '#DDAFF'
+    },
+    'argent': {
+      background: '#F1E6DA',
+      color: '#C0C0C0'
+    },
+    'drain': {
+      background: '#0D1201',
+      color: '#E8F5C9'
+    },
+    'energie': {
+      background: '#FFEEAA',
+      color: '#221100'
+    },
+  };
+
+  // options: bonus:int, deExplosif:bool, nbDes:int, type
   //Renvoie 1dk + bonus, avec le texte
   //champs val et roll
   function rollDePlus(de, options) {
     options = options || {};
     options.nbDes = options.nbDes || 1;
-    var count = options.nbDes;
-    var bonus = options.bonus || 0;
-    var explose = options.deExplosif || false;
-    var texteJetDeTotal = '';
-    var jetTotal = 0;
+    let count = options.nbDes;
+    let bonus = options.bonus || 0;
+    let explose = options.deExplosif || false;
+    let texteJetDeTotal = '';
+    let jetTotal = 0;
     do {
-      var jetDe = randomInteger(de);
+      let jetDe = randomInteger(de);
       texteJetDeTotal += jetDe;
       jetTotal += jetDe;
       explose = explose && (jetDe === de);
@@ -1403,11 +1454,17 @@ var COFantasy = COFantasy || function() {
         }
       }
     } while ((explose || count > 0) && jetTotal < 1000);
-    var res = {
+    let res = {
       val: jetTotal + bonus
     };
-    var msg = '<span style="display: inline-block; border-radius: 5px; padding: 0 4px; background-color: #F1E6DA; color: #000;" title="' + options.nbDes + 'd';
-    msg += de;
+    let style = 'display: inline-block; border-radius: 5px; padding: 0 4px;';
+    let type = options.type || 'normal';
+    let couleurs = couleurType[type];
+    if (couleurs === undefined) couleurs = couleurType.normal;
+    style += ' background-color: ' + couleurs.background + ';';
+    style += ' color: ' + couleurs.color + ';';
+    let msg = '<span style="' + style + '"';
+    msg += ' title="' + options.nbDes + 'd' + de;
     if (options.deExplosif) msg += '!';
     if (bonus > 0) {
       msg += '+' + bonus;
@@ -12016,7 +12073,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function ajouteDe6Crit(x, first) {
-    var bonusCrit = rollDePlus(6);
+    let bonusCrit = rollDePlus(6);
     if (first) x.dmgDisplay = "(" + x.dmgDisplay + ")";
     x.dmgDisplay += '+' + bonusCrit.roll;
     x.dmgTotal += bonusCrit.val;
@@ -12121,13 +12178,13 @@ var COFantasy = COFantasy || function() {
       }
     }
     otherDmg = otherDmg || [];
-    var dmgDisplay = dmg.display;
-    var dmgTotal = dmg.total;
+    let dmgDisplay = dmg.display;
+    let dmgTotal = dmg.total;
     if (dmgTotal < 1 && !(dmg.value && dmg.value.startsWith('0'))) {
       dmgDisplay += ' -> 1';
       dmgTotal = 1;
     }
-    var showTotal = false;
+    let showTotal = false;
     if (dmgCoef > 1) {
       dmgDisplay += " X " + dmgCoef;
       dmgTotal = dmgTotal * dmgCoef;
@@ -12140,7 +12197,7 @@ var COFantasy = COFantasy || function() {
       showTotal = true;
     }
     if (crit) {
-      var messageCrit = charAttribute(target.charId, 'messageSiCritique');
+      let messageCrit = charAttribute(target.charId, 'messageSiCritique');
       if (messageCrit.length > 0) {
         messageCrit = messageCrit[0].get('current');
         expliquer(messageCrit);
@@ -12148,8 +12205,8 @@ var COFantasy = COFantasy || function() {
       if (predicateAsBool(target, 'memePasMal')) {
         options.memePasMal = (dmgTotal / dmgCoef) * critCoef;
       }
-      var firstBonusCritique = true;
-      var x = {
+      let firstBonusCritique = true;
+      let x = {
         dmgDisplay: dmgDisplay,
         dmgTotal: dmgTotal
       };
@@ -12541,7 +12598,7 @@ var COFantasy = COFantasy || function() {
     let attackingToken = attaquant.token;
     let attackerTokName = attaquant.tokName;
     attaquant.additionalDmg = [...options.additionalDmg]; // Reset du calcul des dommages additionnels liés à l'attaquant
-    var sujetAttaquant = onGenre(attaquant, 'il', 'elle');
+    let sujetAttaquant = onGenre(attaquant, 'il', 'elle');
     if (options.contact) {
       //Prise en compte du corps élémentaire
       let typeCorpsElem = predicateAsBool(attaquant, 'corpsElementaire');
@@ -14537,7 +14594,7 @@ var COFantasy = COFantasy || function() {
           }
           if (valAttribute(target, 'FOR', 'force') < valAttribute(attaquant, 'FOR', 'force')) {
             options.rolls = options.rolls || [];
-            var distanceSaisiProjete = options.rolls['distanceSaisiProjection_' + target.token.id] ||
+            let distanceSaisiProjete = options.rolls['distanceSaisiProjection_' + target.token.id] ||
               rollDePlus(6, {
                 nbDes: 2
               });
@@ -14554,9 +14611,10 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (options.projection && taillePersonnage(attaquant, 4) > taillePersonnage(target, 4)) {
-          var bonusProjection = 5 - taillePersonnage(target, 4);
+          let bonusProjection = 5 - taillePersonnage(target, 4);
           options.rolls = options.rolls || [];
-          var distanceProjetee = options.rolls['distanceProjection_' + target.token.id] ||
+          let distanceProjetee =
+            options.rolls['distanceProjection_' + target.token.id] ||
             rollDePlus(6, {
               bonus: bonusProjection
             }).val;
@@ -15238,11 +15296,11 @@ var COFantasy = COFantasy || function() {
                       //Les DMs automatiques en cas de toucher une cible
                       if (attributeAsBool(target, 'sousTension')) {
                         ciblesCount++;
-                        var exprSousTension = '[[' + getValeurStringOfEffet(target, 'sousTension', '1d6') + ']]';
+                        let exprSousTension = '[[' + getValeurStringOfEffet(target, 'sousTension', '1d6') + ']]';
                         sendChat('', exprSousTension, function(res) {
-                          var rolls = res[0];
-                          var explRoll = rolls.inlinerolls[0];
-                          var r = {
+                          let rolls = res[0];
+                          let explRoll = rolls.inlinerolls[0];
+                          let r = {
                             total: explRoll.results.total,
                             type: 'electrique',
                             display: buildinline(explRoll, 'electrique', true)
@@ -15250,7 +15308,7 @@ var COFantasy = COFantasy || function() {
                           dealDamage(attaquant, r, [], evt, false, options,
                             target.messages,
                             function(dmgDisplay, dmg, dmgDrain) {
-                              var dmgMsg =
+                              let dmgMsg =
                                 "<b>Décharge électrique sur " + attackerTokName + " :</b> " +
                                 dmgDisplay;
                               target.messages.push(dmgMsg);
@@ -15261,9 +15319,9 @@ var COFantasy = COFantasy || function() {
                       if (attributeAsBool(target, 'sangMordant')) {
                         ciblesCount++;
                         sendChat("", "[[1d6]]", function(res) {
-                          var rolls = res[0];
-                          var explRoll = rolls.inlinerolls[0];
-                          var r = {
+                          let rolls = res[0];
+                          let explRoll = rolls.inlinerolls[0];
+                          let r = {
                             total: explRoll.results.total,
                             type: 'acide',
                             display: buildinline(explRoll, 'acide', true)
@@ -15297,7 +15355,7 @@ var COFantasy = COFantasy || function() {
                           dealDamage(attaquant, r, [], evt, false, options,
                             target.messages,
                             function(dmgDisplay, dmg, dmgDrain) {
-                              var dmgMsg =
+                              let dmgMsg =
                                 "<b>" + attackerTokName + " est glacé :</b> " +
                                 dmgDisplay + " DM";
                               target.messages.push(dmgMsg);
@@ -15305,7 +15363,7 @@ var COFantasy = COFantasy || function() {
                             });
                         });
                       }
-                      var attrDmSiToucheContact = findObjs({
+                      let attrDmSiToucheContact = findObjs({
                         _type: 'attribute',
                         _characterid: target.charId,
                         name: 'dmSiToucheContact'
@@ -15313,10 +15371,10 @@ var COFantasy = COFantasy || function() {
                       attrDmSiToucheContact.forEach(function(dstc) {
                         ciblesCount++;
                         sendChat("", "[[" + dstc.get('current') + "]]", function(res) {
-                          var rolls = res[0];
-                          var explRoll = rolls.inlinerolls[0];
-                          var type = dstc.get('max');
-                          var r = {
+                          let rolls = res[0];
+                          let explRoll = rolls.inlinerolls[0];
+                          let type = dstc.get('max');
+                          let r = {
                             total: explRoll.results.total,
                             type: type,
                             display: buildinline(explRoll, type, true)
@@ -15324,7 +15382,7 @@ var COFantasy = COFantasy || function() {
                           dealDamage(attaquant, r, [], evt, false, options,
                             target.messages,
                             function(dmgDisplay, dmg, dmgDrain) {
-                              var dmgMsg =
+                              let dmgMsg =
                                 "<b>" + attackerTokName + " subit :</b> " +
                                 dmgDisplay + " DM en touchant " + target.tokName;
                               target.messages.push(dmgMsg);
@@ -15332,27 +15390,26 @@ var COFantasy = COFantasy || function() {
                             });
                         });
                       });
-                      let typeCorpsElem = predicateAsBool(attaquant, 'corpsElementaire');
+                      let typeCorpsElem = predicateAsBool(target, 'corpsElementaire');
                       if (typeCorpsElem && typeCorpsElem !== true) {
                         ciblesCount++;
-                        sendChat("", "[[1d6]]", function(res) {
-                          var rolls = res[0];
-                          var explRoll = rolls.inlinerolls[0];
-                          var r = {
-                            total: explRoll.results.total,
-                            type: typeCorpsElem,
-                            display: buildinline(explRoll, typeCorpsElem, true)
-                          };
-                          dealDamage(attaquant, r, [], evt, false, options,
-                            target.messages,
-                            function(dmgDisplay, dmg, dmgDrain) {
-                              var dmgMsg =
-                                "<b>" + attackerTokName + " subit :</b> " +
-                                dmgDisplay + " DM en touchant " + target.tokName;
-                              target.messages.push(dmgMsg);
-                              finCibles();
-                            });
+                        let dm = rollDePlus(6, {
+                          type: typeCorpsElem
                         });
+                        let r = {
+                          type: typeCorpsElem,
+                          display: dm.roll,
+                          total: dm.val
+                        };
+                        dealDamage(attaquant, r, [], evt, false, options,
+                          target.messages,
+                          function(dmgDisplay, dmg, dmgDrain) {
+                            let dmgMsg =
+                              "<b>" + attackerTokName + " subit :</b> " +
+                              dmgDisplay + " DM en touchant " + target.tokName;
+                            target.messages.push(dmgMsg);
+                            finCibles();
+                          });
                       }
                     }
                     finCibles();
@@ -17504,18 +17561,18 @@ var COFantasy = COFantasy || function() {
   }
 
   function buildinline(inlineroll, dmgType, magique) {
-    var InlineColorOverride = "";
-    var values = [];
-    var critRoll = false;
-    var failRoll = false;
-    var critCheck = false;
-    var failCheck = false;
-    var highRoll = false;
-    var lowRoll = false;
-    var noHighlight = false;
+    let InlineColorOverride = "";
+    let values = [];
+    let critRoll = false;
+    let failRoll = false;
+    let critCheck = false;
+    let failCheck = false;
+    let highRoll = false;
+    let lowRoll = false;
+    let noHighlight = false;
 
     inlineroll.results.rolls.forEach(function(roll) {
-      var result = processRoll(roll, critRoll, failRoll, highRoll, lowRoll, noHighlight);
+      let result = processRoll(roll, critRoll, failRoll, highRoll, lowRoll, noHighlight);
       if (result.value.toString().indexOf("critsuccess") != -1) critCheck = true;
       if (result.value.toString().indexOf("critfail") != -1) failCheck = true;
       values.push(result.value);
@@ -17527,51 +17584,21 @@ var COFantasy = COFantasy || function() {
     });
 
     // Overrides the default coloring of the inline rolls...
-    switch (dmgType) {
-      case 'normal':
-      case 'maladie':
-        if (magique)
-          InlineColorOverride = ' background-color: #FFFFFF; color: #534200;';
-        else
-          InlineColorOverride = ' background-color: #F1E6DA; color: #000;';
-        break;
-      case 'feu':
-        InlineColorOverride = ' background-color: #FF3011; color: #440000;';
-        break;
-      case 'froid':
-        InlineColorOverride = ' background-color: #77FFFF; color: #004444;';
-        break;
-      case 'acide':
-        InlineColorOverride = ' background-color: #80BF40; color: #020401;';
-        break;
-      case 'sonique':
-        InlineColorOverride = ' background-color: #E6CCFF; color: #001144;';
-        break;
-      case 'electrique':
-        InlineColorOverride = ' background-color: #FFFF80; color: #222200;';
-        break;
-      case 'poison':
-        InlineColorOverride = ' background-color: #558000; color: #DDAFFF;';
-        break;
-      case 'argent':
-        InlineColorOverride = ' background-color: #F1E6DA; color: #C0C0C0;';
-        break;
-      case 'drain':
-        InlineColorOverride = ' background-color: #0D1201; color: #E8F5C9;';
-        break;
-      case 'energie':
-        InlineColorOverride = ' background-color: #FFEEAA; color: #221100;';
-        break;
-      default:
-        if (critCheck && failCheck) {
-          InlineColorOverride = ' background-color: #8FA4D4; color: #061539;';
-        } else if (critCheck && !failCheck) {
-          InlineColorOverride = ' background-color: #88CC88; color: #004400;';
-        } else if (!critCheck && failCheck) {
-          InlineColorOverride = ' background-color: #FFAAAA; color: #660000;';
-        } else {
-          InlineColorOverride = ' background-color: #FFFEA2; color: #000;';
-        }
+    let tc = dmgType;
+    if (magique && (tc == 'normal' || tc == 'maladie')) tc = 'magique';
+    let couleurs = couleurType[tc];
+    if (couleurs) {
+      InlineColorOverride = ' background-color: ' + couleurs.background + '; color: ' + couleurs.color + ';';
+    } else {
+      if (critCheck && failCheck) {
+        InlineColorOverride = ' background-color: #8FA4D4; color: #061539;';
+      } else if (critCheck && !failCheck) {
+        InlineColorOverride = ' background-color: #88CC88; color: #004400;';
+      } else if (!critCheck && failCheck) {
+        InlineColorOverride = ' background-color: #FFAAAA; color: #660000;';
+      } else {
+        InlineColorOverride = ' background-color: #FFFEA2; color: #000;';
+      }
     }
     var expression = inlineroll.expression.replace(/=>|>=/, '&amp;ge;').replace(/>/, '&amp;gt;').replace(/<=|=</, '&amp;le;').replace(/</, '&amp;lt;');
     var rollOut = '<span style="display: inline-block; border-radius: 5px; padding: 0 4px; ' + InlineColorOverride + '" title="' + expression + ' = ' + values.join("");
@@ -19974,7 +20001,7 @@ var COFantasy = COFantasy || function() {
         }
       };
       addEvent(evtProuesse);
-      var explications = [];
+      let explications = [];
       perso.ignoreTouteRD = true;
       dealDamage(perso, r, [], evtProuesse, false, {}, explications,
         function(dmgDisplay, dmg) {
@@ -20066,7 +20093,7 @@ var COFantasy = COFantasy || function() {
         }
       };
       addEvent(evtPacteSanglant);
-      var explications = [];
+      let explications = [];
       perso.ignoreTouteRD = true;
       dealDamage(perso, r, [], evtPacteSanglant, false, {}, explications,
         function(dmgDisplay, dmg) {
@@ -20222,7 +20249,7 @@ var COFantasy = COFantasy || function() {
         }
       };
       addEvent(evtTourDeForce);
-      var explications = [];
+      let explications = [];
       perso.ignoreTouteRD = true;
       dealDamage(perso, r, [], evtTourDeForce, false, {}, explications,
         function(dmgDisplay, dmg) {
@@ -24810,7 +24837,7 @@ var COFantasy = COFantasy || function() {
             dmg.total = dmg.roll.inlinerolls[dmgRollNumber].results.total;
             dmg.display = buildinline(dmg.roll.inlinerolls[dmgRollNumber], dmg.type, options.magique);
             var name = cible.token.get('name');
-            var explicationsDmg = [];
+            let explicationsDmg = [];
             cible.attaquant = attaquant;
             dealDamage(cible, dmg, [], evt, false, options, explicationsDmg, function(dmgDisplay, dmgFinal) {
               addLineToFramedDisplay(display,
@@ -28312,7 +28339,7 @@ var COFantasy = COFantasy || function() {
           let finalDisplay = function() {
             nbCibles--;
             if (nbCibles < 1) {
-              sendChat("", endFramedDisplay(display));
+              sendChat('', endFramedDisplay(display));
             }
           };
           cibles.forEach(function(perso) {
@@ -28529,7 +28556,7 @@ var COFantasy = COFantasy || function() {
               dmgRoll = res[0].inlinerolls[0];
             }
             evt.action.rolls.enduireSelfDmg = dmgRoll;
-            var r = {
+            let r = {
               total: dmgRoll.results.total,
               type: 'poison',
               display: buildinline(dmgRoll, 'poison')
@@ -28538,7 +28565,7 @@ var COFantasy = COFantasy || function() {
               carac: 'CON',
               seuil: savePoison
             };
-            var explications = [];
+            let explications = [];
             dealDamage(perso, r, [], evt, false, options, explications,
               function(dmgDisplay, dmg) {
                 explications.forEach(function(e) {
@@ -32078,7 +32105,7 @@ var COFantasy = COFantasy || function() {
         type: 'normal',
         display: d6.roll
       };
-      var explications = [];
+      let explications = [];
       necromant.ignoreTouteRD = true;
       dealDamage(necromant, r, [], evt, false, {}, explications,
         function(dmgDisplay, dmg) {
@@ -33281,7 +33308,7 @@ var COFantasy = COFantasy || function() {
               type: 'normal',
               display: d6.roll
             };
-            var explications2 = [];
+            let explications2 = [];
             perso.ignoreTouteRD = true;
             dealDamage(perso, r, [], evt, false, {}, explications2, function(dmgDisplay) {
               var dmgMsg = "L'étreinte du scorpion inflige " + dmgDisplay + " dégâts.";
@@ -38756,16 +38783,16 @@ var COFantasy = COFantasy || function() {
               onGenre(perso, 'Il', 'Elle') + " subit " + dmgDisplay + " DM");
           });
       }
-      var enflammeAttr = tokenAttribute(perso, 'enflamme');
+      let enflammeAttr = tokenAttribute(perso, 'enflamme');
       if (enflammeAttr.length > 0) {
-        var enflamme = parseInt(enflammeAttr[0].get('current'));
+        let enflamme = parseInt(enflammeAttr[0].get('current'));
         // Pour ne pas faire les dégâts plusieurs fois (plusieurs tokens pour un même personnage), on utilise la valeur max de l'attribut
         var dernierTourEnflamme = parseInt(enflammeAttr[0].get('max'));
         if ((isNaN(dernierTourEnflamme) || dernierTourEnflamme < tour) &&
           !isNaN(enflamme) && enflamme > 0) {
-          var d6Enflamme = randomInteger(6);
-          var feu = d6Enflamme + enflamme - 1;
-          var dmgEnflamme = {
+          let d6Enflamme = randomInteger(6);
+          let feu = d6Enflamme + enflamme - 1;
+          let dmgEnflamme = {
             type: 'feu',
             total: feu,
             display: feu
