@@ -4677,6 +4677,10 @@ var COFantasy = COFantasy || function() {
             bonus += bonusGraceFeline;
           }
         }
+        if (predicateAsBool(personnage, 'pirouettes') && malusArmure(personnage) <= 4) {
+          expliquer("Pirouettes : +5 en acrobaties");
+          bonus += 5;
+        }
         break;
       case 'course':
         if (predicateAsBool(personnage, 'graceFelineVoleur')) {
@@ -4685,6 +4689,12 @@ var COFantasy = COFantasy || function() {
             expliquer("Grâce féline : +" + bonusGraceFeline + " en course");
             bonus += bonusGraceFeline;
           }
+        }
+        break;
+      case 'danse':
+        if (predicateAsBool(personnage, 'pirouettes') && malusArmure(personnage) <= 4) {
+          expliquer("Pirouettes : +5 en danse");
+          bonus += 5;
         }
         break;
       case 'discrétion':
@@ -4929,6 +4939,7 @@ var COFantasy = COFantasy || function() {
     return bonus;
   }
 
+  //expliquer est optionnel, et si présent, il faut msg
   function malusArmure(personnage, expliquer, msg) {
     let malusArmure = 0;
     if (ficheAttributeAsInt(personnage, 'DEFARMUREON', 1))
@@ -9596,6 +9607,19 @@ var COFantasy = COFantasy || function() {
       explications.push(target, 'Libérateur de Dorn => +2 en DEF');
       defense += 2;
     }
+    let pirouettes = predicateAsInt(target, 'pirouettes', 0);
+    if (pirouettes > 0) {
+      if (malusArmure(target) > 4) {
+        explications.push(target, 'Armure lourde, pas de pirouette');
+      } else {
+        explications.push(target, 'Pirouettes => +' + pirouettes + ' en DEF');
+        defense += pirouettes;
+      }
+    }
+    if (attributeAsBool(target, 'danseDesLames') && malusArmure(target) <= 4) {
+      explications.push(target, 'Danse des lames => +2 en DEF');
+      defense += 2;
+    }
     return defense;
   }
 
@@ -9919,6 +9943,10 @@ var COFantasy = COFantasy || function() {
         display: valDesExpert.roll
       };
       explications.push("Expert du combat => +" + valDesExpert.roll + " aux DM");
+    }
+    if (attributeAsBool(attaquant, 'danseDesLames') && malusArmure(attaquant) <= 4) {
+      explications.push(attaquant, 'Danse des lames => +2 en attaque');
+      attBonus += 2;
     }
     return attBonus;
   }
@@ -12147,18 +12175,22 @@ var COFantasy = COFantasy || function() {
       if (displayRes) displayRes('0', 0, 0);
       return 0;
     }
-    var dmgCoef = options.dmgCoef || 1;
+    let dmgCoef = options.dmgCoef || 1;
     if (target.dmgCoef) dmgCoef += target.dmgCoef;
     if (options.ferFroid && (estDemon(target) || estFee(target))) dmgCoef += 1;
-    var diviseDmg = options.diviseDmg || 1;
+    let diviseDmg = options.diviseDmg || 1;
     if (target.diviseDmg) diviseDmg *= target.diviseDmg;
     if (options.attaqueEnEtantGobe) diviseDmg *= 2;
     if (options.attaqueDeGroupeDmgCoef) {
       dmgCoef++;
       expliquer("Attaque en groupe > DEF +" + reglesOptionelles.haute_DEF.val.crit_attaque_groupe.val + " => DMGx" + (crit ? "3" : "2"));
     }
-    var critCoef = 1;
+    let critCoef = 1;
     if (crit) {
+      if (attributeAsBool(target, 'danseDesLames')) {
+        removeTokenAttr(target, 'danseDesLames', evt);
+        expliquer("Le coup critique fait sortir de la transe de danse des lames");
+      }
       if (predicateAsBool(target, 'armureLourdeGuerrier') &&
         attributeAsBool(target, 'DEFARMUREON') &&
         attributeAsInt(target, 'DEFARMURE', 0) >= 8) {
@@ -16660,7 +16692,7 @@ var COFantasy = COFantasy || function() {
     });
     // Autres sources de dégâts
     // On compte d'abord les autres sources, pour la synchronisation
-    var count = 0;
+    let count = 0;
     for (var dt in dmgParType) {
       if (immuniseAuType(target, dt, options.attaquant)) {
         if (expliquer && !target['msgImmunite_' + dt]) {
@@ -18317,22 +18349,22 @@ var COFantasy = COFantasy || function() {
       }
     });
     //Effet de ignorerLaDouleur
-    var ilds = allAttributesNamed(attrs, 'douleurIgnoree');
+    let ilds = allAttributesNamed(attrs, 'douleurIgnoree');
     ilds = ilds.concat(allAttributesNamed(attrs, 'memePasMalIgnore'));
     ilds.forEach(function(ild) {
-      var douleur = parseInt(ild.get('current'));
+      let douleur = parseInt(ild.get('current'));
       if (isNaN(douleur)) {
         error("La douleur ignorée n'est pas un nombre", douleur);
         return;
       }
-      var charId = ild.get('characterid');
+      let charId = ild.get('characterid');
       if (charId === undefined || charId === '') {
         error("Attribut sans personnage", ild);
         return;
       }
-      var ildName = ild.get('name');
+      let ildName = ild.get('name');
       if (ildName == 'douleurIgnoree' || ildName == 'memePasMalIgnore') {
-        var pvAttr = findObjs({
+        let pvAttr = findObjs({
           _type: 'attribute',
           _characterid: charId,
           name: 'PV'
@@ -18344,7 +18376,7 @@ var COFantasy = COFantasy || function() {
           return;
         }
         pvAttr = pvAttr[0];
-        var pv = parseInt(pvAttr.get('current'));
+        let pv = parseInt(pvAttr.get('current'));
         if (isNaN(pv)) {
           error("PV mal formés ", pvAttr);
           return;
@@ -18367,8 +18399,8 @@ var COFantasy = COFantasy || function() {
           }
         }
       } else { // ignorer la douleur d'un token
-        var tokName = ildName.substring(ildName.indexOf('_') + 1);
-        var tokensIld = findObjs({
+        let tokName = ildName.substring(ildName.indexOf('_') + 1);
+        let tokensIld = findObjs({
           _type: 'graphic',
           _subtype: 'token',
           represents: charId,
@@ -18381,10 +18413,10 @@ var COFantasy = COFantasy || function() {
         if (tokensIld.length > 1) {
           sendChar(charId, "a plusieurs tokens nommés " + tokName + ". Un seul d'entre eux subira l'effet d'ignorer la douleur", true);
         }
-        var tokPv = parseInt(tokensIld[0].get('bar1_value'));
-        var tokNewPv = tokPv - douleur;
+        let tokPv = parseInt(tokensIld[0].get('bar1_value'));
+        let tokNewPv = tokPv - douleur;
         if (tokNewPv < 0) tokNewPv = 0;
-        var perso = {
+        let perso = {
           charId: charId,
           token: tokensIld[0]
         };
@@ -18398,7 +18430,7 @@ var COFantasy = COFantasy || function() {
     });
     if (ilds.length > 0) {
       attrs = attrs.filter(function(attr) {
-        var ind = ilds.findIndex(function(nattr) {
+        let ind = ilds.findIndex(function(nattr) {
           return nattr.id == attr.id;
         });
         return (ind == -1);
@@ -38171,6 +38203,11 @@ var COFantasy = COFantasy || function() {
       activation: "pousse un hurlement effrayant",
       actif: "a libéré son âme de prédateur",
       fin: ""
+    },
+    danseDesLames: {
+      activation: "entre en transe",
+      actif: "danse la danse des lames",
+      fin: "termine sa danse des lames"
     },
     protectionContreLeMal: {
       activation: "reçoit une bénédiction de protection contre le mal",

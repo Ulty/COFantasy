@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.04
 ### Capacités
+* Implémentation des rangs 1 et 4 de la voie du danseur de guerre
 * Ajout de la botte secrète du voleur.
 * Support pour le sort de sphère de feu (tiré de Pathfinder)
 * Quelques améliorations pour le guetteur, de la Voie des animaux.
