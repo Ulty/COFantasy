@@ -13969,6 +13969,18 @@ var COFantasy = COFantasy || function() {
         target.token.get('pageid'), evt);
       return;
     }
+    if (predicateAsBool(target, 'immunite_'+ef.effet)) {
+      if (ef.whisper !== undefined) {
+        if (ef.whisper === true) {
+          whisperChar(target.charId, "ne peut pas être affecté par l'effet de "+ef.effet);
+        } else {
+          sendChar(target.charId, ef.whisper + "ne peut pas être affecté par l'effet de "+ef.effet);
+        }
+      } else {
+        target.messages.push(target.tokName + " ne peut pas être affecté par l'effet de "+ef.effet);
+      }
+      return;
+    }
     if (ef.effet == 'saignementsSang' && predicateAsBool(target, 'immuniteSaignement')) {
       if (ef.whisper !== undefined) {
         if (ef.whisper === true) {
@@ -24936,24 +24948,25 @@ var COFantasy = COFantasy || function() {
     };
     addEvent(evt);
     if (limiteRessources(lanceur, options, 'sommeil', "lancer un sort de sommeil", evt)) return;
-    var casterCharName = lanceur.token.get("name");
-    var cha = modCarac(lanceur, 'charisme');
-    var attMagText = addOrigin(casterCharName, '[[' + computeArmeAtk(lanceur, '@{ATKMAG}') + ']]');
+    let casterCharName = lanceur.token.get("name");
+    let cha = modCarac(lanceur, 'charisme');
+    let attMagText = 
+      addOrigin(casterCharName, '[[' + computeArmeAtk(lanceur, '@{ATKMAG}') + ']]');
     sendChat("", "[[1d6]] [[" + attMagText + "]]", function(res) {
       evt.action.rolls = options.rolls || {};
-      var rollD6Id = 'sommeilD6';
-      var rolls = res[0];
-      var afterEvaluate = rolls.content.split(" ");
-      var d6RollNumber = rollNumber(afterEvaluate[0]);
-      var attMagRollNumber = rollNumber(afterEvaluate[1]);
-      var rollD6 = evt.action.rolls[rollD6Id] || rolls.inlinerolls[d6RollNumber];
+      let rollD6Id = 'sommeilD6';
+      let rolls = res[0];
+      let afterEvaluate = rolls.content.split(" ");
+      let d6RollNumber = rollNumber(afterEvaluate[0]);
+      let attMagRollNumber = rollNumber(afterEvaluate[1]);
+      let rollD6 = evt.action.rolls[rollD6Id] || rolls.inlinerolls[d6RollNumber];
       evt.action.rolls[rollD6Id] = rollD6;
-      var nbTargetsMax = rollD6.results.total + cha;
-      var action = "<b>Capacité</b> : Sort de sommeil (max " + nbTargetsMax + " cibles)";
-      var display = startFramedDisplay(options.playerId, action, lanceur);
-      var attMag = rolls.inlinerolls[attMagRollNumber].results.total;
-      var targetsWithSave = [];
-      var targetsWithoutSave = [];
+      let nbTargetsMax = rollD6.results.total + cha;
+      let action = "<b>Capacité</b> : Sort de sommeil (max " + nbTargetsMax + " cibles)";
+      let display = startFramedDisplay(options.playerId, action, lanceur);
+      let attMag = rolls.inlinerolls[attMagRollNumber].results.total;
+      let targetsWithSave = [];
+      let targetsWithoutSave = [];
       cibles.forEach(function(perso) {
         perso.tokName = perso.token.get('name');
         if (estNonVivant(perso) || predicateAsBool(perso, 'immunite_endormi')) { //le sort de sommeil n'affecte que les créatures vivantes

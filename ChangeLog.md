@@ -36,6 +36,7 @@
 * Prise en compte correcte des malus d'armure et de casques pour les compétences sur la fiche.
 
 ### Autres améliorations
+* Possibilité d'immuniser à un effet temporaire particulier.
 * Possibilité de faire des jets d'attaque contre des valeurs de caractéristiques
 * Prise en compte d'un prédicat attaqueSournoise pour indiquer le nombre de dés des attaques sournoises.
 * Si une arme est aussi une arme de jet, le script va automatiquement sélectionner la bonne attaque selon la distance de la cible.
