@@ -8647,10 +8647,12 @@ var COFantasy = COFantasy || function() {
       init -= 2;
     }
     // Voie du pistolero rang 1 (plus vite que son ombre)
-    var armeEnMain = tokenAttribute(perso, 'armeEnMain');
+    let armeEnMain = tokenAttribute(perso, 'armeEnMain');
     if (armeEnMain.length > 0) {
-      var armeL = armeEnMain[0].get('current');
-      if (attributeAsInt(perso, 'charge_' + armeL, 0) > 0) {
+      let armeL = armeEnMain[0].get('current');
+      //L'arme doit être chargée
+      let chargeMax = predicateAsInt(perso, 'charge_'+armeL, 0);
+      if (chargeMax == 0 || attributeAsInt(perso, 'charge_' + armeL, 0) > 0) {
         init += predicateAsInt(perso, 'initEnMain' + armeL, 0);
       }
     }
@@ -12887,24 +12889,24 @@ var COFantasy = COFantasy || function() {
         }
       }
       if (options.tirDouble && options.tirDouble.label && options.tirDouble.label != attackLabel) {
-        var secondLabel = options.tirDouble.label;
-        var secondNom = options.tirDouble.stats.name;
+        let secondLabel = options.tirDouble.label;
+        let secondNom = options.tirDouble.stats.name;
         let chargesSecondeArme = findObjs({
           _type: 'attribute',
           _characterid: attackingCharId,
           name: "charge_" + secondLabel
         });
         if (chargesSecondeArme.length > 0) {
-          var currentCharge2 = parseInt(chargesSecondeArme[0].get('current'));
+          let currentCharge2 = parseInt(chargesSecondeArme[0].get('current'));
           if (isNaN(currentCharge2) || currentCharge2 < 1) {
             sendPerso(attaquant, "ne peut pas faire de tir double avec " + secondNom + " car ce n'est pas chargé");
             return;
           }
           evt.attributes = evt.attributes || [];
           if (options.grenaille) {
-            var chargesGrenaille2 = tokenAttribute(attaquant, 'chargeGrenaille_' + secondLabel);
+            let chargesGrenaille2 = tokenAttribute(attaquant, 'chargeGrenaille_' + secondLabel);
             if (chargesGrenaille2.length > 0) {
-              var currentChargeGrenaille2 = parseInt(chargesGrenaille2[0].get('current'));
+              let currentChargeGrenaille2 = parseInt(chargesGrenaille2[0].get('current'));
               if (isNaN(currentChargeGrenaille2) || currentChargeGrenaille2 < 1) {
                 sendPerso(attaquant, "ne peut pas faire de tir double avec " + secondNom + " car ce n'est pas chargé en grenaille");
                 return;
@@ -12984,19 +12986,19 @@ var COFantasy = COFantasy || function() {
     // 0: attack roll
     // 1: attack skill expression
     // 2: dé de poudre
-    var toEvaluateAttack =
+    let toEvaluateAttack =
       attackExpression(attaquant, nbDe, dice, crit, plusFort, weaponStats);
     if (options.poudre) toEvaluateAttack += " [[1d20]]";
     try {
       sendChat('', toEvaluateAttack, function(resAttack) {
-        var rollsAttack = resAttack[0];
+        let rollsAttack = resAttack[0];
         if (options.rolls && options.rolls.attack)
           rollsAttack = options.rolls.attack;
-        var afterEvaluateAttack = rollsAttack.content.split(' ');
-        var attRollNumber = rollNumber(afterEvaluateAttack[0]);
-        var attSkillNumber = rollNumber(afterEvaluateAttack[1]);
-        var d20roll = rollsAttack.inlinerolls[attRollNumber].results.total;
-        var attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
+        let afterEvaluateAttack = rollsAttack.content.split(' ');
+        let attRollNumber = rollNumber(afterEvaluateAttack[0]);
+        let attSkillNumber = rollNumber(afterEvaluateAttack[1]);
+        let d20roll = rollsAttack.inlinerolls[attRollNumber].results.total;
+        let attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
         evt.type = 'Attaque';
         evt.succes = true;
         evt.action.playerId = playerId;
@@ -13006,16 +13008,16 @@ var COFantasy = COFantasy || function() {
         evt.action.rolls = evt.action.rolls || {};
         evt.action.rolls.attack = rollsAttack;
         // debut de la partie affichage
-        var action = "<b>Arme</b> : ";
+        let action = "<b>Arme</b> : ";
         if (options.sortilege) action = "<b>Sort</b> : ";
-        var label_type = BS_LABEL_INFO;
-        var target = cibles[0];
+        let label_type = BS_LABEL_INFO;
+        let target = cibles[0];
         if (options.aoe || cibles.length > 1) {
           target = undefined;
           label_type = BS_LABEL_WARNING;
         }
         action += "<span style='" + BS_LABEL + " " + label_type + "; text-transform: none; font-size: 100%;'>" + weaponName + "</span>";
-        var display = startFramedDisplay(playerId, action, attaquant, {
+        let display = startFramedDisplay(playerId, action, attaquant, {
           perso2: target,
           chuchote: options.secret,
           retarde: options.secret,
@@ -13023,8 +13025,8 @@ var COFantasy = COFantasy || function() {
         });
         // Cas des armes à poudre
         if (options.poudre && !predicateAsBool(attaquant, 'chimiste')) {
-          var poudreNumber = rollNumber(afterEvaluateAttack[2]);
-          var dePoudre = rollsAttack.inlinerolls[poudreNumber].results.total;
+          let poudreNumber = rollNumber(afterEvaluateAttack[2]);
+          let dePoudre = rollsAttack.inlinerolls[poudreNumber].results.total;
           explications.push(
             "Dé de poudre : " + buildinline(rollsAttack.inlinerolls[poudreNumber]));
           if (dePoudre === 1) {
@@ -18344,7 +18346,7 @@ var COFantasy = COFantasy || function() {
       if (arme === true) degainerArme(perso, '', evt);
       else degainerArme(perso, arme, evt);
     });
-    // On remet en main l'arme par défaut si elle est précisée
+    // On recharge les armes
     let charges = {};
     persosDuCombat.forEach(function(perso) {
       let persoTest = persoParCharId[perso.charId];
@@ -18353,11 +18355,11 @@ var COFantasy = COFantasy || function() {
         let pred = getPredicates(perso);
         for (let predicat in pred) {
           if (predicat.startsWith('charge_'))
-            charges[predicat] = pred[predicat];
+            charges[persoTest.charId][predicat] = pred[predicat];
         }
       }
       for (let charge in charges[persoTest.charId]) {
-        setTokenAttr(perso, charge, charges[charge], evt);
+        setTokenAttr(perso, charge, charges[persoTest.charId][charge], evt);
       }
     });
     //Effet de ignorerLaDouleur
