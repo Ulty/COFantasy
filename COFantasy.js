@@ -466,7 +466,7 @@ var COFantasy = COFantasy || function() {
   // Attention, def, la valeur par défaut, doit être la même que sur la fiche
   // personnage peut ne pas avoir de token
   function ficheAttribute(personnage, name, def) {
-    var attr = charAttribute(personnage.charId, name, {
+    let attr = charAttribute(personnage.charId, name, {
       caseInsensitive: true
     });
     if (attr.length === 0) return def;
@@ -475,7 +475,7 @@ var COFantasy = COFantasy || function() {
 
   //personnage peut ne pas avoir de token
   function ficheAttributeAsInt(personnage, name, def, defPresent) {
-    var attr = charAttribute(personnage.charId, name, {
+    let attr = charAttribute(personnage.charId, name, {
       caseInsensitive: true
     });
     if (attr === undefined) return def;
@@ -484,7 +484,7 @@ var COFantasy = COFantasy || function() {
 
   //Il faut une valeur par défaut, qui correspond à celle de la fiche
   function ficheAttributeAsBool(personnage, name, def) {
-    var attr = charAttribute(personnage.charId, name, {
+    let attr = charAttribute(personnage.charId, name, {
       caseInsensitive: true
     });
     if (attr.length === 0) return def;
@@ -8651,7 +8651,7 @@ var COFantasy = COFantasy || function() {
     if (armeEnMain.length > 0) {
       let armeL = armeEnMain[0].get('current');
       //L'arme doit être chargée
-      let chargeMax = predicateAsInt(perso, 'charge_'+armeL, 0);
+      let chargeMax = predicateAsInt(perso, 'charge_' + armeL, 0);
       if (chargeMax == 0 || attributeAsInt(perso, 'charge_' + armeL, 0) > 0) {
         init += predicateAsInt(perso, 'initEnMain' + armeL, 0);
       }
@@ -10062,9 +10062,9 @@ var COFantasy = COFantasy || function() {
       });
     }
     if (ennemiJure) {
-      var ejSag = modCarac(attaquant, 'sagesse');
+      let ejSag = modCarac(attaquant, 'sagesse');
       attBonus += ejSag;
-      var explEnnemiJure = "Attaque sur ennemi juré => +" + ejSag + " en attaque";
+      let explEnnemiJure = "Attaque sur ennemi juré => +" + ejSag + " en attaque";
       if (!options.pasDeDmg) explEnnemiJure += " et +1d6 aux DM";
       if (options.aoe) explEnnemiJure += " contre " + target.tokName;
       explications.push(explEnnemiJure);
@@ -10080,11 +10080,12 @@ var COFantasy = COFantasy || function() {
         target.armeDArgent = true;
       }
     }
-    var bonusContreBouclier = options.bonusContreBouclier || 0;
+    let bonusContreBouclier = options.bonusContreBouclier || 0;
     if (target.bonusContreBouclier) bonusContreBouclier += target.bonusContreBouclier;
     if (bonusContreBouclier) {
-      if (ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) &&
-        ficheAttributeAsInt(target, 'DEFBOUCLIER', 0) > 0) {
+      if ((ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) &&
+          ficheAttributeAsInt(target, 'DEFBOUCLIER', 0) > 0) ||
+        ficheAttribute(target, 'pnj_bouclier', 'off') == 'on') {
         attBonus += bonusContreBouclier;
         explications.push("L'adversaire porte un bouclier => " + ((bonusContreBouclier > 0) ? '+' : '') + bonusContreBouclier + " en attaque");
       }
@@ -13971,15 +13972,15 @@ var COFantasy = COFantasy || function() {
         target.token.get('pageid'), evt);
       return;
     }
-    if (predicateAsBool(target, 'immunite_'+ef.effet)) {
+    if (predicateAsBool(target, 'immunite_' + ef.effet)) {
       if (ef.whisper !== undefined) {
         if (ef.whisper === true) {
-          whisperChar(target.charId, "ne peut pas être affecté par l'effet de "+ef.effet);
+          whisperChar(target.charId, "ne peut pas être affecté par l'effet de " + ef.effet);
         } else {
-          sendChar(target.charId, ef.whisper + "ne peut pas être affecté par l'effet de "+ef.effet);
+          sendChar(target.charId, ef.whisper + "ne peut pas être affecté par l'effet de " + ef.effet);
         }
       } else {
-        target.messages.push(target.tokName + " ne peut pas être affecté par l'effet de "+ef.effet);
+        target.messages.push(target.tokName + " ne peut pas être affecté par l'effet de " + ef.effet);
       }
       return;
     }
@@ -24952,7 +24953,7 @@ var COFantasy = COFantasy || function() {
     if (limiteRessources(lanceur, options, 'sommeil', "lancer un sort de sommeil", evt)) return;
     let casterCharName = lanceur.token.get("name");
     let cha = modCarac(lanceur, 'charisme');
-    let attMagText = 
+    let attMagText =
       addOrigin(casterCharName, '[[' + computeArmeAtk(lanceur, '@{ATKMAG}') + ']]');
     sendChat("", "[[1d6]] [[" + attMagText + "]]", function(res) {
       evt.action.rolls = options.rolls || {};
