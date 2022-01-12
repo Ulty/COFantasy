@@ -46,7 +46,7 @@ var COFantasy = COFantasy || function() {
 
   "use strict";
 
-  const versionFiche = 5.0;
+  const versionFiche = 5.01;
 
   const PIX_PER_UNIT = 70;
   const HISTORY_SIZE = 200;
@@ -4942,10 +4942,10 @@ var COFantasy = COFantasy || function() {
   //expliquer est optionnel, et si présent, il faut msg
   function malusArmure(personnage, expliquer, msg) {
     let malusArmure = 0;
-    if (ficheAttributeAsInt(personnage, 'DEFARMUREON', 1))
-      malusArmure += ficheAttributeAsInt(personnage, 'DEFARMUREMALUS', 0);
-    if (ficheAttributeAsInt(personnage, 'DEFBOUCLIERON', 1))
-      malusArmure += ficheAttributeAsInt(personnage, 'DEFBOUCLIERMALUS', 0);
+    if (ficheAttributeAsInt(personnage, 'defarmureon', 0))
+      malusArmure += ficheAttributeAsInt(personnage, 'defarmuremalus', 0);
+    if (ficheAttributeAsInt(personnage, 'defbouclieron', 0))
+      malusArmure += ficheAttributeAsInt(personnage, 'defboucliermalus', 0);
     if (expliquer && malusArmure > 0) {
       expliquer("Armure : -" + malusArmure + msg);
     }
@@ -9136,15 +9136,15 @@ var COFantasy = COFantasy || function() {
       defense = ficheAttributeAsInt(target, 'pnj_def', 10);
     } else {
       if (target.defautCuirasse === undefined) {
-        defense += ficheAttributeAsInt(target, 'DEFARMURE', 0) * ficheAttributeAsInt(target, 'DEFARMUREON', 1);
-        defense += ficheAttributeAsInt(target, 'DEFBOUCLIER', 0) * ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1);
+        defense += ficheAttributeAsInt(target, 'defarmure', 0) * ficheAttributeAsInt(target, 'defarmureon', 0);
+        defense += ficheAttributeAsInt(target, 'defbouclier', 0) * ficheAttributeAsInt(target, 'defbouclieron', 0);
         if (attributeAsBool(target, 'armureDuMage')) {
           let bonusArmureDuMage = getValeurOfEffet(target, 'armureDuMage', 4);
           if (defense > 12) defense += bonusArmureDuMage / 2; // On a déjà une armure physique, ça ne se cumule pas.
           else defense += bonusArmureDuMage;
         }
         if (attributeAsBool(target, 'armureDEau')) {
-          var bonusArmureDEau = getValeurOfEffet(target, 'armureDEau', 2);
+          let bonusArmureDEau = getValeurOfEffet(target, 'armureDEau', 2);
           defense += bonusArmureDEau;
           explications.push("Armure d'eau : +" + bonusArmureDEau + " en DEF");
         }
@@ -9230,7 +9230,7 @@ var COFantasy = COFantasy || function() {
     }
     defense += attributeAsInt(target, 'bufDEF', 0);
     defense += attributeAsInt(target, 'actionConcertee', 0);
-    if (ficheAttributeAsInt(target, 'DEFARMUREON', 1) === 0) {
+    if (ficheAttributeAsInt(target, 'defarmureon', 0) === 0) {
       defense += predicateAsInt(target, 'vetementsSacres', 0);
       defense += predicateAsInt(target, 'armureDeVent', 0);
       if (!options.distance)
@@ -9299,22 +9299,22 @@ var COFantasy = COFantasy || function() {
             tokenName);
           return;
         }
-        var distTargetProtecteur = distanceCombat(target.token, protecteur.token, pageId);
+        let distTargetProtecteur = distanceCombat(target.token, protecteur.token, pageId);
         if (distTargetProtecteur > 0) {
           explications.push(nameProtecteur + " est trop loin de " +
             tokenName + " pour le protéger");
           return;
         }
-        if (ficheAttributeAsInt(protecteur, 'DEFBOUCLIERON', 1) === 0) {
-          var sujet = onGenre(protecteur, 'il', 'elle');
+        if (ficheAttributeAsInt(protecteur, 'defbouclieron', 0) === 0) {
+          let sujet = onGenre(protecteur, 'il', 'elle');
           explications.push(nameProtecteur +
             " ne porte pas son bouclier, " + sujet + " ne peut pas proteger " +
             tokenName);
           return;
         }
-        var defBouclierProtecteur;
+        let defBouclierProtecteur;
         if (persoEstPNJ(protecteur)) defBouclierProtecteur = 2;
-        else defBouclierProtecteur = ficheAttributeAsInt(protecteur, 'DEFBOUCLIER', 0);
+        else defBouclierProtecteur = ficheAttributeAsInt(protecteur, 'defbouclier', 0);
         defense += defBouclierProtecteur;
         explications.push(nameProtecteur + " protège " +
           tokenName + " de son bouclier (+" + defBouclierProtecteur + " DEF)");
@@ -9998,9 +9998,9 @@ var COFantasy = COFantasy || function() {
       // On vérifie si la cible porte une armure
       let targetArmorDef = 0;
       if (persoEstPNJ(target)) {
-        if (ficheAttributeAsBool(target, 'DEFARMUREON', false)) targetArmorDef = 5;
+        if (ficheAttributeAsBool(target, 'defarmureon', false)) targetArmorDef = 5;
       } else {
-        targetArmorDef = parseInt(getAttrByName(target.charId, "DEFARMURE"));
+        targetArmorDef = parseInt(getAttrByName(target.charId, "defarmure"));
       }
       if (isNaN(targetArmorDef) || targetArmorDef === 0) {
         attBonus += 2;
@@ -10083,9 +10083,7 @@ var COFantasy = COFantasy || function() {
     let bonusContreBouclier = options.bonusContreBouclier || 0;
     if (target.bonusContreBouclier) bonusContreBouclier += target.bonusContreBouclier;
     if (bonusContreBouclier) {
-      if ((ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) &&
-          ficheAttributeAsInt(target, 'DEFBOUCLIER', 0) > 0) ||
-        ficheAttribute(target, 'pnj_bouclier', 'off') == 'on') {
+      if (ficheAttributeAsInt(target, 'defbouclieron', 0)) {
         attBonus += bonusContreBouclier;
         explications.push("L'adversaire porte un bouclier => " + ((bonusContreBouclier > 0) ? '+' : '') + bonusContreBouclier + " en attaque");
       }
@@ -10098,14 +10096,14 @@ var COFantasy = COFantasy || function() {
         explications.push("Tueur de géant => +2 att. et 2d6 DM");
       target.tueurDeGeants = true;
     }
-    var attrFeinte = tokenAttribute(target, 'feinte_' + attaquant.tokName);
+    let attrFeinte = tokenAttribute(target, 'feinte_' + attaquant.tokName);
     if (attrFeinte.length > 0 && attrFeinte[0].get('current')) {
       let bonusFeinte = predicateAsInt(attaquant, 'bonusFeinte', 5);
       attBonus += bonusFeinte;
-      var msgFeinte = "Feinte => +" + bonusFeinte + " en attaque";
-      var niveauTouche = attrFeinte[0].get('max');
+      let msgFeinte = "Feinte => +" + bonusFeinte + " en attaque";
+      let niveauTouche = attrFeinte[0].get('max');
       if (niveauTouche > 0) { //La feinte avait touché cette cible
-        var faireMouche = predicateAsInt(attaquant, 'faireMouche', 0);
+        let faireMouche = predicateAsInt(attaquant, 'faireMouche', 0);
         if (faireMouche > 0) {
           if (options.contact && !options.pasDeDmg) {
             target.faireMouche = faireMouche * niveauTouche;
@@ -10803,13 +10801,12 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (nouvelleArme.deuxMains) {
-      if (ficheAttributeAsBool(perso, 'DEFBOUCLIER', false) &&
-        ficheAttributeAsInt(perso, 'DEFBOUCLIERON', 0)) {
+      if (ficheAttributeAsInt(perso, 'defbouclieron', 0)) {
         sendPerso(perso, "enlève son bouclier");
         var attrBouclier = findObjs({
           _type: 'attribute',
           _characterid: perso.charId,
-          name: 'DEFBOUCLIERON'
+          name: 'defbouclieron'
         }, {
           caseInsensistive: true
         });
@@ -10824,7 +10821,7 @@ var COFantasy = COFantasy || function() {
         } else {
           attrBouclier = createObj('attribute', {
             characterid: perso.charId,
-            name: 'DEFBOUCLIERON',
+            name: 'defbouclieron',
             current: 0
           });
           evt.attributes.push({
@@ -10833,14 +10830,14 @@ var COFantasy = COFantasy || function() {
         }
       }
     } else if (ancienneArme && (ancienneArme.deuxMains || options.gauche)) {
-      if (ficheAttributeAsBool(perso, 'DEFBOUCLIER', false) &&
-        !ficheAttributeAsInt(perso, 'DEFBOUCLIERON', 0)) {
+      if (ficheAttributeAsBool(perso, 'defbouclier', false) &&
+        !ficheAttributeAsInt(perso, 'defbouclieron', 0)) {
         sendPerso(perso, "remet son bouclier", options.secret);
         evt.attributes = evt.attributes || [];
         var attrBouclierOff = findObjs({
           _type: 'attribute',
           _characterid: perso.charId,
-          name: 'DEFBOUCLIERON'
+          name: 'defbouclieron'
         }, {
           caseInsensistive: true
         }); //devrait être de taille au moins 1, avec valeur courante 0
@@ -12195,18 +12192,18 @@ var COFantasy = COFantasy || function() {
         expliquer("Le coup critique fait sortir de la transe de danse des lames");
       }
       if (predicateAsBool(target, 'armureLourdeGuerrier') &&
-        attributeAsBool(target, 'DEFARMUREON') &&
-        attributeAsInt(target, 'DEFARMURE', 0) >= 8) {
+        ficheAttributeAsBool(target, 'defarmureon', false) &&
+        ficheAttributeAsInt(target, 'defarmure', 0) >= 8) {
         expliquer("L'armure lourde de " + target.token.get('name') + " lui permet d'ignorer les dégâts critiques");
       } else {
         if (options.critCoef) critCoef = options.critCoef;
         if (target.critCoef) critCoef += target.critCoef;
         dmgCoef += critCoef;
-        if (predicateAsBool(target, 'armureProtection') && attributeAsBool(target, 'DEFARMUREON')) {
+        if (predicateAsBool(target, 'armureProtection') && ficheAttributeAsBool(target, 'defarmureon', false)) {
           expliquer("L'armure de protection de " + target.token.get('name') + " le protège du critique");
           diviseDmg++;
         }
-        if (predicateAsBool(target, 'bouclierProtection') && attributeAsBool(target, 'DEFBOUCLIERON')) {
+        if (predicateAsBool(target, 'bouclierProtection') && ficheAttributeAsBool(target, 'defbouclieron', false)) {
           expliquer("Le bouclier de protection de " + target.token.get('name') + " le protège du critique");
           diviseDmg++;
         }
@@ -13522,7 +13519,7 @@ var COFantasy = COFantasy || function() {
                       options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                       options.preDmg[target.token.id].encaisserUnCoup = true;
                     }
-                    if (ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) > 0) {
+                    if (ficheAttributeAsInt(target, 'defbouclieron', 0) > 0) {
                       let test = testLimiteUtilisationsCapa(target, 'devierLesCoups', 'tour');
                       if (test) {
                         options.preDmg = options.preDmg || {};
@@ -13541,7 +13538,7 @@ var COFantasy = COFantasy || function() {
                   }
                   if (options.contact &&
                     capaciteDisponible(target, 'paradeAuBouclier', 'tour') &&
-                    ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) > 0) {
+                    ficheAttributeAsInt(target, 'defbouclieron', 0) > 0) {
                     options.preDmg = options.preDmg || {};
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].paradeAuBouclier = true;
@@ -13581,14 +13578,14 @@ var COFantasy = COFantasy || function() {
                   }
                   if (options.sortilege) {
                     if (attributeAsBool(target, 'absorberUnSort') &&
-                      ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) == 1) {
+                      ficheAttributeAsInt(target, 'defbouclieron', 0) == 1) {
                       options.preDmg = options.preDmg || {};
                       options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                       options.preDmg[target.token.id].absorberUnSort = true;
                     }
                   } else {
                     if (attributeAsBool(target, 'absorberUnCoup') &&
-                      ficheAttributeAsInt(target, 'DEFBOUCLIERON', 1) == 1) {
+                      ficheAttributeAsInt(target, 'defbouclieron', 0) == 1) {
                       options.preDmg = options.preDmg || {};
                       options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                       options.preDmg[target.token.id].absorberUnCoup = true;
@@ -13813,7 +13810,7 @@ var COFantasy = COFantasy || function() {
       error("Dé d'attaque incorrect", d);
       return 0;
     }
-    var attDice = d;
+    let attDice = d;
     if (options.puissant) {
       attDice += 2;
     }
@@ -13826,15 +13823,15 @@ var COFantasy = COFantasy || function() {
   }
 
   function computeMainDmgRollExpr(attaquant, target, weaponStats, attNbDices, attDMBonus, options) {
-    var attDMArme = weaponStats.attDMBonusCommun;
+    let attDMArme = weaponStats.attDMBonusCommun;
     if (isNaN(attDMArme) || attDMArme === 0) attDMArme = '';
     else if (attDMArme > 0) attDMArme = '+' + attDMArme;
     attDMBonus = attDMArme + attDMBonus;
-    var attNbDicesCible = attNbDices;
-    var attDiceCible = computeAttackDice(weaponStats.attDice, target.maxDmg, options);
-    var attCarBonusCible =
+    let attNbDicesCible = attNbDices;
+    let attDiceCible = computeAttackDice(weaponStats.attDice, target.maxDmg, options);
+    let attCarBonusCible =
       computeAttackCarBonus(attaquant, weaponStats.attCarBonus);
-    if (options.epieu && !ficheAttributeAsBool(target, 'DEFARMUREON', false)) {
+    if (options.epieu && !ficheAttributeAsBool(target, 'defarmureon', false)) {
       attNbDicesCible++;
     }
     if (target.pressionMortelle) {
@@ -14750,10 +14747,10 @@ var COFantasy = COFantasy || function() {
                 target.messages.push("Attaque sournoise => +" + sournoise + options.d6 + " DM");
               }
               var valueSournoise = sournoise + options.d6;
-              if (predicateAsBool(target, 'armureProtection') && attributeAsBool(target, 'DEFARMUREON')) {
+              if (predicateAsBool(target, 'armureProtection') && ficheAttributeAsBool(target, 'defarmureon', false)) {
                 target.messages.push("L'armure de protection de " + target.token.get('name') + " réduit l'attaque sournoise");
                 valueSournoise = "ceil(" + valueSournoise + "/2)";
-              } else if (predicateAsBool(target, 'bouclierProtection') && attributeAsBool(target, 'DEFBOUCLIERON')) {
+              } else if (predicateAsBool(target, 'bouclierProtection') && ficheAttributeAsInt(target, 'defbouclieron',0)) {
                 target.messages.push("Le bouclier de protection de " + target.token.get('name') + " réduit l'attaque sournoise");
                 valueSournoise = "ceil(" + valueSournoise + "/2)";
               }
@@ -17147,7 +17144,7 @@ var COFantasy = COFantasy || function() {
           if (rdTarget.distance) rd += rdTarget.distance;
           let piqures = predicateAsInt(target, 'piquresDInsectes', 0);
           if (piqures > 0) {
-            if (persoEstPNJ(target) || (ficheAttributeAsBool(target, 'DEFARMUREON', false) && ficheAttributeAsInt(target, 'DEFARMURE', 0) > 5)) {
+            if (persoEstPNJ(target) || (ficheAttributeAsBool(target, 'defarmureon', false) && ficheAttributeAsInt(target, 'defarmure', 0) > 5)) {
               rd += piqures;
             }
           }
@@ -22476,21 +22473,21 @@ var COFantasy = COFantasy || function() {
           addLineToFramedDisplay(display, "Défense temporairement modifiée de " + bufDef + " (DEF " + defense + ")");
           defenseMontree = true;
         }
-        for (var etat in cof_states) {
+        for (let etat in cof_states) {
           if (getState(perso, etat)) {
-            var markerName = cof_states[etat].substring(7).split("::")[0];
-            var marker = markerCatalog[markerName];
-            var etext = stringOfEtat(etat, perso);
+            let markerName = cof_states[etat].substring(7).split("::")[0];
+            let marker = markerCatalog[markerName];
+            let etext = stringOfEtat(etat, perso);
             if (marker) {
               etext = "<img src=" + marker.url + "></img> " + etext;
             }
-            var saveEtat = boutonSaveState(perso, etat);
+            let saveEtat = boutonSaveState(perso, etat);
             if (saveEtat) etext += ", " + saveEtat;
             addLineToFramedDisplay(display, etext);
           }
         }
-        if (ficheAttributeAsInt(perso, 'DEFARMUREON', 1) === 0) {
-          var possedeArmure = ficheAttributeAsInt(perso, 'DEFARMURE', 0) > 0;
+        if (ficheAttributeAsInt(perso, 'defarmureon', 0) === 0) {
+          let possedeArmure = ficheAttributeAsInt(perso, 'defarmure', 0) > 0;
           if (possedeArmure) addLineToFramedDisplay(display, "Ne porte pas son armure");
           if (predicateAsInt(perso, 'vetementsSacres', 0) > 0) {
             if (possedeArmure) addLineToFramedDisplay(display, "  mais bénéficie de ses vêtements sacrés (DEF " + defense + ")");
@@ -22503,8 +22500,8 @@ var COFantasy = COFantasy || function() {
             defenseMontree = true;
           }
         }
-        if (ficheAttributeAsInt(perso, 'DEFBOUCLIERON', 1) === 0 &&
-          ficheAttributeAsInt(perso, 'DEFBOUCLIER', 0))
+        if (ficheAttributeAsInt(perso, 'defbouclieron', 0) === 0 &&
+          ficheAttributeAsInt(perso, 'defbouclier', 0))
           addLineToFramedDisplay(display, "Ne porte pas son bouclier");
         if (attributeAsBool(perso, 'etatExsangue')) {
           addLineToFramedDisplay(display, "est exsangue");
@@ -22650,8 +22647,8 @@ var COFantasy = COFantasy || function() {
           if (estPNJ) {
             defenseAffichee = ficheAttributeAsInt(perso, 'pnj_def', 10);
           } else {
-            defenseAffichee += ficheAttributeAsInt(perso, 'DEFARMURE', 0) * ficheAttributeAsInt(perso, 'DEFARMUREON', 1);
-            defenseAffichee += ficheAttributeAsInt(perso, 'DEFBOUCLIER', 0) * ficheAttributeAsInt(perso, 'DEFBOUCLIERON', 1);
+            defenseAffichee += ficheAttributeAsInt(perso, 'defarmure', 0) * ficheAttributeAsInt(perso, 'defarmureon', 0);
+            defenseAffichee += ficheAttributeAsInt(perso, 'defbouclier', 0) * ficheAttributeAsInt(perso, 'defbouclieron', 0);
             defenseAffichee += ficheAttributeAsInt(perso, 'DEFDIV', 0);
             defenseAffichee += modCarac(perso, 'dexterite');
           }
@@ -23890,8 +23887,8 @@ var COFantasy = COFantasy || function() {
   }
 
   function porteArmure(perso) {
-    return ficheAttributeAsBool(perso, 'DEFARMUREON', false) ||
-      ficheAttributeAsBool(perso, 'DEFBOUCLIERON', false);
+    return ficheAttributeAsBool(perso, 'defarmureon', false) ||
+      ficheAttributeAsBool(perso, 'defbouclieron', false);
   }
 
   function effetTemporaire(playerId, cibles, effet, mEffet, duree, options) {
@@ -27480,10 +27477,10 @@ var COFantasy = COFantasy || function() {
   function appliquerEncaisserUnCoup(cible, options, evt) {
     removeTokenAttr(cible, 'encaisserUnCoup', evt);
     cible.extraRD =
-      ficheAttributeAsInt(cible, 'DEFARMURE', 0) *
-      ficheAttributeAsInt(cible, 'DEFARMUREON', 1) +
-      ficheAttributeAsInt(cible, 'DEFBOUCLIER', 0) *
-      ficheAttributeAsInt(cible, 'DEFBOUCLIERON', 1);
+      ficheAttributeAsInt(cible, 'defarmure', 0) *
+      ficheAttributeAsInt(cible, 'defarmureon', 0) +
+      ficheAttributeAsInt(cible, 'defbouclier', 0) *
+      ficheAttributeAsInt(cible, 'defbouclieron', 0);
     removePreDmg(options, cible, "encaisserUnCoup");
   }
 
@@ -27551,8 +27548,8 @@ var COFantasy = COFantasy || function() {
   function appliquerDevierLesCoups(cible, test, options, evt) {
     utiliseCapacite(cible, test, evt);
     cible.extraRDBouclier =
-      ficheAttributeAsInt(cible, 'DEFBOUCLIER', 0) *
-      ficheAttributeAsInt(cible, 'DEFBOUCLIERON', 1);
+      ficheAttributeAsInt(cible, 'defbouclier', 0) *
+      ficheAttributeAsInt(cible, 'defbouclieron', 0);
     removePreDmg(options, cible, 'devierLesCoups');
   }
 
@@ -27911,7 +27908,7 @@ var COFantasy = COFantasy || function() {
   //!cof-absorber-coup-au-bouclier id [evtid] [chance]
   function absorberCoupAuBouclier(msg) {
     var condition = function(guerrier) {
-      if (ficheAttributeAsInt(guerrier, 'DEFBOUCLIERON', 1) != 1) {
+      if (ficheAttributeAsInt(guerrier, 'defbouclieron', 0) != 1) {
         sendPerso(guerrier, "ne porte pas son bouclier, il ne peut pas aborber de coup");
         return false;
       }
@@ -27928,7 +27925,7 @@ var COFantasy = COFantasy || function() {
   //!cof-absorber-sort-au-bouclier id [evtid] [chance]
   function absorberSortAuBouclier(msg) {
     var condition = function(guerrier) {
-      if (ficheAttributeAsInt(guerrier, 'DEFBOUCLIERON', 1) != 1) {
+      if (ficheAttributeAsInt(guerrier, 'defbouclieron', 0) != 1) {
         sendPerso(guerrier, "ne porte pas son bouclier, il ne peut pas aborber un sort");
         return false;
       }
@@ -40412,7 +40409,7 @@ var COFantasy = COFantasy || function() {
 }();
 
 on('ready', function() {
-  const scriptVersion = '3.04';
+  const scriptVersion = '3.05';
   on('add:token', COFantasy.addToken);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
   state.COFantasy = state.COFantasy || {
@@ -42015,6 +42012,16 @@ on('ready', function() {
       attr.set('current', predText);
     }
     log("Transformation d'attributs de combat en prédicats");
+  }
+  if (state.COFantasy.version < 3.05) {
+    let attrs = findObjs({
+      _type: 'attribute',
+    });
+    attrs.forEach(function(a) {
+      let name = a.get('name');
+      if (name == 'pnj_armure' || name == 'pnj_bouclier') a.remove();
+    });
+    log("Suppression des attributs pnj d'armure et de bouclier");
   }
   state.COFantasy.version = scriptVersion;
   handout.forEach(function(hand) {

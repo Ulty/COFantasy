@@ -1,4 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 3.05
+### Autres améliorations
+* Prise en compte des changements d'attributs d'armure de la version 5.01 de la fiche.
+
 ## 3.04
 ### Capacités
 * Implémentation des rangs 1 et 4 de la voie du danseur de guerre
