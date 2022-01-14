@@ -6544,13 +6544,13 @@ var COFantasy = COFantasy || function() {
 
   function getFx(cmd, argName, obj, funName) {
     if (cmd.length < 2) {
-      var errMsg = "Il manque un argument à l'option --" + argName;
+      let errMsg = "Il manque un argument à l'option --" + argName;
       if (funName) errMsg += " de " + funName;
       sendChat("COF", errMsg);
       return;
     }
     if (cmd[1] == 'custom' && cmd.length > 2) {
-      var effet = findObjs({
+      let effet = findObjs({
         _type: 'custfx',
         name: cmd[2]
       });
@@ -6571,7 +6571,7 @@ var COFantasy = COFantasy || function() {
     if (labelArme.length > 0) {
       let labelArmePrincipale = labelArme[0].get('current');
       if (labelArmePrincipale) perso.arme = getWeaponStats(perso, labelArmePrincipale);
-      var labelArmeGauche = labelArme[0].get('max');
+      let labelArmeGauche = labelArme[0].get('max');
       if (labelArmeGauche) perso.armeGauche = getWeaponStats(perso, labelArmeGauche);
       perso.armesEnMain = 'calculee';
       return perso.arme;
@@ -10834,7 +10834,7 @@ var COFantasy = COFantasy || function() {
         !ficheAttributeAsInt(perso, 'defbouclieron', 0)) {
         sendPerso(perso, "remet son bouclier", options.secret);
         evt.attributes = evt.attributes || [];
-        var attrBouclierOff = findObjs({
+        let attrBouclierOff = findObjs({
           _type: 'attribute',
           _characterid: perso.charId,
           name: 'defbouclieron'
@@ -10851,7 +10851,7 @@ var COFantasy = COFantasy || function() {
     }
     if (armeActuelle) { //On avait une arme en main
       evt.attributes = evt.attributes || [];
-      var evtAttr = {
+      let evtAttr = {
         attribute: armeActuelle,
       };
       if (options.gauche) {
@@ -10866,8 +10866,10 @@ var COFantasy = COFantasy || function() {
         armeActuelle.set('current', labelArme);
       }
     } else { //On n'avait pas d'arme en main
-      if (options && options.contact && predicateAsBool(perso, 'frappeDuVide')) {
-        options.frappeDuVide = true;
+      if (stateCOF.combat && nouvelleArme && nouvelleArme.portee === 0 &&
+        predicateAsBool(perso, 'frappeDuVide') &&
+        !attributeAsBool(perso, 'limiteParCombat_dejaFrappeContact')) {
+        setTokenAttr(perso, 'limiteParTour_frappeDuVidePossible', true, evt);
       }
       if (options.gauche) {
         setTokenAttr(perso, 'armeEnMain', '', evt, {
@@ -11071,8 +11073,8 @@ var COFantasy = COFantasy || function() {
       options.fx = options.fx || effet.id;
     }
     //Détermination de la (ou des) cible(s)
-    var nomCiblePrincipale; //Utilise pour le cas mono-cible
-    var cibles = [];
+    let nomCiblePrincipale; //Utilise pour le cas mono-cible
+    let cibles = [];
     if (options.redo) { //Dans ce cas les cibles sont précisées dans targetToken
       cibles = targetToken;
       if (cibles.length === 0) {
@@ -11081,16 +11083,16 @@ var COFantasy = COFantasy || function() {
       } else if (cibles.length == 1) targetToken = cibles[0].token;
       nomCiblePrincipale = cibles[0].tokName;
     } else {
-      var murs;
-      var pc;
-      var page;
+      let murs;
+      let pc;
+      let page;
       nomCiblePrincipale = targetToken.get('name');
       if (options.aoe) {
         //cas de la boule de feu qui fait un échec critique : on déplace la cible si elle est artificielle
         if (!options.redo && options.demiAuto &&
           (!options.triche || options.triche == 'echecCritique') &&
           targetToken.get('bar1_max') == 0) { // jshint ignore:line
-          var dice = 20;
+          let dice = 20;
           if (options.avecd12 ||
             (estAffaibli(attaquant) && !predicateAsBool(attaquant, 'insensibleAffaibli')) ||
             getState(attaquant, 'immobilise') ||
@@ -11113,8 +11115,8 @@ var COFantasy = COFantasy || function() {
             pc.x = Math.round(left + Math.cos(angle) * distance);
             pc.y = Math.round(top + Math.sin(angle) * distance);
             page = page || getObj("page", pageId);
-            var width = page.get('width') * PIX_PER_UNIT;
-            var height = page.get('height') * PIX_PER_UNIT;
+            let width = page.get('width') * PIX_PER_UNIT;
+            let height = page.get('height') * PIX_PER_UNIT;
             if (pc.x < 0) pc.x = 0;
             if (pc.y < 0) pc.y = 0;
             if (pc.x > width) pc.y = width;
@@ -11330,7 +11332,7 @@ var COFantasy = COFantasy || function() {
             "-même ? Probablement une erreur à la sélection de la cible. On annule");
           return;
         }
-        var targetCharId = targetToken.get("represents");
+        let targetCharId = targetToken.get("represents");
         if (targetCharId === "") {
           error("Le token ciblé (" + nomCiblePrincipale + ") doit représenter un personnage ", targetToken);
           return;
@@ -11592,7 +11594,15 @@ var COFantasy = COFantasy || function() {
     if (weaponStats.arme || weaponStats.armeGauche || (weaponStats.divers && weaponStats.divers.toLowerCase().includes('arme'))) {
       options.weaponStats = weaponStats;
       options.messages = options.messages || [];
-      degainerArme(attaquant, attackLabel, evt, options);
+      let arme = armesEnMain(attaquant);
+      if ((!arme || arme.label != attackLabel) && (!attaquant.armeGauche || attaquant.armeGauche.label != attackLabel))
+        degainerArme(attaquant, attackLabel, evt, options);
+    }
+    if (options.contact && predicateAsBool(attaquant, 'frappeDuVide')) {
+      if (attributeAsBool(attaquant, 'limiteParTour_frappeDuVidePossible'))
+        options.frappeDuVide = true;
+      //Il faut noter la première attaque au contact
+      setTokenAttr(attaquant, 'limiteParCombat_dejaFrappeContact', true, evt);
     }
     let riposte = predicateAsBool(attaquant, 'riposte');
     let attaqueEnMeute = predicateAsInt(attaquant, 'attaqueEnMeute', 0);
@@ -14090,10 +14100,10 @@ var COFantasy = COFantasy || function() {
           break;
         case 'peauDePierreMag':
           if (ef.valeur === undefined) {
-            var lanceur = target;
+            let lanceur = target;
             if (ef.attaquant) lanceur = ef.attaquant;
-            var rd = 5 + modCarac(lanceur, 'intelligence');
-            var absorbe = 40;
+            let rd = 5 + modCarac(lanceur, 'intelligence');
+            let absorbe = 40;
             if (options.tempeteDeManaIntense) {
               rd += options.tempeteDeManaIntense;
               absorbe += options.tempeteDeManaIntense * 5;
@@ -14112,9 +14122,9 @@ var COFantasy = COFantasy || function() {
       target.messages.push(target.tokName + " " + messageEffetIndetermine[ef.effet].activation);
       setTokenAttr(target, ef.effet, true, evt);
     } else { //On a un effet de combat
-      var effetC = messageEffetCombat[ef.effet];
+      let effetC = messageEffetCombat[ef.effet];
       target.messages.push(target.tokName + " " + effetC.activation);
-      var attrEffetCombat = setTokenAttr(target, ef.effet, true, evt);
+      let attrEffetCombat = setTokenAttr(target, ef.effet, true, evt);
       if (ef.attaquant && options.mana !== undefined && effetC.prejudiciable) {
         addEffetTemporaireLie(ef.attaquant, attrEffetCombat, evt);
       }
@@ -14415,7 +14425,7 @@ var COFantasy = COFantasy || function() {
         explications.push("Agrandissement => +2 aux DM");
       }
       if (attributeAsBool(attaquant, 'forceDeGeant')) {
-        var bonusForceDeGeant = getValeurOfEffet(attaquant, 'forceDeGeant', 2);
+        let bonusForceDeGeant = getValeurOfEffet(attaquant, 'forceDeGeant', 2);
         attDMBonusCommun += "+" + bonusForceDeGeant;
         explications.push("Force de géant => +" + bonusForceDeGeant + " aux DM");
       }
@@ -14750,7 +14760,7 @@ var COFantasy = COFantasy || function() {
               if (predicateAsBool(target, 'armureProtection') && ficheAttributeAsBool(target, 'defarmureon', false)) {
                 target.messages.push("L'armure de protection de " + target.token.get('name') + " réduit l'attaque sournoise");
                 valueSournoise = "ceil(" + valueSournoise + "/2)";
-              } else if (predicateAsBool(target, 'bouclierProtection') && ficheAttributeAsInt(target, 'defbouclieron',0)) {
+              } else if (predicateAsBool(target, 'bouclierProtection') && ficheAttributeAsInt(target, 'defbouclieron', 0)) {
                 target.messages.push("Le bouclier de protection de " + target.token.get('name') + " réduit l'attaque sournoise");
                 valueSournoise = "ceil(" + valueSournoise + "/2)";
               }
