@@ -9170,7 +9170,7 @@ var COFantasy = COFantasy || function() {
     // Autres modificateurs de défense
     defense += attributeAsInt(target, 'defenseTotale', 0);
     let pacifisme = predicateAsInt(target, 'pacifisme', 0, 5);
-    if (pacifisme > 0 && attributeAsBool(target, 'pacifismeAnnule'))
+    if (pacifisme > 0 && !attributeAsBool(target, 'attributDeCombat_pacifismeAnnule'))
       defense += pacifisme;
     if (attributeAsBool(target, 'aspectDuDemon')) {
       defense += getValeurOfEffet(target, 'aspectDuDemon', 2);
@@ -12338,8 +12338,8 @@ var COFantasy = COFantasy || function() {
         setState(attaquant, 'invisible', false, evt);
       }
       if (predicateAsBool(attaquant, 'pacifisme') &&
-        !attributeAsBool(attaquant, 'pacifismeAnnule')) {
-        setTokenAttr(attaquant, 'pacifismeAnnule', true, evt);
+        !attributeAsBool(attaquant, 'attributDeCombat_pacifismeAnnule')) {
+        setTokenAttr(attaquant, 'attributDeCombat_pacifismeAnnule', true, evt);
         sendPerso(attaquant, "perd son pacifisme");
       }
       if (attributeAsBool(attaquant, 'sanctuaire')) {
@@ -18259,8 +18259,6 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('increvableHumainUtilise', evt, attrs);
     attrs = removeAllAttributes('resistanceRaillerie', evt, attrs);
     attrs = removeAllAttributes('defierLaMort', evt, attrs);
-    attrs = removeAllAttributes('pacifismeAnnule', evt, attrs);
-    attrs = removeAllAttributes('pacifismeImpossible', evt, attrs);
     attrs = removeAllAttributes('traquenardImpossible', evt, attrs);
     attrs = removeAllAttributes('niveauDesObjetsAnimes', evt, attrs);
     attrs = removeAllAttributes('seulContreTous_leader', evt, attrs);
@@ -22399,7 +22397,7 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, line);
           }
           if (predicateAsBool(perso, 'pacifisme')) {
-            if (attributeAsBool(perso, 'pacifismeAnnule')) {
+            if (attributeAsBool(perso, 'attributDeCombat_pacifismeAnnule')) {
               addLineToFramedDisplay(display, "Pacifisme non actif");
             } else {
               addLineToFramedDisplay(display, "Pacifisme actif");

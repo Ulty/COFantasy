@@ -1,5 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.05
+### Corrections de bugs
+* Correction d'un bug sur le pacifisme
+
 ### Autres améliorations
 * Prise en compte des changements d'attributs d'armure de la version 5.01 de la fiche.
 
