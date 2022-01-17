@@ -6619,6 +6619,66 @@ var COFantasy = COFantasy || function() {
     return dm;
   }
 
+  //Retourne un objet avec
+  // - carac, et possiblement carac2 (si on a le choix)
+  // - seuil
+  function parseSave(cmd) {
+    if (cmd.length < 3) {
+      if (cmd.length > 0)
+        error("Usage : --" + cmd[0] + " carac seuil", cmd);
+      else
+        error("parsing de sauvegarde", cmd);
+      return;
+    }
+    const res = parseCarac(cmd[1]);
+    if (res === undefined) {
+      error("Le premier argument de save n'est pas une caractéristique", cmd);
+      return;
+    }
+    res.seuil = parseInt(cmd[2]);
+    if (isNaN(res.seuil)) {
+      error("Le deuxième argument de --psave n'est pas un nombre", cmd);
+      return;
+    }
+    if (cmd.length > 3) {
+      let optArgs = cmd.slice(3).join(' ');
+      optArgs = optArgs.split(' +');
+      optArgs.forEach(function(oa) {
+        oa = oa.trim().split(' ');
+        switch (oa[0]) {
+          case 'carac':
+          case 'carac2':
+          case 'seuil':
+            error("Argument supplémentaire de save inconnu", cmd);
+            return;
+          case 'tempete':
+            let ti = 1;
+            if (oa.length > 1) {
+              ti = parseInt(oa[1]);
+              if (isNaN(ti)) ti = 1;
+            }
+            res.tempete = ti;
+            return;
+          case 'contact':
+            if (oa.length < 2) {
+              error("Il manque la difficulté pour les cibles au contact");
+              return;
+            }
+            let diff = parseInt(oa[1]);
+            if (isNaN(diff)) {
+              error("La difficulté pour les cibles au contact n'est pas un nombre");
+              return;
+            }
+            res.contact = diff;
+            return;
+          default:
+            res[oa[0]] = true;
+        }
+      });
+    }
+    return res;
+  }
+
   //!cof-attack id_attaquant id_cible label_attaque [options]
   function parseAttack(msg) {
     let optArgs = msg.content.split(' --');
@@ -8048,53 +8108,6 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  //Retourne un objet avec
-  // - carac, et possiblement carac2 (si on a le choix)
-  // - seuil
-  function parseSave(cmd) {
-    if (cmd.length < 3) {
-      if (cmd.length > 0)
-        error("Usage : --" + cmd[0] + " carac seuil", cmd);
-      else
-        error("parsing de sauvegarde", cmd);
-      return;
-    }
-    const res = parseCarac(cmd[1]);
-    if (res === undefined) {
-      error("Le premier argument de save n'est pas une caractéristique", cmd);
-      return;
-    }
-    res.seuil = parseInt(cmd[2]);
-    if (isNaN(res.seuil)) {
-      error("Le deuxième argument de --psave n'est pas un nombre", cmd);
-      return;
-    }
-    if (cmd.length > 3) {
-      let optArgs = cmd.slice(3).join(' ');
-      optArgs = optArgs.split(' +');
-      optArgs.forEach(function(oa) {
-        oa = oa.trim().split(' ');
-        switch (oa[0]) {
-          case 'carac':
-          case 'carac2':
-          case 'seuil':
-            error("Argument supplémentaire de save inconnu", cmd);
-            return;
-          case 'tempete':
-            var ti = 1;
-            if (oa.length > 1) {
-              ti = parseInt(oa[1]);
-              if (isNaN(ti)) ti = 1;
-            }
-            res.tempete = ti;
-            return;
-          default:
-            res[oa[0]] = true;
-        }
-      });
-    }
-    return res;
-  }
 
   //Si l'attribut est un mod. de caractéristique, va chercher le
   //bon attribut, selon que perso est un PNJ ou nom
@@ -16196,6 +16209,7 @@ var COFantasy = COFantasy || function() {
   //   - carac : la caractéristique à utiliser pour le save
   //   - carac2 : caractéristique alternative
   //   - seuil : la difficulté du jet de sauvegarde
+  //   - contact : la difficulté si la cible est au contact de options.attaquant
   //   - fauchage
   //   - entrave (pour les action qui immobilisent, ralentissent ou paralysent)
   //   - necromancie
@@ -16244,10 +16258,14 @@ var COFantasy = COFantasy || function() {
     }
     let bonusAttrs = [];
     let bonusPreds = [];
+    let seuil = s.seuil;
+    if (s.contact && options.attaquant && distanceCombat(options.attaquant.token, target.token) === 0) {
+      seuil = s.contact;
+    }
     let carac = s.carac;
     //Cas où le save peut se faire au choix parmis 2 caracs
     if (s.carac2) {
-      carac = meilleureCarac(carac, s.carac2, target, s.seuil);
+      carac = meilleureCarac(carac, s.carac2, target, seuil);
     }
     if (carac == 'DEX') {
       bonusPreds.push('reflexesFelins');
@@ -16261,7 +16279,7 @@ var COFantasy = COFantasy || function() {
       bonusPreds.push('bonusSaveContre_' + options.type);
     }
     if (!options.hideSaveTitle) {
-      let title = " Jet de " + carac + " " + s.seuil;
+      let title = " Jet de " + carac + " " + seuil;
       if (options.msgPour) title += options.msgPour;
       expliquer(title);
     }
@@ -16270,7 +16288,7 @@ var COFantasy = COFantasy || function() {
     optionsTest.bonusAttrs = bonusAttrs;
     optionsTest.bonusPreds = bonusPreds;
     optionsTest.bonus = bonus;
-    testCaracteristique(target, carac, s.seuil, saveId, optionsTest, evt,
+    testCaracteristique(target, carac, seuil, saveId, optionsTest, evt,
       function(tr, explications) {
         let smsg = target.tokName + " fait ";
         if (explications.length === 0) {
@@ -16606,9 +16624,9 @@ var COFantasy = COFantasy || function() {
   //On a déterminé les DM du type principal(possiblement après save des dmgExtra, maintenant on applique les résistances, puis on ajoute les DM d'autres types
   function dealDamageAfterDmgExtra(target, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes) {
     if (options.pointsVitaux && dmgTotal > 0) { //dégâts retardés pour une pression mortelle
-      var pMortelle = tokenAttribute(target, 'pressionMortelle');
-      var dmgPMort = dmgTotal;
-      var numberPMort = 1;
+      let pMortelle = tokenAttribute(target, 'pressionMortelle');
+      let dmgPMort = dmgTotal;
+      let numberPMort = 1;
       if (pMortelle.length > 0) {
         dmgPMort += pMortelle[0].get('current');
         numberPMort += pMortelle[0].get('max');
