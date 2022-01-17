@@ -9210,8 +9210,11 @@ var COFantasy = COFantasy || function() {
     if (getState(target, 'surpris')) defense -= 5;
     if (getState(target, 'renverse')) defense -= 5;
     if (getState(target, 'aveugle') || attributeAsBool(target, 'aveugleManoeuvre')) {
-      if (options.distance || !predicateAsBool(target, 'radarMental') || (attaquant && estNonVivant(attaquant)))
+      if (options.contact && predicateAsBool(target, 'radarMental') && attaquant && !estNonVivant(attaquant)) {
+        explications.push(tokenName + " est aveugle, mais bénéficie de son radar mental");
+      } else {
         defense -= 5;
+      }
     }
     if (getState(target, 'etourdi') || attributeAsBool(target, 'peurEtourdi'))
       defense -= 5;
@@ -9224,8 +9227,12 @@ var COFantasy = COFantasy || function() {
           explications.push("Invisible : +10 en DEF");
         }
       } else {
-        defense += 5;
-        explications.push("Invisible : +5 en DEF");
+        if (attaquant && predicateAsBool(attaquant, 'radarMental') && !estNonVivant(target)) {
+          explications.push("Cible invisible, mais " + attaquant.tokName + " utilise son radar mental");
+        } else {
+          defense += 5;
+          explications.push("Invisible : +5 en DEF");
+        }
       }
     }
     defense += attributeAsInt(target, 'bufDEF', 0);
@@ -21321,14 +21328,14 @@ var COFantasy = COFantasy || function() {
     let bonusAttrs = [];
     let bonusPreds = [];
     if (!options.nonVivant) bonusPreds.push('radarMental');
-    var display;
+    let display;
     if (testSurprise === undefined) {
       display = startFramedDisplay(options.playerId, "<b>Surprise !</b>");
     } else {
       display = startFramedDisplay(options.playerId, "Test de surprise difficulté " + testSurprise);
     }
-    var tokensToProcess = cibles.length;
-    var sendEvent = function() {
+    let tokensToProcess = cibles.length;
+    let sendEvent = function() {
       if (tokensToProcess == 1) {
         sendChat("", endFramedDisplay(display));
       }
@@ -21341,8 +21348,8 @@ var COFantasy = COFantasy || function() {
         sendEvent();
         return;
       }
-      var bonusSurprise = 0;
-      var bonusMessages = [];
+      let bonusSurprise = 0;
+      let bonusMessages = [];
       if (compagnonPresent(perso, 'surveillance')) {
         bonusSurprise += 5;
         setTokenAttr(perso, 'bonusInitEmbuscade', 5, evt);
@@ -21359,6 +21366,7 @@ var COFantasy = COFantasy || function() {
         };
         optionsTest.bonus = bonusSurprise;
         optionsTest.bonusAttrs = bonusAttrs;
+        optionsTest.bonusPreds = bonusPreds;
         optionsTest.competence = 'vigilance';
         testCaracteristique(perso, 'SAG', testSurprise, testId, optionsTest, evt,
           function(tr, explications) {
@@ -29765,13 +29773,9 @@ var COFantasy = COFantasy || function() {
         break;
     }
     message += typeRune;
-    var attr = tokenAttribute(target, attrName);
-    if (attr.length !== 0) {
-      var nb = parseInt(attr[0].get('current'));
-      if (!isNaN(nb) && nb > 0) {
-        error("La cible possède déjà une rune " + typeRune, cmd);
-        return;
-      }
+    if (attributeAsInt(target, attrName, 0) > 0) {
+      error("La cible possède déjà une rune " + typeRune, cmd);
+      return;
     }
     if (options.mana !== undefined && limiteRessources(forgesort, options, undefined, "créer " + typeRune, evt)) return;
     setTokenAttr(target, attrName, 1, evt, {
@@ -29787,21 +29791,21 @@ var COFantasy = COFantasy || function() {
 
   //TODO: passer pageId en argument au lieu de prendre la page des joueurs
   function proposerRenouveauRunes(evt, attrs) {
-    var attrsNamed = allAttributesNamed(attrs, 'runeForgesort');
+    let attrsNamed = allAttributesNamed(attrs, 'runeForgesort');
     if (attrsNamed.length === 0) return attrs;
     // Filtrer par Forgesort, dans l'éventualité qu'il y en ait plusieurs actifs
-    var forgesorts = {};
+    let forgesorts = {};
     attrsNamed.forEach(function(attr) {
       // Check de l'existence d'un créateur
-      var foundForgesortId = attr.get('max');
+      let foundForgesortId = attr.get('max');
       if (foundForgesortId === undefined) {
         error("Impossible de retrouver le créateur de la rune : " + attr);
         return;
       }
-      var runesDuForgesort = forgesorts[foundForgesortId];
+      let runesDuForgesort = forgesorts[foundForgesortId];
       if (runesDuForgesort === undefined) {
         // Check de l'existence d'un token présent pour le créateur
-        var tokensForgesort =
+        let tokensForgesort =
           findObjs({
             _pageid: Campaign().get("playerpageid"),
             _type: 'graphic',
