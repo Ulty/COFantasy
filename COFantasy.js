@@ -2921,19 +2921,19 @@ var COFantasy = COFantasy || function() {
             removeTokenAttr(personnage, 'positionSurMonture', evt);
           }
           //On libère les personnages enveloppés, si il y en a.
-          var attrEnveloppe = tokenAttribute(personnage, 'enveloppe');
+          let attrEnveloppe = tokenAttribute(personnage, 'enveloppe');
           attrEnveloppe.forEach(function(a) {
-            var cible = persoOfIdName(a.get('current'), pageId);
+            let cible = persoOfIdName(a.get('current'), pageId);
             if (cible) {
-              var envDM = a.get('max');
+              let envDM = a.get('max');
               if (envDM.startsWith('etreinte')) {
                 //On a une étreinte, on enlève donc l'état immobilisé
                 setState(cible, 'immobilise', false, evt);
               }
               evt.deletedAttributes = evt.deletedAttributes || [];
-              var attrCible = tokenAttribute(cible, 'enveloppePar');
+              let attrCible = tokenAttribute(cible, 'enveloppePar');
               attrCible.forEach(function(a) {
-                var cube = persoOfIdName(a.get('current', pageId));
+                let cube = persoOfIdName(a.get('current', pageId));
                 if (cube === undefined) {
                   evt.deletedAttributes.push(a);
                   a.remove();
@@ -2951,17 +2951,17 @@ var COFantasy = COFantasy || function() {
           //Si le mort est enveloppé, il est relaché
           attrEnveloppe = tokenAttribute(personnage, 'enveloppePar');
           attrEnveloppe.forEach(function(a) {
-            var cube = persoOfIdName(a.get('current'), pageId);
+            let cube = persoOfIdName(a.get('current'), pageId);
             if (cube) {
-              var envDiff = a.get('max');
+              let envDiff = a.get('max');
               if (envDiff.startsWith('etreinte')) {
                 //On a une étreinte, on enlève donc l'état immobilisé
                 setState(personnage, 'immobilise', false, evt);
               }
               evt.deletedAttributes = evt.deletedAttributes || [];
-              var attrCube = tokenAttribute(cube, 'enveloppe');
+              let attrCube = tokenAttribute(cube, 'enveloppe');
               attrCube.forEach(function(a) {
-                var cible = persoOfIdName(a.get('current', pageId));
+                let cible = persoOfIdName(a.get('current', pageId));
                 if (cible === undefined) {
                   evt.deletedAttributes.push(a);
                   a.remove();
@@ -2976,14 +2976,14 @@ var COFantasy = COFantasy || function() {
             a.remove();
           });
           //On libère les personnages agrippés, si il y en a.
-          var attrAgrippe = tokenAttribute(personnage, 'agrippe');
+          let attrAgrippe = tokenAttribute(personnage, 'agrippe');
           attrAgrippe.forEach(function(a) {
-            var cible = persoOfIdName(a.get('current'), pageId);
+            let cible = persoOfIdName(a.get('current'), pageId);
             if (cible) {
               evt.deletedAttributes = evt.deletedAttributes || [];
-              var attrCible = tokenAttribute(cible, 'estAgrippePar');
+              let attrCible = tokenAttribute(cible, 'estAgrippePar');
               attrCible.forEach(function(a) {
-                var agrippant = persoOfIdName(a.get('current', pageId));
+                let agrippant = persoOfIdName(a.get('current', pageId));
                 if (agrippant.token.id == personnage.token.id) {
                   sendPerso(cible, 'se libère de ' + agrippant.tokName);
                   toFront(cible.token);
@@ -2998,14 +2998,14 @@ var COFantasy = COFantasy || function() {
             a.remove();
           });
           //On libère les personnages dévorés, si il y en a.
-          var attrDevore = tokenAttribute(personnage, 'devore');
+          let attrDevore = tokenAttribute(personnage, 'devore');
           attrDevore.forEach(function(a) {
-            var cible = persoOfIdName(a.get('current'), pageId);
+            let cible = persoOfIdName(a.get('current'), pageId);
             if (cible) {
               evt.deletedAttributes = evt.deletedAttributes || [];
-              var attrCible = tokenAttribute(cible, 'estDevorePar');
+              let attrCible = tokenAttribute(cible, 'estDevorePar');
               attrCible.forEach(function(a) {
-                var agrippant = persoOfIdName(a.get('current', pageId));
+                let agrippant = persoOfIdName(a.get('current', pageId));
                 if (agrippant.token.id == personnage.token.id) {
                   sendPerso(cible, 'se libère de ' + agrippant.tokName);
                   toFront(cible.token);
@@ -3021,12 +3021,12 @@ var COFantasy = COFantasy || function() {
           //On libère les personnages avalés, si il y en a.
           let attrGobe = tokenAttribute(personnage, 'aGobe');
           attrGobe.forEach(function(a) {
-            var cible = persoOfIdName(a.get('current'), pageId);
+            let cible = persoOfIdName(a.get('current'), pageId);
             if (cible) {
               evt.deletedAttributes = evt.deletedAttributes || [];
-              var attrCible = tokenAttribute(cible, 'estGobePar');
+              let attrCible = tokenAttribute(cible, 'estGobePar');
               attrCible.forEach(function(a) {
-                var gobant = persoOfIdName(a.get('current', pageId));
+                let gobant = persoOfIdName(a.get('current', pageId));
                 if (gobant.token.id == personnage.token.id) {
                   sendPerso(cible, 'peut enfin sortir du ventre de ' + gobant.tokName);
                   toFront(cible.token);
@@ -3039,14 +3039,14 @@ var COFantasy = COFantasy || function() {
             a.remove();
           });
           //On libère les personnages sous étreinte et immolation
-          var attrEtreinteImmole = tokenAttribute(personnage, 'etreinteImmole');
+          let attrEtreinteImmole = tokenAttribute(personnage, 'etreinteImmole');
           attrEtreinteImmole.forEach(function(a) {
-            var cible = persoOfIdName(a.get('current'), pageId);
+            let cible = persoOfIdName(a.get('current'), pageId);
             if (cible) {
               evt.deletedAttributes = evt.deletedAttributes || [];
-              var attrCible = tokenAttribute(cible, 'etreinteImmolePar');
+              let attrCible = tokenAttribute(cible, 'etreinteImmolePar');
               attrCible.forEach(function(a) {
-                var agrippant = persoOfIdName(a.get('current', pageId));
+                let agrippant = persoOfIdName(a.get('current', pageId));
                 if (agrippant.token.id == personnage.token.id) {
                   sendPerso(cible, 'se libère de ' + agrippant.tokName);
                   toFront(cible.token);
@@ -3060,15 +3060,15 @@ var COFantasy = COFantasy || function() {
             a.remove();
           });
           //On libère les personnages sous étreinte de scorpion
-          var attrEtreinteScorpion = tokenAttribute(personnage, 'etreinteScorpionSur');
+          let attrEtreinteScorpion = tokenAttribute(personnage, 'etreinteScorpionSur');
           attrEtreinteScorpion.forEach(function(a) {
-            var cible = persoOfIdName(a.get('current'), pageId);
+            let cible = persoOfIdName(a.get('current'), pageId);
             if (cible) {
               evt.deletedAttributes = evt.deletedAttributes || [];
-              var attrCible = tokenAttribute(cible, 'etreinteScorpionPar');
-              var attrRatee = tokenAttribute(cible, 'etreinteScorpionRatee');
+              let attrCible = tokenAttribute(cible, 'etreinteScorpionPar');
+              let attrRatee = tokenAttribute(cible, 'etreinteScorpionRatee');
               attrCible.forEach(function(a) {
-                var agrippant = persoOfIdName(a.get('current', pageId));
+                let agrippant = persoOfIdName(a.get('current', pageId));
                 if (agrippant.token.id == personnage.token.id) {
                   sendPerso(cible, 'se libère de ' + agrippant.tokName);
                   toFront(cible.token);
@@ -3084,6 +3084,40 @@ var COFantasy = COFantasy || function() {
             evt.deletedAttributes.push(a);
             a.remove();
           });
+          //On fait l'explosion finale
+          if (predicateAsBool(personnage, 'explosionFinale')) {
+            let label = predicateAsBool(personnage, 'explosionFinale');
+            let character = getObj('character', personnage.charId);
+            if (character === undefined) {
+              error("Impossible de trouver le personnage de " + personnage.token.get('name'), personnage);
+              return;
+            }
+            let msg = {
+              who: 'GM',
+              selected: [{
+                _id: personnage.token.id
+              }]
+            };
+            let pids = character.get('controlledby');
+            pids = pids.split(',');
+            if (pids[0] === '' || pids[0] == 'all') {
+              pids = findObjs({
+                type: 'player'
+              }).map(function(p) {
+                return p.id;
+              });
+            }
+            if (pids.length > 0) {
+              if (pids.length === 0) {
+                msg.playerid = pids[0];
+              } else {
+                msg.playerid = pids.find(playerIsGM);
+                if (msg.playerid === undefined) msg.playerid = pids[0];
+              }
+              msg.content = '!cof-explosion ' + label;
+              attaqueExplosion(msg);
+            }
+          }
           //On termine les effets temporaires liés au personnage
           let etlAttr = tokenAttribute(personnage, 'effetsTemporairesLies');
           if (etlAttr.length > 0) {
@@ -3654,7 +3688,7 @@ var COFantasy = COFantasy || function() {
 
   //origin peut être un message ou un nom de joueur
   function sendPlayer(origin, msg, playerId) {
-    var dest = origin;
+    let dest = origin;
     if (origin.who) {
       playerId = playerId || getPlayerIdFromMsg(origin);
       if (playerIsGM(playerId)) dest = 'GM';
@@ -3690,7 +3724,7 @@ var COFantasy = COFantasy || function() {
   //msg peut être un message ou un playerId
   function peutController(msg, perso) {
     if (msg === undefined) return true;
-    var playerId = getPlayerIdFromMsg(msg);
+    let playerId = getPlayerIdFromMsg(msg);
     if (playerIsGM(playerId)) return true;
     if (msg.selected && msg.selected.length > 0) {
       if (perso.token.id == msg.selected[0]._id) return true;
@@ -3713,33 +3747,33 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "Trop tard pour continuer l'attaque, on est hors combat");
       return;
     }
-    var cmd = msg.content.split(' ');
+    let cmd = msg.content.split(' ');
     if (cmd.length < 2) {
       error("Pas assez d'arguments pour !cof-confirmer-attaque", cmd);
       return;
     }
-    var evt = findEvent(cmd[1]);
+    let evt = findEvent(cmd[1]);
     if (evt === undefined) {
       error("L'action est trop ancienne ou a été annulée", cmd);
       return;
     }
-    var action = evt.action;
+    let action = evt.action;
     if (action === undefined) {
       error("Erreur interne du bouton de confirmation: l'évènement n'a pas d'action", cmd);
       return;
     }
-    var options = action.currentOptions || {};
-    var playerId = getPlayerIdFromMsg(msg);
-    var ctrl = playerIsGM(playerId);
+    let options = action.currentOptions || {};
+    let playerId = getPlayerIdFromMsg(msg);
+    let ctrl = playerIsGM(playerId);
     if (!ctrl && options.preDmg) {
-      var tokens = _.allKeys(options.preDmg);
+      let tokens = _.allKeys(options.preDmg);
       ctrl = tokens.every(function(tid) {
-        var perso = persoOfId(tid);
+        let perso = persoOfId(tid);
         if (perso === undefined) return true;
-        var character = getObj('character', perso.charId);
+        let character = getObj('character', perso.charId);
         if (character === undefined) return true;
-        var cb = character.get('controlledby');
-        var res = cb.split(',').find(function(pid) {
+        let cb = character.get('controlledby');
+        let res = cb.split(',').find(function(pid) {
           return (pid == 'all' || pid == playerId);
         });
         return (res !== undefined);
@@ -4172,17 +4206,24 @@ var COFantasy = COFantasy || function() {
           if (options.ressource) act += " --decrAttribute " + options.ressource.id;
           if (picto === '') {
             // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
-            switch (act.split(' ', 1)[0].substring(5)) {
+            let typeAction = act.split(' ', 1)[0].substring(5);
+            switch (typeAction) {
               case 'attack':
               case 'attaque':
               case 'confirmer-attaque':
+              case 'explosion':
                 let portee = 0;
                 let sortilege;
                 let cmd = args.shift().split(' ');
                 let attackStats = options.attackStats;
-                if (attackStats === undefined && cmd.length > 3) {
-                  let attackLabel = cmd[3].trim();
-                  if (!attackLabel.startsWith('?{')) {
+                if (attackStats === undefined) {
+                  let attackLabel;
+                  if (typeAction == 'explosion' && cmd.length > 1) {
+                    attackLabel = cmd[1].trim();
+                  } else if (cmd.length > 3) {
+                    attackLabel = cmd[3].trim();
+                  }
+                  if (attackLabel && !attackLabel.startsWith('?{')) {
                     attackStats = getWeaponStats(perso, attackLabel);
                   }
                 }
@@ -6000,18 +6041,18 @@ var COFantasy = COFantasy || function() {
   //msg peut être directement le playerId ou un message
   function getPlayerIdFromMsg(msg) {
     if (msg.playerid === undefined) return msg;
-    var playerId = msg.playerid;
+    let playerId = msg.playerid;
     if (playerId == 'API') {
-      var nom = msg.who;
+      let nom = msg.who;
       if (nom === undefined) return playerId;
       nom = nom.replace(/ \(GM\)/, '');
       //On regarde si un joueur s'appelle nom
-      var players = findObjs({
+      let players = findObjs({
         type: 'player',
         displayname: nom
       });
       if (players.length === 0) {
-        var characters = findObjs({
+        let characters = findObjs({
           type: 'character',
           name: nom
         });
@@ -6019,7 +6060,7 @@ var COFantasy = COFantasy || function() {
           error("Impossible de trouver l'id du joueur " + nom, msg);
           return playerId;
         }
-        var pids = characters[0].get('controlledby');
+        let pids = characters[0].get('controlledby');
         pids = pids.split(',');
         if (pids[0] == 'all') {
           players = findObjs({
@@ -7997,7 +8038,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    var playerName = msg.who;
+    let playerName = msg.who;
     if (playerIsGM(playerId)) playerName = 'GM';
     attack(playerName, playerId, attaquant, targetToken, weaponStats, options);
   }
@@ -36870,7 +36911,7 @@ var COFantasy = COFantasy || function() {
     let args_msg = msg.content.substring(index);
     //On va ensuite enlever tout ce qui vient après --target
     index = args_msg.indexOf(' --target ');
-    args_msg = args_msg.substring(0, index);
+    if (index > 0) args_msg = args_msg.substring(0, index);
     args_msg += ' --explosion';
     getSelected(msg, function(selected, playerId) {
       iterSelected(selected, function(perso) {
@@ -36880,7 +36921,10 @@ var COFantasy = COFantasy || function() {
         };
         parseAttack(msga);
       });
-    }, {ignoreAllies:true, ignoreDisque:true});//On ignore les options d'alliés dans le getSelected
+    }, {
+      ignoreAllies: true,
+      ignoreDisque: true
+    }); //On ignore les options d'alliés dans le getSelected
   }
 
   function apiCommand(msg) {

@@ -1,5 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.05
+### Capacités
+* Explosion finale
+
 ### Corrections de bugs
 * Correction de bugs sur le radar mental
 * Correction d'un bug sur le pacifisme
