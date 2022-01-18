@@ -5,6 +5,7 @@
 * Correction d'un bug sur le pacifisme
 
 ### Autres améliorations
+* Possibilité de différencier les saves pour les cibles au contact.
 * Prise en compte des changements d'attributs d'armure de la version 5.01 de la fiche.
 
 ## 3.04

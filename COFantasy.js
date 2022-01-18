@@ -10822,51 +10822,14 @@ var COFantasy = COFantasy || function() {
     }
     if (nouvelleArme.deuxMains) {
       if (ficheAttributeAsInt(perso, 'defbouclieron', 0)) {
-        sendPerso(perso, "enlève son bouclier");
-        var attrBouclier = findObjs({
-          _type: 'attribute',
-          _characterid: perso.charId,
-          name: 'defbouclieron'
-        }, {
-          caseInsensistive: true
-        });
-        evt.attributes = evt.attributes || [];
-        if (attrBouclier.length > 0) {
-          evt.attributes.push({
-            attribute: attrBouclier[0],
-            current: 1,
-            max: ''
-          });
-          attrBouclier[0].set('current', 0);
-        } else {
-          attrBouclier = createObj('attribute', {
-            characterid: perso.charId,
-            name: 'defbouclieron',
-            current: 0
-          });
-          evt.attributes.push({
-            attribute: attrBouclier,
-          });
-        }
+        sendPerso(perso, "enlève son bouclier", options.secret);
+        setFicheAttr(perso, 'defbouclieron', 0, evt);
       }
     } else if (ancienneArme && (ancienneArme.deuxMains || options.gauche)) {
       if (ficheAttributeAsBool(perso, 'defbouclier', false) &&
         !ficheAttributeAsInt(perso, 'defbouclieron', 0)) {
         sendPerso(perso, "remet son bouclier", options.secret);
-        evt.attributes = evt.attributes || [];
-        let attrBouclierOff = findObjs({
-          _type: 'attribute',
-          _characterid: perso.charId,
-          name: 'defbouclieron'
-        }, {
-          caseInsensistive: true
-        }); //devrait être de taille au moins 1, avec valeur courante 0
-        evt.attributes.push({
-          attribute: attrBouclierOff[0],
-          current: 0,
-          max: ''
-        });
-        attrBouclierOff[0].set('current', 1);
+        setFicheAttr(perso, 'defbouclieron', 1, evt);
       }
     }
     if (armeActuelle) { //On avait une arme en main
@@ -15298,7 +15261,7 @@ var COFantasy = COFantasy || function() {
               });
             }
             // Tout ce qui se passe après les saves (autres que saves de diminution des dmg
-            var afterSaves = function() {
+            let afterSaves = function() {
               if (saves > 0) return; //On n'a pas encore fait tous les saves
               if (target.utiliseRuneProtection) {
                 target.messages.push(target.tokName + " utilise sa Rune de Protection pour annuler les dommages");
