@@ -5654,16 +5654,16 @@ var COFantasy = COFantasy || function() {
 
   // callback(selected, playerId, aoe)
   function getSelected(msg, callback, options) {
+    options = options || {};
     let playerId = getPlayerIdFromMsg(msg);
     let pageId;
-    if (options && options.pageId) pageId = options.pageId;
+    if (options.pageId) pageId = options.pageId;
     else pageId = getPageId(playerId);
     let args = msg.content.split(' --');
     let selected = [];
     let enleveAuxSelected = [];
     let count = args.length - 1;
     let called;
-    options = options || {};
     let actif = options.lanceur;
     if (actif === undefined) {
       if (msg.selected !== undefined && msg.selected.length == 1) {
@@ -5736,6 +5736,7 @@ var COFantasy = COFantasy || function() {
             return;
           case 'allies':
           case 'saufAllies':
+            if (options.ignoreAllies) return;
             let selection = selected;
             let saufAllies = (cmdSplit[0] == 'saufAllies');
             if (saufAllies) selection = enleveAuxSelected;
@@ -5808,6 +5809,7 @@ var COFantasy = COFantasy || function() {
             });
             return;
           case 'disque':
+            if (options.ignoreDisque) return;
             if (cmdSplit.length < 3) {
               error("Pas assez d'arguments pour définir un disque", cmdSplit);
               return;
@@ -6846,6 +6848,9 @@ var COFantasy = COFantasy || function() {
           return;
         case 'arc':
         case 'arbalete':
+        case 'attaqueAssuree':
+        case 'attaqueRisquee':
+        case 'attaqueOptions':
         case 'epieu':
         case 'hache':
         case 'marteau':
@@ -6859,6 +6864,7 @@ var COFantasy = COFantasy || function() {
         case 'avecd12':
         case 'demiAuto':
         case 'explodeMax':
+        case 'explosion':
         case 'feinte':
         case 'ignoreObstacles':
         case 'mainsDEnergie':
@@ -6885,9 +6891,6 @@ var COFantasy = COFantasy || function() {
         case 'riposte':
         case 'secret':
         case 'saufAllies':
-        case 'attaqueAssuree':
-        case 'attaqueRisquee':
-        case 'attaqueOptions':
         case 'tirAveugle':
         case 'attaqueBouclierRenverse':
         case 'runeDePuissance':
@@ -10961,12 +10964,12 @@ var COFantasy = COFantasy || function() {
     weaponStats.crit = parseInt(weaponStats.crit);
     let portee = weaponStats.portee;
     if (options.tirDouble && options.tirDouble.label) {
-      var stats2 = getWeaponStats(attaquant, options.tirDouble.label);
+      let stats2 = getWeaponStats(attaquant, options.tirDouble.label);
       if (stats2 === undefined) {
         error("Pas d'arme de label " + options.tirDouble.label + " pour le tir double", attaquant);
         return;
       }
-      var tdSkillDiv = parseInt(stats2.attSkillDiv);
+      let tdSkillDiv = parseInt(stats2.attSkillDiv);
       if (!isNaN(tdSkillDiv) && tdSkillDiv < weaponStats.attSkillDiv)
         weaponStats.attSkillDiv = tdSkillDiv;
       stats2.attDMBonusCommun = parseInt(stats2.attDMBonusCommun);
@@ -10974,6 +10977,17 @@ var COFantasy = COFantasy || function() {
       stats2.attDice = parseInt(stats2.attDice);
       if (stats2.divers && stats2.divers.includes('d3')) stats2.attDice = 3;
       options.tirDouble.stats = stats2;
+    }
+    //Pour les explosions, la portée est 0 mais avec un disque
+    if (options.explosion) {
+      if (options.aoe === undefined) {
+        options.aoe = {
+          type: 'disque',
+          rayon: portee
+        };
+      } else if (options.aoe.type != 'disque') {
+        error("Option explosion ignorée, car l'attaque est une aoe qui n'est pas un disque", options);
+      }
     }
     if (portee > 0) {
       options.distance = true;
@@ -11027,7 +11041,7 @@ var COFantasy = COFantasy || function() {
         if (options.tirDouble.stats.attDice < 0) options.tirDouble.stats.attDice = 0;
       }
       options.auto = true;
-      var effet = findObjs({
+      let effet = findObjs({
         _type: 'custfx',
         name: 'grenaille ' + portee
       });
@@ -11133,16 +11147,17 @@ var COFantasy = COFantasy || function() {
         if (options.dmCible) {
           options.dmCible.target = targetToken;
         }
-        var distanceTarget = distanceCombat(targetToken, attackingToken, pageId, {
-          strict1: true,
-          strict2: true
-        });
-        var pta = tokenCenter(attackingToken);
-        var ptt = tokenCenter(targetToken);
+        let distanceTarget =
+          distanceCombat(targetToken, attackingToken, pageId, {
+            strict1: true,
+            strict2: true
+          });
+        let pta = tokenCenter(attackingToken);
+        let ptt = tokenCenter(targetToken);
         switch (options.aoe.type) {
           case 'ligne':
             if (distanceTarget < portee) { //la ligne va plus loin que la cible
-              var scale = portee * 1.0 / distanceTarget;
+              let scale = portee * 1.0 / distanceTarget;
               ptt = [
                 Math.round((ptt[0] - pta[0]) * scale) + pta[0],
                 Math.round((ptt[1] - pta[1]) * scale) + pta[1]
@@ -11151,11 +11166,11 @@ var COFantasy = COFantasy || function() {
             if (targetToken.get('bar1_max') == 0) { // jshint ignore:line
               //C'est juste un token utilisé pour définir la ligne
               if (options.fx) {
-                var p1e = {
+                let p1e = {
                   x: attackingToken.get('left'),
                   y: attackingToken.get('top'),
                 };
-                var p2e = {
+                let p2e = {
                   x: targetToken.get('left'),
                   y: targetToken.get('top'),
                 };
@@ -11164,7 +11179,7 @@ var COFantasy = COFantasy || function() {
               cibles = [];
               targetToken.remove(); //On l'enlève, normalement plus besoin
             }
-            var allToks =
+            let allToks =
               findObjs({
                 _type: 'graphic',
                 _pageid: pageId,
@@ -11173,19 +11188,19 @@ var COFantasy = COFantasy || function() {
               });
             allToks.forEach(function(obj) {
               if (obj.id == attackingToken.id) return; //on ne se cible pas
-              var objCharId = obj.get('represents');
+              let objCharId = obj.get('represents');
               if (objCharId === '') return;
-              var cible = {
+              let cible = {
                 token: obj,
                 charId: objCharId
               };
               if (getState(cible, 'mort')) return; //pas de dégâts aux morts
-              var pt = tokenCenter(obj);
-              var distToTrajectory = VecMath.ptSegDist(pt, pta, ptt);
+              let pt = tokenCenter(obj);
+              let distToTrajectory = VecMath.ptSegDist(pt, pta, ptt);
               if (distToTrajectory > (obj.get('width') + obj.get('height')) / 4 + PIX_PER_UNIT / 4)
                 return;
               cible.tokName = obj.get('name');
-              var objChar = getObj('character', objCharId);
+              let objChar = getObj('character', objCharId);
               if (objChar === undefined) return;
               cible.name = objChar.get('name');
               cibles.push(cible);
@@ -11207,7 +11222,7 @@ var COFantasy = COFantasy || function() {
                 y: ptt[1],
               };
             }
-            var allToksDisque =
+            let allToksDisque =
               findObjs({
                 _type: "graphic",
                 _pageid: pageId,
@@ -11215,21 +11230,22 @@ var COFantasy = COFantasy || function() {
                 layer: "objects"
               });
             allToksDisque.forEach(function(obj) {
-              if (portee === 0 && obj.id == attackingToken.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
+              if ((options.explosion || portee === 0) &&
+                obj.id == attackingToken.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
               if (obj.get('bar1_max') == 0) return; // jshint ignore:line
-              var objCharId = obj.get('represents');
+              let objCharId = obj.get('represents');
               if (objCharId === '') return;
-              var cible = {
+              let cible = {
                 token: obj,
                 charId: objCharId
               };
               if (getState(cible, 'mort')) return; //pas de dégâts aux morts
-              var distanceCentre =
+              let distanceCentre =
                 distanceCombat(targetToken, obj, pageId, {
                   strict1: true
                 });
               if (distanceCentre > options.aoe.rayon) return;
-              var objChar = getObj('character', objCharId);
+              let objChar = getObj('character', objCharId);
               if (objChar === undefined) return;
               if (murs) {
                 if (obstaclePresent(obj.get('left'), obj.get('top'), pc, murs)) return;
@@ -36843,6 +36859,30 @@ var COFantasy = COFantasy || function() {
       });
   }
 
+  //!cof-explosion correspond à !cof-attack token token --explosion pour chaque  token sélectionné
+  function attaqueExplosion(msg) {
+    if (!msg.content) return;
+    let index = msg.content.indexOf(' ');
+    if (index < 1) {
+      error("Il manque le label de l'attaque à utiliser pour !cof-explosion", msg.content);
+      return;
+    }
+    let args_msg = msg.content.substring(index);
+    //On va ensuite enlever tout ce qui vient après --target
+    index = args_msg.indexOf(' --target ');
+    args_msg = args_msg.substring(0, index);
+    args_msg += ' --explosion';
+    getSelected(msg, function(selected, playerId) {
+      iterSelected(selected, function(perso) {
+        let id = perso.token.id;
+        let msga = {...msg,
+          content: '!cof-attack ' + id + ' ' + id + args_msg
+        };
+        parseAttack(msga);
+      });
+    }, {ignoreAllies:true, ignoreDisque:true});//On ignore les options d'alliés dans le getSelected
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     const command = msg.content.split(' ', 1);
@@ -36866,6 +36906,20 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-confirmer-attaque':
         confirmerAttaque(msg);
+        return;
+      case "!cof-expert-combat":
+      case "!cof-expert-combat-touche":
+      case "!cof-expert-combat-dm":
+        expertDuCombat(msg);
+        return;
+      case "!cof-expert-combat-def":
+        expertDuCombatDEF(msg);
+        return;
+      case "!cof-expert-combat-bousculer":
+        expertDuCombatBousculer(msg);
+        return;
+      case "!cof-explosion":
+        attaqueExplosion(msg);
         return;
       case '!cof-hors-combat': //ancienne syntaxe, plus documentée
       case '!cof-fin-combat':
@@ -36906,17 +36960,6 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-undo':
         undoEvent();
-        return;
-      case "!cof-expert-combat":
-      case "!cof-expert-combat-touche":
-      case "!cof-expert-combat-dm":
-        expertDuCombat(msg);
-        return;
-      case "!cof-expert-combat-def":
-        expertDuCombatDEF(msg);
-        return;
-      case "!cof-expert-combat-bousculer":
-        expertDuCombatBousculer(msg);
         return;
       case "!cof-bouton-rune-energie":
       case "!cof-rune-energie":
