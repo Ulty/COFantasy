@@ -12685,11 +12685,12 @@ var COFantasy = COFantasy || function() {
       //Prise en compte du corps élémentaire
       let typeCorpsElem = predicateAsBool(attaquant, 'corpsElementaire');
       if (typeCorpsElem && typeCorpsElem !== true) {
+        let nbDes = predicateAsInt(attaquant, 'nbCorpsElementaire', 1);
         attaquant.additionalDmg.push({
           type: typeCorpsElem,
-          value: '1d6',
+          value: nbDes + 'd6',
         });
-        explications.push("Corps de " + typeCorpsElem + " => +1d6 DM");
+        explications.push("Corps de " + typeCorpsElem + " => +" + nbDes + "d6 DM");
       }
     }
     const estMook = attackingToken.get('bar1_link') === '';
@@ -15487,8 +15488,10 @@ var COFantasy = COFantasy || function() {
                       let typeCorpsElem = predicateAsBool(target, 'corpsElementaire');
                       if (typeCorpsElem && typeCorpsElem !== true) {
                         ciblesCount++;
+                        let nbDes = predicateAsInt(target, 'nbCorpsElementaire', 1);
                         let dm = rollDePlus(6, {
-                          type: typeCorpsElem
+                          type: typeCorpsElem,
+                          nbDes
                         });
                         let r = {
                           type: typeCorpsElem,

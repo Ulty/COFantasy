@@ -1,7 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.05
 ### Capacités
-* Explosion finale
+* Explosion finale de la voie des créatures élémentaires
 
 ### Corrections de bugs
 * Correction de bugs sur le radar mental
