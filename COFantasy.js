@@ -7449,6 +7449,24 @@ var COFantasy = COFantasy || function() {
         case 'tempeteDeMana':
           parseTempeteDeMana(cmd, options);
           return;
+        case 'magieEnArmure':
+          if (cmd.length > 1) {
+            if (cmd[1] == 'mana') {
+              options.magieEnArmureMana = true;
+            } else {
+              let base = parseInt(cmd[1]);
+              if (isNaN(base)) {
+                error("L'argument de --magieEnArmure doit être un nombre ou mana", cmd);
+                return;
+              }
+              options.magieEnArmure = {
+                base
+              };
+            }
+          } else {
+            options.magieEnArmure = {};
+          }
+          return;
         case 'rang':
           if (cmd.length < 2) {
             error("Usage : --rang r", cmd);
@@ -9701,7 +9719,7 @@ var COFantasy = COFantasy || function() {
   //Bonus en Attaque qui ne dépendent pas du défenseur
   //attaquant doit avoir un champ tokName
   function bonusAttaqueA(attaquant, weaponName, evt, explications, options) {
-    var attBonus = 0;
+    let attBonus = 0;
     if (options.bonusAttaque) attBonus += options.bonusAttaque;
     if (options.armeMagiquePlus) attBonus += options.armeMagiquePlus;
     attBonus += bonusDAttaque(attaquant, explications, evt);
@@ -9717,7 +9735,7 @@ var COFantasy = COFantasy || function() {
     }
     if (options.chance) {
       attBonus += options.chance;
-      var pc = options.chance / 10;
+      let pc = options.chance / 10;
       explications.push(pc + " point" + ((pc > 1) ? "s" : "") + " de chance dépensé => +" + options.chance + " en Attaque");
     }
     if (options.semonce) {
@@ -10011,8 +10029,21 @@ var COFantasy = COFantasy || function() {
       explications.push("Expert du combat => +" + valDesExpert.roll + " aux DM");
     }
     if (attributeAsBool(attaquant, 'danseDesLames') && malusArmure(attaquant) <= 4) {
-      explications.push(attaquant, 'Danse des lames => +2 en attaque');
+      explications.push('Danse des lames => +2 en attaque');
       attBonus += 2;
+    }
+    if (options.magieEnArmure) {
+      let malus = 1;
+      if (options.magieEnArmure.base) {
+        malus = options.magieEnArmure.base;
+      } else if (options.rang) {
+        malus = options.rang;
+      }
+      malus += malusArmure(attaquant);
+      if (malus > 0) {
+        explications.push("Magie en armure => -"+malus+" en attaque");
+        attBonus -= malus;
+      }
     }
     return attBonus;
   }
@@ -14682,7 +14713,7 @@ var COFantasy = COFantasy || function() {
         if (options.saisirEtBroyer) {
           target.messages.push(attaquant.tokName + " soulève " + target.tokName + " gesticulant" + eForFemale(target));
           if (attackLabel) {
-            var cmdAttaqueGratuiteSaisi = '!cof-attack ' + attaquant.token.id + ' ' + target.token.id + ' ' + attackLabel + ' --bonusAttaque 5';
+            let cmdAttaqueGratuiteSaisi = '!cof-attack ' + attaquant.token.id + ' ' + target.token.id + ' ' + attackLabel + ' --bonusAttaque 5';
             target.messages.push(boutonSimple(cmdAttaqueGratuiteSaisi, 'Attaque gratuite'));
           } else {
             target.messages.push(attaquant.tokName + " a droit à une attaque gratuite contre " + target.tokName);

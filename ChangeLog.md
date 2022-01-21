@@ -8,6 +8,7 @@
 * Correction d'un bug sur le pacifisme
 
 ### Autres améliorations
+* Option de magie en armure pour les attaques.
 * Ajout d'une commande !cof-explosion
 * Possibilité de différencier les saves pour les cibles au contact.
 * Prise en compte des changements d'attributs d'armure de la version 5.01 de la fiche.
