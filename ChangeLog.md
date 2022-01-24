@@ -4,6 +4,7 @@
 * Explosion finale de la voie des créatures élémentaires
 
 ### Corrections de bugs
+* On ne peut plus drainer qu'un PV des cibles multiples.
 * Correction de bugs sur le radar mental
 * Correction d'un bug sur le pacifisme
 

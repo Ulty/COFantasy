@@ -11731,7 +11731,7 @@ var COFantasy = COFantasy || function() {
         });
       }
     };
-    var attaqueImpossible = false;
+    let attaqueImpossible = false;
     if (predicateAsBool(attaquant, 'chatimentDuMale')) options.chatimentDuMale = true;
     cibles.forEach(function(cible) {
       if (attaqueImpossible) return;
@@ -14250,10 +14250,10 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    var continuer = evt.action.choices.Continuer;
-    var nbCibles = ciblesTouchees.length;
+    let continuer = evt.action.choices.Continuer;
+    let nbCibles = ciblesTouchees.length;
     ciblesTouchees.forEach(function(cible) {
-      var finaliseTarget = function() {
+      let finaliseTarget = function() {
         nbCibles--;
         if (nbCibles === 0) {
           if (continuer) {
@@ -14287,8 +14287,8 @@ var COFantasy = COFantasy || function() {
           finaliseTarget();
         }
         if (preDmgToken.evitementGenerique && preDmgToken.evitementGenerique.length > 0) {
-          var nbEvitementsGenerique = preDmgToken.evitementGenerique.length;
-          var finaliseTargetPreDmg = function(msg, generalMsg) {
+          let nbEvitementsGenerique = preDmgToken.evitementGenerique.length;
+          let finaliseTargetPreDmg = function(msg, generalMsg) {
             if (generalMsg !== '' && !continuer && !termineCible) { // rerolls uniquement si pas terminé
               explications.push(msg + generalMsg);
             } else {
@@ -15548,7 +15548,7 @@ var COFantasy = COFantasy || function() {
               target.messages.push(msg);
             };
             //Ajoute les états avec save à la cible
-            var etatsAvecSave = function() {
+            let etatsAvecSave = function() {
               if (savesEffets > 0) return; //On n'a pas encore fini avec les effets
               if (etats && saves > 0) {
                 etats.forEach(function(ce, index) {
@@ -15599,7 +15599,7 @@ var COFantasy = COFantasy || function() {
               } else afterSaves();
             };
             // Ajoute les effets avec save à la cible
-            var effetsAvecSave = function() {
+            let effetsAvecSave = function() {
               if (effets && savesEffets > 0) {
                 effets.forEach(function(ef, index) {
                   if (ef.save) {
@@ -15687,9 +15687,9 @@ var COFantasy = COFantasy || function() {
                 });
               } else etatsAvecSave();
             };
-            var effetPietinement = function() {
+            let effetPietinement = function() {
               if ((target.pietine || target.percute) && estAussiGrandQue(attaquant, target)) {
-                var rollId = 'pietinement' + target.token.id;
+                let rollId = 'pietinement' + target.token.id;
                 testOppose(rollId, target, 'FOR', options, attaquant, 'FOR',
                   options, target.messages, evt,
                   function(resultat, crit, rt1, rt2) {
@@ -17201,7 +17201,7 @@ var COFantasy = COFantasy || function() {
         let rdTarget = getRDS(target);
         let rd = rdTarget.rdt || 0;
         if (rd > 0 && !options.aoe && options.attaquant && predicateAsBool(options.attaquant, 'ventreMou')) {
-          var taille = taillePersonnage(target, 4);
+          let taille = taillePersonnage(target, 4);
           if (taille > 4) {
             if (target.messages) target.messages.push("Ventre mou => L'attaque ignore la RD dûe à la taille");
             rd -= 3 * (taille - 4);
@@ -17452,6 +17452,7 @@ var COFantasy = COFantasy || function() {
         }
         if (!options.aoe && predicateAsBool(target, 'ciblesMultiples')) {
           dmgTotal = 1;
+          if (dmSuivis.drain && dmSuivis.drain > 0) dmSuivis.drain = 1;
           expliquer("La nuée est constituée de très nombreuses cibles, l'attaque ne lui fait qu'1 DM");
         }
         let pvPerdus = dmgTotal;
@@ -17589,12 +17590,12 @@ var COFantasy = COFantasy || function() {
                 weaponStatsIncrevable.name = "Attaque à distance";
                 weaponStatsIncrevable.attSkill = '@{ATKTIR}';
               }
-              var optionsIncrevable = {...options
+              let optionsIncrevable = {...options
               };
               optionsIncrevable.pasDeDmg = true;
-              var critIncrevable = critEnAttaque(target, weaponStatsIncrevable, optionsIncrevable);
-              var dice = 20;
-              var malusAttaque = 0;
+              let critIncrevable = critEnAttaque(target, weaponStatsIncrevable, optionsIncrevable);
+              let dice = 20;
+              let malusAttaque = 0;
               if (estAffaibli(target)) {
                 if (predicateAsBool(target, 'insensibleAffaibli')) {
                   malusAttaque = -2;
@@ -17610,7 +17611,7 @@ var COFantasy = COFantasy || function() {
                 dice = 12;
                 expliquer(target.tokName + " mort mais n'abandonne pas => D12 au lieu de D20 en Attaque");
               } else {
-                var ebriete = attributeAsInt(target, 'niveauEbriete', 0);
+                let ebriete = attributeAsInt(target, 'niveauEbriete', 0);
                 if (ebriete > 0) {
                   if (options.distance || options.sortilege || ebriete > 1) {
                     dice = 12;
@@ -17672,16 +17673,16 @@ var COFantasy = COFantasy || function() {
     if (bar1 > 0 && tempDmg >= bar1) { //assommé
       setState(target, 'assomme', true, evt);
     }
-    var attrsLienDeSang = tokenAttribute(target, "lienDeSangVers");
+    let attrsLienDeSang = tokenAttribute(target, "lienDeSangVers");
     if (attrsLienDeSang.length > 0) {
-      var lienDuSangDmg = Math.floor(dmgTotal / 2);
+      let lienDuSangDmg = Math.floor(dmgTotal / 2);
       if (lienDuSangDmg > 0) {
-        var r = {
+        let r = {
           total: lienDuSangDmg,
           type: 'normal',
           display: lienDuSangDmg
         };
-        var personnageLie = persoOfId(attrsLienDeSang[0].get("current"));
+        let personnageLie = persoOfId(attrsLienDeSang[0].get("current"));
         if (personnageLie) {
           expliquer("Le lien de sang inflige " + lienDuSangDmg + " dégâts à " + personnageLie.token.get("name"));
           dealDamage(personnageLie, r, [], evt, false);
@@ -27771,7 +27772,7 @@ var COFantasy = COFantasy || function() {
     let attributAVerifier = attributeName;
     let persoAttribut = perso;
     if (opt.protecteur) { // c'est un personnage tiers qui protège la cible
-      var protecteurAttrs = tokenAttribute(perso, attributeName + 'Valeur');
+      let protecteurAttrs = tokenAttribute(perso, attributeName + 'Valeur');
       if (protecteurAttrs.length < 1) {
         error("Erreur interne dans le bouton de protection, protecteur introuvable", cmd);
         return;
@@ -27791,7 +27792,7 @@ var COFantasy = COFantasy || function() {
     if (opt && opt.condition && !opt.condition(perso)) {
       resolvePreDmgOptions(action.attaquant, action.ciblesTouchees, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, optionsAttaque, evt, action.explications, pageId, action.cibles);
     }
-    var jetAdversaire = cible.attackRoll;
+    let jetAdversaire = cible.attackRoll;
     if (jetAdversaire === undefined) {
       error("Impossible de trouver le jet de l'attaquant", cible);
       return;
