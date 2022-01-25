@@ -7098,7 +7098,7 @@ var COFantasy = COFantasy || function() {
             error("Le premier argument de l'option --tempsRecharge doit être un effet temporaire répertorié", cmd);
             return;
           }
-          var tr = parseInt(cmd[2]);
+          let tr = parseInt(cmd[2]);
           if (isNaN(tr)) {
             error("Le deuxième argument de l'option --tempsRecharge doit être un nombre", cmd);
             return;
@@ -7609,7 +7609,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque l'id de la cible", cmd);
             return;
           }
-          var targetS = persoOfId(cmd[1]);
+          let targetS = persoOfId(cmd[1]);
           if (targetS === undefined) {
             error("Cible supplémentaire invalide", cmd);
             return;
@@ -10041,7 +10041,7 @@ var COFantasy = COFantasy || function() {
       }
       malus += malusArmure(attaquant);
       if (malus > 0) {
-        explications.push("Magie en armure => -"+malus+" en attaque");
+        explications.push("Magie en armure => -" + malus + " en attaque");
         attBonus -= malus;
       }
     }
@@ -10581,6 +10581,20 @@ var COFantasy = COFantasy || function() {
         }
       } else {
         error("Impossible de savoir à qui appliquer la limite par tour", options);
+        return true;
+      }
+    }
+    if (options.tempsRecharge) {
+      if (personnage) {
+        if (attributeAsBool(personnage, options.tempsRecharge.effet)) {
+          sendPerso(personnage, "ne peut pas encore faire cette action", options.secret);
+          return true;
+        }
+        if (options.tempsRecharge.duree > 0) {
+          setAttrDuree(personnage, options.tempsRecharge.effet, options.tempsRecharge.duree, evt);
+        }
+      } else {
+        error("Impossible de savoir à qui s'applique le temps de recharge", options);
         return true;
       }
     }
@@ -11652,15 +11666,6 @@ var COFantasy = COFantasy || function() {
     evt.action = evt.action || {
       options: JSON.parse(JSON.stringify(options)) //pour la chance etc.
     };
-    if (options.tempsRecharge) {
-      if (attributeAsBool(attaquant, options.tempsRecharge.effet)) {
-        sendPerso(attaquant, "ne peut pas encore utiliser cette attaque");
-        return;
-      }
-      if (options.tempsRecharge.duree > 0) {
-        setAttrDuree(attaquant, options.tempsRecharge.effet, options.tempsRecharge.duree, evt);
-      }
-    }
     //On met à jour l'arme en main, si nécessaire
     if (weaponStats.arme || weaponStats.armeGauche || (weaponStats.divers && weaponStats.divers.toLowerCase().includes('arme'))) {
       options.weaponStats = weaponStats;
@@ -18961,7 +18966,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque la limite journalière", cmd);
             return;
           }
-          var limiteCibleParJour = parseInt(cmd[1]);
+          let limiteCibleParJour = parseInt(cmd[1]);
           if (isNaN(limiteCibleParJour) || limiteCibleParJour < 1) {
             error("La limite journalière doit être un nombre positif", cmd);
             return;
@@ -18977,7 +18982,7 @@ var COFantasy = COFantasy || function() {
             options.limiteParCombat = 1;
             return;
           }
-          var limiteParCombat = parseInt(cmd[1]);
+          let limiteParCombat = parseInt(cmd[1]);
           if (isNaN(limiteParCombat) || limiteParCombat < 1) {
             error("La limite par combat doit être un nombre positif", cmd);
             return;
@@ -18988,14 +18993,33 @@ var COFantasy = COFantasy || function() {
             options.limiteParCombatRessource = cmd.join('_');
           }
           return;
+        case 'tempsRecharge':
+          if (cmd.length < 3) {
+            error("Il manque un argument à l'option --tempsRecharge", cmd);
+            return;
+          }
+          if (!estEffetTemp(cmd[1])) {
+            error("Le premier argument de l'option --tempsRecharge doit être un effet temporaire répertorié", cmd);
+            return;
+          }
+          let tr = parseInt(cmd[2]);
+          if (isNaN(tr)) {
+            error("Le deuxième argument de l'option --tempsRecharge doit être un nombre", cmd);
+            return;
+          }
+          options.tempsRecharge = {
+            effet: cmd[1],
+            duree: tr
+          };
+          return;
         case "portee":
           if (cmd.length < 2) {
             error("Pas assez d'argument pour --portee n", cmd);
             return;
           }
-          var portee;
+          let portee;
           if (cmd.length > 2) {
-            var tokPortee = persoOfId(cmd[1], cmd[1], pageId);
+            let tokPortee = persoOfId(cmd[1], cmd[1], pageId);
             if (tokPortee === undefined) {
               error("Premier argument de --portee non valide", cmd);
               return;
@@ -37741,7 +37765,7 @@ var COFantasy = COFantasy || function() {
     },
     rechargeGen: {
       activation: "doit maintenant attendre un peu avant de pouvoir le refaire",
-      actif: "attends avant de pouvoir refaire une attaque",
+      actif: "attend avant de pouvoir refaire une action",
       fin: "a récupéré",
       generic: true
     },

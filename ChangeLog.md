@@ -9,6 +9,7 @@
 * Correction d'un bug sur le pacifisme
 
 ### Autres améliorations
+* Possibilité d'indiquer des temps de recharge pour les effets.
 * Option de magie en armure pour les attaques.
 * Ajout d'une commande !cof-explosion
 * Possibilité de différencier les saves pour les cibles au contact.
