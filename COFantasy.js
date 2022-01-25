@@ -4132,6 +4132,11 @@ var COFantasy = COFantasy || function() {
           }
           ressourceParCombat = "limiteParCombat_" + ressourceParCombat;
           return attributeAsInt(perso, ressourceParCombat, limiteParCombat) === 0;
+        case 'tempsRecharge':
+          if (cmd.length < 2) return false;
+          let effet = cmd[1];
+          if (!estEffetTemp(effet)) return false;
+          return attributeAsBool(perso, effet);
         case 'aussiArmeDeJet':
           if (cmd.length < 2) return false;
           let armeAssociee = getWeaponStats(perso, cmd[1]);
