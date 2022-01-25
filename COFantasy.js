@@ -7450,7 +7450,7 @@ var COFantasy = COFantasy || function() {
           parseTempeteDeMana(cmd, options);
           return;
         case 'magieEnArmure':
-          if (cmd.length > 1) {
+          if (cmd.length > 1 && cmd[1] != '&32;') {
             if (cmd[1] == 'mana') {
               options.magieEnArmureMana = true;
             } else {
