@@ -9,6 +9,7 @@
 * Correction d'un bug sur le pacifisme
 
 ### Autres améliorations
+* Possibilité de save par tour actif pour les effets temporaires.
 * Possibilité d'indiquer des temps de recharge pour les effets.
 * Option de magie en armure pour les attaques.
 * Ajout d'une commande !cof-explosion

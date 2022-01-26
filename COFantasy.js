@@ -1209,12 +1209,12 @@ var COFantasy = COFantasy || function() {
   }
 
   function getState(personnage, etat) {
-    var token = personnage.token;
-    var charId = personnage.charId;
-    var res = false;
-    var attrInvisible = tokenAttribute(personnage, 'tokenInvisible');
+    let token = personnage.token;
+    let charId = personnage.charId;
+    let res = false;
+    let attrInvisible = tokenAttribute(personnage, 'tokenInvisible');
     if (attrInvisible.length > 0 && token.id == attrInvisible[0].get('max')) {
-      var tokenInvisible = getObj('graphic', attrInvisible[0].get('current'));
+      let tokenInvisible = getObj('graphic', attrInvisible[0].get('current'));
       if (tokenInvisible) token = tokenInvisible;
     }
     if (token !== undefined) {
@@ -1229,7 +1229,7 @@ var COFantasy = COFantasy || function() {
       return false;
     }
     if (etat == 'affaibli') { //special case due to new character sheet
-      var de = ficheAttributeAsInt(personnage, 'ETATDE', 20);
+      let de = ficheAttributeAsInt(personnage, 'ETATDE', 20);
       if (de === 20) {
         if (res && token !== undefined) token.set(cof_states[etat], false);
         return false;
@@ -1238,7 +1238,7 @@ var COFantasy = COFantasy || function() {
         return true;
       }
     }
-    var attr = findObjs({
+    let attr = findObjs({
       _type: 'attribute',
       _characterid: charId,
       name: etat
@@ -2168,6 +2168,7 @@ var COFantasy = COFantasy || function() {
       options.attrSave.remove();
     } else if (options.gardeAutresAttributs === undefined) { //On cherche si il y en a un
       enleverEffetAttribut(charId, efComplet, attrName, 'SaveParTour', evt);
+      enleverEffetAttribut(charId, efComplet, attrName, 'SaveActifParTour', evt);
       enleverEffetAttribut(charId, efComplet, attrName, 'SaveParTourType', evt);
     }
     var mEffet = messageEffetTemp[effet];
@@ -7417,12 +7418,13 @@ var COFantasy = COFantasy || function() {
           error("Pas d'effet auquel appliquer le save", optArgs);
           return;
         case 'saveParTour':
+        case 'saveActifParTour':
         case 'saveParJour':
           if (lastEtat) {
             if (lastEtat[cmd[0]]) {
               error("Redéfinition de la condition de save pour un effet", optArgs);
             }
-            var saveParTourParams = parseSave(cmd);
+            let saveParTourParams = parseSave(cmd);
             if (saveParTourParams) {
               lastEtat[cmd[0]] = saveParTourParams;
               return;
@@ -7455,7 +7457,7 @@ var COFantasy = COFantasy || function() {
           parseTempeteDeMana(cmd, options);
           return;
         case 'magieEnArmure':
-          if (cmd.length > 1 && cmd[1] != '&32;') {
+          if (cmd.length > 1) {
             if (cmd[1] == 'mana') {
               options.magieEnArmureMana = true;
             } else {
@@ -14026,6 +14028,7 @@ var COFantasy = COFantasy || function() {
   // - valeur : valeur associée à l'effet
   // - valeurMax : champ max de l'attribut valeur associé à l'effet
   // - saveParTour : caractéristiques du save par tour, si besoin.
+  // - saveActifParTour : caractéristiques du save actif par tour, si besoin.
   // - attaquant : la personne à l'origine de l'effet
   // - options : des options à mettre dans l'attribut d'options
   function setEffetTemporaire(target, ef, duree, evt, options) {
@@ -14225,6 +14228,14 @@ var COFantasy = COFantasy || function() {
       setTokenAttr(target, ef.effet + 'SaveParTour',
         ef.saveParTour.carac, evt, {
           maxVal: ef.saveParTour.seuil
+        });
+      if (ef.typeDmg)
+        setTokenAttr(target, ef.effet + 'SaveParTourType', ef.typeDmg, evt);
+    }
+    if (ef.saveActifParTour) {
+      setTokenAttr(target, ef.effet + 'SaveActifParTour',
+        ef.saveActifParTour.carac, evt, {
+          maxVal: ef.saveActifParTour.seuil
         });
       if (ef.typeDmg)
         setTokenAttr(target, ef.effet + 'SaveParTourType', ef.typeDmg, evt);
@@ -19042,6 +19053,9 @@ var COFantasy = COFantasy || function() {
         case 'saveParTour':
           options.saveParTour = parseSave(cmd);
           return;
+        case 'saveActifParTour':
+          options.saveActifParTour = parseSave(cmd);
+          return;
         case 'save':
           options.save = parseSave(cmd);
           return;
@@ -20522,6 +20536,9 @@ var COFantasy = COFantasy || function() {
       case 'save_state':
         doSaveState(action.playerId, action.perso, action.etat, action.carac, options, action.opposant, action.seuil);
         return true;
+      case 'save_effet':
+        doSaveEffet(action.playerId, action.perso, action.effetC, action.attr, action.attrEffet, action.attrName, action.met, action.carac, action.seuil, action.options);
+        return true;
       case 'set_state':
         doSetState(action.cibles, action.etat, action.valeur, options);
         return true;
@@ -21830,8 +21847,8 @@ var COFantasy = COFantasy || function() {
     if (listActions == ficheAttribute(perso, 'nomlisteaction2', 'Liste 2')) return 2;
     if (listActions == ficheAttribute(perso, 'nomlisteaction3', 'Liste 3')) return 3;
     if (listActions == ficheAttribute(perso, 'nomlisteaction4', 'Liste 4')) return 4;
-    var fullListActions = '#' + listActions + '#';
-    var res = abilities.find(function(a) {
+    let fullListActions = '#' + listActions + '#';
+    let res = abilities.find(function(a) {
       return a.get('name') == fullListActions;
     });
     return res;
@@ -21842,19 +21859,19 @@ var COFantasy = COFantasy || function() {
   //à afficher
   //sinon, fait référence à une des listes d'action de la fiche
   function turnAction(perso, playerId, listActions) {
-    var pageId = perso.token.get('pageid');
+    const pageId = perso.token.get('pageid');
     // Toutes les Abilities du personnage lié au Token
-    var abilities = findObjs({
+    const abilities = findObjs({
       _type: 'ability',
       _characterid: perso.charId,
     });
-    var title = 'Actions possibles :';
+    let title = 'Actions possibles :';
     if (stateCOF.chargeFantastique) title = "Charge fantastique: action d'attaque";
-    var opt_display = {
+    let opt_display = {
       chuchote: true
     };
-    var actionsDuTour;
-    var actionsParDefaut;
+    let actionsDuTour;
+    let actionsParDefaut;
     if (listActions) {
       title = listActions;
       actionsDuTour = findListeActions(perso, listActions, abilities);
@@ -21866,7 +21883,7 @@ var COFantasy = COFantasy || function() {
       actionsDuTour = 0;
       actionsParDefaut = true;
     }
-    var formeDarbre = false;
+    let formeDarbre = false;
     if (actionsDuTour === 0) {
       if (!isActive(perso)) {
         if (!getState(perso, 'surpris') || !compagnonPresent(perso, 'surveillance')) {
@@ -21898,17 +21915,17 @@ var COFantasy = COFantasy || function() {
       ligne += boutonSimple('!cof-fin-reaction-violente ' + perso.token.id, "Prendre sur soi");
     }
     //Les dégâts aux personnages enveloppés par perso
-    var attrs_enveloppe = tokenAttribute(perso, 'enveloppe');
+    let attrs_enveloppe = tokenAttribute(perso, 'enveloppe');
     attrs_enveloppe.forEach(function(a) {
-      var cible = persoOfIdName(a.get('current'), pageId);
+      let cible = persoOfIdName(a.get('current'), pageId);
       if (cible === undefined) {
         error("Attribut d'enveloppe mal formé ou obsolète", a.get('current'));
         return;
       }
-      var enveloppeDM = a.get('max');
+      let enveloppeDM = a.get('max');
       if (enveloppeDM.startsWith('ability ')) {
         enveloppeDM = enveloppeDM.substring(8);
-        var abEnveloppe = abilities.find(function(abilitie) {
+        let abEnveloppe = abilities.find(function(abilitie) {
           return (abilitie.get('name') === enveloppeDM);
         });
         if (abEnveloppe) {
@@ -21928,8 +21945,8 @@ var COFantasy = COFantasy || function() {
         ligne += bouton(command, "Infliger DMs à " + cible.tokName, perso) + '<br />';
       } //else pas reconnu
     });
-    var gobePar;
-    var attrGobePar = tokenAttribute(perso, 'estGobePar');
+    let gobePar;
+    let attrGobePar = tokenAttribute(perso, 'estGobePar');
     if (attrGobePar.length > 0) {
       gobePar = persoOfIdName(attrGobePar[0].get('current', pageId));
       command = '!cof-jet FOR 15 --target ' + perso.token.id;
@@ -21949,13 +21966,13 @@ var COFantasy = COFantasy || function() {
       ligne += boutonSimple(command, 'Se libérer') + "de l'étreinte du scorpion <br />";
     } else {
       if (stateCOF.armeesDesMorts && !gobePar) {
-        var combattreArmee = false;
+        let combattreArmee = false;
         stateCOF.armeesDesMorts.forEach(function(armee) {
-          var persoArmee = persoOfId(armee);
-          var boost = 0;
+          let persoArmee = persoOfId(armee);
+          let boost = 0;
           if (charAttributeAsBool(persoArmee, "armeeDesMortsPuissant")) boost = 1;
           else boost = charAttributeAsInt(persoArmee, "armeeDesMortsTempeteDeManaIntense", 0);
-          var rayon = Math.floor(20 * Math.sqrt(1 + boost));
+          let rayon = Math.floor(20 * Math.sqrt(1 + boost));
           if (persoArmee && distanceCombat(perso.token, persoArmee.token, pageId) <= rayon &&
             (!alliesParPerso[persoArmee.charId] || !alliesParPerso[persoArmee.charId].has(perso.charId))) {
             actionsAAfficher = true;
@@ -21977,6 +21994,32 @@ var COFantasy = COFantasy || function() {
         command = '!cof-liberer-agrippe ' + perso.token.id;
         ligne += bouton(command, 'Se libérer', perso) + ' (action limitée)<br />';
       }
+      //Actions pour les saves actifs
+      let attrs = findObjs({
+        _type: 'attribute',
+        _characterid: perso.charId,
+      });
+      attrs.forEach(function(attr) {
+        let attrName = attr.get('name');
+        let indexSave = attrName.indexOf('SaveActifParTour');
+        if (indexSave < 0) return;
+        let effetC = attrName.substring(0, indexSave);
+        let effetTemp = estEffetTemp(effetC);
+        if (!effetTemp && !estEffetCombat(effetC)) return;
+        attrName = effetC + attrName.substr(indexSave + 11);
+        let met;
+        if (effetTemp) met = messageOfEffetTemp(effetC);
+        else met = messageEffetCombat[effetC];
+        let msgPour;
+        if (met.msgSave) msgPour = met.msgSave;
+        else {
+          msgPour += "save contre ";
+          if (effetC.startsWith('dotGen('))
+            msgPour += effetC.substring(7, effetC.indexOf(')'));
+          else msgPour += effetC;
+        }
+        ligne += boutonSimple("!cof-save-effet " + perso.token.id + " " + attr.id, msgPour) + '<br/>';
+      });
       if (formeDarbre) {
         actionsAAfficher = true;
         command = '!cof-attack @{selected|token_id} ';
@@ -22194,8 +22237,8 @@ var COFantasy = COFantasy || function() {
           }
         }
       }
-      for (var etat in cof_states) {
-        var saveEtat = boutonSaveState(perso, etat);
+      for (let etat in cof_states) {
+        let saveEtat = boutonSaveState(perso, etat);
         if (saveEtat) {
           ligne += saveEtat + '<br />';
           actionsAAfficher = true;
@@ -23279,7 +23322,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function doSetState(cibles, etat, valeur, options) {
-    var evt = {
+    let evt = {
       type: "set_state",
       action: {
         titre: "Interface Set State",
@@ -23290,7 +23333,7 @@ var COFantasy = COFantasy || function() {
       }
     };
     addEvent(evt);
-    var lanceur = options.lanceur;
+    let lanceur = options.lanceur;
     if (lanceur === undefined && cibles.length == 1) lanceur = persoOfId(cibles[0].token.id);
     if (limiteRessources(lanceur, options, etat, etat, evt)) return;
     if (options.messages) {
@@ -23355,16 +23398,16 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseSaveState(msg) {
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined || cmd.length < 4 || !_.has(cof_states, cmd[1])) {
       error("Paramètres de !cof-save-state incorrects", cmd);
       return;
     }
-    var etat = cmd[1];
-    var carac = cmd[2];
-    var carac2;
+    let etat = cmd[1];
+    let carac = cmd[2];
+    let carac2;
     if (!isCarac(carac)) {
       if (carac.length == 6) {
         carac2 = carac.substring(3, 6);
@@ -23383,14 +23426,15 @@ var COFantasy = COFantasy || function() {
         error("Pas de token sélectionné", msg.content);
         return;
       }
-      var pageId = options.pageId;
+      let pageId = options.pageId;
       if (pageId === undefined) {
         iterSelected(selected, function(perso) {
           if (pageId) return;
           pageId = perso.token.get('pageid');
         });
       }
-      var opposant = persoOfId(cmd[3], cmd[4], pageId);
+      let opposant;
+      if (cmd.length > 4) opposant = persoOfId(cmd[3], cmd[4], pageId);
       if (opposant) {
         iterSelected(selected, function(perso) {
           if (!getState(perso, etat)) {
@@ -23400,7 +23444,7 @@ var COFantasy = COFantasy || function() {
           doSaveState(playerId, perso, etat, carac, options, opposant);
         });
       } else {
-        var seuil = parseInt(cmd[3]);
+        let seuil = parseInt(cmd[3]);
         if (isNaN(seuil)) {
           error("La difficulté n'est pas un nombre", cmd);
           return;
@@ -23418,7 +23462,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function doSaveState(playerId, perso, etat, carac, options, opposant, seuil) {
-    var evt = {
+    let evt = {
       type: "save_state",
       action: {
         titre: "Interface Save State",
@@ -23432,13 +23476,13 @@ var COFantasy = COFantasy || function() {
       }
     };
     addEvent(evt);
-    var titre = "Jet de " + carac + " pour " + textOfSaveState(etat, perso);
+    let titre = "Jet de " + carac + " pour " + textOfSaveState(etat, perso);
     if (opposant) {
-      var display = startFramedDisplay(playerId, titre, perso, {
+      let display = startFramedDisplay(playerId, titre, perso, {
         perso2: opposant
       });
-      var explications = [];
-      var rollId = 'saveState_' + perso.token.id;
+      let explications = [];
+      let rollId = 'saveState_' + perso.token.id;
       testOppose(rollId, perso, carac, options, opposant, carac,
         options, explications, evt,
         function(resultat, crit, rt1, rt2) {
@@ -23454,7 +23498,7 @@ var COFantasy = COFantasy || function() {
           sendChat("", endFramedDisplay(display));
         });
     } else {
-      var testId = 'saveState_' + carac + seuil;
+      let testId = 'saveState_' + carac + seuil;
       testCaracteristique(perso, carac, seuil, testId, options, evt, function(res) {
         sendPerso(perso, titre);
         if (res.reussite) {
@@ -23469,14 +23513,145 @@ var COFantasy = COFantasy || function() {
 
   //Renvoie false si le personnage n'a pas d'attribut etatSave
   function boutonSaveState(perso, etat) {
-    var attr = tokenAttribute(perso, etat + 'Save');
+    let attr = tokenAttribute(perso, etat + 'Save');
     if (attr.length === 0) return false;
     attr = attr[0];
-    var carac = attr.get('current');
-    var action = "!cof-save-state " + etat + ' ' + carac + ' ' + attr.get('max');
+    let carac = attr.get('current');
+    let action = "!cof-save-state " + etat + ' ' + carac + ' ' + attr.get('max');
     if (etat == 'enseveli') action += " --bonus ?{Bonus au jet}";
-    var b = bouton(action, "Jet", perso);
+    let b = bouton(action, "Jet", perso);
     return b + " pour " + textOfSaveState(etat, perso);
+  }
+
+  //!cof-save-effet token_id attr_id
+  // où attr_id est l'id de l'attribut de save
+  function parseSaveEffet(msg) {
+    let options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 3) {
+      error("Paramètres de !cof-save-effet incorrects", cmd);
+      return;
+    }
+    let perso = persoOfId(cmd[1]);
+    let attr = getObj('attribute', cmd[2]);
+    if (attr === undefined || perso === undefined) {
+      error("Impossible de trouver le personnage ou l'attribut", cmd);
+      return;
+    }
+    let attrName = attr.get('name');
+    let indexSave = attrName.indexOf('SaveActifParTour');
+    if (indexSave < 0) {
+      error("L'attribut n'est pas un attribut de save actif", attrName);
+      return;
+    }
+    let effetC = attrName.substring(0, indexSave);
+    let effetTemp = estEffetTemp(effetC);
+    if (!effetTemp && !estEffetCombat(effetC)) {
+      error("Impossible de trouver l'effet correspondant à " + effetC, attrName);
+      return;
+    }
+    attrName = effetC + attrName.substr(indexSave + 16);
+    let met;
+    if (effetTemp) met = messageOfEffetTemp(effetC);
+    else met = messageEffetCombat[effetC];
+    let msgPour = " pour ";
+    if (met.msgSave) msgPour += met.msgSave;
+    else {
+      msgPour += "ne plus être sous l'effet de ";
+      if (effetC.startsWith('dotGen('))
+        msgPour += effetC.substring(7, effetC.indexOf(')'));
+      else msgPour += effetC;
+    }
+    let carac = attr.get('current');
+    if (!isCarac(carac)) {
+      error("Save par tour " + attrName + " mal formé", carac);
+      return;
+    }
+    let seuil = parseInt(attr.get('max'));
+    if (isNaN(seuil)) {
+      error("Save par tour " + attrName + " mal formé", seuil);
+      return;
+    }
+    let attrEffet = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+      name: attrName
+    });
+    if (attrEffet === undefined || attrEffet.length === 0) {
+      error("Save sans effet temporaire " + attrName, attr);
+      findObjs({
+        _type: 'attribute',
+        _characterid: perso.charId,
+        name: attr.get('name').replace('SaveParTour', 'SaveParTourType')
+      }).forEach(function(a) {
+        a.remove();
+      });
+      attr.remove();
+      return;
+    }
+    attrEffet = attrEffet[0];
+    let playerId = getPlayerIdFromMsg(msg);
+    options.msgPour = msgPour;
+    let sujet = onGenre(perso, 'il', 'elle');
+    options.msgReussite = ", " + sujet + " " + met.fin;
+    options.msgRate = ", " + sujet + " " + met.actif;
+    let attrType = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+      name: attr.get('name').replace('SaveParTour', 'SaveParTourType')
+    });
+    if (attrType.length > 0) {
+      options.type = attrType[0].get('current');
+    }
+    doSaveEffet(playerId, perso, effetC, attr, attrEffet, attrName, met, carac, seuil, options);
+  }
+
+  function doSaveEffet(playerId, perso, effetC, attr, attrEffet, attrName, met, carac, seuil, options) {
+    let evt = {
+      type: "save_effet",
+      action: {
+        titre: "Interface save effet",
+        perso,
+        effetC,
+        attr,
+        attrEffet,
+        attrName,
+        met,
+        carac,
+        options,
+        seuil,
+        playerId
+      }
+    };
+    addEvent(evt);
+    let titre = "Jet de " + carac + options.msgPour;
+    let display = startFramedDisplay(playerId, titre, perso);
+    let explications = [];
+    let expliquer = function(msg) {
+      explications.push(msg);
+    };
+    let saveId = 'saveParTour_' + attrEffet.id + '_' + perso.token.id;
+    let s = {
+      carac: carac,
+      seuil: seuil,
+      entrave: met.entrave
+    };
+    save(s, perso, saveId, expliquer, options, evt,
+      function(reussite, texte) { //asynchrone
+        explications.forEach(function(e) {
+          addLineToFramedDisplay(display, e);
+        });
+        sendChat("", endFramedDisplay(display));
+        if (reussite) {
+          let eff = effetC;
+          if (estEffetTemp(effetC)) eff = effetTempOfAttribute(attrEffet);
+          finDEffet(attrEffet, eff, attrName, perso.charId, evt, {
+            attrSave: attr,
+            pageId: perso.token.get('pageid')
+          });
+        }
+      });
   }
 
   function updateInit(token, evt) {
@@ -23834,6 +24009,7 @@ var COFantasy = COFantasy || function() {
       valeur: options.valeur,
       valeurMax: options.valeurMax,
       saveParTour: options.saveParTour,
+      saveActifParTour: options.saveActifParTour,
       whisper: whisper,
       attaquant: options.lanceur,
       options: options.optionsEffet
@@ -24199,6 +24375,11 @@ var COFantasy = COFantasy || function() {
             maxVal: options.saveParTour.seuil
           });
         }
+        if (options.saveActifParTour) {
+          setTokenAttr(perso, effet + 'SaveActifParTour', options.saveActifParTour.carac, evt, {
+            maxVal: options.saveActifParTour.seuil
+          });
+        }
         if (options.tempeteDeManaIntense !== undefined) {
           setTokenAttr(perso, effet + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
         }
@@ -24206,11 +24387,11 @@ var COFantasy = COFantasy || function() {
       addEvent(evt);
       if (lanceur && options.fx) {
         iterSelected(selected, function(target) {
-          var p1e = {
+          let p1e = {
             x: lanceur.token.get('left'),
             y: lanceur.token.get('top'),
           };
-          var p2e = {
+          let p2e = {
             x: target.token.get('left'),
             y: target.token.get('top'),
           };
@@ -37118,6 +37299,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-save-state":
         parseSaveState(msg);
         return;
+      case "!cof-save-effet":
+        parseSaveEffet(msg);
+        return;
       case "!cof-degainer":
         parseDegainer(msg);
         return;
@@ -38266,9 +38450,9 @@ var COFantasy = COFantasy || function() {
 
   function buildPatternEffets(listeEffets, postfix) {
     if (postfix && postfix.length === 0) postfix = undefined;
-    var expression = "(";
+    let expression = "(";
     expression = _.reduce(listeEffets, function(reg, msg, effet) {
-      var res = reg;
+      let res = reg;
       if (res !== "(") res += "|";
       res += "^" + effet;
       if (msg.generic) res += "\\([^)_]*\\)";
@@ -38286,13 +38470,14 @@ var COFantasy = COFantasy || function() {
     return new RegExp(expression);
   }
 
-  var patternEffetsTemp = buildPatternEffets(messageEffetTemp);
+  const patternEffetsTemp = buildPatternEffets(messageEffetTemp);
 
   function estEffetTemp(name) {
     return (patternEffetsTemp.test(name));
   }
 
-  var patternAttributEffetsTemp = buildPatternEffets(messageEffetTemp, ["Puissant", "Valeur", "SaveParTour", "SaveParTourType", "TempeteDeManaIntense", "Options"]);
+  const patternAttributEffetsTemp =
+    buildPatternEffets(messageEffetTemp, ['Puissant', 'Valeur', 'SaveParTour', 'SaveActifParTour', 'SaveParTourType', 'TempeteDeManaIntense', 'Options']);
 
   function estAttributEffetTemp(name) {
     return (patternAttributEffetsTemp.test(name));
@@ -38300,10 +38485,10 @@ var COFantasy = COFantasy || function() {
 
   //On sait déjà que le nom a passé le test estEffetTemp
   function effetTempOfAttribute(attr) {
-    var ef = attr.get('name');
+    let ef = attr.get('name');
     if (ef === undefined || messageEffetTemp[ef]) return ef;
     //D'abord on enlève le nom du token
-    var pu = ef.indexOf('_');
+    let pu = ef.indexOf('_');
     if (pu > 0) {
       ef = ef.substring(0, pu);
       if (messageEffetTemp[ef]) return ef;
@@ -38467,13 +38652,14 @@ var COFantasy = COFantasy || function() {
     },
   };
 
-  var patternEffetsCombat = buildPatternEffets(messageEffetCombat);
+  const patternEffetsCombat = buildPatternEffets(messageEffetCombat);
 
   function estEffetCombat(name) {
     return (patternEffetsCombat.test(name));
   }
 
-  var patternAttributEffetsCombat = buildPatternEffets(messageEffetCombat, ["Puissant", "Valeur", "SaveParTour", "SaveParTourType", "TempeteDeManaIntense", "Options"]);
+  const patternAttributEffetsCombat =
+    buildPatternEffets(messageEffetCombat, ['Puissant', 'Valeur', 'SaveParTour', 'SaveActifParTour', 'SaveParTourType', 'TempeteDeManaIntense', 'Options']);
 
   function estAttributEffetCombat(name) {
     return (patternAttributEffetsCombat.test(name));
@@ -39143,27 +39329,27 @@ var COFantasy = COFantasy || function() {
     updateNextInitSet = new Set();
     // Saves à faire à la fin de chaque tour. Asynchrone, mais pas grave ?
     attrs.forEach(function(attr) {
-      var attrName = attr.get('name');
-      var indexSave = attrName.indexOf('SaveParTour');
+      let attrName = attr.get('name');
+      let indexSave = attrName.indexOf('SaveParTour');
       if (indexSave < 0) return;
-      var indexSaveType = attrName.indexOf('SaveParTourType');
+      let indexSaveType = attrName.indexOf('SaveParTourType');
       if (indexSaveType > 0) return;
-      var effetC = attrName.substring(0, indexSave);
-      var effetTemp = estEffetTemp(effetC);
+      let effetC = attrName.substring(0, indexSave);
+      let effetTemp = estEffetTemp(effetC);
       if (!effetTemp && !estEffetCombat(effetC)) return;
-      var carac = attr.get('current');
+      let carac = attr.get('current');
       if (!isCarac(carac)) {
         error("Save par tour " + attrName + " mal formé", carac);
         return;
       }
-      var seuil = parseInt(attr.get('max'));
+      let seuil = parseInt(attr.get('max'));
       if (isNaN(seuil)) {
         error("Save par tour " + attrName + " mal formé", seuil);
         return;
       }
       let charId = attr.get('characterid');
       attrName = effetC + attrName.substr(indexSave + 11);
-      var token;
+      let token;
       iterTokensOfAttribute(charId, pageId, effetC, attrName, function(tok) {
         if (token === undefined) token = tok;
       });
@@ -39171,14 +39357,14 @@ var COFantasy = COFantasy || function() {
         log("Pas de token pour le save " + attrName);
         return;
       }
-      var perso = {
+      const perso = {
         token: token,
         charId: charId
       };
       if (getState(perso, 'mort')) {
         return;
       }
-      var attrEffet = findObjs({
+      let attrEffet = findObjs({
         _type: 'attribute',
         _characterid: charId,
         name: attrName
@@ -39198,13 +39384,13 @@ var COFantasy = COFantasy || function() {
         return;
       }
       attrEffet = attrEffet[0];
-      var expliquer = function(msg) {
+      let expliquer = function(msg) {
         sendPerso(perso, msg);
       };
-      var met;
+      let met;
       if (effetTemp) met = messageOfEffetTemp(effetC);
       else met = messageEffetCombat[effetC];
-      var msgPour = " pour ";
+      let msgPour = " pour ";
       if (met.msgSave) msgPour += met.msgSave;
       else {
         msgPour += "ne plus être sous l'effet de ";
@@ -39212,17 +39398,17 @@ var COFantasy = COFantasy || function() {
           msgPour += effetC.substring(7, effetC.indexOf(')'));
         else msgPour += effetC;
       }
-      var sujet = onGenre(perso, 'il', 'elle');
-      var msgReussite = ", " + sujet + " " + met.fin;
-      var msgRate = ", " + sujet + " " + met.actif;
-      var saveOpts = {
+      let sujet = onGenre(perso, 'il', 'elle');
+      let msgReussite = ", " + sujet + " " + met.fin;
+      let msgRate = ", " + sujet + " " + met.actif;
+      let saveOpts = {
         msgPour: msgPour,
         msgReussite: msgReussite,
         msgRate: msgRate,
         rolls: options.rolls,
         chanceRollId: options.chanceRollId
       };
-      var attrType = findObjs({
+      let attrType = findObjs({
         _type: 'attribute',
         _characterid: charId,
         name: attr.get('name').replace('SaveParTour', 'SaveParTourType')
@@ -39230,8 +39416,8 @@ var COFantasy = COFantasy || function() {
       if (attrType.length > 0) {
         saveOpts.type = attrType[0].get('current');
       }
-      var saveId = 'saveParTour_' + attrEffet.id + '_' + perso.token.id;
-      var s = {
+      let saveId = 'saveParTour_' + attrEffet.id + '_' + perso.token.id;
+      let s = {
         carac: carac,
         seuil: seuil,
         entrave: met.entrave
