@@ -681,6 +681,92 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function splitIdName(idn) {
+    let pos = idn.indexOf(' ');
+    if (pos < 1 || pos >= idn.length) {
+      error("IdName mal formé", idn);
+      return;
+    }
+    let name = idn.substring(pos + 1);
+    return {
+      id: idn.substring(0, pos),
+      name: name
+    };
+  }
+
+  //Renvoie le token et le charId. Si l'id ne correspond à rien, cherche si
+  //on trouve un nom de token, sur la page passée en argument (ou sinon
+  //sur la page active de la campagne)
+  function persoOfId(id, name, pageId, allPages) {
+    let token = getObj('graphic', id);
+    if (token === undefined) {
+      if (name === undefined) return undefined;
+      if (pageId === undefined) {
+        pageId = Campaign().get('playerpageid');
+      }
+      let tokens = findObjs({
+        _type: 'graphic',
+        _subtype: 'token',
+        _pageid: pageId,
+        name: name
+      });
+      if (tokens.length === 0) {
+        if (allPages) {
+          let pages = findObjs({
+            _type: 'page'
+          });
+          pages.find(function(p) {
+            if (p.id == pageId) return false;
+            if (p.get('archived')) return false;
+            tokens = findObjs({
+              _type: 'graphic',
+              _subtype: 'token',
+              _pageid: pageId,
+              name: name
+            });
+            return tokens.length > 0;
+          });
+          if (tokens.length === 0) return undefined;
+        } else return undefined;
+      }
+      if (tokens.length > 1) {
+        error("Ambigüité sur le choix d'un token : il y a " +
+          tokens.length + " tokens nommés " + name, tokens);
+      }
+      token = tokens[0];
+    }
+    let charId = token.get('represents');
+    if (charId === '') {
+      error("le token sélectionné ne représente pas de personnage", token);
+      return undefined;
+    }
+    return {
+      token: token,
+      charId: charId
+    };
+  }
+
+  //Retourne le perso correspondant à un token id suivi du nom de token
+  //Permet d'avoir une information robuste en cas d'interruption du script
+  function persoOfIdName(idn, pageId, allPages) {
+    let sp = splitIdName(idn);
+    if (sp === undefined) return;
+    let perso = persoOfId(sp.id, sp.name, pageId, allPages);
+    if (perso === undefined) {
+      log("Impossible de trouver le personnage correspondant à " + sp.name);
+      return;
+    }
+    perso.tokName = perso.token.get('name');
+    if (perso.tokName == sp.name) return perso;
+    log("En cherchant le token " + idn + ", on trouve " + perso.tokName);
+    log(perso);
+    return perso;
+  }
+
+  function IdName(perso) {
+    return perso.token.id + ' ' + perso.token.get('name');
+  }
+
   let roundMarker;
 
   const roundMarkerSpec = {
@@ -726,6 +812,7 @@ var COFantasy = COFantasy || function() {
     if (sync != threadSync) return;
     if (token) {
       // Cas spéciaux du cavaliers
+      let pageId = token.get('pageid');
       let personnage = persoOfId(token.id);
       let monteSur = tokenAttribute(personnage, 'monteSur');
       let estMontePar = tokenAttribute(personnage, 'estMontePar');
@@ -733,16 +820,14 @@ var COFantasy = COFantasy || function() {
       let cavalier;
       if (monteSur.length > 0) {
         cavalier = personnage;
-        let montureTokenId = monteSur[0].get("current");
-        monture = persoOfId(montureTokenId);
+        monture = persoOfIdName(monteSur[0].get('current'), pageId);
         if (monture !== undefined) token = monture.token;
       } else if (estMontePar.length > 0) {
         monture = personnage;
-        let cavalierId = estMontePar[0].get("current");
-        cavalier = persoOfId(cavalierId);
+        cavalier = persoOfIdName(estMontePar[0].get('current'), pageId);
       }
       removeRoundMarker();
-      roundMarkerSpec._pageid = token.get('pageid');
+      roundMarkerSpec._pageid = pageId;
       let tokenLayer = token.get('layer');
       if (tokenLayer !== 'objects') roundMarkerSpec.layer = tokenLayer;
       else roundMarkerSpec.layer = 'map';
@@ -2002,70 +2087,6 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function splitIdName(idn) {
-    var pos = idn.indexOf(' ');
-    if (pos < 1 || pos >= idn.length) {
-      error("IdName mal formé", idn);
-      return;
-    }
-    var name = idn.substring(pos + 1);
-    return {
-      id: idn.substring(0, pos),
-      name: name
-    };
-  }
-
-  //Renvoie le token et le charId. Si l'id ne correspond à rien, cherche si
-  //on trouve un nom de token, sur la page passée en argument (ou sinon
-  //sur la page active de la campagne)
-  function persoOfId(id, name, pageId) {
-    let token = getObj('graphic', id);
-    if (token === undefined) {
-      if (name === undefined) return undefined;
-      if (pageId === undefined) {
-        pageId = Campaign().get('playerpageid');
-      }
-      let tokens = findObjs({
-        _type: 'graphic',
-        _subtype: 'token',
-        _pageid: pageId,
-        name: name
-      });
-      if (tokens.length === 0) return undefined;
-      if (tokens.length > 1) {
-        error("Ambigüité sur le choix d'un token : il y a " +
-          tokens.length + " tokens nommés " + name, tokens);
-      }
-      token = tokens[0];
-    }
-    var charId = token.get('represents');
-    if (charId === '') {
-      error("le token sélectionné ne représente pas de personnage", token);
-      return undefined;
-    }
-    return {
-      token: token,
-      charId: charId
-    };
-  }
-
-  //Retourne le perso correspondant à un token id suivi du nom de token
-  //Permet d'avoir une information robuste en cas d'interruption du script
-  function persoOfIdName(idn, pageId) {
-    var sp = splitIdName(idn);
-    if (sp === undefined) return;
-    var perso = persoOfId(sp.id, sp.name, pageId);
-    if (perso === undefined) {
-      log("Impossible de trouver le personnage correspondant à " + sp.name);
-      return;
-    }
-    perso.tokName = perso.token.get('name');
-    if (perso.tokName == sp.name) return perso;
-    log("En cherchant le token " + idn + ", on trouve " + perso.tokName);
-    log(perso);
-    return perso;
-  }
-
   function computeScale(pageId) {
     const page = getObj("page", pageId);
     let scale = parseFloat(page.get('scale_number'));
@@ -2114,24 +2135,24 @@ var COFantasy = COFantasy || function() {
     }
     options = options || {};
     //perso montés
-    var pseudoTok1 = tok1;
+    let pseudoTok1 = tok1;
     if (!options.strict1) {
-      var perso1 = persoOfToken(tok1);
+      let perso1 = persoOfToken(tok1);
       if (perso1) {
-        var attrMonture1 = tokenAttribute(perso1, 'monteSur');
+        let attrMonture1 = tokenAttribute(perso1, 'monteSur');
         if (attrMonture1.length > 0) {
-          var pseudoPerso1 = persoOfId(attrMonture1[0].get('current'), attrMonture1[0].get('max'), pageId);
+          let pseudoPerso1 = persoOfIdName(attrMonture1[0].get('current'), pageId);
           if (pseudoPerso1) pseudoTok1 = pseudoPerso1.token;
         }
       }
     }
-    var pseudoTok2 = tok2;
+    let pseudoTok2 = tok2;
     if (!options.strict2) {
-      var perso2 = persoOfToken(tok2);
+      let perso2 = persoOfToken(tok2);
       if (perso2) {
-        var attrMonture2 = tokenAttribute(perso2, 'monteSur');
+        let attrMonture2 = tokenAttribute(perso2, 'monteSur');
         if (attrMonture2.length > 0) {
-          var pseudoPerso2 = persoOfId(attrMonture2[0].get('current'), attrMonture2[0].get('max'), pageId);
+          let pseudoPerso2 = persoOfIdName(attrMonture2[0].get('current'), pageId);
           if (pseudoPerso2) pseudoTok2 = pseudoPerso2.token;
         }
       }
@@ -2914,7 +2935,7 @@ var COFantasy = COFantasy || function() {
           nePlusSuivre(personnage, pageId, evt);
           let persoMonte = tokenAttribute(personnage, 'estMontePar');
           if (persoMonte.length > 0) {
-            const cavalier = persoOfId(persoMonte[0].get('current'), persoMonte[0].get('max'), pageId);
+            const cavalier = persoOfIdName(persoMonte[0].get('current'), pageId);
             if (cavalier !== undefined) {
               removeTokenAttr(cavalier, 'monteSur', evt);
             }
@@ -8660,7 +8681,7 @@ var COFantasy = COFantasy || function() {
     }
     let persoMonte = tokenAttribute(perso, 'estMontePar');
     if (persoMonte.length > 0) {
-      let cavalier = persoOfId(persoMonte[0].get('current'), persoMonte[0].get('max'), perso.token.get('pageid'));
+      let cavalier = persoOfIdName(persoMonte[0].get('current'), perso.token.get('pageid'));
       if (cavalier !== undefined) return persoInit(cavalier, evt);
     }
     let init;
@@ -8789,7 +8810,7 @@ var COFantasy = COFantasy || function() {
     if (!Campaign().get('initiativepage')) {
       Campaign().set('initiativepage', true);
     }
-    var to = getTurnOrder(evt);
+    let to = getTurnOrder(evt);
     if (to.pasAgi.length === 0) { // Fin de tour, on met le tour à la fin et on retrie
       to.pasAgi = to.dejaAgi;
       to.dejaAgi = [];
@@ -11521,7 +11542,7 @@ var COFantasy = COFantasy || function() {
       let attrMonture = tokenAttribute(attaquant, 'monteSur');
       if (attrMonture.length > 0) {
         let pseudoAttacker =
-          persoOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
+          persoOfIdName(attrMonture[0].get('current'), pageId);
         if (pseudoAttacker) pseudoAttackingToken = pseudoAttacker.token;
       }
       cibles = cibles.filter(function(target) {
@@ -11530,7 +11551,7 @@ var COFantasy = COFantasy || function() {
         attrMonture = tokenAttribute(target, 'monteSur');
         if (attrMonture.length > 0) {
           let pseudoTarget =
-            persoOfId(attrMonture[0].get('current'), attrMonture[0].get('max'), pageId);
+            persoOfIdName(attrMonture[0].get('current'), pageId);
           if (pseudoTarget) pseudoTargetToken = pseudoTarget.token;
         }
         target.distance =
@@ -13373,15 +13394,15 @@ var COFantasy = COFantasy || function() {
                     options.gober = true;
                 }
                 if (options.etreinteImmole) {
-                  setTokenAttr(attaquant, 'etreinteImmole', target.token.id + ' ' + target.tokName, evt);
-                  setTokenAttr(target, 'etreinteImmolePar', attaquant.token.id + ' ' + attaquant.tokName, evt);
+                  setTokenAttr(attaquant, 'etreinteImmole', IdName(target), evt);
+                  setTokenAttr(target, 'etreinteImmolePar', IdName(attaquant), evt);
                   setState(target, 'immobilise', true, evt);
                   target.messages.push(attaquant.tokName + " étreint " + target.tokName + " et s'immole !");
                   target.etreinteImmole = true;
                 }
                 if (options.etreinteScorpion) {
-                  setTokenAttr(attaquant, 'etreinteScorpionSur', target.token.id + ' ' + target.tokName, evt);
-                  setTokenAttr(target, 'etreinteScorpionPar', attaquant.token.id + ' ' + attaquant.tokName, evt);
+                  setTokenAttr(attaquant, 'etreinteScorpionSur', IdName(target), evt);
+                  setTokenAttr(target, 'etreinteScorpionPar', IdName(attaquant), evt);
                   target.messages.push(attaquant.tokName + " étreint " + target.tokName + " !");
                 }
               }
@@ -14702,8 +14723,8 @@ var COFantasy = COFantasy || function() {
             target.messages.push("L'armure d'eau empêche " + target.tokName + " d'être aggripé");
           } else {
             let immobilise = estAussiGrandQue(attaquant, target);
-            setTokenAttr(attaquant, 'agrippe', target.token.id + ' ' + target.tokName, evt);
-            setTokenAttr(target, 'estAgrippePar', attaquant.token.id + ' ' + attaquant.tokName, evt, {
+            setTokenAttr(attaquant, 'agrippe', IdName(target), evt);
+            setTokenAttr(target, 'estAgrippePar', IdName(attaquant), evt, {
               maxVal: immobilise
             });
             if (immobilise) setState(target, 'immobilise', true, evt);
@@ -14726,8 +14747,8 @@ var COFantasy = COFantasy || function() {
             } else {
               setState(target, 'renverse', true, evt);
               setState(target, 'immobilise', true, evt);
-              setTokenAttr(attaquant, 'devore', target.token.id + ' ' + target.tokName, evt);
-              setTokenAttr(target, 'estDevorePar', attaquant.token.id + ' ' + attaquant.tokName, evt);
+              setTokenAttr(attaquant, 'devore', IdName(target), evt);
+              setTokenAttr(target, 'estDevorePar', IdName(attaquant), evt);
             }
           }
         }
@@ -15625,14 +15646,14 @@ var COFantasy = COFantasy || function() {
                 effets.forEach(function(ef, index) {
                   if (ef.save) {
                     if (ef.gober) {
-                      var rollIdGober = 'gober_' + target.token.id;
+                      let rollIdGober = 'gober_' + target.token.id;
                       testOppose(rollIdGober, target, 'FOR', options, attaquant, 'FOR',
                         options, target.messages, evt,
                         function(resultat, crit, rt1, rt2) {
                           if (resultat == 2) {
                             target.messages.push(target.tokName + " est entièrement avalé par " + attackerTokName);
-                            setTokenAttr(attaquant, 'aGobe', target.token.id + ' ' + target.tokName, evt);
-                            setTokenAttr(target, 'estGobePar', attaquant.token.id + ' ' + attaquant.tokName, evt);
+                            setTokenAttr(attaquant, 'aGobe', IdName(target), evt);
+                            setTokenAttr(target, 'estGobePar', IdName(attaquant), evt);
                             evt.movedTokens = evt.movedTokens || [];
                             evt.movedTokens.push({
                               token: target.token,
@@ -17943,15 +17964,15 @@ var COFantasy = COFantasy || function() {
         _subtype: 'token',
         layer: 'objects'
       });
-    var mObstacle = 0;
-    var pt1 = tokenCenter(tok1);
-    var pt2 = tokenCenter(tok2);
-    var distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
-    var liste_obstacles = [];
+    let mObstacle = 0;
+    let pt1 = tokenCenter(tok1);
+    let pt2 = tokenCenter(tok2);
+    let distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
+    let liste_obstacles = [];
     allToks.forEach(function(obj) {
       if (obj.id == tok1.id || obj.id == tok2.id) return;
-      var objCharId = obj.get('represents');
-      var perso = {
+      let objCharId = obj.get('represents');
+      let perso = {
         token: obj,
         charId: objCharId
       };
@@ -17964,26 +17985,27 @@ var COFantasy = COFantasy || function() {
       )
         return;
       //On regarde si le token est une monture d'un des personnages
-      var attrMonte = tokenAttribute(perso, 'estMontePar');
-      var estMonture = attrMonte.find(function(a) {
-        var cid = a.get('current');
-        return cid == tok1.id || cid == tok2.id;
+      let attrMonte = tokenAttribute(perso, 'estMontePar');
+      let estMonture = attrMonte.find(function(a) {
+        let sp = splitIdName(a.get('current'));
+        if (sp === undefined) return false;
+        return sp.id == tok1.id || sp.id == tok2.id;
       });
       if (estMonture) return;
-      var pt = tokenCenter(obj);
-      var obj_dist = VecMath.length(VecMath.vec(pt1, pt));
+      let pt = tokenCenter(obj);
+      let obj_dist = VecMath.length(VecMath.vec(pt1, pt));
       if (obj_dist > distance_pix) return;
       obj_dist = VecMath.length(VecMath.vec(pt2, pt));
       if (obj_dist > distance_pix) return;
-      var distToTrajectory = VecMath.ptSegDist(pt, pt1, pt2);
+      let distToTrajectory = VecMath.ptSegDist(pt, pt1, pt2);
       // On modélise le token comme un disque
-      var rayonObj = tokenSizeAsCircle(obj) / 2;
+      let rayonObj = tokenSizeAsCircle(obj) / 2;
       if (distToTrajectory > rayonObj) return;
       liste_obstacles.push(obj.get("name"));
       // On calcule un malus proportionnel à l'arc à traverser
       // Pour l'instant, malus = 1 si distance = PIX_PER_UNIT
-      var longueurArc = 2 * Math.sqrt(rayonObj * rayonObj - distToTrajectory * distToTrajectory);
-      var mToken = longueurArc / PIX_PER_UNIT;
+      let longueurArc = 2 * Math.sqrt(rayonObj * rayonObj - distToTrajectory * distToTrajectory);
+      let mToken = longueurArc / PIX_PER_UNIT;
       //malus plus important si l'obstacle est au contact de la cible
       if (distanceCombat(tok2, obj, pageId) === 0) mToken *= 5;
       else mToken *= 3;
@@ -26931,7 +26953,7 @@ var COFantasy = COFantasy || function() {
           sendChat('COF', "/w GM " + token.get('name') + " n'a plus de capitaine");
         } else {
           if (token.id == capitaine.token.id) return;
-          setTokenAttr(perso, 'capitaine', capitaine.token.id + ' ' + nomCapitaine, evt, {
+          setTokenAttr(perso, 'capitaine', IdName(capitaine), evt, {
             maxVal: bonus,
             charAttr: true
           });
@@ -29472,7 +29494,7 @@ var COFantasy = COFantasy || function() {
     if (attrMonteSur.length > 0) {
       //Alors le cavalier va descendre de sa monture
       attrMonteSur = attrMonteSur[0];
-      let monture = persoOfId(attrMonteSur.get('current'), attrMonteSur.get('max'), pageId);
+      const monture = persoOfIdName(attrMonteSur.get('current'), pageId, true);
       evt.deletedAttributes = evt.deletedAttributes || [];
       evt.deletedAttributes.push(attrMonteSur);
       attrMonteSur.remove();
@@ -29496,20 +29518,27 @@ var COFantasy = COFantasy || function() {
     const tokenM = monture.token;
     nomMonture = tokenM.get('name');
     if (attributeAsBool(monture, 'estMontePar')) {
-      sendPerso(cavalier, "ne peut monter sur " + nomMonture + " car " + onGenre(monture, 'il', 'elle') + " a déjà un cavalier");
-      return;
+      //Vérifie si le cavalier existe bien sur cette page.
+      let cavalierBis;
+      let estMontePar = tokenAttribute(monture, 'estMontePar');
+      estMontePar.forEach(function(emp) {
+        if (cavalierBis) return;
+        cavalierBis = persoOfIdName(emp.get('current'), pageId);
+        if (cavalierBis === undefined) emp.remove();
+      });
+      if (cavalierBis) {
+        sendPerso(cavalier, "ne peut monter sur " + nomMonture + " car " + onGenre(monture, 'il', 'elle') + " a déjà un cavalier, " + cavalierBis.token.get('name'));
+        return;
+      }
     }
     if (distanceCombat(tokenC, tokenM, pageId) > 0) {
       sendPerso(cavalier, "est trop loin de " + nomMonture);
       return;
     }
-    setTokenAttr(cavalier, 'monteSur', tokenM.id, evt, {
+    setTokenAttr(cavalier, 'monteSur', IdName(monture), evt, {
       msg: " monte sur " + nomMonture,
-      maxVal: nomMonture
     });
-    setTokenAttr(monture, 'estMontePar', tokenC.id, evt, {
-      maxVal: tokenC.get('name')
-    });
+    setTokenAttr(monture, 'estMontePar', IdName(cavalier), evt);
     setTokenAttr(monture, 'positionSurMonture', tokenC.get('left') - tokenM.get('left'), evt, {
       maxVal: tokenC.get('top') - tokenM.get('top')
     });
@@ -33350,7 +33379,7 @@ var COFantasy = COFantasy || function() {
       bonus = predicateAsInt(samourai, 'voieDeLHonneur', 2);
     setTokenAttr(samourai, 'defiSamourai', bonus, evt, {
       msg: samourai.tokName + " lance un défi à " + cible.tokName,
-      maxVal: cible.token.id + ' ' + cible.tokName
+      maxVal: IdName(cible)
     });
   }
 
@@ -33422,27 +33451,27 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
     //Choix de la caractéristique pour résister : FOR ou DEX
     let caracRes = meilleureCarac('FOR', 'DEX', cible, 10 + modCarac(attaquant, 'force'));
-    var titre = (type == 'étreinte') ? 'Étreinte' : 'Enveloppement';
-    var display = startFramedDisplay(options.playerId, titre, attaquant, {
+    let titre = (type == 'étreinte') ? 'Étreinte' : 'Enveloppement';
+    let display = startFramedDisplay(options.playerId, titre, attaquant, {
       perso2: cible
     });
-    var explications = [];
-    var rollId = 'enveloppement_' + cible.token.id;
+    let explications = [];
+    let rollId = 'enveloppement_' + cible.token.id;
     testOppose(rollId, attaquant, 'FOR', options, cible, caracRes, options,
       explications, evt,
       function(res, crit, rt1, rt2) {
-        var act = " a absorbé ";
+        let act = " a absorbé ";
         switch (res) {
           case 1:
             if (type == 'étreinte') act = " s'est enroulé autour de ";
             explications.push(attaquant.token.get('name') + act + cible.token.get('name'));
-            var attaquantId = attaquant.token.id + ' ' + attaquant.token.get('name');
-            var maxval = difficulte;
+            let attaquantId = IdName(attaquant);
+            let maxval = difficulte;
             if (type == 'étreinte') maxval = 'etreinte ' + difficulte;
             setTokenAttr(cible, 'enveloppePar', attaquantId, evt, {
               maxVal: maxval
             });
-            var cibleId = cible.token.id + ' ' + cible.token.get('name');
+            let cibleId = IdName(cible);
             cible.token.set('left', attaquant.token.get('left'));
             cible.token.set('right', attaquant.token.get('right'));
             toFront(attaquant.token);
@@ -34411,34 +34440,34 @@ var COFantasy = COFantasy || function() {
 
   //!cof-suivre @{selected|token_id} @{target|token_id}
   function suivre(msg) {
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined) return;
     if (cmd.length < 3) {
       error("Pas assez d'arguments pour !cof-suivre", cmd);
       return;
     }
-    var perso = persoOfId(cmd[1], cmd[1], options.pageId);
+    let perso = persoOfId(cmd[1], cmd[1], options.pageId);
     if (perso === undefined) {
       error("Token sélectionne incorrect pour !cof-suivre", cmd);
       return;
     }
-    var pageId = perso.token.get('pageid');
-    var cible = persoOfId(cmd[2], cmd[2], pageId);
+    let pageId = perso.token.get('pageid');
+    let cible = persoOfId(cmd[2], cmd[2], pageId);
     if (cible === undefined) {
       error("Cible incorrecte pour !cof-suivre", cmd);
       return;
     }
-    var evt = {
+    let evt = {
       type: 'Suivre',
       attributes: []
     };
     //D'abord on arrête de suivre si on suivait quelqu'un
-    var attrSuit = nePlusSuivre(perso, pageId, evt, true);
-    var cibleId = cible.token.id + ' ' + cible.token.get('name');
-    var attr = tokenAttribute(cible, 'estSuiviPar');
-    var suiveurs;
+    let attrSuit = nePlusSuivre(perso, pageId, evt, true);
+    let cibleId = IdName(cible);
+    let attr = tokenAttribute(cible, 'estSuiviPar');
+    let suiveurs;
     if (attr.length === 0) {
       attr = setTokenAttr(cible, 'estSuiviPar', '', evt);
       suiveurs = [];
@@ -34451,11 +34480,11 @@ var COFantasy = COFantasy || function() {
       });
       suiveurs = suiveurs.split(':::');
     }
-    var xt = perso.token.get('left');
-    var yt = perso.token.get('top');
-    var xc = cible.token.get('left');
-    var yc = cible.token.get('top');
-    var distance = Math.floor(Math.sqrt((xc - xt) * (xc - xt) + (yc - yt) * (yc - yt)));
+    let xt = perso.token.get('left');
+    let yt = perso.token.get('top');
+    let xc = cible.token.get('left');
+    let yc = cible.token.get('top');
+    let distance = Math.floor(Math.sqrt((xc - xt) * (xc - xt) + (yc - yt) * (yc - yt)));
     if (attrSuit) {
       //alors evt contient déjà attrSuit
       attrSuit.set('current', cibleId);
@@ -34465,7 +34494,7 @@ var COFantasy = COFantasy || function() {
         maxVal: distance
       });
     }
-    suiveurs.push(perso.token.id + ' ' + perso.token.get('name'));
+    suiveurs.push(IdName(perso));
     attr.set('current', suiveurs.join(':::'));
     sendPerso(perso, "suit " + cible.token.get('name'));
     addEvent(evt);
@@ -35282,7 +35311,7 @@ var COFantasy = COFantasy || function() {
                     }
                   });
                   attrsWithTokNames = attrsWithTokNames.filter(function(attr) {
-                    var sp = splitIdName(attr.get('current'));
+                    let sp = splitIdName(attr.get('current'));
                     if (sp === undefined) return false;
                     if (sp.id == tok.id || sp.name == tokName) {
                       evt.attributes.push({
@@ -35441,20 +35470,20 @@ var COFantasy = COFantasy || function() {
       sendChat("L'armure d'eau empêche " + defenseur.token.get('name') + " d'être aggripé");
       return;
     }
-    var evt = {
+    const evt = {
       type: "Agripper (démon)"
     };
-    var options = {
+    let options = {
       pasDeDmg: true
     };
     if (cmd.length > 3) options.labelArmeAttaquant = cmd[3];
-    var playerId = getPlayerIdFromMsg(msg);
+    const playerId = getPlayerIdFromMsg(msg);
     attaqueContactOpposee(playerId, attaquant, defenseur, evt, options,
       function(res, display, explications) {
         if (res.succes) {
           addLineToFramedDisplay(display, attaquant.tokName + " agrippe fermement " + defenseur.tokName);
-          setTokenAttr(attaquant, 'agrippe', defenseur.token.id + ' ' + defenseur.tokName, evt);
-          setTokenAttr(defenseur, 'estAgrippePar', attaquant.token.id + ' ' + attaquant.tokName, evt);
+          setTokenAttr(attaquant, 'agrippe', IdName(defenseur), evt);
+          setTokenAttr(defenseur, 'estAgrippePar', IdName(attaquant), evt);
           setTokenAttr(defenseur, 'agrippeParUnDemon', true, evt);
         } else {
           addLineToFramedDisplay(display, defenseur.tokName + " échappe à la tentative de saisie.");
@@ -36774,7 +36803,7 @@ var COFantasy = COFantasy || function() {
         max: getInit()
       }, {
         name: 'objetAnimePar',
-        current: lanceur.token.id + ' ' + lanceur.token.get('name')
+        current: IdName(lanceur)
       }, {
         name: 'predicats_script',
         current: 'nonVivant'
@@ -40170,7 +40199,7 @@ var COFantasy = COFantasy || function() {
     //On regarde d'abord si perso est sur une monture
     let attrMonteSur = tokenAttribute(perso, 'monteSur');
     if (attrMonteSur.length > 0) {
-      let monture = persoOfId(attrMonteSur[0].get('current'), attrMonteSur[0].get('max'), pageId);
+      let monture = persoOfIdName(attrMonteSur[0].get('current'), pageId, true);
       if (monture === undefined) {
         sendPerso(perso, "descend de sa monture");
         attrMonteSur[0].remove();
@@ -40288,7 +40317,7 @@ var COFantasy = COFantasy || function() {
     //si non, perso est peut-être une monture
     let attrMontePar = tokenAttribute(perso, 'estMontePar');
     attrMontePar.forEach(function(a) {
-      let cavalier = persoOfId(a.get('current'), a.get('max'), pageId);
+      let cavalier = persoOfIdName(a.get('current'), pageId);
       if (cavalier === undefined) {
         a.remove();
         return;
@@ -40419,12 +40448,14 @@ var COFantasy = COFantasy || function() {
         roundMarker.set('top', y);
       } else {
         // Cas spéciaux du cavaliers : au tour du cavalier, l'init_dynamique suit la monture
-        let estMontePar = tokenAttribute(perso, "estMontePar");
-        if (estMontePar.length > 0 && stateCOF.activeTokenId == estMontePar[0].get("current")) {
-          let cavalierId = estMontePar[0].get("current");
-          let cavalier = persoOfId(cavalierId);
-          roundMarker.set('left', cavalier.token.get('left'));
-          roundMarker.set('top', cavalier.token.get('top'));
+        let estMontePar = tokenAttribute(perso, 'estMontePar');
+        if (estMontePar.length > 0) {
+          let sp = splitIdName(estMontePar[0].get('current'));
+          if (sp && stateCOF.activeTokenId == sp.id) {
+            let cavalier = persoOfId(sp.id);
+            roundMarker.set('left', cavalier.token.get('left'));
+            roundMarker.set('top', cavalier.token.get('top'));
+          }
         }
       }
     }
@@ -40563,7 +40594,7 @@ var COFantasy = COFantasy || function() {
       //Cas des tokens non mooks
       let attrMonteSur = tokenAttribute(perso, 'monteSur');
       if (attrMonteSur.length > 0) {
-        let monture = persoOfId(attrMonteSur[0].get('current'), attrMonteSur[0].get('max'), pageId);
+        let monture = persoOfIdName(attrMonteSur[0].get('current'), pageId);
         if (monture === undefined) {
           sendPerso(perso, "descend de sa monture");
           attrMonteSur[0].remove();
