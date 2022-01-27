@@ -9803,7 +9803,7 @@ var COFantasy = COFantasy || function() {
         let cavalierEm = predicateAsInt(attaquant, 'cavalierEmerite');
         if (cavalierEm) {
           attBonus += cavalierEm;
-          let explCavalierEmerite = "avalier émérite => +" + cavalierEm + " en Attaque";
+          let explCavalierEmerite = "Cavalier émérite => +" + cavalierEm + " en Attaque";
           if (options.displayName) {
             explCavalierEmerite = attaquant.tokName + " est un c" + explCavalierEmerite;
           } else {
@@ -15336,8 +15336,8 @@ var COFantasy = COFantasy || function() {
                   (predicateAsBool(target, 'actionLibre') && (
                     ef.effet == 'ralentiTemp' ||
                     ef.effet == 'immobiliseTemp' ||
-                    ef.effet == 'paralyseTemp')) ||
-                  ef.effet == 'paralyseGoule' ||
+                    ef.effet == 'paralyseTemp' ||
+                    ef.effet == 'paralyseGoule')) ||
                   (ef.entrave && ef.effet != 'paralyseTemp' && ef.effet != 'paralyseGoule' && predicateAsInt(target, 'voieDeLArchange', 1) > 1 && attributeAsBool(target, 'formeDAnge'))
                 ) {
                   target.messages.push(target.tokName + " reste libre de ses mouvements !");
@@ -42362,7 +42362,9 @@ on('ready', function() {
     COFantasy.scriptVersionToCharacter(c, 11);
   });
   COF_loaded = true;
-  log("COFantasy " + scriptVersion + " loaded");
+  let load_msg = "COFantasy " + scriptVersion;
+  if (COF_BETA) load_msg += ' beta';
+  log(load_msg + " loaded");
 });
 
 on("chat:message", function(msg) {
