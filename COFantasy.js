@@ -1566,9 +1566,9 @@ var COFantasy = COFantasy || function() {
 
   //Si evt est défini, alors on considère qu'il faut y mettre la valeur actuelle
   function updateCurrentBar(perso, barNumber, val, evt, maxVal) {
-    var token = perso.token;
-    var prevToken;
-    var HTdeclared;
+    let token = perso.token;
+    let prevToken;
+    let HTdeclared;
     try {
       HTdeclared = HealthColors;
     } catch (e) {
@@ -1579,14 +1579,14 @@ var COFantasy = COFantasy || function() {
       affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
       prevToken = JSON.parse(JSON.stringify(token));
     }
-    var fieldv = 'bar' + barNumber + '_value';
-    var fieldm;
+    let fieldv = 'bar' + barNumber + '_value';
+    let fieldm;
     if (maxVal) fieldm = 'bar' + barNumber + '_max';
-    var attrId = token.get('bar' + barNumber + '_link');
-    var attr;
+    let attrId = token.get('bar' + barNumber + '_link');
+    let attr;
     if (attrId !== '') attr = getObj('attribute', attrId);
     if (attr === undefined) {
-      var prevVal = token.get(fieldv);
+      let prevVal = token.get(fieldv);
       if (evt) affectToken(token, fieldv, prevVal, evt);
       token.set(fieldv, val);
       if (maxVal) {
@@ -1613,15 +1613,15 @@ var COFantasy = COFantasy || function() {
     if (HTdeclared) HealthColors.Update(token, prevToken);
     //Gestion du lien des PVs entre familier et son maître
     if (barNumber == 1) {
-      let persoLie = charAttribute(perso.charId, 'PVPartagesAvec');
-      if (persoLie.length > 0) {
-        persoLie = persoLie[0].get('current');
-        persoLie = findObjs({
+      let nomPersoLie = charAttribute(perso.charId, 'PVPartagesAvec');
+      if (nomPersoLie.length > 0) {
+        nomPersoLie = nomPersoLie[0].get('current');
+        let charLie = findObjs({
           _type: 'character',
-          name: persoLie
+          name: nomPersoLie
         });
-        if (persoLie.length > 0) {
-          let attrLie = charAttribute(persoLie[0].id, 'pv', {
+        if (charLie.length > 0) {
+          let attrLie = charAttribute(charLie[0].id, 'pv', {
             caseInsensitive: true
           });
           if (attrLie.length > 0) {
@@ -1634,6 +1634,27 @@ var COFantasy = COFantasy || function() {
               });
             }
             attrLie.setWithWorker(aset);
+            if (val < 1 && evt) {//Il faut aussi faire mourir l'autre perso
+              let pageId = token.get('pageid');
+              let charIdLie = charLie[0].id;
+              let tokensLies = findObjs({
+                _type:'graphic',
+                _subtype: 'token',
+                _pageid: pageId,
+                represents: charIdLie
+              });
+              if (tokensLies.length === 0) {
+              tokensLies = findObjs({
+                _type:'graphic',
+                _subtype: 'token',
+                represents: charIdLie
+              });
+              }
+              if (tokensLies.length > 0) {
+                let persoLie = {charId:charIdLie, token:tokensLies[0]};
+                mort(persoLie, undefined, evt);
+              }
+            }
           }
         }
       }
@@ -26216,7 +26237,7 @@ var COFantasy = COFantasy || function() {
             pvsPartages.add(attr.get('current'));
           });
           if (ressourceLimiteCibleParJour) {
-            var utilisations =
+            let utilisations =
               attributeAsInt(cible, ressourceLimiteCibleParJour, options.limiteCibleParJour);
             if (utilisations === 0) {
               sendPerso(cible, "ne peut plus bénéficier de " + effet + " aujourd'hui");
@@ -26229,13 +26250,13 @@ var COFantasy = COFantasy || function() {
             finSoin();
             return;
           }
-          var token2 = cible.token;
-          var nomCible = token2.get('name');
-          var sujet = onGenre(cible, 'il', 'elle');
-          var Sujet = onGenre(cible, 'Il', 'Elle');
+          let token2 = cible.token;
+          let nomCible = token2.get('name');
+          let sujet = onGenre(cible, 'il', 'elle');
+          let Sujet = onGenre(cible, 'Il', 'Elle');
           if (options.portee !== undefined) {
             if (options.puissantPortee || options.tempeteDeManaPortee) options.portee = options.portee * 2;
-            var distance = distanceCombat(soigneur.token, token2, pageId);
+            let distance = distanceCombat(soigneur.token, token2, pageId);
             if (distance > options.portee) {
               if (display)
                 addLineToFramedDisplay(display, "<b>" + nomCible + "</b> : trop loin pour le soin.");
