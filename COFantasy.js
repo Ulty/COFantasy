@@ -7747,6 +7747,18 @@ var COFantasy = COFantasy || function() {
           }
           scope.forceMinimum = forceMin;
           return;
+        case 'arcComposite':
+          if (cmd.length < 2) {
+            error("Il faut indiquer le bonus de l'arc composite", cmd);
+            return;
+          }
+          let arcComposite = parseInt(cmd[1]);
+          if (isNaN(arcComposite)) {
+            error("Le bonus d'arc composite doit être un nombre", cmd);
+            return;
+          }
+          scope.arcComposite = arcComposite;
+          return;
         case 'incrDmgCoef':
           scope.dmgCoef = (scope.dmgCoef || 1);
           if (cmd.length > 1) {
@@ -10032,7 +10044,7 @@ var COFantasy = COFantasy || function() {
       attBonus -= 2;
       explications.push("Des os sont brisés => -2 en Attaque");
     }
-    var attrGobe = tokenAttribute(attaquant, 'estGobePar');
+    let attrGobe = tokenAttribute(attaquant, 'estGobePar');
     if (attrGobe.length > 0) {
       var gobant = persoOfIdName(attrGobe[0].get('current'), attaquant.token.get('pageid'));
       if (gobant === undefined) {
@@ -10054,6 +10066,24 @@ var COFantasy = COFantasy || function() {
       options.bonusDM = options.bonusDM || 0;
       options.bonusDM += 1;
       explications.push("Haches et marteaux => +1 en Att. et DM");
+    }
+    if (options.arcComposite) {
+      let force = modCarac(attaquant, 'force');
+      if (force > options.arcComposite) force = options.arcComposite;
+      let msg = "Arc composite => ";
+      if (force < 0) msg += force + " DM";
+      else if (force > 0) msg += '+' + force + " DM";
+      if (force) {
+        options.bonusDM = options.bonusDM || 0;
+        options.bonusDM += force;
+      }
+      if (force < options.arcComposite) {
+        if (force === 0) msg += "-2 Att.";
+        else if (force < 0) msg += " et -2 Att.";
+        else msg += "mais -2 Att.";
+        attBonus -= 2;
+      }
+      explications.push(msg);
     }
     if (attributeAsBool(attaquant, 'fievreux')) {
       attBonus -= 2;
