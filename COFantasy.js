@@ -837,17 +837,17 @@ var COFantasy = COFantasy || function() {
       roundMarkerSpec.width = width;
       roundMarkerSpec.height = width;
       roundMarkerSpec.imgsrc = stateCOF.options.images.val.image_init.val;
-      var localImage;
-      var gmNotes = token.get('gmnotes');
+      let localImage;
+      let gmNotes = token.get('gmnotes');
       try {
         gmNotes = _.unescape(decodeURIComponent(gmNotes)).replace('&nbsp;', ' ');
         gmNotes = linesOfNote(gmNotes);
-        gmNotes.forEach(function(l) {
-          if (localImage) return;
+        gmNotes.find(function(l) {
           if (l.startsWith('init_aura:')) {
             roundMarkerSpec.imgsrc = l.substring(10).trim();
-            localImage = true;
+            return true;
           }
+          return false;
         });
       } catch (uriError) {
         log("Erreur de décodage URI dans la note GM de " + token.get('name') + " : " + gmNotes);
@@ -8995,17 +8995,68 @@ var COFantasy = COFantasy || function() {
     return attr;
   }
 
+  function marcheSylvestreActive(perso) {
+    if (attributeAsBool(perso, 'marcheSylvestre')) return true;
+    if (predicateAsBool(perso, 'marcheSylvestre')) {
+      let x = perso.token.get('left');
+      let y = perso.token.get('top');
+      let tokens = findObjs({
+        _type: 'graphic',
+        _pageid: perso.token.get('pageid'),
+        layer: 'map'
+      });
+      let res = tokens.find(function(token) {
+        let xt = token.get('left');
+        let yt = token.get('top');
+        let w = token.get('width');
+        let h = token.get('height');
+        if (xt-w/2 <= x && x <= xt+w/2 && yt-h/2 <= y && y <= yt+h/2) {
+          let gmNotes = token.get('gmnotes');
+          if (gmNotes === '') return false;
+          try {
+            gmNotes = _.unescape(decodeURIComponent(gmNotes)).replace('&nbsp;', ' ');
+            gmNotes = linesOfNote(gmNotes);
+            let r = gmNotes.find(function(l) {
+              if (l.startsWith('terrainDifficile')) {
+                let index = l.indexOf(':');
+                if (index < 1) return true;
+                l = l.substring(index + 1).trim().split(' ');
+                if (l.length > 1 && l[0] == 'disque') {
+                  let rayon = parseInt(l[1]) / 2;
+                  if (isNaN(rayon) || rayon < 0) {
+                    error("Rayon de terrain difficile non reconnu", l);
+                    return true;
+                  }
+                  return Math.sqrt((x - xt) * (x - xt) + (y - yt) * (y - yt)) <= rayon;
+                }
+                error("Zone de terrain difficile non reconnue", l);
+                return true;
+              }
+              return false;
+            });
+            return r !== undefined;
+          } catch (uriError) {
+            log("Erreur de décodage URI dans la note GM de " + token.get('name') + " : " + gmNotes);
+          }
+        }
+        return false;
+      });
+      return res !== undefined;
+    }
+    return false;
+  }
+
   // bonus d'attaque d'un token, indépendament des options
   // Mise en commun pour attack et attaque-magique
   function bonusDAttaque(personnage, explications, evt) {
     explications = explications || [];
-    var tempAttkMod; // Utilise la barre 3 de l'attaquant
+    let tempAttkMod; // Utilise la barre 3 de l'attaquant
     tempAttkMod = parseInt(personnage.token.get('bar3_value'));
     if (tempAttkMod === undefined || isNaN(tempAttkMod) || tempAttkMod === "") {
       tempAttkMod = 0;
     }
-    var attBonus = tempAttkMod;
-    var fortifie = attributeAsInt(personnage, 'fortifie', 0);
+    let attBonus = tempAttkMod;
+    let fortifie = attributeAsInt(personnage, 'fortifie', 0);
     if (fortifie > 0) {
       attBonus += 3;
       fortifie--;
@@ -9018,8 +9069,9 @@ var COFantasy = COFantasy || function() {
     }
     attBonus += charAttributeAsInt(personnage, 'actionConcertee', 0);
     if (attributeAsBool(personnage, 'chantDesHeros')) {
-      var bonusChantDesHeros = getValeurOfEffet(personnage, 'chantDesHeros', 1);
-      var chantDesHerosIntense = attributeAsInt(personnage, 'chantDesHerosTempeteDeManaIntense', 0);
+      let bonusChantDesHeros = getValeurOfEffet(personnage, 'chantDesHeros', 1);
+      let chantDesHerosIntense =
+        attributeAsInt(personnage, 'chantDesHerosTempeteDeManaIntense', 0);
       bonusChantDesHeros += chantDesHerosIntense;
       attBonus += bonusChantDesHeros;
       explications.push("Chant des héros => +" + bonusChantDesHeros + " en Attaque");
@@ -9027,8 +9079,8 @@ var COFantasy = COFantasy || function() {
         removeTokenAttr(personnage, 'chantDesHerosTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(personnage, 'benediction')) {
-      var bonusBenediction = getValeurOfEffet(personnage, 'benediction', 1);
-      var benedictionIntense = attributeAsInt(personnage, 'benedictionTempeteDeManaIntense', 0);
+      let bonusBenediction = getValeurOfEffet(personnage, 'benediction', 1);
+      let benedictionIntense = attributeAsInt(personnage, 'benedictionTempeteDeManaIntense', 0);
       bonusBenediction += benedictionIntense;
       attBonus += bonusBenediction;
       explications.push("Bénédiction => +" + bonusBenediction + " en Attaque");
@@ -9040,7 +9092,7 @@ var COFantasy = COFantasy || function() {
       explications.push("Lame de lignée perdue => -1 en Attaque");
     }
     if (attributeAsBool(personnage, 'strangulation')) {
-      var malusStrangulation =
+      let malusStrangulation =
         1 + attributeAsInt(personnage, 'dureeStrangulation', 0);
       attBonus -= malusStrangulation;
       explications.push("L'attaquant est étranglé => -" + malusStrangulation + " en Attaque");
@@ -9049,11 +9101,11 @@ var COFantasy = COFantasy || function() {
       attBonus -= 5;
       explications.push("Attaquant à terre => -5 en Attaque");
     }
-    var attrPosture = tokenAttribute(personnage, 'postureDeCombat');
+    let attrPosture = tokenAttribute(personnage, 'postureDeCombat');
     if (attrPosture.length > 0) {
       attrPosture = attrPosture[0];
-      var posture = attrPosture.get('max');
-      var postureVal;
+      let posture = attrPosture.get('max');
+      let postureVal;
       if (posture.startsWith('ATT')) {
         postureVal = parseInt(attrPosture.get('current'));
         attBonus -= postureVal;
@@ -9072,10 +9124,10 @@ var COFantasy = COFantasy || function() {
       attBonus -= 4;
       explications.push("Cadavre animé => -2 en Attaque");
     }
-    var bonusCapitaine = aUnCapitaine(personnage, evt);
+    let bonusCapitaine = aUnCapitaine(personnage, evt);
     if (bonusCapitaine) {
       attBonus += parseInt(bonusCapitaine);
-      var msgCapitaine = "Un ";
+      let msgCapitaine = "Un ";
       if (bonusCapitaine > 2) msgCapitaine += "commandant";
       else msgCapitaine += "capitaine";
       msgCapitaine += " donne des ordres => +" + bonusCapitaine + " en Attaque et aux DMs";
@@ -9083,7 +9135,7 @@ var COFantasy = COFantasy || function() {
       explications.push(msgCapitaine);
     }
     if (attributeAsBool(personnage, 'forceDeGeant')) {
-      var bonusForceDeGeant = getValeurOfEffet(personnage, 'forceDeGeant', 2);
+      let bonusForceDeGeant = getValeurOfEffet(personnage, 'forceDeGeant', 2);
       attBonus += bonusForceDeGeant;
       explications.push("Force de géant => +" + bonusForceDeGeant + " en Attaque");
     }
@@ -9115,7 +9167,7 @@ var COFantasy = COFantasy || function() {
       attBonus -= 2;
       explications.push("Arme brûlante => -2 en Attaque");
     }
-    if (attributeAsBool(personnage, 'marcheSylvestre')) {
+    if (marcheSylvestreActive(personnage)) {
       attBonus += 2;
       explications.push("Marche sylvestre : +2 en Attaque");
     }
@@ -9497,7 +9549,7 @@ var COFantasy = COFantasy || function() {
     }
     if (options.sortilege)
       defense += predicateAsInt(target, 'DEF_magie', 0);
-    if (attributeAsBool(target, 'marcheSylvestre')) {
+    if (marcheSylvestreActive(target)) {
       defense += 2;
       explications.push("Marche sylvestre => +2 DEF");
     }
@@ -11046,7 +11098,7 @@ var COFantasy = COFantasy || function() {
         evt.attributes.push(evtAttr);
         armeActuelle.set('current', labelArme);
         if (labelArmeGauche) armeActuelle.set('max', labelArmeGauche);
-        else if (labelArmeActuelleGauche && nouvelleArme.deuxMains) 
+        else if (labelArmeActuelleGauche && nouvelleArme.deuxMains)
           armeActuelle.set('max', '');
       }
     } else { //On n'avait pas d'arme en main
@@ -21715,7 +21767,7 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  //pour ce débarasser des balises html
+  //pour se débarasser des balises html
   // et avoir un tableau de lignes
   function linesOfNote(note) {
     note = note.trim();
@@ -21727,13 +21779,13 @@ var COFantasy = COFantasy || function() {
   }
 
   function charactersInHandout(note, nomEquipe) {
-    var names = linesOfNote(note);
-    var persos = new Set();
+    let names = linesOfNote(note);
+    let persos = new Set();
     names.forEach(function(name) {
       name = name.replace(/<(?:.|\s)*?>/g, ''); //Pour enlever les <h2>, etc
       name = name.trim();
       if (name.length === 0) return;
-      var characters = findObjs({
+      let characters = findObjs({
         _type: 'character',
       });
       characters = characters.filter(function(c) {
@@ -22263,12 +22315,12 @@ var COFantasy = COFantasy || function() {
               if (label == labelArmePrincipale || labelGauche == labelArmeGauche) continue;
               let arme = armes[label];
               if (arme === undefined) {
-                error("Impossible de trouver l'arme de label " + label + " mentionnée dans le prédicat actionDegainer" + (i-1), armes);
+                error("Impossible de trouver l'arme de label " + label + " mentionnée dans le prédicat actionDegainer" + (i - 1), armes);
                 continue;
               }
               let armeGauche = armes[labelGauche];
               if (armeGauche === undefined) {
-                error("Impossible de trouver l'arme de label " + labelGauche + " mentionnée dans le prédicat actionDegainer" + (i-1), armes);
+                error("Impossible de trouver l'arme de label " + labelGauche + " mentionnée dans le prédicat actionDegainer" + (i - 1), armes);
                 continue;
               }
               degainer += arme.armenom + " et " + armeGauche.armenom + "," + label + ' ' + labelGauche + "|";
@@ -22282,7 +22334,7 @@ var COFantasy = COFantasy || function() {
               if (labels == labelArmePrincipale || labels == labelArmeGauche) continue;
               let arme = armes[labels];
               if (arme === undefined) {
-                error("Impossible de trouver l'arme de label " + labels + " mentionnée dans le prédicat actionDegainer" + (i-1), armes);
+                error("Impossible de trouver l'arme de label " + labels + " mentionnée dans le prédicat actionDegainer" + (i - 1), armes);
                 continue;
               }
               labelsVus.add(labels);
@@ -24255,7 +24307,8 @@ var COFantasy = COFantasy || function() {
             height: diametre,
             layer: 'map',
             isDrawing: true,
-            name: 'Prison végétale'
+            name: 'Prison végétale',
+            gmnotes: 'terrainDifficile:disque ' + Math.floor(diametre)
           });
           if (t) {
             toFront(t);

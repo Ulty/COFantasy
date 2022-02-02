@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.05
 ### Capacités
+* Amélioration de la prise en charge de la marche sylvestre.
 * Explosion finale de la voie des créatures élémentaires
 
 ### Corrections de bugs
