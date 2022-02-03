@@ -3921,7 +3921,8 @@ var COFantasy = COFantasy || function() {
       }
       return mod - Math.floor(attributeAsInt(perso, 'affaiblissementde' + carac, 0) / 2);
     }
-    let valCarac = ficheAttributeAsInt(perso, carac, 10) - attributeAsInt(perso, 'affaiblissementde' + carac, 0);
+    let valCarac = 
+      ficheAttributeAsInt(perso, carac, 10) - attributeAsInt(perso, 'affaiblissementde' + carac, 0);
     let res = Math.floor((valCarac - 10) / 2);
     if ((carac == 'force' || carac == 'FORCE') && attributeAsBool(perso, 'mutationMusclesHypertrophies')) res += 2;
     else if ((carac == 'DEXTERITE' || carac == 'dexterite') && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) res += 4;
@@ -8822,7 +8823,7 @@ var COFantasy = COFantasy || function() {
     // current initiative.
     // Tokens appearing before the turn are sorted
     if (!Campaign().get('initiativepage')) evt.initiativepage = false;
-    var debutCombat = false;
+    let debutCombat = false;
     if (!stateCOF.combat) { //actions de début de combat
       evt.combat = false;
       evt.combat_pageid = stateCOF.combat_pageid;
@@ -8859,14 +8860,14 @@ var COFantasy = COFantasy || function() {
       }
       if (!isActive(perso)) return;
       if (predicateAsBool(perso, 'aucuneActionCombat')) return;
-      var init = persoInit(perso, evt);
+      let init = persoInit(perso, evt);
       // On place le token à sa place dans la liste du tour
-      var dejaIndex =
+      let dejaIndex =
         to.dejaAgi.findIndex(function(elt) {
           return (elt.id == perso.token.id);
         });
       if (dejaIndex == -1) { //Le personnage doit encore agir
-        var push = true;
+        let push = true;
         to.pasAgi =
           to.pasAgi.filter(function(elt) {
             if (elt.id == perso.token.id) {
@@ -8883,6 +8884,7 @@ var COFantasy = COFantasy || function() {
           }
           to.pasAgi.push({
             id: perso.token.id,
+            _pageid: perso.token.get('pageid'),
             pr: init,
             custom: ''
           });
@@ -8892,7 +8894,7 @@ var COFantasy = COFantasy || function() {
       }
     });
     if (debutCombat) { //On cherche si un des personnages de la carte a la capacité Prescience
-      var allToks =
+      let allToks =
         findObjs({
           _type: 'graphic',
           _pageid: stateCOF.combat_pageid,
@@ -8913,7 +8915,7 @@ var COFantasy = COFantasy || function() {
           dernieresPositions: []
         };
         allToks.forEach(function(tok) {
-          var ci = tok.get('represents');
+          let ci = tok.get('represents');
           if (ci == undefined) return;
           stateCOF.prescience.dernieresPositions.push({
             token: tok,
@@ -9010,7 +9012,7 @@ var COFantasy = COFantasy || function() {
         let yt = token.get('top');
         let w = token.get('width');
         let h = token.get('height');
-        if (xt-w/2 <= x && x <= xt+w/2 && yt-h/2 <= y && y <= yt+h/2) {
+        if (xt - w / 2 <= x && x <= xt + w / 2 && yt - h / 2 <= y && y <= yt + h / 2) {
           let gmNotes = token.get('gmnotes');
           if (gmNotes === '') return false;
           try {
@@ -12423,7 +12425,8 @@ var COFantasy = COFantasy || function() {
       (attributeAsBool(target, 'intangibleInvisible') && attributeAsInt(target, 'intangibleInvisibleValeur', 1)) ||
       attributeAsBool(target, 'ombreMortelle') ||
       (options.aoe === undefined &&
-        attributeAsBool(target, 'formeGazeuse'))) {
+        attributeAsBool(target, 'formeGazeuse')) ||
+      (predicateAsBool(target, 'apparition') && !options.energiePositive)) {
       expliquer("L'attaque passe à travers de " + target.tokName);
       if (displayRes) displayRes('0', 0, 0);
       return 0;
@@ -20682,13 +20685,13 @@ var COFantasy = COFantasy || function() {
         doNatureNourriciere(action.perso, options);
         return true;
       case 'nextTurn':
-        let turnOrder = Campaign().get("turnorder");
+        let turnOrder = Campaign().get('turnorder');
         if (turnOrder === '') return false; // nothing in the turn order
         turnOrder = JSON.parse(turnOrder);
         if (turnOrder.length < 1) return false; // Juste le compteur de tour
-        var lastTurn = turnOrder.shift();
+        let lastTurn = turnOrder.shift();
         turnOrder.push(lastTurn);
-        Campaign().set("turnorder", JSON.stringify(turnOrder));
+        Campaign().set('turnorder', JSON.stringify(turnOrder));
         nextTurn(Campaign(), options);
         return true;
       case 'nouveauJour':
@@ -22563,9 +22566,9 @@ var COFantasy = COFantasy || function() {
   }
 
   function getTurnOrder(evt) {
-    var turnOrder = Campaign().get('turnorder');
+    let turnOrder = Campaign().get('turnorder');
     evt.turnorder = evt.turnorder || turnOrder;
-    if (turnOrder === "") {
+    if (turnOrder === '') {
       turnOrder = [{
         id: "-1",
         pr: 1,
@@ -22577,7 +22580,7 @@ var COFantasy = COFantasy || function() {
     } else {
       turnOrder = JSON.parse(turnOrder);
     }
-    var indexTour = turnOrder.findIndex(function(elt) {
+    let indexTour = turnOrder.findIndex(function(elt) {
       return (elt.id == "-1" && elt.custom == "Tour");
     });
     if (indexTour == -1) {
@@ -22591,7 +22594,7 @@ var COFantasy = COFantasy || function() {
       evt.tour = stateCOF.tour;
       stateCOF.tour = 1;
     }
-    var res = {
+    let res = {
       tour: turnOrder[indexTour],
       pasAgi: turnOrder.slice(0, indexTour),
       dejaAgi: turnOrder.slice(indexTour + 1, turnOrder.length)
@@ -22609,9 +22612,9 @@ var COFantasy = COFantasy || function() {
         if (b.pr < a.pr) return -1;
         // Priorité aux joueurs
         // Premier critère : la barre de PV des joueurs est liée
-        var tokenA = getObj('graphic', a.id);
+        let tokenA = getObj('graphic', a.id);
         if (tokenA === undefined) return 1;
-        var tokenB = getObj('graphic', b.id);
+        let tokenB = getObj('graphic', b.id);
         if (tokenB === undefined) return -1;
         if (tokenA.get('bar1_link') === '') {
           if (tokenB.get('bar1_link') === '') return 0;
@@ -22619,28 +22622,28 @@ var COFantasy = COFantasy || function() {
         }
         if (tokenB.get('bar1_link') === '') return -1;
         // Deuxième critère : les joueurs ont un DV
-        var charIdA = tokenA.get('represents');
+        let charIdA = tokenA.get('represents');
         if (charIdA === '') return 1;
-        var charIdB = tokenB.get('represents');
+        let charIdB = tokenB.get('represents');
         if (charIdB === '') return -1;
-        var persoA = {
+        let persoA = {
           token: tokenA,
           charId: charIdA
         };
-        var persoB = {
+        let persoB = {
           token: tokenB,
           charId: charIdB
         };
-        var dvA = ficheAttributeAsInt(persoA, "DV", 0);
-        var dvB = ficheAttributeAsInt(persoB, "DV", 0);
+        let dvA = ficheAttributeAsInt(persoA, "DV", 0);
+        let dvB = ficheAttributeAsInt(persoB, "DV", 0);
         if (dvA === 0) {
           if (dvB === 0) return 0;
           return 1;
         }
         if (dvB === 0) return -1;
         //Entre joueurs, priorité à la plus grosse sagesse
-        var sagA = ficheAttributeAsInt(persoA, 'sagesse', 10);
-        var sagB = ficheAttributeAsInt(persoB, 'sagesse', 10);
+        let sagA = caracCourante(persoA, 'sagesse');
+        let sagB = caracCourante(persoB, 'sagesse');
         if (sagA < sagB) return 1;
         if (sagA > sagB) return -1;
         return 0;
@@ -22648,7 +22651,7 @@ var COFantasy = COFantasy || function() {
       setActiveToken(to.pasAgi[0].id, evt);
     }
     to.pasAgi.push(to.tour);
-    var turnOrder = to.pasAgi.concat(to.dejaAgi);
+    let turnOrder = to.pasAgi.concat(to.dejaAgi);
     Campaign().set('turnorder', JSON.stringify(turnOrder));
   }
 
@@ -23958,34 +23961,34 @@ var COFantasy = COFantasy || function() {
   }
 
   function echangeInit(msg) {
-    var args = msg.content.split(" ");
+    let args = msg.content.split(" ");
     if (args.length < 4) {
       error("Pas assez d'arguments pour !cof-echange-init: " + msg.content, args);
       return;
     }
-    var perso1 = persoOfId(args[1], args[1]);
+    let perso1 = persoOfId(args[1], args[1]);
     if (perso1 === undefined) {
       error("le premier argument n'est pas un token valide", args[1]);
       return;
     }
-    var perso2 = persoOfId(args[2], args[2]);
+    let perso2 = persoOfId(args[2], args[2]);
     if (perso2 === undefined) {
       error("le second argument n'est pas un token valide", args[2]);
       return;
     }
-    var attackBonus = parseInt(args[3]);
+    let attackBonus = parseInt(args[3]);
     if (isNaN(attackBonus) || attackBonus < 1 || attackBonus > 2) {
       error("Le troisième argument n'est pas un nombre", args[3]);
       return;
     }
-    var evt = {
+    let evt = {
       type: "echange_init"
     };
-    var to = getTurnOrder(evt);
-    var tourTok1 = to.pasAgi.findIndex(function(t) {
+    let to = getTurnOrder(evt);
+    let tourTok1 = to.pasAgi.findIndex(function(t) {
       return (t.id == perso1.token.id);
     });
-    var tourTok2 = to.pasAgi.findIndex(function(t) {
+    let tourTok2 = to.pasAgi.findIndex(function(t) {
       return (t.id == perso2.token.id);
     });
     if (tourTok1 < 0) {
@@ -23996,8 +23999,8 @@ var COFantasy = COFantasy || function() {
       sendPerso(perso2, "a déjà agit, pas moyen d'échanger son initiative");
       return;
     }
-    var pr1 = to.pasAgi[tourTok1].pr;
-    var pr2 = to.pasAgi[tourTok2].pr;
+    let pr1 = to.pasAgi[tourTok1].pr;
+    let pr2 = to.pasAgi[tourTok2].pr;
     if (pr1 == pr2) {
       sendPerso(perso1, "a la même initiative que " + perso2.token.get('name'));
       return;
@@ -24012,13 +24015,13 @@ var COFantasy = COFantasy || function() {
     }
     to.pasAgi[tourTok1].pr = pr2;
     to.pasAgi[tourTok2].pr = pr1;
-    var t1 = to.pasAgi[tourTok1];
+    let t1 = to.pasAgi[tourTok1];
     to.pasAgi[tourTok1] = to.pasAgi[tourTok2];
     to.pasAgi[tourTok2] = t1;
     updateNextInit(perso1);
     updateNextInit(perso2);
     to.pasAgi.push(to.tour);
-    var turnOrder = to.pasAgi.concat(to.dejaAgi);
+    let turnOrder = to.pasAgi.concat(to.dejaAgi);
     Campaign().set('turnorder', JSON.stringify(turnOrder));
     addEvent(evt);
   }
@@ -27094,12 +27097,12 @@ var COFantasy = COFantasy || function() {
   }
 
   function tokensEnCombat() {
-    var cmp = Campaign();
-    var turnOrder = cmp.get('turnorder');
+    let cmp = Campaign();
+    let turnOrder = cmp.get('turnorder');
     if (turnOrder === '') return []; // nothing in the turn order
     turnOrder = JSON.parse(turnOrder);
     if (turnOrder.length === 0) return [];
-    var tokens = [];
+    let tokens = [];
     turnOrder.forEach(function(a) {
       if (a.id == -1) return;
       tokens.push({
@@ -35048,7 +35051,7 @@ var COFantasy = COFantasy || function() {
   // msg n'est pas forcément présent
   function nextTurnChargeFantastique(msg, oldTurnOrder) {
     if (oldTurnOrder) Campaign().set('turnorder', oldTurnOrder);
-    var cf = stateCOF.chargeFantastique;
+    let cf = stateCOF.chargeFantastique;
     if (cf === undefined) {
       sendChat("Pas de charge fantastique en cours");
       return;
@@ -35057,11 +35060,11 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "ne peut utiliser ce bouton maintenant");
       return;
     }
-    var evt = {
+    let evt = {
       type: "Tour de charge fantastique",
       chargeFantastique: cf
     };
-    var tid, perso;
+    let tid, perso;
     if (cf.mouvements && cf.mouvements.length > 0) {
       evt.chargeFantastique.mouvements = [...cf.mouvements];
       evt.chargeFantastique.attaques = cf.attaques;
@@ -36784,6 +36787,7 @@ var COFantasy = COFantasy || function() {
           dm = dm.replace(/d([1-9])/g, "*$1");
         }
         let dmgType = options.type || 'magique';
+        options.energiePositive = positif;
         cibles.forEach(function(target) {
           if (estMortVivant(target) != positif) {
             sync();
