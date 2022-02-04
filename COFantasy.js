@@ -3767,6 +3767,25 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function deCarac(x) {
+    switch (x) {
+      case 'FOR':
+        return "de force";
+      case 'DEX':
+        return "de dextérité";
+      case 'CON':
+        return "de constitution";
+      case 'SAG':
+        return "de sagesse";
+      case 'INT':
+        return "d'intelligence";
+      case 'CHA':
+        return "de charisme";
+      default:
+        return "de " + x;
+    }
+  }
+
   //msg peut être un message ou un playerId
   function peutController(msg, perso) {
     if (msg === undefined) return true;
@@ -3921,7 +3940,7 @@ var COFantasy = COFantasy || function() {
       }
       return mod - Math.floor(attributeAsInt(perso, 'affaiblissementde' + carac, 0) / 2);
     }
-    let valCarac = 
+    let valCarac =
       ficheAttributeAsInt(perso, carac, 10) - attributeAsInt(perso, 'affaiblissementde' + carac, 0);
     let res = Math.floor((valCarac - 10) / 2);
     if ((carac == 'force' || carac == 'FORCE') && attributeAsBool(perso, 'mutationMusclesHypertrophies')) res += 2;
@@ -5059,7 +5078,7 @@ var COFantasy = COFantasy || function() {
       bonus = modCarac(personnage, caracOfMod(carac));
       bonus += ficheAttributeAsInt(personnage, carac + "_BONUS", 0);
     }
-    expliquer("Bonus de " + carac + " : " + bonus);
+    expliquer("Bonus " + deCarac(carac) + " : " + bonus);
     let bonusCarac = bonus;
     let bonusAspectDuDemon;
     let bonusForce;
@@ -6231,7 +6250,7 @@ var COFantasy = COFantasy || function() {
       }
       if (options.competences && options.nom === undefined) {
         iterSelected(selected, function(perso) {
-          let display = startFramedDisplay(playerId, "Jet de " + caracteristique, perso, {
+          let display = startFramedDisplay(playerId, "Jet " + deCarac(caracteristique), perso, {
             chuchote: true
           });
           addLineToFramedDisplay(display, "Choisissez la compétence");
@@ -6913,9 +6932,9 @@ var COFantasy = COFantasy || function() {
         options[weaponStats.typeDegats] = true;
         break;
     }
-    var lastEtat; //dernier de etats et effets
-    var lastType = options.type; //dernier type de dégâts infligés
-    var scope = options; //Pour les conditionnelles
+    let lastEtat; //dernier de etats et effets
+    let lastType = options.type; //dernier type de dégâts infligés
+    let scope = options; //Pour les conditionnelles
     optArgs.forEach(function(arg) {
       arg = arg.trim();
       let cmd = arg.split(' ');
@@ -6939,6 +6958,7 @@ var COFantasy = COFantasy || function() {
         case 'seulementDistance':
           scope[cmd[0]] = true;
           return;
+        case 'affute':
         case 'arc':
         case 'arbalete':
         case 'attaqueAssuree':
@@ -6947,7 +6967,6 @@ var COFantasy = COFantasy || function() {
         case 'epieu':
         case 'hache':
         case 'marteau':
-        case 'affute':
         case 'choc':
         case 'armeDArgent':
         case 'artificiel':
@@ -6956,6 +6975,7 @@ var COFantasy = COFantasy || function() {
         case 'auto':
         case 'avecd12':
         case 'demiAuto':
+        case 'energiePositive':
         case 'explodeMax':
         case 'explosion':
         case 'feinte':
@@ -6986,8 +7006,8 @@ var COFantasy = COFantasy || function() {
         case 'saufAllies':
         case 'tirAveugle':
         case 'attaqueBouclierRenverse':
-        case 'runeDePuissance':
         case 'necromancie':
+        case 'runeDePuissance':
           options[cmd[0]] = true;
           return;
         case 'aussiArmeDeJet':
@@ -10867,7 +10887,7 @@ var COFantasy = COFantasy || function() {
             diminueMalediction(perso1, evt);
             break;
         }
-        let texte1 = "Jet de " + carac1 + " de " + nom1 + " : " + rt1.texte;
+        let texte1 = "Jet " + deCarac(carac1) + " de " + nom1 + " : " + rt1.texte;
         if (reussite == 2) {
           if ((carac1 == 'FOR' || carac1 == 'DEX' || carac1 == 'CON') &&
             attributeAsBool(perso1, 'runeForgesort_énergie') &&
@@ -10899,7 +10919,7 @@ var COFantasy = COFantasy || function() {
         expl1.forEach(function(m) {
           explications.push(m);
         });
-        let texte2 = "Jet de " + carac2 + " de " + nom2 + " : " + rt2.texte;
+        let texte2 = "Jet " + deCarac(carac2) + " de " + nom2 + " : " + rt2.texte;
         if (reussite == 1) {
           if ((carac2 == 'FOR' || carac2 == 'DEX' || carac2 == 'CON') &&
             attributeAsBool(perso2, 'runeForgesort_énergie') &&
@@ -16529,7 +16549,7 @@ var COFantasy = COFantasy || function() {
       bonusPreds.push('bonusSaveContre_' + options.type);
     }
     if (!options.hideSaveTitle) {
-      let title = " Jet de " + carac + " " + seuil;
+      let title = " Jet " + deCarac(carac) + " " + seuil;
       if (options.msgPour) title += options.msgPour;
       expliquer(title);
     }
@@ -19969,7 +19989,7 @@ var COFantasy = COFantasy || function() {
           let malus = attributeAsInt(perso, 'affaiblissementde' + carac, 0);
           if (malus > 0) {
             diminueAffaiblissement(perso, carac, 1, evt, malus);
-            sendPerso(perso, "récupère un point de " + carac);
+            sendPerso(perso, "récupère un point " + deCarac(carac));
           }
         });
         if (bar1 >= pvmax && pr.current == pr.max) {
@@ -20962,7 +20982,7 @@ var COFantasy = COFantasy || function() {
       }
       var carac = action.caracteristque;
       if (carac == 'SAG' || carac == 'INT' || carac == 'CHA') {
-        sendPerso(perso, "ne peut pas utiliser la rune d'énergie pour un test de " + carac);
+        sendPerso(perso, "ne peut pas utiliser la rune d'énergie pour un test " + deCarac(carac));
         return;
       }
       if (!persoUtiliseRuneEnergie(perso, evt)) return;
@@ -23702,7 +23722,7 @@ var COFantasy = COFantasy || function() {
       }
     };
     addEvent(evt);
-    let titre = "Jet de " + carac + " pour " + textOfSaveState(etat, perso);
+    let titre = "Jet " + deCarac(carac) + " pour " + textOfSaveState(etat, perso);
     if (opposant) {
       let display = startFramedDisplay(playerId, titre, perso, {
         perso2: opposant
@@ -23851,7 +23871,7 @@ var COFantasy = COFantasy || function() {
       }
     };
     addEvent(evt);
-    let titre = "Jet de " + carac + options.msgPour;
+    let titre = "Jet " + deCarac(carac) + options.msgPour;
     let display = startFramedDisplay(playerId, titre, perso);
     let explications = [];
     let expliquer = function(msg) {
@@ -29542,9 +29562,9 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseProvocation(msg) {
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined) {
       error("Problème de parse options", msg.content);
       return;
@@ -29553,12 +29573,12 @@ var COFantasy = COFantasy || function() {
       error("La commande !cof-provocation requiert 2 arguments", cmd);
       return;
     }
-    var voleur = persoOfId(cmd[1]);
+    let voleur = persoOfId(cmd[1]);
     if (voleur === undefined) {
       error("Le premier argument de !cof-provocation n'est pas un token valide");
       return;
     }
-    var cible = persoOfId(cmd[2]);
+    let cible = persoOfId(cmd[2]);
     if (cible === undefined) {
       error("Le deuxième argument de !cof-provocation n'est pas un token valide");
       return;
@@ -29576,7 +29596,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function doProvocation(voleur, cible, options) {
-    var evt = {
+    let evt = {
       type: 'provocation',
       action: {
         titre: "Provocation",
@@ -29586,27 +29606,28 @@ var COFantasy = COFantasy || function() {
       }
     };
     addEvent(evt);
-    var nomVoleur = voleur.token.get('name');
-    var nomCible = cible.token.get('name');
-    var titre = 'Provocation';
-    var action = 'provocation';
+    let nomVoleur = voleur.token.get('name');
+    let nomCible = cible.token.get('name');
+    let titre = 'Provocation';
+    let action = 'provocation';
     if (options.raillerie) {
       titre = 'Raillerie';
       action = 'raillerie';
     }
-    var display =
+    if (limiteRessources(voleur, options, action, action, evt)) return;
+    const display =
       startFramedDisplay(options.playerId, titre, voleur, {
         perso2: cible
       });
-    var explications = [];
-    var rollId = 'provocation_' + cible.token.id;
+    let explications = [];
+    const rollId = 'provocation_' + cible.token.id;
     testOppose(rollId, voleur, 'CHA', options, cible, 'INT',
       options, explications, evt,
       function(res, crit, rt1, rt2) {
         explications.forEach(function(l) {
           addLineToFramedDisplay(display, l);
         });
-        var reussite;
+        let reussite;
         switch (res) {
           case 0: //en cas d'égalité, on considère que la provocation est réussie
             diminueMalediction(cible, evt);
@@ -29670,7 +29691,7 @@ var COFantasy = COFantasy || function() {
                   setTokenAttr(cible, 'resistanceRaillerie',
                     attributeAsInt(cible, 'resistanceRaillerie', 0) + 10, evt);
                 }
-                reussite = nomCible + " voit clair dans le jeu de " + nomCible + ". La provocation échoue.";
+                reussite = nomCible + " voit clair dans le jeu de " + nomVoleur + ". La provocation échoue.";
             }
         }
         addLineToFramedDisplay(display, reussite);
@@ -30919,7 +30940,7 @@ var COFantasy = COFantasy || function() {
       let malus = attributeAsInt(perso, 'affaiblissementde' + carac, 0);
       if (malus > 0) {
         diminueAffaiblissement(perso, carac, malus, evt, malus);
-        sendPerso(perso, "récupère " + malus + " points de " + carac);
+        sendPerso(perso, "récupère " + malus + " points " + deCarac(carac));
       }
     });
     if (soins <= 0) {
@@ -37127,7 +37148,7 @@ var COFantasy = COFantasy || function() {
         }
         let malus = attributeAsInt(perso, 'affaiblissementde' + carac, 0);
         if (malus === 0) {
-          sendPerso(perso, "n'a pas d'affaiblissement de " + carac);
+          sendPerso(perso, "n'a pas d'affaiblissement " + deCarac(carac));
           return;
         }
         diminueAffaiblissement(perso, carac, valeur, evt, malus);
