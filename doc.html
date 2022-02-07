@@ -108,6 +108,13 @@
 									<li><a class="text-info" href="#Sorts">Autres sorts</a></li>
 									<li><a class="text-info" href="#Capacites_diverses">Capacités diverses</a></li>
                 </ul>
+                <li data-toggle="collapse" data-target="#terres_d_arran"><a href="#Terres_d_Arran">Terres d'Arran</a></li>
+								<ul id="terres_d_arran" class="collapse">
+									<li><a class="text-info" href="#Voies_de_la_famille_des_combattants">Les combattants</a></li>
+									<li><a class="text-info" href="#Voies_de_la_famille_des_aventuriers">Les aventuriers</a></li>
+									<li><a class="text-info" href="#Voies_de_la_famille_des_mystiques">Les mystiques</a></li>
+									<li><a class="text-info" href="#Voies_de_prestige_Arran">Voies de prestige</a></li>
+                </ul>
                 <li data-toggle="collapse" data-target="#markers_personnalises"><a href="#Markers_personnalisés">Markers personnalisés</a></li>
 								<ul id="markers_personnalises" class="collapse">
                   <li><a class="text-info" href="#Markers_presentation">Présentation</a></li>
@@ -2252,8 +2259,19 @@
                 </ul>
               </div>
             </div>
-            <h2 class="text-primary" id="Markers_personnalisés">5. Markers Personnalisés</h2>
-            <h3 class="text-info" id="Markers_presentation">5.1 Présentation</h3>
+            <h2 class="text-primary" id="Terres_d_Arran">5. Terres d'Arran</h2>
+            <h3 class="text-info" id="Voies_de_la_famille_des_combattants">5.1 Voies de la famille des combattants</h3>
+              <div class="decalage">
+                <h4 class="text-secondary">Voie du bastion</h4>
+                <ol>
+                  <li><strong>Protéger un allié</strong> : <code>!cof-proteger-un-allie @{selected|token_id} @{target|token_id}</code>. Fonctionne aussi si on remplace le target par un nom de token. Le script ne vérifie pas que le combattant ne change pas d'allié plus d'une fois par tour.</li>
+                </ol>
+              </div>
+            <h3 class="text-info" id="Voies_de_la_famille_des_aventuriers">5.2 Voies de la famille des aventuriers</h3>
+            <h3 class="text-info" id="Voies_de_la_famille_des_mystiques">5.3 Voies de la famille des mystiques</h3>
+            <h3 class="text-info" id="Voies_de_prestige_Arran">5.4 Voies de prestige</h3>
+            <h2 class="text-primary" id="Markers_personnalisés">6. Markers Personnalisés</h2>
+            <h3 class="text-info" id="Markers_presentation">6.1 Présentation</h3>
             <div class="decalage">
               <p>Roll20 peut être déroutant lors des premières utilisations pour des joueurs plus habitués au Jeu de Rôle sur table. Il introduit des notions peu courantes du fait que les combats vont se dérouler sur des "battlemaps" quadrillées ou non. Aussi on va prendre quelques minutes pour expliquer deux notions importantes : <strong>les tokens</strong> et <strong>les tokens markers</strong> (plus simplement appelés <strong>markers</strong> par la suite).</p>
               <p>Le token : Un token est la représentation graphique d'un personnage (PJ ou PNJ) sur la battlemap. Grâce au token on sait à tout moment où se trouve le personnage, s'il subit un sort à effet de zone ou si sa ligne de tir est dégagée par exemple.</p>
@@ -2262,14 +2280,14 @@
               <p>Dans l'image ci-dessus le token c'est le personnage à la cape bleue qui représente un PJ et le marker c'est le petit escargot qui signifie que ce même PJ est "ralenti". Le script gère les états des PJ et PNJ et il matérialisera leurs états grâce aux markers. Par exemple le MJ va demande un jet de surprise, le script effectue les jets de dés nécessaire et matérialise l'état "surpris" grâce à un marker pour les personnages qui ont raté leur jet de dé. Le script applique automatiquement le malus -5 à la DEF. Au bout d'un tour l'état "surpris" et le marker seront retirés automatiquement par le script. Le MJ peut aussi mettre directement un état à un personnage. Par exemple s'il considère que ses PJs voyagent trop chargés il peut ajouter le marker "encombré" qui lui rappelera que dorénavant les jets de DEX se font sur un d12 et plus sur un d20.</p>
               <p>Il existe des markers qui ne représentent pas un état mais ils sont rares. On peut souligner les ronds de couleurs qui permmettent au joueur de retrouver son token plus facilement. De la même manière dans les markers cof il y existent deux marqueurs <code>cof-init...</code> qui permettent de repérer le prochain joueur pendant les combats. Ce n'est pas un état.</p>
             </div>
-            <h3 class="text-info" id="Markers_COF">5.2 Récupération des markers dédiés COF</h3>
+            <h3 class="text-info" id="Markers_COF">6.2 Récupération des markers dédiés COF</h3>
             <div class="decalage">
               <p>Roll20 possède des markers par défaut mais ils ne sont pas toujours adaptés pour Chroniques Oubliées Fantasy. La communauté a voté pour choisir les tokens les plus pertinents dans le contexte COF. Voici le <a href="https://www.black-book-editions.fr/forums.php?topic_id=16514">lien vers le post dans le forum BBE</a>. N'hésitez pas à venir poser vos questions ou proposer vos talents de graphiste à la communauté.</p>
               <p>Avant de pouvoir créer votre propre jeu de markers sur Roll20, vous devez préalablement télécharger ceux mis à disposition par la communauté depuis <a href="https://github.com/Ulty/COFantasy">le repository GitHub du projet</a>. Procédez comme suit :</p>
               <p><img class="img-fluid" src="https://imgur.com/xEUDHaC.png" data-href="https://imgur.com/xEUDHaC.png"></p>
               <p>Une fois le fichier téléchargé sur votre PC dézippez le répertoire <code>cof-marker-set</code> et son sous-répertoire</p>
             </div>
-            <h3 class="text-info" id="Markers_Import">5.3 Importation des markers dans Roll20</h3>
+            <h3 class="text-info" id="Markers_Import">6.3 Importation des markers dans Roll20</h3>
             <div class="decalage">
               <p>Dans le répertoire <code>cof-marker-set</code> vous trouverez tous les markers qui ont été choisis par la communauté. Dans le répertoire <code>markers-alternatifs</code> vous trouverez les glorieux seconds au vote que vous pouvez utiliser en lieu et place du marker choisi s'il vous plaît plus. Il vous suffit alors de glisser-déposer le fichier dans le répertoire principal et de confirmer l'écrasement de l'autre marker. Vous pouvez aussi choisir vos propres markers dans  <a href="https://game-icons.net/">cette géniale bibliothéque d'icônes</a>. Vous pouvez aussi déssiner vos propre marker. Les limites sont que la taille de l'image doit être exactement de 512x512 px. Un fichier PNG est préférable pour gérer la transparence. Enfin votre fichier doit porter exactement le même nom qu'indiqué <a href="#etats">dans cette documentation</a>.</p>
               <p>Dans Roll20 rendez-vous dans le menu "Outils" puis "Token Marker Library". Appuyez sur "Create Set". Puis renseignez le nom du marker set. "cof markers" par exemple. Appuyez sur "Create Set".</p>
@@ -2278,14 +2296,14 @@
               <p><img class="img-fluid" src="https://imgur.com/5TUTgWb.png" data-href="https://imgur.com/5TUTgWb.png"></p>
               <p>A ce moment il y a deux écoles de vie : ceux qui lâchent tous leurs markers en même temps et qui laisse le soin aux serveurs de Roll20 de décider dans quel ordre ils verront apparaître les markers dans leur interface pour le restant de leur jour. Et ceux qui posent les fichiers un par un pour que l'ordre qu'ils souhaitent soit respecté par Roll20. Quand tout est prêt cliquez sur "Upload". Vous avez un message "Fichiers en cours de traitement" pendant 1 à 2 minutes. Ensuite Roll20 vous propose de renommer vos tokens. Ne changez rien et faîtes "Save". Ca y est, vos markers personnalisés sont enfin prêts !</p>
             </div>
-            <h3 class="text-info" id="Markers_Check">5.4 Activation et Vérification</h3>
+            <h3 class="text-info" id="Markers_Check">6.4 Activation et Vérification</h3>
             <div class="decalage">
               <p>Mais ce n'est pas fini il vous faut encore affecter vos markers à votre campagne. Cela se passe sur la page d'acceuil de votre campagne:</p>
               <p><img class="img-fluid" src="https://imgur.com/cE5OAga.png" data-href="https://imgur.com/cE5OAga.png"></p>
               <p>Lancez votre campagne et vérifiez que les nouveaux markers apparaissent bien. Lancez ensuite la commande <code>!cof-options</code> pour cocher "Markers Personnalises". Enfin comme dernier contrôle allez dans la console des API, faîtes "restart API sandbox" et vérifiez que le message "Markers personnalisés activés" est bien présent. Si ce n'est pas le cas vous avez probablement oublié des markers "obligatoires" et le script n'a pas pu activer les markers cof pour cette raison. La liste des markers manquants devrait apparaître dans la console.</p>
             </div>
-            <h2 class="text-primary" id="Console">6. Console API</h2>
-            <h3 class="text-info" id="Generalites_Console">6.1 Généralités sur la Console </h3>
+            <h2 class="text-primary" id="Console">7. Console API</h2>
+            <h3 class="text-info" id="Generalites_Console">7.1 Généralités sur la Console </h3>
             <div class="decalage">
               <p>Il est recommandé quand vous jouez de garder un onglet de votre navigateur ouvert sur la Console API de votre campagne (Paramètres -> Scripts API). En cas d'absence de réponse du jeu il vous permet de facilement prendre connaissance d'une éventuelle erreur et de prendre rapidement les actions correctives nécessaires.</p>
               <p>Un message bloquant est écrit dans un bloc rouge en dehors de la fenêtre API Output Console et ressemble à l'image suivante :</p>
@@ -2295,7 +2313,7 @@
               <p><img class="img-fluid" src="https://imgur.com/5N5xrXI.png" data-href="https://imgur.com/5N5xrXI.png"></p>
               <p>Malgré la gravité apparente de certains de ces messages (SyntaxError) ils n'empêchent jamais le bon fonctionnement du script. Seuls les messages bloquants apparaissants en rouge empêche le bon fonctionnement du script. Nous n'avons pas complétement la main sur l'apparition de ces messages d'alerte et nous travaillons activement avec Roll20 pour les éliminer. Des messages d'informations sont aussi présents comme par exemple le numéro de version du script que vous utilisez actuellement.</p>
             </div>
-            <h3 class="text-info" id="Messages_Console">6.2 Principaux messages bloquants</h3>
+            <h3 class="text-info" id="Messages_Console">7.2 Principaux messages bloquants</h3>
             <div class="decalage">
               <ul>
                 <li><code>There was an error communicating with the QuantumRoll server</code> Erreur Roll20 courante. "Restart API Sandbox" règle normalement ce problème.</li>
@@ -2305,7 +2323,7 @@
                 <li><code>TypeError: Cannot read property '...' of undefined </code> Erreur dans le code. Pas de solution évidente. Le signaler uniquement si c'est un message bloquant (rouge).</li>
               </ul>
             </div>
-            <h3 class="text-info" id="Infos_Console">6.3 Principaux messages d'information et d'alerte</h3>
+            <h3 class="text-info" id="Infos_Console">7.3 Principaux messages d'information et d'alerte</h3>
             <div class="decalage">
               <ul>
                 <li><code>COFantasy X.XX loaded</code> Information : Le script a correctement démarré. Vous indique le numéro de version utilisé.</li>
@@ -2317,11 +2335,11 @@
                 <li><code>Compétences sans caractéristique associée</code>Alerte : Erreur de déclaration dans le <a href="#jet_caracteristiques">handout de jets de caractéristique</a>.</li>
               </ul>
             </div>
-            <h2 class="text-primary" id="pathfinder">7. Utiliser des personnages Pathfinder</h2>
+            <h2 class="text-primary" id="pathfinder">8. Utiliser des personnages Pathfinder</h2>
 						<div class="decalage">
               <p>Il existe un support basique des fiches Roll20 venant du système Pathfinder 1. La fonction <code>!cof-pathfinder1</code> se lance en sélectionnant un ou plusieurs tokens liés à des fiches Pathfinder (par exemple obtenues en achetant des aventures Pathfinder sur le marketplace de Roll20). L'effet est d'une part de transformer une partie des attributs de la fiche en attributs compris par la fiche COF et le script COFantasy, de changer un peu le token associé à la fiche, mais surtout d'effacer les attributs inutiles pour COF. En effet, le script est relativement sensible au nombre total d'attributs en jeu, et les fiches Pathfinder ont tendence à en avoir vraiment beaucoup. Tout ce qui n'est pas compris par le script se retrouve dans un attribut <code>Attributs Pathfinder</code>. Mais le mieux est de compléter la fiche COF en se basant sur la fiche Pathfinder ouverte dans une autre partie.</p>
             </div>
-            <h2 class="text-primary" id="statistiques">8. Statistiques</h2>
+            <h2 class="text-primary" id="statistiques">9. Statistiques</h2>
 						<div class="decalage">
 							<p>Il est possible d'activer la collecte de statistiques en utilisant la commande <code>!cof-demarrer-statistiques</code>.</p>
 							<p>On peut arrêter la collecte avec <code>!cof-arreter-statistiques</code>, et la mettre en pause avec <code>!cof-pause-statistiques</code>.<br />

@@ -8159,22 +8159,24 @@ var COFantasy = COFantasy || function() {
     if (isNaN(cout) || cout === 0) return {
       cout_nul: true
     };
-    var token = personnage.token;
-    var charId = personnage.charId;
-    var manaAttr = findObjs({
+    let token = personnage.token;
+    let charId = personnage.charId;
+    let manaAttr = findObjs({
       _type: 'attribute',
       _characterid: charId,
       name: 'PM'
     }, {
       caseInsensitive: true
     });
-    var hasMana = false;
+    let hasMana = false;
     if (manaAttr.length > 0) {
-      var manaMax = parseInt(manaAttr[0].get('max'));
+      let manaMax = parseInt(manaAttr[0].get('max'));
       hasMana = !isNaN(manaMax) && manaMax > 0;
     }
     if (hasMana) {
-      var bar2 = parseInt(token.get('bar2_value'));
+      let bar2;
+      if (token) {
+        bar2 = parseInt(token.get('bar2_value'));
       if (isNaN(bar2)) {
         if (token.get('bar1_link') === '') bar2 = 0;
         else { //devrait être lié à la mana courante
@@ -8182,6 +8184,7 @@ var COFantasy = COFantasy || function() {
           bar2 = parseInt(manaAttr[0].get('current'));
         }
       }
+      } else bar2 = parseInt(manaAttr[0].get('current'));
       msg = msg || '';
       if ((reglesOptionelles.mana.val.contrecoup.val && bar2 <= 0) ||
         (!reglesOptionelles.mana.val.contrecoup.val && !reglesOptionelles.mana.val.brulure_de_magie.val && bar2 < cout)) {
@@ -29881,6 +29884,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //!cof-creer-elixir token_id elixir
+  //on peut remplacer token_id par character_id
   function creerElixir(msg) {
     let options = parseOptions(msg);
     if (options === undefined) return;
@@ -29895,29 +29899,33 @@ var COFantasy = COFantasy || function() {
         forgesort = persoOfId(msg.selected[0]._id);
       }
       if (forgesort === undefined) {
+      let c = getObj('character', cmd[1]);
+        if (c === undefined) {
         error("Impossible de savoir qui crée l'élixir", cmd);
         return;
+        }
+        forgesort = {charId:cmd[1]};
       }
     }
-    var voieDesElixirs = predicateAsInt(forgesort, 'voieDesElixirs', 0);
+    let voieDesElixirs = predicateAsInt(forgesort, 'voieDesElixirs', 0);
     if (voieDesElixirs < 1) {
       sendPerso(forgesort, "ne connaît pas la Voie des Élixirs");
       return;
     }
-    var elixir = listeElixirs(voieDesElixirs).find(function(i) {
+    let elixir = listeElixirs(voieDesElixirs).find(function(i) {
       return i.attrName == cmd[2];
     });
     if (elixir === undefined) {
-      var altElixirs = findObjs({
+      let altElixirs = findObjs({
         _type: 'attribute',
         _characterid: forgesort.charId
       });
       altElixirs.find(function(attr) {
-        var attrName = attr.get('name');
+        let attrName = attr.get('name');
         if (!attrName.startsWith('Elixir ')) return false;
-        var rang = parseInt(attrName.substring(7));
+        let rang = parseInt(attrName.substring(7));
         if (isNaN(rang) || rang > 3) return false;
-        var nomElixir = attr.get('current');
+        let nomElixir = attr.get('current');
         if (nomElixir != cmd[2]) return false;
         elixir = {
           nom: nomElixir,
@@ -29928,11 +29936,14 @@ var COFantasy = COFantasy || function() {
         return true;
       });
       if (elixir === undefined) {
-        error(forgesort.token.get('name') + " est incapable de créer " + cmd[2], cmd);
+        let nom;
+        if (forgesort.token) nom = forgesort.token.get('name');
+        else nom = ficheAttribute(forgesort, 'character_name', 'inconnu');
+        error(nom + " est incapable de créer " + cmd[2], cmd);
         return;
       }
     }
-    var evt = {
+    const evt = {
       type: "Création d'élixir"
     };
     addEvent(evt);
@@ -29960,9 +29971,12 @@ var COFantasy = COFantasy || function() {
       }
     }
     // Robustesse DecrAttr multi-cmd
-    var elixirsACreer = charAttribute(forgesort.charId, "elixirsACreer");
+    let elixirsACreer = charAttribute(forgesort.charId, "elixirsACreer");
     if (elixirsACreer.length === 0) {
-      error(forgesort.token.get('name') + " ne peut créer d'élixirs " + cmd[2], cmd);
+        let nom;
+        if (forgesort.token) nom = forgesort.token.get('name');
+        else nom = ficheAttribute(forgesort, 'character_name', 'inconnu');
+      error(nom + " ne peut créer d'élixirs " + cmd[2], cmd);
       return;
     }
     options.decrAttribute = elixirsACreer[0].id;
