@@ -1219,7 +1219,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function etatRendInactif(etat) {
-    var res =
+    let res =
       etat == 'mort' || etat == 'surpris' || etat == 'assomme' ||
       etat == 'etourdi' || etat == 'paralyse' || etat == 'endormi' ||
       etat == 'apeure';
@@ -2811,6 +2811,7 @@ var COFantasy = COFantasy || function() {
     token.set(cof_states[etat], value);
     if (!value) { //On enlève le save si il y en a un
       removeTokenAttr(personnage, etat + 'Save', evt);
+      removeTokenAttr(personnage, etat + 'SaveParTour', evt);
     }
     let pageId = token.get('pageid');
     if (etat == 'aveugle') {
@@ -7317,12 +7318,12 @@ var COFantasy = COFantasy || function() {
             error("Il manque un argument à l'option --etat de !cof-attack", cmd);
             return;
           }
-          var etat = cmd[1];
+          let etat = cmd[1];
           if (!_.has(cof_states, etat)) {
             error("Etat non reconnu", cmd);
             return;
           }
-          var condition = 'toujoursVrai';
+          let condition = 'toujoursVrai';
           if (cmd[0] == 'etatSi') {
             condition = parseCondition(cmd.slice(2));
             if (condition === undefined) return;
@@ -7340,7 +7341,7 @@ var COFantasy = COFantasy || function() {
               return;
             }
             lastEtat.saveCarac = cmd[2];
-            var opposition = persoOfId(cmd[3]);
+            let opposition = persoOfId(cmd[3]);
             if (opposition) {
               lastEtat.saveDifficulte = cmd[3] + ' ' + opposition.token.get('name');
             } else {
@@ -14001,7 +14002,7 @@ var COFantasy = COFantasy || function() {
   function stringOfEtat(etat, perso) {
     if (etat == 'invisible') return etat;
     else if (etat == 'penombre') return "dans la pénombre";
-    var etext = etat;
+    let etext = etat;
     if (etat.endsWith('e')) {
       etext = etat.substring(0, etat.length - 1) + 'é';
     }
@@ -15497,6 +15498,11 @@ var COFantasy = COFantasy || function() {
                   if (ce.saveCarac) {
                     setTokenAttr(target, ce.etat + 'Save', ce.saveCarac, evt, {
                       maxVal: ce.saveDifficulte
+                    });
+                  }
+                  if (ce.saveParTour) {
+                    setTokenAttr(target, ce.etat + 'SaveParTour', ce.saveParTour.carac, evt, {
+                      maxVal: ce.saveParTour.seuil
                     });
                   }
                 } else {
@@ -19567,7 +19573,7 @@ var COFantasy = COFantasy || function() {
   // Remise à zéro de toutes les limites journalières
   // N'ajoute pas evt à l'historique
   function jour(evt, options) {
-    var attrs;
+    let attrs;
     attrs = removeAllAttributes('pressionMortelle', evt);
     attrs = removeAllAttributes('soinsLegers', evt, attrs);
     attrs = removeAllAttributes('depassesoinsLegers', evt, attrs);
@@ -19581,52 +19587,52 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('testsRatesDuTour', evt, attrs);
     //Les élixirs
     attrs = removeAllAttributes('elixirsACreer', evt, attrs);
-    attrs = proposerRenouveauElixirs(evt, attrs);
+    attrs = proposerRenouveauElixirs(evt, attrs, options);
     //Les runes
-    attrs = proposerRenouveauRunes(evt, attrs);
+    attrs = proposerRenouveauRunes(evt, attrs, options);
     //Les plantes médicinales
     attrs = removeAllAttributes('dose_Plante médicinale', evt, attrs);
     attrs = removeConsommables('Plante médicinale', evt, attrs);
     //On pourrait diviser par 2 le nombre de baies
     //var attrsBaie = allAttributesNamed(attrs, 'dose_Baie_magique');
     //Saves journaliers
-    var attrsSave = attrs.filter(function(attr) {
-      var attrName = attr.get('name');
-      var indexSave = attrName.indexOf('SaveParJour');
+    let attrsSave = attrs.filter(function(attr) {
+      let attrName = attr.get('name');
+      let indexSave = attrName.indexOf('SaveParJour');
       if (indexSave <= 0) return false;
       indexSave = attrName.indexOf('SaveParJourType');
       return indexSave <= 0;
     });
     //Les saves sont asynchrones
-    var count = attrsSave.length;
+    let count = attrsSave.length;
     if (count === 0) {
       proposerFinEffetsIndetermines();
       return;
     }
-    var finalize = function() {
+    const finalize = function() {
       count--;
       if (count > 0) return;
       proposerFinEffetsIndetermines();
     };
     attrsSave.forEach(function(attr) {
-      var attrName = attr.get('name');
-      var carac = attr.get('current');
+      let attrName = attr.get('name');
+      let carac = attr.get('current');
       if (!isCarac(carac)) {
         error("Save par jour " + attrName + " mal formé", carac);
         finalize();
         return;
       }
-      var seuil = parseInt(attr.get('max'));
+      let seuil = parseInt(attr.get('max'));
       if (isNaN(seuil)) {
         error("Save par jour " + attrName + " mal formé", seuil);
         finalize();
         return;
       }
-      var charId = attr.get('characterid');
-      var indexSave = attrName.indexOf('SaveParJour');
-      var effetC = attrName.substring(0, indexSave);
+      let charId = attr.get('characterid');
+      let indexSave = attrName.indexOf('SaveParJour');
+      let effetC = attrName.substring(0, indexSave);
       attrName = effetC + attrName.substr(indexSave + 11);
-      var token;
+      let token;
       iterTokensOfAttribute(charId, undefined, effetC, attrName, function(tok) {
         if (token === undefined) token = tok;
       });
@@ -19814,8 +19820,8 @@ var COFantasy = COFantasy || function() {
     getSelected(msg, function(selection, playerId) {
       options.playerId = playerId;
       if (selection.length === 0) {
-        var pageId = getPageId(playerId);
-        var tokens =
+        let pageId = options.pageId;
+        let tokens =
           findObjs({
             _type: 'graphic',
             _subtype: 'token',
@@ -19829,7 +19835,7 @@ var COFantasy = COFantasy || function() {
           });
         });
       }
-      var persos = [];
+      let persos = [];
       iterSelected(selection, function(perso) {
         persos.push(perso);
       });
@@ -19838,7 +19844,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function doNouveauJour(persos, options) {
-    var evt = {
+    let evt = {
       type: "nouveauJour",
       attributes: [],
       action: {
@@ -19847,10 +19853,10 @@ var COFantasy = COFantasy || function() {
       }
     };
     addEvent(evt);
-    var fromMsg = 'player|' + options.playerId;
-    var player = getObj('player', options.playerId);
+    let fromMsg = 'player|' + options.playerId;
+    let player = getObj('player', options.playerId);
     if (player) {
-      var speaksAs = player.get('speakingas');
+      let speaksAs = player.get('speakingas');
       if (speaksAs !== '') fromMsg = speaksAs;
     }
     sendChat(fromMsg, "Un nouveau jour se lève");
@@ -22769,21 +22775,21 @@ var COFantasy = COFantasy || function() {
           line = "Dommages temporaires : " + dmTemp;
           addLineToFramedDisplay(display, line);
         }
-        var douleurIgnoree = attributeAsInt(perso, 'douleurIgnoree', 0);
+        let douleurIgnoree = attributeAsInt(perso, 'douleurIgnoree', 0);
         if (douleurIgnoree > 0) {
           line = "a ignoré " + douleurIgnoree + " pv dans ce combat.";
           addLineToFramedDisplay(display, line);
         }
-        var aDV = ficheAttributeAsInt(perso, 'DV', 0);
+        let aDV = ficheAttributeAsInt(perso, 'DV', 0);
         if (aDV > 0) { // correspond aux PJs
-          var pr = pointsDeRecuperation(perso);
+          let pr = pointsDeRecuperation(perso);
           line =
             "Points de récupération : " + pr.current + " / " + pr.max;
           addLineToFramedDisplay(display, line);
           if (ficheAttributeAsInt(perso, 'option_pc', 1)) {
-            var pc = 3;
-            var pc_max = 3;
-            var attr_pc = charAttribute(perso.charId, 'pc', {
+            let pc = 3;
+            let pc_max = 3;
+            let attr_pc = charAttribute(perso.charId, 'pc', {
               caseInsensitive: true
             });
             if (attr_pc !== undefined && attr_pc.length > 0) {
@@ -22803,16 +22809,16 @@ var COFantasy = COFantasy || function() {
             }
           }
         }
-        var attrsChar = findObjs({
+        let attrsChar = findObjs({
           _type: 'attribute',
           _characterid: charId
         });
-        var attaques = listAllAttacks(perso);
-        var armeEnMain =
+        let attaques = listAllAttacks(perso);
+        let armeEnMain =
           attrsChar.find(function(a) {
             return a.get('name') == 'armeEnMain';
           });
-        var armeEnMainGauche;
+        let armeEnMainGauche;
         if (armeEnMain) {
           armeEnMainGauche = armeEnMain.get('max');
           armeEnMain = armeEnMain.get('current');
@@ -22860,9 +22866,9 @@ var COFantasy = COFantasy || function() {
         });
         if (attributeAsInt(perso, 'enflamme', 0))
           addLineToFramedDisplay(display, "en flammes");
-        var attrEnveloppe = tokenAttribute(perso, 'enveloppePar');
+        let attrEnveloppe = tokenAttribute(perso, 'enveloppePar');
         if (attrEnveloppe.length > 0) {
-          var cube = persoOfIdName(attrEnveloppe[0].get('current'));
+          let cube = persoOfIdName(attrEnveloppe[0].get('current'));
           if (cube) {
             var actE = "est enveloppé dans ";
             if ((attrEnveloppe[0].get('max') + '').startsWith('etreinte')) actE = "est prisonnier de l'étreinte de ";
@@ -23499,15 +23505,15 @@ var COFantasy = COFantasy || function() {
         return;
       }
       valeur = true;
-      options.saveParTour = {
+      options.saveActifParTour = {
         carac: cmd[2]
       };
       let opposition = persoOfId(cmd[3]);
       if (opposition) {
-        options.saveParTour.difficulte = cmd[3] + ' ' + opposition.token.get('name');
+        options.saveActifParTour.difficulte = cmd[3] + ' ' + opposition.token.get('name');
       } else {
-        options.saveParTour.difficulte = parseInt(cmd[3]);
-        if (isNaN(options.saveParTour.difficulte)) {
+        options.saveActifParTour.difficulte = parseInt(cmd[3]);
+        if (isNaN(options.saveActifParTour.difficulte)) {
           error("Difficulté du jet de sauvegarde incorrecte", cmd);
           return;
         }
@@ -23591,24 +23597,24 @@ var COFantasy = COFantasy || function() {
     cibles.forEach(function(perso) {
       function setEffect() {
         setState(perso, etat, valeur, evt);
-        if (options.saveParTour) {
-          setTokenAttr(perso, etat + 'Save', options.saveParTour.carac, evt, {
-            maxVal: options.saveParTour.difficulte
+        if (options.saveActifParTour) {
+          setTokenAttr(perso, etat + 'Save', options.saveActifParTour.carac, evt, {
+            maxVal: options.saveActifParTour.difficulte
           });
         }
       }
       if (options.save) {
-        var saveOpts = {
+        let saveOpts = {
           msgPour: " pour résister à l'effet " + stringOfEtat(etat),
           msgRate: ", raté.",
           rolls: options.rolls,
           chanceRollId: options.chanceRollId,
           type: options.type
         };
-        var expliquer = function(s) {
+        let expliquer = function(s) {
           sendPerso(perso, s);
         };
-        var saveId = 'effet_' + etat + '_' + perso.token.id;
+        let saveId = 'effet_' + etat + '_' + perso.token.id;
         save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, rollText) {
           if (!reussite) {
             setEffect();
@@ -24949,30 +24955,30 @@ var COFantasy = COFantasy || function() {
   }
 
   function parsePeur(msg) {
-    var optArgs = msg.content.split(' --');
-    var cmd = optArgs[0].split(' ');
+    let optArgs = msg.content.split(' --');
+    let cmd = optArgs[0].split(' ');
     if (cmd.length < 3) {
       error("Pas assez d'arguments pour !cof-peur", msg.content);
       return;
     }
-    var playerId = getPlayerIdFromMsg(msg);
-    var pageId = getPageId(playerId);
-    var difficulte = parseInt(cmd[1]);
+    let playerId = getPlayerIdFromMsg(msg);
+    let pageId = getPageId(playerId);
+    let difficulte = parseInt(cmd[1]);
     if (isNaN(difficulte)) {
       error("Le premier argument de !cof-peur, la difficulté du test de résistance, n'est pas un nombre", cmd);
       return;
     }
-    var duree = parseInt(cmd[2]);
+    let duree = parseInt(cmd[2]);
     if (isNaN(duree) || duree < 0) {
       error("Le second argument de !cof-peur, la durée, n'est pas un nombre positif", cmd);
       return;
     }
-    var options = {};
+    let options = {};
     options.playerId = playerId;
     options.pageId = pageId;
     optArgs.shift();
     optArgs.forEach(function(opt) {
-      var optCmd = opt.split(' ');
+      let optCmd = opt.split(' ');
       switch (optCmd[0]) {
         case "attaqueMagique":
           error("TODO", opt);
@@ -29974,19 +29980,19 @@ var COFantasy = COFantasy || function() {
 
   function gestionElixir(msg) {
     getSelected(msg, function(selected, playerId) {
-      var player = getObj('player', playerId);
+      let player = getObj('player', playerId);
       if (player === undefined) {
         error("Impossible de trouver le joueur", playerId);
         return;
       }
       iterSelected(selected, function(forgesort) {
-        var voieDesElixirs = predicateAsInt(forgesort, 'voieDesElixirs', 0);
+        let voieDesElixirs = predicateAsInt(forgesort, 'voieDesElixirs', 0);
         if (voieDesElixirs < 1) {
           sendPerso(forgesort, "ne connaît pas la Voie des Élixirs");
           return;
         }
-        var elixirsACreer = voieDesElixirs * 2;
-        var attrElixirs = tokenAttribute(forgesort, 'elixirsACreer');
+        let elixirsACreer = voieDesElixirs * 2;
+        let attrElixirs = tokenAttribute(forgesort, 'elixirsACreer');
         if (attrElixirs.length === 0) {
           //TODO: ajouter un evenement pour pouvoir faire un undo
           attrElixirs = setTokenAttr(forgesort, 'elixirsACreer', elixirsACreer, {});
@@ -29995,17 +30001,17 @@ var COFantasy = COFantasy || function() {
           elixirsACreer = parseInt(attrElixirs.get('current'));
           if (isNaN(elixirsACreer)) elixirsACreer = 0;
         }
-        var titre;
+        let titre;
         if (elixirsACreer < 1)
           titre = "Impossible de créer un autre élixir aujourd'hui";
         else titre = "Encore " + elixirsACreer + " élixirs à créer";
-        var display = startFramedDisplay(playerId, titre, forgesort, {
+        let display = startFramedDisplay(playerId, titre, forgesort, {
           chuchote: true
         });
         listeElixirs(voieDesElixirs).forEach(function(elixir) {
           if (elixir.rang < 4) {
             //Il est possible de changer l'élixir par défaut
-            var altElixir = charAttribute(forgesort.charId, 'Elixir ' + elixir.rang);
+            let altElixir = charAttribute(forgesort.charId, 'Elixir ' + elixir.rang);
             if (altElixir.length > 0) {
               elixir.nom = altElixir[0].get('current');
               elixir.attrName = altElixir[0].get('current');
@@ -30045,42 +30051,47 @@ var COFantasy = COFantasy || function() {
     }); //Fin du getSelected
   }
 
-  function proposerRenouveauElixirs(evt, attrs) {
-    var attrsNamed = allAttributesNamed(attrs, 'elixir');
+  function proposerRenouveauElixirs(evt, attrs, options) {
+    let attrsNamed = allAttributesNamed(attrs, 'elixir');
     if (attrsNamed.length === 0) return attrs;
     // Trouver les forgesorts avec des élixirs sur eux
-    var forgesorts = {};
+    let forgesorts = {};
     attrsNamed.forEach(function(attr) {
       // Check de l'existence d'un créateur
-      var charId = attr.get('_characterid');
+      let charId = attr.get('characterid');
       // Check de l'existence d'un token présent pour le personnage
-      var tokensPersonnage =
+      let tokensPersonnage =
         findObjs({
           _type: 'graphic',
           _subtype: 'token',
-          represents: charId
+          represents: charId,
+          _pageid: options.pageId
         });
-      if (tokensPersonnage.length < 1) {
+      if (tokensPersonnage.length === 0) {
         error("Impossible de trouver le token du personnage " + charId + " avec un élixir sur la carte");
         return;
       }
-      var token;
+      let token;
       if (tokensPersonnage.length > 1) {
-        var pageIds = characterPageIds(charId);
-        tokensPersonnage.forEach(function(t) {
-          if (token) return;
+        let pageIds = characterPageIds(charId);
+        tokensPersonnage.find(function(t) {
+          if (t.get('pageid') == options.pageId) {
+            token = t;
+            return true;
+          }
           if (pageIds.has(t.get('pageid'))) token = t;
+          return false; //On continue à chercher
         });
       }
       if (token === undefined) token = tokensPersonnage[0];
-      var personnage = {
-        token: tokensPersonnage[0],
-        charId: charId
+      let personnage = {
+        token,
+        charId
       };
-      var voieDesElixirs = predicateAsInt(personnage, 'voieDesElixirs');
+      let voieDesElixirs = predicateAsInt(personnage, 'voieDesElixirs');
       //TODO: réfléchir à une solution pour le renouveau des élixirs échangés
       if (voieDesElixirs > 0) {
-        var elixirsDuForgesort = forgesorts[charId];
+        let elixirsDuForgesort = forgesorts[charId];
         if (elixirsDuForgesort === undefined) {
           elixirsDuForgesort = {
             forgesort: personnage,
@@ -30089,8 +30100,8 @@ var COFantasy = COFantasy || function() {
           };
         }
         // Check de l'élixir à renouveler
-        var nomElixir = attr.get('name');
-        var typeElixir = listeElixirs(voieDesElixirs).find(function(i) {
+        let nomElixir = attr.get('name');
+        let typeElixir = listeElixirs(voieDesElixirs).find(function(i) {
           return "elixir_" + i.attrName == nomElixir;
         });
         if (typeElixir === undefined) {
@@ -30098,18 +30109,18 @@ var COFantasy = COFantasy || function() {
           return;
         }
         // Check des doses
-        var doses = attr.get("current");
+        let doses = attr.get("current");
         if (isNaN(doses)) {
           error("Erreur interne : élixir mal formé");
           return;
         }
         if (doses > 0) {
           // Tout est ok, création de l'item
-          var elixirArenouveler = {
+          let elixirArenouveler = {
             typeElixir: typeElixir,
             doses: doses
           };
-          var elixirsParRang = elixirsDuForgesort.elixirsParRang;
+          let elixirsParRang = elixirsDuForgesort.elixirsParRang;
           if (elixirsParRang[typeElixir.rang] === undefined) {
             elixirsParRang[typeElixir.rang] = [elixirArenouveler];
           } else elixirsParRang[typeElixir.rang].push(elixirArenouveler);
@@ -39595,7 +39606,7 @@ var COFantasy = COFantasy || function() {
       if (indexSaveType > 0) return;
       let effetC = attrName.substring(0, indexSave);
       let effetTemp = estEffetTemp(effetC);
-      if (!effetTemp && !estEffetCombat(effetC)) return;
+      if (!cof_states[effetC] && !effetTemp && !estEffetCombat(effetC)) return;
       let carac = attr.get('current');
       if (!isCarac(carac)) {
         error("Save par tour " + attrName + " mal formé", carac);
@@ -39623,32 +39634,20 @@ var COFantasy = COFantasy || function() {
       if (getState(perso, 'mort')) {
         return;
       }
-      let attrEffet = findObjs({
-        _type: 'attribute',
-        _characterid: charId,
-        name: attrName
-      });
-      if (attrEffet === undefined || attrEffet.length === 0) {
-        if (getObj('attribute', attr.id)) {
-          error("Save sans effet temporaire " + attrName, attr);
-          findObjs({
-            _type: 'attribute',
-            _characterid: charId,
-            name: attr.get('name').replace('SaveParTour', 'SaveParTourType')
-          }).forEach(function(a) {
-            a.remove();
-          });
-          attr.remove();
-        }
-        return;
-      }
-      attrEffet = attrEffet[0];
       let expliquer = function(msg) {
         sendPerso(perso, msg);
       };
       let met;
       if (effetTemp) met = messageOfEffetTemp(effetC);
-      else met = messageEffetCombat[effetC];
+      else if (cof_states[effetC]) {
+        let se= stringOfEtat(effetC, perso);
+        met = {
+        etat: true,
+        msgSave: "ne plus être " + se,
+        fin: "n'est plus " + se,
+        actif: "est toujours " + se
+      };
+      } else met = messageEffetCombat[effetC];
       let msgPour = " pour ";
       if (met.msgSave) msgPour += met.msgSave;
       else {
@@ -39675,6 +39674,33 @@ var COFantasy = COFantasy || function() {
       if (attrType.length > 0) {
         saveOpts.type = attrType[0].get('current');
       }
+      let attrEffet;
+      if (met.etat) {
+        attrEffet = {
+          id: effetC
+        };
+      } else {
+        attrEffet = findObjs({
+          _type: 'attribute',
+          _characterid: charId,
+          name: attrName
+        });
+        if (attrEffet === undefined || attrEffet.length === 0) {
+          if (getObj('attribute', attr.id)) {
+            error("Save sans effet " + attrName, attr);
+            findObjs({
+              _type: 'attribute',
+              _characterid: charId,
+              name: attr.get('name').replace('SaveParTour', 'SaveParTourType')
+            }).forEach(function(a) {
+              a.remove();
+            });
+            attr.remove();
+          }
+          return;
+        }
+        attrEffet = attrEffet[0];
+      }
       let saveId = 'saveParTour_' + attrEffet.id + '_' + perso.token.id;
       let s = {
         carac: carac,
@@ -39684,12 +39710,16 @@ var COFantasy = COFantasy || function() {
       save(s, perso, saveId, expliquer, saveOpts, evt,
         function(reussite, texte) { //asynchrone
           if (reussite) {
-            var eff = effetC;
-            if (effetTemp) eff = effetTempOfAttribute(attrEffet);
-            finDEffet(attrEffet, eff, attrName, charId, evt, {
-              attrSave: attr,
-              pageId: pageId
-            });
+            if (met.etat) {
+              setState(perso, effetC, false, evt);
+            } else {
+              let eff = effetC;
+              if (effetTemp) eff = effetTempOfAttribute(attrEffet);
+              finDEffet(attrEffet, eff, attrName, charId, evt, {
+                attrSave: attr,
+                pageId: pageId
+              });
+            }
           }
         });
     }); //fin boucle attrSave
