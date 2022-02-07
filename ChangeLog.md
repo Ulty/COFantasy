@@ -12,6 +12,7 @@
 * Correction d'un bug sur le pacifisme
 
 ### Autres améliorations
+* Possibilité de renouveler les élixirs et les runes en dehors de la page des joueurs.
 * Support pour les arcs composites façon Pathfinder.
 * Possibilité de save par tour actif pour les effets temporaires.
 * Possibilité d'indiquer des temps de recharge pour les effets.

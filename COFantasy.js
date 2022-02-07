@@ -2216,7 +2216,7 @@ var COFantasy = COFantasy || function() {
       enleverEffetAttribut(charId, efComplet, attrName, 'SaveActifParTour', evt);
       enleverEffetAttribut(charId, efComplet, attrName, 'SaveParTourType', evt);
     }
-    var mEffet = messageEffetTemp[effet];
+    let mEffet = messageEffetTemp[effet];
     if (mEffet === undefined) mEffet = messageEffetCombat[effet];
     if (mEffet && mEffet.statusMarker) {
       iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
@@ -2226,7 +2226,7 @@ var COFantasy = COFantasy || function() {
         tousLesTokens: true
       });
     }
-    var character;
+    let character;
     switch (effet) {
       case 'agrandissement': //redonner sa taille normale
         character = getObj('character', charId);
@@ -2237,11 +2237,11 @@ var COFantasy = COFantasy || function() {
         character.get('defaulttoken', function(normalToken) {
           if (normalToken === '') return;
           normalToken = JSON.parse(normalToken);
-          var largeWidth = normalToken.width + normalToken.width / 2;
-          var largeHeight = normalToken.height + normalToken.height / 2;
+          let largeWidth = normalToken.width + normalToken.width / 2;
+          let largeHeight = normalToken.height + normalToken.height / 2;
           iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
-            var width = token.get('width');
-            var height = token.get('height');
+            let width = token.get('width');
+            let height = token.get('height');
             affectToken(token, 'width', width, evt);
             token.set('width', normalToken.width);
             affectToken(token, 'height', height, evt);
@@ -4530,31 +4530,39 @@ var COFantasy = COFantasy || function() {
       if (who) res = '/w "' + who + '" ';
       else chuchote = false;
     }
-    var name1, name2 = '';
-    var avatar1, avatar2;
+    let name1, name2 = '';
+    let avatar1, avatar2;
     if (perso2) {
-      var img2 = improve_image(perso2.token.get('imgsrc'));
-      if (stateCOF.options.affichage.val.avatar_dans_cadres.val) {
-        var character2 = getObj('character', perso2.charId);
-        if (character2) img2 = improve_image(character2.get('avatar')) || img2;
-      }
+      let img2;
+      if (stateCOF.options.affichage.val.avatar_dans_cadres.val || !perso2.token) {
+        let character2 = getObj('character', perso2.charId);
+        if (character2) img2 = improve_image(character2.get('avatar'));
+      } else img2 = improve_image(perso2.token.get('imgsrc'));
       if (img2) {
         avatar2 = '<img src="' + img2 + '" style="width: 50%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
         name2 = perso2.tokName;
-        if (name2 === undefined) name2 = perso2.token.get('name');
+        if (name2 === undefined) {
+          name2 = perso2.token.get('name');
+        }
         name2 = '<b>' + name2 + '</b>';
       }
     }
     if (perso1) {
-      var img1 = improve_image(perso1.token.get('imgsrc'));
-      if (stateCOF.options.affichage.val.avatar_dans_cadres.val) {
-        var character1 = getObj('character', perso1.charId);
-        if (character1) img1 = improve_image(character1.get('avatar')) || img1;
-      }
+      let img1;
+      if (stateCOF.options.affichage.val.avatar_dans_cadres.val || !perso1.token) {
+        let character1 = getObj('character', perso1.charId);
+        if (character1) img1 = improve_image(character1.get('avatar'));
+      } else img1 = improve_image(perso1.token.get('imgsrc'));
       if (img1) {
         avatar1 = '<img src="' + img1 + '" style="width: ' + (avatar2 ? 50 : 100) + '%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
         if (perso1.tokName) name1 = perso1.tokName;
-        else name1 = perso1.token.get('name');
+        else if (perso1.token) name1 = perso1.token.get('name');
+        else {
+          let displayName = ficheAttribute(perso1, 'displayname', '@{character_name}');
+          if (displayName == '@{alias}')
+            name1 = ficheAttribute(perso1, 'alias', 'inconnu');
+          else name1 = ficheAttribute(perso1, 'character_name', 'inconnu');
+        }
         name1 = '<b>' + name1 + '</b>';
       }
     }
@@ -4585,7 +4593,7 @@ var COFantasy = COFantasy || function() {
         let bar1_info = '',
           bar2_info = '',
           bar3_info = '';
-        if (chuchote && peutController(playerId, perso1)) {
+        if (chuchote && perso1.token && peutController(playerId, perso1)) {
           // on chuchote donc on peut afficher les informations concernant les barres du Token
           if (perso1.token.get('bar1_link') === '') {
             bar1_info = '<b>PV</b> : ' + perso1.token.get('bar1_value') + ' / ' + perso1.token.get('bar1_max');
@@ -30051,6 +30059,42 @@ var COFantasy = COFantasy || function() {
     }); //Fin du getSelected
   }
 
+  function persoOfCharId(charId, pageId, errMsg) {
+    let token;
+    let tokensPersonnage =
+      findObjs({
+        _type: 'graphic',
+        _subtype: 'token',
+        represents: charId,
+        _pageid: pageId
+      });
+    if (tokensPersonnage.length === 0) {
+      tokensPersonnage =
+        findObjs({
+          _type: 'graphic',
+          _subtype: 'token',
+          represents: charId,
+        });
+      if (tokensPersonnage.length === 0) {
+        error("Impossible de trouver le token du personnage " + charId + " " + errMsg);
+        return;
+      }
+      if (tokensPersonnage.length > 1) {
+        let pageIds = characterPageIds(charId);
+        token = tokensPersonnage.find(function(t) {
+          return pageIds.has(t.get('pageid'));
+        });
+      }
+    } else if (tokensPersonnage.length > 1) {
+      log("Attention, plus d'un toke pour le personnage " + charId + " " + errMsg);
+    }
+    if (token === undefined) token = tokensPersonnage[0];
+    return {
+      token,
+      charId
+    };
+  }
+
   function proposerRenouveauElixirs(evt, attrs, options) {
     let attrsNamed = allAttributesNamed(attrs, 'elixir');
     if (attrsNamed.length === 0) return attrs;
@@ -30059,35 +30103,8 @@ var COFantasy = COFantasy || function() {
     attrsNamed.forEach(function(attr) {
       // Check de l'existence d'un créateur
       let charId = attr.get('characterid');
-      // Check de l'existence d'un token présent pour le personnage
-      let tokensPersonnage =
-        findObjs({
-          _type: 'graphic',
-          _subtype: 'token',
-          represents: charId,
-          _pageid: options.pageId
-        });
-      if (tokensPersonnage.length === 0) {
-        error("Impossible de trouver le token du personnage " + charId + " avec un élixir sur la carte");
-        return;
-      }
-      let token;
-      if (tokensPersonnage.length > 1) {
-        let pageIds = characterPageIds(charId);
-        tokensPersonnage.find(function(t) {
-          if (t.get('pageid') == options.pageId) {
-            token = t;
-            return true;
-          }
-          if (pageIds.has(t.get('pageid'))) token = t;
-          return false; //On continue à chercher
-        });
-      }
-      if (token === undefined) token = tokensPersonnage[0];
-      let personnage = {
-        token,
-        charId
-      };
+      let personnage = persoOfCharId(charId, options.pageId, "avec un élixir");
+      if (personnage === undefined) return;
       let voieDesElixirs = predicateAsInt(personnage, 'voieDesElixirs');
       //TODO: réfléchir à une solution pour le renouveau des élixirs échangés
       if (voieDesElixirs > 0) {
@@ -30137,32 +30154,32 @@ var COFantasy = COFantasy || function() {
       let allPlayers = getPlayerIds({
         charId: forgesortCharId
       });
-      var playerId;
+      let playerId;
       if (allPlayers === undefined || allPlayers.length < 1) {
         displayOpt.chuchote = 'gm';
       } else {
         playerId = allPlayers[0];
       }
-      var forgesort = elixirsDuForgesort.forgesort;
+      let forgesort = elixirsDuForgesort.forgesort;
       setTokenAttr(forgesort, "elixirsACreer", elixirsDuForgesort.voieDesElixirs * 2, evt);
-      var display = startFramedDisplay(allPlayers[0], "Renouveler les élixirs", forgesort, displayOpt);
-      var actionToutRenouveler = "";
+      let display = startFramedDisplay(allPlayers[0], "Renouveler les élixirs", forgesort, displayOpt);
+      let actionToutRenouveler = "";
       // Boucle par rang de rune
       for (const rang in elixirsDuForgesort.elixirsParRang) {
-        var elixirsDeRang = elixirsDuForgesort.elixirsParRang[rang];
+        let elixirsDeRang = elixirsDuForgesort.elixirsParRang[rang];
         if (elixirsDeRang === undefined || elixirsDeRang.length < 1) continue;
         addLineToFramedDisplay(display, "Elixirs de rang " + rang, undefined, true);
-        var actionTout = '';
-        var ligneBoutons = '';
+        let actionTout = '';
+        let ligneBoutons = '';
         // Boucle par élixir de ce rang à renouveler
         for (const i in elixirsDeRang) {
-          var elixir = elixirsDeRang[i];
+          let elixir = elixirsDeRang[i];
           // Boucle par dose
           for (let j = 0; j < elixir.doses; j++) {
-            var action = "!cof-creer-elixir " + forgesort.token.id + " " + elixir.typeElixir.attrName;
+            let action = "!cof-creer-elixir " + forgesort.token.id + " " + elixir.typeElixir.attrName;
             actionTout += action + "\n";
             actionToutRenouveler += action + "\n";
-            var nomElixirComplet = elixir.typeElixir.nom;
+            let nomElixirComplet = elixir.typeElixir.nom;
             ligneBoutons += bouton(action, nomElixirComplet.replace("Elixir de ", "").replace("Elixir d'", ""), forgesort);
           }
         }
@@ -30171,7 +30188,7 @@ var COFantasy = COFantasy || function() {
         });
         addLineToFramedDisplay(display, ligneBoutons, undefined, true);
       }
-      var boutonToutRenouveler =
+      let boutonToutRenouveler =
         bouton(actionToutRenouveler, "Tout renouveler", forgesort, {
           buttonStyle: "background-color: green;"
         });
@@ -30342,38 +30359,24 @@ var COFantasy = COFantasy || function() {
   }
 
   //TODO: passer pageId en argument au lieu de prendre la page des joueurs
-  function proposerRenouveauRunes(evt, attrs) {
+  function proposerRenouveauRunes(evt, attrs, options) {
     let attrsNamed = allAttributesNamed(attrs, 'runeForgesort');
     if (attrsNamed.length === 0) return attrs;
     // Filtrer par Forgesort, dans l'éventualité qu'il y en ait plusieurs actifs
     let forgesorts = {};
     attrsNamed.forEach(function(attr) {
       // Check de l'existence d'un créateur
-      let foundForgesortId = attr.get('max');
-      if (foundForgesortId === undefined) {
+      let forgesortId = attr.get('max');
+      if (forgesortId === undefined) {
         error("Impossible de retrouver le créateur de la rune : " + attr);
         return;
       }
-      let runesDuForgesort = forgesorts[foundForgesortId];
+      let runesDuForgesort = forgesorts[forgesortId];
       if (runesDuForgesort === undefined) {
         // Check de l'existence d'un token présent pour le créateur
-        let tokensForgesort =
-          findObjs({
-            _pageid: Campaign().get("playerpageid"),
-            _type: 'graphic',
-            _subtype: 'token',
-            represents: foundForgesortId
-          });
-        if (tokensForgesort.length < 1) {
-          error("Impossible de trouver le token du forgesort " + foundForgesortId + " sur la carte");
-          return;
-        }
-        var forgesort = {
-          token: tokensForgesort[0],
-          charId: foundForgesortId
-        };
+        let forgesort = persoOfCharId(forgesortId, options.pageId, "ayant créé une rune");
         // Check du perso voie des Runes
-        var voieDesRunes = predicateAsInt(forgesort, 'voieDesRunes', 0);
+        let voieDesRunes = predicateAsInt(forgesort, 'voieDesRunes', 0);
         if (voieDesRunes < 1) {
           sendPerso(forgesort, "ne connaît pas la Voie des Runes");
           return;
@@ -30388,22 +30391,9 @@ var COFantasy = COFantasy || function() {
         };
       }
       // Check de la présence d'un token pour la cible
-      var targetCharId = attr.get('characterid');
-      var tokensTarget =
-        findObjs({
-          _pageid: Campaign().get("playerpageid"),
-          _type: 'graphic',
-          _subtype: 'token',
-          represents: targetCharId
-        });
-      if (tokensTarget.length < 1) {
-        error("Impossible de trouver le token de la cible " + targetCharId + " sur la carte");
-        return;
-      }
-      let target = {
-        token: tokensTarget[0],
-        charId: targetCharId
-      };
+      let targetCharId = attr.get('characterid');
+      let target = persoOfCharId(targetCharId, options.pageId, "ayant une rune");
+      if (target === undefined) return;
       // Check de la rune à renouveler
       let runeName = attr.get('name');
       let typeRune =
@@ -30424,7 +30414,7 @@ var COFantasy = COFantasy || function() {
       if (runesParRang[typeRune.rang] === undefined) {
         runesParRang[typeRune.rang] = [runeARenouveler];
       } else runesParRang[typeRune.rang].push(runeARenouveler);
-      forgesorts[foundForgesortId] = runesDuForgesort;
+      forgesorts[forgesortId] = runesDuForgesort;
     });
     // Display par personnage
     for (const [forgesortCharId, runesDuForgesort] of Object.entries(forgesorts)) {
@@ -30435,28 +30425,29 @@ var COFantasy = COFantasy || function() {
       let allPlayers = getPlayerIds({
         charId: forgesortCharId
       });
-      var playerId;
+      let playerId;
       if (allPlayers === undefined || allPlayers.length < 1) {
         displayOpt.chuchote = 'gm';
       } else {
         playerId = allPlayers[0];
       }
-      var forgesort = runesDuForgesort.forgesort;
-      var display = startFramedDisplay(allPlayers[0], "Renouveler les runes", forgesort, displayOpt);
-      var actionToutRenouveler = "";
+      let forgesort = runesDuForgesort.forgesort;
+      let display = startFramedDisplay(allPlayers[0], "Renouveler les runes", forgesort, displayOpt);
+      let actionToutRenouveler = "";
       // Boucle par rang de rune
       for (const rang in runesDuForgesort.runesParRang) {
-        var runesDeRang = runesDuForgesort.runesParRang[rang];
+        let runesDeRang = runesDuForgesort.runesParRang[rang];
         if (runesDeRang === undefined || runesDeRang.length < 1) continue;
         addLineToFramedDisplay(display, runesDeRang[0].typeRune.nom, undefined, true);
-        var actionTout = "";
-        var ligneBoutons = "";
+        let actionTout = "";
+        let ligneBoutons = "";
         // Boucle par rune de ce rang à renouveler
         for (const i in runesDeRang) {
-          var rune = runesDeRang[i];
-          var action = "!cof-creer-rune " + forgesort.token.id + " " + rune.target.token.id + " " + rang;
+          let rune = runesDeRang[i];
+          let action =
+            "!cof-creer-rune " + forgesort.token.id + " " + rune.target.token.id + " " + rang;
           if (rang == 4) {
-            var runeName = rune.runeName;
+            let runeName = rune.runeName;
             action += " " + runeName.substring(runeName.indexOf("(") + 1, runeName.indexOf(")"));
           }
           actionTout += action + "\n";
@@ -30468,7 +30459,7 @@ var COFantasy = COFantasy || function() {
         });
         addLineToFramedDisplay(display, ligneBoutons, undefined, true);
       }
-      var boutonToutRenouveler =
+      let boutonToutRenouveler =
         bouton(actionToutRenouveler, "Tout renouveler", forgesort, {
           buttonStyle: "background-color: green;"
         });
@@ -35441,25 +35432,25 @@ var COFantasy = COFantasy || function() {
         attributes: []
       };
       addEvent(evt);
-      var allAttrs = findObjs({
+      let allAttrs = findObjs({
         _type: 'attribute',
       });
-      var attrsWithTokNames = allAttrs.filter(function(attr) {
+      let attrsWithTokNames = allAttrs.filter(function(attr) {
         return attributesWithTokNames.test(attr.get('name'));
       });
-      var attrsWithCharNames;
-      var treated = new Set(); //On ne veut pas traiter un personnage plus d'une fois.
+      let attrsWithCharNames;
+      let treated = new Set(); //On ne veut pas traiter un personnage plus d'une fois.
       iterSelected(selected, function(perso) {
         if (treated.has(perso.charId)) return;
         treated.add(perso.charId);
-        var character = getObj('character', perso.charId);
+        let character = getObj('character', perso.charId);
         if (character === undefined) {
           error("Personnage de " + perso.token.get('name') + " perdu", perso);
           return;
         }
-        var displayName = ficheAttribute(perso, 'displayname', '@{character_name}');
-        var ancienNom;
-        var nouveauNom;
+        let displayName = ficheAttribute(perso, 'displayname', '@{character_name}');
+        let ancienNom;
+        let nouveauNom;
         if (displayName == '@{alias}') {
           setFicheAttr(perso, 'displayname', '@{character_name}', evt);
           ancienNom = ficheAttribute(perso, 'alias', '');
@@ -35496,12 +35487,12 @@ var COFantasy = COFantasy || function() {
           });
         }
         if (!nouveauNomToken) nouveauNomToken = nouveauNom;
-        var traitementEnCours;
+        let traitementEnCours;
         character.get('defaulttoken', function(defaultToken) {
           if (traitementEnCours) return;
           traitementEnCours = true;
-          var defaultTokenName;
-          var defaultTokenToSet;
+          let defaultTokenName;
+          let defaultTokenToSet;
           if (defaultToken !== '') {
             defaultToken = JSON.parse(defaultToken);
             evt.defaultTokens.push({
@@ -35513,32 +35504,32 @@ var COFantasy = COFantasy || function() {
             defaultToken.name = nouveauNomToken;
             defaultTokenToSet = true;
           }
-          var tokens =
+          let tokens =
             findObjs({
               _type: 'graphic',
               _subtype: 'token',
               represents: perso.charId
             });
           tokens.forEach(function(tok) {
-            var tokName = tok.get('name');
+            let tokName = tok.get('name');
             if (defaultTokenToSet) {
               defaultTokenToSet = false;
               setDefaultTokenFromSpec(character, defaultToken, tok);
             }
-            var tokAttr;
+            let tokAttr;
             if (tok.get('bar1_link') === '') {
               if (defaultTokenName) {
                 if (tokName.startsWith(defaultTokenName)) {
-                  var suffix = tokName.substring(defaultTokenName.length);
-                  var localTokName = nouveauNomToken + suffix;
+                  let suffix = tokName.substring(defaultTokenName.length);
+                  let localTokName = nouveauNomToken + suffix;
                   setToken(tok, 'name', localTokName, evt);
                   tokAttr = tokAttr || findObjs({
                     _type: 'attribute',
                     _characterid: perso.charId
                   });
-                  var endName = "_" + tokName;
+                  let endName = "_" + tokName;
                   tokAttr.forEach(function(attr) {
-                    var attrName = attr.get('name');
+                    let attrName = attr.get('name');
                     if (attrName.endsWith(endName)) {
                       evt.attributes.push({
                         attribute: attr,
@@ -39640,13 +39631,13 @@ var COFantasy = COFantasy || function() {
       let met;
       if (effetTemp) met = messageOfEffetTemp(effetC);
       else if (cof_states[effetC]) {
-        let se= stringOfEtat(effetC, perso);
+        let se = stringOfEtat(effetC, perso);
         met = {
-        etat: true,
-        msgSave: "ne plus être " + se,
-        fin: "n'est plus " + se,
-        actif: "est toujours " + se
-      };
+          etat: true,
+          msgSave: "ne plus être " + se,
+          fin: "n'est plus " + se,
+          actif: "est toujours " + se
+        };
       } else met = messageEffetCombat[effetC];
       let msgPour = " pour ";
       if (met.msgSave) msgPour += met.msgSave;
