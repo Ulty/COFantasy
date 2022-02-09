@@ -1229,11 +1229,11 @@ var COFantasy = COFantasy || function() {
 
   // retourne un tableau contenant la liste des ID de joueurs connectés controllant le personnage lié au Token
   function getPlayerIds(perso) {
-    var character = getObj('character', perso.charId);
+    let character = getObj('character', perso.charId);
     if (character === undefined) return;
-    var charControlledby = character.get('controlledby');
+    let charControlledby = character.get('controlledby');
     if (charControlledby === '') return [];
-    var playerIds = [];
+    let playerIds = [];
     charControlledby.split(",").forEach(function(controlledby) {
       var player = getObj('player', controlledby);
       if (player === undefined) return;
@@ -3857,20 +3857,20 @@ var COFantasy = COFantasy || function() {
   }
 
   function undoTokenEffect(evt) {
-    var HTdeclared;
+    let HTdeclared;
     try {
       HTdeclared = HealthColors;
     } catch (e) {
       if (e.name != "ReferenceError") throw (e);
     }
     _.each(evt.affectes, function(aff) {
-      var prev = aff.prev;
-      var tok = aff.affecte;
+      let prev = aff.prev;
+      let tok = aff.affecte;
       if (prev === undefined || tok === undefined) {
         error("Pas d'état précédant", aff);
         return;
       }
-      var prevTok;
+      let prevTok;
       if (HTdeclared) prevTok = JSON.parse(JSON.stringify(tok));
       _.each(prev, function(val, key) {
         tok.set(key, val);
@@ -5280,7 +5280,7 @@ var COFantasy = COFantasy || function() {
         }
       } else nbDe++;
     }
-    var de = nbDe + "d" + dice;
+    let de = nbDe + "d" + dice;
     if (nbDe > 1) {
       if (plusFort) de += "kh1";
       else de += "kl1";
@@ -5288,6 +5288,31 @@ var COFantasy = COFantasy || function() {
     return de;
   }
 
+  function foudreDuTemps(perso, d20roll) {
+    if (stateCOF.foudreDuTemps.min > d20roll) return;
+    if (stateCOF.foudreDuTemps.max < d20roll) return;
+    let d6 = rollDePlus(6);
+    sendChat('', "La foudre frappe ! "+d6.roll);
+    switch (d6.val) {
+      case 1:
+        sendPerso(perso, " est frappé"+eForFemale(perso)+" de plein fouet !");
+  let pl = getPlayerIds(perso);
+        if (pl === undefined) return;
+        let playerId;
+        let playerName;
+        if (pl.length === 0) {
+          playerName = 'GM';
+        } else {
+          playerId = pl[0];
+        }
+      let dmg = {
+        type: 'electrique',
+        value: '3d6'
+      };
+        let options = {};
+        dmgDirects(playerId, playerName, [perso], dmg, options);
+    }
+  }
   // Test de caractéristique
   // options : bonusAttrs, bonusPreds, bonus, roll
   // Après le test, lance callback(testRes, explications
@@ -5359,6 +5384,7 @@ var COFantasy = COFantasy || function() {
         let d20roll = roll.results.total;
         let bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
         testRes.texte = jetCache ? d20roll + bonusCarac : buildinline(roll) + bonusText;
+        if (stateCOF.foudreDuTemps) foudreDuTemps(personnage, d20roll);
         if (d20roll == 20) {
           testRes.reussite = true;
           testRes.critique = true;
@@ -12386,7 +12412,7 @@ var COFantasy = COFantasy || function() {
       });
     });
     // on envoie la liste aux joueurs qui gèrent l'attaquant
-    var playerIds = getPlayerIds(attaquant);
+    let playerIds = getPlayerIds(attaquant);
     playerIds.forEach(function(playerid) {
       addFramedHeader(display, playerid, true);
       sendChat('', endFramedDisplay(display));
