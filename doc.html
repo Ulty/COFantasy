@@ -1926,6 +1926,9 @@
                   <li><strong>Grande taille</strong> : quand le demi-ogre rentre dans une construction de taille humaine, utiliser <code>!cof-effet constructionTailleHumaine true</code>. À la sortie du bâtiment, <code>!cof-effet constructionTailleHumaine false</code>. Pour les espaces exigus, de même avec l'effet <code>espaceExigu</code>.</li>
                   <li><strong>Réaction violente</strong> : en cas de provocation, exécuter <code>!cof-effet-temp reactionViolente [[1d6]] --save SAG 10</code>. On peut par exemple mettre ce code en ability liée au token. Au MJ et au joueur de gérer les actions qui s'ensuivent. Le script propose une action à l'ogre pour prendre sur lui à chaque tour.</li>
                 </ul>
+                <ol>
+                  <li><strong>Sang-froid</strong> : ajouter un prédicat <code>sangFroid</code>. Modifier la commande pour les provocations en <code>!cof-effet-temp reactionViolente [[1d4]] --save SAG 5</code>. </li>
+                </ol>
                 <h4 class="text-secondary">Demi-orque</h4>
                 <a href="#Vision_dans_le_noir">Vision dans le noir</a>.
                 <ol>

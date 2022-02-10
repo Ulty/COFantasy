@@ -37540,7 +37540,9 @@ var COFantasy = COFantasy || function() {
     attr.remove();
     sendPerso(perso, "prend sur " + onGenre(perso, 'lui', 'elle') + " pour contenir sa réaction violente");
     options.ignoreRD = true;
-    let degats = rollDePlus(6, {
+    let de = 6;
+    if (predicateAsBool(perso, 'sangFroid')) de = 4;
+    let degats = rollDePlus(de, {
       nbDes: duree
     });
     let dmg = {
