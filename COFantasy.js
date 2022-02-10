@@ -5288,31 +5288,163 @@ var COFantasy = COFantasy || function() {
     return de;
   }
 
-  function foudreDuTemps(perso, d20roll) {
+  function foudreDuTemps(perso, d20roll, delayed, more) {
     if (stateCOF.foudreDuTemps.min > d20roll) return;
     if (stateCOF.foudreDuTemps.max < d20roll) return;
+    if (delayed === undefined) {
+      setTimeout(_.bind(foudreDuTemps, undefined, perso, d20roll, true), 2000);
+      return;
+    }
+    playSound('Foudre');
+    if (getState(perso, 'mort')) return;
     let d6 = rollDePlus(6);
-    sendChat('', "La foudre frappe ! "+d6.roll);
+    let titre = "La foudre frappe ! " + d6.roll;
+    let pl = getPlayerIds(perso);
+    if (pl === undefined) return;
+    let playerId;
+    if (pl.length > 0) playerId = pl[0]; //Utilisé juste pour la couleur
+    let display = startFramedDisplay(playerId, titre, perso);
+    let explications = [];
+    let np = nomPerso(perso);
     switch (d6.val) {
       case 1:
-        sendPerso(perso, " est frappé"+eForFemale(perso)+" de plein fouet !");
-  let pl = getPlayerIds(perso);
-        if (pl === undefined) return;
-        let playerId;
-        let playerName;
-        if (pl.length === 0) {
-          playerName = 'GM';
-        } else {
-          playerId = pl[0];
+        {
+          addLineToFramedDisplay(display, np + " est frappé" + eForFemale(perso) + " de plein fouet !");
+          let options = {
+            partialSave: {
+              carac: 'DEX',
+              seuil: 15
+            }
+          };
+          let dmg = {
+            type: 'electrique',
+            value: '3d6',
+          };
+          //Un evt pour pouvoir utiliser les points de chance sur le save
+          let evt = {
+            type: 'dmgDirects',
+            action: {
+              titre,
+              playerId,
+              playerName: 'GM',
+              cibles: [perso],
+              dmg,
+              options
+            }
+          };
+          addEvent(evt);
+          sendChat('', '[[3d6]]', function(resDmg) {
+            dmg.roll = resDmg[0];
+            let afterEvaluateDmg = dmg.roll.content.split(' ');
+            let dmgRollNumber = rollNumber(afterEvaluateDmg[0]);
+            dmg.total = dmg.roll.inlinerolls[dmgRollNumber].results.total;
+            dmg.display = buildinline(dmg.roll.inlinerolls[dmgRollNumber], dmg.type);
+            dealDamage(perso, dmg, [], evt, false, options, explications, function(dmgDisplay, dmgFinal) {
+              addLineToFramedDisplay(display,
+                np + " reçoit " + dmgDisplay + " DM");
+              explications.forEach(function(e) {
+                addLineToFramedDisplay(display, e, 80, false);
+              });
+              sendChat('', endFramedDisplay(display));
+            });
+          });
+          return;
         }
-      let dmg = {
-        type: 'electrique',
-        value: '3d6'
-      };
-        let options = {};
-        dmgDirects(playerId, playerName, [perso], dmg, options);
+      case 2:
+      case 3:
+        {
+          let distance = rollDePlus(6);
+          //Un evt pour pouvoir utiliser les points de chance sur le save
+          let options = {
+            save: {
+              carac: 'FOR',
+              seuil: 10,
+              msgPour: "pour ne pas être tomber"
+            }
+          };
+          let evt = {
+            type: 'set_state',
+            action: {
+              titre,
+              cibles: [perso],
+              etat: 'renverse',
+              valeur: true,
+              options
+            }
+          };
+          addEvent(evt);
+          let saveOpts = {
+            msgPour: options.msgPour,
+            msgRate: ", raté.",
+          };
+          let expliquer = function(s) {
+            explications.push(s);
+          };
+          let saveId = "effet_renverse_" + perso.token.id;
+          save(options.save, perso, saveId, expliquer, saveOpts, evt, function(reussite, rolltext) {
+            let textDist = distance.roll;
+            let seuil = 1;
+            if (reussite) {
+              textDist = distance.val / 2;
+              seuil = 2;
+            }
+            textDist += distance.val > seuil ? ' mètres' : ' mètre';
+            sendChat('', '[[2d6]]', function(resDmg) {
+              let afterEvaluateDmg = resDmg[0].content.split(' ');
+              let dmgRollNumber = rollNumber(afterEvaluateDmg[0]);
+              let dmg = {
+                total: resDmg[0].inlinerolls[dmgRollNumber].results.total,
+                display: buildinline(resDmg[0].inlinerolls[dmgRollNumber], 'electrique'),
+                type: 'electrique'
+              };
+              dealDamage(perso, dmg, [], evt, false, options, explications, function(dmgDisplay, dmgFinal) {
+                addLineToFramedDisplay(display, np + " est projeté" + eForFemale(perso) + " de " + textDist + " par la foudre, et subit " + dmgDisplay + " DM");
+                explications.forEach(function(e) {
+                  addLineToFramedDisplay(display, e, 80, false);
+                });
+                if (reussite) {
+                  addLineToFramedDisplay(display, np + " résiste, la distance de projection passe de " + distance.roll + " à " + (distance.val / 2));
+                } else {
+                  setState(perso, 'renverse', true, evt);
+                }
+                sendChat('', endFramedDisplay(display));
+              });
+            });
+          });
+          return;
+        }
+      default:
+        {
+          addLineToFramedDisplay(display, np + " est dans la zone d'impact !");
+          if (getState(perso, 'affaibli')) {
+            sendChat('', endFramedDisplay(display));
+            return;
+          }
+          let options = {
+            save: {
+              carac: 'CON',
+              seuil: 10,
+              msgPour: ' pour ne pas être affaibli' + eForFemale(perso)
+            }
+          };
+          const evt = {
+            type: 'effetTemp',
+            action: {
+              titre,
+              playerId,
+              cibles: [perso],
+              effet: 'affaibliTemp',
+              mEffet: messageEffetTemp.affaibliTemp,
+              duree: 1,
+              options: options
+            }
+          };
+          addEvent(evt);
+          activerEffetTemporaire(playerId, undefined, [perso], 'affaibliTemp', messageEffetTemp.affaibliTemp, 1, options, evt, '', explications, display);
+        }
     }
   }
+
   // Test de caractéristique
   // options : bonusAttrs, bonusPreds, bonus, roll
   // Après le test, lance callback(testRes, explications
@@ -5512,6 +5644,7 @@ var COFantasy = COFantasy || function() {
       evt.action.rolls[testId] = roll;
       roll.token = personnage.token;
       let d20roll = roll.results.total;
+      if (stateCOF.foudreDuTemps) foudreDuTemps(personnage, d20roll);
       let rtext = jetCache ? d20roll + bonusCarac : buildinline(roll) + bonusText;
       let rt = {
         total: d20roll + bonusCarac,
@@ -8205,13 +8338,13 @@ var COFantasy = COFantasy || function() {
       let bar2;
       if (token) {
         bar2 = parseInt(token.get('bar2_value'));
-      if (isNaN(bar2)) {
-        if (token.get('bar1_link') === '') bar2 = 0;
-        else { //devrait être lié à la mana courante
-          sendPerso(personnage, "*** Attention, la barre de mana du token n'est pas liée à la mana de la fiche ***");
-          bar2 = parseInt(manaAttr[0].get('current'));
+        if (isNaN(bar2)) {
+          if (token.get('bar1_link') === '') bar2 = 0;
+          else { //devrait être lié à la mana courante
+            sendPerso(personnage, "*** Attention, la barre de mana du token n'est pas liée à la mana de la fiche ***");
+            bar2 = parseInt(manaAttr[0].get('current'));
+          }
         }
-      }
       } else bar2 = parseInt(manaAttr[0].get('current'));
       msg = msg || '';
       if ((reglesOptionelles.mana.val.contrecoup.val && bar2 <= 0) ||
@@ -9294,7 +9427,7 @@ var COFantasy = COFantasy || function() {
 
   //tm doit être stateCOF.tenebresMagiques, et bien défini.
   function eclaireParFioleDeLumiere(perso, tm) {
-    var fio = tm.fioleDeLumiere;
+    let fio = tm.fioleDeLumiere;
     if (fio === undefined || fio.porteur === undefined) return false;
     return distanceCombat(fio.porteur.token, perso.token) < fio.distance;
   }
@@ -9845,7 +9978,7 @@ var COFantasy = COFantasy || function() {
       explications.push("Tient l'ennemi à distance => +5 en DEF");
       defense += 5;
     }
-    var tm = stateCOF.tenebresMagiques;
+    let tm = stateCOF.tenebresMagiques;
     if (tm) {
       if (estDemon(target)) {
         if (eclaireParFioleDeLumiere(target, tm)) {
@@ -12382,7 +12515,7 @@ var COFantasy = COFantasy || function() {
     let display =
       startFramedDisplay(undefined, "Attaque " + type + " possible", attaquant, opt_display);
     cibles.forEach(function(target) {
-      if (target.name === undefined) {//TODO vérifier que c'est utile
+      if (target.name === undefined) { //TODO vérifier que c'est utile
         let targetChar = getObj('character', target.charId);
         if (targetChar === undefined) {
           error('Impossible de trouver le personnage représentant ' + nomPerso(target), target);
@@ -13318,6 +13451,7 @@ var COFantasy = COFantasy || function() {
         let attRollNumber = rollNumber(afterEvaluateAttack[0]);
         let attSkillNumber = rollNumber(afterEvaluateAttack[1]);
         let d20roll = rollsAttack.inlinerolls[attRollNumber].results.total;
+        if (stateCOF.foudreDuTemps) foudreDuTemps(attaquant, d20roll);
         let attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
         evt.type = 'Attaque';
         evt.succes = true;
@@ -13570,7 +13704,7 @@ var COFantasy = COFantasy || function() {
                   }
                 });
               }
-              var targetd20roll = d20roll;
+              let targetd20roll = d20roll;
               if (target.chatimentDuMale) {
                 target.chatimentDuMaleRoll = target.chatimentDuMaleRoll || randomInteger(dice);
                 target.chatimentDuMaleLowRoll = target.chatimentDuMaleRoll;
@@ -14078,7 +14212,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function playSound(sound) {
-    var AMdeclared;
+    let AMdeclared;
     try {
       AMdeclared = Roll20AM;
     } catch (e) {
@@ -14088,7 +14222,7 @@ var COFantasy = COFantasy || function() {
       //With Roll20 Audio Master
       sendChat("GM", "!roll20AM --audio,play,nomenu|" + sound);
     } else {
-      var jukebox = findObjs({
+      let jukebox = findObjs({
         type: 'jukeboxtrack',
         title: sound
       });
@@ -17875,7 +18009,8 @@ var COFantasy = COFantasy || function() {
                 let attRollNumber = rollNumber(afterEvaluateAttack[0]);
                 let attSkillNumber = rollNumber(afterEvaluateAttack[1]);
                 let d20rollAttaquant = rollsAttack.inlinerolls[attRollNumber].results.total;
-                var attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
+                if (stateCOF.foudreDuTemps) foudreDuTemps(target, d20rollAttaquant);
+                let attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
                 let explications = [];
                 let attBonus =
                   bonusAttaqueA(target, weaponStatsIncrevable.name, evt, explications, optionsIncrevable);
@@ -19471,6 +19606,13 @@ var COFantasy = COFantasy || function() {
 
   //Si il y a des effets à durée indéterminées, les rappeler au MJ, avec un bouton pour facilement y mettre fin si nécessaire
   function proposerFinEffetsIndetermines() {
+    //On commence par les états globaux
+    if (stateCOF.tenebresMagiques) {
+      sendPlayer('GM', boutonSimple("!cof-tenebres-magiques fin", "Mettre fin") + "aux ténèbres magiques ?");
+    }
+    if (stateCOF.foudreDuTemps) {
+      sendPlayer('GM', boutonSimple("!cof-foudre-du-temps fin", "Mettre fin") + "aux foudres du temps ?");
+    }
     let attrs = findObjs({
       _type: 'attribute'
     });
@@ -20275,23 +20417,23 @@ var COFantasy = COFantasy || function() {
 
   //!cof-bouton-chance [evt.id] [rollId]
   function boutonChance(msg) {
-    var args = msg.content.split(' ');
+    let args = msg.content.split(' ');
     if (args.length < 2) {
       error("La fonction !cof-bouton-chance n'a pas assez d'arguments", args);
       return;
     }
-    var evt = findEvent(args[1]);
+    let evt = findEvent(args[1]);
     if (evt === undefined) {
       error("L'action est trop ancienne ou éte annulée", args);
       return;
     }
-    var action = evt.action;
+    let action = evt.action;
     if (!action) {
       error("Type d'évènement pas encore géré pour la chance", evt);
       return;
     }
-    var perso = evt.personnage;
-    var rollId;
+    let perso = evt.personnage;
+    let rollId;
     if (args.length > 2) {
       var roll = action.rolls[args[2]];
       if (roll === undefined) {
@@ -20313,12 +20455,12 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton");
       return;
     }
-    var chance = pointsDeChance(perso);
+    let chance = pointsDeChance(perso);
     if (chance <= 0) {
       sendPerso(perso, "n'a plus de point de chance à dépenser...");
       return;
     }
-    var evtChance = {
+    let evtChance = {
       type: 'chance',
       rollId: rollId
     };
@@ -21375,7 +21517,7 @@ var COFantasy = COFantasy || function() {
           error("L'argument de !cof-interposer n'est pas une id de token valide (personnage non défini)", msg.content);
           return;
         }
-        cible.name = character.get('name');//TODO: utile ?
+        cible.name = character.get('name'); //TODO: utile ?
         if (attributeAsBool(cible, 'interposer')) {
           sendPerso(cible, " a déjà intercepté une attaque ce tour");
           return;
@@ -23617,14 +23759,14 @@ var COFantasy = COFantasy || function() {
       });
     }
     cibles.forEach(function(perso) {
-      function setEffect() {
+      let setEffect = function() {
         setState(perso, etat, valeur, evt);
         if (options.saveActifParTour) {
           setTokenAttr(perso, etat + 'Save', options.saveActifParTour.carac, evt, {
             maxVal: options.saveActifParTour.difficulte
           });
         }
-      }
+      };
       if (options.save) {
         let saveOpts = {
           msgPour: " pour résister à l'effet " + stringOfEtat(etat),
@@ -24300,7 +24442,7 @@ var COFantasy = COFantasy || function() {
         if (display) {
           cibles.forEach(function(cible) {
             if (cible.messages.length > 0) {
-              if (cibles.length > 1 || !lanceur || cible.token.id != lanceur.token.id)
+              if (cibles.length > 1 || (lanceur && cible.token.id != lanceur.token.id))
                 addLineToFramedDisplay(display, "<b>" + nomPerso(cible) + "</b> :");
               cible.messages.forEach(function(expl) {
                 addLineToFramedDisplay(display, expl, 80);
@@ -24345,33 +24487,33 @@ var COFantasy = COFantasy || function() {
           if (lanceur) ini.push(lanceur);
           entrerEnCombat(undefined, ini, explications, evt);
         }
-        if (options.aoe && options.pageId && effet == 'prisonVegetale' && options.aoe.type == 'disque') {
-          if (lanceur) {}
-          let diametre = options.aoe.rayon * 2 * PIX_PER_UNIT / computeScale(options.pageId);
-          let t = createObj('graphic', {
-            _pageid: options.pageId,
-            imgsrc: stateCOF.options.images.val.prison_vegetale.val,
-            represents: '',
-            left: options.aoe.centre.get('left'),
-            top: options.aoe.centre.get('top'),
-            width: diametre,
-            height: diametre,
-            layer: 'map',
-            isDrawing: true,
-            name: 'Prison végétale',
-            gmnotes: 'terrainDifficile:disque ' + Math.floor(diametre)
+      }
+      if (options.aoe && options.pageId && effet == 'prisonVegetale' && options.aoe.type == 'disque') {
+        if (lanceur) {}
+        let diametre = options.aoe.rayon * 2 * PIX_PER_UNIT / computeScale(options.pageId);
+        let t = createObj('graphic', {
+          _pageid: options.pageId,
+          imgsrc: stateCOF.options.images.val.prison_vegetale.val,
+          represents: '',
+          left: options.aoe.centre.get('left'),
+          top: options.aoe.centre.get('top'),
+          width: diametre,
+          height: diametre,
+          layer: 'map',
+          isDrawing: true,
+          name: 'Prison végétale',
+          gmnotes: 'terrainDifficile:disque ' + Math.floor(diametre)
+        });
+        if (t) {
+          toFront(t);
+          evt.tokens = evt.tokens || [];
+          evt.tokens.push(t);
+          stateCOF.tokensTemps = stateCOF.tokensTemps || [];
+          stateCOF.tokensTemps.push({
+            tid: t.id,
+            duree,
+            init: getInit()
           });
-          if (t) {
-            toFront(t);
-            evt.tokens = evt.tokens || [];
-            evt.tokens.push(t);
-            stateCOF.tokensTemps = stateCOF.tokensTemps || [];
-            stateCOF.tokensTemps.push({
-              tid: t.id,
-              duree,
-              init: getInit()
-            });
-          }
         }
       }
       setEffetTemporaire(perso, ef, d, evt, options);
@@ -24420,7 +24562,7 @@ var COFantasy = COFantasy || function() {
       finalize();
     };
     cibles.forEach(function(perso) {
-      if (display) perso.messages = [];
+      if (display) perso.messages = perso.messages || [];
       let expliquer = function(s) {
         if (display) perso.messages.push(s);
         else sendPerso(perso, s);
@@ -24432,7 +24574,7 @@ var COFantasy = COFantasy || function() {
       }
       if (options.save) {
         let saveOpts = {
-          msgPour: " pour résister à l'effet " + effet,
+          msgPour: options.save.msgPour || " pour résister à l'effet " + effet,
           msgRate: ", raté.",
           attaquant: lanceur,
           rolls: options.rolls,
@@ -25200,12 +25342,14 @@ var COFantasy = COFantasy || function() {
       evt.action.rolls.roll2 = roll2;
       evt.action.rolls.atk2 = atk2;
       var d20roll1 = roll1.results.total;
+      if (stateCOF.foudreDuTemps) foudreDuTemps(attaquant, d20roll1);
       var att1Skill = atk1.results.total;
       if (estAffaibli(attaquant) && predicateAsBool(attaquant, 'insensibleAffaibli')) att1Skill -= 2;
       var attackRoll1 = d20roll1 + att1Skill;
       if (options.chanceRollId && options.chanceRollId.roll1)
         attackRoll1 += options.chanceRollId.roll1;
-      var d20roll2 = roll2.results.total;
+      let d20roll2 = roll2.results.total;
+      if (stateCOF.foudreDuTemps) foudreDuTemps(cible, d20roll2);
       var att2Skill = atk2.results.total;
       if (estAffaibli(cible) && predicateAsBool(cible, 'insensibleAffaibli')) att2Skill -= 2;
       var attackRoll2 = d20roll2 + att2Skill;
@@ -25677,7 +25821,7 @@ var COFantasy = COFantasy || function() {
       error("Fiche de l'attaquant introuvable");
       return;
     }
-    attaquant.name = attaquantChar.get('name');//TODO: utile ?
+    attaquant.name = attaquantChar.get('name'); //TODO: utile ?
     var playerId = options.playerId || getPlayerIdFromMsg(msg);
     var explications = [];
     var bonusA = bonusDAttaque(attaquant, explications, evt);
@@ -25694,7 +25838,8 @@ var COFantasy = COFantasy || function() {
       var afterEvaluate = rolls.content.split(" ");
       var attRollNumber = rollNumber(afterEvaluate[0]);
       var attSkillNumber = rollNumber(afterEvaluate[1]);
-      var d20roll = rolls.inlinerolls[attRollNumber].results.total;
+      let d20roll = rolls.inlinerolls[attRollNumber].results.total;
+      if (stateCOF.foudreDuTemps) foudreDuTemps(attaquant, d20roll);
       var attSkill = rolls.inlinerolls[attSkillNumber].results.total;
       if (estAffaibli(attaquant) && predicateAsBool(attaquant, 'insensibleAffaibli')) attSkill -= 2;
       var attackRoll = d20roll + attSkill;
@@ -28375,7 +28520,8 @@ var COFantasy = COFantasy || function() {
       attackRoll.token = lanceur.token;
       evt.action.rolls = evt.action.rolls || {};
       evt.action.rolls[testId] = attackRoll;
-      var d20roll = attackRoll.results.total;
+      let d20roll = attackRoll.results.total;
+      if (stateCOF.foudreDuTemps) foudreDuTemps(lanceur, d20roll);
       var msg = buildinline(attackRoll);
       var attBonus = ficheAttributeAsInt(lanceur, 'niveau', 1);
       if (estAffaibli(lanceur) && predicateAsBool(lanceur, 'insensibleAffaibli')) attBonus -= 2;
@@ -29900,12 +30046,14 @@ var COFantasy = COFantasy || function() {
         forgesort = persoOfId(msg.selected[0]._id);
       }
       if (forgesort === undefined) {
-      let c = getObj('character', cmd[1]);
+        let c = getObj('character', cmd[1]);
         if (c === undefined) {
-        error("Impossible de savoir qui crée l'élixir", cmd);
-        return;
+          error("Impossible de savoir qui crée l'élixir", cmd);
+          return;
         }
-        forgesort = {charId:cmd[1]};
+        forgesort = {
+          charId: cmd[1]
+        };
       }
     }
     let voieDesElixirs = predicateAsInt(forgesort, 'voieDesElixirs', 0);
@@ -30116,7 +30264,9 @@ var COFantasy = COFantasy || function() {
       // Check de l'existence d'un créateur
       let charId = attr.get('characterid');
       let personnage = persoOfCharId(charId, options.pageId, "avec un élixir");
-      if (personnage === undefined) personnage = {charId};
+      if (personnage === undefined) personnage = {
+        charId
+      };
       let voieDesElixirs = predicateAsInt(personnage, 'voieDesElixirs');
       //TODO: réfléchir à une solution pour le renouveau des élixirs échangés
       if (voieDesElixirs > 0) {
@@ -31063,15 +31213,16 @@ var COFantasy = COFantasy || function() {
       dice = 12;
       explications.push("Attaquant immobilisé => D12 au lieu de D20 en Attaque");
     }
-    var toEvaluateAttack = attackExpression(attaquant, 1, dice, critAttaquant, true, armeAttaquant);
+    let toEvaluateAttack = attackExpression(attaquant, 1, dice, critAttaquant, true, armeAttaquant);
     sendChat('', toEvaluateAttack, function(resAttack) {
-      var rollsAttack = resAttack[0];
+      let rollsAttack = resAttack[0];
       if (options.rolls && options.rolls.attack)
         rollsAttack = options.rolls.attack;
-      var afterEvaluateAttack = rollsAttack.content.split(' ');
-      var attRollNumber = rollNumber(afterEvaluateAttack[0]);
-      var attSkillNumber = rollNumber(afterEvaluateAttack[1]);
-      var d20rollAttaquant = rollsAttack.inlinerolls[attRollNumber].results.total;
+      let afterEvaluateAttack = rollsAttack.content.split(' ');
+      let attRollNumber = rollNumber(afterEvaluateAttack[0]);
+      let attSkillNumber = rollNumber(afterEvaluateAttack[1]);
+      let d20rollAttaquant = rollsAttack.inlinerolls[attRollNumber].results.total;
+      if (stateCOF.foudreDuTemps) foudreDuTemps(attaquant, d20rollAttaquant);
       var attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
       var attBonus =
         bonusAttaqueA(attaquant, armeAttaquant.name, evt, explications, options);
@@ -31115,6 +31266,7 @@ var COFantasy = COFantasy || function() {
         attRollNumber = rollNumber(afterEvaluateAttack[0]);
         attSkillNumber = rollNumber(afterEvaluateAttack[1]);
         var d20rollDefenseur = rollsAttack.inlinerolls[attRollNumber].results.total;
+        if (stateCOF.foudreDuTemps) foudreDuTemps(defenseur, d20rollDefenseur);
         attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
         attBonus =
           bonusAttaqueA(defenseur, armeDefenseur.name, evt, explications, options);
@@ -31497,7 +31649,7 @@ var COFantasy = COFantasy || function() {
           addLineToFramedDisplay(display, expl, 80);
         });
         if (dmSupp) {
-          let actionGratuite = 
+          let actionGratuite =
             "!cof-attack " + attaquant.token.id + " " + cible.token.id + " -1 --auto";
           addLineToFramedDisplay(display, nomPerso(attaquant) + " fait en plus des dégâts à " + nomPerso(cible) + boutonSimple(actionGratuite, "lancer une attaque pour déterminer le montant"), 80);
         }
@@ -35586,11 +35738,11 @@ var COFantasy = COFantasy || function() {
   }
 
   function tenebresMagiques(msg) {
-    var cmd = msg.content.split(' ');
+    let cmd = msg.content.split(' ');
     cmd = cmd.filter(function(c) {
       return c.trim() !== '';
     });
-    var b = true;
+    let b = true;
     if (cmd.length > 1) {
       switch (cmd[1]) {
         case 'true':
@@ -35623,8 +35775,8 @@ var COFantasy = COFantasy || function() {
   }
 
   function fioleDeLumiere(msg) {
-    var cmd = msg.content.split(' ');
-    var tm = stateCOF.tenebresMagiques;
+    let cmd = msg.content.split(' ');
+    let tm = stateCOF.tenebresMagiques;
     if (tm === undefined) {
       sendPlayer(msg, "Pas de ténèbres magiques, pas d'effet de fiole");
       return;
@@ -37429,6 +37581,65 @@ var COFantasy = COFantasy || function() {
     }); //On ignore les options d'alliés dans le getSelected
   }
 
+  function setFoudreDuTemps(msg) {
+    let playerId = getPlayerIdFromMsg(msg);
+    if (!playerIsGM(playerId)) {
+      sendPlayer(msg, "Commande réservée au MJ", playerId);
+      return;
+    }
+    let cmd = msg.content.split(' ');
+    cmd = cmd.filter(function(c) {
+      return c.trim() !== '';
+    });
+    let min = 13;
+    let max = 13;
+    if (stateCOF.foudreDuTemps) {
+      min = stateCOF.foudreDuTemps.min;
+      max = stateCOF.foudreDuTemps.max;
+    }
+    if (cmd.length > 1) {
+      switch (cmd[1]) {
+        case 'true':
+        case 'oui':
+          break;
+        case 'non':
+        case 'sortir':
+        case 'false':
+        case 'fin':
+          max = 1;
+          min = 20;
+          break;
+        default:
+          min = parseInt(cmd[1]);
+          if (isNaN(min)) {
+            error("Le premier argument de !cof-foudre-du-temps est invalide", cmd);
+            return;
+          }
+          if (cmd.length > 2) {
+            max = parseInt(cmd[2]);
+            if (isNaN(max)) {
+              error("Le second argument de !cof-foudre-du-temps est invalide", cmd);
+              max = min;
+            }
+          }
+      }
+    }
+    if (min < 1) min = 1;
+    if (max > 20) max = 20;
+    if (max >= min) {
+      stateCOF.foudreDuTemps = stateCOF.foudreDuTemps || {};
+      stateCOF.foudreDuTemps.min = min;
+      stateCOF.foudreDuTemps.max = max;
+      let message = "Les foudres du temps sont actives pour des jets ";
+      if (min == max) message += "de " + min;
+      else message += "entre " + min + " et " + max;
+      sendPlayer('GM', message);
+    } else {
+      stateCOF.foudreDuTemps = undefined;
+      sendPlayer('GM', "Les personnages ne sont plus sous l'effet des foudres du temps");
+    }
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     const command = msg.content.split(' ', 1);
@@ -37474,6 +37685,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-fin-reaction-violente':
         finReactionViolente(msg);
         return;
+      case '!cof-foudre-du-temps':
+        setFoudreDuTemps(msg);
+        return;
       case '!cof-jet':
         jet(msg);
         return;
@@ -37503,6 +37717,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-sphere-de-feu':
         sphereDeFeu(msg);
+        return;
+      case '!cof-tenebres-magiques':
+        tenebresMagiques(msg);
         return;
       case '!cof-undo':
         undoEvent();
@@ -37931,9 +38148,6 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-reveler-nom':
         revelerNom(msg);
-        return;
-      case '!cof-tenebres-magiques':
-        tenebresMagiques(msg);
         return;
       case '!cof-fiole-de-lumiere':
         fioleDeLumiere(msg);
