@@ -2663,25 +2663,25 @@ var COFantasy = COFantasy || function() {
             });
           } else if (estEffetTemp(effetRetarde)) {
             options.print = function(m) {}; //Pour ne pas afficher le message final.
-            var pp = effetRetarde.indexOf('(');
-            var mEffetRetarde = (pp > 0) ? messageEffetTemp[effetRetarde.substring(effetRetarde, pp)] : messageEffetTemp[effetRetarde];
-            var ef = {
+            let pp = effetRetarde.indexOf('(');
+            let mEffetRetarde = (pp > 0) ? messageEffetTemp[effetRetarde.substring(effetRetarde, pp)] : messageEffetTemp[effetRetarde];
+            let ef = {
               effet: effetRetarde,
               duree: 1,
               message: mEffetRetarde,
               whisper: true,
             };
             iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-              var perso = {
-                token: token,
-                charId: charId
+              let perso = {
+                token,
+                charId
               };
               if (getState(perso, 'mort')) return;
               if (!stateCOF.combat) {
                 sendChat('', "Il restait un effet retardé " + effetRetarde + " qui devait se déclencher pour " + token.get('name'));
                 return;
               }
-              var duree = getValeurOfEffet(perso, efComplet, 1);
+              let duree = getValeurOfEffet(perso, efComplet, 1);
               ef.duree = duree;
               setEffetTemporaire(perso, ef, duree, evt, {});
             });
@@ -5869,13 +5869,13 @@ var COFantasy = COFantasy || function() {
   }
 
   function getPageId(playerId) {
-    var pageId;
+    let pageId;
     if (playerIsGM(playerId)) {
-      var player = getObj('player', playerId);
+      let player = getObj('player', playerId);
       pageId = player.get('lastpage');
     }
     if (pageId === undefined || pageId === "") {
-      var pages = Campaign().get('playerspecificpages');
+      let pages = Campaign().get('playerspecificpages');
       if (pages && pages[playerId] !== undefined) {
         return pages[playerId];
       }
@@ -14502,8 +14502,8 @@ var COFantasy = COFantasy || function() {
           targetMsg = undefined;
         }
       }
-      var secret = !(ef.message && ef.message.visible);
-      var attrEffet = setAttrDuree(target, ef.effet, duree, evt, targetMsg, secret);
+      let secret = !(ef.message && ef.message.visible);
+      let attrEffet = setAttrDuree(target, ef.effet, duree, evt, targetMsg, secret);
       if (ef.attaquant && options.mana !== undefined && ef.message && ef.message.prejudiciable) {
         addEffetTemporaireLie(ef.attaquant, attrEffet, evt);
       }
@@ -16052,8 +16052,8 @@ var COFantasy = COFantasy || function() {
                         type: ef.typeDmg,
                         necromancie: estNecromancie(options)
                       };
-                      var rollId = 'effet_' + ef.effet + index + '_' + target.token.id;
-                      var duree = ef.duree;
+                      let rollId = 'effet_' + ef.effet + index + '_' + target.token.id;
+                      let duree = ef.duree;
                       save(ef.save, target, rollId, expliquer, saveOpts, evt,
                         function(reussite, rollText) {
                           if (reussite && duree && ef.save.demiDuree) {
@@ -19752,6 +19752,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('tueurFantasmagorique', evt, attrs);
     attrs = removeAllAttributes('resisteInjonction', evt, attrs);
     attrs = removeAllAttributes('testsRatesDuTour', evt, attrs);
+    attrs = removeAllAttributes('pointsDeViolence', evt, attrs);
     //Les élixirs
     attrs = removeAllAttributes('elixirsACreer', evt, attrs);
     attrs = proposerRenouveauElixirs(evt, attrs, options);
@@ -19761,7 +19762,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('dose_Plante médicinale', evt, attrs);
     attrs = removeConsommables('Plante médicinale', evt, attrs);
     //On pourrait diviser par 2 le nombre de baies
-    //var attrsBaie = allAttributesNamed(attrs, 'dose_Baie_magique');
+    //let attrsBaie = allAttributesNamed(attrs, 'dose_Baie_magique');
     //Saves journaliers
     let attrsSave = attrs.filter(function(attr) {
       let attrName = attr.get('name');
@@ -22445,6 +22446,15 @@ var COFantasy = COFantasy || function() {
         command = '!cof-soin 5';
         ligne += bouton(command, "Régénération", perso) + " si source élémentaire proche<br />";
       }
+      //Violence ciblée
+      if (predicateAsBool(perso, 'violenceCiblee') && !attributeAsBool(perso, 'reactionViolente')) {
+        let pointsDeViolence = attributeAsInt(perso, 'pointsDeViolence', 0);
+        if (pointsDeViolence > 0) {
+          let attr = tokenAttribute(perso, 'pointsDeViolence')[0];
+          command = "!cof-effet-temp reactionViolente [[1d4]] --decrAttribute " + attr.id + " --target " + perso.token.id;
+          ligne += boutonSimple(command, 'Violence ciblée') + '<br />';
+        }
+      }
       //Les attaques de la fiche à afficher dans la liste d'actions
       const montrerAttaques = ficheAttributeAsInt(perso, 'montrerattaques', 1);
       const afficherAttaquesFiche =
@@ -23255,6 +23265,13 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, ligne);
           }
         });
+        //Violence ciblée
+        if (predicateAsBool(perso, 'violenceCiblee')) {
+          let pointsDeViolence = attributeAsInt(perso, 'pointsDeViolence', 0);
+          if (pointsDeViolence > 0) {
+            addLineToFramedDisplay(display, "Points de violence : " + pointsDeViolence);
+          }
+        }
         let autresAttributs = charAttribute(charId, 'attributsDeStatut');
         autresAttributs.forEach(function(attr) {
           let listeAttrs = attr.get('current').split(',');
@@ -24590,8 +24607,13 @@ var COFantasy = COFantasy || function() {
               reussite = false;
               d = Math.ceil(d / 2);
             }
-            if (reussite) finalize();
-            else setOneEffect(perso, d);
+            if (reussite) {
+              if (effet == 'reactionViolente' && predicateAsBool(perso, 'violenceCiblee')) {
+                expliquer("résiste à la provocation, mais emmagasine de la violence");
+                addToAttributeAsInt(perso, 'pointsDeViolence', 0, 1, evt);
+              }
+              finalize();
+            } else setOneEffect(perso, d);
           });
       } else {
         setOneEffect(perso, duree);
@@ -32744,8 +32766,8 @@ var COFantasy = COFantasy || function() {
       sendPerso(necromant, "lance un sort de ténèbres pour " + duree + " tours");
     }
     // Calcul des cibles à aveugler
-    var cibles = [];
-    var allToksDisque =
+    let cibles = [];
+    let allToksDisque =
       findObjs({
         _type: "graphic",
         _pageid: options.pageId,
@@ -32754,28 +32776,28 @@ var COFantasy = COFantasy || function() {
       });
     allToksDisque.forEach(function(obj) {
       if (obj.get('bar1_max') == 0) return; // jshint ignore:line
-      var objCharId = obj.get('represents');
+      let objCharId = obj.get('represents');
       if (objCharId === '') return;
-      var cible = {
+      let cible = {
         token: obj,
         charId: objCharId
       };
       if (getState(cible, 'mort')) return; //pas de dégâts aux morts
-      var distanceCentre =
+      let distanceCentre =
         distanceCombat(targetToken.token, obj, options.pageId, {
           strict1: true
         });
       if (distanceCentre > rayon) return;
       cibles.push(cible);
     });
-    var effetAveugle = {
+    let effetAveugle = {
       effet: 'aveugleTemp',
       duree: duree
     };
     cibles.forEach(function(perso) {
       setEffetTemporaire(perso, effetAveugle, duree, evt, {});
     });
-    var effetTenebres = {
+    let effetTenebres = {
       effet: 'tenebres',
       duree: duree,
       valeur: token.id,
@@ -37642,6 +37664,71 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function agrandirPage(msg) {
+    let cmd = msg.content.split(' ');
+    if (cmd.length < 1) {
+      error("Il manque le facteur d'agrandissement", cmd);
+      return;
+    }
+    let facteur = parseFloat(cmd[1]);
+    if (isNaN(facteur) || facteur <= 0) {
+      error("Facteur incorrect", cmd);
+      return;
+    }
+    let playerId = getPlayerIdFromMsg(msg);
+    if (!playerIsGM(playerId)) {
+      sendPlayer(msg, "Commande réservée aux MJs", playerId);
+      return;
+    }
+    let pageId = getPageId(playerId);
+    if (!pageId) {
+      error("Impossible de trouver la page", playerId);
+      return;
+    }
+    let page = getObj('page', pageId);
+    if (page === undefined) {
+      error("Impossible de trouver la page correspondant à l'id", pageId);
+      return;
+    }
+    let agrandir = function(o, field) {
+      o.set(field, o.get(field) * facteur);
+    };
+    let move = function(o) {
+      agrandir(o, 'top');
+      agrandir(o, 'left');
+    };
+    let scale = function(o) {
+      agrandir(o, 'width');
+      agrandir(o, 'height');
+    };
+    scale(page);
+    let objects = findObjs({
+      _type: 'graphic',
+      _pageid: pageId
+    });
+    objects.forEach(function(o) {
+      move(o);
+      if (o.get('layer') == 'map') scale(o);
+    });
+    let paths = findObjs({
+      _type: 'path',
+      _pageid: pageId
+    });
+    paths.forEach(function(p) {
+      move(p);
+      agrandir(p, 'scaleX');
+      agrandir(p, 'scaleY');
+    });
+    let texts = findObjs({
+      _type: 'text',
+      _pageid: pageId
+    });
+    texts.forEach(function(t) {
+      move(t);
+    });
+    sendPlayer('GM', "Agrandissement terminé");
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     const command = msg.content.split(' ', 1);
@@ -37650,6 +37737,9 @@ var COFantasy = COFantasy || function() {
     switch (command[0]) {
       case '!cof-affaiblir-carac':
         parseAffaiblirCarac(msg);
+        return;
+      case '!cof-agrandir-page':
+        agrandirPage(msg);
         return;
       case '!cof-animation-des-objets':
         animationDesObjets(msg);
@@ -37714,6 +37804,10 @@ var COFantasy = COFantasy || function() {
       case '!cof-resultat-jet':
         resultatJet(msg);
         return;
+      case "!cof-bouton-rune-energie":
+      case "!cof-rune-energie":
+        runeEnergie(msg);
+        return;
       case '!cof-soigner-affaiblissement':
         soignerAffaiblissement(msg);
         return;
@@ -37725,10 +37819,6 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-undo':
         undoEvent();
-        return;
-      case "!cof-bouton-rune-energie":
-      case "!cof-rune-energie":
-        runeEnergie(msg);
         return;
       case "!cof-rune-puissance":
       case "!cof-bouton-rune-puissance":
@@ -40600,13 +40690,13 @@ var COFantasy = COFantasy || function() {
   //vérifie si de la nouvelle position on peut voir le suivi
   function obstaclePresent(nsx, nsy, pt, murs) {
     if (nsx == pt.x && nsy == pt.y) return false;
-    var ps = {
+    let ps = {
       x: nsx,
       y: nsy
     };
-    var obstacle = murs && murs.find(function(path) {
+    let obstacle = murs && murs.find(function(path) {
       if (path.length === 0) return false;
-      var pc = path[0];
+      let pc = path[0];
       return path.find(function(v, i) {
         if (i === 0) return false;
         if (segmentIntersecte(ps, pt, pc, v)) return true;
