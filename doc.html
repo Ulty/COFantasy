@@ -1356,7 +1356,7 @@
                     <strong>Absorber un coup</strong> :
                     <ul>
                       <li>utiliser <code>!cof-effet-temp absorberUnCoup 1</code> pour se mettre en position. Attention, ça ne vérifie pas si le guerrier porte son bouclier.</li>
-                      <li>le script propose un bouton à activer en cas d'attaque réussie alors que le guerrier est en position,</li>
+                      <li>le script propose un bouton à activer en cas d'attaque réussie alors que le guerrier est en position.</li>
                     </ul>
                   </li>
                   <li>
@@ -1366,7 +1366,7 @@
                       <li>le script propose un bouton à activer en cas d'attaque réussie alors que le guerrier est en position.</li>
                     </ul>
                   </li>
-                  <li><strong>Armure lourde</strong> : Noter l'armure sur la feuille du personnage, et ajouter un <a href=#predicats>prédicat</a> <code>armureLourdeGuerrier</code> au personnage. L'annulation du critique ne se produira que si l'armure est portée et que la valeur totale du bonus de défense supérieure ou égale à 8 (le bonus de DEF d'une armure de plaques complète).</li>
+                  <li><strong>Armure lourde</strong> : Noter l'armure sur la feuille du personnage, et ajouter un <a href=#predicats>prédicat</a> <code>armureLourdeGuerrier</code> au personnage. L'annulation du critique ne se produira que si l'armure est portée et que la valeur totale du bonus de défense supérieure ou égale à 7 (le bonus de DEF d'une armure de plaques complète).</li>
                 </ol>
                 <h4 class="text-secondary">Voie du combat</h4>
                 <ol>
@@ -2290,8 +2290,8 @@
               </ol>
               <h5 class=text-secondary>Voie culturelle des elfes bleus</h5>
               <ol>
-          	<li><strong>Équilibre parfait :</strong> En Attente </li>
-          	<li><strong>Natif d’Elsémur :</strong> En Attente </li>
+          	<li><strong>Équilibre parfait :</strong> Ajouter une compétence équilibre avec le bonus. </li>
+          	<li><strong>Natif d’Elsémur :</strong> voir la capacité choisie. </li>
 		<li><strong>Imperturbable :</strong> En Attente </li>
 		<li><strong>Les enseignements de l’eau  :</strong> En Attente </li>
 		<li><strong>Parangon elfe bleu :</strong> En Attente </li>
@@ -2307,8 +2307,8 @@
               <h5 class=text-secondary>Voie culturelle des elfes sylvains</h5>
               <ol>
          	<li><strong>Le chant de la Terre :</strong> En Attente </li>
-        	<li><strong>Enfant de la forêt :</strong> En Attente </li>
-		<li><strong>Archer émérite :</strong> En Attente </li>
+        	<li><strong>Enfant de la forêt :</strong> voir la capacité choisie </li>
+		<li><strong>Archer émérite :</strong> ajuster les chances de critique pour les attaques utilisant les arcs. </li>
 		<li><strong>Compagnon animal supérieur :</strong> En Attente </li>
 		<li><strong>Parangon elfe vert :</strong> En Attente </li>
               </ol>
@@ -2450,11 +2450,21 @@
               <div class="decalage">
 		<h4 class="text-secondary">Voie du bastion</h4>
 		<ol>
-		<li><strong>Protéger un allié</strong> : <code>!cof-proteger-un-allie @{selected|token_id} @{target|token_id}</code>. Fonctionne aussi si on remplace le target par un nom de token. Le script ne vérifie pas que le combattant ne change pas d'allié plus d'une fois par tour.</li>
-		<li><strong>Absorber un coup (L) :</strong> En Attente </li>
-		<li><strong>Coup de bouclier :</strong> En Attente </li>
-		<li><strong>Absorber un sort (L) :</strong> En Attente </li>
-		<li><strong>Armure lourde :</strong> En Attente </li>
+      <li><strong>Protéger un allié</strong> : <code>!cof-proteger-un-allie @{selected|token_id} @{target|token_id}</code>. Fonctionne aussi si on remplace le target par un nom de token. Le script ne vérifie pas que le combattant ne change pas d'allié plus d'une fois par tour. Pour la capacité avancée, ajouter un prédicat <code>protegerUnAllieAvance</code>.</li>
+		<li><strong>Absorber un coup (L) :</strong>
+                    <ul>
+                      <li>utiliser <code>!cof-effet-temp absorberUnCoup 1</code> pour se mettre en position. Attention, ça ne vérifie pas si le combattant porte son bouclier.</li>
+                      <li>le script propose un bouton à activer en cas d'attaque réussie alors que le combattant est en position.</li>
+                    </ul>
+    </li>
+                  <li><strong>Coup de bouclier :</strong> faire une attaque de bouclier, avec l'option <code>--avecd12</code></li>
+		<li><strong>Absorber un sort (L) :</strong>
+                    <ul>
+                      <li>utiliser <code>!cof-effet-temp absorberUnSort 1</code> pour se mettre en position. Attention, ça ne vérifie pas si le combattant porte son bouclier.</li>
+                      <li>le script propose un bouton à activer en cas d'attaque réussie alors que le combattant est en position.</li>
+                    </ul>
+    </li>
+                  <li><strong>Armure lourde :</strong> Noter l'armure sur la feuille du personnage, et ajouter un <a href=#predicats>prédicat</a> <code>armureLourdeGuerrier</code> au personnage. L'annulation du critique ne se produira que si l'armure est portée et que la valeur totale du bonus de défense supérieure ou égale à 7 (le bonus de DEF d'une armure de plaques complète).</li>
 		</ol>
 		<h4 class="text-secondary">Voie de la bravoure</h4>
 		<ol>
