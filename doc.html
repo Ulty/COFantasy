@@ -1104,7 +1104,7 @@
               <div class="decalage">
                 <h4 class="text-secondary">Voie du cavalier</h4>
                 <ol>
-                  <li><strong>Fidèle monture</strong> : Faire un personnage pour la monture, avec un <a href=#predicats>prédicat</a> <code>monture</code>. Pour monter sur la monture, on peut utiliser une ability de type token action, avec <code>!cof-en-selle @{selected|token_id} <i>nom_de_la_monture</i></code>. Pour en descendre, il suffit de cliquer à nouveau sur le bouton de l'ability.</li>
+                  <li><strong>Fidèle monture</strong> : Faire un personnage pour la monture, avec un <a href=#predicats>prédicat</a> <code>monture</code>. Pour monter sur la monture, on peut utiliser une ability de type token action, avec <code>!cof-en-selle @{selected|token_id} <i>nom_de_la_monture</i></code>. Pour en descendre, il suffit de cliquer à nouveau sur le bouton de l'ability. Si vous souhaitez éviter que la monture apparaisse dans le turn tracker, vous pouvez ajouter un <a href=#predicats>prédicat</a> <code>aucuneActionCombat</code> à la monture. </li>
                   <li><strong>Cavalier émérite</strong> : Ajouter au chevalier un <a href=#predicats>prédicat</a> <code>cavalierEmerite:2</code>. Pour la défense de la monture, ajouter à cellle-ci un attribut <code>defDeriveeDe</code> de valeur le nom du chevalier (exactement tel qu'il apparaît sur la fiche).</li>
                   <li><strong>Monture magique</strong> : pour les soins automatiques de la nuit, ajouter un <a href=#predicats>prédicat</a> <code>montureMagique</code>.</li>
                   <li>
@@ -2468,15 +2468,15 @@
 		</ol>
 		<h4 class="text-secondary">Voie de la bravoure</h4>
 		<ol>
-		<li><strong>Robustesse :</strong> En Attente </li>
-		<li><strong>Armure naturelle :</strong> En Attente </li>
-		<li><strong>Prouesse :</strong> En Attente </li>
-		<li><strong>Dernier rempart (L) :</strong> En Attente </li>
-		<li><strong>Constitution héroïque :</strong> En Attente </li>
+		<li><strong>Robustesse :</strong> rajouter les PVs sur la fiche. </li>
+		<li><strong>Armure naturelle :</strong> rajouter la DEF sur la fiche </li>
+                  <li><strong>Prouesse :</strong> ajouter un <a href=#predicats>prédicat</a> <code>prouesse</code> (on peut y associer un nombre, si on souhaite plus d'une utilisation par tour). Le script générera automatiquement les boutons Prouesse sur les test appropriés.</li>
+		<li><strong>Dernier rempart (L) :</strong> pas de support particulier, le MJ doit gérer les attaques supplémentaires. </li>
+		<li><strong>Constitution héroïque :</strong> reporter les bonus sur la fiche. </li>
 		</ol>
 		<h4 class="text-secondary">Voie du combat à deux armes</h4>
 		<ol>
-		<li><strong>Combat à deux armes (L) :</strong> En Attente </li>
+      <li><strong>Combat à deux armes (L) :</strong> mettre une des attaques de type arme gauche, et y ajouter le modificateur <code>avecd12crit</code>. Pas encore de support pour la capacité avancée : dans ce cas, ajoutez le +1 dans la barre 3 du token ou sur les attaques. </li>
 		<li><strong>Parade croisée (L) :</strong> En Attente </li>
 		<li><strong>Symétrie :</strong> En Attente </li>
 		<li><strong>Double peine :</strong> En Attente </li>
@@ -2484,27 +2484,32 @@
 		</ol>
 		<h4 class="text-secondary">Voie du combat monté  </h4>
 		<ol>
-		<li><strong>Fidèle monture :</strong> En Attente </li>
-		<li><strong>Cavalier émérite :</strong> En Attente </li>
+                  <li><strong>Fidèle monture :</strong> Faire un personnage pour la monture, avec un <a href=#predicats>prédicat</a> <code>monture</code>. Pour monter sur la monture, on peut utiliser une ability de type token action, avec <code>!cof-en-selle @{selected|token_id} <i>nom_de_la_monture</i></code>. Pour en descendre, il suffit de cliquer à nouveau sur le bouton de l'ability. Si vous souhaitez éviter que la monture apparaisse dans le turn tracker, vous pouvez ajouter un <a href=#predicats>prédicat</a> <code>aucuneActionCombat</code> à la monture. </li>
+                  <li><strong>Cavalier émérite</strong> : Ajouter au combattant un <a href=#predicats>prédicat</a> <code>cavalierEmerite:2</code>. Pour la défense de la monture, ajouter à cellle-ci un attribut <code>defDeriveeDe</code> de valeur le nom du combattant (exactement tel qu'il apparaît sur la fiche). Attention, cela suppose que le combattant a une meilleure DEF que sa monture. Si ce n'est pas le cas, faire les ajustements sur la fiche du combattant.</li>
 		<li><strong>Massacrer la piétaille :</strong> En Attente </li>
-		<li><strong>Charge (L) :</strong> En Attente </li>
-		<li><strong>Monture fantastique :</strong> En Attente </li>
+                  <li> <strong>Charge :</strong> pas de support pour le déplacement, mais
+                    <ul>
+                      <li>Pour l'attaque : utiliser <code>--m2d20 --plus 1d6</code></li>
+                      <li>Pour les créatures sur la trajectoire, utiliser <code>!cof-jet FOR 18</code>, et en cas de succès, infliger les DM (<code>!cof-dmg 1d6</code>)</li>
+                    </ul>
+                  </li>
+                  <li><strong>Monture fantastique :</strong> faire un personnage pour la monture, avec un <a href=#predicats>prédicat</a> <code>monture</code>.</li>
 		</ol>
 		<h4 class="text-secondary">Voie du commandement</h4>
 		<ol>
-		<li><strong>Action concertée :</strong> En Attente </li>
-		<li><strong>À couvert (L) :</strong> En Attente </li>
-		<li><strong>Exemplaire :</strong> En Attente </li>
-		<li><strong>Ordre de bataille :</strong> En Attente </li>
-		<li><strong>Charge fantastique (L) :</strong> En Attente </li>
+                  <li><strong>Action concertée :</strong> utiliser <code>!cof-echange-init @{selected|token_id} @{target|token_id} <i>n</i></code> où <i>n</i> peut valoir 1, 2 ou 3 selon le rang dans la voie et si la capacité est avancée.</li>
+                  <li><strong>À couvert (L) :</strong> <code>!cof-a-couvert @{selected|token_id} @{target|token_id}</code> le target est l'allié qui se déplace avec l'arquebusier. Se sélectionner soi-même si pas d'allié. Pas encore de support pour la capacité avancée.</li>
+                  <li><strong>Exemplaire :</strong> faire <code>!cof-exemplaire</code>, juste après l'attaque ratée.</li>
+		<li><strong>Ordre de bataille :</strong> pas de support </li>
+                  <li><strong>Charge fantastique (L) :</strong> <code>!cof-charge-fantastique @{selected|token_id} --alliesEnVue --self --limiteParCombat 1</code></li>
 		</ol>
 		<h4 class="text-secondary">Voie de la férocité</h4>
 		<ol>
-		<li><strong>Cri de guerre :</strong> En Attente </li>
-		<li><strong>Charge (L) :</strong> En Attente </li>
-		<li><strong>Rage du berserk (L) :</strong> En Attente </li>
-		<li><strong>Même pas mal :</strong> En Attente </li>
-		<li><strong>Attaque tourbillon (L) :</strong> En Attente </li>
+                  <li><strong>Cri de guerre :</strong> <code>!cof-effet-combat criDeGuerre</code></li>
+                  <li><strong>Charge (L) :</strong> <code>#Attaque -1 --bonusAttaque 2 --plus 1d6</code>. Le déplacement n'est pas encore géré.</li>
+                  <li><strong>Rage du berserk (L) :</strong> utiliser <code>!cof-rage-du-berserk</code>, à la fois pour entrer en rage et pour tenter d'en sortir avant la fin du combat.</li>
+                  <li><strong>Même pas mal :</strong> ajouter un <a href=#predicats>prédicat</a> <code>memePasMal</code>. Le joueur doit lui-même activer la rage ou le furie si il souhaite en profiter.</li>
+                  <li><strong>Attaque tourbillon (L) :</strong> <code>!cof-explosion -1 --auto --disque 5 --saufAllies --limiteParCombat 1 tourbillon</code>.</li>
 		</ol>
 		<h4 class="text-secondary">Voie de la guerre</h4>
 		<ol>

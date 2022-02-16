@@ -10108,7 +10108,7 @@ var COFantasy = COFantasy || function() {
         let cavalierEm = predicateAsInt(attaquant, 'cavalierEmerite');
         if (cavalierEm) {
           attBonus += cavalierEm;
-          let explCavalierEmerite = "Cavalier émérite => +" + cavalierEm + " en Attaque";
+          let explCavalierEmerite = "avalier émérite => +" + cavalierEm + " en Attaque";
           if (options.displayName) {
             explCavalierEmerite = nomPerso(attaquant) + " est un c" + explCavalierEmerite;
           } else {
