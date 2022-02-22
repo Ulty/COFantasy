@@ -7866,7 +7866,7 @@ var COFantasy = COFantasy || function() {
           }
           if (targetToken.id == targetS.token.id) return;
           options.ciblesSupplementaires = options.ciblesSupplementaires || [];
-          options.ciblesSupplementaires.push(nomPerso(targetS));
+          options.ciblesSupplementaires.push(targetS);
           return;
         case 'ciblesDansDisque':
           if (cmd.length < 2) {
@@ -11805,7 +11805,7 @@ var COFantasy = COFantasy || function() {
           error("Le token ciblé (" + nomCiblePrincipale + ") doit représenter un personnage ", targetToken);
           return;
         }
-        var targetChar = getObj("character", targetCharId);
+        let targetChar = getObj("character", targetCharId);
         if (targetChar === undefined) {
           error("Unexpected undefined 2", targetChar);
           return;
@@ -11819,7 +11819,7 @@ var COFantasy = COFantasy || function() {
       }
       if (options.ciblesSupplementaires) {
         options.ciblesSupplementaires.forEach(function(c) {
-          var i = cibles.some(function(t) {
+          let i = cibles.some(function(t) {
             return (t.token.id == c.token.id);
           });
           if (!i) cibles.push(c);
