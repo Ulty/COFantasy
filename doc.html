@@ -2050,6 +2050,11 @@ tr {line-height: 25px;}
                   <li><strong>Monture puissante</strong> : modifier la fiche du Drake</li>
                   <li><strong>Souffle enflammé</strong> : ajouter une attaque au dragon, même jet pour touche, dm 2d6, portée 40, arme naturelle qui inflige des dégâts de feu, avec comme options <code>--disque 3 --dmSiRate 1d6 --dmCible 4d6</code></li>
                 </ol>
+                <h4 class="text-secondary">Voie du combat à deux armes</h4>
+                <ol>
+                  <li><strong>Combat à deux armes amélioré :</strong> mettre une des attaques de type arme gauche, et y ajouter le modificateur <code>avecd12crit</code>. Pas encore de support pour la capacité avancée : dans ce cas, ajoutez le +1 dans la barre 3 du token ou sur les attaques. </li>
+                  <li><strong>Parade croisée :</strong> <code>!cof-effet-temp paradeCroisee 1 --valeur <i>rang</i> --montreActions</code> où <i>rang</i> est le rang dans la Voie. </li>
+                </ol>
                 <h4 class="text-secondary">Voie du danseur de guerre</h4>
                 <ol>
                   <li><strong>Pirouettes</strong> : on peut rajouter les bonus sur la fiche, ou bien ajouter un <a href=#predicats>prédicat</a> <code>pirouettes</code>, de valeur le bonus en défense (qui ne s'applique que si le malus d'armure est inférieur à 4).</li>
@@ -2483,7 +2488,7 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie du combat à deux armes</h4>
                 <ol>
                   <li><strong>Combat à deux armes (L) :</strong> mettre une des attaques de type arme gauche, et y ajouter le modificateur <code>avecd12crit</code>. Pas encore de support pour la capacité avancée : dans ce cas, ajoutez le +1 dans la barre 3 du token ou sur les attaques. </li>
-                  <li><strong>Parade croisée (L) :</strong> En Attente </li>
+                  <li><strong>Parade croisée (L) :</strong> <code>!cof-effet-temp paradeCroisee 1 --valeur 2 --montreActions</code>. Pour la capacité avancée, <code>!cof-effet-temp paradeCroisee 1 --valeur 4 --montreActions</code>.</li>
                   <li><strong>Symétrie :</strong> En Attente </li>
                   <li><strong>Double peine :</strong> En Attente </li>
                   <li><strong>Combat à deux armes parfait :</strong> En Attente </li>
