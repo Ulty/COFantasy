@@ -35002,36 +35002,36 @@ var COFantasy = COFantasy || function() {
 
   // !cof-centrer-sur-token tid (ou nom de token)
   function centrerSurToken(msg) {
-    var cmd = msg.content.split(' ').filter(function(c) {
+    let cmd = msg.content.split(' ').filter(function(c) {
       return c !== '';
     });
     if (cmd.length < 2) {
       error("Il faut préciser un token sur lequel se centrer", cmd);
       return;
     }
-    var playerId = getPlayerIdFromMsg(msg);
-    var pageId;
+    let playerId = getPlayerIdFromMsg(msg);
+    let pageId;
     if (playerIsGM(playerId)) {
-      var p = getObj('player', playerId);
+      let p = getObj('player', playerId);
       if (p === undefined) {
         error("Impossible de trouver le joueur qui a lancé la commande", msg);
         return;
       }
       pageId = p.get('_lastpage');
     } else {
-      var c = Campaign();
-      var ps = c.get('playerspecificpages');
+      let c = Campaign();
+      let ps = c.get('playerspecificpages');
       if (ps) pageId = ps[playerId];
       if (pageId === undefined) pageId = c.get('playerpageid');
     }
-    var indexNom = msg.content.indexOf(' ');
-    var nom = msg.content.substring(indexNom).trim();
-    var perso = persoOfId(cmd[1], nom, pageId);
+    let indexNom = msg.content.indexOf(' ');
+    let nom = msg.content.substring(indexNom).trim();
+    let perso = persoOfId(cmd[1], nom, pageId);
     if (perso === undefined) {
-      error("Impossible de trouver le personnage sur lequel se centrer", cmd);
+      sendPlayer(msg, "Impossible de trouver le personnage sur lequel se centrer", playerId);
       return;
     }
-    var token = perso.token;
+    let token = perso.token;
     sendPing(token.get('left'), token.get('top'), pageId, playerId, true, playerId);
   }
 
@@ -40287,6 +40287,129 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function actionEffet(attr, effet, attrName, charId, pageId, evt, callBack) {
+    switch (effet) {
+      case 'putrefaction': //prend 1d6 DM
+        degatsParTour(charId, pageId, effet, attrName, {
+            nbDe: 1,
+            de: 6
+          }, 'maladie',
+          "pourrit", evt, {
+            magique: true
+          }, callBack);
+        return;
+      case 'asphyxie': //prend 1d6 DM
+        degatsParTour(charId, pageId, effet, attrName, {
+            nbDe: 1,
+            de: 6
+          }, 'normal',
+          "ne peut plus respirer", evt, {
+            asphyxie: true
+          }, callBack);
+        return;
+      case 'saignementsSang': //prend 1d6 DM
+        if (charPredicateAsBool(charId, 'immuniteSaignement') || 
+          charPredicateAsBool(charId, 'controleSanguin')) {
+          callBack();
+          return;
+        }
+        degatsParTour(charId, pageId, effet, attrName, {
+            nbDe: 1,
+            de: 6
+          }, 'normal',
+          "saigne par tous les orifices du visage", evt, {
+            magique: true
+          }, callBack);
+        return;
+      case 'armureBrulante': //prend 1d4 DM
+        degatsParTour(charId, pageId, effet, attrName, {
+            nbDe: 1,
+            de: 4
+          }, 'feu',
+          "brûle dans son armure", evt, {}, callBack);
+        return;
+      case 'nueeDInsectes': //prend 1 DM
+        degatsParTour(charId, pageId, effet, attrName, {
+            cst: 1
+          }, 'normal',
+          "est piqué par les insectes", evt, {}, callBack);
+        return;
+      case 'nueeDeCriquets': //prend 1 DM
+        degatsParTour(charId, pageId, effet, attrName, {
+            cst: 2
+          }, 'normal',
+          "est piqué par les criquets", evt, {}, callBack);
+        return;
+      case 'nueeDeScorpions': //prend 1D6 DM
+        degatsParTour(charId, pageId, effet, attrName, {
+            nbDe: 1,
+            de: 6
+          }, 'normal',
+          "est piqué par les scorpions", evt, {}, callBack);
+        return;
+      case 'armeBrulante': //prend 1 DM
+        degatsParTour(charId, pageId, effet, attrName, {
+            cst: 1
+          }, 'feu',
+          "se brûle avec son arme", evt, {}, callBack);
+        return;
+      case 'regeneration': //soigne
+        soigneParTour(charId, pageId, effet, attrName, 3, "régénère", evt, {
+          valeur: 'regenerationValeur'
+        }, callBack);
+        return;
+      case 'strangulation':
+        let nameDureeStrang = 'dureeStrangulation';
+        if (effet != attrName) { //concerne un token non lié
+          nameDureeStrang += attrName.substring(attrName.indexOf('_'));
+        }
+        let dureeStrang = findObjs({
+          _type: 'attribute',
+          _characterid: charId,
+          name: nameDureeStrang
+        });
+        if (dureeStrang.length === 0) {
+          let attrDuree = createObj('attribute', {
+            characterid: charId,
+            name: nameDureeStrang,
+            current: 0,
+            max: false
+          });
+          evt.attributes.push({
+            attribute: attrDuree,
+          });
+        } else {
+          let strangUpdate = dureeStrang[0].get('max');
+          if (strangUpdate) { //a été mis à jour il y a au plus 1 tour
+            evt.attributes.push({
+              attribute: dureeStrang[0],
+              current: dureeStrang[0].get('current'),
+              max: strangUpdate
+            });
+            dureeStrang[0].set('max', false);
+          } else { //Ça fait trop longtemps, on arrête tout
+            sendChar(charId, messageEffetTemp[effet].fin, true);
+            evt.attributes.pop(); //On enlève des attributs modifiés pour mettre dans les attribute supprimés.
+            evt.deletedAttributes.push(attr);
+            attr.remove();
+            evt.deletedAttributes.push(dureeStrang[0]);
+            dureeStrang[0].remove();
+          }
+        }
+        callBack();
+        return;
+      case 'dotGen':
+        let effetC = effetComplet(effet, attrName);
+        degatsParTour(charId, pageId, effetC, attrName, {}, '', "", evt, {
+          dotGen: true
+        }, callBack);
+        return;
+      default:
+        callBack();
+        return;
+    }
+  }
+
   //Appelé si le turn order change, mais aussi en interne
   //si evt est déjà défini, ne l'ajoute pas au turn order
   function nextTurn(cmp, options, evt) {
@@ -40396,6 +40519,7 @@ var COFantasy = COFantasy || function() {
         let attrName = attr.get('name');
         let effetC = effetComplet(effet, attrName);
         let v = parseInt(attr.get('current'));
+        if (isNaN(v)) v = 1;
         let effetActif = true;
         if (v <= 1) { //L'effet arrive en fin de vie, doit être supprimé
           //Sauf si on a accumulé plusieurs fois l'effet
@@ -40413,8 +40537,7 @@ var COFantasy = COFantasy || function() {
               v = 1;
               count--;
               effetActif = false;
-            } else v = nDuree;
-            attr.set('current', nDuree);
+            } else v = nDuree + 1; //car on va le diminuer plus bas.
             if (listeDureeAccumulee.length === 0) {
               evt.deletedAttributes.push(accumuleAttr);
               accumuleAttr.remove();
@@ -40426,16 +40549,19 @@ var COFantasy = COFantasy || function() {
               accumuleAttr.set('current', listeDureeAccumulee.join(','));
             }
           } else {
-            let effetFinal = finDEffet(attr, effet, attrName, charId, evt, {
-              pageId
-            });
-            if (effetFinal && effetFinal.oldTokenId == active.id) {
-              active.id = effetFinal.newTokenId;
-              if (active.id === undefined) {} else if (active.id == '-1') {
-                active.custom = 'Tour';
+            //L'action finale
+            actionEffet(attr, effet, attrName, charId, pageId, evt, function() {
+              let effetFinal = finDEffet(attr, effet, attrName, charId, evt, {
+                pageId
+              });
+              if (effetFinal && effetFinal.oldTokenId == active.id) {
+                active.id = effetFinal.newTokenId;
+                if (active.id === undefined) {} else if (active.id == '-1') {
+                  active.custom = 'Tour';
+                }
               }
-            }
-            count--;
+              count--;
+            });
             effetActif = false;
           }
         }
@@ -40445,167 +40571,11 @@ var COFantasy = COFantasy || function() {
             current: v
           });
           if (v > 1) attr.set('current', v - 1);
-          switch (effet) { //rien après le switch, donc on sort par un return
-            case 'putrefaction': //prend 1d6 DM
-              degatsParTour(charId, pageId, effet, attrName, {
-                  nbDe: 1,
-                  de: 6
-                }, 'maladie',
-                "pourrit", evt, {
-                  magique: true
-                },
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
-                });
-              return;
-            case 'asphyxie': //prend 1d6 DM
-              degatsParTour(charId, pageId, effet, attrName, {
-                  nbDe: 1,
-                  de: 6
-                }, 'normal',
-                "ne peut plus respirer", evt, {
-                  asphyxie: true
-                },
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
-                });
-              return;
-            case 'saignementsSang': //prend 1d6 DM
-              if (charPredicateAsBool(charId, 'immuniteSaignement') || charPredicateAsBool(charId, 'controleSanguin')) {
-                count--;
-                if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
-                return;
-              }
-              degatsParTour(charId, pageId, effet, attrName, {
-                  nbDe: 1,
-                  de: 6
-                }, 'normal',
-                "saigne par tous les orifices du visage", evt, {
-                  magique: true
-                },
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
-                });
-              return;
-            case 'armureBrulante': //prend 1d4 DM
-              degatsParTour(charId, pageId, effet, attrName, {
-                  nbDe: 1,
-                  de: 4
-                }, 'feu',
-                "brûle dans son armure", evt, {},
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
-                });
-              return;
-            case 'nueeDInsectes': //prend 1 DM
-              degatsParTour(charId, pageId, effet, attrName, {
-                  cst: 1
-                }, 'normal',
-                "est piqué par les insectes", evt, {},
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
-                });
-              return;
-            case 'nueeDeCriquets': //prend 1 DM
-              degatsParTour(charId, pageId, effet, attrName, {
-                  cst: 2
-                }, 'normal',
-                "est piqué par les criquets", evt, {},
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
-                });
-              return;
-            case 'nueeDeScorpions': //prend 1D6 DM
-              degatsParTour(charId, pageId, effet, attrName, {
-                  nbDe: 1,
-                  de: 6
-                }, 'normal',
-                "est piqué par les scorpions", evt, {},
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
-                });
-              return;
-            case 'armeBrulante': //prend 1 DM
-              degatsParTour(charId, pageId, effet, attrName, {
-                  cst: 1
-                }, 'feu',
-                "se brûle avec son arme", evt, {},
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
-                });
-              return;
-            case 'regeneration': //soigne
-              soigneParTour(charId, pageId, effet, attrName, 3, "régénère", evt, {
-                  valeur: 'regenerationValeur'
-                },
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
-                });
-
-              return;
-            case 'strangulation':
-              let nameDureeStrang = 'dureeStrangulation';
-              if (effet != attrName) { //concerne un token non lié
-                nameDureeStrang += attrName.substring(attrName.indexOf('_'));
-              }
-              let dureeStrang = findObjs({
-                _type: 'attribute',
-                _characterid: charId,
-                name: nameDureeStrang
-              });
-              if (dureeStrang.length === 0) {
-                let attrDuree = createObj('attribute', {
-                  characterid: charId,
-                  name: nameDureeStrang,
-                  current: 0,
-                  max: false
-                });
-                evt.attributes.push({
-                  attribute: attrDuree,
-                });
-              } else {
-                let strangUpdate = dureeStrang[0].get('max');
-                if (strangUpdate) { //a été mis à jour il y a au plus 1 tour
-                  evt.attributes.push({
-                    attribute: dureeStrang[0],
-                    current: dureeStrang[0].get('current'),
-                    max: strangUpdate
-                  });
-                  dureeStrang[0].set('max', false);
-                } else { //Ça fait trop longtemps, on arrête tout
-                  sendChar(charId, messageEffetTemp[effet].fin, true);
-                  attr.set('current', v);
-                  evt.attributes.pop(); //On enlève des attributs modifiés pour mettre dans les attribute supprimés.
-                  evt.deletedAttributes.push(attr);
-                  attr.remove();
-                  evt.deletedAttributes.push(dureeStrang[0]);
-                  dureeStrang[0].remove();
-                }
-              }
-              count--;
-              return;
-            case 'dotGen':
-              degatsParTour(charId, pageId, effetC, attrName, {}, '', "", evt, {
-                  dotGen: true
-                },
-                function() {
-                  count--;
-                  if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
-                });
-              return;
-            default:
-              count--;
-              return;
-          }
+          let apresAction = function() {
+            count--;
+            if (count === 0) nextTurnOfActive(active, attrs, evt, pageId, options);
+          };
+          actionEffet(attr, effet, attrName, charId, pageId, evt, apresAction);
         }
       }); //fin de la boucle sur tous les attributs d'effets temporaires
     }
