@@ -4794,27 +4794,41 @@ var COFantasy = COFantasy || function() {
     switch (comp) {
       case 'acrobatie':
       case 'acrobaties':
-        if (predicateAsBool(personnage, 'graceFelineVoleur')) {
-          let bonusGraceFeline = modCarac(personnage, 'charisme');
-          if (bonusGraceFeline > 0) {
-            expliquer("Grâce féline : +" + bonusGraceFeline + " en acrobaties");
-            bonus += bonusGraceFeline;
+        {
+          if (predicateAsBool(personnage, 'graceFelineVoleur')) {
+            let bonusGraceFeline = modCarac(personnage, 'charisme');
+            if (bonusGraceFeline > 0) {
+              expliquer("Grâce féline : +" + bonusGraceFeline + " en acrobaties");
+              bonus += bonusGraceFeline;
+            }
           }
+          if (predicateAsBool(personnage, 'pirouettes') && malusArmure(personnage) <= 4) {
+            expliquer("Pirouettes : +5 en acrobaties");
+            bonus += 5;
+          }
+          let a = predicateAsInt(personnage, 'ameFeline', 0);
+          if (a > 0) {
+            expliquer("Âme féline : +" + a + " en acrobaties");
+            bonus += a;
+          }
+          break;
         }
-        if (predicateAsBool(personnage, 'pirouettes') && malusArmure(personnage) <= 4) {
-          expliquer("Pirouettes : +5 en acrobaties");
-          bonus += 5;
-        }
-        break;
       case 'course':
-        if (predicateAsBool(personnage, 'graceFelineVoleur')) {
-          let bonusGraceFeline = modCarac(personnage, 'charisme');
-          if (bonusGraceFeline > 0) {
-            expliquer("Grâce féline : +" + bonusGraceFeline + " en course");
-            bonus += bonusGraceFeline;
+        {
+          if (predicateAsBool(personnage, 'graceFelineVoleur')) {
+            let bonusGraceFeline = modCarac(personnage, 'charisme');
+            if (bonusGraceFeline > 0) {
+              expliquer("Grâce féline : +" + bonusGraceFeline + " en course");
+              bonus += bonusGraceFeline;
+            }
           }
+          let a = predicateAsInt(personnage, 'ameFeline', 0);
+          if (a > 0) {
+            expliquer("Âme féline : +" + a + " en course");
+            bonus += a;
+          }
+          break;
         }
-        break;
       case 'danse':
         if (predicateAsBool(personnage, 'pirouettes') && malusArmure(personnage) <= 4) {
           expliquer("Pirouettes : +5 en danse");
@@ -4836,14 +4850,21 @@ var COFantasy = COFantasy || function() {
         }
         break;
       case 'escalade':
-        if (predicateAsBool(personnage, 'graceFelineVoleur')) {
-          let bonusGraceFeline = modCarac(personnage, 'charisme');
-          if (bonusGraceFeline > 0) {
-            expliquer("Grâce féline : +" + bonusGraceFeline + " en escalade");
-            bonus += bonusGraceFeline;
+        {
+          if (predicateAsBool(personnage, 'graceFelineVoleur')) {
+            let bonusGraceFeline = modCarac(personnage, 'charisme');
+            if (bonusGraceFeline > 0) {
+              expliquer("Grâce féline : +" + bonusGraceFeline + " en escalade");
+              bonus += bonusGraceFeline;
+            }
           }
+          let a = predicateAsInt(personnage, 'ameFeline', 0);
+          if (a > 0) {
+            expliquer("Âme féline : +" + a + " en escalade");
+            bonus += a;
+          }
+          break;
         }
-        break;
       case 'négociation':
       case 'negociation':
         bonus += bonusArgumentDeTaille(personnage, expliquer);
@@ -4873,14 +4894,21 @@ var COFantasy = COFantasy || function() {
         break;
       case 'saut':
       case 'sauter':
-        if (predicateAsBool(personnage, 'graceFelineVoleur')) {
-          let bonusGraceFeline = modCarac(personnage, 'charisme');
-          if (bonusGraceFeline > 0) {
-            expliquer("Grâce féline : +" + bonusGraceFeline + " en saut");
-            bonus += bonusGraceFeline;
+        {
+          if (predicateAsBool(personnage, 'graceFelineVoleur')) {
+            let bonusGraceFeline = modCarac(personnage, 'charisme');
+            if (bonusGraceFeline > 0) {
+              expliquer("Grâce féline : +" + bonusGraceFeline + " en saut");
+              bonus += bonusGraceFeline;
+            }
           }
+          let a = predicateAsInt(personnage, 'ameFeline', 0);
+          if (a > 0) {
+            expliquer("Âme féline : +" + a + " en saut");
+            bonus += a;
+          }
+          break;
         }
-        break;
       case 'survie':
         if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
           expliquer("Forêt hostile : -5 en survie");
@@ -9003,6 +9031,8 @@ var COFantasy = COFantasy || function() {
     }
     // Réflexes felins de la Voie du pourfendeur
     init += predicateAsInt(perso, 'reflexesFelins', 0);
+    // Âme féline (félis)
+    init += predicateAsInt(perso, 'ameFeline', 0);
     //Prescience de l'ensorceleur
     if (attributeAsBool(perso, 'prescienceUtilisee')) init += 10;
     //Forêt vivante
@@ -15773,7 +15803,7 @@ var COFantasy = COFantasy || function() {
                   options, target.messages,
                   function(dmgDisplay, dmg, dmgDrain) {
                     if (options.strigeSuce) {
-                      var suce = attributeAsInt(attaquant, 'strigeSuce', 0);
+                      let suce = attributeAsInt(attaquant, 'strigeSuce', 0);
                       if (suce === 0) {
                         setTokenAttr(attaquant, 'bufDEF', -3, evt);
                         target.messages.push(
@@ -15785,7 +15815,7 @@ var COFantasy = COFantasy || function() {
                           "Repus, " + attackerTokName + " se détache et s'envole");
                         target.messages.push(nomPerso(target) + " se sent un peu faible...");
                         setState(target, 'affaibli', true, evt);
-                        var defbuf = attributeAsInt(attaquant, 'bufDEF', 0);
+                        let defbuf = attributeAsInt(attaquant, 'bufDEF', 0);
                         if (defbuf === -3) {
                           removeTokenAttr(attaquant, 'bufDEF', evt);
                         } else if (defbuf !== 0) {
@@ -23460,7 +23490,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function removeBufDef(msg) {
-    var evt = {
+    const evt = {
       type: 'other'
     };
     getSelected(msg, function(selected, playerId) {
@@ -40308,7 +40338,7 @@ var COFantasy = COFantasy || function() {
           }, callBack);
         return;
       case 'saignementsSang': //prend 1d6 DM
-        if (charPredicateAsBool(charId, 'immuniteSaignement') || 
+        if (charPredicateAsBool(charId, 'immuniteSaignement') ||
           charPredicateAsBool(charId, 'controleSanguin')) {
           callBack();
           return;

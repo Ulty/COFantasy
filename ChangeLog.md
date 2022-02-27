@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.05
 ### Capacités
+* Âme féline, du félis.
 * Parade croisée de la Voie du combat à deux armes.
 * Violence ciblée des demi-ogres.
 * Sang-froid des demi-ogres.
