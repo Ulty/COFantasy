@@ -10124,7 +10124,8 @@ var COFantasy = COFantasy || function() {
       options.attaqueDeGroupe = ficheAttributeAsInt(attaquant, 'attaque_de_groupe', 1);
     }
     if (options.attaqueDeGroupe > 1) {
-      var bonusTouche = reglesOptionelles.haute_DEF.val.bonus_attaque_groupe.val * (options.attaqueDeGroupe - 1);
+      let bonusTouche =
+        reglesOptionelles.haute_DEF.val.bonus_attaque_groupe.val * (options.attaqueDeGroupe - 1);
       attBonus += bonusTouche;
       explications.push("Attaque en groupe => +" + bonusTouche + " en Attaque");
     }
@@ -10184,9 +10185,9 @@ var COFantasy = COFantasy || function() {
         options.rayonAffaiblissant = getValeurOfEffet(attaquant, 'rayonAffaiblissant', 2);
         if (options.rayonAffaiblissant < 0) options.rayonAffaiblissant = 1;
         attBonus -= options.rayonAffaiblissant;
-        var msgRA = "Rayon affaiblissant => -" + options.rayonAffaiblissant + " en Attaque";
-        if (options.pasDeDmg) explications.push(msgRA);
-        else explications.push(msgRA + " et aux DM");
+        let msg = "Rayon affaiblissant => -" + options.rayonAffaiblissant + " en Attaque";
+        if (options.pasDeDmg) explications.push(msg);
+        else explications.push(msg + " et aux DM");
       }
       if (attributeAsBool(attaquant, 'enrage')) {
         attBonus += 5;
@@ -10414,6 +10415,13 @@ var COFantasy = COFantasy || function() {
       if (malus > 0) {
         explications.push("Magie en armure => -" + malus + " en attaque");
         attBonus -= malus;
+      }
+    }
+    if (attributeAsBool(attaquant, 'armesNaturelles')) {
+      let weaponStats = armesEnMain(attaquant);
+      if (weaponStats.arme) {
+        explications.push("Utilisation d'une arme avec ses griffes => -1 en attaque");
+        attBonus -= 1;
       }
     }
     return attBonus;
@@ -12087,7 +12095,7 @@ var COFantasy = COFantasy || function() {
       if ((!arme || arme.label != attackLabel) && (!attaquant.armeGauche || attaquant.armeGauche.label != attackLabel))
         degainerArme(attaquant, attackLabel, evt, options);
     }
-    if (options.contact && predicateAsBool(attaquant, 'frappeDuVide')) {
+    if (options.contact && weaponStats.arme && predicateAsBool(attaquant, 'frappeDuVide')) {
       if (attributeAsBool(attaquant, 'limiteParTour_frappeDuVidePossible'))
         options.frappeDuVide = true;
       //Il faut noter la première attaque au contact
@@ -24963,49 +24971,51 @@ var COFantasy = COFantasy || function() {
     let options = parseOptions(msg);
     if (options === undefined) return;
     let cmd = options.cmd;
-    if (cmd === undefined || cmd.length < 3) {
+    if (cmd === undefined || cmd.length < 2) {
       error("Pas assez d'arguments pour !cof-effet", msg.content);
       return;
     }
-    var effet = cmd[1];
+    let effet = cmd[1];
     if (!estEffetIndetermine(effet)) {
       error(effet + " n'est pas un effet répertorié", msg.content);
       return;
     }
     let activer;
     let valeur;
-    switch (cmd[2]) {
-      case 'oui':
-      case 'Oui':
-      case 'true':
-      case 'début':
-      case 'debut':
-        activer = true;
-        break;
-      case 'non':
-      case 'Non':
-      case 'false':
-      case 'fin':
-        activer = false;
-        break;
-      default:
-        valeur = parseInt(cmd[2]);
-        if (isNaN(valeur)) {
-          error("Option de !cof-effet inconnue", cmd);
-          return;
-        }
-        activer = valeur !== 0;
+    if (cmd.length > 2) {
+      switch (cmd[2]) {
+        case 'oui':
+        case 'Oui':
+        case 'true':
+        case 'début':
+        case 'debut':
+          activer = true;
+          break;
+        case 'non':
+        case 'Non':
+        case 'false':
+        case 'fin':
+          activer = false;
+          break;
+        default:
+          valeur = parseInt(cmd[2]);
+          if (isNaN(valeur)) {
+            error("Option de !cof-effet inconnue", cmd);
+            return;
+          }
+          activer = valeur !== 0;
+      }
     }
     const evt = {
       type: 'Effet ' + effet
     };
-    var lanceur = options.lanceur;
-    var charId;
+    let lanceur = options.lanceur;
+    let charId;
     if (lanceur) charId = lanceur.charId;
     getSelected(msg, function(selected, playerId) {
-      var whisper = '';
+      let whisper = '';
       if (options.secret) {
-        var player;
+        let player;
         if (playerId) player = getObj('player', playerId);
         if (player !== undefined) {
           whisper = '/w "' + player.get('displayname') + '" ';
@@ -25027,8 +25037,8 @@ var COFantasy = COFantasy || function() {
       }
       if (options.portee !== undefined) {
         selected = selected.filter(function(sel) {
-          var token = getObj('graphic', sel._id);
-          var dist = distanceCombat(lanceur.token, token);
+          let token = getObj('graphic', sel._id);
+          let dist = distanceCombat(lanceur.token, token);
           if (dist > options.portee) {
             whisperChar(charId, " est trop loin de " + token.get('name'));
             return false;
@@ -25037,6 +25047,18 @@ var COFantasy = COFantasy || function() {
         });
       }
       if (selected.length === 0) return;
+      if (activer === undefined) {
+        if (selected.length > 1) {
+          sendPlayer(msg, "On ne peut sélectionner qu'un token si on ne précise pas si il faut activer ou désactiver l'effet");
+          return;
+        }
+        let perso = persoOfId(selected[0]._id);
+        if (!perso) {
+          error("Token sélectionné non valide", selected);
+          return;
+        }
+        activer = !attributeAsBool(perso, effet);
+      }
       if (activer) {
         if (limiteRessources(lanceur, options, effet, effet, evt)) {
           addEvent(evt);
@@ -25044,14 +25066,14 @@ var COFantasy = COFantasy || function() {
         }
         if (options.classeEffet) {
           selected = selected.filter(function(sel) {
-            var perso = persoOfId(sel._id);
+            let perso = persoOfId(sel._id);
             if (perso === undefined) return false;
             if (attributeAsBool(perso, options.classeEffet)) {
-              var attrDeClasse = attributesOfClass(perso, options.classeEffet);
-              var mpc = "Non cumulable avec";
+              let attrDeClasse = attributesOfClass(perso, options.classeEffet);
+              let mpc = "Non cumulable avec";
               attrDeClasse.forEach(function(attrClasseEffet) {
-                var attr = attrClasseEffet.baseAttribute;
-                var attrName = attr.get('name');
+                let attr = attrClasseEffet.baseAttribute;
+                let attrName = attr.get('name');
                 if (estEffetIndetermine(attrName))
                   mpc += ' ' + messageEffetIndetermine[effetIndetermineOfAttribute(attr)].actif;
                 else mpc += ' ' + attrName;
@@ -25101,7 +25123,7 @@ var COFantasy = COFantasy || function() {
       } else {
         iterSelected(selected, function(perso) {
           //On commence par enlever les attributs de classe d'effet, si besoin
-          var ace = tokenAttribute(perso, effet + 'ClasseEffet');
+          let ace = tokenAttribute(perso, effet + 'ClasseEffet');
           if (ace.length > 0) {
             var ce = ace[0].get('current');
             removeTokenAttr(perso, ce, evt);
@@ -26988,8 +27010,8 @@ var COFantasy = COFantasy || function() {
       });
       // si le consommable n'a pas été trouvé, on le crée avec une valeur de nb
       if (!found) {
-        var pref = 'repeating_equipement_' + generateRowID() + '_';
-        var attre = createObj("attribute", {
+        let pref = 'repeating_equipement_' + generateRowID() + '_';
+        let attre = createObj("attribute", {
           name: pref + 'equip_nom',
           current: nom,
           characterid: perso.charId
@@ -27007,7 +27029,7 @@ var COFantasy = COFantasy || function() {
           attribute: attre,
         });
         if (nb > 1) {
-          var attrQte = createObj('attribute', {
+          let attrQte = createObj('attribute', {
             characterid: perso.charId,
             name: pref + 'equip_qte',
             current: nb,
@@ -27034,7 +27056,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function doNatureNourriciere(perso, options) {
-    var evt = {
+    const evt = {
       type: "natureNourriciere",
       action: {
         perso: perso,
@@ -39208,11 +39230,11 @@ var COFantasy = COFantasy || function() {
   }
 
   function messageOfEffetTemp(effetC) {
-    var res = messageEffetTemp[effetC];
+    let res = messageEffetTemp[effetC];
     if (res) return res;
-    var p = effetC.indexOf('(');
+    let p = effetC.indexOf('(');
     if (p > 0) {
-      var ef = effetC.substring(0, p);
+      let ef = effetC.substring(0, p);
       res = messageEffetTemp[ef];
       return res;
     }
@@ -39371,10 +39393,10 @@ var COFantasy = COFantasy || function() {
   }
 
   function effetCombatOfAttribute(attr) {
-    var ef = attr.get('name');
+    let ef = attr.get('name');
     if (ef === undefined || messageEffetCombat[ef]) return ef;
     //D'abord on enlève le nom du token
-    var pu = ef.indexOf('_');
+    let pu = ef.indexOf('_');
     if (pu > 0) {
       ef = ef.substring(0, pu);
       if (messageEffetCombat[ef]) return ef;
@@ -39384,6 +39406,18 @@ var COFantasy = COFantasy || function() {
 
   // Si un effet est prejudiciable, enlevé par délivrance
   const messageEffetIndetermine = {
+    armesNaturelles: {
+      activation: "se fait pousser griffes et crocs",
+      actif: "a des griffes et des crocs",
+      fin: "n'a plus de griffes et crocs visibles"
+    },
+    fievreux: {
+      activation: "se sent fiévreux",
+      activationF: "se sent fiévreuse",
+      actif: "est fiévreux",
+      fin: "se sent mieux",
+      prejudiciable: true
+    },
     foretVivanteEnnemie: {
       activation: "est gêné par la forêt",
       actif: "est désorienté par la forêt",
@@ -39434,13 +39468,6 @@ var COFantasy = COFantasy || function() {
       activation: "devient plus massif",
       actif: "a une silhouette massive",
       fin: "retrouve une silhouette normale",
-    },
-    fievreux: {
-      activation: "se sent fiévreux",
-      activationF: "se sent fiévreuse",
-      actif: "est fiévreux",
-      fin: "se sent mieux",
-      prejudiciable: true
     },
     presenceGlaciale: {
       activation: "transforme son corps en glace vivante",

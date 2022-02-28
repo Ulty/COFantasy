@@ -1966,6 +1966,12 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Félis</h4>
                 <ol>
                   <li><strong>Âme féline :</strong> ajouter un prédicat <code>ameFeline</code>, de valeur le rang dans la voie. Pensez à ajouter des compétences pour le mouvement sur la fiche si ils ne sont pas déjà présent dans votre handout de compétences.</li>
+                  <li><strong>Armes naturelles :</strong>
+                    <ul>
+                      <li>Créez une attaque "Griffes et crocs" naturelle de contact avec en DM 1d6 + Mod de FOR et les options <code>--si etat armesNaturelles --message Attaque de ses griffes et crocs !</code>.</li>
+                      <li>Pour faire sortir les griffes, dans l'onglet script, ajouter une action "Sortir/rentrer les griffes" faisant <code>!cof-effet armesNaturelles</code>.</li>
+                    </ul>
+                  </li>
                 </ol>
                 <h4 class="text-secondary">Gnome</h4>
                 <ol>
