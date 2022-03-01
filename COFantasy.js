@@ -14039,7 +14039,8 @@ var COFantasy = COFantasy || function() {
               if (!options.auto) {
                 //Seulement si elle n'est pas automatiquement réussie
                 if (isActive(target)) {
-                  if (!options.pasDeDmg && options.contact && !options.ignoreTouteRD) {
+                  if (!options.pasDeDmg && options.contact && 
+                    !options.ignoreTouteRD) {
                     if (attributeAsBool(target, 'encaisserUnCoup')) {
                       options.preDmg = options.preDmg || {};
                       options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
@@ -14088,7 +14089,7 @@ var COFantasy = COFantasy || function() {
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].paradeMagistrale = true;
                   }
-                  if (options.sortilege && predicateAsBool(target, 'esquiveDeLaMgie')) {
+                  if (options.sortilege && predicateAsBool(target, 'esquiveDeLaMagie')) {
                     options.preDmg = options.preDmg || {};
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].esquiveDeLaMagie = true;
