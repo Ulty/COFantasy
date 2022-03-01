@@ -9020,8 +9020,8 @@ var COFantasy = COFantasy || function() {
     if (armeEnMain.length > 0) {
       let armeL = armeEnMain[0].get('current');
       //L'arme doit être chargée
-      let chargeMax = predicateAsInt(perso, 'charge_' + armeL, 0);
-      if (chargeMax == 0 || attributeAsInt(perso, 'charge_' + armeL, 0) > 0) {
+      if (!predicateAsBool(perso, 'charge_' + armeL) ||
+        attributeAsInt(perso, 'charge_' + armeL, 0) > 0) {
         init += predicateAsInt(perso, 'initEnMain' + armeL, 0);
       }
     }
@@ -18914,8 +18914,11 @@ var COFantasy = COFantasy || function() {
         charges[persoTest.charId] = {};
         let pred = getPredicates(perso);
         for (let predicat in pred) {
-          if (predicat.startsWith('charge_'))
-            charges[persoTest.charId][predicat] = pred[predicat];
+          if (predicat.startsWith('charge_')) {
+            let chargeMax = pred[predicat];
+            if (chargeMax === true) chargeMax = 1;
+            charges[persoTest.charId][predicat] = chargeMax;
+          }
         }
       }
       for (let charge in charges[persoTest.charId]) {
@@ -20365,19 +20368,19 @@ var COFantasy = COFantasy || function() {
   }
 
   function recharger(msg) {
-    var cmd = msg.content.split(" ");
+    let cmd = msg.content.split(" ");
     if (cmd.length < 2) {
       error("La fonction !cof-recharger attend au moins un argument", msg);
       return;
     }
-    var attackLabel = cmd[1];
-    var evt = {
+    let attackLabel = cmd[1];
+    let evt = {
       type: 'recharger',
       attributes: []
     };
-    var grenaille = false;
+    let grenaille = false;
     if (msg.content.includes(' --grenaille')) grenaille = true;
-    var options = {};
+    let options = {};
     if (msg.content.includes(' --son')) {
       options = parseOptions(msg);
       options = options || {};
@@ -20389,7 +20392,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       iterSelected(selected, function(perso) {
-        var weaponName = getAttackName(attackLabel, perso);
+        let weaponName = getAttackName(attackLabel, perso);
         if (weaponName === undefined) {
           error("Arme " + attackLabel + " n'existe pas pour " + nomPerso(perso), perso);
           return;
@@ -23041,8 +23044,8 @@ var COFantasy = COFantasy || function() {
             dmTemp = attributeAsInt(perso, 'DMTEMP', 0);
           }
         } else if (lie) {
-          var nameAttrDMTEMP = 'DMTEMP';
-          var versionFiche = parseFloat(ficheAttribute(perso, 'version', 0));
+          let nameAttrDMTEMP = 'DMTEMP';
+          let versionFiche = parseFloat(ficheAttribute(perso, 'version', 0));
           if (isNaN(versionFiche)) versionFiche = 0;
           if (estPNJ && versionFiche < 3.7) nameAttrDMTEMP = 'pnj_dmtemp';
           dmTemp = ficheAttributeAsInt(perso, nameAttrDMTEMP, 0);
@@ -23101,8 +23104,7 @@ var COFantasy = COFantasy || function() {
         }
         _.forEach(attaques, function(att, armeLabel) {
           let nomArme = att.armenom;
-          let chargeMax = predicateAsInt(perso, 'charge_' + armeLabel, 0);
-          if (chargeMax) {
+          if (predicateAsBool(perso, 'charge_' + armeLabel)) {
             let charge = attributeAsInt(perso, 'charge_' + armeLabel, 0);
             if (charge === 0) {
               line = nomArme + " n'est pas chargé";

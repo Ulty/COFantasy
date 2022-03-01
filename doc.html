@@ -2001,6 +2001,16 @@ tr {line-height: 25px;}
                 </ol>
                 <h4 class="text-secondary">Lutin</h4>
                 Voir les <a href="#fee_et_lutin">fées</a>.
+                <h4 class="text-secondary">Minotaure</h4>
+                <ul>
+                  <li><a href="#Vision_dans_le_noir">Vision dans le noir</a>.</li>
+                  <li><strong>Coup de corne :</strong> ajouter simplement l'attaque.</li>
+                  <li><strong>Sens de l'orientation :</strong> utiliser une compétence/</li>
+                  <li><strong>Grande taille</strong> : quand le minotaure rentre dans une construction de taille humaine, utiliser <code>!cof-effet constructionTailleHumaine true</code>. À la sortie du bâtiment, <code>!cof-effet constructionTailleHumaine false</code>. Pour les espaces exigus, de même avec l'effet <code>espaceExigu</code>. Si on veut un seul bouton, enlever simplement l'argument <code>true</code>.</li>
+                </ul>
+                <ol>
+                  <li><strong>Charge :</strong> <code>#Attaque -1 --bonusAttaque 2 --plus 1d6</code>. Le déplacement n'est pas encore géré. Modifier les bonus si le minotaure possède la capacité Charge du barbare.</li>
+                </ol>
                 <h4 class="text-secondary">Nain</h4>
                 <ul>
                   <li><a href="#Vision_dans_le_noir">Vision dans le noir</a>.</li>
@@ -2010,11 +2020,6 @@ tr {line-height: 25px;}
                   <li><strong>Solide comme un roc</strong> : ajouter le texte <code>2/1</code> dans la RD sur la fiche.</li>
                   <li><strong>Haches et marteaux</strong> : ajouter un <a href=#predicats>prédicat</a> <code>hachesEtMarteaux</code>. Ne pas oublier de mettre le modificateur <code>hache</code> ou <code>marteau</code> pour les attaques qui sont concernées.</li>
                 </ol>
-                <h4 class="text-secondary">Minotaure</h4>
-                <ul>
-                  <li><a href="#Vision_dans_le_noir">Vision dans le noir</a>.</li>
-                  <li><strong>Grande taille</strong> : quand le minotaure rentre dans une construction de taille humaine, utiliser <code>!cof-effet constructionTailleHumaine true</code>. À la sortie du bâtiment, <code>!cof-effet constructionTailleHumaine false</code>. Pour les espaces exigus, de même avec l'effet <code>espaceExigu</code>.</li>
-                </ul>
                 <h4 class="text-secondary">Tieflin</h4>
                 <ul>
                   <li><a href="#Vision_dans_le_noir">Vision dans le noir</a>.</li>
