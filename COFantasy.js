@@ -672,7 +672,7 @@ var COFantasy = COFantasy || function() {
   let statusForInitEnemy;
 
   function registerMarkerEffet(marker, effet) {
-    var m = markerCatalog[marker];
+    let m = markerCatalog[marker];
     if (m) {
       messageEffetTemp[effet].statusMarker = m.tag;
       effet_de_marker[m.tag] = effet;
@@ -1145,7 +1145,7 @@ var COFantasy = COFantasy || function() {
     }
     //Utilisation des markers d'effets temporaires
     for (let effet in messageEffetTemp) {
-      var ms = messageEffetTemp[effet].statusMarker;
+      let ms = messageEffetTemp[effet].statusMarker;
       if (ms) effet_de_marker[ms] = effet;
     }
     // Récupération des token Markers attachés à la campagne image, nom, tag, Id
@@ -8874,10 +8874,10 @@ var COFantasy = COFantasy || function() {
   }
 
   function getValeurStringOfEffet(perso, effet, def, attrDef) {
-    var attrsVal = tokenAttribute(perso, effet + 'Valeur');
+    let attrsVal = tokenAttribute(perso, effet + 'Valeur');
     if (attrsVal.length === 0) {
       if (attrDef) {
-        var attr = charAttribute(perso, attrDef);
+        let attr = charAttribute(perso, attrDef);
         if (attr.length === 0) return def;
         return attr[0].get('current');
       }
@@ -8889,19 +8889,19 @@ var COFantasy = COFantasy || function() {
   // renvoie la valeur du bonus si il y a un capitaine (ou commandant)
   //evt est optionnel
   function aUnCapitaine(cible, evt, pageId) {
-    var charId = cible.charId;
-    var attrs = findObjs({
+    let charId = cible.charId;
+    let attrs = findObjs({
       _type: 'attribute',
       _characterid: charId,
     });
-    var attrCapitaine = attrs.find(function(a) {
+    let attrCapitaine = attrs.find(function(a) {
       return (a.get('name') == 'capitaine');
     });
     if (attrCapitaine === undefined) return false;
     if (pageId === undefined) {
       pageId = cible.token.get('pageid');
     }
-    var capitaine = persoOfIdName(attrCapitaine.get('current'), pageId);
+    let capitaine = persoOfIdName(attrCapitaine.get('current'), pageId);
     if (evt && capitaine === undefined) {
       evt.deletedAttributes = evt.deletedAttributes || [];
       evt.deletedAttributes.push(attrCapitaine);
@@ -27464,7 +27464,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function devientCapitaine(msg) {
-    var cmd = msg.content.split(' ');
+    let cmd = msg.content.split(' ');
     cmd = cmd.filter(function(c) {
       return c !== '';
     });
@@ -27472,6 +27472,9 @@ var COFantasy = COFantasy || function() {
       error("La fonction !cof-capitaine attend en argument l'id du capitaine", cmd);
       return;
     }
+    const evt = {
+      type: 'Capitaine'
+    };
     let remove;
     let capitaine;
     let nomCapitaine;
@@ -27482,8 +27485,13 @@ var COFantasy = COFantasy || function() {
     } else {
       capitaine = persoOfId(cmd[1], cmd[1]);
       if (capitaine === undefined) {
-        error("Le premier argument de !cof-lancer-sort doit être un token", cmd[1]);
+        error("Le premier argument de !cof-capitaine doit être un token", cmd[1]);
         return;
+      }
+      let m = markerCatalog['cof-chef'];
+      if (m) {
+        affectToken(capitaine.token, 'statusmarkers', capitaine.token.get('statusmarkers'), evt);
+        capitaine.token.set('status_' + m.tag, true);
       }
       nomCapitaine = nomPerso(capitaine);
       if (cmd.length > 2 && !cmd[2].startsWith('--')) {
@@ -27496,9 +27504,6 @@ var COFantasy = COFantasy || function() {
         if (bonus > 2) titre = 'commandant';
       }
     }
-    const evt = {
-      type: 'Capitaine'
-    };
     getSelected(msg, function(selected) {
       if (selected.length === 0) {
         error("Pas de token sélectionné pour !cof-capitaine");
@@ -28707,7 +28712,10 @@ var COFantasy = COFantasy || function() {
     let optDice;
     if (typeAttaque == 'esquive') {
       let nbDe = nbreDeTestCarac(carac, lanceur);
-      optDice = { carac, nbDe };
+      optDice = {
+        carac,
+        nbDe
+      };
     }
     let attackRollExpr = "[[" + computeDice(lanceur, optDice) + "cs20cf1]]";
     sendChat('', attackRollExpr, function(res) {

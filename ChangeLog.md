@@ -20,6 +20,7 @@
 * Correction d'un bug sur le pacifisme
 
 ### Autres améliorations
+* Ajout d'un marker pour les chefs de groupe.
 * Possibilité de retarder l'affichage de la mort
 * Support pour les foudres du temps.
 * Possibilité de renouveler les élixirs et les runes en dehors de la page des joueurs.
