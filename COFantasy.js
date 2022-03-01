@@ -12697,6 +12697,8 @@ var COFantasy = COFantasy || function() {
     let diviseDmg = options.diviseDmg || 1;
     if (target.diviseDmg) diviseDmg *= target.diviseDmg;
     if (options.attaqueEnEtantGobe) diviseDmg *= 2;
+    if (options.sortilege && predicateAsBool(target, 'esquiveDeLaMagie'))
+      diviseDmg *= 2;
     if (options.attaqueDeGroupeDmgCoef) {
       dmgCoef++;
       expliquer("Attaque en groupe > DEF +" + reglesOptionelles.haute_DEF.val.crit_attaque_groupe.val + " => DMGx" + (crit ? "3" : "2"));
@@ -14085,6 +14087,11 @@ var COFantasy = COFantasy || function() {
                     options.preDmg = options.preDmg || {};
                     options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
                     options.preDmg[target.token.id].paradeMagistrale = true;
+                  }
+                  if (options.sortilege && predicateAsBool(target, 'esquiveDeLaMgie')) {
+                    options.preDmg = options.preDmg || {};
+                    options.preDmg[target.token.id] = options.preDmg[target.token.id] || {};
+                    options.preDmg[target.token.id].esquiveDeLaMagie = true;
                   }
                   if (!options.aoe && capaciteDisponible(target, 'esquiveFatale', 'combat')) {
                     if (target.ennemisAuContact === undefined) {
@@ -16397,6 +16404,11 @@ var COFantasy = COFantasy || function() {
               line += "<br/>" + boutonSimple(action, "tenter une esquive acrobatique");
               nbBoutons++;
             }
+            if (preDmgToken.esquiveDeLaMagie && preDmgToken.esquiveDeLaMagie !== 'reroll') {
+              action = "!cof-esquive-de-la-magie " + target.token.id + ' ' + evt.id;
+              line += "<br/>" + boutonSimple(action, "Esquiver la magie");
+              nbBoutons++;
+            }
             if (preDmgToken.expertDuCombatDEF) {
               action = "!cof-expert-combat-def " + evt.id + " " + target.token.id;
               line += "<br/>" + boutonSimple(action, "utiliser expert du combat");
@@ -16670,7 +16682,7 @@ var COFantasy = COFantasy || function() {
 
   // Meilleure carac parmis 2 pour un save.
   function meilleureCarac(carac1, carac2, personnage, seuil) {
-    var sansEsprit;
+    let sansEsprit;
     if (carac1 == 'SAG' || carac1 == 'INT' || carac1 == 'CHA') {
       sansEsprit = predicateAsBool(personnage, 'sansEsprit');
       if (sansEsprit) return carac1;
@@ -16680,26 +16692,26 @@ var COFantasy = COFantasy || function() {
       sansEsprit = predicateAsBool(personnage, 'sansEsprit');
       if (sansEsprit) return carac2;
     }
-    var options = {
+    const options = {
       cacheBonusToutesCaracs: {}
     };
-    var bonus1 = bonusTestCarac(carac1, personnage, options);
+    let bonus1 = bonusTestCarac(carac1, personnage, options);
     if (carac1 == 'DEX') {
       bonus1 += predicateAsInt(personnage, 'reflexesFelins', 0);
       bonus1 += predicateAsInt(personnage, 'esquiveVoleur', 0);
     }
-    var bonus2 = bonusTestCarac(carac2, personnage, options);
+    let bonus2 = bonusTestCarac(carac2, personnage, options);
     if (carac2 == 'DEX') {
       bonus2 += predicateAsInt(personnage, 'reflexesFelins', 0);
       bonus2 += predicateAsInt(personnage, 'esquiveVoleur', 0);
     }
-    var nbrDe1 = nbreDeTestCarac(carac1, personnage);
-    var nbrDe2 = nbreDeTestCarac(carac2, personnage);
+    let nbrDe1 = nbreDeTestCarac(carac1, personnage);
+    let nbrDe2 = nbreDeTestCarac(carac2, personnage);
     if (estAffaibli(personnage) && predicateAsBool(personnage, 'insensibleAffaibli')) seuil += 2;
-    var de1 = deTest(personnage, carac1);
-    var proba1 = probaSucces(de1, seuil - bonus1, nbrDe1);
-    var de2 = deTest(personnage, carac2);
-    var proba2 = probaSucces(de2, seuil - bonus2, nbrDe2);
+    let de1 = deTest(personnage, carac1);
+    let proba1 = probaSucces(de1, seuil - bonus1, nbrDe1);
+    let de2 = deTest(personnage, carac2);
+    let proba2 = probaSucces(de2, seuil - bonus2, nbrDe2);
     if (proba2 > proba1) return carac2;
     return carac1;
   }
@@ -28528,12 +28540,12 @@ var COFantasy = COFantasy || function() {
 
   // asynchrone : on fait les jets du personnage en opposition
   // options :
-  // predicat : on utilise un prédicat et non un attribut. Peut être 'tour' ou 'cmbat'
+  // predicat : on utilise un prédicat et non un attribut. Peut être 'tour' ou 'combat'
   // protecteur: c'est un protecteur qui protège la cible (pas compatible avec predicate
   function evitementGenerique(msg, verbe, attributeName, actionName, tente, msgDejaFait, carac, typeAttaque, msgReussite, opt) {
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined || cmd.length < 1) {
       error("Impossible de trouve la commande !", msg.content);
       return;
@@ -28542,8 +28554,8 @@ var COFantasy = COFantasy || function() {
       error("Pas assez d'arguments pour " + cmd[0], cmd);
       return;
     }
-    var evt;
-    var chance;
+    let evt;
+    let chance;
     if (cmd.length > 2) { //On relance pour un événement particulier
       evt = findEvent(cmd[2]);
       if (evt === undefined) {
@@ -28562,15 +28574,15 @@ var COFantasy = COFantasy || function() {
       sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour " + verbe + " l'attaque précédente");
       return;
     }
-    var perso = persoOfId(cmd[1]);
+    const perso = persoOfId(cmd[1]);
     if (perso === undefined) {
       error("Le premier argument de " + cmd[0] + " n'est pas un token de personnage", cmd);
       return;
     }
-    var action = evt.action;
-    var optionsAttaque = action.currentOptions;
-    var pageId = action.pageId;
-    var cible = action.cibles.find(function(target) {
+    let action = evt.action;
+    let optionsAttaque = action.currentOptions;
+    let pageId = action.pageId;
+    let cible = action.cibles.find(function(target) {
       return (target.token.id === perso.token.id);
     });
     if (cible === undefined) {
@@ -28611,7 +28623,7 @@ var COFantasy = COFantasy || function() {
       testPredicat = testLimiteUtilisationsCapa(perso, attributeName, opt.predicat, msgDejaFait, "ne sait pas faire " + actionName);
       if (testPredicat === undefined) return;
       testPredicat.perso = perso;
-    } else {
+    } else if (attributAVerifier) {
       attribut = tokenAttribute(persoAttribut, attributAVerifier);
       if (attribut.length === 0) {
         sendPerso(persoAttribut, "ne sait pas faire " + actionName);
@@ -28702,8 +28714,8 @@ var COFantasy = COFantasy || function() {
       evt.action.rolls[testId] = attackRoll;
       let d20roll = attackRoll.results.total;
       if (stateCOF.foudreDuTemps) foudreDuTemps(lanceur, d20roll);
-      var msg = buildinline(attackRoll);
-      var attBonus = ficheAttributeAsInt(lanceur, 'niveau', 1);
+      let msg = buildinline(attackRoll);
+      let attBonus = ficheAttributeAsInt(lanceur, 'niveau', 1);
       if (estAffaibli(lanceur) && predicateAsBool(lanceur, 'insensibleAffaibli')) attBonus -= 2;
       switch (typeAttaque) {
         case 'distance':
@@ -28726,6 +28738,11 @@ var COFantasy = COFantasy || function() {
           break;
         case 'contact':
           attBonus += ficheAttributeAsInt(lanceur, 'ATKCAC_DIV', 0);
+          attBonus += modCarac(lanceur, carac);
+          break;
+        case 'esquive':
+          attBonus += predicateAsInt(lanceur, 'reflexesFelins', 0);
+          attBonus += predicateAsInt(lanceur, 'esquiveVoleur', 0);
           attBonus += modCarac(lanceur, carac);
           break;
         default:
@@ -28868,6 +28885,11 @@ var COFantasy = COFantasy || function() {
         critiqueDevientNormal: true,
         predicat: 'tour'
       });
+  }
+
+  function doEsquiveDeLaMagie(msg) {
+    evitementGenerique(msg, 'esquiver', undefined,
+      "esquive de la magie", "d'esquiver la magie", " a déjà fait esquivé la magie", 'dexterite', 'esquive', "l'attaque est esquivée !", {});
   }
 
   function doEsquiveMagistrale(msg) {
@@ -38185,6 +38207,9 @@ var COFantasy = COFantasy || function() {
         return;
       case "!cof-esquive-acrobatique":
         doEsquiveAcrobatique(msg);
+        return;
+      case "!cof-esquive-de-la-magie":
+        doEsquiveDeLaMagie(msg);
         return;
       case "!cof-resister-a-la-magie":
         resisterALaMagie(msg);

@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.05
 ### Capacités
+* Esquive de la magie.
 * Support basique pour la frénésie du minotaure.
 * Armes naturelles du félis.
 * Âme féline, du félis.
