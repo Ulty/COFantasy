@@ -5293,11 +5293,11 @@ var COFantasy = COFantasy || function() {
 
   function computeDice(lanceur, options) {
     options = options || {};
-    var nbDe = options.nbDe;
+    let nbDe = options.nbDe;
     if (nbDe === undefined) nbDe = 1;
-    var plusFort = options.plusFort;
+    let plusFort = options.plusFort;
     if (plusFort === undefined) plusFort = true;
-    var dice = options.dice;
+    let dice = options.dice;
     if (dice === undefined) dice = deTest(lanceur, options.carac);
     if (attributeAsBool(lanceur, 'malediction')) {
       if (plusFort) {
@@ -23540,13 +23540,13 @@ var COFantasy = COFantasy || function() {
   }
 
   function deTest(personnage, carac) {
-    var dice = 20;
+    let dice = 20;
     if ((estAffaibli(personnage) && !predicateAsBool(personnage, 'insensibleAffaibli')) ||
       getState(personnage, 'immobilise') ||
       attributeAsBool(personnage, 'mortMaisNAbandonnePas'))
       dice = 12;
     else {
-      var ebriete = attributeAsInt(personnage, 'niveauEbriete', 0);
+      let ebriete = attributeAsInt(personnage, 'niveauEbriete', 0);
       if (ebriete > 2) dice = 12;
       else if (ebriete > 1 && carac != 'CON') dice = 12;
     }
@@ -28704,11 +28704,16 @@ var COFantasy = COFantasy || function() {
       error("On n'a ni attribut ni prédicat pour un évitement générique", evitementGen);
       return;
     }
-    let attackRollExpr = "[[" + computeDice(lanceur) + "cs20cf1]]";
+    let optDice;
+    if (typeAttaque == 'esquive') {
+      let nbDe = nbreDeTestCarac(carac, lanceur);
+      optDice = { carac, nbDe };
+    }
+    let attackRollExpr = "[[" + computeDice(lanceur, optDice) + "cs20cf1]]";
     sendChat('', attackRollExpr, function(res) {
       let testId = attributeName + "_" + lanceur.token.id;
       options.rolls = options.rolls || {};
-      var attackRoll = options.rolls[testId] || res[0].inlinerolls[0];
+      let attackRoll = options.rolls[testId] || res[0].inlinerolls[0];
       attackRoll.token = lanceur.token;
       evt.action.rolls = evt.action.rolls || {};
       evt.action.rolls[testId] = attackRoll;
