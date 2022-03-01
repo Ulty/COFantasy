@@ -28706,7 +28706,7 @@ var COFantasy = COFantasy || function() {
       }
     } else if (testPredicat) {
       utiliseCapacite(testPredicat.perso, testPredicat, evt);
-    } else { //ni attribut ni prédicat
+    } else if (attributeName !== undefined) { //ni attribut ni prédicat
       error("On n'a ni attribut ni prédicat pour un évitement générique", evitementGen);
       return;
     }
