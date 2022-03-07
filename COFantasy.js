@@ -2269,6 +2269,19 @@ var COFantasy = COFantasy || function() {
             tousLesTokens: true
           });
         break;
+      case 'penombreTemp':
+        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+          function(token) {
+            setState({
+              token: token,
+              charId: charId
+            }, 'penombre', false, evt, {
+              fromTemp: true
+            });
+          }, {
+            tousLesTokens: true
+          });
+        break;
       case 'ralentiTemp':
         iterTokensOfAttribute(charId, options.pageId, effet, attrName,
           function(token) {
@@ -2727,6 +2740,18 @@ var COFantasy = COFantasy || function() {
           };
           let valAttr = tokenAttribute(perso, efComplet + 'Valeur');
           var tokenTenebres = getObj('graphic', valAttr[0].get('current'));
+          if (tokenTenebres) tokenTenebres.remove();
+        });
+        break;
+      case 'brumes':
+        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+          //Puis on regarde si il y a une valeur à afficher
+          let perso = {
+            token: token,
+            charId: charId
+          };
+          let valAttr = tokenAttribute(perso, efComplet + 'Valeur');
+          let tokenTenebres = getObj('graphic', valAttr[0].get('current'));
           if (tokenTenebres) tokenTenebres.remove();
         });
         break;
@@ -5873,7 +5898,7 @@ var COFantasy = COFantasy || function() {
       pageId = perso.token.get('pageid');
       perso.pageId = pageId;
     }
-    const page = getObj("page", pageId);
+    const page = getObj('page', pageId);
     if (page === undefined) {
       perso.scale = 1;
       return distance;
@@ -9332,7 +9357,7 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(personnage, 'inspiration')) {
       let b = getValeurOfEffet(personnage, 'inspiration', 1);
       let intense = attributeAsInt(personnage, 'inspirationTempeteDeManaIntense', 0);
-      b  += intense;
+      b += intense;
       attBonus += b;
       explications.push("Inspiratuon => +" + b + " en Attaque");
       if (intense)
@@ -14057,7 +14082,7 @@ var COFantasy = COFantasy || function() {
               if (!options.auto) {
                 //Seulement si elle n'est pas automatiquement réussie
                 if (isActive(target)) {
-                  if (!options.pasDeDmg && options.contact && 
+                  if (!options.pasDeDmg && options.contact &&
                     !options.ignoreTouteRD) {
                     if (attributeAsBool(target, 'encaisserUnCoup')) {
                       options.preDmg = options.preDmg || {};
@@ -14607,6 +14632,9 @@ var COFantasy = COFantasy || function() {
           break;
         case 'aveugleTemp':
           setState(target, 'aveugle', true, evt);
+          break;
+        case 'penombreTemp':
+          setState(target, 'penombre', true, evt);
           break;
         case 'ralentiTemp':
           setState(target, 'ralenti', true, evt);
@@ -19358,6 +19386,7 @@ var COFantasy = COFantasy || function() {
         case 'secret':
         case 'magique':
         case 'montreActions':
+        case 'brumes':
           options[cmd[0]] = true;
           break;
         case 'lanceur':
@@ -19525,7 +19554,7 @@ var COFantasy = COFantasy || function() {
             duree: tr
           };
           return;
-        case "portee":
+        case 'portee':
           if (cmd.length < 2) {
             error("Pas assez d'argument pour --portee n", cmd);
             return;
@@ -32896,30 +32925,32 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //!cof-tenebres token-lanceur token-cible
+  // possibilité de --brumes pour un effet de brumes
   function tenebres(msg) {
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined || cmd.length < 2) {
       error("!cof-tenebres mal formé, il faut un token comme premier argument", msg.content);
       return;
     }
-    var necromant = persoOfId(cmd[1], cmd[1], options.pageId);
+    let necromant = persoOfId(cmd[1], cmd[1], options.pageId);
     if (necromant === undefined) {
       error("Le premier argument de !cof-tenebres n'est pas un token valide", cmd);
       return;
     }
-    var targetToken = persoOfId(cmd[2], cmd[2], options.pageId);
-    if (targetToken === undefined) {
+    let target = persoOfId(cmd[2], cmd[2], options.pageId);
+    if (target === undefined) {
       error("Le second argument de !cof-tenebres n'est pas un token valide", cmd);
       return;
     }
     options.lanceur = necromant;
-    var playerId = getPlayerIdFromMsg(msg);
+    const playerId = getPlayerIdFromMsg(msg);
     if (options.tempeteDeMana) {
       if (options.tempeteDeMana.cout === 0) {
         //On demande de préciser les options
-        var optMana = {
+        let optMana = {
           mana: options.mana,
           portee: true,
           duree: true,
@@ -32934,61 +32965,82 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    var portee = options.portee || 20;
+    let portee = options.portee || 20;
     if (options.puissantPortee || options.tempeteDeManaPortee) {
       portee = portee * 2;
     }
-    var rayon = options.rayon || 5;
+    let rayon = options.rayon || options.brumes ? 20 : 5;
     if (options.puissant || options.tempeteDeManaIntense) rayon = Math.floor(Math.sqrt(2) * rayon);
-    if (distanceCombat(necromant.token, targetToken.token, options.pageId, {
+    if (distanceCombat(necromant.token, target.token, options.pageId, {
         strict2: true
       }) > portee) {
       sendPlayer(msg, "Le point visé est trop loin (portée " + portee + ")", playerId);
       return;
     }
-    var duree = 5 + modCarac(necromant, 'intelligence');
+    let duree = 5;
+    if (options.brumes) duree += modCarac(necromant, 'sagesse');
+    else duree += modCarac(necromant, 'intelligence');
     if (options.puissantDuree || options.tempeteDeManaDuree) {
       duree = duree * 2;
     }
-    var evt = {
+    const evt = {
       type: 'tenebres'
     };
     addEvent(evt);
-    if (limiteRessources(necromant, options, 'tenebres', 'lancer un sort de ténèbres', evt)) return;
+    if (options.brumes) {
+      if (limiteRessources(necromant, options, 'brumes', 'lancer un sort de brumes', evt)) return;
+    } else {
+      if (limiteRessources(necromant, options, 'tenebres', 'lancer un sort de ténèbres', evt)) return;
+    }
     if (!stateCOF.combat) {
       initPerso(necromant, evt);
     }
-    let tokenTenebres = "Ténèbres de " + nomPerso(necromant);
-    let token = createObj('graphic', {
-      name: tokenTenebres,
+    let rayonUnite = scaleDistance(necromant, rayon);
+    let tokSpec = {
       showname: true,
       subtype: 'token',
       pageid: options.pageId,
-      imgsrc: 'https://s3.amazonaws.com/files.d20.io/images/192072874/eJXFx20fD931DuBDvzAnQQ/thumb.png?1610469273',
-      left: targetToken.token.get("left"),
-      top: targetToken.token.get("top"),
-      width: 70,
-      height: 70,
-      layer: 'objects',
-      aura1_radius: 0,
-      aura1_color: "#c1c114",
-      aura1_square: true,
-      aura2_radius: scaleDistance(necromant, rayon),
-      aura2_color: "#000000",
-      showplayers_aura2: true
-    });
-    evt.tokens = [token];
+      left: target.token.get("left"),
+      top: target.token.get("top"),
+    };
+    if (options.brumes) {
+      tokSpec.name = "Brumes de " + nomPerso(necromant);
+      tokSpec.imgsrc = 'https://s3.amazonaws.com/files.d20.io/images/274452104/DUq74hFhXq9yPK3Q1KinlA/thumb.png?1646665878';
+      tokSpec.width = rayonUnite * PIX_PER_UNIT;
+      tokSpec.height = rayonUnite * PIX_PER_UNIT;
+      tokSpec.layer = 'map';
+    } else {
+      tokSpec.name = "Ténèbres de " + nomPerso(necromant);
+      tokSpec.imgsrc = 'https://s3.amazonaws.com/files.d20.io/images/192072874/eJXFx20fD931DuBDvzAnQQ/thumb.png?1610469273';
+      tokSpec.width = 70;
+      tokSpec.height = 70;
+      tokSpec.layer = 'objects';
+      tokSpec.aura1_radius = 0;
+      tokSpec.aura1_color = "#c1c114";
+      tokSpec.aura1_square = true;
+      tokSpec.aura2_radius = rayonUnite;
+      tokSpec.aura2_color = "#000000";
+      tokSpec.showplayers_aura2 = true;
+    }
+    let token = createObj('graphic', tokSpec);
+    if (token) {
+      toFront(token);
+      evt.tokens = [token];
+    }
     if (stateCOF.options.affichage.val.duree_effets.val) {
-      sendPerso(necromant, "lance un sort de ténèbres pour " + duree + " tours");
+      if (options.brumes)
+        sendPerso(necromant, "lance un sort de brumes pour " + duree + " tours");
+      else
+        sendPerso(necromant, "lance un sort de ténèbres pour " + duree + " tours");
     }
     // Calcul des cibles à aveugler
     let cibles = [];
     let allToksDisque =
       findObjs({
-        _type: "graphic",
+        _type: 'graphic',
         _pageid: options.pageId,
-        _subtype: "token",
-        layer: "objects"
+        _subtype: 'token',
+        layer: 'objects'
       });
     allToksDisque.forEach(function(obj) {
       if (obj.get('bar1_max') == 0) return; // jshint ignore:line
@@ -32998,9 +33050,9 @@ var COFantasy = COFantasy || function() {
         token: obj,
         charId: objCharId
       };
-      if (getState(cible, 'mort')) return; //pas de dégâts aux morts
+      if (getState(cible, 'mort')) return;
       let distanceCentre =
-        distanceCombat(targetToken.token, obj, options.pageId, {
+        distanceCombat(target.token, obj, options.pageId, {
           strict1: true
         });
       if (distanceCentre > rayon) return;
@@ -33010,6 +33062,7 @@ var COFantasy = COFantasy || function() {
       effet: 'aveugleTemp',
       duree: duree
     };
+    if (options.brumes) effetAveugle.effet = 'penombreTemp';
     cibles.forEach(function(perso) {
       setEffetTemporaire(perso, effetAveugle, duree, evt, {});
     });
@@ -33020,14 +33073,15 @@ var COFantasy = COFantasy || function() {
       pasDeMessageDActivation: true,
       attaquant: necromant
     };
+    if (options.brumes) effetTenebres.effet = 'brumes';
     setEffetTemporaire(necromant, effetTenebres, duree, evt, options);
-    if (targetToken.token.get('bar1_max') == 0) { // jshint ignore:line
+    if (target.token.get('bar1_max') == 0) { // jshint ignore:line
       //C'est juste un token utilisé pour définir le disque
-      targetToken.token.remove(); //On l'enlève, normalement plus besoin
+      target.token.remove(); //On l'enlève, normalement plus besoin
     }
   }
 
-  var demonInvoque = {
+  const demonInvoque = {
     nom: 'Démon',
     avatar: "https://s3.amazonaws.com/files.d20.io/images/183633585/DWpHYp4SLPCDCMHdmTyKOw/thumb.png?1607339938",
     token: "https://s3.amazonaws.com/files.d20.io/images/183633585/DWpHYp4SLPCDCMHdmTyKOw/thumb.png?1607339938",
@@ -38574,6 +38628,13 @@ var COFantasy = COFantasy || function() {
       prejudiciable: true,
       visible: true
     },
+    penombreTemp: {
+      activation: "ne voit plus très loin",
+      actif: "est dans la pénombre",
+      fin: "retrouve une vue normale",
+      msgSave: "retrouver la vue",
+      prejudiciable: true,
+    },
     ralentiTemp: {
       activation: "est ralenti : une seule action, pas d'action limitée",
       activationF: "est ralentie : une seule action, pas d'action limitée",
@@ -39184,6 +39245,12 @@ var COFantasy = COFantasy || function() {
       activation: "lance un sort de Ténèbres",
       actif: "maintient un sort de Ténèbres",
       fin: "les ténèbres se dissipent",
+      visible: true
+    },
+    brumes: {
+      activation: "lance un sort de brumes",
+      actif: "maintient un sort de brumes",
+      fin: "les brumes se dissipent",
       visible: true
     },
     progresserACouvert: {
@@ -41115,16 +41182,16 @@ var COFantasy = COFantasy || function() {
     //sauf si on a déjà été bougé.
     if (!suivis.has(token.id)) {
       suivis.add(token.id);
-      var attrSuivi = tokenAttribute(perso, 'estSuiviPar');
-      var page = getObj('page', pageId);
+      let attrSuivi = tokenAttribute(perso, 'estSuiviPar');
+      let page = getObj('page', pageId);
       if (page === undefined) {
         error("Impossible de trouver la page du token", perso);
         return;
       }
       if (attrSuivi.length > 0) {
-        var width = page.get('width') * PIX_PER_UNIT;
-        var height = page.get('height') * PIX_PER_UNIT;
-        var pt = {
+        let width = page.get('width') * PIX_PER_UNIT;
+        let height = page.get('height') * PIX_PER_UNIT;
+        let pt = {
           x: x,
           y: y
         };
