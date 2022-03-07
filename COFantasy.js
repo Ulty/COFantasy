@@ -4925,10 +4925,10 @@ var COFantasy = COFantasy || function() {
         return options.cacheBonusToutesCaracs.val;
       }
     }
-    var bonus = 0;
+    let bonus = 0;
     if (attributeAsBool(personnage, 'chantDesHeros')) {
-      var bonusChantDesHeros = getValeurOfEffet(personnage, 'chantDesHeros', 1);
-      var chantDesHerosIntense = attributeAsInt(personnage, 'chantDesHerosTempeteDeManaIntense', 0);
+      let bonusChantDesHeros = getValeurOfEffet(personnage, 'chantDesHeros', 1);
+      let chantDesHerosIntense = attributeAsInt(personnage, 'chantDesHerosTempeteDeManaIntense', 0);
       bonusChantDesHeros += chantDesHerosIntense;
       expliquer("Chant des héros : +" + bonusChantDesHeros + " au jet");
       bonus += bonusChantDesHeros;
@@ -4936,13 +4936,22 @@ var COFantasy = COFantasy || function() {
         removeTokenAttr(personnage, 'chantDesHerosTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(personnage, 'benediction')) {
-      var bonusBenediction = getValeurOfEffet(personnage, 'benediction', 1);
-      var benedictionIntense = attributeAsInt(personnage, 'benedictionTempeteDeManaIntense', 0);
+      let bonusBenediction = getValeurOfEffet(personnage, 'benediction', 1);
+      let benedictionIntense = attributeAsInt(personnage, 'benedictionTempeteDeManaIntense', 0);
       bonusBenediction += benedictionIntense;
       expliquer("Bénédiction : +" + bonusBenediction + " au jet");
       bonus += bonusBenediction;
       if (benedictionIntense && evt)
         removeTokenAttr(personnage, 'benedictionTempeteDeManaIntense', evt);
+    }
+    if (attributeAsBool(personnage, 'inspiration')) {
+      let b = getValeurOfEffet(personnage, 'inspiration', 1);
+      let intense = attributeAsInt(personnage, 'inspirationTempeteDeManaIntense', 0);
+      b += intense;
+      expliquer("Inspiration : +" + b + " au jet");
+      bonus += b;
+      if (intense && evt)
+        removeTokenAttr(personnage, 'inspirationTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(personnage, 'lameDeLigneePerdue')) {
       expliquer("Lame de lignée perdue : -1 au jet");
@@ -9319,6 +9328,15 @@ var COFantasy = COFantasy || function() {
       explications.push("Bénédiction => +" + bonusBenediction + " en Attaque");
       if (benedictionIntense)
         removeTokenAttr(personnage, 'benedictionTempeteDeManaIntense', evt);
+    }
+    if (attributeAsBool(personnage, 'inspiration')) {
+      let b = getValeurOfEffet(personnage, 'inspiration', 1);
+      let intense = attributeAsInt(personnage, 'inspirationTempeteDeManaIntense', 0);
+      b  += intense;
+      attBonus += b;
+      explications.push("Inspiratuon => +" + b + " en Attaque");
+      if (intense)
+        removeTokenAttr(personnage, 'inspirationTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(personnage, 'lameDeLigneePerdue')) {
       attBonus -= 1;
@@ -23487,21 +23505,21 @@ var COFantasy = COFantasy || function() {
   }
 
   function bufDef(msg) {
-    var cmd = msg.content.split(' ');
+    let cmd = msg.content.split(' ');
     if (cmd.length < 2) {
       error("La fonction !cof-buf-def attend un argument", cmd);
       return;
     }
-    var buf = parseInt(cmd[1]);
+    let buf = parseInt(cmd[1]);
     if (isNaN(buf)) {
-      error("Argument de !cof-bu-def invalide", cmd);
+      error("Argument de !cof-buf-def invalide", cmd);
       return;
     }
     if (buf === 0) return;
-    var message = "";
+    let message = "";
     if (buf > 0) message = "voit sa défense augmenter";
     else message = "voit sa défense baisser";
-    var evt = {
+    let evt = {
       type: 'other'
     };
     getSelected(msg, function(selected, playerId) {
@@ -38477,11 +38495,11 @@ var COFantasy = COFantasy || function() {
   // entrave: effet qui immobilise, paralyse ou ralentit
   // statusMarker: marker par défaut pour l'effet
   const messageEffetTemp = {
-    paradeCroisee: {
-      activation: "se met en position pour parer des deux armes",
-      actif: "est en position de parade croisée",
-      fin: "ne bénéficie plus de sa parade croisée",
-      visible: true,
+    inspiration: {
+      activation: "est inspiré",
+      activationF: "est inspirée",
+      actif: "est sous l'effet d'une inspiration",
+      fin: "n'est plus inspiré"
     },
     formeDAnge: {
       activation: "prend la forme d'un ange ailé",
@@ -38510,6 +38528,12 @@ var COFantasy = COFantasy || function() {
       activationF: "est touchée par la bénédiction",
       actif: "est béni",
       fin: "l'effet de la bénédiction s'estompe"
+    },
+    paradeCroisee: {
+      activation: "se met en position pour parer des deux armes",
+      actif: "est en position de parade croisée",
+      fin: "ne bénéficie plus de sa parade croisée",
+      visible: true,
     },
     peauDEcorce: {
       activation: "donne à sa peau la consistance de l'écorce",

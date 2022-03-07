@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.05
 ### Capacités
+* Support basique pour l'inspiration des Terres d'Arran.
 * Esquive de la magie.
 * Support basique pour la frénésie du minotaure.
 * Armes naturelles du félis.

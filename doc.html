@@ -370,7 +370,7 @@ tr {line-height: 25px;}
                     </ul>
                   </li>
                   <li><code>--if <i>condition</i></code> <i>options</i> <code>--endif</code>: permet de ne prendre en compte des options que si certaines conditions sont réalisées. Il est possible d'utiliser un <code>--else</code> pour activer des options quand les conditions ne sont pas réalisées. Attention, les options qui modifient une option précédente (comme <code>--valeur</code>) doivent apparaître au même niveau que l'option qu'elles modifient. Comme les conditions peuvent dépendre du dé d'attaque, un certain nombre d'options ne sont pas affectées par cette conditionnelle : tempeteDeMana, les options d'aoe (ligne, cone, disque, target), avecd12, avantage, auto, demiAuto, test, rate, touche, critique, echecCritique, pointsVitaux, tempsRecharge, sortilege, bonusCritique, disparition, affute, munition, tirDouble, semonce, tirDeBarrage, poudre, traquenard, feinte, asDeLaGachette, magique, tranchant, percant, contondant, pasDeDmg. Ne pas hésiter à me demander si vous aviez besoin que l'une de ces options puissent être conditionnelle.</li>
-                  <li><code>--ifSaveFails <i>carac seuil</i></code> <i>options</i> <code> --endif</code> : comme <code>--if</code>, mais fait réaliser une jet de sauvegarde à la cible (comme avec <code>--save</code>), et si le test est raté, applique les options qui suivent. Un <code>--else</code> permet de choisir des options à appliquer quand le test est réussi.</li>
+                  <li><code>--ifSaveFails <i>carac seuil</i></code> <i>options</i> <code> --endif</code> : comme <code>--if</code>, mais fait réaliser une jet de sauvegarde à la cible (comme avec <code>--save</code>), et si le test est raté, applique les options qui suivent. Un <code>--else</code> permet de choisir des options à appliquer quand le test est réussi. À utiliser seulement si on ne peut pas se contenter d'un <code>--save</code>, car ça marche moins bien.</li>
                   <li><code>--decrAttribute <i>nom</i></code> : l'attaque n'est possible que si l'attribut existe et si sa valeur est strictement positive. L'attaque diminue cette valeur de 1. Si cette option est utilisée à l'intérieur d'un <code>--if</code>, alors l'option se contente de diminuer l'attribut (on peut savoir si la valeur est positive grâce à <code>--if etat <i>nom</i></code>).</li>
                   <li><code>--decrLimitePredicatParTour <i>nom</i></code> : l'attaque n'est possible que si un prédicat <i>nom</i> existe et si elle n'a pas été utilisée plus de fois dans le tour que la valeur de ce prédicat. L'attaque augmente ce nombre de 1.</li>
                   <li><code>--tempsRecharge <i>effet</i> <i>duree</i></code> : l'attaque n'est possible que si l'effet est inactif sur l'attaquant, et de plus active l'effet sur l'attaquant pour la durée indiquée si l'attaque est possible. Il existe un effet temporaire générique, <code>rechargeGen(<i>desc</i>)</code> que vous pouvez utiliser si aucun effet existant ne correspond pour votre attaque.</li>
@@ -2667,6 +2667,12 @@ tr {line-height: 25px;}
               </div>
               <h3 class="text-info" id="Voies_de_la_famille_des_mystiques">5.4 Voies de la famille des mystiques</h3>
               <div class="decalage">
+                <h4 classe="text-secondary">Talents magiques</h4>
+                <ul>
+                  <li><strong>Détection de la magie :</strong> pas de support.</li>
+                  <li><strong>Flamme :</strong> Faire une attaque magique de type feu pour l'attaque au contact. Pour l'illumination, <code>!cof-lumiere @{selected|token_id} 5 1 --mana 0</code>.</li>
+                  <li><strong>Inspiration :</strong> <code>!cof-effet-temp inspiration [[2+@{selected|SAG}]] --target @{target|token_id} --lanceur @{selected|token_id} --portee 10</code>. Pour l'instant le script ne vérifie pas que le sort n'est pas actif sur trop de cibles à la fois.</li>
+                </ul>
                 <h4 class="text-secondary">Voie de l’alchimie</h4>
                 <ol>
                   <li><strong>Fortifiant :</strong> En Attente </li>
