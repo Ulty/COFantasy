@@ -3976,7 +3976,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function boutonSimple(action, texte, style) {
-    action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;').replace(/"/g, '&#34;').replace(/{/g, '&#123;').replace(/}/g, '&#125;').replace(/\|/g, '&#124;');
+    action = action.replace(/%/g, '&#37;').replace(/\)/g, '&#41;').replace(/\?/g, '&#63;').replace(/@/g, '&#64;').replace(/\[/g, '&#91;').replace(/]/g, '&#93;').replace(/"/g, '&#34;').replace(/{/g, '&#123;').replace(/}/g, '&#125;').replace(/\|/g, '&#124;').replace(/\*/g, '&#42;');
     action = action.replace(/\'/g, '&apos;'); // escape quotes
     action = action.replace(/:/g, '&amp;#58;'); // double escape colon
     style = style || '';
@@ -4456,7 +4456,7 @@ var COFantasy = COFantasy || function() {
         // cas spécial pour @{selected|token_id} où l'on remplace toutes les occurences par token.id
         act = act.replace(new RegExp(escapeRegExp('@{selected|token_id}'), 'g'), tid);
         act = act.replace(new RegExp(escapeRegExp('@{selected|token_name}'), 'g'), nomPerso(perso));
-        var tmp = act.split('@{selected');
+        let tmp = act.split('@{selected');
         tmp.forEach(function(elem) {
           if (elem.startsWith('|')) {
             // attribut demandé
