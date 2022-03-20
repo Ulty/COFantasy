@@ -1340,7 +1340,7 @@ var COFantasy = COFantasy || function() {
   //Met le champ field à value du token dans evt, pour permettre le undo
   function affectToken(token, field, value, evt) {
     evt.affectes = evt.affectes || {};
-    var aff = evt.affectes[token.id];
+    let aff = evt.affectes[token.id];
     if (aff === undefined) {
       aff = {
         affecte: token,
@@ -3019,7 +3019,7 @@ var COFantasy = COFantasy || function() {
           //On s'assure de mettre les PV de la cible à 0 (pour les insta kills sans dommages)
           if (token.get('bar1_value') > 0) updateCurrentBar(personnage, 1, 0, evt);
           nePlusSuivre(personnage, pageId, evt);
-          lockToken(personnage);
+          lockToken(personnage, evt);
           let persoMonte = tokenAttribute(personnage, 'estMontePar');
           if (persoMonte.length > 0) {
             const cavalier = persoOfIdName(persoMonte[0].get('current'), pageId);
