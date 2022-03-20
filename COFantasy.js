@@ -33395,6 +33395,9 @@ var COFantasy = COFantasy || function() {
     setTokenAttr(necromant, "zombiesControles", zombiesControles + 1, evt);
   }
 
+  const PAUSE = String.fromCharCode(0x23F8);
+  const PLAY = String.fromCharCode(0x23F5);
+
   //Crée les macros utiles au jeu
   const gameMacros = [{
     name: 'Actions',
@@ -33510,7 +33513,7 @@ var COFantasy = COFantasy || function() {
     istokenaction: false,
     inBar: true
   }, {
-    name: '⏸',
+    name: PAUSE,
     action: "!cof-pause",
     visibleto: '',
     istokenaction: false,
@@ -38198,10 +38201,10 @@ var COFantasy = COFantasy || function() {
       return action == '!cof-pause';
     });
     if (stateCOF.pause) {
-      if (macro) macro.set('name', '⏵');
+      if (macro) macro.set('name', PLAY);
       sendChat('COF', "Jeu en pause");
     } else {
-      if (macro) macro.set('name', '⏸');
+      if (macro) macro.set('name', PAUSE);
       sendChat('COF', "Fin de la pause");
     }
   }
