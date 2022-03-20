@@ -853,7 +853,8 @@ tr {line-height: 25px;}
               </div>
               <h4 class="text-secondary">Personnages immobilisés</h4>
               <div class="decalage">
-                <p>Par défaut, le script empêche le déplacement des personnages immobilisés (paralysé, étourdi, etc...). Pour permettre de déplacer ces personnages, le script envoie au MJ 2 boutons, l'un pour réaliser le déplacement qui vient d'être annulé, et l'autre pour débloquer le personnage pour un tour (et dans ce cas, toutes les personnes contrôlant le token peuvent le bouger jusqu'au prochain changement de tour).</p>
+                <p>Le script bloque automatiquement personnages immobilisés (paralysé, étourdi, etc...). Pour permettre de déplacer ces personnages vous pouvez simplement enlever le blockage (click droit sur le token, propriétés avancées). Si vous souhaitez être le seul à pouvoir le bouger, sélectionner le (ou les) token et cliquer sur la macro <code>Bouger</code>. Cela crée un token non bloqué associé au personnage. Bien penser à supprimer ce token après utilisation.</p>
+                <p>Il est possible de mettre le jeu en pause (les joueurs ne peuvent plus bouger leurs tokens) en utilisant la macro &#x23f8;. La macro change alors de nom et devient &#x23f5;, que vous pouvez utiliser pour enlever la pause.</p>
               </div>
               <h4 class="text-secondary" id="escaliers">Escaliers</h4>
               <div class="decalage">

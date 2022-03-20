@@ -22,6 +22,8 @@
 * Correction d'un bug sur le pacifisme
 
 ### Autres améliorations
+* Fonction de pause du jeu
+* Utilisation de la possiblité de bloquer des tokens
 * Ajout d'un marker pour les chefs de groupe.
 * Possibilité de retarder l'affichage de la mort
 * Support pour les foudres du temps.
