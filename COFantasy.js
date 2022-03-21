@@ -41899,7 +41899,7 @@ var COFantasy = COFantasy || function() {
 }();
 
 on('ready', function() {
-  const scriptVersion = '3.05';
+  const scriptVersion = '3.06';
   on('add:token', COFantasy.addToken);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
   state.COFantasy = state.COFantasy || {

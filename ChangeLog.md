@@ -1,7 +1,14 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
-## 3.05
+## 3.06
 ### Capacités
 * Meilleure prise en charge du coup de bouclier.
+
+### Autres améliorations
+* Fonction de pause du jeu
+* Utilisation de la possiblité de bloquer des tokens
+
+## 3.05
+### Capacités
 * Sort de brumes.
 * Support basique pour l'inspiration des Terres d'Arran.
 * Esquive de la magie.
@@ -23,8 +30,6 @@
 * Correction d'un bug sur le pacifisme
 
 ### Autres améliorations
-* Fonction de pause du jeu
-* Utilisation de la possiblité de bloquer des tokens
 * Ajout d'un marker pour les chefs de groupe.
 * Possibilité de retarder l'affichage de la mort
 * Support pour les foudres du temps.
