@@ -1923,7 +1923,7 @@ var COFantasy = COFantasy || function() {
       case 'agrippeParUnDemon':
       case 'etreinteScorpionPar':
       case 'estGobePar':
-        unlockToken(personnage);
+        unlockToken(personnage, evt);
     }
   }
 
@@ -2839,7 +2839,7 @@ var COFantasy = COFantasy || function() {
             token: token,
             charId: charId
           };
-          unlockToken(perso);
+          unlockToken(perso, evt);
         });
     }
     if (newInit.length > 0) initiative(newInit, evt, true);
@@ -3052,7 +3052,7 @@ var COFantasy = COFantasy || function() {
                   evt.deletedAttributes.push(a);
                   a.remove();
                 }
-                unlockToken(cible);
+                unlockToken(cible, evt);
               });
             }
             evt.deletedAttributes.push(a);
@@ -3142,7 +3142,7 @@ var COFantasy = COFantasy || function() {
                   toFront(cible.token);
                   evt.deletedAttributes.push(a);
                   a.remove();
-                  unlockToken(cible);
+                  unlockToken(cible, evt);
                 }
               });
             }
@@ -3465,7 +3465,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (!value) {
-      unlockToken(personnage);
+      unlockToken(personnage, evt);
       if (etatRendInactif(etat) && isActive(personnage) ||
         etat == 'aveugle') updateInit(token, evt);
     }
@@ -4197,13 +4197,13 @@ var COFantasy = COFantasy || function() {
     identifierArme(weaponStats, 'marteau', /\bmarteau\b/i);
     identifierArme(weaponStats, 'epieu', /\b[eé]pieu\b/i);
     //Informations dans le champ spécial
-    var parse = weaponStats.divers.split(' ');
-    var lastParsed;
+    let parse = weaponStats.divers.split(' ');
+    let lastParsed;
     parse.forEach(function(p) {
       p = p.trim();
       if (p === '') return;
       if (p.startsWith('+') && lastParsed == 'DEF') {
-        var bonus = parseInt(p.substring(1));
+        let bonus = parseInt(p.substring(1));
         if (!isNaN(bonus) && bonus > 0) {
           weaponStats.bonusDef = weaponStats.bonusDef || 0;
           weaponStats.bonusDef += bonus;
@@ -6962,6 +6962,10 @@ var COFantasy = COFantasy || function() {
       if (labelArmePrincipale) perso.arme = getWeaponStats(perso, labelArmePrincipale);
       let labelArmeGauche = labelArme[0].get('max');
       if (labelArmeGauche) perso.armeGauche = getWeaponStats(perso, labelArmeGauche);
+      else if (predicateAsBool(perso, 'attaqueAuBouclier') && ficheAttributeAsInt(perso, 'defbouclieron', 0)) {
+        //Alors il porte le bouclier en tant qu'arme en main gauche
+        perso.armeGauche = getWeaponStats(perso, predicateAsBool(perso, 'attaqueAuBouclier'));
+      }
       perso.armesEnMain = 'calculee';
       return perso.arme;
     }
@@ -10439,7 +10443,7 @@ var COFantasy = COFantasy || function() {
       if (gobant === undefined) {
         error("Attribut estGobePar mal formé", attrGobe[0].get('current'));
         attrGobe[0].remove();
-        unlockToken(attaquant);
+        unlockToken(attaquant, evt);
       } else {
         attBonus -= 5;
         explications.push("Attaquant dans le ventre de " + nomPerso(gobant) + " => -5 en Att. et DM/2");
@@ -19174,7 +19178,7 @@ var COFantasy = COFantasy || function() {
               token: token,
               charId: charId
             };
-            unlockToken(perso);
+            unlockToken(perso, evt);
           });
         }
       } else if (estAttributEffetCombat(attrName)) {
@@ -34321,7 +34325,7 @@ var COFantasy = COFantasy || function() {
           let attr = tokenAttribute(perso, 'enveloppePar')[0];
           evt.deletedAttributes.push(attr);
           attr.remove();
-          unlockToken(perso);
+          unlockToken(perso, evt);
           if (etreinte) setState(perso, 'immobilise', false, evt);
           attr = tokenAttribute(cube, 'enveloppe');
           attr.forEach(function(a) {
@@ -34451,7 +34455,7 @@ var COFantasy = COFantasy || function() {
           evt.deletedAttributes = evt.deletedAttributes || [];
           let attr = tokenAttribute(perso, attrName);
           attr[0].remove();
-          unlockToken(perso);
+          unlockToken(perso, evt);
           evt.deletedAttributes.push(attr[0]);
           if (attrName == 'estAgrippePar') removeTokenAttr(perso, 'agrippeParUnDemon', evt);
           if (attrName == 'etreinteImmolePar' || attrName == 'estDevorePar' || attr[0].get('max'))
@@ -34473,7 +34477,7 @@ var COFantasy = COFantasy || function() {
             if (ca && ca.token.id == perso.token.id) {
               evt.deletedAttributes.push(a);
               a.remove();
-              unlockToken(ca);
+              unlockToken(ca, evt);
             }
           });
           sendChat('', endFramedDisplay(display));
@@ -38173,6 +38177,8 @@ var COFantasy = COFantasy || function() {
       _subtype: 'token',
       layer: 'objects'
     });
+    let charTreated = new Set();
+    let charTreatedBlocked = new Set();
     tokens.forEach(function(token) {
       let charId = token.get('represents');
       if (charId === '') return;
@@ -38186,11 +38192,24 @@ var COFantasy = COFantasy || function() {
       if (!controlledByPlayer) return;
       if (stateCOF.pause) token.set('lockMovement', true);
       else {
-        const perso = {
-          token,
-          charId
-        };
-        unlockToken(perso);
+        let linked = token.get('bar1_link') !== '';
+        if (linked && charTreated.has(charId)) {
+          if (!charTreatedBlocked.has(charId)) token.set('lockMovement', false);
+        } else {
+          const perso = {
+            token,
+            charId
+          };
+          if (linked) {
+            charTreated.add(charId);
+            if (persoImmobilise(perso)) {
+              charTreatedBlocked.add(charId);
+              return;
+            }
+          } else if (persoImmobilise(perso)) return;
+          token.set('lockMovement', false);
+          enleveDecoince(perso);
+        }
       }
     });
     let macros = findObjs({
