@@ -22707,6 +22707,10 @@ var COFantasy = COFantasy || function() {
           labelArmePrincipale = labelArme.get('current');
           labelArmeGauche = labelArme.get('max');
         }
+        if ((labelArmeGauche === undefined || labelArmeGauche === '') &&
+          predicateAsBool(perso, 'attaqueAuBouclier') && ficheAttributeAsInt(perso, 'defbouclieron', 0)) {
+          labelArmeGauche = predicateAsBool(perso, 'attaqueAuBouclier');
+        }
         let command = '!cof-attack ' + perso.token.id + ' @{target|token_id} ';
         if (labelArmePrincipale && listeAttaques[labelArmePrincipale]) {
           let nomCommande = listeAttaques[labelArmePrincipale].armenom;

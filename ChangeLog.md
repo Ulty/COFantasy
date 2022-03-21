@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.05
 ### Capacités
+* Meilleure prise en charge du coup de bouclier.
 * Sort de brumes.
 * Support basique pour l'inspiration des Terres d'Arran.
 * Esquive de la magie.

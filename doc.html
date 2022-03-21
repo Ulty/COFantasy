@@ -1132,7 +1132,7 @@ tr {line-height: 25px;}
                       <li>Le script proposera un bouton à activer en cas d'attaque réussie alors que le chevalier est en position.</li>
                     </ul>
                   </li>
-                  <li><strong>Coup de bouclier</strong> : faire une attaque de bouclier, de type <code>Arme gauche</code>, avec le modificateur <code>avecd12</code>. Pour que cette attaque soit proposée dans les listes d'action seulement quand le personnage porte son bouclier, ajouter un prédicat <code>attaqueAuBouclier</code> de valeur le label de l'attaque.</li>
+                  <li><strong>Coup de bouclier</strong> : faire une attaque de bouclier, de type <code>Arme gauche</code>, avec le modificateur <code>avecd12crit</code>. Pour que cette attaque soit proposée dans les listes d'action seulement quand le personnage porte son bouclier, ajouter un prédicat <code>attaqueAuBouclier</code> de valeur le label de l'attaque.</li>
                   <li><strong>Frappe lourde</strong> : faire l'attaque avec les options <code>--avecd12crit --plus 2d6 --ignoreMoitieRD</code></li>
                   <li><strong>Force héroïque</strong> : reporter les bonus sur la fiche</li>
                 </ol>
@@ -2110,7 +2110,7 @@ tr {line-height: 25px;}
                 <ol>
                   <li><strong>Expertise du bouclier</strong> : reporter le bonus sur la fiche dans le bonus de DEF conféré par le bouclier.</li>
                   <li><strong>Progresser à couvert</strong> : <code>!cof-effet-temp progresserACouvert 1 --lanceur @{selected|token_id} --target @{target|token_id} --self --portee 1</code>. A utiliser pour cibler un allié à portée si nécessaire. Au MJ de vérifier qu'elle reste bien près du chevalier pour profiter du bonus.</li>
-                  <li><strong>Attaque au bouclier</strong> : Ajouter une arme avec son Bouclier en "Arme gauche" sur la fiche du personnage. Dans les modificateurs de l'arme, ajoutez <code>avecd12</code>. Pour que cette attaque soit proposée dans les listes d'action seulement quand le personnage porte son bouclier, ajouter un prédicat <code>attaqueAuBouclier</code> de valeur le label de l'attaque.</li>
+                  <li><strong>Attaque au bouclier</strong> : Ajouter une arme avec son Bouclier en "Arme gauche" sur la fiche du personnage. Dans les modificateurs de l'arme, ajoutez <code>avecd12crit</code>. Pour que cette attaque soit proposée dans les listes d'action seulement quand le personnage porte son bouclier, ajouter un prédicat <code>attaqueAuBouclier</code> de valeur le label de l'attaque.</li>
                   <li><strong>Dévier les coups</strong> : Ajouter un prédicat <code>devierLesCoups</code> (on peut y associer un nombre, si on souhaite plus d'une utlisation par tour). Le script ajoute automatiquement un bouton sur les attaques sur lesquelles cette capacité peut-être utilisée.</li>
                   <li><strong>Parade au bouclier</strong> : Ajouter un <a href=#predicats>prédicat</a> <code>paradeAuBouclier</code>. Sur l'ability Coup de bouclier créé pour le rang 3, ajouter <code>--attaqueBouclierRenverse --decrLimitePredicatParTour paradeAuBouclier</code>. Le script ajoute automatiquement un bouton sur les attaques sur lesquelles cette capacité peut-être utilisée. Si le personnage possède un bouclier en arme gauche, le script utilisera le bonus éventuel de l'arme en question sur le jet opposé.</li>
                 </ol>
@@ -2494,7 +2494,7 @@ tr {line-height: 25px;}
                       <li>le script propose un bouton à activer en cas d'attaque réussie alors que le combattant est en position.</li>
                     </ul>
                   </li>
-                  <li><strong>Coup de bouclier :</strong> faire une attaque de bouclier, avec l'option <code>--avecd12</code></li>
+                  <li><strong>Coup de bouclier</strong> : faire une attaque de bouclier, de type <code>Arme gauche</code>, avec le modificateur <code>avecd12crit</code>. Pour que cette attaque soit proposée dans les listes d'action seulement quand le personnage porte son bouclier, ajouter un prédicat <code>attaqueAuBouclier</code> de valeur le label de l'attaque.</li>
                   <li><strong>Absorber un sort (L) :</strong>
                     <ul>
                       <li>utiliser <code>!cof-effet-temp absorberUnSort 1</code> pour se mettre en position. Attention, ça ne vérifie pas si le combattant porte son bouclier.</li>
