@@ -38777,17 +38777,23 @@ var COFantasy = COFantasy || function() {
   // entrave: effet qui immobilise, paralyse ou ralentit
   // statusMarker: marker par défaut pour l'effet
   const messageEffetTemp = {
-    inspiration: {
-      activation: "est inspiré",
-      activationF: "est inspirée",
-      actif: "est sous l'effet d'une inspiration",
-      fin: "n'est plus inspiré"
-    },
     formeDAnge: {
       activation: "prend la forme d'un ange ailé",
       actif: "est en forme d'ange et peut jeter des sorts en vol stationnaire",
       fin: "retrouve sa forme normale. Espérons qu'il était au sol...",
       visible: true,
+    },
+    frenesieMinotaure: {
+      activation: "entre en frénésie",
+      actif: "est en frénésie",
+      fin: "retrouve son calme",
+      msgSave: "retrouver son calme",
+    },
+    inspiration: {
+      activation: "est inspiré",
+      activationF: "est inspirée",
+      actif: "est sous l'effet d'une inspiration",
+      fin: "n'est plus inspiré"
     },
     aCouvert: {
       activation: "reste à couvert",
@@ -39656,12 +39662,6 @@ var COFantasy = COFantasy || function() {
     rageDuBerserk: {
       activation: "entre dans une rage berserk",
       actif: "est dans une rage berserk",
-      fin: "retrouve son calme",
-      msgSave: "retrouver son calme",
-    },
-    frenesieMinotaure: {
-      activation: "entre en frénésie",
-      actif: "est en frénésie",
       fin: "retrouve son calme",
       msgSave: "retrouver son calme",
     },

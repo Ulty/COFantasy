@@ -3,6 +3,9 @@
 ### Capacités
 * Meilleure prise en charge du coup de bouclier.
 
+### Corrections de bugs
+* frenesieMinotaure est bien un effet temporaire.
+
 ### Autres améliorations
 * Fonction de pause du jeu
 * Utilisation de la possiblité de bloquer des tokens
