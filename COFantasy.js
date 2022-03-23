@@ -387,8 +387,8 @@ var COFantasy = COFantasy || function() {
     }, ],
   }, ];
 
-  var stateCOF = state.COFantasy;
-  var reglesOptionelles; // = stateCOF.options.regles.val;
+  let stateCOF = state.COFantasy;
+  let reglesOptionelles; // = stateCOF.options.regles.val;
 
   // List of states:
   const cof_states = {
@@ -4894,6 +4894,11 @@ var COFantasy = COFantasy || function() {
             expliquer("Âme féline : +" + a + " en course");
             bonus += a;
           }
+          a = predicateAsInt(personnage, 'vitesseDuFelin', 0);
+          if (a > 0) {
+            expliquer("Vitesse du félin : +" + a + " en course");
+            bonus += a;
+          }
           break;
         }
       case 'danse':
@@ -4928,6 +4933,11 @@ var COFantasy = COFantasy || function() {
           let a = predicateAsInt(personnage, 'ameFeline', 0);
           if (a > 0) {
             expliquer("Âme féline : +" + a + " en escalade");
+            bonus += a;
+          }
+          a = predicateAsInt(personnage, 'vitesseDuFelin', 0);
+          if (a > 0) {
+            expliquer("Vitesse du félin : +" + a + " en escalade");
             bonus += a;
           }
           break;
@@ -4972,6 +4982,11 @@ var COFantasy = COFantasy || function() {
           let a = predicateAsInt(personnage, 'ameFeline', 0);
           if (a > 0) {
             expliquer("Âme féline : +" + a + " en saut");
+            bonus += a;
+          }
+          a = predicateAsInt(personnage, 'vitesseDuFelin', 0);
+          if (a > 0) {
+            expliquer("Vitesse du félin : +" + a + " en saut");
             bonus += a;
           }
           break;
@@ -9113,6 +9128,7 @@ var COFantasy = COFantasy || function() {
     init += predicateAsInt(perso, 'reflexesFelins', 0);
     // Âme féline (félis)
     init += predicateAsInt(perso, 'ameFeline', 0);
+    init += predicateAsInt(perso, 'vitesseDuFelin', 0);
     //Prescience de l'ensorceleur
     if (attributeAsBool(perso, 'prescienceUtilisee')) init += 10;
     //Forêt vivante
