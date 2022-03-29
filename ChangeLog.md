@@ -7,6 +7,7 @@
 * frenesieMinotaure est bien un effet temporaire.
 
 ### Autres améliorations
+* Implémentation d'un anneau de protection.
 * Fonction de pause du jeu
 * Utilisation de la possiblité de bloquer des tokens
 
