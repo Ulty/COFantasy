@@ -903,6 +903,7 @@ tr {line-height: 25px;}
                   <li><code>--plageEchecCritique <i>c</i></code> : permet de considérer tout jet de dé inférieur ou égal à <i>c</i> comme un échec critique.</li>
                 </ul>
                 <p>Si le personnage possède un attribut numérique <code>modificateurTests</code>, ce modificateur sera pris en compte pour tous les tests.</p>
+                <p>Dans les options de jeu (affichés en utilisant <code>!cof-options</code>, dans le menu des options d'affichage, il est possible de choisir de ne faire afficher les résultats qu'au MJ, qui peut alors en cliquant sur un bouton le montrer aux joueurs (ou pas).</p>
               </div>
               <h3 class="text-info" id="anonymat">2.10 Anonymat et fausses identités</h3>
               <div class="decalage">
@@ -2001,6 +2002,14 @@ tr {line-height: 25px;}
                   <li><strong>Loup parmi les loups</strong> : ajouter un <a href=#predicats>prédicat</a> <code>loupParmiLesLoups</code> avec comme valeur 1 ou 2 selon le rang dans la voie. Une créature sera considérée comme humanoïde si elle a un <a href=#predicats>prédicat</a> <code>humanoide</code>, ou si sa race est reconnue comme humanoïde.</li>
                   <li><strong>Versatile</strong> : se reporter à la capacité choisie.</li>
                   <li><strong>Increvable</strong> : ajouter un <a href=#predicats>prédicat</a> <code>increvableHumain</code>.</li>
+                </ol>
+                <h4 class="text-secondary">Drakonide</h4>
+                <ol>
+                  <li><strong>Souffle</strong> : ajouter une attaque naturelle cochée, faisant des dégâts du type du drakonide, de portée 10 m, avec comme option <code>--cone 30 --psave DEX 12 --tempsRecharge rechargeSouffle [[1d4]]</code>.</li>
+                  <li><strong>Intimidant</strong> : ajouter la compétence <code>intimidation</code> sur la fiche, avec un bonus de +5.</li>
+                  <li><strong>Écailles robustes</strong> : ajouter le bonus sur la fiche.</li>
+                  <li><strong>Fureur drakonide</strong> : ajouter un prédicat <code>fureurDrakonide</code>.</li>
+                  <li><strong>Héritage draconique</strong> : ajuster les caractéristiques sur la fiche.</li>
                 </ol>
                 <h4 class="text-secondary">Lutin</h4>
                 Voir les <a href="#fee_et_lutin">fées</a>.

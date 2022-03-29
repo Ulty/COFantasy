@@ -224,6 +224,11 @@ var COFantasy = COFantasy || function() {
           val: false,
           type: 'bool'
         },
+        MJ_valide_affichage_jets: {
+          explications: "Les résultats des jets de caractéristiques sont d'abord montrées au MJ seul, qui peut ensuite les montrer aux joueurs",
+          val: false,
+          type: 'bool'
+        },
         avatar_dans_cadres: {
           explications: "Si faux, on utilise l'image du token.",
           val: true,
@@ -1217,6 +1222,7 @@ var COFantasy = COFantasy || function() {
       var marker = cof_states[etat].substring(7);
       etat_de_marker[marker] = etat;
     }
+    stateCOF.jetsEnCours = undefined;
   }
 
   function etatRendInactif(etat) {
@@ -3437,7 +3443,7 @@ var COFantasy = COFantasy || function() {
                     return;
                   }
                   let bonus = predicateAsInt(p, 'siphonDesAmes', 0);
-                  let nbDes = 1 + Math.floor(pvMax / 50);
+                  let nbDes = 1 + Math.floor(pvMax / 60);
                   let soin = rollDePlus(6, {
                     bonus,
                     nbDes
@@ -4893,12 +4899,12 @@ var COFantasy = COFantasy || function() {
       if (playerIsGM(playerId)) {
         if (!options.chuchote) options.chuchote = true;
       } else {
-        var character = getObj('character', perso.charId);
+        let character = getObj('character', perso.charId);
         if (character) {
           if (!options.chuchote)
             options.chuchote = '"' + character.get('name') + '"';
-          var controledByGM = false;
-          var charControlledby = character.get('controlledby');
+          let controledByGM = false;
+          let charControlledby = character.get('controlledby');
           charControlledby.split(",").forEach(function(controlledby) {
             if (playerIsGM(controlledby)) controledByGM = true;
           });
@@ -5944,6 +5950,59 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function montrerResultatJet(msg) {
+    let cmd = msg.content.split(' ');
+    if (cmd.length < 2) {
+      error("manque l'argument de !cof-montrer-resultats-jet", cmd);
+      return;
+    }
+    if (!stateCOF.jetsEnCours) {
+      error("Pas de jet en cours", stateCOF);
+      return;
+    }
+    let display = stateCOF.jetsEnCours[cmd[1]];
+    if (display === undefined) {
+      error("Pas de jet en cours pour ce joueur", stateCOF.jetsEnCours);
+      return;
+    }
+    if (display.retarde) {
+      addFramedHeader(display, cmd[1], false);
+      sendChat('', endFramedDisplay(display));
+    } else {
+      sendChat('', endFramedDisplay(display));
+    }
+  }
+
+  function sendDisplayJetPerso(display, playerId, options) {
+    if (!options.chanceRollId && stateCOF.options.affichage.val.MJ_valide_affichage_jets.val) {
+      let players = findObjs({
+        _type: 'player'
+      });
+      let joueur;
+      let gm;
+      players.forEach(function(p) {
+        if (!p.get('online')) return;
+        if (playerIsGM(p.id)) gm = true;
+        else joueur = true;
+      });
+      if (gm && joueur) {
+        stateCOF.jetsEnCours = stateCOF.jetsEnCours || {};
+        stateCOF.jetsEnCours[playerId] = {...display
+        };
+        addLineToFramedDisplay(display, boutonSimple('!cof-montrer-resultats-jet ' + playerId, "Montrer aux joueurs"));
+        addFramedHeader(display, undefined, 'gm');
+        sendChat('', endFramedDisplay(display));
+        return;
+      }
+    }
+    if (display.retarde) {
+      addFramedHeader(display, playerId, true);
+      sendChat('', endFramedDisplay(display));
+      addFramedHeader(display, undefined, 'gm');
+      sendChat('', endFramedDisplay(display));
+    } else sendChat('', endFramedDisplay(display));
+  }
+
   function jetPerso(perso, caracteristique, difficulte, titre, playerId, options) {
     options = options || {};
     const evt = options.evt || {
@@ -5959,7 +6018,8 @@ var COFantasy = COFantasy || function() {
     };
     addEvent(evt);
     let optionsDisplay = {
-      secret: options.secret
+      secret: options.secret ||
+        (!options.chanceRollId && stateCOF.options.affichage.val.MJ_valide_affichage_jets.val)
     };
     const display = startFramedDisplay(playerId, titre, perso, optionsDisplay);
     const testId = 'jet_' + perso.charId + '_' + caracteristique;
@@ -5977,8 +6037,8 @@ var COFantasy = COFantasy || function() {
             if (rt.echecCritique)
               diminueMalediction(perso, evt, attrMalediction);
             else if (!rt.critique) {
-              var action = "!cof-resultat-jet " + stateCOF.eventId;
-              var ligne = "L'action est-elle ";
+              let action = "!cof-resultat-jet " + stateCOF.eventId;
+              let ligne = "L'action est-elle ";
               ligne += bouton(action + " reussi", "réussie", perso);
               ligne += " ou " + bouton(action + " rate", "ratée", perso);
               ligne += " ?";
@@ -6017,12 +6077,7 @@ var COFantasy = COFantasy || function() {
             }
           }
           addLineToFramedDisplay(display, boutonsReroll);
-          if (display.retarde) {
-            addFramedHeader(display, playerId, true);
-            sendChat('', endFramedDisplay(display));
-            addFramedHeader(display, undefined, 'gm');
-            sendChat('', endFramedDisplay(display));
-          } else sendChat('', endFramedDisplay(display));
+          sendDisplayJetPerso(display, playerId, options);
         });
     } else {
       testCaracteristique(perso, caracteristique, difficulte, testId, options, evt,
@@ -6037,12 +6092,7 @@ var COFantasy = COFantasy || function() {
             var msgRate = "C'est raté." + tr.rerolls + tr.modifiers;
             addLineToFramedDisplay(display, msgRate);
           }
-          if (display.retarde) {
-            addFramedHeader(display, playerId, true);
-            sendChat('', endFramedDisplay(display));
-            addFramedHeader(display, undefined, 'gm');
-            sendChat('', endFramedDisplay(display));
-          } else sendChat('', endFramedDisplay(display));
+          sendDisplayJetPerso(display, playerId, options);
         });
     }
   }
@@ -10526,7 +10576,7 @@ var COFantasy = COFantasy || function() {
             value: dmArmeGauche
           });
           attBonus += bonusArmeGauche;
-          var msgAmbidextre = "Attaque ambidextre => +";
+          let msgAmbidextre = "Attaque ambidextre => +";
           if (bonusArmeGauche) {
             msgAmbidextre += bonusArmeGauche + " en attaque";
             if (options.pasDeDmg) explications.push(msgAmbidextre);
@@ -10538,7 +10588,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     let frenesie = predicateAsInt(attaquant, 'frenesie', 0);
-    let pv;
+    let pv, pvMax;
     if (frenesie > 0) {
       pv = parseInt(attaquant.token.get('bar1_value'));
       if (pv <= frenesie) {
@@ -10549,7 +10599,8 @@ var COFantasy = COFantasy || function() {
     if (predicateAsBool(attaquant, 'hausserLeTon')) {
       if (pv === undefined)
         pv = parseInt(attaquant.token.get('bar1_value'));
-      if (pv <= parseInt(attaquant.token.get('bar1_max') / 2)) {
+      pvMax = parseInt(attaquant.token.get('bar1_max'));
+      if (pv <= pvMax / 2) {
         attBonus += 5;
         let msgHausserLeTon = "Hausse le ton => +5 en Attaque";
         if (!options.pasDeDmg) {
@@ -10684,6 +10735,19 @@ var COFantasy = COFantasy || function() {
       if (weaponStats.arme) {
         explications.push("Utilisation d'une arme avec ses griffes => -1 en attaque");
         attBonus -= 1;
+      }
+    }
+    if (predicateAsBool(attaquant, 'fureurDrakonide')) {
+      if (pv === undefined) pv = parseInt(attaquant.token.get('bar1_value'));
+      if (pvMax === undefined)
+        pvMax = parseInt(attaquant.token.get('bar1_max'));
+      if (pv <= pvMax / 2 || attributeAsBool(attaquant, 'fureurDrakonideCritique')) {
+        attBonus += 1;
+        if (options.pasDeDmg)
+          explications.push("Fureur draconide : +1 en Attaque");
+        else
+          explications.push("Fureur draconide : +1 en Attaque et aux DM");
+        options.fureurDrakonide = 1;
       }
     }
     return attBonus;
@@ -13010,6 +13074,10 @@ var COFantasy = COFantasy || function() {
         messageCrit = messageCrit[0].get('current');
         expliquer(messageCrit);
       }
+      if (predicateAsBool(target, 'fureurDrakonide')) {
+        expliquer("le coup critique rend " + nomPerso(target) + " furieu" + onGenre(target, 'x', 'se'));
+        setTokenAttr(target, 'fureurDrakonideCritique', true, evt);
+      }
       if (predicateAsBool(target, 'memePasMal')) {
         options.memePasMal = (dmgTotal / dmgCoef) * critCoef;
       }
@@ -15152,6 +15220,9 @@ var COFantasy = COFantasy || function() {
         type: mainDmgType,
         value: options.rageBerserk + options.d6
       });
+    }
+    if (options.fureurDrakonide) {
+      attDMBonusCommun += " +" + options.fureurDrakonide;
     }
     if (attributeAsBool(attaquant, 'enrage')) {
       attaquant.additionalDmg.push({
@@ -38489,6 +38560,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-montrer-resultats-attaque':
         montrerResultatsAttaque(msg);
         return;
+      case '!cof-montrer-resultats-jet':
+        montrerResultatJet(msg);
+        return;
       case '!cof-nouveau-jour':
         parseNouveauJour(msg);
         return;
@@ -39863,6 +39937,11 @@ var COFantasy = COFantasy || function() {
       activation: "entre en transe",
       actif: "danse la danse des lames",
       fin: "termine sa danse des lames"
+    },
+    fureurDrakonideCritique: {
+      activation: "est rendu furieux par le coup critique",
+      actif: "est en furie draconide",
+      fin: "retrouve son calme"
     },
     protectionContreLeMal: {
       activation: "reçoit une bénédiction de protection contre le mal",
