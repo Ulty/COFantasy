@@ -4694,9 +4694,10 @@ var COFantasy = COFantasy || function() {
         act.indexOf('cof-utilise-consommable ') == -1 &&
         act.indexOf('--equipe') == -1 &&
         act.indexOf('--enVue') == -1 &&
+        act.indexOf('--disque') == -1 &&
         act.indexOf('--target ' + tid) == -1) {
         //Si on n'a pas de cible, on fait comme si le token était sélectionné.
-        var add_token = " --target " + tid;
+        let add_token = " --target " + tid;
         if (act.indexOf(' --allie') >= 0) {
           if (act.indexOf('--lanceur') == -1)
             add_token = " --lanceur " + tid;
@@ -4708,14 +4709,14 @@ var COFantasy = COFantasy || function() {
       return act;
     });
     text = picto + text;
-    var buttonStyle = '';
+    let buttonStyle = '';
     if (options.buttonStyle) buttonStyle = ' style="' + options.buttonStyle + '"';
     else if (style !== '') buttonStyle = ' style="' + style + '"';
-    var overlay = '';
+    let overlay = '';
     if (options.overlay) overlay = ' title="' + options.overlay + '"';
     if (actions.length == 1) {
       action = actions[0];
-      var toReturn = boutonSimple(action, text, buttonStyle + overlay);
+      let toReturn = boutonSimple(action, text, buttonStyle + overlay);
       if (groupe) {
         toReturn += "<br/>" + boutonSimple(action + " --attaqueDeGroupe ?{Attaque en groupe ?}", text + " (groupe)", buttonStyle + overlay);
       }
@@ -6423,23 +6424,32 @@ var COFantasy = COFantasy || function() {
             });
             return;
           case 'disque':
+          case 'disquePasseMur':
             if (options.ignoreDisque) return;
+            let centre;
+            let rayon;
             if (cmdSplit.length < 3) {
-              error("Pas assez d'arguments pour définir un disque", cmdSplit);
-              return;
+              if (actif && cmdSplit.length > 1) {
+                centre = actif;
+                rayon = parseInt(cmdSplit[1]);
+              } else {
+                error("Pas assez d'arguments pour définir un disque", cmdSplit);
+                return;
+              }
+            } else {
+              centre = persoOfId(cmdSplit[1], cmdSplit[1], pageId);
+              if (centre === undefined) {
+                error("le premier argument du disque n'est pas un token valide", cmdSplit);
+                return;
+              }
+              rayon = parseInt(cmdSplit[2]);
             }
-            let centre = persoOfId(cmdSplit[1], cmdSplit[1], pageId);
-            if (centre === undefined) {
-              error("le premier argument du disque n'est pas un token valide", cmdSplit);
-              return;
-            }
-            let tokenCentre = centre.token;
-            let rayon = parseInt(cmdSplit[2]);
             if (isNaN(rayon) || rayon < 0) {
               error("Rayon du disque mal défini", cmdSplit);
               return;
             }
-            let portee;
+            let tokenCentre = centre.token;
+            let portee = 0;
             if (cmdSplit.length > 3) {
               portee = parseInt(cmdSplit[3]);
               if (isNaN(portee) || portee < 0) {
@@ -6462,7 +6472,8 @@ var COFantasy = COFantasy || function() {
             aoe.centre = tokenCentre;
             aoe.rayon = rayon;
             page = page || getObj("page", pageId);
-            murs = getWalls(page, pageId, murs);
+            if (cmdSplit[0] == 'disque')
+              murs = getWalls(page, pageId, murs);
             let pc;
             if (murs) {
               pc = {
@@ -6478,7 +6489,7 @@ var COFantasy = COFantasy || function() {
                 layer: 'objects'
               });
             allToksDisque.forEach(function(obj) {
-              if (portee === 0 && obj.id == actif.token.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
+              if (actif && portee === 0 && obj.id == actif.token.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
               let objCharId = obj.get('represents');
               if (objCharId === '') return;
               if (getState({
@@ -6532,11 +6543,11 @@ var COFantasy = COFantasy || function() {
               layer: 'objects'
             });
             tokensEnVue.forEach(function(obj) {
-              if (obj.id == actif.token.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
-              var objCharId = obj.get('represents');
+              if (actif && obj.id == actif.token.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
+              let objCharId = obj.get('represents');
               if (objCharId === '') return;
               if (obj.get('bar1_max') == 0) return; // jshint ignore:line
-              var objChar = getObj('character', objCharId);
+              let objChar = getObj('character', objCharId);
               if (objChar === undefined) return;
               if (murs) {
                 if (obstaclePresent(obj.get('left'), obj.get('top'), pt, murs)) return;
@@ -6551,7 +6562,7 @@ var COFantasy = COFantasy || function() {
               error("Impossible de trouver la personne dont on sélectionne les lliés en vue", msg);
               return;
             }
-            var alliesEnVue = alliesParPerso[actif.charId];
+            let alliesEnVue = alliesParPerso[actif.charId];
             if (alliesEnVue === undefined) {
               log("Personnage sans allié", actif);
               return;
@@ -6564,7 +6575,7 @@ var COFantasy = COFantasy || function() {
                 y: actif.token.get('top')
               };
             }
-            var tokensAlliesEnVue = findObjs({
+            let tokensAlliesEnVue = findObjs({
               _type: 'graphic',
               _pageid: pageId,
               _subtype: 'token',
@@ -6572,11 +6583,11 @@ var COFantasy = COFantasy || function() {
             });
             tokensAlliesEnVue.forEach(function(obj) {
               if (obj.id == actif.token.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
-              var objCharId = obj.get('represents');
+              let objCharId = obj.get('represents');
               if (objCharId === '') return;
               if (!alliesEnVue.has(objCharId)) return;
               if (obj.get('bar1_max') == 0) return; // jshint ignore:line
-              var objChar = getObj('character', objCharId);
+              let objChar = getObj('character', objCharId);
               if (objChar === undefined) return;
               if (murs) {
                 if (obstaclePresent(obj.get('left'), obj.get('top'), pt, murs)) return;
@@ -7301,6 +7312,11 @@ var COFantasy = COFantasy || function() {
 
   //!cof-attack id_attaquant id_cible label_attaque [options]
   function parseAttack(msg) {
+    const playerId = getPlayerIdFromMsg(msg);
+    if (stateCOF.pause && !playerIsGM(playerId)) {
+      sendPlayer(msg, "Le jeu est en pause", playerId);
+      return;
+    }
     let optArgs = msg.content.split(' --');
     let args = optArgs[0].split(' ');
     args = args.filter(function(a) {
@@ -7416,7 +7432,6 @@ var COFantasy = COFantasy || function() {
         });
       });
     }
-    const playerId = getPlayerIdFromMsg(msg);
     const options = {
       sortilege: weaponStats.sortilege,
       hache: weaponStats.hache,
@@ -15459,8 +15474,8 @@ var COFantasy = COFantasy || function() {
           if (options.enveloppe.type == 'etreinte' && attributeAsBool(target, 'armureDEau')) {
             target.messages.push("L'armure d'eau empêche " + nomPerso(target) + " d'être étreint");
           } else {
-            var ligneEnveloppe = nomPerso(attaquant) + " peut ";
-            var commandeEnvelopper =
+            let ligneEnveloppe = nomPerso(attaquant) + " peut ";
+            let commandeEnvelopper =
               '!cof-enveloppement ' + attaquant.token.id + ' ' + target.token.id + ' ' +
               options.enveloppe.difficulte + ' ' +
               options.enveloppe.type + ' ' + options.enveloppe.expression;
@@ -21417,17 +21432,17 @@ var COFantasy = COFantasy || function() {
   }
 
   function echecTotal(msg) {
-    var args = msg.content.split(' ');
+    let args = msg.content.split(' ');
     if (args.length < 2) {
       error("La fonction !cof-bouton-echec-total n'a pas assez d'arguments", args);
       return;
     }
-    var evt = findEvent(args[1]);
+    let evt = findEvent(args[1]);
     if (evt === undefined) {
       error("L'action est trop ancienne ou éte annulée", args);
       return;
     }
-    var perso = evt.personnage;
+    let perso = evt.personnage;
     if (perso === undefined) {
       error("Erreur interne du bouton d'échec total: l'évenement n'a pas de personnage", evt);
       return;
@@ -21436,17 +21451,17 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton");
       return;
     }
-    var action = evt.action;
+    let action = evt.action;
     if (!action || evt.type != "Attaque") {
       error("Erreur interne du bouton d'échec total: l'évènement n'est pas une attaque", evt);
       return;
     }
-    var evtEchecTotal = {
+    let evtEchecTotal = {
       type: 'echecTotal'
     };
     addEvent(evtEchecTotal);
     // Attaquer avec les mêmes options, vider redo et preDmg éventuels
-    var options = action.options;
+    let options = action.options;
     options.auto = true;
     options.echecTotal = true;
     delete options.redo;
@@ -22792,6 +22807,9 @@ var COFantasy = COFantasy || function() {
         command = '!cof-attack ' + perso.token.id + ' ' + cible.token.id + ' --dm ' + enveloppeDM + ' --auto --nom étreinte ';
         ligne += bouton(command, "Infliger DMs à " + nomPerso(cible), perso) + '<br />';
       } //else pas reconnu
+      //On ajoute aussi un bouton pour libérer
+      command = '!cof-echapper-enveloppement libere --target '+cible.token.id;
+      ligne += boutonSimple(command, "Libérer " + nomPerso(cible))+ '<br />';
     });
     let gobePar;
     let attrGobePar = tokenAttribute(perso, 'estGobePar');
@@ -25589,15 +25607,15 @@ var COFantasy = COFantasy || function() {
       callback();
       return;
     }
-    var carac = 'SAG'; //carac pour résister
+    let carac = 'SAG'; //carac pour résister
     if (options.resisteAvecForce)
       carac = meilleureCarac('SAG', 'FOR', target, difficulte);
     //chercher si un partenaire a sansPeur pour appliquer le bonus
-    var allieSansPeur = 0;
-    var allies = alliesParPerso[target.charId];
+    let allieSansPeur = 0;
+    let allies = alliesParPerso[target.charId];
     if (allies) {
-      var pageId = options.pageId || target.token.get('pageid');
-      var allTokens;
+      const pageId = options.pageId || target.token.get('pageid');
+      let allTokens;
       allies.forEach(function(cid) {
         if (charPredicateAsBool(cid, 'sansPeur')) {
           //On cherche si l'allié est présent sur la même page
@@ -25608,7 +25626,7 @@ var COFantasy = COFantasy || function() {
               _subtype: "token",
               layer: "objects"
             });
-          var alliePresent = allTokens.find(function(tok) {
+          let alliePresent = allTokens.find(function(tok) {
             return tok.get('represents') == cid;
           });
           if (alliePresent)
@@ -25616,7 +25634,7 @@ var COFantasy = COFantasy || function() {
         }
       });
     }
-    var optionsPeur = {...options
+    let optionsPeur = {...options
     };
     optionsPeur.bonus = allieSansPeur;
     let testId = 'peurOne_' + target.token.id;
@@ -25703,11 +25721,18 @@ var COFantasy = COFantasy || function() {
           options.lanceur = persoOfId(optCmd[1], optCmd[1]);
           if (options.lanceur) pageId = options.lanceur.token.get('pageid');
           return;
+        case 'titre':
+          if (optCmd.length < 2) {
+            error("Il manque le titre de l'action", optArgs);
+            return;
+          }
+          options.titre = optCmd.slice(1).join(' ');
+          return;
         default:
           return;
       }
     });
-    var cibles = [];
+    let cibles = [];
     getSelected(msg, function(selected) {
       if (selected === undefined || selected.length === 0) {
         error("Pas de cible sélectionnée pour la peur", msg);
@@ -25715,7 +25740,7 @@ var COFantasy = COFantasy || function() {
       }
       iterSelected(selected, function(perso) {
         if (options.portee !== undefined && options.lanceur) {
-          var distance = distanceCombat(options.lanceur.token, perso.token, pageId);
+          let distance = distanceCombat(options.lanceur.token, perso.token, pageId);
           if (distance > options.portee) {
             return;
           }
@@ -25731,7 +25756,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function doPeur(cibles, difficulte, duree, options) {
-    var evt = {
+    let evt = {
       type: 'peur',
       action: {
         cibles: cibles,
@@ -25741,7 +25766,8 @@ var COFantasy = COFantasy || function() {
       }
     };
     addEvent(evt);
-    var action = "Effet de peur";
+    let action = "Effet de peur";
+    if (options.titre) action = options.titre;
     if (options.lanceur) {
       action = "<b>" + nomPerso(options.lanceur) + "</b> ";
       if (options.effroi)
@@ -25750,9 +25776,9 @@ var COFantasy = COFantasy || function() {
     }
     let messages = [];
     entrerEnCombat(options.lanceur, cibles, messages, evt);
-    var display = startFramedDisplay(options.playerId, action, options.lanceur);
-    var counter = cibles.length;
-    var finalDisplay = function() {
+    let display = startFramedDisplay(options.playerId, action, options.lanceur);
+    let counter = cibles.length;
+    let finalDisplay = function() {
       if (counter == 1) {
         messages.forEach(function(message) {
           addLineToFramedDisplay(display, message);
@@ -27954,17 +27980,20 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, "Pas de token sélectionné pour !cof-consommer-baie", playerId);
         return;
       }
-      var evt = {
+      const evt = {
         type: "consommer une baie"
       };
       addEvent(evt);
       iterSelected(msg.selected, function(perso) {
         if (limiteRessources(perso, options, 'baieMagique', "a déjà mangé une baie aujourd'hui. Pas d'effet.", evt)) return;
-        var soins = rollDePlus(6, {
+        let soins = rollDePlus(6, {
           bonus: baie
         });
         soigneToken(perso, soins.val, evt, function(soinsEffectifs) {
-            var msgSoins = "mange une baie magique. Il est rassasié et récupère ";
+            let msgSoins =
+              "mange une baie magique. " +
+              onGenre(perso, "Il est rassasié", "Elle est rassasiée") +
+              " et récupère ";
             if (soinsEffectifs == soins.val) msgSoins += soins.roll + " points de vie";
             else msgSoins += soinsEffectifs + " PV (le jet était " + soins.roll + ")";
             sendPerso(perso, msgSoins);
@@ -28095,7 +28124,7 @@ var COFantasy = COFantasy || function() {
           error("Argument de !cof-action-defensive non reconnu", cmd);
       }
     }
-    var evt = {
+    const evt = {
       type: "action défensive"
     };
     getSelected(msg, function(selected) {
@@ -34402,9 +34431,9 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseEnveloppement(msg) {
-    var options = parseOptions(msg);
+    const options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    const cmd = options.cmd;
     if (cmd === undefined) {
       error("Problème de parse options", msg.content);
       return;
@@ -34413,7 +34442,7 @@ var COFantasy = COFantasy || function() {
       error("Il manque des arguments à !cof-enveloppement", cmd);
       return;
     }
-    var cube = persoOfId(cmd[1]);
+    let cube = persoOfId(cmd[1]);
     if (cube === undefined) {
       error("Token non défini", cmd[1]);
       return;
@@ -34422,18 +34451,18 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton");
       return;
     }
-    var cible = persoOfId(cmd[2]);
+    let cible = persoOfId(cmd[2]);
     if (cible === undefined) {
       error("Token non défini", cmd[2]);
       return;
     }
-    var difficulte = parseInt(cmd[3]);
+    let difficulte = parseInt(cmd[3]);
     if (isNaN(difficulte)) {
       error("Difficulté n'est pas un nombre, on prend 15 par défaut", cmd[3]);
       difficulte = 15;
     }
-    var exprDM;
-    var type;
+    let exprDM;
+    let type;
     switch (cmd[4]) {
       case 'label':
       case 'ability':
@@ -34525,6 +34554,8 @@ var COFantasy = COFantasy || function() {
   function parseEchapperEnveloppement(msg) {
     let options = msg.options || parseOptions(msg);
     if (options === undefined) return;
+    let libere = 
+      options.cmd && options.cmd.length > 1 && options.cmd[1] == 'libere';
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         sendPlayer(msg, "!cof-echapper-enveloppement sans sélection de token", playerId);
@@ -34550,6 +34581,26 @@ var COFantasy = COFantasy || function() {
         if (maxAttr.startsWith('etreinte ')) {
           etreinte = true;
           maxAttr = maxAttr.substring(9);
+        }
+        if (libere) {
+          let evt = {
+            type:'Libération',
+            deletedAttributes: [attr]
+          };
+          addEvent(evt);
+          attr.remove();
+          unlockToken(perso);
+          if (etreinte) setState(perso, 'immobilise', false, evt);
+          attr = tokenAttribute(cube, 'enveloppe');
+          attr.forEach(function(a) {
+            let ca = persoOfIdName(a.get('current'));
+            if (ca && ca.token.id == perso.token.id) {
+              evt.deletedAttributes.push(a);
+              a.remove();
+            }
+          });
+          sendChar(cube.charId, "libère "+nomPerso(perso));
+          return;
         }
         let difficulte = parseInt(maxAttr);
         if (isNaN(difficulte)) {
@@ -34595,7 +34646,7 @@ var COFantasy = COFantasy || function() {
           if (etreinte) setState(perso, 'immobilise', false, evt);
           attr = tokenAttribute(cube, 'enveloppe');
           attr.forEach(function(a) {
-            var ca = persoOfIdName(a.get('current'));
+            let ca = persoOfIdName(a.get('current'));
             if (ca && ca.token.id == perso.token.id) {
               evt.deletedAttributes.push(a);
               a.remove();

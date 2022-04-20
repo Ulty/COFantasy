@@ -172,11 +172,12 @@ tr {line-height: 25px;}
               <ul>
                 <li>Le MJ lance la macro en sélectionnant les cibles</li>
                 <li id="allie">option <code>--allies</code> : cela fait chercher tous les <i>handout</i> dont le nom est Equipe suivi d'un nom, et tels que le <i>handout</i> contienne une liste de noms (un par ligne), parmis lesquels, celui du personnage qui agit. Le personnage qui agit est celui qui est sélectionné. Les cibles sont tous les alliés du personnage sélectionné, mais pas le personnage lui-même. Attention, les noms de personnages ne doivent pas contenir de balise XML (texte encadré par des &lt; et &gt;).</li>
-                <li>option <code>--alliesEnVue</code> : comme <code>--alies</code>, mais ne garde que les alliés en vue (en fonction des murs sur le layer lumière).</li>
+                <li>option <code>--alliesEnVue</code> : comme <code>--allies</code>, mais ne garde que les alliés en vue (en fonction des murs sur le layer lumière).</li>
                 <li>option <code>--equipe <i>nom</i></code> : agit sur tous les personnages mentionnés dans le <i>handout</i> s'appelant Equipe <i>nom</i>.</li>
                 <li>option <code>--self</code> : pour rajouter le personnage sélectionné. Utile si on veut le personnage et ses alliés, par exemple.</li>
                 <li>option <code>--target</code> : pour ajouter une seule cible, avec une id de token. Le personnage qui agit est celui qui est sélectionné.</li>
-                <li>option <code>--disque</code> : le premier argument doit être l'id ou le nom d'un token qui représente un personnage, le deuxième argument un rayon. Cela sélectionne tous les tokens à une distamce de moins que le rayon du premier argument. Si un troisième argument est donné, il est interprété comme la portée maximum entre le centre du disque et le token actif (qui est supposé être celui sélectionné). Si le premier argument représente un personnage avec un max de PV à 0, il est compris comme un personnage fictif créé juste pour définir le disque, et il sera supprimé après la sélection. À noter que le script crée par défaut un tel personnage, utilisable par tous, et appelé Cible.</li>
+                <li>option <code>--disque</code> : le premier argument, optionnel, est l'id ou le nom d'un token qui représente un personnage, le deuxième argument un rayon. Cela sélectionne tous les tokens à une distance de moins que le rayon du premier argument (ou du personnage à l'origine de l'effet, si le premier argument est absent). Si un troisième argument est donné, il est interprété comme la portée maximum entre le centre du disque et le token du personnage à l'origine de l'effet. Si le premier argument représente un personnage avec un max de PV à 0, il est compris comme un personnage fictif créé juste pour définir le disque, et il sera supprimé après la sélection. À noter que le script crée par défaut un tel personnage, utilisable par tous, et appelé Cible.</li>
+                <li>option <code>--disquePasseMurs</code> : comme <code>--disque</code>, mais l'effet traverse les murs.</li>
                 <li>option <code>--enVue</code> : sélectionne tous les tokens en vue du personnage qui lance l'effet. Accepte aussi un argument d'id de token, dans ce cas on garde les token en vue de celui avec cette id.</li>
                 <li>option <code>--saufAllies</code> permet d'exclure les alliés de la sélection (voir plus haut pour la définition des alliés).</li>
               </ul>
@@ -821,6 +822,7 @@ tr {line-height: 25px;}
                   <li><code>--effroi</code> : la peur est passive (pas un sort)</li>
                   <li><code>--portee <i>n</i></code> : limite la portée du sort à <i>n</i> metres.</li>
                   <li><code>--lanceur <i>id</i></code> : le lanceur de l'effet de peur (si il y en a un). Nécessaire pour la portée, par exemple.</li>
+                  <li><code>--titre <i>message</i></code> : spécifie un titre pour la fenêtre affichant les jets de résistance à la peur.</li>
                 </ul>
               </div>
               <h3 class="text-info" id="consommables">2.6 Consommables <code>!cof-consommables</code></h3>

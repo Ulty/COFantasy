@@ -8,6 +8,9 @@
 * frenesieMinotaure est bien un effet temporaire.
 
 ### Autres améliorations
+* Ajout d'un bouton pour libérer un personnage étreint ou enveloppé.
+* Possibilité de mettre un titre pour un effet de peur.
+* Option pour des effets de disque qui ignorent les murs.
 * Possibilité de laisser le MJ montrer le résultat d'un jet ou non.
 * Implémentation d'un anneau de protection.
 * Fonction de pause du jeu
