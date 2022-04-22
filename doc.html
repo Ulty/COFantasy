@@ -302,7 +302,7 @@ tr {line-height: 25px;}
                     <code>!cof-attack @{selected|token_id} @{target|token_id} 1</code>
                   </div>
                 </div>
-                <p>L'attaque tient alors compte de toutes les informations de l'attaque, y compris chances de critique, portée, type d'attaque, type de dégâs et autres options spécifiées sur la fiche. Par défaut, l'attaque montre le label, le nom de l'attaque, le calcul du bonus d'attaque, le calcul des dégâts, la portée et un champ <code>SPÉCIAL</code>. En cliquant sur la roue au bout à droite de cette ligne, on affiche une deuxième ligne, avec un case à décocher pour ne pas faire apparaître l'attaque à chaque tour, un choix de type d'attaque, des modificateurs, un choix de type de degâts et un champ d'options. Les modificateurs sont constitués d'options sans argument, séparée par une espace. Les options sont reprises telles quels comme un argument à l'attaque (voir plus bas pour le liste de ces options). Attention, pour l'instant ne traite correctment les jets (parties entre crochets) et les demandes au joueur (de type <code>?{question?}</code>) que si on passe par une liste d'actions (donc pas directement en faisant <code>#Attaque 1</code> dans le chat).</p>
+                <p>L'attaque tient alors compte de toutes les informations de l'attaque, y compris chances de critique, portée, type d'attaque, type de dégâs et autres options spécifiées sur la fiche. Par défaut, l'attaque montre le label, le nom de l'attaque, le calcul du bonus d'attaque, le calcul des dégâts, la portée et un champ <code>SPÉCIAL</code> (ou encore appelé <code>divers</code>), qui contient des prédicats pour l'arme, à la façon des <a href=#predicats>prédicats</a> valables pour le personnage. En cliquant sur la roue au bout à droite de cette ligne, on affiche une deuxième ligne, avec un case à décocher pour ne pas faire apparaître l'attaque à chaque tour, un choix de type d'attaque, des modificateurs, un choix de type de degâts et un champ d'options. Les modificateurs sont constitués d'options sans argument, séparée par une espace. Les options sont reprises telles quels comme un argument à l'attaque (voir plus bas pour le liste de ces options). Attention, pour l'instant ne traite correctment les jets (parties entre crochets) et les demandes au joueur (de type <code>?{question?}</code>) que si on passe par une liste d'actions (donc pas directement en faisant <code>#Attaque 1</code> dans le chat).</p>
                 <img class="img-fluid" src="images/armes.jpg">
                 <figcaption>Exemple d'attaques.</figcaption>
                 <p> En l'absence de label, on peut spécifier ces informations sous forme d'options d'attaque</p>
@@ -328,8 +328,8 @@ tr {line-height: 25px;}
                   <li><code>--special <i>txt</i></code> : remplace le champ spécial de l'attaque sur la fiche.</li>
                   <li><code>--tempDmg</code> : l'attaque fait des dégâts temporaires (tient compte de la force de l'adversaire, utilise la barre 2 pour les dmg temp, sauf si le token a des PM, auquel cas on utilisera un attribut temporaire).</li>
                   <li><code>--pasDeDmg</code> : l'attaque ne fait pas de DM.</li>
-                  <li><code>--poudre</code> : l'arme est une arme à poudre, utilisation d'un dé de poudre</li>
-                  <li><code>--epieu</code> : l'arme est un épieu. À noter que l'arme est aussi considérée comme un épieu si elle contient <code>épieu</code> dans son nom ou dans son champs divers. Cette option augmente de 1 le nombre de dés contre un adversaire sans armure.</li>
+                  <li><code>--poudre</code> : l'arme est une arme à poudre, utilisation d'un dé de poudre. Une arme est aussi considérée comme une arme à poudre si elle contient <code>poudre</code> dans le nom de l'arme ou dans le champ divers.</li>
+                  <li><code>--epieu</code> : l'arme est un épieu. À noter que l'arme est aussi considérée comme un épieu si elle contient <code>épieu</code> dans son nom ou <code>epieu</code> dans son champs divers. Cette option augmente de 1 le nombre de dés contre un adversaire sans armure.</li>
                   <li><code>--hache</code> : l'arme est une hache. À noter que l'arme est aussi considérée comme une hache si elle contient <code>hache</code> dans son nom ou dans son champs divers. Cette option permet de passer la RD/hache (pour les sylvaniens, par exemple).</li>
                   <li><code>--marteau</code> : l'arme est un marteau. À noter que l'arme est aussi considérée comme un marteau si elle contient <code>marteau</code> dans son nom ou dans son champs divers.</li>
                   <li><code>--auto</code> : l'attaque réussit automatiquement</li>
@@ -507,7 +507,7 @@ tr {line-height: 25px;}
               </div>
               <h4 class="text-secondary">Recharger des armes : <code>!cof-recharger <i>N</i></code></h4>
               <div class="decalage">
-                <p>Il faut un <a href=#predicats>prédicat</a> <code>charge_<i>N</i></code> où <i>N</i> est le label de l'arme. On peut associer un nombre au prédicat, pour indiquer un maximum de charges supérieur à 1. Noter que si on a 2 armes à une charge, il faut utiliser un maximum de 2.<br />
+                <p>Il faut un <a href=#predicats>prédicat</a> <code>charge</code> dans le champ <code>SPÉCIAL</code> des armes qui ont besoin d'être chargées pour fonctionner. On peut associer un nombre au prédicat, pour indiquer un maximum de charges supérieur à 1. Noter que si on a 2 armes à une charge, il faut utiliser un maximum de 2.<br />
                 Recharge l'arme <i>N</i> (augmente les charges d'un). Les armes sont toutes rechargées à la fin d'un combat.<br />
                 La commande admet un argment optionel <code>--grenaille</code> pour charger (une arme à poudre) avec de la grenaille.
                 </p>
@@ -522,7 +522,7 @@ tr {line-height: 25px;}
                   <li>Enfin, en fin de combat, si le personnage possède un prédicat <code>armeParDefaut</code>, le script va lui faire dégainer l'arme dont le label est la valeur du prédicat. Donc si le prédicat n'a pas de label associé, le personnage va rengainer son arme.</li>
                 </ul>
                 <p>Dans tous les cas, si le personnage dégaine une arme à 2 mains, le script fait enlever le bouclier, et il le fait remettre si on passe d'une arme à 2 mains à une arme à 1 main.</p>
-                <p>Si l'arme contient dans le champ <code>SPÉCIAL</code> le mot clé <code>DEF</code> suivi d'un certain nombre de blancs, puis <code>+<i>n</i></code>, l'arme est considérée comme une arme de parade qui augmente la défense de <i>n</i> quand elle est portée. La diminution et augmentation de défense est prise en compte au moment de dégainer/rengainer.</p>
+                <p>Si l'arme contient dans le champ <code>SPÉCIAL</code> le prédicat <code>DEF</code> de valeur <i>n</i> (par exemple <code>DEF:2</code>), l'arme est considérée comme une arme de parade qui augmente la défense de <i>n</i> quand elle est portée. <p>
                 </p>
               </div>
               <h4 class="text-secondary" id="degainer">Couvert :<code>!cof-bonus-couvert <i>b</i></code></h4>
@@ -887,7 +887,7 @@ tr {line-height: 25px;}
                 <p>Pour faire de la lumière, on peut utiliser <code>!cof-lumiere <i>token_id portee</i></code>. Cela va faire en sorte que le token fasse de la lumière jusqu'à <i>portee</i> mètres. Il est possible d'avoir plusieurs sources de lumière, et la commande est compatible avec la <a href='#Vision_dans_le_noir'>vision dans le noir</a>. La commande admet un troisième argument qui est la distance à laquelle la lumière devient moins brillante, et un quatrième argument qui est le nom du type de lumière (par défaut, <code>lumiere</code>), utilisé quand on éteint les lumières.</p>
                 <p>Pour éteindre des lumières, utiliser <code>!cof-eteindre-lumiere</code> en sélectionnant le ou les tokens désirés. Il est possible de prendre un argument optionnel qui est le nom du groupe de lumières que l'on souhaite éteindre. Par exemple, on peut ainsi éteindre toutes les torches et laisser les effets de lumière magique actifs.</p>
                 <p>Pour les torches, le script propose d'automatiser la gestion en utilisant la commande <code>!cof-torche <i>token_id</i></code>. Si le token tient une torche allumée, cela éteint la torche (et propose au MJ d'indiquer combien de temps la torche est restée allumée), et sinon, si le token possède des torches, cela allume une torche. Le nombre de torche et leur état est stocké dans un attribut <code>torches</code>, dont la valeur courante contient le nombre de torches dans l'inventaire, et la valeur max le temps restant pour la torche en cours d'utilisation (60 minutes pour une torche neuve). Si aucun attribut de ce nom n'existe, le script se contente d'allumer ou d'éteindre une torche, sans gérer leur nombre.</p>
-                <p>Pour les armes qui font de la lumière, on peut préciser un prédicat <code>eclaire_<i>n</i></code>, où <i>n</i> est le label de l'arme. La valeur du prédicat doit être la distance à laquelle l'arme éclaire. On peut préciser dans un prédicat <code>eclaireFaible_<i>n</i></code> le début de la lumière faible, si besoin. Ça peut aussi être une façon de gérer les torches.</p>
+                <p>Pour les armes qui font de la lumière, on peut préciser un prédicat <code>eclaire</code> dans le champe <code>SPÉCIAL</code> de l'arme. La valeur du prédicat doit être la distance à laquelle l'arme éclaire. On peut préciser dans un prédicat <code>eclaireFaible</code> (toujours dans le champ de l'arme) le début de la lumière faible, si besoin. Ça peut aussi être une façon de gérer les torches.</p>
               </div>
               <h3 class="text-info" id="jet_caracteristiques">2.9 Jet de caractéristiques</h3>
               <div class="decalage">
@@ -987,12 +987,7 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie du Pistolero</h4>
                 <ol>
                   <li>
-                    <strong>Plus vite que son ombre</strong> :
-                    <ul>
-                      <li>ajouter un prédicat <code>initEnMain<i>N</i></code>, où <i>N</i> est le numéro d'une attaque avec arme à poudre, avec comme valeur 10</li>
-                      <li>utiliser <code>!cof-degainer <i>N</i></code> pour avoir en main l'arme <i>N</i></li>
-                      <li>exemple : <code>!cof-degainer ?{Arme en main ?|Pétoire,0|Épée,1|Aucune,-1}</code> avec dans les prédicats <code>initEnMain0:10</code>.</li>
-                    </ul>
+                    <strong>Plus vite que son ombre</strong> : ajouter un prédicat <code>plusViteQueSonOmbre</code>. On peut associer un nombre à ce prédicat pour modifier le bonus à l'initiative, ou bien lui donner la valeur <code>arbalete</code> pour activer le bonus sur les arbalètes au lieu des armes à poudre.
                   </li>
                   <li><strong>Cadence de tir</strong> : pas de support</li>
                   <li><strong>Tir double</strong> : utiliser l'option <code>--tirDouble</code> si deux tirs sur une même cible. Si les deux armes sont différentes, rajouter le label de la deuxième arme après l'option (si le label est <i>l2</i>, cela donne <code>--tirDouble <i>l2</i></code>).</li>
@@ -1381,7 +1376,7 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie du combat</h4>
                 <ol>
                   <li><strong>Vivacité</strong> : simplement augmenter l'init sur la fiche.</li>
-                  <li><strong>Désarmer</strong> : <code>!cof-desarmer @{selected|token_id} @{target|token_id}</code>. On peut utiliser un troisième argument optionnel, qui est le label d'une arme par défaut, au cas où le guerrier n'aurait pas d'arme en main. Le script determine si la cible tient une arme à 2 mains en cherchant dans le nom de l'arme, puis dans le champ <code>SPÉCIAL</code> de l'arme. Pour savoir comment le script détermine quelle est l'arme en main, se référer à la section <a href='#degainer'>dégainer</a>.</li>
+                  <li><strong>Désarmer</strong> : <code>!cof-desarmer @{selected|token_id} @{target|token_id}</code>. On peut utiliser un troisième argument optionnel, qui est le label d'une arme par défaut, au cas où le guerrier n'aurait pas d'arme en main.</li>
                   <li><strong>Double attaque</strong> : faire deux attaques, avec l'option supplémentaire <code>--bonusAttaque -2</code>.</li>
                   <li><strong>Attaque circulaire</strong> : faire les attaques normalement, ce n'est pas considéré comme une aoe.</li>
                   <li><strong>Attaque puissante</strong> : utiliser les options <code>--avecd12crit --plus 2d6</code>.</li>
@@ -2296,7 +2291,7 @@ tr {line-height: 25px;}
                     <strong>Poison</strong> : pour enduire une arme de label <i>L</i> de poison, utiliser <code>!cof-enduire-poison <i>L type force save</i></code>. Pour l'instant, <i>type</i> ne peut être que <code>rapide</code>, et <i>force</i> est une expression pour les dégâts (typiquement, <code>2d6</code> pour un poison rapide). <i>save</i> est la difficulté du jet de CON pour résister au poison. On peut rajouter deux arguments optionnels :
                     <ul>
                       <li><code>--testINT</code> <i>n</i>: fixe la difficulté du jet d'INT pour réussir à poser le poison. La difficulté par défaut est 14.</li>
-                      <li><code>--dose</code> <i>nom</i>: indique une ressource dans laquelle on puise pour enduire de poison (à la manière de munitions). Il faudra que le personnage ait un attribut de nom <code>dose_</code><i>nom</i> avec comme valeur le nombre de doses possédées.</li>
+                      <li><code>--dose</code> <i>nom</i>: indique une ressource dans laquelle on puise pour enduire de poison (à la manière de munitions). Il faudra que le personnage ait un attribut de nom <code>dose_<i>nom</i></code> avec comme valeur le nombre de doses possédées.</li>
                     </ul>
                     Il est aussi possible d'enduire de poison des munitions. Pour ce faire, remplacer le label de l'attaque par le nom de l'attribut contenant les mutions (ce nom commence donc par <code>munition_</code>). Le script suppose que toute munition lancée perd son poison.
                   </li>

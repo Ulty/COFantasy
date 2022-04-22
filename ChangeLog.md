@@ -1,4 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 3.07
+### Autres améliorations
+* Passage d'un certain nombres de prédicats concernant des armes dans le champ SPÉCIAL des armes concernées.
+
 ## 3.06
 ### Capacités
 * Ajout des capacités de la Voie du drakonide.
