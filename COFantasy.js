@@ -41370,22 +41370,20 @@ var COFantasy = COFantasy || function() {
 
   //nb à 11 pour ne pas retenter de lire les attributs
   function scriptVersionToCharacter(character, nb) {
-    var charId = character.id;
+    let charId = character.id;
     //On vérifie que les attributs sont peuplés
-    var attrs = findObjs({
+    let attrs = findObjs({
       _type: 'attribute',
       _characterid: charId,
     });
     if (attrs.length === 0) {
       nb = nb || 1;
-      if (nb > 10) {
-        error("Impossible de trouver d'attribut", character);
+      if (nb < 10) {
+        _.delay(function() {
+          scriptVersionToCharacter(character, nb + 1);
+        }, 2000);
         return;
       }
-      _.delay(function() {
-        scriptVersionToCharacter(character, nb + 1);
-      }, 2000);
-      return;
     }
     attrs = findObjs({
       _type: 'attribute',
@@ -41402,6 +41400,11 @@ var COFantasy = COFantasy || function() {
         max: state.COFantasy.version
       });
     } else {
+      if (attrs.length > 1) {
+        for (let i = 1; i < attrs.length; i++) {
+          attrs[i].remove();
+        }
+      }
       attrs[0].setWithWorker({
         current: true,
         max: state.COFantasy.version
@@ -43951,7 +43954,7 @@ on("chat:message", function(msg) {
         sendChat('COF', "Erreur durant l'exécution de " + msg.content);
         log("Erreur durant l'exécution de " + msg.content);
         log(msg);
-        var errMsg = e.name;
+        let errMsg = e.name;
         if (e.lineNumber) errMsg += " at " + e.lineNumber;
         else if (e.number) errMsg += " at " + e.number;
         errMsg += ': ' + e.message;

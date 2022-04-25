@@ -1,5 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.07
+### Corrections de bugs
+* Plus de message d'erreur quand on attend trop avant de sauvegarder un nouveau personnage.
+
 ### Autres améliorations
 * Passage d'un certain nombres de prédicats concernant des armes dans le champ SPÉCIAL des armes concernées.
 
