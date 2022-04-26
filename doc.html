@@ -171,7 +171,7 @@ tr {line-height: 25px;}
               <p>Comme les joueurs ne peuvent pas sélectionner un nombre arbitraire d'ennemis, 7 méthodes sont disponibles&nbsp;:</p>
               <ul>
                 <li>Le MJ lance la macro en sélectionnant les cibles</li>
-                <li id="allie">option <code>--allies</code> : cela fait chercher tous les <i>handout</i> dont le nom est Equipe suivi d'un nom, et tels que le <i>handout</i> contienne une liste de noms (un par ligne), parmis lesquels, celui du personnage qui agit. Le personnage qui agit est celui qui est sélectionné. Les cibles sont tous les alliés du personnage sélectionné, mais pas le personnage lui-même. Attention, les noms de personnages ne doivent pas contenir de balise XML (texte encadré par des &lt; et &gt;).</li>
+                <li id="allie">option <code>--allies</code> : cela fait chercher tous les <i>handout</i> dont le nom est Equipe suivi d'un nom, et tels que le <i>handout</i> contienne une liste de noms (un par ligne), parmis lesquels, celui du personnage qui agit. Le personnage qui agit est celui qui est sélectionné. Les cibles sont tous les alliés du personnage sélectionné, mais pas le personnage lui-même. Attention, les noms de personnages ne doivent pas contenir de balise XML (texte encadré par des &lt; et &gt;). Optionellement, on peut préciser une distance maximale entre le personnage sélectionné et ses allies.</li>
                 <li>option <code>--alliesEnVue</code> : comme <code>--allies</code>, mais ne garde que les alliés en vue (en fonction des murs sur le layer lumière).</li>
                 <li>option <code>--equipe <i>nom</i></code> : agit sur tous les personnages mentionnés dans le <i>handout</i> s'appelant Equipe <i>nom</i>.</li>
                 <li>option <code>--self</code> : pour rajouter le personnage sélectionné. Utile si on veut le personnage et ses alliés, par exemple.</li>
@@ -589,6 +589,7 @@ tr {line-height: 25px;}
                     <li><code>--mana <i>n</i></code> : demande au lanceur de payer <i>n</i> points de mana</li>
                     <li><code>--depasseLimite <i>n</i></code> : permet de lancer les sorts de soins léger, modéré ou de groupe quand la limite journalière est dépassée, mais en augmentant le coût en mana de <i>n</i> à chaque nouveau dépassement.</li>
                     <li><code>--limiteSoinsParJour <i>n</i></code> : limite le nombre total de PVs soignés par jour. Cette limite peut être associée à une ressource (spécifier en deuxième argument de l'option, peut contenir des espaces), de sorte que seuls les soins qui mentionnent cette ressource sont concernés par cette limitation. Cette option n'a de sens que si un soigneur est précisé.</li>
+                    <li><code>--sacrifierPV</code> : le soigneur doit sacrifier autant de PV que le montant des soins (que ces soins soient utilisés ou non).</li>
                   </ul>
                 </div>
               </div>
@@ -1314,7 +1315,7 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie des élixirs</h4>
                 <p style="margin-top:0px; margin-bottom:0px">Pour créer ou juste voir ses élixirs, utiliser la commande <code>!cof-elixirs</code>. Pour cela, il faut aussi un <a href=#predicats>prédicat</a> <code>voieDesElixirs</code> avec comme valeur le rang dans la voie. Noter que la commande <code>!cof-elixirs</code> affiche une liste d'élixirs, et que pour effectivement créer un élixir, il faut cliquer sur le bouton correspondant dans cette liste. Le script propose les élixirs par défaut du jeu, mais vous pouvez modifier cette liste : pour changer un élixir de rang k (k&lt;4), ajouter un attribut de nom <code>Elixir <i>k</i></code>, de valeur courante le nom et de valeur maximale l'effet.</p>
                 <ol>
-                  <li><strong>Fortifiant</strong> : création à l'aide de <code>!cof-elixirs</code>, et utilisation avec la même commande, ou bien en utilisant <code>!cof-consommables</code>.</li>
+                  <li><strong>Fortifiant</strong> : création à l'aide de <code>!cof-elixirs</code>, et utilisation avec la même commande, ou bien en utilisant <code>!cof-consommables</code>. Si vous souhaitez avoir une potion de fortifiant indépendament de cette Voie (par exemple achetée dans une échope), vous pouvez ajouter un consommable avec l'effet <code>!cof-fortifiant <i>n</i></code>, où <i>n</i> est le rang dans la Voie du forgesort qui a créé la potion.</li>
                   <li><strong>Feu grégeois</strong> : création à l'aide de <code>!cof-elixirs</code>, et utilisation avec la même commande, ou bien en utilisant <code>!cof-consommables</code>.</li>
                   <li><strong>Élixir de guérison</strong> : création à l'aide de <code>!cof-elixirs</code>, et utilisation avec la même commande, ou bien en utilisant <code>!cof-consommables</code>.</li>
                   <li><strong>Potion magique</strong> : création à l'aide de <code>!cof-elixirs</code>, et utilisation avec la même commande, ou bien en utilisant <code>!cof-consommables</code>.</li>
@@ -2062,6 +2063,14 @@ tr {line-height: 25px;}
                 </ol>
                 <h4 class="text-secondary">Voie de l'homme du peuple</h4>
                 Reporter les bonus sur la fiche et créer les compétences adéquates.
+                <h4 class="text-secondary">Voie de Périndé</h4>
+                <ol>
+                  <li>Soutient</li>
+                  <li>Présence réconfortante</li>
+                  <li>Prendre sur soit</li>
+                  <li>Défendre les siens</li>
+                  <li><strong>Don de soi</strong> : <code>!cof-soin @{selected|token_id} ?{Nombre de dés?|1|2|3|4|5}d6 --allies 10 --sacrifierPV --mana 3</code></li>
+                </ol>
                 <h4 class="text-secondary">Voie des armes à deux mains</h4>
                 <ol>
                   <li><strong>Allonge</strong> : reporter le bonus d'attaque sur la fiche. Par facilité, j'ai considéré que le bonus d'Init était permanent et nous l'avons reporté sur la fiche.</li>
@@ -2233,6 +2242,7 @@ tr {line-height: 25px;}
                 <ul>
                   <li><strong>Animation des objets</strong> : <code>!cof-animation-des-objets @{selected|token_id} ?{Taille d'objet|tabouret ou coffret,1|chaise ou coffre,2|meuble bas ou table,4|grande table,7|grosse armoire,10}</code> On peut ajouter un troisième argument, <code>@{target|token_id}</code> pour animer un token d'objet sur la carte.</li>
                   <li><strong>Armure d'eau</strong> : <code>!cof-effet-combat armureDEau</code>. Le script automatise l'immunité aux étreintes (pas aux enveloppements) et à la capacité Agripper des créatures volantes.</li>
+                  <li><strong>Coup au but</strong> : <code>!cof-effet-temp bonusAttaqueTemp 1 --valeur 10 --lanceur @{selected|token_id} --portee 10 --mana 0 --target @{target|token_id}</code>.</li>
                   <li><strong>Force de géant</strong> : <code>!cof-effet-temp forceDeGeant 10</code>. Le bonus est de 2 par défaut, mais peut être modifié en utilisant l'option <code>--valeur</code>.</li>
                   <li><strong>Nuée de scorpions</strong> : ajouter une attaque magique, de portée 20 m, type Sortilège, modificateur <code>--pasDeDmg</code> et option  <code>--effet nueeDeScorpions 10</code>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDeScorpions</code> sur la cible dans ce cas).</li>
                   <li><strong>Résistance à la magie</strong> : pour l'augmentation de la DEF contre la magie, utiliser un <a href=#predicats>prédicat</a> <code>DEF_magie</code> et pour le bonus aux tests, <code>resistanceALaMagie</code></li>

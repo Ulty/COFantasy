@@ -1,5 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.07
+### Capacités
+* Don de soin, de la Voie de Périndé
+
 ### Corrections de bugs
 * Plus de message d'erreur quand on attend trop avant de sauvegarder un nouveau personnage.
 
