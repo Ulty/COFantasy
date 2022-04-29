@@ -418,7 +418,7 @@ var COFantasy = COFantasy || function() {
 
   //Remplis quand on sait quels sont les markers dans setStateCOF
   const etat_de_marker = {};
-  var effet_de_marker = {};
+  const effet_de_marker = {};
 
   // Donne le nom de l'attribut, selon qu'il concerne un mook ou un personnage
   // unique
@@ -625,18 +625,18 @@ var COFantasy = COFantasy || function() {
   }
 
   function determineSettingDeJeu() {
-    var characters = findObjs({
+    let characters = findObjs({
       _type: 'character'
     });
-    var charsGenerique = [];
-    var charsArran = [];
+    let charsGenerique = [];
+    let charsArran = [];
     characters.forEach(function(c) {
-      var typePerso = charAttribute(c.id, 'type_personnage', {
+      let typePerso = charAttribute(c.id, 'type_personnage', {
         caseInsensitive: true
       });
       if (typePerso.length > 0 && typePerso[0].get('current') == 'PNJ')
         return; //Les fiches de PNJ sont les mêmes
-      var setting = charAttribute(c.id, 'option_setting', {
+      let setting = charAttribute(c.id, 'option_setting', {
         caseInsensitive: true
       });
       if (setting.length === 0) {
@@ -651,7 +651,7 @@ var COFantasy = COFantasy || function() {
       if (charsArran.length > 0) {
         error("Attention, des personnages suivent les options de jeu des Terres d'Arran (voir le log pour la liste)", charsArran);
         charsArran.forEach(function(c) {
-          var g = getObj('character', c.id);
+          let g = getObj('character', c.id);
           if (g) log(g.get('name'));
           else log(c);
         });
@@ -671,6 +671,16 @@ var COFantasy = COFantasy || function() {
       return;
     }
     stateCOF.setting_arran = true;
+  }
+
+  function persoArran(perso) {
+    if (stateCOF.setting_arran) return true;
+    if (!stateCOF.setting_mixte) return false;
+    if (perso.arran === undefined) {
+      perso.arran =
+        ficheAttribute(perso, 'option_setting', 'generique') == 'arran';
+    }
+    return perso.arran;
   }
 
   let statusForInitAlly;
@@ -1765,6 +1775,76 @@ var COFantasy = COFantasy || function() {
       light_multiplier: token.get('light_multiplier'),
       adv_fow_view_distance: token.get('adv_fow_view_distance'),
     };
+  }
+
+  function caracOfMod(m) {
+    switch (m) {
+      case 'FOR':
+        return 'force';
+      case 'DEX':
+        return 'dexterite';
+      case 'CON':
+        return 'constitution';
+      case 'INT':
+        return 'intelligence';
+      case 'SAG':
+        return 'sagesse';
+      case 'CHA':
+        return 'charisme';
+      default:
+        return;
+    }
+  }
+
+  function PNJCaracOfMod(m) {
+    return 'pnj_' + m.toLowerCase();
+  }
+
+  //Retourne le mod de la caractéristque entière.
+  //si carac n'est pas une carac, retourne 0
+  //perso peut ne pas avoir de token ou être juste un charId
+  function modCarac(perso, carac) {
+    if (perso.charId === undefined) perso = {
+      charId: perso
+    };
+    if (persoEstPNJ(perso)) {
+      let mod = 0;
+      switch (carac) {
+        case 'force':
+        case 'FORCE':
+          mod = ficheAttributeAsInt(perso, 'pnj_for', 0);
+          break;
+        case 'dexterite':
+        case 'DEXTERITE':
+          mod = ficheAttributeAsInt(perso, 'pnj_dex', 0);
+          break;
+        case 'constitution':
+        case 'CONSTITUTION':
+          mod = ficheAttributeAsInt(perso, 'pnj_con', 0);
+          break;
+        case 'intelligence':
+        case 'INTELLIGENCE':
+          mod = ficheAttributeAsInt(perso, 'pnj_int', 0);
+          break;
+        case 'sagesse':
+        case 'SAGESSE':
+          mod = ficheAttributeAsInt(perso, 'pnj_sag', 0);
+          break;
+        case 'charisme':
+        case 'CHARISME':
+          mod = ficheAttributeAsInt(perso, 'pnj_cha', 0);
+          break;
+        default:
+          return 0;
+      }
+      return mod - Math.floor(attributeAsInt(perso, 'affaiblissementde' + carac, 0) / 2);
+    }
+    let valCarac =
+      ficheAttributeAsInt(perso, carac, 10) - attributeAsInt(perso, 'affaiblissementde' + carac, 0);
+    let res = Math.floor((valCarac - 10) / 2);
+    if ((carac == 'force' || carac == 'FORCE') && attributeAsBool(perso, 'mutationMusclesHypertrophies')) res += 2;
+    else if ((carac == 'DEXTERITE' || carac == 'dexterite') && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) res += 4;
+    return res;
   }
 
   //options peut contenir
@@ -4104,76 +4184,6 @@ var COFantasy = COFantasy || function() {
       if (HTdeclared) HealthColors.Update(tok, prevTok);
       sendChat("COF", "État de " + tok.get("name") + " restauré.");
     });
-  }
-
-  function caracOfMod(m) {
-    switch (m) {
-      case 'FOR':
-        return 'force';
-      case 'DEX':
-        return 'dexterite';
-      case 'CON':
-        return 'constitution';
-      case 'INT':
-        return 'intelligence';
-      case 'SAG':
-        return 'sagesse';
-      case 'CHA':
-        return 'charisme';
-      default:
-        return;
-    }
-  }
-
-  function PNJCaracOfMod(m) {
-    return 'pnj_' + m.toLowerCase();
-  }
-
-  //Retourne le mod de la caractéristque entière.
-  //si carac n'est pas une carac, retourne 0
-  //perso peut ne pas avoir de token ou être juste un charId
-  function modCarac(perso, carac) {
-    if (perso.charId === undefined) perso = {
-      charId: perso
-    };
-    if (persoEstPNJ(perso)) {
-      let mod = 0;
-      switch (carac) {
-        case 'force':
-        case 'FORCE':
-          mod = ficheAttributeAsInt(perso, 'pnj_for', 0);
-          break;
-        case 'dexterite':
-        case 'DEXTERITE':
-          mod = ficheAttributeAsInt(perso, 'pnj_dex', 0);
-          break;
-        case 'constitution':
-        case 'CONSTITUTION':
-          mod = ficheAttributeAsInt(perso, 'pnj_con', 0);
-          break;
-        case 'intelligence':
-        case 'INTELLIGENCE':
-          mod = ficheAttributeAsInt(perso, 'pnj_int', 0);
-          break;
-        case 'sagesse':
-        case 'SAGESSE':
-          mod = ficheAttributeAsInt(perso, 'pnj_sag', 0);
-          break;
-        case 'charisme':
-        case 'CHARISME':
-          mod = ficheAttributeAsInt(perso, 'pnj_cha', 0);
-          break;
-        default:
-          return 0;
-      }
-      return mod - Math.floor(attributeAsInt(perso, 'affaiblissementde' + carac, 0) / 2);
-    }
-    let valCarac =
-      ficheAttributeAsInt(perso, carac, 10) - attributeAsInt(perso, 'affaiblissementde' + carac, 0);
-    let res = Math.floor((valCarac - 10) / 2);
-    if ((carac == 'force' || carac == 'FORCE') && attributeAsBool(perso, 'mutationMusclesHypertrophies')) res += 2;
-    else if ((carac == 'DEXTERITE' || carac == 'dexterite') && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) res += 4;
-    return res;
   }
 
   function boutonSimple(action, texte, style) {
@@ -9186,6 +9196,7 @@ var COFantasy = COFantasy || function() {
     return message.activation;
   }
 
+  /* Function non utilisée
   function getValeurStringOfEffet(perso, effet, def, attrDef) {
     let attrsVal = tokenAttribute(perso, effet + 'Valeur');
     if (attrsVal.length === 0) {
@@ -9198,6 +9209,7 @@ var COFantasy = COFantasy || function() {
     }
     return attrsVal[0].get('current');
   }
+  */
 
   // renvoie la valeur du bonus si il y a un capitaine (ou commandant)
   //evt est optionnel
@@ -9899,6 +9911,11 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(target, 'peauDEcorce')) {
       let bonusPeau = getValeurOfEffet(target, 'peauDEcorce', 1, 'voieDesVegetaux');
+      if (bonusPeau == 1 && persoArran(target)) {
+        let v = predicateAsInt(target, 'voieDesForets', 0);
+        if (v < 4) bonusPeau = 2;
+        else bonusPeau = 4;
+      }
       let peauIntense = attributeAsInt(target, 'peauDEcorceTempeteDeManaIntense', 0);
       bonusPeau += peauIntense;
       if (reglesOptionelles.divers.val.forme_d_arbre_amelioree.val && formeDarbre) {
@@ -13365,8 +13382,7 @@ var COFantasy = COFantasy || function() {
     switch (x) {
       case '@{ATKCAC}':
         attDiv = ficheAttributeAsInt(attaquant, 'ATKCAC_DIV', 0);
-        if (stateCOF.setting_arran ||
-          (stateCOF.setting_mixte && ficheAttribute(attaquant, 'option_setting', 'generique') == 'arran')) {
+        if (persoArran(attaquant)) {
           attDiv += ficheAttributeAsInt(attaquant, 'mod_atkcac', 0);
           attCar = '@{FOR}';
         } else {
@@ -13375,8 +13391,7 @@ var COFantasy = COFantasy || function() {
         break;
       case '@{ATKTIR}':
         attDiv = ficheAttributeAsInt(attaquant, 'ATKTIR_DIV', 0);
-        if (stateCOF.setting_arran ||
-          (stateCOF.setting_mixte && ficheAttribute(attaquant, 'option_setting', 'generique') == 'arran')) {
+        if (persoArran(attaquant)) {
           attDiv += ficheAttributeAsInt(attaquant, 'mod_atktir', 0);
           attCar = '@{DEX}';
         } else {
@@ -13385,8 +13400,7 @@ var COFantasy = COFantasy || function() {
         break;
       case '@{ATKMAG}':
         attDiv = ficheAttributeAsInt(attaquant, 'ATKMAG_DIV', 0);
-        if (stateCOF.setting_arran ||
-          (stateCOF.setting_mixte && ficheAttribute(attaquant, 'option_setting', 'generique') == 'arran')) {
+        if (persoArran(attaquant)) {
           attDiv += ficheAttributeAsInt(attaquant, 'mod_atkmag', 0);
           attCar = '@{INT}';
         } else {
@@ -14326,15 +14340,17 @@ var COFantasy = COFantasy || function() {
             target.critique = critique;
             target.attaqueCalculee = true;
             if (options.aoe === undefined && interchange.targets.length > 1) { //any target can be affected
-              var n = randomInteger(interchange.targets.length);
+              let n = randomInteger(interchange.targets.length);
               target.token = interchange.targets[n - 1];
             }
             if (target.touche) {
-              if (attributeAsBool(target, 'imageDecalee')) {
+              if (attributeAsBool(target, 'imageDecalee') &&
+                (!options.aoe || !persoArran(target) || predicateAsBool(target, 'imageDecaleeAvancee'))
+              ) {
                 if (target.rollImageDecalee === undefined) {
                   target.rollImageDecalee = rollDePlus(6);
                 }
-                var id = target.rollImageDecalee;
+                let id = target.rollImageDecalee;
                 if (id.val > 4) {
                   target.touche = false;
                   target.messages.push(id.roll + ": l'attaque passe à travers l'image de " + nomPerso(target));
@@ -14478,6 +14494,7 @@ var COFantasy = COFantasy || function() {
                 let allies = alliesParPerso[target.charId] || new Set();
                 let tokensContact;
                 allies.forEach(function(ci) {
+                  if (ci == attaquant.charId) return;
                   if (charPredicateAsBool(ci, 'intercepter')) {
                     if (tokensContact === undefined) {
                       tokensContact = findObjs({
@@ -14731,9 +14748,8 @@ var COFantasy = COFantasy || function() {
   }
 
   function addEffetTemporaireLie(perso, attr, evt) {
-    var etlAttr = tokenAttribute(perso, 'effetsTemporairesLies');
+    let etlAttr = tokenAttribute(perso, 'effetsTemporairesLies');
     if (etlAttr.length === 0) {
-      etl = '';
       etlAttr = createObj('attribute', {
         characterid: perso.charId,
         name: 'effetsTemporairesLies',
@@ -14745,7 +14761,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     etlAttr = etlAttr[0];
-    var etl = etlAttr.get('current');
+    let etl = etlAttr.get('current');
     evt.attributes.push({
       attribute: etlAttr,
       current: etl
@@ -16232,7 +16248,14 @@ var COFantasy = COFantasy || function() {
                       //Les DMs automatiques en cas de toucher une cible
                       if (attributeAsBool(target, 'sousTension')) {
                         ciblesCount++;
-                        let exprSousTension = '[[' + getValeurStringOfEffet(target, 'sousTension', '1d6') + ']]';
+                        let dm = '1d6';
+                        let attrsVal = tokenAttribute(target, 'sousTensionValeur');
+                        if (attrsVal.length === 0) {
+                          if (predicateAsInt(target, 'voieDeLaMagieElementaliste', 0) > 3)
+                            dm = '2d6';
+                        } else
+                          dm = attrsVal[0].get('current');
+                        let exprSousTension = '[[' + dm + ']]';
                         sendChat('', exprSousTension, function(res) {
                           let rolls = res[0];
                           let explRoll = rolls.inlinerolls[0];
@@ -17120,9 +17143,18 @@ var COFantasy = COFantasy || function() {
       bonus += 5;
       expliquer("Sang de l'Arbre-Coeur => +5 pour résister à la nécromancie");
     }
-    if (predicateAsBool(target, 'liberateurDAnathazerin') && options.type == 'poison') {
-      bonus += 2;
-      expliquer("Libérateur d'Anathazerïn => +2 pour résister au poison");
+    if (options.type == 'poison') {
+      if (predicateAsBool(target, 'liberateurDAnathazerin')) {
+        bonus += 2;
+        expliquer("Libérateur d'Anathazerïn => +2 pour résister au poison");
+      }
+      if (predicateAsBool(target, 'peauDEcorceAvancee') && attributeAsBool(target, 'peauDEcorce')) {
+        let bonusPeau = getValeurOfEffet(target, 'peauDEcorce', 2);
+        if (bonusPeau == 2 && predicateAsInt(target, 'voieDesForets', 0) > 3)
+          bonusPeau = 4;
+        bonus += bonusPeau;
+        expliquer("Peau d'écorce améliorée => +" + bonusPeau + " pour résister au poison");
+      }
     }
     let bonusAttrs = [];
     let bonusPreds = [];
@@ -17509,6 +17541,15 @@ var COFantasy = COFantasy || function() {
       dmgTotal = 0;
     }
     let rd;
+    let rdElems = 0;
+    if (attributeAsBool(target, 'protectionContreLesElements')) {
+      rdElems =
+        getValeurOfEffet(target, 'protectionContreLesElements', 1, 'voieDeLaMagieElementaire') * 2;
+      if (rdElems == 2) {
+        let v = predicateAsInt(target, 'voieDeLaMagieElementaliste');
+        if (v > 1) rdElems = 2 * v;
+      }
+    }
     if (dmgTotal > 0 && immuniseAuType(target, mainDmgType, options.attaquant)) {
       if (expliquer && !target['msgImmunite_' + mainDmgType]) {
         expliquer(nomPerso(target) + " ne semble pas affecté par " + stringOfType(mainDmgType));
@@ -17549,11 +17590,6 @@ var COFantasy = COFantasy || function() {
         }
         dmgDisplay += " - " + rdMain;
         showTotal = true;
-      }
-      var rdElems = 0;
-      if (attributeAsBool(target, 'protectionContreLesElements')) {
-        rdElems =
-          getValeurOfEffet(target, 'protectionContreLesElements', 1, 'voieDeLaMagieElementaire') * 2;
       }
       if (rd.elementaire) rdElems += rd.elementaire;
       if (target.ignoreMoitieRD) rdElems = parseInt(rdElems / 2);
@@ -25125,6 +25161,7 @@ var COFantasy = COFantasy || function() {
       ficheAttributeAsBool(perso, 'defbouclieron', false);
   }
 
+  //options doit être défini
   function effetTemporaire(playerId, cibles, effet, mEffet, duree, options) {
     const evt = {
       type: 'effetTemp',
@@ -27664,7 +27701,7 @@ var COFantasy = COFantasy || function() {
         });
         sendPerso(beneficiaire, " boit un fortifiant");
         soigneToken(beneficiaire, soins.val, evt, function(soinsEffectifs) {
-          var msgSoins = "et est soigné de ";
+          let msgSoins = "et est soigné de ";
           if (soinsEffectifs == soins.val) msgSoins += soins.roll + " PV";
           else msgSoins += soinsEffectifs + " PV (le jet était " + soins.roll + ")";
           sendPerso(beneficiaire, msgSoins);
@@ -27675,10 +27712,43 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function lancerSort(msg) {
-    var options = parseOptions(msg);
+  //Appliquer une huile instable sur l'arme de la cible
+  // Par défaut, c'est l'arme en main de la cible
+  // TODO: le faire pour les projectiles
+  // !cof-huile-instable @{target|token_id}
+  function huileInstable(msg) {
+    const options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    const cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 2) {
+      error("La fonction !cof-huile-instable attend en argument la personne dont il faut enflammer l'arme", cmd);
+      return;
+    }
+    let perso = persoOfId(cmd[1], cmd[1]);
+    if (perso === undefined) {
+      sendPlayer(msg, "Cible pour appliquer l'huile instable incorrecte");
+      return;
+    }
+    let arme = armesEnMain(perso);
+    if (arme === undefined) {
+      sendPerso(perso, "Doit tenir son arme en main pour qu'on puisse appliquer l'huile instable");
+      return;
+    }
+    let playerId = getPlayerIdFromMsg(msg);
+    let effet = 'armeEnflammee(' + arme.label + ')';
+    let mEffet = messageEffetTemp.armeEnflammee;
+    let intel = 0;
+    if (options.lanceur) {
+      intel = modCarac(options.lanceur, 'intelligence');
+    }
+    let duree = (5 + intel) * 6;
+    effetTemporaire(playerId, [perso], effet, mEffet, duree, options);
+  }
+
+  function lancerSort(msg) {
+    const options = parseOptions(msg);
+    if (options === undefined) return;
+    const cmd = options.cmd;
     if (cmd === undefined) return;
     if (options.messages === undefined) options.messages = [];
     if (cmd.length > 1) options.messages.unshift(cmd.slice(1).join(' '));
@@ -27696,16 +27766,16 @@ var COFantasy = COFantasy || function() {
           return;
         }
       }
-      var evt = {
+      const evt = {
         type: "lancement de sort"
       };
       addEvent(evt);
       if (options.lanceur) {
-        var lanceur = options.lanceur;
+        let lanceur = options.lanceur;
         if (options.tempeteDeMana) {
           if (options.tempeteDeMana.cout === 0) {
             //On demande de préciser les options
-            var optMana = {
+            let optMana = {
               mana: options.mana,
               dm: false,
               soins: false,
@@ -29151,16 +29221,14 @@ var COFantasy = COFantasy || function() {
       switch (typeAttaque) {
         case 'distance':
           attBonus += ficheAttributeAsInt(lanceur, 'ATKTIR_DIV', 0);
-          if (stateCOF.setting_arran ||
-            (stateCOF.setting_mixte && ficheAttribute(lanceur, 'option_setting', 'generique') == 'arran')) {
+          if (persoArran(lanceur)) {
             attBonus += ficheAttributeAsInt(lanceur, 'mod_atktir', 0);
           }
           attBonus += modCarac(lanceur, carac);
           break;
         case 'magique':
           attBonus += ficheAttributeAsInt(lanceur, 'ATKMAG_DIV', 0);
-          if (stateCOF.setting_arran ||
-            (stateCOF.setting_mixte && ficheAttribute(lanceur, 'option_setting', 'generique') == 'arran')) {
+          if (persoArran(lanceur)) {
             attBonus += ficheAttributeAsInt(lanceur, 'mod_atkmag', 0);
             attBonus += modCarac(lanceur, 'intelligence');
           } else {
@@ -29985,9 +30053,117 @@ var COFantasy = COFantasy || function() {
       }); //fin du test de carac
   }
 
-  var consommableNomRegExp = new RegExp(/^(repeating_equipement_.*_)equip_nom/);
-  var consommableQuantiteRegExp = new RegExp(/^(repeating_equipement_.*_)equip_qte/);
-  var consommableEffetRegExp = new RegExp(/^(repeating_equipement_.*_)equip_effet/);
+  const listeElixirs = [{
+      nom: 'Élixir fortifiant',
+      attrName: 'fortifiant',
+      action: "!cof-fortifiant $rang",
+      rang: 1
+    }, {
+      nom: 'Élixir de feu grégeois',
+      attrName: 'feu_grégeois',
+      action: "!cof-attack @{selected|token_id} @{target|token_id} Feu Grégeois --auto --dm $rangd6 --feu --psave DEX [[10+@{selected|INT}]] --disque 3 --portee 10 --targetFx burst-fire",
+      rang: 2
+    }, {
+      nom: 'Élixir de guérison',
+      attrName: 'élixir_de_guérison',
+      action: "!cof-soin 3d6+$INT",
+      rang: 3
+    }, {
+      nom: "Élixir d'agrandissement",
+      attrName: "potion_d_agrandissement",
+      action: "!cof-effet-temp agrandissement [[5+$INT]]",
+      rang: 4
+    }, {
+      nom: "Élixir de forme gazeuse",
+      attrName: "potion_de_forme_gazeuse",
+      action: "!cof-effet-temp formeGazeuse [[1d4+$INT]]",
+      rang: 4
+    }, {
+      nom: "Élixir de protection contre les éléments",
+      attrName: "potion_de_protection_contre_les_éléments",
+      action: "!cof-effet-temp protectionContreLesElements [[5+$INT]] --valeur $rang",
+      rang: 4
+    }, {
+      nom: "Élixir d'armure de mage",
+      attrName: "potion_d_armure_de_mage",
+      action: "!cof-effet-combat armureDuMage",
+      rang: 4
+    }, {
+      nom: "Élixir de chute ralentie",
+      attrName: "potion_de_chute_ralentie",
+      action: "est léger comme une plume.",
+      rang: 4
+    }, {
+      nom: "Élixir d'invisibilité",
+      attrName: "potion_d_invisibilité",
+      action: "!cof-set-state invisible true --message se rend invisible ([[1d6+$INT]] minutes)",
+      rang: 5
+    }, {
+      nom: "Élixir de vol",
+      attrName: "potion_de_vol",
+      action: "se met à voler",
+      rang: 5
+    }, {
+      nom: "Élixir de respiration aquatique",
+      attrName: "potion_de_respiration_aquatique",
+      action: "peut respirer sous l'eau",
+      rang: 5
+    }, {
+      nom: "Élixir de flou",
+      attrName: "potion_de_flou",
+      action: "!cof-effet-temp flou [[1d4+$INT]]",
+      rang: 5
+    }, {
+      nom: "Élixir de hâte",
+      attrName: "potion_de_hâte",
+      action: "!cof-effet-temp hate [[1d6+$INT]]",
+      rang: 5
+    },
+    //Le élixirs pour les terres d'Arran
+    {
+      nom: 'Huile instable',
+      attrName: 'huileInstable',
+      action: "!cof-huile-instable @{target|token_id}",
+      rang: 3,
+      arran: true
+    }, {
+      nom: 'Élixir de guérison',
+      attrName: 'élixirGuérison',
+      action: "!cof-soin 3d6+$INT",
+      rang: 4,
+      arran: true
+    }, {
+      nom: "Élixir de peau d'écorce",
+      attrName: 'peauEcorce',
+      action: "!cof-effet-temp peauDEcorce [[5+$SAG]] --valeur 4",
+      rang: 5,
+      arran: true
+    }, {
+      nom: "Élixir d'image décalée",
+      attrName: 'imageDecalee',
+      action: "!cof-effet-temp imageDecalee [[5+$SAG]]",
+      rang: 5,
+      arran: true
+    }, {
+      nom: "Élixir de protection contre les éléments",
+      attrName: 'protectionContreElements',
+      action: "!cof-effet-temp protectionContreLesElements [[5+$SAG]] --valeur 5",
+      rang: 5,
+      arran: true
+    },
+  ];
+
+  function exilirInconnu(elixir, perso, voieDesElixirs) {
+    if (elixir.rang > voieDesElixirs) return true;
+    if (elixir.rang < 3) return false;
+    if (persoArran(perso)) return !elixir.arran;
+    return elixir.arran;
+  }
+
+
+  const consommableNomRegExp = new RegExp(/^(repeating_equipement_.*_)equip_nom/);
+  const consommableQuantiteRegExp = new RegExp(/^(repeating_equipement_.*_)equip_qte/);
+  const consommableEffetRegExp = new RegExp(/^(repeating_equipement_.*_)equip_effet/);
 
   function listeConsommables(msg) {
     getSelected(msg, function(selected, playerId) {
@@ -30031,9 +30207,9 @@ var COFantasy = COFantasy || function() {
           }
           //Consommables dans des attributs utilisateurs
           if (!(attrName.startsWith('dose_') || attrName.startsWith('consommable_') || attrName.startsWith('elixir_'))) return;
-          var consName;
+          let consName;
           if (attrName.startsWith("elixir_")) {
-            var typeElixir = listeElixirs(5).find(function(i) {
+            let typeElixir = listeElixirs.find(function(i) {
               return "elixir_" + i.attrName == attrName;
             });
             if (typeElixir !== undefined) {
@@ -30044,7 +30220,7 @@ var COFantasy = COFantasy || function() {
             consName = attrName.substring(attrName.indexOf('_') + 1);
             consName = consName.replace(/_/g, ' ');
           }
-          var quantite = parseInt(attr.get('current'));
+          let quantite = parseInt(attr.get('current'));
           if (isNaN(quantite) || quantite === 0) return;
           var action = attr.get('max').trim();
           while (consommables[attrName]) {
@@ -30577,90 +30753,22 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function listeElixirs(rang) {
-    let liste = [{
-      nom: 'Élixir fortifiant',
-      attrName: 'fortifiant',
-      action: "!cof-fortifiant $rang",
-      rang: 1
-    }];
-    if (rang < 2) return liste;
-    liste.push({
-      nom: 'Élixir de feu grégeois',
-      attrName: 'feu_grégeois',
-      action: "!cof-attack @{selected|token_id} @{target|token_id} Feu Grégeois --auto --dm $rangd6 --feu --psave DEX [[10+@{selected|INT}]] --disque 3 --portee 10 --targetFx burst-fire",
-      rang: 2
-    });
-    if (rang < 3) return liste;
-    liste.push({
-      nom: 'Élixir de guérison',
-      attrName: 'élixir_de_guérison',
-      action: "!cof-soin 3d6+$INT",
-      rang: 3
-    });
-    if (rang < 4) return liste;
-    liste.push({
-      nom: "Élixir d'agrandissement",
-      attrName: "potion_d_agrandissement",
-      action: "!cof-effet-temp agrandissement [[5+$INT]]",
-      rang: 4
-    });
-    liste.push({
-      nom: "Élixir de forme gazeuse",
-      attrName: "potion_de_forme_gazeuse",
-      action: "!cof-effet-temp formeGazeuse [[1d4+$INT]]",
-      rang: 4
-    });
-    liste.push({
-      nom: "Élixir de protection contre les éléments",
-      attrName: "potion_de_protection_contre_les_éléments",
-      action: "!cof-effet-temp protectionContreLesElements [[5+$INT]] --valeur $rang",
-      rang: 4
-    });
-    liste.push({
-      nom: "Élixir d'armure de mage",
-      attrName: "potion_d_armure_de_mage",
-      action: "!cof-effet-combat armureDuMage",
-      rang: 4
-    });
-    liste.push({
-      nom: "Élixir de chute ralentie",
-      attrName: "potion_de_chute_ralentie",
-      action: "est léger comme une plume.",
-      rang: 4
-    });
-    if (rang < 5) return liste;
-    liste.push({
-      nom: "Élixir d'invisibilité",
-      attrName: "potion_d_invisibilité",
-      action: "!cof-set-state invisible true --message se rend invisible ([[1d6+$INT]] minutes)",
-      rang: 5
-    });
-    liste.push({
-      nom: "Élixir de vol",
-      attrName: "potion_de_vol",
-      action: "se met à voler",
-      rang: 5
-    });
-    liste.push({
-      nom: "Élixir de respiration aquatique",
-      attrName: "potion_de_respiration_aquatique",
-      action: "peut respirer sous l'eau",
-      rang: 5
-    });
-    liste.push({
-      nom: "Élixir de flou",
-      attrName: "potion_de_flou",
-      action: "!cof-effet-temp flou [[1d4+$INT]]",
-      rang: 5
-    });
-    liste.push({
-      nom: "Élixir de hâte",
-      attrName: "potion_de_hâte",
-      action: "!cof-effet-temp hate [[1d6+$INT]]",
-      rang: 5
-    });
-    return liste;
+  function rangVoieDesElixirs(perso, noMsg) {
+    let arran = persoArran(perso);
+    let voieDesElixirs;
+    if (arran) {
+      voieDesElixirs = predicateAsInt(perso, 'voieDeLAlchimie', 0);
+      if (voieDesElixirs === 0)
+        voieDesElixirs = predicateAsInt(perso, 'voieDesElixirs', 0);
+    } else voieDesElixirs = predicateAsInt(perso, 'voieDesElixirs', 0);
+    if (voieDesElixirs < 1 && !noMsg) {
+      if (arran)
+        sendPerso(perso, "ne connaît pas la Voie de l'Alchimie");
+      else
+        sendPerso(perso, "ne connaît pas la Voie des Élixirs");
+      return;
+    }
+    return voieDesElixirs;
   }
 
   //!cof-creer-elixir token_id elixir
@@ -30689,15 +30797,13 @@ var COFantasy = COFantasy || function() {
         };
       }
     }
-    let voieDesElixirs = predicateAsInt(forgesort, 'voieDesElixirs', 0);
-    if (voieDesElixirs < 1) {
-      sendPerso(forgesort, "ne connaît pas la Voie des Élixirs");
-      return;
-    }
-    let elixir = listeElixirs(voieDesElixirs).find(function(i) {
+    let voieDesElixirs = rangVoieDesElixirs(forgesort);
+    if (!voieDesElixirs) return;
+    let elixir = listeElixirs.find(function(i) {
+      if (exilirInconnu(i, forgesort, voieDesElixirs)) return false;
       return i.attrName == cmd[2];
     });
-    if (elixir === undefined) {
+    if (elixir === undefined) { //Version perso des élixirs
       let altElixirs = findObjs({
         _type: 'attribute',
         _characterid: forgesort.charId
@@ -30726,7 +30832,9 @@ var COFantasy = COFantasy || function() {
       type: "Création d'élixir"
     };
     addEvent(evt);
-    if (reglesOptionelles.mana.val.elixirs_sorts.val && ficheAttributeAsBool(forgesort, 'option_pm', true)) {
+    let arran = persoArran(forgesort);
+    //Dépense de mana
+    if (!arran && reglesOptionelles.mana.val.elixirs_sorts.val && ficheAttributeAsBool(forgesort, 'option_pm', true)) {
       if (reglesOptionelles.mana.val.mana_totale.val) {
         switch (elixir.rang) {
           case 1:
@@ -30749,20 +30857,32 @@ var COFantasy = COFantasy || function() {
         options.mana = elixir.rang - 2;
       }
     }
-    // Robustesse DecrAttr multi-cmd
-    let elixirsACreer = charAttribute(forgesort.charId, "elixirsACreer");
+    let elixirsACreer = charAttribute(forgesort.charId, 'elixirsACreer');
     if (elixirsACreer.length === 0) {
       error(nomPerso(forgesort) + " ne peut créer d'élixirs " + cmd[2], cmd);
       return;
     }
-    options.decrAttribute = elixirsACreer[0].id;
+    elixirsACreer = elixirsACreer[0];
+    let extraFortifiants = toInt(elixirsACreer.get('max'), 0);
+    let extra = extraFortifiants > 0 && elixir.rang == 1;
+    if (!extra) options.decrAttribute = elixirsACreer.id;
     if (limiteRessources(forgesort, options, 'elixirsACreer', 'élixirs à créer', evt)) return;
+    if (extra) {
+      evt.attributes = evt.attributes || [];
+      evt.attributes.push({
+        attribute: elixirsACreer,
+        current: elixirsACreer.get('current'),
+        max: extraFortifiants
+      });
+      elixirsACreer.set('max', extraFortifiants - 1);
+    }
     let attrName = 'elixir_' + elixir.attrName;
     let message = "crée un " + elixir.nom;
     let attr = tokenAttribute(forgesort, attrName);
     if (attr.length === 0) {
-      var action = elixir.action.replace(/\$rang/g, voieDesElixirs);
+      let action = elixir.action.replace(/\$rang/g, voieDesElixirs);
       action = action.replace(/\$INT/g, modCarac(forgesort, 'intelligence'));
+      action = action.replace(/\$SAG/g, modCarac(forgesort, 'sagesse'));
       setTokenAttr(forgesort, attrName, 1, evt, {
         msg: message,
         maxVal: action
@@ -30778,35 +30898,48 @@ var COFantasy = COFantasy || function() {
 
   function gestionElixir(msg) {
     getSelected(msg, function(selected, playerId) {
-      let player = getObj('player', playerId);
-      if (player === undefined) {
-        error("Impossible de trouver le joueur", playerId);
-        return;
-      }
       iterSelected(selected, function(forgesort) {
-        let voieDesElixirs = predicateAsInt(forgesort, 'voieDesElixirs', 0);
-        if (voieDesElixirs < 1) {
-          sendPerso(forgesort, "ne connaît pas la Voie des Élixirs");
-          return;
-        }
+        let voieDesElixirs = rangVoieDesElixirs(forgesort);
+        if (!voieDesElixirs) return;
         let elixirsACreer = voieDesElixirs * 2;
+        let fortifiantExtra = 0;
         let attrElixirs = tokenAttribute(forgesort, 'elixirsACreer');
         if (attrElixirs.length === 0) {
           //TODO: ajouter un evenement pour pouvoir faire un undo
-          attrElixirs = setTokenAttr(forgesort, 'elixirsACreer', elixirsACreer, {});
+          let opt = {};
+          if (predicateAsBool(forgesort, 'fortifiantAvance')) {
+            opt.maxVal = 2;
+            fortifiantExtra = 2;
+          }
+          attrElixirs = setTokenAttr(forgesort, 'elixirsACreer', elixirsACreer, {}, opt);
         } else {
           attrElixirs = attrElixirs[0];
-          elixirsACreer = parseInt(attrElixirs.get('current'));
-          if (isNaN(elixirsACreer)) elixirsACreer = 0;
+          elixirsACreer = toInt(attrElixirs.get('current'), 0);
+          fortifiantExtra = toInt(attrElixirs.get('max'), 0);
         }
         let titre;
-        if (elixirsACreer < 1)
-          titre = "Impossible de créer un autre élixir aujourd'hui";
-        else titre = "Encore " + elixirsACreer + " élixirs à créer";
+        if (elixirsACreer < 1) {
+          if (fortifiantExtra < 1)
+            titre = "Impossible de créer un autre élixir aujourd'hui";
+          else {
+            titre = "Encore " + fortifiantExtra + " fortifiant";
+            if (fortifiantExtra > 1) titre += 's';
+            titre += "à créer";
+          }
+        } else {
+          titre = "Encore " + elixirsACreer + " élixir";
+          if (elixirsACreer > 1) titre += 's';
+          if (fortifiantExtra > 0) {
+            titre += " et " + fortifiantExtra + " fortifiant";
+            if (fortifiantExtra > 1) titre += 's';
+          }
+          titre += " à créer";
+        }
         let display = startFramedDisplay(playerId, titre, forgesort, {
           chuchote: true
         });
-        listeElixirs(voieDesElixirs).forEach(function(elixir) {
+        listeElixirs.forEach(function(elixir) {
+          if (exilirInconnu(elixir, forgesort, voieDesElixirs)) return;
           if (elixir.rang < 4) {
             //Il est possible de changer l'élixir par défaut
             let altElixir = charAttribute(forgesort.charId, 'Elixir ' + elixir.rang);
@@ -30826,7 +30959,7 @@ var COFantasy = COFantasy || function() {
           let nomElixir = elixir.nom;
           let options = '';
           let action;
-          if (elixirsACreer > 0) {
+          if (elixirsACreer > 0 || (elixir.rang == 1 && fortifiantExtra > 0)) {
             action = "!cof-creer-elixir ";
             if (forgesort.token) action += forgesort.token.id;
             else action += forgesort.charId;
@@ -30839,6 +30972,7 @@ var COFantasy = COFantasy || function() {
             action = elixir.action;
             action = action.replace(/\$rang/g, voieDesElixirs);
             action = action.replace(/\$INT/g, modCarac(forgesort, 'intelligence'));
+            action = action.replace(/\$SAG/g, modCarac(forgesort, 'sagesse'));
             options += bouton(action, nomElixir, forgesort, {
               ressource: attr
             });
@@ -30900,7 +31034,7 @@ var COFantasy = COFantasy || function() {
       if (personnage === undefined) personnage = {
         charId
       };
-      let voieDesElixirs = predicateAsInt(personnage, 'voieDesElixirs');
+      let voieDesElixirs = rangVoieDesElixirs(personnage, true);
       //TODO: réfléchir à une solution pour le renouveau des élixirs échangés
       if (voieDesElixirs > 0) {
         let elixirsDuForgesort = forgesorts[charId];
@@ -30913,7 +31047,8 @@ var COFantasy = COFantasy || function() {
         }
         // Check de l'élixir à renouveler
         let nomElixir = attr.get('name');
-        let typeElixir = listeElixirs(voieDesElixirs).find(function(i) {
+        let typeElixir = listeElixirs.find(function(i) {
+          if (i.rang > voieDesElixirs) return false;
           return "elixir_" + i.attrName == nomElixir;
         });
         if (typeElixir === undefined) {
@@ -30956,7 +31091,11 @@ var COFantasy = COFantasy || function() {
         playerId = allPlayers[0];
       }
       let forgesort = elixirsDuForgesort.forgesort;
-      setTokenAttr(forgesort, "elixirsACreer", elixirsDuForgesort.voieDesElixirs * 2, evt);
+      let opt = {};
+      if (predicateAsBool(forgesort, 'fortifiantAvance')) {
+        opt.maxVal = 2;
+      }
+      setTokenAttr(forgesort, 'elixirsACreer', elixirsDuForgesort.voieDesElixirs * 2, evt, opt);
       let display = startFramedDisplay(allPlayers[0], "Renouveler les élixirs", forgesort, displayOpt);
       let actionToutRenouveler = "";
       // Boucle par rang de rune
@@ -38618,6 +38757,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-foudre-du-temps':
         setFoudreDuTemps(msg);
         return;
+      case '!cof-huile-instable':
+        huileInstable(msg);
+        return;
       case '!cof-jet':
         jet(msg);
         return;
@@ -41421,7 +41563,7 @@ var COFantasy = COFantasy || function() {
     });
     if (attrs.length === 0) {
       nb = nb || 1;
-      if (nb < 10) {
+      if (nb < 9) {
         _.delay(function() {
           scriptVersionToCharacter(character, nb + 1);
         }, 2000);

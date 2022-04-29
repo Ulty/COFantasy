@@ -2695,12 +2695,13 @@ tr {line-height: 25px;}
                   </li>
                 </ul>
                 <h4 class="text-secondary">Voie de l’alchimie</h4>
+                <p style="margin-top:0px; margin-bottom:0px">Pour créer ou juste voir ses élixirs, utiliser la commande <code>!cof-elixirs</code>. Pour cela, il faut aussi un <a href=#predicats>prédicat</a> <code>voieDeLAlchimie</code> avec comme valeur le rang dans la voie. Noter que la commande <code>!cof-elixirs</code> affiche une liste d'élixirs, et que pour effectivement créer un élixir, il faut cliquer sur le bouton correspondant dans cette liste.</p>
                 <ol>
-                  <li><strong>Fortifiant :</strong> En Attente </li>
-                  <li><strong>Feu grégeois :</strong> En Attente </li>
-                  <li><strong>Huile instable :</strong> En Attente </li>
-                  <li><strong>Élixir de guérison :</strong> En Attente </li>
-                  <li><strong>Élixirs de Protection :</strong> En Attente </li>
+                  <li><strong>Fortifiant :</strong> création à l'aide de <code>!cof-elixirs</code>, et utilisation avec la même commande, ou bien en utilisant <code>!cof-consommables</code>. Pour la version avancée, ajouter un prédicat <code>fortiviantAvance</code></li>
+                  <li><strong>Feu grégeois :</strong> création à l'aide de <code>!cof-elixirs</code>, et utilisation avec la même commande, ou bien en utilisant <code>!cof-consommables</code>. Pas de support pour la version avancée pour l'instant : utiliser <code>!cof-dmg <i>rang</i> --feu</code> pour les personnages qui auraient raté leur jet de DEX.</li>
+                  <li><strong>Huile instable :</strong> création à l'aide de <code>!cof-elixirs</code>, et utilisation avec la même commande, ou bien en utilisant <code>!cof-consommables</code>.</li>
+                  <li><strong>Élixir de guérison :</strong> création à l'aide de <code>!cof-elixirs</code>, et utilisation avec la même commande, ou bien en utilisant <code>!cof-consommables</code>.</li>
+                  <li><strong>Élixirs de Protection :</strong> création à l'aide de <code>!cof-elixirs</code>, et utilisation avec la même commande, ou bien en utilisant <code>!cof-consommables</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie des arts druidiques</h4>
                 <ol>
@@ -2728,7 +2729,8 @@ tr {line-height: 25px;}
                 </ol>
                 <h4 class="text-secondary">Voie des forêts</h4>
                 <ol>
-                  <li><strong>Peau d’écorce* :</strong> En Attente </li>
+                  <li><strong>Peau d’écorce* :</strong>
+                    <code>!cof-effet-temp peauDEcorce [[5+@{selected|SAG}]] ?{Magie|Normale,--mana 1|Économe (L),--mana 0|Étendue (L),--puissant duree --mana 1}</code>. Si le personnage a un <a href=#predicats>prédicat</a> <code>voieDesForets</code> de valeur 4 ou plus, le bonus sera de +4 en DEF. Ajouter un prédicat <code>peauDEcorceAvancee</code> pour la version en capacité avancée.</li>
                   <li><strong>Prison végétale* :</strong> En Attente </li>
                   <li><strong>Baies magiques* :</strong> En Attente </li>
                   <li><strong>Animation d’un arbre* :</strong> En Attente </li>
@@ -2736,7 +2738,7 @@ tr {line-height: 25px;}
                 </ol>
                 <h4 class="text-secondary">Voie des illusions</h4>
                 <ol>
-                  <li><strong>Image décalée* :</strong> En Attente </li>
+                  <li><strong>Image décalée* :</strong> <code>!cof-effet-temp imageDecalee [[5+@{selected|SAG}]] ?{Magie|Normale,--mana 1|Économe (L),--mana 0|Étendue (L),--puissant duree --mana 1}</code>. Pour la version avancée de la capacité, ajouter un prédicat <code>imageDecaleeAvancee</code>.</li>
                   <li><strong>Mirage* :</strong> En Attente </li>
                   <li><strong>Imitation* :</strong> En Attente </li>
                   <li><strong>Dédoublement* :</strong> En Attente </li>
@@ -2746,8 +2748,16 @@ tr {line-height: 25px;}
                 <ol>
                   <li><strong>Brumes* :</strong>
                   <code>!cof-tenebres @{selected|token_id} @{target|token_id} --brumes --mana 1</code>. La commande pose un token de brouillard pour visualiser la zone. Tous les tokens présents dans la zone au lancement du sort sont automatiquement dans l'état pénombre. Au MJ ensuite d'enlever l'état pénombre quand les cibles sortent de la zone. A la fin de la durée du sort, ou à la fin du combat, la zone et les états pénombre restant disparaissent automatiquement. Il est aussi possible de changer les valeurs par défaut du sort (portée 20m, rayon 20m) avec les options <code>--portee X</code> et <code>--rayon X</code>. En règle custom, l'option <code>puissant</code> permet de doubler la superficie couverte (le script calcule le rayon approprié si custom).</li>
-                  <li><strong>Sous tension* :</strong> En Attente </li>
-                  <li><strong>Armure de terre* :</strong> En Attente </li>
+                  <li><strong>Sous tension* :</strong>
+                    <ul>
+                      <li><code>!cof-effet-temp sousTension [[5+@{selected|SAG}]] ?{Magie|Normale,--mana 2|Économe (L),--mana 0|Étendue (L),--puissant duree --mana 2|Puissante (L),--puissant --mana 2}</code> pour lancer le sort et mettre le personnage sous tension</li>
+                      <li>Ajouter une attaque sur la fiche utilisant l'attaque magique, dommages 1d6+INT, portée 10, type Sortilège, dégâts électriques, options <code>--si etat sousTension --fx beam-holy</code>.</li>
+                      <li>Utiliser un prédicat <code>voieDeLaMagieElementaliste</code> de valeur le rang dans la voie pour le passage des dégâts à 2d6 quand le personnage est touché.</li>
+                      <li>Pas de support particulier pour la version avancée.</li>
+                    </ul>
+                  </li>
+                  <li><strong>Armure de terre* :</strong>
+                  bien utiliser un <a href=#predicats>prédicat</a> <code>voieDeLaMagieElementaliste</code> avec comme valeur le rang dans la voie. Pour lancer le sort, faire <code>!cof-effet-temp protectionContreLesElements [[5+@{selected|SAG}]] ?{Magie|Normale,--mana 3|Économe (L),--mana 1|Étendue (L),--puissant duree --mana 3}</code>.</li>
                   <li><strong>Boule de feu* :</strong> En Attente </li>
                   <li><strong>Intelligence héroïque :</strong> En Attente </li>
                 </ol>
