@@ -21371,6 +21371,9 @@ var COFantasy = COFantasy || function() {
       case 'effetTemp':
         effetTemporaire(action.playerId, action.cibles, action.effet, action.mEffet, action.duree, options);
         return true;
+      case 'Effet':
+  effetIndetermine(action.playerId, action.cibles, action.effet, action.activer, action.valeur, action.options);
+        return true;
       case 'enduireDePoison':
         doEnduireDePoison(action.perso, action.armeEnduite, action.savePoison, action.forcePoison, action.attribut,
           action.testINT, action.infosAdditionelles, options);
@@ -25486,6 +25489,11 @@ var COFantasy = COFantasy || function() {
             return;
           }
         }
+        if (activer) {
+          if (attributeAsBool(perso, effet)) return;
+        } else {
+          if (!attributeAsBool(perso, effet)) return;
+        }
         cibles.push(perso);
       });
       if (cibles.length == 0) {
@@ -25509,7 +25517,7 @@ var COFantasy = COFantasy || function() {
 
   function effetIndetermine(playerId, cibles, effet, activer, valeur, options) {
     const evt = {
-      type: 'Effet indetermine',
+      type: 'Effet',
       action: {
         titre: "Effet " + effet,
         playerId,
@@ -25556,9 +25564,13 @@ var COFantasy = COFantasy || function() {
       }
       let msgEffet = whisper + messageEffetIndetermine[effet].activation;
       cibles.forEach(function(perso) {
+        let expliquer = function(s) {
+          sendPerso(perso, s);
+        };
+        let doit = function () {
         if (options.valeurAjoutee) {
           addToAttributeAsInt(perso, effet, 0, options.valeurAjoutee, evt);
-          sendPerso(perso, effet + " varie de " + options.valeurAjoutee, options.secret);
+          expliquer(effet + " varie de " + options.valeurAjoutee, options.secret);
         } else {
 
           setTokenAttr(
@@ -25585,6 +25597,24 @@ var COFantasy = COFantasy || function() {
         }
         if (options.tempeteDeManaIntense !== undefined) {
           setTokenAttr(perso, effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
+        }
+        };
+        if (options.save) {
+          let saveOpts = {
+            msgPour: options.save.msgPour || " pour résister à l'effet " + effet,
+            msgRate: ", raté.",
+            attaquant: lanceur,
+            rolls: options.rolls,
+            chanceRollId: options.chanceRollId,
+            type: options.type
+          };
+          let saveId = 'effet_' + effet + "_" + perso.token.id;
+          save(options.save, perso, saveId, expliquer, saveOpts, evt,
+            function(reussite, rollText) {
+              if (!reussite) doit();
+            });
+        } else {
+          doit();
         }
       });
     } else {
@@ -41099,6 +41129,7 @@ var COFantasy = COFantasy || function() {
       if (isNaN(portee) || portee < 0) return;
       let charId = aura.get('characterid');
       let targets = {};
+      let effet = aura.get('max');
       //For each token representing that character
       allPersos.forEach(function(perso) {
         if (perso.charId != charId) return;
@@ -41110,6 +41141,7 @@ var COFantasy = COFantasy || function() {
           if (target.charId == charId) return;
           if (distanceCombat(perso.token, target.token, pageId) > portee) return;
           tokName = tokName || nomPerso(perso);
+          effet += " --lanceur " + perso.token.id;
           targets[target.token.id] = tokName;
         });
       });
@@ -41126,7 +41158,6 @@ var COFantasy = COFantasy || function() {
           return;
         }
       }
-      let effet = aura.get('max');
       if (effet.includes('$TOKEN')) {
         //On groupe les cibles par token qui génère l'aura
         let targetsPerSource = {};
@@ -41135,7 +41166,7 @@ var COFantasy = COFantasy || function() {
           targetsPerSource[auraTokName].add(tid);
         });
         _.forEach(targetsPerSource, function(tset, auraTokenName) {
-          var effetFinal = effet.replace(/\$TOKEN/g, auraTokenName);
+          let effetFinal = effet.replace(/\$TOKEN/g, auraTokenName);
           tset.forEach(function(tid) {
             effetFinal += " --target " + tid;
           });
