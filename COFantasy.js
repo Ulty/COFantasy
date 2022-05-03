@@ -3969,7 +3969,7 @@ var COFantasy = COFantasy || function() {
     }
     if (evt.characters) {
       evt.characters.forEach(function(character) {
-        var charId = character.id;
+        let charId = character.id;
         findObjs({
           _type: 'attribute',
           _characterid: charId
@@ -25234,26 +25234,26 @@ var COFantasy = COFantasy || function() {
   }
 
   function effetCombat(msg) {
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined || cmd.length < 2) {
       error("Pas assez d'arguments pour !cof-effet-combat", msg.content);
       return;
     }
-    var effet = cmd[1];
+    let effet = cmd[1];
     if (!estEffetCombat(effet)) {
       error(effet + " n'est pas un effet de combat répertorié", msg.content);
       return;
     }
-    var evt = {
+    const evt = {
       type: 'Effet ' + effet
     };
-    var lanceur = options.lanceur;
-    var charId;
+    let lanceur = options.lanceur;
+    let charId;
     if (lanceur) charId = lanceur.charId;
     getSelected(msg, function(selected, playerId) {
-      var whisper = '';
+      let whisper = '';
       if (options.secret) {
         let player;
         if (playerId) player = getObj('player', playerId);
@@ -25278,7 +25278,7 @@ var COFantasy = COFantasy || function() {
       if (lanceur && options.tempeteDeMana) {
         if (options.tempeteDeMana.cout === 0) {
           //On demande de préciser les options
-          var optMana = {
+          let optMana = {
             mana: options.mana,
             dm: messageEffetCombat[effet].dm,
             soins: messageEffetCombat[effet].soins,
@@ -25301,8 +25301,8 @@ var COFantasy = COFantasy || function() {
       if (options.portee !== undefined) {
         if (options.puissantPortee || options.tempeteDeManaPortee) options.portee = options.portee * 2;
         selected = selected.filter(function(sel) {
-          var token = getObj('graphic', sel._id);
-          var dist = distanceCombat(lanceur.token, token);
+          let token = getObj('graphic', sel._id);
+          let dist = distanceCombat(lanceur.token, token);
           if (dist > options.portee) {
             whisperChar(charId, " est trop loin de " + token.get('name'));
             return false;
@@ -25316,11 +25316,11 @@ var COFantasy = COFantasy || function() {
         return;
       }
       initiative(selected, evt);
-      var mEffet = messageEffetCombat[effet];
-      var actMsg = mEffet.activation;
-      var img = options.image;
+      let mEffet = messageEffetCombat[effet];
+      let actMsg = mEffet.activation;
+      let img = options.image;
       if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
-        var newLineimg = '<span style="padding: 4px 0;" >  ';
+        let newLineimg = '<span style="padding: 4px 0;" >  ';
         newLineimg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
         newLineimg += '</span>';
         actMsg += newLineimg;
@@ -25330,7 +25330,7 @@ var COFantasy = COFantasy || function() {
           sendPerso(perso, "ne saigne pas");
           return;
         }
-        var effetAttr = setTokenAttr(perso, effet, true, evt, {
+        let effetAttr = setTokenAttr(perso, effet, true, evt, {
           msg: whisper + actMsg
         });
         if (options.lanceur && options.mana !== undefined && mEffet.prejudiciable) {
@@ -25403,12 +25403,12 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function effetIndetermine(msg) {
+  function parseEffetIndetermine(msg) {
     let options = parseOptions(msg);
     if (options === undefined) return;
     let cmd = options.cmd;
-    if (cmd === undefined || cmd.length < 2) {
-      error("Pas assez d'arguments pour !cof-effet", msg.content);
+    if (cmd === undefined || cmd.length < 3) {
+      error("Pas assez d'arguments pour !cof-effet-temp", msg.content);
       return;
     }
     let effet = cmd[1];
@@ -25425,12 +25425,14 @@ var COFantasy = COFantasy || function() {
         case 'true':
         case 'début':
         case 'debut':
+          valeur = true;
           activer = true;
           break;
         case 'non':
         case 'Non':
         case 'false':
         case 'fin':
+          valeur = false;
           activer = false;
           break;
         default:
@@ -25440,23 +25442,14 @@ var COFantasy = COFantasy || function() {
             return;
           }
           activer = valeur !== 0;
+          if (cmd[2].startsWith('+') || valeur < 0)
+            options.valeurAjoutee = valeur;
       }
     }
-    const evt = {
-      type: 'Effet ' + effet
-    };
     let lanceur = options.lanceur;
     let charId;
     if (lanceur) charId = lanceur.charId;
-    getSelected(msg, function(selected, playerId) {
-      let whisper = '';
-      if (options.secret) {
-        let player;
-        if (playerId) player = getObj('player', playerId);
-        if (player !== undefined) {
-          whisper = '/w "' + player.get('displayname') + '" ';
-        }
-      }
+    getSelected(msg, function(selected, playerId, aoe) {
       if (selected === undefined || selected.length === 0) {
         sendPlayer(msg, "Pas de cible sélectionée pour l'effet", playerId);
         return;
@@ -25468,23 +25461,38 @@ var COFantasy = COFantasy || function() {
         }
         if (selected.length == 1) {
           lanceur = persoOfId(selected[0]._id);
-          if (lanceur) charId = lanceur.charId;
+          if (lanceur) {
+            options.lanceur = lanceur;
+            charId = lanceur.charId;
+          }
         }
       }
-      if (options.portee !== undefined) {
-        selected = selected.filter(function(sel) {
-          let token = getObj('graphic', sel._id);
-          let dist = distanceCombat(lanceur.token, token);
-          if (dist > options.portee) {
-            whisperChar(charId, " est trop loin de " + token.get('name'));
-            return false;
-          }
-          return true;
-        });
+      if (lanceur && options.tempeteDeMana) {
+        if (options.rang && options.tempeteDeMana.cout > options.rang) {
+          sendPlayer(msg, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
+        }
+        if (selected.length == 1 && options.tempeteDeMana.altruiste) {
+          selected[0]._id = options.tempeteDeMana.altruiste.token.id;
+          if (options.portee === undefined) options.portee = 0;
+        }
       }
-      if (selected.length === 0) return;
+      let cibles = [];
+      iterSelected(selected, function(perso) {
+        if (options.portee !== undefined) {
+          if (options.puissantPortee || options.tempeteDeManaPortee) options.portee = options.portee * 2;
+          let dist = distanceCombat(lanceur.token, perso.token);
+          if (dist > options.portee) {
+            sendPerso(perso, " est trop loin de " + nomPerso(perso));
+            return;
+          }
+        }
+        cibles.push(perso);
+      });
+      if (cibles.length == 0) {
+        return;
+      }
       if (activer === undefined) {
-        if (selected.length > 1) {
+        if (cibles.length > 1) {
           sendPlayer(msg, "On ne peut sélectionner qu'un token si on ne précise pas si il faut activer ou désactiver l'effet");
           return;
         }
@@ -25495,92 +25503,113 @@ var COFantasy = COFantasy || function() {
         }
         activer = !attributeAsBool(perso, effet);
       }
-      if (activer) {
-        if (limiteRessources(lanceur, options, effet, effet, evt)) {
-          addEvent(evt);
-          return;
-        }
-        if (options.classeEffet) {
-          selected = selected.filter(function(sel) {
-            let perso = persoOfId(sel._id);
-            if (perso === undefined) return false;
-            if (attributeAsBool(perso, options.classeEffet)) {
-              let attrDeClasse = attributesOfClass(perso, options.classeEffet);
-              let mpc = "Non cumulable avec";
-              attrDeClasse.forEach(function(attrClasseEffet) {
-                let attr = attrClasseEffet.baseAttribute;
-                let attrName = attr.get('name');
-                if (estEffetIndetermine(attrName))
-                  mpc += ' ' + messageEffetIndetermine[effetIndetermineOfAttribute(attr)].actif;
-                else mpc += ' ' + attrName;
-              });
-              sendPerso(perso, mpc, options.secret);
-              return false;
-            }
-            setTokenAttr(perso, options.classeEffet, true, evt);
-            setTokenAttr(perso, effet + 'ClasseEffet', options.classeEffet, evt);
-            return true;
-          });
-        }
-        let msgEffet = whisper + messageEffetIndetermine[effet].activation;
-        let val = (valeur === undefined) ? true : valeur;
-        iterSelected(selected, function(perso) {
-          if (valeur !== undefined && (cmd[2].startsWith('+') || valeur < 0)) {
-            addToAttributeAsInt(perso, effet, 0, valeur, evt);
-            sendPerso(perso, effet + " varie de " + valeur, options.secret);
-          } else {
+      effetIndetermine(playerId, cibles, effet, activer, valeur, options);
+    }, options);
+  }
 
-            setTokenAttr(
-              perso, effet, val, evt, {
-                msg: msgEffet
-              });
-            switch (effet) {
-              case 'foretVivanteEnnemie':
-                if (stateCOF.combat) updateNextInit(perso);
-                break;
-              case 'sangDeLArbreCoeur':
-                guerisonPerso(perso, evt);
-                break;
-            }
-          }
-          if (options.puissant) {
-            let puissant = (options.puissant != 'off');
-            setTokenAttr(perso, effet + 'Puissant', puissant, evt);
-          }
-          if (options.valeur !== undefined) {
-            setTokenAttr(perso, effet + 'Valeur', options.valeur, evt, {
-              maxVal: options.valeurMax
+  function effetIndetermine(playerId, cibles, effet, activer, valeur, options) {
+    const evt = {
+      type: 'Effet indetermine',
+      action: {
+        titre: "Effet " + effet,
+        playerId,
+        cibles,
+        effet,
+        activer,
+        valeur,
+        options
+      }
+    };
+    addEvent(evt);
+    let lanceur = options.lanceur;
+    let whisper = '';
+    if (options.secret && playerId) {
+      let player = getObj('player', playerId);
+      if (player !== undefined) {
+        whisper = '/w "' + player.get('displayname') + '" ';
+      }
+    }
+    if (activer) {
+      if (limiteRessources(lanceur, options, effet, effet, evt)) {
+        return;
+      }
+      if (options.classeEffet) {
+        cibles = cibles.filter(function(perso) {
+          if (perso === undefined) return false;
+          if (attributeAsBool(perso, options.classeEffet)) {
+            let attrDeClasse = attributesOfClass(perso, options.classeEffet);
+            let mpc = "Non cumulable avec";
+            attrDeClasse.forEach(function(attrClasseEffet) {
+              let attr = attrClasseEffet.baseAttribute;
+              let attrName = attr.get('name');
+              if (estEffetIndetermine(attrName))
+                mpc += ' ' + messageEffetIndetermine[effetIndetermineOfAttribute(attr)].actif;
+              else mpc += ' ' + attrName;
             });
+            sendPerso(perso, mpc, options.secret);
+            return false;
           }
-          if (options.tempeteDeManaIntense !== undefined) {
-            setTokenAttr(perso, effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
-          }
-        });
-      } else {
-        iterSelected(selected, function(perso) {
-          //On commence par enlever les attributs de classe d'effet, si besoin
-          let ace = tokenAttribute(perso, effet + 'ClasseEffet');
-          if (ace.length > 0) {
-            var ce = ace[0].get('current');
-            removeTokenAttr(perso, ce, evt);
-            evt.deletedAttributes = evt.deletedAttributes || [];
-            evt.deletedAttributes.push(ace[0]);
-            ace[0].remove();
-          }
-          removeTokenAttr(perso, effet, evt, {
-            msg: messageEffetIndetermine[effet].fin
-          });
-          removeTokenAttr(perso, effet + 'Puissant', evt);
-          removeTokenAttr(perso, effet + 'Valeur', evt);
-          removeTokenAttr(perso, effet + 'TempeteDeManaIntense', evt);
-          removeTokenAttr(perso, effet + 'Options', evt);
-          if (effet == 'foretVivanteEnnemie' && stateCOF.combat) {
-            updateNextInit(perso);
-          }
+          setTokenAttr(perso, options.classeEffet, true, evt);
+          setTokenAttr(perso, effet + 'ClasseEffet', options.classeEffet, evt);
+          return true;
         });
       }
-      addEvent(evt);
-    });
+      let msgEffet = whisper + messageEffetIndetermine[effet].activation;
+      cibles.forEach(function(perso) {
+        if (options.valeurAjoutee) {
+          addToAttributeAsInt(perso, effet, 0, options.valeurAjoutee, evt);
+          sendPerso(perso, effet + " varie de " + options.valeurAjoutee, options.secret);
+        } else {
+
+          setTokenAttr(
+            perso, effet, valeur, evt, {
+              msg: msgEffet
+            });
+          switch (effet) {
+            case 'foretVivanteEnnemie':
+              if (stateCOF.combat) updateNextInit(perso);
+              break;
+            case 'sangDeLArbreCoeur':
+              guerisonPerso(perso, evt);
+              break;
+          }
+        }
+        if (options.puissant) {
+          let puissant = (options.puissant != 'off');
+          setTokenAttr(perso, effet + 'Puissant', puissant, evt);
+        }
+        if (options.valeur !== undefined) {
+          setTokenAttr(perso, effet + 'Valeur', options.valeur, evt, {
+            maxVal: options.valeurMax
+          });
+        }
+        if (options.tempeteDeManaIntense !== undefined) {
+          setTokenAttr(perso, effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
+        }
+      });
+    } else {
+      cibles.forEach(function(perso) {
+        //On commence par enlever les attributs de classe d'effet, si besoin
+        let ace = tokenAttribute(perso, effet + 'ClasseEffet');
+        if (ace.length > 0) {
+          let ce = ace[0].get('current');
+          removeTokenAttr(perso, ce, evt);
+          evt.deletedAttributes = evt.deletedAttributes || [];
+          evt.deletedAttributes.push(ace[0]);
+          ace[0].remove();
+        }
+        removeTokenAttr(perso, effet, evt, {
+          msg: messageEffetIndetermine[effet].fin
+        });
+        removeTokenAttr(perso, effet + 'Puissant', evt);
+        removeTokenAttr(perso, effet + 'Valeur', evt);
+        removeTokenAttr(perso, effet + 'TempeteDeManaIntense', evt);
+        removeTokenAttr(perso, effet + 'Options', evt);
+        if (effet == 'foretVivanteEnnemie' && stateCOF.combat) {
+          updateNextInit(perso);
+        }
+      });
+    }
   }
 
   function finClasseDEffet(msg) {
@@ -37959,6 +37988,11 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "Impossible d'animer plus d'objets pour le moment : somme des niveau animés = " + dejaAnime, playerId);
       return;
     }
+    let evt = {
+      type: "Animation d'objet",
+    };
+    addEvent(evt);
+    if (limiteRessources(lanceur, options, 'animationObjet', "animation d'un objet", evt)) return;
     let tokenSize = 70;
     switch (stats.taille) {
       case 'très petite':
@@ -38045,12 +38079,8 @@ var COFantasy = COFantasy || function() {
     };
     let charObjet =
       createCharacter(persoObjet.nom, playerId, stats.avatar, tokenObjet, persoObjet);
-    let evt = {
-      type: "Animation d'objet",
-      tokens: [tokenObjet],
-      characters: [charObjet.id]
-    };
-    addEvent(evt);
+    evt.tokens = [tokenObjet];
+    evt.characters = [charObjet];
     if (aPartirDExistant)
       setPredicate({
         token: tokenObjet,
@@ -38875,7 +38905,7 @@ var COFantasy = COFantasy || function() {
         effetCombat(msg);
         return;
       case "!cof-effet":
-        effetIndetermine(msg);
+        parseEffetIndetermine(msg);
         return;
       case "!cof-fin-classe-effet":
         finClasseDEffet(msg);
@@ -41119,16 +41149,16 @@ var COFantasy = COFantasy || function() {
         sendChat('player|' + gmId, effet);
       }
     });
-    var armeesDesMorts = allAttributesNamed(attrs, 'armeeDesMorts');
-    var degatsArmeeFull = {};
-    var degatsArmeeDefense = {};
+    let armeesDesMorts = allAttributesNamed(attrs, 'armeeDesMorts');
+    let degatsArmeeFull = {};
+    let degatsArmeeDefense = {};
     armeesDesMorts.forEach(function(armee) {
-      var charId = armee.get('characterid');
-      var boost = 0;
+      let charId = armee.get('characterid');
+      let boost = 0;
       if (charAttribute(charId, "armeeDesMortsPuissant").length > 0) boost = 1;
       else boost = attrAsInt(charAttribute(charId, "armeeDesMortsTempeteDeManaIntense"), 0);
-      var rayon = Math.floor(20 * Math.sqrt(1 + boost));
-      var allies = alliesParPerso[charId] || new Set();
+      let rayon = Math.floor(20 * Math.sqrt(1 + boost));
+      let allies = alliesParPerso[charId] || new Set();
       //Pour chaque token representant ce perso
       allPersos.forEach(function(perso) {
         if (perso.charId != charId) return;
@@ -41586,7 +41616,10 @@ var COFantasy = COFantasy || function() {
         current: true,
         max: state.COFantasy.version
       });
-      attr.setWithWorker({current:true, max:state.COFantasy.version});
+      attr.setWithWorker({
+        current: true,
+        max: state.COFantasy.version
+      });
     } else {
       if (attrs.length > 1) {
         for (let i = 1; i < attrs.length; i++) {
