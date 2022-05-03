@@ -508,17 +508,17 @@ var COFantasy = COFantasy || function() {
 
   //personnage peut ne pas avoir de token
   function attributeAsBool(personnage, name) {
-    var attr = tokenAttribute(personnage, name);
+    let attr = tokenAttribute(personnage, name);
     return attrAsBool(attr);
   }
 
   function charAttributeAsInt(perso, name, def, defPresent) {
-    var attr = charAttribute(perso.charId, name);
+    let attr = charAttribute(perso.charId, name);
     return attrAsInt(attr, def, defPresent);
   }
 
   function charAttributeAsBool(perso, name) {
-    var attr = charAttribute(perso.charId, name);
+    let attr = charAttribute(perso.charId, name);
     return attrAsBool(attr);
   }
 
@@ -23524,9 +23524,10 @@ var COFantasy = COFantasy || function() {
           _characterid: charId
         });
         let attaques = listAllAttacks(perso);
+        let na = fullAttributeName(perso, 'armeEnMain');
         let armeEnMain =
           attrsChar.find(function(a) {
-            return a.get('name') == 'armeEnMain';
+            return a.get('name') == na;
           });
         let armeEnMainGauche;
         if (armeEnMain) {
@@ -23540,8 +23541,9 @@ var COFantasy = COFantasy || function() {
             if (charge === 0) {
               line = nomArme + " n'est pas chargé";
             } else {
+              let na = fullAttributeName(perso, 'chargeGrenaille_' + armeLabel);
               let grenaille = attrsChar.find(function(a) {
-                return (a.get('name') == 'chargeGrenaille_' + armeLabel);
+                return a.get('name') == na;
               });
               if (grenaille) {
                 grenaille = parseInt(grenaille.get('current'));
@@ -41578,12 +41580,13 @@ var COFantasy = COFantasy || function() {
       caseInsensitive: true
     });
     if (attrs.length === 0) {
-      createObj('attribute', {
+      let attr = createObj('attribute', {
         characterid: charId,
         name: 'scriptVersion',
         current: true,
         max: state.COFantasy.version
       });
+      attr.setWithWorker({current:true, max:state.COFantasy.version});
     } else {
       if (attrs.length > 1) {
         for (let i = 1; i < attrs.length; i++) {
@@ -41618,13 +41621,20 @@ var COFantasy = COFantasy || function() {
       removeTokenAttr(perso, 'bougeGraceA');
       return;
     }
+    //On regarde si il existe une copie de ce token, par exemple à cause de l'invisibilité
+    let otherTokens = findObjs({
+      _type: 'graphic',
+      _pageid: pageId,
+      represents: charId,
+      name: nomToken
+    });
+    if (otherTokens.length > 0) return;
     let tokenBougeAttr = tokenAttribute(perso, 'bougeGraceA');
     tokenBougeAttr.forEach(function(a) {
       let tokenBouge = getObj('graphic', a.get('current'));
       if (tokenBouge) {
         tokenBouge.remove();
       } else {
-        let pageId = perso.token.get('pageid');
         tokenBouge = findObjs({
           _type: 'graphic',
           _pageid: pageId,

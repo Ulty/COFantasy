@@ -5,6 +5,8 @@
 * Don de soin, de la Voie de Périndé
 
 ### Corrections de bugs
+* Affichage correct de l'arme en main pour les mooks
+* On garde les attributs quand un mook invisible redevient visible
 * Plus de message d'erreur quand on attend trop avant de sauvegarder un nouveau personnage.
 
 ### Autres améliorations
