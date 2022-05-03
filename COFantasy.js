@@ -21372,7 +21372,7 @@ var COFantasy = COFantasy || function() {
         effetTemporaire(action.playerId, action.cibles, action.effet, action.mEffet, action.duree, options);
         return true;
       case 'Effet':
-  effetIndetermine(action.playerId, action.cibles, action.effet, action.activer, action.valeur, action.options);
+        effetIndetermine(action.playerId, action.cibles, action.effet, action.activer, action.valeur, action.options);
         return true;
       case 'enduireDePoison':
         doEnduireDePoison(action.perso, action.armeEnduite, action.savePoison, action.forcePoison, action.attribut,
@@ -24318,6 +24318,21 @@ var COFantasy = COFantasy || function() {
     cibles.forEach(function(perso) {
       let setEffect = function() {
         setState(perso, etat, valeur, evt);
+        if (lanceur && options.fx) {
+          let p1e = {
+            x: lanceur.token.get('left'),
+            y: lanceur.token.get('top'),
+          };
+          let p2e = {
+            x: perso.token.get('left'),
+            y: perso.token.get('top'),
+          };
+          spawnFxBetweenPoints(p1e, p2e, options.fx, options.pageId);
+        }
+        if (options.son) playSound(options.son);
+        if (options.targetFx) {
+          spawnFx(perso.token.get('left'), perso.token.get('top'), options.targetFx, options.pageId);
+        }
         if (options.saveActifParTour) {
           setTokenAttr(perso, etat + 'Save', options.saveActifParTour.carac, evt, {
             maxVal: options.saveActifParTour.difficulte
@@ -25567,37 +25582,37 @@ var COFantasy = COFantasy || function() {
         let expliquer = function(s) {
           sendPerso(perso, s);
         };
-        let doit = function () {
-        if (options.valeurAjoutee) {
-          addToAttributeAsInt(perso, effet, 0, options.valeurAjoutee, evt);
-          expliquer(effet + " varie de " + options.valeurAjoutee, options.secret);
-        } else {
+        let doit = function() {
+          if (options.valeurAjoutee) {
+            addToAttributeAsInt(perso, effet, 0, options.valeurAjoutee, evt);
+            expliquer(effet + " varie de " + options.valeurAjoutee, options.secret);
+          } else {
 
-          setTokenAttr(
-            perso, effet, valeur, evt, {
-              msg: msgEffet
-            });
-          switch (effet) {
-            case 'foretVivanteEnnemie':
-              if (stateCOF.combat) updateNextInit(perso);
-              break;
-            case 'sangDeLArbreCoeur':
-              guerisonPerso(perso, evt);
-              break;
+            setTokenAttr(
+              perso, effet, valeur, evt, {
+                msg: msgEffet
+              });
+            switch (effet) {
+              case 'foretVivanteEnnemie':
+                if (stateCOF.combat) updateNextInit(perso);
+                break;
+              case 'sangDeLArbreCoeur':
+                guerisonPerso(perso, evt);
+                break;
+            }
           }
-        }
-        if (options.puissant) {
-          let puissant = (options.puissant != 'off');
-          setTokenAttr(perso, effet + 'Puissant', puissant, evt);
-        }
-        if (options.valeur !== undefined) {
-          setTokenAttr(perso, effet + 'Valeur', options.valeur, evt, {
-            maxVal: options.valeurMax
-          });
-        }
-        if (options.tempeteDeManaIntense !== undefined) {
-          setTokenAttr(perso, effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
-        }
+          if (options.puissant) {
+            let puissant = (options.puissant != 'off');
+            setTokenAttr(perso, effet + 'Puissant', puissant, evt);
+          }
+          if (options.valeur !== undefined) {
+            setTokenAttr(perso, effet + 'Valeur', options.valeur, evt, {
+              maxVal: options.valeurMax
+            });
+          }
+          if (options.tempeteDeManaIntense !== undefined) {
+            setTokenAttr(perso, effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
+          }
         };
         if (options.save) {
           let saveOpts = {

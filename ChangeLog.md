@@ -10,6 +10,7 @@
 * Plus de message d'erreur quand on attend trop avant de sauvegarder un nouveau personnage.
 
 ### Autres améliorations
+* Possibilité d'ajouter des effets spéciaux et du son à un !cof-set-state.
 * Passage d'un certain nombres de prédicats concernant des armes dans le champ SPÉCIAL des armes concernées.
 
 ## 3.06
