@@ -4362,10 +4362,14 @@ var COFantasy = COFantasy || function() {
     weaponStats.eclaireFaible = toInt(pred.eclaireFaible);
     //Identification des catégories d'armes utilisées en jeu
     identifierArme(weaponStats, pred, 'arc', /\barc\b/i);
-    identifierArme(weaponStats, pred, 'arbalete', /\barbal([eè])te\b/i);
+    identifierArme(weaponStats, pred, 'arbalete', /\barbal[eè]te\b/i);
     identifierArme(weaponStats, pred, 'hache', /\bhache\b/i);
+    identifierArme(weaponStats, pred, 'epee', /\b[eé]p[eé]e\b/i);
     identifierArme(weaponStats, pred, 'marteau', /\bmarteau\b/i);
     identifierArme(weaponStats, pred, 'epieu', /\b[eé]pieu\b/i);
+    identifierArme(weaponStats, pred, 'baton', /\bb[aâ]ton\b/i);
+    identifierArme(weaponStats, pred, 'masse', /\bmasse\b/i);
+    identifierArme(weaponStats, pred, 'rapiere', /\brapi[eè]re\b/i);
     identifierArme(weaponStats, pred, 'poudre', /\bpoudre\b/i);
     return weaponStats;
   }
@@ -10690,6 +10694,31 @@ var COFantasy = COFantasy || function() {
       options.bonusDM = options.bonusDM || 0;
       options.bonusDM += 1;
       explications.push("Haches et marteaux => +1 en Att. et DM");
+    }
+    let armeDePredilection = predicateAsBool(attaquant, 'armeDePredilection');
+    if (armeDePredilection) {
+      let actif = false;
+      switch (armeDePredilection) {
+        case 'arc':
+        case 'arbalete':
+        case 'hache':
+        case 'epee':
+        case 'marteau':
+        case 'epieu':
+        case 'poudre':
+        case 'baton':
+        case 'masse':
+        case 'rapiere':
+          actif = options[armeDePredilection];
+          if (!actif) {
+      let weaponStats = armesEnMain(attaquant);
+            if (weaponStats) actif = weaponStats[armeDePredilection];
+          }
+      }
+      if (actif) {
+        attBonus += 1;
+        explications.push("Arme de prédiléction => +1 en Attaque");
+      }
     }
     if (options.arcComposite) {
       let force = modCarac(attaquant, 'force');
