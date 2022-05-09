@@ -5840,6 +5840,13 @@ var COFantasy = COFantasy || function() {
         callback(testRes, explications);
         return;
       }
+    } else if (carac == 'CON') {
+      if (predicateAsBool(personnage, 'nonVivant')) {
+        testRes.reussite = true;
+        testRes.texte = "(non-vivant : réussite automatique)";
+        callback(testRes, explications);
+        return;
+      }
     }
     let bonusCarac = bonusTestCarac(carac, personnage, options, testId, evt, explications);
     let jetCache = ficheAttributeAsBool(personnage, 'jets_caches', false);
@@ -9623,7 +9630,7 @@ var COFantasy = COFantasy || function() {
 
   // bonus d'attaque d'un token, indépendament des options
   // Mise en commun pour attack et attaque-magique
-  function bonusDAttaque(personnage, explications, evt) {
+  function bonusDAttaque(personnage, explications, evt, options) {
     explications = explications || [];
     let tempAttkMod; // Utilise la barre 3 de l'attaquant
     tempAttkMod = parseInt(personnage.token.get('bar3_value'));
@@ -9768,7 +9775,11 @@ var COFantasy = COFantasy || function() {
       let masqueIntense = attributeAsInt(personnage, 'masqueDuPredateurTempeteDeManaIntense', 0);
       bonusMasque += masqueIntense;
       attBonus += bonusMasque;
+      if (options && options.pasDeDmg) {
+      explications.push("Masque du prédateur : +" + bonusMasque + " en Attaque");
+      } else {
       explications.push("Masque du prédateur : +" + bonusMasque + " en Attaque et DM");
+      }
       if (masqueIntense)
         removeTokenAttr(personnage, 'masqueDuPredateurTempeteDeManaIntense', evt);
     }
@@ -9776,7 +9787,11 @@ var COFantasy = COFantasy || function() {
       let bonusMasque =
         getValeurOfEffet(personnage, 'masqueDuPredateurAmeLiee', 1);
       attBonus += bonusMasque;
+      if (options && options.pasDeDmg) {
+      explications.push("Masque du prédateur lié : +" + bonusMasque + " en Attaque");
+      } else {
       explications.push("Masque du prédateur lié : +" + bonusMasque + " en Attaque et DM");
+      }
     }
     if (attributeAsBool(personnage, 'armeSecreteBarde')) {
       attBonus -= 10;
@@ -10421,7 +10436,7 @@ var COFantasy = COFantasy || function() {
     let attBonus = 0;
     if (options.bonusAttaque) attBonus += options.bonusAttaque;
     if (options.armeMagiquePlus) attBonus += options.armeMagiquePlus;
-    attBonus += bonusDAttaque(attaquant, explications, evt);
+    attBonus += bonusDAttaque(attaquant, explications, evt, options);
     if (options.tirDouble) {
       attBonus += 2;
       if (options.tirDouble.stats && options.tirDouble.stats.name) {
@@ -13002,6 +13017,7 @@ var COFantasy = COFantasy || function() {
     if (predicateAsBool(target, 'immunite_' + dmgType)) return true;
     switch (dmgType) {
       case 'poison':
+        if (predicateAsBool(target, 'nonVivant')) return true;
         if (attributeAsBool(target, 'sangDeLArbreCoeur')) return true;
         if (predicateOrAttributeAsBool(target, 'controleSanguin')) return true;
         if (attaquant && predicateAsBool(target, 'sangDeFerIf')) {
@@ -13011,6 +13027,7 @@ var COFantasy = COFantasy || function() {
       case 'froid':
         return attributeAsBool(target, 'presenceGlaciale');
       case 'maladie':
+        if (predicateAsBool(target, 'nonVivant')) return true;
         return attributeAsBool(target, 'sangDeLArbreCoeur');
       case 'drain':
         return predicateAsInt(target, 'voieDeLArchange', 1) > 2 && attributeAsBool(target, 'formeDAnge');
@@ -16125,7 +16142,7 @@ var COFantasy = COFantasy || function() {
                 }
                 if (ce.typeDmg && immuniseAuType(target, ce.typeDmg, attaquant)) {
                   if (!target['msgImmunite_' + ce.typeDmg]) {
-                    target.messages.push(nomPerso(target) + " ne semble pas affecté"+eForFemale(target)+" par " + stringOfType(ce.typeDmg));
+                    target.messages.push(nomPerso(target) + " ne semble pas affecté" + eForFemale(target) + " par " + stringOfType(ce.typeDmg));
                     target['msgImmunite_' + ce.typeDmg] = true;
                   }
                   return;
@@ -20049,7 +20066,7 @@ var COFantasy = COFantasy || function() {
         case "nonVivant":
           options.nonVivant = true;
           if (cmd.length > 1) {
-            var nonVivantPerso = persoOfId(cmd[1], cmd[1], pageId);
+            let nonVivantPerso = persoOfId(cmd[1], cmd[1], pageId);
             if (nonVivantPerso) {
               options.nonVivant = predicateAsBool(nonVivantPerso, 'nonVivant');
             }
@@ -31665,6 +31682,204 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  //Crée un nouveau personnage (de type PNJ par défaut)
+  //spec contient les charactéristiques, attributs et abilities
+  //  - attributesFiche contient les attributs définis dans la fiche
+  //      nom_attribut: valeur
+  //  - pv (permet d'être indépendant de PJ ou PNJ)
+  //  - attaques, liste d'attaques, chacune avec (nom, atk, dmnbde, dmde, dm,...)
+  //  - attributes autres attributs (name, current, max)
+  //  - abilities (name, action), toujours rajoutées à la liste d'actions
+  //  - actions (titre, code), ajoutées aux listes d'actions
+  function createCharacter(nom, playerId, avatar, token, spec) {
+    let res = createObj('character', {
+      name: nom,
+      avatar: avatar,
+      controlledby: playerId
+    });
+    if (!res) return;
+    let charId = res.id;
+    if (token) {
+      token.set('represents', charId);
+    }
+    let attrs = findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+    });
+    let attrVersion =
+      attrs.find(function(a) {
+        return a.get('name').toLowerCase() == 'version';
+      });
+    if (!attrVersion) {
+      createObj('attribute', {
+        _characterid: charId,
+        name: 'version',
+        current: versionFiche
+      });
+    }
+    attrVersion =
+      attrs.find(function(a) {
+        return a.get('name').toLowerCase() == 'scriptVersion';
+      });
+    if (!attrVersion) {
+      createObj('attribute', {
+        _characterid: charId,
+        name: 'scriptVersion',
+        current: true,
+        max:stateCOF.version
+      });
+    }
+    let pnj = true;
+    if (spec.attributesFiche) {
+      if (spec.attributesFiche.type_personnage == 'PJ') pnj = false;
+      for (let attrName in spec.attributesFiche) {
+        /*jshint loopfunc: true */
+        let attr =
+          attrs.filter(function(a) {
+            return a.get('name') == attrName;
+          });
+        if (attr.length === 0) {
+          createObj('attribute', {
+            _characterid: charId,
+            name: attrName,
+            current: spec.attributesFiche[attrName]
+          });
+        } else {
+          attr[0].set('current', spec.attributesFiche[attrName]);
+        }
+      }
+    } //end attributesFiche
+    if (pnj) {
+      createObj('attribute', {
+        _characterid: charId,
+        name: 'tab',
+        current: 'carac. pnj'
+      });
+    }
+    if (spec.pv) {
+      var pvAttr = attrs.filter(function(a) {
+        return a.get('name').toUpperCase() == 'PV';
+      });
+      if (pvAttr.length === 0) {
+        pvAttr = createObj('attribute', {
+          _characterid: charId,
+          name: 'PV',
+          current: spec.pv,
+          max: spec.pv
+        });
+      } else {
+        pvAttr = pvAttr[0];
+        pvAttr.set('current', spec.pv);
+        pvAttr.set('max', spec.pv);
+      }
+      if (pnj) {
+        pvAttr = attrs.filter(function(a) {
+          return a.get('name').toLowerCase() == 'pnj_pv';
+        });
+        if (pvAttr.length === 0) {
+          pvAttr = createObj('attribute', {
+            _characterid: charId,
+            name: 'pnj_pv',
+            current: spec.pv,
+            max: spec.pv
+          });
+        } else {
+          pvAttr = pvAttr[0];
+          pvAttr.set('current', spec.pv);
+          pvAttr.set('max', spec.pv);
+        }
+      }
+      if (token) {
+        token.set('bar1_link', pvAttr.id);
+        token.set('bar1_value', spec.pv);
+        token.set('bar1_max', spec.pv);
+      }
+    }
+    if (spec.attaques) {
+      let maxAttackLabel = 0;
+      let prefix_attaques = 'repeating_armes_';
+      if (pnj) prefix_attaques = 'repeating_pnjatk_';
+      spec.attaques.forEach(function(att) {
+        let id = generateRowID();
+        let pref = prefix_attaques + id + '_arme';
+        _.forEach(att, function(value, field) {
+          createObj('attribute', {
+            _characterid: charId,
+            name: pref + field,
+            current: value
+          });
+        });
+        maxAttackLabel++;
+        createObj('attribute', {
+          _characterid: charId,
+          name: pref + 'label',
+          current: maxAttackLabel
+        });
+      });
+      createObj('attribute', {
+        _characterid: charId,
+        name: 'max_attack_label',
+        current: maxAttackLabel
+      });
+    }
+    if (spec.attributes) {
+      spec.attributes.forEach(function(a) {
+        a._characterid = charId;
+        createObj('attribute', a);
+      });
+    }
+    if (spec.abilities) {
+      spec.abilities.forEach(function(a) {
+        a._characterid = charId;
+        a.istokenaction = true;
+        createObj('ability', a);
+      });
+    }
+    if (spec.actions) {
+      var rang = 0;
+      spec.actions.forEach(function(a) {
+        rang++;
+        var pref = 'repeating_actions_' + generateRowID() + '_';
+        createObj('attribute', {
+          name: pref + 'actionoptflag',
+          current: 'off',
+          characterid: charId,
+        });
+        createObj('attribute', {
+          name: pref + 'actionrang',
+          current: rang,
+          characterid: charId,
+        });
+        createObj('attribute', {
+          name: pref + 'actiontitre',
+          current: a.titre,
+          characterid: charId,
+        });
+        if (a.code) {
+          createObj('attribute', {
+            name: pref + 'actioncode',
+            current: a.code,
+            characterid: charId,
+          });
+        }
+      });
+      if (rang > 0) {
+        createObj('attribute', {
+          name: 'maxrangaction',
+          current: rang,
+          characterid: charId
+        });
+      }
+    }
+    createObj('attribute', {
+      name: 'montrerarmeenmain',
+      current: 0,
+      characterid: charId
+    });
+    if (token) setDefaultTokenForCharacter(res, token);
+    return res;
+  }
+
   //!cof-animer-arbre lanceur-id target-id [rang]
   function animerUnArbre(msg) {
     var options = parseOptions(msg);
@@ -32662,192 +32877,6 @@ var COFantasy = COFantasy || function() {
        if (c.startsWith('!')) sendChat(msg.who, c);
        else error("multi-commande invalide", c);
      });*/
-  }
-
-  //Crée un nouveau personnage (de type PNJ par défaut)
-  //spec contient les charactéristiques, attributs et abilities
-  //  - attributesFiche contient les attributs définis dans la fiche
-  //      nom_attribut: valeur
-  //  - pv (permet d'être indépendant de PJ ou PNJ)
-  //  - attaques, liste d'attaques, chacune avec (nom, atk, dmnbde, dmde, dm,...)
-  //  - attributes autres attributs (name, current, max)
-  //  - abilities (name, action), toujours rajoutées à la liste d'actions
-  //  - actions (titre, code), ajoutées aux listes d'actions
-  function createCharacter(nom, playerId, avatar, token, spec) {
-    let res = createObj('character', {
-      name: nom,
-      avatar: avatar,
-      controlledby: playerId
-    });
-    if (!res) return;
-    let charId = res.id;
-    if (token) {
-      token.set('represents', charId);
-    }
-    let attrs = findObjs({
-      _type: 'attribute',
-      _characterid: charId,
-    });
-    let attrVersion =
-      attrs.find(function(a) {
-        return a.get('name').toLowerCase() == 'version';
-      });
-    if (!attrVersion) {
-      createObj('attribute', {
-        _characterid: charId,
-        name: 'version',
-        current: versionFiche
-      });
-    }
-    let pnj = true;
-    if (spec.attributesFiche) {
-      if (spec.attributesFiche.type_personnage == 'PJ') pnj = false;
-      for (var attrName in spec.attributesFiche) {
-        /*jshint loopfunc: true */
-        let attr =
-          attrs.filter(function(a) {
-            return a.get('name') == attrName;
-          });
-        if (attr.length === 0) {
-          createObj('attribute', {
-            _characterid: charId,
-            name: attrName,
-            current: spec.attributesFiche[attrName]
-          });
-        } else {
-          attr[0].set('current', spec.attributesFiche[attrName]);
-        }
-      }
-    } //end attributesFiche
-    if (pnj) {
-      createObj('attribute', {
-        _characterid: charId,
-        name: 'tab',
-        current: 'carac. pnj'
-      });
-    }
-    if (spec.pv) {
-      var pvAttr = attrs.filter(function(a) {
-        return a.get('name').toUpperCase() == 'PV';
-      });
-      if (pvAttr.length === 0) {
-        pvAttr = createObj('attribute', {
-          _characterid: charId,
-          name: 'PV',
-          current: spec.pv,
-          max: spec.pv
-        });
-      } else {
-        pvAttr = pvAttr[0];
-        pvAttr.set('current', spec.pv);
-        pvAttr.set('max', spec.pv);
-      }
-      if (pnj) {
-        pvAttr = attrs.filter(function(a) {
-          return a.get('name').toLowerCase() == 'pnj_pv';
-        });
-        if (pvAttr.length === 0) {
-          pvAttr = createObj('attribute', {
-            _characterid: charId,
-            name: 'pnj_pv',
-            current: spec.pv,
-            max: spec.pv
-          });
-        } else {
-          pvAttr = pvAttr[0];
-          pvAttr.set('current', spec.pv);
-          pvAttr.set('max', spec.pv);
-        }
-      }
-      if (token) {
-        token.set('bar1_link', pvAttr.id);
-        token.set('bar1_value', spec.pv);
-        token.set('bar1_max', spec.pv);
-      }
-    }
-    if (spec.attaques) {
-      let maxAttackLabel = 0;
-      let prefix_attaques = 'repeating_armes_';
-      if (pnj) prefix_attaques = 'repeating_pnjatk_';
-      spec.attaques.forEach(function(att) {
-        let id = generateRowID();
-        let pref = prefix_attaques + id + '_arme';
-        _.forEach(att, function(value, field) {
-          createObj('attribute', {
-            _characterid: charId,
-            name: pref + field,
-            current: value
-          });
-        });
-        maxAttackLabel++;
-        createObj('attribute', {
-          _characterid: charId,
-          name: pref + 'label',
-          current: maxAttackLabel
-        });
-      });
-      createObj('attribute', {
-        _characterid: charId,
-        name: 'max_attack_label',
-        current: maxAttackLabel
-      });
-    }
-    if (spec.attributes) {
-      spec.attributes.forEach(function(a) {
-        a._characterid = charId;
-        createObj('attribute', a);
-      });
-    }
-    if (spec.abilities) {
-      spec.abilities.forEach(function(a) {
-        a._characterid = charId;
-        a.istokenaction = true;
-        createObj('ability', a);
-      });
-    }
-    if (spec.actions) {
-      var rang = 0;
-      spec.actions.forEach(function(a) {
-        rang++;
-        var pref = 'repeating_actions_' + generateRowID() + '_';
-        createObj('attribute', {
-          name: pref + 'actionoptflag',
-          current: 'off',
-          characterid: charId,
-        });
-        createObj('attribute', {
-          name: pref + 'actionrang',
-          current: rang,
-          characterid: charId,
-        });
-        createObj('attribute', {
-          name: pref + 'actiontitre',
-          current: a.titre,
-          characterid: charId,
-        });
-        if (a.code) {
-          createObj('attribute', {
-            name: pref + 'actioncode',
-            current: a.code,
-            characterid: charId,
-          });
-        }
-      });
-      if (rang > 0) {
-        createObj('attribute', {
-          name: 'maxrangaction',
-          current: rang,
-          characterid: charId
-        });
-      }
-    }
-    createObj('attribute', {
-      name: 'montrerarmeenmain',
-      current: 0,
-      characterid: charId
-    });
-    if (token) setDefaultTokenForCharacter(res, token);
-    return res;
   }
 
   const predateurs = {
