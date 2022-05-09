@@ -957,25 +957,25 @@ var COFantasy = COFantasy || function() {
     }
     if (!stateCOF.personnageCibleCree) {
       //On cherche si un personnage cible existe déjà
-      var persos = findObjs({
+      let persos = findObjs({
         _type: 'character',
         name: 'Cible',
         controlledby: 'all'
       });
       if (persos.length === 0) {
-        var pages = findObjs({
+        let pages = findObjs({
           _type: 'page'
         });
         if (pages.length > 0) {
-          var pageId = pages[0].id;
-          var charCible = createObj('character', {
+          let pageId = pages[0].id;
+          let charCible = createObj('character', {
             name: 'Cible',
             controlledby: 'all',
             inplayerjournals: 'all',
             avatar: 'https://s3.amazonaws.com/files.d20.io/images/33041174/5JdDVh-34C-kZglTE1aq-w/max.png?1494837870',
           });
           if (charCible) {
-            var attrPV = charAttribute(charCible.id, 'PV', {
+            let attrPV = charAttribute(charCible.id, 'PV', {
               caseInsensitive: true
             });
             if (attrPV.length > 0) attrPV = attrPV[0];
@@ -1513,8 +1513,8 @@ var COFantasy = COFantasy || function() {
       color: '#222200'
     },
     'poison': {
-      background: '#58000',
-      color: '#DDAFF'
+      background: '#5A752F',
+      color: '#DDDDAA'
     },
     'argent': {
       background: '#F1E6DA',
@@ -3042,6 +3042,22 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function estControlleParJoueur(charId) {
+    let character = getObj('character', charId);
+    if (character === undefined) return false;
+    return character.get('controlledby').length > 0;
+  }
+
+  //Pour savoir si un personnage est un personnage joueur
+  // -> fiche de PJ + dé de vie + token lié + controllé par au moins un joueur.
+  function estPJ(perso) {
+    if (persoEstPNJ(perso)) return false;
+    let dv = ficheAttributeAsInt(perso, 'DV', 0);
+    if (dv === 0) return false;
+    if (perso.token.get('bar1_link') === '') return false;
+    return estControlleParJoueur(perso.charId);
+  }
+
   //options:
   //fromTemp si on est en train de supprimer un effet temporaire
   function setState(personnage, etat, value, evt, options) {
@@ -3832,7 +3848,7 @@ var COFantasy = COFantasy || function() {
       evt.attributes.forEach(function(attr) {
         if (attr.current === undefined) attr.attribute.remove();
         else {
-          var aset = {
+          let aset = {
             current: attr.current
           };
           if (attr.max !== undefined) aset.max = attr.max;
@@ -3851,7 +3867,7 @@ var COFantasy = COFantasy || function() {
     if (evt.defaultTokens) {
       evt.defaultTokens.forEach(function(dt) {
         //On cherche d'abord un token qui représente dt.character
-        var tokens = findObjs({
+        let tokens = findObjs({
           _type: 'graphic',
           represents: dt.character.id
         });
@@ -3938,7 +3954,7 @@ var COFantasy = COFantasy || function() {
         // On le remet chez ses alliés
         if (character.allies.length > 0) {
           Object.values(character.allies).forEach(function(allie) {
-            var alliesPerso = alliesParPerso[allie] || new Set();
+            let alliesPerso = alliesParPerso[allie] || new Set();
             alliesPerso.add(charId);
             alliesParPerso[allie] = alliesPerso;
           });
@@ -3948,10 +3964,10 @@ var COFantasy = COFantasy || function() {
     // deletedAttributes have a quadratic cost in the size of the history
     if (evt.deletedAttributes) {
       evt.deletedAttributes.forEach(function(attr) {
-        var oldId = attr.id;
-        var nameDel = attr.get('name');
+        let oldId = attr.id;
+        let nameDel = attr.get('name');
         log("Restoring attribute " + nameDel);
-        var newAttr =
+        let newAttr =
           createObj('attribute', {
             characterid: attr.newCharId || attr.get('characterid'),
             name: nameDel,
@@ -5795,6 +5811,13 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function pointsDeChance(perso) {
+    if (!estPJ(perso)) return 0;
+    let optionPC = ficheAttributeAsInt(perso, 'option_pc', 1);
+    if (optionPC === 0) return 0;
+    return ficheAttributeAsInt(perso, 'pc', 3);
+  }
+
   // Test de caractéristique
   // options : bonusAttrs, bonusPreds, bonus, roll
   // Après le test, lance callback(testRes, explications
@@ -5911,7 +5934,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         testRes.rerolls = '';
-        var pc = pointsDeChance(personnage);
+        let pc = pointsDeChance(personnage);
         if (!testRes.echecCritique && pc > 0) {
           testRes.rerolls += '<br/>' +
             boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
@@ -5948,13 +5971,6 @@ var COFantasy = COFantasy || function() {
       error("Erreur pendant l'évaluation de " + rollExpr + " dans un test de caractéristiques");
       log(e.name + ": " + e.message);
     }
-  }
-
-  function pointsDeChance(perso) {
-    if (!estPJ(perso)) return 0;
-    var optionPC = ficheAttributeAsInt(perso, 'option_pc', 1);
-    if (optionPC === 0) return 0;
-    return ficheAttributeAsInt(perso, 'pc', 3);
   }
 
   //callback peut prendre en argument une structure avec les champs:
@@ -7784,7 +7800,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque un argument à l'option --plus de !cof-attack", cmd);
             return;
           }
-          var val = arg.substring(arg.indexOf(' ') + 1);
+          let val = arg.substring(arg.indexOf(' ') + 1);
           scope.additionalDmg = scope.additionalDmg || [];
           scope.additionalDmg.push({
             value: val,
@@ -8465,7 +8481,7 @@ var COFantasy = COFantasy || function() {
           scope = ifSaveThen;
           return;
         case "endif":
-          var psEndif = scope.parentScope;
+          let psEndif = scope.parentScope;
           if (psEndif === undefined) {
             error("--endIf sans --if correspondant", cmd);
             return;
@@ -8474,7 +8490,7 @@ var COFantasy = COFantasy || function() {
           scope = psEndif;
           return;
         case "else":
-          var psElse = scope.parentScope;
+          let psElse = scope.parentScope;
           if (psElse === undefined) {
             error("--else sans --if correspondant", cmd);
             return;
@@ -8809,9 +8825,9 @@ var COFantasy = COFantasy || function() {
     switch (cond.type) {
       case 'moins':
         // Au cas où on utilise les MOD au lieu de l'attribut de base:
-        var caracAttr = caracOfMod(cond.attribute);
-        var attackerAttr = valAttribute(attaquant, cond.attribute, caracAttr);
-        var resMoins = true;
+        let caracAttr = caracOfMod(cond.attribute);
+        let attackerAttr = valAttribute(attaquant, cond.attribute, caracAttr);
+        let resMoins = true;
         cibles.forEach(function(target) {
           if (resMoins) {
             var targetAttr = valAttribute(target, cond.attribute, caracAttr);
@@ -10711,7 +10727,7 @@ var COFantasy = COFantasy || function() {
         case 'rapiere':
           actif = options[armeDePredilection];
           if (!actif) {
-      let weaponStats = armesEnMain(attaquant);
+            let weaponStats = armesEnMain(attaquant);
             if (weaponStats) actif = weaponStats[armeDePredilection];
           }
       }
@@ -16106,6 +16122,13 @@ var COFantasy = COFantasy || function() {
                 if (ce.save) {
                   saves++;
                   return; //on le fera plus tard
+                }
+                if (ce.typeDmg && immuniseAuType(target, ce.typeDmg, attaquant)) {
+                  if (!target['msgImmunite_' + ce.typeDmg]) {
+                    target.messages.push(nomPerso(target) + " ne semble pas affecté"+eForFemale(target)+" par " + stringOfType(ce.typeDmg));
+                    target['msgImmunite_' + ce.typeDmg] = true;
+                  }
+                  return;
                 }
                 if (testCondition(ce.condition, attaquant, [target], d20roll, options)) {
                   setState(target, ce.etat, true, evt);
@@ -22628,22 +22651,6 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function estControlleParJoueur(charId) {
-    var character = getObj('character', charId);
-    if (character === undefined) return false;
-    return character.get('controlledby').length > 0;
-  }
-
-  //Pour savoir si un personnage est un personnage joueur
-  // -> fiche de PJ + dé de vie + token lié + controllé par au moins un joueur.
-  function estPJ(perso) {
-    if (persoEstPNJ(perso)) return false;
-    var dv = ficheAttributeAsInt(perso, 'DV', 0);
-    if (dv === 0) return false;
-    if (perso.token.get('bar1_link') === '') return false;
-    return estControlleParJoueur(perso.charId);
-  }
-
   function estAllieJoueur(perso) {
     if (estControlleParJoueur(perso.charId)) return true;
     var allies = alliesParPerso[perso.charId];
@@ -23691,27 +23698,27 @@ var COFantasy = COFantasy || function() {
             }
             addLineToFramedDisplay(display, explEffetMsg);
           } else if (estEffetCombat(attrName)) {
-            var effetC = effetCombatOfAttribute(attr);
+            let effetC = effetCombatOfAttribute(attr);
             if (lie && effetC != attrName) return;
             addLineToFramedDisplay(display, messageEffetCombat[effetC].actif);
           } else if (estEffetIndetermine(attrName)) {
-            var effetI = effetIndetermineOfAttribute(attr);
+            let effetI = effetIndetermineOfAttribute(attr);
             if (lie && effetI != attrName) return;
             addLineToFramedDisplay(display, messageEffetIndetermine[effetI].actif);
           }
         });
         allAttributesNamed(attrsChar, 'munition').forEach(function(attr) {
-          var attrName = attr.get('name');
-          var underscore = attrName.indexOf('_');
+          let attrName = attr.get('name');
+          let underscore = attrName.indexOf('_');
           if (underscore < 0 || underscore == attrName.length - 1) return;
-          var munitionNom = attrName.substring(underscore + 1).replace(/_/g, ' ');
+          let munitionNom = attrName.substring(underscore + 1).replace(/_/g, ' ');
           addLineToFramedDisplay(display, munitionNom + " : " + attr.get('current') + " / " + attr.get('max'));
         });
-        var attrPosture = tokenAttribute(perso, 'postureDeCombat');
+        let attrPosture = tokenAttribute(perso, 'postureDeCombat');
         if (attrPosture.length > 0) {
           attrPosture = attrPosture[0];
-          var posture = attrPosture.get('max');
-          var postureMsg = "a une posture ";
+          let posture = attrPosture.get('max');
+          let postureMsg = "a une posture ";
           switch (posture.substr(-3, 3)) {
             case 'DEF':
               postureMsg += "défensive";
