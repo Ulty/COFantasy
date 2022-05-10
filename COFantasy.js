@@ -5833,21 +5833,6 @@ var COFantasy = COFantasy || function() {
     options = options || {};
     let testRes = {};
     let explications = [];
-    if (carac == 'SAG' || carac == 'INT' || carac == 'CHA') {
-      if (predicateAsBool(personnage, 'sansEsprit')) {
-        testRes.reussite = true;
-        testRes.texte = "(sans esprit : réussite automatique)";
-        callback(testRes, explications);
-        return;
-      }
-    } else if (carac == 'CON') {
-      if (predicateAsBool(personnage, 'nonVivant')) {
-        testRes.reussite = true;
-        testRes.texte = "(non-vivant : réussite automatique)";
-        callback(testRes, explications);
-        return;
-      }
-    }
     let bonusCarac = bonusTestCarac(carac, personnage, options, testId, evt, explications);
     let jetCache = ficheAttributeAsBool(personnage, 'jets_caches', false);
     let testsRatesDuTour;
@@ -7507,7 +7492,7 @@ var COFantasy = COFantasy || function() {
     //Ajout des options de l'arme
     let wo = weaponStats.options.trim();
     //Pour la partie options, il est possible qu'elle soit déjà passée en ligne de commande
-    if (wo !== '' && (optArgs.length < 1 || !optArgs[0].startsWith('attaqueOptions'))) {
+    if (wo !== '' && ((optArgs.length < 1 || !optArgs[0].startsWith('attaqueOptions'))) || indexAussiJet > 0) {
       wo = ' ' + wo;
       wo.split(' --').reverse().forEach(function(o) {
         o = o.trim();
@@ -9212,15 +9197,23 @@ var COFantasy = COFantasy || function() {
     return attrs;
   }
 
+  // perso peut ne pas avoir de token
   function onGenre(perso, male, female) {
     let sexe = ficheAttribute(perso, 'sexe', '');
     if (sexe.startsWith('F')) return female;
     return male;
   }
 
+  // perso peut ne pas avoir de token
   function messageActivation(perso, message) {
     if (message.activationF) return onGenre(perso, message.activation, message.activationF);
     return message.activation;
+  }
+
+  // perso peut ne pas avoir de token
+  function messageActif(perso, message) {
+    if (message.actifF) return onGenre(perso, message.actif, message.actifF);
+    return message.actif;
   }
 
   /* Function non utilisée
@@ -13017,7 +13010,7 @@ var COFantasy = COFantasy || function() {
     if (predicateAsBool(target, 'immunite_' + dmgType)) return true;
     switch (dmgType) {
       case 'poison':
-        if (predicateAsBool(target, 'nonVivant')) return true;
+        if (estNonVivant(target)) return true;
         if (attributeAsBool(target, 'sangDeLArbreCoeur')) return true;
         if (predicateOrAttributeAsBool(target, 'controleSanguin')) return true;
         if (attaquant && predicateAsBool(target, 'sangDeFerIf')) {
@@ -13027,7 +13020,7 @@ var COFantasy = COFantasy || function() {
       case 'froid':
         return attributeAsBool(target, 'presenceGlaciale');
       case 'maladie':
-        if (predicateAsBool(target, 'nonVivant')) return true;
+        if (estNonVivant(target)) return true;
         return attributeAsBool(target, 'sangDeLArbreCoeur');
       case 'drain':
         return predicateAsInt(target, 'voieDeLArchange', 1) > 2 && attributeAsBool(target, 'formeDAnge');
@@ -15042,11 +15035,11 @@ var COFantasy = COFantasy || function() {
         target.token.set('status_' + ef.message.statusMarker, true);
       }
     } else if (ef.effetIndetermine) {
-      target.messages.push(nomPerso(target) + " " + messageEffetIndetermine[ef.effet].activation);
+      target.messages.push(nomPerso(target) + " " + messageActivation(target, messageEffetIndetermine[ef.effet]));
       setTokenAttr(target, ef.effet, true, evt);
     } else { //On a un effet de combat
       let effetC = messageEffetCombat[ef.effet];
-      target.messages.push(nomPerso(target) + " " + effetC.activation);
+      target.messages.push(nomPerso(target) + " " + messageActivation(target, effetC));
       let attrEffetCombat = setTokenAttr(target, ef.effet, true, evt);
       if (ef.attaquant && options.mana !== undefined && effetC.prejudiciable) {
         addEffetTemporaireLie(ef.attaquant, attrEffetCombat, evt);
@@ -16456,14 +16449,14 @@ var COFantasy = COFantasy || function() {
                 etats.forEach(function(ce, index) {
                   if (ce.save) {
                     if (testCondition(ce.condition, attaquant, [target], d20roll, options)) {
-                      var msgPour = " pour résister à un effet";
-                      var msgEtat;
+                      let msgPour = " pour résister à un effet";
+                      let msgEtat;
                       if (ce.etat == 'mort')
                         msgEtat = 'tué' + eForFemale(target);
                       else
                         msgEtat = stringOfEtat(ce.etat, target);
                       let msgRate = ", " + nomPerso(target) + " est " + msgEtat + " par l'attaque";
-                      var saveOpts = {
+                      let saveOpts = {
                         msgPour: msgPour,
                         msgRate: msgRate,
                         attaquant: attaquant,
@@ -16473,7 +16466,7 @@ var COFantasy = COFantasy || function() {
                         type: ce.typeDmg,
                         necromancie: estNecromancie(options)
                       };
-                      var rollId = 'etat_' + ce.etat + index + '_' + target.token.id;
+                      let rollId = 'etat_' + ce.etat + index + '_' + target.token.id;
                       save(ce.save, target, rollId, expliquer, saveOpts, evt,
                         function(reussite, rolltext) {
                           if (!reussite) {
@@ -16547,17 +16540,17 @@ var COFantasy = COFantasy || function() {
                         etatsAvecSave();
                         return;
                       }
-                      var msgPour = " pour résister à un effet";
-                      var msgRate = ", " + nomPerso(target) + " ";
+                      let msgPour = " pour résister à un effet";
+                      let msgRate = ", " + nomPerso(target) + " ";
                       if (ef.duree && ef.message) {
                         msgRate += messageActivation(target, ef.message);
                         if (stateCOF.options.affichage.val.duree_effets.val) msgRate += " (" + ef.duree + " tours)";
                       } else if (ef.effetIndetermine)
-                        msgRate += messageEffetIndetermine[ef.effet].activation;
+                        msgRate += messageActivation(target, messageEffetIndetermine[ef.effet]);
                       else
-                        msgRate += messageEffetCombat[ef.effet].activation;
+                        msgRate += messageActivation(target, messageEffetCombat[ef.effet]);
                       ef.pasDeMessageDActivation = true;
-                      var saveOpts = {
+                      let saveOpts = {
                         msgPour: msgPour,
                         msgRate: msgRate,
                         attaquant: attaquant,
@@ -17162,6 +17155,7 @@ var COFantasy = COFantasy || function() {
   //   - msgPour : message d'explication à afficher avant le jet
   //   - msgReussite : message à afficher en cas de réussite
   //   - msgRate : message à afficher si l'action rate
+  //   - silencieuxSiPasAffecte: ne rien afficher pour les cibles immunisées
   //   - attaquant : le {charId, token} de l'attaquant contre lequel le save se fait (si il y en a un)
   //   - type : le type de dégâts contre lequel on fait le save
   //   - hideSaveTitle : cache le titre du save
@@ -17177,12 +17171,29 @@ var COFantasy = COFantasy || function() {
   //   - sortilege
   function save(s, target, saveId, expliquer, options, evt, afterSave) {
     if (options.type && immuniseAuType(target, options.type, options.attaquant)) {
-      if (!target['msgImmunite_' + options.type]) {
+      if (!target['msgImmunite_' + options.type] && !options.silencieuxSiPasAffecte) {
         expliquer(nomPerso(target) + " ne semble pas affecté par " + stringOfType(options.type));
         target['msgImmunite_' + options.type] = true;
       }
       afterSave(true, '');
       return;
+    }
+    if (s.carac == 'SAG' || s.carac == 'INT' || s.carac == 'CHA' ||
+    s.carac2 == 'SAG' || s.carac2 == 'INT' || s.carac2 == 'CHA') {
+      if (predicateAsBool(target, 'sansEsprit')) {
+        if (!options.silencieuxSiPasAffecte)
+          expliquer(nomPerso(target) + " est sans esprit.");
+        afterSave(true, '');
+        return;
+      }
+    }
+    if (s.carac == 'CON' || s.carac2 == 'CON') {
+      if (estNonVivant(target)) {
+        if (!options.silencieuxSiPasAffecte)
+          expliquer(nomPerso(target) + " n'est pas vraiment vivant.");
+        afterSave(true, '');
+        return;
+      }
     }
     if (s.fauchage) {
       if (s.fauchage <= taillePersonnage(target, 4)) {
@@ -19808,6 +19819,7 @@ var COFantasy = COFantasy || function() {
         case 'magique':
         case 'montreActions':
         case 'brumes':
+        case 'silencieuxSiPasAffecte':
           options[cmd[0]] = true;
           break;
         case 'lanceur':
@@ -20295,7 +20307,8 @@ var COFantasy = COFantasy || function() {
         attrsParPerso[nomPerso] = {
           nomPerso: nomPerso,
           tokenId: tokens[0].id,
-          effets: [ef]
+          effets: [ef],
+          charId
         };
         return;
       }
@@ -20307,7 +20320,7 @@ var COFantasy = COFantasy || function() {
         if (e.pvTemporaires) {
           line += "PV temporaires " + e.pvTemporaires + ' ';
         } else {
-          line += e.actif + ' ';
+          line += messageActif({charId: a.charId}, e) + ' ';
         }
         if (a.tokenId) {
           if (e.pvTemporaires) {
@@ -20422,23 +20435,23 @@ var COFantasy = COFantasy || function() {
         return;
       }
       attrEffet = attrEffet[0];
-      var expliquer = function(msg) {
+      let expliquer = function(msg) {
         sendPerso(perso, msg);
       };
-      var sujet = onGenre(perso, 'il', 'elle');
+      let sujet = onGenre(perso, 'il', 'elle');
       let met = messageEffetIndetermine[effetC];
       if (met === undefined) met = {
         fin: "résiste à l'effet",
         actf: "reste sous l'emprise de l'effet"
       };
-      var saveOpts = {
+      let saveOpts = {
         msgPour: " pour ne plus être sous l'effet " + effetC,
-        msgReussite: ", " + sujet + " " + met.fin,
-        msgRate: ", " + sujet + " " + met.actif,
+        msgReussite: ", " + sujet + ' ' + met.fin,
+        msgRate: ", " + sujet + ' ' + messageActif(perso, met),
         rolls: options.rolls,
         chanceRollId: options.chanceRollId
       };
-      var attrType = findObjs({
+      let attrType = findObjs({
         _type: 'attribute',
         _characterid: charId,
         name: attr.get('name').replace('SaveParJour', 'SaveParJourType')
@@ -23646,7 +23659,6 @@ var COFantasy = COFantasy || function() {
         let defense = defenseOfPerso(undefined, perso, pageId, undefined, {
           test: true
         });
-
         let defenseMontree;
         let bufDef = attributeAsInt(perso, 'bufDEF', 0);
         if (bufDef > 0) {
@@ -23704,7 +23716,7 @@ var COFantasy = COFantasy || function() {
                 if (attrName.indexOf(')_') > 0) return;
               } else if (effet != attrName) return;
             }
-            let explEffetMsg = mt.actif;
+            let explEffetMsg = messageActif(perso, mt);
             if (stateCOF.options.affichage.val.duree_effets.val || playerIsGM(playerId)) {
               let effetVal = attr.get('current');
               if (parseInt(effetVal)) {
@@ -23717,11 +23729,15 @@ var COFantasy = COFantasy || function() {
           } else if (estEffetCombat(attrName)) {
             let effetC = effetCombatOfAttribute(attr);
             if (lie && effetC != attrName) return;
-            addLineToFramedDisplay(display, messageEffetCombat[effetC].actif);
+            addLineToFramedDisplay(display, messageActif(perso, messageEffetCombat[effetC]));
           } else if (estEffetIndetermine(attrName)) {
             let effetI = effetIndetermineOfAttribute(attr);
             if (lie && effetI != attrName) return;
-            addLineToFramedDisplay(display, messageEffetIndetermine[effetI].actif);
+            let mi = messageActif(perso, messageEffetIndetermine[effetI]);
+            if (playerIsGM(playerId)) {
+              mi += ' ' + boutonSimple('!cof-effet ' + effetI + ' false --target ' + perso.token.id, 'X');
+            }
+            addLineToFramedDisplay(display, mi);
           }
         });
         allAttributesNamed(attrsChar, 'munition').forEach(function(attr) {
@@ -24635,8 +24651,8 @@ var COFantasy = COFantasy || function() {
     let playerId = getPlayerIdFromMsg(msg);
     options.msgPour = msgPour;
     let sujet = onGenre(perso, 'il', 'elle');
-    options.msgReussite = ", " + sujet + " " + met.fin;
-    options.msgRate = ", " + sujet + " " + met.actif;
+    options.msgReussite = ", " + sujet + ' ' + met.fin;
+    options.msgRate = ", " + sujet + ' ' + messageActif(perso, met);
     let attrType = findObjs({
       _type: 'attribute',
       _characterid: perso.charId,
@@ -25619,7 +25635,7 @@ var COFantasy = COFantasy || function() {
               let attr = attrClasseEffet.baseAttribute;
               let attrName = attr.get('name');
               if (estEffetIndetermine(attrName))
-                mpc += ' ' + messageEffetIndetermine[effetIndetermineOfAttribute(attr)].actif;
+                mpc += ' ' + messageActif(perso, messageEffetIndetermine[effetIndetermineOfAttribute(attr)]);
               else mpc += ' ' + attrName;
             });
             sendPerso(perso, mpc, options.secret);
@@ -25630,7 +25646,6 @@ var COFantasy = COFantasy || function() {
           return true;
         });
       }
-      let msgEffet = whisper + messageEffetIndetermine[effet].activation;
       cibles.forEach(function(perso) {
         let expliquer = function(s) {
           sendPerso(perso, s);
@@ -25643,7 +25658,7 @@ var COFantasy = COFantasy || function() {
 
             setTokenAttr(
               perso, effet, valeur, evt, {
-                msg: msgEffet
+                msg: whisper + messageActivation(perso, messageEffetIndetermine[effet]) 
               });
             switch (effet) {
               case 'foretVivanteEnnemie':
@@ -25671,6 +25686,7 @@ var COFantasy = COFantasy || function() {
           let saveOpts = {
             msgPour: options.save.msgPour || " pour résister à l'effet " + effet,
             msgRate: ", raté.",
+            silencieuxSiPasAffecte: options.silencieuxSiPasAffecte,
             attaquant: lanceur,
             rolls: options.rolls,
             chanceRollId: options.chanceRollId,
@@ -39382,6 +39398,7 @@ var COFantasy = COFantasy || function() {
   // activation : message à l'activation
   // activationF : message à l'activation si la cible est féminine
   // actif : message de statut
+  // actifF : message de statut si la cible est féminine
   // fin : message à la fin de l'effet
   // dm : permet d'infliger des dm
   // soins : soigne
@@ -39425,12 +39442,14 @@ var COFantasy = COFantasy || function() {
     chantDesHeros: {
       activation: "écoute le chant du barde",
       actif: "est inspiré par le Chant des Héros",
+      actifF: "est inspirée par le Chant des Héros",
       fin: "n'est plus inspiré par le Chant des Héros"
     },
     benediction: {
       activation: "est touché par la bénédiction",
       activationF: "est touchée par la bénédiction",
       actif: "est béni",
+      actifF: "est bénie",
       fin: "l'effet de la bénédiction s'estompe"
     },
     paradeCroisee: {
@@ -39462,6 +39481,7 @@ var COFantasy = COFantasy || function() {
     apeureTemp: {
       activation: "prend peur",
       actif: "est dominé par sa peur",
+      actifF: "est dominée par sa peur",
       fin: "retrouve du courage",
       msgSave: "retrouver du courage",
       prejudiciable: true,
@@ -39471,6 +39491,7 @@ var COFantasy = COFantasy || function() {
       activation: "prend peur: il peut fuir ou rester recroquevillé",
       activationF: "prend peur: elle peut fuir ou rester recroquevillé",
       actif: "est paralysé par la peur",
+      actifF: "est paralysée par la peur",
       fin: "retrouve du courage et peut à nouveau agir",
       msgSave: "retrouver du courage",
       prejudiciable: true,
@@ -39479,6 +39500,7 @@ var COFantasy = COFantasy || function() {
     aveugleTemp: {
       activation: "n'y voit plus rien !",
       actif: "est aveuglé",
+      actifF: "est aveuglée",
       fin: "retrouve la vue",
       msgSave: "retrouver la vue",
       prejudiciable: true,
@@ -39495,6 +39517,7 @@ var COFantasy = COFantasy || function() {
       activation: "est ralenti : une seule action, pas d'action limitée",
       activationF: "est ralentie : une seule action, pas d'action limitée",
       actif: "est ralenti",
+      actifF: "est ralentie",
       msgSave: "ne plus être ralenti",
       fin: "n'est plus ralenti",
       prejudiciable: true,
@@ -39505,6 +39528,7 @@ var COFantasy = COFantasy || function() {
       activation: "est paralysé : aucune action ni déplacement possible",
       activationF: "est paralysée : aucune action ni déplacement possible",
       actif: "est paralysé",
+      actifF: "est paralysée",
       fin: "n'est plus paralysé",
       msgSave: "ne plus être paralysé",
       prejudiciable: true,
@@ -39515,6 +39539,7 @@ var COFantasy = COFantasy || function() {
       activation: "est paralysé : aucune action ni déplacement possible",
       activationF: "est paralysée : aucune action ni déplacement possible",
       actif: "est paralysé",
+      actifF: "est paralysée",
       fin: "n'est plus paralysé",
       msgSave: "ne plus être paralysé",
       prejudiciable: true,
@@ -39524,6 +39549,7 @@ var COFantasy = COFantasy || function() {
       activation: "est immobilisé : aucun déplacement possible",
       activationF: "est immobilisée : aucun déplacement possible",
       actif: "est immobilisé",
+      actifF: "est immobilisée",
       fin: "n'est plus immobilisé",
       msgSave: "pouvoir bouger",
       prejudiciable: true,
@@ -39534,6 +39560,7 @@ var COFantasy = COFantasy || function() {
       activation: "est étourdi : aucune action et -5 en DEF",
       activationF: "est étourdie : aucune action et -5 en DEF",
       actif: "est étourdi",
+      actifF: "est étourdie",
       fin: "n'est plus étourdi",
       msgSave: "se reprendre",
       prejudiciable: true,
@@ -39542,6 +39569,7 @@ var COFantasy = COFantasy || function() {
     affaibliTemp: {
       activation: "se sent faible",
       actif: "est affaibli",
+      actifF: "est affaiblie",
       fin: "se sent moins faible",
       msgSave: "retrouver des forces",
       prejudiciable: true
@@ -39550,6 +39578,7 @@ var COFantasy = COFantasy || function() {
       activation: "est assommé",
       activationF: "est assommée",
       actif: "est assommé",
+      actifF: "est assommée",
       fin: "reprend conscience",
       msgSave: "reprendre conscience",
       prejudiciable: true,
@@ -39558,6 +39587,7 @@ var COFantasy = COFantasy || function() {
     nauseeuxTemp: {
       activation: "souffre de violentes douleurs au ventre",
       actif: "est nauséeux, seul le mouvement est possible",
+      actifF: "est nauséeuse, seul le mouvement est possible",
       fin: "se sent mieux",
       msgSave: "ne plus être nauséeux",
       prejudiciable: true,
@@ -39583,6 +39613,7 @@ var COFantasy = COFantasy || function() {
       activation: "est bloqué par la manoeuvre",
       activationF: "est bloquée par la manoeuvre",
       actif: "est bloqué et ne peut pas se déplacer",
+      actifF: "est bloquée et ne peut pas se déplacer",
       fin: "peut à nouveau se déplacer",
       msgSave: "pouvoir se déplacer",
       prejudiciable: true,
@@ -39592,6 +39623,7 @@ var COFantasy = COFantasy || function() {
       activation: "est déconcentré",
       activationF: "est déconcentrée",
       actif: "a été perturbé par une diversion",
+      actifF: "a été perturbée par une diversion",
       fin: "se reconcentre sur le combat",
       msgSave: "se reconcentrer sur le combat",
       prejudiciable: true,
@@ -39600,7 +39632,8 @@ var COFantasy = COFantasy || function() {
     menaceManoeuvre: {
       activation: "est menacé",
       activationF: "est menacée",
-      actif: "a été menacée, risque de plus de DM",
+      actif: "a été menacé, risque de plus de DM",
+      actifF: "a été menacée, risque de plus de DM",
       fin: "n'est plus sous la menace",
       msgSave: "ne plus être sous la menace",
       prejudiciable: true,
@@ -39610,6 +39643,7 @@ var COFantasy = COFantasy || function() {
       activation: "est tenu à distance",
       activationF: "est tenue à distance",
       actif: "est tenu à distance de son adversaire, il ne peut pas l'attaquer",
+      actifF: "est tenue à distance de son adversaire, elle ne peut pas l'attaquer",
       fin: "peut à nouveau attaquer son adversaire",
       msgSave: "pouvoir à nouveau attaquer son adversaire",
       prejudiciable: true,
@@ -39688,12 +39722,14 @@ var COFantasy = COFantasy || function() {
       activation: "devient flou",
       activationF: "devient floue",
       actif: "apparaît flou",
+      actifF: "apparaît floue",
       fin: "redevient net",
       visible: true
     },
     agrandissement: {
       activation: "se met à grandir",
       actif: "est vraiment très grand",
+      actifF: "est vraiment très grande",
       fin: "retrouve sa taille normale",
       visible: true
     },
@@ -39718,6 +39754,7 @@ var COFantasy = COFantasy || function() {
     sousTension: {
       activation: "se charge d'énergie électrique",
       actif: "est chargé d'énergie électrique",
+      actifF: "est chargée d'énergie électrique",
       fin: "n'est plus chargé d'énergie électrique",
       dm: true,
       visible: false
@@ -39725,6 +39762,7 @@ var COFantasy = COFantasy || function() {
     strangulation: {
       activation: "commence à étouffer",
       actif: "est étranglé",
+      actifF: "est étranglée",
       fin: "respire enfin",
       msgSave: "pouvoir respirer",
       prejudiciable: true,
@@ -39750,11 +39788,13 @@ var COFantasy = COFantasy || function() {
     zoneDeSilence: {
       activation: "n'entend plus rien",
       actif: "est totalement sourd",
+      actifF: "est totalement sourde",
       fin: "peut à nouveau entendre"
     },
     danseIrresistible: {
       activation: "se met à danser",
       actif: "danse malgré lui",
+      actifF: "danse malgré elle",
       fin: "s'arrête de danser",
       msgSave: "s'arrêter de danser",
       prejudiciable: true,
@@ -39772,6 +39812,7 @@ var COFantasy = COFantasy || function() {
     murDeForce: {
       activation: "fait apparaître un mur de force",
       actif: "en entouré d'un mur de force",
+      actifF: "en entourée d'un mur de force",
       fin: "voit son mur de force disparaître",
       visible: true
     },
@@ -39805,6 +39846,7 @@ var COFantasy = COFantasy || function() {
     encaisserUnCoup: {
       activation: "se place de façon à dévier un coup sur son armure",
       actif: "est placé de façon à dévier un coup",
+      actifF: "est placée de façon à dévier un coup",
       fin: "n'est plus en position pour encaisser un coup"
     },
     seulContreTous: {
@@ -39815,17 +39857,20 @@ var COFantasy = COFantasy || function() {
     absorberUnCoup: {
       activation: "se prépare à absorber un coup avec son bouclier",
       actif: "est prêt à absorber un coup avec son bouclier",
+      actifF: "est prête à absorber un coup avec son bouclier",
       fin: "n'est plus en position de prendre le prochain coup sur son bouclier"
     },
     absorberUnSort: {
       activation: "se prépare à absorber un sort avec son bouclier",
       actif: "est prêt à absorber un sort avec son bouclier",
+      actifF: "est prête à absorber un sort avec son bouclier",
       fin: "n'est plus en position de se protéger d'un sort avec son bouclier"
     },
     nueeDInsectes: {
       activation: "est attaqué par une nuée d'insectes",
       activationF: "est attaquée par une nuée d'insectes",
       actif: "est entouré d'une nuée d'insectes",
+      actifF: "est entourée d'une nuée d'insectes",
       fin: "est enfin débarassé des insectes",
       msgSave: "se débarasser des insectes",
       prejudiciable: true,
@@ -39836,6 +39881,7 @@ var COFantasy = COFantasy || function() {
       activation: "est attaqué par une nuée de criquets",
       activationF: "est attaquée par une nuée de criquets",
       actif: "est entouré d'une nuée de criquets",
+      actifF: "est entourée d'une nuée de criquets",
       fin: "est enfin débarassé des criquets",
       msgSave: "se débarasser des criquets",
       prejudiciable: true,
@@ -39846,6 +39892,7 @@ var COFantasy = COFantasy || function() {
       activation: "est attaqué par une nuée de scorpions",
       activationF: "est attaquée par une nuée de scorpions",
       actif: "est entouré d'une nuée de scorpions",
+      actifF: "est entourée d'une nuée de scorpions",
       fin: "est enfin débarassé des scorpions",
       msgSave: "se débarasser des scorpions",
       prejudiciable: true,
@@ -39855,6 +39902,7 @@ var COFantasy = COFantasy || function() {
     toiles: {
       activation: "voit des toiles d'araignées apparaître tout autour",
       actif: "est bloqué par des toiles d'araignées",
+      actifF: "est bloquée par des toiles d'araignées",
       fin: "se libère des toiles",
       msgSave: "se libérer des toiles",
       prejudiciable: true,
@@ -39865,6 +39913,7 @@ var COFantasy = COFantasy || function() {
     prisonVegetale: {
       activation: "voit des plantes pousser et s'enrouler autour de ses jambes",
       actif: "est bloqué par des plantes",
+      actifF: "est bloquée par des plantes",
       fin: "se libère des plantes",
       msgSave: "se libérer des plantes",
       prejudiciable: true,
@@ -39875,11 +39924,13 @@ var COFantasy = COFantasy || function() {
     protectionContreLesElements: {
       activation: "lance un sort de protection contre les éléments",
       actif: "est protégé contre les éléments",
+      actifF: "est protégée contre les éléments",
       fin: "n'est plus protégé contre les éléments"
     },
     masqueMortuaire: {
       activation: "prend l'apparence de la mort",
       actif: "semble mort et animé",
+      actifF: "semble morte et animée",
       fin: "retrouve une apparence de vivant",
       visible: true
     },
@@ -39935,6 +39986,7 @@ var COFantasy = COFantasy || function() {
       activation: "est déstabilisé",
       activationF: "est déstabilisée",
       actif: "est déstabilisé par une action de charme",
+      actifF: "est déstabilisée par une action de charme",
       fin: "retrouve ses esprits",
       msgSave: "retrouver ses esprits",
       prejudiciable: true,
@@ -39978,11 +40030,12 @@ var COFantasy = COFantasy || function() {
     sanctuaire: {
       activation: "lance un sort de sanctuaire",
       actif: "est protégé par un sanctuaire",
+      actifF: "est protégée par un sanctuaire",
       fin: "n'est plus protégé par le sanctuaire"
     },
     rechargeSouffle: {
       activation: "doit maintenant attendre un peu avant de pouvoir le refaire",
-      actif: "attends avant de pouvoir refaire un souffle",
+      actif: "attend avant de pouvoir refaire un souffle",
       fin: "a récupéré"
     },
     paralysieRoublard: {
@@ -40005,12 +40058,14 @@ var COFantasy = COFantasy || function() {
     formeDArbre: {
       activation: "se transorme en arbre",
       actif: "est transformé en arbre",
+      actifF: "est transformée en arbre",
       fin: "retrouve sa forme normale",
       visible: true
     },
     statueDeBois: {
       activation: "se transforme en statue de bois",
       actif: "est transformé en statue de bois",
+      actifF: "est transformée en statue de bois",
       fin: "retrouve sa forme normale",
       msgSave: "ne plus être une statue de bois",
       prejudiciable: true,
@@ -40037,6 +40092,7 @@ var COFantasy = COFantasy || function() {
     champDeProtection: {
       activation: "devient protégé par un champ télékinétique",
       actif: "est protégé par un champ télékinétique",
+      actifF: "est protégée par un champ télékinétique",
       fin: "n'est plus sous l'effet d'un champ de protection",
     },
     attaqueArmeeConjuree: {
@@ -40068,6 +40124,7 @@ var COFantasy = COFantasy || function() {
     expose: {
       activation: "s'expose aux attaques de sa cible",
       actif: "est exposé aux attaques de son adversaire",
+      actifF: "est exposée aux attaques de son adversaire",
       fin: "n'est plus exposé",
       msgSave: "ne plus s'exposer",
       prejudiciable: true
@@ -40099,6 +40156,7 @@ var COFantasy = COFantasy || function() {
       activation: "est énervé par ces railleries",
       activationF: "est énervée par ces railleries",
       actif: "est énervé",
+      actifF: "est énervée",
       fin: "retrouve son calme",
       msgSave: "retrouver son calme",
       prejudiciable: true,
@@ -40256,16 +40314,19 @@ var COFantasy = COFantasy || function() {
     armureMagique: {
       activation: "est entouré d'un halo magique",
       actif: "est protégé par une armure magique",
+      actifF: "est protégée par une armure magique",
       fin: "n'est plus entouré d'un halo magique"
     },
     armureDuMage: {
       activation: "fait apparaître un nuage magique argenté qui le protège",
       actif: "est entouré d'une armure du mage",
+      actifF: "est entourée d'une armure du mage",
       fin: "n'a plus son armure du mage"
     },
     armureDEau: {
       activation: "fait apparaître une couche d'eau de quelques centimètres qui le protège",
       actif: "est entouré d'une armure d'eau'",
+      actifF: "est entourée d'une armure d'eau'",
       fin: "n'a plus son armure d'eau'"
     },
     armeDArgent: {
@@ -40297,6 +40358,7 @@ var COFantasy = COFantasy || function() {
     protectionContreLeMal: {
       activation: "reçoit une bénédiction de protection contre le mal",
       actif: "est protégé contre le mal",
+      actifF: "est protégée contre le mal",
       fin: "n'est plus protégé contre le mal"
     },
     rageDuBerserk: {
@@ -40308,6 +40370,7 @@ var COFantasy = COFantasy || function() {
     enrage: {
       activation: "devient enragé",
       actif: "est enragé",
+      actifF: "est enragée",
       fin: "retrouve son calme",
       msgSave: "retrouver son calme",
     },
@@ -40342,6 +40405,7 @@ var COFantasy = COFantasy || function() {
     estAgrippePar: {
       activation: "est agrippé",
       actif: "est agrippé",
+      actifF: "est agrippée",
       fin: "se libère",
       msgSave: "se libérer",
       entrave: true
@@ -40354,6 +40418,7 @@ var COFantasy = COFantasy || function() {
     estDevorePar: {
       activation: "est saisi",
       actif: "est saisi",
+      actifF: "est saisie",
       fin: "se libère",
       msgSave: "se libérer",
       entrave: true
@@ -40373,6 +40438,7 @@ var COFantasy = COFantasy || function() {
     inconfort: {
       activation: "commence à être gêné par son armure",
       actif: "est gêné par son armure",
+      actifF: "est gênée par son armure",
       fin: "réajuste son armure",
     },
     noyade: {
@@ -40431,12 +40497,15 @@ var COFantasy = COFantasy || function() {
       activation: "se sent fiévreux",
       activationF: "se sent fiévreuse",
       actif: "est fiévreux",
+      actifF: "est fiévreuse",
       fin: "se sent mieux",
       prejudiciable: true
     },
     foretVivanteEnnemie: {
       activation: "est gêné par la forêt",
+      activationF: "est gênée par la forêt",
       actif: "est désorienté par la forêt",
+      actifF: "est désorientée par la forêt",
       fin: "se retrouve dans une forêt normale",
       entrave: true
     },
@@ -40462,6 +40531,7 @@ var COFantasy = COFantasy || function() {
     },
     mutationMusclesHypertrophies: {
       activation: "devient plus musclé",
+      activationF: "devient plus musclée",
       actif: "a les muscles hypertrophiés",
       fin: "retrouve des muscles normaux",
     },
@@ -40477,17 +40547,20 @@ var COFantasy = COFantasy || function() {
     },
     mutationSilhouetteFiliforme: {
       activation: "devient plus fin",
+      activationF: "devient plus fine",
       actif: "a une silhouette filiforme",
       fin: "retrouve une silhouette normale",
     },
     mutationSilhouetteMassive: {
       activation: "devient plus massif",
+      activationF: "devient plus massive",
       actif: "a une silhouette massive",
       fin: "retrouve une silhouette normale",
     },
     presenceGlaciale: {
       activation: "transforme son corps en glace vivante",
       actif: "est formé de glace",
+      actifF: "est formée de glace",
       fin: "retrouve un corps normal",
     },
     sixiemeSens: {
@@ -40497,6 +40570,7 @@ var COFantasy = COFantasy || function() {
     },
     charme: {
       activation: "devient un ami de longue date",
+      activationF: "devient une amie de longue date",
       actif: "est sous le charme de quelqu'un",
       fin: "retrouve ses esprits",
       prejudiciable: true
@@ -40518,7 +40592,9 @@ var COFantasy = COFantasy || function() {
     },
     ondesCorruptrices: { //nombre, à mettre avec !cof-effet ondesCorruptrices 2
       activation: "se sent nauséeux",
+      activationF: "se sent nauséeuse",
       actif: "se sent nauséeux",
+      actifF: "se sent nauséeuse",
       fin: "se sent un peu mieux",
       prejudiciable: true
     },
@@ -41133,8 +41209,8 @@ var COFantasy = COFantasy || function() {
         else msgPour += effetC;
       }
       let sujet = onGenre(perso, 'il', 'elle');
-      let msgReussite = ", " + sujet + " " + met.fin;
-      let msgRate = ", " + sujet + " " + met.actif;
+      let msgReussite = ", " + sujet + ' ' + met.fin;
+      let msgRate = ", " + sujet + ' ' + messageActif(perso, met);
       let saveOpts = {
         msgPour: msgPour,
         msgReussite: msgReussite,
@@ -41209,20 +41285,18 @@ var COFantasy = COFantasy || function() {
       if (isNaN(portee) || portee < 0) return;
       let charId = aura.get('characterid');
       let targets = {};
-      let effet = aura.get('max');
+      let effet = aura.get('max') + " --silencieuxSiPasAffecte";
       //For each token representing that character
       allPersos.forEach(function(perso) {
         if (perso.charId != charId) return;
         if (getState(perso, 'mort')) return;
-        let tokName;
         //On cherche ensuite les tokens à portee
         allPersos.forEach(function(target) {
           if (target.token.id == perso.token.id) return;
           if (target.charId == charId) return;
           if (distanceCombat(perso.token, target.token, pageId) > portee) return;
-          tokName = tokName || nomPerso(perso);
           effet += " --lanceur " + perso.token.id;
-          targets[target.token.id] = tokName;
+          targets[target.token.id] = perso;
         });
       });
       if (_.isEmpty(targets)) return;
@@ -41241,21 +41315,28 @@ var COFantasy = COFantasy || function() {
       if (effet.includes('$TOKEN')) {
         //On groupe les cibles par token qui génère l'aura
         let targetsPerSource = {};
-        _.forEach(targets, function(auraTokName, tid) {
-          targetsPerSource[auraTokName] = targetsPerSource[auraTokName] || new Set();
-          targetsPerSource[auraTokName].add(tid);
+        _.forEach(targets, function(source, tid) {
+          targetsPerSource[source.token.id] = 
+            targetsPerSource[source.token.id] || {source, tset:new Set()};
+          targetsPerSource[source.token.id].tset.add(tid);
         });
-        _.forEach(targetsPerSource, function(tset, auraTokenName) {
-          let effetFinal = effet.replace(/\$TOKEN/g, auraTokenName);
+        _.forEach(targetsPerSource, function({source,tset}, sid) {
+          let effetFinal = effet.replace(/\$TOKEN/g, nomPerso(source));
           tset.forEach(function(tid) {
             effetFinal += " --target " + tid;
           });
+          effetFinal += " --lanceur "+source.token.id;
           sendChat('player|' + gmId, effetFinal);
         });
       } else {
         //Toutes les cibles ensemble
-        _.forEach(targets, function(auraTokenName, tid) {
+        let sourcesVues = new Set();
+        _.forEach(targets, function(source, tid) {
           effet += " --target " + tid;
+          if (!sourcesVues.has(source.token.id)) {
+            sourcesVues.add(source.token.id);
+            effet += " --lanceur "+source.token.id;
+          }
         });
         sendChat('player|' + gmId, effet);
       }
