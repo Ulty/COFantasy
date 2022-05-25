@@ -6,6 +6,7 @@
 * Don de soin, de la Voie de Périndé
 
 ### Corrections de bugs
+* Correction d'un bug faisant appliquer certains effets 2 fois à la fin des tours.
 * Prise en compte des immunités pour les états venant des attaques
 * Affichage correct de l'arme en main pour les mooks
 * On garde les attributs quand un mook invisible redevient visible
