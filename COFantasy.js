@@ -2902,7 +2902,8 @@ var COFantasy = COFantasy || function() {
         iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
           token.set("aura2_radius", 0);
           if (stateCOF.armeesDesMorts && stateCOF.armeesDesMorts[token.id]) {
-            if (evt.armeesDesMorts === undefined) evt.armeesDesMorts = {... stateCOF.armeesDesMorts};
+            if (evt.armeesDesMorts === undefined) evt.armeesDesMorts = {...stateCOF.armeesDesMorts
+            };
             stateCOF.armeesDesMorts[token.id] = undefined;
           }
         });
@@ -9774,9 +9775,9 @@ var COFantasy = COFantasy || function() {
       bonusMasque += masqueIntense;
       attBonus += bonusMasque;
       if (options && options.pasDeDmg) {
-      explications.push("Masque du prédateur : +" + bonusMasque + " en Attaque");
+        explications.push("Masque du prédateur : +" + bonusMasque + " en Attaque");
       } else {
-      explications.push("Masque du prédateur : +" + bonusMasque + " en Attaque et DM");
+        explications.push("Masque du prédateur : +" + bonusMasque + " en Attaque et DM");
       }
       if (masqueIntense)
         removeTokenAttr(personnage, 'masqueDuPredateurTempeteDeManaIntense', evt);
@@ -9786,9 +9787,9 @@ var COFantasy = COFantasy || function() {
         getValeurOfEffet(personnage, 'masqueDuPredateurAmeLiee', 1);
       attBonus += bonusMasque;
       if (options && options.pasDeDmg) {
-      explications.push("Masque du prédateur lié : +" + bonusMasque + " en Attaque");
+        explications.push("Masque du prédateur lié : +" + bonusMasque + " en Attaque");
       } else {
-      explications.push("Masque du prédateur lié : +" + bonusMasque + " en Attaque et DM");
+        explications.push("Masque du prédateur lié : +" + bonusMasque + " en Attaque et DM");
       }
     }
     if (attributeAsBool(personnage, 'armeSecreteBarde')) {
@@ -15379,7 +15380,7 @@ var COFantasy = COFantasy || function() {
       if (options.frappeDuVide) {
         attaquant.additionalDmg.push({
           type: mainDmgType,
-          value: (options.kiai)?6:('1' + options.d6)
+          value: (options.kiai) ? 6 : ('1' + options.d6)
         });
       }
     }
@@ -16191,22 +16192,23 @@ var COFantasy = COFantasy || function() {
             }
             if (effets) {
               effets.forEach(function(ef) {
-                if ((options.sortilege || options.mana !== undefined) &&
-                  (predicateAsBool(target, 'liberteDAction') && (
-                    ef.effet == 'apeureTemp' ||
-                    ef.effet == 'endormiTemp' ||
-                    ef.effet == 'etourdiTemp' ||
-                    ef.effet == 'immobiliseTemp' ||
-                    ef.effet == 'paralyseTemp' ||
-                    ef.effet == 'paralyseGoule' ||
-                    ef.effet == 'ralentiTemp' ||
-                    ef.entrave
-                  )) ||
+                if (((options.sortilege || options.mana !== undefined) &&
+                    (predicateAsBool(target, 'liberteDAction') && (
+                      ef.effet == 'apeureTemp' ||
+                      ef.effet == 'endormiTemp' ||
+                      ef.effet == 'etourdiTemp' ||
+                      ef.effet == 'immobiliseTemp' ||
+                      ef.effet == 'paralyseTemp' ||
+                      ef.effet == 'ralentiTemp' ||
+                      ef.entrave
+                    ))) ||
+                  (ef.effet == 'paralyseGoule' &&
+                    (predicateAsBool(target, 'liberteDAction') || predicateAsBool(target, 'actionLibre'))
+                  ) ||
                   (predicateAsBool(target, 'actionLibre') && (
                     ef.effet == 'ralentiTemp' ||
                     ef.effet == 'immobiliseTemp' ||
-                    ef.effet == 'paralyseTemp' ||
-                    ef.effet == 'paralyseGoule')) ||
+                    ef.effet == 'paralyseTemp')) ||
                   (ef.entrave && ef.effet != 'paralyseTemp' && ef.effet != 'paralyseGoule' && predicateAsInt(target, 'voieDeLArchange', 1) > 1 && attributeAsBool(target, 'formeDAnge'))
                 ) {
                   target.messages.push(nomPerso(target) + " reste libre de ses mouvements !");
@@ -17194,7 +17196,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (s.carac == 'SAG' || s.carac == 'INT' || s.carac == 'CHA' ||
-    s.carac2 == 'SAG' || s.carac2 == 'INT' || s.carac2 == 'CHA') {
+      s.carac2 == 'SAG' || s.carac2 == 'INT' || s.carac2 == 'CHA') {
       if (predicateAsBool(target, 'sansEsprit')) {
         if (!options.silencieuxSiPasAffecte)
           expliquer(nomPerso(target) + " est sans esprit.");
@@ -20339,7 +20341,9 @@ var COFantasy = COFantasy || function() {
         if (e.pvTemporaires) {
           line += "PV temporaires " + e.pvTemporaires + ' ';
         } else {
-          line += messageActif({charId: a.charId}, e) + ' ';
+          line += messageActif({
+            charId: a.charId
+          }, e) + ' ';
         }
         if (a.tokenId) {
           if (e.pvTemporaires) {
@@ -24182,7 +24186,7 @@ var COFantasy = COFantasy || function() {
       iterSelected(selected, function(perso) {
         cibles.push(perso);
       });
-    cibles = enleveDoublonsPartagePV(cibles);
+      cibles = enleveDoublonsPartagePV(cibles);
       if (options.return) return;
       //L'expression à lancer est tout ce qui est entre le premier blanc et le premier --
       let debutDmgRollExpr = msg.content.indexOf(' ') + 1;
@@ -25201,7 +25205,8 @@ var COFantasy = COFantasy || function() {
       }
       if (effet == 'armeeDesMorts') {
         if (stateCOF.armeesDesMorts) {
-          evt.armeesDesMorts = {... stateCOF.armeesDesMorts};
+          evt.armeesDesMorts = {...stateCOF.armeesDesMorts
+          };
         } else {
           evt.armeesDesMorts = {};
           stateCOF.armeesDesMorts = {};
@@ -25685,7 +25690,7 @@ var COFantasy = COFantasy || function() {
 
             setTokenAttr(
               perso, effet, valeur, evt, {
-                msg: whisper + messageActivation(perso, messageEffetIndetermine[effet]) 
+                msg: whisper + messageActivation(perso, messageEffetIndetermine[effet])
               });
             switch (effet) {
               case 'foretVivanteEnnemie':
@@ -31769,7 +31774,7 @@ var COFantasy = COFantasy || function() {
         _characterid: charId,
         name: 'scriptVersion',
         current: true,
-        max:stateCOF.version
+        max: stateCOF.version
       });
     }
     let pnj = true;
@@ -41344,16 +41349,22 @@ var COFantasy = COFantasy || function() {
         //On groupe les cibles par token qui génère l'aura
         let targetsPerSource = {};
         _.forEach(targets, function(source, tid) {
-          targetsPerSource[source.token.id] = 
-            targetsPerSource[source.token.id] || {source, tset:new Set()};
+          targetsPerSource[source.token.id] =
+            targetsPerSource[source.token.id] || {
+              source,
+              tset: new Set()
+            };
           targetsPerSource[source.token.id].tset.add(tid);
         });
-        _.forEach(targetsPerSource, function({source,tset}, sid) {
+        _.forEach(targetsPerSource, function({
+          source,
+          tset
+        }, sid) {
           let effetFinal = effet.replace(/\$TOKEN/g, nomPerso(source));
           tset.forEach(function(tid) {
             effetFinal += " --target " + tid;
           });
-          effetFinal += " --lanceur "+source.token.id;
+          effetFinal += " --lanceur " + source.token.id;
           sendChat('player|' + gmId, effetFinal);
         });
       } else {
@@ -41363,7 +41374,7 @@ var COFantasy = COFantasy || function() {
           effet += " --target " + tid;
           if (!sourcesVues.has(source.token.id)) {
             sourcesVues.add(source.token.id);
-            effet += " --lanceur "+source.token.id;
+            effet += " --lanceur " + source.token.id;
           }
         });
         sendChat('player|' + gmId, effet);
