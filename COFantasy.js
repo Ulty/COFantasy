@@ -16191,7 +16191,7 @@ var COFantasy = COFantasy || function() {
             }
             if (effets) {
               effets.forEach(function(ef) {
-                if (options.sortilege &&
+                if ((options.sortilege || options.mana !== undefined) &&
                   (predicateAsBool(target, 'liberteDAction') && (
                     ef.effet == 'apeureTemp' ||
                     ef.effet == 'endormiTemp' ||
@@ -26304,7 +26304,7 @@ var COFantasy = COFantasy || function() {
       }
     };
     addEvent(evt);
-    var explications = options.messages || [];
+    let explications = options.messages || [];
     entrerEnCombat(attaquant, [cible], explications, evt);
     const display = startFramedDisplay(playerId, evt.action.titre, attaquant, {
       perso2: cible
@@ -26321,7 +26321,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     setTokenAttr(cible, 'injonctionMortelle', true, evt);
-    var saveOpts = {
+    let saveOpts = {
       msgPour: " pour résister à l'injonction mortelle",
       msgRate: ", raté.",
       attaquant: attaquant,
@@ -26329,8 +26329,8 @@ var COFantasy = COFantasy || function() {
       chanceRollId: options.chanceRollId,
       necromancie: true
     };
-    var saveId = 'injonctionMortelle_' + cible.token.id;
-    var expliquer = function(message) {
+    let saveId = 'injonctionMortelle_' + cible.token.id;
+    let expliquer = function(message) {
       addLineToFramedDisplay(display, message, 80);
     };
     save({
