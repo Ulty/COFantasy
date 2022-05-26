@@ -13110,6 +13110,8 @@ var COFantasy = COFantasy || function() {
         ficheAttributeAsBool(target, 'defarmureon', false) &&
         ficheAttributeAsInt(target, 'defarmure', 0) >= 7) {
         expliquer("L'armure lourde de " + nomPerso(target) + " lui permet d'ignorer les dégâts critiques");
+      } else if (predicateAsBool(target, 'immuniteAuxCritiques')) {
+        expliquer("Le succès critique est sans effet");
       } else {
         if (options.critCoef) critCoef = options.critCoef;
         if (target.critCoef) critCoef += target.critCoef;

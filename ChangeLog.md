@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.07
 ### Capacités
+* Prédicat immuniteAucCritiques
 * Amélioration de l'arme de prédilection
 * Voie de l'alchimie (Terres d'Arran)
 * Don de soin, de la Voie de Périndé
