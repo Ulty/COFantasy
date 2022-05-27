@@ -1530,7 +1530,7 @@ var COFantasy = COFantasy || function() {
     },
   };
 
-  // options: bonus:int, deExplosif:bool, nbDes:int, type
+  // options: bonus:int, deExplosif:bool, nbDes:int, type, maxResult
   //Renvoie 1dk + bonus, avec le texte
   //champs val et roll
   function rollDePlus(de, options) {
@@ -1543,6 +1543,7 @@ var COFantasy = COFantasy || function() {
     let jetTotal = 0;
     do {
       let jetDe = randomInteger(de);
+      if (options.maxResult) jetDe = de;
       texteJetDeTotal += jetDe;
       jetTotal += jetDe;
       explose = explose && (jetDe === de);
@@ -4278,7 +4279,7 @@ var COFantasy = COFantasy || function() {
 
   function identifierArme(weaponStats, pred, nom, pattern) {
     let p = pred[nom] ||
-      (weaponStats.name.search(pattern) > 0) ||
+      (weaponStats.name.search(pattern) > -1) ||
       (weaponStats.modificateurs.search(pattern) > -1);
     if (p) {
       weaponStats[nom] = true;
@@ -4397,6 +4398,7 @@ var COFantasy = COFantasy || function() {
     identifierArme(weaponStats, pred, 'masse', /\bmasse\b/i);
     identifierArme(weaponStats, pred, 'rapiere', /\brapi[eè]re\b/i);
     identifierArme(weaponStats, pred, 'poudre', /\bpoudre\b/i);
+    identifierArme(weaponStats, pred, 'sabre', /\b(katana|wakizachi|boken|demi-lame|vivelame|sabre)\b/i);
     return weaponStats;
   }
 
@@ -13011,8 +13013,8 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function ajouteDe6Crit(x, first) {
-    let bonusCrit = rollDePlus(6);
+  function ajouteDe6Crit(x, first, max) {
+    let bonusCrit = rollDePlus(6, {maxResult:max});
     if (first) x.dmgDisplay = "(" + x.dmgDisplay + ")";
     x.dmgDisplay += '+' + bonusCrit.roll;
     x.dmgTotal += bonusCrit.val;
@@ -13170,13 +13172,13 @@ var COFantasy = COFantasy || function() {
         dmgTotal: dmgTotal
       };
       if (options.affute) {
-        ajouteDe6Crit(x, firstBonusCritique);
+        ajouteDe6Crit(x, firstBonusCritique, options.kiai);
         firstBonusCritique = false;
       }
       if (options.tirFatal) {
-        ajouteDe6Crit(x, firstBonusCritique);
+        ajouteDe6Crit(x, firstBonusCritique, options.kiai);
         if (options.tirFatal > 1) {
-          ajouteDe6Crit(x, false);
+          ajouteDe6Crit(x, false, options.kiai);
         }
       }
       if (target.additionalCritDmg) {
@@ -13479,7 +13481,7 @@ var COFantasy = COFantasy || function() {
       default:
         return x;
     }
-    attCar = computeCarExpression(attaquant, attCar);
+    attCar = computeCarValue(attaquant, attCar);
     if (attCar === undefined) return x;
     return attCar + ficheAttributeAsInt(attaquant, 'niveau', 1) + attDiv;
   }
@@ -14771,37 +14773,51 @@ var COFantasy = COFantasy || function() {
     attDMBonus = attDMArme + attDMBonus;
     let attNbDicesCible = attNbDices;
     let attDiceCible = computeAttackDice(weaponStats.attDice, target.maxDmg, options);
-    let attCarBonusCible =
-      computeAttackCarBonus(attaquant, weaponStats.attCarBonus);
+    let attCarBonus = '';
+    if (weaponStats.attCarBonus) {
+      if (weaponStats.sabre && predicateAsBool(attaquant, 'techniqueDuSabre') && weaponStats.attCarBonus == '@{FOR}' && !(options.lamesJumelles && weaponStats.armeGauche)) {
+        let modForce = modCarac(attaquant, 'force');
+        let bonus = predicateAsInt(attaquant, 'techniqueDuSabre', 0, 1);
+        if (bonus > 2 * modForce) attCarBonus = bonus;
+        else attCarBonus = modForce + Math.floor(bonus/2);
+      } else {
+      attCarBonus = computeCarValue(attaquant, weaponStats.attCarBonus);
+      if (attCarBonus === undefined) {
+        attCarBonus = parseInt(weaponStats.attCarBonus);
+      }
+      }
+      if (attCarBonus === 0) attCarBonus = '';
+      else if (attCarBonus > 0) attCarBonus = '+' + attCarBonus;
+    }
     if (options.epieu && !ficheAttributeAsBool(target, 'defarmureon', false)) {
       attNbDicesCible++;
     }
     if (target.pressionMortelle) {
       attNbDicesCible = 1;
       attDiceCible = 6; //TODO : have an option for that
-      attCarBonusCible = '';
+      attCarBonus = '';
     }
     if (!options.sortilege && predicateAsBool(target, 'immuniteAuxArmes')) {
       if (options.magique) {
         attNbDicesCible = options.magique;
         attDiceCible = '6';
-        attCarBonusCible = modCarac(attaquant, 'sagesse');
-        if (attCarBonusCible < 1) attCarBonusCible = '';
-        else attCarBonusCible = " +" + attCarBonusCible;
+        attCarBonus = modCarac(attaquant, 'sagesse');
+        if (attCarBonus < 1) attCarBonus = '';
+        else attCarBonus = " +" + attCarBonus;
       } else {
         target.messages.push(nomPerso(target) + " semble immunisé aux armes ordinaires");
         attNbDicesCible = 0;
-        attCarBonusCible = "";
-        attDMBonus = "";
+        attCarBonus = '';
+        attDMBonus = '';
       }
     }
     let symbde = 'd';
     if (target.maxDmg) symbde = '*';
-    return addOrigin(attaquant.name, attNbDicesCible + symbde + attDiceCible + attCarBonusCible + attDMBonus);
+    return addOrigin(attaquant.name, attNbDicesCible + symbde + attDiceCible + attCarBonus + attDMBonus);
   }
 
   //retourne le mod de la caractéristique x, undefined si ce n'en est pas une
-  function computeCarExpression(perso, x) {
+  function computeCarValue(perso, x) {
     switch (x) {
       case '@{FOR}':
         return modCarac(perso, 'force');
@@ -14842,20 +14858,6 @@ var COFantasy = COFantasy || function() {
     if (etl === '') etl = attr.id;
     else etl += ',' + attr.id;
     etlAttr.set('current', etl);
-  }
-
-  function computeAttackCarBonus(attaquant, x) {
-    if (x === undefined) return '';
-    var attCarBonus = x;
-    if (isNaN(attCarBonus)) {
-      var simplerAttCarBonus = computeCarExpression(attaquant, x);
-      if (simplerAttCarBonus !== undefined) {
-        attCarBonus = simplerAttCarBonus;
-      }
-    }
-    if (attCarBonus === "0" || attCarBonus === 0) attCarBonus = "";
-    else attCarBonus = " + " + attCarBonus;
-    return attCarBonus;
   }
 
   //Met un effet temporaire sur target. L'effet temporaire est spécifié dans ef
@@ -15443,16 +15445,16 @@ var COFantasy = COFantasy || function() {
         evt.deletedAttributes.push(poisonAttr);
         poisonAttr.remove();
       }
-      var attrDmgArme = 'dmgArme(' + attackLabel + ')';
+      let attrDmgArme = 'dmgArme(' + attackLabel + ')';
       if (attributeAsBool(attaquant, attrDmgArme)) {
-        var dmgArme = {
+        let dmgArme = {
           type: mainDmgType,
           value: '1' + options.d6
         };
-        var valDmgArme = tokenAttribute(attaquant, attrDmgArme + 'Valeur');
+        let valDmgArme = tokenAttribute(attaquant, attrDmgArme + 'Valeur');
         if (valDmgArme.length > 0) {
           dmgArme.value = valDmgArme[0].get('current');
-          var dmgArmeType = valDmgArme[0].get('max');
+          let dmgArmeType = valDmgArme[0].get('max');
           if (dmgArmeType !== '') dmgArme.type = dmgArmeType;
         }
         attaquant.additionalDmg.push(dmgArme);
@@ -15471,8 +15473,8 @@ var COFantasy = COFantasy || function() {
     }
     /////////////////////////////////////////////////////////////////
     //Tout ce qui dépend de la cible
-    var ciblesCount = ciblesTouchees.length; //Pour l'asynchronie
-    var attaquesEnTraitrePossibles = {};
+    let ciblesCount = ciblesTouchees.length; //Pour l'asynchronie
+    let attaquesEnTraitrePossibles = {};
     let finCibles = function() {
       ciblesCount--;
       if (ciblesCount === 0) {
@@ -40693,7 +40695,11 @@ var COFantasy = COFantasy || function() {
   function rollAndDealDmg(perso, dmg, type, effet, attrName, msg, count, evt, options, callback, display) {
     let dmgExpr = dmg;
     let tdmi = attributeAsInt(perso, effet + 'TempeteDeManaIntense', 0);
-    if (dmg.de) {
+        if (options.valeur) {
+          let attrsVal = tokenAttribute(perso, options.valeur);
+          if (attrsVal.length > 0) dmgExpr = attrsVal[0].get('current');
+        }
+    else if (dmg.de) {
       if (tdmi) {
         dmgExpr = (tdmi + dmg.nbDe) + 'd' + dmg.de;
         removeTokenAttr(perso, effet + 'TempeteDeManaIntense', evt);
@@ -40811,29 +40817,29 @@ var COFantasy = COFantasy || function() {
   function soigneParTour(charId, pageId, effet, attrName, soinsExpr, msg, evt, options, callback) {
     options = options || {};
     msg = msg || '';
-    var count = -1;
+    let count = -1;
     iterTokensOfAttribute(charId, pageId, effet, attrName,
       function(token, total) {
         if (count < 0) count = total;
-        var perso = {
+        const perso = {
           token: token,
           charId: charId
         };
-        var tdmi = attributeAsInt(perso, effet + "TempeteDeManaIntense", 0);
+        let tdmi = attributeAsInt(perso, effet + "TempeteDeManaIntense", 0);
         if (tdmi) {
           soinsExpr = "(" + soinsExpr + ")*" + (1 + tdmi);
           removeTokenAttr(perso, effet + "TempeteDeManaIntense", evt);
         }
-        var localSoinsExpr = soinsExpr;
+        let localSoinsExpr = soinsExpr;
         if (options.valeur) {
-          var attrsVal = tokenAttribute(perso, options.valeur);
+          let attrsVal = tokenAttribute(perso, options.valeur);
           if (attrsVal.length > 0) localSoinsExpr = attrsVal[0].get('current');
         }
         sendChat('', "[[" + localSoinsExpr + "]]", function(res) {
-          var rolls = res[0];
-          var soinRoll = rolls.inlinerolls[0];
-          var soins = soinRoll.results.total;
-          var displaySoins = buildinline(soinRoll, 'normal', true);
+          let rolls = res[0];
+          let soinRoll = rolls.inlinerolls[0];
+          let soins = soinRoll.results.total;
+          let displaySoins = buildinline(soinRoll, 'normal', true);
           soigneToken(perso, soins, evt,
             function(s) {
               if (s < soins) sendPerso(perso, "récupère tous ses PV.");
@@ -40850,8 +40856,8 @@ var COFantasy = COFantasy || function() {
   }
 
   function getEffectOptions(perso, effet) {
-    var options = {};
-    var optionsAttr = tokenAttribute(perso, effet + 'Options');
+    let options = {};
+    let optionsAttr = tokenAttribute(perso, effet + 'Options');
     optionsAttr.forEach(function(oAttr) {
       parseDmgOptions(oAttr.get('current'), options);
     });
@@ -41527,7 +41533,7 @@ var COFantasy = COFantasy || function() {
         degatsParTour(charId, pageId, effet, attrName, {
             cst: 1
           }, 'normal',
-          "est piqué par les insectes", evt, {}, callBack);
+          "est piqué par les insectes", evt, {valeur:'nueeDInsectesValeur'}, callBack);
         return;
       case 'nueeDeCriquets': //prend 1 DM
         degatsParTour(charId, pageId, effet, attrName, {

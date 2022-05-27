@@ -1867,7 +1867,7 @@ tr {line-height: 25px;}
                 </ol>
                 <h4 class="text-secondary">Voie du sabre</h4>
                 <ol>
-                  <li><strong>Technique du sabre</strong> : ajuster les attaques au sabre en conséquence.</li>
+                  <li><strong>Technique du sabre</strong> : ajouter un <a href=#predicats>prédicat</a> <code>techniqueDuSabre</code>, de valeur le rang dans la Voie.</li>
                   <li><strong>Frappe du vide</strong> : ajouter un <a href=#predicats>prédicat</a> <code>frappeDuVide</code>.</li>
                   <li><strong>Lames Jumelles</strong> : faire les attaques avec le modificateur <code>lamesJumelles</code> permet de prendre en compte la force courante de l'attaquant pour les malus éventuels à l'attaque. Comme le samouraï va par défaut commencer le combat les mains vides, et qu'avec cette capacité il voudra certainement dégainer à la fois le katana et le wakizachi, on peut utiliser un prédicat pour lui faciliter la tâche : si le label du katana est <code>5</code> et celui du wakizachi par exemple <code>3</code>, ajouter un prédicat <code>actionDegainer1:5-3</code> (de cette façon, le fait de dégainer le katana et le wakizachi sera en tête de liste).</li>
                 </ol>
@@ -2575,7 +2575,7 @@ tr {line-height: 25px;}
                 </ol>
                 <h4 class="text-secondary">Voie de la maîtrise des armes</h4>
                 <ol>
-                  <li><strong>Arme de prédilection :</strong> il est possible de préciser une famille d'armes de prédilection (un peu plus large que dans les règles), parmis <code>arc</code>, <code>arbalete</code>, <code>hache</code>, <code>epee</code>, <code>marteau</code>, <code>masse</code>, <code>epieu</code>, <code>poudre</code>, <code>baton</code> et <code>rapiere</code>. Si cela vous convient, ajoutez un prédicat <code>armeDePredilection</code> de valeur une de ces familles. Sinon, simplement ajouter le bonus sur les attaques dans la fiche.</li>
+                  <li><strong>Arme de prédilection :</strong> il est possible de préciser une famille d'armes de prédilection (un peu plus large que dans les règles), parmis <code>arc</code>, <code>arbalete</code>, <code>hache</code>, <code>epee</code>, <code>marteau</code>, <code>masse</code>, <code>sabre</code>, <code>epieu</code>, <code>poudre</code>, <code>baton</code> et <code>rapiere</code>. Si cela vous convient, ajoutez un prédicat <code>armeDePredilection</code> de valeur une de ces familles. Sinon, simplement ajouter le bonus sur les attaques dans la fiche.</li>
                   <li><strong>Science du critique :</strong> En Attente </li>
                   <li><strong>Spécialisation :</strong> En Attente </li>
                   <li><strong>Attaque parfaite (L) :</strong> En Attente </li>
