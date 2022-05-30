@@ -6064,8 +6064,10 @@ var COFantasy = COFantasy || function() {
       });
       let joueur;
       let gm;
+      let joueurJ;
       players.forEach(function(p) {
         if (!p.get('online')) return;
+        if (playerId == p.id) joueurJ = p;
         if (playerIsGM(p.id)) gm = true;
         else joueur = true;
       });
@@ -6076,6 +6078,14 @@ var COFantasy = COFantasy || function() {
         addLineToFramedDisplay(display, boutonSimple('!cof-montrer-resultats-jet ' + playerId, "Montrer aux joueurs"));
         addFramedHeader(display, undefined, 'gm');
         sendChat('', endFramedDisplay(display));
+        if (!playerIsGM(playerId)) {
+          let dest = joueurJ.get('displayname');
+          if (dest.includes('"')) {
+            sendChat('COF', display.action);
+            log("Impossible d'envoyer des messages privés à " + dest + " car le nom contient des guillemets");
+          }
+          sendChat('COF', '/w "' + dest + '" ' + display.action);
+        }
         return;
       }
     }
@@ -13014,7 +13024,9 @@ var COFantasy = COFantasy || function() {
   }
 
   function ajouteDe6Crit(x, first, max) {
-    let bonusCrit = rollDePlus(6, {maxResult:max});
+    let bonusCrit = rollDePlus(6, {
+      maxResult: max
+    });
     if (first) x.dmgDisplay = "(" + x.dmgDisplay + ")";
     x.dmgDisplay += '+' + bonusCrit.roll;
     x.dmgTotal += bonusCrit.val;
@@ -14779,12 +14791,12 @@ var COFantasy = COFantasy || function() {
         let modForce = modCarac(attaquant, 'force');
         let bonus = predicateAsInt(attaquant, 'techniqueDuSabre', 0, 1);
         if (bonus > 2 * modForce) attCarBonus = bonus;
-        else attCarBonus = modForce + Math.floor(bonus/2);
+        else attCarBonus = modForce + Math.floor(bonus / 2);
       } else {
-      attCarBonus = computeCarValue(attaquant, weaponStats.attCarBonus);
-      if (attCarBonus === undefined) {
-        attCarBonus = parseInt(weaponStats.attCarBonus);
-      }
+        attCarBonus = computeCarValue(attaquant, weaponStats.attCarBonus);
+        if (attCarBonus === undefined) {
+          attCarBonus = parseInt(weaponStats.attCarBonus);
+        }
       }
       if (attCarBonus === 0) attCarBonus = '';
       else if (attCarBonus > 0) attCarBonus = '+' + attCarBonus;
@@ -22774,7 +22786,7 @@ var COFantasy = COFantasy || function() {
         ligne += bouton(command, 'Feu grégeois', perso, {
           ressource: attrFeuxGregeois
         });
-        ligne += " (reste " + feuxGregeois + ")";
+        ligne += " (reste " + feuxGregeois + ")<br />";
       }
     }
     return ligne;
@@ -40695,11 +40707,10 @@ var COFantasy = COFantasy || function() {
   function rollAndDealDmg(perso, dmg, type, effet, attrName, msg, count, evt, options, callback, display) {
     let dmgExpr = dmg;
     let tdmi = attributeAsInt(perso, effet + 'TempeteDeManaIntense', 0);
-        if (options.valeur) {
-          let attrsVal = tokenAttribute(perso, options.valeur);
-          if (attrsVal.length > 0) dmgExpr = attrsVal[0].get('current');
-        }
-    else if (dmg.de) {
+    if (options.valeur) {
+      let attrsVal = tokenAttribute(perso, options.valeur);
+      if (attrsVal.length > 0) dmgExpr = attrsVal[0].get('current');
+    } else if (dmg.de) {
       if (tdmi) {
         dmgExpr = (tdmi + dmg.nbDe) + 'd' + dmg.de;
         removeTokenAttr(perso, effet + 'TempeteDeManaIntense', evt);
@@ -41533,7 +41544,9 @@ var COFantasy = COFantasy || function() {
         degatsParTour(charId, pageId, effet, attrName, {
             cst: 1
           }, 'normal',
-          "est piqué par les insectes", evt, {valeur:'nueeDInsectesValeur'}, callBack);
+          "est piqué par les insectes", evt, {
+            valeur: 'nueeDInsectesValeur'
+          }, callBack);
         return;
       case 'nueeDeCriquets': //prend 1 DM
         degatsParTour(charId, pageId, effet, attrName, {

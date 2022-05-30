@@ -15,6 +15,7 @@
 * Plus de message d'erreur quand on attend trop avant de sauvegarder un nouveau personnage.
 
 ### Autres améliorations
+* Affichage d'un message au joueur qui fait le jet quand le MJ doit valider l'affichage.
 * Si le statut d'un personnage est affiché pour le MJ, propose de supprimer les effets à durée indéterminée.
 * Possibilité d'ajouter des effets spéciaux et du son à un !cof-set-state.
 * Passage d'un certain nombres de prédicats concernant des armes dans le champ SPÉCIAL des armes concernées.
