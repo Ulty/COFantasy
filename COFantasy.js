@@ -31505,6 +31505,10 @@ var COFantasy = COFantasy || function() {
       if (runesDuForgesort === undefined) {
         // Check de l'existence d'un token présent pour le créateur
         let forgesort = persoOfCharId(forgesortId, options.pageId, "ayant créé une rune");
+        if (forgesort === undefined) {
+          attr.remove();
+          return;
+        }
         // Check du perso voie des Runes
         let voieDesRunes = predicateAsInt(forgesort, 'voieDesRunes', 0);
         if (voieDesRunes < 1) {

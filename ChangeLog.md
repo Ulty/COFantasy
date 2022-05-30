@@ -7,6 +7,7 @@
 * Don de soin, de la Voie de Périndé
 
 ### Corrections de bugs
+* Protection contre l'absence de créateur d'une rune.
 * Liberté d'action immunise à la paralysie des goules.
 * Correction d'un bug faisant appliquer certains effets 2 fois à la fin des tours.
 * Prise en compte des immunités pour les états venant des attaques
