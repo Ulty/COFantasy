@@ -6360,6 +6360,27 @@ var COFantasy = COFantasy || function() {
     return murs;
   }
 
+  //vérifie si de la nouvelle position on peut voir le suivi
+  function obstaclePresent(nsx, nsy, pt, murs) {
+    if (nsx == pt.x && nsy == pt.y) return false;
+    let ps = {
+      x: nsx,
+      y: nsy
+    };
+    let obstacle = murs && murs.find(function(path) {
+      if (path.length === 0) return false;
+      let pc = path[0];
+      return path.find(function(v, i) {
+        if (i === 0) return false;
+        if (isNaN(v.x) || isNaN(v.y)) return false;
+        if (segmentIntersecte(ps, pt, pc, v)) return true;
+        pc = v;
+        return false;
+      });
+    });
+    return obstacle;
+  }
+
   // callback(selected, playerId, aoe)
   function getSelected(msg, callback, options) {
     options = options || {};
@@ -42026,26 +42047,6 @@ var COFantasy = COFantasy || function() {
       x: x,
       y: y
     };
-  }
-
-  //vérifie si de la nouvelle position on peut voir le suivi
-  function obstaclePresent(nsx, nsy, pt, murs) {
-    if (nsx == pt.x && nsy == pt.y) return false;
-    let ps = {
-      x: nsx,
-      y: nsy
-    };
-    let obstacle = murs && murs.find(function(path) {
-      if (path.length === 0) return false;
-      let pc = path[0];
-      return path.find(function(v, i) {
-        if (i === 0) return false;
-        if (segmentIntersecte(ps, pt, pc, v)) return true;
-        pc = v;
-        return false;
-      });
-    });
-    return obstacle;
   }
 
   //Réagit au déplacement manuel d'un token.
