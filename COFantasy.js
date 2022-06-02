@@ -3212,6 +3212,9 @@ var COFantasy = COFantasy || function() {
               setToken(tokenOriginel, 'rotation', tokenCourant.get('rotation'), evt);
               setToken(tokenOriginel, 'flipv', tokenCourant.get('flipv'), evt);
               setToken(tokenOriginel, 'fliph', tokenCourant.get('fliph'), evt);
+              if (tokenCourant.get('bar1_link') === '') {
+                setToken(tokenOriginel, 'bar1_value', tokenCourant.get('bar1_value'), evt);
+              }
               setToken(tokenOriginel, 'bar2_value', tokenCourant.get('bar2_value'), evt);
               setToken(tokenOriginel, 'aura2_radius', tokenCourant.get('aura2_radius'), evt);
               setToken(tokenOriginel, 'aura2_color', tokenCourant.get('aura2_color'), evt);
@@ -19101,11 +19104,22 @@ var COFantasy = COFantasy || function() {
       }
       total = tNames.length;
       if (total > 1) {
-        let character = getObj('character', charId);
-        let charName = "d'id " + charId;
-        if (character) charName = character.get('name');
-        error("Attention, il y a plusieurs tokens nommés " + tokenName, total);
-        log("  tokens instances du personnage " + charName, total);
+        //On regarde combien il y en a dans le layer objects.
+        let tObjects = tNames.filter(function(tok) {
+          return tok.get('layer') == 'objects';
+        });
+        let totalObjects = tObjects.length;
+        if (totalObjects > 0) {
+          tNames = tObjects;
+          total = totalObjects;
+        }
+        if (total > 1) {
+          let character = getObj('character', charId);
+          let charName = "d'id " + charId;
+          if (character) charName = character.get('name');
+          error("Attention, il y a plusieurs tokens nommés " + tokenName, total);
+          log("  tokens instances du personnage " + charName, total);
+        }
       }
       tNames.forEach(function(tok) {
         foo(tok, total);
