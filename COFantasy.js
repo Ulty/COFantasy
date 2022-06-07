@@ -10075,7 +10075,7 @@ var COFantasy = COFantasy || function() {
       defense -= 10;
     }
     if (options.metal && attributeAsBool(target, 'magnetisme')) {
-      var magnetisme = getValeurOfEffet(target, 'magnetisme', 5);
+      let magnetisme = getValeurOfEffet(target, 'magnetisme', 5);
       defense += magnetisme;
       explications.push(tokenName + " contrôle le magnétisme (+" + magnetisme + " DEF)");
     }
@@ -33834,6 +33834,11 @@ var COFantasy = COFantasy || function() {
       //C'est juste un token utilisé pour définir le disque
       target.token.remove(); //On l'enlève, normalement plus besoin
     }
+    if (options.messages) {
+      options.messages.forEach(function(m) {
+        sendPerso(necromant, m, options.secret);
+      });
+    }
   }
 
   const demonInvoque = {
@@ -35460,11 +35465,11 @@ var COFantasy = COFantasy || function() {
   }
 
   function bonusCouvert(msg) {
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined) return;
-    var nouveauBonus = 0;
+    let nouveauBonus = 0;
     if (cmd.length > 1) {
       nouveauBonus = parseInt(cmd[1]);
       if (isNaN(nouveauBonus) || nouveauBonus < 0) {
