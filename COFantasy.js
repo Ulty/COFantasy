@@ -1258,21 +1258,21 @@ var COFantasy = COFantasy || function() {
   }
 
   function characterPageIds(charId) {
-    var character = getObj('character', charId);
+    let character = getObj('character', charId);
     if (character === undefined) return;
-    var charControlledBy = character.get('controlledby');
-    var playersIds = new Set();
+    let charControlledBy = character.get('controlledby');
+    let playersIds = new Set();
     if (charControlledBy !== '') {
       charControlledBy.split(",").forEach(function(controlledby) {
         if (controlledby == 'all') {
-          var players = findObjs({
+          let players = findObjs({
             _type: 'player'
           });
           players.forEach(function(p) {
             if (p.get('online')) playersIds.add(p.id);
           });
         }
-        var player = getObj('player', controlledby);
+        let player = getObj('player', controlledby);
         if (player === undefined) return;
         if (player.get('online')) playersIds.add(controlledby);
       });
@@ -12739,7 +12739,8 @@ var COFantasy = COFantasy || function() {
 
   // on récupère la valeur de l'action dont chaque Macro #/Ability % est mis dans un tableau 'action'
   //Pour chaque action, on a une commande, un texte et des options.
-  //On appelle f(commande, texte, macros, option)
+  //On appelle f(commande, texte, macros, attackStats)
+  // le dernier argument est optionnel, et n'est là que pour éviter d'avoir à recalculer attackStats
   //actionsDuTour peut être un nombre entre 0 et 4 (listes sur la fiche), ou
   //  une ability
   function treatActions(perso, actionsDuTour, abilities, f) {
@@ -12801,7 +12802,7 @@ var COFantasy = COFantasy || function() {
         } else {
           actionCode = action.trim();
           if (actionCode === '') return;
-          if (actionCode.startsWith('//')) return; //commented out line
+          if (actionCode.startsWith('//')) return; //Ligne commentée
         }
         let actionCommands = actionCode.split(' ');
         actionCommands = actionCommands.filter(function(c) {
@@ -12854,9 +12855,7 @@ var COFantasy = COFantasy || function() {
               }
               if (!actionTextFinal) actionText = attackStats.name;
               actionCode += options;
-              f(actionCode, actionText, macros, {
-                attackStats
-              });
+              f(actionCode, actionText, macros, attackStats);
             } else {
               actionCmd = actionCmd.substr(1);
               if (!actionTextFinal) actionText = actionText.substr(1);
@@ -12904,9 +12903,7 @@ var COFantasy = COFantasy || function() {
                 if (attackStats) {
                   command += attackStats.label + attOptions;
                   if (!actionTextFinal) actionText = attackStats.name;
-                  f(command, actionText, macros, {
-                    attackStats
-                  });
+                  f(command, actionText, macros, attackStats);
                 } else {
                   command += argsAttaqueAMainsNues(perso) + attOptions;
                   if (!actionTextFinal) actionText = 'Mains nues';
@@ -12938,7 +12935,7 @@ var COFantasy = COFantasy || function() {
     return actionsAAfficher;
   }
 
-  function displayAttaqueOpportunite(vid, cibles, type, action, option) {
+  function displayAttaqueOpportunite(vid, cibles, type, action, ligneOptions) {
     let attaquant = persoOfId(vid);
     if (attaquant === undefined) {
       error("Impossible de retrouver le personnage qui pouvait faire une attaque " + type, vid);
@@ -12961,11 +12958,11 @@ var COFantasy = COFantasy || function() {
     }
     let actionsOpportunite = [];
     if (actions) {
-      treatActions(attaquant, actions, abilities, function(command, text, macros, options) {
+      treatActions(attaquant, actions, abilities, function(command, text, macros, attackStats) {
         if (command == 'liste des attaques') {
           actionsOpportunite.push({
             listeActions: true,
-            options
+            attackStats
           });
         } else {
           command = replaceAction(command, attaquant, macros, abilities);
@@ -12973,7 +12970,7 @@ var COFantasy = COFantasy || function() {
             actionsOpportunite.push({
               command: command,
               text: text,
-              options
+              attackStats
             });
           }
         }
@@ -13016,22 +13013,18 @@ var COFantasy = COFantasy || function() {
       }
       addLineToFramedDisplay(display, "contre " + nomPerso(target), 100, true);
       actionsOpportunite.forEach(function(action) {
-        let opt = action.options;
-        if (opt) {
-          if (option) opt = option + opt;
-        } else opt = option;
         if (action.listeActions) {
           let l = listeAttaquesVisibles(attaquant, {
-            ligneOptions: opt,
+            ligneOptions,
             target: target.token.id
           });
           addLineToFramedDisplay(display, l);
           return;
         }
-        var cmd = action.command.replace(/@\{target\|token_id\}/g, target.token.id);
+        let cmd = action.command.replace(/@\{target\|token_id\}/g, target.token.id);
         cmd = cmd.replace(/@\{target\|token_name\}/g, nomPerso(target));
         cmd = cmd.replace(/@\{target\|/g, '@{' + target.name + '|');
-        if (opt) cmd += ' ' + opt;
+        if (ligneOptions) cmd += ' ' + ligneOptions;
         addLineToFramedDisplay(display, bouton(cmd, action.text, attaquant));
       });
     });
@@ -23270,16 +23263,16 @@ var COFantasy = COFantasy || function() {
       }
       //L'action de traverser pour un cyclone
       if (attributeAsBool(perso, 'cyclone')) {
-        var labelCyclone = getValeurOfEffet(perso, 'cyclone', 1);
-        var diffRenverse = 10 + modCarac(perso, 'force');
-        var commandTraverser = "!cof-attack @{selected|token_id} @{target|token_id} " + labelCyclone + " --auto --ifSaveFails DEXFOR " + diffRenverse + " --etat renverse --else --diviseDmg 2 --endif";
+        let labelCyclone = getValeurOfEffet(perso, 'cyclone', 1);
+        let diffRenverse = 10 + modCarac(perso, 'force');
+        let commandTraverser = "!cof-attack @{selected|token_id} @{target|token_id} " + labelCyclone + " --auto --ifSaveFails DEXFOR " + diffRenverse + " --etat renverse --else --diviseDmg 2 --endif";
         ligne += bouton(commandTraverser, 'Traverser', perso) + '<br />';
       }
       //Affichage du second souffle
       if (actionsParDefaut && predicateAsBool(perso, 'secondSouffle') &&
         !attributeAsBool(perso, 'secondSouffleUtilise')) {
-        var pvDebut = attributeAsInt(perso, 'PVsDebutCombat', 0);
-        var pv = parseInt(perso.token.get('bar1_value'));
+        let pvDebut = attributeAsInt(perso, 'PVsDebutCombat', 0);
+        let pv = parseInt(perso.token.get('bar1_value'));
         if (!isNaN(pv) && pv < pvDebut) {
           command = "!cof-soin @{selected|token_id} secondSouffle";
           ligne += bouton(command, 'Second souffle', perso) + '<br/>';
@@ -23305,16 +23298,16 @@ var COFantasy = COFantasy || function() {
         }
       }
       //La liste d'action proprement dite
-      actionsAAfficher = treatActions(perso, actionsDuTour, abilities, function(command, text, macros, options) {
+      actionsAAfficher = treatActions(perso, actionsDuTour, abilities, function(command, text, macros, attackStats) {
         if (command == 'liste des attaques') {
-          let attackOptions = {
-            ligneOptions: options
-          };
+          let attackOptions = {};
           if (gobePar) attackOptions.target = gobePar.token.id;
           ligne += listeAttaquesVisibles(perso, attackOptions);
         } else {
-          options = options || {};
-          var b = bouton(command, text, perso, options);
+          let options = {
+            attackStats
+          };
+          let b = bouton(command, text, perso, options);
           if (options.actionImpossible) ligne += text + '<br />';
           else ligne += b + '<br />';
         }
@@ -40696,7 +40689,7 @@ var COFantasy = COFantasy || function() {
     reactionAllergique: {
       activation: "ressent de fortes démangeaisons",
       actif: "est victime d'une réaction allergique",
-      fin: "les déamgeaisons cessent",
+      fin: "les démangeaisons cessent",
       prejudiciable: true
     },
   };
