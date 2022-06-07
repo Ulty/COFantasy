@@ -33780,7 +33780,6 @@ var COFantasy = COFantasy || function() {
     }
     let token = createObj('graphic', tokSpec);
     if (token) {
-      toFront(token);
       evt.tokens = [token];
     }
     if (stateCOF.options.affichage.val.duree_effets.val) {
