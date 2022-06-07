@@ -8199,7 +8199,7 @@ var COFantasy = COFantasy || function() {
             error("Usage : --rang r", cmd);
             return;
           }
-          var rang = parseInt(cmd[1]);
+          let rang = parseInt(cmd[1]);
           if (isNaN(rang) || rang < 1) {
             error("Le rang doit être un nombre positif");
             return;
@@ -8212,7 +8212,7 @@ var COFantasy = COFantasy || function() {
             error("Usage : --" + cmd[0] + " b", cmd);
             return;
           }
-          var bAtt = parseInt(cmd[1]);
+          let bAtt = parseInt(cmd[1]);
           if (isNaN(bAtt)) {
             error("Le bonus (" + cmd[0] + ") doit être un nombre");
             return;
@@ -12965,7 +12965,7 @@ var COFantasy = COFantasy || function() {
         if (command == 'liste des attaques') {
           actionsOpportunite.push({
             listeActions: true,
-            options: options
+            options
           });
         } else {
           command = replaceAction(command, attaquant, macros, abilities);
@@ -12973,7 +12973,7 @@ var COFantasy = COFantasy || function() {
             actionsOpportunite.push({
               command: command,
               text: text,
-              options: options
+              options
             });
           }
         }
@@ -17111,9 +17111,9 @@ var COFantasy = COFantasy || function() {
         } else if (attributeAsBool(target, 'seulContreTous')) {
           displayAttaqueOpportunite(target.token.id, [attaquant], "de riposte", 'Ripostes');
         } else if (predicateAsBool(target, 'riposte')) {
-          var attrCiblesDeLaCible = tokenAttribute(target, 'dernieresCiblesAttaquees');
+          let attrCiblesDeLaCible = tokenAttribute(target, 'dernieresCiblesAttaquees');
           if (attrCiblesDeLaCible.length > 0) {
-            var ripostesDuTour =
+            let ripostesDuTour =
               attrCiblesDeLaCible[0].get('max').split(' ');
             ripostesDuTour = new Set(ripostesDuTour);
             if (ripostesDuTour.has(attaquant.token.id)) return;
@@ -33722,7 +33722,10 @@ var COFantasy = COFantasy || function() {
     if (options.puissantPortee || options.tempeteDeManaPortee) {
       portee = portee * 2;
     }
-    let rayon = options.rayon || options.brumes ? 20 : 5;
+    let rayon = options.rayon;
+    if (rayon === undefined) {
+      rayon = options.brumes ? 20 : 5;
+    }
     if (options.puissant || options.tempeteDeManaIntense) rayon = Math.floor(Math.sqrt(2) * rayon);
     if (distanceCombat(necromant.token, target.token, options.pageId, {
         strict2: true

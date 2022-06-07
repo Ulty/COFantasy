@@ -7,6 +7,7 @@
 * Don de soin, de la Voie de Périndé
 
 ### Corrections de bugs
+* Prise en compte correcte du rayon des ténèbres.
 * Protection contre les erreurs dans les murs de l'éclairage dynamique.
 * Protection contre l'absence de créateur d'une rune.
 * Liberté d'action immunise à la paralysie des goules.
