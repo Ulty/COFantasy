@@ -1382,7 +1382,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function setToken(token, field, newValue, evt) {
-    var prevValue = token.get(field);
+    let prevValue = token.get(field);
     affectToken(token, field, prevValue, evt);
     token.set(field, newValue);
   }
@@ -41832,6 +41832,8 @@ var COFantasy = COFantasy || function() {
         if (v > 1) attr.set('current', v - 1);
         actionEffet(attr, effet, attrName, charId, pageId, evt, fin);
       }); //fin de la boucle sur tous les attributs d'effets temporaires
+    } else { //L'initiative n'a pas bougée
+      nextTurnOfActive(active, attrs, evt, pageId, options);
     }
   }
 
