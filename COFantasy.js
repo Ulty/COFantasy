@@ -23058,8 +23058,12 @@ var COFantasy = COFantasy || function() {
         _type: 'attribute',
         _characterid: perso.charId,
       });
+        const estMook = perso.token.get('bar1_link') === '';
+      let suffixe = '';
+      if (estMook) suffixe = '_' + perso.token.get('name');
       attrs.forEach(function(attr) {
         let attrName = attr.get('name');
+        if (estMook && !attrName.endsWith(suffixe)) return;
         let indexSave = attrName.indexOf('SaveActifParTour');
         if (indexSave < 0) return;
         let effetC = attrName.substring(0, indexSave);
@@ -40779,7 +40783,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function attributeExtending(charId, attrName, effetC, extension) {
-    var nameWithExtension = effetC + extension + attrName.substr(effetC.length);
+    let nameWithExtension = effetC + extension + attrName.substr(effetC.length);
     return findObjs({
       _type: 'attribute',
       _characterid: charId,
@@ -40790,7 +40794,7 @@ var COFantasy = COFantasy || function() {
   //L'argument effetC doit être le nom complet, pas la base
   //evt.deletedAttributes doit être défini
   function enleverEffetAttribut(charId, effetC, attrName, extension, evt) {
-    var attrSave = attributeExtending(charId, attrName, effetC, extension);
+    let attrSave = attributeExtending(charId, attrName, effetC, extension);
     attrSave.
     forEach(function(attrS) {
       evt.deletedAttributes.push(attrS);

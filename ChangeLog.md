@@ -7,6 +7,7 @@
 * Don de soin, de la Voie de Périndé
 
 ### Corrections de bugs
+* Affichage des saves actifs seulement pour le mook concerné.
 * Correction de l'affichage des DM contre les nuées.
 * Prise en compte correcte du rayon des ténèbres.
 * Protection contre les erreurs dans les murs de l'éclairage dynamique.
