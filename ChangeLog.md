@@ -19,6 +19,7 @@
 * Plus de message d'erreur quand on attend trop avant de sauvegarder un nouveau personnage.
 
 ### Autres améliorations
+* Affichage des messages de la cible quand un allié peut intercepter.
 * Prise en compte de l'option --message pour !cof-tenebres
 * Le token des ténèbres est laissé sous les autres tokens.
 * Affichage d'un message au joueur qui fait le jet quand le MJ doit valider l'affichage.
