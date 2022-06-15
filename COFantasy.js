@@ -3587,8 +3587,9 @@ var COFantasy = COFantasy || function() {
                       if (pvMax > 0 && lie && (s > 4 || s < soinTotal)) {
                         let soin2 = soinTotal - s + Math.floor(s / 5);
                         soigneToken(lie, soin2, evt, function(s) {
-                          let siphMsg = "récupère une partie de l'âme de " + token.get('name') +
-                            "siphonée par " + nomPerso(p) + ". " + onGenre(lie, 'Il', 'Elle') + " récupère " + s + " pv.";
+                          let siphMsg =
+                            "récupère une partie de l'âme de " + token.get('name') +
+                            " siphonée par " + nomPerso(p) + ". " + onGenre(lie, 'Il', 'Elle') + " récupère " + s + " pv.";
                           if (s == soin2) {
                             fraction = 0;
                           } else {
@@ -3616,10 +3617,12 @@ var COFantasy = COFantasy || function() {
                           pvMax -= s;
                           whisperChar(lie.charId, siphMsg);
                         }, function() {
-                          whisperChar(p.charId, "est déjà au maximum de point de vie. Il laisse échapper l'âme de " + token.get('name'));
+                          whisperChar(p.charId,
+                            "est déjà au maximum de point de vie. " + onGenre(p, 'Il', 'Elle') + " laisse échapper l'âme de " + token.get('name'));
                         });
                       } else {
-                        whisperChar(p.charId, "est déjà au maximum de point de vie. Il laisse échapper l'âme de " + token.get('name'));
+                        whisperChar(p.charId,
+                          "est déjà au maximum de point de vie. " + onGenre(p, 'Il', 'Elle') + " laisse échapper l'âme de " + token.get('name'));
                       }
                     });
                 });
@@ -20941,13 +20944,14 @@ var COFantasy = COFantasy || function() {
       sendChat("COF", rollExpr, function(res) {
         let rollRecupID = "rollRecup_" + perso.token.id;
         options.rolls = options.rolls || {};
-        var roll = options.rolls[rollRecupID] ? options.rolls[rollRecupID] : res[0].inlinerolls[0];
+        let roll =
+          options.rolls[rollRecupID] ? options.rolls[rollRecupID] : res[0].inlinerolls[0];
         evt.action = evt.action || {};
         evt.action.rolls = evt.action.rolls || {};
         evt.action.rolls[rollRecupID] = roll;
-        var dVieRoll = roll.results.total;
-        var bonus = conMod + niveau;
-        var total = dVieRoll + bonus;
+        let dVieRoll = roll.results.total;
+        let bonus = conMod + niveau;
+        let total = dVieRoll + bonus;
         if (total < 0) total = 0;
         if (bar1 === 0) {
           if (attributeAsBool(perso, 'etatExsangue')) {
@@ -20963,7 +20967,7 @@ var COFantasy = COFantasy || function() {
         if (reposLong) {
           message = "Au cours de la nuit, ";
         } else {
-          message = "Après 5 minutes de minutes de repos, ";
+          message = "Après 5 minutes de repos, ";
         }
         message +=
           "récupère " + buildinline(roll) + "+" + bonus + " PV. Il lui reste " + pr.current + " points de récupération";
@@ -23058,7 +23062,7 @@ var COFantasy = COFantasy || function() {
         _type: 'attribute',
         _characterid: perso.charId,
       });
-        const estMook = perso.token.get('bar1_link') === '';
+      const estMook = perso.token.get('bar1_link') === '';
       let suffixe = '';
       if (estMook) suffixe = '_' + perso.token.get('name');
       attrs.forEach(function(attr) {
@@ -24901,25 +24905,31 @@ var COFantasy = COFantasy || function() {
   }
 
   function echangeInit(msg) {
-    let args = msg.content.split(" ");
-    if (args.length < 4) {
-      error("Pas assez d'arguments pour !cof-echange-init: " + msg.content, args);
+    let options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 3) {
+      error("Pas assez d'arguments pour !cof-echange-init", msg.content);
       return;
     }
-    let perso1 = persoOfId(args[1], args[1]);
+    let perso1 = persoOfId(cmd[1], cmd[1]);
     if (perso1 === undefined) {
-      error("le premier argument n'est pas un token valide", args[1]);
+      error("le premier argument n'est pas un token valide", cmd[1]);
       return;
     }
-    let perso2 = persoOfId(args[2], args[2]);
+    let pageId = perso1.token.get('pageid');
+    let perso2 = persoOfId(cmd[2], cmd[2], pageId);
     if (perso2 === undefined) {
-      error("le second argument n'est pas un token valide", args[2]);
+      error("le second argument n'est pas un token valide", cmd[2]);
       return;
     }
-    let attackBonus = parseInt(args[3]);
-    if (isNaN(attackBonus) || attackBonus < 1 || attackBonus > 2) {
-      error("Le troisième argument n'est pas un nombre", args[3]);
-      return;
+    let attackBonus = 0;
+    if (cmd.length > 3) {
+      attackBonus = parseInt(cmd[3]);
+      if (isNaN(attackBonus)) {
+        error("Le troisième argument n'est pas un nombre", cmd[3]);
+        return;
+      }
     }
     let evt = {
       type: "echange_init"
@@ -24946,9 +24956,11 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (pr1 > pr2) {
-      setTokenAttr(perso1, 'actionConcertee', attackBonus, evt, {
-        msg: "gagne un bonus de " + attackBonus + " à ses attaques et en DEF pour ce tour"
-      });
+      if (attackBonus) {
+        setTokenAttr(perso1, 'actionConcertee', attackBonus, evt, {
+          msg: "gagne un bonus de " + attackBonus + " à ses attaques et en DEF pour ce tour"
+        });
+      }
       setActiveToken(perso2.token.id, evt);
     } else {
       setActiveToken(perso1.token.id, evt);
