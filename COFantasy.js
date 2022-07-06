@@ -6437,8 +6437,8 @@ var COFantasy = COFantasy || function() {
         const cmdSplit = cmd.split(' ');
         switch (cmdSplit[0]) {
           case 'equipe':
-            var nomEquipe = 'Equipe' + cmd.substring(cmd.indexOf(' '));
-            var equipes = findObjs({
+            let nomEquipe = 'Equipe' + cmd.substring(cmd.indexOf(' '));
+            let equipes = findObjs({
               _type: 'handout',
               name: nomEquipe
             });
@@ -6452,8 +6452,8 @@ var COFantasy = COFantasy || function() {
             count += equipes.length;
             equipes.forEach(function(equipe) {
               equipe.get('notes', function(note) { //asynchrone
-                var persos = charactersInHandout(note, nomEquipe);
-                var tokens = findObjs({
+                let persos = charactersInHandout(note, nomEquipe);
+                let tokens = findObjs({
                   _type: 'graphic',
                   _subtype: 'token',
                   _pageid: pageId,
@@ -11534,8 +11534,8 @@ var COFantasy = COFantasy || function() {
     let nom2 = nomPerso(perso2);
     jetCaracteristique(perso1, carac1, options1, rollId + "_roll1", evt, function(rt1, expl1) {
       jetCaracteristique(perso2, carac2, options2, rollId + "_roll2", evt, function(rt2, expl2) {
-        var reussite;
-        var crit = 0;
+        let reussite;
+        let crit = 0;
         if (rt1.total > rt2.total) reussite = 1;
         else if (rt2.total > rt1.total) reussite = 2;
         else reussite = 0;
@@ -12484,7 +12484,7 @@ var COFantasy = COFantasy || function() {
     }
     //On enlève les alliés si l'option saufAllies est active
     if (options.saufAllies) {
-      var allies = new Set();
+      let allies = new Set();
       allies = alliesParPerso[attaquant.charId] || allies;
       allies = (new Set(allies)).add(attaquant.charId);
       cibles = cibles.filter(function(target) {
@@ -22683,30 +22683,30 @@ var COFantasy = COFantasy || function() {
   function charactersInHandout(note, nomEquipe) {
     let names = linesOfNote(note);
     let persos = new Set();
+    let characters = findObjs({
+      _type: 'character',
+    });
     names.forEach(function(name) {
       name = name.replace(/<(?:.|\s)*?>/g, ''); //Pour enlever les <h2>, etc
       name = name.trim();
       if (name.length === 0) return;
-      let characters = findObjs({
-        _type: 'character',
-      });
-      characters = characters.filter(function(c) {
+      let charsWithName = characters.filter(function(c) {
         return c.get('name').trim() == name;
       });
-      if (characters.length === 0) {
+      if (charsWithName.length === 0) {
         log(name + " dans l'équipe " + nomEquipe + " est inconnu");
         return;
       }
-      if (characters.length > 1) {
-        var nonArch = characters.filter(function(c) {
+      if (charsWithName.length > 1) {
+        let nonArch = charsWithName.filter(function(c) {
           return !(c.get('archived'));
         });
-        if (nonArch.length > 0) characters = nonArch;
-        if (characters.length > 1) {
+        if (nonArch.length > 0) charsWithName = nonArch;
+        if (charsWithName.length > 1) {
           log(name + " dans l'équipe " + nomEquipe + " est en double");
         }
       }
-      characters.forEach(function(character) {
+      charsWithName.forEach(function(character) {
         persos.add(character.id);
       });
     });
@@ -29990,7 +29990,7 @@ var COFantasy = COFantasy || function() {
 
   function doDestructionDesMortsVivants(lanceur, playerName, dm, options) {
     let playerId = options.playerId;
-    var evt = {
+    let evt = {
       type: "destructionMortsVivants",
       action: {
         lanceur: lanceur,
@@ -30014,7 +30014,7 @@ var COFantasy = COFantasy || function() {
     }
     testCaracteristique(lanceur, 'SAG', difficulte, testId, options, evt,
       function(testRes) {
-        var msgJet = "Jet de SAG : " + testRes.texte;
+        let msgJet = "Jet de SAG : " + testRes.texte;
         if (testRes.reussite) {
           addLineToFramedDisplay(display, msgJet + " &ge; " + difficulte + testRes.modifiers);
           if (malusRepetition)
@@ -30037,20 +30037,24 @@ var COFantasy = COFantasy || function() {
           });
           tokensEnVue.forEach(function(obj) {
             if (obj.id == lanceur.token.id) return;
-            var objCharId = obj.get('represents');
+            let objCharId = obj.get('represents');
             if (objCharId === '') return;
             if (obj.get('bar1_max') == 0) return; // jshint ignore:line
-            var objChar = getObj('character', objCharId);
+            let objChar = getObj('character', objCharId);
             if (objChar === undefined) return;
             if (murs) {
               if (obstaclePresent(obj.get('left'), obj.get('top'), pt, murs)) return;
             }
-            var cible = {
+            let cible = {
               charId: objCharId,
               token: obj
             };
             if (!estMortVivant(cible)) return;
             if (getState(cible, 'mort')) return;
+            if (predicateAsBool(cible, 'immunite_destruction')) {
+              addLineToFramedDisplay(display, nomPerso(cible)+" ne semble pas affecté par la destruction des morts-vivants");
+              return;
+            }
             cibles.push(cible);
           });
           let nbCibles = cibles.length;

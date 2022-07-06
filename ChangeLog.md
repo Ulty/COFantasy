@@ -20,6 +20,7 @@
 * Plus de message d'erreur quand on attend trop avant de sauvegarder un nouveau personnage.
 
 ### Autres améliorations
+* Ajout d'un prédicat immunite_destruction
 * Possibilité d'utiliser !cof-echange-init sans argument.
 * Affichage des messages de la cible quand un allié peut intercepter.
 * Prise en compte de l'option --message pour !cof-tenebres
