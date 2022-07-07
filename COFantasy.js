@@ -30053,7 +30053,7 @@ var COFantasy = COFantasy || function() {
             if (!estMortVivant(cible)) return;
             if (getState(cible, 'mort')) return;
             if (predicateAsBool(cible, 'immunite_destruction')) {
-              addLineToFramedDisplay(display, nomPerso(cible)+" ne semble pas affecté par la destruction des morts-vivants");
+              addLineToFramedDisplay(display, nomPerso(cible) + " ne semble pas affecté par la destruction des morts-vivants");
               return;
             }
             cibles.push(cible);
@@ -30132,15 +30132,14 @@ var COFantasy = COFantasy || function() {
       error("Usage : !cof-enduire-poison L type force save", cmd);
       return;
     }
-    let labelArme = cmd[1];
+    let label = cmd[1];
     let typePoison = cmd[2];
     if (typePoison != 'rapide') {
       error("Le seul type de poison géré est rapide, pas " + typePoison, cmd);
     }
-    let attribut = 'poisonRapide_' + labelArme;
     let nomMunition;
-    let estMunition = labelArme.startsWith('munition_');
-    if (estMunition) nomMunition = labelArme.substring(9);
+    let estMunition = label.startsWith('munition_');
+    if (estMunition) nomMunition = label.substring(9);
     let forcePoison = cmd[3];
     let savePoison = parseInt(cmd[4]);
     if (isNaN(savePoison)) {
@@ -30166,6 +30165,30 @@ var COFantasy = COFantasy || function() {
     }); //fin du traitement des options
     getSelected(msg, function(selected, playerId) {
       iterSelected(selected, function(perso) {
+        let labelArme = label;
+        if (!estMunition) {
+          if (labelArme == -1) {
+            labelArme = tokenAttribute(perso, 'armeEnMain');
+            if (labelArme.length > 0) {
+              labelArme = labelArme[0].get('current');
+            } else {
+              sendPerso(perso, "n'a pas d'arme en main");
+              return;
+            }
+          } else if (labelArme == -2) {
+            labelArme = tokenAttribute(perso, 'armeEnMain');
+            if (labelArme.length > 0) {
+              labelArme = labelArme[0].get('max');
+            } else {
+              labelArme = '';
+            }
+            if (labelArme === '') {
+              sendPerso(perso, "n'a pas d'arme en main gauche");
+              return;
+            }
+          }
+        }
+        let attribut = 'poisonRapide_' + labelArme;
         let armeEnduite;
         let attr = tokenAttribute(perso, attribut);
         let infosAdditionelles = savePoison;
@@ -30257,6 +30280,17 @@ var COFantasy = COFantasy || function() {
             return;
           }
         }
+        if (predicateAsBool(perso, 'connaissanceDuPoison')) {
+          //Pas besoin de test
+          const evt = { type: 'enduireDePoison' };
+          addEvent(evt);
+          if (limiteRessources(perso, options, 'enduirePoison', 'enduire de poison', evt)) return;
+          setTokenAttr(perso, attribut, forcePoison, evt, {
+            maxVal: infosAdditionelles
+          });
+          sendPlayer(perso, armeEnduite + " est maintenant enduit de poison");
+          return;
+        }
         doEnduireDePoison(perso, armeEnduite, savePoison, forcePoison, attribut, testINT, infosAdditionelles, options);
       });
     });
@@ -30280,10 +30314,10 @@ var COFantasy = COFantasy || function() {
     if (limiteRessources(perso, options, 'enduirePoison', 'enduire de poison', evt)) return;
     const display = startFramedDisplay(options.playerId, "Essaie d'enduire " + armeEnduite + " de poison", perso);
     //Test d'INT pour savoir si l'action réussit.
-    var testId = 'enduireDePoison';
+    let testId = 'enduireDePoison';
     testCaracteristique(perso, 'INT', testINT, testId, options, evt,
       function(tr) {
-        var jet = "Jet d'INT : " + tr.texte;
+        let jet = "Jet d'INT : " + tr.texte;
         if (tr.echecCritique) { //échec critique
           jet += " Échec critique !" + tr.rerolls + tr.modifiers;
           addLineToFramedDisplay(display, jet);

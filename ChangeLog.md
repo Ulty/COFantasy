@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.07
 ### Capacités
+* Premier rang de la Voie du maître des poisons.
 * Prédicat immuniteAucCritiques
 * Amélioration de l'arme de prédilection
 * Voie de l'alchimie (Terres d'Arran)
