@@ -7608,10 +7608,10 @@ var COFantasy = COFantasy || function() {
       });
       if (cmd.length === 0) cmd = [arg];
       switch (cmd[0]) {
+        case 'enflamme':
         case 'ignoreMoitieRD':
         case 'pressionMortelle':
         case 'tempDmg':
-        case 'enflamme':
         case 'malediction':
         case 'pietine':
         case 'percute':
@@ -7629,10 +7629,11 @@ var COFantasy = COFantasy || function() {
         case 'attaqueAssuree':
         case 'attaqueRisquee':
         case 'attaqueOptions':
+        case 'beni':
+        case 'choc':
         case 'epieu':
         case 'hache':
         case 'marteau':
-        case 'choc':
         case 'armeDArgent':
         case 'artificiel':
         case 'asDeLaGachette':
@@ -17458,12 +17459,12 @@ var COFantasy = COFantasy || function() {
 
   function getRDS(perso) {
     if (perso.rd) return perso.rd;
-    var res = {
+    let res = {
       rdt: 0,
       sauf: {}
     };
     //Pour garder un peu de compatibilité, on regarde encore les attributs RD
-    var attrs = perso.attrs;
+    let attrs = perso.attrs;
     if (attrs === undefined) {
       attrs = findObjs({
         _type: "attribute",
@@ -17472,9 +17473,9 @@ var COFantasy = COFantasy || function() {
       perso.attrs = attrs;
     }
     attrs.forEach(function(a) {
-      var name = a.get('name');
+      let name = a.get('name');
       if (!name.startsWith('RD_')) return;
-      var rds = parseInt(a.get('current'));
+      let rds = parseInt(a.get('current'));
       if (isNaN(rds) || rds === 0) return;
       name = name.substring(3);
       if (name.startsWith('sauf_')) {
@@ -17497,7 +17498,7 @@ var COFantasy = COFantasy || function() {
       res.acide = (res.acide || 0) + 5;
       res.feu = (res.feu || 0) + 5;
     }
-    var rd = ficheAttribute(perso, 'RDS', '');
+    let rd = ficheAttribute(perso, 'RDS', '');
     rd = (rd + '').trim();
     if (rd === '') {
       perso.rd = res;
@@ -17507,10 +17508,10 @@ var COFantasy = COFantasy || function() {
     rd.forEach(function(r) {
       r = r.trim();
       if (r === '') return;
-      var rds;
-      var index = r.indexOf(':');
+      let rds;
+      let index = r.indexOf(':');
       if (index > 0) { //RD à un type particulier
-        var type = r.substring(0, index);
+        let type = r.substring(0, index);
         if (type == 'rdt' || type == 'sauf') return;
         rds = parseInt(r.substring(index + 1));
         if (isNaN(rds) || rds === 0) return;
@@ -17522,7 +17523,7 @@ var COFantasy = COFantasy || function() {
       if (index > 0) { //RD sauf à des types
         rds = parseInt(r.substring(0, index));
         if (isNaN(rds) || rds === 0) return;
-        var sauf = r.substring(index + 1);
+        let sauf = r.substring(index + 1);
         res.sauf[sauf] = res.sauf[sauf] || 0;
         res.sauf[sauf] += rds;
         return;
@@ -17538,7 +17539,7 @@ var COFantasy = COFantasy || function() {
 
   function applyRDSauf(rds, dmgType, total, display, options, target, showTotal, remainingRD) {
     options = options || {};
-    var typeTrouve = function(t) {
+    let typeTrouve = function(t) {
       if (t == dmgType) return true;
       if (options[t]) return true;
       switch (t) {
@@ -17551,11 +17552,11 @@ var COFantasy = COFantasy || function() {
       }
     };
     if (total) {
-      for (var saufType in rds) {
+      for (let saufType in rds) {
         if (saufType == '1') break;
-        var rd = rds[saufType];
+        let rd = rds[saufType];
         if (rd === 0) break;
-        var types = saufType.split('_');
+        let types = saufType.split('_');
         if (types.find(typeTrouve)) break;
         if (target.ignoreMoitieRD) rd = parseInt(rd / 2);
         if (target.ignoreRD && rd > 0) {
@@ -17721,7 +17722,7 @@ var COFantasy = COFantasy || function() {
       showTotal = false;
     } else if (!target.ignoreTouteRD) {
       rd = getRDS(target);
-      var rdMain = typeRD(rd, mainDmgType);
+      let rdMain = typeRD(rd, mainDmgType);
       if (mainDmgType == 'normal') {
         if (options.tranchant && rd.tranchant) rdMain += rd.tranchant;
         if (options.percant && rd.percant) rdMain += rd.percant;

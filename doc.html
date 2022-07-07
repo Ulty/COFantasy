@@ -388,6 +388,7 @@ tr {line-height: 25px;}
                   <li><code>--magique</code> : les dégâts sont magiques. On peut passer en argument le niveau de magie. Il est utilisé contre les créatures immunisées aux armes. Le niveau par défaut est 1.</li>
                   <li><code>--+<i>k</i></code> : l'attaque utilise une arme magique +<i>k</i>. Pratique à mettre dans les modificateurs de l'attaque (dans ce cas, on n'a pas les <code>--</code>), cela rajoute les bonus au toucher et aux dégâts, et indique que les dégâts sont magiques. Si un niveau de magie est spécifié, rajoute <i>k</i> à ce niveau.</li>
                   <li><code>--feu</code>, <code>--acide</code>, <code>--electrique</code>, <code>--froid</code>, <code>--sonique</code>, --<code>poison</code>, --<code>maladie</code>, <code>--argent</code>, <code>--drain</code>, <code>--energie</code>&nbsp;: les dégâts sont de type feu, acide, électrique, froid, sonique, poison, maladie, argent, drain ou énergie. Le type spécifie uniquement le dernier <code>--plus</code> précédent cette option, ou si il n'y en a pas, celui des dégâts principaux. Seul le dernier type spécifié est pris en compte (pas de type multiple pour l'instant). Le type affecte différents attributs, et aussi la couleur d'affichage des dégâts.</li>
+                  <li><code>--beni</code> : les dégâts sont d'une source sainte ou bénie. Sert principalement à signaler pour les résistances aux dégâts qui peuvent dépendre de cela (genre RD 5/beni).</li>
                   <li><code>--tranchant</code>, <code>--percant</code>, <code>--contondant</code> : précise le type d'arme (si pertinent), pour pouvoir utiliser les RD spécifiques à un type d'arme.</li>
                   <li><code>--ignoreRD</code> : l'attaque ignore les RD et division de DMs. Il est possible de donner en argument une valeur de RD ignorée, de sorte que l'attaque ignore les RD jusqu'à cette valeur. Par exemple, pour une arme en adamantium, on pourra écrire <code>--ignoreRD 5</code>.</li>
                   <li><code>--ignoreMoitieRD</code> : l'attaque ignore la moitié de la RD.</li>
@@ -1710,7 +1711,7 @@ tr {line-height: 25px;}
                 </ol>
                 <h4 class="text-secondary">Voie de la guerre sainte</h4>
                 <ol>
-                  <li><strong>Arme bénie</strong> : utiliser les modificateurs <code>reroll1</code> et <code>magique</code> à l'attaque</li>
+                  <li><strong>Arme bénie</strong> : utiliser les modificateurs <code>reroll1</code>, <code>beni</code> et <code>magique</code> à l'attaque</li>
                   <li><strong>Bouclier de la foi</strong> : ajuster le bonus de DEF du bouclier</li>
                   <li><strong>Marteau sprirituel</strong> :
                     <ul>
