@@ -1,4 +1,11 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 3.08
+### Capacités
+* 3 premiers rangs du maître des poisons
+
+### Autres améliorations
+* Prise en charge du poison affaiblissant
+
 ## 3.07
 ### Capacités
 * Premier rang de la Voie du maître des poisons.

@@ -1369,11 +1369,9 @@ var COFantasy = COFantasy || function() {
 
   function estAffaibli(perso) {
     if (perso.affaibli !== undefined) return perso.affaibli;
-    if (getState(perso, 'affaibli')) {
-      perso.affaibli = true;
-      return true;
-    }
-    if (getState(perso, 'blesse')) {
+    if (getState(perso, 'affaibli') || getState(perso, 'blesse') ||
+      attributeAsBool(perso, 'poisonAffaiblissant') ||
+      attributeAsBool(perso, 'poisonAffaiblissantLong')) {
       perso.affaibli = true;
       return true;
     }
@@ -2861,6 +2859,18 @@ var COFantasy = COFantasy || function() {
             });
           }
         }
+        break;
+      case 'poisonAffaiblissantLatent':
+        options.print = function(m) {}; //Pour ne pas afficher le message final.
+        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+          let perso = {
+            token: token,
+            charId: charId
+          };
+          if (getState(perso, 'mort')) return;
+          whisperChar(charId, "Le poison commence à faire effet !");
+          setTokenAttr(perso, 'poisonAffaiblissantLong', true, evt, {});
+        });
         break;
       case 'messageRetarde':
         if (efComplet.length > 16) {
@@ -7347,7 +7357,7 @@ var COFantasy = COFantasy || function() {
     return;
   }
 
-  function parseDmg(expr) {
+  function parseDice(expr, msg) {
     let dm = {
       nbDe: 0,
       dice: 4,
@@ -7358,7 +7368,7 @@ var COFantasy = COFantasy || function() {
     if (indexD > 0) {
       dm.nbDe = parseInt(exprDM.substring(0, indexD));
       if (isNaN(dm.nbDe) || dm.nbDe < 0) {
-        error("Expression de dégâts " + exprDM + " mal formée", expr);
+        error("Expression de " + msg + ' ' + exprDM + " mal formée", expr);
         return;
       }
       exprDM = exprDM.substring(indexD + 1);
@@ -7366,7 +7376,7 @@ var COFantasy = COFantasy || function() {
       if (indexD <= 0) {
         dm.dice = parseInt(exprDM);
         if (isNaN(dm.dice) || dm.dice < 1) {
-          error("Nombre de faces incorrect dans l'expression des dégâts", expr);
+          error("Nombre de faces incorrect dans l'expression de " + msg, expr);
           return;
         }
         return dm;
@@ -7374,14 +7384,14 @@ var COFantasy = COFantasy || function() {
       exprDM = exprDM.replace('+-', '-');
       dm.dice = parseInt(exprDM.substring(0, indexD));
       if (isNaN(dm.dice) || dm.dice < 1) {
-        error("Nombre de faces incorrect dans l'expression des dégâts", expr);
+        error("Nombre de faces incorrect dans l'expression de " + msg, expr);
         return;
       }
       exprDM = exprDM.substring(indexD).trim();
     }
     dm.bonus = parseInt(exprDM);
     if (isNaN(dm.bonus)) {
-      error("Expression de dégâts incorrecte", expr);
+      error("Expression de " + msg + " incorrecte", expr);
       return;
     }
     return dm;
@@ -7746,7 +7756,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque la valeur après l'option --dm", cmd);
             return;
           }
-          let dm = parseDmg(cmd.slice(1).join(''));
+          let dm = parseDice(cmd.slice(1).join(''), 'dégâts');
           if (dm) options.dm = dm;
           return;
         case 'portee':
@@ -13603,6 +13613,96 @@ var COFantasy = COFantasy || function() {
     return attackRollExpr + " " + attackSkillExpr;
   }
 
+  function effetPoison(poisonAttr, seuil, attaquant, explications, options) {
+    let defPoison = poisonAttr.get('current');
+    let index = defPoison.indexOf(' ');
+    let value = 0;
+    let typePoison = 'rapide';
+    if (index < 0) {
+      value = defPoison;
+    } else {
+      typePoison = defPoison.substring(0, index);
+      value = defPoison.substring(index + 1);
+    }
+    if (typePoison == 'rapide') {
+      attaquant.additionalDmg.push({
+        type: 'poison',
+        value,
+        partialSave: {
+          carac: 'CON',
+          seuil
+        }
+      });
+    } else if (typePoison == 'affaiblissant') {
+      options.effets = options.effets || [];
+      if (value == 0) {
+        options.effets.push({
+          effet: 'poisonAffaiblissant',
+          typeDmg: 'poison',
+          message: messageEffetCombat.poisonAffaiblissant,
+          save: {
+            carac: 'CON',
+            seuil
+          },
+        });
+      } else {
+        let exprDuree = parseDice(value, 'durée');
+        let duree = randomInteger(6);
+        if (exprDuree) {
+          if (exprDuree.nbDe <= 0) {
+            if (exprDuree.bonus > 0) duree = exprDuree.bonus;
+          } else {
+            duree = rollDePlus(exprDuree.nbDe, {
+              nbDes: exprDuree.nbDes,
+              bonus: exprDuree.bonus
+            });
+          }
+        }
+
+        options.effets.push({
+          effet: 'poisonAffaiblissantLatent',
+          typeDmg: 'poison',
+          duree,
+          message: messageOfEffetTemp('poisonAffaiblissantLatent'),
+          save: {
+            carac: 'CON',
+            seuil
+          },
+        });
+      }
+    } else {
+      error("Type de poison " + typePoison + " non reconnu.", poisonAttr);
+    }
+    explications.push("L'arme est empoisonnée");
+    return defPoison;
+  }
+
+  function effetPoisonSurMunitions(poisonAttr, attaquant, explications, options, evt) {
+    if (poisonAttr.length > 0) {
+      poisonAttr = poisonAttr[0];
+      let infosPoisonMunitions = poisonAttr.get('max');
+      let index = infosPoisonMunitions.indexOf(' ');
+      let seuil = parseInt(infosPoisonMunitions.substring(0, index));
+      let nombreMunitionsEmpoisonnees = parseInt(infosPoisonMunitions.substring(index + 1));
+      if (!isNaN(seuil) && !isNaN(nombreMunitionsEmpoisonnees) && nombreMunitionsEmpoisonnees > 0) {
+        let defPoison = effetPoison(poisonAttr, seuil, attaquant, explications, options);
+        explications.push("L'arme est empoisonnée");
+        if (nombreMunitionsEmpoisonnees == 1) {
+          evt.deletedAttributes = evt.deletedAttributes || [];
+          evt.deletedAttributes.push(poisonAttr);
+          poisonAttr.remove();
+        } else {
+          evt.attributes.push({
+            attribute: poisonAttr,
+            current: defPoison,
+            max: infosPoisonMunitions
+          });
+          poisonAttr.set('max', seuil + ' ' + (nombreMunitionsEmpoisonnees - 1));
+        }
+      }
+    }
+  }
+
   //N'ajoute pas evt à l'historique
   function resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, explications, options, chargesArme) {
     let attackingCharId = attaquant.charId;
@@ -13666,38 +13766,9 @@ var COFantasy = COFantasy || function() {
           attribute: attr,
         });
       }
-      //On cherche si l'arme est empoisonée
-      let poisonAttr = tokenAttribute(attaquant, 'poisonRapide_' + attackLabel);
-      if (poisonAttr.length > 0) {
-        poisonAttr = poisonAttr[0];
-        let infosPoisonMunitions = poisonAttr.get('max');
-        let infosPoisonMunitionsIndex = infosPoisonMunitions.indexOf(' ');
-        let seuilMunitionsEmpoisonnees = parseInt(infosPoisonMunitions.substring(0, infosPoisonMunitionsIndex));
-        let nombreMunitionsEmpoisonnees = parseInt(infosPoisonMunitions.substring(infosPoisonMunitionsIndex + 1));
-        if (!isNaN(seuilMunitionsEmpoisonnees) && !isNaN(nombreMunitionsEmpoisonnees) && nombreMunitionsEmpoisonnees > 0) {
-          attaquant.additionalDmg.push({
-            type: 'poison',
-            value: poisonAttr.get('current'),
-            partialSave: {
-              carac: 'CON',
-              seuil: seuilMunitionsEmpoisonnees
-            }
-          });
-          explications.push("L'arme est empoisonnée");
-          if (nombreMunitionsEmpoisonnees == 1) {
-            evt.deletedAttributes = evt.deletedAttributes || [];
-            evt.deletedAttributes.push(poisonAttr);
-            poisonAttr.remove();
-          } else {
-            evt.attributes.push({
-              attribute: poisonAttr,
-              current: poisonAttr.get('current'),
-              max: infosPoisonMunitions
-            });
-            poisonAttr.set('max', seuilMunitionsEmpoisonnees + ' ' + (nombreMunitionsEmpoisonnees - 1));
-          }
-        }
-      }
+      //On cherche si l'arme de jet est empoisonée
+      let poisonAttr = tokenAttribute(attaquant, 'enduitDePoison_' + attackLabel);
+      effetPoisonSurMunitions(poisonAttr, attaquant, explications, options, evt);
       let restant = weaponStats.nbArmesDeJet;
       if (randomInteger(100) < weaponStats.tauxDePerte) {
         if (weaponStats.tauxDePerte < 100)
@@ -13752,7 +13823,7 @@ var COFantasy = COFantasy || function() {
           " n'a plus de " + options.munition.nom.replace(/_/g, ' '));
         return;
       }
-      var munitionsMax = parseInt(munitionsAttr.get('max'));
+      let munitionsMax = parseInt(munitionsAttr.get('max'));
       if (isNaN(munitionsMax)) {
         error("Attribut de munitions mal formé", munitionsMax);
         return;
@@ -13764,37 +13835,8 @@ var COFantasy = COFantasy || function() {
         max: munitionsMax
       });
       //On cherche si la munition est empoisonnée
-      let poisonAttr = tokenAttribute(attaquant, 'poisonRapide_munition_' + options.munition.nom);
-      if (poisonAttr.length > 0) {
-        poisonAttr = poisonAttr[0];
-        var infosPoisonMunitions = poisonAttr.get('max');
-        var infosPoisonMunitionsIndex = infosPoisonMunitions.indexOf(' ');
-        var seuilMunitionsEmpoisonnees = parseInt(infosPoisonMunitions.substring(0, infosPoisonMunitionsIndex));
-        var nombreMunitionsEmpoisonnees = parseInt(infosPoisonMunitions.substring(infosPoisonMunitionsIndex + 1));
-        if (!isNaN(seuilMunitionsEmpoisonnees) && !isNaN(nombreMunitionsEmpoisonnees) && nombreMunitionsEmpoisonnees > 0) {
-          attaquant.additionalDmg.push({
-            type: 'poison',
-            value: poisonAttr.get('current'),
-            partialSave: {
-              carac: 'CON',
-              seuil: seuilMunitionsEmpoisonnees
-            }
-          });
-          explications.push("L'arme est empoisonnée");
-          if (nombreMunitionsEmpoisonnees == 1) {
-            evt.deletedAttributes = evt.deletedAttributes || [];
-            evt.deletedAttributes.push(poisonAttr);
-            poisonAttr.remove();
-          } else {
-            evt.attributes.push({
-              attribute: poisonAttr,
-              current: poisonAttr.get('current'),
-              max: infosPoisonMunitions
-            });
-            poisonAttr.set('max', seuilMunitionsEmpoisonnees + ' ' + (nombreMunitionsEmpoisonnees - 1));
-          }
-        }
-      }
+      let poisonAttr = tokenAttribute(attaquant, 'enduitDePoison_munition_' + options.munition.nom);
+      effetPoisonSurMunitions(poisonAttr, attaquant, explications, options, evt);
       munitions--;
       if (randomInteger(100) < options.munition.taux) munitionsMax--;
       if (options.tirDouble) {
@@ -15317,9 +15359,9 @@ var COFantasy = COFantasy || function() {
         attNbDices += options.tempeteDeManaIntense;
       } else if (options.conditionAttaquant &&
         options.conditionAttaquant.type == 'attribut') {
-        var attrtdmi =
+        let attrtdmi =
           options.conditionAttaquant.attribute + "TempeteDeManaIntense";
-        var tdmCond = attributeAsInt(attaquant, attrtdmi, 0);
+        let tdmCond = attributeAsInt(attaquant, attrtdmi, 0);
         if (tdmCond) {
           attNbDices += tdmCond;
           removeTokenAttr(attaquant, attrtdmi, evt);
@@ -15416,7 +15458,8 @@ var COFantasy = COFantasy || function() {
         explications.push("Attaque à outrance => +2d6 DM");
       }
     }
-    if (attaquant.bonusCapitaine) attDMBonusCommun += " +" + attaquant.bonusCapitaine;
+    if (attaquant.bonusCapitaine)
+      attDMBonusCommun += " +" + attaquant.bonusCapitaine;
     // Les autres sources de dégâts
     if (options.distance) {
       if (options.semonce) {
@@ -15484,18 +15527,10 @@ var COFantasy = COFantasy || function() {
       });
     }
     if (attackLabel && (attackingToken.get('bar1_link') === '' || !weaponStats.armeDeJet)) {
-      let poisonAttr = tokenAttribute(attaquant, 'poisonRapide_' + attackLabel);
+      let poisonAttr = tokenAttribute(attaquant, 'enduitDePoison_' + attackLabel);
       if (poisonAttr.length > 0) {
         poisonAttr = poisonAttr[0];
-        attaquant.additionalDmg.push({
-          type: 'poison',
-          value: poisonAttr.get('current'),
-          partialSave: {
-            carac: 'CON',
-            seuil: poisonAttr.get('max')
-          }
-        });
-        explications.push("L'arme est empoisonnée");
+        effetPoison(poisonAttr, poisonAttr.get('max'), attaquant, explications, options);
         evt.deletedAttributes = evt.deletedAttributes || [];
         evt.deletedAttributes.push(poisonAttr);
         poisonAttr.remove();
@@ -15559,7 +15594,7 @@ var COFantasy = COFantasy || function() {
       }
     };
     //Le lien épique (+1d6 DM si les 2 attaquent la même cible
-    var attaqueParLienEpique = new Set();
+    let attaqueParLienEpique = new Set();
     if (options.lienEpique) {
       //On cherche les autres personnages avec le même lien épique
       var allChars = findObjs({
@@ -15680,7 +15715,7 @@ var COFantasy = COFantasy || function() {
               bonus: bonusProjection
             }).val;
           evt.action.rolls['distanceProjection_' + target.token.id] = distanceProjetee;
-          var dmgProjection = "3d6";
+          let dmgProjection = "3d6";
           if (predicateAsBool(target, 'inderacinable')) {
             distanceProjetee /= 2;
             dmgProjection = "floor(" + dmgProjection + "/2)";
@@ -16036,7 +16071,7 @@ var COFantasy = COFantasy || function() {
         // 0 : roll de dégâts principaux
         // 1+ : les rolls de dégâts supplémentaires
         // 1+nb dégâts supplémentaires + : rolls de dégâts critiques
-        var toEvaluateDmg = "[[" + mainDmgRollExpr + "]]" + extraDmgRollExpr;
+        let toEvaluateDmg = "[[" + mainDmgRollExpr + "]]" + extraDmgRollExpr;
         sendChat('', toEvaluateDmg, function(resDmg) {
           let rollsDmg = target.rollsDmg || resDmg[0];
           let afterEvaluateDmg = rollsDmg.content.split(' ');
@@ -23753,7 +23788,7 @@ var COFantasy = COFantasy || function() {
             let n = fieldAsInt(att, 'armejetqte', 1);
             addLineToFramedDisplay(display, nomArme + " : " + n);
           }
-          if (attributeAsBool(perso, 'poisonRapide_' + armeLabel)) {
+          if (attributeAsBool(perso, 'enduitDePoison_' + armeLabel)) {
             addLineToFramedDisplay(display, nomArme + " est enduit de poison.");
           }
         });
@@ -29142,7 +29177,7 @@ var COFantasy = COFantasy || function() {
         toProceed = true;
       }); //fin iterSelected
       if (toProceed) {
-        var options = action.currentOptions || {};
+        let options = action.currentOptions || {};
         options.rolls = action.rolls;
         options.choices = action.choices;
         resolvePreDmgOptions(action.attaquant, action.ciblesTouchees, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.cibles);
@@ -30134,8 +30169,8 @@ var COFantasy = COFantasy || function() {
     }
     let label = cmd[1];
     let typePoison = cmd[2];
-    if (typePoison != 'rapide') {
-      error("Le seul type de poison géré est rapide, pas " + typePoison, cmd);
+    if (typePoison != 'rapide' && typePoison != 'affaiblissant') {
+      error("Les seuls type de poison gérés sont rapide et affaiblissant, mais pas encore " + typePoison, cmd);
     }
     let nomMunition;
     let estMunition = label.startsWith('munition_');
@@ -30188,7 +30223,7 @@ var COFantasy = COFantasy || function() {
             }
           }
         }
-        let attribut = 'poisonRapide_' + labelArme;
+        let attribut = 'enduitDePoison_' + labelArme;
         let armeEnduite;
         let attr = tokenAttribute(perso, attribut);
         let infosAdditionelles = savePoison;
@@ -30259,8 +30294,10 @@ var COFantasy = COFantasy || function() {
             let oldSave = parseInt(infos.substring(0, indexInfos));
             dejaEnduits = parseInt(infos.substring(indexInfos + 1));
             if (isNaN(dejaEnduits)) dejaEnduits = 0;
-            if (dejaEnduits > 0 && (attr[0].get('current') != forcePoison || oldSave != savePoison)) {
-              sendPlayer(msg, "Il y a déjà du poison de force " + attr[0].get('current') + "et de save " + oldSave + " sur les munitions " + armeEnduite + ". Le script ne sait pas gérer différents poisons sur les mêmes munitions.", playerId);
+            if (dejaEnduits > 0 &&
+              (attr[0].get('current') != typePoison + ' ' + forcePoison ||
+                oldSave != savePoison)) {
+              sendPlayer(msg, "Il y a déjà du poison de type " + attr[0].get('current') + "et de save " + oldSave + " sur les munitions " + armeEnduite + ". Le script ne sait pas gérer différents poisons sur les mêmes munitions.", playerId);
               return;
             }
           }
@@ -30282,32 +30319,35 @@ var COFantasy = COFantasy || function() {
         }
         if (predicateAsBool(perso, 'connaissanceDuPoison')) {
           //Pas besoin de test
-          const evt = { type: 'enduireDePoison' };
+          const evt = {
+            type: 'enduireDePoison'
+          };
           addEvent(evt);
           if (limiteRessources(perso, options, 'enduirePoison', 'enduire de poison', evt)) return;
-          setTokenAttr(perso, attribut, forcePoison, evt, {
+          setTokenAttr(perso, attribut, typePoison + ' ' + forcePoison, evt, {
             maxVal: infosAdditionelles
           });
           sendPlayer(perso, armeEnduite + " est maintenant enduit de poison");
           return;
         }
-        doEnduireDePoison(perso, armeEnduite, savePoison, forcePoison, attribut, testINT, infosAdditionelles, options);
+        doEnduireDePoison(perso, armeEnduite, savePoison, typePoison, forcePoison, attribut, testINT, infosAdditionelles, options);
       });
     });
   }
 
-  function doEnduireDePoison(perso, armeEnduite, savePoison, forcePoison, attribut, testINT, infosAdditionelles, options) {
+  function doEnduireDePoison(perso, armeEnduite, savePoison, typePoison, forcePoison, attribut, testINT, infosAdditionelles, options) {
     const evt = {
       type: 'enduireDePoison',
       action: {
-        perso: perso,
-        armeEnduite: armeEnduite,
-        savePoison: savePoison,
-        forcePoison: forcePoison,
-        attribut: attribut,
-        testINT: testINT,
-        infosAdditionelles: infosAdditionelles,
-        options: options
+        perso,
+        armeEnduite,
+        savePoison,
+        typePoison,
+        forcePoison,
+        attribut,
+        testINT,
+        infosAdditionelles,
+        options
       }
     };
     addEvent(evt);
@@ -30323,36 +30363,38 @@ var COFantasy = COFantasy || function() {
           addLineToFramedDisplay(display, jet);
           addLineToFramedDisplay(display, nomPerso(perso) + " s'empoisonne.");
           sendChat('', "[[" + forcePoison + "]]", function(res) {
-            var dmgRoll;
+            let dmgRoll;
             if (options.rolls && options.rolls.enduireSelfDmg) {
               dmgRoll = options.rolls.enduireSelfDmg;
             } else {
               dmgRoll = res[0].inlinerolls[0];
             }
             evt.action.rolls.enduireSelfDmg = dmgRoll;
-            let r = {
-              total: dmgRoll.results.total,
-              type: 'poison',
-              display: buildinline(dmgRoll, 'poison')
-            };
-            options.partialSave = {
-              carac: 'CON',
-              seuil: savePoison
-            };
-            let explications = [];
-            dealDamage(perso, r, [], evt, false, options, explications,
-              function(dmgDisplay, dmg) {
-                explications.forEach(function(e) {
-                  addLineToFramedDisplay(display, e);
-                });
-                addLineToFramedDisplay(display, nomPerso(perso) + " subit " + dmgDisplay + " DM");
-                sendChat('', endFramedDisplay(display));
-              }); //fin de dmg dus à l'échec critique
+            if (typePoison == 'rapide') {
+              let r = {
+                total: dmgRoll.results.total,
+                type: 'poison',
+                display: buildinline(dmgRoll, 'poison')
+              };
+              options.partialSave = {
+                carac: 'CON',
+                seuil: savePoison
+              };
+              let explications = [];
+              dealDamage(perso, r, [], evt, false, options, explications,
+                function(dmgDisplay, dmg) {
+                  explications.forEach(function(e) {
+                    addLineToFramedDisplay(display, e);
+                  });
+                  addLineToFramedDisplay(display, nomPerso(perso) + " subit " + dmgDisplay + " DM");
+                  sendChat('', endFramedDisplay(display));
+                }); //fin de dmg dus à l'échec critique
+            }
           }); //fin du jet de dmg
         } else if (tr.reussite) {
           jet += " &ge; " + testINT + tr.modifiers;
           addLineToFramedDisplay(display, jet);
-          setTokenAttr(perso, attribut, forcePoison, evt, {
+          setTokenAttr(perso, attribut, typePoison + ' ' + forcePoison, evt, {
             maxVal: infosAdditionelles
           });
           addLineToFramedDisplay(display, armeEnduite + " est maintenant enduit de poison");
@@ -32216,7 +32258,7 @@ var COFantasy = COFantasy || function() {
         action.choices[perso.token.id] = action.choices[perso.token.id] || {};
         action.choices[perso.token.id].runeForgesort_protection = true;
       }); //fin iterSelected
-      var options = action.currentOptions || {};
+      let options = action.currentOptions || {};
       options.rolls = action.rolls;
       options.choices = action.choices;
       resolvePreDmgOptions(action.attaquant, action.ciblesTouchees, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.cibles);
@@ -37809,7 +37851,7 @@ var COFantasy = COFantasy || function() {
                 });
                 break;
               case 'dmgbase':
-                let dm = parseDmg(attaque.dmgbase);
+                let dm = parseDice(attaque.dmgbase, 'dégâts');
                 if (dm) {
                   if (dm.nbDe)
                     createObj('attribute', {
@@ -39589,6 +39631,11 @@ var COFantasy = COFantasy || function() {
   // entrave: effet qui immobilise, paralyse ou ralentit
   // statusMarker: marker par défaut pour l'effet
   const messageEffetTemp = {
+    aCouvert: {
+      activation: "reste à couvert",
+      actif: "est à couvert",
+      fin: "n'est pas à couvert"
+    },
     formeDAnge: {
       activation: "prend la forme d'un ange ailé",
       actif: "est en forme d'ange et peut jeter des sorts en vol stationnaire",
@@ -39608,11 +39655,6 @@ var COFantasy = COFantasy || function() {
       actif: "est sous l'effet d'une inspiration",
       fin: "n'est plus inspiré",
       finF: "n'est plus inspirée"
-    },
-    aCouvert: {
-      activation: "reste à couvert",
-      actif: "est à couvert",
-      fin: "n'est pas à couvert"
     },
     imageDecalee: {
       activation: "décale légèrement son image",
@@ -40440,6 +40482,15 @@ var COFantasy = COFantasy || function() {
       msgSave: "résister à la provocation",
       prejudiciable: true,
     },
+    poisonAffaiblissantLatent: {
+      activation: "sent qu'un poison commence à se répandre dans ses veines",
+      actif: "est empoisonné, mais l'effet du poison ne se fait pas encore sentir",
+      actifF: "est empoisonnée, mais l'effet du poison ne se fait pas encore sentir",
+      fin: "se sent faible",
+      msgSave: "résister au poison",
+      prejudiciable: true,
+      seulementVivant: true,
+    },
   };
 
   function buildPatternEffets(listeEffets, postfix) {
@@ -40668,6 +40719,15 @@ var COFantasy = COFantasy || function() {
       prejudiciable: true,
       dm: true
     },
+    poisonAffaiblissant: {
+      activation: "sent le poison ralentir ses mouvements",
+      actif: "est empoisonné",
+      actifF: "est empoisonnée",
+      fin: "le poison n'agit plus",
+      msgSave: "résister au poison",
+      prejudiciable: true,
+      seulementVivant: true,
+    },
   };
 
   const patternEffetsCombat = buildPatternEffets(messageEffetCombat);
@@ -40812,6 +40872,15 @@ var COFantasy = COFantasy || function() {
       actif: "est victime d'une réaction allergique",
       fin: "les démangeaisons cessent",
       prejudiciable: true
+    },
+    poisonAffaiblissantLong: {
+      activation: "sent le poison ralentir ses mouvements",
+      actif: "est empoisonné",
+      actifF: "est empoisonnée",
+      fin: "le poison n'agit plus",
+      msgSave: "résister au poison",
+      prejudiciable: true,
+      seulementVivant: true,
     },
   };
 
@@ -42842,7 +42911,7 @@ var COFantasy = COFantasy || function() {
 }();
 
 on('ready', function() {
-  const scriptVersion = '3.07';
+  const scriptVersion = '3.08';
   on('add:token', COFantasy.addToken);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
   state.COFantasy = state.COFantasy || {
@@ -44551,6 +44620,20 @@ on('ready', function() {
       }
     }
     log("Copie des prédicats de charge et éclairage vers les attaques des armes");
+  }
+  if (state.COFantasy.version < 3.08) {
+    let attrs = findObjs({
+      _type: 'attribute',
+    });
+    attrs.forEach(function(a) {
+      let n = a.get('name');
+      if (!n.startsWith('poisonRapide_')) return;
+      let cur = 'rapide ' + a.get('current');
+      let nouveauNom = 'enduitDePoison' + n.substring(12);
+      a.set('name', nouveauNom);
+      a.set('current', cur);
+    });
+    log("Changement de nom d'attributs pour les armes enduites de poison");
   }
   state.COFantasy.version = scriptVersion;
   handout.forEach(function(hand) {
