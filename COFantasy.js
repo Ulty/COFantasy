@@ -13652,10 +13652,10 @@ var COFantasy = COFantasy || function() {
           if (exprDuree.nbDe <= 0) {
             if (exprDuree.bonus > 0) duree = exprDuree.bonus;
           } else {
-            duree = rollDePlus(exprDuree.nbDe, {
+            duree = rollDePlus(exprDuree.dice, {
               nbDes: exprDuree.nbDes,
               bonus: exprDuree.bonus
-            });
+            }).val;
           }
         }
 
