@@ -5133,6 +5133,27 @@ var COFantasy = COFantasy || function() {
     return capaciteDisponibleSachantPred(perso, capa, unite);
   }
 
+  function bonusInteractionsSociales(perso, expliquer) {
+    let bonus = 0;
+    let perteDeSubstance = predicateAsInt(perso, 'perteDeSubstance', 0);
+    if (perteDeSubstance >= 3) {
+      if (perteDeSubstance < 7) {
+        expliquer("Perte de substance : -2 aux interactions sociales");
+        bonus -= 2;
+      } else if (perteDeSubstance < 10) {
+        expliquer("Perte de substance : -5 aux interactions sociales");
+        bonus -= 5;
+      } else {
+        expliquer("Perte de substance : -2 aux interactions sociales");
+        bonus += 10;
+        if (perteDeSubstance >= 15) {
+          expliquer("Perte de substance : faire un test de CHA pour se faire remarquer");
+        }
+      }
+    }
+    return bonus;
+  }
+
   function bonusAuxCompetences(personnage, comp, expliquer) {
     let bonus = 0;
     switch (comp) {
@@ -5157,6 +5178,11 @@ var COFantasy = COFantasy || function() {
           }
           break;
         }
+      case 'baratiner':
+      case 'bluffer':
+      case 'convaincre':
+        bonus += bonusInteractionsSociales(personnage, expliquer);
+        break;
       case 'course':
         {
           if (predicateAsBool(personnage, 'graceFelineVoleur')) {
@@ -5190,6 +5216,19 @@ var COFantasy = COFantasy || function() {
           expliquer("Forêt hostile : -5 en discrétion");
           bonus -= 5;
         }
+        let perteDeSubstance = predicateAsInt(personnage, 'perteDeSubstance', 0);
+        if (perteDeSubstance >= 5) {
+          if (perteDeSubstance < 7) {
+            expliquer("Perte de substance : +2 en discrétion");
+            bonus += 2;
+          } else if (perteDeSubstance < 10) {
+            expliquer("Perte de substance : +5 en discrétion");
+            bonus += 5;
+          } else {
+            expliquer("Perte de substance : +10 en discrétion");
+            bonus += 10;
+          }
+        }
         break;
       case 'intimidation':
         bonus += bonusArgumentDeTaille(personnage, expliquer);
@@ -5197,6 +5236,7 @@ var COFantasy = COFantasy || function() {
           expliquer("Chevalier Dragon monté : +5 en intimidation");
           bonus += 5;
         }
+        bonus += bonusInteractionsSociales(personnage, expliquer);
         break;
       case 'escalade':
         {
@@ -5219,9 +5259,13 @@ var COFantasy = COFantasy || function() {
           }
           break;
         }
+      case 'mentir':
+        bonus += bonusInteractionsSociales(personnage, expliquer);
+        break;
       case 'négociation':
       case 'negociation':
         bonus += bonusArgumentDeTaille(personnage, expliquer);
+        bonus += bonusInteractionsSociales(personnage, expliquer);
         break;
       case 'orientation':
         if (attributeAsBool(personnage, 'foretVivanteEnnemie')) {
@@ -5250,6 +5294,7 @@ var COFantasy = COFantasy || function() {
           expliquer("Chevalier Dragon monté : +5 en persuasion");
           bonus += 5;
         }
+        bonus += bonusInteractionsSociales(personnage, expliquer);
         break;
       case 'saut':
       case 'sauter':
@@ -13957,9 +14002,9 @@ var COFantasy = COFantasy || function() {
     // et le modificateur d'arme et de caractéritiques qui apparaissent dans
     // la description de l'attaque. Il faut quand même tenir compte des
     // chances de critique
-    var crit = critEnAttaque(attaquant, weaponStats, options);
-    var dice = 20;
-    var malusAttaque = 0;
+    let crit = critEnAttaque(attaquant, weaponStats, options);
+    let dice = 20;
+    let malusAttaque = 0;
     if (!options.auto) {
       if (estAffaibli(attaquant)) {
         if (predicateAsBool(attaquant, 'insensibleAffaibli')) {
@@ -13990,8 +14035,8 @@ var COFantasy = COFantasy || function() {
       dice = 12;
       if (options.avecd12.crit) crit = Math.floor(crit / 2) + 3;
     }
-    var nbDe = 1;
-    var plusFort = true;
+    let nbDe = 1;
+    let plusFort = true;
     if (options.avantage !== undefined) {
       if (options.avantage > 0) nbDe = options.avantage;
       else {
@@ -14161,6 +14206,10 @@ var COFantasy = COFantasy || function() {
               });
               removeTokenAttr(target, amm, evt);
             }
+          }
+          if (predicateAsBool(attaquant, 'dragonInvincible')) {
+            let perteDeSubstance = predicateAsInt(target, 'perteDeSubstance', 0);
+            if (perteDeSubstance > 0) target.perteDeSubstance = perteDeSubstance;
           }
           evalITE(attaquant, target, d20roll, options, 0, evt, explications, options, function() {
             target.ignoreTouteRD = target.ignoreTouteRD || options.ignoreTouteRD;
@@ -15396,6 +15445,12 @@ var COFantasy = COFantasy || function() {
     }
     if (options.bonusDM) {
       attDMBonusCommun += " +" + options.bonusDM;
+    }
+    let perteDeSubstance = predicateAsInt(attaquant, 'perteDeSubstance', 0);
+    if (perteDeSubstance && !predicateAsBool(attaquant, 'ancreInvincible')) {
+      if (perteDeSubstance > 10) perteDeSubstance = 10;
+      attDMBonusCommun += ' -' + perteDeSubstance;
+      explications.push("Perte de substance => -" + perteDeSubstance + " DM");
     }
     if (options.rageBerserk) {
       attaquant.additionalDmg.push({
@@ -17498,32 +17553,6 @@ var COFantasy = COFantasy || function() {
       rdt: 0,
       sauf: {}
     };
-    //Pour garder un peu de compatibilité, on regarde encore les attributs RD
-    let attrs = perso.attrs;
-    if (attrs === undefined) {
-      attrs = findObjs({
-        _type: "attribute",
-        _characterid: perso.charId
-      });
-      perso.attrs = attrs;
-    }
-    attrs.forEach(function(a) {
-      let name = a.get('name');
-      if (!name.startsWith('RD_')) return;
-      let rds = parseInt(a.get('current'));
-      if (isNaN(rds) || rds === 0) return;
-      name = name.substring(3);
-      if (name.startsWith('sauf_')) {
-        name = name.substr(5);
-        res.sauf[name] = res.sauf[name] || 0;
-        res.sauf[name] += rds;
-        return;
-      }
-      if (name == 'rdt' || name == 'sauf') return;
-      res[name] = res[name] || 0;
-      res[name] += rds;
-    });
-    //Fin compatibilité
     if (attributeAsBool(perso, 'formeDArbre')) {
       res.sauf.feu_hache = res.sauf.feu_hache || 0;
       res.sauf.feu_hache += 10;
@@ -17568,6 +17597,7 @@ var COFantasy = COFantasy || function() {
       if (isNaN(rds) || rds === 0) return;
       res.rdt += rds;
     });
+    if (perso.perteDeSubstance) rd.rdt += perso.perteDeSubstance;
     perso.rd = res;
     return res;
   }

@@ -4,11 +4,11 @@
 * 3 premiers rangs du maître des poisons
 
 ### Autres améliorations
+* Prise en charge de la perte de substance d'Invincible.
 * Prise en charge du poison affaiblissant
 
 ## 3.07
 ### Capacités
-* Premier rang de la Voie du maître des poisons.
 * Prédicat immuniteAucCritiques
 * Amélioration de l'arme de prédilection
 * Voie de l'alchimie (Terres d'Arran)
