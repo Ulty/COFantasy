@@ -3,6 +3,9 @@
 ### Capacités
 * 3 premiers rangs du maître des poisons
 
+### Corrections de bugs
+* Correction d'un crash avec des persos ayant un alias.
+
 ### Autres améliorations
 * Prise en charge de la perte de substance d'Invincible.
 * Prise en charge du poison affaiblissant

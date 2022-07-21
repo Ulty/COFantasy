@@ -1443,6 +1443,21 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function nomPerso(perso) {
+    if (perso.tokName) return perso.tokName;
+    if (perso.token) {
+      perso.tokName = perso.token.get('name');
+      return perso.tokName;
+    }
+    if (perso.alias === undefined) {
+      perso.alias =
+        ficheAttribute(perso, 'displayname', '@{character_name}') == '@{alias}';
+    }
+    if (perso.alias) perso.tokName = ficheAttribute(perso, 'alias', 'inconnu');
+    else perso.tokName = ficheAttribute(perso, 'character_name', 'inconnu');
+    return perso.tokName;
+  }
+
   function sendPerso(perso, msg, secret) {
     if (perso.token && perso.token.get('bar1_link') === '') {
       msg = perso.token.get('name') + ' ' + msg;
@@ -1471,7 +1486,7 @@ var COFantasy = COFantasy || function() {
           perso.alias =
             ficheAttribute(perso, 'displayname', '@{character_name}') == '@{alias}';
         }
-        if (perso.alias) sendChat('', perso.token.get('name') + ' ' + msg);
+        if (perso.alias) sendChat('', nomPerso(perso) + ' ' + msg);
         else sendChar(perso.charId, msg);
       }
     }
@@ -4848,21 +4863,6 @@ var COFantasy = COFantasy || function() {
       if (index > 0) image_url = image_url.substring(0, index);
       return image_url;
     }
-  }
-
-  function nomPerso(perso) {
-    if (perso.tokName) return perso.tokName;
-    if (perso.token) {
-      perso.tokName = perso.token.get('name');
-      return perso.tokName;
-    }
-    if (perso.alias === undefined) {
-      perso.alias =
-        ficheAttribute(perso, 'displayname', '@{character_name}') == '@{alias}';
-    }
-    if (perso.alias) perso.tokName = ficheAttribute(perso, 'alias', 'inconnu');
-    else perso.tokName = ficheAttribute(perso, 'character_name', 'inconnu');
-    return perso.tokName;
   }
 
   //Fonction séparée pour pouvoir envoyer un frame à plusieurs joueurs
