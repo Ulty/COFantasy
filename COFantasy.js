@@ -2144,10 +2144,10 @@ var COFantasy = COFantasy || function() {
     let soinsImpossible = new Set(options.saufDMType);
     attrs.forEach(function(a) {
       if (soinsSuivis === 0) return;
-      var an = a.get('name');
+      let an = a.get('name');
       an = an.match(regSuivis);
       if (an && an.length > 0) {
-        var ds = parseInt(a.get('current'));
+        let ds = parseInt(a.get('current'));
         if (ds > 0) {
           if (an[0].length < 2) {
             error("Match non trouvé pour les soins", an);
@@ -7555,6 +7555,7 @@ var COFantasy = COFantasy || function() {
       } else {
         weaponStats.divers = '';
       }
+      weaponStats.options = '';
     } else {
       //On trouve l'attaque correspondant au label
       if (attackLabel == -1) { //attaque avec l'arme en main
@@ -7584,7 +7585,7 @@ var COFantasy = COFantasy || function() {
     //Si c'est aussi une arme de jet, et que le personnage attaque à distance, on va utiliser la version arme de jet de l'attaque.
     let msgIndex = msg.content;
     let indexAussiJet = msgIndex.indexOf('--aussiArmeDeJet ');
-    if (indexAussiJet == -1) {
+    if (indexAussiJet == -1 && weaponStats.options) {
       msgIndex = weaponStats.options;
       indexAussiJet = msgIndex.indexOf('--aussiArmeDeJet ');
     }
@@ -23200,7 +23201,10 @@ var COFantasy = COFantasy || function() {
               let tx = t.get('left');
               let ty = t.get('top');
               if (tx < pxp && tx > pxm && ty < pyp && ty > pym) {
-                command = '!cof-attack ' + perso.token.id + ' ' + t.id + ' ["AttaqueArmée",[0,0],20,[0,6,' + (ficheAttributeAsInt(perso, 'niveau', 1) + 1) + ',0],20] --auto --attaqueArmeeConjuree';
+                command = '!cof-attack ' + perso.token.id + ' ' + t.id +
+                  " Attaque de l'armée --dm " +
+                  (ficheAttributeAsInt(perso, 'niveau', 1) + 1) +
+                  " --auto --attaqueArmeeConjuree --allonge 20";
                 ligne += bouton(command, "Attaque de l'armée", perso) + '<br />';
               }
             }
@@ -32007,7 +32011,15 @@ var COFantasy = COFantasy || function() {
           attr[0].set('current', spec.attributesFiche[attrName]);
         }
       }
-    } //end attributesFiche
+    }
+    if (pnj &&
+      (!spec.attributesFiche || spec.attributesFiche.type_personnage === undefined)) {
+      createObj('attribute', {
+        _characterid: charId,
+        name: 'type_personnage',
+        current: 'PNJ'
+      });
+    }
     if (pnj) {
       createObj('attribute', {
         _characterid: charId,
@@ -33736,9 +33748,9 @@ var COFantasy = COFantasy || function() {
 
   //!cof-conjuration-armee [dé de DM] --limiteParJour...
   function conjurationArmee(msg) {
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined) {
       error("Problème de parse options", msg.content);
       return;
@@ -33749,43 +33761,34 @@ var COFantasy = COFantasy || function() {
         return;
       }
       iterSelected(selected, function(invocateur) {
-        var pageId = invocateur.token.get('pageid');
-        var niveau = ficheAttributeAsInt(invocateur, 'niveau', 1);
-        var evt = {
+        let pageId = invocateur.token.get('pageid');
+        let niveau = ficheAttributeAsInt(invocateur, 'niveau', 1);
+        const evt = {
           type: "Conjuration d'armée"
         };
         if (limiteRessources(invocateur, options, 'conjurationArmee', "conjurer une armée", evt)) {
           addEvent(evt);
           return;
         }
-        var deDM;
-        var nbDeDM;
+        let dm;
         if (cmd.length > 1) {
-          var argDe = cmd[1].split(/d/i);
-          if (argDe.length == 2) {
-            nbDeDM = parseInt(argDe[0]);
-            if (isNaN(nbDeDM) || nbDeDM < 1) nbDeDM = undefined;
-            else {
-              deDM = parseInt(argDe[1]);
-              if (isNaN(deDM) || deDM < 1) deDM = undefined;
-            }
+          dm = parseDice(cmd[1]);
+        }
+        if (dm === undefined) {
+          dm = {
+            nbDe: 1,
+            dice: 6,
+            bonus: 0
+          };
+          let rang = predicateAsInt(invocateur, 'voieDeLaConjuration', 3);
+          if (rang == 4) {
+            dm.dice = 10;
+          } else if (rang > 4) {
+            dm.nbDe = 2;
           }
         }
-        if (deDM === undefined) {
-          var rang = predicateAsInt(invocateur, 'voieDeLaConjuration', 3);
-          if (rang <= 3) {
-            deDM = 6;
-            nbDeDM = 1;
-          } else if (rang == 4) {
-            deDM = 10;
-            nbDeDM = 1;
-          } else {
-            deDM = 6;
-            nbDeDM = 2;
-          }
-        }
-        var nomArmee = "Armée de " + nomPerso(invocateur);
-        var token = createObj('graphic', {
+        let nomArmee = "Armée de " + nomPerso(invocateur);
+        let token = createObj('graphic', {
           name: nomArmee,
           subtype: 'token',
           pageid: pageId,
@@ -33806,13 +33809,15 @@ var COFantasy = COFantasy || function() {
           aura1_square: true
         });
         toFront(token);
-        var avatar = "https://s3.amazonaws.com/files.d20.io/images/73283254/r6sbxbP1QKKtqXyYq-MlLA/max.png?1549547198";
+        let avatar = "https://s3.amazonaws.com/files.d20.io/images/73283254/r6sbxbP1QKKtqXyYq-MlLA/max.png?1549547198";
         let attaque = {
           nom: 'Attaque',
-          dmnbde: nbDeDM,
-          dmde: deDM,
+          dmnbde: dm.nbDe,
+          dmde: dm.dice,
           modificateurs: 'auto',
+          options: "--allonge 20",
         };
+        if (dm.bonus) attaque.dm = dm.bonus;
         let attributes = [{
           name: 'armeeConjuree',
           current: invocateur.charId

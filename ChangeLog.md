@@ -4,6 +4,7 @@
 * 3 premiers rangs du maître des poisons
 
 ### Corrections de bugs
+* Mise à jour de la conjuration d'armée.
 * Correction d'un crash avec des persos ayant un alias.
 
 ### Autres améliorations
