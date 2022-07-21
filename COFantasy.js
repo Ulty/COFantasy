@@ -2193,17 +2193,17 @@ var COFantasy = COFantasy || function() {
       soins = Math.floor(soins / 2);
     }
     bar1 += soins;
-    var soinsEffectifs = soins;
+    let soinsEffectifs = soins;
     if (bar1 > pvmax) {
       if (attributeAsBool(perso, 'formeDArbre')) {
-        var apv = tokenAttribute(perso, 'anciensPV');
+        let apv = tokenAttribute(perso, 'anciensPV');
         if (apv.length > 0) {
           apv = apv[0];
-          var anciensPV = parseInt(apv.get('current'));
-          var anciensMax = parseInt(apv.get('max'));
+          let anciensPV = parseInt(apv.get('current'));
+          let anciensMax = parseInt(apv.get('max'));
           if (!(isNaN(anciensPV) || isNaN(anciensMax)) &&
             anciensPV < anciensMax) {
-            var soinsTransferes = bar1 - pvmax;
+            let soinsTransferes = bar1 - pvmax;
             if (anciensMax - anciensPV < soinsTransferes)
               soinsTransferes = anciensMax - anciensPV;
             anciensPV += soinsTransferes;
@@ -5544,77 +5544,99 @@ var COFantasy = COFantasy || function() {
     let bonusForce;
     switch (carac) {
       case 'DEX':
-        if (attributeAsBool(personnage, 'agrandissement')) {
-          expliquer("Agrandi : -2 au jet de DEX");
-          bonus -= 2;
-        }
-        if (attributeAsBool(personnage, 'aspectDuDemon')) {
-          bonusAspectDuDemon = getValeurOfEffet(personnage, 'aspectDuDemon', 2);
-          expliquer("Aspect du démon : +" + bonusAspectDuDemon + " au jet de DEX");
-          bonus += bonusAspectDuDemon;
-        }
-        if (attributeAsBool(personnage, 'osBrises')) {
-          expliquer("Des os sont brisés : -2 au jet de DEX");
-          bonus -= 2;
-        }
-        if (attributeAsBool(personnage, 'espaceExigu')) {
-          bonusForce = modCarac(personnage, 'force');
-          if (bonusForce < 1) bonusForce = 1;
-          expliquer("Espace exigu : -" + bonusForce + " au jet de DEX");
-          bonus -= bonusForce;
-        } else if (attributeAsBool(personnage, 'constructionTailleHumaine')) {
-          expliquer("Construction de taille humaine : -1 au jet de DEX");
-          bonus -= 1;
-        }
-        if (attributeAsBool(personnage, 'reactionAllergique')) {
-          expliquer("Démangeaisons : -2 au jet de DEX");
-          bonus -= 2;
+        {
+          if (attributeAsBool(personnage, 'agrandissement')) {
+            expliquer("Agrandi : -2 au jet de DEX");
+            bonus -= 2;
+          }
+          if (attributeAsBool(personnage, 'aspectDuDemon')) {
+            bonusAspectDuDemon = getValeurOfEffet(personnage, 'aspectDuDemon', 2);
+            expliquer("Aspect du démon : +" + bonusAspectDuDemon + " au jet de DEX");
+            bonus += bonusAspectDuDemon;
+          }
+          if (attributeAsBool(personnage, 'osBrises')) {
+            expliquer("Des os sont brisés : -2 au jet de DEX");
+            bonus -= 2;
+          }
+          if (attributeAsBool(personnage, 'espaceExigu')) {
+            bonusForce = modCarac(personnage, 'force');
+            if (bonusForce < 1) bonusForce = 1;
+            expliquer("Espace exigu : -" + bonusForce + " au jet de DEX");
+            bonus -= bonusForce;
+          } else if (attributeAsBool(personnage, 'constructionTailleHumaine')) {
+            expliquer("Construction de taille humaine : -1 au jet de DEX");
+            bonus -= 1;
+          }
+          if (attributeAsBool(personnage, 'reactionAllergique')) {
+            expliquer("Démangeaisons : -2 au jet de DEX");
+            bonus -= 2;
+          }
+          let conditions = attributeAsInt(personnage, 'conditionsHostiles', 0, 2);
+          if (conditions > 0 && (!predicateAsBool(personnage, 'marcheSylvestre') || conditions > 4)) {
+            let msgConditions = "Conditions ";
+            if (conditions < 5) msgConditions += "hostiles";
+            else msgConditions += "extrêmes";
+            msgConditions += " : -" + conditions + " au jet de DEX";
+            expliquer(msgConditions);
+            bonus -= conditions;
+          }
         }
         break;
       case 'FOR':
-        if (attributeAsBool(personnage, 'rayonAffaiblissant')) {
-          let malusRayonAffaiblissant = getValeurOfEffet(personnage, 'rayonAffaiblissant', 2);
-          expliquer("Affaibli : -" + malusRayonAffaiblissant + " au jet de FOR");
-          bonus -= malusRayonAffaiblissant;
-        }
-        if (attributeAsBool(personnage, 'agrandissement')) {
-          expliquer("Agrandi : +2 au jet de FOR");
-          bonus += 2;
-        }
-        if (attributeAsBool(personnage, 'aspectDuDemon')) {
-          bonusAspectDuDemon = getValeurOfEffet(personnage, 'aspectDuDemon', 2);
-          expliquer("Aspect du démon : +" + bonusAspectDuDemon + " au jet de FOR");
-          bonus += bonusAspectDuDemon;
-        }
-        if (attributeAsBool(personnage, 'osBrises')) {
-          expliquer("Des os sont brisés : -2 au jet de FOR");
-          bonus -= 2;
-        }
-        if (attributeAsBool(personnage, 'espaceExigu')) {
-          bonusForce = modCarac(personnage, 'force');
-          if (bonusForce < 1) bonusForce = 1;
-          expliquer("Espace exigu : -" + bonusForce + " au jet de FOR");
-          bonus -= bonusForce;
-        } else if (attributeAsBool(personnage, 'constructionTailleHumaine')) {
-          expliquer("Construction de taille humaine : -1 au jet de FOR");
-          bonus -= 1;
-        }
-        if (predicateAsBool(personnage, 'grosseTete')) {
-          let bonusInt;
-          if (persoEstPNJ(personnage)) {
-            bonusInt = ficheAttributeAsInt(personnage, 'pnj_int', 0);
-          } else {
-            bonusInt = modCarac(personnage, 'intelligence');
-            bonusInt += ficheAttributeAsInt(personnage, "INT_BONUS", 0);
+        {
+          if (attributeAsBool(personnage, 'rayonAffaiblissant')) {
+            let malusRayonAffaiblissant = getValeurOfEffet(personnage, 'rayonAffaiblissant', 2);
+            expliquer("Affaibli : -" + malusRayonAffaiblissant + " au jet de FOR");
+            bonus -= malusRayonAffaiblissant;
           }
-          if (bonusInt > bonusCarac) {
-            let msgGrosseTete = "Grosse tête : ";
-            if (bonusInt > 0) msgGrosseTete += '+';
-            msgGrosseTete += bonusInt + " au lieu de ";
-            if (bonusCarac > 0) msgGrosseTete += '+';
-            msgGrosseTete += bonusCarac;
-            expliquer(msgGrosseTete);
-            bonus += bonusInt - bonusCarac;
+          if (attributeAsBool(personnage, 'agrandissement')) {
+            expliquer("Agrandi : +2 au jet de FOR");
+            bonus += 2;
+          }
+          if (attributeAsBool(personnage, 'aspectDuDemon')) {
+            bonusAspectDuDemon = getValeurOfEffet(personnage, 'aspectDuDemon', 2);
+            expliquer("Aspect du démon : +" + bonusAspectDuDemon + " au jet de FOR");
+            bonus += bonusAspectDuDemon;
+          }
+          if (attributeAsBool(personnage, 'osBrises')) {
+            expliquer("Des os sont brisés : -2 au jet de FOR");
+            bonus -= 2;
+          }
+          if (attributeAsBool(personnage, 'espaceExigu')) {
+            bonusForce = modCarac(personnage, 'force');
+            if (bonusForce < 1) bonusForce = 1;
+            expliquer("Espace exigu : -" + bonusForce + " au jet de FOR");
+            bonus -= bonusForce;
+          } else if (attributeAsBool(personnage, 'constructionTailleHumaine')) {
+            expliquer("Construction de taille humaine : -1 au jet de FOR");
+            bonus -= 1;
+          }
+          if (predicateAsBool(personnage, 'grosseTete')) {
+            let bonusInt;
+            if (persoEstPNJ(personnage)) {
+              bonusInt = ficheAttributeAsInt(personnage, 'pnj_int', 0);
+            } else {
+              bonusInt = modCarac(personnage, 'intelligence');
+              bonusInt += ficheAttributeAsInt(personnage, "INT_BONUS", 0);
+            }
+            if (bonusInt > bonusCarac) {
+              let msgGrosseTete = "Grosse tête : ";
+              if (bonusInt > 0) msgGrosseTete += '+';
+              msgGrosseTete += bonusInt + " au lieu de ";
+              if (bonusCarac > 0) msgGrosseTete += '+';
+              msgGrosseTete += bonusCarac;
+              expliquer(msgGrosseTete);
+              bonus += bonusInt - bonusCarac;
+            }
+          }
+          let conditions = attributeAsInt(personnage, 'conditionsHostiles', 0, 2);
+          if (conditions > 0 && (!predicateAsBool(personnage, 'marcheSylvestre') || conditions > 4)) {
+            let msgConditions = "Conditions ";
+            if (conditions < 5) msgConditions += "hostiles";
+            else msgConditions += "extrêmes";
+            msgConditions += " : -" + conditions + " au jet de FOR";
+            expliquer(msgConditions);
+            bonus -= conditions;
           }
         }
         break;
@@ -9689,6 +9711,8 @@ var COFantasy = COFantasy || function() {
   function marcheSylvestreActive(perso) {
     if (attributeAsBool(perso, 'marcheSylvestre')) return true;
     if (predicateAsBool(perso, 'marcheSylvestre')) {
+      let conditions = attributeAsInt(perso, 'conditionsHostiles', 0, 2);
+      if (conditions > 0 && conditions < 5) return true;
       let x = perso.token.get('left');
       let y = perso.token.get('top');
       let tokens = findObjs({
@@ -10528,6 +10552,15 @@ var COFantasy = COFantasy || function() {
       explications.push("Parade croisée => +" + bonus + " en DEF");
       defense += bonus;
     }
+    let conditions = attributeAsInt(target, 'conditionsHostiles', 0, 2);
+    if (conditions > 0 && (!predicateAsBool(target, 'marcheSylvestre') || conditions > 4)) {
+      let msgConditions = "Conditions ";
+      if (conditions < 5) msgConditions += "hostiles";
+      else msgConditions += "extrêmes";
+      msgConditions += " : -" + conditions + " en DEF";
+      explications.push(msgConditions);
+      defense -= conditions;
+    }
     return defense;
   }
 
@@ -10936,6 +10969,15 @@ var COFantasy = COFantasy || function() {
           explications.push("Fureur draconide : +1 en Attaque et aux DM");
         options.fureurDrakonide = 1;
       }
+    }
+    let conditions = attributeAsInt(attaquant, 'conditionsHostiles', 0, 2);
+    if (conditions > 0 && (!predicateAsBool(attaquant, 'marcheSylvestre') || conditions > 4)) {
+      let msgConditions = "Conditions ";
+      if (conditions < 5) msgConditions += "hostiles";
+      else msgConditions += "extrêmes";
+      msgConditions += " : -" + conditions + " en attaque";
+      explications.push(msgConditions);
+      attBonus -= conditions;
     }
     return attBonus;
   }
@@ -40796,6 +40838,11 @@ var COFantasy = COFantasy || function() {
       activation: "se fait pousser griffes et crocs",
       actif: "a des griffes et des crocs",
       fin: "n'a plus de griffes et crocs visibles"
+    },
+    conditionsHostiles: {
+      activation: "se trouve dans des conditions hostiles",
+      actif: "est en conditions hostiles",
+      fin: "retrouve des conditions normales",
     },
     fievreux: {
       activation: "se sent fiévreux",
