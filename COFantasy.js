@@ -2226,7 +2226,7 @@ var COFantasy = COFantasy || function() {
           dmgTemp = toInt(token.get('bar2_value'), 0);
         }
         if (dmgTemp > 0) {
-          var newDmgTemp = dmgTemp - bar1 + pvmax;
+          let newDmgTemp = dmgTemp - bar1 + pvmax;
           if (newDmgTemp < 0) {
             newDmgTemp = 0;
             bar1 -= dmgTemp;
@@ -14382,10 +14382,10 @@ var COFantasy = COFantasy || function() {
                   target.chatimentDuMaleLowRoll = target.d20roll;
                 }
               }
-              var attackRoll = targetd20roll + attSkill + attBonus;
+              let attackRoll = targetd20roll + attSkill + attBonus;
               target.attackRoll = attackRoll;
-              var attackResult; // string
-              var paralyse = false;
+              let attackResult = '';
+              let paralyse = false;
               if (getState(target, 'paralyse')) {
                 paralyse = true;
                 if (!options.attaqueAssuree)
@@ -17640,7 +17640,7 @@ var COFantasy = COFantasy || function() {
       if (isNaN(rds) || rds === 0) return;
       res.rdt += rds;
     });
-    if (perso.perteDeSubstance) rd.rdt += perso.perteDeSubstance;
+    if (perso.perteDeSubstance) res.rdt += perso.perteDeSubstance;
     perso.rd = res;
     return res;
   }
