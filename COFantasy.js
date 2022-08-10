@@ -30403,7 +30403,7 @@ var COFantasy = COFantasy || function() {
           setTokenAttr(perso, attribut, typePoison + ' ' + forcePoison, evt, {
             maxVal: infosAdditionelles
           });
-          sendPlayer(perso, armeEnduite + " est maintenant enduit de poison");
+          sendPlayer(msg, armeEnduite + " est maintenant enduit de poison");
           return;
         }
         doEnduireDePoison(perso, armeEnduite, savePoison, typePoison, forcePoison, attribut, testINT, infosAdditionelles, options);
