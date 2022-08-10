@@ -5144,8 +5144,8 @@ var COFantasy = COFantasy || function() {
         expliquer("Perte de substance : -5 aux interactions sociales");
         bonus -= 5;
       } else {
-        expliquer("Perte de substance : -2 aux interactions sociales");
-        bonus += 10;
+        expliquer("Perte de substance : -10 aux interactions sociales");
+        bonus -= 10;
         if (perteDeSubstance >= 15) {
           expliquer("Perte de substance : faire un test de CHA pour se faire remarquer");
         }
@@ -30403,7 +30403,7 @@ var COFantasy = COFantasy || function() {
           setTokenAttr(perso, attribut, typePoison + ' ' + forcePoison, evt, {
             maxVal: infosAdditionelles
           });
-          sendPlayer(msg, armeEnduite + " est maintenant enduit de poison");
+          sendPlayer(msg, armeEnduite + " est maintenant enduit de poison", playerId);
           return;
         }
         doEnduireDePoison(perso, armeEnduite, savePoison, typePoison, forcePoison, attribut, testINT, infosAdditionelles, options);
@@ -30602,27 +30602,26 @@ var COFantasy = COFantasy || function() {
           error("La liste de consommables n'est pas au point pour les tokens non liés", perso);
           return;
         }
-        var display = startFramedDisplay(playerId, 'Liste de vos consommables :', perso, {
+        let display = startFramedDisplay(playerId, 'Liste de vos consommables :', perso, {
           chuchote: true
         });
-        var attributes = findObjs({
+        let attributes = findObjs({
           _type: 'attribute',
           _characterid: perso.charId
         });
-        var consommables = {}; //map id -> nom, quantite, effet, attr
+        let consommables = {}; //map id -> nom, quantite, effet, attr
         attributes.forEach(function(attr) {
-          var attrName = attr.get('name').trim();
-          var m = consommableNomRegExp.exec(attrName);
-          var consoPrefix;
+          let attrName = attr.get('name').trim();
+          let m = consommableNomRegExp.exec(attrName);
           if (m) {
-            consoPrefix = m[1];
+            let consoPrefix = m[1];
             consommables[consoPrefix] = consommables[consoPrefix] || {};
             consommables[consoPrefix].nom = attr.get('current');
             return;
           }
           m = consommableQuantiteRegExp.exec(attrName);
           if (m) {
-            consoPrefix = m[1];
+            let consoPrefix = m[1];
             consommables[consoPrefix] = consommables[consoPrefix] || {};
             consommables[consoPrefix].quantite = parseInt(attr.get('current'));
             consommables[consoPrefix].attr = attr;
@@ -30630,7 +30629,7 @@ var COFantasy = COFantasy || function() {
           }
           m = consommableEffetRegExp.exec(attrName);
           if (m) {
-            consoPrefix = m[1];
+            let consoPrefix = m[1];
             consommables[consoPrefix] = consommables[consoPrefix] || {};
             consommables[consoPrefix].effet = attr.get('current');
             return;
