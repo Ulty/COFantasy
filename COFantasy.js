@@ -17605,6 +17605,7 @@ var COFantasy = COFantasy || function() {
       res.acide = (res.acide || 0) + 5;
       res.feu = (res.feu || 0) + 5;
     }
+    if (perso.perteDeSubstance) res.rdt += perso.perteDeSubstance;
     let rd = ficheAttribute(perso, 'RDS', '');
     rd = (rd + '').trim();
     if (rd === '') {
@@ -17640,7 +17641,6 @@ var COFantasy = COFantasy || function() {
       if (isNaN(rds) || rds === 0) return;
       res.rdt += rds;
     });
-    if (perso.perteDeSubstance) res.rdt += perso.perteDeSubstance;
     perso.rd = res;
     return res;
   }
@@ -17969,7 +17969,7 @@ var COFantasy = COFantasy || function() {
             if (typeCount === 0) {
               if (!target.ignoreTouteRD) {
                 rd = rd || getRDS(target);
-                var rdl = typeRD(rd, dmgType);
+                let rdl = typeRD(rd, dmgType);
                 if (dmgType == 'normal') {
                   if (options.tranchant && rd.tranchant) rdl += rd.tranchant;
                   if (options.percant && rd.percant) rdl += rd.percant;
