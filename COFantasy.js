@@ -7435,7 +7435,8 @@ var COFantasy = COFantasy || function() {
     if (indexD > 0) {
       dm.nbDe = parseInt(exprDM.substring(0, indexD));
       if (isNaN(dm.nbDe) || dm.nbDe < 0) {
-        error("Expression de " + msg + ' ' + exprDM + " mal formée", expr);
+        if (msg)
+          error("Expression de " + msg + ' ' + exprDM + " mal formée", expr);
         return;
       }
       exprDM = exprDM.substring(indexD + 1);
@@ -7443,7 +7444,8 @@ var COFantasy = COFantasy || function() {
       if (indexD <= 0) {
         dm.dice = parseInt(exprDM);
         if (isNaN(dm.dice) || dm.dice < 1) {
-          error("Nombre de faces incorrect dans l'expression de " + msg, expr);
+          if (msg)
+            error("Nombre de faces incorrect dans l'expression de " + msg, expr);
           return;
         }
         return dm;
@@ -7451,14 +7453,16 @@ var COFantasy = COFantasy || function() {
       exprDM = exprDM.replace('+-', '-');
       dm.dice = parseInt(exprDM.substring(0, indexD));
       if (isNaN(dm.dice) || dm.dice < 1) {
-        error("Nombre de faces incorrect dans l'expression de " + msg, expr);
+        if (msg)
+          error("Nombre de faces incorrect dans l'expression de " + msg, expr);
         return;
       }
       exprDM = exprDM.substring(indexD).trim();
     }
     dm.bonus = parseInt(exprDM);
     if (isNaN(dm.bonus)) {
-      error("Expression de " + msg + " incorrecte", expr);
+      if (msg)
+        error("Expression de " + msg + " incorrecte", expr);
       return;
     }
     return dm;
@@ -41015,12 +41019,25 @@ var COFantasy = COFantasy || function() {
   }
 
   function rollAndDealDmg(perso, dmg, type, effet, attrName, msg, count, evt, options, callback, display) {
-    let dmgExpr = dmg;
-    let tdmi = attributeAsInt(perso, effet + 'TempeteDeManaIntense', 0);
     if (options.valeur) {
       let attrsVal = tokenAttribute(perso, options.valeur);
-      if (attrsVal.length > 0) dmgExpr = attrsVal[0].get('current');
-    } else if (dmg.de) {
+      if (attrsVal.length > 0) {
+        dmg = attrsVal[0].get('current');
+        let dmgDice = parseDice(dmg);
+        if (dmgDice) {
+          if (dmgDice.nbDe === 0) dmg = {
+            cst: dmgDice.bonus
+          };
+          else if (dmgDice.bonus === 0) dmg = {
+            de: dmgDice.dice,
+            nbDe: dmgDice.nbDe
+          };
+        }
+      }
+    }
+    let dmgExpr = dmg;
+    let tdmi = attributeAsInt(perso, effet + 'TempeteDeManaIntense', 0);
+    if (dmg.de) {
       if (tdmi) {
         dmgExpr = (tdmi + dmg.nbDe) + 'd' + dmg.de;
         removeTokenAttr(perso, effet + 'TempeteDeManaIntense', evt);
@@ -41094,8 +41111,8 @@ var COFantasy = COFantasy || function() {
           v: total
         };
         let perso = {
-          token: token,
-          charId: charId
+          token,
+          charId
         };
         if (getState(perso, 'mort')) {
           if (callback) callback();
@@ -41207,7 +41224,7 @@ var COFantasy = COFantasy || function() {
         else evt.deletedAttributes = [attr];
         attr.remove();
       } else {
-        var prevAttr = {
+        let prevAttr = {
           attribute: attr,
           current: 2
         };
@@ -41218,12 +41235,12 @@ var COFantasy = COFantasy || function() {
     // Pour la feinte, on augmente la valeur, et on supprime si la valeur est 2
     let feinte = allAttributesNamed(attrs, 'feinte');
     feinte.forEach(function(attr) {
-      var valFeinte = parseInt(attr.get('current'));
+      let valFeinte = parseInt(attr.get('current'));
       if (isNaN(valFeinte) || valFeinte > 0) {
         evt.deletedAttributes.push(attr);
         attr.remove();
       } else {
-        var prevAttr = {
+        let prevAttr = {
           attribute: attr,
           current: 0
         };
