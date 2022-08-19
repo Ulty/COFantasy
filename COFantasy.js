@@ -5154,6 +5154,22 @@ var COFantasy = COFantasy || function() {
     return bonus;
   }
 
+  //expliquer est optionnel, et si présent, il faut msg
+  function malusArmure(personnage, expliquer, msg) {
+    let malusArmure = 0;
+    if (personnage.malusArmure === undefined) {
+      if (ficheAttributeAsInt(personnage, 'defarmureon', 0))
+        malusArmure += ficheAttributeAsInt(personnage, 'defarmuremalus', 0);
+      if (ficheAttributeAsInt(personnage, 'defbouclieron', 0))
+        malusArmure += ficheAttributeAsInt(personnage, 'defboucliermalus', 0);
+      personnage.malusArmures = malusArmure;
+    } else malusArmure = personnage.malusArmure;
+    if (expliquer && malusArmure > 0) {
+      expliquer("Armure : -" + malusArmure + msg);
+    }
+    return malusArmure;
+  }
+
   function bonusAuxCompetences(personnage, comp, expliquer) {
     let bonus = 0;
     switch (comp) {
@@ -5507,19 +5523,6 @@ var COFantasy = COFantasy || function() {
       expliquer("Argument de taille de " + tok.get('name') + " : +" + modFor);
     });
     return bonus;
-  }
-
-  //expliquer est optionnel, et si présent, il faut msg
-  function malusArmure(personnage, expliquer, msg) {
-    let malusArmure = 0;
-    if (ficheAttributeAsInt(personnage, 'defarmureon', 0))
-      malusArmure += ficheAttributeAsInt(personnage, 'defarmuremalus', 0);
-    if (ficheAttributeAsInt(personnage, 'defbouclieron', 0))
-      malusArmure += ficheAttributeAsInt(personnage, 'defboucliermalus', 0);
-    if (expliquer && malusArmure > 0) {
-      expliquer("Armure : -" + malusArmure + msg);
-    }
-    return malusArmure;
   }
 
   //retourne un entier
@@ -9982,6 +9985,15 @@ var COFantasy = COFantasy || function() {
     return distanceCombat(fio.porteur.token, perso.token) < fio.distance;
   }
 
+  function defenseArmure(perso) {
+    let defense = 0;
+    if (ficheAttributeAsInt(perso, 'defarmureon', 0) > 0)
+      defense = ficheAttributeAsInt(perso, 'defarmure', 0);
+    if (ficheAttributeAsInt(perso, 'defbouclieron', 0) > 0)
+      defense += ficheAttributeAsInt(perso, 'defbouclier', 0);
+    return defense;
+  }
+
   //evt est optionnel
   function defenseOfPerso(attaquant, target, pageId, evt, options) {
     options = options || {};
@@ -10042,8 +10054,7 @@ var COFantasy = COFantasy || function() {
       defense = ficheAttributeAsInt(target, 'pnj_def', 10);
     } else {
       if (target.defautCuirasse === undefined) {
-        defense += ficheAttributeAsInt(target, 'defarmure', 0) * ficheAttributeAsInt(target, 'defarmureon', 0);
-        defense += ficheAttributeAsInt(target, 'defbouclier', 0) * ficheAttributeAsInt(target, 'defbouclieron', 0);
+        defense += defenseArmure(target);
         if (attributeAsBool(target, 'armureDuMage')) {
           let bonusArmureDuMage = getValeurOfEffet(target, 'armureDuMage', 4);
           if (defense > 12) defense += bonusArmureDuMage / 2; // On a déjà une armure physique, ça ne se cumule pas.
@@ -10948,7 +10959,20 @@ var COFantasy = COFantasy || function() {
       } else if (options.rang) {
         malus = options.rang;
       }
-      malus += malusArmure(attaquant);
+      let ma = malusArmure(attaquant);
+      malus += ma;
+      if (malus > 0) {
+        let magieEnArmure = predicateAsInt(attaquant, 'magieEnArmure', 0);
+        let defa = defenseArmure(attaquant);
+        if (2 * magieEnArmure >= defa + ma) { //pas de malus
+          malus = 0;
+        } else {
+          if (magieEnArmure > 0 && predicateAsBool(attaquant, 'magieEnArmureFacilitee')) {
+            malus -= magieEnArmure;
+            if (malus < 0) malus = 1;
+          }
+        }
+      }
       if (malus > 0) {
         explications.push("Magie en armure => -" + malus + " en attaque");
         attBonus -= malus;
@@ -11388,11 +11412,26 @@ var COFantasy = COFantasy || function() {
     };
     if (options.magieEnArmureMana && personnage) {
       options.mana = options.mana || 0;
-      let m = malusArmure(personnage);
-      if (reglesOptionelles.mana.val.mana_totale.val) options.mana += m;
-      //Le plus cohérent avec la mana totale consiste à diviser ce malus par 3,
-      //arrondi au supérieur
-      else options.mana += Math.ceil(m / 3);
+      let ma = malusArmure(personnage);
+      let m = ma;
+      if (m > 0) {
+        let magieEnArmure = predicateAsInt(personnage, 'magieEnArmure', 0);
+        let defa = defenseArmure(personnage);
+        if (2 * magieEnArmure >= defa + ma) { //pas de malus
+          m = 0;
+        } else {
+          if (magieEnArmure > 0 && predicateAsBool(personnage, 'magieEnArmureFacilitee')) {
+            m -= magieEnArmure;
+            if (m < 0) m = 1;
+          }
+        }
+      }
+      if (m > 0) {
+        if (reglesOptionelles.mana.val.mana_totale.val) options.mana += m;
+        //Le plus cohérent avec la mana totale consiste à diviser ce malus par 3,
+        //arrondi au supérieur
+        else options.mana += Math.ceil(m / 3);
+      }
     }
     if (options.mana) {
       if (personnage) {
@@ -25489,8 +25528,13 @@ var COFantasy = COFantasy || function() {
   }
 
   function porteArmure(perso) {
-    return ficheAttributeAsBool(perso, 'defarmureon', false) ||
-      ficheAttributeAsBool(perso, 'defbouclieron', false);
+    if (!ficheAttributeAsBool(perso, 'defarmureon', false) &&
+      !ficheAttributeAsBool(perso, 'defbouclieron', false)) return false;
+    let magieEnArmure = predicateAsInt(perso, 'magieEnArmure', 0);
+    if (magieEnArmure === 0) return true;
+    let ma = malusArmure(perso);
+    let defa = defenseArmure(perso);
+    return (2 * magieEnArmure < defa + ma);
   }
 
   //options doit être défini
@@ -25520,12 +25564,16 @@ var COFantasy = COFantasy || function() {
     if (limiteRessources(lanceur, options, effet, effet, evt)) return;
     if (duree > 0) {
       if (options.magieEnArmure && lanceur && porteArmure(lanceur)) {
-        let display = startFramedDisplay(playerId, "Sort en armure", lanceur, options);
         let difficulte = 10;
         if (options.magieEnArmure.base) difficulte = options.magieEnArmure.base;
         else if (options.rang) difficulte = 10 + options.rang;
         else difficulte = 11;
         difficulte += malusArmure(lanceur);
+        if (predicateAsBool(lanceur, 'magieEnArmureFacilitee')) {
+          options.bonusPreds = options.bonusPreds || [];
+          options.bonusPreds.push('magieEnArmure');
+        }
+        let display = startFramedDisplay(playerId, "Sort en armure", lanceur, options);
         let testId = 'magieEnArmure_' + lanceur.token.id;
         testCaracteristique(lanceur, 'INT', difficulte, testId, options, evt,
           function(tr) {
@@ -26203,21 +26251,21 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseAttaqueMagique(msg, type) {
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined || options.cmd === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd.length < 3) {
       error("Il faut au moins 2 arguments à !cof-attaque-magique", cmd);
       return;
     }
-    var attaquant = persoOfId(cmd[1], cmd[1]);
-    var cible = persoOfId(cmd[2], cmd[2]);
+    let attaquant = persoOfId(cmd[1], cmd[1]);
+    let cible = persoOfId(cmd[2], cmd[2]);
     if (attaquant === undefined || cible === undefined) {
       error("Arguments de !cof-attaque-magique", cmd);
       return;
     }
     if (options.portee) {
-      var distance = distanceCombat(attaquant.token, cible.token, options.pageId);
+      let distance = distanceCombat(attaquant.token, cible.token, options.pageId);
       if (distance > options.portee) {
         sendPerso(attaquant, "est trop loin de " + nomPerso(cible) +
           " pour l'attaque magique");
