@@ -1,7 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.08
 ### Capacités
-* Magie en armure de la Voie du guerrier-mage.
+* Magie en armure et rituel assuré de la Voie du guerrier-mage.
 * 3 premiers rangs du maître des poisons
 
 ### Corrections de bugs

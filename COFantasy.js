@@ -5736,6 +5736,20 @@ var COFantasy = COFantasy || function() {
     return bonus;
   }
 
+  function deTest(personnage, carac) {
+    let dice = 20;
+    if ((estAffaibli(personnage) && !predicateAsBool(personnage, 'insensibleAffaibli')) ||
+      getState(personnage, 'immobilise') ||
+      attributeAsBool(personnage, 'mortMaisNAbandonnePas'))
+      dice = 12;
+    else {
+      let ebriete = attributeAsInt(personnage, 'niveauEbriete', 0);
+      if (ebriete > 2) dice = 12;
+      else if (ebriete > 1 && carac != 'CON') dice = 12;
+    }
+    return dice;
+  }
+
   function computeDice(lanceur, options) {
     options = options || {};
     let nbDe = options.nbDe;
@@ -14107,7 +14121,7 @@ var COFantasy = COFantasy || function() {
         dice = 12;
         explications.push("Attaquant mort mais n'abandonne pas => D12 au lieu de D20 en Attaque");
       } else {
-        var ebriete = attributeAsInt(attaquant, 'niveauEbriete', 0);
+        let ebriete = attributeAsInt(attaquant, 'niveauEbriete', 0);
         if (ebriete > 0) {
           if (options.distance || options.sortilege || ebriete > 1) {
             dice = 12;
@@ -14128,6 +14142,16 @@ var COFantasy = COFantasy || function() {
       else {
         nbDe = 2 - options.avantage; //désavantage
         plusFort = false;
+      }
+    }
+    if (options.sortilege && (options.rituelAssure || attributeAsBool(attaquant, 'rituelAssure'))) {
+      options.rituelAssure = true;
+      finDEffetDeNom(attaquant, 'rituelAssure', evt);
+      if (plusFort) nbDe++;
+      else if (nbDe > 1) nbDe--;
+      else {
+        plusFort = true;
+        nbDe = 2;
       }
     }
     // toEvaluateAttack inlines
@@ -14991,8 +15015,13 @@ var COFantasy = COFantasy || function() {
       attDice += 2;
     }
     if (maxDmg) return attDice; //Dans ce cas, pas de reroll ni d'explosion
-    if (options.reroll1) attDice += "r1";
-    if (options.reroll2) attDice += "r2";
+    if (options.reroll2) {
+      if (attDice > 3 && options.rituelAssure) attDice += 'r3';
+      else attDice += 'r2';
+    } else if (options.reroll1) {
+      if (attDice > 2 && options.rituelAssure) attDice += 'r2';
+      else attDice += 'r1';
+    } else if (options.rituelAssure) attDice += 'r1';
     if (options.explodeMax) attDice += '!';
     else if (options.poudre && reglesOptionelles.divers.val.poudre_explosif.val) attDice += '!p';
     return attDice;
@@ -15738,7 +15767,7 @@ var COFantasy = COFantasy || function() {
     let attaqueParLienEpique = new Set();
     if (options.lienEpique) {
       //On cherche les autres personnages avec le même lien épique
-      var allChars = findObjs({
+      let allChars = findObjs({
         type: 'character'
       });
       allChars.forEach(function(ch) {
@@ -24289,20 +24318,6 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  function deTest(personnage, carac) {
-    let dice = 20;
-    if ((estAffaibli(personnage) && !predicateAsBool(personnage, 'insensibleAffaibli')) ||
-      getState(personnage, 'immobilise') ||
-      attributeAsBool(personnage, 'mortMaisNAbandonnePas'))
-      dice = 12;
-    else {
-      let ebriete = attributeAsInt(personnage, 'niveauEbriete', 0);
-      if (ebriete > 2) dice = 12;
-      else if (ebriete > 1 && carac != 'CON') dice = 12;
-    }
-    return dice;
-  }
-
   function parseDmgOptions(text, options) {
     let optArgs = text.split(' --');
     optArgs.forEach(function(opt) {
@@ -26823,12 +26838,12 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    var pvMax = parseInt(cible.token.get('bar1_max'));
+    let pvMax = parseInt(cible.token.get('bar1_max'));
     if (isNaN(pvMax)) {
       error("Token avec des PV max qui ne sont pas un nombre", cible.token);
       return;
     }
-    var evt = {
+    const evt = {
       type: 'Attaque magique',
     };
     addEvent(evt);
@@ -26839,13 +26854,13 @@ var COFantasy = COFantasy || function() {
       return;
     }
     attaquant.name = attaquantChar.get('name'); //TODO: utile ?
-    var playerId = options.playerId || getPlayerIdFromMsg(msg);
-    var explications = [];
-    var bonusA = bonusDAttaque(attaquant, explications, evt);
+    let playerId = options.playerId || getPlayerIdFromMsg(msg);
+    let explications = [];
+    let bonusA = bonusDAttaque(attaquant, explications, evt);
     if (bonusA === 0) bonusA = "";
     else if (bonusA > 0) bonusA = " +" + bonusA;
-    var attMagText = addOrigin(attaquant.name, "[[" + computeArmeAtk(attaquant, '@{ATKMAG}') + bonusA + "]]");
-    var de = computeDice(attaquant);
+    let attMagText = addOrigin(attaquant.name, "[[" + computeArmeAtk(attaquant, '@{ATKMAG}') + bonusA + "]]");
+    let de = computeDice(attaquant);
     var action = "<b>Attaque magique</b> (contre pv max)";
     var display = startFramedDisplay(playerId, action, attaquant, {
       perso2: cible
@@ -39764,6 +39779,13 @@ var COFantasy = COFantasy || function() {
       actif: "est à couvert",
       fin: "n'est pas à couvert"
     },
+    chantDesHeros: {
+      activation: "écoute le chant du barde",
+      actif: "est inspiré par le Chant des Héros",
+      actifF: "est inspirée par le Chant des Héros",
+      fin: "n'est plus inspiré par le Chant des Héros",
+      finF: "n'est plus inspirée par le Chant des Héros"
+    },
     formeDAnge: {
       activation: "prend la forme d'un ange ailé",
       actif: "est en forme d'ange et peut jeter des sorts en vol stationnaire",
@@ -39791,12 +39813,11 @@ var COFantasy = COFantasy || function() {
       finF: "apparaît à nouveau là où elle se trouve",
       visible: false
     },
-    chantDesHeros: {
-      activation: "écoute le chant du barde",
-      actif: "est inspiré par le Chant des Héros",
-      actifF: "est inspirée par le Chant des Héros",
-      fin: "n'est plus inspiré par le Chant des Héros",
-      finF: "n'est plus inspirée par le Chant des Héros"
+    rituelAssure: {
+      activation: "passe un tour complet à préparer un sort",
+      actif: "a préparé un rituel assuré",
+      fin: "",
+      visible: false
     },
     benediction: {
       activation: "est touché par la bénédiction",
