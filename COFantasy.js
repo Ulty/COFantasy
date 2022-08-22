@@ -10298,8 +10298,13 @@ var COFantasy = COFantasy || function() {
       defense -= 4;
       explications.push("En train de danser => -4 DEF");
     }
-    if (options.sortilege)
+    if (options.sortilege) {
       defense += predicateAsInt(target, 'DEF_magie', 0);
+      if (predicateAsBool(target, 'chasseurDeSorciere')) {
+        defense += 2;
+        explications.push("Chasseur de sorcière => +2 DEF");
+      }
+    }
     if (marcheSylvestreActive(target)) {
       defense += 2;
       explications.push("Marche sylvestre => +2 DEF");
@@ -10406,7 +10411,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (options.distance) {
-      var bonusCouvert = attributeAsInt(target, 'bonusCouvert');
+      let bonusCouvert = attributeAsInt(target, 'bonusCouvert');
       if (bonusCouvert) {
         if (attaquant && predicateAsBool(attaquant, 'joliCoup')) {
           explications.push("Cible à couvert, mais " + nomPerso(attaquant) + " sait bien viser");
@@ -11085,11 +11090,11 @@ var COFantasy = COFantasy || function() {
         malusDistance(attaquant, target.token, target.distance, portee, pageId,
           explications, options.ignoreObstacles);
     }
-    var chasseurEmerite =
+    let chasseurEmerite =
       predicateAsBool(attaquant, 'chasseurEmerite') && estAnimal(target);
     if (chasseurEmerite) {
       attBonus += 2;
-      var explChasseurEmerite = "hasseur émérite => +2 en Attaque";
+      let explChasseurEmerite = "hasseur émérite => +2 en Attaque";
       if (options.displayName) {
         explChasseurEmerite = nomPerso(attaquant) + ' est un c' + explChasseurEmerite;
       } else {
@@ -11256,12 +11261,12 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (options.attaqueEnMeute) {
-      var attaqueParMeute = tokenAttribute(target, 'attaqueParMeute');
+      let attaqueParMeute = tokenAttribute(target, 'attaqueParMeute');
       if (attaqueParMeute.length > 0) {
         attaqueParMeute = attaqueParMeute[0];
-        var attaqueParMeuteCur = attaqueParMeute.get('current');
-        var contientAttaquant;
-        var autreAttaquant;
+        let attaqueParMeuteCur = attaqueParMeute.get('current');
+        let contientAttaquant;
+        let autreAttaquant;
         attaqueParMeuteCur.split(' ').forEach(function(mi) {
           if (mi == attaquant.token.id) {
             contientAttaquant = true;
@@ -11358,6 +11363,16 @@ var COFantasy = COFantasy || function() {
         explications.push(nomPerso(meneurDHommes) + " a désigné " + nomPerso(target) +
           " comme la cible des attaques du groupe : +2 attaque, +1d6 DM");
       }
+    }
+    let combattreLaCorruption =
+      predicateAsInt(attaquant, 'combattreLaCorruption', 0, 1);
+    if (combattreLaCorruption > 0 &&
+      (predicateAsBool(target, 'corrompu') ||
+        estDemon(target) ||
+        estMortVivant(target))) {
+      attBonus += combattreLaCorruption;
+      target.combattreLaCorruption = combattreLaCorruption;
+      explications.push("Combattre la corruption => +" + combattreLaCorruption + " attaque et DM");
     }
     return attBonus;
   }
@@ -15996,8 +16011,15 @@ var COFantasy = COFantasy || function() {
         if (target.chasseurEmerite) {
           attDMBonus += "+2";
         }
+        if (target.combattreLaCorruption) {
+          attDMBonus += "+" + target.combattreLaCorruption;
+        }
         if (target.attaqueDansLeNoir) {
           attDMBonus += '-' + target.attaqueDansLeNoir;
+        }
+        if (predicateAsBool(attaquant, 'chasseurDeSorciere') && predicateAsBool(target, 'necromancien')) {
+          attDMBonus += "+2";
+          target.messages.push("Chasseur de sorcière => +2 en DM");
         }
         if (target.ennemiJure) {
           target.additionalDmg.push({
@@ -21818,6 +21840,9 @@ var COFantasy = COFantasy || function() {
       case 'ombre_mouvante':
         doOmbreMouvante(action.perso, action.playerId, options);
         return true;
+      case "Sentir la corruption":
+        sentirLaCorruption(action.playerId, action.chasseur, action.cible, options);
+        return true;
       default:
         return false;
     }
@@ -27129,6 +27154,7 @@ var COFantasy = COFantasy || function() {
       case 'elfe des bois':
       case 'elfe noir':
       case 'drow':
+      case 'haut elfe':
       case 'halfelin':
       case 'géant':
       case 'geant':
@@ -27150,7 +27176,7 @@ var COFantasy = COFantasy || function() {
       case 'troll':
         return true;
       default:
-        return false;
+        return perso.race.startsWith('humain');
     }
   }
 
@@ -33206,7 +33232,7 @@ var COFantasy = COFantasy || function() {
       sendPerso(expert, "est trop loin de " + nomPerso(cible) + " pour le bousculer.");
       return;
     }
-    var evt = {
+    const evt = {
       type: 'Bousculer'
     };
     addEvent(evt);
@@ -36870,8 +36896,8 @@ var COFantasy = COFantasy || function() {
       type: "ombre_mouvante",
       action: {
         perso: voleur,
-        playerId: playerId,
-        options: options
+        playerId,
+        options,
       }
     };
     addEvent(evt);
@@ -36919,9 +36945,9 @@ var COFantasy = COFantasy || function() {
 
   //!cof-reveler-nom [nouveau nom des tokens]
   function revelerNom(msg) {
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined) {
       error("Problème de parse options", msg.content);
       return;
@@ -36931,13 +36957,13 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, "Pas de token sélectionné pour !cof-reveler-nom", playerId);
         return;
       }
-      var nouveauNomToken;
+      let nouveauNomToken;
       if (cmd.length > 1) nouveauNomToken = cmd.slice(1).join(' ');
       if (selected.length > 1 && nouveauNomToken) {
         sendPlayer(msg, "Attention, on ne peut sélectionner qu'un seul token quand on précise le nouveau nom des tokens", playerId);
         return;
       }
-      var evt = {
+      const evt = {
         type: "Révélation de nom",
         characterNames: [],
         defaultTokens: [],
@@ -39222,6 +39248,115 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  //!cof-sentir-la-corruption @{selected|token_id} @{target|token_id}
+  function parseSentirLaCorruption(msg) {
+    let options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
+    if (cmd === undefined) {
+      error("Problème de parse options", msg.content);
+      return;
+    }
+    if (cmd.length < 3) {
+      error("Usage : !cof-sentir-la-corruption token_id token_id", msg.content);
+      return;
+    }
+    let chasseur = persoOfId(cmd[1]);
+    if (chasseur === undefined) {
+      error("Le premier argument de !cof-sentir-la-corruption n'est pas un token valide", msg.content);
+      return;
+    }
+    let cible = persoOfId(cmd[2]);
+    if (cible === undefined) {
+      error("Le deuxième argument de !cof-sentir-la-corruption n'est pas un token valide", msg.content);
+      return;
+    }
+    let portee = 30;
+    if (options.portee !== undefined) portee = options.portee;
+    if (distanceCombat(chasseur.token, cible.token) > portee) {
+      sendPerso(chasseur, " est trop loin de " + nomPerso(cible) + " pour sentir " + onGenre(cible, "s'il", "si elle") + " est corrompu" + eForFemale(cible));
+      return;
+    }
+    let playerId = getPlayerIdFromMsg(msg);
+    sentirLaCorruption(playerId, chasseur, cible, options);
+  }
+
+  function sentirLaCorruption(playerId, chasseur, cible, options) {
+    const evt = {
+      type: "Sentir la corruption",
+      action: {
+        playerId,
+        chasseur,
+        cible,
+        options,
+      }
+    };
+    addEvent(evt);
+    if (limiteRessources(chasseur, options, 'sentirLaCorruption', 'sentir la corruption', evt)) return;
+    let optionsDisplay = {
+      secret: options.secret
+    };
+    let display = startFramedDisplay(playerId, 'Sentir la corruption', chasseur, optionsDisplay);
+    testCaracteristique(chasseur, 'SAG', 15, 'sentirLaCorruptionChasseur', options, evt,
+      function(tr, explications) {
+        let msgRes = "<b>Jet de SAG :</b> " + tr.texte;
+        explications.forEach(function(m) {
+          addLineToFramedDisplay(display, m, 80);
+        });
+        let endDisplay = function() {
+          if (options.messages) {
+            options.messages.forEach(function(m) {
+              addLineToFramedDisplay(display, m);
+            });
+          }
+          if (display.retarde) {
+            addFramedHeader(display, playerId, true);
+            sendChat('', endFramedDisplay(display));
+            addFramedHeader(display, undefined, 'gm');
+            sendChat('', endFramedDisplay(display));
+          } else sendChat('', endFramedDisplay(display));
+        };
+        if (tr.reussite) {
+          addLineToFramedDisplay(display, msgRes + tr.modifiers);
+          if (estHumanoide(cible)) {
+            testCaracteristique(cible, 'INT', 15, 'sentirLaCorruptionCible', options, evt,
+              function(tr, explications) {
+                let msgRes = "<b>Jet d'INT de " + nomPerso(cible) + " :</b> " + tr.texte;
+                //On n'affiche pas les possibilités de rerolls, sinon il faudrait un bouton pour "continuer" afin de ne pas afficher le résultat.
+                addLineToFramedDisplay(display, msgRes + tr.modifiers);
+                explications.forEach(function(m) {
+                  addLineToFramedDisplay(display, m, 80);
+                });
+                msgRes = nomPerso(chasseur);
+                if (tr.reussite || !predicateAsBool(cible, 'corrompu')) {
+                  msgRes += " ne sent aucune corruption chez " + nomPerso(cible);
+                } else {
+                  msgRes += " sent de la corruption chez " + nomPerso(cible);
+                }
+                addLineToFramedDisplay(display, msgRes);
+                if (options.fx)
+                  spawnFx(chasseur.token.get('left'), chasseur.token.get('top'), options.fx, chasseur.token.get('pageid'));
+                endDisplay();
+              });
+          } else {
+            let msgRes = nomPerso(chasseur);
+            if (predicateAsBool(cible, 'corrompu'))
+              msgRes += " sent de la corruption chez " + nomPerso(cible);
+            else
+              msgRes += " ne sent aucune corruption chez " + nomPerso(cible);
+            addLineToFramedDisplay(display, msgRes + tr.modifiers);
+            if (options.fx)
+              spawnFx(chasseur.token.get('left'), chasseur.token.get('top'), options.fx, chasseur.token.get('pageid'));
+            endDisplay();
+          }
+        } else {
+          addLineToFramedDisplay(display, msgRes + tr.rerolls + tr.modifiers);
+          addLineToFramedDisplay(display, nomPerso(chasseur) + " ne réussit pas à sentir la corruption.");
+          endDisplay();
+        }
+      });
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     const command = msg.content.split(' ', 1);
@@ -39315,6 +39450,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-resultat-jet':
         resultatJet(msg);
         return;
+      case "!cof-rune-protection":
+        runeProtection(msg);
+        return;
       case "!cof-rune-puissance":
       case "!cof-bouton-rune-puissance":
         runePuissance(msg);
@@ -39322,6 +39460,9 @@ var COFantasy = COFantasy || function() {
       case "!cof-rune-energie":
       case "!cof-bouton-rune-energie":
         runeEnergie(msg);
+        return;
+      case '!cof-sentir-la-corruption':
+        parseSentirLaCorruption(msg);
         return;
       case '!cof-soigner-affaiblissement':
         soignerAffaiblissement(msg);
@@ -39334,9 +39475,6 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-undo':
         undoEvent();
-        return;
-      case "!cof-rune-protection":
-        runeProtection(msg);
         return;
       case "!cof-surprise":
         parseSurprise(msg);

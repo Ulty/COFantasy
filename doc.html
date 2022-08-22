@@ -973,6 +973,7 @@ tr {line-height: 25px;}
                   <li><strong>Tir de semonce</strong> : utiliser le modificateur <code>semonce</code> aux attaques. On laisse le MJ vérifier si la dernière attaque du personnage était bien un échec (devrait être facile à voir dans le chat). Le plus pratique pour l'utilisation avec differentes armes, est de créer une action <code>Tir de barrage</code> dans les <a href="#actions_du_tour">actions du tour</a>, avec comme code <code>#Attaque -1 --semonce</code>.
                     <li><strong>Tir de barrage</strong> : Utiliser l'option <code>--tirDeBarrage</code>. Ça multiplie les dégâts par 2, ignore la charge, et laisse un message demandant le undo si la cible décide de ne pas bouger.</li>
                     <li><strong>Couleuvrine</strong> : ajouter une attaque à distance, avec dans les modificateurs, <code>poudre, limiteParCombat</code> (ou en ligne de commande, avec l'option <code>--limiteParCombat</code>)</li>
+                    <li><strong>Feu nourri</strong> : faire les attaques comme pour le tirde barrage. Le script ne va pas vérifier que les cibles ne sont pas trop loin les unes des autres.</li>
                 </ol>
                 <h4 class="text-secondary">Voie des explosifs</h4>
                 <ol>
@@ -2093,6 +2094,14 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie des vermines</h4>
                 <ol>
                   <li><strong>Nuée de criquets</strong> : ajouter une attaque magique, de portée 20 m, type Sortilege, modificateur <code>pasDeDmg</code> et options <code>--effet nueeDeCriquets [[5+@{selected|SAG}]]</code>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDeCriquets</code> sur la cible dans ce cas).</li>
+                </ol>
+                <h4 class="text-secondary">Voie du chasseur de corruption</h4>
+                <p>Pour savoir si une cible est corrompue, le script va utiliser un <a href=#predicats>prédicat</a> <code>corrompu</code> qu'il appartient au MJ d'ajouter pour les créatures selon ses critères.</p>
+                <ol>
+                  <li><strong>Sentir la corruption</strong> : <code>!cof-sentir-la-corruption @{selected|token_id} @{target|token_id}</code>.</li>
+                  <li><strong>Combattre la corruption</strong> : ajouter un prédicat <code>combattreLaCorruption</code>. Y associer la valeur 2 au rang 4 dans la voie.</li>
+                  <li><strong>Chasseur de sorcière</strong> : ajouter un prédicat <code>chasseurDeSorciere</code>. Pour reconnaître les nécromanciens et autres prêtres maléfiques, il faut aussi leur ajouter un prédicat <code>necromancien</code>.</li>
+                  <li><strong>Frappe préventive</strong> : pas de support du script.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du chevalier dragon</h4>
                 <ol>
