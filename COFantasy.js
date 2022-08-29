@@ -9540,6 +9540,7 @@ var COFantasy = COFantasy || function() {
     init += predicateAsInt(perso, 'ameFeline', 0);
     init += predicateAsInt(perso, 'vitesseDuFelin', 0);
     init += predicateAsInt(perso, 'espritVide', 0, 3);
+    init += predicateAsInt(perso, 'pasDuVent', 0, 1);
     //Prescience de l'ensorceleur
     if (attributeAsBool(perso, 'prescienceUtilisee')) init += 10;
     //Forêt vivante
@@ -9698,7 +9699,7 @@ var COFantasy = COFantasy || function() {
       caseInsensitive: true
     });
     if (attr.length === 0) {
-      var maxval = '';
+      let maxval = '';
       if (options && options.maxVal !== undefined) maxval = options.maxVal;
       attr = createObj('attribute', {
         characterid: charId,
@@ -22523,6 +22524,7 @@ var COFantasy = COFantasy || function() {
         let options = attaque.options;
         options.evt = evt;
         options.redo = true;
+        if (options.rolls && options.rolls.attack) delete options.rolls.attack;
         attack(attaque.playerName, attaque.playerId, attaque.attaquant, attaque.cibles, attaque.weaponStats, options);
       });
     });
@@ -22550,20 +22552,20 @@ var COFantasy = COFantasy || function() {
         if (testIntervention === undefined) {
           return;
         }
-        var evtARefaire = lastEvent();
-        var perso = evtARefaire.personnage;
+        let evtARefaire = lastEvent();
+        let perso = evtARefaire.personnage;
         if (perso === undefined) {
           error("Erreur interne : intervention divine sans personnage", evtARefaire);
           return;
         }
-        var action = evtARefaire.action;
+        let action = evtARefaire.action;
         if (action === undefined) {
           error("Impossible de relancer l'action", evtARefaire);
           return;
         }
-        var optionsRedo = action.options || {};
+        let optionsRedo = action.options || {};
         optionsRedo.redo = true;
-        var evt = {
+        const evt = {
           type: "Intervention divine",
           attributes: []
         };
