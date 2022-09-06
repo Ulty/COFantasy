@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.08
 ### Capacités
+* Automatisation d'un cas courant d'utilisation de la capacité Acrobaties.
 * Ajout des 3 premiers rangs de la Voie du chasseur de corruption.
 * Magie en armure et rituel assuré de la Voie du guerrier-mage.
 * 3 premiers rangs du maître des poisons

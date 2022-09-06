@@ -418,6 +418,7 @@ tr {line-height: 25px;}
                   <li><code>--attaqueAssuree</code> : implémente une attaque assurée (+5 à l'attaque, dégâts divisés par 2, critique impossible).</li>
                   <li><code>--attaqueRisquee</code> : implémente une attaque risquée (+2 à l'attaque au contact, -4 en DEF pendant un tour).</li>
                   <li><code>--attaqueDeGroupe <i>n</i></code> : <i>n</i> est le nombre de créatures qui attaquent ; implémente une attaque de groupe (+2 à l'attaque par attaquant au-delà du premier, x2 DMG si l'attaque dépasse la DEF de 5 ou plus, x3 DMG si critique).</li>
+                  <li><code>--attaqueAcrobatique</code> : l'attaquant effectue un test d'acrobatie difficulté 15, et s'il réussit, l'attaque bénéficie des effets d'une sournoise. On peut en option préciser le nombre de dés de cette attaque sournoise.</li>
                   <li><code>--strigeSuce</code> : option spécifique aux striges. Donne le malus de -3 en DEF et compte la quantite sucée. Quand cette quantité arrive à 6, enlève le malus de DEF et rend la cible affaiblie.</li>
                   <li><code>--mainsDEnergie</code> : +2 à +5 à l'attaque, selon l'armure de la cible</li>
                   <li><code>--semonce</code> : +5 au touché et +1d6 aux DM (ne change pas les charges de l'arme).</li>
@@ -487,7 +488,7 @@ tr {line-height: 25px;}
                 <h5>RD simple</h5>
                 <p>Dans le cas d'une RD simple (résistance à tous les dégâts), il suffit d'indiquer un nombre. Exemple : <code>3</code></p>
                 <h5>RD à un type de dégâts particuliers</h5>
-                <p>Pour une RD qui ne s'applique qu'à un type de dégâts particuliers, indiquer le type et la valeur séparés par <code>:</code>. Exemple : <code>feu:5</code>. On peut aussi spécifier une RD conte tous les types élémentaires avec le mot clé <code>elementaire</code>.</p>
+                <p>Pour une RD qui ne s'applique qu'à un type de dégâts particuliers, indiquer le type et la valeur séparés par <code>:</code>. Exemple : <code>feu:5</code>. On peut aussi spécifier une RD conte tous les types élémentaires avec le mot clé <code>elementaire</code>. On peut aussi avoir une RD qui ne s'applique qu'aux attaques à distance avec le mot clé <code>distance</code>.</p>
                 <h5>RD sauf un ou plusieurs types de dégâts particuliers</h5>
                 <p>Pour une RD qui s'applique tout le temps sauf un ou plusieurs types de dégâts particuliers, indiquer la valeur puis <code>/</code> puis les différents types séparés par <code>_</code>. Exemple <code>/</code>. Exemple : <code>5/argent_magique</code><br/>
                 Pour une RD qui s'appliquerait à tous les types d'armes sauf une, utiliser à la place une résistance aux 2 autres types d'armes. Exemple, pour 5/tranchant, utiliser <code>percant:5,contondant:5</code>.</p>
@@ -1904,7 +1905,7 @@ tr {line-height: 25px;}
                 <ol>
                   <li><strong>Esquive</strong> : Ajouter un <a href=#predicats>prédicat</a> <code>esquiveVoleur</code>, de valeur le rang dans la voie. Ne pas modifier la DEF sur la fiche, le script fera les ajustements (et montrera le total avec <code>!cof-statut</code>).</li>
                   <li><strong>Chute</strong> : pas de support particulier.</li>
-                  <li><strong>Acrobaties</strong> : faire <code>!cof-jet DEX 15</code> pour le jet de dextérité, le reste est géré par le MJ.</li>
+                  <li><strong>Acrobaties</strong> : faire <code>!cof-jet DEX 15 --nom acrobatie</code> pour le jet de dextérité, le reste est géré par le MJ. Il est possible d'automatiser quand le personnage décide de faire une attaque quel que soit le résultat du jet d'acrobatie grace à la commande <code>#Attaque -1 --attaqueAcrobatique</code>.</li>
                   <li><strong>Esquive de la magie :</strong> ajouter un <a href=#predicats>prédicat</a> <code>esquiveDeLaMagie</code>.</li>
                   <li><strong>Dextérité héroïque :</strong> ajouter les bonus sur la fiche</li>
                 </ol>

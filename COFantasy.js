@@ -8159,7 +8159,7 @@ var COFantasy = COFantasy || function() {
           scope.nature = true;
           return;
         case 'vampirise':
-          var vampirise = 100;
+          let vampirise = 100;
           if (cmd.length > 1) {
             vampirise = parseInt(cmd[1]);
             if (isNaN(vampirise)) {
@@ -8178,6 +8178,17 @@ var COFantasy = COFantasy || function() {
           scope.sournoise += parseInt(cmd[1]);
           if (isNaN(scope.sournoise) || scope.sournoise < 0) {
             error("L'option --sournoise de !cof-attack attend un argument entier positif", cmd);
+            return;
+          }
+          break;
+        case 'attaqueAcrobatique':
+          if (cmd.length < 2) {
+            options.attaqueAcrobatique = predicateAsInt(attaquant, 'attaqueSournoise', 1);
+            return;
+          }
+          options.attaqueAcrobatique = parseInt(cmd[1]);
+          if (isNaN(options.attaqueAcrobatique) || options.attaqueAcrobatique < 0) {
+            error("L'option --attaqueAcrobatique de !cof-attack attend un argument entier positif", cmd);
             return;
           }
           break;
@@ -12782,13 +12793,13 @@ var COFantasy = COFantasy || function() {
       }
     }
     addEvent(evt);
+    let explications = [];
+    if (options.messages) explications = [...options.messages];
     //On fait les tests pour les cibles qui bénéficieraient d'un sanctuaire
     let ciblesATraiter = cibles.length;
     let cibleTraitee = function() {
       ciblesATraiter--;
       if (ciblesATraiter === 0) {
-        let explications = [];
-        if (options.messages) explications = [...options.messages];
         evalITE(attaquant, undefined, undefined, options, 0, evt, explications, options, function() {
           resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, explications, options, chargesArme);
         });
@@ -12838,12 +12849,32 @@ var COFantasy = COFantasy || function() {
               options.bonusAttaque = (options.bonusAttaque || 0) + 5;
               options.sournoise = options.sournoise || 0;
               options.sournoise += options.disparition;
-              evalSanctuaire();
             } else {
               cible.messages.push(nomPerso(cible) + " repère " + nomPerso(attaquant) + " à temps pour réagir.");
-              evalSanctuaire();
             }
+            evalSanctuaire();
           }); //fin de testOppose (asynchrone)
+      } else if (cibles.length == 1 && options.contact && options.attaqueAcrobatique) {
+        let rollId = 'attaqueAcrobatique_' + attaquant.token.id;
+        let rollOptions = {
+          competence: 'acrobatie'
+        };
+        explications.push("Tentative d'acrobatie pour surprendre " + nomPerso(cible));
+        testCaracteristique(attaquant, 'DEX', 15, rollId, rollOptions, evt,
+          function(tr, expl) {
+            explications.push("<b>Résultat :</b> " + tr.texte);
+            expl.forEach(function(m) {
+              explications.push(m);
+            });
+            if (tr.reussite) {
+              explications.push("Réussite : " + nomPerso(attaquant) + " peut faire une attaque sournoise");
+              options.sournoise = options.sournoise || 0;
+              options.sournoise += options.attaqueAcrobatique;
+            } else {
+              explications.push("Raté, " + nomPerso(attaquant) + " réalise une attaque normale");
+            }
+            evalSanctuaire();
+          });
       } else evalSanctuaire();
     });
   }
@@ -14030,9 +14061,9 @@ var COFantasy = COFantasy || function() {
         }
         evt.attributes = evt.attributes || [];
         if (attackLabel && options.grenaille) {
-          var chargesGrenaille = tokenAttribute(attaquant, 'chargeGrenaille_' + attackLabel);
+          let chargesGrenaille = tokenAttribute(attaquant, 'chargeGrenaille_' + attackLabel);
           if (chargesGrenaille.length > 0) {
-            var currentChargeGrenaille = parseInt(chargesGrenaille[0].get('current'));
+            let currentChargeGrenaille = parseInt(chargesGrenaille[0].get('current'));
             if (isNaN(currentChargeGrenaille) || currentChargeGrenaille < 1) {
               sendPerso(attaquant, "ne peut pas attaquer avec " + weaponName + " car elle n'est pas chargée en grenaille");
               return;
