@@ -2273,7 +2273,7 @@ var COFantasy = COFantasy || function() {
     const page = getObj("page", pageId);
     let scale = parseFloat(page.get('scale_number'));
     if (isNaN(scale) || scale <= 0) return 1.0;
-    var cellSize = parseFloat(page.get('snapping_increment'));
+    let cellSize = parseFloat(page.get('snapping_increment'));
     if (!isNaN(cellSize) && cellSize > 0) scale /= cellSize;
     const unit = page.get('scale_units');
     switch (unit) {
@@ -10418,6 +10418,7 @@ var COFantasy = COFantasy || function() {
       explications.push("Construction de taille humaine : -1 en DEF");
       defense -= 1;
     }
+    defense += predicateAsInt(target, 'voieDesRunes', 0, 1);
     if (attributeAsBool(target, 'attaqueRisquee')) {
       defense -= 4;
       explications.push("Suite à une attaque risquée, -4 en DEF");
@@ -31734,7 +31735,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       iterSelected(selected, function(forgesort) {
-        var voieDesRunes = predicateAsInt(forgesort, 'voieDesRunes', 0);
+        let voieDesRunes = predicateAsInt(forgesort, 'voieDesRunes', 0);
         if (voieDesRunes < 1) {
           sendPerso(forgesort, "ne connaît pas la Voie des Runes.");
           return;
@@ -31742,8 +31743,8 @@ var COFantasy = COFantasy || function() {
           sendPerso(forgesort, "ne peut écrire que des Runes de défense.");
           return;
         }
-        var titre = "Création de runes";
-        var display = startFramedDisplay(playerId, titre, forgesort, {
+        let titre = "Création de runes";
+        let display = startFramedDisplay(playerId, titre, forgesort, {
           chuchote: true
         });
         listeRunes(voieDesRunes).forEach(function(rune) {

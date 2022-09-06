@@ -1359,7 +1359,7 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie des runes</h4>
                 <p style="margin-top:0px; margin-bottom:0px">Ajouter un <a href=#predicats>prédicat</a> <code>voieDesRunes</code> pour le personnage avec comme valeur le niveau dans la voie des Runes.</p>
                 <ol>
-                  <li><strong>Runes de défense</strong> : ajuster la DEF sur la fiche.</li>
+                  <li><strong>Runes de défense</strong> : Rien à faire, le prédicat <code>voieDesRunes</code> est pris en compte dans le calcule de la DEF.</li>
                   <li><strong>Rune d'énergie</strong> : La fabrication des runes de combat est gérée par la commande <code>!cof-runes</code> (il est fortement conseillé de créer une ability pour le forgesort). Le script tente de détecter quand les runes peuvent être utilisées en combat et propose un bouton (à la manière des points de chance). Lors de chaque nuit (utilisation de la commande <code>!cof-nouveau-jour</code>) toutes les runes sont retirées, mais le script va suggérer des raccourcis au forgesort pour les restaurer facilement à tous les tokens présents sur la page des joueurs (par personnage, type de rune, et aussi un bouton "Tout renouveler"). Les points de mana sont automatiquement décomptés.</li>
                   <li><strong>Rune de protection</strong> : cf. ci-dessus. Le script implémente par défaut un maximum de dommages absorbés par la rune équivalent au rang du forgesort dans la voie des Runes multiplié par 10. Il est possible de désactiver cette limitation via !cof-options.</li>
                   <li><strong>Rune de puissance</strong> : cf. ci-dessus. Créer une rune de puissance vous demandera d'indiquer en plus le numéro de l'arme sur la fiche du propriétaire.</li>
