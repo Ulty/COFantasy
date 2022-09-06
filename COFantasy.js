@@ -4631,6 +4631,17 @@ var COFantasy = COFantasy || function() {
                 } else options.actionImpossible = true;
               }
             }
+          } else if (act.startsWith('!cof-recharger ')) {
+            let cmd = act.split(' ');
+            if (cmd.length > 1) {
+              let attackLabel = cmd[1];
+              let arme = getWeaponStats(perso, attackLabel);
+              if (arme !== undefined && arme.charge) {
+                let currentCharge = attributeAsInt(perso, 'charge_' + attackLabel, 0);
+                if (currentCharge >= arme.charge)
+                  options.actionImpossible = true;
+              }
+            }
           }
           if (options.ressource) act += " --decrAttribute " + options.ressource.id;
           if (picto === '') {
@@ -4793,13 +4804,13 @@ var COFantasy = COFantasy || function() {
         tmp.forEach(function(elem) {
           if (elem.startsWith('|')) {
             // attribut demandé
-            var attribute_name = elem.substring(0, elem.indexOf("}")).substr(1);
-            var attrs = findObjs({
+            let attribute_name = elem.substring(0, elem.indexOf("}")).substr(1);
+            let attrs = findObjs({
               _type: 'attribute',
               _characterid: perso.charId,
               name: attribute_name
             });
-            var replacement;
+            let replacement;
             if (attrs.length === 0)
               replacement = '@{' + perso.name + '|' + attribute_name + '}';
             else
@@ -21213,7 +21224,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function recharger(msg) {
-    let cmd = msg.content.split(" ");
+    let cmd = msg.content.split(' ');
     if (cmd.length < 2) {
       error("La fonction !cof-recharger attend au moins un argument", msg);
       return;
@@ -23593,8 +23604,7 @@ var COFantasy = COFantasy || function() {
             attackStats
           };
           let b = bouton(command, text, perso, options);
-          if (options.actionImpossible) ligne += text + '<br />';
-          else ligne += b + '<br />';
+          if (!options.actionImpossible) ligne += b + '<br />';
         }
       });
       if (actionsParDefaut) {
