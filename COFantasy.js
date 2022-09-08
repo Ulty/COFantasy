@@ -7737,6 +7737,7 @@ var COFantasy = COFantasy || function() {
         case 'arc':
         case 'arbalete':
         case 'attaqueAssuree':
+        case 'attaqueFlamboyante':
         case 'attaqueRisquee':
         case 'attaqueOptions':
         case 'beni':
@@ -9807,6 +9808,7 @@ var COFantasy = COFantasy || function() {
 
   // bonus d'attaque d'un token, indépendament des options
   // Mise en commun pour attack et attaque-magique
+  // Ajoute des valeurs à options.bonusDM si présent
   function bonusDAttaque(personnage, explications, evt, options) {
     explications = explications || [];
     let tempAttkMod; // Utilise la barre 3 de l'attaquant
@@ -9974,6 +9976,13 @@ var COFantasy = COFantasy || function() {
       attBonus -= 10;
       explications.push("Déstabilisé par une action de charme => -10 en Attaque");
     }
+    if (options && options.attaqueFlamboyante && options.contact) {
+      let bonus = modCarac(personnage, 'charisme');
+      options.attaqueFlamboyanteBonus = bonus;
+      if (options.bonusDM !== undefined) options.bonusDM += bonus;
+      explications.push("Attaque flamboyante => +" + bonus + " en Attaque et DM");
+      attBonus += bonus;
+    }
     if (attributeAsBool(personnage, 'espaceExigu')) {
       let bonusForce = modCarac(personnage, 'force');
       if (bonusForce < 1) bonusForce = 1;
@@ -10107,7 +10116,7 @@ var COFantasy = COFantasy || function() {
       defense += modCarac(target, 'dexterite');
     }
     if (attributeAsBool(target, 'inconfort')) {
-      var inconfortValeur = attributeAsInt(target, "inconfortValeur", 0);
+      let inconfortValeur = attributeAsInt(target, "inconfortValeur", 0);
       defense -= inconfortValeur;
       explications.push("L'adversaire est gêné par son armure : -" + inconfortValeur + " en DEF");
     }
@@ -10631,11 +10640,14 @@ var COFantasy = COFantasy || function() {
     if (msg) options.msg = msg;
     return setTokenAttr(perso, attr, duree, evt, options);
   }
+
   //Bonus en Attaque qui ne dépendent pas du défenseur
+  //Remplit le champs options.bonusDM (en partant de 0)
   function bonusAttaqueA(attaquant, weaponName, evt, explications, options) {
     let attBonus = 0;
     if (options.bonusAttaque) attBonus += options.bonusAttaque;
     if (options.armeMagiquePlus) attBonus += options.armeMagiquePlus;
+    options.bonusDM = 0;
     attBonus += bonusDAttaque(attaquant, explications, evt, options);
     if (options.tirDouble) {
       attBonus += 2;
@@ -10922,7 +10934,6 @@ var COFantasy = COFantasy || function() {
     }
     if ((options.marteau || options.hache) && predicateAsBool(attaquant, 'hachesEtMarteaux')) {
       attBonus += 1;
-      options.bonusDM = options.bonusDM || 0;
       options.bonusDM += 1;
       explications.push("Haches et marteaux => +1 en Att. et DM");
     }
@@ -10958,7 +10969,6 @@ var COFantasy = COFantasy || function() {
       if (force < 0) msg += force + " DM";
       else if (force > 0) msg += '+' + force + " DM";
       if (force) {
-        options.bonusDM = options.bonusDM || 0;
         options.bonusDM += force;
       }
       if (force < options.arcComposite) {
@@ -11211,7 +11221,13 @@ var COFantasy = COFantasy || function() {
           let desFeinte = predicateAsInt(attaquant, 'nbDesFeinte', 2);
           desFeinte *= niveauTouche;
           target.feinte = desFeinte;
-          if (!options.pasDeDmg) msgFeinte += " et +" + desFeinte + "d6 DM";
+          if (!options.pasDeDmg) {
+            msgFeinte += " et +" + desFeinte + options.d6;
+            if (options.attaqueFlamboyanteBonus)
+              msgFeinte += "+" + options.attaqueFlamboyanteBonus;
+            msgFeinte += " DM";
+
+          }
         }
       }
       explications.push(msgFeinte);
@@ -16121,9 +16137,12 @@ var COFantasy = COFantasy || function() {
           target.messages.push("Lien épique => + 1" + options.d6 + " DM");
         }
         if (target.feinte) {
+          let value = target.feinte + options.d6;
+          if (options.attaqueFlamboyanteBonus)
+            value += "+" + options.attaqueFlamboyanteBonus;
           target.additionalDmg.push({
             type: mainDmgType,
-            value: target.feinte + options.d6
+            value
           });
         }
         var targetTaille = taillePersonnage(target, 4);
