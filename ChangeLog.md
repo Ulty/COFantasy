@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.08
 ### Capacités
+* Rang 3 de la Voie du familier fantastique.
 * Prise en compte automatique du rang 1 de la Voie des runes.
 * Automatisation d'un cas courant d'utilisation de la capacité Acrobaties.
 * Ajout des 3 premiers rangs de la Voie du chasseur de corruption.

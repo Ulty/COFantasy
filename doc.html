@@ -459,6 +459,7 @@ tr {line-height: 25px;}
                   <li><code>--message <i>texte</i></code> : ajoute une ligne avec le message dans la fenêtre de l'attaque. Attention, <i>texte</i> ne doit pas contenir la séquence <code> --</code>.</li>
                   <li><code>--secret</code> : affiche les jets et résultats de l'attaque seulement aux joueurs qui contrôlent l'attaquant ou ses cibles, ainsi qu'au MJ.</li>
                   <li><code>--allonge <i>n</i></code> : ajoute <i>n</i> mètres à la portée d'une attaque au contact. L'allonge peut être un nombre à virgule et même négative.</li>
+                  <li><code>--canaliseParFamilier</code> : le point de départ de l'attaque est le familier s'il est actif sur la carte.</li>
                   <li><code>--soundAttack <i>son</i></code> : joue le son <i>son</i>, à moins qu'une version plus longue de l'option (voir ci-dessous) n'existe et qu'elle soit active.</li>
                   <li><code>--soundAttackEchec <i>son</i></code> : joue le son <i>son</i> lorque l'arme fait un echec, sauf si c'est un échec particulier et une version plus longue existe.</li>
                   <li><code>--soundAttackEchecCritique <i>son</i></code> : joue le son <i>n</i> lorque l'arme fait un echec critique</li>
@@ -1142,12 +1143,6 @@ tr {line-height: 25px;}
                   <li><strong>Frappe lourde</strong> : faire l'attaque avec les options <code>--avecd12crit --plus 2d6 --ignoreMoitieRD</code></li>
                   <li><strong>Force héroïque</strong> : reporter les bonus sur la fiche</li>
                 </ol>
-                <h4 class="text-secondary">Voie du guerrier-mage</h4>
-                <p>Penser à utiliser l'option <code>--magieEnArmure</code> pour le lancement des sorts affectés.</p>
-                <ol>
-                  <li><strong>Magie en armure</strong> : Ajouter un <a href=#predicats>prédicat</a> <code>magieEnArmure</code> de valeur la DEF totale à partir de laquelle le personnage peut lancer des sorts. Comme la fiche ne contient pas l'information de la DEF normale (sans magie) de l'armure portée, le script utilise la moyenne de la DEF et du malus d'armure. En ajoutant un prédicat <code>magieEnArmureFacilitee</code>, le script diminue aussi la difficulté des jets d'INT pour les armures avec une DEF trop grande de la valeur du prédicat de magie en armure.</li>
-                  <li><strong>Rituel Assuré</strong> : <code>!cof-effet-temp rituelAssure 2</code>. Le script ne permet pas de préciser le sort, le premier qui sera lancé après le rituel assuré bénéficiera de l'effet.</li>
-                </ol>
                 <h4 class="text-secondary">Voie du héro</h4>
                 <ol>
                   <li><strong>Ignorer la douleur</strong> : Ajouter un <a href=#predicats>prédicat</a> <code>ignorerLaDouleur</code>. Normalement, le script affiche un bouton quand cela est utilisable, mais on peut aussi le déclencher avec <code>!cof-ignorer-la-douleur</code> juste après le coup.</li>
@@ -1294,7 +1289,7 @@ tr {line-height: 25px;}
                 </ol>
                 <h4 class="text-secondary">Voie de l'invocation</h4>
                 <ol>
-                  <li><strong>Familier</strong> : créer un personnage (de type PNJ) pour le familier, controlé par le joueur et avec un token lié ayant la capcité de voir. 
+                  <li><strong>Familier</strong> : créer un personnage (de type PNJ) pour le familier, controlé par le joueur et avec un token lié ayant la capacité de voir. 
                     <ul>
                       <li>Pour le bonus en initiative, ajouter un attribut <code>familier</code> au personnage, avec comme valeur le nom du compagnon (doit être exactement le même que celui du token du compagnon). Cela automatise l'initiative quand le familier est présent.</li>
                       <li>Pour les points de vie partagés avec le familier, il faut mettre un attribut <code>PVPartagesAvec</code> de valeur le nom du familier (celui de la fiche, pas forcément le même que le token) pour le personnage, et un attribut similaire chez le familier, de valeur courante le nom du personnage. Le partage de PVs ne fonctionne pas avec des mooks, et il ne fait pas le partage de dégâts temporaires. En revanche, le script devrait gérer correctement les dégâts de zone.</li>
@@ -2124,6 +2119,28 @@ tr {line-height: 25px;}
                   <li><strong>Attaque en mouvement</strong> : pas de support du script.</li>
                   <li><strong>Danse des lames</strong> : <code>!cof-effet-combat danseDesLames</code>. Pour l'attaque gratuite supplémentaire, on peut faire <code>#Attaque -1 --si etat danseDesLames --avecd12crit</code>.</li>
                 </ol>
+                <h4 class="text-secondary">Voie du familier fantastique</h4>
+                <ol>
+                  <li><strong>Familier fantastique</strong> : créer un personnage (de type PNJ) pour le familier, controlé par le joueur et avec un token lié ayant la capacité de voir. 
+                    <ul>
+                      <li>Pour le bonus en initiative, ajouter un attribut <code>familier</code> au personnage, avec comme valeur le nom du compagnon (doit être exactement le même que celui du token du compagnon). Cela automatise l'initiative quand le familier est présent.</li>
+                      <li>Pour les points de vie partagés avec le familier, il faut mettre un attribut <code>PVPartagesAvec</code> de valeur le nom du familier (celui de la fiche, pas forcément le même que le token) pour le personnage, et un attribut similaire chez le familier, de valeur courante le nom du personnage. Le partage de PVs ne fonctionne pas avec des mooks, et il ne fait pas le partage de dégâts temporaires. En revanche, le script devrait gérer correctement les dégâts de zone.</li>
+                      <li>Pour la défense du familier, ajouter lui un attribut <code>defDeriveeDe</code>, de valeur le nom du personnage (nom complet sur la fiche).</li>
+                      <li>Pour l'initiative, ajoutez un attribut <code>initiativeDeriveeDe</code> de valeur le nom du personnage.</li>
+                    </ul>
+                  </li>
+                  <li><strong>Pouvoir mineur</strong> : 
+                    <ul>
+                      <li><strong>Minimoi (Égocentrisme)</strong> : Téléportation, pas de support.</li>
+                    </ul>
+                  </li>
+                  <li><strong>Canalisation</strong> : Lancer l'attaque avec l'option <code>--canaliseParFamilier</code>.</li>
+                  <li><strong>Pouvoir supérieur</strong> :
+                    <ul>
+                      <li><strong>Minimoi (Clone)</strong> : à faire.</li>
+                    </ul>
+                  </li>
+                </ol>
                 <h4 class="text-secondary">Voie du gel</h4>
                 <ol>
                   <li></li>
@@ -2134,6 +2151,12 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie du guérisseur</h4>
                 <ol>
                   <li><strong>Premiers soins</strong> : ajouter un <a href=#predicats>prédicat</a> <code>voieDuGuerisseur</code> de valeur le rang dans cette voie pour le bonus aux soins de la Voie des soins. Pas encore de support complet pour le sort, faire simplement <code>!cof-soin @{selected|token_id} @{target|token_id} 2d6+@{selected|SAG}</code>.</li>
+                </ol>
+                <h4 class="text-secondary">Voie du guerrier-mage</h4>
+                <p>Penser à utiliser l'option <code>--magieEnArmure</code> pour le lancement des sorts affectés.</p>
+                <ol>
+                  <li><strong>Magie en armure</strong> : Ajouter un <a href=#predicats>prédicat</a> <code>magieEnArmure</code> de valeur la DEF totale à partir de laquelle le personnage peut lancer des sorts. Comme la fiche ne contient pas l'information de la DEF normale (sans magie) de l'armure portée, le script utilise la moyenne de la DEF et du malus d'armure. En ajoutant un prédicat <code>magieEnArmureFacilitee</code>, le script diminue aussi la difficulté des jets d'INT pour les armures avec une DEF trop grande de la valeur du prédicat de magie en armure.</li>
+                  <li><strong>Rituel Assuré</strong> : <code>!cof-effet-temp rituelAssure 2</code>. Le script ne permet pas de préciser le sort, le premier qui sera lancé après le rituel assuré bénéficiera de l'effet.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du héro</h4>
                 <ol>

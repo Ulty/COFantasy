@@ -2729,20 +2729,20 @@ var COFantasy = COFantasy || function() {
         }
         return res; //Pas besoin de faire le reste, car plus de perso
       case 'formeDArbre':
-        var iterTokOptions = {
+        let iterTokOptions = {
           filterAffected: function(token) {
             return token.get('layer') == 'objects';
           }
         };
         iterTokensOfAttribute(charId, options.pageId, effet, attrName,
           function(token) {
-            var perso = {
+            let perso = {
               token: token,
               charId: charId
             };
-            var tokenChange = attributeAsBool(perso, 'changementDeToken');
+            let tokenChange = attributeAsBool(perso, 'changementDeToken');
             if (tokenChange) {
-              var tokenMJ =
+              let tokenMJ =
                 findObjs({
                   _type: 'graphic',
                   _subtype: 'token',
@@ -2753,7 +2753,7 @@ var COFantasy = COFantasy || function() {
                 });
               if (tokenMJ.length === 0) return;
               removeTokenAttr(perso, 'changementDeToken', evt);
-              var nouveauToken = tokenMJ[0];
+              let nouveauToken = tokenMJ[0];
               setToken(nouveauToken, 'layer', 'objects', evt);
               setToken(nouveauToken, 'left', token.get('left'), evt);
               setToken(nouveauToken, 'top', token.get('top'), evt);
@@ -3017,6 +3017,7 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  //retourne le personnage du compagnon s'il est présent et actif
   function compagnonPresent(personnage, attribut) {
     let attrs = findObjs({
       _type: 'attribute',
@@ -3032,7 +3033,7 @@ var COFantasy = COFantasy || function() {
         layer: 'objects',
         name: compagnon
       });
-      let res = false;
+      let res;
       compToken.forEach(function(tok) {
         if (res) return;
         let compCharId = tok.get('represents');
@@ -3041,11 +3042,11 @@ var COFantasy = COFantasy || function() {
           token: tok,
           charId: compCharId
         };
-        res = isActive(compagnon);
+        if (isActive(compagnon)) res = compagnon;
       });
       return res;
     }
-    return false;
+    return;
   }
 
   function personnageAmeLiee(perso, pageId, allToks) {
@@ -4642,6 +4643,15 @@ var COFantasy = COFantasy || function() {
                   options.actionImpossible = true;
               }
             }
+          } else if (act.startsWith('!cof-attack ')) {
+            let cmd = act.split(' ');
+            if (cmd.length > 3 && cmd[3] == '-1') {
+              //Selon l'arme en main, une action peut être possible ou non
+              let weaponStats = armesEnMain(perso);
+              options.actionImpossible =
+                (weaponStats.deuxMains && attributeAsBool(perso, 'espaceExigu')) ||
+                (weaponStats.portee && cmd.includes('--attaqueFlamboyante'));
+            }
           }
           if (options.ressource) act += " --decrAttribute " + options.ressource.id;
           if (picto === '') {
@@ -4870,7 +4880,7 @@ var COFantasy = COFantasy || function() {
     if (image_url) {
       image_url = image_url.replace('/med.png', '/thumb.png');
       image_url = image_url.replace('/max.png', '/thumb.png');
-      var index = image_url.indexOf('?');
+      let index = image_url.indexOf('?');
       if (index > 0) image_url = image_url.substring(0, index);
       return image_url;
     }
@@ -8478,6 +8488,15 @@ var COFantasy = COFantasy || function() {
           if (targetToken.id == targetS.token.id) return;
           options.ciblesSupplementaires = options.ciblesSupplementaires || [];
           options.ciblesSupplementaires.push(targetS);
+          return;
+        case 'canaliseParFamilier': //TODO
+          let origine = compagnonPresent(attaquant, 'familier');
+          if (origine === undefined) {
+            sendPlayer(msg, "Pas de familier actif, impossible de canaliser par le familier");
+            log("Pas de familier");
+            return;
+          }
+          options.origineDeLAttaque = origine;
           return;
         case 'ciblesDansDisque':
           if (cmd.length < 2) {
@@ -12116,13 +12135,16 @@ var COFantasy = COFantasy || function() {
     // Attacker and target infos
     let attackingToken = attaquant.token;
     let attackingCharId = attaquant.charId;
+    let tokenOrigine = attackingToken;
+    if (options.origineDeLAttaque)
+      tokenOrigine = options.origineDeLAttaque.token;
     let attacker = getObj("character", attackingCharId);
     if (attacker === undefined) {
       error("Unexpected undefined 1", attacker);
       return;
     }
     attaquant.name = attaquant.name || attacker.get("name");
-    let pageId = attaquant.token.get('pageid');
+    let pageId = attackingToken.get('pageid');
     let weaponName = options.nom || weaponStats.name;
     //Options automatically set by some attributes
     if (attributeAsBool(attaquant, 'paralysieRoublard')) {
@@ -12388,11 +12410,11 @@ var COFantasy = COFantasy || function() {
           options.dmCible.target = targetToken;
         }
         let distanceTarget =
-          distanceCombat(targetToken, attackingToken, pageId, {
+          distanceCombat(targetToken, tokenOrigine, pageId, {
             strict1: true,
             strict2: true
           });
-        let pta = tokenCenter(attackingToken);
+        let pta = tokenCenter(tokenOrigine);
         let ptt = tokenCenter(targetToken);
         switch (options.aoe.type) {
           case 'ligne':
@@ -12407,8 +12429,8 @@ var COFantasy = COFantasy || function() {
               //C'est juste un token utilisé pour définir la ligne
               if (options.fx) {
                 let p1e = {
-                  x: attackingToken.get('left'),
-                  y: attackingToken.get('top'),
+                  x: tokenOrigine.get('left'),
+                  y: tokenOrigine.get('top'),
                 };
                 let p2e = {
                   x: targetToken.get('left'),
@@ -12427,7 +12449,7 @@ var COFantasy = COFantasy || function() {
                 layer: 'objects'
               });
             allToks.forEach(function(obj) {
-              if (obj.id == attackingToken.id) return; //on ne se cible pas
+              if (obj.id == tokenOrigine.id) return; //on ne se cible pas
               let objCharId = obj.get('represents');
               if (objCharId === '') return;
               let cible = {
@@ -12471,7 +12493,7 @@ var COFantasy = COFantasy || function() {
               });
             allToksDisque.forEach(function(obj) {
               if ((options.explosion || portee === 0) &&
-                obj.id == attackingToken.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
+                obj.id == tokenOrigine.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
               if (obj.get('bar1_max') == 0) return; // jshint ignore:line
               let objCharId = obj.get('represents');
               if (objCharId === '') return;
@@ -12504,8 +12526,8 @@ var COFantasy = COFantasy || function() {
           case 'cone':
             if (options.fx) {
               let p1eC = {
-                x: attackingToken.get('left'),
-                y: attackingToken.get('top'),
+                x: tokenOrigine.get('left'),
+                y: tokenOrigine.get('top'),
               };
               let p2eC = {
                 x: targetToken.get('left'),
@@ -12538,7 +12560,7 @@ var COFantasy = COFantasy || function() {
                 layer: "objects"
               });
             allToksCone.forEach(function(obj) {
-              if (obj.id == attackingToken.id) return; //on ne se cible pas
+              if (obj.id == tokenOrigine.id) return; //on ne se cible pas
               let objCharId = obj.get('represents');
               if (objCharId === '') return;
               let cible = {
@@ -12565,7 +12587,7 @@ var COFantasy = COFantasy || function() {
             return;
         }
       } else {
-        if (attackingToken.id == targetToken.id && !options.echecTotal) { //même token pour attaquant et cible
+        if (tokenOrigine.id == targetToken.id && !options.echecTotal) { //même token pour attaquant et cible
           sendPerso(attaquant,
             "s'attaque " + onGenre(attaquant, "lui", "elle") +
             "-même ? Probablement une erreur à la sélection de la cible. On annule");
@@ -12613,7 +12635,7 @@ var COFantasy = COFantasy || function() {
     let tm = stateCOF.tenebresMagiques;
     if (tm && estDemon(attaquant)) {
       tm.attaques = tm.attaques || {};
-      tm.attaques[attaquant.token.id] = cibles;
+      tm.attaques[attackingToken.id] = cibles;
     }
     cibles = cibles.filter(function(target) {
       if (getState(target, 'enseveli')) {
@@ -12661,24 +12683,25 @@ var COFantasy = COFantasy || function() {
       let optDistance = {};
       if (options.contact) optDistance.allonge = options.allonge;
       // Si l'attaquant est monté, distance mesurée à partir de sa monture
-      let pseudoAttackingToken = attackingToken;
-      let attrMonture = tokenAttribute(attaquant, 'monteSur');
-      if (attrMonture.length > 0) {
-        let pseudoAttacker =
-          persoOfIdName(attrMonture[0].get('current'), pageId);
-        if (pseudoAttacker) pseudoAttackingToken = pseudoAttacker.token;
+      if (tokenOrigine.id == attackingToken.id) {
+        let attrMonture = tokenAttribute(attaquant, 'monteSur');
+        if (attrMonture.length > 0) {
+          let pseudoAttacker =
+            persoOfIdName(attrMonture[0].get('current'), pageId);
+          if (pseudoAttacker) tokenOrigine = pseudoAttacker.token;
+        }
       }
       cibles = cibles.filter(function(target) {
         // Si la cible est montée, distance mesurée vers sa monture
         let pseudoTargetToken = target.token;
-        attrMonture = tokenAttribute(target, 'monteSur');
+        let attrMonture = tokenAttribute(target, 'monteSur');
         if (attrMonture.length > 0) {
           let pseudoTarget =
             persoOfIdName(attrMonture[0].get('current'), pageId);
           if (pseudoTarget) pseudoTargetToken = pseudoTarget.token;
         }
         target.distance =
-          distanceCombat(pseudoAttackingToken, pseudoTargetToken, pageId, optDistance);
+          distanceCombat(tokenOrigine, pseudoTargetToken, pageId, optDistance);
         if (options.intercepter || options.interposer) return true;
         if (target.distance > portee && target.msgEsquiveFatale === undefined && !(target.chairACanon || target.intercepter)) {
           if (options.aoe || options.auto) return false; //distance stricte
@@ -12883,14 +12906,14 @@ var COFantasy = COFantasy || function() {
             evalSanctuaire();
           }); //fin de testOppose (asynchrone)
       } else if (cibles.length == 1 && options.contact && options.attaqueAcrobatique) {
-        let rollId = 'attaqueAcrobatique_' + attaquant.token.id;
+        let rollId = 'attaqueAcrobatique_' + attackingToken.id;
         let rollOptions = {
           competence: 'acrobatie'
         };
         explications.push("Tentative d'acrobatie pour surprendre " + nomPerso(cible));
         testCaracteristique(attaquant, 'DEX', 15, rollId, rollOptions, evt,
           function(tr, expl) {
-            explications.push("<b>Résultat :</b> " + tr.texte);
+            explications.push("<b>Résultat :</b> " + tr.texte + tr.modifiers);
             expl.forEach(function(m) {
               explications.push(m);
             });
@@ -12899,7 +12922,7 @@ var COFantasy = COFantasy || function() {
               options.sournoise = options.sournoise || 0;
               options.sournoise += options.attaqueAcrobatique;
             } else {
-              explications.push("Raté, " + nomPerso(attaquant) + " réalise une attaque normale");
+              explications.push("Raté, " + nomPerso(attaquant) + " réalise une attaque normale" + tr.rerolls);
             }
             evalSanctuaire();
           });
@@ -14715,17 +14738,20 @@ var COFantasy = COFantasy || function() {
                   evt.succes = true;
                 } else {
                   // Draw failed effect
-                  if (_.has(options, "fx") && options.distance) {
-                    var p1 = {
-                      x: attackingToken.get('left'),
-                      y: attackingToken.get('top')
+                  if (options.fx && options.distance) {
+                    let tokenOrigine = attackingToken;
+                    if (options.origineDeLAttaque)
+                      tokenOrigine = options.origineDeLAttaque.token;
+                    let p1 = {
+                      x: tokenOrigine.get('left'),
+                      y: tokenOrigine.get('top')
                     };
-                    var p2 = {
+                    let p2 = {
                       x: target.token.get('left'),
                       y: target.token.get('top')
                     };
                     // Compute some gaussian deviation in [0, 1]
-                    var dev =
+                    let dev =
                       (Math.random() + Math.random() + Math.random() + Math.random() +
                         Math.random() + 1) / 6;
                     // take into account by how far we miss
@@ -16439,9 +16465,12 @@ var COFantasy = COFantasy || function() {
             if (options.fx) {
               //Pour les cones, on fait un seul effet, car c'est bien géré.
               if (!options.aoe || options.aoe.type != 'cone') {
+                let tokenOrigine = attackingToken;
+                if (options.origineDeLAttaque)
+                  tokenOrigine = options.origineDeLAttaque.token;
                 let p1e = {
-                  x: attackingToken.get('left'),
-                  y: attackingToken.get('top'),
+                  x: tokenOrigine.get('left'),
+                  y: tokenOrigine.get('top'),
                 };
                 let p2e = {
                   x: target.token.get('left'),
