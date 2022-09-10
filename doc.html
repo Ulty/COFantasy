@@ -617,7 +617,7 @@ tr {line-height: 25px;}
               </div>
               <h3 class="text-info" id="statut_etats">2.4 Statut et états</h3>
               <div class="decalage">
-                <p><code>!cof-statut</code> affiche l'état courant de tous les tokens sélectionnés. Utile pour connaître facilement les états qui ne sont pas directement visibles sur un token (points de récupération, armes chargées, ...). Il est possible de rajouter l'affichage d'autres attributs que ceux sélectionnés par défaut par le sript. Pour cela, utiliser un attribut <code>attributsDeStatut</code>, de valeur courante la liste des noms d'attributs à afficher, séparés par des virgules.</p>
+                <p><code>!cof-statut</code> affiche l'état courant de tous les tokens sélectionnés. Utile pour connaître facilement les états qui ne sont pas directement visibles sur un token (points de récupération, armes chargées, ...). Il est possible de rajouter l'affichage d'autres attributs que ceux sélectionnés par défaut par le script. Pour cela, utiliser un attribut <code>attributsDeStatut</code>, de valeur courante la liste des noms d'attributs à afficher, séparés par des virgules.</p>
                 <h4 class="text-secondary" id="etats">États gérés en utilisant le statut des tokens</h4>
                 <div class="decalage">
                   <p><code>!cof-set-state <i>etat</i> <i>[true|false]</i></code> permet de changer l'état des tokens sélectionnés. Si cet état concerne un personnage avec tokens liés (en liant la barre 1 aux points de vie), alors l'état persiste si on change de carte (utilisation d'un attribut hors fiche).</p>
@@ -987,7 +987,7 @@ tr {line-height: 25px;}
                 </ol>
                 <h4 class="text-secondary">Voie du champ de bataille</h4>
                 <ol>
-                  <li><strong>Action concertée</strong> : utiliser <code>!cof-echange-init @{selected|token_id} @{target|token_id} <i>n</i></code> où <i>n</i> peut valoir 1 ou 2 selon le rang dans la voie.</li>
+                  <li><strong>Action concertée</strong> : utiliser <code>!cof-echange-init @{selected|token_id} @{target|token_id} <i>n</i></code> où <i>n</i> peut valoir 0, 1 ou 2 selon le rang dans la voie.</li>
                   <li><strong>À couvert</strong> : <code>!cof-a-couvert @{selected|token_id} @{target|token_id}</code> le target est l'allié qui se déplace avec l'arquebusier. Se sélectionner soi-même si pas d'allié.</li>
                   <li><strong>Combattant aguerri</strong> : se reporter à la capacité choisie</li>
                   <li><strong>Combat de masse</strong> : pas de support particulier, effectuer les actions supplémentaires en fonction des situations.</li>
@@ -1808,7 +1808,7 @@ tr {line-height: 25px;}
               <div class="decalage">
                 <h4 class="text-secondary">Voie de l'archer</h4>
                 <ol>
-                  <li><strong>Sens affutés</strong> : Créez un <a href=#predicats>prédicat</a> <code>sensAffutes</code>. Cela va ajuster l'initiative (ne se voit pas sur la fiche). Pour le bonus aux dégâts des arcs, ajouter manuellement pour chaque attaque. Et ajouter le bonus aux compétences <code>perception</code> et <code>vigilance</code> (ou créez-les).</li>
+                  <li><strong>Sens affutés</strong> : Créez un <a href=#predicats>prédicat</a> <code>sensAffutes</code>. Cela va ajuster l'initiative (ne se voit pas sur la fiche), ainsi que les dégâts des arcs (attention à ne pas en plus le rajouter sur la fiche !).  Ajoutez ensuite le bonus aux compétences <code>perception</code> et <code>vigilance</code> (ou créez-les).</li>
                   <li><strong>Tir aveugle</strong> : utiliser une attaque avec l'option <code>--tirAveugle</code>.</li>
                   <li><strong>Tir rapide</strong> : faire simplement deux attaques dans le tour</li>
                   <li><strong>Flèche de mort</strong> : faire l'attaque avec les options <code>--m2d20 --incrDmgCoef</code></li>
@@ -2053,6 +2053,13 @@ tr {line-height: 25px;}
               </div>
               <h3 class="text-info" id="Prestige">4.2 Voies de prestige et capacités épiques</h3>
               <div class="decalage">
+                <h4 class="text-secondary">Voie d'Arwendée</h4>
+                <ol>
+                  <li><strong>Sens affutés</strong> : Créez un <a href=#predicats>prédicat</a> <code>sensAffutes</code>. Cela va ajuster l'initiative (ne se voit pas sur la fiche), ainsi que les dégâts des arcs. Ajoutez ensuite le bonus aux compétences <code>perception</code> et <code>vigilance</code> (ou créez-les).</li>
+                  <li><strong>Arc de maître</strong> : Créez un <a href=#predicats>prédicat</a> <code>arcDeMaitre</code> pour automatiquement augmenter la portée des arcs de 20 m.</li>
+                  <li><strong>Carquois magique</strong> : <code>!cof-effet-temp carquoisMagique [[5+@{selected|SAG}]] --valeur ?{Type de DM?|feu|froid|foudre} --mana 1</code>.</li>
+                  <li><strong>Protection contre les projectiles</strong> : Créez un <a href=#predicats>prédicat</a> <code>protectionContreLesProjectiles</code>  de valeur 10. Puis, pour lancer le sort, utilisez <code>!cof-effet-temp protectionContreLesProjectiles [[6*(5+@{selected|SAG})]] --lanceur @{selected|token_id} --target @{target|token_id} --mana 2</code>.</li>
+                </ol>
                 <h4 class="text-secondary">Voie de l'archange</h4>
                 <ol>
                   <li><strong>Forme d'ange</strong> : <code>!cof-effet-temp formeDAnge [[5+@{selected|SAG}]] --mana 0</code>. Le MJ devra gérer l'aspect en vol.</li>
@@ -2293,6 +2300,7 @@ tr {line-height: 25px;}
                 <ul>
                   <li><strong>Animation des objets</strong> : <code>!cof-animation-des-objets @{selected|token_id} ?{Taille d'objet|tabouret ou coffret,1|chaise ou coffre,2|meuble bas ou table,4|grande table,7|grosse armoire,10}</code> On peut ajouter un troisième argument, <code>@{target|token_id}</code> pour animer un token d'objet sur la carte.</li>
                   <li><strong>Armure d'eau</strong> : <code>!cof-effet-combat armureDEau</code>. Le script automatise l'immunité aux étreintes (pas aux enveloppements) et à la capacité Agripper des créatures volantes.</li>
+                  <li><strong>Choc</strong> : Faire une attaque de portée 20 m, de type Sortilège, DM contondants, portée 20 m, et avec les options <code>--etat renverse --save FOR 10</code>.</li>
                   <li><strong>Coup au but</strong> : <code>!cof-effet-temp bonusAttaqueTemp 1 --valeur 10 --lanceur @{selected|token_id} --portee 10 --mana 0 --target @{target|token_id}</code>.</li>
                   <li><strong>Force de géant</strong> : <code>!cof-effet-temp forceDeGeant 10</code>. Le bonus est de 2 par défaut, mais peut être modifié en utilisant l'option <code>--valeur</code>.</li>
                   <li><strong>Nuée de scorpions</strong> : ajouter une attaque magique, de portée 20 m, type Sortilège, modificateur <code>--pasDeDmg</code> et option  <code>--effet nueeDeScorpions 10</code>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDeScorpions</code> sur la cible dans ce cas).</li>
@@ -2603,7 +2611,7 @@ tr {line-height: 25px;}
                 </ol>
                 <h4 class="text-secondary">Voie du commandement</h4>
                 <ol>
-                  <li><strong>Action concertée :</strong> utiliser <code>!cof-echange-init @{selected|token_id} @{target|token_id} <i>n</i></code> où <i>n</i> peut valoir 1, 2 ou 3 selon le rang dans la voie et si la capacité est avancée.</li>
+                  <li><strong>Action concertée :</strong> utiliser <code>!cof-echange-init @{selected|token_id} @{target|token_id} <i>n</i></code> où <i>n</i> peut valoir 0, 1, 2 ou 3 selon le rang dans la voie et si la capacité est avancée.</li>
                   <li><strong>À couvert (L) :</strong> <code>!cof-a-couvert @{selected|token_id} @{target|token_id}</code> le target est l'allié qui se déplace avec l'arquebusier. Se sélectionner soi-même si pas d'allié. Pas encore de support pour la capacité avancée.</li>
                   <li><strong>Exemplaire :</strong> faire <code>!cof-exemplaire</code>, juste après l'attaque ratée.</li>
                   <li><strong>Ordre de bataille :</strong> pas de support </li>

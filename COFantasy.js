@@ -4437,6 +4437,9 @@ var COFantasy = COFantasy || function() {
     identifierArme(weaponStats, pred, 'rapiere', /\brapi[eè]re\b/i);
     identifierArme(weaponStats, pred, 'poudre', /\bpoudre\b/i);
     identifierArme(weaponStats, pred, 'sabre', /\b(katana|wakizachi|boken|demi-lame|vivelame|sabre)\b/i);
+    if (weaponStats.arc && predicateAsBool(perso, 'arcDeMaitre')) {
+      weaponStats.portee += 20;
+    }
     return weaponStats;
   }
 
@@ -15636,10 +15639,10 @@ var COFantasy = COFantasy || function() {
     // Les autres modifications aux dégâts qui ne dépendent pas de la cible
     let attDMBonusCommun = '';
     if (options.armeMagiquePlus) {
-      attDMBonusCommun += " +" + options.armeMagiquePlus;
+      attDMBonusCommun += " + " + options.armeMagiquePlus;
     }
     if (options.rayonAffaiblissant) {
-      attDMBonusCommun += " -" + options.rayonAffaiblissant;
+      attDMBonusCommun += " - " + options.rayonAffaiblissant;
     }
     if (options.noyade && weaponStats.arme) {
       attDMBonusCommun += " - 3";
@@ -15649,6 +15652,12 @@ var COFantasy = COFantasy || function() {
     }
     if (options.reactionViolente) {
       attDMBonusCommun += " + 2";
+    }
+    if (weaponStats.arc && predicateAsBool(attaquant, 'sensAffutes')) {
+      let bonus = modCarac(attaquant, 'sagesse');
+      if (bonus > 0) {
+        attDMBonusCommun += ' + ' + bonus;
+      }
     }
     if (attributeAsBool(attaquant, 'masqueDuPredateur')) {
       let bonusMasque = getValeurOfEffet(attaquant, 'masqueDuPredateur', modCarac(attaquant, 'sagesse'));
@@ -15660,7 +15669,7 @@ var COFantasy = COFantasy || function() {
       if (bonusMasque > 0) attDMBonusCommun += " +" + bonusMasque;
     }
     if (options.bonusDM) {
-      attDMBonusCommun += " +" + options.bonusDM;
+      attDMBonusCommun += " + " + options.bonusDM;
     }
     let perteDeSubstance = predicateAsInt(attaquant, 'perteDeSubstance', 0);
     if (perteDeSubstance && !predicateAsBool(attaquant, 'ancreInvincible')) {
@@ -15676,6 +15685,18 @@ var COFantasy = COFantasy || function() {
     }
     if (options.fureurDrakonide) {
       attDMBonusCommun += " +" + options.fureurDrakonide;
+    }
+    if (weaponStats.arc && attributeAsBool(attaquant, 'carquoisMagique')) {
+      let type = getValeurOfEffet(attaquant, 'carquoisMagique', 'feu');
+      let niveau = ficheAttributeAsInt(attaquant, 'niveau', 1);
+      let value = '1';
+      if (niveau > 12) value = '2';
+      value += 'options.d6';
+      attaquant.additionalDmg.push({
+        type,
+        value,
+      });
+      explications.push("Carquois magique => +" + value + " DM de " + type);
     }
     if (attributeAsBool(attaquant, 'enrage')) {
       attaquant.additionalDmg.push({
@@ -16017,7 +16038,7 @@ var COFantasy = COFantasy || function() {
             save: true
           });
         }
-        var attDMBonus = attDMBonusCommun;
+        let attDMBonus = attDMBonusCommun;
         //Les modificateurs de dégâts qui dépendent de la cible
         if (target.tempDmg) {
           let forceTarg = modCarac(target, 'force');
@@ -17791,6 +17812,11 @@ var COFantasy = COFantasy || function() {
       res.acide = (res.acide || 0) + 5;
       res.feu = (res.feu || 0) + 5;
     }
+    if (attributeAsBool(perso, 'protectionContreLesProjectiles')) {
+      let protection =
+        getValeurOfEffet(perso, 'protectionContreLesProjectiles', 5, 'protectionContreLesProjectiles');
+      res.projectiles = (res.projectiles || 0) + protection;
+    }
     if (perso.perteDeSubstance) res.rdt += perso.perteDeSubstance;
     let rd = ficheAttribute(perso, 'RDS', '');
     rd = (rd + '').trim();
@@ -18572,6 +18598,8 @@ var COFantasy = COFantasy || function() {
               rd += piqures;
             }
           }
+          if (!options.sortilege && rdTarget.projectiles)
+            rd += rdTarget.projectiles;
         }
         if (attributeAsBool(target, 'masqueMortuaire')) rd += 2;
         if (attributeAsBool(target, 'masqueMortuaireAmeLiee')) rd += 1;
@@ -40009,6 +40037,19 @@ var COFantasy = COFantasy || function() {
       actif: "est à couvert",
       fin: "n'est pas à couvert"
     },
+    benediction: {
+      activation: "est touché par la bénédiction",
+      activationF: "est touchée par la bénédiction",
+      actif: "est béni",
+      actifF: "est bénie",
+      fin: "l'effet de la bénédiction s'estompe"
+    },
+    carquoisMagique: {
+      activation: "enchante son carquois",
+      actif: "a un carquois enchannté",
+      fin: "le carquois redevient normal",
+      visible: true,
+    },
     chantDesHeros: {
       activation: "écoute le chant du barde",
       actif: "est inspiré par le Chant des Héros",
@@ -40043,24 +40084,25 @@ var COFantasy = COFantasy || function() {
       finF: "apparaît à nouveau là où elle se trouve",
       visible: false
     },
-    rituelAssure: {
-      activation: "passe un tour complet à préparer un sort",
-      actif: "a préparé un rituel assuré",
-      fin: "",
-      visible: false
-    },
-    benediction: {
-      activation: "est touché par la bénédiction",
-      activationF: "est touchée par la bénédiction",
-      actif: "est béni",
-      actifF: "est bénie",
-      fin: "l'effet de la bénédiction s'estompe"
-    },
     paradeCroisee: {
       activation: "se met en position pour parer des deux armes",
       actif: "est en position de parade croisée",
       fin: "ne bénéficie plus de sa parade croisée",
       visible: true,
+    },
+    protectionContreLesProjectiles: {
+      activation: "gagne une protection contre les projectiles",
+      actif: "est protégé contre les projectiles",
+      actifF: "est protégée contre les projectiles",
+      fin: "n'est plus protégé contre les projectiles",
+      finF: "n'est plus protégée contre les projectiles",
+      visible: false,
+    },
+    rituelAssure: {
+      activation: "passe un tour complet à préparer un sort",
+      actif: "a préparé un rituel assuré",
+      fin: "",
+      visible: false
     },
     peauDEcorce: {
       activation: "donne à sa peau la consistance de l'écorce",
