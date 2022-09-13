@@ -4651,9 +4651,11 @@ var COFantasy = COFantasy || function() {
             if (cmd.length > 3 && cmd[3] == '-1') {
               //Selon l'arme en main, une action peut être possible ou non
               let weaponStats = armesEnMain(perso);
+              if (weaponStats) {
               options.actionImpossible =
                 (weaponStats.deuxMains && attributeAsBool(perso, 'espaceExigu')) ||
                 (weaponStats.portee && cmd.includes('--attaqueFlamboyante'));
+              }
             }
           }
           if (options.ressource) act += " --decrAttribute " + options.ressource.id;
@@ -5069,7 +5071,7 @@ var COFantasy = COFantasy || function() {
   function addLineToFramedDisplay(display, line, size, newLine) {
     size = size || 100;
     newLine = (newLine !== undefined) ? newLine : true;
-    var background_color, border = '',
+    let background_color, border = '',
       separator = '';
     if (!newLine) display.isOdd = !display.isOdd;
     if (display.isOdd) {
@@ -5083,7 +5085,7 @@ var COFantasy = COFantasy || function() {
     if (!display.isfirst) {
       if (newLine) border = "border-top: 1px solid #333;";
     } else display.isfirst = false;
-    var formatedLine = '<div style="padding: 0 5px 0; background-color: ' + background_color + '; color: #000;' + border + '">';
+    let formatedLine = '<div style="padding: 0 5px 0; background-color: ' + background_color + '; color: #000;' + border + '">';
 
     if (!newLine) separator = "border-top: 1px solid #ddd;";
     formatedLine += '<div style="padding: 4px 0; font-size: ' + size + '%;' + separator + '">' + line + '</div>';
