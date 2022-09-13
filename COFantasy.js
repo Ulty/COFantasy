@@ -4652,9 +4652,9 @@ var COFantasy = COFantasy || function() {
               //Selon l'arme en main, une action peut être possible ou non
               let weaponStats = armesEnMain(perso);
               if (weaponStats) {
-              options.actionImpossible =
-                (weaponStats.deuxMains && attributeAsBool(perso, 'espaceExigu')) ||
-                (weaponStats.portee && cmd.includes('--attaqueFlamboyante'));
+                options.actionImpossible =
+                  (weaponStats.deuxMains && attributeAsBool(perso, 'espaceExigu')) ||
+                  (weaponStats.portee && cmd.includes('--attaqueFlamboyante'));
               }
             }
           }
@@ -8077,7 +8077,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque la valeur en argument de l'option --accumuleDuree", cmd);
             return;
           }
-          var accumuleDuree = parseInt(cmd[1]);
+          let accumuleDuree = parseInt(cmd[1]);
           if (isNaN(accumuleDuree) || accumuleDuree < 1) {
             error("On ne peut accumuler qu'on nombre strictement positif d'effets", cmd);
             return;
@@ -15693,7 +15693,7 @@ var COFantasy = COFantasy || function() {
       let niveau = ficheAttributeAsInt(attaquant, 'niveau', 1);
       let value = '1';
       if (niveau > 12) value = '2';
-      value += 'options.d6';
+      value += options.d6;
       attaquant.additionalDmg.push({
         type,
         value,
@@ -19341,10 +19341,13 @@ var COFantasy = COFantasy || function() {
     mObstacle = mObstacle / (tokenSizeAsCircle(tok2) / PIX_PER_UNIT);
     if (mObstacle > 5) mObstacle = 5;
     else mObstacle = Math.round(mObstacle);
-    var res = mPortee + mObstacle;
+    let res = mPortee + mObstacle;
     if (mObstacle > 0) {
       log("Obstacle" + ((liste_obstacles.length > 1) ? "s" : "") + " trouvé : " + liste_obstacles.join(', '));
-      explications.push('Obstacle' + ((liste_obstacles.length > 1) ? 's' : '') + ' sur le trajet => -' + mObstacle + ' en Attaque<br /><span style="font-size: 0.8em; color: #666;">' + liste_obstacles.join(', ') + '</span>');
+      let msgObstacles = 'Obstacle' + ((liste_obstacles.length > 1) ? 's' : '') + ' sur le trajet => -' + mObstacle + ' en Attaque<br />';
+      if (liste_obstacles.length > 0)
+        msgObstacles += '<span style="font-size: 0.8em; color: #666;">' + liste_obstacles.join(', ') + '</span>';
+      explications.push(msgObstacles);
     }
     return res;
   }
