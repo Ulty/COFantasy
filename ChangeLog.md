@@ -14,6 +14,7 @@
 * Correction d'un crash avec des persos ayant un alias.
 
 ### Autres améliorations
+* Amélioration des effets de peur.
 * Plus d'affichage des actions de recharge des armes déjà chargées.
 * Prise en charge des conditions hostiles et des conditions extrêmes.
 * Prise en charge de la perte de substance d'Invincible.

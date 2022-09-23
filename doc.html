@@ -763,7 +763,7 @@ tr {line-height: 25px;}
                 </div>
                 <h4 class="text-secondary">Conditions hostiles et extrêmes</h4>
                 <div class="decalage">
-                <p>Pour des conditions hostiles, faire <code>!cof-effet conditionsHostiles oui</code> en sélectionnant les personnages concernés. Pour des conditions extrêmes, <code>!cof-effet conditionsHostiles 5</code>. À noter que le script permet de passer en argument n'importe quel nombre, qui sera appliqué en malus à la DEX, FOR, DEf et attaque.</p>
+                <p>Pour des conditions hostiles, faire <code>!cof-effet conditionsHostiles oui</code> en sélectionnant les personnages concernés. Pour des conditions extrêmes, <code>!cof-effet conditionsHostiles 5</code>. À noter que le script permet de passer en argument n'importe quel nombre, qui sera appliqué en malus à la DEX, FOR, DEF et attaque.</p>
                 </div>
                 <h4 class="text-secondary">Autres bufs et debufs</h4>
                 <div class="decalage">
@@ -827,10 +827,12 @@ tr {line-height: 25px;}
                   <li><code>--resisteAvecForce</code> : on prend le max de FOR et SAG pour résister</li>
                   <li><code>--etourdi</code> : la peur fait fuir ou rend étourdi</li>
                   <li><code>--ralenti</code> : la peur ralenti</li>
+                  <li><code>--secoue</code> : la peur ne donne qu'un malus de -2 aux tests. Mais un autre effet de peur de même type fait fuir.</li>
                   <li><code>--effroi</code> : la peur est passive (pas un sort)</li>
                   <li><code>--portee <i>n</i></code> : limite la portée du sort à <i>n</i> metres.</li>
                   <li><code>--lanceur <i>id</i></code> : le lanceur de l'effet de peur (si il y en a un). Nécessaire pour la portée, par exemple.</li>
                   <li><code>--titre <i>message</i></code> : spécifie un titre pour la fenêtre affichant les jets de résistance à la peur.</li>
+                  <li><code>--immuniseSiResiste <i>nom</i></code> : la personne qui résiste à cet effet de peur est ensuite immunisé pour la journée aux effets de peur ayant la même option (avec le même <i>nom</i>).</li>
                 </ul>
               </div>
               <h3 class="text-info" id="consommables">2.6 Consommables <code>!cof-consommables</code></h3>
@@ -2273,7 +2275,7 @@ tr {line-height: 25px;}
                 </ol>
                 <h4 class="text-secondary">Voie de la meute</h4>
                 <ol>
-                  <li><strong>Intergeanchables</strong> : Utiliser un <a href=#predicats>prédicat</a> <code>interchangeable</code>, avec comme valeur le nombre d'opposants à partir duquel les cibles peuvent être interverties. Par défaut, cela va donner un bonus de +2 en DEf et +3 an attaque. Pour retrouver la valeur normale de +5 en DEF, utilisez <code>!cof-options</code>.</li>
+                  <li><strong>Intergeanchables</strong> : Utiliser un <a href=#predicats>prédicat</a> <code>interchangeable</code>, avec comme valeur le nombre d'opposants à partir duquel les cibles peuvent être interverties. Par défaut, cela va donner un bonus de +2 en DEF et +3 an attaque. Pour retrouver la valeur normale de +5 en DEF, utilisez <code>!cof-options</code>.</li>
                   <li><strong>Attaque en traître</strong> : Au MJ de décider si une attaque est en traître ou pas. Pour une attaque en traître, rajouter les arguments <code>--sournoise 2 --bonusAttaque 5</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du PNJ récurrent</h4>
@@ -2340,7 +2342,7 @@ tr {line-height: 25px;}
                   <li><strong>Frénésie</strong> : Ajouter un <a href=#predicats>prédicat</a> <code>frenesie</code> avec comme valeur le nombre de PV en-dessous duquel la créature devient frénétique (+2 aus jets d'attaque).</li>
                   <li><strong>Hors de portée</strong> : ajouter un <a href=#predicats>prédicat</a> <code>horsDePortee</code></li>
                   <li><strong>Huile de fort assaut</strong> : <code>!cof-effet-temp dmgArme(<i>L</i>) 10 --valeur 1d6</code> où <i>L</i> est le label de l'arme qu'on veut enduire d'huile de fort assaut.</li>
-                  <li><strong>Hurlement</strong> : Pour les chiens infernaux, <code>!cof-peur [[10+?{Nombre de chiens?}]] [[2d4]] --portee 50 --equipe Joueurs</code>, et pour les fantômes, <code>!cof-peur 12 [[1d6]] --portee 10 --equipe Joueurs</code>. Pour l'instant, pas de prise en compte de l'immunité au hurlement apès avoir réussi son jet de SAG.</li>
+                  <li><strong>Hurlement</strong> : Pour les chiens infernaux, <code>!cof-peur [[10+?{Nombre de chiens?}]] 2d4 --titre Hurlement --immuniseSiResiste hurlement --disque 50 --saufAllies</code>, et pour les fantômes, <code>!cof-peur 12 1d6 --titre Hurlement terrible --immuniseSiResiste hurlement --disque 10 --saufAllies</code>.</li>
                   <li><strong>Illusion</strong> : Pour les illusions qui disparaissent et réapparaissent un peu plus loin quand on essaie de les toucher, ajouter un <a href=#predicats>prédicat</a> <code>estUneIllusion</code>.</li>
                   <li><strong>Immunité aux armes</strong> : ajouter un <a href=#predicats>prédicat</a> <code>immuniteAuxArmes</code>. À noter qu'il est possible de spécifier le niveau de magie d'une attaque en donnant un argument à l'option <code>--magique</code>. Ainsi une arme de niveau magique 3 aura en argument <code>--magique 3</code>.</li>
                   <li><strong>Immunité aux attaques non magiques</strong> : ajouter un <a href=#predicats>prédicat</a> <code>immunite_nonMagique</code></li>
