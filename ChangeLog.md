@@ -14,6 +14,7 @@
 * Correction d'un crash avec des persos ayant un alias.
 
 ### Autres améliorations
+* Utilisation d'un attribut entrerEnCombatAvec pour faire rentrer en combat plusieurs tokens en même temps.
 * Amélioration des effets de peur.
 * Plus d'affichage des actions de recharge des armes déjà chargées.
 * Prise en charge des conditions hostiles et des conditions extrêmes.

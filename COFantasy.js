@@ -2828,7 +2828,7 @@ var COFantasy = COFantasy || function() {
       case 'forgeron':
       case 'armeEnflammee':
         iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-          var perso = {
+          let perso = {
             token: token,
             charId: charId
           };
@@ -2837,10 +2837,10 @@ var COFantasy = COFantasy || function() {
         break;
       case 'effetRetarde':
         if (efComplet.length > 14) {
-          var effetRetarde = efComplet.substring(13, efComplet.length - 1);
+          let effetRetarde = efComplet.substring(13, efComplet.length - 1);
           if (_.has(cof_states, effetRetarde)) {
             iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-              var perso = {
+              let perso = {
                 token: token,
                 charId: charId
               };
@@ -9624,7 +9624,8 @@ var COFantasy = COFantasy || function() {
 
   //ne rajoute pas evt à l'historique
   //options: recompute : si pas encore agi, on remet à sa place dans le turn order
-  function initiative(selected, evt, recompute) { //set initiative for selected tokens
+  //already est là pour éviter les récursions infinies
+  function initiative(selected, evt, recompute, already) { //set initiative for selected tokens
     // Toujours appelé quand on entre en combat
     // Initialise le compteur de tour, si besoin
     // Assumption: all tokens that have not acted yet are those before the turn
@@ -9663,8 +9664,11 @@ var COFantasy = COFantasy || function() {
       to.pasAgi = to.dejaAgi;
       to.dejaAgi = [];
     }
+    let tokens;
+    let aAjouter = [];
     iterSelected(selected, function(perso) {
-      stateCOF.combat_pageid = perso.token.get('pageid');
+      let pageId = perso.token.get('pageid');
+      stateCOF.combat_pageid = pageId;
       //Si besoin, on stoque les PVs de début de combat
       if (!attributeAsBool(perso, 'PVsDebutCombat')) {
         setTokenAttr(perso, 'PVsDebutCombat', perso.token.get('bar1_value'), evt);
@@ -9695,10 +9699,40 @@ var COFantasy = COFantasy || function() {
           }
           to.pasAgi.push({
             id: perso.token.id,
-            _pageid: perso.token.get('pageid'),
+            _pageid: pageId,
             pr: init,
             custom: ''
           });
+          if (!recompute) { //Alors on vient d'ajouter le perso au combat
+            let ajouterEnCombat = tokenAttribute(perso, 'entrerEnCombatAvec');
+            if (ajouterEnCombat.length > 0) {
+              let aec = new Set();
+              ajouterEnCombat.forEach(function(attr) {
+                aec.add(attr.get('current'));
+              });
+              tokens = tokens || findObjs({
+                _type: 'graphic',
+                _pageid: pageId,
+                layer: 'objects'
+              });
+              if (!already) {
+                already = new Set();
+                selected.forEach(function(sel) {
+                  already.add(sel._id);
+                });
+              }
+              tokens.forEach(function(tok) {
+                let ci = tok.get('represents');
+                if (!ci) return;
+                if (!aec.has(tok.get('name'))) return;
+                if (already.has(tok.id)) return;
+                aAjouter.push({
+                  _id: tok.id
+                });
+                already.add(tok.id);
+              });
+            }
+          }
         }
       } else {
         to.dejaAgi[dejaIndex].pr = init;
@@ -9737,6 +9771,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     setTurnOrder(to, evt);
+    if (aAjouter.length > 0) initiative(aAjouter, evt, false, already);
   }
 
   function initiativeInterface(msg) {
@@ -9794,7 +9829,7 @@ var COFantasy = COFantasy || function() {
       max: attr.get('max'),
       withWorker: true
     });
-    var nv = {
+    let nv = {
       current: value
     };
     if (options && options.maxVal !== undefined) nv.max = options.maxVal;
@@ -10215,9 +10250,9 @@ var COFantasy = COFantasy || function() {
       explications.push("Peau d'écorce liée : +" + bonus + " en DEF");
     }
     if (attributeAsBool(target, 'champDeProtection')) {
-      var bonusChamp =
+      let bonusChamp =
         getValeurOfEffet(target, 'champDeProtection', 2, 'voieDeLaTelekinesie');
-      var champIntense = attributeAsInt(target, 'champDeProtectionTempeteDeManaIntense', 0);
+      let champIntense = attributeAsInt(target, 'champDeProtectionTempeteDeManaIntense', 0);
       bonusChamp += champIntense;
       defense += bonusChamp;
       explications.push("Champ de protection : +" + bonusChamp + " en DEF");
@@ -10225,7 +10260,7 @@ var COFantasy = COFantasy || function() {
         removeTokenAttr(target, 'champDeProtectionTempeteDeManaIntense', evt);
     }
     if (attributeAsBool(target, 'mutationCuirasse')) {
-      var bonusMutation =
+      let bonusMutation =
         getValeurOfEffet(target, 'mutationCuirasse', 2, 'voieDesMutations');
       defense += bonusMutation;
       explications.push("Cuirasse : +" + bonusMutation + " en DEF");
@@ -18082,6 +18117,7 @@ var COFantasy = COFantasy || function() {
         if (options.percant && rd.percant) rdMain += rd.percant;
         if (options.contondant && rd.contondant) rdMain += rd.contondant;
       }
+      if (options.asphyxie) rdMain += rd.asphyxie;
       if (rd.drain && (options.vampirise || target.vampirise) && mainDmgType != 'drain') {
         rdMain += rd.drain;
       }
@@ -22183,9 +22219,9 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "On ne peut utiliser les runes d'énergie qu'en combat");
       return;
     }
-    var cmd = msg.content.split(' ');
-    var evtARefaire;
-    var evt = {
+    let cmd = msg.content.split(' ');
+    let evtARefaire;
+    const evt = {
       type: "Rune d'énergie",
       attributes: []
     };
@@ -22195,15 +22231,15 @@ var COFantasy = COFantasy || function() {
         error("L'action est trop ancienne ou a été annulée", cmd);
         return;
       }
-      var perso = evtARefaire.personnage;
-      var action = evtARefaire.action;
+      let perso = evtARefaire.personnage;
+      let action = evtARefaire.action;
       if (action === undefined) {
         error("Impossible de relancer l'action", evtARefaire);
         return;
       }
-      var rollId;
+      let rollId;
       if (cmd.length > 2) {
-        var roll = action.rolls[cmd[2]];
+        let roll = action.rolls[cmd[2]];
         if (roll === undefined) {
           error("Erreur interne du bouton de chance : roll non identifié", cmd);
           return;
@@ -22224,7 +22260,7 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, "pas le droit d'utiliser ce bouton");
         return;
       }
-      var carac = action.caracteristque;
+      let carac = action.caracteristque;
       if (carac == 'SAG' || carac == 'INT' || carac == 'CHA') {
         sendPerso(perso, "ne peut pas utiliser la rune d'énergie pour un test " + deCarac(carac));
         return;
@@ -26294,9 +26330,12 @@ var COFantasy = COFantasy || function() {
           if (alliePresent) {
             let bonusAllie = 2 + modCarac(cid, 'charisme');
             if (bonusAllie > allieSansPeur) {
-            allieSansPeur = bonusAllie;
-              let allie = { charId:cid, token:alliePresent};
-              msgAllieSansPeur = nomPerso(allie)+" a donné +" + bonusAllie+" au jet";
+              allieSansPeur = bonusAllie;
+              let allie = {
+                charId: cid,
+                token: alliePresent
+              };
+              msgAllieSansPeur = nomPerso(allie) + " a donné +" + bonusAllie + " au jet";
             }
           }
         }
@@ -26468,12 +26507,12 @@ var COFantasy = COFantasy || function() {
     let finalDisplay = function() {
       counter--;
       if (messages.length > 0) {
-      let m = messages.shift();
-      addLineToFramedDisplay(display, m);
-      while (messages.length > 0) {
-        m = messages.shift();
-        addLineToFramedDisplay(display, m, 80, false);
-      }
+        let m = messages.shift();
+        addLineToFramedDisplay(display, m);
+        while (messages.length > 0) {
+          m = messages.shift();
+          addLineToFramedDisplay(display, m, 80, false);
+        }
       }
       if (counter < 1) {
         sendChat('', endFramedDisplay(display));
@@ -36542,10 +36581,10 @@ var COFantasy = COFantasy || function() {
   }
 
   function ajouteLignePieces(perso, display, unite, nom, piece) {
-    var finAction = unite + " --target " + perso.token.id;
-    var val = ficheAttributeAsInt(perso, 'bourse_' + unite, 0);
-    var line = '<table style="width:100%"><tr><td>';
-    var action =
+    let finAction = unite + " --target " + perso.token.id;
+    let val = ficheAttributeAsInt(perso, 'bourse_' + unite, 0);
+    let line = '<table style="width:100%"><tr><td>';
+    let action =
       "!cof-bourse fixer ?{Nouveau montant de pièces " + piece + " ?} " + finAction;
     line += boutonSimple(action, val) + '<b>' + nom + '</b>';
     line += '</td><td style="text-align: right;">';
@@ -37549,15 +37588,15 @@ var COFantasy = COFantasy || function() {
           sendPlayer(msg, nomPerso(perso) + " déjà converti (pas d'attribut ac)");
           return;
         }
-        let setAttr = function(nom, valeur) {
-          setTokenAttr(perso, nom, valeur, evt, optAttr);
-        };
         let attributes = findObjs({
           _type: 'attribute',
           _characterid: perso.charId,
         });
-        setAttr('type_personnage', 'PNJ');
-        setAttr('tab', 'carac. pnj');
+        setFicheAttr(perso, 'type_personnage', 'PNJ', evt);
+        setFicheAttr(perso, 'tab', 'carac. pnj', evt);
+        let setAttr = function(nom, valeur) {
+          setTokenAttr(perso, nom, valeur, evt, optAttr);
+        };
         let attributsIgnores = '';
         let predicats = '';
         let capacites = '';
@@ -38022,6 +38061,10 @@ var COFantasy = COFantasy || function() {
             case 'swim':
               ajouteCompetence(perso, 'natation', 'FOR', attr.get('current'), evt);
               deleteAttribute(attr, evt);
+              return;
+              //Attributs de toutes facons modifiés:
+            case 'tab':
+            case 'type_personnage':
               return;
             case 'use_magic_device':
               ajouteCompetence(perso, 'objets magiques', 'INT', attr.get('current'), evt);
