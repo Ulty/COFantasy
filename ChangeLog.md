@@ -1,4 +1,12 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 3.09
+### Capacités
+* Drain de force de Dominia (Invincible)
+
+### Autres améliorations
+* Changement des macros Monter et Descendre en icones.
+* Changement de fonctionnement des auras, qui réagissent maintenant au déplacement
+
 ## 3.08
 ### Capacités
 * Ajout de la Voie d'Arwendée. Attention sens affûtés ajoute maintenant automatiquement le bonus de DM aux arcs.
