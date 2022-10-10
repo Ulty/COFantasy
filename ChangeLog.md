@@ -4,6 +4,7 @@
 * Drain de force de Dominia (Invincible)
 
 ### Autres améliorations
+* Ajout de l'option --bonusContreArmure
 * Changement des macros Monter et Descendre en icones.
 * Changement de fonctionnement des auras, qui réagissent maintenant au déplacement
 
