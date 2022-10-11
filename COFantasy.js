@@ -217,6 +217,11 @@ var COFantasy = COFantasy || function() {
               explications: "Lancer l'initiative variable pour chaque créature (nécessite d'activer l'Initiative variable)",
               val: false,
               type: 'bool'
+            },
+            joueurs_lancent_init: {
+              explications: "Fait apparaître un bouton pour que les joueurs lancent leur initiative (nécessite d'activer l'Initiative variable)",
+              val: false,
+              type: 'bool'
             }
           }
         },
@@ -9764,7 +9769,8 @@ var COFantasy = COFantasy || function() {
   //ne rajoute pas evt à l'historique
   //options: recompute : si pas encore agi, on remet à sa place dans le turn order
   //already est là pour éviter les récursions infinies
-  function initiative(selected, evt, recompute, already) { //set initiative for selected tokens
+  //boutonRoll: vient de l'utilisation d'un bouton de roll
+  function initiative(selected, evt, recompute, already, boutonRoll) { //set initiative for selected tokens
     // Toujours appelé quand on entre en combat
     // Initialise le compteur de tour, si besoin
     // Assumption: all tokens that have not acted yet are those before the turn
@@ -9814,6 +9820,19 @@ var COFantasy = COFantasy || function() {
       }
       if (!isActive(perso)) return;
       if (predicateAsBool(perso, 'aucuneActionCombat')) return;
+      if (!boutonRoll && 
+        reglesOptionelles.initiative.val.joueurs_lancent_init.val &&
+        reglesOptionelles.initiative.val.initiative_variable.val) {
+          let pl = getPlayerIds(perso);
+          let controlleParJoueur = pl.find(function(pid) {
+            return !playerIsGM(pid);
+          });
+          if (controlleParJoueur) {
+            let commande = "!cof-init --boutonRoll --target "+perso.token.id;
+            sendPerso(perso, "Cliquez sur " + boutonSimple(commande, "&#127922;") + " pour lancer l'initiative", true);
+            return;
+          }
+      }
       let init = persoInit(perso, evt);
       // On place le token à sa place dans la liste du tour
       let dejaIndex =
@@ -9967,7 +9986,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function initiativeInterface(msg) {
-    getSelected(msg, function(selected) {
+    getSelected(msg, function(selected, playerId) {
       if (selected === undefined || selected.length === 0) {
         error("Dans !cof-init : rien à faire, pas de token selectionné", msg);
         return;
@@ -9976,7 +9995,18 @@ var COFantasy = COFantasy || function() {
       let evt = {
         type: 'initiative'
       };
-      initiative(selected, evt);
+      let boutonRoll = msg.content.includes(" --boutonRoll");
+      if (boutonRoll) {
+        let interdit;
+        iterSelected(selected, function(perso) {
+          interdit = interdit || !peutController(msg, perso);
+        });
+        if (interdit) {
+          sendPlayer(msg, "pas le droit d'utiliser ce bouton");
+          return;
+        }
+    }
+      initiative(selected, evt, undefined, undefined, boutonRoll);
       addEvent(evt);
     });
   }
@@ -29765,16 +29795,16 @@ var COFantasy = COFantasy || function() {
             }
           }
           //On déplace ensuite le joueur.
-          var character = getObj('character', perso.charId);
+          let character = getObj('character', perso.charId);
           if (character === undefined) return;
-          var charControlledby = character.get('controlledby');
+          let charControlledby = character.get('controlledby');
           if (charControlledby === '') {
             //Seul le MJ contrôle le personnage
-            var players = findObjs({
+            let players = findObjs({
               _type: 'player',
               online: true
             });
-            var gm = players.find(function(p) {
+            let gm = players.find(function(p) {
               return playerIsGM(p.id);
             });
             if (gm) {
