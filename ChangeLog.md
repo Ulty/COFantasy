@@ -5,6 +5,7 @@
 * Drain de force de Dominia (Invincible)
 
 ### Autres améliorations
+* Prise en compte de l'option --saufAllies pour !cof-tenebres.
 * Ajout d'une options pour des DM explosifs.
 * Ajout de l'option --bonusContreArmure
 * Changement des macros Monter et Descendre en icones.

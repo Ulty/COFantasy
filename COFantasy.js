@@ -34816,10 +34816,17 @@ var COFantasy = COFantasy || function() {
         _subtype: 'token',
         layer: 'objects'
       });
+    let saufAllies = msg.content.includes(" --saufAllies");
+    let allies;
+    if (saufAllies) {
+      allies = alliesParPerso[necromant.charId];
+      allies = (new Set(allies)).add(necromant.charId);
+    }
     allToksDisque.forEach(function(obj) {
       if (obj.get('bar1_max') == 0) return; // jshint ignore:line
       let objCharId = obj.get('represents');
       if (objCharId === '') return;
+      if (saufAllies && allies.has(objCharId)) return;
       let cible = {
         token: obj,
         charId: objCharId
@@ -34906,7 +34913,7 @@ var COFantasy = COFantasy || function() {
   function invocationDemon(msg) {
     let options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined || cmd.length < 2) {
       error("!cof-invoquer-demon mal formé, il faut un token comme premier argument", msg.content);
       return;
