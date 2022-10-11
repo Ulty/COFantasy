@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.09
 ### Capacités
+* Rage de Baphit (Invincible)
 * Drain de force de Dominia (Invincible)
 
 ### Autres améliorations
