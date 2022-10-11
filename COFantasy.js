@@ -175,6 +175,11 @@ var COFantasy = COFantasy || function() {
               explications: "Les DMs qu'une rune de protection est capable d'absorber sont limités à 10x le rang du forgesort dans la voie des runes",
               val: true,
               type: 'bool'
+            },
+            dm_explosifs: {
+              explications: "Tous les dés de DM sont explosifs",
+              val: false,
+              type: 'bool'
             }
           }
         },
@@ -15595,7 +15600,7 @@ var COFantasy = COFantasy || function() {
       if (attDice > 2 && options.rituelAssure) attDice += 'r2';
       else attDice += 'r1';
     } else if (options.rituelAssure) attDice += 'r1';
-    if (options.explodeMax) attDice += '!';
+    if (options.explodeMax || reglesOptionelles.dommages.val.dm_explosifs.val) attDice += '!';
     else if (options.poudre && reglesOptionelles.divers.val.poudre_explosif.val) attDice += '!p';
     return attDice;
   }
