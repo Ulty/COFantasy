@@ -5,6 +5,7 @@
 * Drain de force de Dominia (Invincible)
 
 ### Autres améliorations
+* Ajout d'un icone pour l'état enflammé.
 * Support des options de tempête de mana pour la conjuration de prédateurs et la conjuration d'armée.
 * Permet aux joueurs de lancer l'initiative pour leur perso.
 * Prise en compte de l'option --saufAllies pour !cof-tenebres.

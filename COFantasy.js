@@ -729,11 +729,16 @@ var COFantasy = COFantasy || function() {
   let statusForInitAlly;
   let statusForInitEnemy;
 
-  function registerMarkerEffet(marker, effet) {
+  function registerMarkerEffet(marker, effet, mEffet, ms) {
     let m = markerCatalog[marker];
     if (m) {
-      messageEffetTemp[effet].statusMarker = m.tag;
+      mEffet.statusMarker = m.tag;
       effet_de_marker[m.tag] = effet;
+    } else if (ms) {
+      if (effet_de_marker[ms] && effet_de_marker[ms] != effet) {
+        sendChat('COF', effet_de_marker[ms] + " et " + effet + " ont le même icone");
+      }
+      effet_de_marker[ms] = effet;
     } else {
       log("Marker " + m + " introuvable. Pas de marker pour l'effet " + effet);
     }
@@ -1222,11 +1227,6 @@ var COFantasy = COFantasy || function() {
       }
       stateCOF.gameMacros = gameMacros;
     }
-    //Utilisation des markers d'effets temporaires
-    for (let effet in messageEffetTemp) {
-      let ms = messageEffetTemp[effet].statusMarker;
-      if (ms) effet_de_marker[ms] = effet;
-    }
     // Récupération des token Markers attachés à la campagne image, nom, tag, Id
     const markers = JSON.parse(Campaign().get("token_markers"));
     markers.forEach(function(m) {
@@ -1278,9 +1278,44 @@ var COFantasy = COFantasy || function() {
       }
       // Cas des markers d'effet temporaire, 3 cas particuliers :
       // uniquement le tag sans "status_" devant
-      registerMarkerEffet('cof-asphyxie', 'asphyxie');
-      registerMarkerEffet('cof-saigne', 'saignementsSang');
-      registerMarkerEffet('cof-prison-vegetale', 'prisonVegetale');
+      for (let effet in messageEffetTemp) {
+        let m = messageEffetTemp[effet];
+        let ms = m.statusMarker;
+        switch (effet) {
+          case 'asphyxie':
+            registerMarkerEffet('cof-asphyxie', effet, m, ms);
+            break;
+          case 'saignementSang':
+            registerMarkerEffet('cof-saigne', effet, m, ms);
+            break;
+          case 'prisonVegetale':
+            registerMarkerEffet('cof-prison-vegetale', effet, m, ms);
+            break;
+          default:
+            if (ms) {
+              if (effet_de_marker[ms] && effet_de_marker[ms] != effet) {
+                sendChat('COF', effet_de_marker[ms] + " et " + effet + " ont le même icone");
+              }
+              effet_de_marker[ms] = effet;
+            }
+        }
+      }
+      for (let effet in messageEffetCombat) {
+        let m = messageEffetCombat[effet];
+        let ms = m.statusMarker;
+        switch (effet) {
+          case 'enflamme':
+            registerMarkerEffet('cof-flamme', effet, m, ms);
+            break;
+          default:
+            if (ms) {
+              if (effet_de_marker[ms] && effet_de_marker[ms] != effet) {
+                sendChat('COF', effet_de_marker[ms] + " et " + effet + " ont le même icone");
+              }
+              effet_de_marker[ms] = effet;
+            }
+        }
+      }
       if (!ancientSet) {
         markersAbsents.forEach(function(m) {
           log("Marker " + m + " introuvable");
@@ -1608,9 +1643,10 @@ var COFantasy = COFantasy || function() {
   };
 
   // options: bonus:int, deExplosif:bool, nbDes:int, type, maxResult
+  //      resultatDesSeuls (rempli par la fonction si true)
   //Renvoie 1dk + bonus, avec le texte
   //champs val et roll
-  //de peut être un nombre ou le résultat de parseDice
+  //de peut être un nombre > 0 ou bien le résultat de parseDice
   function rollDePlus(de, options) {
     options = options || {};
     options.nbDes = options.nbDes || 1;
@@ -1645,6 +1681,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     } while ((explose || count > 0) && jetTotal < 1000);
+    if (options.resultatDesSeuls) options.resultatDesSeuls = jetTotal;
     let res = {
       val: jetTotal + bonus
     };
@@ -16989,6 +17026,11 @@ var COFantasy = COFantasy || function() {
               let enflammePuissance = 1;
               if (options.puissant) enflammePuissance = 2;
               setTokenAttr(target, 'enflamme', enflammePuissance, evt);
+              let ms = messageEffetCombat.enflamme.statusMarker;
+              if (ms) {
+                affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
+                target.token.set('status_' + ms, true);
+              }
               target.messages.push(nomPerso(target) + " prend feu !");
             }
             if (target.malediction) {
@@ -19209,7 +19251,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         dmgTotal -= rd;
-        for (var dmSuiviType in dmSuivis) {
+        for (const dmSuiviType in dmSuivis) {
           if (rd === 0) break;
           dmSuivis[dmSuiviType] -= rd;
           if (dmSuivis[dmSuiviType] < 0) {
@@ -20223,7 +20265,6 @@ var COFantasy = COFantasy || function() {
     });
     // Fin des effets qui durent pour le combat
     attrs = removeAllAttributes('attributDeCombat', evt, attrs);
-    attrs = removeAllAttributes('enflamme', evt, attrs);
     attrs = removeAllAttributes('protegerUnAllie', evt, attrs);
     attrs = removeAllAttributes('protegePar', evt, attrs);
     attrs = removeAllAttributes('interposer', evt, attrs);
@@ -20494,12 +20535,20 @@ var COFantasy = COFantasy || function() {
             });
           });
         }
+        let mEffet = messageEffetCombat[effet];
         let mc = messageFin({
           charId
-        }, messageEffetCombat[effet]);
+        }, mEffet);
         if (mc && mc !== '') sendChar(charId, mc, true);
         evt.deletedAttributes.push(obj);
         obj.remove();
+            let ms = mEffet.statusMarker;
+            if (ms) {
+          iterTokensOfAttribute(charId, combat.pageId, effet, attrName, function(token) {
+              affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
+              token.set('status_' + ms, false);
+            });
+            }
         if (effet == 'estGobePar') {
           iterTokensOfAttribute(charId, combat.pageId, effet, attrName, function(token) {
             let perso = {
@@ -24650,8 +24699,6 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, nomArme + " est enduit de poison.");
           }
         });
-        if (attributeAsInt(perso, 'enflamme', 0))
-          addLineToFramedDisplay(display, "en flammes");
         let attrEnveloppe = tokenAttribute(perso, 'enveloppePar');
         if (attrEnveloppe.length > 0) {
           let cube = persoOfIdName(attrEnveloppe[0].get('current'));
@@ -30814,7 +30861,7 @@ var COFantasy = COFantasy || function() {
     }
     var nindent = indent + "&nbsp;&nbsp;";
     var nAccum = [];
-    for (var category in stats) {
+    for (const category in stats) {
       if (category == 'total' || category == 'nombre') break;
       var catRes = displayStatCategory(stats[category], nindent, category, nAccum);
       res.nombre += catRes.nombre;
@@ -30864,7 +30911,7 @@ var COFantasy = COFantasy || function() {
         addLineToFramedDisplay(display, m);
       });
     };
-    for (var category in stats) {
+    for (const category in stats) {
       //first, check if the category is a player id
       var pl = findPlayer(category);
       var catName = category;
@@ -34518,10 +34565,12 @@ var COFantasy = COFantasy || function() {
         if (options.tempeteDeManaIntense) {
           // on copie les attaques pour leur ajouter --si predateurConjure
           let attaques = predateur.attaques;
-          predateur = {...predateur};
+          predateur = {...predateur
+          };
           predateur.attaques = [];
           attaques.forEach(function(attaque) {
-            attaque = {...attaque};
+            attaque = {...attaque
+            };
             attaque.options = '--si etat predateurConjure';
             predateur.attaques.push(attaque);
           });
@@ -34562,11 +34611,11 @@ var COFantasy = COFantasy || function() {
           max: combat.init
         });
         if (options.tempeteDeManaIntense) {
-        createObj('attribute', {
-          name: 'predateurConjureTempeteDeManaIntense',
-          _characterid: charPredateur.id,
-          current: options.tempeteDeManaIntense,
-        });
+          createObj('attribute', {
+            name: 'predateurConjureTempeteDeManaIntense',
+            _characterid: charPredateur.id,
+            current: options.tempeteDeManaIntense,
+          });
         }
         evt.characters = [charPredateur];
         evt.tokens = [token];
@@ -41945,6 +41994,13 @@ var COFantasy = COFantasy || function() {
       actif: "danse la danse des lames",
       fin: "termine sa danse des lames"
     },
+    enflamme: {
+      activation: "prend feu !",
+      actif: "est en feu",
+      fin: "les flammes s'éteignent",
+      dm: true,
+      statusMarker: 'red',
+    },
     fureurDrakonideCritique: {
       activation: "est rendu furieux par le coup critique",
       activationF: "est rendue furieuse par le coup critique",
@@ -42650,15 +42706,22 @@ var COFantasy = COFantasy || function() {
       if (enflammeAttr.length > 0) {
         let enflamme = parseInt(enflammeAttr[0].get('current'));
         // Pour ne pas faire les dégâts plusieurs fois (plusieurs tokens pour un même personnage), on utilise la valeur max de l'attribut
-        var dernierTourEnflamme = parseInt(enflammeAttr[0].get('max'));
+        let dernierTourEnflamme = parseInt(enflammeAttr[0].get('max'));
         if ((isNaN(dernierTourEnflamme) || dernierTourEnflamme < tour) &&
           !isNaN(enflamme) && enflamme > 0) {
-          let d6Enflamme = randomInteger(6);
-          let feu = d6Enflamme + enflamme - 1;
+          let optFlammes = {
+            resultatDesSeuls: true,
+            bonus: enflamme - 1
+          };
+          let {
+            val,
+            roll
+          } = rollDePlus(6, optFlammes);
+          let d6Enflamme = optFlammes.resultatDesSeuls;
           let dmgEnflamme = {
             type: 'feu',
-            total: feu,
-            display: feu
+            total: val,
+            display: roll
           };
           if (getState(perso, 'mort')) {
             sendChat('', "Le cadavre de " + nomPerso(perso) + " continue de brûler");
@@ -42672,6 +42735,11 @@ var COFantasy = COFantasy || function() {
           if (d6Enflamme < 3) {
             sendPerso(perso, ": les flammes s'éteignent");
             removeTokenAttr(perso, 'enflamme', evt);
+            let ms = messageEffetCombat.enflamme.statusMarker;
+            if (ms) {
+              affectToken(perso.token, 'statusmarkers', perso.token.get('statusmarkers'), evt);
+              perso.token.set('status_' + ms, false);
+            }
           } else {
             enflammeAttr[0].set('max', tour);
           }
@@ -44252,7 +44320,7 @@ var COFantasy = COFantasy || function() {
         if (effet) {
           let attr = tokenAttribute(perso, effet);
           if (attr.length === 0) return;
-          finDEffet(attr[0], effetTempOfAttribute(attr[0]), attr[0].get('name'), perso.charId, evt);
+          finDEffet(attr[0], effet, attr[0].get('name'), perso.charId, evt);
         }
       }
     });
@@ -44263,6 +44331,16 @@ var COFantasy = COFantasy || function() {
       if (etat) {
         let succes = setState(perso, etat, true, evt);
         if (!succes) token.set('status_' + marker, false);
+      } else {
+        let effet = effet_de_marker[marker];
+        if (effet) { //si on a un effet de combat, on peut le lancer.
+          let mEffet = messageEffetCombat[effet];
+          if (mEffet) {
+            setTokenAttr(perso, effet, true, evt, {
+              msg: messageActivation(perso, mEffet)
+            });
+          }
+        }
       }
     });
     addEvent(evt);
