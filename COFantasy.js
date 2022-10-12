@@ -348,6 +348,11 @@ var COFantasy = COFantasy || function() {
           type: 'image',
           val: "https://s3.amazonaws.com/files.d20.io/images/33213510/5r3NGSso1QBJMJewTEKv0A/thumb.png?1495195634"
         },
+        image_mur_de_vent: {
+          explication: "Image utilisée pour un mur de vent sphérique",
+          type: 'image',
+          val: "https://s3.amazonaws.com/files.d20.io/images/308931095/X5zH4itb9QI9La8O7KfMBQ/thumb.png?1665585092"
+        },
         prison_vegetale: {
           explication: "Image utilisée pour un mur de force sphérique",
           type: 'image',
@@ -15819,8 +15824,8 @@ var COFantasy = COFantasy || function() {
       setTokenAttr(target, 'dedouble', true, evt);
       let attrEffet =
         copieToken(target, undefined, stateCOF.options.images.val.image_double.val,
-        "Double de " + nomPerso(target), 'dedoublement', duree,
-        target.token.get('pageid'), evt);
+          "Double de " + nomPerso(target), 'dedoublement', duree,
+          target.token.get('pageid'), evt);
       if (ef.attaquant && options.mana !== undefined) {
         addEffetTemporaireLie(ef.attaquant, attrEffet, evt);
       }
@@ -20549,13 +20554,13 @@ var COFantasy = COFantasy || function() {
         if (mc && mc !== '') sendChar(charId, mc, true);
         evt.deletedAttributes.push(obj);
         obj.remove();
-            let ms = mEffet.statusMarker;
-            if (ms) {
+        let ms = mEffet.statusMarker;
+        if (ms) {
           iterTokensOfAttribute(charId, combat.pageId, effet, attrName, function(token) {
-              affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
-              token.set('status_' + ms, false);
-            });
-            }
+            affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
+            token.set('status_' + ms, false);
+          });
+        }
         if (effet == 'estGobePar') {
           iterTokensOfAttribute(charId, combat.pageId, effet, attrName, function(token) {
             let perso = {
@@ -29130,6 +29135,9 @@ var COFantasy = COFantasy || function() {
   }
 
 
+  //!cof-mur-de-force [opt] [duree]
+  // opt peut être mur, noImage ou vent
+  // On peut changer la taille du mur avec l'option --portee.
   function murDeForce(msg) {
     let options = parseOptions(msg);
     if (options === undefined) return;
@@ -29137,18 +29145,38 @@ var COFantasy = COFantasy || function() {
     if (cmd === undefined) return;
     let sphere = true;
     let imageSphere = stateCOF.options.images.val.image_mur_de_force.val;
+    let typeMur = 'force';
     if (cmd.length > 1) {
-      if (cmd[1] == 'mur') sphere = false;
-      else if (cmd[1] == 'noImage') imageSphere = undefined;
-      else imageSphere = cmd[1].replace('&#58;', ':');
+      switch (cmd[1]) {
+        case 'mur':
+          sphere = false;
+          break;
+        case 'noImage':
+          imageSphere = undefined;
+          break;
+        case 'vent':
+          typeMur = 'vent';
+          imageSphere = stateCOF.options.images.val.image_mur_de_vent.val;
+          break;
+        default:
+          imageSphere = cmd[1].replace('&#58;', ':');
+      }
+    }
+    let duree;
+    if (cmd.length > 2) {
+      duree = parseInt(cmd[2]);
+      if (isNaN(duree) || duree < 1) {
+        error("Le deuxième argument de !cof-mur-de-force doit être une durée", cmd);
+        return;
+      }
     }
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
-        sendPlayer(msg, "Aucun personnage sélectionné pour lancer le mur de force", playerId);
+        sendPlayer(msg, "Aucun personnage sélectionné pour lancer le mur de " + typeMur, playerId);
         return;
       }
       const evt = {
-        type: "Mur de force"
+        type: "Mur de " + typeMur
       };
       addEvent(evt);
       initiative(selected, evt);
@@ -29174,12 +29202,15 @@ var COFantasy = COFantasy || function() {
         }
         let token = lanceur.token;
         let pageId = token.get('pageid');
-        if (limiteRessources(lanceur, options, 'murDeForce', 'lancer un mur de force', evt)) return;
+        if (limiteRessources(lanceur, options, 'murDeForce', 'lancer un mur de ' + typeMur, evt)) return;
         if (options.son) playSound(options.son);
-        whisperChar(lanceur.charId, "lance un sort de mur de force");
+        whisperChar(lanceur.charId, "lance un sort de mur de " + typeMur);
         if (sphere) {
           let scale = computeScale(pageId);
-          let diametre = PIX_PER_UNIT * (6 / scale);
+          let diametre = 6;
+          if (typeMur == 'vent') diametre = 10;
+          if (options.portee) diametre = 2 * options.portee;
+          diametre = PIX_PER_UNIT * (diametre / scale);
           if (options.puissantPortee || options.tempeteDeManaPortee) diametre += diametre;
           if (options.tempeteDeManaIntense)
             diametre *= (1 + options.tempeteDeManaIntense);
@@ -29192,15 +29223,26 @@ var COFantasy = COFantasy || function() {
             width: diametre,
             height: diametre,
             layer: 'map',
-            name: "Mur de force",
+            name: "Mur de " + typeMur,
             isdrawing: true,
           };
-          var newImage = createObj('graphic', imageFields);
+          let newImage = createObj('graphic', imageFields);
           if (newImage) {
             evt.tokens = [newImage];
             toFront(newImage);
             setTokenAttr(lanceur, 'murDeForceId', newImage.id, evt);
-            var duree = 5 + modCarac(lanceur, 'charisme');
+            if (!duree) {
+              switch (typeMur) {
+                case 'force':
+                  duree = 5 + modCarac(lanceur, 'charisme');
+                  break;
+                case 'vent':
+                  duree = 5 + modCarac(lanceur, 'intelligence');
+                  break;
+                default:
+                  duree = 1;
+              }
+            }
             if (options.puissantDuree || options.tempeteDeManaDuree) duree += duree;
             setAttrDuree(lanceur, 'murDeForce', duree, evt);
           } else {

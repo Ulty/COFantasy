@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.10
 ### Capacités
+* Mur de vent
 * Rage de Baphit (Invincible)
 
 ### Autres améliorations
