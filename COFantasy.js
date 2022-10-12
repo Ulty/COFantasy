@@ -7239,12 +7239,12 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  var tempeteDeManaCourante = {
+  let tempeteDeManaCourante = {
     vide: true
   };
 
   function ajouterOptionTempete(display, option, texte, restant) {
-    var line = texte + " : ";
+    let line = texte + " : ";
     if (tempeteDeManaCourante[option])
       line += boutonSimple("!cof-tempete-de-mana -" + option, "Oui");
     else if (restant > 0)
@@ -9820,18 +9820,18 @@ var COFantasy = COFantasy || function() {
       }
       if (!isActive(perso)) return;
       if (predicateAsBool(perso, 'aucuneActionCombat')) return;
-      if (!boutonRoll && 
+      if (!boutonRoll &&
         reglesOptionelles.initiative.val.joueurs_lancent_init.val &&
         reglesOptionelles.initiative.val.initiative_variable.val) {
-          let pl = getPlayerIds(perso);
-          let controlleParJoueur = pl.find(function(pid) {
-            return !playerIsGM(pid);
-          });
-          if (controlleParJoueur) {
-            let commande = "!cof-init --boutonRoll --target "+perso.token.id;
-            sendPerso(perso, "Cliquez sur " + boutonSimple(commande, "&#127922;") + " pour lancer l'initiative", true);
-            return;
-          }
+        let pl = getPlayerIds(perso);
+        let controlleParJoueur = pl.find(function(pid) {
+          return !playerIsGM(pid);
+        });
+        if (controlleParJoueur) {
+          let commande = "!cof-init --boutonRoll --target " + perso.token.id;
+          sendPerso(perso, "Cliquez sur " + boutonSimple(commande, "&#127922;") + " pour lancer l'initiative", true);
+          return;
+        }
       }
       let init = persoInit(perso, evt);
       // On place le token à sa place dans la liste du tour
@@ -10005,7 +10005,7 @@ var COFantasy = COFantasy || function() {
           sendPlayer(msg, "pas le droit d'utiliser ce bouton");
           return;
         }
-    }
+      }
       initiative(selected, evt, undefined, undefined, boutonRoll);
       addEvent(evt);
     });
@@ -16132,7 +16132,7 @@ var COFantasy = COFantasy || function() {
       } else if (options.conditionAttaquant &&
         options.conditionAttaquant.type == 'attribut') {
         let attrtdmi =
-          options.conditionAttaquant.attribute + "TempeteDeManaIntense";
+          options.conditionAttaquant.attribute + 'TempeteDeManaIntense';
         let tdmCond = attributeAsInt(attaquant, attrtdmi, 0);
         if (tdmCond) {
           attNbDices += tdmCond;
@@ -23983,7 +23983,7 @@ var COFantasy = COFantasy || function() {
       //On cherche si il y a une armée conjurée à attaquer
       let attrs_armee =
         findObjs({
-          _type: "attribute",
+          _type: 'attribute',
           name: 'armeeConjuree',
         });
       if (attrs_armee.length > 0) {
@@ -26469,7 +26469,7 @@ var COFantasy = COFantasy || function() {
           });
         }
         if (options.tempeteDeManaIntense !== undefined) {
-          setTokenAttr(perso, effet + "TempeteDeManaIntense", options.tempeteDeManaIntense, evt);
+          setTokenAttr(perso, effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
         }
       });
       addEvent(evt);
@@ -34470,7 +34470,34 @@ var COFantasy = COFantasy || function() {
         type: 'conjuration de prédateurs'
       };
       let combat = initiative(selected, evt);
+      let abort;
       iterSelected(selected, function(invocateur) {
+        if (abort) return;
+        if (options.tempeteDeMana) {
+          if (selected.length > 1) {
+            sendPlayerAndGM(msg, playerId, "Il faut sélectionner un seul token pour les options de tempête de mana");
+            abort = true;
+            return;
+          }
+          if (options.tempeteDeMana.cout === 0) {
+            //On demande de préciser les options
+            let optMana = {
+              mana: options.mana,
+              portee: false,
+              duree: true,
+              dm: true,
+              intense: 0,
+              rang: 1
+            };
+            setTempeteDeMana(playerId, invocateur, msg.content, optMana);
+            abort = true;
+            return;
+          } else {
+            if (options.tempeteDeMana.cout > 1) {
+              sendPlayerAndGM(msg, playerId, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
+            }
+          }
+        }
         if (limiteRessources(invocateur, options, 'invocationPredateur', 'lancer une invocation de prédateur', evt)) return;
         let pageId = invocateur.token.get('pageid');
         let niveau = ficheAttributeAsInt(invocateur, 'niveau', 1);
@@ -34488,6 +34515,17 @@ var COFantasy = COFantasy || function() {
         else if (niveau < 21) predateur = predateurs.oursPolaire;
         else if (niveau < 23) predateur = predateurs.tigreDentsDeSabre;
         else predateur = predateurs.oursPrehistorique;
+        if (options.tempeteDeManaIntense) {
+          // on copie les attaques pour leur ajouter --si predateurConjure
+          let attaques = predateur.attaques;
+          predateur = {...predateur};
+          predateur.attaques = [];
+          attaques.forEach(function(attaque) {
+            attaque = {...attaque};
+            attaque.options = '--si etat predateurConjure';
+            predateur.attaques.push(attaque);
+          });
+        }
         let nomPredateur =
           predateur.nom + ' de ' + nomPerso(invocateur);
         let token = createObj('graphic', {
@@ -34523,6 +34561,13 @@ var COFantasy = COFantasy || function() {
           current: 5 + modCarac(invocateur, 'charisme'),
           max: combat.init
         });
+        if (options.tempeteDeManaIntense) {
+        createObj('attribute', {
+          name: 'predateurConjureTempeteDeManaIntense',
+          _characterid: charPredateur.id,
+          current: options.tempeteDeManaIntense,
+        });
+        }
         evt.characters = [charPredateur];
         evt.tokens = [token];
         initiative([{
@@ -34648,7 +34693,34 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, "Il faut sélectionner le lanceur de la conjuration d'arméé", playerId);
         return;
       }
+      let abort;
       iterSelected(selected, function(invocateur) {
+        if (abort) return;
+        if (options.tempeteDeMana) {
+          if (selected.length > 1) {
+            sendPlayerAndGM(msg, playerId, "Il faut sélectionner un seul token pour les options de tempête de mana");
+            abort = true;
+            return;
+          }
+          if (options.tempeteDeMana.cout === 0) {
+            //On demande de préciser les options
+            let optMana = {
+              mana: options.mana,
+              portee: false,
+              duree: false,
+              dm: true,
+              intense: 0,
+              rang: 3
+            };
+            setTempeteDeMana(playerId, invocateur, msg.content, optMana);
+            abort = true;
+            return;
+          } else {
+            if (options.tempeteDeMana.cout > 1) {
+              sendPlayerAndGM(msg, playerId, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
+            }
+          }
+        }
         let pageId = invocateur.token.get('pageid');
         let niveau = ficheAttributeAsInt(invocateur, 'niveau', 1);
         const evt = {
@@ -34703,13 +34775,19 @@ var COFantasy = COFantasy || function() {
           dmnbde: dm.nbDe,
           dmde: dm.dice,
           modificateurs: 'auto',
-          options: "--allonge 20",
+          options: "--allonge 20 --si etat armeeConjuree",
         };
         if (dm.bonus) attaque.dm = dm.bonus;
         let attributes = [{
           name: 'armeeConjuree',
           current: invocateur.charId
         }];
+        if (options.tempeteDeManaIntense) {
+          attributes.push({
+            name: 'armeeConjureeTempeteDeManaIntense',
+            current: options.tempeteDeManaIntense
+          });
+        }
         let charArmee =
           createCharacter(nomArmee, playerId, avatar, token, {
             pv: niveau * 10,
