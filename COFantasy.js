@@ -456,7 +456,8 @@ var COFantasy = COFantasy || function() {
     blesse: 'status_arrowed',
     encombre: 'status_frozen-orb',
     penombre: 'status_archery-target',
-    enseveli: 'status_edge-crack'
+    enseveli: 'status_edge-crack',
+    chef: 'status_black-flag'
   };
 
   //Remplis quand on sait quels sont les markers dans setStateCOF
@@ -1251,6 +1252,7 @@ var COFantasy = COFantasy || function() {
         encombre: 'status_cof-encombre',
         penombre: 'status_cof-penombre',
         //enseveli: 'status_edge-crack' -> À dessiner
+        chef: 'status_cof-chef',
       };
       // On boucle sur la liste des états pour vérifier que les markers sont bien présents !
       let markersAbsents = [];
@@ -2297,7 +2299,7 @@ var COFantasy = COFantasy || function() {
           tokenFields.aura1_color = "#FF9900";
           tokenFields.aura1_square = false;
           tokenFields.showplayers_aura1 = false;
-          tokenFields.statusmarkers = "";
+          tokenFields.statusmarkers = '';
           tokenFields.showplayers_name = false;
           tokenFields.showplayers_bar1 = false;
           tokenFields.showplayers_bar2 = false;
@@ -4950,6 +4952,7 @@ var COFantasy = COFantasy || function() {
                 style = 'background-color:#cc0000';
                 break;
               case 'attendre':
+              case 'tour-suivant':
                 picto = '<span style="font-family: \'Pictos\'">t</span> ';
                 style = 'background-color:#999999';
                 break;
@@ -9652,7 +9655,7 @@ var COFantasy = COFantasy || function() {
       evt.deletedAttributes.push(attrCapitaine);
       attrCapitaine.remove();
     }
-    var capitaineActif = attrs.find(function(a) {
+    let capitaineActif = attrs.find(function(a) {
       return (a.get('name') == 'capitaineActif');
     });
     if (capitaine && isActive(capitaine)) {
@@ -11832,7 +11835,7 @@ var COFantasy = COFantasy || function() {
         _pageid: pageId,
         layer: 'objects'
       });
-      //On compte tokens au contact de l'attaquant et du défenseur et alliés de l'attaquant
+      //On compte les tokens au contact de l'attaquant et du défenseur et alliés de l'attaquant
       let allies = alliesParPerso[attaquant.charId];
       if (allies) {
         let alliesAuContact = 0;
@@ -15557,6 +15560,7 @@ var COFantasy = COFantasy || function() {
   function stringOfEtat(etat, perso) {
     if (etat == 'invisible') return etat;
     else if (etat == 'penombre') return "dans la pénombre";
+    else if (etat == 'chef') return "est un leader";
     let etext = etat;
     if (etat.endsWith('e')) {
       etext = etat.substring(0, etat.length - 1) + 'é';
@@ -15813,9 +15817,13 @@ var COFantasy = COFantasy || function() {
         target.messages.push(dedoubleMsg);
       }
       setTokenAttr(target, 'dedouble', true, evt);
-      copieToken(target, undefined, stateCOF.options.images.val.image_double.val,
+      let attrEffet =
+        copieToken(target, undefined, stateCOF.options.images.val.image_double.val,
         "Double de " + nomPerso(target), 'dedoublement', duree,
         target.token.get('pageid'), evt);
+      if (ef.attaquant && options.mana !== undefined) {
+        addEffetTemporaireLie(ef.attaquant, attrEffet, evt);
+      }
       return;
     }
     if (predicateAsBool(target, 'immunite_' + ef.effet)) {
@@ -16809,13 +16817,13 @@ var COFantasy = COFantasy || function() {
             target.messages.push("Langage sombre : +1 DM");
           }
         }
-        if (predicateAsBool(attaquant, 'laissez-le-moi') &&
-          attributeAsBool(target, 'seulContreTous_leader')) {
+        if (predicateAsBool(attaquant, 'laissezLeMoi') &&
+          getState(target, 'chef')) {
           target.additionalDmg.push({
             type: mainDmgType,
             value: '1d6'
           });
-          target.messages.push("Cible de " + attackerTokName + " : +1d6 DM");
+          target.messages.push("Laissez-le moi ! => +1d6 DM");
         }
         //Bonus aux DMs dus au défi samouraï
         let defiSamouraiAttr = tokenAttribute(attaquant, 'defiSamourai');
@@ -20295,7 +20303,6 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('defierLaMort', evt, attrs);
     attrs = removeAllAttributes('traquenardImpossible', evt, attrs);
     attrs = removeAllAttributes('niveauDesObjetsAnimes', evt, attrs);
-    attrs = removeAllAttributes('seulContreTous_leader', evt, attrs);
     attrs = removeAllAttributes('meneurDHommesCible', evt, attrs);
     // Autres attributs
     // On récupère les munitions récupérables
@@ -23543,8 +23550,8 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
-  var alliesParPerso = {};
-  var listeCompetences = {
+  let alliesParPerso = {};
+  let listeCompetences = {
     FOR: {
       list: [],
       elts: new Set()
@@ -23707,9 +23714,9 @@ var COFantasy = COFantasy || function() {
 
   function estAllieJoueur(perso) {
     if (estControlleParJoueur(perso.charId)) return true;
-    var allies = alliesParPerso[perso.charId];
+    let allies = alliesParPerso[perso.charId];
     if (allies === undefined) return false;
-    var res = false;
+    let res = false;
     allies.forEach(function(p) {
       res = res || estControlleParJoueur(p);
     });
@@ -29247,11 +29254,7 @@ var COFantasy = COFantasy || function() {
         error("Le premier argument de !cof-capitaine doit être un token", cmd[1]);
         return;
       }
-      let m = markerCatalog['cof-chef'];
-      if (m) {
-        affectToken(capitaine.token, 'statusmarkers', capitaine.token.get('statusmarkers'), evt);
-        capitaine.token.set('status_' + m.tag, true);
-      }
+      setState(capitaine, 'chef', true, evt);
       nomCapitaine = nomPerso(capitaine);
       if (cmd.length > 2 && !cmd[2].startsWith('--')) {
         bonus = parseInt(cmd[2]);
@@ -29280,7 +29283,7 @@ var COFantasy = COFantasy || function() {
             maxVal: bonus,
             charAttr: true
           });
-          sendChat('COF', "/w GM " + nomCapitaine + " est le " + titre + " de " + nomPerso(perso));
+          sendChat('COF', "/w GM " + nomCapitaine + " est " + onGenre(capitaine, "le ", "la ") + titre + " de " + nomPerso(perso));
         }
       });
       addEvent(evt);
@@ -29590,19 +29593,19 @@ var COFantasy = COFantasy || function() {
       error("La durée doit être un nombre positif", cmd);
       return;
     }
-    var image = options.image || stateCOF.options.images.val.image_ombre.val;
+    let image = options.image || stateCOF.options.images.val.image_ombre.val;
     if (options.portee !== undefined) {
-      var distance = distanceCombat(lanceur.token, cible.token, pageId);
+      let distance = distanceCombat(lanceur.token, cible.token, pageId);
       if (distance > options.portee) {
         sendPerso(lanceur, "est trop loind de " + nomPerso(cible) +
           " pour animer son ombre");
         return;
       }
     }
-    var evt = {
+    const evt = {
       type: "Ombre mortelle"
     };
-    var msgRes = "invoquer une ombre mortelle";
+    let msgRes = "invoquer une ombre mortelle";
     if (limiteRessources(lanceur, options, "Ombre_mortelle", msgRes, evt)) return;
     copieToken(cible, image, stateCOF.options.images.val.image_ombre.val, "Ombre de " + nomPerso(cible), 'ombreMortelle', duree, pageId, evt);
     let msgOmbre = "anime l'ombre de " + cible.tokName + ". Celle-ci commence à attaquer " + cible.tokName + "&nbsp;!";
@@ -29611,14 +29614,15 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  //renvoie l'attribut de l'effet temporaire créé
   function copieToken(cible, image1, image2, nom, effet, duree, pageId, evt) {
-    var pv = parseInt(cible.token.get('bar1_value'));
+    let pv = parseInt(cible.token.get('bar1_value'));
     if (isNaN(pv)) {
       error("Token avec des PV qui ne sont pas un nombre", cible.token);
       return;
     }
     if (pv > 1) pv = Math.floor(pv / 2);
-    var pvMax = parseInt(cible.token.get('bar1_max'));
+    let pvMax = parseInt(cible.token.get('bar1_max'));
     if (isNaN(pvMax)) {
       error("Token avec des PV max qui ne sont pas un nombre", cible.token);
       return;
@@ -29645,7 +29649,7 @@ var COFantasy = COFantasy || function() {
       showplayers_name: true,
       showplayers_bar1: cible.token.get('showplayers_bar1'),
     };
-    var newToken;
+    let newToken;
     if (image1) newToken = createObj('graphic', tokenFields);
     if (newToken === undefined) {
       tokenFields.imgsrc = cible.token.get('imgsrc').replace('/max.png', '/thumb.png').replace('/med.png', '/thumb.png');
@@ -29668,8 +29672,9 @@ var COFantasy = COFantasy || function() {
       token: newToken,
       charId: cible.charId
     };
-    setAttrDuree(perso, effet, duree, evt);
+    let attr = setAttrDuree(perso, effet, duree, evt);
     initPerso(perso, evt);
+    return attr;
   }
 
   //retourne true si le joueur est effectivement déplacé
@@ -44422,7 +44427,7 @@ var COFantasy = COFantasy || function() {
 }();
 
 on('ready', function() {
-  const scriptVersion = '3.09';
+  const scriptVersion = '3.10';
   on('add:token', COFantasy.addToken);
   on("change:campaign:playerpageid", COFantasy.initAllMarkers);
   state.COFantasy = state.COFantasy || {
@@ -46156,6 +46161,20 @@ on('ready', function() {
     state.COFantasy.tour = undefined;
     state.COFantasy.init = undefined;
     state.COFantasy.usureOff = undefined;
+  }
+  if (state.COFantasy.version < 3.10) {
+    let attrs_preds = findObjs({
+      _type: 'attribute',
+      name: 'predicats_script'
+    });
+    attrs_preds.forEach(function(a) {
+      let preds = a.get('current');
+      if (preds.includes('laissez-le-moi')) {
+        preds = preds.replace('laissez-le-moi', 'laissezLeMoi');
+        a.set('current', preds);
+      }
+    });
+    log("Changement du prédicat laissez-le-moi");
   }
   state.COFantasy.version = scriptVersion;
   handout.forEach(function(hand) {
