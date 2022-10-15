@@ -9865,9 +9865,10 @@ var COFantasy = COFantasy || function() {
       }
       if (!isActive(perso)) return;
       if (predicateAsBool(perso, 'aucuneActionCombat')) return;
-      if (!boutonRoll &&
+      if (!boutonRoll && !recompute &&
         reglesOptionelles.initiative.val.joueurs_lancent_init.val &&
-        reglesOptionelles.initiative.val.initiative_variable.val) {
+        reglesOptionelles.initiative.val.initiative_variable.val &&
+        !attributeAsBool(perso, 'bonusInitVariable')) {
         let pl = getPlayerIds(perso);
         let controlleParJoueur = pl.find(function(pid) {
           return !playerIsGM(pid);
@@ -10589,7 +10590,7 @@ var COFantasy = COFantasy || function() {
       explications.push(tokenName + " contrôle le magnétisme (+" + magnetisme + " DEF)");
     }
     if (attributeAsBool(target, 'diversionManoeuvre')) {
-      var diversion = getValeurOfEffet(target, 'diversionManoeuvre', -5);
+      let diversion = getValeurOfEffet(target, 'diversionManoeuvre', -5);
       defense += diversion;
       explications.push(tokenName + " est victime d'une diversion => " + diversion + " DEF");
     }
