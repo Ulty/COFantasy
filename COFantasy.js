@@ -21258,6 +21258,14 @@ var COFantasy = COFantasy || function() {
           options.messages = options.messages || [];
           options.messages.push(cmd.slice(1).join(' '));
           return;
+        case 'messageMJ':
+          if (cmd.length < 2) {
+            error("Il manque le message après --messageMJ", cmd);
+            return;
+          }
+          options.messagesMJ = options.messagesMJ || [];
+          options.messagesMJ.push(cmd.slice(1).join(' '));
+          return;
         case 'image':
           if (cmd.length < 2) {
             error("Il manque le nom de l'imageaprès --image", cmd);
@@ -26982,6 +26990,11 @@ var COFantasy = COFantasy || function() {
               sendChat('', whisper + m);
             });
           }
+          if (options.messagesMJ) {
+            options.messagesMJ.forEach(function(m) {
+              sendChat('', '/w gm ' + m);
+            });
+          }
         };
         if (options.save) {
           let saveOpts = {
@@ -27032,6 +27045,11 @@ var COFantasy = COFantasy || function() {
           options.messages.forEach(function(m) {
             sendChat('', whisper + m);
           });
+        }
+          if (options.messagesMJ) {
+            options.messagesMJ.forEach(function(m) {
+              sendChat('', '/w gm ' + m);
+            });
         }
       });
     }
