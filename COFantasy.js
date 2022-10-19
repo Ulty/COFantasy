@@ -1942,8 +1942,8 @@ var COFantasy = COFantasy || function() {
     if (perso.charId === undefined) perso = {
       charId: perso
     };
+    let mod = 0;
     if (persoEstPNJ(perso)) {
-      let mod = 0;
       switch (carac) {
         case 'force':
         case 'FORCE':
@@ -1972,15 +1972,18 @@ var COFantasy = COFantasy || function() {
         default:
           return 0;
       }
-      return mod - Math.floor(attributeAsInt(perso, 'affaiblissementde' + carac, 0) / 2);
+      mod -= Math.floor(attributeAsInt(perso, 'affaiblissementde' + carac, 0) / 2);
+    } else {
+      // On a une fiche de PJ
+      let valCarac =
+        ficheAttributeAsInt(perso, carac, 10) - attributeAsInt(perso, 'affaiblissementde' + carac, 0);
+      mod = Math.floor((valCarac - 10) / 2);
     }
-    // On a une fiche de PJ
-    let valCarac =
-      ficheAttributeAsInt(perso, carac, 10) - attributeAsInt(perso, 'affaiblissementde' + carac, 0);
-    let res = Math.floor((valCarac - 10) / 2);
-    if ((carac == 'force' || carac == 'FORCE') && attributeAsBool(perso, 'mutationMusclesHypertrophies')) res += 2;
-    else if ((carac == 'DEXTERITE' || carac == 'dexterite') && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) res += 4;
-    return res;
+    if (carac == 'force' || carac == 'FORCE') {
+      if (attributeAsBool(perso, 'mutationMusclesHypertrophies')) mod += 2;
+      if (attributeAsBool(perso, 'grandeTaille')) mod += 2;
+    } else if ((carac == 'DEXTERITE' || carac == 'dexterite') && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) mod += 4;
+    return mod;
   }
 
   //Renvoie stateCOF.combat, garanti non false
@@ -3250,7 +3253,7 @@ var COFantasy = COFantasy || function() {
           error("Personnage introuvable");
           return;
         }
-        character.get('defaulttoken', function(normalToken) {
+        character.get('_defaulttoken', function(normalToken) {
           if (normalToken === '') return;
           normalToken = JSON.parse(normalToken);
           let largeWidth = normalToken.width + normalToken.width / 2;
@@ -4565,22 +4568,42 @@ var COFantasy = COFantasy || function() {
         break;
       case 'Arme 1 main':
         weaponStats.arme = true;
+        if (predicateAsBool(perso, 'tropPetit') && !attributeAsBool(perso, 'grandeTaille')) {
+          weaponStats.addNbDice = 1;
+          weaponStats.attDice = 3;
+          weaponStats.attCarBonus = '';
+        }
         break;
       case 'Arme 2 mains':
         weaponStats.arme = true;
         weaponStats.deuxMains = true;
+        if (predicateAsBool(perso, 'tropPetit') && !attributeAsBool(perso, 'grandeTaille')) {
+          weaponStats.addNbDice = 1;
+          weaponStats.attDice = 4;
+          weaponStats.attCarBonus = '';
+        }
         break;
       case 'Sortilege':
         weaponStats.sortilege = true;
         break;
       case 'Arme gauche':
         weaponStats.armeGauche = true;
+        if (predicateAsBool(perso, 'tropPetit') && !attributeAsBool(perso, 'grandeTaille')) {
+          weaponStats.addNbDice = 1;
+          weaponStats.attDice = 3;
+          weaponStats.attCarBonus = '';
+        }
         break;
       case 'Arme de jet':
         weaponStats.armeDeJet = true;
         weaponStats.tauxDePerte = fieldAsInt(att, 'armejettaux', 0);
         weaponStats.nbArmesDeJet = fieldAsInt(att, 'armejetqte', 1);
         weaponStats.prefixe = att.prefixe; //pour trouver l'attribut
+        if (predicateAsBool(perso, 'tropPetit') && !attributeAsBool(perso, 'grandeTaille')) {
+          weaponStats.addNbDice = 1;
+          weaponStats.attDice = 3;
+          weaponStats.attCarBonus = '';
+        }
         break;
       default:
         //On cherche si c'est une arme à 2 mains
@@ -9886,16 +9909,17 @@ var COFantasy = COFantasy || function() {
       if (!boutonRoll && !recompute &&
         reglesOptionelles.initiative.val.joueurs_lancent_init.val &&
         reglesOptionelles.initiative.val.initiative_variable.val) {
+        let persoRoll = perso;
         let persoD = initDerivee(perso);
-        if (persoD) perso = persoD;
-        if (!attributeAsBool(perso, 'bonusInitVariable')) {
-          let pl = getPlayerIds(perso);
+        if (persoD) persoRoll = persoD;
+        if (!attributeAsBool(persoRoll, 'bonusInitVariable')) {
+          let pl = getPlayerIds(persoRoll);
           let controlleParJoueur = pl.find(function(pid) {
             return !playerIsGM(pid);
           });
           if (controlleParJoueur) {
-            let commande = "!cof-init --boutonRoll --target " + perso.token.id;
-            sendPerso(perso, "Cliquez sur " + boutonSimple(commande, "&#127922;") + " pour lancer l'initiative", true);
+            let commande = "!cof-init --boutonRoll --target " + persoRoll.token.id;
+            sendPerso(persoRoll, "Cliquez sur " + boutonSimple(commande, "&#127922;") + " pour lancer l'initiative", true);
             return;
           }
         }
@@ -10399,6 +10423,85 @@ var COFantasy = COFantasy || function() {
     return parseInt(s.substring(3, s.indexOf(']')));
   }
 
+  //Retourne un encodage des tailes :
+  // 1 : minuscule
+  // 2 : très petit
+  // 3 : petit
+  // 4 : moyen
+  // 5 : grand
+  // 6 : énorme
+  // 7 : colossal
+  function taillePersonnage(perso, def) {
+    if (perso.taille) return perso.taille;
+    if (attributeAsBool(perso, 'grandeTaille')) return 4;
+    switch (ficheAttribute(perso, 'taille', '').trim().toLowerCase()) {
+      case "minuscule":
+        perso.taille = 1;
+        return 1;
+      case "très petit":
+      case "très petite":
+      case "tres petit":
+        perso.taille = 2;
+        return 2;
+      case "petit":
+      case "petite":
+        perso.taille = 3;
+        return 3;
+      case "moyen":
+      case "moyenne":
+      case "normal":
+      case "normale":
+        perso.taille = 4;
+        return 4;
+      case "grand":
+      case "grande":
+        perso.taille = 5;
+        return 5;
+      case "énorme":
+      case "enorme":
+        perso.taille = 6;
+        return 6;
+      case "colossal":
+      case "colossale":
+        perso.taille = 7;
+        return 7;
+      default: //On passe à la méthode suivante
+    }
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '');
+      perso.race = perso.race.trim().toLowerCase();
+    }
+    switch (perso.race) {
+      case 'lutin':
+      case 'fee':
+        perso.taille = 2;
+        return 2;
+      case 'halfelin':
+      case 'gobelin':
+      case 'kobold':
+        perso.taille = 3;
+        return 3;
+      case 'humain':
+      case 'elfe':
+      case 'nain':
+      case 'demi-elfe':
+      case 'demi-orque':
+      case 'orque':
+      case 'gnome':
+      case 'âme-forgée':
+        perso.taille = 4;
+        return 4;
+      case 'centaure':
+      case 'demi-ogre':
+      case 'ogre':
+      case 'minotaure':
+        perso.taille = 5;
+        return 5;
+    }
+    perso.taille = def;
+    return def;
+  }
+
   //tm doit être stateCOF.tenebresMagiques, et bien défini.
   function eclaireParFioleDeLumiere(perso, tm) {
     let fio = tm.fioleDeLumiere;
@@ -10695,7 +10798,7 @@ var COFantasy = COFantasy || function() {
     let attaqueAOutrance = attributeAsInt(target, 'attaqueAOutrance', 0);
     if (attaqueAOutrance) {
       defense -= attaqueAOutrance;
-      explications.push("Attaque à outrance => -" + attaqueAOutrance+ " DEF");
+      explications.push("Attaque à outrance => -" + attaqueAOutrance + " DEF");
     }
     let instinctSurvie = predicateAsInt(target, 'instinctDeSurvie', 0);
     if (instinctSurvie > 0 && target.token.get('bar1_value') <= instinctSurvie)
@@ -11690,7 +11793,7 @@ var COFantasy = COFantasy || function() {
         attBonus += 2;
         explications.push("Mains d'énergie => +2 en Attaque (cible sans armure)");
       } else {
-        var bonusMain = Math.min(5, 2 + targetArmorDef);
+        let bonusMain = Math.min(5, 2 + targetArmorDef);
         attBonus += bonusMain;
         explications.push("Mains d'énergie => +" + bonusMain + " en Attaque");
       }
@@ -12772,7 +12875,7 @@ var COFantasy = COFantasy || function() {
     weaponStats.attNbDices = parseInt(weaponStats.attNbDices);
     weaponStats.attDice = parseInt(weaponStats.attDice);
     options.d6 = 'd6';
-    if (predicateAsBool(attaquant, 'tropPetit')) {
+    if (predicateAsBool(attaquant, 'tropPetit') && !attributeAsBool(attaquant, 'grandeTaille')) {
       options.d6 = 'd4';
       if (weaponStats.divers && weaponStats.divers.includes('d3')) {
         weaponStats.attDice = 3;
@@ -16797,7 +16900,7 @@ var COFantasy = COFantasy || function() {
             value
           });
         }
-        var targetTaille = taillePersonnage(target, 4);
+        let targetTaille = taillePersonnage(target, 4);
         if (options.tueurDeGrands) {
           if (targetTaille == 5) {
             target.additionalDmg.push({
@@ -17674,7 +17777,7 @@ var COFantasy = COFantasy || function() {
         "Appliquer", 'background-color:#cc0000');
       return b;
     };
-    var msg;
+    let msg;
     switch (d12roll) {
       case 1:
         msg = "Échec total : ";
@@ -17687,9 +17790,9 @@ var COFantasy = COFantasy || function() {
         }
         return msg;
       case 2:
-        var difficulte = 0;
+        let difficulte = 0;
         if (estCac) {
-          var tailleAttaquant = taillePersonnage(attaquant, 4);
+          let tailleAttaquant = taillePersonnage(attaquant, 4);
           cibles.forEach(function(cible) {
             difficulte = Math.max(difficulte, 12 - ((tailleAttaquant - taillePersonnage(cible, 4)) * 2));
           });
@@ -26604,7 +26707,7 @@ var COFantasy = COFantasy || function() {
     if (options === undefined) return;
     let cmd = options.cmd;
     if (cmd === undefined || cmd.length < 3) {
-      error("Pas assez d'arguments pour !cof-effet-temp", msg.content);
+      error("Pas assez d'arguments pour !cof-effet", msg.content);
       return;
     }
     let effet = cmd[1];
@@ -26682,9 +26785,9 @@ var COFantasy = COFantasy || function() {
             return;
           }
         }
-        if (activer) {
+        if (activer && valeur === true) {
           if (attributeAsBool(perso, effet)) return;
-        } else {
+        } else if (!activer && valeur === false) {
           if (!attributeAsBool(perso, effet)) return;
         }
         cibles.push(perso);
@@ -26706,6 +26809,81 @@ var COFantasy = COFantasy || function() {
       }
       effetIndetermine(playerId, cibles, effet, activer, valeur, options);
     }, options);
+  }
+
+  //L'effet de grandeTaille sur le token
+  function grandeTaille(perso, evt) {
+    if (attributeAsBool(perso, 'tailleDeTokenNormale')) return;
+    let character = getObj('character', perso.charId);
+    if (character === undefined) {
+      error("Personnage introuvable", perso);
+      return;
+    }
+    let token = perso.token;
+    character.get('_defaulttoken', function(normalToken) {
+      if (normalToken === '') return;
+      normalToken = JSON.parse(normalToken);
+      let nw = normalToken.width;
+      let nh = normalToken.height;
+      //Rien à faire si le token occupe déjà une case
+      if (nw >= PIX_PER_UNIT || nh >= PIX_PER_UNIT) return;
+      setTokenAttr(perso, 'tailleDeTokenNormale', nw, evt, {
+        maxVal: nh
+      });
+      //Les facteurs d'agrandissement
+      let fw = PIX_PER_UNIT / nw;
+      let fh = PIX_PER_UNIT / nh;
+      let f = Math.min(fw, fh);
+      normalToken.width = f * nw;
+      normalToken.height = f * nh;
+      let width = token.get('width');
+      let height = token.get('height');
+      affectToken(token, 'width', width, evt);
+      affectToken(token, 'height', height, evt);
+      setDefaultTokenFromSpec(character, normalToken, token);
+      token.set('width', f * width);
+      token.set('height', f * height);
+    });
+  }
+
+  function finDeGrandeTaille(perso, evt) {
+    let attr = tokenAttribute(perso, 'tailleDeTokenNormale');
+    if (attr.length === 0) return;
+    attr = attr[0];
+    let nw = parseInt(attr.get('current'));
+    let nh = parseInt(attr.get('max'));
+    if (isNaN(nw) || isNaN(nh)) {
+      error("La taille de token sauvegardée n'est pas correcte", attr);
+      attr.remove();
+    }
+    let character = getObj('character', perso.charId);
+    if (character === undefined) {
+      error("Personnage introuvable", perso);
+      return;
+    }
+    let token = perso.token;
+    character.get('_defaulttoken', function(currentToken) {
+      if (currentToken === '') return;
+      currentToken = JSON.parse(currentToken);
+      evt.deletedAttributes = evt.deletedAttributes || [];
+      evt.deletedAttributes.push(attr);
+      attr.remove();
+      let width = token.get('width');
+      let height = token.get('height');
+      affectToken(token, 'width', width, evt);
+      affectToken(token, 'height', height, evt);
+      let ntw = nw;
+      let nth = nh;
+      if (width != currentToken.width)
+        ntw = nw * width / currentToken.width;
+      if (height != currentToken.height)
+        nth = nh * height / currentToken.height;
+      currentToken.width = nw;
+      currentToken.height = nh;
+      setDefaultTokenFromSpec(character, currentToken, token);
+      token.set('width', ntw);
+      token.set('height', nth);
+    });
   }
 
   function effetIndetermine(playerId, cibles, effet, activer, valeur, options) {
@@ -26764,7 +26942,6 @@ var COFantasy = COFantasy || function() {
             addToAttributeAsInt(perso, effet, 0, options.valeurAjoutee, evt);
             expliquer(effet + " varie de " + options.valeurAjoutee, options.secret);
           } else {
-
             setTokenAttr(
               perso, effet, valeur, evt, {
                 msg: whisper + messageActivation(perso, messageEffetIndetermine[effet])
@@ -26775,6 +26952,9 @@ var COFantasy = COFantasy || function() {
                 break;
               case 'sangDeLArbreCoeur':
                 guerisonPerso(perso, evt);
+                break;
+              case 'grandeTaille':
+                grandeTaille(perso, evt);
                 break;
             }
           }
@@ -26789,6 +26969,11 @@ var COFantasy = COFantasy || function() {
           }
           if (options.tempeteDeManaIntense !== undefined) {
             setTokenAttr(perso, effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
+          }
+          if (options.messages) {
+            options.messages.forEach(function(m) {
+              sendChat('', whisper + m);
+            });
           }
         };
         if (options.save) {
@@ -26828,8 +27013,18 @@ var COFantasy = COFantasy || function() {
         removeTokenAttr(perso, effet + 'Valeur', evt);
         removeTokenAttr(perso, effet + 'TempeteDeManaIntense', evt);
         removeTokenAttr(perso, effet + 'Options', evt);
-        if (effet == 'foretVivanteEnnemie' && stateCOF.combat) {
-          updateNextInit(perso);
+        switch (effet) {
+          case 'foretVivanteEnnemie':
+            if (stateCOF.combat) updateNextInit(perso);
+            break;
+          case 'grandeTaille':
+            finDeGrandeTaille(perso, evt);
+            break;
+        }
+        if (options.messages) {
+          options.messages.forEach(function(m) {
+            sendChat('', whisper + m);
+          });
         }
       });
     }
@@ -28147,84 +28342,6 @@ var COFantasy = COFantasy || function() {
       default:
         return false;
     }
-  }
-
-  //Retourne un encodage des tailes :
-  // 1 : minuscule
-  // 2 : très petit
-  // 3 : petit
-  // 4 : moyen
-  // 5 : grand
-  // 6 : énorme
-  // 7 : colossal
-  function taillePersonnage(perso, def) {
-    if (perso.taille) return perso.taille;
-    switch (ficheAttribute(perso, 'taille', '').trim().toLowerCase()) {
-      case "minuscule":
-        perso.taille = 1;
-        return 1;
-      case "très petit":
-      case "très petite":
-      case "tres petit":
-        perso.taille = 2;
-        return 2;
-      case "petit":
-      case "petite":
-        perso.taille = 3;
-        return 3;
-      case "moyen":
-      case "moyenne":
-      case "normal":
-      case "normale":
-        perso.taille = 4;
-        return 4;
-      case "grand":
-      case "grande":
-        perso.taille = 5;
-        return 5;
-      case "énorme":
-      case "enorme":
-        perso.taille = 6;
-        return 6;
-      case "colossal":
-      case "colossale":
-        perso.taille = 7;
-        return 7;
-      default: //On passe à la méthode suivante
-    }
-    if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '');
-      perso.race = perso.race.trim().toLowerCase();
-    }
-    switch (perso.race) {
-      case 'lutin':
-      case 'fee':
-        perso.taille = 2;
-        return 2;
-      case 'halfelin':
-      case 'gobelin':
-      case 'kobold':
-        perso.taille = 3;
-        return 3;
-      case 'humain':
-      case 'elfe':
-      case 'nain':
-      case 'demi-elfe':
-      case 'demi-orque':
-      case 'orque':
-      case 'gnome':
-      case 'âme-forgée':
-        perso.taille = 4;
-        return 4;
-      case 'centaure':
-      case 'demi-ogre':
-      case 'ogre':
-      case 'minotaure':
-        perso.taille = 5;
-        return 5;
-    }
-    perso.taille = def;
-    return def;
   }
 
   function estAussiGrandQue(perso1, perso2) {
@@ -37208,7 +37325,7 @@ var COFantasy = COFantasy || function() {
         action = "!cof-options-d-attaque attaque_en_puissance ?{nombre de dés de bonus (-5 att par dé)?}";
         action += " --target " + perso.token.id;
         ligne += "(+" + boutonSimple(action, aep) + "d";
-        if (predicateAsBool(perso, 'tropPetit')) {
+        if (predicateAsBool(perso, 'tropPetit') && !attributeAsBool(perso, 'grandeTaille')) {
           ligne += "4 DM)";
         } else {
           ligne += "6 DM)";
@@ -38104,7 +38221,7 @@ var COFantasy = COFantasy || function() {
         }
         if (!nouveauNomToken) nouveauNomToken = nouveauNom;
         let traitementEnCours;
-        character.get('defaulttoken', function(defaultToken) {
+        character.get('_defaulttoken', function(defaultToken) {
           if (traitementEnCours) return;
           traitementEnCours = true;
           let defaultTokenName;
@@ -42280,6 +42397,13 @@ var COFantasy = COFantasy || function() {
       fin: "se retrouve dans une forêt normale",
       entrave: true
     },
+    grandeTaille: {
+      activation: "devient aussi grand qu'un humain",
+      activationF: "devient aussi grande qu'une humaine",
+      actif: "est grand comme un humain",
+      actifF: "est grande comme une humaine",
+      fin: "retrouve sa taille normale"
+    },
     marcheSylvestre: {
       activation: "se deplace maintenant en terrain difficile",
       actif: "profite du terrain difficile",
@@ -44759,7 +44883,7 @@ on('ready', function() {
     if (charsToTreat === 0) removeAttrs();
     const pageId = Campaign().get('playerpageid');
     characters.forEach(function(character) {
-      character.get('defaulttoken', function(token) {
+      character.get('_defaulttoken', function(token) {
         if (token === '') {
           removeAttrs();
           return;

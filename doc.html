@@ -1971,12 +1971,13 @@ tr {line-height: 25px;}
                   <li><a href="#Vision_dans_le_noir">Vision dans le noir</a>.</li>
                   <li><strong>Tout petit</strong> : reporter le bonus de DEF sur la fiche, et ajouter 5 à une compétence <code>discrétion</code>.</li>
                   <li><strong>Vol</strong> et <strong>Téléportation</strong> : pas de support.</li>
-                  <li><strong>Trop petit</strong> : ajouter un <a href=#predicats>prédicat</a> <code>tropPetit</code>, et pour les attaques au d3, mettre un dé quelconque dans l'attaque, et rajouter le texte <code>d3</code> dans les notes de l'attaque concernée. </li>
+                  <li><strong>Trop petit</strong> : ajouter un <a href=#predicats>prédicat</a> <code>tropPetit</code>. Cela va aussi changer les dégâts de base des armes (il vaut mieux laisser les vrais DM pour que la capacité Grande taille fonctionne).</li>
                 </ul>
                 <ol>
                   <li><strong>Langage des animaux</strong> : aucun support</li>
                   <li><strong>Invisibilité</strong> : <code>!cof-set-state invisible true --message se rend invisible ([[1d6+@{selected|INT}]] minutes) --limiteParJour <i>r</i></code> où <i>r</i> est le rang dans la Voie.</li>
                   <li><strong>Monture féérique</strong> : ajouter un ersonnage pour la monture. Ajoutez-lui le <a href=#predicats>prédicat</a> <code>monture</code>. Pour monter sur la monture, utiliser <code>!cof-en-selle @{selected|token_id} nom_de_la_monture</code>, et pour en descendre, il suffit de faire la même commande (utiliser une ability "token action" rend cela assez facile à l'usage). Si vous souhaitez que la monture rentre en combat à chaque fois que l'être féérique entre en combat, ajoutez à l'être féérique un attribut nommé <code>entrerEnCombatAvec</code>, de valeur le nom du token de la monture.</li>
+                  <li><strong>Grande taille</strong> : <code>!cof-effet grandeTaille oui --lanceur @{selected|token_id} --limiteParJour 3 --message restera à taille humaine durant [[1d6+@{selected|CHA}]] minutes</code>. Le script ne gère pas les durées en minutes, le MJ devra penser à supprimer l'effet, par exemple depuis le statut (<code>!cof-statut</code>).</li>
                 </ol>
                 <h4 class="text-secondary">Félis</h4>
                 <ol>

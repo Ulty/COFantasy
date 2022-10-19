@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.10
 ### Capacités
+* Grande taille de la Voie des êtres féériques.
 * Mur de vent
 * Rage de Baphit (Invincible)
 
