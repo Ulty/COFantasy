@@ -5480,6 +5480,10 @@ var COFantasy = COFantasy || function() {
             bonus += 10;
           }
         }
+        if (predicateAsBool(personnage, 'toutPetit') && !attributeAsBool(personnage, 'grandeTaille')) {
+          expliquer("Tout petit : +5 en discrétion");
+          bonus += 5;
+        }
         break;
       case 'intimidation':
         bonus += bonusArgumentDeTaille(personnage, expliquer);
@@ -5747,7 +5751,7 @@ var COFantasy = COFantasy || function() {
     });
     tokens.forEach(function(tok) {
       if (tok.id == perso.token.id) return;
-      var ci = tok.get('represents');
+      let ci = tok.get('represents');
       if (ci === '') return;
       if (!allies.has(ci)) return;
       let allie = {
@@ -11108,6 +11112,9 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(target, 'rage')) {
       explications.push("En rage => -2 en DEF");
       defense -= 2;
+    }
+    if (predicateAsBool(target, 'toutPetit') && !attributeAsBool(target, 'grandeTaille')) {
+      defense += 2;
     }
     return defense;
   }
