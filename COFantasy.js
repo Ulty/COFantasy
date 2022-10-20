@@ -4520,6 +4520,15 @@ var COFantasy = COFantasy || function() {
     return toInt(res, def);
   }
 
+  function armeDeCreatureFeerique(perso, weaponStats, dice) {
+    if (!predicateAsBool(perso, 'tropPetit')) return;
+    if (attributeAsBool(perso, 'grandeTaille')) return;
+    weaponStats.addNbDice = 1;
+    weaponStats.attDice = dice;
+    if (!predicateAsBool(perso, 'lutinGrosBill') || weaponStats.attCarBonus == '@{FOR}')
+      weaponStats.attCarBonus = '';
+  }
+
   //perso peut ne pas avoir de token
   function getWeaponStats(perso, attackLabel) {
     let weaponStats = {
@@ -4568,42 +4577,26 @@ var COFantasy = COFantasy || function() {
         break;
       case 'Arme 1 main':
         weaponStats.arme = true;
-        if (predicateAsBool(perso, 'tropPetit') && !attributeAsBool(perso, 'grandeTaille')) {
-          weaponStats.addNbDice = 1;
-          weaponStats.attDice = 3;
-          weaponStats.attCarBonus = '';
-        }
+        armeDeCreatureFeerique(perso, weaponStats, 3);
         break;
       case 'Arme 2 mains':
         weaponStats.arme = true;
         weaponStats.deuxMains = true;
-        if (predicateAsBool(perso, 'tropPetit') && !attributeAsBool(perso, 'grandeTaille')) {
-          weaponStats.addNbDice = 1;
-          weaponStats.attDice = 4;
-          weaponStats.attCarBonus = '';
-        }
+        armeDeCreatureFeerique(perso, weaponStats, 4);
         break;
       case 'Sortilege':
         weaponStats.sortilege = true;
         break;
       case 'Arme gauche':
         weaponStats.armeGauche = true;
-        if (predicateAsBool(perso, 'tropPetit') && !attributeAsBool(perso, 'grandeTaille')) {
-          weaponStats.addNbDice = 1;
-          weaponStats.attDice = 3;
-          weaponStats.attCarBonus = '';
-        }
+        armeDeCreatureFeerique(perso, weaponStats, 3);
         break;
       case 'Arme de jet':
         weaponStats.armeDeJet = true;
         weaponStats.tauxDePerte = fieldAsInt(att, 'armejettaux', 0);
         weaponStats.nbArmesDeJet = fieldAsInt(att, 'armejetqte', 1);
         weaponStats.prefixe = att.prefixe; //pour trouver l'attribut
-        if (predicateAsBool(perso, 'tropPetit') && !attributeAsBool(perso, 'grandeTaille')) {
-          weaponStats.addNbDice = 1;
-          weaponStats.attDice = 3;
-          weaponStats.attCarBonus = '';
-        }
+        armeDeCreatureFeerique(perso, weaponStats, 3);
         break;
       default:
         //On cherche si c'est une arme à 2 mains
