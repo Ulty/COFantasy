@@ -25581,6 +25581,13 @@ var COFantasy = COFantasy || function() {
         else sendChat('', m);
       });
     }
+          if (options.messagesMJ) {
+            let source = 'COF';
+            if (lanceur) source = 'character|'+lanceur.charId;
+            options.messagesMJ.forEach(function(m) {
+              sendChat(source, '/w gm ' + m);
+            });
+        }
     cibles.forEach(function(perso) {
       let setEffect = function() {
         setState(perso, etat, valeur, evt);
@@ -26845,6 +26852,12 @@ var COFantasy = COFantasy || function() {
       setTokenAttr(perso, 'tailleDeTokenNormale', nw, evt, {
         maxVal: nh
       });
+      evt.defaultTokens = evt.defaultTokens || [];
+            evt.defaultTokens.push({
+              character: character,
+              defaultToken: {...normalToken
+              }
+            });
       //Les facteurs d'agrandissement
       let fw = PIX_PER_UNIT / nw;
       let fh = PIX_PER_UNIT / nh;
@@ -26883,6 +26896,12 @@ var COFantasy = COFantasy || function() {
       evt.deletedAttributes = evt.deletedAttributes || [];
       evt.deletedAttributes.push(attr);
       attr.remove();
+      evt.defaultTokens = evt.defaultTokens || [];
+            evt.defaultTokens.push({
+              character: character,
+              defaultToken: {...currentToken
+              }
+            });
       let width = token.get('width');
       let height = token.get('height');
       affectToken(token, 'width', width, evt);
@@ -26992,7 +27011,7 @@ var COFantasy = COFantasy || function() {
           }
           if (options.messagesMJ) {
             options.messagesMJ.forEach(function(m) {
-              sendChat('', '/w gm ' + m);
+              sendChar(perso.charId, '/w gm ' + m);
             });
           }
         };
@@ -27048,7 +27067,7 @@ var COFantasy = COFantasy || function() {
         }
           if (options.messagesMJ) {
             options.messagesMJ.forEach(function(m) {
-              sendChat('', '/w gm ' + m);
+              sendChar(perso.charId, '/w gm ' + m);
             });
         }
       });
@@ -29276,21 +29295,27 @@ var COFantasy = COFantasy || function() {
         options.messages.forEach(function(m) {
           sendPerso(cible, m, options.secret);
         });
+          if (options.messagesMJ) {
+            options.messagesMJ.forEach(function(m) {
+              sendChar(cible.charId, '/w gm ' + m);
+            });
+        }
       });
     });
   }
 
+  //Est-ce encore utile ? TODO
   function emulerAs(msg) {
-    var cmd = msg.content.split(' ');
+    let cmd = msg.content.split(' ');
     if (cmd.length < 2) {
       error("Il manque le nom du personnage pour !cof-as", msg.content);
       return;
     }
     cmd.shift();
-    var nomPerso = cmd.shift();
+    let nomPerso = cmd.shift();
     if (nomPerso.charAt(0) == '"') {
       nomPerso = nomPerso.substring(1);
-      var inComma = cmd.length;
+      let inComma = cmd.length;
       while (inComma) {
         nomPerso += ' ' + cmd.shift();
         inComma--;
