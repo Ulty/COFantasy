@@ -3221,9 +3221,9 @@ var COFantasy = COFantasy || function() {
       });
     }
     let character;
+    let combat = stateCOF.combat;
     switch (effet) {
       case 'affecteParAura': //voir si l'aura est toujours là
-        let combat = stateCOF.combat;
         if (combat && combat.auras && efComplet.length > 15) {
           let id = efComplet.substring(15, efComplet.length - 1);
           let aura = combat.auras.find(function(a) {
@@ -7999,7 +7999,7 @@ var COFantasy = COFantasy || function() {
         case 'tirDeBarrage':
         case 'test':
         case 'traquenard':
-        case 'tueurDeGeants':
+        case 'tueurDeGeants': //obsolète
         case 'tueurDeGrands':
         case 'grenaille':
         case 'attaqueArmeeConjuree':
@@ -8152,8 +8152,16 @@ var COFantasy = COFantasy || function() {
             scope.ignoreTouteRD = true;
           }
           return;
+        case 'tueurDe':
+          if (cmd.length < 2) {
+            log("Il faut préciser --tueurDe quoi");
+            return;
+          }
+          options.tueurDe = options.tueurDe || [];
+          options.tueurDe.push(cmd[2]);
+          return;
         case 'magique':
-          var niveauMagie = 1;
+          let niveauMagie = 1;
           if (cmd.length > 1) {
             niveauMagie = parseInt(cmd[1]);
             if (isNaN(niveauMagie) || niveauMagie < 1) {
@@ -9218,6 +9226,36 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function persoEstDeCategorie(perso, categorie) {
+    switch (categorie) {
+      case 'animal':
+        return estAnimal(perso);
+      case 'demon':
+      case 'démon':
+        return estDemon(perso);
+      case 'dragon':
+        return estDraconique(perso);
+      case 'drow':
+      case 'elfe-noir':
+        return estElfeNoir(perso);
+      case 'fee':
+      case 'fée':
+        return estFee(perso);
+      case 'géant':
+      case 'geant':
+        return estGeant(perso);
+      case 'gobelin':
+        return estGobelin(perso);
+      case 'insecte':
+        return estInsecte(perso);
+      case 'mauvais':
+        return estMauvais(perso);
+      case 'mort-vivant':
+        return estMortVivant(perso);
+      default:
+        return raceIs(perso, categorie) || predicateAsBool(perso, categorie);
+    }
+  }
 
   //Si l'attribut est un mod. de caractéristique, va chercher le
   //bon attribut, selon que perso est un PNJ ou nom
@@ -9300,34 +9338,7 @@ var COFantasy = COFantasy || function() {
         return resp;
       case 'typeCible':
         let rest = cibles.every(function(target) {
-          switch (cond.race) {
-            case 'animal':
-              return estAnimal(target);
-            case 'demon':
-            case 'démon':
-              return estDemon(target);
-            case 'dragon':
-              return estDraconique(target);
-            case 'drow':
-            case 'elfe-noir':
-              return estElfeNoir(target);
-            case 'fee':
-            case 'fée':
-              return estFee(target);
-            case 'géant':
-            case 'geant':
-              return estGeant(target);
-            case 'gobelin':
-              return estGobelin(target);
-            case 'insecte':
-              return estInsecte(target);
-            case 'mauvais':
-              return estMauvais(target);
-            case 'mort-vivant':
-              return estMortVivant(target);
-            default:
-              return raceIs(target, cond.race) || predicateAsBool(target, cond.race);
-          }
+          return persoEstDeCategorie(target, cond.race);
         });
         return rest;
       case 'deAttaque':
@@ -11742,6 +11753,144 @@ var COFantasy = COFantasy || function() {
     return attBonus;
   }
 
+  //Tous les bonus de DM normalement calculés dans bonusAttaqueD
+  function bonusDMD(attaquant, target, portee, pageId, evt, explications, options) {
+    let chasseurEmerite =
+      predicateAsBool(attaquant, 'chasseurEmerite') && estAnimal(target);
+    if (chasseurEmerite) {
+      let explChasseurEmerite = "hasseur émérite => +2 aux DM";
+      if (options.displayName) {
+        explChasseurEmerite = nomPerso(attaquant) + ' est un c' + explChasseurEmerite;
+      } else {
+        explChasseurEmerite = 'C' + explChasseurEmerite;
+      }
+      if (options.aoe) explChasseurEmerite += " contre " + nomPerso(target);
+      explications.push(explChasseurEmerite);
+      target.chasseurEmerite = true;
+    }
+    let ennemiJureAttr = findObjs({
+      _type: 'attribute',
+      _characterid: attaquant.charId,
+      name: 'ennemiJure'
+    });
+    let ennemiJure = false;
+    if (ennemiJureAttr.length != 0) {
+      let races = ennemiJureAttr[0].get('current');
+      races.split(",").forEach(function(race) {
+        race = race.trim();
+        if (race === '') return;
+        ennemiJure = persoEstDeCategorie(target, race);
+      });
+    }
+    if (ennemiJure) {
+      let explEnnemiJure = "Attaque sur ennemi juré => + 1d6 aux DM";
+      if (options.aoe) explEnnemiJure += " contre " + nomPerso(target);
+      explications.push(explEnnemiJure);
+      target.ennemiJure = true;
+    }
+    if (options.armeDArgent) {
+      if (estMortVivant(target) || estDemon(target)) {
+        explications.push("Arme en argent => +1d6 aux DM");
+        target.armeDArgent = true;
+      }
+    }
+    if (options.tueurDe) {
+      options.tueurDe.forEach(function(categorie) {
+        if (persoEstDeCategorie(target, categorie)) {
+          let msg = "Tueur d";
+          if (categorie.startsWith('i') || categorie.startsWith('h')) msg += "'";
+          else msg += "e ";
+          msg += categorie + " => +2 ";
+          explications.push(msg + categorie + " => +2d6 DM");
+          target.tueurDe = 2;
+        }
+      });
+    }
+    let attrFeinte = tokenAttribute(target, 'feinte_' + nomPerso(attaquant));
+    if (attrFeinte.length > 0 && attrFeinte[0].get('current')) {
+      let niveauTouche = attrFeinte[0].get('max');
+      if (niveauTouche > 0) { //La feinte avait touché cette cible
+        let msgFeinte = "Feinte => ";
+        let faireMouche = predicateAsInt(attaquant, 'faireMouche', 0);
+        if (faireMouche > 0) {
+          if (options.contact && !options.pasDeDmg) {
+            target.faireMouche = faireMouche * niveauTouche;
+            msgFeinte += " peut faire mouche";
+          }
+        } else {
+          let desFeinte = predicateAsInt(attaquant, 'nbDesFeinte', 2);
+          desFeinte *= niveauTouche;
+          target.feinte = desFeinte;
+          msgFeinte += " +" + desFeinte + options.d6;
+          if (options.attaqueFlamboyanteBonus)
+            msgFeinte += "+" + options.attaqueFlamboyanteBonus;
+          msgFeinte += " DM";
+        }
+        explications.push(msgFeinte);
+      }
+    }
+    let attrAgrippe = tokenAttribute(attaquant, 'agrippe');
+    attrAgrippe.forEach(function(a) {
+      let cibleAgrippee = persoOfIdName(a.get('current'), pageId);
+      if (cibleAgrippee && cibleAgrippee.id == target.id &&
+        !attributeAsBool(cibleAgrippee, 'agrippeParUnDemon')) {
+        explications.push("Cible agrippée => +1d6 DM");
+        target.estAgrippee = true;
+      }
+    });
+    let tm = stateCOF.tenebresMagiques;
+    if (tm) {
+      if (!estDemon(attaquant) && !eclaireParFioleDeLumiere(target, tm)) {
+        let riposte;
+        if (tm.attaques && tm.attaques[target.token.id]) {
+          riposte = tm.attaques[target.token.id].some(function(cible) {
+            return cible.token.id == attaquant.token.id;
+          });
+        }
+        if (riposte) {
+          explications.push("Riposte dans le noir => -2 aux DMs");
+          target.attaqueDansLeNoir = 2;
+        } else {
+          explications.push("Attaque dans le noir => -5 aux DMs");
+          target.attaqueDansLeNoir = 5;
+        }
+      }
+    }
+    if (predicateAsBool(attaquant, 'liberateurDeDorn') && estGeant(target)) {
+      explications.push("Libérateur de Dorn => +2d6 DM");
+      target.cibleLiberateurDeDorn = true;
+    }
+    if (predicateAsBool(attaquant, 'liberateurDeKerserac') && (estGeant(target) || estInsecte(target) || estElfeNoir(target))) {
+      explications.push("Libérateur de Kerserac => +1d6 DM");
+      target.cibleLiberateurDeKerserac = true;
+    }
+    if (predicateAsBool(attaquant, 'liberateurDAnathazerin') && (estInsecte(target) || estElfeNoir(target))) {
+      explications.push("Libérateur d'Anathazerïn => +2d6 DM");
+      target.cibleLiberateurDAnathazerin = true;
+    }
+    let attrMeneurCible = tokenAttribute(target, 'meneurDHommesCible');
+    if (attrMeneurCible.length > 0) {
+      let meneurTokenId = attrMeneurCible[0].get('current');
+      let meneurDHommes = persoOfId(meneurTokenId, meneurTokenId, pageId);
+      if (meneurDHommes && alliesParPerso[meneurDHommes.charId] &&
+        alliesParPerso[meneurDHommes.charId].has(attaquant.charId)) {
+        target.cibleMeneurDHommes = true;
+        explications.push(nomPerso(meneurDHommes) + " a désigné " + nomPerso(target) +
+          " comme la cible des attaques du groupe : +1d6 DM");
+      }
+    }
+    let combattreLaCorruption =
+      predicateAsInt(attaquant, 'combattreLaCorruption', 0, 1);
+    if (combattreLaCorruption > 0 &&
+      (predicateAsBool(target, 'corrompu') ||
+        estDemon(target) ||
+        estMortVivant(target))) {
+      target.combattreLaCorruption = combattreLaCorruption;
+      explications.push("Combattre la corruption => +" + combattreLaCorruption + " DM");
+    }
+    return;
+  }
+
   //Bonus d'attaque qui dépendent de la cible
   function bonusAttaqueD(attaquant, target, portee, pageId, evt, explications, options) {
     let attBonus = 0;
@@ -11829,23 +11978,7 @@ var COFantasy = COFantasy || function() {
       races.split(",").forEach(function(race) {
         race = race.trim();
         if (race === '') return;
-        switch (race) {
-          case 'mort-vivant':
-            if (estMortVivant(target)) ennemiJure = true;
-            break;
-          case 'geant':
-          case 'géant':
-            if (estGeant(target)) ennemiJure = true;
-            break;
-          case 'animal':
-            if (estAnimal(target)) ennemiJure = true;
-            break;
-          case 'gobelin':
-            if (estGobelin(target)) ennemiJure = true;
-            break;
-          default:
-            if (raceIs(target, race)) ennemiJure = true;
-        }
+        ennemiJure = persoEstDeCategorie(target, race);
       });
     }
     if (ennemiJure) {
@@ -11890,6 +12023,21 @@ var COFantasy = COFantasy || function() {
       else
         explications.push("Tueur de géant => +2 att. et 2d6 DM");
       target.tueurDeGeants = true;
+    }
+    if (options.tueurDe) {
+      options.tueurDe.forEach(function(categorie) {
+        if (persoEstDeCategorie(target, categorie)) {
+          let msg = "Tueur d";
+          if (categorie.startsWith('i') || categorie.startsWith('h')) msg += "'";
+          else msg += "e ";
+          msg += categorie + " => +2 ";
+          if (options.pasDeDmg)
+            explications.push(msg + "en Attaque");
+          else
+            explications.push(msg + " att. et 2d6 DM");
+          target.tueurDe = 2;
+        }
+      });
     }
     let attrFeinte = tokenAttribute(target, 'feinte_' + nomPerso(attaquant));
     if (attrFeinte.length > 0 && attrFeinte[0].get('current')) {
@@ -13319,9 +13467,15 @@ var COFantasy = COFantasy || function() {
         sendPlayer(playerName, "cette attaque n'affecte que les créatures vivantes", playerId);
         return false;
       }
-      if (options.attaqueMentale && predicateAsBool(target, 'sansEsprit')) {
-        sendPlayer(playerName, "cette attaque n'affecte que les créatures pensantes", playerId);
-        return false;
+      if (options.attaqueMentale) {
+        if (predicateAsBool(target, 'sansEsprit')) {
+          sendPlayer(playerName, "cette attaque n'affecte que les créatures pensantes", playerId);
+          return false;
+        }
+        if (predicateAsBool(target, 'vegetatif')) {
+          sendPlayer(playerName, "cette attaque n'affecte pas les créatures vég etatives", playerId);
+          return false;
+        }
       }
       if (options.pointsVitaux && estNonVivant(target)) {
         sendPlayer(playerName, "La cible n'est pas vraiment vivante : " + attaquant.name + " ne trouve pas de points vitaux", playerId);
@@ -14002,6 +14156,7 @@ var COFantasy = COFantasy || function() {
     switch (dmgType) {
       case 'poison':
         if (estNonVivant(target)) return true;
+        if (predicateAsBool(target, 'vegetatif')) return true;
         if (attributeAsBool(target, 'sangDeLArbreCoeur')) return true;
         if (predicateOrAttributeAsBool(target, 'controleSanguin')) return true;
         if (attaquant && predicateAsBool(target, 'sangDeFerIf')) {
@@ -14012,6 +14167,7 @@ var COFantasy = COFantasy || function() {
         return attributeAsBool(target, 'presenceGlaciale');
       case 'maladie':
         if (estNonVivant(target)) return true;
+        if (predicateAsBool(target, 'vegetatif')) return true;
         return attributeAsBool(target, 'sangDeLArbreCoeur');
       case 'drain':
         return predicateAsInt(target, 'voieDeLArchange', 1) > 2 && attributeAsBool(target, 'formeDAnge');
@@ -14024,8 +14180,13 @@ var COFantasy = COFantasy || function() {
       estNonVivant(target)) {
       if (expliquer) expliquer("L'asphyxie est sans effet sur une créature non-vivante");
       return true;
-    } else if (estDemon(target)) {
+    }
+    if (estDemon(target)) {
       if (expliquer) expliquer("L'asphyxie est sans effet sur un démon");
+      return true;
+    }
+    if (predicateAsBool(target, 'vegetatif')) {
+      if (expliquer) expliquer("L'asphyxie est sans effet sur une créature végétative");
       return true;
     }
     return false;
@@ -15105,7 +15266,10 @@ var COFantasy = COFantasy || function() {
             target.kiai = target.kiai || options.kiai;
             //Les bonus d'attaque qui dépendent de la cible
             let bad = 0;
-            if (!options.auto) bad = bonusAttaqueD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
+            if (!options.auto)
+              bad = bonusAttaqueD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
+            else if (!options.pasDeDmg)
+              bonusDMD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
             let attBonus = attBonusCommun + bad;
             if (options.traquenard) {
               let initTarg = persoInit(target, evt);
@@ -16860,7 +17024,7 @@ var COFantasy = COFantasy || function() {
             value: '2' + options.d6
           });
         }
-        if (target.tueurDeGeants) {
+        if (target.tueurDeGeants || target.tueurDe) {
           target.additionalDmg.push({
             type: mainDmgType,
             value: '2' + options.d6
@@ -18252,12 +18416,14 @@ var COFantasy = COFantasy || function() {
   function meilleureCarac(carac1, carac2, personnage, seuil) {
     let sansEsprit;
     if (carac1 == 'SAG' || carac1 == 'INT' || carac1 == 'CHA') {
-      sansEsprit = predicateAsBool(personnage, 'sansEsprit');
+      sansEsprit = predicateAsBool(personnage, 'sansEsprit') ||
+        predicateAsBool(personnage, 'vegetatif');
       if (sansEsprit) return carac1;
     }
     if (sansEsprit === undefined &&
       (carac2 == 'SAG' || carac2 == 'INT' || carac2 == 'CHA')) {
-      sansEsprit = predicateAsBool(personnage, 'sansEsprit');
+      sansEsprit = predicateAsBool(personnage, 'sansEsprit') ||
+        predicateAsBool(personnage, 'vegetatif');
       if (sansEsprit) return carac2;
     }
     const options = {
@@ -18318,6 +18484,12 @@ var COFantasy = COFantasy || function() {
       if (predicateAsBool(target, 'sansEsprit')) {
         if (!options.silencieuxSiPasAffecte)
           expliquer(nomPerso(target) + " est sans esprit.");
+        afterSave(true, '');
+        return;
+      }
+      if (predicateAsBool(target, 'vegetatif')) {
+        if (!options.silencieuxSiPasAffecte)
+          expliquer(nomPerso(target) + " est une créature végétative.");
         afterSave(true, '');
         return;
       }
@@ -18700,6 +18872,7 @@ var COFantasy = COFantasy || function() {
     } else if (dmgType == 'poison' || dmgType == 'maladie') {
       if (predicateAsBool(target, 'invulnerable') ||
         predicateAsBool(target, 'creatureArtificielle') ||
+        predicateAsBool(target, 'vegetatif') ||
         estNonVivant(target)) {
         zero();
       } else if (attributeAsBool(target, 'mutationSangNoir')) {
@@ -25574,13 +25747,13 @@ var COFantasy = COFantasy || function() {
         else sendChat('', m);
       });
     }
-          if (options.messagesMJ) {
-            let source = 'COF';
-            if (lanceur) source = 'character|'+lanceur.charId;
-            options.messagesMJ.forEach(function(m) {
-              sendChat(source, '/w gm ' + m);
-            });
-        }
+    if (options.messagesMJ) {
+      let source = 'COF';
+      if (lanceur) source = 'character|' + lanceur.charId;
+      options.messagesMJ.forEach(function(m) {
+        sendChat(source, '/w gm ' + m);
+      });
+    }
     cibles.forEach(function(perso) {
       let setEffect = function() {
         setState(perso, etat, valeur, evt);
@@ -26846,11 +27019,11 @@ var COFantasy = COFantasy || function() {
         maxVal: nh
       });
       evt.defaultTokens = evt.defaultTokens || [];
-            evt.defaultTokens.push({
-              character: character,
-              defaultToken: {...normalToken
-              }
-            });
+      evt.defaultTokens.push({
+        character: character,
+        defaultToken: {...normalToken
+        }
+      });
       //Les facteurs d'agrandissement
       let fw = PIX_PER_UNIT / nw;
       let fh = PIX_PER_UNIT / nh;
@@ -26890,11 +27063,11 @@ var COFantasy = COFantasy || function() {
       evt.deletedAttributes.push(attr);
       attr.remove();
       evt.defaultTokens = evt.defaultTokens || [];
-            evt.defaultTokens.push({
-              character: character,
-              defaultToken: {...currentToken
-              }
-            });
+      evt.defaultTokens.push({
+        character: character,
+        defaultToken: {...currentToken
+        }
+      });
       let width = token.get('width');
       let height = token.get('height');
       affectToken(token, 'width', width, evt);
@@ -27058,10 +27231,10 @@ var COFantasy = COFantasy || function() {
             sendChat('', whisper + m);
           });
         }
-          if (options.messagesMJ) {
-            options.messagesMJ.forEach(function(m) {
-              sendChar(perso.charId, '/w gm ' + m);
-            });
+        if (options.messagesMJ) {
+          options.messagesMJ.forEach(function(m) {
+            sendChar(perso.charId, '/w gm ' + m);
+          });
         }
       });
     }
@@ -27160,6 +27333,7 @@ var COFantasy = COFantasy || function() {
     let optionsPeur = {...options
     };
     optionsPeur.bonus = allieSansPeur;
+    optionsPeur.bonus += predicateAsInt(target, 'courage', 0);
     let testId = 'peurOne_' + target.token.id;
     testCaracteristique(target, carac, difficulte, testId, optionsPeur, evt,
       function(tr, explications) {
@@ -27379,7 +27553,7 @@ var COFantasy = COFantasy || function() {
   // evt est facultatif ; si absent, en crée un nouveau générique et l'ajoute à l'historique
   function attaqueMagiqueOpposee(playerId, attaquant, cible, options, callback, evt) {
     if (options.attaqueMentale) {
-      if (predicateAsBool(cible, 'sansEsprit')) {
+      if (predicateAsBool(cible, 'sansEsprit') || predicateAsBool(cible, 'vegetatif')) {
         sendPerso(attaquant, " est sans esprit, " + onGenre(cible, 'il', 'elle') +
           " est immunisé" + onGenre(cible, '', 'e') + " aux attaques mentales.");
         return;
@@ -29288,10 +29462,10 @@ var COFantasy = COFantasy || function() {
         options.messages.forEach(function(m) {
           sendPerso(cible, m, options.secret);
         });
-          if (options.messagesMJ) {
-            options.messagesMJ.forEach(function(m) {
-              sendChar(cible.charId, '/w gm ' + m);
-            });
+        if (options.messagesMJ) {
+          options.messagesMJ.forEach(function(m) {
+            sendChar(cible.charId, '/w gm ' + m);
+          });
         }
       });
     });
@@ -38655,6 +38829,12 @@ var COFantasy = COFantasy || function() {
                   case 'incorporeal':
                     predicats += 'immunite_nonMagique ';
                     return;
+                  case 'uncanny dodge':
+                    predicats += 'immunite_surpris ';
+                    return;
+                  case 'improved uncanny dodge':
+                    predicats += 'immuniteAuxSournoises ';
+                    return;
                   default:
                     if (d.startsWith('channel resistance ')) {
                       let resChannel = parseInt(d.substring(19));
@@ -38662,6 +38842,14 @@ var COFantasy = COFantasy || function() {
                         log("Capacité défensive " + d + " non connue");
                       } else {
                         predicats += 'bonusSaveContre_positif:' + resChannel + ' ';
+                        return;
+                      }
+                    } else if (d.startsWith('bravery ')) {
+                      let courage = parseInt(d.substring(8));
+                      if (isNaN(courage)) {
+                        log("Capacité défensive " + d + " non connue");
+                      } else {
+                        predicats += 'courage:' + courage + ' ';
                         return;
                       }
                     } else {
@@ -38725,6 +38913,7 @@ var COFantasy = COFantasy || function() {
                   case 'undead':
                   case 'traits':
                   case 'effects':
+                  case 'plants':
                     return;
                   default:
                     log("Immunité à " + i + " non traitée");
@@ -38809,7 +38998,7 @@ var COFantasy = COFantasy || function() {
               let rdn = attr.get('current');
               if (rdn) {
                 rdn = '' + rdn;
-                rdn = rdn.replace('bludgeoning', 'contondant').replace('slashing', 'tranchant').replace('piercing', 'percant').replace('silver', 'argent').replace('magic', 'magique');
+                rdn = rdn.replace('bludgeoning', 'contondant').replace('slashing', 'tranchant').replace('piercing', 'percant').replace('silver', 'argent').replace('magic', 'magique').replace('/-', '');
                 if (rd === '') rd = rdn;
                 else rd += ', ' + rdn;
               }
@@ -38840,7 +39029,11 @@ var COFantasy = COFantasy || function() {
                   predicats += 'nonVivant mortVivant ';
                   break;
                 case 'vermin':
+                case 'Vermin':
                   predicats += 'insecte ';
+                  break;
+                case 'plant':
+                  predicats += 'plante vegetatif ';
                   break;
                 default:
                   log("npc_type non reconnue : " + npcType);
@@ -39208,7 +39401,7 @@ var COFantasy = COFantasy || function() {
               let ennemis = nomAttaque.substring(i + 1, j).split(' ');
               let ennemiJure = '';
               let pasDEnnemi = true;
-              for (let e in ennemis) {
+              for (let e of ennemis) {
                 e = e.trim();
                 if (e === '') continue;
                 switch (e) {
@@ -39223,6 +39416,18 @@ var COFantasy = COFantasy || function() {
                       ennemiJure = 'elfe';
                       pasDEnnemi = false;
                     } else ennemiJure += ', elfe';
+                    break;
+                  case 'dragons':
+                    if (pasDEnnemi) {
+                      ennemiJure = 'dragon';
+                      pasDEnnemi = false;
+                    } else ennemiJure += ', dragon';
+                    break;
+                  case 'giants':
+                    if (pasDEnnemi) {
+                      ennemiJure = 'geant';
+                      pasDEnnemi = false;
+                    } else ennemiJure += ', geant';
                     break;
                   default:
                     if (!e.startsWith('+')) {
@@ -39601,7 +39806,8 @@ var COFantasy = COFantasy || function() {
         let dmgType = options.type || 'magique';
         options.energiePositive = positif;
         cibles.forEach(function(target) {
-          if (estMortVivant(target) != positif) {
+          if (target.token.id == pretre.token.id ||
+            estMortVivant(target) != positif) {
             sync();
             return;
           }
@@ -42870,16 +43076,16 @@ var COFantasy = COFantasy || function() {
       iterTokensOfAttribute(veCharId, combat.pageId,
         'vapeursEthyliques', attr.get('name'),
         function(tok) {
-          var perso = {
+          let perso = {
             charId: veCharId,
             token: tok
           };
-          var testId = 'vapeursEthyliques_' + perso.token.id;
+          let testId = 'vapeursEthyliques_' + perso.token.id;
           testCaracteristique(perso, 'CON', veSeuil, testId, options, evt, function(testRes) {
-            var res = "tente un jet de CON " + veSeuil + " pour combattre les vapeurs éthyliques " + testRes.texte;
+            let res = "tente un jet de CON " + veSeuil + " pour combattre les vapeurs éthyliques " + testRes.texte;
             if (testRes.reussite) {
               res += " => réussi." + testRes.modifiers;
-              var expliquer;
+              let expliquer;
               if (attr.get('name') == 'vapeursEthyliques') {
                 expliquer = function(s) {
                   sendChar(veCharId, s, true);

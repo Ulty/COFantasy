@@ -411,7 +411,7 @@ tr {line-height: 25px;}
                   <li><code>--forceMinimum <i>n</i></code> : l'attaque n'est possible que si l'attaquant a au moins <i>n</i> en force.</li>
                   <li><code>--necromancie</code> : l'attaque est de la nécromancie</li>
                   <li><code>--ferFroid</code> : multiplie par 2 les dégâts contre les fées et les démons (le script reconnaît certaines races et les prédicats <code>démon</code> et <code>fée</code>).</li>
-                  <li><code>--tueurDeGeants</code> : bonus de +2 en attaque et +2d6 DM contre les géants, ogres, ettins et cyclopes.</li>
+                  <li><code>--tueurDe <i>categorie</i></code> : bonus de +2 en attaque et +2d6 DM contre les espèces appartenant à la catégorie (voir la condition <code>typeCible</code>.</li>
                   <li><code>--tueurDeGrands</code> : bonus de +1d6 DM contre les créatures de taille grande et +2d6 DM contre les créatures de taille énorme ou plus.</li>
                   <li><code>--ignoreObstacles</code> : ignore les tokens sur le trajet. Ça semble nécessaire pour les attaques magiques d'après Kegron.</li>
                   <li><code>--retourneEnMain</code> : L'arme de jet revient en main après l'attaque.</li>
@@ -835,6 +835,7 @@ tr {line-height: 25px;}
                   <li><code>--titre <i>message</i></code> : spécifie un titre pour la fenêtre affichant les jets de résistance à la peur.</li>
                   <li><code>--immuniseSiResiste <i>nom</i></code> : la personne qui résiste à cet effet de peur est ensuite immunisé pour la journée aux effets de peur ayant la même option (avec le même <i>nom</i>).</li>
                 </ul>
+                Noter qu'un prédicat <code>courage</code> permet d'obtenir un bonus (égal à la valeur du prédicat) au jet pour résister à la peur.
               </div>
               <h3 class="text-info" id="consommables">2.6 Consommables <code>!cof-consommables</code></h3>
               <div class="decalage">
@@ -2333,6 +2334,7 @@ tr {line-height: 25px;}
                   <li><strong>Cibles multiples</strong> (nuées) : ajouter un <a href=#predicats>prédicat</a> <code>ciblesMultiples</code>.</li>
                   <li><strong>Clignotement</strong> : <code>!cof-effet-temp clignotement [[1d6+2]]</code>.</li>
                   <li><strong>Créature non-vivante</strong> : ajouter un <a href=#predicats>prédicat</a> <code>nonVivant</code>.</li>
+                  <li><strong>Créature végétative</strong> : ajouter un <a href=#predicats>prédicat</a> <code>vegetatif</code>.</li>
                   <li><strong>Cyclone</strong> (pour les élementaires) : <code>!cof-effet-temp cyclone [[1d4+1]] --limiteParCombat 1</code>. Cela va proposer une attaque <code>Traverser</code> dans les actions de l'élémentaire, qui ne peut fonctionner que si le personnage a au moins une attaque sur sa fiche. Par défaut, l'attaque utilisée en traversant est l'attaque de label <code>1</code>, mais on peut préciser un autre label en utilisant l'option <code>--valeur</code>.</li>
                   <li><strong>Dégâts si touché au contact</strong> (élémentaire de feu,...) : ajouter un attribut nommé <code>dmSiToucheContact</code>, de valeur courante les dégâts, et de valeur maximale leur type. Par exemple, pour un élémentaire de feu, la valeur courant sera <code>1d6</code>, et la valeur maximale sera <code>feu</code>.</li>
                   <li><strong>Drain de force</strong> (pour la campagne Invincible) : ajouter un <a href=#predicats>prédicat</a> <code>auraDrainDeForce</code></li>
