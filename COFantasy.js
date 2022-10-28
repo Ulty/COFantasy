@@ -3796,7 +3796,7 @@ var COFantasy = COFantasy || function() {
             };
             evt.combat.armeesDesMorts = {...combat.armeesDesMorts
             };
-            combat.armeesDesMorts[token.id] = undefined;
+            delete combat.armeesDesMorts[token.id];
           }
         });
         break;
@@ -24278,6 +24278,11 @@ var COFantasy = COFantasy || function() {
         for (let aid in stateCOF.combat.armeesDesMorts) {
           if (aid == perso.token.id) continue;
           let persoArmee = stateCOF.combat.armeesDesMorts[aid];
+          if (!persoArmee.token) {
+            error("Erreur dans l'armée des morts", stateCOF.combat.armeesDesMorts);
+            delete stateCOF.combat.armeesDesMorts[aid];
+            continue;
+          }
           let boost = 0;
           if (charAttributeAsBool(persoArmee, "armeeDesMortsPuissant")) boost = 1;
           else boost = charAttributeAsInt(persoArmee, "armeeDesMortsTempeteDeManaIntense", 0);
