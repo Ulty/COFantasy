@@ -8,6 +8,7 @@
 * Rage de Baphit (Invincible)
 
 ### Autres améliorations
+* Possibilité de mettre et enlever son casque depuis !cof-statut
 * Utilisation de l'icone chef pour la capacité laissez-le moi.
 * Ajout d'un icone pour l'état enflammé.
 * Support des options de tempête de mana pour la conjuration de prédateurs et la conjuration d'armée.

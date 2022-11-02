@@ -3796,7 +3796,7 @@ var COFantasy = COFantasy || function() {
             };
             evt.combat.armeesDesMorts = {...combat.armeesDesMorts
             };
-            delete combat.armeesDesMorts[token.id];
+            combat.armeesDesMorts[token.id] = undefined;
           }
         });
         break;
@@ -4449,13 +4449,13 @@ var COFantasy = COFantasy || function() {
 
   //Remplace une macro ou ability par sa définition (récursivement)
   function replaceAction(action, perso, macros, abilities) {
-    var remplacement = false;
+    let remplacement = false;
     if (action.indexOf('#') >= 0) {
       macros = macros || findObjs({
         _type: 'macro'
       });
       macros.forEach(function(m, i) {
-        var mName = m.get('name');
+        let mName = m.get('name');
         if (mName === '') return;
         mName = '#' + mName;
         if (action.indexOf(mName) >= 0) {
@@ -5933,6 +5933,17 @@ var COFantasy = COFantasy || function() {
         options.bonusAttrs.push(compSansBlanc);
         options.bonusPreds = options.bonusPreds || [];
         options.bonusPreds.push(compSansBlanc);
+        if (comp == 'perception' || comp == 'vigilance') {
+          //Appliquer le malus du casque
+          
+        if (ficheAttributeAsBool(personnage, 'casque_on', false)) {
+          let malusCasque = ficheAttributeAsInt(personnage, 'casque_malus', 0);
+          if (malusCasque > 0) {
+            expliquer("Casque : -" + malusCasque);
+            bonus -= malusCasque;
+          }
+        }
+        }
       } else {
         let msgComp = "Compétence " + options.competence + " : ";
         if (bonusCompetence === 0) {
@@ -16064,6 +16075,12 @@ var COFantasy = COFantasy || function() {
     etlAttr.set('current', etl);
   }
 
+  function estImmuniseAEffet(target, effet) {
+    if (predicateAsBool(target, 'immunite_' + effet)) return true;
+    if (effet == 'statueDeBois' && predicateAsBool(target, 'immunite_petrification')) return true;
+    return false;
+  }
+
   //Met un effet temporaire sur target. L'effet temporaire est spécifié dans ef
   // - effet : le nom de l'effet
   // - whisper : true si on doit chuchoter l'effet, undefined si on n'affiche pas
@@ -16120,7 +16137,7 @@ var COFantasy = COFantasy || function() {
       }
       return;
     }
-    if (predicateAsBool(target, 'immunite_' + ef.effet)) {
+    if (estImmuniseAEffet(target, ef.effet)) {
       if (ef.whisper !== undefined) {
         if (ef.whisper === true) {
           whisperChar(target.charId, "ne peut pas être affecté par l'effet de " + ef.effet);
@@ -24278,7 +24295,7 @@ var COFantasy = COFantasy || function() {
         for (let aid in stateCOF.combat.armeesDesMorts) {
           if (aid == perso.token.id) continue;
           let persoArmee = stateCOF.combat.armeesDesMorts[aid];
-          if (!persoArmee.token) {
+          if (!persoArmee || !persoArmee.token) {
             error("Erreur dans l'armée des morts", stateCOF.combat.armeesDesMorts);
             delete stateCOF.combat.armeesDesMorts[aid];
             continue;
@@ -25033,7 +25050,7 @@ var COFantasy = COFantasy || function() {
         if (attrEnveloppe.length > 0) {
           let cube = persoOfIdName(attrEnveloppe[0].get('current'));
           if (cube) {
-            var actE = "est enveloppé dans ";
+            let actE = "est enveloppé dans ";
             if ((attrEnveloppe[0].get('max') + '').startsWith('etreinte')) actE = "est prisonnier de l'étreinte de ";
             addLineToFramedDisplay(display, actE + cube.tokName);
           }
@@ -25078,6 +25095,15 @@ var COFantasy = COFantasy || function() {
         if (ficheAttributeAsInt(perso, 'defbouclieron', 0) === 0 &&
           ficheAttributeAsInt(perso, 'defbouclier', 0))
           addLineToFramedDisplay(display, "Ne porte pas son bouclier");
+        if (ficheAttributeAsInt(perso, 'casque_rd', 0)) {
+          if (ficheAttributeAsBool(perso, 'casque_on', false)) {
+            let b = boutonSimple('!cof-set-attribute casque_on false --message enlève son casque --target ' + perso.token.id, "l'enlever");
+            addLineToFramedDisplay(display, "Porte son casque :" + b);
+          } else {
+            let b = boutonSimple('!cof-set-attribute casque_on true --message met son casque --target ' + perso.token.id, "le mettre");
+            addLineToFramedDisplay(display, "Ne porte pas son casque :" + b);
+          }
+        }
         if (attributeAsBool(perso, 'etatExsangue')) {
           addLineToFramedDisplay(display, "est exsangue");
         }
@@ -38900,6 +38926,9 @@ var COFantasy = COFantasy || function() {
                   case 'disease':
                     predicats += 'immunite_maladie ';
                     return;
+                  case 'death':
+                    predicats += 'immunite_mort ';
+                    return;
                   case 'electricity':
                     predicats += 'immunite_electrique ';
                     return;
@@ -38911,6 +38940,9 @@ var COFantasy = COFantasy || function() {
                     return;
                   case 'paralysis':
                     predicats += 'immunite_paralyse ';
+                    return;
+                  case 'petrification':
+                    predicats += 'immunite_petrification ';
                     return;
                   case 'poison':
                     predicats += 'immunite_poison ';
