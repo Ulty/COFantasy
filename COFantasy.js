@@ -5935,14 +5935,14 @@ var COFantasy = COFantasy || function() {
         options.bonusPreds.push(compSansBlanc);
         if (comp == 'perception' || comp == 'vigilance') {
           //Appliquer le malus du casque
-          
-        if (ficheAttributeAsBool(personnage, 'casque_on', false)) {
-          let malusCasque = ficheAttributeAsInt(personnage, 'casque_malus', 0);
-          if (malusCasque > 0) {
-            expliquer("Casque : -" + malusCasque);
-            bonus -= malusCasque;
+
+          if (ficheAttributeAsBool(personnage, 'casque_on', false)) {
+            let malusCasque = ficheAttributeAsInt(personnage, 'casque_malus', 0);
+            if (malusCasque > 0) {
+              expliquer("Casque : -" + malusCasque);
+              bonus -= malusCasque;
+            }
           }
-        }
         }
       } else {
         let msgComp = "Compétence " + options.competence + " : ";
@@ -9067,6 +9067,7 @@ var COFantasy = COFantasy || function() {
             case 'sagesse':
             case 'intelligence':
             case 'charisme':
+            case 'random':
               break;
             case 'FOR':
               carac = 'force';
@@ -9086,6 +9087,10 @@ var COFantasy = COFantasy || function() {
               break;
             case 'CHA':
               carac = 'charisme';
+              break;
+            case 'rand':
+            case 'RAND':
+              carac = 'random';
               break;
             default:
               error("Le premier argument de affaiblirCarac n'est pas une caractéristique", cmd);
@@ -17409,7 +17414,12 @@ var COFantasy = COFantasy || function() {
                 target.messages.push(s);
               };
               affaiblissements.forEach(function(aff) {
-                affaiblirCaracPerso(target, aff.carac, aff.val, expliquer, evt);
+                let carac = aff.carac;
+                if (carac == 'random') {
+                  let id = 'affaiblissement' + aff.val + '_' + target.token.id;
+                  carac = randomCaracForId(id, options);
+                }
+                affaiblirCaracPerso(target, carac, aff.val, expliquer, evt);
               });
             }
             // Compte le nombre de saves pour la synchronisation
@@ -40233,6 +40243,11 @@ var COFantasy = COFantasy || function() {
       case 'charisme':
         carac = 'charisme';
         break;
+      case 'RAND':
+      case 'rand':
+      case 'random':
+        carac = 'random';
+        break;
       default:
         error("Caractéristique " + carac + " non reconnue", cmd);
         return;
@@ -40283,6 +40298,36 @@ var COFantasy = COFantasy || function() {
     }, options);
   }
 
+  function randomCarac() {
+    switch (randomInteger(6)) {
+      case 1:
+        return 'force';
+      case 2:
+        return 'dexterite';
+      case 3:
+        return 'constitution';
+      case 4:
+        return 'intelligence';
+      case 5:
+        return 'sagesse';
+      case 6:
+        return 'charisme';
+    }
+    error("Erreur interne dans randomCarac");
+  }
+
+  function randomCaracForId(id, options) {
+    if (options.randomCaracs) {
+      if (options.randomCaracs[id]) return options.randomCaracs[id];
+    } else {
+      options.randomCaracs = {};
+    }
+    let carac = randomCarac();
+    options.randomCaracs[id] = carac;
+    return carac;
+  }
+
+  //carac est une caractéristique entière
   function affaiblirCaracPerso(perso, carac, valeur, expliquer, evt) {
     let nomAttr = 'affaiblissementde' + carac;
     let malus = addToAttributeAsInt(perso, nomAttr, 0, valeur, evt);
@@ -40361,27 +40406,29 @@ var COFantasy = COFantasy || function() {
       sendChat('', e);
     });
     cibles.forEach(function(perso) {
+      let car = carac;
+      if (carac == 'random') car = randomCaracForId(perso.token.id, options);
       let expliquer = function(s) {
         sendPerso(perso, s);
       };
       if (options.save) {
         let saveOpts = {
-          msgPour: " pour résister à un affaiblissement de " + carac,
+          msgPour: " pour résister à un affaiblissement de " + car,
           msgRate: ", raté.",
           attaquant: lanceur,
           rolls: options.rolls,
           chanceRollId: options.chanceRollId,
           type: options.type
         };
-        let saveId = 'affaiblissement' + carac + "_" + perso.token.id;
+        let saveId = 'affaiblissement' + car + "_" + perso.token.id;
         save(options.save, perso, saveId, expliquer, saveOpts, evt,
           function(reussite, rollText) {
             if (!reussite) {
-              affaiblirCaracPerso(perso, carac, valeur, expliquer, evt);
+              affaiblirCaracPerso(perso, car, valeur, expliquer, evt);
             }
           });
       } else {
-        affaiblirCaracPerso(perso, carac, valeur, expliquer, evt);
+        affaiblirCaracPerso(perso, car, valeur, expliquer, evt);
       }
     });
   }
@@ -43282,7 +43329,7 @@ var COFantasy = COFantasy || function() {
           chanceRollId: options.chanceRollId,
           type: 'normal'
         };
-        var saveNoyade = {
+        let saveNoyade = {
           carac: 'CON',
           seuil: 15
         };
@@ -43291,13 +43338,13 @@ var COFantasy = COFantasy || function() {
             sendChat('', endFramedDisplay(display));
             return;
           }
-          var jetNoyade = rollDePlus(6);
-          var dmNoyade = {
+          let jetNoyade = rollDePlus(6);
+          let dmNoyade = {
             type: 'normal',
             total: jetNoyade.val,
             display: jetNoyade.roll
           };
-          var explications = [];
+          let explications = [];
           dealDamage(perso, dmNoyade, [], evt, false, options, explications,
             function(dmgDisplay, dmg) {
               explications.forEach(function(m) {

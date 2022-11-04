@@ -381,7 +381,7 @@ tr {line-height: 25px;}
                   <li><code>--valeur <i>v</i></code> : spécifie une valeur au dernier effet mentionné.</li>
                   <li><code>--optionEffet <i>opt arg1 arg2 ...</i></code> : spécifie une option au dernier effet mentionné. L'option <i>opt</i> doit être donnée sans le <code>--</code> et sera passée telle quelle à l'effet, par exemple pour les dégâts périodiques.</li>
                   <li><code>--peur <i>seuil duree</i></code> : fait un effet de peur si l'attaque touche. Le <i>seuil</i> sert pour le test de sagesse de résitance à la peur (tient compte de la capacité <b>sans peur</b> du chevalier).</li>
-                  <li><code>--affaiblirCarac <i>carac n</i></code> : l'attaque diminue la caractéristique <i>carac</i> de <i>n</i></li>
+                  <li><code>--affaiblirCarac <i>carac n</i></code> : l'attaque diminue la caractéristique <i>carac</i> de <i>n</i>. Si <i>carac</i> est <code>random</code>, le script tire une caractéristique au hasard.</li>
                   <li><code>--plus <i>dmg</i></code> : ajoute <i>dmg</i> dégâts. Attention, si <i>dmg</i> est un simple nombre, ces dégâts sont multipliés par les critiques (sauf si de type différent de l'attaque principale). Ainsi, <code>--plus [[1d6]]</code> donnera des dégâts multipliés par les critiques (car la fonction ne voit que le résultat du jet), alors que <code>--plus 1d6</code> ne le sera pas. </li>
                   <li><code>--plusCrit <i>dmg</i></code> : ajoute <i>dmg</i> dégâts en cas de réussite critique</li>
                   <li><code>--test</code> pour voir le résultat du jet d'attaque. On n'applique pas les résultats d'un touché.</li>
@@ -756,7 +756,7 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Affaiblissements de caractéristiques</h4>
                 <div class="decalage">
                   <p>
-                  <code>!cof-affaiblir-carac <i>carac</i> <i>valeur</i></code> permet d'affaiblir temporairement une caractéristique (force, dextérité, constitution, intelligence, sagesse ou charisme) d'une valeur positive. Il existe aussi une option pour les attaques, <code>--affaiblirCarac</code>, qui permet de n'affaiblir une caractéristique que si une attaque est réussie.
+                  <code>!cof-affaiblir-carac <i>carac</i> <i>valeur</i></code> permet d'affaiblir temporairement une caractéristique (force, dextérité, constitution, intelligence, sagesse, charisme ou random) d'une valeur positive. Il existe aussi une option pour les attaques, <code>--affaiblirCarac</code>, qui permet de n'affaiblir une caractéristique que si une attaque est réussie.
                   </p>
                   <p>Une caractéristique affaiblie remonte de 1 après chaque nuit de repos. Le sort de régénération permet de récupérer 1d4 points d'une seule caractéristique physique (d'abord constitution, puis force puis dextérité). Le sort délivrance permet de récupérer 1d4 point d'une seule caractéristique, et comme indiqué dans les règles, le sort de guérison annule tous les affaiblissements de caractéritiques. Enfin le script propose une commande dédiée, <code>!cof-soigner-affaiblissement <i>carac</i> <i>valeur</i></code> pour soigner les affaiblissements.
                   </p>
@@ -1222,7 +1222,7 @@ tr {line-height: 25px;}
                   <li><strong>Animation d'un arbre</strong> :  <code>!cof-animer-arbre @{selected|token_id} @{target|token_id} --portee 0 --mana 1</code>. Cela implique d'avoir un token représentant l'arbre sur la carte. Ce que je fais, c'est de passer un token d'arbre du layer map au layer tokens, puis je laisse le joueur faire le sort. Si c'est trop compliqué, vous pouvez aussi préparer un personnage arbre, avec les caractéristiques décrites, et le faire arriver sur la carte à la main (ne pas oublier sa RD <code>10/feu_hache</code>, dans ce cas).</li>
                   <li><strong>Gland de pouvoir</strong> :
                     <ul>
-                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 10, type Sortilège, modificateur <code>pasDeDmg</code>, options <code>--mana 2 --effet statueDeBois [[2d6+@{selected|SAG}]] --valeur 10 10</code>.</li>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 10, type Sortilège, modificateur <code>pasDeDmg</code>, options <code>--mana 2 --effet statueDeBois [[2d6+@{selected|SAG}]] --valeur 10 10</code>. À noter qu'un prédicat <code>immunite_petrification</code> permet d'être immunisé à cet effet.</li>
                       <li>Objet de sort : <code>#Attaque Gland de pouvoir --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 10 --sortilege --effet statueDeBois [[2d6+@{selected|SAG}]] --valeur 10 10</code></li>
                     </ul>
                   </li>
