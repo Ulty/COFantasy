@@ -32629,7 +32629,7 @@ var COFantasy = COFantasy || function() {
         options.mana = elixir.rang - 2;
       }
     }
-    let elixirsACreer = charAttribute(forgesort.charId, 'elixirsACreer');
+    let elixirsACreer = tokenAttribute(forgesort, 'elixirsACreer');
     if (elixirsACreer.length === 0) {
       error(nomPerso(forgesort) + " ne peut créer d'élixirs " + cmd[2], cmd);
       return;
