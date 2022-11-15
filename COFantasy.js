@@ -33356,7 +33356,7 @@ var COFantasy = COFantasy || function() {
   //  - attributes autres attributs (name, current, max)
   //  - abilities (name, action), toujours rajoutées à la liste d'actions
   //  - actions (titre, code), ajoutées aux listes d'actions
-  function createCharacter(nom, playerId, avatar, token, spec) {
+  function createCharacter(nom, playerId, avatar, token, spec, evt, createur) {
     let res = createObj('character', {
       name: nom,
       avatar: avatar,
@@ -33430,7 +33430,7 @@ var COFantasy = COFantasy || function() {
       });
     }
     if (spec.pv) {
-      var pvAttr = attrs.filter(function(a) {
+      let pvAttr = attrs.filter(function(a) {
         return a.get('name').toUpperCase() == 'PV';
       });
       if (pvAttr.length === 0) {
@@ -33498,7 +33498,10 @@ var COFantasy = COFantasy || function() {
     if (spec.attributes) {
       spec.attributes.forEach(function(a) {
         a._characterid = charId;
-        createObj('attribute', a);
+        let attr = createObj('attribute', a);
+        if (createur && a.lie) {
+          addEffetTemporaireLie(createur, attr, evt);
+        }
       });
     }
     if (spec.abilities) {
@@ -33637,9 +33640,10 @@ var COFantasy = COFantasy || function() {
         name: 'arbreAnime',
         current: niveau,
         max: getInit(),
+        lie: options.mana !== undefined
       }]
     };
-    let charArbre = createCharacter(nomArbre, options.playerId, avatar, tokenArbre, specArbre);
+    let charArbre = createCharacter(nomArbre, options.playerId, avatar, tokenArbre, specArbre, evt, druide);
     evt.characters = [charArbre];
     sendChar(charArbre.id, "commence à s'animer", true);
     initiative([{
@@ -35065,7 +35069,7 @@ var COFantasy = COFantasy || function() {
         });
         toFront(token);
         let charPredateur =
-          createCharacter(nomPredateur, playerId, predateur.avatar, token, predateur);
+          createCharacter(nomPredateur, playerId, predateur.avatar, token, predateur, evt);
         //Tous les prédateurs sont des quadrupèdes
         let persoPredateur = {
           token: token,
@@ -35073,12 +35077,15 @@ var COFantasy = COFantasy || function() {
         };
         setPredicate(persoPredateur, 'quadrupede', evt);
         //Attribut de predateur conjuré pour la disparition automatique
-        createObj('attribute', {
+        let attr = createObj('attribute', {
           name: 'predateurConjure',
           _characterid: charPredateur.id,
           current: 5 + modCarac(invocateur, 'charisme'),
           max: combat.init
         });
+        if (options.mana !== undefined) {
+          addEffetTemporaireLie(invocateur, attr, evt);
+        }
         if (options.tempeteDeManaIntense) {
           createObj('attribute', {
             name: 'predateurConjureTempeteDeManaIntense',
@@ -35156,6 +35163,7 @@ var COFantasy = COFantasy || function() {
             name: 'predateurConjure', //Pas exactement ça, mais ça fait ce qu'il faut
             current: niveau,
             max: combat.init,
+            lie: options.mana !== undefined
           }],
         };
         let nomSphere = sphere.nom + ' de ' + nomPerso(invocateur);
@@ -35182,7 +35190,7 @@ var COFantasy = COFantasy || function() {
         }
         toFront(token);
         let charSphere =
-          createCharacter(nomSphere, playerId, sphere.avatar, token, sphere);
+          createCharacter(nomSphere, playerId, sphere.avatar, token, sphere, evt, invocateur);
         evt.characters = [charSphere];
         evt.tokens = [token];
         initiative([{
@@ -35298,7 +35306,8 @@ var COFantasy = COFantasy || function() {
         if (dm.bonus) attaque.dm = dm.bonus;
         let attributes = [{
           name: 'armeeConjuree',
-          current: invocateur.charId
+          current: invocateur.charId,
+          lie: options.mana !== undefined
         }];
         if (options.tempeteDeManaIntense) {
           attributes.push({
@@ -35311,7 +35320,7 @@ var COFantasy = COFantasy || function() {
             pv: niveau * 10,
             attaques: [attaque],
             attributes: attributes
-          });
+          }, evt, invocateur);
         evt.characters = [charArmee];
         evt.tokens = [token];
         if (stateCOF.combat) {
@@ -35597,7 +35606,7 @@ var COFantasy = COFantasy || function() {
           };
           demon.pv = niveau * 5;
           demon.attaques[0].atk = niveau;
-          let charDemon = createCharacter(tokenDemon, playerId, demonInvoque.avatar, token, demon);
+          let charDemon = createCharacter(tokenDemon, playerId, demonInvoque.avatar, token, demon, evt);
           evt.characters = [charDemon];
           evt.tokens = [token];
           let duree = 5 + modCarac(necromant, 'intelligence');
@@ -35721,7 +35730,7 @@ var COFantasy = COFantasy || function() {
       ...zombieAnime
     };
     let playerId = getPlayerIdFromMsg(msg);
-    let charZombie = createCharacter(nomToken, playerId, zombieAnime.avatar, token, zombie);
+    let charZombie = createCharacter(nomToken, playerId, zombieAnime.avatar, token, zombie, evt);
     evt.characters.push(charZombie);
     evt.tokens.push(token);
     // Dégradation du Zombie
@@ -40099,7 +40108,8 @@ var COFantasy = COFantasy || function() {
       attributes: [{
         name: 'objetAnime',
         current: 5 + modCarac(lanceur, 'intelligence'),
-        max: getInit()
+        max: getInit(),
+        lie: options.mana !== undefined
       }, {
         name: 'objetAnimePar',
         current: idName(lanceur)
@@ -40109,7 +40119,7 @@ var COFantasy = COFantasy || function() {
       }]
     };
     let charObjet =
-      createCharacter(persoObjet.nom, playerId, stats.avatar, tokenObjet, persoObjet);
+      createCharacter(persoObjet.nom, playerId, stats.avatar, tokenObjet, persoObjet, evt, lanceur);
     evt.tokens = [tokenObjet];
     evt.characters = [charObjet];
     if (aPartirDExistant)
