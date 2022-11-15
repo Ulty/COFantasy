@@ -5876,6 +5876,12 @@ var COFantasy = COFantasy || function() {
           }
         }
         break;
+      case 'INT':
+        if (attributeAsBool(personnage, 'secretsDeLAuDela')) {
+          bonus += 5;
+          expliquer("Secrets de l'au-delà : +5");
+        }
+        break;
       case 'CHA':
         if (attributeAsBool(personnage, 'aspectDeLaSuccube')) {
           let bonusAspectDeLaSuccube = getValeurOfEffet(personnage, 'aspectDeLaSuccube', 5);
@@ -41626,6 +41632,16 @@ var COFantasy = COFantasy || function() {
       fin: "retrouve une peau normale",
       visible: true
     },
+    peurEtourdi: {
+      activation: "prend peur: il peut fuir ou rester recroquevillé",
+      activationF: "prend peur: elle peut fuir ou rester recroquevillé",
+      actif: "est paralysé par la peur",
+      actifF: "est paralysée par la peur",
+      fin: "retrouve du courage et peut à nouveau agir",
+      msgSave: "retrouver du courage",
+      prejudiciable: true,
+      visible: true
+    },
     protectionContreLesProjectiles: {
       activation: "gagne une protection contre les projectiles",
       actif: "est protégé contre les projectiles",
@@ -41658,15 +41674,10 @@ var COFantasy = COFantasy || function() {
       prejudiciable: true,
       visible: true
     },
-    peurEtourdi: {
-      activation: "prend peur: il peut fuir ou rester recroquevillé",
-      activationF: "prend peur: elle peut fuir ou rester recroquevillé",
-      actif: "est paralysé par la peur",
-      actifF: "est paralysée par la peur",
-      fin: "retrouve du courage et peut à nouveau agir",
-      msgSave: "retrouver du courage",
-      prejudiciable: true,
-      visible: true
+    secretsDeLAuDela: {
+      activation: "contacte des esprits",
+      actif: "des esprits lui murmurent des secrets oubliés",
+      fin: "les esprits repartent"
     },
     aveugleTemp: {
       activation: "n'y voit plus rien !",
@@ -42538,6 +42549,11 @@ var COFantasy = COFantasy || function() {
       actif: "attaque à outrance",
       fin: "attaque normalement",
     },
+    bonusInitEmbuscade: { //Effet interne pour la capacité Surveillance
+      activation: "a un temps d'avance en cas d'embuscade",
+      actif: "a un temps d'avance",
+      fin: ""
+    },
     criDeGuerre: {
       activation: "pousse son cri de guerre",
       actif: "a effrayé ses adversaires",
@@ -42560,6 +42576,14 @@ var COFantasy = COFantasy || function() {
       dm: true,
       statusMarker: 'red',
     },
+    enrage: {
+      activation: "devient enragé",
+      activationF: "devient enragée",
+      actif: "est enragé",
+      actifF: "est enragée",
+      fin: "retrouve son calme",
+      msgSave: "retrouver son calme",
+    },
     fureurDrakonideCritique: {
       activation: "est rendu furieux par le coup critique",
       activationF: "est rendue furieuse par le coup critique",
@@ -42573,31 +42597,6 @@ var COFantasy = COFantasy || function() {
       fin: "n'est plus protégé contre le mal",
       finF: "n'est plus protégée contre le mal",
     },
-    rageDuBerserk: {
-      activation: "entre dans une rage berserk",
-      actif: "est dans une rage berserk",
-      fin: "retrouve son calme",
-      msgSave: "retrouver son calme",
-    },
-    rage: {
-      activation: "entre en rage",
-      actif: "est en rage",
-      fin: "retrouve son calme",
-      msgSave: "retrouver son calme",
-    },
-    enrage: {
-      activation: "devient enragé",
-      activationF: "devient enragée",
-      actif: "est enragé",
-      actifF: "est enragée",
-      fin: "retrouve son calme",
-      msgSave: "retrouver son calme",
-    },
-    bonusInitEmbuscade: { //Effet interne pour la capacité Surveillance
-      activation: "a un temps d'avance en cas d'embuscade",
-      actif: "a un temps d'avance",
-      fin: ""
-    },
     putrefactionOutreTombe: {
       activation: "sent ses chairs pourrir",
       actif: "subit le contrecoup d'une putréfaction",
@@ -42605,6 +42604,18 @@ var COFantasy = COFantasy || function() {
       msgSave: "ne plus être putréfié",
       prejudiciable: true,
       dm: true
+    },
+    rage: {
+      activation: "entre en rage",
+      actif: "est en rage",
+      fin: "retrouve son calme",
+      msgSave: "retrouver son calme",
+    },
+    rageDuBerserk: {
+      activation: "entre dans une rage berserk",
+      actif: "est dans une rage berserk",
+      fin: "retrouve son calme",
+      msgSave: "retrouver son calme",
     },
     bonusInitVariable: {
       activation: "entre en combat",
