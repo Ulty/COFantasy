@@ -6483,7 +6483,7 @@ var COFantasy = COFantasy || function() {
             if (rt.echecCritique)
               diminueMalediction(perso, evt, attrMalediction);
             else if (!rt.critique) {
-              let action = "!cof-resultat-jet " + stateCOF.eventId;
+              let action = "!cof-resultat-jet " + evt.id;
               let ligne = "L'action est-elle ";
               ligne += bouton(action + " reussi", "réussie", perso);
               ligne += " ou " + bouton(action + " rate", "ratée", perso);
@@ -15804,6 +15804,9 @@ var COFantasy = COFantasy || function() {
                         charId: ci
                       };
                       if (!isActive(perso)) return;
+                      if (persoImmobilise(perso) &&
+                        distanceCombat(tok, attaquant.token, pageId) > 0)
+                        return;
                       if (!capaciteDisponible(perso, 'intercepter', 'tour')) return;
                       alliesAvecInterception.push(perso);
                     });
@@ -15816,6 +15819,9 @@ var COFantasy = COFantasy || function() {
                     charId: tok.get('represents')
                   };
                   if (!isActive(perso)) return;
+                  if (persoImmobilise(perso) &&
+                    distanceCombat(tok, attaquant.token, pageId) > 0)
+                    return;
                   if (!capaciteDisponible(perso, 'intercepter', 'tour')) return;
                   alliesAvecInterception.push(perso);
                 });
@@ -16663,6 +16669,7 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(attaquant, attrForgeron)) {
         let feuForgeron =
           getValeurOfEffet(attaquant, attrForgeron, 1, 'voieDuMetal');
+        if (predicateAsBool(attaquant, 'boutefeu')) feuForgeron *= 2;
         let feuForgeronIntense = attributeAsInt(attaquant, attrForgeron + 'TempeteDeManaIntense', 0);
         if (feuForgeronIntense) {
           feuForgeron = feuForgeron * (1 + feuForgeronIntense);
@@ -17367,7 +17374,7 @@ var COFantasy = COFantasy || function() {
             }
             if (target.malediction) {
               setTokenAttr(target, 'malediction', 3, evt);
-              target.messages.push(nomPerso(target) + " est maudit...");
+              target.messages.push(nomPerso(target) + " est maudit" + eForFemale(target) + "...");
             }
             if (options.attaqueBouclierRenverse && weaponStats.attDice == 4 &&
               rollsDmg.inlinerolls[mainDmgRollNumber].results.rolls[0].results[0].v >= 4) {
@@ -17670,7 +17677,7 @@ var COFantasy = COFantasy || function() {
                           dealDamage(attaquant, r, [], evt, false, options,
                             target.messages,
                             function(dmgDisplay, dmg, dmgDrain) {
-                              var dmgMsg =
+                              let dmgMsg =
                                 "<b>Le sang acide gicle sur " + attackerTokName + " :</b> " +
                                 dmgDisplay + " DM";
                               target.messages.push(dmgMsg);
@@ -17680,15 +17687,15 @@ var COFantasy = COFantasy || function() {
                       }
                       if (options.armeNaturelle && attributeAsBool(target, 'presenceGlaciale')) {
                         ciblesCount++;
-                        var exprPresenceGlaciale = '[[';
-                        var attrsPGValeur = tokenAttribute(target, 'presenceGlacialeValeur');
+                        let exprPresenceGlaciale = '[[';
+                        let attrsPGValeur = tokenAttribute(target, 'presenceGlacialeValeur');
                         if (attrsPGValeur.length === 0) exprPresenceGlaciale += '1d6';
                         else exprPresenceGlaciale += attrsPGValeur[0].get('max');
                         exprPresenceGlaciale += ']]';
                         sendChat("", exprPresenceGlaciale, function(res) {
-                          var rolls = res[0];
-                          var explRoll = rolls.inlinerolls[0];
-                          var r = {
+                          let rolls = res[0];
+                          let explRoll = rolls.inlinerolls[0];
+                          let r = {
                             total: explRoll.results.total,
                             type: 'froid',
                             display: buildinline(explRoll, 'froid', true)
@@ -23613,11 +23620,6 @@ var COFantasy = COFantasy || function() {
           return;
         }
         let evtARefaire = lastEvent();
-        let perso = evtARefaire.personnage;
-        if (perso === undefined) {
-          error("Erreur interne : intervention divine sans personnage", evtARefaire);
-          return;
-        }
         let action = evtARefaire.action;
         if (action === undefined) {
           error("Impossible de relancer l'action", evtARefaire);
@@ -25118,7 +25120,7 @@ var COFantasy = COFantasy || function() {
           addLineToFramedDisplay(display, "est exsangue");
         }
         if (attributeAsBool(perso, 'malediction')) {
-          addLineToFramedDisplay(display, "est maudit...");
+          addLineToFramedDisplay(display, "est maudit" + eForFemale(perso) + "...");
         }
         const allAttrs = findObjs({
           _type: 'attribute',
@@ -26313,9 +26315,9 @@ var COFantasy = COFantasy || function() {
       }
       if (perso2.token.id == perso1.token.id) {
         if (secret) {
-          whisperChar(perso1.charId, "s'est ciblé lui-même, il est donc le seul à couvert");
+          whisperChar(perso1.charId, "s'est ciblé " + onGenre(perso1, 'lui', 'elle') + "-même, il est donc le seul à couvert");
         } else {
-          sendPerso(perso1, "s'est ciblé lui-même, il est donc le seul à couvert");
+          sendPerso(perso1, "s'est ciblé " + onGenre(perso1, 'lui', 'elle') + "-même, il est donc le seul à couvert");
         }
         addEvent(evt);
         return;
@@ -29850,7 +29852,7 @@ var COFantasy = COFantasy || function() {
     }
     let tokenTarget = target.token;
     if (tokenTarget.id == tokenProtecteur.id) {
-      sendPerso(protecteur, "ne peut pas se protéger lui-même");
+      sendPerso(protecteur, "ne peut pas se protéger i" + onGenre(protecteur, 'lui', 'elle') + "-même");
       return;
     }
     const nameTarget = nomPerso(target);
@@ -31834,7 +31836,7 @@ var COFantasy = COFantasy || function() {
     }, {
       nom: 'Élixir de feu grégeois',
       attrName: 'feu_grégeois',
-      action: "!cof-attack @{selected|token_id} @{target|token_id} Feu Grégeois --auto --dm $rangd6 --feu --psave DEX [[10+@{selected|INT}]] --disque 3 --portee 10 --targetFx burst-fire",
+      action: "!cof-attack @{selected|token_id} @{target|token_id} Feu Grégeois --auto --dm $rangd6 --feu --psave DEX [[$base_save+@{selected|INT}]] --disque 3 --portee 10 --targetFx burst-fire",
       rang: 2
     }, {
       nom: 'Élixir de guérison',
@@ -32652,7 +32654,15 @@ var COFantasy = COFantasy || function() {
     let message = "crée un " + elixir.nom;
     let attr = tokenAttribute(forgesort, attrName);
     if (attr.length === 0) {
-      let action = elixir.action.replace(/\$rang/g, voieDesElixirs);
+      let rang = voieDesElixirs;
+      let base_save = 10;
+      if (predicateAsBool(forgesort, 'boutefeu') &&
+        elixir.action.contains('--feu')) {
+        rang = rang + 1;
+        base_save = base_save + 2;
+      }
+      let action = elixir.action.replace(/\$rang/g, rang);
+      action = action.replace(/\$base_save/g, base_save);
       action = action.replace(/\$INT/g, modCarac(forgesort, 'intelligence'));
       action = action.replace(/\$SAG/g, modCarac(forgesort, 'sagesse'));
       setTokenAttr(forgesort, attrName, 1, evt, {
@@ -32741,8 +32751,16 @@ var COFantasy = COFantasy || function() {
             options = nbElixirs + ' ';
           }
           if (nbElixirs > 0) {
+            let rang = voieDesElixirs;
+            let base_save = 10;
+            if (predicateAsBool(forgesort, 'boutefeu') &&
+              elixir.action.contains('--feu')) {
+              rang = rang + 1;
+              base_save = base_save + 2;
+            }
             action = elixir.action;
-            action = action.replace(/\$rang/g, voieDesElixirs);
+            action = action.replace(/\$rang/g, rang);
+            action = action.replace(/\$base_save/g, base_save);
             action = action.replace(/\$INT/g, modCarac(forgesort, 'intelligence'));
             action = action.replace(/\$SAG/g, modCarac(forgesort, 'sagesse'));
             options += bouton(action, nomElixir, forgesort, {
@@ -33936,24 +33954,26 @@ var COFantasy = COFantasy || function() {
   }
 
   function attaqueContactOpposee(playerId, attaquant, defenseur, evt, options, callback) {
-    var explications = [];
+    let explications = [];
     options = options || {
       pasDeDmg: true
     };
     options.contact = true;
     entrerEnCombat(attaquant, [defenseur], explications, evt);
     //Recherche des armes utilisées
-    var armeAttaquant = armeDeContact(attaquant, options.armeAttaquant, options.labelArmeAttaquant, options.armeAttaquantContact);
-    var armeDefenseur = armeDeContact(defenseur, options.armeDefenseur, options.labelArmeDefenseur, options.armeDefenseurContact);
-    var action = options.action || "<b>Attaque opposée</b>";
+    let armeAttaquant =
+      armeDeContact(attaquant, options.armeAttaquant, options.labelArmeAttaquant, options.armeAttaquantContact);
+    let armeDefenseur =
+      armeDeContact(defenseur, options.armeDefenseur, options.labelArmeDefenseur, options.armeDefenseurContact);
+    let action = options.action || "<b>Attaque opposée</b>";
     if (!armeAttaquant.parDefaut) {
       action += " <span style='" + BS_LABEL + " " + BS_LABEL_INFO + "; text-transform: none; font-size: 100%;'>(" + armeAttaquant.name + ")</span>";
     }
-    var display = startFramedDisplay(playerId, action, attaquant, {
+    const display = startFramedDisplay(playerId, action, attaquant, {
       perso2: defenseur
     });
-    var critAttaquant = critEnAttaque(attaquant, armeAttaquant, options);
-    var dice = 20;
+    let critAttaquant = critEnAttaque(attaquant, armeAttaquant, options);
+    let dice = 20;
     let malusAttaque = 0;
     if (estAffaibli(attaquant)) {
       if (predicateAsBool(attaquant, 'insensibleAffaibli')) {
