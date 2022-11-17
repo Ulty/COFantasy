@@ -1497,7 +1497,8 @@ var COFantasy = COFantasy || function() {
       getState(perso, 'mort') || getState(perso, 'surpris') ||
       getState(perso, 'assomme') || getState(perso, 'etourdi') ||
       getState(perso, 'paralyse') || getState(perso, 'endormi') ||
-      getState(perso, 'apeure') || attributeAsBool(perso, 'statueDeBois');
+      getState(perso, 'apeure') || attributeAsBool(perso, 'statueDeBois') ||
+      attributeAsBool(perso, 'souffleDeMort');
     return !inactif;
   }
 
@@ -2893,7 +2894,7 @@ var COFantasy = COFantasy || function() {
       }
     } else { //value est false
       if (etat == 'mort' && stateCOF.combat)
-            removeTokenAttr(personnage, 'a0PVDepuis', evt);
+        removeTokenAttr(personnage, 'a0PVDepuis', evt);
       if (!options.fromTemp)
         removeTokenAttr(personnage, etat + 'Temp', evt);
     }
@@ -8659,6 +8660,9 @@ var COFantasy = COFantasy || function() {
             error("le rayon du disque n'est pas un nombre positif", cmd);
             delete options.aoe;
           }
+          if (cmd.length > 2 && cmd[2] == 'souffleDeMort') {
+            options.aoe.souffleDeMort = {};
+          }
           return;
         case 'cone':
           if (options.aoe) {
@@ -13229,111 +13233,149 @@ var COFantasy = COFantasy || function() {
         let ptt = tokenCenter(targetToken);
         switch (options.aoe.type) {
           case 'ligne':
-            if (distanceTarget < portee) { //la ligne va plus loin que la cible
-              let scale = portee * 1.0 / distanceTarget;
-              ptt = [
-                Math.round((ptt[0] - pta[0]) * scale) + pta[0],
-                Math.round((ptt[1] - pta[1]) * scale) + pta[1]
-              ];
-            }
-            if (targetToken.get('bar1_max') == 0) { // jshint ignore:line
-              //C'est juste un token utilisé pour définir la ligne
-              if (options.fx) {
-                let p1e = {
-                  x: tokenOrigine.get('left'),
-                  y: tokenOrigine.get('top'),
-                };
-                let p2e = {
-                  x: targetToken.get('left'),
-                  y: targetToken.get('top'),
-                };
-                spawnFxBetweenPoints(p1e, p2e, options.fx, pageId);
+            {
+              if (distanceTarget < portee) { //la ligne va plus loin que la cible
+                let scale = portee * 1.0 / distanceTarget;
+                ptt = [
+                  Math.round((ptt[0] - pta[0]) * scale) + pta[0],
+                  Math.round((ptt[1] - pta[1]) * scale) + pta[1]
+                ];
               }
-              cibles = [];
-              targetToken.remove(); //On l'enlève, normalement plus besoin
-            }
-            let allToks =
-              findObjs({
-                _type: 'graphic',
-                _pageid: pageId,
-                _subtype: 'token',
-                layer: 'objects'
-              });
-            allToks.forEach(function(obj) {
-              if (obj.id == tokenOrigine.id) return; //on ne se cible pas
-              let objCharId = obj.get('represents');
-              if (objCharId === '') return;
-              let cible = {
-                token: obj,
-                charId: objCharId
-              };
-              if (getState(cible, 'mort')) return; //pas de dégâts aux morts
-              let pt = tokenCenter(obj);
-              let distToTrajectory = VecMath.ptSegDist(pt, pta, ptt);
-              if (distToTrajectory > (obj.get('width') + obj.get('height')) / 4 + PIX_PER_UNIT / 4)
-                return;
-              cible.tokName = obj.get('name');
-              let objChar = getObj('character', objCharId);
-              if (objChar === undefined) return;
-              cible.name = objChar.get('name');
-              cibles.push(cible);
-            });
-            break;
-          case 'disque':
-            if (distanceTarget > portee) {
-              sendPlayer(playerName,
-                "Le centre du disque visé est trop loin pour " + weaponName +
-                " (distance " + distanceTarget + ", portée " + portee + ")",
-                playerId);
-              return;
-            }
-            page = page || getObj("page", pageId);
-            murs = getWalls(page, pageId, murs);
-            if (murs) {
-              pc = {
-                x: ptt[0],
-                y: ptt[1],
-              };
-            }
-            let allToksDisque =
-              findObjs({
-                _type: "graphic",
-                _pageid: pageId,
-                _subtype: "token",
-                layer: "objects"
-              });
-            allToksDisque.forEach(function(obj) {
-              if ((options.explosion || portee === 0) &&
-                obj.id == tokenOrigine.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
-              if (obj.get('bar1_max') == 0) return; // jshint ignore:line
-              let objCharId = obj.get('represents');
-              if (objCharId === '') return;
-              let cible = {
-                token: obj,
-                charId: objCharId
-              };
-              if (getState(cible, 'mort')) return; //pas de dégâts aux morts
-              let distanceCentre =
-                distanceCombat(targetToken, obj, pageId, {
-                  strict1: true
+              if (targetToken.get('bar1_max') == 0) { // jshint ignore:line
+                //C'est juste un token utilisé pour définir la ligne
+                if (options.fx) {
+                  let p1e = {
+                    x: tokenOrigine.get('left'),
+                    y: tokenOrigine.get('top'),
+                  };
+                  let p2e = {
+                    x: targetToken.get('left'),
+                    y: targetToken.get('top'),
+                  };
+                  spawnFxBetweenPoints(p1e, p2e, options.fx, pageId);
+                }
+                cibles = [];
+                targetToken.remove(); //On l'enlève, normalement plus besoin
+              }
+              let allToks =
+                findObjs({
+                  _type: 'graphic',
+                  _pageid: pageId,
+                  _subtype: 'token',
+                  layer: 'objects'
                 });
-              if (distanceCentre > options.aoe.rayon) return;
-              let objChar = getObj('character', objCharId);
-              if (objChar === undefined) return;
-              if (murs) {
-                if (obstaclePresent(obj.get('left'), obj.get('top'), pc, murs)) return;
-              }
-              cible.name = objChar.get('name');
-              cible.tokName = obj.get('name');
-              cibles.push(cible);
-            });
-            if (targetToken.get('bar1_max') == 0) { // jshint ignore:line
-              //C'est juste un token utilisé pour définir le disque
-              targetToken.remove(); //On l'enlève, normalement plus besoin
+              allToks.forEach(function(obj) {
+                if (obj.id == tokenOrigine.id) return; //on ne se cible pas
+                let objCharId = obj.get('represents');
+                if (objCharId === '') return;
+                let cible = {
+                  token: obj,
+                  charId: objCharId
+                };
+                if (getState(cible, 'mort')) return; //pas de dégâts aux morts
+                let pt = tokenCenter(obj);
+                let distToTrajectory = VecMath.ptSegDist(pt, pta, ptt);
+                if (distToTrajectory > (obj.get('width') + obj.get('height')) / 4 + PIX_PER_UNIT / 4)
+                  return;
+                cible.tokName = obj.get('name');
+                let objChar = getObj('character', objCharId);
+                if (objChar === undefined) return;
+                cible.name = objChar.get('name');
+                cibles.push(cible);
+              });
+              break;
             }
-            // La nouvelle portée (pour ne rien éliminer à l'étape suivante
-            portee += options.aoe.rayon;
-            break;
+          case 'disque':
+            {
+              if (distanceTarget > portee) {
+                sendPlayer(playerName,
+                  "Le centre du disque visé est trop loin pour " + weaponName +
+                  " (distance " + distanceTarget + ", portée " + portee + ")",
+                  playerId);
+                return;
+              }
+              if (options.aoe.souffleDeMort) {
+                let combat = stateCOF.combat;
+                if (!combat) {
+                  sendPlayer(playerName, "Le souffle de mort n'est utilisable qu'en combat", playerId);
+                  return;
+                }
+                let charId = targetToken.get('represents');
+                if (!charId) {
+                  sendPlayer(playerName, "Le centre du disque n'est pas un cadavre", playerId);
+                  return;
+                }
+                let cadavre = {
+                  charId,
+                  token: targetToken
+                };
+                if (!getState(cadavre, 'mort')) {
+                  sendPlayer(playerName, nomPerso(cadavre) + " n'est pas mort" + eForFemale(cadavre), playerId);
+                  return;
+                }
+                let t = attributeAsInt(cadavre, 'a0PVDepuis', 0);
+                if (t < combat.tour - 1) {
+                  sendPlayer(playerName, "La mort de " + nomPerso(cadavre) + " n'est pas assez récente", playerId);
+                  return;
+                }
+                options.aoe.souffleDeMort.allies = alliesParPerso[charId] || new Set();
+                options.aoe.souffleDeMort.allies.add(charId);
+                options.aoe.souffleDeMort.niveau =
+                  ficheAttributeAsInt(cadavre, 'niveau', 0);
+              }
+              page = page || getObj("page", pageId);
+              murs = getWalls(page, pageId, murs);
+              if (murs) {
+                pc = {
+                  x: ptt[0],
+                  y: ptt[1],
+                };
+              }
+              let allToksDisque =
+                findObjs({
+                  _type: "graphic",
+                  _pageid: pageId,
+                  _subtype: "token",
+                  layer: "objects"
+                });
+              allToksDisque.forEach(function(obj) {
+                if ((options.explosion || portee === 0) &&
+                  obj.id == tokenOrigine.id) return; //on ne se cible pas si le centre de l'aoe est soi-même
+                if (obj.get('bar1_max') == 0) return; // jshint ignore:line
+                let objCharId = obj.get('represents');
+                if (objCharId === '') return;
+                let cible = {
+                  token: obj,
+                  charId: objCharId
+                };
+                if (getState(cible, 'mort')) return; //pas de dégâts aux morts
+                let distanceCentre =
+                  distanceCombat(targetToken, obj, pageId, {
+                    strict1: true
+                  });
+                if (distanceCentre > options.aoe.rayon) return;
+                let objChar = getObj('character', objCharId);
+                if (objChar === undefined) return;
+                if (murs) {
+                  if (obstaclePresent(obj.get('left'), obj.get('top'), pc, murs)) return;
+                }
+                if (options.aoe.souffleDeMort) {
+                  if (!options.aoe.souffleDeMort.allies.has(objCharId)) return;
+                  if (estMortVivant(cible)) return;
+                  if (ficheAttributeAsInt(cible, 'niveau', 0) > options.aoe.souffleDeMort.niveau) return;
+                }
+                cible.name = objChar.get('name');
+                cible.tokName = obj.get('name');
+                cibles.push(cible);
+              });
+              if (targetToken.get('bar1_max') == 0) { // jshint ignore:line
+                //C'est juste un token utilisé pour définir le disque
+                targetToken.remove(); //On l'enlève, normalement plus besoin
+              }
+              // La nouvelle portée (pour ne rien éliminer à l'étape suivante
+              portee += options.aoe.rayon;
+              break;
+            }
           case 'cone':
             if (options.fx) {
               let p1eC = {
@@ -17845,7 +17887,9 @@ var COFantasy = COFantasy || function() {
                         etatsAvecSave();
                         return;
                       }
-                      let msgPour = " pour résister à un effet";
+                      let msgPour = " pour ";
+                      if (ef.msgSave) msgPour += ef.msgSave;
+                      else msgPour += "résister à un effet";
                       let msgRate = ", " + nomPerso(target) + " ";
                       if (ef.duree && ef.message) {
                         msgRate += messageActivation(target, ef.message);
@@ -41087,6 +41131,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-huile-instable':
         huileInstable(msg);
         return;
+      case "!cof-init":
+        initiativeInterface(msg);
+        return;
       case '!cof-jet':
         jet(msg);
         return;
@@ -41148,9 +41195,6 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-undo':
         undoEvent();
-        return;
-      case "!cof-init":
-        initiativeInterface(msg);
         return;
       case '!cof-turn-action':
       case '!cof-liste-actions':
@@ -41689,6 +41733,29 @@ var COFantasy = COFantasy || function() {
       fin: "ne bénéficie plus de sa parade croisée",
       visible: true,
     },
+    paralyseTemp: {
+      activation: "est paralysé : aucune action ni déplacement possible",
+      activationF: "est paralysée : aucune action ni déplacement possible",
+      actif: "est paralysé",
+      actifF: "est paralysée",
+      fin: "n'est plus paralysé",
+      finF: "n'est plus paralysée",
+      msgSave: "ne plus être paralysé",
+      prejudiciable: true,
+      visible: true,
+      entrave: true
+    },
+    paralyseGoule: {
+      activation: "est paralysé : aucune action ni déplacement possible",
+      activationF: "est paralysée : aucune action ni déplacement possible",
+      actif: "est paralysé",
+      actifF: "est paralysée",
+      fin: "n'est plus paralysé",
+      finF: "n'est plus paralysée",
+      msgSave: "ne plus être paralysé",
+      prejudiciable: true,
+      visible: true
+    },
     peauDEcorce: {
       activation: "donne à sa peau la consistance de l'écorce",
       actif: "a la peau dure comme l'écorce",
@@ -41748,6 +41815,15 @@ var COFantasy = COFantasy || function() {
       actif: "des esprits lui murmurent des secrets oubliés",
       fin: "les esprits repartent"
     },
+    souffleDeMort: {
+      activation: "est terrifié par la mort de son allié",
+      activationF: "est terrifiée par la mort de son allié",
+      actif: "ne peut agir suite au souffle de mort",
+      fin: "retrouve ses esprits",
+      msgSave: "pouvoir agir malgré la mort de son allié",
+      prejudiciable: true,
+      visible: true,
+    },
     penombreTemp: {
       activation: "ne voit plus très loin",
       actif: "est dans la pénombre",
@@ -41766,29 +41842,6 @@ var COFantasy = COFantasy || function() {
       prejudiciable: true,
       visible: true,
       entrave: true
-    },
-    paralyseTemp: {
-      activation: "est paralysé : aucune action ni déplacement possible",
-      activationF: "est paralysée : aucune action ni déplacement possible",
-      actif: "est paralysé",
-      actifF: "est paralysée",
-      fin: "n'est plus paralysé",
-      finF: "n'est plus paralysée",
-      msgSave: "ne plus être paralysé",
-      prejudiciable: true,
-      visible: true,
-      entrave: true
-    },
-    paralyseGoule: {
-      activation: "est paralysé : aucune action ni déplacement possible",
-      activationF: "est paralysée : aucune action ni déplacement possible",
-      actif: "est paralysé",
-      actifF: "est paralysée",
-      fin: "n'est plus paralysé",
-      finF: "n'est plus paralysée",
-      msgSave: "ne plus être paralysé",
-      prejudiciable: true,
-      visible: true
     },
     immobiliseTemp: {
       activation: "est immobilisé : aucun déplacement possible",
