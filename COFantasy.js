@@ -1459,6 +1459,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //Met le champ field à value du token dans evt, pour permettre le undo
+  //Retourne evt.affectes[token.id]
   function affectToken(token, field, value, evt) {
     evt.affectes = evt.affectes || {};
     let aff = evt.affectes[token.id];
@@ -2243,20 +2244,64 @@ var COFantasy = COFantasy || function() {
 
   //options:
   //fromTemp si on est en train de supprimer un effet temporaire
+  //affectToken si on a déjà changé le statusmarkers (on vient donc d'un changement à la main d'un marker
   function setState(personnage, etat, value, evt, options) {
     let token = personnage.token;
-    let charId = personnage.charId;
     if (value && predicateAsBool(personnage, 'immunite_' + etat)) {
       sendPerso(personnage, 'ne peut pas être ' + stringOfEtat(etat, personnage));
       return false;
     }
-    let aff =
+    options = options || {};
+    let aff = options.affectToken ||
       affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
-    if (value && etatRendInactif(etat) && isActive(personnage)) {
-      if (etat != 'surpris' || !compagnonPresent(personnage, 'surveillance'))
-        removeFromTurnTracker(personnage, evt);
+    if (stateCOF.combat && value && etatRendInactif(etat) &&
+      (options.affectToken || isActive(personnage)) &&
+      (etat != 'surpris' || !compagnonPresent(personnage, 'surveillance'))
+    ) {
+      removeFromTurnTracker(personnage, evt);
     }
-    token.set(cof_states[etat], value);
+    if (!options.affectToken) token.set(cof_states[etat], value);
+    if (token.get('bar1_link') !== '') {
+      let charId = personnage.charId;
+      if (charId === '') {
+        error("token with a linked bar1 but representing no character", token);
+        return true;
+      }
+      if (etat == 'affaibli') { //special case due to new character sheet
+        let v = 12;
+        if (value) v = 20;
+        setFicheAttr(personnage, 'ETATDE', v, evt, {
+          default: 20
+        });
+      } else {
+        let attrEtat =
+          findObjs({
+            _type: 'attribute',
+            _characterid: charId,
+            name: etat
+          });
+        if (value) {
+          if (attrEtat.length === 0) {
+            attrEtat =
+              createObj('attribute', {
+                characterid: charId,
+                name: etat,
+                current: value
+              });
+            evt.attributes = evt.attributes || [];
+            evt.attributes.push({
+              attribute: attrEtat,
+            });
+          }
+        } else {
+          if (attrEtat.length > 0) {
+            evt.deletedAttributes = evt.deletedAttributes || [];
+            evt.deletedAttributes.push(attrEtat[0]);
+            attrEtat[0].remove();
+          }
+        }
+      }
+    }
     if (!value) { //On enlève le save si il y en a un
       removeTokenAttr(personnage, etat + 'Save', evt);
       removeTokenAttr(personnage, etat + 'SaveParTour', evt);
@@ -2287,7 +2332,7 @@ var COFantasy = COFantasy || function() {
         //pour suivre
         nePlusSuivre(personnage, pageId, evt);
       } else {
-        if (!(options && options.fromTemp))
+        if (!(options.fromTemp))
           removeTokenAttr(personnage, 'aveugleTemp', evt);
         if (udl) {
           token.set('has_limit_field_of_vision', false);
@@ -2374,7 +2419,7 @@ var COFantasy = COFantasy || function() {
             }
           }
           removeTokenAttr(personnage, 'tokenInvisible', evt);
-          if (!(options && options.fromTemp)) {
+          if (!options.fromTemp) {
             removeTokenAttr(personnage, 'invisibleTemp', evt);
           }
           if (tokenOriginel) {
@@ -2411,6 +2456,10 @@ var COFantasy = COFantasy || function() {
           if (token.get('bar1_value') > 0) updateCurrentBar(personnage, 1, 0, evt);
           nePlusSuivre(personnage, pageId, evt);
           lockToken(personnage, evt);
+          if (stateCOF.combat)
+            setTokenAttr(personnage, 'a0PVDepuis', stateCOF.combat.tour, evt, {
+              maxVal: stateCOF.combat.init
+            });
           let persoMonte = tokenAttribute(personnage, 'estMontePar');
           if (persoMonte.length > 0) {
             const cavalier = persoOfIdName(persoMonte[0].get('current'), pageId);
@@ -2612,7 +2661,7 @@ var COFantasy = COFantasy || function() {
             let character = getObj('character', personnage.charId);
             if (character === undefined) {
               error("Impossible de trouver le personnage de " + personnage.token.get('name'), personnage);
-              return;
+              return true;
             }
             let msg = {
               who: 'GM',
@@ -2752,7 +2801,7 @@ var COFantasy = COFantasy || function() {
                   let p = x.perso;
                   if (fractionPriorite < 1) {
                     whisperChar(p.charId, "ne réussit pas à siphoner l'âme de " + token.get('name') + " un autre pouvoir l'a siphonée avant lui");
-                    return;
+                    return true;
                   }
                   let bonus = predicateAsInt(p, 'siphonDesAmes', 0);
                   let nbDes = 1 + Math.floor(pvMax / 60);
@@ -2843,108 +2892,14 @@ var COFantasy = COFantasy || function() {
           lockToken(personnage, evt);
       }
     } else { //value est false
-      if (!(options && options.fromTemp))
+      if (etat == 'mort' && stateCOF.combat)
+            removeTokenAttr(personnage, 'a0PVDepuis', evt);
+      if (!options.fromTemp)
         removeTokenAttr(personnage, etat + 'Temp', evt);
-    }
-    if (token.get('bar1_link') !== '') {
-      if (charId === '') {
-        error("token with a linked bar1 but representing no character", token);
-        return true;
-      }
-      if (etat == 'affaibli') { //special case due to new character sheet
-        let attr =
-          findObjs({
-            _type: 'attribute',
-            _characterid: charId,
-            name: 'ETATDE'
-          }, {
-            caseInsensitive: true
-          });
-        if (value) {
-          if (attr.length === 0) {
-            attr =
-              createObj('attribute', {
-                characterid: charId,
-                name: 'ETATDE',
-                current: 12
-              });
-            if (evt.attributes)
-              evt.attributes.push({
-                attribute: attr,
-              });
-            else evt.attributes = [{
-              attribute: attr,
-            }];
-          } else {
-            attr = attr[0];
-            if (parseInt(attr.get('current')) != 12) {
-              if (evt.attributes)
-                evt.attributes.push({
-                  attribute: attr,
-                  current: 20
-                });
-              else evt.attributes = [{
-                attribute: attr,
-                current: 20
-              }];
-              attr.set('current', 12);
-            }
-          }
-        } else {
-          if (attr.length > 0) {
-            attr = attr[0];
-            if (parseInt(attr.get('current')) != 20) {
-              if (evt.attributes)
-                evt.attributes.push({
-                  attribute: attr,
-                  current: 12
-                });
-              else evt.attributes = [{
-                attribute: attr,
-                current: 12
-              }];
-              attr.set('current', 20);
-            }
-          }
-        }
-      } else {
-        let attrEtat =
-          findObjs({
-            _type: 'attribute',
-            _characterid: charId,
-            name: etat
-          });
-        if (value) {
-          if (attrEtat.length === 0) {
-            attrEtat =
-              createObj('attribute', {
-                characterid: charId,
-                name: etat,
-                current: value
-              });
-            if (evt.attributes)
-              evt.attributes.push({
-                attribute: attrEtat,
-              });
-            else evt.attributes = [{
-              attribute: attrEtat,
-            }];
-          }
-        } else {
-          if (attrEtat.length > 0) {
-            attrEtat[0].remove();
-            if (evt.deletedAttributes) {
-              evt.deletedAttributes.push(attrEtat[0]);
-            } else {
-              evt.deletedAttributes = [attrEtat[0]];
-            }
-          }
-        }
-      }
     }
     if (!value) {
       unlockToken(personnage, evt);
-      if (etatRendInactif(etat) && isActive(personnage) ||
+      if (stateCOF.combat && etatRendInactif(etat) && isActive(personnage) ||
         etat == 'aveugle') updateInit(token, evt);
     }
     return true;
@@ -3590,74 +3545,76 @@ var COFantasy = COFantasy || function() {
         }
         return res; //Pas besoin de faire le reste, car plus de perso
       case 'formeDArbre':
-        let iterTokOptions = {
-          filterAffected: function(token) {
-            return token.get('layer') == 'objects';
-          }
-        };
-        iterTokensOfAttribute(charId, options.pageId, effet, attrName,
-          function(token) {
-            let perso = {
-              token: token,
-              charId: charId
-            };
-            let tokenChange = attributeAsBool(perso, 'changementDeToken');
-            if (tokenChange) {
-              let tokenMJ =
-                findObjs({
-                  _type: 'graphic',
-                  _subtype: 'token',
-                  _pageid: token.get('pageid'),
-                  layer: 'gmlayer',
-                  represents: charId,
-                  name: token.get('name')
-                });
-              if (tokenMJ.length === 0) return;
-              removeTokenAttr(perso, 'changementDeToken', evt);
-              let nouveauToken = tokenMJ[0];
-              setToken(nouveauToken, 'layer', 'objects', evt);
-              setToken(nouveauToken, 'left', token.get('left'), evt);
-              setToken(nouveauToken, 'top', token.get('top'), evt);
-              setToken(nouveauToken, 'width', token.get('width'), evt);
-              setToken(nouveauToken, 'height', token.get('height'), evt);
-              setToken(nouveauToken, 'rotation', token.get('rotation'), evt);
-              setToken(nouveauToken, 'bar2_value', token.get('bar2_value'), evt);
-              setToken(nouveauToken, 'aura1_radius', token.get('aura1_radius'), evt);
-              setToken(nouveauToken, 'aura1_color', token.get('aura1_color'), evt);
-              setToken(nouveauToken, 'aura1_square', token.get('aura1_square'), evt);
-              setToken(nouveauToken, 'showplayers_aura1', token.get('showplayers_aura1'), evt);
-              setToken(nouveauToken, 'aura2_radius', token.get('aura2_radius'), evt);
-              setToken(nouveauToken, 'aura2_color', token.get('aura2_color'), evt);
-              setToken(nouveauToken, 'aura2_square', token.get('aura2_square'), evt);
-              setToken(nouveauToken, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
-              setToken(nouveauToken, 'statusmarkers', token.get('statusmarkers'), evt);
-              setToken(nouveauToken, 'light_angle', token.get('light_angle'), evt);
-              setToken(nouveauToken, 'has_limit_field_of_vision', token.get('has_limit_field_of_vision'), evt);
-              setToken(nouveauToken, 'has_limit_field_of_night_vision', token.get('has_limit_field_of_night_vision'), evt);
-              if (stateCOF.combat) {
-                replaceInTurnTracker(token.id, nouveauToken.id, evt);
-              }
-              res = res || {};
-              res.oldTokenId = token.id;
-              res.newTokenId = nouveauToken.id;
-              res.newToken = nouveauToken;
-              deleteTokenWithUndo(token, evt);
-              token = nouveauToken;
-              perso.token = nouveauToken;
+        {
+          let iterTokOptions = {
+            filterAffected: function(token) {
+              return token.get('layer') == 'objects';
             }
-            let apv = tokenAttribute(perso, 'anciensPV');
-            if (apv.length > 0) {
-              updateCurrentBar(perso, 1, apv[0].get('current'), evt, apv[0].get('max'));
-              removeTokenAttr(perso, 'anciensPV', evt);
-              if (stateCOF.combat) {
-                newInit.push({
-                  _id: token.id
-                });
+          };
+          iterTokensOfAttribute(charId, options.pageId, effet, attrName,
+            function(token) {
+              let perso = {
+                token: token,
+                charId: charId
+              };
+              let tokenChange = attributeAsBool(perso, 'changementDeToken');
+              if (tokenChange) {
+                let tokenMJ =
+                  findObjs({
+                    _type: 'graphic',
+                    _subtype: 'token',
+                    _pageid: token.get('pageid'),
+                    layer: 'gmlayer',
+                    represents: charId,
+                    name: token.get('name')
+                  });
+                if (tokenMJ.length === 0) return;
+                removeTokenAttr(perso, 'changementDeToken', evt);
+                let nouveauToken = tokenMJ[0];
+                setToken(nouveauToken, 'layer', 'objects', evt);
+                setToken(nouveauToken, 'left', token.get('left'), evt);
+                setToken(nouveauToken, 'top', token.get('top'), evt);
+                setToken(nouveauToken, 'width', token.get('width'), evt);
+                setToken(nouveauToken, 'height', token.get('height'), evt);
+                setToken(nouveauToken, 'rotation', token.get('rotation'), evt);
+                setToken(nouveauToken, 'bar2_value', token.get('bar2_value'), evt);
+                setToken(nouveauToken, 'aura1_radius', token.get('aura1_radius'), evt);
+                setToken(nouveauToken, 'aura1_color', token.get('aura1_color'), evt);
+                setToken(nouveauToken, 'aura1_square', token.get('aura1_square'), evt);
+                setToken(nouveauToken, 'showplayers_aura1', token.get('showplayers_aura1'), evt);
+                setToken(nouveauToken, 'aura2_radius', token.get('aura2_radius'), evt);
+                setToken(nouveauToken, 'aura2_color', token.get('aura2_color'), evt);
+                setToken(nouveauToken, 'aura2_square', token.get('aura2_square'), evt);
+                setToken(nouveauToken, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
+                setToken(nouveauToken, 'statusmarkers', token.get('statusmarkers'), evt);
+                setToken(nouveauToken, 'light_angle', token.get('light_angle'), evt);
+                setToken(nouveauToken, 'has_limit_field_of_vision', token.get('has_limit_field_of_vision'), evt);
+                setToken(nouveauToken, 'has_limit_field_of_night_vision', token.get('has_limit_field_of_night_vision'), evt);
+                if (combat) {
+                  replaceInTurnTracker(token.id, nouveauToken.id, evt);
+                }
+                res = res || {};
+                res.oldTokenId = token.id;
+                res.newTokenId = nouveauToken.id;
+                res.newToken = nouveauToken;
+                deleteTokenWithUndo(token, evt);
+                token = nouveauToken;
+                perso.token = nouveauToken;
               }
-            }
-          },
-          iterTokOptions);
-        break;
+              let apv = tokenAttribute(perso, 'anciensPV');
+              if (apv.length > 0) {
+                updateCurrentBar(perso, 1, apv[0].get('current'), evt, apv[0].get('max'));
+                removeTokenAttr(perso, 'anciensPV', evt);
+                if (combat) {
+                  newInit.push({
+                    _id: token.id
+                  });
+                }
+              }
+            },
+            iterTokOptions);
+          break;
+        }
       case 'agitAZeroPV':
         iterTokensOfAttribute(charId, options.pageId, effet, attrName, function(token) {
           let perso = {
@@ -3711,7 +3668,7 @@ var COFantasy = COFantasy || function() {
                 charId
               };
               if (getState(perso, 'mort')) return;
-              if (!stateCOF.combat) {
+              if (!combat) {
                 sendChat('', "Il restait un effet retardé " + effetRetarde + " qui devait se déclencher pour " + token.get('name'));
                 return;
               }
@@ -3789,17 +3746,19 @@ var COFantasy = COFantasy || function() {
         });
         break;
       case 'armeeDesMorts':
-        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-          token.set("aura2_radius", 0);
-          if (combat.armeesDesMorts && combat.armeesDesMorts[token.id]) {
-            if (!evt.combat) evt.combat = {...combat
-            };
-            evt.combat.armeesDesMorts = {...combat.armeesDesMorts
-            };
-            combat.armeesDesMorts[token.id] = undefined;
-          }
-        });
-        break;
+        {
+          iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+            token.set("aura2_radius", 0);
+            if (combat.armeesDesMorts && combat.armeesDesMorts[token.id]) {
+              if (!evt.combat) evt.combat = {...combat
+              };
+              evt.combat.armeesDesMorts = {...combat.armeesDesMorts
+              };
+              combat.armeesDesMorts[token.id] = undefined;
+            }
+          });
+          break;
+        }
       case 'lienDeSang':
         iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
           let perso = {
@@ -5329,7 +5288,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function nomLimiteCapa(capa, unite) {
-    var nomLimite = 'limitePar';
+    let nomLimite = 'limitePar';
     switch (unite) {
       case 'tour':
       case 'Tour':
@@ -10137,13 +10096,13 @@ var COFantasy = COFantasy || function() {
 
   // triggers sheet workers
   // options peut avoir un champ msg et un champ maxVal
-  // renvoie l'attribut
+  // si options a un champ default, supprime la fiche si la valeur est default
+  // renvoie l'attribut, sauf si on a ledefault
   function setFicheAttr(personnage, attribute, value, evt, options) {
     let charId = personnage.charId;
     if (options && options.msg !== undefined) {
       sendPerso(personnage, options.msg);
     }
-    evt.attributes = evt.attributes || [];
     let attr = findObjs({
       _type: 'attribute',
       _characterid: charId,
@@ -10152,6 +10111,8 @@ var COFantasy = COFantasy || function() {
       caseInsensitive: true
     });
     if (attr.length === 0) {
+      if (options && options.maxVal === undefined && options.default === value) return;
+      evt.attributes = evt.attributes || [];
       let maxval = '';
       if (options && options.maxVal !== undefined) maxval = options.maxVal;
       attr = createObj('attribute', {
@@ -10169,6 +10130,13 @@ var COFantasy = COFantasy || function() {
       return attr;
     }
     attr = attr[0];
+    if (options && options.maxVal === undefined && options.default === value) {
+      evt.deletedAttributes = evt.deletedAttributes || [];
+      evt.deletedAttributes.push(attr);
+      attr.remove();
+      return;
+    }
+    evt.attributes = evt.attributes || [];
     evt.attributes.push({
       attribute: attr,
       current: attr.get('current'),
@@ -12831,13 +12799,17 @@ var COFantasy = COFantasy || function() {
     if (nouvelleArmeGauche) {
       if (ficheAttributeAsInt(perso, 'defbouclieron', 0)) {
         sendPerso(perso, "enlève son bouclier", options.secret);
-        setFicheAttr(perso, 'defbouclieron', 0, evt);
+        setFicheAttr(perso, 'defbouclieron', 0, evt, {
+          default: 0
+        });
       }
     }
     if (nouvelleArme.deuxMains) {
       if (ficheAttributeAsInt(perso, 'defbouclieron', 0)) {
         sendPerso(perso, "enlève son bouclier", options.secret);
-        setFicheAttr(perso, 'defbouclieron', 0, evt);
+        setFicheAttr(perso, 'defbouclieron', 0, evt, {
+          default: 0
+        });
       }
     } else if (ancienneArme && (ancienneArme.deuxMains || options.gauche)) {
       if (ficheAttributeAsBool(perso, 'defbouclier', false) &&
@@ -20939,9 +20911,9 @@ var COFantasy = COFantasy || function() {
 
   function pointsDeRecuperation(perso) {
     // retourne les nombre de PR restant
-    var attrPR = tokenAttribute(perso, 'pointsDeRecuperation');
-    var prc = 5;
-    var prm = 5;
+    let attrPR = tokenAttribute(perso, 'pointsDeRecuperation');
+    let prc = 5;
+    let prm = 5;
     if (attrPR.length > 0) {
       prc = parseInt(attrPR[0].get('current'));
       prm = parseInt(attrPR[0].get('max'));
@@ -20981,7 +20953,7 @@ var COFantasy = COFantasy || function() {
 
   function enleverPointDeRecuperation(perso, evt) {
     evt.attributes = evt.attributes || [];
-    var attrPR = charAttribute(perso.charId, 'pr', {
+    let attrPR = charAttribute(perso.charId, 'pr', {
       caseInsensitive: true
     });
     if (attrPR.length === 0) {
@@ -20996,7 +20968,7 @@ var COFantasy = COFantasy || function() {
       });
       return;
     }
-    var prc = attrPR[0].get('current');
+    let prc = attrPR[0].get('current');
     if (prc === '') prc = 5;
     else prc = parseInt(prc);
     if (isNaN(prc) || prc < 1) {
@@ -24322,7 +24294,7 @@ var COFantasy = COFantasy || function() {
           if (charAttributeAsBool(persoArmee, "armeeDesMortsPuissant")) boost = 1;
           else boost = charAttributeAsInt(persoArmee, "armeeDesMortsTempeteDeManaIntense", 0);
           let rayon = Math.floor(20 * Math.sqrt(1 + boost));
-          if (persoArmee && distanceCombat(perso.token, persoArmee.token, pageId) <= rayon &&
+          if (distanceCombat(perso.token, persoArmee.token, pageId) <= rayon &&
             (!alliesParPerso[persoArmee.charId] || !alliesParPerso[persoArmee.charId].has(perso.charId))) {
             actionsAAfficher = true;
             combattreArmee = true;
@@ -25338,7 +25310,9 @@ var COFantasy = COFantasy || function() {
     turnOrder = JSON.parse(turnOrder);
     if (turnOrder.length === 0) return;
     let res;
+    let change;
     if (turnOrder[0].id == tokenId) {
+      change = true;
       if (turnOrder.length > 1) {
         res = {
           nextId: turnOrder[1].id
@@ -25366,10 +25340,12 @@ var COFantasy = COFantasy || function() {
     } else {
       turnOrder = turnOrder.filter(
         function(elt) {
-          return (elt.id != tokenId);
+          let f = elt.id == tokenId;
+          change = change || f;
+          return !f;
         });
     }
-    Campaign().set('turnorder', JSON.stringify(turnOrder));
+    if (change) Campaign().set('turnorder', JSON.stringify(turnOrder));
     return res;
   }
 
@@ -27310,9 +27286,12 @@ var COFantasy = COFantasy || function() {
           let attrDeClasse = attributesOfClass(perso, classeEffet);
           attrDeClasse.forEach(function(adc) {
             let attrName = adc.baseAttribute.get('name');
-            if (estEffetIndetermine(attrName))
-              sendPerso(perso,
-                messageFin(perso, messageEffetIndetermine[effetIndetermineOfAttribute(adc.baseAttribute)]));
+            if (estEffetIndetermine(attrName)) {
+              let mf = messageFin(perso, messageEffetIndetermine[effetIndetermineOfAttribute(adc.baseAttribute)]);
+              if (mf && mf !== '')
+                sendPerso(perso,
+                  messageFin(perso, messageEffetIndetermine[effetIndetermineOfAttribute(adc.baseAttribute)]));
+            }
             evt.deletedAttributes.push(adc.baseAttribute);
             adc.baseAttribute.remove();
             evt.deletedAttributes.push(adc.classAttribute);
@@ -28664,6 +28643,7 @@ var COFantasy = COFantasy || function() {
     }
     let effet = "soins";
     let nbDes = 1;
+    let souffleDeVie = false;
     if (options.tempeteDeManaIntense) nbDes += options.tempeteDeManaIntense;
     switch (argSoin) {
       case 'leger':
@@ -28698,6 +28678,24 @@ var COFantasy = COFantasy || function() {
         }
         soins += " +" + bonusModere + "]]";
         break;
+      case 'souffleDeVie':
+        {
+          let combat = stateCOF.combat;
+          if (!combat) {
+            whisperChar(charId, " ne peut pas lancer de soin de groupe en dehors des combats");
+            return;
+          }
+          souffleDeVie = combat.tour;
+          effet = 'souffleDeVie';
+          if (options.portee === undefined) options.portee = 0;
+          let bonus = niveau + predicateAsInt(soigneur, 'voieDuGuerisseur', 0);
+          soins = "[[" + (nbDes + 1) + (options.puissant ? "d10" : "d8");
+          if (attributeAsBool(soigneur, 'formeDAnge') && predicateAsInt(soigneur, 'voieDeLArchange', 1) > 1) {
+            soins += 'ro1';
+          }
+          soins += " +" + bonus + "]]";
+          break;
+        }
       case 'groupe':
         if (!stateCOF.combat) {
           whisperChar(charId, " ne peut pas lancer de soin de groupe en dehors des combats");
@@ -28955,6 +28953,47 @@ var COFantasy = COFantasy || function() {
               if (display)
                 addLineToFramedDisplay(display, nomPerso(soigneur) + ' ' + msgSacrifice);
               else sendPerso(soigneur, msgSacrifice);
+            }
+          }
+          if (souffleDeVie) {
+            let pv = parseInt(cible.token.get('bar1_value'));
+            if (isNaN(pv) || pv > 0) {
+              let m = nomPerso(cible) + " n'est pas à 0 PV, impossible d'utiliser le souffle de vie pour " + onGenre(cible, 'lui', 'elle');
+              if (display) addLineToFramedDisplay(display, m);
+              else sendChar(charId, m, true);
+              finSoin();
+              return;
+            }
+            let d = tokenAttribute(cible, 'a0PVDepuis');
+            if (d.length > 0) {
+              d = d[0];
+              let tour = parseInt(d.get('current'));
+              let tropTard = false;
+              if (!isNaN(tour)) {
+                if (tour < souffleDeVie - 2) tropTard = true;
+                if (tour == souffleDeVie - 2) {
+                  let init = parseInt(d.get('max'));
+                  tropTard = !isNaN(init) && init > stateCOF.combat.init;
+                }
+              }
+              if (tropTard) {
+                let m = nomPerso(cible) + " est à 0 PV depuis plus de 2 tours, impossible d'utiliser le souffle de vie pour " + onGenre(cible, 'lui', 'elle');
+                if (display) addLineToFramedDisplay(display, m);
+                else sendChar(charId, m, true);
+                finSoin();
+                return;
+              }
+              evt.deletedAttributes = evt.deletedAttributes || [];
+              deleteAttribute(d, evt);
+              if (estPJ(cible) && reglesOptionelles.dommages.val.blessures_graves.val) {
+                //Il faut alors annuler la perte de PR ou la blessure grave
+                let pr = pointsDeRecuperation(cible);
+                if (pr.current > 0 || !getState(cible, 'blesse')) {
+                  rajouterPointDeRecuperation(cible, evt);
+                } else {
+                  setState(cible, 'blesse', false, evt);
+                }
+              }
             }
           }
           let callMax = function() {
@@ -37458,42 +37497,47 @@ var COFantasy = COFantasy || function() {
   function optionsDAttaque(msg) {
     const options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined) return;
-    var evt = {
+    let evt = {
       type: "Option d'attaque"
+    };
+    let def0 = {
+      default: 0
     };
     getSelected(msg, function(selected, playerId) {
       iterSelected(selected, function(perso) {
         //D'abord on lit les valeurs
-        var aepc = ficheAttributeAsBool(perso, 'attaque_en_puissance_check');
-        var arc = ficheAttributeAsBool(perso, 'attaque_risquee_check');
-        var aac = ficheAttributeAsBool(perso, 'attaque_assuree_check');
-        var adtc = ficheAttributeAsBool(perso, 'attaque_dm_temp_check');
-        var aep = ficheAttributeAsInt(perso, 'attaque_en_puissance', 1);
-        var adg;
+        let aepc = ficheAttributeAsBool(perso, 'attaque_en_puissance_check', false);
+        let arc = ficheAttributeAsBool(perso, 'attaque_risquee_check', false);
+        let aac = ficheAttributeAsBool(perso, 'attaque_assuree_check', false);
+        let adtc = ficheAttributeAsBool(perso, 'attaque_dm_temp_check', false);
+        let aep = ficheAttributeAsInt(perso, 'attaque_en_puissance', 1);
+        let adg;
         if (persoEstPNJ(perso)) {
           adg = ficheAttributeAsInt(perso, 'attaque_de_groupe', 1);
         }
         if (cmd.length > 1 && cmd[1] == 'reset') {
           if (adg > 1) {
-            setFicheAttr(perso, 'attaque_de_groupe', 1, evt);
+            setFicheAttr(perso, 'attaque_de_groupe', 1, evt, {
+              default: 1
+            });
             adg = 1;
           }
           if (aepc) {
-            setFicheAttr(perso, 'attaque_en_puissance_check', 0, evt);
+            setFicheAttr(perso, 'attaque_en_puissance_check', 0, evt, def0);
             aepc = false;
           }
           if (arc) {
-            setFicheAttr(perso, 'attaque_risquee_check', 0, evt);
+            setFicheAttr(perso, 'attaque_risquee_check', 0, evt, def0);
             arc = false;
           }
           if (aac) {
-            setFicheAttr(perso, 'attaque_assuree_check', 0, evt);
+            setFicheAttr(perso, 'attaque_assuree_check', 0, evt, def0);
             aac = false;
           }
           if (adtc) {
-            setFicheAttr(perso, 'attaque_dm_temp_check', 0, evt);
+            setFicheAttr(perso, 'attaque_dm_temp_check', 0, evt, def0);
             adtc = false;
           }
           turnAction(perso, playerId);
@@ -37509,7 +37553,7 @@ var COFantasy = COFantasy || function() {
                 }
               } else {
                 if (aepc) {
-                  setFicheAttr(perso, cmd[1], 0, evt);
+                  setFicheAttr(perso, cmd[1], 0, evt, def0);
                   aepc = false;
                 }
               }
@@ -37522,7 +37566,7 @@ var COFantasy = COFantasy || function() {
                 }
               } else {
                 if (arc) {
-                  setFicheAttr(perso, cmd[1], 0, evt);
+                  setFicheAttr(perso, cmd[1], 0, evt, def0);
                   arc = false;
                 }
               }
@@ -37536,7 +37580,7 @@ var COFantasy = COFantasy || function() {
                 }
               } else {
                 if (aac) {
-                  setFicheAttr(perso, cmd[1], 0, evt);
+                  setFicheAttr(perso, cmd[1], 0, evt, def0);
                   aac = false;
                 }
               }
@@ -37549,7 +37593,7 @@ var COFantasy = COFantasy || function() {
                 }
               } else {
                 if (adtc) {
-                  setFicheAttr(perso, cmd[1], 0, evt);
+                  setFicheAttr(perso, cmd[1], 0, evt, def0);
                   adtc = false;
                 }
               }
@@ -37559,16 +37603,20 @@ var COFantasy = COFantasy || function() {
                 var nadg = parseInt(cmd[2]);
                 if (isNaN(nadg) || nadg < 1) nadg = 1;
                 if (nadg != adg) {
-                  setFicheAttr(perso, cmd[1], nadg, evt);
+                  setFicheAttr(perso, cmd[1], nadg, evt, {
+                    default: 1
+                  });
                   adg = nadg;
                 }
               }
               break;
             case 'attaque_en_puissance':
-              var naep = parseInt(cmd[2]);
+              let naep = parseInt(cmd[2]);
               if (isNaN(naep) || naep < 1) naep = 1;
               if (naep != aep) {
-                setFicheAttr(perso, cmd[1], naep, evt);
+                setFicheAttr(perso, cmd[1], naep, evt, {
+                  default: 1
+                });
                 aep = naep;
               }
               break;
@@ -38478,7 +38526,9 @@ var COFantasy = COFantasy || function() {
         let ancienNom;
         let nouveauNom;
         if (displayName == '@{alias}') {
-          setFicheAttr(perso, 'displayname', '@{character_name}', evt);
+          setFicheAttr(perso, 'displayname', '@{character_name}', evt, {
+            default: '@{character_name}'
+          });
           ancienNom = ficheAttribute(perso, 'alias', '');
           nouveauNom = character.get('name');
           sendChat('', ancienNom + " était en réalité " + nouveauNom + " !");
@@ -38489,7 +38539,9 @@ var COFantasy = COFantasy || function() {
             sendPlayer(msg, ancienNom + " n'a pas d'alias, rien à révéler.");
             return;
           }
-          setFicheAttr(perso, 'alias', '', evt);
+          setFicheAttr(perso, 'alias', '', evt, {
+            default: ''
+          });
           sendChar(perso.charId, "était en réalité " + nouveauNom + " !");
           evt.characterNames.push({
             character: character,
@@ -41515,7 +41567,15 @@ var COFantasy = COFantasy || function() {
         agripperDeDemon(msg);
         return;
       default:
-        error("Commande " + command[0] + " non reconnue.", command);
+        let errMsg = "Commande " + command[0] + " non reconnue.";
+        log(errMsg);
+        log(command);
+        try {
+          sendPlayer(msg, errMsg);
+        } catch (e) {
+          errMsg = errMsg.replace('[', '[ ');
+          sendPlayer(msg, "Message sans jet : " + errMsg);
+        }
         return;
     }
   }
@@ -41554,6 +41614,15 @@ var COFantasy = COFantasy || function() {
       actifF: "est dominée par sa peur",
       fin: "retrouve du courage",
       msgSave: "retrouver du courage",
+      prejudiciable: true,
+      visible: true
+    },
+    aveugleTemp: {
+      activation: "n'y voit plus rien !",
+      actif: "est aveuglé",
+      actifF: "est aveuglée",
+      fin: "retrouve la vue",
+      msgSave: "retrouver la vue",
       prejudiciable: true,
       visible: true
     },
@@ -41678,15 +41747,6 @@ var COFantasy = COFantasy || function() {
       activation: "contacte des esprits",
       actif: "des esprits lui murmurent des secrets oubliés",
       fin: "les esprits repartent"
-    },
-    aveugleTemp: {
-      activation: "n'y voit plus rien !",
-      actif: "est aveuglé",
-      actifF: "est aveuglée",
-      fin: "retrouve la vue",
-      msgSave: "retrouver la vue",
-      prejudiciable: true,
-      visible: true
     },
     penombreTemp: {
       activation: "ne voit plus très loin",
@@ -42516,6 +42576,11 @@ var COFantasy = COFantasy || function() {
   }
 
   const messageEffetCombat = {
+    a0PVDepuis: {
+      activation: "est à 0 PV",
+      actif: "est à 0 PV",
+      fin: ""
+    },
     armureMagique: {
       activation: "est entouré d'un halo magique",
       activationF: "est entourée d'un halo magique",
@@ -44876,7 +44941,7 @@ var COFantasy = COFantasy || function() {
     const evt = {
       type: "set_state",
     };
-    affectToken(token, 'statusmarkers', prev.statusmarkers, evt);
+    let aff = affectToken(token, 'statusmarkers', prev.statusmarkers, evt);
     let currentMarkers = [];
     let markers = token.get("statusmarkers");
     if (markers !== '') {
@@ -44886,12 +44951,15 @@ var COFantasy = COFantasy || function() {
     if (prev.statusmarkers !== '') {
       previousMarkers = prev.statusmarkers.split(',');
     }
+    let options = {
+      affectToken: aff
+    };
     // Pour tous les markers disparus
     previousMarkers.forEach(function(marker) {
       if (currentMarkers.includes(marker)) return;
       let etat = etat_de_marker[marker];
       if (etat) {
-        setState(perso, etat, false, evt);
+        setState(perso, etat, false, evt, options);
       } else {
         let effet = effet_de_marker[marker];
         if (effet) {
@@ -44906,7 +44974,7 @@ var COFantasy = COFantasy || function() {
       if (previousMarkers.includes(marker)) return;
       let etat = etat_de_marker[marker];
       if (etat) {
-        let succes = setState(perso, etat, true, evt);
+        let succes = setState(perso, etat, true, evt, options);
         if (!succes) token.set('status_' + marker, false);
       } else {
         let effet = effet_de_marker[marker];

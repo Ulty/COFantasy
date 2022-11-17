@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.10
 ### Capacités
+* Souffle de vie de la Voie de Morn
 * Sort de secrets de l'au-delà.
 * traits des créatures végétatives.
 * prédicat pour le trait "Tout petit".
