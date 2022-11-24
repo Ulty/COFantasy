@@ -1406,7 +1406,7 @@ tr {line-height: 25px;}
                 <ol>
                   <li><strong>Robustesse</strong> : rajouter les PV sur la fiche.</li>
                   <li><strong>Armure naturelle</strong> : rajouter la DEF sur la fiche.</li>
-                  <li><strong>Second souffle</strong> : Ajouter un <a href=#predicats>prédicat</a> <code>secondSouffle</code> permet de faire apparaître un bouton pour utiliser le second souffle quand le guerrier a perdu des PVs en combat, limite le gain de PVs à ceux perdus dans le combat en cours, et utilise automatiquement la capacité en fin de combat si elle n'a pas été utilisée. Si cette automatisation ne vous convient pas, vous pouvez utiliser la commande <code>!cof-soin @{selected|token_id} secondSouffle</code> à la place.</li>
+                  <li><strong>Second souffle</strong> : Ajouter un <a href=#predicats>prédicat</a> <code>secondSouffle</code> permet de faire apparaître un bouton pour utiliser le second souffle quand le guerrier a perdu des PVs en combat, limite le gain de PVs à ceux perdus dans le combat en cours, et utilise automatiquement la capacité en fin de combat si elle n'a pas été utilisée. Si cette automatisation ne vous convient pas, vous pouvez utiliser la commande <code>!cof-soin @{selected|token_id} secondSouffle</code> à la place. Enfin, on peut préciser une valeur pour ce prédicat, pour remplacer le niveau + CON (par exemple pour un PNJ).</li>
                   <li><strong>Dur à cuire</strong> : rajouter un <a href=#predicats>prédicat</a> <code>durACuire</code> sur la fiche.</li>
                   <li><strong>Constitution héroïque</strong> : reporter les bonus sur la fiche.</li>
                 </ol>
@@ -2177,6 +2177,7 @@ tr {line-height: 25px;}
                 <ol>
                   <li><strong>Magie en armure</strong> : Ajouter un <a href=#predicats>prédicat</a> <code>magieEnArmure</code> de valeur la DEF totale à partir de laquelle le personnage peut lancer des sorts. Comme la fiche ne contient pas l'information de la DEF normale (sans magie) de l'armure portée, le script utilise la moyenne de la DEF et du malus d'armure. En ajoutant un prédicat <code>magieEnArmureFacilitee</code>, le script diminue aussi la difficulté des jets d'INT pour les armures avec une DEF trop grande de la valeur du prédicat de magie en armure.</li>
                   <li><strong>Rituel Assuré</strong> : <code>!cof-effet-temp rituelAssure 2</code>. Le script ne permet pas de préciser le sort, le premier qui sera lancé après le rituel assuré bénéficiera de l'effet.</li>
+                  <li><strong>MagieDeCombat</strong> :  Ajouter un <a href=#predicats>prédicat</a> <code>magieDeCombat</code>.</li> 
                 </ol>
                 <h4 class="text-secondary">Voie du héro</h4>
                 <ol>

@@ -14533,6 +14533,9 @@ var COFantasy = COFantasy || function() {
           options.tirFatal = 2;
       }
     }
+    if (options.sortilege) {
+      crit -= predicateAsInt(attaquant, 'magieDeCombat', 0, 1);
+    }
     if (crit < 2) crit = 2;
     return crit;
   }
@@ -15183,7 +15186,8 @@ var COFantasy = COFantasy || function() {
                 };
                 dealDamage(attaquant, r, [], evt, false, options, explications,
                   function(dmgDisplay, dmg, dmDrains) {
-                    let dmgMsg = "<b>Dommages pour " + attackerTokName + " :</b> " +
+                    let dmgMsg = 
+                      "<b>Dommages pour " + attackerTokName + " :</b> " +
                       dmgDisplay;
                     addLineToFramedDisplay(display, dmgMsg);
                     finaliseDisplay(display, explications, evt, attaquant, cibles, options);
@@ -15194,16 +15198,16 @@ var COFantasy = COFantasy || function() {
                 "La poudre explose dans " + weaponName +
                 ". L'arme est inutilisable jusqu'à la fin du combat");
               sendChat("", "[[1d6]]", function(res) {
-                var rolls = res[0];
-                var explRoll = rolls.inlinerolls[0];
-                var r = {
+                let rolls = res[0];
+                let explRoll = rolls.inlinerolls[0];
+                let r = {
                   total: explRoll.results.total,
                   type: 'normal',
                   display: buildinline(explRoll, 'normal')
                 };
                 dealDamage(attaquant, r, [], evt, false, options, explications,
                   function(dmgDisplay, dmg, dmDrains) {
-                    var dmgMsg =
+                    let dmgMsg =
                       "<b>Dommages pour " + attackerTokName + " :</b> " +
                       dmgDisplay;
                     addLineToFramedDisplay(display, dmgMsg);
@@ -28766,6 +28770,7 @@ var COFantasy = COFantasy || function() {
         }
         break;
       case 'secondSouffle':
+        {
         if (!stateCOF.combat) {
           whisperChar(charId, " ne peut pas utiliser la capacité second souffle en dehors des combats");
           return;
@@ -28777,11 +28782,14 @@ var COFantasy = COFantasy || function() {
             message: " a déjà repris son souffle durant ce combat",
             limite: 1
           };
-        soins = "[[1d10+" + niveau + "+" + modCarac(soigneur, 'constitution') +
-          "]]";
+        soins = "[[1d10+";
+        let bonus = predicateAsInt(soigneur, 'secondSouffle', 0, -1);
+          if (bonus > 0) soins += bonus;
+          else soins += niveau + "+" + modCarac(soigneur, 'constitution');
+          soins += "]]";
         cible = soigneur;
         options.recuperation = true;
-        if (predicateAsBool(soigneur, 'secondSouffle')) {
+        if (bonus == -1 || bonus > 0) { //Il y a un prédicat second souffle
           //On limite les soins à ce qui a été perdu dans ce combat
           const pvDebut = attributeAsInt(soigneur, 'PVsDebutCombat', 0);
           let pv = parseInt(soigneur.token.get('bar1_value'));
@@ -28793,6 +28801,7 @@ var COFantasy = COFantasy || function() {
           options.limiteSoins = pvDebut - pv;
         }
         break;
+        }
       default:
         if (options.tempeteDeManaIntense) {
           let firstDicePart = argSoin.match(/[1-9][0-9]*d\d+/i);

@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.10
 ### Capacités
+* Magie de combat de la Voie du guerrier-mage.
 * Souffle de mort.
 * Souffle de vie de la Voie de Morn
 * Sort de secrets de l'au-delà.
