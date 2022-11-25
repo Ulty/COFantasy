@@ -4810,7 +4810,8 @@ var COFantasy = COFantasy || function() {
               if (weaponStats) {
                 options.actionImpossible =
                   (weaponStats.deuxMains && attributeAsBool(perso, 'espaceExigu')) ||
-                  (weaponStats.portee && cmd.includes('--attaqueFlamboyante'));
+                  (weaponStats.portee && cmd.includes('--attaqueFlamboyante')) ||
+                  (cmd.includes('--ricochets') && !(weaponStats.armeDeJet || weaponStats.options.includes('--aussiArmeDeJet')));
               }
             }
           }
@@ -8696,15 +8697,42 @@ var COFantasy = COFantasy || function() {
           options.ciblesSupplementaires = options.ciblesSupplementaires || [];
           options.ciblesSupplementaires.push(targetS);
           return;
-        case 'canaliseParFamilier': //TODO
-          let origine = compagnonPresent(attaquant, 'familier');
-          if (origine === undefined) {
-            sendPlayer(msg, "Pas de familier actif, impossible de canaliser par le familier");
-            log("Pas de familier");
+        case 'canaliseParFamilier':
+          {
+            let origine = compagnonPresent(attaquant, 'familier');
+            if (origine === undefined) {
+              sendPlayer(msg, "Pas de familier actif, impossible de canaliser par le familier");
+              log("Pas de familier");
+              return;
+            }
+            options.origineDeLAttaque = origine;
             return;
           }
-          options.origineDeLAttaque = origine;
-          return;
+        case 'ricochets':
+          {
+            if (cmd.length < 2) {
+              error("Il manque le nombre de ricochets", cmd);
+              return;
+            }
+            let restants = parseInt(cmd[1]);
+            if (isNaN(restants) || restants < 0) return;
+            options.ricochets = {
+              restants
+            };
+            cmd.shift();
+            cmd.shift();
+            options.ricochets.cibles = [];
+            let last;
+            cmd.forEach(function(cid) {
+              let cible = persoOfId(cid);
+              if (cible) {
+                last = cible;
+                options.ricochets.cibles.push(cible);
+              }
+            });
+            if (last) options.origineDeLAttaque = last;
+            return;
+          }
         case 'ciblesDansDisque':
           if (cmd.length < 2) {
             error("Il manque le rayon du disque dans lequel les cibles doivent tnir", cmd);
@@ -13528,6 +13556,15 @@ var COFantasy = COFantasy || function() {
         sendPerso(attaquant, "a déjà fait une riposte contre " + nomPerso(target));
         return false;
       }
+      if (options.ricochets) {
+        let dejaTouche = options.ricochets.cibles.some(function(c) {
+          return c.token.id == target.token.id;
+        });
+        if (dejaTouche) {
+          sendPerso(attaquant, nomPerso(target) + " a déjà été touché par un précédent ricochet de cette attaque");
+          return false;
+        }
+      }
       return true;
     });
     if (cibles.length === 0) {
@@ -13540,6 +13577,7 @@ var COFantasy = COFantasy || function() {
     if (!options.redo) {
       //Prise en compte de la distance
       let optDistance = {};
+      options.portee = portee;
       if (options.contact) optDistance.allonge = options.allonge;
       // Si l'attaquant est monté, distance mesurée à partir de sa monture
       if (tokenOrigine.id == attackingToken.id) {
@@ -14838,7 +14876,7 @@ var COFantasy = COFantasy || function() {
     }
     const estMook = attackingToken.get('bar1_link') === '';
     // Les armes de jet
-    if (weaponStats.armeDeJet && !estMook) {
+    if (weaponStats.armeDeJet && !estMook && !(options.ricochets && options.ricochets.cibles.length > 0)) {
       if (weaponStats.nbArmesDeJet < 1) {
         sendPerso(attaquant, "plus de " + weaponName + " à lancer.");
         return;
@@ -15186,7 +15224,7 @@ var COFantasy = COFantasy || function() {
                 };
                 dealDamage(attaquant, r, [], evt, false, options, explications,
                   function(dmgDisplay, dmg, dmDrains) {
-                    let dmgMsg = 
+                    let dmgMsg =
                       "<b>Dommages pour " + attackerTokName + " :</b> " +
                       dmgDisplay;
                     addLineToFramedDisplay(display, dmgMsg);
@@ -18290,7 +18328,7 @@ var COFantasy = COFantasy || function() {
         addLineToFramedDisplay(display, boutonSimple("!cof-confirmer-attaque " + evt.id, "Continuer"));
       } else {
         if (evt.succes === false) {
-          var pc = pointsDeChance(perso);
+          let pc = pointsDeChance(perso);
           if (pc > 0 && !echecCritique) {
             addLineToFramedDisplay(display, boutonSimple("!cof-bouton-chance " + evt.id, "Chance") + " (reste " + pc + " PC)");
           }
@@ -18426,6 +18464,38 @@ var COFantasy = COFantasy || function() {
           displayAttaqueOpportunite(target.token.id, [attaquant], "de riposte", 'Ripostes', '--riposte');
         }
       });
+      if (options.ricochets && options.ricochets.restants > 0 &&
+        evt.action && cibles.length == 1) {
+        if (evt.succes) {
+        let cible = cibles[0];
+    if (stateCOF.options.affichage.val.init_dynamique.val) {
+        threadSync++;
+        activateRoundMarker(threadSync, cible.token);
+    }
+        let restants = options.ricochets.restants - 1;
+        let action = "!cof-attack " + attaquant.token.id + " @{target|token_id} " + evt.action.attackLabel + " --ricochets " + restants;
+        options.ricochets.cibles.forEach(function(c) {
+          action += ' ' + c.token.id;
+        });
+        action += ' ' + cible.token.id;
+        let msg = "Faire un ";
+        if (restants < 1) msg += "dernier ";
+        msg += boutonSimple(action, 'ricochet');
+        let distance = distanceCombat(cible.token, attaquant.token, evt.action.pageId);
+        if (distance > options.portee) {
+          if (restants < 1) msg += " (trop loin pour un retour en main)";
+        } else {
+          let retour = "!cof-retour-boomerang " + attaquant.token.id + " " + evt.action.attackLabel;
+          msg += " ou " + boutonSimple(retour, "retour en main");
+        }
+        sendPerso(attaquant, msg, true);
+        } else {//on a raté, il faut remettre le rounMarker à sa place
+    if (stateCOF.options.affichage.val.init_dynamique.val) {
+          threadSync++;
+          activateRoundMarker(threadSync, attaquant.token);
+    }
+        }
+      }
     }
   }
 
@@ -28771,36 +28841,36 @@ var COFantasy = COFantasy || function() {
         break;
       case 'secondSouffle':
         {
-        if (!stateCOF.combat) {
-          whisperChar(charId, " ne peut pas utiliser la capacité second souffle en dehors des combats");
-          return;
-        }
-        effet = "second souffle";
-        if (options.dose === undefined && options.limiteParJour === undefined)
-          options.limiteAttribut = {
-            nom: 'secondSouffleUtilise',
-            message: " a déjà repris son souffle durant ce combat",
-            limite: 1
-          };
-        soins = "[[1d10+";
-        let bonus = predicateAsInt(soigneur, 'secondSouffle', 0, -1);
+          if (!stateCOF.combat) {
+            whisperChar(charId, " ne peut pas utiliser la capacité second souffle en dehors des combats");
+            return;
+          }
+          effet = "second souffle";
+          if (options.dose === undefined && options.limiteParJour === undefined)
+            options.limiteAttribut = {
+              nom: 'secondSouffleUtilise',
+              message: " a déjà repris son souffle durant ce combat",
+              limite: 1
+            };
+          soins = "[[1d10+";
+          let bonus = predicateAsInt(soigneur, 'secondSouffle', 0, -1);
           if (bonus > 0) soins += bonus;
           else soins += niveau + "+" + modCarac(soigneur, 'constitution');
           soins += "]]";
-        cible = soigneur;
-        options.recuperation = true;
-        if (bonus == -1 || bonus > 0) { //Il y a un prédicat second souffle
-          //On limite les soins à ce qui a été perdu dans ce combat
-          const pvDebut = attributeAsInt(soigneur, 'PVsDebutCombat', 0);
-          let pv = parseInt(soigneur.token.get('bar1_value'));
-          if (isNaN(pv)) return;
-          if (pvDebut <= pv) {
-            whisperChar(charId, "Aucun PV perdu pendant ce combat, second souffle sans effet");
-            return;
+          cible = soigneur;
+          options.recuperation = true;
+          if (bonus == -1 || bonus > 0) { //Il y a un prédicat second souffle
+            //On limite les soins à ce qui a été perdu dans ce combat
+            const pvDebut = attributeAsInt(soigneur, 'PVsDebutCombat', 0);
+            let pv = parseInt(soigneur.token.get('bar1_value'));
+            if (isNaN(pv)) return;
+            if (pvDebut <= pv) {
+              whisperChar(charId, "Aucun PV perdu pendant ce combat, second souffle sans effet");
+              return;
+            }
+            options.limiteSoins = pvDebut - pv;
           }
-          options.limiteSoins = pvDebut - pv;
-        }
-        break;
+          break;
         }
       default:
         if (options.tempeteDeManaIntense) {
@@ -41077,6 +41147,82 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //!cof-retour-boomerang id label
+  function retourBoomerang(msg) {
+    let options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
+    if (cmd === undefined) {
+      error("Problème de parse options", msg.content);
+      return;
+    }
+    if (cmd.length < 3) {
+      error("Il manque des arguments à !cof-retour-boomerang", cmd);
+      return;
+    }
+    let lanceur = persoOfId(cmd[1]);
+    if (!lanceur) {
+      error("L'id du token ayan lancé les armes est incorrecte", cmd);
+      return;
+    }
+    if (stateCOF.combat && stateCOF.options.affichage.val.init_dynamique.val) {
+      threadSync++;
+      activateRoundMarker(threadSync, lanceur.token);
+    }
+    let weaponStats = getWeaponStats(lanceur, cmd[2]);
+    if (!weaponStats || !weaponStats.armeDeJet) {
+      error("Il semble que l'arme ne soit pas une arme de jet", cmd);
+      return;
+    }
+    let evt = {
+      type: "Retour arme de jet"
+    };
+    let attrName = weaponStats.prefixe + 'armejetqte';
+    let attr = findObjs({
+      _type: 'attribute',
+      _characterid: lanceur.charId,
+      name: attrName
+    }, {
+      caseInsensitive: true
+    });
+    evt.attributes = evt.attributes || [];
+    let max = 1;
+    if (attr.length > 0) {
+      attr = attr[0];
+      if (attr.length > 1) {
+        error("Plus d'un attribut pour la quantité d'armes de jet", attr);
+        attr[1].remove();
+      }
+      max = parseInt(attr.get('max'));
+      if (isNaN(max) || max < 1) {
+        error("Maximum de " + weaponStats.name + " mal formé, vérifier sur la fiche", attr);
+        max = 1;
+      }
+      evt.attributes.push({
+        attribute: attr,
+        current: weaponStats.nbArmesDeJet,
+        max: max
+      });
+    } else {
+      attr = createObj('attribute', {
+        characterid: lanceur.charId,
+        name: attrName,
+        current: 1,
+        max: 1
+      });
+      evt.attributes.push({
+        attribute: attr,
+      });
+    }
+    if (weaponStats.nbArmesDeJet >= max) {
+      error(nomPerso(lanceur) + " a déjà toutes " + max + " armes de jet", weaponStats);
+      return;
+    }
+    addEvent(evt);
+    attr.set('current', weaponStats.nbArmesDeJet + 1);
+    sendPerso(lanceur, "rattrape son " + weaponStats.name);
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     const command = msg.content.split(' ', 1);
@@ -41146,6 +41292,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-jet':
         jet(msg);
         return;
+      case '!cof-liste-actions':
+        apiTurnAction(msg);
+        return;
       case '!cof-mettre-a-zero-pv':
         interfaceMettreAZeroPV(msg);
         return;
@@ -41176,6 +41325,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-resultat-jet':
         resultatJet(msg);
         return;
+      case '!cof-retour-boomerang':
+        retourBoomerang(msg);
+        return;
       case "!cof-rune-protection":
         runeProtection(msg);
         return;
@@ -41204,10 +41356,6 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-undo':
         undoEvent();
-        return;
-      case '!cof-turn-action':
-      case '!cof-liste-actions':
-        apiTurnAction(msg);
         return;
       case "!cof-attendre":
         attendreInit(msg);

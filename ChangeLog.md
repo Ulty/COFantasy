@@ -12,6 +12,7 @@
 * Rage de Baphit (Invincible)
 
 ### Autres améliorations
+* Possibilité de faire des ricochets avec une attaque d'arme de jet
 * Possibilité d'affaiblir une caractéristique au hasard.
 * Possibilité de mettre et enlever son casque depuis !cof-statut
 * Utilisation de l'icone chef pour la capacité laissez-le moi.
