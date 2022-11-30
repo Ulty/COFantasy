@@ -2269,8 +2269,8 @@ var COFantasy = COFantasy || function() {
         return true;
       }
       if (etat == 'affaibli') { //special case due to new character sheet
-        let v = 12;
-        if (value) v = 20;
+        let v = 20;
+        if (value) v = 12;
         setFicheAttr(personnage, 'ETATDE', v, evt, {
           default: 20
         });
@@ -4435,9 +4435,9 @@ var COFantasy = COFantasy || function() {
         _characterid: perso.charId
       });
       abilities.forEach(function(a, i) {
-        var aName = a.get('name');
+        let aName = a.get('name');
         if (aName === '') return;
-        var daName = '%' + aName;
+        let daName = '%' + aName;
         if (action.indexOf(daName) >= 0) {
           action = action.replace(daName, a.get('action'));
           if (!remplacement) abilities = abilities.splice(i); //Pour éviter la récursion
@@ -9956,7 +9956,16 @@ var COFantasy = COFantasy || function() {
         to.pasAgi =
           to.pasAgi.filter(function(elt) {
             if (elt.id == perso.token.id) {
-              if (recompute) return false; //On enlève le perso des pasAgi
+              if (recompute && elt.pr != init) {
+                if (elt.pr == combat.init && init > elt.pr) {
+                  //Pour l'instant, on ne peut pas remonter l'init, on le fera au prochain tour
+                  push = false;
+                  updateNextInit(perso);
+                  return true;
+                } else {
+                  return false; //On enlève le perso des pasAgi
+                }
+              }
               push = false; //Sinon, comme on ne recalcule pas, on le laisse
               return true;
             }
@@ -12275,10 +12284,10 @@ var COFantasy = COFantasy || function() {
   }
 
   function diminueMalediction(lanceur, evt, attr) {
-    var attrMalediction = attr || tokenAttribute(lanceur, 'malediction');
+    let attrMalediction = attr || tokenAttribute(lanceur, 'malediction');
     if (attrMalediction.length > 0) {
       attrMalediction = attrMalediction[0];
-      var nbMaudit = parseInt(attrMalediction.get('current'));
+      let nbMaudit = parseInt(attrMalediction.get('current'));
       if (isNaN(nbMaudit) || nbMaudit < 2) {
         evt.deletedAttributes = evt.deletedAttributes || [];
         evt.deletedAttributes.push(attrMalediction);
@@ -12295,18 +12304,18 @@ var COFantasy = COFantasy || function() {
   }
 
   function attributesOfClass(perso, classeEffet) {
-    var attrs = findObjs({
+    let attrs = findObjs({
       _type: 'attribute',
       _characterid: perso.charId
     });
-    var res = [];
+    let res = [];
     attrs.forEach(function(attr) {
-      var attrName = attr.get('name');
-      var ice = attrName.indexOf('ClasseEffet');
+      let attrName = attr.get('name');
+      let ice = attrName.indexOf('ClasseEffet');
       if (ice < 1) return;
       if (attr.get('current') == classeEffet) {
-        var baseAttrName = attrName.replace(/ClasseEffet/, '');
-        var baseAttr = attrs.find(function(a) {
+        let baseAttrName = attrName.replace(/ClasseEffet/, '');
+        let baseAttr = attrs.find(function(a) {
           return (a.get('name') == baseAttrName);
         });
         if (baseAttr === undefined) {
@@ -18466,34 +18475,34 @@ var COFantasy = COFantasy || function() {
       });
       if (options.ricochets && options.ricochets.restants > 0 &&
         evt.action && cibles.length == 1) {
-        if (evt.succes) {
         let cible = cibles[0];
-    if (stateCOF.options.affichage.val.init_dynamique.val) {
-        threadSync++;
-        activateRoundMarker(threadSync, cible.token);
-    }
-        let restants = options.ricochets.restants - 1;
-        let action = "!cof-attack " + attaquant.token.id + " @{target|token_id} " + evt.action.attackLabel + " --ricochets " + restants;
-        options.ricochets.cibles.forEach(function(c) {
-          action += ' ' + c.token.id;
-        });
-        action += ' ' + cible.token.id;
-        let msg = "Faire un ";
-        if (restants < 1) msg += "dernier ";
-        msg += boutonSimple(action, 'ricochet');
-        let distance = distanceCombat(cible.token, attaquant.token, evt.action.pageId);
-        if (distance > options.portee) {
-          if (restants < 1) msg += " (trop loin pour un retour en main)";
-        } else {
-          let retour = "!cof-retour-boomerang " + attaquant.token.id + " " + evt.action.attackLabel;
-          msg += " ou " + boutonSimple(retour, "retour en main");
-        }
-        sendPerso(attaquant, msg, true);
-        } else {//on a raté, il faut remettre le rounMarker à sa place
-    if (stateCOF.options.affichage.val.init_dynamique.val) {
-          threadSync++;
-          activateRoundMarker(threadSync, attaquant.token);
-    }
+        if (cible.touche) {
+          if (stateCOF.options.affichage.val.init_dynamique.val) {
+            threadSync++;
+            activateRoundMarker(threadSync, cible.token);
+          }
+          let restants = options.ricochets.restants - 1;
+          let action = "!cof-attack " + attaquant.token.id + " @{target|token_id} " + evt.action.attackLabel + " --ricochets " + restants;
+          options.ricochets.cibles.forEach(function(c) {
+            action += ' ' + c.token.id;
+          });
+          action += ' ' + cible.token.id;
+          let msg = "Faire un ";
+          if (restants < 1) msg += "dernier ";
+          msg += boutonSimple(action, 'ricochet');
+          let distance = distanceCombat(cible.token, attaquant.token, evt.action.pageId);
+          if (distance > options.portee) {
+            if (restants < 1) msg += " (trop loin pour un retour en main)";
+          } else {
+            let retour = "!cof-retour-boomerang " + attaquant.token.id + " " + evt.action.attackLabel;
+            msg += " ou " + boutonSimple(retour, "retour en main");
+          }
+          sendPerso(attaquant, msg, true);
+        } else { //on a raté, il faut remettre le rounMarker à sa place
+          if (stateCOF.options.affichage.val.init_dynamique.val) {
+            threadSync++;
+            activateRoundMarker(threadSync, attaquant.token);
+          }
         }
       }
     }
@@ -28402,7 +28411,7 @@ var COFantasy = COFantasy || function() {
         return true;
       default:
         let mots = perso.race.split(' ');
-        return mots.include('dragon');
+        return mots.includes('dragon');
     }
   }
 
