@@ -1292,7 +1292,7 @@ var COFantasy = COFantasy || function() {
           case 'asphyxie':
             registerMarkerEffet('cof-asphyxie', effet, m, ms);
             break;
-          case 'saignementSang':
+          case 'saignementsSang':
             registerMarkerEffet('cof-saigne', effet, m, ms);
             break;
           case 'prisonVegetale':
