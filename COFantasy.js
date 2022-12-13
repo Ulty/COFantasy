@@ -5649,7 +5649,8 @@ var COFantasy = COFantasy || function() {
     }
     if (options) {
       if (options.bonus) bonus += options.bonus;
-      if (options.chanceRollId && options.chanceRollId[testId]) bonus += options.chanceRollId[testId];
+      if (options.chanceRollId && options.chanceRollId[testId])
+        bonus += options.chanceRollId[testId];
       let malusCasque = false;
       if (options.bonusAttrs) {
         options.bonusAttrs.forEach(function(attr) {
@@ -7530,6 +7531,7 @@ var COFantasy = COFantasy || function() {
         return {
           type: 'attributCible',
           attribute: args[1],
+          local: true,
           text: args[1]
         };
       case 'attributCible':
@@ -8136,7 +8138,7 @@ var COFantasy = COFantasy || function() {
             return;
           }
           options.tueurDe = options.tueurDe || [];
-          options.tueurDe.push(cmd[2]);
+          options.tueurDe.push(cmd[1]);
           return;
         case 'magique':
           let niveauMagie = 1;
@@ -9292,7 +9294,7 @@ var COFantasy = COFantasy || function() {
         let resMoins = true;
         cibles.forEach(function(target) {
           if (resMoins) {
-            var targetAttr = valAttribute(target, cond.attribute, caracAttr);
+            let targetAttr = valAttribute(target, cond.attribute, caracAttr);
             if (targetAttr >= attackerAttr) resMoins = false;
           }
         });
@@ -9300,7 +9302,7 @@ var COFantasy = COFantasy || function() {
       case 'etat':
         return (getState(attaquant, cond.etat));
       case 'etatCible':
-        var resEtatCible = true;
+        let resEtatCible = true;
         cibles.forEach(function(target) {
           if (resEtatCible && !getState(target, cond.etat))
             resEtatCible = false;
@@ -9322,7 +9324,7 @@ var COFantasy = COFantasy || function() {
         } else {
           cibles.forEach(function(target) {
             if (resAttrCible) {
-              var attr;
+              let attr;
               if (cond.fiche) {
                 attr = ficheAttribute(target, cond.attribute, cond.fiche.def);
                 if (attr === undefined) {
