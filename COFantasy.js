@@ -7944,6 +7944,7 @@ var COFantasy = COFantasy || function() {
         case 'affute':
         case 'arc':
         case 'arbalete':
+        case 'armeDArgent':
         case 'attaqueAssuree':
         case 'attaqueFlamboyante':
         case 'attaqueRisquee':
@@ -7953,7 +7954,7 @@ var COFantasy = COFantasy || function() {
         case 'epieu':
         case 'hache':
         case 'marteau':
-        case 'armeDArgent':
+        case 'vicieux':
         case 'artificiel':
         case 'asDeLaGachette':
         case 'attaqueMentale':
@@ -9489,8 +9490,8 @@ var COFantasy = COFantasy || function() {
     }
     etatParent.aTraiter = scope.ite.length;
     scope.ite = scope.ite.filter(function(ite) {
-      var condInTarget = inTarget;
-      var resCondition;
+      let condInTarget = inTarget;
+      let resCondition;
       if (ite.condition == 'toujoursVrai') resCondition = true;
       switch (ite.condition.type) {
         case 'etat':
@@ -17253,6 +17254,13 @@ var COFantasy = COFantasy || function() {
             target.messages.push(attackerTokName + " bénéficie d'un bonus de +" + bonusDefi + " aux DMs contre " + nomPerso(target));
           }
         }
+        if (options.vicieux) {
+            target.additionalDmg.push({
+              type: mainDmgType,
+              value: '2d6'
+            });
+          target.messages.push("Arme vicieuse => +2d6 DM");
+        }
         if (attributeAsBool(attaquant, 'ombreMortelle') ||
           attributeAsBool(attaquant, 'dedoublement') ||
           (charAttributeAsBool(attaquant, 'armeeConjuree') && attributeAsBool(target, 'attaqueArmeeConjuree'))) {
@@ -17263,7 +17271,7 @@ var COFantasy = COFantasy || function() {
           if (options.divise) options.divise *= 2;
           else options.divise = 2;
         }
-        var mainDmgRollExpr;
+        let mainDmgRollExpr;
         if (target.dmRate) {
           mainDmgRollExpr = options.dmSiRate.value;
           mainDmgType = options.dmSiRate.type;
@@ -17299,7 +17307,7 @@ var COFantasy = COFantasy || function() {
         }
         if (options.tirDouble || options.tirDeBarrage || options.dmFoisDeux) {
           if (options.tirDouble && options.tirDouble.stats) {
-            var stats2 = options.tirDouble.stats;
+            let stats2 = options.tirDouble.stats;
             mainDmgRollExpr += " +" +
               computeMainDmgRollExpr(attaquant, target, stats2, stats2.attNbDices,
                 attDMBonus, options);
@@ -17705,6 +17713,27 @@ var COFantasy = COFantasy || function() {
                       sendChat('COF', "/w GM Jet caché de dommages : " + dmgDisplay);
                     } else {
                       target.dmgMessage += dmgDisplay;
+                    }
+                    if (options.vicieux) {
+                        ciblesCount++;
+                        let dm = rollDePlus(6, {
+                          type: mainDmgType,
+                          nbDes: 1,
+                        });
+                        let r = {
+                          type: mainDmgType,
+                          display: dm.roll,
+                          total: dm.val
+                        };
+                        dealDamage(attaquant, r, [], evt, false, options,
+                          target.messages,
+                          function(dmgDisplay, dmg, dmgDrain) {
+                            let dmgMsg =
+                              "<b>" + attackerTokName + " subit :</b> " +
+                              dmgDisplay + " DM de l'arme vicieuse";
+                            target.messages.push(dmgMsg);
+                            finCibles();
+                          });
                     }
                     if (options.contact) {
                       //Les DMs automatiques en cas de toucher une cible

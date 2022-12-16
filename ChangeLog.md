@@ -12,6 +12,7 @@
 * Rage de Baphit (Invincible)
 
 ### Autres améliorations
+* Ajout des armes vicieuses.
 * Possibilité de faire des ricochets avec une attaque d'arme de jet
 * Possibilité d'affaiblir une caractéristique au hasard.
 * Possibilité de mettre et enlever son casque depuis !cof-statut
