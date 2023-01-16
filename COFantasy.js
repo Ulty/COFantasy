@@ -6651,6 +6651,42 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function determinant(xa, ya, xb, yb) {
+    return xa * yb - ya * xb;
+  }
+
+  //Calcule si le segment [a,b] intersecte le segment [c,d]
+  function segmentIntersecte(a, b, c, d) {
+    let d1 = determinant(b.x - a.x, b.y - a.y, c.x - a.x, c.y - a.y);
+    let d2 = determinant(b.x - a.x, b.y - a.y, d.x - a.x, d.y - a.y);
+    if (d1 > 0 && d2 > 0) return false;
+    if (d1 < 0 && d2 < 0) return false;
+    d1 = determinant(d.x - c.x, d.y - c.y, a.x - c.x, a.y - c.y);
+    d2 = determinant(d.x - c.x, d.y - c.y, b.x - c.x, b.y - c.y);
+    if (d1 > 0 && d2 > 0) return false;
+    if (d1 < 0 && d2 < 0) return false;
+    return true;
+  }
+
+  //traduction des coordonées de path en coordonées réelles sur la carte
+  function translatePathCoordinates(x, y, p) {
+    //D'abord on calcule les coordonnées relatives au centre
+    x -= p.width / 2;
+    y -= p.height / 2;
+    //Puis on applique le scale
+    x *= p.scaleX;
+    y *= p.scaleY;
+    //Puis on fait la rotation
+    let c = Math.cos(p.angle);
+    let s = Math.sin(p.angle);
+    x = c * x + s * y;
+    y = c * y - s * x;
+    //Et finalement on ajoute les coordonnées du centre
+    x += p.left;
+    y += p.top;
+    return { x, y };
+  }
+
   function getWalls(page, pageId, murs) {
     if (murs) return murs;
     if (!page.get('lightrestrictmove')) return;
@@ -6660,7 +6696,10 @@ var COFantasy = COFantasy || function() {
       layer: 'walls'
     });
     murs = murs.map(function(path) {
-      var p = {
+      let chemin = JSON.parse(path.get('_path'));
+      if (chemin.length < 2) return [];
+      if (chemin[1][0] != 'L') return [];
+      let p = {
         angle: path.get('rotation') / 180 * Math.PI,
         width: path.get('width'),
         height: path.get('height'),
@@ -6669,13 +6708,30 @@ var COFantasy = COFantasy || function() {
         scaleX: path.get('scaleX'),
         scaleY: path.get('scaleY'),
       };
-      var chemin = JSON.parse(path.get('_path'));
-      if (chemin.length < 2) return [];
-      if (chemin[1][0] != 'L') return [];
       chemin = chemin.map(function(v) {
         return translatePathCoordinates(v[1], v[2], p);
       });
       return chemin;
+    });
+    //On rajoute les portes fermées.
+    let doors = findObjs({
+      _type: 'door',
+      _pageid: pageId,
+    });
+    doors.forEach(function(door) {
+      if (door.get('isOpen')) return;
+      let path = door.get('path');
+      let x = door.get('x');
+      let y = door.get('y');
+      let chemin = [
+        { x:x + path.handle0.x,
+          y:path.handle0.y - y,
+        },
+        { x:x + path.handle1.x,
+          y:path.handle1.y - y,
+        }
+      ];
+      murs.push(chemin);
     });
     return murs;
   }
@@ -7148,7 +7204,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque un argument à l'option " + args[0], opts);
             return;
           }
-          var bonus = parseInt(args[1]);
+          let bonus = parseInt(args[1]);
           if (isNaN(bonus)) {
             error("Le bonus doit être un nombre", opts);
             return;
@@ -39207,6 +39263,9 @@ var COFantasy = COFantasy || function() {
                   case 'poison':
                     predicats += 'immunite_poison ';
                     return;
+                  case 'construct':
+                    predicats += 'sansEsprit creatureArtificielle immuniteSaignement';
+                    return;
                   case 'undead':
                   case 'traits':
                   case 'effects':
@@ -39295,7 +39354,7 @@ var COFantasy = COFantasy || function() {
               let rdn = attr.get('current');
               if (rdn) {
                 rdn = '' + rdn;
-                rdn = rdn.replace('bludgeoning', 'contondant').replace('slashing', 'tranchant').replace('piercing', 'percant').replace('silver', 'argent').replace('magic', 'magique').replace('/-', '');
+                rdn = rdn.replace('bludgeoning', 'contondant').replace('slashing', 'tranchant').replace('piercing', 'percant').replace('silver', 'argent').replace('magic', 'magique').replace('adamantine', 'adamantium').replace('/-', '');
                 if (rd === '') rd = rdn;
                 else rd += ', ' + rdn;
               }
@@ -44489,45 +44548,6 @@ var COFantasy = COFantasy || function() {
     if (evt) affectToken(perso.token, 'lockMovement', true, evt);
     perso.token.set('lockMovement', false);
     enleveDecoince(perso, evt);
-  }
-
-  function determinant(xa, ya, xb, yb) {
-    return xa * yb - ya * xb;
-  }
-
-  //Calcule si le segment [a,b] intersecte le segment [c,d]
-  function segmentIntersecte(a, b, c, d) {
-    var d1 = determinant(b.x - a.x, b.y - a.y, c.x - a.x, c.y - a.y);
-    var d2 = determinant(b.x - a.x, b.y - a.y, d.x - a.x, d.y - a.y);
-    if (d1 > 0 && d2 > 0) return false;
-    if (d1 < 0 && d2 < 0) return false;
-    d1 = determinant(d.x - c.x, d.y - c.y, a.x - c.x, a.y - c.y);
-    d2 = determinant(d.x - c.x, d.y - c.y, b.x - c.x, b.y - c.y);
-    if (d1 > 0 && d2 > 0) return false;
-    if (d1 < 0 && d2 < 0) return false;
-    return true;
-  }
-
-  //traduction des coordonées de path en coordonées réelles sur la carte
-  function translatePathCoordinates(x, y, p) {
-    //D'abord on calcule les coordonnées relatives au centre
-    x -= p.width / 2;
-    y -= p.height / 2;
-    //Puis on applique le scale
-    x *= p.scaleX;
-    y *= p.scaleY;
-    //Puis on fait la rotation
-    var c = Math.cos(p.angle);
-    var s = Math.sin(p.angle);
-    x = c * x + s * y;
-    y = c * y - s * x;
-    //Et finalement on ajoute les coordonnées du centre
-    x += p.left;
-    y += p.top;
-    return {
-      x: x,
-      y: y
-    };
   }
 
   function getGMId() {
