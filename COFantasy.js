@@ -4468,7 +4468,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function fieldAsString(obj, field, def) {
-    var res = obj[field];
+    let res = obj[field];
     if (res === undefined) return def;
     return res;
   }
@@ -41322,6 +41322,28 @@ var COFantasy = COFantasy || function() {
     sendPerso(lanceur, "rattrape son " + weaponStats.name);
   }
 
+  //Pour ouvrir une porte sans event, en particulier en cas de pause
+  // !cof-open-door id
+  function openDoor(msg) {
+    let options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
+    if (cmd === undefined) {
+      error("Problème de parse options", msg.content);
+      return;
+    }
+    if (cmd.length < 2) {
+      error("Il manque un argument à !cof-open-door", cmd);
+      return;
+    }
+    let door = getObj('door', cmd[1]);
+    if (door === undefined) {
+      error("Impossible de trouver la porte", cmd);
+      return;
+    }
+    door.set('isOpen', true);
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     const command = msg.content.split(' ', 1);
@@ -41339,6 +41361,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-attack':
         parseAttack(msg);
+        return;
+      case '!cof-attendre':
+        attendreInit(msg);
         return;
       case '!cof-bouger':
         decoincer(msg);
@@ -41406,6 +41431,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-nouveau-jour':
         parseNouveauJour(msg);
         return;
+      case '!cof-open-door':
+        openDoor(msg);
+        return;
       case '!cof-options':
         setCofOptions(msg);
         return;
@@ -41455,9 +41483,6 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-undo':
         undoEvent();
-        return;
-      case "!cof-attendre":
-        attendreInit(msg);
         return;
       case "!cof-statut":
         statut(msg);
@@ -45317,6 +45342,16 @@ var COFantasy = COFantasy || function() {
     enleveDecoince(perso, evt);
   }
 
+  function changeDoor(door, prev) {
+    if (!stateCOF.pause) return;
+    if (prev.isOpen) return;
+    if (door.get('isOpen')) {
+      door.set('isOpen', false);
+      let b = boutonSimple('!cof-open-door ' + door.id, "Ouvrir");
+      sendChat('COF', "/w GM "+b+" (jeu en pause)");
+    }
+  }
+
   return {
     apiCommand,
     nextTurn,
@@ -45329,6 +45364,7 @@ var COFantasy = COFantasy || function() {
     initAllMarkers,
     setStateCOF,
     scriptVersionToCharacter,
+    changeDoor,
     predicateOfRaw,
     listAllAttacks,
     getWeaponStats
@@ -47137,3 +47173,4 @@ on('add:character', function(c) {
     COFantasy.scriptVersionToCharacter(c);
   }
 });
+on("change:door:isOpen", COFantasy.changeDoor);

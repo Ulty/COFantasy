@@ -12,6 +12,7 @@
 * Rage de Baphit (Invincible)
 
 ### Autres améliorations
+* Referme les portes qu'on ouvre quand le jeu est en pause.
 * Prise en compte des portes fermées.
 * Ajout des armes vicieuses.
 * Possibilité de faire des ricochets avec une attaque d'arme de jet
