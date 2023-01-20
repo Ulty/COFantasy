@@ -1,4 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 3.11
+### Autres améliorations
+* Nouvelle syntaxe pour les prédicats à valeur complexe.
+
 ## 3.10
 ### Capacités
 * Magie de combat de la Voie du guerrier-mage.

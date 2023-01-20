@@ -162,9 +162,10 @@ tr {line-height: 25px;}
             <div class="decalage">
               <p>Une façon courante d'informer le script qu'un personnage dispose d'une capacité particulière (que ce soit dû à son entraînement ou à un objet porté) consiste à utiliser des prédicats. Il s'agit de mots clés à rentrer dans la zone de texte <code>Prédicats</code>, visible depuis l'onglet <code>Script</code> de la fiche. Ces mots clés peuvent être séparés de blancs ou de retours à la ligne.</p>
               <p>On peut associer une valeur à un prédicat (le plus souvent un nombre, mais en fait n'importe quel mot qui ne contienne ni virgule, ni blanc, ni <code>:</code>). Pour cela, faire suivre le prédicat de <code>:</code> puis de la valeur.</p>
-              <p>Dans chaque ligne de la zone de prédicats, tout ce qui vient après <code>//</code> est considéré comme du commentaire et ignoré.</p>
+              <p>Dans chaque ligne de la zone de prédicats, tout ce qui vient après <code>//</code> est considéré comme du commentaire et ignoré (exception: les valeurs complexes, si le <code>//</code> vient après <code>::</code>, voir plus bas).</p>
               <p><img class="img-fluid" src="images/predicats_barbare.jpg"></p>
               <figcaption>Exemple de prédicats.</figcaption>
+              <p>Certains prédicats ont des valeurs complexes, qui peuvent contenir des blancs, des virgules, des guillements, ou même des <code>:</code> ou <code>//</code>. Afin de pouvoir utliser ces valeurs, vous pouvez faire suivre le nom du prédicat de <code>::</code>. Tout ce qui viendra après jusqu'à la fin de la ligne sera considéré comme étant la valeur associée à ce prédicat. Un exemple typique d'utilisation : quand la valeur est un nom de personnage.</p>
             </div>
             <h3 class="text-info" id="methode_selection_groupes">1.4 Méthodes de sélection de groupes</h3>
             <div class="decalage">
@@ -620,7 +621,7 @@ tr {line-height: 25px;}
               </div>
               <h3 class="text-info" id="statut_etats">2.4 Statut et états</h3>
               <div class="decalage">
-                <p><code>!cof-statut</code> affiche l'état courant de tous les tokens sélectionnés. Utile pour connaître facilement les états qui ne sont pas directement visibles sur un token (points de récupération, armes chargées, ...). Il est possible de rajouter l'affichage d'autres attributs que ceux sélectionnés par défaut par le script. Pour cela, utiliser un attribut <code>attributsDeStatut</code>, de valeur courante la liste des noms d'attributs à afficher, séparés par des virgules.</p>
+                <p><code>!cof-statut</code> affiche l'état courant de tous les tokens sélectionnés. Utile pour connaître facilement les états qui ne sont pas directement visibles sur un token (points de récupération, armes chargées, ...). Il est possible de rajouter l'affichage d'autres attributs que ceux sélectionnés par défaut par le script. Pour cela, utiliser un prédicat <code>attributsDeStatut</code>, de valeur la liste des noms d'attributs à afficher, séparés par des virgules. Attention, si vous avez besoin de séparer vos attributs par des virgules, pensez à utiliser la syntaxe avec <code>::</code>. Si vous le souhaitez, vous pouvez utiliser plusieurs prédicats nommés <code>attributsDeStatut</code>. </p>
                 <h4 class="text-secondary" id="etats">États gérés en utilisant le statut des tokens</h4>
                 <div class="decalage">
                   <p><code>!cof-set-state <i>etat</i> <i>[true|false]</i></code> permet de changer l'état des tokens sélectionnés. Si cet état concerne un personnage avec tokens liés (en liant la barre 1 aux points de vie), alors l'état persiste si on change de carte (utilisation d'un attribut hors fiche).</p>
@@ -855,11 +856,10 @@ tr {line-height: 25px;}
                     </li>
                   </ul>
                 </div>
-                <p>Pour les PNJs, qui n'ont pas encore d'onglet d'équipement, le script regarde tous les attributs qui commencent par <code>dose_</code>, <code>elixir_</code> ou <code>consommable_</code>. Pour ces attributs, la valeur courante doit être le nombre d'éléments possédé, et le max peut être une commande à effectuer pour activer l'effet. La fonction est à réserver aux tokens liés à un personnage. Il est aussi possible de simplement écrire un message qui s'affichera (et diminuera la quantité de consommables).</p>
                 <p>L'échange via le symbole <span class="text-danger"><strong>&#8596;</strong></span> vous permettra de sélectionner un token destinataire qui recevra le consommable dans sa liste. Si le consommable existe déjà pour le destinataire, sa quantité sera augmenté de 1, sinon le consommable sera créé.</p>
                 <div class="alert alert-secondary">
                   <p>Cette fonction peut-être très utile pour que les PJ échangent entre eux un consommable, mais aussi pour faciliter la vente d'objet entre PNJ et PJ.</p>
-                  <p>Pour cette dernière, il vous suffira de préparer un personnage avec un token qui contient, dans ses attributs, les consommables à échanger/vendre.</p>
+                  <p>Pour cette dernière, il vous suffira de préparer un personnage avec un token qui contient, dans son équipement, les consommables à échanger/vendre.</p>
                 </div>
               </div>
               <h3 class="text-info" id="deplacements">2.7 Déplacements</h3>
@@ -947,7 +947,7 @@ tr {line-height: 25px;}
               </div>
               <h4 class="text-info" id="surprise">Surprise : <code>!cof-surprise ?difficulte</code></h4>
               <div class="decalage">
-                <p>Fait un test de surprise sur tous les tokens sélectionné. Si la difficulté n'est pas présente, ils sont automatiquement surpris. Les valeurs des attributs (hors fiche) <code>vigilance</code> et <code>perception</code> sont ajoutés au test de sagesse.</p>
+                <p>Fait un test de surprise sur tous les tokens sélectionné. Si la difficulté n'est pas présente, ils sont automatiquement surpris. Les valeurs des compétences <code>vigilance</code> et <code>perception</code> sont ajoutés au test de sagesse.</p>
                 <p>Si vous souhaitez préciser que la surprise est le fait d'un personnage ou effet non vivant (pour ne pas faire bénéficier du bonus de la capacité Radar mental), vous pouvez rajouter l'option <code>--nonVivant</code>.</p>
               </div>
               <h4 class="text-info" id="bourse">Gestion de la bourse : <code>!cof-bourse</code></h4>
@@ -1081,7 +1081,7 @@ tr {line-height: 25px;}
                       <li>Objet de sort : <code>#Attaque Attaque sonore --toucher [[@{selected|ATKMAG}]] --dm 1d6+[[@{selected|CHA}]] --portee 10 --sortilege --sonique --cone --fx breath-smoke</code></li>
                     </ul>
                   </li>
-                  <li><strong>Zone de silence</strong> : <code>!cof-effet-temp zoneDeSilence [[1d6+@{selected|CHA}]] --lanceur @{selected|token_id} --portee 35 --disque @{target|token_id} 3 --mana 1</code>. Le script ne gère pas le moment où les cibles sortent de la zone. Si cela arrive, le MJ doit enlever à la main l'attribut <code>zoneDeSilence</code> crée par le script pour le personnage concerné.</li>
+                  <li><strong>Zone de silence</strong> : <code>!cof-effet-temp zoneDeSilence [[1d6+@{selected|CHA}]] --lanceur @{selected|token_id} --portee 35 --disque @{target|token_id} 3 --mana 1</code>. Le script ne gère pas le moment où les cibles sortent de la zone. Si cela arrive, le MJ doit enlever à la main l'attribut <code>zoneDeSilence</code> créé par le script pour le personnage concerné.</li>
                   <li><strong>Danse irrésisitible</strong> :
                     <ul>
                       <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateur <code>pasDeDmg</code>, options <code>--mana 2 --effet danseIrresistible [[1d4+@{selected|CHA]]</code>.</li>
@@ -1125,7 +1125,7 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie du cavalier</h4>
                 <ol>
                   <li><strong>Fidèle monture</strong> : Faire un personnage pour la monture, avec un <a href=#predicats>prédicat</a> <code>monture</code>. Pour monter sur la monture, on peut utiliser une ability de type token action, avec <code>!cof-en-selle @{selected|token_id} <i>nom_de_la_monture</i></code>. Pour en descendre, il suffit de cliquer à nouveau sur le bouton de l'ability. Si vous souhaitez éviter que la monture apparaisse dans le turn tracker, vous pouvez ajouter un <a href=#predicats>prédicat</a> <code>aucuneActionCombat</code> à la monture. </li>
-                  <li><strong>Cavalier émérite</strong> : Ajouter au chevalier un <a href=#predicats>prédicat</a> <code>cavalierEmerite:2</code>. Pour la défense de la monture, ajouter à cellle-ci un attribut <code>defDeriveeDe</code> de valeur le nom du chevalier (exactement tel qu'il apparaît sur la fiche).</li>
+                  <li><strong>Cavalier émérite</strong> : Ajouter au chevalier un <a href=#predicats>prédicat</a> <code>cavalierEmerite:2</code>. Pour la défense de la monture, ajouter à cellle-ci un prédicat <code>defDeriveeDe</code> de valeur le nom du chevalier (exactement tel qu'il apparaît sur la fiche, il est possible que cela demande d'utiliser la syntaxe avec <code>::</code>).</li>
                   <li><strong>Monture magique</strong> : pour les soins automatiques de la nuit, ajouter un <a href=#predicats>prédicat</a> <code>montureMagique</code>.</li>
                   <li>
                     <strong>Charge</strong> : pas de support pour le déplacement, mais
@@ -1172,8 +1172,8 @@ tr {line-height: 25px;}
                   <li><strong>Écuyer</strong> : 
                     <ul>
                       <li> Pour le bonus au critique, ajouter un <a href=#predicats>prédicat</a> <code>ecuyer</code>. </li>
-                      <li> Pour les soins de nuit, ajouter à l'écuyer un attribut <code>ecuyerDe</code>, avec comme valeur le nom du chevalier. L'écuyer pourra soigner chaque nuit le chevalier et certains alliés, mais pour qu'il soigne les alliés, il ne faut pas oublier de le mettre dans la <a href="#methode_selection_groupes">liste de l'équipe</a> du chevalier.</li>
-                      <li>Si on souhaite que l'écuyer puisse soigner gratuitement la monture, il faut aussi que celle-ci ait un attribut <code>montureDe</code>, avec comme valeur le nom du chevalier.</li>
+                      <li> Pour les soins de nuit, ajouter à l'écuyer un <a href=#predicats>prédicat</a> <code>ecuyerDe</code>, avec comme valeur le nom du chevalier (attention à utiliser la syntaxe avec <code>::</code> si ce nom contient des espaces). L'écuyer pourra soigner chaque nuit le chevalier et certains alliés, mais pour qu'il soigne les alliés, il ne faut pas oublier de le mettre dans la <a href="#methode_selection_groupes">liste de l'équipe</a> du chevalier.</li>
+                      <li>Si on souhaite que l'écuyer puisse soigner gratuitement la monture, il faut aussi que celle-ci ait un <a href=#predicats>prédicat</a> <code>montureDe</code>, avec comme valeur le nom du chevalier.</li>
                     </ul>
                   </li>
                 </ol>
@@ -1189,14 +1189,14 @@ tr {line-height: 25px;}
                       <li>Objet de sort : <code>#Attaque Nuée d'insectes --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --effet nueeDInsectes [[5+@{selected|SAG}]]</code></li>
                     </ul>
                   </li>
-                  <li><strong>Le guetteur</strong> : Si elle n'est pas déjà présente dans votre handout de compétences, ajouter au druide une compétence <code>perception</code> (valeur 0 pour le moment). Créer un personnage et un token pour l'oiseau. Ajouter au druide un attribut <code>guetteur</code> de valeur le nom exact de l'oiseau (sur la fiche). Ajouter de même un attribut <code>PVPartagesAvec</code> de valeur le nom de l'oiseau. Ajouter aussi à l'oiseau un attribut <code>PVPartagesAvec</code> de valeur le nom du druide. Pour le faire agir en même temps que le druide, ajoutez aussi à l'oiseau un attribut <code>initiativeDeriveeDe</code> de valeur le nom du druide. Pour l'attaque, ajouter sur la fiche une attaque de contact faisant 1d4 DM, avec dans les options <code>--attaqueMagiqueDe <i>nom de personnage du druide</i></code>. Si vous souhaitez que le guetteur rentre en combat en même temps que le druide, ajoutez au druide un attribut nommé <code>entrerEnCombatAvec</code>, de valeur le nom du token de l'oiseau.</li>
+                  <li><strong>Le guetteur</strong> : Si elle n'est pas déjà présente dans votre handout de compétences, ajouter au druide une compétence <code>perception</code> (valeur 0 pour le moment). Créer un personnage et un token pour l'oiseau. Ajouter au druide un <a href=#predicats>prédicat</a> <code>guetteur</code> de valeur le nom exact de l'oiseau (sur la fiche, attention à utiliser la symtaxe avec <code>::</code> si le nom comporte des espaces). Ajouter de même un <a href=#predicats>prédicat</a> <code>PVPartagesAvec</code> de valeur le nom de l'oiseau. Ajouter aussi à l'oiseau un <a href=#predicats>prédicat</a> <code>PVPartagesAvec</code> de valeur le nom du druide. Pour le faire agir en même temps que le druide, ajoutez aussi à l'oiseau un prédicat <code>initiativeDeriveeDe</code> de valeur le nom du druide. Pour l'attaque, ajouter sur la fiche une attaque de contact faisant 1d4 DM, avec dans les options <code>--attaqueMagiqueDe <i>nom de personnage du druide</i></code>. Si vous souhaitez que le guetteur rentre en combat en même temps que le druide, ajoutez au druide un prédicat nommé <code>entrerEnCombatAvec</code>, de valeur le nom du token de l'oiseau.</li>
                   <li><strong>Masque du prédateur</strong> : <code>!cof-effet-temp masqueDuPredateur [[5+@{selected|SAG}]] --mana 2</code></li>
                   <li><strong>Forme animale</strong> : pas d'autre support que <code>!cof-lancer-sort se transforme en ?{Transformation en ?} --mana 3</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie du fauve</h4>
                 <ol>
                   <li><strong>Vitesse du félin</strong> : ajouter un prédicat <code>vitesseDuFelin</code>, de valeur le rang dans la voie. Pensez à ajouter des compétences de saut, escalade et course sur la fiche (sans les bonus !) s'ils ne sont pas déjà présent dans votre handout de compétences.</li>
-                  <li><strong>Panthère</strong> : ajouter un personnage pour la panthère, qui sera contrôlé par le joueur. Si vous souhaitez que la panthère rentre en combat à chaque fois que le druide entre en combat, ajoutez au druide un attribut nommé <code>entrerEnCombatAvec</code>, de valeur le nom du token de la panthère (il peut y avoir plusieurs attributs avec ce nom).</li>
+                  <li><strong>Panthère</strong> : ajouter un personnage pour la panthère, qui sera contrôlé par le joueur. Si vous souhaitez que la panthère rentre en combat à chaque fois que le druide entre en combat, ajoutez au druide un <a href=#predicats>prédicat</a> nommé <code>entrerEnCombatAvec</code>, de valeur le nom du token de la panthère (il peut y avoir plusieurs prédicats avec ce nom).</li>
                   <li><strong>Attaque bondissante</strong> : faire l'attaque avec les options <code>--bonusAttaque 5</code> <code>--plus 1d6</code>. Les conditions d'utilisation sont à vérifier par le MJ.</li>
                   <li><strong>Grand félin</strong> : ajuster la fiche de la panthère, et pour le soin, utiliser <code>!cof-soin @{selected|token_id} nom_familier ?{Montant des soins} --transfer</code>.</li>
                   <li><strong>Les sept vies du chat</strong> : pas de support particulier, la commande Undo peut être utilisée pour annuler l'action qui a mené le Druide à 0 PV.</code></li>
@@ -1214,7 +1214,7 @@ tr {line-height: 25px;}
                   <li><strong>Baies magiques</strong> : Pour simplement créer les baies, on peut utiliser <code>!cof-creer-baies</code>, avec éventuellement des arguments pour la dépense de mana. Si le sort ne demande pas de dépense et que le temps passé n'est pas important, il peut être plus simple de directement utiliser <code>!cof-distribuer-baies</code> avec option <code>--allies --self</code> ou <code>--target</code> pour créer et donner des baies (en ayant sélectionné le druide, le mieux est d'utiliser une ability). Pour consommer ensuite une baie, il faut utiliser <code>!cof-consommables</code>.</li>
                   <li><strong>Forêt vivante</strong> : on peut mettre un effet (avec <code>!cof-effet</code>) <code>foretVivanteEnnemie</code> aux personnages affectés. Par exemple, si on veut donner l'effet aux personnages non alliés du druide, on peut faire <code>!cof-effet foretVivanteEnnemie oui --disque @{selected|token_id} 2000 --saufAllies --mana 0</code>. Attention, l'effet ne disparaît que si on fait un <code>!cof-effet foretVivanteEnnemie non</code> sur les personnages.</li>
                   <li><strong>Régénération</strong> : <code>!cof-effet-temp regeneration [[@{selected|niveau} + @{selected|SAG}]] --lanceur @{selected|token_id} --target @{target|token_id} --limiteCibleParJour 1 --portee 0 --mana 1</code>.</li>
-                  <li><strong>Forme d'arbre</strong> : <code>!cof-effet-temp formeDArbre [[5+@{selected|SAG}]] --mana 2</code>. J'ai choisi de donner comme pouvoir supplémentaire à cette forme d'avoir ses propres PVs, et le druide récupère ses PVs originaux à la fin de l'effet. La transformation est annulée aussi si l'arbre perd tous ses PVs. Le nombre de PVs par défaut est de niveau x 5, mais il peut être modifié en ajoutant au argument <code>--valeur <i>pv</i></code>. Pour augmenter un peu l'intérêt de ce sort, je lui fais aussi augmenter de 50% le bonus de peau d'écorce. Si vous utilisez les actions à afficher à chaque tour, vous pouvez aussi créer une liste d'actions nommée <code>Forme d'arbre</code> contenant les sorts et actions possibles en forme d'arbre. Si une telle liste existe, elle va toujours afficher au moins les actions défensive, d'attente et d'attaque sous forme d'arbre (pas besoin de créer une attaque dédiée sur la fiche). Il est possible de spécifier une image pour le token en forme d'arbre, en utilisant le valeur courante d'un attribut <code>tokenFormeDArbre</code>.</li>
+                  <li><strong>Forme d'arbre</strong> : <code>!cof-effet-temp formeDArbre [[5+@{selected|SAG}]] --mana 2</code>. J'ai choisi de donner comme pouvoir supplémentaire à cette forme d'avoir ses propres PVs, et le druide récupère ses PVs originaux à la fin de l'effet. La transformation est annulée aussi si l'arbre perd tous ses PVs. Le nombre de PVs par défaut est de niveau x 5, mais il peut être modifié en ajoutant au argument <code>--valeur <i>pv</i></code>. Pour augmenter un peu l'intérêt de ce sort, je lui fais aussi augmenter de 50% le bonus de peau d'écorce. Si vous utilisez les actions à afficher à chaque tour, vous pouvez aussi créer une liste d'actions nommée <code>Forme d'arbre</code> contenant les sorts et actions possibles en forme d'arbre. Si une telle liste existe, elle va toujours afficher au moins les actions défensive, d'attente et d'attaque sous forme d'arbre (pas besoin de créer une attaque dédiée sur la fiche). Il est possible de spécifier une image pour le token en forme d'arbre, en utilisant le valeur d'un <a href=#predicats>prédicat</a> <code>tokenFormeDArbre</code>.</li>
                   <li><strong>Sagesse héroïque</strong> : reporter sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary" id="voie_végétaux">Voie des végétaux</h4>
@@ -1297,10 +1297,10 @@ tr {line-height: 25px;}
                 <ol>
                   <li><strong>Familier</strong> : créer un personnage (de type PNJ) pour le familier, controlé par le joueur et avec un token lié ayant la capacité de voir. 
                     <ul>
-                      <li>Pour le bonus en initiative, ajouter un attribut <code>familier</code> au personnage, avec comme valeur le nom du compagnon (doit être exactement le même que celui du token du compagnon). Cela automatise l'initiative quand le familier est présent.</li>
-                      <li>Pour les points de vie partagés avec le familier, il faut mettre un attribut <code>PVPartagesAvec</code> de valeur le nom du familier (celui de la fiche, pas forcément le même que le token) pour le personnage, et un attribut similaire chez le familier, de valeur courante le nom du personnage. Le partage de PVs ne fonctionne pas avec des mooks, et il ne fait pas le partage de dégâts temporaires. En revanche, le script devrait gérer correctement les dégâts de zone.</li>
-                      <li>Pour la défense du familier, ajouter lui un attribut <code>defDeriveeDe</code>, de valeur le nom du personnage (nom complet sur la fiche).</li>
-                      <li>L'initiative ne devrait pas être très utile, mais si besoin, ajoutez un attribut <code>initiativeDeriveeDe</code> de valeur le nom du personnage. En fait, pour les familiers normaux, je préfères même qu'ils n'apparaissent pas sur le turn tracker, et je leur met donc un <a href=#predicats>prédicat</a> <code>aucuneActionCombat</code>.</li>
+                      <li>Pour le bonus en initiative, ajouter un <a href=#predicats>prédicat</a> <code>familier</code> au personnage, avec comme valeur le nom du compagnon (doit être exactement le même que celui du token du compagnon). Cela automatise l'initiative quand le familier est présent.</li>
+                      <li>Pour les points de vie partagés avec le familier, il faut mettre un <a href=#predicats>prédicat</a> <code>PVPartagesAvec</code> de valeur le nom du familier (celui de la fiche, pas forcément le même que le token) pour le personnage, et un prédicat similaire chez le familier, de valeur le nom du personnage. Le partage de PVs ne fonctionne pas avec des mooks, et il ne fait pas le partage de dégâts temporaires. En revanche, le script devrait gérer correctement les dégâts de zone.</li>
+                      <li>Pour la défense du familier, lui ajouter un <a href=#predicats>prédicat</a> <code>defDeriveeDe</code>, de valeur le nom du personnage (nom complet sur la fiche, attention à bien utiliser la syntaxe avec <code>::</code> si ce nom contient des espaces ou autres caractères spéciaux).</li>
+                      <li>L'initiative ne devrait pas être très utile, mais si besoin, ajoutez un prédicat <code>initiativeDeriveeDe</code> de valeur le nom du personnage. En fait, pour les familiers normaux, je préfères même qu'ils n'apparaissent pas sur le turn tracker, et je leur met donc un <a href=#predicats>prédicat</a> <code>aucuneActionCombat</code>.</li>
                     </ul>
                   </li>
                   <li><strong>Serviteur invisible&nbsp;</strong>: pas de support autre que <code>!cof-lancer-sort crée une force invisible pour ([[5+@{selected|CHA}]] minutes) --mana 0</code></li>
@@ -1437,7 +1437,7 @@ tr {line-height: 25px;}
                 </ol>
                 <h4 class="text-secondary">Voie du familier</h4>
                 <ol>
-                  <li><strong>Familier</strong> : créer un token pour le familier, avec vue et controlé par le joueur. Le partage des PV n'est pas géré. Pour le bonus en initiative, ajouter un attribut <code>familier</code>, avec comme valeur le nom du compagnon (doit être exactement le même que celui du token du compagnon). Cela automatise l'initiative quand le familier est présent.</li>
+                  <li><strong>Familier</strong> : créer un token pour le familier, avec vue et controlé par le joueur. Le partage des PV n'est pas géré. Pour le bonus en initiative, ajouter un <a href=#predicats>prédicat</a> <code>familier</code>, avec comme valeur le nom du compagnon (doit être exactement le même que celui du token du compagnon). Cela automatise l'initiative quand le familier est présent.</li>
                   <li><strong>Résistance</strong> : ajouter la valeur de RD sur la fiche du familier.</li>
                   <li><strong>Sens développés</strong> : ajouter un <a href=#predicats>prédicat</a> <code>perception</code> de valeur 5 (ou augmenter ce prédicat, si il existe déjà), et ajouter un prédicat <code>visionDansLeNoir</code> de valeur 20 (40 si le personnage dispose déjà de la vision dans le noir).</li>
                 </ol>
@@ -1823,14 +1823,14 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie du compagnon animal</h4>
                 <ol>
                   <li><strong>Odorat</strong> : ajouter une compétence <code>pistage</code>, de valeur 5 (ou augmentée de 5)</li>
-                  <li><strong>Surveillance</strong> : ajouter un attribut <code>surveillance</code>, avec comme valeur le nom du compagnon (doit être exactement le même que celui du token du compagnon). Cela automatise l'initiative et le bonus aux jets de surprise, le reste se gère manuellement</li>
-                  <li><strong>Combat</strong> : ajouter le loup sous contrôle du joueur. Si vous souhaitez que le loup rentre en combat à chaque fois que le rôdeur entre en combat, ajoutez au rôdeur un attribut nommé <code>entrerEnCombatAvec</code>, de valeur le nom du token du loup.</li>
+                  <li><strong>Surveillance</strong> : ajouter un <a href=#predicats>prédicat</a> <code>surveillance</code>, avec comme valeur le nom du compagnon (doit être exactement le même que celui du token du compagnon). Cela automatise l'initiative et le bonus aux jets de surprise, le reste se gère manuellement</li>
+                  <li><strong>Combat</strong> : ajouter le loup sous contrôle du joueur. Si vous souhaitez que le loup rentre en combat à chaque fois que le rôdeur entre en combat, ajoutez au rôdeur un <a href=#predicats>prédicat</a> nommé <code>entrerEnCombatAvec</code>, de valeur le nom du token du loup.</li>
                   <li><strong>Empathie animale</strong> : pour soigner, utiliser <code>!cof-soin @{selected|token_id} <i>nom_familier</i> ?{Montant des soins} --transfer</code></li>
                   <li><strong>Animal fabuleux</strong> : ajuster les caractéristiques du loup</li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'escarmouche</h4>
                 <ol>
-                  <li><strong>Chasseur émérite</strong> : ajouter un <a href=#predicats>prédicat</a> <code>chasseurEmerite</code>. Puis, si dans le profil (attribut PROFIL) de la cible, il y a <code>animal</code> (ou si la cible a un prédicat <code>animal</code>), le bonus s'applique. Ajouter aussi le bonus à une compétence <code>pistage</code>.</li>
+                  <li><strong>Chasseur émérite</strong> : ajouter un <a href=#predicats>prédicat</a> <code>chasseurEmerite</code>. Puis, si dans le profil (attribut <code>profil</code>) de la cible, il y a <code>animal</code> (ou si la cible a un prédicat <code>animal</code>), le bonus s'applique. Ajouter aussi le bonus à une compétence <code>pistage</code>.</li>
                   <li><strong>Traquenard</strong> : ajouter un <a href=#predicats>prédicat</a> <code>traquenard</code>, puis option <code>--traquenard</code> pour l'attaque. Pour une utilisation pratique, le mieux est de faire une attaque d'arme en main avec l'option : <code>#Attaque -1 --traquenard</code>.</li>
                   <li><strong>Attaque éclair</strong> : <code>--plus [[@{selected|DEX}]] --bonusAttaque [[@{selected|DEX}]]</code></li>
                   <li><strong>Repli</strong> : simplement faire un jet en utilisant par exemple <code>!cof-jet DEX 10</code>, et décrire le résultat.</li>
@@ -1847,9 +1847,9 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie du traqueur</h4>
                 <ol>
                   <li><strong>Pas de loup</strong> : ajouter le bonus à une compétence <code>discrétion</code>.</li>
-                  <li><strong>Ennemi juré</strong> : ajouter un attribut <code>ennemiJure</code> avec comme valeur la race des ennemis. Cette race doit se retrouver dans le champ race de l'ennemi. Le script reconnait aussi le type <code>mort-vivant</code> (tout en minuscules) et dans ce cas va déterminer si la cible est un mort-vivant (prédicat <code>mortVivant</code> ou race reconnue comme mort-vivant), ainsi que le type <code>géant</code> (pour les géants, ogres, trolls, etc.) et le type <code>gobelin</code>.</li>
+                  <li><strong>Ennemi juré</strong> : ajouter un <a href=#predicats>prédicat</a> <code>ennemiJure</code> avec comme valeur la race des ennemis. Cette race doit se retrouver dans le champ race de l'ennemi. Le script reconnait aussi le type <code>mort-vivant</code> (tout en minuscules) et dans ce cas va déterminer si la cible est un mort-vivant (prédicat <code>mortVivant</code> ou race reconnue comme mort-vivant), ainsi que le type <code>géant</code> (pour les géants, ogres, trolls, etc.) et le type <code>gobelin</code>.</li>
                   <li><strong>Embuscade</strong> : en cas d'attaque sur les ennemis, les mettre tous surpris avec la commande <code>!cof-set-state surpris true</code></li>
-                  <li><strong>Second ennemi juré</strong> : on peut renseigner une seconde race dans l'attribut <code>ennemiJure</code> en la séparant de la première par une virgule (exemple : <code>orque, araignée</code>)</li>
+                  <li><strong>Second ennemi juré</strong> : on peut renseigner une seconde race dans un nouveau prédicat <code>ennemiJure</code>, ou alors le rajouter au prédicat <code>ennemiJure</code> précédant, en la séparant de la première par une virgule (exemple : <code>ennemiJure:: orque, araignée</code>, sans rien ensuite sur la ligne)</li>
                   <li><strong>Perception héroïque</strong> : reporter les bonus sur la fiche</li>
                 </ol>
               </div>
@@ -1865,7 +1865,7 @@ tr {line-height: 25px;}
                 <ol>
                   <li><strong>Éduqué</strong> : simplement noter les bonus et compétences sur la fiche.</li>
                   <li><strong>Homme de cour</strong> : ajouter une compétence <code>étiquette</code>, de valeur 5.</li>
-                  <li><strong>Lame de lignée</strong> : pas de support particulier pour l'arme, mais quand le samouraï perd l'arme, vous pouvez rajouter un attribut <code>lameDeLigneePerdue</code>, de valeur <code>true</code> (à effacer quand il la retrouve).</li>
+                  <li><strong>Lame de lignée</strong> : pas de support particulier pour l'arme, mais quand le samouraï perd l'arme, vous pouvez utiliser la commande <code>!cof-effet lameDeLigneePerdue true</code> (avec le samouraï sélectionné). Quand il la retrouve, utilisez <code>!cof-effet lameDeLigneePerdue false</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'honneur</h4>
                 <ol>
@@ -1979,7 +1979,7 @@ tr {line-height: 25px;}
                 <ol>
                   <li><strong>Langage des animaux</strong> : aucun support</li>
                   <li><strong>Invisibilité</strong> : <code>!cof-set-state invisible true --message se rend invisible --messageMJ l'invisibilité va durer [[1d6+@{selected|INT}]] minutes --limiteParJour <i>r</i></code> où <i>r</i> est le rang dans la Voie.</li>
-                  <li><strong>Monture féérique</strong> : ajouter un ersonnage pour la monture. Ajoutez-lui le <a href=#predicats>prédicat</a> <code>monture</code>. Pour monter sur la monture, utiliser <code>!cof-en-selle @{selected|token_id} nom_de_la_monture</code>, et pour en descendre, il suffit de faire la même commande (utiliser une ability "token action" rend cela assez facile à l'usage). Si vous souhaitez que la monture rentre en combat à chaque fois que l'être féérique entre en combat, ajoutez à l'être féérique un attribut nommé <code>entrerEnCombatAvec</code>, de valeur le nom du token de la monture.</li>
+                  <li><strong>Monture féérique</strong> : ajouter un ersonnage pour la monture. Ajoutez-lui le <a href=#predicats>prédicat</a> <code>monture</code>. Pour monter sur la monture, utiliser <code>!cof-en-selle @{selected|token_id} nom_de_la_monture</code>, et pour en descendre, il suffit de faire la même commande (utiliser une ability "token action" rend cela assez facile à l'usage). Si vous souhaitez que la monture rentre en combat à chaque fois que l'être féérique entre en combat, ajoutez à l'être féérique un prédicat nommé <code>entrerEnCombatAvec</code>, de valeur le nom du token de la monture (pensez à utiliser la syntaxe avec <code>::</code> si ce nom contient des caractères spéciaux).</li>
                   <li><strong>Grande taille</strong> : <code>!cof-effet grandeTaille oui --lanceur @{selected|token_id} --limiteParJour 3 --messageMJ La taille humaine durera [[1d6+@{selected|CHA}]] minutes</code>. Le script ne gère pas les durées en minutes, le MJ devra penser à supprimer l'effet, par exemple depuis le statut (<code>!cof-statut</code>).</li>
                 </ol>
                 <h4 class="text-secondary">Félis</h4>
@@ -2008,7 +2008,7 @@ tr {line-height: 25px;}
                 <ol>
                   <li><strong>Grâce elfique</strong> : ajouter les bonus sur la fiche</li>
                   <li><strong>Talent pour la magie</strong> : voir les capacités choisies</li>
-                  <li><strong>Force d'âme</strong> : ajouter des <a href=#predicats>prédicat</a> <code>immunite_peur</code> et <code>immunite_endormi</code>. Ajouter aussi des attributs <code>DEF_magie</code> et <code>bonusSagesseMagie</code> de valeur <code>5</code>.</li>
+                  <li><strong>Force d'âme</strong> : ajouter des <a href=#predicats>prédicat</a> <code>immunite_peur</code> et <code>immunite_endormi</code>. Ajouter aussi des <a href=#predicats>prédicats</a> <code>DEF_magie</code> et <code>bonusSagesseMagie</code> de valeur <code>5</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Humain</h4>
                 <p>Instinct de survie : créer un <a href=#predicats>prédicat</a> <code>instinctDeSurvieHumain</code>.</p>
@@ -2057,7 +2057,7 @@ tr {line-height: 25px;}
                   <li><strong>Résistance aux éléments</strong> : ajouter dans la RD sur la fiche <code>feu:5, electrique:5, froid:5</code></li>
                 </ul>
                 <ol>
-                  <li><strong>Se faire discret</strong> : ajouter les jets sur la fiche, ou bien des attributs <code>mentir</code> et <code>deguisement</code> de valeur 5, à utiliser avec <code>!cof-jet</code>.</li>
+                  <li><strong>Se faire discret</strong> : ajouter les jets sur la fiche, ou bien des compétences <code>mentir</code> et <code>deguisement</code> de valeur 5, à utiliser avec <code>!cof-jet</code>.</li>
                 </ol>
               </div>
               <h3 class="text-info" id="Prestige">4.2 Voies de prestige et capacités épiques</h3>
@@ -2145,10 +2145,10 @@ tr {line-height: 25px;}
                 <ol>
                   <li><strong>Familier fantastique</strong> : créer un personnage (de type PNJ) pour le familier, controlé par le joueur et avec un token lié ayant la capacité de voir. 
                     <ul>
-                      <li>Pour le bonus en initiative, ajouter un attribut <code>familier</code> au personnage, avec comme valeur le nom du compagnon (doit être exactement le même que celui du token du compagnon). Cela automatise l'initiative quand le familier est présent.</li>
-                      <li>Pour les points de vie partagés avec le familier, il faut mettre un attribut <code>PVPartagesAvec</code> de valeur le nom du familier (celui de la fiche, pas forcément le même que le token) pour le personnage, et un attribut similaire chez le familier, de valeur courante le nom du personnage. Le partage de PVs ne fonctionne pas avec des mooks, et il ne fait pas le partage de dégâts temporaires. En revanche, le script devrait gérer correctement les dégâts de zone.</li>
-                      <li>Pour la défense du familier, ajouter lui un attribut <code>defDeriveeDe</code>, de valeur le nom du personnage (nom complet sur la fiche).</li>
-                      <li>Pour l'initiative, ajoutez un attribut <code>initiativeDeriveeDe</code> de valeur le nom du personnage.</li>
+                      <li>Pour le bonus en initiative, ajouter au personnage un <a href=#predicats>prédicat</a> <code>familier</code> de valeur le nom du compagnon (doit être exactement le même que celui du token du compagnon). Cela automatise l'initiative quand le familier est présent.</li>
+                      <li>Pour les points de vie partagés avec le familier, il faut mettre un <a href=#predicats>prédicat</a> <code>PVPartagesAvec</code> de valeur le nom du familier (celui de la fiche, pas forcément le même que le token) pour le personnage, et un prédicat similaire chez le familier, de valeur le nom du personnage. Le partage de PVs ne fonctionne pas avec des mooks, et il ne fait pas le partage de dégâts temporaires. En revanche, le script devrait gérer correctement les dégâts de zone.</li>
+                      <li>Pour la défense du familier, ajouter lui un <a href=#predicats>prédicat</a> <code>defDeriveeDe</code>, de valeur le nom du personnage (nom complet sur la fiche, attention à bien utiliser la syntaxe avec <code>::</code> si ce nom contient des espaces ou d'autres caractères spéciaux).</li>
+                      <li>Pour l'initiative, ajoutez un <a href=#predicats>prédicat</a> <code>initiativeDeriveeDe</code> de valeur le nom du personnage.</li>
                     </ul>
                   </li>
                   <li><strong>Pouvoir mineur</strong> : 
@@ -2214,7 +2214,7 @@ tr {line-height: 25px;}
                   <li><strong>Libérateur de Dorn</strong> : ajouter un prédicat <code>liberateurDeDorn</code>.</li>
                   <li><strong>Libérateur de Kerserac</strong> : ajouter un prédicat <code>liberateurDeKerserac</code>.</li>
                   <li><strong>Libérateur d'Anathazerïn</strong> : ajouter un prédicat <code>liberateurDAnathazerin</code>. La capacité donne le bonus de +2 quel que soit le poison.</li>
-                  <li><strong>Lien épique</strong>: ajouter pour chaque personnage un attribut <code>lienEpique</code>, qui contiennent la même chose dans le champ courant (pensez à un nom d'équipe, par exemple).</li>
+                  <li><strong>Lien épique</strong>: ajouter pour chaque personnage un <a href=#predicats>prédicat</a> <code>lienEpique</code>, qui contiennent la même chose dans le champ courant (pensez à un nom d'équipe, par exemple).</li>
                 </ul>
               </div>
               <h3 class="text-info" id="Créatures">4.3 Voies de créatures</h3>
@@ -2259,7 +2259,7 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie des créatures magique</h4>
                 <ol>
                   <li><strong>Réduction des DM</strong> : Ajouter la RD sur la fiche <code>5/<i>genre</i></code>, où <i>genre</i> peut être <code>magique</code> ou un des types d'attaque (feu, acide, poison, etc...).</li>
-                  <li><strong>Vitalité surnaturelle</strong> : ajouter un attribut <code>vitaliteSurnaturelle</code>, de valeur courante le nombre de PV régénéré par tour. Si la régénération doit continuer même à la mort du personnage, ajoutez un <code>+</code> à la fin de la valeur courante. Si un type de dégât empêche la régénération, inscrire ce type en valeur maximal de l'attribut (attention, ça ne peut pas être le type drain). Si plusieurs types de dégâts, les séparer par une virgule. Par exemple, un troll aura un attribut <code>vitaliteSurnaturelle</code>, de valeur courante <code>5+</code>, et de valeur maximale <code>feu,acide</code>. Si vous voulez réinitialiser les dégâts qui ne peuvent pas se régénérer sur un personnage, vous pouvez utiliser des soins normaux (<code>!cof-soin</code>), et si vous avez augmenté à la main les PVs, vous pouvez effacer les attributs <code>DMSuivis<em>type</em></code> qui ont été créés par le script.</li>
+                  <li><strong>Vitalité surnaturelle</strong> : ajouter un <a href=#predicats>prédicat</a> <code>vitaliteSurnaturelle</code>, de valeur le nombre de PV régénéré par tour. Si la régénération doit continuer même à la mort du personnage, ajoutez un <code>+</code> à la fin de la valeur. Si un type de dégât empêche la régénération, faites suivre la valeur de régénération d'un <code>/</code> suivi du type (attention, ça ne peut pas être le type drain). Si plusieurs types de dégâts, les séparer par une virgule (et dans ce cas, penser à utiliser la syntaxe avec <code>::</code>. Par exemple, un troll aura un prédicat <code>vitaliteSurnaturelle:: 5+ / feu, acide</code>, en faisant attention à ne rien mettre ensuite sur la même ligne. Si vous voulez réinitialiser les dégâts qui ne peuvent pas se régénérer sur un personnage, vous pouvez utiliser des soins normaux (<code>!cof-soin</code>), et si vous avez augmenté à la main les PVs, vous pouvez effacer les attributs <code>DMSuivis<em>type</em></code> qui ont été créés par le script.</li>
                 </ol>
                 <h4 class="text-secondary">Voie des créatures volantes</h4>
                 <ol>
@@ -2295,7 +2295,7 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie du PNJ récurrent</h4>
                 <ol>
                   <li><strong>Instinct de survie</strong> : ajouter un <a href=#predicats>prédicat</a> <code>instinctDeSurvie</code> avec comme valeur le nombre de PV en-dessous duquel le PNJ gagne un bonus de DEF. les autres effets sont à faire par le MJ.</li>
-                  <li><strong>Chair à canon</strong> : ajouter un <a href=#predicats>prédicat</a> <code>chairACanon</code>. Ajouter ensuite à tous ses sous-fifres un attribut <code>chairACanonDe</code> de valeur le nom exact du token du PNJ. On peut y mettre plusieurs noms séparés par des virgules.</li>
+                  <li><strong>Chair à canon</strong> : ajouter un <a href=#predicats>prédicat</a> <code>chairACanon</code>. Ajouter ensuite à tous ses sous-fifres un prédicat <code>chairACanonDe</code> de valeur le nom exact du token du PNJ. On peut y mettre plusieurs noms séparés par des virgules. Attention, dans ce cas (et aussi si le nom de token contient des espaces ou virgules, etc) pensez à utiliser <code>::</code> au lieu de <code>:</code> pour le prédicat.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du prédateur</h4>
                 <ol>
@@ -2345,7 +2345,7 @@ tr {line-height: 25px;}
                   <li><strong>Créature non-vivante</strong> : ajouter un <a href=#predicats>prédicat</a> <code>nonVivant</code>.</li>
                   <li><strong>Créature végétative</strong> : ajouter un <a href=#predicats>prédicat</a> <code>vegetatif</code>.</li>
                   <li><strong>Cyclone</strong> (pour les élementaires) : <code>!cof-effet-temp cyclone [[1d4+1]] --limiteParCombat 1</code>. Cela va proposer une attaque <code>Traverser</code> dans les actions de l'élémentaire, qui ne peut fonctionner que si le personnage a au moins une attaque sur sa fiche. Par défaut, l'attaque utilisée en traversant est l'attaque de label <code>1</code>, mais on peut préciser un autre label en utilisant l'option <code>--valeur</code>.</li>
-                  <li><strong>Dégâts si touché au contact</strong> (élémentaire de feu,...) : ajouter un attribut nommé <code>dmSiToucheContact</code>, de valeur courante les dégâts, et de valeur maximale leur type. Par exemple, pour un élémentaire de feu, la valeur courant sera <code>1d6</code>, et la valeur maximale sera <code>feu</code>.</li>
+                  <li><strong>Dégâts si touché au contact</strong> (élémentaire de feu,...) : ajouter un <a href=#predicats>prédicat</a> nommé <code>dmSiToucheContact</code>, de valeur les dégâts, suivis de <code> --</code> et du type si besoin. Par exemple, pour un élémentaire de feu, le prédicat <code>dmSiToucheContact:: 1d6 --feu</code>, en fin de ligne (rien ne doit suivre sur cette ligne).</li>
                   <li><strong>Drain de force</strong> (pour la campagne Invincible) : ajouter un <a href=#predicats>prédicat</a> <code>auraDrainDeForce</code></li>
                   <li><strong>Écraser</strong> (pour la campagne Invincible) : ajouter un <a href=#predicats>prédicat</a> <code>ecraser</code> de valeur le label de l'attaque utilisée pour écraser.</li>
                   <li><strong>Énergie de la mort</strong> (pour la campagne Vengeance) : ajouter un <a href=#predicats>prédicat</a> <code>energieDeLaMort</code>. Le MJ devra être attentif au message indiquant le retour à la vie, car c'est lui qui devra enlever l'état mort et ajuster les PVs.</li>
@@ -2369,7 +2369,7 @@ tr {line-height: 25px;}
                   <li><strong>Insensible</strong> : ajouter un <a href=#predicats>prédicat</a> <code>insensibleAffaibli</code>.</li>
                   <li><strong>Invisible</strong> : passer le personnage invisible (<code>!cof-set-state invisible true</code>, ou mettre directment le statut sur le token). Si il peut rester invisible en combat, lui ajouter un <a href=#predicats>prédicat</a> <code>invisibleEnCombat</code>. Si il est attaqué autrement qu'avec tir en aveugle par quelqu'un qui ne voit pas l'invisble (à vous de montrer au moins temporairement le token), un malus de +5 en DEF au contact et +10 à distance sera appliqué, de même que le bonus de +5 en attaque contre ceux qui ne voient pas l'invisible. Le script suppose toujours qu'un personnage qui dispose de tir aveugle utilise sa capacité contre les cibles invisibles: à vous de vérifier qu'il ne cumule pas ça avec une capacité limitée.</li>
                   <li><strong>Langage sombre</strong> : en plus de comprendre les elfes noirs, j'ai décidé d'octroyer un bonus de +1 en DEF et +1 aux DM contre les elfes noirs, bonus justifié par la meilleure compréhension de leur culture et de leurs tactiques. Pour cela, j'utiliser un <a href=#predicats>prédicat</a> <code>langageSombreHetre</code>.</li>
-                  <li><strong>Message en cas de coup critique reçu</strong> : on peut utiliser un attribut <code>messageSiCritique</code> avec en valeur courante un message à afficher en cas d'echec critique subit.</li>
+                  <li><strong>Message en cas de coup critique reçu</strong> : on peut utiliser un <a href=#predicats>prédicat</a> <code>messageSiCritique</code> avec en valeur un message à afficher en cas d'echec critique subit. Pensez à bien utiliser la syntaxe avec <code>::</code>.</li>
                   <li><strong>Mot de pouvoir</strong> qui immobilise : <code>!cof-mot-de-pouvoir-immobilise --lanceur @{selected|token_id} --enVue --saufAllies</code> </li>
                   <li><strong>N'abandonne jamais</strong> : ajouter un <a href=#predicats>prédicat</a> <code>nAbandonnejamais</code>.</li>
                   <li><strong>Noirbois</strong> : À l'entrée dans des ténèbres magiques, utiliser la commande <code>!cof-tenebres-magiques</code>. À la sortie ou la fin de ces ténèbres, faire <code>!cof-tenebres-magiques fin</code>. Pour allumer la fiole de lumière, sélectionner un token est faire <code>!cof-fiole-de-lumiere <i>d</i></code> où <i>d</i> est la distance à laquelle la fiole éclaire. On peut ajouter un troisième argument, qui est la distance à laquelle la lumière devient moins brillante (pas d'effet sur la mécanique de jeu). Pour éteindre la lumière, il faut mettre utiliser <code>!cof-fiole-de-lumiere fin</code>.</li>
@@ -2620,7 +2620,7 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie du combat monté  </h4>
                 <ol>
                   <li><strong>Fidèle monture :</strong> Faire un personnage pour la monture, avec un <a href=#predicats>prédicat</a> <code>monture</code>. Pour monter sur la monture, on peut utiliser une ability de type token action, avec <code>!cof-en-selle @{selected|token_id} <i>nom_de_la_monture</i></code>. Pour en descendre, il suffit de cliquer à nouveau sur le bouton de l'ability. Si vous souhaitez éviter que la monture apparaisse dans le turn tracker, vous pouvez ajouter un <a href=#predicats>prédicat</a> <code>aucuneActionCombat</code> à la monture. </li>
-                  <li><strong>Cavalier émérite</strong> : Ajouter au combattant un <a href=#predicats>prédicat</a> <code>cavalierEmerite:2</code>. Pour la défense de la monture, ajouter à cellle-ci un attribut <code>defDeriveeDe</code> de valeur le nom du combattant (exactement tel qu'il apparaît sur la fiche). Attention, cela suppose que le combattant a une meilleure DEF que sa monture. Si ce n'est pas le cas, faire les ajustements sur la fiche du combattant.</li>
+                  <li><strong>Cavalier émérite</strong> : Ajouter au combattant un <a href=#predicats>prédicat</a> <code>cavalierEmerite:2</code>. Pour la défense de la monture, ajouter à cellle-ci un prédicat <code>defDeriveeDe</code> de valeur le nom du combattant (exactement tel qu'il apparaît sur la fiche, il est possible que cela demande d'utiliser la syntaxe avec <code>::</code>). Attention, cela suppose que le combattant a une meilleure DEF que sa monture. Si ce n'est pas le cas, faire les ajustements sur la fiche du combattant.</li>
                   <li><strong>Massacrer la piétaille :</strong> En Attente </li>
                   <li> <strong>Charge :</strong> pas de support pour le déplacement, mais
                     <ul>
