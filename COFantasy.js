@@ -7716,7 +7716,7 @@ var COFantasy = COFantasy || function() {
 
   //Remplis les champs arme et armeGauche de perso
   //renvoie undefined si aucune arme en main principale
-  //renvoie l'arme principale sinon undefined
+  //sinon renvoie l'arme principale
   function armesEnMain(perso) {
     if (perso.armesEnMain) return perso.arme;
     let labelArme = tokenAttribute(perso, 'armeEnMain');
@@ -7887,7 +7887,7 @@ var COFantasy = COFantasy || function() {
       weaponStats.attSkill = attaqueArray[1][0];
       weaponStats.attSkillDiv = attaqueArray[1][1];
       weaponStats.crit = attaqueArray[2];
-      var weaponDmg = attaqueArray[3];
+      const weaponDmg = attaqueArray[3];
       weaponStats.attNbDices = weaponDmg[0];
       weaponStats.attDice = weaponDmg[1];
       weaponStats.attCarBonus = weaponDmg[2];
@@ -7973,6 +7973,7 @@ var COFantasy = COFantasy || function() {
       hache: weaponStats.hache,
       armeNaturelle: weaponStats.armeNaturelle,
       poudre: weaponStats.poudre,
+      arme: weaponStats.arme || weaponStats.armeGauche || weaponStats.armeDeJet,
     };
     switch (weaponStats.typeDegats) {
       case 'mental':
@@ -17257,12 +17258,12 @@ var COFantasy = COFantasy || function() {
               target.messages.push("Arme tenue à 2 mains et cible énorme => +2d6 DM");
             }
           }
-          if (predicateAsBool(attaquant, "grosMonstreGrosseArme")) {
+          if (predicateAsBool(attaquant, 'grosMonstreGrosseArme')) {
             options.puissant = true;
             target.messages.push("Gros Monstre, grosse arme => dégâts de base augmentés");
           }
         }
-        if (attributeAsBool(target, "hemorragie") && !options.sortilege && !options.armeNaturelle) {
+        if (attributeAsBool(target, 'hemorragie') && !options.sortilege && !options.armeNaturelle) {
           target.additionalDmg.push({
             type: mainDmgType,
             value: '1d6'
@@ -17439,13 +17440,13 @@ var COFantasy = COFantasy || function() {
             });
             if (target.additionalCritDmg.length === 0) delete target.additionalCritDmg;
           }
-          var correctAdditionalDmg = [];
+          let correctAdditionalDmg = [];
           additionalDmg.forEach(function(dmSpec, i) {
-            var rRoll = rollsDmg.inlinerolls[rollNumber(afterEvaluateDmg[i + 1])];
+            let rRoll = rollsDmg.inlinerolls[rollNumber(afterEvaluateDmg[i + 1])];
             if (rRoll) {
               correctAdditionalDmg.push(dmSpec);
               dmSpec.total = dmSpec.total || rRoll.results.total;
-              var addDmType = dmSpec.type;
+              let addDmType = dmSpec.type;
               dmSpec.display = dmSpec.display || buildinline(rRoll, addDmType, options.magique);
             } else { //l'expression de DM additionel est mal formée
               error("Expression de dégâts supplémentaires mal formée : " + additionalDmg[i].value, additionalDmg[i]);
@@ -17456,8 +17457,10 @@ var COFantasy = COFantasy || function() {
           }
           additionalDmg = correctAdditionalDmg;
           if (target.touche) { //Devrait être inutile ?
-            if (options.tirDeBarrage) target.messages.push("Tir de barrage : undo si la cible décide de ne pas bouger");
-            if (options.pointsVitaux) target.messages.push(attackerTokName + " vise des points vitaux mais ne semble pas faire de dégâts");
+            if (options.tirDeBarrage)
+              target.messages.push("Tir de barrage : undo si la cible décide de ne pas bouger");
+            if (options.pointsVitaux)
+              target.messages.push(attackerTokName + " vise des points vitaux mais ne semble pas faire de dégâts");
             if (options.pressionMortelle || target.pressionMortelle) {
               removeTokenAttr(target, 'pressionMortelle', evt);
               target.messages.push(attackerTokName + " libère la pression des points vitaux, l'effet est dévastateur !");
@@ -19938,6 +19941,17 @@ var COFantasy = COFantasy || function() {
           dmgTotal = 1;
           if (dmSuivis.drain && dmSuivis.drain > 0) dmSuivis.drain = 1;
           expliquer("La nuée est constituée de très nombreuses cibles, l'attaque ne lui fait qu'1 DM");
+        }
+        if (options.attaquant && options.arme && dmgTotal > 0 &&
+          predicateAsBool(options.attaquant, 'blessureSanglante') &&
+          !estMortVivant(target)) {
+          let ef = {
+            effet: 'blessureSanglante',
+            duree: true,
+            message: messageEffetTemp.blessureSanglante,
+            attaquant: options.attaquant,
+          };
+          setEffetTemporaire(target, ef, 1, evt, {});
         }
         let pvPerdus = dmgTotal;
         if (target.tempDmg) {
@@ -25715,17 +25729,19 @@ var COFantasy = COFantasy || function() {
           }
           return;
         case 'attaquant':
-          if (opt.length < 2) {
-            error("Manque l'id de l'attaquant, option ignorée", optArgs);
+          {
+            if (opt.length < 2) {
+              error("Manque l'id de l'attaquant, option ignorée", optArgs);
+              return;
+            }
+            const attaquant = persoOfId(opt[1]);
+            if (attaquant) {
+              options.attaquant = attaquant;
+              return;
+            }
+            error("Attaquant non trouvé", opt);
             return;
           }
-          var attaquant = persoOfId(opt[1]);
-          if (attaquant) {
-            options.attaquant = attaquant;
-            return;
-          }
-          error("Attaquant non trouvé", opt);
-          return;
         case 'titre':
           if (opt.length < 2) {
             error("Il manque le message après --message", text);
@@ -41956,6 +41972,15 @@ var COFantasy = COFantasy || function() {
       actifF: "est bénie",
       fin: "l'effet de la bénédiction s'estompe"
     },
+    blessureSanglante: {
+      activation: "saigne abondamment",
+      actif: "saigne abondamment",
+      fin: "le saignement cesse enfin",
+      prejudiciable: true,
+      seulementVivant: true,
+      visible: true,
+      dm: true,
+    },
     carquoisMagique: {
       activation: "enchante son carquois",
       actif: "a un carquois enchannté",
@@ -42047,6 +42072,13 @@ var COFantasy = COFantasy || function() {
       fin: "retrouve une peau normale",
       visible: true
     },
+    penombreTemp: {
+      activation: "ne voit plus très loin",
+      actif: "est dans la pénombre",
+      fin: "retrouve une vue normale",
+      msgSave: "retrouver la vue",
+      prejudiciable: true,
+    },
     peurEtourdi: {
       activation: "prend peur: il peut fuir ou rester recroquevillé",
       activationF: "prend peur: elle peut fuir ou rester recroquevillé",
@@ -42102,13 +42134,6 @@ var COFantasy = COFantasy || function() {
       msgSave: "pouvoir agir malgré la mort de son allié",
       prejudiciable: true,
       visible: true,
-    },
-    penombreTemp: {
-      activation: "ne voit plus très loin",
-      actif: "est dans la pénombre",
-      fin: "retrouve une vue normale",
-      msgSave: "retrouver la vue",
-      prejudiciable: true,
     },
     ralentiTemp: {
       activation: "est ralenti : une seule action, pas d'action limitée",
@@ -44120,6 +44145,18 @@ var COFantasy = COFantasy || function() {
           "saigne par tous les orifices du visage", evt, {
             magique: true
           }, callBack);
+        return;
+      case 'blessureSanglante': //prend 1d6 DM
+        if (charPredicateAsBool(charId, 'immuniteSaignement') ||
+          charPredicateAsBool(charId, 'controleSanguin')) {
+          callBack();
+          return;
+        }
+        degatsParTour(charId, pageId, effet, attrName, {
+            nbDe: 1,
+            de: 6
+          }, 'normal',
+          "saigne abondamment", evt, {}, callBack);
         return;
       case 'armureBrulante': //prend 1d4 DM
         degatsParTour(charId, pageId, effet, attrName, {

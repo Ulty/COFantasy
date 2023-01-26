@@ -1,7 +1,13 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.11
+### Capacités
+* Blessure sanglante (voie du pacte vampirique)
+
 ### Autres améliorations
 * Nouvelle syntaxe pour les prédicats à valeur complexe.
+* Referme les portes qu'on ouvre quand le jeu est en pause.
+* Prise en compte des portes fermées.
+* Ajout des armes vicieuses.
 
 ## 3.10
 ### Capacités
@@ -16,9 +22,6 @@
 * Rage de Baphit (Invincible)
 
 ### Autres améliorations
-* Referme les portes qu'on ouvre quand le jeu est en pause.
-* Prise en compte des portes fermées.
-* Ajout des armes vicieuses.
 * Possibilité de faire des ricochets avec une attaque d'arme de jet
 * Possibilité d'affaiblir une caractéristique au hasard.
 * Possibilité de mettre et enlever son casque depuis !cof-statut
