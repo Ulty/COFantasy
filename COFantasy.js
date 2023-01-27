@@ -5296,7 +5296,7 @@ var COFantasy = COFantasy || function() {
       display.output += '<tr>';
       display.endColumn = false;
     } else if (newLine) display.output += '</tr><tr>';
-    var color = '#FFF';
+    let color = '#FFF';
     if (fond) color = "#d3d3d3";
     display.output += '<td style="background-color: ' + color + '; font-size: ' + size + '%;">' + cell + '</td>';
   }
@@ -5306,7 +5306,7 @@ var COFantasy = COFantasy || function() {
       error("Pas de titre pour le cadre", display);
       return;
     }
-    var res = display.header + display.output;
+    let res = display.header + display.output;
     res += '</div>'; // line_content
     res += '</div>'; // all_content
     return res;
@@ -12992,6 +12992,26 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function nePeutPlusPrendreDM(cible, options) {
+    if (!getState(cible, 'mort')) return false;
+    if (!options.type) return false;
+    let regenPossible =
+      predicatesNamed(cible, 'vitaliteSurnaturelle').some(function(a) {
+        let indexType = a.indexOf('/');
+        if (indexType < 0 || indexType == a.length) return false;
+        a = a.substring(indexType + 1);
+        let typeVitalite = a.split(',');
+        let typeMatch = typeVitalite.some(function(tv) {
+          return tv == options.type;
+        });
+        if (!typeMatch) return false;
+        let pvmax = parseInt(cible.token.get("bar1_max"));
+        if (isNaN(pvmax)) return false;
+        let dmSuivis = attributeAsInt(cible, 'DMSuivis' + options.type, 0);
+        return dmSuivis < pvmax;
+      });
+    return !regenPossible;
+  }
   //On enlève les doublons de cibles qui partagent leurs PVs;
   function enleveDoublonsPartagePV(cibles) {
     let ciblesAvecPVsPartages = new Set();
@@ -13379,7 +13399,7 @@ var COFantasy = COFantasy || function() {
                   token: obj,
                   charId: objCharId
                 };
-                if (getState(cible, 'mort')) return; //pas de dégâts aux morts
+                if (nePeutPlusPrendreDM(cible, options)) return; //pas de dégâts aux morts
                 let pt = tokenCenter(obj);
                 let distToTrajectory = VecMath.ptSegDist(pt, pta, ptt);
                 if (distToTrajectory > (obj.get('width') + obj.get('height')) / 4 + PIX_PER_UNIT / 4)
@@ -13455,7 +13475,7 @@ var COFantasy = COFantasy || function() {
                   token: obj,
                   charId: objCharId
                 };
-                if (getState(cible, 'mort')) return; //pas de dégâts aux morts
+                if (nePeutPlusPrendreDM(cible, options)) return; //pas de dégâts aux morts
                 let distanceCentre =
                   distanceCombat(targetToken, obj, pageId, {
                     strict1: true
@@ -13527,7 +13547,7 @@ var COFantasy = COFantasy || function() {
                 token: obj,
                 charId: objCharId
               };
-              if (getState(cible, 'mort')) return; //pas de dégâts aux morts
+              if (nePeutPlusPrendreDM(cible, options)) return; //pas de dégâts aux morts
               let pt = tokenCenter(obj);
               let vecObj = VecMath.normalize(VecMath.vec(pta, pt));
               if (VecMath.dot(vecCentre, vecObj) < cosAngle) return;
@@ -15543,6 +15563,10 @@ var COFantasy = COFantasy || function() {
                 paralyse = true;
                 if (!options.attaqueAssuree)
                   target.messages.push("Cible paralysée => réussite critique automatique");
+              } else if (getState(target, 'mort')) {
+                paralyse = true;
+                if (!options.attaqueAssuree)
+                  target.messages.push("Cible inconsciente => réussite critique automatique");
               }
               if (targetd20roll >= 15) {
                 if (predicateAsBool(attaquant, 'champion'))
@@ -18744,6 +18768,14 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
+    if (s.carac == 'DEX' || s.carac2 == 'DEX') {
+      if (getState(target, 'mort') || getState(target, 'assomme') ||
+        getState(target, 'paralyse') || getState(target, 'endormi')) {
+        if (!options.silencieuxSiPasAffecte)
+          expliquer(nomPerso(target) + " n'est pas en état d'éviter l'effet.");
+        afterSave(false, '');
+      }
+    }
     let bonus = options.bonus || 0;
     if (options.attaquant &&
       attributeAsBool(target, 'protectionContreLeMal') &&
@@ -19380,6 +19412,7 @@ var COFantasy = COFantasy || function() {
 
   //Appelé quand on met à 0 PV
   function mort(personnage, expliquer, evt) {
+    if (getState(personnage, 'mort')) return; //déjà mort
     if (predicateAsBool(personnage, 'energieDeLaMort')) {
       let duree = rollDePlus(6, {
         bonus: 5
@@ -43172,6 +43205,13 @@ var COFantasy = COFantasy || function() {
       actif: "a des griffes et des crocs",
       fin: "n'a plus de griffes et crocs visibles"
     },
+    charme: {
+      activation: "devient un ami de longue date",
+      activationF: "devient une amie de longue date",
+      actif: "est sous le charme de quelqu'un",
+      fin: "retrouve ses esprits",
+      prejudiciable: true
+    },
     conditionsHostiles: {
       activation: "se trouve dans des conditions hostiles",
       actif: "est en conditions hostiles",
@@ -43263,13 +43303,6 @@ var COFantasy = COFantasy || function() {
       activation: "fait un rituel de divination",
       actif: "sait un peu à l'avance ce qu'il va se passer",
       fin: "l'effet du rituel de divination prend fin",
-    },
-    charme: {
-      activation: "devient un ami de longue date",
-      activationF: "devient une amie de longue date",
-      actif: "est sous le charme de quelqu'un",
-      fin: "retrouve ses esprits",
-      prejudiciable: true
     },
     constructionTailleHumaine: {
       activation: "rentre dans une construction de taille humaine.",
@@ -43827,7 +43860,8 @@ var COFantasy = COFantasy || function() {
       if (vitaliteSurnaturelle) {
         let indexType = vitaliteSurnaturelle.indexOf('/');
         let vitaliteSurnat = vitaliteSurnaturelle;
-        if (indexType > 0) vitaliteSurnat.substring(0, indexType);
+        if (indexType > 0)
+          vitaliteSurnat = vitaliteSurnat.substring(0, indexType);
         vitaliteSurnat = vitaliteSurnat.trim();
         let regenereMemeMort;
         if ((vitaliteSurnat + '').endsWith('+')) {

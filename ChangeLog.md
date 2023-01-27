@@ -4,6 +4,7 @@
 * Blessure sanglante (voie du pacte vampirique)
 
 ### Autres améliorations
+* Meilleure prise en compte des créatures mortes qui régénèrent
 * Nouvelle syntaxe pour les prédicats à valeur complexe.
 * Referme les portes qu'on ouvre quand le jeu est en pause.
 * Prise en compte des portes fermées.
