@@ -982,7 +982,7 @@ var COFantasy = COFantasy || function() {
       setTimeout(_.bind(activateRoundMarker, undefined, sync), 200);
     } else if (roundMarker) { //rotation
       let rotation = roundMarker.get('rotation');
-      roundMarker.set('rotation', (rotation + 1) % 365);
+      roundMarker.set('rotation', (rotation + 0.5) % 365);
       let timeout = 100;
       //let page = getObj('page', roundMarker.get('pageid'));
       //if (page && (page.get('dynamic_lighting_enabled') || page.get('showlighting'))) timeout = 2000;
@@ -2999,6 +2999,10 @@ var COFantasy = COFantasy || function() {
       }
     });
     pvmax -= nonSoignable;
+    if (pvmax <= 0) {
+      if (callMax) callMax();
+      return;
+    }
     if (bar1 === 0) {
       if (attributeAsBool(perso, 'etatExsangue')) {
         removeTokenAttr(perso, 'etatExsangue', evt, {
@@ -13194,6 +13198,10 @@ var COFantasy = COFantasy || function() {
         weaponStats.portee = portee;
       }
     } else {
+      if (options.ricochets) {
+        sendPerso(attaquant, "ne peut pas faire de ricochets au contact.");
+        return;
+      }
       options.contact = true;
     }
     //Ce qui peut empêcher l'attaque quelles que soient les cibles
@@ -18588,32 +18596,70 @@ var COFantasy = COFantasy || function() {
           displayAttaqueOpportunite(target.token.id, [attaquant], "de riposte", 'Ripostes', '--riposte');
         }
       });
-      if (options.ricochets && options.ricochets.restants > 0 &&
-        evt.action && cibles.length == 1) {
-        let cible = cibles[0];
-        if (cible.touche) {
-          if (stateCOF.options.affichage.val.init_dynamique.val) {
-            threadSync++;
-            activateRoundMarker(threadSync, cible.token);
+      if (options.ricochets) {
+        if (options.ricochets.restants > 0 &&
+          evt.action && cibles.length == 1) {
+          let cible = cibles[0];
+          if (cible.touche) {
+            //On regarde s'il y a encore des cibles possibles
+            let tokens = findObjs({
+              _type: 'graphic',
+              _subtype: 'token',
+              _pageid: evt.action.pageId,
+              layer: 'objects'
+            });
+            let allies = alliesParPerso[attaquant.charId] || new Set();
+            tokens = tokens.filter(function(tok) {
+              if (tok.id == attaquant.token.id) return false;
+              if (tok.id == cible.token.id) return false;
+              let ci = tok.get('represents');
+              if (ci === '') return false;
+              if (allies.has(ci)) return false;
+              let dejaTouche = options.ricochets.cibles.some(function(c) {
+                return c.token.id == tok.id;
+              });
+              if (dejaTouche) return false;
+              if (distanceCombat(cible.token, tok, evt.action.pageId) > options.portee) return false;
+              return true;
+            });
+            let distance = distanceCombat(cible.token, attaquant.token, evt.action.pageId);
+            if (tokens.length > 0) {
+              if (stateCOF.options.affichage.val.init_dynamique.val) {
+                threadSync++;
+                activateRoundMarker(threadSync, cible.token);
+              }
+              let restants = options.ricochets.restants - 1;
+              let action = "!cof-attack " + attaquant.token.id + " @{target|token_id} " + evt.action.attackLabel + " --ricochets " + restants;
+              options.ricochets.cibles.forEach(function(c) {
+                action += ' ' + c.token.id;
+              });
+              action += ' ' + cible.token.id;
+              let msg = "Faire un ";
+              if (restants < 1) msg += "dernier ";
+              msg += boutonSimple(action, 'ricochet');
+              if (distance > options.portee) {
+                if (restants < 1) msg += " (trop loin pour un retour en main)";
+              } else {
+                let retour = "!cof-retour-boomerang " + attaquant.token.id + " " + evt.action.attackLabel;
+                msg += " ou " + boutonSimple(retour, "retour en main");
+              }
+              sendPerso(attaquant, msg, true);
+            } else if (distance < options.portee) {
+              doRetourBoomerang(attaquant, evt.action.attackLabel, evt);
+            } else {
+              if (stateCOF.options.affichage.val.init_dynamique.val) {
+                threadSync++;
+                activateRoundMarker(threadSync, attaquant.token);
+              }
+              sendPerso(attaquant, "Plus de cible sur laquelle ricocher et trop loin pour un retour en main", true);
+            }
+          } else { //on a raté, il faut remettre le rounMarker à sa place
+            if (stateCOF.options.affichage.val.init_dynamique.val) {
+              threadSync++;
+              activateRoundMarker(threadSync, attaquant.token);
+            }
           }
-          let restants = options.ricochets.restants - 1;
-          let action = "!cof-attack " + attaquant.token.id + " @{target|token_id} " + evt.action.attackLabel + " --ricochets " + restants;
-          options.ricochets.cibles.forEach(function(c) {
-            action += ' ' + c.token.id;
-          });
-          action += ' ' + cible.token.id;
-          let msg = "Faire un ";
-          if (restants < 1) msg += "dernier ";
-          msg += boutonSimple(action, 'ricochet');
-          let distance = distanceCombat(cible.token, attaquant.token, evt.action.pageId);
-          if (distance > options.portee) {
-            if (restants < 1) msg += " (trop loin pour un retour en main)";
-          } else {
-            let retour = "!cof-retour-boomerang " + attaquant.token.id + " " + evt.action.attackLabel;
-            msg += " ou " + boutonSimple(retour, "retour en main");
-          }
-          sendPerso(attaquant, msg, true);
-        } else { //on a raté, il faut remettre le rounMarker à sa place
+        } else {
           if (stateCOF.options.affichage.val.init_dynamique.val) {
             threadSync++;
             activateRoundMarker(threadSync, attaquant.token);
@@ -19739,7 +19785,7 @@ var COFantasy = COFantasy || function() {
         if (attributeAsBool(target, 'statueDeBois')) rd += 10;
         if (attributeAsBool(target, 'mutationSilhouetteMassive')) rd += 3;
         if (crit) {
-          var rdCrit = predicateAsInt(target, 'RD_critique', 0); //pour la compatibilité
+          let rdCrit = predicateAsInt(target, 'RD_critique', 0); //pour la compatibilité
           if (ficheAttributeAsBool(target, 'casque_on', false))
             rdCrit += ficheAttributeAsInt(target, 'casque_rd', 0);
           rd += rdCrit;
@@ -41293,36 +41339,16 @@ var COFantasy = COFantasy || function() {
     });
   }
 
-  //!cof-retour-boomerang id label
-  function retourBoomerang(msg) {
-    let options = parseOptions(msg);
-    if (options === undefined) return;
-    let cmd = options.cmd;
-    if (cmd === undefined) {
-      error("Problème de parse options", msg.content);
-      return;
-    }
-    if (cmd.length < 3) {
-      error("Il manque des arguments à !cof-retour-boomerang", cmd);
-      return;
-    }
-    let lanceur = persoOfId(cmd[1]);
-    if (!lanceur) {
-      error("L'id du token ayan lancé les armes est incorrecte", cmd);
-      return;
-    }
+  function doRetourBoomerang(lanceur, label, evt) {
     if (stateCOF.combat && stateCOF.options.affichage.val.init_dynamique.val) {
       threadSync++;
       activateRoundMarker(threadSync, lanceur.token);
     }
-    let weaponStats = getWeaponStats(lanceur, cmd[2]);
+    let weaponStats = getWeaponStats(lanceur, label);
     if (!weaponStats || !weaponStats.armeDeJet) {
-      error("Il semble que l'arme ne soit pas une arme de jet", cmd);
+      error("Il semble que l'arme ne soit pas une arme de jet", label);
       return;
     }
-    let evt = {
-      type: "Retour arme de jet"
-    };
     let attrName = weaponStats.prefixe + 'armejetqte';
     let attr = findObjs({
       _type: 'attribute',
@@ -41361,12 +41387,36 @@ var COFantasy = COFantasy || function() {
       });
     }
     if (weaponStats.nbArmesDeJet >= max) {
-      error(nomPerso(lanceur) + " a déjà toutes " + max + " armes de jet", weaponStats);
+      error(nomPerso(lanceur) + " a déjà toutes ses armes de jet (" + max + ")", weaponStats);
       return;
     }
-    addEvent(evt);
     attr.set('current', weaponStats.nbArmesDeJet + 1);
     sendPerso(lanceur, "rattrape son " + weaponStats.name);
+  }
+
+  //!cof-retour-boomerang id label
+  function retourBoomerang(msg) {
+    let options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
+    if (cmd === undefined) {
+      error("Problème de parse options", msg.content);
+      return;
+    }
+    if (cmd.length < 3) {
+      error("Il manque des arguments à !cof-retour-boomerang", cmd);
+      return;
+    }
+    let lanceur = persoOfId(cmd[1]);
+    if (!lanceur) {
+      error("L'id du token ayan lancé les armes est incorrecte", cmd);
+      return;
+    }
+    let evt = {
+      type: "Retour arme de jet"
+    };
+    addEvent(evt);
+    doRetourBoomerang(lanceur, cmd[2], evt);
   }
 
   //Pour ouvrir une porte sans event, en particulier en cas de pause
