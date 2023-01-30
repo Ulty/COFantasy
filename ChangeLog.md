@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.11
 ### Capacités
+* Sang puissant (voie du pacte vampirique)
 * Blessure sanglante (voie du pacte vampirique)
 
 ### Autres améliorations

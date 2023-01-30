@@ -17801,15 +17801,30 @@ var COFantasy = COFantasy || function() {
                         }
                       });
                     }
-                    let absorptionEnergie = predicateAsInt(attaquant, 'absorptionEnergie', 0);
+                    let absorptionEnergie = predicateAsInt(attaquant, 'absorptionEnergie', 0, 5);
                     if (absorptionEnergie > 0) {
-                      if (estMortVivant(attaquant) && predicateAsInt(target, 'voieDeLArchange', 1) > 2 && attributeAsBool(target, 'formeDAnge')) {
+                      if ((estMortVivant(attaquant) && predicateAsInt(target, 'voieDeLArchange', 1) > 2 && attributeAsBool(target, 'formeDAnge')) ||
+                        (predicateAsBool(attaquant, 'vampire') && predicateAsBool(target, 'immuniteAbsorptionVampire'))
+                      ) {
                         target.messages.push(nomPerso(target) + "n'est pas affecté" + eForFemale(target) + " par l'absorption d'énergie");
                       } else {
                         soigneToken(attaquant, absorptionEnergie, evt, function(soins) {
                           target.messages.push(
                             "L'attaque soigne " + attackerTokName + " de " + soins + " PV");
                         });
+                        if (predicateAsBool(attaquant, 'vampire')) {
+                          let pointsDeSang = attributeAsInt(target, 'pointsDeSang', 0);
+                          pointsDeSang++;
+                          if (pointsDeSang > ficheAttributeAsInt(target, 'niveau', 1)) {
+                            target.messages.push(
+                              "tombe inconscient" + eForFemale(target) + ". " +
+                              onGenre(target, "Il", "Elle") +
+                              " a trop de points de sang..."
+                            );
+                            setState(target, 'endormi', evt);
+                          }
+                          setTokenAttr(target, 'pointsDeSang', pointsDeSang, evt);
+                        }
                       }
                     }
                     target.dmgMessage = "<b>DM :</b> ";
@@ -34171,6 +34186,10 @@ var COFantasy = COFantasy || function() {
       printEffet("n'est plus maudite");
       removeTokenAttr(cible, 'malediction', evt);
     }
+    if (attributeAsBool(cible, 'pointsDeSang')) {
+      printEffet("n'a plus de point de sang.");
+      removeTokenAttr(cible, 'pointsDeSang', evt);
+    }
     //On enlève les états préjudiciables
     if (getState(cible, 'aveugle')) {
       printEffet("retrouve la vue");
@@ -34290,7 +34309,7 @@ var COFantasy = COFantasy || function() {
       options.limiteParJour = 1;
     }
     if (options.portee !== undefined) {
-      var dist = distanceCombat(lanceur.token, cible.token, options.pageId);
+      const dist = distanceCombat(lanceur.token, cible.token, options.pageId);
       if (dist > options.portee) {
         sendPerso(lanceur, "est trop loin de " + nomPerso(cible));
         return;
