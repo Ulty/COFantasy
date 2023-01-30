@@ -1112,7 +1112,7 @@ var COFantasy = COFantasy || function() {
       });
       gameTables.forEach(function(gameTable) {
         let table = allTables.find(function(table) {
-          return table.get("name") == gameTable.name;
+          return table.get('name') == gameTable.name;
         });
         if (table === undefined) {
           table = createObj('rollabletable', {
@@ -7545,6 +7545,8 @@ var COFantasy = COFantasy || function() {
           altruiste = false;
           break;
         case 'rapide':
+          if (options.magieRapide) break;
+          options.magieRapide = true;
           options.tempeteDeMana.cout++;
           break;
         case 'altruiste':
@@ -8597,19 +8599,28 @@ var COFantasy = COFantasy || function() {
             if (conditionRetour) scope.retourneEnMain = conditionRetour;
           }
           return;
-        case "mana":
-          if (cmd.length < 2) {
-            error("Usage : --mana coût", cmd);
+        case 'mana':
+          {
+            if (cmd.length < 2) {
+              error("Usage : --mana coût", cmd);
+              return;
+            }
+            let mana = parseInt(cmd[1]);
+            if (isNaN(mana) || mana < 0) {
+              error("Le coût en mana doit être un nombre positif");
+              return;
+            }
+            if (scope.mana === undefined) scope.mana = 0;
+            scope.mana += mana;
             return;
           }
-          var mana = parseInt(cmd[1]);
-          if (isNaN(mana) || mana < 0) {
-            error("Le coût en mana doit être un nombre positif");
-            return;
-          }
-          if (scope.mana === undefined) scope.mana = 0;
-          scope.mana += mana;
-          break;
+        case 'magieRapide':
+          if (options.magieRapide) return;
+          if (options.mana === undefined) options.mana = 0;
+          if (reglesOptionelles.mana.val.mana_totale.val) options.mana += 3;
+          else options.mana++;
+          options.magieRapide = true;
+          return;
         case 'tempeteDeMana':
           parseTempeteDeMana(cmd, options);
           return;
@@ -9223,7 +9234,7 @@ var COFantasy = COFantasy || function() {
     if (options.tempeteDeMana) {
       if (options.tempeteDeMana.cout === 0) {
         //On demande de préciser les options
-        var optMana = {
+        let optMana = {
           mana: options.mana,
           rang: options.rang,
           portee: true //Pour avoir l'option
@@ -13847,6 +13858,7 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
     let explications = [];
     if (options.messages) explications = [...options.messages];
+    if (options.magieRapide) explications.push("Magie rapide");
     //On fait les tests pour les cibles qui bénéficieraient d'un sanctuaire
     let ciblesATraiter = cibles.length;
     let cibleTraitee = function() {
@@ -18162,12 +18174,12 @@ var COFantasy = COFantasy || function() {
   }
 
   function suggererEchecCritique(attaquant, weaponStats, cibles, options, evt) {
-    var d12roll = randomInteger(12);
-    var estMag = options.sortilege;
-    var avecArme = weaponStats.arme;
-    var estCac = options.contact;
-    var boutonCritique = function(action) {
-      var b = boutonSimple(action + " --target " + attaquant.token.id,
+    let d12roll = randomInteger(12);
+    let estMag = options.sortilege;
+    let avecArme = weaponStats.arme;
+    let estCac = options.contact;
+    let boutonCritique = function(action) {
+      let b = boutonSimple(action + " --target " + attaquant.token.id,
         "Appliquer", 'background-color:#cc0000');
       return b;
     };
@@ -21514,6 +21526,13 @@ var COFantasy = COFantasy || function() {
           }
           options.mana = options.mana || 0;
           options.mana += cout;
+          return;
+        case 'magieRapide':
+          if (options.magieRapide) return;
+          if (options.mana === undefined) options.mana = 0;
+          if (reglesOptionelles.mana.val.mana_totale.val) options.mana += 3;
+          else options.mana++;
+          options.magieRapide = true;
           return;
         case 'tempeteDeMana':
           parseTempeteDeMana(cmd, options);
@@ -26992,6 +27011,7 @@ var COFantasy = COFantasy || function() {
     };
     let lanceur = options.lanceur;
     let explications = options.messages || [];
+    if (options.magieRapide) explications.push("Magie rapide");
     let whisper = '';
     if (options.secret && playerId) {
       let player = getObj('player', playerId);
@@ -40106,6 +40126,44 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function canalisationParPM(expr, deParPM, phylactere, options) {
+    let res = expr;
+    let indexPM = expr.indexOf('pm');
+    if (indexPM > 0) {
+      let nbPMs = parseInt(expr.substring(0, indexPM));
+      if (!isNaN(nbPMs) || nbPMs > 0) {
+        if (nbPMs == 1) {
+          options.mana = options.mana || 0;
+          options.mana++;
+          res = deParPM;
+          if (phylactere) res += '+ ' + phylactere;
+        } else {
+          let de = parseDice(deParPM);
+          if (de) {
+            res = '';
+            if (de.nbDe) {
+              options.mana = options.mana || 0;
+              options.mana += nbPMs;
+              res = (nbPMs * de.nbDe) + 'd' + de.dice;
+              if (de.bonus) res += '+ ';
+            }
+            if (de.bonus) res += (nbPMs * de.bonus);
+            if (phylactere) {
+              let dp = parseDice(phylactere);
+              if (dp) {
+                if (dp.nbDe) {
+                  res += '+ ' + (nbPMs * dp.nbDe) + 'd' + dp.dice;
+                }
+                if (dp.bonus) res += '+ ' + (nbPMs * dp.bonus);
+              }
+            }
+          }
+        }
+      }
+    }
+    return res;
+  }
+
   //!cof-canaliser [positif|negatif] --soin expr --dm expr
   function canaliser(msg) {
     let options = parseOptions(msg);
@@ -40149,6 +40207,19 @@ var COFantasy = COFantasy || function() {
         type: 'canalisation'
       };
       addEvent(evt);
+      //Conversion des #n pm en soins et dm
+      let deParPM = predicateAsBool(pretre, 'deCanalisation');
+      if (deParPM) {
+        let phylactere;
+        if (positif) phylactere = predicateAsBool(pretre, 'phylacterePositif');
+        else phylactere = predicateAsBool(pretre, 'phylactereNegatif');
+        if (options.soin) {
+          options.soin = canalisationParPM(options.soin, deParPM, phylactere, options);
+        }
+        if (options.dm) {
+          options.dm = canalisationParPM(options.dm, deParPM, phylactere, options);
+        }
+      }
       if (limiteRessources(pretre, options, 'canalisation', 'canalisation', evt)) {
         return;
       }
