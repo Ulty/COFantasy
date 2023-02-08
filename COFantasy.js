@@ -1267,7 +1267,7 @@ var COFantasy = COFantasy || function() {
       stateCOF.gameMacros = gameMacros;
     }
     // Récupération des token Markers attachés à la campagne image, nom, tag, Id
-    const markers = JSON.parse(Campaign().get("token_markers"));
+    const markers = JSON.parse(Campaign().get('token_markers'));
     markers.forEach(function(m) {
       markerCatalog[m.name] = m;
     });
@@ -2074,6 +2074,7 @@ var COFantasy = COFantasy || function() {
         let pageId = token.get('pageid');
         switch (attribute) {
           case 'agrandissement':
+            personnage.taille = undefined;
             let width = token.get('width');
             let height = token.get('height');
             affectToken(token, 'width', width, evt);
@@ -6530,7 +6531,7 @@ var COFantasy = COFantasy || function() {
           if (tr.reussite) {
             addLineToFramedDisplay(display, "C'est réussi." + tr.modifiers);
           } else {
-            var msgRate = "C'est raté." + tr.rerolls + tr.modifiers;
+            let msgRate = "C'est raté." + tr.rerolls + tr.modifiers;
             addLineToFramedDisplay(display, msgRate);
           }
           sendDisplayJetPerso(display, playerId, options);
@@ -9017,23 +9018,25 @@ var COFantasy = COFantasy || function() {
           scope = psEndif;
           return;
         case "else":
-          let psElse = scope.parentScope;
-          if (psElse === undefined) {
-            error("--else sans --if correspondant", cmd);
+          {
+            let psElse = scope.parentScope;
+            if (psElse === undefined) {
+              error("--else sans --if correspondant", cmd);
+              return;
+            }
+            let iteL = psElse.ite[psElse.ite.length - 1];
+            if (iteL.else) {
+              error("Il y a déjà un --else pour ce --if", cmd);
+              return;
+            }
+            delete scope.parentScope;
+            let ifElse = {
+              parentScope: psElse
+            };
+            iteL.else = ifElse;
+            scope = ifElse;
             return;
           }
-          var iteL = psElse.ite[psElse.ite.length - 1];
-          if (iteL.else) {
-            error("Il y a déjà un --else pour ce --if", cmd);
-            return;
-          }
-          delete scope.parentScope;
-          var ifElse = {
-            parentScope: psElse
-          };
-          iteL.else = ifElse;
-          scope = ifElse;
-          return;
         case 'message':
           if (cmd.length < 2) {
             error("Il manque le message après --message", cmd);
@@ -9230,6 +9233,14 @@ var COFantasy = COFantasy || function() {
       }
     });
     closeIte(scope); //pour fermer les endif mal formés et éviter les boucles
+    let bene = predicateAsInt(attaquant, 'benedictionSuperieure', 0);
+    if (bene) {
+      if (!options.armeMagiquePlus || options.armeMagiquePlus < bene) {
+        options.armeMagiquePlus = bene;
+        if (!options.magique) options.magique = bene;
+        else options.magique += bene;
+      }
+    }
     options.additionalDmg = options.additionalDmg || [];
     if (options.tempeteDeMana) {
       if (options.tempeteDeMana.cout === 0) {
@@ -9308,7 +9319,7 @@ var COFantasy = COFantasy || function() {
       if (stateCOF.options.affichage.val.depense_mana.val)
         sendPerso(perso, "dépense " + dep.depense_pm + " PM pour " + msg);
     }
-    var niveau = ficheAttributeAsInt(perso, 'niveau', 1);
+    let niveau = ficheAttributeAsInt(perso, 'niveau', 1);
     if (reglesOptionelles.mana.val.mana_totale.val) {
       if (dep.depense_pm > niveau * 3) {
         sendPerso(perso, "Attention, la dépense totale de mana est supérieure au niveau * 3");
@@ -10559,47 +10570,31 @@ var COFantasy = COFantasy || function() {
     return parseInt(s.substring(3, s.indexOf(']')));
   }
 
-  //Retourne un encodage des tailes :
-  // 1 : minuscule
-  // 2 : très petit
-  // 3 : petit
-  // 4 : moyen
-  // 5 : grand
-  // 6 : énorme
-  // 7 : colossal
-  function taillePersonnage(perso, def) {
-    if (perso.taille) return perso.taille;
+  function tailleNormale(perso, def) {
     if (attributeAsBool(perso, 'grandeTaille')) return 4;
     switch (ficheAttribute(perso, 'taille', '').trim().toLowerCase()) {
       case "minuscule":
-        perso.taille = 1;
         return 1;
       case "très petit":
       case "très petite":
       case "tres petit":
-        perso.taille = 2;
         return 2;
       case "petit":
       case "petite":
-        perso.taille = 3;
         return 3;
       case "moyen":
       case "moyenne":
       case "normal":
       case "normale":
-        perso.taille = 4;
         return 4;
       case "grand":
       case "grande":
-        perso.taille = 5;
         return 5;
       case "énorme":
       case "enorme":
-        perso.taille = 6;
         return 6;
       case "colossal":
       case "colossale":
-        perso.taille = 7;
         return 7;
       default: //On passe à la méthode suivante
     }
@@ -10610,12 +10605,10 @@ var COFantasy = COFantasy || function() {
     switch (perso.race) {
       case 'lutin':
       case 'fee':
-        perso.taille = 2;
         return 2;
       case 'halfelin':
       case 'gobelin':
       case 'kobold':
-        perso.taille = 3;
         return 3;
       case 'humain':
       case 'elfe':
@@ -10625,17 +10618,30 @@ var COFantasy = COFantasy || function() {
       case 'orque':
       case 'gnome':
       case 'âme-forgée':
-        perso.taille = 4;
         return 4;
       case 'centaure':
       case 'demi-ogre':
       case 'ogre':
       case 'minotaure':
-        perso.taille = 5;
         return 5;
     }
-    perso.taille = def;
     return def;
+  }
+
+  //Retourne un encodage des tailes :
+  // 1 : minuscule
+  // 2 : très petit
+  // 3 : petit
+  // 4 : moyen
+  // 5 : grand
+  // 6 : énorme
+  // 7 : colossal
+  function taillePersonnage(perso, def) {
+    if (perso.taille) return perso.taille;
+    let taille = tailleNormale(perso, def);
+    if (attributeAsBool(perso, 'agrandissement')) taille++;
+    perso.taille = taille;
+    return taille;
   }
 
   //tm doit être stateCOF.tenebresMagiques, et bien défini.
@@ -10936,7 +10942,8 @@ var COFantasy = COFantasy || function() {
       defense -= attaqueAOutrance;
       explications.push("Attaque à outrance => -" + attaqueAOutrance + " DEF");
     }
-    let instinctSurvie = predicateAsInt(target, 'instinctDeSurvie', 0);
+    let niveau = ficheAttributeAsInt(target, 'niveau', 1);
+    let instinctSurvie = predicateAsInt(target, 'instinctDeSurvie', 0, niveau * 5);
     if (instinctSurvie > 0 && target.token.get('bar1_value') <= instinctSurvie)
       defense += 5;
     if (attributeAsBool(target, 'danseIrresistible')) {
@@ -12818,6 +12825,107 @@ var COFantasy = COFantasy || function() {
     return 0;
   }
 
+  // prend en compte l'unité de mesure utilisée sur la page
+  function ajouteUneLumiere(perso, nomLumiere, radius, dimRadius, evt) {
+    radius = scaleDistance(perso, radius);
+    if (dimRadius !== '') dimRadius = scaleDistance(perso, dimRadius);
+    const ct = perso.token;
+    const pageId = ct.get('pageid');
+    const page = getObj('page', pageId);
+    const udl = page && page.get('dynamic_lighting_enabled');
+    let brightLight = radius;
+    if (udl) {
+      if (isNaN(brightLight) || brightLight < 0) {
+        error("Lumière avec un rayon négatif", radius);
+        return;
+      }
+    }
+    let attrName = 'lumiere';
+    if (ct.get('bar1_link') === '') attrName += "_" + ct.get('name');
+    if (ct.get('bar1_max')) {
+      let lumiereSurPerso;
+      //Cas particulier où le personnage est un vrai personnage qui ne fait pas de lumière
+      if (!udl && !ct.get('light_radius')) {
+        lumiereSurPerso = true;
+        setToken(ct, 'light_radius', radius, evt);
+        if (dimRadius !== '') setToken(ct, 'light_dimradius', dimRadius, evt);
+        setToken(ct, 'light_otherplayers', true, evt);
+      } else if (udl && !ct.get('emits_bright_light') && !ct.get('emits_low_light')) {
+        lumiereSurPerso = true;
+        if (dimRadius !== '') {
+          if (dimRadius < 0) dimRadius = 0;
+          if (dimRadius < brightLight) {
+            setToken(ct, 'emits_low_light', true, evt);
+            setToken(ct, 'low_light_distance', brightLight, evt);
+            brightLight = dimRadius;
+          }
+        }
+        if (brightLight > 0) {
+          setToken(ct, 'emits_bright_light', true, evt);
+          setToken(ct, 'bright_light_distance', brightLight, evt);
+        }
+      }
+      if (lumiereSurPerso) {
+        let attr1 = createObj('attribute', {
+          characterid: perso.charId,
+          name: attrName,
+          current: nomLumiere,
+          max: 'surToken'
+        });
+        evt.attributes = [{
+          attribute: attr1,
+        }];
+        return;
+      }
+    }
+    let tokLumiere = createObj('graphic', {
+      _pageid: pageId,
+      imgsrc: "https://s3.amazonaws.com/files.d20.io/images/3233035/xHOXBXoAgOHCHs8omiFAYg/thumb.png?1393406116",
+      left: ct.get('left'),
+      top: ct.get('top'),
+      width: 70,
+      height: 70,
+      layer: 'walls',
+      name: nomLumiere,
+    });
+    if (tokLumiere === undefined) {
+      error("Problème lors de la création du token de lumière", perso);
+      return;
+    }
+    evt.tokens = [tokLumiere];
+    if (udl) {
+      if (dimRadius !== '') {
+        if (dimRadius < 0) dimRadius = 0;
+        if (dimRadius < brightLight) {
+          setToken(tokLumiere, 'emits_low_light', true, evt);
+          setToken(tokLumiere, 'low_light_distance', brightLight, evt);
+          brightLight = dimRadius;
+        }
+      }
+      if (brightLight > 0) {
+        setToken(tokLumiere, 'emits_bright_light', true, evt);
+        setToken(tokLumiere, 'bright_light_distance', brightLight, evt);
+      }
+    } else {
+      setToken(tokLumiere, 'light_radius', radius, evt);
+      setToken(tokLumiere, 'light_dimradius', dimRadius, evt);
+      setToken(tokLumiere, 'light_otherplayers', true, evt);
+    }
+    if (ct.get('bar1_max')) { //Lumière liée à un token
+      let attr = createObj('attribute', {
+        characterid: perso.charId,
+        name: attrName,
+        current: nomLumiere,
+        max: tokLumiere.id
+      });
+      evt.attributes = [{
+        attribute: attr,
+      }];
+    } else { //cible temporaire, à effacer
+      ct.remove();
+    }
+  }
+
   //renvoie le nom de l'arme si l'arme est déjà tenue en main
   // options.seulementDroite permet de ne rengainer que l'arme droite
   function degainerArme(perso, labelArme, evt, options) {
@@ -12827,6 +12935,8 @@ var COFantasy = COFantasy || function() {
       perso.pageId = pageId;
     }
     options = options || {};
+    perso.armesEnMain = undefined; //il faut enlever le cache sur l'arme en main
+    perso.arme = undefined;
     let nouvelleArme;
     if (options.weaponStats) nouvelleArme = options.weaponStats;
     else if (labelArme && labelArme !== '') nouvelleArme = getWeaponStats(perso, labelArme);
@@ -13054,8 +13164,8 @@ var COFantasy = COFantasy || function() {
               if (target2Char === undefined) return false;
               target2.name = target2Char.get('name');
             }
-            return ciblePartagee.find(function(attr) {
-              return attr.get('current') == target2.name;
+            return ciblePartagee.find(function(cp) {
+              return cp == target2.name;
             });
           });
           if (representantPresent) return false;
@@ -13945,8 +14055,8 @@ var COFantasy = COFantasy || function() {
 
   // On affiche les options d'attaque à droite
   function afficherOptionsAttaque(perso, opt_display) {
-    var action_opts = '!cof-options-d-attaque --target ' + perso.token.id;
-    var text_opts = '';
+    let action_opts = '!cof-options-d-attaque --target ' + perso.token.id;
+    let text_opts = '';
     if (persoEstPNJ(perso) && ficheAttributeAsInt(perso, 'attaque_de_groupe', 1) > 1) {
       text_opts = "Groupe de " + ficheAttributeAsInt(perso, 'attaque_de_groupe', 1);
     }
@@ -15427,7 +15537,7 @@ var COFantasy = COFantasy || function() {
             removeTokenAttr(attaquant, 'menaceManoeuvre(' + target.token.id + ',crit)', evt);
             setTokenAttr(attaquant, 'attaqueMalgreMenace(' + target.token.id + ')', 2, evt);
           }
-          var amm = 'attaqueMalgreMenace(' + attaquant.token.id + ')';
+          let amm = 'attaqueMalgreMenace(' + attaquant.token.id + ')';
           if (options.contact && cibles.length == 1) {
             if (attributeAsBool(target, amm)) {
               target.messages.push('Attaque automatique suite à une menace ignorée');
@@ -16838,7 +16948,7 @@ var COFantasy = COFantasy || function() {
       if (options.frappeDuVide) {
         attaquant.additionalDmg.push({
           type: mainDmgType,
-          value: (options.kiai) ? 6 : ('1' + options.d6)
+          value: (options.kiai) ? '0d1+6' : ('1' + options.d6)
         });
       }
     }
@@ -20810,7 +20920,8 @@ var COFantasy = COFantasy || function() {
         if (attributeAsBool(perso, "confusion")) {
           //Une chance sur deux de ne pas agir
           if (randomInteger(2) < 2) {
-            sendPerso(perso, "est en pleine confusion. Il ne fait rien ce tour");
+            sendPerso(perso, "est en pleine confusion. " +
+              onGenre(perso, 'Il', 'Elle') + " ne fait rien ce tour");
             removeTokenFlagAura(token);
           } else {
             //Trouver la créature la plus proche
@@ -27372,6 +27483,7 @@ var COFantasy = COFantasy || function() {
       error("Personnage introuvable", perso);
       return;
     }
+    perso.taille = undefined;
     let token = perso.token;
     character.get('_defaulttoken', function(normalToken) {
       if (normalToken === '') return;
@@ -36354,107 +36466,6 @@ var COFantasy = COFantasy || function() {
     ajouteUneLumiere(cible, nomToken, radius, dimRadius, evt);
   }
 
-  // prend en compte l'unité de mesure utilisée sur la page
-  function ajouteUneLumiere(perso, nomLumiere, radius, dimRadius, evt) {
-    radius = scaleDistance(perso, radius);
-    if (dimRadius !== '') dimRadius = scaleDistance(perso, dimRadius);
-    var ct = perso.token;
-    var pageId = ct.get('pageid');
-    var page = getObj('page', pageId);
-    var udl = page && page.get('dynamic_lighting_enabled');
-    var brightLight = radius;
-    if (udl) {
-      if (isNaN(brightLight) || brightLight < 0) {
-        error("Lumière avec un rayon négatif", radius);
-        return;
-      }
-    }
-    var attrName = 'lumiere';
-    if (ct.get('bar1_link') === "") attrName += "_" + ct.get('name');
-    if (ct.get('bar1_max')) {
-      var lumiereSurPerso;
-      //Cas particulier où le personnage est un vrai personnage qui ne fait pas de lumière
-      if (!udl && !ct.get('light_radius')) {
-        lumiereSurPerso = true;
-        setToken(ct, 'light_radius', radius, evt);
-        if (dimRadius !== '') setToken(ct, 'light_dimradius', dimRadius, evt);
-        setToken(ct, 'light_otherplayers', true, evt);
-      } else if (udl && !ct.get('emits_bright_light') && !ct.get('emits_low_light')) {
-        lumiereSurPerso = true;
-        if (dimRadius !== '') {
-          if (dimRadius < 0) dimRadius = 0;
-          if (dimRadius < brightLight) {
-            setToken(ct, 'emits_low_light', true, evt);
-            setToken(ct, 'low_light_distance', brightLight, evt);
-            brightLight = dimRadius;
-          }
-        }
-        if (brightLight > 0) {
-          setToken(ct, 'emits_bright_light', true, evt);
-          setToken(ct, 'bright_light_distance', brightLight, evt);
-        }
-      }
-      if (lumiereSurPerso) {
-        var attr1 = createObj('attribute', {
-          characterid: perso.charId,
-          name: attrName,
-          current: nomLumiere,
-          max: 'surToken'
-        });
-        evt.attributes = [{
-          attribute: attr1,
-        }];
-        return;
-      }
-    }
-    var tokLumiere = createObj('graphic', {
-      _pageid: pageId,
-      imgsrc: "https://s3.amazonaws.com/files.d20.io/images/3233035/xHOXBXoAgOHCHs8omiFAYg/thumb.png?1393406116",
-      left: ct.get('left'),
-      top: ct.get('top'),
-      width: 70,
-      height: 70,
-      layer: 'walls',
-      name: nomLumiere,
-    });
-    if (tokLumiere === undefined) {
-      error("Problème lors de la création du token de lumière", perso);
-      return;
-    }
-    evt.tokens = [tokLumiere];
-    if (udl) {
-      if (dimRadius !== '') {
-        if (dimRadius < 0) dimRadius = 0;
-        if (dimRadius < brightLight) {
-          setToken(tokLumiere, 'emits_low_light', true, evt);
-          setToken(tokLumiere, 'low_light_distance', brightLight, evt);
-          brightLight = dimRadius;
-        }
-      }
-      if (brightLight > 0) {
-        setToken(tokLumiere, 'emits_bright_light', true, evt);
-        setToken(tokLumiere, 'bright_light_distance', brightLight, evt);
-      }
-    } else {
-      setToken(tokLumiere, 'light_radius', radius, evt);
-      setToken(tokLumiere, 'light_dimradius', dimRadius, evt);
-      setToken(tokLumiere, 'light_otherplayers', true, evt);
-    }
-    if (ct.get('bar1_max')) { //Lumière liée à un token
-      var attr = createObj('attribute', {
-        characterid: perso.charId,
-        name: attrName,
-        current: nomLumiere,
-        max: tokLumiere.id
-      });
-      evt.attributes = [{
-        attribute: attr,
-      }];
-    } else { //cible temporaire, à effacer
-      ct.remove();
-    }
-  }
-
   function eteindreUneLumiere(perso, pageId, al, lumName, evt) {
     if (al === undefined) {
       let attrLumiere = tokenAttribute(perso, 'lumiere');
@@ -36487,7 +36498,7 @@ var COFantasy = COFantasy || function() {
     }
     let lumiere = getObj('graphic', lumId);
     if (lumiere === undefined) {
-      var tokensLumiere = findObjs({
+      let tokensLumiere = findObjs({
         _type: 'graphic',
         layer: 'walls',
         name: lumName
@@ -36500,15 +36511,15 @@ var COFantasy = COFantasy || function() {
       lumiere = tokensLumiere.shift();
       if (tokensLumiere.length > 0) {
         //On cherche le token le plus proche de perso
-        var pos = [perso.token.get('left'), perso.token.get('top')];
-        var d =
+        let pos = [perso.token.get('left'), perso.token.get('top')];
+        let d =
           VecMath.length(
             VecMath.vec([lumiere.get('left'), lumiere.get('top')], pos));
-        var samePage = lumiere.get('pageid') == pageId;
+        let samePage = lumiere.get('pageid') == pageId;
         tokensLumiere.forEach(function(tl) {
           if (tl.get('pageid') != pageId) return;
           if (samePage) {
-            var d2 =
+            let d2 =
               VecMath.length(
                 VecMath.vec([tl.get('left'), tl.get('top')], pos));
             if (d2 < d) {
@@ -36526,23 +36537,24 @@ var COFantasy = COFantasy || function() {
   }
 
   function eteindreLumieres(msg) {
-    var options = parseOptions(msg);
+    const options = parseOptions(msg);
     if (options === undefined) return;
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         sendPlayer(msg, "Pas de cible sélectionnée pour !cof-eteindre-lumiere", playerId);
         return;
       }
-      var cmd = options.cmd;
-      var groupe;
+      const cmd = options.cmd;
+      let groupe;
       if (cmd.length > 1) groupe = cmd[1];
       if (groupe && groupe.toLowerCase() == 'tout') groupe = '';
-      var pageId = options.pageId;
-      var evt = {
+      let pageId = options.pageId;
+      const evt = {
         type: "Eteindre la lumière"
       };
       iterSelected(selected, function(perso) {
-        var attrLumiere = tokenAttribute(perso, 'lumiere');
+        pageId = pageId || perso.token.get('pageid');
+        let attrLumiere = tokenAttribute(perso, 'lumiere');
         attrLumiere.forEach(function(al) {
           let lumName = al.get('current');
           if (groupe && !lumName.startsWith(groupe)) return;
@@ -36553,15 +36565,15 @@ var COFantasy = COFantasy || function() {
   }
 
   function switchTorche(msg) {
-    var options = parseOptions(msg);
+    const options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    const cmd = options.cmd;
     if (cmd.length < 2) {
       error("Il faut préciser le token en argument de !cof-torche");
       return;
     }
-    var pageId = options.pageId;
-    var perso = persoOfId(cmd[1], cmd[1], pageId);
+    let pageId = options.pageId;
+    const perso = persoOfId(cmd[1], cmd[1], pageId);
     if (perso === undefined) {
       error("Token invalide", cmd);
       return;
@@ -36588,7 +36600,7 @@ var COFantasy = COFantasy || function() {
         type: "Éteindre les torches"
       };
       attrLumiere.forEach(function(al) {
-        var lumName = al.get('current');
+        let lumName = al.get('current');
         eteindreUneLumiere(perso, pageId, al, lumName, evt);
       });
     }
@@ -39084,7 +39096,7 @@ var COFantasy = COFantasy || function() {
       iterSelected(selected, function(perso) {
         if (cmd[1] == 'fin' || isNaN(distance) || distance < 0) {
           tm.fioleDeLumiere = undefined;
-          var pageId = perso.token.get('pageid');
+          let pageId = perso.token.get('pageid');
           eteindreUneLumiere(perso, pageId, undefined, 'fioleDeLumiere', evt);
         } else {
           tm.fioleDeLumiere = {
@@ -45412,17 +45424,6 @@ var COFantasy = COFantasy || function() {
     return perso;
   }
 
-  function initTokenMarkers(token) {
-    let charId = token.get('represents');
-    if (charId === undefined || charId === '') return; // Si token lié à un perso
-    if (token.get('bar1_link') === '') return; // Si unique
-    let perso = {
-      token: token,
-      charId: charId
-    };
-    synchronisationDesEtats(perso);
-  }
-
 
   function addToken(token, nb) {
     let tokenName = token.get('name');
@@ -45506,14 +45507,71 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
-  function initAllMarkers(campaign) {
+  //Actions à faire pour maintenir la cohérence des tokens qui représentent le même personnage.
+  function changePlayerPage(campaign) {
     let currentMap = getObj('page', campaign.get('playerpageid'));
     let tokens = findObjs({
       _pageid: currentMap.id,
       _type: 'graphic',
       _subtype: 'token'
     });
-    tokens.forEach(initTokenMarkers);
+    tokens.forEach(function(token) {
+      let charId = token.get('represents');
+      if (charId === undefined || charId === '') return; // Si token lié à un perso
+      if (token.get('bar1_link') === '') return; // Si unique
+      let perso = {
+        token,
+        charId
+      };
+      synchronisationDesEtats(perso);
+      let attrLumiere = tokenAttribute(perso, 'lumiere');
+      if (attrLumiere) {
+        attrLumiere.forEach(function(al) {
+          let lumId = al.get('max');
+          if (lumId == 'surToken') {
+            if (!token.get('emits_bright_light') && !token.get('emits_low_light')) {
+              //On cherche un token qui représente le même personnage et émet de la lumière
+              let allTokens = findObjs({
+                type: 'graphic',
+                represents: charId
+              });
+              let tok = allTokens.find(function(t) {
+                return t.get('emits_bright_light') || t.get('emits_low_light');
+              });
+              if (!tok) {
+                al.remove();
+                return;
+              }
+              token.set('emits_bright_light', tok.get('emits_bright_light'));
+              token.set('emits_low_light', tok.get('emits_low_light'));
+            }
+            return;
+          }
+          //Lumière sur un token qui suit le perso.
+          let lumiere = getObj('graphic', lumId);
+          if (lumiere && lumiere.get('pageid') != currentMap.id) {
+            let copyLum = createObj('graphic', {
+              _pageid: currentMap.id,
+              imgsrc: lumiere.get('imgsrc'),
+              left: token.get('left'),
+              top: token.get('top'),
+              width: 70,
+              height: 70,
+              layer: 'walls',
+              name: lumiere.get('name'),
+              emits_low_light: lumiere.get('emits_low_light'),
+              low_light_distance: lumiere.get('low_light_distance'),
+              emits_bright_light: lumiere.get('emits_bright_light'),
+              bright_light_distance: lumiere.get('bright_light_distance'),
+            });
+            if (copyLum) {
+              al.set('max', copyLum.id);
+              lumiere.remove();
+            }
+          }
+        });
+      }
+    });
   }
 
   function enleveDecoince(perso, evt) {
@@ -45581,7 +45639,7 @@ var COFantasy = COFantasy || function() {
     addToken,
     changeMarker,
     changeTokenLock,
-    initAllMarkers,
+    changePlayerPage,
     setStateCOF,
     scriptVersionToCharacter,
     changeDoor,
@@ -45595,7 +45653,7 @@ var COFantasy = COFantasy || function() {
 on('ready', function() {
   const scriptVersion = '3.11';
   on('add:token', COFantasy.addToken);
-  on("change:campaign:playerpageid", COFantasy.initAllMarkers);
+  on("change:campaign:playerpageid", COFantasy.changePlayerPage);
   state.COFantasy = state.COFantasy || {
     combat: false,
     eventId: 0,
