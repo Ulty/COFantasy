@@ -45368,6 +45368,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         synchronisationDesEtats(perso);
+        synchronisationDesLumieres(perso, pageId);
       }
       return perso;
     }
@@ -45437,6 +45438,7 @@ var COFantasy = COFantasy || function() {
           secret: true
         });
       }
+      synchronisationDesLumieres(perso);
       return;
     }
     nb = nb || 1;
@@ -45507,6 +45509,57 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  function synchronisationDesLumieres(perso, pageId) {
+    let attrLumiere = tokenAttribute(perso, 'lumiere');
+    if (attrLumiere) {
+      let token = perso.token;
+      attrLumiere.forEach(function(al) {
+        let lumId = al.get('max');
+        if (lumId == 'surToken') {
+          if (!token.get('emits_bright_light') && !token.get('emits_low_light')) {
+            //On cherche un token qui représente le même personnage et émet de la lumière
+            let allTokens = findObjs({
+              type: 'graphic',
+              represents: perso.charId
+            });
+            let tok = allTokens.find(function(t) {
+              return t.get('emits_bright_light') || t.get('emits_low_light');
+            });
+            if (!tok) {
+              al.remove();
+              return;
+            }
+            token.set('emits_bright_light', tok.get('emits_bright_light'));
+            token.set('emits_low_light', tok.get('emits_low_light'));
+          }
+          return;
+        }
+        //Lumière sur un token qui suit le perso.
+        let lumiere = getObj('graphic', lumId);
+        if (lumiere && lumiere.get('pageid') != pageId) {
+          let copyLum = createObj('graphic', {
+            _pageid: pageId,
+            imgsrc: lumiere.get('imgsrc'),
+            left: token.get('left'),
+            top: token.get('top'),
+            width: 70,
+            height: 70,
+            layer: 'walls',
+            name: lumiere.get('name'),
+            emits_low_light: lumiere.get('emits_low_light'),
+            low_light_distance: lumiere.get('low_light_distance'),
+            emits_bright_light: lumiere.get('emits_bright_light'),
+            bright_light_distance: lumiere.get('bright_light_distance'),
+          });
+          if (copyLum) {
+            al.set('max', copyLum.id);
+            lumiere.remove();
+          }
+        }
+      });
+    }
+  }
+
   //Actions à faire pour maintenir la cohérence des tokens qui représentent le même personnage.
   function changePlayerPage(campaign) {
     let currentMap = getObj('page', campaign.get('playerpageid'));
@@ -45524,53 +45577,7 @@ var COFantasy = COFantasy || function() {
         charId
       };
       synchronisationDesEtats(perso);
-      let attrLumiere = tokenAttribute(perso, 'lumiere');
-      if (attrLumiere) {
-        attrLumiere.forEach(function(al) {
-          let lumId = al.get('max');
-          if (lumId == 'surToken') {
-            if (!token.get('emits_bright_light') && !token.get('emits_low_light')) {
-              //On cherche un token qui représente le même personnage et émet de la lumière
-              let allTokens = findObjs({
-                type: 'graphic',
-                represents: charId
-              });
-              let tok = allTokens.find(function(t) {
-                return t.get('emits_bright_light') || t.get('emits_low_light');
-              });
-              if (!tok) {
-                al.remove();
-                return;
-              }
-              token.set('emits_bright_light', tok.get('emits_bright_light'));
-              token.set('emits_low_light', tok.get('emits_low_light'));
-            }
-            return;
-          }
-          //Lumière sur un token qui suit le perso.
-          let lumiere = getObj('graphic', lumId);
-          if (lumiere && lumiere.get('pageid') != currentMap.id) {
-            let copyLum = createObj('graphic', {
-              _pageid: currentMap.id,
-              imgsrc: lumiere.get('imgsrc'),
-              left: token.get('left'),
-              top: token.get('top'),
-              width: 70,
-              height: 70,
-              layer: 'walls',
-              name: lumiere.get('name'),
-              emits_low_light: lumiere.get('emits_low_light'),
-              low_light_distance: lumiere.get('low_light_distance'),
-              emits_bright_light: lumiere.get('emits_bright_light'),
-              bright_light_distance: lumiere.get('bright_light_distance'),
-            });
-            if (copyLum) {
-              al.set('max', copyLum.id);
-              lumiere.remove();
-            }
-          }
-        });
-      }
+      synchronisationDesLumieres(perso, currentMap.id);
     });
   }
 
