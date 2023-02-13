@@ -4714,7 +4714,8 @@ var COFantasy = COFantasy || function() {
           if (cmd.length < 2) return false;
           let mana = parseInt(cmd[1]);
           if (isNaN(mana) || mana < 0) return false;
-          return !depenseManaPossible(perso, mana);
+          return !depenseManaPossible(perso, mana) ||
+            attributeAsBool(perso, 'frappeDesArcanes');
         case 'limiteParJour':
           if (cmd.length < 2) return false;
           let limiteParJour = parseInt(cmd[1]);
@@ -4760,6 +4761,16 @@ var COFantasy = COFantasy || function() {
     return ai;
   }
 
+  //Enlève les chaîne de type ?{..} pour être sûr que l'action est impossible
+  function removeUserInputs(act) {
+    let m = act.match(/\?\{[^\}]*\}/g);
+    if (!m) return act;
+    m.forEach(function(ma) {
+      act = act.replace(ma, '');
+    });
+    return act;
+  }
+
   //options peut avoir les champs:
   // - ressource, un attribut
   // - overlay
@@ -4791,9 +4802,10 @@ var COFantasy = COFantasy || function() {
       }
       if (act.charAt(0) == '!') {
         if (act.startsWith('!cof-')) {
-          const args = act.split(' --');
+          let actSansChoix = removeUserInputs(act);
+          const args = actSansChoix.split(' --');
           if (actionImpossible(perso, args, '')) options.actionImpossible = true;
-          else if (act.startsWith('!cof-soin ') && !act.includes('--limitePar') && !act.includes('--dose')) { //Limitations spéficiques
+          else if (act.startsWith('!cof-soin ') && !actSansChoix.includes('--limitePar') && !actSansChoix.includes('--dose')) { //Limitations spéficiques
             let rangSoin = predicateAsInt(perso, 'voieDesSoins', 0);
             let cmd = args[0].split(' ');
             if (cmd.includes('leger')) {
@@ -4842,6 +4854,8 @@ var COFantasy = COFantasy || function() {
                   (cmd.includes('--ricochets') && !(weaponStats.armeDeJet || weaponStats.options.includes('--aussiArmeDeJet')));
               }
             }
+            options.actionImpossible = options.actionImpossible ||
+              (actSansChoix.includes(' --frappeDesArcanes') && attributeAsBool(perso, 'frappeDesArcanes'));
           }
           if (options.ressource) act += " --decrAttribute " + options.ressource.id;
           if (picto === '') {
@@ -7476,8 +7490,8 @@ var COFantasy = COFantasy || function() {
       else line += " " + boutonSimple("!cof-tempete-de-mana " + i, i);
     }
     addLineToFramedDisplay(display, line);
-    var v = tempeteDeManaCourante.cmd;
-    var vopt = '';
+    let v = tempeteDeManaCourante.cmd;
+    let vopt = '';
     if (tempeteDeManaCourante.cout) {
       vopt = "--tempeteDeMana";
       if (tempeteDeManaCourante.duree) vopt += " duree";
@@ -8169,6 +8183,14 @@ var COFantasy = COFantasy || function() {
             return;
           }
           options.portee = portee;
+          return;
+        case 'frappeDesArcanes':
+          options.frappeDesArcanes = 2;
+          if (cmd.length > 1) {
+            options.frappeDesArcanes = parseInt(cmd[1]);
+            if (isNaN(options.frappeDesArcanes) || options.frappeDesArcanes < 1)
+              options.frappeDesArcanes = 2;
+          }
           return;
         case 'attaqueMagiqueDe':
           if (cmd.length < 1) {
@@ -11885,6 +11907,16 @@ var COFantasy = COFantasy || function() {
       explications.push("Attaque flamboyante => +" + bonus + " en Attaque et DM");
       attBonus += bonus;
     }
+    if (options.frappeDesArcanes && options.contact) {
+      attBonus += 5;
+      let nbDes = options.frappeDesArcanes;
+      explications.push("Frappe des arcanes => +5 en Attaque et +" + nbDes + "d6 DM");
+      attaquant.additionalDmg = attaquant.additionalDmg || [];
+      attaquant.additionalDmg.push({
+        type: options.type || 'normal',
+        value: nbDes + 'd6'
+      });
+    }
     return attBonus;
   }
 
@@ -13333,6 +13365,10 @@ var COFantasy = COFantasy || function() {
     if (options.forceMinimum &&
       caracCourante(attaquant, 'force') < options.forceMinimum) {
       sendPerso("n'est pas assez fort pour utiliser cette attaque (force minimum " + options.forceMinimum + ")");
+      return;
+    }
+    if ((options.sortilege || options.frappeDesArcanes) && attributeAsBool(attaquant, 'frappeDesArcanes')) {
+      sendPerso("ne peut pas encore lancer de sorts");
       return;
     }
     //Pour l'option grenaille implicite, il faut vérifier que toutes les charge de l'arme sont des charges de grenaille
@@ -15877,6 +15913,13 @@ var COFantasy = COFantasy || function() {
                   touche = false;
                   evt.succes = false;
                 }
+                if (options.frappeDesArcanes) {
+                  if (options.contact) {
+                    setAttrDuree(attaquant, 'frappeDesArcanes', 1 + randomInteger(6), evt);
+                  } else {
+                    sendPerso(attaquant, "Frappe des arcanes seulement possible au contact");
+                  }
+                }
               } else { //Effet si on ne touche pas
                 if (attributeAsBool(attaquant, 'momentDePerfection')) {
                   target.messages.push("Grâce à son instant de perfection, " + nomPerso(attaquant) + " touche !");
@@ -16012,7 +16055,7 @@ var COFantasy = COFantasy || function() {
                     if (target.ennemisAuContact === undefined) {
                       error(nomPerso(target) + " a la possibilité d'une esquive fatale, mais les ennemis au contact ne sont pas calculés", target);
                     } else {
-                      var ciblesEsquiveFatale = target.ennemisAuContact.filter(function(tok) {
+                      let ciblesEsquiveFatale = target.ennemisAuContact.filter(function(tok) {
                         return (tok.id != attaquant.token.id);
                       });
                       if (ciblesEsquiveFatale.length > 0) {
@@ -26810,6 +26853,10 @@ var COFantasy = COFantasy || function() {
       error(effet + " n'est pas un effet temporaire répertorié", msg.content);
       return;
     }
+    if (lanceur && options.mana !== undefined && attributeAsBool(lanceur, 'frappeDesArcanes')) {
+      sendPerso(lanceur, "ne peut pas encore lancer de sort");
+      return;
+    }
     if (!options.type && options.valeurMax && effet.startsWith('dotGen(')) {
       options.type = options.valeurMax;
     }
@@ -32598,7 +32645,7 @@ var COFantasy = COFantasy || function() {
     };
     var attrName = attr.get('name').trim();
     //On regarde si c'est un consommable sur la fiche
-    var m = consommableQuantiteRegExp.exec(attrName);
+    let m = consommableQuantiteRegExp.exec(attrName);
     if (m) {
       var consoPrefix = m[1];
       var attrConsName = charAttribute(perso.charId, consoPrefix + 'equip_nom');
@@ -32707,7 +32754,7 @@ var COFantasy = COFantasy || function() {
     // on recherche si le consommable existe chez perso2
     var found = attributes.find(function(attr2) {
       var attrName2 = attr2.get('name');
-      var m2 = consommableNomRegExp.exec(attrName2);
+      let m2 = consommableNomRegExp.exec(attrName2);
       if (m2) {
         if (consName != attr2.get('current').trim()) return false;
         var consoPrefix2 = m2[1];
@@ -33159,7 +33206,7 @@ var COFantasy = COFantasy || function() {
       let rang = voieDesElixirs;
       let base_save = 10;
       if (predicateAsBool(forgesort, 'boutefeu') &&
-        elixir.action.contains('--feu')) {
+        elixir.action.includes('--feu')) {
         rang = rang + 1;
         base_save = base_save + 2;
       }
@@ -42196,6 +42243,11 @@ var COFantasy = COFantasy || function() {
       finF: "retrouve sa forme normale. Espérons qu'elle était au sol...",
       visible: true,
     },
+    frappeDesArcanes: {
+      activation: "insuffle sa puissance magique dans son attaque",
+      actif: "ne peut plus lancer de sorts pour l'instant",
+      fin: "retrouve assez de puissance magique pour lancer des sorts",
+    },
     frenesieMinotaure: {
       activation: "entre en frénésie",
       actif: "est en frénésie",
@@ -42282,6 +42334,18 @@ var COFantasy = COFantasy || function() {
       finF: "n'est plus protégée contre les projectiles",
       visible: false,
     },
+    ralentiTemp: {
+      activation: "est ralenti : une seule action, pas d'action limitée",
+      activationF: "est ralentie : une seule action, pas d'action limitée",
+      actif: "est ralenti",
+      actifF: "est ralentie",
+      msgSave: "ne plus être ralenti",
+      fin: "n'est plus ralenti",
+      finF: "n'est plus ralentie",
+      prejudiciable: true,
+      visible: true,
+      entrave: true
+    },
     rayonAffaiblissant: {
       activation: "est touché par un rayon affaiblissant",
       activationF: "est touchée par un rayon affaiblissant",
@@ -42319,18 +42383,6 @@ var COFantasy = COFantasy || function() {
       msgSave: "pouvoir agir malgré la mort de son allié",
       prejudiciable: true,
       visible: true,
-    },
-    ralentiTemp: {
-      activation: "est ralenti : une seule action, pas d'action limitée",
-      activationF: "est ralentie : une seule action, pas d'action limitée",
-      actif: "est ralenti",
-      actifF: "est ralentie",
-      msgSave: "ne plus être ralenti",
-      fin: "n'est plus ralenti",
-      finF: "n'est plus ralentie",
-      prejudiciable: true,
-      visible: true,
-      entrave: true
     },
     immobiliseTemp: {
       activation: "est immobilisé : aucun déplacement possible",
