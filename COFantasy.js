@@ -8735,6 +8735,10 @@ var COFantasy = COFantasy || function() {
         case 'critique':
         case 'echecCritique':
         case 'pasDEchecCritique':
+          if (!playerIsGM(playerId)) {
+            sendChat('COF', "Pas le droit d'utiliser l'option --" + cmd[0]);
+            return;
+          }
           if (options.triche === undefined) {
             options.triche = cmd[0];
           } else {
