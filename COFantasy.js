@@ -2390,6 +2390,8 @@ var COFantasy = COFantasy || function() {
           tokenFields.imgsrc = IMG_INVISIBLE;
           let tokenInvisible = createObj('graphic', tokenFields);
           if (tokenInvisible) {
+            if (tokenFields.has_bright_light_vision)
+              tokenInvisible.set('has_bright_light_vision', true);
             evt.tokens = evt.tokens || [];
             evt.tokens.push(tokenInvisible);
             //On met l'ancien token dans le gmlayer, car si l'image vient du marketplace, il est impossible de le recréer depuis l'API
@@ -4694,8 +4696,35 @@ var COFantasy = COFantasy || function() {
     return false;
   }
 
+  //depasse est un string qui commence par --depasseLimite
+  //args doit être défini et contient des valeur à modifier :
+  // - mana
+  // - text
+  function peutDepasserLimite(depasse, perso, attrName, args) {
+    let depArg = depasse.split(' ', 3);
+    let step = 1;
+    if (depArg.length > 1) {
+      step = parseInt(depArg[1]);
+      if (isNaN(step) || step < 0) step = 1;
+    }
+    let d = attributeAsInt(perso, 'depasse' + attrName, 0) + step;
+    if (d < 1) return true;
+    let mana = d;
+    if (args.mana !== undefined) {
+      args.mana += d;
+      mana = args.mana;
+    }
+    if (depenseManaPossible(perso, mana)) {
+      if (args.text) args.text += " (+" + d + "PM)";
+      return true;
+    }
+    return false;
+  }
+
   //options est un tableaux d'options obtenues par split(' --')
-  function actionImpossible(perso, options, defResource) {
+  // peut retourner une struct avec champ extraText
+  function actionImpossible(perso, options, defResource, tref) {
+    let coutMana = 0;
     let ai = options.some(function(opt) {
       opt = opt.trim();
       if (opt === '') return false;
@@ -4714,7 +4743,8 @@ var COFantasy = COFantasy || function() {
           if (cmd.length < 2) return false;
           let mana = parseInt(cmd[1]);
           if (isNaN(mana) || mana < 0) return false;
-          return !depenseManaPossible(perso, mana) ||
+          coutMana += mana;
+          return !depenseManaPossible(perso, coutMana) ||
             attributeAsBool(perso, 'frappeDesArcanes');
         case 'limiteParJour':
           if (cmd.length < 2) return false;
@@ -4730,11 +4760,23 @@ var COFantasy = COFantasy || function() {
             return false;
           }
           //Reste le cas où on peut dépasser cette limite par jour
-          let depasse = tokenAttribute(perso, 'depasseLimiteParJour_' + ressourceParJour);
-          if (depasse.length === 0) return true;
-          let coutDepasse = parseInt(depasse[0].get('current'));
-          if (isNaN(coutDepasse) || coutDepasse < 0) return true;
-          return !depenseManaPossible(perso, coutDepasse);
+          let depasse = options.find(function(o) {
+            return o.startsWith('depasseLimite ');
+          });
+          if (depasse) {
+            let da = {
+              mana: coutMana
+            };
+            if (tref) da.text = tref.text;
+            let dp = peutDepasserLimite(depasse, perso, ressourceParJour, da);
+            if (dp) {
+              coutMana = da.mana;
+              if (tref) tref.text = da.text;
+              return false;
+            }
+            return true;
+          }
+          return true;
         case 'limiteParCombat':
           if (cmd.length < 2) return false;
           let limiteParCombat = parseInt(cmd[1]);
@@ -4804,58 +4846,75 @@ var COFantasy = COFantasy || function() {
         if (act.startsWith('!cof-')) {
           let actSansChoix = removeUserInputs(act);
           const args = actSansChoix.split(' --');
-          if (actionImpossible(perso, args, '')) options.actionImpossible = true;
-          else if (act.startsWith('!cof-soin ') && !actSansChoix.includes('--limitePar') && !actSansChoix.includes('--dose')) { //Limitations spéficiques
-            let rangSoin = predicateAsInt(perso, 'voieDesSoins', 0);
-            let cmd = args[0].split(' ');
-            if (cmd.includes('leger')) {
-              let soinsLegers = attributeAsInt(perso, 'soinsLegers', 0);
-              if (soinsLegers >= rangSoin) {
-                //Peut-être qu'on peut encore dépasser la limite
-                if (act.includes('--depasseLimite')) {
-                  let d = attributeAsInt(perso, 'depassesoinsLegers', 1);
-                  if (depenseManaPossible(perso, d)) {
-                    text += " (+" + d + "PM)";
+          let defRessource = '';
+          if (act.startsWith('!cof-guerison ')) defRessource = 'guérison';
+          let dai = {
+            text
+          };
+          if (actionImpossible(perso, args, defRessource, dai))
+            options.actionImpossible = true;
+          else text = dai.text;
+          if (!options.actionImpossible) {
+            if (act.startsWith('!cof-soin ') && !actSansChoix.includes('--limitePar') && !actSansChoix.includes('--dose')) { //Limitations spéficiques
+              let rangSoin = predicateAsInt(perso, 'voieDesSoins', 0);
+              let cmd = args[0].split(' ');
+              if (cmd.includes('leger')) {
+                let soinsLegers = attributeAsInt(perso, 'soinsLegers', 0);
+                if (soinsLegers >= rangSoin) {
+                  //Peut-être qu'on peut encore dépasser la limite
+                  let depasse = actSansChoix.indexOf('--depasseLimite ');
+                  if (depasse > 0) {
+                    let dp = {
+                      text
+                    };
+                    let pdl =
+                      peutDepasserLimite(actSansChoix.substring(depasse), perso, 'soinsLegers', dp);
+                    if (pdl) text = dp.text;
+                    else options.actionImpossible = true;
                   } else options.actionImpossible = true;
-                } else options.actionImpossible = true;
-              }
-            } else if (cmd.includes('modere')) {
-              let soinsModeres = attributeAsInt(perso, 'soinsModeres', 0);
-              if (soinsModeres >= rangSoin) {
-                //Peut-être qu'on peut encore dépasser la limite
-                if (act.includes('--depasseLimite')) {
-                  let d = attributeAsInt(perso, 'depassesoinsModeres', 0) + 1;
-                  if (depenseManaPossible(perso, d)) {
-                    text += "(+" + d + "PM)";
+                }
+              } else if (cmd.includes('modere')) {
+                let soinsModeres = attributeAsInt(perso, 'soinsModeres', 0);
+                if (soinsModeres >= rangSoin) {
+                  //Peut-être qu'on peut encore dépasser la limite
+                  let depasse = actSansChoix.indexOf('--depasseLimite ');
+                  if (depasse > 0) {
+                    let dp = {
+                      text
+                    };
+                    let pdl =
+                      peutDepasserLimite(actSansChoix.substring(depasse), perso, 'soinsModeres', dp);
+                    if (pdl) text = dp.text;
+                    else options.actionImpossible = true;
                   } else options.actionImpossible = true;
-                } else options.actionImpossible = true;
+                }
               }
-            }
-          } else if (act.startsWith('!cof-recharger ')) {
-            let cmd = act.split(' ');
-            if (cmd.length > 1) {
-              let attackLabel = cmd[1];
-              let arme = getWeaponStats(perso, attackLabel);
-              if (arme !== undefined && arme.charge) {
-                let currentCharge = attributeAsInt(perso, 'charge_' + attackLabel, 0);
-                if (currentCharge >= arme.charge)
-                  options.actionImpossible = true;
+            } else if (act.startsWith('!cof-recharger ')) {
+              let cmd = act.split(' ');
+              if (cmd.length > 1) {
+                let attackLabel = cmd[1];
+                let arme = getWeaponStats(perso, attackLabel);
+                if (arme !== undefined && arme.charge) {
+                  let currentCharge = attributeAsInt(perso, 'charge_' + attackLabel, 0);
+                  if (currentCharge >= arme.charge)
+                    options.actionImpossible = true;
+                }
               }
-            }
-          } else if (act.startsWith('!cof-attack ')) {
-            let cmd = act.split(' ');
-            if (cmd.length > 3 && cmd[3] == '-1') {
-              //Selon l'arme en main, une action peut être possible ou non
-              let weaponStats = armesEnMain(perso);
-              if (weaponStats) {
-                options.actionImpossible =
-                  (weaponStats.deuxMains && attributeAsBool(perso, 'espaceExigu')) ||
-                  (weaponStats.portee && cmd.includes('--attaqueFlamboyante')) ||
-                  (cmd.includes('--ricochets') && !(weaponStats.armeDeJet || weaponStats.options.includes('--aussiArmeDeJet')));
+            } else if (act.startsWith('!cof-attack ')) {
+              let cmd = act.split(' ');
+              if (cmd.length > 3 && cmd[3] == '-1') {
+                //Selon l'arme en main, une action peut être possible ou non
+                let weaponStats = armesEnMain(perso);
+                if (weaponStats) {
+                  options.actionImpossible =
+                    (weaponStats.deuxMains && attributeAsBool(perso, 'espaceExigu')) ||
+                    (weaponStats.portee && cmd.includes('--attaqueFlamboyante')) ||
+                    (cmd.includes('--ricochets') && !(weaponStats.armeDeJet || weaponStats.options.includes('--aussiArmeDeJet')));
+                }
               }
+              options.actionImpossible = options.actionImpossible ||
+                (actSansChoix.includes(' --frappeDesArcanes') && attributeAsBool(perso, 'frappeDesArcanes'));
             }
-            options.actionImpossible = options.actionImpossible ||
-              (actSansChoix.includes(' --frappeDesArcanes') && attributeAsBool(perso, 'frappeDesArcanes'));
           }
           if (options.ressource) act += " --decrAttribute " + options.ressource.id;
           if (picto === '') {
@@ -6559,7 +6618,7 @@ var COFantasy = COFantasy || function() {
     let action = msg.content;
     action = action.replace(/ --competences /, '');
     action = action.replace(/ --competences/, ''); //au cas où ce serait le dernier argument
-    var args = action.substring(9); //on enlève !cof-jet
+    let args = action.substring(9); //on enlève !cof-jet
     if (!args.startsWith(carac)) action = "!cof-jet " + carac + " " + args;
     let overlay;
     switch (carac) {
@@ -12467,6 +12526,22 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  function depasseLimite(perso, nomAttr, msgImpossible, msg, evt, options) {
+    if (options.depasseLimite) {
+      options.mana = options.mana || 0;
+      let step = options.depasseLimite;
+      let cout = attributeAsInt(perso, 'depasse' + nomAttr, 0);
+      cout += step;
+      options.mana += cout;
+      let depMana = depenseManaPossible(perso, options.mana, msg);
+      if (!depMana) return true;
+      setTokenAttr(perso, 'depasse' + nomAttr, cout, evt);
+      return false;
+    }
+    sendPerso(perso, msgImpossible, options.secret);
+    return true;
+  }
+
   //Retourne true si il existe une limite qui empêche de lancer le sort
   //N'ajoute pas l'événement à l'historique
   //explications est optionnel
@@ -12510,38 +12585,37 @@ var COFantasy = COFantasy || function() {
     if (defResource !== undefined) ressource = defResource;
     let utilisations;
     if (options.limiteParJour) {
-      if (personnage) {
-        if (options.limiteParJourRessource)
-          ressource = "limiteParJour_" + options.limiteParJourRessource;
-        else
-          ressource = "limiteParJour_" + defResource;
-        utilisations =
-          attributeAsInt(personnage, ressource, options.limiteParJour);
-        if (utilisations === 0) {
-          sendPerso(personnage, "ne peut plus faire cette action aujourd'hui", options.secret);
-          return true;
-        }
-        setTokenAttr(personnage, ressource, utilisations - 1, evt);
-        if (options.limiteParJourRessource) {
-          let msgJour = nomPerso(personnage) + " ";
-          if (utilisations < 2) msgJour += "ne pourra plus utiliser ";
-          else {
-            msgJour += "pourra encore utiliser ";
-            if (utilisations == 2) msgJour += "une fois ";
-            else msgJour += (utilisations - 1) + " fois ";
-          }
-          msgJour += options.limiteParJourRessource + " aujourd'hui.";
-          if (explications) {
-            stateCOF.afterDisplay = stateCOF.afterDisplay || [];
-            stateCOF.afterDisplay.push({
-              msg: msgJour,
-              destinataire: personnage
-            });
-          } else sendPerso(personnage, msgJour, true);
-        }
-      } else {
+      if (!personnage) {
         error("Impossible de savoir à qui appliquer la limite journalière", options);
         return true;
+      }
+      if (options.limiteParJourRessource)
+        ressource = "limiteParJour_" + options.limiteParJourRessource;
+      else
+        ressource = "limiteParJour_" + defResource;
+      utilisations =
+        attributeAsInt(personnage, ressource, options.limiteParJour);
+      if (utilisations === 0) {
+        if (depasseLimite(personnage, ressource, "ne peut plus faire cette action aujourd'hui", msg, evt, options)) return true;
+        utilisations = 1;
+      }
+      setTokenAttr(personnage, ressource, utilisations - 1, evt);
+      if (options.limiteParJourRessource) {
+        let msgJour = nomPerso(personnage) + " ";
+        if (utilisations < 2) msgJour += "ne pourra plus utiliser ";
+        else {
+          msgJour += "pourra encore utiliser ";
+          if (utilisations == 2) msgJour += "une fois ";
+          else msgJour += (utilisations - 1) + " fois ";
+        }
+        msgJour += options.limiteParJourRessource + " aujourd'hui.";
+        if (explications) {
+          stateCOF.afterDisplay = stateCOF.afterDisplay || [];
+          stateCOF.afterDisplay.push({
+            msg: msgJour,
+            destinataire: personnage
+          });
+        } else sendPerso(personnage, msgJour, true);
       }
     }
     if (options.limiteParCombat) {
@@ -12656,35 +12730,7 @@ var COFantasy = COFantasy || function() {
         let nomAttr = options.limiteAttribut.nom;
         let currentAttr = attributeAsInt(personnage, nomAttr, 0);
         if (currentAttr >= options.limiteAttribut.limite) {
-          if (options.depasseLimite) {
-            options.mana = options.mana || 0;
-            let cout = options.depasseLimite;
-            let step = cout;
-            let depasseAttr = tokenAttribute(personnage, 'depasse' + nomAttr);
-            if (depasseAttr.length > 0) {
-              depasseAttr = depasseAttr[0];
-              cout = parseInt(depasseAttr.get('current'));
-              if (isNaN(cout) || cout < 1) cout = 1;
-              step = parseInt(depasseAttr.get('max'));
-              if (isNaN(step) || step < 1) step = 1;
-              evt.attributes = evt.attributes || [];
-              evt.attributes.push({
-                attribute: depasseAttr,
-                current: cout
-              });
-            } else {
-              depasseAttr = setTokenAttr(personnage, 'depasse' + nomAttr, cout, evt, {
-                maxVal: cout
-              });
-            }
-            options.mana += cout;
-            depMana = depenseManaPossible(personnage, options.mana, msg);
-            if (!depMana) return true;
-            depasseAttr.set('current', cout + step);
-          } else {
-            sendPerso(personnage, options.limiteAttribut.message, options.secret);
-            return true;
-          }
+          if (depasseLimite(personnage, nomAttr, options.limiteAttribut.message, msg, evt, options)) return true;
         }
         setTokenAttr(personnage, nomAttr, currentAttr + 1, evt);
       } else {
@@ -22189,7 +22235,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('depassesoinsModeres', evt, attrs);
     attrs = removeAllAttributes('fortifie', evt, attrs);
     attrs = removeAllAttributes('limiteParJour', evt, attrs);
-    attrs = removeAllAttributes('depasseLimiteParJour', evt, attrs);
+    attrs = removeAllAttributes('depasselimiteParJour', evt, attrs);
     attrs = removeAllAttributes('tueurFantasmagorique', evt, attrs);
     attrs = removeAllAttributes('immunise24HA', evt, attrs);
     attrs = removeAllAttributes('testsRatesDuTour', evt, attrs);
@@ -25689,9 +25735,9 @@ var COFantasy = COFantasy || function() {
         }
         let rangSoin = predicateAsInt(perso, 'voieDesSoins', 0);
         if (rangSoin > 0) {
-          var msgSoins;
-          var soinsRestants;
-          var soins = "";
+          let msgSoins;
+          let soinsRestants;
+          let soins = "";
           let soinsLegers = attributeAsInt(perso, 'soinsLegers', 0);
           if (soinsLegers < rangSoin) {
             soinsRestants = rangSoin - soinsLegers;
@@ -25702,7 +25748,7 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, "ne peut plus faire de soin léger aujourd'hui");
           }
           if (rangSoin > 1) {
-            var soinsModeres = attributeAsInt(perso, 'soinsModeres', 0);
+            let soinsModeres = attributeAsInt(perso, 'soinsModeres', 0);
             if (soinsModeres < rangSoin) {
               soinsRestants = rangSoin - soinsModeres;
               if (soinsRestants > 1) soins = 's';
@@ -25714,9 +25760,9 @@ var COFantasy = COFantasy || function() {
             }
           }
           if (rangSoin > 3) {
-            var soinsGuerison = attributeAsInt(perso, 'limiteParJour_guérison', 1);
-            if (soinsGuerison) {
-              addLineToFramedDisplay(display, "peut encore faire " + soinsGuerison + "guérison" + (soinsGuerison > 1 ? 's' : '') + " aujourd'hui");
+            let soinsGuerison = attributeAsInt(perso, 'limiteParJour_guérison', 1);
+            if (soinsGuerison > 0) {
+              addLineToFramedDisplay(display, "peut encore faire " + soinsGuerison + " guérison" + (soinsGuerison > 1 ? 's' : '') + " aujourd'hui");
             } else {
               addLineToFramedDisplay(display, "ne peut plus faire de guérison aujourd'hui");
             }
