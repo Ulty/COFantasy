@@ -15794,6 +15794,8 @@ var COFantasy = COFantasy || function() {
                     options.devorer = true;
                   if (predicateAsBool(attaquant, 'gober'))
                     options.gober = true;
+                  if (predicateAsBool(attaquant, 'attaqueViolente'))
+                    options.attaqueViolente = true;
                 }
                 if (options.etreinteImmole) {
                   setTokenAttr(attaquant, 'etreinteImmole', idName(target), evt);
@@ -17238,6 +17240,13 @@ var COFantasy = COFantasy || function() {
             }
           }
         }
+        if (options.attaqueViolente) {
+          target.messages.push(nomPerso(attaquant) + " fait une attaque violente. Jet de force opposé pour voir si " + nomPerso(target) + " se fait projeter");
+          target.effets.push({
+            attaqueViolente: true,
+            save: true
+          });
+        }
         if (options.ecraser) {
           target.messages.push(nomPerso(attaquant) + " saisit " + nomPerso(target) + " entre ses bras puissants");
           if (options.ecraser === true) {
@@ -18275,6 +18284,30 @@ var COFantasy = COFantasy || function() {
                           } else {
                             if (resultat === 0) diminueMalediction(attaquant, evt);
                             target.messages.push(nomPerso(target) + " n'est pas avalé.");
+                          }
+                          saves--;
+                          savesEffets--;
+                          etatsAvecSave();
+                        });
+                    } else if (ef.attaqueViolente) {
+                      let rollIdAtt = 'attaqueViolente_' + target.token.id;
+                      testOppose(rollIdAtt, target, 'FOR', options, attaquant, 'FOR',
+                        options, target.messages, evt,
+                        function(resultat, crit, rt1, rt2) {
+                          if (resultat == 2) {
+                            let distance = rollDePlus(6);
+                            target.messages.push(nomPerso(target) + " est projeté" + eForFemale(target) + " à " +
+                              distance.roll + " mètres et tombe au sol");
+                            setState(target, 'renverse', true, evt);
+                            if (attackLabel) {
+                              let cmdAttaqueGratuite = '!cof-attack ' + attaquant.token.id + ' ' + target.token.id + ' ' + attackLabel;
+                              target.messages.push(boutonSimple(cmdAttaqueGratuite, 'Attaque gratuite'));
+                            } else {
+                              target.messages.push(nomPerso(attaquant) + " a droit à une attaque gratuite contre " + nomPerso(target));
+                            }
+                          } else {
+                            if (resultat === 0) diminueMalediction(attaquant, evt);
+                            target.messages.push(nomPerso(target) + " tient bon et ne recule pas");
                           }
                           saves--;
                           savesEffets--;
@@ -20226,7 +20259,7 @@ var COFantasy = COFantasy || function() {
                   }, {
                     caseInsensitive: true
                   });
-                var dmTemp;
+                let dmTemp;
                 if (tmpHitAttr.length === 0) {
                   dmTemp =
                     createObj("attribute", {
@@ -44451,7 +44484,9 @@ var COFantasy = COFantasy || function() {
             nbDe: 1,
             de: 4
           }, 'feu',
-          "brûle dans son armure", evt, {}, callBack);
+          "brûle dans son armure", evt, {
+            valeur: 'armureBrulanteValeur'
+          }, callBack);
         return;
       case 'nueeDInsectes': //prend 1 DM
         degatsParTour(charId, pageId, effet, attrName, {
@@ -44478,7 +44513,9 @@ var COFantasy = COFantasy || function() {
         degatsParTour(charId, pageId, effet, attrName, {
             cst: 1
           }, 'feu',
-          "se brûle avec son arme", evt, {}, callBack);
+          "se brûle avec son arme", evt, {
+            valeur: 'armeBrulanteValeur'
+          }, callBack);
         return;
       case 'regeneration': //soigne
         soigneParTour(charId, pageId, effet, attrName, 3, "régénère", evt, {

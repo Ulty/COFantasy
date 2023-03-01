@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.11
 ### Capacités
+* Attaque violente de la campagne Invicible.
 * Frappe des arcanes, de la Voie du guerrier-mage.
 * Sang puissant (voie du pacte vampirique)
 * Blessure sanglante (voie du pacte vampirique)
