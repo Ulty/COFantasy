@@ -4915,7 +4915,8 @@ var COFantasy = COFantasy || function() {
                 if (weaponStats) {
                   options.actionImpossible =
                     (weaponStats.deuxMains && attributeAsBool(perso, 'espaceExigu')) ||
-                    (weaponStats.portee && cmd.includes('--attaqueFlamboyante')) ||
+                    (weaponStats.portee && 
+                    (cmd.includes('--attaqueFlamboyante') || cmd.includes('--seulementContact'))) ||
                     (cmd.includes('--ricochets') && !(weaponStats.armeDeJet || weaponStats.options.includes('--aussiArmeDeJet')));
                 }
               }
@@ -8122,6 +8123,7 @@ var COFantasy = COFantasy || function() {
         case 'etreinteImmole':
         case 'etreinteScorpion':
         case 'seulementDistance':
+        case 'seulementContact':
           scope[cmd[0]] = true;
           return;
         case 'affute':
@@ -13438,6 +13440,11 @@ var COFantasy = COFantasy || function() {
       options.distance = true;
       if (attributeAsBool(attaquant, 'rageDuBerserk')) {
         sendPerso(attaquant, "est en rage du berserk, il ne veut attaquer qu'au contact");
+        attackCallback(options);
+        return;
+      }
+      if (options.seulementContact) {
+        sendPerso(attaquant, "ne peut utiliser cette attaque qu'au contact");
         attackCallback(options);
         return;
       }

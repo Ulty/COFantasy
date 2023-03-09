@@ -1147,7 +1147,7 @@ tr {line-height: 25px;}
                     </ul>
                   </li>
                   <li><strong>Coup de bouclier</strong> : faire une attaque de bouclier, de type <code>Arme gauche</code>, avec le modificateur <code>avecd12crit</code>. Pour que cette attaque soit proposée dans les listes d'action seulement quand le personnage porte son bouclier, ajouter un prédicat <code>attaqueAuBouclier</code> de valeur le label de l'attaque.</li>
-                  <li><strong>Frappe lourde</strong> : faire l'attaque avec les options <code>--avecd12crit --plus 2d6 --ignoreMoitieRD</code></li>
+                  <li><strong>Frappe lourde</strong> : faire l'attaque avec les options <code>--avecd12crit --plus 2d6 --ignoreMoitieRD --seulementContact</code></li>
                   <li><strong>Force héroïque</strong> : reporter les bonus sur la fiche</li>
                 </ol>
                 <h4 class="text-secondary">Voie du héro</h4>
@@ -1395,7 +1395,7 @@ tr {line-height: 25px;}
                   <li><strong>Désarmer</strong> : <code>!cof-desarmer @{selected|token_id} @{target|token_id}</code>. On peut utiliser un troisième argument optionnel, qui est le label d'une arme par défaut, au cas où le guerrier n'aurait pas d'arme en main.</li>
                   <li><strong>Double attaque</strong> : faire deux attaques, avec l'option supplémentaire <code>--bonusAttaque -2</code>.</li>
                   <li><strong>Attaque circulaire</strong> : faire les attaques normalement, ce n'est pas considéré comme une aoe.</li>
-                  <li><strong>Attaque puissante</strong> : <code>#Attaque -1 --avecd12crit --plus 2d6</code>.</li>
+                  <li><strong>Attaque puissante</strong> : <code>#Attaque -1 --avecd12crit --plus 2d6 --seulementContact</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du maître d'armes</h4>
                 <ol>
@@ -1880,6 +1880,7 @@ tr {line-height: 25px;}
                   <li><strong>Main vide</strong> : faire l'attaque à mains nues correspondant à la capacité.</li>
                   <li><strong>Kiai</strong> : ajouter un <a href=#predicats>prédicat</a> <code>kiai</code>, de valeur <code>1</code>. Au rang 5, mettre cette valeur à <code>2</code>, le script se charge d'attendre 1d6 tours avant de proposer le deuxième kiai.</li>
                   <li><Strong>Course mortelle</strong> : <code>!cof-attack-line @{selected|token_id} --distanceMax 10</code>. L'attaque va être faite avec l'arme en main, mais on peut spécifier un label d'attaque (avant les options) et toutes les options supportées par <code>!cof-attack</code>.</li>
+                  <li><strong>Puissance du ki</strong> : <code>#Attaque -1 --avecd12crit --plus 2d6 --seulementContact</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du sabre</h4>
                 <ol>
@@ -2662,7 +2663,7 @@ tr {line-height: 25px;}
                   <li><strong>Désarmer (L) :</strong> <code>!cof-desarmer @{selected|token_id} @{target|token_id}</code>.</li>
                   <li><strong>Double attaque (L) :</strong> faire deux attaques, avec l'option supplémentaire <code>--bonusAttaque -2</code>.</li>
                   <li><strong>Attaque circulaire (L) :</strong> faire les attaques normalement, ce n'est pas considéré comme une aoe.</li>
-                  <li><strong>Attaque puissante :</strong> <code>#Attaque -1 --avecd12crit --plus 2d6</code>.</li>
+                  <li><strong>Attaque puissante :</strong> <code>#Attaque -1 --avecd12crit --plus 2d6 --seulementContact</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de la maîtrise des armes</h4>
                 <ol>
