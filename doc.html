@@ -1042,7 +1042,7 @@ tr {line-height: 25px;}
                   <li><strong>Réflexes félins</strong> : ajouter un <a href=#predicats>prédicat</a> <code>reflexesFelins</code>, avec comme valeur le bonus aux saves et à l'initiative.</li>
                   <li><strong>Charge</strong> : faire une attaque avec les options <code>--bonusAttaque 2</code> <code>--plus 1d6</code>. Pour gérer plusieurs armes, vous pouvez utiliser la commande <code>#Attaque -1</code>.</li>
                   <li><strong>Enchaînement</strong> : ajouter un <a href=#predicats>prédicat</a> <code>enchainement</code>.</li>
-                  <li><strong>Déchaînement d'acier</strong> : pas de support particulier pour l'instant. Déplacer le token et faire les attaques au passage.</li>
+                  <li><strong>Déchaînement d'acier</strong> : <code>!cof-attack-line @{selected|token_id} --distanceMax 10</code>. L'attaque va être faite avec l'arme en main, mais on peut spécifier un label d'attaque (avant les options) et toutes les options supportées par <code>!cof-attack</code>.</li>
                   <li><strong>Attaque tourbillon</strong> : Faite une action avec le code <code>!cof-explosion -1 --auto --disque 5 --saufAllies --limiteParCombat 1 tourbillon</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du primitif</h4>
@@ -1879,6 +1879,7 @@ tr {line-height: 25px;}
                   <li><strong>Esprit vide</strong> : ajouter un <a href=#predicats>prédicat</a> <code>espritVide</code>. Si vous voulez un boonus différent (par exemple à partir du rang 4 dans la voie), associez les bonus au prédicat.</li>
                   <li><strong>Main vide</strong> : faire l'attaque à mains nues correspondant à la capacité.</li>
                   <li><strong>Kiai</strong> : ajouter un <a href=#predicats>prédicat</a> <code>kiai</code>, de valeur <code>1</code>. Au rang 5, mettre cette valeur à <code>2</code>, le script se charge d'attendre 1d6 tours avant de proposer le deuxième kiai.</li>
+                  <li><Strong>Course mortelle</strong> : <code>!cof-attack-line @{selected|token_id} --distanceMax 10</code>. L'attaque va être faite avec l'arme en main, mais on peut spécifier un label d'attaque (avant les options) et toutes les options supportées par <code>!cof-attack</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du sabre</h4>
                 <ol>

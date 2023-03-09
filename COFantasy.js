@@ -2272,6 +2272,17 @@ var COFantasy = COFantasy || function() {
     return c;
   }
 
+  function persoOfToken(token) {
+    let charId = token.get('represents');
+    if (charId === '') {
+      return undefined;
+    }
+    return {
+      token,
+      charId
+    };
+  }
+
   //options:
   //fromTemp si on est en train de supprimer un effet temporaire
   //affectToken si on a déjà changé le statusmarkers (on vient donc d'un changement à la main d'un marker
@@ -3123,15 +3134,11 @@ var COFantasy = COFantasy || function() {
     return scale;
   }
 
-  function persoOfToken(token) {
-    let charId = token.get('represents');
-    if (charId === '') {
-      return undefined;
-    }
-    return {
-      token: token,
-      charId: charId
-    };
+  // if token is bigger than thresh reduce the distance by that size
+  function tokenSize(tok, thresh) {
+    let size = (tok.get('width') + tok.get('height')) / 2;
+    if (size > thresh) return ((size - thresh) / 2);
+    return 0;
   }
 
   //options peut avoir les champs:
@@ -7947,12 +7954,26 @@ var COFantasy = COFantasy || function() {
       error("Le premier argument de !cof-attack n'est pas un token valide", args[1]);
       return;
     }
+    let pageId = attaquant.token.get('pageid');
     let targetToken = getObj('graphic', args[2]);
-    if (targetToken === undefined) {
-      error("le second argument de !cof-attack doit être un token", args[2]);
-      return;
+    if (targetToken === undefined) { //reste la possibilité de trouver un token de ce nom
+      let tokens = findObjs({
+        _type: 'graphic',
+        _subtype: 'token',
+        _pageid: pageId,
+        name: args[2]
+      });
+      if (tokens.length == 0) {
+        error("le second argument de !cof-attack doit être un token", args[2]);
+        return;
+      }
+      if (tokens.length > 1) {
+        error("Ambigüité sur le choix d'un token : il y a " +
+          tokens.length + " tokens nommés " + args[2], tokens);
+      }
+      targetToken = tokens[0];
     }
-    let attackLabel;
+    let attackLabel = -1;
     if (args.length > 3) {
       attackLabel = args.slice(3).join(' ').trim();
     }
@@ -9052,7 +9073,7 @@ var COFantasy = COFantasy || function() {
         case 'incrCritCoef':
           scope.critCoef = (scope.critCoef || 1);
           if (cmd.length > 1) {
-            var incrCritCoef = parseInt(cmd[1]);
+            let incrCritCoef = parseInt(cmd[1]);
             if (isNaN(incrCritCoef)) {
               error("L'option --incrCritCoef attend un entier", cmd);
               return;
@@ -9303,6 +9324,13 @@ var COFantasy = COFantasy || function() {
             error("L'argument de --difficulteCarac n'est pas une caractéristique", cmd);
           }
           return;
+        case 'attackId':
+          if (cmd.length < 2) {
+            error("Il faut indiquer l'id", cmd);
+            return;
+          }
+          options.attackId = cmd[1];
+          return;
         default:
           let armeMagique = cmd[0].match(/^\+([0-9]+)$/);
           if (armeMagique && armeMagique.length > 0) {
@@ -9386,6 +9414,20 @@ var COFantasy = COFantasy || function() {
     let playerName = msg.who;
     if (playerIsGM(playerId)) playerName = 'GM';
     attack(playerName, playerId, attaquant, targetToken, weaponStats, options);
+  }
+
+  function attackCallback(options, evt) {
+    if (!options.attackId) return;
+    let combat = stateCOF.combat;
+    if (!combat || !combat.attackCallbacks) return;
+    let f = combat.attackCallbacks[options.attackId];
+    if (!evt) {
+      evt = {
+        type: "Suite d'attaque"
+      };
+      addEvent(evt);
+    }
+    if (f) f(evt);
   }
 
   // Fait dépenser de la mana, dep doit contenir une dépense possible
@@ -13303,6 +13345,7 @@ var COFantasy = COFantasy || function() {
         sendPerso(attaquant, "est immunisé à la douleur");
       } else {
         sendPerso(attaquant, "ne peut pas attaquer car il est paralysé de douleur");
+        attackCallback(options);
         return;
       }
     }
@@ -13368,6 +13411,7 @@ var COFantasy = COFantasy || function() {
       let stats2 = getWeaponStats(attaquant, options.tirDouble.label);
       if (stats2 === undefined) {
         error("Pas d'arme de label " + options.tirDouble.label + " pour le tir double", attaquant);
+        attackCallback(options);
         return;
       }
       let tdSkillDiv = parseInt(stats2.attSkillDiv);
@@ -13394,6 +13438,7 @@ var COFantasy = COFantasy || function() {
       options.distance = true;
       if (attributeAsBool(attaquant, 'rageDuBerserk')) {
         sendPerso(attaquant, "est en rage du berserk, il ne veut attaquer qu'au contact");
+        attackCallback(options);
         return;
       }
       if (options.puissantPortee || options.tempeteDeManaPortee) {
@@ -13403,6 +13448,7 @@ var COFantasy = COFantasy || function() {
     } else {
       if (options.ricochets) {
         sendPerso(attaquant, "ne peut pas faire de ricochets au contact.");
+        attackCallback(options);
         return;
       }
       options.contact = true;
@@ -13410,15 +13456,18 @@ var COFantasy = COFantasy || function() {
     //Ce qui peut empêcher l'attaque quelles que soient les cibles
     if (options.avecd12 && ((estAffaibli(attaquant) && !predicateAsBool(attaquant, 'insensibleAffaibli')) || getState(attaquant, 'immobilise'))) {
       sendPerso(attaquant, "ne peut pas utiliser cette capacité quand il est affaibli.");
+      attackCallback(options);
       return;
     }
     if (options.forceMinimum &&
       caracCourante(attaquant, 'force') < options.forceMinimum) {
       sendPerso("n'est pas assez fort pour utiliser cette attaque (force minimum " + options.forceMinimum + ")");
+      attackCallback(options);
       return;
     }
     if ((options.sortilege || options.frappeDesArcanes) && attributeAsBool(attaquant, 'frappeDesArcanes')) {
       sendPerso("ne peut pas encore lancer de sorts");
+      attackCallback(options);
       return;
     }
     //Pour l'option grenaille implicite, il faut vérifier que toutes les charge de l'arme sont des charges de grenaille
@@ -13495,6 +13544,7 @@ var COFantasy = COFantasy || function() {
       cibles = targetToken;
       if (cibles.length === 0) {
         error("Attaque sans cible", targetToken);
+        attackCallback(options);
         return;
       } else if (cibles.length == 1) targetToken = cibles[0].token;
       nomCiblePrincipale = nomPerso(cibles[0]);
@@ -13634,6 +13684,7 @@ var COFantasy = COFantasy || function() {
                   "Le centre du disque visé est trop loin pour " + weaponName +
                   " (distance " + distanceTarget + ", portée " + portee + ")",
                   playerId);
+                attackCallback(options);
                 return;
               }
               if (options.aoe.souffleDeMort) {
@@ -13645,6 +13696,7 @@ var COFantasy = COFantasy || function() {
                 let charId = targetToken.get('represents');
                 if (!charId) {
                   sendPlayer(playerName, "Le centre du disque n'est pas un cadavre", playerId);
+                  attackCallback(options);
                   return;
                 }
                 let cadavre = {
@@ -13653,11 +13705,13 @@ var COFantasy = COFantasy || function() {
                 };
                 if (!getState(cadavre, 'mort')) {
                   sendPlayer(playerName, nomPerso(cadavre) + " n'est pas mort" + eForFemale(cadavre), playerId);
+                  attackCallback(options);
                   return;
                 }
                 let t = attributeAsInt(cadavre, 'a0PVDepuis', 0);
                 if (t < combat.tour - 1) {
                   sendPlayer(playerName, "La mort de " + nomPerso(cadavre) + " n'est pas assez récente", playerId);
+                  attackCallback(options);
                   return;
                 }
                 options.aoe.souffleDeMort.allies = alliesParPerso[charId] || new Set();
@@ -13779,6 +13833,7 @@ var COFantasy = COFantasy || function() {
             break;
           default:
             error("aoe inconnue", options.aoe);
+            attackCallback(options);
             return;
         }
       } else {
@@ -13786,16 +13841,19 @@ var COFantasy = COFantasy || function() {
           sendPerso(attaquant,
             "s'attaque " + onGenre(attaquant, "lui", "elle") +
             "-même ? Probablement une erreur à la sélection de la cible. On annule");
+          attackCallback(options);
           return;
         }
         let targetCharId = targetToken.get("represents");
         if (targetCharId === "") {
           error("Le token ciblé (" + nomCiblePrincipale + ") doit représenter un personnage ", targetToken);
+          attackCallback(options);
           return;
         }
         let targetChar = getObj("character", targetCharId);
         if (targetChar === undefined) {
           error("Unexpected undefined 2", targetChar);
+          attackCallback(options);
           return;
         }
         cibles = [{
@@ -13818,6 +13876,7 @@ var COFantasy = COFantasy || function() {
     if (options.conditionAttaquant !== undefined) {
       if (!testCondition(options.conditionAttaquant, attaquant, cibles)) {
         sendPerso(attaquant, "ne peut pas utiliser " + weaponName);
+        attackCallback(options);
         return;
       }
     }
@@ -13886,6 +13945,7 @@ var COFantasy = COFantasy || function() {
         sendPlayer(playerName, "aucune cible dans l'aire d'effet de " + weaponName + ", action annulée",
           playerId);
       }
+      attackCallback(options);
       return;
     }
     if (!options.redo) {
@@ -13950,6 +14010,7 @@ var COFantasy = COFantasy || function() {
       let maxpix = options.ciblesDansDisque * PIX_PER_UNIT / computeScale(pageId);
       if ((l2 - l1) > 2 * maxpix || (t2 - t1) > 2 * maxpix) {
         sendPlayer(playerName, "Cibles trop éloignées les unes des autres");
+        attackCallback(options);
         return;
       }
       //On calcule la longueur des diagonales du rectangle minimal
@@ -13959,10 +14020,12 @@ var COFantasy = COFantasy || function() {
         //C'est approché, mais sûrement assez bon pour ce qui nous occupe
         let tropLoin = cibles.some(function(target) {
           let pt = tokenCenter(target.token);
+          attackCallback(options);
           return (VecMath.length(VecMath.vec(centre, pt)) > maxpix + 1);
         });
         if (tropLoin) {
           sendPlayer(playerName, "Cibles trop éloignées les unes des autres");
+          attackCallback(options);
           return;
         }
       }
@@ -16813,6 +16876,34 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function moveTokenWithUndo(token, left, top, evt) {
+    if (evt) {
+      evt.movedTokens = evt.movedTokens || [];
+      evt.movedTokens.push({
+        token,
+        oldPosition: {
+          left: token.get('left'),
+          top: token.get('top'),
+        },
+        newPosition: {
+          left,
+          top
+        }
+      });
+    }
+    token.set('left', left);
+    token.set('top', top);
+    let combat = stateCOF.combat;
+    if (stateCOF.options.affichage.val.init_dynamique.val && roundMarker &&
+      combat) {
+      if ((!stateCOF.chargeFantastique && combat.activeTokenId == token.id) ||
+        (stateCOF.chargeFantastique && stateCOF.chargeFantastique.activeTokenId == token.id)) {
+        roundMarker.set('left', left);
+        roundMarker.set('top', top);
+      }
+    }
+  }
+
   function attackDealDmg(attaquant, ciblesTouchees, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles) {
     cibles.forEach(function(target) {
       if (options.test || options.feinte || !target.touche) {
@@ -18267,20 +18358,7 @@ var COFantasy = COFantasy || function() {
                             target.messages.push(nomPerso(target) + " est entièrement avalé par " + attackerTokName);
                             setTokenAttr(attaquant, 'aGobe', idName(target), evt);
                             setTokenAttr(target, 'estGobePar', idName(attaquant), evt);
-                            evt.movedTokens = evt.movedTokens || [];
-                            evt.movedTokens.push({
-                              token: target.token,
-                              oldPosition: {
-                                left: target.token.get('left'),
-                                top: target.token.get('top'),
-                              },
-                              newPosition: {
-                                left: attaquant.token.get('left'),
-                                top: attaquant.token.get('top'),
-                              }
-                            });
-                            target.token.set('left', attaquant.token.get('left'));
-                            target.token.set('top', attaquant.token.get('top'));
+                            moveTokenWithUndo(target.token, attaquant.token.get('left'), attaquant.token.get('top'), evt);
                           } else {
                             if (resultat === 0) diminueMalediction(attaquant, evt);
                             target.messages.push(nomPerso(target) + " n'est pas avalé.");
@@ -18929,6 +19007,9 @@ var COFantasy = COFantasy || function() {
           }
         }
       }
+    }
+    if (!evt.action || !options.preDmg) {
+      attackCallback(options, evt);
     }
   }
 
@@ -20732,13 +20813,6 @@ var COFantasy = COFantasy || function() {
   function tokenSizeAsCircle(token) {
     var surface = token.get('width') * token.get('height');
     return Math.sqrt(surface);
-  }
-
-  // if token is bigger than thresh reduce the distance by that size
-  function tokenSize(tok, thresh) {
-    var size = (tok.get('width') + tok.get('height')) / 2;
-    if (size > thresh) return ((size - thresh) / 2);
-    return 0;
   }
 
 
@@ -30895,9 +30969,9 @@ var COFantasy = COFantasy || function() {
           }
         });
         if (sortieEscalier) {
-          var left = sortieEscalier.get('left');
-          var top = sortieEscalier.get('top');
-          var newPageId = sortieEscalier.get('pageid');
+          let left = sortieEscalier.get('left');
+          let top = sortieEscalier.get('top');
+          let newPageId = sortieEscalier.get('pageid');
           //Déplacement du token
           if (newPageId == pageId) {
             token.set('left', left);
@@ -37011,10 +37085,10 @@ var COFantasy = COFantasy || function() {
       error("Le deuxième token sélectionné n'est pas valide", msg.content);
       return;
     }
-    var evt = {
+    const evt = {
       type: 'Défi samouraï'
     };
-    var explications = [];
+    let explications = [];
     entrerEnCombat(samourai, [cible], explications, evt);
     explications.forEach(function(m) {
       sendPerso(samourai, m);
@@ -37124,8 +37198,7 @@ var COFantasy = COFantasy || function() {
               maxVal: maxval
             });
             let cibleId = idName(cible);
-            cible.token.set('left', attaquant.token.get('left'));
-            cible.token.set('right', attaquant.token.get('right'));
+            moveTokenWithUndo(cible.token, attaquant.token.get('left'), attaquant.token.get('top'), evt);
             toFront(attaquant.token);
             setTokenAttr(attaquant, 'enveloppe', cibleId, evt, {
               maxVal: exprDM
@@ -41673,6 +41746,240 @@ var COFantasy = COFantasy || function() {
     door.set('isOpen', true);
   }
 
+  //Demande de bouger son token jusqu'à destination
+  function attaqueLigneBouger(msg) {
+    const playerId = getPlayerIdFromMsg(msg);
+    if (stateCOF.pause && !playerIsGM(playerId)) {
+      sendPlayer(msg, "Le jeu est en pause", playerId);
+      return;
+    }
+    let args = msg.content.split(' ');
+    if (args.length < 2) {
+      error("Il manque un argument à !cof-attack-line", args);
+      return;
+    }
+    const attaquant = persoOfId(args[1]);
+    if (attaquant === undefined) {
+      error("Le premier argument de !cof-attack-line n'est pas un token valide", args[1]);
+      return;
+    }
+    let token = attaquant.token;
+    let restArgs = args.slice(2).join(' ');
+    let command = '!cof-attack-line-from ' + token.get('left') + ' ' + token.get('top') + ' ' + token.id + ' ' + restArgs;
+    sendPlayer(msg, "Déplacer votre token jusqu'au bout de la ligne (l'emplacement doit être libre), et " + boutonSimple(command, "cliquer ici"), playerId);
+    return;
+  }
+
+  //En partant de from, retourne la première position sur le segment [from, to] 
+  // à distance dist de pt. S'il n'y en a pas, retourne la projection de pt sur le segment
+  function positionLigne(from, to, pt, dist) {
+    let [fx, fy] = from;
+    let [tx, ty] = to;
+    let [x, y] = pt;
+    let a = (tx - fx) * (tx - fx) + (ty - fy) * (ty - fy);
+    let b = 2 * ((fx - x) * (tx - fx) + (fy - y) * (ty - fy));
+    let c = (fx - x) * (fx - x) + (fy - y) * (fy - y) - dist * dist;
+    let delta = b * b - 4 * a * c;
+    if (delta >= 0) {
+      let k = (b + Math.sqrt(delta)) / (2 * a);
+      if (k > 0) k = 0;
+      if (k < -1) k = -1;
+      return [fx - k * (tx - fx), fy - k * (ty - fy)];
+    }
+    //sinon on projette
+    let ps = (x - fx) * (tx - fx) + (y - fy) * (tx - fy) + 0.0;
+    let k = ps / Math.sqrt(a);
+    if (k < 0) k = 0;
+    if (k > 1) k = 1;
+    return [fx + k * (tx - fx), fy + k * (ty - fy)];
+  }
+
+  //!cof-attack-line-from left top id
+  function attaqueLigne(msg) {
+    const playerId = getPlayerIdFromMsg(msg);
+    if (stateCOF.pause && !playerIsGM(playerId)) {
+      sendPlayer(msg, "Le jeu est en pause", playerId);
+      return;
+    }
+    let optArgs = msg.content.split(' --');
+    let args = optArgs[0].split(' ');
+    args = args.filter(function(a) {
+      return a !== '';
+    });
+    optArgs.shift();
+    if (args.length < 4) {
+      error("Pas assez d'arguments pour !cof-attack-line: " + msg.content, args);
+      return;
+    }
+    let originLeft = parseInt(args[1]);
+    let originTop = parseInt(args[2]);
+    if (isNaN(originLeft) || isNaN(originTop)) {
+      error("Coordonnées non numériques dans !co-attack-line", args);
+      return;
+    }
+    const attaquant = persoOfId(args[3]);
+    if (attaquant === undefined) {
+      error("Le premier argument de !cof-attack-line n'est pas un token valide", args[3]);
+      return;
+    }
+    let destLeft = attaquant.token.get('left');
+    let destTop = attaquant.token.get('top');
+    //On remet l'attaquant à sa place
+    attaquant.token.set('left', originLeft);
+    attaquant.token.set('top', originTop);
+    let combat = stateCOF.combat;
+    if (stateCOF.options.affichage.val.init_dynamique.val && roundMarker &&
+      combat) {
+      if ((!stateCOF.chargeFantastique && combat.activeTokenId == attaquant.token.id) ||
+        (stateCOF.chargeFantastique && stateCOF.chargeFantastique.activeTokenId == attaquant.token.id)) {
+        roundMarker.set('left', originLeft);
+        roundMarker.set('top', originTop);
+      }
+    }
+    let pageId = attaquant.token.get('pageid');
+    let scale = computeScale(pageId);
+    let restArgs = '';
+    if (args.length > 4) {
+      restArgs = args.slice(4).join(' ');
+    }
+    let ptDest = [destLeft, destTop];
+    let ptOrigin = [originLeft, originTop];
+    let tropLoin = false;
+    //On cherche si argument --distanceMax, pas utilisé par cof-attack
+    optArgs = optArgs.filter(function(cmd) {
+      if (!cmd.startsWith('distanceMax')) return true;
+      let a = cmd.split(' ');
+      if (a.length < 2) {
+        error("Il manque un argument à --distanceMax", cmd);
+        return false;
+      }
+      let distanceMax = parseInt(a[1]);
+      if (isNaN(distanceMax) || distanceMax < 0) {
+        error("la distance max n'est pas un nombre positif", cmd);
+        return false;
+      }
+      let distancePix = VecMath.length(VecMath.vec(ptOrigin, ptDest));
+      let distance = ((distancePix / PIX_PER_UNIT) * scale);
+      if (distance > distanceMax) {
+        sendPlayer(msg, "Ligne d'attaque trop grande, choisir une destination plus proche");
+        tropLoin = true;
+      }
+      return false;
+    });
+    if (optArgs.length > 0) {
+      restArgs = restArgs + ' --' + optArgs.join(' --');
+    }
+    if (tropLoin) return;
+    //On regarde si l'emplacement est bien vide.
+    let tokens = findObjs({
+      _pageid: pageId,
+      _type: 'graphic',
+      _subtype: 'token',
+      layer: attaquant.token.get('layer')
+    });
+    tokens = tokens.filter(function(tok) {
+      return tok.id != attaquant.token.id && tok.get('represents');
+    });
+    let attRayon = tokenSize(attaquant.token, 0);
+    let overLap = tokens.some(function(tok) {
+      let pt = tokenCenter(tok);
+      let distancePix = VecMath.length(VecMath.vec(pt, ptDest));
+      return distancePix < attRayon + tokenSize(tok, 0);
+    });
+    if (overLap) {
+      sendPlayer(msg, "La place n'est pas libre", playerId);
+      return;
+    }
+    //Puis s'il n'y a pas d'obstacles sur le trajet
+    let page = getObj('page', pageId);
+    let murs = getWalls(page, pageId);
+    if (murs) {
+      let pc = {
+        x: originLeft,
+        y: originTop
+      };
+      if (obstaclePresent(destLeft, destTop, pc, murs)) {
+        sendPlayer(msg, "Il y a des obstacles sur le trajet", playerId);
+        return;
+      }
+    }
+    //On détermine les cibles sur le trajet
+    let cibles = [];
+    tokens.forEach(function(tok) {
+      let cible = {
+        token: tok,
+        charId: tok.get('represents')
+      };
+      if (nePeutPlusPrendreDM(cible, {})) return; //pas de dégâts aux morts
+      let pt = tokenCenter(tok);
+      let distToTrajectory = VecMath.ptSegDist(pt, ptOrigin, ptDest);
+      if (distToTrajectory > attRayon + tokenSize(tok, 0))
+        return;
+      cible.tokName = tok.get('name');
+      let tokChar = getObj('character', cible.charId);
+      if (tokChar === undefined) return;
+      cible.name = tokChar.get('name');
+      cible.distanceOrigine = VecMath.length(VecMath.vec(ptOrigin, pt));
+      cibles.push(cible);
+    });
+    if (cibles.length === 0) {
+      sendPlayer(msg, "Aucune cible valide sur le trajet", playerId);
+      return;
+    }
+    const evt = {
+      type: "Attaque en ligne"
+    };
+    addEvent(evt);
+    let explications = [];
+    combat = entrerEnCombat(attaquant, [], explications, evt);
+    explications.forEach(function(m) {
+      sendPerso(attaquant, m);
+    });
+    combat.attackId = combat.attackId || 0;
+    combat.attackCallbacks = combat.attackCallBacks || {};
+    //On trie les cibles selon leur distance à l'origine.
+    cibles.sort(function(c1, c2) {
+      return c1.distanceOrigine - c2.distanceOrigine;
+    });
+    combat.attackId++;
+    let firstAttack = combat.attackId;
+    cibles.forEach(function(cible) {
+      let nextAttack = combat.attackId + 1;
+      let dist = attRayon + tokenSize(cible.token, 0);
+      let [left, top] = positionLigne(ptOrigin, ptDest, tokenCenter(cible.token), dist);
+      let comAttaque = '!cof-attack ' + attaquant.token.id + ' ' + cible.token.id + ' ' + restArgs + ' --attackId ' + nextAttack;
+      let comSkip = '!cof-skip-attack ' + nextAttack;
+      let m = boutonSimple(comAttaque, "Attaquer " + cible.tokName) + " ou " +
+        boutonSimple(comSkip, "Continuer");
+      combat.attackCallbacks[combat.attackId] = function(evt) {
+        moveTokenWithUndo(attaquant.token, left, top, evt);
+        sendPlayer(msg, m, playerId);
+      };
+      combat.attackId++;
+    });
+    combat.attackCallbacks[combat.attackId] = function() {
+      attaquant.token.set('left', destLeft);
+      attaquant.token.set('top', destTop);
+    };
+    combat.attackCallbacks[firstAttack]();
+  }
+
+  function skipAttack(msg) {
+    let args = msg.content.split(' ');
+    if (args.length < 2) {
+      error("Il manque l'id dans !cof-skip-attack", args);
+      return;
+    }
+    let options = {
+      attackId: args[1]
+    };
+    let evt = {
+      type: "skip attack"
+    };
+    addEvent(evt);
+    attackCallback(options, evt);
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     const command = msg.content.split(' ', 1);
@@ -41690,6 +41997,12 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-attack':
         parseAttack(msg);
+        return;
+      case '!cof-attack-line':
+        attaqueLigneBouger(msg);
+        return;
+      case '!cof-attack-line-from': //seulement utilisé en interne
+        attaqueLigne(msg);
         return;
       case '!cof-attendre':
         attendreInit(msg);
@@ -41798,11 +42111,17 @@ var COFantasy = COFantasy || function() {
       case '!cof-sentir-la-corruption':
         parseSentirLaCorruption(msg);
         return;
+      case '!cof-skip-attack':
+        skipAttack(msg);
+        return;
       case '!cof-soigner-affaiblissement':
         soignerAffaiblissement(msg);
         return;
       case '!cof-sphere-de-feu':
         sphereDeFeu(msg);
+        return;
+      case '!cof-statut':
+        statut(msg);
         return;
       case '!cof-surprise':
         parseSurprise(msg);
@@ -41812,9 +42131,6 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-undo':
         undoEvent();
-        return;
-      case "!cof-statut":
-        statut(msg);
         return;
       case "!cof-armure-magique":
         armureMagique(msg);
@@ -44201,8 +44517,8 @@ var COFantasy = COFantasy || function() {
         perso.ignoreTouteRD = true;
         dealDamage(perso, r, [], evt, false, {}, [], function() {
           // Vérification si le Zombie est toujours vivant
-          let tokens = getObj('graphic', perso.token.id);
-          if (tokens) whisperChar(perso.charId, "se dégrade et perd 1 PV");
+          let token = getObj('graphic', perso.token.id);
+          if (token) whisperChar(perso.charId, "se dégrade et perd 1 PV");
         });
       }
     });
