@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.11
 ### Capacités
+* Ajout des derniers rangs de la voie du pacte vampirique
 * Ajout d'une automatisation pour le déchaînement d'acier du barbare.
 * Attaque violente de la campagne Invicible.
 * Frappe des arcanes, de la Voie du guerrier-mage.

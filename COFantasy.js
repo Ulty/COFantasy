@@ -4915,8 +4915,8 @@ var COFantasy = COFantasy || function() {
                 if (weaponStats) {
                   options.actionImpossible =
                     (weaponStats.deuxMains && attributeAsBool(perso, 'espaceExigu')) ||
-                    (weaponStats.portee && 
-                    (cmd.includes('--attaqueFlamboyante') || cmd.includes('--seulementContact'))) ||
+                    (weaponStats.portee &&
+                      (cmd.includes('--attaqueFlamboyante') || cmd.includes('--seulementContact'))) ||
                     (cmd.includes('--ricochets') && !(weaponStats.armeDeJet || weaponStats.options.includes('--aussiArmeDeJet')));
                 }
               }
@@ -11528,6 +11528,11 @@ var COFantasy = COFantasy || function() {
       options.bonusDM += 1;
       explications.push("Haches et marteaux => +1 DM");
     }
+    let energieImpie = attributeAsInt(attaquant, 'energieImpie', 0);
+    if (energieImpie) {
+      options.bonusDM += energieImpie;
+      explications.push("Énergie impie => +" + energieImpie + " DM");
+    }
     if (options.arcComposite) {
       let force = modCarac(attaquant, 'force');
       if (force > options.arcComposite) force = options.arcComposite;
@@ -11690,6 +11695,16 @@ var COFantasy = COFantasy || function() {
       if (options.pasDeDmg || !options.contact) explications.push(msg);
       else explications.push(msg + " et aux DM");
       options.drainDeForce = true;
+    }
+    let energieImpie = attributeAsInt(attaquant, 'energieImpie', 0);
+    if (energieImpie) {
+      attBonus += energieImpie;
+      let msg = "Énergie impie => +" + energieImpie + " en Attaque";
+      if (!options.pasDeDmg) {
+        msg += " et aux DM";
+        options.bonusDM += energieImpie;
+      }
+      explications.push(msg);
     }
     if (options.contact) {
       if (attributeAsBool(attaquant, 'rayonAffaiblissant')) {
@@ -14648,6 +14663,21 @@ var COFantasy = COFantasy || function() {
     return false;
   }
 
+  function addToDmgTotal(dmgTotal, dm, d, expliquer, evt) {
+    if (d.drainDeSang) {
+      let soins = Math.floor(dm / 2);
+      if (soins > 0) {
+        soigneToken(d.drainDeSang, soins, evt, function(soins) {
+          expliquer("Le saignement soigne " + nomPerso(d.drainDeSang) + " de " + soins + " PV");
+        });
+      }
+      if (predicateAsBool(d.drainDeSang, 'energieImpie')) {
+        addToAttributeAsInt(d.drainDeSang, 'energieImpie', 0, 1, evt);
+      }
+    }
+    return dmgTotal + dm;
+  }
+
   // Fonction asynchrone
   // displayRes est optionnel, et peut avoir 2 arguments
   // - un texte affichant le jet de dégâts
@@ -14759,8 +14789,8 @@ var COFantasy = COFantasy || function() {
       }
       let firstBonusCritique = true;
       let x = {
-        dmgDisplay: dmgDisplay,
-        dmgTotal: dmgTotal
+        dmgDisplay,
+        dmgTotal
       };
       if (options.affute) {
         ajouteDe6Crit(x, firstBonusCritique, options.kiai);
@@ -14788,6 +14818,7 @@ var COFantasy = COFantasy || function() {
       dmgDisplay = x.dmgDisplay;
       dmgTotal = x.dmgTotal;
     }
+    addToDmgTotal(0, dmgTotal, dmg, expliquer, evt);
     //On trie les DM supplémentaires selon leur type
     let dmgParType = {};
     otherDmg.forEach(function(d) {
@@ -14812,10 +14843,10 @@ var COFantasy = COFantasy || function() {
         partialSave(d, target, false, d.display, d.total, expliquer, evt,
           function(res) {
             if (res) {
-              dmgTotal += res.total;
+              dmgTotal = addToDmgTotal(dmgTotal, res.total, d, expliquer, evt);
               dmgDisplay += "+" + res.dmgDisplay;
             } else {
-              dmgTotal += d.total;
+              dmgTotal = addToDmgTotal(dmgTotal, d.total, d, expliquer, evt);
               dmgDisplay += "+" + d.display;
             }
             if (count === 0) dealDamageAfterDmgExtra(target, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes);
@@ -16003,7 +16034,8 @@ var COFantasy = COFantasy || function() {
                     faireMouche = predicateAsInt(attaquant, 'faireMouche', 0);
                   if (faireMouche > 0) { //botte mortelle du duelliste
                     if (target.faireMouche) {
-                      var bonusBotteMortelle = Math.floor((attackRoll - defense) / 5) + options.d6;
+                      let bonusBotteMortelle =
+                        Math.floor((attackRoll - defense) / 5) + options.d6;
                       target.messages.push("Botte mortelle => + " + bonusBotteMortelle + " aux DM");
                       target.additionalDmg.push({
                         type: mainDmgType,
@@ -16739,6 +16771,27 @@ var COFantasy = COFantasy || function() {
             });
           }
           break;
+        case 'hemorragie':
+        case 'blessureSanglante':
+        case 'saignementsSang':
+          if (ef.attaquant && predicateAsBool(ef.attaquant, 'drainDeSang')) {
+            let attAttr = ef.attaquant.token.id + ':' + attrEffet.id;
+            let attrDrain = tokenAttribute(target, 'attributDeCombat_drainDeSang');
+            if (attrDrain.length > 0) {
+              attrDrain = attrDrain[0];
+              let drains = attrDrain.get('current');
+              if (!drains.includes(attAttr)) {
+                evt.attributes = evt.attributes || [];
+                evt.attributes.push({
+                  attribute: attrDrain,
+                  current: drains
+                });
+                attrDrain.set('current', drains + ' ' + attAttr);
+              }
+            } else {
+              setTokenAttr(target, 'attributDeCombat_drainDeSang', attAttr, evt);
+            }
+          }
       }
       if (ef.message && ef.message.statusMarker) {
         affectToken(target.token, 'statusmarkers', target.token.get('statusmarkers'), evt);
@@ -16909,6 +16962,34 @@ var COFantasy = COFantasy || function() {
         roundMarker.set('top', top);
       }
     }
+  }
+
+  //pageId est optionnel
+  function saignementAvecDrain(cible, nomAttr, pageId) {
+    let drainAttr = tokenAttribute(cible, 'attributDeCombat_drainDeSang');
+    if (drainAttr.length === 0) return;
+    let attr = tokenAttribute(cible, nomAttr);
+    if (attr.length === 0) {
+      log("Attribut absent dans saignementAvecDrain " + nomAttr + " de " + nomPerso(cible));
+      return;
+    }
+    let drains = drainAttr[0].get('current').split(' ');
+    let source = drains.find(function(d) {
+      let sa = d.split(':');
+      if (sa.length != 2) {
+        log("Drain de sang mal formé : " + drains);
+        return false;
+      }
+      return attr.some(function(a) {
+        return a.id == sa[1];
+      });
+    });
+    if (!source) return;
+    let id = source.split(':')[0];
+    let perso = persoOfId(id);
+    if (!perso) return;
+    if (distanceCombat(perso.token, cible.token, pageId) > 10) return;
+    return perso;
   }
 
   function attackDealDmg(attaquant, ciblesTouchees, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles) {
@@ -17618,9 +17699,11 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (attributeAsBool(target, 'hemorragie') && !options.sortilege && !options.armeNaturelle) {
+          let sourceDrain = saignementAvecDrain(target, 'hemorragie', pageId);
           target.additionalDmg.push({
             type: mainDmgType,
-            value: '1d6'
+            value: '1d6',
+            drainDeSang: sourceDrain
           });
           target.messages.push("Hémorragie => +1d6 DM");
         }
@@ -17776,9 +17859,9 @@ var COFantasy = COFantasy || function() {
           mainDmgRoll.total = rollsDmg.inlinerolls[mainDmgRollNumber].results.total;
           mainDmgRoll.display = buildinline(rollsDmg.inlinerolls[mainDmgRollNumber], mainDmgType, options.magique);
           if (target.critique && options.additionalCritDmg) {
-            var firstCritRoll = 1 + additionalDmg.length;
+            let firstCritRoll = 1 + additionalDmg.length;
             target.additionalCritDmg = [];
-            var rollsCrit = resDmg[0];
+            let rollsCrit = resDmg[0];
             if (target.rollsDmg && target.rollsDmg.length >= firstCritRoll + options.additinalCritDmg.length)
               rollsCrit = target.rollsDmg;
             options.additionalCritDmg.forEach(function(dmSpec, i) {
@@ -17847,7 +17930,7 @@ var COFantasy = COFantasy || function() {
               attaquant.alliesAvecAttaqueEnTraitre.forEach(function(tok) {
                 if (tok.id == target.id) return;
                 if (distanceCombat(target.token, tok, pageId) === 0) {
-                  var aetp = attaquesEnTraitrePossibles[tok.id];
+                  let aetp = attaquesEnTraitrePossibles[tok.id];
                   if (aetp === undefined) {
                     aetp = [];
                     attaquesEnTraitrePossibles[tok.id] = aetp;
@@ -19786,7 +19869,7 @@ var COFantasy = COFantasy || function() {
                       dm = 0;
                     }
                   }, expliquer, options);
-                dmgTotal += dm;
+                dmgTotal = addToDmgTotal(dmgTotal, dm, d, expliquer, evt);
                 dmgDisplay += "+" + typeDisplay;
                 if (_.has(dmSuivis, dmgType)) {
                   dmSuivis[dmgType] = dm;
@@ -20381,7 +20464,7 @@ var COFantasy = COFantasy || function() {
             message: messageEffetTemp.blessureSanglante,
             attaquant: options.attaquant,
           };
-          setEffetTemporaire(target, ef, 1, evt, {});
+          setEffetTemporaire(target, ef, predicateAsInt(options.attaquant, 'blessureSanglante', 0, 1), evt, {});
         }
         let pvPerdus = dmgTotal;
         if (target.tempDmg) {
@@ -20822,6 +20905,11 @@ var COFantasy = COFantasy || function() {
     return Math.sqrt(surface);
   }
 
+  function distancePixToken(tok1, tok2) {
+    let x = tok1.get('left') - tok2.get('left');
+    let y = tok1.get('top') - tok2.get('top');
+    return Math.sqrt(x * x + y * y);
+  }
 
   function malusDistance(perso1, tok2, distanceDeBase, portee, pageId, explications, ignoreObstacles) {
     // Extension de distance pour tir parabolique
@@ -20845,9 +20933,7 @@ var COFantasy = COFantasy || function() {
         layer: 'objects'
       });
     let mObstacle = 0;
-    let pt1 = tokenCenter(tok1);
-    let pt2 = tokenCenter(tok2);
-    let distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
+    let dp = distancePixToken(tok1, tok2);
     let liste_obstacles = [];
     allToks.forEach(function(obj) {
       if (obj.id == tok1.id || obj.id == tok2.id) return;
@@ -20872,11 +20958,13 @@ var COFantasy = COFantasy || function() {
         return sp.id == tok1.id || sp.id == tok2.id;
       });
       if (estMonture) return;
+      let obj_dist = distancePixToken(tok1, obj);
+      if (obj_dist > dp) return;
+      obj_dist = distancePixToken(tok2, obj);
+      if (obj_dist > dp) return;
+      let pt1 = tokenCenter(tok1);
+      let pt2 = tokenCenter(tok2);
       let pt = tokenCenter(obj);
-      let obj_dist = VecMath.length(VecMath.vec(pt1, pt));
-      if (obj_dist > distance_pix) return;
-      obj_dist = VecMath.length(VecMath.vec(pt2, pt));
-      if (obj_dist > distance_pix) return;
       let distToTrajectory = VecMath.ptSegDist(pt, pt1, pt2);
       // On modélise le token comme un disque
       let rayonObj = tokenSizeAsCircle(obj) / 2;
@@ -21084,6 +21172,8 @@ var COFantasy = COFantasy || function() {
         affectToken(prevToken, 'aura2_color', prevToken.get('aura2_color'), evt);
         affectToken(prevToken, 'showplayers_aura2', prevToken.get('showplayers_aura2'), evt);
         removeTokenFlagAura(prevToken);
+        let perso = persoOfToken(prevToken);
+        if (perso) removeTokenAttr(perso, 'energieImpie', evt);
       } else {
         if (pageId) {
           prevToken = findObjs({
@@ -21282,6 +21372,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('traquenardImpossible', evt, attrs);
     attrs = removeAllAttributes('niveauDesObjetsAnimes', evt, attrs);
     attrs = removeAllAttributes('meneurDHommesCible', evt, attrs);
+    attrs = removeAllAttributes('energieImpie', evt, attrs);
     // Autres attributs
     // On récupère les munitions récupérables
     resetAttr(attrs, 'munition', evt, "récupère ses munitions");
@@ -26124,7 +26215,7 @@ var COFantasy = COFantasy || function() {
         case 'argent':
         case 'energie':
           if (options.additionalDmg) {
-            var l = options.additionalDmg.length;
+            let l = options.additionalDmg.length;
             if (l > 0) {
               options.additionalDmg[l - 1].type = opt[0];
             } else {
@@ -36722,17 +36813,12 @@ var COFantasy = COFantasy || function() {
       lumiere = tokensLumiere.shift();
       if (tokensLumiere.length > 0) {
         //On cherche le token le plus proche de perso
-        let pos = [perso.token.get('left'), perso.token.get('top')];
-        let d =
-          VecMath.length(
-            VecMath.vec([lumiere.get('left'), lumiere.get('top')], pos));
+        let d = distancePixToken(lumiere, perso.token);
         let samePage = lumiere.get('pageid') == pageId;
         tokensLumiere.forEach(function(tl) {
           if (tl.get('pageid') != pageId) return;
           if (samePage) {
-            let d2 =
-              VecMath.length(
-                VecMath.vec([tl.get('left'), tl.get('top')], pos));
+            let d2 = distancePixToken(tl, perso.token);
             if (d2 < d) {
               d = d2;
               lumiere = tl;
@@ -44060,6 +44146,10 @@ var COFantasy = COFantasy || function() {
       };
       let explications;
       if (display) explications = [];
+      if (options.saignement) {
+        let sourceDrain = saignementAvecDrain(perso, effet);
+        r.drainDeSang = sourceDrain;
+      }
       dealDamage(perso, r, [], evt, false, options, explications,
         function(dmgDisplay, dmg) {
           if (dmg > 0) {
@@ -44787,7 +44877,8 @@ var COFantasy = COFantasy || function() {
             de: 6
           }, 'normal',
           "saigne par tous les orifices du visage", evt, {
-            magique: true
+            magique: true,
+            saignement: true
           }, callBack);
         return;
       case 'blessureSanglante': //prend 1d6 DM
@@ -44800,7 +44891,9 @@ var COFantasy = COFantasy || function() {
             nbDe: 1,
             de: 6
           }, 'normal',
-          "saigne abondamment", evt, {}, callBack);
+          "saigne abondamment", evt, {
+            saignement: true
+          }, callBack);
         return;
       case 'armureBrulante': //prend 1d4 DM
         degatsParTour(charId, pageId, effet, attrName, {
