@@ -166,6 +166,7 @@ tr {line-height: 25px;}
               <p><img class="img-fluid" src="images/predicats_barbare.jpg"></p>
               <figcaption>Exemple de prédicats.</figcaption>
               <p>Certains prédicats ont des valeurs complexes, qui peuvent contenir des blancs, des virgules, des guillements, ou même des <code>:</code> ou <code>//</code>. Afin de pouvoir utliser ces valeurs, vous pouvez faire suivre le nom du prédicat de <code>::</code>. Tout ce qui viendra après jusqu'à la fin de la ligne sera considéré comme étant la valeur associée à ce prédicat. Un exemple typique d'utilisation : quand la valeur est un nom de personnage.</p>
+              <p>Il est aussi possible d'associer des prédicats à des attaques. Ces prédicats sont pris en compte quand ses attaques sont des armes, et ce que ces armes sont tenues en main. Cela permet de coder une grande variété d'effets magiques des armes. Attention, cela ne fonctionne pas pour les mooks avec les prédicats <code>animeAPartirDExistant</code>, <code>intercepter</code>, <code>lienEpique</code>, <code>attaqueEnTraitre</code>, <code>sansPeur</code>, <code>immuniteSaignement</code>, et <code>controleSanguin</code>.</p>
             </div>
             <h3 class="text-info" id="methode_selection_groupes">1.4 Méthodes de sélection de groupes</h3>
             <div class="decalage">
@@ -530,7 +531,7 @@ tr {line-height: 25px;}
                   <li>Enfin, en fin de combat, si le personnage possède un prédicat <code>armeParDefaut</code>, le script va lui faire dégainer l'arme dont le label est la valeur du prédicat. Donc si le prédicat n'a pas de label associé, le personnage va rengainer son arme.</li>
                 </ul>
                 <p>Dans tous les cas, si le personnage dégaine une arme à 2 mains, le script fait enlever le bouclier, et il le fait remettre si on passe d'une arme à 2 mains à une arme à 1 main.</p>
-                <p>Si l'arme contient dans le champ <code>SPÉCIAL</code> le prédicat <code>DEF</code> de valeur <i>n</i> (par exemple <code>DEF:2</code>), l'arme est considérée comme une arme de parade qui augmente la défense de <i>n</i> quand elle est portée. <p>
+                <p>Il existe un prédicat <code>DEF</code> qui permet d'ajouter sa valeur à la défense d'un personnage. C'est particulièrement utile pour coder une arme de parade. Par exemple avec<code>DEF:2</code> dans les prédicats de l'arme, elle augmentera la défense de <i>2</i> quand elle sera portée. <p>
                 </p>
               </div>
               <h4 class="text-secondary" id="degainer">Couvert :<code>!cof-bonus-couvert <i>b</i></code></h4>

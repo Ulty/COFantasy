@@ -643,6 +643,8 @@ var COFantasy = COFantasy || function() {
   }
 
   function charPredicateAsBool(charId, name) {
+    let pred = stateCOF.predicats[charId];
+    if (pred) return pred;
     let raw = '';
     let attr = charAttribute(charId, 'predicats_script', {
       caseInsensitive: true
@@ -650,15 +652,92 @@ var COFantasy = COFantasy || function() {
     if (attr.length > 0) {
       raw = attr[0].get('current');
     }
-    let pred = predicateOfRaw(raw);
+    let attrArmes = charAttribute(charId, 'armeEnMain');
+    if (attrArmes.length > 0) {
+      let att;
+      let attaques;
+      let labelArme = attrArmes[0].get('current');
+      if (labelArme) {
+        attaques = listAllAttacks({
+          charId
+        });
+        let att = attaques[labelArme];
+        if (att) {
+          let rawArme = fieldAsString(att, 'armepredicats', '');
+          if (rawArme) raw += '\n' + rawArme;
+        }
+      }
+      //Ensuite l'arme gauche
+      labelArme = attrArmes[0].get('max');
+      if (labelArme) {
+        if (!att) {
+          attaques = attaques || listAllAttacks({
+            charId
+          });
+          att = attaques[labelArme];
+        }
+        if (att) {
+          let rawArme = fieldAsString(att, 'armepredicats', '');
+          if (rawArme) raw += '\n' + rawArme;
+        }
+      }
+    }
+    pred = predicateOfRaw(raw);
+    stateCOF.predicats[charId] = pred;
     return pred[name];
   }
 
+
+  //Problème : ça ne peut pas marcher pour les boucliers en main gauche
+  //car ça utilise lui-même un bouclier...
   function getPredicates(perso) {
     if (perso.predicates === undefined) {
+      const estMook = perso.token.get('bar1_link') === '';
+      if (!estMook && stateCOF.predicats[perso.charId]) {
+        perso.predicates = stateCOF.predicats[perso.charId];
+        return perso.predicates;
+      }
       let raw = ficheAttribute(perso, 'predicats_script', '');
+      if (perso.armesEnMain) {
+        if (perso.arme && perso.arme.predicats)
+          raw += '\n' + perso.arme.predicats;
+        if (perso.armeGauche && perso.armeGauche.predicats)
+          raw += '\n' + perso.armeGauche.predicats;
+      } else if (perso.arme) { //possible si appelé depuis armesEnMain
+        if (perso.arme.predicats)
+          raw += '\n' + perso.arme.predicats;
+      } else { //il faut chercher les prédicats des armes en main
+        //On n'appelle pas armesEnMain pour éviter la récursion
+        //et pour éviter trop de calcul
+        let attrArmes = tokenAttribute(perso, 'armeEnMain');
+        if (attrArmes.length > 0) {
+          let att;
+          let labelArme = attrArmes[0].get('current');
+          if (labelArme) {
+            let attaques = listAllAttacks(perso);
+            let att = attaques[labelArme];
+            if (att) {
+              let rawArme = fieldAsString(att, 'armepredicats', '');
+              if (rawArme) raw += '\n' + rawArme;
+            }
+          }
+          //Ensuite l'arme gauche
+          labelArme = attrArmes[0].get('max');
+          if (labelArme) {
+            if (!att) {
+              let attaques = listAllAttacks(perso);
+              att = attaques[labelArme];
+            }
+            if (att) {
+              let rawArme = fieldAsString(att, 'armepredicats', '');
+              if (rawArme) raw += '\n' + rawArme;
+            }
+          }
+        }
+      }
       let pred = predicateOfRaw(raw);
       perso.predicates = pred;
+      if (!estMook) stateCOF.predicats[perso.charId] = pred;
     }
     return perso.predicates;
   }
@@ -1011,6 +1090,7 @@ var COFantasy = COFantasy || function() {
   //Appelé au lancement du script, mise à jour de certaines variables globales
   function setStateCOF() {
     stateCOF = state.COFantasy;
+    stateCOF.predicats = {}; //prédicats par charId.
     if (stateCOF.roundMarkerId) {
       roundMarker = getObj('graphic', stateCOF.roundMarkerId);
       if (roundMarker === undefined) {
@@ -1444,7 +1524,7 @@ var COFantasy = COFantasy || function() {
   function getAttackName(attackLabel, perso) {
     const attaques = listAllAttacks(perso);
     const arme = attaques[attackLabel];
-    if (arme === undefined) return arme;
+    if (arme === undefined) return;
     return arme.armenom;
   }
 
@@ -4568,6 +4648,7 @@ var COFantasy = COFantasy || function() {
     weaponStats.typeDegats = fieldAsString(att, 'armetypedegats', 'tranchant');
     weaponStats.options = fieldAsString(att, 'armeoptions', '');
     weaponStats.options = weaponStats.options.trim();
+    weaponStats.predicats = fieldAsString(att, 'armepredicats', '');
     switch (weaponStats.typeAttaque) {
       case 'Naturel':
         weaponStats.armeNaturelle = true;
@@ -4810,7 +4891,7 @@ var COFantasy = COFantasy || function() {
     return ai;
   }
 
-  //Enlève les chaîne de type ?{..} pour être sûr que l'action est impossible
+  //Enlève les chaînes de type ?{..} pour être sûr que l'action est impossible
   function removeUserInputs(act) {
     let m = act.match(/\?\{[^\}]*\}/g);
     if (!m) return act;
@@ -4818,6 +4899,27 @@ var COFantasy = COFantasy || function() {
       act = act.replace(ma, '');
     });
     return act;
+  }
+
+  //Remplis les champs arme et armeGauche de perso
+  //renvoie undefined si aucune arme en main principale
+  //sinon renvoie l'arme principale
+  function armesEnMain(perso) {
+    if (perso.armesEnMain) return perso.arme;
+    let labelArme = tokenAttribute(perso, 'armeEnMain');
+    if (labelArme.length > 0) {
+      let labelArmePrincipale = labelArme[0].get('current');
+      if (labelArmePrincipale) perso.arme = getWeaponStats(perso, labelArmePrincipale);
+      let labelArmeGauche = labelArme[0].get('max');
+      if (labelArmeGauche) perso.armeGauche = getWeaponStats(perso, labelArmeGauche);
+      else if (predicateAsBool(perso, 'attaqueAuBouclier') && ficheAttributeAsInt(perso, 'defbouclieron', 0)) {
+        //Alors il porte le bouclier en tant qu'arme en main gauche
+        perso.armeGauche = getWeaponStats(perso, predicateAsBool(perso, 'attaqueAuBouclier'));
+      }
+      perso.armesEnMain = 'calculee';
+      return perso.arme;
+    }
+    return;
   }
 
   //options peut avoir les champs:
@@ -7800,27 +7902,6 @@ var COFantasy = COFantasy || function() {
       }
       obj[argName] = effet[0].id;
     } else obj[argName] = cmd[1];
-  }
-
-  //Remplis les champs arme et armeGauche de perso
-  //renvoie undefined si aucune arme en main principale
-  //sinon renvoie l'arme principale
-  function armesEnMain(perso) {
-    if (perso.armesEnMain) return perso.arme;
-    let labelArme = tokenAttribute(perso, 'armeEnMain');
-    if (labelArme.length > 0) {
-      let labelArmePrincipale = labelArme[0].get('current');
-      if (labelArmePrincipale) perso.arme = getWeaponStats(perso, labelArmePrincipale);
-      let labelArmeGauche = labelArme[0].get('max');
-      if (labelArmeGauche) perso.armeGauche = getWeaponStats(perso, labelArmeGauche);
-      else if (predicateAsBool(perso, 'attaqueAuBouclier') && ficheAttributeAsInt(perso, 'defbouclieron', 0)) {
-        //Alors il porte le bouclier en tant qu'arme en main gauche
-        perso.armeGauche = getWeaponStats(perso, predicateAsBool(perso, 'attaqueAuBouclier'));
-      }
-      perso.armesEnMain = 'calculee';
-      return perso.arme;
-    }
-    return;
   }
 
   //parse les expressions du type 3d6+4
@@ -11384,6 +11465,7 @@ var COFantasy = COFantasy || function() {
     if (predicateAsBool(target, 'toutPetit') && !attributeAsBool(target, 'grandeTaille')) {
       defense += 2;
     }
+    defense += predicateAsInt(target, 'DEF', 0);
     return defense;
   }
 
@@ -13142,7 +13224,7 @@ var COFantasy = COFantasy || function() {
         labelArmeActuelleGauche) {
         let ancienneArmeGauche = getWeaponStats(perso, labelArmeActuelleGauche);
         if (ancienneArmeGauche === undefined) {
-          error("Impossible de trouver l'arme en main gauch", labelArmeActuelleGauche);
+          error("Impossible de trouver l'arme en main gauche", labelArmeActuelleGauche);
           return;
         }
         if (attributeAsBool(perso, 'forgeron(' + labelArmeActuelleGauche + ')')) {
@@ -13157,6 +13239,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     } else armeActuelle = undefined;
+    const estMook = perso.token && perso.token.get('bar1_link') === '';
     //Puis on dégaine
     //mais on vérifie que l'arme existe, sinon c'est juste un ordre de rengainer
     if (nouvelleArme === undefined) {
@@ -13171,6 +13254,8 @@ var COFantasy = COFantasy || function() {
           removeTokenAttr(perso, 'armeEnMain', evt);
         }
       }
+      if (!estMook) stateCOF.predicats[perso.charId] = undefined;
+      perso.predicates = undefined;
       return;
     }
     if (nouvelleArmeGauche) {
@@ -13256,6 +13341,8 @@ var COFantasy = COFantasy || function() {
         ajouteUneLumiere(perso, 'eclaire_' + labelArmeGauche, radius, dimRadius, evt);
       }
     }
+    if (!estMook) stateCOF.predicats[perso.charId] = undefined;
+    perso.predicates = undefined;
   }
 
   function nePeutPlusPrendreDM(cible, options) {
@@ -48056,3 +48143,11 @@ on('add:character', function(c) {
   }
 });
 on("change:door:isOpen", COFantasy.changeDoor);
+on("change:attribute", function(attr, prev) {
+  if (!COF_loaded) return;
+  let predicats = state.COFantasy.predicats;
+  if (!predicats) return;
+  let n = attr.get("name");
+  if (n == "predicats_script" || n.includes('armepredicats'))
+    predicats[attr.get('characterid')] = undefined;
+});
