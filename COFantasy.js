@@ -7540,7 +7540,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (evt.attenteResultat) {
-      var message = evt.type + " ";
+      let message = evt.type + " ";
       if (args[2] == 'rate') {
         diminueMalediction(evt.personnage, evt);
         message += "raté.";
@@ -15152,6 +15152,7 @@ var COFantasy = COFantasy || function() {
             atkmag = ficheAttributeAsInt(attaquant, 'niveau', 0) + 1 + modCarac(attaquant, 'sagesse');
           else atkmag = atk;
         }
+        atkmag += predicateAsInt(attaquant, 'bonusAttaqueMagique', 0);
         return atkmag;
       default:
         return x;
@@ -15191,6 +15192,7 @@ var COFantasy = COFantasy || function() {
         } else {
           attCar = getAttrByName(attaquant.charId, 'ATKMAG_CARAC');
         }
+        attDiv += predicateAsInt(attaquant, 'bonusAttaqueMagique', 0);
         break;
       default:
         return x;
@@ -19679,7 +19681,7 @@ var COFantasy = COFantasy || function() {
       divide();
     }
     if (estElementaire(dmgType)) {
-      if (predicateAsBool(target, 'invulnerable')) {
+      if (predicateAsBool(target, 'invulnerable') ||predicateAsBool(target, 'diviseEffet_elementaire')) {
         divide();
       }
       switch (dmgType) {
@@ -31855,6 +31857,7 @@ var COFantasy = COFantasy || function() {
           } else {
             attBonus += modCarac(lanceur, carac);
           }
+          attBonus += predicateAsInt(lanceur, 'bonusAttaqueMagique', 0);
           break;
         case 'contact':
           attBonus += ficheAttributeAsInt(lanceur, 'ATKCAC_DIV', 0);
