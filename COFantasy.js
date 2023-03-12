@@ -7525,12 +7525,12 @@ var COFantasy = COFantasy || function() {
   }
 
   function resultatJet(msg) {
-    var args = msg.content.split(' ');
+    let args = msg.content.split(' ');
     if (args.length < 3) {
       error("La fonction !cof-resultat-jet n'a pas assez d'arguments", args);
       return;
     }
-    var evt = findEvent(args[1]);
+    const evt = findEvent(args[1]);
     if (evt === undefined) {
       error("Le jet est trop ancien ou éte annulé", args);
       return;
@@ -7855,7 +7855,7 @@ var COFantasy = COFantasy || function() {
           error("condition non reconnue", args);
           return;
         }
-        var valeurDeAttaque = parseInt(args[1]);
+        let valeurDeAttaque = parseInt(args[1]);
         if (isNaN(valeurDeAttaque)) {
           error("La condition de dé d'attaque doit être un nombre", args);
           // on continue exprès pour tomber dans le cas par défaut
@@ -9915,7 +9915,7 @@ var COFantasy = COFantasy || function() {
           error("Condition non reconnue", ite.condition);
           resCondition = true;
       }
-      var branch;
+      let branch;
       if (resCondition) branch = ite.then;
       else branch = ite.else;
       if (branch === undefined) {
@@ -15811,19 +15811,6 @@ var COFantasy = COFantasy || function() {
             removeTokenAttr(attaquant, 'menaceManoeuvre(' + target.token.id + ',crit)', evt);
             setTokenAttr(attaquant, 'attaqueMalgreMenace(' + target.token.id + ')', 2, evt);
           }
-          let amm = 'attaqueMalgreMenace(' + attaquant.token.id + ')';
-          if (options.contact && cibles.length == 1) {
-            if (attributeAsBool(target, amm)) {
-              target.messages.push('Attaque automatique suite à une menace ignorée');
-              options.auto = true;
-              if (attributeAsInt(target, amm, 1) > 1) options.dmFoisDeux = true;
-              target.additionalDmg.push({
-                type: mainDmgType,
-                value: '1d6'
-              });
-              removeTokenAttr(target, amm, evt);
-            }
-          }
           if (predicateAsBool(attaquant, 'dragonInvincible')) {
             let perteDeSubstance = predicateAsInt(target, 'perteDeSubstance', 0);
             if (perteDeSubstance > 0) target.perteDeSubstance = perteDeSubstance;
@@ -15845,6 +15832,19 @@ var COFantasy = COFantasy || function() {
               bad = bonusAttaqueD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
             else if (!options.pasDeDmg)
               bonusDMD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
+          let amm = 'attaqueMalgreMenace(' + attaquant.token.id + ')';
+          if (options.contact && cibles.length == 1) {
+            if (attributeAsBool(target, amm)) {
+              target.messages.push('Attaque automatique suite à une menace ignorée');
+              options.auto = true;
+              if (attributeAsInt(target, amm, 1) > 1) options.dmFoisDeux = true;
+              target.additionalDmg.push({
+                type: mainDmgType,
+                value: '1d6'
+              });
+              removeTokenAttr(target, amm, evt);
+            }
+          }
             let attBonus = attBonusCommun + bad;
             if (options.traquenard) {
               let initTarg = persoInit(target, evt);
@@ -16433,7 +16433,7 @@ var COFantasy = COFantasy || function() {
               }
               resolvePreDmgOptions(attaquant, ciblesTouchees, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles);
             }
-          });
+          }, true); //comme on est dans une boucle qui dépend de la cible, inTarget doit être vrai
         }); //fin de détermination de toucher des cibles
       }); // fin du jet d'attaque asynchrone
     } catch (e) {

@@ -17,6 +17,9 @@
 * Prise en compte des portes fermées.
 * Ajout des armes vicieuses.
 
+### Corrections de bugs
+* Correction pour les options d'attaque --plus au sein d'un --if.
+
 ## 3.10
 ### Capacités
 * Magie de combat de la Voie du guerrier-mage.
