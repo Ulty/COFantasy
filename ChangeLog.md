@@ -9,6 +9,7 @@
 * Blessure sanglante (voie du pacte vampirique)
 
 ### Autres améliorations
+* Utilisation d'une section munitions sur la fiche.
 * Ajout d'un prédicat bonusAttaqueMagique
 * Prédicats pour les armes.
 * Tentative pour un meilleur suivi de la lumière en cas de changement de carte.

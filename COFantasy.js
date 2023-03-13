@@ -4673,6 +4673,7 @@ var COFantasy = COFantasy || function() {
         weaponStats.armeDeJet = true;
         weaponStats.tauxDePerte = fieldAsInt(att, 'armejettaux', 0);
         weaponStats.nbArmesDeJet = fieldAsInt(att, 'armejetqte', 1);
+        weaponStats.nbArmesDeJetMax = fieldAsInt(att, 'armejetqte_max', 1);
         weaponStats.prefixe = att.prefixe; //pour trouver l'attribut
         armeDeCreatureFeerique(perso, weaponStats, 3);
         break;
@@ -4702,11 +4703,12 @@ var COFantasy = COFantasy || function() {
     //Identification des catégories d'armes utilisées en jeu
     identifierArme(weaponStats, pred, 'arc', /\barc\b/i);
     identifierArme(weaponStats, pred, 'arbalete', /\barbal[eè]te\b/i);
+    identifierArme(weaponStats, pred, 'baton', /\bb[aâ]ton\b/i);
     identifierArme(weaponStats, pred, 'hache', /\bhache\b/i);
     identifierArme(weaponStats, pred, 'epee', /\b[eé]p[eé]e\b/i);
-    identifierArme(weaponStats, pred, 'marteau', /\bmarteau\b/i);
     identifierArme(weaponStats, pred, 'epieu', /\b[eé]pieu\b/i);
-    identifierArme(weaponStats, pred, 'baton', /\bb[aâ]ton\b/i);
+    identifierArme(weaponStats, pred, 'fronde', /\bfronde\b/i);
+    identifierArme(weaponStats, pred, 'marteau', /\bmarteau\b/i);
     identifierArme(weaponStats, pred, 'masse', /\bmasse\b/i);
     identifierArme(weaponStats, pred, 'rapiere', /\brapi[eè]re\b/i);
     identifierArme(weaponStats, pred, 'poudre', /\bpoudre\b/i);
@@ -4922,6 +4924,52 @@ var COFantasy = COFantasy || function() {
     return;
   }
 
+  function listAllMunitions(perso) {
+    if (perso.munitions) return perso.munitions;
+    let rawList = extractRepeating(perso, 'munitions');
+    let liste = {}; //liste triée par label de munition
+    for (let pref in rawList) {
+      let ra = rawList[pref];
+      if (ra.labelmunition === undefined) ra.labelmunition = 0;
+      if (liste[ra.labelmunition]) {
+        error("Plusieurs munitions de label " + ra.labelmunitions, ra);
+        continue;
+      }
+      ra.prefixe = pref;
+      liste[ra.labelmunition] = ra;
+    }
+    perso.munitions = liste;
+    return liste;
+  }
+
+  function demandeMunition(perso, weaponStats, options, act) {
+    if (act.includes('--munition')) return act;
+    if (weaponStats.options.includes('--munitions')) return act;
+    let typeMunition;
+    if (weaponStats.arc) typeMunition = 'Flèche';
+    else if (weaponStats.arbalete) typeMunition = 'Carreau';
+    else if (weaponStats.poudre) typeMunition = 'Balle';
+    else if (weaponStats.fronde) typeMunition = 'Autre'; //TODO: ajouter le type bille sur la fiche
+    if (!typeMunition) return act;
+    let munitions = listAllMunitions(perso);
+    let munitionsDeType = [];
+    for (let label in munitions) {
+      let munition = munitions[label];
+      let tm = fieldAsString(munition, 'typemunition', 'Flèche');
+      if (tm != typeMunition) return;
+      let nb = fieldAsInt(munition, 'qtemunition', 1);
+      if (nb > 0) munitionsDeType.push(munition);
+    }
+    if (munitionsDeType.length === 0) return act;
+    let demande = ' ?{Munition|Normale,&amp;#32;';
+    munitionsDeType.forEach(function(m) {
+      demande += '|' +
+        fieldAsString(m, 'nommunition', typeMunition + ' ' + m.labelmunition) +
+        ', --munition ' + m.labelmunition;
+    });
+    return act + demande + '}';
+  }
+
   //options peut avoir les champs:
   // - ressource, un attribut
   // - overlay
@@ -5015,6 +5063,7 @@ var COFantasy = COFantasy || function() {
                 //Selon l'arme en main, une action peut être possible ou non
                 let weaponStats = armesEnMain(perso);
                 if (weaponStats) {
+                  options.attackStats = options.attackStats || weaponStats;
                   options.actionImpossible =
                     (weaponStats.deuxMains && attributeAsBool(perso, 'espaceExigu')) ||
                     (weaponStats.portee &&
@@ -5053,6 +5102,7 @@ var COFantasy = COFantasy || function() {
                 if (attackStats) {
                   portee = attackStats.portee;
                   sortilege = attackStats.sortilege;
+                  act = demandeMunition(perso, attackStats, options, act);
                   if (attackStats.options) {
                     let firstOptionIndex = act.indexOf(' --');
                     if (firstOptionIndex > 0) {
@@ -8014,175 +8064,11 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
-  //!cof-attack id_attaquant id_cible label_attaque [options]
-  function parseAttack(msg) {
-    const playerId = getPlayerIdFromMsg(msg);
-    if (stateCOF.pause && !playerIsGM(playerId)) {
-      sendPlayer(msg, "Le jeu est en pause", playerId);
-      return;
-    }
-    let optArgs = msg.content.split(' --');
-    let args = optArgs[0].split(' ');
-    args = args.filter(function(a) {
-      return a !== '';
-    });
-    optArgs.shift();
-    if (args.length < 3) {
-      error("Pas assez d'arguments pour !cof-attack: " + msg.content, args);
-      return;
-    }
-    const attaquant = persoOfId(args[1]);
-    if (attaquant === undefined) {
-      error("Le premier argument de !cof-attack n'est pas un token valide", args[1]);
-      return;
-    }
-    let pageId = attaquant.token.get('pageid');
-    let targetToken = getObj('graphic', args[2]);
-    if (targetToken === undefined) { //reste la possibilité de trouver un token de ce nom
-      let tokens = findObjs({
-        _type: 'graphic',
-        _subtype: 'token',
-        _pageid: pageId,
-        name: args[2]
-      });
-      if (tokens.length == 0) {
-        error("le second argument de !cof-attack doit être un token", args[2]);
-        return;
-      }
-      if (tokens.length > 1) {
-        error("Ambigüité sur le choix d'un token : il y a " +
-          tokens.length + " tokens nommés " + args[2], tokens);
-      }
-      targetToken = tokens[0];
-    }
-    let attackLabel = -1;
-    if (args.length > 3) {
-      attackLabel = args.slice(3).join(' ').trim();
-    }
-    let weaponStats = {};
-    let attaqueArray;
-    try {
-      attaqueArray = JSON.parse(attackLabel); //plus documenté depuis 2020
-    } catch (e) {}
-    if (Array.isArray(attaqueArray) && attaqueArray.length > 4 &&
-      attaqueArray[1].length > 1 && attaqueArray[3].length > 3) {
-      weaponStats.name = attaqueArray[0].replace(/_/g, ' ');
-      weaponStats.attSkill = attaqueArray[1][0];
-      weaponStats.attSkillDiv = attaqueArray[1][1];
-      weaponStats.crit = attaqueArray[2];
-      const weaponDmg = attaqueArray[3];
-      weaponStats.attNbDices = weaponDmg[0];
-      weaponStats.attDice = weaponDmg[1];
-      weaponStats.attCarBonus = weaponDmg[2];
-      weaponStats.attDMBonusCommun = weaponDmg[3];
-      weaponStats.portee = attaqueArray[4];
-      if (attaqueArray.length > 5) {
-        weaponStats.divers = attaqueArray[5];
-      } else {
-        weaponStats.divers = '';
-      }
-      weaponStats.options = '';
-    } else {
-      //On trouve l'attaque correspondant au label
-      if (attackLabel == -1) { //attaque avec l'arme en main
-        weaponStats = armesEnMain(attaquant);
-        if (attributeAsBool(attaquant, 'paradeCroisee')) {
-          let main = randomInteger(2);
-          if (main == 2) weaponStats = attaquant.armeGauche;
-          if (weaponStats === undefined) weaponStats = attaqueAMainsNues;
-          if (main == 1) weaponStats.attaquePaire = true;
-          else weaponStats.attaqueImpaire = true;
-        } else if (weaponStats === undefined) weaponStats = attaqueAMainsNues;
-      } else if (attackLabel == -2) { //attaque avec l'arme en main gauche
-        if (attaquant.armesEnMain === undefined) armesEnMain(attaquant);
-        weaponStats = attaquant.armeGauche;
-        if (weaponStats === undefined)
-          weaponStats = getWeaponStats(attaquant, attackLabel);
-      } else weaponStats = getWeaponStats(attaquant, attackLabel);
-    }
-    if (weaponStats === undefined) {
-      error("Impossible de trouver l'arme pour l'attaque", attackLabel);
-      return;
-    }
-    if (weaponStats.deuxMains && attributeAsBool(attaquant, 'espaceExigu')) {
-      sendPerso(attaquant, "ne peut pas utiliser d'arme à deux mains dans un espace aussi exigu.");
-      return;
-    }
-    //Si c'est aussi une arme de jet, et que le personnage attaque à distance, on va utiliser la version arme de jet de l'attaque.
-    let msgIndex = msg.content;
-    let indexAussiJet = msgIndex.indexOf('--aussiArmeDeJet ');
-    if (indexAussiJet == -1 && weaponStats.options) {
-      msgIndex = weaponStats.options;
-      indexAussiJet = msgIndex.indexOf('--aussiArmeDeJet ');
-    }
-    if (indexAussiJet > 0) {
-      let labelAussiJet = parseInt(msgIndex.substring(indexAussiJet + 17));
-      if (isNaN(labelAussiJet)) {
-        error("Label --aussiArmeDeJet n'est pas un entier", msgIndex.substring(indexAussiJet + 17));
-      } else {
-        let armeAssociee = getWeaponStats(attaquant, labelAussiJet);
-        if (armeAssociee === undefined) {
-          error("Label --aussiArmeDeJet pas une attaque", labelAussiJet);
-        } else {
-          if (distanceCombat(attaquant.token, targetToken) > 0)
-            weaponStats = armeAssociee;
-        }
-      }
-    }
-    //Ajout des options de l'arme
-    let wo = weaponStats.options.trim();
-    //Pour la partie options, il est possible qu'elle soit déjà passée en ligne de commande
-    if (wo !== '' && ((optArgs.length < 1 || !optArgs[0].startsWith('attaqueOptions'))) || indexAussiJet > 0) {
-      wo = ' ' + wo;
-      wo.split(' --').reverse().forEach(function(o) {
-        o = o.trim();
-        if (o === '') return;
-        optArgs.unshift(o);
-      });
-    }
-    if (weaponStats.modificateurs) {
-      weaponStats.modificateurs.split(',').reverse().forEach(function(m) {
-        m = m.trim();
-        if (m === '') return;
-        m.split(' ').reverse().forEach(function(m) {
-          m = m.trim();
-          if (m === '') return;
-          optArgs.unshift(m);
-        });
-      });
-    }
-    const options = {
-      sortilege: weaponStats.sortilege,
-      hache: weaponStats.hache,
-      armeNaturelle: weaponStats.armeNaturelle,
-      poudre: weaponStats.poudre,
-      arme: weaponStats.arme || weaponStats.armeGauche || weaponStats.armeDeJet,
-    };
-    switch (weaponStats.typeDegats) {
-      case 'mental':
-        options.attaqueMentale = true;
-        /* falls through */
-      case 'feu':
-      case 'froid':
-      case 'acide':
-      case 'electrique':
-      case 'sonique':
-      case 'poison':
-      case 'maladie':
-      case 'drain':
-      case 'energie':
-        options.type = weaponStats.typeDegats;
-        break;
-      case 'tranchant':
-      case 'percant':
-      case 'contondant':
-      case 'magique':
-        options[weaponStats.typeDegats] = true;
-        break;
-    }
-    let lastEtat; //dernier de etats et effets
-    let lastType = options.type; //dernier type de dégâts infligés
-    let scope = options; //Pour les conditionnelles
+  //juste le traitement d'une liste d'options
+  // lastEtat : dernier de etats et effets
+  // lastType : dernier type de dégâts infligés
+  // scope : pour les conditionnelles
+  function parseAttackOptions(attaquant, optArgs, lastEtat, lastType, scope, playerId, msg, targetToken, attackLabel, weaponStats, options) {
     optArgs.forEach(function(arg) {
       arg = arg.trim();
       let cmd = arg.split(' ');
@@ -8861,7 +8747,7 @@ var COFantasy = COFantasy || function() {
             error("Usage : --" + cmd[0] + " b", cmd);
             return;
           }
-          var b2Att = parseInt(cmd[1]);
+          let b2Att = parseInt(cmd[1]);
           if (isNaN(b2Att)) {
             error("Le bonus (" + cmd[0] + ") doit être un nombre");
             return;
@@ -8909,11 +8795,44 @@ var COFantasy = COFantasy || function() {
           }
           return;
         case 'munition':
-          if (cmd.length < 2) {
-            error("Pour les munitions, il faut préciser le nom", cmd);
+          if (options.munition) { //on évite la récursion
+            error("Plusieurs options --munition. Seule la première est prise en compte", cmd);
             return;
           }
-          var tauxPertes = 100; //Par défaut, les munitions sont perdues
+          if (cmd.length < 2) {
+            error("Pour les munitions, il faut préciser le label de la munition", cmd);
+            return;
+          }
+          let labelMunition = cmd[1];
+          let munitions = listAllMunitions(attaquant);
+          if (munitions[labelMunition]) {
+            options.munition = munitions[labelMunition];
+            let effetMunition = fieldAsString(options.munition, 'effetmunition', '');
+            let optionsMunition = fieldAsString(options.munition, 'optionsmunition', '');
+            optionsMunition = (' ' + optionsMunition).split(' --');
+            if (optionsMunition.length > 0) optionsMunition.shift();
+            if (effetMunition) {
+              effetMunition.split(',').reverse().forEach(function(e) {
+                e = e.trim();
+                if (e === '') return;
+                e.split(' ').reverse().forEach(function(e) {
+                  e = e.trim();
+                  if (e === '') return;
+                  optionsMunition.unshift(e);
+                });
+              });
+            }
+            if (optionsMunition.length > 0) {
+              let r = parseAttackOptions(attaquant, optionsMunition, lastEtat, lastType, scope, playerId, msg, targetToken, attackLabel, weaponStats, options);
+              lastEtat = r.lastEtat;
+              lastType = r.lastType;
+              scope = r.scope;
+            }
+            return;
+          }
+          sendPlayer(msg, "Utilisez plutôt les munitions définies sur la fiche", playerId);
+          //Compatibilité avec ancienne version:
+          let tauxPertes = 100; //Par défaut, les munitions sont perdues
           if (cmd.length > 2)
             tauxPertes = parseInt(cmd[2]);
           if (isNaN(tauxPertes) || tauxPertes < 0 || tauxPertes > 100) {
@@ -8927,7 +8846,7 @@ var COFantasy = COFantasy || function() {
           return;
         case "ligne":
           if (options.aoe) {
-            error("Deux options pour définir une aoe", args);
+            error("Deux options pour définir une aoe", optArgs);
             return;
           }
           options.aoe = {
@@ -8936,7 +8855,7 @@ var COFantasy = COFantasy || function() {
           return;
         case 'disque':
           if (options.aoe) {
-            error("Deux options pour définir une aoe", args);
+            error("Deux options pour définir une aoe", optArgs);
             return;
           }
           if (cmd.length < 2) {
@@ -8957,7 +8876,7 @@ var COFantasy = COFantasy || function() {
           return;
         case 'cone':
           if (options.aoe) {
-            error("Deux options pour définir une aoe", args);
+            error("Deux options pour définir une aoe", optArgs);
             return;
           }
           var angle = 90;
@@ -9417,7 +9336,16 @@ var COFantasy = COFantasy || function() {
         default:
           let armeMagique = cmd[0].match(/^\+([0-9]+)$/);
           if (armeMagique && armeMagique.length > 0) {
-            options.armeMagiquePlus = parseInt(armeMagique[1]);
+            let amp = parseInt(armeMagique[1]);
+            //gestion du cumul des bonus
+            if (options.armeMagiquePlus) {
+              let bmp = amp;
+              if (amp > options.armeMagiquePlus) {
+                bmp = options.armeMagiquePlus;
+                options.armeMagiquePlus = amp;
+              }
+              if (weaponStats.portee) weaponStats.portee += 10 * bmp;
+            } else options.armeMagiquePlus = amp;
             if (options.magique === undefined) {
               options.magique = options.armeMagiquePlus;
             } else if (options.magique !== true) {
@@ -9429,6 +9357,183 @@ var COFantasy = COFantasy || function() {
       }
     });
     closeIte(scope); //pour fermer les endif mal formés et éviter les boucles
+    return {
+      lastEtat,
+      lastType,
+      scope
+    };
+  }
+
+  //!cof-attack id_attaquant id_cible label_attaque [options]
+  function parseAttack(msg) {
+    const playerId = getPlayerIdFromMsg(msg);
+    if (stateCOF.pause && !playerIsGM(playerId)) {
+      sendPlayer(msg, "Le jeu est en pause", playerId);
+      return;
+    }
+    let optArgs = msg.content.split(' --');
+    let args = optArgs[0].split(' ');
+    args = args.filter(function(a) {
+      return a !== '';
+    });
+    optArgs.shift();
+    if (args.length < 3) {
+      error("Pas assez d'arguments pour !cof-attack: " + msg.content, args);
+      return;
+    }
+    const attaquant = persoOfId(args[1]);
+    if (attaquant === undefined) {
+      error("Le premier argument de !cof-attack n'est pas un token valide", args[1]);
+      return;
+    }
+    let pageId = attaquant.token.get('pageid');
+    let targetToken = getObj('graphic', args[2]);
+    if (targetToken === undefined) { //reste la possibilité de trouver un token de ce nom
+      let tokens = findObjs({
+        _type: 'graphic',
+        _subtype: 'token',
+        _pageid: pageId,
+        name: args[2]
+      });
+      if (tokens.length == 0) {
+        error("le second argument de !cof-attack doit être un token", args[2]);
+        return;
+      }
+      if (tokens.length > 1) {
+        error("Ambigüité sur le choix d'un token : il y a " +
+          tokens.length + " tokens nommés " + args[2], tokens);
+      }
+      targetToken = tokens[0];
+    }
+    let attackLabel = -1;
+    if (args.length > 3) {
+      attackLabel = args.slice(3).join(' ').trim();
+    }
+    let weaponStats = {};
+    let attaqueArray;
+    try {
+      attaqueArray = JSON.parse(attackLabel); //plus documenté depuis 2020
+    } catch (e) {}
+    if (Array.isArray(attaqueArray) && attaqueArray.length > 4 &&
+      attaqueArray[1].length > 1 && attaqueArray[3].length > 3) {
+      weaponStats.name = attaqueArray[0].replace(/_/g, ' ');
+      weaponStats.attSkill = attaqueArray[1][0];
+      weaponStats.attSkillDiv = attaqueArray[1][1];
+      weaponStats.crit = attaqueArray[2];
+      const weaponDmg = attaqueArray[3];
+      weaponStats.attNbDices = weaponDmg[0];
+      weaponStats.attDice = weaponDmg[1];
+      weaponStats.attCarBonus = weaponDmg[2];
+      weaponStats.attDMBonusCommun = weaponDmg[3];
+      weaponStats.portee = attaqueArray[4];
+      if (attaqueArray.length > 5) {
+        weaponStats.divers = attaqueArray[5];
+      } else {
+        weaponStats.divers = '';
+      }
+      weaponStats.options = '';
+    } else {
+      //On trouve l'attaque correspondant au label
+      if (attackLabel == -1) { //attaque avec l'arme en main
+        weaponStats = armesEnMain(attaquant);
+        if (attributeAsBool(attaquant, 'paradeCroisee')) {
+          let main = randomInteger(2);
+          if (main == 2) weaponStats = attaquant.armeGauche;
+          if (weaponStats === undefined) weaponStats = attaqueAMainsNues;
+          if (main == 1) weaponStats.attaquePaire = true;
+          else weaponStats.attaqueImpaire = true;
+        } else if (weaponStats === undefined) weaponStats = attaqueAMainsNues;
+      } else if (attackLabel == -2) { //attaque avec l'arme en main gauche
+        if (attaquant.armesEnMain === undefined) armesEnMain(attaquant);
+        weaponStats = attaquant.armeGauche;
+        if (weaponStats === undefined)
+          weaponStats = getWeaponStats(attaquant, attackLabel);
+      } else weaponStats = getWeaponStats(attaquant, attackLabel);
+    }
+    if (weaponStats === undefined) {
+      error("Impossible de trouver l'arme pour l'attaque", attackLabel);
+      return;
+    }
+    if (weaponStats.deuxMains && attributeAsBool(attaquant, 'espaceExigu')) {
+      sendPerso(attaquant, "ne peut pas utiliser d'arme à deux mains dans un espace aussi exigu.");
+      return;
+    }
+    //Si c'est aussi une arme de jet, et que le personnage attaque à distance, on va utiliser la version arme de jet de l'attaque.
+    let msgIndex = msg.content;
+    let indexAussiJet = msgIndex.indexOf('--aussiArmeDeJet ');
+    if (indexAussiJet == -1 && weaponStats.options) {
+      msgIndex = weaponStats.options;
+      indexAussiJet = msgIndex.indexOf('--aussiArmeDeJet ');
+    }
+    if (indexAussiJet > 0) {
+      let labelAussiJet = parseInt(msgIndex.substring(indexAussiJet + 17));
+      if (isNaN(labelAussiJet)) {
+        error("Label --aussiArmeDeJet n'est pas un entier", msgIndex.substring(indexAussiJet + 17));
+      } else {
+        let armeAssociee = getWeaponStats(attaquant, labelAussiJet);
+        if (armeAssociee === undefined) {
+          error("Label --aussiArmeDeJet pas une attaque", labelAussiJet);
+        } else {
+          if (distanceCombat(attaquant.token, targetToken) > 0)
+            weaponStats = armeAssociee;
+        }
+      }
+    }
+    //Ajout des options de l'arme
+    let wo = weaponStats.options.trim();
+    //Pour la partie options, il est possible qu'elle soit déjà passée en ligne de commande
+    if (wo !== '' && ((optArgs.length < 1 || !optArgs[0].startsWith('attaqueOptions'))) || indexAussiJet > 0) {
+      wo = ' ' + wo;
+      wo.split(' --').reverse().forEach(function(o) {
+        o = o.trim();
+        if (o === '') return;
+        optArgs.unshift(o);
+      });
+    }
+    if (weaponStats.modificateurs) {
+      weaponStats.modificateurs.split(',').reverse().forEach(function(m) {
+        m = m.trim();
+        if (m === '') return;
+        m.split(' ').reverse().forEach(function(m) {
+          m = m.trim();
+          if (m === '') return;
+          optArgs.unshift(m);
+        });
+      });
+    }
+    const options = {
+      sortilege: weaponStats.sortilege,
+      hache: weaponStats.hache,
+      armeNaturelle: weaponStats.armeNaturelle,
+      poudre: weaponStats.poudre,
+      arme: weaponStats.arme || weaponStats.armeGauche || weaponStats.armeDeJet,
+    };
+    switch (weaponStats.typeDegats) {
+      case 'mental':
+        options.attaqueMentale = true;
+        /* falls through */
+      case 'feu':
+      case 'froid':
+      case 'acide':
+      case 'electrique':
+      case 'sonique':
+      case 'poison':
+      case 'maladie':
+      case 'drain':
+      case 'energie':
+        options.type = weaponStats.typeDegats;
+        break;
+      case 'tranchant':
+      case 'percant':
+      case 'contondant':
+      case 'magique':
+        options[weaponStats.typeDegats] = true;
+        break;
+    }
+    let lastEtat; //dernier de etats et effets
+    let lastType = options.type; //dernier type de dégâts infligés
+    let scope = options; //Pour les conditionnelles
+    parseAttackOptions(attaquant, optArgs, lastEtat, lastType, scope, playerId, msg, targetToken, attackLabel, weaponStats, options);
     let bene = predicateAsInt(attaquant, 'benedictionSuperieure', 0);
     if (bene) {
       if (!options.armeMagiquePlus || options.armeMagiquePlus < bene) {
@@ -9519,9 +9624,9 @@ var COFantasy = COFantasy || function() {
     updateCurrentBar(perso, 2, dep.pm, evt);
     msg = msg || '';
     if (dep.depense_pv) {
-      var source = reglesOptionelles.mana.val.brulure_de_magie.val ? "de la Brûlure de Magie" : "du Contrecoup";
+      let source = reglesOptionelles.mana.val.brulure_de_magie.val ? "de la Brûlure de Magie" : "du Contrecoup";
       updateCurrentBar(perso, 1, dep.pv, evt);
-      var pre = 'p';
+      let pre = 'p';
       if (stateCOF.options.affichage.val.depense_mana.val && dep.depense_pm > 0)
         pre = "dépense " + dep.depense_pm + " PM et p";
       sendPerso(perso, pre + "erd " + dep.depense_pv + " PV à cause " + source + " pour " + msg);
@@ -11987,6 +12092,7 @@ var COFantasy = COFantasy || function() {
       switch (armeDePredilection) {
         case 'arc':
         case 'arbalete':
+        case 'fronde':
         case 'hache':
         case 'epee':
         case 'marteau':
@@ -14353,6 +14459,8 @@ var COFantasy = COFantasy || function() {
       if (!m) return;
       rawList[m[1]] = rawList[m[1]] || {};
       rawList[m[1]][m[2]] = a.get('current');
+      let max = a.get('max');
+      if (max) rawList[m[1]][m[2] + '_max'] = max;
     });
     return rawList;
   }
@@ -15457,47 +15565,117 @@ var COFantasy = COFantasy || function() {
       if (estMook) {
         error("Les munitions ne sont pas supportées pour les tokens qui ne sont pas liées à un personnage", attackingToken);
       }
-      let munitionsAttr = findObjs({
-        _type: 'attribute',
-        _characterid: attackingCharId,
-        name: 'munition_' + options.munition.nom
-      });
-      if (munitionsAttr.length === 0) {
-        sendPerso(attaquant, ": Pas de munition nommée " + options.munition.nom);
-        return;
-      }
-      munitionsAttr = munitionsAttr[0];
-      let munitions = munitionsAttr.get('current');
-      if (munitions < 1 || (options.tirDouble && munitions < 2)) {
-        sendPerso(attaquant,
-          "ne peut pas utiliser cette attaque, car " + sujetAttaquant +
-          " n'a plus de " + options.munition.nom.replace(/_/g, ' '));
-        return;
-      }
-      let munitionsMax = parseInt(munitionsAttr.get('max'));
-      if (isNaN(munitionsMax)) {
-        error("Attribut de munitions mal formé", munitionsMax);
-        return;
-      }
-      evt.attributes = evt.attributes || [];
-      evt.attributes.push({
-        attribute: munitionsAttr,
-        current: munitions,
-        max: munitionsMax
-      });
-      //On cherche si la munition est empoisonnée
-      let poisonAttr = tokenAttribute(attaquant, 'enduitDePoison_munition_' + options.munition.nom);
-      effetPoisonSurMunitions(poisonAttr, attaquant, explications, options, evt);
-      munitions--;
-      if (randomInteger(100) < options.munition.taux) munitionsMax--;
-      if (options.tirDouble) {
+      if (options.munition.nom) { //Ancienne variante, obsolète depuis mars 2023
+        let munitionsAttr = findObjs({
+          _type: 'attribute',
+          _characterid: attackingCharId,
+          name: 'munition_' + options.munition.nom
+        });
+        if (munitionsAttr.length === 0) {
+          sendPerso(attaquant, ": Pas de munition nommée " + options.munition.nom);
+          return;
+        }
+        munitionsAttr = munitionsAttr[0];
+        let munitions = munitionsAttr.get('current');
+        if (munitions < 1 || (options.tirDouble && munitions < 2)) {
+          sendPerso(attaquant,
+            "ne peut pas utiliser cette attaque, car " + sujetAttaquant +
+            " n'a plus de " + options.munition.nom.replace(/_/g, ' '));
+          return;
+        }
+        let munitionsMax = parseInt(munitionsAttr.get('max'));
+        if (isNaN(munitionsMax)) {
+          error("Attribut de munitions mal formé", munitionsMax);
+          return;
+        }
+        evt.attributes = evt.attributes || [];
+        evt.attributes.push({
+          attribute: munitionsAttr,
+          current: munitions,
+          max: munitionsMax
+        });
+        //On cherche si la munition est empoisonnée
+        let poisonAttr = tokenAttribute(attaquant, 'enduitDePoison_munition_' + options.munition.nom);
+        effetPoisonSurMunitions(poisonAttr, attaquant, explications, options, evt);
         munitions--;
         if (randomInteger(100) < options.munition.taux) munitionsMax--;
+        if (options.tirDouble) {
+          munitions--;
+          if (randomInteger(100) < options.munition.taux) munitionsMax--;
+        }
+        explications.push("Il reste " + munitions + " " +
+          options.munition.nom.replace(/_/g, ' ') + " à " + attackerTokName);
+        munitionsAttr.set('current', munitions);
+        munitionsAttr.set('max', munitionsMax);
+      } else { //Utilisation d'une munition de la fiche
+        let m = options.munition;
+        let typeMunition = fieldAsString(m, 'typemunition', 'Flèche');
+        let nom = fieldAsString(m, 'nommunition', typeMunition);
+        let munitions = fieldAsInt(m, 'qtemunition', 1);
+        if (munitions < 1 || (options.tirDouble && munitions < 2)) {
+          sendPerso(attaquant,
+            "ne peut pas utiliser cette attaque, car " + sujetAttaquant +
+            " n'a plus de " + nom);
+          return;
+        }
+        let label = fieldAsString(m, 'labelmunition', '0');
+        //On cherche si la munition est empoisonnée
+        let poisonAttr = tokenAttribute(attaquant, 'enduitDePoison_munition_' + label);
+        effetPoisonSurMunitions(poisonAttr, attaquant, explications, options, evt);
+        let munitionsMax = fieldAsInt(m, 'qtemunition_max', munitions);
+        munitions--;
+        let perte = 0;
+        let taux = fieldAsInt(m, 'tauxmunition', 100);
+        if (randomInteger(100) < taux) {
+          munitionsMax--;
+          perte++;
+        }
+        if (options.tirDouble) {
+          munitions--;
+          if (randomInteger(100) < taux) {
+            munitionsMax--;
+            perte++;
+          }
+        }
+        let msgm = "Il ";
+        if (munitions === 0) {
+          msgm += "ne reste plus de ";
+        } else {
+          msgm += "reste " + munitions + " ";
+        }
+        msgm += nom + " à " + attackerTokName;
+        if (taux < 100 && perte > 0) msgm += ", et la munition utilisée n'est pas récupérable";
+        explications.push(msgm);
+        evt.attributes = evt.attributes || [];
+        let name = m.prefixe + 'qtemunition';
+        let attrQte = findObjs({
+          _type: 'attribute',
+          _characterid: attackingCharId,
+          name
+        }, {
+          caseInsensitive: true
+        });
+        if (attrQte.length > 0) {
+          attrQte = attrQte[0];
+          evt.attributes.push({
+            attribute: attrQte,
+            current: munitions,
+            max: munitionsMax
+          });
+          attrQte.set('current', munitions);
+          attrQte.set('max', munitionsMax);
+        } else {
+          attrQte = createObj('attribute', {
+            characterid: attackingCharId,
+            name,
+            current: munitions,
+            max: munitionsMax
+          });
+          evt.attributes.push({
+            attribute: attrQte,
+          });
+        }
       }
-      explications.push("Il reste " + munitions + " " +
-        options.munition.nom.replace(/_/g, ' ') + " à " + attackerTokName);
-      munitionsAttr.set('current', munitions);
-      munitionsAttr.set('max', munitionsMax);
     }
     // Armes chargées
     if (options.semonce === undefined && options.tirDeBarrage === undefined) {
@@ -15834,19 +16012,19 @@ var COFantasy = COFantasy || function() {
               bad = bonusAttaqueD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
             else if (!options.pasDeDmg)
               bonusDMD(attaquant, target, weaponStats.portee, pageId, evt, target.messages, options);
-          let amm = 'attaqueMalgreMenace(' + attaquant.token.id + ')';
-          if (options.contact && cibles.length == 1) {
-            if (attributeAsBool(target, amm)) {
-              target.messages.push('Attaque automatique suite à une menace ignorée');
-              options.auto = true;
-              if (attributeAsInt(target, amm, 1) > 1) options.dmFoisDeux = true;
-              target.additionalDmg.push({
-                type: mainDmgType,
-                value: '1d6'
-              });
-              removeTokenAttr(target, amm, evt);
+            let amm = 'attaqueMalgreMenace(' + attaquant.token.id + ')';
+            if (options.contact && cibles.length == 1) {
+              if (attributeAsBool(target, amm)) {
+                target.messages.push('Attaque automatique suite à une menace ignorée');
+                options.auto = true;
+                if (attributeAsInt(target, amm, 1) > 1) options.dmFoisDeux = true;
+                target.additionalDmg.push({
+                  type: mainDmgType,
+                  value: '1d6'
+                });
+                removeTokenAttr(target, amm, evt);
+              }
             }
-          }
             let attBonus = attBonusCommun + bad;
             if (options.traquenard) {
               let initTarg = persoInit(target, evt);
@@ -16756,7 +16934,10 @@ var COFantasy = COFantasy || function() {
       setTokenAttr(target, 'lienDeSangDe', ef.attaquant.token.id, evt);
     }
     if (ef.duree) {
-      if (ef.typeDmg && (!ef.message || !ef.message.dm) && predicateAsBool(target, 'diviseEffet_' + ef.typeDmg)) {
+      if (ef.typeDmg && (!ef.message || !ef.message.dm) &&
+        (predicateAsBool(target, 'diviseEffet_' + ef.typeDmg) ||
+          (estElementaire(ef.typeDmg) && predicateAsBool(target, 'diviseEffet_elementaire')))
+      ) {
         duree = Math.ceil(duree / 2);
       }
       if (ef.accumuleDuree) {
@@ -19681,7 +19862,7 @@ var COFantasy = COFantasy || function() {
       divide();
     }
     if (estElementaire(dmgType)) {
-      if (predicateAsBool(target, 'invulnerable') ||predicateAsBool(target, 'diviseEffet_elementaire')) {
+      if (predicateAsBool(target, 'invulnerable') || predicateAsBool(target, 'diviseEffet_elementaire')) {
         divide();
       }
       switch (dmgType) {
@@ -21403,6 +21584,36 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  const munitionRegExpr = new RegExp(/^repeating_munitions_[^_]*_qtemunition$/);
+
+  function recupererMunitions(attrs, evt) {
+    let msgAffiche = new Set();
+    attrs.forEach(function(a) {
+      const nom = a.get('name');
+      if (!munitionRegExpr.test(nom)) return;
+      const charId = a.get('characterid');
+      let m = parseInt(a.get('max'));
+      if (isNaN(m) || m < 0) {
+        error("Erreur dans les quantités de munitions", a);
+        a.remove();
+        return;
+      }
+      let n = parseInt(a.get('current'));
+      if (isNaN(n) || n < m) {
+        evt.attributes.push({
+          attribute: a,
+          current: n,
+          max: m
+        });
+        if (!msgAffiche.has(charId)) {
+          msgAffiche.add(charId);
+          whisperChar(charId, "récupère ses munitions");
+        }
+        a.set('current', m);
+      }
+    });
+  }
+
   function sortirDuCombat() {
     stateCOF.prescience = undefined;
     stateCOF.nextPrescience = undefined;
@@ -21464,7 +21675,8 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('energieImpie', evt, attrs);
     // Autres attributs
     // On récupère les munitions récupérables
-    resetAttr(attrs, 'munition', evt, "récupère ses munitions");
+    resetAttr(attrs, 'munition', evt, "récupère ses munitions"); //obsolète depuis mars 2023.
+    recupererMunitions(attrs, evt);
     recupererArmesDeJet(attrs, evt);
     //Utilisation automatique de second souffle, si pas utilisé
     let tokens = findObjs({ // Les tokens sur la page du combat
@@ -25974,6 +26186,7 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, mi);
           }
         });
+        //ancienne version de munitions, obsolète depuis mars 2023
         allAttributesNamed(attrsChar, 'munition').forEach(function(attr) {
           let attrName = attr.get('name');
           let underscore = attrName.indexOf('_');
@@ -32561,37 +32774,32 @@ var COFantasy = COFantasy || function() {
         if (estMunition) {
           let munitionsCourantes;
           let maxMunitions;
-          let attrQte;
           if (arme) {
             armeEnduite = arme.name;
-            attrQte = findObjs({
-              _type: 'attribute',
-              _characterid: perso.charId,
-              name: arme.prefixe + 'armejetqte'
-            }, {
-              caseInsensitive: true
-            });
-            if (attrQte.length === 0) {
-              munitionsCourantes = 1;
-              maxMunitions = 1;
-            } else {
-              attrQte = attrQte[0];
-            }
+            munitionsCourantes = arme.nbArmesDeJet;
+            maxMunitions = arme.nbArmesDeJetMax;
           } else {
-            armeEnduite = nomMunition.replace(/_/g, ' ');
-            attrQte = tokenAttribute(perso, labelArme);
-            if (attrQte.length === 0) {
-              sendPerso(perso, "n'a pas de munition nommée " + nomMunition);
-              return;
-            }
-            attrQte = attrQte[0];
-          }
-          if (munitionsCourantes === undefined) {
-            munitionsCourantes = parseInt(attrQte.get('current'));
-            maxMunitions = parseInt(attrQte.get('max'));
-            if (isNaN(munitionsCourantes) || isNaN(maxMunitions)) {
-              error("Attribut de munitions mal formé", attrQte);
-              return;
+            let munitions = listAllMunitions(perso);
+            let m = munitions[nomMunition];
+            if (m) {
+              let typeMunition = fieldAsString(m, 'typemunition', 'Flèche');
+              armeEnduite = fieldAsString(m, 'nommunition', typeMunition);
+              munitionsCourantes = fieldAsInt(m, 'qtemunition', 1);
+              maxMunitions = fieldAsInt(m, 'qtemunition_max', 1);
+            } else { //ancienne variante, obsolète depuis mars 2023
+              armeEnduite = nomMunition.replace(/_/g, ' ');
+              let attrQte = tokenAttribute(perso, labelArme);
+              if (attrQte.length === 0) {
+                sendPerso(perso, "n'a pas de munition nommée " + nomMunition);
+                return;
+              }
+              attrQte = attrQte[0];
+              munitionsCourantes = parseInt(attrQte.get('current'));
+              maxMunitions = parseInt(attrQte.get('max'));
+              if (isNaN(munitionsCourantes) || isNaN(maxMunitions)) {
+                error("Attribut de munitions mal formé", attrQte);
+                return;
+              }
             }
           }
           if (munitionsCourantes === 0) {
@@ -34409,7 +34617,7 @@ var COFantasy = COFantasy || function() {
       var rang = 0;
       spec.actions.forEach(function(a) {
         rang++;
-        var pref = 'repeating_actions_' + generateRowID() + '_';
+        let pref = 'repeating_actions_' + generateRowID() + '_';
         createObj('attribute', {
           name: pref + 'actionoptflag',
           current: 'off',
