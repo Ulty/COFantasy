@@ -2123,7 +2123,7 @@ var COFantasy = COFantasy || function() {
     }
     evt.attributes = evt.attributes || [];
     let fullAttribute = fullAttributeName(personnage, attribute, options);
-    if (fullAttribute === undefined) {
+    if (!fullAttribute) {
       let args = {
         personnage,
         attribute,
@@ -9996,7 +9996,7 @@ var COFantasy = COFantasy || function() {
           };
           save(ite.condition.saveCond, target, saveId, expliquer, saveOpts, evt,
             function(reussite, rolltext) {
-              var branch;
+              let branch;
               target.saveResults = target.saveResults || {};
               if (reussite) {
                 branch = ite.else;
@@ -22854,11 +22854,8 @@ var COFantasy = COFantasy || function() {
       if (attrType.length > 0) {
         saveOpts.type = attrType[0].get('current');
       }
-      var saveId = 'saveParJour_' + effetC + "_" + perso.token.id;
-      save({
-          carac: carac,
-          seuil: seuil
-        }, perso, saveId, expliquer, saveOpts, evt,
+      let saveId = 'saveParJour_' + effetC + "_" + perso.token.id;
+      save({ carac, seuil }, perso, saveId, expliquer, saveOpts, evt,
         function(reussite, texte) { //asynchrone
           if (reussite) {
             finDEffet(attrEffet, effetC, attrName, charId, evt, {
@@ -38111,7 +38108,7 @@ var COFantasy = COFantasy || function() {
           chanceRollId: options.chanceRollId,
           type: 'poison'
         };
-        var saveId = 'vapeursEthyliques_' + perso.token.id;
+        let saveId = 'vapeursEthyliques_' + perso.token.id;
         save(options.save, perso, saveId, expliquer, saveOpts, evt,
           function(succes, rollText) {
             if (!succes) {
@@ -38194,7 +38191,7 @@ var COFantasy = COFantasy || function() {
           chanceRollId: options.chanceRollId,
           type: 'poison'
         };
-        var saveId = 'boireAlcool_' + perso.token.id;
+        let saveId = 'boireAlcool_' + perso.token.id;
         save(options.save, perso, saveId, expliquer, saveOpts, evt,
           function(succes, rollText) {
             if (!succes) {
