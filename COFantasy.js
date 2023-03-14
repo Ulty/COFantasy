@@ -4942,9 +4942,9 @@ var COFantasy = COFantasy || function() {
     return liste;
   }
 
+  //Les options de l'arme doivent déjà être dans act
   function demandeMunition(perso, weaponStats, options, act) {
     if (act.includes('--munition')) return act;
-    if (weaponStats.options.includes('--munitions')) return act;
     let typeMunition;
     if (weaponStats.arc) typeMunition = 'Flèche';
     else if (weaponStats.arbalete) typeMunition = 'Carreau';
@@ -5102,7 +5102,6 @@ var COFantasy = COFantasy || function() {
                 if (attackStats) {
                   portee = attackStats.portee;
                   sortilege = attackStats.sortilege;
-                  act = demandeMunition(perso, attackStats, options, act);
                   if (attackStats.options) {
                     let firstOptionIndex = act.indexOf(' --');
                     if (firstOptionIndex > 0) {
@@ -5111,6 +5110,7 @@ var COFantasy = COFantasy || function() {
                       act += ' --attaqueOptions ' + attackStats.options;
                     }
                   }
+                  act = demandeMunition(perso, attackStats, options, act);
                 }
                 //On cherche la portée dans les options (ça a la priorité)
                 args.forEach(function(o) {
@@ -7704,7 +7704,7 @@ var COFantasy = COFantasy || function() {
       magieIntense = tempeteDeManaCourante.intense;
     let maxMagieIntense = magieIntense + restant;
     if (maxMagieIntense > 5 && restant > 0) maxMagieIntense = magieIntense + 1;
-    for (var i = 0; i <= maxMagieIntense; i++) {
+    for (let i = 0; i <= maxMagieIntense; i++) {
       if (i == magieIntense) line += " " + i;
       else line += " " + boutonSimple("!cof-tempete-de-mana " + i, i);
     }
