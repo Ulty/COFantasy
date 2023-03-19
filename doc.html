@@ -365,6 +365,7 @@ tr {line-height: 25px;}
                     <ul id="conditions">
                       <li><code>moins</code> <i>attribut</i> : vrai si l'attribut <i>attribut</i> de la cible est moins haute que celle de l'attaquant</li>
                       <li><code>etat</code> <i>e</i> : vrai si l'état <i>e</i> est actif sur l'attaquant. Cet état peut être un des états définis plus bas, ou un attribut quelconque.</li>
+                      <li><code>attribut</code> <i>attr</i> <i>val</i>: vrai si l'attaquant possède un attribut <i>attr</i>, de valeur <i>val</i>, aux majuscules près. On peut optionnellement préciser qu'il s'agit d'un attribut par token en rajoutant le mot clé <code>local</code>, ou encore qu'il sagit d'un attribut de la fiche, avec éventuellement sa valeur par défaut, en ajoutant le mot clé <code>fiche <i>defaut</i></code>.</li>
                       <li><code>etatCible</code> <i>e</i> : vrai si l'état <i>e</i> est actif sur toutes la cible. Cet état peut être un des états définis plus bas, ou un attribut quelconque.</li>
                       <li><code>attributCible</code> <i>attr</i> <i>val</i>: vrai si la cible possède un attribut <i>attr</i>, de valeur <i>val</i>, aux majuscules près. On peut optionnellement préciser qu'il s'agit d'un attribut par token en rajoutant le mot clé <code>local</code>, ou encore qu'il sagit d'un attribut de la fiche, avec éventuellement sa valeur par défaut, en ajoutant le mot clé <code>fiche <i>defaut</i></code>.</li>
                       <li><code>predicatCible</code> <i>predicat</i>: vrai si la cible possède un prédicat <i>predicat</i>. On peut aussi spécifier une valeur auquel le prédicat doit être égal.</li>
@@ -416,6 +417,7 @@ tr {line-height: 25px;}
                   <li><code>--forceMinimum <i>n</i></code> : l'attaque n'est possible que si l'attaquant a au moins <i>n</i> en force.</li>
                   <li><code>--necromancie</code> : l'attaque est de la nécromancie</li>
                   <li><code>--ferFroid</code> : multiplie par 2 les dégâts contre les fées et les démons (le script reconnaît certaines races et les prédicats <code>démon</code> et <code>fée</code>).</li>
+                  <li><code>--adamantium</code> : l'arme utilisée est en adamantium. Reconnu pour la RD.</li>
                   <li><code>--tueurDe <i>categorie</i></code> : bonus de +2 en attaque et +2d6 DM contre les espèces appartenant à la catégorie (voir la condition <code>typeCible</code>.</li>
                   <li><code>--tueurDeGrands</code> : bonus de +1d6 DM contre les créatures de taille grande et +2d6 DM contre les créatures de taille énorme ou plus.</li>
                   <li><code>--ignoreObstacles</code> : ignore les tokens sur le trajet. Ça semble nécessaire pour les attaques magiques d'après Kegron.</li>

@@ -3254,9 +3254,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     let scale = computeScale(pageId);
-    let pt1 = tokenCenter(pseudoTok1);
-    let pt2 = tokenCenter(pseudoTok2);
-    let distance_pix = VecMath.length(VecMath.vec(pt1, pt2));
+    let distance_pix = distancePixToken(pseudoTok1, pseudoTok2);
     if (!options.strict1) distance_pix -= tokenSize(pseudoTok1, PIX_PER_UNIT / 2);
     if (!options.strict2) distance_pix -= tokenSize(pseudoTok2, PIX_PER_UNIT / 2);
     if (options.allonge) distance_pix -= (options.allonge * PIX_PER_UNIT) / scale;
@@ -4826,7 +4824,18 @@ var COFantasy = COFantasy || function() {
             case 'etat':
               return !getState(perso, condition.etat);
             case 'attribut':
-              return !attributeAsBool(perso, condition.attribute);
+              if (condition.valeur === undefined)
+                return !attributeAsBool(perso, condition.attribute);
+              let attr;
+              if (condition.fiche) {
+                attr = ficheAttribute(perso, condition.attribute, condition.fiche.def);
+                if (attr === undefined) return true;
+                return (attr + '').toLowerCase() != condition.valeur;
+              }
+              if (condition.local) attr = tokenAttribute(perso, condition.attribute);
+              else attr = charAttribute(perso.charId, condition.attribute);
+              if (attr.length === 0) return true;
+              return (attr[0].get('current') + '').toLowerCase() != condition.valeur;
           }
           return false;
         case 'mana':
@@ -7837,6 +7846,28 @@ var COFantasy = COFantasy || function() {
           attribute: args[1],
           text: args[1]
         };
+      case 'attribut':
+        if (args.length < 3) {
+          error("Il manque un argument pour comparer l'attribut", args);
+          return;
+        }
+        let res = {
+          type: 'attribut',
+          attribute: args[1],
+          valeur: args[2].toLowerCase(),
+          text: args[1] + ' ' + args[2]
+        };
+        if (args.length > 3) {
+          if (args[3] == 'local') {
+            res.local = true;
+          } else if (args[3] == 'fiche') {
+            res.fiche = {};
+            if (args.length > 4) {
+              res.fiche.def = args[4];
+            }
+          }
+        }
+        return res;
       case 'etatCible':
         if (args.length < 2) {
           error("condition non reconnue", args);
@@ -7860,8 +7891,8 @@ var COFantasy = COFantasy || function() {
           error("Il manque un argument pour comparer l'attribut de la cible", args);
           return;
         }
-        let res = {
-          type: 'attributCible',
+        res = {
+          type: 'attribut',
           attribute: args[1],
           valeur: args[2].toLowerCase(),
           text: args[1] + ' ' + args[2]
@@ -8123,6 +8154,7 @@ var COFantasy = COFantasy || function() {
         case 'pointsVitaux':
         case 'poudre':
         case 'metal':
+        case 'adamantium':
         case 'ferFroid':
         case 'reroll1':
         case 'reroll2':
@@ -9086,9 +9118,9 @@ var COFantasy = COFantasy || function() {
           scope.critCoef++; //Par défaut, incrémente de 1
           return;
         case 'if':
-          var ifCond = parseCondition(cmd.slice(1));
+          let ifCond = parseCondition(cmd.slice(1));
           if (ifCond === undefined) return;
-          var ifThen = {
+          let ifThen = {
             parentScope: scope
           };
           scope.ite = scope.ite || [];
@@ -9733,42 +9765,58 @@ var COFantasy = COFantasy || function() {
         });
         return resEtatCible;
       case 'attribut':
-        if (attributeAsBool(attaquant, cond.attribute)) return true;
-        if (cond.attribute == 'armeDArgent') {
-          return attributeAsBool(attaquant, 'formeDAnge') && predicateAsInt(attaquant, 'voieDeLArchange', 1) > 2;
+        {
+          if (cond.valeur === undefined) {
+            if (attributeAsBool(attaquant, cond.attribute)) return true;
+            if (cond.attribute == 'armeDArgent') {
+              return attributeAsBool(attaquant, 'formeDAnge') && predicateAsInt(attaquant, 'voieDeLArchange', 1) > 2;
+            }
+            return false;
+          }
+          let attr;
+          if (cond.fiche) {
+            attr = ficheAttribute(attaquant, cond.attribute, cond.fiche.def);
+            if (attr === undefined) return false;
+            return (attr + '').toLowerCase() == cond.valeur;
+          }
+          if (cond.local) attr = tokenAttribute(attaquant, cond.attribute);
+          else attr = charAttribute(attaquant.charId, cond.attribute);
+          if (attr.length === 0) return false;
+          return (attr[0].get('current') + '').toLowerCase() == cond.valeur;
         }
-        return false;
       case 'attributCible':
-        let resAttrCible = true;
-        if (cond.valeur === undefined) {
-          cibles.forEach(function(target) {
-            if (resAttrCible && !attributeAsBool(target, cond.attribute))
-              resAttrCible = false;
-          });
-        } else {
-          cibles.forEach(function(target) {
-            if (resAttrCible) {
-              let attr;
-              if (cond.fiche) {
-                attr = ficheAttribute(target, cond.attribute, cond.fiche.def);
-                if (attr === undefined) {
+        {
+          let resAttrCible = true;
+          if (cond.valeur === undefined) {
+            cibles.forEach(function(target) {
+              if (resAttrCible && !attributeAsBool(target, cond.attribute))
+                resAttrCible = false;
+            });
+          } else {
+            cibles.forEach(function(target) {
+              if (resAttrCible) {
+                let attr;
+                if (cond.fiche) {
+                  attr = ficheAttribute(target, cond.attribute, cond.fiche.def);
+                  if (attr === undefined) {
+                    resAttrCible = false;
+                    return;
+                  }
+                  resAttrCible = (attr + '').toLowerCase() == cond.valeur;
+                  return;
+                }
+                if (cond.local) attr = tokenAttribute(target, cond.attribute);
+                else attr = charAttribute(target.charId, cond.attribute);
+                if (attr.length === 0) {
                   resAttrCible = false;
                   return;
                 }
-                resAttrCible = (attr + '').toLowerCase() == cond.valeur;
-                return;
+                resAttrCible = (attr[0].get('current') + '').toLowerCase() == cond.valeur;
               }
-              if (cond.local) attr = tokenAttribute(target, cond.attribute);
-              else attr = charAttribute(target.charId, cond.attribute);
-              if (attr.length === 0) {
-                resAttrCible = false;
-                return;
-              }
-              resAttrCible = (attr[0].get('current') + '').toLowerCase() == cond.valeur;
-            }
-          });
+            });
+          }
+          return resAttrCible;
         }
-        return resAttrCible;
       case 'predicatCible':
         let resp = cibles.every(function(target) {
           if (cond.valeur === undefined) return predicateAsBool(target, cond.predicat);
@@ -18139,7 +18187,7 @@ var COFantasy = COFantasy || function() {
               if (rRoll) {
                 target.additionalCritDmg.push(dmSpec);
                 dmSpec.total = dmSpec.total || rRoll.results.total;
-                var addDmType = dmSpec.type || 'normal';
+                let addDmType = dmSpec.type || 'normal';
                 dmSpec.display = dmSpec.display || buildinline(rRoll, addDmType, options.magique);
               } else { //l'expression de DM additionel est mal formée
                 error("Expression de dégâts de critiques mal formée : " + options.additionalCritDmg[i].value, options.additionalCritDmg[i]);
@@ -19994,6 +20042,8 @@ var COFantasy = COFantasy || function() {
         contondant: options.contondant,
         sortilege: options.sortilege,
         hache: options.hache,
+        ferFroid: options.ferFroid,
+        adamantium: options.adamantium,
       };
       let remainingRD = 0;
       if (rdMain < 0) remainingRD = rdMain;
@@ -22855,7 +22905,10 @@ var COFantasy = COFantasy || function() {
         saveOpts.type = attrType[0].get('current');
       }
       let saveId = 'saveParJour_' + effetC + "_" + perso.token.id;
-      save({ carac, seuil }, perso, saveId, expliquer, saveOpts, evt,
+      save({
+          carac,
+          seuil
+        }, perso, saveId, expliquer, saveOpts, evt,
         function(reussite, texte) { //asynchrone
           if (reussite) {
             finDEffet(attrEffet, effetC, attrName, charId, evt, {
@@ -38347,6 +38400,7 @@ var COFantasy = COFantasy || function() {
     };
     if (options.messages && options.messages.length > 0)
       opt.msg = options.messages[0];
+    let predicats = state.COFantasy.predicats;
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         error('pas de token sélectionné pour !cof-set-predicate');
@@ -38370,6 +38424,7 @@ var COFantasy = COFantasy || function() {
             if (pred === '') pred = predicat;
             else pred = pred + ' ' + predicat;
             setFicheAttr(perso, 'predicats_script', pred, evt);
+            if (predicats) predicats[perso.charId] = undefined;
             sendPlayer(msg, 'Prédicat ' + predicat + ' ajouté', playerId);
             break;
           case 'false':
@@ -38381,6 +38436,7 @@ var COFantasy = COFantasy || function() {
               sendPlayer(msg, 'Prédicat ' + predicat + ' non trouvé', playerId);
             } else {
               setFicheAttr(perso, 'predicats_script', newPred, evt);
+              if (predicats) predicats[perso.charId] = undefined;
               sendPlayer(msg, 'Prédicat ' + predicat + ' enlevé', playerId);
             }
             break;
@@ -38389,13 +38445,14 @@ var COFantasy = COFantasy || function() {
             return;
         }
         if (options.etats) {
-          for (var etat in options.etats) {
+          for (let etat in options.etats) {
             setState(perso, etat, options.etats[etat], evt);
           }
         }
       }); //fin iterSelected
     }, options);
   }
+
   //!cof-defense-armee-des-morts tokenId
   function defenseArmeeDesMorts(msg) {
     var options = parseOptions(msg);
@@ -39916,6 +39973,8 @@ var COFantasy = COFantasy || function() {
                   case 'improved uncanny dodge':
                     predicats += 'immuniteAuxSournoises ';
                     return;
+                  case 'rejuvenation':
+                    return; //Pas d'effet en combat
                   default:
                     if (d.startsWith('channel resistance ')) {
                       let resChannel = parseInt(d.substring(19));
@@ -40088,7 +40147,7 @@ var COFantasy = COFantasy || function() {
               let rdn = attr.get('current');
               if (rdn) {
                 rdn = '' + rdn;
-                rdn = rdn.replace('bludgeoning', 'contondant').replace('slashing', 'tranchant').replace('piercing', 'percant').replace('silver', 'argent').replace('magic', 'magique').replace('adamantine', 'adamantium').replace('/-', '');
+                rdn = rdn.replace('bludgeoning', 'contondant').replace('slashing', 'tranchant').replace('piercing', 'percant').replace('silver', 'argent').replace('magic', 'magique').replace('adamantine', 'adamantium').replace('cold iron', 'ferFroid').replace('/-', '');
                 if (rd === '') rd = rdn;
                 else rd += ', ' + rdn;
               }
