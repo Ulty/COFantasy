@@ -1,4 +1,3 @@
-// Needs the Vector Math scripty
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -3214,11 +3213,66 @@ var COFantasy = COFantasy || function() {
     return scale;
   }
 
-  // if token is bigger than thresh reduce the distance by that size
+  // si le token est plus grand que thresh, réduit la distance
   function tokenSize(tok, thresh) {
     let size = (tok.get('width') + tok.get('height')) / 2;
     if (size > thresh) return ((size - thresh) / 2);
     return 0;
+  }
+
+  function vecteurUnitaire(pt1, pt2) {
+    let x = pt2.x - pt1.x;
+    let y = pt2.y - pt1.y;
+    let n = Math.sqrt(x*x + y*y);
+    x = x / n;
+    y = y / n;
+    return {x, y};
+  }
+
+  function distancePoints(pt1, pt2) {
+    let x = pt2.x - pt1.x;
+    let y = pt2.y - pt1.y;
+    return Math.sqrt(x * x + y * y);
+  }
+
+  function distanceTokenPrev(token, prev) {
+    let x = token.get('left') - prev.left;
+    let y = token.get('top') - prev.top;
+    return Math.sqrt(x * x + y * y);
+  }
+
+  //Distance en pixels entre 2 tokens
+  function distancePixToken(tok1, tok2) {
+    let x = tok1.get('left') - tok2.get('left');
+    let y = tok1.get('top') - tok2.get('top');
+    return Math.sqrt(x * x + y * y);
+  }
+
+  function pointOfToken(token) {
+    return {x:token.get('left'), y:token.get('top')};
+  }
+
+  //Distance en pixels entre un token et un segment
+  //le segment est donné par ses extrémités, sous forme de {x, y}
+  function distancePixTokenSegment(token, pt1, pt2) {
+    let pt = pointOfToken(token);
+    let seg = {x:pt2.x-pt1.x, y:pt2.y-pt1.y};
+    let vec = {x:pt.x-pt1.x, y:pt.y-pt1.y}; //vecteur de pt1 à pt
+    //On regarde d'abord si le projeté de token sur (pt1, pt2) est dans le segment
+    let ps = seg.x*vec.x + seg.y*vec.y;
+    if (ps <= 0) {//On est avant pt1
+      return Math.sqrt(vec.x*vec.x + vec.y*vec.y);
+    }
+    let dseg = seg.x*seg.x + seg.y*seg.y;
+    if (ps >= dseg) {//On est après pt2, on retourne donc la distance pt pt2
+      let x = pt.x - pt2.x;
+      let y = pt.y - pt2.y;
+      return Math.sqrt(x*x + y*y);
+    }
+    //On calcule le déterminant de vec et seg
+    let det = vec.x * seg.y - vec.y * seg.x;
+    //Et on divise par la longueur du segment
+    return Math.abs(det) / Math.sqrt(dseg);
   }
 
   //options peut avoir les champs:
@@ -4826,16 +4880,7 @@ var COFantasy = COFantasy || function() {
             case 'attribut':
               if (condition.valeur === undefined)
                 return !attributeAsBool(perso, condition.attribute);
-              let attr;
-              if (condition.fiche) {
-                attr = ficheAttribute(perso, condition.attribute, condition.fiche.def);
-                if (attr === undefined) return true;
-                return (attr + '').toLowerCase() != condition.valeur;
-              }
-              if (condition.local) attr = tokenAttribute(perso, condition.attribute);
-              else attr = charAttribute(perso.charId, condition.attribute);
-              if (attr.length === 0) return true;
-              return (attr[0].get('current') + '').toLowerCase() != condition.valeur;
+              return testAttribut(perso, condition.attrbute, condition.valeur, condition);
           }
           return false;
         case 'mana':
@@ -7958,7 +8003,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function closeIte(scope) {
-    var ps = scope.parentScope;
+    let ps = scope.parentScope;
     if (ps === undefined) return;
     log("Il manque un endif");
     delete scope.parentScope;
@@ -8110,9 +8155,8 @@ var COFantasy = COFantasy || function() {
       switch (cmd[0]) {
         case 'enflamme':
         case 'ignoreMoitieRD':
-        case 'pressionMortelle':
-        case 'tempDmg':
         case 'malediction':
+        case 'pressionMortelle':
         case 'pietine':
         case 'percute':
         case 'maxDmg':
@@ -8122,6 +8166,7 @@ var COFantasy = COFantasy || function() {
         case 'etreinteScorpion':
         case 'seulementDistance':
         case 'seulementContact':
+        case 'tempDmg':
           scope[cmd[0]] = true;
           return;
         case 'affute':
@@ -8133,6 +8178,7 @@ var COFantasy = COFantasy || function() {
         case 'attaqueRisquee':
         case 'attaqueOptions':
         case 'beni':
+        case 'spectral':
         case 'choc':
         case 'epieu':
         case 'hache':
@@ -9555,10 +9601,13 @@ var COFantasy = COFantasy || function() {
       case 'energie':
         options.type = weaponStats.typeDegats;
         break;
+      case 'magique':
+        options.magique = true;
+        options.type = 'energie'; //Les dégâts magiques sans type associé sont supposés de type énergie, l'équivalent de force dans PF1
+        break;
       case 'tranchant':
       case 'percant':
       case 'contondant':
-      case 'magique':
         options[weaponStats.typeDegats] = true;
         break;
     }
@@ -9740,6 +9789,23 @@ var COFantasy = COFantasy || function() {
     return charAttributeAsInt(perso, originalAttr, 0);
   }
 
+  //test si l'attribut est présent et si sa valeur est bonne
+  // options peut contenir
+  // fiche : si on cherche un attribut de fiche, et dans ce cas, le champ def donne la valeur par défaut
+  // local : si c'est un attribut différent selon le mook
+  function testAttribut(perso, attrName, valeur, options) {
+          let attr;
+          if (options.fiche) {
+            attr = ficheAttribute(perso, attrName, options.fiche.def);
+            if (attr === undefined) return false;
+            return (attr + '').toLowerCase() == valeur;
+          }
+          if (options.local) attr = tokenAttribute(perso, attrName);
+          else attr = charAttribute(perso.charId, attrName);
+          if (attr.length === 0) return false;
+          return (attr[0].get('current') + '').toLowerCase() == valeur;
+  }
+
   function testCondition(cond, attaquant, cibles, deAttaque, options) {
     if (cond == 'toujoursVrai') return true;
     switch (cond.type) {
@@ -9773,49 +9839,20 @@ var COFantasy = COFantasy || function() {
             }
             return false;
           }
-          let attr;
-          if (cond.fiche) {
-            attr = ficheAttribute(attaquant, cond.attribute, cond.fiche.def);
-            if (attr === undefined) return false;
-            return (attr + '').toLowerCase() == cond.valeur;
-          }
-          if (cond.local) attr = tokenAttribute(attaquant, cond.attribute);
-          else attr = charAttribute(attaquant.charId, cond.attribute);
-          if (attr.length === 0) return false;
-          return (attr[0].get('current') + '').toLowerCase() == cond.valeur;
+          return testAttribut(attaquant, cond.attrbute, cond.valeur, cond);
         }
       case 'attributCible':
         {
-          let resAttrCible = true;
           if (cond.valeur === undefined) {
-            cibles.forEach(function(target) {
-              if (resAttrCible && !attributeAsBool(target, cond.attribute))
-                resAttrCible = false;
+            let res = cibles.every(function(target) {
+              return attributeAsBool(target, cond.attribute);
             });
-          } else {
-            cibles.forEach(function(target) {
-              if (resAttrCible) {
-                let attr;
-                if (cond.fiche) {
-                  attr = ficheAttribute(target, cond.attribute, cond.fiche.def);
-                  if (attr === undefined) {
-                    resAttrCible = false;
-                    return;
-                  }
-                  resAttrCible = (attr + '').toLowerCase() == cond.valeur;
-                  return;
-                }
-                if (cond.local) attr = tokenAttribute(target, cond.attribute);
-                else attr = charAttribute(target.charId, cond.attribute);
-                if (attr.length === 0) {
-                  resAttrCible = false;
-                  return;
-                }
-                resAttrCible = (attr[0].get('current') + '').toLowerCase() == cond.valeur;
-              }
-            });
+            return res;
           }
-          return resAttrCible;
+            let res = cibles.every(function(target) {
+              return testAttribut(target, cond.attrbute, cond.valeur, cond);
+            });
+            return res;
         }
       case 'predicatCible':
         let resp = cibles.every(function(target) {
@@ -11082,17 +11119,19 @@ var COFantasy = COFantasy || function() {
     if (persoEstPNJ(target)) {
       defense = ficheAttributeAsInt(target, 'pnj_def', 10);
     } else {
-      if (target.defautCuirasse === undefined) {
+      if (target.defautCuirasse === undefined && (!attaquant || !predicateAsBool(attaquant, 'creatureIntangible'))) {
+      if (!attaquant || !predicateAsBool(attaquant, 'creatureIntangible')) {
         defense += defenseArmure(target);
-        if (attributeAsBool(target, 'armureDuMage')) {
-          let bonusArmureDuMage = getValeurOfEffet(target, 'armureDuMage', 4);
-          if (defense > 12) defense += bonusArmureDuMage / 2; // On a déjà une armure physique, ça ne se cumule pas.
-          else defense += bonusArmureDuMage;
-        }
         if (attributeAsBool(target, 'armureDEau')) {
           let bonusArmureDEau = getValeurOfEffet(target, 'armureDEau', 2);
           defense += bonusArmureDEau;
           explications.push("Armure d'eau : +" + bonusArmureDEau + " en DEF");
+        }
+      }
+        if (attributeAsBool(target, 'armureDuMage')) {
+          let bonusArmureDuMage = getValeurOfEffet(target, 'armureDuMage', 4);
+          if (defense > 12) defense += bonusArmureDuMage / 2; // On a déjà une armure physique, ça ne se cumule pas.
+          else defense += bonusArmureDuMage;
         }
         defense += ficheAttributeAsInt(target, 'DEFDIV', 0);
       } // Dans le cas contraire, on n'utilise pas ces bonus
@@ -12455,7 +12494,7 @@ var COFantasy = COFantasy || function() {
       if (persoEstPNJ(target)) {
         if (ficheAttributeAsBool(target, 'defarmureon', false)) targetArmorDef = 5;
       } else {
-        targetArmorDef = parseInt(getAttrByName(target.charId, "defarmure"));
+        targetArmorDef = defenseArmure(target);
       }
       if (isNaN(targetArmorDef) || targetArmorDef === 0) {
         attBonus += 2;
@@ -13884,30 +13923,22 @@ var COFantasy = COFantasy || function() {
             strict1: true,
             strict2: true
           });
-        let pta = tokenCenter(tokenOrigine);
-        let ptt = tokenCenter(targetToken);
+        let pta = pointOfToken(tokenOrigine);
+        let ptt = pointOfToken(targetToken);
         switch (options.aoe.type) {
           case 'ligne':
             {
               if (distanceTarget < portee) { //la ligne va plus loin que la cible
                 let scale = portee * 1.0 / distanceTarget;
-                ptt = [
-                  Math.round((ptt[0] - pta[0]) * scale) + pta[0],
-                  Math.round((ptt[1] - pta[1]) * scale) + pta[1]
-                ];
+                ptt = {
+                  x:Math.round((ptt.x - pta.x) * scale) + pta.x,
+                  y:Math.round((ptt.y - pta.y) * scale) + pta.y
+                };
               }
               if (targetToken.get('bar1_max') == 0) { // jshint ignore:line
                 //C'est juste un token utilisé pour définir la ligne
                 if (options.fx) {
-                  let p1e = {
-                    x: tokenOrigine.get('left'),
-                    y: tokenOrigine.get('top'),
-                  };
-                  let p2e = {
-                    x: targetToken.get('left'),
-                    y: targetToken.get('top'),
-                  };
-                  spawnFxBetweenPoints(p1e, p2e, options.fx, pageId);
+                  spawnFxBetweenPoints(pta, ptt, options.fx, pageId);
                 }
                 cibles = [];
                 targetToken.remove(); //On l'enlève, normalement plus besoin
@@ -13928,8 +13959,7 @@ var COFantasy = COFantasy || function() {
                   charId: objCharId
                 };
                 if (nePeutPlusPrendreDM(cible, options)) return; //pas de dégâts aux morts
-                let pt = tokenCenter(obj);
-                let distToTrajectory = VecMath.ptSegDist(pt, pta, ptt);
+                let distToTrajectory = distancePixTokenSegment(obj, pta, ptt);
                 if (distToTrajectory > (obj.get('width') + obj.get('height')) / 4 + PIX_PER_UNIT / 4)
                   return;
                 cible.tokName = obj.get('name');
@@ -13984,12 +14014,6 @@ var COFantasy = COFantasy || function() {
               }
               page = page || getObj("page", pageId);
               murs = getWalls(page, pageId, murs);
-              if (murs) {
-                pc = {
-                  x: ptt[0],
-                  y: ptt[1],
-                };
-              }
               let allToksDisque =
                 findObjs({
                   _type: "graphic",
@@ -14016,7 +14040,7 @@ var COFantasy = COFantasy || function() {
                 let objChar = getObj('character', objCharId);
                 if (objChar === undefined) return;
                 if (murs) {
-                  if (obstaclePresent(obj.get('left'), obj.get('top'), pc, murs)) return;
+                  if (obstaclePresent(obj.get('left'), obj.get('top'), ptt, murs)) return;
                 }
                 if (options.aoe.souffleDeMort) {
                   if (!options.aoe.souffleDeMort.allies.has(objCharId)) return;
@@ -14036,18 +14060,11 @@ var COFantasy = COFantasy || function() {
               break;
             }
           case 'cone':
+            {
             if (options.fx) {
-              let p1eC = {
-                x: tokenOrigine.get('left'),
-                y: tokenOrigine.get('top'),
-              };
-              let p2eC = {
-                x: targetToken.get('left'),
-                y: targetToken.get('top'),
-              };
-              spawnFxBetweenPoints(p1eC, p2eC, options.fx, pageId);
+              spawnFxBetweenPoints(pta, ptt, options.fx, pageId);
             }
-            let vecCentre = VecMath.normalize(VecMath.vec(pta, ptt));
+            let vecCentre = vecteurUnitaire(pta, ptt);
             let cosAngle = Math.cos(options.aoe.angle * Math.PI / 360.0);
             //Pour éviter des artfacts d'arrondi:
             cosAngle = (Math.floor(cosAngle * 1000000)) / 1000000;
@@ -14058,12 +14075,6 @@ var COFantasy = COFantasy || function() {
             }
             page = page || getObj("page", pageId);
             murs = getWalls(page, pageId, murs);
-            if (murs) {
-              pc = {
-                x: pta[0],
-                y: pta[1],
-              };
-            }
             let allToksCone =
               findObjs({
                 _type: "graphic",
@@ -14080,20 +14091,22 @@ var COFantasy = COFantasy || function() {
                 charId: objCharId
               };
               if (nePeutPlusPrendreDM(cible, options)) return; //pas de dégâts aux morts
-              let pt = tokenCenter(obj);
-              let vecObj = VecMath.normalize(VecMath.vec(pta, pt));
-              if (VecMath.dot(vecCentre, vecObj) < cosAngle) return;
+              let pt = pointOfToken(obj);
+              let vecObj = vecteurUnitaire(pta, pt);
+              if (vecCentre.x * vecObj.x + vecCentre.y * vecObj.y < cosAngle) 
+              return;
               // La distance sera comparée à la portée plus loin
               let objChar = getObj('character', objCharId);
               if (objChar === undefined) return;
               if (murs) {
-                if (obstaclePresent(pt[0], pt[1], pc, murs)) return;
+                if (obstaclePresent(pt.x, pt.y, pta, murs)) return;
               }
               cible.name = objChar.get('name');
               cible.tokName = obj.get('name');
               cibles.push(cible);
             });
             break;
+            }
           default:
             error("aoe inconnue", options.aoe);
             attackCallback(options);
@@ -14279,12 +14292,12 @@ var COFantasy = COFantasy || function() {
       //On calcule la longueur des diagonales du rectangle minimal
       let diag = Math.sqrt((l2 - l1) * (l2 - l1) + (t2 - t1) * (t2 - t1));
       if (diag > maxpix) {
-        let centre = [(l1 + l2) / 2, (t1 + t2) / 2];
+        let centre = {x:(l1 + l2) / 2, y:(t1 + t2) / 2};
         //C'est approché, mais sûrement assez bon pour ce qui nous occupe
         let tropLoin = cibles.some(function(target) {
-          let pt = tokenCenter(target.token);
+          let pt = pointOfToken(target.token);
           attackCallback(options);
-          return (VecMath.length(VecMath.vec(centre, pt)) > maxpix + 1);
+          return (distancePoints(centre, pt) > maxpix + 1);
         });
         if (tropLoin) {
           sendPlayer(playerName, "Cibles trop éloignées les unes des autres");
@@ -14935,8 +14948,8 @@ var COFantasy = COFantasy || function() {
     if (options.interposer) {
       return dealDamageAfterOthers(target, crit, {}, evt, expliquer, displayRes, options.interposer, dmg.display, false);
     }
-    if ((attributeAsBool(target, 'intangible') && attributeAsInt(target, 'intangibleValeur', 1)) ||
-      (attributeAsBool(target, 'intangibleInvisible') && attributeAsInt(target, 'intangibleInvisibleValeur', 1)) ||
+    if ((!options.spectral && attributeAsBool(target, 'intangible') && attributeAsInt(target, 'intangibleValeur', 1)) ||
+      (!options.spectral && attributeAsBool(target, 'intangibleInvisible') && attributeAsInt(target, 'intangibleInvisibleValeur', 1)) ||
       attributeAsBool(target, 'ombreMortelle') ||
       (options.aoe === undefined &&
         attributeAsBool(target, 'formeGazeuse')) ||
@@ -14952,7 +14965,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (!options.magique && !options.sortilege && dmg.type != 'magique' &&
-      predicateOrAttributeAsBool(target, 'immunite_nonMagique')) {
+      (predicateOrAttributeAsBool(target, 'immunite_nonMagique') || predicateAsBool(target, 'creatureIntangible'))) {
       expliquer("L'attaque ne semble pas affecter " + nomPerso(target));
       if (displayRes) displayRes('0', 0, 0);
       return 0;
@@ -19894,6 +19907,9 @@ var COFantasy = COFantasy || function() {
     if (!options.sortilege && attributeAsBool(target, 'flou')) {
       divide();
     }
+    if (!options.energiePositive && dmgType != 'energie' && !options.spectral && predicateAsBool(target, 'creatureIntangible')) {
+      divide();
+    }
     if (options.attaqueMentale && predicateAsBool(target, 'bouclierPsi')) {
       divide();
     }
@@ -21214,10 +21230,6 @@ var COFantasy = COFantasy || function() {
     return toEvaluate.replace(/@{/g, "@{" + name + "|");
   }
 
-  function tokenCenter(tok) {
-    return [tok.get('left'), tok.get('top')];
-  }
-
   // Retourne le diamètre d'un disque inscrit dans un carré de surface
   // équivalente à celle du token
   function tokenSizeAsCircle(token) {
@@ -21225,20 +21237,15 @@ var COFantasy = COFantasy || function() {
     return Math.sqrt(surface);
   }
 
-  function distancePixToken(tok1, tok2) {
-    let x = tok1.get('left') - tok2.get('left');
-    let y = tok1.get('top') - tok2.get('top');
-    return Math.sqrt(x * x + y * y);
-  }
-
   function malusDistance(perso1, tok2, distanceDeBase, portee, pageId, explications, ignoreObstacles) {
     // Extension de distance pour tir parabolique
     let tirParabolique = predicateAsBool(perso1, 'tirParabolique');
-    var distance = tirParabolique ? Math.max(0, distanceDeBase - portee) : distanceDeBase;
+    let distance = tirParabolique ? Math.max(0, distanceDeBase - portee) : distanceDeBase;
 
     if (distance === 0) return 0;
-    var tok1 = perso1.token;
-    var mPortee = (distance <= portee) ? 0 : (Math.ceil(5 * (distance - portee) / portee));
+    let tok1 = perso1.token;
+    let mPortee = 
+      (distance <= portee) ? 0 : (Math.ceil(5 * (distance - portee) / portee));
     if (mPortee > 0) {
       explications.push("Distance > " + ((tirParabolique) ? portee * 2 : portee) + " m => -" + mPortee + " en Attaque");
     }
@@ -21282,10 +21289,9 @@ var COFantasy = COFantasy || function() {
       if (obj_dist > dp) return;
       obj_dist = distancePixToken(tok2, obj);
       if (obj_dist > dp) return;
-      let pt1 = tokenCenter(tok1);
-      let pt2 = tokenCenter(tok2);
-      let pt = tokenCenter(obj);
-      let distToTrajectory = VecMath.ptSegDist(pt, pt1, pt2);
+      let pt1 = pointOfToken(tok1);
+      let pt2 = pointOfToken(tok2);
+      let distToTrajectory = distancePixTokenSegment(obj, pt1, pt2);
       // On modélise le token comme un disque
       let rayonObj = tokenSizeAsCircle(obj) / 2;
       if (distToTrajectory > rayonObj) return;
@@ -31764,20 +31770,16 @@ var COFantasy = COFantasy || function() {
 
   function appliquerEncaisserUnCoup(cible, options, evt) {
     removeTokenAttr(cible, 'encaisserUnCoup', evt);
-    cible.extraRD =
-      ficheAttributeAsInt(cible, 'defarmure', 0) *
-      ficheAttributeAsInt(cible, 'defarmureon', 0) +
-      ficheAttributeAsInt(cible, 'defbouclier', 0) *
-      ficheAttributeAsInt(cible, 'defbouclieron', 0);
+    cible.extraRD = defenseArmure(cible);
     removePreDmg(options, cible, "encaisserUnCoup");
   }
 
   //!cof-devier-les-coups, avec la personne qui encaisse sélectionnée
   function doDevierLesCoups(msg) {
-    var optionsDevier = parseOptions(msg);
+    let optionsDevier = parseOptions(msg);
     if (optionsDevier === undefined) return;
-    var cmd = optionsDevier.cmd;
-    var evt = lastEvent();
+    let cmd = optionsDevier.cmd;
+    let evt = lastEvent();
     if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
       evt = findEvent(cmd[1]);
       if (evt === undefined) {
@@ -39965,7 +39967,7 @@ var COFantasy = COFantasy || function() {
                 if (d === '') return;
                 switch (d) {
                   case 'incorporeal':
-                    predicats += 'immunite_nonMagique ';
+                    predicats += 'creatureIntangible ';
                     return;
                   case 'uncanny dodge':
                     predicats += 'immunite_surpris ';
@@ -42219,10 +42221,11 @@ var COFantasy = COFantasy || function() {
 
   //En partant de from, retourne la première position sur le segment [from, to] 
   // à distance dist de pt. S'il n'y en a pas, retourne la projection de pt sur le segment
-  function positionLigne(from, to, pt, dist) {
-    let [fx, fy] = from;
-    let [tx, ty] = to;
-    let [x, y] = pt;
+  function positionLigne(from, to, token, dist) {
+    let fx = from.x; let fy = from.y;
+    let tx = to.x; let ty = to.y;
+    let x = token.get('left');
+    let y = token.get('top');
     let a = (tx - fx) * (tx - fx) + (ty - fy) * (ty - fy);
     let b = 2 * ((fx - x) * (tx - fx) + (fy - y) * (ty - fy));
     let c = (fx - x) * (fx - x) + (fy - y) * (fy - y) - dist * dist;
@@ -42289,8 +42292,8 @@ var COFantasy = COFantasy || function() {
     if (args.length > 4) {
       restArgs = args.slice(4).join(' ');
     }
-    let ptDest = [destLeft, destTop];
-    let ptOrigin = [originLeft, originTop];
+    let ptDest = {x:destLeft, y:destTop};
+    let ptOrigin = {x:originLeft, y:originTop};
     let tropLoin = false;
     //On cherche si argument --distanceMax, pas utilisé par cof-attack
     optArgs = optArgs.filter(function(cmd) {
@@ -42305,7 +42308,7 @@ var COFantasy = COFantasy || function() {
         error("la distance max n'est pas un nombre positif", cmd);
         return false;
       }
-      let distancePix = VecMath.length(VecMath.vec(ptOrigin, ptDest));
+      let distancePix = distancePoints(ptOrigin, ptDest);
       let distance = ((distancePix / PIX_PER_UNIT) * scale);
       if (distance > distanceMax) {
         sendPlayer(msg, "Ligne d'attaque trop grande, choisir une destination plus proche");
@@ -42329,8 +42332,8 @@ var COFantasy = COFantasy || function() {
     });
     let attRayon = tokenSize(attaquant.token, 0);
     let overLap = tokens.some(function(tok) {
-      let pt = tokenCenter(tok);
-      let distancePix = VecMath.length(VecMath.vec(pt, ptDest));
+      let pt = pointOfToken(tok);
+      let distancePix = distancePoints(pt, ptDest);
       return distancePix < attRayon + tokenSize(tok, 0);
     });
     if (overLap) {
@@ -42358,15 +42361,15 @@ var COFantasy = COFantasy || function() {
         charId: tok.get('represents')
       };
       if (nePeutPlusPrendreDM(cible, {})) return; //pas de dégâts aux morts
-      let pt = tokenCenter(tok);
-      let distToTrajectory = VecMath.ptSegDist(pt, ptOrigin, ptDest);
+      let distToTrajectory = distancePixTokenSegment(tok, ptOrigin, ptDest);
       if (distToTrajectory > attRayon + tokenSize(tok, 0))
         return;
       cible.tokName = tok.get('name');
       let tokChar = getObj('character', cible.charId);
       if (tokChar === undefined) return;
       cible.name = tokChar.get('name');
-      cible.distanceOrigine = VecMath.length(VecMath.vec(ptOrigin, pt));
+      let pt = pointOfToken(tok);
+      cible.distanceOrigine = distancePoints(ptOrigin, pt);
       cibles.push(cible);
     });
     if (cibles.length === 0) {
@@ -42393,7 +42396,7 @@ var COFantasy = COFantasy || function() {
     cibles.forEach(function(cible) {
       let nextAttack = combat.attackId + 1;
       let dist = attRayon + tokenSize(cible.token, 0);
-      let [left, top] = positionLigne(ptOrigin, ptDest, tokenCenter(cible.token), dist);
+      let [left, top] = positionLigne(ptOrigin, ptDest, cible.token, dist);
       let comAttaque = '!cof-attack ' + attaquant.token.id + ' ' + cible.token.id + ' ' + restArgs + ' --attackId ' + nextAttack;
       let comSkip = '!cof-skip-attack ' + nextAttack;
       let m = boutonSimple(comAttaque, "Attaquer " + cible.tokName) + " ou " +
@@ -46178,13 +46181,9 @@ var COFantasy = COFantasy || function() {
         lumiere = tokensLumiere.shift();
         if (tokensLumiere.length > 0) {
           //On cherche le token le plus proche de la position précédente
-          var d =
-            VecMath.length(
-              VecMath.vec([lumiere.get('left'), lumiere.get('top')], [prev.left, prev.top]));
+          let d = distanceTokenPrev(lumiere, prev);
           tokensLumiere.forEach(function(tl) {
-            var d2 =
-              VecMath.length(
-                VecMath.vec([tl.get('left'), tl.get('top')], [prev.left, prev.top]));
+            let d2 = distanceTokenPrev(tl, prev);
             if (d2 < d) {
               d = d2;
               lumiere = tl;
