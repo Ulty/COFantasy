@@ -3223,10 +3223,13 @@ var COFantasy = COFantasy || function() {
   function vecteurUnitaire(pt1, pt2) {
     let x = pt2.x - pt1.x;
     let y = pt2.y - pt1.y;
-    let n = Math.sqrt(x*x + y*y);
+    let n = Math.sqrt(x * x + y * y);
     x = x / n;
     y = y / n;
-    return {x, y};
+    return {
+      x,
+      y
+    };
   }
 
   function distancePoints(pt1, pt2) {
@@ -3249,25 +3252,34 @@ var COFantasy = COFantasy || function() {
   }
 
   function pointOfToken(token) {
-    return {x:token.get('left'), y:token.get('top')};
+    return {
+      x: token.get('left'),
+      y: token.get('top')
+    };
   }
 
   //Distance en pixels entre un token et un segment
   //le segment est donné par ses extrémités, sous forme de {x, y}
   function distancePixTokenSegment(token, pt1, pt2) {
     let pt = pointOfToken(token);
-    let seg = {x:pt2.x-pt1.x, y:pt2.y-pt1.y};
-    let vec = {x:pt.x-pt1.x, y:pt.y-pt1.y}; //vecteur de pt1 à pt
+    let seg = {
+      x: pt2.x - pt1.x,
+      y: pt2.y - pt1.y
+    };
+    let vec = {
+      x: pt.x - pt1.x,
+      y: pt.y - pt1.y
+    }; //vecteur de pt1 à pt
     //On regarde d'abord si le projeté de token sur (pt1, pt2) est dans le segment
-    let ps = seg.x*vec.x + seg.y*vec.y;
-    if (ps <= 0) {//On est avant pt1
-      return Math.sqrt(vec.x*vec.x + vec.y*vec.y);
+    let ps = seg.x * vec.x + seg.y * vec.y;
+    if (ps <= 0) { //On est avant pt1
+      return Math.sqrt(vec.x * vec.x + vec.y * vec.y);
     }
-    let dseg = seg.x*seg.x + seg.y*seg.y;
-    if (ps >= dseg) {//On est après pt2, on retourne donc la distance pt pt2
+    let dseg = seg.x * seg.x + seg.y * seg.y;
+    if (ps >= dseg) { //On est après pt2, on retourne donc la distance pt pt2
       let x = pt.x - pt2.x;
       let y = pt.y - pt2.y;
-      return Math.sqrt(x*x + y*y);
+      return Math.sqrt(x * x + y * y);
     }
     //On calcule le déterminant de vec et seg
     let det = vec.x * seg.y - vec.y * seg.x;
@@ -9794,16 +9806,16 @@ var COFantasy = COFantasy || function() {
   // fiche : si on cherche un attribut de fiche, et dans ce cas, le champ def donne la valeur par défaut
   // local : si c'est un attribut différent selon le mook
   function testAttribut(perso, attrName, valeur, options) {
-          let attr;
-          if (options.fiche) {
-            attr = ficheAttribute(perso, attrName, options.fiche.def);
-            if (attr === undefined) return false;
-            return (attr + '').toLowerCase() == valeur;
-          }
-          if (options.local) attr = tokenAttribute(perso, attrName);
-          else attr = charAttribute(perso.charId, attrName);
-          if (attr.length === 0) return false;
-          return (attr[0].get('current') + '').toLowerCase() == valeur;
+    let attr;
+    if (options.fiche) {
+      attr = ficheAttribute(perso, attrName, options.fiche.def);
+      if (attr === undefined) return false;
+      return (attr + '').toLowerCase() == valeur;
+    }
+    if (options.local) attr = tokenAttribute(perso, attrName);
+    else attr = charAttribute(perso.charId, attrName);
+    if (attr.length === 0) return false;
+    return (attr[0].get('current') + '').toLowerCase() == valeur;
   }
 
   function testCondition(cond, attaquant, cibles, deAttaque, options) {
@@ -9849,10 +9861,10 @@ var COFantasy = COFantasy || function() {
             });
             return res;
           }
-            let res = cibles.every(function(target) {
-              return testAttribut(target, cond.attrbute, cond.valeur, cond);
-            });
-            return res;
+          let res = cibles.every(function(target) {
+            return testAttribut(target, cond.attrbute, cond.valeur, cond);
+          });
+          return res;
         }
       case 'predicatCible':
         let resp = cibles.every(function(target) {
@@ -11120,14 +11132,14 @@ var COFantasy = COFantasy || function() {
       defense = ficheAttributeAsInt(target, 'pnj_def', 10);
     } else {
       if (target.defautCuirasse === undefined && (!attaquant || !predicateAsBool(attaquant, 'creatureIntangible'))) {
-      if (!attaquant || !predicateAsBool(attaquant, 'creatureIntangible')) {
-        defense += defenseArmure(target);
-        if (attributeAsBool(target, 'armureDEau')) {
-          let bonusArmureDEau = getValeurOfEffet(target, 'armureDEau', 2);
-          defense += bonusArmureDEau;
-          explications.push("Armure d'eau : +" + bonusArmureDEau + " en DEF");
+        if (!attaquant || !predicateAsBool(attaquant, 'creatureIntangible')) {
+          defense += defenseArmure(target);
+          if (attributeAsBool(target, 'armureDEau')) {
+            let bonusArmureDEau = getValeurOfEffet(target, 'armureDEau', 2);
+            defense += bonusArmureDEau;
+            explications.push("Armure d'eau : +" + bonusArmureDEau + " en DEF");
+          }
         }
-      }
         if (attributeAsBool(target, 'armureDuMage')) {
           let bonusArmureDuMage = getValeurOfEffet(target, 'armureDuMage', 4);
           if (defense > 12) defense += bonusArmureDuMage / 2; // On a déjà une armure physique, ça ne se cumule pas.
@@ -13931,8 +13943,8 @@ var COFantasy = COFantasy || function() {
               if (distanceTarget < portee) { //la ligne va plus loin que la cible
                 let scale = portee * 1.0 / distanceTarget;
                 ptt = {
-                  x:Math.round((ptt.x - pta.x) * scale) + pta.x,
-                  y:Math.round((ptt.y - pta.y) * scale) + pta.y
+                  x: Math.round((ptt.x - pta.x) * scale) + pta.x,
+                  y: Math.round((ptt.y - pta.y) * scale) + pta.y
                 };
               }
               if (targetToken.get('bar1_max') == 0) { // jshint ignore:line
@@ -14061,51 +14073,51 @@ var COFantasy = COFantasy || function() {
             }
           case 'cone':
             {
-            if (options.fx) {
-              spawnFxBetweenPoints(pta, ptt, options.fx, pageId);
-            }
-            let vecCentre = vecteurUnitaire(pta, ptt);
-            let cosAngle = Math.cos(options.aoe.angle * Math.PI / 360.0);
-            //Pour éviter des artfacts d'arrondi:
-            cosAngle = (Math.floor(cosAngle * 1000000)) / 1000000;
-            if (targetToken.get('bar1_max') == 0) { // jshint ignore:line
-              //C'est juste un token utilisé pour définir le cone
-              cibles = [];
-              targetToken.remove(); //On l'enlève, normalement plus besoin
-            }
-            page = page || getObj("page", pageId);
-            murs = getWalls(page, pageId, murs);
-            let allToksCone =
-              findObjs({
-                _type: "graphic",
-                _pageid: pageId,
-                _subtype: "token",
-                layer: "objects"
-              });
-            allToksCone.forEach(function(obj) {
-              if (obj.id == tokenOrigine.id) return; //on ne se cible pas
-              let objCharId = obj.get('represents');
-              if (objCharId === '') return;
-              let cible = {
-                token: obj,
-                charId: objCharId
-              };
-              if (nePeutPlusPrendreDM(cible, options)) return; //pas de dégâts aux morts
-              let pt = pointOfToken(obj);
-              let vecObj = vecteurUnitaire(pta, pt);
-              if (vecCentre.x * vecObj.x + vecCentre.y * vecObj.y < cosAngle) 
-              return;
-              // La distance sera comparée à la portée plus loin
-              let objChar = getObj('character', objCharId);
-              if (objChar === undefined) return;
-              if (murs) {
-                if (obstaclePresent(pt.x, pt.y, pta, murs)) return;
+              if (options.fx) {
+                spawnFxBetweenPoints(pta, ptt, options.fx, pageId);
               }
-              cible.name = objChar.get('name');
-              cible.tokName = obj.get('name');
-              cibles.push(cible);
-            });
-            break;
+              let vecCentre = vecteurUnitaire(pta, ptt);
+              let cosAngle = Math.cos(options.aoe.angle * Math.PI / 360.0);
+              //Pour éviter des artfacts d'arrondi:
+              cosAngle = (Math.floor(cosAngle * 1000000)) / 1000000;
+              if (targetToken.get('bar1_max') == 0) { // jshint ignore:line
+                //C'est juste un token utilisé pour définir le cone
+                cibles = [];
+                targetToken.remove(); //On l'enlève, normalement plus besoin
+              }
+              page = page || getObj("page", pageId);
+              murs = getWalls(page, pageId, murs);
+              let allToksCone =
+                findObjs({
+                  _type: "graphic",
+                  _pageid: pageId,
+                  _subtype: "token",
+                  layer: "objects"
+                });
+              allToksCone.forEach(function(obj) {
+                if (obj.id == tokenOrigine.id) return; //on ne se cible pas
+                let objCharId = obj.get('represents');
+                if (objCharId === '') return;
+                let cible = {
+                  token: obj,
+                  charId: objCharId
+                };
+                if (nePeutPlusPrendreDM(cible, options)) return; //pas de dégâts aux morts
+                let pt = pointOfToken(obj);
+                let vecObj = vecteurUnitaire(pta, pt);
+                if (vecCentre.x * vecObj.x + vecCentre.y * vecObj.y < cosAngle)
+                  return;
+                // La distance sera comparée à la portée plus loin
+                let objChar = getObj('character', objCharId);
+                if (objChar === undefined) return;
+                if (murs) {
+                  if (obstaclePresent(pt.x, pt.y, pta, murs)) return;
+                }
+                cible.name = objChar.get('name');
+                cible.tokName = obj.get('name');
+                cibles.push(cible);
+              });
+              break;
             }
           default:
             error("aoe inconnue", options.aoe);
@@ -14292,7 +14304,10 @@ var COFantasy = COFantasy || function() {
       //On calcule la longueur des diagonales du rectangle minimal
       let diag = Math.sqrt((l2 - l1) * (l2 - l1) + (t2 - t1) * (t2 - t1));
       if (diag > maxpix) {
-        let centre = {x:(l1 + l2) / 2, y:(t1 + t2) / 2};
+        let centre = {
+          x: (l1 + l2) / 2,
+          y: (t1 + t2) / 2
+        };
         //C'est approché, mais sûrement assez bon pour ce qui nous occupe
         let tropLoin = cibles.some(function(target) {
           let pt = pointOfToken(target.token);
@@ -20320,12 +20335,76 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  // retourne les nombre de PR restant, undefined si les PR ne sont pas définis
+  function pointsDeRecuperation(perso) {
+    if (!ficheAttributeAsBool(perso, 'option_pr', true)) return;
+    let attrPR = charAttribute(perso.charId, 'pr', {
+      caseInsensitive: true
+    });
+    if (attrPR.length === 0) {
+      return {
+        current: 5,
+        max: 5
+      };
+    }
+    let prm = attrPR[0].get('max');
+    if (prm === '') prm = 5;
+    else {
+      prm = parseInt(prm);
+      if (isNaN(prm) || prm < 0) prm = 5;
+    }
+    let prc = attrPR[0].get('current');
+    if (prc === '') prc = 5;
+    else {
+      prc = parseInt(prc);
+      if (isNaN(prc)) prc = prm;
+      else if (prc < 0) prc = 0;
+      else if (prc > prm) prc = prm;
+    }
+    return {
+      current: prc,
+      max: prm
+    };
+  }
+
+  function enleverPointDeRecuperation(perso, evt) {
+    evt.attributes = evt.attributes || [];
+    let attrPR = charAttribute(perso.charId, 'pr', {
+      caseInsensitive: true
+    });
+    if (attrPR.length === 0) {
+      attrPR = createObj("attribute", {
+        characterid: perso.charId,
+        name: 'pr',
+        current: 4,
+        max: 5
+      });
+      evt.attributes.push({
+        attribute: attrPR,
+      });
+      return;
+    }
+    let prc = attrPR[0].get('current');
+    if (prc === '') prc = 5;
+    else prc = parseInt(prc);
+    if (isNaN(prc) || prc < 1) {
+      sendChat("COF", "Plus de point de récupération à enlever");
+      return;
+    }
+    evt.attributes.push({
+      attribute: attrPR[0],
+      current: prc
+    });
+    attrPR[0].set('current', prc - 1);
+  }
+
   function testBlessureGrave(target, dmgTotal, expliquer, evt) {
     if (estPJ(target) && ((dmgTotal == 'mort' && reglesOptionelles.dommages.val.blessures_graves.val) ||
         (reglesOptionelles.dommages.val.degats_importants.val && dmgTotal >
           (ficheAttributeAsInt(target, 'niveau', 1) +
             ficheAttributeAsInt(target, 'constitution', 10))))) {
       let pr = pointsDeRecuperation(target);
+      if (!pr) return;
       if (pr.current > 0) {
         expliquer("Les dégâts sont si importants que " + nomPerso(target) + " perd 1 PR");
         enleverPointDeRecuperation(target, evt);
@@ -21082,8 +21161,10 @@ var COFantasy = COFantasy || function() {
         InlineColorOverride = ' background-color: #FFFEA2; color: #000;';
       }
     }
-    var expression = inlineroll.expression.replace(/=>|>=/, '&amp;ge;').replace(/>/, '&amp;gt;').replace(/<=|=</, '&amp;le;').replace(/</, '&amp;lt;');
-    var rollOut = '<span style="display: inline-block; border-radius: 5px; padding: 0 4px; ' + InlineColorOverride + '" title="' + expression + ' = ' + values.join("");
+    let expression =
+      inlineroll.expression.replace(/=>|>=/, '&amp;ge;').replace(/>/, '&amp;gt;').replace(/<=|=</, '&amp;le;').replace(/</, '&amp;lt;');
+    let rollOut =
+      '<span style="display: inline-block; border-radius: 5px; padding: 0 4px; ' + InlineColorOverride + '" title="' + expression + ' = ' + values.join("");
     rollOut += '" class="a inlinerollresult showtip tipsy-n';
     rollOut += (critCheck && failCheck) ? ' importantroll' : (critCheck ? ' fullcrit' : (failCheck ? ' fullfail' : ''));
     rollOut += '">' + inlineroll.results.total + '</span>';
@@ -21244,7 +21325,7 @@ var COFantasy = COFantasy || function() {
 
     if (distance === 0) return 0;
     let tok1 = perso1.token;
-    let mPortee = 
+    let mPortee =
       (distance <= portee) ? 0 : (Math.ceil(5 * (distance - portee) / portee));
     if (mPortee > 0) {
       explications.push("Distance > " + ((tirParabolique) ? portee * 2 : portee) + " m => -" + mPortee + " en Attaque");
@@ -22011,79 +22092,6 @@ var COFantasy = COFantasy || function() {
       delete stateCOF.tokensTemps;
     }
     addEvent(evt);
-  }
-
-  function pointsDeRecuperation(perso) {
-    // retourne les nombre de PR restant
-    let attrPR = tokenAttribute(perso, 'pointsDeRecuperation');
-    let prc = 5;
-    let prm = 5;
-    if (attrPR.length > 0) {
-      prc = parseInt(attrPR[0].get('current'));
-      prm = parseInt(attrPR[0].get('max'));
-      return {
-        current: prc,
-        max: prm
-      };
-    }
-    attrPR = charAttribute(perso.charId, 'pr', {
-      caseInsensitive: true
-    });
-    if (attrPR.length === 0) {
-      return {
-        current: 5,
-        max: 5
-      };
-    }
-    prm = attrPR[0].get('max');
-    if (prm === '') prm = 5;
-    else {
-      prm = parseInt(prm);
-      if (isNaN(prm) || prm < 0) prm = 5;
-    }
-    prc = attrPR[0].get('current');
-    if (prc === '') prc = 5;
-    else {
-      prc = parseInt(prc);
-      if (isNaN(prc)) prc = prm;
-      else if (prc < 0) prc = 0;
-      else if (prc > prm) prc = prm;
-    }
-    return {
-      current: prc,
-      max: prm
-    };
-  }
-
-  function enleverPointDeRecuperation(perso, evt) {
-    evt.attributes = evt.attributes || [];
-    let attrPR = charAttribute(perso.charId, 'pr', {
-      caseInsensitive: true
-    });
-    if (attrPR.length === 0) {
-      attrPR = createObj("attribute", {
-        characterid: perso.charId,
-        name: 'pr',
-        current: 4,
-        max: 5
-      });
-      evt.attributes.push({
-        attribute: attrPR,
-      });
-      return;
-    }
-    let prc = attrPR[0].get('current');
-    if (prc === '') prc = 5;
-    else prc = parseInt(prc);
-    if (isNaN(prc) || prc < 1) {
-      sendChat("COF", "Plus de point de récupération à enlever");
-      return;
-    }
-    evt.attributes.push({
-      attribute: attrPR[0],
-      current: prc
-    });
-    attrPR[0].set('current', prc - 1);
   }
 
   function rajouterPointDeRecuperation(perso, evt) {
@@ -23211,7 +23219,7 @@ var COFantasy = COFantasy || function() {
             sendPerso(perso, "récupère un point " + deCarac(carac));
           }
         });
-        if (bar1 >= pvmax && pr.current == pr.max) {
+        if (bar1 >= pvmax && (!pr || pr.current == pr.max)) {
           finalize();
           return;
         }
@@ -23236,7 +23244,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       let message;
-      if (reposLong && pr.current < pr.max) { // on récupère un PR
+      if (reposLong && pr && pr.current < pr.max) { // on récupère un PR
         //Sauf si on a une blessure gave
         if (getState(perso, 'blesse')) {
           let testId = 'guérir_blessure_' + perso.token.id;
@@ -23268,7 +23276,7 @@ var COFantasy = COFantasy || function() {
         finalize();
         return;
       }
-      if (!reposLong) {
+      if (!reposLong && pr) {
         if (pr.current === 0) { //pas possible de récupérer
           message = " a besoin d'une nuit complète pour récupérer";
           sendPerso(perso, message);
@@ -23311,8 +23319,8 @@ var COFantasy = COFantasy || function() {
         } else {
           message = "Après 5 minutes de repos, ";
         }
-        message +=
-          "récupère " + buildinline(roll) + "+" + bonus + " PV. Il lui reste " + pr.current + " points de récupération";
+        message += "récupère " + buildinline(roll) + "+" + bonus + " PV.";
+        if (pr) message += " Il lui reste " + pr.current + " points de récupération";
         sendPerso(perso, message);
         finalize();
       });
@@ -26057,9 +26065,11 @@ var COFantasy = COFantasy || function() {
         let aDV = ficheAttributeAsInt(perso, 'DV', 0);
         if (aDV > 0) { // correspond aux PJs
           let pr = pointsDeRecuperation(perso);
-          line =
-            "Points de récupération : " + pr.current + " / " + pr.max;
-          addLineToFramedDisplay(display, line);
+          if (pr) {
+            line =
+              "Points de récupération : " + pr.current + " / " + pr.max;
+            addLineToFramedDisplay(display, line);
+          }
           if (ficheAttributeAsInt(perso, 'option_pc', 1)) {
             let pc = 3;
             let pc_max = 3;
@@ -30105,7 +30115,7 @@ var COFantasy = COFantasy || function() {
               if (estPJ(cible) && reglesOptionelles.dommages.val.blessures_graves.val) {
                 //Il faut alors annuler la perte de PR ou la blessure grave
                 let pr = pointsDeRecuperation(cible);
-                if (pr.current > 0 || !getState(cible, 'blesse')) {
+                if (pr && (pr.current > 0 || !getState(cible, 'blesse'))) {
                   rajouterPointDeRecuperation(cible, evt);
                 } else {
                   setState(cible, 'blesse', false, evt);
@@ -42222,8 +42232,10 @@ var COFantasy = COFantasy || function() {
   //En partant de from, retourne la première position sur le segment [from, to] 
   // à distance dist de pt. S'il n'y en a pas, retourne la projection de pt sur le segment
   function positionLigne(from, to, token, dist) {
-    let fx = from.x; let fy = from.y;
-    let tx = to.x; let ty = to.y;
+    let fx = from.x;
+    let fy = from.y;
+    let tx = to.x;
+    let ty = to.y;
     let x = token.get('left');
     let y = token.get('top');
     let a = (tx - fx) * (tx - fx) + (ty - fy) * (ty - fy);
@@ -42292,8 +42304,14 @@ var COFantasy = COFantasy || function() {
     if (args.length > 4) {
       restArgs = args.slice(4).join(' ');
     }
-    let ptDest = {x:destLeft, y:destTop};
-    let ptOrigin = {x:originLeft, y:originTop};
+    let ptDest = {
+      x: destLeft,
+      y: destTop
+    };
+    let ptOrigin = {
+      x: originLeft,
+      y: originTop
+    };
     let tropLoin = false;
     //On cherche si argument --distanceMax, pas utilisé par cof-attack
     optArgs = optArgs.filter(function(cmd) {

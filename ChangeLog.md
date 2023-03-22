@@ -9,6 +9,7 @@
 * Blessure sanglante (voie du pacte vampirique)
 
 ### Autres améliorations
+* Prise en compte de l'option de jeu sans PR.
 * Utilisation d'une section munitions sur la fiche.
 * Ajout d'un prédicat bonusAttaqueMagique
 * Prédicats pour les armes.
