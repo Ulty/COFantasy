@@ -8190,6 +8190,7 @@ var COFantasy = COFantasy || function() {
         case 'attaqueRisquee':
         case 'attaqueOptions':
         case 'beni':
+        case 'peutAgripper':
         case 'spectral':
         case 'choc':
         case 'epieu':
@@ -16232,7 +16233,7 @@ var COFantasy = COFantasy || function() {
                 if (predicateAsBool(attaquant, 'champion'))
                   options.champion = true;
                 if (options.contact) {
-                  if (predicateAsBool(attaquant, 'agripper'))
+                  if (predicateAsBool(attaquant, 'agripper')||options.peutAgripper)
                     options.agripper = true;
                   if (predicateAsBool(attaquant, 'devorer'))
                     options.devorer = true;
@@ -19918,7 +19919,7 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function mitigate(target, dmgType, divide, zero, expliquer, options) {
+  function mitigate(target, dmgType, divide, zero, multiply, expliquer, options) {
     if (!options.sortilege && attributeAsBool(target, 'flou')) {
       divide();
     }
@@ -19936,6 +19937,9 @@ var COFantasy = COFantasy || function() {
     }
     if (predicateOrAttributeAsBool(target, 'resistanceA_' + dmgType) || predicateAsBool(target, 'diviseEffet_' + dmgType)) {
       divide();
+    }
+    if (predicateOrAttributeAsBool(target, 'vulnerableA_' + dmgType)) {
+      multiply();
     }
     if (predicateOrAttributeAsBool(target, 'resistanceA_nonMagique') && !options.magique && !options.sortilege) {
       divide();
@@ -20095,7 +20099,14 @@ var COFantasy = COFantasy || function() {
             dmgDisplay += '-' + dmgTotal;
             dmgTotal = 0;
           }
-        }, expliquer, options);
+        }, 
+        function() {
+          dmgTotal = Math.floor(dmgTotal * 1.5);
+          if (dmgExtra) dmgDisplay = "(" + dmgDisplay + ")";
+          dmgDisplay += " x 1.5";
+          showTotal = true;
+        },
+        expliquer, options);
     }
     let dmSuivis = {
       drain: 0
@@ -20219,7 +20230,13 @@ var COFantasy = COFantasy || function() {
                       typeDisplay += "-" + dm;
                       dm = 0;
                     }
-                  }, expliquer, options);
+                  }, 
+                  function() {
+                    dm = Math.floor(dm * 1.5);
+                    if (dmgParType[dmgType].length > 1) typeDisplay = "(" + typeDisplay + ")";
+                    typeDisplay += " x 1.5";
+                  },
+                  expliquer, options);
                 dmgTotal = addToDmgTotal(dmgTotal, dm, d, expliquer, evt);
                 dmgDisplay += "+" + typeDisplay;
                 if (_.has(dmSuivis, dmgType)) {
@@ -29350,7 +29367,7 @@ var COFantasy = COFantasy || function() {
       perso.race = ficheAttribute(perso, 'race', '');
       perso.race = perso.race.toLowerCase();
     }
-    return (perso.race == race.toLowerCase());
+    return (perso.race.includes(race.toLowerCase()));
   }
 
   function estFee(perso) {
@@ -39970,6 +39987,7 @@ var COFantasy = COFantasy || function() {
               changeAttributeName(attr, 'profil', evt);
               return;
             case 'defensive_abilities':
+              {
               let da = attr.get('current');
               let nonPrisEnCompte = '';
               da.split(',').forEach(function(d) {
@@ -40014,6 +40032,46 @@ var COFantasy = COFantasy || function() {
               });
               if (nonPrisEnCompte !== '') notes += nonPrisEnCompte + '\n';
               return;
+          }
+            case 'weaknesses':
+              {
+              let wea = attr.get('current');
+              let nonPrisEnCompte = '';
+              wea.split(',').forEach(function(w) {
+                w = w.trim();
+                if (w === '') return;
+                switch (w) {
+                  case 'resurrection vulnerability':
+                    notes += "Détruit par un sort de résurection \n";
+                    return;
+                  case 'vulnerable to acid':
+                    predicats += 'vulnerableA_acide ';
+                    return;
+                  case 'vulnerable to cold':
+                    predicats += 'vulnerableA_froid ';
+                    return;
+                  case 'vulnerable to disease':
+                    predicats += 'vulnerableA_maladie ';
+                    return;
+                  case 'vulnerable to electricity':
+                    predicats += 'vulnerableA_electrique ';
+                    return;
+                  case 'vulnerable to fire':
+                    predicats += 'vulnerableA_feu ';
+                    return;
+                  case 'vulnerable to poison':
+                    predicats += 'vulnerableA_poison ';
+                    return;
+                  default:
+                      log("Faiblesse " + w + " non connue");
+                    if (nonPrisEnCompte === '')
+                      nonPrisEnCompte = 'Faiblesses : ' + w;
+                    else nonPrisEnCompte += ', ' + w;
+                }
+              });
+              if (nonPrisEnCompte !== '') notes += nonPrisEnCompte + '\n';
+              return;
+              }
             case 'hp':
               changeAttributeName(attr, 'PV', evt);
               return;
@@ -40197,6 +40255,10 @@ var COFantasy = COFantasy || function() {
                   predicats += 'plante vegetatif ';
                   break;
                 default:
+                  if (npcType.includes('humanoid')) {
+                    predicats += 'humanoide ';
+                    break;
+                  }
                   log("npc_type non reconnue : " + npcType);
                   if (race === '') race = npcType;
               }
@@ -40589,6 +40651,12 @@ var COFantasy = COFantasy || function() {
                       ennemiJure = 'geant';
                       pasDEnnemi = false;
                     } else ennemiJure += ', geant';
+                    break;
+                  case 'humans':
+                    if (pasDEnnemi) {
+                      ennemiJure = 'humain';
+                      pasDEnnemi = false;
+                    } else ennemiJure += ', humain';
                     break;
                   default:
                     if (!e.startsWith('+')) {
@@ -42448,6 +42516,41 @@ var COFantasy = COFantasy || function() {
     attackCallback(options, evt);
   }
 
+  //!cof-vision-nocturne distance [distance vue normale]
+  function ajouterVisionNocturne(msg) {
+    let options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
+    if (cmd === undefined) {
+      error("Problème de parse options", msg.content);
+      return;
+    }
+    if (cmd.length < 2) {
+      error("Il manque un argument à !cof-vision-nocturne", cmd);
+      return;
+    }
+    let distance = parseInt(cmd[1]);
+    if (isNaN(distance) || distance < 0) {
+      error("Distance de vue incorrecte", cmd);
+      return;
+    }
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        sendPlayer(msg, "Utilisation de !cof-vision-nocturne sans sélection de token", playerId);
+        return;
+      }
+      const evt = {
+        type:'vision nocturne', };
+      addEvent(evt);
+      iterSelected(selected, function(perso) {
+        let token = perso.token;
+        setToken(token, 'has_night_vision', true, evt);
+        setToken(token, 'night_vision_effect', 'Nocturnal', evt);
+        setToken(token, 'night_vision_distance', distance, evt);
+      });
+    });
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     const command = msg.content.split(' ', 1);
@@ -42462,6 +42565,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-animation-des-objets':
         animationDesObjets(msg);
+        return;
+      case '!cof-armure-magique':
+        armureMagique(msg);
         return;
       case '!cof-attack':
         parseAttack(msg);
@@ -42481,7 +42587,7 @@ var COFantasy = COFantasy || function() {
       case '!cof-bouton-chance':
         boutonChance(msg);
         return;
-      case "!cof-bouton-pousser-kiai":
+      case '!cof-bouton-pousser-kiai':
         kiai(msg);
         return;
       case '!cof-canaliser':
@@ -42498,13 +42604,13 @@ var COFantasy = COFantasy || function() {
       case '!cof-expert-combat-dm':
         expertDuCombat(msg);
         return;
-      case "!cof-expert-combat-def":
+      case '!cof-expert-combat-def':
         expertDuCombatDEF(msg);
         return;
-      case "!cof-expert-combat-bousculer":
+      case '!cof-expert-combat-bousculer':
         expertDuCombatBousculer(msg);
         return;
-      case "!cof-explosion":
+      case '!cof-explosion':
         attaqueExplosion(msg);
         return;
       case '!cof-hors-combat': //ancienne syntaxe, plus documentée
@@ -42600,8 +42706,8 @@ var COFantasy = COFantasy || function() {
       case '!cof-undo':
         undoEvent();
         return;
-      case "!cof-armure-magique":
-        armureMagique(msg);
+      case '!cof-vision-nocturne':
+        ajouterVisionNocturne(msg);
         return;
       case "!cof-buf-def":
         bufDef(msg);
