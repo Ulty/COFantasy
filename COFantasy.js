@@ -9045,7 +9045,7 @@ var COFantasy = COFantasy || function() {
             error("Deux options pour définir une aoe", optArgs);
             return;
           }
-          var angle = 90;
+          let angle = 90;
           if (cmd.length > 1) {
             angle = parseInt(cmd[1]);
             if (isNaN(angle) || angle < 0 || angle > 360) {
@@ -18039,12 +18039,12 @@ var COFantasy = COFantasy || function() {
             save: true
           });
         }
-        if (predicateAsBool(attaquant, 'lycanthropeEventre')) {
+        if (predicateAsBool(attaquant, 'lycanthropeEventre') && attributeAsBool(attaquant, 'lycanthropie')) {
           let attr = tokenAttribute(attaquant, 'limiteParTour_eventrationReussie');
           if (attr.length > 0) {
-            let tid = attr[0].get('label');
+            let tid = attr[0].get('current');
             if (tid == target.token.id) {
-              target.additinalDmg.push({
+              target.additionalDmg.push({
                 type: 'normal',
                 value: '2d6'
               });
@@ -18412,7 +18412,8 @@ var COFantasy = COFantasy || function() {
             if (target.rollsDmg && target.rollsDmg.length >= firstCritRoll + options.additinalCritDmg.length)
               rollsCrit = target.rollsDmg;
             options.additionalCritDmg.forEach(function(dmSpec, i) {
-              var rRoll = rollsCrit.inlinerolls[rollNumber(afterEvaluateDmg[i + firstCritRoll])];
+              let rn = rollNumber(afterEvaluateDmg[i + firstCritRoll]);
+              let rRoll = rollsCrit.inlinerolls[rn];
               if (rRoll) {
                 target.additionalCritDmg.push(dmSpec);
                 dmSpec.total = dmSpec.total || rRoll.results.total;
