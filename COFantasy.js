@@ -18039,6 +18039,21 @@ var COFantasy = COFantasy || function() {
             save: true
           });
         }
+        if (predicateAsBool(attaquant, 'lycanthropeEventre')) {
+          let attr = tokenAttribute(attaquant, 'limiteParTour_eventrationReussie');
+          if (attr.length > 0) {
+            let tid = attr[0].get('label');
+            if (tid == target.token.id) {
+              target.additinalDmg.push({
+                type: 'normal',
+                value: '2d6'
+              });
+              target.messages.push("Éventration => +2d6 DM");
+            }
+          } else {
+            setTokenAttr(attaquant, 'limiteParTour_eventrationReussie', target.token.id, evt);
+          }
+        }
         let attDMBonus = attDMBonusCommun;
         //Les modificateurs de dégâts qui dépendent de la cible
         if (target.tempDmg) {
