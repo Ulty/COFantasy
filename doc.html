@@ -384,7 +384,7 @@ tr {line-height: 25px;}
                   <li><code>--etat <i>e</i></code>: si l'attaque touche, la cible passe dans l'état <i>e</i>. Il est aussi possible de spécifier une caractéristique et un seuil (comme pour <code>!cof-set-state</code>) pour faire afficher à chaque tour une action permettant de se libérer de l'état.</li>
                   <li><code>--effet <i>e duree</i></code> : ajoute à la cible l'effet temporaire <i>e</i> pour la duree spécifiée. Pour que cela soit automatiquement mis à jour, il faut utiliser le turn tracker. Noter que l'argument de durée peut être omis pour certains effets, comme ceux qui par définition durent tout le combat.</li>
                   <li><code>--valeur <i>v</i></code> : spécifie une valeur au dernier effet mentionné.</li>
-                  <li><code>--optionEffet <i>opt arg1 arg2 ...</i></code> : spécifie une option au dernier effet mentionné. L'option <i>opt</i> doit être donnée sans le <code>--</code> et sera passée telle quelle à l'effet, par exemple pour les dégâts périodiques.</li>
+                  <li><code>--optionEffet <i>opt arg1 arg2 ...</i></code> : spécifie une option au dernier effet mentionné. L'option <i>opt</i> doit être donnée sans le <code>--</code> et sera passée telle quelle à l'effet, par exemple pour les dégâts périodiques, si on ne veut pas que la RD s'applique, on pourra ajouter <code>--optionEffet ignoreRD</code>.</li>
                   <li><code>--peur <i>seuil duree</i></code> : fait un effet de peur si l'attaque touche. Le <i>seuil</i> sert pour le test de sagesse de résistance à la peur (tient compte de la capacité <b>sans peur</b> du chevalier).</li>
                   <li><code>--affaiblirCarac <i>carac n</i></code> : l'attaque diminue la caractéristique <i>carac</i> de <i>n</i>. Si <i>carac</i> est <code>random</code>, le script tire une caractéristique au hasard.</li>
                   <li><code>--plus <i>dmg</i></code> : ajoute <i>dmg</i> dégâts. Attention, si <i>dmg</i> est un simple nombre, ces dégâts sont multipliés par les critiques (sauf si de type différent de l'attaque principale). Ainsi, <code>--plus [[1d6]]</code> donnera des dégâts multipliés par les critiques (car la fonction ne voit que le résultat du jet), alors que <code>--plus 1d6</code> ne le sera pas. </li>
@@ -809,6 +809,7 @@ tr {line-height: 25px;}
                     <li><code>--targetFx <i>effet</i></code> : affiche l'effet spécial sur toutes les cibles (l'effet ne doit pas être directionnel).</li> 
                     <li><code>--son <i>son</i></code> : joue le son (normalement compatible avec Roll20AM)</li>
                     <li><code>--image <i>img</i></code> : affiche l'image dans le texte d'activation de l'effet.</li>
+                    <li><code>--tokenSide <i>n</i></code> : utilisable seulement pour les tokens à plusieurs faces. Dans ce cas, va changer la face du token en <i>n</i> (à noter que les faces sont numérotées à partir de 0). Quand l'effet se termine, le token retrouve la face qu'il avait au moment où on avait appliqué l'effet.</li>
                     <li><code>--<i>type</i></code> : il est possible d'associer un type à l'effet. L'utilisation la plus courante est le type <code>poison</code> ou <code>maladie</code>, qui vont permettre de tenir compte des bonus ou immunités contre les effets de ce type.</li>
                     <li><code>--montreActions</code> : affiche les actions du tours de la cible après avoir appliqué l'effet. Utile si les actions du tours dépendent de cet effet, pour afficher une liste à jour.</li>
                     <li><code>--degainer <i>L</i></code> : le lanceur dégaine l'arme de label <i>L</i>.</li>
@@ -1474,7 +1475,7 @@ tr {line-height: 25px;}
               <div class="decalage">
                 <h4 class="text-secondary">Voie de la magie des arcanes</h4>
                 <ol>
-                  <li><strong>Agrandissement</strong> : <code>!cof-effet-temp agrandissement [[5+@{selected|INT}]] --target @{target|token_id} --lanceur @{selected|token_id} --portee 0 --mana 0</code>.</li>
+                  <li><strong>Agrandissement</strong> : <code>!cof-effet-temp agrandissement [[5+@{selected|INT}]] --target @{target|token_id} --lanceur @{selected|token_id} --portee 0 --mana 0</code>. Si vous souhaitez qu'une arme puisse être tenue à une main quand le personnage est agrandi, ajoutez à l'arme le <a href=#predicats>prédicat</a> <code>armeDeGrand</code>.</li>
                   <li><strong>Forme gazeuse</strong> : <code>!cof-effet-temp formeGazeuse [[1d4 + @{selected|INT}]] --mana 0</code>. Au MJ de faire attention que sous cette forme, toutes les capacités sont interdites.</li>
                   <li><strong>Hâte</strong> : <code>!cof-effet-temp hate [[1d6+@{selected|INT}]] --mana 1</code>, au MJ de gérer ensuite les actions possibles chaque tour.</li>
                   <li><strong>Téléportation</strong> : Pas de support autre que <code>!cof-lancer-sort se téléporte (à [[@{selected|INTELLIGENCE}*10]] m maximum) --mana 2</code>.</li>
@@ -1639,7 +1640,7 @@ tr {line-height: 25px;}
                   </li>
                   <li><strong>Mot de mort</strong> :
                     <ul>
-                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 20, type Sortilège, modificateurs <code>pasDeDmg necromancie difficultePV</code>, options <code>--mana 3 --etat mort --save CON [[10+@{selected|INT}]] tempete 2</code>.</li>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 10, type Sortilège, modificateurs <code>pasDeDmg necromancie difficultePV</code>, options <code>--mana 3 --etat mort --save CON [[10+@{selected|INT}]] tempete 2</code>.</li>
                       <li>Objet de sort : <code>#Attaque Mot de mort --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --necromancie --difficultePV --etat mort --save CON [[10+@{selected|INT}]] tempete 2</code></li>
                     </ul>
                     Comme pour <strong>Briser les coeurs</strong>, je pense qu'on peut augmenter la difficulté du jet de résistance avec la puissance de la tempête de mana.
@@ -2098,6 +2099,10 @@ tr {line-height: 25px;}
                 </ol>
                 <h4 class="text-secondary">Voie de l'homme du peuple</h4>
                 Reporter les bonus sur la fiche et créer les compétences adéquates.
+                <h4 class="text-secondary">Voie de la fusion lycanthropique</h4>
+                <ol>
+                  <li><strong>Lycanthropie</strong> : <code>!cof-effet-temp lycanthropie [[5*@{selected|SAG}]]</code>. Si vous souhaitez un changement d'image du token, utilisez un <a href="https://wiki.roll20.net/Multi-sided_Token">token à plusieurs faces</a>. Dans la liste des faces, en partant de 0, on note <i>n</i> le numéro de la face qui contient l'image de loup-garou. Ajoutez alors <code>--tokenSide <i>n</i></code> à la commande. Par exemple, si la première face est l'image normale du personnage, et la seconde face celle d'un loup-garou, on pourra utiliser <code>!cof-effet-temp lycanthropie [[5*@{selected|SAG}]] --tokenSide 1</code>.</li>
+                </ol>
                 <h4 class="text-secondary">Voie de Morn</h4>
                 <ol>
                   <li><strong>Secrets de l'au-delà</strong> : <code>!cof-effet-temp secretsDeLAuDela 1 --mana 0</code></li>

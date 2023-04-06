@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.11
 ### Capacités
+* Lycanthropie de la Voie de la fusion lycanthropique.
 * Ajout des derniers rangs de la voie du pacte vampirique
 * Ajout d'une automatisation pour le déchaînement d'acier du barbare.
 * Attaque violente de la campagne Invicible.
@@ -9,6 +10,8 @@
 * Blessure sanglante (voie du pacte vampirique)
 
 ### Autres améliorations
+* Application du modificateur tempete aux save pour échapper à un effet ou un état.
+* Possibilité de tenir certaines armes à une main quand agrandi.
 * Prise en charge des armes batardes.
 * Prédicat pour la vulnérabilité à des éléments.
 * Prise en compte de l'option de jeu sans PR.
