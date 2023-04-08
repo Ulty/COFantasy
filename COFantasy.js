@@ -1941,6 +1941,12 @@ var COFantasy = COFantasy || function() {
     return toInt(attrsVal[0].get('current'), def);
   }
 
+  function forceLightingRefresh(pageId) {
+    let page = getObj('page', pageId);
+    if (!page) return;
+    page.set('force_lighting_refresh', true);
+  }
+
   function getTokenFields(token, pageId, charId) {
     return {
       _pageid: pageId || token.get('pageid'),
@@ -2495,8 +2501,10 @@ var COFantasy = COFantasy || function() {
           tokenFields.imgsrc = IMG_INVISIBLE;
           let tokenInvisible = createObj('graphic', tokenFields);
           if (tokenInvisible) {
-            if (tokenFields.has_bright_light_vision)
+            if (tokenFields.has_bright_light_vision) {
               tokenInvisible.set('has_bright_light_vision', true);
+              forceLightingRefresh(pageId);
+            }
             evt.tokens = evt.tokens || [];
             evt.tokens.push(tokenInvisible);
             //On met l'ancien token dans le gmlayer, car si l'image vient du marketplace, il est impossible de le recréer depuis l'API
@@ -9202,7 +9210,7 @@ var COFantasy = COFantasy || function() {
         case 'incrDmgCoef':
           scope.dmgCoef = (scope.dmgCoef || 1);
           if (cmd.length > 1) {
-            var incrDmgCoef = parseInt(cmd[1]);
+            let incrDmgCoef = parseInt(cmd[1]);
             if (isNaN(incrDmgCoef)) {
               error("L'option --incrDmgCoef attend un entier", cmd);
               return;
@@ -31675,7 +31683,7 @@ var COFantasy = COFantasy || function() {
         log("!cof-escalier requiert de sélectionner des tokens");
         return;
       }
-      var pageId = getObj('graphic', selected[0]._id).get('pageid');
+      let pageId = getObj('graphic', selected[0]._id).get('pageid');
       var escaliers = findObjs({
         _type: 'graphic',
         _pageid: pageId,
@@ -31775,7 +31783,7 @@ var COFantasy = COFantasy || function() {
             tokenObj.imgsrc = normalizeTokenImg(tokenObj.imgsrc);
             tokenObj.left = left;
             tokenObj.top = top;
-            var newToken = createObj('graphic', tokenObj);
+            let newToken = createObj('graphic', tokenObj);
             if (newToken === undefined) {
               error("Impossible de copier le token, et donc de faire le changement de carte", tokenObj);
               return;
@@ -32397,6 +32405,7 @@ var COFantasy = COFantasy || function() {
       if (opt && opt.attrAsBool) {
         evt.deletedAttributes = evt.deletedAttributes || [];
         evt.deletedAttributes.push(attribut);
+        attribut.remove();
       } else {
         let curAttribut = parseInt(attribut.get('current'));
         evt.attributes = evt.attributes || [];
@@ -32537,7 +32546,7 @@ var COFantasy = COFantasy || function() {
 
   //!cof-absorber-coup-au-bouclier id [evtid] [chance]
   function absorberCoupAuBouclier(msg) {
-    var condition = function(guerrier) {
+    let condition = function(guerrier) {
       if (ficheAttributeAsInt(guerrier, 'defbouclieron', 0) != 1) {
         sendPerso(guerrier, "ne porte pas son bouclier, il ne peut pas aborber de coup");
         return false;
@@ -32548,7 +32557,7 @@ var COFantasy = COFantasy || function() {
       "d'absorption de coup au bouclier", "d'absorber un coup au bouclier",
       " a déjà essayé d'absorber un coup au bouclier ce tour", 'force', 'contact', "le coup est absorbé !", {
         attrAsBool: true,
-        condition: condition
+        condition,
       });
   }
 
@@ -34235,7 +34244,7 @@ var COFantasy = COFantasy || function() {
             let rang = voieDesElixirs;
             let base_save = 10;
             if (predicateAsBool(forgesort, 'boutefeu') &&
-              elixir.action.contains('--feu')) {
+              elixir.action.includes('--feu')) {
               rang = rang + 1;
               base_save = base_save + 2;
             }
@@ -42834,6 +42843,7 @@ var COFantasy = COFantasy || function() {
       error("Distance de vue incorrecte", cmd);
       return;
     }
+    let pageId = options.pageId;
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         sendPlayer(msg, "Utilisation de !cof-vision-nocturne sans sélection de token", playerId);
@@ -42848,7 +42858,9 @@ var COFantasy = COFantasy || function() {
         setToken(token, 'has_night_vision', true, evt);
         setToken(token, 'night_vision_effect', 'Nocturnal', evt);
         setToken(token, 'night_vision_distance', distance, evt);
+        pageId = pageId || token.get('pageid');
       });
+      forceLightingRefresh(pageId);
     });
   }
 
@@ -46503,7 +46515,7 @@ var COFantasy = COFantasy || function() {
             if (obstaclePresent(nsx, nsy, pt, murs)) {
               //On essaie de suivre le chemin du token, à la place
               //D'abord se déplacer vers l'ancienne position de perso, au maximum de distance pixels
-              var distLoc = distance;
+              let distLoc = distance;
               if (distLoc - dp < 5) {
                 nsx = prev.left;
                 nsy = prev.top;
