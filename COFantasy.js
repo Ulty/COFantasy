@@ -23079,7 +23079,6 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('fortifie', evt, attrs);
     attrs = removeAllAttributes('limiteParJour', evt, attrs);
     attrs = removeAllAttributes('depasselimiteParJour', evt, attrs);
-    attrs = removeAllAttributes('tueurFantasmagorique', evt, attrs);
     attrs = removeAllAttributes('immunise24HA', evt, attrs);
     attrs = removeAllAttributes('testsRatesDuTour', evt, attrs);
     attrs = removeAllAttributes('pointsDeViolence', evt, attrs);
@@ -24263,6 +24262,9 @@ var COFantasy = COFantasy || function() {
         return true;
       case 'tueurFantasmagorique':
         tueurFantasmagorique(action.playerId, action.attaquant, action.cible, options);
+        return true;
+      case 'enkystementLointain':
+        enkystementLointain(action.playerId, action.attaquant, action.cible, options);
         return true;
       case 'vapeursEthyliques':
         doVapeursEthyliques(action.playerId, action.persos, options);
@@ -29031,6 +29033,9 @@ var COFantasy = COFantasy || function() {
       case 'tueurFantasmagorique':
         tueurFantasmagorique(getPlayerIdFromMsg(msg), attaquant, cible, options);
         break;
+      case 'enkystementLointain':
+        enkystementLointain(getPlayerIdFromMsg(msg), attaquant, cible, options);
+        break;
       case 'injonction':
         injonction(getPlayerIdFromMsg(msg), attaquant, cible, options);
         break;
@@ -29242,26 +29247,26 @@ var COFantasy = COFantasy || function() {
             sendChat("", endFramedDisplay(display));
             return;
           }
-          if (attributeAsBool(cible, 'tueurFantasmagorique')) {
+          if (attributeAsBool(cible, 'limiteParJour_tueurFantasmagorique')) {
             addLineToFramedDisplay(display, nomPerso(cible) + " a déjà été victime d'un tueur fantasmagorique aujourd'hui, c'est sans effet");
             sendChat("", endFramedDisplay(display));
             return;
           }
-          setTokenAttr(cible, 'tueurFantasmagorique', true, evt);
-          var s = {
+          setTokenAttr(cible, 'limiteParJour_tueurFantasmagorique', true, evt);
+          const s = {
             carac: 'SAG',
             seuil: 10 + modCarac(attaquant, 'charisme')
           };
-          var niveauAttaquant = ficheAttributeAsInt(attaquant, 'niveau', 1);
-          var niveauCible = ficheAttributeAsInt(cible, 'niveau', 1);
+          const niveauAttaquant = ficheAttributeAsInt(attaquant, 'niveau', 1);
+          const niveauCible = ficheAttributeAsInt(cible, 'niveau', 1);
           if (niveauCible > niveauAttaquant)
             s.seuil -= (niveauCible - niveauAttaquant) * 5;
           else if (niveauCible < niveauAttaquant)
             s.seuil += (niveauAttaquant - niveauCible);
-          var expliquer = function(message) {
+          const expliquer = function(message) {
             addLineToFramedDisplay(display, message, 80);
           };
-          var saveOpts = {
+          const saveOpts = {
             msgPour: " pour résister au tueur fantasmagorique",
             attaquant: attaquant,
             rolls: options.rolls,
@@ -29282,7 +29287,47 @@ var COFantasy = COFantasy || function() {
               sendChat("", endFramedDisplay(display));
             });
         } else {
-          setTokenAttr(cible, 'tueurFantasmagorique', true, evt);
+          setTokenAttr(cible, 'limiteParJour_tueurFantasmagorique', true, evt);
+          sendChat("", endFramedDisplay(display));
+        }
+      }, evt);
+  }
+
+  function enkystementLointain(playerId, attaquant, cible, options) {
+    const evt = {
+      type: 'enkystementLointain',
+      action: {
+        titre: "Enkystement lointain",
+        attaquant: attaquant,
+        cible: cible,
+        options: options
+      }
+    };
+    addEvent(evt);
+    attaqueMagiqueOpposee(playerId, attaquant, cible, options,
+      function(display, reussi) {
+        if (reussi) {
+          if (attributeAsBool(cible, 'limiteParJour_enkystementLointain')) {
+            addLineToFramedDisplay(display, nomPerso(cible) + " a déjà été victime d'un enkystement lointain aujourd'hui, c'est sans effet");
+            sendChat("", endFramedDisplay(display));
+            return;
+          }
+          setTokenAttr(cible, 'limiteParJour_enkystementLointain', true, evt);
+          const niveauAttaquant = ficheAttributeAsInt(attaquant, 'niveau', 1);
+          const niveauCible = ficheAttributeAsInt(cible, 'niveau', 1);
+          let {val,roll} = rollDePlus(20);
+          let message = nomPerso(cible) + " est téléporté" + eForFemale(cible) + " à une distance de ";
+          if (niveauCible < niveauAttaquant / 2) {
+            message += (val*100) + " kilomètres.";
+          } else if (niveauCible < niveauAttaquant) {
+            message += roll + " kilomètre" + (val>1)?'s':'';
+          } else {
+            message += (val*10) + " mètres.";
+          }
+          addLineToFramedDisplay(display, message);
+          sendChat("", endFramedDisplay(display));
+        } else {
+          //Dans ce cas, pas victime, donc on permet d'autre tentatives
           sendChat("", endFramedDisplay(display));
         }
       }, evt);
@@ -35653,17 +35698,17 @@ var COFantasy = COFantasy || function() {
 
   //!cof-desarmer attaquant cible, optionellement un label d'arme
   function desarmer(msg) {
-    var cmd = msg.content.split(' ');
+    let cmd = msg.content.split(' ');
     if (cmd.length < 3) {
       error("Il manque des arguments à !cof-desarmer", msg.content);
       return;
     }
-    var guerrier = persoOfId(cmd[1], cmd[1]);
+    const guerrier = persoOfId(cmd[1], cmd[1]);
     if (guerrier === undefined) {
       error("Le premier argument de !cof-desarmer n'est pas un token valide", cmd);
       return;
     }
-    var cible = persoOfId(cmd[2], cmd[2]);
+    const cible = persoOfId(cmd[2], cmd[2]);
     if (cible === undefined) {
       error("Le deuxième argument de !cof-desarmer n'est pas un token valide", cmd);
       return;
@@ -43171,6 +43216,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-tueur-fantasmagorique':
         parseAttaqueMagique(msg, 'tueurFantasmagorique');
+        return;
+      case '!cof-enkystement-lointain':
+        parseAttaqueMagique(msg, 'enkystementLointain');
         return;
       case '!cof-injonction-mortelle':
         parseInjonctionMortelle(msg);

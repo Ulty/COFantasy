@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.11
 ### Capacités
+* Enkystement lointain.
 * Voie de prestige du messager.
 * Lycanthropie et Éventration de la Voie de la fusion lycanthropique.
 * Ajout des derniers rangs de la voie du pacte vampirique
