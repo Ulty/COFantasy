@@ -16427,7 +16427,7 @@ var COFantasy = COFantasy || function() {
                 }
               }
               if (targetd20roll >= 17 && options.contact &&
-                predicateAsBool(attaquant, 'crocEnJambe')) {
+                predicateAsBool(attaquant, 'crocEnJambe') && !predicateAsBool(target, 'volant')) {
                 if (targetd20roll >= 19 || !estQuadrupede(target)) {
                   setState(target, 'renverse', true, evt);
                   target.messages.push("tombe par terre");
@@ -16753,9 +16753,9 @@ var COFantasy = COFantasy || function() {
                     options.preDmg[target.token.id].resistanceALaMagieBarbare = true;
                   }
                   if (attributeAsBool(target, 'cercleDeProtection')) {
-                    var attrs = tokenAttribute(target, 'cercleDeProtectionValeur');
+                    let attrs = tokenAttribute(target, 'cercleDeProtectionValeur');
                     if (attrs.length > 0) {
-                      var protecteur = persoOfId(attrs[0].get('current'));
+                      let protecteur = persoOfId(attrs[0].get('current'));
                       if (protecteur) {
                         if (attributeAsInt(protecteur, "cercleDeProtectionActif", 0) > 0) {
                           options.preDmg = options.preDmg || {};
@@ -45624,6 +45624,7 @@ var COFantasy = COFantasy || function() {
           if (tokRepresents == charId) return;
           if (allies.has(tokRepresents)) return;
           if (degatsArmeeDefense[target.token.id] != undefined || degatsArmeeFull[target.token.id] != undefined) return;
+          if (predicateAsBool(perso, 'volant')) return;
           if (distanceCombat(perso.token, target.token, pageId) > rayon) return;
           if (attributeAsBool(target, 'defenseArmeeDesMorts')) {
             degatsArmeeDefense[target.token.id] = target;

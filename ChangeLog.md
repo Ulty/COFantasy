@@ -12,6 +12,7 @@
 * Blessure sanglante (voie du pacte vampirique)
 
 ### Autres améliorations
+* Prédicat "volant" pour éviter certains effets.
 * Application du modificateur tempete aux save pour échapper à un effet ou un état.
 * Possibilité de tenir certaines armes à une main quand agrandi.
 * Prise en charge des armes batardes.
