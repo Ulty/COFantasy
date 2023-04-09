@@ -6057,6 +6057,11 @@ var COFantasy = COFantasy || function() {
         expliquer("Pénalité de condition : " + bonusCondition);
       }
     }
+    if (attributeAsBool(personnage, 'sensDuDevoir')) {
+      let b = getValeurOfEffet(personnage, 'sensDuDevoir', 2);
+      expliquer("Sens du devoir => +" + b + " aux tests");
+      bonus += b;
+    }
     if (options) {
       if (options.bonus) bonus += options.bonus;
       if (options.chanceRollId && options.chanceRollId[testId])
@@ -9414,7 +9419,8 @@ var COFantasy = COFantasy || function() {
             error("Il manque une image après --" + cmd[0], cmd);
             return;
           }
-          var imgCmd = cmd[0].replace('-a', 'A').replace('-e', 'E').replace('-c', 'C').replace('-n', 'N').replace('-s', 'S').replace('-t', 'T');
+          let imgCmd =
+            cmd[0].replace('-a', 'A').replace('-e', 'E').replace('-c', 'C').replace('-n', 'N').replace('-s', 'S').replace('-t', 'T');
           if (imgCmd == 'imgAttackNormalTouch') imgCmd = 'imgAttackSucces';
           if (imgCmd == 'imgAttackChampionSucces') imgCmd = 'imgAttackSuccesChampion';
           options[imgCmd] = cmd[1];
@@ -11063,6 +11069,11 @@ var COFantasy = COFantasy || function() {
       attBonus += bonusTemp;
       explications.push("Bonus d'attaque temporaire de " + bonusTemp);
     }
+    if (attributeAsBool(personnage, 'sensDuDevoir')) {
+      let bonus = getValeurOfEffet(personnage, 'sensDuDevoir', 2);
+      explications.push("Sens du devoir => +" + bonus + " en Att");
+      attBonus += bonus;
+    }
     return attBonus;
   }
 
@@ -11753,6 +11764,11 @@ var COFantasy = COFantasy || function() {
     }
     if (predicateAsBool(target, 'toutPetit') && !attributeAsBool(target, 'grandeTaille')) {
       defense += 2;
+    }
+    if (attributeAsBool(target, 'sensDuDevoir')) {
+      let bonus = getValeurOfEffet(target, 'sensDuDevoir', 2);
+      explications.push("Sens du devoir => +" + bonus + " en DEF");
+      defense += bonus;
     }
     defense += predicateAsInt(target, 'DEF', 0);
     return defense;
@@ -25946,7 +25962,7 @@ var COFantasy = COFantasy || function() {
               degainer += armes[l].armenom;
               let pred = armes[l].armepredicats;
               if (pred && pred.includes('batarde')) {
-                degainer += " (2M)," + l + " 2mains|" + 
+                degainer += " (2M)," + l + " 2mains|" +
                   armes[l].armenom + " (1M)";
               }
               degainer += "," + l + "|";
@@ -44714,6 +44730,11 @@ var COFantasy = COFantasy || function() {
       actif: "est en conditions hostiles",
       fin: "retrouve des conditions normales",
     },
+    constructionTailleHumaine: {
+      activation: "rentre dans une construction de taille humaine.",
+      actif: "est un peu à l'étroit, le bâtiment est trop petit",
+      fin: "sort de la construction de taille humains."
+    },
     fievreux: {
       activation: "se sent fiévreux",
       activationF: "se sent fiévreuse",
@@ -44796,15 +44817,15 @@ var COFantasy = COFantasy || function() {
       actifF: "est formée de glace",
       fin: "retrouve un corps normal",
     },
+    sensDuDevoir: {
+      activation: "escorte ou transporte une missive",
+      actif: "a une mission",
+      fin: "a fini sa mission",
+    },
     sixiemeSens: {
       activation: "fait un rituel de divination",
       actif: "sait un peu à l'avance ce qu'il va se passer",
       fin: "l'effet du rituel de divination prend fin",
-    },
-    constructionTailleHumaine: {
-      activation: "rentre dans une construction de taille humaine.",
-      actif: "est un peu à l'étroit, le bâtiment est trop petit",
-      fin: "sort de la construction de taille humains."
     },
     espaceExigu: {
       activation: "entre dans un espace exigu.",

@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.11
 ### Capacités
+* Voie de prestige du messager.
 * Lycanthropie et Éventration de la Voie de la fusion lycanthropique.
 * Ajout des derniers rangs de la voie du pacte vampirique
 * Ajout d'une automatisation pour le déchaînement d'acier du barbare.
