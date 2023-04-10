@@ -28271,7 +28271,7 @@ var COFantasy = COFantasy || function() {
   function afficheOptionImage(options) {
     let img = options.image;
     let extraImg = '';
-    if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
+    if (img && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
       extraImg = '<span style="padding: 4px 0;" >  ';
       extraImg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
       extraImg += '</span>';
@@ -31119,11 +31119,7 @@ var COFantasy = COFantasy || function() {
       }
       if (options.son) playSound(options.son);
       let extraImg = afficheOptionImage(options);
-      options.messages[1] += extraImg;
-      if (options.fx && options.lanceur) {
-        let token = options.lanceur.token;
-        spawnFx(token.get('left'), token.get('top'), options.fx, token.get('pageid'));
-      }
+      options.messages[0] += extraImg;
       iterSelected(selected, function(cible) {
         if (!options.lanceur) {
           if (options.tempeteDeMana) {
@@ -31149,6 +31145,11 @@ var COFantasy = COFantasy || function() {
         }
         if (options.targetFx) {
           spawnFx(cible.token.get('left'), cible.token.get('top'), options.targetFx, cible.token.get('pageid'));
+        }
+        if (options.fx && options.lanceur) {
+          let p1 = pointOfToken(options.lanceur.token);
+          let p2 = pointOfToken(cible.token);
+                spawnFxBetweenPoints(p1, p2, options.fx, cible.token.get('pageid'));
         }
         options.messages.forEach(function(m) {
           sendPerso(cible, m, options.secret);
