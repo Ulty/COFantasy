@@ -12,6 +12,7 @@
 * Blessure sanglante (voie du pacte vampirique)
 
 ### Autres améliorations
+* Prise en compte des options image, fx et targetFx pour !cof-lancer-sort.
 * Implémentation des tremblements de terre d'Invincible.
 * Prédicat "volant" pour éviter certains effets.
 * Application du modificateur tempete aux save pour échapper à un effet ou un état.

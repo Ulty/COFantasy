@@ -6430,7 +6430,7 @@ var COFantasy = COFantasy || function() {
             fct = tremblementDeTerre;
             break;
           default:
-            error("Impossible de trouver la fonction liée à l'effet "+e, ev);
+            error("Impossible de trouver la fonction liée à l'effet " + e, ev);
             return;
         }
       }
@@ -6447,31 +6447,33 @@ var COFantasy = COFantasy || function() {
     if (pl === undefined) return;
     let playerId;
     if (pl.length > 0) playerId = pl[0]; //Utilisé juste pour la couleur
-    let display = startFramedDisplay(playerId, titre, perso, {chuchote:'GM'});
+    let display = startFramedDisplay(playerId, titre, perso, {
+      chuchote: 'GM'
+    });
     switch (d6.val) {
       case 1:
         {
           let commande = '!cof-dmg 4d6 --psave DEX 15 --titre Éboulement majeur';
-          addLineToFramedDisplay(display, "Éboulement majeur : sélectionnez les tokens dans la zone et "+boutonSimple(commande, 'cliquez ici'));
+          addLineToFramedDisplay(display, "Éboulement majeur : sélectionnez les tokens dans la zone et " + boutonSimple(commande, 'cliquez ici'));
           break;
         }
       case 2:
       case 3:
         {
           let commande = '!cof-dmg 2d6 --psave DEX 15 --titre Éboulement mineur';
-          addLineToFramedDisplay(display, "Éboulement mineur : choisissez un personnage au hasard et "+boutonSimple(commande, 'cliquez ici'));
+          addLineToFramedDisplay(display, "Éboulement mineur : choisissez un personnage au hasard et " + boutonSimple(commande, 'cliquez ici'));
           break;
         }
       case 6:
         {
           let commande = '!cof-set-state renverse true --save DEX 12';
-          addLineToFramedDisplay(display, "Le sol tremble et se fissure : sélectionnez les personnages dans une zone d'environ 10 mètres et "+boutonSimple(commande, 'cliquez ici'));
+          addLineToFramedDisplay(display, "Le sol tremble et se fissure : sélectionnez les personnages dans une zone d'environ 10 mètres et " + boutonSimple(commande, 'cliquez ici'));
           break;
         }
-      default:// 4 ou 5
+      default: // 4 ou 5
         {
           let commande = '!cof-effet-temp tremblementMineur 1';
-          addLineToFramedDisplay(display, "Tremblement mineur : sélectionnez les personnages dans la zone et "+boutonSimple(commande, 'cliquez ici'));
+          addLineToFramedDisplay(display, "Tremblement mineur : sélectionnez les personnages dans la zone et " + boutonSimple(commande, 'cliquez ici'));
           break;
         }
     }
@@ -22560,7 +22562,7 @@ var COFantasy = COFantasy || function() {
     }); //fin iteration sur les écuyers
   }
 
-   function parseOptions(msg) {
+  function parseOptions(msg) {
     let pageId, playerId;
     if (msg.selected && msg.selected.length > 0) {
       let firstSelected = getObj('graphic', msg.selected[0]._id);
@@ -28266,6 +28268,17 @@ var COFantasy = COFantasy || function() {
       turnAction(cibles[0], playerId);
   }
 
+  function afficheOptionImage(options) {
+    let img = options.image;
+    let extraImg = '';
+    if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
+      extraImg = '<span style="padding: 4px 0;" >  ';
+      extraImg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
+      extraImg += '</span>';
+    }
+    return extraImg;
+  }
+
   function effetCombat(msg) {
     let options = parseOptions(msg);
     if (options === undefined) return;
@@ -28350,13 +28363,7 @@ var COFantasy = COFantasy || function() {
       }
       initiative(selected, evt);
       let mEffet = messageEffetCombat[effet];
-      let img = options.image;
-      let extraImg = '';
-      if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
-        extraImg = '<span style="padding: 4px 0;" >  ';
-        extraImg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
-        extraImg += '</span>';
-      }
+      let extraImg = afficheOptionImage(options);
       iterSelected(selected, function(perso) {
         if (effet == 'blessureQuiSaigne' && predicateAsBool(perso, 'immuniteSaignement')) {
           sendPerso(perso, "ne saigne pas");
@@ -30606,13 +30613,7 @@ var COFantasy = COFantasy || function() {
               sendChar(charId, maxMsg + ". " + Sujet + " est déjà au maximum de PV", true);
             }
           };
-          let img = options.image;
-          let extraImg = '';
-          if (img !== "" && img !== undefined && (img.toLowerCase().endsWith(".jpg") || img.toLowerCase().endsWith(".png") || img.toLowerCase().endsWith(".gif"))) {
-            extraImg = '<span style="padding: 4px 0;" >  ';
-            extraImg += '<img src="' + img + '" style="width: 80%; display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 auto;">';
-            extraImg += '</span>';
-          }
+          let extraImg = afficheOptionImage(options);
           const printTrue = function(s) {
             if (ressourceLimiteSoinsParJour) {
               addToAttributeAsInt(soigneur, ressourceLimiteSoinsParJour, options.limiteSoinsParJour, -s, evt);
@@ -31117,12 +31118,18 @@ var COFantasy = COFantasy || function() {
         if (limiteRessources(lanceur, options, undefined, "lancer un sort", evt)) return;
       }
       if (options.son) playSound(options.son);
+      let extraImg = afficheOptionImage(options);
+      options.messages[1] += extraImg;
+      if (options.fx && options.lanceur) {
+        let token = options.lanceur.token;
+        spawnFx(token.get('left'), token.get('top'), options.fx, token.get('pageid'));
+      }
       iterSelected(selected, function(cible) {
         if (!options.lanceur) {
           if (options.tempeteDeMana) {
             if (options.tempeteDeMana.cout === 0) {
               //On demande de préciser les options
-              var optMana = {
+              const optMana = {
                 mana: options.mana,
                 dm: false,
                 soins: false,
@@ -31139,6 +31146,9 @@ var COFantasy = COFantasy || function() {
             }
           }
           if (limiteRessources(cible, options, undefined, "lancer un sort", evt)) return;
+        }
+        if (options.targetFx) {
+          spawnFx(cible.token.get('left'), cible.token.get('top'), options.targetFx, cible.token.get('pageid'));
         }
         options.messages.forEach(function(m) {
           sendPerso(cible, m, options.secret);
@@ -42278,7 +42288,8 @@ var COFantasy = COFantasy || function() {
       }
       let ev = evenements[typeEffet];
       if (!ev) {
-        ev = {... evDefaut};
+        ev = {...evDefaut
+        };
         evenements[typeEffet] = ev;
       }
       ev.min = min;
