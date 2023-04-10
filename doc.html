@@ -130,7 +130,7 @@ tr {line-height: 25px;}
           </div>
         </div>
         <div class="col-md-9 col-sm-8 content">
-          <h1>Documentation pour la version 3.11 de COFantasy</h1>
+          <h1>Documentation pour la version 3.12 de COFantasy</h1>
           <h2 class="text-primary" id="comment_utiliser_script">1. Comment utiliser Le script</h2>
           <div class="decalage">
             <h3 class="text-info" id="token_personnages">1.1 Tokens et personnages</h3>
@@ -550,7 +550,7 @@ tr {line-height: 25px;}
               <h4 class="text-secondary">Dégâts directs (sans attaquant, ou aire d'effet trop complexe pour !cof-attack) : <code>!cof-dmg <i>dm</i></code></h4>
               <div class="decalage">
                 <p>Applique des dégâts à tous les tokens sélectionnés. L'argument <i>dm</i> peut être un inline roll. Utile par exemple pour les chutes, ou bien les dégâts d'environnement, voire de pièges.<br />
-                Arguments optionels: une partie des options de <code>!cof-attack</code>, dont le type, et par exemple <code>--psave <i>carac seuil</i></code> (jet de <i>carac</i>, si supérieur au <i>seuil</i>, les dégâts sont divisés par 2).
+                Arguments optionels: une partie des options de <code>!cof-attack</code>, dont le type, et par exemple <code>--psave <i>carac seuil</i></code> (jet de <i>carac</i>, si supérieur au <i>seuil</i>, les dégâts sont divisés par 2). On peut aussi donner un titre aux dégâts en utilisant l'option <code>--titre</code>
                 </p>
                 <p> Il est possible d'infliger des dégâts sur la durée en utilisant la commande <code>!cof-effet-temp dotGen(<i>nom</i>) <i>duree</i> --valeur <i>expr</i> <i>type</i></code>. Les arguments de <code>--valeur</code> donnent l'expression à évaluer, de type lancé de dé, et le type de dégâts. Par défaut, si rien n'est précisé, c'est <code>1d6</code> et <code>normal</code>. On peut utiliser les options habituelles de <code>!cof-effet-temp</code>. Ainsi, si on souhaite infliger des dégâts de poison de 1d4+1 par tour, pendant 10 tours, avec un jet de CON difficulté 12 pour arrêter l'effet, on pourra écrire <code>!cof-effet-temp dotGen(monPoison) 10 --saveParTour CON 12 --valeur 1d4+1 poison</code>.
                 </p>
@@ -2395,7 +2395,7 @@ tr {line-height: 25px;}
                   <li><strong>Faucheuse de géants</strong>: ajouter le modifcateur <code>tueurDeGrands</code> aux attaques.</li>
                   <li><strong>Fièvre du chêne</strong> : pour ajouter encore une RD de 5 contre le feu, ajouter un <a href=#predicats>prédicat</a> <code>fievreChene</code>.</li>
                   <li><strong>Fiévreux</strong> : <code>!cof-effet fievreux</code> donne -2 en attaque, au dégâts et aux tests.</li>
-                  <li><strong>Foudres du temps</strong> : <code>!cof-foudre-du-temps</code> permet d'activer les foudres du temps. On peut donner un argument pour remplacer la valeur par défaut (13) par un autre jet de dés. Un deuxième argument permet de faire sortir la foudre pour tout jet entre les deux valeurs. Par exemple <code>!cof-foudre-du-temps 13 14</code> fait venir la foudre pour tout jet de 13 ou 14. Si votre jeu contient un son (ou playlist) nommé <code>Foudre</code> (avec la majuscule), le son sera joué à chaque fois que la foudre frappera. Finalement, <code>!cof-foudre-du-temps fin</code> met fin aux foudres du temps.</li>
+                  <li><strong>Foudres du temps</strong> : <code>!cof-effet-chaque-d20 foudresDuTemps</code> permet d'activer les foudres du temps. On peut donner un argument pour remplacer la valeur par défaut (13) par un autre jet de dés. Un deuxième argument permet de faire sortir la foudre pour tout jet entre les deux valeurs. Par exemple <code>!cof-effet-chaque-d20 foudresDuTemps 13 14</code> fait venir la foudre pour tout jet de 13 ou 14. Si votre jeu contient un son (ou playlist) nommé <code>Foudre</code> (avec la majuscule), le son sera joué à chaque fois que la foudre frappera. Finalement, <code>!cof-effet-chaque-d20 foudresDuTemps fin</code> met fin aux foudres du temps.</li>
                   <li><strong>Frénésie</strong> : Ajouter un <a href=#predicats>prédicat</a> <code>frenesie</code> avec comme valeur le nombre de PV en-dessous duquel la créature devient frénétique (+2 aus jets d'attaque).</li>
                   <li><strong>Hors de portée</strong> : ajouter un <a href=#predicats>prédicat</a> <code>horsDePortee</code></li>
                   <li><strong>Huile de fort assaut</strong> : <code>!cof-effet-temp dmgArme(<i>L</i>) 10 --valeur 1d6</code> où <i>L</i> est le label de l'arme qu'on veut enduire d'huile de fort assaut.</li>
@@ -2443,6 +2443,7 @@ tr {line-height: 25px;}
                   <li><strong>Sang de fer</strong> : ajouter un <a href=#predicats>prédicat</a> <code>sangDeFerIf</code>.</li>
                   <li><strong>Sans esprit</strong> : ajouter un <a href=#predicats>prédicat</a> <code>sansEsprit</code> permet la réussite automatique des jets de résistance basés sur INT, SAG ou CHA.</li>
                   <li><strong>Sphère de feu</strong> : <code>!cof-sphere-de-feu</code>.</li>
+                  <li><strong>Tremblements de terre</strong> : <code>!cof-effet-chaque-d20 tremblementsDeTerre</code> permet d'activer les tremblements de terre. On peut donner un argument pour remplacer la valeur par défaut (13) par un autre jet de dés. Un deuxième argument permet de faire trembler la terre pour tout jet entre les deux valeurs. Si votre jeu contient un son (ou playlist) nommé <code>TremblementTerre</code> (avec la majuscule), le son sera joué à chaque fois que la terre tremblera. Finalement, <code>!cof-effet-chaque-d20 tremblementsDeTerre fin</code> met fin aux tremblements de terre.</li>
                   <li><strong>Vision nocturne</strong> : on peut utiliser <code>!cof-vision-nocturne 18</code> pour un effet de potion de vision nocturne. Attention, pour remettre la vision habituelle, il faut encore effacer le token et remettre le token du personnage depuis la fiche.</li> 
                   <li><strong>Vulnérabilité aux coups critiques</strong> : si la créature possède un <a href=#predicats>prédicat</a> <code>vulnerableCritique</code>, le script interprète la valeur de ce prédicat comme les chances (sur 100) qu'un coup critique tue directment la créature. Par exemple, la valeur sera de 25 pour un esprit du givre.</li>
                   <li><strong>Vulnérabilité à un type de dégâts</strong> : ajouter un <a href=#predicats>prédicat</a> <code>vulnerableA_<i>type</i></code>, pour augmenter de 50% les dégâts reçus de ce type.</li>

@@ -12,6 +12,7 @@
 * Blessure sanglante (voie du pacte vampirique)
 
 ### Autres améliorations
+* Implémentation des tremblements de terre d'Invincible.
 * Prédicat "volant" pour éviter certains effets.
 * Application du modificateur tempete aux save pour échapper à un effet ou un état.
 * Possibilité de tenir certaines armes à une main quand agrandi.
