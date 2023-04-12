@@ -1621,7 +1621,7 @@ var COFantasy = COFantasy || function() {
       getState(perso, 'assomme') || getState(perso, 'etourdi') ||
       getState(perso, 'paralyse') || getState(perso, 'endormi') ||
       getState(perso, 'apeure') || attributeAsBool(perso, 'statueDeBois') ||
-      attributeAsBool(perso, 'souffleDeMort');
+      attributeAsBool(perso, 'souffleDeMort') || attributeAsBool(perso, 'petrifie');
     return !inactif;
   }
 
@@ -2234,6 +2234,7 @@ var COFantasy = COFantasy || function() {
           case 'agrippeParUnDemon':
           case 'etreinteScorpionPar':
           case 'estEcrasePar':
+          case 'petrifie':
             nePlusSuivre(personnage, pageId, evt);
             lockToken(personnage, evt);
             break;
@@ -4075,6 +4076,7 @@ var COFantasy = COFantasy || function() {
       case 'prisonVegetale':
       case 'toiles':
       case 'statueDeBois':
+      case 'petrifie':
         iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
           let perso = {
             token: token,
@@ -10512,8 +10514,7 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(perso, 'masqueDuPredateur')) {
       init += getValeurOfEffet(perso, 'masqueDuPredateur', modCarac(perso, 'sagesse'));
-    }
-    if (attributeAsBool(perso, 'masqueDuPredateurAmeLiee')) {
+    } else if (attributeAsBool(perso, 'masqueDuPredateurAmeLiee')) {
       init += getValeurOfEffet(perso, 'masqueDuPredateurAmeLiee', 1);
     }
     if (predicateAsBool(perso, 'controleDuMetabolisme')) {
@@ -10933,7 +10934,7 @@ var COFantasy = COFantasy || function() {
 
   // bonus d'attaque d'un token, indépendament des options
   // Mise en commun pour attack et attaque-magique
-  // options n'est utilisé que pour modifier éventuellement l'affichage si pas de DM
+  // options pour modifier éventuellement l'affichage si pas de DM et pour mettre à jour options.bonusDM si présent
   function bonusDAttaque(personnage, explications, evt, options) {
     explications = explications || [];
     let tempAttkMod; // Utilise la barre 3 de l'attaquant
@@ -11078,24 +11079,24 @@ var COFantasy = COFantasy || function() {
       let bonusMasque = getValeurOfEffet(personnage, 'masqueDuPredateur', modCarac(personnage, 'sagesse'));
       let masqueIntense = attributeAsInt(personnage, 'masqueDuPredateurTempeteDeManaIntense', 0);
       bonusMasque += masqueIntense;
-      if (options) options.masqueIntense = masqueIntense;
       attBonus += bonusMasque;
-      if (options && options.pasDeDmg) {
-        explications.push("Masque du prédateur : +" + bonusMasque + " en Attaque");
-      } else {
+      if (options && options.bonusDM !== undefined) {
         explications.push("Masque du prédateur : +" + bonusMasque + " en Attaque et DM");
+        options.bonusDM += bonusMasque;
+      } else {
+        explications.push("Masque du prédateur : +" + bonusMasque + " en Attaque");
       }
       if (masqueIntense)
         removeTokenAttr(personnage, 'masqueDuPredateurTempeteDeManaIntense', evt);
-    }
-    if (attributeAsBool(personnage, 'masqueDuPredateurAmeLiee')) {
+    } else if (attributeAsBool(personnage, 'masqueDuPredateurAmeLiee')) {
       let bonusMasque =
         getValeurOfEffet(personnage, 'masqueDuPredateurAmeLiee', 1);
       attBonus += bonusMasque;
-      if (options && options.pasDeDmg) {
-        explications.push("Masque du prédateur lié : +" + bonusMasque + " en Attaque");
-      } else {
+      if (options && options.bonusDM !== undefined) {
         explications.push("Masque du prédateur lié : +" + bonusMasque + " en Attaque et DM");
+        options.bonusDM += bonusMasque;
+      } else {
+        explications.push("Masque du prédateur lié : +" + bonusMasque + " en Attaque");
       }
     }
     if (attributeAsBool(personnage, 'armeSecreteBarde')) {
@@ -11149,6 +11150,22 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(personnage, 'tremblementMineur')) {
       explications.push("Tremblement mineur => -5 en Att");
       attBonus -= 5;
+    }
+    if (attributeAsBool(personnage, 'detournerLeRegard')) {
+      let bonus = getValeurOfEffet(personnage, 'detournerLeRegard', 2);
+      let msg;
+      if (bonus < 5) {
+        msg = "Détourne le regard";
+      } else {
+        msg = "Ferme les yeux";
+      }
+      msg += " => -" + bonus + " en Att";
+      if (options && options.bonusDM !== undefined) {
+        msg += " et aux DM";
+        options.bonusDM -= bonus;
+      }
+      explications.push(msg);
+      attBonus -= bonus;
     }
     return attBonus;
   }
@@ -11335,6 +11352,7 @@ var COFantasy = COFantasy || function() {
       defense = 13;
     }
     if (attributeAsBool(target, 'statueDeBois')) defense = 10;
+    else if (attributeAsBool(target, 'petrifie')) defense = 5;
     // Malus de défense global pour les longs combats
     let combat = stateCOF.combat;
     if (combat && reglesOptionelles.haute_DEF.val.usure_DEF.val &&
@@ -11846,6 +11864,15 @@ var COFantasy = COFantasy || function() {
       explications.push("Sens du devoir => +" + bonus + " en DEF");
       defense += bonus;
     }
+    if (attributeAsBool(target, 'detournerLeRegard')) {
+      let bonus = getValeurOfEffet(target, 'detournerLeRegard', 2);
+      if (bonus < 5) {
+        explications.push("Détourne le regard => -" + bonus + " en DEF");
+      } else {
+        explications.push("Ferme les yeux => -" + bonus + " en DEF");
+      }
+      defense -= bonus;
+    }
     defense += predicateAsInt(target, 'DEF', 0);
     return defense;
   }
@@ -12031,11 +12058,39 @@ var COFantasy = COFantasy || function() {
         options.fureurDrakonide = 1;
       }
     }
+    if (attributeAsBool(attaquant, 'masqueDuPredateur')) {
+      let bonusMasque = getValeurOfEffet(attaquant, 'masqueDuPredateur', modCarac(attaquant, 'sagesse'));
+      let masqueIntense = attributeAsInt(attaquant, 'masqueDuPredateurTempeteDeManaIntense', 0);
+      bonusMasque += masqueIntense;
+      options.bonusDM += bonusMasque;
+      explications.push("Masque du prédateur : +" + bonusMasque + " aux DM");
+      if (masqueIntense)
+        removeTokenAttr(attaquant, 'masqueDuPredateurTempeteDeManaIntense', evt);
+    } else if (attributeAsBool(attaquant, 'masqueDuPredateurAmeLiee')) {
+      let bonusMasque =
+        getValeurOfEffet(attaquant, 'masqueDuPredateurAmeLiee', 1);
+      if (bonusMasque > 0) {
+        options.bonusDM += bonusMasque;
+        explications.push("Masque du prédateur lié : +" + bonusMasque + " aux DM");
+      }
+    }
     if (options.attaqueFlamboyante && options.contact) {
       let bonus = modCarac(attaquant, 'charisme');
       options.attaqueFlamboyanteBonus = bonus;
       options.bonusDM += bonus;
       explications.push("Attaque flamboyante => +" + bonus + " DM");
+    }
+    if (attributeAsBool(attaquant, 'detournerLeRegard')) {
+      let bonus = getValeurOfEffet(attaquant, 'detournerLeRegard', 2);
+      let msg;
+      if (bonus < 5) {
+        msg = "Détourne le regard";
+      } else {
+        msg = "Ferme les yeux";
+      }
+      msg += " => -" + bonus + " aux DM";
+      options.bonusDM -= bonus;
+      explications.push(msg);
     }
     return;
   }
@@ -12046,7 +12101,7 @@ var COFantasy = COFantasy || function() {
     let attBonus = 0;
     if (options.bonusAttaque) attBonus += options.bonusAttaque;
     if (options.armeMagiquePlus) attBonus += options.armeMagiquePlus;
-    options.bonusDM = 0;
+    if (!options.pasDeDmg) options.bonusDM = 0;
     attBonus += bonusDAttaque(attaquant, explications, evt, options);
     if (options.tirDouble) {
       attBonus += 2;
@@ -17161,7 +17216,8 @@ var COFantasy = COFantasy || function() {
 
   function estImmuniseAEffet(target, effet) {
     if (predicateAsBool(target, 'immunite_' + effet)) return true;
-    if (effet == 'statueDeBois' && predicateAsBool(target, 'immunite_petrification')) return true;
+    if ((effet == 'statueDeBois' || effet == 'petrifie') &&
+      predicateAsBool(target, 'immunite_petrification')) return true;
     return false;
   }
 
@@ -17562,6 +17618,18 @@ var COFantasy = COFantasy || function() {
   function attaqueNeTouchePas(attaquant, echecCritique, weaponStats, display, options, evt, explications, pageId, cibles) {
     finaliseDisplay(display, explications, evt, attaquant, cibles, options, echecCritique);
     if (echecCritique) {
+      let regardPetrifiant = cibles.find(function(target) {
+        return predicateAsBool(target, 'regardPetrifiant');
+      });
+      if (regardPetrifiant && attributeAsBool(attaquant, 'detournerLeRegard') &&
+        getValeurOfEffet(attaquant, 'detournerLeRegard', 2) > 4) {
+        sendPerso(attaquant, "aperçoit " + nomPerso(regardPetrifiant) + " à travers ses paupières !");
+        let seuil = predicateAsInt(regardPetrifiant, 'regardPetrifiant', 0, 16) - 4;
+        let commande = '!cof-effet petrifie --save CON ' + seuil + ' --lanceur ' +
+          regardPetrifiant.token.id + ' --target ' + attaquant.token.id;
+        sendPerso(attaquant, "Faites un " + boutonSimple(commande, 'jet de constititution'));
+        return;
+      }
       if (stateCOF.options.affichage.val.table_crit.val)
         sendChat('COF', "[[1t[Echec-Critique-Contact]]]");
       else sendChat('COF', "/w GM " + suggererEchecCritique(attaquant, weaponStats, cibles, options, evt));
@@ -17728,27 +17796,9 @@ var COFantasy = COFantasy || function() {
         attDMBonusCommun += ' + ' + bonus;
       }
     }
-    if (attributeAsBool(attaquant, 'masqueDuPredateur')) {
-      let bonusMasque = getValeurOfEffet(attaquant, 'masqueDuPredateur', modCarac(attaquant, 'sagesse'));
-      if (options.masqueIntense) bonusMasque += options.masqueIntense;
-      if (bonusMasque > 0) {
-        attDMBonusCommun += " +" + bonusMasque;
-        if (options.auto)
-          explications.push("Masque du prédateur : +" + bonusMasque + " aux DM");
-      }
-    }
-    if (attributeAsBool(attaquant, 'masqueDuPredateurAmeLiee')) {
-      let bonusMasque =
-        getValeurOfEffet(attaquant, 'masqueDuPredateurAmeLiee', 1);
-      if (bonusMasque > 0) {
-        attDMBonusCommun += " +" + bonusMasque;
-        if (options.auto) {
-          explications.push("Masque du prédateur lié : +" + bonusMasque + " aux DM");
-        }
-      }
-    }
     if (options.bonusDM) {
-      attDMBonusCommun += " + " + options.bonusDM;
+      if (options.bonusDM > 0) attDMBonusCommun += " + " + options.bonusDM;
+      else attDMBonusCommun += " " + options.bonusDM;
     }
     let perteDeSubstance = predicateAsInt(attaquant, 'perteDeSubstance', 0);
     if (perteDeSubstance && !predicateAsBool(attaquant, 'ancreInvincible')) {
@@ -19847,6 +19897,7 @@ var COFantasy = COFantasy || function() {
   //   - msgReussite : message à afficher en cas de réussite
   //   - msgRate : message à afficher si l'action rate
   //   - silencieuxSiPasAffecte: ne rien afficher pour les cibles immunisées
+  //   - regard: l'attaque vient d'un regard, on peut détourner les yeux
   //   - attaquant : le {charId, token} de l'attaquant contre lequel le save se fait (si il y en a un)
   //   - type : le type de dégâts contre lequel on fait le save
   //   - hideSaveTitle : cache le titre du save
@@ -19946,6 +19997,31 @@ var COFantasy = COFantasy || function() {
     let seuil = s.seuil;
     if (s.contact && options.attaquant && distanceCombat(options.attaquant.token, target.token) === 0) {
       seuil = s.contact;
+    }
+    if (options.regard) {
+      if (getState(target, 'aveugle')) {
+        expliquer(nomPerso(target) + " ne voit rien.");
+        afterSave(true, '');
+        return;
+      }
+      if (attributeAsBool(target, 'detournerLeRegard')) {
+        switch (getValeurOfEffet(target, 'detournerLeRegard', 2)) {
+          case 1:
+            seuil -= 3;
+            expliquer("détourne un peu le regard => -3 à la difficulté");
+            break;
+          case 2:
+          case 3:
+          case 4:
+            seuil -= 6;
+            expliquer("détourne le regard => -6 à la difficulté");
+            break;
+          default:
+            expliquer(nomPerso(target) + " ferme les yeux");
+            afterSave(true, '');
+            return;
+        }
+      }
     }
     let carac = s.carac;
     //Cas où le save peut se faire au choix parmis 2 caracs
@@ -20971,6 +21047,7 @@ var COFantasy = COFantasy || function() {
           rd += 3;
         }
         if (attributeAsBool(target, 'statueDeBois')) rd += 10;
+        else if (attributeAsBool(target, 'petrifie')) rd += 20;
         if (attributeAsBool(target, 'mutationSilhouetteMassive')) rd += 3;
         if (crit) {
           let rdCrit = predicateAsInt(target, 'RD_critique', 0); //pour la compatibilité
@@ -21635,9 +21712,9 @@ var COFantasy = COFantasy || function() {
 
   function getBrightness(hex) {
     hex = hex.replace('#', '');
-    var c_r = hexDec(hex.substr(0, 2));
-    var c_g = hexDec(hex.substr(2, 2));
-    var c_b = hexDec(hex.substr(4, 2));
+    const c_r = hexDec(hex.substr(0, 2));
+    const c_g = hexDec(hex.substr(2, 2));
+    const c_b = hexDec(hex.substr(4, 2));
     return ((c_r * 299) + (c_g * 587) + (c_b * 114)) / 1000;
   }
 
@@ -22596,6 +22673,7 @@ var COFantasy = COFantasy || function() {
         case 'montreActions':
         case 'brumes':
         case 'silencieuxSiPasAffecte':
+        case 'regard':
           options[cmd[0]] = true;
           break;
         case 'lanceur':
@@ -25899,6 +25977,13 @@ var COFantasy = COFantasy || function() {
         command = '!cof-soin 5';
         ligne += bouton(command, "Régénération", perso) + " si source élémentaire proche<br />";
       }
+      //Regard pétrifiant
+      let regardPetrifiant = predicateAsInt(perso, 'regardPetrifiant', 0, 16);
+      if (regardPetrifiant) {
+        let c = '!cof-effet petrifie --lanceur ' + perso.token.id + ' --target @{target|token_id} --regard --save CON ';
+        ligne += boutonSimple(c + (regardPetrifiant - 4), "Regard pétrifiant") +
+          boutonSimple(c + regardPetrifiant, "(inconscient)") + '<br />';
+      }
       //Violence ciblée
       if (predicateAsBool(perso, 'violenceCiblee') && !attributeAsBool(perso, 'reactionViolente')) {
         let pointsDeViolence = attributeAsInt(perso, 'pointsDeViolence', 0);
@@ -28279,6 +28364,43 @@ var COFantasy = COFantasy || function() {
     return extraImg;
   }
 
+  function activeOuValeur(cmd, options) {
+    let activer = true;
+    let valeur = true;
+    if (cmd.length > 2) {
+      switch (cmd[2]) {
+        case 'oui':
+        case 'Oui':
+        case 'true':
+        case 'début':
+        case 'debut':
+          valeur = true;
+          activer = true;
+          break;
+        case 'non':
+        case 'Non':
+        case 'false':
+        case 'fin':
+          valeur = false;
+          activer = false;
+          break;
+        default:
+          valeur = parseInt(cmd[2]);
+          if (isNaN(valeur)) {
+            error("Option de !cof-effet inconnue", cmd);
+            return;
+          }
+          activer = valeur !== 0;
+          if (cmd[2].startsWith('+') || valeur < 0)
+            options.valeurAjoutee = valeur;
+      }
+    }
+    return {
+      activer,
+      valeur
+    };
+  }
+
   function effetCombat(msg) {
     let options = parseOptions(msg);
     if (options === undefined) return;
@@ -28295,6 +28417,13 @@ var COFantasy = COFantasy || function() {
     const evt = {
       type: 'Effet ' + effet
     };
+    let av = activeOuValeur(cmd, options);
+    if (!av) return;
+    let {
+      activer,
+      valeur
+    } = av;
+    if (!options.valeur && !isNaN(valeur)) options.valeur = valeur;
     let lanceur = options.lanceur;
     let charId;
     if (lanceur) charId = lanceur.charId;
@@ -28361,52 +28490,76 @@ var COFantasy = COFantasy || function() {
         addEvent(evt);
         return;
       }
-      initiative(selected, evt);
       let mEffet = messageEffetCombat[effet];
       let extraImg = afficheOptionImage(options);
-      iterSelected(selected, function(perso) {
-        if (effet == 'blessureQuiSaigne' && predicateAsBool(perso, 'immuniteSaignement')) {
-          sendPerso(perso, "ne saigne pas");
-          return;
-        }
-        let actMsg = messageActivation(perso, mEffet) + extraImg;
-        let effetAttr = setTokenAttr(perso, effet, true, evt, {
-          msg: whisper + actMsg
+      if (activer) {
+        initiative(selected, evt);
+        iterSelected(selected, function(perso) {
+          if (effet == 'blessureQuiSaigne' && predicateAsBool(perso, 'immuniteSaignement')) {
+            sendPerso(perso, "ne saigne pas");
+            return;
+          }
+          let actMsg = messageActivation(perso, mEffet) + extraImg;
+          let effetAttr = setTokenAttr(perso, effet, true, evt, {
+            msg: whisper + actMsg
+          });
+          if (options.lanceur && options.mana !== undefined && mEffet.prejudiciable) {
+            addEffetTemporaireLie(options.lanceur, effetAttr, evt);
+          }
+          if (options.puissant) {
+            let puissant = (options.puissant != 'off');
+            setTokenAttr(perso, effet + 'Puissant', puissant, evt);
+          }
+          if (options.valeur !== undefined) {
+            setTokenAttr(perso, effet + 'Valeur', options.valeur, evt, {
+              maxVal: options.valeurMax
+            });
+          }
+          if (options.optionsEffet !== undefined) {
+            setTokenAttr(perso, effet + 'Options', options.optionsEffet, evt);
+          }
+          if (options.saveParTour) {
+            setTokenAttr(perso, effet + 'SaveParTour', options.saveParTour.carac, evt, {
+              maxVal: options.saveParTour.seuil
+            });
+          }
+          if (options.saveActifParTour) {
+            setTokenAttr(perso, effet + 'SaveActifParTour', options.saveActifParTour.carac, evt, {
+              maxVal: options.saveActifParTour.seuil
+            });
+          }
+          if (options.tempeteDeManaIntense !== undefined) {
+            setTokenAttr(perso, effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
+          }
+          if (options.tokenSide !== undefined) {
+            let oldSide = changeTokenSide(perso, options.tokenSide, evt);
+            if (oldSide !== undefined)
+              setTokenAttr(perso, effet + 'TokenSide', oldSide, evt);
+          }
         });
-        if (options.lanceur && options.mana !== undefined && mEffet.prejudiciable) {
-          addEffetTemporaireLie(options.lanceur, effetAttr, evt);
-        }
-        if (options.puissant) {
-          let puissant = (options.puissant != 'off');
-          setTokenAttr(perso, effet + 'Puissant', puissant, evt);
-        }
-        if (options.valeur !== undefined) {
-          setTokenAttr(perso, effet + 'Valeur', options.valeur, evt, {
-            maxVal: options.valeurMax
+      } else { //on désactive
+        iterSelected(selected, function(perso) {
+          let actMsg = messageFin(perso, mEffet) + extraImg;
+          removeTokenAttr(perso, effet, evt, {
+            msg: whisper + actMsg
           });
-        }
-        if (options.optionsEffet !== undefined) {
-          setTokenAttr(perso, effet + 'Options', options.optionsEffet, evt);
-        }
-        if (options.saveParTour) {
-          setTokenAttr(perso, effet + 'SaveParTour', options.saveParTour.carac, evt, {
-            maxVal: options.saveParTour.seuil
-          });
-        }
-        if (options.saveActifParTour) {
-          setTokenAttr(perso, effet + 'SaveActifParTour', options.saveActifParTour.carac, evt, {
-            maxVal: options.saveActifParTour.seuil
-          });
-        }
-        if (options.tempeteDeManaIntense !== undefined) {
-          setTokenAttr(perso, effet + 'TempeteDeManaIntense', options.tempeteDeManaIntense, evt);
-        }
-        if (options.tokenSide !== undefined) {
-          let oldSide = changeTokenSide(perso, options.tokenSide, evt);
-          if (oldSide !== undefined)
-            setTokenAttr(perso, effet + 'TokenSide', oldSide, evt);
-        }
-      });
+          removeTokenAttr(perso, effet + 'Puissant', evt);
+          removeTokenAttr(perso, effet + 'Valeur', evt);
+          removeTokenAttr(perso, effet + 'Options', evt);
+          removeTokenAttr(perso, effet + 'SaveParTour', evt);
+          removeTokenAttr(perso, effet + 'SaveActifParTour', evt);
+          removeTokenAttr(perso, effet + 'TempeteDeManaIntense', evt);
+          //On remet la face du token
+          let attrTS = tokenAttribute(perso, effet + 'TokenSide');
+          if (attrTS.length > 0) {
+            attrTS = attrTS[0];
+            let side = attrTS.get('current');
+            changeTokenSide(perso, side, evt);
+            evt.deletedAttributes.push(attrTS);
+            attrTS.remove();
+          }
+        });
+      }
       addEvent(evt);
       if (lanceur && options.fx) {
         iterSelected(selected, function(target) {
@@ -28452,7 +28605,7 @@ var COFantasy = COFantasy || function() {
     let options = parseOptions(msg);
     if (options === undefined) return;
     let cmd = options.cmd;
-    if (cmd === undefined || cmd.length < 3) {
+    if (cmd === undefined || cmd.length < 2) {
       error("Pas assez d'arguments pour !cof-effet", msg.content);
       return;
     }
@@ -28461,36 +28614,12 @@ var COFantasy = COFantasy || function() {
       error(effet + " n'est pas un effet répertorié", msg.content);
       return;
     }
-    let activer;
-    let valeur;
-    if (cmd.length > 2) {
-      switch (cmd[2]) {
-        case 'oui':
-        case 'Oui':
-        case 'true':
-        case 'début':
-        case 'debut':
-          valeur = true;
-          activer = true;
-          break;
-        case 'non':
-        case 'Non':
-        case 'false':
-        case 'fin':
-          valeur = false;
-          activer = false;
-          break;
-        default:
-          valeur = parseInt(cmd[2]);
-          if (isNaN(valeur)) {
-            error("Option de !cof-effet inconnue", cmd);
-            return;
-          }
-          activer = valeur !== 0;
-          if (cmd[2].startsWith('+') || valeur < 0)
-            options.valeurAjoutee = valeur;
-      }
-    }
+    let av = activeOuValeur(cmd, options);
+    if (!av) return;
+    let {
+      activer,
+      valeur
+    } = av;
     let lanceur = options.lanceur;
     let charId;
     if (lanceur) charId = lanceur.charId;
@@ -28667,6 +28796,7 @@ var COFantasy = COFantasy || function() {
         whisper = '/w "' + player.get('displayname') + '" ';
       }
     }
+    let mEffet = messageEffetIndetermine[effet];
     if (activer) {
       if (limiteRessources(lanceur, options, effet, effet, evt)) {
         return;
@@ -28703,7 +28833,7 @@ var COFantasy = COFantasy || function() {
           } else {
             setTokenAttr(
               perso, effet, valeur, evt, {
-                msg: whisper + messageActivation(perso, messageEffetIndetermine[effet])
+                msg: whisper + messageActivation(perso, mEffet)
               });
             switch (effet) {
               case 'foretVivanteEnnemie':
@@ -28746,14 +28876,21 @@ var COFantasy = COFantasy || function() {
           }
         };
         if (options.save) {
+            let msgPour = options.save.msgPour;
+          if (!msgPour) {
+            msgPour = " pour ";
+            if (mEffet.msgSave) msgPour += mEffet.msgSave;
+            else msgPour += "résister à l'effet " + effet;
+          }
           let saveOpts = {
-            msgPour: options.save.msgPour || " pour résister à l'effet " + effet,
+            msgPour,
             msgRate: ", raté.",
             silencieuxSiPasAffecte: options.silencieuxSiPasAffecte,
             attaquant: lanceur,
             rolls: options.rolls,
             chanceRollId: options.chanceRollId,
-            type: options.type
+            type: options.type,
+            regard: options.regard,
           };
           let saveId = 'effet_' + effet + "_" + perso.token.id;
           save(options.save, perso, saveId, expliquer, saveOpts, evt,
@@ -28776,7 +28913,7 @@ var COFantasy = COFantasy || function() {
           ace[0].remove();
         }
         removeTokenAttr(perso, effet, evt, {
-          msg: messageFin(perso, messageEffetIndetermine[effet])
+          msg: messageFin(perso, mEffet)
         });
         removeTokenAttr(perso, effet + 'Puissant', evt);
         removeTokenAttr(perso, effet + 'Valeur', evt);
@@ -28797,6 +28934,9 @@ var COFantasy = COFantasy || function() {
             break;
           case 'grandeTaille':
             finDeGrandeTaille(perso, evt);
+            break;
+          case 'petrifie':
+            unlockToken(perso, evt);
             break;
         }
         if (options.messages) {
@@ -31149,7 +31289,7 @@ var COFantasy = COFantasy || function() {
         if (options.fx && options.lanceur) {
           let p1 = pointOfToken(options.lanceur.token);
           let p2 = pointOfToken(cible.token);
-                spawnFxBetweenPoints(p1, p2, options.fx, cible.token.get('pageid'));
+          spawnFxBetweenPoints(p1, p2, options.fx, cible.token.get('pageid'));
         }
         options.messages.forEach(function(m) {
           sendPerso(cible, m, options.secret);
@@ -44734,6 +44874,11 @@ var COFantasy = COFantasy || function() {
       actif: "danse la danse des lames",
       fin: "termine sa danse des lames"
     },
+    detournerLeRegard: {
+      activation: "détourne le regard",
+      actif: "détourne le regard",
+      fin: "regarde normalement",
+    },
     enflamme: {
       activation: "prend feu !",
       actif: "est en feu",
@@ -45042,11 +45187,14 @@ var COFantasy = COFantasy || function() {
       fin: "se sent un peu mieux",
       prejudiciable: true
     },
-    reactionAllergique: {
-      activation: "ressent de fortes démangeaisons",
-      actif: "est victime d'une réaction allergique",
-      fin: "les démangeaisons cessent",
-      prejudiciable: true
+    petrifie: {
+      activation: "se change en pierre",
+      actif: "est transformé en pierre",
+      actifF: "est transformée en pierre",
+      fin: "n'est plus pétrifié",
+      finF: "n'est plus pétrifiée",
+      prejudiciable: true,
+      msgSave: "résister à la pétrification",
     },
     poisonAffaiblissantLong: {
       activation: "sent le poison ralentir ses mouvements",
@@ -45056,6 +45204,12 @@ var COFantasy = COFantasy || function() {
       msgSave: "résister au poison",
       prejudiciable: true,
       seulementVivant: true,
+    },
+    reactionAllergique: {
+      activation: "ressent de fortes démangeaisons",
+      actif: "est victime d'une réaction allergique",
+      fin: "les démangeaisons cessent",
+      prejudiciable: true
     },
   };
 

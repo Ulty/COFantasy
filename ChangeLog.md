@@ -1,9 +1,19 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
-## 3.11
+## 3.12
 ### Capacités
+* Regard pétrifiant du basilic et de la méduse.
 * Enkystement lointain.
 * Voie de prestige du messager.
 * Lycanthropie et Éventration de la Voie de la fusion lycanthropique.
+
+### Autres améliorations
+* Prise en compte des options image, fx et targetFx pour !cof-lancer-sort.
+* Implémentation des tremblements de terre d'Invincible.
+* Prédicat "volant" pour éviter certains effets.
+* Application du modificateur tempete aux save pour échapper à un effet ou un état.
+
+## 3.11
+### Capacités
 * Ajout des derniers rangs de la voie du pacte vampirique
 * Ajout d'une automatisation pour le déchaînement d'acier du barbare.
 * Attaque violente de la campagne Invicible.
@@ -12,10 +22,6 @@
 * Blessure sanglante (voie du pacte vampirique)
 
 ### Autres améliorations
-* Prise en compte des options image, fx et targetFx pour !cof-lancer-sort.
-* Implémentation des tremblements de terre d'Invincible.
-* Prédicat "volant" pour éviter certains effets.
-* Application du modificateur tempete aux save pour échapper à un effet ou un état.
 * Possibilité de tenir certaines armes à une main quand agrandi.
 * Prise en charge des armes batardes.
 * Prédicat pour la vulnérabilité à des éléments.
