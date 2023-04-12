@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.12
 ### Capacités
+* Meilleur support pour le bâton de mage du forgesort.
 * Regard pétrifiant du basilic et de la méduse.
 * Enkystement lointain.
 * Voie de prestige du messager.

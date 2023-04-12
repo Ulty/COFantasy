@@ -1330,7 +1330,7 @@ tr {line-height: 25px;}
               <div class="decalage">
                 <h4 class="text-secondary">Voie des artefacts</h4>
                 <ol>
-                  <li><strong>Bâton de mage</strong> : simplement adapter l'attaque, avec aussi <code>--magique</code>. Pour l'éclair d'énergie, le mieux est d'ajouter une autre attaque.</li>
+                  <li><strong>Bâton de mage</strong> : simplement adapter l'attaque, avec aussi le modificateur <code>magique</code>. Pour l'éclair d'énergie, ajoutez dans les options <code>?{Attaque|Normale,&32;|Éclair d'énergie (L),--eclairDEnergie}</code>. Si vous autorisez les règles de mana pour cette attaque, remplacez par <code>?{Attaque|Normale,&32;|Éclair d'énergie (L),--eclairDEnergie|Éclair d'énergie rapide, --eclairDEnergie --magieRapide|Éclair d'énergie puissant (L), --eclairDEnergie --tempeteDeMana 1}</code>.</li>
                   <li><strong>Blocage</strong> : pas de support autre que <code>!cof-lancer-sort scelle une porte ou un coffre (+5 solidité & RD) pour [[@{selected|INT}]] minutes --mana 0</code></li>
                   <li><strong>Sac sans fond</strong> : pas de support particulier</li>
                   <li><strong>Frappe des arcanes</strong> : le plus simple est d'utiliser la même ligne d'attaque (disons que son label est <code>E</code>) que pour l'attaque d'énergie (mais si besoin, rien n'empêche d'en utiliser une autre). La commande sera alors <code>!cof-explosion E --auto --magique --sortilege --portee 10 --etat renverse --save FOR [[10+@{selected|INT}]]</code>.</li>
@@ -2088,6 +2088,14 @@ tr {line-height: 25px;}
                   <li><strong>Forme d'ange</strong> : <code>!cof-effet-temp formeDAnge [[5+@{selected|SAG}]] --mana 0</code>. Le MJ devra gérer l'aspect en vol.</li>
                   <li><strong>Soins améliorés</strong> : utiliser un prédicat <code>voieDeLArchange</code> avec comme valeur le rang dans la voie.</li>
                   <li><strong>Épée céleste</strong> : rien à faire si le prédicat <code>voieDeLArchange</code> a la bonne valeur. Si le personnage n'a pas déjà la capacité Arme d'argent, ajouter une attaque pour cette arme, avec le modificateur <code>armeDArgent</code> et l'option <code>--si etat armeDArgent</code>.</li>
+                </ol>
+                <h4 class="text-secondary">Voie de l'archer arcanique</h4>
+                <ol>
+                  <li><strong>Flèche magique</strong> : vous pouvez ajouter une munition de type flèche, avec les modificateurs <code>magique, reroll1</code>.</li>
+                  <li><strong>Flèche tueuse</strong> : ajouter une munition dédiée, avec les modificateurs <code>magique, reroll1</code> et les options <code>--bonusAttaque 3 --plus <i>r</i>d6</code>. Au Mj et au joueur de vérifier que cette flèche n'est utilisée que contre la bonne cible...</li>
+                  <li><strong>Flèche intangible</strong> : ajouter une action avec le code <code>#Attaque -1 --difficulteCarac DEX --ignoreObstacles</code>. Attention, pour l'instant le script ne vérifie pas que l'arme utilisée est bien un arc.</li>
+                  <li><strong>Flèches vivantes</strong> : ajoutez aux munitions du rang 1 et 2 l'option <code> --if deAttaque 15 --plus 2d6 --message la flèche prend vie au contact du sang --endif</code>.</li>
+                  <li><strong>Flèche chercheuse</strong> : faire une action avec le code <code>#Attaque -1 --plus 2d6 --portee 1000 --limiteParJour 1 flecheChercheuse</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'expert</h4>
                 Reporter les bonus sur la fiche et créer les compétences adéquates.

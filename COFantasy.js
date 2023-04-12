@@ -8341,6 +8341,7 @@ var COFantasy = COFantasy || function() {
         case 'seulementDistance':
         case 'seulementContact':
         case 'tempDmg':
+        case 'eclairDEnergie':
           scope[cmd[0]] = true;
           return;
         case 'affute':
@@ -14150,6 +14151,13 @@ var COFantasy = COFantasy || function() {
       } else effet = effet[0];
       options.fx = options.fx || effet.id;
     }
+    if (options.eclairDEnergie && !options.redo) {
+      //On augmente le nombre de dés de 1 et on utilise l'attaque magique
+      weaponStats.attNbDices++;
+      weaponStats.attSkill = '@{ATKMAG}';
+      options.messages = options.messages || [];
+      options.messages.push("Éclair d'énergie !");
+    }
     //Détermination de la (ou des) cible(s)
     let nomCiblePrincipale; //Utilise pour le cas mono-cible
     let cibles = [];
@@ -17914,7 +17922,9 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(attaquant, attrForgeron)) {
         let feuForgeron =
           getValeurOfEffet(attaquant, attrForgeron, 1, 'voieDuMetal');
-        if (predicateAsBool(attaquant, 'boutefeu')) feuForgeron *= 2;
+        if (predicateAsBool(attaquant, 'boutefeu')) {
+          feuForgeron = Math.ceil(feuForgeron * 1.6);
+        }
         let feuForgeronIntense = attributeAsInt(attaquant, attrForgeron + 'TempeteDeManaIntense', 0);
         if (feuForgeronIntense) {
           feuForgeron = feuForgeron * (1 + feuForgeronIntense);
@@ -21730,7 +21740,7 @@ var COFantasy = COFantasy || function() {
   // Retourne le diamètre d'un disque inscrit dans un carré de surface
   // équivalente à celle du token
   function tokenSizeAsCircle(token) {
-    var surface = token.get('width') * token.get('height');
+    const surface = token.get('width') * token.get('height');
     return Math.sqrt(surface);
   }
 
@@ -21749,7 +21759,7 @@ var COFantasy = COFantasy || function() {
     if (ignoreObstacles || predicateAsBool(perso1, 'joliCoup'))
       return mPortee;
     // Now determine if any token is between tok1 and tok2
-    var allToks =
+    let allToks =
       findObjs({
         _type: 'graphic',
         _pageid: pageId,
@@ -35779,7 +35789,8 @@ var COFantasy = COFantasy || function() {
       dice = 12;
       explications.push("Attaquant immobilisé => D12 au lieu de D20 en Attaque");
     }
-    let toEvaluateAttack = attackExpression(attaquant, 1, dice, critAttaquant, true, armeAttaquant);
+    let toEvaluateAttack = 
+      attackExpression(attaquant, 1, dice, critAttaquant, true, armeAttaquant);
     try {
       sendChat('', toEvaluateAttack, function(resAttack) {
         let rollsAttack = resAttack[0];
