@@ -20447,6 +20447,10 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function estSouffleDeDragon(options) {
+    return options.aoe && !options.sortilege && options.aoe.type == 'cone' && options.attaquant && estDraconique(options.attaquant);
+  }
+
   //On a déterminé les DM du type principal(possiblement après save des dmgExtra, maintenant on applique les résistances, puis on ajoute les DM d'autres types
   function dealDamageAfterDmgExtra(target, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes) {
     if (options.pointsVitaux && dmgTotal > 0) { //dégâts retardés pour une pression mortelle
@@ -20495,6 +20499,8 @@ var COFantasy = COFantasy || function() {
       if (options.hache && rd.hache) {
         rdMain += rd.hache;
       }
+      if (predicateAsBool(target, 'rdSouffleDeDragon') && estSouffleDeDragon(options))
+        rdMain += predicateAsInt(target, 'rdSouffleDeDragon', 0);
       if (target.ignoreMoitieRD) rdMain = parseInt(rdMain / 2);
       if (target.ignoreRD) {
         if (target.ignoreRD > rdMain) {
@@ -21083,7 +21089,7 @@ var COFantasy = COFantasy || function() {
     if (options.partialSave && options.partialSave.tempete && options.tempeteDeManaIntense) {
       options.partialSave.seuil += options.partialSave.tempete * options.tempeteDeManaIntense;
     }
-    if (options.partialSave && options.aoe && !options.sortilege && options.aoe.type == 'cone' && options.attaquant && estDraconique(options.attaquant) && predicateAsBool(target, 'protectionSouffleDeDragon')) {
+    if (options.partialSave && estSouffleDeDragon(options) && predicateAsBool(target, 'protectionSouffleDeDragon')) {
       target.eviteOuDivise = true;
     }
     partialSave(options, target, showTotal, dmgDisplay, dmgTotal,
