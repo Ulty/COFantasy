@@ -8,6 +8,7 @@
 * Lycanthropie et Éventration de la Voie de la fusion lycanthropique.
 
 ### Autres améliorations
+* Implémentation du bâton des runes mortes
 * Prise en compte des options image, fx et targetFx pour !cof-lancer-sort.
 * Implémentation des tremblements de terre d'Invincible.
 * Prédicat "volant" pour éviter certains effets.

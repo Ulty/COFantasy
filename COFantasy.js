@@ -5864,6 +5864,11 @@ var COFantasy = COFantasy || function() {
           bonus += 5;
         }
         bonus += bonusInteractionsSociales(personnage, expliquer);
+        if (predicateAsBool(personnage, 'batonDesRunesMortes') &&
+          (attributeAsBool(personnage, 'runeLizura') || attributeAsBool(personnage, 'runeMitrah'))) {
+          expliquer("Recouvert" + eForFemale(personnage) + " de la boue noire du bâton : +5 aux tests d'intimidation");
+          bonus += 5;
+        }
         break;
       case 'escalade':
         {
@@ -6280,6 +6285,13 @@ var COFantasy = COFantasy || function() {
         if (attributeAsBool(personnage, 'reactionAllergique')) {
           expliquer("Plaques allergiques : -2 au jet de CHA");
           bonus -= 2;
+        }
+        if (predicateAsBool(personnage, 'batonDesRunesMortes') &&
+          (attributeAsBool(personnage, 'runeLizura') || attributeAsBool(personnage, 'runeMitrah'))) {
+          if (!options.competence || options.competence.trim().toLowerCase() != 'intimidation') {
+            expliquer("Recouvert" + eForFemale(personnage) + " de la boue noire du bâton : -10 aux tests de CHA");
+            bonus -= 10;
+          }
         }
         break;
       case 'CON':
@@ -9239,6 +9251,22 @@ var COFantasy = COFantasy || function() {
             scope.limiteParCombatRessource = cmd.join('_');
           }
           return;
+        case 'limiteParTour':
+          if (cmd.length < 2) {
+            scope.limiteParTour = 1;
+            return;
+          }
+          let limiteParTour = parseInt(cmd[1]);
+          if (isNaN(limiteParTour) || limiteParTour < 1) {
+            error("La limite par tour doit être un nombre positif", cmd);
+            return;
+          }
+          scope.limiteParTour = limiteParTour;
+          if (cmd.length > 2) {
+            cmd.splice(0, 2);
+            scope.limiteParTourRessource = cmd.join('_');
+          }
+          return;
         case 'decrAttribute':
           if (cmd.length < 2) {
             error("Erreur interne d'une commande générée par bouton", cmd);
@@ -11167,6 +11195,13 @@ var COFantasy = COFantasy || function() {
       }
       explications.push(msg);
       attBonus -= bonus;
+    }
+    if (predicateAsBool(personnage, 'batonDesRunesMortes') && attributeAsBool(personnage, 'runeMelianil')) {
+      attBonus += 2;
+      let msg = "Melianil => +2 en Att.";
+      if (options && options.bonusDM !== undefined)
+        msg += " et +1d6 DM";
+      explications.push(msg);
     }
     return attBonus;
   }
@@ -14155,6 +14190,8 @@ var COFantasy = COFantasy || function() {
       //On augmente le nombre de dés de 1 et on utilise l'attaque magique
       weaponStats.attNbDices++;
       weaponStats.attSkill = '@{ATKMAG}';
+      options.contondant = undefined;
+      options.type = 'energie';
       options.messages = options.messages || [];
       options.messages.push("Éclair d'énergie !");
     }
@@ -15201,8 +15238,14 @@ var COFantasy = COFantasy || function() {
   }
 
   function immuniseAuType(target, dmgType, attaquant) {
-    if (predicateAsBool(target, 'immunite_' + dmgType)) return true;
+    if (predicateAsBool(target, 'immunite_' + dmgType)) {
+      if (dmgType == 'acide' && predicateAsBool(attaquant, 'batonDesRunesMortes') && predicateAsBool(target, 'ennemiDuBatonDesRunesMortes')) return false;
+      return true;
+    }
     switch (dmgType) {
+      case 'acide':
+        if (predicateAsBool(target, 'batonDesRunesMortes') && attributeAsBool(target, 'runeLizura')) return true;
+        return false;
       case 'poison':
         if (estNonVivant(target)) return true;
         if (predicateAsBool(target, 'vegetatif')) return true;
@@ -15211,6 +15254,7 @@ var COFantasy = COFantasy || function() {
         if (attaquant && predicateAsBool(target, 'sangDeFerIf')) {
           return estElfeNoir(attaquant) || estInsecte(attaquant);
         }
+        if (predicateAsBool(target, 'batonDesRunesMortes') && attributeAsBool(target, 'runeLizura')) return true;
         return false;
       case 'froid':
         return attributeAsBool(target, 'presenceGlaciale');
@@ -15289,6 +15333,14 @@ var COFantasy = COFantasy || function() {
     if (!options.magique && !options.sortilege && dmg.type != 'magique' &&
       (predicateOrAttributeAsBool(target, 'immunite_nonMagique') || predicateAsBool(target, 'creatureIntangible'))) {
       expliquer("L'attaque ne semble pas affecter " + nomPerso(target));
+      if (displayRes) displayRes('0', 0, 0);
+      return 0;
+    }
+    if (options.aoe && !options.sortilege && options.attaquant &&
+      options.aoe.type == 'cone' &&
+      predicateAsBool(options.attaquant, 'ennemiDuBatonDesRunesMortes') &&
+      predicateAsBool(target, 'batonDesRunesMortes') && attributeAsBool(target, 'runeLizura')) {
+      expliquer("Lizura => immunité au souffle de " + nomPerso(options.attaquant));
       if (displayRes) displayRes('0', 0, 0);
       return 0;
     }
@@ -16711,6 +16763,14 @@ var COFantasy = COFantasy || function() {
                     });
                     target.messages.push("Châtiment du mâle => +2d6 DM");
                   }
+                }
+                if (predicateAsBool(attaquant, 'batonDesRunesMortes') && attributeAsBool(attaquant, 'runeMelianil')) {
+                  target.additionalDmg.push({
+                    type: mainDmgType,
+                    value: '1' + options.d6
+                  });
+                  if (options.auto)
+                    target.messages.push("Melianil => +1d6 DM");
                 }
                 if (attributeAsBool(target, 'momentDePerfection')) {
                   target.messages.push("Grâce à son instant de perfection, " + nomPerso(target) + " évite le coup !");
@@ -20187,6 +20247,9 @@ var COFantasy = COFantasy || function() {
       res.projectiles = (res.projectiles || 0) + protection;
     }
     if (perso.perteDeSubstance) res.rdt += perso.perteDeSubstance;
+    if (predicateAsBool(perso, 'batonDesRunesMortes') && attributeAsBool(perso, 'runeMitrah')) {
+      res.rdt += 5;
+    }
     let rd = ficheAttribute(perso, 'RDS', '');
     rd = (rd + '').trim();
     if (rd === '') {
@@ -23702,13 +23765,13 @@ var COFantasy = COFantasy || function() {
         }
         let affAttr = rajouterPointDeRecuperation(perso, evt, pr);
         if (affAttr === undefined) {
-          error("Pas de point de récupérartion à rajouter et pourtant pas au max", token);
+          error("Pas de point de récupération à rajouter et pourtant pas au max", token);
           finalize();
           return;
         }
         message =
           "Au cours de la nuit, les points de récupération de " + nomPerso(perso) +
-          " passent de " + pr.current + " à " + (pr.current + 1);
+          " passent de " + (pr.current - 1) + " à " + pr.current;
         sendChar(charId, message, true);
         if (bar1 < pvmax) manquePV.push(perso);
         finalize();
@@ -26227,6 +26290,21 @@ var COFantasy = COFantasy || function() {
           if (!options.actionImpossible) ligne += b + '<br />';
         }
       });
+      if (predicateAsBool(perso, 'batonDesRunesMortes')) {
+        if (attributeAsBool(perso, 'runeIsulys') && attributeAsInt(perso, 'limiteParTour_runeIsulys', 1) > 0) {
+          let caracSag = modCarac(perso, 'sagesse');
+          let caracInt = modCarac(perso, 'intelligence');
+          let caracDM = caracSag;
+          if (caracInt > caracSag) caracDM = caracInt;
+          command = "!cof-attack " + perso.token.id + " @{target|token_id} Isulys --toucher [[@{selected|ATKMAG}]] --portee 40 --sortilege --dm 2d6";
+          if (caracDM > 0) command += '+' + caracDM;
+          else if (caracDM < 0) command += caracDM;
+          command += "--energie --magique --limiteParTour 1 runeIsulys --effet affaibli 1";
+          ligne += bouton(command, "Rayon d'énergie", perso) + '<br />';
+        }
+        command = "!cof-gerer-runes-mortes " + perso.token.id;
+        ligne += boutonSimple(command, "Gestion des runes mortes") + '<br />';
+      }
       if (actionsParDefaut) {
         actionsAAfficher = true;
         command = "!cof-attendre ?{Nouvelle initiative}";
@@ -28886,7 +28964,7 @@ var COFantasy = COFantasy || function() {
           }
         };
         if (options.save) {
-            let msgPour = options.save.msgPour;
+          let msgPour = options.save.msgPour;
           if (!msgPour) {
             msgPour = " pour ";
             if (mEffet.msgSave) msgPour += mEffet.msgSave;
@@ -32441,9 +32519,8 @@ var COFantasy = COFantasy || function() {
         sendChat('', "Impossible d'encaisser le dernier coup, ce n'était pas une attaque au contact");
         return;
       }
-      var toProceed;
+      let toProceed;
       iterSelected(selected, function(perso) {
-
         let testDevierCoups = testLimiteUtilisationsCapa(perso, 'devierLesCoups', 'tour', "ne peut plus dévier les coups à ce tour-ci");
         if (testDevierCoups === undefined) return;
         if (!peutController(msg, perso)) {
@@ -32463,7 +32540,7 @@ var COFantasy = COFantasy || function() {
         toProceed = true;
       }); //fin iterSelected
       if (toProceed) {
-        var options = action.currentOptions || {};
+        let options = action.currentOptions || {};
         options.rolls = action.rolls;
         options.choices = action.choices;
         resolvePreDmgOptions(action.attaquant, action.ciblesTouchees, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.cibles);
@@ -32541,7 +32618,7 @@ var COFantasy = COFantasy || function() {
         toProceed = true;
       }); //fin iterSelected
       if (toProceed) {
-        var options = action.currentOptions || {};
+        let options = action.currentOptions || {};
         options.rolls = action.rolls;
         options.choices = action.choices;
         resolvePreDmgOptions(action.attaquant, action.ciblesTouchees, action.echecCritique, action.attackLabel, action.weaponStats, action.attackd20roll, action.display, options, evt, action.explications, action.pageId, action.cibles);
@@ -35789,7 +35866,7 @@ var COFantasy = COFantasy || function() {
       dice = 12;
       explications.push("Attaquant immobilisé => D12 au lieu de D20 en Attaque");
     }
-    let toEvaluateAttack = 
+    let toEvaluateAttack =
       attackExpression(attaquant, 1, dice, critAttaquant, true, armeAttaquant);
     try {
       sendChat('', toEvaluateAttack, function(resAttack) {
@@ -43211,6 +43288,282 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  const listeDesRunesMortes = {
+    Melianil: {
+      description: "+2 en attaque et +1d6 aux DM (à tous les sorts ou aux attaques au contact avec le bâton)",
+    },
+    Isulys: {
+      description: "une fois par tour, par une action d'attaque, peut produire un rayon d’énergie négative d’une portée de 40 mètres. Sur test d’attaque magique réussit, la victime subit [2d6 + Mod. %SAGINT] DM et doit utiliser un d12 à tous ses tests au lieu d’un d20 pendant un tour.",
+    },
+    Bryniza: {
+      description: "permet de voir parfaitement dans le noir à une portée de 30 m, et comme dans la pénombre jusqu'à 50 m. Au prix d'une action limitée, le porteur peut utiliser le sort Détection de la magie 3 fois par jour.",
+      activation: "Les yeux de %NOM deviennent d'un noir d'encre.",
+      fin: "Les yeux de %NOM redeviennent normaux.",
+    },
+    Lizura: {
+      description: "immunité au souffle de Swarathnak, à l'acide et au poison.",
+      activation: "La boue noire du bâton s'écoule le long du bras de %NOM et recouvre tout son corps à l'exception des yeux.",
+      fin: "La boue se retire dans le bâton, %NOM retrouve une apparence normale.",
+      memeEffetQue: 'Mitrah',
+
+    },
+    Mitrah: {
+      description: "RD 5 à tous les DM.",
+      activation: "La boue noire du bâton s'écoule le long du bras de %NOM et recouvre tout son corps à l'exception des yeux.",
+      fin: "La boue se retire dans le bâton, %NOM retrouve une apparence normale.",
+      memeEffetQue: 'Lizura',
+    },
+  };
+
+  const styleRuneActive =
+    'display: inline-block; border-radius: 5px; padding: 0 4px; background-color: #80bf40; color: #020401;';
+
+  //!cof-gerer-runes-mortes token_id
+  function gererRunesMortes(msg) {
+    let cmd = msg.content.split(' ');
+    if (cmd.length < 2) {
+      error("il manque l'id du personnage qui gère ses runes mortes", cmd);
+      return;
+    }
+    let perso = persoOfId(cmd[1]);
+    if (perso === undefined) return;
+    if (!predicateAsBool(perso, 'batonDesRunesMortes')) {
+      sendPerso(perso, "ne porte pas le bâton des runes mortes");
+      return;
+    }
+    let niveau = ficheAttributeAsInt(perso, 'niveau', 1);
+    let playerId = getPlayerIdFromMsg(msg);
+    let display = startFramedDisplay(playerId, "Runes mortes", perso, {
+      chuchote: true
+    });
+    let caracSag = "de SAG";
+    if (modCarac(perso, 'intelligence') > modCarac(perso, 'sagesse'))
+      caracSag = "d'INT";
+    if (cmd.length > 3) {
+      const evt = {
+        type: "gestion des runes mortes",
+      };
+      addEvent(evt);
+      switch (cmd[2]) {
+        case 'activer':
+          {
+            let er = listeDesRunesMortes[cmd[3]];
+            if (!er) {
+              error("Rune " + cmd[3] + " non reconnue", cmd);
+              break;
+            }
+            //Vérification qu'on n'a pas déjà le max de runes
+            let runesLibres = Math.ceil(niveau / 4);
+            for (let rune in listeDesRunesMortes) {
+              if (attributeAsBool(perso, 'rune' + rune)) runesLibres--;
+            }
+            if (runesLibres < 1) {
+              sendPerso(perso, "ne peut pas activer plus de runes", true);
+              break;
+            }
+            let attr = tokenAttribute(perso, 'rune' + cmd[3]);
+            if (attr.length > 0) {
+              if (attr[0].get('current') == 'false') {
+                let donne = attr[0].get('max');
+                if (donne) {
+                  sendPerso(perso, "a donné " + cmd[3] + " à " + donne + ". Impossible de l'activer.", true);
+                  break;
+                }
+              } else {
+                sendPerso(perso, cmd[3] + " est déjà active", true);
+                break;
+              }
+            }
+            let msg;
+            if (er.activation) {
+              if (!er.memeEffetQue || !attributeAsBool(perso, 'rune' + er.memeEffetQue))
+                msg = er.activation.replace('%NOM', nomPerso(perso));
+            }
+            setTokenAttr(perso, 'rune' + cmd[3], true, evt, {
+              msg
+            });
+            sendPerso(perso, er.description.replace('%SAGINT', caracSag), true);
+            if (cmd[3] == 'Bryniza') {
+              //On met la vision dans le noir
+              let token = perso.token;
+              let pageId = token.get('pageid');
+              let visionNoir = predicateAsInt(perso, 'visionDansLeNoir', 0);
+              if (visionNoir <= 30) {
+                let page = getObj('page', pageId);
+                let udl = page && page.get('dynamic_lighting_enabled');
+                if (udl) {
+                  let vs = scaleDistance(perso, 50);
+                  token.set('has_night_vision', true);
+                  token.set('night_vision_effect', 'Dimming');
+                  token.set('night_vision_distance', vs);
+                  page.set('force_lighting_refresh', true);
+                }
+              }
+            }
+            break;
+          }
+        case 'desactiver':
+          {
+            let er = listeDesRunesMortes[cmd[3]];
+            if (!er) {
+              error("Rune " + cmd[3] + " non reconnue", cmd);
+              break;
+            }
+            if (!attributeAsBool(perso, 'rune' + cmd[3])) {
+              sendPerso(perso, cmd[3] + " n'est pas activée.", true);
+              break;
+            }
+            let msg;
+            if (er.fin) {
+              if (!er.memeEffetQue || !attributeAsBool(perso, 'rune' + er.memeEffetQue))
+                msg = er.fin.replace('%NOM', nomPerso(perso));
+            }
+            removeTokenAttr(perso, 'rune' + cmd[3], evt, {
+              msg
+            });
+            if (cmd[3] == 'Bryniza') {
+              //On enlève la vision dans le noir
+              let token = perso.token;
+              let pageId = token.get('pageid');
+              let visionNoir = predicateAsInt(perso, 'visionDansLeNoir', 0);
+              if (visionNoir <= 30) {
+                let page = getObj('page', pageId);
+                let udl = page && page.get('dynamic_lighting_enabled');
+                if (udl) {
+                  if (visionNoir === 0) {
+                    token.set('has_night_vision', false);
+                  } else {
+                    let vs = scaleDistance(perso, visionNoir);
+                    token.set('night_vision_distance', vs);
+                  }
+                  page.set('force_lighting_refresh', true);
+                }
+              }
+            }
+            break;
+          }
+        case 'donner':
+          {
+            if (cmd.length < 4) {
+              error("Il faut préciser le token à qui donner la rune", cmd);
+              break;
+            }
+            let cible = persoOfId(cmd[4]);
+            if (!cible) {
+              error("Impossible de trouver à qui donner la rune", cmd);
+              break;
+            }
+            let attr = tokenAttribute(perso, 'rune' + cmd[3]);
+            if (attr.length > 0) {
+              if (attr[0].get('current') == 'false') {
+                let donne = attr[0].get('max');
+                if (donne) {
+                  sendPerso(perso, "a déjà donné " + cmd[3] + " à " + donne + ".", true);
+                  break;
+                }
+              } else {
+                sendPerso(perso, "Il faut d'abord désactiver " + cmd[3] + " avant de la donner", true);
+                break;
+              }
+            }
+            let er = listeDesRunesMortes[cmd[3]];
+            if (!er) {
+              error("Rune " + cmd[3] + " non reconnue", cmd);
+              break;
+            }
+            let msg = nomPerso(perso) + " donne une rune à " + nomPerso(cible);
+            let maxVal = nomPerso(cible);
+            setTokenAttr(perso, 'rune' + cmd[3], 'false', evt, {
+              msg,
+              maxVal
+            });
+            sendPerso(perso, "peut maintenant communiquer par télépathie avec " + nomPerso(cible), true);
+            sendPerso(cible, "peut maintenant communiquer par télépathie avec " + nomPerso(perso), true);
+            break;
+          }
+        case 'recuperer':
+          {
+            let er = listeDesRunesMortes[cmd[3]];
+            if (!er) {
+              error("Rune " + cmd[3] + " non reconnue", cmd);
+              break;
+            }
+            let attr = tokenAttribute(perso, 'rune' + cmd[3]);
+            if (attr.length === 0) {
+              sendPerso(perso, "a déjà " + cmd[3], true);
+              break;
+            }
+            if (attr[0].get('current') != 'false') {
+              sendPerso(perso, "a déjà " + cmd[3], true);
+              break;
+            }
+            let donne = attr[0].get('max');
+            if (!donne) {
+              sendPerso(perso, "a déjà " + cmd[3], true);
+              break;
+            }
+            let msg = nomPerso(perso) + " rappelle une rune sur le bâton";
+            removeTokenAttr(perso, 'rune' + cmd[3], evt, {
+              msg
+            });
+            sendPerso(perso, "ne peut plus communiquer par télépathie avec " + donne, true);
+            break;
+          }
+        default:
+          error("Action de gestion des runes " + cmd[2] + " non reconnue", cmd);
+      }
+    }
+    let nombreDeRunes = 0;
+    let etatDesRunes = [];
+    for (let rune in listeDesRunesMortes) {
+      let descr = listeDesRunesMortes[rune].description.replace('%SAGINT', caracSag);
+      let er = {
+        nom: rune,
+        descr
+      };
+      let attr = tokenAttribute(perso, "rune" + rune);
+      if (attr.length > 0) {
+        let actif = attr[0].get('current') != 'false';
+        if (actif) {
+          nombreDeRunes++;
+          er.actif = true;
+        } else {
+          let donne = attr[0].get('max');
+          if (donne) er.donne = donne;
+        }
+      }
+      etatDesRunes.push(er);
+    }
+    let maxActives = false;
+    if (niveau < 2) maxActives = true;
+    else maxActives = nombreDeRunes >= Math.ceil(niveau / 4);
+    etatDesRunes.forEach(function(er) {
+      let rune = er.nom;
+      let ligne = 'title="' + er.descr + '"> ' + rune + '</span></strong> ';
+      if (er.actif) {
+        ligne = '<strong><span style="' + styleRuneActive + '" ' + ligne;
+        let commande = '!cof-gerer-runes-mortes ' + cmd[1] + ' desactiver ' + rune;
+        ligne += boutonSimple(commande, "désactiver");
+      } else {
+        ligne = '<strong><span ' + ligne;
+        if (er.donne) {
+          ligne += "donné à " + er.donne;
+          let commande = '!cof-gerer-runes-mortes ' + cmd[1] + ' recuperer ' + rune;
+          ligne += boutonSimple(commande, "récupérer");
+        } else {
+          if (!maxActives) {
+            let commande = '!cof-gerer-runes-mortes ' + cmd[1] + ' activer ' + rune;
+            ligne += boutonSimple(commande, "activer");
+          }
+          let commande = '!cof-gerer-runes-mortes ' + cmd[1] + ' donner ' + rune + ' @{target|token_id}';
+          ligne += boutonSimple(commande, "donner");
+        }
+      }
+      addLineToFramedDisplay(display, ligne);
+    });
+    sendChat('', endFramedDisplay(display));
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     const command = msg.content.split(' ', 1);
@@ -43293,10 +43646,13 @@ var COFantasy = COFantasy || function() {
         msg.content = msg.content.substr(0, i) + ' foudresDuTemps' + msg.content.substr(i);
         setEffetChaqueD20(msg);
         return;
+      case '!cof-gerer-runes-mortes':
+        gererRunesMortes(msg);
+        return;
       case '!cof-huile-instable':
         huileInstable(msg);
         return;
-      case "!cof-init":
+      case '!cof-init':
         initiativeInterface(msg);
         return;
       case '!cof-jet':
@@ -43329,11 +43685,14 @@ var COFantasy = COFantasy || function() {
       case '!cof-pause':
         pauseGame();
         return;
-      case "!cof-recharger":
+      case '!cof-recharger':
         recharger(msg);
         return;
       case '!cof-recuperation':
         parseRecuperer(msg);
+        return;
+      case '!cof-remove-buf-def':
+        removeBufDef(msg);
         return;
       case '!cof-resultat-jet':
         resultatJet(msg);
@@ -43378,9 +43737,6 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-vision-nocturne':
         ajouterVisionNocturne(msg);
-        return;
-      case "!cof-remove-buf-def":
-        removeBufDef(msg);
         return;
       case "!cof-aoe": //deprecated
       case "!cof-dmg":
@@ -47055,23 +47411,37 @@ var COFantasy = COFantasy || function() {
     };
     const pageId = token.get('pageid');
     //Vision
+    let udl;
     let visionNoir = predicateAsInt(perso, 'visionDansLeNoir', 0);
     if (visionNoir > 0) {
-      visionNoir = scaleDistance(perso, visionNoir);
+      let vs = scaleDistance(perso, visionNoir);
       let page = getObj('page', pageId);
-      let udl = page && page.get('dynamic_lighting_enabled');
+      udl = page && page.get('dynamic_lighting_enabled');
       if (udl) {
         token.set('has_night_vision', true);
         //token.set('night_vision_tint', '#555555');
-        token.set('night_vision_distance', visionNoir);
+        token.set('night_vision_distance', vs);
       } else {
-        token.set('light_radius', visionNoir);
+        token.set('light_radius', vs);
         token.set('light_dimradius', -1);
         token.set('light_otherplayers', false);
         token.set('light_hassight', true);
         token.set('light_angle', 360);
       }
     }
+    if (visionNoir <= 30 && predicateAsBool(perso, 'batonDesRunesMortes') && attributeAsBool(perso, 'runeBryniza')) {
+      if (!udl) {
+        let page = getObj('page', pageId);
+        udl = page && page.get('dynamic_lighting_enabled');
+      }
+      if (udl) {
+        let vs = scaleDistance(perso, 50);
+        token.set('has_night_vision', true);
+        token.set('night_vision_effect', 'Dimming');
+        token.set('night_vision_distance', vs);
+      }
+    }
+    if (udl) forceLightingRefresh(pageId);
     if (token.get('bar1_link') !== '') {
       //Cas des tokens non mooks
       let attrMonteSur = tokenAttribute(perso, 'monteSur');
