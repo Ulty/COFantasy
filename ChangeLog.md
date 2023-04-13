@@ -8,6 +8,7 @@
 * Lycanthropie et Éventration de la Voie de la fusion lycanthropique.
 
 ### Autres améliorations
+* Implémentation d'une protection contre les souffles de dragons qui divise les DM en cas d'echec au test de DEX et les annule sinon.
 * Implémentation du bâton des runes mortes
 * Prise en compte des options image, fx et targetFx pour !cof-lancer-sort.
 * Implémentation des tremblements de terre d'Invincible.

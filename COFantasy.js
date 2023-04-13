@@ -10983,7 +10983,7 @@ var COFantasy = COFantasy || function() {
         setTokenAttr(personnage, 'fortifie', fortifie, evt);
       }
     }
-    attBonus += charAttributeAsInt(personnage, 'actionConcertee', 0);
+    attBonus += attributeAsInt(personnage, 'actionConcertee', 0);
     if (attributeAsBool(personnage, 'chantDesHeros')) {
       let bonusChantDesHeros = getValeurOfEffet(personnage, 'chantDesHeros', 1);
       let chantDesHerosIntense =
@@ -20154,7 +20154,7 @@ var COFantasy = COFantasy || function() {
     let totalSave = true;
     if (sav === undefined) {
       sav = ps.partialSave;
-      totalSave = false;
+      if (!target.eviteOuDivise) totalSave = false;
     }
     if (sav === undefined) {
       if (target.partialSaveAuto) {
@@ -20206,16 +20206,14 @@ var COFantasy = COFantasy || function() {
     let saveId = 'parseSave_' + target.token.id;
     save(sav, target, saveId, expliquer, saveOpts, evt,
       function(succes, rollText) {
-        if (succes) {
-          if (totalSave) {
-            dmgDisplay = '0';
-            total = 0;
-          } else {
-            if (showTotal) dmgDisplay = "(" + dmgDisplay + ")";
-            dmgDisplay = dmgDisplay + " / 2";
-            showTotal = true;
-            total = Math.ceil(total / 2);
-          }
+        if (succes && totalSave) {
+          dmgDisplay = '0';
+          total = 0;
+        } else if (succes || target.eviteOuDivise) {
+          if (showTotal) dmgDisplay = "(" + dmgDisplay + ")";
+          dmgDisplay = dmgDisplay + " / 2";
+          showTotal = true;
+          total = Math.ceil(total / 2);
         }
         afterSave({
           succes: succes,
@@ -20448,6 +20446,7 @@ var COFantasy = COFantasy || function() {
       }
     }
   }
+
   //On a déterminé les DM du type principal(possiblement après save des dmgExtra, maintenant on applique les résistances, puis on ajoute les DM d'autres types
   function dealDamageAfterDmgExtra(target, mainDmgType, dmgTotal, dmgDisplay, showTotal, dmgParType, dmgExtra, crit, options, evt, expliquer, displayRes) {
     if (options.pointsVitaux && dmgTotal > 0) { //dégâts retardés pour une pression mortelle
@@ -21083,6 +21082,9 @@ var COFantasy = COFantasy || function() {
     }
     if (options.partialSave && options.partialSave.tempete && options.tempeteDeManaIntense) {
       options.partialSave.seuil += options.partialSave.tempete * options.tempeteDeManaIntense;
+    }
+    if (options.partialSave && options.aoe && !options.sortilege && options.aoe.type == 'cone' && options.attaquant && estDraconique(options.attaquant) && predicateAsBool(target, 'protectionSouffleDeDragon')) {
+      target.eviteOuDivise = true;
     }
     partialSave(options, target, showTotal, dmgDisplay, dmgTotal,
       expliquer, evt,
@@ -21893,9 +21895,9 @@ var COFantasy = COFantasy || function() {
   //Met tous les attributs avec le nom au max
   function resetAttr(attrs, attrName, evt, msg) {
     allAttributesNamed(attrs, attrName).forEach(function(att) {
-      var vm = parseInt(att.get("max"));
+      let vm = parseInt(att.get("max"));
       if (!isNaN(vm)) {
-        var vc = parseInt(att.get("current"));
+        let vc = parseInt(att.get("current"));
         if (vc != vm) {
           evt.attributes.push({
             attribute: att,
