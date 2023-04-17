@@ -5433,7 +5433,7 @@ var COFantasy = COFantasy || function() {
         act.indexOf('--target ' + tid) == -1) {
         //Si on n'a pas de cible, on fait comme si le token était sélectionné.
         let add_token = " --target " + tid;
-        if (act.indexOf(' --allie') >= 0) {
+        if (act.indexOf(' --allie') >= 0 || act.indexOf('!cof-effet') >= 0) {
           if (act.indexOf('--lanceur') == -1)
             add_token = " --lanceur " + tid;
           else add_token = ""; //La cible sont les alliés de --lanceur.
@@ -12594,6 +12594,15 @@ var COFantasy = COFantasy || function() {
         value: nbDes + 'd6'
       });
     }
+    if (options.sortilege && options.type == 'feu' && predicateAsBool(attaquant, 'boutefeu')) {
+      attBonus += 2;
+      explications.push("Boutefeu => +2 en Attaque et +2d6 DM");
+      attaquant.additionalDmg = attaquant.additionalDmg || [];
+      attaquant.additionalDmg.push({
+        type: 'feu',
+        value: '1d6',
+      });
+    }
     return attBonus;
   }
 
@@ -17983,7 +17992,9 @@ var COFantasy = COFantasy || function() {
         let feuForgeron =
           getValeurOfEffet(attaquant, attrForgeron, 1, 'voieDuMetal');
         if (predicateAsBool(attaquant, 'boutefeu')) {
-          feuForgeron = Math.ceil(feuForgeron * 1.6);
+          let opt = tokenAttribute(attaquant, attrForgeron + 'Options');
+          if (opt.length > 0 && opt[0].get('current') == ' --boutefeu')
+          feuForgeron = feuForgeron * 2;
         }
         let feuForgeronIntense = attributeAsInt(attaquant, attrForgeron + 'TempeteDeManaIntense', 0);
         if (feuForgeronIntense) {
@@ -22037,7 +22048,7 @@ var COFantasy = COFantasy || function() {
     }
     if (aura_token_on_turn) {
       // ennemi => rouge
-      var aura2_color = '#CC0000';
+      let aura2_color = '#CC0000';
       if (estAllieJoueur(perso)) {
         // equipe => vert
         aura2_color = '#59E594';
@@ -22046,7 +22057,7 @@ var COFantasy = COFantasy || function() {
       token.set('aura2_color', aura2_color);
       token.set('showplayers_aura2', true);
     } else {
-      var status = '';
+      let status = '';
       // Cas des tokens personnalisés
       if (statusForInitEnemy && statusForInitAlly) {
         // ennemi => rouge
@@ -28121,7 +28132,7 @@ var COFantasy = COFantasy || function() {
       iterSelected(selected, function(perso) {
         if (options.portee !== undefined) {
           if (options.puissantPortee || options.tempeteDeManaPortee) options.portee = options.portee * 2;
-          var dist = distanceCombat(lanceur.token, perso.token);
+          let dist = distanceCombat(lanceur.token, perso.token);
           if (dist > options.portee) {
             sendPerso(perso, " est trop loin de " + nomPerso(perso));
             return;
@@ -28268,7 +28279,9 @@ var COFantasy = COFantasy || function() {
           });
         }
       }
+      let renew = attributeAsBool(perso, effet);
       setEffetTemporaire(perso, ef, d, evt, options);
+      if (!renew) {
       if (effet.startsWith('forgeron(')) {
         //Il faut dégainer l'arme si elle n'est pas en main, et ajouter une lumière
         let labelArmeForgeron = effet.substring(9, effet.indexOf(')'));
@@ -28279,6 +28292,7 @@ var COFantasy = COFantasy || function() {
         let labelArmeEnflammee = effet.substring(14, effet.indexOf(')'));
         degainerArme(perso, labelArmeEnflammee, evt);
         ajouteUneLumiere(perso, effet, 9, 3, evt);
+      }
       }
       if (effet == 'cercleDeProtection') {
         let protecteur = options.lanceur || perso;
@@ -28707,6 +28721,14 @@ var COFantasy = COFantasy || function() {
     }
     let effet = cmd[1];
     if (!estEffetIndetermine(effet)) {
+      if (estEffetTemp(effet)) {
+        parseEffetTemporaire(msg);
+        return;
+      }
+      if (estEffetCombat(effet)) {
+        effetCombat(msg);
+        return;
+      }
       error(effet + " n'est pas un effet répertorié", msg.content);
       return;
     }
@@ -29470,7 +29492,7 @@ var COFantasy = COFantasy || function() {
         line += "+" + options.chanceRollId.roll1;
       line += " = " + attackRoll1;
       if (!reussi) {
-        var pcAttaquant = pointsDeChance(attaquant);
+        const pcAttaquant = pointsDeChance(attaquant);
         if (pcAttaquant > 0)
           line += "<br/>" + boutonSimple("!cof-bouton-chance " + evt.id + " roll1", "Chance") +
           " (reste " + pcAttaquant + " PC)";
