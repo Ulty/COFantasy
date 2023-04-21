@@ -8078,27 +8078,29 @@ var COFantasy = COFantasy || function() {
           text: args[1]
         };
       case 'attribut':
-        if (args.length < 3) {
-          error("Il manque un argument pour comparer l'attribut", args);
-          return;
-        }
-        let res = {
-          type: 'attribut',
-          attribute: args[1],
-          valeur: args[2].toLowerCase(),
-          text: args[1] + ' ' + args[2]
-        };
-        if (args.length > 3) {
-          if (args[3] == 'local') {
-            res.local = true;
-          } else if (args[3] == 'fiche') {
-            res.fiche = {};
-            if (args.length > 4) {
-              res.fiche.def = args[4];
+        {
+          if (args.length < 3) {
+            error("Il manque un argument pour comparer l'attribut", args);
+            return;
+          }
+          let res = {
+            type: 'attribut',
+            attribute: args[1],
+            valeur: args[2].toLowerCase(),
+            text: args[1] + ' ' + args[2]
+          };
+          if (args.length > 3) {
+            if (args[3] == 'local') {
+              res.local = true;
+            } else if (args[3] == 'fiche') {
+              res.fiche = {};
+              if (args.length > 4) {
+                res.fiche.def = args[4];
+              }
             }
           }
+          return res;
         }
-        return res;
       case 'etatCible':
         if (args.length < 2) {
           error("condition non reconnue", args);
@@ -8118,27 +8120,29 @@ var COFantasy = COFantasy || function() {
           text: args[1]
         };
       case 'attributCible':
-        if (args.length < 3) {
-          error("Il manque un argument pour comparer l'attribut de la cible", args);
-          return;
-        }
-        res = {
-          type: 'attribut',
-          attribute: args[1],
-          valeur: args[2].toLowerCase(),
-          text: args[1] + ' ' + args[2]
-        };
-        if (args.length > 3) {
-          if (args[3] == 'local') {
-            res.local = true;
-          } else if (args[3] == 'fiche') {
-            res.fiche = {};
-            if (args.length > 4) {
-              res.fiche.def = args[4];
+        {
+          if (args.length < 3) {
+            error("Il manque un argument pour comparer l'attribut de la cible", args);
+            return;
+          }
+          let res = {
+            type: 'attribut',
+            attribute: args[1],
+            valeur: args[2].toLowerCase(),
+            text: args[1] + ' ' + args[2]
+          };
+          if (args.length > 3) {
+            if (args[3] == 'local') {
+              res.local = true;
+            } else if (args[3] == 'fiche') {
+              res.fiche = {};
+              if (args.length > 4) {
+                res.fiche.def = args[4];
+              }
             }
           }
+          return res;
         }
-        return res;
       case 'predicatCible':
         if (args.length < 2) {
           error("Il manque le prédicat de la cible", args);
@@ -8962,7 +8966,8 @@ var COFantasy = COFantasy || function() {
               error("Le coût de la magie rapide n'est pas un entier positif", cmd);
               cout = 1;
             }
-          } if (reglesOptionelles.mana.val.mana_totale.val) cout = 3;
+          }
+          if (reglesOptionelles.mana.val.mana_totale.val) cout = 3;
           options.mana += cout;
           options.magieRapide = true;
           return;
@@ -22814,44 +22819,45 @@ var COFantasy = COFantasy || function() {
           return;
         case 'mana':
           {
-          if (cmd.length < 2) {
-            error("Pas assez d'argument pour --mana", cmd);
-            return;
-          }
-          let cout;
-          if (cmd.length > 2 && cmd[1] !== '' && cmd[2] !== '') {
-            options.lanceur = options.lanceur || persoOfId(cmd[1], cmd[1], pageId);
-            if (options.lanceur === undefined) {
-              error("Premier argument de --mana non valide", cmd);
+            if (cmd.length < 2) {
+              error("Pas assez d'argument pour --mana", cmd);
               return;
             }
-            cout = parseInt(cmd[2]);
-          } else {
-            cout = parseInt(cmd[1]);
-          }
-          if (isNaN(cout) || cout < 0) {
-            error("Coût en mana incorrect", cmd);
+            let cout;
+            if (cmd.length > 2 && cmd[1] !== '' && cmd[2] !== '') {
+              options.lanceur = options.lanceur || persoOfId(cmd[1], cmd[1], pageId);
+              if (options.lanceur === undefined) {
+                error("Premier argument de --mana non valide", cmd);
+                return;
+              }
+              cout = parseInt(cmd[2]);
+            } else {
+              cout = parseInt(cmd[1]);
+            }
+            if (isNaN(cout) || cout < 0) {
+              error("Coût en mana incorrect", cmd);
+              return;
+            }
+            options.mana = options.mana || 0;
+            options.mana += cout;
             return;
           }
-          options.mana = options.mana || 0;
-          options.mana += cout;
-          return;
-      }
         case 'magieRapide':
           {
-          if (options.magieRapide) return;
-          if (options.mana === undefined) options.mana = 0;
-          let cout = 1;
-          if (cmd.length > 1) {
-            cout = parseInt(cmd[1]);
-            if (isNaN(cout) || cout < 0) {
-              error("Le coût de la magie rapide n'est pas un entier positif", cmd);
-              cout = 1;
+            if (options.magieRapide) return;
+            if (options.mana === undefined) options.mana = 0;
+            let cout = 1;
+            if (cmd.length > 1) {
+              cout = parseInt(cmd[1]);
+              if (isNaN(cout) || cout < 0) {
+                error("Le coût de la magie rapide n'est pas un entier positif", cmd);
+                cout = 1;
+              }
             }
-          } if (reglesOptionelles.mana.val.mana_totale.val) cout = 3;
-          options.mana += cout;
-          options.magieRapide = true;
-          return;
+            if (reglesOptionelles.mana.val.mana_totale.val) cout = 3;
+            options.mana += cout;
+            options.magieRapide = true;
+            return;
           }
         case 'tempeteDeMana':
           parseTempeteDeMana(cmd, options);
