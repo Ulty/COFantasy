@@ -206,7 +206,7 @@ tr {line-height: 25px;}
                 <li><b>Magie puissante (durée) :</b> utiliser l'option <code>--puissant duree</code> dans vos abilities ou attaques</li>
               </ul>
               <p>On peut facilement combiner ces options avec un input de choix roll20 qui permettra au joueur de choisir le type d'incantation lorsqu'il lance le sort, tout en spécifiant la dépense de Mana.</p>
-              <p><code>--mana <i>X</i> ?{Incantation ?|Rapide,&#32;|Puissante (L),--puissant|Portée étendue (L),--puissant portee|Durée étendue (L),--puissant duree}</code></p>
+              <p><code>--mana <i>X</i> ?{Incantation ?|Rapide,&amp;#32;|Puissante (L),--puissant|Portée étendue (L),--puissant portee|Durée étendue (L),--puissant duree}</code></p>
               <h4>Mana Totale (COF p. 180)</h4>
               <p>La première chose à faire est d'activer l'option Mana totale via <code>!cof-options</code>. Pour le reste, vous pouvez réutiliser le principe du système de base ci-dessus.</p>
               <h5>Coût aléatoire</h5>
@@ -222,7 +222,7 @@ tr {line-height: 25px;}
               <h4>Terres d'Arran (COTA p. 112)</h4>
               <p>Première chose à faire, activer l'option Brûlure de Magie via <code>!cof-options</code>. <i>Note : si vous utilisez l'option de Brûlure de Magie avec l'option Mana Totale, vous pouvez utiliser un <a href=#predicats>prédicat</a> <code>coefPVMana</code> qui va diviser le nombre de PVs dépensé par point de mana.</i></p>
               <p>Vous pouvez ensuite réutiliser le même principe que le système de base en combinant dépense de Mana et effets supplémentaires. Voici un exemple pour une Boule de Feu (Voie de l'élémentaliste, rang 4) :</p>
-              <p><code>--mana 2 ?{Incantation ?|Normale,--mana 2|Econome (L),|Puissante (L),--mana 2 --puissant|Portée étendue (L),--mana 2 --puissant portee}</code> (notez que les coût total pour une incantation normale sera de 4 points de mana)</p>
+              <p><code>--mana 2 ?{Incantation ?|Normale,--mana 2|Économe (L),&amp;#32;|Puissante (L),--mana 2 --puissant|Portée étendue (L),--mana 2 --puissant portee}</code> (notez que les coût total pour une incantation normale sera de 4 points de mana)</p>
             </div>
             <h3 class="text-info" id="regles_optionnelles">1.6 Règles optionnelles utilisées</h3>
             <div class="decalage">
@@ -403,6 +403,7 @@ tr {line-height: 25px;}
                   <li><code>--reroll1</code> : relance les 1 aux dés de dégats. À noter que cela ne concerne que les dés de base de l'attaque, pas les DM supplémentaire. </li>
                   <li><code>--explodeMax</code> : relance les valeurs maximum aux dés de DM de base, et rajoute le nouveau résultat (qui lui-même explose).</li>
                   <li><code>--mana <i>n</i></code> : l'attaque coûte <i>n</i> points de mana. Si l'attaque provoque un effet temporaire, le script essaiera de le supprimer à la mort du lanceur (même avec un coût nul).</li>
+                  <li><code>--magieRapide</code> : augmente le coût en mana (1 avec la mana normale, 3 avec la mana totale) et affiche un petit message indiquant que le lancement est rapide. Il est possible de préciser un coût en mana différent.</li>
                   <li><code>--rang <i>n</i></code> : indique le rang de la capacité utilisée, si besoin. Utilisé par l'option <code>--tempeteDeMana</code>.</li>
                   <li><code>--tempeteDeMana <i>liste</i></code> : indique des effets de tempête de mana. La liste peut contenir un nombre (pour l'effet intense), <code>duree</code>, <code>rapide</code>, <code>portee</code> et <code>altruiste <i>id</i></code>. Si le rang du sort est spécifié (par l'option <code>--rang</code>, un message est affichée si le coût en mana est supérieur au rang. Si la liste d'options est vide ou ne contient que <code>altruiste</code>, le script affiche un menu dans le chat pour spécifier les options de tempête de mana. Il est possible d'utiliser les règles de mana totale pour les coûts de tempête de mana (à activer avec <code>!cof-options</code>).</li>
                   <li><code>--magieEnArmure</code> : applique un malus à l'attaque égale au rang du sort + le malus d'armure de l'attaquant. On peut ajouter un argument optionnel : soit un nombre qui va remplacer le rang dans cette formule, soit <code>mana</code> qui va augmenter le coût en mana de l'attaque en fonction de l'armure portée.</li>
@@ -1331,7 +1332,7 @@ tr {line-height: 25px;}
               <div class="decalage">
                 <h4 class="text-secondary">Voie des artefacts</h4>
                 <ol>
-                  <li><strong>Bâton de mage</strong> : simplement adapter l'attaque, avec aussi le modificateur <code>magique</code>. Pour l'éclair d'énergie, ajoutez dans les options <code>?{Attaque|Normale,&32;|Éclair d'énergie (L),--eclairDEnergie}</code>. Si vous autorisez les règles de mana pour cette attaque, remplacez par <code>?{Attaque|Normale,&32;|Éclair d'énergie (L),--eclairDEnergie|Éclair d'énergie rapide, --eclairDEnergie --magieRapide|Éclair d'énergie puissant (L), --eclairDEnergie --tempeteDeMana 1}</code>.</li>
+                  <li><strong>Bâton de mage</strong> : simplement adapter l'attaque, avec aussi le modificateur <code>magique</code>. Pour l'éclair d'énergie, ajoutez dans les options <code>?{Attaque|Normale,--magieRapide 2|Éclair d'énergie (L),--eclairDEnergie}</code>. Si vous autorisez les règles de mana pour cette attaque, remplacez par <code>?{Attaque|Normale,&amp;#32;|Éclair d'énergie (L),--eclairDEnergie|Éclair d'énergie rapide, --eclairDEnergie --magieRapide|Éclair d'énergie puissant (L), --eclairDEnergie --tempeteDeMana 1}</code>.</li>
                   <li><strong>Blocage</strong> : pas de support autre que <code>!cof-lancer-sort scelle une porte ou un coffre (+5 solidité & RD) pour [[@{selected|INT}]] minutes --mana 0</code></li>
                   <li><strong>Sac sans fond</strong> : pas de support particulier</li>
                   <li><strong>Frappe des arcanes</strong> : le plus simple est d'utiliser la même ligne d'attaque (disons que son label est <code>E</code>) que pour l'attaque d'énergie (mais si besoin, rien n'empêche d'en utiliser une autre). La commande sera alors <code>!cof-explosion E --auto --magique --sortilege --portee 10 --etat renverse --save FOR [[10+@{selected|INT}]]</code>.</li>
@@ -1515,7 +1516,7 @@ tr {line-height: 25px;}
                       <li>Objet de sort : <code>#Attaque Boule de feu --toucher [[@{selected|ATKMAG}]] --dm 4d6+[[@{selected|INT}]] --feu --magique --portee 30 --sortilege --demiAuto --disque 6 --psave DEX [[10+@{selected|INT}]] --targetFx explode-fire</code></li>
                     </ul>
                   </li>
-                  <li><strong>Rituel de puissance</strong> : faire l'appel aux attaques avec <code>--avecd12crit --plus 2d6</code>. On peut par exemple ajouter ceci dans les options des attaques lorsque le Rituel peut être utilisé :<code>?{Rituel de puissance?|Non,&#32;|Oui,--avecd12crit --plus 2d6}</code></li>
+                  <li><strong>Rituel de puissance</strong> : faire l'appel aux attaques avec <code>--avecd12crit --plus 2d6</code>. On peut par exemple ajouter ceci dans les options des attaques lorsque le Rituel peut être utilisé :<code>?{Rituel de puissance?|Non,&amp;#32;|Oui,--avecd12crit --plus 2d6}</code></li>
                 </ol>
                 <h4 class="text-secondary">Voie de la magie élémentaire</h4>
                 <ol>

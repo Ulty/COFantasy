@@ -8955,8 +8955,15 @@ var COFantasy = COFantasy || function() {
         case 'magieRapide':
           if (options.magieRapide) return;
           if (options.mana === undefined) options.mana = 0;
-          if (reglesOptionelles.mana.val.mana_totale.val) options.mana += 3;
-          else options.mana++;
+          let cout = 1;
+          if (cmd.length > 1) {
+            cout = parseInt(cmd[1]);
+            if (isNaN(cout) || cout < 0) {
+              error("Le coût de la magie rapide n'est pas un entier positif", cmd);
+              cout = 1;
+            }
+          } if (reglesOptionelles.mana.val.mana_totale.val) cout = 3;
+          options.mana += cout;
           options.magieRapide = true;
           return;
         case 'tempeteDeMana':
@@ -15345,6 +15352,11 @@ var COFantasy = COFantasy || function() {
       if (displayRes) displayRes('0', 0, 0);
       return 0;
     }
+    if ((options.magique || options.sortilege || dmg.type == 'magique') && predicateAsBool(target, 'immunite_magique')) {
+      expliquer("L'attaque ne semble pas affecter " + nomPerso(target));
+      if (displayRes) displayRes('0', 0, 0);
+      return 0;
+    }
     if (options.aoe && !options.sortilege && options.attaquant &&
       options.aoe.type == 'cone' &&
       predicateAsBool(options.attaquant, 'ennemiDuBatonDesRunesMortes') &&
@@ -17994,7 +18006,7 @@ var COFantasy = COFantasy || function() {
         if (predicateAsBool(attaquant, 'boutefeu')) {
           let opt = tokenAttribute(attaquant, attrForgeron + 'Options');
           if (opt.length > 0 && opt[0].get('current') == ' --boutefeu')
-          feuForgeron = feuForgeron * 2;
+            feuForgeron = feuForgeron * 2;
         }
         let feuForgeronIntense = attributeAsInt(attaquant, attrForgeron + 'TempeteDeManaIntense', 0);
         if (feuForgeronIntense) {
@@ -22374,7 +22386,7 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('PVsDebutCombat', evt, attrs);
     // On diminue l'ébriété des personnages sous vapeurs éthyliques
     allAttributesNamed(attrs, 'vapeursEthyliques').forEach(function(attr) {
-      var veCharId = attr.get('characterid');
+      let veCharId = attr.get('characterid');
       if (veCharId === undefined || veCharId === '') {
         error("Attribut sans personnage associé", attr);
         return;
@@ -22382,7 +22394,7 @@ var COFantasy = COFantasy || function() {
       iterTokensOfAttribute(veCharId, combat.pageId,
         'vapeursEthyliques', attr.get('name'),
         function(tok) {
-          var perso = {
+          const perso = {
             charId: veCharId,
             token: tok
           };
@@ -22801,6 +22813,7 @@ var COFantasy = COFantasy || function() {
           }
           return;
         case 'mana':
+          {
           if (cmd.length < 2) {
             error("Pas assez d'argument pour --mana", cmd);
             return;
@@ -22823,13 +22836,23 @@ var COFantasy = COFantasy || function() {
           options.mana = options.mana || 0;
           options.mana += cout;
           return;
+      }
         case 'magieRapide':
+          {
           if (options.magieRapide) return;
           if (options.mana === undefined) options.mana = 0;
-          if (reglesOptionelles.mana.val.mana_totale.val) options.mana += 3;
-          else options.mana++;
+          let cout = 1;
+          if (cmd.length > 1) {
+            cout = parseInt(cmd[1]);
+            if (isNaN(cout) || cout < 0) {
+              error("Le coût de la magie rapide n'est pas un entier positif", cmd);
+              cout = 1;
+            }
+          } if (reglesOptionelles.mana.val.mana_totale.val) cout = 3;
+          options.mana += cout;
           options.magieRapide = true;
           return;
+          }
         case 'tempeteDeMana':
           parseTempeteDeMana(cmd, options);
           return;
@@ -22878,7 +22901,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque la limite de soins journalière", cmd);
             return;
           }
-          var limiteSoinsParJour = parseInt(cmd[1]);
+          let limiteSoinsParJour = parseInt(cmd[1]);
           if (isNaN(limiteSoinsParJour) || limiteSoinsParJour < 1) {
             error("La limite de soins journalière doit être un nombre positif", cmd);
             return;
@@ -23386,8 +23409,8 @@ var COFantasy = COFantasy || function() {
         finalize();
         return;
       }
-      var pageId = token.get('pageid');
-      var perso = {
+      const pageId = token.get('pageid');
+      const perso = {
         token: token,
         charId: charId
       };
@@ -23395,7 +23418,7 @@ var COFantasy = COFantasy || function() {
         finalize();
         return;
       }
-      var attrEffet = findObjs({
+      let attrEffet = findObjs({
         _type: 'attribute',
         _characterid: charId,
         name: attrName
@@ -28282,17 +28305,17 @@ var COFantasy = COFantasy || function() {
       let renew = attributeAsBool(perso, effet);
       setEffetTemporaire(perso, ef, d, evt, options);
       if (!renew) {
-      if (effet.startsWith('forgeron(')) {
-        //Il faut dégainer l'arme si elle n'est pas en main, et ajouter une lumière
-        let labelArmeForgeron = effet.substring(9, effet.indexOf(')'));
-        degainerArme(perso, labelArmeForgeron, evt);
-        let feu = getValeurOfEffet(perso, effet, 1, 'voieDuMetal');
-        ajouteUneLumiere(perso, effet, feu * 3, feu, evt);
-      } else if (effet.startsWith('armeEnflammee(')) {
-        let labelArmeEnflammee = effet.substring(14, effet.indexOf(')'));
-        degainerArme(perso, labelArmeEnflammee, evt);
-        ajouteUneLumiere(perso, effet, 9, 3, evt);
-      }
+        if (effet.startsWith('forgeron(')) {
+          //Il faut dégainer l'arme si elle n'est pas en main, et ajouter une lumière
+          let labelArmeForgeron = effet.substring(9, effet.indexOf(')'));
+          degainerArme(perso, labelArmeForgeron, evt);
+          let feu = getValeurOfEffet(perso, effet, 1, 'voieDuMetal');
+          ajouteUneLumiere(perso, effet, feu * 3, feu, evt);
+        } else if (effet.startsWith('armeEnflammee(')) {
+          let labelArmeEnflammee = effet.substring(14, effet.indexOf(')'));
+          degainerArme(perso, labelArmeEnflammee, evt);
+          ajouteUneLumiere(perso, effet, 9, 3, evt);
+        }
       }
       if (effet == 'cercleDeProtection') {
         let protecteur = options.lanceur || perso;

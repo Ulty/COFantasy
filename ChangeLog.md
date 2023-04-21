@@ -8,6 +8,7 @@
 * Lycanthropie et Éventration de la Voie de la fusion lycanthropique.
 
 ### Autres améliorations
+* Ajout d'un prédicat pour l'immnunité aux dégâts magiques.
 * ImplEmentation d'une RD spécifique contre les souffles de dragons
 * Implémentation d'une protection contre les souffles de dragons qui divise les DM en cas d'echec au test de DEX et les annule sinon.
 * Implémentation du bâton des runes mortes
