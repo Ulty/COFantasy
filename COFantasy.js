@@ -5754,7 +5754,7 @@ var COFantasy = COFantasy || function() {
     let bonus = 0;
     let perteDeSubstance = 0;
     if (predicateAsBool(perso, 'perteDeSubstance'))
-      perteDeSubstance = attributeAsInt(perso, 'perteDesubstance', 0);
+      perteDeSubstance = attributeAsInt(perso, 'perteDeSubstance', 0);
     if (perteDeSubstance >= 3) {
       if (perteDeSubstance < 7) {
         expliquer("Perte de substance : -2 aux interactions sociales");
@@ -5853,7 +5853,7 @@ var COFantasy = COFantasy || function() {
         }
         let perteDeSubstance = 0;
         if (predicateAsBool(personnage, 'perteDeSubstance'))
-          perteDeSubstance = attributeAsInt(personnage, 'perteDesubstance', 0);
+          perteDeSubstance = attributeAsInt(personnage, 'perteDeSubstance', 0);
         if (perteDeSubstance >= 5) {
           if (perteDeSubstance < 7) {
             expliquer("Perte de substance : +2 en discrétion");
@@ -16469,7 +16469,7 @@ var COFantasy = COFantasy || function() {
           if (predicateAsBool(attaquant, 'dragonInvincible')) {
             let perteDeSubstance = 0;
             if (predicateAsBool(target, 'perteDeSubstance'))
-              perteDeSubstance = attributeAsInt(target, 'perteDesubstance', 0);
+              perteDeSubstance = attributeAsInt(target, 'perteDeSubstance', 0);
             if (perteDeSubstance > 0) {
               if (perteDeSubstance > 10) perteDeSubstance = 10;
               target.perteDeSubstance = perteDeSubstance;
@@ -17914,10 +17914,10 @@ var COFantasy = COFantasy || function() {
       else attDMBonusCommun += " " + options.bonusDM;
     }
     if (predicateAsBool(attaquant, 'perteDeSubstance') && !predicateAsBool(attaquant, 'ancreInvincible')) {
-      let perteDeSubstance = attributeAsInt(attaquant, 'perteDesubstance', 0);
+      let perteDeSubstance = attributeAsInt(attaquant, 'perteDeSubstance', 0);
       if (perteDeSubstance) {
         if (perteDeSubstance > 10) perteDeSubstance = 10;
-        attDMBonusCommun += ' -' + perteDeSubstance;
+        attDMBonusCommun += ' - ' + perteDeSubstance;
         explications.push("Perte de substance => -" + perteDeSubstance + " DM");
       }
     }
@@ -23392,13 +23392,13 @@ var COFantasy = COFantasy || function() {
     persos.forEach(function(perso) {
       if (predicateAsBool(perso, 'perteDeSubstance')) {
         let perteDeSubstance = attributeAsInt(perso, 'perteDeSubstance', 0) + 1;
-        let msg = nomPerso(perso) + "a maintenant " + perteDeSubstance;
-        msg += " jour" + (perteDeSubstance > 1) ? 's' : '' + " de perte de substance.<br/>";
+        let msg = nomPerso(perso) + " a maintenant " + perteDeSubstance;
+        msg += " jour" + ((perteDeSubstance > 1) ? 's' : '') + " de perte de substance.<br/>";
         if (!predicateAsBool(perso, 'ancreInvincible')) {
           msg += " Demander un jet de CHA difficulté " + perteDeSubstance;
           msg += " ou " + onGenre(perso, 'il', 'elle') + " disparaît pendant ";
           let nj = rollDePlus(6);
-          msg += nj.roll + " heure" + (nj > 2) ? 's' : '' + '.';
+          msg += nj.roll + " heure" + ((nj.val > 1) ? 's' : '') + '.';
         }
         sendChat('COF', '/w GM ' + msg);
         setTokenAttr(perso, 'perteDeSubstance', perteDeSubstance, evt);
@@ -24231,7 +24231,7 @@ var COFantasy = COFantasy || function() {
         error("Le dernier évènement n'est pas une action", args);
         return;
       }
-      var roll = evt.action.rolls[args[3]];
+      let roll = evt.action.rolls[args[3]];
       if (roll === undefined) {
         error("Erreur interne du bouton de pacte sanglant : roll non identifié", args);
         return;
@@ -24372,24 +24372,24 @@ var COFantasy = COFantasy || function() {
 
   //!cof-tour-force [evt.id] [rollId]
   function boutonTourDeForce(msg) {
-    var args = msg.content.split(' ');
+    let args = msg.content.split(' ');
     if (args.length < 2) {
       error("La fonction !cof-tour-force n'a pas assez d'arguments", args);
       return;
     }
-    var evt = findEvent(args[1]);
+    const evt = findEvent(args[1]);
     if (evt === undefined) {
       error("L'action est trop ancienne ou éte annulée", args);
       return;
     }
-    var perso = evt.personnage;
-    var rollId;
+    let perso = evt.personnage;
+    let rollId;
     if (args.length > 2) {
       if (!evt.action) {
         error("Le dernier évènement n'est pas une action", args);
         return;
       }
-      var roll = evt.action.rolls[args[2]];
+      let roll = evt.action.rolls[args[2]];
       if (roll === undefined) {
         error("Erreur interne du bouton de tour de force : roll non identifié", args);
         return;
@@ -24409,22 +24409,22 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton");
       return;
     }
-    var attrTourDeForce = predicateAsBool(perso, 'tourDeForce');
+    let attrTourDeForce = predicateAsBool(perso, 'tourDeForce');
     if (!attrTourDeForce) {
       sendPerso(perso, "ne peut pas faire ça !");
       return;
     }
-    var action = evt.action;
+    let action = evt.action;
     if (action) { //alors on peut faire le undo
-      var options = action.options || {};
+      let options = action.options || {};
       undoEvent(evt);
-      var d4 = rollDePlus(4);
-      var r = {
+      let d4 = rollDePlus(4);
+      let r = {
         total: d4.val,
         type: 'normal',
         display: d4.roll
       };
-      var evtTourDeForce = {
+      const evtTourDeForce = {
         type: 'tourDeForce',
         rollId: rollId,
         action: {
@@ -26916,7 +26916,7 @@ var COFantasy = COFantasy || function() {
               return;
             }
             if (playerIsGM(playerId)) {
-              let m = "Perte de substance depuis " + perteDeSubstance + " jour" + (perteDeSubstance > 1) ? 's' : '' + ' ';
+              let m = "Perte de substance depuis " + perteDeSubstance + " jour" + ((perteDeSubstance > 1) ? 's' : '') + ' ';
               m += boutonSimple('!cof-set-attribute perteDeSubstance ?{Nombre de jours} --target ' + perso.token.id, 'X');
               addLineToFramedDisplay(display, m);
             }
