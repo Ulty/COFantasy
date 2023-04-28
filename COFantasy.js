@@ -17805,6 +17805,20 @@ var COFantasy = COFantasy || function() {
     return perso;
   }
 
+  function armeElementaire(attaquant, nom, attackLabel, evt) {
+    let attr = nom + '(' + attackLabel + ')';
+    if (attributeAsBool(attaquant, attr)) {
+      let n = 1;
+      let intense = attributeAsInt(attaquant, attr + 'TempeteDeManaIntense', 0);
+      if (intense) {
+        n += intense;
+        removeTokenAttr(attaquant, attr + 'TempeteDeManaIntense', evt);
+      }
+      return n;
+    }
+    return 0;
+  }
+
   function attackDealDmg(attaquant, ciblesTouchees, echecCritique, attackLabel, weaponStats, d20roll, display, options, evt, explications, pageId, cibles) {
     cibles.forEach(function(target) {
       if (options.test || options.feinte || !target.touche) {
@@ -18044,14 +18058,13 @@ var COFantasy = COFantasy || function() {
           value: feuForgeron
         });
       }
-      let attrAEF = 'armeEnflammee(' + attackLabel + ')';
-      if (attributeAsBool(attaquant, attrAEF)) {
-        nAEF = 1;
-        let AEFIntense = attributeAsInt(attaquant, attrAEF + 'TempeteDeManaIntense', 0);
-        if (AEFIntense) {
-          nAEF += AEFIntense;
-          removeTokenAttr(attaquant, attrAEF + 'TempeteDeManaIntense', evt);
-        }
+      nAEF = armeElementaire(attaquant, 'armeEnflammee', attackLabel, evt);
+      let n = armeElementaire(attaquant, 'armeGlacee', attackLabel, evt);
+      if (n) {
+        attaquant.additionalDmg.push({
+          type: 'froid',
+          value: n + 'd6'
+        });
       }
     }
     if (nAEF === 0 && attributeAsBool(attaquant, 'armesEnflammees')) {
@@ -24661,9 +24674,9 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "On ne peut utiliser les dés d'expert du combat qu'en combat");
       return;
     }
-    var cmd = msg.content.split(' ');
-    var evtARefaire;
-    var evt = {
+    let cmd = msg.content.split(' ');
+    let evtARefaire;
+    const evt = {
       type: "Dé d'expert du combat (touche)",
       attributes: []
     };
@@ -24673,8 +24686,8 @@ var COFantasy = COFantasy || function() {
         error("L'action est trop ancienne ou a été annulée", cmd);
         return;
       }
-      var perso = evtARefaire.personnage;
-      var action = evtARefaire.action;
+      let perso = evtARefaire.personnage;
+      let action = evtARefaire.action;
       if (action === undefined) {
         error("Impossible de relancer l'action", evtARefaire);
         return;
@@ -28146,15 +28159,15 @@ var COFantasy = COFantasy || function() {
     if (cof_states[effet]) { //remplacer par sa version effet temporaire
       effet += 'Temp';
     }
-    if (effet == 'forgeron' || effet == 'armeEnflammee') {
+    if (effet == 'forgeron' || effet == 'armeEnflammee' || effet == 'armeGlacee') {
       //Compléter description de l'effet
       if (!lanceur) {
-        error("Pas de lanceur pour forgeron ou armeEnflammee", msg.content);
+        error("Pas de lanceur pour " + effet, msg.content);
         return;
       }
       let armeActuelle = tokenAttribute(lanceur, 'armeEnMain');
       if (armeActuelle.length === 0) {
-        whisperChar(charId, "Pas d'arme en main, impossible de savoir quoi enflammer.");
+        whisperChar(charId, "Pas d'arme en main, impossible de savoir à quoi appliquer " + effet);
         return;
       }
       let labelArme = armeActuelle[0].get('current');
@@ -29605,7 +29618,7 @@ var COFantasy = COFantasy || function() {
         line += "+" + options.chanceRollId.roll2;
       line += " = " + attackRoll2;
       if (reussi) {
-        var pcCible = pointsDeChance(cible);
+        let pcCible = pointsDeChance(cible);
         if (pcCible > 0)
           line += "<br/>" + boutonSimple("!cof-bouton-chance " + evt.id + " roll2", "Chance") +
           " (reste " + pcCible + " PC)";
@@ -44664,6 +44677,14 @@ var COFantasy = COFantasy || function() {
       activation: "voit son arme prendre feu",
       actif: "a une arme enflammée",
       fin: "L'arme n'est plus enflammée.",
+      dm: true,
+      generic: true,
+      visible: true
+    },
+    armeGlacee: {
+      activation: "voit son arme se couvrir de givre",
+      actif: "a une arme glacée",
+      fin: "L'arme n'est plus gelée.",
       dm: true,
       generic: true,
       visible: true

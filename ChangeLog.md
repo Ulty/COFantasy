@@ -1,4 +1,10 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 3.13
+* Ajout d'un effet armeGlacee.
+* Plus d'automatisation pour la perte de substance.
+* Fin automatique de la rage du berserk quand un barbare tombe inconscient.
+* Ajout d'un prédicat pour l'immnunité aux dégâts magiques.
+
 ## 3.12
 ### Capacités
 * Meilleur support pour le bâton de mage du forgesort.
@@ -8,8 +14,6 @@
 * Lycanthropie et Éventration de la Voie de la fusion lycanthropique.
 
 ### Autres améliorations
-* Fin automatique de la rage du berserk quand un barbare tombe inconscient.
-* Ajout d'un prédicat pour l'immnunité aux dégâts magiques.
 * ImplEmentation d'une RD spécifique contre les souffles de dragons
 * Implémentation d'une protection contre les souffles de dragons qui divise les DM en cas d'echec au test de DEX et les annule sinon.
 * Implémentation du bâton des runes mortes
