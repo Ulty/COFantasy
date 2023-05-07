@@ -5971,6 +5971,15 @@ var COFantasy = COFantasy || function() {
         }
         break;
     }
+    let expertiseSpecialisee =
+      predicateAsBool(personnage, 'expertiseSpecialisee');
+    if (expertiseSpecialisee && typeof expertiseSpecialisee == 'string') {
+      expertiseSpecialisee = expertiseSpecialisee.toLowerCase();
+      if (expertiseSpecialisee == comp) {
+        expliquer ("Expertise : +10 aux jet de "+comp);
+        bonus += 10;
+      }
+    }
     return bonus;
   }
 
@@ -6186,6 +6195,10 @@ var COFantasy = COFantasy || function() {
     let bonusCarac = bonus;
     let bonusAspectDuDemon;
     let bonusForce;
+    let expertiseSpecialisee =
+      predicateAsBool(personnage, 'expertiseSpecialisee');
+    if (typeof expertiseSpecialisee == 'string')
+      expertiseSpecialisee = expertiseSpecialisee.toLowerCase();
     switch (carac) {
       case 'DEX':
         {
@@ -6223,6 +6236,10 @@ var COFantasy = COFantasy || function() {
             msgConditions += " : -" + conditions + " au jet de DEX";
             expliquer(msgConditions);
             bonus -= conditions;
+          }
+          if (expertiseSpecialisee == 'dex' || expertiseSpecialisee == 'dexterite' ||  expertiseSpecialisee == 'dextérité') {
+            expliquer("Expertise : +5 aux jets de DEX");
+            bonus += 5;
           }
         }
         break;
@@ -6282,15 +6299,26 @@ var COFantasy = COFantasy || function() {
             expliquer(msgConditions);
             bonus -= conditions;
           }
+          if (expertiseSpecialisee == 'for' || expertiseSpecialisee == 'force') {
+            expliquer("Expertise : +5 aux jets de FOR");
+            bonus += 5;
+          }
         }
         break;
       case 'INT':
+        {
         if (attributeAsBool(personnage, 'secretsDeLAuDela')) {
           bonus += 5;
           expliquer("Secrets de l'au-delà : +5");
         }
+          if (expertiseSpecialisee == 'int' || expertiseSpecialisee == 'intelligence') {
+            expliquer("Expertise : +5 aux jets d'INT");
+            bonus += 5;
+          }
+        }
         break;
       case 'CHA':
+        {
         if (attributeAsBool(personnage, 'aspectDeLaSuccube')) {
           let bonusAspectDeLaSuccube = getValeurOfEffet(personnage, 'aspectDeLaSuccube', 5);
           expliquer("Aspect de la succube : +" + bonusAspectDeLaSuccube + " au jet de CHA");
@@ -6307,8 +6335,14 @@ var COFantasy = COFantasy || function() {
             bonus -= 10;
           }
         }
+          if (expertiseSpecialisee == 'cha' || expertiseSpecialisee == 'charisme') {
+            expliquer("Expertise : +5 aux jets de CHA");
+            bonus += 5;
+          }
+        }
         break;
       case 'CON':
+        {
         if (attributeAsBool(personnage, 'mutationSilhouetteMassive')) {
           expliquer("Silhouette massive : +5 au jet de CON");
           bonus += 5;
@@ -6324,6 +6358,11 @@ var COFantasy = COFantasy || function() {
           bonusAspectDuDemon = getValeurOfEffet(personnage, 'aspectDuDemon', 2);
           expliquer("Aspect du démon : +" + bonusAspectDuDemon + " au jet de CON");
           bonus += bonusAspectDuDemon;
+        }
+          if (expertiseSpecialisee == 'con' || expertiseSpecialisee == 'constitution') {
+            expliquer("Expertise : +5 aux jets de CON");
+            bonus += 5;
+          }
         }
         break;
     }
@@ -12319,19 +12358,23 @@ var COFantasy = COFantasy || function() {
       if (rageBerserk.length > 0) {
         rageBerserk = rageBerserk[0].get('current');
         if (rageBerserk == 'furie') {
-          attBonus += 3;
+          let bonus = 3;
+          if (predicateAsBool(attaquant, 'expertiseSpecialisee') == 'furieDuBerserk') bonus += 2;
           if (options.pasDeDmg)
-            explications.push("Furie du berserk : +3 en Attaque");
+            explications.push("Furie du berserk : +"+bonus+" en Attaque");
           else
-            explications.push("Furie du berserk : +3 en Attaque et +2d6 aux DM");
+            explications.push("Furie du berserk : +"+bonus+" en Attaque et +2d6 aux DM");
+          attBonus += bonus;
           options.rageBerserk = 2;
         } else {
-          attBonus += 2;
+          let bonus = 2;
+          if (predicateAsBool(attaquant, 'expertiseSpecialisee') == 'rageDuBerserk') bonus += 2;
           if (options.pasDeDmg)
-            explications.push("Rage du berserk : +2 en Attaque");
+            explications.push("Rage du berserk : +"+bonus+" en Attaque");
           else
-            explications.push("Rage du berserk : +2 en Attaque et +1d6 aux DM");
+            explications.push("Rage du berserk : +"+bonus+" en Attaque et +1d6 aux DM");
           options.rageBerserk = 1;
+          attBonus += bonus;
         }
       } else if (attributeAsBool(attaquant, 'frenesieMinotaure')) {
         attBonus += 2;
