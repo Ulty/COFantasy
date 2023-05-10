@@ -11975,6 +11975,10 @@ var COFantasy = COFantasy || function() {
       defense -= bonus;
     }
     defense += predicateAsInt(target, 'DEF', 0);
+    if (attaquant && predicateAsBool(target, 'armeDeLEte') && predicateAsBool(attaquant, 'creatureDeLHiver')) {
+      explications.push("Protégé par une arme de l'été => +25 en DEF");
+      defense += 25;
+    }
     return defense;
   }
 
@@ -15432,6 +15436,10 @@ var COFantasy = COFantasy || function() {
     if (options.ferFroid && (estDemon(target) || estFee(target))) dmgCoef += 1;
     let diviseDmg = options.diviseDmg || 1;
     if (target.diviseDmg) diviseDmg *= target.diviseDmg;
+    if (options.attaquant && predicateAsBool(options.attaquant, 'creatureDeLHiver') && predicateAsBool(target, 'armeDeLEte')) {
+      diviseDmg += 4;
+      expliquer("L'arme de l'été divise les dégâts de l'attaque");
+    }
     if (options.attaqueEnEtantGobe) diviseDmg *= 2;
     if (options.sortilege && predicateAsBool(target, 'esquiveDeLaMagie'))
       diviseDmg *= 2;
@@ -24769,22 +24777,22 @@ var COFantasy = COFantasy || function() {
 
   //!cof-expert-combat-def [evt.id] [targetId]
   function expertDuCombatDEF(msg) {
-    var args = msg.content.split(' ');
+    let args = msg.content.split(' ');
     if (args.length < 3) {
       error("La fonction !cof-expert-combat-def n'a pas assez d'arguments", args);
       return;
     }
-    var evtARefaire = findEvent(args[1]);
+    let evtARefaire = findEvent(args[1]);
     if (evtARefaire === undefined) {
       error("L'action est trop ancienne ou éte annulée", args);
       return;
     }
-    var action = evtARefaire.action;
+    let action = evtARefaire.action;
     if (action === undefined) {
       error("Le dernier évènement n'est pas une action", args);
       return;
     }
-    var perso = persoOfId([args[2]]);
+    let perso = persoOfId([args[2]]);
     if (perso === undefined) {
       error("Erreur interne du bouton d'expert du combat (DEF) : pas de cible trouvée", args);
       return;
@@ -24793,7 +24801,7 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "pas le droit d'utiliser ce bouton");
       return;
     }
-    var evt = {
+    const evt = {
       type: 'expertDuCombatDEF',
     };
     if (!persoUtiliseDeExpertDuCombat(perso, evt)) return;
@@ -24807,7 +24815,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function persoUtiliseRuneEnergie(perso, evt) {
-    var attr = tokenAttribute(perso, 'runeForgesort_énergie');
+    let attr = tokenAttribute(perso, 'runeForgesort_énergie');
     if (attr.length < 1 || attr[0].get('current') < 1) {
       sendPerso(perso, "n'a pas de rune d'énergie");
       return false;
@@ -24896,8 +24904,8 @@ var COFantasy = COFantasy || function() {
   }
 
   function persoUtiliseRunePuissance(perso, labelArme, evt, permanent) {
-    var attrName = permanent ? 'runeDePuissance' + labelArme : "runeForgesort_puissance(" + labelArme + ")";
-    var arme = getAttackName(labelArme, perso);
+    let attrName = permanent ? 'runeDePuissance' + labelArme : "runeForgesort_puissance(" + labelArme + ")";
+    let arme = getAttackName(labelArme, perso);
     if (arme === undefined) {
       error(perso.tokNname + " n'a pas d'arme associée au label " + labelArme, perso);
       return false;
