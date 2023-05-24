@@ -5443,7 +5443,7 @@ var COFantasy = COFantasy || function() {
         act.indexOf('--target ' + tid) == -1) {
         //Si on n'a pas de cible, on fait comme si le token était sélectionné.
         let add_token = " --target " + tid;
-        if (act.indexOf(' --allie') >= 0 || act.indexOf('!cof-effet') >= 0) {
+        if (act.indexOf(' --allie') >= 0) {
           if (act.indexOf('--lanceur') == -1)
             add_token = " --lanceur " + tid;
           else add_token = ""; //La cible sont les alliés de --lanceur.
@@ -13222,6 +13222,7 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  //Si le dépassement de limite est possible, renvoie un nouveau depMana, sinon renvoie false
   function depasseLimite(perso, nomAttr, msgImpossible, msg, evt, options) {
     if (options.depasseLimite) {
       options.mana = options.mana || 0;
@@ -13230,12 +13231,12 @@ var COFantasy = COFantasy || function() {
       cout += step;
       options.mana += cout;
       let depMana = depenseManaPossible(perso, options.mana, msg);
-      if (!depMana) return true;
+      if (!depMana) return false;
       setTokenAttr(perso, 'depasse' + nomAttr, cout, evt);
-      return false;
+      return depMana;
     }
     sendPerso(perso, msgImpossible, options.secret);
-    return true;
+    return false;
   }
 
   //Retourne true si il existe une limite qui empêche de lancer le sort
@@ -13292,8 +13293,9 @@ var COFantasy = COFantasy || function() {
       utilisations =
         attributeAsInt(personnage, ressource, options.limiteParJour);
       if (utilisations === 0) {
-        if (depasseLimite(personnage, ressource, "ne peut plus faire cette action aujourd'hui", msg, evt, options)) return true;
-        utilisations = 1;
+        depMana = depasseLimite(personnage, ressource, "ne peut plus faire cette action aujourd'hui", msg, evt, options);
+        if (depMana) utilisations = 1;
+        else return true;
       }
       setTokenAttr(personnage, ressource, utilisations - 1, evt);
       if (options.limiteParJourRessource) {
@@ -13426,7 +13428,8 @@ var COFantasy = COFantasy || function() {
         let nomAttr = options.limiteAttribut.nom;
         let currentAttr = attributeAsInt(personnage, nomAttr, 0);
         if (currentAttr >= options.limiteAttribut.limite) {
-          if (depasseLimite(personnage, nomAttr, options.limiteAttribut.message, msg, evt, options)) return true;
+          depMana = depasseLimite(personnage, nomAttr, options.limiteAttribut.message, msg, evt, options);
+          if (!depMana) return true;
         }
         setTokenAttr(personnage, nomAttr, currentAttr + 1, evt);
       } else {
@@ -25060,9 +25063,9 @@ var COFantasy = COFantasy || function() {
   //Devrait être appelé seulement depuis un bouton
   //!cof-esquive-fatale evtid target_id
   function doEsquiveFatale(msg) {
-    var cmd = msg.content.split(' ');
-    var evtARefaire;
-    var evt = {
+    let cmd = msg.content.split(' ');
+    let evtARefaire;
+    const evt = {
       type: "Esquive fatale",
       attributes: []
     };
@@ -25075,22 +25078,22 @@ var COFantasy = COFantasy || function() {
       error("L'attaque est trop ancienne ou a été annulée", cmd);
       return;
     }
-    var action = evtARefaire.action;
+    let action = evtARefaire.action;
     if (action === undefined) {
       error("Impossible d'esquiver l'attaque", evtARefaire);
       return;
     }
-    var perso = action.cibles[0];
+    let perso = action.cibles[0];
     if (perso === undefined) {
       error("Erreur interne du bouton de 'esquive fatale : l'évenement n'a pas de personnage", evtARefaire);
       return;
     }
-    var adversaire = persoOfId(cmd[2]);
+    let adversaire = persoOfId(cmd[2]);
     if (adversaire === undefined) {
       sendPlayer(msg, "Il faut cibler un token valide");
       return;
     }
-    var attaquant = action.attaquant;
+    let attaquant = action.attaquant;
     if (attaquant.token.id == adversaire.token.id) {
       sendPlayer(msg, "Il faut cibler un autre adversaire que l'attaquant");
       return;
@@ -25099,11 +25102,11 @@ var COFantasy = COFantasy || function() {
       sendPerso(perso, "doit choisir un adversaire au contact pour l'esquive fatale");
       return;
     }
-    var ennemisAuContact = perso.ennemisAuContact;
+    let ennemisAuContact = perso.ennemisAuContact;
     if (ennemisAuContact === undefined) {
       error("Ennemis au contact non définis", perso);
     } else {
-      var i = ennemisAuContact.find(function(tok) {
+      let i = ennemisAuContact.find(function(tok) {
         return (tok.id == adversaire.token.id);
       });
       if (i === undefined) {
@@ -25248,7 +25251,7 @@ var COFantasy = COFantasy || function() {
           return;
         }
         let attaque;
-        var lastAct = lastEvent();
+        let lastAct = lastEvent();
         if (lastAct !== undefined) {
           attaque = lastAct.action;
         }
@@ -25274,19 +25277,19 @@ var COFantasy = COFantasy || function() {
           sendPerso(cible, " est trop loin de " + targetName + " pour s'interposer");
           return;
         }
-        var evt = {
+        const evt = {
           type: 'interposer'
         };
         setTokenAttr(cible, 'interposer', true, evt, {
           msg: "se met devant " + targetName + " pour intercepter l'attaque !"
         });
-        var pvApres = target.token.get('bar1_value');
+        let pvApres = target.token.get('bar1_value');
         // On annule l'ancienne action
         undoEvent();
         // On calcule ensuite les pv perdus, et on les applique au défenseur
-        var pvPerdus = target.token.get('bar1_value') - pvApres;
+        let pvPerdus = target.token.get('bar1_value') - pvApres;
         // Puis on refait en changeant la cible
-        var options = attaque.options;
+        let options = attaque.options;
         options.interposer = pvPerdus;
         options.rolls = attaque.rolls;
         options.evt = evt;
@@ -30790,7 +30793,7 @@ var COFantasy = COFantasy || function() {
       if (options.limiteSoinsParJourRessource)
         ressourceLimiteSoinsParJour = options.limiteSoinsParJourRessource;
       ressourceLimiteSoinsParJour = "limiteParJour_Soins" + ressourceLimiteSoinsParJour;
-      var soinsRestantsDuJour = attributeAsInt(soigneur, ressourceLimiteSoinsParJour, options.limiteSoinsParJour);
+      let soinsRestantsDuJour = attributeAsInt(soigneur, ressourceLimiteSoinsParJour, options.limiteSoinsParJour);
       if (soinsRestantsDuJour < 1) {
         whisperChar(charId, "Plus possible de faire ces soins aujourd'hui");
         return;
@@ -30803,7 +30806,7 @@ var COFantasy = COFantasy || function() {
     if (options.tempeteDeMana && soigneur) {
       if (options.tempeteDeMana.cout === 0) {
         //On demande de préciser les options
-        var optMana = {
+        const optMana = {
           mana: options.mana,
           rang: options.rang,
           portee: options.portee,
@@ -41002,6 +41005,9 @@ var COFantasy = COFantasy || function() {
                   case 'poison':
                     predicats += 'immunite_poison ';
                     return;
+                  case 'poison':
+                    predicats += 'immunite_sommeil ';
+                    return;
                   case 'construct':
                     predicats += 'sansEsprit creatureArtificielle immuniteSaignement';
                     return;
@@ -41112,6 +41118,9 @@ var COFantasy = COFantasy || function() {
                   predicats += 'animal ';
                   break;
                 case 'construct':
+                  predicats += 'nonVivant ';
+                  break;
+                case 'dragon':
                   predicats += 'nonVivant ';
                   break;
                 case 'fey':
@@ -41533,6 +41542,12 @@ var COFantasy = COFantasy || function() {
                       ennemiJure = 'humain';
                       pasDEnnemi = false;
                     } else ennemiJure += ', humain';
+                    break;
+                  case 'dwarves':
+                    if (pasDEnnemi) {
+                      ennemiJure = 'nain';
+                      pasDEnnemi = false;
+                    } else ennemiJure += ', nain';
                     break;
                   default:
                     if (!e.startsWith('+')) {
@@ -47569,7 +47584,7 @@ var COFantasy = COFantasy || function() {
     attrEnveloppe = attrEnveloppe.concat(tokenAttribute(perso, 'aGobe'));
     attrEnveloppe = attrEnveloppe.concat(tokenAttribute(perso, 'ecrase'));
     attrEnveloppe.forEach(function(a) {
-      var cible = persoOfIdName(a.get('current'), pageId);
+      let cible = persoOfIdName(a.get('current'), pageId);
       if (cible === undefined) {
         a.remove();
         return;
