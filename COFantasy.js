@@ -31606,6 +31606,44 @@ var COFantasy = COFantasy || function() {
     sendChat(nomPerso, cmd.join(' '));
   }
 
+  // Renvoie la durée mise à jour ou undefined si l'action n'est pas possible
+  function lancerMurDeForce(lanceur, playerId, duree, msg, typeMur, evt, options) {
+    if (options.tempeteDeMana) {
+      if (options.tempeteDeMana.cout === 0) {
+        //On demande de préciser les options
+        let optMana = {
+          mana: options.mana,
+          dm: false,
+          soins: false,
+          duree: true,
+          portee: true,
+          rang: options.rang,
+        };
+        setTempeteDeMana(playerId, lanceur, msg.content, optMana);
+        return;
+      } else {
+        if (options.rang && options.tempeteDeMana.cout > options.rang) {
+          sendPerso(lanceur, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
+        }
+      }
+    }
+    if (limiteRessources(lanceur, options, 'murDeForce', 'lancer un mur de ' + typeMur, evt)) return;
+    if (options.son) playSound(options.son);
+    whisperChar(lanceur.charId, "lance un sort de mur de " + typeMur);
+    if (!duree) {
+      switch (typeMur) {
+        case 'force':
+          duree = 5 + modCarac(lanceur, 'charisme');
+          break;
+        case 'vent':
+          duree = 5 + modCarac(lanceur, 'intelligence');
+          break;
+        default:
+          duree = 1;
+      }
+    }
+    return duree;
+  }
 
   //!cof-mur-de-force [opt] [duree]
   // opt peut être mur, noImage ou vent
@@ -31651,32 +31689,23 @@ var COFantasy = COFantasy || function() {
         type: "Mur de " + typeMur
       };
       addEvent(evt);
+      let token;
+      let pageId;
+      if (options.lanceur) {
+        duree = lancerMurDeForce(options.lanceur, playerId, duree, msg, typeMur, evt, options);
+        if (!duree) return;
+        token = options.lanceur.token;
+        pageId = token.get('pageid');
+      }
       initiative(selected, evt);
-      iterSelected(selected, function(lanceur) {
-        if (options.tempeteDeMana) {
-          if (options.tempeteDeMana.cout === 0) {
-            //On demande de préciser les options
-            let optMana = {
-              mana: options.mana,
-              dm: false,
-              soins: false,
-              duree: true,
-              portee: true,
-              rang: options.rang,
-            };
-            setTempeteDeMana(playerId, lanceur, msg.content, optMana);
-            return;
-          } else {
-            if (options.rang && options.tempeteDeMana.cout > options.rang) {
-              sendPerso(lanceur, "Attention, le coût de la tempête de mana (" + options.tempeteDeMana.cout + ") est supérieur au rang du sort");
-            }
-          }
+      iterSelected(selected, function(cible) {
+        if (!options.lanceur) {
+          let lanceur = cible;
+          duree = lancerMurDeForce(lanceur, playerId, duree, msg, typeMur, evt, options);
+          if (!duree) return;
+          token = lanceur.token;
+          pageId = token.get('pageid');
         }
-        let token = lanceur.token;
-        let pageId = token.get('pageid');
-        if (limiteRessources(lanceur, options, 'murDeForce', 'lancer un mur de ' + typeMur, evt)) return;
-        if (options.son) playSound(options.son);
-        whisperChar(lanceur.charId, "lance un sort de mur de " + typeMur);
         if (sphere) {
           let scale = computeScale(pageId);
           let diametre = 6;
@@ -31702,21 +31731,9 @@ var COFantasy = COFantasy || function() {
           if (newImage) {
             evt.tokens = [newImage];
             toFront(newImage);
-            setTokenAttr(lanceur, 'murDeForceId', newImage.id, evt);
-            if (!duree) {
-              switch (typeMur) {
-                case 'force':
-                  duree = 5 + modCarac(lanceur, 'charisme');
-                  break;
-                case 'vent':
-                  duree = 5 + modCarac(lanceur, 'intelligence');
-                  break;
-                default:
-                  duree = 1;
-              }
-            }
+            setTokenAttr(cible, 'murDeForceId', newImage.id, evt);
             if (options.puissantDuree || options.tempeteDeManaDuree) duree += duree;
-            setAttrDuree(lanceur, 'murDeForce', duree, evt);
+            setAttrDuree(cible, 'murDeForce', duree, evt);
           } else {
             error("Impossible de créer l'image " + options.image, imageFields);
           }
@@ -39046,24 +39063,24 @@ var COFantasy = COFantasy || function() {
       addEvent(evt);
       return;
     }
-    var display = startFramedDisplay(playerId, 'Vapeurs éthyliques');
-    var expliquer = function(m) {
+    let display = startFramedDisplay(playerId, 'Vapeurs éthyliques');
+    let expliquer = function(m) {
       addLineToFramedDisplay(display, m);
     };
-    var explications = [];
+    const explications = [];
     if (options.save) {
       explications.push(" Jet de " + options.save.carac + " " + options.save.seuil + " pour résister à l'alcool");
     }
     entrerEnCombat(options.lanceur, persos, explications, evt);
     explications.forEach(explication => expliquer(explications));
-    var count = persos.length;
-    var finalize = function() {
+    let count = persos.length;
+    let finalize = function() {
       if (count == 1) sendChat('', endFramedDisplay(display));
       count--;
     };
     persos.forEach(function(perso) {
       if (options.save) {
-        var saveOpts = {
+        let saveOpts = {
           hideSaveTitle: true,
           rolls: options.rolls,
           chanceRollId: options.chanceRollId,
