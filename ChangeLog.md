@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.13
 ### Capacités
+* Rangs 4 et 5 de la Voie télépathie
 * Expertise (rang 1 de la Voie de prestige spécialisée)
 
 ### Autres améliorations

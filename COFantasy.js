@@ -8417,19 +8417,20 @@ var COFantasy = COFantasy || function() {
         case 'arc':
         case 'arbalete':
         case 'armeDArgent':
+        case 'artificiel':
         case 'attaqueAssuree':
         case 'attaqueFlamboyante':
         case 'attaqueRisquee':
         case 'attaqueOptions':
         case 'beni':
+        case 'choc':
+        case 'dominationPsy':
         case 'peutAgripper':
         case 'spectral':
-        case 'choc':
         case 'epieu':
         case 'hache':
         case 'marteau':
         case 'vicieux':
-        case 'artificiel':
         case 'asDeLaGachette':
         case 'attaqueMentale':
         case 'auto':
@@ -11401,6 +11402,12 @@ var COFantasy = COFantasy || function() {
         target.messages.push("Attaque contre " + stringOfCarac(options.difficulteCarac.carac));
       }
       return diff;
+    } else if (options.dominationPsy) {
+      let def = 15 + ficheAttributeAsInt(target, 'niveau', 1);
+      let modINT = modCarac(target, 'intelligence');
+      let modCHA = modCarac(target, 'charisme');
+      let modSAG = modCarac(target, 'sagesse');
+      return def + Math.max(modINT, modCHA, modSAG);
     }
     let defDerivee = predicateAsBool(target, 'defDeriveeDe');
     if (defDerivee) {
@@ -14091,6 +14098,15 @@ var COFantasy = COFantasy || function() {
           seuil: seuilFauchage,
           fauchage: tailleFauchage
         }
+      });
+    }
+    if (!options.redo && options.dominationPsy) {
+      options.effets = options.effets || [];
+      let valeur = 10 + modCarac(attaquant, 'charisme');
+      options.effets.push({
+        effet: 'dominationPsy',
+        effetIndetermine: true,
+        valeur
       });
     }
     if (options.toucher !== undefined) {
@@ -21495,6 +21511,33 @@ var COFantasy = COFantasy || function() {
           setEffetTemporaire(target, ef, predicateAsInt(options.attaquant, 'blessureSanglante', 0, 1), evt, {});
         }
         let pvPerdus = dmgTotal;
+        if (pvPerdus > 0 && attributeAsBool(target, 'dominationPsy') && isActive(target)) {
+          let saveId = 'saveDMDominationPsy_' + target.token.id;
+          let seuil = getValeurOfEffet(target, 'dominationPsy', 10);
+          let s = {
+            carac: 'SAG',
+            seuil
+          };
+          let expliquer = function(msg) {
+            sendPerso(target, msg);
+          };
+          let sujet = onGenre(target, 'il', 'elle');
+          let saveOpts = {
+            msgPour: " pour se libérer de la domination",
+            msgReussite: ", " + sujet + " se libère de la domination",
+            msgRate: ", " + sujet + " reste sous domination malgré les dégâts",
+            rolls: options.rolls,
+            chanceRollId: options.chanceRollId
+          };
+          setTimeout(_.bind(save, undefined, s, target, saveId, expliquer, saveOpts, evt,
+              function(reussite, texte) { //asynchrone
+                if (reussite) {
+                  removeTokenAttr(target, 'dominationPsy', evt);
+                  removeTokenAttr(target, 'dominationPsyValeur', evt);
+                }
+              }),
+            2000);
+        }
         if (target.tempDmg) {
           tempDmg += dmgTotal;
           if (tempDmg > pvmax) {
@@ -45671,6 +45714,12 @@ var COFantasy = COFantasy || function() {
       activation: "rentre dans une construction de taille humaine.",
       actif: "est un peu à l'étroit, le bâtiment est trop petit",
       fin: "sort de la construction de taille humains."
+    },
+    dominationPsy: {
+      activation: "est maintenant sous le contrôle de quelqu'un",
+      actif: "est sous l'effet d'une domination psy",
+      fin: "retrouve le contrôle de son corps",
+      prejudiciable: true,
     },
     fievreux: {
       activation: "se sent fiévreux",
