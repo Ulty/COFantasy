@@ -5,6 +5,7 @@
 * Expertise (rang 1 de la Voie de prestige spécialisée)
 
 ### Autres améliorations
+* Possibilité d'utiliser les options de triche avec les --if
 * Ajout d'un prédicat pour les armes de l'été.
 * Ajout d'un effet armeGlacee.
 * Plus d'automatisation pour la perte de substance.

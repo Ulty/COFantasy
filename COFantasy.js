@@ -9120,8 +9120,8 @@ var COFantasy = COFantasy || function() {
             sendChat('COF', "Pas le droit d'utiliser l'option --" + cmd[0]);
             return;
           }
-          if (options.triche === undefined) {
-            options.triche = cmd[0];
+          if (scope.triche === undefined) {
+            scope.triche = cmd[0];
           } else {
             error("Option incompatible", optArgs);
           }
@@ -16623,7 +16623,7 @@ var COFantasy = COFantasy || function() {
             if (options.auto) {
               addAttackSound("soundAttackSucces", weaponStats.divers, options);
             } else if (!options.interposer) {
-              let triche = options.triche || options.interventionDivine ||
+              let triche = target.triche || options.triche || options.interventionDivine ||
                 weaponStats.attaquePaire || weaponStats.attaqueImpaire;
               if (triche) {
                 switch (triche) {
