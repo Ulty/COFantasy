@@ -2121,7 +2121,7 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie de Morn</h4>
                 <ol>
                   <li><strong>Secrets de l'au-delà</strong> : <code>!cof-effet-temp secretsDeLAuDela 1 --mana 0</code></li>
-                  <li><strong>Souffle de vie</strong> : <code>!cof-soin @{selected|token_id} @{target|token_id} souffleDeVie --portee 20 --mana 0</code></li>
+                  <li><strong>Souffle de vie</strong> : <code>!cof-soin @{selected|token_id} @{target|token_id} souffleDeVie --mana 0</code></li>
                   <li><strong>Souffle de mort</strong> : faire une attaque magique, de portée 20 m (la portée par défaut pour les sorts, mais rien n'est spécifié dans le texte), de dégâts 2d8+INT. Ajoutez <code>auto</code> dans les modificateurs. Pour les options, <code>--disque 10 souffleDeMort --effet souffleDeMort 1 --save CON 10 --mana 1</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de Prestige spécialisée</h4>
@@ -2207,7 +2207,7 @@ tr {line-height: 25px;}
                 </ol>
                 <h4 class="text-secondary">Voie du guérisseur</h4>
                 <ol>
-                  <li><strong>Premiers soins</strong> : ajouter un <a href=#predicats>prédicat</a> <code>voieDuGuerisseur</code> de valeur le rang dans cette voie pour le bonus aux soins de la Voie des soins. Pas encore de support complet pour le sort, faire simplement <code>!cof-soin @{selected|token_id} @{target|token_id} 2d6+@{selected|SAG}</code>.</li>
+                  <li><strong>Premiers soins</strong> : ajouter un <a href=#predicats>prédicat</a> <code>voieDuGuerisseur</code> de valeur le rang dans cette voie pour le bonus aux soins de la Voie des soins. Pour le sort, faire <code>!cof-soin @{selected|token_id} @{target|token_id} premiersSoins --mana 0</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du guerrier-mage</h4>
                 <p>Penser à utiliser l'option <code>--magieEnArmure</code> pour le lancement des sorts affectés.</p>

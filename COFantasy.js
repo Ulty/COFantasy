@@ -19893,7 +19893,7 @@ var COFantasy = COFantasy || function() {
             }
           }
         }
-        if (evt.action.options && !evt.action.options.auto && evt.action.cibles) {
+        if (evt.action.options && evt.action.cibles) {
           evt.action.cibles.forEach(function(target) {
             if (!options.pasDeDmg && target.touche &&
               predicateAsBool(target, 'ignorerLaDouleur') &&
@@ -19902,13 +19902,15 @@ var COFantasy = COFantasy || function() {
                 boutonSimple("!cof-ignorer-la-douleur " + evt.id + ' --target ' + target.token.id, "ignorer la douleur")
               );
             }
-            let pacteSanglant = predicateAsInt(target, 'pacteSanglant', 0);
-            if (pacteSanglant >= 3) {
-              let msg = nomPerso(target) + " fait un Pacte sanglant" + boutonSimple("!cof-pacte-sanglant-def " + evt.id + ' 3 ' + target.token.id, "(+3 DEF)");
-              if (pacteSanglant >= 5) {
-                msg += boutonSimple("!cof-pacte-sanglant-def " + evt.id + ' 5 ' + target.token.id, "(+5 DEF)");
+            if (!evt.action.options.auto) {
+              let pacteSanglant = predicateAsInt(target, 'pacteSanglant', 0);
+              if (pacteSanglant >= 3) {
+                let msg = nomPerso(target) + " fait un Pacte sanglant" + boutonSimple("!cof-pacte-sanglant-def " + evt.id + ' 3 ' + target.token.id, "(+3 DEF)");
+                if (pacteSanglant >= 5) {
+                  msg += boutonSimple("!cof-pacte-sanglant-def " + evt.id + ' 5 ' + target.token.id, "(+5 DEF)");
+                }
+                addLineToFramedDisplay(display, msg);
               }
-              addLineToFramedDisplay(display, msg);
             }
           });
         }
@@ -30739,18 +30741,34 @@ var COFantasy = COFantasy || function() {
         {
           let combat = stateCOF.combat;
           if (!combat) {
-            whisperChar(charId, " ne peut pas lancer de soin de groupe en dehors des combats");
+            whisperChar(charId, " ne peut pas lancer de souffle de vie en dehors des combats");
             return;
           }
           souffleDeVie = combat.tour;
           effet = 'souffleDeVie';
-          if (options.portee === undefined) options.portee = 0;
-          let bonus = niveau + predicateAsInt(soigneur, 'voieDuGuerisseur', 0);
+          if (options.portee === undefined) options.portee = 20;
           soins = "[[" + (nbDes + 1) + (options.puissant ? "d10" : "d8");
           if (attributeAsBool(soigneur, 'formeDAnge') && predicateAsInt(soigneur, 'voieDeLArchange', 1) > 1) {
             soins += 'ro1';
           }
-          soins += " +" + bonus + "]]";
+          soins += " +" + niveau + "]]";
+          break;
+        }
+      case 'premiersSoins':
+        {
+          let combat = stateCOF.combat;
+          if (!combat) {
+            whisperChar(charId, " ne peut pas lancer premiers soins en dehors des combats");
+            return;
+          }
+          souffleDeVie = -1;
+          effet = 'premiersSoins';
+          if (options.portee === undefined) options.portee = 0;
+          soins = "[[" + (nbDes + 1) + (options.puissant ? 'd8' : 'd6');
+          if (attributeAsBool(soigneur, 'formeDAnge') && predicateAsInt(soigneur, 'voieDeLArchange', 1) > 1) {
+            soins += 'ro1';
+          }
+          soins += " +" + modCarac(soigneur, 'sagesse') + "]]";
           break;
         }
       case 'groupe':
@@ -31018,42 +31036,47 @@ var COFantasy = COFantasy || function() {
             }
           }
           if (souffleDeVie) {
+            //souffleDeVie = tour courant pour le sort de souffle de vie,
+            // et -1 pour le sort de premiers soins
             let pv = parseInt(cible.token.get('bar1_value'));
             if (isNaN(pv) || pv > 0) {
-              let m = nomPerso(cible) + " n'est pas à 0 PV, impossible d'utiliser le souffle de vie pour " + onGenre(cible, 'lui', 'elle');
+              let sort = (souffleDeVie > 0) ? "souffle de vie" : "premiers soins";
+              let m = nomPerso(cible) + " n'est pas à 0 PV, impossible d'utiliser " + sort + " pour " + onGenre(cible, 'lui', 'elle');
               if (display) addLineToFramedDisplay(display, m);
               else sendChar(charId, m, true);
               finSoin();
               return;
             }
-            let d = tokenAttribute(cible, 'a0PVDepuis');
-            if (d.length > 0) {
-              d = d[0];
-              let tour = parseInt(d.get('current'));
-              let tropTard = false;
-              if (!isNaN(tour)) {
-                if (tour < souffleDeVie - 2) tropTard = true;
-                if (tour == souffleDeVie - 2) {
-                  let init = parseInt(d.get('max'));
-                  tropTard = !isNaN(init) && init > stateCOF.combat.init;
+            if (souffleDeVie > 0) {
+              let d = tokenAttribute(cible, 'a0PVDepuis');
+              if (d.length > 0) {
+                d = d[0];
+                let tour = parseInt(d.get('current'));
+                let tropTard = false;
+                if (!isNaN(tour)) {
+                  if (tour < souffleDeVie - 2) tropTard = true;
+                  if (tour == souffleDeVie - 2) {
+                    let init = parseInt(d.get('max'));
+                    tropTard = !isNaN(init) && init > stateCOF.combat.init;
+                  }
                 }
-              }
-              if (tropTard) {
-                let m = nomPerso(cible) + " est à 0 PV depuis plus de 2 tours, impossible d'utiliser le souffle de vie pour " + onGenre(cible, 'lui', 'elle');
-                if (display) addLineToFramedDisplay(display, m);
-                else sendChar(charId, m, true);
-                finSoin();
-                return;
-              }
-              evt.deletedAttributes = evt.deletedAttributes || [];
-              deleteAttribute(d, evt);
-              if (estPJ(cible) && reglesOptionelles.dommages.val.blessures_graves.val) {
-                //Il faut alors annuler la perte de PR ou la blessure grave
-                let pr = pointsDeRecuperation(cible);
-                if (pr && (pr.current > 0 || !getState(cible, 'blesse'))) {
-                  rajouterPointDeRecuperation(cible, evt, pr);
-                } else {
-                  setState(cible, 'blesse', false, evt);
+                if (tropTard) {
+                  let m = nomPerso(cible) + " est à 0 PV depuis plus de 2 tours, impossible d'utiliser le souffle de vie pour " + onGenre(cible, 'lui', 'elle');
+                  if (display) addLineToFramedDisplay(display, m);
+                  else sendChar(charId, m, true);
+                  finSoin();
+                  return;
+                }
+                evt.deletedAttributes = evt.deletedAttributes || [];
+                deleteAttribute(d, evt);
+                if (estPJ(cible) && reglesOptionelles.dommages.val.blessures_graves.val) {
+                  //Il faut alors annuler la perte de PR ou la blessure grave
+                  let pr = pointsDeRecuperation(cible);
+                  if (pr && (pr.current > 0 || !getState(cible, 'blesse'))) {
+                    rajouterPointDeRecuperation(cible, evt, pr);
+                  } else {
+                    setState(cible, 'blesse', false, evt);
+                  }
                 }
               }
             }
@@ -31368,10 +31391,10 @@ var COFantasy = COFantasy || function() {
   }
 
   function ignorerLaDouleur(msg) {
-    var options = parseOptions(msg);
+    const options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
-    var evtARefaire = lastEvent();
+    const cmd = options.cmd;
+    let evtARefaire = lastEvent();
     if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
       evtARefaire = findEvent(cmd[1]);
       if (evtARefaire === undefined) {
@@ -31381,7 +31404,7 @@ var COFantasy = COFantasy || function() {
     }
     getSelected(msg, function(selected) {
       iterSelected(selected, function(chevalier) {
-        var token = chevalier.token;
+        let token = chevalier.token;
         if (attributeAsInt(chevalier, 'douleurIgnoree', 0) > 0) {
           sendPerso(chevalier, "a déjà ignoré la doubleur une fois pendant ce combat");
           return;
@@ -31390,21 +31413,21 @@ var COFantasy = COFantasy || function() {
           sendPerso(chevalier, "s'y prend trop tard pour ignorer la douleur : la dernière action n'était pas une attaque");
           return;
         }
-        var aIgnore;
-        var evt = {
+        let aIgnore;
+        const evt = {
           type: 'ignorer la douleur'
         };
-        var PVid = token.get('bar1_link');
+        let PVid = token.get('bar1_link');
         if (PVid === '') { //token non lié, effets seulement sur le token.
           if (evtARefaire.affecte) {
-            var affecte = evtARefaire.affectes[token.id];
+            let affecte = evtARefaire.affectes[token.id];
             if (affecte && affecte.prev) {
-              var lastBar1 = affecte.prev.bar1_value;
-              var bar1 = parseInt(token.get('bar1_value'));
+              let lastBar1 = affecte.prev.bar1_value;
+              let bar1 = parseInt(token.get('bar1_value'));
               if (isNaN(lastBar1) || isNaN(bar1) || lastBar1 <= bar1) {
                 //On regarde la barre 2, peut-être qu'il s'agit de DM temporaires
-                var lastBar2 = affecte.prev.bar2_value;
-                var bar2 = parseInt(token.get('bar2_value'));
+                let lastBar2 = affecte.prev.bar2_value;
+                let bar2 = parseInt(token.get('bar2_value'));
                 if (isNaN(lastBar2) || isNaN(bar2) || bar2 <= lastBar2) {
                   sendPerso(chevalier, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ait pas enlevé de PV");
                   return;
@@ -31420,12 +31443,12 @@ var COFantasy = COFantasy || function() {
             }
           }
         } else { // token lié, il faut regarder l'attribut
-          var attrPV = evtARefaire.attributes.find(function(attr) {
+          let attrPV = evtARefaire.attributes.find(function(attr) {
             return (attr.attribute.id == PVid);
           });
           if (attrPV) {
-            var lastPV = attrPV.current;
-            var newPV = attrPV.attribute.get('current');
+            let lastPV = attrPV.current;
+            let newPV = attrPV.attribute.get('current');
             if (isNaN(lastPV) || isNaN(newPV) || lastPV <= newPV) {
               sendPerso(chevalier, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ait pas enlevé de PV");
               return;
@@ -31439,8 +31462,8 @@ var COFantasy = COFantasy || function() {
               return (attr.attribute.id == PVid);
             });
             if (attrPV) {
-              var lastDmTemp = attrPV.current;
-              var newDmTemp = attrPV.attribute.get('current');
+              let lastDmTemp = attrPV.current;
+              let newDmTemp = attrPV.attribute.get('current');
               if (isNaN(lastDmTemp) || isNaN(newDmTemp) || newDmTemp <= lastDmTemp) {
                 sendPerso(chevalier, "ne peut ignorer la douleur : il semble que la dernière attaque ne lui ait pas augmenté les DM temporaires");
                 return;
