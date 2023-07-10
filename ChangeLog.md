@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.13
 ### Capacités
+* Rangs 1 et 2 de la Voie du guérisseur.
 * Rangs 4 et 5 de la Voie télépathie
 * Expertise (rang 1 de la Voie de prestige spécialisée)
 

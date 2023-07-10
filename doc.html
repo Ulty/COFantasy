@@ -2208,6 +2208,7 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie du guérisseur</h4>
                 <ol>
                   <li><strong>Premiers soins</strong> : ajouter un <a href=#predicats>prédicat</a> <code>voieDuGuerisseur</code> de valeur le rang dans cette voie pour le bonus aux soins de la Voie des soins. Pour le sort, faire <code>!cof-soin @{selected|token_id} @{target|token_id} premiersSoins --mana 0</code>.</li>
+                  <li><strong>Immunité</strong> : utilisez <code>!cof-immunite-guerisseur [[1d6+@{selected|SAG}]] --mana 0 --target @{target|token_id}</code> dans les actions du tour. Si utilisé directement dans le chat, ajoutez <code>--lanceur @{selected|token_id}</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du guerrier-mage</h4>
                 <p>Penser à utiliser l'option <code>--magieEnArmure</code> pour le lancement des sorts affectés.</p>

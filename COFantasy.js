@@ -5308,6 +5308,7 @@ var COFantasy = COFantasy || function() {
               case 'mot-de-pouvoir-immobilise':
               case 'animation-des-objets':
               case 'sphere-de-feu':
+              case 'immunite-guerisseur':
                 picto = '<span style="font-family: \'Pictos Three\'">g</span> ';
                 style = 'background-color:#9900ff';
                 break;
@@ -5425,7 +5426,8 @@ var COFantasy = COFantasy || function() {
           }
         });
       }
-      if (act.startsWith('!cof-lancer-sort') && act.indexOf('--lanceur') == -1) {
+      if ((act.startsWith('!cof-lancer-sort') || act.startsWith('!cof-immunite-guerisseur')) &&
+        act.indexOf('--lanceur') == -1) {
         act += " --lanceur " + tid;
       }
       if (act.indexOf('@{target|') == -1 &&
@@ -15343,6 +15345,7 @@ var COFantasy = COFantasy || function() {
       if (dmgType == 'acide' && predicateAsBool(attaquant, 'batonDesRunesMortes') && predicateAsBool(target, 'ennemiDuBatonDesRunesMortes')) return false;
       return true;
     }
+    if (attributeAsBool(target, 'immuniteA' + dmgType)) return true;
     switch (dmgType) {
       case 'acide':
         if (predicateAsBool(target, 'batonDesRunesMortes') && attributeAsBool(target, 'runeLizura')) return true;
@@ -17441,7 +17444,7 @@ var COFantasy = COFantasy || function() {
 
   //Met un effet temporaire sur target. L'effet temporaire est spécifié dans ef
   // - effet : le nom de l'effet
-  // - whisper : true si on doit chuchoter l'effet, undefined si on n'affiche pas
+  // - whisper : true si on doit chuchoter l'effet, undefined si on n'affiche pas (mais dans ce cas, target.messages doit être défini)
   // - duree : true si c'est un effet à durée en tours
   // - effetIndetermine : true si l'effet a une durée indéterminée (pas combat)
   // - accumuleDuree : si la durée peut s'accumuler
@@ -25451,15 +25454,15 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "On ne peut utiliser petit veinard qu'en combat");
       return;
     }
-    var msgOptions = parseOptions(msg);
+    let msgOptions = parseOptions(msg);
     if (msgOptions === undefined) return;
-    var cmd = msgOptions.cmd;
+    let cmd = msgOptions.cmd;
     if (cmd === undefined) {
       error("Problème de parse options", msg.content);
       return;
     }
-    var evtARefaire;
-    var evt = {
+    let evtARefaire;
+    const evt = {
       type: "Petit veinard",
       attributes: []
     };
@@ -25469,8 +25472,8 @@ var COFantasy = COFantasy || function() {
         error("L'action est trop ancienne ou a été annulée", cmd);
         return;
       }
-      var perso = evtARefaire.personnage;
-      var rollId;
+      let perso = evtARefaire.personnage;
+      let rollId;
       if (cmd.length > 2) {
         if (!evtARefaire.action) {
           error("Le dernier évènement n'est pas une action", msg.content);
@@ -40179,7 +40182,7 @@ var COFantasy = COFantasy || function() {
       }
       stateCOF.chargeFantastique.activeTokenId = perso.token.id;
       setTokenInitAura(perso);
-      var display = startFramedDisplay(playerId, "Charge fantastique", perso, optionsDisplay);
+      let display = startFramedDisplay(playerId, "Charge fantastique", perso, optionsDisplay);
       addLineToFramedDisplay(display, "Phase de mouvement : déplacez votre token en ligne droite");
       addLineToFramedDisplay(display, "puis " + boutonSimple("!cof-next-charge-fantastique", "cliquez ici"));
       sendChat('', endFramedDisplay(display));
@@ -40206,13 +40209,13 @@ var COFantasy = COFantasy || function() {
 
   // !cof-charge-fantastique token_id
   function chargeFantastque(msg) {
-    var options = parseOptions(msg);
-    var cmd = options.cmd;
+    const options = parseOptions(msg);
+    const cmd = options.cmd;
     if (!cmd || cmd.length < 2) {
       error("Pas assez d'arguments pour !cof-charge-fantastique", cmd);
       return;
     }
-    var chevalier = persoOfId(cmd[1], cmd[1], options.pageId);
+    const chevalier = persoOfId(cmd[1], cmd[1], options.pageId);
     if (chevalier === undefined) {
       error("Le token sélectionné ne représente pas un personnage", cmd);
       return;
@@ -40222,7 +40225,7 @@ var COFantasy = COFantasy || function() {
         error('pas de token sélectionné pour !cof-charge-fantastique', msg.content);
         return;
       }
-      var evt = {
+      const evt = {
         type: 'Charge fantastique'
       };
       addEvent(evt);
@@ -40230,8 +40233,8 @@ var COFantasy = COFantasy || function() {
       sendPerso(chevalier, "mène une charge fantastique !");
       initiative(selected, evt);
       stateCOF.chargeFantastique = {};
-      var ordreActions = [];
-      var chevalierIn;
+      let ordreActions = [];
+      let chevalierIn;
       iterSelected(selected, function(perso) {
         if (perso.token.id == chevalier.token.id) {
           chevalierIn = true;
@@ -43850,6 +43853,61 @@ var COFantasy = COFantasy || function() {
     sendChat('', endFramedDisplay(display));
   }
 
+  //!cof-immunite-guerisseur duree
+  function immuniteDuGuerisseur(msg) {
+    let options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
+    if (cmd === undefined) {
+      error("Problème de parse options", msg.content);
+      return;
+    }
+    if (cmd.length < 2) {
+      error("Il manque un argument à !cof-immunite-guerisseur", cmd);
+      return;
+    }
+    let duree = parseInt(cmd[1]);
+    if (isNaN(duree) || duree <= 0) {
+      error("L'immunité a une durée incorrecte", cmd);
+      return;
+    }
+    let pageId = options.pageId;
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        sendPlayer(msg, "Utilisation de !cof-immunite-guerisseur sans sélection de token", playerId);
+        return;
+      }
+      const evt = {
+        type: 'immunité du guérisseur'
+      };
+      addEvent(evt);
+      if (options.lanceur &&
+        limiteRessources(options.lanceur, options, 'immuniteDuGuerisseur', "lancer un sort d'immunité", evt)) return;
+      initiative(selected, evt); //ne recalcule pas l'init
+      let portee = 0;
+      if (options.portee) portee = options.portee;
+      iterSelected(selected, function(perso) {
+        if (options.lanceur &&
+          distanceCombat(options.lanceur.token, perso.token, pageId) > portee) {
+          sendPlayer(msg, nomPerso(perso)+" est trop loin.", playerId);
+          return;
+        }
+        let message = messageEffetTemp.immuniteAmaladie;
+        let ef = {
+          effet: 'immuniteAmaladie',
+          duree: true,
+          message,
+          whisper:true,
+        };
+        setEffetTemporaire(perso, ef, duree, evt, options);
+        ef.effet = 'immuniteApoison';
+        ef.message = messageEffetTemp.immuniteApoison;
+        setEffetTemporaire(perso, ef, duree, evt, options);
+        sendPerso(perso, "est maintenant immunisé"+eForFemale(perso)+" au poison et aux maladies");
+      });
+    });
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     const command = msg.content.split(' ', 1);
@@ -43901,6 +43959,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-creer-baies':
         creerBaies(msg);
         return;
+      case '!cof-dmg':
+        parseDmgDirects(msg);
+        return;
       case '!cof-effet-chaque-d20':
         setEffetChaqueD20(msg);
         return;
@@ -43937,6 +43998,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-huile-instable':
         huileInstable(msg);
+        return;
+      case '!cof-immunite-guerisseur':
+        immuniteDuGuerisseur(msg);
         return;
       case '!cof-init':
         initiativeInterface(msg);
@@ -44023,10 +44087,6 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-vision-nocturne':
         ajouterVisionNocturne(msg);
-        return;
-      case "!cof-aoe": //deprecated
-      case "!cof-dmg":
-        parseDmgDirects(msg);
         return;
       case "!cof-set-state":
         parseSetState(msg);
@@ -44553,6 +44613,34 @@ var COFantasy = COFantasy || function() {
       finF: "apparaît à nouveau là où elle se trouve",
       visible: false
     },
+    immobiliseTemp: {
+      activation: "est immobilisé : aucun déplacement possible",
+      activationF: "est immobilisée : aucun déplacement possible",
+      actif: "est immobilisé",
+      actifF: "est immobilisée",
+      fin: "n'est plus immobilisé",
+      finF: "n'est plus immobilisée",
+      msgSave: "pouvoir bouger",
+      prejudiciable: true,
+      visible: true,
+      entrave: true
+    },
+    immuniteAmaladie: {
+      activation: "devient immunisé aux maladies",
+      activationF: "devient immunisée aux maladies",
+      actif: "est temporairement immunisé aux maladies",
+      actifF: "est temporairement immunisée aux maladies",
+      fin: "redevient sensible aux maladies",
+      visible: false
+    },
+    immuniteApoison: {
+      activation: "devient immunisé au poison",
+      activationF: "devient immunisée au poison",
+      actif: "est temporairement immunisé au poison",
+      actifF: "est temporairement immunisée au poison",
+      fin: "redevient sensible au poison",
+      visible: false
+    },
     lycanthropie: {
       activation: "fusionne avec son compagnon",
       actif: "est en forme hybride",
@@ -44682,18 +44770,6 @@ var COFantasy = COFantasy || function() {
       actifF: "est déséquilibrée par le tremblement",
       fin: '',
       visible: false
-    },
-    immobiliseTemp: {
-      activation: "est immobilisé : aucun déplacement possible",
-      activationF: "est immobilisée : aucun déplacement possible",
-      actif: "est immobilisé",
-      actifF: "est immobilisée",
-      fin: "n'est plus immobilisé",
-      finF: "n'est plus immobilisée",
-      msgSave: "pouvoir bouger",
-      prejudiciable: true,
-      visible: true,
-      entrave: true
     },
     etourdiTemp: {
       activation: "est étourdi : aucune action et -5 en DEF",
@@ -47784,27 +47860,27 @@ var COFantasy = COFantasy || function() {
       represents: charId
     });
     otherTokens = otherTokens.filter(function(tok) {
-      var pid = tok.get('pageid');
-      var page = getObj('page', pid);
+      let pid = tok.get('pageid');
+      const page = getObj('page', pid);
       if (page) {
         return !(page.get('archived'));
       }
       return false;
     });
-    var numero = 1;
-    var nePasModifier = false;
+    let numero = 1;
+    let nePasModifier = false;
     if (typeof TokenNameNumber !== 'undefined' && tokenBaseName.length > 0) {
       if (!isNaN(tokenBaseName[tokenBaseName.length - 1]))
         nePasModifier = true;
     }
     otherTokens.forEach(function(ot) {
       if (ot.id == token.id) return;
-      var name = ot.get('name');
+      let name = ot.get('name');
       if (nePasModifier && name == tokenBaseName) nePasModifier = false;
       if (name.startsWith(tokenBaseName)) {
-        var suffixe = name.replace(tokenBaseName + ' ', '');
+        let suffixe = name.replace(tokenBaseName + ' ', '');
         if (isNaN(suffixe)) return;
-        var n = parseInt(suffixe);
+        let n = parseInt(suffixe);
         if (n == copyOf) {
           if (ot.get('pageid') == pageId) copyOf = 0;
         }
