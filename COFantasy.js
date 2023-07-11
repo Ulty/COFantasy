@@ -359,10 +359,15 @@ var COFantasy = COFantasy || function() {
           val: "https://s3.amazonaws.com/files.d20.io/images/308931095/X5zH4itb9QI9La8O7KfMBQ/thumb.png?1665585092"
         },
         prison_vegetale: {
-          explication: "Image utilisée pour un mur de force sphérique",
+          explication: "Image utilisée pour la prison végétale",
           type: 'image',
           val: "https://s3.amazonaws.com/files.d20.io/images/254738719/c97DFw6JlEePDVXBf-MPsA/thumb.png?1636471250"
         },
+        zone_de_vie: {
+          explication: "Image utilisée pour les zones de vie",
+          type: 'image',
+          val: "https://s3.amazonaws.com/files.d20.io/images/349749304/q3q75jWu9Izlci5YB688WA/thumb.png?1689005544"
+        }
       }
     },
     sons: {
@@ -3076,6 +3081,7 @@ var COFantasy = COFantasy || function() {
     let pvmax = parseInt(token.get("bar1_max"));
     if (isNaN(bar1) || isNaN(pvmax)) {
       error("Soins sur un token sans points de vie", token);
+      if (callMax) callMax();
       return;
     }
     let updateBar1;
@@ -3634,13 +3640,29 @@ var COFantasy = COFantasy || function() {
           attrM[0].remove();
         });
         break;
+      case 'zoneDeVie':
+        let attrIdName = efComplet + 'Id';
+        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+          let perso = {
+            token,
+            charId
+          };
+          let attr = tokenAttribute(perso, attrIdName);
+          if (attr.length === 0) return;
+          let image = getObj('graphic', attr[0].get('current'));
+          if (image) {
+            image.remove();
+          }
+          attr[0].remove();
+        });
+        break;
       case 'regeneration': //faire les soins restants
         let toursRestant = parseInt(attr.get('current'));
         iterTokensOfAttribute(charId, options.pageId, effet, attrName,
           function(token) {
             let perso = {
-              token: token,
-              charId: charId
+              token,
+              charId
             };
             if (!isNaN(toursRestant) && toursRestant > 0) {
               let regen = getValeurOfEffet(perso, 'regeneration', 3);
@@ -5318,6 +5340,7 @@ var COFantasy = COFantasy || function() {
               case 'guerir':
               case 'guerison':
               case 'consommer-baie':
+              case 'zone-de-vie':
                 picto = '<span style="font-family: \'Pictos\'">k</span> ';
                 style = 'background-color:#ffe599;color:#333';
                 break;
@@ -17479,7 +17502,7 @@ var COFantasy = COFantasy || function() {
       if (ef.attaquant) {
         dedoubleMsg += " Il est aux ordres de " + nomPerso(ef.attaquant);
       }
-      if (stateCOF.options.affichage.val.duree_effets.val) dedoubleMsg += " (" + duree + " tours)";
+      if (stateCOF.options.affichage.val.duree_effets.val) dedoubleMsg += " (" + duree + " tour" + ((duree>1)?'s':'') +")";
       if (ef.whisper !== undefined) {
         if (ef.whisper === true) {
           whisperChar(target.charId, dedoubleMsg);
@@ -25479,7 +25502,7 @@ var COFantasy = COFantasy || function() {
           error("Le dernier évènement n'est pas une action", msg.content);
           return;
         }
-        var roll = evtARefaire.action.rolls[cmd[2]];
+        let roll = evtARefaire.action.rolls[cmd[2]];
         if (roll === undefined) {
           error("Erreur interne du bouton de chance : roll non identifié", msg.content);
           return;
@@ -25499,7 +25522,7 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, "pas le droit d'utiliser ce bouton");
         return;
       }
-      var action = evtARefaire.action;
+      let action = evtARefaire.action;
       if (action === undefined) {
         error("Impossible de relancer l'action", evtARefaire);
         return;
@@ -27002,7 +27025,7 @@ var COFantasy = COFantasy || function() {
             if (stateCOF.options.affichage.val.duree_effets.val || playerIsGM(playerId)) {
               let effetVal = attr.get('current');
               if (parseInt(effetVal)) {
-                explEffetMsg += " (" + effetVal + " tours)";
+                explEffetMsg += " (" + effetVal + " tour" + ((effetVal>1)?'s':'') + ")";
               } else {
                 explEffetMsg += " (tour final)";
               }
@@ -28461,7 +28484,6 @@ var COFantasy = COFantasy || function() {
         combat = entrerEnCombat(undefined, ini, explications, evt);
       }
       if (options.aoe && options.pageId && effet == 'prisonVegetale' && options.aoe.type == 'disque') {
-        if (lanceur) {}
         let diametre = options.aoe.rayon * 2 * PIX_PER_UNIT / computeScale(options.pageId);
         let t = createObj('graphic', {
           _pageid: options.pageId,
@@ -29887,20 +29909,20 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseInjonctionMortelle(msg) {
-    var options = parseOptions(msg);
+    const options = parseOptions(msg);
     if (options === undefined || options.cmd === undefined) return;
-    var cmd = options.cmd;
+    const cmd = options.cmd;
     if (cmd.length < 3) {
       error("Il faut au moins 2 arguments à !cof-injonction-mortelle", cmd);
       return;
     }
-    var attaquant = persoOfId(cmd[1], cmd[1]);
-    var cible = persoOfId(cmd[2], cmd[2]);
+    let attaquant = persoOfId(cmd[1], cmd[1]);
+    let cible = persoOfId(cmd[2], cmd[2]);
     if (attaquant === undefined || cible === undefined) {
       error("Arguments de !cof-injonction-mortelle", cmd);
       return;
     }
-    var distance = distanceCombat(attaquant.token, cible.token, options.pageId);
+    let distance = distanceCombat(attaquant.token, cible.token, options.pageId);
     if (distance > 30) {
       sendPerso(attaquant, "est trop loin de " + nomPerso(cible) +
         " pour l'injonction mortelle");
@@ -43889,7 +43911,7 @@ var COFantasy = COFantasy || function() {
       iterSelected(selected, function(perso) {
         if (options.lanceur &&
           distanceCombat(options.lanceur.token, perso.token, pageId) > portee) {
-          sendPlayer(msg, nomPerso(perso)+" est trop loin.", playerId);
+          sendPlayer(msg, nomPerso(perso) + " est trop loin.", playerId);
           return;
         }
         let message = messageEffetTemp.immuniteAmaladie;
@@ -43897,13 +43919,84 @@ var COFantasy = COFantasy || function() {
           effet: 'immuniteAmaladie',
           duree: true,
           message,
-          whisper:true,
+          whisper: true,
         };
         setEffetTemporaire(perso, ef, duree, evt, options);
         ef.effet = 'immuniteApoison';
         ef.message = messageEffetTemp.immuniteApoison;
         setEffetTemporaire(perso, ef, duree, evt, options);
-        sendPerso(perso, "est maintenant immunisé"+eForFemale(perso)+" au poison et aux maladies");
+        sendPerso(perso, "est maintenant immunisé" + eForFemale(perso) + " au poison et aux maladies");
+      });
+    });
+  }
+
+  //!cof-zone-de-vie duree
+  function lancerZoneDeVie(msg) {
+    let options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
+    if (cmd === undefined) {
+      error("Problème de parse options", msg.content);
+      return;
+    }
+    if (cmd.length < 2) {
+      error("Il manque un argument à !cof-zone-de-vie", cmd);
+      return;
+    }
+    let duree = parseInt(cmd[1]);
+    if (isNaN(duree) || duree <= 0) {
+      error("La zone de vie a une durée incorrecte", cmd);
+      return;
+    }
+    let pageId = options.pageId;
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        sendPlayer(msg, "Utilisation de !cof-zone-de-vie sans sélection de token", playerId);
+        return;
+      }
+      const evt = {
+        type: 'zone de vie'
+      };
+      addEvent(evt);
+      if (options.lanceur &&
+        limiteRessources(options.lanceur, options, 'zoneDeVie', "lancer une zone de vie", evt)) return;
+      initiative(selected, evt);
+      iterSelected(selected, function(perso) {
+        let n = 1; //Le numéro de zone de vie, s'il y en a plusieurs en même temps
+        let attrName = 'zoneDeVie(' + n + ')';
+        while (attributeAsBool(perso, attrName)) {
+          n++;
+          attrName = 'zoneDeVie(' + n + ')';
+        }
+        let scale = computeScale(pageId);
+        let diametre = 20;
+        if (options.portee) diametre = 2 * options.portee;
+        diametre = diametre / scale;
+        let diamPix = PIX_PER_UNIT * diametre;
+        let imageFields = {
+          _pageid: pageId,
+          imgsrc: stateCOF.options.images.val.zone_de_vie.val,
+          represents: '',
+          left: perso.token.get('left'),
+          top: perso.token.get('top'),
+          width: diamPix,
+          height: diamPix,
+          layer: 'map',
+          name: "Zone de vie " + n,
+          isdrawing: true,
+          emits_low_light: true,
+          low_light_distance: diametre / 2,
+        };
+        let newImage = createObj('graphic', imageFields);
+        if (newImage) {
+          evt.tokens = evt.tokens || [];
+          evt.tokens.push(newImage);
+          toFront(newImage);
+          setTokenAttr(perso, attrName + 'Id', newImage.id, evt);
+          setAttrDuree(perso, attrName, duree, evt);
+        } else {
+          error("Impossible de créer l'image " + options.image, imageFields);
+        }
       });
     });
   }
@@ -44064,6 +44157,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-sentir-la-corruption':
         parseSentirLaCorruption(msg);
         return;
+      case '!cof-set-state':
+        parseSetState(msg);
+        return;
       case '!cof-skip-attack':
         skipAttack(msg);
         return;
@@ -44088,8 +44184,8 @@ var COFantasy = COFantasy || function() {
       case '!cof-vision-nocturne':
         ajouterVisionNocturne(msg);
         return;
-      case "!cof-set-state":
-        parseSetState(msg);
+      case '!cof-zone-de-vie':
+        lancerZoneDeVie(msg);
         return;
       case "!cof-save-state":
         parseSaveState(msg);
@@ -44581,6 +44677,17 @@ var COFantasy = COFantasy || function() {
       prejudiciable: true,
       seulementVivant: true,
     },
+    etourdiTemp: {
+      activation: "est étourdi : aucune action et -5 en DEF",
+      activationF: "est étourdie : aucune action et -5 en DEF",
+      actif: "est étourdi",
+      actifF: "est étourdie",
+      fin: "n'est plus étourdi",
+      finF: "n'est plus étourdie",
+      msgSave: "se reprendre",
+      prejudiciable: true,
+      visible: true
+    },
     formeDAnge: {
       activation: "prend la forme d'un ange ailé",
       actif: "est en forme d'ange et peut jeter des sorts en vol stationnaire",
@@ -44771,16 +44878,13 @@ var COFantasy = COFantasy || function() {
       fin: '',
       visible: false
     },
-    etourdiTemp: {
-      activation: "est étourdi : aucune action et -5 en DEF",
-      activationF: "est étourdie : aucune action et -5 en DEF",
-      actif: "est étourdi",
-      actifF: "est étourdie",
-      fin: "n'est plus étourdi",
-      finF: "n'est plus étourdie",
-      msgSave: "se reprendre",
-      prejudiciable: true,
-      visible: true
+    zoneDeVie: {
+      activation: "enchante une zone autour de lui",
+      activationF: "enchante une zone autour d'elle",
+      actif: "a créé une zone de vie",
+      fin: "la zone de vie se termine",
+      visible: true,
+      generic: true, //pour pouvoir avoir plusieurs zones de vie
     },
     affaibliTemp: {
       activation: "se sent faible",
@@ -46883,11 +46987,93 @@ var COFantasy = COFantasy || function() {
         callBack();
         return;
       case 'dotGen':
-        let effetC = effetComplet(effet, attrName);
-        degatsParTour(charId, pageId, effetC, attrName, {}, '', "", evt, {
-          dotGen: true
-        }, callBack);
-        return;
+        {
+          let effetC = effetComplet(effet, attrName);
+          degatsParTour(charId, pageId, effetC, attrName, {}, '', "", evt, {
+            dotGen: true
+          }, callBack);
+          return;
+        }
+      case 'zoneDeVie':
+        {
+          let effetC = effetComplet(effet, attrName);
+          let count = -1;
+          let fin = function() {
+            count--;
+            if (count === 0 && callBack) callBack();
+          };
+          iterTokensOfAttribute(charId, pageId, effetC, attrName,
+            function(token, total) {
+              if (count < 0) count = total;
+              let perso = {
+                charId,
+                token
+              };
+              if (getState(perso, 'mort')) {
+                fin();
+                return;
+              }
+              let attrTok = tokenAttribute(perso, effetC + 'Id');
+              if (attrTok.length === 0) {
+                fin();
+                return;
+              }
+              let tokId = attrTok[0].get('current');
+              let tokZone = getObj('graphic', tokId);
+              if (!tokZone) {
+                attrTok[0].remove();
+                fin();
+                return;
+              }
+              let allies = alliesParPerso[charId] || new Set();
+              allies.add(charId);
+              let pageId = tokZone.get('pageid');
+              let cx = tokZone.get('left');
+              let cy = tokZone.get('top');
+              let dx = tokZone.get('width');
+              let dy = tokZone.get('height');
+              let minx = cx - dx / 2;
+              let maxx = cx + dx / 2;
+              let miny = cy - dy / 2;
+              let maxy = cy + dy / 2;
+              let allToks = findObjs({
+                _type: 'graphic',
+                _pageid: pageId,
+                _subtype: 'token',
+              });
+              let cibles = [];
+              allToks.forEach(function(tok) {
+                let tx = tok.get('left');
+                if (tx < minx || tx > maxx) return;
+                let ty = tok.get('top');
+                if (ty < miny || ty > maxy) return;
+                let cible = persoOfToken(tok);
+                if (!cible || !allies.has(cible.charId) || getState(cible, 'mort')) return;
+                cibles.push(cible);
+              });
+              if (cibles.length === 0) {
+                fin();
+                return;
+              }
+              count --; //On a fini avec perso.
+              count += cibles.length;//On ajoute les cibles
+              cibles.forEach(function(cible) {
+                sendChat('', "[[2d6]]", function(res) {
+                  let rolls = res[0];
+                  let soinRoll = rolls.inlinerolls[0];
+                  let soins = soinRoll.results.total;
+                  let displaySoins = buildinline(soinRoll, 'normal', true);
+                  soigneToken(cible, soins, evt,
+                    function(s) {
+                      if (s < soins) sendPerso(cible, "récupère tous ses PV.");
+                      else sendPerso(cible, "récupère " + displaySoins + " PV.");
+                      fin();
+                    }, fin);
+                }); //fin sendChat du jet de dé
+              });
+            });
+          return;
+        }
       default:
         callBack();
         return;
