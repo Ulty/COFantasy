@@ -352,7 +352,8 @@ tr {line-height: 25px;}
                   </li>
 
                   <li><code>--demiAuto</code> : si l'attaque rate, on considère juste que les saves partiels sont automatiquemet réussi. Ça signifie en général que la cible prend au moins la moitié des dégâts.</li>
-                  <li><code>--dmSiRate <i>dmg</i></code> : si l'attaque rate, la cible est quand même touchée et se voit infliger <i>dmg</i> dégâts</li>
+                  <li><code>--dmSiRate <i>dmg</i></code> : si l'attaque rate, la cible est quand même touchée et se voit infliger <i>dmg</i> dégâts.</li>
+                  <li><code>--toucheDoubleDmg</code> : si l'attaque rate, elle inflige les dégâts normaux, et si elle touche, elle double les dégâts de base. Pas cumulable avec <code>dmSiRate</code> ou <code>demiAuto</code>.</li>
                   <li><code>--save <i>carac seuil</i></code> : même effet que <code>--psave</code>, mais pour annuler le dernier <code>--effet</code> ou <code>etat</code> (aucun effet sur les DM). Si on rajoute un argument <code>demiDuree</code> au save, alors la réussite du save ne fait que diviser par 2 sa durée.</li>
                   <li><code>--saveDM <i>carac seuil</i></code> : même effet que <code>--psave</code>, mais pour annuler l'ensemble des dégâts.</li>
                   <li><code>--saveParTour <i>carac seuil</i></code> : même effet que <code>--save</code>, mais donne droit à un jet à la fin de chaque tour au lieu d'un jet au moment de l'attaque.</li>
@@ -2271,6 +2272,7 @@ tr {line-height: 25px;}
                   <li><strong>Libérateur de Kerserac</strong> : ajouter un prédicat <code>liberateurDeKerserac</code>.</li>
                   <li><strong>Libérateur d'Anathazerïn</strong> : ajouter un prédicat <code>liberateurDAnathazerin</code>. La capacité donne le bonus de +2 quel que soit le poison.</li>
                   <li><strong>Lien épique</strong>: ajouter pour chaque personnage un <a href=#predicats>prédicat</a> <code>lienEpique</code>, qui contiennent la même chose dans le champ courant (pensez à un nom d'équipe, par exemple).</li>
+                  <li><strong>Vitalité épique</strong> : ajouter un <a href=#predicats>prédicat</a> <code>vitaliteEpique</code>. Pas de support pour le coup mortel ou la régénération horaire. Attention, si vous utlisez <code>!cof-soin</code> pour cette régénération, les soins seront aussi doublés.</li>
                 </ul>
               </div>
               <h3 class="text-info" id="Créatures">4.3 Voies de créatures</h3>

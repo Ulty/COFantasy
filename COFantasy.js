@@ -3088,6 +3088,7 @@ var COFantasy = COFantasy || function() {
     if (bar1 >= pvmax) bar1 = pvmax;
     else updateBar1 = true;
     if (soins < 0) soins = 0;
+    if (predicateAsBool(perso, 'vitaliteEpique')) soins *= 2;
     let nonSoignable = 0;
     //Update des dm suivis
     let attrs = findObjs({
@@ -25611,7 +25612,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function doSurprise(cibles, testSurprise, selected, options) {
-    var evt = {
+    const evt = {
       type: 'surprise',
       action: {
         cibles: cibles,
@@ -31158,7 +31159,7 @@ var COFantasy = COFantasy || function() {
               }
               msgSoin += " de ";
               if (options.recuperation) msgSoin = "récupère ";
-              if (limiteSoinsAtteinte || s < soins)
+              if (limiteSoinsAtteinte || s != soins)
                 msgSoin += s + " PV. (Le résultat du jet était " + soinTxt + ")";
               else msgSoin += soinTxt + " PV.";
               msgSoin += extraImg;
