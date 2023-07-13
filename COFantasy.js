@@ -9419,6 +9419,11 @@ var COFantasy = COFantasy || function() {
           }
           scope.dmgCoef++; //Par défaut, incrémente de 1
           return;
+        case 'toucheDoubleDmg':
+          options.toucheDoubleDmg = true;
+          options.dmgCoef = options.dmgCoef || 1;
+          options.dmgCoef++;
+          return;
         case 'diviseDmg':
           scope.diviseDmg = (scope.diviseDmg || 1);
           if (cmd.length > 1) {
@@ -14339,7 +14344,7 @@ var COFantasy = COFantasy || function() {
       nomCiblePrincipale = targetToken.get('name');
       if (options.aoe) {
         //cas de la boule de feu qui fait un échec critique : on déplace la cible si elle est artificielle
-        if (!options.redo && options.demiAuto &&
+        if (!options.redo && (options.demiAuto || options.toucheDoubleDmg) &&
           (!options.triche || options.triche == 'echecCritique') &&
           targetToken.get('bar1_max') == 0) { // jshint ignore:line
           let dice = 20;
@@ -16781,6 +16786,10 @@ var COFantasy = COFantasy || function() {
                 } else if (options.dmSiRate) {
                   target.dmRate = true;
                   evt.succes = false;
+                } else if (options.toucheDoubleDmg) {
+                  target.dmgCoef = target.dmgCoef || 0;
+                  target.dmgCoef--;
+                  evt.succes = false;
                 } else touche = false;
                 echecCritique = true;
                 increaseTenacite(attaquant, target, evt);
@@ -16818,6 +16827,10 @@ var COFantasy = COFantasy || function() {
                 } else if (options.dmSiRate) {
                   target.dmRate = true;
                   evt.succes = false;
+                } else if (options.toucheDoubleDmg) {
+                  target.dmgCoef = target.dmgCoef || 0;
+                  target.dmgCoef--;
+                  evt.succes = false;
                 } else touche = false;
                 increaseTenacite(attaquant, target, evt);
               } else if (targetd20roll % 2 && attributeAsBool(target, 'clignotement')) {
@@ -16830,6 +16843,10 @@ var COFantasy = COFantasy || function() {
                   target.partialSaveAuto = true;
                 } else if (options.dmSiRate) {
                   target.dmRate = true;
+                  evt.succes = false;
+                } else if (options.toucheDoubleDmg) {
+                  target.dmgCoef = target.dmgCoef || 0;
+                  target.dmgCoef--;
                   evt.succes = false;
                 } else touche = false;
               } else { // Touché normal
@@ -25558,20 +25575,20 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseSurprise(msg) {
-    var options = parseOptions(msg);
+    const options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    const cmd = options.cmd;
     if (cmd === undefined) {
       error("Problème de parse options", msg.content);
       return;
     }
-    var testSurprise;
+    let testSurprise;
     if (cmd.length > 1) {
       testSurprise = parseInt(cmd[1]);
       if (isNaN(testSurprise)) testSurprise = undefined;
     }
-    var cibles = [];
-    var ciblesSelectionnees;
+    let cibles = [];
+    let ciblesSelectionnees;
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         sendPlayer(msg, "!cof-surprise sans sélection de token", playerId);

@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.13
 ### Capacités
+* Pluie de flèches de la Voie d'Arwendée.
 * Rangs 1 à 4 de la Voie du guérisseur.
 * Rangs 4 et 5 de la Voie télépathie
 * Expertise (rang 1 de la Voie de prestige spécialisée)
