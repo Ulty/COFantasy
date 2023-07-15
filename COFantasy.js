@@ -25716,15 +25716,15 @@ var COFantasy = COFantasy || function() {
     });
     res.result = (tokens.length > limite);
     // Now select the tokens which could be valid targets
-    var p = distanceCombat(attackingToken, token);
+    let p = distanceCombat(attackingToken, token);
     if (p === 0) { //cible au contact, on garde toutes celles au contact
       res.targets = tokens.filter(function(tok) {
-        var d = distanceCombat(attackingToken, tok);
+        let d = distanceCombat(attackingToken, tok);
         return (d === 0);
       });
     } else { // cible à distance, on garde celles au contact de la cible
       res.targets = tokens.filter(function(tok) {
-        var d = distanceCombat(token, tok);
+        let d = distanceCombat(token, tok);
         return (d === 0);
       });
     }
@@ -47084,7 +47084,10 @@ var COFantasy = COFantasy || function() {
                   soigneToken(cible, soins, evt,
                     function(s) {
                       if (s < soins) sendPerso(cible, "récupère tous ses PV.");
-                      else sendPerso(cible, "récupère " + displaySoins + " PV.");
+                      else if (s == soins)
+                        sendPerso(cible, "récupère " + displaySoins + " PV.");
+                      else
+                        sendPerso(cible, "récupère " + s + " PV. (Le jet était "+displaySoins+")");
                       fin();
                     }, fin);
                 }); //fin sendChat du jet de dé
