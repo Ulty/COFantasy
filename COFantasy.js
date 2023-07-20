@@ -14071,8 +14071,8 @@ var COFantasy = COFantasy || function() {
               predicateAsBool(target2, 'guetteur');
           });
           if (representantFamilier) return false;
-          ciblePartagee.forEach(function(attr) {
-            ciblesAvecPVsPartages.add(attr.get('current'));
+          ciblePartagee.forEach(function(cp) {
+            ciblesAvecPVsPartages.add(cp);
           });
         }
       }
@@ -17519,7 +17519,7 @@ var COFantasy = COFantasy || function() {
       if (ef.attaquant) {
         dedoubleMsg += " Il est aux ordres de " + nomPerso(ef.attaquant);
       }
-      if (stateCOF.options.affichage.val.duree_effets.val) dedoubleMsg += " (" + duree + " tour" + ((duree>1)?'s':'') +")";
+      if (stateCOF.options.affichage.val.duree_effets.val) dedoubleMsg += " (" + duree + " tour" + ((duree > 1) ? 's' : '') + ")";
       if (ef.whisper !== undefined) {
         if (ef.whisper === true) {
           whisperChar(target.charId, dedoubleMsg);
@@ -20668,6 +20668,8 @@ var COFantasy = COFantasy || function() {
         if (options.tranchant && rd.tranchant) rdMain += rd.tranchant;
         if (options.percant && rd.percant) rdMain += rd.percant;
         if (options.contondant && rd.contondant) rdMain += rd.contondant;
+      } else if ((mainDmgType == 'poison' || mainDmgType == 'feu' || mainDmgType == 'froid') && !options.magique && rd.nature && !dmgNaturel(options)) {
+        rdMain += rd.nature;
       }
       if (options.asphyxie) rdMain += rd.asphyxie;
       if (rd.drain && (options.vampirise || target.vampirise) && mainDmgType != 'drain') {
@@ -20822,6 +20824,8 @@ var COFantasy = COFantasy || function() {
                   if (options.tranchant && rd.tranchant) rdl += rd.tranchant;
                   if (options.percant && rd.percant) rdl += rd.percant;
                   if (options.contondant && rd.contondant) rdl += rd.contondant;
+                } else if ((dmgType == 'poison' || dmgType == 'feu' || dmgType == 'froid') && !options.magique && rd.nature && !dmgNaturel(options)) {
+                  rdl += rd.nature;
                 }
                 if (target.ignoreMoitieRD) rdl = parseInt(rdl / 2);
                 if (target.ignoreRD) {
@@ -25863,13 +25867,13 @@ var COFantasy = COFantasy || function() {
         nombre: 0
       };
       hand.get('notes', function(note) { // asynchronous
-        var carac; //La carac dont on spécifie les compétences actuellement
-        var lignes = linesOfNote(note);
+        let carac; //La carac dont on spécifie les compétences actuellement
+        let lignes = linesOfNote(note);
         lignes.forEach(function(ligne) {
           ligne = ligne.trim();
-          var header = ligne.split(':');
+          let header = ligne.split(':');
           if (header.length > 1) {
-            var c = header.shift().trim().toUpperCase();
+            let c = header.shift().trim().toUpperCase();
             if (!isCarac(c)) return;
             carac = c;
             ligne = header.join(':').trim();
@@ -25879,7 +25883,7 @@ var COFantasy = COFantasy || function() {
             error("Compétences sans caractéristique associée", note);
             return;
           }
-          var comps = ligne.split(/, |\/| /);
+          let comps = ligne.split(/, |\/| /);
           comps.forEach(function(comp) {
             if (comp.length === 0) return;
             comp = comp.replace(/_/g, ' ');
@@ -27042,7 +27046,7 @@ var COFantasy = COFantasy || function() {
             if (stateCOF.options.affichage.val.duree_effets.val || playerIsGM(playerId)) {
               let effetVal = attr.get('current');
               if (parseInt(effetVal)) {
-                explEffetMsg += " (" + effetVal + " tour" + ((effetVal>1)?'s':'') + ")";
+                explEffetMsg += " (" + effetVal + " tour" + ((effetVal > 1) ? 's' : '') + ")";
               } else {
                 explEffetMsg += " (tour final)";
               }
@@ -42079,7 +42083,7 @@ var COFantasy = COFantasy || function() {
                   if (soinsEffectifs == soins) {
                     line += soinTxt + 'PV';
                   } else {
-                    line += soinsEffectifs + 'PV (jet: ' + soinTxt + ')';
+                    line += soinsEffectifs + ' PV (jet: ' + soinTxt + ')';
                   }
                   addLineToFramedDisplay(display, line);
                   sync();
@@ -47072,8 +47076,8 @@ var COFantasy = COFantasy || function() {
                 fin();
                 return;
               }
-              count --; //On a fini avec perso.
-              count += cibles.length;//On ajoute les cibles
+              count--; //On a fini avec perso.
+              count += cibles.length; //On ajoute les cibles
               cibles.forEach(function(cible) {
                 sendChat('', "[[2d6]]", function(res) {
                   let rolls = res[0];
@@ -47086,7 +47090,7 @@ var COFantasy = COFantasy || function() {
                       else if (s == soins)
                         sendPerso(cible, "récupère " + displaySoins + " PV.");
                       else
-                        sendPerso(cible, "récupère " + s + " PV. (Le jet était "+displaySoins+")");
+                        sendPerso(cible, "récupère " + s + " PV. (Le jet était " + displaySoins + ")");
                       fin();
                     }, fin);
                 }); //fin sendChat du jet de dé
