@@ -7082,7 +7082,8 @@ var COFantasy = COFantasy || function() {
             addLineToFramedDisplay(display, m, 80);
           });
           if (tr.reussite) {
-            addLineToFramedDisplay(display, "C'est réussi." + tr.modifiers);
+            let msgReussite = options.messageSiSucces || "C'est réussi.";
+            addLineToFramedDisplay(display, msgReussite + tr.modifiers);
           } else {
             let msgRate = "C'est raté." + tr.rerolls + tr.modifiers;
             addLineToFramedDisplay(display, msgRate);
@@ -7809,6 +7810,10 @@ var COFantasy = COFantasy || function() {
             return;
           }
           options.plageEchecCritique = plageEC;
+          return;
+        case 'succes':
+          options.messageSiSucces = args.slice(1).join(' ');
+          return;
       }
     });
     getSelected(msg, function(selected, playerId) {
@@ -26602,7 +26607,7 @@ var COFantasy = COFantasy || function() {
       }
       if (envoieAuMJ) {
         opt_display.chuchote = 'gm';
-        var display = startFramedDisplay(lastPlayerid, title, perso, opt_display);
+        const display = startFramedDisplay(lastPlayerid, title, perso, opt_display);
         addLineToFramedDisplay(display, ligne);
         sendChat('', endFramedDisplay(display));
       }
