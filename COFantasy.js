@@ -8312,7 +8312,8 @@ var COFantasy = COFantasy || function() {
     let dm = {
       nbDe: 0,
       dice: 4,
-      bonus: 0
+      bonus: 0,
+      id: generateUUID()
     };
     let exprDM = expr.trim().toLowerCase();
     let indexD = exprDM.indexOf('d');
@@ -8417,7 +8418,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //juste le traitement d'une liste d'options
-  // lastEtat : dernier de etats et effets
+  // lastEtat : dernier de etats et effets, pour savoir à quoi appliquer --save
   // lastType : dernier type de dégâts infligés
   // scope : pour les conditionnelles
   function parseAttackOptions(attaquant, optArgs, lastEtat, lastType, scope, playerId, msg, targetToken, attackLabel, weaponStats, options) {
@@ -9691,17 +9692,18 @@ var COFantasy = COFantasy || function() {
               error("Le premier argument de affaiblirCarac n'est pas une caractéristique", cmd);
               return;
           }
-          let valAff = parseInt(cmd[2]);
-          if (isNaN(valAff)) {
+          let valAff = parseDice(cmd[2]);
+          if (!valAff || !dePositif(valAff)) {
             error("Le deuxième argument de --affaiblirCarac doit être un nombre", cmd);
             return;
           }
           if (valAff === 0) return;
-          scope.affaiblissementsCarac = scope.affaiblissementsCarac || [];
-          scope.affaiblissementsCarac.push({
+          lastEtat = {
             carac,
             val: valAff
-          });
+          };
+          scope.affaiblissementsCarac = scope.affaiblissementsCarac || [];
+          scope.affaiblissementsCarac.push(lastEtat);
           return;
         case 'difficulteCarac':
           if (cmd.length < 2) {
@@ -11393,12 +11395,20 @@ var COFantasy = COFantasy || function() {
     return distanceCombat(fio.porteur.token, perso.token) < fio.distance;
   }
 
+  function defenseBouclier(perso) {
+    let defense = 0;
+    if (ficheAttributeAsInt(perso, 'defbouclieron', 0) > 0) {
+      defense += ficheAttributeAsInt(perso, 'defbouclier', 0);
+      defense += predicateAsInt(perso, 'bouclierDeLaFoi', 0, 1);
+    }
+    return defense;
+  }
+
   function defenseArmure(perso) {
     let defense = 0;
     if (ficheAttributeAsInt(perso, 'defarmureon', 0) > 0)
       defense = ficheAttributeAsInt(perso, 'defarmure', 0);
-    if (ficheAttributeAsInt(perso, 'defbouclieron', 0) > 0)
-      defense += ficheAttributeAsInt(perso, 'defbouclier', 0);
+    defense += defenseBouclier(perso);
     return defense;
   }
 
@@ -11667,7 +11677,7 @@ var COFantasy = COFantasy || function() {
         }
         let defBouclierProtecteur;
         if (persoEstPNJ(protecteur)) defBouclierProtecteur = 2;
-        else defBouclierProtecteur = ficheAttributeAsInt(protecteur, 'defbouclier', 0);
+        else defBouclierProtecteur = ficheAttributeAsInt(protecteur, 'defbouclier', 0) + predicateAsInt(protecteur, 'bouclierDeLaFoi', 0, 1);
         defense += defBouclierProtecteur;
         explications.push(nameProtecteur + " protège " +
           tokenName + " de son bouclier (+" + defBouclierProtecteur + " DEF)");
@@ -18943,25 +18953,6 @@ var COFantasy = COFantasy || function() {
               spawnFx(target.token.get('left'), target.token.get('top'), options.targetFx, pageId);
             }
             target.rollsDmg = rollsDmg;
-            let affaiblissements = options.affaiblissementsCarac;
-            if (target.affaiblissementsCarac) {
-              if (affaiblissements)
-                affaiblissements = affaiblissements.concat(target.affaiblissementsCarac);
-              else affaiblissements = target.affaiblissementsCarac;
-            }
-            if (affaiblissements) {
-              let expliquer = function(s) {
-                target.messages.push(s);
-              };
-              affaiblissements.forEach(function(aff) {
-                let carac = aff.carac;
-                if (carac == 'random') {
-                  let id = 'affaiblissement' + aff.val + '_' + target.token.id;
-                  carac = randomCaracForId(id, options);
-                }
-                affaiblirCaracPerso(target, carac, aff.val, expliquer, evt);
-              });
-            }
             // Compte le nombre de saves pour la synchronisation
             // (On ne compte pas les psave, gérés dans dealDamage)
             let saves = 0;
@@ -19082,6 +19073,32 @@ var COFantasy = COFantasy || function() {
                 }
                 ef.attaquant = attaquant;
                 setEffetTemporaire(target, ef, ef.duree, evt, options);
+              });
+            }
+            //Les affaiblissements
+            let saveAffaiblissements = 0;
+            let affaiblissements = options.affaiblissementsCarac;
+            if (target.affaiblissementsCarac) {
+              if (affaiblissements)
+                affaiblissements = affaiblissements.concat(target.affaiblissementsCarac);
+              else affaiblissements = target.affaiblissementsCarac;
+            }
+            if (affaiblissements) {
+              let expliquer = function(s) {
+                target.messages.push(s);
+              };
+              affaiblissements.forEach(function(aff) {
+                if (aff.save) {
+                  saves++;
+                  saveAffaiblissements++;
+                  return;
+                }
+                let carac = aff.carac;
+                if (carac == 'random') {
+                  let id = 'affaiblissement' + aff.val + '_' + target.token.id;
+                  carac = randomCaracForId(id, options);
+                }
+                affaiblirCaracPerso(target, carac, aff.val, expliquer, evt);
               });
             }
             // Tout ce qui se passe après les saves (autres que saves de diminution des dmg
@@ -19339,7 +19356,7 @@ var COFantasy = COFantasy || function() {
             };
             //Ajoute les états avec save à la cible
             let etatsAvecSave = function() {
-              if (savesEffets > 0) return; //On n'a pas encore fini avec les effets
+              if (savesEffets > 0 || saveAffaiblissements > 0) return; //On n'a pas encore fini avec les effets et les affaiblissements
               if (etats && saves > 0) {
                 etats.forEach(function(ce, index) {
                   if (ce.save) {
@@ -19394,6 +19411,7 @@ var COFantasy = COFantasy || function() {
             };
             // Ajoute les effets avec save à la cible
             let effetsAvecSave = function() {
+              if (saveAffaiblissements > 0) return; //On n'a pas encore fini avec les affaiblissements
               if (effets && savesEffets > 0) {
                 effets.forEach(function(ef, index) {
                   if (ef.save) {
@@ -19538,13 +19556,50 @@ var COFantasy = COFantasy || function() {
                   });
               } else effetsAvecSave();
             };
+            let affaiblissementsAvecSave = function() {
+              if (affaiblissements && saveAffaiblissements > 0) {
+                let expliquer = function(s) {
+                  target.messages.push(s);
+                };
+                affaiblissements.forEach(function(aff) {
+                  if (!aff.save) {
+                    return;
+                  }
+                  let carac = aff.carac;
+                  if (carac == 'random') {
+                    let id = 'affaiblissement' + aff.val + '_' + target.token.id;
+                    carac = randomCaracForId(id, options);
+                  }
+                  let saveOpts = {
+                    msgPour: " pour résister à un affaiblissement de " + carac,
+                    msgRate: ", raté.",
+                    attaquant,
+                    rolls: options.rolls,
+                    sortilege: options.sortilege,
+                    chanceRollId: options.chanceRollId,
+                    type: options.type,
+                    necromancie: estNecromancie(options),
+                  };
+                  let saveId = 'affaiblissement' + carac + "_" + target.token.id;
+                  save(aff.save, target, saveId, expliquer, saveOpts, evt,
+                    function(reussite, rollText) {
+                      if (!reussite) {
+                        affaiblirCaracPerso(target, carac, aff.val, expliquer, evt);
+                      }
+                      saves--;
+                      saveAffaiblissements--;
+                      effetPietinement();
+                    });
+                });
+              } else effetPietinement();
+            };
             // Peut faire peur à la cible
             if (options.peur) {
               peurOneToken(target, options.peur.seuil,
                 options.peur.duree, {
                   resisteAvecForce: true
-                }, target.messages, evt, effetPietinement);
-            } else effetPietinement();
+                }, target.messages, evt, affaiblissementsAvecSave);
+            } else affaiblissementsAvecSave();
           } else {
             evt.succes = false;
             finCibles();
@@ -19644,10 +19699,11 @@ var COFantasy = COFantasy || function() {
       sendFramedDisplay(stateCOF.currentAttackDisplay);
       stateCOF.currentAttackDisplay = undefined;
       if (stateCOF.afterDisplay) {
-        stateCOF.afterDisplay.forEach(function(d) {
+        let ad = stateCOF.afterDisplay;
+        stateCOF.afterDisplay = undefined;//on efface avant au cas où le script crash
+        ad.forEach(function(d) {
           sendPerso(d.destinataire, d.msg, true);
         });
-        stateCOF.afterDisplay = undefined;
       }
     } else {
       sendPlayer(msg, "Pas de résultat d'attaque à montrer");
@@ -19697,10 +19753,11 @@ var COFantasy = COFantasy || function() {
       });
     }
     if (stateCOF.afterDisplay) {
-      stateCOF.afterDisplay.forEach(function(d) {
+      let ad = stateCOF.afterDisplay;
+      stateCOF.afterDisplay = undefined;
+      ad.forEach(function(d) {
         sendPerso(d.destinataire, d.msg, true);
       });
-      stateCOF.afterDisplay = undefined;
     }
   }
 
@@ -27066,7 +27123,7 @@ var COFantasy = COFantasy || function() {
           }
         }
         if (ficheAttributeAsInt(perso, 'defbouclieron', 0) === 0 &&
-          ficheAttributeAsInt(perso, 'defbouclier', 0))
+          ficheAttributeAsBool(perso, 'defbouclier', false))
           addLineToFramedDisplay(display, "Ne porte pas son bouclier");
         if (ficheAttributeAsInt(perso, 'casque_rd', 0)) {
           if (ficheAttributeAsBool(perso, 'casque_on', false)) {
@@ -30254,7 +30311,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //!cof-attaque-magique-contre-pv {selected|token_id} {target|token_id}
-// deprecated
+  // deprecated
   function attaqueMagiqueContrePV(msg) {
     const options = parseOptions(msg);
     if (options === undefined || options.cmd === undefined) return;
@@ -30287,7 +30344,7 @@ var COFantasy = COFantasy || function() {
     };
     addEvent(evt);
     if (limiteRessources(attaquant, options, 'attaque magique', "l'attaque magique", evt)) return;
-    var attaquantChar = getObj('character', attaquant.charId);
+    let attaquantChar = getObj('character', attaquant.charId);
     if (attaquantChar === undefined) {
       error("Fiche de l'attaquant introuvable");
       return;
@@ -30313,14 +30370,14 @@ var COFantasy = COFantasy || function() {
       effetAuD20(attaquant, d20roll);
       let attSkill = rolls.inlinerolls[attSkillNumber].results.total;
       if (estAffaibli(attaquant) && predicateAsBool(attaquant, 'insensibleAffaibli')) attSkill -= 2;
-      var attackRoll = d20roll + attSkill;
+      let attackRoll = d20roll + attSkill;
       let line =
         nomPerso(attaquant) + " fait " +
         buildinline(rolls.inlinerolls[attRollNumber]);
       if (attSkill > 0) line += "+" + attSkill + " = " + attackRoll;
       else if (attSkill < 0) line += attSkill + " = " + attackRoll;
       addLineToFramedDisplay(display, line);
-      var reussi;
+      let reussi;
       if (d20roll == 1) reussi = false;
       else if (d20roll == 20) reussi = true;
       else reussi = (attackRoll >= pvMax);
@@ -32929,9 +32986,7 @@ var COFantasy = COFantasy || function() {
 
   function appliquerDevierLesCoups(cible, test, options, evt) {
     utiliseCapacite(cible, test, evt);
-    cible.extraRDBouclier =
-      ficheAttributeAsInt(cible, 'defbouclier', 0) *
-      ficheAttributeAsInt(cible, 'defbouclieron', 0);
+    cible.extraRDBouclier = defenseBouclier(cible);
     removePreDmg(options, cible, 'devierLesCoups');
   }
 
@@ -42615,8 +42670,8 @@ var COFantasy = COFantasy || function() {
         error("Caractéristique " + carac + " non reconnue", cmd);
         return;
     }
-    let valeur = parseInt(cmd[2]);
-    if (isNaN(valeur) || valeur < 1) {
+    let valeur = parseDice(cmd[2]);
+    if (!valeur || !dePositif(valeur)) {
       error("La valeur d'affaiblissement doit être un nombre positif", cmd);
       return;
     }
@@ -42691,16 +42746,37 @@ var COFantasy = COFantasy || function() {
   }
 
   //carac est une caractéristique entière
+  //valeur est soit un nombre, soit le résultat de parseDice
   function affaiblirCaracPerso(perso, carac, valeur, expliquer, evt) {
     let nomAttr = 'affaiblissementde' + carac;
+    let valeurText = valeur;
+    if (isNaN(valeur)) {
+      let rid = valeur.id;
+      if (rid === undefined) {
+        error("Résultat de parseDice sans id", valeur);
+        return;
+      }
+      if (perso.affaiblirCaracRoll && perso.affaiblirCaracRoll[rid]) {
+        let r = perso.affaiblirCaracRoll[rid];
+        valeur = r.val;
+        valeurText = r.roll;
+      } else {
+        let r = rollDePlus(valeur);
+        valeur = r.val;
+        valeurText = r.roll;
+        perso.affaiblirCaracRoll = perso.affaiblirCaracRoll || {};
+        perso.affaiblirCaracRoll[rid] = r;
+      }
+    }
     let malus = addToAttributeAsInt(perso, nomAttr, 0, valeur, evt);
     let cn = caracNormale(perso, carac);
     if (malus > cn) {
       valeur += cn - malus;
+      valeurText = valeur;
       setTokenAttr(perso, nomAttr, cn, evt);
     }
     if (valeur < 1) return;
-    expliquer("perd " + valeur + " points de " + carac);
+    expliquer("perd " + valeurText + " points de " + carac);
     if (carac == 'constitution') {
       if (malus >= cn) {
         mort(perso, expliquer, evt);
@@ -42741,16 +42817,17 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  // valeur peut être un nombre ou le résultat de parseDice
   function affaiblirCarac(playerId, cibles, carac, valeur, options) {
     const evt = {
       type: 'affaiblissement',
       action: {
         titre: "Affaiblissement de " + carac,
-        playerId: playerId,
-        cibles: cibles,
-        carac: carac,
-        valeur: valeur,
-        options: options
+        playerId,
+        cibles,
+        carac,
+        valeur,
+        options,
       }
     };
     let lanceur = options.lanceur;

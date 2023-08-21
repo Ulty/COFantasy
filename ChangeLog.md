@@ -8,7 +8,7 @@
 * Expertise (rang 1 de la Voie de prestige spécialisée)
 
 ### Autres améliorations
-* Ajout d'une action pour relacer une cible agrippée.
+* Ajout d'une action pour relacher une cible agrippée.
 * Ajout d'une option --succes à !cof-jet
 * Possibilité d'utiliser les options de triche avec les --if
 * Ajout d'un prédicat pour les armes de l'été.
