@@ -79,6 +79,8 @@ let COF_loaded = false;
 // - nextPrescience : pour le changement de tour car prescience ne revient que d'un tour
 // - afterDisplay : données à afficher après un display
 // - version : la version du script en cours, pour détecter qu'on change de version
+// statistiques : des statistiques pour les jets de dés
+// statistiquesEnPause
 
 var COFantasy = COFantasy || function() {
 
@@ -19700,7 +19702,7 @@ var COFantasy = COFantasy || function() {
       stateCOF.currentAttackDisplay = undefined;
       if (stateCOF.afterDisplay) {
         let ad = stateCOF.afterDisplay;
-        stateCOF.afterDisplay = undefined;//on efface avant au cas où le script crash
+        stateCOF.afterDisplay = undefined; //on efface avant au cas où le script crash
         ad.forEach(function(d) {
           sendPerso(d.destinataire, d.msg, true);
         });
@@ -30396,32 +30398,32 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "Pas possible de méditer en combat");
       return;
     }
-    var options = parseOptions(msg);
+    const options = parseOptions(msg);
     if (options === undefined) return;
     getSelected(msg, function(selected, playerId) {
       if (selected === undefined || selected.length === 0) {
         sendPlayer(msg, "Pas de cible sélectionnée pour la transe de guérison", playerId);
         return;
       }
-      var evt = {
+      const evt = {
         type: "Transe de guérison",
       };
       iterSelected(selected, function(perso) {
-        var token = perso.token;
+        let token = perso.token;
         if (attributeAsBool(perso, 'transeDeGuérison')) {
           sendPerso(perso, "a déjà médité depuis le dernier combat");
           return;
         }
-        var bar1 = parseInt(token.get("bar1_value"));
-        var pvmax = parseInt(token.get("bar1_max"));
+        let bar1 = parseInt(token.get("bar1_value"));
+        let pvmax = parseInt(token.get("bar1_max"));
         if (isNaN(bar1) || isNaN(pvmax)) return;
         if (bar1 >= pvmax) {
           sendPerso(perso, "n'a pas besoin de méditer");
           return;
         }
-        var sagMod = modCarac(perso, 'sagesse');
-        var niveau = ficheAttributeAsInt(perso, 'niveau', 1);
-        var soin = niveau + sagMod;
+        let sagMod = modCarac(perso, 'sagesse');
+        let niveau = ficheAttributeAsInt(perso, 'niveau', 1);
+        let soin = niveau + sagMod;
         if (soin < 0) soin = 0;
         if (bar1 === 0) {
           if (attributeAsBool(perso, 'etatExsangue')) {
@@ -31247,7 +31249,7 @@ var COFantasy = COFantasy || function() {
             if (display) {
               addLineToFramedDisplay(display, "<b>" + nomCible + "</b> : pas besoin de soins.");
             } else {
-              var maxMsg = "n'a pas besoin de ";
+              let maxMsg = "n'a pas besoin de ";
               if (options.recuperation) {
                 maxMsg = "se reposer";
                 charId = soigneur.charId;
@@ -44207,6 +44209,43 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //Pour effacer tout ce qui pourrait faire planter et stoqué dans stateCOF
+  function cleanGlobalState(msg) {
+    stateCOF = stateCOF || state.COFantasy;
+    if (!stateCOF) {
+      sendPlayer(msg, "État global de COF déjà vide");
+      return;
+    }
+    try {
+      removeRoundMarker();
+    } catch (e) {
+      stateCOF.roundMarkerId = undefined;
+    }
+    stateCOF.roundMarkerId = undefined;
+    if (stateCOF.combat) {
+      try {
+        sortirDuCombat();
+      } catch (e) {
+        stateCOF.combat = undefined;
+      }
+    }
+    stateCOF.combat = undefined;
+    stateCOF.chargeFantastique = undefined;
+    stateCOF.tokensTemps = undefined;
+    stateCOF.effetAuD20 = undefined;
+    stateCOF.tenebresMagiques = undefined;
+    stateCOF.jetsEnCours = undefined;
+    stateCOF.currentAttackDisplay = undefined;
+    stateCOF.prescience = undefined;
+    stateCOF.nextPrescience = undefined;
+    stateCOF.afterDisplay = undefined;
+    stateCOF.statistiquesEnPause = undefined;
+    stateCOF.statistiques = undefined;
+    log("stateCOf purgé");
+    log(stateCOF);
+    sendPlayer(msg, "État global de COFantasy purgé.");
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     const command = msg.content.split(' ', 1);
@@ -44251,6 +44290,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-canaliser':
         canaliser(msg);
+        return;
+      case '!cof-clean-global-state':
+        cleanGlobalState(msg);
         return;
       case '!cof-confirmer-attaque':
         confirmerAttaque(msg);
@@ -44375,6 +44417,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-sphere-de-feu':
         sphereDeFeu(msg);
         return;
+      case "!cof-save-state":
+        parseSaveState(msg);
+        return;
       case '!cof-statut':
         statut(msg);
         return;
@@ -44392,9 +44437,6 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-zone-de-vie':
         lancerZoneDeVie(msg);
-        return;
-      case "!cof-save-state":
-        parseSaveState(msg);
         return;
       case "!cof-save-effet":
         parseSaveEffet(msg);

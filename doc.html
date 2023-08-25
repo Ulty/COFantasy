@@ -124,6 +124,7 @@ tr {line-height: 25px;}
                 <li><a class="text-info" href="#Generalites_Console">Généralités sur la Console API</a></li>
                 <li><a class="text-info" href="#Erreurs_Console">Principaux messages d'erreur</a></li>
                 <li><a class="text-info" href="#Infos_Console">Principaux messages d'information</a></li>
+                <li><a class="text-info" href="#Reset_state">Purger les variables d'état du jeu</a></li>
               </ul>
               <li><a href="#pathfinder">Conversion depuis Pathfinder</a></li>
             </ol>
@@ -3015,6 +3016,11 @@ tr {line-height: 25px;}
                   <li><code>Marker cof-XXX introuvable</code> Alerte : Erreur dans le nom d'un marker. Voir <a href="#Markers_personnalisés">Markers Personnalisés</a> ou <a href="#etats">liste des états</a>.</li>
                   <li><code>Compétences sans caractéristique associée</code>Alerte : Erreur de déclaration dans le <a href="#jet_caracteristiques">handout de jets de caractéristique</a>.</li>
                 </ul>
+              </div>
+              <h3 class="text-info" id="Reset_state">7.4 Purger les variables d'état du jeu</h3>
+              <div class="decalage">
+                <p>Pour son bon fonctionnement, le script stoque des données, parfois complexes, et il peut arriver que ces données soient corrompues. Dans ce cas, le script peut planter de manière systématique, même sur des actions simples. Si vous soupçonnez une corruption des données, vous pouvez tenter de lancer la commande <code>!cof-clean-global-state</code>.
+                </p>
               </div>
               <h2 class="text-primary" id="pathfinder">8. Utiliser des personnages Pathfinder</h2>
               <div class="decalage">
