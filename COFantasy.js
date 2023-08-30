@@ -29557,6 +29557,10 @@ var COFantasy = COFantasy || function() {
             line += "est ralenti" + eForFemale(target);
             effet = 'ralentiTemp';
             etat = 'ralenti';
+          } else if (options.paralyse) {
+            line += "est paralysé" + eForFemale(target);
+            effet = 'paralyseTemp';
+            etat = 'paralyse';
           } else if (options.secoue && !attributeAsBool(target, 'secoue')) {
             line += "est secoué" + eForFemale(target);
             effet = 'secoue';
@@ -29608,6 +29612,7 @@ var COFantasy = COFantasy || function() {
         case 'ralenti':
         case 'effroi':
         case 'secoue':
+        case 'paralyse':
           options[optCmd[0]] = true;
           return;
         case 'portee':
@@ -29687,7 +29692,7 @@ var COFantasy = COFantasy || function() {
       if (options.titre) action += options.titre;
       else if (options.effroi)
         action += "est vraiment effrayant" + eForFemale(options.lanceur);
-      else action = "<b>Capacité</b> : Sort de peur";
+      else action = "<b>Capacité</b> : Effet de peur";
     } else if (options.titre) action = options.titre;
     let messages = [];
     entrerEnCombat(options.lanceur, cibles, messages, evt);
@@ -31316,11 +31321,11 @@ var COFantasy = COFantasy || function() {
             };
           }
           if (options.fx) {
-            var p1e = {
+            let p1e = {
               x: soigneur.token.get('left'),
               y: soigneur.token.get('top'),
             };
-            var p2e = {
+            let p2e = {
               x: cible.token.get('left'),
               y: cible.token.get('top'),
             };
@@ -31492,10 +31497,10 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseNatureNourriciere(msg) {
-    var options = parseOptions(msg);
+    const options = parseOptions(msg);
     getSelected(msg, function(selected) {
       iterSelected(selected, function(lanceur) {
-        var voieDeLaSurvie = predicateAsInt(lanceur, 'voieDeLaSurvie', 0);
+        let voieDeLaSurvie = predicateAsInt(lanceur, 'voieDeLaSurvie', 0);
         if (voieDeLaSurvie < 1) {
           sendPerso(lanceur, " ne connaît pas la Voie de la Survie ?");
         }

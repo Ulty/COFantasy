@@ -844,6 +844,7 @@ tr {line-height: 25px;}
                   <li><code>--resisteAvecForce</code> : on prend le max de FOR et SAG pour résister</li>
                   <li><code>--etourdi</code> : la peur fait fuir ou rend étourdi</li>
                   <li><code>--ralenti</code> : la peur ralenti</li>
+                  <li><code>--paralyse</code> : la peur paralyse</li>
                   <li><code>--secoue</code> : la peur ne donne qu'un malus de -2 aux tests. Mais un autre effet de peur de même type fait fuir.</li>
                   <li><code>--effroi</code> : la peur est passive (pas un sort)</li>
                   <li><code>--portee <i>n</i></code> : limite la portée du sort à <i>n</i> metres.</li>
@@ -2404,7 +2405,7 @@ tr {line-height: 25px;}
                   <li><strong>Aura glaciale</strong> : ajouter un attribut <code>aura</code>, de valeur courante <code>5</code>, et de valeur maximale <code>!cof-effet-temp ralenti [[1d6]] --save CON 12 --magique --seulementVivant --message une aura de froid intense émane de $TOKEN</code>.</li>
                   <li><strong>Aura de profanation</strong> : ajouter un prédicat <code>auraDeProfanation</code>.</li>
                   <li><strong>Baroud d'honneur</strong> : ajouter un <a href=#predicats>prédicat</a> <code>baroudHonneur</code> (Quand le personnage arrive à 0 PV, il ne meurt pas jusqu'à sa prochaine attaque, qui se fait avec un bonus de +5)</li>
-                  <li><strong>Bâton des runes mortes</strong> : ajoutez dans les prédicats de l'arme le prédicat <code>batonDesRunesMortes</code>. Dans la fiche de Swarathnak, ajoutez le prédicat <code>ennemiDuBatonDesRunesMortes</code>.</li>
+                  <li><strong>Bâton des runes mortes</strong> (Invincible) : ajoutez dans les prédicats de l'arme le prédicat <code>batonDesRunesMortes</code>. Dans la fiche de Swarathnak, ajoutez le prédicat <code>ennemiDuBatonDesRunesMortes</code>.</li>
                   <li><strong>Bonus à l'attaque magique</strong> : utiliser un  <a href=#predicats>prédicat</a> <code>bonusAttaqueMagique</code> de valeur le bonus permet d'ajouter ce bonus aux attaques magiques. Utile en particulier en prédicat d'arme.</li>
                   <li><strong>Boutefeu</strong> (Invincible) : utilisez un <a href=#predicats>prédicat</a> <code>boutefeu</code>.
                   <li><strong>Canalisation</strong> : <code>!cof-canaliser <i>type</i></code> où <i>type</i> peut être <code>positif</code> ou <code>négatif</code>, selon le type d'énergie canalisée. Il faut au moins soit une option <code>--soin <i>expr</i></code> ou  <code>--dm <i>expr</i></code> (il est possible d'avoir les deux), pour exprimer le montant des soins ou des dégâts. Si vous souhaitez avoir un certain nombre de dégâts par point de mana dépensé, vous pouvez utiliser un prédicat <code>deCanalisation</code> contenant l'expression des dégâts (ou soins) par point de mana, et utiliser la syntaxe <code>--soin <i>n</i> pm</code>.</li>

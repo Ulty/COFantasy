@@ -8,6 +8,7 @@
 * Expertise (rang 1 de la Voie de prestige spécialisée)
 
 ### Autres améliorations
+* Possibilité que la peur paralyse.
 * Ajout d'une commande !cof-clean-global-state.
 * Ajout d'une action pour relacher une cible agrippée.
 * Ajout d'une option --succes à !cof-jet
