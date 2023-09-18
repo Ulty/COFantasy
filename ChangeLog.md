@@ -1,6 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.13
 ### Capacités
+* Attaque bondissante du druide
+* Charge du barbare (avec le déplacement)
 * Vitalité épique.
 * Pluie de flèches de la Voie d'Arwendée.
 * Rangs 1 à 4 de la Voie du guérisseur.
@@ -8,6 +10,7 @@
 * Expertise (rang 1 de la Voie de prestige spécialisée)
 
 ### Autres améliorations
+* Possibilité de faire un déplacement automatique avant une attaque
 * Possibilité que la peur paralyse.
 * Ajout d'une commande !cof-clean-global-state.
 * Ajout d'une action pour relacher une cible agrippée.

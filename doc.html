@@ -349,6 +349,7 @@ tr {line-height: 25px;}
                     <li> Si on souhaite que le jet ne permette de réduire qu'une partie des dommages (la dernière ajoutée avec <code>--plus</code>), on peut ajouter <code>local</code>. La syntaxe complète est alors <code>--psave <i>carac seuil</i> local</code>.</li>
                     <li> Si on souhaite que la difficulté soit augmentée en cas de tempête de mana, on peut utiliser le mot clé <code>tempete</code> suivi si besoin de l'incrément en fonction de la mana (par defaut 1 mana augmente de 1 la difficulté). </li>
                     <li> Si on souhaite indiquer une difficulté alternative pour les cibles au contact, ajouter <code>contact <i>n</i></code>, où <i>n</i> est la difficulté en question.</li>
+                    <li> Si on souhaite augmenter la difficulté du save en fonction de la marge de réussite du jet d'attaque, ajouter <code>augmenteAvecMargeDeToucher</code>.</li>
                   </ul>
                   </li>
 
@@ -376,6 +377,7 @@ tr {line-height: 25px;}
                       <li><code>touche</code> : vrai si l'attaque touche.</li>
                       <li><code>critique</code> : vrai si l'attaque est un critique.</li>
                       <li><code>echecCritique</code> : vrai si l'attaque est un échec critique.</li>
+                      <li><code>premiereAttaque</code> : vrai si c'est la première attaque du combat.</li>
                     </ul>
                   </li>
                   <li><code>--if <i>condition</i></code> <i>options</i> <code>--endif</code>: permet de ne prendre en compte des options que si certaines conditions sont réalisées. Il est possible d'utiliser un <code>--else</code> pour activer des options quand les conditions ne sont pas réalisées. Attention, les options qui modifient une option précédente (comme <code>--valeur</code>) doivent apparaître au même niveau que l'option qu'elles modifient. Comme les conditions peuvent dépendre du dé d'attaque, un certain nombre d'options ne sont pas affectées par cette conditionnelle : tempeteDeMana, les options d'aoe (ligne, cone, disque, target), avecd12, avantage, auto, demiAuto, test, pointsVitaux, tempsRecharge, sortilege, bonusCritique, disparition, affute, munition, tirDouble, semonce, tirDeBarrage, poudre, traquenard, feinte, asDeLaGachette, magique, tranchant, percant, contondant, pasDeDmg. Ne pas hésiter à me demander si vous aviez besoin que l'une de ces options puissent être conditionnelle.</li>
@@ -490,6 +492,8 @@ tr {line-height: 25px;}
                   <li><code>--imgAttackSuccesCritique <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un succès critique</li>
                   <li><code>--imgAttackSucces <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un succès</li>
                   <li><code>--imgAttackSuccesChampion <i>img</i></code> : Affiche dans le chat l'image (.jpg/.png/.gif) <i>img</i> lorque l'arme fait un succès champion</li>
+                  <li><code>--terrainDifficile <i>duree</i></code> : si l'attaque affecte une zone en forme de disque, cette zone sera considérée comme du terrain difficile pendant <i>duree</i> tours. En deuxième argument, on peut mettre le nom de la zone, et en troisième argument une image à afficher sur la carte.</li>
+                  <li><code>--deplaceDe <i>dmax</i></code> : l'attaquant se déplacer de <i>dmax</i> mètres maximum pour arriver à portée de sa cible. Le déplacement (et l'attaque) n'a lieu que si il existe une position libre, sans aucun token sur le trajet. On peut spécifier une distance minimum avec <code>--deplaceDe <i>min</i> <i>max</i></code>. On peut aussi ajouter le mot-clé <code>saut</code> pour ignorer les tokens sur le trajet.</li>
                 </ul>
               </div>
               <h4 class="text-secondary">Réduction des dégâts</h4>
@@ -1055,7 +1059,7 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie du pourfendeur</h4>
                 <ol>
                   <li><strong>Réflexes félins</strong> : ajouter un <a href=#predicats>prédicat</a> <code>reflexesFelins</code>, avec comme valeur le bonus aux saves et à l'initiative.</li>
-                  <li><strong>Charge</strong> : faire une attaque avec les options <code>--bonusAttaque 2</code> <code>--plus 1d6</code>. Pour gérer plusieurs armes, vous pouvez utiliser la commande <code>#Attaque -1</code>.</li>
+                  <li><strong>Charge</strong> : faire une attaque avec les options <code>--deplaceDe 5 20 --bonusAttaque 2 --plus 1d6</code>. Pour gérer plusieurs armes, vous pouvez utiliser la commande <code>#Attaque -1</code>.</li>
                   <li><strong>Enchaînement</strong> : ajouter un <a href=#predicats>prédicat</a> <code>enchainement</code>.</li>
                   <li><strong>Déchaînement d'acier</strong> : <code>!cof-attack-line @{selected|token_id} --distanceMax 10</code>. L'attaque va être faite avec l'arme en main, mais on peut spécifier un label d'attaque (avant les options) et toutes les options supportées par <code>!cof-attack</code>.</li>
                   <li><strong>Attaque tourbillon</strong> : Faite une action avec le code <code>!cof-explosion -1 --auto --disque 5 --saufAllies --limiteParCombat 1 tourbillon</code>.</li>
@@ -1213,7 +1217,7 @@ tr {line-height: 25px;}
                 <ol>
                   <li><strong>Vitesse du félin</strong> : ajouter un prédicat <code>vitesseDuFelin</code>, de valeur le rang dans la voie. Pensez à ajouter des compétences de saut, escalade et course sur la fiche (sans les bonus !) s'ils ne sont pas déjà présent dans votre handout de compétences.</li>
                   <li><strong>Panthère</strong> : ajouter un personnage pour la panthère, qui sera contrôlé par le joueur. Si vous souhaitez que la panthère rentre en combat à chaque fois que le druide entre en combat, ajoutez au druide un <a href=#predicats>prédicat</a> nommé <code>entrerEnCombatAvec</code>, de valeur le nom du token de la panthère (il peut y avoir plusieurs prédicats avec ce nom).</li>
-                  <li><strong>Attaque bondissante</strong> : faire l'attaque avec les options <code>--bonusAttaque 5</code> <code>--plus 1d6</code>. Les conditions d'utilisation sont à vérifier par le MJ.</li>
+                  <li><strong>Attaque bondissante</strong> : faire l'attaque avec les options <code>--si premiereAttaque --deplaceDe 5 30 saut --bonusAttaque 5 --plus 1d6</code>. Les conditions d'utilisation sont à vérifier par le MJ.</li>
                   <li><strong>Grand félin</strong> : ajuster la fiche de la panthère, et pour le soin, utiliser <code>!cof-soin @{selected|token_id} nom_familier ?{Montant des soins} --transfer</code>.</li>
                   <li><strong>Les sept vies du chat</strong> : pas de support particulier, la commande Undo peut être utilisée pour annuler l'action qui a mené le Druide à 0 PV.</code></li>
                 </ol>
@@ -1648,8 +1652,8 @@ tr {line-height: 25px;}
                   </li>
                   <li><strong>Mot de mort</strong> :
                     <ul>
-                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 10, type Sortilège, modificateurs <code>pasDeDmg necromancie difficultePV</code>, options <code>--mana 3 --etat mort --save CON [[10+@{selected|INT}]] tempete 2</code>.</li>
-                      <li>Objet de sort : <code>#Attaque Mot de mort --toucher [[@{selected|ATKMAG}]] --pasDeDmg --portee 20 --sortilege --necromancie --difficultePV --etat mort --save CON [[10+@{selected|INT}]] tempete 2</code></li>
+                      <li>Sort : Ajouter une attaque sur la fiche utilisant l'attaque magique, portée 10, type Sortilège, modificateurs <code>pasDeDmg necromancie difficultePV seulementVivant</code>, options <code>--mana 3 --etat mort --save CON [[10+@{selected|INT}]] tempete 2</code>.</li>
+                      <li>Objet de sort : <code>#Attaque Mot de mort --toucher [[@{selected|ATKMAG}]] --pasDeDmg --seulementVivant --portee 20 --sortilege --necromancie --difficultePV --etat mort --save CON [[10+@{selected|INT}]] tempete 2</code></li>
                     </ul>
                     Comme pour <strong>Briser les coeurs</strong>, je pense qu'on peut augmenter la difficulté du jet de résistance avec la puissance de la tempête de mana.
                   </li>
@@ -2059,7 +2063,7 @@ tr {line-height: 25px;}
                   <li><strong>Grande taille</strong> : quand le minotaure rentre dans une construction de taille humaine, utiliser <code>!cof-effet constructionTailleHumaine true</code>. À la sortie du bâtiment, <code>!cof-effet constructionTailleHumaine false</code>. Pour les espaces exigus, de même avec l'effet <code>espaceExigu</code>. Si on veut un seul bouton, enlever simplement l'argument <code>true</code>.</li>
                 </ul>
                 <ol>
-                  <li><strong>Charge :</strong> <code>#Attaque -1 --bonusAttaque 2 --plus 1d6</code>. Le déplacement n'est pas encore géré. Modifier les bonus si le minotaure possède la capacité Charge du barbare.</li>
+                  <li><strong>Charge :</strong> <code>#Attaque -1 --deplaceDe 5 20 --bonusAttaque 2 --plus 1d6</code>. Modifier les bonus si le minotaure possède la capacité Charge du barbare.</li>
                   <li><strong>Frénésie :</strong> On peut faire passer en frénésie avec la commande <code>!cof-effet-temp frenesieMinotaure [[1d6]]</code>. Quand j'aurai le temps, il devrait être possible de faire apparaître un bouton quand le minotaure est blessé.</li>
                   <li><strong>Orientation infaillible :</strong> pas de support particulier.</li>
                   <li><strong>Encorner :</strong> pas de support particulier.</li>
@@ -2302,7 +2306,7 @@ tr {line-height: 25px;}
                 </ol>
                 <h4 class="text-secondary">Voie du cogneur</h4>
                 <ol>
-                  <li><strong>Charge</strong> : Faire l'attaque avec les arguments <code>--m2d20 --pietine</code>.</li>
+                  <li><strong>Charger</strong> : Faire l'attaque avec les arguments <code>--deplaceDe 30 --m2d20 --pietine</code>.</li>
                   <li><strong>Enrager</strong> : ajouter un <a href=#predicats>prédicat</a> <code>peutEnrager</code>.</li>
                   <li><strong>Percuter</strong> : Remplacer <code>--pietine</code> par <code>--percute</code> dans l'attaque de Charge.</li>
                 </ol>
@@ -2724,7 +2728,7 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie de la férocité</h4>
                 <ol>
                   <li><strong>Cri de guerre :</strong> <code>!cof-effet-combat criDeGuerre</code></li>
-                  <li><strong>Charge (L) :</strong> <code>#Attaque -1 --bonusAttaque 2 --plus 1d6</code>. Le déplacement n'est pas encore géré.</li>
+                  <li><strong>Charge (L) :</strong> <code>#Attaque -1 --deplaceDe 5 20 --bonusAttaque 2 --plus 1d6</code>.</li>
                   <li><strong>Rage du berserk (L) :</strong> utiliser <code>!cof-rage-du-berserk</code>, à la fois pour entrer en rage et pour tenter d'en sortir avant la fin du combat. Si le MJ souhaite mettre fin à la rage à cause d'un effet extérieur, il peut utiliser la commande <code>!cof-effet-combat rageDuBerserk fin</code>.</li>
                   <li><strong>Même pas mal :</strong> ajouter un <a href=#predicats>prédicat</a> <code>memePasMal</code>. Le joueur doit lui-même activer la rage ou le furie si il souhaite en profiter.</li>
                   <li><strong>Attaque tourbillon (L) :</strong> <code>!cof-explosion -1 --auto --disque 5 --saufAllies --limiteParCombat 1 tourbillon</code>.</li>
