@@ -5077,7 +5077,7 @@ var COFantasy = COFantasy || function() {
           let armeAssociee = getWeaponStats(perso, cmd[1]);
           return armeAssociee && armeAssociee.armeDeJet && armeAssociee.nbArmesDeJet < 1;
         case 'traquenard':
-              return attributeAsBool(perso, 'attributDeCombat_premiereAttaque');
+          return attributeAsBool(perso, 'attributDeCombat_premiereAttaque');
       }
       return false;
     });
@@ -8153,9 +8153,9 @@ var COFantasy = COFantasy || function() {
     switch (args[0]) {
       case 'crit':
       case 'critique':
-      return {
-        type: 'critique'
-      };
+        return {
+          type: 'critique'
+        };
       case 'etat':
         if (args.length < 2) {
           error("condition non reconnue", args);
@@ -8263,7 +8263,9 @@ var COFantasy = COFantasy || function() {
           text: args[1]
         };
       case 'premiereAttaque':
-        return {type: 'premiereAttaque'};
+        return {
+          type: 'premiereAttaque'
+        };
       case 'deAttaque':
         if (args.length < 2) {
           error("condition non reconnue", args);
@@ -10264,7 +10266,7 @@ var COFantasy = COFantasy || function() {
           return target.critique;
         });
       case 'premiereAttaque':
-        return !attributeAsBool(attaquant,'attributDeCombat_premiereAttaque');
+        return !attributeAsBool(attaquant, 'attributDeCombat_premiereAttaque');
       default:
         error("Condition non reconnue", cond);
     }
@@ -13098,7 +13100,6 @@ var COFantasy = COFantasy || function() {
             if (options.attaqueFlamboyanteBonus)
               msgFeinte += "+" + options.attaqueFlamboyanteBonus;
             msgFeinte += " DM";
-
           }
         }
       }
@@ -13172,7 +13173,7 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
-    if (options.attaqueEnMeute) {
+    if (options.attaqueEnMeute || alliesDAttaqueEnMeute.has(attaquant.charId)) {
       let attaqueParMeute = tokenAttribute(target, 'attaqueParMeute');
       if (attaqueParMeute.length > 0) {
         attaqueParMeute = attaqueParMeute[0];
@@ -13186,7 +13187,7 @@ var COFantasy = COFantasy || function() {
           }
           autreAttaquant = true;
         });
-        if (autreAttaquant) {
+        if (autreAttaquant && options.attaqueEnMeute) {
           attBonus += options.attaqueEnMeute;
           explications.push("Attaque en meute => +" + options.attaqueEnMeute + " pour toucher");
         }
@@ -14975,10 +14976,10 @@ var COFantasy = COFantasy || function() {
         let rayonTarget = tokenSizeAsCircle(target.token) / 2;
         let distMin = rayonAttaquant + rayonTarget;
         let dist = distancePixToken(attackingToken, target.token);
-        if (dist-distMin > portee) {
+        if (dist - distMin > portee) {
           //On essaie 10 chemins : la position la plus proche, puis les 9 qui entourent la cible
           let k = distMin / dist;
-          if (portee > 0 && dist-distMin > deplaceDe.max) {
+          if (portee > 0 && dist - distMin > deplaceDe.max) {
             //On ne peut pas déplacer au contact, on va donc déplacer à la limite de la portée
             k = portee / dist;
           }
@@ -15005,46 +15006,46 @@ var COFantasy = COFantasy || function() {
           if (surTrajet.length > 0) {
             //On ne cherche les autres positions que pour les attaques au contact
             if (options.contact) {
-            let diag = distMin / Math.SQRT2;
-            let positionsAlternatives = [{
-              x: tx - diag,
-              y: ty - diag
-            }, {
-              x: tx,
-              y: ty - distMin
-            }, {
-              x: tx + diag,
-              y: ty - diag
-            }, {
-              x: tx - distMin,
-              y: ty
-            }, {
-              x: tx + distMin,
-              y: ty
-            }, {
-              x: tx - diag,
-              y: ty + diag
-            }, {
-              x: tx,
-              y: ty + distMin
-            }, {
-              x: tx + diag,
-              y: ty + diag
-            }];
-            let pt = pointOfToken(attackingToken);
-            positionsAlternatives.sort(function(p1, p2) {
-              let d1 = distancePoints(pt, p1);
-              let d2 = distancePoints(pt, p2);
-              if (d1 < d2) return -1;
-              if (d2 < d1) return 1;
-              return 0;
-            });
-            positionsAlternatives.forEach(function(ptCible) {
-              if (deplaceDe.positionFinale) return;
-              let ts =
-                tokensSurTrajet(attackingToken, ptCible, rayonAttaquant, allToks, murs, deplaceDe.saut);
-              if (ts.length === 0) deplaceDe.positionFinale = ptCible;
-            });
+              let diag = distMin / Math.SQRT2;
+              let positionsAlternatives = [{
+                x: tx - diag,
+                y: ty - diag
+              }, {
+                x: tx,
+                y: ty - distMin
+              }, {
+                x: tx + diag,
+                y: ty - diag
+              }, {
+                x: tx - distMin,
+                y: ty
+              }, {
+                x: tx + distMin,
+                y: ty
+              }, {
+                x: tx - diag,
+                y: ty + diag
+              }, {
+                x: tx,
+                y: ty + distMin
+              }, {
+                x: tx + diag,
+                y: ty + diag
+              }];
+              let pt = pointOfToken(attackingToken);
+              positionsAlternatives.sort(function(p1, p2) {
+                let d1 = distancePoints(pt, p1);
+                let d2 = distancePoints(pt, p2);
+                if (d1 < d2) return -1;
+                if (d2 < d1) return 1;
+                return 0;
+              });
+              positionsAlternatives.forEach(function(ptCible) {
+                if (deplaceDe.positionFinale) return;
+                let ts =
+                  tokensSurTrajet(attackingToken, ptCible, rayonAttaquant, allToks, murs, deplaceDe.saut);
+                if (ts.length === 0) deplaceDe.positionFinale = ptCible;
+              });
             }
             if (!deplaceDe.positionFinale) {
               let msg = "Il y a des obstacles sur le trajet : " + surTrajet.join(', ');
@@ -15096,12 +15097,12 @@ var COFantasy = COFantasy || function() {
       setTokenAttr(attaquant, 'limiteParCombat_dejaFrappeContact', true, evt);
     }
     let riposte = predicateAsBool(attaquant, 'riposte');
-    let attaqueEnMeute = predicateAsInt(attaquant, 'attaqueEnMeute', 0);
+    let attaqueEnMeute = predicateAsInt(attaquant, 'attaqueEnMeute', 0, 2);
     if (attaqueEnMeute > 0) options.attaqueEnMeute = attaqueEnMeute;
     options.lienEpique = predicateAsBool(attaquant, 'lienEpique');
-    if (riposte || options.attaqueEnMeute || options.lienEpique) {
+    if (riposte || options.attaqueEnMeute || options.lienEpique || alliesDAttaqueEnMeute.has(attackingCharId)) {
       //Dans ce cas, il faut stoquer les cibles attaquées
-      //(dans le cas de riposte, pour ne pas les re-proposer en riposte
+      //(dans le cas de riposte, pour ne pas les re-proposer en riposte)
       let listeCibles =
         cibles.map(function(target) {
           return target.token.id;
@@ -26100,6 +26101,7 @@ var COFantasy = COFantasy || function() {
   }
 
   let alliesParPerso = {};
+  let alliesDAttaqueEnMeute = new Set();
   let listeCompetences = {
     FOR: {
       list: [],
@@ -26127,15 +26129,20 @@ var COFantasy = COFantasy || function() {
     },
     nombre: 0
   };
-  // Appelé uniquement après le "ready" et lorsqu'on modifie un handout (fonctionne après l'ajout et la destruction d'un handout)
-  // Du coup, alliesParPerso est toujours à jour
-  function changeHandout(hand, prev) {
-    if (prev && prev.name && prev.name.startsWith("Equipe ")) {
+
+  function recomputeAllies() {
       const handouts = findObjs({
         _type: 'handout'
       });
       alliesParPerso = {};
+      alliesDAttaqueEnMeute = new Set();
       handouts.forEach(parseHandout);
+  }
+  // Appelé uniquement après le "ready" et lorsqu'on modifie un handout (fonctionne après l'ajout et la destruction d'un handout)
+  // Du coup, alliesParPerso est toujours à jour
+  function changeHandout(hand, prev) {
+    if (prev && prev.name && prev.name.startsWith("Equipe ")) {
+  recomputeAllies();
     } else if (hand) {
       parseHandout(hand);
     }
@@ -26190,7 +26197,9 @@ var COFantasy = COFantasy || function() {
     if (handName.startsWith("Equipe ")) {
       hand.get('notes', function(note) { // asynchronous
         const persos = charactersInHandout(note, handName);
+        let attaqueEnMeute = false;
         persos.forEach(function(charId) {
+          attaqueEnMeute = attaqueEnMeute || charPredicateAsBool(charId, 'attaqueEnMeute');
           let ancien = alliesParPerso[charId];
           if (ancien === undefined) {
             ancien = new Set();
@@ -26202,6 +26211,11 @@ var COFantasy = COFantasy || function() {
           });
           //On ajoute les familiers
         });
+        if (attaqueEnMeute) {
+          persos.forEach(function(charId) {
+            alliesDAttaqueEnMeute.add(charId);
+          });
+        }
       }); //end hand.get('notes')
     } else if (handName == 'Compétences' || handName == 'Competences') {
       listeCompetences = {
@@ -26906,7 +26920,9 @@ var COFantasy = COFantasy || function() {
       actionsAAfficher = treatActions(perso, actionsDuTour, abilities, function(command, text, macros, attackStats) {
         if (command == 'liste des attaques') {
           //Dans ce cas, attackStats est une chaine d'options à ajouter
-          let attackOptions = {ligneOptions:attackStats};
+          let attackOptions = {
+            ligneOptions: attackStats
+          };
           if (gobePar) attackOptions.target = gobePar.token.id;
           ligne += listeAttaquesVisibles(perso, attackOptions);
         } else {
@@ -27017,7 +27033,7 @@ var COFantasy = COFantasy || function() {
     let attrDernieresCibles = tokenAttribute(perso, 'dernieresCiblesAttaquees');
     if (attrDernieresCibles.length > 0) {
       attrDernieresCibles = attrDernieresCibles[0];
-      if (predicateAsBool(perso, 'attaqueEnMeute')) {
+      if (predicateAsBool(perso, 'attaqueEnMeute') || alliesDAttaqueEnMeute.has(perso.charId)) {
         let dernieresCibles = attrDernieresCibles.get('current');
         let cibles = new Set(dernieresCibles.split(' '));
         cibles.forEach(function(ci) {
@@ -32792,7 +32808,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       let pageId = getObj('graphic', selected[0]._id).get('pageid');
-      var escaliers = findObjs({
+      let escaliers = findObjs({
         _type: 'graphic',
         _pageid: pageId,
         layer: 'gmlayer'
@@ -32801,9 +32817,9 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, "Pas de token dans le layer GM", playerId);
         return;
       }
-      var tmaps; //Les passages entre les maps.
-      var versLeHaut = true;
-      var loop = true;
+      let tmaps; //Les passages entre les maps.
+      let versLeHaut = true;
+      let loop = true;
       if (msg.content) {
         if (msg.content.includes(' bas')) {
           versLeHaut = false;
@@ -50674,6 +50690,14 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function changePredicats(attr, prev) {
+    let curPred = attr.get('current');
+    let prevPred = prev.current;
+    if (curPred.includes('attaqueEnMeute') != prevPred.includes('attaqueEnMeute')) {
+  recomputeAllies();
+    }
+  }
+
   return {
     apiCommand,
     nextTurn,
@@ -50690,7 +50714,8 @@ var COFantasy = COFantasy || function() {
     predicateOfRaw,
     listAllAttacks,
     getWeaponStats,
-    updateVersion
+    updateVersion,
+    changePredicats,
   };
 
 }();
@@ -50769,6 +50794,8 @@ on("change:attribute", function(attr, prev) {
   let predicats = state.COFantasy.predicats;
   if (!predicats) return;
   let n = attr.get("name");
-  if (n == "predicats_script" || n.includes('armepredicats'))
+  if (n == "predicats_script" || n.includes('armepredicats')) {
     predicats[attr.get('characterid')] = undefined;
+    COFantasy.changePredicats(attr, prev);
+  }
 });
