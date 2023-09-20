@@ -18531,7 +18531,7 @@ var COFantasy = COFantasy || function() {
         for (let vid in attaquesEnTraitrePossibles) {
           let voleur = persoOfId(vid);
           if (voleur === undefined) continue;
-          if (capaciteDisponible(voleur, 'attaqueEnTraitre')) {
+          if (capaciteDisponible(voleur, 'attaqueEnTraitre', 'tour')) {
             displayAttaqueOpportunite(vid, attaquesEnTraitrePossibles[vid], "en traître", 'Attaques en traitre', '--decrLimitePredicatParTour attaqueEnTraitre');
           }
         }
@@ -20344,7 +20344,7 @@ var COFantasy = COFantasy || function() {
               });
               optionsAction += ' ' + cible.token.id;
               let msg = "Faire un ";
-              if (restants < 2) msg += "dernier ";
+              if (restants === 0) msg += "dernier ";
               if (tokens.length < 2) {
                 let action = baseAction + tokens[0].id + optionsAction;
                 msg += boutonSimple(action, 'ricochet vers ' + tokens[0].get('name'));
@@ -47720,6 +47720,7 @@ var COFantasy = COFantasy || function() {
     let combat = stateCOF.combat;
     if (!combat) {
       error("Le script n'est pas en mode combat", cmp);
+      return;
     }
     let turnOrder = cmp.get('turnorder');
     let pageId = combat.pageId;

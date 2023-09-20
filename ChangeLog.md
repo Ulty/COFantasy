@@ -25,6 +25,7 @@
 * Ajout d'un prédicat pour l'immnunité aux dégâts magiques.
 
 ### Corrections de bugs
+* Activation correcte de l'attaque en traître.
 * Activation de Ignorer la douleur sur les attaques automatiques.
 * Dépense de mana quand on dépasse les limites journalières
 

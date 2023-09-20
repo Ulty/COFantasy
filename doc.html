@@ -1001,12 +1001,12 @@ tr {line-height: 25px;}
                   <li><strong>Tir de semonce</strong> : Ajouter une <a href=#predicats>prédicat</a> <code>tirDeSemonce</code>. Si vous affichez les attaques avec armes en main, cela va automatiquement proposer des tirs de semonces dans les tours suivants les attaques à distance ratées. Si vous préférez le faire à la main, utilisez le modificateur <code>semonce</code> aux attaques.</li>
                     <li><strong>Tir de barrage</strong> : Utiliser l'option <code>--tirDeBarrage</code>. Ça multiplie les dégâts par 2, ignore la charge, et laisse un message demandant le undo si la cible décide de ne pas bouger.</li>
                     <li><strong>Couleuvrine</strong> : ajouter une attaque à distance, avec dans les modificateurs, <code>poudre, limiteParCombat</code> (ou en ligne de commande, avec l'option <code>--limiteParCombat</code>)</li>
-                    <li><strong>Feu nourri</strong> : faire les attaques comme pour le tirde barrage. Le script ne va pas vérifier que les cibles ne sont pas trop loin les unes des autres.</li>
+                    <li><strong>Feu nourri</strong> : faire les attaques comme pour le tir de barrage. Le script ne va pas vérifier que les cibles ne sont pas trop loin les unes des autres.</li>
                 </ol>
                 <h4 class="text-secondary">Voie des explosifs</h4>
                 <ol>
                   <li><strong>Chimiste</strong> : ajoutez un <a href=#predicats>prédicat</a> <code>chimiste</code>, ainsi que les compétences de chimie et alchimie sur la fiche. Si vous utilisez la capacité alternative <strong>Grenaille</strong>, vous pouvez soit gérer les charges de grenaille avec <code>!cof-recharger <i>L</i> --grenaille</code>, soit (si vous ne voulez pas faire gérer les charges) utiliser l'option <code>--grenaille</code>. Si vous utilisez la même attaque pour plusieurs armes et que seule une partie est chargée de grenaille, il faudra aussi utiliser cette option pour utiliser l'arme chargée de grenaille.</li>
-                  <li><strong>Démolition</strong> : pas de support particulier</li>
+                  <li><strong>Démolition</strong> : On peut utiliser <code>!cof-lancer-sort place un explosif qui fait [[4d6]] DM aux structures -limiteParJour 2 chargesExplosives</code>.</li>
                   <li><strong>Poudre puissante</strong> : ajouter un <a href=#predicats>prédicat</a> <code>poudrePuissante</code>.</li>
                   <li><strong>Piège explosif</strong> : </li>
                   <li><strong>Boulet explosif</strong> : ajouter une attaque de type Arme de jet, dégâts 5d6 de type contondant (ou feu ?), portée 20, modificateurs <code>auto</code>, options <code>--disque 5 --psave DEX [[12+@{selected|DEX}]]</code></li>
