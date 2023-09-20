@@ -24468,11 +24468,8 @@ var COFantasy = COFantasy || function() {
     };
     let grenaille = false;
     if (msg.content.includes(' --grenaille')) grenaille = true;
-    let options = {};
-    if (msg.content.includes(' --son')) {
-      options = parseOptions(msg);
-      options = options || {};
-    }
+    let options = parseOptions(msg);
+    options = options || {};
     getSelected(msg, function(selected, playerId) {
       if (selected === undefined) {
         sendPlayer(msg, "!cof-recharger sans sélection de tokens", playerId);
@@ -24595,7 +24592,7 @@ var COFantasy = COFantasy || function() {
           sendPerso(perso, "a déjà tous ses " + arme.name + " chargés");
         }
       });
-    });
+    }, options);
     addEvent(evt);
   }
 
@@ -25708,7 +25705,7 @@ var COFantasy = COFantasy || function() {
         removePreDmg(attaque.options, originalTarget);
         redoEvent(evtARefaire, attaque);
       });
-    });
+    }, options);
   }
 
   //simplement prendre les DM à la place d'un autre
@@ -25871,7 +25868,7 @@ var COFantasy = COFantasy || function() {
         attack(action.playerName, action.playerId, action.attaquant, action.cibles, action.weaponStats, optionsRedo);
         return;
       });
-    });
+    }, options);
   }
 
   //!cof-petit-veinard (avec un token sélectionné)
@@ -25990,7 +25987,7 @@ var COFantasy = COFantasy || function() {
         }
         cibles.push(perso);
       });
-    });
+    }, options);
     if (cibles.length > 0) {
       doSurprise(cibles, testSurprise, ciblesSelectionnees, options);
     } else {
@@ -27058,7 +27055,7 @@ var COFantasy = COFantasy || function() {
           sendPerso(perso, "n'a pas de liste d'actions " + l + " définie");
         }
       });
-    });
+    }, options);
   }
 
   function removeDernieresCiblesAttaquees(perso, evt) {
@@ -28142,7 +28139,7 @@ var COFantasy = COFantasy || function() {
         }
         cibles.push(perso);
       });
-    });
+    }, options);
     doSetState(cibles, etat, valeur, options);
   }
 
@@ -28308,7 +28305,7 @@ var COFantasy = COFantasy || function() {
           doSaveState(playerId, perso, etat, carac, options, undefined, seuil);
         });
       }
-    });
+    }, options);
   }
 
   function doSaveState(playerId, perso, etat, carac, options, opposant, seuil) {
@@ -28540,7 +28537,7 @@ var COFantasy = COFantasy || function() {
       iterSelected(selected, function(perso) {
         personnages.push(perso);
       });
-    });
+    }, options);
     doDegainer(personnages, armeLabel, options);
   }
 
@@ -29411,7 +29408,7 @@ var COFantasy = COFantasy || function() {
           });
         }
       }
-    });
+    }, options);
   }
 
   function parseEffetIndetermine(msg) {
@@ -30002,7 +29999,7 @@ var COFantasy = COFantasy || function() {
         perso.duree = rollDePlus(duree).val;
         cibles.push(perso);
       });
-    });
+    }, options);
     if (cibles.length > 0) {
       doPeur(cibles, difficulte, options);
     } else {
@@ -30518,7 +30515,7 @@ var COFantasy = COFantasy || function() {
       });
       doSommeil(lanceur, cibles, options);
     }, {
-      lanceur: lanceur
+      lanceur
     });
   }
 
@@ -30781,7 +30778,7 @@ var COFantasy = COFantasy || function() {
         sendPerso(perso, "entre en méditation pendant 10 minutes et récupère " + soin + " points de vie.");
       });
       addEvent(evt);
-    });
+    }, options);
   }
 
   function raceIs(perso, race) {
@@ -31840,7 +31837,7 @@ var COFantasy = COFantasy || function() {
         }
         doNatureNourriciere(lanceur, options);
       });
-    });
+    }, options);
   }
 
   function doNatureNourriciere(perso, options) {
@@ -31984,7 +31981,7 @@ var COFantasy = COFantasy || function() {
           sendPerso(chevalier, "ne peut ignorer la douleur : il semble que la dernière attaque ne l'ait pas affecté");
         }
       });
-    });
+    }, options);
   }
 
   function fortifiant(msg) {
@@ -32021,7 +32018,7 @@ var COFantasy = COFantasy || function() {
         // Finalement on met l'effet fortifie
         setTokenAttr(beneficiaire, 'fortifie', rang + 1, evt);
       });
-    });
+    }, options);
   }
 
   //Appliquer une huile instable sur l'arme de la cible
@@ -44581,7 +44578,7 @@ var COFantasy = COFantasy || function() {
           error("Impossible de créer l'image " + options.image, imageFields);
         }
       });
-    });
+    }, options);
   }
 
   //Pour effacer tout ce qui pourrait faire planter et stoqué dans stateCOF
