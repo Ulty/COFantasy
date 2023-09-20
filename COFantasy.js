@@ -661,7 +661,7 @@ var COFantasy = COFantasy || function() {
 
   function charPredicateAsBool(charId, name) {
     let pred = stateCOF.predicats[charId];
-    if (pred) return pred;
+    if (pred) return pred[name];
     let raw = '';
     let attr = charAttribute(charId, 'predicats_script', {
       caseInsensitive: true
@@ -32926,10 +32926,10 @@ var COFantasy = COFantasy || function() {
             token.set('top', top);
           } else {
             //On change de carte, il faut donc copier le token
-            var tokenObj = JSON.parse(JSON.stringify(token));
+            let tokenObj = JSON.parse(JSON.stringify(token));
             tokenObj._pageid = newPageId;
             //On met la taille du token à jour en fonction des échelles des cartes.
-            var ratio = computeScale(pageId) / computeScale(newPageId);
+            let ratio = computeScale(pageId) / computeScale(newPageId);
             if (ratio < 0.9 || ratio > 1.1) {
               if (ratio < 0.25) ratio = 0.25;
               else if (ratio > 4) ratio = 4;
