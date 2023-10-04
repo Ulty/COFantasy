@@ -22805,25 +22805,24 @@ var COFantasy = COFantasy || function() {
   function deleteTokenTemp(tt, evt) {
     let token = getObj('graphic', tt.tid);
     if (!token) return;
-      let gmNotes = token.get('gmnotes');
-      try {
-        if (gmNotes.startsWith('{')) {
-            let effet = JSON.parse(gmNotes);
-    //{typeBombe, portee, message, dm, tempsDePose, duree, intrusion}
-            if (effet && effet.typeBombe) {
-              let pageId = token.get('pageid');
-              if (effet.message) sendChat('', effet.message);
-              spawnFx(token.get('left'), token.get('top'), 'explode-fire', pageId);
-            }
+    let gmNotes = token.get('gmnotes');
+    try {
+      if (gmNotes.startsWith('{')) {
+        let effet = JSON.parse(gmNotes);
+        //{typeBombe, portee, message, dm, tempsDePose, duree, intrusion}
+        if (effet && effet.typeBombe) {
+          let pageId = token.get('pageid');
+          if (effet.message) sendChat('', effet.message);
+          spawnFx(token.get('left'), token.get('top'), 'explode-fire', pageId);
         }
-      } catch (parseError) {
       }
+    } catch (parseError) {}
     let ett = {...tt
     };
     ett.deletedToken = getTokenFields(token);
     evt.deletedTokensTemps = evt.deletedTokensTemps || [];
     evt.deletedTokensTemps.push(ett);
-          token.remove();
+    token.remove();
   }
 
   function sortirDuCombat() {
@@ -39350,6 +39349,7 @@ var COFantasy = COFantasy || function() {
         type: "Libère une cible agrippée"
       };
       finAgripper(perso, agrippant, attrName, evt);
+      sendPerso(agrippant, "relâche " + nomPerso(perso));
       return;
     }
     doLibererAgrippe(perso, agrippant, attrName, options);
@@ -44646,21 +44646,27 @@ var COFantasy = COFantasy || function() {
       case 'demolition':
       case 'démolition':
         {
-        typeBombe = 'demolition';
+          typeBombe = 'demolition';
           let rang = 2;
           if (cmd.length > 3) {
             rang = parseInt(cmd[3]);
             if (isNaN(rang))
               rang = predicateAsInt(arquebusier, cmd[3], 0, 2);
-             if (rang < 1) {
-              error("Rang de démolition "+cmd[3]+" incorrect", cmd);
+            if (rang < 1) {
+              error("Rang de démolition " + cmd[3] + " incorrect", cmd);
               return;
             }
           } else rang = predicateAsInt(arquebusier, 'voieDesExplosifs', 2, 2);
           portee = 6;
-          dm = {nbDe:rang, dice:6, id:generateUUID()};
-          let dmStruct = rollDePlus(6, {nbDes:2*rang});
-          message += " et inflige "+dmStruct.roll+" DM à la structure (ignore la moitié de la RD)";
+          dm = {
+            nbDe: rang,
+            dice: 6,
+            id: generateUUID()
+          };
+          let dmStruct = rollDePlus(6, {
+            nbDes: 2 * rang
+          });
+          message += " et inflige " + dmStruct.roll + " DM à la structure (ignore la moitié de la RD)";
           tempsDePose = 3;
           break;
         }
@@ -44682,7 +44688,7 @@ var COFantasy = COFantasy || function() {
               if (cmd.length > 5) {
                 duree = parseInt(cmd[5]);
                 if (isNaN(duree) || duree < 1) {
-                  error("Durée de retardement "+cmd[5]+" incorrecte");
+                  error("Durée de retardement " + cmd[5] + " incorrecte");
                   return;
                 }
               }
@@ -44696,24 +44702,34 @@ var COFantasy = COFantasy || function() {
               if (cmd.length > 5) {
                 intrusion = parseInt(cmd[5]);
                 if (isNaN(intrusion) || intrusion < 1) {
-                  error("Distance de détection "+cmd[5]+" incorrecte");
+                  error("Distance de détection " + cmd[5] + " incorrecte");
                   return;
                 }
               }
               break;
             default:
-              error("Type de piège explosif "+cmd[4]+" non reconnu", cmd);
+              error("Type de piège explosif " + cmd[4] + " non reconnu", cmd);
               return;
           }
           break;
         }
       default:
-        error("Type de bombe "+cmd[2]+" non reconnu", cmd);
+        error("Type de bombe " + cmd[2] + " non reconnu", cmd);
         return;
     }
-    let gmnotes = JSON.stringify({typeBombe, portee, message, dm, tempsDePose, duree, intrusion});
-    let name = "Bombe "+dm.id;
-    const evt = {type: "Pose de bombe"};
+    let gmnotes = JSON.stringify({
+      typeBombe,
+      portee,
+      message,
+      dm,
+      tempsDePose,
+      duree,
+      intrusion
+    });
+    let name = "Bombe " + dm.id;
+    const evt = {
+      type: "Pose de bombe"
+    };
     addEvent(evt);
     if (limiteRessources(arquebusier, options, 'poseBombe', "poser un explosif", evt)) return;
     //create the token
@@ -44734,22 +44750,22 @@ var COFantasy = COFantasy || function() {
       error("Impossible de créer le token de la bombe", IMG_BOMB);
       return;
     }
-      toFront(t);
-      evt.tokens = evt.tokens || [];
-      evt.tokens.push(t);
-      stateCOF.tokensTemps = stateCOF.tokensTemps || [];
-      stateCOF.tokensTemps.push({
-        tid: t.id,
-        duree: duree+tempsDePose,
-        init: getInit()
-      });
+    toFront(t);
+    evt.tokens = evt.tokens || [];
+    evt.tokens.push(t);
+    stateCOF.tokensTemps = stateCOF.tokensTemps || [];
+    stateCOF.tokensTemps.push({
+      tid: t.id,
+      duree: duree + tempsDePose,
+      init: getInit()
+    });
     //TODO: ajouter un effet temporaire "occupé"
     let msgPose = "pose un explosif. ";
     if (tempsDePose < 2) msgPose += "Cela lui prend tout le tour";
     else {
-      msgPose += onGenre(arquebusier, 'Il', 'Elle') +" y passe le tour et encore le";
+      msgPose += onGenre(arquebusier, 'Il', 'Elle') + " y passe le tour et encore le";
       if (tempsDePose < 3) msgPose += " suivant.";
-      else msgPose += "s "+(tempsDePose-1)+" suivants.";
+      else msgPose += "s " + (tempsDePose - 1) + " suivants.";
     }
     sendPerso(arquebusier, msgPose);
   }
