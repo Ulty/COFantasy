@@ -12,6 +12,7 @@
 * Expertise (rang 1 de la Voie de prestige spécialisée)
 
 ### Autres améliorations
+* Possibilité d'utiliser des prédicats comme valeurs limites des limitations par jour ou par combat.
 * Possibilité de faire un déplacement automatique avant une attaque
 * Possibilité que la peur paralyse.
 * Ajout d'une commande !cof-clean-global-state.

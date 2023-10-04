@@ -97,6 +97,7 @@ var COFantasy = COFantasy || function() {
   const BS_LABEL_DANGER = 'background-color: #d9534f;';
   const DEFAULT_DYNAMIC_INIT_IMG = 'https://s3.amazonaws.com/files.d20.io/images/4095816/086YSl3v0Kz3SlDAu245Vg/thumb.png?1400535580';
   const IMG_INVISIBLE = 'https://s3.amazonaws.com/files.d20.io/images/24377109/6L7tn91HZLAQfrLKQI7-Ew/thumb.png?1476950708';
+  const IMG_BOMB = 'https://s3.amazonaws.com/files.d20.io/images/361033841/dmwnChkZNCI9a0_uKfGcNg/thumb.png?1695976505';
 
   let markerCatalog = {};
   let eventHistory = [];
@@ -989,16 +990,17 @@ var COFantasy = COFantasy || function() {
       roundMarker.remove();
       roundMarker = undefined;
       stateCOF.roundMarkerId = undefined;
-    } else if (stateCOF.roundMarkerId) {
+    } else {
+      stateCOF.roundMarkerId = undefined;
       let roundMarkers = findObjs({
         _type: 'graphic',
         represents: '',
         name: 'Init marker',
+        layer: 'map',
       });
       roundMarkers.forEach(function(rm) {
         rm.remove();
       });
-      stateCOF.roundMarkerId = undefined;
     }
   }
 
@@ -4818,7 +4820,8 @@ var COFantasy = COFantasy || function() {
     weaponStats.modificateurs = fieldAsString(att, 'armemodificateurs', '');
     weaponStats.typeDegats = fieldAsString(att, 'armetypedegats', 'tranchant');
     weaponStats.options = fieldAsString(att, 'armeoptions', '');
-    weaponStats.options = weaponStats.options.trim();
+    //On remplace les \n par des blancs pour l'affichage, sinon ça bug
+    weaponStats.options = weaponStats.options.replace(/\n/g, ' ').trim();
     weaponStats.predicats = fieldAsString(att, 'armepredicats', '');
     switch (weaponStats.typeAttaque) {
       case 'Naturel':
@@ -5032,7 +5035,10 @@ var COFantasy = COFantasy || function() {
         case 'limiteParJour':
           if (cmd.length < 2) return false;
           let limiteParJour = parseInt(cmd[1]);
-          if (isNaN(limiteParJour) || limiteParJour < 1) return false;
+          if (isNaN(limiteParJour)) {
+            limiteParJour = predicateAsInt(perso, cmd[1], 0, 1);
+          }
+          if (limiteParJour < 1) return false;
           let ressourceParJour = defResource;
           if (cmd.length > 2) {
             cmd.splice(0, 2);
@@ -5063,7 +5069,10 @@ var COFantasy = COFantasy || function() {
         case 'limiteParCombat':
           if (cmd.length < 2) return false;
           let limiteParCombat = parseInt(cmd[1]);
-          if (isNaN(limiteParCombat) || limiteParCombat < 1) return false;
+          if (isNaN(limiteParCombat)) {
+            limiteParCombat = predicateAsInt(perso, cmd[1], 0, 1);
+          }
+          if (limiteParCombat < 1) return false;
           let ressourceParCombat = defResource;
           if (cmd.length > 2) {
             cmd.splice(0, 2);
@@ -5862,7 +5871,6 @@ var COFantasy = COFantasy || function() {
         }
       case 'baratiner':
       case 'bluffer':
-      case 'convaincre':
         bonus += bonusInteractionsSociales(personnage, expliquer);
         break;
       case 'course':
@@ -5990,6 +5998,7 @@ var COFantasy = COFantasy || function() {
         }
         break;
       case 'persuasion':
+      case 'convaincre':
         bonus += bonusArgumentDeTaille(personnage, expliquer);
         if (predicateAsBool(personnage, 'ordreDuChevalierDragon') && attributeAsBool(personnage, 'monteSur')) {
           expliquer("Chevalier Dragon monté : +5 en persuasion");
@@ -8449,6 +8458,30 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  // Pour les limites par jour, combat ou tour,
+  // cmd[1] est la valeur ou un prédicat
+  // cmd[2] est la ressource
+  function parseLimite(cmd, type) {
+    let l = parseInt(cmd[1]);
+    if (isNaN(l)) {
+      l = {
+        predicat: cmd[1]
+      };
+    } else if (l < 1) {
+      error("La limite " + type + " doit être un nombre positif", cmd);
+      return;
+    } else {
+      l = {
+        val: l
+      };
+    }
+    if (cmd.length > 2) {
+      cmd.splice(0, 2);
+      l.ressource = cmd.join('_');
+    }
+    return l;
+  }
+
   //juste le traitement d'une liste d'options
   // lastEtat : dernier de etats et effets, pour savoir à quoi appliquer --save
   // lastType : dernier type de dégâts infligés
@@ -9352,53 +9385,35 @@ var COFantasy = COFantasy || function() {
           }
           return;
         case 'limiteParJour':
-          if (cmd.length < 2) {
-            error("Il manque la limite journalière", cmd);
+          {
+            if (cmd.length < 2) {
+              error("Il manque la limite journalière", cmd);
+              return;
+            }
+            let limiteParJour = parseLimite(cmd, "journalière");
+            if (limiteParJour) scope.limiteParJour = limiteParJour;
             return;
           }
-          let limiteParJour = parseInt(cmd[1]);
-          if (isNaN(limiteParJour) || limiteParJour < 1) {
-            error("La limite journalière doit être un nombre positif", cmd);
-            return;
-          }
-          scope.limiteParJour = limiteParJour;
-          if (cmd.length > 2) {
-            cmd.splice(0, 2);
-            scope.limiteParJourRessource = cmd.join('_');
-          }
-          return;
         case 'limiteParCombat':
-          if (cmd.length < 2) {
-            scope.limiteParCombat = 1;
+          {
+            if (cmd.length < 2) {
+              scope.limiteParCombat = 1;
+              return;
+            }
+            let limiteParCombat = parseLimite(cmd, "par combat");
+            if (limiteParCombat) scope.limiteParCombat = limiteParCombat;
             return;
           }
-          let limiteParCombat = parseInt(cmd[1]);
-          if (isNaN(limiteParCombat) || limiteParCombat < 1) {
-            error("La limite par combat doit être un nombre positif", cmd);
-            return;
-          }
-          scope.limiteParCombat = limiteParCombat;
-          if (cmd.length > 2) {
-            cmd.splice(0, 2);
-            scope.limiteParCombatRessource = cmd.join('_');
-          }
-          return;
         case 'limiteParTour':
-          if (cmd.length < 2) {
-            scope.limiteParTour = 1;
+          {
+            if (cmd.length < 2) {
+              scope.limiteParTour = 1;
+              return;
+            }
+            let limiteParTour = parseLimite(cmd, "par tour");
+            if (limiteParTour) scope.limiteParTour = limiteParTour;
             return;
           }
-          let limiteParTour = parseInt(cmd[1]);
-          if (isNaN(limiteParTour) || limiteParTour < 1) {
-            error("La limite par tour doit être un nombre positif", cmd);
-            return;
-          }
-          scope.limiteParTour = limiteParTour;
-          if (cmd.length > 2) {
-            cmd.splice(0, 2);
-            scope.limiteParTourRessource = cmd.join('_');
-          }
-          return;
         case 'decrAttribute':
           if (cmd.length < 2) {
             error("Erreur interne d'une commande générée par bouton", cmd);
@@ -13387,6 +13402,82 @@ var COFantasy = COFantasy || function() {
     return false;
   }
 
+  //Retourne false si il existe la limitePar+type qui empêche de faire l'action
+  // type peut être Jour, Combat ou Tour
+  // si c'est ok, renvoie depMana, éventuellement mis à jour
+  function testLimitePar(perso, type, options, depMana, defRessource, msg, evt, explications) {
+    let nom = 'limitePar' + type;
+    let opt = options[nom];
+    if (opt) {
+      let msgType = '';
+      let temps = '';
+      switch (type) {
+        case 'Jour':
+          msgType = "journalière";
+          temps = "aujourd'hui";
+          break;
+        case 'Combat':
+          if (!stateCOF.combat) {
+            sendPerso(perso, "ne peut pas faire cette action en dehors des combats", options.secret);
+            return false;
+          }
+          msgType = "par combat";
+          temps = "pour ce combat";
+          break;
+        case 'Tour':
+          if (!stateCOF.combat) {
+            sendPerso(perso, "ne peut pas faire cette action en dehors des combats", options.secret);
+            return false;
+          }
+          msgType = "par tour";
+          temps = "durant ce tour";
+          break;
+      }
+      if (!perso) {
+        error("Impossible de savoir à qui appliquer la limite " + msgType, options);
+        return false;
+      }
+      let ressource = nom + '_';
+      if (opt.ressource)
+        ressource += opt.ressource;
+      else
+        ressource += defRessource;
+      let limite = 0;
+      if (opt.val) limite = opt.val;
+      else if (opt.predicat)
+        limite = predicateAsInt(perso, opt.predicat, 0, 1);
+      else {
+        error("Limite " + msgType + " mal formée", opt);
+        return false;
+      }
+      let utilisations = attributeAsInt(perso, ressource, limite);
+      if (utilisations === 0) {
+        depMana = depasseLimite(perso, ressource, "ne peut plus faire cette action " + temps, msg, evt, options);
+        if (depMana) utilisations = 1;
+        else return false;
+      }
+      setTokenAttr(perso, ressource, utilisations - 1, evt);
+      if (opt.ressource) {
+        let msgLimite = nomPerso(perso) + " ";
+        if (utilisations < 2) msgLimite += "ne pourra plus utiliser ";
+        else {
+          msgLimite += "pourra encore utiliser ";
+          if (utilisations == 2) msgLimite += "une fois ";
+          else msgLimite += (utilisations - 1) + " fois ";
+        }
+        msgLimite += opt.ressource + " " + temps;
+        if (explications) {
+          stateCOF.afterDisplay = stateCOF.afterDisplay || [];
+          stateCOF.afterDisplay.push({
+            msg: msgLimite,
+            destinataire: perso
+          });
+        } else sendPerso(perso, msgLimite, true);
+      }
+    }
+    return depMana;
+  }
+
   //Retourne true si il existe une limite qui empêche de lancer le sort
   //N'ajoute pas l'événement à l'historique
   //explications est optionnel
@@ -13426,123 +13517,13 @@ var COFantasy = COFantasy || function() {
         return true;
       }
     }
-    let ressource = '';
-    if (defResource !== undefined) ressource = defResource;
-    let utilisations;
-    if (options.limiteParJour) {
-      if (!personnage) {
-        error("Impossible de savoir à qui appliquer la limite journalière", options);
-        return true;
-      }
-      if (options.limiteParJourRessource)
-        ressource = "limiteParJour_" + options.limiteParJourRessource;
-      else
-        ressource = "limiteParJour_" + defResource;
-      utilisations =
-        attributeAsInt(personnage, ressource, options.limiteParJour);
-      if (utilisations === 0) {
-        depMana = depasseLimite(personnage, ressource, "ne peut plus faire cette action aujourd'hui", msg, evt, options);
-        if (depMana) utilisations = 1;
-        else return true;
-      }
-      setTokenAttr(personnage, ressource, utilisations - 1, evt);
-      if (options.limiteParJourRessource) {
-        let msgJour = nomPerso(personnage) + " ";
-        if (utilisations < 2) msgJour += "ne pourra plus utiliser ";
-        else {
-          msgJour += "pourra encore utiliser ";
-          if (utilisations == 2) msgJour += "une fois ";
-          else msgJour += (utilisations - 1) + " fois ";
-        }
-        msgJour += options.limiteParJourRessource + " aujourd'hui.";
-        if (explications) {
-          stateCOF.afterDisplay = stateCOF.afterDisplay || [];
-          stateCOF.afterDisplay.push({
-            msg: msgJour,
-            destinataire: personnage
-          });
-        } else sendPerso(personnage, msgJour, true);
-      }
-    }
-    if (options.limiteParCombat) {
-      if (personnage) {
-        if (!stateCOF.combat) {
-          sendPerso(personnage, "ne peut pas faire cette action en dehors des combats", options.secret);
-          return true;
-        }
-        if (options.limiteParCombatRessource)
-          ressource = "limiteParCombat_" + options.limiteParCombatRessource;
-        else
-          ressource = "limiteParCombat_" + defResource;
-        utilisations =
-          attributeAsInt(personnage, ressource, options.limiteParCombat);
-        if (utilisations === 0) {
-          let msgToSend = "ne peut plus faire cette action pour ce combat";
-          sendPerso(personnage, msgToSend, options.secret);
-          return true;
-        }
-        setTokenAttr(personnage, ressource, utilisations - 1, evt);
-        if (options.limiteParCombatRessource) {
-          let msgCombat = nomPerso(personnage) + " ";
-          if (utilisations < 2) msgCombat += "ne pourra plus utiliser ";
-          else {
-            msgCombat += "pourra encore utiliser ";
-            if (utilisations == 2) msgCombat += "une fois ";
-            else msgCombat += (utilisations - 1) + " fois ";
-          }
-          msgCombat += options.limiteParCombatRessource + " durant ce combat.";
-          if (explications) {
-            stateCOF.afterDisplay = stateCOF.afterDisplay || [];
-            stateCOF.afterDisplay.push({
-              msg: msgCombat,
-              destinataire: personnage
-            });
-          } else sendPerso(personnage, msgCombat, true);
-        }
-      } else {
-        error("Impossible de savoir à qui appliquer la limite par combat", options);
-        return true;
-      }
-    }
-    if (options.limiteParTour) {
-      if (personnage) {
-        if (!stateCOF.combat) {
-          sendPerso(personnage, "ne peut pas faire cette action en dehors des combats", options.secret);
-          return true;
-        }
-        if (options.limiteParTourRessource)
-          ressource = "limiteParTour_" + options.limiteParTourRessource;
-        else
-          ressource = "limiteParTour_" + defResource;
-        utilisations = attributeAsInt(personnage, ressource, options.limiteParTour);
-        if (utilisations === 0) {
-          let msgToSend = "ne peut plus faire cette action pour ce tour";
-          sendPerso(personnage, msgToSend, options.secret);
-          return true;
-        }
-        setTokenAttr(personnage, ressource, utilisations - 1, evt);
-        if (options.limiteParTourRessource) {
-          let msgCombat = nomPerso(personnage) + " ";
-          if (utilisations < 2) msgCombat += "ne pourra plus utiliser ";
-          else {
-            msgCombat += "pourra encore utiliser ";
-            if (utilisations == 2) msgCombat += "une fois ";
-            else msgCombat += (utilisations - 1) + " fois ";
-          }
-          msgCombat += options.limiteParTourRessource + " durant ce tour.";
-          if (explications) {
-            stateCOF.afterDisplay = stateCOF.afterDisplay || [];
-            stateCOF.afterDisplay.push({
-              msg: msgCombat,
-              destinataire: personnage
-            });
-          } else sendPerso(personnage, msgCombat, options.secret);
-        }
-      } else {
-        error("Impossible de savoir à qui appliquer la limite par tour", options);
-        return true;
-      }
-    }
+    depMana = testLimitePar(personnage, 'Jour', options, depMana, defResource, msg, evt, explications);
+    if (!depMana) return true;
+    depMana = testLimitePar(personnage, 'Combat', options, depMana, defResource, msg, evt, explications);
+    if (!depMana) return true;
+    if (!depMana) return true;
+    depMana = testLimitePar(personnage, 'Tour', options, depMana, defResource, msg, evt, explications);
+    if (!depMana) return true;
     if (options.tempsRecharge) {
       if (personnage) {
         if (attributeAsBool(personnage, options.tempsRecharge.effet)) {
@@ -20208,7 +20189,7 @@ var COFantasy = COFantasy || function() {
         if (options && options.contact && cibles && attaquant &&
           predicateAsBool(attaquant, 'enchainement')) {
           let cibleMorte = cibles.find(function(target) {
-            return target.token.get('bar1_value') == 0;
+            return target.pvPerdus && target.token.get('bar1_value') == 0;
           });
           if (cibleMorte) {
             if (attaquant.ennemisAuContact === undefined) {
@@ -21867,7 +21848,7 @@ var COFantasy = COFantasy || function() {
         }
         let hasMana = (ficheAttributeAsInt(target, 'PM', 0) > 0);
         let tempDmg = 0;
-        const estMook = token.get("bar1_link") === '';
+        const estMook = token.get('bar1_link') === '';
         if (hasMana) {
           if (estMook) tempDmg = attributeAsInt(target, 'DMTEMP', 0);
           else tempDmg = ficheAttributeAsInt(target, 'DMTEMP', 0);
@@ -22165,6 +22146,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function postBarUpdateForDealDamage(target, dmgTotal, pvPerdus, bar1, tempDmg, dmgDisplay, showTotal, dmDrains, displayRes, evt, expliquer) {
+    target.pvPerdus = target.pvPerdus || pvPerdus;
     if (bar1 > 0 && tempDmg >= bar1) { //assommé
       setState(target, 'assomme', true, evt);
     }
@@ -22819,16 +22801,41 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //Peut faire des effets asynchrones
+  function deleteTokenTemp(tt, evt) {
+    let token = getObj('graphic', tt.tid);
+    if (!token) return;
+      let gmNotes = token.get('gmnotes');
+      try {
+        if (gmNotes.startsWith('{')) {
+            let effet = JSON.parse(gmNotes);
+    //{typeBombe, portee, message, dm, tempsDePose, duree, intrusion}
+            if (effet && effet.typeBombe) {
+              let pageId = token.get('pageid');
+              if (effet.message) sendChat('', effet.message);
+              spawnFx(token.get('left'), token.get('top'), 'explode-fire', pageId);
+            }
+        }
+      } catch (parseError) {
+      }
+    let ett = {...tt
+    };
+    ett.deletedToken = getTokenFields(token);
+    evt.deletedTokensTemps = evt.deletedTokensTemps || [];
+    evt.deletedTokensTemps.push(ett);
+          token.remove();
+  }
+
   function sortirDuCombat() {
     stateCOF.prescience = undefined;
     stateCOF.nextPrescience = undefined;
     let combat = stateCOF.combat;
     if (!combat) {
       log("Pas en combat");
-      sendChat("GM", "/w GM Le combat est déjà terminé");
+      sendChat('GM', "/w GM Le combat est déjà terminé");
       return;
     }
-    sendChat("GM", "Le combat est terminé");
+    sendChat('GM', "Le combat est terminé");
     let evt = {
       type: 'fin_combat',
       initiativepage: Campaign().get('initiativepage'),
@@ -23167,14 +23174,7 @@ var COFantasy = COFantasy || function() {
     if (stateCOF.tokensTemps) {
       evt.deletedTokensTemps = [];
       stateCOF.tokensTemps.forEach(function(tt) {
-        let token = getObj('graphic', tt.tid);
-        if (token) {
-          let ett = {...tt
-          };
-          ett.deletedToken = getTokenFields(token);
-          evt.deletedTokensTemps.push(ett);
-          token.remove();
-        }
+        deleteTokenTemp(tt, evt);
       });
       delete stateCOF.tokensTemps;
     }
@@ -23421,16 +23421,8 @@ var COFantasy = COFantasy || function() {
             error("Il manque la limite journalière", cmd);
             return;
           }
-          let limiteParJour = parseInt(cmd[1]);
-          if (isNaN(limiteParJour) || limiteParJour < 1) {
-            error("La limite journalière doit être un nombre positif", cmd);
-            return;
-          }
-          options.limiteParJour = limiteParJour;
-          if (cmd.length > 2) {
-            cmd.splice(0, 2);
-            options.limiteParJourRessource = cmd.join('_');
-          }
+          let limiteParJour = parseLimite(cmd, "journalière");
+          if (limiteParJour) options.limiteParJour = limiteParJour;
           return;
         case 'depasseLimite':
           if (cmd.length < 2) {
@@ -23481,16 +23473,8 @@ var COFantasy = COFantasy || function() {
             options.limiteParCombat = 1;
             return;
           }
-          let limiteParCombat = parseInt(cmd[1]);
-          if (isNaN(limiteParCombat) || limiteParCombat < 1) {
-            error("La limite par combat doit être un nombre positif", cmd);
-            return;
-          }
-          options.limiteParCombat = limiteParCombat;
-          if (cmd.length > 2) {
-            cmd.splice(0, 2);
-            options.limiteParCombatRessource = cmd.join('_');
-          }
+          let limiteParCombat = parseLimite(cmd, "par combat");
+          if (limiteParCombat) options.limiteParCombat = limiteParCombat;
           return;
         case 'tempsRecharge':
           if (cmd.length < 3) {
@@ -25183,8 +25167,12 @@ var COFantasy = COFantasy || function() {
     else if (rangExpertDuCombat > 2) limiteParTour = 2;
     else limiteParTour = 1;
     if (limiteRessources(perso, {
-        limiteParCombat: rangExpertDuCombat * 2,
-        limiteParTour: limiteParTour
+        limiteParCombat: {
+          val: rangExpertDuCombat * 2
+        },
+        limiteParTour: {
+          val: limiteParTour
+        }
       }, "expertDuCombat", "a atteint sa limite de dé d'expert du combat", evt)) {
       addEvent(evt);
       return false;
@@ -25297,7 +25285,9 @@ var COFantasy = COFantasy || function() {
       return false;
     }
     if (limiteRessources(perso, {
-        limiteParCombat: 1
+        limiteParCombat: {
+          val: 1
+        }
       }, "runeForgesort_énergie", "a déjà utilisé sa rune d'énergie durant ce combat", evt)) {
       addEvent(evt);
       return false;
@@ -25391,7 +25381,9 @@ var COFantasy = COFantasy || function() {
       return false;
     }
     if (limiteRessources(perso, {
-        limiteParCombat: 1
+        limiteParCombat: {
+          val: 1
+        }
       }, attrName, "a déjà utilisé sa rune de puissance durant ce combat", evt)) {
       addEvent(evt);
       return false;
@@ -32980,23 +32972,23 @@ var COFantasy = COFantasy || function() {
   }
 
   function defautDansLaCuirasse(msg) {
-    var args = msg.content.split(' ');
+    let args = msg.content.split(' ');
     if (args.length < 3) {
       error("Pas assez d'arguments pour !cof-defaut-dans-la-cuirasse", args);
       return;
     }
-    var tireur = persoOfId(args[1], args[1]);
+    let tireur = persoOfId(args[1], args[1]);
     if (tireur === undefined) {
       error("Le premier argument n'est pas un token valide", args[1]);
       return;
     }
-    var pageId = tireur.token.get('pageid');
-    var cible = persoOfId(args[2], args[2], pageId);
+    let pageId = tireur.token.get('pageid');
+    let cible = persoOfId(args[2], args[2], pageId);
     if (cible === undefined) {
       error("La cible n'est pas un token valide", args[2]);
       return;
     }
-    var evt = {
+    const evt = {
       type: "Défaut dans la cuirasse"
     };
     setTokenAttr(cible, 'defautDansLaCuirasse_' + nomPerso(tireur), 2, evt);
@@ -33647,11 +33639,11 @@ var COFantasy = COFantasy || function() {
       if (attEvBonus > 0) msg += "+" + attEvBonus;
       else if (attEvBonus < 0) msg += attEvBonus;
       msg = nomPerso(lanceur) + " tente " + tente + ". " +
-        onGenre(lanceur, "Il", "elle") + " fait " + msg;
-      var generalMsg = '';
+        onGenre(lanceur, "Il", "Elle") + " fait " + msg;
+      let generalMsg = '';
       if (totalEvitement < jetAdversaire) {
         msg += " => Raté";
-        var pc = pointsDeChance(lanceur);
+        let pc = pointsDeChance(lanceur);
         if (attackRoll.results.total != 1 && pc > 0) {
           generalMsg += '<br/>' +
             boutonSimple("!cof-bouton-chance " + evt.id + " " + testId, "Chance") +
@@ -36593,7 +36585,9 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (options.dose === undefined && options.decrAttribute === undefined) {
-      options.limiteParJour = 1;
+      options.limiteParJour = {
+        val: 1
+      };
     }
     if (options.portee !== undefined) {
       cibles = cibles.filter(function(cible) {
@@ -39352,7 +39346,10 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (cmd.length > 2 && cmd[2] == 'libere') {
-      finAgripper(perso, agrippant, attrName);
+      const evt = {
+        type: "Libère une cible agrippée"
+      };
+      finAgripper(perso, agrippant, attrName, evt);
       return;
     }
     doLibererAgrippe(perso, agrippant, attrName, options);
@@ -44618,6 +44615,145 @@ var COFantasy = COFantasy || function() {
     sendPlayer(msg, "État global de COFantasy purgé.");
   }
 
+  //!cof-poser-bombe token_id [demolition n | piege dm [retardateur|intrusion]]
+  function poserBombe(msg) {
+    let options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
+    if (cmd === undefined) {
+      error("Problème de parse options", msg.content);
+      return;
+    }
+    if (cmd.length < 3) {
+      error("Il manque des arguments pour !cof-poser-bombe", cmd);
+      return;
+    }
+    let pageId = options.pageId;
+    let arquebusier = persoOfId(cmd[1], cmd[1], pageId);
+    if (!arquebusier) {
+      error("Le premier argument de !cof-poser-bombe n'est pas un token valide", cmd);
+      return;
+    }
+    pageId = pageId || arquebusier.token.get('pageid');
+    let typeBombe;
+    let portee; //la portée de l'explosion
+    let message = "La bombe explose";
+    let dm; //les dégâts infligés, sous forme de nbDe, dice, bonus, id
+    let tempsDePose;
+    let duree = 1; //temps au bout duquel ça explose après la pose
+    let intrusion; //si positif, se déclenche s'il y a quelqu'un qui arrive à moins de cette distance de la bombe.
+    switch (cmd[2]) {
+      case 'demolition':
+      case 'démolition':
+        {
+        typeBombe = 'demolition';
+          let rang = 2;
+          if (cmd.length > 3) {
+            rang = parseInt(cmd[3]);
+            if (isNaN(rang))
+              rang = predicateAsInt(arquebusier, cmd[3], 0, 2);
+             if (rang < 1) {
+              error("Rang de démolition "+cmd[3]+" incorrect", cmd);
+              return;
+            }
+          } else rang = predicateAsInt(arquebusier, 'voieDesExplosifs', 2, 2);
+          portee = 6;
+          dm = {nbDe:rang, dice:6, id:generateUUID()};
+          let dmStruct = rollDePlus(6, {nbDes:2*rang});
+          message += " et inflige "+dmStruct.roll+" DM à la structure (ignore la moitié de la RD)";
+          tempsDePose = 3;
+          break;
+        }
+      case 'piege':
+      case 'piège':
+        {
+          typeBombe = 'piege';
+          if (cmd.length < 5) {
+            error("Il manque des arguments pour !cof-poser-bombe", cmd);
+            return;
+          }
+          dm = parseDice(cmd[3]);
+          if (!dm) return;
+          portee = 3;
+          switch (cmd[4]) {
+            case 'retard':
+            case 'retardé':
+              tempsDePose = 1;
+              if (cmd.length > 5) {
+                duree = parseInt(cmd[5]);
+                if (isNaN(duree) || duree < 1) {
+                  error("Durée de retardement "+cmd[5]+" incorrecte");
+                  return;
+                }
+              }
+              break;
+            case 'intrusion':
+            case 'detection':
+            case 'détection':
+              tempsDePose = 2;
+              intrusion = 1;
+              duree = 100;
+              if (cmd.length > 5) {
+                intrusion = parseInt(cmd[5]);
+                if (isNaN(intrusion) || intrusion < 1) {
+                  error("Distance de détection "+cmd[5]+" incorrecte");
+                  return;
+                }
+              }
+              break;
+            default:
+              error("Type de piège explosif "+cmd[4]+" non reconnu", cmd);
+              return;
+          }
+          break;
+        }
+      default:
+        error("Type de bombe "+cmd[2]+" non reconnu", cmd);
+        return;
+    }
+    let gmnotes = JSON.stringify({typeBombe, portee, message, dm, tempsDePose, duree, intrusion});
+    let name = "Bombe "+dm.id;
+    const evt = {type: "Pose de bombe"};
+    addEvent(evt);
+    if (limiteRessources(arquebusier, options, 'poseBombe', "poser un explosif", evt)) return;
+    //create the token
+    let t = createObj('graphic', {
+      _pageid: pageId,
+      imgsrc: IMG_BOMB,
+      represents: '',
+      left: arquebusier.token.get('left'),
+      top: arquebusier.token.get('top'),
+      width: PIX_PER_UNIT,
+      height: PIX_PER_UNIT * 0.8,
+      layer: 'map',
+      isDrawing: true,
+      name,
+      gmnotes
+    });
+    if (!t) {
+      error("Impossible de créer le token de la bombe", IMG_BOMB);
+      return;
+    }
+      toFront(t);
+      evt.tokens = evt.tokens || [];
+      evt.tokens.push(t);
+      stateCOF.tokensTemps = stateCOF.tokensTemps || [];
+      stateCOF.tokensTemps.push({
+        tid: t.id,
+        duree: duree+tempsDePose,
+        init: getInit()
+      });
+    //TODO: ajouter un effet temporaire "occupé"
+    let msgPose = "pose un explosif. ";
+    if (tempsDePose < 2) msgPose += "Cela lui prend tout le tour";
+    else {
+      msgPose += onGenre(arquebusier, 'Il', 'Elle') +" y passe le tour et encore le";
+      if (tempsDePose < 3) msgPose += " suivant.";
+      else msgPose += "s "+(tempsDePose-1)+" suivants.";
+    }
+    sendPerso(arquebusier, msgPose);
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     const command = msg.content.split(' ', 1);
@@ -44748,6 +44884,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-pause':
         pauseGame();
         return;
+      case '!cof-poser-bombe':
+        poserBombe(msg);
+        return;
       case '!cof-recharger':
         recharger(msg);
         return;
@@ -44789,7 +44928,10 @@ var COFantasy = COFantasy || function() {
       case '!cof-sphere-de-feu':
         sphereDeFeu(msg);
         return;
-      case "!cof-save-state":
+      case '!cof-save-effet':
+        parseSaveEffet(msg);
+        return;
+      case '!cof-save-state':
         parseSaveState(msg);
         return;
       case '!cof-statut':
@@ -44809,9 +44951,6 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-zone-de-vie':
         lancerZoneDeVie(msg);
-        return;
-      case "!cof-save-effet":
-        parseSaveEffet(msg);
         return;
       case "!cof-degainer":
         parseDegainer(msg);
@@ -44837,7 +44976,7 @@ var COFantasy = COFantasy || function() {
       case "!cof-fin-classe-effet":
         finClasseDEffet(msg);
         return;
-      case "!cof-attaque-magique":
+      case '!cof-attaque-magique':
         parseAttaqueMagique(msg);
         return;
       case "!cof-injonction":
@@ -47785,15 +47924,7 @@ var COFantasy = COFantasy || function() {
               tt.duree--;
               return true;
             } else {
-              let token = getObj('graphic', tt.tid);
-              if (token) {
-                let ett = {...tt
-                };
-                ett.deletedToken = getTokenFields(token);
-                evt.deletedTokensTemps = evt.deletedTokensTemps || [];
-                evt.deletedTokensTemps.push(ett);
-                token.remove();
-              }
+              deleteTokenTemp(tt, evt);
               return false;
             }
           } else {
