@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.13
 ### Capacités
+* Support pour la démolition et les pièges explosifs.
 * Amélioration du support des tirs de semonce.
 * Attaque en meute pour un joueur gobelin.
 * Attaque bondissante du druide

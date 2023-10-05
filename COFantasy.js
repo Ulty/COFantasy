@@ -1106,6 +1106,67 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function trouveOuCreeCible() {
+    let persos = findObjs({
+      _type: 'character',
+      name: 'Cible',
+      controlledby: 'all'
+    });
+    if (persos.length > 0) return persos[0];
+    let pages = findObjs({
+      _type: 'page'
+    });
+    if (pages.length > 0) {
+      let pageId = pages[0].id;
+      let charCible = createObj('character', {
+        name: 'Cible',
+        controlledby: 'all',
+        inplayerjournals: 'all',
+        avatar: 'https://s3.amazonaws.com/files.d20.io/images/33041174/5JdDVh-34C-kZglTE1aq-w/max.png?1494837870',
+      });
+      if (charCible) {
+        let attrPV = charAttribute(charCible.id, 'PV', {
+          caseInsensitive: true
+        });
+        if (attrPV.length > 0) attrPV = attrPV[0];
+        else attrPV = createObj('attribute', {
+          name: 'PV',
+          characterid: charCible.id,
+          current: 0,
+          max: 0
+        });
+        let attrType = charAttribute(charCible.id, 'type_personnage', {
+          caseInsensitive: true
+        });
+        if (attrType.length > 0) {
+          attrType[0].setWithWorker('current', 'PNJ');
+        } else {
+          attrType = createObj('attribute', {
+            name: 'type_personnage',
+            characterid: charCible.id,
+            current: 'PJ',
+          });
+          attrType.setWithWorker('current', 'PNJ');
+        }
+        let tokenCible = createObj('graphic', {
+          name: 'Cible',
+          layer: 'objects',
+          _pageid: pageId,
+          imgsrc: 'https://s3.amazonaws.com/files.d20.io/images/33041174/5JdDVh-34C-kZglTE1aq-w/thumb.png?1494837870',
+          represents: charCible.id,
+          width: PIX_PER_UNIT,
+          height: PIX_PER_UNIT,
+          bar1_link: attrPV ? attrPV.id : ''
+        });
+        if (tokenCible) {
+          setDefaultTokenForCharacter(charCible, tokenCible);
+          tokenCible.remove();
+        }
+        return charCible;
+      }
+    }
+  }
+
   //Appelé au lancement du script, mise à jour de certaines variables globales
   function setStateCOF() {
     stateCOF = state.COFantasy;
@@ -1143,65 +1204,7 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (!stateCOF.personnageCibleCree) {
-      //On cherche si un personnage cible existe déjà
-      let persos = findObjs({
-        _type: 'character',
-        name: 'Cible',
-        controlledby: 'all'
-      });
-      if (persos.length === 0) {
-        let pages = findObjs({
-          _type: 'page'
-        });
-        if (pages.length > 0) {
-          let pageId = pages[0].id;
-          let charCible = createObj('character', {
-            name: 'Cible',
-            controlledby: 'all',
-            inplayerjournals: 'all',
-            avatar: 'https://s3.amazonaws.com/files.d20.io/images/33041174/5JdDVh-34C-kZglTE1aq-w/max.png?1494837870',
-          });
-          if (charCible) {
-            let attrPV = charAttribute(charCible.id, 'PV', {
-              caseInsensitive: true
-            });
-            if (attrPV.length > 0) attrPV = attrPV[0];
-            else attrPV = createObj('attribute', {
-              name: 'PV',
-              characterid: charCible.id,
-              current: 0,
-              max: 0
-            });
-            let attrType = charAttribute(charCible.id, 'type_personnage', {
-              caseInsensitive: true
-            });
-            if (attrType.length > 0) {
-              attrType[0].setWithWorker('current', 'PNJ');
-            } else {
-              attrType = createObj('attribute', {
-                name: 'type_personnage',
-                characterid: charCible.id,
-                current: 'PJ',
-              });
-              attrType.setWithWorker('current', 'PNJ');
-            }
-            let tokenCible = createObj('graphic', {
-              name: 'Cible',
-              layer: 'objects',
-              _pageid: pageId,
-              imgsrc: 'https://s3.amazonaws.com/files.d20.io/images/33041174/5JdDVh-34C-kZglTE1aq-w/thumb.png?1494837870',
-              represents: charCible.id,
-              width: PIX_PER_UNIT,
-              height: PIX_PER_UNIT,
-              bar1_link: attrPV ? attrPV.id : ''
-            });
-            if (tokenCible) {
-              setDefaultTokenForCharacter(charCible, tokenCible);
-              tokenCible.remove();
-            }
-          }
-        }
-      }
+      trouveOuCreeCible();
       stateCOF.personnageCibleCree = true;
     }
     //Création des tables par défaut
@@ -2048,6 +2051,7 @@ var COFantasy = COFantasy || function() {
       light_losangle: token.get('light_losangle'),
       light_multiplier: token.get('light_multiplier'),
       adv_fow_view_distance: token.get('adv_fow_view_distance'),
+      gmnotes: token.get('gmnotes'),
     };
   }
 
@@ -4541,10 +4545,13 @@ var COFantasy = COFantasy || function() {
   //origin peut être un message ou un nom de joueur
   function sendPlayer(origin, msg, playerId) {
     let dest = origin;
-    if (origin.who) {
-      playerId = playerId || getPlayerIdFromMsg(origin);
-      if (playerIsGM(playerId)) dest = 'GM';
-      else dest = origin.who;
+    if (origin.who !== undefined) {
+      if (origin.who === '') dest = 'GM';
+      else {
+        playerId = playerId || getPlayerIdFromMsg(origin);
+        if (playerId == 'API' || playerIsGM(playerId)) dest = 'GM';
+        else dest = origin.who;
+      }
     }
     if (dest.includes('"')) {
       sendChat('COF', msg);
@@ -7544,29 +7551,33 @@ var COFantasy = COFantasy || function() {
           case 'disque':
           case 'disquePasseMur':
             if (options.ignoreDisque) return;
-            let centre;
+            let tokenCentre;
             let rayon;
             if (cmdSplit.length < 3) {
               if (actif && cmdSplit.length > 1) {
-                centre = actif;
+                tokenCentre = actif.token;
                 rayon = parseInt(cmdSplit[1]);
               } else {
                 error("Pas assez d'arguments pour définir un disque", cmdSplit);
                 return;
               }
             } else {
-              centre = persoOfId(cmdSplit[1], cmdSplit[1], pageId);
-              if (centre === undefined) {
-                error("le premier argument du disque n'est pas un token valide", cmdSplit);
-                return;
+              tokenCentre = getObj('graphic', cmdSplit[1]);
+              if (!tokenCentre) {
+                let centre = persoOfId(cmdSplit[1], cmdSplit[1], pageId);
+                if (centre === undefined) {
+                  error("le premier argument du disque n'est pas un token valide", cmdSplit);
+                  return;
+                }
+                tokenCentre = centre.token;
               }
+              pageId = tokenCentre.get('pageid');
               rayon = parseInt(cmdSplit[2]);
             }
             if (isNaN(rayon) || rayon < 0) {
               error("Rayon du disque mal défini", cmdSplit);
               return;
             }
-            let tokenCentre = centre.token;
             let portee = 0;
             if (cmdSplit.length > 3) {
               portee = parseInt(cmdSplit[3]);
@@ -7762,7 +7773,7 @@ var COFantasy = COFantasy || function() {
           name: nom
         });
         if (characters.length === 0) {
-          error("Impossible de trouver l'id du joueur " + nom, msg);
+          //error("Impossible de trouver l'id du joueur " + nom, msg);
           return playerId;
         }
         let pids = characters[0].get('controlledby');
@@ -22801,22 +22812,71 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  function dmExplosion(id, effet) {
+    let action = "!cof-dmg " + effet.dm + " --disque " + id + " " + effet.portee;
+    if (effet.typeBombe == 'piege') action += " --psave DEX 15";
+    log(action);
+    sendChat('', action);
+  }
+
+  function getTokenTemp(tt) {
+    let token = getObj('graphic', tt.tid);
+    if (!token) {
+      if (!tt.name) return;
+      token = findObjs({
+        _type: 'graphic',
+        name: tt.name
+      });
+      if (token.length === 0) return;
+      token = token[0];
+    }
+    return token;
+  }
+
   //Peut faire des effets asynchrones
   function deleteTokenTemp(tt, evt) {
-    let token = getObj('graphic', tt.tid);
+    let token = getTokenTemp(tt);
     if (!token) return;
-    let gmNotes = token.get('gmnotes');
-    try {
-      if (gmNotes.startsWith('{')) {
-        let effet = JSON.parse(gmNotes);
-        //{typeBombe, portee, message, dm, tempsDePose, duree, intrusion}
-        if (effet && effet.typeBombe) {
-          let pageId = token.get('pageid');
-          if (effet.message) sendChat('', effet.message);
-          spawnFx(token.get('left'), token.get('top'), 'explode-fire', pageId);
+    if (!tt.pasDExplosion) {
+      let gmNotes = token.get('gmnotes');
+      try {
+        if (gmNotes.startsWith('{')) {
+          let effet = JSON.parse(gmNotes);
+          //{typeBombe, portee, message, dm, tempsDePose, duree, intrusion}
+          if (effet && effet.typeBombe) {
+            let pageId = token.get('pageid');
+            if (effet.message) sendChat('', effet.message);
+            let left = token.get('left');
+            let top = token.get('top');
+            spawnFx(left, top, 'explode-fire', pageId);
+            playSound('Explosion');
+            if (effet.dm) {
+              let charCible = trouveOuCreeCible();
+              if (charCible) {
+                charCible.get('_defaulttoken', function(normalToken) {
+                  if (normalToken === '') {
+                    dmExplosion(tt.id, effet);
+                    return;
+                  }
+                  normalToken = JSON.parse(normalToken);
+                  normalToken._pageid = pageId;
+                  normalToken.left = left;
+                  normalToken.top = top;
+                  normalToken.imgsrc = normalizeTokenImg(normalToken.imgsrc);
+                  let tokenCible = createObj('graphic', normalToken);
+                  if (tokenCible) dmExplosion(tokenCible.id, effet);
+                  else {
+                    log("Impossible de créer le token cible");
+                    log(normalToken);
+                    dmExplosion(tt.id, effet);
+                  }
+                });
+              } else dmExplosion(tt.id, effet);
+            }
+          }
         }
-      }
-    } catch (parseError) {}
+      } catch (parseError) {}
+    }
     let ett = {...tt
     };
     ett.deletedToken = getTokenFields(token);
@@ -23173,6 +23233,7 @@ var COFantasy = COFantasy || function() {
     if (stateCOF.tokensTemps) {
       evt.deletedTokensTemps = [];
       stateCOF.tokensTemps.forEach(function(tt) {
+        if (tt.intrusion) tt.pasDExplosion = true;
         deleteTokenTemp(tt, evt);
       });
       delete stateCOF.tokensTemps;
@@ -24394,7 +24455,6 @@ var COFantasy = COFantasy || function() {
           return;
         } else { //dépense d'un PR
           enleverPointDeRecuperation(perso, pr, evt);
-          pr.current--;
         }
       }
       let conMod = modCarac(perso, 'constitution');
@@ -28002,26 +28062,28 @@ var COFantasy = COFantasy || function() {
       }
       tokensToProcess--;
     };
-    try {
-      sendChat('', '[[' + dmg.value + ']]', function(resDmg) {
-        dmg.roll = dmg.roll || resDmg[0];
-        let afterEvaluateDmg = dmg.roll.content.split(' ');
-        let dmgRollNumber = rollNumber(afterEvaluateDmg[0]);
-        dmg.total = dmg.roll.inlinerolls[dmgRollNumber].results.total;
-        dmg.display = buildinline(dmg.roll.inlinerolls[dmgRollNumber], dmg.type, options.magique);
-        cibles.forEach(function(perso) {
-          if (getState(perso, 'mort')) { //pas de dégâts aux morts
-            finalDisplay();
-            return;
-          }
-          if (options.mortsVivants && !(estMortVivant(perso))) {
-            sendPlayer(playerName, nomPerso(perso) + " n'est pas un mort-vivant");
-            finalDisplay();
-            return;
-          }
-          let name = nomPerso(perso);
-          let explications = [];
-          copyDmgOptionsToTarget(perso, options);
+    dmg.rolls = dmg.rolls || [];
+    cibles.forEach(function(perso) {
+      if (getState(perso, 'mort')) { //pas de dégâts aux morts
+        finalDisplay();
+        return;
+      }
+      if (options.mortsVivants && !(estMortVivant(perso))) {
+        sendPlayer(playerName, nomPerso(perso) + " n'est pas un mort-vivant");
+        finalDisplay();
+        return;
+      }
+      let name = nomPerso(perso);
+      let explications = [];
+      copyDmgOptionsToTarget(perso, options);
+      try {
+        sendChat('', '[[' + dmg.value + ']]', function(resDmg) {
+          dmg.rolls[perso.token.id] = dmg.rolls[perso.token.id] || resDmg[0];
+          let roll = dmg.rolls[perso.token.id];
+          let afterEvaluateDmg = roll.content.split(' ');
+          let dmgRollNumber = rollNumber(afterEvaluateDmg[0]);
+          dmg.total = roll.inlinerolls[dmgRollNumber].results.total;
+          dmg.display = buildinline(roll.inlinerolls[dmgRollNumber], dmg.type, options.magique);
           dealDamage(perso, dmg, [], evt, false, options, explications, function(dmgDisplay, dmgFinal) {
             someDmgDone = true;
             addLineToFramedDisplay(display,
@@ -28031,11 +28093,11 @@ var COFantasy = COFantasy || function() {
             });
             finalDisplay();
           });
-        }); //fin forEach
-      }); //fin du jet de dés
-    } catch (rollError) {
-      error("Jet " + dmg.value + " mal formé", dmg);
-    }
+        }); //fin du jet de dés
+      } catch (rollError) {
+        error("Jet " + dmg.value + " mal formé", dmg);
+      }
+    }); //fin forEach
   }
 
   function estElementaire(t) {
@@ -32996,18 +33058,18 @@ var COFantasy = COFantasy || function() {
   }
 
   function postureDeCombat(msg) {
-    var args = msg.content.split(' ');
+    let args = msg.content.split(' ');
     if (args.length < 4) {
       error("Pas assez d'arguments pour !cof-posture-de-combat", args);
       return;
     }
-    var bonus = parseInt(args[1]);
-    var attrDebuf = args[2];
+    let bonus = parseInt(args[1]);
+    let attrDebuf = args[2];
     if (attrDebuf != 'DEF' && attrDebuf != 'ATT' && attrDebuf != 'DM') {
       error("L'attribut à débuffer pour la posture de combat est incorrect", args);
       return;
     }
-    var attrBuf = args[3];
+    let attrBuf = args[3];
     if (attrBuf != 'DEF' && attrBuf != 'ATT' && attrBuf != 'DM') {
       error("L'attribut à augmenter pour la posture de combat est incorrect", args);
       return;
@@ -33018,12 +33080,12 @@ var COFantasy = COFantasy || function() {
           sendPlayer(msg, "choisir un bonus positif (pas " + args[1] + ") pour sa posture de combat", playerId);
           return;
         }
-        var rang = predicateAsInt(guerrier, "voieDuSoldat", 0);
+        let rang = predicateAsInt(guerrier, "voieDuSoldat", 0);
         if (rang > 0 && rang < bonus) {
           sendPerso(guerrier, "ne peut choisir qu'un bonus inférieur à " + rang + " pour sa posture de combat");
           return;
         }
-        var evt = {
+        const evt = {
           type: "Posture de combat"
         };
         if (attrBuf == attrDebuf) {
@@ -44658,11 +44720,7 @@ var COFantasy = COFantasy || function() {
             }
           } else rang = predicateAsInt(arquebusier, 'voieDesExplosifs', 2, 2);
           portee = 6;
-          dm = {
-            nbDe: rang,
-            dice: 6,
-            id: generateUUID()
-          };
+          dm = rang + 'd6';
           let dmStruct = rollDePlus(6, {
             nbDes: 2 * rang
           });
@@ -44678,8 +44736,7 @@ var COFantasy = COFantasy || function() {
             error("Il manque des arguments pour !cof-poser-bombe", cmd);
             return;
           }
-          dm = parseDice(cmd[3]);
-          if (!dm) return;
+          dm = cmd[3];
           portee = 3;
           switch (cmd[4]) {
             case 'retard':
@@ -44706,6 +44763,9 @@ var COFantasy = COFantasy || function() {
                   return;
                 }
               }
+              //On converti la distance d'intrusion en pixels
+              let scale = computeScale(pageId);
+              intrusion = (intrusion / scale) * PIX_PER_UNIT;
               break;
             default:
               error("Type de piège explosif " + cmd[4] + " non reconnu", cmd);
@@ -44726,7 +44786,7 @@ var COFantasy = COFantasy || function() {
       duree,
       intrusion
     });
-    let name = "Bombe " + dm.id;
+    let name = "Bombe " + generateUUID();
     const evt = {
       type: "Pose de bombe"
     };
@@ -44757,7 +44817,9 @@ var COFantasy = COFantasy || function() {
     stateCOF.tokensTemps.push({
       tid: t.id,
       duree: duree + tempsDePose,
-      init: getInit()
+      name,
+      init: getInit(),
+      intrusion
     });
     //TODO: ajouter un effet temporaire "occupé"
     let msgPose = "pose un explosif. ";
@@ -47940,6 +48002,7 @@ var COFantasy = COFantasy || function() {
               tt.duree--;
               return true;
             } else {
+              if (tt.intrusion) tt.pasDExplosion = true;
               deleteTokenTemp(tt, evt);
               return false;
             }
@@ -48327,6 +48390,57 @@ var COFantasy = COFantasy || function() {
     let y = token.get('top');
     let deplacement = prev && (prev.left != x || prev.top != y);
     if (!deplacement) return;
+    //Effet des bombes à intrusion
+    if (stateCOF.tokensTemps) {
+      let collisions = [];
+      let pt_arrivee = {
+        x,
+        y
+      };
+      let pt_depart = {
+        x: prev.left,
+        y: prev.top
+      };
+      let rayon = tokenSizeAsCircle(token) / 2;
+      stateCOF.tokensTemps.forEach(function(tt) {
+        if (!tt.intrusion) return;
+        //tt.intrusion est exprimé en pixels
+        let bombe = getTokenTemp(tt);
+        if (!bombe) return;
+        let pb = pointOfToken(bombe);
+        let distance = distancePoints(pt_depart, pb);
+        if (distance < tt.intrusion) return; //On est parti de la zone de départ
+        let distToTrajectory =
+          distancePixTokenSegment(bombe, pt_depart, pt_arrivee);
+        if (distToTrajectory > tt.intrusion + rayon) return;
+        collisions.push({
+          bombe,
+          tt,
+          distance
+        });
+      });
+      if (collisions.length > 0) {
+        collisions.sort(function(b1, b2) {
+          let d1 = b1.distance;
+          let d2 = b2.distance;
+          if (d1 < d2) return -1;
+          if (d2 < d1) return 1;
+          return 0;
+        });
+        let bombe = collisions[0].bombe;
+        x = bombe.get('left');
+        y = bombe.get('top');
+        token.set('left', x);
+        token.set('top', y);
+        const evt = {
+          type: "Explosion de bombe"
+        };
+        deleteTokenTemp(collisions[0].tt, evt);
+        stateCOF.tokensTemps = stateCOF.tokensTemps.filter(function(tt) {
+          return tt.id == collisions[0].tt.id;
+        });
+      }
+    }
     //Effets des auras, asynchrone
     if (stateCOF.combat && stateCOF.combat.auras) {
       const evt = {
