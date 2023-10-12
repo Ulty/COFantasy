@@ -6121,7 +6121,7 @@ var COFantasy = COFantasy || function() {
       expliquer("Exsangue : -2 au jet");
       bonus -= 2;
     }
-    if (attributeAsBool(personnage, 'putrefactionOutrTombe')) {
+    if (attributeAsBool(personnage, 'putrefactionOutreTombe')) {
       expliquer("Putréfié : -2 au jet");
       bonus -= 2;
     }
@@ -15699,7 +15699,7 @@ var COFantasy = COFantasy || function() {
       else sendPerso(target, msg);
     };
     if (options.interposer) {
-      return dealDamageAfterOthers(target, crit, {}, evt, expliquer, displayRes, options.interposer, dmg.display, false);
+      return dealDamageAfterOthers(target, crit, {}, evt, expliquer, displayRes, options.interposer, dmg.display, false, {});
     }
     if ((!options.spectral && attributeAsBool(target, 'intangible') && attributeAsInt(target, 'intangibleValeur', 1)) ||
       (!options.spectral && attributeAsBool(target, 'intangibleInvisible') && attributeAsInt(target, 'intangibleInvisibleValeur', 1)) ||
@@ -22680,7 +22680,18 @@ var COFantasy = COFantasy || function() {
         setTokenInitAura(perso);
         combat.activeTokenId = tokenId;
         combat.activeTokenName = token.get('name');
-        turnAction(perso);
+        //On enlève aussi les états qui ne durent qu'un tour
+        //TODO: gérer ça avec un effet temporaire.
+        let defenseTotale = tokenAttribute(perso, 'defenseTotale');
+        if (defenseTotale.length > 0) {
+          defenseTotale = defenseTotale[0];
+          let tourDefTotale = defenseTotale.get('max');
+          if (tourDefTotale < combat.tour) {
+            evt.deletedAttributes = evt.deletedAttributes || [];
+            evt.deletedAttributes.push(defenseTotale);
+            defenseTotale.remove();
+          }
+        }
         // Gestion de la confusion
         if (attributeAsBool(perso, "confusion")) {
           //Une chance sur deux de ne pas agir
@@ -22689,6 +22700,7 @@ var COFantasy = COFantasy || function() {
               onGenre(perso, 'Il', 'Elle') + " ne fait rien ce tour");
             removeTokenFlagAura(token);
           } else {
+        turnAction(perso);
             //Trouver la créature la plus proche
             let closestToken;
             pageId = token.get('pageid');
@@ -22733,17 +22745,8 @@ var COFantasy = COFantasy || function() {
               sendPerso(perso, "est seul" + onGenre(perso, '', 'e') + " et en plein confusion");
             }
           }
-        }
-        //On enlève aussi les états qui ne durent qu'un tour
-        let defenseTotale = tokenAttribute(perso, 'defenseTotale');
-        if (defenseTotale.length > 0) {
-          defenseTotale = defenseTotale[0];
-          let tourDefTotale = defenseTotale.get('max');
-          if (tourDefTotale < combat.tour) {
-            evt.deletedAttributes = evt.deletedAttributes || [];
-            evt.deletedAttributes.push(defenseTotale);
-            defenseTotale.remove();
-          }
+        } else {
+        turnAction(perso);
         }
       } else {
         error("Impossible de trouver le token dont c'est le tour", tokenId);
@@ -33170,13 +33173,13 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseTourDeForce(msg) { // Deprecated
-    var options = parseOptions(msg);
-    var cmd = options.cmd;
+    const options = parseOptions(msg);
+    const cmd = options.cmd;
     if (cmd < 2) {
       error("Il manque un argument à !cof-tour-de-force", cmd);
       return;
     }
-    var seuil = parseInt(cmd[1]);
+    let seuil = parseInt(cmd[1]);
     getSelected(msg, function(selected, playerId) {
       iterSelected(selected, function(barbare) {
         if (isNaN(seuil)) {
@@ -41327,7 +41330,7 @@ var COFantasy = COFantasy || function() {
       error("Il faut un argument à !cof-fiole-de-lumiere", cmd);
       return;
     }
-    var distance = parseInt(cmd[1]);
+    const distance = parseInt(cmd[1]);
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
         error("Aucun personnage sélectionné", cmd);
@@ -41337,7 +41340,7 @@ var COFantasy = COFantasy || function() {
         error("Il n'y a qu'une seule fiole de lumière", cmd);
         return;
       }
-      var evt = {
+      const evt = {
         type: 'fioleDeLumiere'
       };
       addEvent(evt);
@@ -41351,7 +41354,7 @@ var COFantasy = COFantasy || function() {
             porteur: perso,
             distance: distance
           };
-          var dimRadius = '';
+          let dimRadius = '';
           if (cmd.length > 3) {
             dimRadius = parseInt(cmd[3]);
             if (isNaN(dimRadius)) {
