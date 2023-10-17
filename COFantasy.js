@@ -8789,7 +8789,8 @@ var COFantasy = COFantasy || function() {
           scope.additionalDmg = scope.additionalDmg || [];
           scope.additionalDmg.push({
             value: val,
-            type: scope.type
+            type: scope.type,
+            plus: true
           });
           break;
         case 'plusCrit':
@@ -19025,12 +19026,15 @@ var COFantasy = COFantasy || function() {
             mainDmgRollExpr += " +" +
               computeMainDmgRollExpr(attaquant, target, stats2, stats2.attNbDices,
                 attDMBonus, options);
+          additionalDmg.forEach(function(dmSpec) {
+            if (!dmSpec.plus) dmSpec.value += " +" + dmSpec.value;
+          });
           } else {
             mainDmgRollExpr += " +" + mainDmgRollExpr;
-          }
           additionalDmg.forEach(function(dmSpec) {
-            dmSpec.value += " +" + dmSpec.Value;
+            dmSpec.value += " +" + dmSpec.value;
           });
+          }
         }
         if (target.etreinteImmole) {
           additionalDmg.push({
@@ -19080,7 +19084,7 @@ var COFantasy = COFantasy || function() {
             let firstCritRoll = 1 + additionalDmg.length;
             target.additionalCritDmg = [];
             let rollsCrit = resDmg[0];
-            if (target.rollsDmg && target.rollsDmg.length >= firstCritRoll + options.additinalCritDmg.length)
+            if (target.rollsDmg && target.rollsDmg.length >= firstCritRoll + options.additionalCritDmg.length)
               rollsCrit = target.rollsDmg;
             options.additionalCritDmg.forEach(function(dmSpec, i) {
               let rn = rollNumber(afterEvaluateDmg[i + firstCritRoll]);
