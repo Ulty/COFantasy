@@ -5180,8 +5180,8 @@ var COFantasy = COFantasy || function() {
       let munition = munitions[label];
       let tm = fieldAsString(munition, 'typemunition', 'Flèche');
       if (tm == typeMunition) {
-      let nb = fieldAsInt(munition, 'qtemunition', 1);
-      if (nb > 0) munitionsDeType.push(munition);
+        let nb = fieldAsInt(munition, 'qtemunition', 1);
+        if (nb > 0) munitionsDeType.push(munition);
       }
     }
     if (munitionsDeType.length === 0) return act;
@@ -5289,27 +5289,27 @@ var COFantasy = COFantasy || function() {
                 }
               }
             } else if (act.startsWith('!cof-attack ')) {
-  if (paralyseParRoublard(perso, false)) {
-    options.actionImpossible = true;
-  } else {
-              let cmd = act.split(' ');
-              if (cmd.length > 3 && cmd[3] == '-1') {
-                //Selon l'arme en main, une action peut être possible ou non
-                let weaponStats = armesEnMain(perso);
-                if (weaponStats) {
-                  options.attackStats = options.attackStats || weaponStats;
-                  options.actionImpossible =
-                    (weaponStats.deuxMains && attributeAsBool(perso, 'espaceExigu')) ||
-                    (weaponStats.portee &&
-                      (cmd.includes('--attaqueFlamboyante') || cmd.includes('--seulementContact'))) ||
-                    (!cmd.includes('--semonce') && !cmd.includes('--tirDeBarrage') && armeDechargee(perso, weaponStats)) ||
-                    (cmd.includes('--semonce') && attributeAsInt(perso, 'attaqueADistanceRatee', 0) != 1) ||
-                    (cmd.includes('--ricochets') && !(weaponStats.armeDeJet || weaponStats.options.includes('--aussiArmeDeJet')));
+              if (paralyseParRoublard(perso, false)) {
+                options.actionImpossible = true;
+              } else {
+                let cmd = act.split(' ');
+                if (cmd.length > 3 && cmd[3] == '-1') {
+                  //Selon l'arme en main, une action peut être possible ou non
+                  let weaponStats = armesEnMain(perso);
+                  if (weaponStats) {
+                    options.attackStats = options.attackStats || weaponStats;
+                    options.actionImpossible =
+                      (weaponStats.deuxMains && attributeAsBool(perso, 'espaceExigu')) ||
+                      (weaponStats.portee &&
+                        (cmd.includes('--attaqueFlamboyante') || cmd.includes('--seulementContact'))) ||
+                      (!cmd.includes('--semonce') && !cmd.includes('--tirDeBarrage') && armeDechargee(perso, weaponStats)) ||
+                      (cmd.includes('--semonce') && attributeAsInt(perso, 'attaqueADistanceRatee', 0) != 1) ||
+                      (cmd.includes('--ricochets') && !(weaponStats.armeDeJet || weaponStats.options.includes('--aussiArmeDeJet')));
+                  }
                 }
+                options.actionImpossible = options.actionImpossible ||
+                  (actSansChoix.includes(' --frappeDesArcanes') && attributeAsBool(perso, 'frappeDesArcanes'));
               }
-              options.actionImpossible = options.actionImpossible ||
-                (actSansChoix.includes(' --frappeDesArcanes') && attributeAsBool(perso, 'frappeDesArcanes'));
-  }
             }
           }
           if (options.ressource) act += " --decrAttribute " + options.ressource.id;
@@ -8509,7 +8509,7 @@ var COFantasy = COFantasy || function() {
   // lastEtat : dernier de etats et effets, pour savoir à quoi appliquer --save
   // lastType : dernier type de dégâts infligés
   // scope : pour les conditionnelles
-  function parseAttackOptions(attaquant, optArgs, lastEtat, lastType, scope, playerId, msg, targetToken, attackLabel, weaponStats, options) {
+  function parseAttackOptions(attaquant, optArgs, lastEtat, lastType, scope, playerId, msg, targetToken, attackLabel, weaponStats, options, commandArgs) {
     optArgs.forEach(function(arg) {
       arg = arg.trim();
       let cmd = arg.split(' ');
@@ -8721,12 +8721,15 @@ var COFantasy = COFantasy || function() {
           options.m2d20 = true;
           return;
         case 'tirDouble':
-          if (cmd.length > 1)
-            options.tirDouble = {
-              label: cmd[1]
-            };
-          else options.tirDouble = options.tirDouble || true;
+          {
+            let label = attackLabel;
+          if (cmd.length > 1) {
+              label = cmd[1];
+          }
+          options.tirDouble = {label, attaquant, targetToken, msg, playerId, commandArgs};
           return;
+          }
+        case 'secondTir': options.secondTir = true; return;
         case 'ignoreRD':
           if (cmd.length < 2) {
             scope.ignoreTouteRD = true;
@@ -9278,7 +9281,7 @@ var COFantasy = COFantasy || function() {
               });
             }
             if (optionsMunition.length > 0) {
-              let r = parseAttackOptions(attaquant, optionsMunition, lastEtat, lastType, scope, playerId, msg, targetToken, attackLabel, weaponStats, options);
+              let r = parseAttackOptions(attaquant, optionsMunition, lastEtat, lastType, scope, playerId, msg, targetToken, attackLabel, weaponStats, options, commandArgs);
               lastEtat = r.lastEtat;
               lastType = r.lastType;
               scope = r.scope;
@@ -9917,6 +9920,11 @@ var COFantasy = COFantasy || function() {
     if (args.length > 3) {
       attackLabel = args.slice(3).join(' ').trim();
     }
+    parseAttackWithWeapon(attaquant, targetToken, attackLabel, optArgs, playerId, msg);
+  }
+
+  function parseAttackWithWeapon(attaquant, targetToken, attackLabel, optArgs, playerId, msg, options) {
+    let commandArgs = [...optArgs];
     let weaponStats;
     let attaqueArray;
     try {
@@ -10016,13 +10024,12 @@ var COFantasy = COFantasy || function() {
         });
       });
     }
-    const options = {
-      sortilege: weaponStats.sortilege,
-      hache: weaponStats.hache,
-      armeNaturelle: weaponStats.armeNaturelle,
-      poudre: weaponStats.poudre,
-      arme: weaponStats.arme || weaponStats.armeGauche || weaponStats.armeDeJet,
-    };
+    options = options || {};
+    options.sortilege = weaponStats.sortilege;
+    options.hache = weaponStats.hache;
+    options.armeNaturelle = weaponStats.armeNaturelle;
+    options.poudre = weaponStats.poudre;
+    options.arme = weaponStats.arme || weaponStats.armeGauche || weaponStats.armeDeJet;
     switch (weaponStats.typeDegats) {
       case 'mental':
         options.attaqueMentale = true;
@@ -10051,7 +10058,7 @@ var COFantasy = COFantasy || function() {
     let lastEtat; //dernier de etats et effets
     let lastType = options.type; //dernier type de dégâts infligés
     let scope = options; //Pour les conditionnelles
-    parseAttackOptions(attaquant, optArgs, lastEtat, lastType, scope, playerId, msg, targetToken, attackLabel, weaponStats, options);
+    parseAttackOptions(attaquant, optArgs, lastEtat, lastType, scope, playerId, msg, targetToken, attackLabel, weaponStats, options, commandArgs);
     let bene = predicateAsInt(attaquant, 'benedictionSuperieure', 0);
     if (bene) {
       if (!options.armeMagiquePlus || options.armeMagiquePlus < bene) {
@@ -12393,13 +12400,7 @@ var COFantasy = COFantasy || function() {
     attBonus += bonusDAttaque(attaquant, explications, evt, options);
     if (options.tirDouble) {
       attBonus += 2;
-      if (options.tirDouble.stats && options.tirDouble.stats.name) {
-        explications.push(nomPerso(attaquant) + " tire avec " +
-          weaponName + " et " + options.tirDouble.stats.name + " à la fois !");
-      } else {
-        explications.push(nomPerso(attaquant) + " tire avec 2 " +
-          weaponName + "s à la fois !");
-      }
+      explications.push("Tir double => +2 Att");
     }
     if (options.chance) {
       attBonus += options.chance;
@@ -14262,7 +14263,7 @@ var COFantasy = COFantasy || function() {
         res = true;
       }
     }
-      perso.paralyseParRoublard = res;
+    perso.paralyseParRoublard = res;
     return res;
   }
 
@@ -14284,10 +14285,10 @@ var COFantasy = COFantasy || function() {
     options.pageId = pageId;
     let weaponName = options.nom || weaponStats.name;
     //Options automatically set by some attributes
-  if (paralyseParRoublard(attaquant, true)) {
-        attackCallback(options);
-    return;
-  }
+    if (paralyseParRoublard(attaquant, true)) {
+      attackCallback(options);
+      return;
+    }
     let deFauchage = predicateAsInt(attaquant, 'fauchage', 0, 15);
     if (!options.redo && deFauchage > 0) {
       let tailleFauchage = predicateAsInt(attaquant, 'tailleFauchage', 0);
@@ -14353,15 +14354,6 @@ var COFantasy = COFantasy || function() {
       options.d6 = 'd4';
     }
     let portee = weaponStats.portee;
-    if (options.tirDouble && options.tirDouble.label) {
-      let stats2 = getWeaponStats(attaquant, options.tirDouble.label, true);
-      if (stats2 === undefined) {
-        error("Pas d'arme de label " + options.tirDouble.label + " pour le tir double", attaquant);
-        attackCallback(options);
-        return;
-      }
-      options.tirDouble.stats = stats2;
-    }
     //Pour les explosions, la portée est 0 mais avec un disque
     if (options.explosion) {
       if (options.aoe === undefined) {
@@ -14434,10 +14426,6 @@ var COFantasy = COFantasy || function() {
       weaponStats.attDice -= 2;
       weaponStats.attDMBonusCommun = Math.ceil(weaponStats.attDMBonusCommun / 2);
       if (weaponStats.attDice < 0) weaponStats.attDice = 0;
-      if (options.tirDouble && options.tirDouble.stats) {
-        options.tirDouble.stats.attDice -= 2;
-        if (options.tirDouble.stats.attDice < 0) options.tirDouble.stats.attDice = 0;
-      }
       options.auto = true;
       let effet = findObjs({
         _type: 'custfx',
@@ -16418,7 +16406,7 @@ var COFantasy = COFantasy || function() {
         }
         munitionsAttr = munitionsAttr[0];
         let munitions = munitionsAttr.get('current');
-        if (munitions < 1 || (options.tirDouble && munitions < 2)) {
+        if (munitions < 1) {
           sendPerso(attaquant,
             "ne peut pas utiliser cette attaque, car " + sujetAttaquant +
             " n'a plus de " + options.munition.nom.replace(/_/g, ' '));
@@ -16440,10 +16428,6 @@ var COFantasy = COFantasy || function() {
         effetPoisonSurMunitions(poisonAttr, attaquant, explications, options, evt);
         munitions--;
         if (randomInteger(100) < options.munition.taux) munitionsMax--;
-        if (options.tirDouble) {
-          munitions--;
-          if (randomInteger(100) < options.munition.taux) munitionsMax--;
-        }
         explications.push("Il reste " + munitions + " " +
           options.munition.nom.replace(/_/g, ' ') + " à " + attackerTokName);
         munitionsAttr.set('current', munitions);
@@ -16453,7 +16437,7 @@ var COFantasy = COFantasy || function() {
         let typeMunition = fieldAsString(m, 'typemunition', 'Flèche');
         let nom = fieldAsString(m, 'nommunition', typeMunition);
         let munitions = fieldAsInt(m, 'qtemunition', 1);
-        if (munitions < 1 || (options.tirDouble && munitions < 2)) {
+        if (munitions < 1) {
           sendPerso(attaquant,
             "ne peut pas utiliser cette attaque, car " + sujetAttaquant +
             " n'a plus de " + nom);
@@ -16470,13 +16454,6 @@ var COFantasy = COFantasy || function() {
         if (randomInteger(100) < taux) {
           munitionsMax--;
           perte++;
-        }
-        if (options.tirDouble) {
-          munitions--;
-          if (randomInteger(100) < taux) {
-            munitionsMax--;
-            perte++;
-          }
         }
         let msgm = "Il ";
         if (munitions === 0) {
@@ -16534,14 +16511,6 @@ var COFantasy = COFantasy || function() {
           sendPerso(attaquant, "ne peut pas attaquer avec " + weaponName + " car elle n'est pas chargée");
           return;
         }
-        if (options.tirDouble &&
-          (!options.tirDouble.stats || options.tirDouble.label == attackLabel) &&
-          currentCharge < 2) {
-          sendPerso(attaquant,
-            "ne peut pas faire de tir double avec ses" + weaponName + "s car " +
-            sujetAttaquant + " n'en a pas au moins 2 chargées");
-          return;
-        }
         evt.attributes = evt.attributes || [];
         if (attackLabel && options.grenaille) {
           let chargesGrenaille = tokenAttribute(attaquant, 'chargeGrenaille_' + attackLabel);
@@ -16551,22 +16520,11 @@ var COFantasy = COFantasy || function() {
               sendPerso(attaquant, "ne peut pas attaquer avec " + weaponName + " car elle n'est pas chargée en grenaille");
               return;
             }
-            if (options.tirDouble &&
-              (!options.tirDouble.stats || options.tirDouble.label == attackLabel) &&
-              currentChargeGrenaille < 2) {
-              sendPerso(attaquant,
-                "ne peut pas faire de tir double de grenaille avec ses" + weaponName + "s car " +
-                sujetAttaquant + " n'en a pas au moins 2 chargées de grenaille");
-              return;
-            }
             evt.attributes.push({
               attribute: chargesGrenaille[0],
               current: currentChargeGrenaille
             });
-            if (options.tirDouble &&
-              (!options.tirDouble.stats || options.tirDouble.label == attackLabel)
-            ) currentChargeGrenaille -= 2;
-            else currentChargeGrenaille -= 1;
+            currentChargeGrenaille -= 1;
             chargesGrenaille[0].set('current', currentChargeGrenaille);
           }
         }
@@ -16574,53 +16532,13 @@ var COFantasy = COFantasy || function() {
           attribute: chargesArme[0],
           current: currentCharge
         });
-        if (options.tirDouble &&
-          (!options.tirDouble.stats || options.tirDouble.label == attackLabel)) currentCharge -= 2;
-        else currentCharge -= 1;
+        currentCharge -= 1;
         //Si l'arme n'est plus chargée, on peut perdre le bonus d'initiative
         if (currentCharge === 0 &&
           bonusPlusViteQueSonOmbre(attaquant, weaponStats)) {
           updateNextInit(attaquant);
         }
         chargesArme[0].set('current', currentCharge);
-      }
-      if (options.tirDouble && options.tirDouble.label && options.tirDouble.label != attackLabel) {
-        let secondLabel = options.tirDouble.label;
-        let secondNom = options.tirDouble.stats.name;
-        let chargesSecondeArme = findObjs({
-          _type: 'attribute',
-          _characterid: attackingCharId,
-          name: "charge_" + secondLabel
-        });
-        if (chargesSecondeArme.length > 0) {
-          let currentCharge2 = parseInt(chargesSecondeArme[0].get('current'));
-          if (isNaN(currentCharge2) || currentCharge2 < 1) {
-            sendPerso(attaquant, "ne peut pas faire de tir double avec " + secondNom + " car ce n'est pas chargé");
-            return;
-          }
-          evt.attributes = evt.attributes || [];
-          if (options.grenaille) {
-            let chargesGrenaille2 = tokenAttribute(attaquant, 'chargeGrenaille_' + secondLabel);
-            if (chargesGrenaille2.length > 0) {
-              let currentChargeGrenaille2 = parseInt(chargesGrenaille2[0].get('current'));
-              if (isNaN(currentChargeGrenaille2) || currentChargeGrenaille2 < 1) {
-                sendPerso(attaquant, "ne peut pas faire de tir double avec " + secondNom + " car ce n'est pas chargé en grenaille");
-                return;
-              }
-              evt.attributes.push({
-                attribute: chargesGrenaille2[0],
-                current: currentChargeGrenaille2
-              });
-              currentChargeGrenaille2 -= 1;
-              chargesGrenaille2[0].set('current', currentChargeGrenaille2);
-            }
-          }
-          evt.attributes.push({
-            attribute: chargesSecondeArme[0],
-            current: currentCharge2
-          });
-          chargesSecondeArme[0].set('current', currentCharge2 - 1);
-        }
       }
     }
     if (limiteRessources(attaquant, options, attackLabel, weaponName, evt, explications)) {
@@ -16696,6 +16614,10 @@ var COFantasy = COFantasy || function() {
         let rollsAttack = resAttack[0];
         if (options.rolls && options.rolls.attack)
           rollsAttack = options.rolls.attack;
+        else {
+          options.rolls = options.rolls || {};
+          options.rolls.attack = rollsAttack;
+        }
         let afterEvaluateAttack = rollsAttack.content.split(' ');
         let attRollNumber = rollNumber(afterEvaluateAttack[0]);
         let attSkillNumber = rollNumber(afterEvaluateAttack[1]);
@@ -19020,21 +18942,11 @@ var COFantasy = COFantasy || function() {
             }
           });
         }
-        if (options.tirDouble || options.tirDeBarrage || options.dmFoisDeux) {
-          if (options.tirDouble && options.tirDouble.stats) {
-            let stats2 = options.tirDouble.stats;
-            mainDmgRollExpr += " +" +
-              computeMainDmgRollExpr(attaquant, target, stats2, stats2.attNbDices,
-                attDMBonus, options);
-          additionalDmg.forEach(function(dmSpec) {
-            if (!dmSpec.plus) dmSpec.value += " +" + dmSpec.value;
-          });
-          } else {
+        if (options.tirDeBarrage || options.dmFoisDeux) {
             mainDmgRollExpr += " +" + mainDmgRollExpr;
-          additionalDmg.forEach(function(dmSpec) {
-            dmSpec.value += " +" + dmSpec.value;
-          });
-          }
+            additionalDmg.forEach(function(dmSpec) {
+              dmSpec.value += " +" + dmSpec.value;
+            });
         }
         if (target.etreinteImmole) {
           additionalDmg.push({
@@ -20384,6 +20296,16 @@ var COFantasy = COFantasy || function() {
             activateRoundMarker(threadSync, attaquant.token);
           }
         }
+      }
+      if (options.tirDouble && evt.succes && !options.secondTir) {
+        let t = options.tirDouble;
+        let optArgs = t.commandArgs;
+        optArgs.push("secondTir");
+        let optR = {};
+        if (options.rolls && options.rolls.attack) {
+          optR.rolls = {attack: options.rolls.attack};
+        }
+  parseAttackWithWeapon(t.attaquant, t.targetToken, t.label, optArgs, t.playerId, t.msg, optR);
       }
     }
     if (!evt.action || !options.preDmg) {
@@ -33272,7 +33194,7 @@ var COFantasy = COFantasy || function() {
           sendPlayer(msg, "pas le droit d'utiliser ce bouton", playerId);
           return;
         }
-        var cible = action.cibles.find(function(target) {
+        let cible = action.cibles.find(function(target) {
           return (target.token.id === chevalier.token.id);
         });
         if (cible === undefined) {
