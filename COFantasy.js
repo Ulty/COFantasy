@@ -20301,7 +20301,7 @@ var COFantasy = COFantasy || function() {
         let t = options.tirDouble;
         let optArgs = t.commandArgs;
         optArgs.push("secondTir");
-        let optR = {};
+        let optR = {chance: options.chance};
         if (options.rolls && options.rolls.attack) {
           optR.rolls = {attack: options.rolls.attack};
         }
