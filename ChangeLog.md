@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.14
 ### Capacités
+* Amélioration de la prise en chagre de la capacité Exemplaire du chevalier.
 * Utilisation d'un prédicat pour As de la gachette.
 * Amélioration de la prise en charge du tir double.
 

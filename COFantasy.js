@@ -1701,6 +1701,7 @@ var COFantasy = COFantasy || function() {
     return perso.tokName;
   }
 
+  //perso peut ne pas avoir de token
   function sendPerso(perso, msg, secret) {
     if (perso.token && perso.token.get('bar1_link') === '') {
       msg = perso.token.get('name') + ' ' + msg;
@@ -8722,13 +8723,22 @@ var COFantasy = COFantasy || function() {
         case 'tirDouble':
           {
             let label = attackLabel;
-          if (cmd.length > 1) {
+            if (cmd.length > 1) {
               label = cmd[1];
+            }
+            options.tirDouble = {
+              label,
+              attaquant,
+              targetToken,
+              msg,
+              playerId,
+              commandArgs
+            };
+            return;
           }
-          options.tirDouble = {label, attaquant, targetToken, msg, playerId, commandArgs};
+        case 'secondTir':
+          options.secondTir = true;
           return;
-          }
-        case 'secondTir': options.secondTir = true; return;
         case 'ignoreRD':
           if (cmd.length < 2) {
             scope.ignoreTouteRD = true;
@@ -15092,7 +15102,9 @@ var COFantasy = COFantasy || function() {
     let attaqueEnMeute = predicateAsInt(attaquant, 'attaqueEnMeute', 0, 2);
     if (attaqueEnMeute > 0) options.attaqueEnMeute = attaqueEnMeute;
     options.lienEpique = predicateAsBool(attaquant, 'lienEpique');
-    if (riposte || options.attaqueEnMeute || options.lienEpique || alliesDAttaqueEnMeute.has(attackingCharId)) {
+    if (riposte || options.attaqueEnMeute || options.lienEpique || 
+      alliesDAttaqueEnMeute.has(attackingCharId) || 
+      predicateAsBool(attaquant, 'exemplaire')) {
       //Dans ce cas, il faut stoquer les cibles attaquées
       //(dans le cas de riposte, pour ne pas les re-proposer en riposte)
       let listeCibles =
@@ -18045,6 +18057,33 @@ var COFantasy = COFantasy || function() {
 
   function attaqueNeTouchePas(attaquant, echecCritique, weaponStats, display, options, evt, explications, pageId, cibles) {
     finaliseDisplay(display, explications, evt, attaquant, cibles, options, echecCritique);
+    let allies = alliesParPerso[attaquant.charId];
+    if (allies && cibles.length == 1) {
+                allies.forEach(function(charId) {
+                  if (charId == attaquant.charId) return;
+                  if (!charPredicateAsBool(charId, 'exemplaire')) return;
+        let attrCibles = charAttribute(charId, 'dernieresCiblesAttaquees');
+        if (attrCibles.length === 0) return;
+        let ciblesAttaquees = attrCibles[0].get('current');
+        if (ciblesAttaquees === '') return;
+        let memeCible = ciblesAttaquees.split(' ').find(function(ci) {
+          return ci == cibles[0].token.id;
+        });
+                  if (!memeCible) return;
+                    let tokens = findObjs({
+                        _type: 'graphic',
+                        _subtype: 'token',
+                        _pageid: pageId,
+                        layer: 'objects',
+                      represents: charId
+                      });
+                    if (tokens.length === 0) return;
+                    let chevalier = {charId, token:tokens[0]};
+        if (attributeAsBool(chevalier, 'limiteParTour_exemplaire')) return;
+                  let action = "!cof-exemplaire "+evt.id+" --target "+chevalier.token.id;
+                  sendPerso(chevalier, boutonSimple(action, "Montrer l'exemple à "+nomPerso(attaquant)), true);
+                });
+    }
     if (echecCritique) {
       let regardPetrifiant = cibles.find(function(target) {
         return predicateAsBool(target, 'regardPetrifiant');
@@ -18946,10 +18985,10 @@ var COFantasy = COFantasy || function() {
           });
         }
         if (options.tirDeBarrage || options.dmFoisDeux) {
-            mainDmgRollExpr += " +" + mainDmgRollExpr;
-            additionalDmg.forEach(function(dmSpec) {
-              dmSpec.value += " +" + dmSpec.value;
-            });
+          mainDmgRollExpr += " +" + mainDmgRollExpr;
+          additionalDmg.forEach(function(dmSpec) {
+            dmSpec.value += " +" + dmSpec.value;
+          });
         }
         if (target.etreinteImmole) {
           additionalDmg.push({
@@ -20304,11 +20343,15 @@ var COFantasy = COFantasy || function() {
         let t = options.tirDouble;
         let optArgs = t.commandArgs;
         optArgs.push("secondTir");
-        let optR = {chance: options.chance};
+        let optR = {
+          chance: options.chance
+        };
         if (options.rolls && options.rolls.attack) {
-          optR.rolls = {attack: options.rolls.attack};
+          optR.rolls = {
+            attack: options.rolls.attack
+          };
         }
-  parseAttackWithWeapon(t.attaquant, t.targetToken, t.label, optArgs, t.playerId, t.msg, optR);
+        parseAttackWithWeapon(t.attaquant, t.targetToken, t.label, optArgs, t.playerId, t.msg, optR);
       }
     }
     if (!evt.action || !options.preDmg) {
@@ -25767,23 +25810,30 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //!cof-exemplaire [evt.id]
   function exemplaire(msg) {
-    getSelected(msg, function(selected, playerId) {
-      iterSelected(selected, function(cible) {
-        if (attributeAsBool(cible, 'exemplaire')) {
-          sendPerso(cible, " a déjà montré l'exemple à ce tour");
-          return;
-        }
+    let options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
         let attaque;
         let lastAct = lastEvent();
         if (lastAct !== undefined) {
+    if (cmd.length > 1 && cmd[1] != lastAct.id) {
+          sendPlayer(msg, "Trop tard pour utiliser ce bouton");
+          return;
+    }
           if (lastAct.type == 'Attaque' && lastAct.succes === false) {
             attaque = lastAct.action;
           }
         }
         if (attaque === undefined) {
-          sendPlayer(msg, "la dernière action trouvée n'est pas une attaque ratée, impossible de montrer l'exemple",
-            playerId);
+          sendPlayer(msg, "la dernière action trouvée n'est pas une attaque ratée, impossible de montrer l'exemple");
+          return;
+        }
+    getSelected(msg, function(selected, playerId) {
+      iterSelected(selected, function(chevalier) {
+        if (attributeAsBool(chevalier, 'limiteParTour_exemplaire')) {
+          sendPerso(chevalier, " a déjà montré l'exemple à ce tour");
           return;
         }
         let attackerName = nomPerso(attaque.attaquant);
@@ -25794,7 +25844,7 @@ var COFantasy = COFantasy || function() {
         const evt = {
           type: "Montrer l'exemple"
         };
-        setTokenAttr(cible, 'exemplaire', true, evt, {
+        setTokenAttr(chevalier, 'limiteParTour_exemplaire', true, evt, {
           msg: "montre l'exemple à " + attackerName
         });
         // On annule l'ancienne action
@@ -33292,10 +33342,10 @@ var COFantasy = COFantasy || function() {
 
   //!cof-parade-projectiles
   function doParadeProjectiles(msg) {
-    var optionsParade = parseOptions(msg);
+    const optionsParade = parseOptions(msg);
     if (optionsParade === undefined) return;
-    var cmd = optionsParade.cmd;
-    var evt = lastEvent();
+    let cmd = optionsParade.cmd;
+    let evt = lastEvent();
     if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
       evt = findEvent(cmd[1]);
       if (evt === undefined) {
@@ -47042,7 +47092,6 @@ var COFantasy = COFantasy || function() {
     attrs = removeAllAttributes('limiteParTour', evt, attrs);
     attrs = removeAllAttributes('actionConcertee', evt, attrs);
     attrs = removeAllAttributes('interposer', evt, attrs);
-    attrs = removeAllAttributes('exemplaire', evt, attrs);
     attrs = removeAllAttributes('attaqueMalgreMenace', evt, attrs);
     attrs = removeAllAttributes('prescienceUtilisee', evt, attrs);
     attrs = removeAllAttributes('increvableHumainUtilise', evt, attrs);
@@ -50931,12 +50980,17 @@ var COFantasy = COFantasy || function() {
         }
       });
       charsWithGachette.forEach(function(charId) {
-        let predicats = ficheAttribute({charId}, 'predicats_script', '');
+        let predicats = ficheAttribute({
+          charId
+        }, 'predicats_script', '');
         if (predicats === '') predicats = 'asDeLaGachette';
         else predicats += '\nasDeLaGachette';
-        setFicheAttr({charId}, 'predicats_script', predicats, evt);
+        setFicheAttr({
+          charId
+        }, 'predicats_script', predicats, evt);
       });
-      log("Mise à jour des prédicats asDeLaGachette effectuée.");
+      if (charsWithGachette.size > 0)
+        log("Mise à jour des prédicats asDeLaGachette effectuée.");
     }
   }
 
