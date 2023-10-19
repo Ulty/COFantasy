@@ -1,7 +1,14 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 3.14
+### Capacités
+* Utilisation d'un prédicat pour As de la gachette.
+* Amélioration de la prise en charge du tir double.
+
+### Corrections de bugs
+* Correction d'un bug qui faisait planter en cas d'interposition du golem.
+
 ## 3.13
 ### Capacités
-* Amélioration de la prise en charge du tir double.
 * Support pour la démolition et les pièges explosifs.
 * Amélioration du support des tirs de semonce.
 * Attaque en meute pour un joueur gobelin.
@@ -28,7 +35,6 @@
 * Ajout d'un prédicat pour l'immnunité aux dégâts magiques.
 
 ### Corrections de bugs
-* Correction d'un bug qui faisait planter en cas d'interposition du golem.
 * Correction d'un bug avec le lien épique.
 * Activation correcte de l'attaque en traître.
 * Activation de Ignorer la douleur sur les attaques automatiques.

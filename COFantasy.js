@@ -8553,7 +8553,6 @@ var COFantasy = COFantasy || function() {
         case 'hache':
         case 'marteau':
         case 'vicieux':
-        case 'asDeLaGachette':
         case 'attaqueMentale':
         case 'auto':
         case 'avecd12':
@@ -8793,7 +8792,6 @@ var COFantasy = COFantasy || function() {
           scope.additionalDmg.push({
             value: val,
             type: scope.type,
-            plus: true
           });
           break;
         case 'plusCrit':
@@ -11091,7 +11089,7 @@ var COFantasy = COFantasy || function() {
   // triggers sheet workers
   // options peut avoir un champ msg et un champ maxVal
   // si options a un champ default, supprime la fiche si la valeur est default
-  // renvoie l'attribut, sauf si on a ledefault
+  // renvoie l'attribut, sauf si on a le default
   function setFicheAttr(personnage, attribute, value, evt, options) {
     let charId = personnage.charId;
     if (options && options.msg !== undefined) {
@@ -16291,6 +16289,11 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function asDeLaGachette(perso, weaponStats) {
+    return predicateAsBool(perso, 'asDeLaGachette') &&
+      (weaponStats.poudre || weaponStats.arbalete);
+  }
+
   //N'ajoute pas evt à l'historique
   function resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, explications, options) {
     let attackingCharId = attaquant.charId;
@@ -17073,7 +17076,7 @@ var COFantasy = COFantasy || function() {
               if (options.test) line += " (" + attackRoll + ")";
               target.attackMessage = line;
               if (touche) {
-                if (options.asDeLaGachette && attackRoll > 24) {
+                if (asDeLaGachette(attaquant, weaponStats) && attackRoll > 24) {
                   target.messages.push("As de la gachette => + 1" + options.d6 + " aux DM");
                   target.additionalDmg.push({
                     type: mainDmgType,
@@ -33247,7 +33250,7 @@ var COFantasy = COFantasy || function() {
         sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour dévier les coups d'une action précédente");
         return;
       }
-      var action = evt.action;
+      const action = evt.action;
       if (action.options.distance) {
         sendChat('', "Impossible d'encaisser le dernier coup, ce n'était pas une attaque au contact");
         return;
@@ -50890,6 +50893,51 @@ var COFantasy = COFantasy || function() {
       });
       log("Mise à jour effectuée");
     }
+    if (version < 3.14) {
+      let evt = {
+        type: "version 3.14",
+        attributes: [],
+      };
+      let charsWithGachette = new Set();
+      let attrs = findObjs({
+        _type: 'attribute'
+      });
+      attrs.forEach(function(attr) {
+        let n = attr.get('name');
+        if (n.match(/^repeating_(armes|pnjatk)_[^_]*_armeoptions/)) {
+          let c = attr.get('current');
+          if (c && c.includes('--asDeLaGachette')) {
+            evt.attributes.push({
+              attribute: attr,
+              current: c
+            });
+            let cid = attr.get('characterid');
+            charsWithGachette.add(cid);
+            c = c.replace(/--asDeLaGachette/g, '').trim();
+            attr.set('current', c);
+          }
+        } else if (n.match(/^repeating_(armes|pnjatk)_[^_]*_armemodificateurs/)) {
+          let c = attr.get('current');
+          if (c && c.includes('asDeLaGachette')) {
+            evt.attributes.push({
+              attribute: attr,
+              current: c
+            });
+            let cid = attr.get('characterid');
+            charsWithGachette.add(cid);
+            c = c.replace(/asDeLaGachette/g, '').trim();
+            attr.set('current', c);
+          }
+        }
+      });
+      charsWithGachette.forEach(function(charId) {
+        let predicats = ficheAttribute({charId}, 'predicats_script', '');
+        if (predicats === '') predicats = 'asDeLaGachette';
+        else predicats += '\nasDeLaGachette';
+        setFicheAttr({charId}, 'predicats_script', predicats, evt);
+      });
+      log("Mise à jour des prédicats asDeLaGachette effectuée.");
+    }
   }
 
   function changePredicats(attr, prev) {
@@ -50923,7 +50971,7 @@ var COFantasy = COFantasy || function() {
 }();
 
 on('ready', function() {
-  const scriptVersion = '3.13';
+  const scriptVersion = '3.14';
   on('add:token', COFantasy.addToken);
   on("change:campaign:playerpageid", COFantasy.changePlayerPage);
   state.COFantasy = state.COFantasy || {
@@ -50996,7 +51044,7 @@ on("change:attribute", function(attr, prev) {
   let predicats = state.COFantasy.predicats;
   if (!predicats) return;
   let n = attr.get("name");
-  if (n == "predicats_script" || n.includes('armepredicats')) {
+  if (n == 'predicats_script' || n.includes('armepredicats')) {
     predicats[attr.get('characterid')] = undefined;
     COFantasy.changePredicats(attr, prev);
   }
