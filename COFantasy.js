@@ -5953,6 +5953,10 @@ var COFantasy = COFantasy || function() {
           expliquer("Rapide comme son ombre : +" + rapideCommeSonOmbre + " en discrétion");
           bonus += rapideCommeSonOmbre;
         }
+        if (predicateAsBool(personnage, 'embuscade')) {
+          expliquer("Prédateur => +5 en discrétion");
+          bonus += 5;
+        }
         break;
       case 'intimidation':
         bonus += bonusArgumentDeTaille(personnage, expliquer);
@@ -10817,6 +10821,7 @@ var COFantasy = COFantasy || function() {
       init -= 5;
     }
     init += predicateAsInt(perso, 'rapideCommeSonOmbre', 0, 3);
+    init += predicateAsInt(perso, 'embuscade', 0, 0);
     return init;
   }
 
@@ -10841,15 +10846,13 @@ var COFantasy = COFantasy || function() {
   //options: recompute : si pas encore agi, on remet à sa place dans le turn order
   //already est là pour éviter les récursions infinies
   //boutonRoll: vient de l'utilisation d'un bouton de roll
-  function initiative(selected, evt, recompute, already, boutonRoll) { //set initiative for selected tokens
-    // Toujours appelé quand on entre en combat
-    // Initialise le compteur de tour, si besoin
-    // Assumption: all tokens that have not acted yet are those before the turn
-    // counter.
-    // When initiative for token not present, assumes it has not acted
-    // When present, stays in same group, but update position according to
-    // current initiative.
-    // Tokens appearing before the turn are sorted
+  // Toujours appelé quand on entre en combat
+  // Initialise le compteur de tour, si besoin
+  // Suppose que tous les tokens qui n'ont pas encore agi sont ceux avant le compteur de tour
+  // Quand on lance l'initiative sur un token non présent dans le turnOrder, on suppose qu'il n'a pas encore agi.
+  // S'il est déjà présent, il reste dans le même groupe, mais on met à jour sa position dans le groupe
+  // Les tokens avant le tour sont triés
+  function initiative(selected, evt, recompute, already, boutonRoll) {
     if (!Campaign().get('initiativepage')) evt.initiativepage = false;
     let debutCombat = false;
     if (!stateCOF.combat) { //actions de début de combat
@@ -10975,6 +10978,11 @@ var COFantasy = COFantasy || function() {
               };
               addAura(perso, aura, aurasCreees, combat, evt);
             });
+            if (predicateAsBool(perso, 'embuscade')) {
+              let diffSurprise = 15 + modCarac(perso, 'dexterite');
+              let commande = "!cof-surprise "+diffSurprise+" --target @{target|token_id}";
+              sendPerso(perso, "peut faire une "+boutonSimple(commande, 'embuscade'), true);
+            }
             //Les autres persos qui entrent en combat en même temps
             let ajouterEnCombat = predicatesNamed(perso, 'entrerEnCombatAvec');
             if (ajouterEnCombat.length > 0) {
@@ -18470,6 +18478,25 @@ var COFantasy = COFantasy || function() {
         onGenre(attaquant, '', 'ne') + ", son attaque porte !";
       explications.push(msgChampion);
     }
+    //Le lien épique (+1d6 DM si les 2 attaquent la même cible
+    let attaqueParLienEpique = new Set();
+    if (options.lienEpique) {
+      //On cherche les autres personnages avec le même lien épique
+      let allChars = findObjs({
+        type: 'character'
+      });
+      allChars.forEach(function(ch) {
+        if (ch.id == attackingCharId) return;
+        if (charPredicateAsBool(ch.id, 'lienEpique') != options.lienEpique) return;
+        let attrCibles = charAttribute(ch.id, 'dernieresCiblesAttaquees');
+        if (attrCibles.length === 0) return;
+        let ciblesAttaquees = attrCibles[0].get('current');
+        if (ciblesAttaquees === '') return;
+        ciblesAttaquees.split(' ').forEach(function(ci) {
+          attaqueParLienEpique.add(ci);
+        });
+      });
+    }
     /////////////////////////////////////////////////////////////////
     //Tout ce qui dépend de la cible
     let ciblesCount = ciblesTouchees.length; //Pour l'asynchronie
@@ -18502,25 +18529,6 @@ var COFantasy = COFantasy || function() {
         }
       }
     };
-    //Le lien épique (+1d6 DM si les 2 attaquent la même cible
-    let attaqueParLienEpique = new Set();
-    if (options.lienEpique) {
-      //On cherche les autres personnages avec le même lien épique
-      let allChars = findObjs({
-        type: 'character'
-      });
-      allChars.forEach(function(ch) {
-        if (ch.id == attackingCharId) return;
-        if (charPredicateAsBool(ch.id, 'lienEpique') != options.lienEpique) return;
-        let attrCibles = charAttribute(ch.id, 'dernieresCiblesAttaquees');
-        if (attrCibles.length === 0) return;
-        let ciblesAttaquees = attrCibles[0].get('current');
-        if (ciblesAttaquees === '') return;
-        ciblesAttaquees.split(' ').forEach(function(ci) {
-          attaqueParLienEpique.add(ci);
-        });
-      });
-    }
     ciblesTouchees.forEach(function(target) {
       //l'évaluation finale des conditions quand on sait si l'attaque a touché.
       evalITE(attaquant, target, d20roll, options, 1, evt, explications, options, function() {
@@ -18725,6 +18733,19 @@ var COFantasy = COFantasy || function() {
         if (target.critique && sournoise === 0 && predicateAsBool(attaquant, 'botteSecrete')) {
           sournoise = predicateAsInt(attaquant, 'attaqueSournoise', 1);
           target.messages.push("Botte secrète !");
+        }
+        if (predicateAsBool(attaquant, 'embuscade') && getState(target, 'surpris')) {
+          sournoise++;
+              target.etats = target.etats || [];
+              target.etats.push({
+                etat: 'renverse',
+                condition: {
+                  type: "moins",
+                  attribute: "FOR",
+                  text: 'force'
+                }
+              });
+          target.messages.push("Embuscade !");
         }
         if (sournoise) {
           let limiteSournoisesParTour = predicateAsInt(attaquant, 'sournoisesParTour', 1);
@@ -37338,17 +37359,13 @@ var COFantasy = COFantasy || function() {
         dm: 3,
       }],
       attributes: [{
-        name: 'discrétion',
-        current: 5
+        name: 'predicats_script',
+        current:'embuscade', 
       }],
       abilities: [{
         name: 'Embuscade',
         action: '!cof-surprise [[15 + @{selected|DEX}]] --target @{target|token_id}'
       }],
-      actions: [{
-        titre: 'Attaque en embuscade',
-        code: '!cof-attack @{selected|token_id} @{target|token_id} 1 --sournoise 1 --if moins FOR --etat renverse --endif'
-      }]
     },
     worg: {
       nom: 'Grand loup',
@@ -37389,17 +37406,13 @@ var COFantasy = COFantasy || function() {
         dm: 5,
       }],
       attributes: [{
-        name: 'discrétion',
-        current: 5
+        name: 'predicats_script',
+        current: 'embuscade'
       }],
       abilities: [{
         name: 'Embuscade',
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }],
-      actions: [{
-        titre: 'Attaque en embuscade',
-        code: '!cof-attack @{selected|token_id} @{target|token_id} 1 --sournoise 1 --if moins FOR --etat renverse --endif'
-      }]
     },
     lion: {
       nom: 'Lion',
@@ -37440,23 +37453,13 @@ var COFantasy = COFantasy || function() {
         dm: 5,
       }],
       attributes: [{
-        name: 'discrétion',
-        current: 5
-      }, {
         name: 'predicats_script',
-        current: 'devorer',
+        current: 'embuscade devorer',
       }],
       abilities: [{
         name: 'Embuscade',
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }],
-      actions: [{
-        titre: 'Attaque en embuscade',
-        code: '!cof-attack @{selected|token_id} @{target|token_id} 1 --sournoise 1 --if moins FOR --etat renverse --endif'
-      }, {
-        titre: 'Dévorer',
-        code: '!cof-attack @{selected|token_id} @{target|token_id} 1'
-      }]
     },
     grandLion: {
       nom: 'Grand lion',
@@ -37496,23 +37499,13 @@ var COFantasy = COFantasy || function() {
         dm: 7,
       }],
       attributes: [{
-        name: 'discrétion',
-        current: 5
-      }, {
         name: 'predicats_script',
-        current: 'devorer',
+        current: 'embuscade devorer',
       }],
       abilities: [{
         name: 'Embuscade',
         action: '!cof-surprise [[15 + @{selected|DEX}]]'
       }],
-      actions: [{
-        titre: 'Attaque en embuscade',
-        code: '!cof-attack @{selected|token_id} @{target|token_id} 1 --sournoise 1 --if moins FOR --etat renverse --endif'
-      }, {
-        titre: 'Dévorer',
-        code: '!cof-attack @{selected|token_id} @{target|token_id} 1'
-      }]
     },
     oursPolaire: {
       nom: 'Ours polaire',
@@ -37600,23 +37593,13 @@ var COFantasy = COFantasy || function() {
         dm: 12,
       }],
       attributes: [{
-        name: 'discrétion',
-        current: 5
-      }, {
         name: 'predicats_script',
-        current: 'devorer',
+        current: 'embuscade devorer',
       }],
       abilities: [{
         name: 'Embuscade',
         action: '!cof-surprise [[15 + @{selected|DEX}]]',
       }],
-      actions: [{
-        titre: 'Attaque en embuscade',
-        code: '!cof-attack @{selected|token_id} @{target|token_id} 1 --sournoise 1 --if moins FOR --etat renverse --endif'
-      }, {
-        titre: 'Dévorer',
-        ccode: '!cof-attack @{selected|token_id} @{target|token_id} 1'
-      }]
     },
     oursPrehistorique: {
       nom: 'Ours préhistorique',
@@ -38323,10 +38306,10 @@ var COFantasy = COFantasy || function() {
             _id: token.id
           }], evt);
           // Ajout du Démon aux alliés du Nécromant
-          var alliesNecromant = alliesParPerso[necromant.charId] || new Set();
+          let alliesNecromant = alliesParPerso[necromant.charId] || new Set();
           alliesNecromant.add(charDemon.id);
           alliesParPerso[necromant.charId] = alliesNecromant;
-          var msg = "invoque un démon";
+          let msg = "invoque un démon";
           if (stateCOF.options.affichage.val.duree_effets.val) msg += " pour " + duree + " tours";
           msg += " mais cela lui coûte " + dmgDisplay + " PV";
           sendPerso(necromant, msg);
