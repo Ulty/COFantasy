@@ -6329,6 +6329,12 @@ var COFantasy = COFantasy || function() {
             expliquer("Expertise : +5 aux jets de DEX");
             bonus += 5;
           }
+          if (attributeAsBool(personnage, 'formeHybride')) {
+            let b = 2;
+            if (predicateAsBool(personnage, 'formeHybrideSuperieure')) b = 4;
+            expliquer("Forme hybride : +"+b+" aux jets de DEX");
+            bonus += b;
+          }
         }
         break;
       case 'FOR':
@@ -6391,6 +6397,12 @@ var COFantasy = COFantasy || function() {
             expliquer("Expertise : +5 aux jets de FOR");
             bonus += 5;
           }
+          if (attributeAsBool(personnage, 'formeHybride')) {
+            let b = 2;
+            if (predicateAsBool(personnage, 'formeHybrideSuperieure')) b = 4;
+            expliquer("Forme hybride : +"+b+" aux jets de FOR");
+            bonus += b;
+          }
         }
         break;
       case 'INT':
@@ -6450,6 +6462,12 @@ var COFantasy = COFantasy || function() {
           if (expertiseSpecialisee == 'con' || expertiseSpecialisee == 'constitution') {
             expliquer("Expertise : +5 aux jets de CON");
             bonus += 5;
+          }
+          if (attributeAsBool(personnage, 'formeHybride')) {
+            let b = 2;
+            if (predicateAsBool(personnage, 'formeHybrideSuperieure')) b = 4;
+            expliquer("Forme hybride : +"+b+" aux jets de CON");
+            bonus += b;
           }
         }
         break;
@@ -10822,6 +10840,10 @@ var COFantasy = COFantasy || function() {
     }
     init += predicateAsInt(perso, 'rapideCommeSonOmbre', 0, 3);
     init += predicateAsInt(perso, 'embuscade', 0, 0);
+    if (attributeAsBool(perso, 'formeHybride')) {
+      if (predicateAsBool(perso, 'formeHybrideSuperieure')) init += 10;
+      else init += 4;
+    }
     return init;
   }
 
@@ -11454,6 +11476,17 @@ var COFantasy = COFantasy || function() {
       let msg = "Melianil => +2 en Att.";
       if (options && options.bonusDM !== undefined)
         msg += " et +1d6 DM";
+      explications.push(msg);
+    }
+    if (attributeAsBool(personnage, 'formeHybride')) {
+      let b = 2;
+      if (predicateAsBool(personnage, 'formeHybrideSuperieure')) b = 4;
+      attBonus += b;
+      let msg = "Forme hybride => +"+b+" en Att.";
+      if (options && options.bonusDM !== undefined) {
+        options.bonusDM += b;
+        msg += " et aux DM";
+      }
       explications.push(msg);
     }
     return attBonus;
@@ -12402,6 +12435,12 @@ var COFantasy = COFantasy || function() {
       msg += " => -" + bonus + " aux DM";
       options.bonusDM -= bonus;
       explications.push(msg);
+    }
+    if (attributeAsBool(attaquant, 'formeHybride')) {
+      let b = 2;
+      if (predicateAsBool(attaquant, 'formeHybrideSuperieure')) b = 4;
+      options.bonusDM += b;
+      explications.push("Forme hybride => +"+b+" DM");
     }
     return;
   }
@@ -15772,6 +15811,10 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(target, 'danseDesLames')) {
         removeTokenAttr(target, 'danseDesLames', evt);
         expliquer("Le coup critique fait sortir de la transe de danse des lames");
+      }
+      if (predicateAsBool(target, 'lycanthrope')) {
+        let commande = "!cof-jet SAG 18 --predicat controleLoupGarou --nom Résister --succes évite de se transformer --target "+target.token.id;
+        expliquer("Le coup critique transforme en bête enragée, à moins de réussir un "+boutonSimple(commande, "jet de SAG"));
       }
       if (predicateAsBool(target, 'armureLourdeGuerrier') &&
         ficheAttributeAsBool(target, 'defarmureon', false) &&
@@ -20783,6 +20826,10 @@ var COFantasy = COFantasy || function() {
     if (perso.perteDeSubstance) res.rdt += perso.perteDeSubstance;
     if (predicateAsBool(perso, 'batonDesRunesMortes') && attributeAsBool(perso, 'runeMitrah')) {
       res.rdt += 5;
+    }
+    if (attributeAsBool(perso, 'formeHybride')) {
+      res.sauf.argent = res.sauf.argent || 0;
+      res.sauf.argent += 5;
     }
     let rd = ficheAttribute(perso, 'RDS', '');
     rd = (rd + '').trim();
@@ -45477,6 +45524,13 @@ var COFantasy = COFantasy || function() {
       fin: "retrouve sa forme normale. Espérons qu'il était au sol...",
       finF: "retrouve sa forme normale. Espérons qu'elle était au sol...",
       visible: true,
+    },
+    formeHybride: {
+      activation: "prend la forme d'une bête mi-homme mi-loup",
+      actif: "est en forme hybride",
+      fin: "retrouve forme humaine",
+      visible: true,
+      dm: true,
     },
     frappeDesArcanes: {
       activation: "insuffle sa puissance magique dans son attaque",

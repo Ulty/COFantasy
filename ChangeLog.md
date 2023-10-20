@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.14
 ### Capacités
+* Ajout de la Voie de prestige du loup-garou.
 * Amélioration de la prise en charge du rang 1 de la Voie du prédateur.
 * Amélioration de la prise en chagre de la capacité Exemplaire du chevalier.
 * Utilisation d'un prédicat pour As de la gachette.
