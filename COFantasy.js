@@ -6332,7 +6332,7 @@ var COFantasy = COFantasy || function() {
           if (attributeAsBool(personnage, 'formeHybride')) {
             let b = 2;
             if (predicateAsBool(personnage, 'formeHybrideSuperieure')) b = 4;
-            expliquer("Forme hybride : +"+b+" aux jets de DEX");
+            expliquer("Forme hybride : +" + b + " aux jets de DEX");
             bonus += b;
           }
         }
@@ -6400,7 +6400,7 @@ var COFantasy = COFantasy || function() {
           if (attributeAsBool(personnage, 'formeHybride')) {
             let b = 2;
             if (predicateAsBool(personnage, 'formeHybrideSuperieure')) b = 4;
-            expliquer("Forme hybride : +"+b+" aux jets de FOR");
+            expliquer("Forme hybride : +" + b + " aux jets de FOR");
             bonus += b;
           }
         }
@@ -6466,7 +6466,7 @@ var COFantasy = COFantasy || function() {
           if (attributeAsBool(personnage, 'formeHybride')) {
             let b = 2;
             if (predicateAsBool(personnage, 'formeHybrideSuperieure')) b = 4;
-            expliquer("Forme hybride : +"+b+" aux jets de CON");
+            expliquer("Forme hybride : +" + b + " aux jets de CON");
             bonus += b;
           }
         }
@@ -11002,8 +11002,8 @@ var COFantasy = COFantasy || function() {
             });
             if (predicateAsBool(perso, 'embuscade')) {
               let diffSurprise = 15 + modCarac(perso, 'dexterite');
-              let commande = "!cof-surprise "+diffSurprise+" --target @{target|token_id}";
-              sendPerso(perso, "peut faire une "+boutonSimple(commande, 'embuscade'), true);
+              let commande = "!cof-surprise " + diffSurprise + " --target @{target|token_id}";
+              sendPerso(perso, "peut faire une " + boutonSimple(commande, 'embuscade'), true);
             }
             //Les autres persos qui entrent en combat en même temps
             let ajouterEnCombat = predicatesNamed(perso, 'entrerEnCombatAvec');
@@ -11482,7 +11482,7 @@ var COFantasy = COFantasy || function() {
       let b = 2;
       if (predicateAsBool(personnage, 'formeHybrideSuperieure')) b = 4;
       attBonus += b;
-      let msg = "Forme hybride => +"+b+" en Att.";
+      let msg = "Forme hybride => +" + b + " en Att.";
       if (options && options.bonusDM !== undefined) {
         options.bonusDM += b;
         msg += " et aux DM";
@@ -12440,7 +12440,7 @@ var COFantasy = COFantasy || function() {
       let b = 2;
       if (predicateAsBool(attaquant, 'formeHybrideSuperieure')) b = 4;
       options.bonusDM += b;
-      explications.push("Forme hybride => +"+b+" DM");
+      explications.push("Forme hybride => +" + b + " DM");
     }
     return;
   }
@@ -15149,8 +15149,8 @@ var COFantasy = COFantasy || function() {
     let attaqueEnMeute = predicateAsInt(attaquant, 'attaqueEnMeute', 0, 2);
     if (attaqueEnMeute > 0) options.attaqueEnMeute = attaqueEnMeute;
     options.lienEpique = predicateAsBool(attaquant, 'lienEpique');
-    if (riposte || options.attaqueEnMeute || options.lienEpique || 
-      alliesDAttaqueEnMeute.has(attackingCharId) || 
+    if (riposte || options.attaqueEnMeute || options.lienEpique ||
+      alliesDAttaqueEnMeute.has(attackingCharId) ||
       predicateAsBool(attaquant, 'exemplaire')) {
       //Dans ce cas, il faut stoquer les cibles attaquées
       //(dans le cas de riposte, pour ne pas les re-proposer en riposte)
@@ -15813,8 +15813,8 @@ var COFantasy = COFantasy || function() {
         expliquer("Le coup critique fait sortir de la transe de danse des lames");
       }
       if (predicateAsBool(target, 'lycanthrope')) {
-        let commande = "!cof-jet SAG 18 --predicat controleLoupGarou --nom Résister --succes évite de se transformer --target "+target.token.id;
-        expliquer("Le coup critique transforme en bête enragée, à moins de réussir un "+boutonSimple(commande, "jet de SAG"));
+        let commande = "!cof-jet SAG 18 --predicat controleLoupGarou --nom Résister --succes évite de se transformer --target " + target.token.id;
+        expliquer("Le coup critique transforme en bête enragée, à moins de réussir un " + boutonSimple(commande, "jet de SAG"));
       }
       if (predicateAsBool(target, 'armureLourdeGuerrier') &&
         ficheAttributeAsBool(target, 'defarmureon', false) &&
@@ -18110,9 +18110,9 @@ var COFantasy = COFantasy || function() {
     finaliseDisplay(display, explications, evt, attaquant, cibles, options, echecCritique);
     let allies = alliesParPerso[attaquant.charId];
     if (allies && cibles.length == 1) {
-                allies.forEach(function(charId) {
-                  if (charId == attaquant.charId) return;
-                  if (!charPredicateAsBool(charId, 'exemplaire')) return;
+      allies.forEach(function(charId) {
+        if (charId == attaquant.charId) return;
+        if (!charPredicateAsBool(charId, 'exemplaire')) return;
         let attrCibles = charAttribute(charId, 'dernieresCiblesAttaquees');
         if (attrCibles.length === 0) return;
         let ciblesAttaquees = attrCibles[0].get('current');
@@ -18120,20 +18120,23 @@ var COFantasy = COFantasy || function() {
         let memeCible = ciblesAttaquees.split(' ').find(function(ci) {
           return ci == cibles[0].token.id;
         });
-                  if (!memeCible) return;
-                    let tokens = findObjs({
-                        _type: 'graphic',
-                        _subtype: 'token',
-                        _pageid: pageId,
-                        layer: 'objects',
-                      represents: charId
-                      });
-                    if (tokens.length === 0) return;
-                    let chevalier = {charId, token:tokens[0]};
+        if (!memeCible) return;
+        let tokens = findObjs({
+          _type: 'graphic',
+          _subtype: 'token',
+          _pageid: pageId,
+          layer: 'objects',
+          represents: charId
+        });
+        if (tokens.length === 0) return;
+        let chevalier = {
+          charId,
+          token: tokens[0]
+        };
         if (attributeAsBool(chevalier, 'limiteParTour_exemplaire')) return;
-                  let action = "!cof-exemplaire "+evt.id+" --target "+chevalier.token.id;
-                  sendPerso(chevalier, boutonSimple(action, "Montrer l'exemple à "+nomPerso(attaquant)), true);
-                });
+        let action = "!cof-exemplaire " + evt.id + " --target " + chevalier.token.id;
+        sendPerso(chevalier, boutonSimple(action, "Montrer l'exemple à " + nomPerso(attaquant)), true);
+      });
     }
     if (echecCritique) {
       let regardPetrifiant = cibles.find(function(target) {
@@ -18741,6 +18744,25 @@ var COFantasy = COFantasy || function() {
             setTokenAttr(attaquant, 'limiteParTour_eventrationReussie', target.token.id, evt);
           }
         }
+        if (predicateAsBool(attaquant, 'massacrerLaPietaille') &&
+          target.token.get('bar1_link') === '' &&
+          taillePersonnage(target, 4) < 5 &&
+          !attributeAsBool(target, 'monteSur')
+        ) {
+          let tokens = findObjs({
+            _type: 'graphic',
+            _subtype: 'token',
+            _pageid: pageId,
+            represents: target.charId
+          });
+          if (tokens.length > 3) {
+            target.additionalDmg.push({
+              type: mainDmgType,
+              value: '1' + options.d6
+            });
+            target.messages.push("Massacrer la piétaille => +1d6 DM");
+          }
+        }
         let attDMBonus = attDMBonusCommun;
         //Les modificateurs de dégâts qui dépendent de la cible
         if (target.tempDmg) {
@@ -18779,15 +18801,15 @@ var COFantasy = COFantasy || function() {
         }
         if (predicateAsBool(attaquant, 'embuscade') && getState(target, 'surpris')) {
           sournoise++;
-              target.etats = target.etats || [];
-              target.etats.push({
-                etat: 'renverse',
-                condition: {
-                  type: "moins",
-                  attribute: "FOR",
-                  text: 'force'
-                }
-              });
+          target.etats = target.etats || [];
+          target.etats.push({
+            etat: 'renverse',
+            condition: {
+              type: "moins",
+              attribute: "FOR",
+              text: 'force'
+            }
+          });
           target.messages.push("Embuscade !");
         }
         if (sournoise) {
@@ -22469,8 +22491,8 @@ var COFantasy = COFantasy || function() {
           getState(perso, 'assomme') || getState(perso, 'endormi') ||
           (attributeAsBool(perso, 'intangible') && attributeAsInt(perso, 'intangibleValeur', 1)) ||
           (attributeAsBool(perso, 'intangibleInvisible') && attributeAsInt(perso, 'intangibleInvisibleValeur', 1)) ||
-        attributeAsBool(perso, 'estGobePar') || 
-        attributeAsBool(perso, 'enveloppePar')
+          attributeAsBool(perso, 'estGobePar') ||
+          attributeAsBool(perso, 'enveloppePar')
         )
       )
         return;
@@ -25885,21 +25907,21 @@ var COFantasy = COFantasy || function() {
     let options = parseOptions(msg);
     if (options === undefined) return;
     let cmd = options.cmd;
-        let attaque;
-        let lastAct = lastEvent();
-        if (lastAct !== undefined) {
-    if (cmd.length > 1 && cmd[1] != lastAct.id) {
-          sendPlayer(msg, "Trop tard pour utiliser ce bouton");
-          return;
+    let attaque;
+    let lastAct = lastEvent();
+    if (lastAct !== undefined) {
+      if (cmd.length > 1 && cmd[1] != lastAct.id) {
+        sendPlayer(msg, "Trop tard pour utiliser ce bouton");
+        return;
+      }
+      if (lastAct.type == 'Attaque' && lastAct.succes === false) {
+        attaque = lastAct.action;
+      }
     }
-          if (lastAct.type == 'Attaque' && lastAct.succes === false) {
-            attaque = lastAct.action;
-          }
-        }
-        if (attaque === undefined) {
-          sendPlayer(msg, "la dernière action trouvée n'est pas une attaque ratée, impossible de montrer l'exemple");
-          return;
-        }
+    if (attaque === undefined) {
+      sendPlayer(msg, "la dernière action trouvée n'est pas une attaque ratée, impossible de montrer l'exemple");
+      return;
+    }
     getSelected(msg, function(selected, playerId) {
       iterSelected(selected, function(chevalier) {
         if (attributeAsBool(chevalier, 'limiteParTour_exemplaire')) {
@@ -33489,6 +33511,7 @@ var COFantasy = COFantasy || function() {
   // asynchrone : on fait les jets du personnage en opposition
   // options :
   // predicat : on utilise un prédicat et non un attribut. Peut être 'tour' ou 'combat'
+  // attrAsBool : si on utilise un attribut, on le lit comme un booléen et non comme un nomre
   // protecteur: c'est un protecteur qui protège la cible (pas compatible avec predicate
   function evitementGenerique(msg, verbe, attributeName, actionName, tente, msgDejaFait, carac, typeAttaque, msgReussite, opt) {
     let options = parseOptions(msg);
@@ -34030,7 +34053,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function displayStatCategory(stats, indent, categoryName, accum) {
-    var res = {
+    const res = {
       nombre: 0,
       total: 0,
     };
@@ -34038,17 +34061,17 @@ var COFantasy = COFantasy || function() {
       res.nombre = stats.nombre;
       res.total = stats.total;
     }
-    var nindent = indent + "&nbsp;&nbsp;";
-    var nAccum = [];
+    let nindent = indent + "&nbsp;&nbsp;";
+    let nAccum = [];
     for (const category in stats) {
       if (category == 'total' || category == 'nombre') break;
-      var catRes = displayStatCategory(stats[category], nindent, category, nAccum);
+      let catRes = displayStatCategory(stats[category], nindent, category, nAccum);
       res.nombre += catRes.nombre;
       res.total += catRes.total;
     }
-    var msg = "aucun jet cellecté";
+    let msg = "aucun jet cellecté";
     if (res.nombre > 0) {
-      var moyenne = res.total / res.nombre;
+      let moyenne = res.total / res.nombre;
       msg = res.nombre + " jet" + ((res.nombre > 1) ? "s" : "") + ", moyenne " + moyenne;
     }
     if (nAccum.length > 0) msg = indent + categoryName + " (" + msg + ") :";
@@ -34061,8 +34084,8 @@ var COFantasy = COFantasy || function() {
   }
 
   function displayStatistics(msg) {
-    var stats = stateCOF.statistiques;
-    var display = startFramedDisplay(getPlayerIdFromMsg(msg), "Statistiques");
+    let stats = stateCOF.statistiques;
+    const display = startFramedDisplay(getPlayerIdFromMsg(msg), "Statistiques");
     if (stats === undefined) {
       stats = stateCOF.statistiquesEnPause;
       if (stats)
@@ -34073,30 +34096,30 @@ var COFantasy = COFantasy || function() {
         return;
       }
     }
-    var tot = {
+    let tot = {
       total: 0,
       nombre: 0
     };
-    var players = findObjs({
+    let players = findObjs({
       type: 'player'
     });
-    var findPlayer = function(pid) {
+    let findPlayer = function(pid) {
       return players.find(function(p) {
         return (p.get('d20userid') == pid);
       });
     };
-    var addMessages = function(mv) {
+    let addMessages = function(mv) {
       mv.forEach(function(m) {
         addLineToFramedDisplay(display, m);
       });
     };
     for (const category in stats) {
       //first, check if the category is a player id
-      var pl = findPlayer(category);
-      var catName = category;
+      let pl = findPlayer(category);
+      let catName = category;
       if (pl) catName = pl.get('displayname');
-      var accum = [];
-      var catRes = displayStatCategory(stats[category], "", catName, accum);
+      let accum = [];
+      let catRes = displayStatCategory(stats[category], "", catName, accum);
       addMessages(accum);
       tot.total += catRes.total;
       tot.nombre += catRes.nombre;
@@ -34932,7 +34955,7 @@ var COFantasy = COFantasy || function() {
       if (m2) {
         if (consName != attr2.get('current').trim()) return false;
         let consoPrefix2 = m2[1];
-        let attrEffet2 = 
+        let attrEffet2 =
           charAttribute(perso2.charId, consoPrefix2 + 'equip_effet');
         if (attrEffet2.length === 0) {
           attrEffet2 = createObj('attribute', {
@@ -35650,7 +35673,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function listeRunes(rang) {
-    var liste = [];
+    let liste = [];
     if (rang < 2) return liste;
     liste.push({
       nom: "Rune d'énergie",
@@ -37054,9 +37077,9 @@ var COFantasy = COFantasy || function() {
     },
     faireDiversion: {
       appliquer: function(attaquant, cible, critique, evt, envoyerMessage) {
-        var msg;
+        let msg;
         if (envoyerMessage) msg = "a son attention attirée ailleurs";
-        var malus = -5;
+        let malus = -5;
         if (critique) malus = -10;
         setAttrDuree(cible, 'diversionManoeuvre', 1, evt, msg);
         setTokenAttr(cible, 'diversionManoeuvreValeur', malus, evt);
@@ -37410,7 +37433,7 @@ var COFantasy = COFantasy || function() {
       }],
       attributes: [{
         name: 'predicats_script',
-        current:'embuscade', 
+        current: 'embuscade',
       }],
       abilities: [{
         name: 'Embuscade',
