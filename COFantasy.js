@@ -22468,7 +22468,9 @@ var COFantasy = COFantasy || function() {
         (getState(perso, 'mort') ||
           getState(perso, 'assomme') || getState(perso, 'endormi') ||
           (attributeAsBool(perso, 'intangible') && attributeAsInt(perso, 'intangibleValeur', 1)) ||
-          (attributeAsBool(perso, 'intangibleInvisible') && attributeAsInt(perso, 'intangibleInvisibleValeur', 1))
+          (attributeAsBool(perso, 'intangibleInvisible') && attributeAsInt(perso, 'intangibleInvisibleValeur', 1)) ||
+        attributeAsBool(perso, 'estGobePar') || 
+        attributeAsBool(perso, 'enveloppePar')
         )
       )
         return;
@@ -33434,7 +33436,7 @@ var COFantasy = COFantasy || function() {
         sendChat('', "la dernière action n'est pas une attaque réussie, trop tard pour parer le projectile d'une action précédente");
         return;
       }
-      var action = evt.action;
+      let action = evt.action;
       if (!action.options.distance) {
         sendChat('', "Impossible de parer le projectile, ce n'était pas une attaque à distance");
         return;
@@ -33794,7 +33796,7 @@ var COFantasy = COFantasy || function() {
 
   //!cof-absorber-sort-au-bouclier id [evtid] [chance]
   function absorberSortAuBouclier(msg) {
-    var condition = function(guerrier) {
+    const condition = function(guerrier) {
       if (ficheAttributeAsInt(guerrier, 'defbouclieron', 0) != 1) {
         sendPerso(guerrier, "ne porte pas son bouclier, il ne peut pas aborber un sort");
         return false;
@@ -33994,12 +33996,12 @@ var COFantasy = COFantasy || function() {
   //value peut être un nombre, un tableau de nombres, ou un inline roll
   function addStatistics(playerId, category, value) {
     if (stateCOF.statistiques === undefined) return;
-    var stat = stateCOF.statistiques;
+    let stat = stateCOF.statistiques;
     if (playerId) {
-      var player = getObj('player', playerId);
+      const player = getObj('player', playerId);
       if (player) {
         //On utilise l'id roll20 qui semble persistante
-        var pid = player.get('d20userid');
+        const pid = player.get('d20userid');
         stat[pid] = stat[pid] || {};
         stat = stat[pid];
       }
@@ -34134,7 +34136,7 @@ var COFantasy = COFantasy || function() {
         if (options.tempeteDeMana) {
           if (options.tempeteDeMana.cout === 0) {
             //On demande de préciser les options
-            var optMana = {
+            const optMana = {
               mana: options.mana,
               dm: true,
               soins: false,
@@ -34717,7 +34719,7 @@ var COFantasy = COFantasy || function() {
           }
           let quantite = parseInt(attr.get('current'));
           if (isNaN(quantite) || quantite === 0) return;
-          var action = attr.get('max').trim();
+          let action = attr.get('max').trim();
           while (consommables[attrName]) {
             attrName += randomInteger(1000);
           }
@@ -34728,7 +34730,7 @@ var COFantasy = COFantasy || function() {
             attr: attr,
           };
         }); //fin de la boucle sur les attributs
-        var aConsommable;
+        let aConsommable;
         _.each(consommables, function(c, prefix) {
           if (c.effet === undefined || c.effet === '' || c.nom === undefined || c.nom === '') return;
           //La quantité est de 1 par défaut sur la fiche
@@ -34743,12 +34745,12 @@ var COFantasy = COFantasy || function() {
             return;
           }
           aConsommable = true;
-          var ligne = c.quantite + ' ';
+          let ligne = c.quantite + ' ';
           ligne += bouton(c.effet, c.nom, perso, {
             ressource: c.attr
           });
           // Pictos : https://wiki.roll20.net/CSS_Wizardry#Pictos
-          var overlay = ' title="Cliquez pour échanger"';
+          let overlay = ' title="Cliquez pour échanger"';
           ligne += boutonSimple('!cof-echange-consommable ' + perso.token.id + ' @{target|token_id} ' + c.attr.id, '<span style="font-family:Pictos">r</span>', overlay);
           addLineToFramedDisplay(display, ligne);
         }); //fin de la boucle sur les onsommables
@@ -34764,13 +34766,13 @@ var COFantasy = COFantasy || function() {
   // !cof-utilise-consommable tok_id attr_id [msg]
   // utilisation d'un consommable sans action en jeu
   function utiliseConsommable(msg) {
-    var cmd = msg.content.split(' ');
+    let cmd = msg.content.split(' ');
     if (cmd.length < 3) {
       error("Erreur interne d'utilisation de consommables", cmd);
       return;
     }
     cmd.shift();
-    var perso = persoOfId(cmd[0]);
+    let perso = persoOfId(cmd[0]);
     if (perso === undefined) {
       log("Propriétaire perdu");
       sendChat('COF', "Plus possible d'utiliser cette action. Réafficher les consommables.");
@@ -34778,12 +34780,12 @@ var COFantasy = COFantasy || function() {
     }
     // Vérifie les droits d'utiliser le consommable
     if (msg.selected && msg.selected.length == 1) {
-      var utilisateur = persoOfId(msg.selected[0]._id);
+      let utilisateur = persoOfId(msg.selected[0]._id);
       if (utilisateur === undefined) {
         sendChat('COF', "Le token sélectionné n'est pas valide");
         return;
       }
-      var d = distanceCombat(perso.token, utilisateur.token);
+      let d = distanceCombat(perso.token, utilisateur.token);
       if (d > 0) {
         sendPerso(utilisateur, "est trop loin de " + nomPerso(perso) + " pour utiliser ses objets");
         return;
@@ -34798,7 +34800,7 @@ var COFantasy = COFantasy || function() {
     }
     //on récupère l'attribut à utiliser
     cmd.shift();
-    var attr = getObj('attribute', cmd[0]);
+    let attr = getObj('attribute', cmd[0]);
     if (attr === undefined) {
       log("Attribut a changé/perdu");
       log(msg.content);
@@ -34806,21 +34808,21 @@ var COFantasy = COFantasy || function() {
       return;
     }
     //Nom du consommable (pour affichage)
-    var consName;
-    var quantite = parseInt(attr.get('current'));
-    var evt = {
+    let consName;
+    let quantite = parseInt(attr.get('current'));
+    const evt = {
       type: "Utilisation de consommable",
       attributes: [{
         attribute: attr,
         current: quantite,
       }]
     };
-    var attrName = attr.get('name').trim();
+    let attrName = attr.get('name').trim();
     //On regarde si c'est un consommable sur la fiche
     let m = consommableQuantiteRegExp.exec(attrName);
     if (m) {
-      var consoPrefix = m[1];
-      var attrConsName = charAttribute(perso.charId, consoPrefix + 'equip_nom');
+      let consoPrefix = m[1];
+      let attrConsName = charAttribute(perso.charId, consoPrefix + 'equip_nom');
       if (attrConsName.length === 0) {
         error("Impossible de trouver le nom du consommable", attr);
         return;
@@ -34845,7 +34847,7 @@ var COFantasy = COFantasy || function() {
 
   //!cof-echange-consommable tid1 tid2 attrid
   function echangeConsommable(msg) {
-    var cmd = msg.content.split(' ');
+    let cmd = msg.content.split(' ');
     if (cmd.length < 4) {
       error("Erreur interne de consommables", cmd);
       return;
@@ -34855,7 +34857,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     //perso1 = token avec qui va échanger le consommable
-    var perso1 = persoOfId(cmd[1]);
+    let perso1 = persoOfId(cmd[1]);
     if (perso1 === undefined) {
       log("Propriétaire perdu");
       sendChat('COF', "Plus possible d'utiliser cette action. Réafficher les consommables.");
@@ -34874,30 +34876,30 @@ var COFantasy = COFantasy || function() {
       return;
     }
     //on récupère l'attribut à échanger de perso1
-    var attr1 = getObj('attribute', cmd[3]);
+    let attr1 = getObj('attribute', cmd[3]);
     if (attr1 === undefined) {
       log("Attribut a changé/perdu");
       log(cmd);
       sendChat('COF', "Plus possible d'utiliser cette action. Veuillez réafficher les consommables.");
       return;
     }
-    var consName;
-    var quantite1 = parseInt(attr1.get('current'));
-    var evt = {
+    let consName;
+    let quantite1 = parseInt(attr1.get('current'));
+    const evt = {
       type: "Échange de consommable",
       attributes: [{
         attribute: attr1,
         current: quantite1,
       }]
     };
-    var effet;
-    var attrName = attr1.get('name').trim();
+    let effet;
+    let attrName = attr1.get('name').trim();
     //On regarde si c'est un consommable sur la fiche
-    var m1 = consommableQuantiteRegExp.exec(attrName);
+    let m1 = consommableQuantiteRegExp.exec(attrName);
     if (m1) {
-      var consoPrefix = m1[1];
-      var attrConsName = charAttribute(perso1.charId, consoPrefix + 'equip_nom');
-      var attrEffet = charAttribute(perso1.charId, consoPrefix + 'equip_effet');
+      let consoPrefix = m1[1];
+      let attrConsName = charAttribute(perso1.charId, consoPrefix + 'equip_nom');
+      let attrEffet = charAttribute(perso1.charId, consoPrefix + 'equip_effet');
       if (attrConsName.length === 0 || attrEffet.length === 0) {
         error("Impossible de trouver le nom ou l'effet du consommable", attr1);
         return;
@@ -34918,19 +34920,20 @@ var COFantasy = COFantasy || function() {
     quantite1--;
     attr1.set('current', quantite1);
     // ajout du consommable dans perso2 :
-    var attributes = findObjs({
+    let attributes = findObjs({
       _type: 'attribute',
       _characterid: perso2.charId
     });
-    var quantite2 = 0;
+    let quantite2 = 0;
     // on recherche si le consommable existe chez perso2
-    var found = attributes.find(function(attr2) {
-      var attrName2 = attr2.get('name');
+    let found = attributes.find(function(attr2) {
+      let attrName2 = attr2.get('name');
       let m2 = consommableNomRegExp.exec(attrName2);
       if (m2) {
         if (consName != attr2.get('current').trim()) return false;
-        var consoPrefix2 = m2[1];
-        var attrEffet2 = charAttribute(perso2.charId, consoPrefix2 + 'equip_effet');
+        let consoPrefix2 = m2[1];
+        let attrEffet2 = 
+          charAttribute(perso2.charId, consoPrefix2 + 'equip_effet');
         if (attrEffet2.length === 0) {
           attrEffet2 = createObj('attribute', {
             characterid: perso2.charId,
@@ -34946,7 +34949,7 @@ var COFantasy = COFantasy || function() {
             "Effet chez " + nomPerso(perso2) + " : " + attrEffet2[0].get('current'), attr2.get('name'));
           return false;
         }
-        var attrQte2 = charAttribute(perso2.charId, consoPrefix2 + 'equip_qte');
+        let attrQte2 = charAttribute(perso2.charId, consoPrefix2 + 'equip_qte');
         if (attrQte2.length === 0) {
           quantite2 = 1;
           attrQte2 = createObj('attribute', {
@@ -34990,8 +34993,8 @@ var COFantasy = COFantasy || function() {
     // si le consommable n'a pas été trouvé, on le crée avec une valeur de 1.
     if (!found) {
       if (m1) {
-        var pref = 'repeating_equipement_' + generateRowID() + '_';
-        var attre = createObj("attribute", {
+        let pref = 'repeating_equipement_' + generateRowID() + '_';
+        let attre = createObj("attribute", {
           name: pref + 'equip_nom',
           current: consName,
           characterid: perso2.charId
@@ -35008,7 +35011,7 @@ var COFantasy = COFantasy || function() {
           attribute: attre,
         });
       } else {
-        var attr2 = createObj("attribute", {
+        let attr2 = createObj("attribute", {
           name: attrName,
           current: 1,
           max: effet,
