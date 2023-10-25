@@ -8,6 +8,9 @@
 * Utilisation d'un prédicat pour As de la gachette.
 * Amélioration de la prise en charge du tir double.
 
+### Autres améliorations
+* Les PNJ avec une seule arme visible la dégainent automatiquement quand on pose le token.
+
 ### Corrections de bugs
 * Correction d'un bug qui faisait planter en cas d'interposition du golem.
 

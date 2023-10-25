@@ -10748,6 +10748,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //ne rajoute pas evt à l'historique
+  //Calcule l'initiative d'un personnage
   function persoInit(perso, evt, already) {
     let persoD = initDerivee(perso);
     if (persoD) perso = persoD;
@@ -35719,9 +35720,9 @@ var COFantasy = COFantasy || function() {
           chuchote: true
         });
         listeRunes(voieDesRunes).forEach(function(rune) {
-          var action = "!cof-creer-rune " + forgesort.token.id + " @{target|token_id} " + rune.rang;
+          let action = "!cof-creer-rune " + forgesort.token.id + " @{target|token_id} " + rune.rang;
           if (rune.rang === 4) action += " ?{Numéro de l'arme de la cible?}";
-          var options = bouton(action, rune.nom, forgesort);
+          let options = bouton(action, rune.nom, forgesort);
           addLineToFramedDisplay(display, options);
         });
         sendFramedDisplay(display);
@@ -35731,14 +35732,14 @@ var COFantasy = COFantasy || function() {
 
   //!cof-creer-rune token_id rune
   function creerRune(msg) {
-    var options = parseOptions(msg);
+    const options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
+    let cmd = options.cmd;
     if (cmd === undefined || cmd.length < 4) {
       error("Pas assez d'arguments pour !cof-creer-runes", msg.content);
       return;
     }
-    var forgesort = persoOfId(cmd[1], cmd[1], options.pageId);
+    let forgesort = persoOfId(cmd[1], cmd[1], options.pageId);
     if (forgesort === undefined) {
       if (msg.selected && msg.selected.length == 1) {
         forgesort = persoOfId(msg.selected[0]._id);
@@ -48994,23 +48995,37 @@ var COFantasy = COFantasy || function() {
   function addToken(token, nb) {
     let tokenName = token.get('name');
     //La plupart du temps, il faut attendre un peu que le nom soit affecté
-    if (tokenName !== '') {
-      let perso = renameToken(token, tokenName);
-      if (perso === undefined) return;
-      const arme = predicateAsBool(perso, 'armeParDefaut');
-      if (arme !== undefined && arme !== true) {
-        degainerArme(perso, arme, {}, {
-          secret: true
-        });
+    if (tokenName === '') {
+      nb = nb || 1;
+      if (nb > 10) {
+        error("Token posé sans nom, ou alors gros lag chez Roll20", token);
+      } else {
+        _.delay(function() {
+          addToken(token, nb + 1);
+        }, 50);
+        return;
       }
-      synchronisationDesLumieres(perso);
-      return;
     }
-    nb = nb || 1;
-    if (nb > 10) return; //Tant pis, peut-être que le nom est vide
-    _.delay(function() {
-      addToken(token, nb + 1);
-    }, 50);
+    //Maintenant, le nom du token est affecté, ou bien nb > 10 et dans ce cas, peut-être que le nom est juste vide
+    let perso = renameToken(token, tokenName);
+    if (perso === undefined) return;
+    let arme = predicateAsBool(perso, 'armeParDefaut');
+    if (arme === undefined && persoEstPNJ(perso)) {
+      //Si le perso est PNJ avec une seule arme, on lui met en main
+      let {
+        armes
+      } = listeDesArmes(perso);
+      for (let l in armes) {
+        if (arme) arme = true;
+        else arme = l;
+      }
+    }
+    if (arme !== undefined && arme !== true) {
+      degainerArme(perso, arme, {}, {
+        secret: true
+      });
+    }
+    synchronisationDesLumieres(perso);
   }
 
   // Surveillance sur le changement d'état du token
