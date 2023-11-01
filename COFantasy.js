@@ -10264,6 +10264,17 @@ var COFantasy = COFantasy || function() {
     parseAttackWithWeapon(attaquant, targetToken, attackLabel, optArgs, playerId, msg);
   }
 
+  //Modifie weaponStats avec --avecd12crit
+  // seulement pour l'attaque avec l'arme principale
+  // suppose qu'on a calculé les armes en main
+  function malusAttaqueDeuxArmes(perso, weaponStats) {
+    if (!perso.armeGauche) return;
+    if (predicateAsBool(perso, 'ambidextrie') || predicateAsBool(perso, 'combatADeuxArmesAmeliore')) return;
+    if (predicateAsBool(perso, 'coupDeBouclier') && perso.armeGauche.label == predicateAsBool(perso, 'attaqueAuBouclier')) return;
+    //L'attaque doit se faire au d12
+    weaponStats.modificateurs += ' avecd12crit';
+  }
+
   function parseAttackWithWeapon(attaquant, targetToken, attackLabel, optArgs, playerId, msg, options) {
     let commandArgs = [...optArgs];
     let weaponStats;
@@ -10301,12 +10312,7 @@ var COFantasy = COFantasy || function() {
           if (main == 1) weaponStats.attaquePaire = true;
           else weaponStats.attaqueImpaire = true;
         }
-        if (attaquant.armeGauche && !(
-        predicateAsBool(attaquant, 'ambidextrie') || predicateAsBool(attaquant, 'combatADeuxArmesAmeliore')
-      )) {
-          //L'attaque doit se faire au d12
-          weaponStats.modificateurs += ' avecd12crit';
-        }
+        malusAttaqueDeuxArmes(attaquant, weaponStats);
       } else if (attackLabel == -2) { //attaque avec l'arme en main gauche
         if (attaquant.armesEnMain === undefined) armesEnMain(attaquant);
         weaponStats = attaquant.armeGauche;
@@ -10319,12 +10325,7 @@ var COFantasy = COFantasy || function() {
         let arme = armesEnMain(attaquant);
         if (arme && arme.label == attackLabel) {
           weaponStats = arme;
-        if (attaquant.armeGauche && !(
-        predicateAsBool(attaquant, 'ambidextrie') || predicateAsBool(attaquant, 'combatADeuxArmesAmeliore')
-      )) {
-          //L'attaque doit se faire au d12
-          weaponStats.modificateurs += ' avecd12crit';
-        }
+          malusAttaqueDeuxArmes(attaquant, weaponStats);
         } else if (attaquant.armeGauche && attaquant.armeGauche.label == attackLabel) {
           weaponStats = attaquant.armeGauche;
         if (!predicateAsBool(attaquant, 'ambidextrie')) {

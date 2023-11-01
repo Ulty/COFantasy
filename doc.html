@@ -2700,7 +2700,7 @@ tr {line-height: 25px;}
                       <li>le script propose un bouton à activer en cas d'attaque réussie alors que le combattant est en position.</li>
                     </ul>
                   </li>
-                  <li><strong>Coup de bouclier</strong> : faire une attaque de bouclier, de type <code>Arme gauche</code>, avec le modificateur <code>avecd12crit</code>. Pour que cette attaque soit proposée dans les listes d'action seulement quand le personnage porte son bouclier, ajouter un prédicat <code>attaqueAuBouclier</code> de valeur le label de l'attaque.</li>
+                  <li><strong>Coup de bouclier</strong> : ajouter un prédicat <code>coupDeBouclier</code> et faire une attaque de bouclier, de type <code>Arme gauche</code>. Pour que cette attaque soit proposée dans les listes d'action seulement quand le personnage porte son bouclier, ajouter un prédicat <code>attaqueAuBouclier</code> de valeur le label de l'attaque.</li>
                   <li><strong>Absorber un sort (L) :</strong>
                     <ul>
                       <li>utiliser <code>!cof-effet-temp absorberUnSort 1</code> pour se mettre en position. Attention, ça ne vérifie pas si le combattant porte son bouclier.</li>
