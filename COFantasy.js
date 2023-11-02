@@ -9765,7 +9765,7 @@ var COFantasy = COFantasy || function() {
         case 'limiteParCombat':
           {
             if (cmd.length < 2) {
-              scope.limiteParCombat = 1;
+              scope.limiteParCombat = {val: 1};
               return;
             }
             let limiteParCombat = parseLimite(cmd, "par combat");
@@ -9775,7 +9775,7 @@ var COFantasy = COFantasy || function() {
         case 'limiteParTour':
           {
             if (cmd.length < 2) {
-              scope.limiteParTour = 1;
+              scope.limiteParTour = {val: 1};
               return;
             }
             let limiteParTour = parseLimite(cmd, "par tour");
@@ -10328,12 +10328,12 @@ var COFantasy = COFantasy || function() {
           malusAttaqueDeuxArmes(attaquant, weaponStats);
         } else if (attaquant.armeGauche && attaquant.armeGauche.label == attackLabel) {
           weaponStats = attaquant.armeGauche;
-        if (!predicateAsBool(attaquant, 'ambidextrie')) {
-          //L'attaque doit se faire au d12
-          weaponStats.modificateurs += ' avecd12crit';
-        }
-      } else weaponStats = getWeaponStats(attaquant, attackLabel);
-    }
+          if (!predicateAsBool(attaquant, 'ambidextrie')) {
+            //L'attaque doit se faire au d12
+            weaponStats.modificateurs += ' avecd12crit';
+          }
+        } else weaponStats = getWeaponStats(attaquant, attackLabel);
+      }
     }
     if (weaponStats === undefined) {
       error("Impossible de trouver l'arme pour l'attaque", attackLabel);
@@ -10420,10 +10420,7 @@ var COFantasy = COFantasy || function() {
         options[weaponStats.typeDegats] = true;
         break;
     }
-    let lastEtat; //dernier de etats et effets
-    let lastType = options.type; //dernier type de dégâts infligés
-    let scope = options; //Pour les conditionnelles
-    parseAttackOptions(attaquant, optArgs, lastEtat, lastType, scope, playerId, msg, targetToken, attackLabel, weaponStats, options, commandArgs);
+    parseAttackOptions(attaquant, optArgs, undefined, options.type, options, playerId, msg, targetToken, attackLabel, weaponStats, options, commandArgs);
     let bene = predicateAsInt(attaquant, 'benedictionSuperieure', 0);
     if (bene) {
       if (!options.armeMagiquePlus || options.armeMagiquePlus < bene) {
@@ -16686,11 +16683,11 @@ var COFantasy = COFantasy || function() {
         chargesArme[0].set('current', currentCharge);
       }
     }
+    // Effets quand on rentre en combat
+    entrerEnCombat(attaquant, cibles, explications, evt);
     if (limiteRessources(attaquant, options, attackLabel, weaponName, evt, explications)) {
       return;
     }
-    // Effets quand on rentre en combat
-    entrerEnCombat(attaquant, cibles, explications, evt);
     // On commence par le jet d'attaque de base : juste le ou les dés d'attaque
     // et le modificateur d'arme et de caractéritiques qui apparaissent dans
     // la description de l'attaque. Il faut quand même tenir compte des
@@ -23687,7 +23684,7 @@ var COFantasy = COFantasy || function() {
           return;
         case 'limiteParCombat':
           if (cmd.length < 2) {
-            options.limiteParCombat = 1;
+            options.limiteParCombat = {val: 1};
             return;
           }
           let limiteParCombat = parseLimite(cmd, "par combat");
@@ -26746,7 +26743,7 @@ var COFantasy = COFantasy || function() {
         ligneArme += armeADegainer.nom;
     } else {
       if (ligneArme)
-      ligneArme += bouton('!cof-degainer --montreActions', '<span style="font-family:Pictos">}</span>', perso);
+        ligneArme += bouton('!cof-degainer --montreActions', '<span style="font-family:Pictos">}</span>', perso);
     }
     return ligneArme;
   }
@@ -36170,14 +36167,14 @@ var COFantasy = COFantasy || function() {
       }], evt);
     }
     setTokenAttr(perso, 'armeSecreteBardeUtilisee', true, evt);
-    var intCible = ficheAttributeAsInt(cible, 'intelligence', 10);
-    var testId = 'armeSecreteBarde';
+    let intCible = ficheAttributeAsInt(cible, 'intelligence', 10);
+    let testId = 'armeSecreteBarde';
     testCaracteristique(perso, 'CHA', intCible, testId, options, evt, function(tr) {
-      var display = startFramedDisplay(options.playerId,
+      let display = startFramedDisplay(options.playerId,
         "Arme secrète", perso, {
           perso2: cible
         });
-      var line = "Jet de CHA : " + tr.texte;
+      let line = "Jet de CHA : " + tr.texte;
       if (tr.reussite) {
         line += " &ge; " + intCible + tr.modifiers;
         addLineToFramedDisplay(display, line);
