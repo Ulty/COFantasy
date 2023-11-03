@@ -20970,6 +20970,7 @@ var COFantasy = COFantasy || function() {
     return res;
   }
 
+  //rds est un objet avec chaque champ sauf. 
   function applyRDSauf(rds, dmgType, total, display, options, target, showTotal, remainingRD) {
     options = options || {};
     let typeTrouve = function(t) {
@@ -21225,6 +21226,7 @@ var COFantasy = COFantasy || function() {
         hache: options.hache,
         ferFroid: options.ferFroid,
         adamantium: options.adamantium,
+        beni: options.beni
       };
       let remainingRD = 0;
       if (rdMain < 0) remainingRD = rdMain;
