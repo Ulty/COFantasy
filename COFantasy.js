@@ -5388,19 +5388,23 @@ var COFantasy = COFantasy || function() {
           }
           return true;
         case 'limiteParCombat':
+        case 'limiteParTour':
+          {
           if (cmd.length < 2) return false;
-          let limiteParCombat = parseInt(cmd[1]);
-          if (isNaN(limiteParCombat)) {
-            limiteParCombat = predicateAsInt(perso, cmd[1], 0, 1);
+          let limite = parseInt(cmd[1]);
+          if (isNaN(limite)) {
+            limite = predicateAsInt(perso, cmd[1], 0, 1);
           }
-          if (limiteParCombat < 1) return false;
-          let ressourceParCombat = defResource;
+          if (limite < 1) return false;
+            let lp = cmd[0];
+          let ressource = defResource;
           if (cmd.length > 2) {
             cmd.splice(0, 2);
-            ressourceParCombat = cmd.join('_');
+            ressource = cmd.join('_');
           }
-          ressourceParCombat = "limiteParCombat_" + ressourceParCombat;
-          return attributeAsInt(perso, ressourceParCombat, limiteParCombat) === 0;
+          ressource = lp+'_' + ressource;
+          return attributeAsInt(perso, ressource, limite) === 0;
+          }
         case 'tempsRecharge':
           if (cmd.length < 2) return false;
           let effet = cmd[1];
@@ -11184,8 +11188,8 @@ var COFantasy = COFantasy || function() {
     if (evt.combat === undefined) evt.combat = {...combat
     };
     combat.auras = combat.auras || [];
-    if (evt.combat) evt.combat.auras = {...combat.auras
-    };
+    if (evt.combat) evt.combat.auras = [...combat.auras
+    ];
     combat.auraCounts = combat.auraCounts || 0;
     aura.id = combat.auraCounts;
     combat.auras.push(aura);
@@ -11591,7 +11595,11 @@ var COFantasy = COFantasy || function() {
         setTokenAttr(personnage, 'fortifie', fortifie, evt);
       }
     }
-    attBonus += attributeAsInt(personnage, 'actionConcertee', 0);
+    let bac = attributeAsInt(personnage, 'actionConcertee', 0);
+    if (bac > 0) {
+    attBonus += bac;
+    explications.push("Attaque concertée => +"+bac+" en Attaque");
+  }
     if (attributeAsBool(personnage, 'chantDesHeros')) {
       let bonusChantDesHeros = getIntValeurOfEffet(personnage, 'chantDesHeros', 1);
       let chantDesHerosIntense =
@@ -12107,7 +12115,11 @@ var COFantasy = COFantasy || function() {
       }
     }
     defense += attributeAsInt(target, 'bufDEF', 0);
-    defense += attributeAsInt(target, 'actionConcertee', 0);
+    let bac = attributeAsInt(target, 'actionConcertee', 0);
+    if (bac > 0) {
+      explications.push("Action concertée => +"+bac+" en DEF");
+      defense += bac;
+    }
     if (ficheAttributeAsInt(target, 'defarmureon', 0) === 0) {
       defense += predicateAsInt(target, 'vetementsSacres', 0);
       defense += predicateAsInt(target, 'armureDeVent', 0);
@@ -23692,6 +23704,16 @@ var COFantasy = COFantasy || function() {
           let limiteParCombat = parseLimite(cmd, "par combat");
           if (limiteParCombat) options.limiteParCombat = limiteParCombat;
           return;
+        case 'limiteParTour':
+          {
+          if (cmd.length < 2) {
+            options.limiteParTour = {val: 1};
+            return;
+          }
+          let limiteParTour = parseLimite(cmd, "par tour");
+          if (limiteParTour) options.limiteParTour = limiteParTour;
+          return;
+          }
         case 'tempsRecharge':
           if (cmd.length < 3) {
             error("Il manque un argument à l'option --tempsRecharge", cmd);
@@ -28877,6 +28899,7 @@ var COFantasy = COFantasy || function() {
       sendPerso(perso1, "a la même initiative que " + nomPerso(perso2));
       return;
     }
+    if (limiteRessources(perso1, options, "actionConcertee", "action concertée", evt)) return;
     if (pr1 > pr2) {
       if (attackBonus) {
         setTokenAttr(perso1, 'actionConcertee', attackBonus, evt, {
@@ -33224,28 +33247,34 @@ var COFantasy = COFantasy || function() {
   }
 
   function postureDeCombat(msg) {
-    let args = msg.content.split(' ');
-    if (args.length < 4) {
-      error("Pas assez d'arguments pour !cof-posture-de-combat", args);
+    let options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
+    if (cmd === undefined || cmd.length < 1) {
+      error("Impossible de trouve la commande !", msg.content);
       return;
     }
-    let bonus = parseInt(args[1]);
-    let attrDebuf = args[2];
+    if (cmd.length < 4) {
+      error("Pas assez d'arguments pour !cof-posture-de-combat", cmd);
+      return;
+    }
+    let bonus = parseInt(cmd[1]);
+    let attrDebuf = cmd[2];
     if (attrDebuf != 'DEF' && attrDebuf != 'ATT' && attrDebuf != 'DM') {
-      error("L'attribut à débuffer pour la posture de combat est incorrect", args);
+      error("L'attribut à débuffer pour la posture de combat est incorrect", cmd);
       return;
     }
-    let attrBuf = args[3];
+    let attrBuf = cmd[3];
     if (attrBuf != 'DEF' && attrBuf != 'ATT' && attrBuf != 'DM') {
-      error("L'attribut à augmenter pour la posture de combat est incorrect", args);
+      error("L'attribut à augmenter pour la posture de combat est incorrect", cmd);
       return;
     }
     getSelected(msg, function(selected, playerId) {
-      iterSelected(selected, function(guerrier) {
         if (isNaN(bonus) || bonus < 1) {
-          sendPlayer(msg, "choisir un bonus positif (pas " + args[1] + ") pour sa posture de combat", playerId);
+          sendPlayer(msg, "choisir un bonus positif (pas " + cmd[1] + ") pour sa posture de combat", playerId);
           return;
         }
+      iterSelected(selected, function(guerrier) {
         let rang = predicateAsInt(guerrier, "voieDuSoldat", 0);
         if (rang > 0 && rang < bonus) {
           sendPerso(guerrier, "ne peut choisir qu'un bonus inférieur à " + rang + " pour sa posture de combat");
@@ -33254,6 +33283,7 @@ var COFantasy = COFantasy || function() {
         const evt = {
           type: "Posture de combat"
         };
+    if (limiteRessources(guerrier, options, 'postureDeCombat', "prendre une posture de combat", evt)) return;
         if (attrBuf == attrDebuf) {
           sendPerso(guerrier, "prend une posture de combat neutre");
           removeTokenAttr(guerrier, 'postureDeCombat', evt);
@@ -36192,17 +36222,17 @@ var COFantasy = COFantasy || function() {
   }
 
   function nouveauNomDePerso(nom) {
-    var characters = findObjs({
+    let characters = findObjs({
       _type: 'character'
     });
     characters = characters.map(function(c) {
       return c.get('name');
     });
-    var trouve = characters.indexOf(nom);
+    let trouve = characters.indexOf(nom);
     if (trouve < 0) return nom;
-    var n = 2;
+    let n = 2;
     while (1) {
-      var nomP = nom + ' ' + n;
+      let nomP = nom + ' ' + n;
       trouve = characters.indexOf(nomP);
       if (trouve < 0) return nomP;
       n++;
@@ -36374,7 +36404,7 @@ var COFantasy = COFantasy || function() {
       });
     }
     if (spec.actions) {
-      var rang = 0;
+      let rang = 0;
       spec.actions.forEach(function(a) {
         rang++;
         let pref = 'repeating_actions_' + generateRowID() + '_';
@@ -36523,10 +36553,10 @@ var COFantasy = COFantasy || function() {
       sendPlayer(msg, "On ne peut utiliser les runes de protection qu'en combat");
       return;
     }
-    var options = parseOptions(msg);
+    let options = parseOptions(msg);
     if (options === undefined) return;
-    var cmd = options.cmd;
-    var evt = lastEvent();
+    let cmd = options.cmd;
+    let evt = lastEvent();
     if (cmd !== undefined && cmd.length > 1) { //On relance pour un événement particulier
       evt = findEvent(cmd[1]);
       if (evt === undefined) {
@@ -36543,7 +36573,7 @@ var COFantasy = COFantasy || function() {
         error("Personne n'est sélectionné pour utiliser une rune", msg);
         return;
       }
-      var action = evt.action;
+      let action = evt.action;
       iterSelected(selected, function(perso) {
         if (!peutController(msg, perso)) {
           sendPlayer(msg, "pas le droit d'utiliser ce bouton", playerId);
