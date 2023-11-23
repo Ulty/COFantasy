@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.14
 ### Capacités
+* Général de la campagne Vengeance.
 * Meilleure prise en charge de l'ambixtrie du voleur et du combat à deux armes amélioré.
 * Massacrer la piétaille
 * Ajout de la Voie de prestige du loup-garou.
