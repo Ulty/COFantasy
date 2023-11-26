@@ -686,38 +686,38 @@ var COFantasy = COFantasy || function() {
     let labelArme = 0;
     let labelArmeGauche = 0;
     if (versionFiche > 5.02) {
-          let armures;
-          let labelArmure = ficheAttribute(perso, 'torseequipe', '0');
-          if (labelArmure && labelArmure != '-1') {
-              armures = armures || listAllArmors(perso);
-              let armure = armures[labelArmure];
-              if (armure) {
-                let rawArmure = fieldAsString(armure, 'effetarmure', '');
-            if (rawArmure) raw += '\n' + rawArmure;
-              }
-          }
-          let labelCasque = ficheAttribute(perso, 'teteequipe', '0');
-          if (labelCasque && labelCasque != '-1') {
-              armures = armures || listAllArmors(perso);
-              let casque = armures[labelCasque];
-              if (casque) {
-                let rawCasque = fieldAsString(casque, 'effetarmure', '');
-            if (rawCasque) raw += '\n' + rawCasque;
-              }
-          }
-          labelArme = ficheAttributeAsInt(perso, 'maindroite', 0);
-          let labelGauche = ficheAttribute(perso, 'maingauche', '0');
-          if (labelGauche.startsWith('b')) {
-            if (labelGauche != 'b-1') {
-              armures = armures || listAllArmors(perso);
-              let labelBouclier = labelGauche.substring(1);
-              let bouclier = armures[labelBouclier];
-              if (bouclier) {
-                let rawBouclier = fieldAsString(bouclier, 'effetarmure', '');
+      let armures;
+      let labelArmure = ficheAttribute(perso, 'torseequipe', '0');
+      if (labelArmure && labelArmure != '-1') {
+        armures = armures || listAllArmors(perso);
+        let armure = armures[labelArmure];
+        if (armure) {
+          let rawArmure = fieldAsString(armure, 'effetarmure', '');
+          if (rawArmure) raw += '\n' + rawArmure;
+        }
+      }
+      let labelCasque = ficheAttribute(perso, 'teteequipe', '0');
+      if (labelCasque && labelCasque != '-1') {
+        armures = armures || listAllArmors(perso);
+        let casque = armures[labelCasque];
+        if (casque) {
+          let rawCasque = fieldAsString(casque, 'effetarmure', '');
+          if (rawCasque) raw += '\n' + rawCasque;
+        }
+      }
+      labelArme = ficheAttributeAsInt(perso, 'maindroite', 0);
+      let labelGauche = ficheAttribute(perso, 'maingauche', '0');
+      if (labelGauche.startsWith('b')) {
+        if (labelGauche != 'b-1') {
+          armures = armures || listAllArmors(perso);
+          let labelBouclier = labelGauche.substring(1);
+          let bouclier = armures[labelBouclier];
+          if (bouclier) {
+            let rawBouclier = fieldAsString(bouclier, 'effetarmure', '');
             if (rawBouclier) raw += '\n' + rawBouclier;
-              }
-            }
-          } else if (labelGauche != '2m') labelArmeGauche = toInt(labelGauche);
+          }
+        }
+      } else if (labelGauche != '2m') labelArmeGauche = toInt(labelGauche);
     } else {
       let attrArmes = charAttribute(charId, 'armeEnMain');
       if (attrArmes.length > 0) {
@@ -785,21 +785,21 @@ var COFantasy = COFantasy || function() {
           let armures;
           let labelArmure = ficheAttribute(perso, 'torseequipe', '0');
           if (labelArmure && labelArmure != '-1') {
-              armures = armures || listAllArmors(perso);
-              let armure = armures[labelArmure];
-              if (armure) {
-                let rawArmure = fieldAsString(armure, 'effetarmure', '');
-            if (rawArmure) raw += '\n' + rawArmure;
-              }
+            armures = armures || listAllArmors(perso);
+            let armure = armures[labelArmure];
+            if (armure) {
+              let rawArmure = fieldAsString(armure, 'effetarmure', '');
+              if (rawArmure) raw += '\n' + rawArmure;
+            }
           }
           let labelCasque = ficheAttribute(perso, 'teteequipe', '0');
           if (labelCasque && labelCasque != '-1') {
-              armures = armures || listAllArmors(perso);
-              let casque = armures[labelCasque];
-              if (casque) {
-                let rawCasque = fieldAsString(casque, 'effetarmure', '');
-            if (rawCasque) raw += '\n' + rawCasque;
-              }
+            armures = armures || listAllArmors(perso);
+            let casque = armures[labelCasque];
+            if (casque) {
+              let rawCasque = fieldAsString(casque, 'effetarmure', '');
+              if (rawCasque) raw += '\n' + rawCasque;
+            }
           }
           labelArme = ficheAttributeAsInt(perso, 'maindroite', 0);
           let labelGauche = ficheAttribute(perso, 'maingauche', '0');
@@ -810,7 +810,7 @@ var COFantasy = COFantasy || function() {
               let bouclier = armures[labelBouclier];
               if (bouclier) {
                 let rawBouclier = fieldAsString(bouclier, 'effetarmure', '');
-            if (rawBouclier) raw += '\n' + rawBouclier;
+                if (rawBouclier) raw += '\n' + rawBouclier;
               }
             }
           } else if (labelGauche != '2m') labelArmeGauche = toInt(labelGauche);
@@ -1224,7 +1224,9 @@ var COFantasy = COFantasy || function() {
           current: 0,
           max: 0
         });
-        setAttrs(charCible.id, {type_personnage:'PNJ'});
+        setAttrs(charCible.id, {
+          type_personnage: 'PNJ'
+        });
         let tokenCible = createObj('graphic', {
           name: 'Cible',
           layer: 'objects',
@@ -2424,8 +2426,8 @@ var COFantasy = COFantasy || function() {
         if (tientUnBouclier) {
           sendPerso(perso, "enlève son bouclier", options.secret);
         }
-      } else if (changementDePrise || 
-        (rengainerArmeGauche && !nouvelleArmeGauche) || 
+      } else if (changementDePrise ||
+        (rengainerArmeGauche && !nouvelleArmeGauche) ||
         armeActuelleTenueADeuxMains) {
         if (!tientUnBouclier && ficheAttributeAsBool(perso, 'defbouclier', false)) {
           let bouclier = 'b' + ficheAttributeMax(perso, 'maingauche', '-1');
@@ -11778,8 +11780,8 @@ var COFantasy = COFantasy || function() {
     });
     let sa = {};
     sa[attribute] = value;
-    if (options && options.maxVal !== undefined) 
-      sa[attribute+'_max'] = options.maxVal;
+    if (options && options.maxVal !== undefined)
+      sa[attribute + '_max'] = options.maxVal;
     setAttrs(charId, sa);
     return attr;
   }
@@ -15716,17 +15718,17 @@ var COFantasy = COFantasy || function() {
     if (perso.toutesLesArmures) return perso.toutesLesArmures;
     let liste = {}; //liste triée par label d'armure
     if (!persoEstPNJ(perso)) {
-    let rawList = extractRepeating(perso, 'armures');
-    for (let pref in rawList) {
-      let ra = rawList[pref];
-      if (ra.labelarmure === undefined) ra.labelarmure = 0;
-      if (liste[ra.labelarmure]) {
-        error("Plusieurs attaques de label " + ra.labelarmure, ra);
-        continue;
+      let rawList = extractRepeating(perso, 'armures');
+      for (let pref in rawList) {
+        let ra = rawList[pref];
+        if (ra.labelarmure === undefined) ra.labelarmure = 0;
+        if (liste[ra.labelarmure]) {
+          error("Plusieurs attaques de label " + ra.labelarmure, ra);
+          continue;
+        }
+        ra.prefixe = pref;
+        liste[ra.labelarmure] = ra;
       }
-      ra.prefixe = pref;
-      liste[ra.labelarmure] = ra;
-    }
     }
     perso.toutesLesArmures = liste;
     return liste;
@@ -21392,16 +21394,16 @@ var COFantasy = COFantasy || function() {
     if (predicateAsBool(target, 'generalVengeance')) {
       if (target.generalVengeance === undefined) {
         let pageId = target.get('pageid');
-      let tokensContact = findObjs({
-        _type: 'graphic',
-        _subtype: 'token',
-        _pageid: pageId,
-        layer: 'objects'
-      });
-      tokensContact = tokensContact.filter(function(tok) {
-        if (tok.id == target.token.id) return false;
-        return distanceCombat(target.token, tok, pageId) === 0;
-      });
+        let tokensContact = findObjs({
+          _type: 'graphic',
+          _subtype: 'token',
+          _pageid: pageId,
+          layer: 'objects'
+        });
+        tokensContact = tokensContact.filter(function(tok) {
+          if (tok.id == target.token.id) return false;
+          return distanceCombat(target.token, tok, pageId) === 0;
+        });
         let gardeEliteContact = tokensContact.some(function(tok) {
           let p = persoOfToken(tok);
           if (!p) return;
