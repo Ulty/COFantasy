@@ -28177,13 +28177,23 @@ var COFantasy = COFantasy || function() {
             }
           }
           if (rangSoin > 3) {
-            let soinsGuerison = attributeAsInt(perso, 'limiteParJour_guérison', 1);
+            let soinsGuerison = attributeAsInt(perso, 'limiteParJour_guérison', rangSoin);
             if (soinsGuerison > 0) {
               addLineToFramedDisplay(display, "peut encore faire " + soinsGuerison + " guérison" + (soinsGuerison > 1 ? 's' : '') + " aujourd'hui");
             } else {
               addLineToFramedDisplay(display, "ne peut plus faire de guérison aujourd'hui");
             }
           }
+        }
+        let voieDesExplosifs = predicateAsInt(perso, 'voieDesExplosifs', 0);
+        if (voieDesExplosifs) {
+          let charges = attributeAsInt(perso, 'limiteParJour_chargesExplosives', voieDesExplosifs);
+          if (charges > 0) {
+            let s = charges > 1 ? 's':'';
+              addLineToFramedDisplay(display, "peut encore utiliser " + charges + " charge" + s + " explosive" + s+ " aujourd'hui");
+            } else {
+              addLineToFramedDisplay(display, "ne peut plus utiliser de charge explosive aujourd'hui");
+            }
         }
         let ebriete = attributeAsInt(perso, 'niveauEbriete', 0);
         if (ebriete > 0 && ebriete < niveauxEbriete.length) {
@@ -37594,17 +37604,17 @@ var COFantasy = COFantasy || function() {
       error("Manoeuvre " + cmd[3] + " inconnue.", cmd);
       return;
     }
-    var limiteAttr = getObj('attribute', cmd[4]);
+    let limiteAttr = getObj('attribute', cmd[4]);
     if (limiteAttr === undefined) {
       sendPlayer(msg, "La manoeuvre a déjà été choisie");
       return;
     }
-    var attaquant = persoOfId(cmd[1], cmd[1]);
+    let attaquant = persoOfId(cmd[1], cmd[1]);
     if (attaquant === undefined) {
       error("Le premier argument de !cof-appliquer-maneuvre n'est pas un token valide", cmd);
       return;
     }
-    var cible = persoOfId(cmd[2], cmd[2]);
+    let cible = persoOfId(cmd[2], cmd[2]);
     if (cible === undefined) {
       error("Le deuxième argument de !cof-appliquer-manoeuvre n'est pas un token valide", cmd);
       return;
@@ -51650,7 +51660,7 @@ on("change:attribute", function(attr, prev) {
   let predicats = state.COFantasy.predicats;
   if (!predicats) return;
   let n = attr.get("name");
-  if (n == 'predicats_script' || n.includes('armepredicats')) {
+  if (n == 'predicats_script' || n.includes('armepredicats') || n.includes('effetarmure')) {
     predicats[attr.get('characterid')] = undefined;
     COFantasy.changePredicats(attr, prev);
   }
