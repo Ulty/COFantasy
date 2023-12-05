@@ -707,7 +707,7 @@ var COFantasy = COFantasy || function() {
       }
       labelArme = ficheAttributeAsInt(perso, 'maindroite', 0);
       let labelGauche = ficheAttribute(perso, 'maingauche', '0');
-      if (labelGauche.startsWith('b')) {
+      if (typeof labelGauche == 'string' && labelGauche.startsWith('b')) {
         if (labelGauche != 'b-1') {
           armures = armures || listAllArmors(perso);
           let labelBouclier = labelGauche.substring(1);
@@ -803,7 +803,7 @@ var COFantasy = COFantasy || function() {
           }
           labelArme = ficheAttributeAsInt(perso, 'maindroite', 0);
           let labelGauche = ficheAttribute(perso, 'maingauche', '0');
-          if (labelGauche.startsWith('b')) {
+          if (typeof labelGauche == 'string' && labelGauche.startsWith('b')) {
             if (labelGauche != 'b-1') {
               armures = armures || listAllArmors(perso);
               let labelBouclier = labelGauche.substring(1);
@@ -2218,6 +2218,35 @@ var COFantasy = COFantasy || function() {
     }], evt, recompute);
   }
 
+  //perso peut ne pas avoir de token
+  // si strict, on retourne undefined s'il n'existe pas d'attaque de ce label
+  function getWeaponStats(perso, attackLabel, strict) {
+    let weaponStats = {
+      name: 'Attaque',
+      attSkill: '@{ATKCAC}',
+      attNbDices: 1,
+      attDice: 4,
+      attDMBonusCommun: 0,
+      crit: 20,
+      divers: '',
+      portee: 0,
+      typeDegats: 'contondant',
+      options: '',
+    };
+    if (attackLabel === undefined) {
+      if (strict) return;
+      return weaponStats;
+    }
+    let attaques = listAllAttacks(perso);
+    let att = attaques[attackLabel];
+    if (att === undefined) {
+      if (strict) return;
+      weaponStats.name = attackLabel;
+      return weaponStats;
+    }
+    return weaponStatsOfAttack(perso, attackLabel, att);
+  }
+
   //renvoie le nom de l'arme si l'arme est déjà tenue en main
   // options.seulementDroite permet de ne rengainer que l'arme droite ou de forcer à porter une arme gauche en main droite
   // options.gauche permet de rengainer ou porter l'arme en main gauche
@@ -2311,7 +2340,7 @@ var COFantasy = COFantasy || function() {
         //On tient l'arme actuelle à 2 mains.
         rengainerArmePrincipale = rengainerArmePrincipale || rengainerArmeGauche;
         armeActuelleTenueADeuxMains = true;
-      } else if (labelGauche.startsWith('b')) {
+      } else if (typeof labelGauche == 'string' && labelGauche.startsWith('b')) {
         //On a un bouclier en main gauche
         tientUnBouclier = true;
       } else {
@@ -2464,7 +2493,7 @@ var COFantasy = COFantasy || function() {
             setFicheAttr(perso, 'maingauche', labelArmeGauche, evt);
           else if (options.deuxMains || nouvelleArme.deuxMains)
             setFicheAttr(perso, 'maingauche', '2m', evt);
-          setFicheAttr(perso, 'armedroite', labelArme, evt);
+          setFicheAttr(perso, 'maindroite', labelArme, evt);
         }
       }
     } else {
@@ -5326,35 +5355,6 @@ var COFantasy = COFantasy || function() {
       weaponStats.attCarBonus = '';
   }
 
-  //perso peut ne pas avoir de token
-  // si strict, on retourne undefined s'il n'existe pas d'attaque de ce label
-  function getWeaponStats(perso, attackLabel, strict) {
-    let weaponStats = {
-      name: 'Attaque',
-      attSkill: '@{ATKCAC}',
-      attNbDices: 1,
-      attDice: 4,
-      attDMBonusCommun: 0,
-      crit: 20,
-      divers: '',
-      portee: 0,
-      typeDegats: 'contondant',
-      options: '',
-    };
-    if (attackLabel === undefined) {
-      if (strict) return;
-      return weaponStats;
-    }
-    let attaques = listAllAttacks(perso);
-    let att = attaques[attackLabel];
-    if (att === undefined) {
-      if (strict) return;
-      weaponStats.name = attackLabel;
-      return weaponStats;
-    }
-    return weaponStatsOfAttack(perso, attackLabel, att);
-  }
-
   function weaponStatsOfAttack(perso, label, att) {
     let weaponStats = {
       label,
@@ -5683,7 +5683,7 @@ var COFantasy = COFantasy || function() {
       if (labelArmePrincipale)
         perso.arme = getWeaponStats(perso, labelArmePrincipale);
       let labelGauche = ficheAttribute(perso, 'maingauche', '0');
-      if (labelGauche.startsWith('b')) {
+      if (typeof labelGauche == 'string' && labelGauche.startsWith('b')) {
         if (perso.arme) perso.arme.deuxMains = undefined;
         let attaqueBouclier = predicateAsBool(perso, 'attaqueAuBouclier');
         if (attaqueBouclier)
@@ -37525,7 +37525,7 @@ var COFantasy = COFantasy || function() {
     },
     desarmer: {
       appliquer: function(attaquant, cible, critique, evt, envoyerMessage) {
-        //setFicheAttr(cible, 'armedroite', 0, evt); à faire en 5.02
+        //setFicheAttr(cible, 'maindroite', 0, evt); à faire en 5.02
         degainerArme(cible, '', evt, {
           seulementDroite: true
         });
@@ -37619,8 +37619,8 @@ var COFantasy = COFantasy || function() {
       error("Le deuxième argument de !cof-appliquer-manoeuvre n'est pas un token valide", cmd);
       return;
     }
-    var effet = listeManoeuvres[cmd[3]];
-    var evt = {
+    let effet = listeManoeuvres[cmd[3]];
+    const evt = {
       type: 'Application de manoeuvre',
       deletedAttributes: [limiteAttr]
     };
@@ -37769,13 +37769,13 @@ var COFantasy = COFantasy || function() {
     };
     addEvent(evt);
     if (!persoUtiliseDeExpertDuCombat(expert, evt)) return;
-    var deExpertise = rollDePlus(6);
-    var playerId = getPlayerIdFromMsg(msg);
-    var explications = [];
+    let deExpertise = rollDePlus(6);
+    let playerId = getPlayerIdFromMsg(msg);
+    let explications = [];
     testOppose("bouculer", expert, "FOR", {
       bonus: deExpertise.val
     }, cible, "FOR", {}, explications, evt, function(resultat, crit, rt1, rt2) {
-      var display = startFramedDisplay(playerId, "Bousculer", expert, {
+      const display = startFramedDisplay(playerId, "Bousculer", expert, {
         perso2: cible
       });
       explications.push("Dé d'expertise : " + deExpertise.roll);
