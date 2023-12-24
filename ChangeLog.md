@@ -1,4 +1,13 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
+## 3.15
+### Autres améliorations
+* Ajout d'un bonus magique pour absorber un coup ou un sort quand le bouclier est magique.
+* Prise en charge de plusieurs casque à mettre depuis le statut
+
+### Correction de bugs
+* Correction pour les armes en main des mooks
+* Ne pas demander qu'un PNJ ait un prédicat pour se battre à 2 armes sans malus.
+
 ## 3.14
 ### Capacités
 * Général de la campagne Vengeance.
