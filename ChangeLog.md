@@ -1,5 +1,8 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.15
+### Capacités
+* Implémentation de la version avancée du drain de force de Dominia.
+
 ### Autres améliorations
 * Ajout d'un bonus magique pour absorber un coup ou un sort quand le bouclier est magique.
 * Prise en charge de plusieurs casque à mettre depuis le statut
