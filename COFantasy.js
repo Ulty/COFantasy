@@ -2175,10 +2175,6 @@ var COFantasy = COFantasy || function() {
     }
   }
 
-  function PNJCaracOfMod(m) {
-    return 'pnj_' + m.toLowerCase();
-  }
-
   //Retourne le mod de la caractéristque entière.
   //si carac n'est pas une carac, retourne 0
   //perso peut ne pas avoir de token ou être juste un charId
@@ -7284,10 +7280,10 @@ var COFantasy = COFantasy || function() {
         }
       } else testsRatesDuTour = undefined;
     }
-    let carSup = nbreDeTestCarac(carac, personnage);
+    let nbDe = nbreDeTestCarac(carac, personnage);
     let de = computeDice(personnage, {
-      nbDe: carSup,
-      carac: carac
+      nbDe,
+      carac
     });
     if (estAffaibli(personnage) && predicateAsBool(personnage, 'insensibleAffaibli')) bonusCarac -= 2;
     let plageEC = 1;
@@ -7401,11 +7397,11 @@ var COFantasy = COFantasy || function() {
   function jetCaracteristique(personnage, carac, options, testId, evt, callback) {
     let explications = [];
     let bonusCarac = bonusTestCarac(carac, personnage, options, testId, evt, explications);
-    let carSup = nbreDeTestCarac(carac, personnage);
+    let nbDe = nbreDeTestCarac(carac, personnage);
     let jetCache = ficheAttributeAsBool(personnage, 'jets_caches', false);
     let de = computeDice(personnage, {
-      nbDe: carSup,
-      carac: carac,
+      nbDe,
+      carac,
       dice: options.dice
     });
     if (estAffaibli(personnage) && predicateAsBool(personnage, 'insensibleAffaibli')) bonusCarac -= 2;
@@ -8777,6 +8773,13 @@ var COFantasy = COFantasy || function() {
         return {
           type: 'premiereAttaque'
         };
+      case 'moitieMoins':
+        return {
+          type: 'moins',
+          attribute: args[1],
+          text: args[1],
+          moitie: true
+        };
       case 'deAttaque':
         if (args.length < 2) {
           error("condition non reconnue", args);
@@ -9709,7 +9712,7 @@ var COFantasy = COFantasy || function() {
         case 'critique':
         case 'echecCritique':
         case 'pasDEchecCritique':
-          if (!playerIsGM(playerId)) {
+          if (playerId && !playerIsGM(playerId)) {
             sendChat('COF', "Pas le droit d'utiliser l'option --" + cmd[0]);
             return;
           }
@@ -10725,10 +10728,13 @@ var COFantasy = COFantasy || function() {
   //bon attribut, selon que perso est un PNJ ou nom
   function valAttribute(perso, originalAttr, caracAttr) {
     if (caracAttr) {
+      let mod = modCarac(perso, caracAttr);
       if (persoEstPNJ(perso)) {
-        return 10 + ficheAttributeAsInt(perso, PNJCaracOfMod(originalAttr), 0) * 2;
+        return 10 + mod * 2;
       }
-      return ficheAttributeAsInt(perso, caracAttr, 0);
+      let v = ficheAttributeAsInt(perso, caracAttr, 0);
+      if (Math.floor((v - 10) / 2) == mod) return v;
+      return 10 + mod * 2;
     }
     return charAttributeAsInt(perso, originalAttr, 0);
   }
@@ -10761,7 +10767,8 @@ var COFantasy = COFantasy || function() {
         cibles.forEach(function(target) {
           if (resMoins) {
             let targetAttr = valAttribute(target, cond.attribute, caracAttr);
-            if (targetAttr >= attackerAttr) resMoins = false;
+            if (cond.moitie) resMoins = targetAttr <= attackerAttr / 2;
+            else resMoins = targetAttr < attackerAttr;
           }
         });
         return resMoins;
@@ -16293,18 +16300,18 @@ var COFantasy = COFantasy || function() {
   }
 
   //attaquant doit avoir un champ name
-  function attackExpression(attaquant, nbDe, dice, crit, plusFort, weaponStats) {
-    let de = computeDice(attaquant, {
-      nbDe: nbDe,
-      dice: dice,
-      plusFort: plusFort
-    });
-    let attackRollExpr = "[[" + de + "cs>" + crit + "cf1]]";
+  function attackExpression(attaquant, diceOptions, weaponStats) {
+    let de = computeDice(attaquant, diceOptions);
+    let attackRollExpr = "[[" + de + "cs>" + diceOptions.crit + "cf1]]";
     let attSkillDiv = weaponStats.attSkillDiv;
     if (isNaN(attSkillDiv)) attSkillDiv = 0;
     let attSkillDivTxt = "";
     if (attSkillDiv > 0) attSkillDivTxt = " + " + attSkillDiv;
     else if (attSkillDiv < 0) attSkillDivTxt += attSkillDiv;
+    if (diceOptions.malusAttaque) {
+      if (diceOptions.malusAttaque > 0) attSkillDivTxt = " + " + diceOptions.malusAttaque;
+      else attSkillDivTxt += diceOptions.malusAttaque;
+    }
     let attackSkillExpr = addOrigin(attaquant.name, "[[" + computeArmeAtk(attaquant, weaponStats.attSkill) + attSkillDivTxt + "]]");
     return attackRollExpr + " " + attackSkillExpr;
   }
@@ -16402,6 +16409,83 @@ var COFantasy = COFantasy || function() {
   function asDeLaGachette(perso, weaponStats) {
     return predicateAsBool(perso, 'asDeLaGachette') &&
       (weaponStats.poudre || weaponStats.arbalete);
+  }
+
+  //Calcul du dé, du nombre de dé, d'un malus à l'attaque, des chances de crit et plusFort
+  //peut modifier options
+  function computeAttackDiceOptions(attaquant, weaponStats, expliquer, evt, options = {}) {
+    let crit = critEnAttaque(attaquant, weaponStats, options);
+    let dice = 20;
+    let malusAttaque = 0;
+    if ((!options.auto || (!options.pasDeDmg && options.contact)) &&
+      attributeAsBool(attaquant, 'drainDeForceSup')) {
+      dice = 12;
+      let msgDrain = "Drain de force => ";
+      if (!options.auto) msgDrain += "D12 au lieux de D20 en attaque";
+      if (!options.pasDeDmg && options.contact) {
+        if (!options.auto) msgDrain += " et ";
+        msgDrain += "DM/2";
+        options.diviseDmg = options.diviseDmg || 1;
+        options.diviseDmg *= 2;
+      }
+      expliquer(msgDrain);
+    }
+    if (!options.auto) {
+      if (estAffaibli(attaquant)) {
+        if (predicateAsBool(attaquant, 'insensibleAffaibli')) {
+          malusAttaque = -2;
+          expliquer("Attaquant affaibli, mais insensible => -2 en Attaque");
+        } else {
+          dice = 12;
+          expliquer("Attaquant affaibli => D12 au lieu de D20 en Attaque");
+        }
+      } else if (getState(attaquant, 'immobilise')) {
+        dice = 12;
+        expliquer("Attaquant immobilisé => D12 au lieu de D20 en Attaque");
+      } else if (attributeAsBool(attaquant, 'mortMaisNAbandonnePas')) {
+        dice = 12;
+        expliquer("Attaquant mort mais n'abandonne pas => D12 au lieu de D20 en Attaque");
+      } else {
+        let ebriete = attributeAsInt(attaquant, 'niveauEbriete', 0);
+        if (ebriete > 0) {
+          if (options.distance || options.sortilege || ebriete > 1) {
+            dice = 12;
+            if (ebriete > 3) ebriete = 3;
+            expliquer("Attaquant " + niveauxEbriete[ebriete] + " => D12 au lieu de D20 en Attaque");
+          }
+        }
+      }
+    }
+    if (options.avecd12) {
+      dice = 12;
+      if (options.avecd12.crit) crit = Math.floor(crit / 2) + 3;
+    }
+    let nbDe = 1;
+    let plusFort = true;
+    if (options.avantage !== undefined) {
+      if (options.avantage > 0) nbDe = options.avantage;
+      else {
+        nbDe = 2 - options.avantage; //désavantage
+        plusFort = false;
+      }
+    }
+    if (options.sortilege && (options.rituelAssure || attributeAsBool(attaquant, 'rituelAssure'))) {
+      options.rituelAssure = true;
+      finDEffetDeNom(attaquant, 'rituelAssure', evt);
+      if (plusFort) nbDe++;
+      else if (nbDe > 1) nbDe--;
+      else {
+        plusFort = true;
+        nbDe = 2;
+      }
+    }
+    return {
+      dice,
+      malusAttaque,
+      nbDe,
+      crit,
+      plusFort
+    };
   }
 
   //N'ajoute pas evt à l'historique
@@ -16663,76 +16747,19 @@ var COFantasy = COFantasy || function() {
     // et le modificateur d'arme et de caractéritiques qui apparaissent dans
     // la description de l'attaque. Il faut quand même tenir compte des
     // chances de critique
-    let crit = critEnAttaque(attaquant, weaponStats, options);
-    let dice = 20;
-    let malusAttaque = 0;
-    if ((!options.auto || (!options.pasDeDmg && options.contact)) &&
-      attributeAsBool(attaquant, 'drainDeForceSup')) {
-      dice = 12;
-      let msgDrain = "Drain de force => ";
-      if (!options.auto) msgDrain += "D12 au lieux de D20 en attaque";
-      if (!options.pasDeDmg && options.contact) {
-        if (!options.auto) msgDrain += " et ";
-        msgDrain += "DM/2";
-        options.diviseDmg = options.diviseDmg || 1;
-        options.diviseDmg *= 2;
-      }
-    }
-    if (!options.auto) {
-      if (estAffaibli(attaquant)) {
-        if (predicateAsBool(attaquant, 'insensibleAffaibli')) {
-          malusAttaque = -2;
-          explications.push("Attaquant affaibli, mais insensible => -2 en Attaque");
-        } else {
-          dice = 12;
-          explications.push("Attaquant affaibli => D12 au lieu de D20 en Attaque");
-        }
-      } else if (getState(attaquant, 'immobilise')) {
-        dice = 12;
-        explications.push("Attaquant immobilisé => D12 au lieu de D20 en Attaque");
-      } else if (attributeAsBool(attaquant, 'mortMaisNAbandonnePas')) {
-        dice = 12;
-        explications.push("Attaquant mort mais n'abandonne pas => D12 au lieu de D20 en Attaque");
-      } else {
-        let ebriete = attributeAsInt(attaquant, 'niveauEbriete', 0);
-        if (ebriete > 0) {
-          if (options.distance || options.sortilege || ebriete > 1) {
-            dice = 12;
-            if (ebriete > 3) ebriete = 3;
-            explications.push("Attaquant " + niveauxEbriete[ebriete] + " => D12 au lieu de D20 en Attaque");
-          }
-        }
-      }
-    }
-    if (options.avecd12) {
-      dice = 12;
-      if (options.avecd12.crit) crit = Math.floor(crit / 2) + 3;
-    }
-    let nbDe = 1;
-    let plusFort = true;
-    if (options.avantage !== undefined) {
-      if (options.avantage > 0) nbDe = options.avantage;
-      else {
-        nbDe = 2 - options.avantage; //désavantage
-        plusFort = false;
-      }
-    }
-    if (options.sortilege && (options.rituelAssure || attributeAsBool(attaquant, 'rituelAssure'))) {
-      options.rituelAssure = true;
-      finDEffetDeNom(attaquant, 'rituelAssure', evt);
-      if (plusFort) nbDe++;
-      else if (nbDe > 1) nbDe--;
-      else {
-        plusFort = true;
-        nbDe = 2;
-      }
-    }
+    let expliquer = function(msg) {
+      explications.push(msg);
+    };
+    let diceOptions =
+      computeAttackDiceOptions(attaquant, weaponStats, expliquer, evt, options);
+    let dice = diceOptions.dice;
+    let crit = diceOptions.crit;
     // toEvaluateAttack inlines
     // 0: attack roll
     // 1: attack skill expression
     // 2: dé de poudre
     let toEvaluateAttack =
-      attackExpression(attaquant, nbDe, dice, crit, plusFort, weaponStats);
+      attackExpression(attaquant, diceOptions, weaponStats);
     if (options.poudre) toEvaluateAttack += " [[1d20]]";
     try {
       sendChat('', toEvaluateAttack, function(resAttack) {
@@ -16846,7 +16873,6 @@ var COFantasy = COFantasy || function() {
         if (!options.auto) {
           attBonusCommun =
             bonusAttaqueA(attaquant, weaponStats, evt, explications, options);
-          attBonusCommun += malusAttaque;
         } else { //calcul des options affectant les DM
           bonusDMA(attaquant, weaponStats, evt, explications, options);
         }
@@ -18855,8 +18881,8 @@ var COFantasy = COFantasy || function() {
           target.etats.push({
             etat: 'renverse',
             condition: {
-              type: "moins",
-              attribute: "FOR",
+              type: 'moins',
+              attribute: 'FOR',
               text: 'force'
             }
           });
@@ -19274,8 +19300,8 @@ var COFantasy = COFantasy || function() {
               target.etats.push({
                 etat: 'renverse',
                 condition: {
-                  type: "moins",
-                  attribute: "FOR",
+                  type: 'moins',
+                  attribute: 'FOR',
                   text: 'force'
                 }
               });
@@ -19358,7 +19384,7 @@ var COFantasy = COFantasy || function() {
                     });
                   }
                 } else {
-                  if (ce.condition.type == "moins") {
+                  if (ce.condition.type == 'moins') {
                     target.messages.push(
                       "Grâce à sa " + ce.condition.text + ", " + nomPerso(target) +
                       " n'est pas " + stringOfEtat(ce.etat, target));
@@ -19746,7 +19772,7 @@ var COFantasy = COFantasy || function() {
                           afterSaves();
                         });
                     } else {
-                      if (ce.condition.type == "moins") {
+                      if (ce.condition.type == 'moins') {
                         target.messages.push(
                           "Grâce à sa " + ce.condition.text + ", " + nomPerso(target) +
                           " n'est pas " + stringOfEtat(ce.etat, target));
@@ -22222,35 +22248,10 @@ var COFantasy = COFantasy || function() {
               let optionsIncrevable = {...options
               };
               optionsIncrevable.pasDeDmg = true;
-              let critIncrevable = critEnAttaque(target, weaponStatsIncrevable, optionsIncrevable);
-              let dice = 20;
-              let malusAttaque = 0;
-              if (estAffaibli(target)) {
-                if (predicateAsBool(target, 'insensibleAffaibli')) {
-                  malusAttaque = -2;
-                  expliquer(nomPerso(target) + " affaibli, mais insensible => -2 en Attaque");
-                } else {
-                  dice = 12;
-                  expliquer(nomPerso(target) + " affaibli => D12 au lieu de D20 en Attaque");
-                }
-              } else if (getState(target, 'immobilise')) {
-                dice = 12;
-                expliquer(nomPerso(target) + " immobilisé => D12 au lieu de D20 en Attaque");
-              } else if (attributeAsBool(target, 'mortMaisNAbandonnePas')) {
-                dice = 12;
-                expliquer(nomPerso(target) + " mort mais n'abandonne pas => D12 au lieu de D20 en Attaque");
-              } else {
-                let ebriete = attributeAsInt(target, 'niveauEbriete', 0);
-                if (ebriete > 0) {
-                  if (options.distance || options.sortilege || ebriete > 1) {
-                    dice = 12;
-                    if (ebriete > 3) ebriete = 3;
-                    expliquer(nomPerso(target) + ' ' + niveauxEbriete[ebriete] + " => D12 au lieu de D20 en Attaque");
-                  }
-                }
-              }
+              let diceOptions =
+                computeAttackDiceOptions(target, weaponStatsIncrevable, expliquer, evt, optionsIncrevable);
               let toEvaluateAttackIncrevable =
-                attackExpression(target, 1, dice, critIncrevable, true, weaponStatsIncrevable);
+                attackExpression(target, diceOptions, weaponStatsIncrevable);
               sendChat('', toEvaluateAttackIncrevable, function(resAttackIncrevable) {
                 let rollsAttack = resAttackIncrevable[0];
                 let afterEvaluateAttack = rollsAttack.content.split(' ');
@@ -22259,10 +22260,10 @@ var COFantasy = COFantasy || function() {
                 let d20roll = rollsAttack.inlinerolls[attRollNumber].results.total;
                 effetAuD20(target, d20roll);
                 let attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
+                parseWeaponStatsOptions(target, options.attaquant, weaponStatsIncrevable, undefined, optionsIncrevable);
                 let explications = [];
                 let attBonus =
                   bonusAttaqueA(target, weaponStatsIncrevable, evt, explications, optionsIncrevable);
-                attBonus += malusAttaque;
                 let pageId = options.pageId || token.get('pageid');
                 attBonus +=
                   bonusAttaqueD(target, target.attaquant, 0, pageId, evt, explications, optionsIncrevable);
@@ -33133,46 +33134,93 @@ var COFantasy = COFantasy || function() {
           if (sortieEscalier) return;
           if (intersection(posX, sizeX, esc.get('left'), esc.get('width')) &&
             intersection(posY, sizeY, esc.get('top'), esc.get('height'))) {
-            let escName = esc.get('name');
-            let l = escName.length;
-            if (l > 1) {
-              let label = escName.substr(l - 1, 1);
-              escName = escName.substr(0, l - 1);
-              let i = labelsEscalier.indexOf(label);
-              if (versLeHaut) {
-                if (i == 11) {
-                  if (loop) escName += labelsEscalier[0];
-                } else escName += labelsEscalier[i + 1];
-              } else {
-                if (i === 0) {
-                  if (loop) escName += labelsEscalier[11];
-                } else escName += labelsEscalier[i - 1];
-              }
-              let escs = escaliers;
-              if (escName.startsWith('tmap_')) {
-                if (!tmaps) {
-                  tmaps = findObjs({
-                    _type: 'graphic',
-                    layer: 'gmlayer'
-                  });
-                  tmaps = tmaps.filter(function(e) {
-                    return e.get('name').startsWith('tmap_');
-                  });
-                }
-                escs = tmaps;
-              }
-              sortieEscalier = escs.find(function(esc2) {
-                return esc2.get('name') == escName;
-              });
-              if (sortieEscalier === undefined && loop) {
-                if (i > 0) { //sortie par le plus petit
-                  escName = escName.substr(0, l - 1) + 'A';
-                  sortieEscalier = escs.find(function(esc2) {
-                    return esc2.get('name') == escName;
-                  });
+            let escName; //Contiendra le nom de l'escalier vers lequel aller
+            //On regarde d'abord le gmnote
+            let gmNotes = esc.get('gmnotes');
+            try {
+              gmNotes = _.unescape(decodeURIComponent(gmNotes)).replace('&nbsp;', ' ');
+              gmNotes = linesOfNote(gmNotes);
+              gmNotes.find(function(l) {
+                if (versLeHaut) {
+                  if (l.startsWith('monte:')) {
+                    escName = l.substring(6);
+                    return true;
+                  }
+                  if (l.startsWith('monter:')) {
+                    escName = l.substring(7);
+                    return true;
+                  }
+                  if (l.startsWith('bas:')) {
+                    escName = l.substring(4);
+                    return true;
+                  }
+                  return false;
                 } else {
-                  sortieEscalier = findEsc(escs, escName.substr(0, l - 1), 10);
+                  if (l.startsWith('descend:')) {
+                    escName = l.substring(8);
+                    return true;
+                  }
+                  if (l.startsWith('descendre:')) {
+                    escName = l.substring(10);
+                    return true;
+                  }
+                  if (l.startsWith('haut:')) {
+                    escName = l.substring(5);
+                    return true;
+                  }
+                  return false;
                 }
+                return false;
+              });
+            } catch (uriError) {
+              log("Erreur de décodage URI dans la note GM de " + esc.get('name') + " : " + gmNotes);
+            }
+            let i; //index de label si on n'utilise pas gmnote
+            if (escName === undefined) {
+              //Si on n'a pas trouvé, on regarde le nom
+              escName = esc.get('name');
+              let l = escName.length;
+              if (l > 1) {
+                let label = escName.substr(l - 1, 1);
+                escName = escName.substr(0, l - 1);
+                i = labelsEscalier.indexOf(label);
+                if (versLeHaut) {
+                  if (i == 11) {
+                    if (loop) escName += labelsEscalier[0];
+                  } else escName += labelsEscalier[i + 1];
+                } else {
+                  if (i === 0) {
+                    if (loop) escName += labelsEscalier[11];
+                  } else escName += labelsEscalier[i - 1];
+                }
+              }
+            }
+            if (!escName) return;
+            //Ensuite on cherche l'escalier de nom escName
+            let escs = escaliers;
+            if (escName.startsWith('tmap_')) {
+              if (!tmaps) {
+                tmaps = findObjs({
+                  _type: 'graphic',
+                  layer: 'gmlayer'
+                });
+                tmaps = tmaps.filter(function(e) {
+                  return e.get('name').startsWith('tmap_');
+                });
+              }
+              escs = tmaps;
+            }
+            sortieEscalier = escs.find(function(esc2) {
+              return esc2.get('name') == escName;
+            });
+            if (sortieEscalier === undefined && i !== undefined && loop) {
+              if (i > 0) { //sortie par le plus petit
+                escName = escName.substr(-1) + 'A';
+                sortieEscalier = escs.find(function(esc2) {
+                  return esc2.get('name') == escName;
+                });
+              } else {
+                sortieEscalier = findEsc(escs, escName.substr(-1), 10);
               }
             }
           }
@@ -33922,8 +33970,9 @@ var COFantasy = COFantasy || function() {
         displayName: true,
         pasDeDmg: true
       };
+      parseWeaponStatsOptions(lanceur, action.attaquant, weaponStats, undefined, optionsEvitement);
       let attEvBonus =
-        bonusAttaqueA(cible, weaponStats, evt, cible.messages, optionsEvitement);
+        bonusAttaqueA(lanceur, weaponStats, evt, cible.messages, optionsEvitement);
       let bad = bonusAttaqueD(lanceur, action.attaquant, 0, pageId, evt, cible.messages, optionsEvitement);
       attEvBonus += bad;
       if (opt && opt.bonusAttaque) attEvBonus += opt.bonusAttaque;
@@ -36933,6 +36982,18 @@ var COFantasy = COFantasy || function() {
     return arme;
   }
 
+  //parse the relevant options from weaponStats and adds them to option
+  //option must not be undefined
+  function parseWeaponStatsOptions(attaquant, defenseur, weaponStats, playerId, options) {
+    if (!weaponStats) return;
+    let tokenDef;
+    if (defenseur) tokenDef = defenseur.token;
+    let optArgs = [];
+    let commandArgs = [...optArgs];
+    addWeaponStatsToOptions(attaquant, weaponStats, optArgs, options);
+    parseAttackOptions(attaquant, optArgs, undefined, options.type, options, playerId, {}, tokenDef, weaponStats.label, weaponStats, options, commandArgs);
+  }
+
   function attaqueContactOpposee(playerId, attaquant, defenseur, evt, options, callback) {
     let explications = [];
     options = options || {
@@ -36954,29 +37015,15 @@ var COFantasy = COFantasy || function() {
     });
     let optionsAttaquant = {...options
     };
-    if (armeAttaquant) {
-      let optArgs = [];
-      let commandArgs = [...optArgs];
-      addWeaponStatsToOptions(attaquant, armeAttaquant, optArgs, optionsAttaquant);
-      parseAttackOptions(attaquant, optArgs, undefined, optionsAttaquant.type, optionsAttaquant, playerId, {}, defenseur.token, armeAttaquant.label, armeAttaquant, optionsAttaquant, commandArgs);
-    }
-    let critAttaquant = critEnAttaque(attaquant, armeAttaquant, optionsAttaquant);
-    let dice = 20;
-    let malusAttaque = 0;
-    if (estAffaibli(attaquant)) {
-      if (predicateAsBool(attaquant, 'insensibleAffaibli')) {
-        malusAttaque = -2;
-        explications.push("Attaquant affaibli, mais insensible => -2 en Attaque");
-      } else {
-        dice = 12;
-        explications.push("Attaquant affaibli => D12 au lieu de D20 en Attaque");
-      }
-    } else if (getState(attaquant, 'immobilise')) {
-      dice = 12;
-      explications.push("Attaquant immobilisé => D12 au lieu de D20 en Attaque");
-    }
+    parseWeaponStatsOptions(attaquant, defenseur, armeAttaquant, playerId, optionsAttaquant);
+    let expliquer = function(msg) {
+      explications.push(msg);
+    };
+    let diceOptions =
+      computeAttackDiceOptions(attaquant, armeAttaquant, expliquer, evt, optionsAttaquant);
+    let critAttaquant = diceOptions.crit;
     let toEvaluateAttack =
-      attackExpression(attaquant, 1, dice, critAttaquant, true, armeAttaquant);
+      attackExpression(attaquant, diceOptions, armeAttaquant);
     try {
       sendChat('', toEvaluateAttack, function(resAttack) {
         let rollsAttack = resAttack[0];
@@ -36990,7 +37037,6 @@ var COFantasy = COFantasy || function() {
         let attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
         let attBonus =
           bonusAttaqueA(attaquant, armeAttaquant, evt, explications, optionsAttaquant);
-        attBonus += malusAttaque;
         let pageId = options.pageId || attaquant.token.get('pageid');
         attBonus +=
           bonusAttaqueD(attaquant, defenseur, 0, pageId, evt, explications, optionsAttaquant);
@@ -37008,28 +37054,11 @@ var COFantasy = COFantasy || function() {
         addLineToFramedDisplay(display, "Jet de " + nomPerso(attaquant) + " : " + attRollValue);
         let optionsDefenseur = {...options
         };
-        if (armeDefenseur) {
-          let optArgs = [];
-          let commandArgs = [...optArgs];
-          addWeaponStatsToOptions(defenseur, armeDefenseur, optArgs, optionsDefenseur);
-          parseAttackOptions(defenseur, optArgs, undefined, optionsDefenseur.type, optionsDefenseur, playerId, {}, attaquant.token, armeDefenseur.label, armeDefenseur, optionsDefenseur, commandArgs);
-        }
-        let critDefenseur = critEnAttaque(defenseur, armeDefenseur, optionsDefenseur);
-        dice = 20;
-        malusAttaque = 0;
-        if (estAffaibli(defenseur)) {
-          if (predicateAsBool(defenseur, 'insensibleAffaibli')) {
-            malusAttaque = -2;
-            explications.push("Défenseur affaibli, mais insensible => -2 en Attaque");
-          } else {
-            dice = 12;
-            explications.push("Défenseur affaibli => D12 au lieu de D20 en Attaque");
-          }
-        } else if (getState(defenseur, 'immobilise')) {
-          dice = 12;
-          explications.push("Défenseur immobilisé => D12 au lieu de D20 en Attaque");
-        }
-        toEvaluateAttack = attackExpression(defenseur, 1, dice, critDefenseur, true, armeDefenseur);
+        parseWeaponStatsOptions(defenseur, attaquant, armeDefenseur, playerId, optionsDefenseur);
+        diceOptions =
+          computeAttackDiceOptions(defenseur, armeDefenseur, expliquer, evt, optionsDefenseur);
+        let critDefenseur = diceOptions.crit;
+        toEvaluateAttack = attackExpression(defenseur, diceOptions, armeDefenseur);
         sendChat('', toEvaluateAttack, function(resAttack) {
           let rollsAttack = resAttack[0];
           if (options.rolls && options.rolls.attackDefenseur)
@@ -37042,7 +37071,6 @@ var COFantasy = COFantasy || function() {
           attSkill = rollsAttack.inlinerolls[attSkillNumber].results.total;
           attBonus =
             bonusAttaqueA(defenseur, armeDefenseur, evt, explications, optionsDefenseur);
-          attBonus += malusAttaque;
           attBonus +=
             bonusAttaqueD(defenseur, attaquant, 0, pageId, evt, explications, optionsDefenseur);
           let attackRollDefenseur = d20rollDefenseur + attSkill + attBonus;
@@ -39938,9 +39966,9 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseVapeursEthyliques(msg) {
-    var options = parseOptions(msg);
+    const options = parseOptions(msg);
     if (options === undefined) return;
-    var cibles = [];
+    let cibles = [];
     getSelected(msg, function(selected, playerId) {
       if (selected === undefined || selected.length === 0) {
         sendPlayer(msg, "pas de cible trouvée, action annulée", playerId);
@@ -39954,7 +39982,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function doVapeursEthyliques(playerId, persos, options) {
-    var evt = {
+    const evt = {
       type: 'vapeursEthyliques',
       action: {
         playerId: playerId,
@@ -41277,7 +41305,8 @@ var COFantasy = COFantasy || function() {
       secret: options.secret
     };
     let display = startFramedDisplay(playerId, 'Ombre mouvante', voleur, optionsDisplay);
-    testCaracteristique(voleur, 'DEX', 10, 'ombreMouvante', options, evt,
+    let difficulte = predicateAsInt(voleur, 'difficulteOmbreMouvante', 10);
+    testCaracteristique(voleur, 'DEX', difficulte, 'ombreMouvante', options, evt,
       function(tr, explications) {
         let msgRes = "<b>Résultat :</b> " + tr.texte;
         if (tr.reussite) {

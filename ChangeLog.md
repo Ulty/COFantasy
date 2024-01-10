@@ -5,6 +5,7 @@
 * Implémentation de la version avancée du drain de force de Dominia.
 
 ### Autres améliorations
+* Extension des mécanismes d'escaliers pour Invincible.
 * Ajout d'un bonus magique pour absorber un coup ou un sort quand le bouclier est magique.
 * Prise en charge de plusieurs casque à mettre depuis le statut
 
