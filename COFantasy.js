@@ -1969,6 +1969,7 @@ var COFantasy = COFantasy || function() {
         max: attr.get('max'),
       });
     }
+    token.set(fieldv, val);//On le fait aussi pour forcer la mise à jour de la barre
     let aset = {
       current: val,
       withWorker: true
@@ -2308,6 +2309,7 @@ var COFantasy = COFantasy || function() {
           options.gauche = true;
           rengainerArmeGauche = true;
         } else if (nouvelleArme.deuxMains) {
+          options.deuxMains = true;
           rengainerArmePrincipale = true;
           rengainerArmeGauche = true;
         } else {
@@ -21980,7 +21982,7 @@ var COFantasy = COFantasy || function() {
           if (estMook) tempDmg = attributeAsInt(target, 'DMTEMP', 0);
           else tempDmg = ficheAttributeAsInt(target, 'DMTEMP', 0);
         } else {
-          tempDmg = parseInt(token.get("bar2_value"));
+          tempDmg = parseInt(token.get('bar2_value'));
           if (isNaN(tempDmg)) {
             if (target.tempDmg) { //then try to set bar2 correctly
               if (estMook) {
@@ -40014,7 +40016,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function doBoireAlcool(playerId, persos, options) {
-    var evt = {
+    const evt = {
       type: 'boireAlcool',
       action: {
         playerId: playerId,
@@ -40026,21 +40028,21 @@ var COFantasy = COFantasy || function() {
     if (limiteRessources(options.lanceur, options, 'boireAlcool', "est affecté par l'alcool", evt)) {
       return;
     }
-    var display = startFramedDisplay(playerId, 'Alcool');
-    var expliquer = function(m) {
+    const display = startFramedDisplay(playerId, 'Alcool');
+    const expliquer = function(m) {
       addLineToFramedDisplay(display, m);
     };
     if (options.save) {
       expliquer("Jet de " + options.save.carac + " " + options.save.seuil + " pour résister à l'alcool");
     }
-    var count = persos.length;
-    var finalize = function() {
+    let count = persos.length;
+    const finalize = function() {
       if (count == 1) sendFramedDisplay(display);
       count--;
     };
     persos.forEach(function(perso) {
       if (options.save) {
-        var saveOpts = {
+        const saveOpts = {
           hideSaveTitle: true,
           rolls: options.rolls,
           chanceRollId: options.chanceRollId,
@@ -49307,7 +49309,7 @@ var COFantasy = COFantasy || function() {
     let perso = renameToken(token, tokenName);
     if (perso === undefined) return;
     let arme = predicateAsBool(perso, 'armeParDefaut');
-    if (arme === undefined && persoEstPNJ(perso)) {
+    if (arme === undefined && persoEstPNJ(perso) && !armesEnMain(perso)) {
       //Si le perso est PNJ avec une seule arme, on lui met en main
       let {
         armes
