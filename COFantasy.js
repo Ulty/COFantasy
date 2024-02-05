@@ -15316,6 +15316,7 @@ var COFantasy = COFantasy || function() {
     for (let pref in rawList) {
       let ra = rawList[pref];
       if (ra.armelabel === undefined) ra.armelabel = 0;
+      if (ra.armenom === undefined) ra.armenom = '';
       if (liste[ra.armelabel]) {
         error("Plusieurs attaques de label " + ra.armelabel, ra);
         continue;
@@ -40109,7 +40110,7 @@ var COFantasy = COFantasy || function() {
         error('pas de token sélectionné pour !cof-bonus-couvert');
         return;
       }
-      var evt = {
+      const evt = {
         type: 'Bonus couvert'
       };
       addEvent(evt);
