@@ -5586,6 +5586,13 @@ var COFantasy = COFantasy || function() {
     return currentCharge === 0;
   }
 
+  function armeChargeeDeGrenaille(perso, arme) {
+    if (!arme.charge || !arme.poudre) return false;
+    let currentCharge = attributeAsInt(perso, 'chargeGrenaille_' + arme.label, 0);
+    return currentCharge > 0;
+  }
+
+
   //options peut avoir les champs:
   // - ressource, un attribut
   // - overlay
@@ -21229,6 +21236,7 @@ var COFantasy = COFantasy || function() {
     }; //si il faut noter les DMs d'un type particulier
     if (mainDmgType == 'drain') dmSuivis.drain = dmgTotal;
     predicatesNamed(target, 'vitaliteSurnaturelle').forEach(function(a) {
+      if (typeof a != "string") return;
       let indexType = a.indexOf('/');
       if (indexType < 0 || indexType == a.length) return;
       a = a.substring(indexType + 1);
@@ -26670,6 +26678,8 @@ var COFantasy = COFantasy || function() {
         }
         if (a.charge && attributeAsInt(perso, 'charge_' + l, 1) === 0)
           degainer += ' (vide)';
+        else if (a.poudre && attributeAsInt(perso, 'chargeGrenaille_' + l, 0) > 0)
+          degainer += ' (grenaille)';
         degainer += "," + l + cote + "|";
         if (armeADegainer) armeADegainer.unique = undefined;
         else armeADegainer = {
@@ -27071,6 +27081,7 @@ var COFantasy = COFantasy || function() {
           } else {
             command += labelArmePrincipale;
             if (armeDechargee(perso, armePrincipale)) nomCommande += ' (vide)';
+            else if (armeChargeeDeGrenaille(perso, armePrincipale)) nomCommande += ' (grenaille)';
           }
           ligneArmePrincipale = bouton(command, nomCommande, perso);
         } else if (!possedeAttaqueNaturelle) {
@@ -27084,6 +27095,7 @@ var COFantasy = COFantasy || function() {
         if (perso.armeGauche) {
           let nomCommande = perso.armeGauche.name;
           if (armeDechargee(perso, perso.armeGauche)) nomCommande += ' (vide)';
+          else if (armeChargeeDeGrenaille(perso, perso.armeGauche)) nomCommande += ' (grenaille)';
           ligneArmeGauche = bouton("!cof-attack @{selected|token_id} @{target|token_id} " + labelArmeGauche, nomCommande, perso);
         }
         //Maintenant on propose de dégainer
