@@ -49189,6 +49189,7 @@ var COFantasy = COFantasy || function() {
   // assure un nom unique en ajoutant un numéro
   // On en profite aussi pour mettre certaines valeurs par défaut
   // retourne un perso si c'est un token de personnage
+  //Si la barre de vie est liée, on met à jour les valeurs, ce n'est plus fait automatiquement oar Roll20
   function renameToken(token, tokenName) {
     let charId = token.get('represents');
     if (charId === undefined || charId === '') return;
@@ -49245,9 +49246,23 @@ var COFantasy = COFantasy || function() {
             attrMonteSur[0].remove();
           }
         }
-        synchronisationDesEtats(perso);
-        synchronisationDesLumieres(perso, pageId);
       }
+      synchronisationDesEtats(perso);
+      for (let barNumber = 1; barNumber <= 3; barNumber++) {
+        let attrId = token.get('bar' + barNumber + '_link');
+        if (attrId) {
+          let attr = getObj('attribute', attrId);
+          if (attr) {
+            let fieldv = 'bar' + barNumber + '_value';
+            token.set(fieldv, attr.get('current'));
+            let fieldm = 'bar' + barNumber + '_max';
+            token.set(fieldm, attr.get('max'));
+          }
+        }
+      }
+      //On synchronise les barres, au cas où la fiche n'a pas été ouverte
+      //déjà fait par l'appel de renameToken
+      //synchronisationDesLumieres(perso, pageId);
       return perso;
     }
     //cas des mooks : numérotation
