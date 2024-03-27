@@ -5,6 +5,8 @@
 * Implémentation de la version avancée du drain de force de Dominia.
 
 ### Autres améliorations
+* Amélioration de la gestion des utilisations de points de chance pour des attaques complexes.
+* Réinitialisation des options d'attaque à la fin d'un combat
 * Synchronisation des barres de tokens quand on le pose : Roll20 ne le fait plus correctement.
 * Extension des mécanismes d'escaliers pour Invincible.
 * Ajout d'un bonus magique pour absorber un coup ou un sort quand le bouclier est magique.

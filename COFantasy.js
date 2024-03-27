@@ -1969,7 +1969,7 @@ var COFantasy = COFantasy || function() {
         max: attr.get('max'),
       });
     }
-    token.set(fieldv, val);//On le fait aussi pour forcer la mise à jour de la barre
+    token.set(fieldv, val); //On le fait aussi pour forcer la mise à jour de la barre
     let aset = {
       current: val,
       withWorker: true
@@ -7262,6 +7262,10 @@ var COFantasy = COFantasy || function() {
         let d20roll = roll.results.total;
         let bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
         testRes.texte = jetCache ? d20roll + bonusCarac : buildinline(roll) + bonusText;
+      if (options.chanceRollId && options.chanceRollId[testId]) {
+        bonusCarac += options.chanceRollId[testId];
+        testRes.texte += "+" + options.chanceRollId[testId];
+      }
         effetAuD20(personnage, d20roll);
         if (d20roll == 20) {
           testRes.reussite = true;
@@ -15243,7 +15247,9 @@ var COFantasy = COFantasy || function() {
       } else if (cibles.length == 1 && options.contact && options.attaqueAcrobatique) {
         let rollId = 'attaqueAcrobatique_' + attackingToken.id;
         let rollOptions = {
-          competence: 'acrobatie'
+          competence: 'acrobatie',
+          chanceRollId: options.chanceRollId,
+          rolls: options.rolls
         };
         explications.push("Tentative d'acrobatie pour surprendre " + nomPerso(cible));
         testCaracteristique(attaquant, 'DEX', 15, rollId, rollOptions, evt,
@@ -15254,8 +15260,11 @@ var COFantasy = COFantasy || function() {
             });
             if (tr.reussite) {
               explications.push("Réussite : " + nomPerso(attaquant) + " peut faire une attaque sournoise");
-              options.sournoise = options.sournoise || 0;
-              options.sournoise += options.attaqueAcrobatique;
+              if (!options.attaqueAcrobatiqueReussie) {
+                options.sournoise = options.sournoise || 0;
+                options.sournoise += options.attaqueAcrobatique;
+                options.attaqueAcrobatiqueReussie = true;
+              }
             } else {
               explications.push("Raté, " + nomPerso(attaquant) + " réalise une attaque normale" + tr.rerolls);
             }
@@ -19148,7 +19157,21 @@ var COFantasy = COFantasy || function() {
         // 1+nb dégâts supplémentaires + : rolls de dégâts critiques
         let toEvaluateDmg = "[[" + mainDmgRollExpr + "]]" + extraDmgRollExpr;
         sendChat('', toEvaluateDmg, function(resDmg) {
-          let rollsDmg = target.rollsDmg || resDmg[0];
+          let rollsDmg = resDmg[0];
+          if (target.rollsDmg) {
+            //We may have more rolls or different rolls
+            let pos = 0;
+            let original = target.rollsDmg.inlinerolls;
+            let reroll = rollsDmg.inlinerolls;
+            original.forEach(function(r, i) {
+              while (reroll[pos] && r.expression != reroll[pos].expression)
+                pos++;
+              if (reroll[pos]) {
+                reroll[pos] = r;
+              }
+              pos++;
+            });
+          }
           let afterEvaluateDmg = rollsDmg.content.split(' ');
           let mainDmgRollNumber = rollNumber(afterEvaluateDmg[0]);
           mainDmgRoll.total = rollsDmg.inlinerolls[mainDmgRollNumber].results.total;
@@ -23161,6 +23184,19 @@ var COFantasy = COFantasy || function() {
         setTokenAttr(perso, 'charge_' + label, charges[persoTest.charId][label], evt);
       }
     });
+    //Remise à zéro des options de combat
+    let def0 = {
+      default: 0
+    };
+    persosDuCombat.forEach(function(perso) {
+      setFicheAttr(perso, 'attaque_de_groupe', 1, evt, {
+        default: 1
+      });
+      setFicheAttr(perso, 'attaque_en_puissance_check', 0, evt, def0);
+      setFicheAttr(perso, 'attaque_risquee_check', 0, evt, def0);
+      setFicheAttr(perso, 'attaque_assuree_check', 0, evt, def0);
+      setFicheAttr(perso, 'attaque_dm_temp_check', 0, evt, def0);
+    });
     //Effet de ignorerLaDouleur
     let ilds = allAttributesNamed(attrs, 'douleurIgnoree');
     ilds = ilds.concat(allAttributesNamed(attrs, 'memePasMalIgnore'));
@@ -24758,6 +24794,153 @@ var COFantasy = COFantasy || function() {
     addEvent(evt);
   }
 
+  //Renvoie true si redo possible, false sinon
+  function redoEvent(evt, action, perso) {
+    let options = action.options || {};
+    options.rolls = action.rolls;
+    options.choices = action.choices;
+    switch (evt.type) {
+      case 'Attaque':
+        options.redo = true;
+        if (action.cibles) {
+          action.cibles.forEach(function(target) {
+            delete target.partialSaveAuto;
+            delete target.dmRate;
+          });
+        }
+        attack(action.playerName, action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
+        return true;
+      case 'attaqueMagique':
+        attaqueMagiqueOpposee(action.playerId, action.attaquant, action.cible, options);
+        return true;
+      case 'armeSecrete':
+        doArmeSecrete(action.perso, action.cible, options);
+        return true;
+      case 'boireAlcool':
+        doBoireAlcool(action.playerId, action.persos, options);
+        return true;
+      case 'dmgDirects':
+        dmgDirects(action.playerId, action.playerName, action.cibles, action.dmg, options);
+        return true;
+      case 'degainer':
+        doDegainer(action.persos, action.armeLabel, options);
+        return true;
+      case 'destructionMortsVivants':
+        doDestructionDesMortsVivants(action.lanceur, action.playerName, action.dm, options);
+        return true;
+      case 'echapperEtreinte':
+      case 'echapperEnveloppement':
+        doEchapperEnveloppement(action.perso, action.etreinte, action.cube, action.difficulte, options);
+        return true;
+      case 'effetTemp':
+        effetTemporaire(action.playerId, action.cibles, action.effet, action.mEffet, action.duree, options);
+        return true;
+      case 'Effet':
+        effetIndetermine(action.playerId, action.cibles, action.effet, action.activer, action.valeur, options);
+        return true;
+      case 'auraDrainDeForce':
+        if (!action.cibles) return;
+        action.cibles.forEach(function(perso) {
+          delete perso.messages;
+        });
+        doAuraDrainDeForce(action.playerId, action.origine, action.cibles, action.mEffet, options);
+        return true;
+      case 'auraDrainDeForceSup':
+        if (!action.cibles) return;
+        action.cibles.forEach(function(perso) {
+          delete perso.messages;
+        });
+        doAuraDrainDeForceSup(action.playerId, action.origine, action.cibles, action.mEffet, options);
+        return true;
+      case 'enduireDePoison':
+        doEnduireDePoison(action.perso, action.armeEnduite, action.savePoison, action.forcePoison, action.attribut,
+          action.testINT, action.infosAdditionelles, options);
+        return true;
+      case 'enveloppement':
+      case 'étreinte':
+        doEnveloppement(action.attaquant, action.cible, action.difficulte, action.type, action.exprDM, options);
+        return true;
+      case 'injonction':
+        injonction(action.playerId, action.attaquant, action.cible, options);
+        return true;
+      case 'injonctionMortelle':
+        injonctionMortelle(action.playerId, action.attaquant, action.cible, options);
+        return true;
+      case 'jetPerso':
+        jetPerso(perso, action.caracteristique, action.difficulte, action.titre, action.playerId, options);
+        return true;
+      case 'libererAgrippe':
+        doLibererAgrippe(action.perso, action.agrippant, action.attrName, options);
+        return true;
+      case 'libererEcrase':
+        doLibererEcrase(action.perso, action.agrippant, action.titre, action.carac, action.difficulte, action.explications, options);
+        return true;
+      case 'natureNourriciere':
+        doNatureNourriciere(action.perso, options);
+        return true;
+      case 'nextTurn':
+        let turnOrder = Campaign().get('turnorder');
+        if (turnOrder === '') return false; // nothing in the turn order
+        turnOrder = JSON.parse(turnOrder);
+        if (turnOrder.length < 1) return false; // Juste le compteur de tour
+        let lastTurn = turnOrder.shift();
+        turnOrder.push(lastTurn);
+        Campaign().set('turnorder', JSON.stringify(turnOrder));
+        nextTurn(Campaign(), options);
+        return true;
+      case 'nouveauJour':
+        doNouveauJour(action.persos, options);
+        return true;
+      case 'peur':
+        doPeur(action.cibles, action.difficulte, options);
+        return true;
+      case 'provocation':
+        doProvocation(action.voleur, action.cible, options);
+        return true;
+      case 'rage':
+        doRageDuBerserk(action.persos, action.typeRage, options);
+        return true;
+      case 'recuperation':
+        doRecuperation(action.persos, action.reposLong, action.playerId, options);
+        return true;
+      case 'save_state':
+        doSaveState(action.playerId, action.perso, action.etat, action.carac, options, action.opposant, action.seuil);
+        return true;
+      case 'save_effet':
+        doSaveEffet(action.playerId, action.perso, action.effetC, action.attr, action.attrEffet, action.attrName, action.met, action.carac, action.seuil, action.options);
+        return true;
+      case 'set_state':
+        doSetState(action.cibles, action.etat, action.valeur, options);
+        return true;
+      case 'sommeil':
+        doSommeil(action.lanceur, action.cibles, options, action.ciblesSansSave, action.ciblesAvecSave);
+        return true;
+      case 'surprise':
+        doSurprise(action.cibles, action.testSurprise, action.selected, options);
+        return true;
+      case 'tourDeForce': //Deprecated
+        doTourDeForce(action.perso, action.seuil, options);
+        return true;
+      case 'tueurFantasmagorique':
+        tueurFantasmagorique(action.playerId, action.attaquant, action.cible, options);
+        return true;
+      case 'enkystementLointain':
+        enkystementLointain(action.playerId, action.attaquant, action.cible, options);
+        return true;
+      case 'vapeursEthyliques':
+        doVapeursEthyliques(action.playerId, action.persos, options);
+        return true;
+      case 'ombre_mouvante':
+        doOmbreMouvante(action.perso, action.playerId, options);
+        return true;
+      case "Sentir la corruption":
+        sentirLaCorruption(action.playerId, action.chasseur, action.cible, options);
+        return true;
+      default:
+        return false;
+    }
+  }
+
   //!cof-bouton-chance [evt.id] [rollId]
   function boutonChance(msg) {
     let args = msg.content.split(' ');
@@ -24805,7 +24988,7 @@ var COFantasy = COFantasy || function() {
     }
     let evtChance = {
       type: 'chance',
-      rollId: rollId
+      rollId
     };
     chance--;
     undoEvent(evt);
@@ -25156,152 +25339,6 @@ var COFantasy = COFantasy || function() {
     error("Type d'évènement pas encore géré pour la chance", evt);
   }
 
-  //Renvoie true si redo possible, false sinon
-  function redoEvent(evt, action, perso) {
-    let options = action.options || {};
-    options.rolls = action.rolls;
-    options.choices = action.choices;
-    switch (evt.type) {
-      case 'Attaque':
-        options.redo = true;
-        if (action.cibles) {
-          action.cibles.forEach(function(target) {
-            delete target.partialSaveAuto;
-            delete target.dmRate;
-          });
-        }
-        attack(action.playerName, action.playerId, action.attaquant, action.cibles, action.weaponStats, options);
-        return true;
-      case 'attaqueMagique':
-        attaqueMagiqueOpposee(action.playerId, action.attaquant, action.cible, options);
-        return true;
-      case 'armeSecrete':
-        doArmeSecrete(action.perso, action.cible, options);
-        return true;
-      case 'boireAlcool':
-        doBoireAlcool(action.playerId, action.persos, options);
-        return true;
-      case 'dmgDirects':
-        dmgDirects(action.playerId, action.playerName, action.cibles, action.dmg, options);
-        return true;
-      case 'degainer':
-        doDegainer(action.persos, action.armeLabel, options);
-        return true;
-      case 'destructionMortsVivants':
-        doDestructionDesMortsVivants(action.lanceur, action.playerName, action.dm, options);
-        return true;
-      case 'echapperEtreinte':
-      case 'echapperEnveloppement':
-        doEchapperEnveloppement(action.perso, action.etreinte, action.cube, action.difficulte, options);
-        return true;
-      case 'effetTemp':
-        effetTemporaire(action.playerId, action.cibles, action.effet, action.mEffet, action.duree, options);
-        return true;
-      case 'Effet':
-        effetIndetermine(action.playerId, action.cibles, action.effet, action.activer, action.valeur, options);
-        return true;
-      case 'auraDrainDeForce':
-        if (!action.cibles) return;
-        action.cibles.forEach(function(perso) {
-          delete perso.messages;
-        });
-        doAuraDrainDeForce(action.playerId, action.origine, action.cibles, action.mEffet, options);
-        return true;
-      case 'auraDrainDeForceSup':
-        if (!action.cibles) return;
-        action.cibles.forEach(function(perso) {
-          delete perso.messages;
-        });
-        doAuraDrainDeForceSup(action.playerId, action.origine, action.cibles, action.mEffet, options);
-        return true;
-      case 'enduireDePoison':
-        doEnduireDePoison(action.perso, action.armeEnduite, action.savePoison, action.forcePoison, action.attribut,
-          action.testINT, action.infosAdditionelles, options);
-        return true;
-      case 'enveloppement':
-      case 'étreinte':
-        doEnveloppement(action.attaquant, action.cible, action.difficulte, action.type, action.exprDM, options);
-        return true;
-      case 'injonction':
-        injonction(action.playerId, action.attaquant, action.cible, options);
-        return true;
-      case 'injonctionMortelle':
-        injonctionMortelle(action.playerId, action.attaquant, action.cible, options);
-        return true;
-      case 'jetPerso':
-        jetPerso(perso, action.caracteristique, action.difficulte, action.titre, action.playerId, options);
-        return true;
-      case 'libererAgrippe':
-        doLibererAgrippe(action.perso, action.agrippant, action.attrName, options);
-        return true;
-      case 'libererEcrase':
-        doLibererEcrase(action.perso, action.agrippant, action.titre, action.carac, action.difficulte, action.explications, options);
-        return true;
-      case 'natureNourriciere':
-        doNatureNourriciere(action.perso, options);
-        return true;
-      case 'nextTurn':
-        let turnOrder = Campaign().get('turnorder');
-        if (turnOrder === '') return false; // nothing in the turn order
-        turnOrder = JSON.parse(turnOrder);
-        if (turnOrder.length < 1) return false; // Juste le compteur de tour
-        let lastTurn = turnOrder.shift();
-        turnOrder.push(lastTurn);
-        Campaign().set('turnorder', JSON.stringify(turnOrder));
-        nextTurn(Campaign(), options);
-        return true;
-      case 'nouveauJour':
-        doNouveauJour(action.persos, options);
-        return true;
-      case 'peur':
-        doPeur(action.cibles, action.difficulte, options);
-        return true;
-      case 'provocation':
-        doProvocation(action.voleur, action.cible, options);
-        return true;
-      case 'rage':
-        doRageDuBerserk(action.persos, action.typeRage, options);
-        return true;
-      case 'recuperation':
-        doRecuperation(action.persos, action.reposLong, action.playerId, options);
-        return true;
-      case 'save_state':
-        doSaveState(action.playerId, action.perso, action.etat, action.carac, options, action.opposant, action.seuil);
-        return true;
-      case 'save_effet':
-        doSaveEffet(action.playerId, action.perso, action.effetC, action.attr, action.attrEffet, action.attrName, action.met, action.carac, action.seuil, action.options);
-        return true;
-      case 'set_state':
-        doSetState(action.cibles, action.etat, action.valeur, options);
-        return true;
-      case 'sommeil':
-        doSommeil(action.lanceur, action.cibles, options, action.ciblesSansSave, action.ciblesAvecSave);
-        return true;
-      case 'surprise':
-        doSurprise(action.cibles, action.testSurprise, action.selected, options);
-        return true;
-      case 'tourDeForce': //Deprecated
-        doTourDeForce(action.perso, action.seuil, options);
-        return true;
-      case 'tueurFantasmagorique':
-        tueurFantasmagorique(action.playerId, action.attaquant, action.cible, options);
-        return true;
-      case 'enkystementLointain':
-        enkystementLointain(action.playerId, action.attaquant, action.cible, options);
-        return true;
-      case 'vapeursEthyliques':
-        doVapeursEthyliques(action.playerId, action.persos, options);
-        return true;
-      case 'ombre_mouvante':
-        doOmbreMouvante(action.perso, action.playerId, options);
-        return true;
-      case "Sentir la corruption":
-        sentirLaCorruption(action.playerId, action.chasseur, action.cible, options);
-        return true;
-      default:
-        return false;
-    }
-  }
 
   function echecTotal(msg) {
     let args = msg.content.split(' ');
@@ -38368,6 +38405,7 @@ var COFantasy = COFantasy || function() {
     let token = createObj('graphic', tokSpec);
     if (token) {
       evt.tokens = [token];
+      toFront(token);
     }
     if (stateCOF.options.affichage.val.duree_effets.val) {
       if (options.brumes)
