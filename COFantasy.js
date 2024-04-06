@@ -7262,10 +7262,10 @@ var COFantasy = COFantasy || function() {
         let d20roll = roll.results.total;
         let bonusText = (bonusCarac > 0) ? "+" + bonusCarac : (bonusCarac === 0) ? "" : bonusCarac;
         testRes.texte = jetCache ? d20roll + bonusCarac : buildinline(roll) + bonusText;
-      if (options.chanceRollId && options.chanceRollId[testId]) {
-        bonusCarac += options.chanceRollId[testId];
-        testRes.texte += "+" + options.chanceRollId[testId];
-      }
+        if (options.chanceRollId && options.chanceRollId[testId]) {
+          bonusCarac += options.chanceRollId[testId];
+          testRes.texte += "+" + options.chanceRollId[testId];
+        }
         effetAuD20(personnage, d20roll);
         if (d20roll == 20) {
           testRes.reussite = true;
