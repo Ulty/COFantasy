@@ -1,3 +1,4 @@
+//Dernière modification : sam. 20 avr. 2024,  09:30
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -79,6 +80,7 @@ let COF_loaded = false;
 // - nextPrescience : pour le changement de tour car prescience ne revient que d'un tour
 // - afterDisplay : données à afficher après un display
 // - version : la version du script en cours, pour détecter qu'on change de version
+// - personnageCibleCree : savoir si la cible a été créée
 // statistiques : des statistiques pour les jets de dés
 // statistiquesEnPause
 
@@ -863,6 +865,7 @@ var COFantasy = COFantasy || function() {
     return toInt(r, def);
   }
 
+  //Renvoie toujours un tableau, possiblement vide
   function predicatesNamed(perso, name) {
     let pred = getPredicates(perso);
     let r = pred[name];
@@ -2154,6 +2157,26 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function modOfCarac(carac) {
+      switch (carac) {
+        case 'force':
+        case 'FORCE': return 'FOR';
+        case 'dexterite':
+        case 'DEXTERITE': return 'DEX';
+        case 'CONSTITUTION': return 'CON';
+        case 'intelligence':
+        case 'INTELLIGENCE':return 'INT';
+        case 'sagesse':
+        case 'SAGESSE': return 'SAG';
+        case 'charisme':
+        case 'CHARISME': return 'CHA';
+        case 'perception':
+        case 'PERCEPTION': return 'PER';
+        default:
+          return '';
+      }
+  }
+
   //Retourne le mod de la caractéristque entière.
   //si carac n'est pas une carac, retourne 0
   //perso peut ne pas avoir de token ou être juste un charId
@@ -2161,31 +2184,26 @@ var COFantasy = COFantasy || function() {
     if (perso.charId === undefined) perso = {
       charId: perso
     };
+    let modCarac= modOfCarac(carac);
     let mod = 0;
     if (persoEstPNJ(perso)) {
-      switch (carac) {
-        case 'force':
-        case 'FORCE':
+      switch (modCarac) {
+        case 'FOR':
           mod = ficheAttributeAsInt(perso, 'pnj_for', 0);
           break;
-        case 'dexterite':
-        case 'DEXTERITE':
+        case 'DEX':
           mod = ficheAttributeAsInt(perso, 'pnj_dex', 0);
           break;
-        case 'constitution':
-        case 'CONSTITUTION':
+        case 'CON':
           mod = ficheAttributeAsInt(perso, 'pnj_con', 0);
           break;
-        case 'intelligence':
-        case 'INTELLIGENCE':
+        case 'INT':
           mod = ficheAttributeAsInt(perso, 'pnj_int', 0);
           break;
-        case 'sagesse':
-        case 'SAGESSE':
+        case 'SAG':
           mod = ficheAttributeAsInt(perso, 'pnj_sag', 0);
           break;
-        case 'charisme':
-        case 'CHARISME':
+        case 'CHAR':
           mod = ficheAttributeAsInt(perso, 'pnj_cha', 0);
           break;
         default:
@@ -2198,11 +2216,12 @@ var COFantasy = COFantasy || function() {
         ficheAttributeAsInt(perso, carac, 10) - attributeAsInt(perso, 'affaiblissementde' + carac, 0);
       mod = Math.floor((valCarac - 10) / 2);
     }
-    if (carac == 'force' || carac == 'FORCE') {
+    if (modCarac == 'FOR') {
       if (attributeAsBool(perso, 'mutationMusclesHypertrophies')) mod += 2;
       if (attributeAsBool(perso, 'grandeTaille')) mod += 2;
       if (attributeAsBool(perso, 'lycanthropie')) mod += 1;
-    } else if ((carac == 'DEXTERITE' || carac == 'dexterite') && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) mod += 4;
+    } else if (modCarac == 'DEX' && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) mod += 4;
+    mod += predicateAsInt(perso, 'bonus_'+modCarac, 0);
     return mod;
   }
 
@@ -14556,7 +14575,7 @@ var COFantasy = COFantasy || function() {
             let distance = Math.random() * reglesOptionelles.divers.val.echec_critique_boule_de_feu.val * PIX_PER_UNIT / computeScale(pageId);
             pc.x = Math.round(left + Math.cos(angle) * distance);
             pc.y = Math.round(top + Math.sin(angle) * distance);
-            page = page || getObj("page", pageId);
+            page = page || getObj('page', pageId);
             let width = page.get('width') * PIX_PER_UNIT;
             let height = page.get('height') * PIX_PER_UNIT;
             if (pc.x < 0) pc.x = 0;
@@ -20411,6 +20430,10 @@ var COFantasy = COFantasy || function() {
               layer: 'objects'
             });
             let allies = alliesParPerso[attaquant.charId] || new Set();
+            let page = getObj('page', evt.action.pageId);
+            let murs = getWalls(page, evt.action.pageId);
+            let ptt = pointOfToken(cible.token);
+            let pta = pointOfToken(attaquant.token);
             tokens = tokens.filter(function(tok) {
               if (tok.id == attaquant.token.id) return false;
               if (tok.id == cible.token.id) return false;
@@ -20423,6 +20446,12 @@ var COFantasy = COFantasy || function() {
               if (dejaTouche) return false;
               let dist = distanceCombat(cible.token, tok, evt.action.pageId);
               if (dist === 0 || dist > options.portee) return false;
+              if (murs) {
+                let x = tok.get('left');
+                let y = tok.get('top');
+                if (obstaclePresent(x, y, ptt, murs)) return false;
+                if (obstaclePresent(x, y, pta, murs)) return false;
+              }
               return true;
             });
             let distance = distanceCombat(cible.token, attaquant.token, evt.action.pageId);
@@ -20905,6 +20934,10 @@ var COFantasy = COFantasy || function() {
       res.sauf.argent += 5;
     }
     let rd = ficheAttribute(perso, 'RDS', '');
+    predicatesNamed(perso, 'bonus_RD').forEach(function(r) {
+      if (rd === '') rd = r;
+      else rd += ','+r;
+    });
     rd = (rd + '').trim();
     if (rd === '') {
       perso.rd = res;
@@ -21793,6 +21826,15 @@ var COFantasy = COFantasy || function() {
         }
         let rdTarget = getRDS(target);
         let rd = rdTarget.rdt || 0;
+        if (!target.perteDeSubstance && options.attaquant && predicateAsBool(target, 'ancreInvincible')) {
+          if (predicateAsBool(options.attaquant, 'dragonInvincble')) {
+            rd += 10;
+            target.messages.push("Ancre contre le dragon => +10 RD");
+          } else if (predicateAsBool(options.attaquant, 'emissaireDuDragonInvincible')) {
+            rd += 5;
+            target.messages.push("Ancre contre émissaire du dragon => +5 RD");
+          }
+        }
         if (rd > 0 && !options.aoe && options.attaquant && predicateAsBool(options.attaquant, 'ventreMou')) {
           let taille = taillePersonnage(target, 4);
           if (taille > 4) {
@@ -44925,6 +44967,8 @@ var COFantasy = COFantasy || function() {
     stateCOF.afterDisplay = undefined;
     stateCOF.statistiquesEnPause = undefined;
     stateCOF.statistiques = undefined;
+    stateCOF.personnageCibleCree = undefined;
+    stateCOF.predicats = {};
     log("stateCOf purgé");
     log(stateCOF);
     sendPlayer(msg, "État global de COFantasy purgé.");
