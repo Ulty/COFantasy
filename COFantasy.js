@@ -1,4 +1,4 @@
-//Dernière modification : sam. 20 avr. 2024,  09:30
+//Dernière modification : jeu. 02 mai 2024,  03:26
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -241,6 +241,11 @@ var COFantasy = COFantasy || function() {
           val: {
             mana_totale: {
               explications: "Tous les sorts ont un coût, celui des tempêtes de mana est multiplié par 3",
+              val: false,
+              type: 'bool'
+            },
+            PR_rend_mana: {
+              explications: "L'utilisation d'un PR pour se reposer rend aussi de la mana en plus des PV. Le montant rendu est le dé de mana + mod. de magie.",
               val: false,
               type: 'bool'
             },
@@ -851,8 +856,12 @@ var COFantasy = COFantasy || function() {
 
   function predicateAsBool(perso, name) {
     let pred = getPredicates(perso);
-    if (Array.isArray(pred)) pred = pred[0];
-    return pred[name];
+    let r = pred[name];
+    if (r === undefined) return false;
+    if (Array.isArray(r)) r = r.find(function(p) {
+      return p;
+    });
+    return r;
   }
 
   function predicateAsInt(perso, name, def, defPresent) {
@@ -860,7 +869,10 @@ var COFantasy = COFantasy || function() {
     let r = pred[name];
     if (r === undefined) return def;
     if (defPresent !== undefined) def = defPresent;
-    if (Array.isArray(r)) r = r[0];
+    if (Array.isArray(r)) {
+      if (r.length === 0) return def;
+      r = Math.max(...r);
+    }
     if (r === true) return def;
     return toInt(r, def);
   }
@@ -2158,23 +2170,30 @@ var COFantasy = COFantasy || function() {
   }
 
   function modOfCarac(carac) {
-      switch (carac) {
-        case 'force':
-        case 'FORCE': return 'FOR';
-        case 'dexterite':
-        case 'DEXTERITE': return 'DEX';
-        case 'CONSTITUTION': return 'CON';
-        case 'intelligence':
-        case 'INTELLIGENCE':return 'INT';
-        case 'sagesse':
-        case 'SAGESSE': return 'SAG';
-        case 'charisme':
-        case 'CHARISME': return 'CHA';
-        case 'perception':
-        case 'PERCEPTION': return 'PER';
-        default:
-          return '';
-      }
+    switch (carac) {
+      case 'force':
+      case 'FORCE':
+        return 'FOR';
+      case 'dexterite':
+      case 'DEXTERITE':
+        return 'DEX';
+      case 'CONSTITUTION':
+        return 'CON';
+      case 'intelligence':
+      case 'INTELLIGENCE':
+        return 'INT';
+      case 'sagesse':
+      case 'SAGESSE':
+        return 'SAG';
+      case 'charisme':
+      case 'CHARISME':
+        return 'CHA';
+      case 'perception':
+      case 'PERCEPTION':
+        return 'PER';
+      default:
+        return '';
+    }
   }
 
   //Retourne le mod de la caractéristque entière.
@@ -2184,7 +2203,7 @@ var COFantasy = COFantasy || function() {
     if (perso.charId === undefined) perso = {
       charId: perso
     };
-    let modCarac= modOfCarac(carac);
+    let modCarac = modOfCarac(carac);
     let mod = 0;
     if (persoEstPNJ(perso)) {
       switch (modCarac) {
@@ -2221,7 +2240,7 @@ var COFantasy = COFantasy || function() {
       if (attributeAsBool(perso, 'grandeTaille')) mod += 2;
       if (attributeAsBool(perso, 'lycanthropie')) mod += 1;
     } else if (modCarac == 'DEX' && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) mod += 4;
-    mod += predicateAsInt(perso, 'bonus_'+modCarac, 0);
+    mod += predicateAsInt(perso, 'bonus_' + modCarac, 0);
     return mod;
   }
 
@@ -20936,7 +20955,7 @@ var COFantasy = COFantasy || function() {
     let rd = ficheAttribute(perso, 'RDS', '');
     predicatesNamed(perso, 'bonus_RD').forEach(function(r) {
       if (rd === '') rd = r;
-      else rd += ','+r;
+      else rd += ',' + r;
     });
     rd = (rd + '').trim();
     if (rd === '') {
@@ -24528,17 +24547,11 @@ var COFantasy = COFantasy || function() {
         }
       }
       let token = perso.token;
-      let charId = perso.charId;
-      let character = getObj("character", charId);
-      if (character === undefined) {
-        finalize();
-        return;
-      }
       let pr = pointsDeRecuperation(perso);
       let bar2 = parseInt(token.get("bar2_value"));
       let manaAttr = findObjs({
         _type: 'attribute',
-        _characterid: charId,
+        _characterid: perso.charId,
         name: 'PM'
       }, {
         caseInsensitive: true
@@ -24546,14 +24559,29 @@ var COFantasy = COFantasy || function() {
       let hasMana = false;
       let dmTemp = bar2;
       let estMook = token.get('bar1_link') === '';
+      let recupereMana;
       if (manaAttr.length > 0) { // Récupération des points de mana
         let manaMax = parseInt(manaAttr[0].get('max'));
         hasMana = !isNaN(manaMax) && manaMax > 0;
         if (hasMana) {
           if (estMook) dmTemp = attributeAsInt(perso, 'DMTEMP', 0);
           else dmTemp = ficheAttributeAsInt(perso, 'DMTEMP', 0);
-          if (reposLong && (isNaN(bar2) || bar2 < manaMax)) {
-            updateCurrentBar(perso, 2, manaMax, evt);
+          if (isNaN(bar2) || bar2 < manaMax) {
+            if (reposLong) {
+              updateCurrentBar(perso, 2, manaMax, evt);
+            } else if (reglesOptionelles.mana.val.PR_rend_mana.val) {
+              let de = ficheAttributeAsInt(perso, 'de_mana', 0);
+              if (de) {
+                let caracMagique = ficheAttribute(perso, 'carac_mana', '@{INT}');
+                if (isNaN(bar2)) bar2 = 0;
+                recupereMana = {
+                  manaMax,
+                  bar2,
+                  de,
+                  caracMagique
+                };
+              }
+            }
           }
         }
       }
@@ -24572,7 +24600,7 @@ var COFantasy = COFantasy || function() {
         finalize();
         return;
       }
-      if (bar1 >= pvmax && !reposLong) {
+      if (bar1 >= pvmax && !reposLong && !recupereMana) {
         //Plus rien à faire si pas un repos long
         sendPerso(perso, "n'a pas besoin de repos");
         finalize();
@@ -24611,7 +24639,6 @@ var COFantasy = COFantasy || function() {
         finalize();
         return;
       }
-      let message;
       if (reposLong && pr && pr.current < pr.max) { // on récupère un PR
         //Sauf si on a une blessure gave
         if (getState(perso, 'blesse')) {
@@ -24620,11 +24647,11 @@ var COFantasy = COFantasy || function() {
             sendPerso(perso, "fait un jet de CON pour guérir de sa blessure");
             let m = "/direct " + onGenre(perso, 'Il', 'Elle') + " fait " + tr.texte;
             if (tr.reussite) {
-              sendChar(charId, m + "&ge; 8, son état s'améliore nettement." + tr.modifiers, true);
+              sendPerso(perso, m + "&ge; 8, son état s'améliore nettement." + tr.modifiers, true);
               setState(perso, 'blesse', false, evt);
             } else {
               let msgRate = m + "< 8, son état reste préoccupant." + tr.rerolls + tr.modifiers;
-              sendChar(charId, msgRate, true);
+              sendPerso(perso, msgRate, true);
             }
             finalize();
           });
@@ -24636,17 +24663,17 @@ var COFantasy = COFantasy || function() {
           finalize();
           return;
         }
-        message =
+        let message =
           "Au cours de la nuit, les points de récupération de " + nomPerso(perso) +
           " passent de " + (pr.current - 1) + " à " + pr.current;
-        sendChar(charId, message, true);
+        sendPerso(perso, message, true);
         if (bar1 < pvmax) manquePV.push(perso);
         finalize();
         return;
       }
       if (!reposLong && pr) {
         if (pr.current === 0) { //pas possible de récupérer
-          message = " a besoin d'une nuit complète pour récupérer";
+          let message = " a besoin d'une nuit complète pour récupérer";
           sendPerso(perso, message);
           finalize();
           return;
@@ -24656,8 +24683,10 @@ var COFantasy = COFantasy || function() {
       }
       let conMod = modCarac(perso, 'constitution');
       let niveau = ficheAttributeAsInt(perso, 'niveau', 1);
-      let characterName = character.get("name");
-      let rollExpr = addOrigin(characterName, "[[1d" + dVie + "]]");
+      let rollExpr = "[[1d" + dVie + "]]";
+      if (recupereMana) {
+        rollExpr += " [[1d" + recupereMana.de + "]]";
+      }
       sendChat("COF", rollExpr, function(res) {
         let rollRecupID = "rollRecup_" + perso.token.id;
         options.rolls = options.rolls || {};
@@ -24666,28 +24695,51 @@ var COFantasy = COFantasy || function() {
         evt.action = evt.action || {};
         evt.action.rolls = evt.action.rolls || {};
         evt.action.rolls[rollRecupID] = roll;
-        let dVieRoll = roll.results.total;
-        let bonus = conMod + niveau;
-        let total = dVieRoll + bonus;
-        if (total < 0) total = 0;
-        if (bar1 === 0) {
-          if (attributeAsBool(perso, 'etatExsangue')) {
-            removeTokenAttr(perso, 'etatExsangue', evt, {
-              msg: "retrouve des couleurs"
-            });
+        let message;
+        if (bar1 < pvmax) {
+          let dVieRoll = roll.results.total;
+          let bonus = conMod + niveau;
+          let total = dVieRoll + bonus;
+          if (total < 0) total = 0;
+          if (bar1 === 0) {
+            if (attributeAsBool(perso, 'etatExsangue')) {
+              removeTokenAttr(perso, 'etatExsangue', evt, {
+                msg: "retrouve des couleurs"
+              });
+            }
           }
+          bar1 += total;
+          if (bar1 < pvmax) manquePV.push(perso);
+          else bar1 = pvmax;
+          updateCurrentBar(perso, 1, bar1, evt);
+          if (reposLong) {
+            message = "Au cours de la nuit, ";
+          } else {
+            message = "Après 5 minutes de repos, ";
+          }
+          message += "récupère " + buildinline(roll) + "+" + bonus + " PV";
         }
-        bar1 += total;
-        if (bar1 < pvmax) manquePV.push(perso);
-        else bar1 = pvmax;
-        updateCurrentBar(perso, 1, bar1, evt);
-        if (reposLong) {
-          message = "Au cours de la nuit, ";
-        } else {
-          message = "Après 5 minutes de repos, ";
+        if (recupereMana) {
+          let rollRecupManaID = "rollRecupmana_" + perso.token.id;
+          roll =
+            options.rolls[rollRecupManaID] ? options.rolls[rollRecupManaID] : res[0].inlinerolls[1];
+          evt.action.rolls[rollRecupManaID] = roll;
+          let dManaRoll = roll.results.total;
+          let bonus = computeCarValue(perso, recupereMana.caracMagique);
+          let total = dManaRoll + bonus;
+          if (total < 0) total = 0;
+          let bar2 = recupereMana.bar2 + total;
+          if (bar2 > recupereMana.manaMax) bar2 = recupereMana.manaMax;
+          updateCurrentBar(perso, 2, bar2, evt);
+          if (message) message += " et ";
+          else message = "Après 5 minutes de repos, récupère ";
+          message += buildinline(roll) + "+" + bonus + " PM.";
+        } else message += '.';
+        if (pr) {
+          message += " Il lui reste " + pr.current + " point";
+          if (pr.current > 1) message += 's';
+          message += " de récupération";
         }
-        message += "récupère " + buildinline(roll) + "+" + bonus + " PV.";
-        if (pr) message += " Il lui reste " + pr.current + " points de récupération";
         sendPerso(perso, message);
         finalize();
       });
