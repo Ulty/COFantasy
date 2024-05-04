@@ -1,4 +1,4 @@
-//Dernière modification : jeu. 02 mai 2024,  03:26
+//Dernière modification : sam. 04 mai 2024,  02:40
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -45237,6 +45237,79 @@ var COFantasy = COFantasy || function() {
     });
   }
 
+  //!cof-recupere-mana montant
+  function recupereMana(msg) {
+    let options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
+    if (cmd === undefined) {
+      error("Problème de parse options", msg.content);
+      return;
+    }
+    if (cmd.length < 2) {
+      sendPlayer(msg, "Il manque le montant de mana à récupérer pour !cof-recupere-mana");
+      return;
+    }
+    let mana = parseDice(cmd[1], "mana");
+    if (mana === undefined) return;
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        sendPlayer(msg, "Personne ne récupère de mana", playerId);
+        return;
+      }
+      const evt = {
+        type: 'récupération de mana'
+      };
+      addEvent(evt);
+      iterSelected(selected, function(perso) {
+        let manaAttr = findObjs({
+          _type: 'attribute',
+          _characterid: perso.charId,
+          name: 'PM'
+        }, {
+          caseInsensitive: true
+        });
+        let manaMax;
+        if (manaAttr.length > 0) {
+          manaMax = parseInt(manaAttr[0].get('max'));
+        }
+        if (!manaMax || isNaN(manaMax) || manaMax < 0) {
+          sendPerso(perso, "n'a pas de mana.");
+          return;
+        }
+        let token = perso.token;
+        let bar2 = parseInt(token.get('bar2_value'));
+        if (isNaN(bar2)) {
+          if (token.get('bar1_link') === '') bar2 = 0;
+          else { //devrait être lié à la mana courante
+            sendPerso(perso, "*** Attention, la barre de mana du token n'est pas liée à la mana de la fiche ***");
+            bar2 = parseInt(manaAttr[0].get('current'));
+          }
+        }
+        if (bar2 >= manaMax) {
+          sendPerso(perso, "est déjà au maximum de mana");
+          return;
+        }
+        if (limiteRessources(perso, options, 'recupereMana', "récupérer de la mana", evt)) return;
+        let r = rollDePlus(mana);
+        let recupere = r.val;
+        bar2 += recupere;
+        if (bar2 >= manaMax) {
+          recupere -= bar2 - manaMax;
+          bar2 = manaMax;
+        }
+        let msg = "récupère ";
+        if (r.val == recupere) msg += r.roll;
+        else msg += recupere;
+        msg += " PM";
+        if (recupere > 1) msg += 's';
+        if (r.val > recupere) msg += " (le résultat du jet était " + r.roll + ")";
+        sendPerso(perso, msg, options.secret);
+        updateCurrentBar(perso, 2, bar2, evt);
+      });
+    }, options);
+  }
+
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
     const command = msg.content.split(' ', 1);
@@ -45296,6 +45369,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-dmg':
         parseDmgDirects(msg);
+        return;
+      case '!cof-echange-init':
+        echangeInit(msg);
         return;
       case '!cof-effet-chaque-d20':
         setEffetChaqueD20(msg);
@@ -45382,6 +45458,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-recuperation':
         parseRecuperer(msg);
         return;
+      case '!cof-recupere-mana':
+        recupereMana(msg);
+        return;
       case '!cof-remove-buf-def':
         removeBufDef(msg);
         return;
@@ -45440,9 +45519,6 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-zone-de-vie':
         lancerZoneDeVie(msg);
-        return;
-      case "!cof-echange-init":
-        echangeInit(msg);
         return;
       case "!cof-a-couvert":
         aCouvert(msg);

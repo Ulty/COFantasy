@@ -5,6 +5,7 @@
 * Implémentation de la version avancée du drain de force de Dominia.
 
 ### Autres améliorations
+* Ajout d'une commande !cof-recupere-mana.
 * Règle optionnelle pour faire récupérer des points de mana quand on dépense un point de récupération.
 * Implémentation de prédicats pour les bonus en RD et aux caractéristiques.
 * Prise en compte des émissaires du dragon pour les ancres.

@@ -200,6 +200,12 @@ tr {line-height: 25px;}
                 <li>Même un sort qui ne coûte pas de mana devrait utiliser <code>--mana 0</code>. Cela permet au script de dissiper automatiquement un effet généré par un lanceur de sort mis hors de combat.</li>
                 <li>Une option d'affichage disponible via <code>!cof-options</code> permet de demander au script d'afficher explicitement dans le chat toute dépense de PM effectuée par un personnage.</li>
               </ul>
+              <h4>Récupérer de la mana</h4>
+              <ul>
+                <li> Faire passer une nuit de repos remet les points de mana au maximum.</li>
+                <li> Une option règle de jeu (accessible avec <code>!cof-options</code>) permet de récupérer de la mana quand on dépense 1 PR pour se reposer (il faut spécifier un dé de mana sur la fiche).</li>
+                <li> La commande <code>!cof-recupere-mana <i>m</i></code> permet de récupérer <i>m</i> points de mana. <i>m</i> peut être un nombre positif ou une expression de dé simple.</li>
+              </ul>
               <h4>Système de base (COF p. 79)</h4>
               <p>Le support des effets supplémentaires à disposition du lanceur de sort sont gérées via l'utilisation d'options sur les commandes utilisées.</p>
               <ul>
@@ -3071,6 +3077,7 @@ tr {line-height: 25px;}
               <div class="decalage">
                 <ul>
                   <li><strong>actionDegainer<i>n</i></strong> : labels d'attaques, séparés par des <code>-</code>, propose de dégainer ce ou ces labels en premier, dans l'ordre du numéro <i>n</i> (partant de 1).</li>
+                  <li><strong>adaptable</strong> : entier, bonus aux tests de caractéristique en combat, si le script a reconnu un test raté de même caractéristique au tour précédent.</li>
                   <li><strong>agripper</strong> : booléen, le personnage peut agripper une cible si le jet d'attaque est 15 ou plus.</li>
                   <li><strong>ambidextrie</strong> : booléen, permet d'attaquer avec l'arme en main gauche sans malus.</li>
                   <li><strong>ameFeline</strong> : entier, bonus en acrobatie, course, escalade, saut et initiative.</li>
@@ -3121,6 +3128,7 @@ tr {line-height: 25px;}
                   <li><strong>creatureArtificielle</strong> : booléen, immunise au poison, à l'asphyxie et aux maladies.</li>
                   <li><strong>crocEnJambe</strong> : booléen, fait tomber les adversaires sur un jet de dé d'attaque de 17-20. Passe à 19-20 contre des adversaires quadrupèdes.</li>
                   <li><strong>DEF</strong> : entier, valeur ajoutée à la DEF.</li>
+                  <li><strong>DEF_magie</strong> : entier, augmente la défense contre les sortilèges.</li>
                   <li><strong>defDeriveeDe</strong> : nom de personnage, la valeur de défense est égale à celle du personnage du prédicat.</li>
                   <li><strong>defenseIntuitive</strong> : booléen, ajoute la SAG à la DEF.</li>
                   <li><strong>defierLaMort</strong> : booléen, fait lancer un dé pour garder 1 PV quand le personnage devrait mourir.</li>
@@ -3151,14 +3159,17 @@ tr {line-height: 25px;}
                   <li><strong>grosseTete</strong> : booléen, remplace le mod. de FOR par le mod. d'INT pour les tests.</li>
                   <li><strong>guetteur</strong> : nom de personnage, nom du personnage représentant le compagnon qui donne un bonus en perception.</li>
                   <li><strong>hachesEtMarteaux</strong> : booléen, ajoute un bonus de 1 en attaque est DM pour les haches et les marteaux.</li>
+                  <li><strong>humanoide</strong> : booléen, le personnage est humanoïde.</li>
                   <li><strong>ignorerLaDouleur</strong> : booléen, permet de reporter les DM d'une attaque à la fin du combat.</li>
                   <li><strong>immunite_<i>x</i></strong> : booléen, empêche de mettre le personnage dans l'état ou effet temporaire nommé <i>x</i>. On peut aussi immuniser aux effets de pétrification avec <i>x</i>=petrification, ou contre la desctruction des mort-vivants avec <i>x</i>=destruction.</li>
                   <li><strong>immuniteSaignement</strong> : booléen, immunise aux effets de saignement.</li>
                   <li><strong>immuniteAuxSournoises</strong> : booléen, annule les DM d'effets de type sournoise.</li>
                   <li><strong>increvable</strong> : booléen, permet de se relever une fois par combat après avoir été mis à 0 PV.</li>
+                  <li><strong>increvableHumain</strong> : booléen, propose un jet pour éviter une attaque qui mettrait à 0 PV.</li>
                   <li><strong>initiativeDeriveeDe</strong> : nom de personnage, l'initiative est celle de ce personnage.</li>
                   <li><strong>insecte</strong> : booléen, le personnage est un insecte. </li>
                   <li><strong>insignifiant</strong> : booléen, bonus de +2 en DEF contre les créature grandes et +4 en DEF contre celles encore plus grandes.</li>
+                  <li><strong>instinctDeSurvieHumain</strong> : booléen, les DM qui amènent à 0 PV sont divisés par 2.</li>
                   <li><strong>intelligenceDuCombat</strong> : booléen, ajoute le mod d'INT à l'initiative et à la DEF. </li>
                   <li><strong>intercepter</strong> : booléen, propose d'intercepter les attaques sur les alliés au contact. </li>
                   <li><strong>interventionDivine</strong> : booléen, autorise l'utilisation de la commande <code>!cof-intervention-divine</code> une fois par combat.</li>
@@ -3167,6 +3178,7 @@ tr {line-height: 25px;}
                   <li><strong>kiai</strong> : entier, nombre de kiaï que le personnage peut pousser dans un combat (avec un délai de 1d6 tours entre chaque).</li>
                   <li><strong>laissezLeMoi</strong> : booléen, rajoute 1d6 aux DM contre les chefs.</li>
                   <li><strong>liberteDAction</strong> : booléen, immunise à tout ce qui entrave le mouvement.</li>
+                  <li><strong>loupParmiLesLoups</strong> : entier, bonus aux DM contre les humanoïdes.</li>
                   <li><strong>marcheSylvestre</strong> : booléen, immunise aux effets de conditions hostiles et donne +2 en attaque et en défense en terrain difficile. </li>
                   <li><strong>mauvais</strong> : booléen, le personnage est mauvais, ce qui signifie normalement, démon, mort-vivant ou élémentaire (impacte la protection contre le mal).</li>
                   <li><strong>memePasMal</strong> : booléen, reporte les DM des coups critiques et donne un bonus aux DMs. </li>
@@ -3186,6 +3198,7 @@ tr {line-height: 25px;}
                   <li><strong>peauDePierre</strong> : booléen, augmente la DEF de la valeur de CON.</li>
                   <li><strong>perception</strong> : entier, bonus aux jets de perception.</li>
                   <li><strong>petiteTaille</strong> : booléen, bonus de +2 en discrétion et +1 en DEF, et le personnage est considéré de taille petit.</li>
+                  <li><strong>petitVeinard</strong> : booléen ou entier (1 par défaut), propose de relancer des jets ce nombre de fois pas combat maximum.</li>
                   <li><strong>piquresDInsectes</strong> : entier, diminue les DM des attaques à distance de ce nombre, si le personnage porte une armure de DEF au moins 5.</li>
                   <li><strong>plusViteQueSonOmbre</strong> : booléen ou entier (par défaut 10), augmente l'initiative si le personnage à une arme à poudre chargée en main. On peut aussi spécifier un autre type d'armes, comme les arbalète, en associant ce nom à la valeur du prédicat.</li>
                   <li><strong>poudrePuissante</strong> : booléen, augmente de 10 la portée et de 2 les DM des armes à poudre.</li>
@@ -3196,6 +3209,7 @@ tr {line-height: 25px;}
                   <li><strong>quadrupede</strong> : booléen, le personnage marche sur 4 pattes ou plus.</li>
                   <li><strong>radarMental</strong> : entier, bonus aux jets de surprise contre les créatures vivantes. Si le prédicat est présent annule les malus liées à la condition aveugle contre les créatures vivantes.</li>
                   <li><strong>rageDuBerserkAmelioree</strong> : booléen, divise par 2 les malus de rage. </li>
+                  <li><strong>rapideCommeSonOmbre</strong> : booléen ou entier (3 par défaut), bonus à la discrétion et à l'initiative.</li>
                   <li><strong>RD_critique</strong> : entier, s'ajoute à la RD contre les coups critiques des casques.</li>
                   <li><strong>reflexesFelins</strong> : entier, bonus aux esquives et à l'initiative.</li>
                   <li><strong>resistanceA_nonMagique</strong> : booléen, divise par 2 les DM non magiques.</li>
@@ -3232,7 +3246,7 @@ tr {line-height: 25px;}
                   <li><strong>voieDeLaTelekinesie</strong> : entier (2 par défaut), bonus de DEF accordé par l'effet <code>champDeProtection</code>.</li>
                   <li><strong>voieDeLArcEtDuCheval</strong> : entier (3 par défaut), ocntrôle le nombre de d6 rajoutés par le ir fatal en cas de critique.</li>
                   <li><strong>voieDeLaSurvie</strong> : entier, contrôle le nombre de plantes trouvées avec Nature nourricière.</li>
-                  <li><strong>voieDeLHonneur</strong> : entier, bonus aux DM par défaut des défis.<li>
+                  <li><strong>voieDeLHonneur</strong> : entier, bonus aux DM par défaut des défis.</li>
                   <li><strong>voieDesElixirs</strong> : entier, rang dans la voie des élixirs, contrôle les élixirs proposés à la création, leur nombre total maximum et la puissance de certains d'entre eux.</li>
                   <li><strong>voieDesMutations</strong> : entier, bonus de défense de la cuirasse de la voie des mutations.</li>
                   <li><strong>voieDesRunes</strong> : entier, rang dans la voie des runes, définit le bonus à la DEF et contrôle les runes proposées à la création et la puissance de certaines d'entre elles.</li>
