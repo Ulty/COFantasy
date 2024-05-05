@@ -1,4 +1,4 @@
-//Dernière modification : sam. 04 mai 2024,  02:40
+//Dernière modification : dim. 05 mai 2024,  08:27
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -1886,7 +1886,8 @@ var COFantasy = COFantasy || function() {
   //de peut être un nombre > 0 ou bien le résultat de parseDice
   function rollDePlus(de, options) {
     options = options || {};
-    options.nbDes = options.nbDes || 1;
+    let nbDes = options.nbDes || 1;
+    let bonus = options.bonus || 0;
     if (de.dice !== undefined) {
       if (!de.nbDe) {
         return {
@@ -1894,12 +1895,11 @@ var COFantasy = COFantasy || function() {
           roll: '' + de.bonus
         };
       }
-      options.nbDes = options.nbDes || de.nbDe;
-      options.bonus = options.bonus || de.bonus;
+      nbDes = options.nbDes || de.nbDe;
+      bonus = options.bonus || de.bonus;
       de = de.dice;
     }
-    let count = options.nbDes;
-    let bonus = options.bonus || 0;
+    let count = nbDes;
     let explose = options.deExplosif || false;
     let texteJetDeTotal = '';
     let jetTotal = 0;
@@ -1929,7 +1929,7 @@ var COFantasy = COFantasy || function() {
     style += ' background-color: ' + couleurs.background + ';';
     style += ' color: ' + couleurs.color + ';';
     let msg = '<span style="' + style + '"';
-    msg += ' title="' + options.nbDes + 'd' + de;
+    msg += ' title="' + nbDes + 'd' + de;
     if (options.deExplosif) msg += '!';
     if (bonus > 0) {
       msg += '+' + bonus;
