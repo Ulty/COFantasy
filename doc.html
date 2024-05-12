@@ -3099,7 +3099,7 @@ tr {line-height: 25px;}
                   <li><strong>asDeLaGachette</strong> : booléen, augmente les DM des arbalètes et armes à poudre de 1d6 si le jet d'attaque atteint 25.</li>
                   <li><strong>aucuneActionCombat</strong> : booléen, le personnage ne rentre pas en combat.</li>
                   <li><strong>batarde</strong> : expression de dés, seulement pour les prédicats des armes à 1 mains : dés de DM quand l'arme est portée à 2 mains.</li>
-                  <li><strong>briseurDOs</strong> : booléen, augmente les chances de critique des attaques au contact, et applique un effet d'os brisés   a la cible en cas de critique.</li>
+                  <li><strong>blessureSanglante</strong> : booléen ou entier (1 par défaut), les blessures infligées par le personnage saignent.La valeur est la durée du saignement</li>
                   <li><strong>bonusAttaqueBouclier</strong> : entier, bonus pour le jet d'absorber un coup.</li>
                   <li><strong>bonus_CHA</strong> : entier, ajoute la valeur au mod de CHA.</li>
                   <li><strong>bonus_CON</strong> : entier, ajoute la valeur au mod de CON.</li>
@@ -3114,16 +3114,24 @@ tr {line-height: 25px;}
                   <li><strong>bouclierDeLaFoi</strong> : entier, bonus à la DEF quand le personnage porte un bouclier.</li>
                   <li><strong>bouclierProtection</strong> : booléen, annule les effets critiques des attaques si le personnage porte un bouclier.</li>
                   <li><strong>bouclierPsi</strong> : booléen, augmente de 5 la DEF contre les attaques mentales et divise par 2 les DM des attaques mentales.</li>
+                  <li><strong>briseurDOs</strong> : booléen, augmente les chances de critique des attaques au contact, et applique un effet d'os brisés   a la cible en cas de critique.</li>
+                  <li><strong>bucheron</strong> : booléen, augmente les DM des armes à 2 mains de 1d6 contre les créatures grandes, et 2d6 contre les créatures énormes.</li>
                   <li><strong>cavalierEmerite</strong> : entier, s'ajoute à l'attaque au contact quand le personnage est sur une monture.</li>
                   <li><strong>charge</strong> : entier (défaut 1), indique que l'arme doit être rechargée (ainsi que le nombre de charge, si on associe un nombre).</li>
+                  <li><strong>chasseurDeSorciere</strong> : booléen, ajoute 2 aux DM et à la DEF contre les nécromanciens.</.li>
                   <li><strong>chasseurEmerite</strong> : booléen, rajoute +2 à l'attaque et aux DM contre les animaux.</li>
                   <li><strong>chimiste</strong> : booléen, indique que le personnage n'a pas besoin de lancer de dé de poudre pour les attaques avec une arme à poudre.</li>
                   <li><strong>coefPVMana</strong> : entier (défaut 1), multiplie la valeur de conversion entre mana et PV pour la brûlure de mana</li>
                   <li><strong>combatADeuxArmes</strong> : booléen, propose de dégaîner une arme en main gauche.</li>
+                  <li><strong>combatADeuxArmesAmeliore</strong> : booléen, permet d'attaquer avec 2 armes sans malus.</li>
                   <li><strong>combatEnPhalange</strong> : booléen, ajoute un bonus en attaque et en DEF en fonction du nombre d'alliés au contact.</li>
                   <li><strong>combatKinetique</strong> : booléen, ajoute 3 à la RD tant que le personnage est conscient de l'attaque.</li>
+                  <li><strong>combattreLaCorruption</strong> : booléen ou entier (1 par défaut), bonus à l'attaque et aux DM contre les cibles corrompues.</li>
+                  <li><strong>connaissanceDuPoison</strong> : booléen, permet d'enduire une arme de poison sans avoir à faire de jet.</li>
+                  <li><strong>controleLoupGarou</strong> : entier, bonus au jet de lycanthrope pour éviter la transformation.</li>
                   <li><strong>controleSanguin</strong> : booléen, immunise au poison et aux effets de saignement, et divise par 2 les DM de vampirisation.</li>
                   <li><strong>controleDuMetabolisme</strong> : booléen, ajoute le mod. de CHA aux tests de CON et à l'initiative.</li>
+                  <li><strong>corrompu</strong> : booléen, le personnage est corronpu (utilise pour la voie du chasseur de corruption).</li>
                   <li><strong>courage</strong> : entier, bonus ajouté pour résister aux effets de peur.</li>
                   <li><strong>creatureArtificielle</strong> : booléen, immunise au poison, à l'asphyxie et aux maladies.</li>
                   <li><strong>crocEnJambe</strong> : booléen, fait tomber les adversaires sur un jet de dé d'attaque de 17-20. Passe à 19-20 contre des adversaires quadrupèdes.</li>
@@ -3133,14 +3141,17 @@ tr {line-height: 25px;}
                   <li><strong>defenseIntuitive</strong> : booléen, ajoute la SAG à la DEF.</li>
                   <li><strong>defierLaMort</strong> : booléen, fait lancer un dé pour garder 1 PV quand le personnage devrait mourir.</li>
                   <li><strong>dentellesEtRapiere</strong> : entier, s'ajoute à la DEF contre les attaques aux contact, mais seulement quand le personnage ne porte pas d'armure.</li>
+                  <li><strong>devierLesCoups</strong> : booléen ou entier (1 par défaut), nombre maximum de fois par tour où on propose de dévier un coup.</li>
                   <li><strong>difficulteOmbreMouvante</strong> : entier (10 par défaut), difficulté du jet de DEX pour passer dans les ombres. Cela peut permettre de tenir compte de l'environnement.</li>
                   <li><strong>diviseEffet_<i>type</i></strong> : booléen, divise par 2 les effets associés à des DM du type.</li>
+                  <li><strong>drainDeSang</strong> : booléen, le personnage est soigné de la moitié des DM des effets de saignement qu'il provoque.</li>
                   <li><strong>durACuire</strong> : booléen, laisee un tour d'actions après être arrivé à 0 PV avant de mourir.</li>
                   <li><strong>eclaire</strong> : entier, le personage fait de la lumière, et la valeur du prédicat est le rayon d'illumination.</li>
                   <li><strong>eclaireFaible</strong> : entier, si le personage fait de la lumière, donne le rayon à partir duquel la lumière devient faible.</li>
                   <li><strong>ecuyer</strong> : booléen, augmente de 1 les chances de critique.</li>
                   <li><strong>ecuyerDe</strong> : nom de personnage, soigne chaque nuit les alliés du chevalier.</li>
                   <li><strong>enchainement</strong> : booléen, propose une attaque gratuite sur une cible au contact quand le personnage tue une autre cible.</li>
+                  <li><strong>energieImpie</strong> : booléen, permet de bénéficier d'energie impie (bonus aux DM et aux soins) quand le personnage draine des PVs.</li>
                   <li><strong>ennemiJure</strong> : race ou type de créature, donne un bonus de 1d6 DM et ajute le mod de SAG à l'attaque contre les créatures de ce type. Il est possible d'utiliser un nom inventé, qu'il faut alors rajouter en prédicats sur les créatures concernées.</li>
                   <li><strong>entrerEnCombatAvec</strong> : nom de token, fait rentrer en combat à chaque fois que ce token entre en combat.</li>
                   <li><strong>espritVide</strong> : booléen ou entier (3 par défaut), augmente l'initiative.</li>
@@ -3149,21 +3160,26 @@ tr {line-height: 25px;}
                   <li><strong>esquiveFatale</strong> : booléen ou entier (1 par défaut), propose des esquives fatales, et limite le nombre d'esquives fatales par combat.</li>
                   <li><strong>esquiveVoleur</strong> : entier, bonus à la DEF.</li>
                   <li><strong>exemplaire</strong> : booléen, propose aux alliés de relancer des attaques.</li>
+                  <li><strong>expertDuCombat</strong> : entier, contrôle les capacités d'expert du combat.</li>
+                  <li><strong>expertiseSpecialisee</strong> : caractéristique, compétence ou mot clé, ajoute 5 aux jets pour une caractéristique, 10 aux jet pour une compétence, et 2 pour la furie du berserk,</li>
                   <li><strong>exsangue</strong> : booléen, permet de continuer à agir à 0 PV, jusqu'à la prochaine blessure.</li>
                   <li><strong>familier</strong> : nom de personnage, nom du personnage représentant le familier qui donne un bonus en initiative.</li>
+                  <li><strong>formeHybrideSuperieure</strong> : booléan, augmente les effets de <code>formeHybride</code>.</li>
                   <li><strong>frappeChirurgicale</strong> : booléen, ajoute le mod. d'INT aux chances de coups critiques avec l'arme en main droite, au contact.</li>
                   <li><strong>frappeDuVide</strong> : booléen, rajoute +2 à l'attaque et 1d6 aux DM de la première attaque si l'arme était au fourreau. De plus, fait automatiquement rengainer l'arme à la fin du combat.</li>
                   <li><strong>fureurDrakonide</strong> : booléen, augmente l'attaque et les DM de 1 quand le personnage est sous la moitié de ses PV max ou qu'il a reçu un coup critique.</li>
                   <li><strong>graceFeline</strong> : booléen, ajoute le mod. de CHA à l'initiative et à la défense.</li>
                   <li><strong>graceFelineVoleur</strong> : booléen, ajoute le charisme aux jets de déplacement (course, escalade, saut).</li>
+                  <li><strong>grosMonstreGrosseArme</strong> : booléen, augmente la catégorie de dé des armes à deux main au contact contre les grosses créatures.</li>
                   <li><strong>grosseTete</strong> : booléen, remplace le mod. de FOR par le mod. d'INT pour les tests.</li>
                   <li><strong>guetteur</strong> : nom de personnage, nom du personnage représentant le compagnon qui donne un bonus en perception.</li>
                   <li><strong>hachesEtMarteaux</strong> : booléen, ajoute un bonus de 1 en attaque est DM pour les haches et les marteaux.</li>
                   <li><strong>humanoide</strong> : booléen, le personnage est humanoïde.</li>
                   <li><strong>ignorerLaDouleur</strong> : booléen, permet de reporter les DM d'une attaque à la fin du combat.</li>
                   <li><strong>immunite_<i>x</i></strong> : booléen, empêche de mettre le personnage dans l'état ou effet temporaire nommé <i>x</i>. On peut aussi immuniser aux effets de pétrification avec <i>x</i>=petrification, ou contre la desctruction des mort-vivants avec <i>x</i>=destruction.</li>
-                  <li><strong>immuniteSaignement</strong> : booléen, immunise aux effets de saignement.</li>
+                  <li><strong>immuniteAbsorptionVampire</strong> : booléen, immunise aux attaque de drain venant des vampires (ayant un prédicat <code>vampire</code>.</li>
                   <li><strong>immuniteAuxSournoises</strong> : booléen, annule les DM d'effets de type sournoise.</li>
+                  <li><strong>immuniteSaignement</strong> : booléen, immunise aux effets de saignement.</li>
                   <li><strong>increvable</strong> : booléen, permet de se relever une fois par combat après avoir été mis à 0 PV.</li>
                   <li><strong>increvableHumain</strong> : booléen, propose un jet pour éviter une attaque qui mettrait à 0 PV.</li>
                   <li><strong>initiativeDeriveeDe</strong> : nom de personnage, l'initiative est celle de ce personnage.</li>
@@ -3179,6 +3195,11 @@ tr {line-height: 25px;}
                   <li><strong>laissezLeMoi</strong> : booléen, rajoute 1d6 aux DM contre les chefs.</li>
                   <li><strong>liberteDAction</strong> : booléen, immunise à tout ce qui entrave le mouvement.</li>
                   <li><strong>loupParmiLesLoups</strong> : entier, bonus aux DM contre les humanoïdes.</li>
+                  <li><strong>lycanthrope</strong> : booléen, le personnage est un lycanthrope. Propose un jet pour résister à la transformation.</li>
+                  <li><strong>lycanthropeEventre</strong> : booléen, permet léventration des lycanthropes.</li>
+                  <li><strong>magieDeCombat</strong> : booléen ou entier (1 par défaut), bonus aux chances de critique des sorts.</li>
+                  <li><strong>magieEnArmure</strong> : entier, valeur d'armure (moyenne entre DEF et malus d'armure) en dessous de laquelle le personnage peut faire de la magie sans pénalité.</li>
+                  <li><strong>magieEnArmureFacilitee</strong> : booléen, diminue la valeur d'armure de <code>magieEnArmure</code> pour déterminer le malus aux jets pour lancer des sorts en armure.</li>
                   <li><strong>marcheSylvestre</strong> : booléen, immunise aux effets de conditions hostiles et donne +2 en attaque et en défense en terrain difficile. </li>
                   <li><strong>mauvais</strong> : booléen, le personnage est mauvais, ce qui signifie normalement, démon, mort-vivant ou élémentaire (impacte la protection contre le mal).</li>
                   <li><strong>memePasMal</strong> : booléen, reporte les DM des coups critiques et donne un bonus aux DMs. </li>
@@ -3190,9 +3211,12 @@ tr {line-height: 25px;}
                   <li><strong>mortVivant</strong> : booléen, indique que le personnage est un mort-vivant.</li>
                   <li><strong>natureNourriciereBaies</strong> : booléen, permet de trouver des baies magiques si le jet de nature nourricière est assez haut.</li>
                   <li><strong>nbDesFeinte</strong> : entier (2 par défaut), nombre de dés à ajouter aux DM des feintes réussies.</li>
+                  <li><strong>necromancien</strong> : booléen, le personnage est un nécromancien ou une sorcière.</li>
                   <li><strong>nonVivant</strong> : booléen, le personnage n'est pas vivant (élémentaire, golem ou autre).</li>
+                  <li><strong>ordreDuChevalierDragon</strong> : booléen, augmente de 5 les jets de persuasion et d'intimidation quand le personnage est sur une monture.</li>
                   <li><strong>pacifisme</strong> : booléen, augmente la DEF de 5 tant que le personnage n'a pas attaqué dans un combat. </li>
                   <li><strong>pacteSanglant</strong> : entier, propose un bouton pour augmenter la DEF de cette valeur, en échange d'une dépense de PV (1d4 pour 3 ou moins, 2d4 sinon).</li>
+                  <li><strong>paradeAuBouclier</strong> : booléen, propose un bouton pour les parades au bouclier.</li>
                   <li><strong>paradeDeProjectiles</strong> : booléen, propose un jet pour parer les projectiles. </li>
                   <li><strong>pasDuVent</strong> : entier, bonus à l'initiative. </li>
                   <li><strong>peauDePierre</strong> : booléen, augmente la DEF de la valeur de CON.</li>
@@ -3200,6 +3224,7 @@ tr {line-height: 25px;}
                   <li><strong>petiteTaille</strong> : booléen, bonus de +2 en discrétion et +1 en DEF, et le personnage est considéré de taille petit.</li>
                   <li><strong>petitVeinard</strong> : booléen ou entier (1 par défaut), propose de relancer des jets ce nombre de fois pas combat maximum.</li>
                   <li><strong>piquresDInsectes</strong> : entier, diminue les DM des attaques à distance de ce nombre, si le personnage porte une armure de DEF au moins 5.</li>
+                  <li><strong>pirouettes</strong> : entier, augmente la DEF si le personnage a un malud d'armure inféreur ou égal à 3.</li>
                   <li><strong>plusViteQueSonOmbre</strong> : booléen ou entier (par défaut 10), augmente l'initiative si le personnage à une arme à poudre chargée en main. On peut aussi spécifier un autre type d'armes, comme les arbalète, en associant ce nom à la valeur du prédicat.</li>
                   <li><strong>poudrePuissante</strong> : booléen, augmente de 10 la portée et de 2 les DM des armes à poudre.</li>
                   <li><strong>prescience</strong> : booléen ou entier (défaut 1), propose de refaire le tour. Le nombre associé indique le nombre de fois que le personnage peut faire ça par combat.</li>
@@ -3212,6 +3237,7 @@ tr {line-height: 25px;}
                   <li><strong>rageDuBerserkAmelioree</strong> : booléen, divise par 2 les malus de rage. </li>
                   <li><strong>rapideCommeSonOmbre</strong> : booléen ou entier (3 par défaut), bonus à la discrétion et à l'initiative.</li>
                   <li><strong>RD_critique</strong> : entier, s'ajoute à la RD contre les coups critiques des casques.</li>
+                  <li><strong>reduireLaDistance</strong> : booléen, augmente la défense contre les grandes créatures (2 à 4, selon la taille).</li>
                   <li><strong>reflexesFelins</strong> : entier, bonus aux esquives et à l'initiative.</li>
                   <li><strong>resistanceA_nonMagique</strong> : booléen, divise par 2 les DM non magiques.</li>
                   <li><strong>resistanceA_<i>type</i></strong> : booléen, divise par 2 les DM du type.</li>
@@ -3228,6 +3254,7 @@ tr {line-height: 25px;}
                   <li><strong>siphonDesAmesPrioritaire</strong> : entier, indique une priorité pour le siphon des âmes, si plusieurs personnages peuvent siphoner une âme. Le personnage ayant un prédicat siphonDesAmesPrioritaire de plus haute valeur sera prioritaire : il absorbera l'âme (et bénéficiera du soin) s'il n'est pas au maximum de PV. Si il est au maximum de PV, on passe au personnage suivant dans l'ordre des priorités. Un personnage n'ayant pas ce prédicat est dernier sur cette liste.</li>
                   <li><strong>surveillance</strong> : nom d'un token, ajoute +5 aux tests contre la surprise si le token est présent. Et augmente l'initiative de 5 dans ces cas.</li>
                   <li><strong>techniqueDuSabre</strong> : entier, bonus aux DM pour le combat au sabre, katana ou vivelame. Ce bonus ne se cumule qu'à moitié avec le mod. de FOR.</li>
+                  <li><strong>tenacite</strong> : booléen, donne un bonus de +2 puis +5 contre un adversaire que le personnage n'a pas réussi à toucher.</li>
                   <li><strong>tirDeSemonce</strong> : booléan, propose un tir de semonce au tour suivant un tir raté.</li>
                   <li><strong>tirFatal</strong> : booléen ou nom de type d'arme (par défaut, arc), augmente les chance de coup critique du mod. de SAG pour les armes de ce type. De plus les DM des coups critiques pour ces attaques sont augmentées de 1 ou 2 d6 (selon la valeur du prédicat <code>voieDeLArcEtDuCheval</code>).</li>
                   <li><strong>tirParabolique</strong> : booléen, augmente la portée des armes à distance (comme la capacité tir parabolique).</li>
@@ -3237,6 +3264,8 @@ tr {line-height: 25px;}
                   <li><strong>toutPetit</strong> : booléen, ajoute 5 aux jets de discrétion et 2 en DEF.</li>
                   <li><strong>traquenard</strong> : booléen, permet la bonne utilisation de l'option d'attaque <code>--traquenard</code>.</li>
                   <li><strong>tropPetit</strong> : booléen, change les d6 de DM en d4.</li>
+                  <li><strong>vampire</strong> : booléen, le personnage est un vampire.</li>
+                  <li><strong>ventreMou</strong> : booléen, réduit la RD fixe des grandes créatures.</li>
                   <li><strong>vetementsSacres</strong> : entier, bonus à la DEF quand le personnage ne porte pas d'armure.</li>
                   <li><strong>vieArtificielle</strong> : booléan, divise les soins par 2.</li>
                   <li><strong>violenceCiblee</strong> : booléen, permet d'emmagasiner et d'utliser des points de violence.</li>
@@ -3254,6 +3283,7 @@ tr {line-height: 25px;}
                   <li><strong>voieDesRunes</strong> : entier, rang dans la voie des runes, définit le bonus à la DEF et contrôle les runes proposées à la création et la puissance de certaines d'entre elles.</li>
                   <li><strong>voieDesSoins</strong> : entier, rang dans la voie des soins, limite le nombre total de soins légers et de soins modérés par jour.</li>
                   <li><strong>voieDesVegetaux</strong> : entier (1 par défaut), bonus de DEF de la peau d'écorce.</li>
+                  <li><strong>voieDuGuerisseur</strong> : entier, bonus aux soins legers, soins modérés et soins de groupe.</li>
                   <li><strong>voieDuMeneurDHomme</strong> : entier (2 par défaut), RD appliquée en cas d'interception (minimum 2).</li>
                   <li><strong>voieDuMetal</strong> : entier, bonus aux DM de l'arme enflammée du forgesort.</li>
                   <li><strong>voieDuSoldat</strong> : entier, limite le bonus de la posture de combat.</li>

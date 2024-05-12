@@ -17,6 +17,7 @@
 * Prise en charge de plusieurs casque à mettre depuis le statut
 
 ### Correction de bugs
+* Correction d'un bug pour les conditions d'attaque sur les attributs.
 * Correction pour les armes en main des mooks
 * Ne pas demander qu'un PNJ ait un prédicat pour se battre à 2 armes sans malus.
 

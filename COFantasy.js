@@ -1,4 +1,4 @@
-//Dernière modification : dim. 05 mai 2024,  08:27
+//Dernière modification : dim. 12 mai 2024,  01:10
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -5453,7 +5453,7 @@ var COFantasy = COFantasy || function() {
             case 'attribut':
               if (condition.valeur === undefined)
                 return !attributeAsBool(perso, condition.attribute);
-              return testAttribut(perso, condition.attrbute, condition.valeur, condition);
+              return testAttribut(perso, condition.attribute, condition.valeur, condition);
             case 'premiereAttaque':
               return attributeAsBool(perso, 'attributDeCombat_premiereAttaque');
           }
@@ -8728,7 +8728,7 @@ var COFantasy = COFantasy || function() {
             return;
           }
           let res = {
-            type: 'attribut',
+            type: 'attributCible',
             attribute: args[1],
             valeur: args[2].toLowerCase(),
             text: args[1] + ' ' + args[2]
@@ -10788,7 +10788,7 @@ var COFantasy = COFantasy || function() {
             }
             return false;
           }
-          return testAttribut(attaquant, cond.attrbute, cond.valeur, cond);
+          return testAttribut(attaquant, cond.attribute, cond.valeur, cond);
         }
       case 'attributCible':
         {
@@ -10799,7 +10799,7 @@ var COFantasy = COFantasy || function() {
             return res;
           }
           let res = cibles.every(function(target) {
-            return testAttribut(target, cond.attrbute, cond.valeur, cond);
+            return testAttribut(target, cond.attribute, cond.valeur, cond);
           });
           return res;
         }
