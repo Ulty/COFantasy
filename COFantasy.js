@@ -1,4 +1,4 @@
-//Dernière modification : dim. 12 mai 2024,  01:10
+//Dernière modification : mar. 14 mai 2024,  09:09
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -88,7 +88,7 @@ var COFantasy = COFantasy || function() {
 
   "use strict";
 
-  const versionFiche = 5.03;
+  const versionFiche = 5.04;
 
   const PIX_PER_UNIT = 70;
   const HISTORY_SIZE = 200;
@@ -689,38 +689,62 @@ var COFantasy = COFantasy || function() {
       charId
     };
     let labelArmeGauche = 0;
-    let armures;
-    let labelArmure = ficheAttribute(perso, 'torseequipe', '0');
-    if (labelArmure && labelArmure != '-1') {
-      armures = armures || listAllArmors(perso);
-      let armure = armures[labelArmure];
-      if (armure) {
-        let rawArmure = fieldAsString(armure, 'effetarmure', '');
-        if (rawArmure) raw += '\n' + rawArmure;
-      }
-    }
-    let labelCasque = ficheAttribute(perso, 'teteequipe', '0');
-    if (labelCasque && labelCasque != '-1') {
-      armures = armures || listAllArmors(perso);
-      let casque = armures[labelCasque];
-      if (casque) {
-        let rawCasque = fieldAsString(casque, 'effetarmure', '');
-        if (rawCasque) raw += '\n' + rawCasque;
-      }
-    }
     let labelArme = ficheAttributeAsInt(perso, 'maindroite', 0);
     let labelGauche = ficheAttribute(perso, 'maingauche', '0');
-    if (typeof labelGauche == 'string' && labelGauche.startsWith('b')) {
-      if (labelGauche != 'b-1') {
+    let versionFiche = findObjs({
+      _type: 'attribute',
+      _characterid: charId,
+      name: 'version',
+    }, {
+      caseInsensitive: true
+    });
+    if (versionFiche.length === 0) versionFiche = 0;
+    else versionFiche = parseFloat(versionFiche[0].get('current'));
+    if (versionFiche < 5.04) {
+      let armures;
+      let labelArmure = ficheAttribute(perso, 'torseequipe', '0');
+      if (labelArmure && labelArmure != '-1') {
         armures = armures || listAllArmors(perso);
-        let labelBouclier = labelGauche.substring(1);
-        let bouclier = armures[labelBouclier];
-        if (bouclier) {
-          let rawBouclier = fieldAsString(bouclier, 'effetarmure', '');
-          if (rawBouclier) raw += '\n' + rawBouclier;
+        let armure = armures[labelArmure];
+        if (armure) {
+          let rawArmure = fieldAsString(armure, 'effetarmure', '');
+          if (rawArmure) raw += '\n' + rawArmure;
         }
       }
-    } else if (labelGauche != '2m') labelArmeGauche = toInt(labelGauche);
+      let labelCasque = ficheAttribute(perso, 'teteequipe', '0');
+      if (labelCasque && labelCasque != '-1') {
+        armures = armures || listAllArmors(perso);
+        let casque = armures[labelCasque];
+        if (casque) {
+          let rawCasque = fieldAsString(casque, 'effetarmure', '');
+          if (rawCasque) raw += '\n' + rawCasque;
+        }
+      }
+      if (typeof labelGauche == 'string' && labelGauche.startsWith('b')) {
+        if (labelGauche != 'b-1') {
+          armures = armures || listAllArmors(perso);
+          let labelBouclier = labelGauche.substring(1);
+          let bouclier = armures[labelBouclier];
+          if (bouclier) {
+            let rawBouclier = fieldAsString(bouclier, 'effetarmure', '');
+            if (rawBouclier) raw += '\n' + rawBouclier;
+          }
+        }
+      } else if (labelGauche != '2m') labelArmeGauche = toInt(labelGauche);
+    } else { //versionFiche >= 5.04
+      //D'abord les objets équipés
+      let armures = listAllArmors(perso);
+      for (let label in armures) {
+        let ar = armures[label];
+        if (ar.equipearmure == '1') {
+          let r = fieldAsString(ar, 'effetarmure', '');
+          if (r) raw += '\n' + r;
+        }
+      }
+      if (typeof labelGauche != 'string' ||
+        (!labelGauche.startsWith('b') && labelGauche != '2m'))
+        labelArmeGauche = toInt(labelGauche);
+    }
     let att;
     let attaques;
     if (labelArme) {
@@ -782,68 +806,128 @@ var COFantasy = COFantasy || function() {
         return perso.predicates;
       }
       let raw = ficheAttribute(perso, 'predicats_script', '');
-      if (perso.armesEnMain) {
-        if (perso.arme && perso.arme.predicats)
-          raw += '\n' + perso.arme.predicats;
-        if (perso.armeGauche && perso.armeGauche.predicats)
-          raw += '\n' + perso.armeGauche.predicats;
-      } else if (perso.arme) { //possible si appelé depuis armesEnMain
-        if (perso.arme.predicats)
-          raw += '\n' + perso.arme.predicats;
-      } else { //il faut chercher les prédicats des armes en main
-        //On n'appelle pas armesEnMain pour éviter la récursion
-        //et pour éviter trop de calcul
-        let labelArmeGauche = 0;
-        let armures;
-        let labelArmure = ficheAttribute(perso, 'torseequipe', '0');
-        if (labelArmure && labelArmure != '-1') {
-          armures = armures || listAllArmors(perso);
-          let armure = armures[labelArmure];
-          if (armure) {
-            let rawArmure = fieldAsString(armure, 'effetarmure', '');
-            if (rawArmure) raw += '\n' + rawArmure;
-          }
-        }
-        let labelCasque = ficheAttribute(perso, 'teteequipe', '0');
-        if (labelCasque && labelCasque != '-1') {
-          armures = armures || listAllArmors(perso);
-          let casque = armures[labelCasque];
-          if (casque) {
-            let rawCasque = fieldAsString(casque, 'effetarmure', '');
-            if (rawCasque) raw += '\n' + rawCasque;
-          }
-        }
-        let labelArme = getLabelArme(perso, 'droite', estMook);
-        let labelGauche = getLabelArme(perso, 'gauche', estMook);
-        if (typeof labelGauche == 'string' && labelGauche.startsWith('b')) {
-          if (labelGauche != 'b-1') {
+      let versionFiche = findObjs({
+        _type: 'attribute',
+        _characterid: perso.charId,
+        name: 'version',
+      }, {
+        caseInsensitive: true
+      });
+      if (versionFiche.length === 0) versionFiche = 0;
+      else versionFiche = parseFloat(versionFiche[0].get('current'));
+      if (versionFiche < 5.04) {
+        if (perso.armesEnMain) {
+          if (perso.arme && perso.arme.predicats)
+            raw += '\n' + perso.arme.predicats;
+          if (perso.armeGauche && perso.armeGauche.predicats)
+            raw += '\n' + perso.armeGauche.predicats;
+        } else if (perso.arme) { //possible si appelé depuis armesEnMain
+          if (perso.arme.predicats)
+            raw += '\n' + perso.arme.predicats;
+        } else { //il faut chercher les prédicats des armes en main
+          //On n'appelle pas armesEnMain pour éviter la récursion
+          //et pour éviter trop de calcul
+          let armures;
+          let labelArmure = ficheAttribute(perso, 'torseequipe', '0');
+          if (labelArmure && labelArmure != '-1') {
             armures = armures || listAllArmors(perso);
-            let labelBouclier = labelGauche.substring(1);
-            let bouclier = armures[labelBouclier];
-            if (bouclier) {
-              let rawBouclier = fieldAsString(bouclier, 'effetarmure', '');
-              if (rawBouclier) raw += '\n' + rawBouclier;
+            let armure = armures[labelArmure];
+            if (armure) {
+              let rawArmure = fieldAsString(armure, 'effetarmure', '');
+              if (rawArmure) raw += '\n' + rawArmure;
             }
           }
-        } else if (labelGauche != '2m') labelArmeGauche = toInt(labelGauche);
-        let attaques;
-        if (labelArme) {
-          attaques = listAllAttacks(perso);
-          let att = attaques[labelArme];
-          if (att) {
-            let rawArme = fieldAsString(att, 'armepredicats', '');
-            if (rawArme) raw += '\n' + rawArme;
+          let labelCasque = ficheAttribute(perso, 'teteequipe', '0');
+          if (labelCasque && labelCasque != '-1') {
+            armures = armures || listAllArmors(perso);
+            let casque = armures[labelCasque];
+            if (casque) {
+              let rawCasque = fieldAsString(casque, 'effetarmure', '');
+              if (rawCasque) raw += '\n' + rawCasque;
+            }
+          }
+          let labelArmeGauche = 0;
+          let labelArme = getLabelArme(perso, 'droite', estMook);
+          let labelGauche = getLabelArme(perso, 'gauche', estMook);
+          if (typeof labelGauche == 'string' && labelGauche.startsWith('b')) {
+            if (labelGauche != 'b-1') {
+              armures = armures || listAllArmors(perso);
+              let labelBouclier = labelGauche.substring(1);
+              let bouclier = armures[labelBouclier];
+              if (bouclier) {
+                let rawBouclier = fieldAsString(bouclier, 'effetarmure', '');
+                if (rawBouclier) raw += '\n' + rawBouclier;
+              }
+            }
+          } else if (labelGauche != '2m') labelArmeGauche = toInt(labelGauche);
+          let attaques;
+          if (labelArme) {
+            attaques = listAllAttacks(perso);
+            let att = attaques[labelArme];
+            if (att) {
+              let rawArme = fieldAsString(att, 'armepredicats', '');
+              if (rawArme) raw += '\n' + rawArme;
+            }
+          }
+          //Ensuite l'arme gauche
+          if (labelArmeGauche) {
+            if (!attaques) {
+              attaques = listAllAttacks(perso);
+            }
+            let att = attaques[labelArmeGauche];
+            if (att) {
+              let rawArme = fieldAsString(att, 'armepredicats', '');
+              if (rawArme) raw += '\n' + rawArme;
+            }
           }
         }
-        //Ensuite l'arme gauche
-        if (labelArmeGauche) {
-          if (!attaques) {
-            attaques = listAllAttacks(perso);
+      } else { //versionFiche >= 5.04
+        //D'abord les objets équipés
+        let armures = listAllArmors(perso);
+        for (let label in armures) {
+          let ar = armures[label];
+          if (ar.equipearmure == '1') {
+            let r = fieldAsString(ar, 'effetarmure', '');
+            if (r) raw += '\n' + r;
           }
-          let att = attaques[labelArmeGauche];
-          if (att) {
-            let rawArme = fieldAsString(att, 'armepredicats', '');
-            if (rawArme) raw += '\n' + rawArme;
+        }
+        //Puis les armes en main
+        if (perso.armesEnMain) {
+          if (perso.arme && perso.arme.predicats)
+            raw += '\n' + perso.arme.predicats;
+          if (perso.armeGauche && perso.armeGauche.predicats)
+            raw += '\n' + perso.armeGauche.predicats;
+        } else if (perso.arme) { //possible si appelé depuis armesEnMain
+          if (perso.arme.predicats)
+            raw += '\n' + perso.arme.predicats;
+        } else { //il faut chercher les prédicats des armes en main
+          //On n'appelle pas armesEnMain pour éviter la récursion
+          //et pour éviter trop de calcul
+          let labelArmeGauche = 0;
+          let labelArme = getLabelArme(perso, 'droite', estMook);
+          let labelGauche = getLabelArme(perso, 'gauche', estMook);
+          if (typeof labelGauche != 'string' ||
+            (!labelGauche.startsWith('b') && labelGauche != '2m'))
+            labelArmeGauche = toInt(labelGauche);
+          let attaques;
+          if (labelArme) {
+            attaques = listAllAttacks(perso);
+            let att = attaques[labelArme];
+            if (att) {
+              let rawArme = fieldAsString(att, 'armepredicats', '');
+              if (rawArme) raw += '\n' + rawArme;
+            }
+          }
+          //Ensuite l'arme gauche
+          if (labelArmeGauche) {
+            if (!attaques) {
+              attaques = listAllAttacks(perso);
+            }
+            let att = attaques[labelArmeGauche];
+            if (att) {
+              let rawArme = fieldAsString(att, 'armepredicats', '');
+              if (rawArme) raw += '\n' + rawArme;
+            }
           }
         }
       }
@@ -5451,9 +5535,7 @@ var COFantasy = COFantasy || function() {
             case 'etat':
               return !getState(perso, condition.etat);
             case 'attribut':
-              if (condition.valeur === undefined)
-                return !attributeAsBool(perso, condition.attribute);
-              return testAttribut(perso, condition.attribute, condition.valeur, condition);
+              return !testConditionAttribut(condition, perso);
             case 'premiereAttaque':
               return attributeAsBool(perso, 'attributDeCombat_premiereAttaque');
           }
@@ -10754,6 +10836,17 @@ var COFantasy = COFantasy || function() {
     return (attr[0].get('current') + '').toLowerCase() == valeur;
   }
 
+  function testConditionAttribut(cond, attaquant) {
+    if (cond.valeur === undefined) {
+      if (attributeAsBool(attaquant, cond.attribute)) return true;
+      if (cond.attribute == 'armeDArgent') {
+        return attributeAsBool(attaquant, 'formeDAnge') && predicateAsInt(attaquant, 'voieDeLArchange', 1) > 2;
+      }
+      return false;
+    }
+    return testAttribut(attaquant, cond.attribute, cond.valeur, cond);
+  }
+
   function testCondition(cond, attaquant, cibles, deAttaque, options) {
     if (cond == 'toujoursVrai') return true;
     switch (cond.type) {
@@ -10780,16 +10873,7 @@ var COFantasy = COFantasy || function() {
         });
         return resEtatCible;
       case 'attribut':
-        {
-          if (cond.valeur === undefined) {
-            if (attributeAsBool(attaquant, cond.attribute)) return true;
-            if (cond.attribute == 'armeDArgent') {
-              return attributeAsBool(attaquant, 'formeDAnge') && predicateAsInt(attaquant, 'voieDeLArchange', 1) > 2;
-            }
-            return false;
-          }
-          return testAttribut(attaquant, cond.attribute, cond.valeur, cond);
-        }
+        return testConditionAttribut(cond, attaquant);
       case 'attributCible':
         {
           if (cond.valeur === undefined) {
@@ -15392,7 +15476,7 @@ var COFantasy = COFantasy || function() {
         let ra = rawList[pref];
         if (ra.labelarmure === undefined) ra.labelarmure = 0;
         if (liste[ra.labelarmure]) {
-          error("Plusieurs attaques de label " + ra.labelarmure, ra);
+          error("Plusieurs armures de label " + ra.labelarmure, ra);
           continue;
         }
         ra.prefixe = pref;
@@ -51717,7 +51801,7 @@ on("change:attribute", function(attr, prev) {
   let predicats = state.COFantasy.predicats;
   if (!predicats) return;
   let n = attr.get("name");
-  if (n == 'predicats_script' || n.includes('armepredicats') || n.includes('effetarmure') || n == 'maindroite' || n == 'maingauche' || n == 'torseequipe' || n == 'teteequipe') {
+  if (n == 'predicats_script' || n.endsWith('_armepredicats') || n.endsWith('_effetarmure') || n.endsWith('_equipearmure') || n == 'maindroite' || n == 'maingauche') {
     predicats[attr.get('characterid')] = undefined;
     COFantasy.changePredicats(attr, prev);
   }
