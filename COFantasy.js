@@ -1,4 +1,4 @@
-//Dernière modification : mar. 14 mai 2024,  02:33
+//Dernière modification : mar. 14 mai 2024,  03:52
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -12839,6 +12839,27 @@ var COFantasy = COFantasy || function() {
     if (predicateAsBool(target, 'petiteTaille') && !attributeAsBool(target, 'agrandissement')) {
       defense += 1;
     }
+    //Bonus au défi duelliste
+    let defiDuellisteAttr = tokenAttribute(target, 'defiDuelliste');
+    if (defiDuellisteAttr.length > 0) {
+      defiDuellisteAttr = defiDuellisteAttr[0];
+      let cibleDefi = defiDuellisteAttr.get('max');
+      if (cibleDefi.startsWith(attaquant.token.id)) cibleDefi = true;
+      else {
+        let cibleDefiSep = cibleDefi.indexOf(' ');
+        let cibleDefiName = cibleDefi.substring(cibleDefiSep + 1);
+        if (cibleDefiName == nomPerso(attaquant)) {
+          let cibleDefiId = cibleDefi.substring(0, cibleDefiSep);
+          cibleDefi = persoOfId(cibleDefiId, cibleDefiName, pageId);
+          cibleDefi = cibleDefi === undefined || cibleDefi.id == attaquant.token.id;
+        } else cibleDefi = false;
+      }
+      if (cibleDefi) {
+        let bonusDefi = parseInt(defiDuellisteAttr.get('current'));
+        defense += bonusDefi;
+        explications.push("Défi => +" + bonusDefi + " DEF");
+      }
+    }
     return defense;
   }
 
@@ -13720,7 +13741,6 @@ var COFantasy = COFantasy || function() {
           attBonus -= 5;
           target.attaqueDansLeNoir = 5;
         }
-
       }
     }
     if (predicateAsBool(attaquant, 'liberateurDeDorn') && estGeant(target)) {
@@ -13778,6 +13798,27 @@ var COFantasy = COFantasy || function() {
       attBonus += combattreLaCorruption;
       target.combattreLaCorruption = combattreLaCorruption;
       explications.push("Combattre la corruption => +" + combattreLaCorruption + " attaque et DM");
+    }
+    //Bonus au défi duelliste
+    let defiDuellisteAttr = tokenAttribute(attaquant, 'defiDuelliste');
+    if (defiDuellisteAttr.length > 0) {
+      defiDuellisteAttr = defiDuellisteAttr[0];
+      let cibleDefi = defiDuellisteAttr.get('max');
+      if (cibleDefi.startsWith(target.token.id)) cibleDefi = true;
+      else {
+        let cibleDefiSep = cibleDefi.indexOf(' ');
+        let cibleDefiName = cibleDefi.substring(cibleDefiSep + 1);
+        if (cibleDefiName == nomPerso(target)) {
+          let cibleDefiId = cibleDefi.substring(0, cibleDefiSep);
+          cibleDefi = persoOfId(cibleDefiId, cibleDefiName, pageId);
+          cibleDefi = cibleDefi === undefined || cibleDefi.id == target.token.id;
+        } else cibleDefi = false;
+      }
+      if (cibleDefi) {
+        let bonusDefi = parseInt(defiDuellisteAttr.get('current'));
+        attBonus += bonusDefi;
+        explications.push("Défi => +" + bonusDefi + " attaque");
+      }
     }
     return attBonus;
   }
@@ -14063,7 +14104,9 @@ var COFantasy = COFantasy || function() {
         if (options.depensePR.pv) {
           options.rolls = options.rolls || {};
           let pv = options.rolls.depensePR || rollDePlus(options.depensePR.pv);
-          evt.action = evt.action || {rolls:{}};
+          evt.action = evt.action || {
+            rolls: {}
+          };
           evt.action.rolls.depensePR = pv;
           let r = {
             total: pv.val,
@@ -19209,7 +19252,7 @@ var COFantasy = COFantasy || function() {
             if (cibleDefiName == nomPerso(target)) {
               let cibleDefiId = cibleDefi.substring(0, cibleDefiSep);
               cibleDefi = persoOfId(cibleDefiId, cibleDefiName, pageId);
-              cibleDefi = cibleDefi === undefined || cibleDefi.id == target.id;
+              cibleDefi = cibleDefi === undefined || cibleDefi.id == target.token.id;
             } else cibleDefi = false;
           }
           if (cibleDefi) {
@@ -39583,12 +39626,12 @@ var COFantasy = COFantasy || function() {
     sendFramedDisplay(display);
   }
 
-  function lancerDefiSamourai(msg) {
+  function lancerDefi(msg, command, nomAttr, descr, predicatBonus) {
     let options = parseOptions(msg);
     if (options === undefined) return;
     let cmd = options.cmd;
     if (cmd === undefined || cmd.length < 3) {
-      error("cof-defi-samourai demande au moins 2 options",
+      error(command + " demande au moins 2 options",
         msg.content);
       return;
     }
@@ -39598,7 +39641,7 @@ var COFantasy = COFantasy || function() {
       error("Le token sélectionné n'est pas valide", msg.content);
       return;
     }
-    if (attributeAsBool(samourai, 'defiSamourai')) {
+    if (attributeAsBool(samourai, nomAttr)) {
       sendPlayer(msg, nomPerso(samourai) + " a déjà lancé un défi durant ce combat.");
       return;
     }
@@ -39608,7 +39651,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     const evt = {
-      type: 'Défi samouraï'
+      type: descr
     };
     let explications = [];
     entrerEnCombat(samourai, [cible], explications, evt);
@@ -39619,16 +39662,26 @@ var COFantasy = COFantasy || function() {
     if (cmd.length > 3) {
       bonus = parseInt(cmd[3]);
       if (isNaN(bonus) || bonus < 1) {
-        error("Bonus de défi de samouraï incorrect", cmd[3]);
+        error("Bonus de " + descr + " incorrect", cmd[3]);
         bonus = undefined;
       }
     }
     if (bonus === undefined)
-      bonus = predicateAsInt(samourai, 'voieDeLHonneur', 2);
-    setTokenAttr(samourai, 'defiSamourai', bonus, evt, {
+      bonus = predicateAsInt(samourai, predicatBonus, 2);
+    setTokenAttr(samourai, nomAttr, bonus, evt, {
       msg: nomPerso(samourai) + " lance un défi à " + nomPerso(cible),
       maxVal: idName(cible)
     });
+  }
+
+  function lancerDefiSamourai(msg) {
+    lancerDefi(msg, 'cof-defi-samourai', 'defiSamourai', 'défi de samouraï',
+      'voieDeLHonneur');
+  }
+
+  function lancerDefiDuelliste(msg) {
+    lancerDefi(msg, 'cof-defi-duelliste', 'defiDuelliste', 'défi de duelliste',
+      'voieDuDuelliste');
   }
 
   function parseEnveloppement(msg) {
@@ -45946,6 +45999,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-torche':
         switchTorche(msg);
         return;
+      case '!cof-defi-duelliste':
+        lancerDefiDuelliste(msg);
+        return;
       case '!cof-defi-samourai':
         lancerDefiSamourai(msg);
         return;
@@ -47264,6 +47320,11 @@ var COFantasy = COFantasy || function() {
     bonusInitVariable: {
       activation: "entre en combat",
       actif: "est en combat",
+      fin: ''
+    },
+    defiDuelliste: {
+      activation: "lance un défi",
+      actif: "a lancé un défi",
       fin: ''
     },
     defiSamourai: {
