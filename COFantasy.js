@@ -1,4 +1,4 @@
-//Dernière modification : mar. 14 mai 2024,  09:09
+//Dernière modification : mar. 14 mai 2024,  09:17
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -29403,6 +29403,9 @@ var COFantasy = COFantasy || function() {
             sendChat('', e);
           });
         }
+        if (options.degainer !== undefined && lanceur) {
+          degainerArme(lanceur, options.degainer, evt);
+        }
       }
     };
     let setOneEffect = function(perso, d) {
@@ -29479,6 +29482,9 @@ var COFantasy = COFantasy || function() {
         setTokenAttr(perso, effet + 'Puissant', puissant, evt);
       }
       effetsSpeciaux(lanceur, perso, options);
+      if (options.degainer !== undefined && !lanceur) {
+        degainerArme(perso, options.degainer, evt);
+      }
       finalize();
     };
     cibles.forEach(function(perso) {
