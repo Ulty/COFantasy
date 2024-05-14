@@ -805,6 +805,7 @@ tr {line-height: 25px;}
                     <li><code>--limiteParCombat</code> : même effet que la limite par jour. Si aucun argument n'est donné, la limite est de une fois par combat.  Attention, il faut un lanceur auquel appliquer la limite par combat !</li>
                     <li><code>--tempsRecharge <i>effet</i> <i>duree</i></code> : l'action n'est possible que si l'effet est inactif sur le personnage qui génère l'effet, et de plus active l'effet sur celui-ci pour la durée indiquée. Il existe un effet temporaire générique, <code>rechargeGen(<i>desc</i>)</code> que vous pouvez utiliser si aucun effet existant ne correspond.</li>
                     <li><code>--dose <i>nom</i></code>: définie une ressource nommée <code>dose_<i>nom</i></code>, dont la valeur doit être positive. Utile par exemple pour les parchemins, les potions ou les baguettes.</li>
+                    <li><code>--depensePR</code>: demande de dépenser un point de récupération. Si un premier argument est ajouté, on enlève ce nombre aux PR au lieu de 1. Si un second argument est précisé, on enlève ce second argument aux PV quand le personnage n'a plus de PR.</li>
                     <li><code>--portee <i>id d</i></code> : impose aux cibles de l'effet d'être à moins de <i>d</i> mètres du token <i>id</i>. Si <code>--lanceur</code> est précisé, inutile de donner <i>id</i>.</li>
                     <li><code>--puissant</code> : lance la version puissante de l'effet</li>
                     <li><code>--puissant oui</code> : idem</li>
@@ -2122,7 +2123,7 @@ tr {line-height: 25px;}
                 <ol>
                   <li><strong>Forme d'ange</strong> : <code>!cof-effet-temp formeDAnge [[5+@{selected|SAG}]] --mana 0</code>. Le MJ devra gérer l'aspect en vol.</li>
                   <li><strong>Soins améliorés</strong> : utiliser un prédicat <code>voieDeLArchange</code> avec comme valeur le rang dans la voie.</li>
-                  <li><strong>Épée céleste</strong> : rien à faire si le prédicat <code>voieDeLArchange</code> a la bonne valeur. Si le personnage n'a pas déjà la capacité Arme d'argent, ajouter une attaque pour cette arme, avec le modificateur <code>armeDArgent</code> et l'option <code>--si etat armeDArgent</code>.</li>
+                  <li><strong>Épée céleste</strong> : rien à faire si le prédicat <code>voieDeLArchange</code> a la bonne valeur. Si le personnage n'a pas déjà la capacité Arme d'argent, ajouter une attaque pour cette arme, avec le modificateur <code>armeDArgent</code> et l'option <code>--si etat armeDArgent</code>. Si vous souhaitez que cette arme soit dégainée par défaut, vous pouvez ajouter <code>--degainer <i>L</i></code> à la commande de la forme d'ange (<i>L</i> est le label de l'attaque).</li>
                 </ol>
                 <h4 class="text-secondary">Voie de l'archer arcanique</h4>
                 <ol>
@@ -3193,6 +3194,7 @@ tr {line-height: 25px;}
                   <li><strong>joliCoup</strong> : booléen, ignore les obstacles pour les attaques à distance.</li>
                   <li><strong>kiai</strong> : entier, nombre de kiaï que le personnage peut pousser dans un combat (avec un délai de 1d6 tours entre chaque).</li>
                   <li><strong>laissezLeMoi</strong> : booléen, rajoute 1d6 aux DM contre les chefs.</li>
+                  <li><strong>liberateurDeDorn</strong> : booléen, augmente la défense de 2, l'attaque de 2 et les DM de 2d6 contre les géants.</li>
                   <li><strong>liberteDAction</strong> : booléen, immunise à tout ce qui entrave le mouvement.</li>
                   <li><strong>loupParmiLesLoups</strong> : entier, bonus aux DM contre les humanoïdes.</li>
                   <li><strong>lycanthrope</strong> : booléen, le personnage est un lycanthrope. Propose un jet pour résister à la transformation.</li>

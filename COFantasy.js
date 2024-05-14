@@ -1,4 +1,4 @@
-//Dernière modification : mar. 14 mai 2024,  09:17
+//Dernière modification : mar. 14 mai 2024,  02:33
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -13933,22 +13933,22 @@ var COFantasy = COFantasy || function() {
 
   //Retourne true si il existe une limite qui empêche de lancer le sort
   //N'ajoute pas l'événement à l'historique
-  //explications est optionnel
-  function limiteRessources(personnage, options, defResource, msg, evt, explications) {
+  //perso et explications sont optionnels
+  function limiteRessources(perso, options, defResource, msg, evt, explications) {
     let depMana = {
       cout_null: true
     };
-    if (options.magieEnArmureMana && personnage) {
+    if (options.magieEnArmureMana && perso) {
       options.mana = options.mana || 0;
-      let ma = malusArmure(personnage);
+      let ma = malusArmure(perso);
       let m = ma;
       if (m > 0) {
-        let magieEnArmure = predicateAsInt(personnage, 'magieEnArmure', 0);
-        let defa = defenseArmure(personnage);
+        let magieEnArmure = predicateAsInt(perso, 'magieEnArmure', 0);
+        let defa = defenseArmure(perso);
         if (2 * magieEnArmure >= defa + ma) { //pas de malus
           m = 0;
         } else {
-          if (magieEnArmure > 0 && predicateAsBool(personnage, 'magieEnArmureFacilitee')) {
+          if (magieEnArmure > 0 && predicateAsBool(perso, 'magieEnArmureFacilitee')) {
             m -= magieEnArmure;
             if (m < 0) m = 1;
           }
@@ -13962,29 +13962,29 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (options.mana) {
-      if (personnage) {
-        depMana = depenseManaPossible(personnage, options.mana, msg);
+      if (perso) {
+        depMana = depenseManaPossible(perso, options.mana, msg);
         if (!depMana) return true;
       } else {
         error("Impossible de savoir qui doit dépenser de la mana", options);
         return true;
       }
     }
-    depMana = testLimitePar(personnage, 'Jour', options, depMana, defResource, msg, evt, explications);
+    depMana = testLimitePar(perso, 'Jour', options, depMana, defResource, msg, evt, explications);
     if (!depMana) return true;
-    depMana = testLimitePar(personnage, 'Combat', options, depMana, defResource, msg, evt, explications);
+    depMana = testLimitePar(perso, 'Combat', options, depMana, defResource, msg, evt, explications);
     if (!depMana) return true;
     if (!depMana) return true;
-    depMana = testLimitePar(personnage, 'Tour', options, depMana, defResource, msg, evt, explications);
+    depMana = testLimitePar(perso, 'Tour', options, depMana, defResource, msg, evt, explications);
     if (!depMana) return true;
     if (options.tempsRecharge) {
-      if (personnage) {
-        if (attributeAsBool(personnage, options.tempsRecharge.effet)) {
-          sendPerso(personnage, "ne peut pas encore faire cette action", options.secret);
+      if (perso) {
+        if (attributeAsBool(perso, options.tempsRecharge.effet)) {
+          sendPerso(perso, "ne peut pas encore faire cette action", options.secret);
           return true;
         }
         if (options.tempsRecharge.duree > 0) {
-          setAttrDuree(personnage, options.tempsRecharge.effet, options.tempsRecharge.duree, evt);
+          setAttrDuree(perso, options.tempsRecharge.effet, options.tempsRecharge.duree, evt);
         }
       } else {
         error("Impossible de savoir à qui s'applique le temps de recharge", options);
@@ -13992,28 +13992,28 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (options.dose) {
-      if (personnage) {
+      if (perso) {
         let nomDose = options.dose.replace(/_/g, ' ');
-        let doses = attributeAsInt(personnage, 'dose_' + options.dose, 0);
+        let doses = attributeAsInt(perso, 'dose_' + options.dose, 0);
         if (doses === 0) {
-          sendPerso(personnage, "n'a plus de " + nomDose, options.secret);
+          sendPerso(perso, "n'a plus de " + nomDose, options.secret);
           return true;
         }
-        setTokenAttr(personnage, 'dose_' + options.dose, doses - 1, evt);
+        setTokenAttr(perso, 'dose_' + options.dose, doses - 1, evt);
       } else {
         error("Impossible de savoir qui doit dépenser la dose", options);
         return true;
       }
     }
     if (options.limiteAttribut) {
-      if (personnage) {
+      if (perso) {
         let nomAttr = options.limiteAttribut.nom;
-        let currentAttr = attributeAsInt(personnage, nomAttr, 0);
+        let currentAttr = attributeAsInt(perso, nomAttr, 0);
         if (currentAttr >= options.limiteAttribut.limite) {
-          depMana = depasseLimite(personnage, nomAttr, options.limiteAttribut.message, msg, evt, options);
+          depMana = depasseLimite(perso, nomAttr, options.limiteAttribut.message, msg, evt, options);
           if (!depMana) return true;
         }
-        setTokenAttr(personnage, nomAttr, currentAttr + 1, evt);
+        setTokenAttr(perso, nomAttr, currentAttr + 1, evt);
       } else {
         error("Impossible de savoir à qui appliquer la limitation", options);
         return true;
@@ -14042,18 +14042,56 @@ var COFantasy = COFantasy || function() {
     }
     if (options.decrLimitePredicatParTour) {
       let pred = options.decrLimitePredicatParTour;
-      if (personnage) {
-        let test = testLimiteUtilisationsCapa(personnage, pred, 'tour',
+      if (perso) {
+        let test = testLimiteUtilisationsCapa(perso, pred, 'tour',
           "ne peut plus utiliser " + pred + " ce tour",
           "Action impossible, pas de prédicat " + pred);
         if (test === undefined) return true;
-        utiliseCapacite(personnage, test, evt);
+        utiliseCapacite(perso, test, evt);
       } else {
         error("Impossible de savoir à qui appliquer la limitation du prédicat " + pred, options);
         return true;
       }
     }
-    if (personnage) depenseMana(personnage, depMana, msg, evt);
+    if (options.depensePR) {
+      if (!perso) {
+        error("Impossible de savoir à qui enlever les PR.", options);
+        return true;
+      }
+      let pr = pointsDeRecuperation(perso);
+      if (!pr || !pr.current || pr.current < options.depensePR.val) {
+        if (options.depensePR.pv) {
+          options.rolls = options.rolls || {};
+          let pv = options.rolls.depensePR || rollDePlus(options.depensePR.pv);
+          evt.action = evt.action || {rolls:{}};
+          evt.action.rolls.depensePR = pv;
+          let r = {
+            total: pv.val,
+            type: 'normal',
+            display: pv.roll
+          };
+          let expl = explications || [];
+          perso.ignoreTouteRD = true;
+          dealDamage(perso, r, [], evt, false, {}, expl,
+            function(dmgDisplay, dmg) {
+              let dmgMsg = "perd " + dmgDisplay + " PV";
+              if (explications) explications.push(dmgMsg);
+              else {
+                expl.forEach(function(m) {
+                  sendPerso(perso, m, options.secret);
+                });
+                sendPerso(perso, dmgMsg, options.secret);
+              }
+            });
+        } else {
+          sendPerso(perso, "Plus de PR à dépenser", options.secret);
+          return true;
+        }
+      } else { //dépense de PR
+        enleverPointDeRecuperation(perso, pr, evt, options.depensePR.val);
+      }
+    }
+    if (perso) depenseMana(perso, depMana, msg, evt);
     return false;
   }
 
@@ -21673,7 +21711,8 @@ var COFantasy = COFantasy || function() {
   }
 
   // pr doit être défini, et pr.current > 0
-  function enleverPointDeRecuperation(perso, pr, evt) {
+  // n est optionnel
+  function enleverPointDeRecuperation(perso, pr, evt, n) {
     evt.attributes = evt.attributes || [];
     let attrPR;
     if (pr.attribut) {
@@ -21683,10 +21722,15 @@ var COFantasy = COFantasy || function() {
         caseInsensitive: true
       });
       if (attrPR.length === 0) {
+        let current = 4;
+        if (n) {
+          current = 5 - n;
+          if (current < 0) current = 0;
+        }
         attrPR = createObj("attribute", {
           characterid: perso.charId,
           name: 'pr',
-          current: 4,
+          current,
           max: 5
         });
         evt.attributes.push({
@@ -21700,7 +21744,10 @@ var COFantasy = COFantasy || function() {
       attribute: attrPR,
       current: pr.current
     });
-    pr.current--;
+    if (n) {
+      pr.current -= n;
+      if (pr.current < 0) pr.current = 0;
+    } else pr.current--;
     attrPR.set('current', pr.current);
   }
 
@@ -24100,6 +24147,17 @@ var COFantasy = COFantasy || function() {
               }
             }
             options.terrainDifficile = terrainDifficile;
+            return;
+          }
+        case 'depensePR':
+          {
+            options.depensePR = {
+              val: 1
+            };
+            if (cmd.length < 2) return;
+            options.depensePR.val = toInt(cmd[1], 1, 1);
+            if (cmd.length < 3) return;
+            options.depensePR.pv = parseDice(cmd[2], "PV dépensés si pas de PR");
             return;
           }
         default:
