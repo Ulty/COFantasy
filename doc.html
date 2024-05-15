@@ -553,7 +553,7 @@ tr {line-height: 25px;}
                   <li>Enfin, en fin de combat, si le personnage possède un prédicat <code>armeParDefaut</code>, le script va lui faire dégainer l'arme dont le label est la valeur du prédicat. Donc si le prédicat n'a pas de label associé, le personnage va rengainer son arme.</li>
                 </ul>
                 <p>Dans tous les cas, si le personnage dégaine une arme à 2 mains, le script fait enlever le bouclier, et il le fait remettre si on passe d'une arme à 2 mains à une arme à 1 main.</p>
-                <p>Il existe un prédicat <code>DEF</code> qui permet d'ajouter sa valeur à la défense d'un personnage. C'est particulièrement utile pour coder une arme de parade. Par exemple avec<code>DEF:2</code> dans les prédicats de l'arme, elle augmentera la défense de <i>2</i> quand elle sera portée. <p>
+                <p>Il existe un prédicat <code>bonus_DEF</code> qui permet d'ajouter sa valeur à la défense d'un personnage. C'est particulièrement utile pour coder une arme de parade. Par exemple avec<code>bonus_DEF:2</code> dans les prédicats de l'arme, elle augmentera la défense de <i>2</i> quand elle sera portée. <p>
                 </p>
               </div>
               <h4 class="text-secondary" id="degainer">Couvert :<code>!cof-bonus-couvert <i>b</i></code></h4>
@@ -3109,6 +3109,8 @@ tr {line-height: 25px;}
                   <li><strong>bonusAttaqueBouclier</strong> : entier, bonus pour le jet d'absorber un coup.</li>
                   <li><strong>bonus_CHA</strong> : entier, ajoute la valeur au mod de CHA.</li>
                   <li><strong>bonus_CON</strong> : entier, ajoute la valeur au mod de CON.</li>
+                  <li><strong>bonus_DEF</strong> : entier, valeur ajoutée à la DEF.</li>
+                  <li><strong>bonus_DEF(anneau)</strong> : entier, valeur ajoutée à la DEF.</li>
                   <li><strong>bonus_DEX</strong> : entier, ajoute la valeur au mod de DEX.</li>
                   <li><strong>bonus_FOR</strong> : entier, ajoute la valeur au mod de FOR.</li>
                   <li><strong>bonus_INT</strong> : entier, ajoute la valeur au mod d'INT.</li>
@@ -3141,7 +3143,6 @@ tr {line-height: 25px;}
                   <li><strong>courage</strong> : entier, bonus ajouté pour résister aux effets de peur.</li>
                   <li><strong>creatureArtificielle</strong> : booléen, immunise au poison, à l'asphyxie et aux maladies.</li>
                   <li><strong>crocEnJambe</strong> : booléen, fait tomber les adversaires sur un jet de dé d'attaque de 17-20. Passe à 19-20 contre des adversaires quadrupèdes.</li>
-                  <li><strong>DEF</strong> : entier, valeur ajoutée à la DEF.</li>
                   <li><strong>DEF_magie</strong> : entier, augmente la défense contre les sortilèges.</li>
                   <li><strong>defDeriveeDe</strong> : nom de personnage, la valeur de défense est égale à celle du personnage du prédicat.</li>
                   <li><strong>defenseIntuitive</strong> : booléen, ajoute la SAG à la DEF.</li>

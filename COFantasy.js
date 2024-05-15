@@ -1,4 +1,4 @@
-//Dernière modification : mar. 14 mai 2024,  03:52
+//Dernière modification : mer. 15 mai 2024,  08:32
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -12832,6 +12832,8 @@ var COFantasy = COFantasy || function() {
       defense -= bonus;
     }
     defense += predicateAsInt(target, 'DEF', 0);
+    defense += predicateAsInt(target, 'bonus_DEF', 0);
+    defense += predicateAsInt(target, 'bonus_DEF(anneau)', 0);
     if (attaquant && predicateAsBool(target, 'armeDeLEte') && predicateAsBool(attaquant, 'creatureDeLHiver')) {
       explications.push("Protégé par une arme de l'été => +25 en DEF");
       defense += 25;
