@@ -1,4 +1,4 @@
-//Dernière modification : mer. 15 mai 2024,  08:50
+//Dernière modification : mer. 15 mai 2024,  04:51
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -9998,21 +9998,28 @@ var COFantasy = COFantasy || function() {
             return;
           }
         case 'decrAttribute':
-          if (cmd.length < 2) {
-            error("Erreur interne d'une commande générée par bouton", cmd);
-            return;
-          }
-          let attr = getObj('attribute', cmd[1]);
-          if (attr === undefined) {
-            attr = tokenAttribute(attaquant, cmd[1]);
-            if (attr.length === 0) {
-              error("Attribut à changer perdu", cmd);
+          {
+            if (cmd.length < 2) {
+              error("Erreur interne d'une commande générée par bouton", cmd);
               return;
             }
-            attr = attr[0];
+            let attr = getObj('attribute', cmd[1]);
+            if (attr === undefined) {
+              attr = tokenAttribute(attaquant, cmd[1]);
+              if (attr.length === 0) {
+                error("Attribut à changer perdu", cmd);
+                return;
+              }
+              attr = attr[0];
+            }
+            let da = {
+              id: attr.id,
+              val: 1
+            };
+            if (cmd.length > 2) da.val = toInt(cmd[2], 1);
+            scope.decrAttribute = da;
+            return;
           }
-          scope.decrAttribute = attr.id; //Seulement l'id pour pouvoir cloner
-          return;
         case 'decrLimitePredicatParTour':
           if (cmd.length < 2) {
             error("Erreur interne d'une commande générée par bouton", cmd);
@@ -10982,24 +10989,27 @@ var COFantasy = COFantasy || function() {
           }
           break;
         case 'decrAttribute':
-          let attr = getObj('attribute', branch.decrAttribute);
-          if (attr === undefined) {
-            error("Attribut introuvable", branch.decrAttribute);
+          {
+            let da = branch.decrAttribute;
+            let attr = getObj('attribute', da.id);
+            if (attr === undefined) {
+              error("Attribut introuvable", da.id);
+              break;
+            }
+            let oldval = parseInt(attr.get('current'));
+            if (isNaN(oldval) || oldval < da.val) {
+              sendChar(attr.get('characterid'), "ne peut plus faire cela", true);
+              break;
+            }
+            evt.attributes = evt.attributes || [];
+            evt.attributes.push({
+              attribute: attr,
+              current: oldval,
+              max: attr.get('max')
+            });
+            attr.set('current', oldval - da.val);
             break;
           }
-          let oldval = parseInt(attr.get('current'));
-          if (isNaN(oldval) || oldval < 1) {
-            sendChar(attr.get('characterid'), "ne peut plus faire cela", true);
-            break;
-          }
-          evt.attributes = evt.attributes || [];
-          evt.attributes.push({
-            attribute: attr,
-            current: oldval,
-            max: attr.get('max')
-          });
-          attr.set('current', oldval - 1);
-          break;
         case 'decrLimitePredicatParTour':
           //Ne fait que diminuer l'attribut, n'empêche pas l'attaque
           let pred = branch.decrLimitePredicatParTour;
@@ -12832,7 +12842,7 @@ var COFantasy = COFantasy || function() {
       }
       defense -= bonus;
     }
-    defense += predicateAsInt(target, 'DEF', 0);//deprecated
+    defense += predicateAsInt(target, 'DEF', 0); //deprecated
     defense += predicateAsInt(target, 'bonus_DEF', 0);
     defense += predicateAsInt(target, 'bonus_DEF(anneau)', 0);
     if (attaquant && predicateAsBool(target, 'armeDeLEte') && predicateAsBool(attaquant, 'creatureDeLHiver')) {
@@ -14064,13 +14074,14 @@ var COFantasy = COFantasy || function() {
       }
     }
     if (options.decrAttribute) {
-      let attr = getObj('attribute', options.decrAttribute);
+      let da = options.decrAttribute;
+      let attr = getObj('attribute', da.id);
       if (attr === undefined) {
-        error("Attribut introuvable", options.decrAttribute);
+        error("Attribut introuvable", da.id);
         return true;
       }
       let oldval = parseInt(attr.get('current'));
-      if (isNaN(oldval) || oldval < 1) {
+      if (isNaN(oldval) || oldval < da.val) {
         let expliquer = sendChar;
         if (options.secret) expliquer = whisperChar;
         expliquer(attr.get('characterid'), "ne peut plus faire cela", true);
@@ -14082,7 +14093,7 @@ var COFantasy = COFantasy || function() {
         current: oldval,
         max: attr.get('max')
       });
-      attr.set('current', oldval - 1);
+      attr.set('current', oldval - da.val);
     }
     if (options.decrLimitePredicatParTour) {
       let pred = options.decrLimitePredicatParTour;
@@ -24006,7 +24017,12 @@ var COFantasy = COFantasy || function() {
             log(cmd);
             return;
           }
-          options.decrAttribute = attr.id;
+          let da = {
+            id: attr.id,
+            val: 1
+          };
+          if (cmd.length > 2) da.val = toInt(cmd[2], 1);
+          options.decrAttribute = da;
           return;
         case 'valeur':
           if (cmd.length < 2) {
@@ -35896,7 +35912,10 @@ var COFantasy = COFantasy || function() {
     elixirsACreer = elixirsACreer[0];
     let extraFortifiants = toInt(elixirsACreer.get('max'), 0);
     let extra = extraFortifiants > 0 && elixir.rang == 1;
-    if (!extra) options.decrAttribute = elixirsACreer.id;
+    if (!extra) options.decrAttribute = {
+      id: elixirsACreer.id,
+      val: 1
+    };
     if (limiteRessources(forgesort, options, 'elixirsACreer', 'élixirs à créer', evt)) return;
     if (extra) {
       evt.attributes = evt.attributes || [];
