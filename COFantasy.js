@@ -1,4 +1,4 @@
-//Dernière modification : mer. 15 mai 2024,  08:32
+//Dernière modification : mer. 15 mai 2024,  08:50
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -2261,6 +2261,7 @@ var COFantasy = COFantasy || function() {
       case 'dexterite':
       case 'DEXTERITE':
         return 'DEX';
+      case 'constitution':
       case 'CONSTITUTION':
         return 'CON';
       case 'intelligence':
@@ -12831,7 +12832,7 @@ var COFantasy = COFantasy || function() {
       }
       defense -= bonus;
     }
-    defense += predicateAsInt(target, 'DEF', 0);
+    defense += predicateAsInt(target, 'DEF', 0);//deprecated
     defense += predicateAsInt(target, 'bonus_DEF', 0);
     defense += predicateAsInt(target, 'bonus_DEF(anneau)', 0);
     if (attaquant && predicateAsBool(target, 'armeDeLEte') && predicateAsBool(attaquant, 'creatureDeLHiver')) {
