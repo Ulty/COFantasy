@@ -1,4 +1,4 @@
-//Dernière modification : mer. 15 mai 2024,  04:51
+//Dernière modification : jeu. 16 mai 2024,  09:26
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -51850,6 +51850,7 @@ var COFantasy = COFantasy || function() {
   function changePredicats(attr, prev) {
     let curPred = attr.get('current');
     let prevPred = prev.current;
+    if (!prevPred) return;
     if (curPred.includes('attaqueEnMeute') != prevPred.includes('attaqueEnMeute')) {
       recomputeAllies();
     }
@@ -51947,7 +51948,7 @@ on("change:attribute", function(attr, prev) {
   if (!COF_loaded) return;
   let predicats = state.COFantasy.predicats;
   if (!predicats) return;
-  let n = attr.get("name");
+  let n = attr.get('name');
   if (n == 'predicats_script' || n.endsWith('_armepredicats') || n.endsWith('_effetarmure') || n.endsWith('_equipearmure') || n == 'maindroite' || n == 'maingauche') {
     predicats[attr.get('characterid')] = undefined;
     COFantasy.changePredicats(attr, prev);
