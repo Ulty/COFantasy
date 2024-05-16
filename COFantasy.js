@@ -1,4 +1,4 @@
-//Dernière modification : jeu. 16 mai 2024,  09:26
+//Dernière modification : jeu. 16 mai 2024,  09:46
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -23405,7 +23405,7 @@ var COFantasy = COFantasy || function() {
       if (!isActive(perso)) return;
       let persoTest = persoParCharId[perso.charId];
       let arme = predicateAsBool(persoTest, 'armeParDefaut');
-      if (arme === undefined) return;
+      if (arme === undefined || arme === false) return;
       if (arme === true) degainerArme(perso, '', evt);
       else degainerArme(perso, arme, evt);
     });
