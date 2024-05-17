@@ -1,4 +1,4 @@
-//Dernière modification : ven. 17 mai 2024,  03:10
+//Dernière modification : ven. 17 mai 2024,  03:27
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -7095,6 +7095,7 @@ var COFantasy = COFantasy || function() {
     let dice = 20;
     if ((estAffaibli(personnage) && !predicateAsBool(personnage, 'insensibleAffaibli')) ||
       getState(personnage, 'immobilise') ||
+      (carac == 'DEX' && getState(personnage, 'encombre')) || 
       attributeAsBool(personnage, 'mortMaisNAbandonnePas'))
       dice = 12;
     else {
