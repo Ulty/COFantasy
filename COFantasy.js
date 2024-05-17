@@ -1,4 +1,4 @@
-//Dernière modification : ven. 17 mai 2024,  08:50
+//Dernière modification : ven. 17 mai 2024,  03:10
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -6378,7 +6378,9 @@ var COFantasy = COFantasy || function() {
   }
 
   function bonusAuxCompetences(personnage, comp, expliquer) {
-    let bonus = 0;
+    let bonus = predicateAsInt(personnage, 'bonusTests_' + comp, 0);
+    if (bonus)
+      expliquer("Bonus de compétence : " + ((bonus < 0) ? "-" : "+") + bonus);
     switch (comp) {
       case 'acrobatie':
       case 'acrobaties':
@@ -6802,6 +6804,11 @@ var COFantasy = COFantasy || function() {
     switch (carac) {
       case 'DEX':
         {
+          let bonusDEX = predicateAsInt(personnage, 'bonusTests_DEX', 0) + Math.max(predicateAsInt(personnage, 'bonusTests_dexterite', 0), predicateAsInt(personnage, 'bonusTests_dexterité', 0));
+          if (bonusDEX) {
+            expliquer("Bonus aux jets de DEX : " + ((bonusDEX < 0) ? "-" : "+") + bonusDEX);
+            bonus += bonusDEX;
+          }
           if (attributeAsBool(personnage, 'agrandissement')) {
             expliquer("Agrandi : -2 au jet de DEX");
             bonus -= 2;
@@ -6851,6 +6858,11 @@ var COFantasy = COFantasy || function() {
         break;
       case 'FOR':
         {
+          let bonusFOR = predicateAsInt(personnage, 'bonusTests_FOR', 0) + predicateAsInt(personnage, 'bonusTests_force', 0);
+          if (bonusFOR) {
+            expliquer("Bonus aux jets de FOR : " + ((bonusFOR < 0) ? "-" : "+") + bonusFOR);
+            bonus += bonusFOR;
+          }
           if (attributeAsBool(personnage, 'rayonAffaiblissant')) {
             let malusRayonAffaiblissant = getIntValeurOfEffet(personnage, 'rayonAffaiblissant', 2);
             expliquer("Affaibli : -" + malusRayonAffaiblissant + " au jet de FOR");
@@ -6919,6 +6931,11 @@ var COFantasy = COFantasy || function() {
         break;
       case 'INT':
         {
+          let bonusINT = predicateAsInt(personnage, 'bonusTests_INT', 0) + predicateAsInt(personnage, 'bonusTests_intelligence', 0);
+          if (bonusINT) {
+            expliquer("Bonus aux jets d'INT : " + ((bonusINT < 0) ? "-" : "+") + bonusINT);
+            bonus += bonusINT;
+          }
           if (attributeAsBool(personnage, 'secretsDeLAuDela')) {
             bonus += 5;
             expliquer("Secrets de l'au-delà : +5");
@@ -6931,6 +6948,11 @@ var COFantasy = COFantasy || function() {
         break;
       case 'CHA':
         {
+          let bonusCHA = predicateAsInt(personnage, 'bonusTests_CHA', 0) + predicateAsInt(personnage, 'bonusTests_charisme', 0);
+          if (bonusCHA) {
+            expliquer("Bonus aux jets de CHA : " + ((bonusCHA < 0) ? "-" : "+") + bonusCHA);
+            bonus += bonusCHA;
+          }
           if (attributeAsBool(personnage, 'aspectDeLaSuccube')) {
             let bonusAspectDeLaSuccube = getIntValeurOfEffet(personnage, 'aspectDeLaSuccube', 5);
             expliquer("Aspect de la succube : +" + bonusAspectDeLaSuccube + " au jet de CHA");
@@ -6955,6 +6977,11 @@ var COFantasy = COFantasy || function() {
         break;
       case 'CON':
         {
+          let bonusCON = predicateAsInt(personnage, 'bonusTests_CON', 0) + predicateAsInt(personnage, 'bonusTests_constitution', 0);
+          if (bonusCON) {
+            expliquer("Bonus aux jets de CON : " + ((bonusCON < 0) ? "-" : "+") + bonusCON);
+            bonus += bonusCON;
+          }
           if (attributeAsBool(personnage, 'mutationSilhouetteMassive')) {
             expliquer("Silhouette massive : +5 au jet de CON");
             bonus += 5;
@@ -6983,6 +7010,15 @@ var COFantasy = COFantasy || function() {
           }
         }
         break;
+      case 'SAG':
+        {
+          let bonusSAG = predicateAsInt(personnage, 'bonusTests_SAG', 0) + predicateAsInt(personnage, 'bonusTests_sagesse', 0);
+          if (bonusSAG) {
+            expliquer("Bonus aux jets de SAG : " + ((bonusSAG < 0) ? "-" : "+") + bonusSAG);
+            bonus += bonusSAG;
+          }
+        }
+        break;
     }
     let bonusCompetence;
     if (options && options.competence) {
@@ -7005,8 +7041,8 @@ var COFantasy = COFantasy || function() {
           bestFit = caracsLimitees.includes(carac);
         }
       }
+      let compSansBlanc = options.competence.toLowerCase().replace(/ /g, '_');
       if (bonusCompetence === undefined) {
-        let compSansBlanc = options.competence.toLowerCase().replace(/ /g, '_');
         options.bonusAttrs = options.bonusAttrs || [];
         options.bonusAttrs.push(compSansBlanc);
         options.bonusPreds = options.bonusPreds || [];
