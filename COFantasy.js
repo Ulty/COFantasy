@@ -1,4 +1,4 @@
-//Dernière modification : jeu. 16 mai 2024,  09:46
+//Dernière modification : ven. 17 mai 2024,  08:50
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -7873,22 +7873,29 @@ var COFantasy = COFantasy || function() {
       layer: 'walls'
     });
     murs = murs.map(function(path) {
-      let chemin = JSON.parse(path.get('_path'));
-      if (chemin.length < 2) return [];
-      if (chemin[1][0] != 'L') return [];
-      let p = {
-        angle: path.get('rotation') / 180 * Math.PI,
-        width: path.get('width'),
-        height: path.get('height'),
-        top: path.get('top'),
-        left: path.get('left'),
-        scaleX: path.get('scaleX'),
-        scaleY: path.get('scaleY'),
-      };
-      chemin = chemin.map(function(v) {
-        return translatePathCoordinates(v[1], v[2], p);
-      });
-      return chemin;
+      let pa = path.get('_path');
+      if (!pa) return [];
+      try {
+        let chemin = JSON.parse(pa);
+        if (chemin.length < 2) return [];
+        if (chemin[1][0] != 'L') return [];
+        let p = {
+          angle: path.get('rotation') / 180 * Math.PI,
+          width: path.get('width'),
+          height: path.get('height'),
+          top: path.get('top'),
+          left: path.get('left'),
+          scaleX: path.get('scaleX'),
+          scaleY: path.get('scaleY'),
+        };
+        chemin = chemin.map(function(v) {
+          return translatePathCoordinates(v[1], v[2], p);
+        });
+        return chemin;
+      } catch (error) {
+        error("Erreur, chemin mal formé dans le calque d'éclairage dynamique", path);
+        log(error.name + ": " + error.message);
+      }
     });
     //On rajoute les portes fermées.
     let doors = findObjs({
