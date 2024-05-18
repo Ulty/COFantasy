@@ -1,4 +1,4 @@
-//Dernière modification : ven. 17 mai 2024,  03:27
+//Dernière modification : sam. 18 mai 2024,  03:02
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -6591,7 +6591,9 @@ var COFantasy = COFantasy || function() {
         return options.cacheBonusToutesCaracs.val;
       }
     }
-    let bonus = 0;
+    let bonus = predicateAsInt(personnage, 'bonusTousTests', 0);
+    if (bonus)
+      expliquer("Bonus aux tests : " + ((bonus < 0) ? "-" : "+") + bonus);
     if (attributeAsBool(personnage, 'chantDesHeros')) {
       let bonusChantDesHeros = getIntValeurOfEffet(personnage, 'chantDesHeros', 1);
       let chantDesHerosIntense = attributeAsInt(personnage, 'chantDesHerosTempeteDeManaIntense', 0);
