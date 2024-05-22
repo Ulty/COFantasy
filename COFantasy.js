@@ -1,4 +1,4 @@
-//Dernière modification : mer. 22 mai 2024,  04:06
+//Dernière modification : mer. 22 mai 2024,  09:44
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -1968,8 +1968,7 @@ var COFantasy = COFantasy || function() {
   //Renvoie 1dk + bonus, avec le texte
   //champs val et roll
   //de peut être un nombre > 0 ou bien le résultat de parseDice
-  function rollDePlus(de, options) {
-    options = options || {};
+  function rollDePlus(de, options = {}) {
     let nbDes = options.nbDes || 1;
     let bonus = options.bonus || 0;
     if (de.dice !== undefined) {
@@ -7097,7 +7096,7 @@ var COFantasy = COFantasy || function() {
     let dice = 20;
     if ((estAffaibli(personnage) && !predicateAsBool(personnage, 'insensibleAffaibli')) ||
       getState(personnage, 'immobilise') ||
-      (carac == 'DEX' && getState(personnage, 'encombre')) || 
+      (carac == 'DEX' && getState(personnage, 'encombre')) ||
       attributeAsBool(personnage, 'mortMaisNAbandonnePas'))
       dice = 12;
     else {
@@ -18073,6 +18072,11 @@ var COFantasy = COFantasy || function() {
     return oldSide;
   }
 
+  function immuniseAuxSaignements(perso) {
+    return predicateAsBool(perso, 'immuniteSaignement') ||
+      predicateAsBool(perso, 'controleSanguin');
+  }
+
   //Met un effet temporaire sur target. L'effet temporaire est spécifié dans ef
   // - effet : le nom de l'effet
   // - whisper : true si on doit chuchoter l'effet, undefined si on n'affiche pas (mais dans ce cas, target.messages doit être défini)
@@ -18142,7 +18146,7 @@ var COFantasy = COFantasy || function() {
       }
       return;
     }
-    if (ef.effet == 'saignementsSang' && predicateAsBool(target, 'immuniteSaignement')) {
+    if (ef.effet == 'saignementsSang' && immuniseAuxSaignements(target)) {
       if (ef.whisper !== undefined) {
         if (ef.whisper === true) {
           whisperChar(target.charId, "ne peut pas saigner");
@@ -19642,6 +19646,20 @@ var COFantasy = COFantasy || function() {
             if (target.effets) {
               if (effets) effets = effets.concat(target.effets);
               else effets = target.effets;
+            }
+            if (predicateAsBool(attaquant, 'hemorragiePestrilax') && !immuniseAuxSaignements(target)) {
+              if (attributeAsBool(target, 'blessureQuiSaigne')) {
+                let niveauBlessure = getIntValeurOfEffet(target, 'blessureQuiSaigne', 0);
+                target.messages.push("La blessure devient plus importante");
+                setTokenAttr(target, 'blessureQuiSaigneValeur', niveauBlessure + 1, evt);
+              } else {
+                effets = effets || [];
+                effets.push({
+                  effet: 'blessureQuiSaigne',
+                  attaquant,
+                  message: messageEffetCombat.blessureQuiSaigne,
+                });
+              }
             }
             if (effets) {
               effets.forEach(function(ef) {
@@ -29924,7 +29942,7 @@ var COFantasy = COFantasy || function() {
       if (activer) {
         initiative(selected, evt);
         iterSelected(selected, function(perso) {
-          if (effet == 'blessureQuiSaigne' && predicateAsBool(perso, 'immuniteSaignement')) {
+          if (effet == 'blessureQuiSaigne' && immuniseAuxSaignements(perso)) {
             sendPerso(perso, "ne saigne pas");
             return;
           }
@@ -47313,10 +47331,23 @@ var COFantasy = COFantasy || function() {
       actif: "attaque à outrance",
       fin: "attaque normalement",
     },
+    blessureQuiSaigne: {
+      activation: "reçoit une blessure qui saigne",
+      actif: "saigne à cause d'une blessure",
+      fin: "saigne beaucoup moins",
+      msgSave: "ne plus saigner",
+      prejudiciable: true,
+      dm: true
+    },
     bonusInitEmbuscade: { //Effet interne pour la capacité Surveillance
       activation: "a un temps d'avance en cas d'embuscade",
       actif: "a un temps d'avance",
       fin: ""
+    },
+    bonusInitVariable: {
+      activation: "entre en combat",
+      actif: "est en combat",
+      fin: ''
     },
     criDeGuerre: {
       activation: "pousse son cri de guerre",
@@ -47385,11 +47416,6 @@ var COFantasy = COFantasy || function() {
       actif: "est dans une rage berserk",
       fin: "retrouve son calme",
       msgSave: "retrouver son calme",
-    },
-    bonusInitVariable: {
-      activation: "entre en combat",
-      actif: "est en combat",
-      fin: ''
     },
     defiDuelliste: {
       activation: "lance un défi",
@@ -47472,14 +47498,6 @@ var COFantasy = COFantasy || function() {
       seulementVivant: true,
       dm: true,
       visible: true
-    },
-    blessureQuiSaigne: {
-      activation: "reçoit une blessure qui saigne",
-      actif: "saigne à cause d'une blessure",
-      fin: "saigne beaucoup moins",
-      msgSave: "ne plus saigner",
-      prejudiciable: true,
-      dm: true
     },
     poisonAffaiblissant: {
       activation: "sent le poison ralentir ses mouvements",
@@ -47721,6 +47739,16 @@ var COFantasy = COFantasy || function() {
     return effet;
   }
 
+  function getEffectOptions(perso, effet, options) {
+    options = options || {};
+    let optionsAttr = tokenAttribute(perso, effet + 'Options');
+    optionsAttr.forEach(function(oAttr) {
+      parseDmgOptions(oAttr.get('current'), options);
+    });
+    copyDmgOptionsToTarget(perso, options);
+    return options;
+  }
+
   function rollAndDealDmg(perso, dmg, type, effet, attrName, msg, count, evt, options, callback, display) {
     if (options.valeur) {
       let attrsVal = tokenAttribute(perso, options.valeur);
@@ -47894,16 +47922,6 @@ var COFantasy = COFantasy || function() {
             });
         }); //fin sendChat du jet de dé
       }); //fin iterTokensOfAttribute
-  }
-
-  function getEffectOptions(perso, effet, options) {
-    options = options || {};
-    let optionsAttr = tokenAttribute(perso, effet + 'Options');
-    optionsAttr.forEach(function(oAttr) {
-      parseDmgOptions(oAttr.get('current'), options);
-    });
-    copyDmgOptionsToTarget(perso, options);
-    return options;
   }
 
   // gestion des effets qui se déclenchent à la fin de chaque tour
@@ -48125,16 +48143,18 @@ var COFantasy = COFantasy || function() {
           });
       }
       if (attributeAsBool(perso, 'blessureQuiSaigne') &&
-        !getState(perso, 'mort') &&
-        !predicateAsBool(perso, 'immuniteSaignement') &&
-        !predicateAsBool(perso, 'controleSanguin')) {
-        let jetSaignement = rollDePlus(6);
+        !getState(perso, 'mort') && !immuniseAuxSaignements(perso)) {
+        let bonus = getIntValeurOfEffet(perso, 'blessureQuiSaigne', 0);
+        let jetSaignement = rollDePlus(6, {
+          bonus
+        });
         let dmgSaignement = {
           type: 'normal',
           total: jetSaignement.val,
           display: jetSaignement.roll
         };
         let optDMSaignements = getEffectOptions(perso, 'blessureQuiSaigne');
+        perso.ignoreTouteRD = true;
         dealDamage(perso, dmgSaignement, [], evt, false, optDMSaignements, undefined,
           function(dmgDisplay, dmgFinal) {
             sendPerso(perso, "saigne. " + onGenre(perso, 'Il', 'Elle') + " perd " + dmgDisplay + " PVs");

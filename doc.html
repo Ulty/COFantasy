@@ -2471,6 +2471,7 @@ tr {line-height: 25px;}
                   <li><strong>Foudres du temps</strong> : <code>!cof-effet-chaque-d20 foudresDuTemps</code> permet d'activer les foudres du temps. On peut donner un argument pour remplacer la valeur par défaut (13) par un autre jet de dés. Un deuxième argument permet de faire sortir la foudre pour tout jet entre les deux valeurs. Par exemple <code>!cof-effet-chaque-d20 foudresDuTemps 13 14</code> fait venir la foudre pour tout jet de 13 ou 14. Si votre jeu contient un son (ou playlist) nommé <code>Foudre</code> (avec la majuscule), le son sera joué à chaque fois que la foudre frappera. Finalement, <code>!cof-effet-chaque-d20 foudresDuTemps fin</code> met fin aux foudres du temps.</li>
                   <li><strong>Frénésie</strong> : Ajouter un <a href=#predicats>prédicat</a> <code>frenesie</code> avec comme valeur le nombre de PV en-dessous duquel la créature devient frénétique (+2 aus jets d'attaque).</li>
                   <li><strong>Général</strong> (pour la campagne Vengeance) : Ajouter au général un <a href=#predicats>prédicat</a> <code>generalVengeance</code>, et aux gardes d'élite un prédicat <code>gardeEliteVengeance</code>.</li>
+                  <li><strong>Hémorragie</strong> (Invincible) : ajouter un prédicat <code>hemorragiePestrilax</code>.</li>
                   <li><strong>Hors de portée</strong> : ajouter un <a href=#predicats>prédicat</a> <code>horsDePortee</code></li>
                   <li><strong>Huile de fort assaut</strong> : <code>!cof-effet-temp dmgArme(<i>L</i>) 10 --valeur 1d6</code> où <i>L</i> est le label de l'arme qu'on veut enduire d'huile de fort assaut.</li>
                   <li><strong>Hurlement</strong> : Pour les chiens infernaux, <code>!cof-peur [[10+?{Nombre de chiens?}]] 2d4 --titre Hurlement --immuniseSiResiste hurlement --disque 50 --saufAllies</code>, et pour les fantômes, <code>!cof-peur 12 1d6 --titre Hurlement terrible --immuniseSiResiste hurlement --disque 10 --saufAllies</code>.</li>
@@ -3127,6 +3128,7 @@ tr {line-height: 25px;}
                   <li><strong>briseurDOs</strong> : booléen, augmente les chances de critique des attaques au contact, et applique un effet d'os brisés   a la cible en cas de critique.</li>
                   <li><strong>bucheron</strong> : booléen, augmente les DM des armes à 2 mains de 1d6 contre les créatures grandes, et 2d6 contre les créatures énormes.</li>
                   <li><strong>cavalierEmerite</strong> : entier, s'ajoute à l'attaque au contact quand le personnage est sur une monture.</li>
+                  <li><strong>champion</strong> : booléen, touche automatiquement et ajoute 1d6 aux DM sur un résultat de 15 ou plus au dé d'attaque.</li>
                   <li><strong>charge</strong> : entier (défaut 1), indique que l'arme doit être rechargée (ainsi que le nombre de charge, si on associe un nombre).</li>
                   <li><strong>chasseurDeSorciere</strong> : booléen, ajoute 2 aux DM et à la DEF contre les nécromanciens.</.li>
                   <li><strong>chasseurEmerite</strong> : booléen, rajoute +2 à l'attaque et aux DM contre les animaux.</li>
