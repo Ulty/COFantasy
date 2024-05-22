@@ -1,4 +1,4 @@
-//Dernière modification : sam. 18 mai 2024,  03:02
+//Dernière modification : mer. 22 mai 2024,  04:06
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -10535,10 +10535,11 @@ var COFantasy = COFantasy || function() {
   // seulement pour l'attaque avec l'arme principale
   // suppose qu'on a calculé les armes en main
   function malusAttaqueDeuxArmes(perso, weaponStats) {
-    if (!perso.armeGauche) return;
+    if (!perso.armeGauche || !perso.arme) return;
     if (persoEstPNJ(perso)) return; //On ne rentre pas dans ces détails pour les PNJs
     if (predicateAsBool(perso, 'ambidextrie') || predicateAsBool(perso, 'combatADeuxArmesAmeliore')) return;
     if (predicateAsBool(perso, 'coupDeBouclier') && perso.armeGauche.label == predicateAsBool(perso, 'attaqueAuBouclier')) return;
+    if (predicateAsBool(perso, 'tirDouble') && perso.armeGauche.poudre && perso.arme.poudre) return;
     //L'attaque doit se faire au d12
     weaponStats.modificateurs += ' avecd12crit';
   }

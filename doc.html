@@ -1035,7 +1035,7 @@ tr {line-height: 25px;}
                     <strong>Plus vite que son ombre</strong> : ajouter un prédicat <code>plusViteQueSonOmbre</code>. On peut associer un nombre à ce prédicat pour modifier le bonus à l'initiative, ou bien lui donner la valeur <code>arbalete</code> pour activer le bonus sur les arbalètes au lieu des armes à poudre.
                   </li>
                   <li><strong>Cadence de tir</strong> : pas de support</li>
-                  <li><strong>Tir double</strong> : utiliser l'option <code>--tirDouble</code> si deux tirs sur une même cible. Si les deux armes sont différentes, rajouter le label de la deuxième arme après l'option (si le label est <i>l2</i>, cela donne <code>--tirDouble <i>l2</i></code>). Si vous avez une pétoire dans la main droite et l'autre dans la main gauche, vous pouvez par exemple utiliser l'action <code>#Attaque -1 --tirDouble -2</code>. Attention, il faut faire 2 undo pour annuler une attaque de tir double réussie.</li>
+                  <li><strong>Tir double</strong> : ajouter un prédicat <code>tirDouble</code> pour ne pas avoir le malus à l'attaque avec une arme à poudre dans chaque main. Si le personnage veut faire 2 tirs sur la même cible, il peut utiliser l'option <code>--tirDouble</code>. Si les deux armes sont différentes, rajouter le label de la deuxième arme après l'option (si le label est <i>l2</i>, cela donne <code>--tirDouble <i>l2</i></code>). Si vous avez une pétoire dans la main droite et l'autre dans la main gauche, vous pouvez par exemple utiliser l'action <code>#Attaque -1 --tirDouble -2</code>. Attention, il faut faire 2 undo pour annuler une attaque de tir double réussie.</li>
                   <li><strong>As de la gâchette</strong> : ajouter un <a href=#predicats>prédicat</a> <code>asDeLaGachette</code> sur la fiche.</li>
                   <li><strong>Dextérité héroïque</strong> : reporter le bonus sur la fiche</li>
                 </ol>
@@ -3269,6 +3269,7 @@ tr {line-height: 25px;}
                   <li><strong>techniqueDuSabre</strong> : entier, bonus aux DM pour le combat au sabre, katana ou vivelame. Ce bonus ne se cumule qu'à moitié avec le mod. de FOR.</li>
                   <li><strong>tenacite</strong> : booléen, donne un bonus de +2 puis +5 contre un adversaire que le personnage n'a pas réussi à toucher.</li>
                   <li><strong>tirDeSemonce</strong> : booléan, propose un tir de semonce au tour suivant un tir raté.</li>
+                  <li><strong>tirDouble</strong> : booléan, quand le personnage attaque avec une arme à poudre dans chaque main, il utilise un d20 par défaut.</li>
                   <li><strong>tirFatal</strong> : booléen ou nom de type d'arme (par défaut, arc), augmente les chance de coup critique du mod. de SAG pour les armes de ce type. De plus les DM des coups critiques pour ces attaques sont augmentées de 1 ou 2 d6 (selon la valeur du prédicat <code>voieDeLArcEtDuCheval</code>).</li>
                   <li><strong>tirParabolique</strong> : booléen, augmente la portée des armes à distance (comme la capacité tir parabolique).</li>
                   <li><strong>tirPrecis</strong> : entier, ajouté aux DM quand la cible est à moins de 5xDEX mètres.</li>
@@ -3283,6 +3284,7 @@ tr {line-height: 25px;}
                   <li><strong>vieArtificielle</strong> : booléan, divise les soins par 2.</li>
                   <li><strong>violenceCiblee</strong> : booléen, permet d'emmagasiner et d'utliser des points de violence.</li>
                   <li><strong>visionDansLeNoir</strong> : entier, le personnage voit dans le noir jusqu'à la distance indiquée par le prédicat, en mètres.</li>
+                  <li><strong>vitaliteEpique</strong> : booléan, multiplie par 2 les soins reçus.</li>
                   <li><strong>vitesseDuFelin</strong> : entier, bonus à l'initiative et aux jets de course, d'escalade, et de saut.</li>
                   <li><strong>voieDeLaConjuration</strong> : entier, rang dans la Voie de la conjuration. Contrôle les conjurations de prédateurs et la conjuration d'armées.</li>
                   <li><strong>voieDeLaMagieElementaire</strong> : entier, on utilise 2 fois cette valeur pour la valeur de la protection des éléments.</li>
