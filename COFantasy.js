@@ -1,4 +1,4 @@
-//Dernière modification : mer. 22 mai 2024,  09:44
+//Dernière modification : jeu. 23 mai 2024,  09:34
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -10543,6 +10543,14 @@ var COFantasy = COFantasy || function() {
     weaponStats.modificateurs += ' avecd12crit';
   }
 
+  //weaponStats est la stat de l'arme en main gauche
+  function malusAttaqueMainGauche(perso, weaponStats) {
+    if (predicateAsBool(perso, 'ambidextrie')) return;
+    if (predicateAsBool(perso, 'tirDouble') && weaponStats.poudre && (!perso.arme || perso.arme.poudre)) return;
+    //L'attaque doit se faire au d12
+    weaponStats.modificateurs += ' avecd12crit';
+  }
+
   //Modifie optArgs (liste de strings) et options (objet)
   function addWeaponStatsToOptions(perso, weaponStats, optArgs, options, indexAussiJet) {
     if (weaponStats.options) {
@@ -10641,10 +10649,7 @@ var COFantasy = COFantasy || function() {
       } else if (attackLabel == -2) { //attaque avec l'arme en main gauche
         if (attaquant.armesEnMain === undefined) armesEnMain(attaquant);
         weaponStats = attaquant.armeGauche;
-        if (!predicateAsBool(attaquant, 'ambidextrie')) {
-          //L'attaque doit se faire au d12
-          weaponStats.modificateurs += ' avecd12crit';
-        }
+        malusAttaqueMainGauche(attaquant, weaponStats);
       }
       if (weaponStats === undefined) {
         let arme = armesEnMain(attaquant);
@@ -10653,10 +10658,7 @@ var COFantasy = COFantasy || function() {
           malusAttaqueDeuxArmes(attaquant, weaponStats);
         } else if (attaquant.armeGauche && attaquant.armeGauche.label == attackLabel) {
           weaponStats = attaquant.armeGauche;
-          if (!predicateAsBool(attaquant, 'ambidextrie')) {
-            //L'attaque doit se faire au d12
-            weaponStats.modificateurs += ' avecd12crit';
-          }
+          malusAttaqueMainGauche(attaquant, weaponStats);
         } else weaponStats = getWeaponStats(attaquant, attackLabel);
       }
     }
