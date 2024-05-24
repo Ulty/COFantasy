@@ -2496,7 +2496,7 @@ tr {line-height: 25px;}
                   <li><strong>Phylactère de canalisation</strong> : ajouter un prédicat <code>phylacterePositif</code> pour un phylactère de canalisation positive, ou <code>phylactereNegatif</code> pour un phylactère de canalisation négative. Associez à ce prédicat la valeur ajoutée pour chaque PM dépensé (nécessite l'utilisation du prédicat <code>deCanalisation</code>). Une valeur de <code>1d4</code> semble adaptée pour le phylactère de canalisation de Pathfinder 1.</li>
                   <li><strong>Piqûres d'insectes</strong> : Rajouter un <a href=#predicats>prédicat</a> <code>piquresDInsectes</code> avec comme valeur la résistance aux dégâts à distance appropriée</li>
                   <li>
-                    <strong>Poison</strong> : pour enduire une arme de label <i>L</i> de poison, utiliser <code>!cof-enduire-poison <i>L type force save</i></code>. Pour l'instant, <i>type</i> ne peut être que <code>rapide</code> ou <code>affaiblissant</code>. Pour un poison rapide, <i>force</i> est une expression pour les dégâts (typiquement, <code>2d6</code>), pour un poison affaiblissant c'est une expression indiquant au bout de combien de tours le poison fait effet (si c'est 0, alors l'affaiblissement ne dure que pendant un combat, sinon c'est une durée en heures, à gérer par le MJ). <i>save</i> est la difficulté du jet de CON pour résister au poison. On peut rajouter deux arguments optionnels :
+                    <strong>Poison</strong> : pour enduire une arme de label <i>L</i> de poison, utiliser <code>!cof-enduire-poison <i>L type force save</i></code>. Pour l'instant, <i>type</i> ne peut être que <code>rapide</code>, <code>affaiblissant</code> ou <code>paralysant</code>. Pour un poison rapide, <i>force</i> est une expression pour les dégâts (typiquement, <code>2d6</code>), pour un poison affaiblissant c'est une expression indiquant au bout de combien de tours le poison fait effet (si c'est 0, alors l'affaiblissement ne dure que pendant un combat, sinon c'est une durée en heures, à gérer par le MJ), et pour un poison paralysant, c'est la durée de la paralysie en tours. <i>save</i> est la difficulté du jet de CON pour résister au poison. On peut rajouter deux arguments optionnels :
                     <ul>
                       <li><code>--testINT</code> <i>n</i>: fixe la difficulté du jet d'INT pour réussir à poser le poison. La difficulté par défaut est 14.</li>
                       <li><code>--dose</code> <i>nom</i>: indique une ressource dans laquelle on puise pour enduire de poison. Il faudra que le personnage ait un attribut de nom <code>dose_<i>nom</i></code> avec comme valeur le nombre de doses possédées.</li>
@@ -2507,6 +2507,7 @@ tr {line-height: 25px;}
                       <li><strong>poisonAffaiblissant</strong> est un effet qui rend affaibli pendant tout un combat.</li>
                       <li><strong>poisonAffaiblissantLong</strong>, le même effet mais sans limite de durée (à gérer par le MJ).</li>
                       <li><strong>poisonAffaiblissantLatent</strong> est un effet à durée en tours. Quand l'effet prend fin, le personnage devient empoisonné et affaibli.</li>
+                      <li><strong>poisonParalysant</strong> est un effet à durée en tours, qui paralyse.</li>
                     </ul>
                   </li>
                   <li><strong>Potion de sang de l'Arbre-Coeur</strong> : <code>!cof-effet sangDeLArbreCoeur true</code>, à enlever quand les 24h sont passées.</li>
@@ -3266,6 +3267,7 @@ tr {line-height: 25px;}
                   <li><strong>scienceDuCritique</strong> : booléen, augmente de 1 les chances de critique.</li>
                   <li><strong>secondSouffle</strong> : booléen ou entier, propose un jet de récupération de PV une fois par combat, appliqué automatiquement à la fin du combat si pas utilisé. Si on met un entier, on soigne avec cette valeur à la place de CON + niveau.</li>
                   <li><strong>sensAffutes</strong> : booléen, ajoute la sagesse aux dégâts des arcs et à l'initiative.</li>
+                  <li><strong>sergent</strong> : booléen, une fois par combat, ignore une attaque qui aurait dû le mettre à 0 PV.</li>
                   <li><strong>sournoisesParTour</strong> : entier (1 par défaut), nombre maximum d'effets d'attaques sournoises par tour pour le personnage.</li>
                   <li><strong>specialisationGuerrier</strong> : booléen ou entier (2 par défaut), donne un bonus aux DM pour l'arme de prédilection.</li>
                   <li><strong>siphonDesAmes</strong> : booléen ou entier, fait récupérer 1d6 PV quand une créature meurt dans les 20 mètres. Si une valeur est précisée, elle est ajoutée à ce dé.</i>

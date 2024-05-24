@@ -1,4 +1,4 @@
-//Dernière modification : jeu. 23 mai 2024,  09:34
+//Dernière modification : ven. 24 mai 2024,  02:53
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -2065,12 +2065,11 @@ var COFantasy = COFantasy || function() {
         attribute: attr,
         current: attr.get('current'),
         max: attr.get('max'),
+        withWorker: true,
       });
     }
-    token.set(fieldv, val); //On le fait aussi pour forcer la mise à jour de la barre
     let aset = {
       current: val,
-      withWorker: true
     };
     if (maxVal) aset.max = maxVal;
     attr.setWithWorker(aset);
@@ -4063,6 +4062,7 @@ var COFantasy = COFantasy || function() {
         break;
       case 'paralyseTemp':
       case 'paralyseGoule':
+      case 'poisonParalysant':
         iterTokensOfAttribute(charId, options.pageId, effet, attrName,
           function(token) {
             setState({
@@ -13073,8 +13073,10 @@ var COFantasy = COFantasy || function() {
         unlockToken(attaquant, evt);
       } else {
         attBonus -= 5;
-        options.diviseDmg = options.diviseDmg || 1;
-        options.diviseDmg *= 2;
+        if (!options.redo) {
+          options.diviseDmg = options.diviseDmg || 1;
+          options.diviseDmg *= 2;
+        }
         messageAttaqueDM("Attaquant dans le ventre de " + nomPerso(gobant), explications, options, -5, 'moitié');
       }
     }
@@ -16558,54 +16560,81 @@ var COFantasy = COFantasy || function() {
       typePoison = defPoison.substring(0, index);
       value = defPoison.substring(index + 1);
     }
-    if (typePoison == 'rapide') {
-      attaquant.additionalDmg.push({
-        type: 'poison',
-        value,
-        partialSave: {
-          carac: 'CON',
-          seuil
+    switch (typePoison) {
+      case 'rapide':
+        {
+          attaquant.additionalDmg.push({
+            type: 'poison',
+            value,
+            partialSave: {
+              carac: 'CON',
+              seuil
+            }
+          });
+          break;
         }
-      });
-    } else if (typePoison == 'affaiblissant') {
-      options.effets = options.effets || [];
-      if (value == 0) {
-        options.effets.push({
-          effet: 'poisonAffaiblissant',
-          typeDmg: 'poison',
-          message: messageEffetCombat.poisonAffaiblissant,
-          save: {
-            carac: 'CON',
-            seuil
-          },
-        });
-      } else {
-        let exprDuree = parseDice(value, 'durée');
-        let duree = randomInteger(6);
-        if (exprDuree) {
-          if (exprDuree.nbDe <= 0) {
-            if (exprDuree.bonus > 0) duree = exprDuree.bonus;
+      case 'affaiblissant':
+        {
+          options.effets = options.effets || [];
+          if (value == 0) {
+            options.effets.push({
+              effet: 'poisonAffaiblissant',
+              typeDmg: 'poison',
+              message: messageEffetCombat.poisonAffaiblissant,
+              save: {
+                carac: 'CON',
+                seuil
+              },
+            });
           } else {
-            duree = rollDePlus(exprDuree.dice, {
-              nbDes: exprDuree.nbDes,
-              bonus: exprDuree.bonus
-            }).val;
+            let exprDuree = parseDice(value, 'durée');
+            let duree = randomInteger(6);
+            if (exprDuree) {
+              if (exprDuree.nbDe <= 0) {
+                if (exprDuree.bonus > 0) duree = exprDuree.bonus;
+              } else {
+                duree = rollDePlus(exprDuree).val;
+              }
+            }
+            options.effets.push({
+              effet: 'poisonAffaiblissantLatent',
+              typeDmg: 'poison',
+              duree,
+              message: messageOfEffetTemp('poisonAffaiblissantLatent'),
+              save: {
+                carac: 'CON',
+                seuil
+              },
+            });
           }
+          break;
         }
-
-        options.effets.push({
-          effet: 'poisonAffaiblissantLatent',
-          typeDmg: 'poison',
-          duree,
-          message: messageOfEffetTemp('poisonAffaiblissantLatent'),
-          save: {
-            carac: 'CON',
-            seuil
-          },
-        });
-      }
-    } else {
-      error("Type de poison " + typePoison + " non reconnu.", poisonAttr);
+      case 'paralysant':
+        {
+          options.effets = options.effets || [];
+          let exprDuree = parseDice(value, 'durée');
+          let duree = 1;
+          if (exprDuree) {
+            duree = rollDePlus(exprDuree);
+            if (duree && duree.val > 0) duree = duree.val;
+            else duree = 0;
+          }
+          if (duree) {
+            options.effets.push({
+              effet: 'poisonParalysant',
+              typeDmg: 'poison',
+              duree,
+              message: messageOfEffetTemp('poisonParalysant'),
+              save: {
+                carac: 'CON',
+                seuil
+              },
+            });
+          }
+          break;
+        }
+      default:
+        error("Type de poison " + typePoison + " non reconnu.", poisonAttr);
     }
     explications.push("L'arme est empoisonnée");
     return defPoison;
@@ -16656,8 +16685,10 @@ var COFantasy = COFantasy || function() {
       if (!options.pasDeDmg && options.contact) {
         if (!options.auto) msgDrain += " et ";
         msgDrain += "DM/2";
-        options.diviseDmg = options.diviseDmg || 1;
-        options.diviseDmg *= 2;
+        if (!options.redo) {
+          options.diviseDmg = options.diviseDmg || 1;
+          options.diviseDmg *= 2;
+        }
       }
       expliquer(msgDrain);
     }
@@ -18237,6 +18268,7 @@ var COFantasy = COFantasy || function() {
           break;
         case 'paralyseTemp':
         case 'paralyseGoule':
+        case 'poisonParalysant':
           setState(target, 'paralyse', true, evt);
           break;
         case 'immobiliseTemp':
@@ -29500,6 +29532,7 @@ var COFantasy = COFantasy || function() {
               (effet == 'immobiliseTemp' ||
                 effet == 'paralyseTemp' ||
                 effet == 'paralyseGoule' ||
+                effet == 'poisonParalysant' ||
                 effet == 'ralentiTemp' ||
                 effet == 'toiles')) ||
             (mEffet.entrave && effet != 'paralyseTemp' && effet != 'paralyseGoule' && predicateAsInt(perso, 'voieDeLArchange', 1) > 1 && attributeAsBool(perso, 'formeDAnge'))
@@ -34937,8 +34970,14 @@ var COFantasy = COFantasy || function() {
     }
     let label = cmd[1];
     let typePoison = cmd[2];
-    if (typePoison != 'rapide' && typePoison != 'affaiblissant') {
-      error("Les seuls type de poison gérés sont rapide et affaiblissant, mais pas encore " + typePoison, cmd);
+    switch (typePoison) {
+      case 'rapide':
+      case 'affaiblissant':
+      case 'paralysant':
+        break;
+      default:
+        error("Les seuls type de poison gérés sont rapide, affaiblissant et paralysant, mais pas encore " + typePoison, cmd);
+        return;
     }
     let nomMunition;
     let estMunition = label.startsWith('munition_');
@@ -46450,6 +46489,25 @@ var COFantasy = COFantasy || function() {
       prejudiciable: true,
       visible: true
     },
+    poisonAffaiblissantLatent: {
+      activation: "sent qu'un poison commence à se répandre dans ses veines",
+      actif: "est empoisonné, mais l'effet du poison ne se fait pas encore sentir",
+      actifF: "est empoisonnée, mais l'effet du poison ne se fait pas encore sentir",
+      fin: "se sent faible",
+      msgSave: "résister au poison",
+      prejudiciable: true,
+      seulementVivant: true,
+    },
+    poisonParalysant: {
+      activation: "sent le poison ralentir ses mouvements. Il ne peut plus bouger !",
+      activationf: "sent le poison ralentir ses mouvements. Elle ne peut plus bouger !",
+      actif: "est empoisonné et ne peut plus bouger",
+      actifF: "est empoisonnée et ne peut plus bouger",
+      fin: "peut à nouveau bouger",
+      msgSave: "résister au poison",
+      prejudiciable: true,
+      seulementVivant: true,
+    },
     protectionContreLesProjectiles: {
       activation: "gagne une protection contre les projectiles",
       actif: "est protégé contre les projectiles",
@@ -47216,15 +47274,6 @@ var COFantasy = COFantasy || function() {
       fin: "reprend son calme",
       msgSave: "résister à la provocation",
       prejudiciable: true,
-    },
-    poisonAffaiblissantLatent: {
-      activation: "sent qu'un poison commence à se répandre dans ses veines",
-      actif: "est empoisonné, mais l'effet du poison ne se fait pas encore sentir",
-      actifF: "est empoisonnée, mais l'effet du poison ne se fait pas encore sentir",
-      fin: "se sent faible",
-      msgSave: "résister au poison",
-      prejudiciable: true,
-      seulementVivant: true,
     },
   };
 
@@ -49857,7 +49906,7 @@ var COFantasy = COFantasy || function() {
         else arme = l;
       }
     }
-    if (arme !== undefined && arme !== true) {
+    if (arme && arme !== true) {
       degainerArme(perso, arme, {}, {
         secret: true
       });
