@@ -1100,7 +1100,7 @@ tr {line-height: 25px;}
                   <li><strong>Intelligence du combat</strong> : ajouter un <a href=#predicats>prédicat</a> <code>intelligenceDuCombat</code>.</li>
                   <li><strong>Feinte</strong> : faire une attaque avec l'option <code>--feinte</code> pour profiter des effets de feinte au tour suivant. Par défaut, le bonus à l'attaque suivante est de +5 (règles de base), mais vous pouvez spécifier un bonus différent (par exemple 10 pour les règles de la boîte d'initiation) avec un <a href=#predicats>prédicat</a> <code>bonusFeinte</code> (la valeur du prédicat remplace le bonus de +5 par défaut). Il est aussi possible de changer le nombre de dés de dégât bonus en utilisant un prédicat<code>nbDesFeinte</code>.</li>
                   <li><strong>Attaque flamboyante</strong> : faire une attaque avec le modificateur <code>attaqueFlamboyante</code>. Le plus pratique pour l'utilisation avec différentes armes, est d'ajouter à la liste des <a href="#actions_du_tour">actions du tour</a> une action de titre <code>Attaque flamboyante</code> et de code <code>#Attaque -1 --attaqueFlamboyante</code>. Attention, afin de garder un intérêt à la feinte quand on dispose de cette attaque, j'ai choisi de rajouter encore le mod. de charisme aux DM en cas d'attaque flamboyante suivant une feinte réussie. Si cela ne vous convient pas, vous pouvez à la place de cette option ajouter <code>--bonusAttaque [[@{selected|CHA}]] --plus [[@{selected|CHA}]]</code>.</li>
-                  <li><strong>Botte mortelle</strong> : ajoutez un <a href=#predicats>prédicat</a> <code>botteMortelle</code>.</li>
+                  <li><strong>Botte mortelle</strong> : ajoutez un <a href=#predicats>prédicat</a> <code>botteMortelle</code>. J'ai une règle maison qui permet de mieux profiter des feintes avec les bottes mortelles : je donne +1d6 par tranche de 5 du jet d'attaque au-dessus de la défense, quand le barde attaque après une feinte. Pour utiliser cette règle, ajoutez un prédicat <code>botteMortelleEtFeinte</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du musicien</h4>
                 <ol>
@@ -3123,6 +3123,7 @@ tr {line-height: 25px;}
                   <li><strong>bonusTests_<i>nom</i></strong> : entier, ajoute la valeur aux tests de compétence caractéristique <i>nom</i> ou de compétence <i>nom</i>.</li>
                   <li><strong>bonusTousTests</strong> : entier, ajoute la valeur aux tests de caractéristique.</li>
                   <li><strong>botteMortelle</strong> : booléen, ajoute 2d6 de DM si le jet d'attaque dépasse de 10 la DEF de la cible.</li>
+                  <li><strong>botteMortelleEtFeinte</strong> : booléen, change le comportement de botte mortelle quand le coup est donné après une feinte : le bonus devient 1d6 par tranche de 5 au-dessus de la défense de l'adversaire.</li>
                   <li><strong>bouclierDeLaFoi</strong> : entier, bonus à la DEF quand le personnage porte un bouclier.</li>
                   <li><strong>bouclierProtection</strong> : booléen, annule les effets critiques des attaques si le personnage porte un bouclier.</li>
                   <li><strong>bouclierPsi</strong> : booléen, augmente de 5 la DEF contre les attaques mentales et divise par 2 les DM des attaques mentales.</li>
@@ -3140,6 +3141,7 @@ tr {line-height: 25px;}
                   <li><strong>combatEnPhalange</strong> : booléen, ajoute un bonus en attaque et en DEF en fonction du nombre d'alliés au contact.</li>
                   <li><strong>combatKinetique</strong> : booléen, ajoute 3 à la RD tant que le personnage est conscient de l'attaque.</li>
                   <li><strong>combattreLaCorruption</strong> : booléen ou entier (1 par défaut), bonus à l'attaque et aux DM contre les cibles corrompues.</li>
+                  <li><strong>commandant</strong> : booléen, divise par 2 tous les dégâts reçus si au moins 4 créatures sous ses ordres sont à moins de 10 mètres de lui.</li>
                   <li><strong>connaissanceDuPoison</strong> : booléen, permet d'enduire une arme de poison sans avoir à faire de jet.</li>
                   <li><strong>controleLoupGarou</strong> : entier, bonus au jet de lycanthrope pour éviter la transformation.</li>
                   <li><strong>controleSanguin</strong> : booléen, immunise au poison et aux effets de saignement, et divise par 2 les DM de vampirisation.</li>
@@ -3246,6 +3248,7 @@ tr {line-height: 25px;}
                   <li><strong>plusViteQueSonOmbre</strong> : booléen ou entier (par défaut 10), augmente l'initiative si le personnage à une arme à poudre chargée en main. On peut aussi spécifier un autre type d'armes, comme les arbalète, en associant ce nom à la valeur du prédicat.</li>
                   <li><strong>poudrePuissante</strong> : booléen, augmente de 10 la portée et de 2 les DM des armes à poudre.</li>
                   <li><strong>prescience</strong> : booléen ou entier (défaut 1), propose de refaire le tour. Le nombre associé indique le nombre de fois que le personnage peut faire ça par combat.</li>
+                  <li><strong>prescienceParJour</strong> : comme <code>prescience</code>, mais limité à une fois par jour.</li>
                   <li><strong>proprioception</strong> : booléen, immunise aux effets de douleur et de peur,</li>
                   <li><strong>protectionContreLesProjectiles</strong> : entier, valeur de la RD apportée par l'effet temporaire de même nom</li>
                   <li><strong>prouesse</strong> : booléen, propose un bouton pour les prouesses de guerrier.</li>

@@ -1,4 +1,4 @@
-//Dernière modification : ven. 24 mai 2024,  02:53
+//Dernière modification : jeu. 13 juin 2024,  04:57
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -1125,10 +1125,7 @@ var COFantasy = COFantasy || function() {
       error("le token sélectionné ne représente pas de personnage", token);
       return undefined;
     }
-    return {
-      token: token,
-      charId: charId
-    };
+    return { token, charId };
   }
 
   //Retourne le perso correspondant à un token id suivi du nom de token
@@ -2666,13 +2663,14 @@ var COFantasy = COFantasy || function() {
   // maxVal: la valeur max de l'attribut
   // secret: le message n'est pas affiché pour tout le monde.
   // charAttr: si présent, on utilise un attribut de personnage
+  // copy: créée une copie du l'attribut si déjà présent, ne modifie pas.
   // renvoie l'attribut créé ou mis à jour
-  function setTokenAttr(personnage, attribute, value, evt, options) {
+  function setTokenAttr(personnage, attribute, value, evt, options={}) {
     let charId = personnage.charId;
     let token = personnage.token;
     let maxval = '';
-    if (options && options.maxVal !== undefined) maxval = options.maxVal;
-    if (options && options.msg !== undefined) {
+    if (options.maxVal !== undefined) maxval = options.maxVal;
+    if (options.msg !== undefined) {
       sendPerso(personnage, options.msg, options.secret);
     }
     evt.attributes = evt.attributes || [];
@@ -2689,11 +2687,14 @@ var COFantasy = COFantasy || function() {
       error("Création d'un attribut undefined pour " + name, args);
       return;
     }
-    let attr = findObjs({
+    let attr = [];
+    if (!options.copy) {
+      attr = findObjs({
       _type: 'attribute',
       _characterid: charId,
       name: fullAttribute
     });
+    }
     if (attr.length === 0) {
       attr = createObj('attribute', {
         characterid: charId,
@@ -2842,7 +2843,7 @@ var COFantasy = COFantasy || function() {
       max: attr.get('max')
     });
     attr.set('current', value);
-    if (options && options.maxVal !== undefined) attr.set('max', maxval);
+    if (options.maxVal !== undefined) attr.set('max', maxval);
     return attr;
   }
 
@@ -4575,15 +4576,13 @@ var COFantasy = COFantasy || function() {
             charId: charId
           };
           let attrsLienDeSangDe = tokenAttribute(perso, "lienDeSangDe");
-          if (attrsLienDeSangDe.length > 0) {
-            let tokenLie = persoOfId(attrsLienDeSangDe[0].get("current"));
+          attrsLienDeSangDe.forEach(function(attr) {
+            let tokenLie = persoOfId(attr.get("current"));
             if (tokenLie) {
-              tokenAttribute(tokenLie, "lienDeSangVers").forEach(function(attr) {
-                attr.remove();
+              tokenAttribute(tokenLie, "lienDeSangVers").forEach(function(a) {
+                a.remove();
               });
             }
-          }
-          attrsLienDeSangDe.forEach(function(attr) {
             attr.remove();
           });
         });
@@ -11678,7 +11677,8 @@ var COFantasy = COFantasy || function() {
           token: tok,
           charId: ci
         };
-        return capaciteDisponible(perso, 'prescience', 'combat');
+        return capaciteDisponible(perso, 'prescience', 'combat') ||
+        capaciteDisponible(perso, 'prescienceParJour', 'jour');
       });
       if (prescience) { //Il faut stoquer les positions de tous les token pour le retour en arrière.
         stateCOF.prescience = {
@@ -17522,6 +17522,13 @@ var COFantasy = COFantasy || function() {
                       target.messages.push("Botte mortelle => l'attaque fait mouche");
                       target.faireMouche = faireMouche;
                     }
+                  } else if (predicateAsBool(attaquant, 'botteMortelleEtFeinte') && target.feinte) {
+                    let nbDes = Math.floor((attackRoll - defense) / 5);
+                    target.messages.push("Botte mortelle et feinte => + " + nbDes + options.d6 + " aux DM");
+                    target.additionalDmg.push({
+                      type: mainDmgType,
+                      value: nbDes + options.d6
+                    });
                   } else if (attackRoll > defense + 9) { //botte mortelle du barde
                     target.messages.push("Botte mortelle => + 2" + options.d6 + " aux DM");
                     target.additionalDmg.push({
@@ -18196,8 +18203,9 @@ var COFantasy = COFantasy || function() {
         error("Effet de lien de sans sans attaquant", ef);
         return;
       }
-      setTokenAttr(ef.attaquant, 'lienDeSangVers', target.token.id, evt);
-      setTokenAttr(target, 'lienDeSangDe', ef.attaquant.token.id, evt);
+      let opt = {copy:true};
+      setTokenAttr(ef.attaquant, 'lienDeSangVers', target.token.id, evt, opt);
+      setTokenAttr(target, 'lienDeSangDe', ef.attaquant.token.id, evt, opt);
     }
     if (ef.duree) {
       if (ef.typeDmg && (!ef.message || !ef.message.dm) &&
@@ -22638,16 +22646,21 @@ var COFantasy = COFantasy || function() {
     if (attrsLienDeSang.length > 0) {
       let lienDuSangDmg = Math.floor(dmgTotal / 2);
       if (lienDuSangDmg > 0) {
+        let vus = new Set();
+        attrsLienDeSang.forEach(function(attr) {
         let r = {
           total: lienDuSangDmg,
           type: 'normal',
           display: lienDuSangDmg
         };
-        let personnageLie = persoOfId(attrsLienDeSang[0].get("current"));
+        let personnageLie = persoOfId(attr.get("current"));
         if (personnageLie) {
+          if (vus.has(personnageLie.token.id)) return;
+          vus.add(personnageLie.token.id);
           expliquer("Le lien de sang inflige " + lienDuSangDmg + " dégâts à " + personnageLie.token.get("name"));
           dealDamage(personnageLie, r, [], evt, false);
         }
+        });
       }
     }
     if (showTotal) dmgDisplay += " = " + dmgTotal;
