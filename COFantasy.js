@@ -1,4 +1,4 @@
-//Dernière modification : jeu. 13 juin 2024,  04:57
+//Dernière modification : jeu. 13 juin 2024,  08:50
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -775,6 +775,195 @@ var COFantasy = COFantasy || function() {
     return pred[name];
   }
 
+  //options peut contenir
+  // msg: un message à afficher
+  // maxVal: la valeur max de l'attribut
+  // secret: le message n'est pas affiché pour tout le monde.
+  // charAttr: si présent, on utilise un attribut de personnage
+  // copy: créée une copie du l'attribut si déjà présent, ne modifie pas.
+  // renvoie l'attribut créé ou mis à jour
+  function setTokenAttr(personnage, attribute, value, evt, options = {}) {
+    let charId = personnage.charId;
+    let token = personnage.token;
+    let maxval = '';
+    if (options.maxVal !== undefined) maxval = options.maxVal;
+    if (options.msg !== undefined) {
+      sendPerso(personnage, options.msg, options.secret);
+    }
+    evt.attributes = evt.attributes || [];
+    let fullAttribute = fullAttributeName(personnage, attribute, options);
+    if (!fullAttribute) {
+      let args = {
+        personnage,
+        attribute,
+        value,
+        options
+      };
+      let name = 'inconnu';
+      if (token) name = token.get('name');
+      error("Création d'un attribut undefined pour " + name, args);
+      return;
+    }
+    let attr = [];
+    if (!options.copy) {
+      attr = findObjs({
+        _type: 'attribute',
+        _characterid: charId,
+        name: fullAttribute
+      });
+    }
+    if (attr.length === 0) {
+      attr = createObj('attribute', {
+        characterid: charId,
+        name: fullAttribute,
+        current: value,
+        max: maxval
+      });
+      evt.attributes.push({
+        attribute: attr,
+      });
+      if (token) {
+        let pageId = token.get('pageid');
+        switch (attribute) {
+          case 'agrandissement':
+            personnage.taille = undefined;
+            let arme = armesEnMain(personnage);
+            if (arme.armeDeGrand) {
+              let taille = taillePersonnage(personnage, 4);
+              if (taille == 5) {
+                arme.deuxMains = false;
+                sendPerso(personnage, "peut maintenant tenir " + arme.name + " à une main");
+                degainerArme(personnage, arme.label, evt);
+              }
+            }
+            let width = token.get('width');
+            let height = token.get('height');
+            affectToken(token, 'width', width, evt);
+            affectToken(token, 'height', height, evt);
+            width += width / 2;
+            height += height / 2;
+            token.set('width', width);
+            token.set('height', height);
+            break;
+          case 'formeDArbre':
+            //On copie les PVs pour pouvoir les restaurer à la fin de l'effet
+            setTokenAttr(personnage, 'anciensPV', token.get('bar1_value'), evt, {
+              maxVal: token.get('bar1_max')
+            });
+            //On va créer une copie de token, mais avec une image d'arbre
+            let tokenFields = getTokenFields(token, pageId, personnage.charId);
+            let tokenArbre;
+            let imageArbre = predicateAsBool(personnage, 'tokenFormeDArbre');
+            if (imageArbre) {
+              tokenFields.imgsrc = imageArbre;
+              tokenArbre = createObj('graphic', tokenFields);
+            }
+            if (tokenArbre === undefined) {
+              tokenFields.imgsrc = stateCOF.options.images.val.image_arbre.val;
+              tokenArbre = createObj('graphic', tokenFields);
+            }
+            if (tokenArbre) {
+              evt.tokens = evt.tokens || [];
+              evt.tokens.push(tokenArbre);
+              //On met l'ancien token dans le gmlayer, car si l'image vient du marketplace, il est impossible de le recréer depuis l'API
+              setToken(token, 'layer', 'gmlayer', evt);
+              setTokenAttr(personnage, 'changementDeToken', true, evt);
+              replaceInTurnTracker(token.id, tokenArbre.id, evt);
+              personnage.token = tokenArbre;
+              token = tokenArbre;
+            }
+            //On met maintenant les nouveaux PVs
+            //selon Kegron http://www.black-book-editions.fr/forums.php?topic_id=4800&tid=245841#msg245841
+            let niveau = ficheAttributeAsInt(personnage, 'niveau', 1);
+            let nouveauxPVs = getIntValeurOfEffet(personnage, 'formeDArbre', niveau * 5);
+            updateCurrentBar(personnage, 1, nouveauxPVs, evt, nouveauxPVs);
+            //L'initiative change
+            initPerso(personnage, evt, true);
+            break;
+          case 'bloqueManoeuvre':
+          case 'enveloppePar':
+          case 'prisonVegetale':
+          case 'toiles':
+          case 'statueDeBois':
+          case 'estGobePar':
+          case 'agrippeParUnDemon':
+          case 'etreinteScorpionPar':
+          case 'estEcrasePar':
+          case 'petrifie':
+          case 'paralysieRoublard':
+            nePlusSuivre(personnage, pageId, evt);
+            lockToken(personnage, evt);
+            break;
+          case 'armeeDesMorts':
+            affectToken(personnage.token, "aura2_radius", personnage.token.get("aura2_radius"), evt);
+            affectToken(personnage.token, "aura2_color", personnage.token.get("aura2_color"), evt);
+            affectToken(personnage.token, "showplayers_aura2", personnage.token.get("showplayers_aura2"), evt);
+            personnage.token.set("aura2_radius", 20);
+            personnage.token.set("aura2_color", "#b6d7a8");
+            personnage.token.set("showplayers_aura2", true);
+            break;
+          case 'armeeDesMortsPuissant':
+            personnage.token.set("aura2_radius", 28);
+            break;
+          case 'armeeDesMortsTempeteDeManaIntense':
+            personnage.token.set("aura2_radius", Math.floor(20 * Math.sqrt(1 + value)));
+            break;
+          case 'masqueDuPredateur':
+            {
+              //L'initiative change
+              initPerso(personnage, evt, true);
+              let lie = personnageAmeLiee(personnage);
+              if (lie) {
+                setTokenAttr(lie, 'masqueDuPredateurAmeLiee', value, evt, {
+                  maxVal: options.maxVal
+                });
+                let valeur = getIntValeurOfEffet(personnage, 'masqueDuPredateur', modCarac(personnage, 'sagesse'));
+                valeur = Math.floor(valeur / 2);
+                if (valeur > 1)
+                  setTokenAttr(lie, 'masqueDuPredateurAmeLieeValeur', valeur, evt);
+                initPerso(lie, evt, true);
+              }
+            }
+            break;
+          case 'masqueMortuaire':
+            {
+              let lie = personnageAmeLiee(personnage);
+              if (lie) {
+                setTokenAttr(lie, 'masqueMortuaireAmeLiee', value, evt, {
+                  maxVal: options.maxVal
+                });
+              }
+            }
+            break;
+          case 'peauDEcorce':
+            {
+              let lie = personnageAmeLiee(personnage);
+              if (lie) {
+                setTokenAttr(lie, 'peauDEcorceAmeLiee', value, evt, {
+                  maxVal: options.maxVal
+                });
+                let valeur = getIntValeurOfEffet(personnage, 'peauDEcorce', 1, 'voieDesVegetaux');
+                valeur = Math.floor(valeur / 2);
+                if (valeur > 1)
+                  setTokenAttr(lie, 'peauDEcorceAmeLieeValeur', valeur, evt);
+              }
+            }
+            break;
+        }
+      }
+      return attr;
+    }
+    attr = attr[0];
+    evt.attributes.push({
+      attribute: attr,
+      current: attr.get('current'),
+      max: attr.get('max')
+    });
+    attr.set('current', value);
+    if (options.maxVal !== undefined) attr.set('max', maxval);
+    return attr;
+  }
+
   function getLabelArme(perso, cote, estMook) {
     if (estMook === undefined) {
       estMook = perso.token && perso.token.get('bar1_link') === '';
@@ -1125,7 +1314,10 @@ var COFantasy = COFantasy || function() {
       error("le token sélectionné ne représente pas de personnage", token);
       return undefined;
     }
-    return { token, charId };
+    return {
+      token,
+      charId
+    };
   }
 
   //Retourne le perso correspondant à un token id suivi du nom de token
@@ -2656,195 +2848,6 @@ var COFantasy = COFantasy || function() {
         ajouteUneLumiere(perso, 'eclaire_' + labelArmeGauche, radius, dimRadius, evt);
       }
     }
-  }
-
-  //options peut contenir
-  // msg: un message à afficher
-  // maxVal: la valeur max de l'attribut
-  // secret: le message n'est pas affiché pour tout le monde.
-  // charAttr: si présent, on utilise un attribut de personnage
-  // copy: créée une copie du l'attribut si déjà présent, ne modifie pas.
-  // renvoie l'attribut créé ou mis à jour
-  function setTokenAttr(personnage, attribute, value, evt, options={}) {
-    let charId = personnage.charId;
-    let token = personnage.token;
-    let maxval = '';
-    if (options.maxVal !== undefined) maxval = options.maxVal;
-    if (options.msg !== undefined) {
-      sendPerso(personnage, options.msg, options.secret);
-    }
-    evt.attributes = evt.attributes || [];
-    let fullAttribute = fullAttributeName(personnage, attribute, options);
-    if (!fullAttribute) {
-      let args = {
-        personnage,
-        attribute,
-        value,
-        options
-      };
-      let name = 'inconnu';
-      if (token) name = token.get('name');
-      error("Création d'un attribut undefined pour " + name, args);
-      return;
-    }
-    let attr = [];
-    if (!options.copy) {
-      attr = findObjs({
-      _type: 'attribute',
-      _characterid: charId,
-      name: fullAttribute
-    });
-    }
-    if (attr.length === 0) {
-      attr = createObj('attribute', {
-        characterid: charId,
-        name: fullAttribute,
-        current: value,
-        max: maxval
-      });
-      evt.attributes.push({
-        attribute: attr,
-      });
-      if (token) {
-        let pageId = token.get('pageid');
-        switch (attribute) {
-          case 'agrandissement':
-            personnage.taille = undefined;
-            let arme = armesEnMain(personnage);
-            if (arme.armeDeGrand) {
-              let taille = taillePersonnage(personnage, 4);
-              if (taille == 5) {
-                arme.deuxMains = false;
-                sendPerso(personnage, "peut maintenant tenir " + arme.name + " à une main");
-                degainerArme(personnage, arme.label, evt);
-              }
-            }
-            let width = token.get('width');
-            let height = token.get('height');
-            affectToken(token, 'width', width, evt);
-            affectToken(token, 'height', height, evt);
-            width += width / 2;
-            height += height / 2;
-            token.set('width', width);
-            token.set('height', height);
-            break;
-          case 'formeDArbre':
-            //On copie les PVs pour pouvoir les restaurer à la fin de l'effet
-            setTokenAttr(personnage, 'anciensPV', token.get('bar1_value'), evt, {
-              maxVal: token.get('bar1_max')
-            });
-            //On va créer une copie de token, mais avec une image d'arbre
-            let tokenFields = getTokenFields(token, pageId, personnage.charId);
-            let tokenArbre;
-            let imageArbre = predicateAsBool(personnage, 'tokenFormeDArbre');
-            if (imageArbre) {
-              tokenFields.imgsrc = imageArbre;
-              tokenArbre = createObj('graphic', tokenFields);
-            }
-            if (tokenArbre === undefined) {
-              tokenFields.imgsrc = stateCOF.options.images.val.image_arbre.val;
-              tokenArbre = createObj('graphic', tokenFields);
-            }
-            if (tokenArbre) {
-              evt.tokens = evt.tokens || [];
-              evt.tokens.push(tokenArbre);
-              //On met l'ancien token dans le gmlayer, car si l'image vient du marketplace, il est impossible de le recréer depuis l'API
-              setToken(token, 'layer', 'gmlayer', evt);
-              setTokenAttr(personnage, 'changementDeToken', true, evt);
-              replaceInTurnTracker(token.id, tokenArbre.id, evt);
-              personnage.token = tokenArbre;
-              token = tokenArbre;
-            }
-            //On met maintenant les nouveaux PVs
-            //selon Kegron http://www.black-book-editions.fr/forums.php?topic_id=4800&tid=245841#msg245841
-            let niveau = ficheAttributeAsInt(personnage, 'niveau', 1);
-            let nouveauxPVs = getIntValeurOfEffet(personnage, 'formeDArbre', niveau * 5);
-            updateCurrentBar(personnage, 1, nouveauxPVs, evt, nouveauxPVs);
-            //L'initiative change
-            initPerso(personnage, evt, true);
-            break;
-          case 'bloqueManoeuvre':
-          case 'enveloppePar':
-          case 'prisonVegetale':
-          case 'toiles':
-          case 'statueDeBois':
-          case 'estGobePar':
-          case 'agrippeParUnDemon':
-          case 'etreinteScorpionPar':
-          case 'estEcrasePar':
-          case 'petrifie':
-          case 'paralysieRoublard':
-            nePlusSuivre(personnage, pageId, evt);
-            lockToken(personnage, evt);
-            break;
-          case 'armeeDesMorts':
-            affectToken(personnage.token, "aura2_radius", personnage.token.get("aura2_radius"), evt);
-            affectToken(personnage.token, "aura2_color", personnage.token.get("aura2_color"), evt);
-            affectToken(personnage.token, "showplayers_aura2", personnage.token.get("showplayers_aura2"), evt);
-            personnage.token.set("aura2_radius", 20);
-            personnage.token.set("aura2_color", "#b6d7a8");
-            personnage.token.set("showplayers_aura2", true);
-            break;
-          case 'armeeDesMortsPuissant':
-            personnage.token.set("aura2_radius", 28);
-            break;
-          case 'armeeDesMortsTempeteDeManaIntense':
-            personnage.token.set("aura2_radius", Math.floor(20 * Math.sqrt(1 + value)));
-            break;
-          case 'masqueDuPredateur':
-            {
-              //L'initiative change
-              initPerso(personnage, evt, true);
-              let lie = personnageAmeLiee(personnage);
-              if (lie) {
-                setTokenAttr(lie, 'masqueDuPredateurAmeLiee', value, evt, {
-                  maxVal: options.maxVal
-                });
-                let valeur = getIntValeurOfEffet(personnage, 'masqueDuPredateur', modCarac(personnage, 'sagesse'));
-                valeur = Math.floor(valeur / 2);
-                if (valeur > 1)
-                  setTokenAttr(lie, 'masqueDuPredateurAmeLieeValeur', valeur, evt);
-                initPerso(lie, evt, true);
-              }
-            }
-            break;
-          case 'masqueMortuaire':
-            {
-              let lie = personnageAmeLiee(personnage);
-              if (lie) {
-                setTokenAttr(lie, 'masqueMortuaireAmeLiee', value, evt, {
-                  maxVal: options.maxVal
-                });
-              }
-            }
-            break;
-          case 'peauDEcorce':
-            {
-              let lie = personnageAmeLiee(personnage);
-              if (lie) {
-                setTokenAttr(lie, 'peauDEcorceAmeLiee', value, evt, {
-                  maxVal: options.maxVal
-                });
-                let valeur = getIntValeurOfEffet(personnage, 'peauDEcorce', 1, 'voieDesVegetaux');
-                valeur = Math.floor(valeur / 2);
-                if (valeur > 1)
-                  setTokenAttr(lie, 'peauDEcorceAmeLieeValeur', valeur, evt);
-              }
-            }
-            break;
-        }
-      }
-      return attr;
-    }
-    attr = attr[0];
-    evt.attributes.push({
-      attribute: attr,
-      current: attr.get('current'),
-      max: attr.get('max')
-    });
-    attr.set('current', value);
-    if (options.maxVal !== undefined) attr.set('max', maxval);
-    return attr;
   }
 
   // evt peut être undefined
@@ -10450,6 +10453,16 @@ var COFantasy = COFantasy || function() {
             options.deplaceDe = deplaceDe;
             return;
           }
+        case 'draineMana':
+          {
+            if (cmd.length < 1) {
+              error("Il manque la valeur après l'option --draineMana", cmd);
+              return;
+            }
+            let dm = parseDice(cmd.slice(1).join(''), 'drain de mana');
+            if (dm) options.draineMana = dm;
+            return;
+          }
         default:
           let armeMagique = cmd[0].match(/^\+([0-9]+)$/);
           if (armeMagique && armeMagique.length > 0) {
@@ -11678,7 +11691,7 @@ var COFantasy = COFantasy || function() {
           charId: ci
         };
         return capaciteDisponible(perso, 'prescience', 'combat') ||
-        capaciteDisponible(perso, 'prescienceParJour', 'jour');
+          capaciteDisponible(perso, 'prescienceParJour', 'jour');
       });
       if (prescience) { //Il faut stoquer les positions de tous les token pour le retour en arrière.
         stateCOF.prescience = {
@@ -18203,7 +18216,9 @@ var COFantasy = COFantasy || function() {
         error("Effet de lien de sans sans attaquant", ef);
         return;
       }
-      let opt = {copy:true};
+      let opt = {
+        copy: true
+      };
       setTokenAttr(ef.attaquant, 'lienDeSangVers', target.token.id, evt, opt);
       setTokenAttr(target, 'lienDeSangDe', ef.attaquant.token.id, evt, opt);
     }
@@ -19595,6 +19610,45 @@ var COFantasy = COFantasy || function() {
                   text: 'force'
                 }
               });
+            }
+            if (options.draineMana) {
+              let manaAttr = findObjs({
+                _type: 'attribute',
+                _characterid: target.charId,
+                name: 'PM'
+              }, {
+                caseInsensitive: true
+              });
+              let hasMana = false;
+              if (manaAttr.length > 0) {
+                let manaMax = parseInt(manaAttr[0].get('max'));
+                hasMana = !isNaN(manaMax) && manaMax > 0;
+              }
+              if (hasMana) {
+                let bar2;
+                bar2 = parseInt(target.token.get('bar2_value'));
+                if (isNaN(bar2) || bar2 < 0) {
+                  if (target.token.get('bar1_link') === '') bar2 = 0;
+                  else { //devrait être lié à la mana courante
+                    sendPerso(target, "*** Attention, la barre de mana du token n'est pas liée à la mana de la fiche ***");
+                    bar2 = parseInt(manaAttr[0].get('current'));
+                  }
+                }
+                let dm = rollDePlus(options.draineMana);
+                if (bar2 > 0 && dm.val > 0) {
+                  let mana = bar2 - dm.val;
+                  let m = dm.roll;
+                  if (mana < 0) {
+                    m = bar2 + '';
+                    mana = 0;
+                  }
+                  updateCurrentBar(target, 2, mana, evt);
+                  target.messages.push("drainé" + eForFemale(target) + 
+                    " de " + m + " point" + ((bar2-mana> 1) ? 's' : '') + 
+                    " de mana");
+                }
+              } else { //pas de mana. On ne fait rien ?
+              }
             }
             // Draw effect, if any
             if (options.fx) {
@@ -22648,18 +22702,18 @@ var COFantasy = COFantasy || function() {
       if (lienDuSangDmg > 0) {
         let vus = new Set();
         attrsLienDeSang.forEach(function(attr) {
-        let r = {
-          total: lienDuSangDmg,
-          type: 'normal',
-          display: lienDuSangDmg
-        };
-        let personnageLie = persoOfId(attr.get("current"));
-        if (personnageLie) {
-          if (vus.has(personnageLie.token.id)) return;
-          vus.add(personnageLie.token.id);
-          expliquer("Le lien de sang inflige " + lienDuSangDmg + " dégâts à " + personnageLie.token.get("name"));
-          dealDamage(personnageLie, r, [], evt, false);
-        }
+          let r = {
+            total: lienDuSangDmg,
+            type: 'normal',
+            display: lienDuSangDmg
+          };
+          let personnageLie = persoOfId(attr.get("current"));
+          if (personnageLie) {
+            if (vus.has(personnageLie.token.id)) return;
+            vus.add(personnageLie.token.id);
+            expliquer("Le lien de sang inflige " + lienDuSangDmg + " dégâts à " + personnageLie.token.get("name"));
+            dealDamage(personnageLie, r, [], evt, false);
+          }
         });
       }
     }
