@@ -9,6 +9,7 @@
 * Implémentation de la version avancée du drain de force de Dominia.
 
 ### Autres améliorations
+* Les cadavres réanimés sont considérés comme chair à canon du nécromancien s'il possède cette capacité.
 * Ajout de la possibilité de drainer de la mana.
 * Ajout du poison paralysant
 * Ajout d'une option --depensePR pour les actions autres que les attaques

@@ -1,4 +1,4 @@
-//Dernière modification : jeu. 13 juin 2024,  08:50
+//Dernière modification : sam. 15 juin 2024,  02:28
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -12735,13 +12735,21 @@ var COFantasy = COFantasy || function() {
         };
         if (getState(pChair, 'mort')) return;
         let tokPreds = predicatesNamed(pChair, 'chairACanonDe');
-        let estChair = tokPreds.find(function(a) {
-          let chairACanonDe = a.split(',');
-          return chairACanonDe.find(function(b) {
-            let trimmed = b.trim();
-            return trimmed == nomPerso(target) || trimmed == target.name;
+        let estChair =
+          tokPreds.find(function(a) {
+            let chairACanonDe = a.split(',');
+            return chairACanonDe.find(function(b) {
+              let trimmed = b.trim();
+              return trimmed == nomPerso(target) || trimmed == target.name;
+            });
           });
-        });
+        if (!estChair) {
+          let attrs = tokenAttribute(pChair, 'attributDeCombat_chairACanonDe');
+          estChair = attrs.find(function(attr) {
+            let p = persoOfIdName(attr.get('current'));
+            return p && p.token.id == target.token.id;
+          });
+        }
         return estChair;
       });
       if (target.chairACanon.length > 0) {
@@ -19643,8 +19651,8 @@ var COFantasy = COFantasy || function() {
                     mana = 0;
                   }
                   updateCurrentBar(target, 2, mana, evt);
-                  target.messages.push("drainé" + eForFemale(target) + 
-                    " de " + m + " point" + ((bar2-mana> 1) ? 's' : '') + 
+                  target.messages.push("drainé" + eForFemale(target) +
+                    " de " + m + " point" + ((bar2 - mana > 1) ? 's' : '') +
                     " de mana");
                 }
               } else { //pas de mana. On ne fait rien ?
@@ -33254,7 +33262,7 @@ var COFantasy = COFantasy || function() {
           sendPerso(protecteur, "protège déjà " + nameTarget);
           return;
         }
-        if (predicateAsBool(protecteur, 'attributDeCombat_protegerUnAllieAvance')) {
+        if (predicateAsBool(protecteur, 'protegerUnAllieAvance')) {
           let previousTarget2 =
             persoOfIdName(attrsProtecteur[0].get('max'), pageId);
           if (previousTarget2) {
@@ -40424,6 +40432,10 @@ var COFantasy = COFantasy || function() {
     setTokenAttr(cible, 'cadavreAnime', true, evt, {
       msg: 'se relève'
     });
+    if (predicateAsBool(lanceur, 'chairACanon')) {
+      //Le cadavre animé devient chair à canon du lanceur
+      setTokenAttr(cible, 'attributDeCombat_chairACanonDe', idName(lanceur), evt);
+    }
   }
 
   const niveauxEbriete = [
