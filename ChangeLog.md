@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.15
 ### Capacités
+* Phénix, de la Voie du guérisseur.
 * Possibilité d'avoir un lien de sang vers plus d'un personnage
 * Hémorragie de Pestrilax.
 * Prise en compte de la capacité Tir double pour les attaques à 2 mains.

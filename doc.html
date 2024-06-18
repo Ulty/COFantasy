@@ -1224,7 +1224,7 @@ tr {line-height: 25px;}
                   </li>
                   <li><strong>Le guetteur</strong> : Si elle n'est pas déjà présente dans votre handout de compétences, ajouter au druide une compétence <code>perception</code> (valeur 0 pour le moment). Créer un personnage et un token pour l'oiseau. Ajouter au druide un <a href=#predicats>prédicat</a> <code>guetteur</code> de valeur le nom exact de l'oiseau (sur la fiche, attention à utiliser la symtaxe avec <code>::</code> si le nom comporte des espaces). Ajouter de même un <a href=#predicats>prédicat</a> <code>PVPartagesAvec</code> de valeur le nom de l'oiseau. Ajouter aussi à l'oiseau un <a href=#predicats>prédicat</a> <code>PVPartagesAvec</code> de valeur le nom du druide. Pour le faire agir en même temps que le druide, ajoutez aussi à l'oiseau un prédicat <code>initiativeDeriveeDe</code> de valeur le nom du druide. Pour l'attaque, ajouter sur la fiche une attaque de contact faisant 1d4 DM, avec dans les options <code>--attaqueMagiqueDe <i>nom de personnage du druide</i></code>. Si vous souhaitez que le guetteur rentre en combat en même temps que le druide, ajoutez au druide un prédicat nommé <code>entrerEnCombatAvec</code>, de valeur le nom du token de l'oiseau.</li>
                   <li><strong>Masque du prédateur</strong> : <code>!cof-effet-temp masqueDuPredateur [[5+@{selected|SAG}]] --mana 2</code></li>
-                  <li><strong>Forme animale</strong> : pas d'autre support que <code>!cof-lancer-sort se transforme en ?{Transformation en ?} --mana 3</code></li>
+                  <li><strong>Forme animale</strong> : <code>!cof-changer-de-forme ?{Transformation en ?} --mana @{selected|token_id} 3</code>. Si vous avez prévu une fiche pour l'animal choisi (le nom de la fiche doit correspondre à l'animal), alors le token du personnage devrait devenir celui de cette fiche, et les tests de caractéristiques tenir compte de la fiche.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du fauve</h4>
                 <ol>
@@ -2259,6 +2259,7 @@ tr {line-height: 25px;}
                   <li><strong>Immunité</strong> : utilisez <code>!cof-immunite-guerisseur [[1d6+@{selected|SAG}]] --mana 0 --target @{target|token_id}</code> dans les actions du tour. Si utilisé directement dans le chat, ajoutez <code>--lanceur @{selected|token_id}</code>.</li>
                   <li><strong>Soins rapides</strong> : pas de support au niveau du script.</li>
                   <li><strong>Zone de vie</strong> : <code>!cof-zone-de-vie [[1d6+@{selected|SAG}]] --mana 1 --limiteParJour 3 --lanceur @{selected|token_id}</code>. Cela devrait respecter le sort, sauf pour le moment où le soin prend effet : c'est au début de chaque tour du prêtre.</li>
+                  <li><strong>Phénix</strong> : ajouter un prédicat <code>phenix</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du guerrier-mage</h4>
                 <p>Penser à utiliser l'option <code>--magieEnArmure</code> pour le lancement des sorts affectés.</p>
@@ -3150,6 +3151,7 @@ tr {line-height: 25px;}
                   <li><strong>corrompu</strong> : booléen, le personnage est corronpu (utilise pour la voie du chasseur de corruption).</li>
                   <li><strong>courage</strong> : entier, bonus ajouté pour résister aux effets de peur.</li>
                   <li><strong>creatureArtificielle</strong> : booléen, immunise au poison, à l'asphyxie et aux maladies.</li>
+                  <li><strong>critiqueEpiqueSorts</strong> : booléen, augmente de 2 les chances de critique des sorts et de 1d6 les dégâts critiques des sorts.</li>
                   <li><strong>crocEnJambe</strong> : booléen, fait tomber les adversaires sur un jet de dé d'attaque de 17-20. Passe à 19-20 contre des adversaires quadrupèdes.</li>
                   <li><strong>DEF_magie</strong> : entier, augmente la défense contre les sortilèges.</li>
                   <li><strong>defDeriveeDe</strong> : nom de personnage, la valeur de défense est égale à celle du personnage du prédicat.</li>
@@ -3244,6 +3246,7 @@ tr {line-height: 25px;}
                   <li><strong>perception</strong> : entier, bonus aux jets de perception.</li>
                   <li><strong>petiteTaille</strong> : booléen, bonus de +2 en discrétion et +1 en DEF, et le personnage est considéré de taille petit.</li>
                   <li><strong>petitVeinard</strong> : booléen ou entier (1 par défaut), propose de relancer des jets ce nombre de fois pas combat maximum.</li>
+                  <li><strong>peutEnrager</strong> : booléen, le personnage devient enragé s'il subit un critique ou passe sous la moitié de ses PV max.</li>
                   <li><strong>piquresDInsectes</strong> : entier, diminue les DM des attaques à distance de ce nombre, si le personnage porte une armure de DEF au moins 5.</li>
                   <li><strong>pirouettes</strong> : entier, augmente la DEF si le personnage a un malud d'armure inféreur ou égal à 3.</li>
                   <li><strong>plusViteQueSonOmbre</strong> : booléen ou entier (par défaut 10), augmente l'initiative si le personnage à une arme à poudre chargée en main. On peut aussi spécifier un autre type d'armes, comme les arbalète, en associant ce nom à la valeur du prédicat.</li>
