@@ -1,4 +1,4 @@
-//Dernière modification : mer. 19 juin 2024,  01:46
+//Dernière modification : mer. 19 juin 2024,  02:32
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -21887,7 +21887,7 @@ var COFantasy = COFantasy || function() {
       let soins = rollDePlus(rollExpr);
       let printTrue = function(s) {
         let msgSoin = nomPerso(cible) + " est soigné" + eForFemale(cible) + " de ";
-        if (s < soins.val)
+        if (s != soins.val)
           msgSoin += s + " PV. (Le résultat du jet était " + soins.roll + ")";
         else msgSoin += soins.roll + " PV.";
         addMsg(msgSoin);
@@ -23986,7 +23986,7 @@ var COFantasy = COFantasy || function() {
             } else {
               msgSoin = nomPerso(c) + " récupère ";
             }
-            if (s < soins)
+            if (s != soins)
               msgSoin += s + " PV. (Le résultat du jet était " + soinTxt + ")";
             else msgSoin += soinTxt + " PV.";
             addLineToFramedDisplay(display, msgSoin);
