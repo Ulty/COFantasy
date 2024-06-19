@@ -1,4 +1,4 @@
-//Dernière modification : mar. 18 juin 2024,  10:15
+//Dernière modification : mer. 19 juin 2024,  09:26
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -20898,7 +20898,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function nbreDeTestCarac(carac, perso) {
-    let typeJet = ficheAttribute(perso, carac + '_SUP', '@jetnormal', optTransforme);
+    let typeJet = ficheAttribute(perso, carac + '_SUP', '@{jetnormal}', optTransforme);
     switch (typeJet) {
       case '@{JETNORMAL}':
       case '@{jetnormal}':
