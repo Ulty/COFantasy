@@ -1,4 +1,4 @@
-//Dernière modification : mer. 19 juin 2024,  09:26
+//Dernière modification : mer. 19 juin 2024,  01:46
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -31293,7 +31293,7 @@ var COFantasy = COFantasy || function() {
         } else {
           addLineToFramedDisplay(display, nomPerso(cible) + " meurt sous l'injonction mortelle !", 80);
           updateCurrentBar(cible, 1, 0, evt);
-          setState(cible, 'mort', true, evt);
+          mort(cible, expliquer, evt);
           sendFramedDisplay(display);
         }
       });
