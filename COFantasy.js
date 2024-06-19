@@ -1,4 +1,4 @@
-//Dernière modification : mar. 18 juin 2024,  02:13
+//Dernière modification : mar. 18 juin 2024,  10:15
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -544,13 +544,17 @@ var COFantasy = COFantasy || function() {
     return false;
   }
 
-  function attributesInsensitive(perso, name, options) {
+  function getCharId(perso, options) {
     let charId = perso.charId;
     if (options && options.transforme) {
       persoTransforme(perso);
       if (perso.transforme.charId) charId = perso.transforme.charId;
     }
-    return charAttribute(charId, name, {
+    return charId;
+  }
+
+  function attributesInsensitive(perso, name, options) {
+    return charAttribute(getCharId(perso, options), name, {
       caseInsensitive: true
     });
   }
@@ -814,6 +818,8 @@ var COFantasy = COFantasy || function() {
     return ptest.pnj;
   }
 
+  let optTransforme = {transforme: true};
+
   //Retourne le mod de la caractéristque entière.
   //si carac n'est pas une carac, retourne 0
   //perso peut ne pas avoir de token ou être juste un charId
@@ -823,9 +829,7 @@ var COFantasy = COFantasy || function() {
     };
     let modCarac = modOfCarac(carac);
     let mod = 0;
-    let opt = {
-      transforme: true
-    };
+    let opt = optTransforme;
     if (persoEstPNJ(perso, opt)) {
       switch (modCarac) {
         case 'FOR':
@@ -6352,14 +6356,11 @@ var COFantasy = COFantasy || function() {
   //expliquer est optionnel, et si présent, il faut msg
   function malusArmure(personnage, expliquer, msg) {
     let malusArmure = 0;
-    let opt = {
-      transforme: true
-    };
     if (personnage.malusArmure === undefined) {
-      if (ficheAttributeAsInt(personnage, 'defarmureon', 0, opt))
-        malusArmure += ficheAttributeAsInt(personnage, 'defarmuremalus', 0, opt);
-      if (ficheAttributeAsInt(personnage, 'defbouclieron', 0, opt))
-        malusArmure += ficheAttributeAsInt(personnage, 'defboucliermalus', 0, opt);
+      if (ficheAttributeAsInt(personnage, 'defarmureon', 0, optTransforme))
+        malusArmure += ficheAttributeAsInt(personnage, 'defarmuremalus', 0, optTransforme);
+      if (ficheAttributeAsInt(personnage, 'defbouclieron', 0, optTransforme))
+        malusArmure += ficheAttributeAsInt(personnage, 'defboucliermalus', 0, optTransforme);
       personnage.malusArmures = malusArmure;
     } else malusArmure = personnage.malusArmure;
     if (expliquer && malusArmure > 0) {
@@ -10860,13 +10861,10 @@ var COFantasy = COFantasy || function() {
   //bon attribut, selon que perso est un PNJ ou nom
   function valCarac(perso, caracAttr) {
     let mod = modCarac(perso, caracAttr);
-    let opt = {
-      transforme: true
-    };
-    if (persoEstPNJ(perso, opt)) {
+    if (persoEstPNJ(perso, optTransforme)) {
       return 10 + mod * 2;
     }
-    let v = ficheAttributeAsInt(perso, caracAttr, 0, opt);
+    let v = ficheAttributeAsInt(perso, caracAttr, 0, optTransforme);
     if (Math.floor((v - 10) / 2) == mod) return v;
     return 10 + mod * 2 + v % 2;
   }
@@ -11367,16 +11365,13 @@ var COFantasy = COFantasy || function() {
     let persoD = initDerivee(perso);
     if (persoD) perso = persoD;
     let init;
-    let opt = {
-      transforme: true
-    };
-    if (persoEstPNJ(perso, opt)) {
-      init = ficheAttributeAsInt(perso, 'pnj_init', 10, opt);
+    if (persoEstPNJ(perso, optTransforme)) {
+      init = ficheAttributeAsInt(perso, 'pnj_init', 10, optTransforme);
     } else {
       init = valCarac(perso, 'dexterite');
-      init += ficheAttributeAsInt(perso, 'INIT_DIV', 0, opt);
+      init += ficheAttributeAsInt(perso, 'INIT_DIV', 0, optTransforme);
       if (stateCOF.setting_arran || stateCOF.setting_mixte)
-        init += ficheAttributeAsInt(perso, 'mod_initiative', 0, opt);
+        init += ficheAttributeAsInt(perso, 'mod_initiative', 0, optTransforme);
     }
     if (attributeAsBool(perso, 'formeDArbre')) init = 7;
     //Règle optionelle : +1d6, à lancer en entrant en combat
@@ -12159,10 +12154,7 @@ var COFantasy = COFantasy || function() {
 
   function tailleNormale(perso, def) {
     if (attributeAsBool(perso, 'grandeTaille')) return 4;
-    let opt = {
-      transforme: true
-    };
-    switch (ficheAttribute(perso, 'taille', '', opt).trim().toLowerCase()) {
+    switch (ficheAttribute(perso, 'taille', '', optTransforme).trim().toLowerCase()) {
       case "minuscule":
         return 1;
       case "très petit":
@@ -12190,7 +12182,7 @@ var COFantasy = COFantasy || function() {
     }
     if (predicateAsBool(perso, 'petiteTaille')) return 3;
     if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', opt);
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
       perso.race = perso.race.trim().toLowerCase();
     }
     switch (perso.race) {
@@ -12321,11 +12313,8 @@ var COFantasy = COFantasy || function() {
     let tokenName = nomPerso(target);
     let explications = target.messages || [];
     let defense = 10;
-    let opt = {
-      transforme: true
-    };
-    if (persoEstPNJ(target, opt)) {
-      defense = ficheAttributeAsInt(target, 'pnj_def', 10, opt);
+    if (persoEstPNJ(target)) {
+      defense = ficheAttributeAsInt(target, 'pnj_def', 10);
     } else {
       if (target.defautCuirasse === undefined && (!attaquant || !predicateAsBool(attaquant, 'creatureIntangible'))) {
         if (!attaquant || !predicateAsBool(attaquant, 'creatureIntangible')) {
@@ -12341,7 +12330,7 @@ var COFantasy = COFantasy || function() {
           if (defense > 12) defense += bonusArmureDuMage / 2; // On a déjà une armure physique, ça ne se cumule pas.
           else defense += bonusArmureDuMage;
         }
-        defense += ficheAttributeAsInt(target, 'DEFDIV', 0, opt);
+        defense += ficheAttributeAsInt(target, 'DEFDIV', 0);
       } // Dans le cas contraire, on n'utilise pas ces bonus
       defense += modCarac(target, 'dexterite');
     }
@@ -15585,11 +15574,13 @@ var COFantasy = COFantasy || function() {
   }
 
   //perso peut ne pas avoir de token
-  function extractRepeating(perso, repeatingSection) {
+  // options peut contenir transforme
+  function extractRepeating(perso, repeatingSection, options) {
     const reg = new RegExp("^(repeating_" + repeatingSection + "_[^_]*_)(.*)$");
+    let charId = getCharId(perso, options);
     const attributes = findObjs({
       _type: 'attribute',
-      _characterid: perso.charId,
+      _characterid: charId,
     });
     let rawList = {};
     attributes.forEach(function(a) {
@@ -15607,8 +15598,8 @@ var COFantasy = COFantasy || function() {
   function listAllAttacks(perso) {
     if (perso.toutesLesAttaques) return perso.toutesLesAttaques;
     let rawList;
-    if (persoEstPNJ(perso)) rawList = extractRepeating(perso, 'pnjatk');
-    else rawList = extractRepeating(perso, 'armes');
+    if (persoEstPNJ(perso, optTransforme)) rawList = extractRepeating(perso, 'pnjatk', optTransforme);
+    else rawList = extractRepeating(perso, 'armes', optTransforme);
     let liste = {}; //liste triée par label d'attaque
     for (let pref in rawList) {
       let ra = rawList[pref];
@@ -20907,9 +20898,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function nbreDeTestCarac(carac, perso) {
-    let typeJet = ficheAttribute(perso, carac + '_SUP', '@jetnormal', {
-      transforme: true
-    });
+    let typeJet = ficheAttribute(perso, carac + '_SUP', '@jetnormal', optTransforme);
     switch (typeJet) {
       case '@{JETNORMAL}':
       case '@{jetnormal}':
@@ -27622,11 +27611,11 @@ var COFantasy = COFantasy || function() {
         }
       }
       //Les attaques de la fiche à afficher dans la liste d'actions
-      const montrerAttaques = ficheAttributeAsInt(perso, 'montrerattaques', 1);
+      const montrerAttaques = ficheAttributeAsInt(perso, 'montrerattaques', 1, optTransforme);
       const afficherAttaquesFiche =
         actionsParDefaut ||
         (actionsDuTour === 0 && montrerAttaques);
-      const montrerArmeEnMain = (actionsDuTour === 0 && ficheAttributeAsInt(perso, 'montrerarmeenmain', 1));
+      const montrerArmeEnMain = (actionsDuTour === 0 && ficheAttributeAsInt(perso, 'montrerarmeenmain', 1, optTransforme));
       if (afficherAttaquesFiche) {
         let attackOptions = {};
         if (gobePar) attackOptions.target = gobePar.token.id;
@@ -31608,9 +31597,7 @@ var COFantasy = COFantasy || function() {
 
   function raceIs(perso, race) {
     if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', {
-        transforme: true
-      });
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
       perso.race = perso.race.toLowerCase();
     }
     return (perso.race.includes(race.toLowerCase()));
@@ -31619,9 +31606,7 @@ var COFantasy = COFantasy || function() {
   function estFee(perso) {
     if (predicateAsBool(perso, 'fée')) return true;
     if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', {
-        transforme: true
-      });
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
       perso.race = perso.race.toLowerCase();
     }
     if (perso.race === '') return false;
@@ -31641,9 +31626,7 @@ var COFantasy = COFantasy || function() {
   function estDemon(perso) {
     if (predicateAsBool(perso, 'démon')) return true;
     if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', {
-        transforme: true
-      });
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
       perso.race = perso.race.toLowerCase();
     }
     if (perso.race === '') return false;
@@ -31663,9 +31646,7 @@ var COFantasy = COFantasy || function() {
   function estDraconique(perso) {
     if (predicateAsBool(perso, 'dragon')) return true;
     if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', {
-        transforme: true
-      });
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
       perso.race = perso.race.toLowerCase();
     }
     if (perso.race === '') return false;
@@ -31683,9 +31664,7 @@ var COFantasy = COFantasy || function() {
   function estMortVivant(perso) {
     if (predicateAsBool(perso, 'mortVivant')) return true;
     if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', {
-        transforme: true
-      });
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
       perso.race = perso.race.toLowerCase();
     }
     if (perso.race === '') return false;
@@ -31706,9 +31685,7 @@ var COFantasy = COFantasy || function() {
   function estGeant(perso) {
     if (predicateAsBool(perso, 'géant')) return true;
     if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', {
-        transforme: true
-      });
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
       perso.race = perso.race.toLowerCase();
     }
     if (perso.race === '') return false;
@@ -31729,9 +31706,7 @@ var COFantasy = COFantasy || function() {
   function estGobelin(perso) {
     if (predicateAsBool(perso, 'gobelin')) return true;
     if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', {
-        transforme: true
-      });
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
       perso.race = perso.race.toLowerCase();
     }
     if (perso.race === '') return false;
@@ -31756,9 +31731,7 @@ var COFantasy = COFantasy || function() {
   function estElfeNoir(perso) {
     if (predicateAsBool(perso, 'elfeNoir')) return true;
     if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', {
-        transforme: true
-      });
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
       perso.race = perso.race.toLowerCase();
     }
     if (perso.race === '') return false;
@@ -31775,9 +31748,7 @@ var COFantasy = COFantasy || function() {
   function estElfe(perso) {
     if (predicateAsBool(perso, 'elfe')) return true;
     if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', {
-        transforme: true
-      });
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
       perso.race = perso.race.toLowerCase();
     }
     if (perso.race === '') return false;
@@ -31789,17 +31760,13 @@ var COFantasy = COFantasy || function() {
   function estInsecte(perso) {
     if (predicateAsBool(perso, 'insecte')) return true;
     if (perso.profil === undefined) {
-      perso.profil = ficheAttribute(perso, 'profil', '', {
-        transforme: true
-      });
+      perso.profil = ficheAttribute(perso, 'profil', '', optTransforme);
       perso.profil = perso.profil.toLowerCase();
     }
     if (perso.profil == 'insecte') return true;
     if (perso.profil == 'araignée') return true;
     if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', {
-        transforme: true
-      });
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
       perso.race = perso.race.toLowerCase();
     }
     if (perso.race === '') return false;
@@ -31818,9 +31785,7 @@ var COFantasy = COFantasy || function() {
   function estHumanoide(perso) {
     if (predicateAsBool(perso, 'humanoide')) return true;
     if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', {
-        transforme: true
-      });
+      perso.profil = ficheAttribute(perso, 'race', '', optTransforme);
       perso.race = perso.race.toLowerCase();
     }
     if (perso.race === '') return false;
@@ -31860,9 +31825,7 @@ var COFantasy = COFantasy || function() {
   function estQuadrupede(perso) {
     if (predicateAsBool(perso, 'quadrupede')) return true;
     if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', {
-        transforme: true
-      });
+      perso.profil = ficheAttribute(perso, 'race', '', optTransforme);
       perso.race = perso.race.toLowerCase();
     }
     if (perso.race === '') return false;
@@ -45954,6 +45917,7 @@ var COFantasy = COFantasy || function() {
             }
             let newToken = createObj('graphic', tokenFields);
             replaceTokenOfPerso(perso, newToken, evt);
+            perso.toutesLesAttaques = undefined;
           }
           sendPerso(perso, "se transforme en " + nomForme, options.secret);
           setTokenAttr(perso, 'changementDeForme', nomForme, evt);
