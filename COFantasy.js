@@ -1,4 +1,4 @@
-//Dernière modification : mer. 19 juin 2024,  02:32
+
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -847,7 +847,7 @@ var COFantasy = COFantasy || function() {
         case 'SAG':
           mod = ficheAttributeAsInt(perso, 'pnj_sag', 0, opt);
           break;
-        case 'CHAR':
+        case 'CHA':
           mod = ficheAttributeAsInt(perso, 'pnj_cha', 0, opt);
           break;
         default:
@@ -1051,6 +1051,13 @@ var COFantasy = COFantasy || function() {
   }
 
   function getLabelArme(perso, cote, estMook) {
+    persoTransforme(perso);
+    if (perso.transforme.charId) {
+      if (cote == 'droite') return attributeAsInt(perso, 'maindroiteTransforme', 0);
+      let attr = tokenAttribute(perso, 'maingaucheTransforme');
+      if (attr.length === 0) return '0';
+      return attr[0].get('current');
+    }
     if (estMook === undefined) {
       estMook = perso.token && perso.token.get('bar1_link') === '';
     }
@@ -15595,6 +15602,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //perso peut ne pas avoir de token
+  //renvoie la liste du perso transformé
   function listAllAttacks(perso) {
     if (perso.toutesLesAttaques) return perso.toutesLesAttaques;
     let rawList;
@@ -27132,7 +27140,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function listeDesArmes(perso) {
-    const listeAttaques = listAllAttacks(perso);
+    const listeAttaques = listAllAttacks(perso);//liste du perso transformé
     let attaqueNaturelleNonVisible;
     let armes = {};
     let armeVisible = 0;
