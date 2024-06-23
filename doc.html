@@ -2156,6 +2156,7 @@ tr {line-height: 25px;}
                   <li><strong>Secrets de l'au-delà</strong> : <code>!cof-effet-temp secretsDeLAuDela 1 --mana 0</code></li>
                   <li><strong>Souffle de vie</strong> : <code>!cof-soin @{selected|token_id} @{target|token_id} souffleDeVie --mana 0</code></li>
                   <li><strong>Souffle de mort</strong> : faire une attaque magique, de portée 20 m (la portée par défaut pour les sorts, mais rien n'est spécifié dans le texte), de dégâts 2d8+INT. Ajoutez <code>auto</code> dans les modificateurs. Pour les options, <code>--disque 10 souffleDeMort --effet souffleDeMort 1 --save CON 10 --mana 1</code>.</li>
+                  <li><strong>Vent des âmes</strong> : <code>!cof-effet-temp ventDesAmes @{selected|SAG} --lanceur @{selected|token_id} --target @{target|token_id} --mana 2</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie de Prestige du Loup-garou</h4>
                 <p>Créer une fiche pour la forme de loup, avec son propre token. En cas de transfornation, simplement remplacer le token du personnage par le token de la forme de loup, en mettant à jour les états et les PVs. Pour résister à une transformation, utiliser <code>!cof-jet SAG 18 --predicat controleLoupGarou --nom Résister --succes évite de se transformer en loup</code>. Un prédicat <code>lycanthrope</code> proposera automatiquement le jet en cas d'encaissement de critique.</p>

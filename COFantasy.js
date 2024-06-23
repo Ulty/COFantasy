@@ -1,4 +1,3 @@
-
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -818,7 +817,9 @@ var COFantasy = COFantasy || function() {
     return ptest.pnj;
   }
 
-  let optTransforme = {transforme: true};
+  let optTransforme = {
+    transforme: true
+  };
 
   //Retourne le mod de la caractéristque entière.
   //si carac n'est pas une carac, retourne 0
@@ -1053,10 +1054,8 @@ var COFantasy = COFantasy || function() {
   function getLabelArme(perso, cote, estMook) {
     persoTransforme(perso);
     if (perso.transforme.charId) {
-      if (cote == 'droite') return attributeAsInt(perso, 'maindroiteTransforme', 0);
-      let attr = tokenAttribute(perso, 'maingaucheTransforme');
-      if (attr.length === 0) return '0';
-      return attr[0].get('current');
+      //On suppose que les transformations ne permettent pas de porter d'arme
+      return 0;
     }
     if (estMook === undefined) {
       estMook = perso.token && perso.token.get('bar1_link') === '';
@@ -27140,7 +27139,7 @@ var COFantasy = COFantasy || function() {
   }
 
   function listeDesArmes(perso) {
-    const listeAttaques = listAllAttacks(perso);//liste du perso transformé
+    const listeAttaques = listAllAttacks(perso); //liste du perso transformé
     let attaqueNaturelleNonVisible;
     let armes = {};
     let armeVisible = 0;
@@ -27365,12 +27364,18 @@ var COFantasy = COFantasy || function() {
     let actionsAAfficher;
     let ligne = '';
     let command = '';
-    if (actionsParDefaut && !stateCOF.chargeFantastique && attributeAsBool(perso, 'hate')) {
-      ligne += "Effet de hâte : une action d'attaque ou de mouvement en plus <br />";
-    }
-    if (actionsParDefaut && !stateCOF.chargeFantastique && attributeAsBool(perso, 'reactionViolente')) {
-      ligne += "Crise de folie : doit attaquer la personne qui l'a provoqué et ceux qui l'en empêchent.<br />";
-      ligne += boutonSimple('!cof-fin-reaction-violente ' + perso.token.id, "Prendre sur soi");
+    if (actionsParDefaut && !stateCOF.chargeFantastique) {
+      if (attributeAsBool(perso, 'hate')) {
+        ligne += "Effet de hâte : une action d'attaque ou de mouvement en plus <br />";
+      }
+      if (attributeAsBool(perso, 'reactionViolente')) {
+        ligne += "Crise de folie : doit attaquer la personne qui l'a provoqué et ceux qui l'en empêchent.<br />";
+        ligne += boutonSimple('!cof-fin-reaction-violente ' + perso.token.id, "Prendre sur soi") + "<br />";
+      }
+      if (attributeAsBool(perso, 'ventDesAmes')) {
+        command = "!cof-jet INT 15 --nom Concentration --succes peut faire une action limitée --target " + perso.token.id;
+        ligne += boutonSimple(command, "Faire une action limitée") + "<br />";
+      }
     }
     //Les dégâts aux personnages enveloppés par perso
     let attrs_enveloppe = tokenAttribute(perso, 'enveloppe');
@@ -46606,6 +46611,14 @@ var COFantasy = COFantasy || function() {
       fin: "fin d'aura",
       generic: true,
     },
+    affaibliTemp: {
+      activation: "se sent faible",
+      actif: "est affaibli",
+      actifF: "est affaiblie",
+      fin: "se sent moins faible",
+      msgSave: "retrouver des forces",
+      prejudiciable: true
+    },
     apeureTemp: {
       activation: "prend peur",
       actif: "est dominé par sa peur",
@@ -46906,6 +46919,15 @@ var COFantasy = COFantasy || function() {
       fin: '',
       visible: false
     },
+    ventDesAmes: {
+      activation: "est entouré d'esprits torturés qui hurlent et le tourmentent",
+      activationF: "est entourée d'esprits torturés qui hurlent et la tourmentent",
+      actif: "est tourmenté par des esprits torturés, il peine à se concentrer",
+      actifF: "est tourmentée par des esprits torturés, elle peine à se concentrer",
+      fin: "Les esprits disparaissent.",
+      visible: true,
+      prejudiciable: true,
+    },
     zoneDeVie: {
       activation: "enchante une zone autour de lui",
       activationF: "enchante une zone autour d'elle",
@@ -46913,14 +46935,6 @@ var COFantasy = COFantasy || function() {
       fin: "la zone de vie se termine",
       visible: true,
       generic: true, //pour pouvoir avoir plusieurs zones de vie
-    },
-    affaibliTemp: {
-      activation: "se sent faible",
-      actif: "est affaibli",
-      actifF: "est affaiblie",
-      fin: "se sent moins faible",
-      msgSave: "retrouver des forces",
-      prejudiciable: true
     },
     assommeTemp: {
       activation: "est assommé",

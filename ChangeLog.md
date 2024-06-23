@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.15
 ### Capacités
+* Vent des âmes de la Voie de Morn
 * Phénix, de la Voie du guérisseur.
 * Possibilité d'avoir un lien de sang vers plus d'un personnage
 * Hémorragie de Pestrilax.
