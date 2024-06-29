@@ -543,6 +543,11 @@ var COFantasy = COFantasy || function() {
     return false;
   }
 
+  function attrAsString(attr, def='') {
+    if (attr.length === 0) return def;
+    return attr[0].get('current')+'';
+  }
+
   function getCharId(perso, options) {
     let charId = perso.charId;
     if (options && options.transforme) {
@@ -600,6 +605,12 @@ var COFantasy = COFantasy || function() {
   function attributeAsBool(personnage, name) {
     let attr = tokenAttribute(personnage, name);
     return attrAsBool(attr);
+  }
+
+  //personnage peut ne pas avoir de token
+  function attributeAsString(personnage, name, def='') {
+    let attr = tokenAttribute(personnage, name);
+    return attrAsString(attr, def);
   }
 
   function charAttributeAsInt(perso, name, def, defPresent) {
@@ -2966,6 +2977,79 @@ var COFantasy = COFantasy || function() {
     };
   }
 
+  // perso peut ne pas avoir de token
+  function onGenre(perso, male, female) {
+    let sexe = ficheAttribute(perso, 'sexe', '');
+    if (sexe.startsWith('F')) return female;
+    return male;
+  }
+
+  //Nom d'attribut avec une extension, tenant compte des mook
+  function effetWithExtension(baseName, attrName, extension) {
+    return baseName + extension + attrName.substr(baseName.length);
+  }
+
+  function attributeWithExtensionAsString(perso, baseName, extension, attrName) {
+    if (baseName) {
+    if (perso.token) return attributeAsString(perso, baseName+extension);
+    if (attrName) {
+      let fullName = effetWithExtension(baseName, attrName, extension);
+      let attrs = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+      name: fullName
+    });
+      if (attrs.length === 0) return '';
+      else return attrs[0].get('current') + '';
+    }
+    }
+    //On essaie de retrouver le baseName
+    if (attrName) {
+      let fullName;
+        let idx = attrName.indexOf('_');
+      if (idx < 0)  {
+        fullName = attrName + extension;
+      } else {
+        let tokPart = attrName.substring(idx);
+      baseName = attrName.substring(0, idx);
+        fullName = baseName + extension + tokPart;
+      }
+      let attrs = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+      name: fullName
+    });
+      if (attrs.length === 0) return '';
+      else return attrs[0].get('current') + '';
+    }
+return '';
+  }
+
+  // perso peut ne pas avoir de token
+  function messageActivation(perso, message, effetC, attrName) {
+    if (!message.activation)
+      return attributeWithExtensionAsString(perso, effetC, 'Activation', attrName);
+    if (message.activationF) return onGenre(perso, message.activation, message.activationF);
+    return message.activation;
+  }
+
+  // perso peut ne pas avoir de token
+  function messageActif(perso, message, effetC, attrName) {
+    if (!message.actif)
+      return attributeWithExtensionAsString(perso, effetC, 'Actif', attrName);
+    if (message.actifF) return onGenre(perso, message.actif, message.actifF);
+    return message.actif;
+  }
+
+  // perso peut ne pas avoir de token
+  function messageFin(perso, message, effetC, attrName) {
+    if (!message.fin)
+      return attributeWithExtensionAsString(perso, effetC, 'Fin', attrName);
+    if (message.finF) return onGenre(perso, message.fin, message.finF);
+    return message.fin;
+  }
+
+
   //options:
   //fromTemp si on est en train de supprimer un effet temporaire
   //affectToken si on a déjà changé le statusmarkers (on vient donc d'un changement à la main d'un marker
@@ -3959,8 +4043,7 @@ var COFantasy = COFantasy || function() {
   //evt.deletedAttributes doit être défini
   function enleverEffetAttribut(charId, effetC, attrName, extension, evt) {
     let attrSave = attributeExtending(charId, attrName, effetC, extension);
-    attrSave.
-    forEach(function(attrS) {
+    attrSave.forEach(function(attrS) {
       evt.deletedAttributes.push(attrS);
       attrS.remove();
     });
@@ -4367,7 +4450,7 @@ var COFantasy = COFantasy || function() {
         attr.remove();
         let msgFin = messageFin({
           charId
-        }, mEffet);
+        }, mEffet, efComplet, attrName);
         if (options.print && mEffet) options.print(msgFin);
         else {
           sendChar(charId, msgFin, true);
@@ -4604,7 +4687,7 @@ var COFantasy = COFantasy || function() {
       if (!estMort && mEffet) {
         let msgFin = messageFin({
           charId
-        }, mEffet);
+        }, mEffet, efComplet, attrName);
         if (options.print) options.print(msgFin);
         else {
           if (attrName == efComplet)
@@ -4622,6 +4705,9 @@ var COFantasy = COFantasy || function() {
       enleverEffetAttribut(charId, efComplet, attrName, 'TempeteDeManaIntense', evt);
       enleverEffetAttribut(charId, efComplet, attrName, 'DureeAccumulee', evt);
       enleverEffetAttribut(charId, efComplet, attrName, 'Options', evt);
+      enleverEffetAttribut(charId, efComplet, attrName, 'Activation', evt);
+      enleverEffetAttribut(charId, efComplet, attrName, 'Actif', evt);
+      enleverEffetAttribut(charId, efComplet, attrName, 'Fin', evt);
     }
     //On remet la face du token
     let attrTS = attributeExtending(charId, attrName, efComplet, 'TokenSide');
@@ -11248,32 +11334,6 @@ var COFantasy = COFantasy || function() {
     });
     return attrs;
   }
-
-  // perso peut ne pas avoir de token
-  function onGenre(perso, male, female) {
-    let sexe = ficheAttribute(perso, 'sexe', '');
-    if (sexe.startsWith('F')) return female;
-    return male;
-  }
-
-  // perso peut ne pas avoir de token
-  function messageActivation(perso, message) {
-    if (message.activationF) return onGenre(perso, message.activation, message.activationF);
-    return message.activation;
-  }
-
-  // perso peut ne pas avoir de token
-  function messageActif(perso, message) {
-    if (message.actifF) return onGenre(perso, message.actif, message.actifF);
-    return message.actif;
-  }
-
-  // perso peut ne pas avoir de token
-  function messageFin(perso, message) {
-    if (message.finF) return onGenre(perso, message.fin, message.finF);
-    return message.fin;
-  }
-
   function getStringValeurOfEffet(perso, effet, def, attrDef) {
     let attrsVal = tokenAttribute(perso, effet + 'Valeur');
     if (attrsVal.length === 0) {
@@ -18155,6 +18215,9 @@ var COFantasy = COFantasy || function() {
   // - attaquant : la personne à l'origine de l'effet
   // - options : des options à mettre dans l'attribut d'options
   // - tokenSide : change le côté du token à cette face
+  // - actif : message à afficher quand l'effet est actif
+  // - activation: message à afficher quand l'effet s'active
+  // - fin : message à afficher à la fin de l'effet
   function setEffetTemporaire(target, ef, duree, evt, options) {
     if (ef.effet == 'dedoublement') {
       if (attributeAsBool(target, 'dedouble') ||
@@ -18226,6 +18289,15 @@ var COFantasy = COFantasy || function() {
       setTokenAttr(ef.attaquant, 'lienDeSangVers', target.token.id, evt, opt);
       setTokenAttr(target, 'lienDeSangDe', ef.attaquant.token.id, evt, opt);
     }
+    if (ef.actif !== undefined) {
+      setTokenAttr(target, ef.effet + 'Actif', ef.actif, evt);
+    }
+    if (ef.activation !== undefined) {
+      setTokenAttr(target, ef.effet + 'Activation', ef.activation, evt);
+    }
+    if (ef.fin !== undefined) {
+      setTokenAttr(target, ef.effet + 'Fin', ef.fin, evt);
+    }
     if (ef.duree) {
       if (ef.typeDmg && (!ef.message || !ef.message.dm) &&
         (predicateAsBool(target, 'diviseEffet_' + ef.typeDmg) ||
@@ -18255,7 +18327,7 @@ var COFantasy = COFantasy || function() {
       }
       let targetMsg = '';
       if (ef.message && !ef.pasDeMessageDActivation) {
-        let msgAct = messageActivation(target, ef.message);
+        let msgAct = messageActivation(target, ef.message, ef.effet);
         if (ef.whisper === undefined) {
           targetMsg = nomPerso(target) + " " + msgAct;
         } else if (ef.whisper !== true) {
@@ -18363,11 +18435,11 @@ var COFantasy = COFantasy || function() {
         target.token.set('status_' + ef.message.statusMarker, true);
       }
     } else if (ef.effetIndetermine) {
-      target.messages.push(nomPerso(target) + " " + messageActivation(target, messageEffetIndetermine[ef.effet]));
+      target.messages.push(nomPerso(target) + " " + messageActivation(target, messageEffetIndetermine[ef.effet], ef.effet));
       setTokenAttr(target, ef.effet, true, evt);
     } else { //On a un effet de combat
       let effetC = messageEffetCombat[ef.effet];
-      target.messages.push(nomPerso(target) + " " + messageActivation(target, effetC));
+      target.messages.push(nomPerso(target) + " " + messageActivation(target, effetC, ef.effet));
       let attrEffetCombat = setTokenAttr(target, ef.effet, true, evt);
       if (ef.attaquant && options.mana !== undefined && effetC.prejudiciable) {
         addEffetTemporaireLie(ef.attaquant, attrEffetCombat, evt);
@@ -20210,12 +20282,12 @@ var COFantasy = COFantasy || function() {
                       else msgPour += "résister à un effet";
                       let msgRate = ", " + nomPerso(target) + " ";
                       if (ef.duree && ef.message) {
-                        msgRate += messageActivation(target, ef.message);
+                        msgRate += messageActivation(target, ef.message, ef.effet);
                         if (stateCOF.options.affichage.val.duree_effets.val) msgRate += " (" + ef.duree + " tours)";
                       } else if (ef.effetIndetermine)
-                        msgRate += messageActivation(target, messageEffetIndetermine[ef.effet]);
+                        msgRate += messageActivation(target, messageEffetIndetermine[ef.effet], ef.effet);
                       else
-                        msgRate += messageActivation(target, messageEffetCombat[ef.effet]);
+                        msgRate += messageActivation(target, messageEffetCombat[ef.effet], ef.effet);
                       ef.pasDeMessageDActivation = true;
                       if (ef.save.tempete && options.tempeteDeManaIntense) {
                         ef.save.seuil += ef.save.tempete * options.tempeteDeManaIntense;
@@ -23858,9 +23930,10 @@ var COFantasy = COFantasy || function() {
           });
         }
         let mEffet = messageEffetCombat[effet];
+        let efComplet = effetComplet(effet, attrName);
         let mc = messageFin({
           charId
-        }, mEffet);
+        }, mEffet, efComplet, attrName);
         if (mc && mc !== '') sendChar(charId, mc, true);
         //On remet la face du token si besoin
         let attrTS = attributeExtending(charId, attrName, effet, 'TokenSide');
@@ -24506,6 +24579,17 @@ var COFantasy = COFantasy || function() {
             options.depensePR.pv = parseDice(cmd[2], "PV dépensés si pas de PR");
             return;
           }
+        case 'activation':
+        case 'actif':
+        case 'fin':
+          {
+            if (options[cmd[0]]) {
+              error("L'option "+cmd[0]+" est en double", cmd);
+              return;
+            }
+      options[cmd[0]] = cmd.slice(1).join(' ');
+            return;
+          }
         default:
           return;
       }
@@ -24639,7 +24723,7 @@ var COFantasy = COFantasy || function() {
         } else {
           line += messageActif({
             charId: a.charId
-          }, e) + ' ';
+          }, e, undefined, e.nom) + ' ';
         }
         if (a.tokenId) {
           if (e.pvTemporaires) {
@@ -24780,8 +24864,8 @@ var COFantasy = COFantasy || function() {
       };
       let saveOpts = {
         msgPour: " pour ne plus être sous l'effet " + effetC,
-        msgReussite: ", " + sujet + ' ' + messageFin(perso, met),
-        msgRate: ", " + sujet + ' ' + messageActif(perso, met),
+        msgReussite: ", " + sujet + ' ' + messageFin(perso, met, effetC),
+        msgRate: ", " + sujet + ' ' + messageActif(perso, met, effetC),
         rolls: options.rolls,
         chanceRollId: options.chanceRollId
       };
@@ -28297,7 +28381,8 @@ var COFantasy = COFantasy || function() {
                 if (attrName.indexOf(')_') > 0) return;
               } else if (effet != attrName) return;
             }
-            let explEffetMsg = messageActif(perso, mt);
+            let efComplet = effetComplet(effet, attrName);
+            let explEffetMsg = messageActif(perso, mt, efComplet);
             if (stateCOF.options.affichage.val.duree_effets.val || playerIsGM(playerId)) {
               let effetVal = attr.get('current');
               if (parseInt(effetVal)) {
@@ -28310,11 +28395,13 @@ var COFantasy = COFantasy || function() {
           } else if (estEffetCombat(attrName)) {
             let effetC = effetCombatOfAttribute(attr);
             if (lie && effetC != attrName) return;
-            addLineToFramedDisplay(display, messageActif(perso, messageEffetCombat[effetC]));
+            let efComplet = effetComplet(effetC, attrName);
+            addLineToFramedDisplay(display, messageActif(perso, messageEffetCombat[effetC], efComplet));
           } else if (estEffetIndetermine(attrName)) {
             let effetI = effetIndetermineOfAttribute(attr);
+            let efComplet = effetComplet(effetI, attrName);
             if (lie && effetI != attrName) return;
-            let mi = messageActif(perso, messageEffetIndetermine[effetI]);
+            let mi = messageActif(perso, messageEffetIndetermine[effetI], efComplet);
             if (playerIsGM(playerId)) {
               mi += ' ' + boutonSimple('!cof-effet ' + effetI + ' false --target ' + perso.token.id, 'X');
             }
@@ -29274,8 +29361,8 @@ var COFantasy = COFantasy || function() {
     let playerId = getPlayerIdFromMsg(msg);
     options.msgPour = msgPour;
     let sujet = onGenre(perso, 'il', 'elle');
-    options.msgReussite = ", " + sujet + ' ' + messageFin(perso, met);
-    options.msgRate = ", " + sujet + ' ' + messageActif(perso, met);
+    options.msgReussite = ", " + sujet + ' ' + messageFin(perso, met, effetC);
+    options.msgRate = ", " + sujet + ' ' + messageActif(perso, met, effetC);
     let attrType = findObjs({
       _type: 'attribute',
       _characterid: perso.charId,
@@ -29617,6 +29704,15 @@ var COFantasy = COFantasy || function() {
       error("Impossible de trouver l'effet " + effet, cmd);
       return;
     }
+    if (pp > 0) {
+      let pe = effet.indexOf(')', pp);
+      if (pe > pp && effet.startsWith('effetTempGenerique(')) {
+        let nomGenerique = effet.substring(pp+1, pe);
+        options.actif = options.actif || nomGenerique;
+        options.activation = options.activation || "Début de " + nomGenerique;
+        options.fin = options.fin || "Fin de "+nomGenerique;
+      }
+    }
     let duree = parseInt(cmd[2]);
     if (isNaN(duree) || duree < 1) duree = 0; //On veut terminer l'effet
     if (options.puissantDuree || options.tempeteDeManaDuree) duree = duree * 2;
@@ -29766,7 +29862,10 @@ var COFantasy = COFantasy || function() {
       whisper: whisper,
       attaquant: options.lanceur,
       options: options.optionsEffet,
-      tokenSide: options.tokenSide
+      tokenSide: options.tokenSide,
+      actif: options.actif,
+      activation: options.activation,
+      fin: options.fin
     };
     if (display) ef.whisper = undefined;
     let nbCibles = cibles.length;
@@ -30150,7 +30249,7 @@ var COFantasy = COFantasy || function() {
             sendPerso(perso, "ne saigne pas");
             return;
           }
-          let actMsg = messageActivation(perso, mEffet) + extraImg;
+          let actMsg = messageActivation(perso, mEffet, effet) + extraImg;
           let effetAttr = setTokenAttr(perso, effet, true, evt, {
             msg: whisper + actMsg
           });
@@ -30190,7 +30289,7 @@ var COFantasy = COFantasy || function() {
         });
       } else { //on désactive
         iterSelected(selected, function(perso) {
-          let actMsg = messageFin(perso, mEffet) + extraImg;
+          let actMsg = messageFin(perso, mEffet, effet) + extraImg;
           removeTokenAttr(perso, effet, evt, {
             msg: whisper + actMsg
           });
@@ -30200,6 +30299,9 @@ var COFantasy = COFantasy || function() {
           removeTokenAttr(perso, effet + 'SaveParTour', evt);
           removeTokenAttr(perso, effet + 'SaveActifParTour', evt);
           removeTokenAttr(perso, effet + 'TempeteDeManaIntense', evt);
+          removeTokenAttr(perso, effet + 'Activation', evt);
+          removeTokenAttr(perso, effet + 'Actif', evt);
+          removeTokenAttr(perso, effet + 'Fin', evt);
           //On remet la face du token
           let attrTS = tokenAttribute(perso, effet + 'TokenSide');
           if (attrTS.length > 0) {
@@ -30476,7 +30578,7 @@ var COFantasy = COFantasy || function() {
           } else {
             setTokenAttr(
               perso, effet, valeur, evt, {
-                msg: whisper + messageActivation(perso, mEffet)
+                msg: whisper + messageActivation(perso, mEffet, effet)
               });
             switch (effet) {
               case 'foretVivanteEnnemie':
@@ -30556,7 +30658,7 @@ var COFantasy = COFantasy || function() {
           ace[0].remove();
         }
         removeTokenAttr(perso, effet, evt, {
-          msg: messageFin(perso, mEffet)
+          msg: messageFin(perso, mEffet, effet)
         });
         removeTokenAttr(perso, effet + 'Puissant', evt);
         removeTokenAttr(perso, effet + 'Valeur', evt);
@@ -37342,7 +37444,7 @@ var COFantasy = COFantasy || function() {
         if (effet.prejudiciable) {
           let attr = tokenAttribute(cible, nomEffet);
           if (attr.length > 0) {
-            printEffet(messageFin(cible, effet));
+            printEffet(messageFin(cible, effet, nomEffet));
             evt.deletedAttributes.push(attr[0]);
             attr[0].remove();
           }
@@ -37352,7 +37454,7 @@ var COFantasy = COFantasy || function() {
         if (effet.prejudiciable) {
           let attr = tokenAttribute(cible, nomEffet);
           if (attr.length > 0) {
-            printEffet(messageFin(cible, effet));
+            printEffet(messageFin(cible, effet, nomEffet));
             evt.deletedAttributes.push(attr[0]);
             attr[0].remove();
           }
@@ -46692,6 +46794,9 @@ var COFantasy = COFantasy || function() {
       prejudiciable: true,
       seulementVivant: true,
     },
+    effetTempGenerique: {
+      generic: true
+    },
     etourdiTemp: {
       activation: "est étourdi : aucune action et -5 en DEF",
       activationF: "est étourdie : aucune action et -5 en DEF",
@@ -47653,7 +47758,7 @@ var COFantasy = COFantasy || function() {
   }
 
   const patternAttributEffetsTemp =
-    buildPatternEffets(messageEffetTemp, ['Puissant', 'Valeur', 'SaveParTour', 'SaveActifParTour', 'SaveParTourType', 'TempeteDeManaIntense', 'Options', 'TokenSide']);
+    buildPatternEffets(messageEffetTemp, ['Puissant', 'Valeur', 'SaveParTour', 'SaveActifParTour', 'SaveParTourType', 'TempeteDeManaIntense', 'Options', 'TokenSide', 'Activation', 'Actif', 'Fin']);
 
   function estAttributEffetTemp(name) {
     return (patternAttributEffetsTemp.test(name));
@@ -47915,7 +48020,7 @@ var COFantasy = COFantasy || function() {
   }
 
   const patternAttributEffetsCombat =
-    buildPatternEffets(messageEffetCombat, ['Puissant', 'Valeur', 'SaveParTour', 'SaveActifParTour', 'SaveParTourType', 'TempeteDeManaIntense', 'Options', 'TokenSide']);
+    buildPatternEffets(messageEffetCombat, ['Puissant', 'Valeur', 'SaveParTour', 'SaveActifParTour', 'SaveParTourType', 'TempeteDeManaIntense', 'Options', 'TokenSide', 'Activation', 'Actif', 'Fin']);
 
   function estAttributEffetCombat(name) {
     return (patternAttributEffetsCombat.test(name));
@@ -48118,11 +48223,10 @@ var COFantasy = COFantasy || function() {
   }
 
   function attributeExtending(charId, attrName, effetC, extension) {
-    let nameWithExtension = effetC + extension + attrName.substr(effetC.length);
     return findObjs({
       _type: 'attribute',
       _characterid: charId,
-      name: nameWithExtension
+      name: effetWithExtension(effetC, attrName, extension),
     });
   }
 
@@ -48727,8 +48831,8 @@ var COFantasy = COFantasy || function() {
         else msgPour += effetC;
       }
       let sujet = onGenre(perso, 'il', 'elle');
-      let msgReussite = ", " + sujet + ' ' + messageFin(perso, met);
-      let msgRate = ", " + sujet + ' ' + messageActif(perso, met);
+      let msgReussite = ", " + sujet + ' ' + messageFin(perso, met, effetC);
+      let msgRate = ", " + sujet + ' ' + messageActif(perso, met, effetC);
       let saveOpts = {
         msgPour: msgPour,
         msgReussite: msgReussite,
@@ -49014,9 +49118,10 @@ var COFantasy = COFantasy || function() {
             });
             dureeStrang[0].set('max', false);
           } else { //Ça fait trop longtemps, on arrête tout
+            let efComplet = effetComplet(effet, attrName);
             sendChar(charId, messageFin({
               charId
-            }, messageEffetTemp[effet]), true);
+            }, messageEffetTemp[effet], efComplet), true);
             evt.attributes.pop(); //On enlève des attributs modifiés pour mettre dans les attribute supprimés.
             evt.deletedAttributes.push(attr);
             attr.remove();
@@ -50321,7 +50426,7 @@ var COFantasy = COFantasy || function() {
           let mEffet = messageEffetCombat[effet];
           if (mEffet) {
             setTokenAttr(perso, effet, true, evt, {
-              msg: messageActivation(perso, mEffet)
+              msg: messageActivation(perso, mEffet, effet)
             });
           }
         }

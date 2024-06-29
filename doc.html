@@ -832,6 +832,7 @@ tr {line-height: 25px;}
                     <li><code>--montreActions</code> : affiche les actions du tours de la cible après avoir appliqué l'effet. Utile si les actions du tours dépendent de cet effet, pour afficher une liste à jour.</li>
                     <li><code>--degainer <i>L</i></code> : le lanceur dégaine l'arme de label <i>L</i>.</li>
                   </ul>
+                  <p> Il existe un effet temporaire générique sans message, pour avoir des timers associés à des personnages : <code>effetTempGenerique</code>. Vous pouvez décider du message à la création avec l'option <code>--activation</code>, du message de statut avec <code>--actif</code> et du message de fin avec <code>--fin</code>.</p>
                   <p><code>!cof-boire-alcool</code> et <code>!cof-desaouler</code> permettent de faire varier le niveau d'ébriété. Par exemple, pour tester si le niveau d'ébriété augmente après avoir bu un certain nombre de verres, on peut utiliser la macro <code>!cof-boire-alcool --save CON [[10+?{Nombre de verres}]]</code>.
                 </div>
                 <h4 class="text-secondary">Effets retardés</h4>
@@ -2150,6 +2151,14 @@ tr {line-height: 25px;}
                 <ol>
                   <li><strong>Lycanthropie</strong> : <code>!cof-effet-temp lycanthropie [[5*@{selected|SAG}]]</code>. Si vous souhaitez un changement d'image du token, utilisez un <a href="https://wiki.roll20.net/Multi-sided_Token">token à plusieurs faces</a>. Dans la liste des faces, en partant de 0, on note <i>n</i> le numéro de la face qui contient l'image de loup-garou. Ajoutez alors <code>--tokenSide <i>n</i></code> à la commande. Par exemple, si la première face est l'image normale du personnage, et la seconde face celle d'un loup-garou, on pourra utiliser <code>!cof-effet-temp lycanthropie [[5*@{selected|SAG}]] --tokenSide 1</code>.</li>
                   <li><strong>Éventration</strong> : ajouter un prédicat <code>lycanthropeEventre</code>.</li>
+                </ol>
+                <h4 class="text-secondary">Voie de Fortur</h4>
+                <ol>
+                  <li><strong>Sans peur</strong> : Ajouter un prédicat <code>sansPeur</code>, utilisé quand on essaiera de faire peur à un <a href="#allie">allié</a>.</li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li><strong>Claquer des mains</strong> : <code>!cof-explosion Claquer des mains --auto --limiteParCombat 1 claquerDesMains --dm 1 --sortilege --disque 10 --etat etourdi --saveParTour CON 12</code> </li>
                 </ol>
                 <h4 class="text-secondary">Voie de Morn</h4>
                 <ol>
