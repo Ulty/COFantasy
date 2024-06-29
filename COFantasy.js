@@ -15203,6 +15203,10 @@ return '';
           sendPlayer(playerName, "cette attaque n'affecte pas les créatures vég etatives", playerId);
           return false;
         }
+        if (predicateAsBool(target, 'immunite_mental')) {
+          sendPerso(target, "ne semble pas effecté"+eForFemale(target)+" par cette attaque");
+          return false;
+        }
       }
       if (options.pointsVitaux && estNonVivant(target)) {
         sendPlayer(playerName, "La cible n'est pas vraiment vivante : " + attaquant.name + " ne trouve pas de points vitaux", playerId);
@@ -16066,6 +16070,7 @@ return '';
       case 'drain':
         return predicateAsInt(target, 'voieDeLArchange', 1) > 2 && attributeAsBool(target, 'formeDAnge');
     }
+    if (options.attaqueMentale && predicateAsBool(target, 'immunite_mental')) return true;
     return false;
   }
 
@@ -31029,6 +31034,9 @@ return '';
       } else if (predicateAsBool(cible, 'liberteDAction')) {
         sendPerso(cible, "reste libre de ses actions !");
         return;
+      } else if (predicateAsBool(cible, "immunite_mental")) {
+        sendPerso(cible, "n'est pas affecté"+eForFemale(cible)+" par l'attaque");
+        return;
       }
     }
     let explications = options.messages || [];
@@ -31222,6 +31230,11 @@ return '';
           }
           if (attributeAsBool(cible, 'limiteParJour_tueurFantasmagorique')) {
             addLineToFramedDisplay(display, nomPerso(cible) + " a déjà été victime d'un tueur fantasmagorique aujourd'hui, c'est sans effet");
+            sendFramedDisplay(display);
+            return;
+          }
+          if (predicateAsBool(cible, 'immunite_tueurFantasmagorique')) {
+            addLineToFramedDisplay(display, nomPerso(cible) + " n'est pas affecté par le tueur fantasmagorique");
             sendFramedDisplay(display);
             return;
           }
