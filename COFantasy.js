@@ -553,7 +553,7 @@ var COFantasy = COFantasy || function() {
     if (options && options.transforme) {
       persoTransforme(perso);
       if (perso.transforme.charId) {
-        if (perso.transforme.garde && perso.transforme.garde[name.toLowerCase()]) 
+        if (perso.transforme.garde && perso.transforme.garde[name.toLowerCase()])
           return charId;
         charId = perso.transforme.charId;
       }
@@ -793,11 +793,11 @@ var COFantasy = COFantasy || function() {
         if (rawArme) raw += '\n' + rawArme;
       }
     }
-      persoTransforme(perso);
-      if (perso.transforme.charId) {
-        let rawT = ficheAttribute(perso, 'predicats_script', '', optTransforme);
-        if (rawT) raw += '\n' + rawT;
-      }
+    persoTransforme(perso);
+    if (perso.transforme.charId) {
+      let rawT = ficheAttribute(perso, 'predicats_script', '', optTransforme);
+      if (rawT) raw += '\n' + rawT;
+    }
     pred = predicateOfRaw(raw);
     stateCOF.predicats[charId] = pred;
     return pred[name];
@@ -820,7 +820,7 @@ var COFantasy = COFantasy || function() {
     perso.transforme.charId = forme[0].id;
     let garde = attrs[0].get('max');
     if (garde) {
-    perso.transforme.garde = {};
+      perso.transforme.garde = {};
       garde = garde.split(',');
       garde.forEach(function(g) {
         perso.transforme.garde[g] = true;
@@ -2615,7 +2615,7 @@ var COFantasy = COFantasy || function() {
     let att = attaques[attackLabel];
     if (att === undefined) {
       if (strict) return;
-      if (attackLabel == -1) {//On cherche une attaque naturelle
+      if (attackLabel == -1) { //On cherche une attaque naturelle
         for (let label in attaques) {
           att = attaques[label];
           const t = fieldAsString(att, 'armetypeattaque', 'Naturel');
@@ -16033,10 +16033,10 @@ var COFantasy = COFantasy || function() {
         }
       }
       if (actionsOpportunite.length === 0 || armesEnMain(attaquant)) {
-      actionsOpportunite.push({
-        command: '!cof-attack @{selected|token_id} @{target|token_id} -1',
-        text: "Attaque avec l'arme en main"
-      });
+        actionsOpportunite.push({
+          command: '!cof-attack @{selected|token_id} @{target|token_id} -1',
+          text: "Attaque avec l'arme en main"
+        });
       }
     }
     let opt_display = {
@@ -27670,7 +27670,7 @@ var COFantasy = COFantasy || function() {
       });
       //On peut chercher à se relever
       if (getState(perso, 'renverse')) {
-        command = "!cof-set-state renverse false --target "+perso.token.id;
+        command = "!cof-set-state renverse false --target " + perso.token.id;
         ligne += boutonSimple(command, "Se relever") + '(action de mvt)<br/>';
       }
       let ecraser = predicateAsBool(perso, 'ecraser');
@@ -46162,7 +46162,7 @@ var COFantasy = COFantasy || function() {
               c = c.trim();
               if (regFicheAttr.test(c)) garde += c.toLowerCase() + ',';
             });
-            if (garde) optSet.maxVal = garde.substring(0, garde.length-1);
+            if (garde) optSet.maxVal = garde.substring(0, garde.length - 1);
           }
           setTokenAttr(perso, 'changementDeForme', nomForme, evt, optSet);
           stateCOF.predicats[perso.charId] = undefined;
@@ -46198,7 +46198,7 @@ var COFantasy = COFantasy || function() {
         restoreTokenOfPerso(perso, evt);
         sendPerso(perso, "retrouve sa forme normale", options.secret);
         removeTokenAttr(perso, 'changementDeForme', evt);
-          stateCOF.predicats[perso.charId] = undefined;
+        stateCOF.predicats[perso.charId] = undefined;
       }); //fin de iterSelected
     }, options);
   }
