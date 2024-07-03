@@ -99,7 +99,8 @@ tr {line-height: 25px;}
               <li data-toggle="collapse" data-target="#autres_capacites"><a href="#Autres_capacités">Autres capacités</a></li>
               <ul id="autres_capacites" class="collapse">
                 <li><a class="text-info" href="#Capacites_raciales">Voies et capacités raciales</a></li>
-                <li><a class="text-info" href="#Prestige">Voies de prestige et capacités épiques</a></li>
+                <li><a class="text-info" href="#Prestige">Voies de prestige</a></li>
+                <li><a class="text-info" href="#Epique">Capacités épiques</a></li>
                 <li><a class="text-info" href="#Créatures">Voies de créature</a></li>
                 <li><a class="text-info" href="#Sorts">Autres sorts</a></li>
                 <li><a class="text-info" href="#Capacites_diverses">Capacités diverses</a></li>
@@ -868,6 +869,7 @@ tr {line-height: 25px;}
                   <li><code>--immuniseSiResiste <i>nom</i></code> : la personne qui résiste à cet effet de peur est ensuite immunisé pour la journée aux effets de peur ayant la même option (avec le même <i>nom</i>).</li>
                 </ul>
                 Noter qu'un prédicat <code>courage</code> permet d'obtenir un bonus (égal à la valeur du prédicat) au jet pour résister à la peur.
+                <p><code>!cof-changer-de-forme</code> permet de gérer des changements de forme. Le seul argument nécessaire est le nom de la forme, qui doit corresondre au nom d'une des fiches en jeu. Après le changement, le personnage utilisera les caractéristiques, les attaques, les actions et les prédicats de cette fiche. On peut garder certaines caractéristiques en utilisant l'option <code>--gardeCarac</code>. À noter que les prédicats sont toujours ajoutés, ils ne remplacent pas ceux de la fiche d'origine.</p>
               </div>
               <h3 class="text-info" id="consommables">2.6 Consommables <code>!cof-consommables</code></h3>
               <div class="decalage">
@@ -1225,7 +1227,7 @@ tr {line-height: 25px;}
                   </li>
                   <li><strong>Le guetteur</strong> : Si elle n'est pas déjà présente dans votre handout de compétences, ajouter au druide une compétence <code>perception</code> (valeur 0 pour le moment). Créer un personnage et un token pour l'oiseau. Ajouter au druide un <a href=#predicats>prédicat</a> <code>guetteur</code> de valeur le nom exact de l'oiseau (sur la fiche, attention à utiliser la symtaxe avec <code>::</code> si le nom comporte des espaces). Ajouter de même un <a href=#predicats>prédicat</a> <code>PVPartagesAvec</code> de valeur le nom de l'oiseau. Ajouter aussi à l'oiseau un <a href=#predicats>prédicat</a> <code>PVPartagesAvec</code> de valeur le nom du druide. Pour le faire agir en même temps que le druide, ajoutez aussi à l'oiseau un prédicat <code>initiativeDeriveeDe</code> de valeur le nom du druide. Pour l'attaque, ajouter sur la fiche une attaque de contact faisant 1d4 DM, avec dans les options <code>--attaqueMagiqueDe <i>nom de personnage du druide</i></code>. Si vous souhaitez que le guetteur rentre en combat en même temps que le druide, ajoutez au druide un prédicat nommé <code>entrerEnCombatAvec</code>, de valeur le nom du token de l'oiseau.</li>
                   <li><strong>Masque du prédateur</strong> : <code>!cof-effet-temp masqueDuPredateur [[5+@{selected|SAG}]] --mana 2</code></li>
-                  <li><strong>Forme animale</strong> : <code>!cof-changer-de-forme ?{Transformation en ?} --mana @{selected|token_id} 3</code>. Si vous avez prévu une fiche pour l'animal choisi (le nom de la fiche doit correspondre à l'animal), alors le token du personnage devrait devenir celui de cette fiche, et les tests de caractéristiques tenir compte de la fiche.</li>
+                  <li><strong>Forme animale</strong> : <code>!cof-changer-de-forme ?{Transformation en ?} --gardeCarac DEF --mana @{selected|token_id} 3</code>. Si vous avez prévu une fiche pour l'animal choisi (le nom de la fiche doit correspondre à l'animal), alors le token du personnage devrait devenir celui de cette fiche, et les tests de caractéristiques tenir compte de la fiche. Par défaut, les attaques et action de l'animal seront affichées, mais aucune attaque ou action du personnage original ne sera affichée quand il est transformé, sauf s'il possède un prédicat <code>actionsPossiblesTransforme</code>, de valeur le label d'une action (pas d'une attaque). Vous pouvez mettre plusieurs actions en les séparant par une virgule (et dans ce cas, utiliser la syntaxe du prédicat avec <code>::</code>).</li>
                 </ol>
                 <h4 class="text-secondary">Voie du fauve</h4>
                 <ol>
@@ -2111,7 +2113,7 @@ tr {line-height: 25px;}
                   <li><strong>Se faire discret</strong> : ajouter les jets sur la fiche, ou bien des compétences <code>mentir</code> et <code>deguisement</code> de valeur 5, à utiliser avec <code>!cof-jet</code>.</li>
                 </ol>
               </div>
-              <h3 class="text-info" id="Prestige">4.2 Voies de prestige et capacités épiques</h3>
+              <h3 class="text-info" id="Prestige">4.2 Voies de prestige</h3>
               <div class="decalage">
                 <h4 class="text-secondary">Voie d'Arwendée</h4>
                 <ol>
@@ -2199,6 +2201,12 @@ tr {line-height: 25px;}
                 <h4 class="text-secondary">Voie des vermines</h4>
                 <ol>
                   <li><strong>Nuée de criquets</strong> : ajouter une attaque magique, de portée 20 m, type Sortilege, modificateur <code>pasDeDmg</code> et options <code>--effet nueeDeCriquets [[5+@{selected|SAG}]]</code>. Pas de support particulier pour les DM de zone qui détruisent la nuée (enlever l'attribut <code>nueeDeCriquets</code> sur la cible dans ce cas).</li>
+                </ol>
+                <h4 class="text-secondary">Voie du changeur de forme</h4>
+                <ol>
+                  <li><strong>Forme animale supérieure</strong> : <code>!cof-changer-de-forme ?{Transformation en ?}</code>. Si vous avez prévu une fiche pour l'animal choisi (le nom de la fiche doit correspondre à l'animal), alors le token du personnage devrait devenir celui de cette fiche, et les tests de caractéristiques tenir compte de la fiche. Par défaut, les attaques et action de l'animal seront affichées, mais aucune attaque ou action du personnage original ne sera affichée quand il est transformé, sauf s'il possède un prédicat <code>actionsPossiblesTransforme</code>, de valeur le label d'une action (pas d'une attaque). Vous pouvez mettre plusieurs actions en les séparant par une virgule (et dans ce cas, utiliser la syntaxe du prédicat avec <code>::</code>).</li>
+                  <li><strong>Transformation rapide</strong> : pas de support du script.</li>
+                  <li><strong>Grande forme animale</strong> : comme pour la forme animale supérieure.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du chasseur de corruption</h4>
                 <p>Pour savoir si une cible est corrompue, le script va utiliser un <a href=#predicats>prédicat</a> <code>corrompu</code> qu'il appartient au MJ d'ajouter pour les créatures selon ses critères.</p>
@@ -2324,7 +2332,9 @@ tr {line-height: 25px;}
                   <li><strong>Ventre mou</strong> : ajouter un <a href=#predicats>prédicat</a> <code>ventreMou</code>. Cela va diminuer la RD fixe de 3 maximum pour une créature grande, 6 maximum pour une créature énorme et 10 maximum pour une créature colossale.</li>
                   <li><strong>Bûcheron</strong> : ajouter un <a href=#predicats>prédicat</a> <code>bucheron</code>.</li>
                 </ol>
-                <h4 class="text-secondary">Capacités épiques</h4>
+              </div>
+              <h3 class="text-info" id="Epique">4.3 Capacités épiques</h3>
+              <div class="decalage">
                 <ul>
                   <li><strong>Libérateur de Dorn</strong> : ajouter un prédicat <code>liberateurDeDorn</code>.</li>
                   <li><strong>Libérateur de Kerserac</strong> : ajouter un prédicat <code>liberateurDeKerserac</code>.</li>
@@ -2333,7 +2343,7 @@ tr {line-height: 25px;}
                   <li><strong>Vitalité épique</strong> : ajouter un <a href=#predicats>prédicat</a> <code>vitaliteEpique</code>. Pas de support pour le coup mortel ou la régénération horaire. Attention, si vous utlisez <code>!cof-soin</code> pour cette régénération, les soins seront aussi doublés.</li>
                 </ul>
               </div>
-              <h3 class="text-info" id="Créatures">4.3 Voies de créatures</h3>
+              <h3 class="text-info" id="Créatures">4.4 Voies de créatures</h3>
               <div class="decalage">
                 <h4 class="text-secondary">Voie du champion</h4>
                 <ol>
@@ -2427,7 +2437,7 @@ tr {line-height: 25px;}
                   <li><strong>Assassinat</strong> : rajouter <code>--if etatCible surpris --etat mort --save CON 15 --endif</code> à l'Attaque mortelle.</li>
                 </ol>
               </div>
-              <h3 class="text-info" id="Sorts">4.4 Autres sorts</h3>
+              <h3 class="text-info" id="Sorts">4.5 Autres sorts</h3>
               <div class="decalage">
                 Sorts qui ne sont pas dans des voies, mais peuvent venir du grimoire (dans le compagnon) ou d'effets de parchemins.
                 <ul>
@@ -2444,7 +2454,7 @@ tr {line-height: 25px;}
                   <li><strong>Toiles</strong> : <code>!cof-effet-temp toiles [[5+@{selected|SAG}]] --saveActifParTour FOR [[10+@{selected|SAG}]] --lanceur @{selected|token_id} --disque @{target|token_id} 5 20 --saufAllies --mana 0</code>.</li>
                 </ul>
               </div>
-              <h3 class="text-info" id="Capacites_diverses">4.5 Capacités diverses</h3>
+              <h3 class="text-info" id="Capacites_diverses">4.6 Capacités diverses</h3>
               <div class="decalage">
                 <ul>
                   <li><strong>Absorption d'énergie</strong> (spectres et vampires) : ajouter un <a href=#predicats>prédicat</a> <code>absorptionEnergie</code> de valeur la valeur du soin accordé à l'attaquant à chaque fois qu'il endommage une cible (5 par défaut, si vous ne mettez aucune valeur). Pour l'absorption des vampires, ajouter un prédicat <code>vampire</code>.</li>

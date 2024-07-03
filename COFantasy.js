@@ -543,22 +543,26 @@ var COFantasy = COFantasy || function() {
     return false;
   }
 
-  function attrAsString(attr, def='') {
+  function attrAsString(attr, def = '') {
     if (attr.length === 0) return def;
-    return attr[0].get('current')+'';
+    return attr[0].get('current') + '';
   }
 
-  function getCharId(perso, options) {
+  function getCharId(perso, name, options) {
     let charId = perso.charId;
     if (options && options.transforme) {
       persoTransforme(perso);
-      if (perso.transforme.charId) charId = perso.transforme.charId;
+      if (perso.transforme.charId) {
+        if (perso.transforme.garde && perso.transforme.garde[name.toLowerCase()]) 
+          return charId;
+        charId = perso.transforme.charId;
+      }
     }
     return charId;
   }
 
   function attributesInsensitive(perso, name, options) {
-    return charAttribute(getCharId(perso, options), name, {
+    return charAttribute(getCharId(perso, name, options), name, {
       caseInsensitive: true
     });
   }
@@ -608,7 +612,7 @@ var COFantasy = COFantasy || function() {
   }
 
   //personnage peut ne pas avoir de token
-  function attributeAsString(personnage, name, def='') {
+  function attributeAsString(personnage, name, def = '') {
     let attr = tokenAttribute(personnage, name);
     return attrAsString(attr, def);
   }
@@ -789,6 +793,11 @@ var COFantasy = COFantasy || function() {
         if (rawArme) raw += '\n' + rawArme;
       }
     }
+      persoTransforme(perso);
+      if (perso.transforme.charId) {
+        let rawT = ficheAttribute(perso, 'predicats_script', '', optTransforme);
+        if (rawT) raw += '\n' + rawT;
+      }
     pred = predicateOfRaw(raw);
     stateCOF.predicats[charId] = pred;
     return pred[name];
@@ -809,6 +818,14 @@ var COFantasy = COFantasy || function() {
     });
     if (forme.length == 0) return;
     perso.transforme.charId = forme[0].id;
+    let garde = attrs[0].get('max');
+    if (garde) {
+    perso.transforme.garde = {};
+      garde = garde.split(',');
+      garde.forEach(function(g) {
+        perso.transforme.garde[g] = true;
+      });
+    }
   }
 
   //PNJ au sens de la fiche utilisée, pas forcément en jeu
@@ -835,13 +852,14 @@ var COFantasy = COFantasy || function() {
   //Retourne le mod de la caractéristque entière.
   //si carac n'est pas une carac, retourne 0
   //perso peut ne pas avoir de token ou être juste un charId
-  function modCarac(perso, carac) {
+  //Si options est défini on utilise les caracs du perso et pas le transformé
+  function modCarac(perso, carac, options) {
     if (perso.charId === undefined) perso = {
       charId: perso
     };
     let modCarac = modOfCarac(carac);
     let mod = 0;
-    let opt = optTransforme;
+    let opt = options || optTransforme;
     if (persoEstPNJ(perso, opt)) {
       switch (modCarac) {
         case 'FOR':
@@ -879,6 +897,102 @@ var COFantasy = COFantasy || function() {
     } else if (modCarac == 'DEX' && attributeAsBool(perso, 'mutationSilhouetteFiliforme')) mod += 4;
     mod += predicateAsInt(perso, 'bonus_' + modCarac, 0);
     return mod;
+  }
+
+  function forceLightingRefresh(pageId) {
+    let page = getObj('page', pageId);
+    if (!page) return;
+    page.set('force_lighting_refresh', true);
+  }
+
+  //pageId et charId sont optionnels
+  function getTokenFields(token, pageId, charId) {
+    return {
+      _pageid: pageId || token.get('pageid'),
+      imgsrc: token.get('imgsrc'),
+      represents: charId || token.get('represents'),
+      left: token.get('left'),
+      top: token.get('top'),
+      width: token.get('width'),
+      height: token.get('height'),
+      rotation: token.get('rotation'),
+      layer: token.get('layer'),
+      flipv: token.get('flipv'),
+      fliph: token.get('fliph'),
+      name: token.get('name'),
+      tooltip: token.get('tooltip'),
+      show_tooltip: token.get('show_tooltip'),
+      controlledby: token.get('controlledby'),
+      bar1_link: token.get('bar1_link'),
+      bar2_link: token.get('bar2_link'),
+      bar3_link: token.get('bar3_link'),
+      bar1_value: token.get('bar1_value'),
+      bar2_value: token.get('bar2_value'),
+      bar3_value: token.get('bar3_value'),
+      bar1_max: token.get('bar1_max'),
+      bar2_max: token.get('bar2_max'),
+      bar3_max: token.get('bar3_max'),
+      bar_location: token.get('bar_location'),
+      compact_bar: token.get('compact_bar'),
+      aura1_radius: token.get('aura1_radius'),
+      aura2_radius: token.get('aura2_radius'),
+      aura1_color: token.get('aura1_color'),
+      aura2_color: token.get('aura2_color'),
+      aura1_square: token.get('aura1_square'),
+      aura2_square: token.get('aura2_square'),
+      tint_color: token.get('tint_color'),
+      statusmarkers: token.get('statusmarkers'),
+      showname: token.get('showname'),
+      showplayers_name: token.get('showplayers_name'),
+      showplayers_bar1: token.get('showplayers_bar1'),
+      showplayers_bar2: token.get('showplayers_bar2'),
+      showplayers_bar3: token.get('showplayers_bar3'),
+      showplayers_aura1: token.get('showplayers_aura1'),
+      showplayers_aura2: token.get('showplayers_aura2'),
+      playersedit_name: token.get('playersedit_name'),
+      playersedit_bar1: token.get('playersedit_bar1'),
+      playersedit_bar2: token.get('playersedit_bar2'),
+      playersedit_bar3: token.get('playersedit_bar3'),
+      playersedit_aura1: token.get('playersedit_aura1'),
+      playersedit_aura2: token.get('playersedit_aura2'),
+      lastmove: token.get('lastmove'),
+      sides: token.get('sides'),
+      currentSide: token.get('currentSide'),
+      lockMovement: token.get('lockMovement'),
+      /* Dynamic Lighting */
+      has_bright_light_vision: token.get('has_bright_light_vision'),
+      has_night_vision: token.get('has_night_vision'),
+      night_vision_distance: token.get('night_vision_distance'),
+      emits_bright_light: token.get('emits_bright_light'),
+      bright_light_distance: token.get('bright_light_distance'),
+      emits_low_light: token.get('emits_low_light'),
+      low_light_distance: token.get('low_light_distance'),
+      light_sensitivity_multiplier: token.get('light_sensitivity_multiplier'),
+      night_vision_effect: token.get('night_vision_effect'),
+      has_limit_field_of_vision: token.get('has_limit_field_of_vision'),
+      limit_field_of_vision_center: token.get('limit_field_of_vision_center'),
+      limit_field_of_vision_total: token.get('limit_field_of_vision_total'),
+      has_limit_field_of_night_vision: token.get('has_limit_field_of_night_vision'),
+      limit_field_of_night_vision_center: token.get('limit_field_of_night_vision_center'),
+      limit_field_of_night_vision_total: token.get('limit_field_of_night_vision_total'),
+      has_directional_bright_light: token.get('has_directional_bright_light'),
+      directional_bright_light_center: token.get('directional_bright_light_center'),
+      directional_bright_light_total: token.get('directional_bright_light_total'),
+      has_directional_dim_light: token.get('has_directional_dim_light'),
+      directional_dim_light_center: token.get('directional_dim_light_center'),
+      directional_dim_light_total: token.get('directional_dim_light_total'),
+      light_color: token.get('light_color'),
+      /* Legacy Dynamic Lighting */
+      light_radius: token.get('light_radius'),
+      light_dimradius: token.get('light_dimradius'),
+      light_otherplayers: token.get('light_otherplayers'),
+      light_hassight: token.get('light_hassight'),
+      light_angle: token.get('light_angle'),
+      light_losangle: token.get('light_losangle'),
+      light_multiplier: token.get('light_multiplier'),
+      adv_fow_view_distance: token.get('adv_fow_view_distance'),
+      gmnotes: token.get('gmnotes'),
+    };
   }
 
   //options peut contenir
@@ -1222,6 +1336,12 @@ var COFantasy = COFantasy || function() {
             }
           }
         }
+      }
+      //On rajoute les prédicats de transformation, si transformé
+      persoTransforme(perso);
+      if (perso.transforme.charId) {
+        let rawT = ficheAttribute(perso, 'predicats_script', '', optTransforme);
+        if (rawT) raw += '\n' + rawT;
       }
       let pred = predicateOfRaw(raw);
       perso.predicates = pred;
@@ -2417,102 +2537,6 @@ var COFantasy = COFantasy || function() {
     return toInt(attrsVal[0].get('current'), def);
   }
 
-  function forceLightingRefresh(pageId) {
-    let page = getObj('page', pageId);
-    if (!page) return;
-    page.set('force_lighting_refresh', true);
-  }
-
-  //pageId et charId sont optionnels
-  function getTokenFields(token, pageId, charId) {
-    return {
-      _pageid: pageId || token.get('pageid'),
-      imgsrc: token.get('imgsrc'),
-      represents: charId || token.get('represents'),
-      left: token.get('left'),
-      top: token.get('top'),
-      width: token.get('width'),
-      height: token.get('height'),
-      rotation: token.get('rotation'),
-      layer: token.get('layer'),
-      flipv: token.get('flipv'),
-      fliph: token.get('fliph'),
-      name: token.get('name'),
-      tooltip: token.get('tooltip'),
-      show_tooltip: token.get('show_tooltip'),
-      controlledby: token.get('controlledby'),
-      bar1_link: token.get('bar1_link'),
-      bar2_link: token.get('bar2_link'),
-      bar3_link: token.get('bar3_link'),
-      bar1_value: token.get('bar1_value'),
-      bar2_value: token.get('bar2_value'),
-      bar3_value: token.get('bar3_value'),
-      bar1_max: token.get('bar1_max'),
-      bar2_max: token.get('bar2_max'),
-      bar3_max: token.get('bar3_max'),
-      bar_location: token.get('bar_location'),
-      compact_bar: token.get('compact_bar'),
-      aura1_radius: token.get('aura1_radius'),
-      aura2_radius: token.get('aura2_radius'),
-      aura1_color: token.get('aura1_color'),
-      aura2_color: token.get('aura2_color'),
-      aura1_square: token.get('aura1_square'),
-      aura2_square: token.get('aura2_square'),
-      tint_color: token.get('tint_color'),
-      statusmarkers: token.get('statusmarkers'),
-      showname: token.get('showname'),
-      showplayers_name: token.get('showplayers_name'),
-      showplayers_bar1: token.get('showplayers_bar1'),
-      showplayers_bar2: token.get('showplayers_bar2'),
-      showplayers_bar3: token.get('showplayers_bar3'),
-      showplayers_aura1: token.get('showplayers_aura1'),
-      showplayers_aura2: token.get('showplayers_aura2'),
-      playersedit_name: token.get('playersedit_name'),
-      playersedit_bar1: token.get('playersedit_bar1'),
-      playersedit_bar2: token.get('playersedit_bar2'),
-      playersedit_bar3: token.get('playersedit_bar3'),
-      playersedit_aura1: token.get('playersedit_aura1'),
-      playersedit_aura2: token.get('playersedit_aura2'),
-      lastmove: token.get('lastmove'),
-      sides: token.get('sides'),
-      currentSide: token.get('currentSide'),
-      lockMovement: token.get('lockMovement'),
-      /* Dynamic Lighting */
-      has_bright_light_vision: token.get('has_bright_light_vision'),
-      has_night_vision: token.get('has_night_vision'),
-      night_vision_distance: token.get('night_vision_distance'),
-      emits_bright_light: token.get('emits_bright_light'),
-      bright_light_distance: token.get('bright_light_distance'),
-      emits_low_light: token.get('emits_low_light'),
-      low_light_distance: token.get('low_light_distance'),
-      light_sensitivity_multiplier: token.get('light_sensitivity_multiplier'),
-      night_vision_effect: token.get('night_vision_effect'),
-      has_limit_field_of_vision: token.get('has_limit_field_of_vision'),
-      limit_field_of_vision_center: token.get('limit_field_of_vision_center'),
-      limit_field_of_vision_total: token.get('limit_field_of_vision_total'),
-      has_limit_field_of_night_vision: token.get('has_limit_field_of_night_vision'),
-      limit_field_of_night_vision_center: token.get('limit_field_of_night_vision_center'),
-      limit_field_of_night_vision_total: token.get('limit_field_of_night_vision_total'),
-      has_directional_bright_light: token.get('has_directional_bright_light'),
-      directional_bright_light_center: token.get('directional_bright_light_center'),
-      directional_bright_light_total: token.get('directional_bright_light_total'),
-      has_directional_dim_light: token.get('has_directional_dim_light'),
-      directional_dim_light_center: token.get('directional_dim_light_center'),
-      directional_dim_light_total: token.get('directional_dim_light_total'),
-      light_color: token.get('light_color'),
-      /* Legacy Dynamic Lighting */
-      light_radius: token.get('light_radius'),
-      light_dimradius: token.get('light_dimradius'),
-      light_otherplayers: token.get('light_otherplayers'),
-      light_hassight: token.get('light_hassight'),
-      light_angle: token.get('light_angle'),
-      light_losangle: token.get('light_losangle'),
-      light_multiplier: token.get('light_multiplier'),
-      adv_fow_view_distance: token.get('adv_fow_view_distance'),
-      gmnotes: token.get('gmnotes'),
-    };
-  }
-
   function caracOfMod(m, accent) {
     switch (m) {
       case 'FOR':
@@ -2591,7 +2615,17 @@ var COFantasy = COFantasy || function() {
     let att = attaques[attackLabel];
     if (att === undefined) {
       if (strict) return;
-      weaponStats.name = attackLabel;
+      if (attackLabel == -1) {//On cherche une attaque naturelle
+        for (let label in attaques) {
+          att = attaques[label];
+          const t = fieldAsString(att, 'armetypeattaque', 'Naturel');
+          if (t != 'Naturel') continue;
+          if (fieldAsInt(att, 'armeactionvisible', 1) != 1) continue;
+          let options = ' ' + fieldAsString(att, 'armeoptions', '');
+          if (actionImpossible(perso, options.split(' --'), label)) continue;
+          return weaponStatsOfAttack(perso, label, att);
+        }
+      } else weaponStats.name = attackLabel;
       return weaponStats;
     }
     return weaponStatsOfAttack(perso, attackLabel, att);
@@ -2991,38 +3025,38 @@ var COFantasy = COFantasy || function() {
 
   function attributeWithExtensionAsString(perso, baseName, extension, attrName) {
     if (baseName) {
-    if (perso.token) return attributeAsString(perso, baseName+extension);
-    if (attrName) {
-      let fullName = effetWithExtension(baseName, attrName, extension);
-      let attrs = findObjs({
-      _type: 'attribute',
-      _characterid: perso.charId,
-      name: fullName
-    });
-      if (attrs.length === 0) return '';
-      else return attrs[0].get('current') + '';
-    }
+      if (perso.token) return attributeAsString(perso, baseName + extension);
+      if (attrName) {
+        let fullName = effetWithExtension(baseName, attrName, extension);
+        let attrs = findObjs({
+          _type: 'attribute',
+          _characterid: perso.charId,
+          name: fullName
+        });
+        if (attrs.length === 0) return '';
+        else return attrs[0].get('current') + '';
+      }
     }
     //On essaie de retrouver le baseName
     if (attrName) {
       let fullName;
-        let idx = attrName.indexOf('_');
-      if (idx < 0)  {
+      let idx = attrName.indexOf('_');
+      if (idx < 0) {
         fullName = attrName + extension;
       } else {
         let tokPart = attrName.substring(idx);
-      baseName = attrName.substring(0, idx);
+        baseName = attrName.substring(0, idx);
         fullName = baseName + extension + tokPart;
       }
       let attrs = findObjs({
-      _type: 'attribute',
-      _characterid: perso.charId,
-      name: fullName
-    });
+        _type: 'attribute',
+        _characterid: perso.charId,
+        name: fullName
+      });
       if (attrs.length === 0) return '';
       else return attrs[0].get('current') + '';
     }
-return '';
+    return '';
   }
 
   // perso peut ne pas avoir de token
@@ -11334,6 +11368,7 @@ return '';
     });
     return attrs;
   }
+
   function getStringValeurOfEffet(perso, effet, def, attrDef) {
     let attrsVal = tokenAttribute(perso, effet + 'Valeur');
     if (attrsVal.length === 0) {
@@ -12379,8 +12414,11 @@ return '';
     let tokenName = nomPerso(target);
     let explications = target.messages || [];
     let defense = 10;
-    if (persoEstPNJ(target)) {
-      defense = ficheAttributeAsInt(target, 'pnj_def', 10);
+    let opt = {};
+    persoTransforme(target);
+    if (target.transforme.charId && !(target.transforme.garde && target.transforme.garde.def)) opt = optTransforme;
+    if (persoEstPNJ(target, opt)) {
+      defense = ficheAttributeAsInt(target, 'pnj_def', 10, opt);
     } else {
       if (target.defautCuirasse === undefined && (!attaquant || !predicateAsBool(attaquant, 'creatureIntangible'))) {
         if (!attaquant || !predicateAsBool(attaquant, 'creatureIntangible')) {
@@ -12396,9 +12434,9 @@ return '';
           if (defense > 12) defense += bonusArmureDuMage / 2; // On a déjà une armure physique, ça ne se cumule pas.
           else defense += bonusArmureDuMage;
         }
-        defense += ficheAttributeAsInt(target, 'DEFDIV', 0);
+        defense += ficheAttributeAsInt(target, 'DEFDIV', 0, opt);
       } // Dans le cas contraire, on n'utilise pas ces bonus
-      defense += modCarac(target, 'dexterite');
+      defense += modCarac(target, 'dexterite', opt);
     }
     if (attributeAsBool(target, 'inconfort')) {
       let inconfortValeur = attributeAsInt(target, "inconfortValeur", 0);
@@ -15204,7 +15242,7 @@ return '';
           return false;
         }
         if (predicateAsBool(target, 'immunite_mental')) {
-          sendPerso(target, "ne semble pas effecté"+eForFemale(target)+" par cette attaque");
+          sendPerso(target, "ne semble pas effecté" + eForFemale(target) + " par cette attaque");
           return false;
         }
       }
@@ -15647,7 +15685,7 @@ return '';
   // options peut contenir transforme
   function extractRepeating(perso, repeatingSection, options) {
     const reg = new RegExp("^(repeating_" + repeatingSection + "_[^_]*_)(.*)$");
-    let charId = getCharId(perso, options);
+    let charId = getCharId(perso, repeatingSection, options);
     const attributes = findObjs({
       _type: 'attribute',
       _characterid: charId,
@@ -15708,9 +15746,10 @@ return '';
     return liste;
   }
 
-  function sortedActionList(perso, listNumber) {
+  // options peut contenir transforme pour utiliser cette version
+  function sortedActionList(perso, listNumber, options) {
     let actions = [];
-    let rawActions = extractRepeating(perso, 'actions' + listNumber);
+    let rawActions = extractRepeating(perso, 'actions' + listNumber, options);
     for (let pref in rawActions) {
       let ra = rawActions[pref];
       if (ra.actiontitre === undefined) ra.actiontitre = ' ';
@@ -15738,7 +15777,20 @@ return '';
     let options = '';
     switch (actionsDuTour) {
       case 0:
-        actions = sortedActionList(perso, '');
+        actions = sortedActionList(perso, '', optTransforme);
+        if (perso.transforme.charId) {
+          let p = predicateAsBool(perso, 'actionsPossiblesTransforme');
+          if (p && typeof(p) == 'string') {
+            let ind = p.split(',');
+            let actOrig = sortedActionList(perso, '');
+            ind.forEach(function(i) {
+              i = toInt(i, -1);
+              if (i < 0) return;
+              let a = actOrig[i];
+              if (a) actions.push(a);
+            });
+          }
+        }
         break;
       case 1:
       case 2:
@@ -15971,18 +16023,21 @@ return '';
       let listeAttaques = listAllAttacks(attaquant);
       for (let label in listeAttaques) {
         let arme = listeAttaques[label];
-        if (parseInt(arme.armeactionvisible) === 0) continue;
-        if (arme.armetypeattaque == 'Naturel' || arme.armetypeattaque === 'undefined') {
+        if (fieldAsInt(arme, 'armeactionvisible', 1) === 0) continue;
+        let typeAttaque = fieldAsString(arme, 'armetypeattaque', 'Naturel');
+        if (typeAttaque == 'Naturel') {
           actionsOpportunite.push({
             command: '!cof-attack @{selected|token_id} @{target|token_id} ' + label,
-            text: arme.armenom,
+            text: fieldAsString(arme, 'armenom', 'Attaque')
           });
         }
       }
+      if (actionsOpportunite.length === 0 || armesEnMain(attaquant)) {
       actionsOpportunite.push({
         command: '!cof-attack @{selected|token_id} @{target|token_id} -1',
         text: "Attaque avec l'arme en main"
       });
+      }
     }
     let opt_display = {
       chuchote: true,
@@ -24589,10 +24644,17 @@ return '';
         case 'fin':
           {
             if (options[cmd[0]]) {
-              error("L'option "+cmd[0]+" est en double", cmd);
+              error("L'option " + cmd[0] + " est en double", cmd);
               return;
             }
-      options[cmd[0]] = cmd.slice(1).join(' ');
+            options[cmd[0]] = cmd.slice(1).join(' ');
+            return;
+          }
+        case 'gardeCarac':
+          {
+            if (cmd.length < 2) return;
+            options.gardeCarac = options.gardeCarac || [];
+            options.gardeCarac = options.gardeCarac.concat(cmd.slice(1));
             return;
           }
         default:
@@ -27606,6 +27668,11 @@ return '';
         }
         ligne += boutonSimple("!cof-save-effet " + perso.token.id + " " + attr.id, msgPour) + '<br/>';
       });
+      //On peut chercher à se relever
+      if (getState(perso, 'renverse')) {
+        command = "!cof-set-state renverse false --target "+perso.token.id;
+        ligne += boutonSimple(command, "Se relever") + '(action de mvt)<br/>';
+      }
       let ecraser = predicateAsBool(perso, 'ecraser');
       if (ecraser) {
         let attrEcrase = tokenAttribute(perso, 'ecrase');
@@ -27856,6 +27923,10 @@ return '';
           if (!options.actionImpossible) ligne += b + '<br />';
         }
       });
+      if (perso.transforme.charId) {
+        command = "!cof-fin-changement-de-forme --target " + perso.token.id;
+        ligne += boutonSimple(command, "Retrouver sa forme normale") + '<br/>';
+      }
       if (predicateAsBool(perso, 'batonDesRunesMortes')) {
         if (attributeAsBool(perso, 'runeIsulys') && attributeAsInt(perso, 'limiteParTour_runeIsulys', 1) > 0) {
           let caracSag = modCarac(perso, 'sagesse');
@@ -29712,10 +29783,10 @@ return '';
     if (pp > 0) {
       let pe = effet.indexOf(')', pp);
       if (pe > pp && effet.startsWith('effetTempGenerique(')) {
-        let nomGenerique = effet.substring(pp+1, pe);
+        let nomGenerique = effet.substring(pp + 1, pe);
         options.actif = options.actif || nomGenerique;
         options.activation = options.activation || "Début de " + nomGenerique;
-        options.fin = options.fin || "Fin de "+nomGenerique;
+        options.fin = options.fin || "Fin de " + nomGenerique;
       }
     }
     let duree = parseInt(cmd[2]);
@@ -31035,7 +31106,7 @@ return '';
         sendPerso(cible, "reste libre de ses actions !");
         return;
       } else if (predicateAsBool(cible, "immunite_mental")) {
-        sendPerso(cible, "n'est pas affecté"+eForFemale(cible)+" par l'attaque");
+        sendPerso(cible, "n'est pas affecté" + eForFemale(cible) + " par l'attaque");
         return;
       }
     }
@@ -45941,52 +46012,86 @@ return '';
 
   function restoreTokenOfPerso(perso, evt) {
     let tokenChange = attributeAsBool(perso, 'changementDeToken');
-    if (tokenChange) {
-      let token = perso.token;
-      let tokenMJ =
+    if (!tokenChange) return;
+    let token = perso.token;
+    let tokenMJ =
+      findObjs({
+        _type: 'graphic',
+        _subtype: 'token',
+        _pageid: token.get('pageid'),
+        layer: 'gmlayer',
+        represents: perso.charId,
+        name: token.get('name')
+      });
+    if (tokenMJ.length === 0) { //Il est peut-être sur une autre page
+      tokenMJ =
         findObjs({
           _type: 'graphic',
           _subtype: 'token',
-          _pageid: token.get('pageid'),
           layer: 'gmlayer',
           represents: perso.charId,
           name: token.get('name')
         });
-      if (tokenMJ.length === 0) return;
-      removeTokenAttr(perso, 'changementDeToken', evt);
-      let nouveauToken = tokenMJ[0];
-      setToken(nouveauToken, 'layer', 'objects', evt);
-      setToken(nouveauToken, 'left', token.get('left'), evt);
-      setToken(nouveauToken, 'top', token.get('top'), evt);
-      //setToken(nouveauToken, 'width', token.get('width'), evt);
-      //setToken(nouveauToken, 'height', token.get('height'), evt);
-      setToken(nouveauToken, 'rotation', token.get('rotation'), evt);
-      setToken(nouveauToken, 'bar2_value', token.get('bar2_value'), evt);
-      setToken(nouveauToken, 'aura1_radius', token.get('aura1_radius'), evt);
-      setToken(nouveauToken, 'aura1_color', token.get('aura1_color'), evt);
-      setToken(nouveauToken, 'aura1_square', token.get('aura1_square'), evt);
-      setToken(nouveauToken, 'showplayers_aura1', token.get('showplayers_aura1'), evt);
-      setToken(nouveauToken, 'aura2_radius', token.get('aura2_radius'), evt);
-      setToken(nouveauToken, 'aura2_color', token.get('aura2_color'), evt);
-      setToken(nouveauToken, 'aura2_square', token.get('aura2_square'), evt);
-      setToken(nouveauToken, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
-      setToken(nouveauToken, 'statusmarkers', token.get('statusmarkers'), evt);
-      setToken(nouveauToken, 'light_angle', token.get('light_angle'), evt);
-      setToken(nouveauToken, 'has_limit_field_of_vision', token.get('has_limit_field_of_vision'), evt);
-      setToken(nouveauToken, 'has_limit_field_of_night_vision', token.get('has_limit_field_of_night_vision'), evt);
-      if (stateCOF.combat) {
-        replaceInTurnTracker(token.id, nouveauToken.id, evt);
-      }
-      let res = {
-        oldTokenId: token.id,
-        newTokenId: nouveauToken.id,
-        newToken: nouveauToken,
-      };
-      deleteTokenWithUndo(token, evt);
-      perso.token = nouveauToken;
-      return res;
     }
+    removeTokenAttr(perso, 'changementDeToken', evt);
+    if (tokenMJ.length === 0) {
+      let character = getObj('character', perso.charId);
+      character.get('_defaulttoken', function(defToken) {
+        if (defToken) {
+          defToken = JSON.parse(defToken);
+          defToken.imgsrc = thumbImage(defToken.imgsrc);
+          defToken.layer = 'objects';
+          defToken.left = token.get('left');
+          defToken.top = token.get('top');
+          defToken.pageid = token.get('pageid');
+          let newToken = createObj('graphic', defToken);
+          if (newToken) {
+            copyOldTokenToNewToken(newToken, perso, evt);
+            return;
+          }
+        }
+        error("Impossible de retrouver le token d'origine du personnage", perso);
+      });
+      return;
+    }
+    return copyOldTokenToNewToken(tokenMJ[0], perso, evt);
   }
+
+  function copyOldTokenToNewToken(nouveauToken, perso, evt) {
+    let token = perso.token;
+    setToken(nouveauToken, 'layer', 'objects', evt);
+    setToken(nouveauToken, 'left', token.get('left'), evt);
+    setToken(nouveauToken, 'top', token.get('top'), evt);
+    //setToken(nouveauToken, 'width', token.get('width'), evt);
+    //setToken(nouveauToken, 'height', token.get('height'), evt);
+    setToken(nouveauToken, 'rotation', token.get('rotation'), evt);
+    setToken(nouveauToken, 'bar2_value', token.get('bar2_value'), evt);
+    setToken(nouveauToken, 'aura1_radius', token.get('aura1_radius'), evt);
+    setToken(nouveauToken, 'aura1_color', token.get('aura1_color'), evt);
+    setToken(nouveauToken, 'aura1_square', token.get('aura1_square'), evt);
+    setToken(nouveauToken, 'showplayers_aura1', token.get('showplayers_aura1'), evt);
+    setToken(nouveauToken, 'aura2_radius', token.get('aura2_radius'), evt);
+    setToken(nouveauToken, 'aura2_color', token.get('aura2_color'), evt);
+    setToken(nouveauToken, 'aura2_square', token.get('aura2_square'), evt);
+    setToken(nouveauToken, 'showplayers_aura2', token.get('showplayers_aura2'), evt);
+    setToken(nouveauToken, 'statusmarkers', token.get('statusmarkers'), evt);
+    setToken(nouveauToken, 'light_angle', token.get('light_angle'), evt);
+    setToken(nouveauToken, 'has_limit_field_of_vision', token.get('has_limit_field_of_vision'), evt);
+    setToken(nouveauToken, 'has_limit_field_of_night_vision', token.get('has_limit_field_of_night_vision'), evt);
+    if (stateCOF.combat) {
+      replaceInTurnTracker(token.id, nouveauToken.id, evt);
+    }
+    let res = {
+      oldTokenId: token.id,
+      newTokenId: nouveauToken.id,
+      newToken: nouveauToken,
+    };
+    deleteTokenWithUndo(token, evt);
+    perso.token = nouveauToken;
+    return res;
+  }
+
+  let regFicheAttr = /^[a-zA-Z0-9]+$/;
 
   //!cof-changer-de-forme nom de la forme
   function changerDeForme(msg) {
@@ -46046,9 +46151,21 @@ return '';
             let newToken = createObj('graphic', tokenFields);
             replaceTokenOfPerso(perso, newToken, evt);
             perso.toutesLesAttaques = undefined;
+          } else {
+            sendChat('', "/w GM L'image du token de " + nomPerso(perso) + " n'est pas utilisable par le script. Utiliser une image de votre librairie.");
           }
           sendPerso(perso, "se transforme en " + nomForme, options.secret);
-          setTokenAttr(perso, 'changementDeForme', nomForme, evt);
+          let optSet = {};
+          if (options.gardeCarac) {
+            let garde = '';
+            options.gardeCarac.forEach(function(c) {
+              c = c.trim();
+              if (regFicheAttr.test(c)) garde += c.toLowerCase() + ',';
+            });
+            if (garde) optSet.maxVal = garde.substring(0, garde.length-1);
+          }
+          setTokenAttr(perso, 'changementDeForme', nomForme, evt, optSet);
+          stateCOF.predicats[perso.charId] = undefined;
         }); //fin de iterSelected
       });
     }, options);
@@ -46081,6 +46198,7 @@ return '';
         restoreTokenOfPerso(perso, evt);
         sendPerso(perso, "retrouve sa forme normale", options.secret);
         removeTokenAttr(perso, 'changementDeForme', evt);
+          stateCOF.predicats[perso.charId] = undefined;
       }); //fin de iterSelected
     }, options);
   }
