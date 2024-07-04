@@ -2373,14 +2373,14 @@ var COFantasy = COFantasy || function() {
     let nbDes = options.nbDes || 1;
     let bonus = options.bonus || 0;
     if (de.dice !== undefined) {
-      if (!de.nbDe) {
+      nbDes = options.nbDes || de.nbDe;
+      bonus = options.bonus || de.bonus || 0;
+      if (!nbDes) {
         return {
-          val: de.bonus,
-          roll: '' + de.bonus
+          val: bonus,
+          roll: '' + bonus
         };
       }
-      nbDes = options.nbDes || de.nbDe;
-      bonus = options.bonus || de.bonus;
       de = de.dice;
     }
     let count = nbDes;
@@ -3763,6 +3763,9 @@ var COFantasy = COFantasy || function() {
 
   //fonction avec callback, mais synchrone
   // n'ajoute pas evt à l'historique
+  // options:
+  // - saufDMTYpe
+  // - recuperation
   function soigneToken(perso, soins, evt, callTrue, callMax, options) {
     options = options || {};
     let token = perso.token;
@@ -24658,6 +24661,7 @@ var COFantasy = COFantasy || function() {
             return;
           }
         default:
+          options[cmd[0]] = true;
           return;
       }
     });
@@ -27926,6 +27930,14 @@ var COFantasy = COFantasy || function() {
       if (perso.transforme.charId) {
         command = "!cof-fin-changement-de-forme --target " + perso.token.id;
         ligne += boutonSimple(command, "Retrouver sa forme normale") + '<br/>';
+        if (predicateAsBool(perso, 'transformationRegeneratrice')) {
+          let pv = parseInt(perso.token.get('bar1_value'));
+          let anciensPVs = attributeAsInt(perso, 'PVAvantTransformation', pv);
+          if (!isNaN(pv) && anciensPVs > pv) {
+            command = "!cof-fin-changement-de-forme --transformationRegeneratrice --target " + perso.token.id;
+            ligne += boutonSimple(command, "Transformation régénératrice") + '(L)<br/>';
+          }
+        }
       }
       if (predicateAsBool(perso, 'batonDesRunesMortes')) {
         if (attributeAsBool(perso, 'runeIsulys') && attributeAsInt(perso, 'limiteParTour_runeIsulys', 1) > 0) {
@@ -28517,6 +28529,8 @@ var COFantasy = COFantasy || function() {
           let attr = attrChangementDeForme[0];
           let forme = attr.get('current');
           let annuler = "!cof-fin-changement-de-forme --target " + perso.token.id;
+          if (predicateAsBool(perso, 'transformationRegeneratrice'))
+            annuler += ' --transformationRegeneratrice';
           let m = "est changé" + eForFemale(perso) + " en " + forme + boutonSimple(annuler, 'X');
           addLineToFramedDisplay(display, m);
         }
@@ -41947,7 +41961,7 @@ var COFantasy = COFantasy || function() {
       error("Pas de sauvegarde disponible pour la prescience", stateCOF);
       return;
     }
-    var testPrescience =
+    const testPrescience =
       testLimiteUtilisationsCapa(ensorceleur, 'prescience', 'combat',
         "ne peut plus utiliser son pouvoir de prescience pendant ce combat",
         "ne peut pas faire de prescience");
@@ -41955,7 +41969,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     //On commence par faire les undo
-    var evt = lastEvent();
+    let evt = lastEvent();
     if (evt === undefined) {
       error("Impossible d'utiliser la prescience car l'historique est vide", cmd);
       return;
@@ -46165,13 +46179,16 @@ var COFantasy = COFantasy || function() {
             if (garde) optSet.maxVal = garde.substring(0, garde.length - 1);
           }
           setTokenAttr(perso, 'changementDeForme', nomForme, evt, optSet);
+          if (predicateAsBool(perso, 'transformationRegeneratrice')) {
+            setTokenAttr(perso, 'PVAvantTransformation', perso.token.get('bar1_value'), evt);
+          }
           stateCOF.predicats[perso.charId] = undefined;
         }); //fin de iterSelected
       });
     }, options);
   }
 
-  //!cof-finn-changement-de-forme
+  //!cof-fin-changement-de-forme [--tranformationRegeneratrice]
   function finChangementDeForme(msg) {
     let options = parseOptions(msg);
     if (options === undefined) return;
@@ -46197,7 +46214,32 @@ var COFantasy = COFantasy || function() {
         }
         restoreTokenOfPerso(perso, evt);
         sendPerso(perso, "retrouve sa forme normale", options.secret);
+        if (options.transformationRegeneratrice) {
+          let anciensPVs = attributeAsInt(perso, 'PVAvantTransformation', -1);
+          if (anciensPVs < 0) {
+            error("Impossible de trouver les PVs du moment de la transformation", anciensPVs);
+          } else {
+            let pv = parseInt(perso.token.get('bar1_value'));
+            if (!isNaN(pv) && anciensPVs > pv) {
+              let jetSoins = rollDePlus({
+                dice: 6,
+                nbDe: 3
+              });
+              let msg = " la transformation " + onGenre(perso, 'le', 'la') + " soigne de ";
+              let soins = jetSoins.val;
+              if (pv + soins > anciensPVs) {
+                soins = anciensPVs - pv;
+                msg += soins + " PV (le jet était " + jetSoins.roll + ")";
+              } else {
+                msg += jetSoins.roll + " PVs";
+              }
+              sendPerso(perso, msg);
+              soigneToken(perso, soins, evt);
+            }
+          }
+        }
         removeTokenAttr(perso, 'changementDeForme', evt);
+        removeTokenAttr(perso, 'PVAvantTransformation', evt);
         stateCOF.predicats[perso.charId] = undefined;
       }); //fin de iterSelected
     }, options);
