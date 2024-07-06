@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.15
 ### Capacités
+* Au dessus de la mêlée.
 * Transformation régénéatrice.
 * Implémentation des capacité de forme animale.
 * Vent des âmes de la Voie de Morn

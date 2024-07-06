@@ -16890,6 +16890,375 @@ var COFantasy = COFantasy || function() {
     };
   }
 
+  function raceIs(perso, race) {
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
+      perso.race = perso.race.toLowerCase();
+    }
+    return (perso.race.includes(race.toLowerCase()));
+  }
+
+  function estFee(perso) {
+    if (predicateAsBool(perso, 'fée')) return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    switch (perso.race) {
+      case 'licorne':
+      case 'farfadet':
+      case 'fee':
+      case 'fée':
+      case 'pixie':
+      case 'lutin':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function estDemon(perso) {
+    if (predicateAsBool(perso, 'démon')) return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    switch (perso.race) {
+      case 'démon':
+      case 'demon':
+      case 'balor':
+      case 'marilith':
+      case 'quasit':
+      case 'succube':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function estDraconique(perso) {
+    if (predicateAsBool(perso, 'dragon')) return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    switch (perso.race) {
+      case 'dragon':
+      case 'draconide':
+      case 'kobold':
+        return true;
+      default:
+        let mots = perso.race.split(' ');
+        return mots.includes('dragon');
+    }
+  }
+
+  function estMortVivant(perso) {
+    if (predicateAsBool(perso, 'mortVivant')) return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    switch (perso.race) {
+      case 'squelette':
+      case 'zombie':
+      case 'mort-vivant':
+      case 'mort vivant':
+      case 'momie':
+      case 'goule':
+      case 'vampire':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function estGeant(perso) {
+    if (predicateAsBool(perso, 'géant')) return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    switch (perso.race) {
+      case 'géant':
+      case 'geant':
+      case 'ogre':
+      case 'troll':
+      case 'ettin':
+      case 'cyclope':
+      case 'yai':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function estGobelin(perso) {
+    if (predicateAsBool(perso, 'gobelin')) return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    switch (perso.race) {
+      case 'gobelin':
+      case 'gobelours':
+      case 'hobgobelin':
+      case 'wikkawak':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function estNonVivant(perso) {
+    return (predicateAsBool(perso, 'nonVivant') ||
+      attributeAsBool(perso, 'masqueMortuaire') ||
+      attributeAsBool(perso, 'masqueMortuaireAmeLiee') ||
+      estMortVivant(perso));
+  }
+
+  function estElfeNoir(perso) {
+    if (predicateAsBool(perso, 'elfeNoir')) return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    if (perso.race.includes('elf') && perso.race.includes('noir')) return true;
+    switch (perso.race) {
+      case 'drider':
+      case 'drow':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function estElfe(perso) {
+    if (predicateAsBool(perso, 'elfe')) return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    if (perso.race.includes('elfe')) return true;
+    return false;
+  }
+
+  //Vrai pour les insectes et araignées
+  function estInsecte(perso) {
+    if (predicateAsBool(perso, 'insecte')) return true;
+    if (perso.profil === undefined) {
+      perso.profil = ficheAttribute(perso, 'profil', '', optTransforme);
+      perso.profil = perso.profil.toLowerCase();
+    }
+    if (perso.profil == 'insecte') return true;
+    if (perso.profil == 'araignée') return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    if (perso.race.includes('elf') && perso.race.includes('noir')) return true;
+    switch (perso.race) {
+      case 'ankheg':
+      case 'araignée':
+      case 'araignee':
+      case 'insecte':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function estHumanoide(perso) {
+    if (predicateAsBool(perso, 'humanoide')) return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    switch (perso.race) {
+      case 'humain':
+      case 'nain':
+      case 'elfe':
+      case 'elfe des bois':
+      case 'elfe noir':
+      case 'drow':
+      case 'haut elfe':
+      case 'halfelin':
+      case 'géant':
+      case 'geant':
+      case 'ange':
+      case 'barghest':
+      case 'démon':
+      case 'doppleganger':
+      case 'dryade':
+      case 'gnoll':
+      case 'gobelin':
+      case 'gobelours':
+      case 'hobegobelin':
+      case 'homme-lézard':
+      case 'kobold':
+      case 'nymphe':
+      case 'ogre':
+      case 'orque':
+      case 'pixie':
+      case 'troll':
+        return true;
+      default:
+        return perso.race.startsWith('humain');
+    }
+  }
+
+  function estQuadrupede(perso) {
+    if (predicateAsBool(perso, 'quadrupede')) return true;
+    if (perso.race === undefined) {
+      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
+      perso.race = perso.race.toLowerCase();
+    }
+    if (perso.race === '') return false;
+    switch (perso.race) {
+      case 'ankheg':
+      case 'araignée':
+      case 'araignee':
+      case 'basilic':
+      case 'béhir':
+      case 'behir':
+      case 'bulette':
+      case 'bison':
+      case 'centaure':
+      case 'cheval':
+      case 'chien':
+      case 'chimère':
+      case 'chimere':
+      case 'cockatrice':
+      case 'crocodile':
+      case 'dragon':
+      case 'drider':
+      case 'eléphant':
+      case 'elephant':
+      case 'éléphant':
+      case 'mammouth':
+      case 'griffon':
+      case 'hipogriffe':
+      case 'hippogriffe':
+      case 'hydre':
+      case 'licorne':
+      case 'lion':
+      case 'loup':
+      case 'worg':
+      case 'manticore':
+      case 'ours':
+      case 'panthere':
+      case 'panthère':
+      case 'pegase':
+      case 'pégase':
+      case 'pieuvre':
+      case 'rat':
+      case 'rhinoceros':
+      case 'rhinocéros':
+      case 'sanglier':
+      case 'taureau':
+      case 'tigre':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function estAnimal(perso) {
+    if (predicateAsBool(perso, 'animal')) return true;
+    let attr = findObjs({
+      _type: 'attribute',
+      _characterid: perso.charId,
+    });
+    let attrProfile = attr.filter(function(a) {
+      return a.get('name').toUpperCase() == 'PROFIL';
+    });
+    if (attrProfile.length > 0) {
+      if (attrProfile[0].get('current').trim().toLowerCase() == 'animal')
+        return true;
+    }
+    let attrRace = attr.filter(function(a) {
+      return a.get('name').toUpperCase() == 'RACE';
+    });
+    if (attrRace.length === 0) return false;
+    let charRace = attrRace[0].get('current').trim().toLowerCase();
+    switch (charRace) {
+      case 'animal':
+      case 'aigle':
+      case 'araignee':
+      case 'araignée':
+      case 'basilic':
+      case 'bulette':
+      case 'bison':
+      case 'calmar':
+      case 'chauve-souris':
+      case 'cheval':
+      case 'chien':
+      case 'crocodile':
+      case 'dinosaure':
+      case 'éléphant':
+      case 'eléphant':
+      case 'elephant':
+      case 'gorille':
+      case 'griffon':
+      case 'hipogriffe':
+      case 'hydre':
+      case 'insecte':
+      case 'lion':
+      case 'loup':
+      case 'mammouth':
+      case 'manticore':
+      case 'ours':
+      case 'ours-hibou':
+      case 'panthère':
+      case 'pegase':
+      case 'pégase':
+      case 'pieuvre':
+      case 'rhinocéros':
+      case 'roc':
+      case 'sanglier':
+      case 'serpent':
+      case 'rat':
+      case 'taureau':
+      case 'tigre':
+      case 'wiverne':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function estMauvais(perso) {
+    if (predicateAsBool(perso, 'mauvais')) return true;
+    if (estDemon(perso)) return true; //remplit perso.race
+    switch (perso.race) {
+      case 'squelette':
+      case 'zombie':
+      case 'élémentaire':
+      case 'momie':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function estAussiGrandQue(perso1, perso2) {
+    let t1 = taillePersonnage(perso1);
+    let t2 = taillePersonnage(perso2);
+    if (t1 === undefined || t2 === undefined) return true;
+    return t1 >= t2;
+  }
+
+
   //N'ajoute pas evt à l'historique
   function resoudreAttaque(attaquant, cibles, attackLabel, weaponName, weaponStats, playerId, pageId, evt, explications, options) {
     let attackingCharId = attaquant.charId;
@@ -21556,29 +21925,30 @@ var COFantasy = COFantasy || function() {
   }
 
   function mitigate(target, dmgType, divide, zero, multiply, expliquer, options) {
+    let div = 1;
     if (!options.sortilege && attributeAsBool(target, 'flou')) {
-      divide();
+      div++;
     }
     if (!options.energiePositive && dmgType != 'energie' && !options.spectral && predicateAsBool(target, 'creatureIntangible')) {
-      divide();
+      div++;
     }
     if (options.attaqueMentale && predicateAsBool(target, 'bouclierPsi')) {
-      divide();
+      div++;
     }
     if (options.aoe &&
       (predicateAsBool(target, 'protectionDMZone') ||
         predicateAsBool(target, 'protectionDMZone_' + dmgType))) {
-      divide();
+      div++;
       expliquer(nomPerso(target) + " est protégé contre les dégâts de zone");
     }
     if (predicateOrAttributeAsBool(target, 'resistanceA_' + dmgType) || predicateAsBool(target, 'diviseEffet_' + dmgType)) {
-      divide();
+      div++;
     }
     if (predicateOrAttributeAsBool(target, 'vulnerableA_' + dmgType)) {
       multiply();
     }
     if (predicateOrAttributeAsBool(target, 'resistanceA_nonMagique') && !options.magique && !options.sortilege) {
-      divide();
+      div++;
     }
     if (predicateAsBool(target, 'generalVengeance')) {
       if (target.generalVengeance === undefined) {
@@ -21601,26 +21971,26 @@ var COFantasy = COFantasy || function() {
         });
         target.generalVengeance = gardeEliteContact;
       }
-      if (target.generalVengeance) divide();
+      if (target.generalVengeance) div++;
     }
     if (estElementaire(dmgType)) {
       if (predicateAsBool(target, 'invulnerable') || predicateAsBool(target, 'diviseEffet_elementaire')) {
-        divide();
+        div++;
       }
       switch (dmgType) {
         case 'froid':
-          if (attributeAsBool(target, 'masqueMortuaire')) divide();
-          if (attributeAsBool(target, 'mutationFourrureViolette')) divide();
+          if (attributeAsBool(target, 'masqueMortuaire')) div++;
+          if (attributeAsBool(target, 'mutationFourrureViolette')) div++;
           break;
         case 'feu':
-          if (attributeAsBool(target, 'presenceGlaciale')) divide();
-          if (attributeAsBool(target, 'mutationEcaillesRouges')) divide();
+          if (attributeAsBool(target, 'presenceGlaciale')) div++;
+          if (attributeAsBool(target, 'mutationEcaillesRouges')) div++;
           break;
         case 'acide':
-          if (attributeAsBool(target, 'mutationEcaillesRouges')) divide();
+          if (attributeAsBool(target, 'mutationEcaillesRouges')) div++;
           break;
         case 'electrique':
-          if (attributeAsBool(target, 'mutationFourrureViolette')) divide();
+          if (attributeAsBool(target, 'mutationFourrureViolette')) div++;
           break;
       }
     } else if (dmgType == 'poison' || dmgType == 'maladie') {
@@ -21630,24 +22000,33 @@ var COFantasy = COFantasy || function() {
         estNonVivant(target)) {
         zero();
       } else if (attributeAsBool(target, 'mutationSangNoir')) {
-        divide();
+        div++;
       }
     } else {
       if (options.tranchant && predicateOrAttributeAsBool(target, 'resistanceA_tranchant')) {
-        divide();
+        div++;
       } else if (options.percant && predicateOrAttributeAsBool(target, 'resistanceA_percant')) {
-        divide();
+        div++;
       } else if (options.contondant && predicateOrAttributeAsBool(target, 'resistanceA_contondant')) {
-        divide();
+        div++;
       }
       if (attributeAsBool(target, 'armureMagique')) {
-        divide();
+        div++;
       }
       if (options.vampirise && predicateOrAttributeAsBool(target, 'controleSanguin')) {
         expliquer(nomPerso(target) + " contrôle parfaitement son sang");
-        divide();
+        div++;
       }
     }
+    if (options.attaquant && predicateAsBool(target, 'auDessusDeLaMelee')) {
+      let na = ficheAttributeAsInt(options.attaquant, 'niveau', 1);
+      let nc = ficheAttributeAsInt(target, 'niveau', 1);
+      if (nc >= 2 * na) {
+        expliquer(nomPerso(target) + " est au-dessus de la mêlée.");
+        div++;
+      }
+    }
+    if (div > 1) divide(div);
   }
 
   function estSouffleDeDragon(options) {
@@ -21755,12 +22134,14 @@ var COFantasy = COFantasy || function() {
       dmgTotal = resSauf.total;
       dmgDisplay = resSauf.display;
       showTotal = resSauf.showTotal;
+    }
       // Damage mitigaters for main damage
       mitigate(target, mainDmgType,
-        function() {
-          dmgTotal = Math.ceil(dmgTotal / 2);
+        function(div) {
+          div = div || 2;
+          dmgTotal = Math.ceil(dmgTotal / div);
           if (dmgExtra) dmgDisplay = "(" + dmgDisplay + ")";
-          dmgDisplay += " / 2";
+          dmgDisplay += " / "+div;
           showTotal = true;
         },
         function() {
@@ -21776,7 +22157,6 @@ var COFantasy = COFantasy || function() {
           showTotal = true;
         },
         expliquer, options);
-    }
     let dmSuivis = {
       drain: 0
     }; //si il faut noter les DMs d'un type particulier
@@ -21892,10 +22272,11 @@ var COFantasy = COFantasy || function() {
                 dm = resSauf.total;
                 typeDisplay = resSauf.display;
                 mitigate(target, dmgType,
-                  function() {
-                    dm = Math.ceil(dm / 2);
+                  function(div) {
+                    div = div || 2;
+                    dm = Math.ceil(dm / div);
                     if (dmgParType[dmgType].length > 1) typeDisplay = "(" + typeDisplay + ")";
-                    typeDisplay += " / 2";
+                    typeDisplay += " / " + div;
                   },
                   function() {
                     if (dm > 0) {
@@ -31806,374 +32187,6 @@ var COFantasy = COFantasy || function() {
       });
       addEvent(evt);
     }, options);
-  }
-
-  function raceIs(perso, race) {
-    if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
-      perso.race = perso.race.toLowerCase();
-    }
-    return (perso.race.includes(race.toLowerCase()));
-  }
-
-  function estFee(perso) {
-    if (predicateAsBool(perso, 'fée')) return true;
-    if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
-      perso.race = perso.race.toLowerCase();
-    }
-    if (perso.race === '') return false;
-    switch (perso.race) {
-      case 'licorne':
-      case 'farfadet':
-      case 'fee':
-      case 'fée':
-      case 'pixie':
-      case 'lutin':
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  function estDemon(perso) {
-    if (predicateAsBool(perso, 'démon')) return true;
-    if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
-      perso.race = perso.race.toLowerCase();
-    }
-    if (perso.race === '') return false;
-    switch (perso.race) {
-      case 'démon':
-      case 'demon':
-      case 'balor':
-      case 'marilith':
-      case 'quasit':
-      case 'succube':
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  function estDraconique(perso) {
-    if (predicateAsBool(perso, 'dragon')) return true;
-    if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
-      perso.race = perso.race.toLowerCase();
-    }
-    if (perso.race === '') return false;
-    switch (perso.race) {
-      case 'dragon':
-      case 'draconide':
-      case 'kobold':
-        return true;
-      default:
-        let mots = perso.race.split(' ');
-        return mots.includes('dragon');
-    }
-  }
-
-  function estMortVivant(perso) {
-    if (predicateAsBool(perso, 'mortVivant')) return true;
-    if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
-      perso.race = perso.race.toLowerCase();
-    }
-    if (perso.race === '') return false;
-    switch (perso.race) {
-      case 'squelette':
-      case 'zombie':
-      case 'mort-vivant':
-      case 'mort vivant':
-      case 'momie':
-      case 'goule':
-      case 'vampire':
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  function estGeant(perso) {
-    if (predicateAsBool(perso, 'géant')) return true;
-    if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
-      perso.race = perso.race.toLowerCase();
-    }
-    if (perso.race === '') return false;
-    switch (perso.race) {
-      case 'géant':
-      case 'geant':
-      case 'ogre':
-      case 'troll':
-      case 'ettin':
-      case 'cyclope':
-      case 'yai':
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  function estGobelin(perso) {
-    if (predicateAsBool(perso, 'gobelin')) return true;
-    if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
-      perso.race = perso.race.toLowerCase();
-    }
-    if (perso.race === '') return false;
-    switch (perso.race) {
-      case 'gobelin':
-      case 'gobelours':
-      case 'hobgobelin':
-      case 'wikkawak':
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  function estNonVivant(perso) {
-    return (predicateAsBool(perso, 'nonVivant') ||
-      attributeAsBool(perso, 'masqueMortuaire') ||
-      attributeAsBool(perso, 'masqueMortuaireAmeLiee') ||
-      estMortVivant(perso));
-  }
-
-  function estElfeNoir(perso) {
-    if (predicateAsBool(perso, 'elfeNoir')) return true;
-    if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
-      perso.race = perso.race.toLowerCase();
-    }
-    if (perso.race === '') return false;
-    if (perso.race.includes('elf') && perso.race.includes('noir')) return true;
-    switch (perso.race) {
-      case 'drider':
-      case 'drow':
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  function estElfe(perso) {
-    if (predicateAsBool(perso, 'elfe')) return true;
-    if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
-      perso.race = perso.race.toLowerCase();
-    }
-    if (perso.race === '') return false;
-    if (perso.race.includes('elfe')) return true;
-    return false;
-  }
-
-  //Vrai pour les insectes et araignées
-  function estInsecte(perso) {
-    if (predicateAsBool(perso, 'insecte')) return true;
-    if (perso.profil === undefined) {
-      perso.profil = ficheAttribute(perso, 'profil', '', optTransforme);
-      perso.profil = perso.profil.toLowerCase();
-    }
-    if (perso.profil == 'insecte') return true;
-    if (perso.profil == 'araignée') return true;
-    if (perso.race === undefined) {
-      perso.race = ficheAttribute(perso, 'race', '', optTransforme);
-      perso.race = perso.race.toLowerCase();
-    }
-    if (perso.race === '') return false;
-    if (perso.race.includes('elf') && perso.race.includes('noir')) return true;
-    switch (perso.race) {
-      case 'ankheg':
-      case 'araignée':
-      case 'araignee':
-      case 'insecte':
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  function estHumanoide(perso) {
-    if (predicateAsBool(perso, 'humanoide')) return true;
-    if (perso.race === undefined) {
-      perso.profil = ficheAttribute(perso, 'race', '', optTransforme);
-      perso.race = perso.race.toLowerCase();
-    }
-    if (perso.race === '') return false;
-    switch (perso.race) {
-      case 'humain':
-      case 'nain':
-      case 'elfe':
-      case 'elfe des bois':
-      case 'elfe noir':
-      case 'drow':
-      case 'haut elfe':
-      case 'halfelin':
-      case 'géant':
-      case 'geant':
-      case 'ange':
-      case 'barghest':
-      case 'démon':
-      case 'doppleganger':
-      case 'dryade':
-      case 'gnoll':
-      case 'gobelin':
-      case 'gobelours':
-      case 'hobegobelin':
-      case 'homme-lézard':
-      case 'kobold':
-      case 'nymphe':
-      case 'ogre':
-      case 'orque':
-      case 'pixie':
-      case 'troll':
-        return true;
-      default:
-        return perso.race.startsWith('humain');
-    }
-  }
-
-  function estQuadrupede(perso) {
-    if (predicateAsBool(perso, 'quadrupede')) return true;
-    if (perso.race === undefined) {
-      perso.profil = ficheAttribute(perso, 'race', '', optTransforme);
-      perso.race = perso.race.toLowerCase();
-    }
-    if (perso.race === '') return false;
-    switch (perso.race) {
-      case 'ankheg':
-      case 'araignée':
-      case 'araignee':
-      case 'basilic':
-      case 'béhir':
-      case 'behir':
-      case 'bulette':
-      case 'bison':
-      case 'centaure':
-      case 'cheval':
-      case 'chien':
-      case 'chimère':
-      case 'chimere':
-      case 'cockatrice':
-      case 'crocodile':
-      case 'dragon':
-      case 'drider':
-      case 'eléphant':
-      case 'elephant':
-      case 'éléphant':
-      case 'mammouth':
-      case 'griffon':
-      case 'hipogriffe':
-      case 'hippogriffe':
-      case 'hydre':
-      case 'licorne':
-      case 'lion':
-      case 'loup':
-      case 'worg':
-      case 'manticore':
-      case 'ours':
-      case 'panthere':
-      case 'panthère':
-      case 'pegase':
-      case 'pégase':
-      case 'pieuvre':
-      case 'rat':
-      case 'rhinoceros':
-      case 'rhinocéros':
-      case 'sanglier':
-      case 'taureau':
-      case 'tigre':
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  function estAnimal(perso) {
-    if (predicateAsBool(perso, 'animal')) return true;
-    let attr = findObjs({
-      _type: 'attribute',
-      _characterid: perso.charId,
-    });
-    let attrProfile = attr.filter(function(a) {
-      return a.get('name').toUpperCase() == 'PROFIL';
-    });
-    if (attrProfile.length > 0) {
-      if (attrProfile[0].get('current').trim().toLowerCase() == 'animal')
-        return true;
-    }
-    let attrRace = attr.filter(function(a) {
-      return a.get('name').toUpperCase() == 'RACE';
-    });
-    if (attrRace.length === 0) return false;
-    let charRace = attrRace[0].get('current').trim().toLowerCase();
-    switch (charRace) {
-      case 'animal':
-      case 'aigle':
-      case 'araignee':
-      case 'araignée':
-      case 'basilic':
-      case 'bulette':
-      case 'bison':
-      case 'calmar':
-      case 'chauve-souris':
-      case 'cheval':
-      case 'chien':
-      case 'crocodile':
-      case 'dinosaure':
-      case 'éléphant':
-      case 'eléphant':
-      case 'elephant':
-      case 'gorille':
-      case 'griffon':
-      case 'hipogriffe':
-      case 'hydre':
-      case 'insecte':
-      case 'lion':
-      case 'loup':
-      case 'mammouth':
-      case 'manticore':
-      case 'ours':
-      case 'ours-hibou':
-      case 'panthère':
-      case 'pegase':
-      case 'pégase':
-      case 'pieuvre':
-      case 'rhinocéros':
-      case 'roc':
-      case 'sanglier':
-      case 'serpent':
-      case 'rat':
-      case 'taureau':
-      case 'tigre':
-      case 'wiverne':
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  function estMauvais(perso) {
-    if (predicateAsBool(perso, 'mauvais')) return true;
-    if (estDemon(perso)) return true; //remplit perso.race
-    switch (perso.race) {
-      case 'squelette':
-      case 'zombie':
-      case 'élémentaire':
-      case 'momie':
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  function estAussiGrandQue(perso1, perso2) {
-    let t1 = taillePersonnage(perso1);
-    let t2 = taillePersonnage(perso2);
-    if (t1 === undefined || t2 === undefined) return true;
-    return t1 >= t2;
   }
 
   //Lance les fx et les sons à la fin d'une action qui a réussi
