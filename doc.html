@@ -2445,6 +2445,7 @@ tr {line-height: 25px;}
                 <ul>
                   <li><strong>Animation des objets</strong> : <code>!cof-animation-des-objets @{selected|token_id} ?{Taille d'objet|tabouret ou coffret,1|chaise ou coffre,2|meuble bas ou table,4|grande table,7|grosse armoire,10}</code> On peut ajouter un troisième argument, <code>@{target|token_id}</code> pour animer un token d'objet sur la carte.</li>
                   <li><strong>Armure d'eau</strong> : <code>!cof-effet-combat armureDEau</code>. Le script automatise l'immunité aux étreintes (pas aux enveloppements) et à la capacité Agripper des créatures volantes.</li>
+                  <li><strong>Armure de feu</strong> : <code>!cof-effet armureDeFeu --messageMJ L'armure de feu va durer [[5+@{selected|INT}]] minutes --mana @{selected|token_id} 1</code>.
                   <li><strong>Choc</strong> : Faire une attaque de portée 20 m, de type Sortilège, DM contondants, portée 20 m, et avec les options <code>--etat renverse --save FOR 10</code>.</li>
                   <li><strong>Coup au but</strong> : <code>!cof-effet-temp bonusAttaqueTemp 1 --valeur 10 --lanceur @{selected|token_id} --portee 10 --mana 0 --target @{target|token_id}</code>.</li>
                   <li><strong>Force de géant</strong> : <code>!cof-effet-temp forceDeGeant 10</code>. Le bonus est de 2 par défaut, mais peut être modifié en utilisant l'option <code>--valeur</code>.</li>

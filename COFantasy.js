@@ -16118,6 +16118,9 @@ var COFantasy = COFantasy || function() {
         }
         if (predicateAsBool(target, 'batonDesRunesMortes') && attributeAsBool(target, 'runeLizura')) return true;
         return false;
+      case 'feu':
+        if (attributeAsBool(target, 'armureDeFeu')) return true;
+        return false;
       case 'froid':
         return attributeAsBool(target, 'presenceGlaciale');
       case 'maladie':
@@ -20512,6 +20515,29 @@ var COFantasy = COFantasy || function() {
                             });
                         });
                       }
+                      if (attributeAsBool(target, 'armureDeFeu')) {
+                        ciblesCount++;
+                        let dm = '1d6';
+                        if (options.armeNaturelle) dm = '2d6';
+                        sendChat("", "[["+dm+"]]", function(res) {
+                          let rolls = res[0];
+                          let explRoll = rolls.inlinerolls[0];
+                          let r = {
+                            total: explRoll.results.total,
+                            type: 'feu',
+                            display: buildinline(explRoll, 'feu', true)
+                          };
+                          dealDamage(attaquant, r, [], evt, false, options,
+                            target.messages,
+                            function(dmgDisplay, dmg, dmgDrain) {
+                              let dmgMsg =
+                                "<b>L'armure de feu brûle " + attackerTokName + " :</b> " +
+                                dmgDisplay + " DM";
+                              target.messages.push(dmgMsg);
+                              finCibles();
+                            });
+                        });
+                      }
                       if (options.armeNaturelle && attributeAsBool(target, 'presenceGlaciale')) {
                         ciblesCount++;
                         let exprPresenceGlaciale = '[[';
@@ -22135,28 +22161,28 @@ var COFantasy = COFantasy || function() {
       dmgDisplay = resSauf.display;
       showTotal = resSauf.showTotal;
     }
-      // Damage mitigaters for main damage
-      mitigate(target, mainDmgType,
-        function(div) {
-          div = div || 2;
-          dmgTotal = Math.ceil(dmgTotal / div);
-          if (dmgExtra) dmgDisplay = "(" + dmgDisplay + ")";
-          dmgDisplay += " / "+div;
-          showTotal = true;
-        },
-        function() {
-          if (dmgTotal > 0) {
-            dmgDisplay += '-' + dmgTotal;
-            dmgTotal = 0;
-          }
-        },
-        function() {
-          dmgTotal = Math.floor(dmgTotal * 1.5);
-          if (dmgExtra) dmgDisplay = "(" + dmgDisplay + ")";
-          dmgDisplay += " x 1.5";
-          showTotal = true;
-        },
-        expliquer, options);
+    // Damage mitigaters for main damage
+    mitigate(target, mainDmgType,
+      function(div) {
+        div = div || 2;
+        dmgTotal = Math.ceil(dmgTotal / div);
+        if (dmgExtra) dmgDisplay = "(" + dmgDisplay + ")";
+        dmgDisplay += " / " + div;
+        showTotal = true;
+      },
+      function() {
+        if (dmgTotal > 0) {
+          dmgDisplay += '-' + dmgTotal;
+          dmgTotal = 0;
+        }
+      },
+      function() {
+        dmgTotal = Math.floor(dmgTotal * 1.5);
+        if (dmgExtra) dmgDisplay = "(" + dmgDisplay + ")";
+        dmgDisplay += " x 1.5";
+        showTotal = true;
+      },
+      expliquer, options);
     let dmSuivis = {
       drain: 0
     }; //si il faut noter les DMs d'un type particulier
@@ -48230,6 +48256,12 @@ var COFantasy = COFantasy || function() {
       activation: "se fait pousser griffes et crocs",
       actif: "a des griffes et des crocs",
       fin: "n'a plus de griffes et crocs visibles"
+    },
+    armureDeFeu: {
+      activation: "s'immole dans une aura de flammes vives",
+      actif: "est entouré d'une armure de feu",
+      actifF: "est entourée d'une armure de feu",
+      fin: "le feu s'éteint"
     },
     charme: {
       activation: "devient un ami de longue date",
