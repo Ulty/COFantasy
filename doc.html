@@ -869,7 +869,7 @@ tr {line-height: 25px;}
                   <li><code>--immuniseSiResiste <i>nom</i></code> : la personne qui résiste à cet effet de peur est ensuite immunisé pour la journée aux effets de peur ayant la même option (avec le même <i>nom</i>).</li>
                 </ul>
                 Noter qu'un prédicat <code>courage</code> permet d'obtenir un bonus (égal à la valeur du prédicat) au jet pour résister à la peur.
-                <p><code>!cof-changer-de-forme</code> permet de gérer des changements de forme. Le seul argument nécessaire est le nom de la forme, qui doit corresondre au nom d'une des fiches en jeu. Après le changement, le personnage utilisera les caractéristiques, les attaques, les actions et les prédicats de cette fiche. On peut garder certaines caractéristiques en utilisant l'option <code>--gardeCarac</code>. À noter que les prédicats sont toujours ajoutés, ils ne remplacent pas ceux de la fiche d'origine. Le personnage garde toujours ses PV et PM d'origine.</p>
+                <p><code>!cof-changer-de-forme</code> permet de gérer des changements de forme. Le seul argument nécessaire est le nom de la forme, qui doit corresondre au nom d'une des fiches en jeu. Après le changement, le personnage utilisera les caractéristiques, les attaques, les actions et les prédicats de cette fiche. On peut garder certaines caractéristiques en utilisant l'option <code>--gardeCarac</code>, et garder le meilleur avec <code>--gardeCaracSiMeilleure</code>. L'option <code>--utiliserAttaqueMagique</code> permet d'utiliser l'attaque magique du personnage si elle est plus forte que le score d'attaque de la créature. Une option <code>--augmentePVs</code> augmente les PV de ceux de la nouvelle forme divisés par 10. À noter que les prédicats sont toujours ajoutés, ils ne remplacent pas ceux de la fiche d'origine. Le personnage garde toujours ses PV et PM d'origine.</p>
               </div>
               <h3 class="text-info" id="consommables">2.6 Consommables <code>!cof-consommables</code></h3>
               <div class="decalage">
@@ -2206,7 +2206,7 @@ tr {line-height: 25px;}
                 <ol>
                   <li><strong>Forme animale supérieure</strong> : <code>!cof-changer-de-forme ?{Transformation en ?}</code>. Si vous avez prévu une fiche pour l'animal choisi (le nom de la fiche doit correspondre à l'animal), alors le token du personnage devrait devenir celui de cette fiche, et les tests de caractéristiques tenir compte de la fiche. Par défaut, les attaques et action de l'animal seront affichées, mais aucune attaque ou action du personnage original ne sera affichée quand il est transformé, sauf s'il possède un prédicat <code>actionsPossiblesTransforme</code>, de valeur le label d'une action (pas d'une attaque). Vous pouvez mettre plusieurs actions en les séparant par une virgule (et dans ce cas, utiliser la syntaxe du prédicat avec <code>::</code>).</li>
                   <li><strong>Transformation rapide</strong> : pas de support du script.</li>
-                  <li><strong>Grande forme animale</strong> : comme pour la forme animale supérieure.</li>
+                  <li><strong>Grande forme animale</strong> : comme pour la forme animale supérieure, mais avec l'option <code>--gardeCarac DEF</code>.</li>
                   <li><strong>Transformation régénératrice</strong> : ajouter une prédicat <code>transformationRegeneratrice</code>.</li>
                 </ol>
                 <h4 class="text-secondary">Voie du chasseur de corruption</h4>
@@ -2338,6 +2338,7 @@ tr {line-height: 25px;}
               <div class="decalage">
                 <ul>
                   <li><strong>Au dessus de la mêlée</strong> : ajouter un prédicat <code>auDessusDeLaMelee</code>.</li>
+                  <li><strong>Grande forme animale</strong> : <code>!cof-changer-de-forme ?{Transformation en ?} --mana  @{selected|token_id} 4 --gardeCaracSiMeilleure DEF --utiliserAttaqueMagique</code>. Il faut prévoir des fiches pour les formes que le lanceur de sorts va prendre.</li>
                   <li><strong>Libérateur de Dorn</strong> : ajouter un prédicat <code>liberateurDeDorn</code>.</li>
                   <li><strong>Libérateur de Kerserac</strong> : ajouter un prédicat <code>liberateurDeKerserac</code>.</li>
                   <li><strong>Libérateur d'Anathazerïn</strong> : ajouter un prédicat <code>liberateurDAnathazerin</code>. La capacité donne le bonus de +2 quel que soit le poison.</li>
