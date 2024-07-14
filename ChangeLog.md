@@ -1,6 +1,7 @@
 # COFantasy: Historique des changements (depuis la version 1.0)
 ## 3.15
 ### Capacités
+* Implémentaion d'un prédicat pour Autorité naturelle.
 * Armure de feu
 * Au dessus de la mêlée.
 * Transformation régénéatrice.

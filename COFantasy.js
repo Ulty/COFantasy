@@ -1,4 +1,4 @@
-//Dernière modification : mar. 09 juil. 2024,  06:16
+//Dernière modification : dim. 14 juil. 2024,  10:07
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -6668,6 +6668,15 @@ var COFantasy = COFantasy || function() {
           expliquer("Recouvert" + eForFemale(personnage) + " de la boue noire du bâton : +5 aux tests d'intimidation");
           bonus += 5;
         }
+        if (predicateAsBool(personnage, 'autoriteNaturelle')) {
+          expliquer("Autorité naturelle : +5 en intimidation");
+          bonus += 5;
+        }
+      case 'commander':
+        if (predicateAsBool(personnage, 'autoriteNaturelle')) {
+          expliquer("Autorité naturelle : +5 pour donner des ordres");
+          bonus += 5;
+        }
         break;
       case 'escalade':
         {
@@ -11624,6 +11633,15 @@ var COFantasy = COFantasy || function() {
       if (predicateAsBool(perso, 'formeHybrideSuperieure')) init += 10;
       else init += 4;
     }
+    if (attributeAsBool(perso, 'rapideCommeLeVent')) {
+      init += 4;
+    }
+    if (predicateAsBool(perso, 'autoriteNaturelle')) {
+      let bonus = 1 + modCarac(perso, 'CHA');
+      if (bonus > 0) {
+        init += bonus;
+      }
+    }
     return init;
   }
 
@@ -13107,6 +13125,16 @@ var COFantasy = COFantasy || function() {
         let bonusDefi = parseInt(defiDuellisteAttr.get('current'));
         defense += bonusDefi;
         explications.push("Défi => +" + bonusDefi + " DEF");
+      }
+    }
+    if (attributeAsBool(target, 'rapideCommeLeVent')) {
+      defense += 4;
+        explications.push("Rapide comme le vent => +3 DEF");
+    }
+    if (predicateAsBool(target, 'autoriteNaturelle')) {
+      let bonus = 1 + modCarac(target, 'CHA');
+      if (bonus > 0) {
+        defense += bonus;
       }
     }
     return defense;
@@ -27984,6 +28012,8 @@ var COFantasy = COFantasy || function() {
     if (actionsParDefaut && !stateCOF.chargeFantastique) {
       if (attributeAsBool(perso, 'hate')) {
         ligne += "Effet de hâte : une action d'attaque ou de mouvement en plus <br />";
+      } else if (attributeAsBool(perso, 'rapideCommeLeVent')) {
+        ligne += "Rapide comme le vent : une action d'attaque ou de mouvement en plus <br />";
       }
       if (attributeAsBool(perso, 'reactionViolente')) {
         ligne += "Crise de folie : doit attaquer la personne qui l'a provoqué et ceux qui l'en empêchent.<br />";
@@ -47020,6 +47050,16 @@ var COFantasy = COFantasy || function() {
       prejudiciable: true,
       visible: true
     },
+    assommeTemp: {
+      activation: "est assommé",
+      activationF: "est assommée",
+      actif: "est assommé",
+      actifF: "est assommée",
+      fin: "reprend conscience",
+      msgSave: "reprendre conscience",
+      prejudiciable: true,
+      visible: true
+    },
     attaqueADistanceRatee: {
       activation: "rate une attaque à distance",
       actif: "a raté une attaque à distance",
@@ -47269,6 +47309,12 @@ var COFantasy = COFantasy || function() {
       visible: true,
       entrave: true
     },
+    rapideCommeLeVent: {
+      activation: "devient rapide comme le vent",
+      actif: "est rapide comme le vent",
+      fin: "n'est plus aussi rapide",
+      visible: true,
+    },
     rayonAffaiblissant: {
       activation: "est touché par un rayon affaiblissant",
       activationF: "est touchée par un rayon affaiblissant",
@@ -47330,16 +47376,6 @@ var COFantasy = COFantasy || function() {
       fin: "la zone de vie se termine",
       visible: true,
       generic: true, //pour pouvoir avoir plusieurs zones de vie
-    },
-    assommeTemp: {
-      activation: "est assommé",
-      activationF: "est assommée",
-      actif: "est assommé",
-      actifF: "est assommée",
-      fin: "reprend conscience",
-      msgSave: "reprendre conscience",
-      prejudiciable: true,
-      visible: true
     },
     nauseeuxTemp: {
       activation: "souffre de violentes douleurs au ventre",
