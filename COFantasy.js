@@ -1,4 +1,4 @@
-//Dernière modification : dim. 14 juil. 2024,  10:07
+//Dernière modification : dim. 14 juil. 2024,  10:19
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -6672,6 +6672,7 @@ var COFantasy = COFantasy || function() {
           expliquer("Autorité naturelle : +5 en intimidation");
           bonus += 5;
         }
+        break;
       case 'commander':
         if (predicateAsBool(personnage, 'autoriteNaturelle')) {
           expliquer("Autorité naturelle : +5 pour donner des ordres");
