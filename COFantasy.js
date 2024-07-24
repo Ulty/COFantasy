@@ -1,4 +1,4 @@
-//Dernière modification : mer. 24 juil. 2024,  12:27
+//Dernière modification : mer. 24 juil. 2024,  01:47
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -834,7 +834,7 @@ var COFantasy = COFantasy || function() {
         perso.transforme.garde[g] = true;
       });
       if (gardeEtMeilleur.length > 1) {
-         perso.transforme.gardeMeilleur = {};
+        perso.transforme.gardeMeilleur = {};
         let meilleur = gardeEtMeilleur[1].split(',');
         meilleur.forEach(function(m) {
           perso.transforme.gardeMeilleur[m] = true;
@@ -4130,6 +4130,15 @@ var COFantasy = COFantasy || function() {
         tousLesTokens: true
       });
     }
+    if (mEffet && mEffet.eclaire) {
+      iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
+        let perso = {
+          token,
+          charId
+        };
+        eteindreUneLumiere(perso, options.pageId, undefined, efComplet, evt);
+      });
+    }
     let character;
     let combat = stateCOF.combat;
     switch (effet) {
@@ -4577,16 +4586,6 @@ var COFantasy = COFantasy || function() {
             //On note qu'il l'a déjà fait pour qu'il ne puisse le refaire dans le combat
             setTokenAttr(perso, 'aAgiAZeroPV', true, evt);
           }
-        });
-        break;
-      case 'forgeron':
-      case 'armeEnflammee':
-        iterTokensOfAttribute(charId, options.pageId, efComplet, attrName, function(token) {
-          let perso = {
-            token: token,
-            charId: charId
-          };
-          eteindreUneLumiere(perso, options.pageId, undefined, efComplet, evt);
         });
         break;
       case 'effetRetarde':
@@ -13130,7 +13129,7 @@ var COFantasy = COFantasy || function() {
     }
     if (attributeAsBool(target, 'rapideCommeLeVent')) {
       defense += 4;
-        explications.push("Rapide comme le vent => +3 DEF");
+      explications.push("Rapide comme le vent => +3 DEF");
     }
     if (predicateAsBool(target, 'autoriteNaturelle')) {
       let bonus = 1 + modCarac(target, 'CHA');
@@ -23252,7 +23251,7 @@ var COFantasy = COFantasy || function() {
               setTokenAttr(target, 'PVTempChangementDeForme', pvTemp2 - dmgTotal, evt);
               expliquer(nomPerso(target) + " perd " + dmgTotal + " PVs de transformation");
             }
-          } 
+          }
           if (pvTemporaires > 0) {
             if (pvTemporaires <= dmgTotal - pvTemp2) {
               removeTokenAttr(target, 'PVTemporaires', evt);
@@ -30430,6 +30429,23 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  function effetEclaire(perso, mEffet, efComplet, evt) {
+    let eclaire = mEffet.eclaire;
+    if (!eclaire) return;
+    let distance = eclaire.distance || 0;
+    if (eclaire.coefValeur) {
+      let v = getIntValeurOfEffet(perso, efComplet, mEffet.valeur || 0, mEffet.valeurPred);
+      distance += v * eclaire.coefValeur;
+    }
+    if (distance < 0) distance = 0;
+    let distanceFaible = eclaire.distanceFaible;
+    if (distanceFaible === undefined) {
+      if (distance === 0) distanceFaible = 1;
+      else distanceFaible = distance * 3;
+    }
+    ajouteUneLumiere(perso, efComplet, distanceFaible, distance, evt);
+  }
+
   //Si display est défini, l'envoie dans le chat à la fin de l'appel
   function activerEffetTemporaire(lanceur, cibles, effet, mEffet, duree, options, evt, whisper, explications, display) {
     let ef = {
@@ -30516,16 +30532,14 @@ var COFantasy = COFantasy || function() {
       let renew = attributeAsBool(perso, effet);
       setEffetTemporaire(perso, ef, d, evt, options);
       if (!renew) {
+        effetEclaire(perso, mEffet, effet, evt);
         if (effet.startsWith('forgeron(')) {
           //Il faut dégainer l'arme si elle n'est pas en main, et ajouter une lumière
           let labelArmeForgeron = effet.substring(9, effet.indexOf(')'));
           degainerArme(perso, labelArmeForgeron, evt);
-          let feu = getIntValeurOfEffet(perso, effet, 1, 'voieDuMetal');
-          ajouteUneLumiere(perso, effet, feu * 3, feu, evt);
         } else if (effet.startsWith('armeEnflammee(')) {
           let labelArmeEnflammee = effet.substring(14, effet.indexOf(')'));
           degainerArme(perso, labelArmeEnflammee, evt);
-          ajouteUneLumiere(perso, effet, 9, 3, evt);
         }
       }
       if (effet == 'cercleDeProtection') {
@@ -31163,6 +31177,7 @@ var COFantasy = COFantasy || function() {
               perso, effet, valeur, evt, {
                 msg: whisper + messageActivation(perso, mEffet, effet)
               });
+            effetEclaire(perso, mEffet, effet, evt);
             switch (effet) {
               case 'foretVivanteEnnemie':
                 if (stateCOF.combat) updateNextInit(perso);
@@ -31255,6 +31270,9 @@ var COFantasy = COFantasy || function() {
           changeTokenSide(perso, side, evt);
           evt.deletedAttributes.push(attrTS);
           attrTS.remove();
+        }
+        if (mEffet.eclaire) {
+          eteindreUneLumiere(perso, options.pageId, undefined, effet, evt);
         }
         switch (effet) {
           case 'foretVivanteEnnemie':
@@ -39886,6 +39904,7 @@ var COFantasy = COFantasy || function() {
       lumiere = tokensLumiere.shift();
       if (tokensLumiere.length > 0) {
         //On cherche le token le plus proche de perso
+        pageId = pageId || perso.token.get('pageid');
         let d = distancePixToken(lumiere, perso.token);
         let samePage = lumiere.get('pageid') == pageId;
         tokensLumiere.forEach(function(tl) {
@@ -46323,9 +46342,11 @@ var COFantasy = COFantasy || function() {
             setTokenAttr(perso, 'changementDeFormeUtiliseAttaqueMag', true, evt);
           }
           if (options.augmentePVs) {
-            let pv = ficheAttributeMax({charId:formeChar.id}, 'pv', 0);
+            let pv = ficheAttributeMax({
+              charId: formeChar.id
+            }, 'pv', 0);
             if (pv > 0) {
-              setTokenAttr(perso, 'PVTempChangementDeForme', Math.ceil(pv/10), evt);
+              setTokenAttr(perso, 'PVTempChangementDeForme', Math.ceil(pv / 10), evt);
             }
           }
           stateCOF.predicats[perso.charId] = undefined;
@@ -46387,7 +46408,7 @@ var COFantasy = COFantasy || function() {
         removeTokenAttr(perso, 'changementDeForme', evt);
         removeTokenAttr(perso, 'PVAvantTransformation', evt);
         removeTokenAttr(perso, 'changementDeFormeUtiliseAttaqueMag', evt);
-              removeTokenAttr(perso, 'PVTempChangementDeForme', evt);
+        removeTokenAttr(perso, 'PVTempChangementDeForme', evt);
         stateCOF.predicats[perso.charId] = undefined;
       }); //fin de iterSelected
     }, options);
@@ -47021,6 +47042,12 @@ var COFantasy = COFantasy || function() {
   // msgSave: message à afficher quand on résiste à l'effet. Sera précédé de "pour "
   // entrave: effet qui immobilise, paralyse ou ralentit
   // statusMarker: marker par défaut pour l'effet
+  // eclaire: l'effet émet de la lumière. 3 champs possibles (optionnels):
+  //   - distance: distance à laquelle il émet de la lumiere vive (defaut 0)
+  //   - distanceFaible:distance à laquelle il émet de la lumière douce (défaut 1, si distance = 0, sinon distance x 3)
+  //   - coefValeur: ajoute coefValeur * valeur à distance (defaut 0)
+  // valeur: valeur par défaut, si utile
+  // valeurPred: prédicat utilisé pour la valeur
   const messageEffetTemp = {
     aCouvert: {
       activation: "reste à couvert",
@@ -47474,7 +47501,12 @@ var COFantasy = COFantasy || function() {
       fin: "L'arme n'est plus enflammée.",
       dm: true,
       generic: true,
-      visible: true
+      visible: true,
+      eclaire: {
+        coefValeur: 1
+      },
+      valeur: 1,
+      valeurPred: 'voieDuMetal',
     },
     armeEnflammee: {
       activation: "voit son arme prendre feu",
@@ -47482,7 +47514,10 @@ var COFantasy = COFantasy || function() {
       fin: "L'arme n'est plus enflammée.",
       dm: true,
       generic: true,
-      visible: true
+      visible: true,
+      eclaire: {
+        distance: 3
+      },
     },
     armeGlacee: {
       activation: "voit son arme se couvrir de givre",
@@ -48376,7 +48411,11 @@ var COFantasy = COFantasy || function() {
       activation: "s'immole dans une aura de flammes vives",
       actif: "est entouré d'une armure de feu",
       actifF: "est entourée d'une armure de feu",
-      fin: "le feu s'éteint"
+      fin: "le feu s'éteint",
+      visible: true,
+      eclaire: {
+        distance: 5
+      },
     },
     charme: {
       activation: "devient un ami de longue date",
