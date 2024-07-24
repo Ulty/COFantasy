@@ -1,4 +1,4 @@
-//Dernière modification : dim. 14 juil. 2024,  10:19
+//Dernière modification : mer. 24 juil. 2024,  12:27
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -13241,7 +13241,7 @@ var COFantasy = COFantasy || function() {
               typeDMGauche = attaquant.armeGauche.typeDegats;
           }
           if (typeDMGauche == 'normal' && attaquant.armeGauche.modificateurs &&
-            attaquant.armeGauche.modificateurs.includes("magique")) {
+            attaquant.armeGauche.modificateurs.includes('magique')) {
             typeDMGauche = 'magique';
           }
           attaquant.additionalDmg = attaquant.additionalDmg || [];
@@ -46275,7 +46275,7 @@ var COFantasy = COFantasy || function() {
         }
         iterSelected(selected, function(perso) {
           if (attributeAsBool(perso, 'changementDeForme')) {
-            sendPerso("est déjà transformé");
+            sendPerso(perso, "est déjà transformé");
             return;
           }
           if (token) {
