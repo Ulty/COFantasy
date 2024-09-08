@@ -1,4 +1,4 @@
-//Dernière modification : mer. 24 juil. 2024,  01:47
+//Dernière modification : dim. 08 sept. 2024,  05:59
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -2605,6 +2605,116 @@ var COFantasy = COFantasy || function() {
     return initiative([{
       _id: personnage.token.id
     }], evt, recompute);
+  }
+
+  //options est un tableaux d'options obtenues par split(' --')
+  // peut retourner une struct avec champ extraText
+  function actionImpossible(perso, options, defResource, tref) {
+    let coutMana = 0;
+    let ai = options.some(function(opt) {
+      opt = opt.trim();
+      if (opt === '') return false;
+      const cmd = opt.split(' ');
+      switch (cmd[0]) {
+        case 'si':
+          let condition = parseCondition(cmd.slice(1));
+          switch (condition.type) {
+            case 'etat':
+              return !getState(perso, condition.etat);
+            case 'attribut':
+              return !testConditionAttribut(condition, perso);
+            case 'premiereAttaque':
+              return attributeAsBool(perso, 'attributDeCombat_premiereAttaque');
+          }
+          return false;
+        case 'mana':
+          if (cmd.length < 2) return false;
+          let mana = parseInt(cmd[1]);
+          if (isNaN(mana) || mana < 0) return false;
+          coutMana += mana;
+          return !depenseManaPossible(perso, coutMana) ||
+            attributeAsBool(perso, 'frappeDesArcanes');
+        case 'limiteParJour':
+          if (cmd.length < 2) return false;
+          let limiteParJour = parseInt(cmd[1]);
+          if (isNaN(limiteParJour)) {
+            limiteParJour = predicateAsInt(perso, cmd[1], 0, 1);
+          }
+          if (limiteParJour < 1) return false;
+          let ressourceParJour = defResource;
+          if (cmd.length > 2) {
+            cmd.splice(0, 2);
+            ressourceParJour = cmd.join('_');
+          }
+          ressourceParJour = 'limiteParJour_' + ressourceParJour;
+          if (attributeAsInt(perso, ressourceParJour, limiteParJour) > 0) {
+            return false;
+          }
+          //Reste le cas où on peut dépasser cette limite par jour
+          let depasse = options.find(function(o) {
+            return o.startsWith('depasseLimite ');
+          });
+          if (depasse) {
+            let da = {
+              mana: coutMana
+            };
+            if (tref) da.text = tref.text;
+            let dp = peutDepasserLimite(depasse, perso, ressourceParJour, da);
+            if (dp) {
+              coutMana = da.mana;
+              if (tref) tref.text = da.text;
+              return false;
+            }
+            return true;
+          }
+          return true;
+        case 'limiteParCombat':
+        case 'limiteParTour':
+          {
+            if (cmd.length < 2) return false;
+            let limite = parseInt(cmd[1]);
+            if (isNaN(limite)) {
+              limite = predicateAsInt(perso, cmd[1], 0, 1);
+            }
+            if (limite < 1) return false;
+            let lp = cmd[0];
+            let ressource = defResource;
+            if (cmd.length > 2) {
+              cmd.splice(0, 2);
+              ressource = cmd.join('_');
+            }
+            ressource = lp + '_' + ressource;
+            return attributeAsInt(perso, ressource, limite) === 0;
+          }
+        case 'tempsRecharge':
+          if (cmd.length < 2) return false;
+          let effet = cmd[1];
+          if (!estEffetTemp(effet)) return false;
+          return attributeAsBool(perso, effet);
+        case 'aussiArmeDeJet':
+          if (cmd.length < 2) return false;
+          let armeAssociee = getWeaponStats(perso, cmd[1]);
+          return armeAssociee && armeAssociee.armeDeJet && armeAssociee.nbArmesDeJet < 1;
+        case 'traquenard':
+          return attributeAsBool(perso, 'attributDeCombat_premiereAttaque');
+        case 'decrAttribute':
+          {
+            if (cmd.length < 2) return false;
+            let attr = getObj('attribute', cmd[1]);
+            if (attr === undefined) {
+              attr = tokenAttribute(perso, cmd[1]);
+              if (attr.length === 0) return true;
+              attr = attr[0];
+            }
+            let oldval = parseInt(attr.get('current'));
+            let val = 1;
+            if (cmd.length > 2) val = toInt(cmd[2], 1);
+            return oldval < val;
+          }
+      }
+      return false;
+    });
+    return ai;
   }
 
   //perso peut ne pas avoir de token
@@ -5706,102 +5816,6 @@ var COFantasy = COFantasy || function() {
       return true;
     }
     return false;
-  }
-
-  //options est un tableaux d'options obtenues par split(' --')
-  // peut retourner une struct avec champ extraText
-  function actionImpossible(perso, options, defResource, tref) {
-    let coutMana = 0;
-    let ai = options.some(function(opt) {
-      opt = opt.trim();
-      if (opt === '') return false;
-      const cmd = opt.split(' ');
-      switch (cmd[0]) {
-        case 'si':
-          let condition = parseCondition(cmd.slice(1));
-          switch (condition.type) {
-            case 'etat':
-              return !getState(perso, condition.etat);
-            case 'attribut':
-              return !testConditionAttribut(condition, perso);
-            case 'premiereAttaque':
-              return attributeAsBool(perso, 'attributDeCombat_premiereAttaque');
-          }
-          return false;
-        case 'mana':
-          if (cmd.length < 2) return false;
-          let mana = parseInt(cmd[1]);
-          if (isNaN(mana) || mana < 0) return false;
-          coutMana += mana;
-          return !depenseManaPossible(perso, coutMana) ||
-            attributeAsBool(perso, 'frappeDesArcanes');
-        case 'limiteParJour':
-          if (cmd.length < 2) return false;
-          let limiteParJour = parseInt(cmd[1]);
-          if (isNaN(limiteParJour)) {
-            limiteParJour = predicateAsInt(perso, cmd[1], 0, 1);
-          }
-          if (limiteParJour < 1) return false;
-          let ressourceParJour = defResource;
-          if (cmd.length > 2) {
-            cmd.splice(0, 2);
-            ressourceParJour = cmd.join('_');
-          }
-          ressourceParJour = 'limiteParJour_' + ressourceParJour;
-          if (attributeAsInt(perso, ressourceParJour, limiteParJour) > 0) {
-            return false;
-          }
-          //Reste le cas où on peut dépasser cette limite par jour
-          let depasse = options.find(function(o) {
-            return o.startsWith('depasseLimite ');
-          });
-          if (depasse) {
-            let da = {
-              mana: coutMana
-            };
-            if (tref) da.text = tref.text;
-            let dp = peutDepasserLimite(depasse, perso, ressourceParJour, da);
-            if (dp) {
-              coutMana = da.mana;
-              if (tref) tref.text = da.text;
-              return false;
-            }
-            return true;
-          }
-          return true;
-        case 'limiteParCombat':
-        case 'limiteParTour':
-          {
-            if (cmd.length < 2) return false;
-            let limite = parseInt(cmd[1]);
-            if (isNaN(limite)) {
-              limite = predicateAsInt(perso, cmd[1], 0, 1);
-            }
-            if (limite < 1) return false;
-            let lp = cmd[0];
-            let ressource = defResource;
-            if (cmd.length > 2) {
-              cmd.splice(0, 2);
-              ressource = cmd.join('_');
-            }
-            ressource = lp + '_' + ressource;
-            return attributeAsInt(perso, ressource, limite) === 0;
-          }
-        case 'tempsRecharge':
-          if (cmd.length < 2) return false;
-          let effet = cmd[1];
-          if (!estEffetTemp(effet)) return false;
-          return attributeAsBool(perso, effet);
-        case 'aussiArmeDeJet':
-          if (cmd.length < 2) return false;
-          let armeAssociee = getWeaponStats(perso, cmd[1]);
-          return armeAssociee && armeAssociee.armeDeJet && armeAssociee.nbArmesDeJet < 1;
-        case 'traquenard':
-          return attributeAsBool(perso, 'attributDeCombat_premiereAttaque');
-      }
-      return false;
-    });
-    return ai;
   }
 
   //Enlève les chaînes de type ?{..} pour être sûr que l'action est impossible
