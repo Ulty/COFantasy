@@ -1,4 +1,4 @@
-//Dernière modification : dim. 08 sept. 2024,  05:59
+//Dernière modification : ven. 20 sept. 2024,  03:34
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -5560,6 +5560,7 @@ var COFantasy = COFantasy || function() {
     if (persoEstPNJ(attaquant, options)) return computeArmeAtkPNJ(attaquant, x);
     let attDiv;
     let attCar;
+    let attBase = 1;
     switch (x) {
       case '@{ATKCAC}':
         attDiv = ficheAttributeAsInt(attaquant, 'ATKCAC_DIV', 0, options);
@@ -5569,6 +5570,7 @@ var COFantasy = COFantasy || function() {
         } else {
           attCar = ficheAttribute(attaquant, 'ATKCAC_CARAC', '@{FOR}', options);
         }
+        attBase = ficheAttributeAsInt(attaquant, 'atkcac_base', 1, options);
         break;
       case '@{ATKTIR}':
         attDiv = ficheAttributeAsInt(attaquant, 'ATKTIR_DIV', 0, options);
@@ -5578,6 +5580,7 @@ var COFantasy = COFantasy || function() {
         } else {
           attCar = ficheAttribute(attaquant, 'ATKTIR_CARAC', '@{DEX}', options);
         }
+        attBase = ficheAttributeAsInt(attaquant, 'atktir_base', 1, options);
         break;
       case '@{ATKMAG}':
         attDiv = ficheAttributeAsInt(attaquant, 'ATKMAG_DIV', 0, options);
@@ -5588,13 +5591,14 @@ var COFantasy = COFantasy || function() {
           attCar = ficheAttribute(attaquant, 'ATKMAG_CARAC', '@{INT}', options);
         }
         attDiv += predicateAsInt(attaquant, 'bonusAttaqueMagique', 0);
+        attBase = ficheAttributeAsInt(attaquant, 'atkmag_base', 1, options);
         break;
       default:
         return x;
     }
     attCar = computeCarValue(attaquant, attCar, options);
     if (attCar === undefined) return x;
-    return attCar + ficheAttributeAsInt(attaquant, 'niveau', 1, options) + attDiv;
+    return attCar + attBase + attDiv;
   }
 
   function armeDeCreatureFeerique(perso, weaponStats, dice) {
@@ -34842,10 +34846,11 @@ var COFantasy = COFantasy || function() {
       let d20roll = attackRoll.results.total;
       effetAuD20(lanceur, d20roll);
       let msg = buildinline(attackRoll);
-      let attBonus = ficheAttributeAsInt(lanceur, 'niveau', 1);
-      if (estAffaibli(lanceur) && predicateAsBool(lanceur, 'insensibleAffaibli')) attBonus -= 2;
+      let attBonus;
       switch (typeAttaque) {
         case 'distance':
+          attBonus = ficheAttributeAsInt(lanceur, 'atktir_base', 1);
+          attBonus = computeArmeAtk(lanceur, '@ATKTIR');
           attBonus += ficheAttributeAsInt(lanceur, 'ATKTIR_DIV', 0);
           if (persoArran(lanceur)) {
             attBonus += ficheAttributeAsInt(lanceur, 'mod_atktir', 0);
@@ -34853,6 +34858,7 @@ var COFantasy = COFantasy || function() {
           attBonus += modCarac(lanceur, carac);
           break;
         case 'magique':
+          attBonus = ficheAttributeAsInt(lanceur, 'atkmag_base', 1);
           attBonus += ficheAttributeAsInt(lanceur, 'ATKMAG_DIV', 0);
           if (persoArran(lanceur)) {
             attBonus += ficheAttributeAsInt(lanceur, 'mod_atkmag', 0);
@@ -34863,16 +34869,19 @@ var COFantasy = COFantasy || function() {
           attBonus += predicateAsInt(lanceur, 'bonusAttaqueMagique', 0);
           break;
         case 'contact':
+          attBonus = ficheAttributeAsInt(lanceur, 'atkcaca_base', 1);
           attBonus += ficheAttributeAsInt(lanceur, 'ATKCAC_DIV', 0);
           attBonus += modCarac(lanceur, carac);
           break;
         case 'esquive':
+          attBonus = ficheAttributeAsInt(lanceur, 'niveau', 1);
           attBonus += predicateAsInt(lanceur, 'reflexesFelins', 0);
           attBonus += predicateAsInt(lanceur, 'esquiveVoleur', 0);
           attBonus += predicateAsInt(lanceur, 'esquive', 0);
           attBonus += modCarac(lanceur, carac);
           break;
         default:
+          attBonus = ficheAttributeAsInt(lanceur, 'niveau', 1);
       }
       let weaponStats;
       if (opt && opt.arme && lanceur.arme) {
